@@ -122,17 +122,17 @@ public class WorkbookInteraction
 	}
 
 	[KernelFunction]
-	[Description("Updates a specific cell in the current .Net interactive notebook by providing the entire content replacement, saves the updated notebook")]
-	public async Task<string> UpdateSmallWorkbookCell(
+	[Description("Updates a specific Markdown or code cell in the current .Net interactive notebook by providing the entire new content")]
+	public async Task<string> ReplaceWorkbookCell(
 		[Description(uniqueContentDescription)] string uniqueContent,
-		[Description("The new content string for the cell's content")] string newCellContent)
+		[Description("The new entire string for the target cell's content")] string newCellContent)
 	{
 		uniqueContent = DecodeValue(uniqueContent).Trim();
 		newCellContent = DecodeValue(newCellContent);
 
 
 		var returnMessage = new StringBuilder();
-		returnMessage.AppendLine($"Updating small cell containing: {uniqueContent}\n\nReplacement cell:{newCellContent}\n...\n");
+		returnMessage.AppendLine($"Updating cell containing: {uniqueContent}\n\nReplacement cell:{newCellContent}\n...\n");
 		try
 		{
 			var notebook = await InteractiveDocument.LoadAsync(new FileInfo(_notebookPath));
@@ -147,14 +147,13 @@ public class WorkbookInteraction
 
 			var notebookJson = notebook.ToJupyterJson();
 			File.WriteAllText(_notebookPath, notebookJson);
-			Console.WriteLine($"Appel à UpdateSmallWorkbookCell terminé");
 			_iterationCount++;
 			Console.WriteLine($"WorkbookInteraction Itération {_iterationCount} terminée.");
 			returnMessage.AppendLine("Cell Successfully updated. Don't forget to run the notebook to check for progress.");
 		}
 		catch (Exception ex)
 		{
-			var message = $"Error updating small notebook cell:\n {ex.Message}";
+			var message = $"Error replacing notebook cell:\n {ex.Message}";
 			_logger.LogError(ex, "Erreur lors de l'exécution du notebook");
 			returnMessage.AppendLine(message);
 		}
@@ -166,80 +165,80 @@ public class WorkbookInteraction
 
 	private const string uniqueContentDescription = "A short string that the target cell to edit contains, and that is found nowhere else in the other cells, thus identifying the cell univoquely by lookup";
 
-	[KernelFunction]
-	[Description("Updating function for large notebook cells with 15+ unchanged lines: use to replace or insert a specific string locally without having to write the entire cell")]
-	public async Task<string> UpdateLargeWorkbookCell(
-		[Description(uniqueContentDescription)] string uniqueContent,
-		[Description("A string directly preceding the position where the new content should be added in the target cell, or empty for appending the new content at a new line at the end of the cell")] string editLocation,
-		[Description("In case of a replacement, a string at the end of the content block to be replaced, which starts a the end of the editLocation string, or empty for inserting the new content at the same location but without replacing an existing block")] string replacedBlockEnd,
-		[Description("The new content for replacement or insertion")] string newContent)
-	{
-		uniqueContent = DecodeValue(uniqueContent);
-		replacedBlockEnd = DecodeValue(replacedBlockEnd);
-		editLocation = DecodeValue(editLocation);
+	//[KernelFunction]
+	//[Description("Updating function for large notebook cells with 15+ unchanged lines: use to replace or insert a specific string locally without having to write the entire cell")]
+	//public async Task<string> UpdateLargeWorkbookCell(
+	//	[Description(uniqueContentDescription)] string uniqueContent,
+	//	[Description("A string directly preceding the position where the new content should be added in the target cell, or empty for appending the new content at a new line at the end of the cell")] string editLocation,
+	//	[Description("In case of a replacement, a string that finishes the content block to be replaced, which starts a the end of the editLocation string, or empty for inserting the new content at the same location but without replacing an existing block")] string replacedBlockEnd,
+	//	[Description("The new content for replacement or insertion")] string newContent)
+	//{
+	//	uniqueContent = DecodeValue(uniqueContent);
+	//	replacedBlockEnd = DecodeValue(replacedBlockEnd);
+	//	editLocation = DecodeValue(editLocation);
 
-		newContent = DecodeValue(newContent);
-
-
-		var returnMessage = new StringBuilder();
-		returnMessage.AppendLine($"Updating large cell containing: {uniqueContent}\nInsert location:{editLocation}\nReplaced block end:{replacedBlockEnd}\nNew content:{newContent}\n...\n");
-		try
-		{
-			var notebook = await InteractiveDocument.LoadAsync(new FileInfo(_notebookPath));
-			var cell = notebook.Elements.FirstOrDefault(e => e.Contents.Contains(uniqueContent));
-			if (cell == null)
-			{
-				throw new Exception($"Cell with identifying string '{uniqueContent}' not found.");
-			}
-
-			if (string.IsNullOrEmpty(editLocation))
-			{
-				cell.Contents = $"{cell.Contents}\n{newContent}";
-			}
-			else if (!cell.Contents.Contains(editLocation))
-			{
-				throw new Exception($"Edit location '{editLocation}' not found in target cell.");
-			}
-			else
-			{
-				var editLocationIdx = cell.Contents.IndexOf(editLocation, StringComparison.InvariantCultureIgnoreCase) + editLocation.Length;
-				if (string.IsNullOrEmpty(replacedBlockEnd))
-				{
-					cell.Contents =
-						$"{cell.Contents.Substring(0, editLocationIdx)}\n{newContent}\n{cell.Contents.Substring(editLocationIdx)}";
-				}
-				else if (!cell.Contents.Contains(replacedBlockEnd))
-				{
-					throw new Exception($"Replaced Block End'{replacedBlockEnd}' not found in target cell.");
-				}
-				else
-				{
-					var replacedEndIndex = cell.Contents.IndexOf(replacedBlockEnd, StringComparison.InvariantCultureIgnoreCase) + replacedBlockEnd.Length;
-					var replacedBlock = cell.Contents.Substring(editLocationIdx, replacedEndIndex - editLocationIdx);
-					cell.Contents = cell.Contents.Replace(replacedBlock, newContent);
-				}
-			};
+	//	newContent = DecodeValue(newContent);
 
 
-			var notebookJson = notebook.ToJupyterJson();
-			File.WriteAllText(_notebookPath, notebookJson);
+	//	var returnMessage = new StringBuilder();
+	//	returnMessage.AppendLine($"Updating large cell containing: {uniqueContent}\nInsert location:{editLocation}\nReplaced block end:{replacedBlockEnd}\nNew content:{newContent}\n...\n");
+	//	try
+	//	{
+	//		var notebook = await InteractiveDocument.LoadAsync(new FileInfo(_notebookPath));
+	//		var cell = notebook.Elements.FirstOrDefault(e => e.Contents.Contains(uniqueContent));
+	//		if (cell == null)
+	//		{
+	//			throw new Exception($"Cell with identifying string '{uniqueContent}' not found.");
+	//		}
+
+	//		if (string.IsNullOrEmpty(editLocation))
+	//		{
+	//			cell.Contents = $"{cell.Contents}\n{newContent}";
+	//		}
+	//		else if (!cell.Contents.Contains(editLocation))
+	//		{
+	//			throw new Exception($"Edit location '{editLocation}' not found in target cell.");
+	//		}
+	//		else
+	//		{
+	//			var editLocationIdx = cell.Contents.IndexOf(editLocation, StringComparison.InvariantCultureIgnoreCase) + editLocation.Length;
+	//			if (string.IsNullOrEmpty(replacedBlockEnd))
+	//			{
+	//				cell.Contents =
+	//					$"{cell.Contents.Substring(0, editLocationIdx)}\n{newContent}\n{cell.Contents.Substring(editLocationIdx)}";
+	//			}
+	//			else if (!cell.Contents.Contains(replacedBlockEnd))
+	//			{
+	//				throw new Exception($"Replaced Block End'{replacedBlockEnd}' not found in target cell.");
+	//			}
+	//			else
+	//			{
+	//				var replacedEndIndex = cell.Contents.IndexOf(replacedBlockEnd, StringComparison.InvariantCultureIgnoreCase) + replacedBlockEnd.Length;
+	//				var replacedBlock = cell.Contents.Substring(editLocationIdx, replacedEndIndex - editLocationIdx);
+	//				cell.Contents = cell.Contents.Replace(replacedBlock, newContent);
+	//			}
+	//		};
+
+
+	//		var notebookJson = notebook.ToJupyterJson();
+	//		File.WriteAllText(_notebookPath, notebookJson);
 			
-			_iterationCount++;
-			Console.WriteLine($"WorkbookInteraction Itération {_iterationCount} terminée.");
-			returnMessage.AppendLine($"Cell Successfully updated. New Cell content:\n{cell.Contents}\n Please fix any typo, and don't forget to run the notebook to check for outputs before moving on with next steps.");
-		}
-		catch (Exception ex)
-		{
-			var message = $"Error updating large notebook cell:\n {ex.Message}";
-			Console.WriteLine(message);
-			_logger.LogError(ex, "Erreur lors de l'exécution du notebook");
-			returnMessage.AppendLine(message);
-		}
+	//		_iterationCount++;
+	//		Console.WriteLine($"WorkbookInteraction Itération {_iterationCount} terminée.");
+	//		returnMessage.AppendLine($"Cell Successfully updated. New Cell content:\n{cell.Contents}\n Please fix any typo, and don't forget to run the notebook to check for outputs before moving on with next steps.");
+	//	}
+	//	catch (Exception ex)
+	//	{
+	//		var message = $"Error updating large notebook cell:\n {ex.Message}";
+	//		Console.WriteLine(message);
+	//		_logger.LogError(ex, "Erreur lors de l'exécution du notebook");
+	//		returnMessage.AppendLine(message);
+	//	}
 
-		var toReturn = returnMessage.ToString();
-		Console.WriteLine(toReturn);
-		return toReturn;
-	}
+	//	var toReturn = returnMessage.ToString();
+	//	Console.WriteLine(toReturn);
+	//	return toReturn;
+	//}
 
 
 }
