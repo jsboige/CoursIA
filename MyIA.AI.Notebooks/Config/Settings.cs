@@ -140,7 +140,7 @@ public static class Settings
 
         try
         {
-            var config = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(configFile));
+            var config = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(configFile))!;
             bool useAzureOpenAI = config[TypeKey] == "azure";
             string model = config[ModelKey];
             string azureEndpoint = config[EndpointKey];

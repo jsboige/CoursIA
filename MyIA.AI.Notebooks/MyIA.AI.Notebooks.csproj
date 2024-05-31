@@ -1,9 +1,42 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="dotNetRdf" Version="3.1.1" />
+    <PackageReference Include="Microsoft.DotNet.Interactive" Version="1.0.0-beta.24229.4" />
+    <PackageReference Include="Microsoft.DotNet.Interactive.CSharp" Version="1.0.0-beta.24229.4" />
+    <PackageReference Include="Microsoft.DotNet.Interactive.Documents" Version="1.0.0-beta.24229.4" />
+    <PackageReference Include="Microsoft.DotNet.Interactive.PackageManagement" Version="1.0.0-beta.24229.4" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0-preview.4.24266.19" />
+    <PackageReference Include="Microsoft.ML.Probabilistic" Version="0.4.2403.801" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.13.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Planners.OpenAI" Version="1.13.0-preview" />
+    <PackageReference Include="SkiaSharp" Version="3.0.0-preview.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Config\settings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Semantic-Kernel\Resources\generate_plan.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Semantic-Kernel\Resources\StepPrompt.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Semantic-Kernel\Workbook-Template.ipynb">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Semantic-Kernel\Resources\" />
+  </ItemGroup>
 
 </Project>

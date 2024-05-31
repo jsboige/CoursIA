@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 
 // ReSharper disable InconsistentNaming
+
+using System.Text;
+
 public static class Utils
 {
     // Function used to wrap long lines of text
