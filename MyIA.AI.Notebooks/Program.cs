@@ -46,7 +46,7 @@ class Program
 		Console.WriteLine("Kernel et Semantic Kernel initialisés.");
 
 		// Description de la tâche
-		string taskDescription = "Créer un notebook .Net interactive permettant de requêter DBPedia. Utilisant le package Nuget dotNetRDF. Choisir un exemple de requête dont le résultat peut être synthétisé dans un graphique. Utiliser Plotly ou Xplot pour afficher un graphique synthétisant les résultats.";
+		string taskDescription = "Créer un notebook .Net interactive permettant de requêter DBPedia, utilisant le package Nuget dotNetRDF. Choisir un exemple de requête dont le résultat peut être synthétisé dans un graphique. Utiliser Plotly.NET.Interactive ou XPlot.Plotly.Interactive pour afficher un graphique synthétisant les résultats et ne pas oublier de documenter l'ensemble dans le markdown et dans le code.";
 
 		// Initialisation du notebook
 		var notebookPath = @$"./Workbooks/Workbook-{DateTime.Now.ToFileTime()}.ipynb";

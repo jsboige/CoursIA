@@ -57,12 +57,25 @@ public class NotebookUpdater
 
 		Console.WriteLine("Appel de ChatGPT avec le workbook initialisé...");
 
-		var plannerPrompt = $"Help create the following interactive .Net notebook, which contains a description of its purpose.\n Use function calling to improve and validate it with incremental edits:\n - Use the UpdateSmallWorkbookCell function to edit targeted cells within the notebook initially, and then UpdateLargeWorkbookCell as they grow in size. \n- Use the RunNotebook function on a regular basis after one large or several small edits to re-execute the notebook and produce outputs, checking for potential issues, and further edit faulty cells to fix all errors found in the json outputs.\n Make sure to also edit Markdown cells to explain your sub-goals, and to include display in your code cells for sanity checks of intermediate results.\n- Continue updating the notebook until it runs without any error and the code cells are filled with code that fully accomplishes the requested task.\n\n{notebookJson}\nRemember, only once the workbook was  run and thoroughly tested should you call the SendFinalAnswer function.";
-		Console.WriteLine($"Envoi du prompt au planner...\n{plannerPrompt}");
+
+
+
+		var plannerPrompt = $"Help create the following interactive .Net notebook, which contains a description of its purpose.\n" +
+		                    $"Use function calling to improve and validate it with incremental edits:\n" +
+		                    $"- Use the ReplaceWorkbookCell function to edit targeted cells within the notebook initially, and then ReplaceBlockInWorkbookCell or InsertInWorkbookCell as they grow in size. Pay attention to those 3 functions distinctive signatures to avoid strings mismatched or mis-replaced\n" +
+		                    $"- Those functions do run the code cells by default, returning corresponding outputs, but you can also choose to restart the Kernel and run the entire notebook when needed.\n" +
+		                    //$"- Make sure to always start editing Markdown cells to explain the following code, and to include comments and make use of output displays in your code cells for sanity checks of intermediate results, and state your current sub-goals in the accompanying message.\n" +
+		                    $"- Continue to update the notebook until it runs without any error, the code cells are properly fed with actual code that fully accomplishes the requested task and the markdown cells with the appropriate documentation.\n" +
+		                    $"- Concerning Nuget packages, note that you might find yourself in a tough spot if you start hallucinating Nuget packages. Pay special attention and don't mix-up package names and namespaces.\n" +
+							$"\n\nHere is the starting notebook.\n{notebookJson}\nRemember, only once the workbook was run and thoroughly tested, documented and cleaned should you call the 'SendFinalAnswer' function.";
+		
+		_logger.LogInformation($"Sending prompt to planner...\n{plannerPrompt}");
+
+
 
 		var result = await _planner.ExecuteAsync(_semanticKernel, plannerPrompt);
 
-		Console.WriteLine("Notebook mis à jour avec succès.");
+		_logger.LogInformation("Notebook mis à jour avec succès.");
 
 		return result.FinalAnswer;
 	}

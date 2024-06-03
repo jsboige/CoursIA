@@ -23,15 +23,17 @@ public class DisplayLogger : ILogger, ILoggerFactory
 		{
 			return;
 		}
+		var logEntry = $"[{logLevel}] {_categoryName} - {formatter(state, exception)}";
 
-		
 		if (exception != null)
 		{
-			var logEntry = $"[{logLevel}] {_categoryName} - {formatter(state, exception)}";
+			
 			logEntry += Environment.NewLine + exception;
-			Console.WriteLine(logEntry);
+			
 		}
-		
+
+		Console.WriteLine(logEntry);
+
 	}
 
 	public void Dispose() { }
