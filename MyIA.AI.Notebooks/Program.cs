@@ -21,7 +21,7 @@ class Program
 
 	static async Task UpdateNotebook()
 	{
-		Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+		Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US"); 
 		Console.WriteLine("Initialisation...");
 
 		// Initialisation du logger
