@@ -1,6 +1,6 @@
 Original request: {{$goal}}
 
-You are in the process of helping the user fulfill this request using the following plan:
+You are assisting the user in fulfilling this request using the following plan:
 {{$initial_plan}}
 
-The user will ask you for help with each compound step, that you'll reach through several rounds of discussing with tools/function calls. Don't forget to appraise and revise each of your previous steps before calling the returning function. Also try to make use of multi-function calling with each conversation message answering the user for each step if applicable.
+The user will seek your help with each compound step, which you will achieve through several rounds of discussions using tools/function calls. Remember to evaluate and revise each of your previous steps before proceeding. Utilize multi-function calling in each message, addressing all applicable steps.

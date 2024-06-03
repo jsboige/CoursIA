@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ class Program
 
 	static async Task UpdateNotebook()
 	{
+		Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 		Console.WriteLine("Initialisation...");
 
 		// Initialisation du logger

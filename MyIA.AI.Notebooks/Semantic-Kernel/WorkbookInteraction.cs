@@ -68,7 +68,6 @@ namespace MyIA.AI.Notebooks
 			File.WriteAllText(_notebookPath, notebookJson);
 		}
 
-
 		private string ExtractCellOutput(string notebookJson, int cellIndex)
 		{
 			var cell = ExtractCell(notebookJson, cellIndex);
@@ -76,7 +75,7 @@ namespace MyIA.AI.Notebooks
 			{
 				return string.Empty;
 			}
-			return outputs.GetRawText() ;
+			return outputs.GetRawText();
 		}
 
 		private JsonElement ExtractCell(string notebookJson, int cellIndex)
@@ -101,9 +100,7 @@ namespace MyIA.AI.Notebooks
 			}
 			if (includeNotebook)
 			{
-
 				returnMessage.AppendLine($"Complete Notebook Jupyter json:\n{outputJson}\n");
-				
 			}
 
 			if (includeErrors)
@@ -111,13 +108,13 @@ namespace MyIA.AI.Notebooks
 				var cellsWithErrors = notebook.Elements.FindAllIndex(e => e.Outputs.Exists(output => output is ErrorElement)).ToList();
 				if (cellsWithErrors.Count > 0)
 				{
-					returnMessage.AppendLine($"The complete notebook contains {cellsWithErrors.Count} cells with errors, please fix the content of their parent cells' source before moving forward.");
+					returnMessage.AppendLine($"The notebook contains {cellsWithErrors.Count} cells with errors. Please fix the content of these cells before proceeding.");
 					var errorCellsContent = cellsWithErrors.Select(i => ExtractCell(outputJson, i).GetRawText()).ToList();
 					returnMessage.AppendLine($"Cells with errors:\n{string.Join("\n", errorCellsContent)}\n");
 				}
 				else
 				{
-					returnMessage.AppendLine("No error was found in outputs, but please check that the notebook reaches its stated goal before returning.");
+					returnMessage.AppendLine("No errors found in outputs, but please ensure the notebook achieves its intended purpose before proceeding.");
 				}
 			}
 
@@ -132,9 +129,8 @@ namespace MyIA.AI.Notebooks
 			return newValue;
 		}
 
-		private async Task<string> UpdateCellAsync(string uniqueContent, Func<InteractiveDocumentElement, string> updateFunc, StringBuilder returnMessage, bool runNotebook, bool returnNotebook)
+		private async Task UpdateCellAsync(string uniqueContent, Func<InteractiveDocumentElement, string> updateFunc, StringBuilder returnMessage, bool runNotebook, bool returnNotebook)
 		{
-			
 			try
 			{
 				var notebook = await LoadNotebookAsync();
@@ -152,8 +148,7 @@ namespace MyIA.AI.Notebooks
 				var newContent = updateFunc(cell);
 				if (newContent == cell.Contents)
 				{
-					throw new ArgumentException(
-						"You just tried to update a notebook cell without changing its content. Please don't do that.");
+					throw new ArgumentException("You attempted to update a notebook cell without changing its content. Please provide new content.");
 				}
 				cell.Contents = newContent;
 
@@ -161,131 +156,170 @@ namespace MyIA.AI.Notebooks
 
 				_iterationCount++;
 				_logger.LogInformation($"WorkbookInteraction Iteration {_iterationCount} completed.");
-				returnMessage.AppendLine($"Cell successfully edited with updated content:\n{cell.Contents}\n");
+				returnMessage.AppendLine($"Cell successfully updated with new content:\n{cell.Contents}\n");
 
 				if (runNotebook)
 				{
-					returnMessage.AppendLine("Restarting Kernel\nStart Running notebook\n...\n");
+					returnMessage.AppendLine("Restarting Kernel and running entire notebook...");
 					this.InitializeExecutor();
 					await _executor.RunNotebookAsync(notebook);
-					returnMessage.AppendLine("End Running notebook");
+					returnMessage.AppendLine("Notebook execution completed.");
 				}
 				else
 				{
-					returnMessage.AppendLine("Running cell\n...\n");
+					returnMessage.AppendLine("Running cell...");
 					await _executor.RunCell(cell);
-					returnMessage.AppendLine("End Running cell");
+					returnMessage.AppendLine("Cell execution completed.");
 				}
-				var message = GenerateReturnMessage(cellIndex, false , runNotebook, notebook);
+				var message = GenerateReturnMessage(cellIndex, returnNotebook, runNotebook, notebook);
 				returnMessage.AppendLine(message);
 			}
 			catch (Exception ex)
 			{
-				var message = $"Error updating notebook cell:\n {ex.Message}. Trace:\n";
-				//_logger.LogError(ex, "Erreur lors de l'exécution du notebook");
+				var message = $"Error updating notebook cell:\n{ex.Message}. Trace:\n";
 				message += returnMessage;
 				throw new InvalidOperationException(message);
 			}
 
-			var toReturn = returnMessage.ToString();
+			//var toReturn = returnMessage.ToString();
+			//_logger.LogInformation($"{toReturn}\n");
+			//return toReturn;
+		}
+
+		private async Task<string> ExecuteWithExceptionHandling(Func<Task<string>> function)
+		{
+			try
+			{
+				return await function();
+			}
+			catch (Exception ex)
+			{
+				return $"Error: {ex.Message}";
+			}
+		}
+
+		[KernelFunction]
+		[Description("Updates a specific Markdown or code cell in the current .NET interactive notebook by providing the entire new content")]
+		public async Task<string> ReplaceWorkbookCell(
+		[Description(uniqueContentDescription)] string uniqueContent,
+		[Description("The new content for the target cell")] string newCellContent,
+		[Description(runNotebookDescription)] bool runNotebook = false)
+		{
+			var returnMessage = new StringBuilder();
+			returnMessage.AppendLine("Start ReplaceWorkbookCell\n");
+			newCellContent = DecodeValue(newCellContent);
+
+			var toReturn = await ExecuteWithExceptionHandling(async () =>
+			{
+				await UpdateCellAsync(uniqueContent, cell => newCellContent, returnMessage, runNotebook,
+					runNotebook);
+				return returnMessage.ToString();
+
+			}).ConfigureAwait(false);
+			toReturn += "\nEnd ReplaceWorkbookCell";
 			_logger.LogInformation($"{toReturn}\n");
 			return toReturn;
 		}
 
 		[KernelFunction]
-		[Description("Updates a specific Markdown or code cell in the current .Net interactive notebook by providing the entire new content")]
-		public Task<string> ReplaceWorkbookCell(
-			[Description(uniqueContentDescription)] string uniqueContent,
-			[Description("The new entire string for the target cell's content")] string newCellContent,
-			[Description(runNotebookDescription)] bool runNotebook = false)
-			//[Description(returnNotebookDescription)] bool returnNotebook = false)
-		{
-			var returnMessage = new StringBuilder();
-			returnMessage.AppendLine("## Calling ReplaceWorkbookCell\n");
-			newCellContent = DecodeValue(newCellContent);
-
-			return UpdateCellAsync(uniqueContent, cell => newCellContent, returnMessage, runNotebook, runNotebook);
-		}
-
-		
-		[KernelFunction]
 		[Description("Replaces a specific block within a cell identified by a unique string")]
-		public Task<string> ReplaceBlockInWorkbookCell(
+		public async Task<string> ReplaceBlockInWorkbookCell(
 			[Description(uniqueContentDescription)] string uniqueContent,
 			[Description("The string that starts the block to be replaced")] string blockStart,
 			[Description("The string that ends the block to be replaced")] string blockEnd,
-			[Description("The new content to replace the specified block from blockStart to blockEnd both included in the bloc")] string newContent,
+			[Description("The new content to replace the specified block")] string newContent,
 			[Description(runNotebookDescription)] bool runNotebook = false)
-			//[Description(returnNotebookDescription)] bool returnNotebook = false)
 		{
-			//bool returnNotebook = false;
 			var returnMessage = new StringBuilder();
-			returnMessage.AppendLine("## Calling ReplaceBlockInWorkbookCell\n");
+			returnMessage.AppendLine("Start ReplaceBlockInWorkbookCell\n");
 
 			uniqueContent = DecodeValue(uniqueContent);
 			blockStart = DecodeValue(blockStart);
 			blockEnd = DecodeValue(blockEnd);
 			newContent = DecodeValue(newContent);
 
-			return UpdateCellAsync(uniqueContent, cell =>
+			var toReturn = await ExecuteWithExceptionHandling(async () =>
 			{
-				var startIndex = cell.Contents.IndexOf(blockStart, StringComparison.InvariantCultureIgnoreCase);
-				var endIndex = cell.Contents.IndexOf(blockEnd, startIndex + blockStart.Length, StringComparison.InvariantCultureIgnoreCase) + blockEnd.Length;
+				await UpdateCellAsync(uniqueContent, cell =>
+				{
+					var startIndex = cell.Contents.IndexOf(blockStart, StringComparison.InvariantCultureIgnoreCase);
+					var endIndex = cell.Contents.IndexOf(blockEnd, startIndex + blockStart.Length,
+						StringComparison.InvariantCultureIgnoreCase) + blockEnd.Length;
 
-				if (startIndex == -1)
-				{
-					throw new ArgumentException($"Block start not found in target cell.\nBlock start:\"{blockStart}\"\nCell Content:\n\"{cell.Contents}\"", nameof(blockStart));
-				}
-				if (endIndex == -1)
-				{
-					throw new ArgumentException($"Block end not found in target cell.\nBlock end:\"{blockEnd}\"\nCell Content:\n\"{cell.Contents}\"", nameof(blockEnd));
-				}
-				if (startIndex >= endIndex)
-				{
-					throw new ArgumentException($"Block start found after block end in target cell.\nBlock start:\"{blockStart}\"\nBlock end:\"{blockEnd}\"\nCell Content:\n\"{cell.Contents}\"");
-				}
+					if (startIndex == -1)
+					{
+						throw new ArgumentException(
+							$"Block start not found in target cell.\nBlock start:\"{blockStart}\"\nCell Content:\n\"{cell.Contents}\"",
+							nameof(blockStart));
+					}
 
-				var block = cell.Contents.Substring(startIndex, endIndex - startIndex);
-				if (string.IsNullOrEmpty(block))
-				{
-					throw new ArgumentException("Block to replace is empty.");
-				}
-				return cell.Contents.Replace(block, $"{newContent}");
-			}, returnMessage, runNotebook, runNotebook);
+					if (endIndex == -1)
+					{
+						throw new ArgumentException(
+							$"Block end not found in target cell.\nBlock end:\"{blockEnd}\"\nCell Content:\n\"{cell.Contents}\"",
+							nameof(blockEnd));
+					}
+
+					if (startIndex >= endIndex)
+					{
+						throw new ArgumentException(
+							$"Block start found after block end in target cell.\nBlock start:\"{blockStart}\"\nBlock end:\"{blockEnd}\"\nCell Content:\n\"{cell.Contents}\"");
+					}
+
+					var block = cell.Contents.Substring(startIndex, endIndex - startIndex);
+					if (string.IsNullOrEmpty(block))
+					{
+						throw new ArgumentException("Block to replace is empty.");
+					}
+
+					return cell.Contents.Replace(block, newContent);
+				}, returnMessage, runNotebook, runNotebook);
+				return returnMessage.ToString();
+			});
+			toReturn += "\nEnd ReplaceBlockInWorkbookCell";
+			_logger.LogInformation($"{toReturn}\n");
+			return toReturn;
 		}
 
 		[KernelFunction]
 		[Description("Inserts new content after a specified location in a cell identified by a unique string")]
-		public Task<string> InsertInWorkbookCell(
-				[Description(uniqueContentDescription)] string uniqueContent,
-				[Description("The string directly preceding the position where the new content should be added")] string insertAfter,
-				[Description("The new content to be inserted directly after the previous parameter string, which should not be repeated")] string newContent,
-				[Description(runNotebookDescription)] bool runNotebook = false)
-			//[Description(returnNotebookDescription)] bool returnNotebook = false)
+		public async Task<string> InsertInWorkbookCell(
+			[Description(uniqueContentDescription)] string uniqueContent,
+			[Description("The string directly preceding the position where the new content should be added")] string insertAfter,
+			[Description("The new content to be inserted")] string newContent,
+			[Description(runNotebookDescription)] bool runNotebook = false)
 		{
-			//bool returnNotebook = false;
 			var returnMessage = new StringBuilder();
-			returnMessage.AppendLine("## Calling InsertInWorkbookCell\n");
+			returnMessage.AppendLine("Start InsertInWorkbookCell\n");
 
 			uniqueContent = DecodeValue(uniqueContent);
 			insertAfter = DecodeValue(insertAfter);
 			newContent = DecodeValue(newContent);
 
-			return UpdateCellAsync(uniqueContent, cell =>
+			var toReturn = await ExecuteWithExceptionHandling(async () =>
 			{
-				if (!cell.Contents.Contains(insertAfter))
+				await UpdateCellAsync(uniqueContent, cell =>
 				{
-					throw new ArgumentException($"Insert location '{insertAfter}' not found in target cell:\n\"{cell.Contents}\"", nameof(insertAfter));
-				}
+					if (!cell.Contents.Contains(insertAfter))
+					{
+						throw new ArgumentException(
+							$"Insert location '{insertAfter}' not found in target cell:\n\"{cell.Contents}\"",
+							nameof(insertAfter));
+					}
 
-				var insertIndex = cell.Contents.IndexOf(insertAfter, StringComparison.InvariantCultureIgnoreCase) + insertAfter.Length;
-				return cell.Contents.Insert(insertIndex, $"\n{newContent}");
-			}, returnMessage, runNotebook, runNotebook);
+					var insertIndex = cell.Contents.IndexOf(insertAfter, StringComparison.InvariantCultureIgnoreCase) +
+					                  insertAfter.Length;
+					return cell.Contents.Insert(insertIndex, $"\n{newContent}");
+				}, returnMessage, runNotebook, runNotebook);
+				return returnMessage.ToString();
+			});
+			toReturn += "\nEnd InsertInWorkbookCell";
+			_logger.LogInformation($"{toReturn}\n");
+			return toReturn;
 		}
 
-		private const string uniqueContentDescription = "A short string from the cell to update -typically a title to edit a markdown cell or a comment to edit a code cell- that is found nowhere else in the other cells, thus identifying the cell univoquely by lookup";
-		private const string runNotebookDescription = "Whether to restart the kernel and run the entire notebook after the update rather than just running the cell";
-		private const string returnNotebookDescription = "Whether to return the entire notebook and not just the cell's content and output";
+		private const string uniqueContentDescription = "A short string from the cell to update (e.g., a title in a markdown cell or a comment in a code cell) that is unique across all cells in the notebook";
+		private const string runNotebookDescription = "Whether to restart the kernel and run the entire notebook after the update instead of just running the cell";
 
 	}
 }

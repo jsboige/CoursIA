@@ -12,7 +12,6 @@ public class NotebookUpdater
 	private readonly string _notebookPath;
 	private readonly ILogger _logger;
 
-
 	private static string GetPlanTemplate()
 	{
 		var planTemplate = File.ReadAllText("./Semantic-Kernel/Resources/generate_plan.yaml");
@@ -48,36 +47,27 @@ public class NotebookUpdater
 		_semanticKernel.ImportPluginFromObject(workbookInteraction);
 	}
 
-	
-
 	public async Task<string> UpdateNotebook()
 	{
-		Console.WriteLine("Lecture du contenu du notebook...");
+		Console.WriteLine("Reading notebook content...");
 		var notebookJson = File.ReadAllText(_notebookPath);
 
-		Console.WriteLine("Appel de ChatGPT avec le workbook initialisé...");
+		Console.WriteLine("Calling ChatGPT with initialized workbook...");
 
+		var plannerPrompt = $"Assist in creating the following interactive .NET notebook, which includes a description of its purpose.\n" +
+							$"Use function calls to incrementally improve and validate it:\n" +
+							$"- Initially, use the ReplaceWorkbookCell function to edit targeted cells. As the notebook evolves, use ReplaceBlockInWorkbookCell or InsertInWorkbookCell. Pay attention to these functions' distinct signatures to avoid mismatches.\n" +
+							$"- These functions execute the code cells by default, returning corresponding outputs. You can also choose to restart the kernel and run the entire notebook when necessary.\n" +
+							$"- Continue updating the notebook until it runs without errors, with code cells correctly implementing the required tasks and markdown cells containing appropriate documentation.\n" +
+							$"- Be cautious with NuGet packages to avoid mix-ups in package names and namespaces.\n" +
+							$"\nHere is the starting notebook:\n{notebookJson}\nEnsure that the workbook is thoroughly tested, documented, and cleaned before calling the 'SendFinalAnswer' function.";
 
-
-
-		var plannerPrompt = $"Help create the following interactive .Net notebook, which contains a description of its purpose.\n" +
-		                    $"Use function calling to improve and validate it with incremental edits:\n" +
-		                    $"- Use the ReplaceWorkbookCell function to edit targeted cells within the notebook initially, and then ReplaceBlockInWorkbookCell or InsertInWorkbookCell as they grow in size. Pay attention to those 3 functions distinctive signatures to avoid strings mismatched or mis-replaced\n" +
-		                    $"- Those functions do run the code cells by default, returning corresponding outputs, but you can also choose to restart the Kernel and run the entire notebook when needed.\n" +
-		                    //$"- Make sure to always start editing Markdown cells to explain the following code, and to include comments and make use of output displays in your code cells for sanity checks of intermediate results, and state your current sub-goals in the accompanying message.\n" +
-		                    $"- Continue to update the notebook until it runs without any error, the code cells are properly fed with actual code that fully accomplishes the requested task and the markdown cells with the appropriate documentation.\n" +
-		                    $"- Concerning Nuget packages, note that you might find yourself in a tough spot if you start hallucinating Nuget packages. Pay special attention and don't mix-up package names and namespaces.\n" +
-							$"\n\nHere is the starting notebook.\n{notebookJson}\nRemember, only once the workbook was run and thoroughly tested, documented and cleaned should you call the 'SendFinalAnswer' function.";
-		
 		_logger.LogInformation($"Sending prompt to planner...\n{plannerPrompt}");
-
-
 
 		var result = await _planner.ExecuteAsync(_semanticKernel, plannerPrompt);
 
-		_logger.LogInformation("Notebook mis à jour avec succès.");
+		_logger.LogInformation("Notebook successfully updated.");
 
 		return result.FinalAnswer;
 	}
-
 }
