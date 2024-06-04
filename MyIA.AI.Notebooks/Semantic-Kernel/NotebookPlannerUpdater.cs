@@ -5,7 +5,7 @@ using Microsoft.SemanticKernel.Planning;
 
 namespace MyIA.AI.Notebooks;
 #pragma warning disable SKEXP0060
-public class NotebookUpdater
+public class NotebookPlannerUpdater
 {
 	private readonly FunctionCallingStepwisePlanner _planner;
 	private readonly Kernel _semanticKernel;
@@ -24,7 +24,7 @@ public class NotebookUpdater
 		return toReturn;
 	}
 
-	public NotebookUpdater(Kernel semanticKernel, string notebookPath, ILogger logger, int maxIterations = 5)
+	public NotebookPlannerUpdater(Kernel semanticKernel, string notebookPath, ILogger logger, int maxIterations = 5)
 	{
 		_semanticKernel = semanticKernel;
 		_notebookPath = notebookPath;

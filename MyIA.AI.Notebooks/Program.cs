@@ -57,7 +57,7 @@ class Program
 		// Création et exécution de NotebookUpdater
 		var nbIterations = 50;
 		Console.WriteLine("Création de l'instance NotebookUpdater...");
-		var updater = new NotebookUpdater(semanticKernel, notebookPath, logger, nbIterations);
+		var updater = new NotebookPlannerUpdater(semanticKernel, notebookPath, logger, nbIterations);
 
 		Console.WriteLine("Appel à UpdateNotebook...");
 		var response = await updater.UpdateNotebook();
