@@ -8,6 +8,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using SKernel = Microsoft.SemanticKernel.Kernel;
+using Microsoft.DotNet.Interactive;
+using Microsoft.SemanticKernel.ChatCompletion;
+using System.ComponentModel;
+using Microsoft.SemanticKernel.Agents;
+using Microsoft.SemanticKernel.Agents.Chat;
 
 
 namespace MyIA.AI.Notebooks;
@@ -80,5 +85,131 @@ class Program
 		File.WriteAllText(notebookPath, notebookContent);
 		Console.WriteLine($"Notebook personnalisé prêt à l'exécution\n{notebookContent}");
 	}
+
+
+
+//	public static async Task UpdateNotebookWithAgents(string[] args)
+//	{
+//		var serviceCollection = new ServiceCollection();
+//		serviceCollection.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+//		var serviceProvider = serviceCollection.BuildServiceProvider();
+//		var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+//		var kernel = SKernel.Builder.Build();
+//		var compositeKernel = new CompositeKernel();
+
+//		kernel.ImportPluginFromType<WorkbookInteraction>(compositeKernel, logger);
+//		kernel.ImportPluginFromType<ProjectManagerPlugin>();
+
+//#pragma warning disable SKEXP0110
+//		var coderAgent = new ChatCompletionAgent
+//		{
+//			Instructions = "You are an assistant coder. Your role is to update the notebook as instructed.",
+//			Name = "CoderAgent",
+//			Kernel = kernel,
+//		};
+
+//		var projectManagerAgent = new ChatCompletionAgent
+//		{
+//			Instructions = "You are the project manager. You oversee the notebook's progress and determine when the task is complete.",
+//			Name = "ProjectManagerAgent",
+//			Kernel = kernel,
+//		};
+
+//		KernelFunction terminationFunction = KernelFunctionFactory.CreateFromPrompt(
+//			"""
+//            Determine if the task is complete. If so, respond with a single word: yes.
+
+//            History:
+//            {{$history}}
+//            """);
+
+//		KernelFunction selectionFunction = KernelFunctionFactory.CreateFromPrompt(
+//			"""
+//            Determine the next participant in the conversation. Choose between "CoderAgent" and "ProjectManagerAgent".
+
+//            History:
+//            {{$history}}
+//            """);
+
+//		var chat = new AgentGroupChat(coderAgent, projectManagerAgent)
+//		{
+//			ExecutionSettings = new()
+//			{
+//				TerminationStrategy = new NotebookTerminationStrategy(terminationFunction, kernel),
+//				SelectionStrategy = new NotebookSelectionStrategy(selectionFunction, kernel),
+//			}
+//		};
+
+//		string input = "Create a .NET interactive notebook for querying DBPedia and visualizing results.";
+//		chat.AddChatMessage(new ChatMessageContent(AuthorRole.User, input));
+//		Console.WriteLine($"# {AuthorRole.User}: '{input}'");
+
+//		await foreach (var content in chat.InvokeAsync())
+//		{
+//			Console.WriteLine($"# {content.Role} - {content.AuthorName ?? "*"}: '{content.Content}'");
+//		}
+
+//		Console.WriteLine($"# IS COMPLETE: {chat.IsComplete}");
+//	}
+
+
 }
+
+
+//public class ProjectManagerPlugin
+//{
+//	//[KernelFunction]
+//	//[Description("Check if the notebook task is complete.")]
+//	//public string CheckTaskCompletion(string notebookJson)
+//	//{
+//	//	// Logic to check if the task is complete.
+//	//	// For simplicity, we assume the task is complete if a specific string is found in the notebook JSON.
+//	//	if (notebookJson.Contains("TASK_COMPLETED"))
+//	//	{
+//	//		return "yes";
+//	//	}
+//	//	return "no";
+//	//}
+
+//	[KernelFunction]
+//	[Description("Send the final answer when the notebook task is complete.")]
+//	public string SendFinalAnswer(string answer)
+//	{
+//		return "TASK_COMPLETED:\n" answer;
+//	}
+//}
+
+
+//public class NotebookTerminationStrategy : KernelFunctionTerminationStrategy
+//{
+//	public NotebookTerminationStrategy(KernelFunction terminationFunction, Kernel kernel)
+//		: base(terminationFunction, kernel)
+//	{
+//		Agents = new List<ChatCompletionAgent>
+//		{
+//			new ChatCompletionAgent
+//			{
+//				Name = "ProjectManagerAgent",
+//				Kernel = kernel,
+//				Instructions = "Check if the notebook task is complete and send the final answer."
+//			}
+//		};
+//		ResultParser = (result) => result.GetValue<string>()?.Contains("yes", StringComparison.OrdinalIgnoreCase) ?? false;
+//		HistoryVariableName = "history";
+//		MaximumIterations = 10;
+//	}
+//}
+
+
+//public class NotebookSelectionStrategy : KernelFunctionSelectionStrategy
+//{
+//	public NotebookSelectionStrategy(KernelFunction selectionFunction, Kernel kernel)
+//		: base(selectionFunction, kernel)
+//	{
+//		ResultParser = (result) => result.GetValue<string>() ?? "CoderAgent";
+//		AgentsVariableName = "agents";
+//		HistoryVariableName = "history";
+//	}
+//}
 
