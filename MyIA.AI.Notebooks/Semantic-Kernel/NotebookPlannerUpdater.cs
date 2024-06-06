@@ -43,7 +43,7 @@ public class NotebookPlannerUpdater
 		_planner = new FunctionCallingStepwisePlanner(options);
 		_logger = logger;
 
-		var workbookInteraction = new WorkbookInteraction(notebookPath, _logger);
+		var workbookInteraction = new WorkbookUpdateInteraction(notebookPath, _logger);
 		_semanticKernel.ImportPluginFromObject(workbookInteraction);
 	}
 
