@@ -200,7 +200,8 @@ public class WorkbookInteractionBase
 		}, returnMessage);
 
 		returnMessage.AppendLine("End RunNotebook");
-		_logger.LogInformation($"{returnMessage}\n");
-		return returnMessage.ToString();
+		var toReturn = returnMessage.ToString();
+		_logger.LogInformation($"{toReturn}\n");
+		return toReturn;
 	}
 }

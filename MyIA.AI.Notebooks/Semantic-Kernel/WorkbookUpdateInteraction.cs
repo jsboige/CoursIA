@@ -20,27 +20,6 @@ using Microsoft.SemanticKernel;
 
 namespace MyIA.AI.Notebooks
 {
-
-	public class WorkbookValidation(string notebookPath, ILogger logger) : WorkbookInteractionBase(notebookPath, logger)
-	{
-
-		private bool _isApproved;
-
-		public bool IsApproved => _isApproved;
-
-		
-
-		[KernelFunction]
-		[Description("Submits the latest version for aproval")]
-		public Task<string> ApproveNotebook()
-		{
-			this._isApproved = true;
-			var message = $"Notebook approved\n";
-			_logger.LogInformation(message);
-			return Task.FromResult(message);
-		}
-	}
-
 	public class WorkbookUpdateInteraction(string notebookPath, ILogger logger)
 		: WorkbookInteractionBase(notebookPath, logger)
 	{
@@ -65,8 +44,9 @@ namespace MyIA.AI.Notebooks
 			}, returnMessage);
 
 			returnMessage.AppendLine("End ReplaceWorkbookCell");
-			_logger.LogInformation($"{returnMessage}\n");
-			return returnMessage.ToString();
+			var toReturn = returnMessage.ToString();
+			_logger.LogInformation($"{toReturn}\n");
+			return toReturn;
 		}
 
 		[KernelFunction]
@@ -98,8 +78,9 @@ namespace MyIA.AI.Notebooks
 			}, returnMessage);
 
 			returnMessage.AppendLine("End ReplaceBlockInWorkbookCell");
-			_logger.LogInformation($"{returnMessage}\n");
-			return returnMessage.ToString();
+			var toReturn = returnMessage.ToString();
+			_logger.LogInformation($"{toReturn}\n");
+			return toReturn;
 		}
 
 		[KernelFunction]
@@ -132,8 +113,9 @@ namespace MyIA.AI.Notebooks
 			}, returnMessage);
 
 			returnMessage.AppendLine("End InsertInWorkbookCell");
-			_logger.LogInformation($"{returnMessage}\n");
-			return returnMessage.ToString();
+			var toReturn = returnMessage.ToString();
+			_logger.LogInformation($"{toReturn}\n");
+			return toReturn;
 		}
 
 
