@@ -1,21 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
+﻿using System.ComponentModel;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Web;
-using AngleSharp.Html.Dom.Events;
-using Microsoft.DotNet.Interactive;
-using Microsoft.DotNet.Interactive.CSharp;
 using Microsoft.DotNet.Interactive.Documents;
-using Microsoft.DotNet.Interactive.Documents.Jupyter;
-using Microsoft.DotNet.Interactive.PackageManagement;
 using Microsoft.Extensions.Logging;
-using Microsoft.ML.Probabilistic.Collections;
 using Microsoft.SemanticKernel;
 
 namespace MyIA.AI.Notebooks
@@ -30,9 +18,9 @@ namespace MyIA.AI.Notebooks
 		[KernelFunction]
 		[Description("Updates a specific Markdown or code cell in the current .NET interactive notebook by providing the entire new content")]
 		public async Task<string> ReplaceWorkbookCell(
-		[Description(uniqueContentDescription)] string uniqueContent,
-		[Description("The new content for the target cell")] string newCellContent,
-		[Description(restartKernelDescription)] bool restartKernel = false)
+			[Description(uniqueContentDescription)] string uniqueContent,
+			[Description("The new content for the target cell")] string newCellContent,
+			[Description(restartKernelDescription)] bool restartKernel = false)
 		{
 			var returnMessage = new StringBuilder();
 			returnMessage.AppendLine("Start ReplaceWorkbookCell\n");
@@ -118,9 +106,8 @@ namespace MyIA.AI.Notebooks
 			return toReturn;
 		}
 
-
 		[KernelFunction]
-		[Description("Submits the latest version for aproval")]
+		[Description("Submits the latest version for approval")]
 		public Task<string> SubmitNotebook()
 		{
 			this._isPendingApproval = true;
@@ -128,6 +115,5 @@ namespace MyIA.AI.Notebooks
 			_logger.LogInformation(message);
 			return Task.FromResult(message);
 		}
-
 	}
 }

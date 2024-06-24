@@ -1,8 +1,14 @@
 ﻿using Microsoft.DotNet.Interactive;
 using Microsoft.DotNet.Interactive.Commands;
+using Microsoft.DotNet.Interactive.Connection;
 using Microsoft.DotNet.Interactive.Documents;
+using Microsoft.DotNet.Interactive.Documents.Jupyter;
 using Microsoft.DotNet.Interactive.Events;
+using Microsoft.DotNet.Interactive.Utility;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Diagnostics;
+using System.Reflection;
 using KernelInfo = Microsoft.DotNet.Interactive.Documents.KernelInfo;
 
 namespace MyIA.AI.Notebooks
@@ -14,12 +20,16 @@ namespace MyIA.AI.Notebooks
 		public int TruncationLength = 500;
 		private readonly ILogger _logger;
 
+		public event EventHandler<DisplayEvent>? DisplayEvent;
+		public event EventHandler<CommandFailed>? CommandFailed;
+
 		public NotebookExecutor(CompositeKernel kernel, ILogger logger)
 		{
 			_logger = logger;
 			_kernel = kernel;
 			var kernelInfoCollection = CreateKernelInfos(_kernel);
 			_kernelLookup = kernelInfoCollection.ToDictionary(k => k.Name, StringComparer.OrdinalIgnoreCase);
+			kernel.KernelEvents.Subscribe(OnKernelEventReceived);
 		}
 
 		public async Task RunNotebookAsync(
@@ -55,7 +65,7 @@ namespace MyIA.AI.Notebooks
 		public async Task RunCell(InteractiveDocumentElement element)
 		{
 			if (_kernelLookup.TryGetValue(element.KernelName!, out var kernelInfo) &&
-			    StringComparer.OrdinalIgnoreCase.Equals(kernelInfo.LanguageName, "markdown"))
+				StringComparer.OrdinalIgnoreCase.Equals(kernelInfo.LanguageName, "markdown"))
 			{
 				var formattedValue = new FormattedValue("text/markdown", element.Contents);
 				var displayValue = new DisplayValue(formattedValue);
@@ -74,52 +84,44 @@ namespace MyIA.AI.Notebooks
 
 					foreach (var ev in codeResult.Events)
 					{
-						//if (ev is DisplayEvent displayEvent)
-						//{
-						//	outputs.Add(CreateDisplayOutputElement(displayEvent));
-						//}
-						if (ev is ErrorProduced errorProduced)
+						switch (ev)
 						{
-							outputs.Add(CreateErrorOutputElement(errorProduced));
-						}
-						else if (ev is StandardOutputValueProduced stdOutput)
-						{
-							outputs.Add(CreateDisplayOutputElement(stdOutput));
-						}
-						else if (ev is StandardErrorValueProduced stdError)
-						{
-							outputs.Add(CreateDisplayOutputElement(stdError));
-						}
-						else if (ev is CommandFailed commandFailed)
-						{
-							outputs.Add(CreateErrorOutputElement(commandFailed));
-						}
-						else if (ev is DisplayedValueProduced displayedValueProduced)
-						{
-							outputs.Add(CreateDisplayOutputElement(displayedValueProduced));
-							displayedValues[displayedValueProduced.ValueId] = outputs.Count - 1;
-						}
-						else if (ev is DisplayedValueUpdated displayedValueUpdated)
-						{
-							if (displayedValues.TryGetValue(displayedValueUpdated.ValueId, out var index))
-							{
-								outputs[index] = CreateDisplayOutputElement(displayedValueUpdated);
-							}
-							else
-							{
-								throw new InvalidOperationException($"Displayed value with id {displayedValueUpdated.ValueId} not found for updating.");
-							}
-						}
-						else if (ev is ReturnValueProduced returnValueProduced)
-						{
-							outputs.Add(CreateDisplayOutputElement(returnValueProduced));
-						}
-						else if (ev is DiagnosticsProduced diagnosticsProduced)
-						{
-							diagnosticsProduced.Diagnostics
-								.Select(d => new ErrorElement(d.Message, d.Severity.ToString()))
-								.ToList()
-								.ForEach(e => outputs.Add(e));
+							case ErrorProduced errorProduced:
+								outputs.Add(CreateErrorOutputElement(errorProduced));
+								break;
+							case StandardOutputValueProduced stdOutput:
+								outputs.Add(CreateDisplayOutputElement(stdOutput));
+								break;
+							case StandardErrorValueProduced stdError:
+								outputs.Add(CreateDisplayOutputElement(stdError));
+								break;
+							case CommandFailed commandFailed:
+								outputs.Add(CreateErrorOutputElement(commandFailed));
+								CommandFailed?.Invoke(this, commandFailed);
+								break;
+							case DisplayedValueProduced displayedValueProduced:
+								outputs.Add(CreateDisplayOutputElement(displayedValueProduced));
+								displayedValues[displayedValueProduced.ValueId] = outputs.Count - 1;
+								break;
+							case DisplayedValueUpdated displayedValueUpdated:
+								if (displayedValues.TryGetValue(displayedValueUpdated.ValueId, out var index))
+								{
+									outputs[index] = CreateDisplayOutputElement(displayedValueUpdated);
+								}
+								else
+								{
+									throw new InvalidOperationException($"Displayed value with id {displayedValueUpdated.ValueId} not found for updating.");
+								}
+								break;
+							case ReturnValueProduced returnValueProduced:
+								outputs.Add(CreateDisplayOutputElement(returnValueProduced));
+								break;
+							case DiagnosticsProduced diagnosticsProduced:
+								diagnosticsProduced.Diagnostics
+									.Select(d => new ErrorElement(d.Message, d.Severity.ToString()))
+									.ToList()
+									.ForEach(e => outputs.Add(e));
+								break;
 						}
 					}
 
@@ -128,10 +130,7 @@ namespace MyIA.AI.Notebooks
 				}
 				catch (Exception ex)
 				{
-					_logger.LogError(message:$"Crash du kernel {element.KernelName}",exception:ex);
-					//var errorElement = new ErrorElement("Error", ex.Message);
-					//element.Outputs.Clear();
-					//element.Outputs.Add(errorElement);
+					_logger.LogError(message: $"Crash du kernel {element.KernelName}", exception: ex);
 				}
 			}
 		}
@@ -178,9 +177,20 @@ namespace MyIA.AI.Notebooks
 
 
 		public string Truncate(string s) => s.Length <= TruncationLength ? s : s.Substring(0, TruncationLength) + "(...)";
-			
+
+		private void OnKernelEventReceived(KernelEvent ke)
+		{
+			switch (ke)
+			{
+				case DisplayEvent de:
+					DisplayEvent?.Invoke(this, de);
+					break;
+				case CommandFailed cf:
+					CommandFailed?.Invoke(this, cf);
+					break;
+			}
+		}
+
+		
 	}
-
-
-
 }
