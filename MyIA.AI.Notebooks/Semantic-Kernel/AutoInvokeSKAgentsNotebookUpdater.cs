@@ -1,86 +1,113 @@
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.Agents.Chat;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-namespace MyIA.AI.Notebooks;
-
-[Experimental("SKEXP0110")]
-public class AutoInvokeSKAgentsNotebookUpdater : NotebookUpdater
+namespace MyIA.AI.Notebooks
 {
-	public async Task UpdateNotebookWithAutoInvokeSKAgents()
-	{
-		var notebookPath = @$"./Workbooks/Workbook-{DateTime.Now.ToFileTime()}.ipynb";
-		SetStartingNotebook(NotebookTaskDescription, notebookPath);
-		var notebookJson = File.ReadAllText(notebookPath);
-
-		var workbookInteraction = new WorkbookUpdateInteraction(notebookPath, logger);
-		var workbookSupervision = new WorkbookInteractionBase(notebookPath, logger);
-		var workbookValidation = new WorkbookValidation(notebookPath, logger);
-
-		var groupChatAgents = GetSKGroupChatAgents(workbookInteraction, workbookSupervision, workbookValidation);
-
-		var chat = new AgentGroupChat(groupChatAgents.Values.Select(tuple => (Agent)tuple.agent).ToArray())
-		{
-			ExecutionSettings = new()
-			{
-				TerminationStrategy = new NotebookTerminationStrategy { WorkbookValidation = workbookValidation, Updater = this},
-				SelectionStrategy = new NotebookSelectionStrategy { WorkbookUpdateInteraction = workbookInteraction, Updater = this },
-			},
-			LoggerFactory = new DisplayLogger(nameof(Program), LogLevel.Trace)
-		};
-
-		var input = $"\nHere is the starting notebook:\n{notebookJson}\nEnsure that the workbook is thoroughly tested, documented, and cleaned before calling the 'ApproveNotebook' function.";
-		chat.AddChatMessage(new ChatMessageContent(AuthorRole.User, input));
-		Console.WriteLine($"# {AuthorRole.User}: '{NotebookTaskDescription}'");
-
-		await foreach (var content in chat.InvokeAsync())
-		{
-			Console.WriteLine($"# {content.Role} - {content.AuthorName ?? "*"}: '{content.Content}'");
-		}
-
-		Console.WriteLine($"# IS COMPLETE: {chat.IsComplete}");
-	}
-
 	[Experimental("SKEXP0110")]
-	private class NotebookTerminationStrategy : TerminationStrategy
+	public class AutoInvokeSKAgentsNotebookUpdater(string notebookPath, ILogger logger)
+		: NotebookUpdaterBase(notebookPath, logger)
 	{
-
-		public NotebookUpdater Updater { get; set; }
-
-		public WorkbookValidation WorkbookValidation { get; set; }
-
-		protected override Task<bool> ShouldAgentTerminateAsync(Agent agent, IReadOnlyList<ChatMessageContent> history, CancellationToken cancellationToken)
+		protected override async Task PerformNotebookUpdateAsync()
 		{
-			return Task.FromResult(WorkbookValidation.IsApproved);
-		}
-	}
+			SetStartingNotebook(NotebookTaskDescription);
+			var notebookJson = File.ReadAllText(NotebookPath);
 
-	[Experimental("SKEXP0110")]
-	public class NotebookSelectionStrategy : SelectionStrategy
-	{
-		public NotebookUpdater Updater { get; set; }
+			var workbookInteraction = new WorkbookUpdateInteraction(NotebookPath, Logger);
+			var workbookSupervision = new WorkbookInteractionBase(NotebookPath, Logger);
+			var workbookValidation = new WorkbookValidation(NotebookPath, Logger);
 
-		public WorkbookUpdateInteraction WorkbookUpdateInteraction { get; set; }
+			var groupChatAgents = GetSKGroupChatAgents(workbookInteraction, workbookSupervision, workbookValidation);
 
-		public override Task<Agent> NextAsync(IReadOnlyList<Agent> agents, IReadOnlyList<ChatMessageContent> history, CancellationToken cancellationToken = new CancellationToken())
-		{
-			if (WorkbookUpdateInteraction.IsPendingApproval)
+			var chat = new AgentGroupChat(groupChatAgents.Values.Select(tuple => (Agent)tuple.agent).ToArray())
 			{
-				return Task.FromResult(agents.First(a => a.Name == Updater.AdminAgentName));
-			}
-			else
-			{
-				if (history.Last().AuthorName == Updater.CoderAgentName)
+				ExecutionSettings = new()
 				{
-					return Task.FromResult(agents.First(a => a.Name == Updater.ReviewerAgentName));
+					TerminationStrategy = new NotebookTerminationStrategy { WorkbookValidation = workbookValidation, Updater = this },
+					SelectionStrategy = new NotebookSelectionStrategy { WorkbookUpdateInteraction = workbookInteraction, Updater = this },
+				},
+				LoggerFactory = new DisplayLogger(nameof(Program), LogLevel.Trace)
+			};
+
+			var input = $"\nHere is the starting notebook:\n{notebookJson}\nEnsure that the workbook is thoroughly tested, documented, and cleaned before calling the 'ApproveNotebook' function.";
+			chat.AddChatMessage(new ChatMessageContent(AuthorRole.User, input));
+			Console.WriteLine($"# {AuthorRole.User}: '{NotebookTaskDescription}'");
+
+			await foreach (var content in chat.InvokeAsync())
+			{
+				Console.WriteLine($"# {content.Role} - {content.AuthorName ?? "*"}: '{content.Content}'");
+			}
+
+			Console.WriteLine($"# IS COMPLETE: {chat.IsComplete}");
+		}
+
+		private Dictionary<string, (ChatCompletionAgent agent, KernelPlugin plugin)> GetSKGroupChatAgents(
+			WorkbookUpdateInteraction workbookInteraction,
+			WorkbookInteractionBase workbookSupervision,
+			WorkbookValidation workbookValidation)
+		{
+			var coderAgent = CreateAgent(CoderAgentName, CoderAgentInstructions, workbookInteraction);
+			var reviewerAgent = CreateAgent(ReviewerAgentName, ReviewerAgentInstructions, workbookSupervision);
+			var adminAgent = CreateAgent(AdminAgentName, AdminAgentInstructions, workbookValidation);
+
+			return new Dictionary<string, (ChatCompletionAgent agent, KernelPlugin plugin)>
+			{
+				{ CoderAgentName, coderAgent },
+				{ ReviewerAgentName, reviewerAgent },
+				{ AdminAgentName, adminAgent }
+			};
+		}
+
+		private (ChatCompletionAgent agent, KernelPlugin plugin) CreateAgent(string name, string instructions, object pluginObject)
+		{
+			var kernel = InitSemanticKernel();
+			var plugin = kernel.ImportPluginFromObject(pluginObject);
+
+			var agent = new ChatCompletionAgent
+			{
+				Instructions = instructions,
+				Name = name,
+				Kernel = kernel,
+				ExecutionSettings = new OpenAIPromptExecutionSettings { ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions },
+			};
+
+			return (agent, plugin);
+		}
+
+		private class NotebookTerminationStrategy : TerminationStrategy
+		{
+			public NotebookUpdaterBase Updater { get; set; }
+			public WorkbookValidation WorkbookValidation { get; set; }
+
+			protected override Task<bool> ShouldAgentTerminateAsync(Agent agent, IReadOnlyList<ChatMessageContent> history, CancellationToken cancellationToken)
+			{
+				return Task.FromResult(WorkbookValidation.IsApproved);
+			}
+		}
+
+		private class NotebookSelectionStrategy : SelectionStrategy
+		{
+			public NotebookUpdaterBase Updater { get; set; }
+			public WorkbookUpdateInteraction WorkbookUpdateInteraction { get; set; }
+
+			public override Task<Agent> NextAsync(IReadOnlyList<Agent> agents, IReadOnlyList<ChatMessageContent> history, CancellationToken cancellationToken = new CancellationToken())
+			{
+				if (WorkbookUpdateInteraction.IsPendingApproval)
+				{
+					return Task.FromResult(agents.First(a => a.Name == Updater.AdminAgentName));
 				}
 				else
 				{
-					return Task.FromResult(agents.First(a => a.Name == Updater.CoderAgentName));
+					return Task.FromResult(history.Last().AuthorName == Updater.CoderAgentName
+						? agents.First(a => a.Name == Updater.ReviewerAgentName)
+						: agents.First(a => a.Name == Updater.CoderAgentName));
 				}
 			}
 		}

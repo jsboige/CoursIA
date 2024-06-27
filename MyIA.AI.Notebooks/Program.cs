@@ -21,6 +21,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using AutoGen.SemanticKernel;
 using Azure.AI.OpenAI;
 using Humanizer;
+using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 
 
 namespace MyIA.AI.Notebooks;
@@ -32,8 +33,10 @@ class Program
 	static async Task Main(string[] args)
 	{
 		//await GuessingGame.RunGameAsync(_logger, InitSemanticKernel);
-		var autoInvokeUpdater = new AutoInvokeSKAgentsNotebookUpdater();
-		await autoInvokeUpdater.UpdateNotebookWithAutoInvokeSKAgents();
+		var logger = new DisplayLogger("NotebookUpdater", LogLevel.Trace);
+		var notebookPath = @$"./Workbooks/Workbook-{DateTime.Now.ToFileTime()}.ipynb";
+		var autoInvokeUpdater = new AutoInvokeSKAgentsNotebookUpdater(notebookPath,logger);
+		await autoInvokeUpdater.UpdateNotebookAsync();
 	}
 	
 
