@@ -16,9 +16,9 @@
     <PackageReference Include="Microsoft.DotNet.Interactive.PackageManagement" Version="1.0.0-beta.24229.4" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0-preview.5.24306.7" />
     <PackageReference Include="Microsoft.ML.Probabilistic" Version="0.4.2403.801" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.14.1" />
-    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.14.1-alpha" />
-    <PackageReference Include="Microsoft.SemanticKernel.Planners.OpenAI" Version="1.14.1-preview" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.15.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.15.0-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel.Planners.OpenAI" Version="1.15.0-preview" />
     <PackageReference Include="SkiaSharp" Version="3.0.0-preview.3.1" />
   </ItemGroup>
 

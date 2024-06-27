@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace MyIA.AI.Notebooks;
 
 public class DisplayLogger : ILogger, ILoggerFactory
 {
@@ -13,7 +12,7 @@ public class DisplayLogger : ILogger, ILoggerFactory
 		_logLevel = logLevel;
 	}
 
-	public IDisposable? BeginScope<TState>(TState state ) where TState : notnull => this;
+	public IDisposable? BeginScope<TState>(TState state) where TState : notnull => this;
 
 	public bool IsEnabled(LogLevel logLevel) => logLevel >= _logLevel;
 
@@ -27,9 +26,9 @@ public class DisplayLogger : ILogger, ILoggerFactory
 
 		if (exception != null)
 		{
-			
+
 			logEntry += Environment.NewLine + exception;
-			
+
 		}
 
 		Console.WriteLine(logEntry);

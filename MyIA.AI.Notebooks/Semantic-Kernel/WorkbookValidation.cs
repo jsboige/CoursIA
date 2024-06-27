@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 
-namespace MyIA.AI.Notebooks;
+
 
 public class WorkbookValidation(string notebookPath, ILogger logger) : WorkbookInteractionBase(notebookPath, logger)
 {
@@ -11,7 +11,7 @@ public class WorkbookValidation(string notebookPath, ILogger logger) : WorkbookI
 
 	public bool IsApproved => _isApproved;
 
-		
+
 
 	[KernelFunction]
 	[Description("Submits the latest version for aproval")]
