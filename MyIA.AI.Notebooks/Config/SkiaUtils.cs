@@ -1,28 +1,71 @@
 // Copyright (c) Microsoft. All rights reserved.
 
 using SkiaSharp;
+using System.Drawing;
 using System.Net.Http;
+using System.IO;
+using Microsoft.DotNet.Interactive;
 
 // ReSharper disable InconsistentNaming
 public static class SkiaUtils
 {
     // Function used to display images in the notebook
-    public static async Task ShowImage(string url, int width, int height)
+    public static async Task<DisplayedValue> ShowImage(string path, int width, int height, DisplayedValue placeholder = null)
     {
         SKImageInfo info = new SKImageInfo(width, height);
-        SKSurface surface = SKSurface.Create(info);
-        SKCanvas canvas = surface.Canvas;
-        canvas.Clear(SKColors.White);
-        var httpClient = new HttpClient();
-        using (Stream stream = await httpClient.GetStreamAsync(url))
-        using (MemoryStream memStream = new MemoryStream())
+        using (var surface = SKSurface.Create(info))
         {
-            await stream.CopyToAsync(memStream);
-            memStream.Seek(0, SeekOrigin.Begin);
-            SKBitmap webBitmap = SKBitmap.Decode(memStream);
-            canvas.DrawBitmap(webBitmap, 0, 0, null);
-            surface.Draw(canvas, 0, 0, null);
-        };
-        surface.Snapshot().Display();
+            var canvas = surface.Canvas;
+            canvas.Clear(SKColors.White);
+
+            if (File.Exists(path)) // Vérifier si le chemin est un fichier local
+            {
+                using (var stream = File.OpenRead(path))
+                {
+                    using (var bitmap = SKBitmap.Decode(stream))
+                    {
+                        canvas.DrawBitmap(bitmap, 0, 0);
+                    }
+                }
+            }
+            else // Sinon, traiter comme une URL distante
+            {
+                using (var httpClient = new HttpClient())
+                {
+                    using (Stream stream = await httpClient.GetStreamAsync(path))
+                    using (var bitmap = SKBitmap.Decode(stream))
+                    {
+                        canvas.DrawBitmap(bitmap, 0, 0);
+                    }
+                }
+            }
+
+            // Capture l'image en tant que SKImage
+            var skImage = surface.Snapshot();
+
+            // Si un placeholder est fourni, mettez-le à jour
+            if (placeholder != null)
+            {
+                placeholder.Update(ToBitmap(skImage));
+                return placeholder;
+            }
+
+            // Sinon, créez et retournez un nouvel objet DisplayedValue
+            return skImage.Display();
+        }
     }
+
+
+    public static Bitmap ToBitmap(SKImage skImage)
+    {
+        using (var data = skImage.Encode(SKEncodedImageFormat.Png, 100))
+        using (var stream = new MemoryStream())
+        {
+            data.SaveTo(stream);
+            stream.Seek(0, SeekOrigin.Begin);
+            return new Bitmap(stream);
+        }
+    }
+
+
 }

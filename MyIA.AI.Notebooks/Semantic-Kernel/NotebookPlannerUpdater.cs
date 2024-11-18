@@ -29,7 +29,6 @@ public class NotebookPlannerUpdater : NotebookUpdaterBase
 
 	protected override async Task PerformNotebookUpdateAsync()
 	{
-		SetStartingNotebook(NotebookTaskDescription);
 		var notebookJson = File.ReadAllText(NotebookPath);
 
 		var plannerPrompt = $"Assist in creating the following interactive .NET notebook, which includes a description of its purpose.\n" +
