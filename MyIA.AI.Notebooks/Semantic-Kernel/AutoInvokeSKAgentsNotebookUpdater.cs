@@ -16,7 +16,6 @@ public class AutoInvokeSKAgentsNotebookUpdater(string notebookPath, ILogger logg
 {
 	protected override async Task PerformNotebookUpdateAsync()
 	{
-		SetStartingNotebook(NotebookTaskDescription);
 		var notebookJson = File.ReadAllText(NotebookPath);
 
 		var workbookInteraction = new WorkbookUpdateInteraction(NotebookPath, Logger);
@@ -37,7 +36,7 @@ public class AutoInvokeSKAgentsNotebookUpdater(string notebookPath, ILogger logg
 
 		var input = $"\nHere is the starting notebook:\n{notebookJson}\nEnsure that the workbook is thoroughly tested, documented, and cleaned before calling the 'ApproveNotebook' function.";
 		chat.AddChatMessage(new ChatMessageContent(AuthorRole.User, input));
-		Console.WriteLine($"# {AuthorRole.User}: '{NotebookTaskDescription}'");
+		//Console.WriteLine($"# {AuthorRole.User}: '{NotebookTaskDescription}'");
 
 		await foreach (var content in chat.InvokeAsync())
 		{

@@ -36,6 +36,7 @@ class Program
 		var logger = new DisplayLogger("NotebookUpdater", LogLevel.Trace);
 		var notebookPath = @$"./Workbooks/Workbook-{DateTime.Now.ToFileTime()}.ipynb";
 		var autoInvokeUpdater = new AutoInvokeSKAgentsNotebookUpdater(notebookPath,logger);
+		autoInvokeUpdater.SetStartingNotebookFromTemplate(autoInvokeUpdater.NotebookTaskDescription);
 		await autoInvokeUpdater.UpdateNotebookAsync();
 	}
 	

@@ -8,11 +8,12 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using SKernel = Microsoft.SemanticKernel.Kernel;
 
 public abstract class NotebookUpdaterBase
 {
 	protected ILogger Logger;
-	protected Kernel SemanticKernel;
+	protected SKernel SemanticKernel;
 	protected string NotebookPath;
 	protected int MaxRetries = 3;
 
@@ -49,10 +50,10 @@ public abstract class NotebookUpdaterBase
 		AdminAgentInstructions = $"You are a strict project manager with high coding skills, in charge of managing a development task. You oversee development progress and determine when the task is complete.\n{DefaultGeneralGroupChatInstructions}- Use the RunNotebook function to run and return the outputs of the current notebook.\n- Use the ApproveNotebook function once the notebook was tested with appropriate outputs.\n- Before you approve the notebook make sure to explicitly review all cells, the validity of their outputs and make a clear statement explaining why you think the notebook's goal was completed, based on the cells' content and outputs.\n{DefaultToolsUsageInstructions}";
 	}
 
-	protected Kernel InitSemanticKernel()
+	protected SKernel InitSemanticKernel()
 	{
 		var (useAzureOpenAI, model, azureEndpoint, apiKey, orgId) = Settings.LoadFromFile();
-		var builder = Kernel.CreateBuilder();
+		var builder = SKernel.CreateBuilder();
 		builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddProvider(new DisplayLoggerProvider(LogLevel.Trace)));
 
 		if (useAzureOpenAI)
@@ -63,7 +64,7 @@ public abstract class NotebookUpdaterBase
 		return builder.Build();
 	}
 
-	protected void SetStartingNotebook(string taskDescription)
+	public void SetStartingNotebookFromTemplate(string taskDescription)
 	{
 		var notebookTemplatePath = "./Semantic-Kernel/Workbook-Template.ipynb";
 		string notebookContent = File.Exists(NotebookPath) ? File.ReadAllText(NotebookPath) : File.ReadAllText(notebookTemplatePath);

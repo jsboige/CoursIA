@@ -20,7 +20,6 @@ public class AutoGenNotebookUpdater : NotebookUpdaterBase
 
 	protected override async Task PerformNotebookUpdateAsync()
 	{
-		SetStartingNotebook(NotebookTaskDescription);
 		var notebookJson = File.ReadAllText(NotebookPath);
 
 		var workbookInteraction = new WorkbookUpdateInteraction(NotebookPath, Logger);
