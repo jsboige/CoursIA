@@ -10,10 +10,12 @@
   <ItemGroup>
     <PackageReference Include="AutoGen" Version="0.0.15" />
     <PackageReference Include="dotNetRdf" Version="3.2.0" />
-    <PackageReference Include="Microsoft.DotNet.Interactive" Version="1.0.0-beta.24229.4" />
-    <PackageReference Include="Microsoft.DotNet.Interactive.CSharp" Version="1.0.0-beta.24229.4" />
-    <PackageReference Include="Microsoft.DotNet.Interactive.Documents" Version="1.0.0-beta.24229.4" />
-    <PackageReference Include="Microsoft.DotNet.Interactive.PackageManagement" Version="1.0.0-beta.24229.4" />
+    <PackageReference Include="Microsoft.DotNet.Interactive" Version="1.0.0-beta.24568.1" />
+    <PackageReference Include="Microsoft.DotNet.Interactive.AI" Version="1.0.0-beta.23620.4" />
+    <PackageReference Include="Microsoft.DotNet.Interactive.CSharp" Version="1.0.0-beta.24568.1" />
+    <PackageReference Include="Microsoft.DotNet.Interactive.Documents" Version="1.0.0-beta.24568.1" />
+    <PackageReference Include="Microsoft.DotNet.Interactive.Jupyter" Version="1.0.0-beta.24568.1" />
+    <PackageReference Include="Microsoft.DotNet.Interactive.PackageManagement" Version="1.0.0-beta.24568.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0-preview.5.24306.7" />
     <PackageReference Include="Microsoft.ML.Probabilistic" Version="0.4.2403.801" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.15.0" />
@@ -31,6 +33,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Semantic-Kernel\Resources\StepPrompt.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Semantic-Kernel\Workbook-Template-Python.ipynb">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Semantic-Kernel\Workbook-Template.ipynb">
