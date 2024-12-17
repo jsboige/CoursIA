@@ -38,11 +38,11 @@ class Program
 	static async Task Main(string[] args)
 	{
 		//await GuessingGame.RunGameAsync(_logger, InitSemanticKernel);
-		TestNotebookUpdater();
+		await TestNotebookUpdater().ConfigureAwait(false);
 	}
 
 
-	private static  void TestNotebookUpdater()
+	private static async Task TestNotebookUpdater()
 	{
 		var logger = new DisplayLogger("NotebookUpdater", LogLevel.Trace);
 		var notebookPath = @$"./Workbooks/Workbook-{DateTime.Now.ToFileTime()}.ipynb";
@@ -53,7 +53,7 @@ class Program
 			autoInvokeUpdater.SetStartingNotebookFromTemplate(defaultPythonNotebookTaskInstruction);
 		}
 
-		autoInvokeUpdater.UpdateNotebookAsync().ConfigureAwait(false);
+		await autoInvokeUpdater.UpdateNotebookAsync().ConfigureAwait(false);
 	}
 
 

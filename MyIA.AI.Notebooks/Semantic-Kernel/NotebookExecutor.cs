@@ -86,6 +86,11 @@ public class NotebookExecutor
 				? _kernel.DefaultKernelName
 				: element.KernelName;
 
+			if (targetKernelName.Contains("python", StringComparison.OrdinalIgnoreCase))
+			{
+				element.Contents = $"#!{targetKernelName}\n{element.Contents}";
+			}
+
 			var submitCode = new SubmitCode(element.Contents, targetKernelName);
 			KernelCommandResult codeResult = await _kernel.SendAsync(submitCode);
 

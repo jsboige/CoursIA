@@ -86,7 +86,9 @@ public class WorkbookInteractionBase
 			.UseKernelHelpers()
 			.UseWho()
 			.UseValueSharing()
-			.UseImportMagicCommand();
+			.UseImportMagicCommand()
+			.UseDefaultMagicCommands()
+			.UseJupyterHelpers();
 
 		cSharpKernel.UseNugetDirective((k, resolvedPackageReference) =>
 		{
