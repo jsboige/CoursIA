@@ -16,7 +16,7 @@ public class NotebookExecutor
 {
 	private readonly CompositeKernel _kernel;
 	private readonly Dictionary<string, KernelInfo> _kernelLookup;
-	public int TruncationLength = 500;
+	public int TruncationLength = 3000;
 	private readonly ILogger _logger;
 
 	public event EventHandler<DisplayEvent>? DisplayEvent;
@@ -199,7 +199,17 @@ public class NotebookExecutor
 	public static string[] SplitIntoLines(string s) =>
 		s.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
 
-	public string Truncate(string s) => s.Length <= TruncationLength ? s : s[..TruncationLength] + "(...)";
+	public string Truncate(string s)
+	{
+		if (s.Length <= TruncationLength)
+		{
+			return s;
+		}
+
+		int segmentLength = TruncationLength / 2; // Longueur du début et de la fin
+		return $"{s.Substring(0, segmentLength)}... [truncated] ...{s.Substring(s.Length - segmentLength)}";
+	}
+
 
 	private void OnKernelEventReceived(KernelEvent ke)
 	{

@@ -26,15 +26,15 @@ public abstract class NotebookUpdaterBase
 
 **Étapes suggérées** :
 
-1. Éditer les **cellules de Markdown** pour présenter l’objectif et affiner la requête SPARQL (avec agrégats).
-2. Renseigner et tester les **cellules de code** C#.  
-3. Corriger d’éventuels bugs puis valider la **sortie graphique** finale.  
+1. Renseigner et tester les **cellules de code** C#.  
+2. Corriger d’éventuels bugs qui apparaissent des les sorties de cellule de code.
+3. Valider les sorties de cellule de code intermédiaires
+3. Valider la **sortie graphique** finale.  
 
 **Résultat attendu** :
   
 1. Une requête complexe sur DBpedia (avec agrégats) correctement exécutée.  
-2. Un graphique Plotly.Net **pertinent** reflétant les données issues de DBpedia.  
-3. Des cellules Markdown expliquant la démarche, l’exemple de requête et la visualisation.";
+2. Un graphique Plotly.Net **pertinent** reflétant les données issues de DBpedia.";
 
 	private const string DefaultToolsUsageInstructions =
 		@"**Tool Usage Guidelines**:
@@ -58,7 +58,7 @@ public abstract class NotebookUpdaterBase
 Follow these rules to optimize usage and keep the conversation log efficient.";
 
 
-	private const string DefaultGeneralGroupChatInstructions = "Assist in creating the following .NET interactive notebook, which includes a description of its objective.\nYou are part of a group chat with several assistants conversing and using function calls to incrementally improve, review and validate it.\n";
+	//private const string DefaultGeneralGroupChatInstructions = "Assist in creating the following .NET interactive notebook, which includes a description of its objective.\nYou are part of a group chat with several assistants conversing and using function calls to incrementally improve, review and validate it.\n";
 
 
 	public string CoderAgentName { get; set; } = "Coder_Agent";
@@ -68,17 +68,17 @@ Follow these rules to optimize usage and keep the conversation log efficient.";
 	public string NotebookTaskDescription { get; set; }
 	public string ToolsUsageInstructions { get; set; }
 	public string GeneralGroupChatInstructions { get; set; } =
-		@"You are part of a **group chat** involving multiple assistants (Coder, Reviewer, and Admin) who collaborate to create or update a .NET Interactive notebook. 
+		@"You are part of a **group chat** involving multiple assistants (Coder, Reviewer, and Admin) who collaborate to create or update a .NET Interactive notebook (either in c# or in python through an externel kernel import). 
 Each assistant has specific roles:
 
-- **Coder** updates notebook cells (Markdown or code) by calling the provided functions.
+- **Coder** updates notebook code cells by calling the provided functions.
 - **Reviewer** reviews changes, provides feedback, and can run the entire notebook for diagnostics.
 - **Admin** oversees the final validation and can approve the notebook once it meets the requirements.
 
 **Guidelines**:
 - Maintain clarity between Markdown and code cells. 
 - Follow the naming conventions and parameters of the provided notebook functions (e.g., ReplaceWorkbookCell).
-- Avoid unnecessary function calls or partial updates that might cause confusion.
+- Avoid unnecessary function calls or partial updates that might cause confusion.   
 
 Use the conversation to **incrementally improve** the notebook until the Admin agent decides to approve it. 
 Any direct modifications must be done via the proper function calls. 
@@ -86,37 +86,29 @@ Group chat messages should remain concise and focused on the task.
 Tool usage instructions apply to any function calls you make.";
 
 	public string CoderAgentInstructions { get; set; } =
-		$@"You are the **Coder assistant**. Your task is to update and refine a .NET Interactive notebook incrementally, ensuring clarity, correctness, and functionality.
-
-### General Guidelines:
+		$@"### General Guidelines:
 1. **Markdown Cells**:
-   - Use Markdown cells to **describe the task**, **provide context**, and **explain code logic**.
-   - DO NOT INSERT CODE in Markdown cells. All functional code belongs in code cells.
+   - **IGNORE** Markdown cells. You are strictly tasked with updating **code cells**.
 
 2. **Code Cells**:
-   - Write functional and executable code directly in **code cells**. Do not leave code cells empty before addressing following cells.
-   - **Avoid duplicating code** between Markdown cells and code cells.
-   - Check code for correctness within the .NET Interactive environment before submission.
-   - Ensure code cells are functional by checking the returned output of eac
+   - Update only **code cells** identified by existing content strings (e.g., comments or placeholders).
+   - Ensure that all updated cells contain functional, executable code.
+   - Validate the outputs of the code cells and fix any errors.
 
-3. **Clear Separation**:
-   - Markdown = Explanations, logic, and methodology.
-   - Code Cells = Functional and executable code.
-
-### Process:
-1. Analyze the notebook's current state.
-2. Add or modify cells as follows:
-   - Use **Markdown cells** for textual content only.
-   - Use **code cells** to execute functional code. Do not replicate this code in Markdown.
-3. Ensure that:
-   - Code cells are **non-empty** and contain executable, relevant code.
-   - Markdown clearly describes the code and logic **without duplicating the actual code content**.
-4. Validate the output of each cell and re-run if necessary.
+3. **Identification**:
+   - Use existing comments or initial placeholders to identify the relevant code cells.
+   - Do not attempt to modify or interact with Markdown content under any circumstance.
+   - Note that sometimes cell or content identification may fail for various reasons resulting in missed updates. Notification will indicate when such a failure occurs. When and only when that happens, renew your function calls with the appropriate fixes and don't take your updates for granted unless you were able to double-check the outputs resulting from their execution.
+   - Conversely, pay attention to your successful updates. Notification will indicate new cell content: don't try to replace content that was already replaced, and be careful not to duplicate your function calls or the cells content one way or another, as this may lead to unnecessary updates or errors.
+   - If you are uncertain about the content of a cell, don't hesitate to run the entire notebook to verify the cells and outputs.
+	
 
 ### Key Errors to Avoid:
 - Leaving code cells empty.
-- Placing complete code examples in Markdown cells.
-- Duplicating code between Markdown and code cells.
+- Misidentifying a Markdown cell as a code cell.
+- Duplicating code in code cells.
+- When in doubt, stop function calling and let the reviewer assess the situation.
+
 
 **Tool Usage**:
 {DefaultToolsUsageInstructions}";
@@ -126,18 +118,16 @@ Tool usage instructions apply to any function calls you make.";
 		$@"You are the **Reviewer assistant**. Your role is to validate and provide feedback on the notebook updates made by the Coder assistant.
 
 ### Responsibilities:
-1. Review updates to Markdown cells for:
-   - Clarity, relevance, and correctness.
-   - Logical flow of instructions or explanations.
-2. Review updates to code cells for:
+1. Review updates to code cells for:
    - Syntax correctness and functionality.
    - Alignment with the notebook’s objectives (e.g., correct external data queries, appropriate visualizations).
-3. Identify and point out missing or incomplete sections in the notebook.
+   - Valid outputs without errors or exceptions.
+2. Identify and point out missing or incomplete sections in the notebook.
 
 ### Process:
 1. Call `RunNotebook()` to execute the entire notebook and analyze outputs.
 2. Provide feedback on:
-   - Errors or inconsistencies in Markdown and code cells.
+   - Errors or inconsistencies in code cells.
    - Suggestions for improvement or corrections.
 3. Collaborate with the Coder assistant to refine the notebook.
 
@@ -156,13 +146,12 @@ Tool usage instructions apply to any function calls you make.";
 ### Responsibilities:
 1. Monitor the updates and feedback provided by the Coder and Reviewer agents.
 2. Verify that the notebook meets all task requirements:
-   - Markdown cells are clear, well-structured, and relevant.
-   - Code cells are correct, functional, and aligned with the notebook’s objectives.
+   - Code cells are correct, functional, and aligned with the notebook’s objectives. No errors remain in code cells outputs.
 3. Call `RunNotebook()` to validate the notebook outputs.
 
 ### Approval Criteria:
-- All cells are correctly typed (Markdown or code).
-- No errors remain in code cells.
+- All code cells are correctly typed.
+- No errors remain in code cells outputs.
 - The notebook achieves the stated objectives and is complete.
 
 ### Key Points:

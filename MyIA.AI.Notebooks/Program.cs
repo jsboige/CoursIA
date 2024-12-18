@@ -31,7 +31,14 @@ namespace MyIA.AI.Notebooks;
 class Program
 {
 
-	private static string defaultPythonNotebookTaskInstruction = "Créer un notebook Python permettant de requêter DBpedia (SPARQL) et d’afficher un graphique final avec rdflib ou SPARQLWrapper et plotly.\r\nÉtapes suggérées :\r\n\r\n    Éditer le Markdown pour décrire la requête SPARQL (avec agrégats) et l’objectif de la visualisation.\r\n    Installer et importer SPARQLWrapper ou rdflib, plus plotly.\r\n    Mettre au point la requête, puis produire un graphique plotly utilisant les résultats.";
+	private static string defaultPythonNotebookTaskInstruction = @"Créer un notebook Python permettant de requêter DBpedia (SPARQL) et d’afficher un graphique final avec rdflib ou SPARQLWrapper et plotly.  
+
+**Résultat attendu** :
+  
+1. Une requête complexe sur DBpedia (avec agrégats) correctement exécutée.  
+2. Un graphique plotly **pertinent** reflétant les données issues de DBpedia.";
+
+
 
 	private static bool testPython = true;
 
@@ -51,6 +58,10 @@ class Program
 		{
 			autoInvokeUpdater.NotebookTemplatePath = "./Semantic-Kernel/Workbook-Template-Python.ipynb";
 			autoInvokeUpdater.SetStartingNotebookFromTemplate(defaultPythonNotebookTaskInstruction);
+		}
+		else
+		{
+			autoInvokeUpdater.SetStartingNotebookFromTemplate(autoInvokeUpdater.NotebookTaskDescription);
 		}
 
 		await autoInvokeUpdater.UpdateNotebookAsync().ConfigureAwait(false);

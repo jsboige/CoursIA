@@ -15,10 +15,10 @@ public class WorkbookUpdateInteraction(string notebookPath, ILogger logger)
 	public bool IsPendingApproval => _isPendingApproval;
 
 	[KernelFunction]
-	[Description("Updates a specific Markdown or code cell in the current .NET interactive notebook by providing the entire new content")]
+	[Description("Updates a specific Markdown or code cell in the current .NET interactive notebook by providing new content for the entire cell")]
 	public async Task<string> ReplaceWorkbookCell(
 		[Description(uniqueContentDescription)] string uniqueContent,
-		[Description("The new content for the target cell")] string newCellContent,
+		[Description("The new content for the entire target cell")] string newCellContent,
 		[Description(restartKernelDescription)] bool restartKernel = false)
 	{
 		var returnMessage = new StringBuilder();
@@ -55,12 +55,12 @@ public class WorkbookUpdateInteraction(string notebookPath, ILogger logger)
 		{
 			await UpdateCellAsync(uniqueContent, cell =>
 			{
-				if (!cell.Contents.Contains(oldBlock))
+				if (!cell.Contents.Contains(oldBlock, StringComparison.OrdinalIgnoreCase))
 				{
 					throw new ArgumentException($"Block to replace not found in target cell.\nBlock:\"{oldBlock}\"\nCell Content:\n\"{cell.Contents}\"", nameof(oldBlock));
 				}
 
-				return cell.Contents.Replace(oldBlock, newContent);
+				return cell.Contents.Replace(oldBlock, newContent, StringComparison.OrdinalIgnoreCase);
 			}, returnMessage, restartKernel, false);
 		}, returnMessage);
 

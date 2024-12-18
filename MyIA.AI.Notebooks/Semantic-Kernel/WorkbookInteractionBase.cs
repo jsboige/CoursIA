@@ -156,7 +156,7 @@ public class WorkbookInteractionBase
 		await InitializeExecutorIfNeeded();
 
 		var notebook = await LoadNotebookAsync();
-		var cell = notebook.Elements.FirstOrDefault(e => e.Contents.Contains(uniqueContent));
+		var cell = notebook.Elements.FirstOrDefault(e => e.Contents.Contains(uniqueContent) && IsCodeCell(e));
 		if (cell == null)
 		{
 			throw new ArgumentException($"Cell with identifying string '{uniqueContent}' not found in notebook.");
@@ -296,4 +296,13 @@ public class WorkbookInteractionBase
 		_logger.LogInformation($"{toReturn}\n");
 		return toReturn;
 	}
+
+	/// <summary>
+	/// Détermine si une cellule est une cellule de code.
+	/// </summary>
+	private bool IsCodeCell(InteractiveDocumentElement cell)
+	{
+		return !string.IsNullOrEmpty(cell.KernelName); // Les cellules de code ont un KernelName défini.
+	}
+
 }
