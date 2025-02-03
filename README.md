@@ -13,6 +13,7 @@ Avant de commencer, assure-toi d'avoir installé :
 - [Python 3.9+](https://www.python.org/downloads/)
 - [Visual Studio Code](https://code.visualstudio.com/)
 - L'extension **Python** et **Jupyter** dans VSCode
+- [Extension **.Net extension pack**](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-pack)
 - [OpenAI API key](https://platform.openai.com/signup/) (si utilisation de l'API OpenAI)
 
 ### 🔧 Installation des dépendances
