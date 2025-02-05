@@ -19,8 +19,8 @@ public class NotebookPlannerUpdater : NotebookUpdaterBase
 			MaxTokensRatio = 0.3,
 			MaxIterations = maxIterations,
 			ExecutionSettings = new OpenAIPromptExecutionSettings { ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions },
-			GetInitialPlanPromptTemplate = () => File.ReadAllText("./Semantic-Kernel/Resources/generate_plan.yaml"),
-			GetStepPromptTemplate = () => File.ReadAllText("./Semantic-Kernel/Resources/StepPrompt.txt"),
+			GetInitialPlanPromptTemplate = () => File.ReadAllText("./SemanticKernel/Resources/generate_plan.yaml"),
+			GetStepPromptTemplate = () => File.ReadAllText("./SemanticKernel/Resources/StepPrompt.txt"),
 		};
 
 		_planner = new FunctionCallingStepwisePlanner(options);

@@ -34,7 +34,7 @@ class Program
 		var autoInvokeUpdater = new AutoInvokeSKAgentsNotebookUpdater(notebookPath, logger);
 		if (testPython)
 		{
-			autoInvokeUpdater.NotebookTemplatePath = "./Semantic-Kernel/Workbook-Template-Python.ipynb";
+			autoInvokeUpdater.NotebookTemplatePath = "./SemanticKernel/Workbook-Template-Python.ipynb";
 			autoInvokeUpdater.SetStartingNotebookFromTemplate(defaultPythonNotebookTaskInstruction);
 		}
 		else
