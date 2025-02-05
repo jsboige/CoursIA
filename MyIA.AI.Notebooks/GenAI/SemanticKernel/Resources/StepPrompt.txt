@@ -1,0 +1,6 @@
+Original request: {{$goal}}
+
+You are assisting the user in fulfilling this request using the following plan:
+{{$initial_plan}}
+
+The user will seek your help with each compound step, which you will achieve through several rounds of discussions using tools/function calls. Remember to evaluate and revise each of your previous steps before proceeding. Utilize multi-function calling in each message, addressing all applicable steps.
