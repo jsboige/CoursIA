@@ -31,22 +31,22 @@
     <None Update="Config\settings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Semantic-Kernel\Resources\generate_plan.yaml">
+    <None Update="GenAI\SemanticKernel\Resources\generate_plan.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Semantic-Kernel\Resources\StepPrompt.txt">
+    <None Update="GenAI\SemanticKernel\Resources\StepPrompt.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Semantic-Kernel\Workbook-Template-Python.ipynb">
+    <None Update="GenAI\SemanticKernel\Workbook-Template-Python.ipynb">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Semantic-Kernel\Workbook-Template.ipynb">
+    <None Update="GenAI\SemanticKernel\Workbook-Template.ipynb">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Semantic-Kernel\Resources\" />
+    <Folder Include="SemanticKernel\Resources\" />
     <Folder Include="Sudoku\CompiledModels\" />
   </ItemGroup>
 
