@@ -3,7 +3,7 @@
 
 #Installation et Imports
 # Installation des bibliothèques nécessaires
-%pip install semantic-kernel python-dotenv openai --quiet
+
 
 # Import des bibliothèques
 import os
@@ -125,4 +125,8 @@ async def jouer_partie():
     logger.info("🏁 Partie terminée !")
 
 # Exécuter la partie
-await jouer_partie()
+import asyncio
+
+# Vérifier si le script est exécuté directement
+if __name__ == "__main__":
+    asyncio.run(jouer_partie())
