@@ -12,8 +12,8 @@ import random
 from dotenv import load_dotenv
 from semantic_kernel import Kernel
 from semantic_kernel.agents import ChatCompletionAgent, AgentGroupChat
-from semantic_kernel.agents.strategies.termination import TerminationStrategy
-from semantic_kernel.connectors.ai.openai import OpenAIChatCompletion
+from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
+from semantic_kernel.connectors.chat.open_ai import OpenAIChatCompletion
 from semantic_kernel.contents import ChatHistory, ChatMessageContent, AuthorRole
 from semantic_kernel.functions import KernelArguments
 from dalle import text2im  # Utilisation de DALL-E pour générer les images
