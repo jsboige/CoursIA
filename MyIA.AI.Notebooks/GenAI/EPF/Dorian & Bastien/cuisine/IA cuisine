@@ -1,0 +1,113 @@
+# Si ce n'est pas déjà fait, installez les bibliothèques nécessaires
+# !pip install openai fpdf
+
+import openai
+from fpdf import FPDF
+import unicodedata
+import re
+
+# Remplacez "VOTRE_CLE_API" par votre clé API OpenAI
+openai.api_key = ""
+
+def sanitize_filename(filename):
+    """
+    Nettoie le nom de fichier en supprimant les accents, en remplaçant les espaces par des underscores,
+    et en supprimant les caractères spéciaux.
+    """
+    # Supprime les accents
+    filename = unicodedata.normalize('NFKD', filename).encode('ASCII', 'ignore').decode('ASCII')
+    # Remplace les espaces par des underscores
+    filename = filename.replace(" ", "_")
+    # Supprime tout caractère qui n'est pas alphanumérique, underscore ou tiret
+    filename = re.sub(r'[^a-zA-Z0-9_\-]', '', filename)
+    return filename
+
+def obtenir_recette_chat(requete, nb_personnes):
+    """
+    Génère une recette de cuisine détaillée en fonction de la requête de l'utilisateur et du nombre de personnes.
+    La recette doit impérativement préciser :
+      - Le temps de préparation
+      - Le temps de cuisson (ainsi que tout autre temps pertinent, par exemple le temps de repos)
+      - La liste des ingrédients
+      - Les étapes de préparation
+    
+    Paramètres :
+      - requete (str) : La demande de l'utilisateur (exemple : "lasagnes végétariennes")
+      - nb_personnes (str) : Le nombre de personnes pour lesquelles la recette est adaptée.
+    
+    Retour :
+      - recette (str) : La recette générée par l'IA.
+    """
+    messages = [
+        {"role": "system", "content": "Tu es un chef cuisinier expert et très détaillé. Tu fournis des recettes complètes avec toutes les informations utiles pour réussir le plat."},
+        {"role": "user", "content": (
+            f"Peux-tu me donner une recette détaillée pour {requete} pour {nb_personnes} personnes ? "
+            "La recette doit inclure clairement le temps de préparation, le temps de cuisson, le temps total (et les autres temps éventuels, comme le repos), "
+            "la liste des ingrédients et les étapes de préparation détaillées."
+        )}
+    ]
+    
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=500,      # Vous pouvez augmenter cette valeur pour obtenir encore plus de détails
+            temperature=0.7
+        )
+    except Exception as e:
+        print("Une erreur s'est produite lors de la génération de la recette :", e)
+        return None
+
+    recette = response["choices"][0]["message"]["content"].strip()
+    return recette
+
+def creer_pdf(titre, contenu, nom_fichier):
+    """
+    Crée un fichier PDF contenant le titre et le contenu fourni.
+    
+    Paramètres :
+      - titre (str) : Le titre à afficher en haut du PDF.
+      - contenu (str) : Le contenu (ici, la recette) à insérer dans le PDF.
+      - nom_fichier (str) : Le nom du fichier PDF à créer.
+    """
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # Titre en gras et centré
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, titre, ln=True, align='C')
+    pdf.ln(10)
+    
+    # Contenu de la recette
+    pdf.set_font("Arial", size=12)
+    # Découper le contenu en lignes pour gérer les retours à la ligne
+    lignes = contenu.split('\n')
+    for ligne in lignes:
+        pdf.multi_cell(0, 10, ligne)
+    
+    pdf.output(nom_fichier)
+    print(f"Le fichier PDF a été créé avec succès : {nom_fichier}")
+
+# Partie principale du script
+if __name__ == "__main__":
+    requete = input("Entrez un ingrédient ou un type de recette souhaité : ")
+    nb_personnes = input("Pour combien de personnes ? : ")
+    
+    print("\nGénération de la recette...")
+    recette = obtenir_recette_chat(requete, nb_personnes)
+    
+    if recette:
+        print("\nVoici votre recette :\n")
+        print(recette)
+        
+        choix = input("\nVoulez-vous télécharger la recette en PDF ? (o/n) : ")
+        if choix.strip().lower() in ["o", "oui"]:
+            # Utilisation de la demande de l'utilisateur pour nommer le fichier
+            nom_pdf = sanitize_filename(requete) + ".pdf"
+            titre_pdf = f"Recette de {requete} pour {nb_personnes} personnes"
+            creer_pdf(titre_pdf, recette, nom_pdf)
+        else:
+            print("Téléchargement PDF annulé.")
+    else:
+        print("La recette n'a pas pu être générée.")
