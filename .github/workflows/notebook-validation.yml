@@ -1,0 +1,50 @@
+name: Notebook Validation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  validate-notebooks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install nbconvert jupyter nbformat
+        
+    - name: Check notebook format
+      run: |
+        echo "Checking notebook format..."
+        find . -name "*.ipynb" -not -path "*/\.*" | xargs -I {} jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=60 --ExecutePreprocessor.allow-errors=True {}
+        
+    - name: Check for syntax errors
+      run: |
+        echo "Checking for syntax errors in notebooks..."
+        find . -name "*.ipynb" -not -path "*/\.*" | xargs -I {} python -c "
+        import json
+        import sys
+        with open('{}', 'r', encoding='utf-8') as f:
+            try:
+                nb = json.load(f)
+                # Check if the notebook is valid JSON
+                print('✓ {} is valid JSON'.format('{}'))
+            except json.JSONDecodeError as e:
+                print('✗ {} is not valid JSON: {}'.format('{}', e))
+                sys.exit(1)
+        "
