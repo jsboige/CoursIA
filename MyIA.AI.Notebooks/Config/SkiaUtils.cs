@@ -3,9 +3,11 @@
 using System.Drawing;
 using Microsoft.DotNet.Interactive;
 using SkiaSharp;
+using System.IO;
+using System.Net.Http;
 
-// ReSharper disable InconsistentNaming
-namespace MyIA.AI.Notebooks.Config;
+// // ReSharper disable InconsistentNaming
+// namespace MyIA.AI.Notebooks.Config;
 
 public static class SkiaUtils
 {
