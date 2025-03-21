@@ -1,0 +1,58 @@
+//@version=6
+indicator("Divergence Haussière RSI avec Ligne de Connexion", overlay=false)
+
+// Inputs
+length = input.int(14, title="Longueur RSI", minval=1)
+src = close
+level30 = input.float(30, title="Niveau 30", minval=0, maxval=100)
+
+// Calcul RSI, lowest et highest global
+rsi = ta.rsi(src, length)
+lowest_rsi = ta.lowest(rsi, 5)
+highest_rsi = ta.highest(rsi, 5)
+cross_above_rsi = ta.crossover(rsi, rsi[1])  // Détection de la remontée
+
+// Variables pour les points de divergence
+var float rsi_low1 = na
+var float price_low1 = na
+var int time_low1 = na
+var float rsi_low2 = na
+var float price_low2 = na
+var int time_low2 = na
+var float rsi_low3 = na  // Pour le troisième pic
+var float price_low3 = na
+var int time_low3 = na
+
+// Détection du premier creux sous 30
+if rsi < level30 and rsi > lowest_rsi[1]
+    rsi_low1 := rsi
+    price_low1 := low
+    time_low1 := time
+    rsi_low2 := na  // Réinitialise le deuxième point
+    price_low2 := na
+    time_low2 := na
+    rsi_low3 := na  // Réinitialise le troisième point
+    price_low3 := na
+    time_low3 := na
+
+// Confirmation du deuxième creux (bas absolu) et divergence
+if not na(rsi_low1) and rsi < level30 and rsi > rsi_low1 and low < price_low1 and rsi < highest_rsi[1]
+    rsi_low2 := rsi
+    price_low2 := low
+    time_low2 := time
+if not na(rsi_low2) and cross_above_rsi and rsi > rsi_low2
+    line.new(time_low1, rsi_low1, time_low2, rsi_low2, xloc=xloc.bar_time, extend=extend.none, color=color.green, style=line.style_solid)
+    rsi_low2 := na  // Réinitialise après confirmation
+
+// Détection d’un troisième creux avec le premier
+if not na(rsi_low1) and rsi < level30 and rsi > rsi_low1 and low < price_low1 and rsi < highest_rsi[1]
+    rsi_low3 := rsi
+    price_low3 := low
+    time_low3 := time
+if not na(rsi_low3) and cross_above_rsi and rsi > rsi_low3
+    line.new(time_low1, rsi_low1, time_low3, rsi_low3, xloc=xloc.bar_time, extend=extend.none, color=color.blue, style=line.style_solid)
+    rsi_low3 := na  // Réinitialise après confirmation
+
+// Affichage
+plot(rsi, title="RSI", color=color.purple)
+hline(level30, title="Level 30", color=color.gray, linestyle=hline.style_dashed)
