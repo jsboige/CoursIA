@@ -1,0 +1,84 @@
+//@version=6
+strategy("Stratégie Divergence Baissière RSI - Bitcoin", overlay=true)
+
+// Inputs
+length = input.int(14, title="Longueur RSI", minval=1)
+level70 = input.float(70, title="Niveau 70", minval=0, maxval=100)
+sl_pct = input.float(2.0, title="Stop Loss %", minval=0.1, step=0.1)
+tp_pct = input.float(2.0, title="Take Profit % (1RR)", minval=0.1, step=0.1)  // 1RR = SL %
+
+// Calcul RSI, lowest et highest global
+rsi = ta.rsi(close, length)
+lowest_rsi = ta.lowest(rsi, 5)
+highest_rsi = ta.highest(rsi, 5)
+cross_below_rsi = ta.crossunder(rsi, rsi[1])
+
+// Variables pour les points de divergence
+var float rsi_high1 = na
+var float price_high1 = na
+var int time_high1 = na
+var float rsi_high2 = na
+var float price_high2 = na
+var int time_high2 = na
+var float rsi_high3 = na
+var float price_high3 = na
+var int time_high3 = na
+var float entry_price = na  // Prix d’entrée pour gérer TP/SL
+var bool was_in_position = false  // Suivi de l'état de la position
+
+// Détection du premier sommet au-dessus de 70
+if rsi > level70 and rsi < highest_rsi[1]
+    rsi_high1 := rsi
+    price_high1 := high
+    time_high1 := time
+    rsi_high2 := na
+    price_high2 := na
+    time_high2 := na
+    rsi_high3 := na
+    price_high3 := na
+    time_high3 := na
+
+// Confirmation du deuxième sommet et entrée
+if not na(rsi_high1) and rsi > level70 and rsi < rsi_high1 and high > price_high1 and rsi > lowest_rsi[1]
+    rsi_high2 := rsi
+    price_high2 := high
+    time_high2 := time
+if not na(rsi_high2) and cross_below_rsi and rsi < rsi_high2
+    line.new(time_high1, rsi_high1, time_high2, rsi_high2, xloc=xloc.bar_time, extend=extend.none, color=color.red, style=line.style_solid)
+    strategy.entry("Short2", strategy.short)
+    entry_price := close  // Enregistre le prix d’entrée
+    rsi_high2 := na
+
+// Détection d’un troisième sommet et entrée
+if not na(rsi_high1) and rsi > level70 and rsi < rsi_high1 and high > price_high1 and rsi > lowest_rsi[1]
+    rsi_high3 := rsi
+    price_high3 := high
+    time_high3 := time
+if not na(rsi_high3) and cross_below_rsi and rsi < rsi_high3
+    line.new(time_high1, rsi_high1, time_high3, rsi_high3, xloc=xloc.bar_time, extend=extend.none, color=color.orange, style=line.style_solid)
+    strategy.entry("Short3", strategy.short)
+    entry_price := close  // Enregistre le prix d’entrée
+    rsi_high3 := na
+
+// Conditions de sortie
+if strategy.position_size < 0
+    // Utiliser un seul ordre de sortie pour SL et TP
+    strategy.exit("Exit", from_entry="Short2", stop=entry_price * (1 + sl_pct / 100), limit=entry_price * (1 - tp_pct / 100))
+    strategy.exit("Exit", from_entry="Short3", stop=entry_price * (1 + sl_pct / 100), limit=entry_price * (1 - tp_pct / 100))
+
+// Détection de la sortie et affichage des labels
+if strategy.position_size == 0 and was_in_position
+    // Vérifier le dernier trade fermé pour déterminer la raison de la sortie
+    if strategy.closedtrades > 0
+        last_trade_profit = strategy.closedtrades.profit(strategy.closedtrades - 1)
+        if last_trade_profit > 0  // Profit = TP touché
+            label.new(bar_index, low, "TP", color=color.green, textcolor=color.white, style=label.style_label_up)
+        else if last_trade_profit < 0  // Perte = SL touché
+            label.new(bar_index, low, "SL", color=color.red, textcolor=color.white, style=label.style_label_up)
+    entry_price := na  // Réinitialiser après la sortie
+was_in_position := strategy.position_size < 0
+
+// Affichage des niveaux d'entrée, TP et SL
+plot(entry_price, title="Prix d'entrée", color=color.blue, linewidth=1, style=plot.style_linebr)
+plot(entry_price * (1 - tp_pct / 100), title="TP (1RR)", color=color.green, linewidth=1, style=plot.style_linebr)
+plot(entry_price * (1 + sl_pct / 100), title="SL", color=color.red, linewidth=1, style=plot.style_linebr)
