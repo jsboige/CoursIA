@@ -1,0 +1,2137 @@
+org-tweetyproject-logics-pl/src/main/java/org/tweetyproject/logics/pl/examples/PlExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2020 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pl.examples;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.pl.syntax.Conjunction;
+import org.tweetyproject.logics.pl.parser.PlParser;
+import org.tweetyproject.logics.pl.reasoner.SimplePlReasoner;
+import org.tweetyproject.logics.pl.syntax.Contradiction;
+import org.tweetyproject.logics.pl.syntax.Implication;
+import org.tweetyproject.logics.pl.syntax.Negation;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+import org.tweetyproject.logics.pl.syntax.PlFormula;
+import org.tweetyproject.logics.pl.syntax.PlSignature;
+import org.tweetyproject.logics.pl.syntax.Proposition;
+
+/**
+ * Some general examples for using basic propositional logic classes like PlParser and SimplePlReasoner.
+ * 
+ * @author Anna Gessler
+ *
+ */
+public class PlExample {
+	/**
+	 * main
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws ParserException, IOException {
+		//Manually create formulas and belief base
+		PlBeliefSet beliefSet = new PlBeliefSet();
+		Proposition f1 = new Proposition("a");
+		Negation f2 = new Negation(f1);
+		Conjunction c = new Conjunction();
+		c.add(f1, f2, new Proposition("b"));
+		Implication i = new Implication(f2, new Proposition("c"));
+		beliefSet.add(f1,f2,c,i);
+		System.out.println(beliefSet + "\n");
+		
+		//Parse belief base from string
+		PlParser parser = new PlParser();	
+		beliefSet = parser.parseBeliefBase("a || b || c \n !a || b \n !b || c \n !c || (!a && !b && !c && !d)");
+		System.out.println(beliefSet);
+		
+		//Parse belief base from file
+		beliefSet = parser.parseBeliefBaseFromFile("src/main/resources/examplebeliefbase.proplogic");
+		System.out.println(beliefSet);
+		
+		//Parse list of belief bases from file
+		List<PlBeliefSet> beliefSets = parser.parseListOfBeliefBasesFromFile("src/main/resources/examplebeliefbase_multiple.proplogic");
+		System.out.println(beliefSets);
+		
+		//Parse list of belief bases using a custom delimiter
+		beliefSets = parser.parseListOfBeliefBases("a || b \n a && !a ##### c => d", "#####");
+		System.out.println(beliefSets);
+		
+		//Note that belief bases can have signatures larger than their formulas' signature
+		PlSignature sig = beliefSet.getSignature();
+		sig.add(new Proposition("f"));
+		beliefSet.setSignature(sig);
+		System.out.println(beliefSet);
+		System.out.println("Minimal signature: " + beliefSet.getMinimalSignature());
+		//...but not smaller (commented out line throws exception)
+		sig.remove(new Proposition("a"));
+		//beliefSet2.setSignature(sig);
+		
+		//Use simple inference reasoner
+		SimplePlReasoner reasoner = new SimplePlReasoner();
+		PlFormula query = new Negation(new Proposition("a"));
+		Boolean answer1 = reasoner.query(beliefSet, query);
+		System.out.println(answer1);
+		Boolean answer2 = reasoner.query(beliefSet, new Contradiction());
+		System.out.println(answer2);
+		
+		//Examples for using XOR
+		System.out.println();
+		PlFormula xor = parser.parseFormula("a ^^ b ^^ c");
+		System.out.println("parsed formula: " + xor);
+		System.out.println("dnf: " +  xor.toDnf());
+		System.out.println("cnf: " + xor.toCnf());
+		System.out.println("nnf: " +  xor.toNnf());
+		System.out.println("models :" + xor.getModels());
+		xor = parser.parseFormula("a ^^ b ^^ c ^^ d ^^ e ^^ f");
+		System.out.println("parsed formula: " + xor);
+		System.out.println("models: " + xor.getModels());
+		System.out.println();
+		beliefSet = parser.parseBeliefBaseFromFile("src/main/resources/examplebeliefbase_xor.proplogic");
+		System.out.println(beliefSet);
+	}
+
+    /** Default Constructor */
+    public PlExample(){}
+}
+
+
+org-tweetyproject-logics-pl/src/main/java/org/tweetyproject/logics/pl/examples/SatSolverExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pl.examples;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.pl.parser.DimacsParser;
+import org.tweetyproject.logics.pl.parser.PlParser;
+import org.tweetyproject.logics.pl.sat.CmdLineSatSolver;
+import org.tweetyproject.logics.pl.sat.DimacsSatSolver;
+import org.tweetyproject.logics.pl.sat.SatSolver;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+
+/**
+ * Example code illustrating the use of external SAT solvers such as Lingeling
+ * and CaDicaL, and related utilities. Most other modern SAT solvers that use the
+ * Dimacs format can be used the same way as the solvers in this example by 
+ * providing the path to the solver's binary.
+ * 
+ * <br>
+ * Note: You need to download the respective solvers and replace the paths to
+ * their binaries in the example, otherwise it won't run. See
+ * {@link org.tweetyproject.logics.pl.sat.CmdLineSatSolver} for download links.
+ * 
+ * @author Matthias Thimm
+ * @author Anna Gessler
+ */
+public class SatSolverExample {
+
+	// Insert the paths to your solver binaries here
+	private static String lingeling_path = "/home/anna/snap/sat/lingeling/lingeling";
+	private static String cadical_path = "/home/anna/snap/sat/cadical/build/cadical";
+	private static String kissat_path = "/home/anna/snap/sat/kissat/build/kissat";
+	private static String slime_path = "/home/anna/snap/sat/slime/slime/bin/slime_cli";
+	/**
+	 * main
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws ParserException, IOException {
+		// Creating a belief base manually
+		PlBeliefSet kb1 = new PlBeliefSet();
+		PlParser tweetyParser = new PlParser();
+		kb1.add(tweetyParser.parseFormula("a || b || c"));
+		kb1.add(tweetyParser.parseFormula("!a || b && d"));
+		kb1.add(tweetyParser.parseFormula("a"));
+		kb1.add(tweetyParser.parseFormula("!c"));
+		kb1.add(tweetyParser.parseFormula("a || -"));
+		System.out.println(kb1);
+
+		// The conversion into dimacs format is done automatically by CmdLineSatSolver,
+		// but the method can also be called manually:
+		List<String> re = DimacsSatSolver.convertToDimacs(kb1);
+		for(String s: re)
+			System.out.println(s);
+
+		// Parsing a belief base in dimacs format
+		DimacsParser dimacsParser = new DimacsParser();
+		PlBeliefSet kb2 = dimacsParser.parseBeliefBaseFromFile("src/main/resources/dimacs_ex4.cnf");
+		System.out.println(kb2);
+
+		// Using the SAT solver Lingeling
+		CmdLineSatSolver lingelingSolver = new CmdLineSatSolver(lingeling_path);
+		// add a cmd line parameter
+		lingelingSolver.addOption("--reduce");
+		System.out.println("\n" + lingelingSolver.isSatisfiable(kb1));
+		System.out.println("Witness: " + lingelingSolver.getWitness(kb1));
+		System.out.println(lingelingSolver.isSatisfiable(kb2));
+
+		// Using the SAT solver CaDiCaL
+		CmdLineSatSolver cadicalSolver = new CmdLineSatSolver(cadical_path);
+		System.out.println("\n" + cadicalSolver.isSatisfiable(kb1));
+		System.out.println("Witness: " + cadicalSolver.getWitness(kb1));
+		System.out.println(cadicalSolver.isSatisfiable(kb2));
+
+		// Using the SAT solver Kissat
+		CmdLineSatSolver kissatSolver = new CmdLineSatSolver(kissat_path);
+		// add a cmd line parameter
+		kissatSolver.addOption("--unsat");
+		System.out.println("\n" + kissatSolver.isSatisfiable(kb1));
+		System.out.println("Witness: " + kissatSolver.getWitness(kb1));
+		System.out.println(kissatSolver.isSatisfiable(kb2));
+
+		// Using the SAT solver Slime
+		CmdLineSatSolver slimeSolver = new CmdLineSatSolver(slime_path);
+		System.out.println("\n" + slimeSolver.isSatisfiable(kb1));
+		System.out.println("Witness: " + slimeSolver.getWitness(kb1));
+		System.out.println(slimeSolver.isSatisfiable(kb2));
+
+		// For easier switching of solvers and when using classes that use
+		// a sat solver internally, you can set the default solver
+		// for your whole program once and call getDefaultSolver in all other places of
+		// usage
+		SatSolver.setDefaultSolver(kissatSolver);
+		SatSolver defaultSolver = SatSolver.getDefaultSolver();
+		System.out.println("\n" + defaultSolver.isSatisfiable(kb1));
+	}
+
+    /** Default Constructor */
+    public SatSolverExample(){}
+}
+
+org-tweetyproject-logics-pl/src/main/java/org/tweetyproject/logics/pl/examples/MaMeasureExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pl.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.commons.analysis.BeliefSetInconsistencyMeasure;
+import org.tweetyproject.logics.commons.analysis.MaInconsistencyMeasure;
+import org.tweetyproject.logics.pl.parser.PlParser;
+import org.tweetyproject.logics.pl.sat.MarcoMusEnumerator;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+import org.tweetyproject.logics.pl.syntax.PlFormula;
+
+/**
+ *  Example code illustrating the Ma inconsistency measure.
+ * @author Matthias Thimm
+ */
+public class MaMeasureExample {
+	/**
+	 * main
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws ParserException, IOException{
+		// Create some knowledge base
+		PlBeliefSet kb = new PlBeliefSet();
+		PlParser parser = new PlParser();
+			
+		kb.add((PlFormula)parser.parseFormula("a"));
+		kb.add((PlFormula)parser.parseFormula("!a"));
+		kb.add((PlFormula)parser.parseFormula("!a && !b"));
+		kb.add((PlFormula)parser.parseFormula("b"));
+		
+				
+		// test Ma inconsistency measure		
+		BeliefSetInconsistencyMeasure<PlFormula> ma = new MaInconsistencyMeasure<PlFormula>(new MarcoMusEnumerator("/Users/mthimm/Projects/misc_bins/marco_py-1.0/marco.py"));
+		System.out.println("Ma: " + ma.inconsistencyMeasure(kb));
+		
+	}
+
+    /** Default Constructor */
+    public MaMeasureExample(){}
+}
+
+
+org-tweetyproject-logics-pl/src/main/java/org/tweetyproject/logics/pl/examples/McscInconsistencyMeasureExample.java
+
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pl.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.commons.analysis.McscInconsistencyMeasure;
+import org.tweetyproject.logics.pl.parser.PlParser;
+import org.tweetyproject.logics.pl.sat.MarcoMusEnumerator;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+import org.tweetyproject.logics.pl.syntax.PlFormula;
+
+/**
+ * Example code illustrating the MCSC inconsistency measure.
+ * 
+ * @author Matthias Thimm
+ */
+public class McscInconsistencyMeasureExample {
+	/**
+	 * main
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws ParserException, IOException{
+		PlBeliefSet beliefSet = new PlBeliefSet();
+		PlParser parser = new PlParser();		
+		// Example of [Ammoura 2015]
+		// ¬p ∨ ¬q, ¬p ∨ ¬r, ¬q ∨ ¬r, p, q, r
+		// (note that the inconsistency value is 3 and not 4 as claimed in [Ammoura 2015]) 
+		beliefSet.add((PlFormula)parser.parseFormula("!p || !q"));
+		beliefSet.add((PlFormula)parser.parseFormula("!p || !r"));
+		beliefSet.add((PlFormula)parser.parseFormula("!q || !r"));
+		beliefSet.add((PlFormula)parser.parseFormula("p"));
+		beliefSet.add((PlFormula)parser.parseFormula("q"));
+		beliefSet.add((PlFormula)parser.parseFormula("r"));
+		
+		System.out.println(beliefSet);
+		
+		McscInconsistencyMeasure<PlFormula> i = new McscInconsistencyMeasure<PlFormula>(new MarcoMusEnumerator("/Users/mthimm/Projects/misc_bins/marco_py-1.0/marco.py"));
+		
+		System.out.println(i.inconsistencyMeasure(beliefSet));
+		
+	}
+	
+
+    /** Default Constructor */
+    public McscInconsistencyMeasureExample(){}
+}
+
+org-tweetyproject-logics-pl/src/main/java/org/tweetyproject/logics/pl/examples/MinimalInconsistentSubsetExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pl.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.commons.analysis.NaiveMusEnumerator;
+import org.tweetyproject.logics.pl.sat.SatSolver;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+import org.tweetyproject.logics.pl.syntax.Proposition;
+import org.tweetyproject.logics.pl.syntax.PlFormula;
+import org.tweetyproject.logics.pl.syntax.PlSignature;
+import org.tweetyproject.logics.pl.util.CnfSampler;
+
+/**
+ * Example code illustrating the use of MUS enumerators.
+ * @author Matthias Thimm
+ *
+ */
+public class MinimalInconsistentSubsetExample {
+	/**
+	 * main
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws ParserException, IOException{
+		PlSignature sig = new PlSignature();
+		for(int i = 0; i < 5; i++)
+			sig.add(new Proposition("a" + i));
+		CnfSampler sampler = new CnfSampler(sig,0.8,30, 30);
+		PlBeliefSet kb = sampler.next();
+		System.out.println(kb);
+		System.out.println();
+		
+		NaiveMusEnumerator<PlFormula> enumerator = new NaiveMusEnumerator<PlFormula>(SatSolver.getDefaultSolver());
+		
+		long millis = System.currentTimeMillis();		
+		System.out.println(enumerator.minimalInconsistentSubsets(kb));
+		System.out.println(System.currentTimeMillis()-millis);		
+	}
+
+    /** Default Constructor */
+    public MinimalInconsistentSubsetExample(){}
+}
+
+
+org-tweetyproject-logics-pl/src/main/java/org/tweetyproject/logics/pl/examples/MusExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pl.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.commons.analysis.MusEnumerator;
+import org.tweetyproject.logics.pl.parser.PlParser;
+import org.tweetyproject.logics.pl.sat.MarcoMusEnumerator;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+import org.tweetyproject.logics.pl.syntax.PlFormula;
+
+/**
+ * Example code illustrating the use of MUS enumerators.
+ * @author Matthias Thimm
+ *
+ */
+public class MusExample {
+	/**
+	 * main
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws ParserException, IOException{
+		PlBeliefSet beliefSet = new PlBeliefSet();
+		PlParser parser = new PlParser();
+		for(int i = 0; i < 7; i++){
+			beliefSet.add((PlFormula)parser.parseFormula("a"+i));
+			beliefSet.add((PlFormula)parser.parseFormula("!a"+i));
+		}
+		beliefSet.add((PlFormula)parser.parseFormula("!a1 && !a2"));
+		beliefSet.add((PlFormula)parser.parseFormula("!a3 || !a4"));
+		beliefSet.add((PlFormula)parser.parseFormula("!a3 || !a4 || a5"));
+		
+		
+		System.out.println(beliefSet);
+		
+		MusEnumerator<PlFormula> enumerator = new MarcoMusEnumerator("/Users/mthimm/Projects/misc_bins/marco_py-1.0/marco.py");
+		
+		System.out.println(enumerator.minimalInconsistentSubsets(beliefSet));		
+	}
+
+    /** Default Constructor */
+    public MusExample(){}
+}
+
+org-tweetyproject-logics-pl/src/main/java/org/tweetyproject/logics/pl/examples/MaxSatExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2020 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pl.examples;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.tweetyproject.commons.Interpretation;
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.pl.parser.PlParser;
+import org.tweetyproject.logics.pl.sat.MaxSatSolver;
+import org.tweetyproject.logics.pl.sat.OpenWboSolver;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+import org.tweetyproject.logics.pl.syntax.PlFormula;
+
+/**
+ * Illustrates the use of MaxSAT solvers.
+ * @author Matthias Thimm
+ *
+ */
+public class MaxSatExample {
+	/**
+	 * main
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws ParserException, IOException {
+		MaxSatSolver solver = new OpenWboSolver("/Users/mthimm/Documents/software/misc_bins/open-wbo_2.1");
+		
+		PlBeliefSet bs = new PlBeliefSet();
+		PlParser parser = new PlParser();
+		
+		bs.add(parser.parseFormula("!a && b"));
+		bs.add(parser.parseFormula("b || c"));
+		bs.add(parser.parseFormula("c || d"));
+		bs.add(parser.parseFormula("f || (c && g)"));
+		
+		Map<PlFormula, Integer> softClauses = new HashMap<>();
+		softClauses.put(parser.parseFormula("a || !b"),25);
+		softClauses.put(parser.parseFormula("!c"),15);
+		
+		Interpretation<PlBeliefSet,PlFormula> witness = solver.getWitness(bs,softClauses);
+		System.out.println("Interpretation satisfying the hard constraints and minimising costs of violated soft constraints: " + witness);
+		System.out.println("Cost of solution: " + MaxSatSolver.costOf(witness, bs, softClauses));
+	}
+
+    /** Default Constructor */
+    public MaxSatExample(){}
+}
+
+org-tweetyproject-logics-pl/src/main/java/org/tweetyproject/logics/pl/examples/ContensionExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pl.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.commons.analysis.BeliefSetInconsistencyMeasure;
+import org.tweetyproject.logics.pl.analysis.ContensionInconsistencyMeasure;
+import org.tweetyproject.logics.pl.parser.PlParser;
+import org.tweetyproject.logics.pl.sat.Sat4jSolver;
+import org.tweetyproject.logics.pl.sat.SatSolver;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+import org.tweetyproject.logics.pl.syntax.PlFormula;
+
+/**
+ * Example code illustrating the contension inconsistency measure.
+ * @author Matthias Thimm
+ */
+public class ContensionExample {
+	/**
+	 * main
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 * @throws InterruptedException InterruptedException
+	 */
+	public static void main(String[] args) throws ParserException, IOException, InterruptedException{
+		// Set SAT solver
+		SatSolver.setDefaultSolver(new Sat4jSolver());
+		// Create some knowledge base
+		PlBeliefSet kb = new PlBeliefSet();
+		PlParser parser = new PlParser();
+	
+		kb.add((PlFormula)parser.parseFormula("a"));
+		kb.add((PlFormula)parser.parseFormula("!a && b"));
+		kb.add((PlFormula)parser.parseFormula("!b"));
+		kb.add((PlFormula)parser.parseFormula("c || a"));
+		kb.add((PlFormula)parser.parseFormula("!c || a"));
+		kb.add((PlFormula)parser.parseFormula("!c || d"));
+		kb.add((PlFormula)parser.parseFormula("!d"));
+		kb.add((PlFormula)parser.parseFormula("d"));
+		kb.add((PlFormula)parser.parseFormula("c"));
+		
+		// test contension inconsistency measure		
+		BeliefSetInconsistencyMeasure<PlFormula> cont = new ContensionInconsistencyMeasure();
+		System.out.println("Cont: " + cont.inconsistencyMeasure(kb));
+	}
+
+    /** Default Constructor */
+    public ContensionExample(){}
+}
+
+org-tweetyproject-logics-pl/src/main/java/org/tweetyproject/logics/pl/examples/FuzzyMeasureExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pl.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.pl.analysis.FuzzyInconsistencyMeasure;
+import org.tweetyproject.logics.pl.parser.PlParser;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+import org.tweetyproject.logics.pl.syntax.PlFormula;
+import org.tweetyproject.math.func.fuzzy.ProductNorm;
+
+/**
+ * Example code illustrating fuzzy logic-based inconsistency measures.
+ * 
+ * @author Matthias Thimm
+ */
+public class FuzzyMeasureExample {
+	/**
+	 * main
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws ParserException, IOException{
+		PlBeliefSet bs = new PlBeliefSet();
+		PlParser parser = new PlParser();
+		
+		bs.add((PlFormula) parser.parseFormula("a && !a"));
+		bs.add((PlFormula) parser.parseFormula("!(!(a && !a))"));
+		bs.add((PlFormula) parser.parseFormula("!(!(!(!(a && !a))))"));
+		bs.add((PlFormula) parser.parseFormula("!(!(!(!(!(!(a && !a))))))"));
+		bs.add((PlFormula) parser.parseFormula("!(!(!(!(!(!(!(!(a && !a))))))))"));
+		bs.add((PlFormula) parser.parseFormula("a && a"));
+		
+		System.out.println(bs);
+		
+		FuzzyInconsistencyMeasure mes = new FuzzyInconsistencyMeasure(new ProductNorm(),FuzzyInconsistencyMeasure.SUMFUZZY_MEASURE);
+		
+		System.out.println(mes.inconsistencyMeasure(bs));
+		
+		System.out.println();
+		
+		System.out.println(mes.getOptimalInterpretation(bs));
+		
+	}
+
+    /** Default Constructor */
+    public FuzzyMeasureExample(){}
+}
+
+
+TweetyProject/org-tweetyproject-logics-bpm/src/main/java/org/tweetyproject/logics/bpm/examples/Example.java
+
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2021 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.bpm.examples;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.commons.Plotter;
+import org.tweetyproject.logics.bpm.analysis.BpmnInconsistencyMeasure;
+import org.tweetyproject.logics.bpm.analysis.DeadEndMeasure;
+import org.tweetyproject.logics.bpm.analysis.DeadTransitionMeasure;
+import org.tweetyproject.logics.bpm.analysis.UnfairnessEntropyMeasure;
+import org.tweetyproject.logics.bpm.analysis.UnfairnessMeasure;
+import org.tweetyproject.logics.bpm.analysis.UnlivenessMeasure;
+import org.tweetyproject.logics.bpm.parser.bpmn_to_petri.PetriNetParser;
+import org.tweetyproject.logics.bpm.parser.xml_to_bpmn.RootParser;
+import org.tweetyproject.logics.bpm.plotting.BpmnModelPlotter;
+import org.tweetyproject.logics.bpm.syntax.BpmnModel;
+import org.tweetyproject.logics.petri.plotting.PetriNetPlotter;
+import org.tweetyproject.logics.petri.plotting.ReachabilityGraphPlotter;
+import org.tweetyproject.logics.petri.syntax.PetriNet;
+import org.tweetyproject.logics.petri.syntax.reachability_graph.ReachabilityGraph;
+import org.tweetyproject.logics.petri.syntax.reachability_graph.ReachabilityGraphParser;
+
+/**
+ * Visualize inconsistency analysis for some BPMN models 
+ * @author Benedikt Knopp
+ */
+public class Example {
+
+	/**
+	 * Specify BPMN models for which the functionalities of inconsistency analysis
+	 * are to be visualized
+	 * @param args args
+	 * @throws ParserException ParserException
+	 * @throws IOException IOExeption
+	 */
+	public static void main(String[] args) throws ParserException, IOException {
+
+		DeadEndMeasure deadEndMeasure = new DeadEndMeasure();
+		DeadTransitionMeasure deadTransitionMeasure = new DeadTransitionMeasure();
+		UnlivenessMeasure unlivenessMeasure = new UnlivenessMeasure();
+		UnfairnessMeasure unfairnessMeasure = new UnfairnessMeasure();
+		UnfairnessEntropyMeasure unfairnessEntropyMeasure = new UnfairnessEntropyMeasure();
+		
+		
+		String modelPath = System.getProperty("user.dir") + "/../org-tweetyproject-logics-bpm/src/main/resources/";
+		File unproblematic_browsing = new File(modelPath + "unproblematic_browsing.bpmn");
+		File unproblematic_dinner = new File(modelPath + "unproblematic_dinner.bpmn");
+		File problematic_hit = new File(modelPath + "problematic_hit.bpmn");
+		File problematic_with_inclusive_gateways = new File(modelPath + "problematic_with_inclusive_gateways.bpmn");
+		
+		runExample(unproblematic_browsing, false, ProbabilityFunctionType.RANDOM, deadEndMeasure);
+		runExample(unproblematic_dinner, false, ProbabilityFunctionType.RANDOM, deadEndMeasure);
+		runExample(unproblematic_browsing, true, ProbabilityFunctionType.RANDOM, deadTransitionMeasure);
+		runExample(problematic_with_inclusive_gateways, true, ProbabilityFunctionType.IRREGULAR, deadTransitionMeasure);
+		runExample(problematic_hit, true, ProbabilityFunctionType.RANDOM, unlivenessMeasure);
+		runExample(problematic_with_inclusive_gateways, true, ProbabilityFunctionType.IRREGULAR, unlivenessMeasure);
+		runExample(problematic_hit, true, ProbabilityFunctionType.RANDOM, unfairnessMeasure);
+		runExample(problematic_with_inclusive_gateways, true, ProbabilityFunctionType.IRREGULAR, unfairnessEntropyMeasure);		
+
+	} 
+	
+	private enum ProbabilityFunctionType {
+		/**
+		 * An equal distribution
+		 */
+		DEFAULT, 
+		/**
+		 * A Probability Function with random behaviour
+		 */
+		RANDOM,
+		/**
+		 * A deterministic function (each probability is either 0 or 1)
+		 */
+		IRREGULAR
+	}
+	
+	/**
+	 * Run the visualization for a particular BPMN model
+	 * @param modelFile the file of the BPMN model
+	 * @throws ParserException
+	 * @throws IOException
+	 */
+	private static void runExample(File modelFile, boolean useShortCircuit, ProbabilityFunctionType pftype, BpmnInconsistencyMeasure measure) throws ParserException, IOException {
+		BpmnModel bpmnModel;
+		PetriNet petriNet;
+		ReachabilityGraph reachabilityGraph;
+		
+		RootParser rootParser = new RootParser();
+		FileReader reader = new FileReader(modelFile);
+		bpmnModel  =  (BpmnModel) rootParser.parseBeliefBase(reader);
+		
+		PetriNetParser petriNetParser = new PetriNetParser(bpmnModel);
+		petriNetParser.setProvideInitialTokensAtStartEvents(true);
+		petriNetParser.construct();
+		petriNet = petriNetParser.get();
+		if(useShortCircuit) {
+			petriNet.transformToShortCircuit();
+		}
+		
+		ReachabilityGraphParser rg_parser = new ReachabilityGraphParser(petriNet);
+		rg_parser.construct();
+		reachabilityGraph = rg_parser.get();
+		if(pftype == ProbabilityFunctionType.RANDOM ) {
+			reachabilityGraph.initializeRandomProbabilityFunction();
+		} else if (pftype == ProbabilityFunctionType.DEFAULT) {
+			reachabilityGraph.initializeDefaultProbabilityFunction();			
+		} else {
+			reachabilityGraph.initializeIrregularProbabilityFunction();			
+		}
+
+		Plotter groundPlotter = new Plotter();
+		groundPlotter.createFrame(2000, 1000);
+		
+		BpmnModelPlotter bpmn_plotter = new BpmnModelPlotter(groundPlotter, bpmnModel);
+		bpmn_plotter.createGraph();
+		
+		PetriNetPlotter petri_plotter = new PetriNetPlotter(groundPlotter, petriNet);
+		petri_plotter.createGraph();
+		
+		ReachabilityGraphPlotter rg_plotter = 
+		new ReachabilityGraphPlotter(groundPlotter, reachabilityGraph);
+		rg_plotter.createGraph();
+		
+		measure.inconsistencyMeasure(reachabilityGraph);
+		
+		List<String> labels = new ArrayList<>();
+		labels.add(modelFile.getName());
+		labels.addAll(measure.getInfoStrings());
+
+		groundPlotter.addLabels(labels);
+		groundPlotter.show();
+	}
+	
+	
+
+    /** Default Constructor */
+    public Example(){}
+}
+
+org-tweetyproject-logics-cl/src/main/java/org/tweetyproject/logics/cl/examples/CReasonerExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.cl.examples;
+
+import org.tweetyproject.logics.cl.reasoner.SimpleCReasoner;
+import org.tweetyproject.logics.cl.syntax.*;
+import org.tweetyproject.logics.pl.syntax.*;
+
+/**
+ * Demonstrates how to construct a conditional logic knowledge base programmatically
+ * and query it using the Simple C-reasoner.
+ * <p>
+ * This example creates a belief set of conditional statements and then uses the SimpleCReasoner
+ * to compute and print a model for that belief set.
+ * </p>
+ */
+public class CReasonerExample {
+
+	/** Constructor */
+	public CReasonerExample(){
+		// default
+	}
+
+	/**
+     * The main method where the example is executed.
+     * <p>
+     * This method creates propositions and conditional statements, adds them to a belief set,
+     * and uses a simple C-reasoner to compute and display the model of the belief set.
+     * </p>
+     *
+     * @param args command-line arguments (not used in this example)
+     */
+	public static void main(String[] args){
+		Proposition f = new Proposition("f");
+		Proposition b = new Proposition("b");
+		Proposition p = new Proposition("p");
+
+		Conditional c1 = new Conditional(b,f);
+		Conditional c2 = new Conditional(p,b);
+		Conditional c3 = new Conditional(p,new Negation(f));
+
+		ClBeliefSet bs = new ClBeliefSet();
+		bs.add(c1);
+		bs.add(c2);
+		bs.add(c3);
+
+		System.out.println(bs);
+
+		SimpleCReasoner reasoner = new SimpleCReasoner();
+
+		System.out.println(reasoner.getModel(bs));
+
+	}
+}
+
+org-tweetyproject-logics-cl/src/main/java/org/tweetyproject/logics/cl/examples/ReasonerExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.cl.examples;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+import org.tweetyproject.logics.cl.reasoner.SimpleCReasoner;
+import org.tweetyproject.logics.cl.reasoner.RuleBasedCReasoner;
+import org.tweetyproject.logics.cl.semantics.RankingFunction;
+import org.tweetyproject.logics.cl.syntax.ClBeliefSet;
+import org.tweetyproject.logics.cl.syntax.Conditional;
+import org.tweetyproject.logics.pl.syntax.Negation;
+import org.tweetyproject.logics.pl.syntax.Proposition;
+
+/**
+ * Compares reasoning with different reasoners.
+ */
+public class ReasonerExample {
+	/** Constructor */
+	public ReasonerExample(){
+		// default
+	}
+
+	/**  Indicates if the program should continue running  */
+	private static boolean run = true;
+
+	/**  Indicates if the comparison between rule-based and brute-force reasoners should be performed  */
+	private static boolean compare = true;
+
+	private static final String [] entries = {
+		"Beispiel 'Simpel'", "Beispiel 'Drowning Problem'", "Beispiel 'Komplex (Kiwis)'",
+		"Beispiel-Beschreibungen", "Toggle Bruteforce Reasoner", "Beenden"
+	};
+
+	private static ClBeliefSet [] beliefSets;
+
+	private static final String [] descriptions = {
+		"Einfaches Beispiel enthaelt 3 Konditionale und 4 Symbole jedoch keine Spezialfaelle.",
+		"Enthaelt das Drowning-Problem enkodiert als 'Pinguine sind Voegel die keine Fluegel haben'.",
+		"Erhoeht die Komplexitaet des Beispiels, so dass 6 Konditionale und 5 Symbole verwendet werden."
+	};
+
+	/**
+	 *  Example
+	 * @param args the args
+	 * @throws IOException error
+	 */
+	public static void main(String[] args) throws IOException {
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+
+		init();
+		while(run) {
+			System.out.println("Status:");
+			printStatus();
+
+			System.out.println();
+			System.out.println("Menu:");
+			for(int i=0; i<entries.length; ++i) {
+				System.out.print(String.valueOf(i+1) + ". " + entries[i]);
+				if(i < beliefSets.length) {
+					System.out.print(" - " + beliefSets[i].toString());
+				}
+				System.out.println();
+			}
+
+			Integer selection = -1;
+			String str = in.readLine();
+			try {
+				selection = Integer.parseInt(str);
+			} catch (NumberFormatException nfe) {
+				System.out.println(nfe.getMessage());
+			}
+
+			if(selection >= 1 && selection < entries.length-2) {
+				test(beliefSets[selection-1]);
+			} else if(selection == (entries.length-2)) {
+				printDescription();
+			} else if (selection == (entries.length-1)) {
+				compare = !compare;
+			} else if(selection == entries.length) {
+				run = false;
+			}
+
+
+		}
+	}
+
+	private static void init() {
+		beliefSets = new ClBeliefSet[3];
+		Proposition b = new Proposition("b");
+		Proposition f = new Proposition("f");
+		Proposition k = new Proposition("k");
+		Proposition p = new Proposition("p");
+		Proposition w = new Proposition("w");
+
+		beliefSets[0] = new ClBeliefSet();
+		beliefSets[0].add(new Conditional(b, f));
+		beliefSets[0].add(new Conditional(b, w));
+		beliefSets[0].add(new Conditional(p, b));
+
+		beliefSets[1] = new ClBeliefSet();
+		beliefSets[1].addAll(beliefSets[0]);
+		beliefSets[1].add(new Conditional(p, new Negation(f)));
+
+		beliefSets[2] = new ClBeliefSet();
+		beliefSets[2].addAll(beliefSets[1]);
+		beliefSets[2].add(new Conditional(k, b));
+		beliefSets[2].add(new Conditional(k, new Negation(w)));
+	}
+
+	private static void printStatus() {
+		System.out.println("Comparision with Bruteforce Reasoner: " +
+				(compare ? "On" : "Off"));
+	}
+
+	private static void printDescription() {
+		System.out.println("Bespiel-Beschreibungen:");
+		for(int i=0; i<descriptions.length; ++i) {
+			System.out.println();
+			System.out.println(entries[i]+":");
+			System.out.println(descriptions[i]);
+		}
+	}
+
+	private static void test(ClBeliefSet beliefset) {
+		System.out.println("Start Calculation RuleBased:");
+		long begin = System.nanoTime();
+		RuleBasedCReasoner rReasoner = new RuleBasedCReasoner();
+		RankingFunction cReprRuleBased = rReasoner.getModel(beliefset);
+		long end = System.nanoTime();
+		long duration = (end-begin) / (1000*1000);
+		System.out.println("Finished RuleBased in '" + String.valueOf(duration) + "' ms");
+		System.out.println();
+
+		System.out.println("Ranking Function:");
+		System.out.println(cReprRuleBased);
+
+
+		if(compare) {
+			System.out.println();
+			System.out.println();
+
+			System.out.println("Start Calculation BruteForce:");
+			begin = System.nanoTime();
+			SimpleCReasoner reasoner = new SimpleCReasoner();
+			RankingFunction cReprBruteForce = reasoner.getModel(beliefset);
+			end = System.nanoTime();
+			duration = (end-begin) / (1000*1000);
+			System.out.println("Finished Bruteforce in '" + String.valueOf(duration) + "' ms");
+			System.out.println();
+
+			System.out.println("Ranking Function:");
+			System.out.println(cReprBruteForce);
+
+			boolean equal = cReprBruteForce.equals(cReprRuleBased);
+			System.out.println();
+			System.out.println("The results of the two reasoner are " + (equal ? "EQUAL" : "NOT EQUAL"));
+		}
+	}
+
+}
+
+
+org-tweetyproject-logics-dl/src/main/java/org/tweetyproject/logics/dl/examples/DlExample.java
+
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.dl.examples;
+
+import java.io.IOException;
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.dl.syntax.EquivalenceAxiom;
+import org.tweetyproject.logics.dl.syntax.Individual;
+import org.tweetyproject.logics.dl.syntax.RoleAssertion;
+import org.tweetyproject.logics.dl.syntax.Union;
+import org.tweetyproject.logics.dl.parser.DlParser;
+import org.tweetyproject.logics.dl.reasoner.NaiveDlReasoner;
+import org.tweetyproject.logics.dl.syntax.AtomicConcept;
+import org.tweetyproject.logics.dl.syntax.AtomicRole;
+import org.tweetyproject.logics.dl.syntax.Complement;
+import org.tweetyproject.logics.dl.syntax.ConceptAssertion;
+import org.tweetyproject.logics.dl.syntax.DlAxiom;
+import org.tweetyproject.logics.dl.syntax.DlBeliefSet;
+import org.tweetyproject.logics.dl.syntax.DlSignature;
+/**
+ *
+ * Examples for using the description logic syntax classes and parser.
+ *
+ * @author Anna Gessler
+ *
+ */
+public class DlExample {
+
+	/** Default */
+	public DlExample(){
+
+	}
+
+
+	/**
+	 * Main method demonstrating the creation of a description logic knowledge base,
+	 * parsing a knowledge base from a file, and using a naive DL reasoner.
+	 *
+	 * @param args command-line arguments (not used in this example)
+	 * @throws ParserException if there is an error during parsing
+	 * @throws IOException if there is an I/O error during file access
+	 */
+	public static void main(String[] args) throws ParserException, IOException {
+
+		//Create description logics signature
+		AtomicConcept human = new AtomicConcept("Human");
+		AtomicConcept male = new AtomicConcept("Male");
+		AtomicConcept female = new AtomicConcept("Female");
+		AtomicConcept house = new AtomicConcept("House");
+		AtomicConcept father = new AtomicConcept("Father");
+		AtomicRole fatherOf = new AtomicRole("fatherOf");
+		Individual bob = new Individual("Bob");
+		Individual alice = new Individual("Alice");
+
+		//Create some terminological axioms
+		EquivalenceAxiom femaleHuman = new EquivalenceAxiom(female,human);
+		EquivalenceAxiom maleHuman = new EquivalenceAxiom(male,human);
+		EquivalenceAxiom femaleNotMale = new EquivalenceAxiom(female,new Complement(male));
+		EquivalenceAxiom maleNotFemale = new EquivalenceAxiom(male,new Complement(female));
+
+		EquivalenceAxiom fatherEq = new EquivalenceAxiom(father, new Union(male,fatherOf));
+		EquivalenceAxiom houseNotHuman = new EquivalenceAxiom(house,new Complement(human));
+
+		//Create some assertional axioms
+		ConceptAssertion aliceHuman = new ConceptAssertion(alice,human);
+		ConceptAssertion bobHuman = new ConceptAssertion(bob,human);
+		ConceptAssertion aliceFemale = new ConceptAssertion(alice,female);
+		ConceptAssertion bobMale = new ConceptAssertion(bob,male);
+		RoleAssertion bobFatherOfAlice = new RoleAssertion(bob,alice,fatherOf);
+
+		//Add axioms to knowledge base
+		DlBeliefSet dbs = new DlBeliefSet();
+		dbs.add(femaleHuman);
+		dbs.add(maleHuman);
+		dbs.add(maleNotFemale);
+		dbs.add(femaleNotMale);
+		dbs.add(maleHuman);
+		dbs.add(fatherEq);
+		dbs.add(houseNotHuman);
+		dbs.add(aliceHuman);
+		dbs.add(bobHuman);
+		dbs.add(aliceFemale);
+		dbs.add(bobMale);
+		dbs.add(bobFatherOfAlice);
+
+		//Print knowledge base
+		System.out.println(dbs);
+		System.out.println("Only the ABox: " + dbs.getABox());
+		System.out.println("Only the TBox: " + dbs.getTBox());
+
+		//Parse knowledge base
+		DlParser parser = new DlParser();
+		DlBeliefSet parseddbs = parser.parseBeliefBaseFromFile("src/main/resources/examplebeliefbase.dlogic");
+		DlSignature parsedsig = (DlSignature) parseddbs.getMinimalSignature();
+		System.out.println("\nParsed signature: " + parsedsig.getIndividuals() + ","+ parsedsig.getConcepts() + "," + parsedsig.getRoles());
+		System.out.println("\nParsed knowledge base: ");
+		for (DlAxiom dax : parseddbs)
+			System.out.println(dax);
+
+		//Naive DL reasoner
+		DlBeliefSet dbs2 = new DlBeliefSet();
+		Individual tweety = new Individual("Tweety");
+		ConceptAssertion tweetyMale = new ConceptAssertion(tweety,male);
+		ConceptAssertion tweetyHuman = new ConceptAssertion(tweety,human);
+		dbs2.add(aliceFemale);
+		dbs2.add(tweetyMale);
+		dbs2.add(maleNotFemale);
+		dbs2.add(aliceHuman);
+		NaiveDlReasoner reasoner = new NaiveDlReasoner();
+		System.out.println("\n"+reasoner.query(dbs2,femaleHuman ));
+		System.out.println(reasoner.query(dbs2,tweetyHuman ));
+	}
+}
+
+
+org-tweetyproject-logics-fol/src/main/java/org/tweetyproject/logics/fol/examples/FolExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.fol.examples;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.commons.syntax.Constant;
+import org.tweetyproject.logics.commons.syntax.Predicate;
+import org.tweetyproject.logics.commons.syntax.Sort;
+import org.tweetyproject.logics.fol.parser.FolParser;
+import org.tweetyproject.logics.fol.reasoner.FolReasoner;
+import org.tweetyproject.logics.fol.reasoner.SimpleFolReasoner;
+import org.tweetyproject.logics.fol.syntax.FolBeliefSet;
+import org.tweetyproject.logics.fol.syntax.FolFormula;
+import org.tweetyproject.logics.fol.syntax.FolSignature;
+
+/**
+ * Some examples for using FolParser and provers.
+ *
+ */
+public class FolExample {
+
+	/** Constructor */
+	public FolExample(){
+		// default
+	}
+
+	/**
+	 * Main method fpr examples
+	 * @param args arguments
+	 * @throws ParserException ParserException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws ParserException, IOException{
+		/*
+		 * Example 1: Add sorts, constants and predicates to a first-order logic signature
+		 */
+		//Create new FOLSignature with equality
+		FolSignature sig = new FolSignature(true);
+
+		//Add sort
+		Sort sortAnimal = new Sort("Animal");
+		sig.add(sortAnimal);
+
+		//Add constants
+		Constant constantPenguin = new Constant("penguin",sortAnimal);
+		Constant constantKiwi = new Constant("kiwi",sortAnimal);
+		sig.add(constantPenguin, constantKiwi);
+
+		//Add predicates
+		List<Sort> predicateList = new ArrayList<Sort>();
+		predicateList.add(sortAnimal);
+		Predicate p = new Predicate("Flies",predicateList);
+		List<Sort> predicateList2 = new ArrayList<Sort>();
+		predicateList2.add(sortAnimal);
+		predicateList2.add(sortAnimal);
+		Predicate p2 = new Predicate("Knows",predicateList2); //Add Predicate Knows(Animal,Animal)
+		sig.add(p, p2);
+		System.out.println("Signature: " + sig);
+
+		/*
+		 * Example 2: Parse formulas with FolParser using the signature defined above
+		 */
+		FolParser parser = new FolParser();
+		parser.setSignature(sig); //Use the signature defined above
+		FolBeliefSet bs = new FolBeliefSet();
+		FolFormula f1 = (FolFormula)parser.parseFormula("!Flies(kiwi)");
+		FolFormula f2 = (FolFormula)parser.parseFormula("Flies(penguin)");
+		FolFormula f3 = (FolFormula)parser.parseFormula("!Knows(penguin,kiwi)");
+		FolFormula f4 = (FolFormula)parser.parseFormula("/==(penguin,kiwi)");
+		FolFormula f5 = (FolFormula)parser.parseFormula("kiwi == kiwi");
+		bs.add(f1, f2, f3, f4, f5);
+		System.out.println("\nParsed BeliefBase: " + bs);
+
+		//Note that belief bases can have signatures larger (but not smaller) than their formulas' signature
+		FolSignature sigLarger = bs.getSignature();
+		sigLarger.add(new Constant("archaeopteryx",sortAnimal));
+		bs.setSignature(sigLarger);
+		System.out.println(bs);
+		System.out.println("Minimal signature: " + bs.getMinimalSignature());
+
+		/*
+		 * Example 3: Use one of the provers to check whether various formulas can be inferred from the knowledge base parsed in Example 2.
+		 */
+		FolReasoner.setDefaultReasoner(new SimpleFolReasoner()); //Set default prover, options are NaiveProver, EProver, Prover9
+		FolReasoner prover = FolReasoner.getDefaultReasoner();
+		System.out.println("ANSWER 1: " + prover.query(bs, (FolFormula)parser.parseFormula("Flies(kiwi)")));
+		System.out.println("ANSWER 2: " + prover.query(bs, (FolFormula)parser.parseFormula("forall X: (exists Y: (Flies(X) && Flies(Y) && X/==Y))")));
+		System.out.println("ANSWER 3: " + prover.query(bs, (FolFormula)parser.parseFormula("kiwi == kiwi")));
+		System.out.println("ANSWER 4: " + prover.query(bs, (FolFormula)parser.parseFormula("kiwi /== kiwi")));
+		System.out.println("ANSWER 5: " + prover.query(bs, (FolFormula)parser.parseFormula("penguin /== kiwi")));
+
+		/*
+		 * Example 4: Parse another BeliefBase from a file. The signature is also parsed from the file.
+		 * Then prove/disprove some queries on the knowledge bases.
+		 * Note: This may take a long time to compute.
+		 */
+		parser = new FolParser();
+		parser.setSignature(new FolSignature(true));
+		bs = parser.parseBeliefBaseFromFile("src/main/resources/examplebeliefbase2.fologic");
+		System.out.println("\nParsed BeliefBase: " + bs);
+		FolFormula query = (FolFormula)parser.parseFormula("exists X:(teaches(alice,X))");
+		System.out.println("Query: " + query + "\nANSWER 1: " + prover.query(bs,query));
+		query = (FolFormula)parser.parseFormula("exists X:(exists Y:(hasID(alice,X) && hasID(alice,Y) && X/==Y))");
+		System.out.println("Query: " + query + "\nANSWER 2: " + prover.query(bs,query));
+	}
+}
+
+org-tweetyproject-logics-ml/src/main/java/org/tweetyproject/logics/ml/examples/MlExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.ml.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.ml.reasoner.SimpleMlReasoner;
+import org.tweetyproject.logics.ml.syntax.MlBeliefSet;
+import org.tweetyproject.logics.fol.syntax.FolFormula;
+import org.tweetyproject.logics.ml.parser.MlParser;
+
+/**
+ * Some examples for testing ModalParser and NaiveModalReasoner. Shows how to
+ * construct a modal logic knowledge base programmatically and how to query it
+ * using the naive reasoner.
+ *
+ * @author Anna Gessler
+ */
+public class MlExample {
+
+	/**
+	 * Demonstrates the parsing and reasoning capabilities of the `MlParser` and `SimpleMlReasoner` classes.
+	 *
+	 *
+	 * @param args command-line arguments (not used in this example).
+	 * @throws ParserException if there is an error during parsing of the belief bases or formulas.
+	 * @throws IOException if there is an error reading from the files.
+	 */
+
+	public static void main(String[] args) throws ParserException, IOException {
+		// Parse simple BeliefBase from file
+		MlParser parser = new MlParser();
+		MlBeliefSet b1 = parser.parseBeliefBaseFromFile("src/main/resources/examplebeliefbase2.mlogic");
+		FolFormula f1 = (FolFormula) parser.parseFormula("<>(A&&B)");
+		System.out.println("Parsed belief base:" + b1 + "\nSignature of belief base:" + b1.getMinimalSignature());
+		System.out.println("Parsed formula:" + f1);
+
+		// Parse simple BeliefBase from string
+		parser = new MlParser();
+		MlBeliefSet b2 = parser.parseBeliefBase("Animal = {penguin,eagle} \n type(Flies(Animal)) \n (Flies(eagle))");
+		FolFormula f2 = (FolFormula) parser.parseFormula("(Flies(penguin)) || (!(Flies(penguin)))");
+		System.out.println("Parsed belief base:" + b2);
+		System.out.println("Parsed formula:" + f2);
+
+		// Parse more complex BeliefBase from file
+		parser = new MlParser();
+		MlBeliefSet b3 = parser.parseBeliefBaseFromFile("src/main/resources/examplebeliefbase.mlogic");
+		System.out.println("Parsed belief base:" + b3 + "\nSignature of belief base:" + b3.getMinimalSignature());
+
+		// Reasoner examples
+		SimpleMlReasoner reasoner = new SimpleMlReasoner();
+		System.out.println("Answer to query: " + reasoner.query(b1, f1));
+		System.out.println("Answer to query: " + reasoner.query(b2, f2));
+	}
+
+}
+
+org-tweetyproject-logics-ml/src/main/java/org/tweetyproject/logics/ml/examples/MlExample2.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.ml.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.commons.syntax.Predicate;
+import org.tweetyproject.logics.commons.syntax.RelationalFormula;
+import org.tweetyproject.logics.fol.syntax.FolFormula;
+import org.tweetyproject.logics.fol.syntax.FolSignature;
+import org.tweetyproject.logics.ml.parser.MlParser;
+import org.tweetyproject.logics.ml.reasoner.AbstractMlReasoner;
+import org.tweetyproject.logics.ml.reasoner.SPASSMlReasoner;
+import org.tweetyproject.logics.ml.syntax.MlBeliefSet;
+
+/**
+ * More examples for testing ModalParser and ModalReasoner. Shows how to
+ * construct a modal logic knowledge base programmatically and how to query it
+ * using the SPASS reasoner.
+ *
+ * @author Matthias Thimm
+ */
+public class MlExample2 {
+
+	/**
+	 * Default Constructor
+	 */
+	public MlExample2(){
+		super();
+	}
+
+	/**
+	 * Demonstrates the creation and reasoning over a modal logic belief set using the `MlParser`
+	 * and `AbstractMlReasoner` classes.
+	 *
+	 * @param args command-line arguments (not used in this example).
+	 * @throws ParserException if there is an error during parsing of the formulas.
+	 * @throws IOException if there is an error accessing resources (e.g., the SPASS reasoner).
+	 */
+	public static void main(String[] args) throws ParserException, IOException {
+		MlBeliefSet bs = new MlBeliefSet();
+		MlParser parser = new MlParser();
+		FolSignature sig = new FolSignature();
+		sig.add(new Predicate("p", 0));
+		sig.add(new Predicate("q", 0));
+		sig.add(new Predicate("r", 0));
+		parser.setSignature(sig);
+		bs.add((RelationalFormula) parser.parseFormula("!(<>(p))"));
+		bs.add((RelationalFormula) parser.parseFormula("p || r"));
+		bs.add((RelationalFormula) parser.parseFormula("!r || [](q && r)"));
+		bs.add((RelationalFormula) parser.parseFormula("[](r && <>(p || q))"));
+		bs.add((RelationalFormula) parser.parseFormula("!p && !q"));
+		System.out.println("Modal knowledge base: " + bs);
+		AbstractMlReasoner reasoner = new SPASSMlReasoner("/add/path/to/SPASS");
+		System.out.println("[](!p)      " + reasoner.query(bs, (FolFormula) parser.parseFormula("[](!p)")));
+		System.out.println("<>(q || r)  " + reasoner.query(bs, (FolFormula) parser.parseFormula("<>(q || r)")));
+		System.out.println("p           " + reasoner.query(bs, (FolFormula) parser.parseFormula("p")));
+		System.out.println("r           " + reasoner.query(bs, (FolFormula) parser.parseFormula("r")));
+		System.out.println("[](r)       " + reasoner.query(bs, (FolFormula) parser.parseFormula("[](r)")));
+		System.out.println("[](q)       " + reasoner.query(bs, (FolFormula) parser.parseFormula("[](q)")));
+	}
+}
+
+org-tweetyproject-logics-mln/src/main/java/org/tweetyproject/logics/mln/examples/AlchemyExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.mln.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.commons.util.Pair;
+import org.tweetyproject.logics.fol.parser.FolParser;
+import org.tweetyproject.logics.fol.syntax.FolFormula;
+import org.tweetyproject.logics.fol.syntax.FolSignature;
+import org.tweetyproject.logics.mln.reasoner.AlchemyMlnReasoner;
+import org.tweetyproject.logics.mln.syntax.MarkovLogicNetwork;
+
+/**
+ * Example code illustrating the use of the Alchemy reasoner.
+ * @author Matthias Thimm
+ *
+ */
+public class AlchemyExample {
+
+
+	/**
+	 * Default constructor for {@code AlchemyExample}.
+	 * <p>
+	 * This constructor initializes the example for running the Alchemy reasoner
+	 * with a predefined MLN setup.
+	 * </p>
+	 */
+	public AlchemyExample() {
+		// Default constructor, no specific initialization required
+	}
+
+	/**
+	 * The main method to run the Alchemy reasoner example.
+	 * <p>
+	 * This method sets up an MLN with smokers and cancer, parses a query, and
+	 * invokes the Alchemy reasoner to compute the result. It prints the result
+	 * of the query to the console.
+	 * </p>
+	 *
+	 * @param args command-line arguments (not used in this example)
+	 * @throws ParserException if there is an error during parsing
+	 * @throws IOException if there is an I/O error
+	 */
+	public static void main(String[] args) throws ParserException, IOException{
+		Pair<MarkovLogicNetwork,FolSignature> exp1 = MlnExample.SmokersExample(3);
+		AlchemyMlnReasoner reasoner = new AlchemyMlnReasoner();
+		FolParser parser = new FolParser();
+		parser.setSignature(exp1.getSecond());
+		FolFormula query = (FolFormula) parser.parseFormula("cancer(d0)");
+		reasoner.setAlchemyInferenceCommand("/Users/mthimm/Projects/misc_bins/alchemy/infer");
+		System.out.println(reasoner.query(exp1.getFirst(),query,exp1.getSecond()));
+	}
+}
+
+org-tweetyproject-logics-pcl/src/main/java/org/tweetyproject/logics/pcl/examples/AnalysisExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.pcl.examples;
+
+import java.io.*;
+
+import org.tweetyproject.commons.*;
+import org.tweetyproject.logics.commons.analysis.BeliefSetInconsistencyMeasure;
+import org.tweetyproject.logics.pcl.analysis.*;
+import org.tweetyproject.logics.pcl.syntax.*;
+import org.tweetyproject.math.opt.rootFinder.OptimizationRootFinder;
+
+/**
+ * Example code illustrating the use of inconsistency measures and repairing approaches for probabilistic conditional logic.
+ *
+ * <p>
+ * This class demonstrates how to evaluate the inconsistency of a probabilistic conditional logic belief set and
+ * how to apply different repairing techniques to make the belief set consistent.
+ * </p>
+ *
+ *
+ * @author Your Name
+ */
+public class AnalysisExample {
+
+    /**
+     * Main method illustrating how to compute the inconsistency measure, culpability, and repair a probabilistic belief set.
+     *
+     * @param args Command line arguments (not used)
+     * @throws FileNotFoundException If the specified belief set file is not found
+     * @throws ParserException If an error occurs while parsing the belief set
+     * @throws IOException If an I/O error occurs while reading the belief set file
+     */
+    public static void main(String[] args) throws FileNotFoundException, ParserException, IOException {
+
+        // Parse the belief set from a PCL file
+        PclBeliefSet beliefSet = (PclBeliefSet) new org.tweetyproject.logics.pcl.parser.PclParser().parseBeliefBaseFromFile("/path/to/test.pcl");
+
+        // Define the root finder to be used for distance minimization and culpability measures
+        OptimizationRootFinder rootFinder = null; // TODO: Root finder to be defined
+
+        // Define the inconsistency measure based on distance minimization
+        BeliefSetInconsistencyMeasure<ProbabilisticConditional> dist = new DistanceMinimizationInconsistencyMeasure(rootFinder);
+
+        // Define the culpability measure using the mean distance approach
+        MeanDistanceCulpabilityMeasure cp = new MeanDistanceCulpabilityMeasure(rootFinder, false);
+
+        // Print the belief set and its inconsistency measure
+        System.out.println(beliefSet);
+        System.out.println(dist.inconsistencyMeasure(beliefSet));
+
+        // Print the culpability measure for each probabilistic conditional in the belief set
+        for (ProbabilisticConditional pc : beliefSet)
+            System.out.println(pc + "\t" + cp.culpabilityMeasure(beliefSet, pc));
+
+        // Define the machine shops for repairing the belief set
+        PenalizingCreepingMachineShop ms = new PenalizingCreepingMachineShop(rootFinder);
+        BalancedMachineShop ms2 = new BalancedMachineShop(cp);
+
+        // Repair the belief set using the different machine shop approaches
+        System.out.print(ms.repair(beliefSet));
+        System.out.print(ms2.repair(beliefSet));
+    }
+
+    /** Default Constructor */
+    public AnalysisExample() {
+    }
+}
+
+
+org-tweetyproject-logics-rcl/src/main/java/org/tweetyproject/logics/rcl/examples/RclExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.rcl.examples;
+
+import java.io.*;
+
+import org.tweetyproject.commons.*;
+import org.tweetyproject.logics.fol.parser.*;
+import org.tweetyproject.logics.fol.syntax.*;
+import org.tweetyproject.logics.rcl.parser.*;
+import org.tweetyproject.logics.rcl.reasoner.SimpleRelationalCReasoner;
+import org.tweetyproject.logics.rcl.semantics.*;
+import org.tweetyproject.logics.rcl.syntax.RclBeliefSet;
+
+/**
+ * Example code illustrating the use of working with relational
+ * conditionals and using c reasoning.
+ * @author Matthias Thimm
+ *
+ */
+public class RclExample {
+
+	/**
+     * Default constructor for creating an instance of RclExample.
+     */
+    public RclExample() {
+        super();
+    }
+
+
+
+
+    /**
+     * The main method serves as the entry point for the example application.
+     *
+     * @param args Command line arguments. The first argument is the path to the
+     *             file containing the belief base, and the second argument (optional)
+     *             is the path to the file containing the queries.
+     * @throws FileNotFoundException if the belief base or query file is not found
+     * @throws ParserException if there is an error while parsing the belief base
+     *                         or the queries
+     * @throws IOException if an I/O error occurs while reading the files
+     */
+	public static void main(String[] args) throws FileNotFoundException, ParserException, IOException{
+
+
+		RclParser parser = new RclParser();
+		RclBeliefSet bs = (RclBeliefSet) parser.parseBeliefBaseFromFile(args[0]);
+		System.out.println("Knowledge base:\n " + bs);
+
+		RelationalRankingFunction kappa = new SimpleRelationalCReasoner(true).getModel(bs,parser.getSignature());
+		System.out.println("Simple c-representation:\n" + kappa);
+
+		System.out.println();
+		System.out.println("Queries: ");
+
+		FolParser pars = new FolParser();
+		pars.setSignature(parser.getSignature());
+
+		if(args[1] != null && !args[1].equals("")){
+			BufferedReader in = new BufferedReader(new FileReader(args[1]));
+			String line = null;
+			while ((line = in.readLine()) != null) {
+				System.out.println(line + "\t:\t" + kappa.rank((FolFormula)pars.parseFormula(line)));
+			}
+			in.close();
+		}
+	}
+}
+
+org-tweetyproject-lp-asp/src/main/java/org/tweetyproject/lp/asp/examples/ASPExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2020 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.lp.asp.examples;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.tweetyproject.logics.commons.syntax.Constant;
+import org.tweetyproject.logics.commons.syntax.Predicate;
+import org.tweetyproject.logics.commons.syntax.Variable;
+import org.tweetyproject.lp.asp.grounder.GringoGrounder;
+import org.tweetyproject.lp.asp.reasoner.ClingoSolver;
+import org.tweetyproject.lp.asp.semantics.AnswerSet;
+import org.tweetyproject.lp.asp.syntax.ASPAtom;
+import org.tweetyproject.lp.asp.syntax.ASPBodyElement;
+import org.tweetyproject.lp.asp.syntax.ASPRule;
+import org.tweetyproject.lp.asp.syntax.AggregateAtom;
+import org.tweetyproject.lp.asp.syntax.AggregateHead;
+import org.tweetyproject.lp.asp.syntax.ClassicalHead;
+import org.tweetyproject.lp.asp.syntax.DefaultNegation;
+import org.tweetyproject.lp.asp.syntax.Program;
+import org.tweetyproject.lp.asp.syntax.StrictNegation;
+
+/**
+ * Example code for creating basic ASP programs and calling solvers and grounders.
+ * See {@link org.tweetyproject.lp.asp.examples.ASPParserExample} for how to quickly
+ * parse the same examples using the parser.
+ *
+ * <br> Tested with clingo 5.4.0
+ *
+ * @author Anna Gessler
+ *
+ */
+public class ASPExample {
+
+	private static String CLINGO_PATH = "your/path/to/clingo";
+
+	/**
+	 * Example
+	 * @param args IOException
+	 * @throws IOException IOException
+	 */
+	public static void main(String[] args) throws IOException {
+		// Recreating src/main/resources/ex1.asp manually
+		ASPAtom p = new ASPAtom("p");
+		ASPAtom r = new ASPAtom("r");
+		ASPAtom q = new ASPAtom("q");
+		ASPAtom b = new ASPAtom("b");
+		ASPRule r1 = new ASPRule(new ClassicalHead(p), new DefaultNegation(r));
+		ASPRule r2 = new ASPRule(new ClassicalHead(r));
+		r2.setBody(new StrictNegation(q), new DefaultNegation(b));
+		ASPRule r3 = new ASPRule(new ClassicalHead(new StrictNegation(q)), b);
+		ASPRule r4 = new ASPRule(b);
+		Program p1 = new Program(r1, r2, r3, r4);
+		System.out.println("Ex1: " + p1 + "\n");
+
+		// Recreating src/main/resources/ex5.asp manually
+		Predicate motive = new Predicate("motive", 1);
+		Predicate guilty = new Predicate("guilty", 1);
+		Predicate innocent = new Predicate("innocent", 1);
+		Constant harry = new Constant("harry");
+		Constant sally = new Constant("sally");
+		Variable Suspect = new Variable("Suspect");
+		r1 = new ASPRule(new ClassicalHead(new ASPAtom(motive, harry)));
+		r2 = new ASPRule(new ClassicalHead(new ASPAtom(motive, sally)));
+		r3 = new ASPRule(new ClassicalHead(new ASPAtom(guilty, harry)));
+		r4 = new ASPRule(new ClassicalHead(new ASPAtom(innocent, Suspect)));
+		r4.setBody(new ASPAtom(motive, Suspect), new StrictNegation(new ASPAtom(guilty, Suspect)));
+		Program p2 = new Program(r1, r2, r3, r4);
+		ASPAtom query = new ASPAtom(innocent, harry);
+		p2.setQuery(query);
+		System.out.println("Ex5: " + p2 + "\n");
+
+		// Calling solver (the conversion to clingo format is done automatically)
+		ClingoSolver solver = new ClingoSolver(CLINGO_PATH);
+		List<AnswerSet> as = solver.getModels(p2);
+		System.out.println("Clingo output:\n" + as + "\n");
+
+		// Calling grounder
+		GringoGrounder grounder = new GringoGrounder(CLINGO_PATH);
+		Program groundP2 = grounder.getGroundProgram(p2);
+		System.out.println("ground program:"+groundP2);
+
+		// Shortcut for creating a cardinality rule
+		// Also see {@link org.tweetyproject.lp.asp.examples.AggregateExample} for more
+		// aggregate examples
+		System.out.println("Cardinality rules: ");
+		List<ASPBodyElement> literals = new ArrayList<ASPBodyElement>();
+		literals.add(new ASPAtom("a"));
+		literals.add(new ASPAtom("b"));
+		literals.add(new ASPAtom("c"));
+		AggregateHead h = new AggregateHead(literals, 1, 2);
+		// as head
+		r1 = new ASPRule(h);
+		Program p3 = new Program(r1);
+		System.out.println(p3);
+		solver = new ClingoSolver(CLINGO_PATH);
+		as = solver.getModels(p3);
+		System.out.println("\nClingo output:\n" + as);
+		// same cardinality rule as body
+		r2 = new ASPRule();
+		r2.setBody(new AggregateAtom(literals, 1, 2));
+	}
+
+
+    /** Default Constructor */
+    public ASPExample(){}
+}
+
+
+org-tweetyproject-logics-qbf/src/main/java/org/tweetyproject/logics/qbf/examples/QbfExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2020 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.qbf.examples;
+
+import java.io.IOException;
+
+import org.tweetyproject.commons.ParserException;
+import org.tweetyproject.logics.pl.syntax.Negation;
+import org.tweetyproject.logics.pl.syntax.PlBeliefSet;
+import org.tweetyproject.logics.pl.syntax.PlFormula;
+import org.tweetyproject.logics.pl.syntax.Proposition;
+import org.tweetyproject.logics.qbf.parser.QCirParser;
+import org.tweetyproject.logics.qbf.parser.QbfParser;
+import org.tweetyproject.logics.qbf.parser.QdimacsParser;
+import org.tweetyproject.logics.qbf.syntax.ExistsQuantifiedFormula;
+import org.tweetyproject.logics.qbf.writer.QdimacsWriter;
+
+/**
+ * Some general examples for quantified boolean formulas and for parsers and
+ * writers.
+ *
+ * @author Anna Gessler
+ *
+ */
+public class QbfExample {
+
+	/** Default */
+	public QbfExample() {
+
+	}
+
+	/**
+	 * Demonstrates the use of the TweetyProject library for working with various
+	 * types of belief sets
+	 * and parsers, including propositional logic, QBF (Quantified Boolean
+	 * Formulas), QDIMACS, and QCir formats.
+	 * The method performs the following tasks:
+	 *
+	 * 1. Creates a propositional logic belief set and adds formulas to it.
+	 * 2. Uses the TweetyProject QBF parser to read a belief set from a file.
+	 * 3. Uses the QDIMACS parser to read and parse QDIMACS-formatted belief sets
+	 * and outputs.
+	 * 4. Uses the QDIMACS writer to print a belief set in QDIMACS format.
+	 * 5. Uses the QCir parser to read QCir-formatted belief sets and print them.
+	 *
+	 * @param args Command-line arguments (not used in this example).
+	 * @throws ParserException If an error occurs during parsing.
+	 * @throws IOException     If an error occurs during file I/O operations.
+	 */
+	public static void main(String[] args) throws ParserException, IOException {
+		PlBeliefSet p = new PlBeliefSet();
+		Proposition v = new Proposition("V");
+		ExistsQuantifiedFormula ef = new ExistsQuantifiedFormula(v, v);
+		Negation n = new Negation(ef);
+		p.add(ef);
+		p.add(n);
+		System.out.println(p);
+
+		// TweetyProject Parser
+		System.out.println("\nTweetyProject parser\n=================");
+		QbfParser parser1 = new QbfParser();
+		p = parser1.parseBeliefBaseFromFile("src/main/resources/tweety-example.qbf");
+		System.out.println(p);
+
+		// QDIMACS Parser
+		System.out.println("\nQDIMACS parser\n=================");
+		QdimacsParser parser2 = new QdimacsParser();
+		PlBeliefSet p2 = parser2.parseBeliefBaseFromFile("src/main/resources/qdimacs-example1.qdimacs");
+		System.out.println(p2);
+		QdimacsParser.Answer answer = parser2
+				.parseQDimacsOutput("c a comment \n" + "s cnf 1 2 2 0 \n" + "2 -1 0 \n" + "1 -2 0   ");
+		System.out.println(answer);
+
+		// QDIMACS Writer
+		System.out.println("\nQDIMACS writer\n=================");
+		QdimacsWriter writer = new QdimacsWriter();
+		System.out.println(writer.printBase(p));
+
+		// QCir Parser
+		System.out.println("\nQCir parser\n=================");
+		QCirParser parser3 = new QCirParser();
+		PlBeliefSet p3 = parser3.parseBeliefBaseFromFile("src/main/resources/qcir-example1.qcir");
+		System.out.println(p3);
+		System.out.println("output: " + parser3.getOutputVariable() + "\n");
+		PlBeliefSet p4 = parser3.parseBeliefBaseFromFile("src/main/resources/qcir-example2-sat.qcir");
+		for (PlFormula f : p4)
+			System.out.println(f);
+		System.out.println("output: " + parser3.getOutputVariable());
+	}
+}
+
+org-tweetyproject-logics-rpcl/src/main/java/org/tweetyproject/logics/rpcl/examples/RpclMeReasonerExample.java
+
+/*
+ *  This file is part of "TweetyProject", a collection of Java libraries for
+ *  logical aspects of artificial intelligence and knowledge representation.
+ *
+ *  TweetyProject is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License version 3 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Copyright 2016 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
+package org.tweetyproject.logics.rpcl.examples;
+
+import org.tweetyproject.logics.commons.syntax.Constant;
+import org.tweetyproject.logics.commons.syntax.Predicate;
+import org.tweetyproject.logics.fol.syntax.FolSignature;
+import org.tweetyproject.logics.rpcl.reasoner.RpclMeReasoner;
+import org.tweetyproject.logics.rpcl.semantics.AggregatingSemantics;
+import org.tweetyproject.logics.rpcl.syntax.RelationalProbabilisticConditional;
+import org.tweetyproject.logics.rpcl.syntax.RpclBeliefSet;
+import org.tweetyproject.math.opt.solver.OctaveSqpSolver;
+import org.tweetyproject.math.opt.solver.Solver;
+import org.tweetyproject.math.probability.Probability;
+
+/**
+ *  Example code illustrating relational probabilistic conditional logic and reasoning with it.
+ */
+public class RpclMeReasonerExample {
+
+	/** Default */
+	public RpclMeReasonerExample() {
+	}
+
+
+	/**
+	 * Example
+	 * @param args cmd args
+	 */
+	public static void main(String[] args){
+		OctaveSqpSolver.setPathToOctave("/usr/local/octave/3.8.0/bin/octave");
+		Solver.setDefaultGeneralSolver(new OctaveSqpSolver());
+		Predicate a = new Predicate("a", 1);
+		Predicate b = new Predicate("b", 1);
+		Constant c1 = new Constant("c1");
+		Constant c2 = new Constant("c2");
+		org.tweetyproject.logics.commons.syntax.Variable x = new org.tweetyproject.logics.commons.syntax.Variable("X");
+		org.tweetyproject.logics.fol.syntax.FolAtom atomA = new org.tweetyproject.logics.fol.syntax.FolAtom(a);
+		atomA.addArgument(x);
+		org.tweetyproject.logics.fol.syntax.FolAtom atomB = new org.tweetyproject.logics.fol.syntax.FolAtom(b);
+		atomB.addArgument(x);
+		RelationalProbabilisticConditional pc = new RelationalProbabilisticConditional(atomA,atomB,new Probability(0.3));
+
+		RpclBeliefSet bs = new RpclBeliefSet();
+		bs.add(pc);
+
+		FolSignature sig = new FolSignature();
+		sig.add(a);
+		sig.add(b);
+		sig.add(c1);
+		sig.add(c2);
+
+		System.out.println(bs);
+
+		RpclMeReasoner reasoner = new RpclMeReasoner(new AggregatingSemantics());
+
+
+		System.out.println(reasoner.getModel(bs,sig));
+
+		org.tweetyproject.logics.fol.syntax.FolAtom atomAC = new org.tweetyproject.logics.fol.syntax.FolAtom(a);
+		atomAC.addArgument(c1);
+		org.tweetyproject.logics.fol.syntax.FolAtom atomBC = new org.tweetyproject.logics.fol.syntax.FolAtom(b);
+		atomBC.addArgument(c1);
+
+		System.out.println(reasoner.query(bs,atomAC));
+		System.out.println(reasoner.query(bs,atomBC));
+
+
+	}
+}
+
