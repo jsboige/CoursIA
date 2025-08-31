@@ -357,3 +357,10 @@ MyIA.AI.Notebooks/GenAI/SemanticKernel/.env
 
 # VSCode settings
 .vscode/settings.json
+
+
+# VSCode specific
+.vscode/
+
+# Debugging reports
+DEBUGGING_REPORT.md
