@@ -1,0 +1,8 @@
+date,id_produit,categorie,quantite,prix_unitaire
+2023-10-01,A101,Electronique,5,120.00
+2023-10-01,B202,Livre,10,15.50
+2023-10-02,A101,Electronique,3,
+2023-10-03,C303,Maison,2,75.90
+2023-10-03,B202,Livre,6,15.50
+'2023-10-04',A101,Electronique,4,120.00
+2023-10-04,D404,Jardin,,35.00
