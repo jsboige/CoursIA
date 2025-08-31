@@ -1,0 +1,7 @@
+Nom : Bob Durand
+Expérience : 2 ans en tant que Data Analyst chez WebAnalytics.
+Tâches : Création de dashboards, requêtes SQL pour reporting.
+Compétences techniques :
+- Langages : R, SQL (intermédiaire)
+- Outils : Tableau, PowerBI
+Formation : Master en Marketing Digital.

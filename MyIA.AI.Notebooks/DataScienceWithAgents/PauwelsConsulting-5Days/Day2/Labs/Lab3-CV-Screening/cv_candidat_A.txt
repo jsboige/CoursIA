@@ -1,0 +1,8 @@
+Nom : Alice Martin
+Expérience : 5 ans en tant que Data Scientist chez DataCorp.
+Projets : Développement d'un moteur de recommandation, modèle de prédiction de churn client.
+Compétences techniques :
+- Langages : Python (avancé), SQL
+- Librairies : Scikit-Learn, Pandas, TensorFlow
+- Spécialisation : Modèles de séries temporelles pour la prévision de la demande.
+Soft Skills : Habituée à présenter les résultats aux comités de direction.

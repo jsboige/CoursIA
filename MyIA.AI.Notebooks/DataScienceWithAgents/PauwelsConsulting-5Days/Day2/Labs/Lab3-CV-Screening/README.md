@@ -1,0 +1,1 @@
+Utiliser un agent d'IA pour analyser, noter et résumer des CVs par rapport à une offre d'emploi.

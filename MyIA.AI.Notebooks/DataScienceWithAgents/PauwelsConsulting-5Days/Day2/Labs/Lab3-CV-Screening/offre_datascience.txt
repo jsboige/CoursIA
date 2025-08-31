@@ -1,0 +1,9 @@
+Titre : Data Scientist Senior
+Entreprise : Innovatech Solutions
+Description : Nous recherchons un Data Scientist expérimenté pour développer des modèles prédictifs et des solutions d'analyse de données. Vous travaillerez sur des problématiques client complexes, de la conception à la mise en production.
+Compétences requises :
+- Python (expert)
+- Scikit-Learn, Pandas
+- SQL
+- Expérience en modélisation de séries temporelles
+- Excellente communication et capacité à vulgariser des résultats techniques.
