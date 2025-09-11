@@ -364,3 +364,8 @@ MyIA.AI.Notebooks/GenAI/SemanticKernel/.env
 
 # Debugging reports
 DEBUGGING_REPORT.md
+
+# Fichiers générés par les scripts d'audit et de réparation
+*.html
+*_results.json
+*_checkpoint.json
