@@ -369,3 +369,11 @@ DEBUGGING_REPORT.md
 *.html
 *_results.json
 *_checkpoint.json
+
+# Fichiers temporaires de test générés
+*-coursia-test.ipynb
+*-papermill-output.ipynb
+test-*.json
+
+# Logs MCP spécifiques
+*-mcp-*.log
