@@ -1,0 +1,27 @@
+# Requirements Papermill-CoursIA - Solution SDDD Validée
+# Environnement: mcp-jupyter (Conda validated)
+
+# Core dependencies (patterns industriels Netflix/Airbnb)
+papermill>=2.5.0
+jupyter>=1.0.0
+nbformat>=5.0.0
+
+# Async/monitoring support
+aiofiles>=23.0.0
+tqdm>=4.65.0
+
+# Educational reporting & export
+pandas>=2.0.0
+jinja2>=3.0.0
+
+# Kernel support (.NET, Python, etc.)
+jupyter-client>=8.0.0
+ipykernel>=6.0.0
+
+# Production logging & monitoring
+structlog>=23.0.0
+coloredlogs>=15.0.0
+
+# Optional: Advanced features
+# psutil>=5.9.0  # Memory monitoring
+# plotly>=5.0.0  # Interactive reports
