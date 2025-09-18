@@ -377,3 +377,49 @@ test-*.json
 
 # Logs MCP spécifiques
 *-mcp-*.log
+
+# Notebooks exécutés par Papermill (générés automatiquement)
+*_executed.ipynb
+
+# Notebooks et fichiers de test temporaires
+test-*.ipynb
+test_*.ipynb
+*-diagnostic.ipynb
+simple_test.py
+test_papermill.py
+
+# Répertoires temporaires de test
+temp-test-cleanup/
+videos/
+temp-dotnet-test/
+
+# === PATTERNS INVESTIGATION MCP-NUGET ===
+# Ajoutés suite au nettoyage SDDD du 18 septembre 2025
+
+# Fichiers de debug MCP-NuGet spécifiques
+debug-*-executed.ipynb
+debug-*-test*.ipynb
+diagnostic-*-executed.ipynb
+
+# Notebooks de validation MCP temporaires
+*-MCP-VALIDATION-TEST.ipynb
+*-REPAIRED*.ipynb
+*_executed_*TEST*.ipynb
+*-solution-A-test.ipynb
+
+# Scripts de test Python MCP générés
+test_env_vars.py
+test_msbuild_vars.py
+test_papermill_*.py
+
+# Variantes multiples de notebooks créées pendant debug
+*-direct-test.ipynb
+*-param-test.ipynb
+*-validation-MCP.ipynb
+*_debug_test.ipynb
+*_manual_test.ipynb
+*_test_isolation.ipynb
+*_test_parameterized.ipynb
+
+# Répertoires générés automatiquement
+GeneratedSource/
