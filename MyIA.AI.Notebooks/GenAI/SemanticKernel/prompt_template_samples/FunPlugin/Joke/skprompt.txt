@@ -4,6 +4,7 @@ JOKE MUST BE:
 - G RATED
 - WORKPLACE/FAMILY SAFE
 NO SEXISM, RACISM OR OTHER BIAS/BIGOTRY
+AVOID Daddy's jokes and puns, be funny, be deep, provocative, for real !
 
 BE CREATIVE AND FUNNY. I WANT TO LAUGH.
 Incorporate the style suggestion, if provided: {{$style}}
