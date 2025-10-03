@@ -441,3 +441,31 @@ jdk-*.zip
 jdk-*.tar.gz
 zulu*.zip
 zulu*.tar.gz
+
+# === SYMBOLIC AI ARGUMENT ANALYSIS ===
+# Cache des textes récupérés automatiquement
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/text_cache/
+**/text_cache/
+
+# === TWEETY JDK/JPYPE INTEGRATION DEBUGGING ===
+# Archives de session de debug (scripts temporaires, logs, rapports)
+archives/
+
+# Outputs de notebooks de test temporaires
+outputs/
+**/outputs/
+
+# Logs et résultats de diagnostic Tweety générés automatiquement
+diagnostic_tweety_results_*.json
+repair_tweety_*.json
+test_tweety_*.json
+
+# Scripts de réparation/diagnostic temporaires Python générés
+diagnostic_tweety_infrastructure.py
+repair_tweety_infrastructure*.py
+inspect_tweety_jars.py
+test_tweety_final_correct_class.py
+
+# Rapports de succès temporaires générés durant sessions debug
+RAPPORT_SUCCÈS_*.md
+TWEETY_INFRASTRUCTURE_REPAIR_GUIDE.md
