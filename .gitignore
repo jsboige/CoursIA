@@ -380,6 +380,7 @@ test-*.json
 
 # Notebooks exécutés par Papermill (générés automatiquement)
 *_executed.ipynb
+*_executed_*.ipynb
 
 # Notebooks et fichiers de test temporaires
 test-*.ipynb
@@ -421,5 +422,22 @@ test_papermill_*.py
 *_test_isolation.ipynb
 *_test_parameterized.ipynb
 
+# Fichiers de données temporaires générés lors des tests
+*.csv
+rss_titles.csv
+
 # Répertoires générés automatiquement
 GeneratedSource/
+
+# === JDK PORTABLE POUR ARGUMENT ANALYSIS ===
+# JDK portable téléchargé automatiquement par install_jdk_portable.py
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/
+**/jdk-17-portable/
+**/jdk-portable.zip
+**/jdk-portable.tar.gz
+
+# Archives JDK temporaires
+jdk-*.zip
+jdk-*.tar.gz
+zulu*.zip
+zulu*.tar.gz
