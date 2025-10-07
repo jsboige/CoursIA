@@ -428,3 +428,20 @@ test_tweety_final_correct_class.py
 # Rapports de succès temporaires générés durant sessions debug
 RAPPORT_SUCCÈS_*.md
 TWEETY_INFRASTRUCTURE_REPAIR_GUIDE.md
+
+# === NOTEBOOKS TEMPORAIRES EXECUTIONMANAGER ===
+# Notebooks temporaires générés lors du développement et tests
+*_executed*.ipynb
+*_test*.ipynb
+*_fixed*.ipynb
+debug-*.ipynb
+diagnostic-*.ipynb
+*-validation-MCP.ipynb
+
+# Checkpoints Jupyter
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Scripts de nettoyage et logs associés
+clean-notebooks-*.log
+backup-temp-files-*/
