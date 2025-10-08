@@ -1,0 +1,15 @@
+﻿# GenAI CoursIA Phase 2 - Dependances Python
+openai>=1.12.0
+anthropic>=0.21.0
+requests>=2.31.0
+pillow>=10.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+jupyter>=1.0.0
+ipywidgets>=8.0.0
+python-dotenv>=1.0.0
+aiohttp>=3.8.0
+asyncio-throttle>=1.0.0
+
+# Generation automatique Phase 2.1 - 20251008_050730
