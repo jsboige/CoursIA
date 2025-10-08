@@ -21,24 +21,16 @@ function Write-Section {
 try {
     if ($Stop) {
         Write-Section "Arrêt du service orchestrator"
-        docker compose -f docker-compose.test.yml down
+        docker compose -f ../../../docker-compose.test.yml down
         Write-Host "✅ Service arrêté" -ForegroundColor Green
         exit 0
     }
 
     Write-Section "TEST 1: Démarrage Orchestrator (sans GPU)"
     
-    # Créer le réseau si nécessaire
-    Write-Host "Création du réseau de test..." -ForegroundColor Yellow
-    docker network create --driver bridge --subnet 172.21.0.0/16 genai-test-network 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✅ Réseau créé" -ForegroundColor Green
-    } else {
-        Write-Host "ℹ️ Réseau déjà existant" -ForegroundColor Gray
-    }
-    
     Write-Section "Démarrage du service"
-    docker compose -f docker-compose.test.yml up orchestrator -d
+    Write-Host "ℹ️ Docker Compose va créer le réseau automatiquement" -ForegroundColor Gray
+    docker compose -f ../../../docker-compose.test.yml up orchestrator -d
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "❌ Échec du démarrage" -ForegroundColor Red
@@ -49,10 +41,10 @@ try {
     Start-Sleep -Seconds 10
     
     Write-Section "Statut du Container"
-    docker compose -f docker-compose.test.yml ps
+    docker compose -f ../../../docker-compose.test.yml ps
     
     Write-Section "Logs (20 dernières lignes)"
-    docker compose -f docker-compose.test.yml logs --tail=20 orchestrator
+    docker compose -f ../../../docker-compose.test.yml logs --tail=20 orchestrator
     
     Write-Section "Test Health Check"
     try {
