@@ -1,0 +1,308 @@
+# =============================================================================
+# CoursIA GenAI - Docker Compose Tests Progressifs
+# =============================================================================
+# Configuration simplifiée pour tests étape par étape des services GenAI
+# 
+# UTILISATION:
+#   Test 1: docker compose -f docker-compose.test.yml up orchestrator -d
+#   Test 2: docker compose -f docker-compose.test.yml up comfyui-test -d
+#
+# IMPORTANT: 
+#   - Tests isolés (pas de depends_on)
+#   - Un service à la fois
+#   - Valider chaque étape avant de passer à la suivante
+# =============================================================================
+
+version: '3.8'
+
+# ===== NETWORKS CONFIGURATION =====
+networks:
+  genai-test-network:
+    name: genai-test-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+
+# ===== SERVICES DE TEST =====
+services:
+
+  # === TEST 1: ORCHESTRATOR (sans GPU, léger) ===
+  orchestrator:
+    build:
+      context: ./docker-configurations/orchestrator
+      dockerfile: Dockerfile
+    image: coursia/genai-orchestrator:test
+    container_name: coursia-orchestrator-test
+    hostname: orchestrator-test
+    
+    ports:
+      - "8193:8193"
+      
+    volumes:
+      # Docker socket pour gestion containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker-configurations/orchestrator/config:/app/config:ro
+      - ./docker-configurations/outputs:/app/shared/outputs:rw
+      
+    environment:
+      # Environment
+      - GENAI_ENVIRONMENT=test
+      - LOG_LEVEL=DEBUG
+      
+      # Docker Configuration
+      - DOCKER_API_VERSION=1.41
+      - MAX_CONCURRENT_MODELS=1
+      
+      # API Configuration
+      - API_AUTH_ENABLED=false
+      - HEALTH_CHECK_INTERVAL=30
+      - METRICS_ENABLED=true
+      
+      # Services URLs (optionnel, pas utilisé en mode test isolé)
+      - FLUX_URL=http://172.21.0.11:8188
+      - SD35_URL=http://172.21.0.12:8000
+      - COMFYUI_URL=http://172.21.0.13:8188
+      
+    deploy:
+      resources:
+        limits:
+          memory: 1GB
+          cpus: '1.0'
+        reservations:
+          memory: 256MB
+          
+    networks:
+      genai-test-network:
+        ipv4_address: 172.21.0.10
+        
+    restart: "no"
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8193/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # === TEST 2: COMFYUI MINIMAL (avec GPU) ===
+  comfyui-test:
+    image: comfyanonymous/comfyui:latest-cu121
+    container_name: coursia-comfyui-test
+    hostname: comfyui-test
+    
+    ports:
+      - "8191:8188"
+      
+    volumes:
+      # Volumes minimaux pour test
+      - ./docker-configurations/outputs:/app/output:rw
+      - ./docker-configurations/cache:/app/cache:rw
+      
+    environment:
+      # CUDA Configuration
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=0
+      - PYTHONPATH=/app
+      
+      # ComfyUI Settings (minimal)
+      - COMFYUI_ARGS=--enable-cors-header --listen 0.0.0.0 --port 8188
+      
+    deploy:
+      resources:
+        limits:
+          memory: 4GB
+          cpus: '2.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              
+    networks:
+      genai-test-network:
+        ipv4_address: 172.21.0.13
+        
+    restart: "no"
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/system_stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # === TEST 3: FLUX MINIMAL (avec GPU, nécessite modèles) ===
+  flux-test:
+    image: comfyanonymous/comfyui:latest-cu121
+    container_name: coursia-flux-test
+    hostname: flux-test
+    
+    ports:
+      - "8189:8188"
+      
+    volumes:
+      # Volumes pour modèles (nécessite modèles FLUX)
+      - ./docker-configurations/flux-1-dev/models:/app/models:ro
+      - ./docker-configurations/flux-1-dev/config:/app/config:ro
+      - ./docker-configurations/outputs:/app/output:rw
+      - ./docker-configurations/cache:/app/cache:rw
+      
+    environment:
+      # CUDA Configuration
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=0
+      - PYTHONPATH=/app
+      
+      # ComfyUI Settings
+      - COMFYUI_ARGS=--enable-cors-header --listen 0.0.0.0 --port 8188
+      - GPU_MEMORY_LIMIT=8GB
+      
+    deploy:
+      resources:
+        limits:
+          memory: 8GB
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              
+    networks:
+      genai-test-network:
+        ipv4_address: 172.21.0.11
+        
+    restart: "no"
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/system_stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # === TEST 4: SD3.5 MINIMAL (avec GPU, télécharge auto) ===
+  sd35-test:
+    image: huggingface/diffusers:latest-gpu
+    container_name: coursia-sd35-test
+    hostname: sd35-test
+    
+    ports:
+      - "8190:8000"
+      
+    volumes:
+      - ./docker-configurations/stable-diffusion-35/models:/models:rw
+      - ./docker-configurations/stable-diffusion-35/config:/config:ro
+      - ./docker-configurations/outputs:/outputs:rw
+      - ./docker-configurations/cache:/cache:rw
+      
+    environment:
+      # Model Configuration
+      - MODEL_NAME=stabilityai/stable-diffusion-3.5-large
+      - MODEL_PRECISION=fp16
+      - CACHE_DIR=/cache
+      - OUTPUT_DIR=/outputs
+      
+      # CUDA Configuration
+      - CUDA_VISIBLE_DEVICES=0
+      - TORCH_COMPILE=1
+      
+      # API Settings
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      
+      # Hugging Face
+      - HUGGINGFACE_HUB_CACHE=/cache/huggingface
+      - TRANSFORMERS_CACHE=/cache/transformers
+      - HF_HOME=/cache/huggingface
+      
+    deploy:
+      resources:
+        limits:
+          memory: 12GB
+          cpus: '4.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              
+    networks:
+      genai-test-network:
+        ipv4_address: 172.21.0.12
+        
+    restart: "no"
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 45s
+      timeout: 15s
+      retries: 3
+      start_period: 180s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+# =============================================================================
+# INSTRUCTIONS D'UTILISATION
+# =============================================================================
+#
+# TEST 1: Orchestrator (sans GPU, rapide)
+# ----------------------------------------
+# docker compose -f docker-compose.test.yml up orchestrator -d
+# docker compose -f docker-compose.test.yml logs -f orchestrator
+# curl http://localhost:8193/health
+# docker compose -f docker-compose.test.yml down
+#
+# TEST 2: ComfyUI minimal (avec GPU, ~5-10 min téléchargement image)
+# ------------------------------------------------------------------
+# docker compose -f docker-compose.test.yml up comfyui-test -d
+# docker compose -f docker-compose.test.yml logs -f comfyui-test
+# # Ouvrir: http://localhost:8191
+# docker compose -f docker-compose.test.yml down
+#
+# TEST 3: FLUX minimal (nécessite modèles ~24GB placés manuellement)
+# -------------------------------------------------------------------
+# # PREREQUIS: Placer modèles dans docker-configurations/flux-1-dev/models/
+# docker compose -f docker-compose.test.yml up flux-test -d
+# docker compose -f docker-compose.test.yml logs -f flux-test
+# # Ouvrir: http://localhost:8189
+# docker compose -f docker-compose.test.yml down
+#
+# TEST 4: SD3.5 minimal (télécharge auto ~7GB)
+# --------------------------------------------
+# docker compose -f docker-compose.test.yml up sd35-test -d
+# docker compose -f docker-compose.test.yml logs -f sd35-test
+# # Attendre téléchargement modèle (~10-15 min)
+# curl http://localhost:8190/health
+# docker compose -f docker-compose.test.yml down
+#
+# NETTOYAGE COMPLET
+# -----------------
+# docker compose -f docker-compose.test.yml down -v
+# docker network rm genai-test-network
+#
+# =============================================================================
