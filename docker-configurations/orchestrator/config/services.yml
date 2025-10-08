@@ -1,0 +1,48 @@
+# =============================================================================
+# CoursIA GenAI Orchestrator - Services Configuration
+# =============================================================================
+# Configuration des services GenAI gérés par l'orchestrateur
+# =============================================================================
+
+services:
+  flux-1-dev:
+    name: "FLUX.1-dev"
+    container: "coursia-flux-1-dev"
+    type: "image-generation"
+    model: "FLUX.1-dev"
+    port: 8189
+    internal_port: 8188
+    healthcheck_endpoint: "/system_stats"
+    capabilities:
+      - text-to-image
+      - creative-generation
+      - high-quality
+    priority: 1
+    
+  stable-diffusion-35:
+    name: "Stable Diffusion 3.5"
+    container: "coursia-sd35"
+    type: "image-generation"
+    model: "SD3.5-Large"
+    port: 8190
+    internal_port: 8000
+    healthcheck_endpoint: "/health"
+    capabilities:
+      - text-to-image
+      - versatile-generation
+      - production-ready
+    priority: 2
+    
+  comfyui-workflows:
+    name: "ComfyUI Workflows"
+    container: "coursia-comfyui-workflows"
+    type: "workflow-engine"
+    model: "ComfyUI"
+    port: 8191
+    internal_port: 8188
+    healthcheck_endpoint: "/system_stats"
+    capabilities:
+      - advanced-workflows
+      - educational-content
+      - custom-pipelines
+    priority: 3

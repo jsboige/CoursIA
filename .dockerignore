@@ -1,0 +1,115 @@
+# =============================================================================
+# CoursIA GenAI - Docker Ignore File
+# =============================================================================
+# Fichiers et répertoires à exclure lors du build des images Docker
+# =============================================================================
+
+# ===== VERSION CONTROL =====
+.git
+.gitignore
+.gitattributes
+
+# ===== IDE / EDITOR =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ===== PYTHON =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# ===== NODE / NPM =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== LOGS =====
+*.log
+logs/
+*.log.*
+
+# ===== DOCKER =====
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# ===== DOCUMENTATION =====
+README.md
+docs/
+*.md
+LICENSE
+
+# ===== OUTPUTS / CACHE =====
+outputs/
+cache/
+temp/
+tmp/
+*.tmp
+
+# ===== MODELS (trop volumineux) =====
+models/
+*.safetensors
+*.ckpt
+*.pth
+*.bin
+*.onnx
+
+# ===== ENVIRONMENT FILES =====
+.env
+.env.*
+*.env
+
+# ===== NOTEBOOKS =====
+*.ipynb
+.ipynb_checkpoints/
+
+# ===== TESTS =====
+tests/
+test/
+*_test.py
+test_*.py
+
+# ===== SCRIPTS =====
+scripts/
+*.sh
+*.ps1
+
+# ===== CONFIGURATION (exclure pour sécurité) =====
+config/secrets.yml
+config/production.yml
+*.key
+*.pem
+*.crt
+
+# ===== BUILD ARTIFACTS =====
+*.o
+*.a
+*.exe
+*.dll
+*.so
+*.dylib
+
+# ===== MISC =====
+.editorconfig
+.eslintrc*
+.prettierrc*
+Makefile
