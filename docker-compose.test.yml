@@ -22,8 +22,8 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.21.0.0/16
-          gateway: 172.21.0.1
+        - subnet: 172.25.0.0/16
+          gateway: 172.25.0.1
 
 # ===== SERVICES DE TEST =====
 services:
@@ -61,9 +61,9 @@ services:
       - METRICS_ENABLED=true
       
       # Services URLs (optionnel, pas utilisé en mode test isolé)
-      - FLUX_URL=http://172.21.0.11:8188
-      - SD35_URL=http://172.21.0.12:8000
-      - COMFYUI_URL=http://172.21.0.13:8188
+      - FLUX_URL=http://172.25.0.11:8188
+      - SD35_URL=http://172.25.0.12:8000
+      - COMFYUI_URL=http://172.25.0.13:8188
       
     deploy:
       resources:
@@ -75,7 +75,7 @@ services:
           
     networks:
       genai-test-network:
-        ipv4_address: 172.21.0.10
+        ipv4_address: 172.25.0.10
         
     restart: "no"
     
@@ -128,7 +128,7 @@ services:
               
     networks:
       genai-test-network:
-        ipv4_address: 172.21.0.13
+        ipv4_address: 172.25.0.13
         
     restart: "no"
     
@@ -184,7 +184,7 @@ services:
               
     networks:
       genai-test-network:
-        ipv4_address: 172.21.0.11
+        ipv4_address: 172.25.0.11
         
     restart: "no"
     
@@ -249,7 +249,7 @@ services:
               
     networks:
       genai-test-network:
-        ipv4_address: 172.21.0.12
+        ipv4_address: 172.25.0.12
         
     restart: "no"
     

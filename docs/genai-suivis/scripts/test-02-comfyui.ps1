@@ -23,7 +23,7 @@ function Write-Section {
 try {
     if ($Stop) {
         Write-Section "Arrêt du service ComfyUI"
-        docker compose -f docker-compose.test.yml down comfyui-test
+        docker compose -f ../../../docker-compose.test.yml down comfyui-test
         Write-Host "✅ Service arrêté" -ForegroundColor Green
         exit 0
     }
@@ -59,7 +59,7 @@ try {
         Write-Host "   (Ceci peut prendre 10-30 minutes)" -ForegroundColor Gray
     }
     
-    docker compose -f docker-compose.test.yml up comfyui-test -d
+    docker compose -f ../../../docker-compose.test.yml up comfyui-test -d
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "❌ Échec du démarrage" -ForegroundColor Red
@@ -70,10 +70,10 @@ try {
     Start-Sleep -Seconds 15
     
     Write-Section "Statut du Container"
-    docker compose -f docker-compose.test.yml ps
+    docker compose -f ../../../docker-compose.test.yml ps
     
     Write-Section "Logs (30 dernières lignes)"
-    docker compose -f docker-compose.test.yml logs --tail=30 comfyui-test
+    docker compose -f ../../../docker-compose.test.yml logs --tail=30 comfyui-test
     
     Write-Section "Vérification GPU dans le container"
     docker exec coursia-comfyui-test nvidia-smi 2>$null
