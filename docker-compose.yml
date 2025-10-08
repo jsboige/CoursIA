@@ -1,0 +1,316 @@
+# =============================================================================
+# CoursIA GenAI - Docker Compose Configuration (Development Mode)
+# =============================================================================
+# Configuration Docker locale pour services de génération d'images GenAI
+# 
+# Services inclus:
+#   - FLUX.1-dev (ComfyUI) : Port 8189
+#   - Stable Diffusion 3.5 : Port 8190
+#   - ComfyUI Workflows : Port 8191
+#   - Orchestrator : Port 8193
+#
+# Réseau: genai-network (172.20.0.0/16)
+# Mode: Development (ressources réduites pour tests locaux)
+# =============================================================================
+
+version: '3.8'
+
+# ===== NETWORKS CONFIGURATION =====
+networks:
+  genai-network:
+    name: genai-dev-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+# ===== VOLUMES CONFIGURATION =====
+volumes:
+  genai-models:
+    name: genai-models-dev
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/docker-configurations/models
+      
+  genai-outputs:
+    name: genai-outputs-dev
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/docker-configurations/outputs
+      
+  genai-cache:
+    name: genai-cache-dev
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/docker-configurations/cache
+
+# ===== SERVICES CONFIGURATION =====
+services:
+
+  # === FLUX.1-DEV SERVICE ===
+  flux-1-dev:
+    image: comfyanonymous/comfyui:latest-cu124
+    container_name: coursia-flux-1-dev
+    hostname: flux-1-dev
+    
+    ports:
+      - "${GENAI_PORT_FLUX:-8189}:8188"
+      
+    volumes:
+      # Modèles (lecture seule pour sécurité)
+      - genai-models:/app/models:ro
+      - ./docker-configurations/flux-1-dev/custom_nodes:/app/custom_nodes:rw
+      - ./docker-configurations/flux-1-dev/workflows:/app/workflows:rw
+      - genai-outputs:/app/output:rw
+      - genai-cache:/app/cache:rw
+      
+    environment:
+      # CUDA Configuration
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=0
+      - PYTHONPATH=/app
+      
+      # ComfyUI Settings
+      - COMFYUI_ARGS=--enable-cors-header --listen 0.0.0.0 --port 8188
+      - WORKFLOW_AUTO_SAVE=true
+      - ENABLE_WORKFLOW_API=true
+      
+      # Performance (Development)
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+      - GPU_MEMORY_LIMIT=${FLUX_GPU_MEMORY_LIMIT:-8GB}
+      - CPU_THREADS=${FLUX_CPU_THREADS:-4}
+      
+    deploy:
+      resources:
+        limits:
+          memory: ${FLUX_MEMORY_LIMIT:-8GB}
+          cpus: '${FLUX_CPU_LIMIT:-4.0}'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              
+    networks:
+      genai-network:
+        ipv4_address: 172.20.0.11
+        
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/system_stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # === STABLE DIFFUSION 3.5 SERVICE ===
+  stable-diffusion-35:
+    image: huggingface/diffusers:latest-gpu
+    container_name: coursia-sd35
+    hostname: sd35
+    
+    ports:
+      - "${GENAI_PORT_SD35:-8190}:8000"
+      
+    volumes:
+      - genai-models:/models:ro
+      - genai-outputs:/outputs:rw
+      - genai-cache:/cache:rw
+      - ./docker-configurations/stable-diffusion-3.5/config:/config:ro
+      
+    environment:
+      # Model Configuration
+      - MODEL_NAME=stabilityai/stable-diffusion-3.5-large
+      - MODEL_PRECISION=${SD35_PRECISION:-fp16}
+      - CACHE_DIR=/cache
+      - OUTPUT_DIR=/outputs
+      
+      # CUDA Configuration
+      - CUDA_VISIBLE_DEVICES=0
+      - TORCH_COMPILE=1
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:1024
+      
+      # API Settings
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - MAX_CONCURRENT_REQUESTS=2
+      - REQUEST_TIMEOUT=600
+      
+      # Hugging Face
+      - HUGGINGFACE_HUB_CACHE=/cache/huggingface
+      - TRANSFORMERS_CACHE=/cache/transformers
+      - HF_HOME=/cache/huggingface
+      
+      # Performance (Development)
+      - GPU_MEMORY_LIMIT=${SD35_GPU_MEMORY_LIMIT:-10GB}
+      - BATCH_SIZE=${SD35_BATCH_SIZE:-1}
+      
+    deploy:
+      resources:
+        limits:
+          memory: ${SD35_MEMORY_LIMIT:-12GB}
+          cpus: '${SD35_CPU_LIMIT:-6.0}'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              
+    networks:
+      genai-network:
+        ipv4_address: 172.20.0.12
+        
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 45s
+      timeout: 15s
+      retries: 3
+      start_period: 180s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # === COMFYUI WORKFLOWS SERVICE ===
+  comfyui-workflows:
+    image: comfyanonymous/comfyui:latest-cu124
+    container_name: coursia-comfyui-workflows
+    hostname: comfyui-workflows
+    
+    ports:
+      - "${GENAI_PORT_COMFYUI:-8191}:8188"
+      
+    volumes:
+      - genai-models:/app/models:ro
+      - ./docker-configurations/comfyui-workflows/custom_nodes:/app/custom_nodes:rw
+      - ./docker-configurations/comfyui-workflows/workflows:/app/web/workflows:rw
+      - genai-outputs:/app/output:rw
+      - ./docker-configurations/comfyui-workflows/input:/app/input:rw
+      
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONPATH=/app
+      - COMFYUI_ARGS=--enable-cors-header --listen 0.0.0.0 --port 8188 --extra-model-paths-config /app/extra_model_paths.yaml
+      - WORKFLOW_AUTO_SAVE=true
+      - ENABLE_WORKFLOW_API=true
+      - GPU_MEMORY_LIMIT=${COMFYUI_GPU_MEMORY_LIMIT:-3GB}
+      
+    deploy:
+      resources:
+        limits:
+          memory: ${COMFYUI_MEMORY_LIMIT:-4GB}
+          cpus: '${COMFYUI_CPU_LIMIT:-3.0}'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              
+    networks:
+      genai-network:
+        ipv4_address: 172.20.0.13
+        
+    depends_on:
+      - flux-1-dev
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/system_stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # === ORCHESTRATOR SERVICE ===
+  orchestrator:
+    build:
+      context: ./docker-configurations/orchestrator
+      dockerfile: Dockerfile
+    image: coursia/genai-orchestrator:latest
+    container_name: coursia-orchestrator
+    hostname: orchestrator
+    
+    ports:
+      - "${GENAI_PORT_ORCHESTRATOR:-8193}:8193"
+      
+    volumes:
+      # Docker socket pour gestion containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker-configurations/orchestrator/config:/app/config:ro
+      - genai-outputs:/app/shared/outputs:rw
+      
+    environment:
+      # Environment
+      - GENAI_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      
+      # Docker Configuration
+      - DOCKER_API_VERSION=1.41
+      - MAX_CONCURRENT_MODELS=${MAX_CONCURRENT_MODELS:-2}
+      
+      # API Configuration
+      - API_AUTH_ENABLED=false
+      - HEALTH_CHECK_INTERVAL=30
+      - METRICS_ENABLED=true
+      
+      # Services URLs (internal network)
+      - FLUX_URL=http://172.20.0.11:8188
+      - SD35_URL=http://172.20.0.12:8000
+      - COMFYUI_URL=http://172.20.0.13:8188
+      
+    deploy:
+      resources:
+        limits:
+          memory: ${ORCHESTRATOR_MEMORY_LIMIT:-2GB}
+          cpus: '${ORCHESTRATOR_CPU_LIMIT:-2.0}'
+        reservations:
+          memory: 512MB
+          
+    networks:
+      genai-network:
+        ipv4_address: 172.20.0.10
+        
+    depends_on:
+      - flux-1-dev
+      - stable-diffusion-35
+      - comfyui-workflows
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8193/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
