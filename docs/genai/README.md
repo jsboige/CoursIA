@@ -53,7 +53,7 @@ Cette documentation technique couvre l'ensemble de l'infrastructure GenAI Images
 
 Les rapports de mission et suivis chronologiques du développement de l'infrastructure GenAI sont disponibles dans le répertoire dédié:
 
-➡️ **[docs/genai-suivis/](../genai-suivis/)** - Rapports historiques et suivis de phases
+➡️ **[docs/suivis/genai-image/](docs/suivis/genai-image/)** - Rapports historiques et suivis de phases
 
 ---
 

@@ -793,19 +793,19 @@ execute_notebook(
 
 #### Architecture & Design
 
-1. **[`docs/genai/architecture.md`](../../docs/genai/architecture.md)**
+1. **[`docs/genai/architecture.md`](../../../docs/suivis/genai-image/architecture.md)**
    - Architecture modulaire complète
    - Diagrammes composants
    - Flux de données
    - Patterns conception
 
-2. **[`docs/genai/development-standards.md`](../../docs/genai/development-standards.md)**
+2. **[`docs/genai/development-standards.md`](../../../docs/suivis/genai-image/development-standards.md)**
    - Standards code Python
    - Conventions nommage
    - Structure notebooks
    - Documentation requirements
 
-3. **[`docs/genai/docker-lifecycle-management.md`](../../docs/genai/docker-lifecycle-management.md)**
+3. **[`docs/genai/docker-lifecycle-management.md`](../../../docs/suivis/genai-image/docker-lifecycle-management.md)**
    - Cycle de vie containers
    - Orchestration Docker Compose
    - Health checks
@@ -815,7 +815,7 @@ execute_notebook(
 
 #### Déploiement & Production
 
-4. **[`docs/genai/deployment-guide.md`](../../docs/genai/deployment-guide.md)**
+4. **[`docs/genai/deployment-guide.md`](../../../docs/suivis/genai-image/deployment-guide.md)**
    - Environnements (dev, staging, prod)
    - CI/CD pipelines
    - Monitoring alerting
@@ -827,7 +827,7 @@ execute_notebook(
    - Scaling strategies
    - Cost optimization
 
-6. **[`docs/genai/environment-configurations.md`](../../docs/genai/environment-configurations.md)**
+6. **[`docs/genai/environment-configurations.md`](../../../docs/suivis/genai-image/environment-configurations.md)**
    - Configuration environnements multiples
    - Variables d'environnement
    - Secrets management
@@ -837,13 +837,13 @@ execute_notebook(
 
 #### Testing & Quality
 
-7. **[`docs/genai/infrastructure-tests.md`](../../docs/genai/infrastructure-tests.md)**
+7. **[`docs/genai/infrastructure-tests.md`](../../../docs/suivis/genai-image/infrastructure-tests.md)**
    - Tests unitaires
    - Tests intégration
    - Tests end-to-end
    - Performance benchmarks
 
-8. **[`docs/genai/integration-procedures.md`](../../docs/genai/integration-procedures.md)**
+8. **[`docs/genai/integration-procedures.md`](../../../docs/suivis/genai-image/integration-procedures.md)**
    - Procédures intégration
    - APIs testing
    - Validation workflows
@@ -853,7 +853,7 @@ execute_notebook(
 
 #### Templates & Guides
 
-9. **[`docs/genai/phase2-templates.md`](../../docs/genai/phase2-templates.md)**
+9. **[`docs/genai/phase2-templates.md`](../../../docs/suivis/genai-image/phase2-templates.md)**
    - Templates notebooks
    - Boilerplate code
    - Configuration types
