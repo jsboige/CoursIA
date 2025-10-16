@@ -185,7 +185,7 @@ D:\Production\qwen-image-edit.myia.io\
 ## 📁 Fichiers Créés
 
 ```
-docs/genai-suivis/
+docs/suivis/genai-image/
 ├── 2025-10-15_13_create-iis-site-comfyui.ps1      (Script création IIS)
 ├── 2025-10-15_13_commandes-admin-iis.md           (Doc admin)
 ├── 2025-10-15_13_start-comfyui.sh                 (Script démarrage)
@@ -218,7 +218,7 @@ D:/Production/
 
 ## 📞 Support
 
-- Scripts: `docs/genai-suivis/2025-10-15_13_*`
+- Scripts: `docs/suivis/genai-image/2025-10-15_13_*`
 - Doc admin: `2025-10-15_13_commandes-admin-iis.md`
 - Config IIS: `D:\Production\qwen-image-edit.myia.io\web.config`
 

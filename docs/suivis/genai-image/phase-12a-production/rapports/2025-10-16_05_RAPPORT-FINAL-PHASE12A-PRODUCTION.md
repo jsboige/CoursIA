@@ -179,7 +179,7 @@ La Phase 12A a permis de déployer avec succès ComfyUI + Qwen Image-Edit en pro
 - ✅ Logs console: 41 scripts (attendu avant auth)
 - 🔒 Authentification requise pour tests complets
 
-**Screenshots Archivés** ([`docs/genai-suivis/screenshots/`](screenshots/)):
+**Screenshots Archivés** ([`docs/suivis/genai-image/screenshots/`](screenshots/)):
 - [`comfyui-ui.png`](screenshots/comfyui-ui.png) - 8.31 KB (script)
 - [`comfyui-interface-mcp.png`](screenshots/comfyui-interface-mcp.png) - 156.56 KB (MCP) ⭐
 - [`forge-ui.png`](screenshots/forge-ui.png) - 20.44 KB (script)
@@ -741,7 +741,7 @@ Firefox can't establish a connection to wss://qwen-image-edit.myia.io
 - **Documentation ComfyUI**: https://github.com/comfyanonymous/ComfyUI
 - **Qwen Image-Edit**: https://huggingface.co/Qwen/Qwen-Image-Edit-2509
 - **Custom Node**: https://github.com/gokayfem/ComfyUI-QwenImageWanBridge
-- **Historique Phases**: [`docs/genai-suivis/`](.)
+- **Historique Phases**: [`docs/suivis/genai-image/`](.)
 
 ---
 

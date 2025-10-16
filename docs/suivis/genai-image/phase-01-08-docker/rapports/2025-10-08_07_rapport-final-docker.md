@@ -68,7 +68,7 @@ L'infrastructure complète de génération d'images par IA (FLUX.1-dev, Stable D
 **Résultat**: 17 fichiers réorganisés
 
 **Amélioration**:
-- Séparation [`docs/genai/`](../genai/) et [`docs/genai-suivis/`](.)
+- Séparation [`docs/genai/`](../genai/) et [`docs/suivis/genai-image/`](.)
 - README d'index structurés
 - Historique Git préservé
 
@@ -189,7 +189,7 @@ HUGGING_FACE_HUB_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 **Commande**:
 ```powershell
-cd docs/genai-suivis/scripts
+cd docs/suivis/genai-image/scripts
 .\test-01-orchestrator.ps1
 ```
 
@@ -220,7 +220,7 @@ cd docs/genai-suivis/scripts
 
 **Pour tester**:
 ```powershell
-cd docs/genai-suivis/scripts
+cd docs/suivis/genai-image/scripts
 .\test-02-comfyui.ps1 -Force
 ```
 
@@ -252,7 +252,7 @@ cd docs/genai-suivis/scripts
    - Phase 1 infrastructure
    - Containers Docker
 
-5. **[`docs/genai-suivis/2025-10-08_03_phase1-3-production-ready.md`](2025-10-08_03_phase1-3-production-ready.md)** - Score: 0.6480
+5. **[`docs/suivis/genai-image/2025-10-08_03_phase1-3-production-ready.md`](2025-10-08_03_phase1-3-production-ready.md)** - Score: 0.6480
    - Infrastructure Docker robuste
    - Production-ready certifié
 
@@ -279,7 +279,7 @@ cd docs/genai-suivis/scripts
 
 1. **Tester ComfyUI avec GPU**:
    ```powershell
-   cd docs/genai-suivis/scripts
+   cd docs/suivis/genai-image/scripts
    .\test-02-comfyui.ps1 -Force
    ```
    - Durée estimée: 10-30 min
@@ -358,7 +358,7 @@ cd docs/genai-suivis/scripts
 
 1. **Tests GPU** (optionnel, 30 min):
    ```powershell
-   cd docs/genai-suivis/scripts
+   cd docs/suivis/genai-image/scripts
    .\test-02-comfyui.ps1 -Force
    ```
 

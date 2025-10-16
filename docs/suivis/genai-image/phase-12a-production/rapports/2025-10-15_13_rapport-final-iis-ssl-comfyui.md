@@ -23,9 +23,9 @@
 |---------|--------|--------------|
 | Répertoire Production | ✅ CRÉÉ | `D:\Production\qwen-image-edit.myia.io` |
 | web.config | ✅ CONFIGURÉ | Reverse proxy vers localhost:8188 |
-| Script IIS | ✅ PRÊT | `docs/genai-suivis/2025-10-15_13_create-iis-site-comfyui.ps1` |
-| Script Tests Playwright | ✅ PRÊT | `docs/genai-suivis/2025-10-15_13_test-playwright-ui.ps1` |
-| Guide Installation | ✅ DOCUMENTÉ | `docs/genai-suivis/2025-10-15_13_guide-installation-iis-ssl.md` |
+| Script IIS | ✅ PRÊT | `docs/suivis/genai-image/2025-10-15_13_create-iis-site-comfyui.ps1` |
+| Script Tests Playwright | ✅ PRÊT | `docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1` |
+| Guide Installation | ✅ DOCUMENTÉ | `docs/suivis/genai-image/2025-10-15_13_guide-installation-iis-ssl.md` |
 
 ---
 
@@ -256,13 +256,13 @@ while ($true) {
 
 ### Scripts PowerShell
 
-1. **`docs/genai-suivis/2025-10-15_13_create-iis-site-comfyui.ps1`**
+1. **`docs/suivis/genai-image/2025-10-15_13_create-iis-site-comfyui.ps1`**
    - Création automatique du site IIS
    - Configuration bindings HTTP/HTTPS
    - Vérifications intégrées
    - 56 lignes
 
-2. **`docs/genai-suivis/2025-10-15_13_test-playwright-ui.ps1`**
+2. **`docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1`**
    - Installation environnement Playwright
    - Création script de test JavaScript
    - Configuration npm
@@ -270,13 +270,13 @@ while ($true) {
 
 ### Documentation
 
-3. **`docs/genai-suivis/2025-10-15_13_guide-installation-iis-ssl.md`**
+3. **`docs/suivis/genai-image/2025-10-15_13_guide-installation-iis-ssl.md`**
    - Guide complet étape par étape
    - Commandes manuelles alternatives
    - Dépannage détaillé
    - 559 lignes
 
-4. **Ce rapport: `docs/genai-suivis/2025-10-15_13_rapport-final-iis-ssl-comfyui.md`**
+4. **Ce rapport: `docs/suivis/genai-image/2025-10-15_13_rapport-final-iis-ssl-comfyui.md`**
    - Synthèse de l'état actuel
    - Actions à effectuer
    - Checklists complètes
@@ -377,10 +377,10 @@ while ($true) {
 
 ### Scripts Créés
 
-- `docs/genai-suivis/2025-10-15_13_create-iis-site-comfyui.ps1`
-- `docs/genai-suivis/2025-10-15_13_test-playwright-ui.ps1`
-- `docs/genai-suivis/2025-10-15_13_guide-installation-iis-ssl.md`
-- `docs/genai-suivis/2025-10-15_13_rapport-final-iis-ssl-comfyui.md` (ce fichier)
+- `docs/suivis/genai-image/2025-10-15_13_create-iis-site-comfyui.ps1`
+- `docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1`
+- `docs/suivis/genai-image/2025-10-15_13_guide-installation-iis-ssl.md`
+- `docs/suivis/genai-image/2025-10-15_13_rapport-final-iis-ssl-comfyui.md` (ce fichier)
 
 ### Configuration
 
