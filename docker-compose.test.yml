@@ -94,7 +94,7 @@ services:
 
   # === TEST 2: COMFYUI MINIMAL (avec GPU) ===
   comfyui-test:
-    image: comfyanonymous/comfyui:latest-cu121
+    image: comfyanonymous/comfyui:latest-cu124
     container_name: coursia-comfyui-test
     hostname: comfyui-test
     
@@ -147,7 +147,7 @@ services:
 
   # === TEST 3: FLUX MINIMAL (avec GPU, nécessite modèles) ===
   flux-test:
-    image: comfyanonymous/comfyui:latest-cu121
+    image: comfyanonymous/comfyui:latest-cu124
     container_name: coursia-flux-test
     hostname: flux-test
     
