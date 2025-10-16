@@ -264,7 +264,7 @@ Windows 11 Pro (Host)
 
 ## Fichiers Créés
 
-### Scripts Production (tous dans `docs/genai-suivis/`)
+### Scripts Production (tous dans `docs/suivis/genai-image/`)
 
 1. **`2025-10-14_12A_start-comfyui-watchdog.ps1`** (137 lignes)
    - Watchdog avec monitoring
@@ -300,7 +300,7 @@ Windows 11 Pro (Host)
 ### Logs Générés (dynamiques)
 
 ```
-docs/genai-suivis/logs/comfyui-production/
+docs/suivis/genai-image/logs/comfyui-production/
 ├── startup-YYYY-MM-DD.log           # Logs watchdog quotidiens
 └── gpu-monitoring-YYYY-MM-DD.csv    # Métriques GPU quotidiennes
 ```

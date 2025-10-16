@@ -34,7 +34,7 @@
 
 ### Script Interactif Préparé
 
-**📄 Fichier:** [`docs/genai-suivis/2025-10-15_22_configure-ssl-win-acme.ps1`](2025-10-15_22_configure-ssl-win-acme.ps1)
+**📄 Fichier:** [`docs/suivis/genai-image/2025-10-15_22_configure-ssl-win-acme.ps1`](2025-10-15_22_configure-ssl-win-acme.ps1)
 
 **Exécution:**
 ```powershell
@@ -88,7 +88,7 @@ Après exécution du script, vous devriez avoir:
 - Subject: CN=qwen-image-edit.myia.io
 - Thumbprint: [généré par Let's Encrypt]
 - Expire: [date + 90 jours]
-- Fichier info: `docs/genai-suivis/certificat-ssl-info.json`
+- Fichier info: `docs/suivis/genai-image/certificat-ssl-info.json`
 
 ✅ **HTTPS fonctionnel:**
 ```powershell
@@ -108,7 +108,7 @@ Invoke-WebRequest https://qwen-image-edit.myia.io/system_stats
 
 ### Script Playwright Préparé
 
-**📄 Fichier:** [`docs/genai-suivis/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1)
+**📄 Fichier:** [`docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1)
 
 ### Exécution Tests
 
@@ -164,8 +164,8 @@ Get-ChildItem $docsDir
 ```
 
 **Résultat attendu:**
-- `docs/genai-suivis/screenshots/comfyui-ui.png`
-- `docs/genai-suivis/screenshots/forge-ui.png`
+- `docs/suivis/genai-image/screenshots/comfyui-ui.png`
+- `docs/suivis/genai-image/screenshots/forge-ui.png`
 
 ---
 
@@ -173,7 +173,7 @@ Get-ChildItem $docsDir
 
 ### À Compléter Manuellement
 
-**Fichier:** [`docs/genai-suivis/2025-10-15_22_execution-deploiement-final.md`](2025-10-15_22_execution-deploiement-final.md)
+**Fichier:** [`docs/suivis/genai-image/2025-10-15_22_execution-deploiement-final.md`](2025-10-15_22_execution-deploiement-final.md)
 
 Ajouter section après Phase 4:
 
@@ -240,8 +240,8 @@ curl https://qwen-image-edit.myia.io/system_stats
 - Screenshot: ✅ forge-ui.png ([taille] KB)
 
 **Screenshots copiés:**
-- `docs/genai-suivis/screenshots/comfyui-ui.png`
-- `docs/genai-suivis/screenshots/forge-ui.png`
+- `docs/suivis/genai-image/screenshots/comfyui-ui.png`
+- `docs/suivis/genai-image/screenshots/forge-ui.png`
 
 ### Statut Phase 5
 ✅ **SUCCÈS COMPLET**
@@ -261,7 +261,7 @@ curl https://qwen-image-edit.myia.io/system_stats
 - [ ] Test HTTPS manuel réussi (curl + browser)
 - [ ] Script Playwright installé/exécuté
 - [ ] Screenshots générés (2 fichiers PNG)
-- [ ] Screenshots copiés dans docs/genai-suivis/screenshots/
+- [ ] Screenshots copiés dans docs/suivis/genai-image/screenshots/
 - [ ] Rapport d'exécution mis à jour avec timestamps réels
 - [ ] Checkpoint sémantique mis à jour
 
@@ -300,7 +300,7 @@ curl http://localhost:8188/system_stats
 wsl kill 838
 
 # Relancer
-wsl -e bash /mnt/d/Dev/CoursIA/docs/genai-suivis/2025-10-15_13_test-comfyui-launch.sh
+wsl -e bash /mnt/d/Dev/CoursIA/docs/suivis/genai-image/2025-10-15_13_test-comfyui-launch.sh
 ```
 
 ### Vérifier Site IIS

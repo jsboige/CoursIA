@@ -173,8 +173,8 @@ Script bash complet pour diagnostiquer l'environnement ComfyUI.
 
 **Utilisation:**
 ```bash
-chmod +x docs/genai-suivis/2025-10-15_13_debug-comfyui-startup.sh
-wsl -e /mnt/d/Dev/CoursIA/docs/genai-suivis/2025-10-15_13_debug-comfyui-startup.sh
+chmod +x docs/suivis/genai-image/2025-10-15_13_debug-comfyui-startup.sh
+wsl -e /mnt/d/Dev/CoursIA/docs/suivis/genai-image/2025-10-15_13_debug-comfyui-startup.sh
 ```
 
 ### 2. Script Lancement: [`2025-10-15_13_test-comfyui-launch.sh`](./2025-10-15_13_test-comfyui-launch.sh)
@@ -182,8 +182,8 @@ Script bash pour lancer ComfyUI en background avec monitoring.
 
 **Utilisation:**
 ```bash
-chmod +x docs/genai-suivis/2025-10-15_13_test-comfyui-launch.sh
-wsl -e /mnt/d/Dev/CoursIA/docs/genai-suivis/2025-10-15_13_test-comfyui-launch.sh
+chmod +x docs/suivis/genai-image/2025-10-15_13_test-comfyui-launch.sh
+wsl -e /mnt/d/Dev/CoursIA/docs/suivis/genai-image/2025-10-15_13_test-comfyui-launch.sh
 ```
 
 **Logs générés:**
@@ -196,7 +196,7 @@ Script PowerShell pour tester l'accès depuis Windows.
 
 **Utilisation:**
 ```powershell
-pwsh -File docs/genai-suivis/2025-10-15_13_test-comfyui-access.ps1
+pwsh -File docs/suivis/genai-image/2025-10-15_13_test-comfyui-access.ps1
 ```
 
 ---
@@ -261,7 +261,7 @@ wsl -e bash -c 'kill -9 $(cat /tmp/comfyui.pid)'
 
 ### Redémarrer ComfyUI
 ```bash
-wsl -e /mnt/d/Dev/CoursIA/docs/genai-suivis/2025-10-15_13_test-comfyui-launch.sh
+wsl -e /mnt/d/Dev/CoursIA/docs/suivis/genai-image/2025-10-15_13_test-comfyui-launch.sh
 ```
 
 ---

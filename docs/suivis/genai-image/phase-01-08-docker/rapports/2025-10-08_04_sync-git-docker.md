@@ -43,7 +43,7 @@ Synchronisation bidirectionnelle réussie entre deux agents travaillant en paral
 **Contenu:**
 - ✅ **Nouvelle structure:**
   - [`docs/genai/`](../genai/) : Documentation de référence (14 fichiers)
-  - [`docs/genai-suivis/`](.) : Suivis de mission chronologiques (3 fichiers)
+  - [`docs/suivis/genai-image/`](.) : Suivis de mission chronologiques (3 fichiers)
 - ✅ **Fichiers déplacés avec `git mv`** (historique préservé)
 - ✅ **README d'index** pour navigation facilitée
 - ✅ **Script de restructuration**: [`scripts/39-restructure-genai-docs-20251008.ps1`](../../scripts/39-restructure-genai-docs-20251008.ps1)
@@ -231,7 +231,7 @@ Conflits: 0
 
 ## 📎 Fichiers Créés/Modifiés dans ce Rapport
 
-- ✅ [`docs/genai-suivis/2025-10-08_04_sync-git-docker.md`](./2025-10-08_04_sync-git-docker.md) (ce fichier)
+- ✅ [`docs/suivis/genai-image/2025-10-08_04_sync-git-docker.md`](./2025-10-08_04_sync-git-docker.md) (ce fichier)
 
 ---
 

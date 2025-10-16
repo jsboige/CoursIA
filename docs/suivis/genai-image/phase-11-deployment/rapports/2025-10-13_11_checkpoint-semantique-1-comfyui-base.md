@@ -206,7 +206,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py --listen 0.0.0.0 --port 8188
 ## 📝 Notes Techniques
 
 ### Scripts Créés
-- `docs/genai-suivis/2025-10-13_11_install-comfyui-requirements.sh`
+- `docs/suivis/genai-image/2025-10-13_11_install-comfyui-requirements.sh`
   - Installation automatisée des requirements
   - Validation PyTorch + CUDA
   - Détection GPUs disponibles

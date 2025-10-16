@@ -224,7 +224,7 @@ prompt_id = client.generate_text2image(
 
 ### Fichiers Créés
 
-1. **`docs/genai-suivis/2025-10-16_13A_checkpoint-1-etat-lieux-bridge.md`**
+1. **`docs/suivis/genai-image/2025-10-16_13A_checkpoint-1-etat-lieux-bridge.md`**
    - 556 lignes
    - Synthèse 3 recherches sémantiques
    - État infrastructure + notebooks
@@ -244,7 +244,7 @@ prompt_id = client.generate_text2image(
    - 5 cells test complet
    - Documentation inline
 
-5. **`docs/genai-suivis/2025-10-16_13A_RAPPORT-FINAL-BRIDGE-COMFYUI.md`**
+5. **`docs/suivis/genai-image/2025-10-16_13A_RAPPORT-FINAL-BRIDGE-COMFYUI.md`**
    - Ce document
    - Synthèse complète Phase 13A
 

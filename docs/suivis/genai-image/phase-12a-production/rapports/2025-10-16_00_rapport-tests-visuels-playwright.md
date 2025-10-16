@@ -16,7 +16,7 @@ Valider visuellement les deux interfaces en production (ComfyUI + Forge) avec un
 
 ### Approche 1: Script Automatisé Playwright
 
-**Fichier**: [`docs/genai-suivis/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1)
+**Fichier**: [`docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1)
 
 **Résultats**:
 - ✅ Installation: Node.js v23.11.0 détecté
@@ -297,7 +297,7 @@ Via le snapshot accessibility, voici les éléments principaux identifiés :
 
 ## 📁 Screenshots Archivés
 
-Tous les screenshots sont disponibles dans [`docs/genai-suivis/screenshots/`](screenshots/):
+Tous les screenshots sont disponibles dans [`docs/suivis/genai-image/screenshots/`](screenshots/):
 
 ### ComfyUI
 - [`comfyui-ui.png`](screenshots/comfyui-ui.png) - 8.31 KB (script auto)

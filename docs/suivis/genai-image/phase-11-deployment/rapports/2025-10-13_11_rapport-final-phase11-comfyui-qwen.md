@@ -185,7 +185,7 @@ docker-configurations/comfyui-qwen/
 **Option 1: Standalone Production (RECOMMANDÉ)**
 ```bash
 # Lancer ComfyUI directement en WSL
-wsl bash /mnt/d/Dev/CoursIA/docs/genai-suivis/2025-10-13_11_test-comfyui-background.sh
+wsl bash /mnt/d/Dev/CoursIA/docs/suivis/genai-image/2025-10-13_11_test-comfyui-background.sh
 
 # Avantages:
 # - Fonctionne immédiatement

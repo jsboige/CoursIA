@@ -47,7 +47,7 @@ curl http://localhost:8188/system_stats
 
 #### [22:23:05] 1.4. Démarrage ComfyUI
 ```bash
-wsl -e bash /mnt/d/Dev/CoursIA/docs/genai-suivis/2025-10-15_13_test-comfyui-launch.sh
+wsl -e bash /mnt/d/Dev/CoursIA/docs/suivis/genai-image/2025-10-15_13_test-comfyui-launch.sh
 ```
 ✅ **Résultat:** ComfyUI démarré avec succès
 - **PID:** 838
@@ -351,7 +351,7 @@ wsl kill 838
 wsl nvidia-smi
 
 # Relancer ComfyUI
-wsl -e bash /mnt/d/Dev/CoursIA/docs/genai-suivis/2025-10-15_13_test-comfyui-launch.sh
+wsl -e bash /mnt/d/Dev/CoursIA/docs/suivis/genai-image/2025-10-15_13_test-comfyui-launch.sh
 ```
 
 ### Prochaines Étapes
@@ -392,7 +392,7 @@ wsl -e bash /mnt/d/Dev/CoursIA/docs/genai-suivis/2025-10-15_13_test-comfyui-laun
 Pour compléter les 10% restants, les scripts suivants ont été préparés:
 
 #### 1. Configuration SSL Automatique
-**📄 Script:** [`docs/genai-suivis/2025-10-15_22_configure-ssl-win-acme.ps1`](2025-10-15_22_configure-ssl-win-acme.ps1)
+**📄 Script:** [`docs/suivis/genai-image/2025-10-15_22_configure-ssl-win-acme.ps1`](2025-10-15_22_configure-ssl-win-acme.ps1)
 
 **Fonctionnalités:**
 - ✅ Vérification win-acme disponible
@@ -411,13 +411,13 @@ cd D:\Dev\CoursIA
 ```
 
 #### 2. Vérification Certificats
-**📄 Script:** [`docs/genai-suivis/check-certificates.ps1`](check-certificates.ps1)
+**📄 Script:** [`docs/suivis/genai-image/check-certificates.ps1`](check-certificates.ps1)
 
 **Résultat:** ❌ Aucun certificat wildcard `*.myia.io` existant
 **Action:** Génération nouveau certificat nécessaire
 
 #### 3. Tests Playwright UI
-**📄 Script:** [`docs/genai-suivis/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1)
+**📄 Script:** [`docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1)
 
 **Fonctionnalités:**
 - ✅ Installation environnement Playwright
@@ -441,7 +441,7 @@ npm test
 - `D:\Production\playwright-tests\results\forge-ui.png`
 
 #### 4. Instructions Complètes
-**📄 Document:** [`docs/genai-suivis/2025-10-15_22_INSTRUCTIONS-FINALES-SSL-TESTS.md`](2025-10-15_22_INSTRUCTIONS-FINALES-SSL-TESTS.md)
+**📄 Document:** [`docs/suivis/genai-image/2025-10-15_22_INSTRUCTIONS-FINALES-SSL-TESTS.md`](2025-10-15_22_INSTRUCTIONS-FINALES-SSL-TESTS.md)
 
 **Contenu:**
 - ✅ État actuel détaillé (90% complet)
@@ -483,7 +483,7 @@ npm test
 1. Exécuter: `.\docs\genai-suivis\2025-10-15_13_test-playwright-ui.ps1`
 2. Attendre installation + tests
 3. Vérifier screenshots générés
-4. Copier dans `docs/genai-suivis/screenshots/`
+4. Copier dans `docs/suivis/genai-image/screenshots/`
 
 **Résultat attendu:**
 - ✅ Tests ComfyUI UI passés

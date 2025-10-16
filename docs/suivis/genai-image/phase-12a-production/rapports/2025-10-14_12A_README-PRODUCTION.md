@@ -61,7 +61,7 @@
 
 ```
 CoursIA/
-├── docs/genai-suivis/
+├── docs/suivis/genai-image/
 │   ├── 2025-10-14_12A_start-comfyui-watchdog.ps1      # Watchdog + monitoring
 │   ├── 2025-10-14_12A_install-scheduled-task.ps1     # Installation tâche planifiée
 │   ├── 2025-10-14_12A_setup-iis-reverse-proxy.ps1    # Configuration IIS

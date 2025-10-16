@@ -95,25 +95,25 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
 
 #### 1. Démarrage & Monitoring
 
-- [`docs/genai-suivis/2025-10-14_12A_start-comfyui-watchdog.ps1`](2025-10-14_12A_start-comfyui-watchdog.ps1) (137 lignes)
+- [`docs/suivis/genai-image/2025-10-14_12A_start-comfyui-watchdog.ps1`](2025-10-14_12A_start-comfyui-watchdog.ps1) (137 lignes)
   - Watchdog avec auto-restart et monitoring continu
   - Détection crash + relance automatique
   - Logs CSV avec timestamps
   - Alertes température GPU et VRAM
 
-- [`docs/genai-suivis/2025-10-14_12A_monitor-gpu-performance.ps1`](2025-10-14_12A_monitor-gpu-performance.ps1) (167 lignes)
+- [`docs/suivis/genai-image/2025-10-14_12A_monitor-gpu-performance.ps1`](2025-10-14_12A_monitor-gpu-performance.ps1) (167 lignes)
   - Monitoring temps réel GPU
   - Export CSV pour analyse
   - Statistiques agrégées (min/max/avg)
   - Dashboard console coloré
 
-- [`docs/genai-suivis/2025-10-15_13_start-comfyui.sh`](2025-10-15_13_start-comfyui.sh)
+- [`docs/suivis/genai-image/2025-10-15_13_start-comfyui.sh`](2025-10-15_13_start-comfyui.sh)
   - Script démarrage simplifié WSL
   - Activation venv automatique
   - Configuration CUDA_VISIBLE_DEVICES
   - Options optimisation performance
 
-- [`docs/genai-suivis/2025-10-15_13_test-comfyui-launch.sh`](2025-10-15_13_test-comfyui-launch.sh)
+- [`docs/suivis/genai-image/2025-10-15_13_test-comfyui-launch.sh`](2025-10-15_13_test-comfyui-launch.sh)
   - Tests démarrage background
   - Validation port 8188
   - Vérification GPU allocation
@@ -121,7 +121,7 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
 
 #### 2. Configuration IIS & SSL
 
-- [`docs/genai-suivis/2025-10-15_13_create-iis-site-comfyui.ps1`](2025-10-15_13_create-iis-site-comfyui.ps1) (56 lignes)
+- [`docs/suivis/genai-image/2025-10-15_13_create-iis-site-comfyui.ps1`](2025-10-15_13_create-iis-site-comfyui.ps1) (56 lignes)
   - Création automatique site IIS
   - Configuration bindings HTTP/HTTPS
   - Association certificat SSL
@@ -140,13 +140,13 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
 
 #### 3. Tests & Validation
 
-- [`docs/genai-suivis/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1) (145 lignes)
+- [`docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1) (145 lignes)
   - Installation environnement Playwright
   - Tests navigateurs (Chromium/Firefox/WebKit)
   - Capture screenshots automatique
   - Validation visuelle ComfyUI + Forge
 
-- [`docs/genai-suivis/2025-10-15_13_test-comfyui-access.ps1`](2025-10-15_13_test-comfyui-access.ps1)
+- [`docs/suivis/genai-image/2025-10-15_13_test-comfyui-access.ps1`](2025-10-15_13_test-comfyui-access.ps1)
   - Tests HTTP local (localhost:8188)
   - Tests reverse proxy HTTP/HTTPS
   - Validation endpoints API
@@ -160,7 +160,7 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
 
 #### 4. Documentation
 
-- [`docs/genai-suivis/2025-10-14_12A_README-PRODUCTION.md`](2025-10-14_12A_README-PRODUCTION.md) (687 lignes)
+- [`docs/suivis/genai-image/2025-10-14_12A_README-PRODUCTION.md`](2025-10-14_12A_README-PRODUCTION.md) (687 lignes)
   - Guide opérationnel complet
   - Architecture détaillée
   - Commandes administration
@@ -168,25 +168,25 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
   - Métriques et monitoring
   - Procédures maintenance
 
-- [`docs/genai-suivis/2025-10-15_13_guide-installation-iis-ssl.md`](2025-10-15_13_guide-installation-iis-ssl.md) (559 lignes)
+- [`docs/suivis/genai-image/2025-10-15_13_guide-installation-iis-ssl.md`](2025-10-15_13_guide-installation-iis-ssl.md) (559 lignes)
   - Guide step-by-step création site IIS
   - Configuration certificat SSL
   - Tests validation complets
   - Checklist exécution
 
-- [`docs/genai-suivis/2025-10-15_13_rapport-final-iis-ssl-comfyui.md`](2025-10-15_13_rapport-final-iis-ssl-comfyui.md) (473 lignes)
+- [`docs/suivis/genai-image/2025-10-15_13_rapport-final-iis-ssl-comfyui.md`](2025-10-15_13_rapport-final-iis-ssl-comfyui.md) (473 lignes)
   - État infrastructure complète
   - Actions nécessaires avec admin
   - Métriques performance attendues
   - Prochaines étapes détaillées
 
-- [`docs/genai-suivis/2025-10-15_13_rapport-debug-comfyui.md`](2025-10-15_13_rapport-debug-comfyui.md)
+- [`docs/suivis/genai-image/2025-10-15_13_rapport-debug-comfyui.md`](2025-10-15_13_rapport-debug-comfyui.md)
   - Résolution problèmes démarrage
   - Validation ComfyUI opérationnel
   - Tests GPU et performance
   - Diagnostic complet environnement
 
-- [`docs/genai-suivis/2025-10-15_13_rapport-deploiement-iis-comfyui.md`](2025-10-15_13_rapport-deploiement-iis-comfyui.md)
+- [`docs/suivis/genai-image/2025-10-15_13_rapport-deploiement-iis-comfyui.md`](2025-10-15_13_rapport-deploiement-iis-comfyui.md)
   - Exploration infrastructure D:\Production
   - Analyse 48 sites existants
   - Préparation structure qwen-image-edit
@@ -1139,10 +1139,10 @@ cd D:\Dev\CoursIA
 
 ### Fichiers Créés Cette Session
 
-1. `docs/genai-suivis/2025-10-15_22_execution-deploiement-final.md` - Rapport exécution
-2. `docs/genai-suivis/2025-10-15_22_configure-ssl-win-acme.ps1` - Script SSL interactif
-3. `docs/genai-suivis/check-certificates.ps1` - Vérification certificats
-4. `docs/genai-suivis/2025-10-15_22_INSTRUCTIONS-FINALES-SSL-TESTS.md` - Instructions complètes
+1. `docs/suivis/genai-image/2025-10-15_22_execution-deploiement-final.md` - Rapport exécution
+2. `docs/suivis/genai-image/2025-10-15_22_configure-ssl-win-acme.ps1` - Script SSL interactif
+3. `docs/suivis/genai-image/check-certificates.ps1` - Vérification certificats
+4. `docs/suivis/genai-image/2025-10-15_22_INSTRUCTIONS-FINALES-SSL-TESTS.md` - Instructions complètes
 
 ### Prochaines Étapes
 

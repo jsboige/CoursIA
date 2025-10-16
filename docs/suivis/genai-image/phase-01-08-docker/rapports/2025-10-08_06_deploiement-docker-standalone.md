@@ -130,7 +130,7 @@ Chaque service dispose d'un README complet incluant:
 
 ### Scripts de Test PowerShell
 
-**Emplacement** : `docs/genai-suivis/scripts/`  
+**Emplacement** : `docs/suivis/genai-image/scripts/`  
 **Statut** : ✅ Tous créés  
 
 | Script | Service | GPU | Taille | Durée |
@@ -146,7 +146,7 @@ Chaque service dispose d'un README complet incluant:
 - ✅ Mode -Force pour téléchargements lourds
 - ✅ Logs détaillés avec codes couleur
 
-**Documentation** : `docs/genai-suivis/scripts/README.md` (171 lignes)
+**Documentation** : `docs/suivis/genai-image/scripts/README.md` (171 lignes)
 
 ---
 
@@ -159,7 +159,7 @@ Chaque service dispose d'un README complet incluant:
 **Téléchargement** : ~100 MB (image Python)  
 
 ```powershell
-cd docs/genai-suivis/scripts
+cd docs/suivis/genai-image/scripts
 .\test-01-orchestrator.ps1
 ```
 
@@ -187,7 +187,7 @@ cd docs/genai-suivis/scripts
 **Téléchargement** : ~5-10 GB (image ComfyUI + CUDA)  
 
 ```powershell
-cd docs/genai-suivis/scripts
+cd docs/suivis/genai-image/scripts
 
 # Vérifier prérequis
 .\test-02-comfyui.ps1
@@ -338,7 +338,7 @@ Recommandé : **100 GB libre** pour confort
 
 1. **Exécuter Test 1** : Orchestrator
    ```powershell
-   cd docs/genai-suivis/scripts
+   cd docs/suivis/genai-image/scripts
    .\test-01-orchestrator.ps1
    ```
 
