@@ -11,6 +11,7 @@ Bienvenue dans le dépôt **CoursIA**, qui contient les ressources et TPs pour l
 - [Mise en route](#mise-en-route)
 - [Parcours d'apprentissage](#parcours-dapprentissage)
 - [Contenu des modules](#contenu-des-modules)
+- [Suivis Projets](#suivis-projets)
 - [Contribution](#contribution)
 - [Licence](#licence)
 
@@ -161,6 +162,16 @@ Notebooks sur les probabilités et l'inférence bayésienne :
 Notebooks sur la théorie de l'information intégrée :
 
 - `Intro_to_PyPhi.ipynb` - Introduction à PyPhi pour IIT
+
+## 📂 Suivis Projets
+
+Cette section regroupe les suivis détaillés des projets en cours et terminés.
+
+### 🖼️ Projet GenAI Image
+
+- **Description** : Déploiement d'une infrastructure locale ComfyUI + Qwen pour la génération et l'édition d'images par IA. Inclut la mise en production SSL/IIS, le monitoring et le design de workflows pédagogiques.
+- **Statut** : Phase 13A complétée, Phase 13B en planification
+- **Accès** : [`docs/suivis/genai-image/README.md`](docs/suivis/genai-image/README.md)
 
 ## 👥 Contribution
 
