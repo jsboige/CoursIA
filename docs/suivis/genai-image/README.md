@@ -406,7 +406,7 @@ search_tasks_semantic(
 - ✅ Lancer script debug : [`phase-11-deployment/scripts/test-comfyui-standalone.sh`](phase-11-deployment/scripts/test-comfyui-standalone.sh)
 
 **Problème** : SSL/HTTPS non fonctionnel
-- ✅ Vérifier certificat : [`phase-12a-production/scripts/check-certificates.ps1`](../genai-suivis/check-certificates.ps1)
+- ✅ Vérifier certificat : [`phase-12a-production/scripts/check-certificates.ps1`](phase-12a-production/scripts/check-certificates.ps1)
 - ✅ Relancer Win-ACME : [`phase-12a-production/scripts/configure-ssl-win-acme.ps1`](phase-12a-production/scripts/configure-ssl-win-acme.ps1)
 
 **Problème** : WebSocket errors
