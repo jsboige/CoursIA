@@ -1,0 +1,67 @@
+services:
+  comfyui-qwen:
+    image: nvidia/cuda:12.4.0-devel-ubuntu22.04
+    container_name: comfyui-qwen
+    hostname: comfyui-qwen
+    
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-0}']
+              capabilities: [gpu]
+    
+    ports:
+      - "${COMFYUI_PORT:-8188}:8188"
+    
+    volumes:
+      - type: bind
+        source: ${COMFYUI_WORKSPACE_PATH}
+        target: /workspace/ComfyUI
+    
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - TZ=${TZ:-Europe/Paris}
+      - COMFYUI_PORT=8188
+      - COMFYUI_LISTEN=0.0.0.0
+    
+    working_dir: /workspace/ComfyUI
+    
+    command: >
+      bash -c "
+        apt-get update -qq &&
+        apt-get install -y -qq --no-install-recommends python3 python3-pip python3-venv git curl wget ca-certificates &&
+        apt-get clean &&
+        rm -rf /var/lib/apt/lists/* &&
+        cd /workspace/ComfyUI &&
+        test -d venv || exit 1 &&
+        source venv/bin/activate &&
+        exec python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
+      "
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/system_stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    
+    restart: unless-stopped
+    
+    networks:
+      - comfyui-network
+    
+    labels:
+      - "com.myia.service=comfyui-qwen"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=qwen-image-edit-2509"
+      - "com.myia.phase=11-production"
+
+networks:
+  comfyui-network:
+    driver: bridge
+    name: comfyui-network
