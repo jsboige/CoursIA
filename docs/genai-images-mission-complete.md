@@ -154,7 +154,7 @@ MyIA.AI.Notebooks/GenAI/
 
 **Livrables** :
 - [`docs/genai/architecture.md`](genai/architecture.md)
-- [`docs/genai-suivis/2025-10-07_01_phase1-2-architecture.md`](genai-suivis/2025-10-07_01_phase1-2-architecture.md)
+- [`docs/suivis/genai-image/2025-10-07_01_phase1-2-architecture.md`](genai-suivis/2025-10-07_01_phase1-2-architecture.md)
 
 ---
 
@@ -552,7 +552,7 @@ response = client.chat.completions.create(
 
 3. **Documentation partagée** :
    - [`docs/genai/architecture.md`](genai/architecture.md) : Single source of truth
-   - [`docs/genai-suivis/`](genai-suivis/) : Timeline updates
+   - [`docs/suivis/genai-image/`](genai-suivis/) : Timeline updates
 
 4. **Zero conflits majeurs** :
    - Séparation claire fichiers (APIs vs Docker notebooks)
