@@ -365,6 +365,15 @@ MyIA.AI.Notebooks/GenAI/SemanticKernel/.env
 .vscode/
 
 
+# Docker cache (Phase 19 - Nettoyage Git)
+docker-configurations/cache/
+docker-configurations/models/
+
+# Notebooks temporaires
+.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/zulu17.50.19-ca-jdk17.0.11-win_x64/DISCLAIMER
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/zulu17.50.19-ca-jdk17.0.11-win_x64/readme.txt
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/zulu17.50.19-ca-jdk17.0.11-win_x64/release
