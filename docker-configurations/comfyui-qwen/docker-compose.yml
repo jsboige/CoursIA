@@ -28,6 +28,7 @@ services:
       - TZ=${TZ:-Europe/Paris}
       - COMFYUI_PORT=8188
       - COMFYUI_LISTEN=0.0.0.0
+      - COMFYUI_LOGIN_ENABLED=true
     
     working_dir: /workspace/ComfyUI
     
@@ -40,7 +41,7 @@ services:
         cd /workspace/ComfyUI &&
         test -d venv || exit 1 &&
         source venv/bin/activate &&
-        exec python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
+        exec python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention --enable-auth
       "
     
     healthcheck:
