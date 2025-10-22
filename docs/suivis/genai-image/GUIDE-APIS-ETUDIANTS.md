@@ -53,6 +53,61 @@ CoursIA met à votre disposition **2 APIs complémentaires** de génération d'i
 - **URL Production**: `https://qwen-image-edit.myia.io`
 - **API Endpoint**: Port 8188 (WebSocket)
 - **Documentation complète**: [`docs/suivis/genai-image/phase-12-production/`](phase-12-production/)
+### 🔐 Authentification (NOUVEAU - Phase 23C)
+
+**Depuis le 2025-10-21**, l'API Qwen requiert une authentification par token Bearer pour garantir la sécurité et la disponibilité du service.
+
+#### Obtention du Token
+
+**Méthode 1 - Interface Web** :
+1. Accédez à https://qwen-image-edit.myia.io/login
+2. Connectez-vous avec :
+   - **Username** : `etudiant`
+   - **Password** : `CourIA2025!`
+3. Copiez le token affiché après connexion
+
+**Méthode 2 - Fourni par l'Enseignant** :
+Contactez votre enseignant pour obtenir votre token personnel.
+
+#### Configuration dans les Notebooks
+
+**Étape 1 : Créer le fichier `.env`**
+
+```bash
+cd MyIA.AI.Notebooks/GenAI/01-Images-Foundation/
+cp .env.example .env
+```
+
+**Étape 2 : Éditer `.env` avec votre token**
+
+```env
+# Fichier: MyIA.AI.Notebooks/GenAI/01-Images-Foundation/.env
+QWEN_API_TOKEN=votre_token_copie_ici
+```
+
+**Étape 3 : Le notebook charge automatiquement le token**
+
+```python
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+QWEN_API_TOKEN = os.getenv("QWEN_API_TOKEN")
+
+# Headers d'authentification (ajouté automatiquement par ComfyUIClient)
+AUTH_HEADERS = {"Authorization": f"Bearer {QWEN_API_TOKEN}"}
+```
+
+#### Sécurité du Token
+
+⚠️ **Règles CRITIQUES** :
+- ❌ Ne JAMAIS partager votre token
+- ❌ Ne JAMAIS commiter le fichier `.env` dans Git (déjà dans `.gitignore`)
+- ✅ Utiliser TOUJOURS le fichier `.env` pour stocker le token
+- ✅ Contacter l'enseignant en cas de perte du token
+
+**Note** : Le fichier `.env` est automatiquement ignoré par Git pour votre sécurité.
+
 
 ### 💻 Exemple Python - Génération Simple
 

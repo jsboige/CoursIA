@@ -44,13 +44,14 @@ Ce notebook vous apprendra à:
 Installez les dépendances suivantes:
 
 ```bash
-pip install requests Pillow matplotlib
+pip install requests Pillow matplotlib python-dotenv
 ```
 
 **Détails Packages**:
 - **`requests`**: Communication HTTP avec l'API ComfyUI
 - **`Pillow` (PIL)**: Manipulation images (chargement, sauvegarde, redimensionnement)
 - **`matplotlib`**: Affichage visuel des résultats dans le notebook
+- **`python-dotenv`**: Chargement variables d'environnement depuis `.env` (authentification - Phase 23C)
 
 ### Vérification Installation
 
