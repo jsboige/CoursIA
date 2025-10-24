@@ -100,10 +100,36 @@ jupyter lab
 
 ---
 
+## 🔐 **Authentification ComfyUI**
+
+> **NOUVEAU** : L'accès à ComfyUI nécessite désormais une authentification Bearer Token pour sécuriser les services GenAI.
+
+### 📋 **Guide Rapide Étudiants**
+
+1. **Obtenir votre token** : Contactez votre enseignant pour recevoir votre token personnel Bearer
+2. **Configuration** : Créez un fichier `.env` dans `MyIA.AI.Notebooks/GenAI/`
+3. **Utilisation** : Les notebooks chargent automatiquement les credentials
+
+📖 **Documentation complète** :
+- **Guide Étudiants** : [`README-ETUDIANTS-AUTH.md`](README-ETUDIANTS-AUTH.md) - Configuration pas-à-pas
+- **Documentation Technique** : [`README-AUTH.md`](README-AUTH.md) - Architecture d'authentification
+- **Scripts Admin** : [`scripts/genai-auth/`](../../scripts/genai-auth/) - Gestion des tokens
+
+### ⚠️ **Important**
+- ✅ Tous les notebooks supportent l'authentification (graceful degradation si désactivée)
+- ✅ Helper Python : `comfyui_client.py` gère automatiquement les credentials
+- ⚠️ Ne partagez JAMAIS votre token - il est personnel et traçable
+
+---
+
 ## ⚙️ **Configuration**
 
 ### 🔑 **Variables Environnement** (`.env`)
 ```bash
+# Authentification ComfyUI (REQUIS pour services locaux)
+COMFYUI_BASE_URL=http://localhost:8188
+COMFYUI_BEARER_TOKEN=YOUR_TOKEN_HERE    # Token fourni par l'enseignant
+
 # APIs Principales
 OPENAI_API_KEY=sk-...              # DALL-E 3, GPT-5
 ANTHROPIC_API_KEY=sk-ant-...       # Claude Vision
@@ -113,11 +139,13 @@ HUGGINGFACE_TOKEN=hf_...           # Modèles HF
 DOCKER_HOST=localhost:2376         # Docker Services
 JUPYTER_TOKEN=your-secure-token    # Jupyter Security
 
-# Modèles Spécialisés  
+# Modèles Spécialisés
 QWEN_API_ENDPOINT=https://...      # Qwen 2.5 Image Edit
 FLUX_MODEL_PATH=/models/flux/      # FLUX.1 Local
 SD35_CHECKPOINT=/models/sd35/      # Stable Diffusion 3.5
 ```
+
+**Modèle de configuration** : Voir [`.env.example`](.env.example) pour un template complet
 
 ### 📦 **Dépendances Principales**
 ```text

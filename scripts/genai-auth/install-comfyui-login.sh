@@ -1,41 +1,42 @@
 #!/bin/bash
 #
 # .SYNOPSIS
-#   Installe le custom node ComfyUI-Login dans un ou plusieurs conteneurs Docker ComfyUI.
+#   Installe le custom node ComfyUI-Login dans le workspace persistant de ComfyUI sur l'hôte.
 #
 # .DESCRIPTION
 #   Ce script automatise l'installation du custom node ComfyUI-Login depuis son repository GitHub.
-#   Il clone le repository, installe les dépendances Python nécessaires via pip, et s'assure
-#   que le node est correctement placé dans le répertoire 'custom_nodes' du conteneur cible.
-#   Le script est conçu pour être idempotent : si le node est déjà installé, il le met à jour.
+#   CRITIQUE: Ce script installe le node sur le SYSTÈME DE FICHIERS HÔTE et non dans le conteneur
+#   pour garantir la PERSISTANCE des données. L'ancienne méthode d'installation via 'docker exec'
+#   entraînait une perte du node à chaque redémarrage du conteneur.
+#   Le script clone ou met à jour le repository et installe les dépendances Python.
 #
-# .PARAMETER ContainerNames
-#   Un ou plusieurs noms de conteneurs Docker dans lesquels installer le custom node.
+# .PARAMETER COMFYUI_WORKSPACE_PATH
+#   Chemin d'accès complet au répertoire racine de ComfyUI sur la machine hôte.
+#   Ce répertoire doit contenir le sous-répertoire 'custom_nodes'.
 #   Ce paramètre est obligatoire.
 #
 # .EXAMPLE
-#   # Installer dans un seul conteneur
-#   ./install-comfyui-login.sh comfyui-qwen
+#   # Installer en spécifiant le chemin du workspace
+#   ./install-comfyui-login.sh "/path/to/your/ComfyUI"
 #
 # .EXAMPLE
-#   # Installer dans plusieurs conteneurs simultanément
-#   ./install-comfyui-login.sh comfyui-qwen comfyui-forge
+#   # Utiliser une variable d'environnement
+#   export COMFYUI_WORKSPACE_PATH="/path/to/your/ComfyUI"
+#   ./install-comfyui-login.sh
 #
 # .NOTES
-#   - Le script nécessite que Docker soit installé et que l'utilisateur ait les permissions
-#     nécessaires pour exécuter des commandes `docker exec`.
-#   - Les conteneurs cibles doivent être en cours d'exécution.
+#   - Le script nécessite que Git soit installé sur la machine hôte.
+#   - L'utilisateur doit avoir les permissions d'écriture dans le répertoire du workspace.
 #   - Le script utilise 'set -e' pour s'arrêter immédiatement en cas d'erreur.
-#   - Créé lors de la reconstruction post-incident (2025-10-22).
+#   - Corrigé le 2025-10-22 pour résoudre un bug critique de persistance.
 #
 
 set -euo pipefail
 
 # --- Configuration ---
-REPO_URL="https://github.com/11cafe/ComfyUI-Login.git"
-CUSTOM_NODES_DIR="/app/custom_nodes"
+REPO_URL="https://github.com/liusida/ComfyUI-Login.git"
 NODE_DIR_NAME="ComfyUI-Login"
-LOG_PREFIX="[INSTALL-LOGIN]"
+LOG_PREFIX="[INSTALL-LOGIN-HOST]"
 
 # --- Fonctions ---
 
@@ -44,73 +45,77 @@ log() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') - $LOG_PREFIX $1"
 }
 
-# Valide que les conteneurs cibles existent et tournent
-validate_containers() {
-    for container in "$@"; do
-        log "Vérification du conteneur '$container'..."
-        if ! docker ps --filter "name=^${container}$" --format "{{.Names}}" | grep -q "^${container}$"; then
-            log "❌ ERREUR: Le conteneur '$container' n'est pas en cours d'exécution ou n'existe pas."
-            exit 1
-        fi
-        log "✅ Conteneur '$container' trouvé et en cours d'exécution."
-    done
-}
+# Installe ou met à jour le custom node sur le système de fichiers hôte
+install_on_host() {
+    local workspace_path="$1"
+    
+    # Valider que le chemin du workspace est un répertoire valide
+    log "Vérification du chemin du workspace: '$workspace_path'..."
+    if [ ! -d "$workspace_path" ]; then
+        log "❌ ERREUR: Le chemin COMFYUI_WORKSPACE_PATH ('$workspace_path') n'est pas un répertoire valide."
+        exit 1
+    fi
+    log "✅ Le chemin du workspace est valide."
 
-# Installe ou met à jour le custom node dans un conteneur donné
-install_in_container() {
-    local container_name="$1"
-    local node_path="${CUSTOM_NODES_DIR}/${NODE_DIR_NAME}"
+    local custom_nodes_dir="${workspace_path}/custom_nodes"
+    # S'assurer que le répertoire custom_nodes existe
+    if [ ! -d "$custom_nodes_dir" ]; then
+        log "ℹ️ Le répertoire 'custom_nodes' n'existe pas dans le workspace. Création de '$custom_nodes_dir'..."
+        mkdir -p "$custom_nodes_dir"
+        log "✅ Répertoire 'custom_nodes' créé."
+    fi
 
-    log "--- Début de l'installation pour le conteneur '$container_name' ---"
+    local node_path="${custom_nodes_dir}/${NODE_DIR_NAME}"
 
-    # Vérifie si le répertoire du node existe déjà
-    if docker exec "$container_name" test -d "$node_path"; then
-        log "ℹ️ Le répertoire '$node_path' existe déjà. Tentative de mise à jour..."
-        docker exec "$container_name" bash -c "cd '$node_path' && git pull"
+    log "--- Début de l'installation sur l'hôte ---"
+
+    # Vérifie si le répertoire du node existe déjà pour cloner ou mettre à jour
+    if [ -d "$node_path" ]; then
+        log "ℹ️ Le répertoire '$node_path' existe déjà. Tentative de mise à jour via 'git pull'..."
+        (cd "$node_path" && git pull)
     else
         log "ℹ️ Le répertoire '$node_path' n'existe pas. Clonage du repository..."
-        docker exec "$container_name" git clone "$REPO_URL" "$node_path"
+        git clone "$REPO_URL" "$node_path"
     fi
-    log "✅ Repository cloné/mis à jour avec succès."
+    log "✅ Repository cloné/mis à jour avec succès dans '$node_path'."
 
     # Installe les dépendances Python
     local requirements_path="${node_path}/requirements.txt"
-    if docker exec "$container_name" test -f "$requirements_path"; then
-        log "ℹ️ Fichier 'requirements.txt' trouvé. Installation des dépendances..."
-        docker exec "$container_name" pip install --no-cache-dir -r "$requirements_path"
+    if [ -f "$requirements_path" ]; then
+        log "ℹ️ Fichier 'requirements.txt' trouvé. Installation des dépendances via pip..."
+        # Il est attendu que l'environnement Python approprié soit activé
+        pip install --no-cache-dir -r "$requirements_path"
         log "✅ Dépendances Python installées."
     else
-        log "⚠️ AVERTISSEMENT: Fichier 'requirements.txt' non trouvé dans '$node_path'. Aucune dépendance installée."
+        log "⚠️ AVERTISSEMENT: Fichier 'requirements.txt' non trouvé. Aucune dépendance installée."
     fi
 
-    log "--- ✅ Installation terminée avec succès pour '$container_name' ---"
+    log "--- ✅ Installation sur l'hôte terminée avec succès ---"
 }
 
 # --- Script Principal ---
 
-# Vérifie les arguments
-if [ "$#" -eq 0 ]; then
-    log "❌ ERREUR: Aucun nom de conteneur fourni."
-    echo "Usage: $0 <container_name_1> [container_name_2] ..."
+# Le chemin du workspace peut être passé en argument ou via une variable d'environnement
+COMFYUI_WORKSPACE_PATH="${1:-${COMFYUI_WORKSPACE_PATH:-}}"
+
+# Vérifie que le chemin du workspace a été fourni
+if [ -z "$COMFYUI_WORKSPACE_PATH" ]; then
+    log "❌ ERREUR: Le chemin du workspace ComfyUI n'a pas été fourni."
+    echo "Usage: $0 <COMFYUI_WORKSPACE_PATH>"
+    echo "Vous pouvez aussi définir la variable d'environnement COMFYUI_WORKSPACE_PATH."
     exit 1
 fi
 
-log "Démarrage du script d'installation ComfyUI-Login..."
-log "Conteneurs cibles: $@"
+log "Démarrage du script d'installation ComfyUI-Login pour une installation persistante."
+log "Workspace ComfyUI cible: $COMFYUI_WORKSPACE_PATH"
 
-# Validation des prérequis
-validate_containers "$@"
+# Installation sur l'hôte
+install_on_host "$COMFYUI_WORKSPACE_PATH"
 
-# Boucle sur chaque conteneur pour l'installation
-for container in "$@"; do
-    install_in_container "$container"
-done
-
-log "🎉 Opération terminée. Tous les conteneurs ont été traités."
+log "🎉 Opération terminée."
 log "Veuillez redémarrer les services ComfyUI pour que les changements prennent effet."
 echo
-echo "Exemple de commande de redémarrage:"
-echo "  docker-compose restart $@"
+echo "Rappel: Cette installation a été effectuée sur la machine hôte pour garantir la persistance."
 echo
 
 exit 0

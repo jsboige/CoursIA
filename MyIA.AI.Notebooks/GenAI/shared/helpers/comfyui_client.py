@@ -1,7 +1,8 @@
 """
-ComfyUI API Client - Bridge vers infrastructure locale
+ComfyUI API Client - Bridge vers infrastructure locale avec authentification
 Auteur: Phase 13A - Implémentation Bridge
 Date: 2025-10-16
+Mise à jour: 2025-10-22 - Ajout authentification Bearer
 Référence: Architecture Phase 12C
 """
 
@@ -13,7 +14,11 @@ import logging
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from enum import Enum
+from dotenv import load_dotenv
 
+
+# Charger variables d'environnement
+load_dotenv()
 
 # Configuration Logging
 logging.basicConfig(level=logging.INFO)
@@ -28,16 +33,30 @@ class ImageGenMode(Enum):
 
 @dataclass
 class ComfyUIConfig:
-    """Configuration client ComfyUI"""
+    """Configuration client ComfyUI avec authentification optionnelle"""
     base_url: str = "http://localhost:8188"  # Port production (Phase 12A)
     timeout: int = 120  # Timeout génération (secondes)
     poll_interval: int = 2  # Intervalle polling (secondes)
+    auth_token: Optional[str] = None  # Token authentification Bearer (optionnel)
+    
+    def __post_init__(self):
+        """Initialise token depuis env si non fourni"""
+        if self.auth_token is None:
+            self.auth_token = os.getenv('COMFYUI_API_TOKEN')
+    
+    def get_headers(self) -> Dict[str, str]:
+        """Génère headers HTTP avec authentification si disponible"""
+        headers = {}
+        if self.auth_token:
+            headers['Authorization'] = f'Bearer {self.auth_token}'
+        return headers
     
     def test_connection(self) -> bool:
         """Teste connexion au service ComfyUI"""
         try:
             response = requests.get(
                 f"{self.base_url}/system_stats",
+                headers=self.get_headers(),
                 timeout=10
             )
             if response.status_code == 200:
@@ -56,7 +75,11 @@ class ComfyUIConfig:
     def get_system_stats(self) -> Optional[Dict[str, Any]]:
         """Récupère statistiques système ComfyUI"""
         try:
-            response = requests.get(f"{self.base_url}/system_stats", timeout=10)
+            response = requests.get(
+                f"{self.base_url}/system_stats",
+                headers=self.get_headers(),
+                timeout=10
+            )
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -76,7 +99,14 @@ class ComfyUIClient:
         """
         self.config = config or ComfyUIConfig()
         self.base_url = self.config.base_url
-        logger.info(f"🎨 ComfyUI Client initialisé: {self.base_url}")
+        
+        # Log authentification
+        if self.config.auth_token:
+            logger.info(f"🎨 ComfyUI Client initialisé: {self.base_url}")
+            logger.info("✓ Authentification configurée")
+        else:
+            logger.info(f"🎨 ComfyUI Client initialisé: {self.base_url}")
+            logger.warning("⚠️  Aucun token - connexion sans authentification")
     
     def queue_prompt(self, workflow: Dict[str, Any]) -> Optional[str]:
         """
@@ -92,6 +122,7 @@ class ComfyUIClient:
             response = requests.post(
                 f"{self.base_url}/prompt",
                 json={"prompt": workflow},
+                headers=self.config.get_headers(),
                 timeout=self.config.timeout
             )
             response.raise_for_status()
@@ -133,6 +164,7 @@ class ComfyUIClient:
             try:
                 response = requests.get(
                     f"{self.base_url}/history/{prompt_id}",
+                    headers=self.config.get_headers(),
                     timeout=10
                 )
                 response.raise_for_status()
@@ -185,6 +217,7 @@ class ComfyUIClient:
                     "subfolder": "",
                     "type": "output"
                 },
+                headers=self.config.get_headers(),
                 timeout=30
             )
             response.raise_for_status()
