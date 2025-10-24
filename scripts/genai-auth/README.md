@@ -2,7 +2,7 @@
 
 ## Contexte
 
-Ce répertoire contient un ensemble de scripts PowerShell et Bash recréés suite à l'incident `git clean -fd` du 2025-10-22. Ces scripts permettent d'installer, configurer, tester, déployer et annuler le déploiement d'une solution d'authentification basée sur le custom node [ComfyUI-Login](https://github.com/11cafe/ComfyUI-Login) pour les services GenAI.
+Ce répertoire contient un ensemble de scripts PowerShell et Bash recréés suite à l'incident `git clean -fd` du 2025-10-22. Ces scripts permettent d'installer, configurer, tester, déployer et annuler le déploiement d'une solution d'authentification basée sur le custom node [ComfyUI-Login](https://github.com/liusida/ComfyUI-Login) pour les services GenAI.
 
 La recréation de ces scripts est basée sur les informations récupérées dans le rapport de mission SDDD : `recovery/07-RAPPORT-MISSION-SDDD-AUTHENTIFICATION-GENAI.md`.
 
@@ -35,15 +35,28 @@ Les scripts sont conçus pour être exécutés dans un ordre précis pour un dé
 
 ### 1. `install-comfyui-login.sh`
 
--   **Objectif**: Installer le custom node ComfyUI-Login.
+> ⚠️ **AVERTISSEMENT DE SÉCURITÉ CRITIQUE**
+> La version précédente de ce script installait ComfyUI-Login **à l'intérieur du conteneur Docker**. Cette approche présentait un **bug critique**: le custom node était supprimé à chaque redémarrage du conteneur, entraînant une perte de configuration et une faille de sécurité potentielle.
+> Le script a été corrigé pour installer le node dans le **workspace persistant sur la machine hôte**. N'utilisez jamais l'ancienne méthode.
+
+-   **Objectif**: Installer le custom node ComfyUI-Login de manière **persistante** sur le système de fichiers de l'hôte.
 -   **Usage**:
     ```bash
-    ./install-comfyui-login.sh <container_name_1> [container_name_2] ...
+    # Le chemin du workspace peut être fourni comme argument...
+    ./install-comfyui-login.sh <COMFYUI_WORKSPACE_PATH>
+
+    # ...ou via une variable d'environnement
+    export COMFYUI_WORKSPACE_PATH="/path/to/ComfyUI"
+    ./install-comfyui-login.sh
     ```
 -   **Exemple**:
     ```bash
-    ./install-comfyui-login.sh comfyui-qwen comfyui-forge
+    # Chemin vers le workspace monté dans le conteneur comfyui-qwen
+    ./install-comfyui-login.sh "\\wsl.localhost\Ubuntu\home\jesse\SD\workspace\comfyui-qwen\ComfyUI"
     ```
+-   **Comment trouver le `COMFYUI_WORKSPACE_PATH`?**
+    -   Consultez le fichier `docker-compose.yml` de votre service (ex: `docker-configurations/comfyui-qwen/docker-compose.yml`) pour voir quel répertoire local est monté.
+    -   Recherchez un fichier `.env` ou `.env.example` qui pourrait contenir la variable `COMFYUI_WORKSPACE_PATH`.
 
 ### 2. `configure-comfyui-auth.ps1`
 
@@ -69,7 +82,7 @@ Les scripts sont conçus pour être exécutés dans un ordre précis pour un dé
     # Crée les fichiers .token et un .env.generated dans le répertoire spécifié
     ./generate-bearer-tokens.ps1 -Usernames "qwen-api-user", "forge-api-user" -OutputPath "./docker-configurations/comfyui-qwen/custom_nodes/ComfyUI-Login"
     ```
-    **Important**: Le `OutputPath` doit pointer vers le répertoire où ComfyUI-Login s'attend à trouver les fichiers `.token` à l'intérieur du conteneur.
+    **Important**: Le `OutputPath` doit pointer vers le répertoire `ComfyUI-Login` situé dans les `custom_nodes` de votre **workspace sur la machine hôte**. C'est le même chemin que celui utilisé par le script `install-comfyui-login.sh`.
 
 ### 4. `extract-bearer-tokens.ps1`
 
