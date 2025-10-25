@@ -14,11 +14,24 @@ import logging
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from enum import Enum
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
 
-# Charger variables d'environnement
-load_dotenv()
+# Charger variables d'environnement depuis le répertoire GenAI
+# Cherche le .env dans les répertoires parents jusqu'à trouver GenAI/.env
+dotenv_path = find_dotenv(filename='.env', usecwd=False)
+if not dotenv_path:
+    # Fallback : chemin explicite si find_dotenv échoue
+    import pathlib
+    genai_root = pathlib.Path(__file__).resolve().parent.parent.parent
+    dotenv_path = genai_root / '.env'
+    if dotenv_path.exists():
+        load_dotenv(dotenv_path=str(dotenv_path))
+    else:
+        logger.warning(f"⚠️  Fichier .env non trouvé dans {genai_root}")
+else:
+    load_dotenv(dotenv_path=dotenv_path)
+    logger.debug(f"🔑 Variables d'environnement chargées depuis {dotenv_path}")
 
 # Configuration Logging
 logging.basicConfig(level=logging.INFO)

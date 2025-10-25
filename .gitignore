@@ -372,6 +372,8 @@ docker-configurations/models/
 # Notebooks temporaires
 .ipynb_checkpoints/
 *-checkpoint.ipynb
+*_output*.ipynb
+*_validation*.ipynb
 
 
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/zulu17.50.19-ca-jdk17.0.11-win_x64/DISCLAIMER
