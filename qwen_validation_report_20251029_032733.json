@@ -1,0 +1,106 @@
+{
+  "metadata": {
+    "validation_mode": "complete",
+    "timestamp": "2025-10-29T03:27:33.220315",
+    "validator_version": "3.0",
+    "platform": "Windows",
+    "comfyui_url": "http://localhost:8188",
+    "container_name": "comfyui-qwen"
+  },
+  "metrics": {
+    "execution_time": 0.21,
+    "total_tests": 10,
+    "success_count": 7,
+    "failure_count": 2,
+    "critical_issues_count": 2,
+    "warnings_count": 0,
+    "success_rate": 70.0
+  },
+  "tests": {
+    "docker_container": {
+      "status": "SUCCESS",
+      "details": "Container comfyui-qwen est en cours d'exécution",
+      "critical": false,
+      "warning": false,
+      "timestamp": "2025-10-29T03:27:33.177424"
+    },
+    "directory_ComfyUI-QwenImageWanBridge": {
+      "status": "SUCCESS",
+      "details": "Répertoire ComfyUI-QwenImageWanBridge existe",
+      "critical": false,
+      "warning": false,
+      "timestamp": "2025-10-29T03:27:33.177938"
+    },
+    "directory_nodes": {
+      "status": "SUCCESS",
+      "details": "Répertoire nodes existe",
+      "critical": false,
+      "warning": false,
+      "timestamp": "2025-10-29T03:27:33.178028"
+    },
+    "init_file_ComfyUI-QwenImageWanBridge___init__.py": {
+      "status": "SUCCESS",
+      "details": "Fichier __init__.py existe dans ComfyUI-QwenImageWanBridge",
+      "critical": false,
+      "warning": false,
+      "timestamp": "2025-10-29T03:27:33.178110"
+    },
+    "init_file_nodes___init__.py": {
+      "status": "SUCCESS",
+      "details": "Fichier __init__.py existe dans nodes",
+      "critical": false,
+      "warning": false,
+      "timestamp": "2025-10-29T03:27:33.178182"
+    },
+    "init_content_ComfyUI-QwenImageWanBridge": {
+      "status": "SUCCESS",
+      "details": "Contenu de __init__.py valide",
+      "critical": false,
+      "warning": false,
+      "timestamp": "2025-10-29T03:27:33.189677"
+    },
+    "init_content_nodes": {
+      "status": "WARNING",
+      "details": "Contenu de __init__.py semble incomplet",
+      "critical": false,
+      "warning": true,
+      "timestamp": "2025-10-29T03:27:33.205688"
+    },
+    "node_source_files": {
+      "status": "SUCCESS",
+      "details": "1 fichiers sources de nodes trouvés",
+      "critical": false,
+      "warning": false,
+      "timestamp": "2025-10-29T03:27:33.206116"
+    },
+    "import_main_package": {
+      "status": "FAILURE",
+      "details": "Échec import package principal: No module named 'ComfyUI_QwenImageWanBridge'",
+      "critical": true,
+      "warning": false,
+      "timestamp": "2025-10-29T03:27:33.207136"
+    },
+    "comfyui_api_access": {
+      "status": "FAILURE",
+      "details": "API ComfyUI inaccessible (HTTP 401)",
+      "critical": true,
+      "warning": false,
+      "timestamp": "2025-10-29T03:27:33.219676"
+    }
+  },
+  "critical_issues": [
+    "import_main_package: Échec import package principal: No module named 'ComfyUI_QwenImageWanBridge'",
+    "comfyui_api_access: API ComfyUI inaccessible (HTTP 401)"
+  ],
+  "warnings": [],
+  "recommendations": [
+    "Vérifiez les chemins Python et les fichiers __init__.py",
+    "Vérifiez l'installation des nodes Qwen dans ComfyUI"
+  ],
+  "summary": {
+    "status": "FAILURE",
+    "total_critical": 2,
+    "total_warnings": 0,
+    "needs_intervention": true
+  }
+}

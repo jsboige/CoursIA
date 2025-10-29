@@ -1,397 +1,354 @@
 """
-ComfyUI API Client - Bridge vers infrastructure locale avec authentification
-Auteur: Phase 13A - Implémentation Bridge
-Date: 2025-10-16
-Mise à jour: 2025-10-22 - Ajout authentification Bearer
-Référence: Architecture Phase 12C
+Client pour interagir avec l'API ComfyUI avec authentification Bearer Token.
+Workflow corrigé basé sur qwen_text_to_image_2509.json de référence.
 """
 
-import os
-import time
 import json
-import requests
-import logging
-from typing import Optional, Dict, Any, List
-from dataclasses import dataclass
-from enum import Enum
-from dotenv import load_dotenv, find_dotenv
+import os
+import random
+import time
+from pathlib import Path
+from typing import Any, Dict, Optional
+from urllib import request, error
 
 
-# Charger variables d'environnement depuis le répertoire GenAI
-# Cherche le .env dans les répertoires parents jusqu'à trouver GenAI/.env
-dotenv_path = find_dotenv(filename='.env', usecwd=False)
-if not dotenv_path:
-    # Fallback : chemin explicite si find_dotenv échoue
-    import pathlib
-    genai_root = pathlib.Path(__file__).resolve().parent.parent.parent
-    dotenv_path = genai_root / '.env'
-    if dotenv_path.exists():
-        load_dotenv(dotenv_path=str(dotenv_path))
-    else:
-        logger.warning(f"⚠️  Fichier .env non trouvé dans {genai_root}")
-else:
-    load_dotenv(dotenv_path=dotenv_path)
-    logger.debug(f"🔑 Variables d'environnement chargées depuis {dotenv_path}")
-
-# Configuration Logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
-class ImageGenMode(Enum):
-    """Modes de génération disponibles"""
-    LOCAL = "local"   # ComfyUI + Qwen local
-    CLOUD = "cloud"   # OpenRouter APIs
-
-
-@dataclass
 class ComfyUIConfig:
-    """Configuration client ComfyUI avec authentification optionnelle"""
-    base_url: str = "http://localhost:8188"  # Port production (Phase 12A)
-    timeout: int = 120  # Timeout génération (secondes)
-    poll_interval: int = 2  # Intervalle polling (secondes)
-    auth_token: Optional[str] = None  # Token authentification Bearer (optionnel)
+    """Configuration pour le client ComfyUI."""
     
-    def __post_init__(self):
-        """Initialise token depuis env si non fourni"""
-        if self.auth_token is None:
-            self.auth_token = os.getenv('COMFYUI_API_TOKEN')
-    
-    def get_headers(self) -> Dict[str, str]:
-        """Génère headers HTTP avec authentification si disponible"""
-        headers = {}
-        if self.auth_token:
-            headers['Authorization'] = f'Bearer {self.auth_token}'
-        return headers
-    
-    def test_connection(self) -> bool:
-        """Teste connexion au service ComfyUI"""
-        try:
-            response = requests.get(
-                f"{self.base_url}/system_stats",
-                headers=self.get_headers(),
-                timeout=10
-            )
-            if response.status_code == 200:
-                logger.info("✅ ComfyUI accessible")
-                return True
-            else:
-                logger.error(f"❌ ComfyUI status code: {response.status_code}")
-                return False
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"❌ Connexion échouée: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"❌ Erreur inattendue: {e}")
-            return False
-    
-    def get_system_stats(self) -> Optional[Dict[str, Any]]:
-        """Récupère statistiques système ComfyUI"""
-        try:
-            response = requests.get(
-                f"{self.base_url}/system_stats",
-                headers=self.get_headers(),
-                timeout=10
-            )
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.error(f"❌ Erreur stats système: {e}")
-            return None
+    def __init__(
+        self,
+        base_url: str = "http://localhost:8188",
+        timeout: int = 120,
+        poll_interval: int = 2,
+        api_token: Optional[str] = None
+    ):
+        """
+        Initialise la configuration.
+        
+        Args:
+            base_url: URL du serveur ComfyUI
+            timeout: Timeout en secondes pour les requêtes
+            poll_interval: Intervalle de polling en secondes
+            api_token: Token Bearer pour l'authentification
+        """
+        self.base_url = base_url
+        self.timeout = timeout
+        self.poll_interval = poll_interval
+        self.api_token = api_token
 
 
 class ComfyUIClient:
-    """Client Python pour ComfyUI API - Production Ready"""
-    
-    def __init__(self, config: Optional[ComfyUIConfig] = None):
+    """Client pour interagir avec ComfyUI via son API REST."""
+
+    def __init__(self, base_url: str, api_token: Optional[str] = None):
         """
-        Initialise client ComfyUI
-        
+        Initialise le client ComfyUI.
+
         Args:
-            config: Configuration personnalisée (optionnel)
+            base_url: URL du serveur ComfyUI (ex: http://localhost:8188)
+            api_token: Token Bearer pour l'authentification (optionnel)
         """
-        self.config = config or ComfyUIConfig()
-        self.base_url = self.config.base_url
+        self.server_url = base_url.rstrip("/")
+        self.api_token = api_token
+        self.client_id = str(random.randint(1, 1000000))
+
+    def _make_request(
+        self, endpoint: str, method: str = "GET", data: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """
+        Effectue une requête HTTP vers l'API ComfyUI.
+
+        Args:
+            endpoint: Endpoint de l'API (ex: /prompt)
+            method: Méthode HTTP (GET, POST, etc.)
+            data: Données à envoyer (pour POST)
+
+        Returns:
+            Réponse JSON de l'API
+
+        Raises:
+            Exception: Si la requête échoue
+        """
+        # S'assurer que server_url ne se termine pas par / et endpoint commence par /
+        server_url = self.server_url.rstrip("/")
+        endpoint = endpoint.lstrip("/")
+        url = f"{server_url}/{endpoint}"
+        headers = {"Content-Type": "application/json"}
+
+        # Ajouter l'authentification Bearer si un token est fourni
+        if self.api_token:
+            headers["Authorization"] = f"Bearer {self.api_token}"
+
+        # Préparer les données pour les requêtes non-GET
+        request_data = None
+        if method.upper() != "GET" and data is not None:
+            request_data = json.dumps(data).encode()
         
-        # Log authentification
-        if self.config.auth_token:
-            logger.info(f"🎨 ComfyUI Client initialisé: {self.base_url}")
-            logger.info("✓ Authentification configurée")
+        # Pour les requêtes GET, créer l'objet Request différemment
+        if method.upper() == "GET":
+            req = request.Request(url, headers=headers, method="GET")
         else:
-            logger.info(f"🎨 ComfyUI Client initialisé: {self.base_url}")
-            logger.warning("⚠️  Aucun token - connexion sans authentification")
-    
-    def queue_prompt(self, workflow: Dict[str, Any]) -> Optional[str]:
-        """
-        Envoie workflow ComfyUI et retourne prompt_id
-        
-        Args:
-            workflow: Dictionnaire workflow ComfyUI (format JSON)
-            
-        Returns:
-            str: prompt_id si succès, None sinon
-        """
-        try:
-            response = requests.post(
-                f"{self.base_url}/prompt",
-                json={"prompt": workflow},
-                headers=self.config.get_headers(),
-                timeout=self.config.timeout
+            req = request.Request(
+                url,
+                data=request_data,
+                headers=headers,
+                method=method.upper(),  # Convertir en majuscules
             )
-            response.raise_for_status()
-            data = response.json()
-            prompt_id = data.get("prompt_id")
-            
-            if prompt_id:
-                logger.info(f"✅ Workflow queued: {prompt_id}")
-                return prompt_id
-            else:
-                logger.error("❌ Pas de prompt_id dans réponse")
-                return None
-                
-        except requests.exceptions.Timeout:
-            logger.error("❌ Timeout lors du queue_prompt")
-            return None
-        except Exception as e:
-            logger.error(f"❌ Erreur queue_prompt: {e}")
-            return None
-    
-    def wait_for_completion(
-        self, 
-        prompt_id: str,
-        verbose: bool = True
-    ) -> bool:
+
+        try:
+            with request.urlopen(req) as response:
+                return json.loads(response.read().decode())
+        except error.HTTPError as e:
+            error_body = e.read().decode() if e.fp else "No error body"
+            raise Exception(
+                f"HTTP {e.code} Error calling {url}: {e.reason}\nBody: {error_body}"
+            )
+        except error.URLError as e:
+            raise Exception(f"URL Error calling {url}: {e.reason}")
+
+    def queue_prompt(self, workflow: Dict[str, Any]) -> str:
         """
-        Attend complétion génération (polling)
-        
+        Envoie un workflow à ComfyUI pour exécution.
+
         Args:
-            prompt_id: ID du prompt à surveiller
-            verbose: Afficher logs progression
-            
+            workflow: Workflow ComfyUI au format JSON
+
         Returns:
-            bool: True si succès, False sinon
+            ID du prompt en queue
+
+        Raises:
+            Exception: Si l'enqueue échoue
         """
-        elapsed = 0
-        
-        while elapsed < self.config.timeout:
-            try:
-                response = requests.get(
-                    f"{self.base_url}/history/{prompt_id}",
-                    headers=self.config.get_headers(),
-                    timeout=10
-                )
-                response.raise_for_status()
-                history = response.json()
-                
-                if prompt_id in history:
-                    status = history[prompt_id].get("status", {})
-                    
-                    # Vérifier complétion
-                    if status.get("completed"):
-                        logger.info(f"✅ Génération complétée: {prompt_id}")
-                        return True
-                    
-                    # Vérifier erreur
-                    if status.get("status_str") == "error":
-                        messages = status.get("messages", [])
-                        logger.error(f"❌ Erreur génération: {messages}")
-                        return False
-                
-                # Attendre avant prochain poll
-                time.sleep(self.config.poll_interval)
-                elapsed += self.config.poll_interval
-                
-                if verbose and elapsed % 10 == 0:
-                    logger.info(f"⏳ Attente... {elapsed}s / {self.config.timeout}s")
-                
-            except Exception as e:
-                logger.error(f"❌ Erreur polling: {e}")
-                return False
-        
-        logger.error(f"⏱️ Timeout après {self.config.timeout}s")
-        return False
-    
-    def get_image(self, prompt_id: str, filename: str) -> Optional[bytes]:
+        payload = {"prompt": workflow, "client_id": self.client_id}
+        response = self._make_request("/prompt", method="POST", data=payload)
+
+        if "prompt_id" not in response:
+            raise Exception(f"Prompt queue failed: {response}")
+
+        return response["prompt_id"]
+
+    def get_history(self, prompt_id: str) -> Dict[str, Any]:
         """
-        Récupère image générée
-        
+        Récupère l'historique d'exécution d'un prompt.
+
         Args:
             prompt_id: ID du prompt
-            filename: Nom fichier image
-            
+
         Returns:
-            bytes: Données image si succès, None sinon
+            Historique d'exécution
         """
-        try:
-            response = requests.get(
-                f"{self.base_url}/view",
-                params={
-                    "filename": filename,
-                    "subfolder": "",
-                    "type": "output"
-                },
-                headers=self.config.get_headers(),
-                timeout=30
-            )
-            response.raise_for_status()
-            return response.content
-        except Exception as e:
-            logger.error(f"❌ Erreur récupération image: {e}")
-            return None
-    
+        return self._make_request(f"/history/{prompt_id}")
+
+    def wait_for_completion(
+        self, prompt_id: str, timeout: int = 300, poll_interval: int = 2
+    ) -> Dict[str, Any]:
+        """
+        Attend la complétion d'un prompt.
+
+        Args:
+            prompt_id: ID du prompt
+            timeout: Timeout en secondes
+            poll_interval: Intervalle de polling en secondes
+
+        Returns:
+            Résultat de l'exécution
+
+        Raises:
+            TimeoutError: Si le timeout est dépassé
+            Exception: Si l'exécution échoue
+        """
+        start_time = time.time()
+
+        while True:
+            if time.time() - start_time > timeout:
+                raise TimeoutError(
+                    f"Workflow execution timed out after {timeout}s (prompt_id: {prompt_id})"
+                )
+
+            history = self.get_history(prompt_id)
+
+            if prompt_id in history:
+                result = history[prompt_id]
+
+                # Vérifier si l'exécution est terminée
+                if "outputs" in result:
+                    return result
+
+                # Vérifier les erreurs
+                if "errors" in result and result["errors"]:
+                    raise Exception(
+                        f"Workflow execution failed: {json.dumps(result['errors'], indent=2)}"
+                    )
+
+            time.sleep(poll_interval)
+
     def generate_text2image(
         self,
         prompt: str,
-        negative_prompt: str = "blurry, low quality, distorted",
-        width: int = 512,
-        height: int = 512,
-        steps: int = 20,
+        width: int = 1024,
+        height: int = 1024,
+        num_inference_steps: Optional[int] = None,
+        steps: Optional[int] = None,
+        seed: Optional[int] = None,
+        negative_prompt: str = "blurry, low quality, watermark",
         cfg: float = 7.0,
-        seed: int = -1,
-        save_prefix: str = "notebook_gen"
-    ) -> Optional[str]:
+        save_prefix: str = "qwen_t2i",
+    ) -> Dict[str, Any]:
         """
-        Génère image avec workflow Qwen basique
+        Génère une image à partir d'un prompt texte.
+        Workflow WanBridge validé historiquement (Phase 12C).
         
+        Architecture: Custom node ComfyUI-QwenImageWanBridge + modèle Diffusers
+        Source: docs/suivis/genai-image/phase-12c-architecture/rapports/2025-10-16_12C_architectures-5-workflows-qwen.md
+
         Args:
-            prompt: Prompt texte génération
-            negative_prompt: Prompt négatif (ce qu'on ne veut pas)
-            width: Largeur image (pixels)
-            height: Hauteur image (pixels)
-            steps: Nombre steps diffusion
-            cfg: CFG scale (guidage prompt)
-            seed: Seed random (-1 = aléatoire)
-            save_prefix: Préfixe fichier sauvegarde
-            
+            prompt: Prompt textuel
+            width: Largeur de l'image (défaut: 1024, aligné 32px)
+            height: Hauteur de l'image (défaut: 1024, aligné 32px)
+            num_inference_steps: Nombre de steps de débruitage (deprecated, use steps)
+            steps: Nombre de steps de débruitage (défaut: 20)
+            seed: Seed aléatoire (None = aléatoire)
+            negative_prompt: Prompt négatif (défaut: "blurry, low quality, watermark")
+            cfg: Classifier-Free Guidance scale (défaut: 7.0)
+            save_prefix: Préfixe pour le fichier de sortie
+
         Returns:
-            str: prompt_id si succès, None sinon
+            Résultat de la génération (historique ComfyUI)
         """
-        # Workflow JSON Qwen basique (référence Phase 12C)
+        # Gérer l'alias steps/num_inference_steps
+        if steps is not None:
+            inference_steps = steps
+        elif num_inference_steps is not None:
+            inference_steps = num_inference_steps
+        else:
+            inference_steps = 20  # Valeur optimale pour Qwen (doc Phase 12C)
+        
+        if seed is None:
+            seed = random.randint(0, 2**32 - 1)
+
+        # WORKFLOW WANBRIDGE VALIDÉ HISTORIQUEMENT - Méthode WanBridge simple
+        # Source: docs/suivis/genai-image/phase-12c-architecture/rapports/2025-10-16_12C_architectures-5-workflows-qwen.md
+        # Architecture: Custom node ComfyUI-QwenImageWanBridge + modèle Diffusers
         workflow = {
             "1": {
+                "class_type": "QwenVLCLIPLoader",
                 "inputs": {
-                    "model_path": "Qwen-Image-Edit-2509-FP8"
-                },
-                "class_type": "QwenVLCLIPLoader"
+                    "model_path": "Qwen-Image-Edit-2509-FP8"  # Chemin relatif au répertoire checkpoints/
+                }
             },
             "2": {
+                "class_type": "TextEncodeQwenImageEdit",
                 "inputs": {
                     "text": prompt,
                     "clip": ["1", 0]
-                },
-                "class_type": "TextEncodeQwenImageEdit"
-            },
-            "3": {
-                "inputs": {
-                    "text": negative_prompt,
-                    "clip": ["1", 0]
-                },
-                "class_type": "TextEncodeQwenImageEdit"
+                }
             },
             "4": {
+                "class_type": "QwenVLEmptyLatent",
                 "inputs": {
                     "width": width,
                     "height": height,
                     "batch_size": 1
-                },
-                "class_type": "EmptyLatentImage"
+                }
             },
             "5": {
+                "class_type": "QwenImageSamplerNode",
                 "inputs": {
-                    "seed": seed if seed >= 0 else int(time.time() * 1000),
-                    "steps": steps,
+                    "seed": seed,
+                    "steps": inference_steps,
                     "cfg": cfg,
-                    "sampler_name": "euler_ancestral",
-                    "scheduler": "normal",
-                    "denoise": 1.0,
-                    "transformer": ["1", 1],
                     "positive": ["2", 0],
-                    "negative": ["3", 0],
-                    "latent_image": ["4", 0]
-                },
-                "class_type": "QwenImageSamplerNode"
+                    "latent": ["4", 0]
+                }
             },
             "6": {
+                "class_type": "VAEDecode",
                 "inputs": {
                     "samples": ["5", 0],
-                    "vae": ["1", 2]
-                },
-                "class_type": "VAEDecodeQwen"
+                    "vae": ["1", 1]  # CORRECTION: Index 1 = VAE, pas 2
+                }
             },
             "7": {
+                "class_type": "SaveImage",
                 "inputs": {
                     "filename_prefix": save_prefix,
-                    "images": ["6", 0]
-                },
-                "class_type": "SaveImage"
+                    "images": ["6", 0]  # CORRECTION: VAEDecode a une seule sortie (index 0)
+                }
             }
         }
-        
-        logger.info(f"🎨 Génération: '{prompt[:50]}...'")
-        logger.info(f"   Résolution: {width}x{height}, Steps: {steps}, CFG: {cfg}")
-        
+
+        # Enqueue et attendre la complétion
         prompt_id = self.queue_prompt(workflow)
-        
-        if prompt_id and self.wait_for_completion(prompt_id):
-            logger.info(f"✅ Génération réussie: {prompt_id}")
-            return prompt_id
-        else:
-            logger.error("❌ Génération échouée")
-            return None
+        result = self.wait_for_completion(prompt_id)
+
+        return result
 
 
-# Fonctions Helper pour notebooks
-
-def create_client(
-    base_url: str = "http://localhost:8188"
-) -> ComfyUIClient:
+def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
     """
-    Crée et teste client ComfyUI
-    
+    Charge un client ComfyUI depuis un fichier .env.
+
     Args:
-        base_url: URL base ComfyUI
-        
+        env_path: Chemin vers le fichier .env (None = cherche dans répertoire courant)
+
     Returns:
-        ComfyUIClient: Client initialisé et validé
-        
+        Client ComfyUI configuré
+
     Raises:
-        ConnectionError: Si connexion échoue
+        ValueError: Si les variables d'environnement requises sont manquantes
     """
-    config = ComfyUIConfig(base_url=base_url)
-    
-    if not config.test_connection():
-        raise ConnectionError(
-            f"❌ Impossible de se connecter à ComfyUI sur {base_url}. "
-            f"Vérifier que le service est démarré (Phase 12A)."
+    if env_path is None:
+        # Chercher .env dans le répertoire courant et parents
+        current = Path.cwd()
+        for parent in [current] + list(current.parents):
+            candidate = parent / ".env"
+            if candidate.exists():
+                env_path = candidate
+                break
+
+    if env_path is None or not env_path.exists():
+        raise ValueError(
+            f"Fichier .env non trouvé. Cherché dans: {Path.cwd()} et parents"
         )
-    
-    # Afficher stats système
-    stats = config.get_system_stats()
-    if stats:
-        system = stats.get("system", {})
-        logger.info(f"🖥️  GPU: {system.get('gpu_name', 'N/A')}")
-        logger.info(f"💾 VRAM: {system.get('vram_total', 'N/A')} MB")
-    
-    return ComfyUIClient(config)
 
+    # Charger les variables d'environnement
+    env_vars = {}
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                key, _, value = line.partition("=")
+                env_vars[key.strip()] = value.strip().strip('"').strip("'")
 
-def quick_generate(
-    prompt: str,
-    client: Optional[ComfyUIClient] = None,
-    **kwargs
-) -> Optional[str]:
+    # Récupérer l'URL et le token
+    server_url = env_vars.get("COMFYUI_API_URL")
+    api_token = env_vars.get("COMFYUI_API_TOKEN")
+
+    if not server_url:
+        raise ValueError("COMFYUI_API_URL manquant dans .env")
+
+    if not api_token:
+        print(
+            "⚠️  COMFYUI_API_TOKEN manquant dans .env - authentification désactivée"
+        )
+
+    return ComfyUIClient(server_url, api_token)
+
+def create_client(config: Optional[ComfyUIConfig] = None) -> ComfyUIClient:
     """
-    Génération rapide text-to-image (wrapper simplifié)
+    Crée un client ComfyUI avec configuration optionnelle.
     
     Args:
-        prompt: Prompt texte
-        client: Client ComfyUI (créé automatiquement si None)
-        **kwargs: Paramètres optionnels (width, height, steps, etc.)
-        
-    Returns:
-        str: prompt_id si succès, None sinon
-    """
-    if client is None:
-        client = create_client()
+        config: Configuration ComfyUI (None = charge depuis .env)
     
-    return client.generate_text2image(prompt, **kwargs)
+    Returns:
+        Client ComfyUI configuré
+    """
+    if config is None:
+        # Charger depuis .env
+        return load_from_env()
+    
+    return ComfyUIClient(
+        server_url=config.base_url,
+        api_token=config.api_token
+    )

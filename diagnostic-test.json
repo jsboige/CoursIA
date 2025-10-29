@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-10-29T00:28:34.881780",
+  "container_name": "comfy-ui-ia",
+  "package_structure": {
+    "bridge_path": "/workspace/ComfyUI/custom_nodes/ComfyUI_QwenImageWanBridge",
+    "exists": false,
+    "has_init": false,
+    "subdirectories": [],
+    "python_files": [],
+    "missing_inits": [],
+    "issues": [
+      "Package non trouvé: /workspace/ComfyUI/custom_nodes/ComfyUI_QwenImageWanBridge"
+    ]
+  },
+  "nodes_inspection": {
+    "custom_nodes_path": "/workspace/ComfyUI/custom_nodes",
+    "total_nodes": 0,
+    "qwen_nodes": 0,
+    "nodes_found": [],
+    "registration_errors": [
+      "Répertoire custom_nodes inaccessible: /workspace/ComfyUI/custom_nodes"
+    ],
+    "import_errors": []
+  },
+  "environment_diagnostic": {
+    "container_accessible": false,
+    "python_paths": [],
+    "dependencies_check": {},
+    "comfyui_connection": false,
+    "environment_variables": {},
+    "disk_space": {},
+    "issues": [
+      "Container ComfyUI inaccessible"
+    ]
+  },
+  "summary": {
+    "total_issues": 3,
+    "critical_issues": 3,
+    "warnings": 0,
+    "recommendations": [
+      "Le package ComfyUI-QwenImageWanBridge n'existe pas",
+      "Corriger les erreurs d'enregistrement des nodes",
+      "Vérifier que le container ComfyUI est en cours d'exécution"
+    ]
+  }
+}
