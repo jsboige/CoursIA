@@ -1,0 +1,111 @@
+{
+  "29": {
+    "class_type": "QwenVLCLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b.safetensors"
+    }
+  },
+  "30": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    }
+  },
+  "31": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_edit_2509_fp8_e4m3fn.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    }
+  },
+  "37": {
+    "class_type": "QwenTemplateBuilder",
+    "inputs": {
+      "user_prompt": "A beautiful landscape",
+      "mode": "default_edit",
+      "custom_system_prompt": ""
+    }
+  },
+  "4": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "example.png",
+      "upload": "image"
+    }
+  },
+  "38": {
+    "class_type": "QwenVLTextEncoder",
+    "inputs": {
+      "clip": ["29", 0],
+      "edit_image": ["4", 0],
+      "vae": ["30", 0],
+      "text": ["37", 0],
+      "system_prompt": ["37", 1]
+    }
+  },
+  "10": {
+    "class_type": "QwenVLEmptyLatent",
+    "inputs": {
+      "width": 1152,
+      "height": 768,
+      "batch_size": 1
+    }
+  },
+  "25": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": ["31", 0],
+      "lora_name": "Qwen-Image-Edit-Lightning-8steps-V1.0.safetensors",
+      "strength_model": 1.0
+    }
+  },
+  "26": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": ["25", 0],
+      "shift": 3.0
+    }
+  },
+  "27": {
+    "class_type": "CFGNorm",
+    "inputs": {
+      "model": ["26", 0],
+      "multiplier": 1.0
+    }
+  },
+  "28": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": ["38", 0]
+    }
+  },
+  "33": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["27", 0],
+      "positive": ["38", 0],
+      "negative": ["28", 0],
+      "latent_image": ["10", 0],
+      "seed": 42,
+      "steps": 5,
+      "cfg": 1.0,
+      "sampler_name": "res_2s",
+      "scheduler": "beta57",
+      "denoise": 1.0
+    }
+  },
+  "12": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["33", 0],
+      "vae": ["30", 0]
+    }
+  },
+  "41": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["12", 0],
+      "filename_prefix": "qwen_edit"
+    }
+  }
+}
