@@ -1,140 +1,220 @@
-# Scripts d'Automatisation pour l'Authentification GenAI
+# Scripts GenAI Auth - Structure Consolidée
 
-## Contexte
+Ce répertoire contient les scripts consolidés et paramétriques pour la gestion de l'authentification et de la configuration des services GenAI (ComfyUI, Qwen, etc.).
 
-Ce répertoire contient un ensemble de scripts PowerShell et Bash recréés suite à l'incident `git clean -fd` du 2025-10-22. Ces scripts permettent d'installer, configurer, tester, déployer et annuler le déploiement d'une solution d'authentification basée sur le custom node [ComfyUI-Login](https://github.com/liusida/ComfyUI-Login) pour les services GenAI.
+## 📁 Scripts Principaux
 
-La recréation de ces scripts est basée sur les informations récupérées dans le rapport de mission SDDD : `recovery/07-RAPPORT-MISSION-SDDD-AUTHENTIFICATION-GENAI.md`.
+### 🔐 Gestionnaire d'Authentification
+- **`genai-auth-manager.py`** - Gestionnaire principal d'authentification GenAI
+  - Génération de tokens Bearer sécurisés
+  - Configuration multi-services (ComfyUI Qwen, Forge, etc.)
+  - Validation des tokens existants
+  - Diagnostic des problèmes d'authentification
+  - Gestion des environnements d'authentification
 
-## Prérequis Globaux
-
-- **Docker**: Docker Desktop doit être installé et en cours d'exécution.
-- **PowerShell**: Pour les scripts `.ps1`, PowerShell 7+ est recommandé.
-- **Git Bash**: Pour les scripts `.sh`, un environnement Bash comme Git Bash est nécessaire sous Windows.
-- **Permissions**: L'utilisateur doit avoir les droits pour exécuter des commandes Docker.
-- **Module Bcrypt**: Le script `generate-bearer-tokens.ps1` nécessite le module PowerShell `Bcrypt`. Il tentera de l'installer automatiquement, mais si cela échoue, exécutez :
-  ```powershell
-  Install-Module -Name Bcrypt -Scope CurrentUser -Repository PSGallery -Force
+  ```bash
+  # Génération de tokens pour ComfyUI Qwen
+  python genai-auth-manager.py generate --service comfyui-qwen
+  
+  # Validation des tokens ComfyUI Qwen
+  python genai-auth-manager.py validate --service comfyui-qwen
+  
+  # Diagnostic des problèmes d'authentification
+  python genai-auth-manager.py diagnose --service comfyui-qwen
+  
+  # Liste des services configurés
+  python genai-auth-manager.py list-services
+  
+  # Affichage de la configuration
+  python genai-auth-manager.py show-config
   ```
 
-## Ordre d'Exécution des Scripts
+### 🐳 Gestionnaire Docker Qwen
+- **`docker-qwen-manager.py`** - Gestionnaire Docker pour ComfyUI Qwen
+  - Démarrage/arrêt/redémarrage des conteneurs
+  - Monitoring des ressources (CPU, mémoire, disque, réseau)
+  - Validation des configurations Docker
+  - Gestion des volumes et réseaux
+  - Diagnostic des problèmes Docker
 
-Les scripts sont conçus pour être exécutés dans un ordre précis pour un déploiement complet.
+  ```bash
+  # Démarrer le conteneur ComfyUI Qwen
+  python docker-qwen-manager.py start --container comfyui-qwen
+  
+  # Arrêter le conteneur ComfyUI Qwen
+  python docker-qwen-manager.py stop --container comfyui-qwen
+  
+  # Redémarrer le conteneur ComfyUI Qwen
+  python docker-qwen-manager.py restart --container comfyui-qwen
+  
+  # Vérifier le statut d'un conteneur
+  python docker-qwen-manager.py status --container comfyui-qwen
+  
+  # Vérifier la santé d'un conteneur
+  python docker-qwen-manager.py health --container comfyui-qwen
+  
+  # Monitorer les ressources d'un conteneur
+  python docker-qwen-manager.py monitor --container comfyui-qwen --duration 300
+  
+  # Valider la configuration Docker complète
+  python docker-qwen-manager.py validate-setup
+  
+  # Afficher la configuration Docker actuelle
+  python docker-qwen-manager.py show-config
+  ```
 
-1.  **`install-comfyui-login.sh`**: Installe le custom node dans les conteneurs Docker.
-2.  **`configure-comfyui-auth.ps1`**: Prépare les fichiers de configuration `.env` pour activer l'authentification.
-3.  **`generate-bearer-tokens.ps1`**: Crée les comptes utilisateurs et les mots de passe/tokens.
-4.  **`deploy-auth-solution.ps1`**: Orchestre le redémarrage des services avec la nouvelle configuration.
-5.  **`extract-bearer-tokens.ps1`**: (Optionnel, si la génération manuelle échoue) Extrait les tokens depuis les logs après le premier démarrage.
-6.  **`test-comfyui-auth.ps1`**: Valide que la solution d'authentification est fonctionnelle.
-7.  **`rollback-auth-solution.ps1`**: (En cas de problème) Annule le déploiement et restaure la configuration précédente.
+### 🔍 Validateur Complet Qwen
+- **`qwen-validator.py`** - Validateur complet pour la solution Qwen ComfyUI
+  - Validation complète de l'environnement
+  - Tests de connectivité et d'API
+  - Validation des workflows JSON
+  - Diagnostic des problèmes
+  - Génération de rapports détaillés
+
+  ```bash
+  # Validation rapide
+  python qwen-validator.py --mode quick
+  
+  # Validation complète
+  python qwen-validator.py --mode comprehensive
+  
+  # Validation d'un workflow spécifique
+  python qwen-validator.py --workflow workflow.json --output validation_report.json
+  
+  # Afficher la configuration
+  python qwen-validator.py --show-config
+  ```
+
+### 🛠️ Setup Initial ComfyUI Qwen
+- **`qwen-setup.py`** - Script de setup initial pour ComfyUI Qwen
+  - Vérification des prérequis système
+  - Installation des dépendances Python
+  - Configuration de l'environnement
+  - Configuration de l'authentification
+  - Validation du setup complet
+
+  ```bash
+  # Setup complet
+  python qwen-setup.py --full-setup
+  
+  # Vérification des prérequis seulement
+  python qwen-setup.py --check-prereqs
+  
+  # Configuration de l'environnement seulement
+  python qwen-setup.py --setup-env
+  
+  # Installation des dépendances seulement
+  python qwen-setup.py --install-deps
+  
+  # Configuration de l'authentification seulement
+  python qwen-setup.py --setup-auth
+  
+  # Afficher la configuration actuelle
+  python qwen-setup.py --show-config
+  ```
+
+## 📊 Scripts Utilitaires Consolidés
+
+Les scripts suivants sont conservés comme utilitaires spécialisés :
+
+### Client Helper ComfyUI
+- **`comfyui_client_helper.py`** - Client HTTP complet pour ComfyUI (1305 lignes)
+  - Interface client/batch/investigation/debug
+  - Gestionnaire de workflows
+  - Système de plugins extensible
+
+### Utilitaires de Workflow
+- **`workflow_utils.py`** - Utilitaire consolidé pour la manipulation de workflows (489 lignes)
+  - Validation JSON, correction des liens, optimisation
+  - Backup et restauration de workflows
+
+### Diagnostic Complet
+- **`diagnostic_utils.py`** - Utilitaire consolidé pour le diagnostic (426 lignes)
+  - Diagnostic environnement Python, Docker, services
+  - Génération de rapports détaillés
+
+## 🗂️ Scripts Supprimés
+
+Les scripts suivants ont été consolidés dans les nouveaux scripts paramétriques et supprimés du répertoire :
+
+### Scripts d'Authentification
+- `generate-bearer-tokens.py` → Consolidé dans `genai-auth-manager.py`
+- `debug_auth_token.py` → Consolidé dans `genai-auth-manager.py`
+- `extract-bearer-tokens.ps1` → Consolidé dans `genai-auth-manager.py`
+
+### Scripts de Configuration Docker
+- `configure-comfyui-auth.ps1` → Consolidé dans `docker-qwen-manager.py`
+- `validate-docker-config.ps1` → Consolidé dans `docker-qwen-manager.py`
+- `check-docker-containers.ps1` → Consolidé dans `docker-qwen-manager.py`
+- `create-venv-in-container.sh` → Consolidé dans `qwen-setup.py`
+- `recreate-venv-in-container.sh` → Consolidé dans `qwen-setup.py`
+
+### Scripts de Validation
+- `validate-qwen-solution.py` → Consolidé dans `qwen-validator.py`
+- `test_qwen_workflow_validation.py` → Consolidé dans `qwen-validator.py`
+- `test_qwen_workflow_final.py` → Consolidé dans `qwen-validator.py`
+- `test_qwen_simple.py` → Consolidé dans `qwen-validator.py`
+- `test_submit_workflow.py` → Consolidé dans `qwen-validator.py`
+- `diagnostic-qwen-complete.py` → Consolidé dans `diagnostic_utils.py`
+
+### Scripts de Réparation
+- `fix_workflow_links.py` → Consolidé dans `workflow_utils.py`
+- `fix-qwen-workflow.py` → Consolidé dans `qwen-validator.py`
+- `fix-comfyui-dependencies.sh` → Consolidé dans `qwen-setup.py`
+
+### Scripts de Setup
+- `init-venv.sh` → Consolidé dans `qwen-setup.py`
+- `install-missing-dependencies.sh` → Consolidé dans `qwen-setup.py`
+- `setup-and-test-comfyui.sh` → Consolidé dans `qwen-setup.py`
+
+### Scripts d'Exploration
+- `explore-qwen-custom-node.ps1` → Consolidé dans `comfyui_client_helper.py`
+
+## 📋 Fichiers de Données
+
+- `validation_complete_qwen_system_20251030_234336.json` - Données de validation système
+- `validation_complete_qwen_system.py` - Script de validation système (conservé)
+
+## 🔧 Configuration
+
+Les scripts utilisent des fichiers de configuration JSON pour la persistance des paramètres :
+
+- `genai_auth_config.json` - Configuration du gestionnaire d'authentification
+- `docker_qwen_config.json` - Configuration du gestionnaire Docker Qwen
+- `qwen_validator_config.json` - Configuration du validateur Qwen
+- `qwen_setup_config.json` - Configuration du setup Qwen
+
+## 🚀 Avantages de la Consolidation
+
+### ✅ Maintenance Simplifiée
+- **4 scripts principaux** au lieu de 28 scripts spécialisés
+- **Configuration centralisée** dans des fichiers JSON
+- **Paramétrisation complète** avec arguments flexibles
+- **Logging structuré** pour tous les scripts
+- **Gestion d'erreurs** robuste et cohérente
+
+### 🎯 Fonctionnalités Améliorées
+- **Gestion multi-services** dans le gestionnaire d'authentification
+- **Monitoring avancé** avec échantillonnage des ressources
+- **Validation modulaire** avec modes rapide/complet/workflow
+- **Setup automatisé** avec validation des prérequis
+- **Extensibilité** via système de plugins (client helper)
+- **Rapports détaillés** au format JSON avec métadonnées
+
+### 📈 Utilisation Recommandée
+
+1. **Utiliser les scripts principaux** pour les opérations courantes
+2. **Réserver les scripts spécialisés** pour les cas d'usage avancé
+3. **Configurer les scripts** via les fichiers de configuration JSON
+4. **Consulter les logs** pour le diagnostic des problèmes
+
+## 🔒 Sécurité
+
+- Les tokens sont générés avec bcrypt (work factor 12)
+- Les configurations sont sauvegardées dans des fichiers JSON
+- Les scripts incluent une validation des arguments et des erreurs détaillées
+- Les opérations sensibles nécessitent une confirmation explicite
 
 ---
 
-## Description Détaillée des Scripts
-
-### 1. `install-comfyui-login.sh`
-
-> ⚠️ **AVERTISSEMENT DE SÉCURITÉ CRITIQUE**
-> La version précédente de ce script installait ComfyUI-Login **à l'intérieur du conteneur Docker**. Cette approche présentait un **bug critique**: le custom node était supprimé à chaque redémarrage du conteneur, entraînant une perte de configuration et une faille de sécurité potentielle.
-> Le script a été corrigé pour installer le node dans le **workspace persistant sur la machine hôte**. N'utilisez jamais l'ancienne méthode.
-
--   **Objectif**: Installer le custom node ComfyUI-Login de manière **persistante** sur le système de fichiers de l'hôte.
--   **Usage**:
-    ```bash
-    # Le chemin du workspace peut être fourni comme argument...
-    ./install-comfyui-login.sh <COMFYUI_WORKSPACE_PATH>
-
-    # ...ou via une variable d'environnement
-    export COMFYUI_WORKSPACE_PATH="/path/to/ComfyUI"
-    ./install-comfyui-login.sh
-    ```
--   **Exemple**:
-    ```bash
-    # Chemin vers le workspace monté dans le conteneur comfyui-qwen
-    ./install-comfyui-login.sh "\\wsl.localhost\Ubuntu\home\jesse\SD\workspace\comfyui-qwen\ComfyUI"
-    ```
--   **Comment trouver le `COMFYUI_WORKSPACE_PATH`?**
-    -   Consultez le fichier `docker-compose.yml` de votre service (ex: `docker-configurations/comfyui-qwen/docker-compose.yml`) pour voir quel répertoire local est monté.
-    -   Recherchez un fichier `.env` ou `.env.example` qui pourrait contenir la variable `COMFYUI_WORKSPACE_PATH`.
-
-### 2. `configure-comfyui-auth.ps1`
-
--   **Objectif**: Créer/mettre à jour les fichiers `.env` pour activer l'authentification.
--   **Usage**:
-    ```powershell
-    ./configure-comfyui-auth.ps1 -ServiceName <nom_du_service>
-    ```
--   **Exemple**:
-    ```powershell
-    ./configure-comfyui-auth.ps1 -ServiceName "comfyui-qwen"
-    ```
-
-### 3. `generate-bearer-tokens.ps1`
-
--   **Objectif**: Générer des comptes utilisateurs et des mots de passe sécurisés.
--   **Usage**:
-    ```powershell
-    ./generate-bearer-tokens.ps1 -Usernames <user1>,<user2> -OutputPath <chemin_vers_tokens>
-    ```
--   **Exemple**:
-    ```powershell
-    # Crée les fichiers .token et un .env.generated dans le répertoire spécifié
-    ./generate-bearer-tokens.ps1 -Usernames "qwen-api-user", "forge-api-user" -OutputPath "./docker-configurations/comfyui-qwen/custom_nodes/ComfyUI-Login"
-    ```
-    **Important**: Le `OutputPath` doit pointer vers le répertoire `ComfyUI-Login` situé dans les `custom_nodes` de votre **workspace sur la machine hôte**. C'est le même chemin que celui utilisé par le script `install-comfyui-login.sh`.
-
-### 4. `extract-bearer-tokens.ps1`
-
--   **Objectif**: Extraire un token depuis les logs Docker après la première connexion.
--   **Usage**:
-    ```powershell
-    ./extract-bearer-tokens.ps1 -ContainerName <nom_conteneur> -EnvVarName <nom_variable_env>
-    ```
--   **Exemple**:
-    ```powershell
-    ./extract-bearer-tokens.ps1 -ContainerName "comfyui-qwen" -EnvVarName "QWEN_API_TOKEN"
-    ```
-
-### 5. `test-comfyui-auth.ps1`
-
--   **Objectif**: Valider la configuration de l'authentification.
--   **Usage**:
-    ```powershell
-    ./test-comfyui-auth.ps1 -ApiUrl <url_api> -ValidToken <token_valide>
-    ```
--   **Exemple**:
-    ```powershell
-    $myToken = "votre_token_ici"
-    ./test-comfyui-auth.ps1 -ApiUrl "http://localhost:8888/system_stats" -ValidToken $myToken
-    ```
-
-### 6. `deploy-auth-solution.ps1`
-
--   **Objectif**: Orchestrer le déploiement complet.
--   **Usage**:
-    ```powershell
-    ./deploy-auth-solution.ps1
-    ```
--   **Note**: Ce script sauvegarde automatiquement la configuration avant de procéder.
-
-### 7. `rollback-auth-solution.ps1`
-
--   **Objectif**: Annuler le déploiement en cas de problème.
--   **Usage**:
-    ```powershell
-    ./rollback-auth-solution.ps1 -BackupPath <chemin_vers_backup>
-    ```
--   **Exemple**:
-    ```powershell
-    ./rollback-auth-solution.ps1 -BackupPath ".\.backups\deploy_20251022183000"
-    ```
-
-## Variables d'Environnement
-
-Pour que les services Docker prennent en compte l'authentification, les variables suivantes doivent être définies dans les fichiers `.env` respectifs de chaque service (gérés par `configure-comfyui-auth.ps1`):
-
--   `COMFYUI_LOGIN_ENABLED=true`: Active le custom node.
--   `COMFYUI_ARGS=--enable-auth`: Modifie les arguments de démarrage de ComfyUI.
-
-Les tokens eux-mêmes sont gérés par les fichiers `.token` lus par ComfyUI-Login et ne sont pas directement passés comme variables d'environnement au conteneur.
+*Dernière mise à jour : 2025-10-31*
