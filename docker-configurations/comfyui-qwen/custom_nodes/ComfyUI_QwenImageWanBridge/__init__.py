@@ -13,17 +13,19 @@ from ComfyUI_QwenImageWanBridge.nodes.qwen_vll_encoder import QwenVLLEncoder
 NODE_CLASS_MAPPINGS = {
     "QwenVLCLIPLoader": QwenVLCLIPLoader,
     "QwenImageSamplerNode": QwenImageSamplerNode,
+    "QwenAdvancedSampler": QwenAdvancedSampler,
     "QwenTextToImageNode": QwenTextToImageNode,
     "QwenImageToVideoNode": QwenImageToVideoNode,
     "QwenVLLEncoder": QwenVLLEncoder,
 }
-
 __all__ = [
     "QwenWrapperBase",
     "QwenVLCLIPLoader",
     "QwenImageSamplerNode",
+    "QwenAdvancedSampler",
     "QwenTextToImageNode",
     "QwenImageToVideoNode",
     "QwenVLLEncoder",
     "NODE_CLASS_MAPPINGS",
+]
 ]

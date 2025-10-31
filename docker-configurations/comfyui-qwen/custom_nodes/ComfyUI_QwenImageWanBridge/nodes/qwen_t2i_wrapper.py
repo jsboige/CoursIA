@@ -15,7 +15,7 @@ import comfy.model_management as mm
 from comfy.utils import load_torch_file
 import comfy.model_base
 
-from ComfyUI_QwenImageWanBridge.nodes.qwen_wrapper_base import QwenWrapperBase
+from .qwen_wrapper_base import QwenWrapperBase
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ Qwen VLL Encoder Wrapper for ComfyUI
 Provides encoding functionality for Qwen models
 """
 
-from ComfyUI_QwenImageWanBridge.nodes.qwen_wrapper_base import QwenWrapperBase
+from .qwen_wrapper_base import QwenWrapperBase
 
 
 class QwenVLLEncoder(QwenWrapperBase):
