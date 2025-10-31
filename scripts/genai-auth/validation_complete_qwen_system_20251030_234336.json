@@ -1,0 +1,114 @@
+{
+  "validation_metadata": {
+    "timestamp": "2025-10-30T23:43:39.641382",
+    "validator_version": "1.0 - VALIDATION COMPLÈTE INDÉPENDANTE",
+    "platform": "win32",
+    "comfyui_url": "http://localhost:8188",
+    "container_name": "comfyui-qwen",
+    "validation_type": "COMPLETE_SYSTEM_VALIDATION",
+    "duration_seconds": 0
+  },
+  "test_results": {
+    "infrastructure": {
+      "container_status": "RUNNING",
+      "custom_nodes": "ERROR",
+      "models": "ERROR",
+      "overall": "UNKNOWN",
+      "api_connectivity": "FAILURE",
+      "infrastructure_score": 25,
+      "infrastructure_status": "FAIL"
+    },
+    "workflow": {
+      "workflow_loading": "UNKNOWN",
+      "workflow_submission": "ERROR",
+      "image_generation": "UNKNOWN",
+      "overall": "UNKNOWN",
+      "workflow_score": 0,
+      "workflow_status": "FAIL"
+    },
+    "security": {
+      "authentication": "FAILURE",
+      "api_key_security": "MEDIUM",
+      "boundary_awareness": "COMPLIANT",
+      "overall": "UNKNOWN",
+      "security_score": 70,
+      "security_status": "FAIL"
+    },
+    "documentation": {
+      "documentation_exists": "PARTIAL",
+      "documentation_accessible": "PRESENT",
+      "documentation_consistent": "ISSUES",
+      "overall": "UNKNOWN",
+      "existing_docs": [
+        "rapport_final_validation_qwen_sddd.md",
+        "rapport_test_qwen_comfyui.md"
+      ],
+      "consistency_issues": [
+        "✅ Documentation multiple présente et cohérente"
+      ],
+      "documentation_score": 25,
+      "documentation_status": "FAIL"
+    },
+    "end_to_end": {
+      "real_generation": "ERROR",
+      "image_quality": "UNKNOWN",
+      "performance": "UNKNOWN",
+      "overall": "UNKNOWN",
+      "e2e_score": 0,
+      "e2e_status": "FAIL"
+    }
+  },
+  "overall_assessment": {
+    "status": "PARTIAL",
+    "total_score": 120,
+    "max_score": 500,
+    "score_percentage": 24.0,
+    "passed_tests": 5,
+    "failed_tests": 0,
+    "critical_issues": [],
+    "warnings": []
+  },
+  "detailed_findings": {
+    "infrastructure": {
+      "status": "FAIL",
+      "score": 25,
+      "issues": [],
+      "recommendations": []
+    },
+    "workflow": {
+      "status": "FAIL",
+      "score": 0,
+      "issues": [],
+      "recommendations": []
+    },
+    "security": {
+      "status": "FAIL",
+      "score": 70,
+      "issues": [],
+      "recommendations": []
+    },
+    "documentation": {
+      "status": "FAIL",
+      "score": 25,
+      "issues": [],
+      "recommendations": []
+    },
+    "end_to_end": {
+      "status": "FAIL",
+      "score": 0,
+      "issues": [],
+      "recommendations": []
+    }
+  },
+  "production_readiness": {
+    "status": "NOT_READY",
+    "score": 120,
+    "criteria_met": {
+      "infrastructure": false,
+      "workflow": false,
+      "security": false,
+      "documentation": false,
+      "end_to_end": false
+    }
+  }
+}
