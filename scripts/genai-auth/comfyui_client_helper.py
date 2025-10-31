@@ -159,11 +159,24 @@ class ComfyUIClient:
             print(f"❌ Impossible récupérer infos serveur: {e.message}")
             return {}
     
-    def get_object_info(self, node_class: str) -> Dict[str, Any]:
-        """Récupère les informations d'un node spécifique"""
+    def get_system_stats(self) -> Dict[str, Any]:
+        """Récupère les statistiques système de ComfyUI"""
         try:
-            response = self._make_request('GET', f'/object_info/{node_class}')
+            response = self._make_request('GET', '/system_stats')
             return response.json()
+        except ComfyUIError as e:
+            print(f"❌ Impossible récupérer stats système: {e.message}")
+            return {}
+    
+    def get_object_info(self, node_class: str = None) -> Dict[str, Any]:
+        """Récupère les informations des objets/nodes disponibles"""
+        try:
+            if node_class:
+                response = self._make_request('GET', f'/object_info/{node_class}')
+                return response.json()
+            else:
+                response = self._make_request('GET', '/object_info')
+                return response.json()
         except ComfyUIError as e:
             print(f"❌ Impossible récupérer infos node {node_class}: {e.message}")
             return {}
@@ -564,13 +577,13 @@ try:
                 
                 print(json.dumps({{
                     "success": True,
-                    "node_class": "{node_class}",
+                    "node_class": f"{node_class}",
                     "return_types": getattr(node_class_obj, 'RETURN_TYPES', None),
                     "test_result": str(type(result)),
                     "test_inputs": test_inputs
                 }}, default=str))
             else:
-                print(json.dumps({{"error": f"Fonction {{function_name}} non trouvée"}}))
+                print(json.dumps({"error": f"Fonction {function_name} non trouvée"}))
         else:
             print(json.dumps({{"error": "Attribut FUNCTION non défini"}}))
             
@@ -1173,47 +1186,46 @@ python comfyui-client-helper.py debug --workflow workflow_casse.json --fix
 ## RÉFÉRENCE API COMPLÈTE
 
 ### Endpoints principaux
-- GET  /system_stats          - Statistiques du serveur
-- GET  /object_info/{class}  - Informations sur un node
-- POST /prompt               - Soumettre un workflow
-- GET  /queue                - File d'attente
-- GET  /history/{prompt_id}  - Historique d'exécution
-- GET  /view?filename=X     - Télécharger un fichier
-- POST /upload               - Uploader un fichier
+# - GET  /system_stats          - Statistiques du serveur
+# - GET  /object_info/{class}  - Informations sur un node
+# - POST /prompt               - Soumettre un workflow
+# - GET  /queue                - File d'attente
+# - GET  /history/{prompt_id}  - Historique d'exécution
+# - GET  /view?filename=X     - Télécharger un fichier
+# - POST /upload               - Uploader un fichier
 
 ### Codes d'erreur
-- 200: Succès
-- 400: Requête invalide
-- 401: Non autorisé (API key)
-- 403: Accès interdit
-- 404: Ressource non trouvée
-- 429: Trop de requêtes
-- 500+: Erreur serveur
+# - 200: Succès
+# - 400: Requête invalide
+# - 401: Non autorisé (API key)
+# - 403: Accès interdit
+# - 404: Ressource non trouvée
+# - 429: Trop de requêtes
+# - 500+: Erreur serveur
 
 ## CONFIGURATION
 
 ### Variables d'environnement
-```bash
-export COMFYUI_HOST=localhost
-export COMFYUI_PORT=8188
-export COMFYUI_API_KEY=votre_clé_api
-export COMFYUI_PROTOCOL=http
-```
-```
+# ```bash
+# export COMFYUI_HOST=localhost
+# export COMFYUI_PORT=8188
+# export COMFYUI_API_KEY=votre_clé_api
+# export COMFYUI_PROTOCOL=http
+# ```
 
 ### Fichier de configuration
-```json
-{
-  "host": "localhost",
-  "port": 8188,
-  "protocol": "http",
-  "api_key": null,
-  "timeout": 30,
-  "max_retries": 3,
-  "retry_delay": 1.0,
-  "verify_ssl": true
-}
-```
+# ```json
+# {
+#   "host": "localhost",
+#   "port": 8188,
+#   "protocol": "http",
+#   "api_key": null,
+#   "timeout": 30,
+#   "max_retries":3,
+#   "retry_delay": 1.0,
+#   "verify_ssl": true
+# }
+# ```
 
 ## EXTENSIBILITÉ
 
@@ -1243,15 +1255,15 @@ class MonPlugin:
 # Exemple de code
 
 ### Utiliser un plugin
-```python
-# Exemple de code Python
-# Le plugin est automatiquement chargé et disponible
-plugin = helper.plugin_system.get_plugin('mon_plugin')
-if plugin:
-    instance = plugin(helper.client)
-    instance.custom_investigation(params)
-# Fin de l'exemple
-
+# ```python
+# # Exemple de code Python
+# # Le plugin est automatiquement chargé et disponible
+# plugin = helper.plugin_system.get_plugin('mon_plugin')
+# if plugin:
+# #     instance = plugin(helper.client)
+# #     instance.custom_investigation(params)
+# # Fin de l'exemple
+# ```
     def run(self, args=None):
         # Main entry point
         if args is None:
@@ -1284,7 +1296,9 @@ if plugin:
 def main():
     # Main entry point
     cli = ComfyUIHelperCLI()
-    cli.run()
+    parser = cli.setup_parser()
+    args = parser.parse_args()
+    cli.run(args)
 
 
 if __name__ == "__main__":

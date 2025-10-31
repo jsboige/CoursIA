@@ -122,10 +122,31 @@ class QwenValidator:
             self.custom_nodes_dir = self.comfyui_dir / 'custom_nodes' / 'ComfyUI-QwenImageWanBridge'
         
         # Configuration du client API ComfyUI (respect des frontières)
+        # 🔧 CORRECTION SDDD : Lecture du token fonctionnel depuis fichier de solution
+        solution_token_file = Path.cwd() / 'comfyui_auth_solution.json'
+        api_key = None
+        
+        if solution_token_file.exists():
+            try:
+                with open(solution_token_file, 'r', encoding='utf-8') as f:
+                    solution_data = json.load(f)
+                    api_key = solution_data.get('token')
+                    logger.info(f"🔑 Token fonctionnel chargé depuis solution: {api_key[:20]}...")
+            except Exception as e:
+                logger.error(f"❌ Erreur lecture token solution: {e}")
+        
+        # Fallback au token par défaut si pas de solution
+        if not api_key:
+            logger.warning("⚠️ Aucun token solution trouvé, utilisation du fallback")
+            api_key = "2b$12$UUDceblhZeEySDwVMC0ccN.IaQmMBfKdTY.aAE3poXcq1zsOP6coni"
+        
         self.comfyui_config = ComfyUIConfig(
-            base_url='http://localhost:8188',
+            host='localhost',
+            port=8188,
+            protocol='http',
             timeout=30,
-            max_retries=3
+            max_retries=3,
+            api_key=api_key  # 🔧 SDDD : Token fonctionnel
         )
         self.comfyui_client = ComfyUIClient(self.comfyui_config)
         
@@ -618,7 +639,7 @@ class QwenValidator:
                 'timestamp': datetime.now().isoformat(),
                 'validator_version': '4.0 - CORRIGÉE SDDD',
                 'platform': platform.system(),
-                'comfyui_url': self.comfyui_config.base_url,
+                'comfyui_url': f"{self.comfyui_config.protocol}://{self.comfyui_config.host}:{self.comfyui_config.port}",
                 'container_name': self.container_name,
                 'boundary_awareness': 'RESPECTÉE - Client API pur uniquement',
                 'sddd_correction': 'VIOLATION des frontières hôte/conteneur corrigée'
