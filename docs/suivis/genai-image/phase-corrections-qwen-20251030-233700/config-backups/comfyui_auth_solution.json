@@ -1,8 +1,0 @@
-{
-  "token": "$2b$12$03f3f6f91f4175e338c314f7bd96ebd3dd834b53c1813d69d830f",
-  "raw_token": "17daf4825c18c380da8058a070f20b07beefdd7697034cfcda36c21dddb14382",
-  "timestamp": "2025-10-30T22:58:00.000000+00:00",
-  "status": "fixed",
-  "problem": "token_format_bcrypt",
-  "solution": "G\u00e9n\u00e9ration automatique token bcrypt valide"
-}
