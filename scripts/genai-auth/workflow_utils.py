@@ -81,22 +81,22 @@ class WorkflowUtils:
                 validation_results["node_count"] = len(nodes)
                 
                 # Valider chaque noeud
-                for i, (node_id, node_data) in enumerate(nodes):
+                for i, node_data in enumerate(nodes):
                     if not isinstance(node_data, dict):
                         validation_results["errors"].append(f"Nœud {i} invalide: doit être un dictionnaire")
                         continue
                     
                     # Validation des champs requis
-                    required_fields = ["class_type", "inputs"]
+                    required_fields = ["type"]  # "type" au lieu de "class_type" dans notre format
                     for field in required_fields:
                         if field not in node_data:
                             validation_results["errors"].append(f"Nœud {i}: champ '{field}' manquant")
                     
                     # Validation des types
-                    if "class_type" in node_data:
-                        class_type = node_data["class_type"]
-                        if not isinstance(class_type, str):
-                            validation_results["errors"].append(f"Nœud {i}: class_type doit être une chaîne")
+                    if "type" in node_data:
+                        node_type = node_data["type"]
+                        if not isinstance(node_type, str):
+                            validation_results["errors"].append(f"Nœud {i}: type doit être une chaîne")
             else:
                 validation_results["errors"].append("Le workflow doit contenir une section 'nodes'")
             
@@ -108,10 +108,11 @@ class WorkflowUtils:
                         validation_results["errors"].append(f"Lien {i} invalide: doit être [source, target]")
             
             # Extraire les métadonnées
+            from datetime import datetime
             validation_results["metadata"] = {
                 "file_size": workflow_path.stat().st_size if workflow_path.exists() else 0,
-                "last_modified": workflow_path.stat().st_mtime.isoformat() if workflow_path.exists() else None,
-                "node_types": list(set(node.get("class_type", "Unknown") for node in workflow_data.get("nodes", [])))
+                "last_modified": datetime.fromtimestamp(workflow_path.stat().st_mtime).isoformat() if workflow_path.exists() else None,
+                "node_types": list(set(node.get("type", "Unknown") for node in workflow_data.get("nodes", [])))
             }
             
             # Si pas d'erreurs critiques
@@ -179,10 +180,10 @@ class WorkflowUtils:
                                 fixed_links.append(fixed_link)
                                 corrections_made += 1
                                 logger.info(f"✅ Lien {i} corrigé: {source_id} -> {target_id}")
+                            else:
+                                logger.warning(f"⚠️ Lien {i} format non reconnu: {link}")
                         else:
-                            logger.warning(f"⚠️ Lien {i} format non reconnu: {link}")
-                    else:
-                        logger.warning(f"⚠️ Lien {i} type non reconnu: {type(link)}")
+                            logger.warning(f"⚠️ Lien {i} type non reconnu: {type(link)}")
                 
                 # Mettre à jour les liens
                 if corrections_made > 0:

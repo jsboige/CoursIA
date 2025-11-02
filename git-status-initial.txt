@@ -1,0 +1,27 @@
+ M .gitignore
+ M .secrets/.env.generated
+ M .secrets/qwen-api-user.token
+ M docker-configurations/comfyui-qwen/docker-compose.yml
+ M docs/suivis/genai-image/phase-29-corrections-qwen-20251031-111200/README.md
+ M scripts/genai-auth/README.md
+ M scripts/genai-auth/validation_complete_qwen_system.py
+ M scripts/genai-auth/workflow_utils.py
+?? .secrets/.env.backup_20251101_112901
+?? .secrets/.env.backup_20251101_112956
+?? .secrets/.env.generated.backup_20251101_113139
+?? .secrets/.env.generated.backup_20251101_113246
+?? .secrets/.env.generated.backup_20251101_113335
+?? .secrets/.env.generated.backup_20251101_113434
+?? .secrets/.env.generated.backup_20251101_151329
+?? docker-configurations/comfyui-qwen/.env.backup_20251101_112901
+?? docker-configurations/comfyui-qwen/.env.backup_20251101_112956
+?? docker-configurations/comfyui-qwen/.env.backup_20251101_113246
+?? docker-configurations/comfyui-qwen/.env.backup_20251101_113335
+?? docker-configurations/comfyui-qwen/.env.backup_20251101_113434
+?? docker-configurations/comfyui-qwen/.env.backup_20251101_151329
+?? docs/suivis/genai-image/phase-29-corrections-qwen-20251031-111200/outputsqwen_fp8_validation_20251102_132734_00001_.png
+?? qwen_nodes_available.json
+?? scripts/genai-auth/nettoyage-reorganisation-sddd-phase29.ps1
+?? temp_generate_credentials.py
+?? temp_hash.txt
+?? temp_write_hash.py
