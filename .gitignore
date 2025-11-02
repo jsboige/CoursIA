@@ -355,6 +355,10 @@ MigrationBackup/
 .env.*.local
 .env.docker
 
+# HuggingFace tokens (Phase 29 - ÉTAPE 24F)
+.secrets/.env.huggingface
+.secrets/.env.huggingface.backup
+
 # VSCode settings
 .vscode/settings.json
 
@@ -379,6 +383,18 @@ diagnostic-*.json
 temp_*.json
 test_qwen_simple.py
 get_token*.py
+
+# Backups temporaires (Phase 29 - Post-Nettoyage)
+*.backup_*
+.env.backup_*
+
+# Fichiers temporaires racine (Phase 29 - Post-Nettoyage)
+temp_*.py
+temp_*.txt
+temp_*/
+
+# Fichiers de debug (Phase 29 - Post-Nettoyage)
+*_nodes_available.json
 
 # Répertoires aberrants historiques
 coursIA/

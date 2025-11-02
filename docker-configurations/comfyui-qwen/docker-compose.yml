@@ -19,6 +19,10 @@ services:
       - type: bind
         source: ${COMFYUI_WORKSPACE_PATH}
         target: /workspace/ComfyUI
+      - type: bind
+        source: ../../.secrets/qwen-api-user.token
+        target: /workspace/ComfyUI/.secrets/qwen-api-user.token
+        read_only: true
     
     environment:
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
@@ -29,6 +33,8 @@ services:
       - COMFYUI_PORT=8188
       - COMFYUI_LISTEN=0.0.0.0
       - COMFYUI_LOGIN_ENABLED=true
+      - COMFYUI_AUTH_TOKEN=${QWEN_API_TOKEN}
+      - COMFYUI_AUTH_TOKEN_FILE=${COMFYUI_AUTH_TOKEN_FILE}
     
     working_dir: /workspace/ComfyUI
     

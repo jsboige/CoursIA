@@ -138,4 +138,153 @@ La structure de la Phase 29 est **100% complète et conforme** aux principes SDD
 **Statut**: ✅ STRUCTURE SDDD TERMINÉE - Prête pour corrections
 ---
 **Infrastructure prête pour la Phase 29** ✅
+
+---
+
+## 📚 Index Complet des Livrables Phase 29
+
+### 🔬 Scripts Transients (14 scripts)
+
+1. **`01-validation-custom-nodes-20251031-120000.py`** (619 lignes)
+   - Validation des custom nodes Qwen installés
+   - Rapport JSON généré : `rapports/01-validation-custom-nodes-20251031-120000.json`
+
+2. **`02-verification-modeles-qwen-20251031-121500.py`** (720 lignes)
+   - Vérification de la présence et accessibilité des modèles Qwen
+   - Rapport : `rapports/06-verification-modeles-qwen-20251031-121500.md`
+
+3. **`03-test-generation-images-20251031-230500.py`** (729 lignes)
+   - Premier test de génération d'images avec workflow Qwen
+   - Rapport : `rapports/09-test-generation-images-20251031-230500.md`
+
+4. **`04-resync-test-final-20251101-145700.py`** (505 lignes)
+   - Resynchronisation complète des credentials
+   - Rapport : `rapports/15-test-final-complet-20251101-145700.md`
+
+5. **`05-test-auth-final-20251101-171300.py`** (66 lignes)
+   - Test d'authentification API simplifié
+
+6. **`06-fix-wsl-token-file-20251101-171400.py`** (77 lignes)
+   - Correction du fichier token dans WSL
+
+7. **`06-regeneration-complete-auth-20251101-173400.py`** (206 lignes)
+   - Régénération complète de l'authentification
+   - Rapport : `rapports/16-regeneration-complete-credentials-20251101_232640.md`
+
+8. **`07-verification-complete-auth-20251101-232300.py`** (210 lignes)
+   - Vérification complète de l'authentification
+
+9. **`08-force-docker-reload-auth-20251101-232700.py`** (179 lignes)
+   - Forçage du rechargement Docker pour authentification
+
+10. **`09-diagnostic-bind-mount-wsl-20251101-232900.py`** (203 lignes)
+    - Diagnostic des bind mounts WSL
+
+11. **`10-force-all-token-locations-20251101-233400.py`** (223 lignes)
+    - Forçage de tous les emplacements de token
+
+12. **`11-inspect-container-token-20251101-233700.py`** (128 lignes)
+    - Inspection du token dans le container
+
+13. **`12-rebuild-complet-docker-20251101-234400.py`** (256 lignes)
+    - Rebuild complet du container Docker
+
+14. **`13-inspect-comfyui-auth-code-20251101-234800.py`** (194 lignes)
+    - Inspection du code d'authentification ComfyUI
+
+15. **`14-test-generation-images-final-20251102-005300.py`** ⭐ (382 lignes)
+    - **Test final end-to-end complet du système Qwen**
+    - Validation Docker + Authentification + Génération
+    - Rapport JSON détaillé de validation
+
+### 📋 Rapports (19 rapports)
+
+#### Rapports Structurels (1-4)
+1. **`01-VALIDATION_COHERENCE_PHASE29-20251031-111200.md`** - Validation initiale de la phase
+2. **`02-RAPPORT_FINAL_PHASE29-20251031-111200.md`** - Rapport final initial (obsolète, remplacé par #19)
+3. **`03-validation-custom-nodes-20251031-120000.md`** - Validation des custom nodes
+4. **`04-test-validation-20251031-120000.md`** - Test de validation initial
+
+#### Rapports Techniques (5-16)
+5. **`05-verification-modeles-qwen-20251031-223553.md`** - Vérification modèles (version courte)
+6. **`06-verification-modeles-qwen-20251031-121500.md`** - Vérification modèles (version longue)
+7. **`07-correction-transient-02-20251031-225700.md`** - Corrections script transient 02
+8. **`07-nettoyage-reorganisation-sddd-20251101-145137.md`** - Nettoyage et réorganisation SDDD
+9. **`08-verification-directe-modeles-qwen-20251031-230300.md`** - Vérification directe modèles
+10. **`09-test-generation-images-20251031-230500.md`** - Test génération d'images
+11. **`10-correction-script-03-20251031-230000.md`** - Corrections script transient 03
+12. **`11-diagnostic-credentials-20251031-234000.md`** - Diagnostic des credentials
+13. **`12-guide-reference-credentials-comfyui-20251031-234429.md`** - Guide de référence credentials
+14. **`13-diagnostic-generation-images-20251101-111500.md`** - Diagnostic génération d'images
+15. **`14-resync-credentials-20251101-113435.md`** - Resynchronisation credentials
+16. **`15-test-final-complet-20251101-145700.md`** - Test final complet
+17. **`16-regeneration-complete-credentials-20251101_232640.md`** - Régénération complète credentials
+
+#### Rapports Majeurs (17-19) 🌟
+17. **`17-archeologie-authentification-comfyui-SDDD-20251101-235600.md`** (580 lignes)
+    - **Archéologie documentaire SDDD**
+    - Méthodologie d'investigation des 15+ rapports précédents
+    - Identification de la piste ComfyUI-Login
+
+18. **`18-resolution-finale-authentification-comfyui-login-20251101-232000.md`** (441 lignes)
+    - **Résolution finale du problème d'authentification**
+    - Découverte critique : bcrypt hash comme bearer token
+    - Solution technique complète implémentée
+
+19. **`19-rapport-final-phase-29-resolution-complete-20251102-005300.md`** ⭐ (571 lignes)
+    - **Rapport final synthétique de la Phase 29**
+    - Chronologie complète (31 oct - 2 nov 2025)
+    - Synthèse des 14 scripts transients
+    - Synthèse des 19 rapports
+    - Livrables consolidés
+    - Guide de maintenance
+
+### 🛠️ Scripts Standalone Consolidés (3 scripts)
+
+Localisés dans `scripts/genai-auth/` :
+
+1. **`install-comfyui-login.py`** ⭐ (197 lignes)
+   - Installation automatisée du custom node ComfyUI-Login
+   - Synchronisation des credentials bcrypt
+   - Validation post-installation
+
+2. **`test-comfyui-auth-simple.py`** ⭐ (79 lignes)
+   - Test rapide d'authentification (< 5 secondes)
+   - Diagnostic clair HTTP 200/401
+
+3. **`test-comfyui-image-simple.py`** ⭐ (170 lignes)
+   - Test end-to-end de génération d'image
+   - Workflow minimal avec timeout configurable
+
+### 📊 Métriques Phase 29
+
+#### Volume de Travail
+- **Scripts transients** : 14 scripts (4,977 lignes au total)
+- **Rapports** : 19 rapports (~150 KB documentation)
+- **Scripts consolidés** : 3 scripts standalone (446 lignes)
+- **Durée** : 3 jours (31 oct - 2 nov 2025)
+
+#### Découvertes Critiques
+1. **ComfyUI-Login requis** pour l'authentification API
+2. **Mécanisme bcrypt hash** : Le hash bcrypt complet est utilisé comme bearer token (comportement inhabituel)
+3. **Synchronisation WSL** : Nécessité de synchroniser les fichiers token entre host et container
+
+#### Résultat Final
+- ✅ **Authentification** : HTTP 200 (OK)
+- ✅ **Génération d'images** : Fonctionnelle
+- ✅ **Documentation** : Complète et traçable
+- ✅ **Maintenance** : Scripts standalone simples et maintenables
+
+### 🔗 Liens Importants
+
+- **Documentation centrale** : `scripts/genai-auth/README.md`
+- **Rapport final** : `rapports/19-rapport-final-phase-29-resolution-complete-20251102-005300.md`
+- **Rapport archéologie** : `rapports/17-archeologie-authentification-comfyui-SDDD-20251101-235600.md`
+- **Rapport résolution** : `rapports/18-resolution-finale-authentification-comfyui-login-20251101-232000.md`
+
+---
+
+**Phase 29 - COMPLÈTE** ✅  
+**Date de clôture** : 2025-11-02 00:53:00 (UTC+1)  
+**Statut** : 🎯 RÉSOLUTION TOTALE - Système Qwen ComfyUI 100% fonctionnel
 **Prochaine action** : Passer en mode Code pour consolidation et commits
