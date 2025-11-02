@@ -452,18 +452,17 @@ def verify_and_copy_output() -> Optional[str]:
     
     print(f"\nImage trouvée : {latest_image}")
     
-    # Copier vers Windows
-    container_path = f"/workspace/ComfyUI/output/{latest_image}"
-    host_wsl_path = f"/home/jesse/SD/workspace/comfyui-qwen/ComfyUI/output/{latest_image}"
+    # Copier vers Windows via Docker API
+    container_path = f"{CONTAINER_NAME}:/workspace/ComfyUI/output/{latest_image}"
     windows_dest_path = os.path.join(OUTPUT_DIR, latest_image)
     
     print(f"\nCopie vers Windows...")
-    print(f"  Source WSL : {host_wsl_path}")
+    print(f"  Source Container : {container_path}")
     print(f"  Destination : {windows_dest_path}")
     
     try:
-        # Utiliser wsl cp pour copier depuis WSL vers Windows
-        copy_command = f'wsl cp "{host_wsl_path}" "{windows_dest_path}"'
+        # Utiliser docker cp pour copier depuis le container
+        copy_command = f'docker cp {container_path} "{windows_dest_path}"'
         result = subprocess.run(
             ["pwsh", "-c", copy_command],
             capture_output=True,
