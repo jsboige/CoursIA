@@ -90,7 +90,7 @@ curl -X GET -H "Authorization: Bearer $2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYd
 
 **Commande exécutée** :
 ```bash
-python scripts/genai-auth/test-comfyui-auth-simple.py
+python scripts/genai-auth/test_comfyui_auth_simple.py
 ```
 
 **Résultat** :
@@ -135,7 +135,7 @@ Test d'Authentification ComfyUI-Login
 
 **Commande exécutée** :
 ```bash
-python scripts/genai-auth/test-comfyui-image-simple.py
+python scripts/genai-auth/test_comfyui_image_simple.py
 ```
 
 **Résultat** :

@@ -319,22 +319,22 @@ def main():
         epilog="""
 Exemples d'utilisation:
   # Générer des tokens pour ComfyUI Qwen
-  python genai-auth-manager.py generate --service comfyui-qwen
+  python genai_auth_manager.py generate --service comfyui-qwen
   
   # Valider les tokens existants
-  python genai-auth-manager.py validate --service comfyui-qwen
+  python genai_auth_manager.py validate --service comfyui-qwen
   
   # Diagnostiquer les problèmes d'authentification
-  python genai-auth-manager.py diagnose --service comfyui-qwen
+  python genai_auth_manager.py diagnose --service comfyui-qwen
   
   # Lister tous les services
-  python genai-auth-manager.py list-services
+  python genai_auth_manager.py list-services
   
   # Afficher la configuration actuelle
-  python genai-auth-manager.py show-config
+  python genai_auth_manager.py show-config
   
   # Ajouter un nouveau service
-  python genai-auth-manager.py add-service --name mon-service --config '{"host": "localhost", "port": 8080}'
+  python genai_auth_manager.py add-service --name mon-service --config '{"host": "localhost", "port": 8080}'
         """
     )
     

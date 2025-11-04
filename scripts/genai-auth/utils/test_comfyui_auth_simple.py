@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-Script Simple - Test Authentification ComfyUI avec Hash Bcrypt
+Test d'authentification ComfyUI avec credentials dynamiques.
 
-Ce script teste l'authentification ComfyUI-Login en utilisant
-le hash bcrypt comme Bearer token (comportement documenté).
+Architecture alignée avec setup_complete_qwen.py :
+- Credentials chargés depuis .secrets/qwen-api-user.token
+- Gestion d'erreurs robuste
+- Logging structuré
 
-Auteur: Consolidation Phase 29
-Date: 2025-11-01
-Version: 1.0.0
+Auteur : Phase 29 - Rapport 38
+Date : 2025-11-02
+Version: 2.0.0 (Credentials Dynamiques)
 """
 
 import sys
@@ -16,7 +18,33 @@ from pathlib import Path
 
 # Configuration
 COMFYUI_URL = "http://localhost:8188"
-BCRYPT_HASH = "$2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5M2"
+
+
+def load_auth_token():
+    """Charge le token d'authentification depuis .secrets/qwen-api-user.token"""
+    # Remonter à la racine du projet (3 niveaux: utils -> genai-auth -> scripts -> racine)
+    project_root = Path(__file__).parent.parent.parent.parent
+    secrets_file = project_root / ".secrets" / "qwen-api-user.token"
+    
+    if not secrets_file.exists():
+        raise FileNotFoundError(
+            f"Fichier secrets non trouvé : {secrets_file}\n"
+            f"Exécutez install_comfyui_login.py pour générer le token"
+        )
+    
+    bcrypt_hash = secrets_file.read_text().strip()
+    
+    if not bcrypt_hash.startswith("$2b$"):
+        raise ValueError(
+            f"Hash bcrypt invalide dans {secrets_file}\n"
+            f"Le hash doit commencer par '$2b$'"
+        )
+    
+    return bcrypt_hash
+
+
+# Charger le hash bcrypt dynamiquement
+BCRYPT_HASH = load_auth_token()
 
 def test_authentication():
     """Test l'authentification avec le hash bcrypt comme token"""

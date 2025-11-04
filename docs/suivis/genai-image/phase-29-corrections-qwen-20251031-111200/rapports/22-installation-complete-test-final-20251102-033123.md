@@ -2,7 +2,7 @@
 
 **Date**: 2025-11-02 03:31:23  
 **Durée totale**: 39.23s  
-**Script**: `install-comfyui-login.py`
+**Script**: `install_comfyui_login.py`
 
 ## Résumé Exécutif
 
@@ -65,7 +65,7 @@ Installation MASTER en 7 parties pour ComfyUI Qwen avec authentification.
 
 - **Phase**: 29
 - **Type**: Installation MASTER
-- **Script**: `scripts/genai-auth/install-comfyui-login.py`
+- **Script**: `scripts/genai-auth/install_comfyui_login.py`
 - **Timestamp Start**: 2025-11-02T03:30:44.061429
 - **Timestamp End**: 2025-11-02T03:31:23.296362
 - **Durée**: 39.23s

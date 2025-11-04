@@ -209,7 +209,7 @@ services:
 
 ### Test #1 : Authentification ComfyUI API
 
-**Script** : [`scripts/genai-auth/test-comfyui-auth-simple.py`](../../scripts/genai-auth/test-comfyui-auth-simple.py)
+**Script** : [`scripts/genai-auth/test_comfyui_auth_simple.py`](../../scripts/genai-auth/test_comfyui_auth_simple.py)
 
 **Résultat** :
 ```

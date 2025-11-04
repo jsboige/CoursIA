@@ -68,8 +68,8 @@ docs/suivis/genai-image/phase-29-corrections-qwen-20251031-111200/
 
 Vérification de la présence des scripts consolidés essentiels :
 
-- ✅ `scripts/genai-auth/genai-auth-manager.py`
-- ✅ `scripts/genai-auth/docker-qwen-manager.py`
+- ✅ `scripts/genai-auth/genai_auth_manager.py`
+- ✅ `scripts/genai-auth/docker_qwen_manager.py`
 - ✅ `scripts/genai-auth/qwen-validator.py`
 - ✅ `scripts/genai-auth/comfyui_client_helper.py`
 - ✅ `scripts/genai-auth/diagnostic_utils.py`
