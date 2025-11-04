@@ -783,7 +783,7 @@ def step_generate_report(results: Dict[str, Any]) -> Dict[str, Any]:
 
 **Date**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}  
 **Durée totale**: {duration:.2f}s  
-**Script**: `install-comfyui-login.py`
+**Script**: `install_comfyui_login.py`
 
 ## Résumé Exécutif
 
@@ -932,7 +932,7 @@ Installation MASTER en 7 parties pour ComfyUI Qwen avec authentification.
 
 - **Phase**: 29
 - **Type**: Installation MASTER
-- **Script**: `scripts/genai-auth/install-comfyui-login.py`
+- **Script**: `scripts/genai-auth/install_comfyui_login.py`
 - **Timestamp Start**: {results['timestamp_start']}
 - **Timestamp End**: {results['timestamp_end']}
 - **Durée**: {duration:.2f}s

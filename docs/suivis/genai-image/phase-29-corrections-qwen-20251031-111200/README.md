@@ -243,16 +243,16 @@ La structure de la Phase 29 est **100% complète et conforme** aux principes SDD
 
 Localisés dans `scripts/genai-auth/` :
 
-1. **`install-comfyui-login.py`** ⭐ (197 lignes)
+1. **`install_comfyui_login.py`** ⭐ (197 lignes)
    - Installation automatisée du custom node ComfyUI-Login
    - Synchronisation des credentials bcrypt
    - Validation post-installation
 
-2. **`test-comfyui-auth-simple.py`** ⭐ (79 lignes)
+2. **`test_comfyui_auth_simple.py`** ⭐ (79 lignes)
    - Test rapide d'authentification (< 5 secondes)
    - Diagnostic clair HTTP 200/401
 
-3. **`test-comfyui-image-simple.py`** ⭐ (170 lignes)
+3. **`test_comfyui_image_simple.py`** ⭐ (170 lignes)
    - Test end-to-end de génération d'image
    - Workflow minimal avec timeout configurable
 

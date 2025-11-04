@@ -91,7 +91,7 @@ curl -X GET \
 
 ## 📦 Scripts Consolidés Créés
 
-### 1. `scripts/genai-auth/test-comfyui-auth-simple.py`
+### 1. `scripts/genai-auth/test_comfyui_auth_simple.py`
 **Objectif** : Test rapide de l'authentification ComfyUI-Login
 
 **Fonctionnalités** :
@@ -101,14 +101,14 @@ curl -X GET \
 
 **Usage** :
 ```bash
-python scripts/genai-auth/test-comfyui-auth-simple.py
+python scripts/genai-auth/test_comfyui_auth_simple.py
 ```
 
 **Résultat** : ✅ Authentification réussie (HTTP 200)
 
 ---
 
-### 2. `scripts/genai-auth/test-comfyui-image-simple.py`
+### 2. `scripts/genai-auth/test_comfyui_image_simple.py`
 **Objectif** : Test de génération d'image avec authentification
 
 **Fonctionnalités** :
@@ -118,14 +118,14 @@ python scripts/genai-auth/test-comfyui-auth-simple.py
 
 **Usage** :
 ```bash
-python scripts/genai-auth/test-comfyui-image-simple.py
+python scripts/genai-auth/test_comfyui_image_simple.py
 ```
 
 **Note** : Le test de workflow a échoué car ComfyUI Qwen utilise des **custom nodes Qwen spécifiques** (non-standard). L'authentification fonctionne, mais un workflow adapté est nécessaire pour la génération d'images.
 
 ---
 
-### 3. `scripts/genai-auth/install-comfyui-login.py` ⭐
+### 3. `scripts/genai-auth/install_comfyui_login.py` ⭐
 **Objectif** : Installation et configuration automatisée complète de ComfyUI-Login
 
 **Fonctionnalités** :
@@ -142,10 +142,10 @@ python scripts/genai-auth/test-comfyui-image-simple.py
 python scripts/genai-auth/install-comfyui-login.py
 
 # Installation sans redémarrage (pour tests)
-python scripts/genai-auth/install-comfyui-login.py --skip-restart
+python scripts/genai-auth/install_comfyui_login.py --skip-restart
 
 # Avec chemin workspace custom
-python scripts/genai-auth/install-comfyui-login.py \
+python scripts/genai-auth/install_comfyui_login.py \
   --workspace /custom/path/comfyui-qwen \
   --secrets .secrets/custom-token.token
 ```
@@ -245,9 +245,9 @@ sequenceDiagram
 ### Tests de Scripts Consolidés
 | Script | Statut | Résultat |
 |--------|--------|----------|
-| `test-comfyui-auth-simple.py` | ✅ PASS | HTTP 200, affichage des stats |
-| `test-comfyui-image-simple.py` | ⚠️ PARTIEL | Authentification OK, workflow incompatible |
-| `install-comfyui-login.py` | ✅ PASS | Installation, config, test réussis |
+| `test_comfyui_auth_simple.py` | ✅ PASS | HTTP 200, affichage des stats |
+| `test_comfyui_image_simple.py` | ⚠️ PARTIEL | Authentification OK, workflow incompatible |
+| `install_comfyui_login.py` | ✅ PASS | Installation, config, test réussis |
 
 ---
 
@@ -314,9 +314,9 @@ scripts/genai-auth/
 ├── workflow_utils.py
 ├── validation_complete_qwen_system.py
 ├── resync-credentials-complete.py
-├── test-comfyui-auth-simple.py ⭐
-├── test-comfyui-image-simple.py ⭐
-└── install-comfyui-login.py ⭐ (NOUVEAU - Script consolidé principal)
+├── test_comfyui_auth_simple.py ⭐
+├── test_comfyui_image_simple.py ⭐
+└── install_comfyui_login.py ⭐ (NOUVEAU - Script consolidé principal)
 ```
 
 ---

@@ -101,7 +101,7 @@ Le Rapport 17 a révélé que **le système d'authentification COMPLET a été p
 
 ### Installation ComfyUI-Login
 
-Script consolidé créé : [`install-comfyui-login.py`](../../../scripts/genai-auth/install-comfyui-login.py)
+Script consolidé créé : [`install_comfyui_login.py`](../../../scripts/genai-auth/install_comfyui_login.py)
 
 Fonctionnalités :
 - ✅ Vérification installation existante (WSL)
@@ -144,17 +144,17 @@ Authorization: Bearer $2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5
 
 ### Scripts Consolidés (3 nouveaux scripts)
 
-1. **[`install-comfyui-login.py`](../../../scripts/genai-auth/install-comfyui-login.py)** (313 lignes)
+1. **[`install_comfyui_login.py`](../../../scripts/genai-auth/install_comfyui_login.py)** (313 lignes)
    - Installation automatisée ComfyUI-Login
    - Synchronisation credentials
    - Test authentification intégré
 
-2. **[`test-comfyui-auth-simple.py`](../../../scripts/genai-auth/test-comfyui-auth-simple.py)** (98 lignes)
+2. **[`test_comfyui_auth_simple.py`](../../../scripts/genai-auth/test_comfyui_auth_simple.py)** (98 lignes)
    - Test rapide authentification
    - Affichage informations système
    - Diagnostic clair (HTTP 200/401)
 
-3. **[`test-comfyui-image-simple.py`](../../../scripts/genai-auth/test-comfyui-image-simple.py)** (188 lignes)
+3. **[`test_comfyui_image_simple.py`](../../../scripts/genai-auth/test_comfyui_image_simple.py)** (188 lignes)
    - Test génération d'image
    - Suivi exécution avec timeout
    - Validation image générée
@@ -298,16 +298,16 @@ docs/suivis/genai-image/phase-29-corrections-qwen-20251031-111200/
 ```
 scripts/genai-auth/
 ├── genai_auth_manager.py               # Gestionnaire auth principal (424 lignes)
-├── docker-qwen-manager.py              # Gestionnaire Docker Qwen (524 lignes)
+├── docker_qwen_manager.py              # Gestionnaire Docker Qwen (524 lignes)
 ├── qwen-validator.py                   # Validateur complet Qwen (478 lignes)
 ├── qwen-setup.py                       # Setup initial Qwen (447 lignes)
 ├── comfyui_client_helper.py            # Client ComfyUI complet (1305 lignes)
 ├── workflow_utils.py                   # Utilitaires workflows (490 lignes)
 ├── diagnostic_utils.py                 # Utilitaires diagnostic (426 lignes)
 ├── validation_complete_qwen_system.py  # Validation système (800 lignes)
-├── install-comfyui-login.py ⭐          # Installation ComfyUI-Login (313 lignes)
-├── test-comfyui-auth-simple.py ⭐       # Test auth simple (98 lignes)
-└── test-comfyui-image-simple.py ⭐      # Test génération simple (188 lignes)
+├── install_comfyui_login.py ⭐          # Installation ComfyUI-Login (313 lignes)
+├── test_comfyui_auth_simple.py ⭐       # Test auth simple (98 lignes)
+└── test_comfyui_image_simple.py ⭐      # Test génération simple (188 lignes)
 ```
 
 ### Rapports de Référence
@@ -332,16 +332,16 @@ scripts/genai-auth/
 ## 🚀 Utilisation du Système
 
 ### Installation ComfyUI-Login
-
 ```bash
 # Installation complète avec redémarrage
-python scripts/genai-auth/install-comfyui-login.py
+python scripts/genai-auth/install_comfyui_login.py
 
 # Installation sans redémarrage (pour tests)
+```
 python scripts/genai-auth/install-comfyui-login.py --skip-restart
 
 # Avec chemin workspace custom
-python scripts/genai-auth/install-comfyui-login.py \
+python scripts/genai-auth/install_comfyui_login.py \
   --workspace /custom/path/comfyui-qwen \
   --secrets .secrets/custom-token.token
 ```
@@ -350,7 +350,7 @@ python scripts/genai-auth/install-comfyui-login.py \
 
 ```bash
 # Test rapide authentification
-python scripts/genai-auth/test-comfyui-auth-simple.py
+python scripts/genai-auth/test_comfyui_auth_simple.py
 ```
 
 **Résultat attendu** :
@@ -366,7 +366,7 @@ python scripts/genai-auth/test-comfyui-auth-simple.py
 
 ```bash
 # Test génération d'image
-python scripts/genai-auth/test-comfyui-image-simple.py
+python scripts/genai-auth/test_comfyui_image_simple.py
 ```
 
 **Résultat attendu** :
@@ -440,7 +440,7 @@ docker logs comfyui-qwen --tail 50
 wsl bash -c "test -d /home/jesse/SD/workspace/comfyui-qwen/ComfyUI/custom_nodes/ComfyUI-Login && echo 'INSTALLÉ' || echo 'NON INSTALLÉ'"
 
 # Réinstaller si nécessaire
-python scripts/genai-auth/install-comfyui-login.py
+python scripts/genai-auth/install_comfyui_login.py
 ```
 
 ### Synchronisation Credentials

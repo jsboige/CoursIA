@@ -407,28 +407,28 @@ def main():
         epilog="""
 Exemples d'utilisation:
   # Démarrer un conteneur
-  python docker-qwen-manager.py start --container comfyui-qwen
+  python docker_qwen_manager.py start --container comfyui-qwen
   
   # Arrêter un conteneur
-  python docker-qwen-manager.py stop --container comfyui-qwen
+  python docker_qwen_manager.py stop --container comfyui-qwen
   
   # Redémarrer un conteneur
-  python docker-qwen-manager.py restart --container comfyui-qwen
+  python docker_qwen_manager.py restart --container comfyui-qwen
   
   # Vérifier le statut d'un conteneur
-  python docker-qwen-manager.py status --container comfyui-qwen
+  python docker_qwen_manager.py status --container comfyui-qwen
   
   # Vérifier la santé d'un conteneur
-  python docker-qwen-manager.py health --container comfyui-qwen
+  python docker_qwen_manager.py health --container comfyui-qwen
   
   # Monitorer les ressources d'un conteneur
-  python docker-qwen-manager.py monitor --container comfyui-qwen --duration 300
+  python docker_qwen_manager.py monitor --container comfyui-qwen --duration 300
   
   # Valider la configuration Docker complète
-  python docker-qwen-manager.py validate-setup
+  python docker_qwen_manager.py validate-setup
   
   # Afficher la configuration actuelle
-  python docker-qwen-manager.py show-config
+  python docker_qwen_manager.py show-config
         """
     )
     
