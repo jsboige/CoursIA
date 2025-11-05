@@ -401,3 +401,4 @@ coursIA/
 
 # JDK Portable - Exclure tout le répertoire au lieu de lister chaque fichier
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/
+.vscode/
