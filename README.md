@@ -163,6 +163,32 @@ Notebooks sur la théorie de l'information intégrée :
 
 - `Intro_to_PyPhi.ipynb` - Introduction à PyPhi pour IIT
 
+## 🧪 Scripts de Test GenAI Auth
+
+Cette section contient des scripts pour valider l'installation et le bon fonctionnement de l'infrastructure de génération d'images avec Qwen et ComfyUI.
+
+### Test Complet du Système
+Pour lancer la suite de tests complète (authentification, génération, etc.), utilisez le script consolidé :
+
+```bash
+# Test complet du système Qwen ComfyUI
+python scripts/genai-auth/utils/consolidated_tests.py
+```
+
+### Structure des Scripts
+
+La logique de test est centralisée pour simplifier la maintenance :
+
+```
+scripts/genai-auth/
+├── core/
+│   └── setup_complete_qwen.py          # Installation complète
+└── utils/
+    ├── token_manager.py                # Gestionnaire centralisé des tokens
+    ├── comfyui_client_helper.py        # Client ComfyUI robuste
+    └── consolidated_tests.py           # Suite de tests complète et unique
+```
+
 ## 📂 Suivis Projets
 
 Cette section regroupe les suivis détaillés des projets en cours et terminés.

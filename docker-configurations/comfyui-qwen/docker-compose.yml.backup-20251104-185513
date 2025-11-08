@@ -17,8 +17,13 @@ services:
     
     volumes:
       - type: bind
-        source: ${COMFYUI_WORKSPACE_PATH}
+        source: ./ComfyUI
         target: /workspace/ComfyUI
+      - type: bind
+        source: ../../.secrets/qwen-api-user.token
+        target: /workspace/ComfyUI/.secrets/qwen-api-user.token
+        read_only: true
+      - ./outputs:/workspace/ComfyUI/output
     
     environment:
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
@@ -29,24 +34,31 @@ services:
       - COMFYUI_PORT=8188
       - COMFYUI_LISTEN=0.0.0.0
       - COMFYUI_LOGIN_ENABLED=true
+      - COMFYUI_AUTH_TOKEN=${QWEN_API_TOKEN}
+      - COMFYUI_AUTH_TOKEN_FILE=${COMFYUI_AUTH_TOKEN_FILE}
     
     working_dir: /workspace/ComfyUI
     
     command: >
       bash -c "
+        set -e &&
+        echo 'Installing system dependencies...' &&
         apt-get update -qq &&
-        apt-get install -y -qq --no-install-recommends python3 python3-pip python3-venv git curl wget ca-certificates &&
+        apt-get install -y -qq --no-install-recommends python3 python3-pip git curl wget ca-certificates python3.10-venv &&
         apt-get clean &&
         rm -rf /var/lib/apt/lists/* &&
         cd /workspace/ComfyUI &&
-        echo 'Creating fresh venv and installing dependencies...' &&
+        # Force venv recreation to avoid WSL/Docker incompatibility
+        echo 'Removing existing venv...' &&
         rm -rf venv &&
+        echo 'Creating venv and installing dependencies...' &&
         python3 -m venv venv &&
         . venv/bin/activate &&
         pip install --no-cache-dir -r requirements.txt &&
-        echo 'Dependencies installed successfully' &&
+        echo 'Venv activated successfully' &&
+        echo 'Python version:' && python --version &&
         echo 'Starting ComfyUI...' &&
-        exec python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
+        exec python main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
       "
     
     healthcheck:

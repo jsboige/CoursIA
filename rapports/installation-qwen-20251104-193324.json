@@ -1,0 +1,38 @@
+{
+  "timestamp_start": "2025-11-04T19:33:24.662058",
+  "steps": [
+    {
+      "name": "Vérification prérequis",
+      "status": "SUCCESS",
+      "timestamp": "2025-11-04T19:33:24.733455"
+    },
+    {
+      "name": "Démarrage container Docker",
+      "status": "SKIPPED",
+      "timestamp": "2025-11-04T19:33:24.733966"
+    },
+    {
+      "name": "Installation ComfyUI-Login",
+      "status": "SKIPPED",
+      "timestamp": "2025-11-04T19:33:24.734225"
+    },
+    {
+      "name": "Téléchargement modèles FP8",
+      "status": "SKIPPED",
+      "timestamp": "2025-11-04T19:33:24.734482"
+    },
+    {
+      "name": "Configuration authentification",
+      "status": "SUCCESS",
+      "timestamp": "2025-11-04T19:33:24.735406"
+    },
+    {
+      "name": "Test génération image",
+      "status": "SUCCESS",
+      "timestamp": "2025-11-04T19:33:24.736288"
+    }
+  ],
+  "errors": [],
+  "status": "SUCCESS",
+  "timestamp_end": "2025-11-04T19:33:24.736500"
+}
