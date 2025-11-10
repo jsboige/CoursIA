@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-11-10T11:10:53.981217",
+  "validation_success": false,
+  "tests_performed": [
+    "connectivity",
+    "web_auth",
+    "api_auth"
+  ],
+  "comfyui_url": "http://localhost:8188",
+  "comfyui_container": "comfyui-qwen"
+}
