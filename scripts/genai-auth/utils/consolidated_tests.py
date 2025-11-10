@@ -28,7 +28,7 @@ from comfyui_client_helper import ComfyUIClient, ComfyUIConfig
 COMFYUI_API_BASE = "http://localhost:8188"
 CONTAINER_NAME = "comfyui-qwen"
 BCRYPT_TOKEN_FILE = ".secrets/qwen-api-user.token"
-OUTPUT_DIR = "docs/suivis/genai-image/phase-29-corrections-qwen-20251031-111200/outputs"
+OUTPUT_DIR = "./outputs"
 TIMEOUT_SECONDS = 180
 POLL_INTERVAL_SECONDS = 5
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -123,7 +123,7 @@ def test_generation_simple():
         workflow = {
             "3": {
                 "inputs": {
-                    "seed": 42,
+                    "seed": int(time.time()),  # Seed dynamique basé sur le timestamp
                     "steps": 20,
                     "cfg": 8,
                     "sampler_name": "euler",
@@ -138,7 +138,7 @@ def test_generation_simple():
             },
             "4": {
                 "inputs": {
-                    "ckpt_name": "qwen_image_edit_2509_fp8_e4m3fn.safetensors"
+                    "ckpt_name": "qwen_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors"
                 },
                 "class_type": "CheckpointLoaderSimple"
             },
@@ -190,6 +190,8 @@ def test_generation_simple():
         
         if result and 'outputs' in result:
             print(f"✅ Image générée!")
+            # Copier l'image depuis le conteneur vers ./outputs
+            copy_image_from_container("simple_test_output")
             return True
         else:
             print("❌ Aucune image générée ou timeout.")
@@ -212,6 +214,28 @@ def run_docker_command(command: str) -> Optional[str]:
     except subprocess.CalledProcessError as e:
         print(f"   - Erreur Docker: {e.stderr.strip()}")
         return None
+
+def copy_image_from_container(filename_prefix):
+    """Copie la dernière image générée depuis le conteneur vers ./outputs"""
+    try:
+        # Lister les images dans le conteneur
+        list_cmd = f"ls -t /workspace/ComfyUI/output/{filename_prefix}* 2>/dev/null | head -1"
+        result = subprocess.run(["pwsh", "-c", f"docker exec {CONTAINER_NAME} bash -c '{list_cmd}'"],
+                           capture_output=True, text=True, check=False)
+        
+        if result.returncode == 0 and result.stdout.strip():
+            image_name = result.stdout.strip()
+            # Utiliser une approche plus robuste pour copier l'image
+            container_path = f"/workspace/ComfyUI/output/{image_name}"
+            local_path = f"./outputs/{image_name}"
+            
+            # Exécuter la commande docker cp avec des arguments séparés
+            subprocess.run(["docker", "cp", f"{CONTAINER_NAME}:{container_path}", local_path], check=True)
+            print(f"   - Image copiée: {image_name} -> ./outputs/")
+        else:
+            print(f"   - ⚠️ Aucune image trouvée avec le préfixe: {filename_prefix}")
+    except Exception as e:
+        print(f"   - ❌ Erreur lors de la copie de l'image: {e}")
 
 def verify_fp8_models_exist():
     """Vérifie la présence des 3 modèles FP8 officiels (mode WSL standalone)."""
@@ -241,7 +265,7 @@ def test_generation_fp8_official():
         "4": {"inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "class_type": "EmptySD3LatentImage"},
         "5": {"inputs": {"text": "A serene mountain landscape at sunset with a lake reflecting the orange sky", "clip": ["2", 0]}, "class_type": "CLIPTextEncode"},
         "6": {"inputs": {"text": "ugly, blurry, low quality, distorted, watermark, text", "clip": ["2", 0]}, "class_type": "CLIPTextEncode"},
-        "7": {"inputs": {"seed": 42, "steps": 20, "cfg": 7.0, "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0, "model": ["1", 0], "positive": ["5", 0], "negative": ["6", 0], "latent_image": ["4", 0]}, "class_type": "KSampler"},
+        "7": {"inputs": {"seed": int(time.time()), "steps": 20, "cfg": 7.0, "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0, "model": ["1", 0], "positive": ["5", 0], "negative": ["6", 0], "latent_image": ["4", 0]}, "class_type": "KSampler"},
         "8": {"inputs": {"samples": ["7", 0], "vae": ["3", 0]}, "class_type": "VAEDecode"},
         "9": {"inputs": {"filename_prefix": f"fp8_official_output_{TIMESTAMP}", "images": ["8", 0]}, "class_type": "SaveImage"}
     }
@@ -260,6 +284,8 @@ def test_generation_fp8_official():
             history_res = requests.get(f"{COMFYUI_API_BASE}/history/{prompt_id}", headers=headers, timeout=10)
             if history_res.status_code == 200 and prompt_id in history_res.json():
                 print("✅ Image générée avec succès!")
+                # Copier l'image depuis le conteneur vers ./outputs
+                copy_image_from_container(f"fp8_official_output_{TIMESTAMP}")
                 return True
             time.sleep(POLL_INTERVAL_SECONDS)
         
