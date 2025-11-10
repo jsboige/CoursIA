@@ -46,7 +46,7 @@ services:
         pip install --no-cache-dir -r requirements.txt &&
         echo 'Dependencies installed successfully' &&
         echo 'Starting ComfyUI...' &&
-        exec python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
+        exec python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention --enable-cors-header
       "
     
     healthcheck:
