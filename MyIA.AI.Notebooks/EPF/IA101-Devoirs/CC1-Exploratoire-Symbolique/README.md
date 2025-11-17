@@ -23,6 +23,8 @@ Ce projet implémente un système de diagnostic médical intelligent combinant q
 ```
 CC1-Exploratoire-Symbolique/
 ├── CC1-Diagnostic-Medical.ipynb          # Template étudiant (à compléter)
+├── enonce/
+│   └── sujet.md                         # Sujet du devoir
 ├── data/
 │   └── patients.csv                      # Données de test (10 patients)
 └── README.md                             # Ce fichier
