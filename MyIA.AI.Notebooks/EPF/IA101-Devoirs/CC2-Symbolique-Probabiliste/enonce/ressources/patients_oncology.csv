@@ -1,0 +1,65 @@
+patient_id,age,sexe,type_cancer,protocole,cycle_numero,jour_cycle,dose_prevue_mg,dose_reelle_mg,taux_globules_blancs,taux_plaquettes,fonction_renale_ml_min,effet_secondaire,score_toxicite,hospitalisation
+P001,58,M,Colorectal,FOLFOX,1,1,85,85,7200,180000,95,Nausées légères,1,Non
+P001,58,M,Colorectal,FOLFOX,1,8,85,85,6800,175000,93,Nausées modérées,2,Non
+P001,58,M,Colorectal,FOLFOX,1,15,0,0,3900,165000,92,Neutropénie,3,Non
+P001,58,M,Colorectal,FOLFOX,1,21,0,0,5200,170000,94,Récupération,1,Non
+P001,58,M,Colorectal,FOLFOX,2,1,85,70,5500,172000,93,Fatigue,2,Non
+P001,58,M,Colorectal,FOLFOX,2,8,85,70,5100,168000,91,Neuropathie légère,2,Non
+P001,58,M,Colorectal,FOLFOX,2,15,0,0,3200,160000,90,Neutropénie sévère,4,Oui
+P001,58,M,Colorectal,FOLFOX,2,21,0,0,4800,165000,92,Récupération lente,2,Non
+P002,62,F,Sein,AC-T,1,1,60,60,6800,190000,88,Nausées,1,Non
+P002,62,F,Sein,AC-T,1,8,0,0,4500,175000,87,Neutropénie modérée,3,Non
+P002,62,F,Sein,AC-T,1,15,0,0,3800,165000,86,Persistance,3,Non
+P002,62,F,Sein,AC-T,1,21,0,0,5800,180000,88,Récupération,1,Non
+P002,62,F,Sein,AC-T,2,1,60,60,6200,185000,87,Aucun,0,Non
+P002,62,F,Sein,AC-T,2,8,0,0,5200,178000,86,Neutropénie légère,2,Non
+P002,62,F,Sein,AC-T,2,15,0,0,4900,172000,85,Stable,2,Non
+P002,62,F,Sein,AC-T,2,21,0,0,6500,182000,87,Bonne récupération,1,Non
+P003,45,F,Ovaire,Carbo-Taxol,1,1,150,150,7500,200000,102,Réaction allergique,2,Non
+P003,45,F,Ovaire,Carbo-Taxol,1,8,150,150,7000,195000,100,Neuropathie,2,Non
+P003,45,F,Ovaire,Carbo-Taxol,1,15,0,0,6200,185000,98,Fatigue,1,Non
+P003,45,F,Ovaire,Carbo-Taxol,1,21,0,0,7200,192000,101,Aucun,0,Non
+P003,45,F,Ovaire,Carbo-Taxol,2,1,150,150,7800,198000,100,Aucun,0,Non
+P003,45,F,Ovaire,Carbo-Taxol,2,8,150,150,7500,193000,99,Neuropathie légère,1,Non
+P003,45,F,Ovaire,Carbo-Taxol,2,15,0,0,7000,190000,98,Fatigue légère,1,Non
+P003,45,F,Ovaire,Carbo-Taxol,2,21,0,0,7600,195000,100,Excellente récupération,0,Non
+P004,71,M,Poumon,Cisplatin-Vinorelbine,1,1,75,75,6500,175000,78,Nausées sévères,3,Non
+P004,71,M,Poumon,Cisplatin-Vinorelbine,1,8,40,40,5800,168000,76,Vomissements,3,Non
+P004,71,M,Poumon,Cisplatin-Vinorelbine,1,15,0,0,2800,155000,74,Neutropénie critique,5,Oui
+P004,71,M,Poumon,Cisplatin-Vinorelbine,1,22,0,0,3500,160000,75,Infection,4,Oui
+P004,71,M,Poumon,Cisplatin-Vinorelbine,2,1,75,50,4200,162000,76,Report pour toxicité,3,Non
+P004,71,M,Poumon,Cisplatin-Vinorelbine,2,8,40,30,3900,158000,74,Fatigue extrême,4,Non
+P004,71,M,Poumon,Cisplatin-Vinorelbine,2,15,0,0,2500,150000,72,Aplasie,5,Oui
+P004,71,M,Poumon,Cisplatin-Vinorelbine,2,22,0,0,3200,155000,73,Récupération difficile,4,Oui
+P005,53,M,Pancréas,Gemcitabine-nab-Paclitaxel,1,1,125,125,7000,185000,90,Aucun,0,Non
+P005,53,M,Pancréas,Gemcitabine-nab-Paclitaxel,1,8,100,100,6200,178000,88,Fatigue,1,Non
+P005,53,M,Pancréas,Gemcitabine-nab-Paclitaxel,1,15,100,100,5500,170000,87,Anémie légère,2,Non
+P005,53,M,Pancréas,Gemcitabine-nab-Paclitaxel,1,22,0,0,6000,175000,89,Récupération,1,Non
+P005,53,M,Pancréas,Gemcitabine-nab-Paclitaxel,2,1,125,125,6500,180000,88,Aucun,0,Non
+P005,53,M,Pancréas,Gemcitabine-nab-Paclitaxel,2,8,100,100,5800,172000,86,Neutropénie légère,2,Non
+P005,53,M,Pancréas,Gemcitabine-nab-Paclitaxel,2,15,100,100,5200,168000,85,Persistance,2,Non
+P005,53,M,Pancréas,Gemcitabine-nab-Paclitaxel,2,22,0,0,6200,174000,88,Bonne tolérance,1,Non
+P006,67,F,Colorectal,FOLFIRI,1,1,180,180,6900,182000,85,Diarrhée,2,Non
+P006,67,F,Colorectal,FOLFIRI,1,8,0,0,4800,170000,83,Neutropénie,3,Non
+P006,67,F,Colorectal,FOLFIRI,1,15,0,0,4200,165000,82,Diarrhée sévère,4,Non
+P006,67,F,Colorectal,FOLFIRI,1,21,0,0,5500,175000,84,Récupération,2,Non
+P006,67,F,Colorectal,FOLFIRI,2,1,180,150,5800,178000,83,Adaptation dose,2,Non
+P006,67,F,Colorectal,FOLFIRI,2,8,0,0,5100,172000,82,Neutropénie modérée,3,Non
+P006,67,F,Colorectal,FOLFIRI,2,15,0,0,4700,168000,81,Amélioration,2,Non
+P006,67,F,Colorectal,FOLFIRI,2,21,0,0,6000,176000,83,Tolérance acceptable,2,Non
+P007,49,M,Lymphome,R-CHOP,1,1,50,50,7800,195000,98,Fièvre,2,Non
+P007,49,M,Lymphome,R-CHOP,1,8,0,0,6500,185000,96,Neutropénie légère,2,Non
+P007,49,M,Lymphome,R-CHOP,1,15,0,0,5800,178000,95,Stable,1,Non
+P007,49,M,Lymphome,R-CHOP,1,21,0,0,7200,188000,97,Récupération complète,0,Non
+P007,49,M,Lymphome,R-CHOP,2,1,50,50,8000,192000,97,Aucun,0,Non
+P007,49,M,Lymphome,R-CHOP,2,8,0,0,7000,186000,96,Fatigue légère,1,Non
+P007,49,M,Lymphome,R-CHOP,2,15,0,0,6500,180000,95,Aucun,0,Non
+P007,49,M,Lymphome,R-CHOP,2,21,0,0,7800,190000,97,Excellente tolérance,0,Non
+P008,55,F,Sein,Docetaxel,1,1,75,75,6700,188000,92,Alopécie,1,Non
+P008,55,F,Sein,Docetaxel,1,8,0,0,3500,165000,90,Neutropénie sévère,4,Non
+P008,55,F,Sein,Docetaxel,1,15,0,0,3000,158000,89,Fièvre neutropénique,5,Oui
+P008,55,F,Sein,Docetaxel,1,21,0,0,4500,170000,91,Récupération lente,3,Non
+P008,55,F,Sein,Docetaxel,2,1,75,60,5000,175000,90,Réduction dose préventive,2,Non
+P008,55,F,Sein,Docetaxel,2,8,0,0,4200,168000,89,Neutropénie modérée,3,Non
+P008,55,F,Sein,Docetaxel,2,15,0,0,3900,163000,88,Persistance,3,Non
+P008,55,F,Sein,Docetaxel,2,21,0,0,5200,172000,90,Amélioration,2,Non
