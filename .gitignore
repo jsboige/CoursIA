@@ -359,6 +359,9 @@ MigrationBackup/
 .secrets/.env.huggingface
 .secrets/.env.huggingface.backup
 
+# Tokens API backup (SÉCURITÉ CRITIQUE)
+.secrets/qwen-api-user.token.backup
+
 # VSCode settings
 .vscode/settings.json
 
