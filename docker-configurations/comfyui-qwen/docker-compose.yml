@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   comfyui-qwen:
-    image: nvidia/cuda:12.4.0-devel-ubuntu22.04
-    container_name: comfyui-qwen-stable
+    image: python:3.11
+    container_name: comfyui-qwen
     hostname: comfyui-qwen
     
     deploy:
@@ -19,7 +19,7 @@ services:
     
     volumes:
       - type: bind
-        source: ${COMFYUI_WORKSPACE_PATH}
+        source: ${COMFYUI_WORKSPACE_PATH:-./workspace}
         target: /workspace/ComfyUI
       - type: volume
         source: comfyui-models
@@ -27,6 +27,13 @@ services:
       - type: volume
         source: comfyui-data
         target: /workspace/ComfyUI/input
+      - type: bind
+        source: ../../.secrets/qwen-api-user.token
+        target: /workspace/ComfyUI/.secrets/qwen-api-user.token
+        read_only: true
+      - type: bind
+        source: ./install_comfyui.sh
+        target: /workspace/ComfyUI/install_comfyui.sh
     
     environment:
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
@@ -36,12 +43,12 @@ services:
       - TZ=${TZ:-Europe/Paris}
       - COMFYUI_PORT=8188
       - COMFYUI_LISTEN=0.0.0.0
-      - COMFYUI_LOGIN_ENABLED=true
       # Tokens pour téléchargement des modèles
       - CIVITAI_TOKEN=${CIVITAI_TOKEN}
       - HF_TOKEN=${HF_TOKEN}
       - QWEN_API_TOKEN=${QWEN_API_TOKEN}
       # Configuration authentification ComfyUI-Login
+      - COMFYUI_LOGIN_ENABLED=${COMFYUI_LOGIN_ENABLED:-true}
       - COMFYUI_USERNAME=${COMFYUI_USERNAME:-admin}
       - COMFYUI_PASSWORD=${COMFYUI_PASSWORD}
       - COMFYUI_BEARER_TOKEN=${COMFYUI_BEARER_TOKEN}
@@ -57,51 +64,89 @@ services:
     working_dir: /workspace/ComfyUI
     
     command: >
-      bash -c "
-        apt-get update -qq &&
-        apt-get install -y -qq --no-install-recommends python3 python3-pip python3-venv git curl wget ca-certificates &&
-        apt-get clean &&
-        rm -rf /var/lib/apt/lists/* &&
-        cd /workspace &&
-        # Cloner ComfyUI si le répertoire n'existe pas ou est vide
-        if [ ! -d ComfyUI ] || [ ! -f ComfyUI/main.py ]; then
-          echo 'Clonage de ComfyUI depuis GitHub...' &&
-          rm -rf ComfyUI 2>/dev/null || true &&
-          sleep 2 &&
-          git clone https://github.com/comfyanonymous/ComfyUI.git --depth 1
-        fi &&
-        cd /workspace/ComfyUI &&
-        if [ ! -d venv ]; then
-          echo 'Création du venv et installation des dépendances...' &&
-          python3 -m venv venv &&
-          venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 &&
-          venv/bin/pip install -r requirements.txt
-        fi &&
-        # Créer le répertoire custom_nodes si nécessaire
-        mkdir -p custom_nodes &&
-        # Installer ComfyUI-Login si nécessaire
-        if [ ! -d custom_nodes/ComfyUI-Login ]; then
-          echo 'Installation de ComfyUI-Login...' &&
-          cd custom_nodes &&
-          git clone https://github.com/ComfyUI-Login/ComfyUI-Login.git &&
-          cd ComfyUI-Login &&
-          pip install -r requirements.txt &&
-          cd ../..
-        fi &&
-        # S'assurer que le token est correctement écrit
-        echo 'Configuration du token ComfyUI-Login...' &&
-        echo '${COMFYUI_BEARER_TOKEN}' > custom_nodes/ComfyUI-Login/PASSWORD &&
-        chmod 600 custom_nodes/ComfyUI-Login/PASSWORD &&
-        cd .. &&
-        exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
-      "
+      bash -c "chmod +x /workspace/ComfyUI/install_comfyui.sh && cd /workspace/ComfyUI && ./install_comfyui.sh"
+        echo "Création du venv et installation des dépendances..."
+        python3 -m virtualenv venv
+        venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+        venv/bin/pip install -r requirements.txt
+      fi
+      # Créer le répertoire custom_nodes si nécessaire
+      mkdir -p custom_nodes
+      # Installer ComfyUI-Login si nécessaire
+      if [ ! -d custom_nodes/ComfyUI-Login ]; then
+        echo "Installation de ComfyUI-Login..."
+        cd custom_nodes
+        # Gestion derreur réseau/DNS avec retry
+        for attempt in 1 2 3; do
+          echo "Tentative $attempt/3 pour cloner ComfyUI-Login..."
+          if git clone https://github.com/liusida/ComfyUI-Login.git; then
+            echo "Clonage de ComfyUI-Login réussi"
+            break
+          else
+            echo "Échec du clonage, tentative en cours..."
+            if [ "$attempt" -eq 3 ]; then
+              echo "ERREUR: Impossible de cloner ComfyUI-Login après 3 tentatives"
+              exit 1
+            fi
+            sleep 5
+          fi
+        done
+        cd ComfyUI-Login
+        pip install -r requirements.txt
+        cd ../..
+      else
+        echo "ComfyUI-Login déjà installé, vérification des mises à jour..."
+        cd custom_nodes/ComfyUI-Login
+        git pull origin main || echo "Avertissement: Impossible de mettre à jour ComfyUI-Login"
+        cd ../..
+      fi
+      # Installer ComfyUI-QwenImageWanBridge si nécessaire
+      if [ ! -d custom_nodes/ComfyUI-QwenImageWanBridge ]; then
+        echo "Installation de ComfyUI-QwenImageWanBridge..."
+        cd custom_nodes
+        # Forcer la réinstallation complète de ComfyUI-QwenImageWanBridge
+        echo "Suppression de linstallation existante pour réinstallation propre..."
+        rm -rf ComfyUI-QwenImageWanBridge 2>/dev/null || true
+        sleep 2
+        # Gestion derreur réseau/DNS avec retry améliorée
+        for attempt in 1 2 3 4 5; do
+          echo "Tentative $attempt/5 pour cloner ComfyUI-QwenImageWanBridge..."
+          if git clone https://github.com/gokayfem/ComfyUI-QwenImageWanBridge.git; then
+            echo "Clonage de ComfyUI-QwenImageWanBridge réussi"
+            break
+          else
+            echo "Échec du clonage, tentative en cours..."
+            if [ "$attempt" -eq 5 ]; then
+              echo "ERREUR: Impossible de cloner ComfyUI-QwenImageWanBridge après 5 tentatives"
+              exit 1
+            fi
+            sleep 10
+          fi
+        done
+        cd ComfyUI-QwenImageWanBridge
+        pip install -r requirements.txt
+        cd ../..
+      else
+        echo "ComfyUI-QwenImageWanBridge déjà installé, vérification des mises à jour..."
+        cd custom_nodes/ComfyUI-QwenImageWanBridge
+        git pull origin main || echo "Avertissement: Impossible de mettre à jour ComfyUI-QwenImageWanBridge"
+        cd ../..
+      fi
+      # Sassurer que le token est correctement écrit
+      echo "Configuration du token ComfyUI-Login..."
+      mkdir -p custom_nodes/ComfyUI-Login
+      echo "${COMFYUI_BEARER_TOKEN}" > custom_nodes/ComfyUI-Login/PASSWORD
+      chmod 600 custom_nodes/ComfyUI-Login/PASSWORD
+      echo "Configuration terminée, démarrage de ComfyUI..."
+      exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
+      '
     
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8188/", "--max-time", "10"]
-      interval: 60s
-      timeout: 15s
-      retries: 3
-      start_period: 180s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     
     restart: unless-stopped
     
@@ -111,8 +156,8 @@ services:
     labels:
       - "com.myia.service=comfyui-qwen"
       - "com.myia.gpu=rtx-3090"
-      - "com.myia.model=qwen-image-edit"
-      - "com.myia.phase=validation"
+      - "com.myia.model=qwen-image-edit-2509"
+      - "com.myia.phase=production-secure"
 
 networks:
   comfyui-network:

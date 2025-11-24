@@ -14,9 +14,9 @@ Ce projet documente le déploiement complet d'une infrastructure locale de gén�
 
 | Métrique | Valeur |
 |----------|--------|
-| **Documentation totale** | 738 KB (83 fichiers) |
-| **Phases complétées** | 13A / 13 |
-| **Scripts automation** | 31 fichiers (.ps1/.sh) |
+| **Documentation totale** | 1.2 MB (124 fichiers) |
+| **Phases complétées** | 30 / 13A |
+| **Scripts automation** | 37 fichiers (.ps1/.sh/.py) |
 | **Infrastructure** | Production SSL/HTTPS |
 | **Modèle** | Qwen-Image-Edit-2509-FP8 (54 GB) |
 | **GPU** | NVIDIA RTX 3090 |
@@ -30,14 +30,15 @@ Ce projet documente le déploiement complet d'une infrastructure locale de gén�
 genai-image/
 ├── README.md (ce fichier)
 │
+
 ├── phase-01-08-docker/          # Initialisation Docker/MCP
 ├── phase-09-10-investigation/   # Investigation alternatives Forge
 ├── phase-11-deployment/         # ✨ Deployment ComfyUI Standalone
 ├── phase-12a-production/        # ✨ Production SSL/IIS/Monitoring
 ├── phase-12b-tests/             # ✨ Tests génération workflows
 ├── phase-12c-architecture/      # ✨ Architecture workflows pédagogiques
-└── phase-13a-bridge/            # ✨ Bridge Python ComfyUI (en cours)
-```
+├── phase-13a-bridge/            # ✨ Bridge Python ComfyUI (en cours)
+└── phase-30-validation-sanctuarisation-docker-qwen/  # ✨ Validation et Sanctuarisation Docker Qwen
 
 ---
 
@@ -48,6 +49,15 @@ genai-image/
 
 **Livrables** :
 - Architecture Docker multi-services
+
+### Phase 30: Validation et Sanctuarisation Docker Qwen (Nov 10-14)
+**Objectif** : Validation complète et sanctuarisation de l'infrastructure ComfyUI-Qwen
+
+**Livrables** :
+- Système ComfyUI-Qwen validé et sécurisé
+- Configuration Docker sanctuarisée
+- Documentation complète de validation
+- Scripts de test et de maintenance
 - Configuration MCP Jupyter
 - Tests validation Docker
 - Déploiement standalone fonctionnel
