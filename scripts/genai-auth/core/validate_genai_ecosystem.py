@@ -298,6 +298,89 @@ class GenAIValidator:
             message=".env et .env.example présents"
         )
     
+    def check_comfyui_web_auth(self) -> CheckResult:
+        """Vérifie l'authentification sur l'interface web ComfyUI"""
+        self.log("Vérification authentification web ComfyUI...", "INFO")
+        
+        try:
+            import requests
+            
+            response = requests.get("http://localhost:8188/", timeout=10)
+            
+            if response.status_code == 401:
+                return CheckResult(
+                    name="Authentification Web ComfyUI",
+                    passed=True,
+                    message="Interface web PROTÉGÉE (401 Unauthorized)"
+                )
+            elif response.status_code == 200:
+                if "login" in response.text.lower() or "auth" in response.text.lower():
+                    return CheckResult(
+                        name="Authentification Web ComfyUI",
+                        passed=True,
+                        message="Interface web PROTÉGÉE (page de login détectée)"
+                    )
+                else:
+                    return CheckResult(
+                        name="Authentification Web ComfyUI",
+                        passed=False,
+                        message="Interface web NON PROTÉGÉE (accès direct)"
+                    )
+            else:
+                return CheckResult(
+                    name="Authentification Web ComfyUI",
+                    passed=False,
+                    message=f"Réponse inattendue: {response.status_code}"
+                )
+               
+        except Exception as e:
+            return CheckResult(
+                name="Authentification Web ComfyUI",
+                passed=False,
+                message=f"Erreur test web: {e}"
+            )
+    
+    def check_comfyui_api_auth(self) -> CheckResult:
+        """Vérifie l'authentification sur les endpoints API ComfyUI"""
+        self.log("Vérification authentification API ComfyUI...", "INFO")
+        
+        try:
+            import requests
+            
+            # Test de l'endpoint /prompt
+            response = requests.post(
+                "http://localhost:8188/prompt",
+                json={"prompt": {}},
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+            
+            if response.status_code == 401:
+                return CheckResult(
+                    name="Authentification API ComfyUI",
+                    passed=True,
+                    message="API PROTÉGÉE (401 Unauthorized)"
+                )
+            elif response.status_code == 200:
+                return CheckResult(
+                    name="Authentification API ComfyUI",
+                    passed=False,
+                    message="API NON PROTÉGÉE (accès direct)"
+                )
+            else:
+                return CheckResult(
+                    name="Authentification API ComfyUI",
+                    passed=False,
+                    message=f"Réponse API inattendue: {response.status_code}"
+                )
+               
+        except Exception as e:
+            return CheckResult(
+                name="Authentification API ComfyUI",
+                passed=False,
+                message=f"Erreur test API: {e}"
+            )
+    
     def check_api_keys_configured(self) -> CheckResult:
         """Vérifie configuration clés API"""
         self.log("Vérification clés API...", "INFO")
@@ -537,6 +620,43 @@ class GenAIValidator:
             message="Tous les notebooks ont un JSON valide"
         )
     
+    def check_token_unification(self) -> CheckResult:
+        """Vérifie l'unification des tokens ComfyUI-Login"""
+        self.log("Vérification unification tokens ComfyUI...", "INFO")
+        
+        try:
+            # Importer le synchroniseur
+            sys.path.append(str(Path(__file__).parent.parent / "utils"))
+            from token_synchronizer import TokenSynchronizer
+            
+            # Créer le synchroniseur
+            synchronizer = TokenSynchronizer()
+            
+            # Valider la cohérence
+            is_consistent = synchronizer.validate_consistency()
+            
+            if is_consistent:
+                return CheckResult(
+                    name="Unification Tokens ComfyUI",
+                    passed=True,
+                    message="✅ Tous les tokens sont unifiés et cohérents"
+                )
+            else:
+                return CheckResult(
+                    name="Unification Tokens ComfyUI",
+                    passed=False,
+                    message="❌ Les tokens ne sont pas unifiés ou incohérents",
+                    fix_available=True,
+                    fix_command="python scripts/genai-auth/utils/token_synchronizer.py --unify"
+                )
+                
+        except Exception as e:
+            return CheckResult(
+                name="Unification Tokens ComfyUI",
+                passed=False,
+                message=f"Erreur validation unification: {e}"
+            )
+    
     # ============================================================
     # EXÉCUTION VALIDATION
     # ============================================================
@@ -568,6 +688,13 @@ class GenAIValidator:
         print("-" * 60)
         self.add_check(self.check_openai_api_connectivity())
         self.add_check(self.check_openrouter_api_connectivity())
+        
+        # Checks authentification ComfyUI
+        print("\n🔐 AUTHENTIFICATION COMFYUI")
+        print("-" * 60)
+        self.add_check(self.check_comfyui_web_auth())
+        self.add_check(self.check_comfyui_api_auth())
+        self.add_check(self.check_token_unification())
         
         # Checks qualité
         print("\n✨ QUALITÉ NOTEBOOKS")
@@ -634,6 +761,7 @@ class GenAIValidator:
             json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
         
         print(f"📄 Rapport sauvegardé: {output_file}")
+
 
 def main():
     """Point d'entrée principal"""

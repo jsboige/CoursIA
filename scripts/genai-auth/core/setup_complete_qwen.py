@@ -367,31 +367,28 @@ class QwenSetup:
         return True
 
     def configure_auth(self) -> bool:
-        """Configure l'authentification bcrypt."""
-        logger.info("Configuration de l'authentification...")
+        """Configure l'authentification bcrypt avec synchroniseur unifié."""
+        logger.info("Configuration de l'authentification avec synchroniseur unifié...")
         
-        # Vérifier que le token bcrypt existe
-        if not BCRYPT_TOKEN_FILE.exists():
-            logger.error(f"❌ Token bcrypt non trouvé: {BCRYPT_TOKEN_FILE}")
-            logger.info("Exécuter install_comfyui_login.py pour générer le token")
-            return False
-        
-        # Lire le hash bcrypt
         try:
-            with open(BCRYPT_TOKEN_FILE) as f:
-                bcrypt_hash = f.read().strip()
+            # Importer et utiliser le synchroniseur unifié
+            sys.path.append(str(Path(__file__).parent.parent / "utils"))
+            from token_synchronizer import TokenSynchronizer
             
-            if not bcrypt_hash.startswith("$2b$"):
-                logger.error(f"❌ Hash bcrypt invalide dans {BCRYPT_TOKEN_FILE}")
+            # Créer le synchroniseur
+            synchronizer = TokenSynchronizer()
+            
+            # Exécuter l'unification complète
+            logger.info("🔄 Lancement de l'unification des tokens...")
+            success = synchronizer.run_complete_unification()
+            
+            if success:
+                logger.info("✅ Authentification unifiée et configurée avec succès")
+                return True
+            else:
+                logger.error("❌ Échec de l'unification des tokens")
                 return False
-            
-            logger.info(f"✅ Hash bcrypt chargé depuis {BCRYPT_TOKEN_FILE}")
-            logger.info(f"Hash: {bcrypt_hash[:20]}...")
-            
-            # Le hash est déjà synchronisé par install_comfyui_login.py
-            logger.info("✅ Authentification configurée")
-            return True
-            
+                
         except Exception as e:
             logger.error(f"❌ Erreur configuration authentification: {e}")
             return False

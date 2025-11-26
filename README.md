@@ -163,30 +163,74 @@ Notebooks sur la théorie de l'information intégrée :
 
 - `Intro_to_PyPhi.ipynb` - Introduction à PyPhi pour IIT
 
-## 🧪 Scripts de Test GenAI Auth
+## 🧪 Scripts GenAI Auth - Écosystème ComfyUI-Qwen Sécurisé
 
-Cette section contient des scripts pour valider l'installation et le bon fonctionnement de l'infrastructure de génération d'images avec Qwen et ComfyUI.
+Cette section contient les scripts pour l'installation, la validation et la gestion de l'écosystème ComfyUI-Qwen avec authentification sécurisée.
 
-### Test Complet du Système
-Pour lancer la suite de tests complète (authentification, génération, etc.), utilisez le script consolidé :
+### 🚀 Installation Complète
+Pour installer l'écosystème complet de manière automatisée :
 
 ```bash
-# Test complet du système Qwen ComfyUI
-python scripts/genai-auth/utils/consolidated_tests.py
+# Installation complète automatisée
+python scripts/genai-auth/core/setup_complete_qwen.py
 ```
 
-### Structure des Scripts
+### 🔍 Validation et Diagnostic
+Pour valider et diagnostiquer l'écosystème :
 
-La logique de test est centralisée pour simplifier la maintenance :
+```bash
+# Validation complète de l'écosystème
+python scripts/genai-auth/core/validate_genai_ecosystem.py --verbose
+
+# Diagnostic de l'authentification
+python scripts/genai-auth/core/diagnose_comfyui_auth.py
+
+# Synchronisation des tokens
+python scripts/genai-auth/utils/token_synchronizer.py --unify
+```
+
+### 📚 Documentation Complète
+La documentation complète de l'écosystème est disponible dans :
+
+- **[Index de l'écosystème](docs/suivis/genai-image/README-ECOSYSTEME-COMFYUI-QWEN-20251125.md)** : Vue d'ensemble et navigation
+- **[Guide d'utilisation](docs/suivis/genai-image/GUIDE-UTILISATION-COMFYUI-QWEN-20251125.md)** : Instructions complètes (567 lignes)
+- **[Architecture technique](docs/suivis/genai-image/ARCHITECTURE-FINALE-COMFYUI-QWEN-20251125.md)** : Architecture détaillée (456 lignes)
+- **[Rapport de mission](docs/suivis/genai-image/RAPPORT-FINAL-MISSION-COMFYUI-LOGIN-20251125.md)** : Mission accomplie (334 lignes)
+
+### Structure des Scripts
+L'écosystème est organisé de manière modulaire et maintenable :
 
 ```
 scripts/genai-auth/
-├── core/
-│   └── setup_complete_qwen.py          # Installation complète
-└── utils/
-    ├── token_manager.py                # Gestionnaire centralisé des tokens
-    ├── comfyui_client_helper.py        # Client ComfyUI robuste
-    └── consolidated_tests.py           # Suite de tests complète et unique
+├── README.md                          (376 lignes - Documentation complète)
+├── core/                              Scripts principaux
+│   ├── setup_complete_qwen.py         (527 lignes - Installation complète)
+│   ├── validate_genai_ecosystem.py    (Validation écosystème)
+│   ├── diagnose_comfyui_auth.py       (Diagnostic authentification)
+│   └── install_comfyui_login.py       (Installation ComfyUI-Login)
+├── utils/                             Utilitaires spécialisés
+│   ├── token_synchronizer.py          (608 lignes - Synchroniseur unifié)
+│   ├── comfyui_client_helper.py       (1305 lignes - Client HTTP)
+│   ├── workflow_utils.py              (489 lignes - Manipulation workflows)
+│   └── diagnostic_utils.py            (426 lignes - Utilitaires diagnostic)
+└── tests/                             Scripts de test
+    └── genai-improvements/           Tests et débogage
+```
+
+### 🐳 Configuration Docker
+La configuration Docker est organisée dans `docker-configurations/` :
+
+```
+docker-configurations/
+├── README.md                    (170 lignes - Documentation infrastructure)
+├── comfyui-qwen/              (Configuration principale)
+│   ├── docker-compose.yml
+│   ├── .env
+│   └── workspace/
+├── models/                      (Modèles partagés)
+├── cache/                       (Cache partagé)
+└── orchestrator/                (Service d'orchestration)
+```
 ```
 
 ## 📂 Suivis Projets

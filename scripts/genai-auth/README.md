@@ -7,24 +7,72 @@ Ce répertoire contient les scripts consolidés et paramétriques pour la gestio
 ```
 scripts/genai-auth/
 ├── README.md                          (ce fichier)
-├── core/                              Scripts d'installation et setup
+├── core/                              Scripts principaux et validation
+│   ├── validate_genai_ecosystem.py     Validation complète écosystème
+│   ├── diagnose_comfyui_auth.py        Diagnostic authentification ComfyUI
 │   ├── install_comfyui_login.py       Installation ComfyUI-Login
 │   └── setup_complete_qwen.py         Wrapper d'installation complète Qwen
-├── workflows/                         Scripts de workflows validés
-│   └── (à venir: generate-image-qwen-fp8.py)
 ├── utils/                             Utilitaires et helpers
+│   ├── benchmark.py                    Benchmark de performance
 │   ├── comfyui_client_helper.py       Client HTTP complet pour ComfyUI
 │   ├── diagnostic_utils.py            Utilitaires de diagnostic
 │   ├── docker_qwen_manager.py         Gestionnaire Docker Qwen
 │   ├── genai_auth_manager.py          Gestionnaire d'authentification
-│   ├── test_comfyui_auth_simple.py    Test rapide authentification
 │   └── workflow_utils.py              Utilitaires de manipulation de workflows
+├── tests/                             Scripts de test
+│   └── genai-improvements/           Tests et débogage
+├── workflows/                         Scripts de workflows validés
+├── archive/                           Scripts archivés
+│   ├── scripts_epars/                  Scripts obsolètes consolidés
+│   └── archive-wsl/                   Scripts WSL archivés
 └── backup_consolidation/              Backups automatiques
 ```
 
 ## 🚀 Scripts Principaux
 
-### 🔐 Installation et Authentification (core/)
+### 🔐 Scripts Principaux et Validation (core/)
+
+#### `validate_genai_ecosystem.py` ⭐ NOUVEAU
+Script de validation complète de l'écosystème GenAI Images.
+
+**Fonctionnalités** :
+- Validation structure fichiers et notebooks
+- Vérification configuration (.env, clés API)
+- Tests connectivité APIs (OpenAI, OpenRouter)
+- Validation authentification ComfyUI (web et API)
+- Contrôle qualité notebooks (BOM, JSON valide)
+- Génération rapport JSON détaillé
+
+**Usage** :
+```bash
+# Validation complète
+python scripts/genai-auth/core/validate_genai_ecosystem.py
+
+# Mode verbeux avec corrections automatiques
+python scripts/genai-auth/core/validate_genai_ecosystem.py --verbose --fix
+
+# Génération rapport JSON
+python scripts/genai-auth/core/validate_genai_ecosystem.py --report
+```
+
+#### `diagnose_comfyui_auth.py` ⭐ NOUVEAU
+Script de diagnostic complet pour l'authentification ComfyUI.
+
+**Fonctionnalités** :
+- Diagnostic statut conteneur ComfyUI
+- Test connectivité service
+- Validation configuration authentification
+- Analyse logs erreurs
+- Génération rapport diagnostic
+
+**Usage** :
+```bash
+# Diagnostic complet
+python scripts/genai-auth/core/diagnose_comfyui_auth.py
+
+# Diagnostic avec mode verbeux
+python scripts/genai-auth/core/diagnose_comfyui_auth.py --verbose
+```
 
 #### `install_comfyui_login.py` ⭐
 Script consolidé d'installation et configuration ComfyUI-Login.
@@ -128,6 +176,28 @@ Vous devez installer manuellement :
 - Token HuggingFace dans `.secrets/.env.huggingface`
 
 ### 🔧 Utilitaires (utils/)
+
+#### `benchmark.py` ⭐ NOUVEAU
+Script de benchmark pour ComfyUI Qwen avec monitoring GPU.
+
+**Fonctionnalités** :
+- Mesure temps de génération d'images
+- Monitoring utilisation GPU (mémoire, température, utilisation)
+- Support authentification ComfyUI
+- Génération rapport de performance
+- Mode sans authentification disponible
+
+**Usage** :
+```bash
+# Benchmark avec authentification
+python scripts/genai-auth/utils/benchmark.py
+
+# Benchmark sans authentification
+python scripts/genai-auth/utils/benchmark.py --no-auth
+
+# Benchmark avec workflow custom
+python scripts/genai-auth/utils/benchmark.py --workflow custom_workflow.json
+```
 
 #### `test_comfyui_auth_simple.py`
 Test rapide d'authentification ComfyUI-Login (< 5 secondes).
