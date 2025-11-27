@@ -362,6 +362,10 @@ MigrationBackup/
 # Tokens API backup (SÉCURITÉ CRITIQUE)
 .secrets/qwen-api-user.token.backup
 
+# Scripts secrets directory (SÉCURITÉ CRITIQUE)
+scripts/.secrets/
+scripts/docker-configurations/comfyui-qwen/.secrets/
+
 # VSCode settings
 .vscode/settings.json
 
