@@ -372,8 +372,7 @@ class QwenSetup:
         
         try:
             # Importer et utiliser le synchroniseur unifié
-            sys.path.append(str(Path(__file__).parent.parent / "utils"))
-            from token_synchronizer import TokenSynchronizer
+            from ..utils.token_synchronizer import TokenSynchronizer
             
             # Créer le synchroniseur
             synchronizer = TokenSynchronizer()

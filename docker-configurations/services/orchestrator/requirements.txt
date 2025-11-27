@@ -5,6 +5,9 @@
 # Core dependencies
 PyYAML>=6.0.1
 requests>=2.31.0
+python-dotenv>=1.0.0
+openai>=1.3.0
+huggingface-hub>=0.20.0
 
 # HTTP server
 

@@ -22,13 +22,13 @@ services:
         source: ${COMFYUI_WORKSPACE_PATH:-./workspace}
         target: /workspace/ComfyUI
       - type: bind
-        source: ../shared/models
+        source: ../../shared/models
         target: /workspace/ComfyUI/models
       - type: bind
-        source: ../shared/cache
+        source: ../../shared/cache
         target: /workspace/ComfyUI/cache
       - type: bind
-        source: ../shared/outputs
+        source: ../../shared/outputs
         target: /workspace/ComfyUI/output
       - type: bind
         source: ../../.secrets/qwen-api-user.token

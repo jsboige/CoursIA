@@ -58,7 +58,7 @@ class TokenSynchronizer:
     
     def __init__(self, root_dir: Path = None):
         if root_dir is None:
-            root_dir = Path(__file__).parent.parent.parent.parent
+            root_dir = Path(__file__).parent.parent.parent
         
         self.root_dir = root_dir
         self.secrets_dir = root_dir / ".secrets"

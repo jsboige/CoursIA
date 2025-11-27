@@ -55,7 +55,7 @@ try {
 # Exécution du diagnostic Python
 Write-Host "`n🔍 Exécution du diagnostic complet..." -ForegroundColor Yellow
 
-$scriptPath = "scripts/genai-auth/diagnose_comfyui_auth.py"
+$scriptPath = "scripts/genai-auth/core/validate_genai_ecosystem.py"
 $pythonCmd = "python"
 
 if ($Verbose) {

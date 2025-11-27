@@ -74,7 +74,7 @@ if (-not $TestOnly) {
     Write-Host "`n🔄 Synchronisation des credentials..." -ForegroundColor Yellow
     
     try {
-        $pythonScript = "scripts/genai-auth/sync_comfyui_credentials.py"
+        $pythonScript = "scripts/genai-auth/utils/token_synchronizer.py --sync"
         $process = Start-Process -FilePath "python" -ArgumentList $pythonScript -Wait -PassThru -NoNewWindow
         
         if ($process.ExitCode -eq 0) {
