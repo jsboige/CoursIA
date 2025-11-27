@@ -1,0 +1,21 @@
+# Configuration ComfyUI pour FLUX.1-dev
+# Ce fichier définit les chemins des modèles pour ComfyUI
+
+comfyui:
+  base_path: /app/models
+  
+  # Chemins des différents types de modèles
+  checkpoints: /app/models/checkpoints
+  vae: /app/models/vae
+  clip: /app/models/clip
+  loras: /app/models/loras
+  embeddings: /app/models/embeddings
+  
+  # Chemins des custom nodes
+  custom_nodes: /app/custom_nodes
+  
+  # Chemins des workflows
+  workflows: /app/workflows
+  
+  # Sortie
+  output: /app/output
