@@ -128,13 +128,19 @@ class TokenSynchronizer:
             self.log(f"Erreur lecture {path}: {e}", "ERROR")
             return None
     
-    def write_token_file(self, path: str, content: str, backup: bool = True):
+    def write_token_file(self, path: str, content: str, backup: bool = False):
         """Écrit un token dans un fichier avec sauvegarde"""
         try:
-            # Créer sauvegarde si fichier existe
+            # Créer sauvegarde si fichier existe et utiliser le répertoire _backups
             if backup and Path(path).exists():
-                backup_path = f"{path}.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                Path(path).rename(backup_path)
+                # Créer le répertoire _backups s'il n'existe pas
+                backup_dir = Path(path).parent.parent / "_backups"
+                backup_dir.mkdir(parents=True, exist_ok=True)
+                
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                backup_filename = f"{Path(path).name}.backup.{timestamp}"
+                backup_path = backup_dir / backup_filename
+                shutil.copy2(path, backup_path)
                 self.log(f"Sauvegardé: {backup_path}", "INFO")
             
             # Créer répertoire si nécessaire
@@ -146,9 +152,9 @@ class TokenSynchronizer:
             
             self.log(f"Écrit: {path}", "SUCCESS")
             return True
-            
         except Exception as e:
             self.log(f"Erreur écriture {path}: {e}", "ERROR")
+            return False
             return False
     
     def is_bcrypt_hash(self, token: str) -> bool:

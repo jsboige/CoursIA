@@ -32,7 +32,7 @@
 #>
 
 param(
-    [switch]$Backup = $true,
+    [switch]$Backup = $false,
     [switch]$Validate = $true,
     [string]$Source = $null,
     [switch]$Restart = $false
@@ -105,8 +105,14 @@ function Backup-CurrentEnv {
     
     $envPath = "docker-configurations/services/comfyui-qwen/.env"
     if (Test-Path $envPath) {
+        # Créer le répertoire _backups s'il n'existe pas
+        $backupDir = "_backups"
+        if (-not (Test-Path $backupDir)) {
+            New-Item -Path $backupDir -ItemType Directory -Force
+        }
+        
         $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-        $backupPath = "docker-configurations/services/comfyui-qwen/.env.backup.$timestamp"
+        $backupPath = "$backupDir/.env.backup.$timestamp"
         
         try {
             Copy-Item $envPath $backupPath

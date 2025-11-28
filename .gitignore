@@ -395,6 +395,9 @@ get_token*.py
 *.backup_*
 .env.backup_*
 
+# Backups centralisés dans _backups/
+_backups/
+
 # Fichiers temporaires racine (Phase 29 - Post-Nettoyage)
 temp_*.py
 temp_*.txt

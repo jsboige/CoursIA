@@ -102,14 +102,19 @@ class EnvReconstructor:
             return None
     
     def backup_existing_env(self) -> bool:
-        """Crée une sauvegarde du fichier .env existant"""
+        """Crée une sauvegarde du fichier .env existant dans le répertoire _backups"""
         if not self.env_path.exists():
             self.log("Aucun fichier .env existant à sauvegarder", "INFO")
             return True
         
         try:
+            # Créer le répertoire _backups s'il n'existe pas
+            backup_dir = self.root_dir / "_backups"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            backup_path = self.env_path.parent / f".env.backup.{timestamp}"
+            backup_filename = f".env.backup.{timestamp}"
+            backup_path = backup_dir / backup_filename
             shutil.copy2(self.env_path, backup_path)
             self.log(f"Sauvegarde créée: {backup_path}", "SUCCESS")
             return True
@@ -367,8 +372,8 @@ def main():
     # Créer le reconstructeur
     reconstructor = EnvReconstructor()
     
-    # Par défaut: backup et validation
-    backup = args.backup if args.backup is not None else True
+    # Par défaut: validation uniquement (pas de backup automatique)
+    backup = args.backup if args.backup is not None else False
     validate = args.validate if args.validate is not None else True
     
     try:
