@@ -68,16 +68,6 @@ services:
     
     command: >
       bash -c "chmod +x /workspace/ComfyUI/install_comfyui.sh && cd /workspace/ComfyUI && ./install_comfyui.sh"
-        echo "Création du venv et installation des dépendances..."
-        python3 -m virtualenv venv
-        venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-        venv/bin/pip install -r requirements.txt
-      fi
-      # Créer le répertoire custom_nodes si nécessaire
-      mkdir -p custom_nodes
-      # Installer ComfyUI-Login si nécessaire
-      if [ ! -d custom_nodes/ComfyUI-Login ]; then
-        echo "Installation de ComfyUI-Login..."
         cd custom_nodes
         # Gestion derreur réseau/DNS avec retry
         for attempt in 1 2 3; do
