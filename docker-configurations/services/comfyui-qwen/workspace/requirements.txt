@@ -1,0 +1,27 @@
+# Requirements de base pour ComfyUI
+torch
+torchvision
+torchaudio
+numpy
+pillow
+opencv-python
+psutil
+
+# Requirements pour le web serveur
+flask
+flask-cors
+requests
+websocket-client
+aiohttp
+
+# Requirements pour le traitement d'images
+Pillow
+scipy
+scikit-image
+matplotlib
+
+# Requirements pour les modèles
+transformers
+diffusers
+accelerate
+safetensors

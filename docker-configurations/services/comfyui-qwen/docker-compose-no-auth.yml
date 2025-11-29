@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  comfyui-qwen:
+    image: python:3.11
+    container_name: comfyui-qwen
+    hostname: comfyui-qwen
+    
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-0}']
+              capabilities: [gpu]
+    
+    ports:
+      - "${COMFYUI_PORT:-8188}:8188"
+    
+    volumes:
+      - type: bind
+        source: ${COMFYUI_WORKSPACE_PATH:-./workspace}
+        target: /workspace/ComfyUI
+      - type: bind
+        source: ../../shared/models
+        target: /workspace/ComfyUI/models
+      - type: bind
+        source: ../../shared/cache
+        target: /workspace/ComfyUI/cache
+      - type: bind
+        source: ../../shared/outputs
+        target: /workspace/ComfyUI/output
+      - type: bind
+        source: ../../.secrets/qwen-api-user.token
+        target: /workspace/ComfyUI/.secrets/qwen-api-user.token
+        read_only: true
+      - type: bind
+        source: ./install_comfyui.sh
+        target: /workspace/ComfyUI/install_comfyui.sh
+    
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - TZ=${TZ:-Europe/Paris}
+      - COMFYUI_PORT=8188
+      - COMFYUI_LISTEN=0.0.0.0
+      # Tokens pour téléchargement des modèles
+      - CIVITAI_TOKEN=${CIVITAI_TOKEN}
+      - HF_TOKEN=${HF_TOKEN}
+      - QWEN_API_TOKEN=${QWEN_API_TOKEN}
+      # Configuration authentification DÉSACTIVÉE
+      - COMFYUI_LOGIN_ENABLED=false
+      - GUEST_MODE_ENABLED=${GUEST_MODE_ENABLED:-false}
+      - SECRET_KEY=${SECRET_KEY}
+      # Configuration comportement
+      - CORS_ENABLED=${CORS_ENABLED:-true}
+      - VERBOSE_LOGGING=${VERBOSE_LOGGING:-false}
+      - API_TIMEOUT=${API_TIMEOUT:-30}
+      - MAX_LOGIN_ATTEMPTS=${MAX_LOGIN_ATTEMPTS:-3}
+      - SESSION_EXPIRE_HOURS=${SESSION_EXPIRE_HOURS:-24}
+    
+    working_dir: /workspace/ComfyUI
+    
+    command: >
+      bash -c "chmod +x /workspace/ComfyUI/install_comfyui.sh && cd /workspace/ComfyUI && ./install_comfyui.sh"
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/", "--max-time", "10"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    
+    restart: unless-stopped
+    
+    networks:
+      - comfyui-network
+    
+    labels:
+      - "com.myia.service=comfyui-qwen"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=qwen-image-edit-2509"
+      - "com.myia.phase=production-secure"
+
+networks:
+  comfyui-network:
+    driver: bridge
+    name: comfyui-network
+
+# Les volumes sont maintenant gérés par le système de volumes partagés
+# Pas de volumes locaux nécessaires - utilisation des bind mounts vers shared/
