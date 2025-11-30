@@ -16,6 +16,7 @@ This release marks the completion of ComfyUI-Login mission with a complete authe
 ✅ Consolidated scripts architecture with 12+ utilities
 ✅ Comprehensive documentation (25,000+ lines) with SDDD methodology
 ✅ All critical bugs resolved and validated
+✅ Strict .env consolidation (zero duplicates)
 
 🚀 FEATURES IMPLEMENTED
 - Secure bcrypt-based authentication with ComfyUI-Login integration
@@ -32,6 +33,7 @@ This release marks the completion of ComfyUI-Login mission with a complete authe
 - Broken paths and dependencies → RESOLVED with post-reorganization fixes
 - Docker configuration inconsistencies → RESOLVED with production-ready setup
 - Documentation-code misalignment → RESOLVED with SDDD validation
+- Env file fragmentation → RESOLVED with strict consolidation
 
 📊 TECHNICAL SPECIFICATIONS
 - Architecture: Modular Docker containers with GPU optimization
@@ -48,92 +50,22 @@ This release marks the completion of ComfyUI-Login mission with a complete authe
 - scripts/genai-auth/deployment/: Deployment automation
 - scripts/genai-auth/maintenance/: Maintenance and monitoring
 - docker-configurations/services/: Production-ready Docker configurations
-- docker-configurations/shared/: Shared resources and models
-- docs/suivis/genai-image/: Complete technical documentation
 
-📚 DOCUMENTATION
-- Complete technical reference (25,000+ lines)
-- User guides and deployment procedures
-- API documentation with examples
-- Troubleshooting guides and best practices
-- SDDD methodology with triple grounding validation
-- Semantic searchability with 75% coherence score
+📝 DOCUMENTATION
+- docs/suivis/genai-image/: Complete project documentation
+- docs/suivis/genai-image/phase-32-restauration-post-reorganisation/: Final phase reports
 
-🔒 SECURITY FEATURES
-- Bcrypt-based token authentication
-- Secure credential management with .env pattern
-- Token synchronization across services
-- Isolated secrets management
-- Security validation scripts
-- Access control for GPU resources
-
-⚡ PERFORMANCE OPTIMIZATIONS
-- GPU RTX 3090 optimization with CUDA_VISIBLE_DEVICES
-- Multi-service load balancing
-- Efficient volume mounting
-- Resource usage monitoring
-- Automated health checks
-- Performance benchmarking tools
-
-🛠️ AUTOMATION TOOLS
-- Complete setup automation scripts
-- Token synchronization utilities
-- Docker container management
-- System validation and diagnostics
-- Backup and recovery procedures
-- Monitoring and alerting systems
-
-📈 QUALITY METRICS
-- 32 development phases completed (0-31)
-- 25,000+ lines of technical documentation
-- 11 critical corrections applied and validated
-- 75% documentation coherence score
-- 95%+ test success rate
-- Production-ready infrastructure validation
-
-🔄 MAINTENANCE READY
-- Modular script architecture for easy updates
-- Comprehensive monitoring and alerting
-- Automated backup and recovery procedures
-- Documentation for maintenance teams
-- Validation scripts for continuous quality assurance
-
-This is a production-ready release suitable for immediate deployment in enterprise environments with comprehensive documentation, security features, and maintenance automation.
+Signed-off-by: Roo Architect <roo@myia.ai>
 ```
 
-## Métadonnées du tag
+## Instructions pour créer le tag
 
-**Nom du tag** : comfyui-auth-v1.0-stable  
-**Date de création** : 27 novembre 2025  
-**Auteur** : Roo Code - Mode Architect  
-**Version** : 1.0 - Stable Release  
-**Référence** : Commit actuel avec toutes les corrections phase 32  
-**Statut** : ✅ PRODUCTION-READY  
+```powershell
+# 1. Vérifier que tout est commité
+git status
 
-## Contexte de la version
+# 2. Créer le tag annoté
+git tag -a comfyui-auth-v1.0-stable -F docs/suivis/genai-image/phase-32-restauration-post-reorganisation/TAG-GIT-COMFYUI-AUTH-V1.0-STABLE.md
 
-Cette version marque la fin réussie de la mission ComfyUI-Login après 32 phases de développement intensif. Le système est maintenant production-ready avec :
-
-- Infrastructure Docker optimisée pour GPU RTX 3090
-- Authentification sécurisée avec ComfyUI-Login et tokens bcrypt
-- Scripts maîtres consolidés dans architecture maintenable
-- Documentation technique complète et validée
-
-## Recommandations de déploiement
-
-1. **Validation pré-déploiement** : Exécuter les scripts de validation
-2. **Configuration environnement** : Adapter les variables .env selon l'environnement
-3. **Tests de charge** : Valider sous charge avant mise en production
-4. **Monitoring** : Activer les scripts de monitoring intégrés
-5. **Formation** : Utiliser la documentation complète pour les équipes
-
-## Prochaines étapes
-
-- Déploiement en environnement de production
-- Monitoring continu des performances
-- Maintenance régulière selon les scripts automatisés
-- Évolutions basées sur l'architecture établie
-
----
-
-*Message du tag créé pour la version stable ComfyUI Auth v1.0 - 27 novembre 2025*
+# 3. Pousser le tag (si remote configuré)
+# git push origin comfyui-auth-v1.0-stable
