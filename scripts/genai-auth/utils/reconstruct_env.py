@@ -28,10 +28,13 @@ class EnvReconstructor:
     
     def __init__(self, root_dir: Path = None):
         if root_dir is None:
-            root_dir = Path(__file__).parent.parent.parent
+            # Remonter jusqu'à la racine du projet (d:/Dev/CoursIA)
+            # scripts/genai-auth/utils/reconstruct_env.py -> utils -> genai-auth -> scripts -> ROOT
+            root_dir = Path(__file__).parent.parent.parent.parent
         
         self.root_dir = root_dir
         self.secrets_dir = root_dir / ".secrets"
+        # Cible explicite vers le fichier Maître
         self.docker_config_dir = root_dir / "docker-configurations" / "services" / "comfyui-qwen"
         self.env_path = self.docker_config_dir / ".env"
         
@@ -247,7 +250,8 @@ class EnvReconstructor:
             "# 2. Les tokens sensibles (COMFYUI_BEARER_TOKEN, SECRET_KEY) sont générés automatiquement",
             "# 3. L'authentification ComfyUI-Login est maintenant correctement installée et configurée",
             "# 4. Le token est synchronisé entre le fichier .env et le conteneur",
-            "# 5. Fichier reconstruit automatiquement pour résoudre les incohérences"
+            "# 5. Fichier reconstruit automatiquement pour résoudre les incohérences",
+            "# 6. FICHIER MAÎTRE CONSOLIDÉ - SOURCE DE VÉRITÉ UNIQUE"
         ]
         
         return '\n'.join(content_lines)

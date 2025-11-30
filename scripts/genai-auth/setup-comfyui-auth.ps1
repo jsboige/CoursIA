@@ -4,8 +4,10 @@
 param(
     [switch]$Force,
     [switch]$TestOnly,
-    [string]$EnvPath = "docker-configurations/comfyui-qwen/.env"
+    [string]$EnvPath = "docker-configurations/services/comfyui-qwen/.env"
 )
+
+# NOTE: Utilisation directe du fichier maître, plus de liens symboliques
 
 Write-Host "🔐 CONFIGURATION DE L'AUTHENTIFICATION COMFYUI" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
@@ -56,9 +58,9 @@ try {
         Write-Host "❌ Conteneur comfyui-qwen non trouvé" -ForegroundColor Red
         if (-not $Force) {
             Write-Host "🚀 Démarrage du conteneur..." -ForegroundColor Yellow
-            Set-Location "docker-configurations/comfyui-qwen"
+            Set-Location "docker-configurations/services/comfyui-qwen"
             docker-compose up -d
-            Set-Location "../../"
+            Set-Location "../../../"
             
             Write-Host "⏳ Attente de 60s pour le démarrage..." -ForegroundColor Yellow
             Start-Sleep -Seconds 60
@@ -93,7 +95,7 @@ if (-not $TestOnly) {
 Write-Host "`n🔍 Test de l'authentification..." -ForegroundColor Yellow
 
 try {
-    $pythonScript = "scripts/genai-auth/validate_comfyui_auth_final.py"
+    $pythonScript = "scripts/genai-auth/validate-comfyui-auth.py"
     $process = Start-Process -FilePath "python" -ArgumentList $pythonScript -Wait -PassThru -NoNewWindow
     
     if ($process.ExitCode -eq 0) {

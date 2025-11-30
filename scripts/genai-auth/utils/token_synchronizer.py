@@ -58,18 +58,21 @@ class TokenSynchronizer:
     
     def __init__(self, root_dir: Path = None):
         if root_dir is None:
-            root_dir = Path(__file__).parent.parent.parent
+            # Remonter jusqu'à la racine du projet (d:/Dev/CoursIA)
+            # scripts/genai-auth/utils/token_synchronizer.py -> utils -> genai-auth -> scripts -> ROOT
+            root_dir = Path(__file__).parent.parent.parent.parent
         
         self.root_dir = root_dir
         self.secrets_dir = root_dir / ".secrets"
         self.docker_config_dir = root_dir / "docker-configurations" / "comfyui-qwen"
         
         # Emplacements connus des tokens
+        # NOTE: Utilisation exclusive du fichier .env Maître
         self.token_locations = [
             {
-                'path': str(root_dir / ".env"),
+                'path': str(root_dir / "docker-configurations" / "services" / "comfyui-qwen" / ".env"),
                 'type': 'env',
-                'description': 'Fichier .env principal (variables COMFYUI_*)'
+                'description': 'Fichier .env MAÎTRE (Source de vérité unique)'
             },
             {
                 'path': str(self.secrets_dir / "qwen-api-user.token"),
@@ -79,12 +82,7 @@ class TokenSynchronizer:
             {
                 'path': str(self.secrets_dir / "comfyui_auth_tokens.conf"),
                 'type': 'config',
-                'description': 'Configuration unifiée des tokens (NOUVEAU)'
-            },
-            {
-                'path': str(self.docker_config_dir / ".env"),
-                'type': 'env',
-                'description': 'Configuration Docker ComfyUI'
+                'description': 'Configuration unifiée des tokens'
             },
             {
                 'path': str(self.docker_config_dir / ".secrets" / "qwen-api-user.token"),
@@ -308,14 +306,8 @@ class TokenSynchronizer:
                         'content': bcrypt_hash
                     },
                     {
-                        'name': 'env_main',
-                        'path': str(self.root_dir / ".env"),
-                        'type': 'env',
-                        'content': bcrypt_hash
-                    },
-                    {
-                        'name': 'docker_env',
-                        'path': str(self.docker_config_dir / ".env"),
+                        'name': 'env_master',
+                        'path': str(self.root_dir / "docker-configurations" / "services" / "comfyui-qwen" / ".env"),
                         'type': 'env',
                         'content': bcrypt_hash
                     },

@@ -11,12 +11,14 @@ import sys
 import json
 import time
 import os
+import random
 from pathlib import Path
 
 # Ajouter le répertoire parent au PYTHONPATH pour import comfyui_client
 sys.path.insert(0, str(Path(__file__).parent / ".." / "utils"))
 
 from comfyui_client_helper import ComfyUIClient, ComfyUIConfig
+from token_manager import token_manager
 
 def test_qwen_workflow():
     """
@@ -26,11 +28,38 @@ def test_qwen_workflow():
     print("TEST WORKFLOW COMFYUI QWEN WANBRIDGE (NOUVELLE API)")
     print("=" * 80)
     
+    # Récupération du token via TokenManager
+    try:
+        # Essai avec le token brut d'abord (souvent requis pour l'API)
+        try:
+            raw_token = token_manager.get_raw_token()
+            print("🔑 Token brut récupéré via TokenManager")
+            
+            # Construction de l'authentification Bearer avec le hash bcrypt
+            # ComfyUI-Login attend le hash bcrypt complet comme token Bearer
+            # Voir password.py: if auth_type == 'Bearer' and token_from_header == TOKEN:
+            # où TOKEN est lu depuis le fichier PASSWORD (qui contient le hash)
+            
+            # On récupère le hash bcrypt (qui est le contenu du fichier token)
+            bcrypt_hash = token_manager.get_bcrypt_hash()
+            
+            # On utilise ce hash comme token Bearer
+            api_key = bcrypt_hash
+            print(f"🔑 Authentification Bearer configurée avec le hash bcrypt")
+            
+        except Exception as e:
+            print(f"⚠️ Erreur lors de la configuration de l'auth: {e}")
+            api_key = None
+            
+    except Exception as e:
+        print(f"⚠️ Impossible de récupérer le token via TokenManager: {e}")
+        api_key = None
+
     # Configuration
     config = ComfyUIConfig(
         host="localhost",
         port=8188,
-        api_key="$2b$12$UDceblhZeEySDwVMC0ccN.IaQmMBfKdTY.aAE3poXcq1zsOP6coni"
+        api_key=api_key
     )
     
     print(f"\n📡 Configuration:")
@@ -41,6 +70,9 @@ def test_qwen_workflow():
         # Créer client ComfyUI
         client = ComfyUIClient(config)
         
+        # Pas de login explicite nécessaire si on utilise le bon token Bearer
+        # Le middleware check_login_status vérifie le header Authorization
+
         # Test de connectivité
         if not client.test_connectivity():
             print("❌ Impossible de se connecter au serveur ComfyUI")
@@ -75,7 +107,7 @@ def test_qwen_workflow():
                     ],
                     "sampler_name": "euler",
                     "scheduler": "normal",
-                    "seed": 8566257,
+                    "seed": random.randint(1, 1000000000),
                     "steps": 20
                 }
             },

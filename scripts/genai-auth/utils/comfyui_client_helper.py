@@ -83,7 +83,18 @@ class ComfyUIClient:
         })
         
         if config.api_key:
-            self.session.headers['Authorization'] = f'Bearer {config.api_key}'
+            # Si le token commence déjà par "Bearer " ou "Basic ", ne pas l'ajouter
+            if config.api_key.startswith("Bearer ") or config.api_key.startswith("Basic "):
+                self.session.headers['Authorization'] = config.api_key
+            else:
+                # Par défaut, essayer Bearer, mais si ça échoue, on pourrait avoir besoin de Basic
+                # Pour l'instant on garde Bearer par défaut pour compatibilité
+                self.session.headers['Authorization'] = f'Bearer {config.api_key}'
+            
+            # DEBUG: Afficher le header d'autorisation (masqué)
+            auth_header = self.session.headers['Authorization']
+            masked_auth = auth_header[:15] + "..." + auth_header[-5:] if len(auth_header) > 20 else "***"
+            print(f"🔑 Auth Header configuré: {masked_auth}")
     
     def _get_base_url(self) -> str:
         """Retourne l'URL de base de l'API ComfyUI"""
@@ -313,28 +324,84 @@ class ComfyUIClient:
             
             downloaded_count = 0
             for node_id, node_outputs in outputs.items():
+                # Les outputs peuvent être un dict ou une liste de dicts
                 if isinstance(node_outputs, dict):
-                    for output_name, output_data in node_outputs.items():
-                        if output_data.get('type') == 'image' and 'filename' in output_data:
-                            # Télécharger l'image
-                            image_url = f"{self._get_base_url()}/view?filename={output_data['filename']}"
-                            img_response = self.session.get(image_url, stream=True)
+                    items_to_process = node_outputs.items()
+                elif isinstance(node_outputs, list):
+                    # Si c'est une liste, on suppose que ce sont des images
+                    items_to_process = [("images", item) for item in node_outputs]
+                else:
+                    print(f"⚠️ Format d'output inconnu pour le node {node_id}: {type(node_outputs)}")
+                    continue
+
+                # Si items_to_process est une liste de tuples (cas liste), on itère directement
+                # Si c'est une liste de dicts (cas liste d'images), on doit adapter
+                
+                final_items = []
+                if isinstance(node_outputs, list):
+                    # C'est une liste d'objets (probablement des images)
+                    for item in node_outputs:
+                        final_items.append(("image", item))
+                elif isinstance(node_outputs, dict):
+                    # C'est un dictionnaire clé-valeur
+                    for k, v in node_outputs.items():
+                        # Si la valeur est une liste (ex: images: [{...}]), on l'aplatit
+                        if isinstance(v, list):
+                            for item in v:
+                                final_items.append((k, item))
+                        else:
+                            final_items.append((k, v))
+                
+                for output_name, output_data in final_items:
+                    # DEBUG: Afficher les données de sortie pour diagnostic
+                    print(f"🔍 Analyse output: {output_name} -> {output_data}")
+                    
+                    # Vérification plus souple pour les images
+                    is_image = False
+                    if isinstance(output_data, dict):
+                        # Cas standard: type='image' ou extension d'image dans filename
+                        # Note: ComfyUI retourne parfois type='output' pour les images sauvegardées
+                        if output_data.get('type') in ['image', 'output', 'temp']:
+                            is_image = True
+                            print(f"   ✅ Identifié comme image via type='{output_data.get('type')}'")
+                        elif 'filename' in output_data:
+                            ext = os.path.splitext(output_data['filename'])[1].lower()
+                            if ext in ['.png', '.jpg', '.jpeg', '.webp']:
+                                is_image = True
+                                print(f"   ✅ Identifié comme image via extension='{ext}'")
+                        else:
+                            print(f"   ⚠️ Non identifié comme image (type={output_data.get('type')}, filename={output_data.get('filename')})")
+                    else:
+                        print(f"   ⚠️ Données invalides (pas un dict): {type(output_data)}")
+                    
+                    if is_image and 'filename' in output_data:
+                        # Télécharger l'image
+                        image_url = f"{self._get_base_url()}/view?filename={output_data['filename']}"
+                        if 'subfolder' in output_data and output_data['subfolder']:
+                            image_url += f"&subfolder={output_data['subfolder']}"
+                        if 'type' in output_data and output_data['type']:
+                            image_url += f"&type={output_data['type']}"
                             
-                            if img_response.status_code == 200:
-                                img_path = Path(output_dir) / output_data['filename']
-                                with open(img_path, 'wb') as f:
-                                    for chunk in img_response.iter_content(chunk_size=8192):
-                                        f.write(chunk)
-                                print(f"✅ Image téléchargée: {img_path}")
-                                downloaded_count += 1
-                            
-                            # Télécharger les métadonnées
-                            metadata = {k: v for k, v in output_data.items() if k != 'filename'}
-                            if metadata:
-                                metadata_path = Path(output_dir) / f"{output_data['filename']}.json"
-                                with open(metadata_path, 'w') as f:
-                                    json.dump(metadata, f, indent=2)
-                                print(f"✅ Métadonnées sauvegardées: {metadata_path}")
+                        print(f"⬇️ Téléchargement depuis: {image_url}")
+                        img_response = self.session.get(image_url, stream=True)
+                        
+                        if img_response.status_code == 200:
+                            img_path = Path(output_dir) / output_data['filename']
+                            with open(img_path, 'wb') as f:
+                                for chunk in img_response.iter_content(chunk_size=8192):
+                                    f.write(chunk)
+                            print(f"✅ Image téléchargée: {img_path}")
+                            downloaded_count += 1
+                        else:
+                            print(f"❌ Erreur téléchargement (HTTP {img_response.status_code}): {img_response.text[:100]}")
+                        
+                        # Télécharger les métadonnées
+                        metadata = {k: v for k, v in output_data.items() if k != 'filename'}
+                        if metadata:
+                            metadata_path = Path(output_dir) / f"{output_data['filename']}.json"
+                            with open(metadata_path, 'w') as f:
+                                json.dump(metadata, f, indent=2)
+                            print(f"✅ Métadonnées sauvegardées: {metadata_path}")
             
             print(f"✅ Téléchargement terminé: {downloaded_count} fichiers")
             return True
