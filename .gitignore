@@ -365,6 +365,10 @@ MigrationBackup/
 # Scripts secrets directory (SÉCURITÉ CRITIQUE)
 scripts/.secrets/
 scripts/docker-configurations/comfyui-qwen/.secrets/
+# Secrets ComfyUI Auth (SÉCURITÉ CRITIQUE)
+.secrets/comfyui_auth_tokens.conf
+.secrets/qwen-api-user.token
+docker-configurations/comfyui-qwen/.secrets/qwen-api-user.token
 
 # VSCode settings
 .vscode/settings.json
