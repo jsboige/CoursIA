@@ -10,6 +10,7 @@ Date: 2025-11-30
 import sys
 import json
 import time
+import os
 from pathlib import Path
 
 # Ajouter le répertoire parent au PYTHONPATH pour import comfyui_client
@@ -171,7 +172,14 @@ def test_qwen_workflow():
             print(f"📊 Outputs: {len(outputs)}")
             
             # Téléchargement des résultats
-            output_dir = "./output_test_qwen"
+            # Définition du dossier de sortie à la racine du projet
+            project_root = Path(__file__).parent.parent.parent.parent
+            output_dir = os.path.join(project_root, "outputs")
+            
+            # Création du dossier s'il n'existe pas
+            os.makedirs(output_dir, exist_ok=True)
+            
+            print(f"📂 Dossier de sortie: {output_dir}")
             client.download_result(prompt_id, output_dir)
             return True
         else:
