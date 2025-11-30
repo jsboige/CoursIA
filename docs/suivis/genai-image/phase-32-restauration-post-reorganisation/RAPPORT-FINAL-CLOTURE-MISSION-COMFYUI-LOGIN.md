@@ -115,6 +115,12 @@ Résoudre le problème critique d'authentification HTTP 401 qui bloquait l'accè
 - **Validation Complète** : Tests réels confirmant le fonctionnement de bout en bout
 - **Résultat** : Système 100% opérationnel, stable et performant
 
+**Validation Technique Réelle** :
+- ✅ **Authentification** : Validée (Login + API Token fonctionnels).
+- ✅ **Workflow** : Validé (Le serveur accepte et analyse le workflow).
+- ⚠️ **Génération** : En attente de modèle (Action : Télécharger `Qwen-Image-Edit-2509-FP8.safetensors`).
+- **Confirmation** : Le tag `comfyui-auth-v1.0-stable` reste valide car le code est fonctionnel.
+
 ---
 
 ## SECTION 4: ARCHITECTURE FINALE
