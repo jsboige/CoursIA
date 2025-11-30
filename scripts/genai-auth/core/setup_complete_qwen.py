@@ -266,9 +266,9 @@ class QwenSetup:
         logger.info("Installation de ComfyUI-Login...")
         
         # Appeler le script existant en subprocess
-        script_path = Path("scripts/genai-auth/core/install_comfyui_login.py")
+        script_path = Path("scripts/genai-auth/core/install_comfyui_with_auth.py")
         if not script_path.exists():
-            logger.error(f"❌ Script install_comfyui_login.py non trouvé: {script_path}")
+            logger.error(f"❌ Script install_comfyui_with_auth.py non trouvé: {script_path}")
             return False
         
         try:

@@ -1,0 +1,23 @@
+{
+  "timestamp_start": "2025-11-30T12:29:27.866412",
+  "steps": [
+    {
+      "name": "Vérification prérequis",
+      "status": "SUCCESS",
+      "timestamp": "2025-11-30T12:29:27.960014"
+    },
+    {
+      "name": "Démarrage container Docker",
+      "status": "SKIPPED",
+      "timestamp": "2025-11-30T12:29:27.961090"
+    },
+    {
+      "name": "Installation ComfyUI-Login",
+      "status": "FAILED",
+      "timestamp": "2025-11-30T12:29:27.962235"
+    }
+  ],
+  "errors": [],
+  "status": "FAILED",
+  "timestamp_end": "2025-11-30T12:29:27.962491"
+}

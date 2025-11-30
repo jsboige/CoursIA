@@ -311,13 +311,13 @@ class TokenSynchronizer:
                         'name': 'env_main',
                         'path': str(self.root_dir / ".env"),
                         'type': 'env',
-                        'content': f"COMFYUI_API_TOKEN={bcrypt_hash}\nCOMFYUI_RAW_TOKEN={raw_token}"
+                        'content': bcrypt_hash
                     },
                     {
                         'name': 'docker_env',
                         'path': str(self.docker_config_dir / ".env"),
                         'type': 'env',
-                        'content': f"COMFYUI_BEARER_TOKEN={bcrypt_hash}"
+                        'content': bcrypt_hash
                     },
                     {
                         'name': 'docker_secrets',
@@ -370,18 +370,37 @@ class TokenSynchronizer:
                         if existing_content:
                             # Mettre à jour les lignes COMFYUI_*
                             lines = existing_content.split('\n')
-                            updated_lines = []
+                            
+                            # Utiliser un dictionnaire pour éviter les doublons
+                            env_vars = {}
+                            other_lines = []
                             
                             for line in lines:
-                                if line.startswith('COMFYUI_API_TOKEN='):
-                                    updated_lines.append(f"COMFYUI_API_TOKEN={content}")
-                                elif line.startswith('COMFYUI_BEARER_TOKEN='):
-                                    updated_lines.append(f"COMFYUI_BEARER_TOKEN={content}")
-                                elif line.startswith('COMFYUI_RAW_TOKEN='):
-                                    # Garder le token brut de la config
-                                    updated_lines.append(f"COMFYUI_RAW_TOKEN={config['raw_token']}")
+                                line = line.strip()
+                                if not line:
+                                    continue
+                                    
+                                if line.startswith('#'):
+                                    other_lines.append(line)
+                                    continue
+                                    
+                                if '=' in line:
+                                    key, val = line.split('=', 1)
+                                    env_vars[key.strip()] = val.strip()
                                 else:
-                                    updated_lines.append(line)
+                                    other_lines.append(line)
+                            
+                            # Mettre à jour les valeurs
+                            env_vars['COMFYUI_API_TOKEN'] = content
+                            # Si COMFYUI_BEARER_TOKEN était présent, le mettre à jour, sinon l'ajouter si c'est le fichier docker
+                            if 'COMFYUI_BEARER_TOKEN' in env_vars or 'docker' in location['name']:
+                                env_vars['COMFYUI_BEARER_TOKEN'] = content
+                            
+                            # Toujours mettre à jour le raw token
+                            env_vars['COMFYUI_RAW_TOKEN'] = config['raw_token']
+                            
+                            # Reconstruire le contenu
+                            updated_lines = other_lines + [f"{k}={v}" for k, v in env_vars.items()]
                             
                             content = '\n'.join(updated_lines)
                 
