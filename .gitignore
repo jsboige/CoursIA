@@ -417,4 +417,4 @@ docker-configurations/comfyui-qwen/workspace/venv/
 *.env
 *.env.backup
 *.env.backup-SECURE
-docker-configurations/services/comfyui-qwen/workspace/venv/
+docker-configurations/services/comfyui-qwen/workspace/
