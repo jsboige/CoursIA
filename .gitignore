@@ -422,3 +422,6 @@ docker-configurations/comfyui-qwen/workspace/venv/
 *.env.backup
 *.env.backup-SECURE
 docker-configurations/services/comfyui-qwen/workspace/
+
+# Ignore nested git repository
+docker-configurations/services/comfyui-qwen/ComfyUI/
