@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  forge-turbo:
+    image: ghcr.io/ai-dock/stable-diffusion-webui-forge:latest-cuda
+    container_name: forge-turbo
+    hostname: forge-turbo
+    ports:
+      - "${FORGE_PORT:-17861}:7860"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CLI_ARGS=--ui-settings-file config-turbo.json --api --api-log --listen --gradio-auth ${FORGE_USER:-admin}:${FORGE_PASSWORD:-changeme} --gpu-device-id 1 --cuda-malloc --xformers
+    volumes:
+      - ../../shared/models:/opt/storage/stable_diffusion/models
+      - ../../shared/outputs:/opt/storage/stable_diffusion/outputs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped

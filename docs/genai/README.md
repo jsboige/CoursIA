@@ -6,7 +6,37 @@ Documentation de référence pour l'écosystème GenAI/Image CoursIA.
 
 ## 🎯 Vue d'Ensemble
 
-Cette documentation technique couvre l'ensemble de l'infrastructure GenAI Images intégrée au projet CoursIA, incluant l'architecture, le déploiement, la configuration et l'utilisation des modèles de génération d'images par IA.
+Cette documentation technique couvre l'ensemble de l'infrastructure GenAI Images intégrée au projet CoursIA. L'écosystème est actuellement structuré en deux piliers principaux :
+
+1.  **ComfyUI (Stable v1.0)** : Infrastructure de production stabilisée, sécurisée et documentée.
+2.  **Forge (Chantier)** : Environnement expérimental pour SD XL Turbo, en cours de migration vers les standards d'infrastructure.
+
+## 🏛️ Piliers de l'Infrastructure
+
+### 1. ComfyUI - Environnement Stable v1.0 ✅
+
+Le cœur de notre infrastructure de génération d'images, basé sur ComfyUI, a atteint sa maturité v1.0.
+
+*   **État** : 🟢 Production Stable
+*   **Référence Technique** : [**Configuration de Référence v1.0**](../suivis/genai-image/phase-32-restauration-post-reorganisation/CONFIGURATION_REFERENCE_V1.0_STABLE.md)
+*   **Fonctionnalités Clés** :
+    *   Authentification unifiée (Basic Auth + Token Sync)
+    *   Support Qwen-VL et Flux.1
+    *   Architecture Docker optimisée
+    *   Monitoring et logs centralisés
+
+### 2. Forge - Environnement Expérimental 🚧
+
+L'environnement Forge, dédié à la génération ultra-rapide (SD XL Turbo), est en cours de consolidation.
+
+*   **État** : 🟠 Chantier en cours
+*   **Objectif** : Dockerisation et intégration à l'infrastructure standardisée.
+*   **Roadmap** :
+    *   [ ] Dockerisation du service Forge
+    *   [ ] Intégration de l'authentification unifiée
+    *   [ ] Standardisation des notebooks associés
+
+---
 
 ## 📖 Guides Utilisateur
 
@@ -39,6 +69,7 @@ Cette documentation technique couvre l'ensemble de l'infrastructure GenAI Images
 | [**Configurations Environnement**](environment-configurations.md) | Configuration des environnements (dev, prod) | DevOps, Développeurs |
 | [**Procédures Intégration**](integration-procedures.md) | Procédures d'intégration MCP | Développeurs Backend |
 | [**Templates Phase 2**](phase2-templates.md) | Templates pour implémentation Phase 2 | Développeurs |
+| [**Configuration Référence Qwen**](../suivis/genai-image/phase-32-restauration-post-reorganisation/CONFIGURATION_REFERENCE_V1.0_STABLE.md) | Configuration stable ComfyUI Qwen | DevOps, Architectes |
 
 ## 🧪 Tests & Scripts
 
@@ -49,11 +80,30 @@ Cette documentation technique couvre l'ensemble de l'infrastructure GenAI Images
 
 ---
 
+## 📓 État des Notebooks
+
+### ✅ Notebooks Fonctionnels (ComfyUI)
+Ces notebooks sont validés et opérationnels sur l'infrastructure stable v1.0.
+
+*   `01-Images-Foundation/01-5-Qwen-Image-Edit.ipynb` : Édition d'images avec Qwen-VL et ComfyUI.
+*   `00-GenAI-Environment/00-4-Environment-Validation.ipynb` : Validation de l'environnement.
+
+### 🚧 Notebooks à Consolider (Forge)
+Ces notebooks nécessitent une attention particulière en attendant la finalisation du chantier Forge.
+
+*   `01-Images-Foundation/01-4-Forge-SD-XL-Turbo.ipynb` : Génération rapide avec SD XL Turbo (En attente de dockerisation Forge).
+
+---
+
 ## 📋 Suivis de Mission
 
 Les rapports de mission et suivis chronologiques du développement de l'infrastructure GenAI sont disponibles dans le répertoire dédié:
 
 ➡️ **[docs/suivis/genai-image/](docs/suivis/genai-image/)** - Rapports historiques et suivis de phases
+
+### 🏆 Rapports Clés
+*   ✅ **[Rapport Final Mission Qwen ComfyUI](../suivis/genai-image/RAPPORT-FINAL-MISSION-QWEN-COMFYUI.md)** : Synthèse complète de la stabilisation de l'environnement.
+*   🔒 **[Configuration de Référence](../suivis/genai-image/phase-32-restauration-post-reorganisation/CONFIGURATION_REFERENCE_V1.0_STABLE.md)** : Source de vérité technique pour la reconstruction.
 
 ---
 
@@ -89,8 +139,8 @@ Les rapports de mission et suivis chronologiques du développement de l'infrastr
 
 ## 📝 Maintenance
 
-**Méthode**: SDDD (Semantic-Documentation-Driven-Design)  
-**Dernière mise à jour**: 8 octobre 2025  
+**Méthode**: SDDD (Semantic-Documentation-Driven-Design)
+**Dernière mise à jour**: 1 décembre 2025
 **Responsable**: Équipe CoursIA GenAI
 
 ---
