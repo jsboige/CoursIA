@@ -20,14 +20,14 @@ Identifier et catégoriser tous les fichiers éparpillés dans l'environnement Q
 
 ### Fichiers modifiés (M) - 9 fichiers
 ```bash
-M docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/__init__.py
-M docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/__init__.py
-M docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py
-M docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py
-M docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py
-M docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py
-M docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py
-M docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py
+M docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/__init__.py
+M docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/__init__.py
+M docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py
+M docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py
+M docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py
+M docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py
+M docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py
+M docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py
 M docs/suivis/genai-image/README.md
 M scripts/genai-auth/comfyui_client_helper.py
 M scripts/genai-auth/fix-qwen-workflow.py

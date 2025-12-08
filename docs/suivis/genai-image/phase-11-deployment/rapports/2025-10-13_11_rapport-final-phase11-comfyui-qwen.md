@@ -164,7 +164,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
 ### Structure Créée
 
 ```
-docker-configurations/comfyui-qwen/
+docker-configurations/services/comfyui-qwen/
 ├── docker-compose.yml     # ⚠️ Nécessite ajustements
 ├── .env                   # Configuration GPU
 ├── .env.example          # Template

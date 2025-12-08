@@ -43,7 +43,7 @@ Import times for custom nodes:
 **Analyse :** Les logs montrent que ComfyUI-Login **était présent** lors du premier démarrage mais a été **supprimé** lors d'un redémarrage ultérieur.
 
 #### 2.2. Configuration Docker Actuelle
-**Fichier :** [`docker-compose-no-auth.yml`](docker-configurations/comfyui-qwen/docker-compose-no-auth.yml:1)
+**Fichier :** [`docker-compose-no-auth.yml`](docker-configurations/services/comfyui-qwen/docker-compose-no-auth.yml:1)
 
 **Commande de démarrage :**
 ```bash
@@ -65,7 +65,7 @@ exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto
 
 **Dans le workspace local :**
 ```
-docker-configurations/comfyui-qwen/workspace/custom_nodes/
+docker-configurations/services/comfyui-qwen/workspace/custom_nodes/
 ├── example_node.py.example  
 └── websocket_image_save.py
 ```
@@ -87,7 +87,7 @@ Les rapports précédents documentent une "résolution par suppression de ComfyU
 
 ### **Cause Racine Secondaire : Configuration Docker Incomplète**
 
-Le fichier [`docker-compose-no-auth.yml`](docker-configurations/comfyui-qwen/docker-compose-no-auth.yml:1) n'inclut aucune logique d'installation ou de configuration de ComfyUI-Login.
+Le fichier [`docker-compose-no-auth.yml`](docker-configurations/services/comfyui-qwen/docker-compose-no-auth.yml:1) n'inclut aucune logique d'installation ou de configuration de ComfyUI-Login.
 
 **Manques critiques :**
 - ❌ Installation de ComfyUI-Login absente

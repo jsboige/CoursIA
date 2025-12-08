@@ -154,7 +154,7 @@ Le script perdu utilisait `/app/custom_nodes` (chemin **non-persistant**) au lie
 
 ### 2.1. Configuration Docker Actuelle
 
-**Fichier** : [`docker-configurations/comfyui-qwen/docker-compose.yml`](../../../docker-configurations/comfyui-qwen/docker-compose.yml)
+**Fichier** : [`docker-configurations/services/comfyui-qwen/docker-compose.yml`](../../../docker-configurations/services/comfyui-qwen/docker-compose.yml)
 
 #### Analyse Ligne par Ligne
 

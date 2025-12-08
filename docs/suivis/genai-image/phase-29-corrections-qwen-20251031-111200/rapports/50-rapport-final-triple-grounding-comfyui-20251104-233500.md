@@ -86,7 +86,7 @@ def run_all_tests():
 ## 🔄 Artefacts de Configuration
 
 ### Docker Compose (abandonné au profit WSL)
-- **Fichier** : `docker-configurations/comfyui-qwen/docker-compose.yml`
+- **Fichier** : `docker-configurations/services/comfyui-qwen/docker-compose.yml`
 - **Statut** : Configuré mais non utilisé (problèmes montage volumes)
 - **Leçon apprise** : WSL standalone plus efficace que Docker pour ce cas d'usage
 

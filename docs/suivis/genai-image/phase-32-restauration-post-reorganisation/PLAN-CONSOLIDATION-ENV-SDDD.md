@@ -6,8 +6,8 @@ Actuellement, l'environnement souffre d'une fragmentation des fichiers de config
 
 ### Fichiers Identifiés
 1.  `docker-configurations/services/comfyui-qwen/.env` (Cible Maître)
-2.  `docker-configurations/comfyui-qwen/.env` (Satellite)
-3.  `scripts/docker-configurations/comfyui-qwen/.env` (Satellite)
+2.  `docker-configurations/services/comfyui-qwen/.env` (Satellite)
+3.  `scripts/docker-configurations/services/comfyui-qwen/.env` (Satellite)
 4.  `scripts/docker-configurations/services/comfyui-qwen/.env` (Copie récente du Maître)
 5.  `scripts/.env` (Satellite)
 6.  `.env` (Racine - Satellite)
@@ -34,7 +34,7 @@ Pour éviter de casser les scripts existants, les fichiers satellites seront rem
 
 *   `.env` (Racine) -> `docker-configurations/services/comfyui-qwen/.env`
 *   `scripts/.env` -> `../docker-configurations/services/comfyui-qwen/.env`
-*   `docker-configurations/comfyui-qwen/.env` -> `../services/comfyui-qwen/.env`
+*   `docker-configurations/services/comfyui-qwen/.env` -> `../services/comfyui-qwen/.env`
 
 *Note : Sous Windows, les symlinks nécessitent des privilèges ou le mode développeur. Si impossible, une copie synchronisée par script sera utilisée comme fallback, mais le symlink est privilégié.*
 

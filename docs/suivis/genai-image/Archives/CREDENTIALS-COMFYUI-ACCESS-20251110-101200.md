@@ -15,7 +15,7 @@ http://localhost:8188/
 ### 👤 Identifiants
 Les identifiants sont configurés dans le fichier `.env` :
 ```
-docker-configurations/comfyui-qwen/.env
+docker-configurations/services/comfyui-qwen/.env
 ```
 
 **Variables de configuration :**
@@ -34,7 +34,7 @@ Désactivé (GUEST_MODE_ENABLED=false)
 
 | Composant | Statut | Détails |
 |-----------|---------|----------|
-| **Fichier .env** | ✅ Lu et validé | `docker-configurations/comfyui-qwen/.env` |
+| **Fichier .env** | ✅ Lu et validé | `docker-configurations/services/comfyui-qwen/.env` |
 | **ComfyUI-Login** | ✅ Installé et configuré | Version dans `/workspace/ComfyUI/custom_nodes/ComfyUI-Login/` |
 | **Conteneur Docker** | ✅ En cours d'exécution | `comfyui-qwen` |
 | **Authentification Web** | ✅ Active | Retourne 401 Unauthorized |
@@ -79,7 +79,7 @@ Utilisez les identifiants configurés dans le fichier `.env` :
 ## 🔧 MAINTENANCE
 
 ### Pour mettre à jour les credentials
-1. Modifiez `docker-configurations/comfyui-qwen/.env`
+1. Modifiez `docker-configurations/services/comfyui-qwen/.env`
 2. Exécutez: `python scripts/genai-auth/sync_comfyui_credentials.py`
 3. Ou utilisez: `pwsh -File scripts/genai-auth/setup-comfyui-auth.ps1`
 
@@ -138,7 +138,7 @@ Ils sont configurés dans le fichier `.env` qui est exclu du versionnement par `
 
 Pour obtenir les identifiants actuels, consultez le fichier :
 ```
-docker-configurations/comfyui-qwen/.env
+docker-configurations/services/comfyui-qwen/.env
 ```
 
 ---

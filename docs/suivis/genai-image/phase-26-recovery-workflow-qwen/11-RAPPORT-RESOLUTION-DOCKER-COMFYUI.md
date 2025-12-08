@@ -126,7 +126,7 @@ Pour éviter ce problème à l'avenir, créer un Dockerfile qui:
 ## 📌 Fichiers Créés/Modifiés
 
 - ✅ `docker-compose.yml.backup-20251023-*` (backup de sécurité)
-- ✅ `docker-configurations/comfyui-qwen/init-venv.sh` (script non utilisé car Python 3.10 manquant)
+- ✅ `docker-configurations/services/comfyui-qwen/init-venv.sh` (script non utilisé car Python 3.10 manquant)
 - ✅ `recovery/11-RAPPORT-RESOLUTION-DOCKER-COMFYUI.md` (ce rapport)
 
 ---

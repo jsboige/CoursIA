@@ -426,7 +426,7 @@ diff <(cat .secrets/qwen-api-user.token) <(wsl bash -c "cat /home/jesse/SD/works
 docker ps --filter name=comfyui-qwen
 
 # Redémarrer container
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose restart
 
 # Vérifier logs
@@ -531,7 +531,7 @@ curl -X GET \
 wsl bash -c "ls -la /home/jesse/SD/workspace/comfyui-qwen/ComfyUI/custom_nodes/ComfyUI-Login"
 
 # Redémarrer container
-cd docker-configurations/comfyui-qwen && docker-compose restart
+cd docker-configurations/services/comfyui-qwen && docker-compose restart
 ```
 
 ### B. Fichiers de Configuration

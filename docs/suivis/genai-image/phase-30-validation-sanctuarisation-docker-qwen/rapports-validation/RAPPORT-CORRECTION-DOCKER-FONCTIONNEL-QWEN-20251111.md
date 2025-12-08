@@ -18,7 +18,7 @@ La configuration Docker de Qwen ComfyUI a été entièrement restaurée et corri
 ### 1. Code source ComfyUI manquant
 **Problème** : Le conteneur ne trouvait pas le fichier `main.py` car le code source ComfyUI n'avait pas été cloné dans le volume persistant.
 
-**Solution appliquée** : Modification du [`docker-compose.yml`](docker-configurations/comfyui-qwen/docker-compose.yml:58) pour ajouter une étape de clonage automatique :
+**Solution appliquée** : Modification du [`docker-compose.yml`](docker-configurations/services/comfyui-qwen/docker-compose.yml:58) pour ajouter une étape de clonage automatique :
 
 ```bash
 # Cloner ComfyUI si le répertoire n'existe pas ou est vide
@@ -43,7 +43,7 @@ fi &&
 ## Configuration Finale
 
 ### Variables d'environnement restaurées
-Toutes les variables d'environnement essentielles ont été restaurées dans le [`.env`](docker-configurations/comfyui-qwen/.env) :
+Toutes les variables d'environnement essentielles ont été restaurées dans le [`.env`](docker-configurations/services/comfyui-qwen/.env) :
 
 - Tokens d'API (CivitAI, HuggingFace, Qwen)
 - Configuration d'authentification ComfyUI-Login
@@ -51,7 +51,7 @@ Toutes les variables d'environnement essentielles ont été restaurées dans le 
 - Configuration réseau et ports
 
 ### Commande de démarrage optimisée
-La commande finale dans [`docker-compose.yml`](docker-configurations/comfyui-qwen/docker-compose.yml:51) inclut :
+La commande finale dans [`docker-compose.yml`](docker-configurations/services/comfyui-qwen/docker-compose.yml:51) inclut :
 
 1. **Clonage conditionnel** avec `--depth 1`
 2. **Création automatique du venv** si absent
@@ -121,12 +121,12 @@ La commande finale dans [`docker-compose.yml`](docker-configurations/comfyui-qwe
 
 ## Fichiers Modifiés
 
-1. **[`docker-configurations/comfyui-qwen/docker-compose.yml`](docker-configurations/comfyui-qwen/docker-compose.yml)** 
+1. **[`docker-configurations/services/comfyui-qwen/docker-compose.yml`](docker-configurations/services/comfyui-qwen/docker-compose.yml)** 
    - Ajout de la logique de clonage automatique
    - Optimisation de la séquence d'installation
    - Gestion robuste des erreurs de suppression
 
-2. **[`docker-configurations/comfyui-qwen/.env`](docker-configurations/comfyui-qwen/.env)** 
+2. **[`docker-configurations/services/comfyui-qwen/.env`](docker-configurations/services/comfyui-qwen/.env)** 
    - Variables d'environnement complètes restaurées
    - Configuration d'authentification activée
 
@@ -142,7 +142,7 @@ La commande finale dans [`docker-compose.yml`](docker-configurations/comfyui-qwe
 
 ```bash
 # Arrêt et redémarrage du service
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose down
 docker-compose up -d
 

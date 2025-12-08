@@ -27,7 +27,7 @@ Résoudre le problème de permissions Docker pour ComfyUI identifié dans l'audi
 
 #### ❌ Cause Principale : Chemin de Volume Incorrect
 - **Problème** : Le répertoire `./ComfyUI` n'existait pas à la racine du projet
-- **Réalité** : Les fichiers se trouvaient dans `docker-configurations/comfyui-qwen/ComfyUI/`
+- **Réalité** : Les fichiers se trouvaient dans `docker-configurations/services/comfyui-qwen/ComfyUI/`
 - **Impact** : Docker montait un répertoire vide → `requirements.txt` inaccessible
 
 #### 🔧 Tentatives de Correction Docker
@@ -43,14 +43,14 @@ volumes:
 # Après  
 volumes:
   - type: bind
-    source: ./docker-configurations/comfyui-qwen/ComfyUI
+    source: ./docker-configurations/services/comfyui-qwen/ComfyUI
     target: /workspace/ComfyUI
 ```
 
 ##### 2. Lien Symbolique Windows
 ```powershell
 # Création d'un lien symbolique
-New-Item -ItemType SymbolicLink -Path './ComfyUI' -Target 'docker-configurations/comfyui-qwen/ComfyUI' -Force
+New-Item -ItemType SymbolicLink -Path './ComfyUI' -Target 'docker-configurations/services/comfyui-qwen/ComfyUI' -Force
 ```
 
 ##### 3. Chemin Absolu Docker
@@ -58,7 +58,7 @@ New-Item -ItemType SymbolicLink -Path './ComfyUI' -Target 'docker-configurations
 # Tentative avec chemin absolu
 volumes:
   - type: bind
-    source: /d/Dev/CoursIA/docker-configurations/comfyui-qwen/ComfyUI
+    source: /d/Dev/CoursIA/docker-configurations/services/comfyui-qwen/ComfyUI
     target: /workspace/ComfyUI
 ```
 
@@ -119,9 +119,9 @@ echo "🚀 Démarrage ComfyUI via WSL standalone..."
 ### ✅ Succès de l'Alternative WSL
 
 1. **Scripts fonctionnels** : Les deux scripts sont créés et testés
-2. **Token récupéré** : Lecture automatique depuis `docker-configurations/comfyui-qwen/.env`
+2. **Token récupéré** : Lecture automatique depuis `docker-configurations/services/comfyui-qwen/.env`
 3. **WSL détecté** : Version 2.6.1.0 fonctionnelle
-4. **Répertoire accessible** : `/mnt/d/Dev/CoursIA/docker-configurations/comfyui-qwen/ComfyUI/` visible depuis WSL
+4. **Répertoire accessible** : `/mnt/d/Dev/CoursIA/docker-configurations/services/comfyui-qwen/ComfyUI/` visible depuis WSL
 
 ### ❌ Échec de la Solution Docker
 

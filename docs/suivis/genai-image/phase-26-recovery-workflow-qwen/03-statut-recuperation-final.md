@@ -240,7 +240,7 @@ M  docs/suivis/genai-image/GUIDE-APIS-ETUDIANTS.md
 
 ### Fichiers Untracked (à commiter)
 ```
-?? docker-configurations/comfyui-qwen/docker-compose.yml.backup-20251021-031332
+?? docker-configurations/services/comfyui-qwen/docker-compose.yml.backup-20251021-031332
 ?? docs/suivis/genai-image/phase-23c-audit-services/
 ?? recovery/
 ```
@@ -290,7 +290,7 @@ git diff docs/suivis/genai-image/GUIDE-APIS-ETUDIANTS.md
 ```bash
 # Commit 1: Documentation Phase 23C (CRITIQUE)
 git add docs/suivis/genai-image/phase-23c-audit-services/
-git add docker-configurations/comfyui-qwen/docker-compose.yml.backup-20251021-031332
+git add docker-configurations/services/comfyui-qwen/docker-compose.yml.backup-20251021-031332
 git commit -m "docs: Phase 23C - Rapport Final + Message Étudiants APIs GenAI
 
 - Ajout MESSAGE-ETUDIANTS-APIS-GENAI.md (instructions complètes)

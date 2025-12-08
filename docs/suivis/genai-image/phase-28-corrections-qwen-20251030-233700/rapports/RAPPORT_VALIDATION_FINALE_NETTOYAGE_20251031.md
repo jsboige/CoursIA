@@ -22,14 +22,14 @@ pwsh -c "git status --porcelain"
 ### Résultats de l'État Git
 
 #### 📁 Fichiers Modifiés (M)
-- `docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/__init__.py`
-- `docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/__init__.py`
-- `docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py`
-- `docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py`
-- `docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py`
-- `docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py`
-- `docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py`
-- `docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py`
+- `docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/__init__.py`
+- `docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/__init__.py`
+- `docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py`
+- `docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py`
+- `docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py`
+- `docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py`
+- `docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py`
+- `docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py`
 - `docs/suivis/genai-image/README.md`
 
 #### 🗑️ Fichiers Supprimés (D)
@@ -144,7 +144,7 @@ docs/suivis/genai-image/phase-corrections-qwen-20251030-233700/
 
 #### 🐳 Configuration Docker Nettoyée
 ```
-docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/
+docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/
 ├── nodes/ (tous les wrappers organisés)
 ├── __init__.py (mis à jour)
 └── Structure respectée SDDD
@@ -189,7 +189,7 @@ docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/
 ### Actions Immédiates
 1. **Commit des fichiers modifiés** :
    ```powershell
-   pwsh -c "git add docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/"
+   pwsh -c "git add docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/"
    pwsh -c "git add docs/suivis/genai-image/README.md"
    pwsh -c "git commit -m 'Finalisation nettoyage fichiers éparpillés - Structure SDDD appliquée'"
    ```

@@ -17,7 +17,7 @@ Ce guide documente la configuration complète des credentials pour l'authentific
 |---|---|---|---|
 | **Token Brut** | `@TKEoMzUx&)F@B$^1O3hkt&VkDWp0JXf` | `.secrets/.env.generated` | Clients Bearer |
 | **Hash bcrypt** | `$2b$12$UDceblhZeE...` | `.secrets/qwen-api-user.token` | Serveur Validation |
-| **Docker Env** | `QWEN_API_TOKEN=...` | `docker-configurations/comfyui-qwen/.env` | Config Docker |
+| **Docker Env** | `QWEN_API_TOKEN=...` | `docker-configurations/services/comfyui-qwen/.env` | Config Docker |
 
 ---
 
@@ -83,14 +83,14 @@ $2b$12$UDceblhZeEySDwVMC0ccN.IaQmMBfKdTY.aAE3poXcq1zsOP6coni
 
 ### 3. Configuration Docker
 
-**Fichier** : `docker-configurations/comfyui-qwen/.env`
+**Fichier** : `docker-configurations/services/comfyui-qwen/.env`
 ```env
 # ComfyUI API Authentication
 QWEN_API_TOKEN=@TKEoMzUx&)F@B$^1O3hkt&VkDWp0JXf
 COMFYUI_AUTH_TOKEN_FILE=/workspace/ComfyUI/.secrets/qwen-api-user.token
 ```
 
-**Fichier** : `docker-configurations/comfyui-qwen/docker-compose.yml`
+**Fichier** : `docker-configurations/services/comfyui-qwen/docker-compose.yml`
 ```yaml
 environment:
   - COMFYUI_LOGIN_ENABLED=true
@@ -157,7 +157,7 @@ python scripts/genai-auth/genai_auth_manager.py generate \
 
 ```bash
 # Éditer .env
-nano docker-configurations/comfyui-qwen/.env
+nano docker-configurations/services/comfyui-qwen/.env
 
 # Mettre à jour QWEN_API_TOKEN avec le nouveau token brut
 # depuis .secrets/.env.generated
@@ -166,7 +166,7 @@ nano docker-configurations/comfyui-qwen/.env
 ### Étape 3 : Redémarrer le Serveur
 
 ```bash
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose down
 docker-compose up -d
 ```
@@ -272,8 +272,8 @@ Réponse HTTP (200/401/403)
 |---|---|---|---|
 | `.secrets/.env.generated` | Token brut | Plain text | ❌ Ignoré |
 | `.secrets/qwen-api-user.token` | Hash bcrypt | Bcrypt hash | ✅ Peut commiter |
-| `docker-configurations/comfyui-qwen/.env` | Variables Docker | Config | ❌ Ignoré |
-| `docker-configurations/comfyui-qwen/docker-compose.yml` | Config Docker | YAML | ✅ Commité |
+| `docker-configurations/services/comfyui-qwen/.env` | Variables Docker | Config | ❌ Ignoré |
+| `docker-configurations/services/comfyui-qwen/docker-compose.yml` | Config Docker | YAML | ✅ Commité |
 
 ---
 

@@ -588,7 +588,7 @@ pip install -r requirements.txt --upgrade
 - `2025-10-13_11_rapport-final-phase11-comfyui-qwen.md` - Rapport Phase 11
 - `2025-10-13_11_checkpoint-semantique-1-comfyui-base.md` - Checkpoint 1
 - `2025-10-13_11_checkpoint-semantique-2-standalone-validation.md` - Checkpoint 2
-- `docker-configurations/comfyui-qwen/README.md` - Config Docker (future)
+- `docker-configurations/services/comfyui-qwen/README.md` - Config Docker (future)
 
 ---
 

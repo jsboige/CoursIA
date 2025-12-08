@@ -62,7 +62,7 @@ La mission Qwen a atteint **un niveau exceptionnel de réalisation** avec un sco
 - **04-fix-hardcoded-paths-20251029-235209.py** : Correction chemins hardcodés
 - **05-fix-circular-dependency-20251029-235424.py** : Résolution dépendances circulaires
 
-#### Configurations Docker (docker-configurations/comfyui-qwen/)
+#### Configurations Docker (docker-configurations/services/comfyui-qwen/)
 - **docker-compose.yml** : Déploiement production complet
 - **.env.example** : Configuration sécurisée avec credentials
 - **custom_nodes/ComfyUI_QwenImageWanBridge/** : 5 wrappers spécialisés
@@ -101,7 +101,7 @@ GenAI Qwen Ecosystem (Production-Ready)
 ├── Scripts Consolidés (scripts/genai-auth/) - 4 scripts essentiels
 ├── Scripts Transients (phase-recovery/) - 5 scripts autonomes
 ├── Documentation SDDD (docs/suivis/genai-image/) - 2000+ lignes
-├── Configurations Docker (docker-configurations/comfyui-qwen/)
+├── Configurations Docker (docker-configurations/services/comfyui-qwen/)
 │   ├── custom_nodes/ComfyUI_QwenImageWanBridge/ - 5 wrappers
 │   ├── docker-compose.yml - Déploiement production
 │   └── .env.example - Configuration sécurisée
@@ -343,17 +343,17 @@ class WanBridgePattern:
 
 ### 5.3 Configurations et Infrastructure
 
-#### Docker Configurations (docker-configurations/comfyui-qwen/)
-- [`docker-compose.yml`](../../../docker-configurations/comfyui-qwen/docker-compose.yml) - Déploiement production
-- [`.env.example`](../../../docker-configurations/comfyui-qwen/.env.example) - Configuration sécurisée
-- [`custom_nodes/ComfyUI_QwenImageWanBridge/`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/) - 5 wrappers spécialisés
+#### Docker Configurations (docker-configurations/services/comfyui-qwen/)
+- [`docker-compose.yml`](../../../docker-configurations/services/comfyui-qwen/docker-compose.yml) - Déploiement production
+- [`.env.example`](../../../docker-configurations/services/comfyui-qwen/.env.example) - Configuration sécurisée
+- [`custom_nodes/ComfyUI_QwenImageWanBridge/`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/) - 5 wrappers spécialisés
 
 #### Custom Nodes ComfyUI-Qwen
-- [`qwen_wrapper_loaders.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py) - Loaders modèles Qwen
-- [`qwen_t2i_wrapper.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py) - Wrapper text-to-image
-- [`qwen_i2v_wrapper.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py) - Wrapper image-to-video
-- [`qwen_vll_encoder.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py) - Encodeur VLL
-- [`qwen_wrapper_nodes.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py) - Nodes traitement
+- [`qwen_wrapper_loaders.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py) - Loaders modèles Qwen
+- [`qwen_t2i_wrapper.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py) - Wrapper text-to-image
+- [`qwen_i2v_wrapper.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py) - Wrapper image-to-video
+- [`qwen_vll_encoder.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py) - Encodeur VLL
+- [`qwen_wrapper_nodes.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py) - Nodes traitement
 
 ---
 

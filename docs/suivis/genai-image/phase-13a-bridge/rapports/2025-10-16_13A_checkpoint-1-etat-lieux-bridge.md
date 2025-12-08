@@ -60,7 +60,7 @@ class ComfyUIConfig:
 
 #### Port Production: 8188 ✅
 ```yaml
-# docker-configurations/comfyui-qwen/docker-compose.yml
+# docker-configurations/services/comfyui-qwen/docker-compose.yml
 services:
   comfyui-qwen:
     ports:
@@ -87,7 +87,7 @@ TZ=Europe/Paris
 └── main.py
 ```
 
-**Référence**: [`docker-configurations/comfyui-qwen/README.md`](../../docker-configurations/comfyui-qwen/README.md)
+**Référence**: [`docker-configurations/services/comfyui-qwen/README.md`](../../docker-configurations/services/comfyui-qwen/README.md)
 
 ---
 
@@ -319,7 +319,7 @@ COMFYUI_API_URL=http://localhost:8188  # ✅ Port production (Phase 12A)
 2. **`MyIA.AI.Notebooks/GenAI/README.md`** - À vérifier
 3. **`MyIA.AI.Notebooks/GenAI/DEPLOYMENT.md`** - À vérifier
 4. **`MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/*.ipynb`** - À vérifier
-5. **`docker-configurations/comfyui-qwen/docker-compose.yml`** - Port 8188 OK ✅
+5. **`docker-configurations/services/comfyui-qwen/docker-compose.yml`** - Port 8188 OK ✅
 
 **Patterns de Recherche**:
 - `localhost:8191` → Doit devenir `8188`
@@ -434,7 +434,7 @@ COMFYUI_API_URL=http://localhost:8188  # ✅ Port production (Phase 12A)
 - [`2025-10-16_12C_design-notebooks-pedagogiques.md`](2025-10-16_12C_design-notebooks-pedagogiques.md) - Design complet
 
 ### Configuration
-- [`docker-configurations/comfyui-qwen/README.md`](../../docker-configurations/comfyui-qwen/README.md) - Config Docker
+- [`docker-configurations/services/comfyui-qwen/README.md`](../../docker-configurations/services/comfyui-qwen/README.md) - Config Docker
 - [`MyIA.AI.Notebooks/GenAI/.env.template`](../../MyIA.AI.Notebooks/GenAI/.env.template) - Variables env (À corriger)
 
 ---

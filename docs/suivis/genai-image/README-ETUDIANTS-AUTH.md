@@ -163,7 +163,7 @@ pip install python-dotenv
 **Solution** :
 ```bash
 # Démarrer le container Docker
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose up -d
 
 # Vérifier les logs

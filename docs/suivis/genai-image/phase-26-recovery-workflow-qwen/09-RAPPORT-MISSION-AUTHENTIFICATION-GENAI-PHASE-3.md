@@ -75,7 +75,7 @@ cd "${COMFYUI_WORKSPACE_PATH}/custom_nodes/"
 
 ```powershell
 # Parse docker-compose.yml pour extraire le chemin du volume
-$composeFile = "docker-configurations/comfyui-qwen/docker-compose.yml"
+$composeFile = "docker-configurations/services/comfyui-qwen/docker-compose.yml"
 $volumePath = # Extraction du mapping de volume
 ```
 
@@ -328,7 +328,7 @@ docker-compose restart comfyui-qwen
 #### Option B : Manuel
 ```powershell
 # Inspecter docker-compose.yml
-code docker-configurations/comfyui-qwen/docker-compose.yml
+code docker-configurations/services/comfyui-qwen/docker-compose.yml
 # Chercher la ligne "volumes:" et identifier le mapping vers /workspace
 ```
 
@@ -604,7 +604,7 @@ export COMFYUI_WORKSPACE_PATH=/workspace
 ### Ressources
 
 - [Documentation ComfyUI-Login](https://github.com/liusida/ComfyUI-Login)
-- [Guide Docker Compose](../docker-configurations/comfyui-qwen/)
+- [Guide Docker Compose](../docker-configurations/services/comfyui-qwen/)
 - [Documentation GenAI](../docs/genai/)
 
 ---

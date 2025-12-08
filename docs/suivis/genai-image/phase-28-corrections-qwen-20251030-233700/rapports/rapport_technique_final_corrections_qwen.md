@@ -40,23 +40,23 @@ Documenter de manière exhaustive toutes les corrections structurelles appliqué
    - **Fonctionnalités**: Test de connectivité, soumission de workflows, monitoring des ressources
    - **Architecture**: Client API pur sans violation des frontières système
 
-3. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py`**
+3. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py`**
    - **Correction**: Maintien de l'architecture existante avec imports relatifs corrigés
    - **Stabilité**: Nodes fonctionnels avec les nouvelles dépendances
 
-4. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py`**
+4. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py`**
    - **Correction**: Imports relatifs corrigés pour compatibilité avec le nouveau système
 
-5. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py`**
+5. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py`**
    - **Correction**: Imports relatifs corrigés et compatibilité maintenue
 
-6. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py`**
+6. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py`**
    - **Correction**: Imports relatifs corrigés pour compatibilité avec le système de validation
 
-7. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py`**
+7. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py`**
    - **Correction**: Imports relatifs corrigés et compatibilité maintenue
 
-8. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py`**
+8. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py`**
    - **Correction**: Imports relatifs corrigés et compatibilité maintenue
 
 ### Correction des erreurs de syntaxe dans comfyui_client_helper.py
@@ -287,32 +287,32 @@ Documenter de manière exhaustive toutes les corrections structurelles appliqué
    - **Lignes**: 127 lignes
 
 #### Nodes ComfyUI-QwenImageWanBridge :
-1. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py`**
+1. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py`**
    - **Nature**: Nodes principaux Qwen (sampler, edit)
    - **Changements**: Maintien architecture avec imports corrigés
    - **Lignes**: 292 lignes
 
-2. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py`**
+2. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py`**
    - **Nature**: Loader CLIP pour Qwen
    - **Changements**: Imports relatifs corrigés
    - **Lignes**: 87 lignes
 
-3. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py`**
+3. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py`**
    - **Nature**: Encodeur VAE pour Qwen
    - **Changements**: Imports relatifs corrigés
    - **Lignes**: ~87 lignes (estimation)
 
-4. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py`**
+4. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py`**
    - **Nature**: Wrapper sampler pour Qwen
    - **Changements**: Imports relatifs corrigés
    - **Lignes**: ~87 lignes (estimation)
 
-5. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py`**
+5. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py`**
    - **Nature**: Wrapper I2V pour Qwen
    - **Changements**: Imports relatifs corrigés
    - **Lignes**: ~87 lignes (estimation)
 
-6. **`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py`**
+6. **`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py`**
    - **Nature**: Wrapper T2I pour Qwen
    - **Changements**: Imports relatifs corrigés
    - **Lignes**: ~87 lignes (estimation)

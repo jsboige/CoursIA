@@ -20,7 +20,7 @@ git status --porcelain
 ### Catégorisation des Changements
 - **Scripts consolidés critiques** : `scripts/genai-auth/` (4 scripts essentiels)
 - **Documentation SDDD vitale** : `docs/suivis/genai-image/` (rapports, matrices, plans)
-- **Configurations Docker** : `docker-configurations/comfyui-qwen/` (custom nodes)
+- **Configurations Docker** : `docker-configurations/services/comfyui-qwen/` (custom nodes)
 - **Fichiers temporaires** : Rapports de validation JSON, scripts de test
 - **Fichiers obsolètes** : Scripts de migration, documents de récupération
 
@@ -54,7 +54,7 @@ git commit -m "docs: documentation SDDD complète - rapports et matrices
 
 #### Commit 3 - Configurations Docker
 ```bash
-git add docker-configurations/comfyui-qwen/
+git add docker-configurations/services/comfyui-qwen/
 git commit -m "feat: custom nodes ComfyUI-QwenImageWanBridge
 
 - __init__.py : Configuration principale

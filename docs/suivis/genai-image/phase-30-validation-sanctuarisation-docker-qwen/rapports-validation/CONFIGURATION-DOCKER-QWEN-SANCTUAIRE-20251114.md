@@ -166,7 +166,7 @@ COMFYUI_LOGIN_ENABLED=true
 
 # Workspace Path to ComfyUI installation
 # Path to ComfyUI installation - RESTORED FUNCTIONAL CONFIGURATION
-COMFYUI_WORKSPACE_PATH=D:/Dev/CoursIA/docker-configurations/comfyui-qwen/workspace
+COMFYUI_WORKSPACE_PATH=D:/Dev/CoursIA/docker-configurations/services/comfyui-qwen/workspace
 
 # =============================================================================
 # SYSTEM CONFIGURATION
@@ -237,7 +237,7 @@ SESSION_EXPIRE_HOURS=24
 ### 3.1 Structure de Montage Docker
 
 ```
-docker-configurations/comfyui-qwen/
+docker-configurations/services/comfyui-qwen/
 ├── workspace/                          # Monté dans /workspace/ComfyUI (conteneur)
 │   ├── ComfyUI/                    # Installation ComfyUI clonée automatiquement
 │   │   ├── main.py                 # Point d'entrée ComfyUI
@@ -288,8 +288,8 @@ docker-configurations/comfyui-qwen/
 
 ```bash
 # 1. Cloner le dépôt de configuration
-git clone <repository-url> docker-configurations/comfyui-qwen
-cd docker-configurations/comfyui-qwen
+git clone <repository-url> docker-configurations/services/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 
 # 2. Configurer les tokens (obligatoire)
 # Éditer .env avec vos tokens personnels :

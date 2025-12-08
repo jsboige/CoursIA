@@ -23,7 +23,7 @@ La restauration du système Qwen ComfyUI a été réalisée avec succès en suiv
 ### 2. Restauration à l'État de Référence
 
 #### Fichiers Restaurés
-- **Répertoires concernés:** `docker-configurations/comfyui-qwen/` et `scripts/genai-auth/`
+- **Répertoires concernés:** `docker-configurations/services/comfyui-qwen/` et `scripts/genai-auth/`
 - **Méthode:** `git checkout e1b22f8 -- <fichiers>`
 - **Résultat:** Fichiers de configuration restaurés à leur état validé de la Phase 12A
 

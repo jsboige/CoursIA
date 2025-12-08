@@ -55,7 +55,7 @@ Les scripts sont conçus pour être exécutés dans un ordre précis pour un dé
     ./install-comfyui-login.sh "\\wsl.localhost\Ubuntu\home\jesse\SD\workspace\comfyui-qwen\ComfyUI"
     ```
 -   **Comment trouver le `COMFYUI_WORKSPACE_PATH`?**
-    -   Consultez le fichier `docker-compose.yml` de votre service (ex: `docker-configurations/comfyui-qwen/docker-compose.yml`) pour voir quel répertoire local est monté.
+    -   Consultez le fichier `docker-compose.yml` de votre service (ex: `docker-configurations/services/comfyui-qwen/docker-compose.yml`) pour voir quel répertoire local est monté.
     -   Recherchez un fichier `.env` ou `.env.example` qui pourrait contenir la variable `COMFYUI_WORKSPACE_PATH`.
 
 ### 2. `configure-comfyui-auth.ps1`
@@ -80,7 +80,7 @@ Les scripts sont conçus pour être exécutés dans un ordre précis pour un dé
 -   **Exemple**:
     ```powershell
     # Crée les fichiers .token et un .env.generated dans le répertoire spécifié
-    ./generate-bearer-tokens.ps1 -Usernames "qwen-api-user", "forge-api-user" -OutputPath "./docker-configurations/comfyui-qwen/custom_nodes/ComfyUI-Login"
+    ./generate-bearer-tokens.ps1 -Usernames "qwen-api-user", "forge-api-user" -OutputPath "./docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI-Login"
     ```
     **Important**: Le `OutputPath` doit pointer vers le répertoire `ComfyUI-Login` situé dans les `custom_nodes` de votre **workspace sur la machine hôte**. C'est le même chemin que celui utilisé par le script `install-comfyui-login.sh`.
 

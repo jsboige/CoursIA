@@ -67,7 +67,7 @@ curl -I http://localhost:8090 --connect-timeout 5
 - ✅ `scripts/.secrets/comfyui_auth_tokens.conf` (configuration unifiée)
 - ✅ `scripts/.secrets/qwen-api-user.token` (token bcrypt)
 - ✅ `scripts/.env` (variables d'environnement)
-- ✅ `docker-configurations/comfyui-qwen/.env` (environnement Docker)
+- ✅ `docker-configurations/services/comfyui-qwen/.env` (environnement Docker)
 
 **⚠️ Incohérences détectées :**
 - COMFYUI_API_TOKEN incohérent dans env_main
@@ -231,7 +231,7 @@ curl -I http://localhost:8189 --connect-timeout 5
 - `scripts/.secrets/comfyui_auth_tokens.conf`
 - `scripts/.secrets/qwen-api-user.token`
 - `scripts/.env`
-- `docker-configurations/comfyui-qwen/.env`
+- `docker-configurations/services/comfyui-qwen/.env`
 
 #### ⏳ **SOLUTION #2 : EN ATTENTE DE FIN D'INSTALLATION**
 **Action :** Surveillance du conteneur ComfyUI-Qwen

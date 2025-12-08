@@ -12,7 +12,7 @@
 
 #### 1. Structure Docker Configurations
 
-**Problème** : La documentation fait référence à `docker-configurations/comfyui-qwen/` alors que la structure réelle est `docker-configurations/services/comfyui-qwen/`
+**Problème** : La documentation fait référence à `docker-configurations/services/comfyui-qwen/` alors que la structure réelle est `docker-configurations/services/comfyui-qwen/`
 
 **Fichiers à corriger** :
 - `ARCHITECTURE-FINALE-COMFYUI-QWEN-20251125.md`
@@ -32,7 +32,7 @@
 **Actions** :
 ```bash
 # Rechercher et remplacer
-docker-configurations/comfyui-qwen/ → docker-configurations/services/comfyui-qwen/
+docker-configurations/services/comfyui-qwen/ → docker-configurations/services/comfyui-qwen/
 ```
 
 #### 2. Chemins de Volumes Docker

@@ -11,7 +11,7 @@ Mission de finalisation de la configuration Docker ComfyUI avec venv Python 3.10
 ### 1. Scripts Créés
 - ✅ `scripts/genai-auth/create-venv-in-container.sh` - Script automatisé de création venv
 - ✅ `scripts/genai-auth/recreate-venv-in-container.sh` - Script de recréation avec diagnostic
-- ✅ `docker-configurations/comfyui-qwen/init-venv.sh` - Script d'initialisation venv pour Docker
+- ✅ `docker-configurations/services/comfyui-qwen/init-venv.sh` - Script d'initialisation venv pour Docker
 
 ### 2. Venv Créé avec Succès
 ```bash
@@ -26,7 +26,7 @@ wsl -d Ubuntu -e bash -c "cd /home/jesse/SD/workspace/comfyui-qwen/ComfyUI && py
 - ✅ Total: ~80 packages installés
 
 ### 3. Configuration Docker Modifiée
-- ✅ `docker-configurations/comfyui-qwen/docker-compose.yml` simplifié
+- ✅ `docker-configurations/services/comfyui-qwen/docker-compose.yml` simplifié
 - ✅ Suppression de la création automatique du venv dans le container
 - ✅ Utilisation du venv pré-créé dans le workspace WSL
 
@@ -130,8 +130,8 @@ command: >
 - ⚠️ Créé avec Python 3.12 (WSL) au lieu de Python 3.10 (container)
 
 ### Fichiers Modifiés
-1. `docker-configurations/comfyui-qwen/docker-compose.yml` - Simplifié
-2. `docker-configurations/comfyui-qwen/init-venv.sh` - Nouveau script d'init
+1. `docker-configurations/services/comfyui-qwen/docker-compose.yml` - Simplifié
+2. `docker-configurations/services/comfyui-qwen/init-venv.sh` - Nouveau script d'init
 3. `scripts/genai-auth/create-venv-in-container.sh` - Script de création
 4. `scripts/genai-auth/recreate-venv-in-container.sh` - Script de recréation
 

@@ -74,8 +74,8 @@ from ComfyUI_QwenImageWanBridge.nodes.qwen_wrapper_nodes import QwenTextNode
 **Solution appliquée :**
 ```python
 # Création de __init__.py dans chaque module
-# docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/__init__.py
-# docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/__init__.py
+# docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/__init__.py
+# docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/__init__.py
 ```
 
 **Impact :** Reconnaissance correcte des modules par Python
@@ -109,7 +109,7 @@ from ComfyUI_QwenImageWanBridge.nodes.qwen_wrapper_nodes import QwenTextNode
 ### 2.3 Custom Nodes ComfyUI Optimisés
 **Structure créée :**
 ```
-docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/
+docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/
 ├── __init__.py
 ├── nodes/
 │   ├── __init__.py
@@ -184,7 +184,7 @@ docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/
 ### 4.3 Configurations et Infrastructure
 
 #### Docker Configurations
-- **`docker-configurations/comfyui-qwen/`** : Configuration ComfyUI complète
+- **`docker-configurations/services/comfyui-qwen/`** : Configuration ComfyUI complète
   - **`custom_nodes/ComfyUI-QwenImageWanBridge/`** : 5 wrappers spécialisés
   - **`docker-compose.yml`** : Déploiement production
   - **`.env.example`** : Configuration sécurisée
@@ -329,7 +329,7 @@ Cette mission a établi **12 patterns SDDD réutilisables** :
 ### Vers Artefacts Techniques
 - **Scripts Production** : [`scripts/genai-auth/`](../../../scripts/genai-auth/) - 4 scripts essentiels
 - **Scripts Recovery** : [`phase-recovery-20251029-234009/transient-scripts/`](phase-recovery-20251029-234009/transient-scripts/) - 5 scripts transients
-- **Configuration Docker** : [`docker-configurations/comfyui-qwen/`](../../../docker-configurations/comfyui-qwen/) - Custom nodes ComfyUI
+- **Configuration Docker** : [`docker-configurations/services/comfyui-qwen/`](../../../docker-configurations/services/comfyui-qwen/) - Custom nodes ComfyUI
 - **Workflow Corrigé** : [`temp_official_workflow_qwen_t2i_fixed.json`](../../../temp_official_workflow_qwen_t2i_fixed.json) - JSON fonctionnel
 
 ### Vers Documentation Stratégique

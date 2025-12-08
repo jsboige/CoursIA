@@ -347,9 +347,9 @@ Les problèmes structurels critiques qui bloquaient le système ComfyUI Qwen **o
 ## 📝 7. Documentation Technique
 
 ### **Fichiers de configuration créés/modifiés**
-- `docker-configurations/comfyui-qwen/docker-compose-simple.yml` : Configuration Docker simplifiée et fonctionnelle
-- `docker-configurations/comfyui-qwen/create_token_manual.py` : Script de correction du token
-- `docker-configurations/comfyui-qwen/validation_post_correction.py` : Script de validation post-correction
+- `docker-configurations/services/comfyui-qwen/docker-compose-simple.yml` : Configuration Docker simplifiée et fonctionnelle
+- `docker-configurations/services/comfyui-qwen/create_token_manual.py` : Script de correction du token
+- `docker-configurations/services/comfyui-qwen/validation_post_correction.py` : Script de validation post-correction
 
 ### **Commandes de diagnostic utilisées**
 ```bash

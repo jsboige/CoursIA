@@ -174,7 +174,7 @@ Total: 7 scripts d'automatisation
 ```
 
 **3. Fichiers de Configuration Docker Modifiés**
-- `docker-configurations/comfyui-qwen/custom_nodes/ComfyUI-Login/` (installation)
+- `docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI-Login/` (installation)
 - `docker-configurations/comfyui-forge/custom_nodes/ComfyUI-Login/` (installation)
 - `docker-compose.production.yml` (avec authentification)
 - `.env.production` (tokens de production)

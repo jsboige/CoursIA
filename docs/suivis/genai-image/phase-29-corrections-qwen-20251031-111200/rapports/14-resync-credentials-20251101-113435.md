@@ -18,7 +18,7 @@ $2b$12$m7L5KS4HtEHdMlXlY84ZvuErA2ij2650UUt5M2OhgwisoX2pkbWxO
 | Fichier | Type | Valeur |
 |---------|------|--------|
 | `.secrets/.env.generated` | Token brut | `8Ano*gLvfa...` |
-| `docker-configurations/comfyui-qwen/.env` | Token brut | `8Ano*gLvfa...` |
+| `docker-configurations/services/comfyui-qwen/.env` | Token brut | `8Ano*gLvfa...` |
 | `/home/jesse/SD/workspace/comfyui-qwen/ComfyUI/.secrets/qwen-api-user.token` (WSL) | Hash bcrypt | `$2b$12$m7L5KS4HtEHdMlXlY84ZvuE...` |
 
 ## Étapes de Validation

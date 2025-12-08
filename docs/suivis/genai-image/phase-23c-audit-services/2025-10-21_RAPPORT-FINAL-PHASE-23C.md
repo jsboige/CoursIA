@@ -752,7 +752,7 @@ QWEN_API_TOKEN = os.getenv("QWEN_API_TOKEN")
 
 - [ ] **Backup configuration Docker existante créé**
   - Fichier déjà backupé: `docker-compose.yml.backup-20251021-031332`
-  - Validation: `ls docker-configurations/comfyui-qwen/*.backup*`
+  - Validation: `ls docker-configurations/services/comfyui-qwen/*.backup*`
 
 **DÉPLOIEMENT AUTHENTIFICATION** (exécution scripts):
 

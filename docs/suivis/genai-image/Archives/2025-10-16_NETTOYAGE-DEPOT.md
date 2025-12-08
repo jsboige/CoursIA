@@ -175,7 +175,7 @@ docs/suivis/genai-image/phase-11-deployment/scripts/2025-10-10_11_docker-setup.p
    ```
 
 4. **Restauration Configuration Locale**
-   - Secrets restaurés dans `docker-configurations/comfyui-qwen/.env` (ignoré par Git)
+   - Secrets restaurés dans `docker-configurations/services/comfyui-qwen/.env` (ignoré par Git)
    - Fichier `.env.example` créé avec placeholders et documentation
 
 **État Final Sécurité** :
@@ -297,8 +297,8 @@ Hash: e1b22f8
 Type: feat
 Scope: docker
 Files:
-  - docker-configurations/comfyui-qwen/.env.example
-  - docker-configurations/comfyui-qwen/README.md
+  - docker-configurations/services/comfyui-qwen/.env.example
+  - docker-configurations/services/comfyui-qwen/README.md
 ```
 
 #### Commit 4: Mise à jour Configs
@@ -419,7 +419,7 @@ ls: cannot access 'docs/suivis/genai-image/': No such file or directory
    - Civitai: https://civitai.com/user/account
 
 2. **Générer nouvelles clés**
-   - Remplacer dans `docker-configurations/comfyui-qwen/.env`
+   - Remplacer dans `docker-configurations/services/comfyui-qwen/.env`
    - Tester fonctionnement
 
 ### Documentation 📚

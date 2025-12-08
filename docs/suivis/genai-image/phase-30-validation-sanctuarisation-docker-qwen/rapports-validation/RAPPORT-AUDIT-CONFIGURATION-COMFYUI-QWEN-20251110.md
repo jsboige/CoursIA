@@ -116,7 +116,7 @@ environment:
 
 ### Test docker-compose config
 ```bash
-cd docker-configurations/comfyui-qwen && docker-compose config
+cd docker-configurations/services/comfyui-qwen && docker-compose config
 ```
 **Résultat** : ✅ **SUCCÈS** (Exit code 0)
 
@@ -169,7 +169,7 @@ python scripts/genai-auth/sync_comfyui_credentials.py
 ### 4. Tests Réguliers
 ```bash
 # Test complet après chaque modification
-docker-compose -f docker-configurations/comfyui-qwen/docker-compose.yml up -d
+docker-compose -f docker-configurations/services/comfyui-qwen/docker-compose.yml up -d
 sleep 60
 curl -f http://localhost:8188/system_stats
 ```
@@ -207,8 +207,8 @@ Le système ComfyUI Qwen est maintenant prêt pour un déploiement en production
 ---
 
 **Fichiers modifiés** :
-- `docker-configurations/comfyui-qwen/docker-compose.yml` : +13 variables d'environnement
-- `docker-configurations/comfyui-qwen/.env` : Nettoyage et documentation améliorée
+- `docker-configurations/services/comfyui-qwen/docker-compose.yml` : +13 variables d'environnement
+- `docker-configurations/services/comfyui-qwen/.env` : Nettoyage et documentation améliorée
 
 **Scripts de référence** :
 - `scripts/genai-auth/sync_comfyui_credentials.py` : Synchronisation des credentials

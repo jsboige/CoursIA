@@ -197,8 +197,8 @@ curl -f http://localhost:8188/system_stats
 - `start-comfyui-wsl-simple.ps1` (2.39 KB) - Script PowerShell simplifié
 
 ### Configuration Docker préservée
-- `docker-configurations/comfyui-qwen/docker-compose.yml.backup-20251023-155041` - Backup fonctionnel original
-- `docker-configurations/comfyui-qwen/docker-compose.yml.backup-20251104-185513` - Backup intermédiaire
+- `docker-configurations/services/comfyui-qwen/docker-compose.yml.backup-20251023-155041` - Backup fonctionnel original
+- `docker-configurations/services/comfyui-qwen/docker-compose.yml.backup-20251104-185513` - Backup intermédiaire
 
 ---
 

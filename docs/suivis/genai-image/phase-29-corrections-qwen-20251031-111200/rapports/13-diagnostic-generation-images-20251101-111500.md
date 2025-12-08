@@ -87,8 +87,8 @@ Il y a **deux hashes bcrypt différents** :
 3. Mettre à jour `QWEN_API_USER_TOKEN` avec le token correct
 
 **Fichiers à Vérifier** :
-- `docker-configurations/comfyui-qwen/.secrets/qwen-api-user.token`
-- `docker-configurations/comfyui-qwen/.env`
+- `docker-configurations/services/comfyui-qwen/.secrets/qwen-api-user.token`
+- `docker-configurations/services/comfyui-qwen/.env`
 - `.secrets/.env.generated`
 
 ### Solution 2 : Régénérer et Redéployer les Tokens

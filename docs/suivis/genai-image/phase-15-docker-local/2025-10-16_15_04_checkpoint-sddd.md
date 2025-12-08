@@ -290,7 +290,7 @@ De Notebooks vers:
 ## Service ComfyUI-Qwen (Standalone)
 
 Ce service fonctionne indépendamment du réseau genai-dev-network.
-Voir: docker-configurations/comfyui-qwen/README.md
+Voir: docker-configurations/services/comfyui-qwen/README.md
 ```
 
 #### Gap 2: Exemple .env Global

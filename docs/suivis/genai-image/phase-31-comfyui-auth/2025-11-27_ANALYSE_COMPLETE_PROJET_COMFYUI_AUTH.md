@@ -92,7 +92,7 @@ scripts/genai-auth/utils/
 
 ### Configuration Docker
 ```
-docker-configurations/comfyui-qwen/
+docker-configurations/services/comfyui-qwen/
 ├── docker-compose.yml               # Service ComfyUI + Qwen
 ├── .env                           # Variables environnement sécurisées
 ├── .secrets/                      # Tokens d'authentification

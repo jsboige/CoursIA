@@ -17,7 +17,7 @@ Tous les objectifs définis dans la mission ont été atteints avec succès.
     - `MyIA.AI.Notebooks/GenAI/INDEX.md`
     - `docs/suivis/genai-image/README.md`
     - `docs/genai/README.md`
-    - `docker-configurations/comfyui-qwen/README.md`
+    - `docker-configurations/services/comfyui-qwen/README.md`
     - `docker-configurations/comfyui-workflows/README.md`
     - `docker-configurations/stable-diffusion-35/README.md`
 - **Références obsolètes**: Toutes les références à `docs/genai-suivis/` ont été identifiées dans les fichiers `.md` du projet et corrigées.
@@ -33,7 +33,7 @@ Tous les objectifs définis dans la mission ont été atteints avec succès.
 - **Statut**: ✅ Complété
 - **Détails**:
     - `MyIA.AI.Notebooks/GenAI/INDEX.md`: Les liens vers la documentation technique (`../../docs/genai/`) ont été mis à jour pour pointer vers la nouvelle structure (`../../../docs/suivis/genai-image/`).
-    - `docker-configurations/comfyui-qwen/README.md` et `docker-configurations/stable-diffusion-35/README.md`: Aucune référence obsolète à `docs/genai-suivis/` n'a été trouvée dans ces fichiers.
+    - `docker-configurations/services/comfyui-qwen/README.md` et `docker-configurations/stable-diffusion-35/README.md`: Aucune référence obsolète à `docs/genai-suivis/` n'a été trouvée dans ces fichiers.
 
 ### 4. Mise à Jour README Documentation
 - **Statut**: ✅ Complété

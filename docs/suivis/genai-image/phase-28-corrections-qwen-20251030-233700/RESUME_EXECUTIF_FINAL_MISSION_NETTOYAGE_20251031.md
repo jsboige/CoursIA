@@ -76,7 +76,7 @@ docs/suivis/genai-image/phase-corrections-qwen-20251030-233700/
 
 ### 🐳 Configuration Docker Nettoyée
 ```
-docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/
+docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/
 ├── nodes/ (tous les wrappers organisés)
 ├── __init__.py (mis à jour)
 └── Structure respectée SDDD

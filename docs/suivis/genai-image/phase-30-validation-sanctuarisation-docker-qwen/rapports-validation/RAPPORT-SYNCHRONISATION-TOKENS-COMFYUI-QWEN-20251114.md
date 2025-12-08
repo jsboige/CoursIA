@@ -10,7 +10,7 @@
 Résoudre le problème fondamental de désynchronisation des tokens entre les différents emplacements :
 - **Token client** : `.secrets/.env.generated` (token brut)
 - **Hash serveur** : `.secrets/qwen-api-user.token` (hash bcrypt)
-- **Hash Docker** : `docker-configurations/comfyui-qwen/.env` (hash bcrypt)
+- **Hash Docker** : `docker-configurations/services/comfyui-qwen/.env` (hash bcrypt)
 
 Le problème identifié : **les trois hash étaient différents**, empêchant la validation `bcrypt.checkpw()` de fonctionner.
 
@@ -70,10 +70,10 @@ validation = bcrypt.checkpw(token_brut.encode('utf-8'), hash_bcrypt)
    - **Nouveau** : `$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.`
    - **Sauvegarde** : `.secrets/qwen-api-user.token.backup`
 
-2. **`docker-configurations/comfyui-qwen/.env`**
+2. **`docker-configurations/services/comfyui-qwen/.env`**
    - **Ancienne ligne 66** : `COMFYUI_BEARER_TOKEN=$2b$12$6kSChnnUFiCUPfyAllJPoHm.9O9LL9KnIlX88zomudAiJDvMRoJ3uOXa`
    - **Nouvelle ligne 66** : `COMFYUI_BEARER_TOKEN=$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.`
-   - **Sauvegarde** : `docker-configurations/comfyui-qwen/.env.backup`
+   - **Sauvegarde** : `docker-configurations/services/comfyui-qwen/.env.backup`
 
 3. **`.secrets/.env.generated`**
    - **Statut** : Inchangé (token brut préservé)
@@ -83,7 +83,7 @@ validation = bcrypt.checkpw(token_brut.encode('utf-8'), hash_bcrypt)
 
 **Commande exécutée** :
 ```bash
-cd d:/Dev/CoursIA/docker-configurations/comfyui-qwen
+cd d:/Dev/CoursIA/docker-configurations/services/comfyui-qwen
 docker-compose down && docker-compose up -d
 ```
 
@@ -153,7 +153,7 @@ Statut: SUCCESS
 |------------|---------|--------|
 | `.secrets/.env.generated` | `2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij` | ✅ Token brut préservé |
 | `.secrets/qwen-api-user.token` | `$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.` | ✅ Hash mis à jour |
-| `docker-configurations/comfyui-qwen/.env` | `$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.` | ✅ Hash synchronisé |
+| `docker-configurations/services/comfyui-qwen/.env` | `$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.` | ✅ Hash synchronisé |
 
 ### Validation Technique ✅
 ```python

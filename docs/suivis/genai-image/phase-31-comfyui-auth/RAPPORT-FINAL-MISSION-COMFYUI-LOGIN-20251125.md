@@ -73,7 +73,7 @@ Le contexte technique révélait une complexité particulière : le plugin Comfy
   "targets": [
     ".env",
     ".secrets/comfyui_auth_tokens.conf",
-    "docker-configurations/comfyui-qwen/.env"
+    "docker-configurations/services/comfyui-qwen/.env"
   ]
 }
 ```
@@ -307,7 +307,7 @@ Authorization: Bearer $2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5
 - `diagnostic_utils.py` : Utilitaires de diagnostic (426 lignes)
 
 #### 2. Docker Configurations Organisées
-**`docker-configurations/comfyui-qwen/`** - Configuration principale
+**`docker-configurations/services/comfyui-qwen/`** - Configuration principale
 - `docker-compose.yml` : Service ComfyUI + Qwen avec GPU
 - `.env` : Variables d'environnement unifiées (99 lignes)
 - `workspace/` : Volume persistant pour ComfyUI

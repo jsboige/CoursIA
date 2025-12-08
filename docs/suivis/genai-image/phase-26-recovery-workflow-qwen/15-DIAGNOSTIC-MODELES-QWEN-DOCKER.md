@@ -6,7 +6,7 @@
 ## 🎯 RÉSUMÉ EXÉCUTIF
 **Cause racine identifiée** : **AUCUN téléchargement automatique n'a jamais été configuré dans le système Docker actuel.**
 ### Faits Critiques
-1. ✅ Le token [`HF_TOKEN`](../docker-configurations/comfyui-qwen/.env:1) existe bien dans le fichier `.env`
+1. ✅ Le token [`HF_TOKEN`](../docker-configurations/services/comfyui-qwen/.env:1) existe bien dans le fichier `.env`
 2. ❌ Le token **N'EST JAMAIS PASSÉ** dans l'environnement du container Docker
 3. ❌ **AUCUN script de téléchargement automatique** n'existe dans la configuration Docker
 4. ✅ Les modèles existaient précédemment (confirmé par doc [`phase-15-docker-local`](../docs/suivis/genai-image/phase-15-docker-local/2025-10-16_15_05_identification-composants.md:76-114))
@@ -14,7 +14,7 @@
 ---
 ## 📋 PARTIE 1 : DIAGNOSTIC TECHNIQUE DÉTAILLÉ
 ### 1.1 Configuration Docker Analysée
-**Fichier** : [`docker-configurations/comfyui-qwen/docker-compose.yml`](../docker-configurations/comfyui-qwen/docker-compose.yml:1-79)
+**Fichier** : [`docker-configurations/services/comfyui-qwen/docker-compose.yml`](../docker-configurations/services/comfyui-qwen/docker-compose.yml:1-79)
 #### ❌ Problème #1 : Token HF_TOKEN Non Propagé
 **Ligne 23-31 - Section `environment`** :
 ```yaml
@@ -28,7 +28,7 @@ environment:
   - COMFYUI_LISTEN=0.0.0.0
   - COMFYUI_LOGIN_ENABLED=true
 ```
-**Constat** : La variable `HF_TOKEN` présente dans [`.env`](../docker-configurations/comfyui-qwen/.env:1) **N'EST PAS** passée au container.
+**Constat** : La variable `HF_TOKEN` présente dans [`.env`](../docker-configurations/services/comfyui-qwen/.env:1) **N'EST PAS** passée au container.
 **Impact** : Même si un script de téléchargement existait, il n'aurait **AUCUN accès** au token HuggingFace.
 #### ❌ Problème #2 : Aucun Script de Téléchargement Appelé
 **Ligne 35-56 - Section `command`** :
@@ -181,7 +181,7 @@ Les modèles doivent être téléchargés depuis Hugging Face et placés dans le
 **Étape 1 : Vérifier le chemin workspace actuel**
 ```powershell
 # Lire la variable d'environnement
-Get-Content docker-configurations/comfyui-qwen/.env | Select-String "COMFYUI_WORKSPACE_PATH"
+Get-Content docker-configurations/services/comfyui-qwen/.env | Select-String "COMFYUI_WORKSPACE_PATH"
 ```
 **Étape 2 : Accéder au WSL et télécharger le modèle**
 ```bash
@@ -211,14 +211,14 @@ ls -lh models/checkpoints/Qwen-Image-Edit-2509-FP8
 ```
 **Étape 4 : Redémarrer le container Docker**
 ```powershell
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose restart
 docker-compose logs -f
 ```
 ### 4.3 Solution à Long Terme : Automatisation (Optionnelle)
 Si l'utilisateur souhaite VRAIMENT un téléchargement automatique :
 #### Option A : Script d'Initialisation Docker
-**Créer** : `docker-configurations/comfyui-qwen/init-download-models.sh`
+**Créer** : `docker-configurations/services/comfyui-qwen/init-download-models.sh`
 ```bash
 #!/bin/bash
 set -e
@@ -289,7 +289,7 @@ command: >
   "
 ```
 #### Option B : Image Docker Personnalisée
-**Créer** : `docker-configurations/comfyui-qwen/Dockerfile`
+**Créer** : `docker-configurations/services/comfyui-qwen/Dockerfile`
 ```dockerfile
 FROM nvidia/cuda:12.4.0-devel-ubuntu22.04
 # Installation dépendances système
@@ -331,8 +331,8 @@ services:
 ## 📊 VALIDATION TRIPLE GROUNDING
 ### ✅ Grounding Sémantique
 **Documents consultés** :
-- ✅ [`docker-configurations/comfyui-qwen/docker-compose.yml`](../docker-configurations/comfyui-qwen/docker-compose.yml)
-- ✅ [`docker-configurations/comfyui-qwen/.env`](../docker-configurations/comfyui-qwen/.env)
+- ✅ [`docker-configurations/services/comfyui-qwen/docker-compose.yml`](../docker-configurations/services/comfyui-qwen/docker-compose.yml)
+- ✅ [`docker-configurations/services/comfyui-qwen/.env`](../docker-configurations/services/comfyui-qwen/.env)
 - ✅ [`docker-configurations/flux-1-dev/README.md`](../docker-configurations/flux-1-dev/README.md) (comparaison)
 - ✅ [`docs/suivis/genai-image/phase-15-docker-local/`](../docs/suivis/genai-image/phase-15-docker-local/) (preuves historiques)
 - ✅ [`recovery/07-11`](../recovery/) (contexte authentification et résolution problèmes)

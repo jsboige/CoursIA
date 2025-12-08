@@ -47,7 +47,7 @@
 - Services: orchestrator, comfyui-test
 - Réseau test: genai-test-network (172.25.0.0/16)
 
-✅ **docker-configurations/comfyui-qwen/**:
+✅ **docker-configurations/services/comfyui-qwen/**:
 - docker-compose.yml standalone
 - .env configuré avec tokens
 - README.md exhaustif (356 lignes)
@@ -175,12 +175,12 @@ Service dédié pour édition d'images avec Qwen-Image-Edit-2509.
 
 - **Port**: 8188
 - **GPU**: RTX 3090 (24GB VRAM)
-- **Documentation**: `docker-configurations/comfyui-qwen/README.md`
+- **Documentation**: `docker-configurations/services/comfyui-qwen/README.md`
 - **Réseau**: Standalone (comfyui-network)
 
 ### Démarrage
 \`\`\`bash
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose up -d
 \`\`\`
 ```
@@ -430,7 +430,7 @@ netstat -ano | Select-String ":818[89]|:819[013]"
 ### Infrastructure Docker
 - [x] docker-compose.yml présent et valide
 - [x] docker-compose.test.yml présent
-- [x] docker-configurations/comfyui-qwen/ configuré
+- [x] docker-configurations/services/comfyui-qwen/ configuré
 - [ ] docker-configurations/models/ créé ⬅️ **ACTION 1**
 - [ ] docker-configurations/cache/ créé ⬅️ **ACTION 2**
 - [x] docker-configurations/outputs/ existe

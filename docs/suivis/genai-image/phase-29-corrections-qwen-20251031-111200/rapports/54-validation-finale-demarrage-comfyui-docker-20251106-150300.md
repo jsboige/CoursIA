@@ -31,7 +31,7 @@ Valider le démarrage réel de ComfyUI avec la configuration Docker restaurée d
 
 ### 1. État du Container Docker
 
-**Commande** : `cd docker-configurations/comfyui-qwen && docker-compose ps`
+**Commande** : `cd docker-configurations/services/comfyui-qwen && docker-compose ps`
 
 **Résultat** :
 ```bash
@@ -231,8 +231,8 @@ GPU 1: NVIDIA GeForce RTX 3090        On  |   00000000:06:00.0 Off |
 
 ## 🔗 Références Techniques
 
-- **Configuration Docker** : `docker-configurations/comfyui-qwen/docker-compose.yml`
-- **Environnement** : `docker-configurations/comfyui-qwen/.env`
+- **Configuration Docker** : `docker-configurations/services/comfyui-qwen/docker-compose.yml`
+- **Environnement** : `docker-configurations/services/comfyui-qwen/.env`
 - **Scripts validation** : `scripts/genai-auth/utils/validate_gpu_cuda.py`
 - **Tests génération** : `scripts/genai-auth/utils/consolidated_tests.py`
 - **Image générée** : `./outputs/fp8_official_output_20251106_155731_00001_.png`

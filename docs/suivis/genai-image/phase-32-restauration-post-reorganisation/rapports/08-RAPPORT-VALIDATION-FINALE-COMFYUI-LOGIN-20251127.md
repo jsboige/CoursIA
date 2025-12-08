@@ -107,7 +107,7 @@ comfyui-qwen   Up 53 seconds (health: starting)   0.0.0.0:8188->8188/tcp, [::]:8
 
 #### ❌ setup-comfyui-auth.ps1
 **Problèmes identifiés** :
-- **Fichier .env manquant** : `docker-configurations/comfyui-qwen/.env`
+- **Fichier .env manquant** : `docker-configurations/services/comfyui-qwen/.env`
 - Le script cherche au mauvais emplacement
 
 #### ❌ run-comfyui-auth-diagnostic.ps1
@@ -141,7 +141,7 @@ comfyui-qwen   Up 53 seconds (health: starting)   0.0.0.0:8188->8188/tcp, [::]:8
 
 #### ❌ Incohérences Critiques
 - **Token différent** entre `.env` et backup sécurisé
-- **Fichier manquant** : `docker-configurations/comfyui-qwen/.env` (recherché par scripts)
+- **Fichier manquant** : `docker-configurations/services/comfyui-qwen/.env` (recherché par scripts)
 
 ---
 

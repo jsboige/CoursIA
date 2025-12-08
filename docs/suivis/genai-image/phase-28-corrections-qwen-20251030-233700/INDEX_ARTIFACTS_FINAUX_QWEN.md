@@ -63,17 +63,17 @@
 | Fichier | Chemin | Description | Statut |
 |--------|--------|-------------|--------|
 | **Docker Compose** | [`docker-compose.yml`](../../../docker-compose.yml) | Déploiement ComfyUI | ✅ Production |
-| **Custom Nodes** | [`docker-configurations/comfyui-qwen/`](../../../docker-configurations/comfyui-qwen/) | Nodes Qwen ComfyUI | ✅ Complet |
+| **Custom Nodes** | [`docker-configurations/services/comfyui-qwen/`](../../../docker-configurations/services/comfyui-qwen/) | Nodes Qwen ComfyUI | ✅ Complet |
 
 ### Custom Nodes ComfyUI
 | Node | Chemin | Fonction | Statut |
 |------|--------|----------|--------|
-| **Wrapper Loaders** | [`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py) | Loaders modèles | ✅ Opérationnel |
-| **Wrapper T2I** | [`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py) | Text-to-Image | ✅ Opérationnel |
-| **Wrapper I2V** | [`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py) | Image-to-Video | ✅ Opérationnel |
-| **Encoder VLL** | [`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py) | Encodeur VLL | ✅ Opérationnel |
-| **Wrapper Nodes** | [`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py) | Nodes traitement | ✅ Opérationnel |
-| **Wrapper Sampler** | [`docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py`](../../../docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py) | Échantillonnage | ✅ Opérationnel |
+| **Wrapper Loaders** | [`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_loaders.py) | Loaders modèles | ✅ Opérationnel |
+| **Wrapper T2I** | [`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_t2i_wrapper.py) | Text-to-Image | ✅ Opérationnel |
+| **Wrapper I2V** | [`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_i2v_wrapper.py) | Image-to-Video | ✅ Opérationnel |
+| **Encoder VLL** | [`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_vll_encoder.py) | Encodeur VLL | ✅ Opérationnel |
+| **Wrapper Nodes** | [`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_nodes.py) | Nodes traitement | ✅ Opérationnel |
+| **Wrapper Sampler** | [`docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py`](../../../docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/nodes/qwen_wrapper_sampler.py) | Échantillonnage | ✅ Opérationnel |
 
 ---
 

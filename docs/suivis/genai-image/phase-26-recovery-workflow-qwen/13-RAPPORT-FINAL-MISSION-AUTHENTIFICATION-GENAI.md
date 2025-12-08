@@ -355,7 +355,7 @@ OPENAI_API_KEY=sk-...
 | `MyIA.AI.Notebooks/GenAI/README.md` | +49 | Ajout section authentification |
 | `MyIA.AI.Notebooks/GenAI/shared/helpers/comfyui_client.py` | +85 | Intégration authentification Bearer |
 | `MyIA.AI.Notebooks/GenAI/01-Images-Foundation/01-5-Qwen-Image-Edit.ipynb` | +2 cellules | Graceful degradation auth |
-| `docker-configurations/comfyui-qwen/docker-compose.yml` | +3 lignes | Volume venv persistant |
+| `docker-configurations/services/comfyui-qwen/docker-compose.yml` | +3 lignes | Volume venv persistant |
 | `scripts/genai-auth/configure-comfyui-auth.ps1` | Complet | Configuration automatisée |
 | `scripts/genai-auth/deploy-auth-solution.ps1` | Complet | Script déploiement complet |
 | `scripts/genai-auth/rollback-auth-solution.ps1` | Complet | Script rollback sécurisé |
@@ -643,7 +643,7 @@ CoursIA/
 │   ├── deploy-auth-solution.ps1           [MODIFIÉ] Déploiement complet
 │   └── rollback-auth-solution.ps1         [MODIFIÉ] Rollback sécurisé
 │
-├── docker-configurations/comfyui-qwen/
+├── docker-configurations/services/comfyui-qwen/
 │   └── docker-compose.yml                 [MODIFIÉ] Volume venv persistant
 │
 └── recovery/

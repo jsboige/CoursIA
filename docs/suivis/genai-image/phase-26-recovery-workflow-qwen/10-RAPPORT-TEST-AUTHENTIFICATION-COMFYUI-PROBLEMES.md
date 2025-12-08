@@ -25,7 +25,7 @@ Tester que l'API ComfyUI fonctionne correctement avec l'authentification Bearer 
 **Constat**: Le container `comfyui-qwen` n'existait pas au début de la mission.
 
 **Action effectuée**: 
-- Copie du [`docker-compose.yml`](../docker-configurations/comfyui-qwen/docker-compose.yml) vers `/home/jesse/SD/workspace/comfyui-qwen/`
+- Copie du [`docker-compose.yml`](../docker-configurations/services/comfyui-qwen/docker-compose.yml) vers `/home/jesse/SD/workspace/comfyui-qwen/`
 - Création du fichier `.env` avec les variables nécessaires
 
 **Résultat**: Container créé mais ne démarre pas correctement.
@@ -54,7 +54,7 @@ ModuleNotFoundError: No module named 'yaml'
 
 **Tentatives de résolution**:
 - ✅ Installation de PyYAML dans le venv (confirmé installé)
-- ✅ Mise à jour du [`docker-compose.yml`](../docker-configurations/comfyui-qwen/docker-compose.yml) pour utiliser `venv/bin/python3` au lieu de `python3`
+- ✅ Mise à jour du [`docker-compose.yml`](../docker-configurations/services/comfyui-qwen/docker-compose.yml) pour utiliser `venv/bin/python3` au lieu de `python3`
 - ✅ Recréation du venv avec toutes les dépendances
 - ❌ Problème persiste car incompatibilité de versions Python
 
@@ -64,7 +64,7 @@ ModuleNotFoundError: No module named 'yaml'
 
 **Problème fondamental**:
 
-Le [`docker-compose.yml`](../docker-configurations/comfyui-qwen/docker-compose.yml:19-21) actuel monte le workspace en volume :
+Le [`docker-compose.yml`](../docker-configurations/services/comfyui-qwen/docker-compose.yml:19-21) actuel monte le workspace en volume :
 
 ```yaml
 volumes:
@@ -101,7 +101,7 @@ Cela signifie que les dépendances Python installées sur l'hôte sont utilisée
 
 ### Modifications de configuration
 
-4. [`docker-configurations/comfyui-qwen/docker-compose.yml`](../docker-configurations/comfyui-qwen/docker-compose.yml)
+4. [`docker-configurations/services/comfyui-qwen/docker-compose.yml`](../docker-configurations/services/comfyui-qwen/docker-compose.yml)
    - ✅ Correction ligne 44 : `exec venv/bin/python3` au lieu de `exec python3`
    - Statut: Modifié mais problème persiste
 
@@ -222,7 +222,7 @@ ModuleNotFoundError: No module named 'yaml'
 
 ### Fichiers de configuration
 
-- ✅ [`docker-configurations/comfyui-qwen/docker-compose.yml`](../docker-configurations/comfyui-qwen/docker-compose.yml) - Modifié
+- ✅ [`docker-configurations/services/comfyui-qwen/docker-compose.yml`](../docker-configurations/services/comfyui-qwen/docker-compose.yml) - Modifié
 - ✅ `/home/jesse/SD/workspace/comfyui-qwen/.env` - Créé
 - ✅ [`MyIA.AI.Notebooks/GenAI/.env`](../MyIA.AI.Notebooks/GenAI/.env) - Token Bearer configuré
 - ❌ ComfyUI-Login - Non chargé (serveur ne démarre pas)
@@ -336,7 +336,7 @@ Une fois le serveur stable :
 
 ### Configuration
 
-4. [`docker-configurations/comfyui-qwen/docker-compose.yml`](../docker-configurations/comfyui-qwen/docker-compose.yml) - Partiellement corrigé
+4. [`docker-configurations/services/comfyui-qwen/docker-compose.yml`](../docker-configurations/services/comfyui-qwen/docker-compose.yml) - Partiellement corrigé
 
 ### Documentation
 

@@ -96,7 +96,7 @@ python scripts/genai-auth/core/validate_genai_ecosystem.py --verbose
 |---------|--------|--------|
 | `.env` | `$2b$12$03f3f6f91f4175e338c314f7bd96ebd3dd834b53c1813d69d830f` | ✅ Unifié |
 | `.secrets/qwen-api-user.token` | `$2b$12$03f3f6f91f4175e338c314f7bd96ebd3dd834b53c1813d69d830f` | ✅ Unifié |
-| `docker-configurations/comfyui-qwen/.env` | `$2b$12$03f3f6f91f4175e338c314f7bd96ebd3dd834b53c1813d69d830f` | ✅ Unifié |
+| `docker-configurations/services/comfyui-qwen/.env` | `$2b$12$03f3f6f91f4175e338c314f7bd96ebd3dd834b53c1813d69d830f` | ✅ Unifié |
 
 ---
 

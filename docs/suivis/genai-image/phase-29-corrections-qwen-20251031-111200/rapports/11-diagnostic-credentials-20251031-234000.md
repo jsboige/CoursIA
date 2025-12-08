@@ -49,7 +49,7 @@ self.api_key = "2b$12$UDceblhZeEySDwVMC0ccN.IaQmMBfKdTY.aAE3poXcq1zsOP6coni"
 **Impact** : ❌ Authentification échoue systématiquement
 
 #### ❌ Incohérence #2 : Docker non configuré
-**Fichier** : `docker-configurations/comfyui-qwen/docker-compose.yml`
+**Fichier** : `docker-configurations/services/comfyui-qwen/docker-compose.yml`
 ```yaml
 environment:
   - COMFYUI_LOGIN_ENABLED=true
@@ -107,7 +107,7 @@ environment:
 1. **`.secrets/.env.generated`** :
    - `QWEN_API_USER_TOKEN` = Token brut ✅
 
-2. **`docker-configurations/comfyui-qwen/.env`** :
+2. **`docker-configurations/services/comfyui-qwen/.env`** :
    - ❌ Aucune variable pour l'authentification
 
 ---
@@ -125,7 +125,7 @@ self.api_key = os.getenv("QWEN_API_USER_TOKEN") or "@TKEoMzUx&)F@B$^1O3hkt&VkDWp
 ```
 
 ### Étape 2 : Configurer Docker
-**Ajouter dans `docker-configurations/comfyui-qwen/.env`** :
+**Ajouter dans `docker-configurations/services/comfyui-qwen/.env`** :
 ```env
 # API Authentication Token
 QWEN_API_TOKEN=@TKEoMzUx&)F@B$^1O3hkt&VkDWp0JXf
@@ -158,8 +158,8 @@ volumes:
 ## 📁 FICHIERS À MODIFIER
 
 1. ✏️ `scripts/genai-auth/validation_complete_qwen_system.py` (ligne 36)
-2. ✏️ `docker-configurations/comfyui-qwen/.env` (ajouter QWEN_API_TOKEN)
-3. ✏️ `docker-configurations/comfyui-qwen/docker-compose.yml` (environment + volumes)
+2. ✏️ `docker-configurations/services/comfyui-qwen/.env` (ajouter QWEN_API_TOKEN)
+3. ✏️ `docker-configurations/services/comfyui-qwen/docker-compose.yml` (environment + volumes)
 4. ⚠️ Vérifier tous les autres scripts clients pour le même problème
 
 ---

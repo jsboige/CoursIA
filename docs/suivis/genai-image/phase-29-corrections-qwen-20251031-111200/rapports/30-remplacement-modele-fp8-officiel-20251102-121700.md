@@ -197,7 +197,7 @@ docker exec comfyui-qwen ls -la /workspace/ComfyUI/models/vae/
 ```
 ### 2. Redémarrage Container (si nécessaire)
 ```bash
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose restart
 ```
 ### 3. Vérification Chargement Modèles
@@ -205,7 +205,7 @@ docker-compose restart
 - Vérifier présence des 3 modèles dans les dropdowns
 - Tester workflow "Qwen-Image-Edit Basic"
 ### 4. Mise à Jour Documentation
-- Mettre à jour `docker-configurations/comfyui-qwen/README.md`
+- Mettre à jour `docker-configurations/services/comfyui-qwen/README.md`
 - Documenter l'architecture officielle (3 fichiers séparés)
 - Ajouter troubleshooting symlinks résiduels
 ---

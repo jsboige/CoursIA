@@ -112,7 +112,7 @@ Authorization: Bearer $2b$12$03f3f6f91f4175e338c314f7bd96ebd3dd834b53c1813d69d83
 Le `token_synchronizer.py` garantit la cohérence entre :
 - `.env` (variables d'environnement)
 - `.secrets/qwen-api-user.token` (hash bcrypt serveur)
-- `docker-configurations/comfyui-qwen/.env` (configuration Docker)
+- `docker-configurations/services/comfyui-qwen/.env` (configuration Docker)
 
 ---
 

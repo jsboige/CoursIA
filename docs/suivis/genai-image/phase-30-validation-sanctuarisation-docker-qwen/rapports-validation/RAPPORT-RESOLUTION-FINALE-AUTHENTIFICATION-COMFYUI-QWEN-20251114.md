@@ -193,7 +193,7 @@ docker-compose -f docker-compose-no-auth.yml up -d
 ### 1. Validation Utilisateur (Immédiat)
 ```bash
 # Tests de génération d'images avec la configuration actuelle
-python docker-configurations/comfyui-qwen/test_qwen_models.py
+python docker-configurations/services/comfyui-qwen/test_qwen_models.py
 ```
 
 ### 2. Investigation ComfyUI-Login (Court Terme)

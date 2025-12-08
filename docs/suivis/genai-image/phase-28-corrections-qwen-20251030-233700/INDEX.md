@@ -106,7 +106,7 @@ docs/suivis/genai-image/phase-corrections-qwen-20251030-233700/
 ### Actions Recommandées
 1. **Commit des fichiers modifiés** :
    ```powershell
-   pwsh -c "git add docker-configurations/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/"
+   pwsh -c "git add docker-configurations/services/comfyui-qwen/custom_nodes/ComfyUI_QwenImageWanBridge/"
    pwsh -c "git add docs/suivis/genai-image/README.md"
    pwsh -c "git commit -m 'Finalisation nettoyage fichiers éparpillés - Structure SDDD appliquée'"
    ```

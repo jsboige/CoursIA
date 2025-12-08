@@ -149,7 +149,7 @@ volumes:
 **Raison**:
 - README service standalone suffisant (356 lignes)
 - Service standalone avec réseau séparé
-- Documentation accessible: `docker-configurations/comfyui-qwen/README.md`
+- Documentation accessible: `docker-configurations/services/comfyui-qwen/README.md`
 
 **Impact**: Aucun - Documentation existe et est complète
 

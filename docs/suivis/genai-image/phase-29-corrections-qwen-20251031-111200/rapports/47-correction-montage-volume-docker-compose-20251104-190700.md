@@ -17,7 +17,7 @@ L'objectif de cette mission était d'arrêter le processus de debug inutile et d
 
 ### 2.2. Sauvegarde du docker-compose.yml
 - **Action :** Création d'une sauvegarde avec timestamp
-- **Commande :** `Copy-Item 'docker-configurations/comfyui-qwen/docker-compose.yml' 'docker-configurations/comfyui-qwen/docker-compose.yml.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')'`
+- **Commande :** `Copy-Item 'docker-configurations/services/comfyui-qwen/docker-compose.yml' 'docker-configurations/services/comfyui-qwen/docker-compose.yml.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')'`
 - **Résultat :** ✅ SUCCÈS - Sauvegarde créée avec succès
 
 ### 2.3. Correction du montage de volume

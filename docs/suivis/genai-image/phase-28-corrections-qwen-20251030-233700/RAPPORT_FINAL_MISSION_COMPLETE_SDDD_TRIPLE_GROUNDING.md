@@ -214,7 +214,7 @@ GenAI Image Ecosystem
 ### 5.3 Configurations et Infrastructure
 
 #### Docker Configurations
-- **docker-configurations/comfyui-qwen/** : Configuration ComfyUI complète
+- **docker-configurations/services/comfyui-qwen/** : Configuration ComfyUI complète
   - **custom_nodes/ComfyUI-QwenImageWanBridge/** : 5 wrappers spécialisés
   - **docker-compose.yml** : Déploiement production
   - **.env.example** : Configuration sécurisée
@@ -342,7 +342,7 @@ BEARER_TOKEN_EXPIRY=3600
 ### Vers Artefacts Techniques
 - **Scripts Production** : [`scripts/genai-auth/`](../../../scripts/genai-auth/) - 4 scripts essentiels
 - **Scripts Recovery** : [`phase-recovery-20251029-234009/transient-scripts/`](phase-recovery-20251029-234009/transient-scripts/) - 5 scripts transients
-- **Configuration Docker** : [`docker-configurations/comfyui-qwen/`](../../../docker-configurations/comfyui-qwen/) - Custom nodes ComfyUI
+- **Configuration Docker** : [`docker-configurations/services/comfyui-qwen/`](../../../docker-configurations/services/comfyui-qwen/) - Custom nodes ComfyUI
 
 ### Vers Documentation Stratégique
 - **Phase Recovery** : [`RAPPORT_FINAL_PHASE_RECOVERY_SDDD.md`](phase-recovery-20251029-234009/RAPPORT_FINAL_PHASE_RECOVERY_SDDD.md)

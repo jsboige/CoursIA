@@ -30,7 +30,7 @@ Already up to date.
 
 ### 2.1 ComfyUI-Qwen (Créé 2025-10-16)
 
-**Emplacement**: `docker-configurations/comfyui-qwen/`
+**Emplacement**: `docker-configurations/services/comfyui-qwen/`
 
 **Fichiers du Service**:
 ```
@@ -104,7 +104,7 @@ HF_TOKEN=XXXXX_REDACTED_FOR_SECURITY
 
 **Démarrage**:
 ```bash
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose up -d
 ```
 
@@ -444,7 +444,7 @@ SD35_CPU_LIMIT=6.0
 
 8. **Test Démarrage**
    ```bash
-   cd docker-configurations/comfyui-qwen
+   cd docker-configurations/services/comfyui-qwen
    docker-compose up -d
    docker-compose logs -f
    ```

@@ -304,7 +304,7 @@ docker stop comfyui-qwen
 docker system prune -f
 
 # Recréer le conteneur propre
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose down
 docker-compose up --force-recreate
 ```

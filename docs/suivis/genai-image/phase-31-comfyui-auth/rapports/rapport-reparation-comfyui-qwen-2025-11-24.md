@@ -89,7 +89,7 @@ docker logs comfyui-qwen
 
 ### Démarrage/Arrêt
 ```bash
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 docker-compose up -d    # Démarrer
 docker-compose down      # Arrêter
 docker logs -f comfyui-qwen  # Surveillance

@@ -16,7 +16,7 @@ La documentation de la Phase 31 présente une excellente couverture fonctionnell
 ### Problèmes Identifiés
 
 #### 🔴 Incohérences Critiques (Impact Élevé)
-1. **Structure Docker incohérente** : La documentation décrit `docker-configurations/comfyui-qwen/` mais la structure réelle est `docker-configurations/services/comfyui-qwen/`
+1. **Structure Docker incohérente** : La documentation décrit `docker-configurations/services/comfyui-qwen/` mais la structure réelle est `docker-configurations/services/comfyui-qwen/`
 2. **Chemins de volumes incorrects** : Les chemins dans la documentation ne correspondent pas à la structure actuelle des bind mounts
 3. **Références de scripts obsolètes** : Certains scripts mentionnés n'existent plus ou ont été déplacés
 
@@ -57,7 +57,7 @@ La documentation de la Phase 31 présente une excellente couverture fonctionnell
 
 #### ⚠️ ARCHITECTURE-FINALE-COMFYUI-QWEN-20251125.md
 - **Statut** : PARTIELLEMENT COHÉRENT
-- **Structure Docker** : ❌ Décrit `docker-configurations/comfyui-qwen/` au lieu de `docker-configurations/services/comfyui-qwen/`
+- **Structure Docker** : ❌ Décrit `docker-configurations/services/comfyui-qwen/` au lieu de `docker-configurations/services/comfyui-qwen/`
 - **Chemins volumes** : ❌ Chemins relatifs incorrects pour la structure actuelle
 - **Scripts** : ✅ Références correctes des scripts principaux
 - **Configuration** : ⚠️ Quelques variables d'environnement inexactes
@@ -182,7 +182,7 @@ Scripts manquants ou déplacés :
 
 #### ❌ Références Brisées
 - Les références aux guides d'utilisation à la racine sont brisées
-- Les liens vers `docker-configurations/comfyui-qwen/` sont incorrects
+- Les liens vers `docker-configurations/services/comfyui-qwen/` sont incorrects
 - Certaines références de scripts utils sont obsolètes
 
 ### Références Externes
@@ -207,7 +207,7 @@ Scripts manquants ou déplacés :
 - `README-ECOSYSTEME-COMFYUI-QWEN-20251125.md`
 
 **Modifications requises** :
-- Remplacer `docker-configurations/comfyui-qwen/` par `docker-configurations/services/comfyui-qwen/`
+- Remplacer `docker-configurations/services/comfyui-qwen/` par `docker-configurations/services/comfyui-qwen/`
 - Mettre à jour les chemins de volumes
 - Corriger les commandes d'exemple
 

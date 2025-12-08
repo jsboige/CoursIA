@@ -152,7 +152,7 @@ services:
   "locations": [
     ".env",
     ".secrets/comfyui_auth_tokens.conf",
-    "docker-configurations/comfyui-qwen/.env"
+    "docker-configurations/services/comfyui-qwen/.env"
   ]
 }
 ```

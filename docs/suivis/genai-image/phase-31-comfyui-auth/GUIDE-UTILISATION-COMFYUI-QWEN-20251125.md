@@ -73,7 +73,7 @@ python scripts/genai-auth/core/setup_complete_qwen.py
 
 ```bash
 # 1. Configuration Docker
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 cp .env.example .env
 # Éditer .env avec vos configurations
 
@@ -569,7 +569,7 @@ docker exec comfyui-qwen ls -la /workspace/ComfyUI/models/diffusion_models/
 
 1. **Configuration optimale** :
    ```env
-   # Dans docker-configurations/comfyui-qwen/.env
+   # Dans docker-configurations/services/comfyui-qwen/.env
    GPU_DEVICE_ID=0
    CUDA_VISIBLE_DEVICES=0
    NVIDIA_VISIBLE_DEVICES=0
@@ -630,7 +630,7 @@ docker exec comfyui-qwen ls -la /workspace/ComfyUI/models/diffusion_models/
 
 1. **Sécurité renforcée** :
    ```env
-   # Dans docker-configurations/comfyui-qwen/.env
+   # Dans docker-configurations/services/comfyui-qwen/.env
    GUEST_MODE_ENABLED=false
    MAX_LOGIN_ATTEMPTS=3
    SESSION_EXPIRE_HOURS=8
