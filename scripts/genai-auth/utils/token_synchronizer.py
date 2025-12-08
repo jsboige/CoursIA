@@ -64,13 +64,13 @@ class TokenSynchronizer:
         
         self.root_dir = root_dir
         self.secrets_dir = root_dir / ".secrets"
-        self.docker_config_dir = root_dir / "docker-configurations" / "comfyui-qwen"
+        self.docker_config_dir = root_dir / "docker-configurations" / "services" / "comfyui-qwen"
         
         # Emplacements connus des tokens
         # NOTE: Utilisation exclusive du fichier .env Maître
         self.token_locations = [
             {
-                'path': str(root_dir / "docker-configurations" / "services" / "comfyui-qwen" / ".env"),
+                'path': str(self.docker_config_dir / ".env"),
                 'type': 'env',
                 'description': 'Fichier .env MAÎTRE (Source de vérité unique)'
             },

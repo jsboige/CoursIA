@@ -66,7 +66,8 @@ class GenAIValidator:
         self.warnings: List[str] = []
         
         # Chemins importants
-        self.root_dir = Path(__file__).parent.parent
+        # scripts/genai-auth/core/validate_genai_ecosystem.py -> core -> genai-auth -> scripts -> ROOT
+        self.root_dir = Path(__file__).parent.parent.parent.parent
         self.genai_dir = self.root_dir / "MyIA.AI.Notebooks" / "GenAI"
         self.docs_dir = self.root_dir / "docs"
         self.tests_dir = self.root_dir / "tests"
@@ -380,7 +381,65 @@ class GenAIValidator:
                 passed=False,
                 message=f"Erreur test API: {e}"
             )
-    
+
+    def check_forge_connectivity(self) -> CheckResult:
+        """Vérifie la connectivité et l'authentification de Forge SDXL Turbo"""
+        self.log("Vérification connectivité Forge SDXL Turbo...", "INFO")
+        
+        try:
+            import requests
+            
+            # Essayer d'abord IPv6 [::1] car Docker Windows mappe souvent dessus
+            url = "http://[::1]:17861"
+            try:
+                # Ne pas suivre les redirections automatiquement pour détecter le 302 vers le portail
+                response = requests.get(url, timeout=5, allow_redirects=False)
+            except:
+                # Fallback IPv4
+                url = "http://localhost:17861"
+                response = requests.get(url, timeout=5, allow_redirects=False)
+            
+            if response.status_code == 302 or response.status_code == 301:
+                location = response.headers.get('Location', '')
+                if "1111" in location or "login" in location:
+                     return CheckResult(
+                        name="Connectivité Forge SDXL Turbo",
+                        passed=True,
+                        message=f"Service accessible et PROTÉGÉ (Redirection vers Service Portal: {location})"
+                    )
+            
+            if response.status_code == 401:
+                return CheckResult(
+                    name="Connectivité Forge SDXL Turbo",
+                    passed=True,
+                    message="Service accessible et PROTÉGÉ (401 Unauthorized)"
+                )
+            elif "login" in response.text.lower() or "service portal" in response.text.lower():
+                return CheckResult(
+                    name="Connectivité Forge SDXL Turbo",
+                    passed=True,
+                    message="Service accessible et PROTÉGÉ (Page de login détectée)"
+                )
+            elif response.status_code == 200:
+                return CheckResult(
+                    name="Connectivité Forge SDXL Turbo",
+                    passed=False,
+                    message="Service accessible mais NON PROTÉGÉ (200 OK sans login)"
+                )
+            else:
+                return CheckResult(
+                    name="Connectivité Forge SDXL Turbo",
+                    passed=False,
+                    message=f"Réponse inattendue: {response.status_code}"
+                )
+                
+        except Exception as e:
+            return CheckResult(
+                name="Connectivité Forge SDXL Turbo",
+                passed=False,
+                message=f"Erreur connexion: {str(e)[:100]} (Vérifier si le conteneur forge-turbo est démarré)"
+            )
+
     def check_api_keys_configured(self) -> CheckResult:
         """Vérifie configuration clés API"""
         self.log("Vérification clés API...", "INFO")
@@ -626,10 +685,11 @@ class GenAIValidator:
         
         try:
             # Importer le synchroniseur
-            from ..utils.token_synchronizer import TokenSynchronizer
+            sys.path.append(str(self.root_dir / "scripts" / "genai-auth" / "utils"))
+            from token_synchronizer import TokenSynchronizer
             
             # Créer le synchroniseur
-            synchronizer = TokenSynchronizer()
+            synchronizer = TokenSynchronizer(root_dir=self.root_dir)
             
             # Valider la cohérence
             is_consistent = synchronizer.validate_consistency()
@@ -694,6 +754,11 @@ class GenAIValidator:
         self.add_check(self.check_comfyui_web_auth())
         self.add_check(self.check_comfyui_api_auth())
         self.add_check(self.check_token_unification())
+
+        # Checks Forge
+        print("\n🔨 AUTHENTIFICATION FORGE")
+        print("-" * 60)
+        self.add_check(self.check_forge_connectivity())
         
         # Checks qualité
         print("\n✨ QUALITÉ NOTEBOOKS")
