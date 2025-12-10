@@ -29,10 +29,10 @@
 | `03-Images-Orchestration/03-2-Workflow-Orchestration.ipynb` | À faire | Correction BOM + Exec Async | ✅ Validé | BOM supprimé |
 | `03-Images-Orchestration/03-3-Performance-Optimization.ipynb` | À faire | Correction BOM + Exec Async | ✅ Validé | BOM supprimé |
 | **04-Images-Applications** | | | | |
-| `04-Images-Applications/04-1-Educational-Content-Generation.ipynb` | À faire | - | - | |
-| `04-Images-Applications/04-2-Creative-Workflows.ipynb` | À faire | - | - | |
-| `04-Images-Applications/04-3-Cross-Stitch-Pattern-Maker-Legacy.ipynb` | À faire | - | - | |
-| `04-Images-Applications/04-3-Production-Integration.ipynb` | À faire | - | - | |
+| `04-Images-Applications/04-1-Educational-Content-Generation.ipynb` | À faire | Exécution Async (Batch) | ✅ Validé | Structure OK |
+| `04-Images-Applications/04-2-Creative-Workflows.ipynb` | À faire | Exécution Async (Batch) | ✅ Validé | Structure OK |
+| `04-Images-Applications/04-3-Cross-Stitch-Pattern-Maker-Legacy.ipynb` | À faire | Exécution Async (Mode Test) | ✅ Validé | Mode test injecté pour éviter blocage UI |
+| `04-Images-Applications/04-3-Production-Integration.ipynb` | À faire | Exécution Async (Batch) | ✅ Validé | Structure OK |
 
 ## Détails des Interventions
 
@@ -56,3 +56,9 @@
 *   **03-1-Multi-Model-Comparison.ipynb** : Échec initial (BOM UTF-8). Fichier nettoyé. Validation réussie.
 *   **03-2-Workflow-Orchestration.ipynb** : Échec initial (BOM UTF-8). Fichier nettoyé. Validation réussie.
 *   **03-3-Performance-Optimization.ipynb** : Échec initial (BOM UTF-8). Fichier nettoyé. Validation réussie.
+
+### 04-Images-Applications
+*   **04-1-Educational-Content-Generation.ipynb** : Validation réussie en mode batch asynchrone.
+*   **04-2-Creative-Workflows.ipynb** : Validation réussie en mode batch asynchrone.
+*   **04-3-Cross-Stitch-Pattern-Maker-Legacy.ipynb** : Validation réussie en injectant `notebook_mode="test"` pour contourner l'attente d'interaction utilisateur.
+*   **04-3-Production-Integration.ipynb** : Validation réussie en mode batch asynchrone.
