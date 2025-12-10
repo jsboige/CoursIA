@@ -17,13 +17,14 @@ Cette documentation technique couvre l'ensemble de l'infrastructure GenAI Images
 
 Le cœur de notre infrastructure de génération d'images, basé sur ComfyUI, a atteint sa maturité v1.0.
 
-*   **État** : 🟢 Production Stable
+*   **État** : 🟢 Production Stable (Validé Phase 30)
 *   **Référence Technique** : [**Configuration de Référence v1.0**](../suivis/genai-image/phase-32-restauration-post-reorganisation/CONFIGURATION_REFERENCE_V1.0_STABLE.md)
 *   **Fonctionnalités Clés** :
     *   Authentification unifiée (Basic Auth + Token Sync)
     *   Support Qwen-VL et Flux.1
     *   Architecture Docker optimisée
     *   Monitoring et logs centralisés
+    *   Scripts de gestion unifiés (`manage-genai.ps1`)
 
 ### 2. Forge - Environnement Expérimental 🚧
 
@@ -77,6 +78,8 @@ L'environnement Forge, dédié à la génération ultra-rapide (SD XL Turbo), es
 |----------|-------------|--------|
 | [**Tests Infrastructure**](infrastructure-tests.md) | Suite de tests pour validation infrastructure | QA, DevOps |
 | [**Scripts PowerShell**](powershell-scripts.md) | Scripts d'automatisation PowerShell | DevOps, Administrateurs |
+
+> **Nouveau :** Utilisez le script unifié `scripts/genai-auth/manage-genai.ps1` pour toutes les opérations courantes (Déploiement, Diagnostic, Validation).
 
 ---
 
@@ -140,7 +143,7 @@ Les rapports de mission et suivis chronologiques du développement de l'infrastr
 ## 📝 Maintenance
 
 **Méthode**: SDDD (Semantic-Documentation-Driven-Design)
-**Dernière mise à jour**: 1 décembre 2025
+**Dernière mise à jour**: 10 décembre 2025
 **Responsable**: Équipe CoursIA GenAI
 
 ---

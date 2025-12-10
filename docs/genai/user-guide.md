@@ -1,543 +1,630 @@
-# 🎨 Guide Utilisateur - Écosystème GenAI Images CoursIA
+# Guide APIs Génération Images - Étudiants CoursIA
 
-**Date :** 7 octobre 2025  
-**Version :** 1.0  
-**Public :** Étudiants, Enseignants, Développeurs
+**Version**: 1.0  
+**Date**: 2025-10-16  
+**Public**: Étudiants Master IA  
+**Prérequis**: Python 3.10+, bases REST API
 
 ---
 
-## 🚀 Démarrage Rapide (5 minutes)
+## 🎯 Vue d'Ensemble
 
-### Étape 1 : Vérification Prérequis
+CoursIA met à votre disposition **2 APIs complémentaires** de génération d'images par IA:
 
-**Environnement Requis :**
-- Python 3.9+ avec Jupyter
-- Visual Studio Code avec extensions Python + Jupyter
-- Clé API OpenRouter (recommandé) OU OpenAI
+| API | Cas d'usage | Force | Latence |
+|-----|-------------|-------|---------|
+| **Qwen Image-Edit 2.5** | Production, édition avancée | Multimodal haute qualité | 5-10s |
+| **SD XL Turbo** | Prototypage rapide | Vitesse, itérations | 1-3s |
 
-**Vérification Installation :**
-```powershell
-# Vérification Python et Jupyter
-python --version
-jupyter --version
+**Recommandation workflow**:
+1. 🚀 **Exploration** → SD XL Turbo (itérations rapides)
+2. 🎨 **Raffinement** → Qwen (qualité production)
+3. 📝 **Production finale** → Qwen (contrôle précis)
 
-# Test d'environnement CoursIA
-cd "d:\dev\CoursIA\MyIA.AI.Notebooks\GenAI"
-python -c "import jupyter; print('✅ Jupyter OK')"
-```
+---
 
-### Étape 2 : Configuration API (2 minutes)
+## 📚 Table des Matières
 
-**Option A : OpenRouter (Recommandé) 🌟**
-1. Créer compte sur [OpenRouter.ai](https://openrouter.ai/)
-2. Récupérer votre clé API
-3. Ajouter dans `.env` :
+1. [API 1: Qwen Image-Edit 2.5](#api-1-qwen-image-edit-25)
+2. [API 2: SD XL Turbo (Forge)](#api-2-sd-xl-turbo-forge)
+3. [Comparaison Technique](#comparaison-technique)
+4. [Exemples Pratiques](#exemples-pratiques)
+5. [Troubleshooting](#troubleshooting)
+6. [Ressources Complémentaires](#ressources-complémentaires)
+
+---
+
+## API 1: Qwen Image-Edit 2.5
+
+### 🎯 Présentation
+
+**Qwen Image-Edit** est un modèle multimodal avancé capable de:
+- ✅ Génération text-to-image haute qualité
+- ✅ Édition d'images guidée par texte
+- ✅ Compréhension contextuelle avancée
+- ✅ Support multi-langues (dont français)
+
+**Architecture**: ComfyUI + vLLM + Qwen-Image-Edit-2509-FP8  
+**GPU**: RTX 3090 (24GB VRAM)  
+**Modèle**: 54GB (quantification FP8)
+
+### 🔗 Accès
+
+- **URL Production**: `https://qwen-image-edit.myia.io`
+- **API Endpoint**: Port 8188 (WebSocket)
+- **Documentation complète**: [`docs/suivis/genai-image/phase-12-production/`](../suivis/genai-image/phase-12a-production/)
+
+### 🔐 Authentification (NOUVEAU - Phase 23C)
+
+**Depuis le 2025-10-21**, l'API Qwen requiert une authentification par token Bearer pour garantir la sécurité et la disponibilité du service.
+
+#### Obtention du Token
+
+**Méthode 1 - Interface Web** :
+1. Accédez à https://qwen-image-edit.myia.io/login
+2. Connectez-vous avec :
+   - **Username** : `etudiant`
+   - **Password** : `CourIA2025!`
+3. Copiez le token affiché après connexion
+
+**Méthode 2 - Fourni par l'Enseignant** :
+Contactez votre enseignant pour obtenir votre token personnel.
+
+#### Configuration dans les Notebooks
+
+**Étape 1 : Créer le fichier `.env`**
+
 ```bash
-OPENROUTER_API_KEY=sk-or-v1-votre-clé-ici
+cd MyIA.AI.Notebooks/GenAI/01-Images-Foundation/
+cp .env.example .env
 ```
 
-**Option B : OpenAI (Alternative)**
-1. Compte OpenAI avec crédits
-2. Ajouter dans `.env` :
-```bash
-OPENAI_API_KEY=sk-proj-votre-clé-ici
+**Étape 2 : Éditer `.env` avec votre token**
+
+```env
+# Fichier: MyIA.AI.Notebooks/GenAI/01-Images-Foundation/.env
+QWEN_API_TOKEN=votre_token_copie_ici
 ```
 
-### Étape 3 : Premier Test (3 minutes)
+**Étape 3 : Le notebook charge automatiquement le token**
 
 ```python
-# Test rapide dans un notebook
-from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-# Chargement configuration
 load_dotenv()
+QWEN_API_TOKEN = os.getenv("QWEN_API_TOKEN")
 
-# Vérification API
-if os.getenv("OPENROUTER_API_KEY"):
-    print("🎉 OpenRouter configuré - Prêt pour GenAI Images!")
-elif os.getenv("OPENAI_API_KEY"):
-    print("✅ OpenAI configuré - Mode fallback actif")
-else:
-    print("❌ Aucune API configurée - Voir guide configuration")
+# Headers d'authentification (ajouté automatiquement par ComfyUIClient)
+AUTH_HEADERS = {"Authorization": f"Bearer {QWEN_API_TOKEN}"}
 ```
 
----
+#### Sécurité du Token
 
-## 📚 Parcours d'Apprentissage Recommandés
+⚠️ **Règles CRITIQUES** :
+- ❌ Ne JAMAIS partager votre token
+- ❌ Ne JAMAIS commiter le fichier `.env` dans Git (déjà dans `.gitignore`)
+- ✅ Utiliser TOUJOURS le fichier `.env` pour stocker le token
+- ✅ Contacter l'enseignant en cas de perte du token
 
-### 🎯 Parcours Débutant (2-3 heures)
+**Note** : Le fichier `.env` est automatiquement ignoré par Git pour votre sécurité.
 
-**Pour qui :** Première expérience avec GenAI Images
 
-1. **📖 00-GenAI-Environment/00-Environment-Validation.ipynb** *(15 min)*
-   - Configuration et validation environnement
-   - Test des APIs disponibles
-   - Familiarisation interface
+### 💻 Exemple Python - Génération Simple
 
-2. **🖼️ 01-Images-Foundation/01-OpenAI-DALLE-Intro.ipynb** *(30 min)*
-   - Première génération d'images avec DALL-E
-   - Compréhension des prompts basiques
-   - Paramètres de base
-
-3. **🔍 01-Images-Foundation/02-OpenRouter-GPT5-Vision.ipynb** *(30 min)*
-   - Analyse d'images avec GPT-5 Vision
-   - Descriptions automatiques
-   - Vision + génération combinées
-
-4. **🎨 01-Images-Foundation/03-Stable-Diffusion-Basics.ipynb** *(45 min)*
-   - Introduction Stable Diffusion
-   - Comparaison avec DALL-E
-   - Styles et techniques de base
-
-**🎓 Résultat :** Capacité à générer et analyser des images avec 3 technologies différentes
-
-### 🎯 Parcours Intermédiaire (4-5 heures)
-
-**Pour qui :** Bases GenAI acquises, souhait d'approfondir
-
-*Prérequis : Parcours Débutant complété*
-
-1. **✏️ 02-Images-Advanced/01-Qwen-Image-Edit-2509.ipynb** *(60 min)*
-   - Édition d'images avec IA
-   - Modifications ciblées
-   - Workflows d'amélioration
-
-2. **🎭 02-Images-Advanced/02-FLUX1-Creative-Generation.ipynb** *(60 min)*
-   - Génération créative avancée
-   - Styles artistiques complexes
-   - Techniques de prompt engineering
-
-3. **⚙️ 02-Images-Advanced/03-ComfyUI-Workflows.ipynb** *(90 min)*
-   - Workflows ComfyUI
-   - Pipelines automatisés
-   - Génération en série
-
-**🎓 Résultat :** Maîtrise des techniques avancées et workflows complexes
-
-### 🎯 Parcours Expert (6-8 heures)
-
-**Pour qui :** Développement d'applications complètes
-
-*Prérequis : Parcours Intermédiaire complété*
-
-1. **🔄 03-Images-Orchestration/01-Multi-Model-Pipeline.ipynb** *(90 min)*
-   - Orchestration de plusieurs modèles
-   - Pipelines de traitement complexes
-   - Optimisation performances
-
-2. **☁️ 03-Images-Orchestration/02-Hybrid-Cloud-Local.ipynb** *(90 min)*
-   - Architecture hybride cloud/local
-   - Basculement automatique
-   - Gestion des coûts
-
-3. **⚡ 03-Images-Orchestration/03-Batch-Processing.ipynb** *(90 min)*
-   - Traitement en lot
-   - Automatisation complète
-   - Monitoring et reporting
-
-4. **🏗️ 04-Images-Applications/01-Educational-Content.ipynb** *(120 min)*
-   - Création contenu éducatif
-   - Génération automatisée
-   - Application pratique complète
-
-**🎓 Résultat :** Capacité à développer des applications GenAI Images production-ready
-
----
-
-## 🛠️ Guides Techniques
-
-### Configuration Environnement
-
-#### Variables d'Environnement (.env)
-
-**Configuration Minimale :**
-```bash
-# API Principal (choisir un)
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-# OU
-OPENAI_API_KEY=sk-proj-your-key-here
-
-# Configuration de base
-GENAI_OUTPUT_DIR="outputs"
-GENAI_DEFAULT_MODEL="gpt-4o-2024-08-06"
-```
-
-**Configuration Avancée :**
-```bash
-# URLs de base (personnalisables)
-OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
-OPENROUTER_APP_NAME="CoursIA-GenAI"
-OPENAI_BASE_URL="https://api.openai.com/v1"
-
-# Paramètres de performance
-GENAI_TIMEOUT_SECONDS=300
-GENAI_MAX_RETRIES=3
-GENAI_CONCURRENT_REQUESTS=2
-
-# Services Docker locaux (optionnel)
-FLUX_API_URL="http://localhost:8001"
-STABLE_DIFFUSION_URL="http://localhost:7860"
-COMFYUI_API_URL="http://localhost:8188"
-
-# Debug et logging
-GENAI_DEBUG_LEVEL="INFO"
-GENAI_LOG_FILE="logs/genai.log"
-```
-
-#### Résolution Problèmes Courants
-
-**Problème : "Module not found"**
-```powershell
-# Installation packages requis
-pip install python-dotenv requests pillow jupyter ipywidgets
-pip install openai anthropic  # APIs
-```
-
-**Problème : "API Key not found"**
 ```python
-# Diagnostic clé API
-import os
-from dotenv import load_dotenv
+import sys
+sys.path.insert(0, '../shared')
+from helpers.comfyui_client import create_client
 
-load_dotenv()
-print("OpenRouter:", "✅" if os.getenv("OPENROUTER_API_KEY") else "❌")
-print("OpenAI:", "✅" if os.getenv("OPENAI_API_KEY") else "❌")
-```
+# 1. Connexion au service
+client = create_client("https://qwen-image-edit.myia.io")
 
-**Problème : Timeout API**
-```python
-# Configuration timeout adaptatif
-import os
-os.environ["GENAI_TIMEOUT_SECONDS"] = "600"  # 10 minutes
-```
-
-### Optimisation Performances
-
-#### Gestion Mémoire
-```python
-# Libération mémoire entre générations
-import gc
-gc.collect()
-
-# Limitation taille images
-MAX_IMAGE_SIZE = (1024, 1024)
-COMPRESSION_QUALITY = 85
-```
-
-#### Cache et Réutilisation
-```python
-# Cache des réponses API
-import hashlib
-import pickle
-from pathlib import Path
-
-def cache_api_response(prompt, response, model="default"):
-    cache_dir = Path("cache")
-    cache_dir.mkdir(exist_ok=True)
-    
-    prompt_hash = hashlib.md5(f"{model}:{prompt}".encode()).hexdigest()
-    cache_file = cache_dir / f"{prompt_hash}.pkl"
-    
-    with open(cache_file, 'wb') as f:
-        pickle.dump(response, f)
-```
-
----
-
-## 📊 Monitoring et Analytics
-
-### Métriques de Performance
-
-**Indicateurs Clés :**
-```python
-import time
-import json
-from datetime import datetime
-
-class GenAIMetrics:
-    def __init__(self):
-        self.metrics = {
-            "generations": [],
-            "api_calls": [],
-            "errors": [],
-            "costs": []
-        }
-    
-    def log_generation(self, model, prompt, duration, success):
-        self.metrics["generations"].append({
-            "timestamp": datetime.now().isoformat(),
-            "model": model,
-            "prompt_length": len(prompt),
-            "duration_seconds": duration,
-            "success": success
-        })
-    
-    def get_stats(self):
-        total_gens = len(self.metrics["generations"])
-        success_rate = sum(g["success"] for g in self.metrics["generations"]) / total_gens * 100
-        avg_duration = sum(g["duration_seconds"] for g in self.metrics["generations"]) / total_gens
-        
-        return {
-            "total_generations": total_gens,
-            "success_rate": f"{success_rate:.1f}%",
-            "average_duration": f"{avg_duration:.1f}s"
-        }
-
-# Usage dans notebooks
-metrics = GenAIMetrics()
-# ... pendant génération ...
-metrics.log_generation("gpt-4o", prompt, duration, success)
-print(metrics.get_stats())
-```
-
-### Logging Avancé
-
-**Configuration Logging :**
-```python
-import logging
-from datetime import datetime
-from pathlib import Path
-
-# Setup logging CoursIA GenAI
-def setup_genai_logging(level="INFO"):
-    logger = logging.getLogger('coursia_genai')
-    logger.setLevel(getattr(logging, level))
-    
-    # File handler
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
-    
-    file_handler = logging.FileHandler(
-        log_dir / f"genai_{datetime.now().strftime('%Y%m%d')}.log"
-    )
-    file_handler.setLevel(logging.DEBUG)
-    
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(getattr(logging, level))
-    
-    # Formatter
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
-    
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-    
-    return logger
-
-# Usage dans notebooks
-logger = setup_genai_logging()
-logger.info("🚀 Démarrage session GenAI")
-logger.debug(f"Configuration: {api_config}")
-```
-
----
-
-## 🔧 Intégration MCP
-
-### Exécution via MCP (Mode Batch)
-
-**Configuration MCP :**
-Les notebooks sont compatibles avec l'infrastructure MCP de CoursIA pour exécution automatisée.
-
-**Variables Papermill :**
-```python
-# Cellule Parameters (à personnaliser)
-notebook_mode = "batch"        # Mode MCP
-api_provider = "openrouter"    # Provider par défaut  
-skip_widgets = True            # Désactive widgets interactifs
-debug_level = "INFO"           # Niveau logging
-output_format = "detailed"     # Format de sortie
-```
-
-**Commandes MCP :**
-```python
-# Via jupyter-papermill-mcp-server
-await execute_notebook_sync(
-    notebook_path="01-Images-Foundation/01-OpenAI-DALLE-Intro.ipynb",
-    parameters={
-        "notebook_mode": "batch",
-        "api_provider": "openrouter",
-        "skip_widgets": True,
-        "prompt": "Un paysage futuriste avec des robots"
-    },
-    timeout_seconds=300
+# 2. Génération text-to-image
+prompt_id = client.generate_text2image(
+    prompt="A serene mountain landscape at sunset with a lake reflection",
+    negative_prompt="blurry, low quality, distorted",
+    width=1024,
+    height=1024,
+    steps=25,  # Plus de steps = meilleure qualité
+    cfg_scale=7.5,  # Guidance (7-8 recommandé)
+    seed=-1  # -1 pour aléatoire
 )
+
+print(f"Génération lancée: {prompt_id}")
+
+# 3. Attendre et récupérer résultat
+images = client.wait_for_images(prompt_id)
+print(f"✅ {len(images)} image(s) générée(s)")
 ```
 
-### Paramétrage Avancé MCP
+### 💻 Exemple Python - Édition Image
 
-**Injection de Sujets Complexes :**
 ```python
-# Pour notebooks éducatifs avec sujets générés
-complex_topic = {
-    "subject": "Architecture GenAI multimodale",
-    "difficulty": "advanced", 
-    "focus_areas": ["orchestration", "performance", "coûts"],
-    "deliverables": ["rapport", "code", "présentation"]
-}
+# Éditer une image existante
+from PIL import Image
 
-# MCP injection
-await execute_notebook_with_complex_topic(
-    notebook_path="04-Images-Applications/01-Educational-Content.ipynb",
-    topic_parameters=complex_topic
+# Charger image source
+input_image = Image.open("mon_image.png")
+
+# Édition guidée par texte
+prompt_id = client.edit_image(
+    image=input_image,
+    prompt="Add a rainbow in the sky",
+    strength=0.7,  # 0.0-1.0 (force modification)
+    steps=30
 )
+
+edited_images = client.wait_for_images(prompt_id)
+edited_images[0].save("image_editee.png")
 ```
 
----
+### 📊 Paramètres Clefs
 
-## 🎓 Cas d'Usage Pédagogiques
+| Paramètre | Plage | Recommandé | Impact |
+|-----------|-------|------------|--------|
+| `steps` | 1-50 | 20-30 | Qualité (+ = meilleur mais + lent) |
+| `cfg_scale` | 1-20 | 7-8 | Respect prompt (trop haut = artefacts) |
+| `strength` | 0.0-1.0 | 0.6-0.8 | Force édition (édition seule) |
+| `seed` | -1 ou int | -1 | Reproductibilité (-1 = aléatoire) |
 
-### Pour Enseignants
+### ⚠️ Limites & Conseils
 
-**Génération de Contenu Pédagogique :**
-- Illustrations automatiques pour cours
-- Diagrammes techniques générés
-- Exemples visuels personnalisés par sujet
+**Limites**:
+- ⏱️ Latence: 5-10s par génération
+- 🖼️ Résolution max: 2048x2048 (au-delà = VRAM overflow)
+- 🔄 Pas de batch generation (1 image à la fois)
 
-**Évaluation et Exercices :**
-- Génération d'images pour exercices d'analyse
-- Création de références visuelles
-- Tests de reconnaissance automatique
+**Conseils qualité**:
+- 📝 Prompts détaillés en anglais donnent meilleurs résultats
+- 🎨 Utiliser negative prompts pour éviter artefacts
+- 🔢 Fixer seed pour reproductibilité expériences
 
-### Pour Étudiants
-
-**Projets Pratiques :**
-- Portfolio d'images générées
-- Comparaison de modèles GenAI
-- Applications créatives personnelles
-
-**Recherche et Expérimentation :**
-- Test de prompts avancés
-- Analyse qualitative des résultats
-- Optimisation de paramètres
-
-### Pour Développeurs
-
-**Prototypage Rapide :**
-- Maquettes visuelles automatiques
-- Assets pour applications
-- Tests A/B de concepts visuels
-
-**Intégration Applications :**
-- APIs prêtes à l'emploi
-- Patterns de code réutilisables
-- Monitoring production-ready
+**Notebook complet**: [`MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-5-ComfyUI-Local-Test.ipynb`](../../MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-5-ComfyUI-Local-Test.ipynb)
 
 ---
 
-## 🚨 Sécurité et Bonnes Pratiques
+## API 2: SD XL Turbo (Forge)
 
-### Protection des Clés API
+### 🎯 Présentation
 
-**✅ Faire :**
-- Utiliser des fichiers `.env` (jamais en git)
-- Rotation régulière des clés
-- Variables d'environnement système
-- Clés avec permissions minimales
+**SD XL Turbo** est une version optimisée de Stable Diffusion XL pour:
+- ⚡ Génération ultra-rapide (1-3 secondes)
+- 🎯 Prototypage et itérations rapides
+- 💾 Faible consommation VRAM (4-6GB)
+- 🎨 Qualité standard satisfaisante
 
-**❌ Ne Jamais Faire :**
-- Clés en dur dans le code
-- Partage de clés par email/chat
-- Commit accidentel de `.env`
-- Clés dans logs ou outputs
+**Architecture**: Stable Diffusion WebUI Forge  
+**GPU**: RTX 3090 (24GB VRAM) - GPU 1 dédié  
+**Modèle**: turbovisionxlSuperFastXLBasedOnNew v4.31 (~6.5GB)
 
-### Utilisation Responsable
+### 🔗 Accès
 
-**Coûts et Limites :**
-- Surveillance de la consommation API
-- Timeouts appropriés
-- Cache des résultats fréquents
-- Modèles adaptés au besoin
+- **URL Production**: `https://turbo.stable-diffusion-webui-forge.myia.io`
+- **WebUI**: Interface Gradio (browser)
+- **API REST**: Endpoints Forge standard
+- **Authentication**: Basic Auth (credentials fournis par enseignant)
 
-**Contenu Généré :**
-- Vérification du contenu produit
-- Respect des politiques d'usage
-- Attribution appropriée
-- Respect de la propriété intellectuelle
+### 💻 Exemple Python - Génération Rapide (WebUI)
 
----
-
-## 🆘 Support et Dépannage
-
-### FAQ Rapide
-
-**Q: Quelle API choisir entre OpenRouter et OpenAI ?**
-R: OpenRouter pour accès unifié à multiple modèles (GPT-5, Qwen), OpenAI pour simplicité et fiabilité.
-
-**Q: Docker est-il obligatoire ?**
-R: Non, tous les notebooks fonctionnent avec APIs cloud. Docker est optionnel pour modèles locaux.
-
-**Q: Puis-je utiliser mes propres images ?**
-R: Oui, les notebooks supportent upload et analyse d'images personnelles.
-
-**Q: Les notebooks fonctionnent-ils offline ?**
-R: Partiellement. Configuration et interface oui, génération nécessite API/Docker.
-
-### Diagnostic Automatisé
-
-**Script de Diagnostic :**
 ```python
-def diagnostic_complet():
-    """Diagnostic automatique environnement GenAI"""
-    print("🔍 Diagnostic CoursIA GenAI\n")
-    
-    # Test Python et modules
-    try:
-        import sys, jupyter, dotenv
-        print(f"✅ Python {sys.version}")
-        print(f"✅ Jupyter {jupyter.__version__}")
-    except ImportError as e:
-        print(f"❌ Module manquant: {e}")
-    
-    # Test configuration
-    from dotenv import load_dotenv
-    import os
-    
-    load_dotenv()
-    apis = {
-        "OpenRouter": os.getenv("OPENROUTER_API_KEY"),
-        "OpenAI": os.getenv("OPENAI_API_KEY")
+import requests
+import base64
+from io import BytesIO
+from PIL import Image
+
+# Configuration
+BASE_URL = "https://turbo.stable-diffusion-webui-forge.myia.io"
+# Credentials fournis par l'enseignant
+AUTH = ("username", "password")
+
+def generate_image_turbo(prompt, negative_prompt="", steps=4):
+    """
+    Génération rapide avec SD XL Turbo
+    Note: Steps réduits (4-8) car modèle "turbo" optimisé
+    """
+    payload = {
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "steps": steps,  # Turbo: 4-8 steps suffisent
+        "width": 1024,
+        "height": 1024,
+        "cfg_scale": 2.0,  # Turbo: CFG bas (1.5-3.0)
+        "sampler_name": "Euler",
+        "scheduler": "simple"
     }
     
-    for api, key in apis.items():
-        status = "✅" if key else "❌"
-        print(f"{status} {api}: {'Configuré' if key else 'Manquant'}")
+    response = requests.post(
+        f"{BASE_URL}/sdapi/v1/txt2img",
+        json=payload,
+        auth=AUTH,
+        timeout=30
+    )
     
-    # Test répertoires
-    from pathlib import Path
-    
-    required_dirs = [
-        Path("outputs"),
-        Path("logs"), 
-        Path("cache")
-    ]
-    
-    for dir_path in required_dirs:
-        if dir_path.exists():
-            print(f"✅ Répertoire {dir_path}")
-        else:
-            dir_path.mkdir(exist_ok=True)
-            print(f"🔧 Créé répertoire {dir_path}")
-    
-    print("\n🎉 Diagnostic terminé!")
+    if response.status_code == 200:
+        result = response.json()
+        # Décoder image base64
+        image_data = base64.b64decode(result['images'][0])
+        image = Image.open(BytesIO(image_data))
+        return image
+    else:
+        raise Exception(f"Erreur API: {response.status_code}")
 
-# Lancer dans n'importe quel notebook
-diagnostic_complet()
+# Utilisation
+image = generate_image_turbo(
+    prompt="A futuristic city at night, neon lights, cyberpunk style",
+    negative_prompt="blurry, low quality",
+    steps=6
+)
+image.save("turbo_output.png")
+print("✅ Image générée en ~2-3 secondes")
 ```
 
-### Contact Support
+### 💻 Exemple Python - Variation Rapide
 
-**Ressources :**
-- **Documentation :** [`docs/genai-images-development-standards.md`](genai-images-development-standards.md)
-- **Problèmes techniques :** Issues GitHub du projet CoursIA
-- **Communauté :** Discord/Forum CoursIA (si disponible)
+```python
+def generate_variations(base_prompt, variations, steps=4):
+    """
+    Générer rapidement plusieurs variations d'un concept
+    Idéal pour exploration créative
+    """
+    results = []
+    
+    for i, variation in enumerate(variations):
+        full_prompt = f"{base_prompt}, {variation}"
+        print(f"Génération {i+1}/{len(variations)}: {variation}")
+        
+        image = generate_image_turbo(
+            prompt=full_prompt,
+            steps=steps
+        )
+        results.append((variation, image))
+    
+    return results
+
+# Exploration rapide de styles
+base = "A cozy coffee shop interior"
+styles = [
+    "modern minimalist design",
+    "vintage rustic atmosphere", 
+    "futuristic sci-fi aesthetic",
+    "warm traditional style"
+]
+
+variations = generate_variations(base, styles, steps=4)
+
+# Sauvegarder toutes les variations
+for style, img in variations:
+    filename = f"coffee_shop_{style.replace(' ', '_')}.png"
+    img.save(filename)
+
+print(f"✅ {len(variations)} variations générées en ~10 secondes")
+```
+
+### 📊 Paramètres Turbo Spécifiques
+
+| Paramètre | Turbo | Standard | Explication |
+|-----------|-------|----------|-------------|
+| `steps` | **4-8** | 20-50 | Turbo optimisé pour peu de steps |
+| `cfg_scale` | **1.5-3.0** | 7-8 | CFG bas car guidance intégrée |
+| `sampler` | **Euler** | DPM++/DDIM | Euler plus rapide avec Turbo |
+
+### ⚠️ Limites & Conseils
+
+**Limites**:
+- 🎨 Qualité légèrement inférieure à Qwen
+- 📝 Moins bon avec prompts complexes
+- 🔄 Pas d'édition image (txt2img seulement)
+
+**Quand utiliser**:
+- ✅ Phase exploration (tester 10+ concepts rapidement)
+- ✅ Prototypage interface (placeholder images)
+- ✅ Workshops/démos temps réel
+- ❌ Production finale (préférer Qwen)
+
+**Astuce**: Générer avec Turbo → Affiner avec Qwen (workflow hybride)
 
 ---
 
-*Guide conçu pour accompagner votre apprentissage GenAI Images avec CoursIA 🚀*
+## 📊 Comparaison Technique
+
+### Tableau Récapitulatif
+
+| Critère | Qwen Image-Edit | SD XL Turbo | Gagnant |
+|---------|-----------------|-------------|---------|
+| **Latence moyenne** | 5-10s | 1-3s | 🏆 Turbo |
+| **Qualité visuelle** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 🏆 Qwen |
+| **VRAM utilisée** | 10-15GB | 4-6GB | 🏆 Turbo |
+| **Respect prompt** | Excellent | Bon | 🏆 Qwen |
+| **Édition images** | ✅ Oui | ❌ Non | 🏆 Qwen |
+| **Multilingue** | ✅ Oui | ⚠️ Limité | 🏆 Qwen |
+| **Itérations/min** | 6-12 | 20-60 | 🏆 Turbo |
+| **Apprentissage** | Moyen | Facile | 🏆 Turbo |
+
+### Cas d'Usage Recommandés
+
+#### Utilisez Qwen pour:
+- 📚 **Projets académiques** nécessitant qualité
+- 🎨 **Édition fine** d'images existantes
+- 🌍 **Prompts multilingues** (français, etc.)
+- 📊 **Visualisations** pour présentations
+- 🔬 **Recherche** nécessitant reproductibilité
+
+#### Utilisez SD XL Turbo pour:
+- ⚡ **Brainstorming visuel** rapide
+- 🎮 **Prototypes** applications
+- 🏃 **Workshops** temps réel
+- 🧪 **Tests A/B** multiples variations
+- 🚀 **Démos** interactives
+
+---
+
+## 🚀 Exemples Pratiques
+
+### Exemple 1: Workflow Hybride (Recommandé)
+
+```python
+# Phase 1: Exploration rapide avec Turbo (2 min)
+concepts = [
+    "minimalist logo design",
+    "geometric abstract pattern",
+    "nature-inspired organic shapes"
+]
+
+best_concepts = []
+for concept in concepts:
+    img = generate_image_turbo(f"professional {concept}", steps=6)
+    # Évaluation humaine ou automatique
+    best_concepts.append(img)
+
+# Phase 2: Raffinement avec Qwen (10 min)
+final_image = client.generate_text2image(
+    prompt="professional minimalist logo design, clean lines, modern",
+    steps=30,
+    cfg_scale=7.5,
+    width=1024,
+    height=1024
+)
+
+print("✅ Workflow complet: exploration + raffinement")
+```
+
+### Exemple 2: Génération Dataset Éducatif
+
+```python
+# Créer dataset images pour classification
+categories = {
+    "animals": ["cat", "dog", "bird", "fish"],
+    "vehicles": ["car", "bicycle", "airplane", "train"],
+    "food": ["pizza", "burger", "salad", "pasta"]
+}
+
+dataset = []
+
+for category, items in categories.items():
+    for item in items:
+        # Génération rapide avec Turbo
+        img = generate_image_turbo(
+            prompt=f"photo of a {item}, clear background, centered",
+            steps=6
+        )
+        dataset.append({
+            "category": category,
+            "item": item,
+            "image": img
+        })
+
+print(f"✅ Dataset de {len(dataset)} images créé en <5 min")
+```
+
+### Exemple 3: Comparaison Modèles (Recherche)
+
+```python
+import time
+
+test_prompts = [
+    "A serene landscape with mountains",
+    "Abstract geometric pattern",
+    "Portrait of a scientist"
+]
+
+results = []
+
+for prompt in test_prompts:
+    # Test Turbo
+    start = time.time()
+    img_turbo = generate_image_turbo(prompt, steps=6)
+    time_turbo = time.time() - start
+    
+    # Test Qwen
+    start = time.time()
+    prompt_id = client.generate_text2image(prompt, steps=25)
+    img_qwen = client.wait_for_images(prompt_id)[0]
+    time_qwen = time.time() - start
+    
+    results.append({
+        "prompt": prompt,
+        "turbo_time": time_turbo,
+        "qwen_time": time_qwen,
+        "speedup": time_qwen / time_turbo
+    })
+
+# Analyse
+import pandas as pd
+df = pd.DataFrame(results)
+print(df)
+print(f"Speedup moyen: {df['speedup'].mean():.1f}x")
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### Problèmes Communs
+
+#### ❌ Erreur "Connection timeout" (Qwen)
+
+```python
+# Solution: Augmenter timeout
+client = create_client(
+    "https://qwen-image-edit.myia.io",
+    timeout=60  # 60 secondes au lieu de 30
+)
+```
+
+#### ❌ Erreur "Unauthorized" (SD XL Turbo)
+
+```python
+# Vérifier credentials
+AUTH = ("votre_username", "votre_password")
+
+# Tester connexion
+response = requests.get(
+    f"{BASE_URL}/sdapi/v1/sd-models",
+    auth=AUTH
+)
+print(f"Status: {response.status_code}")  # Doit être 200
+```
+
+#### ❌ Images floues/artefacts (Les deux)
+
+**Qwen**:
+- Augmenter `steps` (30-40)
+- Ajuster `cfg_scale` (6-8)
+- Ajouter negative prompt détaillé
+
+**Turbo**:
+- Utiliser `steps=6` (ni trop bas ni trop haut)
+- CFG entre 2.0-2.5
+- Simplifier prompt (pas trop complexe)
+
+#### ❌ "Out of memory" (VRAM)
+
+**Qwen**:
+- Réduire résolution (1024x1024 → 768x768)
+- Attendre 30s entre générations
+
+**Turbo**:
+- Rare (modèle économe), vérifier autres processus GPU
+
+### Bonnes Pratiques
+
+1. **Gestion erreurs**:
+```python
+try:
+    image = generate_image_turbo(prompt)
+except Exception as e:
+    print(f"Erreur: {e}")
+    # Fallback ou retry
+```
+
+2. **Logging**:
+```python
+import logging
+logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
+logger.info(f"Génération: {prompt}")
+```
+
+3. **Rate limiting**:
+```python
+import time
+
+# Éviter surcharge serveur
+for prompt in prompts:
+    image = generate_image_turbo(prompt)
+    time.sleep(2)  # 2s entre requêtes
+```
+
+---
+
+## 📚 Ressources Complémentaires
+
+### Documentation Technique
+
+- **Qwen Architecture**: [`docs/suivis/genai-image/phase-12-production/rapports/2025-10-16_12C_architectures-5-workflows-qwen.md`](../suivis/genai-image/phase-12a-production/rapports/2025-10-16_12C_architectures-5-workflows-qwen.md)
+- **Tests Validation Qwen**: [`docs/suivis/genai-image/phase-12-production/rapports/2025-10-16_12B_RAPPORT-FINAL-TESTS-GENERATION.md`](../suivis/genai-image/phase-12a-production/rapports/2025-10-16_12B_RAPPORT-FINAL-TESTS-GENERATION.md)
+- **Audit Infrastructure**: [`docs/suivis/genai-image/phase-14-audit-infrastructure/2025-10-16_AUDIT-INFRASTRUCTURE-COMPLETE.md`](../suivis/genai-image/phase-14-audit-infrastructure/2025-10-16_AUDIT-INFRASTRUCTURE-COMPLETE.md)
+
+### Notebooks Jupyter
+
+1. **Qwen - Tests Complets**:
+   - Path: [`MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-5-ComfyUI-Local-Test.ipynb`](../../MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-5-ComfyUI-Local-Test.ipynb)
+   - Contenu: Client Python, tests génération, workflows
+
+2. **Applications Images** (à adapter):
+   - Path: [`MyIA.AI.Notebooks/GenAI/04-Images-Applications/`](../../MyIA.AI.Notebooks/GenAI/04-Images-Applications/)
+   - Exemples: Contenu éducatif, workflows créatifs
+
+### Code Source
+
+- **Client ComfyUI**: [`MyIA.AI.Notebooks/GenAI/shared/helpers/comfyui_client.py`](../../MyIA.AI.Notebooks/GenAI/shared/helpers/comfyui_client.py)
+- **Tests**: [`MyIA.AI.Notebooks/GenAI/tests/test_comfyui_client.py`](../../MyIA.AI.Notebooks/GenAI/tests/test_comfyui_client.py)
+
+### Liens Externes
+
+- **Qwen Documentation**: [Qwen-VL GitHub](https://github.com/QwenLM/Qwen-VL)
+- **ComfyUI**: [ComfyUI Documentation](https://github.com/comfyanonymous/ComfyUI)
+- **Stable Diffusion**: [SD WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)
+- **Automatic1111 API**: [SD API Wiki](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/API)
+
+---
+
+## 🎓 Support & Contact
+
+### Assistance Technique
+
+- **Documentation complète**: Ce guide + notebooks
+- **Tests de validation**: Scripts Python fournis
+- **Troubleshooting**: Section dédiée ci-dessus
+
+### Contact Enseignant
+
+Pour obtenir:
+- 🔑 Credentials accès SD XL Turbo
+- 💡 Conseils projets spécifiques
+- 🐛 Support erreurs bloquantes
+- 📊 Accès ressources supplémentaires
+
+---
+
+## 📝 Changelog
+
+### Version 1.0 (2025-10-16)
+- ✅ Documentation initiale complète
+- ✅ Exemples Python Qwen + Turbo
+- ✅ Comparaison technique détaillée
+- ✅ Workflows pratiques recommandés
+- ✅ Troubleshooting exhaustif
+
+---
+
+**Guide créé par**: Équipe CoursIA  
+**Dernière mise à jour**: 2025-10-16  
+**Validé pour**: Production étudiants Master IA
+
+---
+
+## 🚀 Quick Start (TL;DR)
+
+```python
+# QWEN (Qualité)
+from helpers.comfyui_client import create_client
+client = create_client("https://qwen-image-edit.myia.io")
+img = client.generate_text2image("mountain sunset", steps=25)
+
+# TURBO (Vitesse)
+import requests
+response = requests.post(
+    "https://turbo.stable-diffusion-webui-forge.myia.io/sdapi/v1/txt2img",
+    json={"prompt": "mountain sunset", "steps": 6},
+    auth=("user", "pass")
+)
+
+# WORKFLOW HYBRIDE
+# 1. Explorer avec Turbo (rapide)
+# 2. Affiner avec Qwen (qualité)
+```
+
+**Bon développement! 🎨🚀**
