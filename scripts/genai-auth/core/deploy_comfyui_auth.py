@@ -35,7 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger("DeployComfyUI")
 
 # Constantes
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DOCKER_COMPOSE_DIR = PROJECT_ROOT / "docker-configurations" / "services" / "comfyui-qwen"
 CONTAINER_NAME = "comfyui-qwen"
 COMFYUI_PORT = 8188

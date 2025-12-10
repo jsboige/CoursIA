@@ -31,7 +31,7 @@ logging.basicConfig(
 logger = logging.getLogger("CleanupComfyUI")
 
 # Constantes
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONTAINER_NAME = "comfyui-qwen"
 SECRETS_DIR = PROJECT_ROOT / ".secrets"
 

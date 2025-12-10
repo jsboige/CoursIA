@@ -33,7 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger("ValidateComfyUI")
 
 # Constantes
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 SECRETS_DIR = PROJECT_ROOT / ".secrets"
 COMFYUI_URL = "http://localhost:8188"
 
