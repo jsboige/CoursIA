@@ -27,7 +27,7 @@ def load_env_file(env_path):
 
 def check_docker_compose():
     """Vérifie si docker-compose.yml existe"""
-    compose_path = "docker-configurations/comfyui-qwen/docker-compose.yml"
+    compose_path = "docker-configurations/services/comfyui-qwen/docker-compose.yml"
     if not os.path.exists(compose_path):
         print(f"❌ Fichier {compose_path} non trouvé")
         return False
@@ -35,7 +35,7 @@ def check_docker_compose():
 
 def update_docker_compose_with_env():
     """Met à jour docker-compose.yml pour inclure les variables d'environnement d'authentification"""
-    compose_path = "docker-configurations/comfyui-qwen/docker-compose.yml"
+    compose_path = "docker-configurations/services/comfyui-qwen/docker-compose.yml"
     
     try:
         with open(compose_path, 'r') as f:
@@ -124,7 +124,7 @@ def start_comfyui_container():
         print("🚀 Démarrage du conteneur ComfyUI...")
         
         result = subprocess.run(
-            ["docker-compose", "-f", "docker-configurations/comfyui-qwen/docker-compose.yml", "up", "-d"],
+            ["docker-compose", "-f", "docker-configurations/services/comfyui-qwen/docker-compose.yml", "up", "-d"],
             capture_output=True, text=True
         )
         
@@ -147,8 +147,8 @@ def wait_for_comfyui_ready(max_wait=300):
         try:
             import requests
             response = requests.get("http://localhost:8188/system_stats", timeout=5)
-            if response.status_code == 200:
-                print("✅ ComfyUI est prêt!")
+            if response.status_code in [200, 401, 403]:
+                print(f"✅ ComfyUI est prêt! (Status: {response.status_code})")
                 return True
         except:
             pass
@@ -171,7 +171,7 @@ def main():
         sys.exit(1)
     
     # Chargement du .env
-    env_path = "docker-configurations/comfyui-qwen/.env"
+    env_path = "docker-configurations/services/comfyui-qwen/.env"
     env_vars = load_env_file(env_path)
     
     if not env_vars:

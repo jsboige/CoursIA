@@ -369,6 +369,7 @@ scripts/docker-configurations/comfyui-qwen/.secrets/
 .secrets/comfyui_auth_tokens.conf
 .secrets/qwen-api-user.token
 docker-configurations/comfyui-qwen/.secrets/qwen-api-user.token
+docker-configurations/services/comfyui-qwen/.secrets/
 
 # VSCode settings
 .vscode/settings.json
