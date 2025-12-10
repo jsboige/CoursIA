@@ -29,7 +29,7 @@ services:
         source: ../../shared/outputs
         target: /workspace/ComfyUI/output
       - type: bind
-        source: ../../.secrets/qwen-api-user.token
+        source: ../../../.secrets/qwen-api-user.token
         target: /workspace/ComfyUI/.secrets/qwen-api-user.token
         read_only: true
       - type: bind

@@ -127,6 +127,15 @@ class ComfyUIClient:
 
         return response["prompt_id"]
 
+    def get_system_stats(self) -> Dict[str, Any]:
+        """
+        Récupère les statistiques système de ComfyUI.
+
+        Returns:
+            Statistiques système
+        """
+        return self._make_request("/system_stats")
+
     def get_history(self, prompt_id: str) -> Dict[str, Any]:
         """
         Récupère l'historique d'exécution d'un prompt.
@@ -324,6 +333,27 @@ def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
     server_url = env_vars.get("COMFYUI_API_URL")
     api_token = env_vars.get("COMFYUI_API_TOKEN")
 
+    # Tenter de récupérer le token depuis le fichier .secrets/qwen-api-user.token
+    # On cherche le répertoire .secrets à la racine du projet (en remontant depuis env_path)
+    if env_path:
+        project_root = env_path.parent
+        # Remonter jusqu'à trouver .secrets ou atteindre la racine
+        for _ in range(5): # Max 5 niveaux
+            secrets_file = project_root / ".secrets" / "qwen-api-user.token"
+            if secrets_file.exists():
+                try:
+                    file_token = secrets_file.read_text(encoding='utf-8').strip()
+                    if file_token:
+                        print(f"✅ Token chargé depuis {secrets_file}")
+                        api_token = file_token
+                        break
+                except Exception as e:
+                    print(f"⚠️ Erreur lecture token fichier: {e}")
+            
+            if project_root.parent == project_root: # Racine atteinte
+                break
+            project_root = project_root.parent
+
     if not server_url:
         raise ValueError("COMFYUI_API_URL manquant dans .env")
 
@@ -349,6 +379,6 @@ def create_client(config: Optional[ComfyUIConfig] = None) -> ComfyUIClient:
         return load_from_env()
     
     return ComfyUIClient(
-        server_url=config.base_url,
+        base_url=config.base_url,
         api_token=config.api_token
     )

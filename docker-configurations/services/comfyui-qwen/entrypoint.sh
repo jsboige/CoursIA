@@ -43,30 +43,54 @@ echo "🔒 Installation des dépendances d'authentification..."
 venv/bin/pip install aiohttp_session aiohttp_security bcrypt cryptography
 
 # Configuration de l'authentification (génération du fichier PASSWORD)
-if [ -n "$COMFYUI_PASSWORD" ]; then
-    echo "🔐 Configuration de l'authentification..."
-    venv/bin/python3 -c "
+echo "🔐 Configuration de l'authentification..."
+venv/bin/python3 -c "
 import bcrypt
 import os
 import sys
 
-password = os.environ.get('COMFYUI_PASSWORD', '').encode('utf-8')
 username = os.environ.get('COMFYUI_USERNAME', 'admin')
 # Le chemin doit correspondre à celui attendu par ComfyUI-Login (dans le dossier racine de ComfyUI/login)
 password_dir = os.path.join('login')
 password_path = os.path.join(password_dir, 'PASSWORD')
+secret_token_path = os.path.join('.secrets', 'qwen-api-user.token')
 
 if not os.path.exists(password_dir):
     os.makedirs(password_dir)
 
-salt = bcrypt.gensalt()
-hashed = bcrypt.hashpw(password, salt)
+hashed = None
 
-with open(password_path, 'wb') as f:
-    f.write(hashed + b'\n' + username.encode('utf-8'))
-print(f'✅ Utilisateur {username} configuré')
+# Try to load from mounted secret
+if os.path.exists(secret_token_path):
+    try:
+        with open(secret_token_path, 'rb') as f:
+            content = f.read().strip()
+            if content:
+                hashed = content
+                print(f'✅ Token chargé depuis {secret_token_path}')
+    except Exception as e:
+        print(f'⚠️ Erreur lecture token secret: {e}')
+
+# Fallback to generation from password
+if not hashed:
+    print('⚠️ Pas de token secret trouvé, génération depuis mot de passe...')
+    password = os.environ.get('COMFYUI_PASSWORD', '').encode('utf-8')
+    if not password:
+        # Si pas de mot de passe, on ne fait rien (laisse ComfyUI sans auth ou avec ancienne config)
+        # Mais ici on veut forcer une config si possible
+        pass
+    
+    if password:
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password, salt)
+
+if hashed:
+    with open(password_path, 'wb') as f:
+        f.write(hashed + b'\n' + username.encode('utf-8'))
+    print(f'✅ Utilisateur {username} configuré')
+else:
+    print('⚠️ Aucune configuration d\'authentification appliquée')
 "
-fi
 
 # Démarrage
 echo "🔥 Démarrage du serveur..."

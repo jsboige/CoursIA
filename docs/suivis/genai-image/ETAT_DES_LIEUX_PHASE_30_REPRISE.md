@@ -33,9 +33,19 @@ Basé sur `RAPPORT_VALIDATION_PHASE_30.md` :
 | **03-Orchestration** | ✅ Validé | Tous OK. |
 | **04-Applications** | ⏳ À faire | Pas encore traités dans le rapport. |
 
-### Problème Bloquant : Authentification ComfyUI
-Les tests `00-5` et `01-5` échouent avec une erreur **HTTP 401 Unauthorized**.
-Cela indique que ComfyUI est bien protégé par mot de passe (via `ComfyUI-Login`), mais que les notebooks ou les scripts de test n'envoient pas correctement les credentials ou le token de session.
+### Problème Bloquant : Authentification ComfyUI (RÉSOLU)
+Les tests `00-5` et `01-5` échouaient avec une erreur **HTTP 401 Unauthorized**.
+
+**Diagnostic :**
+*   `ComfyUI-Login` utilise le hash bcrypt stocké dans `login/PASSWORD` comme token d'API.
+*   Le script `entrypoint.sh` régénérait ce hash avec un sel aléatoire à chaque démarrage du conteneur, invalidant ainsi tout token statique stocké côté client.
+*   Le montage du fichier secret `.secrets/qwen-api-user.token` échouait car Docker créait un répertoire au lieu de monter le fichier (problème de chemin relatif).
+
+**Résolution (10/12/2025) :**
+1.  **Stabilisation du Token :** Modification de `docker-configurations/services/comfyui-qwen/entrypoint.sh` pour utiliser le contenu du fichier secret monté (s'il existe) comme hash, au lieu d'en générer un nouveau.
+2.  **Correction du Montage Docker :** Correction du chemin relatif dans `docker-configurations/services/comfyui-qwen/docker-compose.yml` (passage de `../../` à `../../../`) pour pointer correctement vers le fichier `.secrets/qwen-api-user.token` à la racine.
+3.  **Mise à jour Client :** Mise à jour de `MyIA.AI.Notebooks/GenAI/.env` avec le hash token correct (`$2b$12$670...`).
+4.  **Validation :** Création et exécution réussie du script `MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/validate_auth.py`.
 
 ## 3. Travaux en Cours sur les Scripts (`scripts/genai-auth/`)
 
@@ -45,7 +55,7 @@ Des scripts ont été développés pour automatiser la gestion de l'auth :
 
 ## 4. Plan d'Action pour la Reprise
 
-1.  **Résoudre l'Authentification :**
+1.  **Résoudre l'Authentification :** (FAIT)
     *   Vérifier que les notebooks utilisent bien les credentials du `.env` pour s'authentifier auprès de ComfyUI.
     *   Si nécessaire, adapter les notebooks pour supporter l'authentification (Basic Auth ou Session).
 2.  **Finaliser la Validation :**
