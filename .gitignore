@@ -426,3 +426,6 @@ docker-configurations/services/comfyui-qwen/workspace/
 
 # Ignore nested git repository
 docker-configurations/services/comfyui-qwen/ComfyUI/
+
+# GenAI Notebooks Data
+MyIA.AI.Notebooks/GenAI/data/
