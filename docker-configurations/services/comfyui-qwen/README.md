@@ -49,13 +49,29 @@ ComfyUI/
 - **Taille**: ~54GB (quantifié FP8)
 - **Emplacement**: `models/checkpoints/Qwen-Image-Edit-2509-FP8/`
 
-### 3. Custom Node
+### 3. Modèle Z-Image (Turbo GGUF)
+
+- **Nom**: Z-Image-Turbo-GGUF (Lumina-2)
+- **Taille**: ~5.5GB (Q5_K_M)
+- **Emplacement**: `models/unet/z_image_turbo-Q5_K_M.gguf`
+- **Encodeur Texte Requis**: **Gemma 3 4B** (Architecture `gemma3_4b`, dimension 2560)
+  - *Note*: Qwen2.5-VL ou Gemma 2 2B ne sont PAS compatibles (dimension incorrecte).
+  - Emplacement cible: `models/clip/gemma-3-4b-it.gguf` (ou similaire)
+
+### 4. Custom Node
 
 - **Nom**: ComfyUI-QwenImageWanBridge
 - **Repository**: https://github.com/gokayfem/ComfyUI-QwenImageWanBridge
 - **Emplacement**: `custom_nodes/ComfyUI-QwenImageWanBridge/`
 
-### 4. Docker avec GPU Support
+### 4. Custom Node (Z-Image)
+
+- **Nom**: ComfyUI-GGUF
+- **Repository**: https://github.com/city96/ComfyUI-GGUF
+- **Emplacement**: `custom_nodes/ComfyUI-GGUF/`
+- **Usage**: Support des modèles GGUF (Z-Image Turbo)
+
+### 5. Docker avec GPU Support
 
 ```bash
 # Vérifier support GPU Docker

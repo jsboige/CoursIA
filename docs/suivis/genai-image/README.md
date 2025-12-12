@@ -69,6 +69,20 @@ genai-image/
 
 ---
 
+### Phase 35: Debug Avancé Z-Image (Images Noires) ✨ (Clôturé)
+**Objectif** : Résolution du problème d'inférence (NaNs/Images Noires) sur le pipeline Lumina-2/Z-Image.
+
+**Statut** : 🛑 **ABANDONNÉ / IMPASSE TECHNIQUE**
+
+**Résultat** : Incompatibilité structurelle confirmée entre Z-Image (dims 2560) et Gemma-2-2B (dims 2304). Aucun encodeur compatible identifié pour le chargement GGUF actuel.
+**Décision** : Abandon de Z-Image pour cette mission. Repli stratégique vers Qwen2.5-VL.
+
+**Documentation** :
+- [Stratégie de Résolution](phase-35-debug-avance/STRATEGIE_RESOLUTION_Z_IMAGE.md)
+- [Rapport Technique Impasse](phase-35-debug-avance/RAPPORT_TECHNIQUE_IMPASSE_Z_IMAGE.md)
+
+---
+
 ### Phase 9-10: Investigation Forge/Qwen (Oct 10-11)
 **Objectif** : Investigation alternatives à ComfyUI
 

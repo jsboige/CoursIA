@@ -46,6 +46,7 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 | **02-1-Qwen-Image-Edit-2509** | Édition avancée Qwen 2.5 | Qwen API, InPainting |
 | **02-2-FLUX-1-Advanced-Generation** | Génération haute qualité FLUX | FLUX.1, LoRA, Fine-tuning |
 | **02-3-Stable-Diffusion-3-5** | Stable Diffusion production | SD 3.5, ControlNet, Custom |
+| **02-4-Z-Image-Lumina2** | Génération Z-Image (Lumina-2) | ComfyUI, Gemma-2, WanVAE |
 
 ### 🔄 **03-Images-Orchestration** (Multi-Modèles)
 *🔴 Niveau Expert | Orchestration complexe*
