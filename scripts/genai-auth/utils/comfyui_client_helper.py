@@ -426,11 +426,19 @@ class WorkflowManager:
                 print(f"❌ Workflow invalide: doit être un dictionnaire")
                 return None
             
+            # Check if it's API format (dict of nodes) or UI format (has 'nodes')
+            is_api_format = False
             if 'nodes' not in workflow:
-                print(f"❌ Workflow invalide: section 'nodes' manquante")
-                return None
+                # Check if it looks like API format
+                sample_keys = list(workflow.keys())[:5]
+                if sample_keys and all(isinstance(workflow[k], dict) and 'class_type' in workflow[k] for k in sample_keys):
+                    is_api_format = True
+                else:
+                    print(f"❌ Workflow invalide: section 'nodes' manquante et format API non reconnu")
+                    return None
             
-            print(f"✅ Workflow chargé: {len(workflow.get('nodes', []))} nodes")
+            node_count = len(workflow) if is_api_format else len(workflow.get('nodes', []))
+            print(f"✅ Workflow chargé: {node_count} nodes")
             return workflow
             
         except json.JSONDecodeError as e:
@@ -445,7 +453,28 @@ class WorkflowManager:
         """Valide la structure d'un workflow et retourne les erreurs"""
         errors = []
         
-        # Validation des sections requises
+        # Détection format API (dictionnaire de nodes)
+        is_api_format = True
+        if not isinstance(workflow, dict):
+            is_api_format = False
+        else:
+            # Vérifier si c'est un format API (clés = IDs, valeurs = dict avec class_type et inputs)
+            # On vérifie quelques clés pour être sûr
+            sample_keys = list(workflow.keys())[:5]
+            if not sample_keys:
+                is_api_format = False # Vide
+            else:
+                for k in sample_keys:
+                    v = workflow[k]
+                    if not isinstance(v, dict) or 'class_type' not in v or 'inputs' not in v:
+                        is_api_format = False
+                        break
+        
+        if is_api_format:
+            print("✅ Workflow format API détecté")
+            return True, []
+        
+        # Validation des sections requises (Format UI)
         required_sections = ['nodes', 'links', 'groups', 'config', 'extra', 'version']
         for section in required_sections:
             if section not in workflow:
@@ -856,6 +885,7 @@ Exemples:
         parser.add_argument('--port', type=int, default=8188, help='Port ComfyUI (défaut: 8188)')
         parser.add_argument('--protocol', choices=['http', 'https'], default='http', help='Protocole (défaut: http)')
         parser.add_argument('--api-key', help='Clé API ComfyUI')
+        parser.add_argument('--api-key-file', help='Fichier contenant la clé API ComfyUI')
         parser.add_argument('--timeout', type=int, default=30, help='Timeout en secondes (défaut: 30)')
         parser.add_argument('--no-ssl-verify', action='store_true', help='Désactiver la vérification SSL')
         
@@ -1004,7 +1034,9 @@ Exemples:
         
         # Attendre la complétion
         print("⏳ Attente de complétion...")
-        result = self.client.get_result(prompt_id, wait_completion=True)
+        # Utiliser le timeout configuré pour l'attente du résultat (ou 300s minimum par défaut si config.timeout est court)
+        wait_timeout = max(300, self.config.timeout)
+        result = self.client.get_result(prompt_id, wait_completion=True, timeout=wait_timeout)
         
         if result and result.get('status', {}).get('completed', False):
             print("✅ Workflow complété avec succès")
@@ -1299,25 +1331,25 @@ python comfyui-client-helper.py debug --workflow workflow_casse.json --fix
 ### Créer un plugin
 # plugins/mon_plugin.py
 
-def register_plugin(plugin_system):
-    # Register plugin in system
-    plugin_system.register_plugin('mon_plugin', MonPlugin)
-
-class MonPlugin:
-    # Custom plugin example
-    
-    def __init__(self, client):
-        self.client = client
-    
-    def custom_investigation(self, params):
-        # Custom investigation method
-        # Votre logique ici
-        pass
-    
-    def custom_workflow_processor(self, workflow):
-        # Custom workflow processing
-        # Votre logique ici
-        return workflow
+# def register_plugin(plugin_system):
+#     # Register plugin in system
+#     plugin_system.register_plugin('mon_plugin', MonPlugin)
+#
+# class MonPlugin:
+#     # Custom plugin example
+#
+#     def __init__(self, client):
+#         self.client = client
+#
+#     def custom_investigation(self, params):
+#         # Custom investigation method
+#         # Votre logique ici
+#         pass
+#
+#     def custom_workflow_processor(self, workflow):
+#         # Custom workflow processing
+#         # Votre logique ici
+#         return workflow
 
 # Exemple de code
 
@@ -1340,7 +1372,22 @@ class MonPlugin:
         # Mettre à jour la configuration
         self.config.port = args.port
         self.config.protocol = args.protocol
-        self.config.api_key = args.api_key
+        
+        # Gestion de la clé API (argument direct ou fichier)
+        if args.api_key:
+            self.config.api_key = args.api_key
+        elif args.api_key_file:
+            try:
+                with open(args.api_key_file, 'r') as f:
+                    # Lecture et nettoyage robuste du token (strip whitespace + newlines)
+                    content = f.read().strip()
+                    # Si le token contient des guillemets (erreur JSON/Shell), on les nettoie
+                    content = content.strip('"').strip("'")
+                    self.config.api_key = content
+            except Exception as e:
+                print(f"❌ Erreur lecture fichier clé API {args.api_key_file}: {e}")
+                return
+        
         self.config.timeout = args.timeout
         self.config.verify_ssl = not args.no_ssl_verify
         

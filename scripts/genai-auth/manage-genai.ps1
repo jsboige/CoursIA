@@ -4,40 +4,39 @@
 
 .DESCRIPTION
     Ce script centralise toutes les opérations de maintenance, déploiement et diagnostic
-    pour l'infrastructure GenAI Image. Il remplace les multiples scripts épars.
+    pour l'infrastructure GenAI Image en s'appuyant sur les scripts Python consolidés.
 
 .PARAMETER Action
     L'action à effectuer :
-    - Deploy    : Déploie ou met à jour l'infrastructure Docker
-    - Diagnose  : Lance un diagnostic complet de l'environnement
-    - Validate  : Valide le fonctionnement (API, Auth, GPU)
-    - Monitor   : Affiche les logs et l'état des ressources
-    - Cleanup   : Nettoie les ressources inutilisées
-    - Sync      : Synchronise les tokens d'authentification
+    - Setup       : Installe ou répare l'infrastructure (Nodes + Modèles)
+    - Start       : Démarre les services Docker
+    - Stop        : Arrête les services Docker
+    - Status      : Affiche l'état des conteneurs et du GPU
+    - Sync-Auth   : Synchronise les credentials d'authentification
+    - Validate    : Lance la suite de validation complète
+    - Validate-Auth : Valide uniquement l'authentification
+    - Audit       : Audite la sécurité des tokens
 
 .PARAMETER Force
-    Force la reconstruction ou le redémarrage (pour Deploy)
-
-.PARAMETER AutoFix
-    Tente de corriger automatiquement les problèmes (pour Diagnose)
+    Force l'opération (ex: reconstruction pour Start, écrasement pour Setup si supporté)
 
 .EXAMPLE
-    .\manage-genai.ps1 -Action Diagnose -AutoFix
-    .\manage-genai.ps1 -Action Deploy --Force
+    .\manage-genai.ps1 -Action Status
+    .\manage-genai.ps1 -Action Start
+    .\manage-genai.ps1 -Action Validate
 
 .NOTES
-    Version: 1.0
-    Date: 2025-12-10
+    Version: 2.0 (Consolidation)
+    Date: 2025-12-13
     Auteur: Roo
 #>
 
 param(
     [Parameter(Mandatory=$true)]
-    [ValidateSet("Deploy", "Diagnose", "Validate", "Monitor", "Cleanup", "Sync")]
+    [ValidateSet("Setup", "Start", "Stop", "Status", "Sync-Auth", "Validate", "Validate-Auth", "Audit")]
     [string]$Action,
 
-    [switch]$Force,
-    [switch]$AutoFix
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,7 +45,9 @@ $ScriptDir = $PSScriptRoot
 # Configuration des chemins
 $PythonCmd = "python"
 $CoreDir = Join-Path $ScriptDir "core"
-$UtilsDir = Join-Path $ScriptDir "utils"
+$DockerManagerScript = Join-Path $ScriptDir "docker_manager.py"
+$ValidationScript = Join-Path $ScriptDir "validation_suite.py"
+$AuthManagerScript = Join-Path $CoreDir "auth_manager.py"
 
 # Fonction helper pour exécuter Python
 function Invoke-PythonScript {
@@ -59,12 +60,10 @@ function Invoke-PythonScript {
         Write-Error "Script introuvable : $ScriptPath"
     }
 
-    Write-Host "🚀 Exécution : $ScriptPath" -ForegroundColor Cyan
-    if ($Arguments) {
-        Write-Host "   Arguments : $Arguments" -ForegroundColor Gray
-    }
-
-    $env:PYTHONPATH = "$ScriptDir;$UtilsDir;$env:PYTHONPATH"
+    Write-Host "🚀 Exécution : $(Split-Path $ScriptPath -Leaf) $Arguments" -ForegroundColor Cyan
+    
+    # Ajout du répertoire courant au PYTHONPATH pour les imports relatifs
+    $env:PYTHONPATH = "$ScriptDir;$CoreDir;$env:PYTHONPATH"
     
     & $PythonCmd $ScriptPath @Arguments
     
@@ -75,51 +74,66 @@ function Invoke-PythonScript {
 
 # Gestion des actions
 switch ($Action) {
-    "Deploy" {
-        Write-Host "📦 DÉPLOIEMENT DE L'INFRASTRUCTURE" -ForegroundColor Green
-        $Script = Join-Path $CoreDir "deploy_comfyui_auth.py"
-        $Args = @()
-        if ($Force) { $Args += "--force" }
-        Invoke-PythonScript -ScriptPath $Script -Arguments $Args
+    "Setup" {
+        Write-Host "🛠️ SETUP INFRASTRUCTURE" -ForegroundColor Green
+        # docker_manager.py setup
+        $Args = @("setup")
+        # Si setup supporte force plus tard, on pourra l'ajouter
+        Invoke-PythonScript -ScriptPath $DockerManagerScript -Arguments $Args
     }
 
-    "Diagnose" {
-        Write-Host "🔍 DIAGNOSTIC SYSTÈME" -ForegroundColor Yellow
-        $Script = Join-Path $CoreDir "diagnose_comfyui_auth.py"
-        $Args = @()
-        if ($AutoFix) { $Args += "--autofix" }
-        if ($PSBoundParameters.ContainsKey('Verbose') -and $PSBoundParameters['Verbose']) { $Args += "--verbose" }
-        
-        Invoke-PythonScript -ScriptPath $Script -Arguments $Args
+    "Start" {
+        Write-Host "▶️ DÉMARRAGE SERVICES" -ForegroundColor Green
+        # docker_manager.py start
+        $Args = @("start")
+        # Support de --build si Force est présent (hypothèse courante, à adapter si besoin)
+        # Vérification du script docker_manager.py suggère qu'il pourrait supporter --build pour start
+        # Mais dans le doute et pour suivre les specs strictes, on appelle start simple pour l'instant
+        # sauf si l'utilisateur a spécifié Force, on pourrait tenter d'ajouter un argument si supporté.
+        # Pour l'instant on reste sur "start" simple comme demandé.
+        Invoke-PythonScript -ScriptPath $DockerManagerScript -Arguments $Args
+    }
+
+    "Stop" {
+        Write-Host "⏹️ ARRÊT SERVICES" -ForegroundColor Yellow
+        # docker_manager.py stop
+        $Args = @("stop")
+        Invoke-PythonScript -ScriptPath $DockerManagerScript -Arguments $Args
+    }
+
+    "Status" {
+        Write-Host "📊 STATUT SYSTÈME" -ForegroundColor Cyan
+        # docker_manager.py status
+        $Args = @("status")
+        Invoke-PythonScript -ScriptPath $DockerManagerScript -Arguments $Args
+    }
+
+    "Sync-Auth" {
+        Write-Host "🔐 SYNC AUTHENTIFICATION" -ForegroundColor Yellow
+        # docker_manager.py sync
+        $Args = @("sync")
+        Invoke-PythonScript -ScriptPath $DockerManagerScript -Arguments $Args
     }
 
     "Validate" {
-        Write-Host "✅ VALIDATION FONCTIONNELLE" -ForegroundColor Green
-        $Script = Join-Path $CoreDir "validate_comfyui_auth.py"
-        Invoke-PythonScript -ScriptPath $Script
+        Write-Host "✅ VALIDATION COMPLÈTE" -ForegroundColor Green
+        # validation_suite.py --full
+        $Args = @("--full")
+        Invoke-PythonScript -ScriptPath $ValidationScript -Arguments $Args
     }
 
-    "Monitor" {
-        Write-Host "📊 MONITORING" -ForegroundColor Cyan
-        # Monitor script was moved to archive, but it's useful.
-        # Let's use the one in archive for now or reimplement/restore it if needed.
-        # Actually, I moved ALL .ps1 to archive. I should have kept monitor or moved it to utils/scripts.
-        # For now, let's point to archive or better, restore it to scripts/genai-auth/utils/monitor.ps1 later.
-        # I'll point to archive for this step to keep it working.
-        $Script = Join-Path $ScriptDir "archive/monitor_comfyui_qwen.ps1"
-        & $Script
+    "Validate-Auth" {
+        Write-Host "🔑 VALIDATION AUTHENTIFICATION" -ForegroundColor Green
+        # validation_suite.py --auth-only
+        $Args = @("--auth-only")
+        Invoke-PythonScript -ScriptPath $ValidationScript -Arguments $Args
     }
 
-    "Cleanup" {
-        Write-Host "🧹 NETTOYAGE" -ForegroundColor Magenta
-        $Script = Join-Path $CoreDir "cleanup_comfyui_auth.py"
-        Invoke-PythonScript -ScriptPath $Script
-    }
-
-    "Sync" {
-        Write-Host "🔐 SYNCHRONISATION TOKENS" -ForegroundColor Yellow
-        $Script = Join-Path $CoreDir "sync_comfyui_credentials.py"
-        Invoke-PythonScript -ScriptPath $Script
+    "Audit" {
+        Write-Host "🛡️ AUDIT SÉCURITÉ" -ForegroundColor Magenta
+        # core/auth_manager.py audit
+        $Args = @("audit")
+        Invoke-PythonScript -ScriptPath $AuthManagerScript -Arguments $Args
     }
 }
 

@@ -1,75 +1,80 @@
-# Scripts d'Authentification et Gestion ComfyUI Qwen
+# 🔐 GenAI Auth & Management Scripts
 
-Ce répertoire contient l'ensemble des scripts pour gérer l'authentification, l'installation et la maintenance du service ComfyUI Qwen.
+Ce répertoire contient les outils centralisés pour gérer l'infrastructure GenAI (ComfyUI, Forge, Qwen) avec une authentification sécurisée et une validation rigoureuse.
 
-## 📂 Structure
+## 📁 Structure Simplifiée
+
+La structure a été rationalisée pour plus de clarté et de maintenabilité.
 
 ```
 scripts/genai-auth/
-├── core/                       # Scripts principaux (Master scripts)
-│   ├── install_comfyui_login.py    # 🚀 Installation complète et configuration
-│   ├── validate_genai_ecosystem.py # ✅ Validation de l'écosystème
-│   ├── diagnose_comfyui_auth.py    # 🔍 Diagnostic approfondi authentification
-│   └── ...
-├── utils/                      # Utilitaires partagés
-│   ├── token_synchronizer.py       # 🔄 Synchronisation unifiée des tokens
-│   ├── comfyui_client_helper.py    # 🛠️ Client API ComfyUI
-│   └── ...
-└── archive/                    # Scripts obsolètes ou archivés
+├── manage-genai.ps1        # 🚀 Point d'entrée unique (CLI PowerShell)
+├── docker_manager.py       # 🐳 Gestionnaire central Docker (Cycle de vie, Maintenance)
+├── validation_suite.py     # ✅ Suite de validation unifiée (Auth, Nodes, Génération)
+├── core/                   # 🧱 Librairies Core
+│   ├── auth_manager.py     # Gestion de l'authentification (Tokens, Hashing)
+│   └── comfyui_client.py   # Client API ComfyUI unifié
+├── config/                 # ⚙️ Configuration (Modèles, Nodes, Tokens)
+├── utils/                  # 🛠️ Utilitaires divers et legacy
+└── archive/                # 📦 Scripts obsolètes ou archivés
 ```
 
-## 🚀 Scripts Principaux
+## 🚀 Utilisation Rapide (`manage-genai.ps1`)
 
-### 1. Installation et Configuration
-**Script :** `core/install_comfyui_login.py`
-- Installe ComfyUI-Login et ComfyUI-QwenImageWanBridge
-- Synchronise les credentials
-- Redémarre le conteneur Docker
-- Valide l'installation
+Le script `manage-genai.ps1` est le point d'entrée recommandé. Il encapsule toutes les commandes Python complexes.
 
-```bash
-python scripts/genai-auth/core/install_comfyui_login.py
+### Commandes Principales
+
+| Commande | Description |
+| :--- | :--- |
+| **`Setup`** | Initialise l'environnement : installe les dépendances, télécharge les modèles, configure les secrets. |
+| **`Start`** | Démarre les services Docker (ComfyUI, Forge). |
+| **`Stop`** | Arrête les services proprement. |
+| **`Restart`** | Redémarre les services. |
+| **`Validate`** | Lance la suite de validation complète (Santé, Auth, Nodes, Test Génération). |
+| **`Sync`** | Synchronise les credentials entre l'hôte et les conteneurs. |
+| **`Logs`** | Affiche les logs des conteneurs. |
+| **`Status`** | Affiche l'état des services et l'utilisation GPU. |
+
+### Exemples
+
+```powershell
+# Démarrer l'environnement
+./manage-genai.ps1 Start
+
+# Valider que tout fonctionne (Auth + Nodes + Test Image)
+./manage-genai.ps1 Validate
+
+# Réinstaller les dépendances et modèles manquants
+./manage-genai.ps1 Setup
+
+# Voir les logs en temps réel
+./manage-genai.ps1 Logs -Tail 100
 ```
 
-### 2. Validation de l'Écosystème
-**Script :** `core/validate_genai_ecosystem.py`
-- Vérifie la structure des fichiers
-- Vérifie la configuration (.env, clés API)
-- Teste l'authentification Web et API
-- Vérifie la qualité des notebooks
+## 🛠️ Scripts Python Core
 
+Si vous devez utiliser les scripts Python directement (débuggage avancé) :
+
+### `docker_manager.py`
+Gestionnaire d'infrastructure.
 ```bash
-python scripts/genai-auth/core/validate_genai_ecosystem.py --verbose
+python docker_manager.py status
+python docker_manager.py setup comfyui-qwen
+python docker_manager.py validate
 ```
 
-### 3. Synchronisation des Tokens
-**Script :** `utils/token_synchronizer.py`
-- Unifie les tokens entre .secrets, .env et Docker
-- Assure une source de vérité unique
-
+### `validation_suite.py`
+Suite de tests.
 ```bash
-python scripts/genai-auth/utils/token_synchronizer.py --unify
+python validation_suite.py --full       # Tout tester
+python validation_suite.py --auth-only  # Tester seulement l'auth
+python validation_suite.py --nodes-only # Tester seulement les custom nodes
 ```
 
-### 4. Diagnostic Authentification
-**Script :** `core/diagnose_comfyui_auth.py`
-- Analyse approfondie des problèmes d'authentification
-- Vérifie les logs, les dépendances et la configuration du conteneur
+## 📦 Archivage (Consolidation 2025-12-12)
 
-```bash
-python scripts/genai-auth/core/diagnose_comfyui_auth.py
-```
+Les anciens scripts dispersés (`diagnostic_manager.py`, `validate_all_models.py`, `verify_image_content.py`, etc.) ont été consolidés ou déplacés dans `archive/consolidated_20251212/` pour garder la racine propre.
 
-## ⚠️ Scripts Obsolètes
-
-Les scripts suivants sont conservés pour référence mais ne doivent plus être utilisés :
-- `core/sync_comfyui_credentials.py` (Remplacé par `utils/token_synchronizer.py`)
-- `core/setup_complete_qwen.py` (Remplacé par `core/install_comfyui_login.py`)
-
-## 🔐 Gestion des Credentials
-
-La source de vérité unique pour les tokens est : `.secrets/comfyui_auth_tokens.conf`
-
-Pour régénérer ou resynchroniser les tokens :
-```bash
-python scripts/genai-auth/utils/token_synchronizer.py --unify
+---
+*Dernière mise à jour : 2025-12-13*

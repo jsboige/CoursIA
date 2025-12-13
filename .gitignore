@@ -384,7 +384,14 @@ docker-configurations/models/
 # Phase 26 - Nettoyage Structurel
 # Outputs temporaires
 outputs/
- 
+output_z_image/
+
+# Modèles locaux (trop volumineux)
+models/
+
+# Logs ComfyUI
+logs_comfy.txt
+
 # Configs Docker racine (déplacées)
 .env.docker.example
 docker-compose.test.yml
