@@ -22,6 +22,7 @@ Le cœur de notre infrastructure de génération d'images, basé sur ComfyUI, a 
 *   **Fonctionnalités Clés** :
     *   Authentification unifiée (Basic Auth + Token Sync)
     *   Support Qwen-VL et Flux.1
+    *   **Nouveau (Phase 39)** : Support Z-Image Turbo (Lumina-Next) via Diffusers Wrapper
     *   Architecture Docker optimisée
     *   Monitoring et logs centralisés
     *   Scripts de gestion unifiés (`manage-genai.ps1`)

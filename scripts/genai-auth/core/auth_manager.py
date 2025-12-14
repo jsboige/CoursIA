@@ -38,7 +38,9 @@ logging.basicConfig(
 logger = logging.getLogger("AuthManager")
 
 # Constantes
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+# D:/Dev/CoursIA/scripts/genai-auth/core/auth_manager.py
+# parent->core, parent->genai-auth, parent->scripts, parent->CoursIA (root)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 SECRETS_DIR = PROJECT_ROOT / ".secrets"
 CONFIG_FILE = SECRETS_DIR / "comfyui_auth_tokens.conf"
 

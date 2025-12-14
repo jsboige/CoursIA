@@ -15,6 +15,7 @@ CoursIA met à votre disposition **2 APIs complémentaires** de génération d'i
 |-----|-------------|-------|---------|
 | **Qwen Image-Edit 2.5** | Production, édition avancée | Multimodal haute qualité | 5-10s |
 | **SD XL Turbo** | Prototypage rapide | Vitesse, itérations | 1-3s |
+| **Z-Image Turbo (Lumina)** | Génération ultra-rapide next-gen | Qualité photoréaliste + Vitesse | 2-4s |
 
 **Recommandation workflow**:
 1. 🚀 **Exploration** → SD XL Turbo (itérations rapides)
@@ -27,10 +28,11 @@ CoursIA met à votre disposition **2 APIs complémentaires** de génération d'i
 
 1. [API 1: Qwen Image-Edit 2.5](#api-1-qwen-image-edit-25)
 2. [API 2: SD XL Turbo (Forge)](#api-2-sd-xl-turbo-forge)
-3. [Comparaison Technique](#comparaison-technique)
-4. [Exemples Pratiques](#exemples-pratiques)
-5. [Troubleshooting](#troubleshooting)
-6. [Ressources Complémentaires](#ressources-complémentaires)
+3. [API 3: Z-Image Turbo (Lumina-Next)](#api-3-z-image-turbo-lumina-next)
+4. [Comparaison Technique](#comparaison-technique)
+5. [Exemples Pratiques](#exemples-pratiques)
+6. [Troubleshooting](#troubleshooting)
+7. [Ressources Complémentaires](#ressources-complémentaires)
 
 ---
 
@@ -323,6 +325,59 @@ print(f"✅ {len(variations)} variations générées en ~10 secondes")
 - ❌ Production finale (préférer Qwen)
 
 **Astuce**: Générer avec Turbo → Affiner avec Qwen (workflow hybride)
+
+---
+
+## API 3: Z-Image Turbo (Lumina-Next)
+
+### 🎯 Présentation
+
+**Z-Image Turbo** (basé sur l'architecture Lumina-Next-SFT) représente la nouvelle génération de modèles rapides :
+- 🚀 **Architecture native Diffusers** : Intégration optimisée et robuste
+- 🖼️ **Qualité photoréaliste** supérieure à SD XL Turbo
+- ⚡ **Vitesse impressionnante** : 2-4 secondes pour une image HD
+- 🔧 **Contrôle précis** : Respect strict du prompt
+
+**Architecture**: ComfyUI + Diffusers Wrapper + Gemma 2B (Text Encoder)
+**GPU**: RTX 3090 (24GB VRAM)
+**Modèle**: Z-Image-Turbo (Safetensors, ~2.5GB) + Gemma-2-2B-It
+
+### 🔗 Accès
+
+- **Via ComfyUI** : Utilise le même endpoint que Qwen (`http://localhost:8188`)
+- **Workflow** : `workflow_z_image_reboot.json`
+
+### 💻 Exemple Python - Z-Image Turbo
+
+```python
+import json
+from helpers.comfyui_client import create_client
+
+# 1. Charger le workflow spécifique
+# Note: Assurez-vous d'avoir le fichier JSON du workflow
+with open('workflow_z_image_reboot.json', 'r') as f:
+    workflow = json.load(f)
+
+client = create_client("http://localhost:8188")
+
+# 2. Configurer le prompt (Node ID 6 = CLIP Text Encode)
+# Note: Les IDs peuvent varier selon le workflow, vérifiez le JSON
+workflow["6"]["inputs"]["text"] = "A futuristic cityscape, cyberpunk style, neon lights, 8k, photorealistic"
+
+# 3. Lancer la génération
+try:
+    print("🚀 Lancement de la génération Z-Image...")
+    prompt_id = client.queue_prompt(workflow)
+    images = client.wait_for_images(prompt_id)
+    
+    if images:
+        images[0].save("z_image_cyberpunk.png")
+        print("✅ Image sauvegardée : z_image_cyberpunk.png")
+    else:
+        print("❌ Aucune image générée")
+except Exception as e:
+    print(f"❌ Erreur : {e}")
+```
 
 ---
 

@@ -26,7 +26,7 @@ from datetime import datetime
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configuration par défaut
-DEFAULT_HOST = "localhost"
+DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8188
 
 @dataclass
@@ -105,7 +105,8 @@ class ComfyUIClient:
         try:
             self._request('GET', '/system_stats')
             return True
-        except:
+        except Exception as e:
+            print(f"DEBUG: is_reachable failed: {e}")
             return False
 
     def get_system_stats(self) -> Dict[str, Any]:

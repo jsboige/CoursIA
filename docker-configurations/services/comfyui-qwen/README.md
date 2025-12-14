@@ -49,27 +49,28 @@ ComfyUI/
 - **Taille**: ~54GB (quantifié FP8)
 - **Emplacement**: `models/checkpoints/Qwen-Image-Edit-2509-FP8/`
 
-### 3. Modèle Z-Image (Turbo GGUF)
+### 3. Modèle Z-Image Turbo (Lumina-Next)
 
-- **Nom**: Z-Image-Turbo-GGUF (Lumina-2)
-- **Taille**: ~5.5GB (Q5_K_M)
-- **Emplacement**: `models/unet/z_image_turbo-Q5_K_M.gguf`
-- **Encodeur Texte Requis**: **Gemma 3 4B** (Architecture `gemma3_4b`, dimension 2560)
-  - *Note*: Qwen2.5-VL ou Gemma 2 2B ne sont PAS compatibles (dimension incorrecte).
-  - Emplacement cible: `models/clip/gemma-3-4b-it.gguf` (ou similaire)
+- **Nom**: Z-Image-Turbo (Architecture Lumina-Next-SFT)
+- **Format**: Safetensors (Diffusers native)
+- **Taille**: ~2.5GB (Modèle principal) + ~2.5GB (Text Encoder)
+- **Emplacement**:
+  - UNet/Transformer : `models/diffusers/z_image_turbo/` (ou structure Diffusers standard)
+  - Text Encoder : `models/clip/gemma-2-2b-it.safetensors` (Gemma 2 2B)
+- **Architecture**: Utilise un wrapper Diffusers spécialisé pour ComfyUI.
 
-### 4. Custom Node
+### 4. Custom Nodes
 
+#### A. Qwen Image-Edit (Principal)
 - **Nom**: ComfyUI-QwenImageWanBridge
 - **Repository**: https://github.com/gokayfem/ComfyUI-QwenImageWanBridge
 - **Emplacement**: `custom_nodes/ComfyUI-QwenImageWanBridge/`
 
-### 4. Custom Node (Z-Image)
-
-- **Nom**: ComfyUI-GGUF
-- **Repository**: https://github.com/city96/ComfyUI-GGUF
-- **Emplacement**: `custom_nodes/ComfyUI-GGUF/`
-- **Usage**: Support des modèles GGUF (Z-Image Turbo)
+#### B. Z-Image Turbo (Nouveau - Phase 39)
+- **Nom**: ComfyUI-Lumina-Next-SFT-DiffusersWrapper
+- **Repository**: (Interne/Adapté) Wrapper autour de `diffusers`
+- **Emplacement**: `custom_nodes/ComfyUI-Lumina-Next-SFT-DiffusersWrapper/`
+- **Usage**: Support natif et optimisé de l'architecture Lumina-Next via la librairie Diffusers.
 
 ### 5. Docker avec GPU Support
 

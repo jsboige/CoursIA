@@ -49,14 +49,10 @@ logger = logging.getLogger("ComfyUIValidator")
 # Constantes
 COMFYUI_URL = "http://localhost:8188"
 EXPECTED_QWEN_NODES = [
-    "QwenTextEncode", "QwenImageEncode", "QwenImageDecode", "QwenVAEEncode",
-    "QwenVAEDecode", "QwenSampler", "QwenKSampler", "QwenLatentUpscale",
-    "QwenControlNet", "QwenControlNetApply", "QwenLoraLoader", "QwenCheckpointLoader",
-    "QwenModelMerge", "QwenCLIPTextEncode", "QwenConditioningConcat",
-    "QwenConditioningAverage", "QwenImageScale", "QwenImageCrop", "QwenImageBlur",
-    "QwenImageSharpen", "QwenImageColorCorrect", "QwenImageBatch", "QwenLoadImage",
-    "QwenSaveImage", "QwenPreviewImage", "QwenImageFromBatch",
-    "QwenRepeatImageBatch", "QwenImagePadForOutpaint"
+    "ModelMergeQwenImage",
+    "TextEncodeQwenImageEdit",
+    "TextEncodeQwenImageEditPlus",
+    "QwenImageDiffsynthControlnet"
 ]
 
 class ComfyUIValidator:
@@ -89,9 +85,14 @@ class ComfyUIValidator:
     def check_service_health(self) -> bool:
         """Vérifie si ComfyUI répond"""
         logger.info("📡 Vérification disponibilité service...")
-        if not self.client.test_connectivity():
-            logger.error("❌ ComfyUI inaccessible sur localhost:8188")
+        try:
+            if not self.client.is_reachable():
+                logger.error("❌ ComfyUI inaccessible sur localhost:8188 (is_reachable returned False)")
+                return False
+        except Exception as e:
+            logger.error(f"❌ ComfyUI inaccessible sur localhost:8188 (Exception: {e})")
             return False
+            
         logger.info("✅ Service ComfyUI en ligne")
         return True
 
@@ -172,13 +173,13 @@ class ComfyUIValidator:
             logger.error(f"❌ Erreur lors de la vérification des nœuds: {e}")
             return False
 
-    def check_generation(self) -> bool:
+    def check_generation(self, workflow_filename="workflow_z_image.json") -> bool:
         """
         Validation de la génération d'image (Fusion de run_z_image_test.py)
         """
-        self.log_section("TEST GÉNÉRATION (Z-IMAGE)")
+        self.log_section(f"TEST GÉNÉRATION ({workflow_filename})")
         
-        workflow_path = Path("docker-configurations/services/comfyui-qwen/workspace/workflow_z_image.json")
+        workflow_path = Path("docker-configurations/services/comfyui-qwen/workspace") / workflow_filename
         
         # Résolution chemin (projet racine)
         project_root = Path(os.getcwd())
@@ -195,8 +196,8 @@ class ComfyUIValidator:
         logger.info("📤 Soumission du workflow Z-Image...")
         
         try:
-            workflow = WorkflowManager.load_workflow(str(full_workflow_path))
-            prompt_id = self.client.submit_workflow(workflow)
+            workflow = WorkflowManager.load(str(full_workflow_path))
+            prompt_id = self.client.queue_prompt(workflow)
             
             if not prompt_id:
                 logger.error("❌ Échec de la soumission du workflow")
@@ -204,7 +205,7 @@ class ComfyUIValidator:
                 
             logger.info(f"🆔 Job ID: {prompt_id} - Attente génération...")
             
-            result = self.client.get_result(prompt_id, wait_completion=True, timeout=300)
+            result = self.client.wait_for_prompt(prompt_id, timeout=300)
             
             if not result:
                 logger.error("❌ Timeout ou erreur récupération résultat")
@@ -227,7 +228,7 @@ class ComfyUIValidator:
             logger.error(f"❌ Erreur test génération: {e}")
             return False
 
-    def run_suite(self, full=True, auth_only=False, nodes_only=False) -> bool:
+    def run_suite(self, full=True, auth_only=False, nodes_only=False, workflow="workflow_z_image.json") -> bool:
         """Exécute la suite de tests selon les arguments"""
         
         # 0. Health Check (Toujours)
@@ -248,7 +249,7 @@ class ComfyUIValidator:
 
         # 3. Generation Check (Seulement en mode full ou explicite)
         if full:
-            results.append(self.check_generation())
+            results.append(self.check_generation(workflow_filename=workflow))
 
         success = all(results)
         self.log_section("RÉSULTAT FINAL")
@@ -264,6 +265,7 @@ def main():
     parser.add_argument('--full', action='store_true', help='Exécuter tous les tests (défaut)', default=True)
     parser.add_argument('--auth-only', action='store_true', help='Test authentification uniquement')
     parser.add_argument('--nodes-only', action='store_true', help='Test nœuds uniquement')
+    parser.add_argument('--workflow', type=str, default="workflow_z_image.json", help='Nom du fichier workflow à tester (défaut: workflow_z_image.json)')
     
     args = parser.parse_args()
     
@@ -272,7 +274,7 @@ def main():
         args.full = False
 
     validator = ComfyUIValidator()
-    success = validator.run_suite(full=args.full, auth_only=args.auth_only, nodes_only=args.nodes_only)
+    success = validator.run_suite(full=args.full, auth_only=args.auth_only, nodes_only=args.nodes_only, workflow=args.workflow)
     
     sys.exit(0 if success else 1)
 

@@ -31,20 +31,21 @@ venv/bin/pip install -r requirements.txt
 venv/bin/pip install einops
 
 # Installation ComfyUI-Login
-LOGIN_DIR="custom_nodes/ComfyUI-Login"
-if [ ! -d "$LOGIN_DIR" ]; then
-    echo "🔑 Installation de ComfyUI-Login..."
-    git clone https://github.com/liusida/ComfyUI-Login.git "$LOGIN_DIR"
-    venv/bin/pip install -r "$LOGIN_DIR/requirements.txt"
-fi
+if [ "$COMFYUI_LOGIN_ENABLED" = "true" ]; then
+    LOGIN_DIR="custom_nodes/ComfyUI-Login"
+    if [ ! -d "$LOGIN_DIR" ]; then
+        echo "🔑 Installation de ComfyUI-Login..."
+        git clone https://github.com/liusida/ComfyUI-Login.git "$LOGIN_DIR"
+        venv/bin/pip install -r "$LOGIN_DIR/requirements.txt"
+    fi
 
-# Installation explicite des dépendances critiques pour l'auth
-echo "🔒 Installation des dépendances d'authentification..."
-venv/bin/pip install aiohttp_session aiohttp_security bcrypt cryptography
+    # Installation explicite des dépendances critiques pour l'auth
+    echo "🔒 Installation des dépendances d'authentification..."
+    venv/bin/pip install aiohttp_session aiohttp_security bcrypt cryptography
 
-# Configuration de l'authentification (génération du fichier PASSWORD)
-echo "🔐 Configuration de l'authentification..."
-venv/bin/python3 -c "
+    # Configuration de l'authentification (génération du fichier PASSWORD)
+    echo "🔐 Configuration de l'authentification..."
+    venv/bin/python3 -c "
 import bcrypt
 import os
 import sys
@@ -91,6 +92,9 @@ if hashed:
 else:
     print('⚠️ Aucune configuration d\'authentification appliquée')
 "
+else
+    echo "⚠️ Authentification désactivée (COMFYUI_LOGIN_ENABLED != true)"
+fi
 
 # Démarrage
 echo "🔥 Démarrage du serveur..."
