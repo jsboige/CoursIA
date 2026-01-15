@@ -316,48 +316,45 @@ def palier_group_size_adjustment(group_size):
 
 def fuzzy_match_group(eval_group_name, student_project_string):
     """
-    Tente de faire correspondre un nom de groupe d'évaluation (potentiellement simple)
-    avec une chaîne de projet d'étudiant (potentiellement plus descriptive).
+    Correspondance entre nom de groupe évalué et nom de projet inscrit.
+    Privilégie la correspondance exacte ou quasi-exacte (>= 90% similarité).
     """
     if not isinstance(eval_group_name, str) or not isinstance(student_project_string, str):
         return False
 
-    # Normalisation : minuscules, suppression des espaces superflus
+    # Normalisation simple : minuscules, trim, normaliser les séparateurs
     eval_norm = eval_group_name.lower().strip()
     student_norm = student_project_string.lower().strip()
 
-    # Cas 1: Correspondance directe (pour les noms simples comme "Quoridor")
+    # Normaliser les variations courantes (- vs /, espaces multiples)
+    eval_norm = re.sub(r'\s+', ' ', eval_norm)
+    student_norm = re.sub(r'\s+', ' ', student_norm)
+    eval_norm = eval_norm.replace(' / ', ' - ').replace('/', '-')
+    student_norm = student_norm.replace(' / ', ' - ').replace('/', '-')
+
+    # Cas 1: Correspondance exacte
     if eval_norm == student_norm:
         return True
 
-    # Cas 2: Si l'un est contenu dans l'autre (ex: "groupe 1" et "1")
-    if eval_norm in student_norm or student_norm in eval_norm:
+    # Cas 2: Correspondance par similarité très élevée (>= 90%)
+    # Gère les petites variations de ponctuation, accents, etc.
+    similarity = fuzz.ratio(eval_norm, student_norm)
+    if similarity >= 90:
         return True
 
-    # Cas 3: Extraction intelligente des numéros de groupe
-    # On cherche le pattern "groupe X" ou "group X" pour extraire le numéro principal
-    group_pattern = r'groupe?\s*(\d+)'
-    
-    eval_group_match = re.search(group_pattern, eval_norm)
-    student_group_match = re.search(group_pattern, student_norm)
-    
-    # Si les deux ont un numéro de groupe explicite, on compare ces numéros
+    # Cas 3: Pour les anciens formats (groupe X, project X)
+    group_pattern = r'^groupe?\s*(\d+)$'
+    eval_group_match = re.match(group_pattern, eval_norm)
+    student_group_match = re.match(group_pattern, student_norm)
+
     if eval_group_match and student_group_match:
         return eval_group_match.group(1) == student_group_match.group(1)
-    
-    # Cas 4: Fallback - correspondance par contenu significatif (pour les noms de projet)
-    # Extraire les mots significatifs (> 3 caractères)
-    eval_words = set(word for word in re.findall(r'\b\w+\b', eval_norm) if len(word) > 3)
-    student_words = set(word for word in re.findall(r'\b\w+\b', student_norm) if len(word) > 3)
-    
-    # Exclure les mots communs non significatifs
-    common_words = {'groupe', 'group', 'projet', 'project', 'pour', 'avec', 'dans', 'pour', 'machine', 'learning'}
-    eval_words -= common_words
-    student_words -= common_words
-    
-    # S'il y a au moins 2 mots en commun, c'est probablement le même projet
-    if len(eval_words.intersection(student_words)) >= 2:
-        return True
+
+    # Cas 4: Inclusion simple pour les noms courts non numérotés
+    if not (eval_norm and eval_norm[0].isdigit()):
+        if len(eval_norm) > 5 and len(student_norm) > 5:
+            if eval_norm in student_norm or student_norm in eval_norm:
+                return True
 
     return False
 
@@ -394,64 +391,42 @@ def is_feedback_empty(evaluation):
 
 def apply_rectification(project_eval, target_mean=15.0, target_stdev=2.0, skip_normalization=False):
     """
-    Applique le redressement en 2 étapes (conforme au notebook GradeBook.ipynb) :
-    1. Étape A : Bonus/malus selon taille du groupe
-    2. Étape B : Centrage-réduction avec la moyenne et écart-type cibles (optionnel)
+    Applique le redressement en 2 étapes :
+    1. Étape A : Centrage-réduction avec la moyenne et écart-type cibles (optionnel)
+    2. Étape B : Bonus/malus selon taille du groupe (appliqué APRÈS normalisation)
 
     Args:
         project_eval: Objet ProjectEvaluation
         target_mean: Moyenne cible pour le redressement
         target_stdev: Écart-type cible pour le redressement
-        skip_normalization: Si True, saute l'étape B (centrage-réduction)
+        skip_normalization: Si True, saute l'étape A (centrage-réduction)
     """
-    
-    print("\n" + "="*80)
-    print("ÉTAPE A : Application des bonus/malus selon la taille des groupes")
-    print("="*80)
-    
-    # Étape A : Application du bonus/malus
+
+    # Initialiser les notes avec les moyennes brutes
     for group_eval in project_eval.grouped_evaluations:
-        raw_avg = group_eval.moyenne  # Note brute pondérée
-        group_size = len(group_eval.group_members)
-        bonus_malus = palier_group_size_adjustment(group_size)
-        
-        adjusted = raw_avg + bonus_malus
-        adjusted = np.clip(adjusted, 0, 20)
-        
-        group_eval.note_rectifiee = adjusted
-        
-        print(f"  {group_eval.groupe[:40]:40} | Taille: {group_size} | Brute: {raw_avg:.2f} | Bonus/Malus: {bonus_malus:+.1f} | Ajustée: {adjusted:.2f}")
-    
-    # Étape B : Centrage-réduction (optionnel)
+        group_eval.note_rectifiee = group_eval.moyenne
+
+    # Étape A : Centrage-réduction (optionnel) - AVANT bonus/malus
     if skip_normalization:
         print("\n" + "="*80)
-        print("ÉTAPE B : Centrage-réduction DÉSACTIVÉE (skip_normalization=True)")
+        print("ÉTAPE A : Centrage-réduction DÉSACTIVÉE (skip_normalization=True)")
         print("="*80)
-        print("  Les notes conservent les valeurs après bonus/malus uniquement.")
-
-        # Statistiques finales (sans normalisation)
-        final_grades = [g.note_rectifiee for g in project_eval.grouped_evaluations]
-        if final_grades:
-            print(f"\n  Statistiques finales :")
-            print(f"    Moyenne: {np.mean(final_grades):.2f}")
-            print(f"    Écart-type: {np.std(final_grades):.2f}")
-            print(f"    Min: {np.min(final_grades):.2f}")
-            print(f"    Max: {np.max(final_grades):.2f}")
+        print("  Les notes brutes sont conservées.")
     else:
         print("\n" + "="*80)
-        print("ÉTAPE B : Centrage-réduction statistique")
+        print("ÉTAPE A : Centrage-réduction statistique (sur notes brutes)")
         print(f"  Moyenne cible: {target_mean:.2f} | Écart-type cible: {target_stdev:.2f}")
         print("="*80)
 
-        # Calcul de la moyenne et écart-type du projet (basés sur les notes de l'étape A)
+        # Calcul de la moyenne et écart-type du projet (basés sur les notes brutes)
         total_students = sum(len(g.group_members) for g in project_eval.grouped_evaluations)
 
         if total_students == 0:
             print("⚠️  Aucun étudiant trouvé, impossible d'appliquer le redressement")
             return
 
-        sum_rectified = sum(g.note_rectifiee * len(g.group_members) for g in project_eval.grouped_evaluations)
-        project_mean = sum_rectified / total_students
+        sum_grades = sum(g.note_rectifiee * len(g.group_members) for g in project_eval.grouped_evaluations)
+        project_mean = sum_grades / total_students
 
         sum_squared_diffs = sum(
             ((g.note_rectifiee - project_mean) ** 2) * len(g.group_members)
@@ -467,10 +442,27 @@ def apply_rectification(project_eval, target_mean=15.0, target_stdev=2.0, skip_n
         # Application de la fonction AdjustGrade pour chaque groupe
         for group_eval in project_eval.grouped_evaluations:
             current_grade = group_eval.note_rectifiee
-            final_grade = adjust_grade(current_grade, project_mean, project_stdev, target_mean, target_stdev)
-            group_eval.note_rectifiee = final_grade
+            normalized_grade = adjust_grade(current_grade, project_mean, project_stdev, target_mean, target_stdev)
+            group_eval.note_rectifiee = normalized_grade
 
-            print(f"  {group_eval.groupe[:40]:40} | Avant: {current_grade:.2f} | Après: {final_grade:.2f}")
+            print(f"  {group_eval.groupe[:40]:40} | Brute: {current_grade:.2f} | Normalisée: {normalized_grade:.2f}")
+
+    # Étape B : Application du bonus/malus APRÈS normalisation
+    print("\n" + "="*80)
+    print("ÉTAPE B : Application des bonus/malus selon la taille des groupes")
+    print("="*80)
+
+    for group_eval in project_eval.grouped_evaluations:
+        pre_bonus = group_eval.note_rectifiee
+        group_size = len(group_eval.group_members)
+        bonus_malus = palier_group_size_adjustment(group_size)
+
+        final_grade = pre_bonus + bonus_malus
+        final_grade = np.clip(final_grade, 0, 20)
+
+        group_eval.note_rectifiee = final_grade
+
+        print(f"  {group_eval.groupe[:40]:40} | Taille: {group_size} | Avant bonus: {pre_bonus:.2f} | Bonus/Malus: {bonus_malus:+.1f} | Finale: {final_grade:.2f}")
 
         # Statistiques finales
         final_grades = [g.note_rectifiee for g in project_eval.grouped_evaluations]
