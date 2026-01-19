@@ -93,6 +93,57 @@ Primary documentation language is French. Code comments may be in French or Engl
 
 ---
 
+## MCP Jupyter Papermill - Exécution de Notebooks
+
+Claude Code dispose d'un MCP (Model Context Protocol) pour exécuter les notebooks Jupyter de ce repository.
+
+### Capacités
+
+| Catégorie | Outils disponibles |
+|-----------|-------------------|
+| **Lecture/Écriture** | `read_notebook`, `write_notebook`, `create_notebook`, `read_cells`, `add_cell`, `update_cell`, `remove_cell` |
+| **Inspection** | `inspect_notebook`, `list_notebook_files`, `get_notebook_info` |
+| **Kernels** | `list_kernels`, `manage_kernel` (start/stop/restart/interrupt) |
+| **Exécution interactive** | `execute_on_kernel` (code brut, cellule spécifique, notebook complet) |
+| **Exécution Papermill** | `execute_notebook` (sync/async avec injection de paramètres) |
+| **Jobs asynchrones** | `manage_async_job` (status, logs, cancel, list, cleanup) |
+
+### Kernels supportés
+
+- **Python 3** : `python3` (via ipykernel dans conda `mcp-jupyter-py310`)
+- **.NET Interactive** : `.net-csharp`, `.net-fsharp`, `.net-powershell` (via dotnet interactive)
+
+### Configuration MCP (référence)
+
+Le MCP est configuré dans `~/.claude.json` avec les variables d'environnement nécessaires pour :
+- L'environnement conda `mcp-jupyter-py310`
+- Le SDK .NET et MSBuild pour les notebooks C#
+- Les chemins Jupyter pour trouver tous les kernels
+
+### Exemples d'utilisation
+
+```
+# Lister les notebooks du repo
+list_notebook_files(directory="MyIA.AI.Notebooks", recursive=true)
+
+# Lire les cellules d'un notebook
+read_cells(path="MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking.ipynb", mode="list")
+
+# Exécuter un notebook Python complet
+execute_notebook(input_path="MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb", mode="sync")
+
+# Démarrer un kernel et exécuter du code interactif
+manage_kernel(action="start", kernel_name="python3")
+execute_on_kernel(kernel_id="...", mode="code", code="print('Hello')")
+```
+
+### Limitations connues
+
+- Le reporting de progression des jobs async peut afficher des valeurs incorrectes
+- Les notebooks .NET Interactive nécessitent que `dotnet interactive` soit installé globalement
+
+---
+
 ## GradeBookApp - Système de Notation par Évaluations Collégiales
 
 ### Vue d'ensemble
