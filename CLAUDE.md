@@ -120,6 +120,38 @@ Le MCP est configuré dans `~/.claude.json` avec les variables d'environnement n
 - Le SDK .NET et MSBuild pour les notebooks C#
 - Les chemins Jupyter pour trouver tous les kernels
 
+### Installation des kernels .NET
+
+Les kernels .NET Interactive doivent être installés dans le répertoire de l'environnement conda :
+
+```
+C:/Users/<user>/.conda/envs/mcp-jupyter-py310/share/jupyter/kernels/
+├── .net-csharp/
+├── .net-fsharp/
+└── .net-powershell/
+```
+
+**Configuration requise dans `kernel.json`** : Utiliser le chemin absolu vers `dotnet-interactive.exe` :
+
+```json
+{
+  "argv": [
+    "C:\\Users\\<user>\\.dotnet\\tools\\dotnet-interactive.exe",
+    "jupyter",
+    "--default-kernel",
+    "csharp",
+    "{connection_file}",
+    "--http-port-range",
+    "2048-3000"
+  ],
+  "env": {
+    "DOTNET_ROOT": "C:\\Program Files\\dotnet"
+  },
+  "display_name": ".NET (C#)",
+  "language": "C#"
+}
+```
+
 ### Exemples d'utilisation
 
 ```
@@ -137,10 +169,71 @@ manage_kernel(action="start", kernel_name="python3")
 execute_on_kernel(kernel_id="...", mode="code", code="print('Hello')")
 ```
 
-### Limitations connues
+### Notebooks .NET avec `#!import` - Exécution cellule par cellule
 
-- Le reporting de progression des jobs async peut afficher des valeurs incorrectes
-- Les notebooks .NET Interactive nécessitent que `dotnet interactive` soit installé globalement
+Les notebooks .NET utilisant la directive `#!import` (comme les notebooks Sudoku) **ne fonctionnent pas bien avec Papermill**. Utiliser l'exécution cellule par cellule :
+
+```python
+# 1. Démarrer un kernel .NET
+manage_kernel(action="start", kernel_name=".net-csharp")
+
+# 2. Définir le répertoire de travail (important pour les chemins relatifs)
+execute_on_kernel(
+    kernel_id="...",
+    mode="code",
+    code='System.IO.Directory.SetCurrentDirectory(@"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")'
+)
+
+# 3. Exécuter les cellules une par une
+execute_on_kernel(kernel_id="...", mode="notebook_cell", path="notebook.ipynb", cell_index=0)
+execute_on_kernel(kernel_id="...", mode="notebook_cell", path="notebook.ipynb", cell_index=1)
+# ...
+
+# 4. Arrêter le kernel à la fin
+manage_kernel(action="stop", kernel_id="...")
+```
+
+### Répertoire de travail pour notebooks
+
+Les notebooks Sudoku et autres utilisant des chemins relatifs (ex: `puzzles/Easy.txt`) nécessitent de définir le répertoire de travail :
+
+```csharp
+// En C# (.NET Interactive)
+System.IO.Directory.SetCurrentDirectory(@"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku");
+```
+
+```python
+# En Python
+import os
+os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
+```
+
+### Limitations et problèmes connus
+
+| Problème | Impact | Contournement |
+| -------- | ------ | ------------- |
+| **Papermill + `#!import`** | L'exécution reste bloquée | Utiliser `execute_on_kernel` cellule par cellule |
+| **Cold start .NET** | Premier démarrage peut timeout (30-60s) | Relancer une seconde fois après timeout |
+| **Progression async** | Valeurs incorrectes (ex: 100/50 pour 21 cellules) | Bug connu, ignorer les chiffres de progression |
+| **Kernel unresponsive** | Après exécution Papermill échouée | Arrêter et redémarrer le kernel |
+| **Chemins relatifs** | "File not found" dans notebooks | Définir `Directory.SetCurrentDirectory()` |
+
+### Résolution de problèmes
+
+**Le kernel .NET ne démarre pas** :
+
+1. Vérifier que `dotnet-interactive` est installé : `dotnet tool list -g`
+2. Vérifier le chemin absolu dans `kernel.json`
+3. Vérifier que `DOTNET_ROOT` pointe vers l'installation .NET
+
+**Le notebook échoue avec "couldn't find file"** :
+
+1. Vérifier le répertoire de travail avec `System.IO.Directory.GetCurrentDirectory()`
+2. Définir explicitement le répertoire avec `SetCurrentDirectory()`
+
+**Timeout au premier démarrage** :
+
+- Normal pour .NET Interactive (compilation JIT). Relancer après timeout.
 
 ---
 
