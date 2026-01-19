@@ -85,8 +85,8 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 |--------|--------|-------------|
 | 00-GenAI-Environment | Complet | Setup et configuration |
 | 01-Images-Foundation | Complet | DALL-E 3, GPT-5, Forge, Qwen |
-| 02-Images-Advanced | En cours | Qwen 2509, FLUX, SD 3.5, Z-Image (stubs a finaliser) |
-| 03-Images-Orchestration | En cours | Comparaison, Workflows, Optimisation (stubs a finaliser) |
+| 02-Images-Advanced | Complet | Qwen 2509, FLUX, SD 3.5, Z-Image |
+| 03-Images-Orchestration | Complet | Comparaison, Workflows, Optimisation |
 | 04-Images-Applications | Complet | Applications pedagogiques |
 | Texte/ | Reference | OpenAI Intro, Prompts, RAG, Local LLMs |
 
