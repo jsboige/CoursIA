@@ -75,7 +75,28 @@ graph TD
 
 ---
 
-## 🐳 Spécifications Docker Détaillées
+## Infrastructure Production (Consolide Phase 42)
+
+### Inventaire des Conteneurs
+
+| Service | Conteneur | Moteurs IA | Port | GPU ID | Authentification |
+|---------|-----------|------------|------|--------|------------------|
+| **ComfyUI Qwen** | `comfyui-qwen` | Qwen2-VL (Edit), Z-Image Turbo (Lumina-Next) | 8188 | 0 (RTX 3090) | Hybride: Web (User/Pass) + API (Bearer Token) |
+| **Forge Turbo** | `forge-turbo` | SDXL Turbo | 17861 | 1 (RTX 3090) | Basic: Gradio Auth |
+
+### Custom Nodes Critiques (ComfyUI-Qwen)
+
+- `ComfyUI-Login` : Securisation acces
+- `ComfyUI-Lumina-Next-SFT-DiffusersWrapper` : Moteur Z-Image Turbo
+- `ComfyUI_QwenImageWanBridge` : Wrapper Qwen
+
+### Correction Importante
+
+Le modele installe est **Qwen2-VL** (Vision-Language), pas "Qwen3". Implementation native via `comfy_extras/nodes_qwen.py` (Node `TextEncodeQwenImageEdit`).
+
+---
+
+## Specifications Docker Detaillees
 
 ### 1. ComfyUI-Qwen Container (Production)
 

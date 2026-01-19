@@ -69,8 +69,10 @@ CoursIA met à votre disposition **2 APIs complémentaires** de génération d'i
    - **Password** : `CourIA2025!`
 3. Copiez le token affiché après connexion
 
-**Méthode 2 - Fourni par l'Enseignant** :
+**Methode 2 - Fourni par l'Enseignant** :
 Contactez votre enseignant pour obtenir votre token personnel.
+
+> **Note Technique** : ComfyUI-Login utilise une implementation particuliere ou le hash bcrypt EST le bearer token (pas le mot de passe en clair). Les tokens fournis sont donc des hashes commencant par `$2b$12$...`
 
 #### Configuration dans les Notebooks
 

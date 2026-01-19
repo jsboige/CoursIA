@@ -1009,4 +1009,81 @@ docker volume prune -f
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 ```
 
-**Ce guide de troubleshooting fournit une approche systématique pour résoudre tous les problèmes courants de l'infrastructure GenAI CoursIA.**
+---
+
+## Problemes Specifiques ComfyUI-Qwen (Consolide Phase 23-42)
+
+### Authentification ComfyUI-Login
+
+**Probleme : HTTP 401 "Authentication required"**
+
+ComfyUI-Login utilise une implementation non-standard : le hash bcrypt EST le bearer token (pas le mot de passe).
+
+```
+# INCORRECT
+Authorization: Bearer mon_mot_de_passe
+
+# CORRECT
+Authorization: Bearer $2b$12$03f3f6f91f4175e338c314f7bd96ebd3dd834b53c1813d69d830f
+```
+
+**Solution :**
+```bash
+# Regenerer et synchroniser les tokens
+python scripts/genai-auth/utils/token_synchronizer.py --unify
+
+# Source de verite : .secrets/comfyui_auth_tokens.conf
+```
+
+### Z-Image Generation (Images Noires/NaN)
+
+**Probleme :** Images noires ou NaN avec Z-Image GGUF workflows
+
+**Cause :** Incompatibilite dimension entre Z-Image U-Net (2560 dims) et encodeurs Gemma disponibles (2304 dims)
+
+**Decision :** Approche GGUF abandonnee. Utiliser le wrapper Diffusers.
+
+**Solution :**
+- Custom node : `ComfyUI-Lumina-Next-SFT-DiffusersWrapper`
+- Performance : ~3 secondes pour 1024x1024
+- Statut : EXPERIMENTAL
+
+### MCP Jupyter/Papermill
+
+**Probleme : ModuleNotFoundError dans MCP**
+
+**Solutions :**
+1. PYTHONPATH explicite dans config MCP
+2. stderr pour logs (pas stdout - protocole stdio)
+3. Chemins absolus requis dans mcp_settings.json
+
+**Diagnostic :**
+```powershell
+# Verifier environnement conda
+conda run -n mcp-jupyter-py310 python -c "import papermill; print('OK')"
+```
+
+### GPU Mapping PyTorch/nvidia-smi
+
+**Probleme :** GPU 0 nvidia-smi != GPU 0 PyTorch (mapping inverse)
+
+**Solution :** CUDA_VISIBLE_DEVICES=0 utilise RTX 3090 (pas 3080 Ti)
+
+**Configuration actuelle :**
+- GPU 0 (PyTorch) = RTX 3090 24GB → ComfyUI-Qwen (port 8188)
+- GPU 1 (PyTorch) = RTX 3080 Ti 16GB → Forge Turbo (port 17861)
+
+---
+
+## Erreurs Courantes Additionnelles
+
+| Message | Cause | Solution |
+|---------|-------|----------|
+| `Value not in list` (Qwen nodes) | Format checkpoint incompatible | Qwen utilise fichiers shardes, pas .safetensors unifie |
+| `cryptography not found` | venv pas active au demarrage | Ajouter `source venv/bin/activate` dans startup.sh |
+| `BOM UTF-8` dans outputs PowerShell | Encodage incorrect | Forcer UTF-8 sans BOM |
+| `Port 8191 vs 8188` confusion | Ancienne config vs actuelle | Port correct = 8188 |
+
+---
+
+**Ce guide de troubleshooting fournit une approche systematique pour resoudre tous les problemes courants de l'infrastructure GenAI CoursIA.**
