@@ -7,13 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 CoursIA is an educational AI course platform combining:
 - **Jupyter notebooks** for AI learning (C# with .NET Interactive and Python)
 - **Docker infrastructure** for GenAI services (ComfyUI + Qwen image editing)
+- **GradeBookApp** for student evaluation with collegial grading
 - **Production-ready ecosystem** with authentication, orchestration, and validation
 
 Repository: https://github.com/jsboige/CoursIA
 
-## Build & Setup Commands
+## Common Commands
 
-### Python Environment
+### Python Environment Setup
+
 ```bash
 python -m venv venv
 venv\Scripts\activate  # Windows
@@ -26,7 +28,7 @@ python -m ipykernel install --user --name=coursia --display-name "Python (CoursI
 ```bash
 dotnet restore MyIA.CoursIA.sln
 ```
-Configuration: Copy `MyIA.AI.Notebooks/Config/settings.json.openai-example` to `settings.json`
+Target framework: .NET 9.0. Configuration: Copy `MyIA.AI.Notebooks/Config/settings.json.openai-example` to `settings.json`
 
 ### Docker/ComfyUI Services
 ```bash
@@ -36,31 +38,42 @@ docker-compose up -d
 ```
 Access: http://localhost:8188 (requires Bearer token authentication)
 
-## Validation & Testing
+### Validation & Testing
 
-### Notebook Validation
-GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 ```bash
-python scripts/genai-stack/validate_notebooks.py
+python scripts/genai-stack/validate_notebooks.py  # Notebook validation
+python scripts/genai-stack/validate_stack.py      # GenAI stack validation
+python scripts/genai-stack/check_vram.py          # VRAM check
 ```
+GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 
-### GenAI Stack Validation
+### GradeBookApp
 ```bash
-python scripts/genai-stack/validate_stack.py
-python scripts/genai-stack/check_vram.py
+python GradeBookApp/gradebook.py           # Python version
+dotnet run --project GradeBookApp          # C# version
+python GradeBookApp/run_epf_mis_2026.py    # EPF MIS multi-epreuves
 ```
 
 ## Architecture
 
 ```
-MyIA.AI.Notebooks/           # Educational content (18 notebooks)
-├── GenAI/                   # GenAI ecosystem (image generation, LLMs)
-├── ML/                      # Machine Learning with ML.NET (C#)
-├── SymbolicAI/              # Z3 solver, OR-Tools, RDF
-├── Sudoku/                  # 6 solving approaches
-├── Search/                  # Genetic algorithms
-├── Probas/                  # Probabilistic inference
-└── IIT/                     # Integrated Information Theory
+MyIA.AI.Notebooks/           # Interactive notebooks by topic
+├── GenAI/                   # GenAI ecosystem (18 notebooks: image generation, LLMs)
+├── ML/                      # ML.NET tutorials
+├── Sudoku/                  # Constraint solving (Backtracking, Z3, OR-Tools, Genetic)
+├── Search/                  # Optimization algorithms (GeneticSharp, PyGad)
+├── SymbolicAI/              # RDF, Z3 solver, OR-Tools
+├── Probas/                  # Infer.NET probabilistic programming
+├── IIT/                     # PyPhi - Integrated Information Theory
+├── EPF/                     # Student assignments (CC1, CC2)
+└── Config/                  # API settings (settings.json)
+
+MyIA.AI.Shared/              # Shared C# library
+
+GradeBookApp/                # Student grading system
+├── configs/                 # Course-specific grading configs (EPF, EPITA)
+├── legacy/                  # Archived/deprecated scripts
+└── gradebook.py             # Main grading logic (unified pipeline)
 
 docker-configurations/       # Production infrastructure
 ├── comfyui-qwen/           # Main ComfyUI + Qwen service
@@ -69,8 +82,11 @@ docker-configurations/       # Production infrastructure
 └── orchestrator/           # Service orchestration
 
 scripts/
-├── genai-stack/            # Validation and management
+├── genai-stack/            # Validation and management scripts
+├── archive/                # Legacy scripts
 └── notebook-fixes/         # Notebook repair utilities
+
+notebook-infrastructure/     # Papermill automation & MCP maintenance
 ```
 
 ### GenAI Notebooks Structure (4 levels)
@@ -102,23 +118,68 @@ Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans 
 
 ## Key Technologies
 
-- **AI/ML**: OpenAI API, Anthropic Claude, Qwen 2.5-VL, Hugging Face, Diffusers
-- **ComfyUI**: Custom Qwen nodes (16-channel VAE, vision tokens, multi-image editing)
-- **Docker**: Containerized GPU services (RTX 3090, 24GB VRAM recommended)
-- **.NET**: ML.NET, .NET Interactive for C# notebooks
-- **Jupyter**: Python and C# kernels, papermill for execution
+**AI/ML**: OpenAI API, Anthropic Claude, Qwen 2.5-VL, Hugging Face, Diffusers
+**ComfyUI**: Custom Qwen nodes (16-channel VAE, vision tokens, multi-image editing)
+**Docker**: Containerized GPU services (RTX 3090, 24GB VRAM recommended)
+**.NET**: ML.NET, .NET Interactive, Microsoft.SemanticKernel, AutoGen
+**Jupyter**: Python and C# kernels, papermill for execution
 
-## API Keys Configuration
+## Configuration
 
-GenAI notebooks require API keys in `MyIA.AI.Notebooks/GenAI/.env`:
-- `OPENAI_API_KEY` - DALL-E 3, GPT models
-- `ANTHROPIC_API_KEY` - Claude Vision
-- `COMFYUI_BEARER_TOKEN` - Local ComfyUI access
-- `HUGGINGFACE_TOKEN` - Hugging Face models
+- **OpenAI/API keys**: `MyIA.AI.Notebooks/GenAI/.env` (template: `.env.example`)
+  - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_BEARER_TOKEN`, `HUGGINGFACE_TOKEN`
+- **C# settings**: `MyIA.AI.Notebooks/Config/settings.json`
+- **Docker env**: Variables in `docker-compose.yml` (ports, memory limits)
 
-## Hardware Requirements
+## Language
 
-For ComfyUI/Qwen services:
-- GPU: RTX 3090 (24GB VRAM) recommended
-- RAM: 32GB+ recommended
-- Storage: 100GB+ for models
+Primary documentation language is French. Code comments may be in French or English.
+
+---
+
+## GradeBookApp - Systeme de Notation par Evaluations Collegiales
+
+### Vue d'ensemble
+
+GradeBookApp est un systeme de notation qui combine les evaluations collegiales des etudiants avec celle du professeur. Le pipeline existe en deux versions :
+
+- **Notebook C#** : `MyIA.AI.Notebooks/GradeBook.ipynb` (version interactive originale)
+- **Python** : `GradeBookApp/gradebook.py` (version consolidee pour production)
+
+### Pipeline de notation
+
+1. **Chargement des donnees** - Fichiers inscription CSV + evaluations Google Forms
+2. **Filtrage** - Notes hors limites, dates incoherentes, auto-evaluations, doublons
+3. **Calcul note brute** - Moyenne ponderee (etudiants + professeur avec TEACHER_WEIGHT)
+4. **Rectification** - Bonus/malus taille groupe + centrage-reduction statistique
+5. **Generation Excel** - Resume etudiants + feedbacks par epreuve
+
+### Configuration multi-epreuves
+
+```python
+CONFIG = {
+    'nom_classe': 'EPF MIS 2026',
+    'inscriptions_path': 'chemin/inscriptions.csv',
+    'epreuves': [
+        {'nom': 'CC1', 'inscription_col': 'Groupe CC1', 'poids': 0.5, 'target_mean': 15.0},
+        {'nom': 'Projet ML', 'inscription_col': 'Sujet', 'poids': 0.5, 'target_mean': 15.5}
+    ],
+    'output_path': 'chemin/Notes_Finales.xlsx',
+    'professor_email': 'jsboige@gmail.com'
+}
+```
+
+### Fonctions principales (gradebook.py)
+
+| Fonction | Description |
+| -------- | ----------- |
+| `run_pipeline(config)` | Pipeline mono-epreuve |
+| `run_multi_epreuve_pipeline(config)` | Pipeline multi-epreuves avec moyenne ponderee |
+| `apply_rectification(proj_eval, mean, std)` | Applique bonus/malus + centrage-reduction |
+| `generate_excel_workbook(...)` | Genere l'Excel avec filtrage NaN |
+
+### Dependances Python GradeBookApp
+
+```bash
+pip install pandas numpy openpyxl rapidfuzz unidecode
+```
