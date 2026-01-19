@@ -67,9 +67,32 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 | **04-3-Production-Integration** | Intégration systèmes production | APIs, Microservices |
 | **04-3-Cross-Stitch-Pattern-Maker-Legacy** | Générateur motifs point de croix | DMC Colors, Pattern Generation |
 
+### 📝 **Texte/** (Generation de Texte)
+*Reference | Complementaire aux modules Images*
+
+| Notebook | Description | Technologies |
+|----------|-------------|--------------|
+| **1_OpenAI_Intro** | Introduction a l'API OpenAI | GPT-4, Chat Completions |
+| **2_PromptEngineering** | Techniques de prompt engineering | Few-shot, Chain-of-Thought |
+| **3_RAG** | Retrieval Augmented Generation | Embeddings, Vector Search |
+| **4_LocalLlama** | Utilisation de LLMs locaux | Llama, Ollama |
+
 ---
 
-## 🚀 **Démarrage Rapide**
+## Statut des Modules
+
+| Module | Statut | Description |
+|--------|--------|-------------|
+| 00-GenAI-Environment | Complet | Setup et configuration |
+| 01-Images-Foundation | Complet | DALL-E 3, GPT-5, Forge, Qwen |
+| 02-Images-Advanced | En cours | Qwen 2509, FLUX, SD 3.5, Z-Image (stubs a finaliser) |
+| 03-Images-Orchestration | En cours | Comparaison, Workflows, Optimisation (stubs a finaliser) |
+| 04-Images-Applications | Complet | Applications pedagogiques |
+| Texte/ | Reference | OpenAI Intro, Prompts, RAG, Local LLMs |
+
+---
+
+## 🚀 **Demarrage Rapide**
 
 ### 1. **Prérequis**
 ```bash
