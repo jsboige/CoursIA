@@ -1,170 +1,149 @@
 # Docker Configurations - GenAI Ecosystem
 
-Ce répertoire contient les configurations Docker consolidées pour l'écosystème GenAI Images, en parfaite cohérence avec les scripts `genai-auth`.
+Ce repertoire contient les configurations Docker consolidees pour l'ecosysteme GenAI Images, en parfaite coherence avec les scripts `genai-auth`.
 
-## 📁 Structure Organisée
+## Structure Organisee
 
 ```
 docker-configurations/
-├── README.md                    (ce fichier)
-├── _archive-20251125/          (configurations obsolètes archivées)
-├── cache/                       (cache partagé pour tous les services)
-├── models/                      (modèles partagés pour tous les services)
-├── orchestrator/                (service d'orchestration)
-└── comfyui-qwen/              (configuration principale ComfyUI + Qwen)
-    ├── README.md
-    ├── docker-compose.yml
-    ├── .env.example
-    ├── install_comfyui.sh
-    └── workspace/
+├── README.md                   (ce fichier)
+├── services/                   (configurations Docker des services)
+│   ├── comfyui-qwen/          (ComfyUI + Qwen Image-Edit) [PORT 8188]
+│   │   ├── docker-compose.yml
+│   │   ├── README.md
+│   │   └── .env.example
+│   ├── forge-turbo/           (Stable Diffusion Forge) [PORT 17861]
+│   │   ├── docker-compose.yml
+│   │   ├── Dockerfile
+│   │   └── README.md
+│   └── orchestrator/          (service d'orchestration - experimental)
+├── profiles/                   (profils de deploiement GPU)
+│   └── README.md              (guide qwen-only, forge-only, dual-gpu)
+├── shared/                     (ressources partagees entre services)
+├── cache/                      (cache HuggingFace, CivitAI)
+├── models/                     (modeles partages)
+├── .secrets/                   (tokens authentification - gitignore)
+├── docs/                       (documentation infrastructure)
+├── logs/                       (logs des services)
+└── _archive-20251125/         (configurations obsoletes archivees)
 ```
 
-## 🚀 Configuration Principale
+## Allocation GPU
 
-### `comfyui-qwen/` - ComfyUI + Qwen Image-Edit
+| GPU | Modele | VRAM | Service | Port |
+|-----|--------|------|---------|------|
+| 0 (PyTorch) | RTX 3090 | 24 GB | ComfyUI Qwen | 8188 |
+| 1 (PyTorch) | RTX 3080 Ti | 16 GB | Forge Turbo | 17861 |
 
-Configuration principale et fonctionnelle pour ComfyUI avec le modèle Qwen-Image-Edit-2509-FP8.
+**Note**: Le mapping PyTorch est inverse par rapport a nvidia-smi.
 
-**Caractéristiques** :
-- ✅ **Authentification ComfyUI-Login** consolidée (Phase 29)
-- ✅ **GPU RTX 3090** optimisé (24GB VRAM)
-- ✅ **Scripts genai-auth** intégrés et validés
-- ✅ **Modèles FP8 officiels** Comfy-Org
-- ✅ **Documentation complète** et procédures de dépannage
+## Services Principaux
 
-**Démarrage rapide** :
+### `services/comfyui-qwen/` - ComfyUI + Qwen Image-Edit
+
+Configuration principale pour ComfyUI avec le modele Qwen-Image-Edit-2509-FP8.
+
+**Demarrage** :
 ```bash
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 cp .env.example .env
-# Éditer .env avec vos configurations
 docker-compose up -d
 ```
 
-**Accès** : http://localhost:8188 (avec authentification)
+**Acces** : http://localhost:8188 (authentification Bearer Token)
 
-## 🔧 Services Complémentaires
+Voir [services/comfyui-qwen/README.md](services/comfyui-qwen/README.md)
 
-### `orchestrator/` - Service d'Orchestration
+### `services/forge-turbo/` - Stable Diffusion Forge
 
-Service Python pour la gestion et l'orchestration des conteneurs GenAI.
+Service Docker pour Stable Diffusion WebUI Forge optimise SDXL Turbo.
 
-**Fonctionnalités** :
-- Monitoring des ressources (CPU, GPU, mémoire)
-- Gestion du cycle de vie des conteneurs
-- API REST pour l'orchestration
-- Intégration avec les scripts genai-auth
-
-### `models/` - Répertoire de Modèles Partagés
-
-Volume partagé pour tous les modèles GenAI.
-
-**Structure** :
-```
-models/
-├── checkpoints/          (modèles principaux)
-├── vae/                 (VAE models)
-├── unet/                (UNET models)
-└── clip/                 (CLIP models)
+**Demarrage** :
+```bash
+cd docker-configurations/services/forge-turbo
+cp .env.example .env
+docker-compose up -d
 ```
 
-### `cache/` - Cache Partagé
+**Acces** : http://localhost:17861 (authentification Gradio Basic)
 
-Volume partagé pour le cache des différents services (HuggingFace, CivitAI, etc.).
+Voir [services/forge-turbo/README.md](services/forge-turbo/README.md)
 
-## 🔗 Intégration avec Scripts GenAI-Auth
+## Profils de Deploiement
 
-Cette configuration est conçue pour fonctionner de manière transparente avec les scripts consolidés :
+Voir [profiles/README.md](profiles/README.md) pour les profils disponibles:
 
-### Scripts Principaux
+| Profil | Services | GPUs |
+|--------|----------|------|
+| `qwen-only` | ComfyUI Qwen | RTX 3090 |
+| `forge-only` | Forge Turbo | RTX 3080 Ti |
+| `dual-gpu` | ComfyUI + Forge | Les deux |
 
-- **`setup_complete_qwen.py`** : Installation complète automatisée
-- **`validate_genai_ecosystem.py`** : Validation de l'écosystème
-- **`diagnose_comfyui_auth.py`** : Diagnostic authentification
-- **`install_comfyui_login.py`** : Installation ComfyUI-Login
+## Ressources Partagees
 
-### Flux de Travail Validé
+### `models/` - Modeles Partages
 
-1. **Installation** : `python scripts/genai-auth/core/setup_complete_qwen.py`
-2. **Validation** : `python scripts/genai-auth/core/validate_genai_ecosystem.py`
-3. **Diagnostic** : `python scripts/genai-auth/core/diagnose_comfyui_auth.py`
-4. **Utilisation** : Accès via http://localhost:8188
+Volume partage pour tous les modeles GenAI.
 
-## 🗑️ Configurations Archivées
+### `cache/` - Cache Partage
 
-Les configurations obsolètes ont été archivées dans `_archive-20251125/` :
+Volume partage pour le cache HuggingFace, CivitAI, etc.
+
+## Integration avec Scripts GenAI-Auth
+
+Scripts de gestion dans `../scripts/genai-auth/core/`:
+
+| Script | Description |
+|--------|-------------|
+| `setup_complete_qwen.py` | Installation complete automatisee |
+| `validate_genai_ecosystem.py` | Validation de l'ecosysteme |
+| `diagnose_comfyui_auth.py` | Diagnostic authentification |
+
+## Configurations Archivees
+
+Les configurations obsoletes sont dans `_archive-20251125/`:
 - Anciens docker-compose.yml multi-services
-- Configurations incomplètes (flux-1-dev, stable-diffusion-35, comfyui-workflows)
-- Fichiers de backup et versions obsolètes
+- Configurations incompletes (flux-1-dev, stable-diffusion-35)
 
-Voir `_archive-20251125/README.md` pour les détails.
+Voir `_archive-20251125/README.md` pour les details.
 
-## 📋 Prérequis
+## Prerequis
 
-### Système
-- **Docker Desktop** avec support WSL2
-- **NVIDIA Docker Runtime** (GPU support)
-- **Windows 11** avec WSL2 Ubuntu
+- **Docker Desktop** avec support WSL2 et NVIDIA Docker Runtime
+- **GPU**: RTX 3090 (24GB) + RTX 3080 Ti (16GB) recommandes
+- **RAM**: 32GB+ recommande
+- **Stockage**: 100GB+ pour les modeles
 
-### Hardware
-- **GPU RTX 3090** (24GB VRAM recommandée)
-- **RAM** : 32GB+ recommandé
-- **Stockage** : 100GB+ pour les modèles
+## Securite
 
-### Logiciels
-- **Python 3.8+** (pour les scripts genai-auth)
-- **Git** (pour le clonage des repositories)
-- **PowerShell 7+** (pour les scripts Windows)
+- **Tokens**: Stockes dans `.secrets/` (gitignore)
+- **ComfyUI**: Authentification Bearer Token (hash bcrypt)
+- **Forge**: Authentification Gradio Basic
 
-## 🔒 Sécurité
+## Documentation
 
-- **Tokens sécurisés** : Stockés dans `.secrets/` (gitignore)
-- **Authentification bcrypt** : ComfyUI-Login avec hash bcrypt
-- **Isolation réseau** : Containers isolés sur réseau dédié
-- **Volumes read-only** : Modèles montés en lecture seule
+- [Architecture GenAI](../docs/genai/architecture.md)
+- [Guide Utilisateur](../docs/genai/user-guide.md)
+- [Troubleshooting](../docs/genai/troubleshooting.md)
+- [Scripts GenAI-Auth](../scripts/genai-auth/README.md)
 
-## 📚 Documentation Complète
+## Depannage
 
-Pour la documentation détaillée de l'écosystème :
+```bash
+# Logs container
+docker-compose logs comfyui-qwen
 
-- **Scripts GenAI-Auth** : `../scripts/genai-auth/README.md`
-- **Rapport Phase 29** : `../docs/suivis/genai-image/RAPPORT-RESOLUTION-UNIFICATION-TOKENS-COMFYUI-20251125.md`
-- **Architecture GenAI** : `../docs/genai/`
+# GPU disponible
+docker exec comfyui-qwen nvidia-smi
 
-## 🚨 Dépannage
+# Diagnostic auth
+python scripts/genai-auth/core/diagnose_comfyui_auth.py
+```
 
-### Problèmes Communs
-
-1. **Container ne démarre pas** :
-   ```bash
-   docker-compose logs comfyui-qwen
-   ```
-
-2. **GPU non détectée** :
-   ```bash
-   docker exec comfyui-qwen nvidia-smi
-   ```
-
-3. **Authentification échoue** :
-   ```bash
-   python scripts/genai-auth/core/diagnose_comfyui_auth.py
-   ```
-
-4. **Validation complète** :
-   ```bash
-   python scripts/genai-auth/core/validate_genai_ecosystem.py
-   ```
-
-### Support
-
-Pour toute question ou problème :
-1. Consulter les logs du container
-2. Utiliser les scripts de diagnostic genai-auth
-3. Vérifier la documentation Phase 29
-4. Consulter les rapports de suivi dans `docs/suivis/`
+Voir [../docs/genai/troubleshooting.md](../docs/genai/troubleshooting.md) pour plus de details.
 
 ---
 
-**Dernière mise à jour** : 2025-11-25  
-**Version** : 2.0.0 - Structure consolidée  
-**Statut** : Production Ready ✅  
-**Phase** : Post-consolidation scripts genai-auth
+**Derniere mise a jour**: 2025-01-19
+**Version**: 3.0.0 - Structure consolidee Phase 3
+**Statut**: Production Ready
