@@ -158,6 +158,34 @@ class ComfyUIClient:
             time.sleep(1)
         raise ComfyUIError(f"Timeout waiting for prompt {prompt_id}")
 
+    def free_memory(self, unload_models: bool = True) -> Dict[str, Any]:
+        """Libere la VRAM et decharge les modeles via POST /free.
+
+        Args:
+            unload_models: Si True, decharge tous les modeles de la VRAM
+
+        Returns:
+            Reponse JSON du serveur avec status de liberation, ou {"success": True} si vide
+        """
+        payload = {
+            "unload_models": unload_models,
+            "free_memory": True
+        }
+        resp = self._request('POST', '/free', json=payload)
+        # /free peut retourner une reponse vide sur succes
+        try:
+            return resp.json() if resp.text.strip() else {"success": True}
+        except Exception:
+            return {"success": True}
+
+    def interrupt_prompt(self) -> Dict[str, Any]:
+        """Interrompt le prompt en cours d'execution"""
+        return self._request('POST', '/interrupt').json()
+
+    def clear_queue(self) -> Dict[str, Any]:
+        """Vide la file d'attente"""
+        return self._request('POST', '/queue', json={"clear": True}).json()
+
 class WorkflowManager:
     """Utilitaires pour manipuler les workflows JSON"""
     
