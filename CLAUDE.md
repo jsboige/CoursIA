@@ -366,14 +366,15 @@ os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
 | **CSPs_Intro.ipynb** | min_conflicts O(n²) par itération, timeout avec n=256 | Version optimisée avec compteurs incrémentaux (O(n)), supporte n=256 en 0.036s et n=1000 en 0.5s |
 | **Sudoku-0-Environment.ipynb** | `DisplayResults()` affichage inversé | Paramètres `values`/`Keys` de `Chart2D.Chart.Bar` corrigés |
 | **GeneticSharp-EdgeDetection.ipynb** | `#load "../Config/SkiaUtils.cs"` échoue avec Papermill | Code SkiaUtils intégré directement dans le notebook |
-| **RDF.Net.ipynb** | Erreur DBpedia (service externe instable) | Try/catch ajouté avec message d'erreur gracieux |
+| **RDF.Net.ipynb** | Erreur DBpedia + fichiers manquants | Try/catch DBpedia + exemples in-memory pour cellules 107-113 |
 | **PyGad-EdgeDetection.ipynb** | `plt.show()` bloque en mode batch, timeout >300s | Ajout `plt.close()` après chaque `plt.show()`, support `BATCH_MODE` |
+| **Tweety.ipynb** | Warning trompeur sur InformationObject | Message corrigé : seule section CrMas affectée, reste du notebook OK |
 
 ### Notebooks vérifiés
 
 | Notebook | Statut | Notes |
 | -------- | ------ | ----- |
-| **Tweety.ipynb** (72 cellules) | OK | 0 erreurs, JVM démarre correctement, warning `InformationObject` non bloquant |
+| **Tweety.ipynb** (72 cellules) | OK | JVM démarre avec JDK portable, InformationObject manquant (Tweety 1.28 API) n'affecte que CrMas |
 | **Argument_Analysis_Agentic-0-init.ipynb** | OK | Exécution Python 43.4s, config OpenAI validée |
 | **Argument_Analysis_Executor.ipynb** | OK (batch) | Mode batch ajouté (`BATCH_MODE=true` dans `.env`), analyse complète en 122s |
 | **PyGad-EdgeDetection.ipynb** | OK (corrigé) | `plt.close()` ajouté, supporte `BATCH_MODE`, reste long (~300s avec 100 générations) |
@@ -386,10 +387,30 @@ os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
 
 | Notebook | Dépendance | Notes |
 | -------- | ---------- | ----- |
-| **Tweety.ipynb** | JDK 17+, JARs Tweety dans `libs/` | Auto-détection JAVA_HOME |
-| **Argument_Analysis/** | OpenAI API (`.env`) | 7 notebooks avec Semantic Kernel, mode batch supporté |
-| **RDF.Net.ipynb** | DBpedia (service web) | Peut échouer si DBpedia indisponible |
-| **Fast-Downward.ipynb** | Exécutable Fast Downward | Chemin configurable |
+| **Tweety.ipynb** | JDK 17+ | Auto-téléchargement JDK portable Zulu 17, JARs dans `libs/` |
+| **Argument_Analysis/** | OpenAI API (`.env`) | 6 notebooks avec Semantic Kernel, mode batch supporté |
+| **RDF.Net.ipynb** | DBpedia (service web) | Peut échouer si DBpedia indisponible, exemples in-memory en fallback |
+| **Fast-Downward.ipynb** | Exécutable Fast Downward | Auto-compilation si manquant |
+
+### Structure Argument_Analysis (après nettoyage Janvier 2026)
+
+```
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/
+├── .env / .env.example          # Configuration API (OPENAI_API_KEY, BATCH_MODE)
+├── Argument_Analysis_*.ipynb    # 6 notebooks du workflow
+├── install_jdk_portable.py      # Utilitaire installation JDK
+├── data/                        # Données (taxonomie sophismes, etc.)
+├── ext_tools/                   # Outils externes
+├── jdk-17-portable/             # JDK Zulu 17 (ignoré git)
+├── libs/                        # JARs Tweety
+├── ontologies/                  # Ontologies OWL
+└── resources/                   # Ressources Tweety
+```
+
+**Fichiers supprimés** (nettoyage) :
+- Scripts temporaires : `fix_*.py`, `text_sanitizer.py`
+- Fichiers exemples obsolètes : `ExemplesTweetyJava*.txt`
+- Notebook dupliqué : `Tweety.ipynb` (copie dans Argument_Analysis)
 
 ### Mode batch pour Argument_Analysis
 
