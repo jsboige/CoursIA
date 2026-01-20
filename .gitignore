@@ -448,3 +448,7 @@ MyIA.AI.Notebooks/SymbolicAI/resources/
 
 # Jupyter/MCP temp files
 kernel_info.json
+
+# Tweety runtime dependencies (downloaded by notebook, may be created at root level during testing)
+libs/
+resources/
