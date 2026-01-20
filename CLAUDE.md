@@ -367,6 +367,7 @@ os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
 | **Sudoku-0-Environment.ipynb** | `DisplayResults()` affichage inversé | Paramètres `values`/`Keys` de `Chart2D.Chart.Bar` corrigés |
 | **GeneticSharp-EdgeDetection.ipynb** | `#load "../Config/SkiaUtils.cs"` échoue avec Papermill | Code SkiaUtils intégré directement dans le notebook |
 | **RDF.Net.ipynb** | Erreur DBpedia (service externe instable) | Try/catch ajouté avec message d'erreur gracieux |
+| **PyGad-EdgeDetection.ipynb** | `plt.show()` bloque en mode batch, timeout >300s | Ajout `plt.close()` après chaque `plt.show()`, support `BATCH_MODE` |
 
 ### Notebooks vérifiés
 
@@ -375,7 +376,8 @@ os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
 | **Tweety.ipynb** (72 cellules) | OK | 0 erreurs, JVM démarre correctement, warning `InformationObject` non bloquant |
 | **Argument_Analysis_Agentic-0-init.ipynb** | OK | Exécution Python 43.4s, config OpenAI validée |
 | **Argument_Analysis_Executor.ipynb** | OK (batch) | Mode batch ajouté (`BATCH_MODE=true` dans `.env`), analyse complète en 122s |
-| **PyGad-EdgeDetection.ipynb** | Timeout | 100 générations x 100 individus dépasse 300s |
+| **PyGad-EdgeDetection.ipynb** | OK (corrigé) | `plt.close()` ajouté, supporte `BATCH_MODE`, reste long (~300s avec 100 générations) |
+| **Exploration_non_informée...ipynb** | OK | Exécution Papermill réussie |
 | **OR-Tools-Stiegler.ipynb** | Kernel .NET | Papermill bloque au démarrage, exécution manuelle requise |
 | **Sudoku-2-Genetic.ipynb** | Manuel | Utilise `#!import`, test manuel requis |
 | **Sudoku-6-Infer.ipynb** | Manuel | Utilise `#!import` + Infer.NET, test manuel requis |
