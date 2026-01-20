@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Script de configuration pour le reboot de Z-Image Turbo (Phase 37).
-Télécharge les modèles requis et génère le workflow ComfyUI.
+Script de configuration pour Z-Image (Lumina-Next-SFT Diffusers).
+Telecharge les modeles requis et genere le workflow ComfyUI.
+
+Note: Le node LuminaDiffusersNode utilise LuminaPipeline (diffusers 0.34+)
+et telecharge automatiquement le modele depuis HuggingFace (~10GB).
 """
 
 import json

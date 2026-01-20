@@ -124,6 +124,80 @@ Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans 
 **.NET**: ML.NET, .NET Interactive, Microsoft.SemanticKernel, AutoGen
 **Jupyter**: Python and C# kernels, papermill for execution
 
+---
+
+## GenAI Services - ComfyUI Image Generation
+
+### Services disponibles
+
+| Service | Modele | VRAM | Description |
+|---------|--------|------|-------------|
+| **Qwen Image Edit** | qwen_image_edit_2509 | ~29GB | Edition d'images avec prompts multimodaux |
+| **Z-Image/Lumina** | Lumina-Next-SFT | ~10GB | Generation text-to-image haute qualite |
+
+### Architecture Qwen (Phase 29)
+
+Workflow ComfyUI pour Qwen Image Edit 2509 :
+
+```
+VAELoader (qwen_image_vae.safetensors, 16 channels)
+    |
+CLIPLoader (qwen_2.5_vl_7b_fp8_scaled.safetensors, type: sd3)
+    |
+UNETLoader (qwen_image_edit_2509_fp8_e4m3fn.safetensors)
+    |
+ModelSamplingAuraFlow (shift=3.0)
+    |
+CFGNorm (strength=1.0)
+    |
+TextEncodeQwenImageEdit (clip, prompt, vae)
+    |
+ConditioningZeroOut (negative)
+    |
+EmptySD3LatentImage (16 channels)
+    |
+KSampler (scheduler=beta, cfg=1.0, sampler=euler)
+    |
+VAEDecode
+```
+
+**Points critiques** :
+- VAE 16 canaux (pas SDXL standard)
+- `scheduler=beta` obligatoire
+- `cfg=1.0` (pas de CFG classique, utilise CFGNorm)
+- `ModelSamplingAuraFlow` avec shift=3.0
+
+### Architecture Z-Image/Lumina
+
+Workflow ComfyUI simplifie avec LuminaDiffusersNode :
+
+```
+LuminaDiffusersNode (Alpha-VLLM/Lumina-Next-SFT-diffusers)
+    |
+VAELoader (sdxl_vae.safetensors)
+    |
+VAEDecode
+    |
+SaveImage
+```
+
+**Parametres LuminaDiffusersNode** :
+- `model_path`: "Alpha-VLLM/Lumina-Next-SFT-diffusers"
+- `num_inference_steps`: 20-40
+- `guidance_scale`: 3.0-5.0
+- `scaling_watershed`: 0.3
+- `proportional_attn`: true
+- `max_sequence_length`: 256
+
+**Note technique (Janvier 2025)** : Le node utilise `LuminaPipeline` (diffusers 0.34+), ancien nom `LuminaText2ImgPipeline` obsolete.
+
+### Approches abandonnees
+
+| Approche | Raison abandon |
+|----------|----------------|
+| Z-Image GGUF | Incompatibilite dimensionnelle (2560 vs 2304) entre RecurrentGemma et Gemma-2 |
+| Qwen GGUF | Non teste, prefer les poids fp8 pour qualite |
+
 ## Configuration
 
 - **OpenAI/API keys**: `MyIA.AI.Notebooks/GenAI/.env` (template: `.env.example`)

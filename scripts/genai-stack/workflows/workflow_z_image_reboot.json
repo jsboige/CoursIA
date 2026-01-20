@@ -1,86 +1,64 @@
 {
+  "_meta": {
+    "title": "Z-Image (Lumina-Next-SFT) - Text-to-Image",
+    "description": "Z-Image generation using LuminaDiffusersNode wrapper with SDXL VAE",
+    "version": "2.0.0",
+    "author": "CoursIA GenAI Team",
+    "date": "2026-01-20",
+    "source": "Lumina-Next-SFT-diffusers from HuggingFace",
+    "models_required": {
+      "pipeline": "Alpha-VLLM/Lumina-Next-SFT-diffusers (~10GB, auto-downloaded)",
+      "vae": "vae/sdxl_vae.safetensors"
+    },
+    "nodes_used": [
+      "LuminaDiffusersNode",
+      "VAELoader",
+      "VAEDecode",
+      "SaveImage"
+    ],
+    "notes": "Uses LuminaPipeline (diffusers 0.34+). First run downloads model from HuggingFace."
+  },
+  "1": {
+    "class_type": "LuminaDiffusersNode",
+    "inputs": {
+      "model_path": "Alpha-VLLM/Lumina-Next-SFT-diffusers",
+      "prompt": "A cinematic shot of a cyberpunk samurai in a neon city, raining, reflections, 8k, highly detailed, photorealistic",
+      "negative_prompt": "blur, low quality, watermark, text, logo, bad anatomy, deformed",
+      "num_inference_steps": 20,
+      "guidance_scale": 4.0,
+      "seed": 42,
+      "batch_size": 1,
+      "scaling_watershed": 0.3,
+      "proportional_attn": true,
+      "clean_caption": true,
+      "max_sequence_length": 256,
+      "use_time_shift": false,
+      "t_shift": 4,
+      "strength": 1.0
+    },
+    "_meta": {"title": "Lumina-Next-SFT Diffusers"}
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "sdxl_vae.safetensors"
+    },
+    "_meta": {"title": "VAE Loader (SDXL)"}
+  },
   "3": {
-    "class_type": "CheckpointLoaderSimple",
-    "inputs": {
-      "ckpt_name": "sd-v1-5-pruned-emaonly.ckpt"
-    }
-  },
-  "4": {
-    "class_type": "EmptyLatentImage",
-    "inputs": {
-      "width": 512,
-      "height": 512,
-      "batch_size": 1
-    }
-  },
-  "6": {
-    "class_type": "CLIPTextEncode",
-    "inputs": {
-      "text": "A bright red apple on a wooden table, high quality, 4k, photorealistic",
-      "clip": [
-        "3",
-        1
-      ]
-    }
-  },
-  "7": {
-    "class_type": "CLIPTextEncode",
-    "inputs": {
-      "text": "ugly, blurry, low quality, black and white, watermark",
-      "clip": [
-        "3",
-        1
-      ]
-    }
-  },
-  "8": {
-    "class_type": "KSampler",
-    "inputs": {
-      "seed": 12345,
-      "steps": 20,
-      "cfg": 8.0,
-      "sampler_name": "euler",
-      "scheduler": "normal",
-      "denoise": 1.0,
-      "model": [
-        "3",
-        0
-      ],
-      "positive": [
-        "6",
-        0
-      ],
-      "negative": [
-        "7",
-        0
-      ],
-      "latent_image": [
-        "4",
-        0
-      ]
-    }
-  },
-  "10": {
     "class_type": "VAEDecode",
     "inputs": {
-      "samples": [
-        "8",
-        0
-      ],
-      "vae": [
-        "3",
-        2
-      ]
-    }
+      "samples": ["1", 0],
+      "vae": ["2", 0]
+    },
+    "_meta": {"title": "VAE Decode"}
   },
-  "12": {
+  "4": {
     "class_type": "SaveImage",
     "inputs": {
-      "images": [
-        "10",
-        0
-      ],
-      "filename_prefix": "Z-Image-Reboot"
-    }
+      "filename_prefix": "Z-Image-Lumina",
+      "images": ["3", 0]
+    },
+    "_meta": {"title": "Save Image"}
   }
 }
