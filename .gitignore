@@ -443,3 +443,6 @@ MyIA.AI.Notebooks/SymbolicAI/resources/
 
 # Jupyter/MCP temp files
 kernel_info.json
+
+# Argument_Analysis Papermill outputs (test execution)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/output/

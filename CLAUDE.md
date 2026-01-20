@@ -442,6 +442,34 @@ BATCH_MODE="true"
 - `Argument_Analysis_UI_configuration.ipynb` - Widgets interactifs (polling loop)
 - `Argument_Analysis_Agentic-3-orchestration.ipynb` - Dépend de 0/1/2 chargés
 
+### Mises à jour Janvier 2026 - Notebooks Search, Sudoku, SymbolicAI
+
+**Division de Tweety.ipynb** : Le notebook monolithique (72 cellules, 307KB) a été divisé en 6 notebooks thématiques :
+
+| Notebook | Contenu | Cellules originales |
+| -------- | ------- | ------------------- |
+| Tweety-1-Setup.ipynb | Configuration JDK/JPype, téléchargement JARs | 0-14 |
+| Tweety-2-Basic-Logics.ipynb | Logique Propositionnelle, FOL | 15-20 |
+| Tweety-3-Advanced-Logics.ipynb | DL, Modale, QBF, Conditional | 21-26 |
+| Tweety-4-Belief-Revision.ipynb | CrMas, mesures incohérence, MUS | 27-35 |
+| Tweety-5-Abstract-Argumentation.ipynb | Dung, ASPIC+, DeLP, ABA, ASP | 36-54 |
+| Tweety-6-Advanced-Argumentation.ipynb | ADF, Weighted, Social, Ranking | 55-71 |
+
+Le notebook original `Tweety.ipynb` est conservé pour référence. Chaque notebook 2-6 inclut une cellule d'initialisation JVM partagée.
+
+**Nouveaux notebooks Python Sudoku** :
+
+| Notebook | Description |
+| -------- | ----------- |
+| Sudoku-Python-Backtracking.ipynb | Backtracking simple + MRV, visualisation matplotlib |
+| Sudoku-Python-ORTools-Z3.ipynb | OR-Tools CP-SAT + Z3 SMT, comparaison performances |
+
+**Amélioration Argument_Analysis_Executor.ipynb** : Ajout d'une cellule de validation finale qui génère un rapport JSON structuré avec :
+- Cross-validation (COMPLETE_VALIDATED, PARTIAL, MINIMAL, INCOMPLETE)
+- Score de confiance (0-100%)
+- Checks : ARGUMENTS_IDENTIFIED, FALLACIES_ANALYZED, BELIEF_SET_CREATED, QUERIES_EXECUTED, CONCLUSION_GENERATED
+- Export JSON vers `output/analysis_report.json`
+
 ---
 
 ## GradeBookApp - Systeme de Notation par Evaluations Collegiales
