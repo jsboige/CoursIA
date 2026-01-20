@@ -163,9 +163,18 @@ class WorkflowManager:
     
     @staticmethod
     def load(path: Union[str, Path]) -> Dict[str, Any]:
-        """Charge un workflow depuis un fichier"""
+        """Charge un workflow depuis un fichier.
+
+        Filtre automatiquement les clés de métadonnées (comme _meta)
+        qui ne sont pas des nœuds ComfyUI valides.
+        """
         with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            raw = json.load(f)
+
+        # Filter out non-node keys (like _meta) at root level
+        # Valid nodes have a 'class_type' key
+        return {k: v for k, v in raw.items()
+                if isinstance(v, dict) and 'class_type' in v}
 
     @staticmethod
     def validate(workflow: Dict[str, Any]) -> Tuple[bool, List[str]]:
