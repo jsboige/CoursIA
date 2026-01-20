@@ -4,23 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CoursIA is an educational AI course platform combining:
-- **Jupyter notebooks** for AI learning (C# with .NET Interactive and Python)
-- **Docker infrastructure** for GenAI services (ComfyUI + Qwen image editing)
-- **GradeBookApp** for student evaluation with collegial grading
-- **Production-ready ecosystem** with authentication, orchestration, and validation
-
-Repository: https://github.com/jsboige/CoursIA
+CoursIA is an AI course repository containing interactive Jupyter notebooks in both Python and C# (.NET Interactive). It covers machine learning, generative AI, symbolic AI, probabilistic programming, and optimization algorithms. The repository also includes Docker infrastructure for local GenAI image generation services and a GradeBookApp for student evaluation.
 
 ## Common Commands
 
 ### Python Environment Setup
-
 ```bash
 python -m venv venv
 venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/macOS
-pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt
+pip install jupyter openai
 python -m ipykernel install --user --name=coursia --display-name "Python (CoursIA)"
 ```
 
@@ -28,180 +20,70 @@ python -m ipykernel install --user --name=coursia --display-name "Python (CoursI
 ```bash
 dotnet restore MyIA.CoursIA.sln
 ```
-Target framework: .NET 9.0. Configuration: Copy `MyIA.AI.Notebooks/Config/settings.json.openai-example` to `settings.json`
+Target framework: .NET 9.0. Configuration in `MyIA.AI.Notebooks/Config/settings.json` (copy from `settings.json.openai-example`).
 
-### Docker/ComfyUI Services
+### Docker GenAI Services
 ```bash
-cd docker-configurations/comfyui-qwen
-cp .env.example .env
-docker-compose up -d
+docker-compose up -d              # Start all services
+docker-compose down               # Stop services
 ```
-Access: http://localhost:8188 (requires Bearer token authentication)
+PowerShell scripts available: `scripts/docker-setup.ps1`, `scripts/docker-start.ps1`, `scripts/docker-stop.ps1`
 
-### Validation & Testing
+Services: FLUX.1-dev (8189), Stable Diffusion 3.5 (8190), ComfyUI Workflows (8191), Orchestrator (8193)
 
+### Running Tests
 ```bash
-python scripts/genai-stack/validate_notebooks.py  # Notebook validation
-python scripts/genai-stack/validate_stack.py      # GenAI stack validation
-python scripts/genai-stack/check_vram.py          # VRAM check
+python tests/validate_genai_ecosystem.py
 ```
-GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 
 ### GradeBookApp
 ```bash
 python GradeBookApp/gradebook.py           # Python version
 dotnet run --project GradeBookApp          # C# version
-python GradeBookApp/run_epf_mis_2026.py    # EPF MIS multi-epreuves
 ```
 
 ## Architecture
 
 ```
 MyIA.AI.Notebooks/           # Interactive notebooks by topic
-├── GenAI/                   # GenAI ecosystem (18 notebooks: image generation, LLMs)
-├── ML/                      # ML.NET tutorials
-├── Sudoku/                  # Constraint solving (Backtracking, Z3, OR-Tools, Genetic)
-├── Search/                  # Optimization algorithms (GeneticSharp, PyGad)
-├── SymbolicAI/              # RDF, Z3 solver, OR-Tools
-├── Probas/                  # Infer.NET probabilistic programming
-├── IIT/                     # PyPhi - Integrated Information Theory
-├── EPF/                     # Student assignments (CC1, CC2)
-└── Config/                  # API settings (settings.json)
+  GenAI/                     # OpenAI, RAG, Semantic Kernel, local LLMs
+  ML/                        # ML.NET tutorials
+  Sudoku/                    # Constraint solving (Backtracking, Z3, OR-Tools, Genetic)
+  Search/                    # Optimization algorithms (GeneticSharp, PyGad)
+  SymbolicAI/                # RDF, Z3 solver, OR-Tools
+  Probas/                    # Infer.NET probabilistic programming
+  IIT/                       # PyPhi - Integrated Information Theory
+  EPF/                       # Student assignments (CC1, CC2)
+  Config/                    # API settings (settings.json)
 
 MyIA.AI.Shared/              # Shared C# library
 
-GradeBookApp/                # Student grading system
-├── configs/                 # Course-specific grading configs (EPF, EPITA)
-├── legacy/                  # Archived/deprecated scripts
-└── gradebook.py             # Main grading logic (unified pipeline)
+GradeBookApp/                # Student grading system (see detailed section below)
+  configs/                   # Course-specific grading configs (EPF, EPITA)
+  legacy/                    # Archived/deprecated scripts
+  gradebook.py               # Main grading logic (Python, unified pipeline)
 
-docker-configurations/       # Production infrastructure
-├── comfyui-qwen/           # Main ComfyUI + Qwen service
-├── models/                 # Shared model storage
-├── cache/                  # Shared cache layer
-└── orchestrator/           # Service orchestration
-
-scripts/
-├── genai-stack/            # Validation and management scripts
-├── archive/                # Legacy scripts
-└── notebook-fixes/         # Notebook repair utilities
+docker-configurations/       # GenAI Docker service configs
+  flux-1-dev/
+  stable-diffusion-35/
+  comfyui-workflows/
+  orchestrator/
 
 notebook-infrastructure/     # Papermill automation & MCP maintenance
+scripts/                     # PowerShell/Python utilities
 ```
 
-### GenAI Notebooks Structure (4 levels)
-- **00-GenAI-Environment**: Setup and configuration
-- **01-Images-Foundation**: DALL-E 3, GPT-5, basic operations
-- **02-Images-Advanced**: Qwen, FLUX, Stable Diffusion 3.5, Z-Image
-- **03-Images-Orchestration**: Multi-model comparison, workflows
-- **04-Images-Applications**: Educational content, production integration
+## Key Dependencies
 
-## Code Style Guidelines
+**C# Notebooks**: Microsoft.DotNet.Interactive, Microsoft.SemanticKernel, Microsoft.ML.Probabilistic, dotNetRdf, AutoGen
 
-- **No emojis** in code, variable names, or generated files
-- Follow PEP 8 for Python, standard conventions for C#
-- Keep naming professional and descriptive
-- Avoid prefixes like "Pure", "Enhanced", "Advanced", "Ultimate" - use descriptive names instead
-- Do not commit without explicit user approval
+**Python GenAI**: openai, anthropic, pillow, numpy, pandas, matplotlib, python-dotenv
 
-### Branch Naming
-```
-type/name-short-descriptif
-```
-Examples: `feature/notebook-transformers`, `fix/ml-example-bug`, `docs/improve-readme`
-
-### Commit Messages
-```
-Type: description courte de la modification
-```
-Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans l'exemple ML.NET`
-
-## Key Technologies
-
-**AI/ML**: OpenAI API, Anthropic Claude, Qwen 2.5-VL, Hugging Face, Diffusers
-**ComfyUI**: Custom Qwen nodes (16-channel VAE, vision tokens, multi-image editing)
-**Docker**: Containerized GPU services (RTX 3090, 24GB VRAM recommended)
-**.NET**: ML.NET, .NET Interactive, Microsoft.SemanticKernel, AutoGen
-**Jupyter**: Python and C# kernels, papermill for execution
-
----
-
-## GenAI Services - ComfyUI Image Generation
-
-### Services disponibles
-
-| Service | Modele | VRAM | Description |
-|---------|--------|------|-------------|
-| **Qwen Image Edit** | qwen_image_edit_2509 | ~29GB | Edition d'images avec prompts multimodaux |
-| **Z-Image/Lumina** | Lumina-Next-SFT | ~10GB | Generation text-to-image haute qualite |
-
-### Architecture Qwen (Phase 29)
-
-Workflow ComfyUI pour Qwen Image Edit 2509 :
-
-```
-VAELoader (qwen_image_vae.safetensors, 16 channels)
-    |
-CLIPLoader (qwen_2.5_vl_7b_fp8_scaled.safetensors, type: sd3)
-    |
-UNETLoader (qwen_image_edit_2509_fp8_e4m3fn.safetensors)
-    |
-ModelSamplingAuraFlow (shift=3.0)
-    |
-CFGNorm (strength=1.0)
-    |
-TextEncodeQwenImageEdit (clip, prompt, vae)
-    |
-ConditioningZeroOut (negative)
-    |
-EmptySD3LatentImage (16 channels)
-    |
-KSampler (scheduler=beta, cfg=1.0, sampler=euler)
-    |
-VAEDecode
-```
-
-**Points critiques** :
-- VAE 16 canaux (pas SDXL standard)
-- `scheduler=beta` obligatoire
-- `cfg=1.0` (pas de CFG classique, utilise CFGNorm)
-- `ModelSamplingAuraFlow` avec shift=3.0
-
-### Architecture Z-Image/Lumina
-
-Workflow ComfyUI simplifie avec LuminaDiffusersNode :
-
-```
-LuminaDiffusersNode (Alpha-VLLM/Lumina-Next-SFT-diffusers)
-    |
-VAELoader (sdxl_vae.safetensors)
-    |
-VAEDecode
-    |
-SaveImage
-```
-
-**Parametres LuminaDiffusersNode** :
-- `model_path`: "Alpha-VLLM/Lumina-Next-SFT-diffusers"
-- `num_inference_steps`: 20-40
-- `guidance_scale`: 3.0-5.0
-- `scaling_watershed`: 0.3
-- `proportional_attn`: true
-- `max_sequence_length`: 256
-
-**Note technique (Janvier 2025)** : Le node utilise `LuminaPipeline` (diffusers 0.34+), ancien nom `LuminaText2ImgPipeline` obsolete.
-
-### Approches abandonnees
-
-| Approche | Raison abandon |
-|----------|----------------|
-| Z-Image GGUF | Incompatibilite dimensionnelle (2560 vs 2304) entre RecurrentGemma et Gemma-2 |
-| Qwen GGUF | Non teste, prefer les poids fp8 pour qualite |
+**Docker**: NVIDIA GPU support required for GenAI services
 
 ## Configuration
 
 - **OpenAI/API keys**: `MyIA.AI.Notebooks/GenAI/.env` (template: `.env.example`)
-  - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_BEARER_TOKEN`, `HUGGINGFACE_TOKEN`
 - **C# settings**: `MyIA.AI.Notebooks/Config/settings.json`
 - **Docker env**: Variables in `docker-compose.yml` (ports, memory limits)
 
@@ -331,10 +213,12 @@ os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
 | Problème | Impact | Contournement |
 | -------- | ------ | ------------- |
 | **Papermill + `#!import`** | L'exécution reste bloquée | Utiliser `execute_on_kernel` cellule par cellule |
+| **Papermill + kernels .NET** | Le kernel reste bloqué au démarrage (>60s) | Préférer exécution manuelle ou cellule par cellule |
 | **Cold start .NET** | Premier démarrage peut timeout (30-60s) | Relancer une seconde fois après timeout |
 | **Progression async** | Valeurs incorrectes (ex: 100/50 pour 21 cellules) | Bug connu, ignorer les chiffres de progression |
 | **Kernel unresponsive** | Après exécution Papermill échouée | Arrêter et redémarrer le kernel |
 | **Chemins relatifs** | "File not found" dans notebooks | Définir `Directory.SetCurrentDirectory()` |
+| **PyGad long runtime** | Algorithme génétique >300s avec 100 générations | Réduire `num_generations` pour tests rapides |
 
 ### Résolution de problèmes
 
@@ -355,32 +239,193 @@ os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
 
 ---
 
-## GradeBookApp - Systeme de Notation par Evaluations Collegiales
+## État des Notebooks - Vérifications et Corrections (Janvier 2026)
+
+### Corrections effectuées
+
+| Notebook | Problème | Correction |
+| -------- | -------- | ---------- |
+| **CSPs_Intro.ipynb** | min_conflicts O(n²) par itération, timeout avec n=256 | Version optimisée avec compteurs incrémentaux (O(n)), supporte n=256 en 0.036s et n=1000 en 0.5s |
+| **Sudoku-0-Environment.ipynb** | `DisplayResults()` affichage inversé | Paramètres `values`/`Keys` de `Chart2D.Chart.Bar` corrigés |
+| **GeneticSharp-EdgeDetection.ipynb** | `#load "../Config/SkiaUtils.cs"` échoue avec Papermill | Code SkiaUtils intégré directement dans le notebook |
+| **RDF.Net.ipynb** | Erreur DBpedia (service externe instable) | Try/catch ajouté avec message d'erreur gracieux |
+
+### Notebooks vérifiés
+
+| Notebook | Statut | Notes |
+| -------- | ------ | ----- |
+| **Tweety.ipynb** (72 cellules) | ✅ OK | 0 erreurs, JVM démarre correctement, warning `InformationObject` non bloquant |
+| **Argument_Analysis_Agentic-0-init.ipynb** | ✅ OK | Exécution Python 43.4s, config OpenAI validée |
+| **Argument_Analysis_Executor.ipynb** | ✅ OK (batch) | Mode batch ajouté (`BATCH_MODE=true` dans `.env`), analyse complète en 122s |
+| **PyGad-EdgeDetection.ipynb** | ⚠️ Timeout | 100 générations × 100 individus dépasse 300s |
+| **OR-Tools-Stiegler.ipynb** | ⚠️ Kernel .NET | Papermill bloque au démarrage, exécution manuelle requise |
+| **Sudoku-2-Genetic.ipynb** | 📋 Manuel | Utilise `#!import`, test manuel requis |
+| **Sudoku-6-Infer.ipynb** | 📋 Manuel | Utilise `#!import` + Infer.NET, test manuel requis |
+
+### Notebooks avec dépendances externes
+
+| Notebook | Dépendance | Notes |
+| -------- | ---------- | ----- |
+| **Tweety.ipynb** | JDK 17+, JARs Tweety dans `libs/` | Auto-détection JAVA_HOME |
+| **Argument_Analysis/** | OpenAI API (`.env`) | 7 notebooks avec Semantic Kernel, mode batch supporté |
+| **RDF.Net.ipynb** | DBpedia (service web) | Peut échouer si DBpedia indisponible |
+| **Fast-Downward.ipynb** | Exécutable Fast Downward | Chemin configurable |
+
+### Mode batch pour Argument_Analysis
+
+Le notebook **Argument_Analysis_Executor.ipynb** supporte un mode batch pour les tests automatisés (Papermill/MCP) :
+
+**Configuration dans `.env`** :
+
+```bash
+# Mode batch pour exécution non-interactive
+BATCH_MODE="true"
+# Texte personnalisé optionnel (sinon texte d'exemple utilisé)
+# BATCH_TEXT="Votre texte à analyser..."
+```
+
+**Comportement** :
+
+- `BATCH_MODE=true` : Skip le chargement de `UI_configuration.ipynb` (widgets bloquants), utilise texte d'exemple ou `BATCH_TEXT`
+- `BATCH_MODE=false` (défaut) : Mode interactif avec interface widgets
+
+**Notebooks testables en mode batch** :
+
+- `Argument_Analysis_Executor.ipynb` - Orchestrateur complet (~122s)
+- `Argument_Analysis_Agentic-0-init.ipynb` - Config uniquement (~43s)
+- `Argument_Analysis_Agentic-1-informal_agent.ipynb` - Définition agent (~5s)
+- `Argument_Analysis_Agentic-2-pl_agent.ipynb` - Définition agent (~5s)
+
+**Notebooks NON testables automatiquement** :
+
+- `Argument_Analysis_UI_configuration.ipynb` - Widgets interactifs (polling loop)
+- `Argument_Analysis_Agentic-3-orchestration.ipynb` - Dépend de 0/1/2 chargés
+
+---
+
+## GradeBookApp - Système de Notation par Évaluations Collégiales
 
 ### Vue d'ensemble
 
-GradeBookApp est un systeme de notation qui combine les evaluations collegiales des etudiants avec celle du professeur. Le pipeline existe en deux versions :
+GradeBookApp est un système de notation qui combine les évaluations collégiales des étudiants avec celle du professeur. Le pipeline existe en deux versions :
 
 - **Notebook C#** : `MyIA.AI.Notebooks/GradeBook.ipynb` (version interactive originale)
-- **Python** : `GradeBookApp/gradebook.py` (version consolidee pour production)
+- **Python** : `GradeBookApp/gradebook.py` (version consolidée pour production)
+
+Les deux versions sont fonctionnellement équivalentes et supportent les multi-épreuves.
+
+### Architecture des fichiers
+
+```text
+GradeBookApp/
+├── gradebook.py              # Pipeline unifié (EPF + EPITA, mono + multi-épreuves)
+├── run_grading.py            # Point d'entrée EPITA
+├── run_epf_mis_2026.py       # Exemple config multi-épreuves EPF MIS
+├── configs/                  # Configurations par classe
+│   ├── __init__.py
+│   ├── README.md             # Guide création configs
+│   ├── epf_2026_ml.py        # Config EPF MIS (Machine Learning)
+│   └── epf_2026_genai.py     # Config EPF GenAI
+├── legacy/                   # Scripts archivés
+│   └── generate_notes_finales_epf.py
+└── [fichiers C#]             # Version .NET (EvaluationRecord.cs, etc.)
+```
 
 ### Pipeline de notation
 
-1. **Chargement des donnees** - Fichiers inscription CSV + evaluations Google Forms
-2. **Filtrage** - Notes hors limites, dates incoherentes, auto-evaluations, doublons
-3. **Calcul note brute** - Moyenne ponderee (etudiants + professeur avec TEACHER_WEIGHT)
-4. **Rectification** - Bonus/malus taille groupe + centrage-reduction statistique
-5. **Generation Excel** - Resume etudiants + feedbacks par epreuve
+Le pipeline suit ces étapes (conformes au notebook original) :
 
-### Configuration multi-epreuves
+1. **Chargement des données**
+   - Fichier d'inscription CSV (un fichier unique avec colonnes de groupe par épreuve)
+   - Fichier(s) d'évaluation CSV (export Google Forms, un par épreuve)
+
+2. **Filtrage des évaluations invalides**
+   - Notes hors limites (< 1 ou > 19.5)
+   - Dates incohérentes (± 5h par rapport à la médiane du groupe)
+   - Évaluateurs non inscrits au cours
+   - Auto-évaluations (membre du groupe évalué)
+   - Évaluations en double
+
+3. **Calcul de la note brute par groupe**
+   - Formule : `Note = (Communication + Théorique + Technique + Organisation) × 2 / NbCritères`
+   - Moyenne pondérée : `(moyenneÉtudiants + noteProfesseur × TEACHER_WEIGHT) / (1 + TEACHER_WEIGHT)`
+   - Avec `TEACHER_WEIGHT = 1.0`, la note du prof compte 50%
+
+4. **Rectification en deux étapes**
+   - **Étape A** : Bonus/malus selon taille du groupe
+
+     ```text
+     Taille 1 : +3.0 points
+     Taille 2 : +1.0 point
+     Taille 3 :  0.0 (référence)
+     Taille 4 : -1.0 point
+     Taille 5 : -3.0 points
+     ```
+
+   - **Étape B** : Centrage-réduction statistique
+
+     ```text
+     noteFinale = ((note - moyenne) / écartType) × écartTypeCible + moyenneCible
+     ```
+
+     Borné entre 0 et 20.
+
+5. **Génération du fichier Excel**
+   - Onglet "Résumé Étudiants" : Nom, Prénom, [Groupe + Note par épreuve], Moyenne finale
+   - Onglet "[Épreuve] Feedback" par épreuve : feedbacks qualitatifs (filtrés des lignes NaN)
+
+### Commandes d'exécution
+
+```bash
+# EPF MIS 2026 (multi-épreuves : CC1 + Projet ML)
+python GradeBookApp/run_epf_mis_2026.py
+
+# EPF GenAI 2026 (mono-épreuve)
+python GradeBookApp/configs/epf_2026_genai.py
+
+# EPITA (ancien modèle)
+python GradeBookApp/run_grading.py
+```
+
+### Format des fichiers d'entrée
+
+**Fichier d'inscription (CSV)** :
+
+```csv
+Prénom,Nom de famille,Adresse de courriel,Sujet,Groupe CC1
+Jean,DUPONT,jean.dupont@epf.fr,Projet IA,Groupe 1
+```
+
+**Fichier d'évaluation Google Forms (CSV)** :
+
+```csv
+Horodateur,Adresse e-mail,Votre nom,Votre prénom,Groupe à évaluer,Qualité de la présentation (communication, la forme),Qualité théorique (...),Qualité technique (...),Organisation (...),Points positifs,Points négatifs,Recommandations
+2026-01-10 14:30:00,jsboige@gmail.com,Boige,Jean-Sylvain,Groupe 1,9,8,9,8,Bon travail,RAS,Continuer
+```
+
+### Configuration multi-épreuves
 
 ```python
 CONFIG = {
     'nom_classe': 'EPF MIS 2026',
     'inscriptions_path': 'chemin/inscriptions.csv',
     'epreuves': [
-        {'nom': 'CC1', 'inscription_col': 'Groupe CC1', 'poids': 0.5, 'target_mean': 15.0},
-        {'nom': 'Projet ML', 'inscription_col': 'Sujet', 'poids': 0.5, 'target_mean': 15.5}
+        {
+            'nom': 'CC1',
+            'inscription_col': 'Groupe CC1',
+            'evaluations_path': 'chemin/CC1_Evaluations.csv',
+            'poids': 0.5,  # 50% de la note finale
+            'target_mean': 15.0,
+            'target_std': 2.0
+        },
+        {
+            'nom': 'Projet ML',
+            'inscription_col': 'Sujet',
+            'evaluations_path': 'chemin/Projet_Evaluations.csv',
+            'poids': 0.5,
+            'target_mean': 15.5,
+            'target_std': 2.0
+        }
     ],
     'output_path': 'chemin/Notes_Finales.xlsx',
     'professor_email': 'jsboige@gmail.com'
@@ -389,14 +434,27 @@ CONFIG = {
 
 ### Fonctions principales (gradebook.py)
 
-| Fonction | Description |
-| -------- | ----------- |
-| `run_pipeline(config)` | Pipeline mono-epreuve |
-| `run_multi_epreuve_pipeline(config)` | Pipeline multi-epreuves avec moyenne ponderee |
-| `apply_rectification(proj_eval, mean, std)` | Applique bonus/malus + centrage-reduction |
-| `generate_excel_workbook(...)` | Genere l'Excel avec filtrage NaN |
+| Fonction                                    | Description                                   |
+| ------------------------------------------- | --------------------------------------------- |
+| `run_pipeline(config)`                      | Pipeline mono-épreuve (modèle EPF)            |
+| `run_multi_epreuve_pipeline(config)`        | Pipeline multi-épreuves avec moyenne pondérée |
+| `process_grades(...)`                       | Pipeline EPITA (ancien modèle)                |
+| `load_student_records(file, mapping)`       | Charge les inscriptions avec mapping colonnes |
+| `load_grades_from_file(file, ...)`          | Charge les évaluations Google Forms           |
+| `apply_rectification(proj_eval, mean, std)` | Applique bonus/malus + centrage-réduction     |
+| `generate_excel_workbook(...)`              | Génère l'Excel avec filtrage NaN              |
+| `is_feedback_empty(evaluation)`             | Détecte les feedbacks vides (NaN)             |
 
-### Dependances Python GradeBookApp
+### Classes de données
+
+| Classe              | Attributs principaux                                            |
+| ------------------- | --------------------------------------------------------------- |
+| `StudentRecord`     | prenom, nom, sujets[], notes[], moyenne                         |
+| `EvaluationRecord`  | date, email, nom, prenom, groupe, notes{}, is_teacher           |
+| `GroupEvaluation`   | groupe, evaluations[], group_members[], note_rectifiee, moyenne |
+| `ProjectEvaluation` | professor_email, grouped_evaluations[], moyenne, ecart_type     |
+
+### Dépendances Python
 
 ```bash
 pip install pandas numpy openpyxl rapidfuzz unidecode
