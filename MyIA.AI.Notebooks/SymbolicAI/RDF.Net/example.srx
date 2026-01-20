@@ -126,12 +126,22 @@
     </result>
     <result>
       <binding name="type">
-        <uri>http://purl.org/goodrelations/v1#BusinessEntity</uri>
+        <uri>http://xmlns.com/foaf/0.1/Organization</uri>
       </binding>
     </result>
     <result>
       <binding name="type">
-        <uri>http://xmlns.com/foaf/0.1/Organization</uri>
+        <uri>http://xmlns.com/foaf/0.1/Person</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.w3.org/ns/sparql-service-description#Service</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://purl.org/goodrelations/v1#BusinessEntity</uri>
       </binding>
     </result>
     <result>
@@ -211,11 +221,6 @@
     </result>
     <result>
       <binding name="type">
-        <uri>http://xmlns.com/foaf/0.1/Person</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
         <uri>http://www.w3.org/2002/07/owl#inverseFunctionalProperty</uri>
       </binding>
     </result>
@@ -261,6 +266,11 @@
     </result>
     <result>
       <binding name="type">
+        <uri>http://dbpedia.org/ontology/Department</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
         <uri>http://dbpedia.org/ontology/Location</uri>
       </binding>
     </result>
@@ -296,192 +306,42 @@
     </result>
     <result>
       <binding name="type">
-        <uri>http://www.wikidata.org/entity/Q3887</uri>
+        <uri>http://umbel.org/umbel/rc/Ginkgo</uri>
       </binding>
     </result>
     <result>
       <binding name="type">
-        <uri>http://dbpedia.org/ontology/Non-ProfitOrganisation</uri>
+        <uri>http://umbel.org/umbel/rc/SpaceStation</uri>
       </binding>
     </result>
     <result>
       <binding name="type">
-        <uri>http://www.w3.org/ns/sparql-service-description#Service</uri>
+        <uri>http://umbel.org/umbel/rc/Spacecraft</uri>
       </binding>
     </result>
     <result>
       <binding name="type">
-        <uri>http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#NaturalPerson</uri>
+        <uri>http://umbel.org/umbel/rc/Pope</uri>
       </binding>
     </result>
     <result>
       <binding name="type">
-        <uri>http://schema.org/AdministrativeArea</uri>
+        <uri>http://www.wikidata.org/entity/Q2066131</uri>
       </binding>
     </result>
     <result>
       <binding name="type">
-        <uri>http://schema.org/Airport</uri>
+        <uri>http://purl.org/vocommons/voaf#Vocabulary</uri>
       </binding>
     </result>
     <result>
       <binding name="type">
-        <uri>http://schema.org/BankOrCreditUnion</uri>
+        <uri>http://www.wikidata.org/entity/Q10978</uri>
       </binding>
     </result>
     <result>
       <binding name="type">
-        <uri>http://schema.org/BodyOfWater</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Book</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/City</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/CollegeOrUniversity</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/CreativeWork</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/EducationalOrganization</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Event</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Festival</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Hotel</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/LakeBodyOfWater</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/LandmarksOrHistoricalBuildings</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Language</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Library</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Mountain</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Movie</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/MusicAlbum</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/MusicGroup</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/MusicRecording</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Organization</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Park</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Place</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Product</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/RadioStation</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/Restaurant</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/School</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/ShoppingCenter</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/SportsEvent</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/SportsTeam</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/TVEpisode</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/TelevisionStation</uri>
-      </binding>
-    </result>
-    <result>
-      <binding name="type">
-        <uri>http://schema.org/WebSite</uri>
+        <uri>http://www.ontologydesignpatterns.org/ont/d0.owl#Activity</uri>
       </binding>
     </result>
     <result>
@@ -496,12 +356,152 @@
     </result>
     <result>
       <binding name="type">
+        <uri>http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Concept</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
         <uri>http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Event</uri>
       </binding>
     </result>
     <result>
       <binding name="type">
+        <uri>http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#InformationObject</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#NaturalPerson</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
         <uri>http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#SocialPerson</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#TimeInterval</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q1028181</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q1048525</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q10517054</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q1067263</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q10833314</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q10843402</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q10871364</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q1092563</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q10962</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11032</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q1107</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q1107656</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11173</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11204</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11303</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11315</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11410</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11424</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11436</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11446</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11631</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11707</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q11774891</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="type">
+        <uri>http://www.wikidata.org/entity/Q12136</uri>
       </binding>
     </result>
   </results>

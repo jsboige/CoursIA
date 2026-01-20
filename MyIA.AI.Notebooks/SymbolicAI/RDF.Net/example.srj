@@ -153,13 +153,25 @@
       {
         "type": {
           "type": "uri",
-          "value": "http://purl.org/goodrelations/v1#BusinessEntity"
+          "value": "http://xmlns.com/foaf/0.1/Organization"
         }
       },
       {
         "type": {
           "type": "uri",
-          "value": "http://xmlns.com/foaf/0.1/Organization"
+          "value": "http://xmlns.com/foaf/0.1/Person"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/ns/sparql-service-description#Service"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#BusinessEntity"
         }
       },
       {
@@ -255,12 +267,6 @@
       {
         "type": {
           "type": "uri",
-          "value": "http://xmlns.com/foaf/0.1/Person"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
           "value": "http://www.w3.org/2002/07/owl#inverseFunctionalProperty"
         }
       },
@@ -315,6 +321,12 @@
       {
         "type": {
           "type": "uri",
+          "value": "http://dbpedia.org/ontology/Department"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
           "value": "http://dbpedia.org/ontology/Location"
         }
       },
@@ -357,229 +369,49 @@
       {
         "type": {
           "type": "uri",
-          "value": "http://www.wikidata.org/entity/Q3887"
+          "value": "http://umbel.org/umbel/rc/Ginkgo"
         }
       },
       {
         "type": {
           "type": "uri",
-          "value": "http://dbpedia.org/ontology/Non-ProfitOrganisation"
+          "value": "http://umbel.org/umbel/rc/SpaceStation"
         }
       },
       {
         "type": {
           "type": "uri",
-          "value": "http://www.w3.org/ns/sparql-service-description#Service"
+          "value": "http://umbel.org/umbel/rc/Spacecraft"
         }
       },
       {
         "type": {
           "type": "uri",
-          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#NaturalPerson"
+          "value": "http://umbel.org/umbel/rc/Pope"
         }
       },
       {
         "type": {
           "type": "uri",
-          "value": "http://schema.org/AdministrativeArea"
+          "value": "http://www.wikidata.org/entity/Q2066131"
         }
       },
       {
         "type": {
           "type": "uri",
-          "value": "http://schema.org/Airport"
+          "value": "http://purl.org/vocommons/voaf#Vocabulary"
         }
       },
       {
         "type": {
           "type": "uri",
-          "value": "http://schema.org/BankOrCreditUnion"
+          "value": "http://www.wikidata.org/entity/Q10978"
         }
       },
       {
         "type": {
           "type": "uri",
-          "value": "http://schema.org/BodyOfWater"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Book"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/City"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/CollegeOrUniversity"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/CreativeWork"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/EducationalOrganization"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Event"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Festival"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Hotel"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/LakeBodyOfWater"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/LandmarksOrHistoricalBuildings"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Language"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Library"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Mountain"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Movie"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/MusicAlbum"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/MusicGroup"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/MusicRecording"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Organization"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Park"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Place"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Product"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/RadioStation"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/Restaurant"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/School"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/ShoppingCenter"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/SportsEvent"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/SportsTeam"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/TVEpisode"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/TelevisionStation"
-        }
-      },
-      {
-        "type": {
-          "type": "uri",
-          "value": "http://schema.org/WebSite"
+          "value": "http://www.ontologydesignpatterns.org/ont/d0.owl#Activity"
         }
       },
       {
@@ -597,13 +429,181 @@
       {
         "type": {
           "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Concept"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
           "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Event"
         }
       },
       {
         "type": {
           "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#InformationObject"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#NaturalPerson"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
           "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#SocialPerson"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#TimeInterval"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1028181"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1048525"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10517054"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1067263"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10833314"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10843402"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10871364"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1092563"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10962"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11032"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1107"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1107656"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11173"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11204"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11303"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11315"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11410"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11424"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11436"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11446"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11631"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11707"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11774891"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q12136"
         }
       }
     ]
