@@ -63,32 +63,116 @@ echo "Venv reconstruit avec pyyaml inclus"
 echo "Création du répertoire custom_nodes..."
 mkdir -p custom_nodes
 
-echo "Installation ComfyUI-Login..."
-if [ ! -d custom_nodes/ComfyUI-Login ]; then
-    echo "Installation de ComfyUI-Login..."
-    cd custom_nodes
+# =============================================================================
+# CUSTOM NODES INSTALLATION
+# =============================================================================
+
+echo "=== Installation des Custom Nodes ==="
+
+cd /workspace/ComfyUI/custom_nodes
+
+# -----------------------------------------------------------------------------
+# 1. ComfyUI-Login (Authentification)
+# -----------------------------------------------------------------------------
+echo "1/3 Installation ComfyUI-Login..."
+if [ ! -d "ComfyUI-Login" ]; then
     for attempt in 1 2 3; do
-        echo "Tentative $attempt/3 pour cloner ComfyUI-Login..."
+        echo "  Tentative $attempt/3 pour cloner ComfyUI-Login..."
         if git clone https://github.com/liusida/ComfyUI-Login.git; then
-            echo "Clonage de ComfyUI-Login réussi"
+            echo "  Clonage de ComfyUI-Login réussi"
             break
         else
-            echo "Échec du clonage, tentative en cours..."
             if [ "$attempt" -eq 3 ]; then
-                echo "ERREUR: Impossible de cloner ComfyUI-Login après 3 tentatives"
+                echo "  ERREUR: Impossible de cloner ComfyUI-Login après 3 tentatives"
                 exit 1
             fi
             sleep 5
         fi
     done
     cd ComfyUI-Login
-    pip install -r requirements.txt
-    cd ../..
+    /workspace/ComfyUI/venv/bin/pip install -r requirements.txt
+    cd ..
 else
-    echo "ComfyUI-Login déjà installé, vérification des mises à jour..."
-    cd custom_nodes/ComfyUI-Login
-    git pull origin main || echo "Avertissement: Impossible de mettre à jour ComfyUI-Login"
-    cd ../..
+    echo "  ComfyUI-Login déjà installé"
 fi
 
+# -----------------------------------------------------------------------------
+# 2. ComfyUI_QwenImageWanBridge (Nodes Qwen - CRITICAL)
+# Source: https://github.com/wanfuzhizun/ComfyUI_QwenImageWanBridge
+# Ref: Phase 29 - docs/suivis/genai-image/phase-29-corrections-qwen/SYNTHESE-COMPLETE-PHASE-29.md
+# -----------------------------------------------------------------------------
+echo "2/3 Installation ComfyUI_QwenImageWanBridge..."
+if [ ! -d "ComfyUI_QwenImageWanBridge" ]; then
+    for attempt in 1 2 3; do
+        echo "  Tentative $attempt/3 pour cloner ComfyUI_QwenImageWanBridge..."
+        if git clone https://github.com/wanfuzhizun/ComfyUI_QwenImageWanBridge.git; then
+            echo "  Clonage de ComfyUI_QwenImageWanBridge réussi"
+            break
+        else
+            if [ "$attempt" -eq 3 ]; then
+                echo "  ERREUR: Impossible de cloner ComfyUI_QwenImageWanBridge après 3 tentatives"
+                exit 1
+            fi
+            sleep 5
+        fi
+    done
+    # Installation des dépendances WanBridge
+    echo "  Installation des dépendances WanBridge..."
+    /workspace/ComfyUI/venv/bin/pip install transformers accelerate safetensors sentencepiece
+else
+    echo "  ComfyUI_QwenImageWanBridge déjà installé"
+fi
+
+# -----------------------------------------------------------------------------
+# 3. ComfyUI-GGUF (Support modèles GGUF - optionnel)
+# -----------------------------------------------------------------------------
+echo "3/3 Installation ComfyUI-GGUF (optionnel)..."
+if [ ! -d "ComfyUI-GGUF" ]; then
+    git clone https://github.com/city96/ComfyUI-GGUF.git || echo "  Avertissement: ComfyUI-GGUF non installé (optionnel)"
+    if [ -d "ComfyUI-GGUF" ]; then
+        /workspace/ComfyUI/venv/bin/pip install gguf
+    fi
+else
+    echo "  ComfyUI-GGUF déjà installé"
+fi
+
+cd /workspace/ComfyUI
+
+# =============================================================================
+# MODELS DIRECTORIES
+# =============================================================================
+echo "=== Création des répertoires modèles ==="
+mkdir -p models/diffusion_models
+mkdir -p models/text_encoders
+mkdir -p models/vae
+mkdir -p models/loras
+
+# =============================================================================
+# MODELS DOWNLOAD INSTRUCTIONS
+# =============================================================================
+echo ""
+echo "============================================================"
+echo "INSTALLATION TERMINÉE - MODÈLES À TÉLÉCHARGER"
+echo "============================================================"
+echo ""
+echo "Les modèles Qwen FP8 doivent être téléchargés manuellement:"
+echo ""
+echo "1. Diffusion Model (20GB):"
+echo "   URL: https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI"
+echo "   Fichier: split_files/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors"
+echo "   Dest: /workspace/ComfyUI/models/diffusion_models/"
+echo ""
+echo "2. Text Encoder (8.8GB):"
+echo "   URL: https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI"
+echo "   Fichier: split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
+echo "   Dest: /workspace/ComfyUI/models/text_encoders/"
+echo ""
+echo "3. VAE (243MB):"
+echo "   URL: https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI"
+echo "   Fichier: split_files/vae/qwen_image_vae.safetensors"
+echo "   Dest: /workspace/ComfyUI/models/vae/"
+echo ""
+echo "Script de téléchargement: scripts/genai-stack/download_qwen_models.py"
+echo "============================================================"
+echo ""
 echo "Installation terminée avec succès!"

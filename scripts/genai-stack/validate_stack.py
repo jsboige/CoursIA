@@ -48,11 +48,27 @@ logger = logging.getLogger("ComfyUIValidator")
 
 # Constantes
 COMFYUI_URL = "http://localhost:8188"
+
+# Nodes Qwen natifs (fournis par ComfyUI core)
 EXPECTED_QWEN_NODES = [
     "ModelMergeQwenImage",
     "TextEncodeQwenImageEdit",
     "TextEncodeQwenImageEditPlus",
     "QwenImageDiffsynthControlnet"
+]
+
+# Nodes natifs ComfyUI requis pour le workflow Qwen Phase 29
+REQUIRED_NATIVE_NODES = [
+    "VAELoader",
+    "CLIPLoader",
+    "UNETLoader",
+    "ModelSamplingAuraFlow",
+    "CFGNorm",
+    "ConditioningZeroOut",
+    "EmptySD3LatentImage",
+    "KSampler",
+    "VAEDecode",
+    "SaveImage"
 ]
 
 class ComfyUIValidator:
@@ -139,47 +155,75 @@ class ComfyUIValidator:
 
     def check_nodes(self) -> bool:
         """
-        Validation des Custom Nodes (Fusion de install_comfyui_login.py)
+        Validation des Custom Nodes et Nodes Natifs requis pour Qwen Phase 29
         """
-        self.log_section("TEST CUSTOM NODES")
-        
+        self.log_section("TEST NODES (Qwen + Natifs)")
+
         try:
             object_info = self.client.get_object_info()
             if not object_info:
-                logger.error("❌ Impossible de récupérer la liste des nœuds")
+                logger.error("Impossible de recuperer la liste des noeuds")
                 return False
-                
+
             available_nodes = set(object_info.keys())
-            missing_nodes = []
-            
-            logger.info(f"📦 {len(available_nodes)} nœuds détectés au total")
-            
+            missing_qwen = []
+            missing_native = []
+
+            logger.info(f"{len(available_nodes)} noeuds detectes au total")
+
+            # 1. Verification nodes Qwen natifs
+            logger.info("Verification nodes Qwen natifs...")
             for node in EXPECTED_QWEN_NODES:
                 if node in available_nodes:
-                    # logger.info(f"  ✅ {node}") # Trop verbeux
                     pass
                 else:
-                    logger.error(f"  ❌ MANQUANT: {node}")
-                    missing_nodes.append(node)
-            
-            if missing_nodes:
-                logger.error(f"❌ {len(missing_nodes)} nœuds Qwen critiques manquants !")
-                return False
-                
-            logger.info(f"✅ Tous les {len(EXPECTED_QWEN_NODES)} nœuds Qwen critiques sont présents.")
-            return True
-            
+                    logger.error(f"  MANQUANT (Qwen): {node}")
+                    missing_qwen.append(node)
+
+            # 2. Verification nodes natifs requis pour workflow
+            logger.info("Verification nodes natifs requis...")
+            for node in REQUIRED_NATIVE_NODES:
+                if node in available_nodes:
+                    pass
+                else:
+                    logger.error(f"  MANQUANT (natif): {node}")
+                    missing_native.append(node)
+
+            # Resultat
+            if missing_qwen:
+                logger.error(f"{len(missing_qwen)} noeuds Qwen manquants: {missing_qwen}")
+            else:
+                logger.info(f"OK: {len(EXPECTED_QWEN_NODES)} noeuds Qwen presents")
+
+            if missing_native:
+                logger.error(f"{len(missing_native)} noeuds natifs manquants: {missing_native}")
+            else:
+                logger.info(f"OK: {len(REQUIRED_NATIVE_NODES)} noeuds natifs presents")
+
+            return len(missing_qwen) == 0 and len(missing_native) == 0
+
         except Exception as e:
-            logger.error(f"❌ Erreur lors de la vérification des nœuds: {e}")
+            logger.error(f"Erreur lors de la verification des noeuds: {e}")
             return False
 
-    def check_generation(self, workflow_filename="workflow_z_image.json") -> bool:
+    def check_generation(self, workflow_filename="workflow_qwen_native_t2i.json") -> bool:
         """
-        Validation de la génération d'image (Fusion de run_z_image_test.py)
+        Validation de la generation d'image avec workflow Qwen natif Phase 29
         """
-        self.log_section(f"TEST GÉNÉRATION ({workflow_filename})")
-        
-        workflow_path = Path("docker-configurations/services/comfyui-qwen/workspace") / workflow_filename
+        self.log_section(f"TEST GENERATION ({workflow_filename})")
+
+        # Chercher le workflow dans plusieurs emplacements
+        workflow_paths = [
+            Path("scripts/genai-stack/workflows") / workflow_filename,
+            Path("docker-configurations/services/comfyui-qwen/workspace") / workflow_filename
+        ]
+        workflow_path = None
+        for wp in workflow_paths:
+            if wp.exists():
+                workflow_path = wp
+                break
+        if not workflow_path:
+            workflow_path = workflow_paths[0]  # Default
         
         # Résolution chemin (projet racine)
         project_root = Path(os.getcwd())
@@ -193,7 +237,7 @@ class ComfyUIValidator:
             logger.error(f"❌ Workflow introuvable: {full_workflow_path}")
             return False
             
-        logger.info("📤 Soumission du workflow Z-Image...")
+        logger.info(f"Soumission du workflow {workflow_filename}...")
         
         try:
             workflow = WorkflowManager.load(str(full_workflow_path))
@@ -228,7 +272,7 @@ class ComfyUIValidator:
             logger.error(f"❌ Erreur test génération: {e}")
             return False
 
-    def run_suite(self, full=True, auth_only=False, nodes_only=False, workflow="workflow_z_image.json") -> bool:
+    def run_suite(self, full=True, auth_only=False, nodes_only=False, workflow="workflow_qwen_native_t2i.json") -> bool:
         """Exécute la suite de tests selon les arguments"""
         
         # 0. Health Check (Toujours)
@@ -265,7 +309,7 @@ def main():
     parser.add_argument('--full', action='store_true', help='Exécuter tous les tests (défaut)', default=True)
     parser.add_argument('--auth-only', action='store_true', help='Test authentification uniquement')
     parser.add_argument('--nodes-only', action='store_true', help='Test nœuds uniquement')
-    parser.add_argument('--workflow', type=str, default="workflow_z_image.json", help='Nom du fichier workflow à tester (défaut: workflow_z_image.json)')
+    parser.add_argument('--workflow', type=str, default="workflow_qwen_native_t2i.json", help='Workflow a tester (defaut: workflow_qwen_native_t2i.json)')
     
     args = parser.parse_args()
     

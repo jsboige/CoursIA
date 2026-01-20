@@ -67,11 +67,13 @@ services:
     entrypoint: ["/bin/bash", "/entrypoint.sh"]
     
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8188/", "--max-time", "10"]
+      # Verification TCP simple car l'API requiert authentification Bearer
+      # Le code HTTP 401 indique que le serveur fonctionne (auth requise)
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8188/ | grep -qE '200|401'"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s
+      start_period: 180s
     
     restart: unless-stopped
     

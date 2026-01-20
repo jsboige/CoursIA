@@ -30,11 +30,16 @@ echo "📦 Vérification des dépendances..."
 venv/bin/pip install -r requirements.txt
 venv/bin/pip install einops
 
-# Installation ComfyUI-Login
+# =============================================================================
+# CUSTOM NODES INSTALLATION
+# =============================================================================
+echo "Verification des custom nodes..."
+
+# 1. ComfyUI-Login (Authentification)
 if [ "$COMFYUI_LOGIN_ENABLED" = "true" ]; then
     LOGIN_DIR="custom_nodes/ComfyUI-Login"
     if [ ! -d "$LOGIN_DIR" ]; then
-        echo "🔑 Installation de ComfyUI-Login..."
+        echo "Installation de ComfyUI-Login..."
         git clone https://github.com/liusida/ComfyUI-Login.git "$LOGIN_DIR"
         venv/bin/pip install -r "$LOGIN_DIR/requirements.txt"
     fi
@@ -93,9 +98,33 @@ else:
     print('⚠️ Aucune configuration d\'authentification appliquée')
 "
 else
-    echo "⚠️ Authentification désactivée (COMFYUI_LOGIN_ENABLED != true)"
+    echo "Authentification desactivee (COMFYUI_LOGIN_ENABLED != true)"
 fi
 
-# Démarrage
-echo "🔥 Démarrage du serveur..."
+# 2. ComfyUI_QwenImageWanBridge (Nodes Qwen optionnels)
+WANBRIDGE_DIR="custom_nodes/ComfyUI_QwenImageWanBridge"
+if [ ! -d "$WANBRIDGE_DIR" ]; then
+    echo "Installation de ComfyUI_QwenImageWanBridge..."
+    git clone https://github.com/wanfuzhizun/ComfyUI_QwenImageWanBridge.git "$WANBRIDGE_DIR" || echo "WanBridge: echec clone (optionnel)"
+    if [ -d "$WANBRIDGE_DIR" ]; then
+        venv/bin/pip install transformers accelerate safetensors sentencepiece
+    fi
+else
+    echo "ComfyUI_QwenImageWanBridge deja present"
+fi
+
+# 3. ComfyUI-GGUF (Support modeles GGUF - optionnel)
+GGUF_DIR="custom_nodes/ComfyUI-GGUF"
+if [ ! -d "$GGUF_DIR" ]; then
+    echo "Installation de ComfyUI-GGUF (optionnel)..."
+    git clone https://github.com/city96/ComfyUI-GGUF.git "$GGUF_DIR" || echo "GGUF: echec clone (optionnel)"
+    if [ -d "$GGUF_DIR" ]; then
+        venv/bin/pip install gguf
+    fi
+fi
+
+# =============================================================================
+# DEMARRAGE
+# =============================================================================
+echo "Demarrage du serveur ComfyUI..."
 exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention

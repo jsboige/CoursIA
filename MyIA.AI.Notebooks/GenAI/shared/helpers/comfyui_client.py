@@ -200,15 +200,18 @@ class ComfyUIClient:
         steps: Optional[int] = None,
         seed: Optional[int] = None,
         negative_prompt: str = "blurry, low quality, watermark",
-        cfg: float = 7.0,
+        cfg: float = 1.0,
         save_prefix: str = "qwen_t2i",
     ) -> Dict[str, Any]:
         """
         Génère une image à partir d'un prompt texte.
-        Workflow WanBridge validé historiquement (Phase 12C).
-        
-        Architecture: Custom node ComfyUI-QwenImageWanBridge + modèle Diffusers
-        Source: docs/suivis/genai-image/phase-12c-architecture/rapports/2025-10-16_12C_architectures-5-workflows-qwen.md
+        Workflow 100% NATIF ComfyUI - Phase 29 validé.
+
+        Architecture: Nodes natifs ComfyUI + modèles FP8 Comfy-Org
+        Modèles requis:
+          - diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors (20GB)
+          - text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors (8.8GB)
+          - vae/qwen_image_vae.safetensors (243MB)
 
         Args:
             prompt: Prompt textuel
@@ -217,8 +220,8 @@ class ComfyUIClient:
             num_inference_steps: Nombre de steps de débruitage (deprecated, use steps)
             steps: Nombre de steps de débruitage (défaut: 20)
             seed: Seed aléatoire (None = aléatoire)
-            negative_prompt: Prompt négatif (défaut: "blurry, low quality, watermark")
-            cfg: Classifier-Free Guidance scale (défaut: 7.0)
+            negative_prompt: Prompt négatif (non utilisé dans architecture native Qwen)
+            cfg: Classifier-Free Guidance scale (défaut: 1.0 pour Qwen avec CFGNorm)
             save_prefix: Préfixe pour le fichier de sortie
 
         Returns:
@@ -230,58 +233,107 @@ class ComfyUIClient:
         elif num_inference_steps is not None:
             inference_steps = num_inference_steps
         else:
-            inference_steps = 20  # Valeur optimale pour Qwen (doc Phase 12C)
-        
+            inference_steps = 20  # Valeur optimale pour Qwen
+
         if seed is None:
             seed = random.randint(0, 2**32 - 1)
 
-        # WORKFLOW WANBRIDGE VALIDÉ HISTORIQUEMENT - Méthode WanBridge simple
-        # Source: docs/suivis/genai-image/phase-12c-architecture/rapports/2025-10-16_12C_architectures-5-workflows-qwen.md
-        # Architecture: Custom node ComfyUI-QwenImageWanBridge + modèle Diffusers
+        # WORKFLOW 100% NATIF ComfyUI - Validé Phase 29
+        # Source: docs/suivis/genai-image/phase-29-corrections-qwen/SYNTHESE-COMPLETE-PHASE-29.md
+        # Architecture: Nodes natifs + modèles FP8 officiels Comfy-Org
         workflow = {
+            # Chargement des modèles
             "1": {
-                "class_type": "QwenVLCLIPLoader",
+                "class_type": "VAELoader",
                 "inputs": {
-                    "model_path": "Qwen-Image-Edit-2509-FP8"  # Chemin relatif au répertoire checkpoints/
+                    "vae_name": "qwen_image_vae.safetensors"
                 }
             },
             "2": {
-                "class_type": "TextEncodeQwenImageEdit",
+                "class_type": "CLIPLoader",
                 "inputs": {
-                    "text": prompt,
-                    "clip": ["1", 0]
+                    "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                    "type": "sd3"
                 }
             },
+            "3": {
+                "class_type": "UNETLoader",
+                "inputs": {
+                    "unet_name": "qwen_image_edit_2509_fp8_e4m3fn.safetensors",
+                    "weight_dtype": "fp8_e4m3fn"
+                }
+            },
+            # Configuration du modèle pour Qwen (AuraFlow sampling)
             "4": {
-                "class_type": "QwenVLEmptyLatent",
+                "class_type": "ModelSamplingAuraFlow",
+                "inputs": {
+                    "model": ["3", 0],
+                    "shift": 3.0
+                }
+            },
+            # Normalisation CFG
+            "5": {
+                "class_type": "CFGNorm",
+                "inputs": {
+                    "model": ["4", 0],
+                    "strength": 1.0
+                }
+            },
+            # Encodage du prompt positif avec Qwen
+            "6": {
+                "class_type": "TextEncodeQwenImageEdit",
+                "inputs": {
+                    "clip": ["2", 0],
+                    "prompt": prompt,
+                    "vae": ["1", 0]
+                }
+            },
+            # Conditioning négatif (vide pour Qwen)
+            "7": {
+                "class_type": "ConditioningZeroOut",
+                "inputs": {
+                    "conditioning": ["6", 0]
+                }
+            },
+            # Création du latent vide (16 canaux pour Qwen)
+            "8": {
+                "class_type": "EmptySD3LatentImage",
                 "inputs": {
                     "width": width,
                     "height": height,
                     "batch_size": 1
                 }
             },
-            "5": {
-                "class_type": "QwenImageSamplerNode",
+            # Sampling
+            "9": {
+                "class_type": "KSampler",
                 "inputs": {
+                    "model": ["5", 0],
+                    "positive": ["6", 0],
+                    "negative": ["7", 0],
+                    "latent_image": ["8", 0],
                     "seed": seed,
                     "steps": inference_steps,
                     "cfg": cfg,
-                    "positive": ["2", 0],
-                    "latent": ["4", 0]
+                    "sampler_name": "euler",
+                    "scheduler": "beta",
+                    "denoise": 1.0
                 }
             },
-            "6": {
+            # Décodage VAE
+            "10": {
                 "class_type": "VAEDecode",
                 "inputs": {
-                    "samples": ["5", 0],
-                    "vae": ["1", 1]  # CORRECTION: Index 1 = VAE, pas 2
+                    "samples": ["9", 0],
+                    "vae": ["1", 0]
                 }
             },
-            "7": {
+            # Sauvegarde
+            "11": {
                 "class_type": "SaveImage",
                 "inputs": {
-                    "filename_prefix": save_prefix,
-                    "images": ["6", 0]  # CORRECTION: VAEDecode a une seule sortie (index 0)
+                    "images": ["10", 0],
+                    "filename_prefix": save_prefix
                 }
             }
         }
