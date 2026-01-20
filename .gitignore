@@ -441,14 +441,5 @@ MyIA.AI.Notebooks/GenAI/data/
 MyIA.AI.Notebooks/SymbolicAI/libs/native/
 MyIA.AI.Notebooks/SymbolicAI/resources/
 
-# Papermill output notebooks
-*_output.ipynb
-*_output[0-9].ipynb
-*_output[0-9][0-9].ipynb
-
 # Jupyter/MCP temp files
 kernel_info.json
-
-# Tweety runtime dependencies (downloaded by notebook, may be created at root level during testing)
-libs/
-resources/
