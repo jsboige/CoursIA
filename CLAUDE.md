@@ -44,8 +44,28 @@ Access: http://localhost:8188 (requires Bearer token authentication)
 python scripts/genai-stack/validate_notebooks.py  # Notebook validation
 python scripts/genai-stack/validate_stack.py      # GenAI stack validation
 python scripts/genai-stack/check_vram.py          # VRAM check
+python scripts/verify_notebooks.py [target]       # Multi-family notebook verification
 ```
 GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
+
+### Claude Code Commands
+
+```
+/verify-notebooks [target] [options]    # Verify and test notebooks with iterative fixing
+```
+
+**Arguments:**
+- `target`: Notebook path, family name (`Sudoku`, `Search`, `SymbolicAI`, `Argument_Analysis`, etc.), or `all`
+- `--quick`: Structure validation only (no execution)
+- `--fix`: Attempt automatic fixes iteratively
+- `--python-only` / `--dotnet-only`: Filter by kernel type
+
+**Examples:**
+```
+/verify-notebooks Sudoku --quick
+/verify-notebooks Argument_Analysis --fix
+/verify-notebooks MyIA.AI.Notebooks/Search/CSPs_Intro.ipynb --fix
+```
 
 ### GradeBookApp
 ```bash
