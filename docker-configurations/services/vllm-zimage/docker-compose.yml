@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  vllm-zimage:
+    image: vllm/vllm-openai:v0.6.3
+    container_name: vllm-zimage
+    ports:
+      - "${VLLM_ZIMAGE_PORT:-8001}:8000"
+    volumes:
+      - ../../shared/cache/huggingface:/root/.cache/huggingface
+      - ../../shared/models:/models:ro
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - CUDA_VISIBLE_DEVICES=0
+    command: >
+      --model Alpha-VLLM/Lumina-Next-SFT-diffusers
+      --served-model-name z-image
+      --port 8000
+      --dtype bfloat16
+      --trust-remote-code
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    restart: unless-stopped
+    networks:
+      - genai-network
+
+networks:
+  genai-network:
+    external: true
+    name: genai-network

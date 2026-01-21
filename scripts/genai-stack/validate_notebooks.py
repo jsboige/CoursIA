@@ -180,16 +180,26 @@ class NotebookValidator:
 def main():
     parser = argparse.ArgumentParser(description="Notebook Validation Suite")
     parser.add_argument('target', nargs='?', type=str, default="MyIA.AI.Notebooks/GenAI", help='Dossier ou fichier cible')
-    
+    parser.add_argument('--cleanup', action='store_true',
+                        help='Supprimer les notebooks executes apres validation (conserve uniquement le rapport JSON)')
+
     args = parser.parse_args()
-    
+
     validator = NotebookValidator(args.target)
     results = validator.run_validation()
     validator.save_report(results)
-    
+
+    # Nettoyage des notebooks executes si demande
+    if args.cleanup:
+        import shutil
+        output_dir = Path("rapports/notebook_validation")
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+            logger.info(f"🧹 Nettoyage: {output_dir} supprime")
+
     if any(r['status'] == 'failed' for r in results):
         sys.exit(1)
-    
+
     sys.exit(0)
 
 if __name__ == "__main__":

@@ -121,6 +121,7 @@ NOTEBOOK_SERVICE_MAP = {
 
 # Services externes
 FORGE_URL = "http://localhost:17861"
+VLLM_ZIMAGE_URL = "http://localhost:8001"
 
 
 class VRAMManager:
@@ -609,6 +610,27 @@ def check_forge_api() -> bool:
         return False
 
 
+def check_vllm_api() -> bool:
+    """Verifie si vLLM Z-Image API est accessible."""
+    try:
+        resp = requests.get(f"{VLLM_ZIMAGE_URL}/health", timeout=5)
+        if resp.status_code == 200:
+            logger.info(f"OK vLLM Z-Image accessible sur {VLLM_ZIMAGE_URL}")
+            # Verifier aussi l'endpoint models
+            models_resp = requests.get(f"{VLLM_ZIMAGE_URL}/v1/models", timeout=5)
+            if models_resp.status_code == 200:
+                models = models_resp.json().get('data', [])
+                model_names = [m.get('id', 'unknown') for m in models]
+                logger.info(f"  Modeles disponibles: {model_names}")
+            return True
+        else:
+            logger.warning(f"vLLM Z-Image repond avec HTTP {resp.status_code}")
+            return False
+    except Exception as e:
+        logger.warning(f"vLLM Z-Image inaccessible: {e}")
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="ComfyUI Validation Suite avec Model Switching",
@@ -644,6 +666,8 @@ Exemples:
                         help='Valider un groupe specifique de notebooks')
     parser.add_argument('--dry-run', action='store_true', help='Check syntax seulement (pas de generation)')
     parser.add_argument('--check-forge', action='store_true', help='Verifier aussi Forge-Turbo API')
+    parser.add_argument('--vllm', action='store_true', help='Verifier vLLM Z-Image API (OpenAI-compatible)')
+    parser.add_argument('--check-vllm', action='store_true', help='Alias pour --vllm')
 
     args = parser.parse_args()
 
@@ -710,6 +734,11 @@ Exemples:
     if args.check_forge:
         forge_ok = check_forge_api()
         success = success and forge_ok
+
+    # Check vLLM Z-Image API
+    if args.vllm or args.check_vllm:
+        vllm_ok = check_vllm_api()
+        success = success and vllm_ok
 
     # Resume final
     logger.info("\n" + "=" * 60)
