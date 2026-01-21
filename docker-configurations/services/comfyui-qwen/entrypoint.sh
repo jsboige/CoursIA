@@ -123,6 +123,35 @@ if [ ! -d "$GGUF_DIR" ]; then
     fi
 fi
 
+# 4. ComfyUI-nunchaku (Quantification INT4 SVDQuant - Recommande pour VRAM limitee)
+# NOTE: Version 1.1.0 requise pour compatibilite avec nunchaku backend 1.0.1
+#       Version 1.2.0+ introduit 'use_additional_t_cond' incompatible avec backend 1.0.1
+NUNCHAKU_DIR="custom_nodes/ComfyUI-nunchaku"
+NUNCHAKU_PLUGIN_VERSION="v1.1.0"
+if [ ! -d "$NUNCHAKU_DIR" ]; then
+    echo "Installation de ComfyUI-nunchaku ${NUNCHAKU_PLUGIN_VERSION} (INT4 quantization)..."
+    git clone --branch ${NUNCHAKU_PLUGIN_VERSION} --depth 1 https://github.com/nunchaku-ai/ComfyUI-nunchaku.git "$NUNCHAKU_DIR" || echo "Nunchaku: echec clone"
+    if [ -d "$NUNCHAKU_DIR" ]; then
+        echo "Installation du backend nunchaku..."
+        # Detecter version PyTorch pour installer le bon wheel pre-compile
+        TORCH_VERSION=$(venv/bin/python -c "import torch; print(torch.__version__.split('+')[0])")
+        TORCH_MAJOR=$(echo $TORCH_VERSION | cut -d. -f1)
+        TORCH_MINOR=$(echo $TORCH_VERSION | cut -d. -f2)
+        NUNCHAKU_WHEEL_URL="https://github.com/nunchaku-ai/nunchaku/releases/download/v1.0.1/nunchaku-1.0.1+torch${TORCH_MAJOR}.${TORCH_MINOR}-cp311-cp311-linux_x86_64.whl"
+
+        echo "Installation nunchaku 1.0.1 pour PyTorch ${TORCH_MAJOR}.${TORCH_MINOR}..."
+        wget -q -O /tmp/nunchaku.whl "$NUNCHAKU_WHEEL_URL" && \
+        venv/bin/pip install /tmp/nunchaku.whl && \
+        rm -f /tmp/nunchaku.whl || \
+        echo "ATTENTION: Echec installation nunchaku wheel, fonctionnalites INT4 non disponibles"
+
+        # Installer dependances du plugin
+        venv/bin/pip install diffusers>=0.35 peft>=0.17
+    fi
+else
+    echo "ComfyUI-nunchaku deja present"
+fi
+
 # =============================================================================
 # DEMARRAGE
 # =============================================================================

@@ -57,6 +57,12 @@ EXPECTED_QWEN_NODES = [
     "QwenImageDiffsynthControlnet"
 ]
 
+# Nodes Nunchaku (fournis par ComfyUI-nunchaku plugin)
+EXPECTED_NUNCHAKU_NODES = [
+    "NunchakuQwenImageDiTLoader",
+    "NunchakuLoraLoader",
+]
+
 # Nodes natifs ComfyUI requis pour le workflow Qwen Phase 29
 REQUIRED_NATIVE_NODES = [
     "VAELoader",
@@ -154,7 +160,17 @@ class ModelSwitcher:
     """Switch entre modeles Qwen et Z-Image avec gestion VRAM."""
 
     MODEL_CONFIGS = {
-        # Qwen 2511 Q4_K_M - Version recommandee (compatible RTX 3090)
+        # Nunchaku INT4 Lightning - RECOMMANDE (ultra-low VRAM)
+        "nunchaku": {
+            "unet": "svdq-int4_r128-qwen-image-edit-lightningv1.0-4steps.safetensors",
+            "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+            "vae": "qwen_image_vae.safetensors",
+            "vram_required_mb": 4000,  # INT4 avec offload: ~3-4GB
+            "steps": 4,  # Lightning
+            "cfg": 1.0,
+            "workflow": "workflow_qwen_nunchaku_t2i.json",
+        },
+        # Qwen 2511 Q4_K_M - Version GGUF (compatible RTX 3090)
         "qwen": {
             "unet": "qwen-image-edit-2511-Q4_K_M.gguf",
             "clip": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
@@ -172,6 +188,7 @@ class ModelSwitcher:
             "vram_required_mb": 29000,  # FP8: ~29GB
             "steps": 20,
             "cfg": 1.0,
+            "workflow": "workflow_qwen_native_t2i.json",
         },
         # Z-Image Lumina
         "zimage": {
@@ -394,11 +411,13 @@ class ComfyUIValidator:
             logger.error(f"❌ Erreur API: {e}")
             return False
 
-    def check_nodes(self) -> bool:
+    def check_nodes(self, check_nunchaku: bool = False) -> bool:
         """
         Validation des Custom Nodes et Nodes Natifs requis pour Qwen Phase 29
+        Args:
+            check_nunchaku: Si True, verifie aussi les nodes Nunchaku INT4
         """
-        self.log_section("TEST NODES (Qwen + Natifs)")
+        self.log_section("TEST NODES (Qwen + Natifs" + (" + Nunchaku)" if check_nunchaku else ")"))
 
         try:
             object_info = self.client.get_object_info()
@@ -409,6 +428,7 @@ class ComfyUIValidator:
             available_nodes = set(object_info.keys())
             missing_qwen = []
             missing_native = []
+            missing_nunchaku = []
 
             logger.info(f"{len(available_nodes)} noeuds detectes au total")
 
@@ -430,6 +450,16 @@ class ComfyUIValidator:
                     logger.error(f"  MANQUANT (natif): {node}")
                     missing_native.append(node)
 
+            # 3. Verification nodes Nunchaku (optionnel)
+            if check_nunchaku:
+                logger.info("Verification nodes Nunchaku INT4...")
+                for node in EXPECTED_NUNCHAKU_NODES:
+                    if node in available_nodes:
+                        logger.info(f"  OK: {node}")
+                    else:
+                        logger.warning(f"  MANQUANT (Nunchaku): {node}")
+                        missing_nunchaku.append(node)
+
             # Resultat
             if missing_qwen:
                 logger.error(f"{len(missing_qwen)} noeuds Qwen manquants: {missing_qwen}")
@@ -441,6 +471,13 @@ class ComfyUIValidator:
             else:
                 logger.info(f"OK: {len(REQUIRED_NATIVE_NODES)} noeuds natifs presents")
 
+            if check_nunchaku:
+                if missing_nunchaku:
+                    logger.warning(f"{len(missing_nunchaku)} noeuds Nunchaku manquants (INT4 non disponible)")
+                else:
+                    logger.info(f"OK: {len(EXPECTED_NUNCHAKU_NODES)} noeuds Nunchaku presents (INT4 disponible)")
+
+            # Nunchaku est optionnel, donc n'echoue pas le test
             return len(missing_qwen) == 0 and len(missing_native) == 0
 
         except Exception as e:
@@ -513,9 +550,17 @@ class ComfyUIValidator:
             logger.error(f"❌ Erreur test génération: {e}")
             return False
 
-    def run_suite(self, full=True, auth_only=False, nodes_only=False, workflow="workflow_qwen_native_t2i.json") -> bool:
-        """Exécute la suite de tests selon les arguments"""
-        
+    def run_suite(self, full=True, auth_only=False, nodes_only=False,
+                   workflow="workflow_qwen_native_t2i.json", check_nunchaku=False) -> bool:
+        """Exécute la suite de tests selon les arguments
+        Args:
+            full: Executer tous les tests
+            auth_only: Test authentification uniquement
+            nodes_only: Test noeuds uniquement
+            workflow: Fichier workflow a tester
+            check_nunchaku: Verifier aussi les nodes Nunchaku INT4
+        """
+
         # 0. Health Check (Toujours)
         if not self.check_service_health():
             return False
@@ -529,20 +574,24 @@ class ComfyUIValidator:
 
         # 2. Nodes Check
         if full or nodes_only:
-            results.append(self.check_nodes())
+            results.append(self.check_nodes(check_nunchaku=check_nunchaku))
             if nodes_only: return all(results)
 
         # 3. Generation Check (Seulement en mode full ou explicite)
         if full:
+            # Log info si workflow Nunchaku
+            if "nunchaku" in workflow.lower():
+                logger.info("Test generation avec Nunchaku INT4 Lightning...")
+                logger.info("  Performances attendues: ~4s warm, ~100s cold start")
             results.append(self.check_generation(workflow_filename=workflow))
 
         success = all(results)
-        self.log_section("RÉSULTAT FINAL")
+        self.log_section("RESULTAT FINAL")
         if success:
-            logger.info("✨ SUITE DE VALIDATION : SUCCÈS TOTAL ✨")
+            logger.info("SUITE DE VALIDATION : SUCCES TOTAL")
         else:
-            logger.error("💀 SUITE DE VALIDATION : ÉCHEC PARTIEL 💀")
-            
+            logger.error("SUITE DE VALIDATION : ECHEC PARTIEL")
+
         return success
 
 def check_forge_api() -> bool:
@@ -581,6 +630,12 @@ Exemples:
     parser.add_argument('--workflow', type=str, default="workflow_qwen_native_t2i.json",
                         help='Workflow a tester (defaut: workflow_qwen_native_t2i.json)')
 
+    # Mode Nunchaku INT4 (nouveau)
+    parser.add_argument('--nunchaku', action='store_true',
+                        help='Test generation avec Nunchaku INT4 Lightning (4GB VRAM, 4s/image)')
+    parser.add_argument('--check-nunchaku-nodes', action='store_true',
+                        help='Verifier que les nodes Nunchaku sont charges')
+
     # Mode Notebooks (nouveau)
     parser.add_argument('--notebooks', action='store_true', help='Validation syntaxe notebooks GenAI')
     parser.add_argument('--with-switching', action='store_true',
@@ -595,6 +650,13 @@ Exemples:
     # Logique mode
     if args.auth_only or args.nodes_only:
         args.full = False
+
+    # Raccourci Nunchaku
+    if args.nunchaku:
+        args.workflow = "workflow_qwen_nunchaku_t2i.json"
+        logger.info("Mode Nunchaku INT4 Lightning active")
+        logger.info("  - VRAM attendue: ~4-8GB (vs 29GB FP8)")
+        logger.info("  - Temps attendu: ~4s warm / ~100s cold start")
 
     success = True
 
@@ -634,11 +696,14 @@ Exemples:
     # Mode ComfyUI standard
     elif args.full or args.auth_only or args.nodes_only:
         validator = ComfyUIValidator()
+        # Check nunchaku si option ou si workflow nunchaku
+        check_nunchaku = args.check_nunchaku_nodes or args.nunchaku or "nunchaku" in args.workflow.lower()
         success = validator.run_suite(
             full=args.full,
             auth_only=args.auth_only,
             nodes_only=args.nodes_only,
-            workflow=args.workflow
+            workflow=args.workflow,
+            check_nunchaku=check_nunchaku
         )
 
     # Check Forge supplementaire
