@@ -446,3 +446,5 @@ kernel_info.json
 
 # Argument_Analysis Papermill outputs (test execution)
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/output/
+# SymbolicAI runtime tools (downloaded by notebooks)
+MyIA.AI.Notebooks/SymbolicAI/ext_tools/
