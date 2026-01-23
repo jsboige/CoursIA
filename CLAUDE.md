@@ -32,7 +32,7 @@ Target framework: .NET 9.0. Configuration: Copy `MyIA.AI.Notebooks/Config/settin
 
 ### Docker/ComfyUI Services
 ```bash
-cd docker-configurations/comfyui-qwen
+cd docker-configurations/services/comfyui-qwen
 cp .env.example .env
 docker-compose up -d
 ```
