@@ -6,7 +6,7 @@ multiple backend options:
 
 1. subprocess (default): Direct Lean execution via subprocess (Windows/Linux/macOS)
 2. wsl: Execute via WSL lean4_jupyter kernel (Windows with WSL)
-3. leandojo: Use LeanDojo for ML/LLM theorem proving (requires Python 3.10, GitHub token)
+3. leandojo: Use LeanDojo for ML/LLM theorem proving (requires Python <3.13, GitHub token)
 
 Usage:
     from lean_runner import LeanRunner
@@ -22,6 +22,29 @@ Usage:
 
     # Auto-detect best backend
     runner = LeanRunner(backend='auto')
+
+LeanDojo Backend (for ML/LLM theorem proving):
+    from lean_runner import LeanRunner
+
+    runner = LeanRunner(backend='leandojo')
+
+    # Trace a repository to extract theorems
+    traced = runner.trace_repo(
+        "https://github.com/yangky11/lean4-example",
+        "7761283d0aed994cd1c7e893786212d2a01d159e"
+    )
+
+    # Get all theorems from the repo
+    theorems = runner.get_theorems(traced)
+    print(f"Found {len(theorems)} theorems")
+
+    # Try to prove a theorem with tactics
+    result = runner.prove_with_tactics(theorems[0], ["rfl"])
+    print(f"Proof succeeded: {result['success']}")
+
+    # Or interact with Dojo directly
+    dojo, state = runner.create_dojo(theorems[0])
+    new_state = runner.run_tactic(dojo, state, "intro x")
 """
 
 import subprocess
@@ -397,13 +420,142 @@ class LeanRunner:
     def _run_leandojo(self, code: str) -> LeanResult:
         """Execute Lean code via LeanDojo (limited - mainly for tracing)."""
         # LeanDojo is primarily for tracing repos and extracting theorems
-        # For direct code execution, fall back to subprocess
-        return LeanResult(
-            success=False, output="",
-            errors="LeanDojo backend is for theorem extraction, not direct execution. "
-                   "Use 'subprocess' or 'wsl' backend for running code.",
-            code=code, exit_code=-1, backend="leandojo"
-        )
+        # For direct code execution, use subprocess backend
+        subprocess_runner = LeanRunner(timeout=self.timeout, backend="subprocess")
+        result = subprocess_runner.run(code)
+        result.backend = "leandojo-subprocess"
+        return result
+
+    # =========================================================================
+    # LeanDojo-specific methods for ML/LLM theorem proving
+    # =========================================================================
+
+    def trace_repo(self, repo_url: str, commit: str, force: bool = False):
+        """
+        Trace a Lean Git repository to extract theorems and their states.
+
+        Args:
+            repo_url: GitHub repository URL (e.g., "https://github.com/yangky11/lean4-example")
+            commit: Commit hash to trace
+            force: Force re-tracing even if cached
+
+        Returns:
+            TracedRepo object from LeanDojo
+
+        Example:
+            runner = LeanRunner(backend='leandojo')
+            traced = runner.trace_repo("https://github.com/yangky11/lean4-example",
+                                       "7761283d0aed994cd1c7e893786212d2a01d159e")
+            theorems = runner.get_theorems(traced)
+        """
+        if self.backend != Backend.LEANDOJO:
+            raise RuntimeError("trace_repo requires 'leandojo' backend")
+
+        from lean_dojo import LeanGitRepo, trace, is_available_in_cache
+
+        repo = LeanGitRepo(repo_url, commit)
+        if not force and is_available_in_cache(repo):
+            print(f"Repository found in cache")
+
+        traced_repo = trace(repo)
+        self._leandojo_repo = traced_repo
+        return traced_repo
+
+    def get_theorems(self, traced_repo=None) -> list:
+        """
+        Extract all theorems from a traced repository.
+
+        Args:
+            traced_repo: TracedRepo object (or use last traced repo)
+
+        Returns:
+            List of Theorem objects with full_name, file_path, etc.
+        """
+        if traced_repo is None:
+            traced_repo = self._leandojo_repo
+        if traced_repo is None:
+            raise RuntimeError("No traced repository. Call trace_repo() first.")
+
+        return list(traced_repo.get_theorems())
+
+    def create_dojo(self, theorem):
+        """
+        Create a Dojo environment for interactive proving.
+
+        Args:
+            theorem: Theorem object from get_theorems()
+
+        Returns:
+            Tuple of (Dojo, initial_state)
+
+        Example:
+            runner = LeanRunner(backend='leandojo')
+            traced = runner.trace_repo(url, commit)
+            theorems = runner.get_theorems(traced)
+            dojo, state = runner.create_dojo(theorems[0])
+            # Use dojo.run_tac(state, "rfl") to run tactics
+        """
+        from lean_dojo import Dojo
+        return Dojo(theorem).__enter__()
+
+    def run_tactic(self, dojo, state, tactic: str):
+        """
+        Run a tactic in a Dojo environment.
+
+        Args:
+            dojo: Dojo environment
+            state: Current proof state
+            tactic: Tactic string to run (e.g., "rfl", "simp", "apply foo")
+
+        Returns:
+            New state after running the tactic, or None if tactic failed
+        """
+        return dojo.run_tac(state, tactic)
+
+    def prove_with_tactics(self, theorem, tactics: list) -> dict:
+        """
+        Attempt to prove a theorem using a sequence of tactics.
+
+        Args:
+            theorem: Theorem object
+            tactics: List of tactic strings to try in sequence
+
+        Returns:
+            Dict with 'success', 'steps', 'remaining_goals'
+
+        Example:
+            runner = LeanRunner(backend='leandojo')
+            traced = runner.trace_repo(url, commit)
+            theorems = runner.get_theorems(traced)
+            result = runner.prove_with_tactics(theorems[0], ["intro x", "rfl"])
+        """
+        from lean_dojo import Dojo
+
+        steps = []
+        with Dojo(theorem) as (dojo, state):
+            current_state = state
+            for tactic in tactics:
+                if current_state is None or not current_state.goals:
+                    break
+
+                result = dojo.run_tac(current_state, tactic)
+                steps.append({
+                    'tactic': tactic,
+                    'success': result is not None,
+                    'goals_before': len(current_state.goals),
+                    'goals_after': len(result.goals) if result else None
+                })
+
+                if result is not None:
+                    current_state = result
+                else:
+                    break
+
+            return {
+                'success': current_state is not None and len(current_state.goals) == 0,
+                'steps': steps,
+                'remaining_goals': len(current_state.goals) if current_state else None
+            }
 
     def run_interactive(self, code: str) -> None:
         """
@@ -608,4 +760,22 @@ theorem add_comm_example (a b : Nat) : a + b = b + a := by
 """)
 
     runner.cleanup()
+
+    # Test LeanDojo if available
+    if "leandojo" in LeanRunner.available_backends():
+        print("\n--- Test LeanDojo backend ---")
+        try:
+            dojo_runner = LeanRunner(backend='leandojo')
+            info = dojo_runner.check_installation()
+            print(f"LeanDojo version: {info['version']}")
+
+            # Note: tracing a repo takes several minutes, so we skip in basic test
+            print("LeanDojo available. Use trace_repo() to trace repositories.")
+            print("Example:")
+            print('  traced = runner.trace_repo("https://github.com/yangky11/lean4-example",')
+            print('                             "7761283d0aed994cd1c7e893786212d2a01d159e")')
+            print('  theorems = runner.get_theorems(traced)')
+        except Exception as e:
+            print(f"LeanDojo test skipped: {e}")
+
     print("\nDone!")

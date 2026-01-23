@@ -21,8 +21,9 @@ Cette serie de notebooks introduit **Lean 4**, un assistant de preuves et langag
 | 6 | [Lean-6-Mathlib-Essentials](Lean-6-Mathlib-Essentials.ipynb) | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
 | 7 | [Lean-7-LLM-Integration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
 | 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problemes Erdos | 55 min |
+| 9 | [Lean-9-LeanDojo](Lean-9-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 
-**Duree totale** : ~5h55
+**Duree totale** : ~6h40
 
 ## Prerequisites
 
@@ -86,9 +87,16 @@ cp .env.example .env
 
 ### LLM et Preuves Automatiques
 - [LeanCopilot](https://github.com/lean-dojo/LeanCopilot)
+- [LeanDojo](https://leandojo.readthedocs.io/) - ML/LLM theorem proving
 - [AlphaProof Paper Analysis](https://www.julian.ac/blog/2025/11/13/alphaproof-paper/)
 - [APOLLO System](https://arxiv.org/html/2505.05758v1)
 - [Erdos Problems Formalization](https://xenaproject.wordpress.com/2025/12/05/formalization-of-erdos-problems/)
+
+### LeanDojo
+
+- [LeanDojo Documentation](https://leandojo.readthedocs.io/)
+- [LeanDojo Paper](https://arxiv.org/abs/2306.15626) (NeurIPS 2023)
+- [lean4-example Repository](https://github.com/yangky11/lean4-example)
 
 ## Document source
 
@@ -126,22 +134,28 @@ elan show
 
 ```
 Lean/
-├── Lean-1-Setup.ipynb
-├── Lean-2-Dependent-Types.ipynb
+├── Lean-1-Setup.ipynb              # Python kernel - diagnostics
+├── Lean-2-Dependent-Types.ipynb    # Lean4 kernel
 ├── Lean-3-Propositions-Proofs.ipynb
 ├── Lean-4-Quantifiers.ipynb
 ├── Lean-5-Tactics.ipynb
 ├── Lean-6-Mathlib-Essentials.ipynb
-├── Lean-7-LLM-Integration.ipynb
-├── Lean-8-Agentic-Proving.ipynb
+├── Lean-7-LLM-Integration.ipynb    # Python kernel - APIs LLM
+├── Lean-8-Agentic-Proving.ipynb    # Python kernel - orchestration
+├── Lean-9-LeanDojo.ipynb           # Python kernel - LeanDojo
+├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
-└── examples/
-    ├── basic_logic.lean
-    ├── quantifiers.lean
-    ├── tactics_demo.lean
-    ├── mathlib_examples.lean
-    └── llm_assisted_proof.lean
+├── examples/
+│   ├── basic_logic.lean
+│   ├── quantifiers.lean
+│   ├── tactics_demo.lean
+│   ├── mathlib_examples.lean
+│   └── llm_assisted_proof.lean
+└── tests/
+    ├── test_leandojo_basic.py      # Tests rapides (sans tracing)
+    ├── test_leandojo_repos.py      # Tests complets sur repos
+    └── test_wsl_lean4_jupyter.py   # Tests backend WSL
 ```
 
 ## Licence

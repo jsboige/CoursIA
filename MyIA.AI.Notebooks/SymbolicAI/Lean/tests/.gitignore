@@ -1,2 +1,4 @@
-# LeanDojo tests - excluded until LeanDojo backend is stable
-test_leandojo*.py
+# LeanDojo test cache and temp files
+__pycache__/
+*.pyc
+.env
