@@ -1,9 +1,8 @@
-version: '3.8'
-
 services:
   vllm-zimage:
-    image: vllm/vllm-openai:v0.6.3
+    image: vllm/vllm-omni:v0.12.0rc1
     container_name: vllm-zimage
+    ipc: host
     ports:
       - "${VLLM_ZIMAGE_PORT:-8001}:8000"
     volumes:
@@ -12,12 +11,27 @@ services:
     environment:
       - HF_TOKEN=${HF_TOKEN}
       - CUDA_VISIBLE_DEVICES=0
-    command: >
-      --model Alpha-VLLM/Lumina-Next-SFT-diffusers
-      --served-model-name z-image
-      --port 8000
-      --dtype bfloat16
-      --trust-remote-code
+      - NCCL_P2P_DISABLE=1
+    # vLLM Omni serve command for Z-Image-Turbo text-to-image
+    # API endpoint: /v1/chat/completions (OpenAI-compatible)
+    # Supported resolutions: 1328x1328, 1664x928, 928x1664, 1472x1140, etc.
+    # Note: L'entrypoint de l'image est déjà "vllm serve --omni", on passe juste les arguments
+    # Optimizations: GPU memory utilization, max sequences, VAE slicing/tiling
+    command:
+      - "Tongyi-MAI/Z-Image-Turbo"
+      - "--served-model-name"
+      - "z-image"
+      - "--port"
+      - "8000"
+      - "--dtype"
+      - "bfloat16"
+      - "--trust-remote-code"
+      - "--gpu-memory-utilization"
+      - "0.3"
+      - "--max-num-seqs"
+      - "4"
+      - "--vae-use-slicing"
+      - "--vae-use-tiling"
     deploy:
       resources:
         reservations:

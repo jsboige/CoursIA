@@ -380,6 +380,7 @@ docker-configurations/services/comfyui-qwen/.secrets/
 # Docker cache (Phase 19 - Nettoyage Git)
 docker-configurations/cache/
 docker-configurations/models/
+docker-configurations/shared/cache/
  
 # Phase 26 - Nettoyage Structurel
 # Outputs temporaires
