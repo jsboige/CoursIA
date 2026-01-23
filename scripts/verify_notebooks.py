@@ -79,6 +79,16 @@ NOTEBOOK_FAMILIES = {
     "EPF": {
         "path": "MyIA.AI.Notebooks/EPF",
         "kernel": "mixed"
+    },
+    "Lean": {
+        "path": "MyIA.AI.Notebooks/SymbolicAI/Lean",
+        "kernel": "lean4",
+        "notes": "Requires lean4_jupyter kernel and elan"
+    },
+    "Tweety": {
+        "path": "MyIA.AI.Notebooks/SymbolicAI/Tweety",
+        "kernel": "python",
+        "notes": "Requires JDK 17+ (auto-download)"
     }
 }
 
@@ -191,6 +201,8 @@ def detect_notebook_kernel(notebook_path: Path) -> str:
             return 'python'
         elif '.net' in kernel_name or language in ['c#', 'csharp', 'f#', 'fsharp']:
             return 'dotnet'
+        elif 'lean' in kernel_name or language == 'lean4' or language == 'lean':
+            return 'lean4'
 
         # Check for .NET magic commands in cells
         cells = nb.get('cells', [])

@@ -1,0 +1,2 @@
+# LeanDojo tests - excluded until LeanDojo backend is stable
+test_leandojo*.py

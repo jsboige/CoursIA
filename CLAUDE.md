@@ -492,6 +492,108 @@ Le notebook original `Tweety.ipynb` est conservé pour référence. Chaque noteb
 
 ---
 
+## Lean - Proof Assistant et Verification Formelle (8 notebooks)
+
+### Vue d'ensemble
+
+Serie de notebooks pour Lean 4, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Les notebooks 6-8 couvrent l'etat de l'art 2025-2026 : Mathlib4, integration LLM, et agents autonomes pour les preuves.
+
+**Repertoire** : `MyIA.AI.Notebooks/SymbolicAI/Lean/`
+**Kernel** : `lean4_jupyter` (installation via pip)
+**Duree totale** : ~5h55
+
+### Structure des notebooks
+
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| **Partie 1 : Fondations** | | | |
+| 1 | Lean-1-Setup | Installation elan, kernel Jupyter, verification | 15 min |
+| 2 | Lean-2-Dependent-Types | Calcul des Constructions, types, polymorphisme | 35 min |
+| 3 | Lean-3-Propositions-Proofs | Prop, connecteurs, Curry-Howard, preuves par termes | 45 min |
+| 4 | Lean-4-Quantifiers | forall, exists, egalite, arithmetique Nat | 40 min |
+| 5 | Lean-5-Tactics | Mode tactique, apply/exact/intro/rw/simp | 50 min |
+| **Partie 2 : Etat de l'art** | | | |
+| 6 | Lean-6-Mathlib-Essentials | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
+| 7 | Lean-7-LLM-Integration | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
+| 8 | Lean-8-Agentic-Proving | Agents autonomes, APOLLO, problemes Erdos | 55 min |
+
+### Installation
+
+```bash
+# Installer elan (gestionnaire de versions Lean)
+# Windows (PowerShell)
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1 | Invoke-Expression
+
+# Linux/macOS
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+
+# Installer Lean 4 stable
+elan default leanprover/lean4:stable
+
+# Environnement Python pour lean4_jupyter
+conda create -n lean4-jupyter python=3.10
+conda activate lean4-jupyter
+pip install lean4_jupyter
+
+# Pour notebooks LLM (optionnel)
+pip install openai anthropic
+```
+
+### Configuration
+
+```bash
+cd MyIA.AI.Notebooks/SymbolicAI/Lean
+cp .env.example .env
+# Ajouter OPENAI_API_KEY ou ANTHROPIC_API_KEY pour notebooks 7-8
+```
+
+### Validation
+
+```bash
+python scripts/verify_lean.py --quick              # Validation structurelle rapide
+python scripts/verify_lean.py --check-env          # Verifier installation Lean
+python scripts/verify_lean.py --execute --verbose  # Execution complete
+```
+
+### Percees recentes (2024-2026)
+
+| Systeme | Accomplissement |
+|---------|-----------------|
+| **AlphaProof** (DeepMind) | Medaille d'argent IMO 2024, publie dans Nature |
+| **Harmonic Aristotle** | Resolution Erdos #124 variant (~30 ans ouvert) en 6h |
+| **DeepSeek-Prover** | Resolution de problemes Erdos 379, 987, 730, 198 |
+| **Mathlib4** v4.27.0-rc1 | 4M+ lignes, utilise par Terry Tao |
+
+### Concepts cles
+
+- **Lean 4** (pas Lean 3) - syntaxe moderne
+- **Curry-Howard** : propositions = types, preuves = termes
+- **Tactiques** : apply, exact, intro, rw, simp, omega, ring, linarith
+- **Preuves constructives** + logique classique (via `open Classical`)
+- **Progression** : termes -> tactiques -> Mathlib -> LLMs -> agents
+
+### Fichiers de support
+
+```
+Lean/
+├── Lean-1-Setup.ipynb ... Lean-8-Agentic-Proving.ipynb
+├── README.md                    # Documentation complete
+├── .env.example                 # Template API keys
+└── examples/
+    ├── basic_logic.lean         # Logique propositionnelle
+    ├── quantifiers.lean         # Quantificateurs
+    ├── tactics_demo.lean        # Tactiques
+    ├── mathlib_examples.lean    # Usage Mathlib
+    └── llm_assisted_proof.lean  # Preuves assistees LLM
+```
+
+### Document source
+
+- Notebooks 1-5 : `D:\Dropbox\IA101\TPs\TP - Z3 - Tweety - Lean.pdf` (Section VI)
+- Notebooks 6-8 : Recherches etat de l'art 2025-2026 (Mathlib4, AlphaProof, APOLLO, Harmonic Aristotle)
+
+---
+
 ## GradeBookApp - Systeme de Notation par Evaluations Collegiales
 
 ### Vue d'ensemble
