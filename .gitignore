@@ -447,7 +447,7 @@ MyIA.AI.Notebooks/GenAI/temp/*
 !MyIA.AI.Notebooks/GenAI/temp/.gitkeep
 
 # Tweety runtime dependencies (downloaded by notebook)
-MyIA.AI.Notebooks/SymbolicAI/libs/native/
+# Note: libs/native/ et ext_tools/EProver/ sont versionnés (binaires précieux)
 MyIA.AI.Notebooks/SymbolicAI/resources/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/jdk-17-portable/
@@ -459,6 +459,4 @@ kernel_info.json
 
 # Argument_Analysis Papermill outputs (test execution)
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/output/
-# SymbolicAI runtime tools (downloaded by notebooks)
-MyIA.AI.Notebooks/SymbolicAI/ext_tools/
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/text_cache/

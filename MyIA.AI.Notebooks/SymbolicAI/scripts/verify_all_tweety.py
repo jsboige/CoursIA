@@ -178,6 +178,10 @@ class EnvironmentCheck:
     clingo_installed: bool = False
     clingo_version: Optional[str] = None
     spass_installed: bool = False
+    eprover_installed: bool = False
+    eprover_path: Optional[str] = None
+    sat_libs_found: List[str] = field(default_factory=list)  # lingeling, minisat, picosat
+    sat_libs_path: Optional[str] = None
     errors: List[str] = field(default_factory=list)
 
     @property
@@ -277,6 +281,14 @@ class TweetyVerificationReport:
             print(f"  Clingo: {clingo_status} {self.environment.clingo_version or 'not found'}")
             spass_status = "[OK]" if self.environment.spass_installed else "[OPTIONAL]"
             print(f"  SPASS: {spass_status}")
+            eprover_status = "[OK]" if self.environment.eprover_installed else "[OPTIONAL]"
+            eprover_info = self.environment.eprover_path if self.environment.eprover_installed else "not found"
+            print(f"  EProver: {eprover_status} {eprover_info}")
+            sat_status = "[OK]" if self.environment.sat_libs_found else "[OPTIONAL]"
+            sat_info = ", ".join(self.environment.sat_libs_found) if self.environment.sat_libs_found else "not found"
+            print(f"  Native SAT libs: {sat_status} {sat_info}")
+            if self.environment.sat_libs_path:
+                print(f"    Path: {self.environment.sat_libs_path}")
             if self.environment.errors:
                 for err in self.environment.errors:
                     print(f"  [!] {err}")
@@ -476,6 +488,38 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
             if spass_path.exists():
                 env.spass_installed = True
                 break
+
+    # Check EProver (optional but valuable for FOL reasoning)
+    eprover_path = shutil.which("eprover")
+    if eprover_path:
+        env.eprover_installed = True
+        env.eprover_path = eprover_path
+    else:
+        local_eprover_paths = [
+            tweety_dir.parent / "ext_tools" / "EProver" / "eprover.exe",
+            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "EProver" / "eprover.exe",
+        ]
+        for ep_path in local_eprover_paths:
+            if ep_path.exists():
+                env.eprover_installed = True
+                env.eprover_path = str(ep_path)
+                break
+
+    # Check native SAT libraries (lingeling, minisat, picosat)
+    native_libs_paths = [
+        tweety_dir.parent / "libs" / "native",
+        tweety_dir / "libs" / "native",
+    ]
+    for libs_path in native_libs_paths:
+        if libs_path.exists():
+            env.sat_libs_path = str(libs_path)
+            # Check for each SAT solver library
+            for solver in ["lingeling", "minisat", "picosat"]:
+                dll_path = libs_path / f"{solver}.dll"
+                so_path = libs_path / f"{solver}.so"
+                if dll_path.exists() or so_path.exists():
+                    env.sat_libs_found.append(solver)
+            break
 
     return env
 
