@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(wsl.exe -d Ubuntu -- bash -c 'cat ~/.lean4-kernel-wrapper.py')"
     ]
   }
 }
