@@ -1,0 +1,6 @@
+c Test MaxSAT simple
+p wcnf 3 4 100
+100 1 0
+100 2 0
+5 -1 -2 0
+3 -3 0

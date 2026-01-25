@@ -1,0 +1,6 @@
+c Simple unsatisfiable CNF for testing
+c Clauses: x1, x2, -x1 OR -x2
+p cnf 2 3
+1 0
+2 0
+-1 -2 0
