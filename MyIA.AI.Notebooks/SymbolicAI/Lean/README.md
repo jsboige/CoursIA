@@ -1,6 +1,19 @@
 # Lean - Solveur Mathematique et Verification Formelle
 
-Cette serie de notebooks introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves.
+Cette serie de **9 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves.
+
+## Navigation
+
+Tous les notebooks incluent une **barre de navigation** en haut et en bas permettant de passer facilement d'un notebook a l'autre. Chaque notebook contient egalement un **Plan** avec des liens ancres vers chaque section.
+
+## Modes d'execution suggeres
+
+| Mode | Notebooks | Temps | Description |
+|------|-----------|-------|-------------|
+| **Fondations** | 1-5 | ~3h | Base theorique complete (types, logique, tactiques) |
+| **Avec Mathlib** | 1-6 | ~3h45 | Ajoute les tactiques Mathlib |
+| **Integration IA** | 1-7 | ~4h35 | Ajoute LLMs et preuves assistees |
+| **Complet** | 1-9 | ~6h40 | Toutes les fonctionnalites incluant LeanDojo |
 
 ## Structure
 
@@ -24,6 +37,26 @@ Cette serie de notebooks introduit **Lean 4**, un assistant de preuves et langag
 | 9 | [Lean-9-LeanDojo](Lean-9-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 
 **Duree totale** : ~6h40
+
+## Statut de maturite
+
+| # | Notebook | Cellules | Exercices | Solutions | Statut |
+|---|----------|----------|-----------|-----------|--------|
+| 1 | Setup | ~17 | - | - | **COMPLET** |
+| 2 | Dependent-Types | ~50 | 3 | 3 | **COMPLET** |
+| 3 | Propositions-Proofs | ~50 | 3 | 3 | **COMPLET** |
+| 4 | Quantifiers | ~46 | 3 | 3 | **COMPLET** |
+| 5 | Tactics | ~70 | 3 | 3 | **COMPLET** |
+| 6 | Mathlib-Essentials | ~45 | 3 | 3 | **COMPLET** |
+| 7 | LLM-Integration | ~50 | 2 | 2 | **COMPLET** |
+| 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
+| 9 | LeanDojo | ~100 | Demo | - | **COMPLET** |
+
+Tous les notebooks incluent :
+- Navigation header/footer avec liens vers notebooks precedent/suivant
+- Plan de ce Notebook avec liens ancres (notebooks 2-4)
+- Tableaux recapitulatifs en fin de section
+- Exercices avec solutions completes
 
 ## Prerequisites
 
