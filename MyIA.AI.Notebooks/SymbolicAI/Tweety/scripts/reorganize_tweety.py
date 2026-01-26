@@ -20,7 +20,7 @@ def write_notebook(path, nb):
     """Écrit un notebook au format JSON"""
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(nb, f, indent=1, ensure_ascii=False)
-    print(f"✓ Écrit: {path}")
+    print(f"[OK] Écrit: {path}")
 
 def create_notebook_from_cells(cells, metadata=None):
     """Crée un nouveau notebook à partir d'une liste de cellules"""
@@ -55,7 +55,7 @@ def main():
     # Sauvegarder une copie de backup
     backup_path = base_dir / "Tweety-5-Abstract-Argumentation.ipynb.backup"
     shutil.copy(tweety5_path, backup_path)
-    print(f"✓ Backup créé: {backup_path}")
+    print(f"[OK] Backup créé: {backup_path}")
 
     cells = tweety5['cells']
     metadata = tweety5['metadata']
@@ -70,7 +70,7 @@ def main():
     dung_cells = cells[2:11]  # Section 4.1 complète
     structured_cells = cells[11:21]  # Sections 4.2-4.6
 
-    print(f"\n✓ Séparation des cellules:")
+    print(f"\n[OK] Séparation des cellules:")
     print(f"  - Init: {len(init_cells)} cellules")
     print(f"  - Dung (4.1): {len(dung_cells)} cellules")
     print(f"  - Structured (4.2-4.6): {len(structured_cells)} cellules")
@@ -180,10 +180,10 @@ def main():
 
         # Supprimer l'ancien fichier
         old_tweety6_path.unlink()
-        print(f"✓ Supprimé: {old_tweety6_path}")
+        print(f"[OK] Supprimé: {old_tweety6_path}")
 
     print("\n" + "="*60)
-    print("✓ Réorganisation terminée avec succès !")
+    print("[OK] Réorganisation terminée avec succès !")
     print("="*60)
     print(f"\nNouvelle structure :")
     print(f"  - Tweety-5-Abstract-Argumentation.ipynb (Dung uniquement)")

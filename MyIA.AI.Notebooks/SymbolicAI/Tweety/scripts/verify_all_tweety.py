@@ -360,13 +360,19 @@ class TweetyVerificationReport:
 def get_repo_root() -> Path:
     """Get the repository root directory"""
     script_dir = Path(__file__).parent
-    # Navigate up from scripts/ to SymbolicAI/ to MyIA.AI.Notebooks/ to repo root
-    return script_dir.parent.parent.parent
+    # Navigate up from Tweety/scripts/ to Tweety/ to SymbolicAI/ to MyIA.AI.Notebooks/ to repo root
+    return script_dir.parent.parent.parent.parent
 
 
 def get_tweety_directory(repo_root: Path) -> Path:
     """Get the Tweety notebooks directory"""
     return repo_root / "MyIA.AI.Notebooks" / "SymbolicAI" / "Tweety"
+
+
+def get_tweety_directory_local() -> Path:
+    """Get the Tweety notebooks directory (relative to script location)"""
+    script_dir = Path(__file__).parent
+    return script_dir.parent  # Tweety/scripts/ -> Tweety/
 
 
 def find_libs_directory(tweety_dir: Path) -> Optional[Path]:
