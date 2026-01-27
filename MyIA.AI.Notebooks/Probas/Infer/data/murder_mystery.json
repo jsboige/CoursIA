@@ -1,0 +1,26 @@
+{
+  "description": "Murder Mystery - Factor Graphs example",
+  "suspects": [
+    {
+      "name": "Colonel Auburn",
+      "prior_guilt": 0.7,
+      "weapon_preference": {"revolver": 0.9, "dagger": 0.1},
+      "hair_color": {"auburn": 0.9, "grey": 0.1}
+    },
+    {
+      "name": "Professor Grey",
+      "prior_guilt": 0.3,
+      "weapon_preference": {"revolver": 0.2, "dagger": 0.8},
+      "hair_color": {"auburn": 0.5, "grey": 0.5}
+    }
+  ],
+  "evidence": {
+    "weapon_found": "revolver",
+    "hair_found": "grey"
+  },
+  "questions": [
+    "What is P(Auburn guilty | weapon=revolver)?",
+    "What is P(Auburn guilty | hair=grey)?",
+    "What is P(Auburn guilty | weapon=revolver, hair=grey)?"
+  ]
+}

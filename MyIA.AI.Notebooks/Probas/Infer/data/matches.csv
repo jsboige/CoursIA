@@ -1,0 +1,13 @@
+match_id,player1,player2,winner,draw
+0,Alice,Bob,Alice,0
+1,Bob,Claire,Claire,0
+2,Alice,Claire,Alice,0
+3,David,Alice,Alice,0
+4,Claire,David,Claire,0
+5,Bob,David,0,1
+6,Alice,Bob,Alice,0
+7,Claire,Alice,Claire,0
+8,David,Bob,David,0
+9,Alice,David,Alice,0
+10,Bob,Claire,Claire,0
+11,David,Claire,0,1

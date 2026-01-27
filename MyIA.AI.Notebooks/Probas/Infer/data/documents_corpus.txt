@@ -1,0 +1,10 @@
+DOC_1: machine learning algorithms neural networks deep learning
+DOC_2: probability statistics bayesian inference
+DOC_3: neural networks deep learning backpropagation
+DOC_4: bayesian inference probabilistic models graphical
+DOC_5: deep learning convolutional neural networks images
+DOC_6: graphical models bayesian networks inference
+DOC_7: reinforcement learning rewards actions states
+DOC_8: probability distributions gaussian mixture models
+DOC_9: natural language processing text classification
+DOC_10: computer vision image recognition neural networks
