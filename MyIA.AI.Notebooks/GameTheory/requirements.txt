@@ -1,0 +1,36 @@
+# Game Theory Notebooks - Dependencies
+# Installation: pip install -r requirements.txt
+
+# Core scientific computing
+numpy>=1.24.0
+scipy>=1.10.0
+matplotlib>=3.7.0
+
+# Game Theory libraries
+nashpy>=0.0.40
+open_spiel>=1.4
+
+# Visualization
+networkx>=3.0
+graphviz>=0.20
+seaborn>=0.12.0
+
+# Interactive notebooks
+ipywidgets>=8.0.0
+tqdm>=4.65.0
+
+# Data handling
+pandas>=2.0.0
+
+# Optional: Multi-agent RL (for notebooks 12-15)
+# stable-baselines3>=2.0.0
+# gymnasium>=0.28.0
+
+# Optional: Deep learning for Deep CFR
+# torch>=2.0.0
+
+# Utilities
+python-dotenv>=1.0.0
+
+# Testing
+pytest>=7.0.0

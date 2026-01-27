@@ -375,6 +375,60 @@ os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
 
 - Normal pour .NET Interactive (compilation JIT). Relancer après timeout.
 
+### Kernels WSL - Problèmes connus
+
+Lors de la création de kernels Jupyter qui s'exécutent dans WSL (comme pour OpenSpiel, Lean4, etc.), plusieurs pièges sont à éviter :
+
+| Problème | Cause | Solution |
+| -------- | ----- | -------- |
+| **SyntaxWarning: invalid escape sequence** | Docstrings/commentaires contenant `\A`, `\U`, etc. | Utiliser `#` commentaires au lieu de docstrings, ou doubler les backslashes |
+| **Chemin `~\AppData\...` non converti** | VSCode passe des chemins avec tilde Windows | Wrapper doit détecter `~\` et remplacer par `%USERPROFILE%` avant `wslpath` |
+| **wslpath échoue sur `~`** | `wslpath` ne comprend pas le tilde | Expansion manuelle : `~` → `C:\Users\<user>` via `cmd.exe /c echo %USERPROFILE%` |
+| **Kernel timeout 60s** | Wrapper script a des erreurs silencieuses | Tester avec `python3 -m py_compile script.py` |
+
+**Template de wrapper WSL sans erreurs** :
+
+```python
+#!/usr/bin/env python3
+# Wrapper for WSL kernel - NO DOCSTRINGS to avoid escape sequence issues
+# Handles VSCode path format: ~\\AppData\\Roaming\\jupyter\\runtime\\...
+
+import sys
+import subprocess
+import os
+
+def get_windows_home():
+    result = subprocess.run(
+        ["cmd.exe", "/c", "echo", "%USERPROFILE%"],
+        capture_output=True, text=True
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+def convert_path(win_path):
+    # Handle ~\\ or ~/ prefix (Windows tilde notation from VSCode)
+    if win_path.startswith("~\\") or win_path.startswith("~/"):
+        win_home = get_windows_home()
+        if win_home:
+            win_path = win_home + win_path[1:]
+            win_path = win_path.replace("/", "\\")
+    result = subprocess.run(["wslpath", "-u", win_path], capture_output=True, text=True)
+    return result.stdout.strip() if result.returncode == 0 else win_path
+
+# Process -f argument
+args = sys.argv[1:]
+for i, arg in enumerate(args):
+    if arg == "-f" and i + 1 < len(args):
+        conn_file = args[i + 1]
+        if ":" in conn_file or conn_file.startswith("~\\") or conn_file.startswith("~/"):
+            args[i + 1] = convert_path(conn_file)
+        break
+
+os.environ["PATH"] = "/path/to/venv/bin:" + os.environ.get("PATH", "")
+os.chdir(os.path.expanduser("~"))
+os.execvp("/path/to/venv/bin/python3",
+          ["/path/to/venv/bin/python3", "-m", "ipykernel_launcher"] + args)
+```
+
 ---
 
 ## État des Notebooks - Vérifications et Corrections (Janvier 2026)
