@@ -1,4 +1,17 @@
-# Installation du Kernel Python WSL avec OpenSpiel
+# Installation des Kernels WSL pour GameTheory
+
+Ce guide couvre l'installation de deux kernels WSL pour la serie GameTheory :
+
+| Kernel | Notebooks | Usage |
+|--------|-----------|-------|
+| **Python (GameTheory WSL + OpenSpiel)** | 7, 12, 15 | OpenSpiel (CFR, NFSP) |
+| **Lean 4 (WSL)** | 16, 19 | Code Lean natif |
+
+Les notebooks 17 et 18 utilisent Python avec `lean_runner.py` et peuvent fonctionner avec le kernel Python standard.
+
+---
+
+# Partie 1 : Kernel Python + OpenSpiel
 
 ## Probleme
 
@@ -284,3 +297,143 @@ Si WSL n'est pas disponible, les notebooks utilisent automatiquement `game_theor
 - `gale_shapley`: Matching stable
 
 Ces implementations sont suffisantes pour comprendre les concepts, meme si elles n'ont pas toutes les optimisations d'OpenSpiel.
+
+---
+
+## Partie 2 : Kernel Lean 4 (WSL)
+
+### Probleme
+
+Le kernel `lean4_jupyter` utilise `signal.SIGPIPE` qui n'existe pas sur Windows. De plus, Lean 4 fonctionne mieux dans un environnement Linux.
+
+### Solution
+
+Installer Lean 4 et lean4_jupyter dans WSL Ubuntu, avec un kernel accessible depuis Jupyter Windows.
+
+### Installation Automatique (Recommandee)
+
+```bash
+# 1. Dans WSL Ubuntu
+cd /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_lean4.sh
+```
+
+```powershell
+# 2. Dans PowerShell Windows
+cd C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+.\setup_lean4_kernel.ps1
+```
+
+### Installation Manuelle
+
+#### 1. Dans WSL Ubuntu - Installer Lean 4
+
+```bash
+# Installer elan (gestionnaire de versions Lean)
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+source ~/.elan/env
+
+# Installer Lean 4 stable
+elan default leanprover/lean4:stable
+
+# Verifier
+lean --version
+```
+
+#### 2. Creer l'environnement Python pour lean4_jupyter
+
+```bash
+# Creer un environnement virtuel
+python3 -m venv ~/.lean4-venv
+source ~/.lean4-venv/bin/activate
+
+# Installer les dependances
+pip install --upgrade pip
+pip install lean4_jupyter ipykernel pyyaml
+```
+
+#### 3. Installer le REPL (requis par lean4_jupyter)
+
+```bash
+# Cloner et compiler le REPL
+cd ~
+git clone https://github.com/leanprover-community/repl.git
+cd repl
+lake build
+
+# Copier dans le PATH
+cp .lake/build/bin/repl ~/.elan/bin/
+```
+
+#### 4. Creer le wrapper (WSL)
+
+Le script `setup_wsl_lean4.sh` cree automatiquement le wrapper `~/.lean4-kernel-wrapper.py` qui gere la conversion des chemins Windows vers WSL.
+
+#### 5. Creer le kernelspec Windows (PowerShell)
+
+```powershell
+# Creer le dossier pour le kernel
+$kernelPath = "$env:APPDATA\jupyter\kernels\lean4-wsl"
+New-Item -ItemType Directory -Force -Path $kernelPath
+
+# Obtenir le nom d'utilisateur WSL
+$wslUser = (wsl -d Ubuntu whoami).Trim()
+
+# Creer le kernel.json
+@"
+{
+  "argv": [
+    "wsl.exe", "-d", "Ubuntu", "--",
+    "/home/$wslUser/.lean4-venv/bin/python3",
+    "/home/$wslUser/.lean4-kernel-wrapper.py",
+    "-f", "{connection_file}"
+  ],
+  "display_name": "Lean 4 (WSL)",
+  "language": "lean4"
+}
+"@ | Out-File -Encoding utf8 "$kernelPath\kernel.json"
+
+# Verifier
+jupyter kernelspec list
+```
+
+### Verification
+
+```bash
+# Dans WSL
+source ~/.lean4-venv/bin/activate
+source ~/.elan/env
+
+# Test du REPL
+echo '{"cmd": "#eval 2 + 2"}' | repl
+
+# Test de lean4_jupyter
+python3 -c "import lean4_jupyter; print('OK')"
+```
+
+### Notebooks concernes
+
+| Notebook | Kernel | Contenu |
+|----------|--------|---------|
+| 16-Lean-Definitions | Lean 4 (WSL) | Definitions formelles Game, Nash |
+| 17-Lean-NashExistence | Python 3 | Python + lean_runner.py |
+| 18-Lean-CombinatorialGames | Python 3 | Python + lean_runner.py |
+| 19-Lean-SocialChoice | Lean 4 (WSL) | Arrow, Sen en Lean natif |
+
+### Depannage Lean
+
+#### Le kernel ne demarre pas
+
+1. Verifier les logs: `wsl -d Ubuntu -- cat ~/.lean4-wrapper.log`
+2. Verifier l'installation: `wsl -d Ubuntu -- bash -c "source ~/.elan/env && lean --version"`
+3. Verifier le REPL: `wsl -d Ubuntu -- bash -c "source ~/.elan/env && which repl"`
+
+#### Erreur "repl not found"
+
+Recompiler et reinstaller le REPL:
+```bash
+cd ~/repl
+git pull
+lake build
+cp .lake/build/bin/repl ~/.elan/bin/
+```

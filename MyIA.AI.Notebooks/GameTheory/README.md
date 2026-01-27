@@ -38,10 +38,10 @@ Cette serie de notebooks introduit la **Theorie des Jeux**, combinant **Python**
 
 | # | Notebook | Kernel | Contenu | Duree |
 |---|----------|--------|---------|-------|
-| 16 | [GameTheory-16-Lean-Definitions](GameTheory-16-Lean-Definitions.ipynb) | Lean4 | Types Game, Strategy, Nash | 45 min |
-| 17 | [GameTheory-17-Lean-NashExistence](GameTheory-17-Lean-NashExistence.ipynb) | Python+Lean | Brouwer, Kakutani, point fixe | 55 min |
-| 18 | [GameTheory-18-Lean-CombinatorialGames](GameTheory-18-Lean-CombinatorialGames.ipynb) | Lean4 | PGame mathlib, Nim, Sprague-Grundy | 50 min |
-| 19 | [GameTheory-19-Lean-SocialChoice](GameTheory-19-Lean-SocialChoice.ipynb) | Lean4 | Arrow + Sen, impossibilite | 70 min |
+| 16 | [GameTheory-16-Lean-Definitions](GameTheory-16-Lean-Definitions.ipynb) | Lean 4 (WSL) | Types Game, Strategy, Nash | 45 min |
+| 17 | [GameTheory-17-Lean-NashExistence](GameTheory-17-Lean-NashExistence.ipynb) | Python | Brouwer, Kakutani, point fixe (lean_runner.py) | 55 min |
+| 18 | [GameTheory-18-Lean-CombinatorialGames](GameTheory-18-Lean-CombinatorialGames.ipynb) | Python | PGame mathlib, Nim, Sprague-Grundy (lean_runner.py) | 50 min |
+| 19 | [GameTheory-19-Lean-SocialChoice](GameTheory-19-Lean-SocialChoice.ipynb) | Lean 4 (WSL) | Arrow + Sen, impossibilite | 70 min |
 
 **Duree totale** : ~15h30
 
