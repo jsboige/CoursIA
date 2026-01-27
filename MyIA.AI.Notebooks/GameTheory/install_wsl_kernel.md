@@ -8,7 +8,23 @@ OpenSpiel (bibliotheque DeepMind pour la theorie des jeux) n'a pas de wheels pre
 
 Installer un kernel Python dans WSL Ubuntu avec OpenSpiel, accessible depuis Jupyter Windows.
 
-## Etapes
+## Installation Automatique (Recommandee)
+
+### Methode rapide avec scripts
+
+```bash
+# 1. Dans WSL Ubuntu
+cd /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_openspiel.sh
+```
+
+```powershell
+# 2. Dans PowerShell Windows
+cd C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+.\setup_wsl_kernel.ps1
+```
+
+## Installation Manuelle
 
 ### 1. Installer WSL (si pas deja fait)
 
@@ -39,66 +55,71 @@ pip install open_spiel nashpy numpy scipy matplotlib networkx seaborn pandas tqd
 python -c "import pyspiel; print(f'OpenSpiel OK: {len(pyspiel.registered_names())} jeux')"
 ```
 
-### 3. Enregistrer le kernel pour Jupyter Windows
+### 3. Creer le wrapper script (WSL)
+
+VSCode passe les chemins de connexion au format `~\AppData\...`. Le shell WSL **consomme les backslashes**, donc un wrapper bash est necessaire.
+
+**IMPORTANT - Problemes connus:**
+1. Les backslashes sont consommes par le shell WSL (`~\AppData` devient `~AppData`)
+2. Les docstrings Python avec `\A`, `\U` causent des SyntaxWarning
+3. Utiliser un wrapper **bash** (pas Python directement) pour preserver les chemins
 
 ```bash
-# Dans WSL, installer le kernel
-source ~/.gametheory-venv/bin/activate
-python -m ipykernel install --user --name gametheory-wsl --display-name "Python (GameTheory WSL)"
+# Dans WSL - Creer le wrapper bash
+cat > ~/.gametheory-kernel-wrapper.sh << 'WRAPPER_SCRIPT'
+#!/bin/bash
+# Kernel wrapper for WSL - handles Windows path conversion
+
+LOGFILE="/tmp/kernel-wrapper.log"
+echo "=== Kernel wrapper started ===" > "$LOGFILE"
+echo "Args: $@" >> "$LOGFILE"
+
+ARGS=()
+NEXT_IS_CONN=false
+
+for arg in "$@"; do
+    if [ "$NEXT_IS_CONN" = true ]; then
+        echo "Original path: $arg" >> "$LOGFILE"
+
+        # Handle tilde notation (~\AppData\...)
+        if [[ "$arg" == ~* ]]; then
+            WIN_HOME=$(cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d "\r\n")
+            arg="${WIN_HOME}${arg:1}"
+            echo "After tilde expansion: $arg" >> "$LOGFILE"
+        fi
+
+        # Convert to Linux path
+        LINUX_PATH=$(wslpath -u "$arg" 2>/dev/null)
+        if [ -n "$LINUX_PATH" ]; then
+            arg="$LINUX_PATH"
+        fi
+
+        echo "Final path: $arg" >> "$LOGFILE"
+        ARGS+=("$arg")
+        NEXT_IS_CONN=false
+    elif [ "$arg" = "-f" ]; then
+        ARGS+=("$arg")
+        NEXT_IS_CONN=true
+    else
+        ARGS+=("$arg")
+    fi
+done
+
+echo "Final args: ${ARGS[@]}" >> "$LOGFILE"
+echo "Launching ipykernel..." >> "$LOGFILE"
+
+export PATH="$HOME/.gametheory-venv/bin:$PATH"
+cd ~
+exec ~/.gametheory-venv/bin/python3 -m ipykernel_launcher "${ARGS[@]}"
+WRAPPER_SCRIPT
+
+chmod +x ~/.gametheory-kernel-wrapper.sh
+
+# Verifier la syntaxe
+bash -n ~/.gametheory-kernel-wrapper.sh && echo "Wrapper OK"
 ```
 
-### 4. Creer le wrapper script (WSL)
-
-VSCode passe les chemins de connexion au format `~\AppData\...` que `wslpath` ne comprend pas directement. Un script wrapper est necessaire.
-
-**IMPORTANT**: Ne pas utiliser de docstrings avec backslashes (`\A`, `\U`, etc.) - cela cause des SyntaxWarning qui font echouer le kernel.
-
-```bash
-# Dans WSL
-cat > ~/.gametheory-kernel-wrapper.py << 'EOF'
-#!/usr/bin/env python3
-# Wrapper for WSL kernel - NO DOCSTRINGS to avoid escape sequence issues
-import sys
-import subprocess
-import os
-
-def get_windows_home():
-    result = subprocess.run(["cmd.exe", "/c", "echo", "%USERPROFILE%"],
-                          capture_output=True, text=True)
-    return result.stdout.strip() if result.returncode == 0 else None
-
-def convert_path(win_path):
-    if win_path.startswith("~\\") or win_path.startswith("~/"):
-        win_home = get_windows_home()
-        if win_home:
-            win_path = win_home + win_path[1:]
-            win_path = win_path.replace("/", "\\")
-    result = subprocess.run(["wslpath", "-u", win_path], capture_output=True, text=True)
-    return result.stdout.strip() if result.returncode == 0 else win_path
-
-args = sys.argv[1:]
-for i, arg in enumerate(args):
-    if arg == "-f" and i + 1 < len(args):
-        conn_file = args[i + 1]
-        if ":" in conn_file or conn_file.startswith("~\\") or conn_file.startswith("~/"):
-            args[i + 1] = convert_path(conn_file)
-        break
-
-os.environ["PATH"] = "/home/$USER/.gametheory-venv/bin:" + os.environ.get("PATH", "")
-os.chdir(os.path.expanduser("~"))
-os.execvp("/home/$USER/.gametheory-venv/bin/python3",
-          ["/home/$USER/.gametheory-venv/bin/python3", "-m", "ipykernel_launcher"] + args)
-EOF
-
-# Remplacer $USER par votre nom d'utilisateur WSL
-sed -i "s/\$USER/$USER/g" ~/.gametheory-kernel-wrapper.py
-chmod +x ~/.gametheory-kernel-wrapper.py
-
-# Verifier qu'il n'y a pas d'erreurs de syntaxe
-python3 -m py_compile ~/.gametheory-kernel-wrapper.py && echo "Wrapper OK"
-```
-
-### 5. Creer le kernelspec Windows (PowerShell)
+### 4. Creer le kernelspec Windows (PowerShell)
 
 ```powershell
 # Creer le dossier pour le kernel
@@ -106,14 +127,14 @@ $kernelPath = "$env:APPDATA\jupyter\kernels\gametheory-wsl"
 New-Item -ItemType Directory -Force -Path $kernelPath
 
 # Obtenir le nom d'utilisateur WSL
-$wslUser = wsl -d Ubuntu whoami
+$wslUser = (wsl -d Ubuntu whoami).Trim()
 
-# Creer le kernel.json avec le wrapper
+# Creer le kernel.json avec le wrapper BASH (pas Python!)
 @"
 {
   "argv": [
     "wsl.exe", "-d", "Ubuntu", "--",
-    "python3", "/home/$wslUser/.gametheory-kernel-wrapper.py",
+    "bash", "/home/$wslUser/.gametheory-kernel-wrapper.sh",
     "-f", "{connection_file}"
   ],
   "display_name": "Python (GameTheory WSL + OpenSpiel)",
@@ -125,9 +146,9 @@ $wslUser = wsl -d Ubuntu whoami
 jupyter kernelspec list
 ```
 
-### 6. Redemarrer VSCode
+### 5. Redemarrer VSCode
 
-Apres installation, redemarrez VSCode et selectionnez le kernel "Python (GameTheory WSL + OpenSpiel)" pour les notebooks qui utilisent OpenSpiel (7, 12, 15).
+Apres installation, redemarrez **completement** VSCode (pas juste recharger la fenetre) et selectionnez le kernel "Python (GameTheory WSL + OpenSpiel)" pour les notebooks qui utilisent OpenSpiel (7, 12, 15).
 
 ## Verification
 
@@ -178,6 +199,17 @@ print(f"Kuhn Poker: {game.num_players()} joueurs, {game.num_distinct_actions()} 
 
 ## Depannage
 
+### Le kernel ne demarre pas (backslashes manquants)
+
+**Symptome**: Le log montre `c:UsersjsboiAppData...` sans separateurs
+
+**Cause**: Le wrapper Python recoit le chemin apres que bash a consomme les backslashes
+
+**Solution**: Utiliser un wrapper **bash** au lieu de Python directement dans kernel.json:
+```json
+"argv": ["wsl.exe", "-d", "Ubuntu", "--", "bash", "/home/user/.wrapper.sh", "-f", "{connection_file}"]
+```
+
 ### Le kernel ne demarre pas (SyntaxWarning)
 
 Si vous voyez `SyntaxWarning: invalid escape sequence '\A'` ou similaire:
@@ -190,9 +222,9 @@ Si vous voyez `SyntaxWarning: invalid escape sequence '\A'` ou similaire:
 
 1. Verifier que WSL fonctionne: `wsl -l -v`
 2. Verifier l'environnement: `wsl -d Ubuntu -- bash -c "source ~/.gametheory-venv/bin/activate && python --version"`
-3. Verifier la conversion de chemin:
+3. Verifier le log du wrapper:
    ```bash
-   wsl -d Ubuntu -- bash -c 'python3 ~/.gametheory-kernel-wrapper.py --help 2>&1 | head -5'
+   wsl -d Ubuntu -- cat /tmp/kernel-wrapper.log
    ```
 
 ### OpenSpiel ne s'importe pas
