@@ -113,25 +113,36 @@ def main():
                     log(f"Connection file still missing after wait")
             break
 
-    # Set up environment
-    os.environ['PATH'] = '/home/jesse/.elan/bin:' + os.environ.get('PATH', '')
+    # Set up environment with CLEAN PATH (not inheriting polluted Windows PATH)
+    # The Windows PATH causes issues because it contains spaces and special chars
+    os.environ['PATH'] = '/home/jesse/.elan/bin:/home/jesse/.lean4-venv/bin:/usr/local/bin:/usr/bin:/bin'
     os.chdir(os.path.expanduser('~'))
-    log(f"PATH set, cwd: {os.getcwd()}")
+    log(f"PATH set (clean): {os.environ['PATH']}")
+    log(f"cwd: {os.getcwd()}")
     log(f"About to launch kernel with args: {args}")
 
-    # Launch the kernel using execvp - this replaces the current process
-    # IMPORTANT: Do NOT use subprocess.run with capture_output as it blocks
-    # the kernel's stdin/stdout/stderr communication with Jupyter
-    python_path = '/home/jesse/.lean4-venv/bin/python3'
-    kernel_args = [python_path, '-m', 'lean4_jupyter.kernel'] + args
-    log(f"Launching kernel via execvp: {kernel_args}")
-    log(f"--- execvp will replace this process ---")
+    # Launch the kernel directly using IPKernelApp.launch_instance
+    # NOTE: python -m lean4_jupyter.kernel exits immediately for unknown reasons
+    # But calling IPKernelApp.launch_instance directly works correctly
+    log(f"Launching kernel directly via IPKernelApp.launch_instance")
 
     try:
-        os.execvp(python_path, kernel_args)
+        # Set sys.argv for the kernel to parse
+        sys.argv = ['lean4_jupyter'] + args
+        log(f"sys.argv set to: {sys.argv}")
+
+        # Import and launch the kernel
+        from ipykernel.kernelapp import IPKernelApp
+        from lean4_jupyter.kernel import Lean4Kernel
+
+        log(f"Starting kernel...")
+        IPKernelApp.launch_instance(kernel_class=Lean4Kernel)
+        log(f"Kernel exited normally")
+    except SystemExit as e:
+        log(f"SystemExit: {e}")
+        sys.exit(e.code if e.code is not None else 0)
     except Exception as e:
-        # If execvp fails, log the error
-        log(f"execvp failed: {e}")
+        log(f"Exception launching kernel: {e}")
         import traceback
         log(traceback.format_exc())
         sys.exit(1)
