@@ -1,0 +1,5 @@
+# Requirements for Infer.NET notebooks testing
+papermill>=2.4.0
+jupyter>=1.0.0
+jupyter-client>=7.0.0
+nbformat>=5.0.0
