@@ -375,59 +375,93 @@ os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
 
 - Normal pour .NET Interactive (compilation JIT). Relancer après timeout.
 
-### Kernels WSL - Problèmes connus
+### Kernels WSL - Problemes connus (Janvier 2026)
 
-Lors de la création de kernels Jupyter qui s'exécutent dans WSL (comme pour OpenSpiel, Lean4, etc.), plusieurs pièges sont à éviter :
+Lors de la creation de kernels Jupyter qui s'executent dans WSL (comme pour OpenSpiel, Lean4, etc.), plusieurs pieges sont a eviter :
 
-| Problème | Cause | Solution |
+| Probleme | Cause | Solution |
 | -------- | ----- | -------- |
-| **SyntaxWarning: invalid escape sequence** | Docstrings/commentaires contenant `\A`, `\U`, etc. | Utiliser `#` commentaires au lieu de docstrings, ou doubler les backslashes |
-| **Chemin `~\AppData\...` non converti** | VSCode passe des chemins avec tilde Windows | Wrapper doit détecter `~\` et remplacer par `%USERPROFILE%` avant `wslpath` |
-| **wslpath échoue sur `~`** | `wslpath` ne comprend pas le tilde | Expansion manuelle : `~` → `C:\Users\<user>` via `cmd.exe /c echo %USERPROFILE%` |
-| **Kernel timeout 60s** | Wrapper script a des erreurs silencieuses | Tester avec `python3 -m py_compile script.py` |
+| **Backslashes completement supprimes** | Le shell WSL consomme TOUS les `\` avant que le script les recoive | Utiliser un wrapper **bash** (pas Python) avec regex de reconstruction |
+| **Chemin recu sans separateurs** | `~\AppData\...\kernel.json` devient `c:UsersjsboiAppDataRoaming...` | Regex: `^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$` |
+| **SyntaxWarning: invalid escape sequence** | Docstrings Python avec `\A`, `\U`, etc. | Utiliser `#` commentaires, pas docstrings |
+| **Variables heredoc interpolees** | `cat << 'EOF'` dans `bash -c '...'` interprete quand meme `$VAR` | Ecrire le script via fichier temporaire Windows, puis copier vers WSL |
+| **Kernel timeout 60s** | Wrapper script a des erreurs silencieuses | Verifier `/tmp/kernel-wrapper.log` dans WSL |
 
-**Template de wrapper WSL sans erreurs** :
+**IMPORTANT** : Un wrapper Python direct ne fonctionne PAS car les backslashes sont consommes par le shell WSL avant que Python les recoive. Il faut un wrapper **bash**.
 
-```python
-#!/usr/bin/env python3
-# Wrapper for WSL kernel - NO DOCSTRINGS to avoid escape sequence issues
-# Handles VSCode path format: ~\\AppData\\Roaming\\jupyter\\runtime\\...
+**kernel.json correct** :
 
-import sys
-import subprocess
-import os
-
-def get_windows_home():
-    result = subprocess.run(
-        ["cmd.exe", "/c", "echo", "%USERPROFILE%"],
-        capture_output=True, text=True
-    )
-    return result.stdout.strip() if result.returncode == 0 else None
-
-def convert_path(win_path):
-    # Handle ~\\ or ~/ prefix (Windows tilde notation from VSCode)
-    if win_path.startswith("~\\") or win_path.startswith("~/"):
-        win_home = get_windows_home()
-        if win_home:
-            win_path = win_home + win_path[1:]
-            win_path = win_path.replace("/", "\\")
-    result = subprocess.run(["wslpath", "-u", win_path], capture_output=True, text=True)
-    return result.stdout.strip() if result.returncode == 0 else win_path
-
-# Process -f argument
-args = sys.argv[1:]
-for i, arg in enumerate(args):
-    if arg == "-f" and i + 1 < len(args):
-        conn_file = args[i + 1]
-        if ":" in conn_file or conn_file.startswith("~\\") or conn_file.startswith("~/"):
-            args[i + 1] = convert_path(conn_file)
-        break
-
-os.environ["PATH"] = "/path/to/venv/bin:" + os.environ.get("PATH", "")
-os.chdir(os.path.expanduser("~"))
-os.execvp("/path/to/venv/bin/python3",
-          ["/path/to/venv/bin/python3", "-m", "ipykernel_launcher"] + args)
+```json
+{
+  "argv": [
+    "wsl.exe", "-d", "Ubuntu", "--",
+    "bash", "/home/<user>/.gametheory-kernel-wrapper.sh",
+    "-f", "{connection_file}"
+  ],
+  "display_name": "Python (GameTheory WSL + OpenSpiel)",
+  "language": "python"
+}
 ```
+
+**Template de wrapper BASH** (seul qui fonctionne) :
+
+```bash
+#!/bin/bash
+# Kernel wrapper for WSL - handles stripped backslashes
+# VSCode envoie: ~\AppData\Roaming\jupyter\runtime\kernel-xxx.json
+# Wrapper recoit: c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json
+
+LOGFILE="/tmp/kernel-wrapper.log"
+echo "=== Kernel wrapper started ===" > "$LOGFILE"
+echo "Args: $@" >> "$LOGFILE"
+
+ARGS=()
+NEXT_IS_CONN=false
+
+for arg in "$@"; do
+    if [ "$NEXT_IS_CONN" = true ]; then
+        echo "Original path: $arg" >> "$LOGFILE"
+
+        # Case 1: Tilde notation (rare, mais possible)
+        if [[ "$arg" == ~* ]]; then
+            WIN_HOME=$(cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d "\r\n")
+            arg="${WIN_HOME}${arg:1}"
+        fi
+
+        # Case 2: Backslashes strippes - CRITIQUE
+        # Pattern: c:Users<user>AppDataRoamingjupyterruntimekernel-xxx.json
+        if [[ "$arg" =~ ^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$ ]]; then
+            USERNAME="${BASH_REMATCH[1]}"
+            FILENAME="${BASH_REMATCH[2]}"
+            arg="C:\\Users\\${USERNAME}\\AppData\\Roaming\\jupyter\\runtime\\${FILENAME}"
+            echo "Reconstructed path: $arg" >> "$LOGFILE"
+        fi
+
+        # Convert to Linux path
+        if [[ "$arg" == *":"* ]] || [[ "$arg" == *"\\"* ]]; then
+            LINUX_PATH=$(wslpath -u "$arg" 2>/dev/null)
+            if [ -n "$LINUX_PATH" ]; then
+                arg="$LINUX_PATH"
+            fi
+        fi
+
+        echo "Final path: $arg" >> "$LOGFILE"
+        ARGS+=("$arg")
+        NEXT_IS_CONN=false
+    elif [ "$arg" = "-f" ]; then
+        ARGS+=("$arg")
+        NEXT_IS_CONN=true
+    else
+        ARGS+=("$arg")
+    fi
+done
+
+export PATH="/home/<user>/.gametheory-venv/bin:$PATH"
+cd ~
+exec /home/<user>/.gametheory-venv/bin/python3 -m ipykernel_launcher "${ARGS[@]}"
+```
+
+**Scripts de deploiement** : Voir `MyIA.AI.Notebooks/GameTheory/scripts/` et `install_wsl_kernel.md`
 
 ---
 

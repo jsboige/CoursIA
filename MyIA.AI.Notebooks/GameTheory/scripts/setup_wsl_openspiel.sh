@@ -45,7 +45,10 @@ echo "[4/5] Creating kernel wrapper script..."
 cat > "$WRAPPER_PATH" << 'WRAPPER_SCRIPT'
 #!/bin/bash
 # Kernel wrapper for WSL - handles Windows path conversion
-# DO NOT use variables like $LOG directly - they get expanded during creation
+# Handles multiple path formats:
+#   1. Tilde notation: ~\AppData\Roaming\jupyter\runtime\kernel-xxx.json
+#   2. Stripped backslashes: c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json
+#   3. Normal Windows paths: C:\Users\...\kernel-xxx.json
 
 LOGFILE="/tmp/kernel-wrapper.log"
 echo "=== Kernel wrapper started ===" > "$LOGFILE"
@@ -58,17 +61,29 @@ for arg in "$@"; do
     if [ "$NEXT_IS_CONN" = true ]; then
         echo "Original path: $arg" >> "$LOGFILE"
 
-        # Handle tilde notation (~\AppData\...)
+        # Case 1: Tilde notation (~\AppData\... or ~/AppData/...)
         if [[ "$arg" == ~* ]]; then
             WIN_HOME=$(cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d "\r\n")
             arg="${WIN_HOME}${arg:1}"
             echo "After tilde expansion: $arg" >> "$LOGFILE"
         fi
 
-        # Convert to Linux path
-        LINUX_PATH=$(wslpath -u "$arg" 2>/dev/null)
-        if [ -n "$LINUX_PATH" ]; then
-            arg="$LINUX_PATH"
+        # Case 2: Backslashes were stripped by shell (c:UsersjsboiAppDataRoaming...)
+        # Pattern: c:Users<user>AppDataRoamingjupyterruntimekernel-xxx.json
+        if [[ "$arg" =~ ^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$ ]]; then
+            USERNAME="${BASH_REMATCH[1]}"
+            FILENAME="${BASH_REMATCH[2]}"
+            # Reconstruct with proper path separators
+            arg="C:\\Users\\${USERNAME}\\AppData\\Roaming\\jupyter\\runtime\\${FILENAME}"
+            echo "Reconstructed path: $arg" >> "$LOGFILE"
+        fi
+
+        # Convert Windows path to Linux path
+        if [[ "$arg" == *":"* ]] || [[ "$arg" == *"\\"* ]]; then
+            LINUX_PATH=$(wslpath -u "$arg" 2>/dev/null)
+            if [ -n "$LINUX_PATH" ]; then
+                arg="$LINUX_PATH"
+            fi
         fi
 
         echo "Final path: $arg" >> "$LOGFILE"
