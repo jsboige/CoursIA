@@ -1,6 +1,6 @@
 # Programmation Probabiliste avec Infer.NET
 
-Serie de **12 notebooks** couvrant la programmation probabiliste avec Microsoft Infer.NET, des fondamentaux aux modeles relationnels avances.
+Serie de **13 notebooks** couvrant la programmation probabiliste avec Microsoft Infer.NET, des fondamentaux aux modeles relationnels avances, incluant un guide de troubleshooting.
 
 ## Vue d'ensemble
 
@@ -18,8 +18,11 @@ Serie de **12 notebooks** couvrant la programmation probabiliste avec Microsoft 
 | 10 | [Infer-10-Crowdsourcing](Infer-10-Crowdsourcing.ipynb) | 55 min | Workers, communautes, agregation |
 | 11 | [Infer-11-Sequences](Infer-11-Sequences.ipynb) | 65 min | HMM, series temporelles, motifs |
 | 12 | [Infer-12-Recommenders](Infer-12-Recommenders.ipynb) | 60 min | Factorisation, Click Model |
+| 13 | [Infer-13-Debugging](Infer-13-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
 
-**Duree totale** : ~10h15
+**Duree totale** : ~11h
+
+**Ressource complementaire** : [Glossaire](Infer-Glossary.md) - Definitions des termes techniques
 
 ## Progression Pedagogique
 
@@ -43,6 +46,9 @@ MODELES AVANCES (9-12)
 +-- 10-Crowdsourcing : Hierarchique, communautes
 +-- 11-Sequences : HMM, series temporelles
 +-- 12-Recommenders : Factorisation, multi-vues
+
+REFERENCE (13)
++-- 13-Debugging : Troubleshooting, diagnostics, comparaison algorithmes
 ```
 
 ## Prerequis
@@ -137,6 +143,8 @@ Infer/
 +-- Infer-10-Crowdsourcing.ipynb
 +-- Infer-11-Sequences.ipynb
 +-- Infer-12-Recommenders.ipynb
++-- Infer-13-Debugging.ipynb
++-- Infer-Glossary.md
 +-- README.md
 ```
 
@@ -190,6 +198,8 @@ Infer/
 
 ## Troubleshooting
 
+Pour un guide complet de troubleshooting, voir [Infer-13-Debugging](Infer-13-Debugging.ipynb).
+
 ### Erreur de compilation
 ```csharp
 moteur.Compiler.CompilerChoice = CompilerChoice.Roslyn;
@@ -204,6 +214,10 @@ Cette ligne est **obligatoire** pour les notebooks .NET Interactive.
 ### Memoire insuffisante
 - Reduire la taille des tableaux
 - Utiliser des boucles `ForEach` au lieu de developpements explicites
+
+### Glossaire
+
+Consultez le [Glossaire](Infer-Glossary.md) pour les definitions des termes techniques (EP, VMP, Factor Graph, etc.)
 
 ---
 
