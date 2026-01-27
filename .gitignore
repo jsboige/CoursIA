@@ -467,3 +467,11 @@ GeneratedSource/
 # Notebook test outputs
 **/test_outputs/
 
+
+# Lean build artifacts
+.lake/
+mathlib_examples/
+
+# External tools binaries (too large to track)
+MyIA.AI.Notebooks/SymbolicAI/ext_tools/clingo/
+MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
