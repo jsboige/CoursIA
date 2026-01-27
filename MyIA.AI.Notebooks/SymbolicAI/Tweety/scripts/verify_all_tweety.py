@@ -18,8 +18,11 @@ Usage:
 Options:
     --quick              Structure validation only (no execution)
     --check-env          Check if Tweety environment is properly configured
+    --analyze-outputs    Analyze existing notebook outputs (no execution)
     --execute            Execute notebooks with Papermill
     --cell-by-cell       Execute notebooks cell by cell with jupyter client
+    --execute-missing    Execute only cells without outputs or with errors
+    --clean-errors       Remove outputs from cells with errors (for re-execution)
     --notebook NAME      Execute only specified notebook(s), comma-separated
     --verbose            Verbose output
     --json               Output results as JSON
@@ -28,6 +31,7 @@ Options:
 Examples:
     python verify_all_tweety.py --quick                      # Fast structural check
     python verify_all_tweety.py --check-env                  # Check Tweety installation
+    python verify_all_tweety.py --analyze-outputs --verbose  # Analyze existing outputs
     python verify_all_tweety.py --execute --verbose          # Full execution test
     python verify_all_tweety.py --cell-by-cell               # Cell-by-cell execution
     python verify_all_tweety.py --notebook Tweety-1-Setup    # Single notebook
@@ -54,7 +58,7 @@ TWEETY_NOTEBOOKS = [
     "Tweety-4-Belief-Revision.ipynb",
     "Tweety-5-Abstract-Argumentation.ipynb",
     "Tweety-6-Structured-Argumentation.ipynb",
-    "Tweety-7-Advanced-Argumentation.ipynb",  # Original (conservé pour référence)
+    # Tweety-7 divided into 7a and 7b
     "Tweety-7a-Extended-Frameworks.ipynb",
     "Tweety-7b-Ranking-Probabilistic.ipynb",
     "Tweety-8-Agent-Dialogues.ipynb",
@@ -103,10 +107,6 @@ KNOWN_ISSUES = {
     "Tweety-5-Abstract-Argumentation.ipynb": [
         "AF Learning disabled - ClassCastException (Tautology cannot be cast to AssociativePlFormula)",
         "Limitation: Internal Tweety bug, section commented out"
-    ],
-    "Tweety-7-Advanced-Argumentation.ipynb": [
-        "ADF section may fail - requires native SAT solver (NativeMinisatSolver)",
-        "Limitation: Native libraries not loadable via JPype, Sat4j fallback insufficient"
     ],
     "Tweety-7a-Extended-Frameworks.ipynb": [
         "ADF section may fail - requires native SAT solver",
@@ -817,6 +817,375 @@ def analyze_executed_notebook(notebook_path: Path) -> Dict[str, Any]:
     }
 
 
+def analyze_notebook_outputs(notebook_path: Path, verbose: bool = False) -> Dict[str, Any]:
+    """
+    Analyze existing outputs in a notebook without re-executing.
+    Returns detailed info about each cell's execution status.
+    """
+    try:
+        with open(notebook_path, 'r', encoding='utf-8') as f:
+            nb = json.load(f)
+    except Exception as e:
+        return {'error': str(e), 'cells': []}
+
+    results = {
+        'notebook': notebook_path.name,
+        'total_cells': 0,
+        'code_cells': 0,
+        'cells_with_output': 0,
+        'cells_with_errors': 0,
+        'cells_without_output': 0,
+        'errors': [],
+        'warnings': [],
+        'cells': [],
+    }
+
+    cells = nb.get('cells', [])
+    results['total_cells'] = len(cells)
+
+    for i, cell in enumerate(cells):
+        cell_type = cell.get('cell_type', 'unknown')
+        cell_id = cell.get('id', f'cell_{i}')
+
+        if cell_type != 'code':
+            continue
+
+        results['code_cells'] += 1
+        source = ''.join(cell.get('source', []))
+        outputs = cell.get('outputs', [])
+
+        cell_info = {
+            'index': i,
+            'id': cell_id,
+            'has_output': len(outputs) > 0,
+            'error': None,
+            'output_types': [],
+            'first_line': source.split('\n')[0][:60] if source else '(empty)',
+        }
+
+        if not outputs:
+            results['cells_without_output'] += 1
+            if source.strip():  # Non-empty cell without output
+                cell_info['status'] = 'NOT_EXECUTED'
+            else:
+                cell_info['status'] = 'EMPTY'
+        else:
+            results['cells_with_output'] += 1
+            cell_info['status'] = 'OK'
+
+            for output in outputs:
+                output_type = output.get('output_type', '')
+                cell_info['output_types'].append(output_type)
+
+                if output_type == 'error':
+                    results['cells_with_errors'] += 1
+                    ename = output.get('ename', 'Error')
+                    evalue = output.get('evalue', '')
+                    traceback_text = '\n'.join(output.get('traceback', []))
+                    cell_info['status'] = 'ERROR'
+                    cell_info['error'] = f"{ename}: {evalue}"
+                    results['errors'].append({
+                        'cell_index': i,
+                        'cell_id': cell_id,
+                        'ename': ename,
+                        'evalue': evalue,
+                        'first_line': cell_info['first_line'],
+                        'source': source,
+                        'output_text': traceback_text[:500],
+                    })
+                elif output_type == 'stream':
+                    text = ''.join(output.get('text', []))
+                    # Check for known issues in output text
+                    if 'error=740' in text.lower():
+                        results['warnings'].append({
+                            'cell_index': i,
+                            'type': 'SPASS_PERMISSIONS',
+                            'message': 'SPASS requires admin privileges on Windows',
+                        })
+                    elif 'TypeError' in text or 'AttributeError' in text:
+                        results['warnings'].append({
+                            'cell_index': i,
+                            'type': 'RUNTIME_WARNING',
+                            'message': text[:150],
+                        })
+
+        results['cells'].append(cell_info)
+
+    return results
+
+
+def print_output_analysis(analysis: Dict[str, Any], verbose: bool = False, show_code: bool = False):
+    """Print formatted output analysis."""
+    name = analysis.get('notebook', 'Unknown')
+    code_cells = analysis.get('code_cells', 0)
+    with_output = analysis.get('cells_with_output', 0)
+    with_errors = analysis.get('cells_with_errors', 0)
+    without_output = analysis.get('cells_without_output', 0)
+
+    # Status icon
+    if with_errors > 0:
+        status = "!"
+        status_text = f"ERRORS ({with_errors})"
+    elif without_output > 0:
+        status = "~"
+        status_text = f"INCOMPLETE ({without_output} not executed)"
+    else:
+        status = "+"
+        status_text = "OK"
+
+    print(f"  [{status}] {name}: {status_text}")
+    print(f"      Code cells: {code_cells}, With output: {with_output}, Errors: {with_errors}")
+
+    # Show errors
+    for err in analysis.get('errors', []):
+        print(f"      [ERROR] Cell {err['cell_index']}: {err['ename']}: {err['evalue'][:80]}")
+        if verbose:
+            print(f"              First line: {err['first_line']}")
+        if show_code and err.get('source'):
+            print(f"              --- Code (first 10 lines) ---")
+            for line in err.get('source', '').split('\n')[:10]:
+                print(f"              | {line}")
+        if show_code and err.get('output_text'):
+            print(f"              --- Output ---")
+            for line in err.get('output_text', '').split('\n')[:5]:
+                print(f"              > {line[:100]}")
+
+    # Show warnings
+    for warn in analysis.get('warnings', []):
+        print(f"      [WARN] Cell {warn['cell_index']}: {warn['type']}")
+        if verbose:
+            print(f"             {warn['message'][:100]}")
+
+    # Verbose: show cells without output
+    if verbose and without_output > 0:
+        print(f"      Cells without output:")
+        for cell in analysis.get('cells', []):
+            if cell.get('status') == 'NOT_EXECUTED':
+                print(f"        Cell {cell['index']}: {cell['first_line']}")
+
+
+def clean_error_outputs(notebook_path: Path, verbose: bool = False) -> Dict[str, Any]:
+    """
+    Remove outputs from cells that have errors.
+    Returns info about cleaned cells.
+    """
+    try:
+        with open(notebook_path, 'r', encoding='utf-8') as f:
+            nb = json.load(f)
+    except Exception as e:
+        return {'error': str(e), 'cleaned': 0}
+
+    cleaned_cells = []
+    cells = nb.get('cells', [])
+
+    for i, cell in enumerate(cells):
+        if cell.get('cell_type') != 'code':
+            continue
+
+        outputs = cell.get('outputs', [])
+        has_error = any(o.get('output_type') == 'error' for o in outputs)
+
+        if has_error:
+            cell['outputs'] = []
+            cell['execution_count'] = None
+            cleaned_cells.append(i)
+            if verbose:
+                source = ''.join(cell.get('source', []))
+                first_line = source.split('\n')[0][:50] if source else '(empty)'
+                print(f"    Cleaned cell {i}: {first_line}")
+
+    if cleaned_cells:
+        with open(notebook_path, 'w', encoding='utf-8') as f:
+            json.dump(nb, f, indent=1, ensure_ascii=False)
+
+    return {
+        'notebook': notebook_path.name,
+        'cleaned': len(cleaned_cells),
+        'cell_indices': cleaned_cells,
+    }
+
+
+def execute_missing_cells(notebook_path: Path, timeout: int = 120, verbose: bool = False) -> Dict[str, Any]:
+    """
+    Execute only cells without outputs or with errors.
+    Uses jupyter_client to execute cells in order.
+    """
+    try:
+        import jupyter_client
+    except ImportError:
+        return {'error': 'jupyter_client not installed: pip install jupyter_client'}
+
+    # Load notebook
+    try:
+        with open(notebook_path, 'r', encoding='utf-8') as f:
+            nb = json.load(f)
+    except Exception as e:
+        return {'error': str(e)}
+
+    cells = nb.get('cells', [])
+
+    # Find cells that need execution
+    cells_to_execute = []
+    for i, cell in enumerate(cells):
+        if cell.get('cell_type') != 'code':
+            continue
+
+        source = ''.join(cell.get('source', []))
+        if not source.strip():
+            continue
+
+        outputs = cell.get('outputs', [])
+        needs_execution = not outputs or any(o.get('output_type') == 'error' for o in outputs)
+
+        if needs_execution:
+            cells_to_execute.append(i)
+
+    if not cells_to_execute:
+        return {'notebook': notebook_path.name, 'executed': 0, 'message': 'All cells have outputs'}
+
+    if verbose:
+        print(f"  Cells to execute: {cells_to_execute}")
+
+    # Start kernel
+    try:
+        km = jupyter_client.KernelManager(kernel_name='python3')
+        km.start_kernel(cwd=str(notebook_path.parent))
+        kc = km.client()
+        kc.start_channels()
+        kc.wait_for_ready(timeout=60)
+    except Exception as e:
+        return {'error': f'Kernel start failed: {e}'}
+
+    results = {
+        'notebook': notebook_path.name,
+        'executed': 0,
+        'success': 0,
+        'errors': 0,
+        'cell_results': [],
+    }
+
+    try:
+        # Set working directory
+        cwd_code = f"import os; os.chdir(r'{notebook_path.parent}')"
+        kc.execute(cwd_code)
+        kc.get_shell_msg(timeout=10)
+
+        # Execute ALL code cells in order (to build up state)
+        # but only record new outputs for cells_to_execute
+        for i, cell in enumerate(cells):
+            if cell.get('cell_type') != 'code':
+                continue
+
+            source = ''.join(cell.get('source', []))
+            if not source.strip():
+                continue
+
+            needs_new_output = i in cells_to_execute
+            start_time = time.time()
+
+            try:
+                msg_id = kc.execute(source)
+
+                new_outputs = []
+                error_output = None
+
+                # Collect outputs
+                while True:
+                    try:
+                        msg = kc.get_iopub_msg(timeout=timeout)
+                        msg_type = msg.get('msg_type', '')
+                        content = msg.get('content', {})
+
+                        if msg_type == 'stream':
+                            new_outputs.append({
+                                'output_type': 'stream',
+                                'name': content.get('name', 'stdout'),
+                                'text': content.get('text', ''),
+                            })
+                        elif msg_type == 'execute_result':
+                            new_outputs.append({
+                                'output_type': 'execute_result',
+                                'data': content.get('data', {}),
+                                'metadata': content.get('metadata', {}),
+                                'execution_count': content.get('execution_count'),
+                            })
+                        elif msg_type == 'display_data':
+                            new_outputs.append({
+                                'output_type': 'display_data',
+                                'data': content.get('data', {}),
+                                'metadata': content.get('metadata', {}),
+                            })
+                        elif msg_type == 'error':
+                            error_output = {
+                                'output_type': 'error',
+                                'ename': content.get('ename', 'Error'),
+                                'evalue': content.get('evalue', ''),
+                                'traceback': content.get('traceback', []),
+                            }
+                            new_outputs.append(error_output)
+                        elif msg_type == 'status':
+                            if content.get('execution_state') == 'idle':
+                                break
+
+                    except Exception as e:
+                        if 'Timeout' in str(type(e).__name__):
+                            error_output = {
+                                'output_type': 'error',
+                                'ename': 'TimeoutError',
+                                'evalue': f'Cell execution timed out after {timeout}s',
+                                'traceback': [],
+                            }
+                            new_outputs.append(error_output)
+                        break
+
+                execution_time = time.time() - start_time
+
+                # Update cell outputs only for cells that needed execution
+                if needs_new_output:
+                    cell['outputs'] = new_outputs
+                    results['executed'] += 1
+
+                    if error_output:
+                        results['errors'] += 1
+                        status = 'ERROR'
+                    else:
+                        results['success'] += 1
+                        status = 'OK'
+
+                    results['cell_results'].append({
+                        'cell_index': i,
+                        'status': status,
+                        'execution_time': execution_time,
+                    })
+
+                    if verbose:
+                        print(f"    Cell {i}: [{status}] {execution_time:.1f}s")
+
+            except Exception as e:
+                if needs_new_output:
+                    results['errors'] += 1
+                    results['cell_results'].append({
+                        'cell_index': i,
+                        'status': 'ERROR',
+                        'error': str(e),
+                    })
+                    if verbose:
+                        print(f"    Cell {i}: [ERROR] {str(e)[:50]}")
+
+        # Save notebook with new outputs
+        with open(notebook_path, 'w', encoding='utf-8') as f:
+            json.dump(nb, f, indent=1, ensure_ascii=False)
+
+    finally:
+        try:
+            kc.stop_channels()
+            km.shutdown_kernel(now=True)
+        except Exception:
+            pass
+
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Verify Tweety notebooks',
@@ -827,14 +1196,22 @@ def main():
                         help='Structure validation only (no execution)')
     parser.add_argument('--check-env', action='store_true',
                         help='Check if Tweety environment is properly configured')
+    parser.add_argument('--analyze-outputs', action='store_true',
+                        help='Analyze existing notebook outputs without re-executing')
     parser.add_argument('--execute', action='store_true',
                         help='Execute notebooks with Papermill')
     parser.add_argument('--cell-by-cell', action='store_true',
                         help='Execute notebooks cell by cell')
+    parser.add_argument('--execute-missing', action='store_true',
+                        help='Execute only cells without outputs or with errors')
+    parser.add_argument('--clean-errors', action='store_true',
+                        help='Remove outputs from cells with errors (for re-execution)')
     parser.add_argument('--notebook', type=str,
                         help='Execute only specified notebook(s), comma-separated')
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Verbose output')
+    parser.add_argument('--show-code', action='store_true',
+                        help='Show source code and output for cells with errors')
     parser.add_argument('--json', action='store_true',
                         help='Output results as JSON')
     parser.add_argument('--timeout', type=int, default=120,
@@ -880,6 +1257,80 @@ def main():
     # Check support files
     libs_path = find_libs_directory(tweety_dir)
     report.support_files['libs/'] = libs_path is not None
+
+    # Analyze existing outputs if requested
+    if args.analyze_outputs:
+        if not args.json:
+            print("\n--- Output Analysis ---")
+
+        all_analyses = []
+        for validation in report.notebooks:
+            if not validation.exists:
+                continue
+
+            notebook_path = tweety_dir / validation.name
+            analysis = analyze_notebook_outputs(notebook_path, args.verbose)
+            all_analyses.append(analysis)
+
+            if not args.json:
+                print_output_analysis(analysis, args.verbose, getattr(args, 'show_code', False))
+
+            # Update validation with analysis results
+            if analysis.get('errors'):
+                for err in analysis['errors']:
+                    validation.errors.append(f"Cell {err['cell_index']}: {err['ename']}: {err['evalue'][:50]}")
+            if analysis.get('warnings'):
+                for warn in analysis['warnings']:
+                    validation.warnings.append(f"Cell {warn['cell_index']}: {warn['type']}")
+
+        if args.json:
+            report_dict = report.to_dict()
+            report_dict['output_analysis'] = all_analyses
+            print(json.dumps(report_dict, indent=2))
+            sys.exit(0)
+
+    # Clean error outputs if requested
+    if args.clean_errors:
+        if not args.json:
+            print("\n--- Cleaning Error Outputs ---")
+
+        for validation in report.notebooks:
+            if not validation.exists:
+                continue
+
+            notebook_path = tweety_dir / validation.name
+            result = clean_error_outputs(notebook_path, args.verbose)
+
+            if result.get('cleaned', 0) > 0:
+                print(f"  [{validation.name}] Cleaned {result['cleaned']} cell(s)")
+            elif args.verbose:
+                print(f"  [{validation.name}] No errors to clean")
+
+    # Execute missing cells if requested
+    if args.execute_missing:
+        if not args.json:
+            print("\n--- Executing Missing/Error Cells ---")
+
+        for validation in report.notebooks:
+            if not validation.exists:
+                continue
+
+            notebook_path = tweety_dir / validation.name
+            print(f"\n  Processing: {validation.name}")
+
+            result = execute_missing_cells(notebook_path, args.timeout, args.verbose)
+
+            if result.get('error'):
+                print(f"    ERROR: {result['error']}")
+                report.execution_results[validation.name] = "ERROR"
+            elif result.get('executed', 0) == 0:
+                print(f"    All cells already have outputs")
+                report.execution_results[validation.name] = "OK"
+            else:
+                success = result.get('success', 0)
+                errors = result.get('errors', 0)
+                print(f"    Executed {result['executed']} cells: {success} OK, {errors} errors")
+                report.execution_results[validation.name] = f"EXECUTED ({success}/{result['executed']})"
 
     # Execute notebooks if requested
     if args.execute or args.cell_by_cell:
