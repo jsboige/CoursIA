@@ -45,6 +45,36 @@ Cette serie de notebooks introduit la **Theorie des Jeux**, combinant **Python**
 
 **Duree totale** : ~15h30
 
+## Statut de maturite
+
+| # | Notebook | Cellules | Exercices | Solutions | Statut |
+|---|----------|----------|-----------|-----------|--------|
+| 1 | Setup | ~15 | - | - | **COMPLET** |
+| 2 | NormalForm | ~25 | 3 | 3 | **COMPLET** |
+| 3 | Topology2x2 | ~30 | 3 | 3 | **COMPLET** |
+| 4 | NashEquilibrium | ~35 | 3 | 3 | **COMPLET** |
+| 5 | ZeroSum-Minimax | ~25 | 3 | 3 | **COMPLET** |
+| 6 | EvolutionTrust | ~40 | 3 | 3 | **COMPLET** |
+| 7 | ExtensiveForm | ~30 | 3 | 3 | **COMPLET** |
+| 8 | BackwardInduction | ~35 | 3 | 3 | **COMPLET** |
+| 9 | ForwardInduction-SPE | ~35 | 3 | 3 | **COMPLET** |
+| 10 | BayesianGames | ~30 | 3 | 3 | **COMPLET** |
+| 11 | ReputationGames | ~30 | 3 | 3 | **COMPLET** |
+| 12 | ImperfectInfo-CFR | ~45 | 3 | 3 | **COMPLET** |
+| 13 | DifferentialGames | ~35 | 3 | 3 | **COMPLET** |
+| 14 | MechanismDesign | ~40 | 3 | 3 | **COMPLET** |
+| 15 | MultiAgent-RL | ~35 | 3 | 3 | **COMPLET** |
+| 16 | Lean-Definitions | ~25 | 3 | 3 | **COMPLET** |
+| 17 | Lean-NashExistence | ~20 | 3 | 3 | **COMPLET** |
+| 18 | Lean-CombinatorialGames | ~25 | 3 | 3 | **COMPLET** |
+| 19 | Lean-SocialChoice | ~30 | 3 | 3 | **COMPLET** |
+
+Tous les notebooks incluent :
+- Navigation header/footer avec liens
+- Plan avec liens ancres
+- Tableaux recapitulatifs
+- Exercices avec solutions completes
+
 ## Prerequisites
 
 - Connaissances de base en logique et mathematiques
