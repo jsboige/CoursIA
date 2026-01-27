@@ -60,15 +60,22 @@ python -c "import pyspiel; print(f'OpenSpiel OK: {len(pyspiel.registered_names()
 VSCode passe les chemins de connexion au format `~\AppData\...`. Le shell WSL **consomme les backslashes**, donc un wrapper bash est necessaire.
 
 **IMPORTANT - Problemes connus:**
-1. Les backslashes sont consommes par le shell WSL (`~\AppData` devient `~AppData`)
-2. Les docstrings Python avec `\A`, `\U` causent des SyntaxWarning
-3. Utiliser un wrapper **bash** (pas Python directement) pour preserver les chemins
+1. Les backslashes sont **completement supprimes** par le shell WSL:
+   - VSCode envoie: `~\AppData\Roaming\jupyter\runtime\kernel-xxx.json`
+   - Le wrapper recoit: `c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json`
+2. Le wrapper doit **reconstruire** le chemin avec une regex
+3. Les docstrings Python avec `\A`, `\U` causent des SyntaxWarning
+4. Utiliser un wrapper **bash** (pas Python directement)
 
 ```bash
 # Dans WSL - Creer le wrapper bash
 cat > ~/.gametheory-kernel-wrapper.sh << 'WRAPPER_SCRIPT'
 #!/bin/bash
 # Kernel wrapper for WSL - handles Windows path conversion
+# Handles multiple path formats:
+#   1. Tilde notation: ~\AppData\Roaming\jupyter\runtime\kernel-xxx.json
+#   2. Stripped backslashes: c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json
+#   3. Normal Windows paths: C:\Users\...\kernel-xxx.json
 
 LOGFILE="/tmp/kernel-wrapper.log"
 echo "=== Kernel wrapper started ===" > "$LOGFILE"
@@ -81,17 +88,29 @@ for arg in "$@"; do
     if [ "$NEXT_IS_CONN" = true ]; then
         echo "Original path: $arg" >> "$LOGFILE"
 
-        # Handle tilde notation (~\AppData\...)
+        # Case 1: Tilde notation (~\AppData\... or ~/AppData/...)
         if [[ "$arg" == ~* ]]; then
             WIN_HOME=$(cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d "\r\n")
             arg="${WIN_HOME}${arg:1}"
             echo "After tilde expansion: $arg" >> "$LOGFILE"
         fi
 
-        # Convert to Linux path
-        LINUX_PATH=$(wslpath -u "$arg" 2>/dev/null)
-        if [ -n "$LINUX_PATH" ]; then
-            arg="$LINUX_PATH"
+        # Case 2: Backslashes were stripped by shell (c:UsersjsboiAppDataRoaming...)
+        # Pattern: c:Users<user>AppDataRoamingjupyterruntimekernel-xxx.json
+        if [[ "$arg" =~ ^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$ ]]; then
+            USERNAME="${BASH_REMATCH[1]}"
+            FILENAME="${BASH_REMATCH[2]}"
+            # Reconstruct with proper path separators
+            arg="C:\\Users\\${USERNAME}\\AppData\\Roaming\\jupyter\\runtime\\${FILENAME}"
+            echo "Reconstructed path: $arg" >> "$LOGFILE"
+        fi
+
+        # Convert Windows path to Linux path
+        if [[ "$arg" == *":"* ]] || [[ "$arg" == *"\\"* ]]; then
+            LINUX_PATH=$(wslpath -u "$arg" 2>/dev/null)
+            if [ -n "$LINUX_PATH" ]; then
+                arg="$LINUX_PATH"
+            fi
         fi
 
         echo "Final path: $arg" >> "$LOGFILE"
@@ -201,14 +220,23 @@ print(f"Kuhn Poker: {game.num_players()} joueurs, {game.num_distinct_actions()} 
 
 ### Le kernel ne demarre pas (backslashes manquants)
 
-**Symptome**: Le log montre `c:UsersjsboiAppData...` sans separateurs
+**Symptome**: Le log `/tmp/kernel-wrapper.log` montre un chemin sans separateurs:
 
-**Cause**: Le wrapper Python recoit le chemin apres que bash a consomme les backslashes
-
-**Solution**: Utiliser un wrapper **bash** au lieu de Python directement dans kernel.json:
-```json
-"argv": ["wsl.exe", "-d", "Ubuntu", "--", "bash", "/home/user/.wrapper.sh", "-f", "{connection_file}"]
 ```
+Original path: c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json
+```
+
+**Cause**: Le shell WSL consomme **tous** les backslashes avant que le script les recoive
+
+**Solution**: Le wrapper doit reconstruire le chemin avec une regex:
+
+```bash
+if [[ "$arg" =~ ^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$ ]]; then
+    arg="C:\\Users\\${BASH_REMATCH[1]}\\AppData\\Roaming\\jupyter\\runtime\\${BASH_REMATCH[2]}"
+fi
+```
+
+Verifier que le wrapper contient cette regex (voir section 3 ci-dessus).
 
 ### Le kernel ne demarre pas (SyntaxWarning)
 
