@@ -336,12 +336,42 @@ class LeanRunner:
                 timeout=self.timeout, cwd=self._temp_dir
             )
 
+            # IMPORTANT: Lean outputs errors to stdout, not stderr!
+            # And returns exit code 0 even with errors.
+            # We need to check stdout for error patterns.
+            stdout = result.stdout.strip()
+            stderr = result.stderr.strip()
+
+            # Detect errors in stdout (Lean's actual error output)
+            has_errors = (
+                ": error:" in stdout or
+                ": warning: declaration uses 'sorry'" in stdout or
+                "unknown identifier" in stdout or
+                "unknown constant" in stdout or
+                "tactic 'sorry' failed" in stdout or
+                "unsolved goals" in stdout
+            )
+
+            # Extract error messages from stdout
+            error_lines = []
+            output_lines = []
+            for line in stdout.split('\n'):
+                if ": error:" in line or ": warning:" in line:
+                    error_lines.append(line)
+                else:
+                    output_lines.append(line)
+
+            # Combine errors from stdout and stderr
+            errors = '\n'.join(error_lines)
+            if stderr:
+                errors = f"{errors}\n{stderr}" if errors else stderr
+
             return LeanResult(
-                success=result.returncode == 0,
-                output=result.stdout.strip(),
-                errors=result.stderr.strip(),
+                success=not has_errors and result.returncode == 0,
+                output='\n'.join(output_lines).strip(),
+                errors=errors.strip(),
                 code=code,
-                exit_code=result.returncode,
+                exit_code=result.returncode if has_errors else 0,
                 backend="subprocess"
             )
 
@@ -1003,14 +1033,29 @@ class LLMClient:
 class LeanProofPrompt:
     """
     Gestion des prompts pour generation de preuves Lean.
-    
+
     Fournit :
     - Templates de prompts structures (initial, correction, few-shot)
     - Extraction de code Lean des reponses LLM
     - Nettoyage et formatting du code
     """
-    
-    SYSTEM_PROMPT = """Tu es un expert en Lean 4 et Mathlib4.
+
+    # System prompt when Mathlib is NOT available
+    SYSTEM_PROMPT = """Tu es un expert en Lean 4.
+
+Tu dois generer des preuves Lean 4 qui :
+1. Utilisent les tactiques Lean 4 STANDARD (rfl, simp, omega, exact, apply, intro, constructor, cases, induction, rw, have)
+2. N'utilisent PAS de tactiques Mathlib (ring, linarith, norm_num, field_simp, polyrith) - Mathlib n'est pas disponible
+3. Pour les operations sur Nat, utilisent les lemmes standard comme Nat.add_comm, Nat.mul_comm, Nat.add_assoc, Nat.mul_assoc, Nat.left_distrib, etc.
+4. Sont syntaxiquement correctes
+5. Sont concises et elegantes
+
+IMPORTANT: Ne genere PAS d'import Mathlib, ils ne sont pas disponibles.
+
+Reponds UNIQUEMENT avec le code Lean, sans explications supplementaires."""
+
+    # System prompt when Mathlib IS available
+    SYSTEM_PROMPT_MATHLIB = """Tu es un expert en Lean 4 et Mathlib4.
 
 Tu dois generer des preuves Lean 4 qui :
 1. Utilisent les tactiques appropriees (rfl, simp, omega, ring, linarith, exact, apply, intro, etc.)
@@ -1048,13 +1093,24 @@ Reponds UNIQUEMENT avec le code Lean, sans explications supplementaires."""
         
         # Ajouter le theoreme
         prompt_parts.append(f"Theoreme:\n```lean\n{theorem_statement}\n```\n")
-        
-        # Instructions
-        prompt_parts.append(
-            "\nDonne le code Lean complet avec la preuve (remplace 'by sorry' par les tactiques).\n"
-            "Utilise les tactiques Mathlib si appropriees (ring, linarith, omega, simp)."
-        )
-        
+
+        # Instructions - adapt based on Mathlib availability
+        has_mathlib = context and "imports" in context and "Mathlib" in context["imports"]
+        if has_mathlib:
+            prompt_parts.append(
+                "\nDonne le code Lean complet avec la preuve (remplace 'by sorry' par les tactiques).\n"
+                "Utilise les tactiques Mathlib si appropriees (ring, linarith, omega, simp)."
+            )
+        else:
+            prompt_parts.append(
+                "\nDonne le code Lean complet avec la preuve (remplace 'by sorry' par les tactiques).\n"
+                "IMPORTANT: Mathlib n'est PAS disponible. Utilise uniquement les tactiques standard:\n"
+                "- rfl, simp, omega (pour arithmetique entiere)\n"
+                "- exact (avec lemmes standard: Nat.add_comm, Nat.mul_comm, etc.)\n"
+                "- apply, intro, constructor, cases, induction, rw\n"
+                "- NE PAS utiliser ring, linarith, norm_num (ils necessitent Mathlib)"
+            )
+
         return "\n".join(prompt_parts)
     
     @staticmethod
@@ -1453,10 +1509,16 @@ class ProofGenerator:
                     print(f"Correction (erreur precedente: {last_error[:60]}...)")
             
             # Appeler le LLM
+            # Select system prompt based on Mathlib availability
+            has_mathlib = context and "imports" in context and "Mathlib" in context["imports"]
+            system_prompt = (
+                LeanProofPrompt.SYSTEM_PROMPT_MATHLIB if has_mathlib
+                else LeanProofPrompt.SYSTEM_PROMPT
+            )
             try:
                 llm_response = self.llm.generate(
                     prompt,
-                    system_prompt=LeanProofPrompt.SYSTEM_PROMPT,
+                    system_prompt=system_prompt,
                     temperature=self.temperature
                 )
                 
