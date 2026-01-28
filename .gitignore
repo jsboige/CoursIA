@@ -470,7 +470,7 @@ GeneratedSource/
 
 # Lean build artifacts
 .lake/
-mathlib_examples/
+mathlib_examples/.lake/
 
 # External tools binaries (too large to track)
 MyIA.AI.Notebooks/SymbolicAI/ext_tools/clingo/
