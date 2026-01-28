@@ -813,11 +813,11 @@ def load_env_file(env_path: Path = None) -> bool:
     except ImportError:
         return False
     if env_path and env_path.exists():
-        _load_dotenv(env_path)
+        _load_dotenv(env_path, override=True)  # Force override existing vars
         return True
     for path in [Path(__file__).parent / ".env", Path.cwd() / ".env"]:
         if path.exists():
-            _load_dotenv(path)
+            _load_dotenv(path, override=True)  # Force override existing vars
             return True
     return False
 
@@ -1474,7 +1474,15 @@ class ProofGenerator:
                 break
             
             # Etape 2: Verifier avec Lean
-            lean_result = self.verifier.verify(current_code)
+            # Ajouter les imports du contexte si necessaire
+            code_to_verify = current_code
+            if context and "imports" in context:
+                imports_str = context["imports"]
+                # Verifier si les imports sont deja dans le code
+                if imports_str not in current_code:
+                    code_to_verify = f"{imports_str}\n\n{current_code}"
+
+            lean_result = self.verifier.verify(code_to_verify)
             
             # Enregistrer la tentative
             attempts.append(ProofAttempt(
