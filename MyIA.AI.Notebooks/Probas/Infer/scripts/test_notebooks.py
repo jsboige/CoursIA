@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Configuration
-NOTEBOOKS_DIR = Path(__file__).parent.parent.parent / "MyIA.AI.Notebooks" / "Probas" / "Infer"
+NOTEBOOKS_DIR = Path(__file__).parent.parent  # MyIA.AI.Notebooks/Probas/Infer
 OUTPUT_DIR = NOTEBOOKS_DIR / "test_outputs"
 KERNEL_NAME = ".net-csharp"
 
@@ -30,7 +30,48 @@ NOTEBOOKS = [
     "Infer-10-Crowdsourcing.ipynb",
     "Infer-11-Sequences.ipynb",
     "Infer-12-Recommenders.ipynb",
+    "Infer-13-Debugging.ipynb",
 ]
+
+# ANSI color codes for terminal output
+class Colors:
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+
+
+def print_colored(text, color):
+    """Print colored text to terminal."""
+    print(f"{color}{text}{Colors.ENDC}")
+
+
+def verify_kernel_available():
+    """Verify that the .NET kernel is available."""
+    try:
+        result = subprocess.run(
+            ["jupyter", "kernelspec", "list"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        if KERNEL_NAME in result.stdout:
+            print_colored(f"✓ Kernel {KERNEL_NAME} available", Colors.GREEN)
+            return True
+        else:
+            print_colored(f"✗ Kernel {KERNEL_NAME} not found", Colors.RED)
+            print("\nAvailable kernels:")
+            print(result.stdout)
+            print("\nInstall .NET Interactive:")
+            print("  dotnet tool install -g Microsoft.dotnet-interactive")
+            print("  dotnet interactive jupyter install")
+            return False
+    except subprocess.CalledProcessError as e:
+        print_colored(f"✗ Error checking kernel: {e}", Colors.RED)
+        return False
 
 
 def setup_output_dir():
@@ -145,64 +186,74 @@ def main():
     args = parser.parse_args()
 
     if args.list:
-        print("Available notebooks:")
+        print_colored("Available notebooks:", Colors.BOLD)
         for nb in NOTEBOOKS:
             path = NOTEBOOKS_DIR / nb
-            status = "OK" if path.exists() else "MISSING"
-            print(f"  [{status}] {nb}")
+            if path.exists():
+                print_colored(f"  [✓] {nb}", Colors.GREEN)
+            else:
+                print_colored(f"  [✗] {nb}", Colors.RED)
         return 0
+
+    # Verify kernel before running tests
+    if not verify_kernel_available():
+        return 1
 
     setup_output_dir()
 
     notebooks_to_test = [args.notebook] if args.notebook else NOTEBOOKS
 
     print(f"\n{'='*60}")
-    print(f"Infer.NET Notebooks Test Suite")
+    print_colored("Infer.NET Notebooks Test Suite", Colors.BOLD)
     print(f"{'='*60}")
     print(f"Notebooks directory: {NOTEBOOKS_DIR}")
     print(f"Output directory: {OUTPUT_DIR}")
     print(f"Kernel: {KERNEL_NAME}")
-    print(f"Timeout: {args.timeout}s")
+    print(f"Timeout: {args.timeout}s per notebook")
     print(f"{'='*60}\n")
 
     results = []
 
     for notebook in notebooks_to_test:
-        print(f"Testing: {notebook}")
+        print_colored(f"Testing: {notebook}", Colors.BOLD)
         result = run_notebook(notebook, timeout=args.timeout, verbose=args.verbose)
         result['notebook'] = notebook
         results.append(result)
 
         if result['success']:
-            print(f"  Status: OK ({result['duration']:.1f}s)")
+            print_colored(f"  ✓ SUCCESS ({result['duration']:.1f}s)", Colors.GREEN)
         else:
-            print(f"  Status: FAILED ({result['duration']:.1f}s)")
+            print_colored(f"  ✗ FAILED ({result['duration']:.1f}s)", Colors.RED)
             if args.verbose and result['error']:
                 print(f"  Error: {result['error'][:200]}...")
 
             # Try to extract detailed errors from output notebook
             if result['output_path'] and os.path.exists(result['output_path']):
                 errors = extract_errors_from_notebook(result['output_path'])
-                for err in errors[:3]:  # Show first 3 errors
-                    print(f"    Cell {err.get('cell_index', '?')}: {err.get('ename', 'Error')}: {err.get('evalue', '')[:100]}")
+                if errors:
+                    print_colored("  Errors found:", Colors.YELLOW)
+                    for err in errors[:3]:  # Show first 3 errors
+                        print(f"    Cell {err.get('cell_index', '?')}: {err.get('ename', 'Error')}: {err.get('evalue', '')[:100]}")
 
         print()
 
     # Summary
     print(f"\n{'='*60}")
-    print("SUMMARY")
+    print_colored("SUMMARY", Colors.BOLD)
     print(f"{'='*60}")
 
     passed = sum(1 for r in results if r['success'])
     failed = len(results) - passed
     total_time = sum(r['duration'] for r in results)
 
-    print(f"Passed: {passed}/{len(results)}")
-    print(f"Failed: {failed}/{len(results)}")
-    print(f"Total time: {total_time:.1f}s")
+    print(f"Total: {len(results)} notebooks")
+    print_colored(f"✓ Passed: {passed}/{len(results)}", Colors.GREEN if passed > 0 else Colors.YELLOW)
+    if failed > 0:
+        print_colored(f"✗ Failed: {failed}/{len(results)}", Colors.RED)
+    print(f"Total time: {total_time:.1f}s ({total_time/60:.1f} minutes)")
 
     if failed > 0:
-        print("\nFailed notebooks:")
+        print_colored("\nFailed notebooks:", Colors.YELLOW)
         for r in results:
             if not r['success']:
                 print(f"  - {r['notebook']}: {r['error'][:100] if r['error'] else 'Unknown error'}...")
