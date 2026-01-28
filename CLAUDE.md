@@ -587,7 +587,11 @@ Le notebook original `Tweety.ipynb` est conservé pour référence. Chaque noteb
 Serie de notebooks pour Lean 4, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Les notebooks 6-8 couvrent l'etat de l'art 2025-2026 : Mathlib4, integration LLM, et agents autonomes pour les preuves.
 
 **Repertoire** : `MyIA.AI.Notebooks/SymbolicAI/Lean/`
-**Kernel** : `lean4_jupyter` (installation via pip)
+**Kernels** :
+- `lean4` (Windows) - Notebooks 1-6
+- `Lean 4 (WSL)` - Alternative WSL pour notebooks Lean
+- `Python 3 (WSL)` - Notebooks 7-8 (LLM integration)
+
 **Duree totale** : ~5h55
 
 ### Structure des notebooks
@@ -607,24 +611,20 @@ Serie de notebooks pour Lean 4, un assistant de preuves et langage de programmat
 
 ### Installation
 
+**IMPORTANT** : Tous les scripts sont dans `scripts/`, exécuter uniquement depuis là.
+
 ```bash
-# Installer elan (gestionnaire de versions Lean)
-# Windows (PowerShell)
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1 | Invoke-Expression
+# 1. Ouvrir et exécuter Lean-1-Setup.ipynb (toutes les cellules)
+#    Le notebook installe automatiquement : elan, Lean 4, lean4_jupyter, kernels
 
-# Linux/macOS
-curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+# 2. Valider l'installation
+python scripts/validate_lean_setup.py
 
-# Installer Lean 4 stable
-elan default leanprover/lean4:stable
+# 3. Pour notebooks 7-8 (LLM), configurer Python WSL
+bash scripts/setup_wsl_python.sh
 
-# Environnement Python pour lean4_jupyter
-conda create -n lean4-jupyter python=3.10
-conda activate lean4-jupyter
-pip install lean4_jupyter
-
-# Pour notebooks LLM (optionnel)
-pip install openai anthropic
+# 4. Valider WSL
+python scripts/validate_lean_setup.py --wsl
 ```
 
 ### Configuration
@@ -632,16 +632,20 @@ pip install openai anthropic
 ```bash
 cd MyIA.AI.Notebooks/SymbolicAI/Lean
 cp .env.example .env
-# Ajouter OPENAI_API_KEY ou ANTHROPIC_API_KEY pour notebooks 7-8
+# Éditer .env et ajouter :
+#   OPENAI_API_KEY=sk-...       (requis pour notebooks 7-8)
+#   ANTHROPIC_API_KEY=sk-ant-... (optionnel)
+#   GITHUB_TOKEN=ghp_...        (pour LeanDojo)
 ```
 
 ### Validation
 
 ```bash
-python scripts/verify_lean.py --quick              # Validation structurelle rapide
-python scripts/verify_lean.py --check-env          # Verifier installation Lean
-python scripts/verify_lean.py --execute --verbose  # Execution complete
+python scripts/validate_lean_setup.py          # Valider environnement Windows
+python scripts/validate_lean_setup.py --wsl    # Valider environnement WSL
 ```
+
+Sortie attendue : `Tous les composants OK (12/12)`
 
 ### Percees recentes (2024-2026)
 
@@ -660,19 +664,24 @@ python scripts/verify_lean.py --execute --verbose  # Execution complete
 - **Preuves constructives** + logique classique (via `open Classical`)
 - **Progression** : termes -> tactiques -> Mathlib -> LLMs -> agents
 
-### Fichiers de support
+### Structure du répertoire
 
 ```
 Lean/
-├── Lean-1-Setup.ipynb ... Lean-8-Agentic-Proving.ipynb
-├── README.md                    # Documentation complete
-├── .env.example                 # Template API keys
+├── Lean-1-Setup.ipynb ... Lean-8-Agentic-Proving.ipynb  # Notebooks (racine)
+├── lean_runner.py                # Backend Python pour Lean
+├── .env / .env.example           # Configuration API
+├── scripts/                      # TOUS LES SCRIPTS
+│   ├── README.md                 # Documentation scripts
+│   ├── setup_wsl_python.sh       # Config Python WSL
+│   ├── validate_lean_setup.py    # Validation environnement
+│   └── lean4-kernel-wrapper.py   # Wrapper kernel WSL
+├── tests/                        # Tests unitaires
+│   ├── test_leandojo_basic.py
+│   └── test_wsl_lean4_jupyter.py
 └── examples/
-    ├── basic_logic.lean         # Logique propositionnelle
-    ├── quantifiers.lean         # Quantificateurs
-    ├── tactics_demo.lean        # Tactiques
-    ├── mathlib_examples.lean    # Usage Mathlib
-    └── llm_assisted_proof.lean  # Preuves assistees LLM
+    ├── basic_logic.lean          # Exemples Lean
+    └── llm_assisted_proof.lean
 ```
 
 ### Document source

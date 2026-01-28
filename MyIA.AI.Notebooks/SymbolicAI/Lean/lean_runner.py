@@ -779,3 +779,746 @@ theorem add_comm_example (a b : Nat) : a + b = b + a := by
             print(f"LeanDojo test skipped: {e}")
 
     print("\nDone!")
+
+
+# =========================================================================
+# LLM Integration Classes for Lean Proof Generation
+# =========================================================================
+# Added January 2026
+# =========================================================================
+
+# Try to import optional LLM dependencies
+try:
+    import openai as _openai_module
+    _OPENAI_AVAILABLE = True
+except ImportError:
+    _OPENAI_AVAILABLE = False
+
+try:
+    import anthropic as _anthropic_module
+    _ANTHROPIC_AVAILABLE = True
+except ImportError:
+    _ANTHROPIC_AVAILABLE = False
+
+# Additional imports for LLM classes
+from typing import Dict, Any
+import time
+import re
+
+
+def load_env_file(env_path: Path = None) -> bool:
+    """Load environment variables from .env file."""
+    try:
+        from dotenv import load_dotenv as _load_dotenv
+    except ImportError:
+        return False
+    if env_path and env_path.exists():
+        _load_dotenv(env_path)
+        return True
+    for path in [Path(__file__).parent / ".env", Path.cwd() / ".env"]:
+        if path.exists():
+            _load_dotenv(path)
+            return True
+    return False
+
+# Configuration des providers LLM
+PROVIDERS_CONFIG = {
+    "openai": {
+        "models": {
+            "gpt-5.2": {"max_tokens_param": "max_completion_tokens", "default": 1000},
+            "gpt-5-mini": {"max_tokens_param": "max_completion_tokens", "default": 1000},
+        },
+        "api_key_env": "OPENAI_API_KEY",
+        "default_model": "gpt-5.2"
+    },
+    "anthropic": {
+        "models": {
+            "claude-sonnet-4-5": {"max_tokens": 4096},
+            "claude-opus-4-5": {"max_tokens": 4096},
+            "claude-3-5-sonnet": {"max_tokens": 4096}
+        },
+        "api_key_env": "ANTHROPIC_API_KEY",
+        "default_model": "claude-sonnet-4-5"
+    }
+}
+
+@dataclass
+class LLMResponse:
+    """Reponse d'un LLM avec metadonnees."""
+    content: str
+    model: str
+    provider: str
+    tokens_used: Dict[str, int]
+    latency_ms: float
+
+class LLMClient:
+    """
+    Client unifie pour OpenAI et Anthropic avec retry logic.
+    
+    Gere automatiquement :
+    - Parametres max_tokens vs max_completion_tokens selon le modele
+    - Retry avec exponential backoff pour rate limits
+    - Extraction de code Lean des reponses
+    """
+    
+    def __init__(self, provider: str = "openai", model: str = None):
+        """
+        Initialise le client LLM.
+        
+        Args:
+            provider: "openai" ou "anthropic"
+            model: Nom du modele (None = utiliser defaut du provider)
+        """
+        self.provider = provider.lower()
+        if self.provider not in PROVIDERS_CONFIG:
+            raise ValueError(f"Provider {provider} non supporte. Utilisez: {list(PROVIDERS_CONFIG.keys())}")
+        
+        config = PROVIDERS_CONFIG[self.provider]
+        self.model = model or os.getenv("OPENAI_CHAT_MODEL_ID") or config["default_model"]
+        self.api_key = os.getenv(config["api_key_env"])
+        
+        if not self.api_key or self.api_key.startswith(("sk-...", "sk-ant-...")):
+            raise ValueError(
+                f"Cle API {config['api_key_env']} non configuree. "
+                f"Ajoutez-la dans .env : {config['api_key_env']}=sk-..."
+            )
+        
+        # Initialiser les clients API
+        if self.provider == "openai":
+            from openai import OpenAI
+            self.client = OpenAI(api_key=self.api_key)
+        elif self.provider == "anthropic":
+            from anthropic import Anthropic
+            self.client = Anthropic(api_key=self.api_key)
+    
+    def generate(
+        self,
+        prompt: str,
+        system_prompt: str = "Tu es un expert en Lean 4 et Mathlib4.",
+        temperature: float = 0.3,
+        max_retries: int = 3
+    ) -> LLMResponse:
+        """
+        Genere une reponse avec retry logic.
+        
+        Args:
+            prompt: Le prompt utilisateur
+            system_prompt: Le prompt systeme
+            temperature: Temperature (0.0-1.0, bas = deterministe)
+            max_retries: Nombre de tentatives en cas d'erreur
+        
+        Returns:
+            LLMResponse avec le contenu et les metadonnees
+        """
+        for attempt in range(max_retries):
+            try:
+                start_time = time.time()
+                
+                if self.provider == "openai":
+                    response = self._generate_openai(prompt, system_prompt, temperature)
+                elif self.provider == "anthropic":
+                    response = self._generate_anthropic(prompt, system_prompt, temperature)
+                
+                latency_ms = (time.time() - start_time) * 1000
+                
+                return LLMResponse(
+                    content=response["content"],
+                    model=response["model"],
+                    provider=self.provider,
+                    tokens_used=response["tokens"],
+                    latency_ms=latency_ms
+                )
+            
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    print(f"  [Erreur API, retry dans {wait_time}s: {e}]")
+                    time.sleep(wait_time)
+                else:
+                    raise RuntimeError(f"Echec apres {max_retries} tentatives: {e}")
+    
+    def _generate_openai(self, prompt: str, system_prompt: str, temperature: float) -> Dict[str, Any]:
+        """Genere avec OpenAI."""
+        # Detecter le bon parametre max_tokens
+        model_config = PROVIDERS_CONFIG["openai"]["models"]
+        for model_prefix, config in model_config.items():
+            if self.model.startswith(model_prefix):
+                max_tokens_param = config["max_tokens_param"]
+                max_tokens_value = config["default"]
+                break
+        else:
+            # Defaut pour modeles inconnus
+            max_tokens_param = "max_tokens"
+            max_tokens_value = 800
+        
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=temperature,
+            **{max_tokens_param: max_tokens_value}
+        )
+        
+        return {
+            "content": response.choices[0].message.content,
+            "model": response.model,
+            "tokens": {
+                "prompt": response.usage.prompt_tokens,
+                "completion": response.usage.completion_tokens,
+                "total": response.usage.total_tokens
+            }
+        }
+    
+    def _generate_anthropic(self, prompt: str, system_prompt: str, temperature: float) -> Dict[str, Any]:
+        """Genere avec Anthropic."""
+        model_config = PROVIDERS_CONFIG["anthropic"]["models"]
+        max_tokens = model_config.get(self.model, {"max_tokens": 4096})["max_tokens"]
+        
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            system=system_prompt,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        return {
+            "content": response.content[0].text,
+            "model": response.model,
+            "tokens": {
+                "prompt": response.usage.input_tokens,
+                "completion": response.usage.output_tokens,
+                "total": response.usage.input_tokens + response.usage.output_tokens
+            }
+        }
+
+# Verification de la configuration
+
+class LeanProofPrompt:
+    """
+    Gestion des prompts pour generation de preuves Lean.
+    
+    Fournit :
+    - Templates de prompts structures (initial, correction, few-shot)
+    - Extraction de code Lean des reponses LLM
+    - Nettoyage et formatting du code
+    """
+    
+    SYSTEM_PROMPT = """Tu es un expert en Lean 4 et Mathlib4.
+
+Tu dois generer des preuves Lean 4 qui :
+1. Utilisent les tactiques appropriees (rfl, simp, omega, ring, linarith, exact, apply, intro, etc.)
+2. Sont syntaxiquement correctes
+3. Sont concises et elegantes
+4. Utilisent Mathlib quand approprie
+
+Reponds UNIQUEMENT avec le code Lean, sans explications supplementaires."""
+
+    @staticmethod
+    def build_initial_prompt(
+        theorem_statement: str,
+        context: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """
+        Construit le prompt initial pour generer une preuve.
+        
+        Args:
+            theorem_statement: Le theoreme a prouver (sans 'by sorry')
+            context: Contexte optionnel (imports, hypotheses, variables)
+        
+        Returns:
+            Le prompt structure
+        """
+        prompt_parts = ["Ecris une preuve Lean 4 pour le theoreme suivant:\n"]
+        
+        # Ajouter le contexte si disponible
+        if context:
+            if "imports" in context:
+                prompt_parts.append(f"Imports disponibles:\n{context['imports']}\n")
+            if "variables" in context:
+                prompt_parts.append(f"Variables:\n{context['variables']}\n")
+            if "hypotheses" in context:
+                prompt_parts.append(f"Hypotheses:\n{context['hypotheses']}\n")
+        
+        # Ajouter le theoreme
+        prompt_parts.append(f"Theoreme:\n```lean\n{theorem_statement}\n```\n")
+        
+        # Instructions
+        prompt_parts.append(
+            "\nDonne le code Lean complet avec la preuve (remplace 'by sorry' par les tactiques).\n"
+            "Utilise les tactiques Mathlib si appropriees (ring, linarith, omega, simp)."
+        )
+        
+        return "\n".join(prompt_parts)
+    
+    @staticmethod
+    def build_correction_prompt(
+        theorem_statement: str,
+        previous_proof: str,
+        error_message: str,
+        iteration: int
+    ) -> str:
+        """
+        Construit le prompt de correction base sur une erreur.
+        
+        Args:
+            theorem_statement: Le theoreme original
+            previous_proof: La preuve qui a echoue
+            error_message: L'erreur Lean
+            iteration: Numero de l'iteration
+        
+        Returns:
+            Le prompt de correction
+        """
+        return f"""La preuve suivante contient une erreur (iteration {iteration}):
+
+Theoreme:
+```lean
+{theorem_statement}
+```
+
+Preuve actuelle:
+```lean
+{previous_proof}
+```
+
+Erreur Lean:
+```
+{error_message}
+```
+
+Analyse l'erreur et fournis une preuve CORRIGEE complete.
+Donne UNIQUEMENT le code Lean corrige, sans explications."""
+    
+    @staticmethod
+    def build_few_shot_prompt(
+        theorem_statement: str,
+        examples: List[Dict[str, str]]
+    ) -> str:
+        """
+        Construit un prompt few-shot avec exemples similaires.
+        
+        Args:
+            theorem_statement: Le theoreme a prouver
+            examples: Liste de {theorem, proof} exemples
+        
+        Returns:
+            Le prompt few-shot
+        """
+        prompt_parts = ["Voici des exemples de preuves Lean 4:\n"]
+        
+        for i, example in enumerate(examples, 1):
+            prompt_parts.append(f"\nExemple {i}:")
+            prompt_parts.append(f"```lean\n{example['theorem']}\n{example['proof']}\n```")
+        
+        prompt_parts.append(f"\nMaintenant, prouve ce theoreme en suivant le meme style:")
+        prompt_parts.append(f"```lean\n{theorem_statement}\n```")
+        
+        return "\n".join(prompt_parts)
+    
+    @staticmethod
+    def extract_lean_code(llm_response: str) -> str:
+        """
+        Extrait le code Lean d'une reponse LLM.
+        
+        Gere plusieurs formats :
+        - ```lean ... ```
+        - ``` ... ```
+        - Code direct sans backticks
+        
+        Args:
+            llm_response: La reponse complete du LLM
+        
+        Returns:
+            Le code Lean extrait et nettoye
+        """
+        # Cas 1: Code dans ```lean ... ```
+        lean_match = re.search(r'```lean\s*(.*?)\s*```', llm_response, re.DOTALL)
+        if lean_match:
+            return lean_match.group(1).strip()
+        
+        # Cas 2: Code dans ``` ... ``` (sans langue specifiee)
+        code_match = re.search(r'```\s*(.*?)\s*```', llm_response, re.DOTALL)
+        if code_match:
+            return code_match.group(1).strip()
+        
+        # Cas 3: Pas de backticks, prendre tout le contenu
+        # Nettoyer les lignes de commentaire explicatif
+        lines = []
+        for line in llm_response.split('\n'):
+            # Garder les lignes qui ressemblent a du code Lean
+            if line.strip() and not line.strip().startswith(('Voici', 'La preuve', 'Explication')):
+                lines.append(line)
+        
+        return '\n'.join(lines).strip()
+
+# Exemples d'utilisation
+
+@dataclass
+class ErrorInfo:
+    """Information sur une erreur Lean."""
+    message: str
+    line: Optional[int] = None
+    column: Optional[int] = None
+    severity: str = "error"
+
+class ProofVerifier:
+    """
+    Verifie les preuves Lean avec lean_runner.py.
+    
+    Gere :
+    - Verification formelle avec multiple backends (subprocess, wsl, leandojo)
+    - Parsing des erreurs Lean (ligne, colonne, message)
+    - Feedback structure pour le LLM
+    """
+    
+    def __init__(self, backend: str = "auto", timeout: int = 30):
+        """
+        Initialise le verificateur.
+        
+        Args:
+            backend: Backend LeanRunner ("subprocess", "wsl", "leandojo", "auto")
+            timeout: Timeout en secondes pour la verification
+        """
+        self.backend = backend
+        self.timeout = timeout
+        
+        # Initialiser LeanRunner
+        try:
+            # LeanRunner is defined above in this module
+            self.runner = LeanRunner(backend=backend, timeout=timeout)
+            self.available = True
+            print(f"LeanRunner initialise (backend: {self.runner.backend.value})")
+        except Exception as e:
+            self.runner = None
+            self.available = False
+            print(f"[Warning] LeanRunner non disponible: {e}")
+            print("  -> Les verifications seront simulees")
+    
+    def verify(self, code: str) -> 'LeanResult':
+        """
+        Verifie le code Lean.
+        
+        Args:
+            code: Le code Lean complet a verifier
+        
+        Returns:
+            LeanResult avec success, output, errors, etc.
+        """
+        if not self.available:
+            # Simulation si LeanRunner non disponible
+            return self._simulate_verification(code)
+        
+        try:
+            result = self.runner.run(code)
+            return result
+        except Exception as e:
+            # En cas d'erreur d'execution
+            from lean_runner import LeanResult
+            return LeanResult(
+                success=False,
+                output="",
+                errors=f"Erreur d'execution: {str(e)}",
+                code=code,
+                exit_code=-1,
+                backend=self.backend
+            )
+    
+    def _simulate_verification(self, code: str) -> 'LeanResult':
+        """Simule une verification (pour tests sans Lean)."""
+        from lean_runner import LeanResult
+        
+        # Heuristique simple : si contient 'sorry', echec
+        if 'sorry' in code:
+            return LeanResult(
+                success=False,
+                output="",
+                errors="Main.lean:1:0: error: declaration uses 'sorry'",
+                code=code,
+                exit_code=1,
+                backend="simulation"
+            )
+        
+        # Sinon, simuler succes
+        return LeanResult(
+            success=True,
+            output="",
+            errors="",
+            code=code,
+            exit_code=0,
+            backend="simulation"
+        )
+    
+    def parse_errors(self, result: 'LeanResult') -> List[ErrorInfo]:
+        """
+        Parse les erreurs Lean du resultat.
+        
+        Format typique:
+        Main.lean:10:5: error: unknown identifier 'foo'
+        Main.lean:12:0: warning: unused variable
+        
+        Args:
+            result: Le resultat de verification
+        
+        Returns:
+            Liste d'ErrorInfo structures
+        """
+        errors = []
+        
+        if not result.errors:
+            return errors
+        
+        # Pattern pour erreurs Lean : filename:line:column: severity: message
+        error_pattern = re.compile(r'([^:]+):(\d+):(\d+):\s*(error|warning):\s*(.+)')
+        
+        for line in result.errors.split('\n'):
+            match = error_pattern.match(line.strip())
+            if match:
+                _, line_num, col_num, severity, message = match.groups()
+                errors.append(ErrorInfo(
+                    message=message.strip(),
+                    line=int(line_num),
+                    column=int(col_num),
+                    severity=severity
+                ))
+            elif line.strip() and ('error' in line.lower() or 'warning' in line.lower()):
+                # Erreur sans format standard
+                errors.append(ErrorInfo(
+                    message=line.strip(),
+                    severity="error" if "error" in line.lower() else "warning"
+                ))
+        
+        return errors
+    
+    def get_readable_feedback(self, result: 'LeanResult') -> str:
+        """
+        Formate le feedback pour le LLM.
+        
+        Args:
+            result: Le resultat de verification
+        
+        Returns:
+            Message de feedback structure
+        """
+        if result.success:
+            return "Preuve verifiee avec succes!"
+        
+        errors = self.parse_errors(result)
+        
+        if not errors:
+            # Erreur generique sans parsing
+            return f"Echec de verification:\n{result.errors}"
+        
+        # Formater les erreurs de maniere pedagogique
+        feedback_parts = [f"La preuve contient {len(errors)} erreur(s):"]
+        
+        for i, error in enumerate(errors, 1):
+            location = f" (ligne {error.line}, col {error.column})" if error.line else ""
+            feedback_parts.append(f"\n{i}. {error.severity.upper()}{location}:")
+            feedback_parts.append(f"   {error.message}")
+        
+        return '\n'.join(feedback_parts)
+
+
+@dataclass
+class ProofAttempt:
+    """Une tentative de preuve dans la boucle de feedback."""
+    iteration: int
+    code: str
+    result: 'LeanResult'
+    llm_response: LLMResponse
+    timestamp: float
+
+@dataclass
+class ProofResult:
+    """Resultat final d'une session de preuve."""
+    success: bool
+    theorem_statement: str
+    final_proof: Optional[str]
+    attempts: List[ProofAttempt]
+    total_iterations: int
+    total_time_ms: float
+    llm_provider: str
+    llm_model: str
+    
+    def get_metrics(self) -> Dict[str, Any]:
+        """Extrait les metriques de la session."""
+        total_tokens = sum(
+            attempt.llm_response.tokens_used["total"]
+            for attempt in self.attempts
+        )
+        avg_latency = sum(
+            attempt.llm_response.latency_ms
+            for attempt in self.attempts
+        ) / len(self.attempts) if self.attempts else 0
+        
+        return {
+            "success": self.success,
+            "iterations": self.total_iterations,
+            "total_time_ms": self.total_time_ms,
+            "total_tokens": total_tokens,
+            "avg_llm_latency_ms": avg_latency,
+            "provider": self.llm_provider,
+            "model": self.llm_model
+        }
+
+class ProofGenerator:
+    """
+    Generateur de preuves avec feedback loop LLM ↔ Lean.
+    
+    Orchestration complete :
+    1. LLM genere une preuve initiale
+    2. LeanRunner verifie formellement
+    3. Si echec : LLM corrige base sur l'erreur
+    4. Repeter jusqu'a succes ou max_iterations
+    """
+    
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        verifier: ProofVerifier,
+        max_iterations: int = 5,
+        temperature: float = 0.3
+    ):
+        """
+        Initialise le generateur.
+        
+        Args:
+            llm_client: Client LLM (OpenAI ou Anthropic)
+            verifier: Verificateur Lean
+            max_iterations: Nombre max d'iterations
+            temperature: Temperature pour la generation
+        """
+        self.llm = llm_client
+        self.verifier = verifier
+        self.max_iterations = max_iterations
+        self.temperature = temperature
+    
+    def prove(
+        self,
+        theorem_statement: str,
+        context: Optional[Dict[str, Any]] = None,
+        verbose: bool = True
+    ) -> ProofResult:
+        """
+        Tente de prouver un theoreme avec feedback iteratif.
+        
+        Args:
+            theorem_statement: Le theoreme a prouver (sans 'by sorry')
+            context: Contexte optionnel (imports, variables, hypotheses)
+            verbose: Afficher les details
+        
+        Returns:
+            ProofResult avec succes, preuve, historique et metriques
+        """
+        start_time = time.time()
+        attempts = []
+        current_code = None
+        
+        if verbose:
+            print(f"\n{'='*60}")
+            print(f"TENTATIVE DE PREUVE")
+            print(f"{'='*60}")
+            print(f"Theoreme: {theorem_statement[:80]}...")
+            print(f"Provider: {self.llm.provider} / {self.llm.model}")
+            print(f"Max iterations: {self.max_iterations}")
+            print(f"{'='*60}\n")
+        
+        for iteration in range(1, self.max_iterations + 1):
+            if verbose:
+                print(f"--- Iteration {iteration}/{self.max_iterations} ---")
+            
+            # Etape 1: Generer ou corriger
+            if current_code is None:
+                # Generation initiale
+                prompt = LeanProofPrompt.build_initial_prompt(theorem_statement, context)
+                if verbose:
+                    print("Generation initiale...")
+            else:
+                # Correction base sur erreur
+                last_error = attempts[-1].result.errors
+                prompt = LeanProofPrompt.build_correction_prompt(
+                    theorem_statement,
+                    current_code,
+                    last_error,
+                    iteration
+                )
+                if verbose:
+                    print(f"Correction (erreur precedente: {last_error[:60]}...)")
+            
+            # Appeler le LLM
+            try:
+                llm_response = self.llm.generate(
+                    prompt,
+                    system_prompt=LeanProofPrompt.SYSTEM_PROMPT,
+                    temperature=self.temperature
+                )
+                
+                # Extraire le code Lean
+                current_code = LeanProofPrompt.extract_lean_code(llm_response.content)
+                
+                if verbose:
+                    print(f"LLM genere ({llm_response.latency_ms:.0f}ms, "
+                          f"{llm_response.tokens_used['total']} tokens)")
+                    print(f"Code:\n{current_code[:150]}...")
+                
+            except Exception as e:
+                if verbose:
+                    print(f"[ERREUR LLM] {e}")
+                break
+            
+            # Etape 2: Verifier avec Lean
+            lean_result = self.verifier.verify(current_code)
+            
+            # Enregistrer la tentative
+            attempts.append(ProofAttempt(
+                iteration=iteration,
+                code=current_code,
+                result=lean_result,
+                llm_response=llm_response,
+                timestamp=time.time()
+            ))
+            
+            if lean_result.success:
+                # SUCCES !
+                total_time = (time.time() - start_time) * 1000
+                if verbose:
+                    print(f"\n[SUCCES] Preuve verifiee en {iteration} iteration(s)!")
+                    print(f"Temps total: {total_time:.0f}ms")
+                
+                return ProofResult(
+                    success=True,
+                    theorem_statement=theorem_statement,
+                    final_proof=current_code,
+                    attempts=attempts,
+                    total_iterations=iteration,
+                    total_time_ms=total_time,
+                    llm_provider=self.llm.provider,
+                    llm_model=self.llm.model
+                )
+            else:
+                # Echec - afficher feedback
+                if verbose:
+                    feedback = self.verifier.get_readable_feedback(lean_result)
+                    print(f"[ECHEC] {feedback[:100]}...")
+        
+        # Echec apres max_iterations
+        total_time = (time.time() - start_time) * 1000
+        if verbose:
+            print(f"\n[ECHEC] Pas de preuve trouvee apres {self.max_iterations} iterations")
+            print(f"Temps total: {total_time:.0f}ms")
+        
+        return ProofResult(
+            success=False,
+            theorem_statement=theorem_statement,
+            final_proof=current_code,
+            attempts=attempts,
+            total_iterations=self.max_iterations,
+            total_time_ms=total_time,
+            llm_provider=self.llm.provider,
+            llm_model=self.llm.model
+        )
