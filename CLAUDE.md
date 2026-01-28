@@ -587,10 +587,13 @@ Le notebook original `Tweety.ipynb` est conservé pour référence. Chaque noteb
 Serie de notebooks pour Lean 4, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Les notebooks 6-8 couvrent l'etat de l'art 2025-2026 : Mathlib4, integration LLM, et agents autonomes pour les preuves.
 
 **Repertoire** : `MyIA.AI.Notebooks/SymbolicAI/Lean/`
-**Kernels** :
-- `lean4` (Windows) - Notebooks 1-6
-- `Lean 4 (WSL)` - Alternative WSL pour notebooks Lean
-- `Python 3 (WSL)` - Notebooks 7-8 (LLM integration)
+
+**IMPORTANT - Kernels WSL uniquement** :
+
+- `Python 3 (WSL)` - Notebook 1 (installation/setup) + Notebooks 7-9 (LLM/LeanDojo)
+- `Lean 4 (WSL)` - Notebooks 2-6 (preuves Lean natives)
+
+**Les kernels Windows NE fonctionnent PAS** (signal.SIGPIPE, problemes chemins)
 
 **Duree totale** : ~5h55
 
