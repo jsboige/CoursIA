@@ -874,7 +874,9 @@ class LLMClient:
             raise ValueError(f"Provider {provider} non supporte. Utilisez: {list(PROVIDERS_CONFIG.keys())}")
         
         config = PROVIDERS_CONFIG[self.provider]
-        self.model = model or os.getenv("OPENAI_CHAT_MODEL_ID") or config["default_model"]
+        # Lire la variable d'environnement spécifique au provider
+        env_model_var = f"{self.provider.upper()}_CHAT_MODEL_ID"
+        self.model = model or os.getenv(env_model_var) or config["default_model"]
         self.api_key = os.getenv(config["api_key_env"])
         
         if not self.api_key or self.api_key.startswith(("sk-...", "sk-ant-...")):
