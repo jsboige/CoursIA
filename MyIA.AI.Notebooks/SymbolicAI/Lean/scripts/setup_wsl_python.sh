@@ -24,9 +24,9 @@ pip install --quiet python-dotenv openai anthropic
 # 4. Verifier les installations
 echo ""
 echo "=== Verification ==="
-python3 -c "import dotenv; print(f'✓ python-dotenv {dotenv.__version__}')"
-python3 -c "import openai; print(f'✓ openai {openai.__version__}')"
-python3 -c "import anthropic; print(f'✓ anthropic {anthropic.__version__}')"
+python3 -c "import importlib.metadata as meta; print(f'✓ python-dotenv {meta.version(\"python-dotenv\")}')"
+python3 -c "import importlib.metadata as meta; print(f'✓ openai {meta.version(\"openai\")}')"
+python3 -c "import importlib.metadata as meta; print(f'✓ anthropic {meta.version(\"anthropic\")}')"
 
 echo ""
 echo "=== Configuration terminee ==="
