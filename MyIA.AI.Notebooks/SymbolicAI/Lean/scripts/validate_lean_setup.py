@@ -56,6 +56,27 @@ def check_python():
 
 def check_command(cmd, name, version_flag="--version"):
     """Verifie si une commande existe et retourne sa version"""
+    import platform
+
+    # Sur Linux/WSL, sourcer .elan/env pour elan/lean/lake
+    if platform.system() == "Linux" and cmd in ["elan", "lean", "lake"]:
+        try:
+            # Essayer avec source .elan/env
+            bash_cmd = f"source ~/.elan/env 2>/dev/null && {cmd} {version_flag}"
+            result = subprocess.run(
+                ["bash", "-c", bash_cmd],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            if result.returncode == 0:
+                version = result.stdout.strip().split('\n')[0]
+                print_ok(f"{name}: {version}")
+                return True
+        except Exception as e:
+            pass
+
+    # Méthode standard
     path = shutil.which(cmd)
     if path:
         try:
