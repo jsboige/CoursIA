@@ -624,6 +624,7 @@ Serie de notebooks pour Lean 4, un assistant de preuves et langage de programmat
 python scripts/validate_lean_setup.py
 
 # 3. Pour notebooks 7-8 (LLM), configurer Python WSL
+#    Installe: python-dotenv, openai, anthropic, matplotlib, semantic-kernel
 bash scripts/setup_wsl_python.sh
 
 # 4. Valider WSL
@@ -674,6 +675,7 @@ Lean/
 ├── Lean-1-Setup.ipynb ... Lean-8-Agentic-Proving.ipynb  # Notebooks (racine)
 ├── lean_runner.py                # Backend Python pour Lean
 ├── .env / .env.example           # Configuration API
+├── requirements.txt              # Dependencies Python (semantic-kernel, openai, etc.)
 ├── scripts/                      # TOUS LES SCRIPTS
 │   ├── README.md                 # Documentation scripts
 │   ├── setup_wsl_python.sh       # Config Python WSL
