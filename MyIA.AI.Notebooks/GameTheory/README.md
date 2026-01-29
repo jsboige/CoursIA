@@ -145,15 +145,33 @@ GameTheory/
 │   ├── Combinatorial.lean
 │   └── SocialChoice.lean
 ├── examples/
-│   ├── prisoners_dilemma.py
-│   ├── topology_2x2_periodic_table.py
-│   ├── centipede_game.py
-│   ├── kuhn_poker_cfr.py
-│   └── arrow_simple.lean
+│   ├── prisoners_dilemma.py          # Analyse complete du dilemme
+│   ├── topology_2x2_periodic_table.py # Classification Robinson-Goforth
+│   ├── centipede_game.py             # Paradoxe de l'induction arriere
+│   ├── stag_hunt_forward_induction.py # Raffinement par induction avant
+│   ├── kuhn_poker_cfr.py             # CFR pour Kuhn poker
+│   ├── stackelberg_leader_follower.py # Equilibre leader-follower
+│   ├── vcg_auction.py                # Mecanisme VCG
+│   └── arrow_simple.lean             # Theoreme d'Arrow en Lean
 └── tests/
-    ├── test_nash_computation.py
-    ├── test_strategies.py
-    └── test_lean_definitions.py
+    ├── test_nash_computation.py      # Tests equilibres Nash
+    ├── test_strategies.py            # Tests strategies IPD
+    ├── test_extensive_form.py        # Tests jeux extensifs
+    ├── test_phase3.py                # Tests CFR, VCG, Stackelberg
+    └── test_lean_definitions.py      # Tests fichiers Lean
+```
+
+## Tests
+
+```bash
+# Executer tous les tests unitaires
+cd MyIA.AI.Notebooks/GameTheory
+python -m pytest tests/ -v
+
+# Executer les exemples Python
+python examples/prisoners_dilemma.py
+python examples/kuhn_poker_cfr.py
+python examples/vcg_auction.py
 ```
 
 ## Validation
