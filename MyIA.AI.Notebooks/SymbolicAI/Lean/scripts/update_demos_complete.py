@@ -67,7 +67,7 @@ NEW_SIMULATE_METHOD = '''    def _simulate_response(self, message: str, state: P
         La complexite vient du nombre de lemmes necessaires.
         """
         theorem = state.theorem_statement.lower()
-        goal = state.theorem_goal or ""
+        goal = state.current_goal or ""
 
         if self.name == "SearchAgent":
             return self._do_search(state, theorem, goal)
@@ -177,47 +177,48 @@ NEW_SIMULATE_METHOD = '''    def _simulate_response(self, message: str, state: P
 
         last = state.tactics_history[-1]
         n = len(state.tactics_history)
+        attempt_id = f"attempt_{n}"
 
         # DEMO_1
         if "rfl" in last.tactic and "n = n" in theorem:
-            state_mgr.add_verification_result(last.id, True, "OK", "", "", 50.0)
+            state_mgr.add_verification_result(attempt_id, True, "OK", "", "", 50.0)
             state_mgr.set_proof_complete(last.tactic)
             return f"[VerifierAgent] SUCCES! {last.tactic}"
 
         # DEMO_2
         if "n + m + 0 = m + n" in theorem:
             if n == 1:
-                state_mgr.add_verification_result(last.id, False, "n+m = m+n", "not closed", "", 80.0)
+                state_mgr.add_verification_result(attempt_id, False, "n+m = m+n", "not closed", "", 80.0)
                 state_mgr.designate_next_agent("CriticAgent")
                 return "[VerifierAgent] Progres. But restant. -> CriticAgent"
             else:
-                state_mgr.add_verification_result(last.id, True, "OK", "", "", 100.0)
+                state_mgr.add_verification_result(attempt_id, True, "OK", "", "", 100.0)
                 state_mgr.set_proof_complete(last.tactic)
                 return f"[VerifierAgent] SUCCES apres {n} etapes!"
 
         # DEMO_3
         if "quad_comm" in theorem:
             if n < 4:
-                state_mgr.add_verification_result(last.id, False, f"{n}/4", "continue", "", 100.0)
+                state_mgr.add_verification_result(attempt_id, False, f"{n}/4", "continue", "", 100.0)
                 state_mgr.designate_next_agent("CriticAgent")
                 return f"[VerifierAgent] Etape {n}/4 OK. -> CriticAgent"
             else:
-                state_mgr.add_verification_result(last.id, True, "OK", "", "", 150.0)
+                state_mgr.add_verification_result(attempt_id, True, "OK", "", "", 150.0)
                 state_mgr.set_proof_complete(last.tactic)
                 return f"[VerifierAgent] SUCCES apres {n} reecritures!"
 
         # DEMO_4
         if "distrib_both" in theorem:
             if n < 5:
-                state_mgr.add_verification_result(last.id, False, f"{n}/5", "continue", "", 120.0)
+                state_mgr.add_verification_result(attempt_id, False, f"{n}/5", "continue", "", 120.0)
                 state_mgr.designate_next_agent("CriticAgent")
                 return f"[VerifierAgent] Etape {n}/5. -> CriticAgent"
             else:
-                state_mgr.add_verification_result(last.id, True, "OK", "", "", 200.0)
+                state_mgr.add_verification_result(attempt_id, True, "OK", "", "", 200.0)
                 state_mgr.set_proof_complete(last.tactic)
                 return f"[VerifierAgent] SUCCES apres {n} etapes!"
 
-        state_mgr.add_verification_result(last.id, False, "", "error", "", 50.0)
+        state_mgr.add_verification_result(attempt_id, False, "", "error", "", 50.0)
         state_mgr.designate_next_agent("CriticAgent")
         return "[VerifierAgent] Echec. -> CriticAgent"
 
