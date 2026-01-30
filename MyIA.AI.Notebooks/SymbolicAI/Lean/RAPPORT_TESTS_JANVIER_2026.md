@@ -279,6 +279,44 @@ $ git log --oneline --graph --decorate -3
 
 ---
 
+## Analyse des Résultats des Démos (30 Janvier 2026)
+
+### Résultats Observés
+
+| Demo | Itérations Attendues | Itérations Réelles | Écart | Analyse |
+|------|---------------------|-------------------|-------|---------|
+| DEMO_1 (trivial) | 1-2 | 2 | OK | `rfl` suffit |
+| DEMO_2 (simple) | 6-10 | **4** | -2 | Lemme `Nat.add_right_cancel` trouvé directement |
+| DEMO_3 (intermédiaire) | 10-15 | **4** | -6 | Lemme `Nat.mul_add` trouvé directement |
+| DEMO_4 (avancé) | 12-20 | **3** | -9 | Lemme `List.length_append` trouvé directement |
+
+### Cause Racine
+
+Les démos terminent plus rapidement que prévu car :
+
+1. **Mathlib contient les lemmes exacts** pour chaque théorème
+2. **SearchAgent trouve immédiatement** le bon lemme (base indexée, pas d'exploration)
+3. **Simulation trop "parfaite"** : pattern matching vs génération stochastique LLM
+4. **CriticAgent/CoordinatorAgent jamais activés** car aucun échec à corriger
+
+### Impact Pédagogique
+
+La simulation démontre l'**architecture** multi-agents mais pas la **difficulté** réelle du theorem proving.
+
+Pour observer la vraie complexité :
+- Utiliser `USE_LLM_MODE = True` (appels OpenAI réels)
+- Ou utiliser des théorèmes sans lemme Mathlib direct
+
+### Cellules Ajoutées (30 Janvier 2026)
+
+| Notebook | Cellule | Type | Contenu |
+|----------|---------|------|---------|
+| Lean-9 | 45 | Markdown | Analyse comparative des résultats |
+| Lean-9 | 46 | Code | Table de comparaison dynamique |
+| Lean-9 | 47 | Markdown | Conclusion et Points Clés |
+
+---
+
 ## Conclusion
 
 Toutes les erreurs identifiées ont été corrigées et validées syntaxiquement. Les notebooks sont prêts pour les tests manuels d'exécution.
@@ -286,3 +324,5 @@ Toutes les erreurs identifiées ont été corrigées et validées syntaxiquement
 **Qualité** : Les corrections respectent les standards de code Python, utilisent les line endings Unix (LF), et maintiennent la cohérence avec l'architecture des notebooks.
 
 **Impact** : Les notebooks 8 et 9 sont maintenant alignés et fonctionnellement séparés (ad-hoc vs SK).
+
+**Analyse des Démos** : Les résultats rapides (3-4 itérations vs 10-20 attendues) sont expliqués par l'accès direct aux lemmes Mathlib dans la simulation. Des cellules de conclusion ont été ajoutées pour documenter cette observation.
