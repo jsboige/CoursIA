@@ -1,121 +1,151 @@
 # SymbolicAI - Notebooks TweetyProject
 
-Collection de notebooks Jupyter pour l'apprentissage de l'IA symbolique avec la bibliothèque Java [TweetyProject](https://tweetyproject.org/).
+Collection de notebooks Jupyter pour l'apprentissage de l'IA symbolique avec la bibliotheque Java [TweetyProject](https://tweetyproject.org/).
 
-## 📚 Série Tweety - Notebooks Principaux
+## Serie Tweety - 10 Notebooks Complets
 
-**Statut**: ✅ Série complète validée (100% - 0 erreurs)
+**Statut**: Serie complete validee (100%)
 
-Explorez les logiques symboliques et l'argumentation computationnelle avec ces 7 notebooks progressifs:
+Explorez les logiques symboliques et l'argumentation computationnelle avec cette serie progressive:
 
-### 1. [Tweety-1-Setup.ipynb](Tweety-1-Setup.ipynb) - Configuration ⚙️
-**Durée**: 10 min | **Prérequis**: Aucun
+### Partie 1 : Fondations
 
-Installation et configuration de l'environnement complet:
+| # | Notebook | Theme | Duree |
+|---|----------|-------|-------|
+| 1 | [Tweety-1-Setup](Tweety/Tweety-1-Setup.ipynb) | Configuration JVM, JARs, outils externes | 20 min |
+| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle (PL) et FOL | 45 min |
+| 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | DL, Modale, QBF, Conditionnelle | 40 min |
+
+### Partie 2 : Revision de Croyances
+
+| # | Notebook | Theme | Duree |
+|---|----------|-------|-------|
+| 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | CrMas, MUS, MaxSAT, Mesures d'incoherence | 50 min |
+
+### Partie 3 : Argumentation
+
+| # | Notebook | Theme | Duree |
+|---|----------|-------|-------|
+| 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Dung AF, Semantiques, CF2, Generation | 55 min |
+| 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP | 60 min |
+| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended | 50 min |
+| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking Semantics, Probabiliste | 40 min |
+
+### Partie 4 : Applications
+
+| # | Notebook | Theme | Duree |
+|---|----------|-------|-------|
+| 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents, Dialogues argumentatifs, Loteries | 35 min |
+| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Preferences, Theorie du vote | 30 min |
+
+**Duree totale estimee** : ~7 heures
+
+---
+
+## Contenu Detaille
+
+### 1. Setup - Configuration Environnement
 - Installation automatique Python + JPype + Tweety
-- Téléchargement JDK portable (Zulu 17)
-- Téléchargement JARs TweetyProject v1.28
+- Telechargement JDK portable (Zulu 17)
+- Telechargement JARs TweetyProject v1.28/1.29
 - Configuration outils externes (Clingo, SPASS)
-- Démarrage et test JVM
+- Demarrage et test JVM
 
-**IMPORTANT**: À exécuter en premier, obligatoire pour tous les autres notebooks.
+**IMPORTANT**: A executer en premier, obligatoire pour tous les autres notebooks.
 
-### 2. [Tweety-2-Basic-Logics.ipynb](Tweety-2-Basic-Logics.ipynb) - Logiques de Base 🔤
-**Durée**: 30 min | **Prérequis**: Tweety-1
+### 2. Basic Logics - Logiques Fondamentales
+- **Logique Propositionnelle (PL)**: Syntaxe, parsing, mondes possibles
+- **Solveurs SAT**: Comparaison CaDiCaL, Glucose, MiniSat avec pySAT
+- **Logique du Premier Ordre (FOL)**: Signatures, sorts, predicats
 
-- **Logique Propositionnelle (PL)**: Syntaxe, parsing, mondes possibles, solveurs SAT
-- **Logique du Premier Ordre (FOL)**: Signatures, sorts, prédicats, raisonnement
-
-### 3. [Tweety-3-Advanced-Logics.ipynb](Tweety-3-Advanced-Logics.ipynb) - Logiques Avancées 🧮
-**Durée**: 20 min | **Prérequis**: Tweety-1
-
-- **Logique de Description (DL)**: ABox, TBox, concepts, rôles
-- **Logique Modale (ML)**: Opérateurs modaux, sémantiques Kripke
-- **QBF**: Formules booléennes quantifiées
+### 3. Advanced Logics - Logiques Avancees
+- **Logique de Description (DL)**: ABox, TBox, concepts, roles
+- **Logique Modale (ML)**: Operateurs modaux, semantiques Kripke
+- **QBF**: Formules booleennes quantifiees
 - **Logique Conditionnelle (CL)**
 
-### 4. [Tweety-4-Belief-Revision.ipynb](Tweety-4-Belief-Revision.ipynb) - Révision de Croyances 🔄
-**Durée**: 25 min | **Prérequis**: Tweety-1
-
-- Révision de croyances multi-agents (CrMas)
-- Mesures d'incohérence (distance, contension, fuzzy)
-- Énumération MUS (Minimal Unsatisfiable Subsets)
+### 4. Belief Revision - Revision de Croyances
+- Revision de croyances multi-agents (CrMas)
+- Mesures d'incoherence (distance, contension, fuzzy)
+- Enumeration MUS (Minimal Unsatisfiable Subsets)
 - MaxSAT avec Open-WBO
 
-### 5. [Tweety-5-Abstract-Argumentation.ipynb](Tweety-5-Abstract-Argumentation.ipynb) - Argumentation Abstraite 🎯
-**Durée**: 30 min | **Prérequis**: Tweety-1
-
+### 5. Abstract Argumentation - Argumentation de Dung
 - Cadres d'argumentation de Dung
-- Sémantiques: Grounded, Preferred, Stable, Complete, CF2
-- Génération et apprentissage de cadres
+- Semantiques: Grounded, Preferred, Stable, Complete, CF2
+- Generation et apprentissage de cadres
 - Raisonneurs alternatifs
 
-### 6. [Tweety-6-Structured-Argumentation.ipynb](Tweety-6-Structured-Argumentation.ipynb) - Argumentation Structurée 🏗️
-**Durée**: 30 min | **Prérequis**: Tweety-1, Tweety-5
-
+### 6. Structured Argumentation - Argumentation Structuree
 - **ASPIC+**: Construction PL/FOL, conversion vers Dung
 - **DeLP**: Defeasible Logic Programming
 - **ABA**: Assumption-Based Argumentation
-- **Argumentation Déductive**
+- **Argumentation Deductive**
 - **ASP**: Answer Set Programming avec Clingo
 
-### 7. [Tweety-7-Advanced-Argumentation.ipynb](Tweety-7-Advanced-Argumentation.ipynb) - Argumentation Avancée 🚀
-**Durée**: 40 min | **Prérequis**: Tweety-1, Tweety-5
+### 7a. Extended Frameworks - Frameworks Etendus
+- **ADF**: Abstract Dialectical Frameworks
+- **Bipolar**: Frameworks bipolaires (support + attaque)
+- **WAF**: Frameworks ponderes
+- **SAF**: Argumentation sociale
+- **SetAF**: Attaques collectives
+- **EAF/REAF**: Attaques recursives
 
-- Abstract Dialectical Frameworks (ADF)
-- Frameworks bipolaires (support + attaque)
-- Frameworks pondérés, sociaux, SetAF
-- Frameworks étendus (attaques sur attaques)
-- Sémantiques ranking
+### 7b. Ranking & Probabilistic - Classement et Probabilites
+- Semantiques de classement (Categorizer, h-Categorizer, Burden)
 - Argumentation probabiliste
+- Comparaison solveurs natifs et Java
 
-**Durée totale série**: ~3h10 (lecture + exécution)
+### 8. Agent Dialogues - Agents et Dialogues
+- Framework agents de base
+- Jeux grounded (ArguingAgent)
+- Dialogues argumentatifs
+- Loteries argumentatives
+
+### 9. Preferences - Preferences et Vote
+- Ordres de preference
+- Theorie du vote
+- Agregation de preferences
 
 ---
 
-## 📂 Structure du Répertoire
+## Structure du Repertoire
 
 ```
 SymbolicAI/
-├── Tweety-1-Setup.ipynb                      # Configuration environnement
-├── Tweety-2-Basic-Logics.ipynb               # PL + FOL
-├── Tweety-3-Advanced-Logics.ipynb            # DL, ML, QBF
-├── Tweety-4-Belief-Revision.ipynb            # Révision, MUS
-├── Tweety-5-Abstract-Argumentation.ipynb     # Dung
-├── Tweety-6-Structured-Argumentation.ipynb   # ASPIC+, DeLP, ABA
-├── Tweety-7-Advanced-Argumentation.ipynb     # ADF, Ranking
-│
-├── scripts/                                   # Scripts utilitaires
-│   ├── verify_all_tweety.py                  # Vérification complète
-│   ├── reorganize_tweety.py                  # Réorganisation notebooks
-│   ├── install_clingo.py                     # Installation Clingo
+├── Tweety/                                # Serie principale
+│   ├── Tweety-1-Setup.ipynb
+│   ├── Tweety-2-Basic-Logics.ipynb
+│   ├── Tweety-3-Advanced-Logics.ipynb
+│   ├── Tweety-4-Belief-Revision.ipynb
+│   ├── Tweety-5-Abstract-Argumentation.ipynb
+│   ├── Tweety-6-Structured-Argumentation.ipynb
+│   ├── Tweety-7a-Extended-Frameworks.ipynb
+│   ├── Tweety-7b-Ranking-Probabilistic.ipynb
+│   ├── Tweety-8-Agent-Dialogues.ipynb
+│   ├── Tweety-9-Preferences.ipynb
+│   ├── libs/                              # JARs TweetyProject (35 modules)
+│   ├── resources/                         # Fichiers d'exemples
+│   ├── ext_tools/                         # Outils externes (Clingo, SPASS)
+│   ├── jdk-17-portable/                   # JDK Zulu (telecharge auto)
+│   ├── scripts/                           # Scripts de validation
 │   └── README.md
 │
-├── reports/                                   # Rapports de qualité
-│   ├── TWEETY_QUALITY_REPORT.md              # Rapport complet 2026-01-23
-│   └── README.md
-│
-├── archive/                                   # Versions historiques
-│   ├── Tweety.ipynb                          # Original monolithique
-│   └── README.md
-│
-├── libs/                                      # JARs TweetyProject (auto-téléchargés)
-├── resources/                                 # Fichiers de données (.aba, .aspic, etc.)
-├── ext_tools/                                 # Outils externes (Clingo, SPASS)
-├── jdk-17-portable/                          # JDK portable (auto-téléchargé)
-└── README.md                                  # Ce fichier
+├── Argument_Analysis/                     # Analyse argumentative avec LLM
+├── Lean/                                  # Proof Assistant Lean 4
+└── README.md                              # Ce fichier
 ```
 
 ---
 
-## 🚀 Démarrage Rapide
+## Demarrage Rapide
 
-### Installation (Première Fois)
+### Installation (Premiere Fois)
 
-1. **Cloner le dépôt** (si pas déjà fait):
+1. **Cloner le depot** (si pas deja fait):
 ```bash
 git clone https://github.com/jsboige/CoursIA.git
-cd CoursIA/MyIA.AI.Notebooks/SymbolicAI
+cd CoursIA/MyIA.AI.Notebooks/SymbolicAI/Tweety
 ```
 
 2. **Lancer Jupyter**:
@@ -123,102 +153,98 @@ cd CoursIA/MyIA.AI.Notebooks/SymbolicAI
 jupyter notebook
 ```
 
-3. **Exécuter Tweety-1-Setup.ipynb** en entier (cellule par cellule)
-   - Installe automatiquement: Python packages, JDK, JARs Tweety, outils
-   - Durée: ~5-10 minutes selon connexion internet
+3. **Executer Tweety-1-Setup.ipynb** en entier
+   - Installe automatiquement: packages Python, JDK, JARs Tweety, outils
+   - Duree: ~5-10 minutes selon connexion internet
 
-4. **Explorer les notebooks 2-7** dans l'ordre ou à la carte
+4. **Explorer les notebooks 2-9** dans l'ordre ou a la carte
 
 ### Utilisation Quotidienne
 
-Si l'environnement est déjà configuré:
+Si l'environnement est deja configure:
 1. Lancer Jupyter
-2. Ouvrir directement le notebook souhaité (Tweety-2 à Tweety-7)
-3. L'initialisation JVM se fait automatiquement dans chaque notebook
+2. Ouvrir directement le notebook souhaite
+3. L'initialisation JVM se fait automatiquement
 
 ---
 
-## 🧪 Vérification et Tests
+## Verification et Tests
 
-### Vérifier l'intégrité de la série
+### Script de verification
 
 ```bash
-cd scripts/
-python verify_all_tweety.py
-```
+cd Tweety/scripts/
 
-**Résultats attendus**: 7/7 notebooks OK, 0 erreurs
+# Verification structurelle rapide
+python verify_all_tweety.py --quick
 
-### Tests individuels avec Papermill
+# Verification environnement
+python verify_all_tweety.py --check-env
 
-```bash
-python -m papermill Tweety-1-Setup.ipynb output.ipynb --kernel python3
+# Analyse des sorties existantes
+python verify_all_tweety.py --analyze-outputs --verbose
+
+# Execution complete
+python verify_all_tweety.py --execute --verbose
 ```
 
 ---
 
-## 📊 Qualité et Statut
+## Outils Externes
 
-### Dernière Vérification: 2026-01-23
-
-| Notebook | Cellules | Durée | Statut |
-|----------|----------|-------|--------|
-| Tweety-1 | 7 | 5s | ✅ VALIDE |
-| Tweety-2 | 4 | 170s | ✅ VALIDE |
-| Tweety-3 | 4 | 8s | ✅ VALIDE |
-| Tweety-4 | 5 | 12s | ✅ VALIDE |
-| Tweety-5 | 5 | 15s | ✅ VALIDE |
-| Tweety-6 | 6 | 18s | ✅ VALIDE |
-| Tweety-7 | 9 | 25s | ✅ VALIDE |
-| **TOTAL** | **40** | **~5min** | **✅ 100%** |
-
-**Rapport détaillé**: [reports/TWEETY_QUALITY_REPORT.md](reports/TWEETY_QUALITY_REPORT.md)
+| Outil | Usage | Installation |
+|-------|-------|--------------|
+| **Clingo** | ASP (Answer Set Programming) | Auto-telecharge |
+| **SPASS** | Logique Modale | Manuel (Windows) |
+| **EProver** | FOL haute performance | Inclus |
+| **Z3** | SMT solver, MARCO | `pip install z3-solver` |
+| **PySAT** | SAT/MaxSAT moderne | `pip install python-sat` |
 
 ---
 
-## 🛠️ Dépendances
+## Dependances
 
-### Automatiquement Installées
+### Automatiquement Installees
 
-- **Python packages**: jpype1, requests, tqdm, clingo
-- **JDK**: Zulu 17 portable (auto-téléchargé)
-- **TweetyProject**: v1.28 (23 JARs - core + modules)
+- **Python packages**: jpype1, requests, tqdm, clingo, python-sat, z3-solver
+- **JDK**: Zulu 17 portable (auto-telecharge)
+- **TweetyProject**: v1.28/1.29 (35 JARs)
 - **Clingo**: v5.4.0 (Windows/Linux auto-install)
 
-### Optionnelles (Améliorent l'Expérience)
+### Installation manuelle
 
-- **SPASS**: Prouveur FOL/ML (installation manuelle recommandée)
-- **EProver**: Prouveur FOL (installation manuelle)
-- **Open-WBO**: Solveur MaxSAT (installation manuelle)
+```bash
+pip install jpype1 requests tqdm clingo z3-solver python-sat
+```
 
 ---
 
-## 📖 Ressources
+## Limitations Connues (Tweety 1.28/1.29)
+
+| Limitation | Impact | Contournement |
+|------------|--------|---------------|
+| **CrMas/InformationObject** | Section revision multi-agents | API refactorisee dans 1.28+ |
+| **SimpleMlReasoner** | Bloque indefiniment | Utiliser SPASS externe |
+| **ADF natif SAT** | Raisonnement ADF incomplet | Necessite solveur SAT natif |
+| **SPASS Windows** | Requiert droits admin | Erreur 740 sans elevation |
+
+---
+
+## Ressources
 
 - **TweetyProject**: https://tweetyproject.org/
-- **Documentation**: http://tweetyproject.org/doc/
+- **Documentation API**: https://tweetyproject.org/api/
 - **GitHub**: https://github.com/TweetyProjectTeam/TweetyProject
 - **JPype**: https://jpype.readthedocs.io/
 
 ---
 
-## 🤝 Contribution
+## Licence
 
-Cette série a été créée et vérifiée en Janvier 2026. Pour signaler des problèmes ou suggérer des améliorations:
-
-1. Utiliser `scripts/verify_all_tweety.py` pour identifier les régressions
-2. Consulter `reports/TWEETY_QUALITY_REPORT.md` pour l'état de référence
-3. Tester localement avant de commiter
+Les notebooks sont distribues sous licence MIT.
+TweetyProject est sous licence LGPL 3.0.
 
 ---
 
-## 📜 Licence
-
-Ce matériel pédagogique fait partie du projet CoursIA.
-Voir LICENSE à la racine du dépôt pour détails.
-
----
-
-**Dernière mise à jour**: 2026-01-23
-**Auteur**: Jean-Sébastien Bevilacqua (jsboige@gmail.com)
-**Vérification**: Claude Code (Anthropic)
+**Derniere mise a jour**: 2026-01-31
+**Auteur**: Jean-Sebastien Bevilacqua (jsboige@gmail.com)

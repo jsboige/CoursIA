@@ -552,18 +552,39 @@ BATCH_MODE="true"
 
 ### Mises à jour Janvier 2026 - Notebooks Search, Sudoku, SymbolicAI
 
-**Division de Tweety.ipynb** : Le notebook monolithique (72 cellules, 307KB) a été divisé en 6 notebooks thématiques :
+**Notebooks Tweety (10 notebooks)** : Série complète sur TweetyProject, bibliothèque Java pour l'IA symbolique.
 
-| Notebook | Contenu | Cellules originales |
-| -------- | ------- | ------------------- |
-| Tweety-1-Setup.ipynb | Configuration JDK/JPype, téléchargement JARs | 0-14 |
-| Tweety-2-Basic-Logics.ipynb | Logique Propositionnelle, FOL | 15-20 |
-| Tweety-3-Advanced-Logics.ipynb | DL, Modale, QBF, Conditional | 21-26 |
-| Tweety-4-Belief-Revision.ipynb | CrMas, mesures incohérence, MUS | 27-35 |
-| Tweety-5-Abstract-Argumentation.ipynb | Dung, ASPIC+, DeLP, ABA, ASP | 36-54 |
-| Tweety-6-Advanced-Argumentation.ipynb | ADF, Weighted, Social, Ranking | 55-71 |
+| Notebook | Contenu | Cellules |
+| -------- | ------- | -------- |
+| Tweety-1-Setup.ipynb | Configuration JDK/JPype, téléchargement JARs, outils externes | 34 |
+| Tweety-2-Basic-Logics.ipynb | Logique Propositionnelle (PL), First-Order Logic (FOL), SAT4J, pySAT | 31 |
+| Tweety-3-Advanced-Logics.ipynb | Description Logic (DL), Modal, QBF, Conditional Logic | 23 |
+| Tweety-4-Belief-Revision.ipynb | CrMas multi-agent, mesures incohérence, MUS, MaxSAT | 22 |
+| Tweety-5-Abstract-Argumentation.ipynb | Frameworks Dung, sémantiques (grounded, preferred, stable, CF2) | 14 |
+| Tweety-6-Structured-Argumentation.ipynb | ASPIC+, DeLP, ABA, Deductive, ASP (Clingo) | 15 |
+| Tweety-7a-Extended-Frameworks.ipynb | ADF, Bipolar, WAF, SAF, SetAF, EAF/REAF | 18 |
+| Tweety-7b-Ranking-Probabilistic.ipynb | Ranking semantics, probabilistic argumentation | 10 |
+| Tweety-8-Agent-Dialogues.ipynb | Agents argumentatifs, protocoles de dialogue | 11 |
+| Tweety-9-Preferences.ipynb | Préférences, voting theory, social choice | 11 |
 
-Le notebook original `Tweety.ipynb` est conservé pour référence. Chaque notebook 2-6 inclut une cellule d'initialisation JVM partagée.
+**Module partagé** : `tweety_init.py` centralise l'initialisation JVM et la détection des outils externes.
+
+```python
+from tweety_init import init_tweety, EXTERNAL_TOOLS, get_tool_path
+jvm_ready = init_tweety()
+```
+
+**Outils externes supportés** :
+- **Clingo** : ASP solver pour logique ASP
+- **SPASS** : Prouveur de théorèmes modal (requiert droits admin sur Windows)
+- **EProver** : Prouveur FOL
+- **pySAT** : SAT solvers Python (CaDiCaL, Glucose)
+- **MARCO** : Énumérateur MUS avec Z3
+
+**Limitations connues** :
+- SPASS.exe requiert des droits administrateur sur Windows (erreur 740)
+- ADF nécessite un SAT solver natif incrémental (NativeMinisatSolver), Sat4jSolver ne fonctionne pas
+- InformationObject manquant dans Tweety 1.28 affecte uniquement CrMas (notebook 4)
 
 **Nouveaux notebooks Python Sudoku** :
 
