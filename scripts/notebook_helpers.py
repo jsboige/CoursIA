@@ -465,6 +465,509 @@ class CellIterator:
 
 
 # ============================================================================
+# Execution classes and functions
+# ============================================================================
+
+@dataclass
+class ExecutionResult:
+    """Result of notebook/cell execution."""
+    success: bool
+    cell_index: Optional[int] = None
+    output: str = ""
+    error: Optional[str] = None
+    duration: float = 0.0
+    kernel: str = "unknown"
+
+
+@dataclass
+class NotebookExecutionResult:
+    """Result of full notebook execution."""
+    success: bool
+    notebook_path: str
+    output_path: Optional[str] = None
+    kernel: str = "unknown"
+    total_cells: int = 0
+    executed_cells: int = 0
+    failed_cells: int = 0
+    duration: float = 0.0
+    cell_results: List[ExecutionResult] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
+
+    @property
+    def success_rate(self) -> float:
+        if self.executed_cells == 0:
+            return 0.0
+        return ((self.executed_cells - self.failed_cells) / self.executed_cells) * 100
+
+
+class NotebookExecutor:
+    """
+    Executor for running notebooks with various backends.
+
+    Supports:
+    - jupyter_client for cell-by-cell execution
+    - papermill for full notebook execution
+    - Auto-detection of kernel type (python3, .net-csharp, lean4, etc.)
+
+    Consolidated from:
+    - verify_lean.py (execute_notebook_cell_by_cell)
+    - papermill-coursia/core/executor.py (PapermillExecutor)
+    - verify_notebooks.py (execute_python_notebook)
+    """
+
+    # Known kernel mappings
+    KERNEL_PATTERNS = {
+        'python': 'python3',
+        'python3': 'python3',
+        '.net-csharp': '.net-csharp',
+        '.net-fsharp': '.net-fsharp',
+        'csharp': '.net-csharp',
+        'fsharp': '.net-fsharp',
+        'lean4': 'lean4',
+        'lean': 'lean4',
+    }
+
+    def __init__(self, timeout: int = 300, verbose: bool = False):
+        """
+        Initialize the executor.
+
+        Args:
+            timeout: Default timeout in seconds for execution
+            verbose: Whether to print progress messages
+        """
+        self.timeout = timeout
+        self.verbose = verbose
+        self._jupyter_client = None
+
+    def detect_kernel(self, notebook_path: str) -> str:
+        """
+        Detect the appropriate kernel for a notebook.
+
+        Args:
+            notebook_path: Path to the notebook
+
+        Returns:
+            Kernel name (e.g., 'python3', '.net-csharp', 'lean4')
+        """
+        try:
+            helper = NotebookHelper(notebook_path)
+            metadata = helper.notebook.get('metadata', {})
+            kernel_spec = metadata.get('kernelspec', {})
+            kernel_name = kernel_spec.get('name', '').lower()
+            language = kernel_spec.get('language', '').lower()
+
+            # Check kernel name directly
+            if kernel_name in self.KERNEL_PATTERNS:
+                return self.KERNEL_PATTERNS[kernel_name]
+
+            # Check language
+            if 'python' in language:
+                return 'python3'
+            elif language in ['c#', 'csharp']:
+                return '.net-csharp'
+            elif language in ['f#', 'fsharp']:
+                return '.net-fsharp'
+            elif 'lean' in language:
+                return 'lean4'
+
+            # Check for .NET magic commands in cells
+            for cell in helper.cells:
+                if cell.get('cell_type') == 'code':
+                    source = ''.join(cell.get('source', []))
+                    if '#!import' in source or '#!csharp' in source:
+                        return '.net-csharp'
+                    if '#!fsharp' in source:
+                        return '.net-fsharp'
+
+            return 'python3'  # Default
+
+        except Exception as e:
+            if self.verbose:
+                print(f"Warning: Could not detect kernel: {e}")
+            return 'python3'
+
+    def execute_cell(
+        self,
+        notebook_path: str,
+        cell_index: int,
+        kernel_name: Optional[str] = None,
+        timeout: Optional[int] = None
+    ) -> ExecutionResult:
+        """
+        Execute a single cell using jupyter_client.
+
+        Args:
+            notebook_path: Path to the notebook
+            cell_index: Index of the cell to execute
+            kernel_name: Kernel to use (auto-detected if None)
+            timeout: Timeout in seconds (uses default if None)
+
+        Returns:
+            ExecutionResult with output and status
+        """
+        import time
+        start_time = time.time()
+
+        try:
+            import jupyter_client
+        except ImportError:
+            return ExecutionResult(
+                success=False,
+                cell_index=cell_index,
+                error="jupyter_client not installed. Run: pip install jupyter-client",
+                duration=time.time() - start_time
+            )
+
+        kernel_name = kernel_name or self.detect_kernel(notebook_path)
+        timeout = timeout or self.timeout
+
+        helper = NotebookHelper(notebook_path)
+        cell = helper.get_cell(cell_index)
+
+        if not cell:
+            return ExecutionResult(
+                success=False,
+                cell_index=cell_index,
+                error=f"Cell {cell_index} not found",
+                kernel=kernel_name,
+                duration=time.time() - start_time
+            )
+
+        if cell.get('cell_type') != 'code':
+            return ExecutionResult(
+                success=True,
+                cell_index=cell_index,
+                output="Skipped (non-code cell)",
+                kernel=kernel_name,
+                duration=time.time() - start_time
+            )
+
+        source = helper.get_cell_source(cell_index)
+        if not source.strip():
+            return ExecutionResult(
+                success=True,
+                cell_index=cell_index,
+                output="Skipped (empty cell)",
+                kernel=kernel_name,
+                duration=time.time() - start_time
+            )
+
+        # Start kernel if not already running
+        try:
+            km = jupyter_client.KernelManager(kernel_name=kernel_name)
+            km.start_kernel()
+            kc = km.client()
+            kc.start_channels()
+            kc.wait_for_ready(timeout=30)
+        except Exception as e:
+            return ExecutionResult(
+                success=False,
+                cell_index=cell_index,
+                error=f"Failed to start {kernel_name} kernel: {e}",
+                kernel=kernel_name,
+                duration=time.time() - start_time
+            )
+
+        try:
+            # Set working directory
+            nb_dir = str(Path(notebook_path).parent)
+            if kernel_name == 'python3':
+                kc.execute(f"import os; os.chdir(r'{nb_dir}')")
+            elif '.net' in kernel_name:
+                kc.execute(f'System.IO.Directory.SetCurrentDirectory(@"{nb_dir}")')
+
+            # Wait for wd setup
+            self._wait_for_idle(kc, timeout=10)
+
+            # Execute the cell
+            kc.execute(source)
+
+            # Collect outputs
+            outputs = []
+            errors = []
+
+            while True:
+                try:
+                    msg = kc.get_iopub_msg(timeout=timeout)
+                    msg_type = msg['msg_type']
+                    content = msg.get('content', {})
+
+                    if msg_type == 'stream':
+                        outputs.append(content.get('text', ''))
+                    elif msg_type == 'execute_result':
+                        data = content.get('data', {})
+                        outputs.append(data.get('text/plain', str(data)))
+                    elif msg_type == 'error':
+                        ename = content.get('ename', 'Error')
+                        evalue = content.get('evalue', '')
+                        errors.append(f"{ename}: {evalue}")
+                    elif msg_type == 'status' and content.get('execution_state') == 'idle':
+                        break
+                except Exception:
+                    break
+
+            output_text = '\n'.join(outputs)
+            error_text = '\n'.join(errors) if errors else None
+
+            return ExecutionResult(
+                success=len(errors) == 0,
+                cell_index=cell_index,
+                output=output_text,
+                error=error_text,
+                kernel=kernel_name,
+                duration=time.time() - start_time
+            )
+
+        finally:
+            try:
+                kc.stop_channels()
+                km.shutdown_kernel(now=True)
+            except:
+                pass
+
+    def _wait_for_idle(self, kc, timeout: int = 10) -> None:
+        """Wait for kernel to become idle."""
+        while True:
+            try:
+                msg = kc.get_iopub_msg(timeout=timeout)
+                if msg['msg_type'] == 'status' and msg['content']['execution_state'] == 'idle':
+                    break
+            except:
+                break
+
+    def execute_notebook_cell_by_cell(
+        self,
+        notebook_path: str,
+        kernel_name: Optional[str] = None,
+        timeout_per_cell: int = 60,
+        stop_on_error: bool = False
+    ) -> NotebookExecutionResult:
+        """
+        Execute all cells in a notebook sequentially.
+
+        Args:
+            notebook_path: Path to the notebook
+            kernel_name: Kernel to use (auto-detected if None)
+            timeout_per_cell: Timeout per cell in seconds
+            stop_on_error: Whether to stop on first error
+
+        Returns:
+            NotebookExecutionResult with all cell results
+        """
+        import time
+        start_time = time.time()
+
+        try:
+            import jupyter_client
+        except ImportError:
+            return NotebookExecutionResult(
+                success=False,
+                notebook_path=notebook_path,
+                errors=["jupyter_client not installed"]
+            )
+
+        kernel_name = kernel_name or self.detect_kernel(notebook_path)
+        helper = NotebookHelper(notebook_path)
+
+        result = NotebookExecutionResult(
+            success=True,
+            notebook_path=notebook_path,
+            kernel=kernel_name,
+            total_cells=helper.cell_count
+        )
+
+        # Start kernel
+        try:
+            km = jupyter_client.KernelManager(kernel_name=kernel_name)
+            km.start_kernel()
+            kc = km.client()
+            kc.start_channels()
+            kc.wait_for_ready(timeout=30)
+        except Exception as e:
+            result.success = False
+            result.errors.append(f"Failed to start {kernel_name} kernel: {e}")
+            result.duration = time.time() - start_time
+            return result
+
+        try:
+            # Set working directory
+            nb_dir = str(Path(notebook_path).parent)
+            if kernel_name == 'python3':
+                kc.execute(f"import os; os.chdir(r'{nb_dir}')")
+            elif '.net' in kernel_name:
+                kc.execute(f'System.IO.Directory.SetCurrentDirectory(@"{nb_dir}")')
+            self._wait_for_idle(kc, timeout=10)
+
+            # Execute each cell
+            for i, cell in enumerate(helper.cells):
+                if cell.get('cell_type') != 'code':
+                    continue
+
+                source = helper.get_cell_source(i)
+                if not source.strip():
+                    continue
+
+                if self.verbose:
+                    print(f"  Cell {i}: ", end="", flush=True)
+
+                cell_start = time.time()
+                outputs = []
+                errors = []
+
+                try:
+                    kc.execute(source)
+
+                    while True:
+                        try:
+                            msg = kc.get_iopub_msg(timeout=timeout_per_cell)
+                            msg_type = msg['msg_type']
+                            content = msg.get('content', {})
+
+                            if msg_type == 'stream':
+                                outputs.append(content.get('text', ''))
+                            elif msg_type == 'execute_result':
+                                data = content.get('data', {})
+                                outputs.append(data.get('text/plain', ''))
+                            elif msg_type == 'error':
+                                ename = content.get('ename', 'Error')
+                                evalue = content.get('evalue', '')
+                                errors.append(f"{ename}: {evalue}")
+                            elif msg_type == 'status' and content.get('execution_state') == 'idle':
+                                break
+                        except Exception as e:
+                            if 'timeout' in str(e).lower():
+                                errors.append(f"Timeout after {timeout_per_cell}s")
+                            break
+
+                except Exception as e:
+                    errors.append(str(e))
+
+                cell_result = ExecutionResult(
+                    success=len(errors) == 0,
+                    cell_index=i,
+                    output='\n'.join(outputs),
+                    error='\n'.join(errors) if errors else None,
+                    kernel=kernel_name,
+                    duration=time.time() - cell_start
+                )
+
+                result.cell_results.append(cell_result)
+                result.executed_cells += 1
+
+                if cell_result.success:
+                    if self.verbose:
+                        print("OK")
+                else:
+                    result.failed_cells += 1
+                    result.errors.append(f"Cell {i}: {cell_result.error}")
+                    if self.verbose:
+                        print(f"FAILED: {cell_result.error[:50] if cell_result.error else 'unknown'}")
+                    if stop_on_error:
+                        break
+
+            result.success = result.failed_cells == 0
+            result.duration = time.time() - start_time
+
+        finally:
+            try:
+                kc.stop_channels()
+                km.shutdown_kernel(now=True)
+            except:
+                pass
+
+        return result
+
+    def execute_with_papermill(
+        self,
+        notebook_path: str,
+        output_path: Optional[str] = None,
+        parameters: Optional[Dict[str, Any]] = None,
+        kernel_name: Optional[str] = None,
+        timeout: Optional[int] = None
+    ) -> NotebookExecutionResult:
+        """
+        Execute a notebook using Papermill (subprocess).
+
+        Args:
+            notebook_path: Path to the notebook
+            output_path: Path for output notebook (auto-generated if None)
+            parameters: Parameters to inject
+            kernel_name: Kernel to use (auto-detected if None)
+            timeout: Timeout in seconds
+
+        Returns:
+            NotebookExecutionResult
+        """
+        import subprocess
+        import time
+        import sys
+
+        start_time = time.time()
+        kernel_name = kernel_name or self.detect_kernel(notebook_path)
+        timeout = timeout or self.timeout
+
+        nb_path = Path(notebook_path)
+        if output_path is None:
+            output_path = str(nb_path.parent / f"{nb_path.stem}_output{nb_path.suffix}")
+
+        cmd = [
+            sys.executable, '-m', 'papermill',
+            str(notebook_path),
+            str(output_path),
+            '--kernel', kernel_name
+        ]
+
+        # Add parameters
+        if parameters:
+            for key, value in parameters.items():
+                cmd.extend(['-p', str(key), str(value)])
+
+        result = NotebookExecutionResult(
+            success=False,
+            notebook_path=notebook_path,
+            output_path=output_path,
+            kernel=kernel_name
+        )
+
+        try:
+            if self.verbose:
+                print(f"Executing with Papermill (kernel={kernel_name})...")
+
+            proc_result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=str(nb_path.parent)
+            )
+
+            result.duration = time.time() - start_time
+
+            if proc_result.returncode == 0:
+                result.success = True
+                if self.verbose:
+                    print(f"Success in {result.duration:.1f}s")
+            else:
+                result.errors.append(proc_result.stderr[-500:] if proc_result.stderr else "Unknown error")
+                if self.verbose:
+                    print(f"Failed: {result.errors[-1][:100]}")
+
+        except subprocess.TimeoutExpired:
+            result.duration = timeout
+            result.errors.append(f"Timeout after {timeout}s")
+            if self.verbose:
+                print(f"Timeout after {timeout}s")
+
+        except Exception as e:
+            result.duration = time.time() - start_time
+            result.errors.append(str(e))
+            if self.verbose:
+                print(f"Error: {e}")
+
+        return result
+
+
+# ============================================================================
 # Utility functions for common operations
 # ============================================================================
 
@@ -544,6 +1047,24 @@ Examples:
     output_parser.add_argument('notebook', help='Path to notebook')
     output_parser.add_argument('cell_index', type=int, help='Cell index')
 
+    # execute command
+    exec_parser = subparsers.add_parser('execute', help='Execute notebook')
+    exec_parser.add_argument('notebook', help='Path to notebook')
+    exec_parser.add_argument('--cell', type=int, default=None,
+                             help='Execute only this cell index')
+    exec_parser.add_argument('--kernel', default=None,
+                             help='Kernel to use (auto-detect if not specified)')
+    exec_parser.add_argument('--timeout', type=int, default=300,
+                             help='Timeout in seconds (default: 300)')
+    exec_parser.add_argument('--papermill', action='store_true',
+                             help='Use Papermill instead of cell-by-cell')
+    exec_parser.add_argument('--verbose', '-v', action='store_true',
+                             help='Verbose output')
+
+    # detect-kernel command
+    kernel_parser = subparsers.add_parser('detect-kernel', help='Detect notebook kernel')
+    kernel_parser.add_argument('notebook', help='Path to notebook')
+
     args = parser.parse_args()
 
     if args.command == 'list':
@@ -581,6 +1102,62 @@ Examples:
         helper = NotebookHelper(args.notebook)
         output = helper.get_cell_output_text(args.cell_index)
         print(output if output else "(no output)")
+
+    elif args.command == 'execute':
+        executor = NotebookExecutor(timeout=args.timeout, verbose=args.verbose)
+
+        if args.cell is not None:
+            # Execute single cell
+            result = executor.execute_cell(
+                args.notebook,
+                args.cell,
+                kernel_name=args.kernel
+            )
+            print(f"\nCell {result.cell_index}:")
+            print(f"  Success: {result.success}")
+            print(f"  Kernel: {result.kernel}")
+            print(f"  Duration: {result.duration:.2f}s")
+            if result.output:
+                print(f"  Output: {result.output[:500]}")
+            if result.error:
+                print(f"  Error: {result.error}")
+        elif args.papermill:
+            # Execute with Papermill
+            result = executor.execute_with_papermill(
+                args.notebook,
+                kernel_name=args.kernel
+            )
+            print(f"\nNotebook: {result.notebook_path}")
+            print(f"  Success: {result.success}")
+            print(f"  Kernel: {result.kernel}")
+            print(f"  Duration: {result.duration:.2f}s")
+            if result.output_path:
+                print(f"  Output: {result.output_path}")
+            if result.errors:
+                print(f"  Errors: {result.errors}")
+        else:
+            # Execute cell by cell
+            result = executor.execute_notebook_cell_by_cell(
+                args.notebook,
+                kernel_name=args.kernel,
+                timeout_per_cell=min(args.timeout, 60)
+            )
+            print(f"\nNotebook: {result.notebook_path}")
+            print(f"  Success: {result.success}")
+            print(f"  Kernel: {result.kernel}")
+            print(f"  Cells: {result.executed_cells}/{result.total_cells}")
+            print(f"  Failed: {result.failed_cells}")
+            print(f"  Success rate: {result.success_rate:.1f}%")
+            print(f"  Duration: {result.duration:.2f}s")
+            if result.errors:
+                print(f"  Errors:")
+                for err in result.errors[:5]:
+                    print(f"    - {err[:100]}")
+
+    elif args.command == 'detect-kernel':
+        executor = NotebookExecutor()
+        kernel = executor.detect_kernel(args.notebook)
+        print(f"Detected kernel: {kernel}")
 
     else:
         parser.print_help()
