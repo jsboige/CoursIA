@@ -11,5 +11,6 @@ anthropic>=0.20.0
 # Visualization
 matplotlib>=3.7.0
 
-# Multi-agent orchestration (Lean-8)
+# Multi-agent orchestration (Lean-8, Lean-9)
 semantic-kernel>=1.39.0
+nest-asyncio>=1.6.0  # For async in Jupyter
