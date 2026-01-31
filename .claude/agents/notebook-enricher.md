@@ -66,8 +66,72 @@ IMPORTANT: Deux cellules de code qui se suivent sans markdown entre elles indiqu
 2. **Identifier** les cellules de code sans interpretation de resultats
 3. **Identifier** les cellules de code consecutives sans markdown entre elles
 4. **Identifier** les transitions abruptes entre sections
-5. **Ajouter** les cellules markdown necessaires via NotebookEdit
+5. **Ajouter** les cellules markdown necessaires via NotebookEdit (voir section critique ci-dessous)
 6. **Verifier** la coherence globale
+
+## CRITIQUE : Utilisation correcte de NotebookEdit
+
+**TOUJOURS utiliser `edit_mode="insert"`** pour ajouter de nouvelles cellules.
+
+**JAMAIS utiliser `edit_mode="replace"`** sur des cellules existantes, sauf pour corriger des erreurs mineures dans du markdown.
+
+### Exemple CORRECT : Insertion d'une cellule explicative
+
+```python
+NotebookEdit(
+    notebook_path="chemin/notebook.ipynb",
+    cell_id="id_cellule_precedente",   # La nouvelle cellule sera inseree APRES celle-ci
+    edit_mode="insert",                 # OBLIGATOIRE pour ajouter
+    cell_type="markdown",
+    new_source="### Explication\n\nCe code fait..."
+)
+```
+
+### Exemple INCORRECT (A NE PAS FAIRE)
+
+```python
+# DANGEREUX - Ecrase la cellule existante !
+NotebookEdit(
+    notebook_path="chemin/notebook.ipynb",
+    cell_id="id_cellule_code",
+    edit_mode="replace",  # INTERDIT sauf correction mineure
+    new_source="..."
+)
+```
+
+### Strategie d'insertion
+
+1. **Lire le notebook** avec `read_cells(path, mode="list")` pour obtenir les IDs de cellules
+2. **Identifier les points d'insertion** (apres quelle cellule inserer)
+3. **Inserer dans l'ordre inverse** (du bas vers le haut) pour eviter le decalage des indices
+4. Ou utiliser les **cell_id** plutot que les indices pour des insertions stables
+
+## OBLIGATOIRE : Verification du diff avant completion
+
+**Avant de terminer**, TOUJOURS executer `git diff --stat <notebook_path>` pour verifier :
+
+1. **Ratio insertions/deletions** : Les insertions doivent largement depasser les deletions
+   - CORRECT : `+48 insertions(+), 2 deletions(-)`
+   - PROBLEME : `+10 insertions(+), 255 deletions(-)` → Ecrasement detecte !
+
+2. **Si deletions > 50** : STOP ! Quelque chose s'est mal passe
+   - Executer `git checkout -- <notebook_path>` pour restaurer
+   - Recommencer avec `edit_mode="insert"` uniquement
+
+3. **Verifier le contenu du diff** avec `git diff <notebook_path> | head -100`
+   - Les lignes `-` ne doivent PAS contenir de code Python/C#
+   - Les lignes `-` acceptables : metadata, cell_id, lignes vides
+
+### Exemple de verification
+
+```bash
+# Verifier les stats
+git diff --stat MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-1-Setup.ipynb
+# Attendu: +20 insertions(+), 1 deletion(-)
+
+# Si probleme detecte, restaurer
+git checkout -- MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-1-Setup.ipynb
+```
 
 ## Processus avec --execute
 
