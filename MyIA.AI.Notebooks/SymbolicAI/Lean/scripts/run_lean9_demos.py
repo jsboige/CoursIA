@@ -466,34 +466,38 @@ DEMOS = [
     {
         "name": "DEMO_1_TRIVIAL",
         "theorem": "theorem demo_rfl (n : Nat) : n = n",
-        "description": "Reflexivite - 1 lemme direct (Eq.refl)",
-        "expected_iterations": "2-3",
+        "description": "Reflexivite pure - rfl immediat",
+        "expected_iterations": "1-2",
         "expected_lemmas": 1,
-        "complexity": "Triviale"
+        "complexity": "Triviale",
+        "strategy": "rfl"
     },
     {
-        "name": "DEMO_2_COMPOSITION",
-        "theorem": "theorem add_zero_comm (n m : Nat) : n + m + 0 = m + n",
-        "description": "Composition - 2 lemmes (add_zero + add_comm)",
-        "expected_iterations": "5-7",
+        "name": "DEMO_2_DEFINITION",
+        "theorem": "theorem zero_add (n : Nat) : 0 + n = n",
+        "description": "Definition - necessite induction ou unfold",
+        "expected_iterations": "2-4",
+        "expected_lemmas": 1,
+        "complexity": "Simple - induction basique",
+        "strategy": "induction ou simp [Nat.zero_add]"
+    },
+    {
+        "name": "DEMO_3_INDUCTION",
+        "theorem": "theorem add_assoc_manual (a b c : Nat) : (a + b) + c = a + (b + c)",
+        "description": "Associativite - necessite induction structuree",
+        "expected_iterations": "3-6",
         "expected_lemmas": 2,
-        "complexity": "Simple - necessite combiner 2 lemmes"
+        "complexity": "Intermediaire - induction avec hypothese",
+        "strategy": "induction a with | zero => simp | succ => simp [*]"
     },
     {
-        "name": "DEMO_3_MULTI_REWRITE",
-        "theorem": "theorem quad_comm (a b c d : Nat) : (a + b) + (c + d) = (d + c) + (b + a)",
-        "description": "Reecritures multiples - 4 applications de add_comm + add_assoc",
-        "expected_iterations": "10-15",
-        "expected_lemmas": 2,
-        "complexity": "Intermediaire - chaine de reecritures"
-    },
-    {
-        "name": "DEMO_4_STRUCTURED",
-        "theorem": "theorem distrib_both (a b c : Nat) : (a + b) * c + a * c = a * c + a * c + b * c",
-        "description": "Preuve structuree - right_distrib + add_assoc + add_comm",
-        "expected_iterations": "15-20",
+        "name": "DEMO_4_COMPOSED",
+        "theorem": "theorem length_append_manual (xs ys : List Nat) : (xs ++ ys).length = xs.length + ys.length",
+        "description": "Longueur concatenation - induction sur liste + arithmetique",
+        "expected_iterations": "5-10",
         "expected_lemmas": 3,
-        "complexity": "Avancee - decomposition + recombinaison"
+        "complexity": "Avancee - preuve par induction sur structure de donnees",
+        "strategy": "induction xs with | nil => simp | cons => simp [*, Nat.add_assoc]"
     }
 ]
 
