@@ -464,40 +464,44 @@ print("prove_with_multi_agents: OK")
 # ===== DEMOS =====
 DEMOS = [
     {
-        "name": "DEMO_1_TRIVIAL",
+        "name": "DEMO_1_REFLEXIVITY",
         "theorem": "theorem demo_rfl (n : Nat) : n = n",
-        "description": "Reflexivite pure - rfl immediat",
-        "expected_iterations": "1-2",
-        "expected_lemmas": 1,
-        "complexity": "Triviale",
+        "description": "Reflexivite pure - seul TacticAgent avec rfl",
+        "expected_iterations": "1",
+        "expected_lemmas": 0,
+        "expected_agents": ["TacticAgent"],
+        "complexity": "Triviale - une tactique suffit",
         "strategy": "rfl"
     },
     {
-        "name": "DEMO_2_DEFINITION",
-        "theorem": "theorem zero_add (n : Nat) : 0 + n = n",
-        "description": "Definition - necessite induction ou unfold",
-        "expected_iterations": "2-4",
+        "name": "DEMO_2_SUCCESSOR",
+        "theorem": "theorem succ_ne_zero (n : Nat) : Nat.succ n != 0",
+        "description": "Propriete structurelle - SearchAgent trouve Nat.succ_ne_zero",
+        "expected_iterations": "1-2",
         "expected_lemmas": 1,
-        "complexity": "Simple - induction basique",
-        "strategy": "induction ou simp [Nat.zero_add]"
+        "expected_agents": ["SearchAgent", "TacticAgent"],
+        "complexity": "Simple - recherche de lemme",
+        "strategy": "exact Nat.succ_ne_zero n OU decide"
     },
     {
-        "name": "DEMO_3_INDUCTION",
-        "theorem": "theorem add_assoc_manual (a b c : Nat) : (a + b) + c = a + (b + c)",
-        "description": "Associativite - necessite induction structuree",
-        "expected_iterations": "3-6",
+        "name": "DEMO_3_LIST_INDUCTION",
+        "theorem": "theorem length_append (xs ys : List Nat) : (xs ++ ys).length = xs.length + ys.length",
+        "description": "Induction sur liste - necessite raisonnement structurel",
+        "expected_iterations": "2-4",
         "expected_lemmas": 2,
-        "complexity": "Intermediaire - induction avec hypothese",
-        "strategy": "induction a with | zero => simp | succ => simp [*]"
+        "expected_agents": ["SearchAgent", "TacticAgent", "VerifierAgent"],
+        "complexity": "Intermediaire - induction + simplification",
+        "strategy": "induction xs <;> simp [*]"
     },
     {
-        "name": "DEMO_4_COMPOSED",
-        "theorem": "theorem length_append_manual (xs ys : List Nat) : (xs ++ ys).length = xs.length + ys.length",
-        "description": "Longueur concatenation - induction sur liste + arithmetique",
-        "expected_iterations": "5-10",
+        "name": "DEMO_4_ALGEBRAIC",
+        "theorem": "theorem mul_add_distrib (a b c : Nat) : a * (b + c) = a * b + a * c",
+        "description": "Distributivite - peut necessiter induction OU lemme direct",
+        "expected_iterations": "3-6",
         "expected_lemmas": 3,
-        "complexity": "Avancee - preuve par induction sur structure de donnees",
-        "strategy": "induction xs with | nil => simp | cons => simp [*, Nat.add_assoc]"
+        "expected_agents": ["SearchAgent", "TacticAgent", "VerifierAgent", "CriticAgent"],
+        "complexity": "Avancee - multiple strategies possibles",
+        "strategy": "exact Nat.mul_add OU induction a avec ring"
     }
 ]
 
