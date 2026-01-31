@@ -1,111 +1,128 @@
-# SymbolicAI - Notebooks TweetyProject
+# SymbolicAI - Intelligence Artificielle Symbolique
 
-Collection de notebooks Jupyter pour l'apprentissage de l'IA symbolique avec la bibliotheque Java [TweetyProject](https://tweetyproject.org/).
+Collection de notebooks Jupyter pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, planification automatique et optimisation.
 
-## Serie Tweety - 10 Notebooks Complets
+## Vue d'ensemble
 
-**Statut**: Serie complete validee (100%)
+| Serie | Notebooks | Theme | Duree |
+|-------|-----------|-------|-------|
+| [Tweety](#tweety---tweetyproject) | 10 | Logiques formelles, Argumentation | ~7h |
+| [Lean](#lean---verification-formelle) | 10 | Proof assistant, Verification formelle | ~6h40 |
+| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | Analyse argumentative avec LLM | ~3h |
+| [Autres notebooks](#autres-notebooks) | 4 | Z3, OR-Tools, RDF, Planification | ~2h |
 
-Explorez les logiques symboliques et l'argumentation computationnelle avec cette serie progressive:
-
-### Partie 1 : Fondations
-
-| # | Notebook | Theme | Duree |
-|---|----------|-------|-------|
-| 1 | [Tweety-1-Setup](Tweety/Tweety-1-Setup.ipynb) | Configuration JVM, JARs, outils externes | 20 min |
-| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle (PL) et FOL | 45 min |
-| 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | DL, Modale, QBF, Conditionnelle | 40 min |
-
-### Partie 2 : Revision de Croyances
-
-| # | Notebook | Theme | Duree |
-|---|----------|-------|-------|
-| 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | CrMas, MUS, MaxSAT, Mesures d'incoherence | 50 min |
-
-### Partie 3 : Argumentation
-
-| # | Notebook | Theme | Duree |
-|---|----------|-------|-------|
-| 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Dung AF, Semantiques, CF2, Generation | 55 min |
-| 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP | 60 min |
-| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended | 50 min |
-| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking Semantics, Probabiliste | 40 min |
-
-### Partie 4 : Applications
-
-| # | Notebook | Theme | Duree |
-|---|----------|-------|-------|
-| 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents, Dialogues argumentatifs, Loteries | 35 min |
-| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Preferences, Theorie du vote | 30 min |
-
-**Duree totale estimee** : ~7 heures
+**Duree totale estimee** : ~19 heures
 
 ---
 
-## Contenu Detaille
+## Tweety - TweetyProject
 
-### 1. Setup - Configuration Environnement
-- Installation automatique Python + JPype + Tweety
-- Telechargement JDK portable (Zulu 17)
-- Telechargement JARs TweetyProject v1.28/1.29
-- Configuration outils externes (Clingo, SPASS)
-- Demarrage et test JVM
+Serie complete de 10 notebooks sur [TweetyProject](https://tweetyproject.org/), bibliotheque Java pour l'IA symbolique.
 
-**IMPORTANT**: A executer en premier, obligatoire pour tous les autres notebooks.
+### Structure
 
-### 2. Basic Logics - Logiques Fondamentales
-- **Logique Propositionnelle (PL)**: Syntaxe, parsing, mondes possibles
-- **Solveurs SAT**: Comparaison CaDiCaL, Glucose, MiniSat avec pySAT
-- **Logique du Premier Ordre (FOL)**: Signatures, sorts, predicats
+| # | Notebook | Theme | Duree |
+|---|----------|-------|-------|
+| **Fondations** |
+| 1 | [Tweety-1-Setup](Tweety/Tweety-1-Setup.ipynb) | Configuration JVM, JARs, outils externes | 20 min |
+| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle (PL) et FOL | 45 min |
+| 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | DL, Modale, QBF, Conditionnelle | 40 min |
+| **Revision de Croyances** |
+| 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | CrMas, MUS, MaxSAT, Mesures d'incoherence | 50 min |
+| **Argumentation** |
+| 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Dung AF, Semantiques (grounded, preferred, stable, CF2) | 55 min |
+| 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP (Clingo) | 60 min |
+| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 50 min |
+| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, Probabiliste | 40 min |
+| **Applications** |
+| 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents, Dialogues argumentatifs, Loteries | 35 min |
+| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Preferences, Theorie du vote | 30 min |
 
-### 3. Advanced Logics - Logiques Avancees
-- **Logique de Description (DL)**: ABox, TBox, concepts, roles
-- **Logique Modale (ML)**: Operateurs modaux, semantiques Kripke
-- **QBF**: Formules booleennes quantifiees
-- **Logique Conditionnelle (CL)**
+### Technologies
+- **JPype** : Integration Java/Python
+- **PySAT** : Solveurs SAT (CaDiCaL, Glucose, MiniSat)
+- **Clingo** : Answer Set Programming
+- **Z3** : SMT solver
 
-### 4. Belief Revision - Revision de Croyances
-- Revision de croyances multi-agents (CrMas)
-- Mesures d'incoherence (distance, contension, fuzzy)
-- Enumeration MUS (Minimal Unsatisfiable Subsets)
-- MaxSAT avec Open-WBO
+Documentation complete : [Tweety/README.md](Tweety/README.md)
 
-### 5. Abstract Argumentation - Argumentation de Dung
-- Cadres d'argumentation de Dung
-- Semantiques: Grounded, Preferred, Stable, Complete, CF2
-- Generation et apprentissage de cadres
-- Raisonneurs alternatifs
+---
 
-### 6. Structured Argumentation - Argumentation Structuree
-- **ASPIC+**: Construction PL/FOL, conversion vers Dung
-- **DeLP**: Defeasible Logic Programming
-- **ABA**: Assumption-Based Argumentation
-- **Argumentation Deductive**
-- **ASP**: Answer Set Programming avec Clingo
+## Lean - Verification Formelle
 
-### 7a. Extended Frameworks - Frameworks Etendus
-- **ADF**: Abstract Dialectical Frameworks
-- **Bipolar**: Frameworks bipolaires (support + attaque)
-- **WAF**: Frameworks ponderes
-- **SAF**: Argumentation sociale
-- **SetAF**: Attaques collectives
-- **EAF/REAF**: Attaques recursives
+Serie de 10 notebooks sur **Lean 4**, proof assistant base sur la theorie des types dependants.
 
-### 7b. Ranking & Probabilistic - Classement et Probabilites
-- Semantiques de classement (Categorizer, h-Categorizer, Burden)
-- Argumentation probabiliste
-- Comparaison solveurs natifs et Java
+### Structure
 
-### 8. Agent Dialogues - Agents et Dialogues
-- Framework agents de base
-- Jeux grounded (ArguingAgent)
-- Dialogues argumentatifs
-- Loteries argumentatives
+| # | Notebook | Theme | Duree |
+|---|----------|-------|-------|
+| **Fondations** |
+| 1 | [Lean-1-Setup](Lean/Lean-1-Setup.ipynb) | Installation elan, kernel Jupyter | 15 min |
+| 2 | [Lean-2-Dependent-Types](Lean/Lean-2-Dependent-Types.ipynb) | Calcul des Constructions, types | 35 min |
+| 3 | [Lean-3-Propositions-Proofs](Lean/Lean-3-Propositions-Proofs.ipynb) | Curry-Howard, preuves par termes | 45 min |
+| 4 | [Lean-4-Quantifiers](Lean/Lean-4-Quantifiers.ipynb) | forall, exists, egalite | 40 min |
+| 5 | [Lean-5-Tactics](Lean/Lean-5-Tactics.ipynb) | Mode tactique (apply, intro, rw, simp) | 50 min |
+| **Etat de l'art** |
+| 6 | [Lean-6-Mathlib-Essentials](Lean/Lean-6-Mathlib-Essentials.ipynb) | Mathlib4, ring/linarith/omega | 45 min |
+| 7 | [Lean-7-LLM-Integration](Lean/Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof | 50 min |
+| 7b | [Lean-7b-Examples](Lean/Lean-7b-Examples.ipynb) | Exemples pratiques LLM | 30 min |
+| 8 | [Lean-8-Agentic-Proving](Lean/Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO | 55 min |
+| 9 | [Lean-9-LeanDojo](Lean/Lean-9-LeanDojo.ipynb) | LeanDojo, theorem proving ML | 45 min |
 
-### 9. Preferences - Preferences et Vote
-- Ordres de preference
-- Theorie du vote
-- Agregation de preferences
+### Percees recentes (2024-2026)
+- **AlphaProof** (DeepMind) : Medaille d'argent IMO 2024
+- **Harmonic Aristotle** : Resolution Erdos #124 en 6h
+- **Mathlib4** : 4M+ lignes, utilise par Terry Tao
+
+Documentation complete : [Lean/README.md](Lean/README.md)
+
+---
+
+## Argument Analysis - Analyse Argumentative LLM
+
+Pipeline d'analyse argumentative avec Semantic Kernel et LLMs.
+
+### Structure
+
+| Notebook | Description |
+|----------|-------------|
+| [Argument_Analysis_Agentic-0-init](Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb) | Configuration OpenAI, Semantic Kernel |
+| [Argument_Analysis_Agentic-1-informal_agent](Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb) | Agent d'analyse informelle |
+| [Argument_Analysis_Agentic-2-pl_agent](Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb) | Agent logique propositionnelle |
+| [Argument_Analysis_Agentic-3-orchestration](Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb) | Orchestration multi-agents |
+| [Argument_Analysis_Executor](Argument_Analysis/Argument_Analysis_Executor.ipynb) | Pipeline complet |
+| [Argument_Analysis_UI_configuration](Argument_Analysis/Argument_Analysis_UI_configuration.ipynb) | Interface widgets |
+
+### Configuration
+
+```bash
+cd Argument_Analysis
+cp .env.example .env
+# Ajouter OPENAI_API_KEY et BATCH_MODE=true pour tests automatises
+```
+
+---
+
+## Autres Notebooks
+
+### Optimisation et Contraintes
+
+| Notebook | Description | Kernel |
+|----------|-------------|--------|
+| [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | Probleme de Stiegler avec OR-Tools | .NET C# |
+| [Linq2Z3](Linq2Z3.ipynb) | Integration Z3 avec LINQ | .NET C# |
+
+### RDF et Web Semantique
+
+| Notebook | Description | Kernel |
+|----------|-------------|--------|
+| [RDF.Net](RDF.Net/RDF.Net.ipynb) | RDF, SPARQL, dotNetRDF | .NET C# |
+
+### Planification Automatique
+
+| Notebook | Description | Kernel |
+|----------|-------------|--------|
+| [Fast-Downward](Planners/Fast-Downward.ipynb) | Planification avec Fast Downward | Python |
 
 ---
 
@@ -113,138 +130,119 @@ Explorez les logiques symboliques et l'argumentation computationnelle avec cette
 
 ```
 SymbolicAI/
-├── Tweety/                                # Serie principale
-│   ├── Tweety-1-Setup.ipynb
-│   ├── Tweety-2-Basic-Logics.ipynb
-│   ├── Tweety-3-Advanced-Logics.ipynb
-│   ├── Tweety-4-Belief-Revision.ipynb
-│   ├── Tweety-5-Abstract-Argumentation.ipynb
-│   ├── Tweety-6-Structured-Argumentation.ipynb
-│   ├── Tweety-7a-Extended-Frameworks.ipynb
-│   ├── Tweety-7b-Ranking-Probabilistic.ipynb
-│   ├── Tweety-8-Agent-Dialogues.ipynb
-│   ├── Tweety-9-Preferences.ipynb
-│   ├── libs/                              # JARs TweetyProject (35 modules)
-│   ├── resources/                         # Fichiers d'exemples
-│   ├── ext_tools/                         # Outils externes (Clingo, SPASS)
-│   ├── jdk-17-portable/                   # JDK Zulu (telecharge auto)
-│   ├── scripts/                           # Scripts de validation
+├── Tweety/                    # Serie TweetyProject (10 notebooks)
+│   ├── Tweety-1-Setup.ipynb ... Tweety-9-Preferences.ipynb
+│   ├── libs/                  # JARs TweetyProject
+│   ├── ext_tools/             # Clingo, SPASS
+│   ├── jdk-17-portable/       # JDK Zulu (auto-telecharge)
+│   ├── scripts/               # Scripts de validation
 │   └── README.md
 │
-├── Argument_Analysis/                     # Analyse argumentative avec LLM
-├── Lean/                                  # Proof Assistant Lean 4
-└── README.md                              # Ce fichier
+├── Lean/                      # Serie Lean 4 (10 notebooks)
+│   ├── Lean-1-Setup.ipynb ... Lean-9-LeanDojo.ipynb
+│   ├── lean_runner.py         # Backend Python multi-mode
+│   ├── scripts/               # Scripts installation/validation
+│   └── README.md
+│
+├── Argument_Analysis/         # Analyse argumentative LLM (6 notebooks)
+│   ├── Argument_Analysis_*.ipynb
+│   ├── data/                  # Taxonomie sophismes
+│   └── ontologies/            # Ontologies OWL
+│
+├── RDF.Net/                   # Web semantique
+│   └── RDF.Net.ipynb
+│
+├── Planners/                  # Planification automatique
+│   └── Fast-Downward.ipynb
+│
+├── OR-tools-Stiegler.ipynb    # Optimisation
+├── Linq2Z3.ipynb              # SMT solving
+│
+├── archive/                   # Versions historiques
+├── data/                      # Donnees partagees
+├── ext_tools/                 # Outils externes partages
+├── libs/                      # Bibliotheques partagees
+├── reports/                   # Rapports de qualite
+├── scripts/                   # Scripts utilitaires
+└── README.md                  # Ce fichier
 ```
 
 ---
 
-## Demarrage Rapide
+## Installation
 
-### Installation (Premiere Fois)
-
-1. **Cloner le depot** (si pas deja fait):
-```bash
-git clone https://github.com/jsboige/CoursIA.git
-cd CoursIA/MyIA.AI.Notebooks/SymbolicAI/Tweety
-```
-
-2. **Lancer Jupyter**:
-```bash
-jupyter notebook
-```
-
-3. **Executer Tweety-1-Setup.ipynb** en entier
-   - Installe automatiquement: packages Python, JDK, JARs Tweety, outils
-   - Duree: ~5-10 minutes selon connexion internet
-
-4. **Explorer les notebooks 2-9** dans l'ordre ou a la carte
-
-### Utilisation Quotidienne
-
-Si l'environnement est deja configure:
-1. Lancer Jupyter
-2. Ouvrir directement le notebook souhaite
-3. L'initialisation JVM se fait automatiquement
-
----
-
-## Verification et Tests
-
-### Script de verification
+### Prerequis communs
 
 ```bash
-cd Tweety/scripts/
+# Python 3.10+
+pip install jupyter ipykernel
 
-# Verification structurelle rapide
-python verify_all_tweety.py --quick
-
-# Verification environnement
-python verify_all_tweety.py --check-env
-
-# Analyse des sorties existantes
-python verify_all_tweety.py --analyze-outputs --verbose
-
-# Execution complete
-python verify_all_tweety.py --execute --verbose
+# Pour notebooks .NET
+dotnet tool install -g Microsoft.dotnet-interactive
+dotnet interactive jupyter install
 ```
+
+### Par serie
+
+**Tweety** : Executer `Tweety-1-Setup.ipynb` (telechargement automatique JDK + JARs)
+
+**Lean** : Executer `Lean-1-Setup.ipynb` (installation elan + Lean 4)
+
+**Argument Analysis** : Configurer `.env` avec `OPENAI_API_KEY`
 
 ---
 
 ## Outils Externes
 
-| Outil | Usage | Installation |
-|-------|-------|--------------|
-| **Clingo** | ASP (Answer Set Programming) | Auto-telecharge |
-| **SPASS** | Logique Modale | Manuel (Windows) |
-| **EProver** | FOL haute performance | Inclus |
-| **Z3** | SMT solver, MARCO | `pip install z3-solver` |
-| **PySAT** | SAT/MaxSAT moderne | `pip install python-sat` |
+| Outil | Usage | Serie |
+|-------|-------|-------|
+| **JPype** | Bridge Java/Python | Tweety |
+| **Clingo** | Answer Set Programming | Tweety |
+| **SPASS** | Prouveur modal | Tweety |
+| **Z3** | SMT solver | Tweety, Linq2Z3 |
+| **PySAT** | SAT solvers (CaDiCaL, Glucose) | Tweety |
+| **elan** | Gestionnaire versions Lean | Lean |
+| **Mathlib4** | Bibliotheque mathematique Lean | Lean |
+| **OR-Tools** | Optimisation combinatoire | OR-Tools |
+| **Fast Downward** | Planification PDDL | Planners |
 
 ---
 
-## Dependances
-
-### Automatiquement Installees
-
-- **Python packages**: jpype1, requests, tqdm, clingo, python-sat, z3-solver
-- **JDK**: Zulu 17 portable (auto-telecharge)
-- **TweetyProject**: v1.28/1.29 (35 JARs)
-- **Clingo**: v5.4.0 (Windows/Linux auto-install)
-
-### Installation manuelle
+## Validation
 
 ```bash
-pip install jpype1 requests tqdm clingo z3-solver python-sat
+# Tweety
+cd Tweety/scripts && python verify_all_tweety.py --quick
+
+# Lean
+cd Lean && python scripts/validate_lean_setup.py
+
+# Notebooks .NET
+dotnet restore MyIA.CoursIA.sln
 ```
-
----
-
-## Limitations Connues (Tweety 1.28/1.29)
-
-| Limitation | Impact | Contournement |
-|------------|--------|---------------|
-| **CrMas/InformationObject** | Section revision multi-agents | API refactorisee dans 1.28+ |
-| **SimpleMlReasoner** | Bloque indefiniment | Utiliser SPASS externe |
-| **ADF natif SAT** | Raisonnement ADF incomplet | Necessite solveur SAT natif |
-| **SPASS Windows** | Requiert droits admin | Erreur 740 sans elevation |
 
 ---
 
 ## Ressources
 
-- **TweetyProject**: https://tweetyproject.org/
-- **Documentation API**: https://tweetyproject.org/api/
-- **GitHub**: https://github.com/TweetyProjectTeam/TweetyProject
-- **JPype**: https://jpype.readthedocs.io/
+### TweetyProject
+- Site : https://tweetyproject.org/
+- API : https://tweetyproject.org/api/
+
+### Lean 4
+- Documentation : https://leanprover.github.io/lean4/doc/
+- Mathlib4 : https://leanprover-community.github.io/mathlib4_docs/
+
+### Semantic Kernel
+- Documentation : https://learn.microsoft.com/semantic-kernel/
 
 ---
 
 ## Licence
 
 Les notebooks sont distribues sous licence MIT.
-TweetyProject est sous licence LGPL 3.0.
+Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour**: 2026-01-31
-**Auteur**: Jean-Sebastien Bevilacqua (jsboige@gmail.com)
+**Derniere mise a jour** : 2026-01-31
