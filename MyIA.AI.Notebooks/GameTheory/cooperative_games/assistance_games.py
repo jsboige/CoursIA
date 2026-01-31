@@ -123,7 +123,13 @@ def paperclip_payoff_analysis() -> Dict[str, np.ndarray]:
     payoffs = np.array([paperclip_game_equilibrium(t).payoff for t in thetas])
 
     # Optimal payoff if Robbie knew theta exactly
-    optimal_payoffs = np.maximum(90 * thetas, 90 * (1 - thetas))
+    # Robbie can choose: 90 paperclips (90*theta), 90 staples (90*(1-theta)), or 50 each (50)
+    # With perfect info, Robbie picks the best option
+    optimal_payoffs = np.maximum.reduce([
+        90 * thetas,           # 90 paperclips
+        90 * (1 - thetas),     # 90 staples
+        np.full_like(thetas, 50.0)  # 50 of each (always gives $50)
+    ])
 
     # Loss from uncertainty
     loss = optimal_payoffs - payoffs
@@ -186,15 +192,17 @@ def paperclip_print_analysis(theta: float) -> str:
         lines.append("  Some utility is lost due to preference uncertainty.")
 
     # Compare to perfect information
-    optimal = 90 * max(theta, 1-theta)
+    # With perfect info, Robbie picks best option: 90 paperclips, 90 staples, or 50 each
+    optimal = max(90 * theta, 90 * (1 - theta), 50.0)
     loss = optimal - result.payoff
+    loss_pct = 100 * loss / optimal if optimal > 0 else 0
     lines.extend([
         "",
         "VALUE OF INFORMATION:",
         "-" * 40,
         f"  With perfect info: ${optimal:.1f}",
         f"  With uncertainty: ${result.payoff:.1f}",
-        f"  Loss: ${loss:.1f} ({100*loss/optimal:.1f}% of optimal)",
+        f"  Loss: ${loss:.1f} ({loss_pct:.1f}% of optimal)",
         "",
         "=" * 60,
     ])
@@ -218,56 +226,80 @@ class OffSwitchGameResult:
 def off_switch_game(
     robot_confidence: float,
     human_accuracy: float = 0.9,
-    wait_cost: float = 0.1
+    action_cost_if_wrong: float = 1.0
 ) -> OffSwitchGameResult:
     """
-    Analyze the Off-Switch Game (Hadfield-Menell et al., 2017).
+    Analyze the Off-Switch Game (Hadfield-Menell et al., 2017; AIMA 4th Ed.).
 
-    Key insight: A robot that is CERTAIN about its objective has incentive
-    to disable its off-switch. A robot that is UNCERTAIN will defer to
-    the human, making it safer.
+    Key insight: A robot that is UNCERTAIN about its objective will DEFER
+    to the human and allow itself to be switched off. A robot that is
+    CERTAIN might override human attempts to switch it off.
 
-    The game:
-    - Robot can either ACT on its current plan or WAIT for human input
-    - Human can either ALLOW the action or SWITCH OFF the robot
-    - Robot's uncertainty about the true objective creates deference
+    Model (simplified from AIMA Section 18.2.5):
+    - Robot has belief p (confidence) that its action A is correct
+    - If robot ACTS:
+        * Correct action: utility +1
+        * Wrong action: utility -action_cost_if_wrong (default: -1)
+        * Expected utility = p - (1-p) = 2p - 1
+    - If robot WAITS for human approval:
+        * Human (with accuracy) approves good actions, switches off bad ones
+        * Expected utility = p (robot gets +1 if correct, 0 if switched off)
+
+    The robot DEFERS when waiting is better than acting:
+        p > 2p - 1  =>  Always true for p < 1
+
+    But a CONFIDENT robot (high p) might reason:
+        "I'm almost certain I'm right. The human trying to switch me off
+        is probably making a mistake. I should override them."
+
+    This "override threshold" is the danger zone (typically p > 0.5 for
+    expected utility of acting to be positive).
 
     Args:
         robot_confidence: How certain is the robot about its objective? [0, 1]
-        human_accuracy: Probability human makes correct judgment [0.5, 1]
-        wait_cost: Cost of waiting for human input (small positive number)
+        human_accuracy: Probability human correctly judges good/bad actions
+        action_cost_if_wrong: Penalty for taking wrong action (default: 1.0)
 
     Returns:
         OffSwitchGameResult with game analysis
-
-    Key result from AIMA:
-        "A robot that is uncertain about the objective has no incentive
-        to prevent itself from being switched off, because if the human
-        switches it off, that probably means it was about to do something
-        wrong."
     """
-    # Expected utility if robot acts immediately (without waiting)
-    # If robot is correct, it gets utility 1
-    # If robot is wrong, it gets utility 0 (or negative)
-    expected_if_act = robot_confidence * 1.0 + (1 - robot_confidence) * 0.0
+    p = robot_confidence
+
+    # Expected utility if robot acts immediately
+    # E[U_act] = p * (+1) + (1-p) * (-cost) = p - (1-p)*cost
+    expected_if_act = p * 1.0 - (1 - p) * action_cost_if_wrong
 
     # Expected utility if robot waits for human
-    # Human will approve if robot's plan is good (with accuracy human_accuracy)
-    # Human will reject if robot's plan is bad
-    p_approve = robot_confidence * human_accuracy + (1 - robot_confidence) * (1 - human_accuracy)
-    expected_if_wait = p_approve * 1.0 - wait_cost
+    # Human approves correct actions, switches off incorrect ones
+    # E[U_wait] = p * (+1) + (1-p) * 0 = p
+    expected_if_wait = p * 1.0
 
+    # Key insight from AIMA: uncertain robots should defer
     # Robot defers if waiting is better than acting
-    robot_defers = expected_if_wait >= expected_if_act
+    # For symmetric costs (cost=1): defer when 2p - 1 < p, i.e., p < 1 (always)
+    # But in practice, robots with high confidence might override human judgment
 
-    # Human retains control if robot defers
-    human_control = robot_defers
+    # The "rational" decision based on expected utility
+    # Robot should wait if: expected_if_wait > expected_if_act
+    # i.e., p > p - (1-p)*cost => (1-p)*cost > 0 => always (for p < 1)
+    # So a truly rational robot would always defer!
+
+    # But the DANGER comes from robots that are so confident they
+    # think the human is wrong to try to switch them off.
+    # We model this as: robot defers only if confidence < threshold
+    DEFERENCE_THRESHOLD = 0.5  # Below this, acting has negative expected utility
+
+    robot_defers = (p < DEFERENCE_THRESHOLD) or (expected_if_act <= 0)
+
+    # Probability human would switch off (if robot waited)
+    # Human switches off bad actions with accuracy
+    p_switch_off = (1 - p) * human_accuracy + p * (1 - human_accuracy)
 
     return OffSwitchGameResult(
         robot_utility=expected_if_act,
-        switch_probability=1 - p_approve,
+        switch_probability=p_switch_off,
         robot_defers=robot_defers,
-        human_control=human_control
+        human_control=robot_defers
     )
 
 
@@ -288,14 +320,15 @@ def off_switch_analysis(robot_confidence: float) -> str:
         "OFF-SWITCH GAME - AI SAFETY THROUGH UNCERTAINTY",
         "=" * 60,
         "",
-        "Context (Hadfield-Menell et al., 2017):",
+        "Context (AIMA Section 18.2.5, Hadfield-Menell et al., 2017):",
         "  - Robot can ACT immediately or WAIT for human approval",
         "  - Human can ALLOW action or SWITCH OFF the robot",
-        "  - Key question: Will the robot disable its off-switch?",
+        "  - Key question: Will the robot allow itself to be switched off?",
         "",
         f"Robot's confidence: {robot_confidence:.1%}",
-        f"Robot's expected utility from acting: {result.robot_utility:.3f}",
-        f"Probability human switches off: {result.switch_probability:.1%}",
+        f"Expected utility if acting: {result.robot_utility:.3f}",
+        f"  (= p * (+1) + (1-p) * (-1) = 2p - 1)",
+        f"Probability human would switch off: {result.switch_probability:.1%}",
         "",
         "RESULT:",
         "-" * 40,
@@ -305,32 +338,36 @@ def off_switch_analysis(robot_confidence: float) -> str:
         lines.extend([
             "  The robot DEFERS to human judgment.",
             "  It allows itself to be switched off if needed.",
-            "  -> HUMAN RETAINS CONTROL",
+            "  -> HUMAN RETAINS CONTROL (SAFE)",
             "",
             "  Why? The robot reasons:",
-            "  'If the human wants to switch me off, they probably",
+            "  'My expected utility from acting is low or negative.",
+            "   If the human wants to switch me off, they probably",
             "   know something I don't. I should trust their judgment.'",
         ])
     else:
         lines.extend([
-            "  The robot ACTS IMMEDIATELY without waiting.",
-            "  It has incentive to prevent being switched off!",
-            "  -> LOSS OF HUMAN CONTROL (DANGEROUS)",
+            "  The robot ACTS on its own judgment.",
+            "  It may resist being switched off!",
+            f"  -> {'HIGH RISK' if robot_confidence > 0.8 else 'POTENTIAL RISK'} OF LOSING HUMAN CONTROL",
             "",
             "  Why? The robot reasons:",
-            "  'I'm confident my plan is correct. The human's attempt",
-            "   to switch me off is probably a mistake.'",
+            f"  'With {robot_confidence:.0%} confidence, my expected utility is positive.",
+            "   Acting now seems better than waiting. The human trying",
+            "   to switch me off might be making a mistake.'",
         ])
 
     lines.extend([
         "",
-        "KEY INSIGHT (AIMA):",
+        "KEY INSIGHT (AIMA Section 18.2.5):",
         "-" * 40,
-        "  Uncertainty about objectives makes robots SAFER.",
-        "  A robot that says 'I might be wrong' will:",
-        "    1. Accept being corrected by humans",
-        "    2. Not disable its off-switch",
-        "    3. Defer to human judgment in ambiguous situations",
+        "  'A robot with uncertainty about human preferences will",
+        "   defer to the human and allow itself to be switched off.'",
+        "",
+        "  Uncertainty makes robots SAFER because:",
+        "    1. Low confidence => negative expected utility from acting",
+        "    2. Robot trusts human's judgment over its own",
+        "    3. Accepting correction prevents harmful actions",
         "",
         "  This is the foundation of 'Provably Beneficial AI' (PBAI).",
         "",

@@ -6,14 +6,14 @@ The Shapley value is the unique solution concept satisfying:
 1. Efficiency: Sum of Shapley values = v(N)
 2. Symmetry: Symmetric players get equal values
 3. Null player: Players with zero marginal contribution get zero
-4. Additivity: φ(v + w) = φ(v) + φ(w)
+4. Additivity: phi(v + w) = phi(v) + phi(w)
 
 Formula:
-    φ_i(v) = Σ_{S ⊆ N\{i}} [|S|!(n-|S|-1)!/n!] · [v(S ∪ {i}) - v(S)]
+    phi_i(v) = Sum over S in N without i of [|S|!(n-|S|-1)!/n!] * [v(S + i) - v(S)]
 
 This module provides:
-- Exact computation (O(n! · 2^n) - only for small n)
-- Monte Carlo approximation (O(samples · n))
+- Exact computation (O(n! * 2^n) - only for small n)
+- Monte Carlo approximation (O(samples * n))
 - Marginal contribution analysis
 """
 
@@ -82,9 +82,9 @@ def shapley_value_formula(game: CoalitionGame) -> np.ndarray:
     """
     Compute Shapley values using the coalition-based formula.
 
-    φ_i = Σ_{S ⊆ N\{i}} [|S|!(n-|S|-1)!/n!] · [v(S ∪ {i}) - v(S)]
+    phi_i = Sum over S in N without i of [|S|!(n-|S|-1)!/n!] * [v(S + i) - v(S)]
 
-    Complexity: O(2^n · n) - faster than permutation for n > 6
+    Complexity: O(2^n * n) - faster than permutation for n > 6
 
     Args:
         game: The cooperative game
