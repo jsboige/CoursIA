@@ -466,10 +466,48 @@ DEMOS = [
     {
         "name": "DEMO_1_REFLEXIVITY",
         "theorem": "theorem demo_rfl (n : Nat) : n = n",
-        "description": "Reflexivite pure - seul TacticAgent avec rfl",
-        "expected_iterations": "1",
+        "description": "Reflexivite pure - TacticAgent reconnait rfl immediatement",
+        "expected_iterations": "2-3",
         "expected_lemmas": 0,
         "expected_agents": ["TacticAgent"],
+        "complexity": "Triviale - rfl suffit, pas de recherche",
+        "strategy": "rfl",
+        "trap": "Aucun piege - cas de base"
+    },
+    {
+        "name": "DEMO_2_DECIDABLE",
+        "theorem": "theorem three_ne_five : (3 : Nat) \u2260 5",
+        "description": "Inegalite decidable - rfl/simp echouent, besoin de decide",
+        "expected_iterations": "3-5",
+        "expected_lemmas": 0,
+        "expected_agents": ["SearchAgent", "TacticAgent"],
+        "complexity": "Simple - mais piege tactique",
+        "strategy": "decide ou native_decide",
+        "trap": "rfl et simp ne marchent pas sur les inegalites"
+    },
+    {
+        "name": "DEMO_3_HYPOTHESIS",
+        "theorem": "theorem symmetry_from_hyp (a b : Nat) (h : a = b) : b = a",
+        "description": "Utilisation d'hypothese - pas de lemme direct 'b = a'",
+        "expected_iterations": "3-5",
+        "expected_lemmas": 1,
+        "expected_agents": ["SearchAgent", "TacticAgent", "VerifierAgent"],
+        "complexity": "Intermediaire - comprendre et utiliser h",
+        "strategy": "exact h.symm OU rw [h] OU exact Eq.symm h",
+        "trap": "SearchAgent ne trouve pas de lemme direct pour b = a"
+    },
+    {
+        "name": "DEMO_4_COMPOSITION",
+        "theorem": "theorem add_right_comm (a b c : Nat) : a + b + c = a + c + b",
+        "description": "Composition de lemmes - pas de lemme direct, besoin de combiner",
+        "expected_iterations": "4-8",
+        "expected_lemmas": 2,
+        "expected_agents": ["SearchAgent", "TacticAgent", "VerifierAgent", "CriticAgent"],
+        "complexity": "Avancee - plusieurs rewrites necessaires",
+        "strategy": "rw [Nat.add_assoc, Nat.add_comm b c, ...] OU omega",
+        "trap": "Un seul rewrite ne suffit pas, strategie multi-etapes"
+    }
+],
         "complexity": "Triviale - une tactique suffit",
         "strategy": "rfl"
     },
