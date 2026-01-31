@@ -52,7 +52,11 @@ def main():
     LeanVerificationPlugin = namespace.get('LeanVerificationPlugin')
 
     if not all([ProofState, ProofAgentGroupChat, DEMOS, create_agents]):
-        print('Missing required classes')
+        print('Missing required classes:')
+        print(f'  ProofState: {ProofState is not None}')
+        print(f'  ProofAgentGroupChat: {ProofAgentGroupChat is not None}')
+        print(f'  DEMOS: {DEMOS is not None}')
+        print(f'  create_agents: {create_agents is not None}')
         return False
 
     print('=' * 70)
