@@ -20,6 +20,7 @@ Enrich Jupyter notebooks with pedagogical markdown content.
   - `--fix-errors`: Attempt to fix code errors found during execution
   - `--strict`: Require interpretation after EVERY code cell
   - `--consecutive`: Focus on fixing consecutive code cells (cells de code qui se suivent)
+  - `--iterate`: Use cell-iterator agent to iterate on cells until objective met
 
 ## Instructions for Claude
 
@@ -126,6 +127,42 @@ Pour chaque paire de cellules de code consecutives, ajouter:
 - Soit une transition entre concepts
 ```
 
+### 7b. If --iterate is specified
+
+Use the cell-iterator agent for iterative correction:
+
+```
+ITERATION SUR CELLULES:
+Pour les cellules de code qui produisent des resultats incorrects:
+1. Lire la sortie actuelle
+2. Comparer avec l'objectif attendu
+3. Corriger le code si necessaire
+4. Reexecuter et verifier
+5. Iterer jusqu'a succes ou max iterations
+
+Utiliser l'agent notebook-cell-iterator:
+- Lire .claude/agents/notebook-cell-iterator.md
+- Utiliser scripts/notebook_helpers.py pour manipulation
+```
+
+Pour chaque cellule necessitant iteration:
+```python
+Task(
+    subagent_type="general-purpose",
+    prompt=f"""
+    Tu es un agent notebook-cell-iterator.
+    Lis .claude/agents/notebook-cell-iterator.md
+
+    Notebook: {notebook_path}
+    Cell: {cell_index}
+    Objective: {expected_output}
+    Max iterations: 5
+    """,
+    description=f"Iterate cell {cell_index}",
+    run_in_background=True
+)
+```
+
 ### 8. Monitor agent completion
 
 Check agent outputs periodically:
@@ -188,4 +225,37 @@ Details per notebook:
 /enrich-notebooks MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb --strict
 /enrich-notebooks Tweety --execute
 /enrich-notebooks all --consecutive
+/enrich-notebooks Lean --execute --iterate
+```
+
+## Helper disponible
+
+Le script `scripts/notebook_helpers.py` fournit des utilitaires pour la manipulation de notebooks :
+
+```python
+from scripts.notebook_helpers import NotebookHelper, CellIterator
+
+# Lecture et analyse de notebook
+helper = NotebookHelper("path/to/notebook.ipynb")
+helper.list_cells()                          # Liste toutes les cellules
+helper.find_consecutive_code_cells()         # Trouve les paires sans markdown
+helper.find_cells_with_errors()              # Trouve les cellules en erreur
+helper.get_cell_source(5)                    # Source de la cellule 5
+helper.get_cell_output_text(5)               # Sortie de la cellule 5
+
+# Iteration avec objectif (pour --iterate)
+iterator = CellIterator(
+    notebook_path="...",
+    cell_index=5,
+    objective="SUCCESS",
+    max_iterations=5
+)
+```
+
+Usage CLI :
+```bash
+python scripts/notebook_helpers.py list notebook.ipynb
+python scripts/notebook_helpers.py analyze notebook.ipynb
+python scripts/notebook_helpers.py get-source notebook.ipynb 5
+python scripts/notebook_helpers.py get-output notebook.ipynb 5
 ```
