@@ -69,6 +69,457 @@ THEORIE DE LA DECISION (14-20)
 
 ---
 
+## Fondamentaux (Notebooks 1-3)
+
+Les notebooks 1-3 introduisent les concepts fondamentaux de la programmation probabiliste avec Infer.NET.
+
+### Infer-1 : Configuration et Premier Modele
+
+**Duree** : 45 min | **Prerequis** : Notions de probabilites
+
+**Objectifs** :
+
+- Installer et configurer Infer.NET dans .NET Interactive
+- Comprendre le workflow en 3 etapes : Modele → Moteur → Inference
+- Implementer un premier modele bayesien (Two Coins)
+- Maitriser les priors conjugues Beta-Bernoulli
+
+**Sections** :
+
+1. Configuration de l'environnement (.NET Interactive, CompilerChoice.Roslyn)
+2. Introduction a la programmation probabiliste
+3. Exemple : Probleme des deux pieces (Two Coins)
+4. Exemple avance : Estimation de piece biaisee avec prior Beta
+5. Apprentissage en ligne : mise a jour sequentielle
+
+**Concepts cles** :
+
+| Concept | Description |
+|---------|-------------|
+| Variable\<T\> | Representation des quantites incertaines |
+| Prior conjugue | Beta-Bernoulli pour inference analytique |
+| ExpectationPropagation | Algorithme d'inference par defaut |
+
+**Applications** : Estimation de piece biaisee, apprentissage en ligne
+
+---
+
+### Infer-2 : Distributions Continues et Melanges
+
+**Duree** : 50 min | **Prerequis** : Notebook 1
+
+**Objectifs** :
+
+- Modeliser des donnees continues avec distributions gaussiennes
+- Maitriser les priors conjugues Gaussian-Gaussian et Gamma-Gamma
+- Implementer l'apprentissage en ligne
+- Decouvrir les modeles de melange avec `Variable.Switch`
+
+**Sections** :
+
+1. Modelisation de temps de trajet de cycliste
+2. Priors conjugues et apprentissage en ligne
+3. Melanges gaussiens pour donnees multimodales
+4. Visualisation des factor graphs
+
+**Concepts cles** :
+
+| Distribution | Usage | Parametres |
+|--------------|-------|------------|
+| Gaussian | Quantites continues | mean, precision |
+| Gamma | Prior sur precision | shape, scale |
+| Variable.Switch | Selection de composante | index, values |
+
+**Applications** : Temps de trajet cycliste, detection de modes multiples, clustering
+
+---
+
+### Infer-3 : Graphes de Facteurs et Inference Discrete
+
+**Duree** : 55 min | **Prerequis** : Notebooks 1-2
+
+**Objectifs** :
+
+- Comprendre la representation en graphes de facteurs
+- Maitriser `Variable.If/IfNot` et `Variable.Case` pour branchements
+- Observer le phenomene d'explaining away
+- Implementer le paradoxe de Monty Hall
+
+**Sections** :
+
+1. Introduction aux graphes de facteurs
+2. Exemple Murder Mystery (MBML Ch.1)
+3. Paradoxe de Monty Hall avec `Variable.Case`
+4. Phenomene Explaining Away
+5. Visualisation Graphviz
+
+**Concepts cles** :
+
+| Structure | Usage | Exemple |
+|-----------|-------|---------|
+| Variable.If | Conditionnement binaire | P(Y\|X=true) |
+| Variable.Case | Conditionnement multi-value | Switch sur enum |
+| Explaining away | Causes alternatives | P(A\|B,C) < P(A\|C) |
+
+**Applications** : Murder Mystery, Monty Hall (2/3 vs 1/3), systemes experts
+
+---
+
+## Modeles Classiques (Notebooks 4-6)
+
+Les notebooks 4-6 couvrent les modeles bayesiens classiques : reseaux, competences et classement.
+
+### Infer-4 : Reseaux Bayesiens
+
+**Duree** : 60 min | **Prerequis** : Notebook 3
+
+**Objectifs** :
+
+- Construire des reseaux bayesiens avec tables de probabilite conditionnelle (CPT)
+- Comprendre D-separation et independance conditionnelle
+- Distinguer inference causale (do) vs observationnelle
+- Implementer des modeles hierarchiques
+
+**Sections** :
+
+1. Reseau Wet Grass/Sprinkler/Rain
+2. Construction de CPTs avec `Variable.Case`
+3. D-separation et independance
+4. Inference causale vs observationnelle
+5. Modele hierarchique Rats (BUGS)
+
+**Concepts cles** :
+
+| Concept | Formule | Description |
+|---------|---------|-------------|
+| CPT | P(X \| Parents(X)) | Table de probabilite conditionnelle |
+| D-separation | - | Critere graphique d'independance |
+| do-calculus | P(Y \| do(X)) ≠ P(Y \| X) | Intervention vs observation |
+| Hierarchique | θᵢ ~ F(λ) | Pooling partiel entre groupes |
+
+**Applications** : Wet Grass, diagnostic medical, modele Rats (8 laboratoires)
+
+---
+
+### Infer-5 : Theorie de la Reponse a l'Item (IRT)
+
+**Duree** : 65 min | **Prerequis** : Notebook 4
+
+**Objectifs** :
+
+- Implementer IRT (Item Response Theory) Difficulty-Ability
+- Decouvrir DINA pour competences discretes
+- Modeliser les parametres slip et guess
+- Gerer les relations many-to-many avec Q-matrix
+- Evaluer avec courbes ROC
+
+**Sections** :
+
+1. Modele IRT Difficulty-Ability (continu)
+2. Modele DINA avec competences binaires
+3. Parametres slip et guess
+4. Q-matrix pour competences multiples
+5. Evaluation ROC
+
+**Concepts cles** :
+
+| Modele | Formule | Usage |
+|--------|---------|-------|
+| IRT | P(correct) = σ(ability - difficulty) | Competence continue |
+| DINA | ηᵢⱼ = Πₖ αⱼₖ^qᵢₖ | Competences binaires |
+| Slip | P(erreur \| maitrise) | Erreur d'inattention |
+| Guess | P(succes \| non-maitrise) | Reponse au hasard |
+
+**Applications** : Tests educatifs, diagnostic de competences, adaptive testing
+
+---
+
+### Infer-6 : TrueSkill
+
+**Duree** : 50 min | **Prerequis** : Notebook 2
+
+**Objectifs** :
+
+- Comprendre le systeme TrueSkill (Xbox Live)
+- Modeliser le skill comme Gaussian(μ, σ²)
+- Gerer les matchs avec `ConstrainBetween`
+- Implementer l'apprentissage en ligne
+- Etendre au 2v2 et free-for-all
+
+**Sections** :
+
+1. Modele TrueSkill de base (1v1)
+2. Representation du skill : N(μ, σ²)
+3. Modeling matches avec performance = skill + bruit
+4. Gestion des ex-aequo
+5. Extensions : Teams (2v2), Multi-player
+
+**Concepts cles** :
+
+| Composant | Formule | Description |
+|-----------|---------|-------------|
+| Skill | N(μ, σ²) | Niveau + incertitude |
+| Performance | pᵢ = skillᵢ + N(0, β²) | Skill + bruit de match |
+| Team skill | Σ skills individuels | Somme des membres |
+| Update | μ_new ∝ surprise | Plus grande si upset |
+
+**Applications** : Classement Xbox Live, tournois esports, matchmaking equilibre
+
+---
+
+## Classification et Selection (Notebooks 7-8)
+
+Les notebooks 7-8 couvrent la classification bayesienne et la selection de modeles.
+
+### Infer-7 : Classification Bayesienne
+
+**Duree** : 55 min | **Prerequis** : Notebook 4
+
+**Objectifs** :
+
+- Implementer la regression logistique bayesienne (probit model)
+- Decouvrir le Bayes Point Machine (BPM)
+- Modeliser les tests A/B cliniques avec Beta-Binomial
+- Propager l'incertitude dans les predictions
+
+**Sections** :
+
+1. Regression logistique bayesienne (probit)
+2. Bayes Point Machine (BPM) multi-features
+3. Test A/B clinique avec Beta-Binomial
+4. Propagation d'incertitude
+5. Exercice : Classification de spam
+
+**Concepts cles** :
+
+| Modele | Formule | Description |
+|--------|---------|-------------|
+| Probit | P(y=1\|x) = Φ(w·x) | CDF gaussienne |
+| BPM | Moyenne du posterior sur w | Classification robuste |
+| Beta-Binomial | Hierarchique pour proportions | Test A/B |
+
+**Applications** : Classification spam/ham, test A/B clinique, detection d'anomalies
+
+---
+
+### Infer-8 : Selection de Modeles
+
+**Duree** : 50 min | **Prerequis** : Notebook 7
+
+**Objectifs** :
+
+- Calculer l'evidence (marginal likelihood)
+- Comparer modeles avec Bayes Factor
+- Comprendre Occam's Razor automatique
+- Implementer ARD (Automatic Relevance Determination)
+
+**Sections** :
+
+1. Evidence et marginal likelihood
+2. Bayes Factor pour comparaison de modeles
+3. Occam's Razor : penalisation automatique
+4. ARD pour selection de features
+5. LOO-CV bayesien vs frequentiste
+
+**Concepts cles** :
+
+| Concept | Formule | Interpretation |
+|---------|---------|----------------|
+| Evidence | P(D\|M) = ∫ P(D\|θ)P(θ\|M)dθ | Vraisemblance marginale |
+| Bayes Factor | BF₁₂ = P(D\|M₁) / P(D\|M₂) | >10 = forte evidence |
+| ARD | wᵢ ~ N(0, λᵢ⁻¹) | λᵢ → ∞ si non pertinent |
+
+**Applications** : Comparaison polynomes, feature selection, model averaging
+
+---
+
+## Modeles Avances (Notebooks 9-12)
+
+Les notebooks 9-12 couvrent les modeles avances : topics, crowdsourcing, sequences et recommandation.
+
+### Infer-9 : Topic Models (LDA)
+
+**Duree** : 60 min | **Prerequis** : Notebook 4
+
+**Objectifs** :
+
+- Implementer LDA (Latent Dirichlet Allocation)
+- Maitriser les priors Dirichlet
+- Resoudre la convergence VMP vers solutions degenerees
+- Utiliser des priors asymetriques
+
+**Sections** :
+
+1. Introduction a LDA et bag-of-words
+2. Priors Dirichlet conjugues
+3. Probleme : VMP + priors symetriques → modes degeneres
+4. Solution : Priors asymetriques
+5. Prediction sur nouveaux documents
+
+**Concepts cles** :
+
+| Composant | Distribution | Role |
+|-----------|--------------|------|
+| θ_d | Dirichlet(α) | Proportions topics/document |
+| z_dn | Categorical(θ_d) | Topic du mot n |
+| φ_k | Dirichlet(β) | Distribution mots/topic |
+
+**Note** : Utilise VMP au lieu d'EP pour les modeles LDA.
+
+**Applications** : Analyse de corpus, detection de themes, recommandation de contenu
+
+---
+
+### Infer-10 : Crowdsourcing
+
+**Duree** : 55 min | **Prerequis** : Notebook 4
+
+**Objectifs** :
+
+- Agreger des annotations de multiples annotateurs
+- Modeliser Honest Worker (capacite unique)
+- Implementer Biased Worker (matrice de confusion)
+- Decouvrir le modele Community
+- Appliquer l'apprentissage actif
+
+**Sections** :
+
+1. Modele Honest Worker
+2. Modele Biased Worker (matrice de confusion)
+3. Modele Community (groupes hierarchiques)
+4. Active learning : selection d'items
+5. Gold standard pour calibration
+
+**Concepts cles** :
+
+| Modele | Formule | Description |
+|--------|---------|-------------|
+| Honest | P(label\|true, worker) = α_worker | Capacite unique |
+| Biased | C_worker[true, observed] | Matrice de confusion |
+| Uncertainty | H(c \| y₁:ₙ) | Entropie pour active learning |
+
+**Applications** : Amazon Mechanical Turk, controle qualite, optimisation budget annotation
+
+---
+
+### Infer-11 : Sequences (HMM)
+
+**Duree** : 65 min | **Prerequis** : Notebook 10
+
+**Objectifs** :
+
+- Comprendre les Hidden Markov Models (HMM)
+- Implementer les emissions gaussiennes
+- Decoder les sequences d'etats caches
+- Appliquer au motif finding (bioinformatique)
+
+**Sections** :
+
+1. Introduction aux HMM
+2. HMM avec emissions gaussiennes
+3. Approche simplifiee : classification independante
+4. HMM complet avec Forward-Backward
+5. Detection de regimes meteo
+6. Motif finding ADN
+7. Exercice : Detection de promotions
+
+**Concepts cles** :
+
+| Algorithme | Formule | Usage |
+|------------|---------|-------|
+| Forward | αₜ(k) = P(x₁:ₜ, zₜ=k) | Probabilite jointe |
+| Backward | βₜ(k) = P(xₜ₊₁:T \| zₜ=k) | Complement |
+| Posterior | γₜ(k) ∝ αₜ(k)·βₜ(k) | Etat a chaque t |
+
+**Note** : Infer.NET ne supporte pas nativement les HMM complets. Implementation manuelle Forward-Backward recommandee.
+
+**Applications** : Detection d'anomalies capteur, prevision meteo, motif finding ADN
+
+---
+
+### Infer-12 : Systemes de Recommandation
+
+**Duree** : 70 min | **Prerequis** : Notebook 7
+
+**Objectifs** :
+
+- Implementer la factorisation matricielle probabiliste
+- Gerer le cold-start avec features
+- Decouvrir le Click Model pour sources multiples
+- Classer des documents par pertinence
+
+**Sections** :
+
+1. Introduction aux systemes de recommandation
+2. Factorisation matricielle (User × Item traits)
+3. Probleme de sous-determination avec peu de donnees
+4. Cold-start : regression avec features
+5. Click Model : aggregation de sources
+6. Classement de documents
+7. Exercice : Recommandation de films
+
+**Concepts cles** :
+
+| Modele | Formule | Description |
+|--------|---------|-------------|
+| Factorisation | R_ui ≈ U_u · I_i | Traits latents |
+| Cold-start | R ~ w·features | Features utilisateur/item |
+| Click Model | P(click) = P(examine) × P(relevant) | Sources multiples |
+
+**Applications** : Netflix/Amazon, moteurs de recherche, e-commerce
+
+---
+
+## Reference (Notebook 13)
+
+### Infer-13 : Debugging et Bonnes Pratiques
+
+**Duree** : 60 min | **Prerequis** : Tous les notebooks precedents
+
+**Objectifs** :
+
+- Diagnostiquer les erreurs courantes
+- Comparer EP vs VMP
+- Maitriser les outils de debug Infer.NET
+- Appliquer les bonnes pratiques
+
+**Sections** :
+
+1. Erreurs courantes et solutions
+2. Comparaison EP vs VMP
+3. Outils de debug (ShowFactorGraph, BrowserMode)
+4. Bonnes pratiques de modelisation
+5. Checklist de debugging
+6. Fonctions de diagnostic
+7. Exercice : Debugger un modele bugue
+
+**Problemes courants** :
+
+| Probleme | Symptome | Solution |
+|----------|----------|----------|
+| Observed + Inferred | PointMass | Ne pas ObservedValue sur variable inferee |
+| Label switching | Modes symetriques | Priors asymetriques |
+| Variance nulle | IsPointMass = true | Verifier prior, observations |
+| Convergence lente | Iterations > 50 | Verifier graphe, utiliser VMP |
+
+**Comparaison EP vs VMP** :
+
+| Critere | EP | VMP |
+|---------|-----|-----|
+| Exactitude | Exact (gaussiennes) | Approximation |
+| Vitesse | Plus lent | Rapide |
+| Convergence | Garantie | Peut diverger |
+
+**Bonnes pratiques** :
+
+1. Nommer toutes les variables : `.Named("theta")`
+2. Verifier le factor graph systematiquement
+3. Tester avec donnees simulees
+4. Choisir priors informatifs (Beta(2,2) > Beta(1,1))
+5. Valider posteriors (variance > 0, IsProper = true)
+
+---
+
 ## Theorie de la Decision (Notebooks 14-20)
 
 Les notebooks 14-20 forment une serie complete sur la theorie de la decision bayesienne.
