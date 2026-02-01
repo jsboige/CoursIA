@@ -255,11 +255,33 @@ Commandes disponibles via `/command` dans Claude Code :
 
 Agents specialises utilisables via Task tool :
 
+#### Agents de conception et construction
+
+| Agent | Fichier | Mission |
+|-------|---------|---------|
+| **notebook-designer** | `.claude/agents/notebook-designer.md` | Concevoir et creer de nouveaux notebooks from scratch |
+| **notebook-iterative-builder** | `.claude/agents/notebook-iterative-builder.md` | Orchestrer la construction/amelioration iterative de notebooks |
+
+#### Agents d'execution et validation
+
+| Agent | Fichier | Mission |
+|-------|---------|---------|
+| **notebook-executor** | `.claude/agents/notebook-executor.md` | Executer des notebooks via MCP Jupyter avec gestion des kernels |
+| **notebook-validator** | `.claude/agents/notebook-validator.md` | Valider tous les aspects d'un notebook (structure, execution, pedagogie) |
+
+#### Agents d'enrichissement et correction
+
 | Agent | Fichier | Mission |
 |-------|---------|---------|
 | **notebook-enricher** | `.claude/agents/notebook-enricher.md` | Ajouter du markdown pedagogique aux notebooks |
+| **notebook-cell-iterator** | `.claude/agents/notebook-cell-iterator.md` | Iterer sur des cellules pour atteindre un objectif (correction, optimisation) |
 | **infer-notebook-enricher** | `.claude/agents/infer-notebook-enricher.md` | Specialisation pour notebooks Infer.NET |
 | **notebook-cleaner** | `.claude/agents/notebook-cleaner.md` | Nettoyer et reorganiser les notebooks |
+
+#### Agents utilitaires
+
+| Agent | Fichier | Mission |
+|-------|---------|---------|
 | **readme-updater** | `.claude/agents/readme-updater.md` | Mettre a jour les README de series de notebooks |
 
 **Invocation type** :
@@ -268,6 +290,77 @@ Task(
     subagent_type="general-purpose",
     prompt="Tu es un agent readme-updater. Lis .claude/agents/readme-updater.md et mets a jour: {path}",
     description="Update README"
+)
+```
+
+#### Workflows de conception iterative
+
+Les agents peuvent etre combines pour des workflows complets :
+
+**1. Creation d'un nouveau notebook** :
+```python
+# Workflow complet via notebook-iterative-builder
+Task(
+    subagent_type="general-purpose",
+    prompt="""
+    Agent: notebook-iterative-builder
+    Mode: new
+    Topic: "K-Means Clustering"
+    Domain: ML
+    Level: intermediate
+    Notebook path: MyIA.AI.Notebooks/ML/KMeans-Intro.ipynb
+    Quality target: 90
+    Max iterations: 5
+    """,
+    description="Build KMeans notebook"
+)
+```
+
+**2. Amelioration d'un notebook existant** :
+```python
+# Etape 1 : Valider
+Task(subagent_type="general-purpose",
+     prompt="notebook-validator: validate MyIA.AI.Notebooks/Probas/Infer/Infer-2.ipynb")
+
+# Etape 2 : Enrichir selon le rapport
+Task(subagent_type="general-purpose",
+     prompt="notebook-enricher: enrich MyIA.AI.Notebooks/Probas/Infer/Infer-2.ipynb --execute")
+
+# Etape 3 : Re-valider
+Task(subagent_type="general-purpose",
+     prompt="notebook-validator: validate MyIA.AI.Notebooks/Probas/Infer/Infer-2.ipynb")
+```
+
+**3. Correction d'erreurs d'execution** :
+```python
+# Workflow via notebook-iterative-builder mode fix
+Task(
+    subagent_type="general-purpose",
+    prompt="""
+    Agent: notebook-iterative-builder
+    Mode: fix
+    Notebook path: MyIA.AI.Notebooks/GameTheory/GameTheory-15.ipynb
+    Quality target: 100  # 100% execution sans erreurs
+    Focus areas: ["execution"]
+    """,
+    description="Fix execution errors"
+)
+```
+
+**4. Iteration sur une cellule specifique** :
+```python
+# Corriger une cellule avec objectif precis
+Task(
+    subagent_type="general-purpose",
+    prompt="""
+    Agent: notebook-cell-iterator
+    Notebook: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-9-SK-Multi-Agents.ipynb
+    Cell index: 39
+    Objective: "iterations: 4"  # Sortie attendue
+    Max iterations: 5
+    Kernel: python3
+    """,
+    description="Fix Lean demo cell"
 )
 ```
 
