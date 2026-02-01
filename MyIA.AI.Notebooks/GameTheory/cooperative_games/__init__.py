@@ -49,7 +49,14 @@ from .french_politics import (
     analyze_coalition_dynamics,
     PARTIES_2024,
     scenario_analysis,
-    compare_value_functions
+    compare_value_functions,
+    analyze_barrage_effect,
+    analyze_center_transfers,
+    compare_model_vs_reality,
+    SECOND_ROUND_RESULTS,
+    TRANSFERS_TO_NFP,
+    TRANSFERS_TO_ENSEMBLE,
+    TRANSFERS_TO_RN
 )
 from .assistance_games import (
     paperclip_game_equilibrium,
@@ -91,6 +98,13 @@ __all__ = [
     "PARTIES_2024",
     "scenario_analysis",
     "compare_value_functions",
+    "analyze_barrage_effect",
+    "analyze_center_transfers",
+    "compare_model_vs_reality",
+    "SECOND_ROUND_RESULTS",
+    "TRANSFERS_TO_NFP",
+    "TRANSFERS_TO_ENSEMBLE",
+    "TRANSFERS_TO_RN",
     # Assistance games (AI Safety)
     "paperclip_game_equilibrium",
     "paperclip_payoff_analysis",
