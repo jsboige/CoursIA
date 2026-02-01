@@ -1,188 +1,283 @@
 # Scripts Lean
 
-Ce répertoire contient tous les scripts de configuration et validation pour les notebooks Lean.
+Ce repertoire contient les scripts de configuration, validation et maintenance pour les notebooks Lean.
 
-## Scripts disponibles
+## Structure
 
-### Configuration
+```
+scripts/
+├── validate_lean_setup.py   # Validation environnement (Windows/WSL)
+├── verify_lean.py           # Verification complete des notebooks
+├── notebook_utils.py        # Utilitaires notebooks (list, format, info)
+├── demo_manager.py          # Gestion des DEMOs Lean-9
+├── lean4-kernel-wrapper.py  # Wrapper kernel Lean4 WSL
+├── setup_wsl_python.sh      # Setup Python WSL
+├── tests/                   # Tests unitaires
+│   ├── test_leandojo_basic.py
+│   ├── test_leandojo_repos.py
+│   └── test_wsl_lean4_jupyter.py
+└── archive/                 # Scripts temporaires archives (32 scripts)
+```
 
-| Script | Description | Usage |
-|--------|-------------|-------|
-| `setup_wsl_python.sh` | Configure le venv Python WSL avec toutes les dépendances | `bash scripts/setup_wsl_python.sh` |
-| `lean4-kernel-wrapper.py` | Wrapper pour le kernel Lean4 via WSL | Utilisé automatiquement par Jupyter |
+## Scripts Principaux
 
-### Validation
+### validate_lean_setup.py
 
-| Script | Description | Usage |
-|--------|-------------|-------|
-| `validate_lean_setup.py` | Validation rapide de l'environnement (elan, lean, packages, kernels) | `python scripts/validate_lean_setup.py` |
-| | Validation WSL | `python scripts/validate_lean_setup.py --wsl` |
-| `verify_lean.py` | Validation complète avec exécution de notebooks (structure + tests) | `python scripts/verify_lean.py --quick` |
-| | Validation environnement | `python scripts/verify_lean.py --check-env` |
-| | Exécution via Papermill | `python scripts/verify_lean.py --execute` |
-| | Exécution cellule par cellule | `python scripts/verify_lean.py --cell-by-cell` |
-| | Notebooks Python uniquement | `python scripts/verify_lean.py --python-only` |
-| | Notebook spécifique | `python scripts/verify_lean.py --notebook Lean-7` |
-
-## Utilisation typique
-
-### Première installation
+Validation rapide de l'environnement Lean.
 
 ```bash
-# 1. Ouvrir et exécuter Lean-1-Setup.ipynb (toutes les cellules)
+# Validation Windows
+python scripts/validate_lean_setup.py
+
+# Validation WSL
+python scripts/validate_lean_setup.py --wsl
+```
+
+**Verifie** : Python, elan, Lean 4, Lake, packages (lean4-jupyter, openai, anthropic), kernels Jupyter, .env, lean_runner.py
+
+### verify_lean.py
+
+Verification complete avec execution de notebooks.
+
+```bash
+# Verification rapide (structure uniquement)
+python scripts/verify_lean.py --quick
+
+# Verification environnement
+python scripts/verify_lean.py --check-env
+
+# Execution via Papermill
+python scripts/verify_lean.py --execute
+
+# Execution cellule par cellule
+python scripts/verify_lean.py --cell-by-cell
+
+# Notebooks Python uniquement
+python scripts/verify_lean.py --python-only
+
+# Notebook specifique
+python scripts/verify_lean.py --notebook Lean-7
+```
+
+### notebook_utils.py
+
+Utilitaires pour manipuler les notebooks Jupyter.
+
+```bash
+# Lister les cellules
+python scripts/notebook_utils.py list ../Lean-9-SK-Multi-Agents.ipynb
+
+# Formater le markdown (ajoute lignes vides)
+python scripts/notebook_utils.py format ../Lean-9-SK-Multi-Agents.ipynb
+
+# Apercu sans modification
+python scripts/notebook_utils.py format ../Lean-9-SK-Multi-Agents.ipynb --dry-run
+
+# Informations notebook
+python scripts/notebook_utils.py info ../Lean-9-SK-Multi-Agents.ipynb
+
+# Obtenir le source d'une cellule
+python scripts/notebook_utils.py get-source ../Lean-9-SK-Multi-Agents.ipynb 39
+
+# Obtenir l'output d'une cellule
+python scripts/notebook_utils.py get-output ../Lean-9-SK-Multi-Agents.ipynb 39
+```
+
+### demo_manager.py
+
+Gestion centralisee des demonstrations Lean-9.
+
+```bash
+# Afficher la configuration actuelle
+python scripts/demo_manager.py show
+
+# Mettre a jour le notebook avec les DEMOs
+python scripts/demo_manager.py update
+
+# Apercu sans modification
+python scripts/demo_manager.py update --dry-run
+
+# Echanger deux demos (ex: DEMO_2 <-> DEMO_3)
+python scripts/demo_manager.py reorder 2 3
+```
+
+**Pour modifier les DEMOs** : Editer `DEFAULT_DEMOS` dans `demo_manager.py`, puis executer `update`.
+
+### setup_wsl_python.sh
+
+Configure l'environnement Python dans WSL pour les notebooks 7-9.
+
+```bash
+bash scripts/setup_wsl_python.sh
+```
+
+**Installe** : venv Python, ipykernel, python-dotenv, openai, anthropic, semantic-kernel
+
+### lean4-kernel-wrapper.py
+
+Wrapper pour le kernel Lean4 via WSL. Utilise automatiquement par Jupyter.
+
+## Utilisation Typique
+
+### Premiere Installation
+
+```bash
+# 1. Ouvrir et executer Lean-1-Setup.ipynb (toutes les cellules)
 
 # 2. Valider l'installation Windows
 python scripts/validate_lean_setup.py
 
-# 3. Si notebooks 7-8 nécessaires, configurer WSL
+# 3. Si notebooks 7-9 necessaires, configurer WSL
 bash scripts/setup_wsl_python.sh
 
 # 4. Valider l'installation WSL
 python scripts/validate_lean_setup.py --wsl
 ```
 
-### Vérification rapide
+### Verification Quotidienne
 
 ```bash
-# Vérifier que tout est OK avant de lancer les notebooks
+# Verifier que tout est OK avant de lancer les notebooks
 python scripts/validate_lean_setup.py
 ```
 
-### Réinstallation propre
+### Modification des DEMOs
 
 ```bash
-# Supprimer les venv
-rm -rf ~/.python3-wsl-venv
+# 1. Editer DEFAULT_DEMOS dans demo_manager.py
+# 2. Verifier les changements
+python scripts/demo_manager.py show
 
-# Réinstaller
-bash scripts/setup_wsl_python.sh
-
-# Valider
-python scripts/validate_lean_setup.py --wsl
+# 3. Appliquer au notebook
+python scripts/demo_manager.py update
 ```
 
-## Structure du projet
+### Formatage Markdown
+
+```bash
+# Corriger le formatage (lignes vides manquantes)
+python scripts/notebook_utils.py format ../Lean-9-SK-Multi-Agents.ipynb
+```
+
+## Tests Unitaires
+
+```bash
+# Executer tous les tests
+python -m pytest scripts/tests/
+
+# Test specifique
+python -m pytest scripts/tests/test_leandojo_basic.py
+```
+
+## Archive
+
+Le dossier `archive/` contient 32 scripts temporaires utilises pendant le developpement :
+
+- `fix_*.py` - Corrections ponctuelles
+- `update_demos_*.py` - Anciennes versions de demo_manager
+- `test_*.py` - Tests ponctuels
+- Autres scripts one-shot
+
+Ces scripts sont conserves pour reference mais ne sont plus necessaires.
+
+## Structure du Projet
 
 ```
 MyIA.AI.Notebooks/SymbolicAI/Lean/
-├── Lean-1-Setup.ipynb              # Notebook d'installation
-├── Lean-2-Dependent-Types.ipynb    # Types dépendants
+├── Lean-1-Setup.ipynb              # Installation
+├── Lean-2-Dependent-Types.ipynb    # Types dependants
 ├── Lean-3-Propositions-Proofs.ipynb # Logique propositionnelle
 ├── Lean-4-Quantifiers.ipynb        # Quantificateurs
 ├── Lean-5-Tactics.ipynb            # Tactiques
 ├── Lean-6-Mathlib-Essentials.ipynb # Mathlib4
-├── Lean-7-LLM-Integration.ipynb    # Nécessite Python WSL
-├── Lean-8-Agentic-Proving.ipynb    # Nécessite Python WSL
+├── Lean-7-LLM-Integration.ipynb    # Python WSL requis
+├── Lean-8-Agentic-Proving.ipynb    # Python WSL requis
+├── Lean-9-SK-Multi-Agents.ipynb    # Python WSL requis
 ├── lean_runner.py                  # Backend Python pour Lean
-├── .env                            # Configuration API (à créer depuis .env.example)
-└── scripts/                        # TOUS LES SCRIPTS ET TESTS ICI
-    ├── README.md                   # Cette documentation
-    ├── setup_wsl_python.sh         # Config Python WSL
-    ├── validate_lean_setup.py      # Validation environnement
-    ├── verify_lean.py              # Validation notebooks complète
-    ├── lean4-kernel-wrapper.py     # Wrapper kernel WSL
-    └── tests/                      # Tests unitaires
-        ├── test_leandojo_basic.py
-        ├── test_leandojo_repos.py
-        └── test_wsl_lean4_jupyter.py
+├── .env                            # Configuration API
+└── scripts/                        # CE REPERTOIRE
 ```
 
-## Dépendances Python
+## Dependances Python
 
 ### Windows (kernel Python standard)
+
 - `lean4-jupyter` - Kernel Jupyter pour Lean
 - `python-dotenv` - Chargement .env
-- `openai` - API OpenAI (notebooks 7-8)
-- `anthropic` - API Claude (notebooks 7-8, optionnel)
+- `openai` - API OpenAI (notebooks 7-9)
+- `anthropic` - API Claude (notebooks 7-9, optionnel)
 
 ### WSL (kernel Python 3 WSL)
-- Installées dans `~/.python3-wsl-venv/`
+
+- Installees dans `~/.python3-wsl-venv/`
 - `ipykernel` - Kernel Jupyter
 - `python-dotenv` - Chargement .env
 - `openai` - API OpenAI
 - `anthropic` - API Claude
 
-## Validation attendue
+## Validation Attendue
 
 Sortie normale de `validate_lean_setup.py` :
 
-```
-✓ Python 3.13
-✓ elan: elan 4.1.2
-✓ Lean 4: Lean (version 4.27.0, ...)
-✓ Lake: lake 4.27.0
-✓ lean4-jupyter: 0.0.2
-✓ python-dotenv: 1.0.0
-✓ openai: 1.109.1
-✓ anthropic: 0.x.x
-✓ Kernel Jupyter: lean4
-✓ Kernel Jupyter: python3-wsl
-✓ .env: Present avec 3/3 cles
-✓ lean_runner.py: OK (51186 bytes)
+```text
+OK Python 3.13
+OK elan: elan 4.1.2
+OK Lean 4: Lean (version 4.27.0, ...)
+OK Lake: lake 4.27.0
+OK lean4-jupyter: 0.0.2
+OK python-dotenv: 1.0.0
+OK openai: 1.109.1
+OK anthropic: 0.x.x
+OK Kernel Jupyter: lean4
+OK Kernel Jupyter: python3-wsl
+OK .env: Present avec 3/3 cles
+OK lean_runner.py: OK (51186 bytes)
 
 Tous les composants OK (12/12)
 ```
 
 ## Troubleshooting
 
-### anthropic non installé
+### anthropic non installe
+
 ```bash
 pip install anthropic
 ```
 
 ### Venv WSL corrompu
+
 ```bash
 rm -rf ~/.python3-wsl-venv
 bash scripts/setup_wsl_python.sh
 ```
 
-### Kernel Python 3 (WSL) ne démarre pas
+### Kernel Python 3 (WSL) ne demarre pas
+
 ```bash
-# Vérifier les logs wrapper
+# Verifier les logs wrapper
 wsl cat ~/.python3-wrapper.log
 
-# Réinstaller le kernel
-python scripts/validate_lean_setup.py  # Régénère kernel.json
+# Reinstaller le kernel
+python scripts/validate_lean_setup.py
 ```
 
-### .env non chargé dans notebooks 7-8
-Vérifier que `python-dotenv` est installé dans le venv WSL :
+### .env non charge dans notebooks 7-9
+
 ```bash
 wsl ~/.python3-wsl-venv/bin/python3 -c "import dotenv; print(dotenv.__version__)"
 ```
 
-## Tests unitaires
-
-Les tests sont dans `scripts/tests/` :
-
-| Test | Description |
-|------|-------------|
-| `test_leandojo_basic.py` | Tests de base LeanDojo |
-| `test_leandojo_repos.py` | Tests dépôts LeanDojo |
-| `test_wsl_lean4_jupyter.py` | Tests kernel WSL |
-
-```bash
-# Exécuter tous les tests
-python -m pytest scripts/tests/
-
-# Test spécifique
-python -m pytest scripts/tests/test_leandojo_basic.py
-```
-
 ## Maintenance
 
-Les scripts doivent rester **exécutables et auto-suffisants**. Avant chaque commit :
+Avant chaque commit :
 
 ```bash
 # 1. Valider l'environnement
 python scripts/validate_lean_setup.py
 
-# 2. Vérifier la structure des notebooks
+# 2. Verifier la structure des notebooks
 python scripts/verify_lean.py --quick
 
-# 3. Tester le setup WSL (dans WSL)
-wsl bash scripts/setup_wsl_python.sh
-
-# 4. Exécuter les tests unitaires
+# 3. Executer les tests
 python -m pytest scripts/tests/
 ```
