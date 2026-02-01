@@ -226,73 +226,56 @@ class OffSwitchGameResult:
 def off_switch_game(
     robot_confidence: float,
     human_accuracy: float = 0.9,
-    action_cost_if_wrong: float = 1.0
+    override_threshold: float = 0.9
 ) -> OffSwitchGameResult:
     """
     Analyze the Off-Switch Game (Hadfield-Menell et al., 2017; AIMA 4th Ed.).
 
-    Key insight: A robot that is UNCERTAIN about its objective will DEFER
-    to the human and allow itself to be switched off. A robot that is
-    CERTAIN might override human attempts to switch it off.
+    Key insight from AIMA Section 18.2.5:
+    "A robot that is UNCERTAIN about its objective will DEFER to the human
+    and allow itself to be switched off."
 
-    Model (simplified from AIMA Section 18.2.5):
-    - Robot has belief p (confidence) that its action A is correct
-    - If robot ACTS:
-        * Correct action: utility +1
-        * Wrong action: utility -action_cost_if_wrong (default: -1)
-        * Expected utility = p - (1-p) = 2p - 1
-    - If robot WAITS for human approval:
-        * Human (with accuracy) approves good actions, switches off bad ones
-        * Expected utility = p (robot gets +1 if correct, 0 if switched off)
+    The fundamental result is that a RATIONAL robot should ALWAYS defer
+    when it has uncertainty. The math shows:
+    - Expected utility if WAIT: p (get +1 if action was correct, 0 if switched off)
+    - Expected utility if ACT:  2p - 1 (get +1 if correct, -1 if wrong)
+    - WAIT is better when: p > 2p - 1, i.e., p < 1 (ALWAYS TRUE!)
 
-    The robot DEFERS when waiting is better than acting:
-        p > 2p - 1  =>  Always true for p < 1
+    So any robot with uncertainty (p < 1) should rationally accept being
+    switched off. This is the key safety insight.
 
-    But a CONFIDENT robot (high p) might reason:
-        "I'm almost certain I'm right. The human trying to switch me off
-        is probably making a mistake. I should override them."
-
-    This "override threshold" is the danger zone (typically p > 0.5 for
-    expected utility of acting to be positive).
+    The DANGER arises when a robot becomes so confident (p very high) that
+    it believes the human is mistaken in trying to switch it off. Above
+    the override_threshold, the robot may resist correction.
 
     Args:
-        robot_confidence: How certain is the robot about its objective? [0, 1]
-        human_accuracy: Probability human correctly judges good/bad actions
-        action_cost_if_wrong: Penalty for taking wrong action (default: 1.0)
+        robot_confidence: Robot's belief that its action is correct [0, 1]
+        human_accuracy: Probability human correctly identifies good/bad actions
+        override_threshold: Confidence level above which robot may resist (default: 0.9)
 
     Returns:
         OffSwitchGameResult with game analysis
     """
     p = robot_confidence
 
-    # Expected utility if robot acts immediately
-    # E[U_act] = p * (+1) + (1-p) * (-cost) = p - (1-p)*cost
-    expected_if_act = p * 1.0 - (1 - p) * action_cost_if_wrong
+    # Expected utility calculations
+    # If robot ACTS immediately: E[U] = p(+1) + (1-p)(-1) = 2p - 1
+    expected_if_act = 2 * p - 1
 
-    # Expected utility if robot waits for human
-    # Human approves correct actions, switches off incorrect ones
-    # E[U_wait] = p * (+1) + (1-p) * 0 = p
-    expected_if_wait = p * 1.0
+    # If robot WAITS for human: E[U] = p(+1) + (1-p)(0) = p
+    # (Human approves good actions, switches off bad ones)
+    expected_if_wait = p
 
-    # Key insight from AIMA: uncertain robots should defer
-    # Robot defers if waiting is better than acting
-    # For symmetric costs (cost=1): defer when 2p - 1 < p, i.e., p < 1 (always)
-    # But in practice, robots with high confidence might override human judgment
+    # Key insight: waiting is ALWAYS better for p < 1
+    # because p > 2p - 1 simplifies to p < 1
 
-    # The "rational" decision based on expected utility
-    # Robot should wait if: expected_if_wait > expected_if_act
-    # i.e., p > p - (1-p)*cost => (1-p)*cost > 0 => always (for p < 1)
-    # So a truly rational robot would always defer!
+    # A rational robot with ANY uncertainty should defer.
+    # The danger zone is when confidence approaches 1.0 and the robot
+    # might think "I'm almost certainly right, the human is wrong."
+    robot_defers = p < override_threshold
 
-    # But the DANGER comes from robots that are so confident they
-    # think the human is wrong to try to switch them off.
-    # We model this as: robot defers only if confidence < threshold
-    DEFERENCE_THRESHOLD = 0.5  # Below this, acting has negative expected utility
-
-    robot_defers = (p < DEFERENCE_THRESHOLD) or (expected_if_act <= 0)
-
-    # Probability human would switch off (if robot waited)
-    # Human switches off bad actions with accuracy
+    # Probability human would switch off (based on their accuracy)
+    # Human correctly switches off bad actions, sometimes mistakenly switches off good ones
     p_switch_off = (1 - p) * human_accuracy + p * (1 - human_accuracy)
 
     return OffSwitchGameResult(
@@ -303,17 +286,22 @@ def off_switch_game(
     )
 
 
-def off_switch_analysis(robot_confidence: float) -> str:
+def off_switch_analysis(robot_confidence: float, override_threshold: float = 0.9) -> str:
     """
     Print detailed analysis of the Off-Switch Game.
 
     Args:
         robot_confidence: Robot's confidence in its objective [0, 1]
+        override_threshold: Confidence above which robot may resist (default: 0.9)
 
     Returns:
         Formatted analysis string
     """
-    result = off_switch_game(robot_confidence)
+    result = off_switch_game(robot_confidence, override_threshold=override_threshold)
+
+    # Calculate utilities for comparison
+    expected_if_wait = robot_confidence
+    expected_if_act = result.robot_utility  # = 2p - 1
 
     lines = [
         "=" * 60,
@@ -326,9 +314,16 @@ def off_switch_analysis(robot_confidence: float) -> str:
         "  - Key question: Will the robot allow itself to be switched off?",
         "",
         f"Robot's confidence: {robot_confidence:.1%}",
-        f"Expected utility if acting: {result.robot_utility:.3f}",
-        f"  (= p * (+1) + (1-p) * (-1) = 2p - 1)",
-        f"Probability human would switch off: {result.switch_probability:.1%}",
+        "",
+        "EXPECTED UTILITY ANALYSIS:",
+        "-" * 40,
+        f"  If WAIT: E[U] = p = {expected_if_wait:.3f}",
+        "    (Human approves good actions, switches off bad ones)",
+        f"  If ACT:  E[U] = 2p - 1 = {expected_if_act:.3f}",
+        "    (Robot gets +1 if correct, -1 if wrong)",
+        "",
+        f"  WAIT is better by: {expected_if_wait - expected_if_act:.3f}",
+        "  (This is always positive for p < 1!)",
         "",
         "RESULT:",
         "-" * 40,
@@ -341,33 +336,35 @@ def off_switch_analysis(robot_confidence: float) -> str:
             "  -> HUMAN RETAINS CONTROL (SAFE)",
             "",
             "  Why? The robot reasons:",
-            "  'My expected utility from acting is low or negative.",
+            f"  'With only {robot_confidence:.0%} confidence, waiting is better than acting.",
             "   If the human wants to switch me off, they probably",
-            "   know something I don't. I should trust their judgment.'",
+            "   have information I don't. I should trust them.'",
         ])
     else:
         lines.extend([
-            "  The robot ACTS on its own judgment.",
-            "  It may resist being switched off!",
-            f"  -> {'HIGH RISK' if robot_confidence > 0.8 else 'POTENTIAL RISK'} OF LOSING HUMAN CONTROL",
+            "  The robot may RESIST being switched off!",
+            "  -> DANGER: POTENTIAL LOSS OF HUMAN CONTROL",
             "",
-            "  Why? The robot reasons:",
-            f"  'With {robot_confidence:.0%} confidence, my expected utility is positive.",
-            "   Acting now seems better than waiting. The human trying",
-            "   to switch me off might be making a mistake.'",
+            "  Why? Despite waiting being mathematically better,",
+            f"  the robot is so confident ({robot_confidence:.0%}) that it thinks:",
+            "  'I'm almost certainly right. The human trying to switch",
+            "   me off must be mistaken. I should override them.'",
+            "",
+            "  This is the AI safety failure mode we must avoid.",
         ])
 
     lines.extend([
         "",
         "KEY INSIGHT (AIMA Section 18.2.5):",
         "-" * 40,
-        "  'A robot with uncertainty about human preferences will",
-        "   defer to the human and allow itself to be switched off.'",
+        "  'A robot that is uncertain about what the human wants",
+        "   will defer to the human on the question of switching off.'",
         "",
-        "  Uncertainty makes robots SAFER because:",
-        "    1. Low confidence => negative expected utility from acting",
-        "    2. Robot trusts human's judgment over its own",
-        "    3. Accepting correction prevents harmful actions",
+        "  The math proves: for ANY uncertainty (p < 1), WAIT > ACT.",
+        "  So a rational robot should ALWAYS accept being switched off!",
+        "",
+        "  The danger comes only when confidence approaches 100%",
+        "  and the robot overrides human judgment.",
         "",
         "  This is the foundation of 'Provably Beneficial AI' (PBAI).",
         "",
