@@ -44,21 +44,22 @@ class PartyData:
 
 # Official results from Ministry of Interior
 # Source: https://www.resultats-elections.interieur.gouv.fr/legislatives2024/
+# Updated with vie-publique.fr and touteleurope.eu data (July 2024)
 PARTIES_2024 = {
     'LFI': PartyData(
         name="La France Insoumise",
         short_name="LFI",
         first_round_votes=4_935_908,
         first_round_pct=9.89,
-        seats_won=74,
-        estimated_alone_seats=45,  # Estimation sans front republicain
+        seats_won=71,  # Corrige: 71 elus (source: vie-publique.fr)
+        estimated_alone_seats=40,  # Estimation sans front republicain
     ),
     'PS': PartyData(
         name="Parti Socialiste",
         short_name="PS",
         first_round_votes=2_993_292,  # PS + divers gauche allies
         first_round_pct=5.99,
-        seats_won=59,
+        seats_won=64,  # Corrige: 64 elus (source: vie-publique.fr)
         estimated_alone_seats=35,
     ),
     'EELV': PartyData(
@@ -66,7 +67,7 @@ PARTIES_2024 = {
         short_name="EELV",
         first_round_votes=1_625_481,
         first_round_pct=3.26,
-        seats_won=33,
+        seats_won=33,  # 33 elus
         estimated_alone_seats=15,
     ),
     'PCF': PartyData(
@@ -74,13 +75,15 @@ PARTIES_2024 = {
         short_name="PCF",
         first_round_votes=1_154_236,
         first_round_pct=2.31,
-        seats_won=9,
+        seats_won=9,  # 9 elus
         estimated_alone_seats=5,
     ),
 }
 
-# NFP total results
-NFP_TOTAL_SEATS = 182  # Total sieges NFP
+# NFP total results (LFI + PS + EELV + PCF + autres = 180)
+# Note: vie-publique indique 180 pour le NFP principal, certaines sources 182-194
+# selon comment on compte les apparentes
+NFP_TOTAL_SEATS = 180  # Total sieges NFP (4 partis principaux + 3 autres)
 NFP_FIRST_ROUND_VOTES = 10_709_917
 NFP_FIRST_ROUND_PCT = 21.45
 
@@ -245,16 +248,17 @@ def get_2024_legislative_data() -> Dict[str, PartyData]:
 
 def seats_coalition_value(coalition: Set[int], parties: List[str]) -> float:
     """
-    Value function based on estimated seats using vote transfer model.
+    Value function based on coalition synergies and center vote attraction.
 
-    This models coalition value based on:
-    1. Base votes of each party in the coalition
-    2. Vote transfers from allies who withdraw (desistements)
-    3. Reduction for voters who abstain
+    Key modeling insight:
+    - The Shapley value measures what happens when a party is NOT in the coalition
+    - Absent parties' voters don't transfer TO the coalition - they compete or abstain
+    - Coalition value comes from: base seats + synergy from mutual withdrawals
+      + ability to attract CENTER voters (external to the game)
 
-    The model reflects the reality of French two-round elections where
-    coalition success depends heavily on how well allied voters transfer
-    their votes to the remaining candidate.
+    The model uses calibrated synergy multipliers based on 2024 results:
+    - Full NFP (4 parties): 182 seats (observed)
+    - Synergy from coordination: mutual 2nd round withdrawals boost winning chances
 
     Args:
         coalition: Set of party indices
@@ -267,54 +271,82 @@ def seats_coalition_value(coalition: Set[int], parties: List[str]) -> float:
         return 0.0
 
     party_codes = [parties[i] for i in coalition]
-    all_left_parties = ['LFI', 'PS', 'EELV', 'PCF']
-    absent_parties = [p for p in all_left_parties if p not in party_codes]
+    n_parties = len(coalition)
 
-    # Special case: full coalition (calibrated to actual result)
-    if len(party_codes) == 4:
-        return NFP_TOTAL_SEATS  # 182 sieges NFP reel
-
-    # Base: individual seats if parties run alone
+    # Base: individual seats if parties run alone (competing against each other)
     base_seats = sum(PARTIES_2024[p].estimated_alone_seats for p in party_codes)
+    # Individual estimates: LFI=45, PS=35, EELV=15, PCF=5, Total=100
 
-    # Calculate vote transfer bonus from allied parties who withdraw
-    transfer_bonus = 0.0
+    # Full coalition: calibrated to actual result
+    if n_parties == 4:
+        return float(NFP_TOTAL_SEATS)  # 182 seats
 
-    for absent in absent_parties:
-        absent_votes = PARTIES_2024[absent].first_round_votes
+    # Coalition synergy from mutual withdrawals (desistements)
+    # When parties coordinate, they don't split the left vote in the 2nd round
+    # This synergy depends on which parties are present
 
-        # Voters of absent party either transfer to coalition or abstain
-        abstention_rate = ABSTENTION_IF_ABSENT.get(absent, 0.15)
-        available_votes = absent_votes * (1 - abstention_rate)
+    # Synergy factors calibrated to interpolate between individual (100) and full (182)
+    # The 82 extra seats come from: coordination + center attraction + barrage effect
 
-        # These votes are distributed among coalition parties
-        # Weighted by transfer rates
-        total_transfer = 0.0
-        for present in party_codes:
-            transfer_rate = COALITION_TRANSFERS.get((absent, present), 0.5)
-            total_transfer += transfer_rate
-
-        # Normalize transfers (they may not sum to 1)
-        if total_transfer > 0:
-            effective_transfer = min(total_transfer, 1.0)  # Cap at 100%
-            transferred_votes = available_votes * effective_transfer
-
-            # Convert votes to seats (rough estimate: ~25k votes per marginal seat)
-            VOTES_PER_SEAT = 25000
-            transfer_bonus += transferred_votes / VOTES_PER_SEAT
-
-    # Apply a discount for coordination costs and imperfect transfers
-    n_parties = len(party_codes)
     if n_parties == 1:
-        coordination_factor = 1.0  # No coordination needed
+        # Single party: base seats only, no synergy
+        return float(base_seats)
+
     elif n_parties == 2:
-        coordination_factor = 0.85  # Some friction
-    else:
-        coordination_factor = 0.75  # More complex coordination
+        # Two-party alliance: partial synergy
+        # Synergy depends on ideological proximity and combined strength
 
-    total_seats = base_seats + transfer_bonus * coordination_factor
+        # Calculate synergy based on which pair
+        pair = set(party_codes)
 
-    return round(total_seats, 1)
+        # Ideologically close pairs have better synergy
+        if pair == {'LFI', 'PCF'}:
+            synergy_factor = 1.25  # Close, good transfers
+        elif pair == {'PS', 'EELV'}:
+            synergy_factor = 1.30  # Very compatible, attracts center
+        elif pair == {'LFI', 'PS'}:
+            synergy_factor = 1.20  # Some tension, but big
+        elif pair == {'PS', 'PCF'}:
+            synergy_factor = 1.22
+        elif pair == {'LFI', 'EELV'}:
+            synergy_factor = 1.18  # Less natural
+        elif pair == {'EELV', 'PCF'}:
+            synergy_factor = 1.15  # Small parties, limited reach
+        else:
+            synergy_factor = 1.20  # Default
+
+        return round(base_seats * synergy_factor, 1)
+
+    elif n_parties == 3:
+        # Three-party alliance: good synergy, missing one component
+        missing = [p for p in ['LFI', 'PS', 'EELV', 'PCF'] if p not in party_codes][0]
+
+        # Impact of missing party on coalition effectiveness
+        # Key insight: synergy depends on what's MISSING, not just what's present
+        # Missing a large party hurts more than missing a small one
+
+        if missing == 'LFI':
+            # Without LFI: lose largest left bloc, but better center reports
+            # PS+EELV+PCF base = 35+15+5 = 55
+            synergy_factor = 1.55  # ~85 seats (center attraction compensates partially)
+        elif missing == 'PS':
+            # Without PS: lose moderate anchor, worse center attraction
+            # LFI+EELV+PCF base = 40+15+5 = 60
+            synergy_factor = 1.42  # ~85 seats (center hesitates with LFI-dominated coalition)
+        elif missing == 'EELV':
+            # Without EELV: lose eco-voters, some center loss
+            # LFI+PS+PCF base = 40+35+5 = 80
+            synergy_factor = 1.60  # ~128 seats
+        elif missing == 'PCF':
+            # Without PCF: minimal impact, PCF has few winnable seats
+            # LFI+PS+EELV base = 40+35+15 = 90
+            synergy_factor = 1.80  # ~162 seats (almost full coalition effect)
+        else:
+            synergy_factor = 1.50
+
+        return round(base_seats * synergy_factor, 1)
+
+    return float(base_seats)
 
 
 def voting_power_value(coalition: Set[int], parties: List[str]) -> float:
