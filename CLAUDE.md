@@ -44,7 +44,7 @@ Access: http://localhost:8188 (requires Bearer token authentication)
 python scripts/genai-stack/validate_notebooks.py  # Notebook validation
 python scripts/genai-stack/validate_stack.py      # GenAI stack validation
 python scripts/genai-stack/check_vram.py          # VRAM check
-python scripts/verify_notebooks.py [target]       # Multi-family notebook verification
+python scripts/notebook_tools.py validate [target] # Multi-family notebook verification
 ```
 GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 
@@ -102,9 +102,10 @@ docker-configurations/       # Production infrastructure
 └── orchestrator/           # Service orchestration
 
 scripts/
-├── genai-stack/            # Validation and management scripts
-├── archive/                # Legacy scripts
-└── notebook-fixes/         # Notebook repair utilities
+├── notebook_tools.py       # Main CLI: validate, skeleton, analyze, check-env, execute
+├── extract_notebook_skeleton.py  # Notebook structure extraction
+├── genai-stack/            # GenAI validation and management scripts
+└── archive/                # Archived legacy and one-shot scripts
 
 notebook-infrastructure/     # Papermill automation & MCP maintenance
 ```
@@ -228,6 +229,85 @@ SaveImage
 ## Language
 
 Primary documentation language is French. Code comments may be in French or English.
+
+---
+
+## Claude Code - Agents, Skills et Scripts
+
+### Skills (Commandes slash)
+
+Commandes disponibles via `/command` dans Claude Code :
+
+| Skill | Fichier | Description |
+|-------|---------|-------------|
+| `/verify-notebooks` | `.claude/commands/verify-notebooks.md` | Verifier et tester les notebooks avec correction iterative |
+| `/enrich-notebooks` | `.claude/commands/enrich-notebooks.md` | Enrichir les notebooks avec du contenu pedagogique |
+| `/cleanup-notebooks` | `.claude/commands/cleanup-notebooks.md` | Nettoyer et reorganiser le markdown des notebooks |
+
+**Exemples** :
+```bash
+/verify-notebooks Sudoku --quick
+/enrich-notebooks Infer --consecutive
+/cleanup-notebooks Tweety --dry-run
+```
+
+### Agents
+
+Agents specialises utilisables via Task tool :
+
+| Agent | Fichier | Mission |
+|-------|---------|---------|
+| **notebook-enricher** | `.claude/agents/notebook-enricher.md` | Ajouter du markdown pedagogique aux notebooks |
+| **infer-notebook-enricher** | `.claude/agents/infer-notebook-enricher.md` | Specialisation pour notebooks Infer.NET |
+| **notebook-cleaner** | `.claude/agents/notebook-cleaner.md` | Nettoyer et reorganiser les notebooks |
+| **readme-updater** | `.claude/agents/readme-updater.md` | Mettre a jour les README de series de notebooks |
+
+**Invocation type** :
+```python
+Task(
+    subagent_type="general-purpose",
+    prompt="Tu es un agent readme-updater. Lis .claude/agents/readme-updater.md et mets a jour: {path}",
+    description="Update README"
+)
+```
+
+### Scripts Python
+
+Scripts utilitaires dans `scripts/` :
+
+| Script | Description |
+|--------|-------------|
+| `verify_notebooks.py` | Verification multi-famille des notebooks (structure et execution) |
+| `extract_notebook_skeleton.py` | Extraction structure notebooks pour generation README |
+| `verify_lean.py` | Validation environnement Lean 4 |
+| `split_tweety_jvm.py` | Utilitaires JVM pour Tweety |
+| `split_tweety_setup.py` | Configuration Tweety |
+
+**Utilisation `extract_notebook_skeleton.py`** :
+```bash
+# Resume rapide
+python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku
+
+# Format tableau markdown pour README
+python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output markdown
+
+# Format detaille avec previews de code
+python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output detailed --code-preview
+
+# JSON pour traitement programmatique
+python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output json
+```
+
+### Scripts par famille de notebooks
+
+| Repertoire | Scripts |
+|------------|---------|
+| `scripts/genai-stack/` | `validate_notebooks.py`, `validate_stack.py`, `check_vram.py` |
+| `MyIA.AI.Notebooks/Probas/Infer/scripts/` | `test_notebooks.py` (validation contenu + execution) |
+| `MyIA.AI.Notebooks/SymbolicAI/scripts/` | `extract_notebook_content.py` |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/` | `validate_lean_setup.py`, `setup_wsl_python.sh` |
+| `MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/` | `verify_all_tweety.py`, `sat_comparison_demo.py` |
+| `MyIA.AI.Notebooks/GameTheory/scripts/` | `validate_lean_setup.py` |
 
 ---
 
