@@ -5,8 +5,15 @@ Consolidated Notebook Tools for CoursIA
 A comprehensive utility module for working with Jupyter notebooks across the repository.
 Provides tools for validation, execution, skeleton extraction, and content analysis.
 
+This module extends notebook_helpers.py with:
+- Notebook family configuration (Sudoku, Lean, Tweety, etc.)
+- High-level validation and skeleton extraction
+- Environment checking per family
+- CLI commands: validate, skeleton, analyze, check-env, execute
+
 Usage as module:
-    from notebook_tools import NotebookAnalyzer, NotebookValidator, NotebookExecutor
+    from notebook_tools import NotebookAnalyzer, NotebookValidator, discover_notebooks
+    from notebook_helpers import NotebookHelper, NotebookExecutor  # Low-level
 
 Usage as CLI:
     python notebook_tools.py validate [target] [--quick] [--verbose]
@@ -35,6 +42,19 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
+
+# Import base classes from notebook_helpers
+try:
+    from notebook_helpers import (
+        NotebookHelper,
+        NotebookExecutor as BaseExecutor,
+        NotebookExecutionResult as BaseExecutionResult,
+        ExecutionResult,
+        CellInfo as BaseCellInfo,
+    )
+    HELPERS_AVAILABLE = True
+except ImportError:
+    HELPERS_AVAILABLE = False
 
 
 # =============================================================================
@@ -915,7 +935,7 @@ class EnvironmentChecker:
 
 
 # =============================================================================
-# NOTEBOOK EXECUTOR
+# NOTEBOOK EXECUTOR (uses notebook_helpers if available, fallback otherwise)
 # =============================================================================
 
 @dataclass
@@ -945,16 +965,29 @@ class NotebookExecutionResult:
 
 
 class NotebookExecutor:
-    """Execute notebooks using Papermill or cell-by-cell"""
+    """
+    Execute notebooks using Papermill or cell-by-cell.
+
+    Note: For more advanced execution features (persistent kernels, iterative
+    correction), use notebook_helpers.NotebookExecutor directly.
+    """
 
     def __init__(self, notebook_path: Union[str, Path]):
         self.path = Path(notebook_path)
         self.analyzer = NotebookAnalyzer(notebook_path)
 
+        # Use notebook_helpers executor if available
+        if HELPERS_AVAILABLE:
+            self._base_executor = BaseExecutor(timeout=300, verbose=False)
+        else:
+            self._base_executor = None
+
     def detect_kernel_name(self) -> str:
         """Detect the appropriate kernel name for execution"""
-        kernel = self.analyzer.kernel.lower()
+        if self._base_executor:
+            return self._base_executor.detect_kernel(str(self.path))
 
+        kernel = self.analyzer.kernel.lower()
         if 'python' in kernel:
             return 'python3'
         elif '.net' in kernel or 'csharp' in kernel:
@@ -963,16 +996,30 @@ class NotebookExecutor:
             return '.net-fsharp'
         elif 'lean' in kernel:
             return 'lean4'
-        else:
-            return 'python3'  # Default
+        return 'python3'
 
     def execute_with_papermill(self, timeout: int = 300,
                                 output_path: Optional[Path] = None,
                                 batch_mode: bool = False) -> NotebookExecutionResult:
-        """
-        Execute notebook using Papermill.
-        Returns NotebookExecutionResult with success/failure info.
-        """
+        """Execute notebook using Papermill."""
+        # Use base executor if available
+        if self._base_executor:
+            params = {"BATCH_MODE": "true"} if batch_mode else None
+            result = self._base_executor.execute_with_papermill(
+                str(self.path),
+                output_path=str(output_path) if output_path else None,
+                parameters=params,
+                timeout=timeout
+            )
+            return NotebookExecutionResult(
+                path=str(self.path),
+                success=result.success,
+                kernel=result.kernel,
+                execution_time=result.duration,
+                message="SUCCESS" if result.success else "; ".join(result.errors)
+            )
+
+        # Fallback implementation
         kernel = self.detect_kernel_name()
         start_time = time.time()
 
@@ -981,218 +1028,78 @@ class NotebookExecutor:
 
         cmd = [
             sys.executable, "-m", "papermill",
-            str(self.path),
-            str(output_path),
-            "--kernel", kernel,
-            "--cwd", str(self.path.parent)
+            str(self.path), str(output_path),
+            "--kernel", kernel, "--cwd", str(self.path.parent)
         ]
-
         if batch_mode:
             cmd.extend(["-p", "BATCH_MODE", "true"])
 
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout
-            )
-
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             execution_time = time.time() - start_time
-
             if result.returncode == 0:
                 return NotebookExecutionResult(
-                    path=str(self.path),
-                    success=True,
-                    kernel=kernel,
-                    execution_time=execution_time,
-                    message=f"SUCCESS (kernel={kernel})"
+                    path=str(self.path), success=True, kernel=kernel,
+                    execution_time=execution_time, message=f"SUCCESS (kernel={kernel})"
                 )
             else:
-                error_msg = result.stderr[-500:] if result.stderr else "Unknown error"
                 return NotebookExecutionResult(
-                    path=str(self.path),
-                    success=False,
-                    kernel=kernel,
+                    path=str(self.path), success=False, kernel=kernel,
                     execution_time=execution_time,
-                    message=f"FAILED: {error_msg}"
+                    message=f"FAILED: {result.stderr[-500:] if result.stderr else 'Unknown error'}"
                 )
-
         except subprocess.TimeoutExpired:
             return NotebookExecutionResult(
-                path=str(self.path),
-                success=False,
-                kernel=kernel,
-                execution_time=timeout,
-                message=f"TIMEOUT ({timeout}s)"
+                path=str(self.path), success=False, kernel=kernel,
+                execution_time=timeout, message=f"TIMEOUT ({timeout}s)"
             )
         except Exception as e:
             return NotebookExecutionResult(
-                path=str(self.path),
-                success=False,
-                kernel=kernel,
-                execution_time=time.time() - start_time,
-                message=f"ERROR: {e}"
+                path=str(self.path), success=False, kernel=kernel,
+                execution_time=time.time() - start_time, message=f"ERROR: {e}"
             )
 
     def execute_cell_by_cell(self, timeout: int = 60,
                               verbose: bool = False) -> NotebookExecutionResult:
-        """
-        Execute notebook cell by cell using jupyter_client.
-        Better for .NET notebooks with #!import or Lean notebooks.
-        """
+        """Execute notebook cell by cell using jupyter_client."""
+        # Use base executor if available
+        if self._base_executor:
+            self._base_executor.verbose = verbose
+            result = self._base_executor.execute_notebook_cell_by_cell(
+                str(self.path), timeout_per_cell=timeout
+            )
+            return NotebookExecutionResult(
+                path=str(self.path),
+                success=result.success,
+                kernel=result.kernel,
+                total_cells=result.total_cells,
+                executed_cells=result.executed_cells,
+                success_cells=result.executed_cells - result.failed_cells,
+                error_cells=result.failed_cells,
+                execution_time=result.duration,
+                message=f"Executed {result.executed_cells} cells: {result.executed_cells - result.failed_cells} OK, {result.failed_cells} errors"
+            )
+
+        # Fallback: minimal implementation
         try:
             import jupyter_client
         except ImportError:
             return NotebookExecutionResult(
-                path=str(self.path),
-                success=False,
-                kernel="unknown",
+                path=str(self.path), success=False, kernel="unknown",
                 message="jupyter_client not installed: pip install jupyter_client"
             )
 
         if not self.analyzer.is_valid:
             return NotebookExecutionResult(
-                path=str(self.path),
-                success=False,
-                kernel="unknown",
+                path=str(self.path), success=False, kernel="unknown",
                 message="Could not load notebook"
             )
 
         kernel_name = self.detect_kernel_name()
-        cells = self.analyzer.cells
-        cell_results = []
-        start_time = time.time()
-
-        # Start kernel
-        try:
-            km = jupyter_client.KernelManager(kernel_name=kernel_name)
-            km.start_kernel(cwd=str(self.path.parent))
-            kc = km.client()
-            kc.start_channels()
-            kc.wait_for_ready(timeout=60)
-        except Exception as e:
-            return NotebookExecutionResult(
-                path=str(self.path),
-                success=False,
-                kernel=kernel_name,
-                message=f"Failed to start {kernel_name} kernel: {e}"
-            )
-
-        try:
-            # Set working directory for Python kernels
-            if 'python' in kernel_name:
-                wd_code = f"import os; os.chdir(r'{self.path.parent}')"
-                kc.execute(wd_code)
-                while True:
-                    try:
-                        msg = kc.get_iopub_msg(timeout=5)
-                        if msg['msg_type'] == 'status' and msg['content']['execution_state'] == 'idle':
-                            break
-                    except:
-                        break
-
-            success_count = 0
-            error_count = 0
-
-            for i, cell in enumerate(cells):
-                cell_type = cell.get('cell_type', 'unknown')
-                source = ''.join(cell.get('source', []))
-
-                if cell_type != 'code' or not source.strip():
-                    cell_results.append(CellExecutionResult(
-                        index=i,
-                        cell_type=cell_type,
-                        success=True,
-                        output='skipped'
-                    ))
-                    continue
-
-                cell_start = time.time()
-                if verbose:
-                    print(f"  Cell {i}: ", end="", flush=True)
-
-                try:
-                    msg_id = kc.execute(source)
-                    outputs = []
-                    errors = []
-
-                    while True:
-                        try:
-                            msg = kc.get_iopub_msg(timeout=timeout)
-                            msg_type = msg['msg_type']
-                            content = msg.get('content', {})
-
-                            if msg_type == 'stream':
-                                outputs.append(content.get('text', ''))
-                            elif msg_type == 'execute_result':
-                                data = content.get('data', {})
-                                outputs.append(data.get('text/plain', str(data)))
-                            elif msg_type == 'error':
-                                errors.append(f"{content.get('ename', 'Error')}: {content.get('evalue', '')}")
-                            elif msg_type == 'status' and content.get('execution_state') == 'idle':
-                                break
-                        except Exception as e:
-                            if 'timeout' in str(e).lower():
-                                errors.append(f"Timeout after {timeout}s")
-                            break
-
-                    output_text = '\n'.join(outputs)[:500]
-                    error_text = '\n'.join(errors) if errors else None
-                    cell_success = len(errors) == 0
-
-                    cell_results.append(CellExecutionResult(
-                        index=i,
-                        cell_type=cell_type,
-                        success=cell_success,
-                        execution_time=time.time() - cell_start,
-                        output=output_text,
-                        error=error_text
-                    ))
-
-                    if cell_success:
-                        success_count += 1
-                        if verbose:
-                            print("OK")
-                    else:
-                        error_count += 1
-                        if verbose:
-                            print(f"FAILED: {error_text[:80] if error_text else 'unknown'}")
-
-                except Exception as e:
-                    cell_results.append(CellExecutionResult(
-                        index=i,
-                        cell_type=cell_type,
-                        success=False,
-                        execution_time=time.time() - cell_start,
-                        error=str(e)
-                    ))
-                    error_count += 1
-                    if verbose:
-                        print(f"ERROR: {e}")
-
-            total_time = time.time() - start_time
-            executed = sum(1 for r in cell_results if r.output != 'skipped')
-
-            return NotebookExecutionResult(
-                path=str(self.path),
-                success=error_count == 0,
-                kernel=kernel_name,
-                total_cells=len(cells),
-                executed_cells=executed,
-                success_cells=success_count,
-                error_cells=error_count,
-                execution_time=total_time,
-                message=f"Executed {executed} cells: {success_count} OK, {error_count} errors",
-                cell_results=cell_results
-            )
-
-        finally:
-            try:
-                kc.stop_channels()
-                km.shutdown_kernel(now=True)
-            except:
-                pass
+        return NotebookExecutionResult(
+            path=str(self.path), success=False, kernel=kernel_name,
+            message="Cell-by-cell execution requires notebook_helpers. Install with: from notebook_helpers import NotebookExecutor"
+        )
 
 
 # =============================================================================
