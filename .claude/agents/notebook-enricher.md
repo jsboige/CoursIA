@@ -162,15 +162,52 @@ Apres une cellule affichant des resultats numeriques :
 
 ## Adaptation par domaine
 
-Ce template peut etre specialise pour differents domaines :
+Ce template s'adapte automatiquement selon le domaine du notebook. Voici les elements specifiques a chaque domaine :
 
 | Domaine | Specialisation |
 |---------|----------------|
 | Probabilites/Infer.NET | Distributions, priors, posteriors, inference |
 | ML/Deep Learning | Metriques, courbes, hyperparametres |
 | Optimisation | Convergence, fitness, contraintes |
-| Theorie des jeux | Equilibres, strategies, gains |
+| Theorie des jeux | Equilibres, strategies, gains, Shapley |
 | Logique formelle | Preuves, tactiques, theoremes |
+
+### Guide d'adaptation par domaine
+
+#### Probabilites/Infer.NET
+
+- **Vocabulaire** : prior, posterior, likelihood, evidence, inference, marginalisation
+- **Formules** : Utiliser LaTeX pour Bayes ($P(H|E) = \frac{P(E|H)P(H)}{P(E)}$)
+- **Tableaux** : Comparer priors vs posteriors, parametres de distributions
+- **Interpretations** : Expliquer ce que signifient les distributions inferees
+
+#### Theorie des jeux
+
+- **Vocabulaire** : equilibre de Nash, strategie dominante, Pareto, minimax, Shapley, Core
+- **Formules LaTeX** :
+  - Valeur de Shapley : $\phi_i(v) = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|!(n-|S|-1)!}{n!}[v(S \cup \{i\}) - v(S)]$
+  - Equilibre Nash : $u_i(s^*_i, s^*_{-i}) \geq u_i(s_i, s^*_{-i})$
+- **Tableaux** : Matrices de gains, comparaison equilibres, valeurs Shapley par joueur
+- **Visualisations** : Arbres de jeu, diagrammes de meilleure reponse
+- **Interpretations** : Expliquer pourquoi un profil est/n'est pas un equilibre
+
+#### ML/Deep Learning
+
+- **Vocabulaire** : loss, accuracy, precision, recall, overfitting, regularisation
+- **Tableaux** : Metriques par epoch, comparaison modeles, matrices de confusion
+- **Graphiques** : Courbes d'apprentissage, ROC, importance des features
+
+#### Optimisation
+
+- **Vocabulaire** : fitness, convergence, contraintes, espace de recherche, front Pareto
+- **Tableaux** : Evolution fitness, comparaison algorithmes, parametres optimaux
+- **Interpretations** : Expliquer la convergence ou non-convergence
+
+#### Logique formelle (Lean, Z3, Tweety)
+
+- **Vocabulaire** : theoreme, lemme, preuve, tactique, satisfiabilite
+- **Formules** : Notation logique formelle, quantificateurs
+- **Interpretations** : Expliquer la strategie de preuve, les tactiques utilisees
 
 ## Invocation depuis Claude Code
 
@@ -188,6 +225,32 @@ Task(
 )
 ```
 
+## Outils de support
+
+Utiliser `scripts/notebook_tools.py` pour preparer l'enrichissement :
+
+```bash
+# Analyser la structure d'un notebook
+python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/GameTheory/notebook.ipynb --output json
+
+# Verifier l'etat des sorties
+python scripts/notebook_tools.py analyze MyIA.AI.Notebooks/GameTheory/
+
+# Valider la structure et le contenu
+python scripts/notebook_tools.py validate MyIA.AI.Notebooks/GameTheory --verbose
+```
+
+En Python, utiliser le module directement :
+
+```python
+from scripts.notebook_tools import NotebookAnalyzer, NotebookValidator
+
+analyzer = NotebookAnalyzer("notebook.ipynb")
+skeleton = analyzer.get_skeleton()
+print(f"Sections: {[s.title for s in skeleton.sections]}")
+print(f"Code/Markdown ratio: {skeleton.code_cells}/{skeleton.markdown_cells}")
+```
+
 ## Serie de notebooks
 
 Pour traiter une serie complete, lancer des agents en parallele :
@@ -198,6 +261,16 @@ for nb in notebooks:
     Task(
         subagent_type="general-purpose",
         prompt=f"Enrichir {nb} selon .claude/agents/notebook-enricher.md",
-        run_in_background=True
+        run_in_background=True,
+        model="sonnet"  # Utiliser Sonnet pour les taches d'enrichissement
     )
 ```
+
+## Agents specialises disponibles
+
+| Agent | Domaine | Fichier |
+|-------|---------|---------|
+| infer-notebook-enricher | Probabilites/Infer.NET | .claude/agents/infer-notebook-enricher.md |
+
+> **Note** : Pour les autres domaines (GameTheory, ML, etc.), utiliser cet agent generique
+> avec les adaptations decrites dans la section "Guide d'adaptation par domaine".
