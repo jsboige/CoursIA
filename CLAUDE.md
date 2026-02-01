@@ -44,7 +44,7 @@ Access: http://localhost:8188 (requires Bearer token authentication)
 python scripts/genai-stack/validate_notebooks.py  # Notebook validation
 python scripts/genai-stack/validate_stack.py      # GenAI stack validation
 python scripts/genai-stack/check_vram.py          # VRAM check
-python scripts/verify_notebooks.py [target]       # Multi-family notebook verification
+python scripts/notebook_tools.py validate [target] # Multi-family notebook verification
 ```
 GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 
@@ -102,9 +102,10 @@ docker-configurations/       # Production infrastructure
 └── orchestrator/           # Service orchestration
 
 scripts/
-├── genai-stack/            # Validation and management scripts
-├── archive/                # Legacy scripts
-└── notebook-fixes/         # Notebook repair utilities
+├── notebook_tools.py       # Main CLI: validate, skeleton, analyze, check-env, execute
+├── extract_notebook_skeleton.py  # Notebook structure extraction
+├── genai-stack/            # GenAI validation and management scripts
+└── archive/                # Archived legacy and one-shot scripts
 
 notebook-infrastructure/     # Papermill automation & MCP maintenance
 ```

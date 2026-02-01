@@ -216,9 +216,31 @@ Task(
 )
 ```
 
-## Script d'extraction
+## Scripts d'extraction et validation
 
-Le script `scripts/extract_notebook_skeleton.py` est utilise pour extraire :
+### Option 1 : notebook_tools.py (recommande)
+
+Le script consolide `scripts/notebook_tools.py` offre plusieurs commandes :
+
+```bash
+# Extraire le squelette d'un notebook ou repertoire
+python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output markdown
+python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output json
+python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output summary
+
+# Valider la structure des notebooks
+python scripts/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku --quick
+
+# Analyser les sorties
+python scripts/notebook_tools.py analyze MyIA.AI.Notebooks/Sudoku
+
+# Verifier l'environnement
+python scripts/notebook_tools.py check-env Sudoku
+```
+
+### Option 2 : extract_notebook_skeleton.py (alternatif)
+
+Le script `scripts/extract_notebook_skeleton.py` peut aussi etre utilise :
 
 ```bash
 # Format resume
