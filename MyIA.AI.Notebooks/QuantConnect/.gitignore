@@ -1,0 +1,164 @@
+# QuantConnect AI Trading Series
+# Git Ignore Configuration
+
+# ===============================
+# Environment & Secrets
+# ===============================
+.env
+.env.local
+*.env.backup
+secrets/
+.secrets/
+
+# ===============================
+# Python
+# ===============================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ===============================
+# Jupyter Notebooks
+# ===============================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+.jupyter/
+
+# Jupyter execution outputs (keep clean notebooks in git)
+*-checkpoint.ipynb
+
+# ===============================
+# LEAN CLI & QuantConnect
+# ===============================
+# Local data directory (market data downloaded by LEAN)
+data/
+!data/README.md
+
+# Backtest results
+results/
+backtests/
+*.json.gz
+
+# LEAN logs
+logs/
+*.log
+
+# LEAN cache
+.lean/
+cache/
+
+# Object Store (local ML models)
+object-store/
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+*.onnx
+*.pb
+
+# ===============================
+# Machine Learning
+# ===============================
+# Model checkpoints
+checkpoints/
+models/
+*.model
+*.weights
+
+# Training outputs
+runs/
+lightning_logs/
+mlruns/
+
+# Datasets
+datasets/
+*.csv
+*.parquet
+*.feather
+!assets/*.csv  # Keep example datasets
+
+# ===============================
+# IDEs
+# ===============================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+
+# Jupyter Lab
+.jupyter/
+
+# ===============================
+# OS
+# ===============================
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# ===============================
+# Temporary Files
+# ===============================
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ===============================
+# Documentation Build
+# ===============================
+docs/_build/
+site/
+
+# ===============================
+# Testing
+# ===============================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ===============================
+# Notes
+# ===============================
+# Always commit:
+# - Notebook templates (without execution outputs)
+# - README files
+# - Configuration examples (.env.example)
+# - Shared libraries (shared/, SharedLib/)
+# - Algorithm templates (algorithms/)
+# - Scripts (scripts/)
+#
+# Never commit:
+# - Actual .env files with secrets
+# - Downloaded market data
+# - Backtest results
+# - Trained ML models (unless small & educational)
+# - Logs

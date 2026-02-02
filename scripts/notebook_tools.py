@@ -131,6 +131,22 @@ NOTEBOOK_FAMILIES = {
         "kernel": "python",
         "notes": "Uses nashpy, some notebooks have Lean proofs",
         "expected_notebooks": [f"GameTheory-{i}-*.ipynb" for i in range(1, 20)]
+    },
+    "QuantConnect": {
+        "path": "MyIA.AI.Notebooks/QuantConnect",
+        "kernel": "mixed",
+        "python": ["Python/QC-Py-*.ipynb"],
+        "csharp": ["CSharp/QC-CS-*.ipynb"],
+        "requires_env": True,
+        "cloud_first": True,
+        "notes": "Cloud-first design (QuantConnect.com). Local Docker optional. Python + C# dual notebooks.",
+        "expected_notebooks": [f"QC-Py-{i:02d}-*.ipynb" for i in range(1, 28)] + [f"QC-CS-{i:02d}-*.ipynb" for i in range(1, 28)],
+        "dependencies": {
+            "python": ["quantconnect-lean>=2.5.14000", "xgboost", "tensorflow", "stable-baselines3"],
+            "csharp": [".NET 9.0", "QuantConnect.Lean", "Accord.NET"]
+        },
+        "validation_script": "scripts/validate_qc_notebooks.py",
+        "test_script": "scripts/test_algorithms.py"
     }
 }
 
