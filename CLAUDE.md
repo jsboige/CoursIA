@@ -137,6 +137,13 @@ Type: description courte de la modification
 ```
 Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans l'exemple ML.NET`
 
+### Git Best Practices
+
+- **NEVER use `git push --force` or `--force-with-lease`** unless absolutely necessary and explicitly approved by the user
+- If secrets are accidentally committed, prefer creating a new clean branch with cherry-pick rather than rewriting history
+- Always commit incrementally to avoid needing force pushes later
+- If a force push seems necessary, ask the user first and explain the risks
+
 ## Key Technologies
 
 **AI/ML**: OpenAI API, Anthropic Claude, Qwen 2.5-VL, Hugging Face, Diffusers
