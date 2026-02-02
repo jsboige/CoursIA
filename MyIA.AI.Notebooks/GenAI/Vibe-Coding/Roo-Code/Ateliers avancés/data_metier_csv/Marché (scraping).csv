@@ -1,0 +1,31 @@
+Titre de poste,Compétences demandées,Expertise,Localisation,TJM / Salaire,Entreprise,Type de contrat
+DevOps,"Kubernetes, Terraform, CI/CD, AWS/GCP, SRE",Expert DevOps,Paris,650-800 EUR/j,Entreprise A,Freelance
+DevOps,"Openshift, Kubernetes, GitLab-CI, GitOps",Expert DevOps Openshift,Paris,400-800 EUR/j,Entreprise B,Freelance
+DevOps,"Kubernetes, Terraform, IaC",Consultant DevOps Terraform,Saint-Cloud,Non precise,Entreprise C,CDI
+DevOps,"Azure, GCP, CI/CD, Terraform",Devops Cloud Engineer,Paris,Non precise,Entreprise D,CDI
+Data Engineer,"AWS, Pipelines",Data Engineer AWS,Velizy,Non precise,Entreprise E,CDI
+Data Engineer,"GCP, DBT, Spark, Scala",Data Engineer GCP,Paris,Non precise,Entreprise F,Freelance
+Data Engineer,"Azure, Data Factory, PySpark, BI",Azure Data Engineer,Paris,600-750 EUR/j,Entreprise G,Freelance
+Data Engineer,"Snowflake",Data Engineer Snowflake,Guyancourt,Non precise,Entreprise H,CDI
+Product Owner,"PowerBI, Supply Chain",Product Owner PowerBI,Paris,Non precise,Entreprise I,CDI
+Product Owner,"Finance, UX",Product Owner Finance,Paris,Non precise,Entreprise J,CDI
+Chef de projet,"MOA, plannings",Chef de projet coordination,Issy-les-Moulineaux,Non precise,Entreprise K,Freelance
+Developpeur,"Python, SQL, Spark",Developpeur Python backend,Montrouge,Non precise,Entreprise L,CDI
+Developpeur,"CSS, Front-end",Developpeur Front CSS,Hauts-de-Seine,Non precise,Entreprise M,CDI
+Developpeur,"Golang",Developpeur Backend Golang,Paris,Non precise,Entreprise N,CDI
+DevOps,"Kubernetes, Bash, CI/CD, Ansible",Expert DevOps,Ile-de-France,400-600 EUR/j,ESN Alpha,Freelance
+Chef de projet,"POC IA, gestion projet, ServiceNow",Chef de projet innovation IA,Ile-de-France,400-610 EUR/j,ESN Beta,Freelance
+Developpeur fullstack,"React, Node.js, TypeScript",Fullstack JavaScript,Lyon,500-650 EUR/j,Groupe Gamma,Freelance
+Data Scientist,"Python, ML, TensorFlow, NLP",Data Scientist NLP,Paris,550-700 EUR/j,Groupe Delta,Freelance
+Architecte Cloud,"AWS, Azure, GCP, Kubernetes",Cloud Architect Multi-cloud,Paris,700-900 EUR/j,Epsilon Corp,Freelance
+QA Engineer,"Selenium, Cypress, API Testing",QA Automation,Nantes,400-500 EUR/j,Zeta Solutions,Freelance
+Scrum Master,"SAFe, Jira, Confluence",Scrum Master SAFe,Bordeaux,450-550 EUR/j,Eta Partners,Freelance
+Tech Lead,"Java, Spring Boot, Microservices",Tech Lead Java,Paris,600-750 EUR/j,Theta Systems,Freelance
+ML Engineer,"Python, PyTorch, MLOps, Kubernetes",ML Engineer Senior,Paris,650-800 EUR/j,Iota AI,Freelance
+SRE,"Linux, Prometheus, Grafana, Terraform",Site Reliability Engineer,Lille,500-650 EUR/j,Kappa Tech,Freelance
+Consultant BI,"Power BI, Tableau, SQL",Consultant BI Analytics,Toulouse,450-550 EUR/j,Lambda Analytics,Freelance
+Developpeur mobile,"React Native, iOS, Android",Developpeur Mobile Cross-platform,Marseille,500-600 EUR/j,Mu Digital,Freelance
+Ingenieur Securite,"Pentesting, SIEM, SOC",Ingenieur Cybersecurite,Paris,600-750 EUR/j,Nu Security,Freelance
+Chef de projet technique,"Agile, Jira, budgets",Chef de projet IT,La Defense,Non precise,Xi Consulting,CDI
+Data Analyst,"Python, SQL, Looker, Tableau",Data Analyst Marketing,Paris,450-550 EUR/j,Omicron Data,Freelance
+Architecte Solution,"TOGAF, ArchiMate, API",Solution Architect,Paris,700-850 EUR/j,Pi Architecture,Freelance
