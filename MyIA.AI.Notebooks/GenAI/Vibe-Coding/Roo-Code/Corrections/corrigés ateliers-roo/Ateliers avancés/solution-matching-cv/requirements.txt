@@ -1,0 +1,18 @@
+# Fichier de dépendances Python pour le projet solution-matching-cv
+
+# --- Application ---
+flask
+python-dotenv
+semantic-kernel
+pandas
+numpy
+scikit-learn
+Werkzeug
+matching
+chromadb
+
+# --- Tests ---
+pytest
+playwright
+pytest-playwright
+pytest-html
