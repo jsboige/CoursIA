@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Le Petit Pain - Boulangerie artisanale traditionnelle">
+    <title>Le Petit Pain | Boulangerie Artisanale</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Polices Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Raleway:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Icônes Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- En-tête et Navigation -->
+    <header>
+        <div class="container">
+            <div class="logo">
+                <a href="index.html">Le Petit<span>Pain</span></a>
+            </div>
+            <nav>
+                <ul class="menu">
+                    <li><a href="index.html" class="active">Accueil</a></li>
+                    <li><a href="about.html">À propos</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+                <button class="menu-toggle" id="menu-toggle" aria-expanded="false">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Section Héro -->
+    <section id="accueil" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Bienvenue chez <span class="highlight">Le Petit Pain</span></h1>
+                <h2>L'art de la boulangerie traditionnelle</h2>
+                <p>Des produits frais, faits à la main avec des ingrédients locaux et de saison.</p>
+                <div class="hero-buttons">
+                    <a href="#produits" class="btn btn-primary">Découvrir nos produits</a>
+                    <a href="contact.html" class="btn btn-secondary">Nous trouver</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="image-placeholder">
+                    <!-- Image de pain ou logo -->
+                    <i class="fas fa-bread-slice"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Présentation -->
+    <section id="presentation" class="about-preview">
+        <div class="container">
+            <div class="section-header">
+                <h2>Notre Boulangerie</h2>
+                <p>Une tradition familiale depuis trois générations</p>
+            </div>
+            
+            <div class="about-content">
+                <div class="about-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-store"></i>
+                    </div>
+                </div>
+                <div class="about-text">
+                    <p>Bienvenue chez Le Petit Pain, votre boulangerie artisanale au cœur de la ville. Depuis 1985, nous perpétuons la tradition du pain fait main, avec passion et savoir-faire.</p>
+                    <p>Chaque jour, nos boulangers se lèvent à l'aube pour vous proposer des produits frais, préparés avec des ingrédients soigneusement sélectionnés auprès de producteurs locaux.</p>
+                    <div class="about-buttons">
+                        <a href="about.html" class="btn btn-primary">En savoir plus</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Produits -->
+    <section id="produits" class="products">
+        <div class="container">
+            <div class="section-header">
+                <h2>Nos Produits Phares</h2>
+                <p>Découvrez nos spécialités préparées avec amour et tradition</p>
+            </div>
+            
+            <div class="products-grid">
+                <!-- Produit 1 -->
+                <div class="product-card">
+                    <div class="product-image">
+                        <div class="image-placeholder">
+                            <i class="fas fa-baguette-bread"></i>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3>La Tradition</h3>
+                        <p>Notre baguette emblématique, à la croûte dorée et croustillante, avec une mie alvéolée et savoureuse.</p>
+                        <div class="product-tags">
+                            <span>Farine T65</span>
+                            <span>Levain naturel</span>
+                            <span>Cuisson sur pierre</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Produit 2 -->
+                <div class="product-card">
+                    <div class="product-image">
+                        <div class="image-placeholder">
+                            <i class="fas fa-croissant"></i>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3>Croissant au Beurre</h3>
+                        <p>Feuilleté à la perfection avec notre beurre AOP Charentes-Poitou, pour un petit-déjeuner inoubliable.</p>
+                        <div class="product-tags">
+                            <span>Beurre AOP</span>
+                            <span>Fait main</span>
+                            <span>Feuilletage traditionnel</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Produit 3 -->
+                <div class="product-card">
+                    <div class="product-image">
+                        <div class="image-placeholder">
+                            <i class="fas fa-bread-loaf"></i>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3>Pain de Campagne</h3>
+                        <p>Un grand classique à la mie dense et au goût prononcé, idéal pour accompagner vos repas ou vos plateaux de fromages.</p>
+                        <div class="product-tags">
+                            <span>Farine complète</span>
+                            <span>Longue fermentation</span>
+                            <span>Cuisson au feu de bois</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Produit 4 -->
+                <div class="product-card">
+                    <div class="product-image">
+                        <div class="image-placeholder">
+                            <i class="fas fa-cake-candles"></i>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3>Tarte aux Fruits de Saison</h3>
+                        <p>Une pâte sablée croustillante garnie de crème pâtissière et de fruits frais de saison.</p>
+                        <div class="product-tags">
+                            <span>Fruits locaux</span>
+                            <span>Fait maison</span>
+                            <span>Recette traditionnelle</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pied de page -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <a href="index.html">Le Petit<span>Pain</span></a>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">Accueil</a>
+                    <a href="about.html">À propos</a>
+                    <a href="contact.html">Contact</a>
+                </div>
+                <div class="footer-social">
+                    <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Le Petit Pain. Tous droits réservés.</p>
+                <div class="footer-info">
+                    <p><i class="fas fa-map-marker-alt"></i> 123 Rue du Fournil, 75000 Paris</p>
+                    <p><i class="fas fa-phone"></i> 01 23 45 67 89</p>
+                    <p><i class="fas fa-envelope"></i> contact@lepetitpain.fr</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bouton de retour en haut -->
+    <a href="#accueil" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <!-- Script JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>

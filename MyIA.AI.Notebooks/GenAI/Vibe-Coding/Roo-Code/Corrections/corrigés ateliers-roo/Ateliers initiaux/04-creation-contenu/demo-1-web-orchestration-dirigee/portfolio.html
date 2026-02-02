@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Portfolio DigitalBoost - Découvrez nos réalisations : sites web, applications mobiles, e-commerce et projets digitaux">
+    <meta name="keywords" content="portfolio, réalisations, projets digitaux, sites web, applications mobiles, e-commerce">
+    <title>Portfolio - DigitalBoost</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar" role="navigation" aria-label="Navigation principale">
+            <div class="navbar-logo">
+                <a href="index.html" aria-label="Accueil - DigitalBoost">
+                    <img src="images/logo.svg" alt="DigitalBoost Logo" width="180" height="50">
+                </a>
+            </div>
+            <button class="navbar-toggle" aria-label="Menu mobile" aria-expanded="false">
+                <span class="navbar-toggle-icon"></span>
+                <span class="navbar-toggle-icon"></span>
+                <span class="navbar-toggle-icon"></span>
+            </button>
+            <ul class="navbar-menu">
+                <li><a href="index.html">Accueil</a></li>
+                <li><a href="services.html">Services</a></li>
+                <li><a href="about.html">À propos</a></li>
+                <li><a href="portfolio.html" class="active" aria-current="page">Portfolio</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Page Header -->
+        <section class="page-header">
+            <div class="container">
+                <h1>Notre Portfolio</h1>
+                <p class="page-subtitle">Découvrez nos réalisations et les succès que nous avons construits avec nos clients partenaires.</p>
+                <div class="breadcrumb">
+                    <ol>
+                        <li><a href="index.html">Accueil</a></li>
+                        <li>Portfolio</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- Portfolio Filter -->
+        <section class="portfolio-filter" aria-label="Filtres des projets">
+            <div class="container">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all" aria-pressed="true">Tous les projets</button>
+                    <button class="filter-btn" data-filter="web" aria-pressed="false">Sites Web</button>
+                    <button class="filter-btn" data-filter="mobile" aria-pressed="false">Applications</button>
+                    <button class="filter-btn" data-filter="branding" aria-pressed="false">Branding</button>
+                    <button class="filter-btn" data-filter="ecommerce" aria-pressed="false">E-commerce</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Portfolio Grid -->
+        <section class="portfolio-section" aria-labelledby="portfolio-title">
+            <div class="container">
+                <h2 id="portfolio-title" class="section-title">Nos Réalisations</h2>
+                <div class="portfolio-grid">
+                    <article class="portfolio-item" data-category="web ecommerce">
+                        <div class="portfolio-image">
+                            <div class="project-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="project-title">TechShop E-commerce</h3>
+                            <p class="project-description">Plateforme e-commerce complète pour une boutique de high-tech avec intégration paiement et gestion des stocks avancée.</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">E-commerce</span>
+                                <span class="tag">React</span>
+                                <span class="tag">Node.js</span>
+                            </div>
+                            <a href="#" class="portfolio-link">Voir le projet →</a>
+                        </div>
+                    </article>
+
+                    <article class="portfolio-item" data-category="mobile">
+                        <div class="portfolio-image">
+                            <div class="project-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M16 1H8C6.34 1 5 2.34 5 4V20C5 21.66 6.34 23 8 23H16C17.66 23 19 21.66 19 20V4C19 2.34 17.66 1 16 1ZM14 21H10V20H14V21ZM17.25 19H6.75V4H17.25V19Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="project-title">FitTracker App</h3>
+                            <p class="project-description">Application mobile de suivi fitness avec coaching personnalisé et intégration objets connectés intelligente.</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">Mobile</span>
+                                <span class="tag">React Native</span>
+                                <span class="tag">Firebase</span>
+                            </div>
+                            <a href="#" class="portfolio-link">Voir le projet →</a>
+                        </div>
+                    </article>
+
+                    <article class="portfolio-item" data-category="web branding">
+                        <div class="portfolio-image">
+                            <div class="project-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 7V3H2V21H22V7H12ZM6 19H4V17H6V19ZM6 15H4V13H6V15ZM6 11H4V9H6V11ZM6 7H4V5H6V7ZM10 19H8V17H10V19ZM10 15H8V13H10V15ZM10 11H8V9H10V11ZM10 7H8V5H10V7ZM20 19H12V17H20V19ZM20 15H12V13H20V15ZM20 11H12V9H20V11Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="project-title">Cabinet d'Avocat Martin</h3>
+                            <p class="project-description">Site vitrine élégant avec booking en ligne et refonte complète de l'identité visuelle professionnelle.</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">Web Design</span>
+                                <span class="tag">Branding</span>
+                                <span class="tag">WordPress</span>
+                            </div>
+                            <a href="#" class="portfolio-link">Voir le projet →</a>
+                        </div>
+                    </article>
+
+                    <article class="portfolio-item" data-category="web">
+                        <div class="portfolio-image">
+                            <div class="project-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8.1 13.34L13 14.53V11H15V17.16L13.06 16.78L7.88 15.53L8.1 13.34ZM18.31 6L16.9 8H15V6.5C15 5.67 14.33 5 13.5 5H10.5C9.67 5 9 5.67 9 6.5V8H7.1L5.69 6H18.31ZM20 10H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V10H4V8H20V10Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="project-title">Restaurant Le Gourmet</h3>
+                            <p class="project-description">Site web moderne avec réservation en ligne, menu interactif et galerie photos appétissante optimisée.</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">Site Web</span>
+                                <span class="tag">UI/UX</span>
+                                <span class="tag">Vue.js</span>
+                            </div>
+                            <a href="#" class="portfolio-link">Voir le projet →</a>
+                        </div>
+                    </article>
+
+                    <article class="portfolio-item" data-category="mobile">
+                        <div class="portfolio-image">
+                            <div class="project-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H15V4C15 2.9 14.1 2 13 2H11C9.9 2 9 2.9 9 4V5H6.5C5.84 5 5.28 5.42 5.08 6.01L3 12V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V12L18.92 6.01ZM13 4V5H11V4H13ZM19 12H17V14C17 14.55 16.55 15 16 15S15 14.55 15 14V12H9V14C9 14.55 8.55 15 8 15S7 14.55 7 14V12H5V20H19V12Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="project-title">CarShare Mobile</h3>
+                            <p class="project-description">Application de partage de voitures avec géolocalisation, paiement intégré et système de notation avancé.</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">Mobile</span>
+                                <span class="tag">Flutter</span>
+                                <span class="tag">Maps API</span>
+                            </div>
+                            <a href="#" class="portfolio-link">Voir le projet →</a>
+                        </div>
+                    </article>
+
+                    <article class="portfolio-item" data-category="web ecommerce">
+                        <div class="portfolio-image">
+                            <div class="project-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2L13.09 8.26L22 9L13.5 13L16 21L12 17.77L8 21L10.5 13L2 9L10.91 8.26L12 2Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="project-title">Boutique Mode Élégante</h3>
+                            <p class="project-description">E-commerce de mode avec essayage virtuel, recommandations IA et expérience shopping immersive.</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">E-commerce</span>
+                                <span class="tag">Shopify</span>
+                                <span class="tag">AR/VR</span>
+                            </div>
+                            <a href="#" class="portfolio-link">Voir le projet →</a>
+                        </div>
+                    </article>
+
+                    <article class="portfolio-item" data-category="web branding">
+                        <div class="portfolio-image">
+                            <div class="project-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM12 17.5L6.5 12H9V6.5H15V12H17.5L12 17.5Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="project-title">Clinique Santé+</h3>
+                            <p class="project-description">Plateforme médicale avec prise de rendez-vous, téléconsultation et dossier patient sécurisé RGPD.</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">Healthcare</span>
+                                <span class="tag">Security</span>
+                                <span class="tag">Angular</span>
+                            </div>
+                            <a href="#" class="portfolio-link">Voir le projet →</a>
+                        </div>
+                    </article>
+
+                    <article class="portfolio-item" data-category="web">
+                        <div class="portfolio-image">
+                            <div class="project-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M5 13.18V4H12V8L17 6.09V17.91L12 16V20H5V10.82L3 9.82L3.83 8.18L5 8.82V13.18ZM7 18H10V10H7V18ZM14 14.73L15 15.09V8.91L14 9.27V14.73Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="project-title">École Digital Academy</h3>
+                            <p class="project-description">Plateforme d'apprentissage en ligne avec cours vidéos, exercices interactifs et suivi des progrès personnalisé.</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">E-learning</span>
+                                <span class="tag">LMS</span>
+                                <span class="tag">Laravel</span>
+                            </div>
+                            <a href="#" class="portfolio-link">Voir le projet →</a>
+                        </div>
+                    </article>
+
+                    <article class="portfolio-item" data-category="branding">
+                        <div class="portfolio-image">
+                            <div class="project-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18.5 2H5.5C3.57 2 2 3.57 2 5.5V18.5C2 20.43 3.57 22 5.5 22H18.5C20.43 22 22 20.43 22 18.5V5.5C22 3.57 20.43 2 18.5 2ZM20 18.5C20 19.33 19.33 20 18.5 20H5.5C4.67 20 4 19.33 4 18.5V5.5C4 4.67 4.67 4 5.5 4H18.5C19.33 4 20 4.67 20 5.5V18.5ZM16.5 8.5C16.5 9.33 15.83 10 15 10S13.5 9.33 13.5 8.5S14.17 7 15 7S16.5 7.67 16.5 8.5ZM12 15C14.21 15 16 13.21 16 11S14.21 7 12 7S8 8.79 8 11S9.79 15 12 15ZM12 9C13.1 9 14 9.9 14 11S13.1 13 12 13S10 12.1 10 11S10.9 9 12 9Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <h3 class="project-title">Coffee Artisan</h3>
+                            <p class="project-description">Identité visuelle complète pour une chaîne de café avec logo, charte graphique et supports marketing cohérents.</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">Branding</span>
+                                <span class="tag">Logo Design</span>
+                                <span class="tag">Print</span>
+                            </div>
+                            <a href="#" class="portfolio-link">Voir le projet →</a>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- Load More Button -->
+                <div class="portfolio-actions">
+                    <button class="btn btn-secondary" id="loadMore">Charger plus de projets</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Client Testimonials -->
+        <section class="testimonials-section" aria-labelledby="testimonials-title">
+            <div class="container">
+                <h2 id="testimonials-title" class="section-title">Ce que disent nos clients</h2>
+                <div class="testimonials-grid">
+                    <article class="testimonial-card">
+                        <div class="testimonial-content">
+                            <p class="testimonial-text">"DigitalBoost a transformé notre présence en ligne. Notre nouveau site e-commerce a augmenté nos ventes de 300% en 6 mois."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="8" r="4" fill="currentColor"/>
+                                    <path d="M12 14c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                            <div class="author-info">
+                                <h4 class="author-name">Pierre Durand</h4>
+                                <p class="author-role">CEO, TechShop</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="testimonial-card">
+                        <div class="testimonial-content">
+                            <p class="testimonial-text">"Une équipe exceptionnelle qui a su comprendre nos besoins et livrer une application mobile au-delà de nos attentes."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="8" r="4" fill="currentColor"/>
+                                    <path d="M12 14c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                            <div class="author-info">
+                                <h4 class="author-name">Sarah Martin</h4>
+                                <p class="author-role">Fondatrice, FitTracker</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="testimonial-card">
+                        <div class="testimonial-content">
+                            <p class="testimonial-text">"Professionnalisme, créativité et respect des délais. Je recommande vivement DigitalBoost pour tout projet digital."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="8" r="4" fill="currentColor"/>
+                                    <path d="M12 14c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                            <div class="author-info">
+                                <h4 class="author-name">Maître Leblanc</h4>
+                                <p class="author-role">Avocat, Cabinet Martin</p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="portfolio-stats" aria-labelledby="stats-title">
+            <div class="container">
+                <h2 id="stats-title" class="section-title">Nos Résultats</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">150+</div>
+                        <div class="stat-label">Projets réalisés</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">98%</div>
+                        <div class="stat-label">Clients satisfaits</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">85%</div>
+                        <div class="stat-label">Clients fidèles</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24h</div>
+                        <div class="stat-label">Temps de réponse</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <div class="container">
+                <div class="cta-content">
+                    <h2 class="cta-title">Votre projet sera le prochain ?</h2>
+                    <p class="cta-subtitle">Rejoignez nos clients satisfaits et donnons vie à vos idées ensemble avec notre expertise reconnue.</p>
+                    <div class="cta-buttons">
+                        <a href="contact.html" class="btn btn-primary">Démarrer un projet</a>
+                        <a href="services.html" class="btn btn-secondary">Découvrir nos services</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <img src="images/logo.svg" alt="DigitalBoost Logo" width="120" height="30">
+                    </div>
+                    <p class="footer-description">Votre partenaire digital pour propulser votre entreprise vers le succès avec des solutions innovantes et performantes.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3 class="footer-title">Services</h3>
+                    <ul class="footer-links">
+                        <li><a href="services.html">Design UI/UX</a></li>
+                        <li><a href="services.html">Développement Web</a></li>
+                        <li><a href="services.html">Applications Mobile</a></li>
+                        <li><a href="services.html">Marketing Digital</a></li>
+                        <li><a href="services.html">Solutions Cloud</a></li>
+                        <li><a href="services.html">Consulting</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3 class="footer-title">Entreprise</h3>
+                    <ul class="footer-links">
+                        <li><a href="about.html">À propos</a></li>
+                        <li><a href="portfolio.html">Portfolio</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="#">Carrières</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3 class="footer-title">Contact</h3>
+                    <address class="footer-address">
+                        <p>123 Avenue des Champs-Élysées<br>75008 Paris, France</p>
+                        <p><a href="tel:+33123456789">01 23 45 67 89</a></p>
+                        <p><a href="mailto:contact@digitalboost.fr">contact@digitalboost.fr</a></p>
+                    </address>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 DigitalBoost. Tous droits réservés. | <a href="#">Mentions légales</a> | <a href="#">Politique de confidentialité</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="js/portfolio.js"></script>
+</body>
+</html>
