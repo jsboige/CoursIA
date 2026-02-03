@@ -100,8 +100,8 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 cd MyIA.AI.Notebooks/GenAI
 
 # Configuration environnement
-cp .env.template .env
-# Éditer .env avec vos API keys
+cp .env.example .env
+# Éditer .env avec vos API keys (ou utilisez .env.students si fourni par l'enseignant)
 ```
 
 ### 2. **Installation**
