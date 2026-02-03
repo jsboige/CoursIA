@@ -20,12 +20,13 @@ Bienvenue dans le depot **CoursIA**, plateforme educative complete pour l'appren
 
 ## Introduction
 
-Ce depot contient **180+ notebooks Jupyter** interactifs couvrant :
+Ce depot contient **230+ notebooks Jupyter** interactifs couvrant :
 - **IA Symbolique** : Logiques formelles, argumentation, verification formelle (Lean 4, Tweety, Z3)
 - **Probabilites** : Inference bayesienne, modeles graphiques (Infer.NET)
 - **Theorie des jeux** : Nash, jeux evolutionnaires, cooperatifs, CFR, OpenSpiel
 - **Machine Learning** : ML.NET, algorithmes genetiques
 - **IA Generative** : OpenAI, LLMs, generation d'images (DALL-E, FLUX, Qwen, SD3.5)
+- **Trading Algorithmique** : QuantConnect LEAN, ML/DL/RL pour strategies de trading
 
 Les notebooks sont en **C# (.NET Interactive)**, **Python** et **Lean 4**, avec une documentation pedagogique complete.
 
@@ -35,7 +36,7 @@ Les notebooks sont en **C# (.NET Interactive)**, **Python** et **Lean 4**, avec 
 
 ```
 CoursIA/
-├── MyIA.AI.Notebooks/           # 180+ notebooks interactifs
+├── MyIA.AI.Notebooks/           # 230+ notebooks interactifs
 │   ├── GenAI/                   # IA Generative (30+ notebooks)
 │   │   ├── 00-GenAI-Environment/# Setup et configuration
 │   │   ├── Image/               # Generation d'images (19 notebooks)
@@ -62,6 +63,7 @@ CoursIA/
 │   ├── Search/                  # Recherche et optimisation (5 notebooks)
 │   ├── ML/                      # Machine Learning (14 notebooks)
 │   ├── RL/                      # Reinforcement Learning (3 notebooks)
+│   ├── QuantConnect/            # Trading algorithmique + AI (27 notebooks Python)
 │   ├── IIT/                     # PyPhi - Information integree (1 notebook)
 │   ├── Probas/                  # Probabilites (22 notebooks)
 │   ├── EPF/                     # Devoirs etudiants (4 notebooks)
@@ -101,8 +103,9 @@ CoursIA/
 | **Search** | 5 | C#, Python | ~1h10 | - |
 | **ML** | 14 | C#, Python | ~4h | - |
 | **RL** | 3 | Python | ~2h | - |
+| **QuantConnect** | 27 | Python | ~30h | QuantConnect (gratuit) |
 | **IIT** | 1 | Python | ~1h30 | - |
-| **Total** | **200+** | **Mixed** | **~85h** | - |
+| **Total** | **230+** | **Mixed** | **~115h** | - |
 
 ## Series de notebooks
 
@@ -249,6 +252,26 @@ CoursIA/
 
 [README RL](MyIA.AI.Notebooks/RL/README.md)
 
+### QuantConnect - Trading Algorithmique + AI
+
+**27 notebooks Python** sur le trading algorithmique avec QuantConnect LEAN, incluant ML/DL/RL/LLM.
+
+| Phase | Notebooks | Contenu |
+|-------|-----------|---------|
+| **Fondations LEAN** | 01-04 | Setup, Platform Fundamentals, Data Management, Research |
+| **Universe & Assets** | 05-08 | Universe Selection, Options, Futures/Forex, Multi-Asset |
+| **Trading Avance** | 09-12 | Order Types, Risk Management, Indicators, Backtesting |
+| **Algorithm Framework** | 13-15 | Alpha Models, Portfolio Construction, Optimization |
+| **Data Alternatives** | 16-17 | Alternative Data, Sentiment Analysis |
+| **ML/DL/AI** | 18-27 | Features, Classification, Regression, Deep Learning, RL, LLM |
+
+**Caracteristiques** :
+- Cloud-first (QuantConnect free tier)
+- 9 notebooks dedies ML/DL/RL/LLM
+- Production-ready (deployment live)
+
+[README QuantConnect](MyIA.AI.Notebooks/QuantConnect/README.md) | [Getting Started](MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md)
+
 ## Configuration et API Keys
 
 ### Fichiers de configuration par famille
@@ -259,6 +282,7 @@ CoursIA/
 | **Argument_Analysis** | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/.env` | `OPENAI_API_KEY`, `GLOBAL_LLM_SERVICE`, `BATCH_MODE` |
 | **Lean** | `MyIA.AI.Notebooks/SymbolicAI/Lean/.env` | `OPENAI_API_KEY`, `GITHUB_TOKEN`, `LEAN_VERSION` |
 | **GameTheory** | `MyIA.AI.Notebooks/GameTheory/.env` | `BATCH_MODE`, `OPENSPIEL_NUM_THREADS` |
+| **QuantConnect** | `MyIA.AI.Notebooks/QuantConnect/.env` | `QC_USER_ID`, `QC_API_TOKEN`, `QC_ORG_ID` |
 | **C# Notebooks** | `MyIA.AI.Notebooks/Config/settings.json` | `apikey`, `model`, `type` (openai/azure) |
 | **Docker ComfyUI** | `docker-configurations/services/comfyui-qwen/.env` | `CIVITAI_TOKEN`, `HF_TOKEN`, `COMFYUI_BEARER_TOKEN` |
 
