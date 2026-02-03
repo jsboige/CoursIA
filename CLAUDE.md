@@ -102,13 +102,83 @@ docker-configurations/       # Production infrastructure
 └── orchestrator/           # Service orchestration
 
 scripts/
-├── notebook_tools.py       # Main CLI: validate, skeleton, analyze, check-env, execute
+├── notebook_helpers.py     # Low-level notebook manipulation (NotebookHelper, CellIterator)
+├── notebook_tools.py       # High-level CLI: validate, skeleton, analyze, check-env, execute
 ├── extract_notebook_skeleton.py  # Notebook structure extraction
 ├── genai-stack/            # GenAI validation and management scripts
 └── archive/                # Archived legacy and one-shot scripts
 
 notebook-infrastructure/     # Papermill automation & MCP maintenance
 ```
+
+### Notebook Scripts (IMPORTANT pour Claude Code)
+
+Ces scripts sont essentiels pour la manipulation et l'iteration sur les notebooks :
+
+**notebook_helpers.py** - Classes de base :
+
+```python
+from notebook_helpers import NotebookHelper, CellIterator, NotebookExecutor
+
+# Manipulation de notebook
+helper = NotebookHelper("path/to/notebook.ipynb")
+helper.list_cells()                    # Liste toutes les cellules
+helper.get_cell_source(5)              # Source de la cellule 5
+helper.set_cell_source(5, "new code")  # Modifier une cellule
+helper.find_cells_with_pattern("import")  # Recherche par regex
+helper.find_cells_with_errors()        # Cellules en erreur
+helper.save()                          # Sauvegarder
+
+# Iteration corrective sur une cellule
+iterator = CellIterator(
+    notebook_path="notebook.ipynb",
+    cell_index=5,
+    objective="Output should contain 'SUCCESS'",
+    max_iterations=5
+)
+```
+
+**notebook_tools.py** - CLI et validation :
+
+```bash
+# Valider un notebook ou une famille
+python scripts/notebook_tools.py validate Lean --quick
+python scripts/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku/Sudoku-1.ipynb
+
+# Extraire le squelette (pour README)
+python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Tweety --output markdown
+
+# Analyser la structure
+python scripts/notebook_tools.py analyze MyIA.AI.Notebooks/SymbolicAI
+
+# Verifier l'environnement
+python scripts/notebook_tools.py check-env Lean
+
+# Executer (cell-by-cell ou papermill)
+python scripts/notebook_tools.py execute GameTheory --timeout 120 --cell-by-cell
+```
+
+**notebook_helpers.py** - CLI pour execution et debug :
+
+```bash
+# Lister les cellules d'un notebook
+python scripts/notebook_helpers.py list notebook.ipynb --verbose
+
+# Executer une cellule specifique (pour debug)
+python scripts/notebook_helpers.py execute notebook.ipynb --cell 5 --timeout 60
+
+# Executer tout le notebook cell-by-cell
+python scripts/notebook_helpers.py execute notebook.ipynb --verbose
+
+# Detecter le kernel
+python scripts/notebook_helpers.py detect-kernel notebook.ipynb
+
+# Obtenir la source ou output d'une cellule
+python scripts/notebook_helpers.py get-source notebook.ipynb 5
+python scripts/notebook_helpers.py get-output notebook.ipynb 5
+```
+
+**IMPORTANT** : Utiliser ces scripts plutot que du code Python ad-hoc lors de l'iteration sur les notebooks
 
 ### GenAI Notebooks Structure (4 levels)
 - **00-GenAI-Environment**: Setup and configuration
