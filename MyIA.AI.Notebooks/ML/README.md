@@ -52,6 +52,8 @@ dotnet --version
 # - Microsoft.ML.Probabilistic
 ```
 
+Documentation complete : [ML.Net/README.md](ML.Net/README.md)
+
 ## Python Data Science with Agents
 
 Formation complete en Data Science Python avec integration d'agents IA.
@@ -86,6 +88,8 @@ venv\Scripts\activate  # Windows
 pip install numpy pandas scikit-learn matplotlib seaborn
 pip install langchain openai python-dotenv  # Pour agents
 ```
+
+Documentation complete : [DataScienceWithAgents/README.md](DataScienceWithAgents/README.md)
 
 ## Public cible
 

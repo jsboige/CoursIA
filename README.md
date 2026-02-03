@@ -114,8 +114,9 @@ CoursIA/
 |-------|-----------|---------|-----------|--------|
 | **Tweety** | 10 | TweetyProject, logiques PL/FOL/DL, argumentation Dung, ASPIC+ | JDK 17+ (auto) | [README](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) |
 | **Lean** | 10 | Lean 4, types dependants, tactiques, Mathlib, LLM integration | WSL, elan | [README](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
-| **Argument_Analysis** | 6 | Analyse argumentative multi-agents avec Semantic Kernel | OpenAI API | - |
-| **Autres** | 21+ | Z3, OR-Tools, RDF.NET, Fast-Downward | Varies | - |
+| **Argument_Analysis** | 6 | Analyse argumentative multi-agents avec Semantic Kernel | OpenAI API | [README](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md) |
+| **Planners** | 1 | Fast-Downward, planification PDDL | Python | [README](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) |
+| **Autres** | 14+ | Z3, OR-Tools, RDF.NET | Varies | - |
 
 **Notebooks Tweety (detail)** :
 

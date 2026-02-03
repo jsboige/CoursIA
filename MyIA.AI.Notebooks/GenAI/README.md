@@ -1,26 +1,31 @@
-# 🖼️ GenAI Images Ecosystem - CoursIA
+# GenAI - Ecosysteme IA Generative
 
-> **Écosystème modulaire de génération d'images par Intelligence Artificielle**  
-> Architecture production-ready | 18 notebooks spécialisés | Compatible MCP
+Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : images, texte, agents et vibe-coding.
 
----
+## Vue d'ensemble
 
-## 📋 **Vue d'Ensemble**
+| Statistique | Valeur |
+|-------------|--------|
+| Notebooks | 50+ |
+| Sous-domaines | 6 (Environment, Image, Texte, SemanticKernel, EPF, Vibe-Coding) |
+| Duree totale | ~25-30h |
 
-L'écosystème GenAI Images CoursIA est une architecture modulaire complète pour l'exploration, l'apprentissage et la production d'images générées par IA. Cette structure suit les principes **SDDD (Semantic-Documentation-Driven-Design)** et s'intègre parfaitement avec l'infrastructure **MCP (MyIA Control Plane)**.
+## Structure
 
-### 🎯 **Objectifs**
-- **🎓 Pédagogique** : Progression structurée de l'initiation à l'expertise
-- **🔬 Expérimental** : Comparaison et évaluation des modèles
-- **🏭 Production** : Intégration dans workflows professionnels
-- **🔄 Évolutif** : Architecture modulaire extensible
+```
+GenAI/
+├── 00-GenAI-Environment/    # Setup et configuration (5 notebooks)
+├── Image/                   # Generation d'images (19 notebooks)
+├── Texte/                   # LLMs et texte (4 notebooks)
+├── SemanticKernel/          # Microsoft Semantic Kernel (15 notebooks)
+├── EPF/                     # Projets etudiants (4 notebooks)
+└── Vibe-Coding/             # Tutorials Claude Code et Roo Code
+```
 
----
+## Sous-domaines
 
-## 🏗️ **Architecture Modulaire**
-
-### 📖 **00-GenAI-Environment** (Setup & Infrastructure)
-*🟢 Niveau Débutant | Prérequis obligatoires*
+### 00-GenAI-Environment - Setup et Infrastructure
+*Niveau Debutant | Prerequis obligatoires*
 
 | Notebook | Description | Technologies |
 |----------|-------------|--------------|
@@ -67,8 +72,9 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 | **04-3-Production-Integration** | Intégration systèmes production | APIs, Microservices |
 | **04-3-Cross-Stitch-Pattern-Maker-Legacy** | Générateur motifs point de croix | DMC Colors, Pattern Generation |
 
-### 📝 **Texte/** (Generation de Texte)
-*Reference | Complementaire aux modules Images*
+### Texte/ - Generation de Texte
+
+*Complementaire aux modules Images*
 
 | Notebook | Description | Technologies |
 |----------|-------------|--------------|
@@ -76,6 +82,56 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 | **2_PromptEngineering** | Techniques de prompt engineering | Few-shot, Chain-of-Thought |
 | **3_RAG** | Retrieval Augmented Generation | Embeddings, Vector Search |
 | **4_LocalLlama** | Utilisation de LLMs locaux | Llama, Ollama |
+
+[README Texte](Texte/README.md)
+
+### SemanticKernel/ - Microsoft Semantic Kernel
+
+*SDK pour integration LLMs dans applications .NET/Python*
+
+| Notebook | Description |
+|----------|-------------|
+| **01-SemanticKernel-Intro** | Introduction, setup, premiers plugins |
+| **02-SemanticKernel-Advanced** | Plugins avances, chaining |
+| **03-SemanticKernel-Agents** | Agents autonomes |
+| **05-SemanticKernel-NotebookMaker** | Generation automatique de notebooks |
+
+[README SemanticKernel](SemanticKernel/README.md)
+
+### EPF/ - Projets Etudiants
+
+*Projets realises par les etudiants EPF*
+
+| Projet | Auteurs | Description |
+|--------|---------|-------------|
+| barbie-schreck | Carole & Cleo | Generation images style Barbie/Shrek |
+| receipe_maker | Dorian & Bastien | Generateur de recettes |
+| medical_chatbot | Louise & Jeanne Celine | Chatbot medical educatif |
+
+[README EPF](EPF/README.md)
+
+### Vibe-Coding/ - Tutorials IA Generative pour Developpeurs
+
+*Ateliers Claude Code et Roo Code*
+
+| Section | Contenu | Duree |
+|---------|---------|-------|
+| Claude-Code | 5 modules (decouverte a automatisation) | 13-16h |
+| Roo-Code | 5 modules + ateliers avances | ~15h |
+
+[README Vibe-Coding](Vibe-Coding/README.md)
+
+---
+
+## Liens vers sous-README
+
+| Sous-domaine | README |
+|--------------|--------|
+| Image | [Image/README.md](Image/README.md) |
+| Texte | [Texte/README.md](Texte/README.md) |
+| SemanticKernel | [SemanticKernel/README.md](SemanticKernel/README.md) |
+| EPF | [EPF/README.md](EPF/README.md) |
+| Vibe-Coding | [Vibe-Coding/README.md](Vibe-Coding/README.md) |
 
 ---
 
