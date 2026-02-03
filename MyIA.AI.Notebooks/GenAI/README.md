@@ -101,7 +101,7 @@ cd MyIA.AI.Notebooks/GenAI
 
 # Configuration environnement
 cp .env.example .env
-# Éditer .env avec vos API keys (ou utilisez .env.students si fourni par l'enseignant)
+# Éditer .env avec vos API keys (token fourni par l'enseignant pour le cours)
 ```
 
 ### 2. **Installation**
