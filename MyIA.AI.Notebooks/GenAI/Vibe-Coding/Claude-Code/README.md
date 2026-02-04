@@ -133,6 +133,20 @@ Semaine 3: Atelier 05 (Automatisation avancée)
 - Hooks (PreToolUse, PostToolUse)
 - Configuration projet avancée
 
+## Notebooks Interactifs CLI
+
+Une serie de **5 notebooks Jupyter** pour apprendre et experimenter avec `claude -p` en ligne de commande.
+
+| Notebook | Duree | Description |
+|----------|-------|-------------|
+| [01-Claude-CLI-Bases](notebooks/01-Claude-CLI-Bases.ipynb) | 20 min | Installation, premiere commande, modeles |
+| [02-Claude-CLI-Sessions](notebooks/02-Claude-CLI-Sessions.ipynb) | 25 min | Gestion des conversations et sessions |
+| [03-Claude-CLI-References](notebooks/03-Claude-CLI-References.ipynb) | 25 min | @-mentions, contexte fichiers, CLAUDE.md |
+| [04-Claude-CLI-Agents](notebooks/04-Claude-CLI-Agents.ipynb) | 30 min | Agents Explore, Plan, subagents |
+| [05-Claude-CLI-Automatisation](notebooks/05-Claude-CLI-Automatisation.ipynb) | 30 min | Pipelines, scripts, hooks |
+
+**Duree totale : 2h10** | [README des notebooks](notebooks/README.md)
+
 ## Documentation complémentaire
 
 ### Guides dans ce dépôt
@@ -141,6 +155,7 @@ Semaine 3: Atelier 05 (Automatisation avancée)
 |----------|-------------|-------------|
 | **Introduction** | [docs/claude-code/INTRO-CLAUDE-CODE.md](../docs/claude-code/INTRO-CLAUDE-CODE.md) | Concepts et fonctionnalités |
 | **Installation** | [docs/claude-code/INSTALLATION-CLAUDE-CODE.md](../docs/claude-code/INSTALLATION-CLAUDE-CODE.md) | Guide complet avec OpenRouter |
+| **Modeles alternatifs** | [docs/claude-code/OPENROUTER-MODELES-ALTERNATIFS.md](../docs/claude-code/OPENROUTER-MODELES-ALTERNATIFS.md) | GLM-4.7, Qwen3 Coder via OpenRouter |
 | **Aide-mémoire** | [docs/claude-code/CHEAT-SHEET.md](../docs/claude-code/CHEAT-SHEET.md) | Commandes essentielles |
 | **Concepts avancés** | [docs/claude-code/CONCEPTS-AVANCES.md](../docs/claude-code/CONCEPTS-AVANCES.md) | Skills, Subagents, Hooks, MCP |
 | **Comparaison** | [docs/claude-code/COMPARAISON-CLAUDE-ROO.md](../docs/claude-code/COMPARAISON-CLAUDE-ROO.md) | Claude Code vs Roo Code |
