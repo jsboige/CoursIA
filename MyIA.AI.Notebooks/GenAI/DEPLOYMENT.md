@@ -1,7 +1,8 @@
 # 🚀 DEPLOYMENT GUIDE - GenAI Images Production
 
 > **Guide complet de déploiement en production**  
-> APIs Externes | Sécurité | Monitoring | Scaling | Best Practices
+> APIs Externes | Sécurité | Monitoring | Scaling | Best Practices 
+
 
 ---
 
