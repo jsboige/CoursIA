@@ -27,13 +27,44 @@ Analyser un notebook Jupyter et ajouter du markdown pedagogique aux endroits sui
 | `--fix-errors` | Tenter de corriger les erreurs d'execution |
 | `--strict` | Exiger une interpretation apres CHAQUE cellule de code |
 
+## REGLE FONDAMENTALE : Position des cellules
+
+### Interpretation = APRES le code, JAMAIS avant
+
+**CRITIQUE** : Une cellule d'interpretation/analyse doit TOUJOURS etre placee APRES la cellule de code qu'elle commente.
+
+| Type de cellule | Position correcte | Exemple de titre |
+|-----------------|-------------------|------------------|
+| **Introduction** | AVANT le code | "## Section X", "### Preparation des donnees" |
+| **Interpretation** | APRES le code | "### Interpretation des resultats", "### Analyse du..." |
+
+**Comment distinguer ?**
+- Si le texte utilise le **futur** ("Ce code va...") → Introduction → AVANT
+- Si le texte utilise le **passe/present** ("Le resultat montre...", "On observe...") → Interpretation → APRES
+
+### Exemple CORRECT
+
+```
+[MARKDOWN] ### Preparation du modele           ← Introduction (futur)
+[CODE]     model.fit(X, y)                      ← Code
+[MARKDOWN] ### Interpretation des resultats    ← Interpretation (passe) ✓
+```
+
+### Exemple INCORRECT (Erreur commune)
+
+```
+[MARKDOWN] ### Interpretation des resultats    ← ERREUR! Avant le code ✗
+[CODE]     model.fit(X, y)                      ← Code
+[MARKDOWN] ### Section suivante
+```
+
 ## Criteres d'amelioration
 
 ### Ou ajouter du markdown ?
 
-1. **Avant une section de code complexe** : Expliquer ce que le code va faire et pourquoi
-2. **Apres des resultats numeriques** : Interpreter les valeurs, comparer avec les attentes
-3. **Apres des erreurs ou warnings** : Expliquer la cause et la resolution
+1. **Avant une section de code complexe** : Expliquer ce que le code va faire et pourquoi (INTRODUCTION)
+2. **Apres des resultats numeriques** : Interpreter les valeurs, comparer avec les attentes (INTERPRETATION)
+3. **Apres des erreurs ou warnings** : Expliquer la cause et la resolution (INTERPRETATION)
 4. **Entre deux concepts distincts** : Transition pedagogique
 5. **En conclusion de partie** : Resume avec tableau recapitulatif
 6. **Entre deux cellules de code consecutives** : Ajouter une transition ou explication
@@ -105,6 +136,28 @@ NotebookEdit(
 2. **Identifier les points d'insertion** (apres quelle cellule inserer)
 3. **Inserer dans l'ordre inverse** (du bas vers le haut) pour eviter le decalage des indices
 4. Ou utiliser les **cell_id** plutot que les indices pour des insertions stables
+
+### Verification du positionnement des interpretations
+
+**AVANT de terminer**, verifier que chaque cellule d'interpretation est bien positionnee :
+
+```bash
+# Script de verification rapide
+python -c "
+import json
+with open('notebook.ipynb') as f:
+    nb = json.load(f)
+for i, cell in enumerate(nb['cells']):
+    if cell['cell_type'] == 'markdown':
+        src = ''.join(cell['source']).lower()
+        if any(p in src for p in ['interprétation', 'analyse du', 'résultat']):
+            prev_type = nb['cells'][i-1]['cell_type'] if i > 0 else 'none'
+            status = '✓' if prev_type == 'code' else '⚠️ ERREUR'
+            print(f'{status} Row {i}: prev={prev_type}')
+"
+```
+
+Si une interpretation est precedee de markdown au lieu de code → **la deplacer apres le code correspondant**.
 
 ## OBLIGATOIRE : Verification du diff avant completion
 
