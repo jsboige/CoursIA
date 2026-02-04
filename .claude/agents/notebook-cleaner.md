@@ -309,6 +309,99 @@ Si OUI a ces 3 questions -> **CORRIGER**, pas checkout.
 git checkout -- notebook.ipynb
 ```
 
+## REGLES SPECIFIQUES : SERIES GENAI (Texte et SemanticKernel)
+
+Les notebooks GenAI necessitent des corrections specifiques en plus du nettoyage standard.
+
+### 1. Migration des modeles (PRIORITE HAUTE)
+
+**Les modeles gpt-4o et gpt-4o-mini sont OBSOLETES. Migrer vers gpt-5-mini.**
+
+| Pattern a trouver | Remplacement |
+|-------------------|--------------|
+| `model="gpt-4o-mini"` | `model="gpt-5-mini"` |
+| `model="gpt-4o"` | `model="gpt-5-mini"` |
+| `"gpt-4o-mini"` dans les exemples .env | `"gpt-5-mini"` |
+| `OPENAI_CHAT_MODEL_ID="gpt-4o"` | `OPENAI_CHAT_MODEL_ID="gpt-5-mini"` |
+
+**EXCEPTION** : Conserver les anciens modeles dans :
+- Les cellules de comparaison historique (ex: "Evolution des modeles")
+- Les exemples explicitement documentes comme "ancienne API"
+- Les tests de compatibilite entre modeles
+
+### 2. Nettoyage des parametres commentes
+
+**Pour gpt-5-mini, les parametres max_tokens et temperature sont souvent inutiles.**
+
+| Pattern | Action |
+|---------|--------|
+| `# max_tokens=200,` dans un appel API | SUPPRIMER la ligne commentee |
+| `# temperature=0.7` dans un appel API | SUPPRIMER la ligne commentee |
+| `# max_tokens=...` avec explication pedagogique | CONSERVER si pertinent |
+| `max_tokens=...` actif (non commente) | CONSERVER |
+
+**IMPORTANT** : Ne supprimer QUE les lignes commentees sans valeur pedagogique. Si le commentaire explique le parametre (ex: `# temperature=0.7 pour plus de creativite`), le conserver.
+
+### 3. Detection des sections dupliquees
+
+**Pattern frequent** : Deux cellules "Conclusion" consecutives en fin de notebook.
+
+```
+[MD] # Conclusion (cell-26)     <- Garder la plus complete
+[MD] ## Conclusion (cell-27)    <- SUPPRIMER si redondant
+```
+
+**Processus** :
+1. Detecter les cellules avec titres similaires (Conclusion, Resume, Bilan)
+2. Comparer leur contenu
+3. Fusionner ou supprimer la moins complete
+
+### 4. Coherence des exemples de configuration
+
+Les exemples de `.env` dans les cellules markdown doivent etre coherents :
+
+**Corriger** :
+```markdown
+# Ancien (incorrect)
+OPENAI_CHAT_MODEL_ID="gpt-4o-mini"
+
+# Nouveau (correct)
+OPENAI_CHAT_MODEL_ID="gpt-5-mini"
+```
+
+### 5. Modeles de raisonnement (o4-mini, gpt-5-thinking)
+
+**Ces modeles utilisent `reasoning_effort` au lieu de `temperature`.**
+
+| Parametre | Modeles Chat | Modeles Raisonnement |
+|-----------|--------------|---------------------|
+| Creativite | `temperature=0.7` | `reasoning_effort="low"` |
+| Precision | `temperature=0.2` | `reasoning_effort="medium"` |
+| Complexe | `temperature=0` | `reasoning_effort="high"` |
+
+**Verifier** que les cellules utilisant o4-mini n'ont pas de parametre temperature.
+
+### 6. Verifications structurelles specifiques GenAI
+
+| Verification | Description |
+|--------------|-------------|
+| **Import .env** | Chaque notebook doit avoir `load_dotenv('../.env')` en debut |
+| **Mode batch** | Les cellules interactives doivent gerer `BATCH_MODE` |
+| **Outputs longs** | Les outputs de pip install doivent etre tronques ou caches |
+
+### Checklist de nettoyage GenAI
+
+Avant de terminer, verifier :
+
+- [ ] Tous les `gpt-4o-mini` remplaces par `gpt-5-mini`
+- [ ] Pas de parametres commentes inutiles (max_tokens, temperature)
+- [ ] Pas de conclusions dupliquees
+- [ ] Exemples .env coherents avec gpt-5-mini
+- [ ] Structure intro -> code -> interpretation respectee
+- [ ] Hierarchie de titres coherente
+
+---
+
 ## INVOCATION
 
 Via la commande :
@@ -331,6 +424,12 @@ Task(
     5. Les indices changent apres chaque operation !
     6. Une operation a la fois, verification, puis suivante
     7. JAMAIS git checkout sauf corruption MAJEURE (5+ cellules code ecrasees)
+
+    REGLES GENAI (si applicable):
+    8. Migrer gpt-4o/gpt-4o-mini vers gpt-5-mini
+    9. Supprimer les parametres commentes inutiles (# max_tokens, # temperature)
+    10. Fusionner les conclusions dupliquees
+    11. Mettre a jour les exemples .env
     """,
     description="Cleanup notebook",
     model="sonnet"
