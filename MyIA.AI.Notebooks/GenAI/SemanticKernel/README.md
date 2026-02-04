@@ -6,9 +6,10 @@ Serie de notebooks couvrant Microsoft Semantic Kernel, un SDK pour l'integration
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks Python | 8 (serie principale) |
-| Notebooks C# | 7 (avances/templates) |
-| Duree estimee | ~6h30 (serie Python) |
+| Notebooks Python | 8 (serie principale 01-08) |
+| Notebooks Avances | 4 (interop Python/C# 09-10) |
+| Templates | 3 |
+| Duree estimee | ~9h (serie complete) |
 | Version SK cible | 1.39+ |
 
 ## Serie principale (Python)
@@ -26,13 +27,14 @@ Parcours pedagogique complet sur Semantic Kernel en Python :
 | 07 | [SK-7-MultiModal](07-SemanticKernel-MultiModal.ipynb) | DALL-E, Whisper, GPT-4 Vision | 45 min |
 | 08 | [SK-8-MCP](08-SemanticKernel-MCP.ipynb) | Model Context Protocol, Interoperabilite | 45 min |
 
-## Notebooks avances (C#/.NET)
+## Notebooks avances (Python/C# Interop)
 
-| Notebook | Description | Kernel |
-|----------|-------------|--------|
-| [04-Building Notebooks](04-SemanticKernel-Building%20Notebooks%20with%20clr.ipynb) | Construction de notebooks via CLR | C# |
-| [05-NotebookMaker](05-SemanticKernel-NotebookMaker.ipynb) | **Systeme 3-agents** (Admin, Coder, Reviewer) | C# |
-| [05-NotebookMaker-batch](05-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch | C# |
+| # | Notebook | Description | Duree |
+|---|----------|-------------|-------|
+| 09 | [SK-9-Building-CLR](09-SemanticKernel-Building-CLR.ipynb) | Interop Python/C# via pythonnet, chargement DLL .NET | 40 min |
+| 10 | [SK-10-NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) | **Systeme 3-agents** (Admin, Coder, Reviewer) pour generation de notebooks | 60 min |
+| 10a | [SK-10a-NotebookMaker-batch](10a-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch sans UI interactive | 30 min |
+| 10b | [SK-10b-NotebookMaker-batch-param](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | Version parametrisee pour Papermill | 30 min |
 
 ## Templates
 
@@ -51,28 +53,42 @@ Parcours pedagogique complet sur Semantic Kernel en Python :
 | **Plugins** | Collections de fonctions | 01, 02 |
 | **Function Calling** | `FunctionChoiceBehavior.Auto()` | 02 |
 | **Agents** | Entites autonomes | 03 |
-| **AgentGroupChat** | Collaboration multi-agents | 03 |
+| **AgentGroupChat** | Collaboration multi-agents | 03, 10 |
 | **Filters** | Interception avant/apres | 04 |
 | **Vector Stores** | RAG, embeddings | 05 |
 | **Process Framework** | Workflows orchestres | 06 |
 | **Multi-Modal** | Images, audio, vision | 07 |
 | **MCP** | Interoperabilite des outils | 08 |
+| **pythonnet/CLR** | Interop Python/.NET | 09 |
+| **NotebookState** | Gestion etat notebook | 10 |
+| **SelectionStrategy** | Choix agent dynamique | 10 |
 
 ## Parcours recommande
 
 ```
-01-Fundamentals ─────> 02-Functions ─────> 03-Agents
-      |                      |                  |
-      |                      |                  v
-      |                      |         05-NotebookMaker (avance)
-      |                      |
-      v                      v
-04-Filters <────────> 05-VectorStores
-      |                      |
-      v                      v
-06-ProcessFramework   07-MultiModal
-      |                      |
-      └──────────> 08-MCP <──┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                     SERIE PRINCIPALE (Python)                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  01-Fundamentals ───> 02-Functions ───> 03-Agents                   │
+│        │                    │                │                      │
+│        v                    v                v                      │
+│  04-Filters <────────> 05-VectorStores      │                      │
+│        │                    │                │                      │
+│        v                    v                │                      │
+│  06-ProcessFramework   07-MultiModal         │                      │
+│        │                    │                │                      │
+│        └──────────> 08-MCP <─┘               │                      │
+│                                              │                      │
+├─────────────────────────────────────────────────────────────────────┤
+│                     SERIE AVANCEE (Interop)                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                              │                      │
+│                                              v                      │
+│  09-Building-CLR ─────────────────> 10-NotebookMaker                │
+│  (Python/C# Interop)                (Agents generateurs)            │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Prerequisites
@@ -125,6 +141,13 @@ dotnet --version
 - [MCP Specification](https://modelcontextprotocol.io/)
 
 ## Changelog
+
+### Fevrier 2026
+
+- Reorganisation de la serie complete (01-10)
+- Renumerotation notebooks avances : 09-Building-CLR, 10-NotebookMaker
+- Verification et validation de tous les notebooks (100% execution)
+- Mise a jour README avec parcours recommande ameliore
 
 ### Janvier 2026
 
