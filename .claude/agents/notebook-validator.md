@@ -696,7 +696,7 @@ for nb in notebooks:
 ### Scripts disponibles
 
 ```bash
-# Validation via notebook_tools.py
+# Validation via notebook_tools.py (général)
 python scripts/notebook_tools.py validate MyIA.AI.Notebooks/ML/notebook.ipynb --verbose
 
 # Validation famille complète
@@ -704,6 +704,63 @@ python scripts/notebook_tools.py validate MyIA.AI.Notebooks/GameTheory/ --quick
 
 # Analyse de la structure
 python scripts/notebook_tools.py skeleton notebook.ipynb --output json
+```
+
+### Scripts GenAI (scripts/genai-stack/)
+
+**IMPORTANT** : Pour les notebooks GenAI, utiliser ces scripts spécialisés :
+
+```bash
+# Validation complète de la stack GenAI (services, auth, modèles)
+python scripts/genai-stack/validate_stack.py
+
+# Validation des notebooks GenAI avec Papermill
+python scripts/genai-stack/validate_notebooks.py MyIA.AI.Notebooks/GenAI/Image/01-Foundation/
+
+# Vérification GPU/VRAM disponibles
+python scripts/genai-stack/check_vram.py
+
+# Liste des modèles disponibles sur ComfyUI
+python scripts/genai-stack/list_models.py
+
+# Liste des nodes ComfyUI disponibles
+python scripts/genai-stack/list_nodes.py
+```
+
+#### Mapping notebooks GenAI -> services requis
+
+```python
+NOTEBOOK_SERVICE_MAP = {
+    "cloud": ["01-1-*.ipynb", "01-3-*.ipynb"],      # OpenAI DALL-E (API cloud)
+    "forge": ["01-4-*.ipynb", "02-3-*.ipynb"],      # SD Forge local/remote
+    "qwen": ["01-5-*.ipynb", "02-1-*.ipynb"],       # ComfyUI Qwen (~29GB VRAM)
+    "zimage": ["02-4-*.ipynb"],                      # Z-Image/vLLM (~10GB VRAM)
+    "multi": ["03-*.ipynb"],                         # Multi-modèles
+    "apps": ["04-*.ipynb"]                           # Applications
+}
+```
+
+#### Variables d'environnement GenAI
+
+Vérifier que `.env` contient :
+
+```bash
+# MyIA.AI.Notebooks/GenAI/.env
+LOCAL_MODE=false              # true pour Docker local, false pour myia.io
+COMFYUI_API_URL=https://qwen-image-edit.myia.io
+COMFYUI_AUTH_TOKEN=...        # Bearer token requis
+OPENAI_API_KEY=...            # Pour notebooks 01-Foundation
+ZIMAGE_API_URL=https://z-image.myia.io
+```
+
+#### Skill associé
+
+Utiliser `/validate-genai` pour une validation rapide de la stack :
+
+```
+/validate-genai all           # Validation complète
+/validate-genai services      # Services uniquement
+/validate-genai notebooks     # Notebooks uniquement
 ```
 
 ### Helpers Python

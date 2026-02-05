@@ -625,6 +625,54 @@ execute_notebook(
 )
 ```
 
+## Scripts GenAI (scripts/genai-stack/)
+
+**IMPORTANT** : Pour les notebooks GenAI, utiliser ces scripts spécialisés :
+
+```bash
+# Validation complète de la stack GenAI avant exécution
+python scripts/genai-stack/validate_stack.py
+
+# Exécution des notebooks GenAI avec Papermill et authentification
+python scripts/genai-stack/validate_notebooks.py MyIA.AI.Notebooks/GenAI/Image/01-Foundation/
+
+# Vérification GPU/VRAM disponibles (requis pour 02-Advanced)
+python scripts/genai-stack/check_vram.py
+
+# Liste des modèles disponibles sur ComfyUI
+python scripts/genai-stack/list_models.py
+```
+
+### Configuration GenAI requise
+
+Vérifier que `MyIA.AI.Notebooks/GenAI/.env` contient :
+
+```bash
+LOCAL_MODE=false              # true pour Docker local, false pour myia.io
+COMFYUI_API_URL=https://qwen-image-edit.myia.io
+COMFYUI_AUTH_TOKEN=...        # Bearer token requis pour ComfyUI
+OPENAI_API_KEY=...            # Pour notebooks 01-Foundation (DALL-E)
+ZIMAGE_API_URL=https://z-image.myia.io
+```
+
+### Mapping notebooks GenAI -> services requis
+
+| Notebooks | Service | VRAM requis |
+|-----------|---------|-------------|
+| 01-1, 01-3 | OpenAI API (cloud) | N/A |
+| 01-4, 02-3 | SD Forge | ~8GB |
+| 01-5, 02-1 | ComfyUI Qwen | ~29GB |
+| 02-4 | Z-Image/vLLM | ~10GB |
+| 03-* | Multi-modèles | Variable |
+| 04-* | Applications | Variable |
+
+### Skills associés
+
+```
+/validate-genai all           # Valider la stack complète
+/execute-notebook <path>      # Exécuter un notebook
+```
+
 ## Bonnes pratiques
 
 | Pratique | Description |
@@ -635,6 +683,7 @@ execute_notebook(
 | **Stop on error = false** | Pour rapport complet d'exécution |
 | **Sauvegarder les sorties** | Pour analyse ultérieure |
 | **Redémarrer kernel si corrompu** | Après échecs multiples |
+| **Valider GenAI stack avant exécution** | Utiliser scripts/genai-stack/validate_stack.py |
 
 ## Limitations connues
 
