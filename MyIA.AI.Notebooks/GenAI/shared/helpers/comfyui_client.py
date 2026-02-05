@@ -344,6 +344,158 @@ class ComfyUIClient:
 
         return result
 
+    def generate_text2image_lightning(
+        self,
+        prompt: str,
+        width: int = 1024,
+        height: int = 1024,
+        steps: int = 4,
+        seed: Optional[int] = None,
+        cfg: float = 1.0,
+        save_prefix: str = "qwen_lightning",
+        timeout: int = 60,
+    ) -> Dict[str, Any]:
+        """
+        Generation rapide avec modele Nunchaku Lightning V2.0 INT4 (4 steps).
+
+        ~5x plus rapide que generate_text2image() grace a:
+        - Quantification INT4 (12GB vs 20GB)
+        - Seulement 4 steps de diffusion au lieu de 20
+        - Modele distille (Lightning)
+
+        V2.0 vs V1.0 : Moins de saturation, textures de peau plus naturelles.
+
+        Modeles requis:
+          - diffusion_models/svdq-int4_r128-qwen-image-edit-2509-lightningv2.0-4steps.safetensors
+          - text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
+          - vae/qwen_image_vae.safetensors
+
+        Args:
+            prompt: Prompt textuel
+            width: Largeur de l'image (defaut: 1024)
+            height: Hauteur de l'image (defaut: 1024)
+            steps: Nombre de steps (defaut: 4 pour Lightning)
+            seed: Seed aleatoire (None = aleatoire)
+            cfg: CFG scale (defaut: 1.0)
+            save_prefix: Prefixe pour le fichier de sortie
+            timeout: Timeout en secondes (defaut: 60s car beaucoup plus rapide)
+
+        Returns:
+            Resultat de la generation (historique ComfyUI)
+        """
+        if seed is None:
+            seed = random.randint(0, 2**32 - 1)
+
+        # WORKFLOW NUNCHAKU LIGHTNING INT4 - 4 steps
+        # Utilise NunchakuQwenImageDiTLoader au lieu de UNETLoader
+        workflow = {
+            # VAE
+            "1": {
+                "class_type": "VAELoader",
+                "inputs": {
+                    "vae_name": "qwen_image_vae.safetensors"
+                }
+            },
+            # CLIP (text encoder)
+            "2": {
+                "class_type": "CLIPLoader",
+                "inputs": {
+                    "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                    "type": "qwen_image",
+                    "device": "default"
+                }
+            },
+            # Nunchaku Lightning V2.0 INT4 Model Loader
+            "3": {
+                "class_type": "NunchakuQwenImageDiTLoader",
+                "inputs": {
+                    "model_path": "svdq-int4_r128-qwen-image-edit-2509-lightningv2.0-4steps.safetensors",
+                    "cache_threshold": "enable",
+                    "attention_mode": 20,
+                    "moe_mode": "disable"
+                }
+            },
+            # ModelSamplingAuraFlow
+            "4": {
+                "class_type": "ModelSamplingAuraFlow",
+                "inputs": {
+                    "model": ["3", 0],
+                    "shift": 3.0
+                }
+            },
+            # CFGNorm
+            "5": {
+                "class_type": "CFGNorm",
+                "inputs": {
+                    "model": ["4", 0],
+                    "strength": 1.0
+                }
+            },
+            # Encodage du prompt (positif)
+            "6": {
+                "class_type": "TextEncodeQwenImageEdit",
+                "inputs": {
+                    "clip": ["2", 0],
+                    "prompt": prompt,
+                    "vae": ["1", 0]
+                }
+            },
+            # Conditioning negatif (vide)
+            "7": {
+                "class_type": "ConditioningZeroOut",
+                "inputs": {
+                    "conditioning": ["6", 0]
+                }
+            },
+            # Latent vide
+            "8": {
+                "class_type": "EmptySD3LatentImage",
+                "inputs": {
+                    "width": width,
+                    "height": height,
+                    "batch_size": 1
+                }
+            },
+            # KSampler - 4 steps avec scheduler simple
+            "9": {
+                "class_type": "KSampler",
+                "inputs": {
+                    "model": ["5", 0],
+                    "positive": ["6", 0],
+                    "negative": ["7", 0],
+                    "latent_image": ["8", 0],
+                    "seed": seed,
+                    "steps": steps,
+                    "cfg": cfg,
+                    "sampler_name": "euler",
+                    "scheduler": "simple",
+                    "denoise": 1.0
+                }
+            },
+            # VAE Decode
+            "10": {
+                "class_type": "VAEDecode",
+                "inputs": {
+                    "samples": ["9", 0],
+                    "vae": ["1", 0]
+                }
+            },
+            # Save
+            "11": {
+                "class_type": "SaveImage",
+                "inputs": {
+                    "images": ["10", 0],
+                    "filename_prefix": save_prefix
+                }
+            }
+        }
+
+        # Enqueue et attendre la completion
+        prompt_id = self.queue_prompt(workflow)
+        result = self.wait_for_completion(prompt_id, timeout=timeout)
+
+        return result
+
 
 def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
     """

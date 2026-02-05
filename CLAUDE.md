@@ -296,6 +296,55 @@ SaveImage
 | Z-Image GGUF | Incompatibilite dimensionnelle (2560 vs 2304) entre RecurrentGemma et Gemma-2 |
 | Qwen GGUF | Non teste, prefer les poids fp8 pour qualite |
 
+### Scripts de validation GenAI (scripts/genai-stack/)
+
+**IMPORTANT pour agents** : Utiliser ces scripts au lieu de demarrer des kernels MCP directement.
+
+```bash
+# Validation notebooks GenAI avec Papermill
+python scripts/genai-stack/validate_notebooks.py MyIA.AI.Notebooks/GenAI/Image/01-Foundation/
+
+# Validation stack complete (services, auth)
+python scripts/genai-stack/validate_stack.py
+
+# Verification GPU/VRAM
+python scripts/genai-stack/check_vram.py
+
+# Liste modeles ComfyUI disponibles
+python scripts/genai-stack/list_models.py
+```
+
+### Mapping notebooks GenAI → services
+
+| Notebooks | Service | Prerequis |
+|-----------|---------|-----------|
+| 01-1, 01-3 | OpenAI API (cloud) | OPENAI_API_KEY |
+| 01-4, 02-3 | SD Forge | Service local ou myia.io |
+| 01-5, 02-1 | ComfyUI Qwen | COMFYUI_AUTH_TOKEN, ~29GB VRAM |
+| 02-4 | Z-Image/vLLM | ~10GB VRAM |
+| 03-* | Multi-modeles | Tous les services |
+| 04-* | Applications | Variable |
+
+### Configuration .env GenAI
+
+Fichier : `MyIA.AI.Notebooks/GenAI/.env`
+
+```bash
+# Mode local (Docker) vs remote (myia.io)
+LOCAL_MODE=false
+
+# ComfyUI
+COMFYUI_API_URL=https://qwen-image-edit.myia.io
+COMFYUI_AUTH_TOKEN=<bearer_token_bcrypt>
+
+# OpenAI via OpenRouter
+OPENAI_API_KEY=sk-or-v1-...
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+
+# Mode batch pour execution automatisee
+BATCH_MODE=false
+```
+
 ## Configuration
 
 - **OpenAI/API keys**: `MyIA.AI.Notebooks/GenAI/.env` (template: `.env.example`)

@@ -10,7 +10,7 @@ services:
       - ../../shared/models:/models:ro
     environment:
       - HF_TOKEN=${HF_TOKEN}
-      - CUDA_VISIBLE_DEVICES=0
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - NCCL_P2P_DISABLE=1
     # vLLM Omni serve command for Z-Image-Turbo text-to-image
     # API endpoint: /v1/chat/completions (OpenAI-compatible)
@@ -27,7 +27,7 @@ services:
       - "bfloat16"
       - "--trust-remote-code"
       - "--gpu-memory-utilization"
-      - "0.3"
+      - "0.8"
       - "--max-num-seqs"
       - "4"
       - "--vae-use-slicing"
@@ -44,7 +44,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 180s
+      start_period: 300s
     restart: unless-stopped
     networks:
       - genai-network

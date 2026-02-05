@@ -141,6 +141,58 @@ Fixes Applied:
 4. **External Services**: Some notebooks depend on external services (DBpedia, etc.)
 5. **.NET Cold Start**: First .NET kernel start may timeout (30-60s), retry once
 
+## GenAI Notebooks - Configuration spécifique
+
+### Scripts dédiés (scripts/genai-stack/)
+
+Pour les notebooks GenAI, utiliser les scripts spécialisés :
+
+```bash
+# Validation complète de la stack GenAI
+python scripts/genai-stack/validate_stack.py
+
+# Validation des notebooks GenAI avec authentification
+python scripts/genai-stack/validate_notebooks.py MyIA.AI.Notebooks/GenAI/Image/
+
+# Vérification GPU/VRAM
+python scripts/genai-stack/check_vram.py
+
+# Liste des modèles ComfyUI disponibles
+python scripts/genai-stack/list_models.py
+```
+
+### Mapping notebooks -> services requis
+
+| Notebooks | Service | Prérequis |
+|-----------|---------|-----------|
+| 01-1, 01-3 | OpenAI API | OPENAI_API_KEY dans .env |
+| 01-4, 02-3 | SD Forge | Service local ou myia.io |
+| 01-5, 02-1 | ComfyUI Qwen | COMFYUI_AUTH_TOKEN, ~29GB VRAM |
+| 02-4 | Z-Image/vLLM | ~10GB VRAM |
+| 03-* | Multi-modèles | Tous les services |
+| 04-* | Applications | Variable |
+
+### Configuration .env requise
+
+```bash
+# MyIA.AI.Notebooks/GenAI/.env
+LOCAL_MODE=false              # true pour Docker local
+COMFYUI_API_URL=https://qwen-image-edit.myia.io
+COMFYUI_AUTH_TOKEN=...        # Bearer token requis
+OPENAI_API_KEY=...            # Pour DALL-E
+ZIMAGE_API_URL=https://z-image.myia.io
+```
+
+### Skill associé
+
+Utiliser `/validate-genai` pour valider la stack avant les notebooks :
+
+```
+/validate-genai all           # Validation complète
+/validate-genai services      # Services uniquement
+/validate-genai notebooks     # Notebooks uniquement
+```
+
 ## Examples
 
 ```
@@ -148,5 +200,7 @@ Fixes Applied:
 /verify-notebooks Search --quick
 /verify-notebooks MyIA.AI.Notebooks/SymbolicAI/Tweety.ipynb --fix
 /verify-notebooks Argument_Analysis --python-only
+/verify-notebooks GenAI --quick
+/verify-notebooks GenAI/Image/01-Foundation --fix
 /verify-notebooks all --quick
 ```
