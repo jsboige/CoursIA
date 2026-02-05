@@ -63,8 +63,8 @@ Image/
 |----------|---------|
 | [04-1-Educational-Content-Generation](04-Applications/04-1-Educational-Content-Generation.ipynb) | Contenu educatif |
 | [04-2-Creative-Workflows](04-Applications/04-2-Creative-Workflows.ipynb) | Workflows creatifs |
-| [04-3-Cross-Stitch-Pattern-Maker-Legacy](04-Applications/04-3-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) |
 | [04-3-Production-Integration](04-Applications/04-3-Production-Integration.ipynb) | Integration production |
+| [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) |
 
 [README 04-Applications](04-Applications/README.md)
 

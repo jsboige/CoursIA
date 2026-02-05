@@ -14,10 +14,10 @@ Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : im
 
 ```
 GenAI/
-├── 00-GenAI-Environment/    # Setup et configuration (5 notebooks)
+├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
 ├── Image/                   # Generation d'images (19 notebooks)
-├── Texte/                   # LLMs et texte (4 notebooks)
-├── SemanticKernel/          # Microsoft Semantic Kernel (15 notebooks)
+├── Texte/                   # LLMs et generation de texte (10 notebooks)
+├── SemanticKernel/          # Microsoft Semantic Kernel (14 notebooks)
 ├── EPF/                     # Projets etudiants (4 notebooks)
 └── Vibe-Coding/             # Tutorials Claude Code et Roo Code
 ```
@@ -33,6 +33,8 @@ GenAI/
 | **00-2-Docker-Services-Management** | Gestion services conteneurisés | Docker Compose, Portainer |
 | **00-3-API-Endpoints-Configuration** | Configuration endpoints API | OpenAI, Hugging Face, Local |
 | **00-4-Environment-Validation** | Tests et validation setup | Pytest, Monitoring |
+| **00-5-ComfyUI-Local-Test** | Test local des services ComfyUI | ComfyUI, Bearer Token |
+| **00-6-Local-Docker-Deployment** | Deploiement Docker local complet | Docker Compose, GPU |
 
 ### 🖼️ **01-Images-Foundation** (Modèles Base)
 *🟢 Niveau Débutant | Introduction aux fondamentaux*
@@ -72,29 +74,28 @@ GenAI/
 | **04-3-Production-Integration** | Intégration systèmes production | APIs, Microservices |
 | **04-3-Cross-Stitch-Pattern-Maker-Legacy** | Générateur motifs point de croix | DMC Colors, Pattern Generation |
 
-### Texte/ - Generation de Texte
+### Texte/ - Generation de Texte par IA
 
-*Complementaire aux modules Images*
+*Serie complete sur les LLMs et APIs OpenAI modernes (10 notebooks)*
 
-| Notebook | Description | Technologies |
-|----------|-------------|--------------|
-| **1_OpenAI_Intro** | Introduction a l'API OpenAI | GPT-4, Chat Completions |
-| **2_PromptEngineering** | Techniques de prompt engineering | Few-shot, Chain-of-Thought |
-| **3_RAG** | Retrieval Augmented Generation | Embeddings, Vector Search |
-| **4_LocalLlama** | Utilisation de LLMs locaux | Llama, Ollama |
+| Tier | Notebooks | Contenu |
+|------|-----------|---------|
+| **Fondations** | 1-2 | OpenAI Intro, Prompt Engineering |
+| **Sorties Structurees** | 3-4 | Structured Outputs, Function Calling |
+| **Augmentation** | 5-7 | RAG moderne, PDF/Web Search, Code Interpreter |
+| **Avance** | 8-10 | Reasoning Models, Production Patterns, Local LLMs |
 
 [README Texte](Texte/README.md)
 
 ### SemanticKernel/ - Microsoft Semantic Kernel
 
-*SDK pour integration LLMs dans applications .NET/Python*
+*SDK pour integration LLMs dans applications .NET/Python (14 notebooks)*
 
-| Notebook | Description |
-|----------|-------------|
-| **01-SemanticKernel-Intro** | Introduction, setup, premiers plugins |
-| **02-SemanticKernel-Advanced** | Plugins avances, chaining |
-| **03-SemanticKernel-Agents** | Agents autonomes |
-| **05-SemanticKernel-NotebookMaker** | Generation automatique de notebooks |
+| Section | Notebooks | Contenu |
+|---------|-----------|---------|
+| **Serie principale** | 01-08 | Fundamentals, Functions, Agents, Filters, VectorStores, Process, MultiModal, MCP |
+| **Interop avancee** | 09-10 | Python/C# CLR, NotebookMaker (3 variantes) |
+| **Templates** | 3 | Templates C# et Python |
 
 [README SemanticKernel](SemanticKernel/README.md)
 
@@ -144,7 +145,7 @@ GenAI/
 | 02-Images-Advanced | Complet | Qwen 2509, FLUX, SD 3.5, Z-Image |
 | 03-Images-Orchestration | Complet | Comparaison, Workflows, Optimisation |
 | 04-Images-Applications | Complet | Applications pedagogiques |
-| Texte/ | Reference | OpenAI Intro, Prompts, RAG, Local LLMs |
+| Texte/ | Complet | 10 notebooks : OpenAI, Prompts, Structured Outputs, RAG, Reasoning, Production |
 
 ---
 

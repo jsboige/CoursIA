@@ -20,7 +20,7 @@ Bienvenue dans le depot **CoursIA**, plateforme educative complete pour l'appren
 
 ## Introduction
 
-Ce depot contient **230+ notebooks Jupyter** interactifs couvrant :
+Ce depot contient **255+ notebooks Jupyter** interactifs couvrant :
 - **IA Symbolique** : Logiques formelles, argumentation, verification formelle (Lean 4, Tweety, Z3)
 - **Probabilites** : Inference bayesienne, modeles graphiques (Infer.NET)
 - **Theorie des jeux** : Nash, jeux evolutionnaires, cooperatifs, CFR, OpenSpiel
@@ -36,16 +36,16 @@ Les notebooks sont en **C# (.NET Interactive)**, **Python** et **Lean 4**, avec 
 
 ```
 CoursIA/
-├── MyIA.AI.Notebooks/           # 230+ notebooks interactifs
-│   ├── GenAI/                   # IA Generative (30+ notebooks)
-│   │   ├── 00-GenAI-Environment/# Setup et configuration
+├── MyIA.AI.Notebooks/           # 255+ notebooks interactifs
+│   ├── GenAI/                   # IA Generative (55+ notebooks)
+│   │   ├── 00-GenAI-Environment/# Setup et configuration (6 notebooks)
 │   │   ├── Image/               # Generation d'images (19 notebooks)
 │   │   │   ├── 01-Foundation/   # DALL-E 3, GPT-5, Forge
 │   │   │   ├── 02-Advanced/     # Qwen, FLUX, SD3.5, Z-Image
 │   │   │   ├── 03-Orchestration/# Multi-modeles, workflows
 │   │   │   └── 04-Applications/ # Production, contenu educatif
-│   │   ├── Texte/               # LLMs et texte (4 notebooks)
-│   │   ├── SemanticKernel/      # Microsoft Semantic Kernel (5+ notebooks)
+│   │   ├── Texte/               # LLMs et generation texte (10 notebooks)
+│   │   ├── SemanticKernel/      # Microsoft Semantic Kernel (14 notebooks)
 │   │   └── Vibe-Coding/         # Claude Code et Roo Code tutorials
 │   │
 │   ├── SymbolicAI/              # IA Symbolique (47+ notebooks)
@@ -70,8 +70,8 @@ CoursIA/
 │   └── Config/                  # Configuration API (settings.json)
 │
 ├── .claude/                     # Configuration Claude Code
-│   ├── agents/                  # 9 agents specialises
-│   └── commands/                # 3 skills (commandes slash)
+│   ├── agents/                  # 10 agents specialises
+│   └── commands/                # 6 skills (commandes slash)
 │
 ├── scripts/                     # Scripts utilitaires
 │   ├── verify_notebooks.py      # Verification multi-famille
@@ -98,14 +98,14 @@ CoursIA/
 | **SymbolicAI** | 47+ | Python, Lean 4 | ~25h | OpenAI (optionnel) |
 | **GameTheory** | 26 | Python, Lean 4 | ~18h30 | OpenAI (optionnel) |
 | **Infer.NET** | 20 | .NET C# | ~17h | - |
-| **GenAI** | 30+ | Python | ~10h | OpenAI/Anthropic |
+| **GenAI** | 55+ | Python | ~25h | OpenAI/Anthropic |
 | **Sudoku** | 11 | C#, Python | ~2h | - |
 | **Search** | 5 | C#, Python | ~1h10 | - |
 | **ML** | 14 | C#, Python | ~4h | - |
 | **RL** | 3 | Python | ~2h | - |
 | **QuantConnect** | 27 | Python | ~30h | QuantConnect (gratuit) |
 | **IIT** | 1 | Python | ~1h30 | - |
-| **Total** | **230+** | **Mixed** | **~115h** | - |
+| **Total** | **255+** | **Mixed** | **~130h** | - |
 
 ## Series de notebooks
 
@@ -197,15 +197,15 @@ CoursIA/
 
 ### GenAI - IA Generative
 
-**30+ notebooks** organises en plusieurs sous-domaines.
+**55+ notebooks** organises en plusieurs sous-domaines.
 
 | Sous-domaine | Notebooks | Contenu | Services requis |
 |--------------|-----------|---------|-----------------|
-| **00-Environment** | 1 | Setup, Docker, API configuration | - |
+| **00-Environment** | 6 | Setup, Docker, API, validation, deploiement local | - |
 | **Image/** | 19 | Generation d'images (4 niveaux) | OpenAI/Docker GPU |
-| **Texte/** | 4 | OpenAI, Prompt Engineering, RAG, Local LLaMA | OpenAI API |
-| **SemanticKernel/** | 5+ | Microsoft Semantic Kernel, agents | OpenAI API |
-| **Vibe-Coding/** | - | Tutorials Claude Code et Roo Code (demos) | Claude/Roo |
+| **Texte/** | 10 | OpenAI, Prompts, Structured Outputs, RAG, Reasoning, Production | OpenAI API |
+| **SemanticKernel/** | 14 | SK Fundamentals a MCP, NotebookMaker, templates | OpenAI API |
+| **Vibe-Coding/** | 5+ | Notebooks CLI Claude Code + ateliers Roo Code | Claude/Roo |
 
 **Structure Image/** :
 
@@ -609,6 +609,9 @@ Le workflow `.github/workflows/notebook-validation.yml` valide automatiquement :
 | `/verify-notebooks [target]` | Verifier et tester les notebooks |
 | `/enrich-notebooks [target]` | Enrichir avec du contenu pedagogique |
 | `/cleanup-notebooks [target]` | Nettoyer et reorganiser le markdown |
+| `/build-notebook [topic]` | Construire un nouveau notebook from scratch |
+| `/execute-notebook [path]` | Executer un notebook via MCP Jupyter |
+| `/validate-genai` | Valider le stack GenAI complet |
 
 **Options** :
 - `--quick` : Structure uniquement (pas d'execution)
@@ -638,6 +641,7 @@ Le workflow `.github/workflows/notebook-validation.yml` valide automatiquement :
 | `notebook-executor` | `.claude/agents/notebook-executor.md` | Execution de notebooks |
 | `notebook-iterative-builder` | `.claude/agents/notebook-iterative-builder.md` | Construction iterative |
 | `notebook-validator` | `.claude/agents/notebook-validator.md` | Validation de notebooks |
+| `readme-hierarchy-auditor` | `.claude/agents/readme-hierarchy-auditor.md` | Audit et maintenance hierarchie README |
 
 ### MCP Jupyter Papermill
 
