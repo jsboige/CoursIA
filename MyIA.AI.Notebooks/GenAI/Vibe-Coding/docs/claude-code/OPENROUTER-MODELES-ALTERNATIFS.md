@@ -92,30 +92,75 @@ Rechargez :
 source ~/.bashrc  # ou ~/.zshrc
 ```
 
-### Etape 3 : Configuration via fichier settings.json (Alternative)
+### Etape 3 : Configuration via fichier settings.json (Recommandee)
 
-Creez ou editez `.claude/settings.json` dans votre projet :
+Claude Code utilise une hierarchie de fichiers de configuration. Pour la personnalisation des modeles, **privilegiez le fichier de la machine** plutot que celui du projet, car :
+
+- Il s'applique a **tous vos projets** sur cette machine
+- Il ne risque pas d'etre commite accidentellement dans un depot git
+- Il n'impose pas vos preferences aux autres utilisateurs du projet
+
+#### Option A : Fichier machine (recommande)
+
+Creez ou editez le fichier de settings de votre machine :
+
+- **Windows** : `C:\Users\<UTILISATEUR>\.claude\settings.json`
+- **macOS / Linux** : `~/.claude/settings.json`
+
+Exemple concret (Windows) :
+
+```text
+C:\Users\Administrator\.claude\settings.json
+```
+
+Contenu :
 
 ```json
 {
-  "anthropic": {
-    "baseURL": "https://openrouter.ai/api",
-    "authToken": "sk-or-v1-VOTRE_CLE_OPENROUTER",
-    "apiKey": "",
-    "defaultModels": {
-      "opus": "z-ai/glm-4.7",
-      "sonnet": "qwen/qwen3-coder-next",
-      "haiku": "z-ai/glm-4.7-flash"
-    }
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
+    "ANTHROPIC_API_KEY": "",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "z-ai/glm-4.7",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen/qwen3-coder-next",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "z-ai/glm-4.7-flash"
   }
 }
 ```
 
-**Important :** Ajoutez ce fichier a votre `.gitignore` :
+#### Option B : Fichier projet (si configuration specifique au projet)
+
+Si vous avez besoin d'une configuration differente pour un projet en particulier, creez `.claude/settings.json` a la racine du projet :
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
+    "ANTHROPIC_API_KEY": "",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "z-ai/glm-4.7",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen/qwen3-coder-next",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "z-ai/glm-4.7-flash"
+  }
+}
+```
+
+**Important :** Si vous utilisez le fichier projet, ajoutez-le a votre `.gitignore` pour ne pas exposer votre cle API :
 
 ```bash
 echo ".claude/settings.json" >> .gitignore
 ```
+
+#### Ordre de priorite des settings
+
+Claude Code charge les configurations dans cet ordre (la derniere ecrase les precedentes) :
+
+1. Configuration par defaut de Claude Code
+2. `~/.claude/settings.json` (fichier machine)
+3. `.claude/settings.json` (fichier projet)
+4. Variables d'environnement (PowerShell/Bash, cf. Etape 2)
+
+> **Note :** Les variables d'environnement de l'Etape 2 et le fichier settings.json sont deux methodes equivalentes. Choisissez l'une ou l'autre, pas les deux a la fois.
 
 ---
 
