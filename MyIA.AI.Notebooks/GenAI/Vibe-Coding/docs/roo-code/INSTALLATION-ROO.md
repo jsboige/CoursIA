@@ -74,6 +74,9 @@ Les profils vous permettent de basculer rapidement entre différents modèles d'
 | `Deepseek-Deepseek-r1`       | `deepseek/deepseek-r1`                 |
 | `Qwen-Qwen-3-235b-a22b`      | `qwen/Qwen-3-235b-a22b`               |
 | `Qwen-Qwen-3-32B`            | `qwen/Qwen-3-32b`                |
+| `Qwen3-Coder-Next`           | `qwen/qwen3-coder-next`                 |
+| `GLM-4.7`                    | `z-ai/glm-4.7`                           |
+| `GLM-4.7-Flash`              | `z-ai/glm-4.7-flash`                     |
 | `Mistral-Mistral-Small`    | `mistralai/mistral-small`         |
 
 *Note : Certains noms de modèles demandés ont été adaptés aux identifiants disponibles sur OpenRouter.*
@@ -138,4 +141,49 @@ Forker le dépôt https://github.com/jsboige/roo-extensions
 Le faire cartographier par un agent roo, initialiser les sous-modules, compiler et installer les MCPs.
 Faire instruire une tâche pour valider le fonctionnement des différents outils des MCPs.
 
+## Étape 11 : Configurer les Custom Instructions
+
+Les Custom Instructions permettent de personnaliser le comportement de Roo selon vos projets et preferences.
+
+### Configuration rapide projet
+
+1. Creez le repertoire de rules a la racine de votre projet :
+
+```bash
+mkdir -p .roo/rules
+```
+
+2. Ajoutez vos conventions dans un fichier Markdown :
+
+```bash
+echo "# Conventions du projet" > .roo/rules/01-conventions.md
+echo "- Repondre en francais" >> .roo/rules/01-conventions.md
+echo "- Utiliser TypeScript strict" >> .roo/rules/01-conventions.md
+```
+
+### Configuration globale (tous projets)
+
+Pour des instructions appliquees a tous vos projets :
+
+**Windows (PowerShell) :**
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.roo\rules"
+"Toujours repondre en francais" | Out-File "$env:USERPROFILE\.roo\rules\01-langue.md"
+```
+
+**macOS/Linux :**
+```bash
+mkdir -p ~/.roo/rules
+echo "Toujours repondre en francais" > ~/.roo/rules/01-langue.md
+```
+
+### Hierarchie de priorite
+
+| Source | Emplacement | Priorite |
+|--------|-------------|----------|
+| Global | `~/.roo/rules/` | Basse |
+| Projet | `.roo/rules/` | Haute |
+| Mode-specific | `.roo/rules-{mode}/` | Tres haute |
+
+**Guide complet :** [CUSTOM-INSTRUCTIONS-ROO.md](./CUSTOM-INSTRUCTIONS-ROO.md)
 

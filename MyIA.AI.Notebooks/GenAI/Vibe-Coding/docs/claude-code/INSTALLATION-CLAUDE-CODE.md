@@ -252,6 +252,26 @@ claude
 }
 ```
 
+### Étape 6 : Configuration Multi-Modèles (Optionnel)
+
+OpenRouter permet d'utiliser des modèles alternatifs à Claude. Voici une configuration recommandée avec des modèles performants et économiques :
+
+| Alias | Modèle Alternatif | Identifiant | Avantage |
+|-------|-------------------|-------------|----------|
+| `opus` | GLM-4.7 | `z-ai/glm-4.7` | Raisonnement avancé, 30x moins cher |
+| `sonnet` | Qwen3 Coder Next | `qwen/qwen3-coder-next` | Optimisé code, 256K context |
+| `haiku` | GLM-4.7 Flash | `z-ai/glm-4.7-flash` | Ultra-rapide, très économique |
+
+**Configuration rapide (PowerShell) :**
+
+```powershell
+$env:ANTHROPIC_DEFAULT_OPUS_MODEL = "z-ai/glm-4.7"
+$env:ANTHROPIC_DEFAULT_SONNET_MODEL = "qwen/qwen3-coder-next"
+$env:ANTHROPIC_DEFAULT_HAIKU_MODEL = "z-ai/glm-4.7-flash"
+```
+
+**Guide complet :** [OPENROUTER-MODELES-ALTERNATIFS.md](./OPENROUTER-MODELES-ALTERNATIFS.md)
+
 ## Configuration de l'Extension VS Code
 
 ### Paramètres Recommandés

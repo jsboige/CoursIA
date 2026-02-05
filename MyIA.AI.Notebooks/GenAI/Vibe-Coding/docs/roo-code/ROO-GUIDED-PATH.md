@@ -122,3 +122,26 @@ Découvrez comment Roo peut vous aider à générer de la documentation techniqu
 
 *   **Dossier de la démo :** `ateliers/demo-roo-code/05-projets-avances/demo-2-documentation/`
 *   **Objectif :** Automatiser la création de documentation.
+
+## Thème 6 : Personnalisation Avancée
+
+### Étape 12 : Configurer les Custom Instructions (20 min)
+
+Apprenez à personnaliser le comportement de Roo avec des règles projet et globales pour adapter l'assistant à vos conventions et préférences.
+
+*   **Documentation :** [CUSTOM-INSTRUCTIONS-ROO.md](./CUSTOM-INSTRUCTIONS-ROO.md)
+*   **Objectif :** Maîtriser le système de rules et AGENTS.md
+
+**Concepts abordés :**
+
+*   Configuration globale (`~/.roo/rules/`)
+*   Configuration projet (`.roo/rules/`)
+*   Rules mode-specific (`.roo/rules-code/`, `.roo/rules-architect/`)
+*   Fichier AGENTS.md pour les équipes
+*   Hiérarchie et priorité des sources
+
+**Exercices pratiques :**
+
+1.  Créer une configuration projet avec vos conventions
+2.  Définir des rules spécifiques au mode Code
+3.  Mettre en place un AGENTS.md pour standardiser le comportement en équipe
