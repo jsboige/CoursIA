@@ -101,6 +101,9 @@ Le module `helpers/claude_cli.py` fournit des fonctions utilitaires :
 from helpers.claude_cli import (
     run_claude,           # Execute claude -p et retourne stdout/stderr
     run_claude_json,      # Execute et parse la reponse JSON
+    run_claude_continue,  # Continue une session avec -c
+    run_claude_command,   # Execute une commande slash (/sessions, /status)
+    get_claude_version,   # Retourne la version de Claude CLI
     check_claude_status,  # Verifie la connexion
     verify_installation   # Verifie l'installation
 )
@@ -108,6 +111,12 @@ from helpers.claude_cli import (
 # Exemple
 stdout, stderr, code = run_claude("Bonjour", model="haiku")
 print(stdout)
+
+# Continuer une conversation
+stdout, stderr, code = run_claude_continue("Et pour les tuples ?")
+
+# Commande slash
+stdout, stderr, code = run_claude_command("/sessions")
 ```
 
 ## Fichiers Exemples

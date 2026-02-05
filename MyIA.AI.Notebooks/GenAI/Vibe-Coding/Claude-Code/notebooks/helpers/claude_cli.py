@@ -221,6 +221,138 @@ def check_claude_status() -> Dict[str, Any]:
         return {"connected": False, "error": str(e)}
 
 
+def get_claude_version() -> str:
+    """
+    Retourne la version de Claude CLI installee.
+
+    Returns:
+        str: Version de Claude CLI, ou message d'erreur/simulation.
+
+    Example:
+        >>> version = get_claude_version()
+        >>> print(version)
+    """
+    if SIMULATION_MODE:
+        return SIMULATED_RESPONSES["version"]
+
+    if not verify_installation():
+        return "Claude CLI n'est pas installe"
+
+    try:
+        result = subprocess.run(
+            ["claude", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        return result.stdout.strip() if result.returncode == 0 else f"Erreur: {result.stderr}"
+    except subprocess.TimeoutExpired:
+        return "Erreur: Timeout"
+    except FileNotFoundError:
+        return "Erreur: Claude CLI introuvable dans le PATH"
+    except Exception as e:
+        return f"Erreur: {str(e)}"
+
+
+def run_claude_continue(
+    prompt: str,
+    timeout: int = 60,
+    fork: bool = False
+) -> Tuple[str, str, int]:
+    """
+    Continue la derniere conversation avec le flag -c.
+
+    Args:
+        prompt: Le message de suite a envoyer.
+        timeout: Timeout en secondes.
+        fork: Si True, cree un fork de session (--fork-session).
+
+    Returns:
+        Tuple[str, str, int]: (stdout, stderr, return_code)
+
+    Example:
+        >>> stdout, stderr, code = run_claude_continue("Et pour les tuples ?")
+        >>> print(stdout)
+    """
+    if SIMULATION_MODE:
+        response = SIMULATED_RESPONSES.get(
+            prompt.lower().split()[0] if prompt else "default",
+            SIMULATED_RESPONSES["default"]
+        )
+        suffix = " (fork)" if fork else " (suite)"
+        return response + suffix, "", 0
+
+    if not verify_installation():
+        return "", "Erreur: Claude CLI n'est pas installe", 1
+
+    cmd = ["claude", "-c"]
+    if fork:
+        cmd.append("--fork-session")
+    cmd.append(prompt)
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        return result.stdout, result.stderr, result.returncode
+    except subprocess.TimeoutExpired:
+        return "", f"Erreur: Timeout apres {timeout} secondes", -1
+    except FileNotFoundError:
+        return "", "Erreur: Claude CLI introuvable dans le PATH", 1
+    except Exception as e:
+        return "", f"Erreur inattendue: {str(e)}", -1
+
+
+def run_claude_command(
+    command: str,
+    timeout: int = 30
+) -> Tuple[str, str, int]:
+    """
+    Execute une commande slash Claude (ex: /sessions, /status).
+
+    Args:
+        command: La commande a executer (avec ou sans /).
+        timeout: Timeout en secondes.
+
+    Returns:
+        Tuple[str, str, int]: (stdout, stderr, return_code)
+
+    Example:
+        >>> stdout, stderr, code = run_claude_command("/sessions")
+        >>> print(stdout)
+    """
+    if not command.startswith("/"):
+        command = f"/{command}"
+
+    if SIMULATION_MODE:
+        if "session" in command.lower():
+            return "Sessions simulees:\n  session-001 (2 messages)\n  session-002 (5 messages)", "", 0
+        elif "status" in command.lower():
+            return SIMULATED_RESPONSES["status"], "", 0
+        return f"Commande {command} simulee", "", 0
+
+    if not verify_installation():
+        return "", "Erreur: Claude CLI n'est pas installe", 1
+
+    try:
+        result = subprocess.run(
+            ["claude", command],
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        return result.stdout, result.stderr, result.returncode
+    except subprocess.TimeoutExpired:
+        return "", f"Erreur: Timeout apres {timeout} secondes", -1
+    except FileNotFoundError:
+        return "", "Erreur: Claude CLI introuvable dans le PATH", 1
+    except Exception as e:
+        return "", f"Erreur inattendue: {str(e)}", -1
+
+
 def format_code_block(code: str, language: str = "python") -> str:
     """
     Formate du code pour l'affichage dans un notebook.
