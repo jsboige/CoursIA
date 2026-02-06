@@ -2,6 +2,8 @@
 
 Ce guide explique comment configurer le contexte global et local dans Roo Code pour personnaliser le comportement de l'assistant selon vos projets et preferences.
 
+> **Documentation officielle** : [docs.roocode.com/features/custom-instructions](https://docs.roocode.com/features/custom-instructions)
+
 ## Vue d'Ensemble
 
 Roo Code charge et fusionne les instructions de plusieurs sources pour creer un ensemble unifie de "custom instructions" ajoutees au system prompt. Cela permet de :
@@ -245,11 +247,14 @@ Pour activer le support AGENTS.md :
 3. Activez l'option **"Use AGENTS.md"**
 
 Ou via les settings JSON :
+
 ```json
 {
-  "roo.useAgentsFile": true
+  "roo-cline.useAgentRules": true
 }
 ```
+
+> **Note :** Roo prefere `AGENTS.md` a `AGENT.md` si les deux existent.
 
 ### Format AGENTS.md
 
@@ -355,12 +360,20 @@ Voici l'ordre exact dans lequel Roo charge et fusionne les instructions :
 
 **Conseil :** Utilisez des prefixes numeriques pour controler l'ordre de chargement :
 
-```
+```text
 .roo/rules/
 ├── 01-conventions.md      # Charge en premier
 ├── 02-architecture.md     # Charge en second
 └── 99-overrides.md        # Charge en dernier (priorite haute)
 ```
+
+### Traitement des Fichiers
+
+- **Chargement recursif** : tous les fichiers des sous-repertoires sont inclus
+- **Tri alphabetique** : insensible a la casse, par nom de fichier
+- **Fichiers ignores** : `.DS_Store`, `*.bak`, `*.cache`, `*.log`, `*.tmp`, `Thumbs.db`
+- **Fichiers vides** : ignores silencieusement
+- **Liens symboliques** : supportes (profondeur max : 5 niveaux)
 
 ---
 
