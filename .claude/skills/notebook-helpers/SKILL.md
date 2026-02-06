@@ -1,7 +1,6 @@
 ---
 name: notebook-helpers
 description: Reference for notebook manipulation scripts (notebook_helpers.py, notebook_tools.py). Use when working with Jupyter notebooks, analyzing structure, executing cells, or manipulating notebook content.
-user-invocable: false
 ---
 
 # Notebook Helper Scripts Reference

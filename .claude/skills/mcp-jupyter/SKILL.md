@@ -1,12 +1,25 @@
 ---
 name: mcp-jupyter
 description: Reference for MCP Jupyter tools (kernel management, cell execution, Papermill). Use when executing notebooks, managing kernels, or running code interactively via MCP.
-user-invocable: false
 ---
 
 # MCP Jupyter Reference
 
-## Available Tools
+## When to Use MCP vs Local Scripts
+
+| Need | Tool | Why |
+|------|------|-----|
+| Batch validation (Python) | `scripts/notebook_tools.py validate` | Faster, no kernel setup |
+| Batch execution (Python) | `scripts/notebook_tools.py execute` | Papermill CLI, simpler |
+| Structure analysis | `scripts/notebook_helpers.py list --verbose` | Local, instant |
+| Find enrichment gaps | `NotebookHelper.find_cells_needing_enrichment()` | Python API |
+| Cell-by-cell .NET execution | **MCP** `execute_on_kernel` | Only option (Papermill blocked) |
+| Interactive debugging | **MCP** `manage_kernel` + `execute_on_kernel` | Live kernel state |
+| Notebook read/write via API | **MCP** `read_cells`, `add_cell` | Remote/programmatic |
+
+**Rule**: Prefer local scripts for Python notebooks. Use MCP for .NET kernels and interactive sessions. See `notebook-helpers` skill for full script reference.
+
+## Available MCP Tools
 
 | Tool | Description |
 |------|-------------|

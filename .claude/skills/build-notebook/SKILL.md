@@ -1,8 +1,6 @@
 ---
 name: build-notebook
-description: Build or improve Jupyter notebooks iteratively with quality scoring
-argument-hint: "<new|improve|fix> <path> [--topic=X] [--domain=X] [--level=X] [--quality=N] [--max-iter=N]"
-disable-model-invocation: true
+description: Build or improve Jupyter notebooks iteratively with quality scoring. Arguments: <new|improve|fix> <path> [--topic] [--domain] [--level] [--quality] [--max-iter]
 ---
 
 # Build Notebook

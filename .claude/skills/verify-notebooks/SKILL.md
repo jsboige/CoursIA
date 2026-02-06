@@ -1,8 +1,6 @@
 ---
 name: verify-notebooks
-description: Verify and test Jupyter notebooks with iterative fixing
-argument-hint: "[target] [--quick] [--fix] [--python-only] [--dotnet-only]"
-disable-model-invocation: true
+description: Verify and test Jupyter notebooks with iterative fixing. Arguments: [target] [--quick] [--fix] [--python-only] [--dotnet-only]
 ---
 
 # Verify Notebooks
@@ -21,13 +19,14 @@ Verify and test Jupyter notebooks in the CoursIA repository.
 ## Process
 
 1. **Parse target** - Determine individual file, family, or all
-2. **Discover notebooks** - Use Glob: `MyIA.AI.Notebooks/{family}/**/*.ipynb` (exclude `*_output.ipynb`)
-3. **Categorize by kernel** - Python (Papermill) vs .NET (cell-by-cell via MCP)
+2. **Discover notebooks** - Use `python scripts/notebook_tools.py validate {target} --quick` for rapid discovery and structure check
+3. **Categorize by kernel** - `python scripts/notebook_helpers.py detect-kernel {path}`
 4. **Execute tests**:
-   - Python: `cd "{dir}" && python -m papermill "{nb}" "{nb}_output.ipynb" --kernel python3 -p BATCH_MODE true`
-   - .NET: MCP cell-by-cell (see mcp-jupyter skill for patterns)
-5. **Analyze results** - Report SUCCESS/ERROR/SKIPPED per notebook
-6. **If --fix**: Read error, identify cell, analyze root cause, apply fix, re-execute (max 3 attempts)
+   - **Python (preferred)**: `python scripts/notebook_tools.py execute {target} --timeout 300`
+   - **Python (alternative)**: `python scripts/notebook_helpers.py execute {path} --verbose` (cell-by-cell with output)
+   - **.NET**: MCP cell-by-cell only (see `mcp-jupyter` skill) - Papermill does NOT work
+5. **Analyze errors** - `python scripts/notebook_helpers.py list {path} --verbose` to inspect failed cells
+6. **If --fix**: Use notebook-cell-iterator agent (model: sonnet) for targeted cell corrections (max 3 attempts)
 7. **Generate summary report**
 
 ## Family Reference

@@ -1,7 +1,6 @@
 ---
 name: notebook-patterns
 description: Pedagogical patterns for enriching notebooks (GameTheory model). Use when adding interpretations, structuring notebooks, or creating educational content in Jupyter notebooks.
-user-invocable: false
 ---
 
 # Notebook Enrichment Patterns

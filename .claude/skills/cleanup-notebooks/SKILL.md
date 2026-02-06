@@ -1,8 +1,6 @@
 ---
 name: cleanup-notebooks
-description: Clean up and reorganize markdown in enriched Jupyter notebooks
-argument-hint: "[target] [--dry-run] [--aggressive] [--hierarchy-only]"
-disable-model-invocation: true
+description: Clean up and reorganize markdown in enriched Jupyter notebooks. Arguments: [target] [--dry-run] [--aggressive] [--hierarchy-only]
 ---
 
 # Cleanup Notebooks

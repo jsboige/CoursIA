@@ -1,8 +1,6 @@
 ---
 name: validate-genai
-description: Validate the GenAI stack (services, authentication, models, notebooks, GPU)
-argument-hint: "[all|services|auth|models|notebooks|vram] [--local] [--remote] [--quick]"
-disable-model-invocation: true
+description: Validate the GenAI stack (services, authentication, models, notebooks, GPU). Arguments: [all|services|auth|models|notebooks|vram] [--local] [--remote] [--quick]
 ---
 
 # Validate GenAI Stack

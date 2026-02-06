@@ -1,8 +1,6 @@
 ---
 name: enrich-notebooks
-description: Enrich Jupyter notebooks with pedagogical markdown content
-argument-hint: "[target] [--execute] [--fix-errors] [--strict] [--consecutive] [--iterate]"
-disable-model-invocation: true
+description: Enrich Jupyter notebooks with pedagogical markdown content. Arguments: [target] [--execute] [--fix-errors] [--strict] [--consecutive] [--iterate]
 ---
 
 # Enrich Notebooks
@@ -25,10 +23,17 @@ Add pedagogical markdown content to Jupyter notebooks.
 1. **Parse target** - Discover notebooks to enrich
 2. **For each notebook**, launch a background agent:
    - Read the notebook-enricher agent instructions (`.claude/agents/notebook-enricher.md`)
-   - Analyze structure with `python scripts/notebook_helpers.py list {path} --verbose`
-   - Identify enrichment points (consecutive code cells, missing interpretations, etc.)
+   - Analyze structure: `python scripts/notebook_helpers.py list {path} --verbose`
+   - Find gaps programmatically (Python API):
+     ```python
+     from scripts.notebook_helpers import NotebookHelper
+     helper = NotebookHelper(path)
+     gaps = helper.find_cells_needing_enrichment()      # Cells missing interpretation
+     consecutive = helper.find_consecutive_code_cells()  # Code cells without markdown between
+     ```
+   - Validate placement: `helper.validate_enrichment_context(cell_index)` returns what's needed
    - Insert markdown cells via NotebookEdit (bottom-to-top to preserve indices)
-   - Verify coherence after each insertion
+   - Verify with: `helper.get_cell_sequence(start, end)` after each insertion
 
 3. **If --execute**: Execute notebooks first to capture outputs for interpretation
 4. **If --fix-errors**: Analyze errors, propose corrections, re-execute

@@ -1,13 +1,11 @@
 ---
 name: execute-notebook
-description: Execute Jupyter notebooks via MCP Jupyter with kernel management
-argument-hint: "<notebook_path> [--mode=full|selective|papermill] [--cells=0,5,10] [--timeout=300] [--batch] [--save]"
-disable-model-invocation: true
+description: Execute Jupyter notebooks using local scripts or MCP Jupyter. Arguments: <notebook_path> [--mode] [--cells] [--timeout] [--batch] [--save]
 ---
 
 # Execute Notebook
 
-Execute a Jupyter notebook with full kernel lifecycle management.
+Execute a Jupyter notebook with full lifecycle management.
 
 **Notebook**: `$ARGUMENTS`
 
@@ -23,16 +21,31 @@ Execute a Jupyter notebook with full kernel lifecycle management.
 ## Execution by Kernel Type
 
 ### Python (kernel: python3)
-- **Papermill** (preferred for batch): `python -m papermill "{nb}" "{output}" --kernel python3`
-- **Cell-by-cell** (for control): MCP `manage_kernel` + `execute_on_kernel`
+
+**Local scripts (preferred for batch)**:
+```bash
+# Full execution via notebook_tools.py
+python scripts/notebook_tools.py execute {path} --timeout 300
+
+# Cell-by-cell with verbose output via notebook_helpers.py
+python scripts/notebook_helpers.py execute {path} --verbose
+
+# Specific cell execution
+python scripts/notebook_helpers.py execute {path} --cell 5 --timeout 60
+```
+
+**MCP (for interactive debugging)**:
+- `manage_kernel(action="start", kernel_name="python3")` + `execute_on_kernel`
 
 ### .NET (kernel: .net-csharp)
-- **Cell-by-cell ONLY** - Papermill does NOT work with .NET
+- **MCP cell-by-cell ONLY** - Papermill and local scripts do NOT work with .NET kernels
 - CRITICAL: Set working directory first with `SetCurrentDirectory()`
+- See `mcp-jupyter` skill for detailed .NET patterns
 
 ### GenAI notebooks
 - Check `.env` configuration first (use `/validate-genai`)
 - Use `--batch` for notebooks with interactive widgets
+- Use dedicated scripts: `python scripts/genai-stack/validate_notebooks.py`
 
 ## Error Handling
 
