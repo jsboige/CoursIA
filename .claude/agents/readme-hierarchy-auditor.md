@@ -1,3 +1,13 @@
+---
+name: readme-hierarchy-auditor
+description: Audit and maintain the complete README hierarchy across the notebook repository. Use for comprehensive README creation and update (bottom-up strategy).
+tools: Read, Glob, Grep, Bash, Write, Edit
+model: haiku
+memory: project
+skills:
+  - notebook-helpers
+---
+
 # Agent: README Hierarchy Auditor
 
 ## Mission
