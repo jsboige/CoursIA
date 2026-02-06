@@ -155,7 +155,7 @@ Une serie de **5 notebooks Jupyter** pour apprendre et experimenter avec `claude
 |----------|-------------|-------------|
 | **Introduction** | [docs/claude-code/INTRO-CLAUDE-CODE.md](../docs/claude-code/INTRO-CLAUDE-CODE.md) | Concepts et fonctionnalités |
 | **Installation** | [docs/claude-code/INSTALLATION-CLAUDE-CODE.md](../docs/claude-code/INSTALLATION-CLAUDE-CODE.md) | Guide complet avec OpenRouter |
-| **Modeles alternatifs** | [docs/claude-code/OPENROUTER-MODELES-ALTERNATIFS.md](../docs/claude-code/OPENROUTER-MODELES-ALTERNATIFS.md) | GLM-4.7, Qwen3 Coder via OpenRouter |
+| **Modeles alternatifs** | [docs/claude-code/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter](../docs/claude-code/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter) | GLM-4.7, Qwen3 Coder via OpenRouter |
 | **Aide-mémoire** | [docs/claude-code/CHEAT-SHEET.md](../docs/claude-code/CHEAT-SHEET.md) | Commandes essentielles |
 | **Concepts avancés** | [docs/claude-code/CONCEPTS-AVANCES.md](../docs/claude-code/CONCEPTS-AVANCES.md) | Skills, Subagents, Hooks, MCP |
 | **Comparaison** | [docs/claude-code/COMPARAISON-CLAUDE-ROO.md](../docs/claude-code/COMPARAISON-CLAUDE-ROO.md) | Claude Code vs Roo Code |
