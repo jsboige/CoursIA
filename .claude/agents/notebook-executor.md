@@ -3,7 +3,7 @@ name: notebook-executor
 description: Execute Jupyter notebooks via MCP Jupyter with full kernel lifecycle management. Use proactively when notebooks need execution, output capture, or error diagnosis.
 tools: Read, Glob, Grep, Bash, Write, Edit, NotebookEdit
 model: sonnet
-memory: project
+memory: user
 skills:
   - mcp-jupyter
   - notebook-helpers

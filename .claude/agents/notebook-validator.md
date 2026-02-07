@@ -3,7 +3,7 @@ name: notebook-validator
 description: Comprehensive validation of Jupyter notebooks (structure, syntax, execution, pedagogy, content). Use proactively after any notebook modification to verify quality.
 tools: Read, Glob, Grep, Bash
 model: sonnet
-memory: project
+memory: user
 skills:
   - notebook-helpers
   - notebook-patterns

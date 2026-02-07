@@ -3,7 +3,7 @@ name: readme-updater
 description: Update README files for notebook series (structure tables, navigation links, statistics). Use after adding or modifying notebooks in a series.
 tools: Read, Glob, Grep, Bash, Write, Edit
 model: haiku
-memory: project
+memory: user
 skills:
   - notebook-helpers
 ---

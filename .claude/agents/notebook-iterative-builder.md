@@ -2,7 +2,7 @@
 name: notebook-iterative-builder
 description: Orchestrate iterative notebook creation/improvement cycles (design, execute, validate, enrich, fix). Use for complex multi-step notebook workflows requiring quality convergence.
 model: inherit
-memory: project
+memory: user
 skills:
   - notebook-helpers
   - notebook-patterns

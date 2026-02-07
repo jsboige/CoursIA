@@ -3,7 +3,7 @@ name: notebook-modernizer
 description: Modernize Jupyter notebooks by detecting outdated libraries, deprecated APIs, and missing best practices via web research. Use when notebooks may contain outdated dependencies or when preparing notebooks for publication with current standards.
 tools: Read, Glob, Grep, Bash, Edit, NotebookEdit, WebSearch, WebFetch
 model: inherit
-memory: project
+memory: user
 skills:
   - notebook-helpers
   - notebook-patterns

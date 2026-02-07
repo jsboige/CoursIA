@@ -475,3 +475,10 @@ mathlib_examples/.lake/
 # External tools binaries (too large to track)
 MyIA.AI.Notebooks/SymbolicAI/ext_tools/clingo/
 MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
+
+# Claude Code agent memory (runtime-generated, stored in user directory)
+.claude/agent-memory/
+.claude/agent-memory-local/
+
+# Windows artifact
+nul

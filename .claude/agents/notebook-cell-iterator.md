@@ -3,7 +3,7 @@ name: notebook-cell-iterator
 description: Iteratively fix specific notebook cells until they produce expected output. Use when a specific cell needs targeted correction with measurable success criteria.
 tools: Read, Glob, Grep, Bash, Edit, NotebookEdit
 model: sonnet
-memory: project
+memory: user
 skills:
   - mcp-jupyter
   - notebook-helpers
