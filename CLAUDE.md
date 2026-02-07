@@ -32,19 +32,21 @@ Target framework: .NET 9.0. Configuration: Copy `MyIA.AI.Notebooks/Config/settin
 
 ### Docker/ComfyUI Services
 ```bash
-cd docker-configurations/services/comfyui-qwen
-cp .env.example .env
-docker-compose up -d
+python scripts/genai-stack/genai.py docker status    # Statut des services
+python scripts/genai-stack/genai.py docker start all # Demarrer tous les services
+python scripts/genai-stack/genai.py docker stop all  # Arreter tous les services
 ```
 Access: http://localhost:8188 (requires Bearer token authentication)
 
 ### Validation & Testing
 
 ```bash
-python scripts/genai-stack/validate_notebooks.py  # Notebook validation
-python scripts/genai-stack/validate_stack.py      # GenAI stack validation
-python scripts/genai-stack/check_vram.py          # VRAM check
-python scripts/notebook_tools.py validate [target] # Multi-family notebook verification
+python scripts/genai-stack/genai.py validate --full       # Validation complete ComfyUI
+python scripts/genai-stack/genai.py validate --nunchaku   # Test Nunchaku INT4
+python scripts/genai-stack/genai.py validate --notebooks  # Validation syntaxe notebooks
+python scripts/genai-stack/genai.py notebooks             # Validation Papermill notebooks
+python scripts/genai-stack/genai.py gpu                   # Verification VRAM
+python scripts/notebook_tools.py validate [target]        # Multi-family notebook verification
 ```
 GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 
@@ -226,22 +228,35 @@ SaveImage
 | Z-Image GGUF | Incompatibilite dimensionnelle (2560 vs 2304) entre RecurrentGemma et Gemma-2 |
 | Qwen GGUF | Non teste, prefer les poids fp8 pour qualite |
 
-### Scripts de validation GenAI (scripts/genai-stack/)
+### Scripts de gestion GenAI (scripts/genai-stack/)
 
-**IMPORTANT pour agents** : Utiliser ces scripts au lieu de demarrer des kernels MCP directement.
+**IMPORTANT pour agents** : Utiliser le CLI unifie `genai.py` au lieu de demarrer des kernels MCP directement.
 
 ```bash
-# Validation notebooks GenAI avec Papermill
-python scripts/genai-stack/validate_notebooks.py MyIA.AI.Notebooks/GenAI/Image/01-Foundation/
+# CLI unifie - aide
+python scripts/genai-stack/genai.py --help
 
-# Validation stack complete (services, auth)
-python scripts/genai-stack/validate_stack.py
+# Gestion services Docker
+python scripts/genai-stack/genai.py docker status          # Statut services
+python scripts/genai-stack/genai.py docker start all       # Demarrer tous les services
+python scripts/genai-stack/genai.py docker test --remote   # Tester endpoints (local + remote)
 
-# Verification GPU/VRAM
-python scripts/genai-stack/check_vram.py
+# Validation stack ComfyUI
+python scripts/genai-stack/genai.py validate --full        # Validation complete
+python scripts/genai-stack/genai.py validate --nunchaku    # Test Nunchaku INT4 Lightning
 
-# Liste modeles ComfyUI disponibles
-python scripts/genai-stack/list_models.py
+# Validation notebooks
+python scripts/genai-stack/genai.py validate --notebooks   # Syntaxe notebooks GenAI
+python scripts/genai-stack/genai.py notebooks              # Execution Papermill
+
+# GPU et modeles
+python scripts/genai-stack/genai.py gpu                    # Verification VRAM
+python scripts/genai-stack/genai.py models list-nodes      # Custom nodes ComfyUI
+python scripts/genai-stack/genai.py models list-checkpoints # Checkpoints disponibles
+
+# Authentification
+python scripts/genai-stack/genai.py auth audit             # Audit securite tokens
+python scripts/genai-stack/genai.py auth sync              # Synchroniser tokens
 ```
 
 ### Mapping notebooks GenAI → services
