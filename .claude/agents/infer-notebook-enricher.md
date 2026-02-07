@@ -3,7 +3,7 @@ name: infer-notebook-enricher
 description: Specialized enrichment for Infer.NET probabilistic programming notebooks. Use for Probas/Infer notebook family with domain-specific interpretation patterns.
 tools: Read, Glob, Grep, Edit, NotebookEdit
 model: sonnet
-memory: user
+memory: project
 skills:
   - notebook-patterns
   - notebook-helpers

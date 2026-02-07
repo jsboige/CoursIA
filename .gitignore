@@ -476,8 +476,7 @@ mathlib_examples/.lake/
 MyIA.AI.Notebooks/SymbolicAI/ext_tools/clingo/
 MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
 
-# Claude Code agent memory (runtime-generated, stored in user directory)
-.claude/agent-memory/
+# Claude Code agent memory - local scope only (project scope is versioned)
 .claude/agent-memory-local/
 
 # Windows artifact

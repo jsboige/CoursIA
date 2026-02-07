@@ -3,7 +3,7 @@ name: notebook-enricher
 description: Add pedagogical markdown to Jupyter notebooks (interpretations, introductions, transitions, conclusions). Use proactively when notebooks lack explanatory content or have consecutive code cells.
 tools: Read, Glob, Grep, Edit, NotebookEdit
 model: sonnet
-memory: user
+memory: project
 skills:
   - notebook-patterns
   - notebook-helpers

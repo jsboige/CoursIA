@@ -3,7 +3,7 @@ name: notebook-cleaner
 description: Clean up and reorganize pedagogical markdown in Jupyter notebooks (deduplication, positioning fixes, hierarchy corrections). Use after enrichment to fix structural issues.
 tools: Read, Glob, Grep, Edit, NotebookEdit
 model: sonnet
-memory: user
+memory: project
 skills:
   - notebook-patterns
   - notebook-helpers

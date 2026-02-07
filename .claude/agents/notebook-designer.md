@@ -3,7 +3,7 @@ name: notebook-designer
 description: Design and create new Jupyter notebooks from scratch with proper pedagogical structure. Use when creating entirely new educational content.
 tools: Read, Glob, Grep, Bash, Write, Edit, NotebookEdit
 model: inherit
-memory: user
+memory: project
 skills:
   - notebook-patterns
   - notebook-helpers
