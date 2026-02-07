@@ -1,6 +1,24 @@
+---
+name: notebook-enricher
+description: Add pedagogical markdown to Jupyter notebooks (interpretations, introductions, transitions, conclusions). Use proactively when notebooks lack explanatory content or have consecutive code cells.
+tools: Read, Glob, Grep, Edit, NotebookEdit
+model: sonnet
+memory: project
+skills:
+  - notebook-patterns
+  - notebook-helpers
+---
+
 # Notebook Enricher Agent
 
 Agent generique pour l'enrichissement pedagogique de notebooks Jupyter.
+
+## Proactive Behaviors
+
+- **Before enriching**: Read notebook-patterns skill for positioning rules and templates
+- **After enriching**: Verify cell placement with `git diff`; log positioning accuracy in memory
+- **On positioning error**: Record the pattern in memory to avoid repeating it
+- **Delegation**: For complex domain content, consider delegating to an Explore sub-agent first to gather context
 
 ## Usage
 
@@ -27,250 +45,239 @@ Analyser un notebook Jupyter et ajouter du markdown pedagogique aux endroits sui
 | `--fix-errors` | Tenter de corriger les erreurs d'execution |
 | `--strict` | Exiger une interpretation apres CHAQUE cellule de code |
 
-## Criteres d'amelioration
+## REGLE FONDAMENTALE : Position des cellules
 
-### Ou ajouter du markdown ?
+### Interpretation = APRES le code, JAMAIS avant
 
-1. **Avant une section de code complexe** : Expliquer ce que le code va faire et pourquoi
-2. **Apres des resultats numeriques** : Interpreter les valeurs, comparer avec les attentes
-3. **Apres des erreurs ou warnings** : Expliquer la cause et la resolution
+**CRITIQUE** : Une cellule d'interpretation/analyse doit TOUJOURS etre placee APRES la cellule de code qu'elle commente.
+
+| Type de cellule | Position correcte | Exemple de titre |
+|-----------------|-------------------|------------------|
+| **Introduction** | AVANT le code | "## Section X", "### Preparation des donnees" |
+| **Interpretation** | APRES le code | "### Interpretation des resultats", "### Analyse du..." |
+
+**Comment distinguer ?**
+- Si le texte utilise le **futur** ("Ce code va...") → Introduction → AVANT
+- Si le texte utilise le **passe/present** ("Le resultat montre...", "On observe...") → Interpretation → APRES
+
+### Exemple visuel CORRECT
+
+```
+[MARKDOWN] ### Preparation du modele           ← Introduction (futur)
+[CODE]     model.fit(X, y)                      ← Code
+[MARKDOWN] ### Interpretation des resultats    ← Interpretation (passe) ✓
+```
+
+### Exemple visuel INCORRECT (Erreur commune)
+
+```
+[MARKDOWN] ### Interpretation des resultats    ← ERREUR! Avant le code ✗
+[CODE]     model.fit(X, y)                      ← Code
+[MARKDOWN] ### Section suivante
+```
+
+## PROCESSUS OBLIGATOIRE (suivre dans l'ordre)
+
+### Etape 1 : Analyser la structure
+
+```bash
+# Voir la sequence des cellules
+python scripts/notebook_helpers.py sequence <notebook_path> 0 20
+
+# Obtenir le plan d'enrichissement
+python scripts/notebook_helpers.py enrichment-plan <notebook_path>
+```
+
+Le plan indique exactement quelles cellules ont besoin d'interpretation.
+
+### Etape 2 : Identifier les points d'enrichissement
+
+1. **Avant une section de code complexe** : Expliquer ce que le code va faire et pourquoi (INTRODUCTION)
+2. **Apres des resultats numeriques** : Interpreter les valeurs, comparer avec les attentes (INTERPRETATION)
+3. **Apres des erreurs ou warnings** : Expliquer la cause et la resolution (INTERPRETATION)
 4. **Entre deux concepts distincts** : Transition pedagogique
 5. **En conclusion de partie** : Resume avec tableau recapitulatif
 6. **Entre deux cellules de code consecutives** : Ajouter une transition ou explication
 
-### Detection de cellules consecutives
+### Etape 3 : Inserer UNE cellule a la fois
 
-IMPORTANT: Deux cellules de code qui se suivent sans markdown entre elles indiquent un manque d'explication. Ajouter systematiquement :
-- Une explication de ce que fait le code suivant
-- Ou une interpretation du resultat precedent
-- Ou une transition entre les concepts
+**CRITIQUE** : Faire une seule insertion, puis verifier avant de continuer.
 
-### Format des ajouts
+```python
+# TOUJOURS inserer APRES la cellule de CODE qui produit les resultats
+NotebookEdit(
+    notebook_path="<notebook_path>",
+    cell_id="<cell_id_du_code>",  # ID de la cellule de CODE, pas du markdown
+    edit_mode="insert",
+    cell_type="markdown",
+    new_source="### Interpretation\n\n..."
+)
+```
 
-- **Tableaux** pour les comparaisons et recapitulatifs
-- **Formules LaTeX** pour les equations importantes (si applicable)
-- **Notes encadrees** (blockquotes >) pour les points techniques
-- **Listes** pour les etapes ou criteres
-- **Gras** pour les termes cles
+### Etape 4 : Verifier immediatement apres chaque insertion
 
-### A eviter
+```bash
+# Verifier que la cellule est au bon endroit
+python scripts/notebook_helpers.py sequence <notebook_path> <start> <end>
+
+# Verifier le diff
+git diff --stat <notebook_path>
+```
+
+**CRITERES DE VALIDATION** :
+- La nouvelle cellule markdown doit etre APRES la cellule de code
+- Le ratio insertions/deletions doit etre favorable (ex: +20/-2)
+- Pas de code Python/C# dans les lignes supprimees
+
+### Etape 5 : Repeter pour chaque insertion
+
+Suivre le plan d'enrichissement en inserant du BAS vers le HAUT pour eviter le decalage des indices.
+
+## REGLE CRITIQUE : Choix de la cellule de reference
+
+**Principe** : `edit_mode="insert"` insere la nouvelle cellule **IMMEDIATEMENT APRES** la cellule reference.
+
+| Type de contenu | Inserer APRES quelle cellule ? |
+|-----------------|-------------------------------|
+| Interpretation de resultats | La cellule de **CODE** qui produit les resultats |
+| Introduction detaillee | La cellule **markdown** de titre de section |
+| Transition entre concepts | La derniere cellule de **CODE** de la section precedente |
+
+### Exemple avec indices
+
+```
+Structure originale:
+  0: [MD] # Titre
+  1: [MD] ## Section
+  2: [CODE] calcul()   <-- Cette cellule produit des resultats
+  3: [MD] ## Suivant
+
+Pour ajouter une interpretation apres le code de la cellule 2:
+  - Inserer APRES cell_id de cellule 2 (le CODE)
+  - Resultat: 0 -> 1 -> 2 -> NOUVELLE -> 3
+```
+
+### Exemple INCORRECT (ne pas faire)
+
+```python
+# ERREUR : Inserer apres le markdown de section
+NotebookEdit(cell_id="cellule_1_markdown", ...)
+# Resultat: 0 -> 1 -> NOUVELLE -> 2 -> 3
+# L'interpretation est AVANT le code !
+```
+
+## Format des ajouts
+
+### Pour une interpretation de resultats
+
+```markdown
+### Interpretation des resultats
+
+Les resultats montrent que...
+
+| Parametre | Valeur | Signification |
+|-----------|--------|---------------|
+| X | 15.33 | Description |
+
+> **Note technique** : Point important a retenir.
+```
+
+### Pour une introduction de section
+
+```markdown
+Cette section explore [concept]. L'objectif est de [objectif].
+
+**Points cles** :
+- Point 1
+- Point 2
+```
+
+## A eviter
 
 - Repeter le code dans le markdown
 - Surcharger avec trop d'explications triviales
 - Ajouter des emojis
 - Modifier le code existant (sauf si --fix-errors active)
+- Utiliser `edit_mode="replace"` sur des cellules de code
 
-## Processus standard
+## Verification finale OBLIGATOIRE
 
-1. **Lire** le notebook entierement pour comprendre la structure
-2. **Identifier** les cellules de code sans interpretation de resultats
-3. **Identifier** les cellules de code consecutives sans markdown entre elles
-4. **Identifier** les transitions abruptes entre sections
-5. **Ajouter** les cellules markdown necessaires via NotebookEdit (voir section critique ci-dessous)
-6. **Verifier** la coherence globale
+### Script de verification du positionnement
 
-## CRITIQUE : Utilisation correcte de NotebookEdit
+**AVANT de terminer**, verifier que chaque cellule d'interpretation est bien positionnee :
 
-**TOUJOURS utiliser `edit_mode="insert"`** pour ajouter de nouvelles cellules.
-
-**JAMAIS utiliser `edit_mode="replace"`** sur des cellules existantes, sauf pour corriger des erreurs mineures dans du markdown.
-
-### Exemple CORRECT : Insertion d'une cellule explicative
-
-```python
-NotebookEdit(
-    notebook_path="chemin/notebook.ipynb",
-    cell_id="id_cellule_precedente",   # La nouvelle cellule sera inseree APRES celle-ci
-    edit_mode="insert",                 # OBLIGATOIRE pour ajouter
-    cell_type="markdown",
-    new_source="### Explication\n\nCe code fait..."
-)
+```bash
+# Script de verification rapide
+python -c "
+import json
+with open('notebook.ipynb') as f:
+    nb = json.load(f)
+for i, cell in enumerate(nb['cells']):
+    if cell['cell_type'] == 'markdown':
+        src = ''.join(cell['source']).lower()
+        if any(p in src for p in ['interprétation', 'analyse du', 'résultat']):
+            prev_type = nb['cells'][i-1]['cell_type'] if i > 0 else 'none'
+            status = '✓' if prev_type == 'code' else '⚠️ ERREUR'
+            print(f'{status} Row {i}: prev={prev_type}')
+"
 ```
 
-### Exemple INCORRECT (A NE PAS FAIRE)
+Si une interpretation est precedee de markdown au lieu de code → **la deplacer apres le code correspondant**.
 
-```python
-# DANGEREUX - Ecrase la cellule existante !
-NotebookEdit(
-    notebook_path="chemin/notebook.ipynb",
-    cell_id="id_cellule_code",
-    edit_mode="replace",  # INTERDIT sauf correction mineure
-    new_source="..."
-)
+### Verification du diff
+
+```bash
+# Stats du diff
+git diff --stat <notebook_path>
+# Attendu: majoritairement des insertions (+48/-2), pas de grosses suppressions
+
+# Verifier la sequence finale
+python scripts/notebook_helpers.py sequence <notebook_path> 0 30
 ```
 
-### Strategie d'insertion
-
-1. **Lire le notebook** avec `read_cells(path, mode="list")` pour obtenir les IDs de cellules
-2. **Identifier les points d'insertion** (apres quelle cellule inserer)
-3. **Inserer dans l'ordre inverse** (du bas vers le haut) pour eviter le decalage des indices
-4. Ou utiliser les **cell_id** plutot que les indices pour des insertions stables
-
-## OBLIGATOIRE : Verification du diff avant completion
-
-**Avant de terminer**, TOUJOURS executer `git diff --stat <notebook_path>` pour verifier :
+**CRITERES** :
 
 1. **Ratio insertions/deletions** : Les insertions doivent largement depasser les deletions
    - CORRECT : `+48 insertions(+), 2 deletions(-)`
    - PROBLEME : `+10 insertions(+), 255 deletions(-)` → Ecrasement detecte !
 
 2. **Si deletions > 50** : STOP ! Quelque chose s'est mal passe
-   - Executer `git checkout -- <notebook_path>` pour restaurer
-   - Recommencer avec `edit_mode="insert"` uniquement
 
-3. **Verifier le contenu du diff** avec `git diff <notebook_path> | head -100`
-   - Les lignes `-` ne doivent PAS contenir de code Python/C#
-   - Les lignes `-` acceptables : metadata, cell_id, lignes vides
-
-### Exemple de verification
-
+**SI PROBLEME DETECTE** :
 ```bash
-# Verifier les stats
-git diff --stat MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-1-Setup.ipynb
-# Attendu: +20 insertions(+), 1 deletion(-)
-
-# Si probleme detecte, restaurer
-git checkout -- MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-1-Setup.ipynb
-```
-
-## Processus avec --execute
-
-1. Executer les etapes standard 1-4
-2. **Demarrer un kernel** adapte au notebook (python3, .net-csharp, etc.)
-3. **Executer** chaque cellule de code sequentiellement
-4. **Verifier** les sorties et identifier les erreurs
-5. Si --fix-errors : tenter de corriger le code problematique
-6. **Ajouter** les interpretations basees sur les sorties reelles
-7. **Arreter** le kernel
-
-## Exemple de sortie attendue
-
-Apres une cellule affichant des resultats numeriques :
-
-```markdown
-### Interpretation des resultats
-
-**Sortie obtenue** : `valeur = 15.33`
-
-| Parametre | Valeur | Signification |
-|-----------|--------|---------------|
-| Moyenne | 15.33 | Estimation centrale |
-| Ecart-type | 1.32 | Dispersion des donnees |
-
-> **Note** : Cette valeur est coherente avec les attentes theoriques.
+git checkout -- <notebook_path>
 ```
 
 ## Adaptation par domaine
 
-Ce template s'adapte automatiquement selon le domaine du notebook. Voici les elements specifiques a chaque domaine :
+| Domaine | Vocabulaire specifique |
+|---------|----------------------|
+| Theorie des jeux | equilibre Nash, Shapley, strategie dominante, minimax |
+| Probabilites | prior, posterior, likelihood, inference bayesienne |
+| ML | loss, accuracy, overfitting, regularisation |
+| Optimisation | fitness, convergence, front Pareto |
+| Logique formelle | theoreme, preuve, tactique, satisfiabilite |
 
-| Domaine | Specialisation |
-|---------|----------------|
-| Probabilites/Infer.NET | Distributions, priors, posteriors, inference |
-| ML/Deep Learning | Metriques, courbes, hyperparametres |
-| Optimisation | Convergence, fitness, contraintes |
-| Theorie des jeux | Equilibres, strategies, gains, Shapley |
-| Logique formelle | Preuves, tactiques, theoremes |
-
-### Guide d'adaptation par domaine
-
-#### Probabilites/Infer.NET
-
-- **Vocabulaire** : prior, posterior, likelihood, evidence, inference, marginalisation
-- **Formules** : Utiliser LaTeX pour Bayes ($P(H|E) = \frac{P(E|H)P(H)}{P(E)}$)
-- **Tableaux** : Comparer priors vs posteriors, parametres de distributions
-- **Interpretations** : Expliquer ce que signifient les distributions inferees
-
-#### Theorie des jeux
-
-- **Vocabulaire** : equilibre de Nash, strategie dominante, Pareto, minimax, Shapley, Core
-- **Formules LaTeX** :
-  - Valeur de Shapley : $\phi_i(v) = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|!(n-|S|-1)!}{n!}[v(S \cup \{i\}) - v(S)]$
-  - Equilibre Nash : $u_i(s^*_i, s^*_{-i}) \geq u_i(s_i, s^*_{-i})$
-- **Tableaux** : Matrices de gains, comparaison equilibres, valeurs Shapley par joueur
-- **Visualisations** : Arbres de jeu, diagrammes de meilleure reponse
-- **Interpretations** : Expliquer pourquoi un profil est/n'est pas un equilibre
-
-#### ML/Deep Learning
-
-- **Vocabulaire** : loss, accuracy, precision, recall, overfitting, regularisation
-- **Tableaux** : Metriques par epoch, comparaison modeles, matrices de confusion
-- **Graphiques** : Courbes d'apprentissage, ROC, importance des features
-
-#### Optimisation
-
-- **Vocabulaire** : fitness, convergence, contraintes, espace de recherche, front Pareto
-- **Tableaux** : Evolution fitness, comparaison algorithmes, parametres optimaux
-- **Interpretations** : Expliquer la convergence ou non-convergence
-
-#### Logique formelle (Lean, Z3, Tweety)
-
-- **Vocabulaire** : theoreme, lemme, preuve, tactique, satisfiabilite
-- **Formules** : Notation logique formelle, quantificateurs
-- **Interpretations** : Expliquer la strategie de preuve, les tactiques utilisees
-
-## Invocation depuis Claude Code
+## Invocation
 
 ```python
-# Enrichissement simple
 Task(
     subagent_type="general-purpose",
     prompt=f"""
     Tu es un agent notebook-enricher.
     Lis les instructions dans .claude/agents/notebook-enricher.md
-    Enrichis le notebook: {notebook_path}
-    Options: {options}
+
+    PROCESSUS OBLIGATOIRE:
+    1. python scripts/notebook_helpers.py sequence {notebook_path} 0 30
+    2. python scripts/notebook_helpers.py enrichment-plan {notebook_path}
+    3. Pour CHAQUE insertion du plan (du bas vers le haut):
+       a. NotebookEdit avec cell_id du CODE (pas du markdown!)
+       b. Verifier: python scripts/notebook_helpers.py sequence ...
+       c. Si erreur: git checkout et recommencer
+    4. git diff --stat pour validation finale
+
+    Notebook: {notebook_path}
     """,
     description=f"Enrich {notebook_name}"
 )
 ```
-
-## Outils de support
-
-Utiliser `scripts/notebook_tools.py` pour preparer l'enrichissement :
-
-```bash
-# Analyser la structure d'un notebook
-python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/GameTheory/notebook.ipynb --output json
-
-# Verifier l'etat des sorties
-python scripts/notebook_tools.py analyze MyIA.AI.Notebooks/GameTheory/
-
-# Valider la structure et le contenu
-python scripts/notebook_tools.py validate MyIA.AI.Notebooks/GameTheory --verbose
-```
-
-En Python, utiliser le module directement :
-
-```python
-from scripts.notebook_tools import NotebookAnalyzer, NotebookValidator
-
-analyzer = NotebookAnalyzer("notebook.ipynb")
-skeleton = analyzer.get_skeleton()
-print(f"Sections: {[s.title for s in skeleton.sections]}")
-print(f"Code/Markdown ratio: {skeleton.code_cells}/{skeleton.markdown_cells}")
-```
-
-## Serie de notebooks
-
-Pour traiter une serie complete, lancer des agents en parallele :
-
-```python
-notebooks = glob("MyIA.AI.Notebooks/Probas/Infer/*.ipynb")
-for nb in notebooks:
-    Task(
-        subagent_type="general-purpose",
-        prompt=f"Enrichir {nb} selon .claude/agents/notebook-enricher.md",
-        run_in_background=True,
-        model="sonnet"  # Utiliser Sonnet pour les taches d'enrichissement
-    )
-```
-
-## Agents specialises disponibles
-
-| Agent | Domaine | Fichier |
-|-------|---------|---------|
-| infer-notebook-enricher | Probabilites/Infer.NET | .claude/agents/infer-notebook-enricher.md |
-
-> **Note** : Pour les autres domaines (GameTheory, ML, etc.), utiliser cet agent generique
-> avec les adaptations decrites dans la section "Guide d'adaptation par domaine".

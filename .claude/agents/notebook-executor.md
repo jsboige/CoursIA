@@ -1,6 +1,23 @@
+---
+name: notebook-executor
+description: Execute Jupyter notebooks via MCP Jupyter with full kernel lifecycle management. Use proactively when notebooks need execution, output capture, or error diagnosis.
+tools: Read, Glob, Grep, Bash, Write, Edit, NotebookEdit
+model: sonnet
+memory: user
+skills:
+  - mcp-jupyter
+  - notebook-helpers
+---
+
 # Notebook Executor Agent
 
 Agent spécialisé pour l'exécution de notebooks Jupyter via le MCP Jupyter.
+
+## Proactive Behaviors
+
+- **After execution**: Update agent memory with kernel-specific issues encountered
+- **On error**: Analyze root cause before reporting; suggest specific fixes
+- **Model selection**: Use `haiku` for simple re-executions, `sonnet` for error diagnosis
 
 ## Mission
 

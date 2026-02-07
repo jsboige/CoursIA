@@ -1,530 +1,384 @@
 # Comparaison : Claude Code vs Roo Code
 
-Guide comparatif détaillé pour comprendre les différences entre Claude Code et Roo Code, et choisir le bon outil selon vos besoins.
+Guide comparatif detaille pour comprendre les differences entre Claude Code et Roo Code, et choisir le bon outil selon vos besoins.
 
-## 📊 Vue d'Ensemble
+> Sources : [code.claude.com/docs](https://code.claude.com/docs) | [docs.roocode.com](https://docs.roocode.com)
 
-| Critère | Claude Code | Roo Code |
-|---------|-------------|----------|
-| **Développeur** | Anthropic (officiel) | Communauté open-source |
+## Vue d'Ensemble
+
+| Critere | Claude Code | Roo Code |
+| --- | --- | --- |
+| **Developpeur** | Anthropic (officiel) | Communaute open-source |
 | **Type** | Outil agentique natif | Extension VS Code |
 | **Interfaces** | CLI + Extension VS Code | Extension VS Code uniquement |
-| **Première sortie** | 2024 | 2024 |
-| **Open Source** | Non (propriétaire) | Oui (fork de Cline) |
-| **Documentation** | Officielle complète | Communautaire |
+| **Open Source** | Non (proprietaire) | Oui (fork de Cline) |
+| **Documentation** | Officielle complete | Communautaire + docs.roocode.com |
 
-## 🎯 Philosophie et Approche
+## Philosophie et Approche
 
-### Claude Code
-**"Agentic coding with AI that understands your codebase"**
+### Claude Code - "Agentic coding"
 
-- Focus sur l'**autonomie** et l'**exécution**
-- Architecture **multi-agents** sophistiquée
-- Intégration **native** terminal et IDE
-- Optimisé pour les **workflows professionnels**
+- Focus sur l'**autonomie** et l'**execution**
+- Architecture **multi-agents** sophistiquee (sous-agents paralleles)
+- Integration **native** terminal et IDE
+- Optimise pour les **workflows professionnels**
 - Support **officiel** Anthropic
 
-### Roo Code
-**"AI coding assistant for VS Code"**
+### Roo Code - "AI coding assistant"
 
 - Focus sur la **collaboration** humain-AI
 - Interface **graphique** intuitive
-- **Multi-modèles** flexible (OpenRouter)
-- Communauté **active** et contributions
-- Personnalisation **extensive**
+- **Multi-modeles** flexible (OpenRouter natif)
+- Systeme de **modes** personnalisables (Architect, Code, Ask, Debug)
+- Communaute **active** et contributions open-source
 
-## 🔧 Installation et Configuration
-
-### Installation
+## Installation et Configuration
 
 | Aspect | Claude Code | Roo Code |
-|--------|-------------|----------|
-| **Méthode** | Installateur natif ou npm | Extension VS Code uniquement |
-| **Prérequis** | Aucun (natif) ou Node.js 18+ | VS Code 1.60+ |
-| **Taille** | ~100 MB (natif) | ~5 MB (extension) |
+| --- | --- | --- |
+| **Methode** | npm ou installateur natif | Extension VS Code |
+| **Prerequis** | Node.js 18+ (npm) ou aucun (natif) | VS Code 1.60+ |
 | **Plateformes** | Windows, macOS, Linux, WSL | Windows, macOS, Linux |
 | **Temps install** | 2-5 minutes | 1-2 minutes |
 
-### Configuration Modèles
+### Configuration des modeles
 
 **Claude Code avec OpenRouter :**
+
 ```bash
-# Variables d'environnement
+# Via variables d'environnement
 export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
-export ANTHROPIC_AUTH_TOKEN="VOTRE_CLE"
+export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"
 export ANTHROPIC_API_KEY=""
 ```
 
-**Roo Code avec OpenRouter :**
+Ou via `~/.claude/settings.json` :
+
 ```json
-// Via interface graphique des paramètres
 {
-  "provider": "OpenRouter",
-  "apiKey": "VOTRE_CLE",
-  "model": "anthropic/claude-sonnet-4"
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
+    "ANTHROPIC_API_KEY": ""
+  }
 }
 ```
 
-**Verdict :** Roo Code est plus simple à configurer via l'interface graphique.
+**Roo Code avec OpenRouter :**
 
-## 🤖 Modèles et Providers
+Configuration via l'interface graphique des parametres (Prompts Tab), choix du provider OpenRouter et saisie de la cle API.
 
-### Claude Code
+**Verdict :** Roo Code est plus simple a configurer grace a son interface graphique. Claude Code offre plus de flexibilite via fichiers et variables d'environnement.
 
-| Aspect | Détails |
-|--------|---------|
-| **Modèles natifs** | Claude Sonnet, Opus, Haiku (via Anthropic) |
+## Modeles et Providers
+
+### Modeles Claude Code
+
+| Aspect | Details |
+| --- | --- |
+| **Modeles natifs** | Claude Sonnet 4.5, Opus 4.6, Haiku 4.5 |
 | **Aliases** | `sonnet`, `opus`, `haiku` |
-| **Avec OpenRouter** | Tous modèles OpenRouter disponibles |
-| **Fallback** | Support fallback automatique |
-| **Streaming** | Oui |
+| **Avec OpenRouter** | Tous modeles OpenRouter disponibles |
+| **Aliases alternatifs** | `ANTHROPIC_DEFAULT_OPUS_MODEL`, etc. |
 
-### Roo Code
+### Modeles Roo Code
 
-| Aspect | Détails |
-|--------|---------|
-| **Modèles** | Tous via OpenRouter (100+ modèles) |
+| Aspect | Details |
+| --- | --- |
+| **Modeles** | Tous via OpenRouter (100+ modeles) |
 | **Providers** | OpenRouter, Anthropic, OpenAI, Google, etc. |
-| **Profils** | Système de profils pour changer rapidement |
-| **Multi-modèles** | Utilisation simultanée possible |
-| **Streaming** | Oui |
+| **Profils** | Systeme de profils pour changer rapidement |
+| **Par mode** | Modele different par mode (Code, Architect, etc.) |
 
-**Verdict :** Roo Code offre plus de flexibilité pour tester différents modèles.
+**Verdict :** Roo Code offre plus de flexibilite native pour tester differents modeles. Claude Code rattrape avec les aliases OpenRouter.
 
-## 🎨 Interface Utilisateur
+## Interface Utilisateur
 
 ### Claude Code CLI
 
-**Points forts :**
-- ✅ Léger et rapide
-- ✅ Scriptable et automatisable
-- ✅ Parfait pour CI/CD
-- ✅ Contrôle total via flags
+**Points forts :** leger et rapide, scriptable et automatisable, parfait pour CI/CD, controle total via flags.
 
-**Points faibles :**
-- ❌ Courbe d'apprentissage pour les flags
-- ❌ Pas de visualisation graphique
-- ❌ Moins intuitif pour débutants
+**Points faibles :** courbe d'apprentissage pour les flags, pas de visualisation graphique native.
 
 ### Claude Code Extension VS Code
 
-**Points forts :**
-- ✅ Interface native VS Code
-- ✅ Diffs interactifs visuels
-- ✅ @-mentions avec sélection
-- ✅ Multiples conversations (tabs/windows)
-- ✅ Historique persistant
-
-**Points faibles :**
-- ❌ Moins de contrôle que CLI
-- ❌ Nécessite VS Code ouvert
+**Points forts :** interface native VS Code, diffs interactifs visuels, @-mentions avec selection, multiples conversations (tabs/windows), historique persistant.
 
 ### Roo Code Extension
 
-**Points forts :**
-- ✅ Interface graphique très intuitive
-- ✅ Panneau de configuration visuel
-- ✅ Gestion profils modèles facile
-- ✅ Marketplace intégré
-- ✅ Meilleure pour débutants
+**Points forts :** interface graphique tres intuitive, panneau de configuration visuel, gestion profils modeles facile, modes specialises (Architect, Code, Ask, Debug).
 
-**Points faibles :**
-- ❌ Pas de CLI
-- ❌ Moins scriptable
-- ❌ Dépendant de VS Code
+**Points faibles :** pas de CLI, moins scriptable, dependant de VS Code.
 
-**Verdict :** Roo Code est plus accessible pour débutants, Claude Code CLI plus puissant pour experts.
+**Verdict :** Roo Code est plus accessible pour debutants. Claude Code CLI est plus puissant pour experts et automatisation.
 
-## 🔌 Extensibilité (MCP)
+## Extensibilite (MCP)
 
-### Claude Code
+### Support MCP Claude Code
 
 | Aspect | Support |
-|--------|---------|
-| **MCP natif** | ✅ Complet |
+| --- | --- |
+| **MCP natif** | Complet |
 | **Transports** | HTTP, Stdio, SSE |
 | **Configuration** | CLI (`claude mcp`) ou fichiers JSON |
 | **Scopes** | User, Project, Local |
-| **Tool Search** | ✅ Automatique si >10% contexte |
-| **Resources** | ✅ Via @-mentions |
-| **Prompts** | ✅ Deviennent slash commands |
-| **OAuth** | ✅ Support intégré |
+| **Tool Search** | Automatique si >10% contexte |
+| **Resources** | Via @-mentions |
+| **Prompts** | Deviennent slash commands |
+| **OAuth** | Support integre |
 
-### Roo Code
+### Support MCP Roo Code
 
 | Aspect | Support |
-|--------|---------|
-| **MCP** | ✅ Support partiel |
-| **Transports** | Principalement Stdio |
+| --- | --- |
+| **MCP** | Support complet (Stdio) |
+| **Transports** | Principalement Stdio, SSE |
 | **Configuration** | Interface graphique + JSON |
 | **Scopes** | Project principalement |
-| **Tool Search** | ❌ Non |
-| **Resources** | ⚠️ Support limité |
-| **Prompts** | ⚠️ Support limité |
-| **OAuth** | ❌ Configuration manuelle |
+| **Tool Search** | Non |
+| **Resources** | Support partiel |
 
-**Verdict :** Claude Code a un support MCP nettement plus complet et mature.
+**Verdict :** Claude Code a un support MCP nettement plus complet et mature, notamment pour les serveurs HTTP et le tool search.
 
-## 🚀 Agents et Parallélisation
+## Agents et Parallelisation
 
-### Claude Code - Sous-agents Intégrés
+### Claude Code - Sous-agents Integres
 
-**Agents spécialisés :**
-- **Explore** : Lecture seule, recherche rapide
+Agents specialises :
+
+- **Explore** : Lecture seule, recherche rapide (modele Haiku)
 - **Plan** : Recherche pour planification
-- **General-purpose** : Tâches complexes multi-étapes
+- **General-purpose** : Taches complexes multi-etapes
 
-**Capacités :**
-- ✅ Jusqu'à **10 agents parallèles** simultanément
-- ✅ Agents **personnalisables** via JSON
-- ✅ Délégation **automatique** des tâches
-- ✅ Gestion **contexte** indépendant par agent
+Capacites :
 
-**Exemple :**
-```bash
-claude --agents '{
-  "reviewer": {
-    "description": "Code reviewer",
-    "prompt": "Expert en qualité code",
-    "tools": ["Read", "Grep"]
-  }
-}'
-```
+- Jusqu'a **10 agents paralleles** simultanement
+- Agents **personnalisables** via fichiers `.claude/agents/*.md`
+- Delegation **automatique** basee sur la description
+- Gestion **contexte** independant par agent
 
-### Roo Code - Agents Configurables
+### Roo Code - Modes et Boomerang
 
-**Capacités :**
-- ⚠️ Pas de système de sous-agents natif
-- ✅ Workflow **séquentiel** optimisé
-- ✅ Configuration **skills** personnalisés
-- ❌ Pas de parallélisation native
+Modes integres :
 
-**Verdict :** Claude Code est **largement supérieur** pour tâches complexes nécessitant parallélisation.
+- **Code** : Ecriture et modification de code
+- **Architect** : Planification et architecture
+- **Ask** : Questions et recherche
+- **Debug** : Debugging et correction
 
-## 📝 Mémoire et Contexte
+Capacites :
 
-### Claude Code - CLAUDE.md
+- **Custom modes** personnalisables (`.roomodes`)
+- Workflow **sequentiel** optimise
+- Pattern **Boomerang** pour orchestration multi-mode
+- Pas de parallelisation native
 
-**Format :**
-```markdown
-# Stack Technique
-- TypeScript 5.3
-- React 18
+**Verdict :** Claude Code est superieur pour les taches complexes necessitant parallelisation. Roo Code compense avec ses modes specialises et le pattern Boomerang.
 
-# Commandes
-- `npm test` : Tests
-```
+## Memoire et Contexte
 
-**Caractéristiques :**
-- ✅ Hiérarchie (user / project / directory)
-- ✅ Importation avec `@path/to/file`
-- ✅ Lecture automatique au démarrage
-- ✅ Génération via `/init`
+### Claude Code - Systeme CLAUDE.md
 
-### Roo Code - Configuration Projet
+**Hierarchie (priorite croissante) :**
 
-**Format :**
-```json
-{
-  "projectContext": "...",
-  "customInstructions": "...",
-  "skills": [...]
-}
-```
+1. `~/.claude/CLAUDE.md` : Instructions globales personnelles
+1. `CLAUDE.md` ou `.claude/CLAUDE.md` : Instructions projet (equipe)
+1. `.claude/CLAUDE.local.md` : Instructions projet personnelles
+1. Sous-dossiers : `CLAUDE.md` par repertoire
 
-**Caractéristiques :**
-- ✅ Configuration via interface graphique
-- ✅ Instructions personnalisées
-- ❌ Pas de système hiérarchique
-- ❌ Pas d'importation de fichiers
+**Complement :** `.claude/rules/*.md` pour regles modulaires avec scoping par fichier (frontmatter `globs`).
 
-**Verdict :** Claude Code offre un système plus flexible et structuré.
+### Roo Code - Systeme de Rules
 
-## 🎭 Skills et Commands
+**Hierarchie :**
 
-### Claude Code
+1. Instructions globales via UI (Prompts Tab)
+1. `~/.roo/rules/` : Regles globales
+1. `~/.roo/rules-{mode}/` : Regles globales par mode
+1. `.roo/rules/` : Regles projet
+1. `.roo/rules-{mode}/` : Regles projet par mode
+1. `.roorules` / `.roorules-{mode}` : Fichiers alternatifs
+1. `AGENTS.md` : Instructions agent d'equipe
 
-**Skills :**
-- Format standard `SKILL.md`
-- Auto-découverte
-- Invocation automatique par l'AI
-- Compatible avec ecosystem
+**Verdict :** Les deux systemes sont riches. Claude Code favorise CLAUDE.md + rules, Roo Code offre un scoping par mode plus fin.
 
-**Slash Commands :**
-- Intégrés : `/init`, `/commit`, `/review`, `/mcp`
-- Personnalisables
-- Deviennent skills automatiquement
+## Skills et Commands
 
-**Marketplace :**
-- [SkillsMP](https://skillsmp.com/)
-- Installation one-click
-- Communauté active
+### Claude Code - Skills et Slash Commands
 
-### Roo Code
+**Skills** (`.claude/skills/*/SKILL.md`) :
 
-**Skills :**
-- Configuration manuelle
-- Format propriétaire
-- Marketplace intégré dans l'extension
+- Format standardise avec frontmatter YAML
+- Auto-decouverte et application automatique par Claude
+- Support des fichiers de reference et scripts
+- Marketplace communautaire ([SkillsMP](https://skillsmp.com/))
 
-**Slash Commands :**
-- Configuration via settings
-- Interface graphique
-- Moins de commandes intégrées
+**Slash Commands integres :** `/init`, `/commit`, `/review`, `/mcp`, `/status`, `/hooks`, `/memory`
 
-**Verdict :** Claude Code a un ecosystem plus mature et standardisé.
+### Roo Code - Modes personnalises
 
-## 🪝 Hooks et Automatisation
+**Custom Modes** (`.roomodes`) :
 
-### Claude Code
+- Definition de modes avec outils autorises
+- Restrictions de fichiers par mode
+- Configuration via interface graphique
+- Partage possible via le depot
 
-**Types de hooks :**
+**Verdict :** Claude Code a un ecosysteme skills plus mature et standardise. Roo Code compense avec ses custom modes flexibles.
+
+## Hooks et Automatisation
+
+### Claude Code - Hooks complets
+
+Types de hooks :
+
+- `PreToolUse` / `PostToolUse` : Avant/apres chaque outil
+- `UserPromptSubmit` : A la soumission d'un prompt
+- `SessionStart` / `SessionEnd` : Debut/fin de session
+- `Notification`, `Stop`, `SubagentStart/Stop`, `PreCompact`
+
+Configuration dans `settings.json` :
+
 ```json
 {
   "hooks": {
-    "user-prompt-submit": "run_tests.sh",
-    "pre-tool": {
-      "Write": "format_code.sh"
-    },
-    "post-tool": {
-      "Bash": "check_syntax.sh"
-    }
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python check_file.py"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
 
-**Capacités :**
-- ✅ Pre-tool, Post-tool, User-prompt
-- ✅ Configuration par outil
-- ✅ Interface `/hooks` dédiée
-- ✅ Scripts shell support
+### Roo Code - Automatisation limitee
 
-### Roo Code
+- Support des hooks basique via configuration
+- Moins de points d'accroche que Claude Code
+- Automatisation principalement via les modes
 
-**Hooks :**
-- ⚠️ Support limité
-- Configuration manuelle
-- Moins de types de hooks
+**Verdict :** Claude Code offre un systeme de hooks nettement plus complet et granulaire.
 
-**Verdict :** Claude Code offre un système de hooks plus complet.
+## Securite et Permissions
 
-## 💰 Coût et Tarification
+### Claude Code - Systeme granulaire
 
-### Claude Code
+**Modes de permission :** `default`, `acceptEdits`, `plan`, `auto-accept`
 
-**Options :**
-1. **Abonnement Claude** (Pro/Max/Teams/Enterprise)
-   - Modèles Anthropic inclus
-   - Modèles tiers via OpenRouter facturés séparément
+**Regles fines :**
 
-2. **API Anthropic** (pay-per-use)
-   - Facturation à l'utilisation
-
-3. **Via OpenRouter uniquement**
-   - Tous modèles facturés par OpenRouter
-
-**Coûts typiques (avec OpenRouter) :**
-- Claude Sonnet 4 : ~$3 / 1M tokens input
-- Claude Opus 4 : ~$15 / 1M tokens input
-
-### Roo Code
-
-**Options :**
-- **OpenRouter** (principal)
-- **API directes** (Anthropic, OpenAI, etc.)
-- **Providers gratuits** possibles
-
-**Coûts :** Identiques à Claude Code si même modèle via OpenRouter
-
-**Verdict :** Coûts similaires, flexibilité équivalente avec OpenRouter.
-
-## 🔒 Sécurité et Permissions
-
-### Claude Code
-
-**Niveaux de permission :**
-- `default` : Demande avant chaque action
-- `auto-accept` : Accepte automatiquement
-- `plan` : Planification sans exécution
-
-**Configuration fine :**
 ```json
 {
-  "allowedTools": ["Read", "Bash(git:*)"],
-  "disallowedTools": ["Write(/etc/*:*)"]
+  "permissions": {
+    "allow": ["Read", "Bash(npm run *)"],
+    "deny": ["Read(.env)", "Bash(rm -rf *)"],
+    "ask": ["Bash(git push *)"]
+  }
 }
 ```
 
-**Sécurité :**
-- ✅ Sandboxing natif
-- ✅ Granularité par outil
-- ✅ Patterns d'exclusion
-- ✅ Audit trail
+**Sandbox :** Isolation des commandes avec controle reseau (macOS/Linux).
+
+### Roo Code - Approbation manuelle
+
+- Systeme d'approbation par action
+- Auto-approve configurable par mode
+- Moins de granularite que Claude Code
+
+**Verdict :** Claude Code offre un controle plus fin et professionnel, avec le sandbox en plus.
+
+## Cout et Tarification
+
+Les couts sont identiques si le meme modele est utilise via OpenRouter.
+
+**Couts typiques OpenRouter :**
+
+- Claude Sonnet 4.5 : ~$3 / 1M tokens input
+- Claude Opus 4.6 : ~$15 / 1M tokens input
+- Modeles alternatifs (GLM, Qwen) : souvent moins cher
+
+**Verdict :** Couts similaires, flexibilite equivalente avec OpenRouter.
+
+## Documentation et Support
+
+### Claude Code
+
+- Documentation officielle complete : [code.claude.com/docs](https://code.claude.com/docs)
+- Best practices officielles : [code.claude.com/docs/en/best-practices](https://code.claude.com/docs/en/best-practices)
+- Support officiel Anthropic
+- Communaute Discord et GitHub active
+- Guides tiers nombreux ([Awesome Claude Code](https://github.com/hesreallyhim/awesome-claude-code))
 
 ### Roo Code
 
-**Permissions :**
-- Système d'approbation manuel
-- Moins de granularité
+- Documentation officielle : [docs.roocode.com](https://docs.roocode.com)
+- Communaute active Discord et GitHub
+- Tutoriels video et guides communautaires
+- Open source : contributions bienvenues
 
-**Verdict :** Claude Code offre un contrôle plus fin et professionnel.
+## Cas d'Usage Recommandes
 
-## 📚 Documentation et Support
+### Preferer Claude Code pour
 
-### Claude Code
+- Developpement **professionnel** et **supporte**
+- **Parallelisation** de taches (sous-agents)
+- Integration **CLI** pour automatisation et CI/CD
+- Support **MCP** complet
+- Travail en **equipe** avec standards partages
+- Projets necessitant **securite granulaire** (sandbox, permissions)
 
-**Documentation :**
-- ✅ [Officielle complète](https://code.claude.com/docs)
-- ✅ Guides étape par étape
-- ✅ Exemples pratiques
-- ✅ Changelog détaillé
+### Preferer Roo Code pour
 
-**Support :**
-- ✅ Support officiel Anthropic
-- ✅ GitHub Issues actif
-- ✅ Communauté Discord
-- ✅ Guides tiers nombreux
+- **Debutants** avec les AI coding tools
+- Tester **differents modeles** facilement
+- Interface **graphique** intuitive
+- **Custom modes** specialises (Architect, Debug)
+- Projets **open source** et personnalisation poussee
+- **Budget limite** (modeles alternatifs moins chers)
 
-### Roo Code
+### Recommandation pour la formation EPF 2026
 
-**Documentation :**
-- ⚠️ Communautaire principalement
-- ⚠️ Moins structurée
-- ✅ Tutoriels vidéo
-- ✅ README GitHub
+1. **Debutants** : Commencer avec **Roo Code** (plus accessible, interface intuitive)
+1. **Intermediaires** : Essayer les **deux** (comparer workflows, identifier preferences)
+1. **Avances** : Preferer **Claude Code** (parallelisation, CLI, workflows professionnels)
 
-**Support :**
-- ✅ Communauté active
-- ✅ GitHub Issues
-- ❌ Pas de support officiel
+Les deux outils peuvent coexister sans probleme dans VS Code.
 
-**Verdict :** Claude Code bénéficie d'un support professionnel.
+## Tableau Synthese
 
-## 🎓 Cas d'Usage Recommandés
+| Critere | Claude Code | Roo Code |
+| --- | --- | --- |
+| Facilite installation | 3/5 | 5/5 |
+| Interface utilisateur | 4/5 | 5/5 |
+| Puissance (agents) | 5/5 | 3/5 |
+| MCP Support | 5/5 | 3/5 |
+| Flexibilite modeles | 4/5 | 5/5 |
+| Documentation | 5/5 | 4/5 |
+| Automatisation | 5/5 | 3/5 |
+| Securite | 5/5 | 3/5 |
+| Courbe apprentissage | 3/5 | 5/5 |
 
-### Choisir Claude Code si...
-
-✅ Vous voulez un outil **professionnel** et **supporté**
-✅ Vous avez besoin de **parallélisation** de tâches
-✅ Vous utilisez principalement la **famille Claude**
-✅ Vous voulez une **intégration MCP complète**
-✅ Vous travaillez en **équipe** avec standards
-✅ Vous avez besoin de **CLI** pour automatisation
-✅ Vous cherchez **stabilité** et **fiabilité**
-
-**Idéal pour :**
-- Développement professionnel
-- Projets d'équipe
-- CI/CD et automatisation
-- Tâches complexes multi-fichiers
-- Génération de documentation
-- Refactoring à grande échelle
-
-### Choisir Roo Code si...
-
-✅ Vous êtes **débutant** avec les AI coding tools
-✅ Vous voulez tester **différents modèles** facilement
-✅ Vous préférez une **interface graphique** simple
-✅ Vous avez un **budget limité** (modèles moins chers)
-✅ Vous voulez **personnaliser** extensivement
-✅ Vous travaillez **solo** sur petits projets
-✅ Vous aimez l'**open source** et contribuer
-
-**Idéal pour :**
-- Apprentissage et expérimentation
-- Projets personnels
-- Développement rapide (prototypage)
-- Tests de différents modèles LLM
-- Petites modifications ponctuelles
-- Utilisateurs débutants en AI
-
-## 🔄 Migration entre Outils
-
-### De Roo Code vers Claude Code
-
-**Avantages :**
-- ✅ Gain en **performance** et **parallélisation**
-- ✅ Support **MCP** plus complet
-- ✅ **CLI** pour automatisation
-- ✅ Documentation **professionnelle**
-
-**Étapes :**
-1. Installer Claude Code (CLI + Extension)
-2. Configurer OpenRouter (mêmes clés)
-3. Créer `CLAUDE.md` (équivalent config Roo)
-4. Migrer MCP servers vers `.mcp.json`
-5. Recréer skills si nécessaire
-
-### De Claude Code vers Roo Code
-
-**Avantages :**
-- ✅ Interface plus **intuitive**
-- ✅ **Multi-modèles** plus facile
-- ✅ **Open source** et personnalisable
-
-**Étapes :**
-1. Installer extension Roo Code
-2. Configurer profils modèles
-3. Transférer instructions de CLAUDE.md
-4. Adapter configuration MCP si supporté
-
-## 🏆 Récapitulatif et Recommandations
-
-### Tableau Synthèse
-
-| Critère | Claude Code | Roo Code | Gagnant |
-|---------|-------------|----------|---------|
-| **Facilité installation** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Roo |
-| **Interface utilisateur** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Roo |
-| **Puissance (agents)** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | Claude |
-| **MCP Support** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | Claude |
-| **Flexibilité modèles** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Roo |
-| **Documentation** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | Claude |
-| **Automatisation** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | Claude |
-| **Communauté** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | Égalité |
-| **Prix** | ⭐⭐⭐ | ⭐⭐⭐⭐ | Roo |
-| **Courbe apprentissage** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Roo |
-
-### Recommandation Générale
-
-**Pour la formation EPF 2026 :**
-
-1. **Débutants** : Commencer avec **Roo Code**
-   - Plus accessible
-   - Interface intuitive
-   - Moins intimidant
-
-2. **Intermédiaires** : Essayer les **deux**
-   - Comparer workflows
-   - Identifier préférences
-   - Comprendre forces/faiblesses
-
-3. **Avancés** : Préférer **Claude Code**
-   - Exploiter parallélisation
-   - Utiliser CLI pour automation
-   - Workflows professionnels
-
-**Dans la pratique :**
-- **Roo Code** pour petites tâches rapides et expérimentation
-- **Claude Code** pour projets sérieux et développement d'équipe
-- **Les deux** peuvent coexister sans problème !
-
-## 📖 Ressources Complémentaires
+## Ressources
 
 ### Claude Code
+
 - [Documentation officielle](https://code.claude.com/docs)
-- [Best practices](https://www.anthropic.com/engineering/claude-code-best-practices)
+- [Best practices](https://code.claude.com/docs/en/best-practices)
 - [GitHub](https://github.com/anthropics/claude-code)
+- [Awesome Claude Code](https://github.com/hesreallyhim/awesome-claude-code)
 
 ### Roo Code
-- Basé sur [Cline](https://github.com/cline/cline)
-- [Documentation Roo](https://docs.roo.dev)
-- Communauté Discord
 
-### Comparaisons Tiers
-- [Builder.io Guide](https://www.builder.io/blog/claude-code)
-- [WhyTryAI Comparison](https://www.whytryai.com/p/claude-code-beginner-guide)
+- [Documentation officielle](https://docs.roocode.com)
+- [GitHub](https://github.com/RooVetGit/Roo-Code)
+- [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RooVet.roo-cline)
 
 ---
 
-**Conclusion :** Les deux outils ont leur place. Claude Code excelle en puissance et professionnalisme, Roo Code en accessibilité et flexibilité. Choisissez selon vos besoins et votre niveau ! 🚀
+**Conclusion :** Les deux outils ont leur place. Claude Code excelle en puissance et professionnalisme, Roo Code en accessibilite et flexibilite. Choisissez selon vos besoins et votre niveau.

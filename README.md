@@ -20,12 +20,13 @@ Bienvenue dans le depot **CoursIA**, plateforme educative complete pour l'appren
 
 ## Introduction
 
-Ce depot contient **180+ notebooks Jupyter** interactifs couvrant :
+Ce depot contient **255+ notebooks Jupyter** interactifs couvrant :
 - **IA Symbolique** : Logiques formelles, argumentation, verification formelle (Lean 4, Tweety, Z3)
 - **Probabilites** : Inference bayesienne, modeles graphiques (Infer.NET)
 - **Theorie des jeux** : Nash, jeux evolutionnaires, cooperatifs, CFR, OpenSpiel
 - **Machine Learning** : ML.NET, algorithmes genetiques
 - **IA Generative** : OpenAI, LLMs, generation d'images (DALL-E, FLUX, Qwen, SD3.5)
+- **Trading Algorithmique** : QuantConnect LEAN, ML/DL/RL pour strategies de trading
 
 Les notebooks sont en **C# (.NET Interactive)**, **Python** et **Lean 4**, avec une documentation pedagogique complete.
 
@@ -35,13 +36,17 @@ Les notebooks sont en **C# (.NET Interactive)**, **Python** et **Lean 4**, avec 
 
 ```
 CoursIA/
-├── MyIA.AI.Notebooks/           # 180+ notebooks interactifs
-│   ├── GenAI/                   # IA Generative (18 notebooks)
-│   │   ├── 00-Environment/      # Setup et configuration
-│   │   ├── 01-Foundation/       # DALL-E 3, GPT-5
-│   │   ├── 02-Advanced/         # Qwen, FLUX, SD3.5, Z-Image
-│   │   ├── 03-Orchestration/    # Multi-modeles, workflows
-│   │   └── 04-Applications/     # Production, contenu educatif
+├── MyIA.AI.Notebooks/           # 255+ notebooks interactifs
+│   ├── GenAI/                   # IA Generative (55+ notebooks)
+│   │   ├── 00-GenAI-Environment/# Setup et configuration (6 notebooks)
+│   │   ├── Image/               # Generation d'images (19 notebooks)
+│   │   │   ├── 01-Foundation/   # DALL-E 3, GPT-5, Forge
+│   │   │   ├── 02-Advanced/     # Qwen, FLUX, SD3.5, Z-Image
+│   │   │   ├── 03-Orchestration/# Multi-modeles, workflows
+│   │   │   └── 04-Applications/ # Production, contenu educatif
+│   │   ├── Texte/               # LLMs et generation texte (10 notebooks)
+│   │   ├── SemanticKernel/      # Microsoft Semantic Kernel (14 notebooks)
+│   │   └── Vibe-Coding/         # Claude Code et Roo Code tutorials
 │   │
 │   ├── SymbolicAI/              # IA Symbolique (47+ notebooks)
 │   │   ├── Tweety/              # TweetyProject - 10 notebooks
@@ -56,14 +61,17 @@ CoursIA/
 │   ├── Probas/Infer/            # Infer.NET - 20 notebooks
 │   ├── Sudoku/                  # Resolution Sudoku (11 notebooks)
 │   ├── Search/                  # Recherche et optimisation (5 notebooks)
-│   ├── ML/                      # Machine Learning (5+ notebooks)
-│   ├── IIT/                     # PyPhi - Information integree (3 notebooks)
-│   ├── EPF/                     # Devoirs etudiants (15+ notebooks)
+│   ├── ML/                      # Machine Learning (14 notebooks)
+│   ├── RL/                      # Reinforcement Learning (3 notebooks)
+│   ├── QuantConnect/            # Trading algorithmique + AI (27 notebooks Python)
+│   ├── IIT/                     # PyPhi - Information integree (1 notebook)
+│   ├── Probas/                  # Probabilites (22 notebooks)
+│   ├── EPF/                     # Devoirs etudiants (4 notebooks)
 │   └── Config/                  # Configuration API (settings.json)
 │
 ├── .claude/                     # Configuration Claude Code
-│   ├── agents/                  # 4 agents specialises
-│   └── commands/                # 3 skills (commandes slash)
+│   ├── agents/                  # 10 agents specialises
+│   └── commands/                # 6 skills (commandes slash)
 │
 ├── scripts/                     # Scripts utilitaires
 │   ├── verify_notebooks.py      # Verification multi-famille
@@ -90,12 +98,14 @@ CoursIA/
 | **SymbolicAI** | 47+ | Python, Lean 4 | ~25h | OpenAI (optionnel) |
 | **GameTheory** | 26 | Python, Lean 4 | ~18h30 | OpenAI (optionnel) |
 | **Infer.NET** | 20 | .NET C# | ~17h | - |
-| **GenAI** | 18 | Python | ~6h | OpenAI/Anthropic |
+| **GenAI** | 55+ | Python | ~25h | OpenAI/Anthropic |
 | **Sudoku** | 11 | C#, Python | ~2h | - |
 | **Search** | 5 | C#, Python | ~1h10 | - |
-| **ML** | 5+ | C# | ~1h30 | - |
-| **IIT** | 3 | Python | ~1h | - |
-| **Total** | **180+** | **Mixed** | **~75h** | - |
+| **ML** | 14 | C#, Python | ~4h | - |
+| **RL** | 3 | Python | ~2h | - |
+| **QuantConnect** | 27 | Python | ~30h | QuantConnect (gratuit) |
+| **IIT** | 1 | Python | ~1h30 | - |
+| **Total** | **255+** | **Mixed** | **~130h** | - |
 
 ## Series de notebooks
 
@@ -107,8 +117,9 @@ CoursIA/
 |-------|-----------|---------|-----------|--------|
 | **Tweety** | 10 | TweetyProject, logiques PL/FOL/DL, argumentation Dung, ASPIC+ | JDK 17+ (auto) | [README](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) |
 | **Lean** | 10 | Lean 4, types dependants, tactiques, Mathlib, LLM integration | WSL, elan | [README](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
-| **Argument_Analysis** | 6 | Analyse argumentative multi-agents avec Semantic Kernel | OpenAI API | - |
-| **Autres** | 21+ | Z3, OR-Tools, RDF.NET, Fast-Downward | Varies | - |
+| **Argument_Analysis** | 6 | Analyse argumentative multi-agents avec Semantic Kernel | OpenAI API | [README](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md) |
+| **Planners** | 1 | Fast-Downward, planification PDDL | Python | [README](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) |
+| **Autres** | 14+ | Z3, OR-Tools, RDF.NET | Varies | - |
 
 **Notebooks Tweety (detail)** :
 
@@ -141,20 +152,17 @@ CoursIA/
 
 [README GameTheory](MyIA.AI.Notebooks/GameTheory/README.md)
 
-### Probas/Infer - Programmation Probabiliste
+### Probas - Programmation Probabiliste
 
-**20 notebooks** sur Infer.NET couvrant l'inference bayesienne et la theorie de la decision.
+**22 notebooks** couvrant l'inference bayesienne avec Infer.NET (C#) et Pyro (Python).
 
-| Groupe | Notebooks | Contenu | Duree |
-|--------|-----------|---------|-------|
-| **Fondamentaux** | 1-3 | Setup, Gaussiennes, Factor Graphs | ~2h |
-| **Modeles classiques** | 4-6 | Reseaux bayesiens, IRT/DINA, TrueSkill | ~3h |
-| **Classification** | 7-8 | Probit/BPM, selection de modeles | ~2h |
-| **Avances** | 9-12 | LDA, crowdsourcing, HMM, recommandation | ~4h |
-| **Reference** | 13 | Debugging, bonnes pratiques | ~1h |
-| **Decision** | 14-20 | Theorie de la decision, utilite, VOI, POMDP | ~5h |
+| Section | Notebooks | Kernel | Contenu |
+|---------|-----------|--------|---------|
+| **Racine** | 2 | Python/C# | Infer-101 (intro), Pyro_RSA_Hyperbole (pragmatique) |
+| **Infer/ 1-13** | 13 | C# | Fondamentaux, modeles classiques, debugging |
+| **Infer/ 14-20** | 7 | C# | Theorie de la decision bayesienne |
 
-[README Infer](MyIA.AI.Notebooks/Probas/Infer/README.md)
+[README Probas](MyIA.AI.Notebooks/Probas/README.md) | [README Infer](MyIA.AI.Notebooks/Probas/Infer/README.md)
 
 ### Sudoku - Resolution par Contraintes
 
@@ -189,34 +197,80 @@ CoursIA/
 
 ### GenAI - IA Generative
 
-**18 notebooks** organises en 4 niveaux progressifs.
+**55+ notebooks** organises en plusieurs sous-domaines.
 
-| Niveau | Contenu | Services requis |
-|--------|---------|-----------------|
-| **00-Environment** | Setup, Docker, API configuration | - |
-| **01-Foundation** | DALL-E 3, GPT-5, operations de base | OpenAI API |
-| **02-Advanced** | Qwen Image Edit, FLUX, Stable Diffusion 3.5, Z-Image | Docker GPU |
-| **03-Orchestration** | Comparaison multi-modeles, workflows | Docker GPU |
-| **04-Applications** | Contenu educatif, integration production | OpenAI/Docker |
+| Sous-domaine | Notebooks | Contenu | Services requis |
+|--------------|-----------|---------|-----------------|
+| **00-Environment** | 6 | Setup, Docker, API, validation, deploiement local | - |
+| **Image/** | 19 | Generation d'images (4 niveaux) | OpenAI/Docker GPU |
+| **Texte/** | 10 | OpenAI, Prompts, Structured Outputs, RAG, Reasoning, Production | OpenAI API |
+| **SemanticKernel/** | 14 | SK Fundamentals a MCP, NotebookMaker, templates | OpenAI API |
+| **Vibe-Coding/** | 5+ | Notebooks CLI Claude Code + ateliers Roo Code | Claude/Roo |
+
+**Structure Image/** :
+
+| Niveau | Contenu |
+|--------|---------|
+| **01-Foundation** | DALL-E 3, GPT-5, Forge SD-XL Turbo, Qwen |
+| **02-Advanced** | Qwen Image Edit 2509, FLUX, SD 3.5, Z-Image/Lumina |
+| **03-Orchestration** | Comparaison multi-modeles, workflows, optimisation |
+| **04-Applications** | Contenu educatif, workflows creatifs, production |
 
 [README GenAI](MyIA.AI.Notebooks/GenAI/README.md)
 
 ### IIT - Integrated Information Theory
 
-**3 notebooks** sur PyPhi et la theorie de l'information integree.
+**1 notebook** sur PyPhi et la theorie de l'information integree.
 
-| Notebook | Contenu |
-|----------|---------|
-| Intro_to_PyPhi | Introduction, concepts de base |
-| IIT_Networks | Reseaux et phi |
-| IIT_Analysis | Analyse avancee |
+| Notebook | Contenu | Duree |
+|----------|---------|-------|
+| [Intro_to_PyPhi](MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb) | TPM, Phi, CES, Causation actuelle, Macro-subsystemes | ~90 min |
+
+[README IIT](MyIA.AI.Notebooks/IIT/README.md)
 
 ### ML - Machine Learning
 
-**5+ notebooks** sur ML.NET et AutoML.
+**14 notebooks** couvrant ML.NET (C#) et Python Data Science avec agents IA.
 
-- ML-1 a ML-4 : Introduction, Features, Entrainement, Evaluation
-- TP-prevision-ventes : Projet pratique
+| Section | Notebooks | Contenu |
+|---------|-----------|---------|
+| **ML.NET** | 5 | Introduction, Features, Entrainement, AutoML, Evaluation |
+| **Python Foundations** | 2 | NumPy, Pandas |
+| **AI Agents Workshop** | 7 | RFP Analysis, CV Screening, Data Wrangling, First Agent |
+
+[README ML](MyIA.AI.Notebooks/ML/README.md)
+
+### RL - Reinforcement Learning
+
+**3 notebooks** sur Stable Baselines3 et l'apprentissage par renforcement.
+
+| Notebook | Contenu | Duree |
+|----------|---------|-------|
+| stable_baseline_1 | Introduction PPO, CartPole | ~30 min |
+| stable_baseline_2 | Wrappers, sauvegarde, callbacks | ~40 min |
+| stable_baseline_3 | HER, goal-conditioned RL, SAC/DDPG | ~45 min |
+
+[README RL](MyIA.AI.Notebooks/RL/README.md)
+
+### QuantConnect - Trading Algorithmique + AI
+
+**27 notebooks Python** sur le trading algorithmique avec QuantConnect LEAN, incluant ML/DL/RL/LLM.
+
+| Phase | Notebooks | Contenu |
+|-------|-----------|---------|
+| **Fondations LEAN** | 01-04 | Setup, Platform Fundamentals, Data Management, Research |
+| **Universe & Assets** | 05-08 | Universe Selection, Options, Futures/Forex, Multi-Asset |
+| **Trading Avance** | 09-12 | Order Types, Risk Management, Indicators, Backtesting |
+| **Algorithm Framework** | 13-15 | Alpha Models, Portfolio Construction, Optimization |
+| **Data Alternatives** | 16-17 | Alternative Data, Sentiment Analysis |
+| **ML/DL/AI** | 18-27 | Features, Classification, Regression, Deep Learning, RL, LLM |
+
+**Caracteristiques** :
+- Cloud-first (QuantConnect free tier)
+- 9 notebooks dedies ML/DL/RL/LLM
+- Production-ready (deployment live)
+
+[README QuantConnect](MyIA.AI.Notebooks/QuantConnect/README.md) | [Getting Started](MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md)
 
 ## Configuration et API Keys
 
@@ -228,6 +282,7 @@ CoursIA/
 | **Argument_Analysis** | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/.env` | `OPENAI_API_KEY`, `GLOBAL_LLM_SERVICE`, `BATCH_MODE` |
 | **Lean** | `MyIA.AI.Notebooks/SymbolicAI/Lean/.env` | `OPENAI_API_KEY`, `GITHUB_TOKEN`, `LEAN_VERSION` |
 | **GameTheory** | `MyIA.AI.Notebooks/GameTheory/.env` | `BATCH_MODE`, `OPENSPIEL_NUM_THREADS` |
+| **QuantConnect** | `MyIA.AI.Notebooks/QuantConnect/.env` | `QC_USER_ID`, `QC_API_TOKEN`, `QC_ORG_ID` |
 | **C# Notebooks** | `MyIA.AI.Notebooks/Config/settings.json` | `apikey`, `model`, `type` (openai/azure) |
 | **Docker ComfyUI** | `docker-configurations/services/comfyui-qwen/.env` | `CIVITAI_TOKEN`, `HF_TOKEN`, `COMFYUI_BEARER_TOKEN` |
 
@@ -431,14 +486,16 @@ cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
 
 ### Parcours d'apprentissage suggere
 
-1. **ML** - Introduction au Machine Learning avec ML.NET
+1. **ML** - Introduction au Machine Learning (ML.NET et Python)
 2. **Sudoku** - Algorithmes de resolution (backtracking, contraintes)
 3. **Search** - Recherche et optimisation
-4. **SymbolicAI/Tweety** - Logiques formelles et argumentation
-5. **Probas/Infer** - Inference bayesienne
-6. **GameTheory** - Theorie des jeux
-7. **SymbolicAI/Lean** - Verification formelle (WSL requis)
-8. **GenAI** - IA generative (API keys requises)
+4. **RL** - Reinforcement Learning avec Stable Baselines3
+5. **SymbolicAI/Tweety** - Logiques formelles et argumentation
+6. **Probas** - Inference bayesienne (Infer.NET, Pyro)
+7. **IIT** - Theorie de l'information integree (PyPhi)
+8. **GameTheory** - Theorie des jeux
+9. **SymbolicAI/Lean** - Verification formelle (WSL requis)
+10. **GenAI** - IA generative (API keys requises)
 
 ## Infrastructure Docker
 
@@ -552,6 +609,9 @@ Le workflow `.github/workflows/notebook-validation.yml` valide automatiquement :
 | `/verify-notebooks [target]` | Verifier et tester les notebooks |
 | `/enrich-notebooks [target]` | Enrichir avec du contenu pedagogique |
 | `/cleanup-notebooks [target]` | Nettoyer et reorganiser le markdown |
+| `/build-notebook [topic]` | Construire un nouveau notebook from scratch |
+| `/execute-notebook [path]` | Executer un notebook via MCP Jupyter |
+| `/validate-genai` | Valider le stack GenAI complet |
 
 **Options** :
 - `--quick` : Structure uniquement (pas d'execution)
@@ -577,6 +637,11 @@ Le workflow `.github/workflows/notebook-validation.yml` valide automatiquement :
 | `notebook-cleaner` | `.claude/agents/notebook-cleaner.md` | Nettoyage markdown |
 | `notebook-cell-iterator` | `.claude/agents/notebook-cell-iterator.md` | Iteration sur cellules |
 | `readme-updater` | `.claude/agents/readme-updater.md` | Mise a jour README |
+| `notebook-designer` | `.claude/agents/notebook-designer.md` | Conception de notebooks |
+| `notebook-executor` | `.claude/agents/notebook-executor.md` | Execution de notebooks |
+| `notebook-iterative-builder` | `.claude/agents/notebook-iterative-builder.md` | Construction iterative |
+| `notebook-validator` | `.claude/agents/notebook-validator.md` | Validation de notebooks |
+| `readme-hierarchy-auditor` | `.claude/agents/readme-hierarchy-auditor.md` | Audit et maintenance hierarchie README |
 
 ### MCP Jupyter Papermill
 

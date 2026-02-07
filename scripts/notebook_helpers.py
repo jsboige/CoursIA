@@ -305,6 +305,264 @@ class NotebookHelper:
             self.set_cell_source(index, new_source)
         return count
 
+    # ========================================================================
+    # ENRICHMENT VALIDATION METHODS
+    # ========================================================================
+
+    def get_cell_sequence(self, start: int, end: int = None,
+                          max_preview: int = 60) -> List[Dict[str, Any]]:
+        """
+        Get a compact sequence view of cells in a range.
+
+        Perfect for agents to validate their insertions by checking
+        the cell sequence around a modified area.
+
+        Args:
+            start: Starting cell index (inclusive)
+            end: Ending cell index (inclusive). If None, returns just start cell.
+            max_preview: Max characters for source preview
+
+        Returns:
+            List of dicts with: index, cell_id, type, preview, has_output
+        """
+        if end is None:
+            end = start
+
+        # Clamp to valid range
+        start = max(0, start)
+        end = min(end, self.cell_count - 1)
+
+        sequence = []
+        for i in range(start, end + 1):
+            cell = self.get_cell(i)
+            if not cell:
+                continue
+
+            source = self.get_cell_source(i)
+            first_line = source.split('\n')[0][:max_preview] if source else ""
+
+            # Clean up the preview
+            preview = first_line.strip()
+            if len(first_line) == max_preview:
+                preview += "..."
+
+            cell_info = {
+                'index': i,
+                'cell_id': cell.get('id', 'N/A'),
+                'type': cell.get('cell_type', 'unknown'),
+                'preview': preview,
+            }
+
+            if cell.get('cell_type') == 'code':
+                cell_info['has_output'] = bool(cell.get('outputs', []))
+
+            sequence.append(cell_info)
+
+        return sequence
+
+    def print_cell_sequence(self, start: int, end: int = None) -> str:
+        """
+        Print a formatted cell sequence for easy visual inspection.
+
+        Returns:
+            Formatted string showing the cell sequence
+        """
+        sequence = self.get_cell_sequence(start, end)
+        lines = []
+
+        for cell in sequence:
+            type_marker = "[MD]" if cell['type'] == 'markdown' else "[CODE]"
+            output_marker = ""
+            if cell['type'] == 'code':
+                output_marker = " (output)" if cell.get('has_output') else " (no output)"
+
+            lines.append(
+                f"  {cell['index']:2d}: {type_marker:6s} {cell['cell_id']:10s} | {cell['preview']}{output_marker}"
+            )
+
+        return "\n".join(lines)
+
+    def validate_enrichment_context(self, code_cell_index: int) -> Dict[str, Any]:
+        """
+        Validate the enrichment context around a code cell.
+
+        Checks if a code cell has:
+        - An introduction/explanation BEFORE it (or is first in section)
+        - An interpretation/analysis AFTER it (if it produces output)
+
+        Args:
+            code_cell_index: Index of the code cell to check
+
+        Returns:
+            Dict with:
+                valid: bool - True if structure is correct
+                has_intro_before: bool - Markdown exists before
+                has_interpretation_after: bool - Markdown exists after
+                prev_cell: Optional[Dict] - Info about previous cell
+                next_cell: Optional[Dict] - Info about next cell
+                suggestion: str - What to fix if invalid
+        """
+        result = {
+            'valid': True,
+            'code_cell_index': code_cell_index,
+            'has_intro_before': False,
+            'has_interpretation_after': False,
+            'prev_cell': None,
+            'next_cell': None,
+            'suggestion': ''
+        }
+
+        cell = self.get_cell(code_cell_index)
+        if not cell or cell.get('cell_type') != 'code':
+            result['valid'] = False
+            result['suggestion'] = f"Cell {code_cell_index} is not a code cell"
+            return result
+
+        # Check previous cell
+        if code_cell_index > 0:
+            prev = self.get_cell(code_cell_index - 1)
+            if prev:
+                prev_source = self.get_cell_source(code_cell_index - 1)
+                result['prev_cell'] = {
+                    'index': code_cell_index - 1,
+                    'type': prev.get('cell_type'),
+                    'preview': prev_source.split('\n')[0][:60] if prev_source else ""
+                }
+                if prev.get('cell_type') == 'markdown':
+                    result['has_intro_before'] = True
+
+        # Check next cell
+        if code_cell_index < self.cell_count - 1:
+            next_cell = self.get_cell(code_cell_index + 1)
+            if next_cell:
+                next_source = self.get_cell_source(code_cell_index + 1)
+                result['next_cell'] = {
+                    'index': code_cell_index + 1,
+                    'type': next_cell.get('cell_type'),
+                    'preview': next_source.split('\n')[0][:60] if next_source else ""
+                }
+                if next_cell.get('cell_type') == 'markdown':
+                    result['has_interpretation_after'] = True
+
+        # Determine if structure is valid
+        code_source = self.get_cell_source(code_cell_index)
+        has_output = bool(cell.get('outputs', []))
+
+        # A code cell with significant output should have interpretation after
+        if has_output and not result['has_interpretation_after']:
+            result['valid'] = False
+            result['suggestion'] = f"Insert interpretation AFTER cell {code_cell_index} (using cell_id='{cell.get('id')}')"
+
+        # Check for consecutive code cells
+        if not result['has_intro_before'] and result['prev_cell']:
+            if result['prev_cell']['type'] == 'code':
+                result['valid'] = False
+                result['suggestion'] = f"Insert explanation BEFORE cell {code_cell_index} (after cell {code_cell_index - 1})"
+
+        return result
+
+    def find_cells_needing_enrichment(self) -> List[Dict[str, Any]]:
+        """
+        Find all code cells that need enrichment (interpretation after output).
+
+        Returns:
+            List of dicts describing cells that need attention
+        """
+        needs_enrichment = []
+
+        for i in range(self.cell_count):
+            cell = self.get_cell(i)
+            if not cell or cell.get('cell_type') != 'code':
+                continue
+
+            # Skip empty cells
+            source = self.get_cell_source(i)
+            if not source.strip():
+                continue
+
+            # Check context
+            context = self.validate_enrichment_context(i)
+            if not context['valid']:
+                needs_enrichment.append({
+                    'cell_index': i,
+                    'cell_id': cell.get('id'),
+                    'first_line': source.split('\n')[0][:50],
+                    'has_output': bool(cell.get('outputs', [])),
+                    'issue': context['suggestion']
+                })
+
+        return needs_enrichment
+
+    def get_insertion_plan(self) -> List[Dict[str, Any]]:
+        """
+        Generate a plan for enriching the notebook.
+
+        Returns a list of insertions to make, in REVERSE ORDER
+        (so indices stay valid during insertion from bottom to top).
+
+        Each item has:
+            insert_after_index: cell index to insert after
+            insert_after_id: cell_id (if available, else None)
+            content_type: 'interpretation' or 'introduction'
+            code_preview: preview of the code cell
+            insert_position: human-readable position description
+        """
+        plan = []
+
+        for i in range(self.cell_count):
+            cell = self.get_cell(i)
+            if not cell or cell.get('cell_type') != 'code':
+                continue
+
+            source = self.get_cell_source(i)
+            if not source.strip():
+                continue
+
+            has_output = bool(cell.get('outputs', []))
+            cell_id = cell.get('id')
+
+            # Check if needs interpretation after (code with output but no markdown after)
+            if has_output and i < self.cell_count - 1:
+                next_cell = self.get_cell(i + 1)
+                if next_cell and next_cell.get('cell_type') == 'code':
+                    plan.append({
+                        'insert_after_index': i,
+                        'insert_after_id': cell_id,
+                        'content_type': 'interpretation',
+                        'code_preview': source.split('\n')[0][:50],
+                        'insert_position': f"After cell {i} (code)"
+                    })
+
+        # REVERSE the plan so insertions don't shift indices
+        plan.reverse()
+
+        return plan
+
+    def print_enrichment_plan(self) -> str:
+        """
+        Print a human-readable enrichment plan.
+
+        Format designed for agent consumption: shows exactly what to do.
+        """
+        plan = self.get_insertion_plan()
+        if not plan:
+            return "No enrichment needed - all code cells have markdown after them."
+
+        lines = [
+            "ENRICHMENT PLAN (execute in this order - bottom to top):",
+            "=" * 60
+        ]
+
+        for item in plan:
+            lines.append(f"\n{item['content_type'].upper()}:")
+            lines.append(f"  Insert AFTER cell index {item['insert_after_index']}")
+            if item['insert_after_id']:
+                lines.append(f"  Cell ID: {item['insert_after_id']}")
+            lines.append(f"  Code: {item['code_preview']}...")
+            lines.append(f"  Action: Add markdown interpretation of this code's output")
+
+        return "\n".join(lines)
+
 
 class CellIterator:
     """
@@ -1047,6 +1305,22 @@ Examples:
     output_parser.add_argument('notebook', help='Path to notebook')
     output_parser.add_argument('cell_index', type=int, help='Cell index')
 
+    # sequence command - NEW for enrichment validation
+    seq_parser = subparsers.add_parser('sequence', help='Show cell sequence around an index')
+    seq_parser.add_argument('notebook', help='Path to notebook')
+    seq_parser.add_argument('start', type=int, help='Start cell index')
+    seq_parser.add_argument('end', type=int, nargs='?', default=None, help='End cell index (optional)')
+
+    # validate-context command - NEW for enrichment validation
+    ctx_parser = subparsers.add_parser('validate-context', help='Validate enrichment context around a code cell')
+    ctx_parser.add_argument('notebook', help='Path to notebook')
+    ctx_parser.add_argument('cell_index', type=int, help='Code cell index to validate')
+
+    # enrichment-plan command - NEW
+    plan_parser = subparsers.add_parser('enrichment-plan', help='Show cells needing enrichment')
+    plan_parser.add_argument('notebook', help='Path to notebook')
+    plan_parser.add_argument('--json', action='store_true', help='Output as JSON')
+
     # execute command
     exec_parser = subparsers.add_parser('execute', help='Execute notebook')
     exec_parser.add_argument('notebook', help='Path to notebook')
@@ -1102,6 +1376,38 @@ Examples:
         helper = NotebookHelper(args.notebook)
         output = helper.get_cell_output_text(args.cell_index)
         print(output if output else "(no output)")
+
+    elif args.command == 'sequence':
+        helper = NotebookHelper(args.notebook)
+        end = args.end if args.end is not None else args.start + 4
+        print(f"\nCell sequence [{args.start}-{end}] in {helper.path.name}:")
+        print(helper.print_cell_sequence(args.start, end))
+        print()
+
+    elif args.command == 'validate-context':
+        helper = NotebookHelper(args.notebook)
+        result = helper.validate_enrichment_context(args.cell_index)
+        print(f"\nEnrichment context for cell {args.cell_index}:")
+        print(f"  Valid: {result['valid']}")
+        print(f"  Has intro before: {result['has_intro_before']}")
+        print(f"  Has interpretation after: {result['has_interpretation_after']}")
+        if result['prev_cell']:
+            print(f"  Previous cell: [{result['prev_cell']['type']}] {result['prev_cell']['preview'][:40]}")
+        if result['next_cell']:
+            print(f"  Next cell: [{result['next_cell']['type']}] {result['next_cell']['preview'][:40]}")
+        if result['suggestion']:
+            print(f"  Suggestion: {result['suggestion']}")
+        print()
+
+    elif args.command == 'enrichment-plan':
+        helper = NotebookHelper(args.notebook)
+        if args.json:
+            plan = helper.get_insertion_plan()
+            print(json.dumps(plan, indent=2))
+        else:
+            print(f"\n{helper.path.name}")
+            print(helper.print_enrichment_plan())
+        print()
 
     elif args.command == 'execute':
         executor = NotebookExecutor(timeout=args.timeout, verbose=args.verbose)

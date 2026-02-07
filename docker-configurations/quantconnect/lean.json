@@ -1,0 +1,145 @@
+{
+  "comment": "QuantConnect LEAN Configuration File",
+  "comment-1": "This configuration is for local Docker development",
+
+  "environment": "backtesting",
+
+  "algorithm-type-name": "BasicTemplateAlgorithm",
+
+  "algorithm-language": "Python",
+
+  "algorithm-location": "/Lean/Launcher/algorithms",
+
+  "data-folder": "/Lean/Data",
+
+  "data-provider": "DefaultDataProvider",
+
+  "data-directory": "/Lean/Data",
+
+  "cache-location": "/Lean/Data",
+
+  "debugging": false,
+
+  "debugging-method": "LocalCmdline",
+
+  "log-handler": "ConsoleLogHandler",
+
+  "messaging-handler": "StreamingMessageHandler",
+
+  "job-queue-handler": "JobQueue",
+
+  "api-handler": "Api",
+
+  "map-file-provider": "LocalDiskMapFileProvider",
+
+  "factor-file-provider": "LocalDiskFactorFileProvider",
+
+  "data-aggregator": "QuantConnect.Lean.Engine.DataFeeds.AggregationManager",
+
+  "alpha-handler": "LocalObjectStore",
+
+  "data-permission-manager": "DataPermissionManager",
+
+  "live-mode-brokerage": "PaperBrokerage",
+
+  "setup-handler": "ConsoleSetupHandler",
+
+  "result-handler": "BacktestingResultHandler",
+
+  "data-feed-handler": "FileSystemDataFeed",
+
+  "real-time-handler": "BacktestingRealTimeHandler",
+
+  "history-provider": "SubscriptionDataReaderHistoryProvider",
+
+  "transaction-handler": "BacktestingTransactionHandler",
+
+  "object-store": "LocalObjectStore",
+
+  "object-store-root": "/Lean/ObjectStore",
+
+  "maximum-chart-series": 10,
+
+  "maximum-data-points-per-chart-series": 4000,
+
+  "force-exchange-always-open": false,
+
+  "transaction-log": "",
+
+  "reserved-words-prefix": "@",
+
+  "show-missing-data-logs": true,
+
+  "maximum-warmup-history-days": 5,
+
+  "maximum-security-history-days": 30,
+
+  "maximum-concurrent-backtests": 1,
+
+  "api-access-token": "",
+
+  "api-user-id": "",
+
+  "job-user-id": "0",
+
+  "job-project-id": 0,
+
+  "api-data-update": false,
+
+  "lean-manager-type": "LocalLeanManager",
+
+  "transaction-log-path": "/Lean/Logs",
+
+  "version-id": "",
+
+  "forward-console-messages": true,
+
+  "command-queue-handler": "CommandQueueHandler",
+
+  "history-provider-live": "BrokerageHistoryProvider",
+
+  "data-queue-handler": "LiveDataQueue",
+
+  "download-data-provider": "QuantConnect.Lean.Engine.DataFeeds.DownloadDataProvider",
+
+  "data-downloader": "Api",
+
+  "map-downloader": "Api",
+
+  "parameters": {},
+
+  "python-venv": "",
+
+  "python-additional-paths": [
+    "/Lean/Launcher/shared",
+    "/Lean/Launcher/notebooks"
+  ],
+
+  "job-organization-id": "",
+
+  "composer-dll-directory": "./",
+
+  "algorithm-manager-time-loop-maximum": 20,
+
+  "send-via-api": false,
+
+  "api-data-channel": "",
+
+  "update-flush-interval": 10,
+
+  "regression-update-statistics": false,
+
+  "show-logs-in-console": true,
+
+  "close-automatically": true,
+
+  "log-level": "Information",
+
+  "scheduled-event-leaky-bucket-time-token-capacity": 3,
+
+  "scheduled-event-leaky-bucket-time-token-refill-rate-per-minute": 60,
+
+  "scheduled-event-leaky-bucket-minimum-time-interval-minutes": 0.1,
+
+  "comment-end": "End of configuration"
+}

@@ -165,6 +165,20 @@ cp .env.example .env
 #   BATCH_TEXT="..."    # Texte optionnel pour mode batch
 ```
 
+Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.md)
+
+---
+
+## Planners - Planification Automatique
+
+Introduction a la planification automatique avec Fast Downward, un planificateur PDDL de reference.
+
+| Notebook | Cellules | Kernel | Contenu |
+|----------|----------|--------|---------|
+| [Fast-Downward](Planners/Fast-Downward.ipynb) | 46 | Python | Planification PDDL, heuristiques, A*, Blocks World |
+
+Documentation complete : [Planners/README.md](Planners/README.md)
+
 ---
 
 ## Autres Notebooks

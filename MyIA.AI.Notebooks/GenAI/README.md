@@ -1,26 +1,31 @@
-# 🖼️ GenAI Images Ecosystem - CoursIA
+# GenAI - Ecosysteme IA Generative
 
-> **Écosystème modulaire de génération d'images par Intelligence Artificielle**  
-> Architecture production-ready | 18 notebooks spécialisés | Compatible MCP
+Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : images, texte, agents et vibe-coding.
 
----
+## Vue d'ensemble
 
-## 📋 **Vue d'Ensemble**
+| Statistique | Valeur |
+|-------------|--------|
+| Notebooks | 50+ |
+| Sous-domaines | 6 (Environment, Image, Texte, SemanticKernel, EPF, Vibe-Coding) |
+| Duree totale | ~25-30h |
 
-L'écosystème GenAI Images CoursIA est une architecture modulaire complète pour l'exploration, l'apprentissage et la production d'images générées par IA. Cette structure suit les principes **SDDD (Semantic-Documentation-Driven-Design)** et s'intègre parfaitement avec l'infrastructure **MCP (MyIA Control Plane)**.
+## Structure
 
-### 🎯 **Objectifs**
-- **🎓 Pédagogique** : Progression structurée de l'initiation à l'expertise
-- **🔬 Expérimental** : Comparaison et évaluation des modèles
-- **🏭 Production** : Intégration dans workflows professionnels
-- **🔄 Évolutif** : Architecture modulaire extensible
+```
+GenAI/
+├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
+├── Image/                   # Generation d'images (19 notebooks)
+├── Texte/                   # LLMs et generation de texte (10 notebooks)
+├── SemanticKernel/          # Microsoft Semantic Kernel (14 notebooks)
+├── EPF/                     # Projets etudiants (4 notebooks)
+└── Vibe-Coding/             # Tutorials Claude Code et Roo Code
+```
 
----
+## Sous-domaines
 
-## 🏗️ **Architecture Modulaire**
-
-### 📖 **00-GenAI-Environment** (Setup & Infrastructure)
-*🟢 Niveau Débutant | Prérequis obligatoires*
+### 00-GenAI-Environment - Setup et Infrastructure
+*Niveau Debutant | Prerequis obligatoires*
 
 | Notebook | Description | Technologies |
 |----------|-------------|--------------|
@@ -28,6 +33,8 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 | **00-2-Docker-Services-Management** | Gestion services conteneurisés | Docker Compose, Portainer |
 | **00-3-API-Endpoints-Configuration** | Configuration endpoints API | OpenAI, Hugging Face, Local |
 | **00-4-Environment-Validation** | Tests et validation setup | Pytest, Monitoring |
+| **00-5-ComfyUI-Local-Test** | Test local des services ComfyUI | ComfyUI, Bearer Token |
+| **00-6-Local-Docker-Deployment** | Deploiement Docker local complet | Docker Compose, GPU |
 
 ### 🖼️ **01-Images-Foundation** (Modèles Base)
 *🟢 Niveau Débutant | Introduction aux fondamentaux*
@@ -67,15 +74,65 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 | **04-3-Production-Integration** | Intégration systèmes production | APIs, Microservices |
 | **04-3-Cross-Stitch-Pattern-Maker-Legacy** | Générateur motifs point de croix | DMC Colors, Pattern Generation |
 
-### 📝 **Texte/** (Generation de Texte)
-*Reference | Complementaire aux modules Images*
+### Texte/ - Generation de Texte par IA
 
-| Notebook | Description | Technologies |
-|----------|-------------|--------------|
-| **1_OpenAI_Intro** | Introduction a l'API OpenAI | GPT-4, Chat Completions |
-| **2_PromptEngineering** | Techniques de prompt engineering | Few-shot, Chain-of-Thought |
-| **3_RAG** | Retrieval Augmented Generation | Embeddings, Vector Search |
-| **4_LocalLlama** | Utilisation de LLMs locaux | Llama, Ollama |
+*Serie complete sur les LLMs et APIs OpenAI modernes (10 notebooks)*
+
+| Tier | Notebooks | Contenu |
+|------|-----------|---------|
+| **Fondations** | 1-2 | OpenAI Intro, Prompt Engineering |
+| **Sorties Structurees** | 3-4 | Structured Outputs, Function Calling |
+| **Augmentation** | 5-7 | RAG moderne, PDF/Web Search, Code Interpreter |
+| **Avance** | 8-10 | Reasoning Models, Production Patterns, Local LLMs |
+
+[README Texte](Texte/README.md)
+
+### SemanticKernel/ - Microsoft Semantic Kernel
+
+*SDK pour integration LLMs dans applications .NET/Python (14 notebooks)*
+
+| Section | Notebooks | Contenu |
+|---------|-----------|---------|
+| **Serie principale** | 01-08 | Fundamentals, Functions, Agents, Filters, VectorStores, Process, MultiModal, MCP |
+| **Interop avancee** | 09-10 | Python/C# CLR, NotebookMaker (3 variantes) |
+| **Templates** | 3 | Templates C# et Python |
+
+[README SemanticKernel](SemanticKernel/README.md)
+
+### EPF/ - Projets Etudiants
+
+*Projets realises par les etudiants EPF*
+
+| Projet | Auteurs | Description |
+|--------|---------|-------------|
+| barbie-schreck | Carole & Cleo | Generation images style Barbie/Shrek |
+| receipe_maker | Dorian & Bastien | Generateur de recettes |
+| medical_chatbot | Louise & Jeanne Celine | Chatbot medical educatif |
+
+[README EPF](EPF/README.md)
+
+### Vibe-Coding/ - Tutorials IA Generative pour Developpeurs
+
+*Ateliers Claude Code et Roo Code*
+
+| Section | Contenu | Duree |
+|---------|---------|-------|
+| Claude-Code | 5 modules (decouverte a automatisation) | 13-16h |
+| Roo-Code | 5 modules + ateliers avances | ~15h |
+
+[README Vibe-Coding](Vibe-Coding/README.md)
+
+---
+
+## Liens vers sous-README
+
+| Sous-domaine | README |
+|--------------|--------|
+| Image | [Image/README.md](Image/README.md) |
+| Texte | [Texte/README.md](Texte/README.md) |
+| SemanticKernel | [SemanticKernel/README.md](SemanticKernel/README.md) |
+| EPF | [EPF/README.md](EPF/README.md) |
+| Vibe-Coding | [Vibe-Coding/README.md](Vibe-Coding/README.md) |
 
 ---
 
@@ -88,7 +145,7 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 | 02-Images-Advanced | Complet | Qwen 2509, FLUX, SD 3.5, Z-Image |
 | 03-Images-Orchestration | Complet | Comparaison, Workflows, Optimisation |
 | 04-Images-Applications | Complet | Applications pedagogiques |
-| Texte/ | Reference | OpenAI Intro, Prompts, RAG, Local LLMs |
+| Texte/ | Complet | 10 notebooks : OpenAI, Prompts, Structured Outputs, RAG, Reasoning, Production |
 
 ---
 
