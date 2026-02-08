@@ -22,8 +22,10 @@ pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt
 
 # C# (.NET 9.0)
 dotnet restore MyIA.CoursIA.sln
+```
 
 ### Docker/ComfyUI Services
+
 ```bash
 python scripts/genai-stack/genai.py docker status    # Statut des services
 python scripts/genai-stack/genai.py docker start all # Demarrer tous les services
@@ -41,12 +43,6 @@ python scripts/genai-stack/genai.py gpu                   # Verification VRAM
 python scripts/notebook_tools.py validate [target]        # Multi-family notebook verification
 ```
 GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
-
-### Claude Code Commands
-
-```
-/verify-notebooks [target] [options]    # Verify and test notebooks with iterative fixing
-```
 
 ### Claude Code Skills (slash commands)
 
@@ -98,11 +94,10 @@ notebook-infrastructure/     # Papermill automation & MCP maintenance
 
 ## Key Technologies
 
-**AI/ML**: OpenAI API, Anthropic Claude, Qwen 2.5-VL, Hugging Face, Diffusers
-**ComfyUI**: Custom Qwen nodes (16-channel VAE, vision tokens, multi-image editing)
-**Docker**: Containerized GPU services (RTX 3090, 24GB VRAM recommended)
-**.NET**: ML.NET, .NET Interactive, Microsoft.SemanticKernel, AutoGen
-**Jupyter**: Python and C# kernels, papermill for execution
+- **AI/ML**: OpenAI API, Anthropic Claude, Qwen 2.5-VL, Hugging Face, Semantic Kernel
+- **Notebooks**: Python 3.10+, .NET 9.0 Interactive, Papermill, MCP Jupyter
+- **Docker**: ComfyUI GPU services (RTX 3090, 24GB VRAM)
+- **GenAI Models**: DALL-E 3, GPT-5, Qwen Image Edit, Lumina/Z-Image
 
 ---
 
