@@ -1,0 +1,78 @@
+# Whisper-WebUI - Transcription et sous-titrage audio
+# Base: jhj0517/whisper-webui (Gradio)
+# Config originale: D:\Production\Whisper-WebUI\docker-compose-myia.yaml
+#
+# GPU: RTX 3090 (nvidia-smi GPU 1, device_ids=['1'])
+# Coexiste avec ComfyUI Qwen sur la meme GPU en usage normal
+# Port externe: 36540 (configurable via .env)
+# Auth: Gradio Basic Auth
+
+services:
+  whisper-webui:
+    image: jhj0517/whisper-webui:latest
+    container_name: whisper-webui
+    hostname: whisper-webui
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-1}']
+              capabilities: [gpu]
+
+    ports:
+      - "${WHISPER_PORT:-36540}:7860"
+
+    volumes:
+      - type: bind
+        source: ${WHISPER_MODELS_PATH:-./models}
+        target: /Whisper-WebUI/models
+      - type: bind
+        source: ${WHISPER_CONFIGS_PATH:-./configs}
+        target: /Whisper-WebUI/configs
+      - type: bind
+        source: ${WHISPER_OUTPUTS_PATH:-../../shared/outputs/audio}
+        target: /Whisper-WebUI/outputs
+
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - TZ=${TZ:-Europe/Paris}
+
+    entrypoint:
+      - python
+      - app.py
+      - --server_port
+      - "7860"
+      - --server_name
+      - "0.0.0.0"
+      - --username
+      - "${WHISPER_USER:-admin}"
+      - --password
+      - "${WHISPER_PASSWORD:-changeme}"
+      - --whisper_type
+      - "${WHISPER_TYPE:-insanely_fast_whisper}"
+
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:7860/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    networks:
+      - whisper-network
+
+    labels:
+      - "com.myia.service=whisper-webui"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=whisper-large-v3-turbo"
+
+networks:
+  whisper-network:
+    driver: bridge
+    name: whisper-network

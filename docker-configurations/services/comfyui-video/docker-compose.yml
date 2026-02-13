@@ -1,0 +1,94 @@
+# ComfyUI-Video - Generation et edition video par IA
+# Base sur comfyui-qwen avec nodes video supplementaires
+#
+# GPU: RTX 3090 (PyTorch 0, nvidia-smi GPU 1)
+# EXCLUSIF avec comfyui-qwen (meme GPU, ne pas lancer les deux)
+# Port: 8189 (pour ne pas confliter avec comfyui-qwen:8188)
+#
+# Nodes video supplementaires (voir install_video_nodes.sh):
+# - ComfyUI-AnimateDiff-Evolved
+# - ComfyUI-VideoHelperSuite
+# - ComfyUI-HunyuanVideoWrapper
+
+services:
+  comfyui-video:
+    image: python:3.11
+    container_name: comfyui-video
+    hostname: comfyui-video
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-0}']
+              capabilities: [gpu]
+
+    ports:
+      - "${COMFYUI_VIDEO_PORT:-8189}:8188"
+
+    volumes:
+      - type: bind
+        source: ${COMFYUI_WORKSPACE_PATH:-./workspace}
+        target: /workspace/ComfyUI
+      - type: bind
+        source: ../../shared/models
+        target: /workspace/ComfyUI/models
+      - type: bind
+        source: ../../shared/cache
+        target: /workspace/ComfyUI/cache
+      - type: bind
+        source: ../../shared/outputs
+        target: /workspace/ComfyUI/output
+      - type: bind
+        source: ./entrypoint.sh
+        target: /entrypoint.sh
+      - type: bind
+        source: ./install_video_nodes.sh
+        target: /install_video_nodes.sh
+
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - TZ=${TZ:-Europe/Paris}
+      - COMFYUI_PORT=8188
+      - COMFYUI_LISTEN=0.0.0.0
+      # Tokens pour telechargement des modeles
+      - CIVITAI_TOKEN=${CIVITAI_TOKEN}
+      - HF_TOKEN=${HF_TOKEN}
+      # Configuration authentification
+      - COMFYUI_LOGIN_ENABLED=${COMFYUI_LOGIN_ENABLED:-true}
+      - COMFYUI_USERNAME=${COMFYUI_USERNAME}
+      - COMFYUI_PASSWORD=${COMFYUI_PASSWORD}
+      - COMFYUI_VIDEO_TOKEN=${COMFYUI_VIDEO_TOKEN}
+      - CORS_ENABLED=${CORS_ENABLED:-true}
+      - API_TIMEOUT=${API_TIMEOUT:-600}
+
+    working_dir: /workspace/ComfyUI
+
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8188/ | grep -qE '200|401'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+
+    restart: unless-stopped
+
+    networks:
+      - comfyui-video-network
+
+    labels:
+      - "com.myia.service=comfyui-video"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=animatediff-video"
+      - "com.myia.phase=experimental"
+
+networks:
+  comfyui-video-network:
+    driver: bridge
+    name: comfyui-video-network
