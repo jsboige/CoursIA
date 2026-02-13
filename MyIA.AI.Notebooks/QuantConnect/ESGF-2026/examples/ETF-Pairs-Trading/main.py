@@ -51,6 +51,13 @@ class ETFPairsTrading(QCAlgorithm):
 
         self.SetWarmUp(14, self.resolution)
 
+        # Decouvrir les paires co-integrees chaque lundi matin
+        self.Schedule.On(
+            self.DateRules.Every(DayOfWeek.Monday),
+            self.TimeRules.AfterMarketOpen("SPY", 30),
+            Action(self.RebalancePairs)
+        )
+
         self.Schedule.On(
             self.DateRules.Every(DayOfWeek.Friday),
             self.TimeRules.AfterMarketClose("USA", 0),

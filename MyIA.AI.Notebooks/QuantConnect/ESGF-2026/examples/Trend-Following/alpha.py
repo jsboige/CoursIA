@@ -28,7 +28,7 @@ class custom_alpha(AlphaModel):
             self.hist = hist
 
     def __init__(self, algo):
-        self.algo = self
+        self.algo = algo
         self.plotting = False
 
 
