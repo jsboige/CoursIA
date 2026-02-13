@@ -1,0 +1,32 @@
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "Semantic Web avec Python et .NET",
+  "description": "Cours complet sur le Web Semantique, de RDF aux graphes de connaissances",
+  "image": "https://example.org/images/semantic-web-course.png",
+  "brand": {
+    "@type": "Brand",
+    "name": "CoursIA"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR",
+    "availability": "https://schema.org/InStock",
+    "url": "https://github.com/jsboige/CoursIA"
+  },
+  "educationalLevel": "University",
+  "teaches": [
+    "RDF et triples",
+    "SPARQL queries",
+    "OWL ontologies",
+    "SHACL validation",
+    "JSON-LD et Schema.org",
+    "Knowledge Graphs",
+    "GraphRAG"
+  ],
+  "author": {
+    "@type": "Person",
+    "name": "Jean-Sebastien Boige"
+  }
+}

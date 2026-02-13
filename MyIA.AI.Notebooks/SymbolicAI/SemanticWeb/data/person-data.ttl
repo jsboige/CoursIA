@@ -1,0 +1,45 @@
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <http://example.org/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+# Test data with intentional validation errors for SW-9 SHACL exercises
+
+# Valid person
+ex:alice a foaf:Person ;
+    foaf:name "Alice Dupont" ;
+    foaf:mbox <mailto:alice@example.com> ;
+    foaf:age 30 ;
+    foaf:knows ex:bob .
+
+# Valid person
+ex:bob a foaf:Person ;
+    foaf:name "Bob Martin" ;
+    foaf:age 25 ;
+    foaf:knows ex:alice .
+
+# ERROR: missing name (minCount violation)
+ex:charlie a foaf:Person ;
+    foaf:age 40 .
+
+# ERROR: age is negative (minInclusive violation)
+ex:diana a foaf:Person ;
+    foaf:name "Diana Leroy" ;
+    foaf:age -5 .
+
+# ERROR: invalid email format (pattern violation)
+ex:eve a foaf:Person ;
+    foaf:name "Eve Bernard" ;
+    foaf:mbox <not-an-email> .
+
+# ERROR: name too short (minLength violation)
+ex:frank a foaf:Person ;
+    foaf:name "F" ;
+    foaf:age 55 .
+
+# ERROR: knows points to a non-Person (class violation)
+ex:grace a foaf:Person ;
+    foaf:name "Grace Moreau" ;
+    foaf:knows ex:myDog .
+
+ex:myDog a ex:Dog ;
+    foaf:name "Rex" .

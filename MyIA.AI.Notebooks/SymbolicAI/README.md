@@ -1,6 +1,6 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
-Collection de **31 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle avec proof assistants, planification automatique et optimisation.
+Collection de **44 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique et optimisation.
 
 ## Vue d'ensemble
 
@@ -8,10 +8,11 @@ Collection de **31 notebooks Jupyter** pour l'apprentissage de l'IA symbolique :
 |-------|-----------|----------|-------|-------|
 | [Tweety](#tweety---tweetyproject) | 10 | ~200 | Logiques formelles, Argumentation | ~7h |
 | [Lean](#lean---verification-formelle) | 11 | ~454 | Proof assistant, Types dependants, LLMs | ~8h |
+| [SemanticWeb](#semanticweb---web-semantique) | 13 | ~400 | RDF, SPARQL, OWL, SHACL, GraphRAG | ~10h |
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | ~76 | Analyse argumentative multi-agents | ~3h |
-| [Autres notebooks](#autres-notebooks) | 4 | ~190 | Z3, OR-Tools, RDF, Planification | ~2h30 |
+| [Autres notebooks](#autres-notebooks) | 3 | ~75 | Z3, OR-Tools, Planification | ~1h30 |
 
-**Total** : 31 notebooks, ~920 cellules, ~20h30 de contenu
+**Total** : 44 notebooks, ~1320 cellules, ~30h30 de contenu
 
 ---
 
@@ -169,6 +170,50 @@ Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.
 
 ---
 
+## SemanticWeb - Web Semantique
+
+Serie de **13 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF, fondations RDF/SPARQL/OWL) et **Python** (rdflib, standards modernes, IA). Refonte complete du notebook monolithique `RDF.Net/RDF.Net.ipynb`.
+
+### Structure detaillee
+
+| # | Notebook | Kernel | Contenu detaille |
+|---|----------|--------|------------------|
+| | **Partie 1 : Fondations RDF** | | |
+| 1 | [SW-1-Setup](SemanticWeb/SW-1-Setup.ipynb) | .NET C# | Installation dotNetRDF, concepts RDF, pile W3C, premier graphe |
+| 2 | [SW-2-RDFBasics](SemanticWeb/SW-2-RDFBasics.ipynb) | .NET C# | Triplets, noeuds (URI, bnodes, litteraux), serialisation |
+| 3 | [SW-3-GraphOperations](SemanticWeb/SW-3-GraphOperations.ipynb) | .NET C# | Lecture, ecriture, fusion, selection, listes RDF |
+| 4 | [SW-4-SPARQL](SemanticWeb/SW-4-SPARQL.ipynb) | .NET C# | Query Builder, SELECT, FILTER, OPTIONAL, UNION |
+| | **Partie 2 : Donnees Liees et Ontologies** | | |
+| 5 | [SW-5-LinkedData](SemanticWeb/SW-5-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requetes federees SERVICE |
+| 6 | [SW-6-RDFS](SemanticWeb/SW-6-RDFS.ipynb) | .NET C# | Vocabulaire RDFS, inference, hierarchies de classes |
+| 7 | [SW-7-OWL](SemanticWeb/SW-7-OWL.ipynb) | .NET C# | OWL 2, OntologyGraph, profils EL/QL/RL |
+| | **Partie 3 : Ecosysteme Python et Standards Modernes** | | |
+| 8 | [SW-8-PythonRDF](SemanticWeb/SW-8-PythonRDF.ipynb) | Python | rdflib, SPARQLWrapper, comparaison dotNetRDF vs rdflib |
+| 9 | [SW-9-SHACL](SemanticWeb/SW-9-SHACL.ipynb) | Python | Validation pySHACL, contraintes, qualite des donnees |
+| 10 | [SW-10-JSONLD](SemanticWeb/SW-10-JSONLD.ipynb) | Python | JSON-LD, Schema.org, donnees structurees web |
+| 11 | [SW-11-RDFStar](SemanticWeb/SW-11-RDFStar.ipynb) | Python | RDF 1.2 (RDF-Star), quoted triples, SPARQL-Star |
+| | **Partie 4 : Graphes de Connaissances et IA** | | |
+| 12 | [SW-12-KnowledgeGraphs](SemanticWeb/SW-12-KnowledgeGraphs.ipynb) | Python | Construction KGs, kglab, OWLReady2, visualisation |
+| 13 | [SW-13-GraphRAG](SemanticWeb/SW-13-GraphRAG.ipynb) | Python | KG + LLMs, Microsoft GraphRAG, extraction entites |
+
+### Technologies utilisees
+
+| Technologie | Version | Usage |
+|-------------|---------|-------|
+| **dotNetRDF** | 3.2.1 | Core RDF/SPARQL en .NET (SW-1 a SW-7) |
+| **rdflib** | 7.5.0 | Core RDF/SPARQL en Python (SW-8 a SW-13) |
+| **pySHACL** | 0.27.0 | Validation SHACL (SW-9) |
+| **OWLReady2** | 0.50+ | Manipulation ontologies (SW-12) |
+| **kglab** | 0.6.1+ | Abstraction graphes de connaissances (SW-12) |
+
+### Standards W3C couverts
+
+RDF 1.1/1.2, SPARQL 1.1, RDFS, OWL 2, SHACL, JSON-LD 1.1
+
+Documentation complete : [SemanticWeb/README.md](SemanticWeb/README.md)
+
+---
+
 ## Planners - Planification Automatique
 
 Introduction a la planification automatique avec Fast Downward, un planificateur PDDL de reference.
@@ -190,18 +235,9 @@ Documentation complete : [Planners/README.md](Planners/README.md)
 | [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | 17 | .NET C# | **Probleme de Stigler** : regime optimal a cout minimal. Programmation lineaire avec OR-Tools, contraintes nutritionnelles, resolution LP |
 | [Linq2Z3](Linq2Z3.ipynb) | 12 | .NET C# | **SMT avec LINQ** : integration Z3.Linq, syntaxe declarative. **Missionnaires et Cannibales** : modelisation, recherche solution optimale |
 
-### Web Semantique (1 notebook)
+### Web Semantique
 
-| Notebook | Cellules | Kernel | Contenu |
-|----------|----------|--------|---------|
-| [RDF.Net](RDF.Net/RDF.Net.ipynb) | 115 | .NET C# | **Introduction RDF** : triplets, graphes, serialisation (Turtle, RDF/XML, N3). **SPARQL** : requetes SELECT, CONSTRUCT, filtres. **dotNetRDF** : API C#. **DBpedia** : interrogation endpoint public. **Trinity RDF** : ORM pour RDF |
-
-Sections detaillees :
-- Hello World avec RDF.Net
-- Lecture/ecriture de graphes RDF
-- Requetes SPARQL
-- Exploration de DBpedia
-- Jena Fuseki (serveur SPARQL)
+> **Note** : Le notebook monolithique `RDF.Net/RDF.Net.ipynb` a ete remplace par la serie complete [SemanticWeb](SemanticWeb/README.md) (13 notebooks, ~10h). Voir la section [SemanticWeb](#semanticweb---web-semantique) ci-dessus.
 
 ### Planification Automatique (1 notebook)
 
@@ -271,7 +307,13 @@ SymbolicAI/
 │   ├── data/                  # Taxonomie sophismes CSV
 │   └── ontologies/            # Ontologies OWL argumentation
 │
-├── RDF.Net/                   # Web semantique (115 cellules)
+├── SemanticWeb/               # Web semantique (13 notebooks, ~400 cellules)
+│   ├── SW-1-Setup.ipynb ... SW-13-GraphRAG.ipynb
+│   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD, CSV
+│   ├── requirements.txt
+│   └── README.md
+│
+├── RDF.Net/                   # [DEPRECIE] Remplace par SemanticWeb/
 │   └── RDF.Net.ipynb
 │
 ├── Planners/                  # Planification PDDL (46 cellules)
@@ -332,7 +374,9 @@ dotnet interactive jupyter install
 | **Semantic Kernel** | 1.0+ | Orchestration LLM | Argument Analysis, Lean |
 | **OR-Tools** | 9.8+ | Optimisation | OR-Tools, Planners |
 | **Fast Downward** | latest | Planification PDDL | Planners |
-| **dotNetRDF** | 3.0+ | RDF/SPARQL | RDF.Net |
+| **dotNetRDF** | 3.2+ | RDF/SPARQL | SemanticWeb |
+| **rdflib** | 7.5+ | RDF/SPARQL Python | SemanticWeb |
+| **pySHACL** | 0.27+ | Validation SHACL | SemanticWeb |
 
 ---
 
@@ -395,4 +439,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-01-31
+**Derniere mise a jour** : 2026-02-13
