@@ -82,16 +82,19 @@ class ETFPairsTrading(QCAlgorithm):
         prices = history.close.unstack(level=0)
         results = []
         from itertools import combinations
-        from arch.unitroot.cointegration import engle_granger
+        from statsmodels.tsa.stattools import coint
         for etf1, etf2 in combinations(symbols, 2):
             etf1_prices = prices[etf1].dropna()
             etf2_prices = prices[etf2].dropna()
-            if len(etf1_prices) == len(etf2_prices) and len(etf1_prices) > 50:
-                model = engle_granger(etf1_prices, etf2_prices, trend="n", lags=0)
+            common_idx = etf1_prices.index.intersection(etf2_prices.index)
+            etf1_prices = etf1_prices.loc[common_idx]
+            etf2_prices = etf2_prices.loc[common_idx]
+            if len(etf1_prices) > 50:
+                t_stat, pvalue, crit = coint(etf1_prices, etf2_prices)
                 corr = etf1_prices.corr(etf2_prices)
                 vol = etf1_prices.std() + etf2_prices.std()
-                if model.pvalue < 0.1 and corr > 0.6 and vol > 0.01:
-                    results.append((etf1, etf2, model.pvalue, corr, vol))
+                if pvalue < 0.1 and corr > 0.6 and vol > 0.01:
+                    results.append((etf1, etf2, pvalue, corr, vol))
         if not results:
             self.Log("No valid cointegrated pairs found.")
             return

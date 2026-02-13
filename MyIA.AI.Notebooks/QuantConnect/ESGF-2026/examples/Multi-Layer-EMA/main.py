@@ -35,25 +35,40 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
                 continue
             price = data[symbol].Close
             indicators = self.indicators[symbol]
+            if not indicators["ema10"].IsReady or not indicators["ema50"].IsReady:
+                continue
+            rsi_val = indicators["rsi"].Current.Value
+            ema_fast = indicators["ema10"].Current.Value
+            ema_slow = indicators["ema50"].Current.Value
+            bb_lower = indicators["bollinger"].LowerBand.Current.Value
+            bb_upper = indicators["bollinger"].UpperBand.Current.Value
+            # Entree : golden cross + RSI entre 35 et 70 + prix sous la bande superieure
             if (active_positions < self.max_positions and
-                indicators["rsi"].Current.Value > 30 and
-                indicators["ema10"].Current.Value > indicators["ema50"].Current.Value):
+                ema_fast > ema_slow and
+                35 < rsi_val < 70 and
+                price < bb_upper):
                 if not self.Portfolio[symbol].Invested:
                     allocation = 0.7 / self.max_positions
                     self.SetHoldings(symbol, allocation)
                     indicators["entry_price"] = price
                     indicators["stop_loss"] = price * self.fixed_stop_pct
-                    self.Debug(f"Buy signal triggered for {symbol}. Entry price: {price}")
+                    self.Debug(f"BUY {symbol} @ {price:.2f} | RSI={rsi_val:.1f} EMA10={ema_fast:.2f} EMA50={ema_slow:.2f}")
             if self.Portfolio[symbol].Invested:
                 trailing_stop = max(indicators["stop_loss"], price * self.trailing_stop_pct)
                 indicators["stop_loss"] = trailing_stop
+                # Sortie : trailing stop OU take profit OU death cross + RSI > 75
                 if price < trailing_stop:
                     self.Liquidate(symbol)
                     indicators["entry_price"] = None
                     indicators["stop_loss"] = None
-                    self.Debug(f"Trailing stop-loss triggered for {symbol}. Liquidated at {price}.")
+                    self.Debug(f"STOP {symbol} @ {price:.2f}")
                 elif price > indicators["entry_price"] * self.take_profit_pct:
                     self.Liquidate(symbol)
                     indicators["entry_price"] = None
                     indicators["stop_loss"] = None
-                    self.Debug(f"Take profit triggered for {symbol}. Liquidated at {price}.")
+                    self.Debug(f"TP {symbol} @ {price:.2f}")
+                elif ema_fast < ema_slow and rsi_val > 75:
+                    self.Liquidate(symbol)
+                    indicators["entry_price"] = None
+                    indicators["stop_loss"] = None
+                    self.Debug(f"DEATH CROSS {symbol} @ {price:.2f} | RSI={rsi_val:.1f}")

@@ -1,7 +1,7 @@
 #region imports
 from AlgorithmImports import *
 from Portfolio.EqualWeightingPortfolioConstructionModel import EqualWeightingPortfolioConstructionModel
-from arch.unitroot.cointegration import engle_granger
+from statsmodels.tsa.stattools import coint
 from utils import reset_and_warm_up
 #endregion
 
@@ -71,10 +71,16 @@ class CointegratedVectorPortfolioConstructionModel(EqualWeightingPortfolioConstr
         if df.shape[1] < 2 or df.empty:
             self.live_log(self.algorithm, "Not enough columns or data => zero allocation.")
             return {insight: 0 for insight in activeInsights}
-        model = engle_granger(df.iloc[:, 0], df.iloc[:, 1:], trend='n', lags=0)
-        if model.pvalue > 0.10:
+        # Cointegration test via statsmodels
+        t_stat, pvalue, crit = coint(df.iloc[:, 0], df.iloc[:, 1])
+        if pvalue > 0.10:
             return {insight: 0 for insight in activeInsights}
-        coint_vector = model.cointegrating_vector
+        # OLS hedge ratio : y = beta * x + residual
+        from numpy.linalg import lstsq
+        X = df.iloc[:, 1].values.reshape(-1, 1)
+        y = df.iloc[:, 0].values
+        beta, _, _, _ = lstsq(X, y, rcond=None)
+        coint_vector = np.array([1.0, beta[0]])
         total_weight = sum(abs(coint_vector))
         result = {}
         for insight, weight in zip(activeInsights, coint_vector):
