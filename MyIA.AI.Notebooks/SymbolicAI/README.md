@@ -172,7 +172,7 @@ Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.
 
 ## SemanticWeb - Web Semantique
 
-Serie de **13 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF, fondations RDF/SPARQL/OWL) et **Python** (rdflib, standards modernes, IA). Refonte complete du notebook monolithique `RDF.Net/RDF.Net.ipynb`.
+Serie de **13 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF, fondations RDF/SPARQL/OWL) et **Python** (rdflib, standards modernes, IA). Refonte complete du notebook monolithique `RDF.Net.ipynb` (original conserve dans [SemanticWeb/RDF.Net-Legacy/](SemanticWeb/RDF.Net-Legacy/)).
 
 ### Structure detaillee
 
@@ -237,7 +237,7 @@ Documentation complete : [Planners/README.md](Planners/README.md)
 
 ### Web Semantique
 
-> **Note** : Le notebook monolithique `RDF.Net/RDF.Net.ipynb` a ete remplace par la serie complete [SemanticWeb](SemanticWeb/README.md) (13 notebooks, ~10h). Voir la section [SemanticWeb](#semanticweb---web-semantique) ci-dessus.
+> **Note** : Le notebook monolithique `RDF.Net.ipynb` a ete remplace par la serie complete [SemanticWeb](SemanticWeb/README.md) (13 notebooks, ~10h). L'original est conserve dans [SemanticWeb/RDF.Net-Legacy/](SemanticWeb/RDF.Net-Legacy/). Voir la section [SemanticWeb](#semanticweb---web-semantique) ci-dessus.
 
 ### Planification Automatique (1 notebook)
 
@@ -310,11 +310,9 @@ SymbolicAI/
 ├── SemanticWeb/               # Web semantique (13 notebooks, ~400 cellules)
 │   ├── SW-1-Setup.ipynb ... SW-13-GraphRAG.ipynb
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD, CSV
+│   ├── RDF.Net-Legacy/      # Notebook original (reference historique)
 │   ├── requirements.txt
 │   └── README.md
-│
-├── RDF.Net/                   # [DEPRECIE] Remplace par SemanticWeb/
-│   └── RDF.Net.ipynb
 │
 ├── Planners/                  # Planification PDDL (46 cellules)
 │   └── Fast-Downward.ipynb

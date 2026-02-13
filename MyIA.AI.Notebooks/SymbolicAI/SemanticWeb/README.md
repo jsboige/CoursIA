@@ -150,6 +150,11 @@ SemanticWeb/
 │   ├── person-data.ttl        # Donnees test (avec erreurs)
 │   ├── product.jsonld         # Exemple Schema.org
 │   └── movies.csv             # Dataset pour KG
+├── RDF.Net-Legacy/
+│   ├── RDF.Net.ipynb        # Notebook original (173 cellules, reference)
+│   ├── Example.ttl
+│   ├── example.srj
+│   └── example.srx
 ├── SW-1-Setup.ipynb
 ├── SW-2-RDFBasics.ipynb
 ├── ...
@@ -159,6 +164,8 @@ SemanticWeb/
 ## Origine
 
 Cette serie est une refonte complete du notebook monolithique `RDF.Net.ipynb` (173 cellules), eclate en 13 notebooks progressifs et enrichi de tous les standards modernes du Web Semantique (2024-2026).
+
+Le notebook original est conserve dans [RDF.Net-Legacy/](RDF.Net-Legacy/) a titre de reference historique.
 
 ## Ressources
 
