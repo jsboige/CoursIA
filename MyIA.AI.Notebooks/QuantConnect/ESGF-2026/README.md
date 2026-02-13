@@ -137,6 +137,48 @@ create_backtest(model: {projectId: 22298373, backtestName: "test-2026"})
 
 ---
 
+## Resultats de Backtest (Fevrier 2026)
+
+Compilation : **11/11 projets compilent avec succes** (0 erreurs, warnings non-bloquants uniquement).
+
+### Tableau des metriques (meilleur backtest par projet)
+
+| # | Projet | Periode | Return | CAGR | Sharpe | Max DD | Trades | Win Rate | Statut |
+|---|--------|---------|--------|------|--------|--------|--------|----------|--------|
+| 1 | **Option-Wheel-Strategy** | 2020-06 / 2024-09 | +68.5% | 12.9% | 0.996 | 7.4% | 91 | 94% | HEALTHY |
+| 2 | **CSharp-BTC-EMA-Cross** | 2021-10 / 2024-12 | +166.7% | 36.2% | 1.094 | 40.7% | 7 | 67% | HEALTHY |
+| 3 | **CSharp-BTC-MACD-ADX** | 2013-04 / 2024-12 | +4239.2% | 38.1% | 1.224 | 48.8% | 19 | 78% | HEALTHY |
+| 4 | **Multi-Layer-EMA** | 2020-01 / 2024-01 | +2292.2% | 120.9% | 1.891 | 54.4% | 663 | 37% | HEALTHY |
+| 5 | **Sector-Momentum** | 2024-01 / 2024-07 | +32.2% | 66.1% | 2.530 | 5.6% | 1300 | 60% | HEALTHY |
+| 6 | **Options-VGT** | 2023-12 / 2025-01 | +28.3% | 25.3% | 0.892 | 15.6% | 25 | 71% | HEALTHY |
+| 7 | **Trend-Following** | 2020-06 / 2020-09 | +24.5% | 136.0% | 2.157 | 20.5% | 809 | 68% | HEALTHY |
+| 8 | **CSharp-CTG-Momentum** | 2021-01 / 2024-11 | +87.3% | 17.7% | 0.507 | 36.1% | 170 | 64% | HEALTHY |
+| 9 | **ETF-Pairs-Trading** | 2020-01 / 2024-03 | -14.6% | -3.7% | -0.759 | 19.8% | 304 | 50% | BROKEN |
+| 10 | **Crypto-MultiCanal** | 2024-01 / 2025-01 | 0% | 0% | 0 | 0% | 0 | 0% | BROKEN |
+| 11 | **BTC-MachineLearning** | -- | -- | -- | -- | -- | 0 | -- | NO_DATA |
+
+**Legende** : HEALTHY (Sharpe > 0.5) | NEEDS_IMPROVEMENT (Sharpe 0-0.5) | BROKEN (Sharpe < 0 ou 0 trades) | NO_DATA (pas de backtest)
+
+### Ameliorations appliquees (Phase 3 - Fevrier 2026)
+
+| Projet | Amelioration | Commit |
+|--------|-------------|--------|
+| **Multi-Layer-EMA** | Filtre Bollinger band, RSI resserre (35-70), sortie death cross + RSI>75 | c2b9cb3 |
+| **ETF-Pairs-Trading** | Remplacement `arch` par `statsmodels.tsa.stattools.coint`, hedge ratio OLS numpy | c2b9cb3 |
+| **BTC-MachineLearning** | Entrainement RandomForest in-situ si modele ObjectStore absent | c2b9cb3 |
+| **Trend-Following** | Fix `self.algo = self` -> `self.algo = algo` dans alpha.py | 801afdb |
+| **ETF-Pairs-Trading** | Ajout `Schedule.On` pour `RebalancePairs` | 801afdb |
+| **Options-VGT** | Reecriture logique multi-equity (local only, projet etudiant) | 801afdb |
+| **Crypto-MultiCanal** | Ajout `import traceback`, lookback 1000->500, fix CalculateOrderQuantity | en cours |
+
+### Notes sur les projets BROKEN
+
+- **ETF-Pairs-Trading** : Return negatif (-14.6%) malgre Sharpe decent en intra. Remplacement `arch` par `statsmodels` effectue, nouveau backtest necessaire.
+- **Crypto-MultiCanal** : Runtime error dans le dernier backtest (0 trades). Corrections critiques en cours de push au cloud (import traceback, lookback, sizing).
+- **BTC-MachineLearning** : Aucun backtest existant. Entrainement in-situ ajoute, premier backtest a lancer.
+
+---
+
 ## Notes pour 2026
 
 - La **Quant League** classique est terminee (Q4-2025)
