@@ -111,15 +111,19 @@ CoursIA/
 
 ### SymbolicAI - IA Symbolique
 
+Decouverte des logiques formelles et de l'argumentation computationnelle. Cette serie vous fera explorer les systemes de raisonnement automatique, de la logique propositionnelle aux frameworks d'argumentation de Dung, en passant par la verification de theoremes avec Lean 4. Vous apprendrez a utiliser **TweetyProject** (bibliotheque Java via JPype) pour manipuler des bases de connaissances, calculer des extensions d'argumentation, et modeliser des dialogues multi-agents. La serie couvre egalement les extensions avancees (ASPIC+, DeLP, ADF), la revision de croyances AGM, et les systemes de preferences.
+
 **47+ notebooks** couvrant les logiques formelles, l'argumentation computationnelle et la verification formelle.
 
 | Serie | Notebooks | Contenu | Prerequis | README |
 |-------|-----------|---------|-----------|--------|
 | **Tweety** | 10 | TweetyProject, logiques PL/FOL/DL, argumentation Dung, ASPIC+ | JDK 17+ (auto) | [README](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) |
-| **Lean** | 10 | Lean 4, types dependants, tactiques, Mathlib, LLM integration | WSL, elan | [README](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
+| **Lean** | 11 | Lean 4, types dependants, tactiques, Mathlib, LLM integration | WSL, elan | [README](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
 | **Argument_Analysis** | 6 | Analyse argumentative multi-agents avec Semantic Kernel | OpenAI API | [README](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md) |
 | **Planners** | 1 | Fast-Downward, planification PDDL | Python | [README](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) |
 | **Autres** | 14+ | Z3, OR-Tools, RDF.NET | Varies | - |
+
+**Focus sur Lean 4** : Cette sous-serie vous initie a la verification formelle avec Lean 4, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Vous progresserez des fondements (types dependants, isomorphisme de Curry-Howard) jusqu'aux tactiques avancees de Mathlib, puis decouvrirez l'etat de l'art de l'assistance par LLMs (LeanCopilot, AlphaProof) et les agents autonomes pour la preuve mathematique. Note : necessite WSL sous Windows.
 
 **Notebooks Tweety (detail)** :
 
@@ -140,6 +144,8 @@ CoursIA/
 
 ### GameTheory - Theorie des Jeux
 
+Des jeux statiques aux strategies multi-agent. Cette serie couvre les fondamentaux de la theorie des jeux : equilibres de Nash, strategies mixtes, jeux evolutionnaires et repetes. Vous implementerez des algorithmes comme CFR (Counterfactual Regret Minimization) avec Nashpy et OpenSpiel, tout en decouvrant les preuves formelles avec Lean 4 pour une comprehension mathematique approfondie.
+
 **26 notebooks** (17 principaux + 9 side tracks) combinant Python et Lean 4.
 
 | Partie | Notebooks | Contenu | Kernel |
@@ -154,6 +160,8 @@ CoursIA/
 
 ### Probas - Programmation Probabiliste
 
+Programmation probabiliste et inference bayesienne. Avec Infer.NET de Microsoft, vous apprendrez a definir des modeles probabilistes, propager l'incertitude et mettre a jour vos croyances face a de nouvelles observations. La serie couvre les distributions fondamentales (Gaussian, Beta, Dirichlet), les reseaux bayesiens et la theorie de la decision sous incertitude.
+
 **22 notebooks** couvrant l'inference bayesienne avec Infer.NET (C#) et Pyro (Python).
 
 | Section | Notebooks | Kernel | Contenu |
@@ -165,6 +173,8 @@ CoursIA/
 [README Probas](MyIA.AI.Notebooks/Probas/README.md) | [README Infer](MyIA.AI.Notebooks/Probas/Infer/README.md)
 
 ### Sudoku - Resolution par Contraintes
+
+Une approche comparative des algorithmes de resolution. Ce qui rend cette serie unique : le meme probleme resolu avec six techniques differentes ! Vous comparerez le backtracking naif, les algorithmes genetiques, la programmation par contraintes (OR-Tools), les solveurs SMT (Z3), et meme une approche probabiliste (Infer.NET). Ideal pour comprendre les compromis performance/complexite de chaque paradigme.
 
 **11 notebooks** (7 C#, 4 Python) illustrant differentes approches algorithmiques.
 
@@ -183,6 +193,8 @@ CoursIA/
 
 ### Search - Recherche et Optimisation
 
+Algorithmes classiques et metaheuristiques d'optimisation. De la recherche aveugle (BFS, DFS) aux heuristiques informees (A*, Hill Climbing) en passant par le recuit simule et les algorithmes genetiques. Les notebooks appliquent ces concepts a des problemes concrets : detection de bords dans une image, optimisation de portefeuille financier, satisfaction de contraintes.
+
 **5 notebooks** sur les algorithmes de recherche et les metaheuristiques.
 
 | Notebook | Kernel | Contenu |
@@ -196,6 +208,8 @@ CoursIA/
 [README Search](MyIA.AI.Notebooks/Search/README.md)
 
 ### GenAI - IA Generative
+
+De l'appel API a l'orchestration de workflows complexes. Cette serie vous emmene du premier prompt avec l'API OpenAI jusqu'a la construction d'applications multi-modeles. Vous explorerez la generation d'images (DALL-E 3, FLUX, Qwen, SD 3.5), le prompt engineering avance, les outputs structures, le RAG, et l'orchestration avec Microsoft Semantic Kernel.
 
 **55+ notebooks** organises en plusieurs sous-domaines.
 
@@ -253,6 +267,8 @@ CoursIA/
 [README RL](MyIA.AI.Notebooks/RL/README.md)
 
 ### QuantConnect - Trading Algorithmique + AI
+
+Trading algorithmique avec ML/DL/RL et LLMs. Base sur le framework LEAN de QuantConnect, cette serie progresse des fondamentaux du backtesting jusqu'aux strategies avancees integrant machine learning, deep learning et meme des LLMs pour l'analyse de sentiment. Le free tier cloud permet de tester sans infrastructure locale.
 
 **27 notebooks Python** sur le trading algorithmique avec QuantConnect LEAN, incluant ML/DL/RL/LLM.
 

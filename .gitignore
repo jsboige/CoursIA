@@ -481,3 +481,13 @@ MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
 
 # Windows artifact
 nul
+
+# Slides - Originaux Dropbox (reference, pas dupliques dans git)
+slides/*/original/
+# Slides - Rendus PNG (regenerables via PowerPoint COM)
+slides/*/extracted/renders/
+# Slides - Images extraites en masse (regenerables)
+slides/*/extracted/images/
+# Slides - Assets etudiants bruts et rendus
+slides/_assets/raw/
+slides/_assets/*/renders/
