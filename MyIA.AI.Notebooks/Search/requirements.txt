@@ -1,0 +1,27 @@
+# Search & Constraint Programming - Dependencies
+# Install: pip install -r requirements.txt
+
+# Core CSP/Search
+python-constraint>=1.4.0     # CSP basique (backtracking, forward checking)
+ortools>=9.8                 # Google OR-Tools CP-SAT solver
+z3-solver>=4.12              # Microsoft Z3 SMT solver
+
+# Metaheuristics
+deap>=1.4                    # Genetic algorithms framework
+pygad>=3.3                   # GA simplifie
+
+# Graph & Visualization
+networkx>=3.1                # Graphes et algorithmes
+matplotlib>=3.7              # Visualisation
+graphviz>=0.20               # Arbres de recherche (necessite Graphviz installe)
+
+# Data & Scientific
+numpy>=1.24
+scipy>=1.10
+
+# Jupyter
+ipywidgets>=8.1
+papermill>=2.4
+
+# Optional: MiniZinc (requires MiniZinc IDE installed separately)
+# minizinc>=0.9
