@@ -20,12 +20,12 @@ Bienvenue dans le depot **CoursIA**, plateforme educative complete pour l'appren
 
 ## Introduction
 
-Ce depot contient **255+ notebooks Jupyter** interactifs couvrant :
+Ce depot contient **290+ notebooks Jupyter** interactifs couvrant :
 - **IA Symbolique** : Logiques formelles, argumentation, verification formelle (Lean 4, Tweety, Z3)
 - **Probabilites** : Inference bayesienne, modeles graphiques (Infer.NET)
 - **Theorie des jeux** : Nash, jeux evolutionnaires, cooperatifs, CFR, OpenSpiel
 - **Machine Learning** : ML.NET, algorithmes genetiques
-- **IA Generative** : OpenAI, LLMs, generation d'images (DALL-E, FLUX, Qwen, SD3.5)
+- **IA Generative** : OpenAI, LLMs, generation d'images, audio et video (DALL-E, FLUX, Qwen, SD3.5, Whisper, MusicGen, AnimateDiff)
 - **Trading Algorithmique** : QuantConnect LEAN, ML/DL/RL pour strategies de trading
 
 Les notebooks sont en **C# (.NET Interactive)**, **Python** et **Lean 4**, avec une documentation pedagogique complete.
@@ -37,13 +37,23 @@ Les notebooks sont en **C# (.NET Interactive)**, **Python** et **Lean 4**, avec 
 ```
 CoursIA/
 ├── MyIA.AI.Notebooks/           # 255+ notebooks interactifs
-│   ├── GenAI/                   # IA Generative (55+ notebooks)
+│   ├── GenAI/                   # IA Generative (87+ notebooks)
 │   │   ├── 00-GenAI-Environment/# Setup et configuration (6 notebooks)
 │   │   ├── Image/               # Generation d'images (19 notebooks)
 │   │   │   ├── 01-Foundation/   # DALL-E 3, GPT-5, Forge
 │   │   │   ├── 02-Advanced/     # Qwen, FLUX, SD3.5, Z-Image
 │   │   │   ├── 03-Orchestration/# Multi-modeles, workflows
 │   │   │   └── 04-Applications/ # Production, contenu educatif
+│   │   ├── Audio/               # Speech, TTS, musique (16 notebooks)
+│   │   │   ├── 01-Foundation/   # OpenAI TTS/Whisper, operations audio
+│   │   │   ├── 02-Advanced/     # Voice cloning, MusicGen, Demucs
+│   │   │   ├── 03-Orchestration/# Multi-modeles audio, temps reel
+│   │   │   └── 04-Applications/ # Contenu educatif, transcription, sync
+│   │   ├── Video/               # Generation et comprehension (16 notebooks)
+│   │   │   ├── 01-Foundation/   # Operations, GPT-5 video, Qwen-VL, AnimateDiff
+│   │   │   ├── 02-Advanced/     # HunyuanVideo, LTX, Wan, SVD
+│   │   │   ├── 03-Orchestration/# Multi-modeles video, ComfyUI
+│   │   │   └── 04-Applications/ # Video educative, workflows, production
 │   │   ├── Texte/               # LLMs et generation texte (10 notebooks)
 │   │   ├── SemanticKernel/      # Microsoft Semantic Kernel (14 notebooks)
 │   │   └── Vibe-Coding/         # Claude Code et Roo Code tutorials
@@ -98,14 +108,14 @@ CoursIA/
 | **SymbolicAI** | 47+ | Python, Lean 4 | ~25h | OpenAI (optionnel) |
 | **GameTheory** | 26 | Python, Lean 4 | ~18h30 | OpenAI (optionnel) |
 | **Infer.NET** | 20 | .NET C# | ~17h | - |
-| **GenAI** | 55+ | Python | ~25h | OpenAI/Anthropic |
+| **GenAI** | 87+ | Python | ~75h | OpenAI/Anthropic |
 | **Sudoku** | 11 | C#, Python | ~2h | - |
 | **Search** | 5 | C#, Python | ~1h10 | - |
 | **ML** | 14 | C#, Python | ~4h | - |
 | **RL** | 3 | Python | ~2h | - |
 | **QuantConnect** | 27 | Python | ~30h | QuantConnect (gratuit) |
 | **IIT** | 1 | Python | ~1h30 | - |
-| **Total** | **255+** | **Mixed** | **~130h** | - |
+| **Total** | **290+** | **Mixed** | **~180h** | - |
 
 ## Series de notebooks
 
@@ -209,14 +219,16 @@ Algorithmes classiques et metaheuristiques d'optimisation. De la recherche aveug
 
 ### GenAI - IA Generative
 
-De l'appel API a l'orchestration de workflows complexes. Cette serie vous emmene du premier prompt avec l'API OpenAI jusqu'a la construction d'applications multi-modeles. Vous explorerez la generation d'images (DALL-E 3, FLUX, Qwen, SD 3.5), le prompt engineering avance, les outputs structures, le RAG, et l'orchestration avec Microsoft Semantic Kernel.
+De l'appel API a l'orchestration de workflows complexes. Cette serie vous emmene du premier prompt avec l'API OpenAI jusqu'a la construction d'applications multi-modeles. Vous explorerez la generation d'images (DALL-E 3, FLUX, Qwen, SD 3.5), d'audio (TTS, STT, musique) et de video, le prompt engineering avance, les outputs structures, le RAG, et l'orchestration avec Microsoft Semantic Kernel.
 
-**55+ notebooks** organises en plusieurs sous-domaines.
+**87+ notebooks** organises en plusieurs sous-domaines.
 
 | Sous-domaine | Notebooks | Contenu | Services requis |
 |--------------|-----------|---------|-----------------|
 | **00-Environment** | 6 | Setup, Docker, API, validation, deploiement local | - |
 | **Image/** | 19 | Generation d'images (4 niveaux) | OpenAI/Docker GPU |
+| **Audio/** | 16 | Speech, TTS, musique, separation (4 niveaux) | OpenAI/GPU local |
+| **Video/** | 16 | Operations, comprehension, generation (4 niveaux) | OpenAI/GPU local |
 | **Texte/** | 10 | OpenAI, Prompts, Structured Outputs, RAG, Reasoning, Production | OpenAI API |
 | **SemanticKernel/** | 14 | SK Fundamentals a MCP, NotebookMaker, templates | OpenAI API |
 | **Vibe-Coding/** | 5+ | Notebooks CLI Claude Code + ateliers Roo Code | Claude/Roo |
@@ -229,6 +241,24 @@ De l'appel API a l'orchestration de workflows complexes. Cette serie vous emmene
 | **02-Advanced** | Qwen Image Edit 2509, FLUX, SD 3.5, Z-Image/Lumina |
 | **03-Orchestration** | Comparaison multi-modeles, workflows, optimisation |
 | **04-Applications** | Contenu educatif, workflows creatifs, production |
+
+**Structure Audio/** :
+
+| Niveau | Contenu |
+|--------|---------|
+| **01-Foundation** | OpenAI TTS, Whisper STT, operations audio (librosa, pydub), Whisper local, Kokoro TTS |
+| **02-Advanced** | Chatterbox TTS, XTTS voice cloning, MusicGen, Demucs separation |
+| **03-Orchestration** | Multi-model comparison, pipelines audio, temps reel (Realtime API) |
+| **04-Applications** | Contenu educatif, transcription pipeline, composition musicale, sync A/V |
+
+**Structure Video/** :
+
+| Niveau | Contenu |
+|--------|---------|
+| **01-Foundation** | Operations video (moviepy, ffmpeg), GPT-5 understanding, Qwen-VL, ESRGAN, AnimateDiff |
+| **02-Advanced** | HunyuanVideo, LTX-Video, Wan, SVD image-to-video |
+| **03-Orchestration** | Multi-model comparison, workflows video, ComfyUI Video |
+| **04-Applications** | Video educative, workflows creatifs, Sora API, production pipeline |
 
 [README GenAI](MyIA.AI.Notebooks/GenAI/README.md)
 

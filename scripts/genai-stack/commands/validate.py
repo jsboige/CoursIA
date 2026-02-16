@@ -25,9 +25,10 @@ _script_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_script_dir))
 
 from config import (
-    COMFYUI_URL, FORGE_URL, VLLM_ZIMAGE_URL,
+    COMFYUI_URL, FORGE_URL, VLLM_ZIMAGE_URL, WHISPER_URL, COMFYUI_VIDEO_URL,
     EXPECTED_QWEN_NODES, EXPECTED_NUNCHAKU_NODES, REQUIRED_NATIVE_NODES,
-    NOTEBOOK_SERVICE_MAP, MODEL_CONFIGS, WORKFLOWS_DIR, GENAI_DIR,
+    NOTEBOOK_SERVICE_MAP, NOTEBOOK_SERIES, NOTEBOOK_SEARCH_DIRS,
+    MODEL_CONFIGS, WORKFLOWS_DIR, GENAI_DIR,
 )
 from core.auth_manager import GenAIAuthManager
 from core.comfyui_client import ComfyUIClient, ComfyUIConfig, WorkflowManager
@@ -149,9 +150,22 @@ class BatchNotebookValidator:
         self.results[group] = results
         return results
 
-    def run_full_validation(self) -> Dict:
-        for group in ["cloud", "forge", "qwen", "zimage", "multi", "apps"]:
-            self.validate_group(group)
+    def run_full_validation(self, series: str = None) -> Dict:
+        """Validation de tous les groupes (ou d'une serie specifique).
+
+        Args:
+            series: Nom de la serie (image, audio, video) ou None pour tout
+        """
+        if series and series in NOTEBOOK_SERIES:
+            groups = NOTEBOOK_SERIES[series]
+        elif series is None:
+            groups = list(NOTEBOOK_SERVICE_MAP.keys())
+        else:
+            groups = [series]
+
+        for group in groups:
+            if group in NOTEBOOK_SERVICE_MAP:
+                self.validate_group(group)
         return self.results
 
     def print_summary(self) -> bool:
@@ -356,6 +370,46 @@ def check_vllm_api() -> bool:
         return False
 
 
+def check_whisper_api() -> bool:
+    """Verifie si Whisper-WebUI (Gradio) est accessible."""
+    try:
+        resp = requests.get(f"{WHISPER_URL}/", timeout=10)
+        if resp.status_code == 200:
+            logger.info(f"OK Whisper-WebUI accessible sur {WHISPER_URL}")
+            return True
+        elif resp.status_code == 401:
+            logger.info(f"OK Whisper-WebUI accessible (auth requise) sur {WHISPER_URL}")
+            return True
+        logger.warning(f"Whisper-WebUI repond avec HTTP {resp.status_code}")
+        return False
+    except Exception as e:
+        logger.warning(f"Whisper-WebUI inaccessible: {e}")
+        return False
+
+
+def check_comfyui_video_api() -> bool:
+    """Verifie si ComfyUI-Video est accessible."""
+    try:
+        resp = requests.get(f"{COMFYUI_VIDEO_URL}/system_stats", timeout=10)
+        if resp.status_code == 200:
+            logger.info(f"OK ComfyUI-Video accessible sur {COMFYUI_VIDEO_URL}")
+            data = resp.json()
+            devices = data.get('devices', [])
+            if devices:
+                dev = devices[0]
+                vram_total = dev.get('vram_total', 0) / (1024**3)
+                logger.info(f"  GPU: {dev.get('name', '?')} ({vram_total:.1f}GB)")
+            return True
+        elif resp.status_code == 401:
+            logger.info(f"OK ComfyUI-Video accessible (auth requise) sur {COMFYUI_VIDEO_URL}")
+            return True
+        logger.warning(f"ComfyUI-Video repond avec HTTP {resp.status_code}")
+        return False
+    except Exception as e:
+        logger.warning(f"ComfyUI-Video inaccessible: {e}")
+        return False
+
+
 # --- CLI ---
 
 def register(subparsers):
@@ -372,10 +426,18 @@ def register(subparsers):
                        help='Validation syntaxe notebooks GenAI')
     parser.add_argument('--with-switching', action='store_true')
     parser.add_argument('--group', type=str,
-                       choices=['cloud', 'forge', 'qwen', 'zimage', 'multi', 'apps'])
+                       choices=list(NOTEBOOK_SERVICE_MAP.keys()),
+                       help='Groupe de notebooks a valider')
+    parser.add_argument('--series', type=str,
+                       choices=list(NOTEBOOK_SERIES.keys()),
+                       help='Serie complete a valider (image, audio, video)')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--check-forge', action='store_true')
     parser.add_argument('--check-vllm', '--vllm', action='store_true')
+    parser.add_argument('--check-whisper', action='store_true',
+                       help='Verifier la sante de Whisper-WebUI')
+    parser.add_argument('--check-comfyui-video', action='store_true',
+                       help='Verifier la sante de ComfyUI-Video')
 
 
 def execute(args) -> int:
@@ -393,7 +455,8 @@ def execute(args) -> int:
     success = True
 
     # Mode Notebooks
-    if args.notebooks or args.with_switching or args.group:
+    series = getattr(args, 'series', None)
+    if args.notebooks or args.with_switching or args.group or series:
         logger.info("\n" + "=" * 60)
         logger.info("VALIDATION NOTEBOOKS GENAI")
         logger.info("=" * 60)
@@ -417,6 +480,9 @@ def execute(args) -> int:
             results = batch_validator.validate_group(args.group)
             valid_count = sum(1 for r in results.values() if r.get("valid", False))
             success = valid_count == len(results)
+        elif series:
+            batch_validator.run_full_validation(series=series)
+            success = batch_validator.print_summary()
         else:
             batch_validator.run_full_validation()
             success = batch_validator.print_summary()
@@ -441,6 +507,14 @@ def execute(args) -> int:
     if args.check_vllm:
         success = success and check_vllm_api()
 
+    # Check Whisper-WebUI
+    if getattr(args, 'check_whisper', False):
+        success = success and check_whisper_api()
+
+    # Check ComfyUI-Video
+    if getattr(args, 'check_comfyui_video', False):
+        success = success and check_comfyui_video_api()
+
     logger.info("\n" + "=" * 60)
     logger.info("VALIDATION TERMINEE: " + ("SUCCES" if success else "ECHECS DETECTES"))
     logger.info("=" * 60)
@@ -461,10 +535,14 @@ def main():
     parser.add_argument('--notebooks', action='store_true')
     parser.add_argument('--with-switching', action='store_true')
     parser.add_argument('--group', type=str,
-                       choices=['cloud', 'forge', 'qwen', 'zimage', 'multi', 'apps'])
+                       choices=list(NOTEBOOK_SERVICE_MAP.keys()))
+    parser.add_argument('--series', type=str,
+                       choices=list(NOTEBOOK_SERIES.keys()))
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--check-forge', action='store_true')
     parser.add_argument('--check-vllm', '--vllm', action='store_true')
+    parser.add_argument('--check-whisper', action='store_true')
+    parser.add_argument('--check-comfyui-video', action='store_true')
     args = parser.parse_args()
     sys.exit(execute(args))
 

@@ -482,6 +482,10 @@ MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
 # Windows artifact
 nul
 
+# Rapports de validation notebooks
+notebook_validation_report.json
+rapports/
+
 # Slides - Originaux Dropbox (reference, pas dupliques dans git)
 slides/*/original/
 # Slides - Rendus PNG (regenerables via PowerPoint COM)

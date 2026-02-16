@@ -66,7 +66,11 @@ python GradeBookApp/run_epf_mis_2026.py         # EPF MIS multi-epreuves
 
 ```
 MyIA.AI.Notebooks/           # Jupyter notebooks by topic
-├── GenAI/                   # Image generation, LLMs (Python)
+├── GenAI/                   # Image, Audio, Video generation, LLMs (Python)
+│   ├── Image/               # Image generation (19 notebooks)
+│   ├── Audio/               # Speech, Voice & Music (16 notebooks)
+│   ├── Video/               # Video generation & comprehension (16 notebooks)
+│   └── Texte/               # Text generation (10 notebooks)
 ├── ML/                      # ML.NET tutorials (.NET C#)
 ├── Sudoku/                  # Constraint solving (.NET C#)
 ├── Search/                  # Optimization (Mixed Python/C#)
@@ -204,7 +208,7 @@ python scripts/genai-stack/genai.py auth audit             # Audit securite toke
 python scripts/genai-stack/genai.py auth sync              # Synchroniser tokens
 ```
 
-### Mapping notebooks GenAI → services
+### Mapping notebooks GenAI Image → services
 
 | Notebooks | Service | Prerequis |
 |-----------|---------|-----------|
@@ -214,6 +218,37 @@ python scripts/genai-stack/genai.py auth sync              # Synchroniser tokens
 | 02-4 | Z-Image/vLLM | ~10GB VRAM |
 | 03-* | Multi-modeles | Tous les services |
 | 04-* | Applications | Variable |
+
+### Mapping notebooks Audio → services
+
+| Notebooks | Service | Prerequis |
+|-----------|---------|-----------|
+| Audio/01-1, 01-2 | OpenAI API (TTS/STT) | OPENAI_API_KEY |
+| Audio/01-3 | Local (librosa, pydub) | Aucun |
+| Audio/01-4 | Whisper local | GPU ~10 GB |
+| Audio/01-5 | Kokoro TTS | GPU ~2 GB |
+| Audio/02-1 | Chatterbox TTS | GPU ~8 GB |
+| Audio/02-2 | XTTS v2 | GPU ~6 GB |
+| Audio/02-3 | MusicGen | GPU ~10 GB |
+| Audio/02-4 | Demucs v4 | GPU ~4 GB |
+| Audio/03-* | Multi-modeles | Mixed |
+| Audio/04-* | Applications | Mixed |
+
+### Mapping notebooks Video → services
+
+| Notebooks | Service | Prerequis |
+|-----------|---------|-----------|
+| Video/01-1 | Local (moviepy, FFmpeg) | FFmpeg installe |
+| Video/01-2 | OpenAI GPT-5 | OPENAI_API_KEY |
+| Video/01-3 | Qwen2.5-VL local | GPU ~18 GB |
+| Video/01-4 | Real-ESRGAN/RIFE | GPU ~4 GB |
+| Video/01-5 | AnimateDiff | GPU ~12 GB |
+| Video/02-1 | HunyuanVideo | GPU ~18 GB |
+| Video/02-2 | LTX-Video | GPU ~8 GB |
+| Video/02-3 | Wan 2.1/2.2 | GPU ~10 GB |
+| Video/02-4 | SVD | GPU ~10 GB |
+| Video/03-3 | ComfyUI Video | Docker, nodes video |
+| Video/04-3 | Sora 2 API | OPENAI_API_KEY |
 
 ### Configuration .env GenAI
 
