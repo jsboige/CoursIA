@@ -74,8 +74,8 @@ Le Web Semantique etend le Web classique en permettant aux machines de comprendr
 | 10 | JSONLD | 60 | 3 | **COMPLET** |
 | 11 | RDFStar | 52 | 2 | **COMPLET** |
 | 12 | KnowledgeGraphs | 75 | 3 | **COMPLET** |
-| 13 | GraphRAG | 72 | 3 | **COMPLET** |
-| 14 | Reasoners (bonus) | 57 | 3 | **COMPLET** |
+| 13 | GraphRAG | 44 | 3 | **COMPLET** |
+| 14 | Reasoners (bonus) | 38 | 3 | **COMPLET** |
 
 ## Prerequisites
 
