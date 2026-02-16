@@ -22,6 +22,11 @@
   - Duration: 50 minutes, Prerequisites: Sudoku-1-Backtracking
   - Interpretations after CP solver test and performance comparison
   - BOTTOM-to-TOP strategy with re-read between each insertion
+- **2026-02-16**: Search-9-Metaheuristics (3 cells added: 2 interpretations, 1 code improvement)
+  - Added interpretation after parameter analysis visualization (pop_size impact)
+  - Added interpretation after PSO convergence visualization with technical note
+  - Replaced seaborn with matplotlib in comparative plots (removed dependency)
+  - All cells positioned correctly, BOTTOM-to-TOP strategy used
 
 ### Domain-Specific Patterns
 
@@ -31,6 +36,7 @@
 | ML | accuracy, loss, overfitting, cross-validation | Train-test split, model evaluation, interpretation tables |
 | Probas | prior, posterior, likelihood, inference | Bayesian updates, factor graphs, distribution visualization |
 | Sudoku/Constraint Solving | CSP, CP-SAT, MIP, DecisionBuilder, AllDifferent, propagation | Solver comparison tables, performance benchmarks, constraint modeling patterns |
+| Search/Optimization | fitness, convergence, population, exploration/exploitation, metaheuristics | Parameter sensitivity analysis, algorithm comparison tables, convergence plots |
 
 ### Content Strategy Templates
 
