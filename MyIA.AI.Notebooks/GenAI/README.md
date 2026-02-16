@@ -6,9 +6,9 @@ Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : im
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 50+ |
-| Sous-domaines | 6 (Environment, Image, Texte, SemanticKernel, EPF, Vibe-Coding) |
-| Duree totale | ~25-30h |
+| Notebooks | 82+ |
+| Sous-domaines | 8 (Environment, Image, Audio, Video, Texte, SemanticKernel, EPF, Vibe-Coding) |
+| Duree totale | ~70-80h |
 
 ## Structure
 
@@ -16,6 +16,8 @@ Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : im
 GenAI/
 ├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
 ├── Image/                   # Generation d'images (19 notebooks)
+├── Audio/                   # Speech, TTS, musique, separation (16 notebooks)
+├── Video/                   # Generation et comprehension video (16 notebooks)
 ├── Texte/                   # LLMs et generation de texte (10 notebooks)
 ├── SemanticKernel/          # Microsoft Semantic Kernel (14 notebooks)
 ├── EPF/                     # Projets etudiants (4 notebooks)
@@ -74,6 +76,32 @@ GenAI/
 | **04-3-Production-Integration** | Intégration systèmes production | APIs, Microservices |
 | **04-3-Cross-Stitch-Pattern-Maker-Legacy** | Générateur motifs point de croix | DMC Colors, Pattern Generation |
 
+### Audio/ - Speech, Voix & Musique par IA
+
+*Serie complete pour le traitement audio par IA generative (16 notebooks)*
+
+| Niveau | Notebooks | Contenu |
+|--------|-----------|---------|
+| **Foundation** | 01-1 a 01-5 | OpenAI TTS, Whisper STT, operations audio, Whisper local, Kokoro TTS |
+| **Advanced** | 02-1 a 02-4 | Chatterbox TTS, XTTS voice cloning, MusicGen, Demucs separation |
+| **Orchestration** | 03-1 a 03-3 | Multi-model comparison, pipelines, temps reel |
+| **Applications** | 04-1 a 04-4 | Contenu educatif, transcription, composition musicale, sync A/V |
+
+[README Audio](Audio/README.md)
+
+### Video/ - Generation & Comprehension Video par IA
+
+*Serie complete pour la generation et comprehension video par IA (16 notebooks)*
+
+| Niveau | Notebooks | Contenu |
+|--------|-----------|---------|
+| **Foundation** | 01-1 a 01-5 | Operations video, GPT-5 understanding, Qwen-VL, ESRGAN, AnimateDiff |
+| **Advanced** | 02-1 a 02-4 | HunyuanVideo, LTX-Video, Wan, SVD image-to-video |
+| **Orchestration** | 03-1 a 03-3 | Multi-model comparison, workflows, ComfyUI Video |
+| **Applications** | 04-1 a 04-4 | Video educative, workflows creatifs, Sora API, production |
+
+[README Video](Video/README.md)
+
 ### Texte/ - Generation de Texte par IA
 
 *Serie complete sur les LLMs et APIs OpenAI modernes (10 notebooks)*
@@ -129,6 +157,8 @@ GenAI/
 | Sous-domaine | README |
 |--------------|--------|
 | Image | [Image/README.md](Image/README.md) |
+| Audio | [Audio/README.md](Audio/README.md) |
+| Video | [Video/README.md](Video/README.md) |
 | Texte | [Texte/README.md](Texte/README.md) |
 | SemanticKernel | [SemanticKernel/README.md](SemanticKernel/README.md) |
 | EPF | [EPF/README.md](EPF/README.md) |
@@ -145,6 +175,8 @@ GenAI/
 | 02-Images-Advanced | Complet | Qwen 2509, FLUX, SD 3.5, Z-Image |
 | 03-Images-Orchestration | Complet | Comparaison, Workflows, Optimisation |
 | 04-Images-Applications | Complet | Applications pedagogiques |
+| Audio/ | Complet | 16 notebooks : TTS, STT, voix, musique, separation |
+| Video/ | Complet | 16 notebooks : Operations, comprehension, generation, workflows |
 | Texte/ | Complet | 10 notebooks : OpenAI, Prompts, Structured Outputs, RAG, Reasoning, Production |
 
 ---
@@ -241,6 +273,18 @@ Pillow>=10.0.0
 opencv-python>=4.8.0
 numpy>=1.24.0
 
+# Audio Processing
+librosa>=0.10.0
+soundfile>=0.12.0
+pydub>=0.25.0
+faster-whisper>=0.10.0
+
+# Video Processing
+moviepy>=2.0.0
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.9
+decord>=0.6.0
+
 # Jupyter & Notebooks
 jupyter>=1.0.0
 ipywidgets>=8.0.0
@@ -258,23 +302,27 @@ huggingface-hub>=0.19.0
 
 ### 🎯 **Parcours Recommandés**
 
-#### **👨‍🎓 Débutant (20h)**
+#### **👨‍🎓 Débutant (30h)**
 1. `00-GenAI-Environment/` - Setup complet (4h)
 2. `01-Images-Foundation/` - Bases DALL-E & GPT-5 (8h)
-3. `01-3-Basic-Image-Operations` - Manipulation images (4h)
-4. Premier projet pratique (4h)
+3. `Audio/01-Foundation/` - TTS & STT basics (6h)
+4. `Video/01-Foundation/` - Operations video basics (6h)
+5. Premier projet pratique (6h)
 
-#### **👨‍💻 Intermédiaire (40h)**
-1. Révision Débutant (4h)
+#### **👨‍💻 Intermédiaire (60h)**
+1. Révision Débutant (6h)
 2. `02-Images-Advanced/` - Modèles spécialisés (16h)
-3. `03-1-Multi-Model-Comparison` - Évaluation (8h)
-4. Projet intégration multi-modèles (12h)
+3. `Audio/02-Advanced/` - Voix, musique, separation (10h)
+4. `Video/02-Advanced/` - Generation video (12h)
+5. Projet intégration multi-modales (16h)
 
-#### **🚀 Expert (80h)**
-1. Révision Intermédiaire (8h)
-2. `03-Images-Orchestration/` - Architecture complexe (24h)
-3. `04-Images-Applications/` - Production (32h)
-4. Projet production complet (16h)
+#### **🚀 Expert (120h)**
+1. Révision Intermédiaire (12h)
+2. `03-Images-Orchestration/` - Architecture complexe (16h)
+3. `Audio/03-Orchestration/` + `04-Applications/` - Pipelines audio (14h)
+4. `Video/03-Orchestration/` + `04-Applications/` - Workflows video (16h)
+5. `04-Images-Applications/` - Production (20h)
+6. Projet production complet (42h)
 
 ---
 
@@ -357,19 +405,23 @@ huggingface-hub>=0.19.0
 Après completion de cet écosystème, vous maîtriserez :
 
 ### 🎯 **Compétences Techniques**
-- ✅ **Multi-modal AI** : Texte → Image, Image → Image
-- ✅ **Model comparison** : Évaluation objective performances  
+- ✅ **Multi-modal AI** : Texte → Image, Audio, Video
+- ✅ **Model comparison** : Évaluation objective performances
 - ✅ **Production deployment** : Architecture scalable
 - ✅ **Workflow automation** : Chaînes traitement complexes
+- ✅ **Speech processing** : STT, TTS, voice cloning, musique
+- ✅ **Video understanding** : Compréhension, génération, édition
 
 ### 🚀 **Projets Réalisables**
 - 🎨 **Générateur contenu visuel** automatisé
-- 📚 **Plateforme éducative** avec images adaptatives
+- 🎙️ **Podcast/TTS generator** avec voix personnalisées
+- 🎬 **Video pédagogique** generée automatiquement
+- 📚 **Plateforme éducative** avec contenus multimédia adaptatifs
 - 🏭 **Service production** génération à la demande
-- 🔬 **Benchmark suite** comparaison modèles
+- 🔬 **Benchmark suite** comparaison modèles multi-modaux
 
 ---
 
-**🎓 Bon apprentissage avec l'écosystème GenAI Images CoursIA !**
+**🎓 Bon apprentissage avec l'écosystème GenAI CoursIA !**
 
 *Créé avec ❤️ par l'équipe CoursIA | Architecture SDDD | Compatible MCP*
