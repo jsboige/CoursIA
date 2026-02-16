@@ -172,44 +172,63 @@ Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.
 
 ## SemanticWeb - Web Semantique
 
-Serie de **13 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF, fondations RDF/SPARQL/OWL) et **Python** (rdflib, standards modernes, IA). Refonte complete du notebook monolithique `RDF.Net.ipynb` (original conserve dans [SemanticWeb/RDF.Net-Legacy/](SemanticWeb/RDF.Net-Legacy/)).
+Serie complete de **14 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF, fondations) et **Python** (rdflib, standards modernes, IA). Cette serie couvre l'ensemble du spectre : des fondations RDF aux graphes de connaissances integres aux LLMs (GraphRAG).
+
+### Parcours pedagogique
+
+La serie est divisee en 4 parties progressives, plus un notebook bonus sur les raisonneurs OWL.
+
+**Partie 1 : Fondations RDF (.NET C#)** - Les 4 premiers notebooks etablissent les bases avec dotNetRDF, depuis l'installation jusqu'aux requetes SPARQL.
+
+**Partie 2 : Donnees Liees et Ontologies (.NET C#)** - Les notebooks 5-7 explorent les donnees du Web ouvert (DBpedia, Wikidata) et les ontologies (RDFS, OWL).
+
+**Partie 3 : Ecosysteme Python et Standards Modernes** - Les notebooks 8-11 font la transition vers Python et couvrent les standards modernes (SHACL, JSON-LD, RDF-Star).
+
+**Partie 4 : Graphes de Connaissances et IA** - Les notebooks 12-13 connectent le Web Semantique avec l'IA moderne (construction de KGs, GraphRAG).
+
+**Bonus** - Le notebook 14 compare differents raisonneurs OWL (owlrl, HermiT, reasonable, Growl).
 
 ### Structure detaillee
 
 | # | Notebook | Kernel | Contenu detaille |
 |---|----------|--------|------------------|
-| | **Partie 1 : Fondations RDF** | | |
-| 1 | [SW-1-Setup](SemanticWeb/SW-1-Setup.ipynb) | .NET C# | Installation dotNetRDF, concepts RDF, pile W3C, premier graphe |
-| 2 | [SW-2-RDFBasics](SemanticWeb/SW-2-RDFBasics.ipynb) | .NET C# | Triplets, noeuds (URI, bnodes, litteraux), serialisation |
-| 3 | [SW-3-GraphOperations](SemanticWeb/SW-3-GraphOperations.ipynb) | .NET C# | Lecture, ecriture, fusion, selection, listes RDF |
-| 4 | [SW-4-SPARQL](SemanticWeb/SW-4-SPARQL.ipynb) | .NET C# | Query Builder, SELECT, FILTER, OPTIONAL, UNION |
-| | **Partie 2 : Donnees Liees et Ontologies** | | |
-| 5 | [SW-5-LinkedData](SemanticWeb/SW-5-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requetes federees SERVICE |
-| 6 | [SW-6-RDFS](SemanticWeb/SW-6-RDFS.ipynb) | .NET C# | Vocabulaire RDFS, inference, hierarchies de classes |
-| 7 | [SW-7-OWL](SemanticWeb/SW-7-OWL.ipynb) | .NET C# | OWL 2, OntologyGraph, profils EL/QL/RL |
-| | **Partie 3 : Ecosysteme Python et Standards Modernes** | | |
-| 8 | [SW-8-PythonRDF](SemanticWeb/SW-8-PythonRDF.ipynb) | Python | rdflib, SPARQLWrapper, comparaison dotNetRDF vs rdflib |
-| 9 | [SW-9-SHACL](SemanticWeb/SW-9-SHACL.ipynb) | Python | Validation pySHACL, contraintes, qualite des donnees |
-| 10 | [SW-10-JSONLD](SemanticWeb/SW-10-JSONLD.ipynb) | Python | JSON-LD, Schema.org, donnees structurees web |
-| 11 | [SW-11-RDFStar](SemanticWeb/SW-11-RDFStar.ipynb) | Python | RDF 1.2 (RDF-Star), quoted triples, SPARQL-Star |
-| | **Partie 4 : Graphes de Connaissances et IA** | | |
-| 12 | [SW-12-KnowledgeGraphs](SemanticWeb/SW-12-KnowledgeGraphs.ipynb) | Python | Construction KGs, kglab, OWLReady2, visualisation |
-| 13 | [SW-13-GraphRAG](SemanticWeb/SW-13-GraphRAG.ipynb) | Python | KG + LLMs, Microsoft GraphRAG, extraction entites |
-| **Bonus** | [SW-14-Reasoners](SemanticWeb/SW-14-Reasoners.ipynb) | Python | Comparaison owlrl/HermiT/reasonable/Growl |
+| **Partie 1 : Fondations RDF** | | |
+| 1 | [SW-1-Setup](SemanticWeb/SW-1-Setup.ipynb) | .NET C# | Installation dotNetRDF, vision Tim Berners-Lee, pile W3C "Layer Cake", premier graphe RDF "Hello World" |
+| 2 | [SW-2-RDFBasics](SemanticWeb/SW-2-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds (URI, blank, litteraux avec types/langues), formats de serialisation (Turtle, N-Triples, RDF/XML) |
+| 3 | [SW-3-GraphOperations](SemanticWeb/SW-3-GraphOperations.ipynb) | .NET C# | Parsers/Writers, fusion de graphes, `GetTriplesWithXxx()`, LINQ sur RDF, listes RDF (`AssertList`, `GetListItems`) |
+| 4 | [SW-4-SPARQL](SemanticWeb/SW-4-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL (LEFT JOIN), UNION, ORDER BY, `SparqlParameterizedString` |
+| **Partie 2 : Donnees Liees et Ontologies** | | |
+| 5 | [SW-5-LinkedData](SemanticWeb/SW-5-LinkedData.ipynb) | .NET C# | DBpedia (Wikipedia en RDF), Wikidata (Q-items/P-properties), requetes federees `SERVICE`, endpoints SPARQL publics |
+| 6 | [SW-6-RDFS](SemanticWeb/SW-6-RDFS.ipynb) | .NET C# | Vocabulaire RDFS (`rdfs:Class`, `subClassOf`, `domain`, `range`), inference automatique, `OntologyGraph` |
+| 7 | [SW-7-OWL](SemanticWeb/SW-7-OWL.ipynb) | .NET C# | OWL 2 vs. RDFS, profils (EL/QL/RL), restrictions (∃/∀), `owl:unionOf`/`intersectionOf`, raisonnement |
+| **Partie 3 : Ecosysteme Python et Standards Modernes** | | |
+| 8 | [SW-8-PythonRDF](SemanticWeb/SW-8-PythonRDF.ipynb) | Python | rdflib (`Graph`, `URIRef`, `Literal`), SPARQLWrapper, equivalences dotNetRDF ↔ rdflib |
+| 9 | [SW-9-SHACL](SemanticWeb/SW-9-SHACL.ipynb) | Python | SHACL (`NodeShape`, `PropertyShape`), contraintes (`sh:minCount`, `sh:pattern`), pySHACL, rapports de validation |
+| 10 | [SW-10-JSONLD](SemanticWeb/SW-10-JSONLD.ipynb) | Python | JSON-LD (`@context`, `@id`, `@type`), Schema.org (SEO, rich snippets Google), compactage/expansion |
+| 11 | [SW-11-RDFStar](SemanticWeb/SW-11-RDFStar.ipynb) | Python | RDF 1.2, quoted triples (`<<<:s :p :o>>>`), annotations, provenance, SPARQL-Star |
+| **Partie 4 : Graphes de Connaissances et IA** | | |
+| 12 | [SW-12-KnowledgeGraphs](SemanticWeb/SW-12-KnowledgeGraphs.ipynb) | Python | kglab, OWLReady2, import CSV/JSON→RDF, visualisation NetworkX/pyvis, integration Wikidata/DBpedia |
+| 13 | [SW-13-GraphRAG](SemanticWeb/SW-13-GraphRAG.ipynb) | Python | RAP (Retrieval-Augmented Generation), Microsoft GraphRAG, extraction entites LLM, prompt engineering |
+| **Bonus** | | |
+| 14 | [SW-14-Reasoners](SemanticWeb/SW-14-Reasoners.ipynb) | Python | Comparaison owlrl/HermiT/reasonable/Growl, benchmarks temps d'execution, OWL 2 RL vs. DL |
 
 ### Technologies utilisees
 
 | Technologie | Version | Usage |
 |-------------|---------|-------|
 | **dotNetRDF** | 3.2.1 | Core RDF/SPARQL en .NET (SW-1 a SW-7) |
-| **rdflib** | 7.5.0 | Core RDF/SPARQL en Python (SW-8 a SW-13) |
+| **rdflib** | 7.5.0 | Core RDF/SPARQL en Python (SW-8 a SW-14) |
 | **pySHACL** | 0.27.0 | Validation SHACL (SW-9) |
-| **OWLReady2** | 0.50+ | Manipulation ontologies (SW-12) |
+| **OWLReady2** | 0.50+ | Manipulation ontologies (SW-12, SW-14) |
 | **kglab** | 0.6.1+ | Abstraction graphes de connaissances (SW-12) |
+| **owlrl** | 6.0+ | Raisonneur OWL 2 RL Python pur (SW-14) |
+| **reasonable** | 0.1+ | Raisonneur OWL 2 RL Rust (SW-14) |
 
 ### Standards W3C couverts
 
-RDF 1.1/1.2, SPARQL 1.1, RDFS, OWL 2, SHACL, JSON-LD 1.1
+RDF 1.1/1.2, SPARQL 1.1, RDFS 1.0, OWL 2, SHACL 1.0, JSON-LD 1.1
+
+> **Note** : Cette serie est une refonte complete du notebook monolithique `RDF.Net.ipynb` (173 cellules). L'original est conserve dans [SemanticWeb/RDF.Net-Legacy/](SemanticWeb/RDF.Net-Legacy/) a titre de reference historique.
 
 Documentation complete : [SemanticWeb/README.md](SemanticWeb/README.md)
 
