@@ -16,6 +16,12 @@
   - All cells positioned correctly on first attempt
   - BOTTOM-to-TOP strategy prevented index conflicts
   - No git rollbacks needed
+- **2026-02-16**: Sudoku-3-ORTools (4 cells added: 1 header with objectives, 2 interpretations, 1 footer)
+  - Navigation header and footer with Search notebook links
+  - Learning objectives (Bloom taxonomy) for CSP, CP-SAT, MIP
+  - Duration: 50 minutes, Prerequisites: Sudoku-1-Backtracking
+  - Interpretations after CP solver test and performance comparison
+  - BOTTOM-to-TOP strategy with re-read between each insertion
 
 ### Domain-Specific Patterns
 
@@ -24,6 +30,7 @@
 | Data Science with Agents | Pandas, LangChain, DataFrame, agent, tools, reasoning | Progressive questions (simple->complex), data cleaning workflow, agent orchestration |
 | ML | accuracy, loss, overfitting, cross-validation | Train-test split, model evaluation, interpretation tables |
 | Probas | prior, posterior, likelihood, inference | Bayesian updates, factor graphs, distribution visualization |
+| Sudoku/Constraint Solving | CSP, CP-SAT, MIP, DecisionBuilder, AllDifferent, propagation | Solver comparison tables, performance benchmarks, constraint modeling patterns |
 
 ### Content Strategy Templates
 

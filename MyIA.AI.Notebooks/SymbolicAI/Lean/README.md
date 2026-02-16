@@ -1,6 +1,6 @@
 # Lean - Solveur Mathematique et Verification Formelle
 
-Cette serie de **9 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves.
+Cette serie de **11 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves.
 
 ## Navigation
 
@@ -12,8 +12,8 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |------|-----------|-------|-------------|
 | **Fondations** | 1-5 | ~3h | Base theorique complete (types, logique, tactiques) |
 | **Avec Mathlib** | 1-6 | ~3h45 | Ajoute les tactiques Mathlib |
-| **Integration IA** | 1-7 | ~4h35 | Ajoute LLMs et preuves assistees |
-| **Complet** | 1-9 | ~6h40 | Toutes les fonctionnalites incluant LeanDojo |
+| **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
+| **Complet** | 1-10 | ~8h | Toutes les fonctionnalites incluant LeanDojo |
 
 ## Structure
 
@@ -33,10 +33,12 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 6 | [Lean-6-Mathlib-Essentials](Lean-6-Mathlib-Essentials.ipynb) | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
 | 7 | [Lean-7-LLM-Integration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
+| 7b | [Lean-7b-Examples](Lean-7b-Examples.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
 | 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problemes Erdos | 55 min |
-| 9 | [Lean-9-LeanDojo](Lean-9-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
+| 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Semantic Kernel, orchestration multi-agents | 45 min |
+| 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 
-**Duree totale** : ~6h40
+**Duree totale** : ~8h
 
 ## Statut de maturite
 
@@ -49,8 +51,10 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 5 | Tactics | ~70 | 3 | 3 | **COMPLET** |
 | 6 | Mathlib-Essentials | ~45 | 3 | 3 | **COMPLET** |
 | 7 | LLM-Integration | ~50 | 2 | 2 | **COMPLET** |
+| 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
 | 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
-| 9 | LeanDojo | ~100 | Demo | - | **COMPLET** |
+| 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
+| 10 | LeanDojo | ~100 | Demo | - | **COMPLET** |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
@@ -174,8 +178,10 @@ Lean/
 ├── Lean-5-Tactics.ipynb
 ├── Lean-6-Mathlib-Essentials.ipynb
 ├── Lean-7-LLM-Integration.ipynb    # Python kernel - APIs LLM
+├── Lean-7b-Examples.ipynb          # Python kernel - benchmarks
 ├── Lean-8-Agentic-Proving.ipynb    # Python kernel - orchestration
-├── Lean-9-LeanDojo.ipynb           # Python kernel - LeanDojo
+├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Semantic Kernel
+├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
