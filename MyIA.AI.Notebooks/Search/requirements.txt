@@ -4,11 +4,15 @@
 # Core CSP/Search
 python-constraint>=1.4.0     # CSP basique (backtracking, forward checking)
 ortools>=9.8                 # Google OR-Tools CP-SAT solver
-z3-solver>=4.12              # Microsoft Z3 SMT solver
+z3-solver>=4.13              # Microsoft Z3 SMT solver
+
+# Automata
+automata-lib>=9.2.0          # Finite automata library (NFA, DFA)
 
 # Metaheuristics
 deap>=1.4                    # Genetic algorithms framework
 pygad>=3.3                   # GA simplifie
+mealpy>=3.0                  # Metaheuristics library (PSO, SA, ABC, etc.)
 
 # Graph & Visualization
 networkx>=3.1                # Graphes et algorithmes
@@ -18,6 +22,9 @@ graphviz>=0.20               # Arbres de recherche (necessite Graphviz installe)
 # Data & Scientific
 numpy>=1.24
 scipy>=1.10
+
+# Linear Programming
+pulp>=2.8.0                 # Linear programming with CBC, HiGHS solvers
 
 # Jupyter
 ipywidgets>=8.1
