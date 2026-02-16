@@ -8,11 +8,11 @@ Collection de **44 notebooks Jupyter** pour l'apprentissage de l'IA symbolique :
 |-------|-----------|----------|-------|-------|
 | [Tweety](#tweety---tweetyproject) | 10 | ~200 | Logiques formelles, Argumentation | ~7h |
 | [Lean](#lean---verification-formelle) | 11 | ~454 | Proof assistant, Types dependants, LLMs | ~8h |
-| [SemanticWeb](#semanticweb---web-semantique) | 13 | ~400 | RDF, SPARQL, OWL, SHACL, GraphRAG | ~10h |
+| [SemanticWeb](#semanticweb---web-semantique) | 13+1 | ~460 | RDF, SPARQL, OWL, SHACL, GraphRAG, Reasoners | ~10h45 |
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | ~76 | Analyse argumentative multi-agents | ~3h |
 | [Autres notebooks](#autres-notebooks) | 3 | ~75 | Z3, OR-Tools, Planification | ~1h30 |
 
-**Total** : 44 notebooks, ~1320 cellules, ~30h30 de contenu
+**Total** : 45 notebooks, ~1370 cellules, ~31h15 de contenu
 
 ---
 
@@ -195,6 +195,7 @@ Serie de **13 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRD
 | | **Partie 4 : Graphes de Connaissances et IA** | | |
 | 12 | [SW-12-KnowledgeGraphs](SemanticWeb/SW-12-KnowledgeGraphs.ipynb) | Python | Construction KGs, kglab, OWLReady2, visualisation |
 | 13 | [SW-13-GraphRAG](SemanticWeb/SW-13-GraphRAG.ipynb) | Python | KG + LLMs, Microsoft GraphRAG, extraction entites |
+| **Bonus** | [SW-14-Reasoners](SemanticWeb/SW-14-Reasoners.ipynb) | Python | Comparaison owlrl/HermiT/reasonable/Growl |
 
 ### Technologies utilisees
 
@@ -307,8 +308,9 @@ SymbolicAI/
 │   ├── data/                  # Taxonomie sophismes CSV
 │   └── ontologies/            # Ontologies OWL argumentation
 │
-├── SemanticWeb/               # Web semantique (13 notebooks, ~400 cellules)
+├── SemanticWeb/               # Web semantique (13+1 notebooks, ~460 cellules)
 │   ├── SW-1-Setup.ipynb ... SW-13-GraphRAG.ipynb
+│   ├── SW-14-Reasoners.ipynb  # Bonus comparaison raisonneurs
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD, CSV
 │   ├── RDF.Net-Legacy/      # Notebook original (reference historique)
 │   ├── requirements.txt
