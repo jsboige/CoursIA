@@ -481,3 +481,6 @@ MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
 
 # Windows artifact
 nul
+# Rapports de validation notebooks
+notebook_validation_report.json
+rapports/
