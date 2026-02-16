@@ -10,14 +10,14 @@ Le Web Semantique etend le Web classique en permettant aux machines de comprendr
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 13 |
-| Duree totale | ~10h |
-| Langages | .NET C# (1-7), Python (8-13) |
+| Notebooks | 13 + 1 bonus |
+| Duree totale | ~10h + 45min (bonus) |
+| Langages | .NET C# (1-7), Python (8-14) |
 | Niveau | Debutant a avance |
 
 ## Structure
 
-**13 notebooks** organises en **4 parties** progressives.
+**13 notebooks** organises en **4 parties** progressives, plus **1 notebook bonus**.
 
 ### Partie 1 : Fondations RDF (.NET C#)
 
@@ -52,6 +52,12 @@ Le Web Semantique etend le Web classique en permettant aux machines de comprendr
 | 12 | [SW-12-KnowledgeGraphs](SW-12-KnowledgeGraphs.ipynb) | Python | Construction KGs, kglab, OWLReady2, visualisation | 55 min |
 | 13 | [SW-13-GraphRAG](SW-13-GraphRAG.ipynb) | Python | KG + LLMs, Microsoft GraphRAG, extraction entites | 50 min |
 
+### Bonus : Raisonneurs OWL
+
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| **14** | [SW-14-Reasoners](SW-14-Reasoners.ipynb) | Python | Comparaison owlrl/HermiT/reasonable/Growl, benchmarks | 45 min |
+
 ## Statut de maturite
 
 | # | Notebook | Cellules | Exercices | Statut |
@@ -69,6 +75,7 @@ Le Web Semantique etend le Web classique en permettant aux machines de comprendr
 | 11 | RDFStar | 52 | 2 | **COMPLET** |
 | 12 | KnowledgeGraphs | 75 | 3 | **COMPLET** |
 | 13 | GraphRAG | 72 | 3 | **COMPLET** |
+| 14 | Reasoners (bonus) | 57 | 3 | **COMPLET** |
 
 ## Prerequisites
 
@@ -116,11 +123,13 @@ cp .env.example .env
 | Technologie | Version | Notebooks | Role |
 |-------------|---------|-----------|------|
 | dotNetRDF | 3.4.1 | SW-1 a SW-7 | Core RDF/SPARQL en .NET |
-| rdflib | 7.5.0 | SW-8 a SW-13 | Core RDF/SPARQL en Python |
+| rdflib | 7.5.0 | SW-8 a SW-14 | Core RDF/SPARQL en Python |
 | pySHACL | 0.27.0 | SW-9 | Validation SHACL |
 | OWLReady2 | 0.50+ | SW-12 | Manipulation ontologies |
 | SPARQLWrapper | 2.0+ | SW-5, SW-8 | Requetes endpoints distants |
 | kglab | 0.6.1+ | SW-12 | Abstraction graphes de connaissances |
+| owlrl | 6.0+ | SW-14 | Raisonneur OWL 2 RL Python pur |
+| reasonable | 0.1+ | SW-14 | Raisonneur OWL 2 RL Rust |
 
 ## Standards W3C couverts
 
