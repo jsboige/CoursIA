@@ -137,6 +137,18 @@ class NotebookValidator:
         original_env = os.environ.copy()
         os.environ.update(self.env_vars)
 
+        # Add ffmpeg to PATH if available locally
+        ffmpeg_paths = [
+            "D:/Dev/CoursIA/tools/ffmpeg/bin",  # Local installation
+            "C:/Program Files/ffmpeg/bin",
+            "C:/tools/ffmpeg/bin",
+        ]
+        for ffmpeg_path in ffmpeg_paths:
+            if Path(ffmpeg_path).exists():
+                os.environ["PATH"] = f"{ffmpeg_path};{os.environ.get('PATH', '')}"
+                logger.info(f"Added ffmpeg to PATH: {ffmpeg_path}")
+                break
+
         try:
             pm.execute_notebook(
                 input_path=str(notebook_path),
