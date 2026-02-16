@@ -5,7 +5,7 @@ from datetime import timedelta, datetime
 #endregion
 
 class FilteredPairsAlphaModel(PearsonCorrelationPairsTradingAlphaModel):
-    def __init__(self, lookback=20, resolution=Resolution.Hour, threshold=2.0, pairs=[], cooldown_days=2):
+    def __init__(self, lookback=20, resolution=Resolution.Hour, threshold=1.5, pairs=[], cooldown_days=2):
         super().__init__(lookback, resolution, threshold)
         self.pairs = pairs
         self.cooldown = timedelta(days=cooldown_days)

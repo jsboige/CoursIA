@@ -19,7 +19,7 @@ class ETFPairsTrading(QCAlgorithm):
         self.UniverseSettings.DataNormalizationMode = DataNormalizationMode.Adjusted
 
         lookback_param = self.GetParameter("lookback") or "20"
-        threshold_param = self.GetParameter("threshold") or "2.2"
+        threshold_param = self.GetParameter("threshold") or "1.5"
         self.lookback = int(lookback_param)
         self.zscore_threshold = float(threshold_param)
 
@@ -75,7 +75,7 @@ class ETFPairsTrading(QCAlgorithm):
         if len(symbols) < 2:
             self.Log("Not enough active securities for pair analysis.")
             return
-        history = self.History(symbols, 500, self.resolution)
+        history = self.History(symbols, 1638, self.resolution)
         if history.empty:
             self.Log("No historical data available for these symbols.")
             return
@@ -93,12 +93,12 @@ class ETFPairsTrading(QCAlgorithm):
                 t_stat, pvalue, crit = coint(etf1_prices, etf2_prices)
                 corr = etf1_prices.corr(etf2_prices)
                 vol = etf1_prices.std() + etf2_prices.std()
-                if pvalue < 0.1 and corr > 0.6 and vol > 0.01:
+                if pvalue < 0.05 and vol > 0.01:
                     results.append((etf1, etf2, pvalue, corr, vol))
         if not results:
             self.Log("No valid cointegrated pairs found.")
             return
-        results.sort(key=lambda x: (-x[3] * x[4], x[2]))
+        results.sort(key=lambda x: x[2])
         top_pairs = [(etf1, etf2) for etf1, etf2, _, _, _ in results[:3]]
         for etf1, etf2 in top_pairs:
             if etf1 not in self.Securities:
