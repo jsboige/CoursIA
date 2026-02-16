@@ -21,10 +21,12 @@ Bienvenue dans le depot **CoursIA**, plateforme educative complete pour l'appren
 ## Introduction
 
 Ce depot contient **290+ notebooks Jupyter** interactifs couvrant :
+- **Recherche & Optimisation** : Algorithmes classiques, metaheuristiques, programmation par contraintes
+- **Resolution de Sudoku** : Approches comparatives (backtracking, genetique, contraintes, SMT, probabiliste)
 - **IA Symbolique** : Logiques formelles, argumentation, verification formelle (Lean 4, Tweety, Z3)
-- **Probabilites** : Inference bayesienne, modeles graphiques (Infer.NET)
 - **Theorie des jeux** : Nash, jeux evolutionnaires, cooperatifs, CFR, OpenSpiel
-- **Machine Learning** : ML.NET, algorithmes genetiques
+- **Probabilites** : Inference bayesienne, modeles graphiques (Infer.NET)
+- **Machine Learning** : ML.NET, algorithmes genetiques, Reinforcement Learning
 - **IA Generative** : OpenAI, LLMs, generation d'images, audio et video (DALL-E, FLUX, Qwen, SD3.5, Whisper, MusicGen, AnimateDiff)
 - **Trading Algorithmique** : QuantConnect LEAN, ML/DL/RL pour strategies de trading
 
@@ -36,7 +38,26 @@ Les notebooks sont en **C# (.NET Interactive)**, **Python** et **Lean 4**, avec 
 
 ```
 CoursIA/
-├── MyIA.AI.Notebooks/           # 255+ notebooks interactifs
+├── MyIA.AI.Notebooks/           # 290+ notebooks interactifs
+│   ├── Search/                  # Recherche et optimisation (5 notebooks)
+│   ├── Sudoku/                  # Resolution Sudoku (11 notebooks)
+│   ├── SymbolicAI/              # IA Symbolique (47+ notebooks)
+│   │   ├── Tweety/              # TweetyProject - 10 notebooks
+│   │   ├── SemanticWeb/         # RDF, OWL, SPARQL, reasoners (14 notebooks)
+│   │   ├── Lean/                # Lean 4 - 11 notebooks
+│   │   ├── Argument_Analysis/   # Analyse argumentative - 6 notebooks
+│   │   └── Planners/            # Fast-Downward, PDDL
+│   │
+│   ├── GameTheory/              # Theorie des jeux (26 notebooks)
+│   │   ├── GameTheory-1 to 17   # Notebooks principaux
+│   │   └── *b, *c variants      # Lean + Python side tracks
+│   │
+│   ├── Probas/Infer/            # Infer.NET - 20 notebooks
+│   ├── Probas/                  # Probabilites - racine (2 notebooks)
+│   ├── ML/                      # Machine Learning (17 notebooks)
+│   │   ├── RL/                  # Reinforcement Learning (3 notebooks)
+│   │   └── *                    # ML.NET, Python Data Science (14 notebooks)
+│   │
 │   ├── GenAI/                   # IA Generative (87+ notebooks)
 │   │   ├── 00-GenAI-Environment/# Setup et configuration (6 notebooks)
 │   │   ├── Image/               # Generation d'images (19 notebooks)
@@ -58,24 +79,8 @@ CoursIA/
 │   │   ├── SemanticKernel/      # Microsoft Semantic Kernel (14 notebooks)
 │   │   └── Vibe-Coding/         # Claude Code et Roo Code tutorials
 │   │
-│   ├── SymbolicAI/              # IA Symbolique (47+ notebooks)
-│   │   ├── Tweety/              # TweetyProject - 10 notebooks
-│   │   ├── Lean/                # Lean 4 - 10 notebooks
-│   │   ├── Argument_Analysis/   # Analyse argumentative - 6 notebooks
-│   │   └── Planners/            # Fast-Downward, PDDL
-│   │
-│   ├── GameTheory/              # Theorie des jeux (26 notebooks)
-│   │   ├── GameTheory-1 to 17   # Notebooks principaux
-│   │   └── *b, *c variants      # Lean + Python side tracks
-│   │
-│   ├── Probas/Infer/            # Infer.NET - 20 notebooks
-│   ├── Sudoku/                  # Resolution Sudoku (11 notebooks)
-│   ├── Search/                  # Recherche et optimisation (5 notebooks)
-│   ├── ML/                      # Machine Learning (14 notebooks)
-│   ├── RL/                      # Reinforcement Learning (3 notebooks)
 │   ├── QuantConnect/            # Trading algorithmique + AI (27 notebooks Python)
 │   ├── IIT/                     # PyPhi - Information integree (1 notebook)
-│   ├── Probas/                  # Probabilites (22 notebooks)
 │   ├── EPF/                     # Devoirs etudiants (4 notebooks)
 │   └── Config/                  # Configuration API (settings.json)
 │
@@ -105,29 +110,65 @@ CoursIA/
 
 | Categorie | Notebooks | Kernels | Duree estimee | API requise |
 |-----------|-----------|---------|---------------|-------------|
-| **SymbolicAI** | 47+ | Python, Lean 4 | ~25h | OpenAI (optionnel) |
-| **GameTheory** | 26 | Python, Lean 4 | ~18h30 | OpenAI (optionnel) |
-| **Infer.NET** | 20 | .NET C# | ~17h | - |
-| **GenAI** | 87+ | Python | ~75h | OpenAI/Anthropic |
-| **Sudoku** | 11 | C#, Python | ~2h | - |
 | **Search** | 5 | C#, Python | ~1h10 | - |
-| **ML** | 14 | C#, Python | ~4h | - |
-| **RL** | 3 | Python | ~2h | - |
+| **Sudoku** | 11 | C#, Python | ~2h | - |
+| **SymbolicAI** | 60+ | Python, Lean 4 | ~35h | OpenAI (optionnel) |
+| **GameTheory** | 26 | Python, Lean 4 | ~18h30 | OpenAI (optionnel) |
+| **Probas** | 22 | C#, Python | ~17h | - |
+| **ML** | 17 | C#, Python | ~6h | - |
+| **GenAI** | 87+ | Python | ~75h | OpenAI/Anthropic |
 | **QuantConnect** | 27 | Python | ~30h | QuantConnect (gratuit) |
 | **IIT** | 1 | Python | ~1h30 | - |
-| **Total** | **290+** | **Mixed** | **~180h** | - |
+| **EPF** | 4 | Mixed | Variable | - |
+| **Total** | **290+** | **Mixed** | **~190h** | - |
 
 ## Series de notebooks
+
+### Search - Recherche et Optimisation
+
+Algorithmes classiques et metaheuristiques d'optimisation. De la recherche aveugle (BFS, DFS) aux heuristiques informees (A*, Hill Climbing) en passant par le recuit simule et les algorithmes genetiques. Les notebooks appliquent ces concepts a des problemes concrets : detection de bords dans une image, optimisation de portefeuille financier, satisfaction de contraintes.
+
+**5 notebooks** sur les algorithmes de recherche et les metaheuristiques.
+
+| Notebook | Kernel | Contenu |
+|----------|--------|---------|
+| CSPs_Intro | Python | Programmation par contraintes, AC-3, N-Queens, Min-Conflicts |
+| Exploration | Python | BFS, DFS, A*, Hill Climbing, Simulated Annealing |
+| GeneticSharp-EdgeDetection | C# | Detection de bords avec GeneticSharp |
+| Portfolio_Optimization | C# | Optimisation de portefeuille financier |
+| PyGad-EdgeDetection | Python | Detection de bords avec PyGAD |
+
+[README Search](MyIA.AI.Notebooks/Search/README.md)
+
+### Sudoku - Resolution par Contraintes
+
+Une approche comparative des algorithmes de resolution. Ce qui rend cette serie unique : le meme probleme resolu avec six techniques differentes ! Vous comparerez le backtracking naif, les algorithmes genetiques, la programmation par contraintes (OR-Tools), les solveurs SMT (Z3), et meme une approche probabiliste (Infer.NET). Ideal pour comprendre les compromis performance/complexite de chaque paradigme.
+
+**11 notebooks** (7 C#, 4 Python) illustrant differentes approches algorithmiques.
+
+| Approche | Notebooks | Technologies | Kernel |
+|----------|-----------|--------------|--------|
+| **Backtracking** | 1, Python | MRV, recherche exhaustive | C#, Python |
+| **Genetique** | 2, Python | GeneticSharp, PyGAD | C#, Python |
+| **Contraintes** | 3, Python | OR-Tools CP/SAT/MIP | C#, Python |
+| **SMT** | 4, Python | Z3, bitvectors | C#, Python |
+| **Couverture exacte** | 5, Python | Dancing Links (DLX) | C#, Python |
+| **Probabiliste** | 6 | Infer.NET | C# |
+
+**Note** : Les notebooks C# utilisent `#!import` et necessitent une execution cellule par cellule (Papermill incompatible).
+
+[README Sudoku](MyIA.AI.Notebooks/Sudoku/README.md)
 
 ### SymbolicAI - IA Symbolique
 
 Decouverte des logiques formelles et de l'argumentation computationnelle. Cette serie vous fera explorer les systemes de raisonnement automatique, de la logique propositionnelle aux frameworks d'argumentation de Dung, en passant par la verification de theoremes avec Lean 4. Vous apprendrez a utiliser **TweetyProject** (bibliotheque Java via JPype) pour manipuler des bases de connaissances, calculer des extensions d'argumentation, et modeliser des dialogues multi-agents. La serie couvre egalement les extensions avancees (ASPIC+, DeLP, ADF), la revision de croyances AGM, et les systemes de preferences.
 
-**47+ notebooks** couvrant les logiques formelles, l'argumentation computationnelle et la verification formelle.
+**60+ notebooks** couvrant les logiques formelles, l'argumentation computationnelle, le Web Semantique et la verification formelle.
 
 | Serie | Notebooks | Contenu | Prerequis | README |
 |-------|-----------|---------|-----------|--------|
 | **Tweety** | 10 | TweetyProject, logiques PL/FOL/DL, argumentation Dung, ASPIC+ | JDK 17+ (auto) | [README](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) |
+| **SemanticWeb** | 14 | RDF, OWL, SPARQL, reasoners, SHACL | Python (rdflib) | [README](MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/README.md) |
 | **Lean** | 11 | Lean 4, types dependants, tactiques, Mathlib, LLM integration | WSL, elan | [README](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
 | **Argument_Analysis** | 6 | Analyse argumentative multi-agents avec Semantic Kernel | OpenAI API | [README](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md) |
 | **Planners** | 1 | Fast-Downward, planification PDDL | Python | [README](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) |
@@ -135,20 +176,7 @@ Decouverte des logiques formelles et de l'argumentation computationnelle. Cette 
 
 **Focus sur Lean 4** : Cette sous-serie vous initie a la verification formelle avec Lean 4, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Vous progresserez des fondements (types dependants, isomorphisme de Curry-Howard) jusqu'aux tactiques avancees de Mathlib, puis decouvrirez l'etat de l'art de l'assistance par LLMs (LeanCopilot, AlphaProof) et les agents autonomes pour la preuve mathematique. Note : necessite WSL sous Windows.
 
-**Notebooks Tweety (detail)** :
-
-| Notebook | Contenu | Outils externes |
-|----------|---------|-----------------|
-| Tweety-1-Setup | JDK, JPype, libs | - |
-| Tweety-2-Basic-Logics | PL, FOL, SAT4J, pySAT | pySAT |
-| Tweety-3-Advanced-Logics | DL, Modal, QBF | SPASS (admin req.) |
-| Tweety-4-Belief-Revision | CrMas, MUS, MaxSAT | MARCO |
-| Tweety-5-Abstract-Argumentation | Dung, semantiques | - |
-| Tweety-6-Structured-Argumentation | ASPIC+, DeLP, ASP | Clingo |
-| Tweety-7a-Extended-Frameworks | ADF, Bipolar, WAF | - |
-| Tweety-7b-Ranking-Probabilistic | Ranking semantics | - |
-| Tweety-8-Agent-Dialogues | Protocoles de dialogue | - |
-| Tweety-9-Preferences | Voting, social choice | - |
+**Focus sur Semantic Web** : Cette serie couvre les standards du W3C pour les donnees liees : RDF pour le modele de donnees, OWL pour l'ontologie, SPARQL pour les requetes, et les reasoners pour l'inference. Vous manipulerez des graphes de connaissances avec rdflib et comparerez differentes implementations de reasoners (Jena, OwlReady, etc.).
 
 [README SymbolicAI](MyIA.AI.Notebooks/SymbolicAI/README.md)
 
@@ -182,40 +210,18 @@ Programmation probabiliste et inference bayesienne. Avec Infer.NET de Microsoft,
 
 [README Probas](MyIA.AI.Notebooks/Probas/README.md) | [README Infer](MyIA.AI.Notebooks/Probas/Infer/README.md)
 
-### Sudoku - Resolution par Contraintes
+### ML - Machine Learning
 
-Une approche comparative des algorithmes de resolution. Ce qui rend cette serie unique : le meme probleme resolu avec six techniques differentes ! Vous comparerez le backtracking naif, les algorithmes genetiques, la programmation par contraintes (OR-Tools), les solveurs SMT (Z3), et meme une approche probabiliste (Infer.NET). Ideal pour comprendre les compromis performance/complexite de chaque paradigme.
+**17 notebooks** couvrant ML.NET (C#), Python Data Science et Reinforcement Learning.
 
-**11 notebooks** (7 C#, 4 Python) illustrant differentes approches algorithmiques.
+| Section | Notebooks | Contenu |
+|---------|-----------|---------|
+| **ML.NET** | 5 | Introduction, Features, Entrainement, AutoML, Evaluation |
+| **Python Foundations** | 2 | NumPy, Pandas |
+| **AI Agents Workshop** | 7 | RFP Analysis, CV Screening, Data Wrangling, First Agent |
+| **Reinforcement Learning** | 3 | Stable Baselines3, PPO, SAC/DDPG, HER |
 
-| Approche | Notebooks | Technologies | Kernel |
-|----------|-----------|--------------|--------|
-| **Backtracking** | 1, Python | MRV, recherche exhaustive | C#, Python |
-| **Genetique** | 2, Python | GeneticSharp, PyGAD | C#, Python |
-| **Contraintes** | 3, Python | OR-Tools CP/SAT/MIP | C#, Python |
-| **SMT** | 4, Python | Z3, bitvectors | C#, Python |
-| **Couverture exacte** | 5, Python | Dancing Links (DLX) | C#, Python |
-| **Probabiliste** | 6 | Infer.NET | C# |
-
-**Note** : Les notebooks C# utilisent `#!import` et necessitent une execution cellule par cellule (Papermill incompatible).
-
-[README Sudoku](MyIA.AI.Notebooks/Sudoku/README.md)
-
-### Search - Recherche et Optimisation
-
-Algorithmes classiques et metaheuristiques d'optimisation. De la recherche aveugle (BFS, DFS) aux heuristiques informees (A*, Hill Climbing) en passant par le recuit simule et les algorithmes genetiques. Les notebooks appliquent ces concepts a des problemes concrets : detection de bords dans une image, optimisation de portefeuille financier, satisfaction de contraintes.
-
-**5 notebooks** sur les algorithmes de recherche et les metaheuristiques.
-
-| Notebook | Kernel | Contenu |
-|----------|--------|---------|
-| CSPs_Intro | Python | Programmation par contraintes, AC-3, N-Queens, Min-Conflicts |
-| Exploration | Python | BFS, DFS, A*, Hill Climbing, Simulated Annealing |
-| GeneticSharp-EdgeDetection | C# | Detection de bords avec GeneticSharp |
-| Portfolio_Optimization | C# | Optimisation de portefeuille financier |
-| PyGad-EdgeDetection | Python | Detection de bords avec PyGAD |
-
-[README Search](MyIA.AI.Notebooks/Search/README.md)
+[README ML](MyIA.AI.Notebooks/ML/README.md)
 
 ### GenAI - IA Generative
 
@@ -262,40 +268,6 @@ De l'appel API a l'orchestration de workflows complexes. Cette serie vous emmene
 
 [README GenAI](MyIA.AI.Notebooks/GenAI/README.md)
 
-### IIT - Integrated Information Theory
-
-**1 notebook** sur PyPhi et la theorie de l'information integree.
-
-| Notebook | Contenu | Duree |
-|----------|---------|-------|
-| [Intro_to_PyPhi](MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb) | TPM, Phi, CES, Causation actuelle, Macro-subsystemes | ~90 min |
-
-[README IIT](MyIA.AI.Notebooks/IIT/README.md)
-
-### ML - Machine Learning
-
-**14 notebooks** couvrant ML.NET (C#) et Python Data Science avec agents IA.
-
-| Section | Notebooks | Contenu |
-|---------|-----------|---------|
-| **ML.NET** | 5 | Introduction, Features, Entrainement, AutoML, Evaluation |
-| **Python Foundations** | 2 | NumPy, Pandas |
-| **AI Agents Workshop** | 7 | RFP Analysis, CV Screening, Data Wrangling, First Agent |
-
-[README ML](MyIA.AI.Notebooks/ML/README.md)
-
-### RL - Reinforcement Learning
-
-**3 notebooks** sur Stable Baselines3 et l'apprentissage par renforcement.
-
-| Notebook | Contenu | Duree |
-|----------|---------|-------|
-| stable_baseline_1 | Introduction PPO, CartPole | ~30 min |
-| stable_baseline_2 | Wrappers, sauvegarde, callbacks | ~40 min |
-| stable_baseline_3 | HER, goal-conditioned RL, SAC/DDPG | ~45 min |
-
-[README RL](MyIA.AI.Notebooks/RL/README.md)
-
 ### QuantConnect - Trading Algorithmique + AI
 
 Trading algorithmique avec ML/DL/RL et LLMs. Base sur le framework LEAN de QuantConnect, cette serie progresse des fondamentaux du backtesting jusqu'aux strategies avancees integrant machine learning, deep learning et meme des LLMs pour l'analyse de sentiment. Le free tier cloud permet de tester sans infrastructure locale.
@@ -317,6 +289,16 @@ Trading algorithmique avec ML/DL/RL et LLMs. Base sur le framework LEAN de Quant
 - Production-ready (deployment live)
 
 [README QuantConnect](MyIA.AI.Notebooks/QuantConnect/README.md) | [Getting Started](MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md)
+
+### IIT - Integrated Information Theory
+
+**1 notebook** sur PyPhi et la theorie de l'information integree.
+
+| Notebook | Contenu | Duree |
+|----------|---------|-------|
+| [Intro_to_PyPhi](MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb) | TPM, Phi, CES, Causation actuelle, Macro-subsystemes | ~90 min |
+
+[README IIT](MyIA.AI.Notebooks/IIT/README.md)
 
 ## Configuration et API Keys
 
