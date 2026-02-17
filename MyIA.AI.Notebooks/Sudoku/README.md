@@ -1,12 +1,12 @@
 # Sudoku - Resolution par Differentes Approches Algorithmiques
 
-Cette serie de **18 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en deux versions : **C# (.NET Interactive)** et **Python**.
+Cette serie de **19 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en deux versions : **C# (.NET Interactive)** et **Python**.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 18 (10 C#, 8 Python) |
+| Notebooks | 19 (11 C#, 8 Python) |
 | Duree estimee | ~5h |
 | Niveau | Debutant a avance |
 | Langages | C# (.NET Interactive), Python |
@@ -27,7 +27,8 @@ Cette serie de **18 notebooks** explore differentes techniques de resolution de 
 | 7 | [Sudoku-7-Norvig](Sudoku-7-Norvig.ipynb) | ~20 min | Propagation de Norvig : elimination, naked/hidden singles | Sudoku-0 |
 | 8 | [Sudoku-8-SimulatedAnnealing](Sudoku-8-SimulatedAnnealing.ipynb) | ~20 min | Recuit simule : energie, refroidissement, swaps | Sudoku-0 |
 | 9 | [Sudoku-9-HumanStrategies](Sudoku-9-HumanStrategies.ipynb) | ~25 min | 13 strategies humaines : X-Wing, Naked Pairs, Locked Candidates | Sudoku-0 |
-| 12 | [Sudoku-12-SymbolicAutomata](Sudoku-12-SymbolicAutomata.ipynb) | ~30 min | Automates symboliques avec CharSet et Z3 (vrais SFA) | Sudoku-0 |
+| 12 | [Sudoku-12-SymbolicAutomata](Sudoku-12-SymbolicAutomata.ipynb) | ~30 min | Theorie des automates symboliques et compilation vers SMT (Z3) | Sudoku-0 |
+| 13 | [Sudoku-13-BDD](Sudoku-13-BDD.ipynb) | ~25 min | Automates avec Binary Decision Diagrams (approche pure) | Sudoku-12 |
 
 ### Notebooks Python
 
@@ -59,7 +60,9 @@ Sudoku-0  Environment (classes de base)
     |
     +---> Sudoku-4  Z3 (SMT)
     |
-    +---> Sudoku-12  Symbolic Automata (Z3, automates symboliques)
+    +---> Sudoku-12  Symbolic Automata (Z3, compilation SMT)
+    |         |
+    |         +---> Sudoku-13  BDD/MDD (approche pure)
     |
     +---> Sudoku-5  Dancing Links (couverture exacte)
     |
@@ -79,7 +82,8 @@ Sudoku-0  Environment (classes de base)
 | **Algorithme Genetique** | Metaheuristique | Variable | Non garanti | 2, Python |
 | **OR-Tools CP-SAT** | Programmation par contraintes | Tres rapide | Garantie | 3, Python |
 | **Z3 SMT** | Satisfiabilite Modulo Theories | Rapide | Garantie | 4, Python |
-| **Z3 Symbolic Automata (C#)** | Automates symboliques | Rapide | Garantie | 12 (C#) |
+| **Symbolic Automata + Z3 (C#)** | Automates symboliques compiles vers SMT | Rapide | Garantie | 12 (C#) |
+| **BDD/MDD Automata (C#)** | Automates avec Binary Decision Diagrams | Moyen | Garantie | 13 (C#) |
 | **Dancing Links** | Couverture exacte | Optimal | Garantie | 5, Python |
 | **Infer.NET** | Inference probabiliste | Experimental | Variable | 6 |
 | **Norvig Propagation** | Propagation de contraintes | Tres rapide | Garantie | 7 |
@@ -169,7 +173,8 @@ Sudoku/
 ├── Sudoku-9-HumanStrategies.ipynb         # Strategies humaines C#
 ├── Sudoku-10-NeuralNetwork.ipynb          # Reseau de neurones Python
 ├── Sudoku-11-Comparison.ipynb             # Benchmark comparatif Python
-├── Sudoku-12-SymbolicAutomata.ipynb       # Automates symboliques C# (CharSet + Z3)
+├── Sudoku-12-SymbolicAutomata.ipynb       # Automates symboliques + Z3 (C#)
+├── Sudoku-13-BDD.ipynb                    # Automates avec BDD/MDD (C#)
 ├── Sudoku-Python-Backtracking.ipynb       # Backtracking Python
 ├── Sudoku-Python-ORTools-Z3.ipynb         # OR-Tools + Z3 Python
 ├── Sudoku-Python-Genetic.ipynb            # Algorithme genetique Python
