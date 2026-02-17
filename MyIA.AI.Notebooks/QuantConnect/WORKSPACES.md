@@ -14,7 +14,7 @@ Workspace sponsorise par Jared Broad pour l'enseignement.
 | ID | Nom | Lang | Fichiers | Description |
 |----|-----|------|----------|-------------|
 | 22298373 | Exemple-Python-Crypto-MultiCanal | Py | main.py (54K), research.ipynb (210K), fix_ipynb_quotes.py, research_archive.ipynb | **Detecteur hierarchique multi-canaux** - Projet principal, le plus avance |
-| 21047688 | Exemple-Python-BTC-MachineLearning | Py | main.py, research.ipynb, main-simple.py, research-simple.ipynb | ML sur BTC avec version simplifiee |
+| 21047688 | Exemple-Python-BTC-MachineLearning | Py | main.py (335L), research.ipynb, main-simple.py, research-simple.ipynb, **research_robustness.ipynb** (NEW), RESEARCH.md | ML sur BTC avec version simplifiee + **recherche robustesse** (walk-forward, 5 hypotheses) |
 | 20216947 | Exemple-Python-multi layer ema | Py | main.py, research.ipynb | Strategie multi-couches EMA |
 | 21113806 | Trading des Options sur VGT Equities | Py | main.py, essai_pour_voir.ipynb | Options trading sur VGT |
 | 20216898 | Exemple-Python-option wheel strategy | Py | main.py + 4 variantes (covered_puts, margin, current, updates) | Wheel strategy (options income) |
