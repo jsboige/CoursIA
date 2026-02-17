@@ -103,8 +103,9 @@ namespace QuantConnect.Algorithm.CSharp
         public override void Initialize()
         {
             _isLogging = false;
-            //Set trading window
-            SetStartDate(2021, 1, 1);
+            // Extended: covers 2015 bear, 2016-2017 bull, 2018 vol, 2019 rally,
+            // COVID crash 2020, 2021 bull, 2022 bear, 2023-2025 recovery
+            SetStartDate(2015, 1, 1);
             SetEndDate(DateTime.Now);
 
             //Set cash and brokermodel

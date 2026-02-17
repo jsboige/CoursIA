@@ -349,8 +349,9 @@ namespace QuantConnect.Algorithm.CSharp
             // SetStartDate(2021, 10, 16); //61672
             // SetEndDate(2024, 10, 11); //60326
 
-            // SetStartDate(2013, 04, 07); // début backtest 164
-            SetStartDate(2021, 04, 09); // début backtest 59000
+            // Extended: covers pre-COVID, COVID crash, bear 2022, recovery 2023-2025
+            // Note: 500-day warmup needs data from ~Nov 2017 (Binance BTCUSDT available)
+            SetStartDate(2019, 4, 1);
 
         }
 

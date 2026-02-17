@@ -9,8 +9,8 @@ from alpha import FilteredPairsAlphaModel
 class ETFPairsTrading(QCAlgorithm):
 
     def Initialize(self):
+        # Extended: run to present to cover recent market turbulence (2024-2026)
         self.SetStartDate(2020, 1, 1)
-        self.SetEndDate(2024, 3, 1)
         self.SetCash(1000000)
         self.resolution = Resolution.Hour
         self.Settings.FillForwardDataEnabled = True

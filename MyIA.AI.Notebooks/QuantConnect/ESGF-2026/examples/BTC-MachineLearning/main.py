@@ -19,10 +19,12 @@ class MyEnhancedCryptoMlAlgorithm(QCAlgorithm):
     # Dates fixes pour eviter data leakage
     # Training: 2021-01-01 a 2022-12-31 (2 ans, periode pre-backtest)
     # Backtest: 2023-01-01 a 2024-06-01 (1.5 ans out-of-sample)
-    TRAIN_START = datetime(2021, 1, 1)
+    # Extended: 4 years training (2019-2022) for more regime diversity
+    TRAIN_START = datetime(2019, 1, 1)
     TRAIN_END = datetime(2022, 12, 31)
+    # Extended: test through present (2023-2026)
     BACKTEST_START = datetime(2023, 1, 1)
-    BACKTEST_END = datetime(2024, 6, 1)
+    BACKTEST_END = datetime(2026, 3, 1)
 
     STARTING_CASH = 100000
     SMA_PERIOD = 20
@@ -41,8 +43,8 @@ class MyEnhancedCryptoMlAlgorithm(QCAlgorithm):
     # Entre 0.4 et 0.6: pas de trade (zone d'incertitude)
 
     # Retraining periodique
-    RETRAIN_INTERVAL_DAYS = 30
-    RETRAIN_LOOKBACK_DAYS = 365
+    RETRAIN_INTERVAL_DAYS = 60  # Increased from 30 for more stable model
+    RETRAIN_LOOKBACK_DAYS = 730  # 2 years lookback for regime diversity
 
     def Initialize(self):
         # Configuration backtest (out-of-sample)

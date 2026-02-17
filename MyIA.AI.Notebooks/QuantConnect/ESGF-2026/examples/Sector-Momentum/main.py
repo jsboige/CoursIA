@@ -10,8 +10,8 @@ class SectorDualMomentumStrategy(QCAlgorithm):
     checked_symbols_from_previous_deployment = False
 
     def initialize(self):
-        self.set_start_date(2024, 1, 1)
-        self.set_end_date(2024, 7, 20)
+        # Extended: covers COVID crash 2020, bull 2020-2021, bear 2022, recovery 2023-2025
+        self.set_start_date(2020, 1, 1)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.settings.minimum_order_margin_portfolio_percentage = 0

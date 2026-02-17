@@ -39,7 +39,7 @@ class DualMomentumAlphaModel(AlphaModel):
         for sector in target_sectors:
             for security in security_momentum[sector]:
                 if security_momentum[sector][security] > 0:
-                    security.SetLeverage(2)
+                    security.SetLeverage(1.5)  # Reduced from 2x for robustness across bear markets
                     target_securities.append(security)
         target_securities = sorted(target_securities, key = lambda x: algorithm.securities[x.symbol].Fundamentals.MarketCap, reverse=True)[:10]
         for security in target_securities:
