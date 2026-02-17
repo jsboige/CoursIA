@@ -50,7 +50,9 @@ Tous les notebooks necessitent les [Fondations](../Foundations/README.md). Prere
 | App-7 Wordle | Search-6, Search-7 | - |
 | App-8 MiniZinc | Search-8 | minizinc |
 | App-9 EdgeDetection | Search-5 (GA) | pygad, scikit-image |
-| App-10 Portfolio | Search-5 (GA) | pygad |
+| App-10 Portfolio | Search-5 (GA), Search-11 (PL) | pygad |
+| App-11 Picross | Search-10 (DLX) | ortools |
+| App-12 ConnectFour | Search-3 (A*), Search-4 | numpy, matplotlib |
 
 ## Sources des projets etudiants
 

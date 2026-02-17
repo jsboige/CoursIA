@@ -176,7 +176,7 @@ Decouverte des logiques formelles et de l'argumentation computationnelle. Cette 
 
 **Focus sur Lean 4** : Cette sous-serie vous initie a la verification formelle avec Lean 4, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Vous progresserez des fondements (types dependants, isomorphisme de Curry-Howard) jusqu'aux tactiques avancees de Mathlib, puis decouvrirez l'etat de l'art de l'assistance par LLMs (LeanCopilot, AlphaProof) et les agents autonomes pour la preuve mathematique. Note : necessite WSL sous Windows.
 
-**Focus sur Semantic Web** : Cette serie couvre les standards du W3C pour les donnees liees : RDF pour le modele de donnees, OWL pour l'ontologie, SPARQL pour les requetes, et les reasoners pour l'inference. Vous manipulerez des graphes de connaissances avec rdflib et comparerez differentes implementations de reasoners (Jena, OwlReady, etc.).
+**Focus sur Semantic Web** : Cette serie de 14 notebooks couvre l'ensemble du spectre du Web Semantique, des fondations RDF aux graphes de connaissances integres aux LLMs. Vous commencerez avec .NET et dotNetRDF pour apprehender les concepts fondamentaux (triples, graphes, SPARQL), puis transitionnerez vers Python pour les standards modernes (SHACL pour la validation de donnees, JSON-LD pour le SEO, RDF-Star pour les annotations). La serie se termine par une connexion moderne avec l'IA : construction de graphes de connaissances (kglab, OWLReady2), GraphRAG (combinaison KG + LLMs), et comparaison de raisonneurs OWL (owlrl, HermiT, reasonable, Growl).
 
 [README SymbolicAI](MyIA.AI.Notebooks/SymbolicAI/README.md)
 

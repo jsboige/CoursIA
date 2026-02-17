@@ -296,6 +296,62 @@ anthropic>=0.7.0
 huggingface-hub>=0.19.0
 ```
 
+### 🎬 **FFmpeg Installation (Requis pour Video/Audio)**
+
+FFmpeg est indispensable pour les notebooks Video et certains notebooks Audio. Il permet :
+- **Decodage video** : lecture, conversion, extraction de metadonnees
+- **Operations audio** : decoupage, mixing, format conversion
+- **Integration Python** : moviepy, pydub, ffmpeg-python
+
+#### Installation Windows
+
+```powershell
+# Option 1: Script automatique (recommande)
+powershell -ExecutionPolicy Bypass -File scripts/install-ffmpeg.ps1
+
+# Option 2: Installation manuelle winget
+winget install FFmpeg
+
+# Option 3: Installation locale (pour developpement)
+# Le script installera dans: D:\Dev\CoursIA\tools\ffmpeg\
+# Le notebook execution script l'ajoutera automatiquement au PATH
+```
+
+#### Installation Linux
+
+```bash
+# Ubuntu/Debian
+sudo apt update && sudo apt install -y ffmpeg
+
+# Fedora
+sudo dnf install -y ffmpeg
+
+# Verifier l'installation
+ffmpeg -version
+```
+
+#### Installation macOS
+
+```bash
+# Via Homebrew
+brew install ffmpeg
+
+# Verifier l'installation
+ffmpeg -version
+```
+
+#### Verification dans Python
+
+```python
+# Tester FFmpeg depuis Python
+import subprocess
+result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
+print(result.stdout.split('\n')[0])  # Affiche la version
+```
+
+**Note** : Le script `scripts/genai-stack/commands/notebooks.py` ajoute automatiquement
+`D:/Dev/CoursIA/tools/ffmpeg/bin` au PATH lors de l'execution des notebooks.
+
 ---
 
 ## 📊 **Progression Pédagogique**

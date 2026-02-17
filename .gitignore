@@ -310,6 +310,9 @@ __pycache__/
 # tools/**
 # !tools/packages.config
 
+# FFmpeg local installation (keep scripts in tools/)
+tools/ffmpeg/
+
 # Tabs Studio
 *.tss
 
@@ -495,3 +498,15 @@ slides/*/extracted/images/
 # Slides - Assets etudiants bruts et rendus
 slides/_assets/raw/
 slides/_assets/*/renders/
+
+# Fichiers temporaires d'execution notebooks (artefacts bash/Python)
+=*
+[0-9].*
+[0-9][0-9].*
+[0-9].[0-9].*
+*.tmp.*
+execute_*.py
+*_temp.py
+
+# Agent memory temporaire (local scope)
+.claude/agent-memory/notebook-*/

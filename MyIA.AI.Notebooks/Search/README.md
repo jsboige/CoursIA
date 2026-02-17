@@ -6,9 +6,9 @@ Cette serie explore les algorithmes de recherche et d'optimisation, de la formal
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | ~20 (Foundations: 8, Applications: 12) |
+| Notebooks | ~24 (Foundations: 12, Applications: 12) |
 | Langages | Python (principal), C# (side tracks) |
-| Duree estimee | ~12h |
+| Duree estimee | ~22h |
 | Niveau | Debutant a avance |
 
 ## Structure
@@ -29,6 +29,10 @@ Progression theorique des espaces d'etats aux CSP avances.
 | 6 | [Search-6-CSP-Fundamentals](Foundations/Search-6-CSP-Fundamentals.ipynb) | ~50 min | Variables, domaines, contraintes, backtracking, MRV, LCV | Search-1 |
 | 7 | [Search-7-CSP-Consistency](Foundations/Search-7-CSP-Consistency.ipynb) | ~45 min | AC-3, Forward checking, MAC, propagation de contraintes | Search-6 |
 | 8 | [Search-8-CSP-Advanced](Foundations/Search-8-CSP-Advanced.ipynb) | ~50 min | AllDifferent, cumulative, circuit, symetries, LNS | Search-7 |
+| 9 | [Search-9-Metaheuristics](Foundations/Search-9-Metaheuristics.ipynb) | ~1h30 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif | Search-4, Search-5 |
+| 10 | [Search-10-DancingLinks](Foundations/Search-10-DancingLinks.ipynb) | ~1h30 | Algorithme X, DLX, Sudoku, N-Queens, Pentominoes | Search-2 |
+| 11 | [Search-11-LinearProgramming](Foundations/Search-11-LinearProgramming.ipynb) | ~2h | PuLP, simplex, transport, diet, sensibilite, PLNE | Algebre lineaire |
+| 12 | [Search-12-SymbolicAutomata](Foundations/Search-12-SymbolicAutomata.ipynb) | ~2h | DFA/NFA (automata-lib), predicats Z3, automates symboliques | Search-1, SymbolicAI/Z3 |
 
 ### Partie 2 : Applications (`Applications/`)
 
@@ -68,16 +72,21 @@ Search-5  GeneticAlgorithms ──> App-9  EdgeDetection, App-10 Portfolio
 Search-6  CSP Fundamentals ──>  App-1  NQueens, App-2 GraphColoring
 Search-7  CSP Consistency  ──>  App-6  Minesweeper, App-7 Wordle
 Search-8  CSP Advanced     ──>  App-3  NurseScheduling, App-4 JobShop, App-8 MiniZinc
+Search-9  Metaheuristics    ──>  Benchmark optimisation continue
+Search-10 Dancing Links    ──>  App-11 Picross, Sudoku-5 DLX
+Search-11 Linear Programming─>  App-10 Portfolio optimisation
+Search-12 Symbolic Automata─>  Sudoku-12 Automata symboliques
 ```
 
 ## Liens avec les autres series
 
 | Serie | Lien |
 |-------|------|
-| [Sudoku](../Sudoku/README.md) | Application complete des CSP (6+ solveurs) |
-| [SymbolicAI](../SymbolicAI/README.md) | Z3 SMT, OR-Tools, planification PDDL |
+| [Sudoku](../Sudoku/README.md) | Application complete des CSP (17 solveurs dont DLX et automates symboliques) |
+| [SymbolicAI](../SymbolicAI/README.md) | Z3 SMT, OR-Tools, planification PDDL, automates symboliques |
 | [GameTheory](../GameTheory/README.md) | Minimax, MCTS (jeux a information parfaite) |
 | [Probas/Infer](../Probas/README.md) | Approches probabilistes des CSP |
+| [GenAI](../GenAI/README.md) | Optimisation d'hyperparametres avec metaheuristiques |
 
 ## Prerequis
 
@@ -118,11 +127,15 @@ dotnet --version
 | **BFS/DFS/A*** | Algorithmes de recherche non informee et informee |
 | **Heuristique** | Fonction h(n) estimant le cout restant (f = g + h pour A*) |
 | **Recherche locale** | Hill Climbing, Simulated Annealing, Tabu Search |
+| **Metaheuristiques** | PSO, ABC, SA, BRO - optimisation sans derivees |
 | **CSP** | Constraint Satisfaction Problem : (X, D, C) |
 | **Backtracking** | Exploration systematique avec retour arriere |
 | **MRV/LCV** | Heuristiques de choix de variable/valeur |
 | **Arc Consistency** | Reduction des domaines par propagation (AC-3) |
 | **Algorithme Genetique** | Evolution de population : selection, crossover, mutation |
+| **Dancing Links (DLX)** | Algorithme X avec listes doublement liees pour couverture exacte |
+| **Programmation Lineaire** | Optimisation lineaire avec contraintes (PuLP, simplex) |
+| **Automates Symboliques** | Predicats Z3 pour alphabets infinis |
 | **OR-Tools CP-SAT** | Solveur de programmation par contraintes de Google |
 
 ## Ressources
@@ -139,6 +152,9 @@ dotnet --version
 - [Z3 Theorem Prover](https://github.com/Z3Prover/z3) - Solveur SMT
 - [DEAP](https://deap.readthedocs.io/) - Framework GA
 - [PyGAD](https://pygad.readthedocs.io/) - GA simplifie
+- [MEALPy](https://github.com/thieu1995/mealpy) - Metaheuristiques (160+ algorithmes)
+- [PuLP](https://github.com/coin-or/pulp) - Programmation lineaire
+- [automata-lib](https://pypi.org/project/automata-lib/) - Automates finis
 - [MiniZinc](https://www.minizinc.org/) - Modelisation declarative
 - [GeneticSharp](https://github.com/giacomelli/GeneticSharp) - GA en C#
 
@@ -156,7 +172,7 @@ Search/
 ├── search_helpers.py                      # Utilitaires partages
 ├── resources/                             # Images et donnees
 │
-├── Foundations/                            # Sous-serie 1 : Fondations
+├── Foundations/                            # Sous-serie 1 : Fondations (12 notebooks)
 │   ├── README.md
 │   ├── Search-1-StateSpace.ipynb
 │   ├── Search-2-Uninformed.ipynb
@@ -165,7 +181,11 @@ Search/
 │   ├── Search-5-GeneticAlgorithms.ipynb
 │   ├── Search-6-CSP-Fundamentals.ipynb
 │   ├── Search-7-CSP-Consistency.ipynb
-│   └── Search-8-CSP-Advanced.ipynb
+│   ├── Search-8-CSP-Advanced.ipynb
+│   ├── Search-9-Metaheuristics.ipynb
+│   ├── Search-10-DancingLinks.ipynb
+│   ├── Search-11-LinearProgramming.ipynb
+│   └── Search-12-SymbolicAutomata.ipynb
 │
 ├── Applications/                           # Sous-serie 2 : Applications
 │   ├── README.md

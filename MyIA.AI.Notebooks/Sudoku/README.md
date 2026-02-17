@@ -1,13 +1,13 @@
 # Sudoku - Resolution par Differentes Approches Algorithmiques
 
-Cette serie de **16 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches probabilistes et neuronales. Les notebooks sont disponibles en deux versions : **C# (.NET Interactive)** et **Python**.
+Cette serie de **17 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en deux versions : **C# (.NET Interactive)** et **Python**.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 16 (10 C#, 6 Python) |
-| Duree estimee | ~4h |
+| Notebooks | 17 (10 C#, 7 Python) |
+| Duree estimee | ~4h30 |
 | Niveau | Debutant a avance |
 | Langages | C# (.NET Interactive), Python |
 
@@ -38,6 +38,7 @@ Cette serie de **16 notebooks** explore differentes techniques de resolution de 
 | - | [Sudoku-Python-DancingLinks](Sudoku-Python-DancingLinks.ipynb) | ~13 min | Dancing Links from scratch | Python |
 | 10 | [Sudoku-10-NeuralNetwork](Sudoku-10-NeuralNetwork.ipynb) | ~25 min | 4 architectures CNN (Dense, Conv, iteratif) avec PyTorch | Python, DL basique |
 | 11 | [Sudoku-11-Comparison](Sudoku-11-Comparison.ipynb) | ~20 min | Benchmark comparatif final de tous les solveurs | Python |
+| 12 | [Sudoku-12-SymbolicAutomata](Sudoku-12-SymbolicAutomata.ipynb) | ~25 min | Automates symboliques avec Z3 (alternative a Automata.Net) | Python, Z3 basics |
 
 ## Progression recommandee
 
@@ -58,6 +59,8 @@ Sudoku-0  Environment (classes de base)
     |
     +---> Sudoku-4  Z3 (SMT)
     |
+    +---> Sudoku-12  Symbolic Automata (Z3, automates symboliques)
+    |
     +---> Sudoku-5  Dancing Links (couverture exacte)
     |
     +---> Sudoku-6  Infer.NET (inference probabiliste)
@@ -76,6 +79,7 @@ Sudoku-0  Environment (classes de base)
 | **Algorithme Genetique** | Metaheuristique | Variable | Non garanti | 2, Python |
 | **OR-Tools CP-SAT** | Programmation par contraintes | Tres rapide | Garantie | 3, Python |
 | **Z3 SMT** | Satisfiabilite Modulo Theories | Rapide | Garantie | 4, Python |
+| **Z3 Symbolic Automata** | Automates symboliques | Rapide | Garantie | 12 |
 | **Dancing Links** | Couverture exacte | Optimal | Garantie | 5, Python |
 | **Infer.NET** | Inference probabiliste | Experimental | Variable | 6 |
 | **Norvig Propagation** | Propagation de contraintes | Tres rapide | Garantie | 7 |
@@ -87,7 +91,7 @@ Sudoku-0  Environment (classes de base)
 
 | Serie | Lien |
 |-------|------|
-| [Search - Foundations](../Search/Foundations/README.md) | Theorie : backtracking (Search-6), propagation (Search-7), CP avance (Search-8) |
+| [Search - Foundations](../Search/Foundations/README.md) | Theorie : backtracking (Search-6), propagation (Search-7), CP avance (Search-8), automates symboliques (Search-12) |
 | [Search - Applications](../Search/Applications/README.md) | Autres problemes CSP : N-Queens, Minesweeper, Wordle |
 | [SymbolicAI](../SymbolicAI/README.md) | Z3 SMT (approfondi), OR-Tools |
 | [Probas/Infer](../Probas/README.md) | Infer.NET (approfondi) |
@@ -163,6 +167,7 @@ Sudoku/
 ├── Sudoku-9-HumanStrategies.ipynb         # Strategies humaines C#
 ├── Sudoku-10-NeuralNetwork.ipynb          # Reseau de neurones Python
 ├── Sudoku-11-Comparison.ipynb             # Benchmark comparatif Python
+├── Sudoku-12-SymbolicAutomata.ipynb       # Automates symboliques Python (Z3)
 ├── Sudoku-Python-Backtracking.ipynb       # Backtracking Python
 ├── Sudoku-Python-ORTools-Z3.ipynb         # OR-Tools + Z3 Python
 ├── Sudoku-Python-Genetic.ipynb            # Algorithme genetique Python
