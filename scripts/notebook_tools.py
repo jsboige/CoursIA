@@ -698,8 +698,38 @@ class NotebookValidator:
                         message=f'Heading level jump: {levels[i-1]} to {levels[i]}'
                     ))
 
-        # Check LaTeX
-        single_dollars = len(re.findall(r'(?<!\$)\$(?!\$)', source))
+        # Check LaTeX - improved detection to avoid false positives
+        # Exclude $ signs used for:
+        # - Currency (like $15, $30) within tables or regular text
+        # - Semantic Kernel placeholders ({{$variable}})
+        # - JavaScript/template literals ($var, ${expr})
+        # - JSON Schema keywords ($defs, $id, $schema)
+        # - Code inline with $ (like `$defs`)
+        # Only validate $ that are likely LaTeX math delimiters
+
+        # Remove various non-LaTeX $ patterns before checking
+        source_for_latex = source
+        # Remove markdown table rows
+        source_for_latex = re.sub(r'^\|.*?\|$', '', source_for_latex, flags=re.MULTILINE)
+        # Remove inline code with $ (like `$defs`, `$id`, `$schema`)
+        source_for_latex = re.sub(r'`\$[^`]+`', '', source_for_latex)
+        # Remove JSON Schema keywords
+        source_for_latex = re.sub(r'\$defs\b', '', source_for_latex)
+        source_for_latex = re.sub(r'\$id\b', '', source_for_latex)
+        source_for_latex = re.sub(r'\$schema\b', '', source_for_latex)
+        # Remove Semantic Kernel placeholders {{$variable}}
+        source_for_latex = re.sub(r'\{\{\$[^}]+\}\}', '', source_for_latex)
+        # Remove template literal patterns ${expr}
+        source_for_latex = re.sub(r'\$\{[^}]+\}', '', source_for_latex)
+        # Remove currency patterns like $15, $30, $15-30, $1M
+        source_for_latex = re.sub(r'\$\d+[MmKkBb]?(?:-\d+[MmKkBb]?)?', '', source_for_latex)
+        # Remove standalone $ followed by space or digit (currency symbol)
+        source_for_latex = re.sub(r'\$\s', ' ', source_for_latex)
+        source_for_latex = re.sub(r'\$\d', '0', source_for_latex)
+        # Remove $ at end of sentence (currency)
+        source_for_latex = re.sub(r'\$\.', '.', source_for_latex)
+
+        single_dollars = len(re.findall(r'(?<!\$)\$(?!\$)', source_for_latex))
         if single_dollars % 2 != 0:
             issues.append(ValidationIssue(
                 issue_type='error',
@@ -708,7 +738,7 @@ class NotebookValidator:
                 message='Unbalanced $ signs in LaTeX'
             ))
 
-        double_dollars = len(re.findall(r'\$\$', source))
+        double_dollars = len(re.findall(r'\$\$', source_for_latex))
         if double_dollars % 2 != 0:
             issues.append(ValidationIssue(
                 issue_type='error',
