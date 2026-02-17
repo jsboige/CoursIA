@@ -83,6 +83,7 @@ class ETFPairsTrading(QCAlgorithm):
         results = []
         from itertools import combinations
         from statsmodels.tsa.stattools import coint
+        import numpy as np
         for etf1, etf2 in combinations(symbols, 2):
             etf1_prices = prices[etf1].dropna()
             etf2_prices = prices[etf2].dropna()
@@ -93,13 +94,33 @@ class ETFPairsTrading(QCAlgorithm):
                 t_stat, pvalue, crit = coint(etf1_prices, etf2_prices)
                 corr = etf1_prices.corr(etf2_prices)
                 vol = etf1_prices.std() + etf2_prices.std()
-                if pvalue < 0.05 and vol > 0.01:
-                    results.append((etf1, etf2, pvalue, corr, vol))
+                # Calculate half-life of mean reversion
+                # Hedge ratio (beta) via OLS
+                from numpy.linalg import lstsq
+                X = etf2_prices.values.reshape(-1, 1)
+                y = etf1_prices.values
+                beta, _, _, _ = lstsq(X, y, rcond=None)
+                spread = y - beta[0] * etf2_prices.values
+                # Lag-1 autocorrelation for OU process half-life
+                spread_lagged = spread[:-1]
+                spread_current = spread[1:]
+                if len(spread_lagged) > 10:
+                    corr_lag1 = np.corrcoef(spread_lagged, spread_current)[0, 1]
+                    if corr_lag1 > 0 and corr_lag1 < 1:
+                        half_life = -np.log(2) / np.log(corr_lag1)
+                    else:
+                        half_life = 999  # Invalid, filter out
+                else:
+                    half_life = 999
+                # Filter: only keep pairs with reasonable half-life (<30 days for hourly resolution)
+                if pvalue < 0.05 and vol > 0.01 and half_life < 30:
+                    results.append((etf1, etf2, pvalue, corr, vol, half_life))
         if not results:
-            self.Log("No valid cointegrated pairs found.")
+            self.Log("No valid cointegrated pairs found with HL < 30 days.")
             return
         results.sort(key=lambda x: x[2])
-        top_pairs = [(etf1, etf2) for etf1, etf2, _, _, _ in results[:3]]
+        top_pairs = [(etf1, etf2) for etf1, etf2, _, _, _, _ in results[:3]]
+        pair_halflifes = {(etf1, etf2): hl for etf1, etf2, _, _, _, hl in results[:3]}
         for etf1, etf2 in top_pairs:
             if etf1 not in self.Securities:
                 self.Log(f"Forcing AddEquity for {etf1.Value}")
@@ -107,8 +128,9 @@ class ETFPairsTrading(QCAlgorithm):
             if etf2 not in self.Securities:
                 self.Log(f"Forcing AddEquity for {etf2.Value}")
                 self.AddEquity(etf2.Value, self.resolution)
-        self.filteredAlpha.update_pairs(top_pairs)
-        self.Log(f"Top pairs discovered and forced add: {[f'{etf1.Value}-{etf2.Value}' for etf1, etf2 in top_pairs]}")
+        self.filteredAlpha.update_pairs(top_pairs, pair_halflifes)
+        pair_details = [f'{etf1.Value}-{etf2.Value} (HL={pair_halflifes[(etf1, etf2)]:.1f}d)' for etf1, etf2 in top_pairs]
+        self.Log(f"Top pairs with HL filter: {pair_details}")
 
     def WeeklySummaryLog(self):
         equity = self.Portfolio.TotalPortfolioValue
