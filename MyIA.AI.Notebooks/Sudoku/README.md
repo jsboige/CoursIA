@@ -114,6 +114,8 @@ dotnet --version
 # - Plotly.NET
 ```
 
+**Note sur les outputs** : Les notebooks C# (.NET Interactive) ne contiennent pas de outputs de cellule executes. L'infrastructure Jupyter pour .NET n'etant pas disponible dans tous les environnements, les notebooks sont fournis sans outputs pre-executes. Pour voir les resultats d'execution, executez les cellules directement dans VS Code avec l'extension .NET Interactive ou Jupyter Lab avec le kernel .NET.
+
 ### Python
 
 ```bash
