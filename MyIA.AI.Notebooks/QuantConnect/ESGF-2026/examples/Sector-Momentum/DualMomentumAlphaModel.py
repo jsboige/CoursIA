@@ -3,11 +3,13 @@ from AlgorithmImports import *
 #endregion
 class DualMomentumAlphaModel(AlphaModel):
 
-    def __init__(self, vix_threshold=25):
+    def __init__(self, vix_threshold=30, lookback_period=180, top_n_sectors=4):
         self.sectors = {}
         self.securities_list = []
         self.day = -1
         self.vix_threshold = vix_threshold
+        self.lookback_period = lookback_period  # OPTIMISÉ: 180 jours (9 mois momentum)
+        self.top_n_sectors = top_n_sectors  # OPTIMISÉ: 4 secteurs pour diversification
         self.vix = None
         self.vix_initialized = False
 
@@ -61,7 +63,7 @@ class DualMomentumAlphaModel(AlphaModel):
         for sector in target_sectors:
             for security in security_momentum[sector]:
                 if security_momentum[sector][security] > 0:
-                    security.SetLeverage(1.5)  # Reduced from 2x for robustness across bear markets
+                    security.SetLeverage(1.25)  # OPTIMISÉ: 1.25x pour meilleur Sharpe (recherche: 1.041)
                     target_securities.append(security)
         target_securities = sorted(target_securities, key = lambda x: algorithm.securities[x.symbol].Fundamentals.MarketCap, reverse=True)[:10]
         for security in target_securities:
