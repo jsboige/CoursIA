@@ -1,0 +1,1858 @@
+---
+marp: true
+theme: ia101
+paginate: true
+header: 'IA 101'
+footer: 'S4 - Trading Algorithmique'
+---
+
+<!-- _class: title -->
+
+# Trading Algorithmique
+
+Intelligence Artificielle -- S4
+
+**Trading automatise et IA pour les marches financiers**
+
+- Comprendre les fondamentaux du trading algorithmique
+- Apprendre a utiliser Lean/QuantConnect
+- Concevoir et implementer un algorithme de trading
+- Evaluer et optimiser une strategie algorithmique
+- Maitriser le traitement de donnees et l'IA pour le trading
+
+---
+
+# Plan du Cours - Partie 1: Fondamentaux
+
+- Introduction au trading algorithmique
+  - Definition, profil du trader algorithmique
+  - Types de trading (HFT, MFT, LFT)
+- Marches financiers et instruments
+  - Actions, Forex, Futures, Cryptomonnaies
+- Ordres de trading
+  - Types d'ordres, instructions, gestion de la visibilite
+- Trouver et evaluer une strategie
+  - Sources d'idees, metriques de performance
+
+<!-- TODO: ajouter schema d'architecture generale (Market Data → Algorithm → Broker) -->
+
+---
+
+# Plan du Cours - Partie 2: Strategies et Pratique
+
+- Strategies de trading
+  - Moyenne reversion, Momentum, Regime switching
+  - Arbitrage, Market making, High-frequency trading
+  - Trading saisonnier, Portefeuille a haut levier
+- Backtesting et gestion du risque
+  - Plateformes, mesures de performance, pieges
+  - Formule de Kelly, stop loss, risques
+- Lean/QuantConnect
+  - Installation, environnement, framework
+  - Machine learning pour le trading
+
+---
+
+# Qu'est-ce que le Trading Algorithmique?
+
+- **Definition**
+  - Achat et vente d'actifs financiers pilotes par des algorithmes
+  - Elimination des biais emotionnels dans la prise de decision
+- **Methodes d'analyse**
+  - Analyse technique (indicateurs, patterns graphiques)
+  - Donnees fondamentales (revenus, indicateurs macroeconomiques)
+  - Donnees extra-financieres (flux d'actualites, sentiment du marche)
+- **Universalite**
+  - Tout ce qui est numerisable peut etre utilise en trading quantitatif
+  - Diversification facilitee sur plusieurs strategies simultanees
+
+<!-- TODO: ajouter schema de flux de donnees (market data → strategie → ordres) -->
+
+---
+
+# Profil du Trader Algorithmique
+
+- **Formation et diplome**
+  - Pas necessairement un diplome avance
+  - Origines variees: sciences physiques, ingenierie, informatique
+- **Competences requises**
+  - Mathematiques, statistiques et programmation
+  - Comprehension des marches financiers
+  - Curiosite et capacite d'apprentissage continu
+- **Experience pratique**
+  - Finance et programmation cruciales
+  - Avoir des economies pour les periodes sans gains
+  - Importance de la discipline et de la gestion du stress
+
+---
+
+# Avantages du Trading Algorithmique
+
+- **Scalabilite**
+  - Facilite a augmenter les volumes de trading
+  - Possibilite de gerer plusieurs strategies de front
+- **Optimisation du temps**
+  - Moins consacre aux operations manuelles
+  - Plus de temps pour la recherche et l'optimisation
+- **Elimination des biais**
+  - Pas de biais emotionnels dans la prise de decision
+  - Execution disciplinee selon le modele
+- **Pas de necessite de marketing**
+  - Pas besoin de chercher activement des clients ou investisseurs
+  - Focus sur la performance algorithmique
+
+---
+
+# Types de Trading Algorithmique (1/2)
+
+- **HFT (High-Frequency Trading)**
+  - Operations en millisecondes ou microsecondes
+  - Objectif: Exploiter de petites inefficacites du marche
+  - Technologie: Necessite une infrastructure technologique de pointe
+- **MFT (Medium-Frequency Trading)**
+  - Operations sur des secondes, minutes a quelques heures
+  - Objectif: Arbitrage, suivi de tendance, et autres strategies
+  - Flexibilite: Moins exigeant technologiquement mais necessite une analyse de donnees robuste
+
+---
+
+# Types de Trading Algorithmique (2/2)
+
+- **LFT (Low-Frequency Trading)**
+  - Operations sur des jours, semaines ou mois
+  - Objectif: Investissement base sur des facteurs fondamentaux ou des indicateurs techniques
+  - Gestion du Risque: Focalisation sur la reduction du risque a long terme
+- **Chaque type a ses specificites**
+  - Avantages et inconvenients propres
+  - Necessite des competences, des infrastructures et des ressources differentes
+  - Offre des opportunites de rendement variables
+
+<!-- TODO: ajouter timeline de frequences de trading (microseconde → mois) -->
+
+---
+
+<!-- _class: questions -->
+
+# Questions?
+
+---
+
+# Vue d'ensemble du Marche
+
+- **Marches Principaux**
+  - Actions, Forex, Futures, Cryptomonnaies
+- **Roles des Participants**
+  - Traders particuliers, institutionnels, market makers, arbitragistes
+  - Fournisseurs de liquidite, preneurs de liquidite
+- **Reglementations**
+  - MiFID II en Europe
+  - Dodd-Frank aux Etats-Unis
+- **Importance des Donnees**
+  - Tickers, Order Book, Volume, Time & Sales
+  - Impact de la qualite et de la frequence (temps reel vs resolution)
+
+<!-- TODO: ajouter diagramme des participants du marche -->
+
+---
+
+# Instruments Financiers
+
+- **Actions**
+  - Titres qui representent une fraction de la propriete d'une entreprise
+- **Forex**
+  - Echange de devises etrangeres, souvent a des fins de speculation ou de couverture
+- **Futures**
+  - Contrats qui obligent a acheter ou vendre un actif a un prix fixe a une date future
+- **Cryptomonnaies**
+  - Monnaies numeriques qui utilisent la cryptographie pour securiser les transactions
+  - Aspects reglementaires variables
+- **Classes d'actifs**
+  - Categories d'investissement (actions, obligations, matieres premieres)
+  - Diversification du risque
+
+---
+
+# Analyse Technique et Fondamentale
+
+- **Analyse Technique**
+  - Etude des graphiques de prix et de volume
+  - Indicateurs: moyennes mobiles, RSI, MACD, Bollinger Bands
+  - Patterns graphiques: chandeliers, tete-epaules, triangles
+- **Analyse Fondamentale**
+  - Evaluation de la valeur intrinseque d'un actif
+  - Donnees financieres: revenus, benefices, ratios
+  - Indicateurs macroeconomiques: taux d'interet, inflation, PIB
+- **Combinaison des deux approches**
+  - Analyse technique pour le timing d'entree/sortie
+  - Analyse fondamentale pour la selection d'actifs
+
+<!-- TODO: ajouter graphiques de moyennes mobiles (SMA/EMA crossovers) -->
+<!-- TODO: ajouter graphiques de RSI avec zones surachat/survente -->
+<!-- TODO: ajouter graphiques de Bollinger Bands -->
+
+---
+
+# Infrastructure de Trading
+
+- **Plateformes et Courtiers**
+  - Interactive Brokers, MetaTrader, Robinhood
+- **API de Trading**
+  - Interface de programmation permettant l'automatisation des ordres
+  - FIX, REST APIs, WebSocket
+- **Flux de Donnees**
+  - Fournit des informations en temps reel ou differe sur les marches
+  - Certaines plateformes offrent des flux combines
+- **Latence et Couts**
+  - Delais d'execution: Temps entre la soumission et l'execution d'un ordre
+  - Couts de transaction: Frais associes a l'achat et a la vente d'actifs
+- **Exigence d'Infrastructure**
+  - Serveurs co-localises, GPUs pour ML
+
+<!-- TODO: ajouter schema d'infrastructure (datacenter, co-location, broker API) -->
+
+---
+
+# Les Ordres de Trading - Types d'Ordres (1/2)
+
+- **Les ordres sont cruciaux pour toute strategie de trading**
+- **Ordres au marche**
+  - Execution: Immédiate au meilleur prix
+  - Risque: Prix d'execution incertain
+  - Impact: Peut affecter significativement le marche
+- **Ordres a cours limite**
+  - Controle: Prix limite pour l'achat/vente
+  - Flexibilite: Utilisation aggressive ou passive
+  - Risque: Execution incertaine
+
+---
+
+# Les Ordres de Trading - Types d'Ordres (2/2)
+
+- **Ordres conditionnels et hybrides**
+  - Complexite: Inclut des ordres caches, routes
+  - Utilite: Pour des strategies plus avancees
+- **Ordres stop**
+  - Declenchent un ordre au marche ou limite une fois qu'un prix predefini est atteint
+- **Choix du type d'ordre**
+  - Depend du besoin d'immediateté et du controle du prix
+  - Ordres au marche sont rapides mais incertains en prix
+  - Ordres a cours limite offrent plus de controle mais moins de certitude
+- **Impact du mode d'execution**
+  - Bourse centrale vs. Dark pools
+
+<!-- TODO: ajouter diagramme des types d'ordres avec exemples de scenarios -->
+
+---
+
+# Ordres - Instructions Optionnelles (1/2)
+
+- **Les instructions optionnelles offrent plus de controle sur vos ordres**
+- **Instructions de Duree: "Good 'til"**
+  - GTD: Actif jusqu'a une date donnee
+  - GTC: Actif jusqu'a annulation
+  - GAT: Actif a un moment donne
+- **Instructions d'Encheres**
+  - On-open: Pour enchere d'ouverture
+  - On-close: Pour enchere de cloture
+  - Next-auction: Pour prochaine enchere valide
+
+---
+
+# Ordres - Instructions Optionnelles (2/2)
+
+- **Instructions de Remplissage**
+  - IOC: Execution ou annulation immediate
+  - FOK: Fill-or-Kill: Execution totale immediate ou annulation
+  - AON: All-or-None: Execution totale requise
+  - Minimum-Volume: Volume minimum requis
+- **Importance pour l'efficacite**
+  - Comprendre ces instructions ameliore l'efficacite de trading
+  - Permettent d'adapter vos ordres a differentes situations de marche
+
+---
+
+# Ordres - Instructions Specifiques (1/2)
+
+- **Ordres Must-Be-Filled (MBF)**
+  - Execution Totale: Doivent etre executes en totalite
+  - Interruption de volatilite: Declenche une interruption si non execute
+  - Session de Trading Separee: Session speciale pour ces ordres
+- **Preferencement et Instructions Dirigees**
+  - Trading Bilateral: Direction vers un courtier specifique
+  - On parle d'internalisation
+  - Controverse: Contournent les regles de priorite
+  - Amelioration de Prix: Mecanismes speciaux pour ameliorer le prix
+
+---
+
+# Ordres - Instructions Specifiques (2/2)
+
+- **Instructions de Routage**
+  - Do-Not-Route: Execution locale uniquement
+  - Directed-Routing: Routage vers un marche specifique
+- **Inter-Market Sweeps**
+  - Balayage: Balaye le carnet d'ordres sur un marche donne
+- **Instructions de Liaison**
+  - One-Cancels-Other (OCO): Deux ordres sont mutuellement exclusifs
+  - One-Triggers-Other (OTO): Un ordre declenche un autre ordre
+- **Instructions Diverses**
+  - Anonymat: Certains marches offrent l'anonymat
+  - Ventes a Decouvert: Drapeau requis sur certains marches
+  - Lots Impairs: Appariement de lots ronds avec lots impairs
+
+---
+
+# Types d'Ordres bases sur des Conditions
+
+- **Ordres a seuil de declenchement suiveur (Trailing Stop)**
+  - Verrouillage des prix: S'adapte au marche
+  - Flexibilite: Maximise les gains sans predire le stop
+  - Ex: Stop de vente a -5% dont le seuil remonte avec le cours
+- **Ordres conditionnels / Si touche**
+  - Logique d'activation: Cache jusqu'a un niveau de prix
+  - Polyvalence: Bases sur le prix d'autres actifs
+- **Ordres sensibles au tick**
+  - Dependance au tick: Execute si le dernier prix repond a des conditions
+  - Impact sur le marche: Minimise pour un meilleur prix
+
+---
+
+# Types d'Ordres - Gestion de la Visibilite (1/2)
+
+- **Types d'ordres caches**
+  - Ordres Iceberg
+  - Partie visible et cachee
+  - Frequents sur les marches a forte liquidite (actions, futures)
+  - Priorite: Plus basse que les ordres visibles
+- **Types d'ordres discretionnaires**
+  - Ordres non tenus
+  - Trader decide de l'execution
+  - Evolution: Plus basees sur des regles
+
+---
+
+# Types d'Ordres - Gestion de la Visibilite (2/2)
+
+- **Ordres ajustes (Pegged)**
+  - Prix dynamique: Suivre la meilleure offre ou demande
+- **Ordres achemines (Routed)**
+  - Strategies complexes: Routage vers differents lieux
+  - Smart Order Routing: Strategies complexes
+  - Ex: Interactive Brokers SmartRouting
+  - Permet d'eviter le slippage ou optimise l'execution
+
+---
+
+# Autres Types d'Ordres - Specialises
+
+- **Ordres de croisement**
+  - Types varies: Committed, Uncommitted, etc.
+  - Mecanismes varies: Differents reseaux de croisement
+- **Ordres non engages**
+  - Similaires aux IOIs: Besoin de confirmation
+  - Protection: Tailles minimales, etc.
+- **Ordres negocies**
+  - Mecanisme bilateral: Environnement de negociation
+  - Anonymat: Entre investisseurs ou fournisseurs de liquidite
+- **Alertes Automatisees**
+  - Notification aux PLPs: Exemple de Millennium ATS
+
+---
+
+# Order-Contingent et Implied Orders
+
+- **Order-Contingent Order Types**
+  - Ordres Lies-Alternatifs: Liste d'ordres alternatifs
+  - Ordres Contingents: Ajustent prix et taille
+- **Implied Orders**
+  - Ordres Implicites: Ajustent prix et taille
+  - Importance: Liquidite supplementaire en marche a terme
+
+<!-- TODO: ajouter diagramme de flux d'ordres complexes -->
+
+---
+
+<!-- _class: questions -->
+
+# Questions?
+
+---
+
+# Trouver une Strategie qui vous Convient (1/2)
+
+- **Sources d'Idees**
+  - Articles academiques, blogs, forums, medias
+  - Suivi des meilleures strategies sur plateformes
+- **Modification de Strategies**
+  - Ajustements pour rentabilite
+- **Echange d'idees**
+  - Blogs de trading pour partage
+- **Strategies qui vous conviennent**
+  - Temps disponible: Temps complet vs temps partiel
+  - Academiques vs. Publiques: Complexite vs simplicite
+  - Competences en programmation: Elargit les options
+
+---
+
+# Trouver une Strategie qui vous Convient (2/2)
+
+- **Votre Capital de Trading**
+  - Ancien minimum conseille de 50 000 $
+  - Nouveaux minima grace aux cryptos et frais reduits
+- **Votre Objectif**
+  - Revenu regulier vs gains en capital
+
+---
+
+# Comment Evaluer une Strategie?
+
+- **Mesures Standard**
+  - Ratio de Sharpe: Mesure le rendement ajuste au risque
+  - High Watermark: Rendement cumule maximal a un moment donne
+  - Drawdown Maximum et Duree: La plus grande baisse et le temps pour recuperer
+- **Criteres de performance**
+  - Rendement annualise
+  - Volatilite des rendements
+  - Ratio gain/perte moyen
+  - Taux de reussite des trades
+
+<!-- TODO: ajouter graphique de courbe de rendement avec drawdowns annotes -->
+<!-- TODO: ajouter graphique de ratio de Sharpe (risk/return) -->
+
+---
+
+# Strategies Plausibles et leurs Pieges (1/2)
+
+- **Drawdowns**
+  - Perte de valeur, profondeur et duree a evaluer
+- **Slippage**
+  - Ecart de prix entre ordre et execution
+- **Couts de Transaction**
+  - Impact sur les strategies a haute frequence
+- **Evolution du Marche**
+  - Efficacite moindre qu'il y a 10 ans
+  - Les marches sont plus efficients
+
+---
+
+# Strategies Plausibles et leurs Pieges (2/2)
+
+- **Changements de Regime**
+  - Donnees historiques parfois non pertinentes
+- **Overfitting**
+  - Surajustement aux donnees historiques
+- **Frais de financements**
+  - Pour les positions a marge
+
+<!-- TODO: ajouter graphique d'exemple d'overfitting (train vs test performance) -->
+
+---
+
+# Intelligence Artificielle et Selection de Stocks
+
+- **Scepticisme initial sur l'IA**
+  - Tendance a surajuster les donnees
+- **Pratiques qui fonctionnent en IA**
+  - Modeles simples, fondements econometriques
+  - Mixture d'experts
+- **Strategies "Sous le Radar"**
+  - Faible capacite
+  - Moins d'arbitrage par grands fonds
+- **Avancees recentes**
+  - "Guerre" des modeles
+  - Theorie des jeux
+
+<!-- TODO: ajouter diagramme de mixture d'experts (multiple models → vote) -->
+
+---
+
+<!-- _class: questions -->
+
+# Questions?
+
+---
+
+# Backtesting (1/2)
+
+- **Qu'est-ce que c'est?**
+  - Evaluation d'une strategie d'investissement sur des donnees historiques
+- **Pourquoi c'est important**
+  - Valider l'efficacite de la recherche originale
+  - Experimenter avec des variations pour l'optimiser
+- **Sources de Donnees**
+  - Recherche web pour des bases gratuites ou peu couteuses
+  - Yahoo Finance, Alpha Vantage, Interactive Brokers, Binance
+
+---
+
+# Backtesting (2/2)
+
+- **Pieges et Problemes**
+  - Donnees ajustees pour les splits et les dividendes: Risque de faux signaux
+  - Biais de survie: Surevaluation potentielle des performances
+- **Dans le cas ou le Machine Learning est utilise**
+  - Le backtesting doit prendre en compte les biais de selection de donnees
+  - Separer convenablement les ensembles (training, validation, test)
+  - Evaluer la generalisation
+
+<!-- TODO: ajouter schema de pipeline de backtesting (donnees → strategie → evaluation) -->
+
+---
+
+# Plateformes de Backtesting (1/2)
+
+- **Excel**
+  - Toutes les donnees sont visibles, ce qui reduit le risque de "look-ahead bias"
+  - Utilise a la fois pour le backtesting et le trading en direct
+  - Inconvenients: Limite aux modeles simples d'investissement
+- **MATLAB**
+  - Utilise en institutionnel, excellent pour tester des strategies sur de grands portefeuilles
+  - Modules statistiques avances
+  - Inconvenients: Couteux et moins efficace pour executer les trades
+
+---
+
+# Plateformes de Backtesting (2/2)
+
+- **TradeStation et autres plateformes**
+  - Execution des trades possible directement depuis la plateforme
+  - Donnees historiques integrees
+  - Inconvenients: Langage proprietaire, vous attache a TradeStation comme courtier
+- **Evolution des Plateformes**
+  - Python & R: Ont pris le relais de MATLAB dans la plupart des cas
+  - Exemple: Zipline et autres frameworks open-source
+  - C#: Alternative montante grace aux efforts de Microsoft et Lean
+
+---
+
+# Lean / QuantConnect
+
+- **Solution open-core en Python et C#**
+  - 3 environnements (Lean, Lean-cli-QC)
+  - Permettent backtesting, paper trading et live trading
+  - Utilisee dans ce cours
+- **Avantages**
+  - Lean gere nativement les ajustements de donnees (splits, dividendes)
+  - Fournit un grand catalogue de donnees alternatives
+  - Simplifie l'evaluation point-in-time
+
+<!-- TODO: ajouter screenshot de QuantConnect IDE -->
+<!-- TODO: ajouter diagramme d'architecture Lean Engine -->
+
+---
+
+# Mesures de Performance et Pieges (1/2)
+
+- **Mesures Standard**
+  - Ratio de Sharpe: Mesure le rendement ajuste au risque, souvent annualise
+  - High Watermark: Rendement cumule maximal a un moment donne
+  - Drawdown Maximum et Duree: La plus grande baisse et le temps pour recuperer
+- **Pieges courants**
+  - Look-ahead bias: Utilisation de donnees futures dans le calcul
+  - Data-Snooping Bias: Overfitting base sur les donnees historiques
+  - Couts de Transaction: Omission des couts associes aux transactions
+
+---
+
+# Mesures de Performance et Pieges (2/2)
+
+- **Avec Machine Learning**
+  - Derive des donnees (data drift)
+  - La distribution des donnees evolue dans le temps
+  - Rend les patterns historiques obsoletes
+
+<!-- TODO: ajouter graphique de data drift (distribution train vs test) -->
+
+---
+
+# Precautions face aux Pieges (1/2)
+
+- **Look-ahead**
+  - Utilisation de donnees decalees
+  - Forward-testing (paper trading)
+- **Data-Snooping Bias**
+  - Peu de parametres
+  - Augmentation, division et adaptation des donnees de backtest
+- **Modeles de trading sans parametres**
+  - Pas de surajustement, fiabilite mais complexite computationnelle
+
+---
+
+# Precautions face aux Pieges (2/2)
+
+- **Paper Trading**
+  - Test sur des donnees reelles non vues, le plus fiable
+- **Analyse de sensibilite**
+  - Variation des parametres pour evaluer la stabilite de la performance
+- **Simplification du modele**
+  - Elimination des conditions superflues
+- **Repartition du capital de trading**
+  - Entre differentes strategies pour diminuer la variance
+- **Couts de Transaction**
+  - A integrer dans le Backtest pour des resultats plus realistes
+- **Derive des donnees (data drift) et non stationnarite**
+  - Revalider regulierement les modeles
+  - Appliquer des techniques comme la differenciation fractionnaire
+
+---
+
+# Affinement de la Strategie
+
+- **Le Probleme**
+  - Rendements diminuent quand une strategie est populaire
+- **Solutions**
+  - Variations Mineures: Petites variations peuvent ameliorer les rendements
+  - Exclusion de Stocks: Eviter certains types d'actions
+  - Changement de Timing: Ajuster les points d'entree et de sortie
+
+---
+
+<!-- _class: questions -->
+
+# Questions?
+
+---
+
+# Gestion du Risque - Introduction
+
+- **La gestion du risque permet de "preserver" le capital initial tout en optimisant la croissance sur le long terme**
+- **Maximisation de la Croissance**
+  - Objectif de maximiser la croissance du capital a long terme
+  - Rendement Moyen: ( m )
+  - Variance des Rendements: ( s^2 )
+- **Eviter la Ruine**
+  - Eviter une chute catastrophique du capital a zero
+  - Drawdown: Chute maximale du capital sur une periode donnee
+
+---
+
+# Outils et Formules
+
+- **Formule de Kelly**
+  - Determine la fraction optimale du capital a risquer par trade
+  - f* = (p * b - q) / b
+  - p = probabilite de gain, q = probabilite de perte (1-p)
+  - b = ratio gain/perte moyen
+- **Value-at-Risk (VaR)**
+  - Estime la perte maximale potentielle sur une periode
+  - Avec un niveau de confiance donne
+- **Conditional Value-at-Risk (CVaR)**
+  - Estime la perte moyenne au-dela du VaR
+  - Prend en compte les "fat tails"
+
+<!-- TODO: ajouter graphique de la fonction Kelly (fraction optimale vs edge) -->
+<!-- TODO: ajouter diagramme de derivation de la formule de Kelly -->
+
+---
+
+# Gestion du Risque avec la Formule de Kelly
+
+- **Gestion avec la Formule de Kelly**
+  - Reduction de la Taille du Portefeuille: Si les pertes augmentent, reduisez f
+- **Contagion Financiere**
+  - Le risque de propagation des pertes entre les fonds
+- **Evenements Extremes (Black swans)**
+  - Limites de la Formule: Ne prend pas en compte les "fat tails"
+  - Gestion des Evenements Imprevus: Utilisation de modeles de Value-at-Risk (VaR)
+- **Utilisation de Stop Loss**
+  - Momentum vs Mean-Reverting: L'efficacite varie en fonction du regime du marche
+  - Fondamental vs Liquidite: Quand appliquer les stop loss
+
+---
+
+# Autres Types de Risques
+
+- **Risque de Modele**
+  - Biais de survie, biais de lookahead, et erreurs de donnees
+  - Changements structurels du marche comme l'impact des nouvelles reglementations
+- **Risque Logiciel**
+  - Bugs, latence et decalages de donnees
+  - Assurez-vous que le systeme de trading automatise est bien teste et surveille
+- **Risques Physiques**
+  - Pannes de courant, defaillance du materiel, cyberattaques
+  - Solution de secours et plan de recuperation en cas de catastrophe
+
+---
+
+# Preparation Psychologique (1/2)
+
+- **Emotions en Trading**
+  - Overtrading en periode de gains
+  - Aversion au risque en periode de pertes
+  - Importance de suivre scrupuleusement le modele
+- **Biais Comportementaux**
+  - Effet de dotation
+  - Biais du statu quo
+  - Aversion a la perte
+  - Biais de representativite
+  - Comment ces biais affectent la prise de decision en trading
+
+---
+
+# Preparation Psychologique (2/2)
+
+- **Desespoir et Avidite**
+  - Importance de la gestion du stress et de la psychologie
+  - Mettre en place des garde-fous pour eviter la prise de decisions impulsives
+- **Conseils Pratiques**
+  - Commencez petit pour tester votre discipline
+  - Avoir un tampon financier ou des sources de revenus alternatives
+  - Reduire la pression financiere et psychologique
+  - Necessite parfois d'un support psychologique ou d'un coaching (cf. Athletes)
+
+---
+
+<!-- _class: questions -->
+
+# Questions?
+
+---
+
+# Strategies de Moyenne Reversion
+
+- **Moyenne Reversion**
+  - Les prix des actions ont tendance a revenir vers une moyenne a long terme
+- **Recherche Academique**
+  - Proximite a une marche aleatoire
+  - Mais certaines conditions permettent la moyenne reversion
+- **Pieges en Backtesting**
+  - Biais de Survie: Ignorer les actifs disparus peut fausser les resultats
+  - Erreurs de Base de Donnees: Incoherences dans les donnees financieres
+- **Effets de la Concurrence**
+  - Reduit les opportunites d'arbitrage, diminuant les rendements
+
+<!-- TODO: ajouter graphique de Bollinger Bands avec mean reversion trades annotes -->
+
+---
+
+# Strategies Fondamentales de Momentum
+
+- **Momentum**
+  - Tendance d'un actif a continuer a se deplacer dans la meme direction pendant une certaine periode
+- **Diffusion Lente de l'Information**
+  - Cree des opportunites de momentum
+- **Comportement de Troupeau**
+  - Les investisseurs suivent les autres, amplifiant les tendances
+- **Horizons Temporels Imprevisibles**
+  - Imprevisibilite de la duree du momentum
+- **Effets de la Concurrence**
+  - Accelere l'atteinte de l'equilibre des prix
+  - Rend les strategies de momentum moins efficaces a long terme
+
+<!-- TODO: ajouter graphique de moyennes mobiles avec signaux crossover -->
+
+---
+
+# Strategies de Regime Switching (1/2)
+
+- **Concept & Types**
+  - Les Marches varient entre differents regimes
+  - (haussiers/baissiers, inflation/recession, volatilite)
+  - La Prediction de ces regimes est un defi
+- **Outils & Approches - GARCH**
+  - Modele "autoregressif conditionnellement heteroscedastique generalise"
+  - Utile pour mesurer la volatilite, moins pour le prix d'actions
+
+---
+
+# Strategies de Regime Switching (2/2)
+
+- **Modeles probabilistes**
+  - Modeles de Markov, de Kalman etc.
+  - Necessite un modele de variables hypothetiques ou variables latentes
+  - Tres puissant mais complexe
+- **Data Mining**
+  - Utilise indicateurs techniques, donnees macro, "buzz" mediatique
+- **Application Pratique**
+  - Machine Learning pour detection en temps reel
+  - Attention aux pieges: biais de "data snooping" et optimisation excessive
+
+<!-- TODO: ajouter diagramme de modele de Markov cache (HMM) pour regimes -->
+
+---
+
+# Ponderations par le Volume et le Temps
+
+- **VWAP - Volume Weighted Average Price**
+  - Objectif: Obtenir un prix moyen pondere par le volume
+  - Utilisation: Frequemment utilise en trading institutionnel pour minimiser l'impact du marche
+  - Mecanisme: Calcule le rapport cout/volume a des intervalles reguliers et execute des ordres en fonction
+- **TWAP - Time Weighted Average Price**
+  - Objectif: Obtenir un prix moyen pondere par le temps
+  - Utilisation: Utilise lorsque l'impact du volume sur le prix est moins pertinent
+  - Mecanisme: Divise un gros ordre en plus petits morceaux, executes a intervalles reguliers
+- **TWAP/VWAP sont tres utilises par les institutionnels**
+  - Pour eviter un prix moyen trop deforme
+
+<!-- TODO: ajouter graphique comparatif VWAP vs TWAP -->
+
+---
+
+# Strategies Basees sur les Donnees - Modeles Factoriels
+
+- **Exposition Factorielle**
+  - Mesure la sensibilite d'un actif a differents facteurs du marche
+  - Taux d'interet, volatilite du marche
+- **Rendement Factoriel & Specifique**
+  - Le rendement factoriel est celui qui peut etre attribue a l'exposition a certains facteurs
+  - Le rendement specifique est le rendement qui n'est pas explique par ces facteurs
+- **Utilisation**
+  - Ces modeles sont couramment utilises pour la construction de portefeuilles
+  - Pour comprendre les sources de rendement
+
+<!-- TODO: ajouter heatmap de correlations entre facteurs -->
+
+---
+
+# Strategies Basees sur les Donnees - Sentiment Analysis
+
+- **Objectif**
+  - Exploiter les donnees textuelles pour predire les mouvements du marche
+- **Technologie**
+  - Utilise des techniques de NLP (Natural Language Processing)
+  - Analyse des textes tels que les nouvelles, les tweets, etc.
+- **Mecanisme**
+  - Le sentiment du marche est extrait des donnees textuelles
+  - Utilise pour generer des signaux de trading
+- **Utilisation Pratique**
+  - Les hedge funds et les traders algorithmiques utilisent l'analyse du sentiment
+  - Pour ameliorer leurs strategies
+- **Importance de la mise en place d'un pipeline de donnees**
+  - Collecte, nettoyage, feature engineering etc.
+
+---
+
+# Metriques des Modeles Factoriels
+
+- **Metriques Standards**
+  - R-squared: Proportion de variance expliquee
+  - Alpha: Rendement ajuste au risque
+  - Beta: Sensibilite au marche
+  - Information Ratio: Rendement actif par unite de risque actif
+- **Analyse de Performance**
+  - Attribution de performance par facteur
+  - Contribution au risque par facteur
+  - Correlation entre facteurs
+
+<!-- TODO: ajouter graphique de decomposition de performance par facteur -->
+
+---
+
+# Strategies Basees sur les Donnees 2.0 (1/2)
+
+- **Methodes Modernes**
+  - Multi-Factoriels: Evolution des modeles 3F de Fama-French vers des modeles multi-factoriels
+- **Machine Learning en Trading**
+  - Machine Learning Parametrique: Utilisation de reseaux neuronaux et de modeles sequentiels en deep learning comme LSTM
+  - Machine Learning Non-Parametrique: Emploi de forets aleatoires, k-NN, SVM pour capturer des relations non-lineaires
+  - Succes des techniques d'ensemble, Mixture of experts
+
+---
+
+# Strategies Basees sur les Donnees 2.0 (2/2)
+
+- **Avancees en ML et RL**
+  - Modeles Sequentiels: Utilisation de LSTM, de GRU, de Transformers en deep learning
+  - Reseaux bayesiens dynamiques pour capturer des dependances temporelles
+  - Reinforcement Learning (RL): Application a l'optimisation de strategie en temps reel
+  - Prise de decision avec ou sans modele predictif associe
+- **Analyse & Risques Modernes**
+  - Metriques Modernes: Transition du R² vers des mesures comme l'Information Ratio
+  - Optimisation Bayesienne: Utilisee pour la selection de modele et l'ajustement de parametres
+  - Mise a Jour Continue: Adaptation aux changements de comportement du marche via techniques d'apprentissage en ligne
+
+---
+
+# Workflows Semantique et Theorie des Jeux
+
+- **Workflows semantique**
+  - Avenement des LLMs (ChatGPT, Llama etc.)
+  - Analyse de sentiment avancee
+  - Generation de signaux a partir de donnees textuelles
+- **Theorie des jeux**
+  - Strategies adversariales, poursuite et predation
+  - Signalement (baleines etc.)
+  - Flash crashs et manipulation de marche
+  - Modelisation des interactions entre traders
+
+<!-- TODO: ajouter diagramme de theorie des jeux (matrice de gains) -->
+
+---
+
+<!-- _class: questions -->
+
+# Questions?
+
+---
+
+# Strategies de Sortie en Trading (1/2)
+
+- **Periode de Detention Fixe**
+  - Utilisee par defaut dans divers modeles de trading
+  - Momentum: La periode optimale peut etre trouvee via un backtest
+  - Attention a l'evolution rapide de l'information
+  - Reversion a la Moyenne: Une methode plus robuste pour determiner la periode optimale est disponible
+- **Prix ou Profit Cible**
+  - Utilise pour definir un objectif de sortie
+  - Reversion a la Moyenne: Le prix moyen historique peut servir de prix cible
+  - Momentum: Moins fiable car base sur une evaluation fondamentale incertaine
+
+---
+
+# Strategies de Sortie en Trading (2/2)
+
+- **Derniers Signaux d'Entree**
+  - Utiliser le signal d'entree le plus recent comme signal de sortie
+  - Momentum: Si le signal change, c'est presque comme un stop-loss
+  - Reversion a la Moyenne: Le signal reste generalement le meme, donc pas de stop-loss recommande
+- **Prix Stop**
+  - Rarement utilise de maniere efficace
+  - Momentum: Peut etre justifie si le sens du momentum change
+  - Reversion a la Moyenne: Souvent contre-productif, sauf en cas de changement de regime du a des nouvelles
+
+---
+
+# Strategies de Sortie 2.0 (1/2)
+
+- **Categories Classiques**
+  - Periode de Detention Fixe: Adaptation via ML pour prediction de la periode optimale
+  - Prix ou Profit Cible: Integration de donnees en temps reel pour ajuster les cibles
+  - Derniers Signaux d'Entree & Prix Stop: Utilisation rare, mais avec opportunites pour optimisation par RL
+- **Avancees en ML et Analyse Temps Reel**
+  - Deep Learning: Utilisation de CNN ou LSTM pour detection de patterns et ajustement de la strategie de sortie
+  - Reinforcement Learning (RL): Apprentissage pour optimiser la sortie en fonction du rendement et du risque
+
+---
+
+# Strategies de Sortie 2.0 (2/2)
+
+- **Gestion de Risques Avancee**
+  - Options & Derives: Utilisation pour couvrir les positions et ajuster les strategies de sortie
+  - Analyse Sentimentale: Utilisation de NLP pour ajuster les strategies en fonction du sentiment du marche
+- **Alertes et Ajustements en Temps Reel**
+  - Web Scraping & API: Collecte en temps reel de donnees de marche pour ajuster les strategies
+  - Optimisation Continue: Mise a jour en temps reel des parametres via techniques d'apprentissage en ligne
+
+---
+
+# Arbitrage et Paires
+
+- **Pairs Trading**
+  - Objectif: Capitaliser sur la relation entre deux actifs similaires
+  - Utilisation: Necessite une analyse de co-integration
+  - Mecanisme: Achete un actif et vend un actif similaire en anticipation d'une convergence des prix
+- **Statistical Arbitrage**
+  - Objectif: Exploiter les ecarts de prix entre des actifs fortement correles
+  - Utilisation: Necessite une modelisation statistique complexe
+  - Mecanisme: Utilise des modeles statistiques pour identifier les opportunites d'arbitrage
+
+<!-- TODO: ajouter graphique de pairs trading avec spread et signaux -->
+
+---
+
+# Market Making et Optimal Trading
+
+- **Market Making**
+  - Objectif: Acheter et vendre activement pour profiter de l'ecart acheteur-vendeur
+  - Utilisation: Necessite une tres faible latence et de gros volumes
+  - Mecanisme: Fournit des liquidites en affichant constamment des offres d'achat et de vente
+- **Optimal Trading Strategies**
+  - Objectif: Minimiser les couts de transaction et l'impact du marche
+  - Utilisation: Generalement utilise par les fonds institutionnels et les traders a haute frequence
+  - Mecanisme: Utilise des algorithmes pour optimiser le timing et le cout des ordres
+
+<!-- TODO: ajouter diagramme de market making (bid-ask spread, inventory management) -->
+
+---
+
+# Strategies de Trading a Haute Frequence (1/2)
+
+- **Exploite de petites inefficacites sur le marche ou fournit une liquidite temporaire en echange d'une petite commission**
+- **Ratio de Sharpe Eleve**
+  - Loi des grands nombres stabilise le rendement
+  - Centaines de paris par jour minimisent les ecarts de rendement
+- **Difficultes et Defis**
+  - Couts de transaction cruciaux pour les tests
+  - Execution a haute vitesse pour maximiser profits/pertes
+  - Risque de liquidation rapide (slippage, anomalies de marche)
+
+---
+
+# Strategies de Trading a Haute Frequence (2/2)
+
+- **Machine Learning et AI**
+  - Utilisation de modeles de Deep Learning pour prediction de micro-tendances
+  - Reinforcement Learning pour l'ajustement dynamique de strategies
+- **Latence Ultra-Faible**
+  - Utilisation de FPGA (Field-Programmable Gate Arrays) pour des ordres en microsecondes
+  - Co-location de serveurs pres des bourses
+- **Risques et Reglementations**
+  - Detection d'abus de marche par des algorithmes de surveillance
+  - Impact des regulations comme MiFID II sur la transparence
+
+<!-- TODO: ajouter schema d'infrastructure HFT (FPGA, co-location) -->
+
+---
+
+# Strategies de Trading Saisonnier
+
+- **Effet de Janvier**
+  - Petites capitalisations beneficient en janvier
+  - Vendre en decembre pour raisons fiscales
+- **Strategies Mensuelles**
+  - Acheter/vendre selon la performance du mois precedent
+  - Efficace jusqu'a 2002
+- **Strategies Matieres Premieres**
+  - Essence et gaz naturel
+  - Fiable car base sur besoins economiques (ex. petrole en ete)
+- **Precautions**
+  - Biais de Data-Snooping
+  - Verifier la fiabilite et le sens economique
+
+---
+
+# Strategies de Trading Saisonnier 2.0 (1/2)
+
+- **Concepts Traditionnels**
+  - Effet de Janvier: Machine learning pour identifier les meilleures opportunites en temps reel
+  - Strategies Mensuelles: Utilisation d'algorithmes adaptatifs pour revalider l'efficacite
+  - Strategies Matieres Premieres: Optimisation par RL pour des meilleures entrees et sorties
+- **Innovations en ML & Data Analytics**
+  - Time Series Forecasting: LSTM et ARIMA pour predire la saisonnalite
+  - Reinforcement Learning (RL): Maximisation des rendements en adaptant les strategies saisonnieres
+  - Random Forest & SVM: Classification pour detecter les meilleures periodes d'achat/vente
+
+---
+
+# Strategies de Trading Saisonnier 2.0 (2/2)
+
+- **Intelligence Contextuelle**
+  - IoT & Big Data: Utilisation de donnees meteorologiques et de flux logistiques pour optimiser les trades en matieres premieres
+  - Sentiment Analysis: Evaluer l'effet du sentiment saisonnier sur les marches
+- **Gestion de Risques Avancee**
+  - Simulation de Monte Carlo: Estimation des intervalles de confiance pour les strategies
+  - Backtesting Adaptatif: Tests dynamiques pour ajuster aux changements du marche
+
+---
+
+# Portefeuille a Haut Levier vs Haut Beta (1/2)
+
+- **Beta**
+  - Mesure de la sensibilite d'un actif par rapport au marche
+  - Haut Beta: Plus volatil, plus de rendements mais plus de risques
+  - Faible Beta: Moins de risques, meilleur ratio de Sharpe
+- **Levier**
+  - Utilisation d'emprunts pour augmenter l'exposition aux actifs
+  - Effet Amplificateur: Augmente les gains mais aussi les pertes
+  - Risques de Queue Epaisse: Pertes imprevues dues a une distribution de rendements atypique
+
+---
+
+# Portefeuille a Haut Levier vs Haut Beta (2/2)
+
+- **Ratio de Sharpe**
+  - Mesure le rendement ajuste au risque
+  - Croissance Composee: Proportionnelle au carre du ratio de Sharpe
+- **Allocation d'Actifs**
+  - Repartition du portefeuille entre differentes classes d'actifs
+  - Optimisation 23-77: Entre actions a faible beta et obligations pour un risque minimal
+- **Un faible beta avec un levier modere**
+  - Offre theoriquement une meilleure croissance composee a long terme (cf. formule de Kelly)
+  - Mais avec des risques inherents
+
+<!-- TODO: ajouter graphique de comparaison levier vs beta (risk/return) -->
+
+---
+
+# Portefeuille a Haut Levier vs Haut Beta 2.0 (1/2)
+
+- **Beta Adaptatif**
+  - Utilisation de l'apprentissage machine pour ajuster dynamiquement le beta
+  - Predictions de Volatilite: Utilisation de series temporelles pour anticiper les changements de volatilite
+- **Levier avec Machine Learning**
+  - Algorithmes pour decider du moment optimal pour appliquer un levier
+  - Risques de Catastrophe: Utilisation d'alertes algorithmiques pour reduire le levier en cas de signaux de crash
+
+---
+
+# Portefeuille a Haut Levier vs Haut Beta 2.0 (2/2)
+
+- **Optimisation de Ratio de Sharpe avec IA**
+  - Utilisation de reseaux de neurones pour maximiser le ratio de Sharpe
+  - Apprentissage par Renforcement: Pour une allocation d'actifs dynamique et optimisee
+- **Gestion du Risque 2.0**
+  - Techniques modernes comme le "Value-at-Risk" (VaR) base sur le deep learning
+  - Indicateurs de Sentiment du Marche: Via le traitement du langage naturel pour anticiper les changements de marche
+- **La version 2.0 integre des techniques d'apprentissage machine et d'analyse de donnees pour une gestion plus proactive et adaptative du risque et du rendement**
+
+---
+
+<!-- _class: questions -->
+
+# Questions?
+
+---
+
+<!-- _class: title -->
+
+# Initiation a Lean
+
+Documentation officielle QuantConnect
+
+---
+
+# Lean/QuantConnect
+
+- **Qu'est-ce que c'est?**
+  - Plateforme de trading algorithmique
+- **Langages de Programmation**
+  - C#, Python
+- **Fonctionnalites Principales**
+  - Notebooks d'analyse, Backtesting, optimisation, paper et live trading
+- **Data Library**
+  - Donnees historiques de plusieurs marches
+- **Communaute & Ressources**
+  - Forums, tutoriels, documentation
+
+<!-- TODO: ajouter screenshot de QuantConnect IDE (code editor + backtest results) -->
+
+---
+
+# Installation de l'Environnement (1/2)
+
+- **3 environnements**
+  - QuantConnect: Plateforme dans le Cloud
+  - Lean-Cli + vscode: Plateforme hybride QC + containers locaux
+  - Lean: Plateforme Open-source locale
+- **QuantConnect**
+  - Creer un compte
+  - Organisations, Noeuds de ressources
+- **Lean-cli**
+  - Terminal
+  - IDEs locaux
+
+---
+
+# Installation de l'Environnement (2/2)
+
+- **VS Code**
+  - Extensions: C# dev kit, polyglot, python, git extension pack, Python extension pack, QuantConnect
+- **Visual Studio Community / for Mac**
+  - Charge de developpement Desktop (Windows) / .Net (Mac)
+- **DotPeek (desassembleur)**
+- **Jetbrains Rider**
+  - Licence?
+
+<!-- TODO: ajouter screenshot de VS Code avec extension QuantConnect -->
+
+---
+
+# Mise en Route Lean-cli / VScode
+
+- **Installation pip**
+  - `pip install --upgrade lean`
+  - `lean --version`
+- **Sur QuantConnect**
+  - My Account – Request Token Information
+- **Lean init**
+  - Choix de l'"Organisation"
+- **Synchronisation**
+  - `lean cloud pull`
+  - `lean cloud push`
+
+<!-- TODO: ajouter screenshot de ligne de commande lean-cli -->
+
+---
+
+# Mise en Route Lean (1/2)
+
+- **Fork/Clone git de Lean**
+  - Dans le repertoire de votre choix
+  - Depot personnalise: https://github.com/myintelligenceagency/Lean
+- **Ouvrir la solution**
+  - QuantConnect.Lean.sln
+  - Affichage des projets, projet de demarrage par defaut
+- **Generer la solution**
+  - Restauration des packages, compilation des projets
+
+---
+
+# Mise en Route Lean (2/2)
+
+- **Executer le Launcher**
+  - Demarrage en debug
+  - Fichier de config `Lean/Launcher/bin/debug/config.json`
+  - Algorithme par defaut: BasicTemplateFrameworkAlgorithm
+  - Placer un point d'arret dans la fonction Initialize et relancer
+- **Desassemblage**
+  - DotPeek / serveur de symboles
+- **Developpement et debuggage en Python**
+  - https://github.com/MyIntelligenceAgency/Lean/blob/master/ESGF/Python.md
+
+---
+
+# Environnement d'Algorithme (1/2)
+
+- **QCAlgorithm**
+  - Ticker vs Bar
+  - Evenements => pas de lookahead
+  - + Interfaces + Classes de base
+  - + Strategic Development Framework
+- **Objets fondamentaux**
+  - Time
+  - Symboles
+  - Portfolio
+  - Securities
+  - Brokers
+
+---
+
+# Environnement d'Algorithme (2/2)
+
+- **Objets fondamentaux (suite)**
+  - Indicateurs (e.g. EMA)
+  - History
+- **Membres locaux**
+  - Manipules par les methodes
+  - Parfois herites + "Parameters"
+  - Possibilite de les initializer
+
+<!-- TODO: ajouter diagramme de classe QCAlgorithm avec relations -->
+
+---
+
+# Evenements (1/2)
+
+- **Initialize**
+  - Setxxx, Addxxx, ajout de handlers (InsightsGenerated etc.)
+  - Gestion des dates + Consolidateurs
+  - Cash / AddEquities/AddForex etc. (+ resolution) vs SetUniverseSelection
+  - SetBrokerageModel, SetPortfolioConstruction, SetDataNormalisationMode
+- **OnData**
+  - Slice => Ticks, TradeBars
+  - => dictionaire par symbole
+  - Price => close (data, data.Bars, Securities[xx])
+
+---
+
+# Evenements (2/2)
+
+- **OnData (suite)**
+  - Decision => Portfolio.Invested, nextEntryTime
+  - Ordres: MarketOrder (symbol, calcul), SetHoldings
+  - Journalisation: Log
+  - Sortie: condition/entryprice – Liquidate
+- **OnOrderEvent**
+  - Filled, Submitted etc.
+- **Autres points d'entree**
+  - OnSecuritiesChange, OnEndOfDay, OnBrokerageMessage, OnWarmupFinished etc.
+  - Evenements planifies (Schedule)
+
+<!-- TODO: ajouter diagramme de sequence des evenements (Initialize → OnData → OnOrderEvent) -->
+
+---
+
+# Initialisation - Dates et Monnaies
+
+- **Definition des dates de backtesting**
+  - C#
+    ```csharp
+    this.SetStartDate(2013, 1, 5);
+    this.SetEndDate(DateTime.Now.Date.AddDays(-7));
+    ```
+  - Python
+    ```python
+    self.SetStartDate(2018, 4, 1)
+    self.SetEndDate(datetime.now() - timedelta(7))
+    ```
+- **Definition des monnaies et montants initiaux**
+  - C#: `this.SetAccountCurrency("EUR"); this.SetCash("EUR", 10000);`
+  - Python: `self.SetAccountCurrency("BTC"); self.SetCash("EUR", 10000)`
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Initialisation - Broker et Securites
+
+- **Choix du Broker et souscription a des securites**
+  - C#
+    ```csharp
+    this.SetBrokerageModel(BrokerageName.Bitstamp, AccountType.Cash);
+    var btcSecurity = this.AddCrypto("BTCUSD", Resolution.Daily);
+    ```
+  - Python
+    ```python
+    self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Cash)
+    self.spy = self.AddEquity("SPY", Resolution.Hour, Market.Oanda)
+    ```
+- **Ajout d'indicateurs**
+  - C#: `this.Fast = EMA(_btcusd, FastPeriod); this.Slow = EMA(_btcusd, SlowPeriod);`
+  - Python: `self.fast = self.EMA(symbol, 30, Resolution.Minute); self.slow = self.EMA(symbol, 60, Resolution.Minute)`
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Initialisation - Warmup
+
+- **Warmup**
+  - C# (Timespan)
+    ```csharp
+    this.SetWarmUp(TimeSpan.FromDays(150));
+    ```
+  - Python (nb barres)
+    ```python
+    self.SetWarmUp(200)
+    ```
+- **Possibilite de Warmup automatique**
+  - `AutomaticIndicatorWarmUp = True`
+  - `self.Settings.AutomaticIndicatorWarmUp = True`
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Initialisation - Evenements Planifies
+
+- **Evenements planifies**
+  - C#
+    ```csharp
+    Schedule.On(DateRules.EveryDay(),
+                TimeRules.Every(TimeSpan.FromDays(1)),
+                this.ExampleFunc);
+    ```
+  - Python
+    ```python
+    self.Schedule.On(self.DateRules.EveryDay(),
+                     self.TimeRules.Every(timedelta(minutes=10)),
+                     self.ExampleFunc)
+    ```
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Initialisation - Consolidation et Graphiques
+
+- **Consolidation de barres**
+  - C#: `this._consolidator = Consolidate(_symbol, TimeSpan.FromMinutes(10), ConsolidationHandler);`
+  - Python: `self.consolidator = self.Consolidate(self.symbol, timedelta(minutes=10), self.consolidation_handler)`
+- **Creations de graphiques**
+  - C#
+    ```csharp
+    var stockPlot = new Chart(_ChartName);
+    var assetPrice = new Series(_PriceSeriesName, SeriesType.Line, "$", Color.Blue);
+    stockPlot.AddSeries(assetPrice);
+    This.AddChart(stockPlot);
+    ```
+  - Python
+    ```python
+    stockPlot = Chart("Trade Plot")
+    stockPlot.AddSeries(Series("Price", SeriesType.Line, 0))
+    self.AddChart(stockPlot)
+    ```
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Evenements de Donnees
+
+- **Temps decoupe en "slices"**
+  - Peuvent contenir des Ticks (ponctuel) ou TradeBars, QuoteBars (periodes)
+- **Methode principale**
+  - C#
+    ```csharp
+    public override void OnData(Slice slice)
+    {
+        var data = slice[_symbol];
+    }
+    ```
+  - Python
+    ```python
+    def OnData(self, slice: Slice) -> None:
+        data = slice[self.symbol]
+    ```
+- **Alternative: "CurrentSlice"**
+  - Dans un evenement planifie
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Journalisation et Graphiques
+
+- **Journalisation**
+  - Methodes Log ou Debug
+  - Exemple crypto:
+    ```csharp
+    Debug($"Time: {data.Time.ToShortDateString()}, Price: @{data.Bars[_btcusd].Close}$/Btc;
+           Portfolio: {Portfolio.CashBook[Portfolio.CashBook.AccountCurrency].Amount}$,
+           {Portfolio[_btcusd].Quantity}BTCs,
+           Total Value: {Portfolio.TotalPortfolioValue}$,
+           Total Fees: {Portfolio.TotalFees}$");
+    ```
+  - Logs enregistres dans backtest: Eviter de les surcharger pour eviter la saturation
+- **Export de graphiques**
+  - Methode Plot (cf initialisation)
+- **Utilisation de donnees historiques**
+  - Python: `self.df = self.History(self.Symbol("SPY"), start_time, end_time, Resolution.Hour)`
+  - Plusieurs symbols: `self.dataframe = self.History([self.Symbol("IBM"), self.Symbol("AAPL")], start_time, end_time)`
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- TODO: ajouter screenshot de graphique genere par backtest -->
+
+---
+
+# Gestion Explicite des Ordres (1/2)
+
+- **Types**
+  - Market, Limit, StopMarket, StopLimit, MarketOnOpenOrder, MarketOnCloseOrder etc.
+- **Exemples**
+  - C#: `var orderTicket = this.StopMarketOrder("IBM", 10, price / 0.1m);`
+  - Python: `marketOrderTicket = self.LimitOrder("SPY", 100, 21.67)`
+- **Type de retour: OrderTicket**
+  - Permet de suivre l'ordre (Status, QuatityFilled etc.)
+  - Possibilite de faire des MAJ chez certains Brokers
+  - Classe UpdateOrderFields, methode ticket.Update
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Gestion Explicite des Ordres (2/2)
+
+- **Methode OnOrderEvent**
+  - C#: `public override void OnOrderEvent(OrderEvent orderEvent)`
+  - Python: `def OnOrderEvent(self, orderEvent: OrderEvent) -> None:`
+- **Annulation**
+  - Methode ticket.Cancel("message") ou request = ticket.CancelOrderRequest()
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Gestion des Ordres par Dimensionnement (1/2)
+
+- **Dimensionnement de position**
+  - Ponderer la valeur des actifs du portefeuille
+- **Exemples**
+  - C# (version simple): `this.SetHoldings("IBM", 0.5);`
+  - Python (tous les parametres): `self.SetHoldings(symbol, weight, liquidate_existing_holdings, tag, order_properties)`
+- **Possibilite de definir plusieurs cibles d'actifs simultanement**
+  - `self.SetHoldings([PortfolioTarget("SPY", 0.8), PortfolioTarget("IBM", 0.2)], True)`
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Gestion des Ordres par Dimensionnement (2/2)
+
+- **Calcul des quantites tenant compte des frais**
+  - `var quantity = CalculateOrderQuantity("IBM", 0.4);`
+- **Existence d'un Buffer (slippage)**
+  - 2,5% par defaut
+  - Personalisation:
+    - `Settings.FreePortfolioValuePercentage = 0.05m;` (pourcentage)
+    - `self.Settings.FreePortfolioValue = 10000` (Valeur absolue)
+- **Liquidation**
+  - C# (un actif): `Liquidate("AAPL", "Liquidated");`
+  - Python (toutes les positions): `order_ids = self.Liquidate()`
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Notebooks de Recherche
+
+- **Research Environnement**
+  - Environnement d'exploration facilitant l'iteration
+  - Jupyter / Python
+  - .Net Interactive / C#
+- **Workflow**
+  - Hypothese / Edge → Research → Strategy → Backtests/Optimisation → Paper/Live trading
+- **Kernel dedie**
+  - Execution QC en ligne
+  - Execution sous container Docker / lean-cli
+- **QuantBooks**
+  - Classe heritant de QCAlgorithm
+  - Utilisation de donnees historisees / dataframes pour analyse
+
+<!-- TODO: ajouter screenshot de Jupyter notebook avec QuantBook -->
+<!-- TODO: ajouter diagramme de workflow (Research → Backtest → Live) -->
+
+---
+
+# Framework de Haut Niveau
+
+- **Ensemble de modules de haut niveau**
+  - Universe Selection: Choix des instruments disponible
+  - Alpha Creation: Construction de signaux (insights)
+  - Portfolio construction: construction et maintenance du portefeuille (targets)
+  - Risk management (minimization de risque)
+  - Execution (immediate ou optimisee)
+- **Abstractions facilitant la gestion de portefeuille**
+  - Utilisable en combinaison avec des primitives de bas niveau
+  - (Alpha, PortfolioConstruction, Risk, Execution) peuvent etre utilises individuellement ou combines
+
+<!-- TODO: ajouter diagramme d'architecture du framework (Universe → Alpha → Portfolio → Risk → Execution) -->
+
+---
+
+# Selection d'Univers
+
+- **Un univers definit les actifs disponibles pour le portefeuille**
+- **Selection manuelle**
+  - `AddUniverseSelection(new ManualUniverseSelectionModel(symbols));`
+- **Selection parametrique ou planifiee**
+  - Ex: EmaCrossUniverseSelectionModel
+  - Selectionne les actifs d'un ensemble en retournement haussier le plus fort
+- **Combinaisons d'univers possible**
+- **Methode OnSecurityChanged quand des actifs sont rajoutes ou enleves**
+  - C#: `public override void OnSecuritiesChanged(SecurityChanges changes)`
+  - Python: `def OnSecuritiesChanged(self, algorithm: QCAlgorithm, changes: SecurityChanges) -> None:`
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Alphas (1/2)
+
+- **Classes chargees de generer des signaux**
+  - = Insights (direction, amplitude et confiance)
+  - e.g. A partir d'indicateurs
+- **Ajout a l'initialisation**
+  - `self.AddAlpha(RsiAlphaModel())`
+- **Alphas par defaut**
+  - ConstantAlphaModel, HistoricalReturnsAlphaModel, EmaCrossAlphaModel, MacdAlphaModel, RsiAlphaModel
+  - BasePairsTradingAlphaModel, PearsonCorrelationPairsTradingAlphaModel etc.
+
+---
+
+# Alphas (2/2)
+
+- **Alpha personnalise**
+  - Python: classe + initialisation + creation d'insights
+    ```python
+    class MyAlphaModel(AlphaModel):
+        def OnSecuritiesChanged(self, algorithm: QCAlgorithm, changes: SecurityChanges) -> None:
+            pass
+        def Update(self, algorithm: QCAlgorithm, data: Slice) -> List[Insight]:
+            pass
+    ```
+  - C#
+    ```csharp
+    class MyAlphaModel : AlphaModel
+    {
+        public override IEnumerable<Insight> Update(QCAlgorithm algorithm, Slice data)
+        public override void OnSecuritiesChanged(QCAlgorithm algorithm, SecurityChanges changes)
+    }
+    ```
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Insights
+
+- **Definit les signaux retournes par la methode Update des Alphas**
+- **Exemples**
+  - Python: `insight = Insight.Price("IBM", timedelta(minutes = 20), InsightDirection.Up)`
+  - C#: `var insight = Insight.Price("IBM", TimeSpan.FromMinutes(20), InsightDirection.Up);`
+- **Caracteristiques**
+  - Parametres importants: Direction, Period, Magnitude, Confidence, Weight
+  - Possibilite de les regrouper: `return Insight.Group([insight1, insight2, insight3])`
+  - Possibilite de les annuler: `self.insight.Cancel(algorithm.UtcTime)`
+- **Si pas de reference utilisation de l'insight manager**
+  - Filtrage par symbole, par direction etc.
+  - `var insights = algorithm.Insights.GetInsights(insight => insight.Direction == InsightDirection.Up);`
+  - `algorithm.Insights.Cancel(symbols)`
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Construction de Portefeuille (1/2)
+
+- **Modele de construction de portefeuille**
+  - Creee des "targets" qui se traduisent par des ordres
+- **Exemples**
+  - Python: `self.SetPortfolioConstruction(EqualWeightingPortfolioConstructionModel())`
+  - C#: `SetPortfolioConstruction(new EqualWeightingPortfolioConstructionModel());`
+- **Modeles fournis par defaut**
+  - EqualWeightingPortfolioConstructionModel: Poids egal entre les actifs avec Insights
+  - ConfidenceWeightedPortfolioConstructionModel: Ponderation par la confiance de l'insight
+  - InsightWeightingPortfolioConstructionModel: Ponderation par poids de l'insight
+
+---
+
+# Construction de Portefeuille (2/2)
+
+- **Modeles fournis par defaut (suite)**
+  - SectorWeightingPortfolioConstructionModel: Ponderation par secteur industriel
+  - AccumulativeInsightPortfolioConstructionModel: Compte les insights par symbole et direction
+  - MeanVarianceOptimizationPortfolioConstructionModel: Minimise la volatilite
+  - BlackLittermanOptimizationPortfolioConstructionModel: Utilise un optimiseur
+  - MeanReversionPortfolioConstructionModel: Retour a la moyenne
+  - RiskParityPortfolioConstructionModel: Minimisation du risque
+- **Optimiseurs fournis**
+  - MaximumSharpeRatioPortfolioOptimizer, MinimumVariancePortfolioOptimizer
+  - UnconstrainedMeanVariancePortfolioOptimizer, RiskParityPortfolioOptimizer
+
+---
+
+# Gestion du Risque
+
+- **Objectif: gestion du risque des cibles**
+  - Renvoyees par le gestionnaire de portefeuille
+  - Idealement, doit etre integre des la conception, pas apres optimisation
+  - Sinon, souvent performances degradees
+- **Definition**
+  - C#: `this.AddRiskManagement(new MaximumDrawdownPercentPerSecurity());`
+  - Python: `self.AddRiskManagement(MaximumSectorExposureRiskManagementModel())`
+- **Modeles fournis par defaut**
+  - MaximumDrawdownPercentPerSecurity, MaximumDrawdownPercentPortfolio
+  - MaximumUnrealizedProfitPercentPerSecurity
+  - MaximumSectorExposureRiskManagementModel, TrailingStopRiskManagementModel
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Modeles d'Execution
+
+- **Determine comment les ordres sont executes**
+- **Definition**
+  - C#: `this.SetExecution(new ImmediateExecutionModel());`
+  - Python: `self.SetExecution(ImmediateExecutionModel())`
+- **Modeles fournis**
+  - ImmediateExecutionModel
+  - SpreadExecutionModel (Necessite des QuoteBars)
+  - StandardDeviationExecutionModel
+  - VolumeWeightedAveragePriceExecutionModel
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+
+---
+
+# Optimisation de Parametres (1/2)
+
+- **Definition de parametres d'algorithmes**
+  - Appel explicite
+    ```python
+    fast_period = self.GetParameter("ema-fast", 100)
+    self.fast = self.EMA("SPY", fast_period)
+    ```
+  - Exemple Python: ParameterizedAlgorithm.py
+  - Utilisation d'attributs
+    ```csharp
+    [Parameter("ema-fast")]
+    public int FastPeriod = 18;
+    ```
+- **Configuration dynamique**
+  - Fichier config.json
+  - Interface en ligne dediee / UI similaire dans l'extension vscode
+
+<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- TODO: ajouter screenshot de l'interface d'optimisation de parametres -->
+
+---
+
+# Optimisation de Parametres (2/2)
+
+- **Lanceur d'Optimisation**
+  - Execute une serie de backtests
+  - Dans l'objectif de trouver la meilleure combinaison des parametres
+  - Pour optimiser une mesure (e.g. ratio de Sharpe)
+- **Environnement**
+  - QuantConnect: bouton et Formulaire de parametrage (Utilisation de credits dans le cloud)
+  - Lean-cli: Commande dediee
+  - Lean: QuantConnect.Optimizer.Launcher
+- **Bon usage**
+  - Attention a la combinatoire (Produit cartesien de toutes les possibilites voire + pour Euler)
+  - Utilisation d'une version d'algo "rapide" (test manuel de sensibilite a la resolution)
+  - Attention au sur-apprentissage (Optimisation sur une periode donnee, validation finale sur une periode + recente)
+
+<!-- TODO: ajouter heatmap de resultats d'optimisation (parametres vs performance) -->
+
+---
+
+# Optimisation de Parametres - Configuration (1/2)
+
+- **Configuration**
+  - Designation de l'algo C# ou Python identique: "algorithm-type-name", etc.
+  - A priori pas de debug, au besoin utiliser la journalisation
+- **Designation des parametres a optimiser**
+  - parameters: name, min, max, step
+- **2 strategies d'exploration**
+  - GridSearch: teste toutes les combinaisons
+  - EulerSearch: teste toutes les combinaisons, puis raffine a partir de la meilleure
+  - Parametres supplementaires pour la subdivision des steps initiaux: min-step, default-segment-amount
+
+---
+
+# Optimisation de Parametres - Configuration (2/2)
+
+- **Definition des objectifs**
+  - Parametre optimization-criterion a optimiser
+  - Parametre target a maximiser ou minimiser (extremum)
+  - Cf class PerformanceMetrics
+  - Cible a atteindre target-value (Permet d'arreter l'optimisation de facon prematuree)
+- **Ajout de contraintes**
+  - Parametres target, operator, target-value
+  - Permet de disqualifier certaines configurations (risque trop eleve)
+
+---
+
+<!-- _class: questions -->
+
+# Questions?
+
+---
+
+# Machine Learning pour le Trading (1/2)
+
+- **Prediction de Series temporelles**
+  - Regression: Prediction du prix
+  - Classification: Prediction de la tendance (trend haussier, baissier, neutre)
+  - Detection d'anomalie
+- **Evolution des architectures**
+  - RNN (LSTM)
+  - Transformers
+  - CNN
+  - Diffusion
+
+---
+
+# Machine Learning pour le Trading (2/2)
+
+- **Retours sur le trading**
+  - Marche en constante evolution (modeles MAJ)
+  - Regression difficile / pas tres adaptee
+  - Modeles de classification boostes relativement efficaces
+
+<!-- TODO: ajouter diagramme d'architecture LSTM pour prediction de series temporelles -->
+<!-- TODO: ajouter graphique de predictions vs actuel -->
+
+---
+
+# Difficultes du ML dans le Trading (1/2)
+
+- **Non stationnarite**
+  - Different des Times series classiques
+  - Changements continuels dans les distributions de donnees
+  - Pire que ca: adversarial
+  - Le marche s'adapte, changement de regimes intentionnels
+  - Necessite de beaucoup de feedback, attention aux modeles statiques
+- **Identification de regimes distincts**
+  - Duree des transitions assez lente / difficile a detecter
+  - Detection d'anomalie difficile
+  - Emprise du regime localisee / globale
+  - Intensite des changements des regimes
+
+---
+
+# Difficultes du ML dans le Trading (2/2)
+
+- **Donnees inadequates**
+  - Ratio signal / bruit mauvais
+  - Granularite variable des donnees (e.g. rapports trimestriels)
+  - Donnees insuffisantes / overfitting
+  - Importance d'un pipeline de reentrainement continu
+
+<!-- TODO: ajouter graphique de ratio signal/bruit dans les donnees de marche -->
+
+---
+
+# ML en .Net
+
+- **ML.Net** https://github.com/dotnet/machinelearning
+  - Classification, Regression, Deep-learning, ONNX
+- **Tensorflow.Net** https://medium.com/@mariusmuntean/operationalize-tensorflow-models-with-ml-net-8b7389628d70
+- **TorchSharp** https://github.com/dotnet/TorchSharp
+  - Similaire a Pytorch (Bridge), Base de Autodiff.Net
+- **Infer**
+  - Programmation probabiliste
+  - https://dotnet.github.io/infer/default.html
+  - https://www.mbmlbook.com/toc.html
+- **AutoML**
+  - Choix du modele et hyperparametrisation
+  - "experiments" sur differents trainers
+- **TimeSeries**
+
+---
+
+# Exemples et Ressources ML.Net
+
+- **Exemples**
+  - https://github.com/dotnet/machinelearning-samples/tree/main
+  - https://github.com/dotnet/csharp-notebooks/tree/main/machine-learning
+- **Accord** http://accord-framework.net/
+  - Complet mais obsolete/vieillissant
+  - SVM toujours d'actualite
+  - Autres algos pris en charge par ML.Net
+
+---
+
+# ML dans Lean/QC (1/2)
+
+- **Exemple Accord SVM**
+  - Exemple simpliste
+  - Entrainement a la volee
+  - A utiliser en combinaison avec d'autres indicateurs/signaux
+- **Integration MyIA.Backtesting**
+  - Nombreux parametres
+  - Entrainement en batch
+
+---
+
+# ML dans Lean/QC (2/2)
+
+- **Types de modeles**
+  - Accord SVM: Type de noyau + complexite
+  - ML.Net AutoML: Classification, metrique d'optimisation
+  - A venir: prediction: modele regressif
+- **Integration Lean dans une branche dediee**
+- **Nouveaux exemples QC**
+  - https://www.quantconnect.com/docs/v2/writing-algorithms/machine-learning/key-concepts
+
+<!-- TODO: ajouter screenshot de code ML dans Lean -->
+<!-- TODO: ajouter graphique de features importance -->
+<!-- TODO: ajouter courbes de learning (train/validation) -->
+
+---
+
+<!-- _class: questions -->
+
+# Questions?
+
+---
+
+# Pour aller plus loin : Notebooks
+
+**Notebooks QuantConnect (~27 notebooks disponibles)**
+- Strategies de base: `QuantConnect/BasicTemplateAlgorithm.ipynb`
+- Moyennes mobiles: `QuantConnect/MovingAverageCrossover.ipynb`
+- RSI Strategy: `QuantConnect/RSIStrategy.ipynb`
+- Mean Reversion: `QuantConnect/MeanReversion.ipynb`
+- Backtesting: `QuantConnect/BacktestAnalysis.ipynb`
+- Optimisation: `QuantConnect/ParameterOptimization.ipynb`
+- LSTM pour prediction: `QuantConnect/LSTM-Prediction.ipynb`
+- Reinforcement Learning: `QuantConnect/ReinforcementLearning.ipynb`
+
+**Autres notebooks pertinents**
+- Optimisation de portefeuille: `Search/Portfolio_Optimization_GeneticSharp.ipynb`
+- Modeles probabilistes pour le risque: `Probas/`
+
+---
+
+<!-- _class: title -->
+
+# Merci
+
+Jean-Sylvain Boige
+jsboige@myia.org
+
+> **Notebooks associes:** `QuantConnect/` (~27 notebooks)
+> Strategies de trading, backtesting, optimisation, machine learning

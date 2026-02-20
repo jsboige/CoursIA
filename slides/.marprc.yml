@@ -1,0 +1,4 @@
+allowLocalFiles: true
+html: true
+themeSet:
+  - ./themes/ia101.css
