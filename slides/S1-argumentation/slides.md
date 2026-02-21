@@ -31,8 +31,9 @@ footer: 'S1 - Argumentation'
 - **La rhétorique aristotélicienne**
   - Ethos, logos et pathos
 
-<!-- TODO: timeline Aristote -> Toulmin -> argumentation computationnelle -->
-<!-- TODO: schema Ethos/Pathos/Logos avec exemples -->
+<!-- Ethos = credibilite, Logos = logique, Pathos = emotion -->
+
+> **Chronologie** : Aristote (IVe s. av. JC) → Scolastique (XIIIe) → Toulmin (1958) → Pragma-dialectique (1984) → Argumentation computationnelle (2000s)
 
 ---
 
@@ -121,7 +122,7 @@ footer: 'S1 - Argumentation'
   - et (prémisse de réfutation)
   - Alors (Conclusion)
 
-<!-- TODO: schema modele de Toulmin (Claim, Data, Warrant, Backing, Qualifier, Rebuttal) -->
+<!-- Toulmin : Donnees → Garantie → Conclusion, + Fondement, Qualificateur, Refutation -->
 
 ---
 
@@ -135,7 +136,7 @@ footer: 'S1 - Argumentation'
   - **Légal** → prémisse légale (loi, jurisprudence etc.)
   - **Esthétique** → prémisse esthétique (Critère esthétique)
 
-<!-- TODO: galerie visuelle des schemes courants -->
+<!-- Schemes : argument d'autorite, analogie, cause a effet, etc. -->
 
 ---
 
@@ -211,8 +212,7 @@ footer: 'S1 - Argumentation'
   - Cf. Taxonomie
   - Nom pas nécessaire, mais utile
 
-<!-- TODO: taxonomie visuelle des sophismes (formels vs informels) -->
-<!-- TODO: illustrations pedagogiques des sophismes (ad hominem, strawman, false dilemma, etc.) -->
+<!-- Sophismes formels (non sequitur) vs informels (ad hominem, homme de paille, faux dilemme) -->
 
 ---
 
@@ -392,7 +392,7 @@ footer: 'S1 - Argumentation'
 | Reductio ad absurdum | ¬A → ⊥ | A |
 | Résolution | A ∨ B, ¬B ∨ C | A ∨ C |
 
-<!-- TODO: arbre de preuve, graphe de resolution -->
+<!-- Arbre de preuve : premisses aux feuilles, conclusion a la racine -->
 
 ---
 
@@ -488,7 +488,7 @@ footer: 'S1 - Argumentation'
   - Modèle sous forme de graphe (Nœuds = arguments, arrêtes = attaques)
   - Notion d'ensembles stable / extensions (pas d'attaques internes)
 
-<!-- TODO: schema graphe d'attaque AF = (Arguments, Attacks) -->
+<!-- AF de Dung : graphe oriente (arguments, attaques), extensions admissibles -->
 
 ---
 
@@ -567,7 +567,7 @@ _Programme de français de première des voies générale et technologique_
 
 > Voir aussi : Deck III - Logique (slides 28-32) pour l'aparté argumentation
 
-<!-- TODO: ajouter QR codes vers notebooks Tweety -->
+<!-- Notebooks dans MyIA.AI.Notebooks/SymbolicAI/ -->
 
 ---
 
