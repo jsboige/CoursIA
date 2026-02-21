@@ -16,7 +16,7 @@ Intelligence Artificielle - VII
 Quelles sont ses limites?
 Son impact réel?
 
-<!-- TODO: ajouter visuel IA futuriste, ethique, cerveau+circuit -->
+<!-- Elargissements : ethique, limites, futur de l'IA -->
 
 ---
 
@@ -59,7 +59,7 @@ Son impact réel?
   - GPT 5.2, Claude Opus 4.5, Gemini Pro 3
   - Raisonnement, ARC, Maths, Développement
 
-<!-- TODO: timeline IA faible vs forte vs super-IA -->
+<!-- IA faible (specialisee) → IA forte (AGI) → super-IA (hypothetique) -->
 
 ---
 
@@ -82,7 +82,7 @@ Son impact réel?
 - **Discussion rapide**
   - "Les LLMs modernes répondent-ils aux critiques de l'époque GOFAI?"
 
-<!-- TODO: schema embodied cognition, photo robot Ameca/Figure 02 -->
+<!-- Embodied AI : cognition situee, robots humanoides (Ameca, Figure 02) -->
 
 ---
 
@@ -105,7 +105,7 @@ Son impact réel?
   - L'IA reste incapable d'émotions ou de conscience réelle
   - Autonomie simulée = méta-programmes (prompts systèmes)
 
-<!-- TODO: exemples visuels art IA (Stable Diffusion, DALL-E) -->
+<!-- Art IA : Stable Diffusion, DALL-E, Midjourney -->
 
 ---
 
@@ -127,7 +127,7 @@ Son impact réel?
 - **Limite persistante**
   - Les systèmes humains et artificiels restent soumis aux contraintes des mathématiques
 
-<!-- TODO: schema theoreme de Godel simplifie -->
+<!-- Godel : tout systeme formel coherent contient des enonces indecidables -->
 
 ---
 
@@ -148,7 +148,7 @@ Son impact réel?
 - **Défi**
   - Concevoir des tests mesurant l'acquisition de nouvelles compétences, la généralisation et l'éthique
 
-<!-- TODO: graphique evolution benchmarks 2020-2026 -->
+<!-- Benchmarks : MMLU, HumanEval, MATH - progression rapide 2020-2026 -->
 
 ---
 
@@ -175,7 +175,7 @@ Son impact réel?
 - **Réflexion rapide**
   - "Comment distinguer compréhension réelle et apparente chez une IA?"
 
-<!-- TODO: illustration chambre chinoise de Searle -->
+<!-- Chambre chinoise : manipulation de symboles sans comprehension -->
 
 ---
 
@@ -242,7 +242,7 @@ Son impact réel?
 - **Question pour réflexion**
   - "Comment garantir que l'IA sert l'intérêt collectif et non des intérêts individuels?"
 
-<!-- TODO: infographie balance benefices/risques -->
+<!-- Balance benefices/risques : productivite vs emploi, sante vs surveillance -->
 
 ---
 
@@ -264,7 +264,7 @@ Son impact réel?
   - Appel du secrétaire général de l'ONU à une interdiction des LAWS sans supervision humaine
 - **Vers une régulation ou une course à l'armement?**
 
-<!-- TODO: photos Harop, Kargu, drone Ukraine -->
+<!-- Armes autonomes : drones LAWS, debat sur l'interdiction -->
 
 ---
 
@@ -286,7 +286,7 @@ Son impact réel?
   - Chiffrement homomorphe
   - Augmentation
 
-<!-- TODO: schema federated learning, icone GDPR -->
+<!-- Federated learning : entrainement distribue, donnees restent locales -->
 
 ---
 
@@ -302,7 +302,7 @@ Son impact réel?
 - **Exemple concret**
   - Inclusive Images Competition (Google/NeurIPS)
 
-<!-- TODO: exemples visuels de biais algorithmique -->
+<!-- Biais : recrutement Amazon, reconnaissance faciale, scores de credit -->
 
 ---
 
@@ -329,7 +329,7 @@ Son impact réel?
     - On the Biology of a Large Language Model
     - When Models Manipulate Manifolds
 
-<!-- TODO: schema XAI boite noire vs boite blanche -->
+<!-- XAI : LIME, SHAP, attention maps, arbres de decision interpretes -->
 
 ---
 
@@ -346,7 +346,7 @@ Son impact réel?
 - **Question ouverte**
   - Une société sans travail reste-t-elle envisageable?
 
-<!-- TODO: graphique evolution emploi vs automatisation -->
+<!-- Emploi : automatisation des taches repetitives, creation de nouveaux metiers -->
 
 ---
 
@@ -414,7 +414,7 @@ Son impact réel?
 - **Question ouverte**
   - "Quel futur voulons-nous co-créer avec l'IA?"
 
-<!-- TODO: graphique croissance exponentielle Kurzweil -->
+<!-- Kurzweil : loi des rendements acceleres, singularite ~2045 -->
 
 ---
 
@@ -461,7 +461,7 @@ Son impact réel?
   - Robots industriels: environnements contrôlés, tâches répétitives
   - Défis pour le marché domestique: variabilité des environnements et tâches complexes
 
-<!-- TODO: photos Lidar, Arduino, NVIDIA Orin -->
+<!-- Hardware IA : GPU (NVIDIA), TPU (Google), NPU embarques -->
 
 ---
 
@@ -552,7 +552,7 @@ Son impact réel?
   - Apprentissage symbolique et architectures neuro-symboliques
     - Enrichissement des bases de connaissance, guidage par LLM
 
-<!-- TODO: schema architecture hybride neuro-symbolique -->
+<!-- Neuro-symbolique : combiner apprentissage profond et raisonnement logique -->
 
 ---
 
@@ -602,7 +602,7 @@ Son impact réel?
   - Nouvelle approche de l'émergence
   - 2023: Michael Levin: Classical Sorting Algorithms as a Model of Morphogenesis
 
-<!-- TODO: visualisation AlphaFold structure proteique -->
+<!-- AlphaFold : prediction de structure proteique, Nobel 2024 -->
 
 ---
 
@@ -619,7 +619,7 @@ Son impact réel?
 - **Infrastructure**
   - Course à l'armement (Datacenters, GPUs)
 
-<!-- TODO: carte mondiale clusters IA -->
+<!-- Clusters IA : Silicon Valley, Chine (Baidu, Alibaba), Europe (Mistral) -->
 
 ---
 
@@ -661,7 +661,7 @@ Son impact réel?
   - DALL-E, Stable Diffusion, ComfyUI, LLMs
 - **Théorie des jeux**: `GameTheory/` - 26 notebooks OpenSpiel
 
-<!-- TODO: ajouter liens vers notebooks specifiques -->
+<!-- Notebooks dans MyIA.AI.Notebooks/ -->
 
 ---
 
