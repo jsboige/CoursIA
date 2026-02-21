@@ -62,6 +62,10 @@ Intelligence Artificielle -- VI
 
 # Agent Apprenant
 
+- **4 modules** : performance, apprentissage, critique, generateur de problemes
+- Le module d'apprentissage ameliore le composant de performance a partir du feedback du critique
+- Le generateur de problemes suggere de nouvelles experiences pour enrichir l'apprentissage
+
 ---
 
 <!-- _class: dense -->
@@ -165,7 +169,7 @@ Intelligence Artificielle -- VI
 
 ![bg right:35%](images/img_005.png)
 
-<!-- TODO: ajouter frontiere de decision arbre vs foret aleatoire -->
+<!-- Frontiere de decision : arbre = decoupage orthogonal, foret = ensemble lisse -->
 
 ---
 
@@ -354,22 +358,15 @@ Intelligence Artificielle -- VI
 
 # Résumé arbres de décision
 
-- L’induction d’arbres de décision est l’une des méthodes d’apprentissage les plus utilisées
-- Surpasse les humains dans de nombreux problème
-- Apprentissage utilise le gain informationnel.
-- Points forts
-- Rapide
-- Simple
-- Compréhensible
-- Empiriquement valide
-- Robuste vis-à-vis du bruit
-- Points faibles:
-- Découpe à un seul attribut limite le type d’arbres / problèmes supportés
-- Les arbres de grande taille sont durs à comprendre
-- Nécessite des vecteurs de taille fixe
-- Non incrémental (méthode en batch)
+- L’induction d’arbres de decision est l’une des methodes d’apprentissage les plus utilisees
+- Surpasse les humains dans de nombreux problemes, apprentissage par gain informationnel
+- **Points forts** : rapide, simple, comprehensible, empiriquement valide, robuste au bruit
+- **Points faibles** :
+  - Decoupe a un seul attribut : limite les types de problemes supportes
+  - Les arbres de grande taille deviennent difficiles a interpreter
+  - Necessite des vecteurs de taille fixe, non incremental (batch)
 
-<!-- TODO: ajouter frontiere de decision arbre vs foret aleatoire -->
+<!-- Frontiere de decision : arbre = decoupage orthogonal, foret = ensemble lisse -->
 
 ---
 
@@ -534,7 +531,7 @@ Intelligence Artificielle -- VI
 
 ![bg right:35%](images/img_020.png)
 
-<!-- TODO: ajouter schema bagging vs boosting -->
+<!-- Bagging = echantillons paralleles, Boosting = echantillons sequentiels ponderes -->
 
 ---
 
@@ -544,17 +541,25 @@ Intelligence Artificielle -- VI
 
 ---
 
-# Classification linéaire
+# Classification lineaire
+
+- Separer les classes par un hyperplan dans l'espace des caracteristiques
+- Fonction de decision : f(x) = sign(w . x + b)
+- Limite : ne fonctionne que si les donnees sont lineairement separables
 
 ![bg right:40%](images/img_021.png)
 
 ---
 
-# Régression logistique
+# Regression logistique
+
+- Sortie = probabilite d'appartenance a une classe via la fonction sigmoide
+- Frontiere de decision lisse, interpretable, rapide a entrainer
+- Base des classificateurs lineaires modernes
 
 ![bg right:40%](images/img_022.png)
 
-<!-- TODO: ajouter graphique regression lineaire vs polynomiale -->
+<!-- Regression : lineaire = droite, polynomiale = courbe, risque de surapprentissage -->
 
 ---
 <!-- _class: columns-layout -->
@@ -632,7 +637,12 @@ Intelligence Artificielle -- VI
 
 ---
 
-# Apprentissage par rétropropagation
+# Apprentissage par retropropagation
+
+- **Principe** : propager l'erreur de la sortie vers les couches cachees
+- Calcul du gradient de l'erreur par la regle de la chaine (chain rule)
+- Mise a jour des poids : W_j ← W_j - alpha * dE/dW_j
+- Permet d'entrainer des reseaux multi-couches (invention cle du deep learning)
 
 ![bg right:35%](images/img_031.png)
 
@@ -682,7 +692,7 @@ Intelligence Artificielle -- VI
 ![bg](images/img_036.png)
 ![bg](images/img_037.png)
 
-<!-- TODO: ajouter schema architecture reseau de neurones (couches, activation) -->
+<!-- Architecture NN : entree → couches cachees (activation ReLU/sigmoid) → sortie -->
 
 ---
 
@@ -710,7 +720,7 @@ Intelligence Artificielle -- VI
 ![bg](images/img_040.png)
 ![bg](images/img_041.png)
 
-<!-- TODO: ajouter schema CNN avec feature maps -->
+<!-- CNN : convolution → feature maps → pooling → couches denses → classification -->
 
 ---
 
@@ -1045,7 +1055,7 @@ Intelligence Artificielle -- VI
 ![bg right:35% vertical](images/img_084.png)
 ![bg](images/img_085.png)
 
-<!-- TODO: ajouter visualisation clustering (avant/apres) -->
+<!-- Clustering : donnees brutes → k-means/DBSCAN → groupes identifies -->
 
 ---
 
@@ -1342,7 +1352,7 @@ Intelligence Artificielle -- VI
   - Then find a separating plane / SVM in that high-dimensional space
   - Voila:  A nonlinear classifier!
 
-<!-- TODO: ajouter visualisation SVM avec support vectors et marge -->
+<!-- SVM : hyperplan optimal, vecteurs supports sur la marge maximale -->
 
 ![bg right:35%](images/img_086.png)
 
@@ -2143,7 +2153,7 @@ Intelligence Artificielle -- VI
 - Equilibres de Nash
 - Application du RL au domaine médical
 
-<!-- TODO: ajouter schema agent-environnement (observation, action, reward) -->
+<!-- RL : agent observe l'etat, choisit une action, recoit une recompense -->
 
 ---
 
@@ -2184,7 +2194,7 @@ Intelligence Artificielle -- VI
 > **Deep Learning et GenAI** : `GenAI/` - Transformers, diffusion, LLMs
 > **Probabilites et inference** : `Probas/` - Infer.NET, reseaux bayesiens
 
-<!-- TODO: ajouter QR codes vers les notebooks -->
+<!-- Notebooks disponibles dans MyIA.AI.Notebooks/ -->
 
 ---
 
