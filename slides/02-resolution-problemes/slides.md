@@ -3,6 +3,7 @@ marp: true
 theme: ia101
 paginate: true
 header: 'IA 101'
+footer: 'II - Resolution de problemes'
 ---
 
 <!-- _class: title -->
@@ -48,15 +49,15 @@ Intelligence Artificielle - II
 
 ---
 
-# Agent fondé sur des buts
+# Agent fonde sur des buts
 
-- Réactif  Délibératif
-- Exploration du Futur, séquences d'actions
-- Recherche, planification
+L'agent passe du mode **reactif** au mode **deliberatif** : il anticipe les consequences de ses actions.
+
+- Exploration du futur : envisager des sequences d'actions
+- Recherche : parcourir systematiquement l'espace des possibles
+- Planification : construire un plan avant d'agir
 
 ![bg right:50%](images/img_001.png)
-
-<!-- notes:  design best program for given machine resources -->
 
 ---
 
@@ -107,14 +108,15 @@ Intelligence Artificielle - II
 
 # Types de problèmes
 
-- Déterministes, complètement observables → problème à état simple
-  - L'agent sait exactement dans quel état il sera; la solution est une séquence
-- Non-observable → problème sans capteur dit conformant
-  - L'agent peut ne pas savoir où il est, la solution est une séquence
-- Non déterministe et / ou partiellement observable → problème de contingence
-  - Les percepts fournissent une nouvelle information à propos de l'état courant
-  - Entrelacement {calcul, action}
-- Espaces d'états inconnu → problèmes d'exploration en ligne
+- **Deterministe, completement observable** → probleme a etat simple
+  - L'agent sait exactement dans quel etat il sera ; la solution est une sequence d'actions predeterminee
+- **Non-observable** → probleme sans capteur (dit *conformant*)
+  - L'agent ne connait pas sa position ; la solution doit fonctionner quel que soit l'etat reel
+- **Non deterministe et/ou partiellement observable** → probleme de contingence
+  - Les percepts fournissent de nouvelles informations sur l'etat courant
+  - Necessite un entrelacement {calcul, action, observation}
+- **Espace d'etats inconnu** → probleme d'exploration en ligne
+  - L'agent decouvre l'environnement au fur et a mesure de ses actions
 
 ---
 
@@ -226,6 +228,12 @@ Intelligence Artificielle - II
 
 # Arbre d'exploration: exemple
 
+- Developpement progressif depuis Arad
+- A chaque etape, on developpe un noeud feuille de la frontiere
+- L'ordre de developpement depend de la **strategie d'exploration** choisie
+
+![center w:650](images/img_007.png)
+
 ---
 
 # Exploration de graphe
@@ -287,7 +295,7 @@ Intelligence Artificielle - II
 - Variantes
   - Bidirectionnelle
 
-<!-- TODO: tableau comparatif BFS/DFS/UCS/IDS avec complexites et caracteristiques -->
+<!-- Le tableau comparatif complet est presente plus loin (img_018) -->
 
 ---
 
@@ -304,7 +312,7 @@ Intelligence Artificielle - II
 
 # Propriétés de l'exploration en largeur
 
-- Complet ? Oui (si b est finit)
+- Complet ? Oui (si b est fini)
 - Complexité en temps ?
   - 1+b+b2+b3+… +bd + b(bd-1) = O(bd+1)
 - Complexité en espace ?
@@ -412,16 +420,17 @@ Intelligence Artificielle - II
 
 ![center w:700](images/img_018.png)
 
-<!-- TODO: tableau comparatif complet BFS/DFS/UCS/IDS/A* avec complexites temps/espace et optimalite -->
-
 ---
 
 # Les missionnaires et cannibales
 
-- Les missionnaires et cannibales doivent traverser la rivière
-- Pas plus de 2 personnes en même temps sur la barque
-- Si + de cannibales que de missionnaires d'un côté ou l'autre
--  ils se font manger
+- **Probleme classique d'exploration** en IA (Russell & Norvig)
+- 3 missionnaires et 3 cannibales doivent traverser une riviere en barque
+- **Contraintes** :
+  - La barque transporte au maximum 2 personnes
+  - Si les cannibales sont plus nombreux que les missionnaires sur une rive, les missionnaires sont devores
+- **Formulation** : etat = (nb missionnaires, nb cannibales, position barque) sur une rive
+- Espace d'etats compact mais solution non triviale (11 traversees minimum)
 
 ![bg right:40%](images/img_019.png)
 
@@ -546,7 +555,7 @@ Exploration non informée
   - Si h(n) est consistante, A* est optimal en exploration de graphe
     - Démonstration: f est monotone  puis par l'absurde en développant
 
-<!-- TODO: visualisation A* pas-a-pas sur carte Roumanie avec contours f -->
+<!-- La carte de Roumanie est illustree dans les slides precedentes (img_009, img_010) -->
 
 ---
 
@@ -759,44 +768,44 @@ Exploration informée et locale
 
 ---
 
-# Exploration locale d'espaces continus
+# Exploration locale d'espaces continus (1/2)
 
-- Etats définis par des variables réelles
-- Problèmes de discontinuités
-  - Une solution = Discrétisation des voisinages
-- Pente pour l'escalade = gradient du paysage
-  - Parfois résolution analytique de ∇ f = 0 (rare)
-  - Si valable localement: x ← x + α∇ f où α est le pas de l'étape
-  - Si pas analytique: gradient empirique
-- Exploration linéaire
-  - α trop petit ou trop grand → on double le pas jusqu'à observer une diminution
-- Méthode de Newton-Raphson
-  - Formule de Newton pour trouver g(x) = 0 : x ← x – g(x) / g'(x)
-  - En prenant pour g le gradient de f: x ← x – Hf⁻¹(x) ∇ f(x)
-  - avec H matrice Hessienne des dérivées secondes de f
-- Méthodes modernes (RMSProp, ADAM)
-  - Efficacité et optimisation des méthodes par gradient
-  - Condition de Polyak-Lojasiewicz
-- Optimisation sous contrainte
-  - Contraintes sur les variables
-  - Programmation linéaire
-  - ← inégalités formant ensemble convexe (pas de trous)
-  - Très étudié → complexité polynomiale
+- **Etats definis par des variables reelles** (pas discretes)
+- Le gradient du paysage remplace la notion de pente pour l'escalade
+  - Parfois resolution analytique de ∇f = 0 (rare en pratique)
+  - Sinon : mise a jour iterative x ← x + α∇f ou α est le **pas d'apprentissage**
+  - Gradient empirique si la derivee analytique n'est pas disponible
+- **Exploration lineaire** : ajuster α en doublant le pas jusqu'a observer une diminution
+- **Methode de Newton-Raphson** :
+  - x ← x – Hf⁻¹(x) ∇f(x), avec H la matrice Hessienne (derivees secondes)
+  - Convergence rapide mais couteuse (inversion de matrice)
 
 ![bg right:25%](images/img_033.gif)
 
 ---
 
+# Exploration locale d'espaces continus (2/2)
+
+- **Methodes modernes de descente de gradient** :
+  - RMSProp, ADAM : pas adaptatif par parametre, momentum
+  - Fondements theoriques : condition de Polyak-Lojasiewicz
+  - Utilisees massivement en apprentissage profond
+- **Optimisation sous contrainte** :
+  - Les variables sont soumises a des inegalites formant un ensemble convexe
+  - **Programmation lineaire** : objectif et contraintes lineaires → complexite polynomiale
+  - Tres etudiee, nombreux solveurs efficaces (Simplex, points interieurs)
+
+---
+
 # Exploration avec actions non déterministes
 
-- Cf. cours précédent → utilité des percepts
-- Solution != séquence → plan contingent ou stratégie
-- Arbres Et-Ou: entrelacement de nœuds
-  - Nœuds Ou = Choix d'exploration classique
-  - Nœuds Et = « Choix » de l'environnement
-- solutions cycliques → possibilité d'étiquettes (tant que…)
-- **Ex: Aspirateur glissant**
-  - **Où l'action de déplacement peut échouer**
+- Quand les actions ont des **resultats imprevisibles**, la solution n'est plus une simple sequence mais un **plan contingent** (strategie avec branchements)
+- **Arbres Et-Ou** : entrelacement de deux types de noeuds
+  - Noeuds **Ou** = choix de l'agent (exploration classique)
+  - Noeuds **Et** = « choix » de l'environnement (tous les resultats possibles)
+- Solutions cycliques possibles → etiquettes de boucle (tant que...)
+- **Exemple : Aspirateur glissant**
+  - L'action de deplacement peut echouer aleatoirement
 
 ![bg right:40%](images/img_034.png)
 
@@ -804,19 +813,15 @@ Exploration informée et locale
 
 # Exploration avec observations partielles
 
-- Cf. cours précédent → Etat pas situé précisément
-- Analogue à non déterministe
-- Etat de croyance: états physiques possibles
-- Exploration sans observation: problème conformant
-  - Parfois parfaitement soluble. Ex: positionnement de pièces
-  - Idée → contraindre le monde
-- N états physiques → 2N états de croyances
-  - Modèle de transition → étape de prévision
-- Exploration incrémentale
-  - → Arbres Et-Ou complets
-- Exploration avec observation
-  - Etape de prévision d'observations
-  - Etape de mise à jour
+- L'agent ne connait pas son etat exact → il raisonne sur un **etat de croyance** (ensemble d'etats physiques possibles)
+- **Probleme conformant** (sans observation) :
+  - Parfois soluble malgre l'absence totale de percepts (ex : positionnement de pieces)
+  - Idee : choisir des actions qui **contraignent le monde** vers le but
+- N etats physiques → 2^N etats de croyance possibles
+  - Modele de transition → etape de prevision
+- **Exploration avec observation** :
+  - Prevision des observations possibles apres chaque action
+  - Mise a jour de l'etat de croyance → arbres Et-Ou complets
 
 ![bg right:40%](images/img_035.png)
 
@@ -824,20 +829,16 @@ Exploration informée et locale
 
 # Exploration en ligne
 
-- Entrelacement calcul et action
-- Problèmes de découverte
-  - Ratio de compétitivité
-  - En temps, vis-à-vis d'un espace connu
-- Il y a parfois des impasses
-  - sinon l'espace est explorable sans risque
-- Algorithmes
-  - **DFS, Escalade avec reprise aléatoire**
-  - **Mémoire  estimation H de l'heuristique h**
-  - **LRTA*** (learning real time A*)
-- Apprentissage
-  - De la « carte » (Etats)
-  - Du coût d'étape
-  - Des règles (transitions)
+- **Entrelacement calcul et action** : l'agent explore en temps reel, sans modele prealable
+- **Problemes de decouverte** :
+  - Ratio de competitivite : performance vs un agent omniscient connaissant l'espace
+  - Presence possible d'impasses (sinon l'espace est explorable sans risque)
+- **Algorithmes** :
+  - DFS en ligne, escalade avec reprise aleatoire
+  - Memoire : estimation H de l'heuristique h, mise a jour apres chaque action
+  - **LRTA*** (Learning Real-Time A*) : converge vers le chemin optimal
+- **Apprentissage en ligne** :
+  - De la « carte » (etats decouverts), du cout d'etape, des regles de transition
 
 ![bg right:40%](images/img_036.png)
 
@@ -876,7 +877,7 @@ Exploration informée et locale
 - Exploration informée (heuristiques)
 - **Exploration en situation d'adversité: les jeux** ← *vous êtes ici*
 - Minimax et Alpha-Bêta
-- Décisions impafaites
+- Décisions imparfaites
 - Problèmes à satisfaction de contraintes
 - Backtracking
 - Exploration locale
@@ -887,18 +888,14 @@ Exploration informée et locale
 
 # Jeux vs Exploration
 
-- Environnements:
-  - multi-agents
-  - concurrentiels
-- Classe de jeux la plus étudiée (échecs, Go)
-  - Alternés
-  - Déterministes
-  - A somme nulle (h1 = -h2)
-  - A information parfaite
-- Difficulté
-  - Imprédictibilité  arbre d'exploration complet
-  - Impraticable, solution optimale impossible
-  - Performance critique: temps  victoire
+- **Environnements multi-agents concurrentiels** : l'adversaire est une source d'incertitude
+- Classe de jeux la plus etudiee en IA (echecs, Go, dames) :
+  - Tours alternes, deterministes, a somme nulle (le gain de l'un = la perte de l'autre)
+  - Information parfaite (tous les joueurs voient l'etat complet)
+- **Difficultes specifiques** :
+  - L'adversaire rend le resultat imprevisible → il faut envisager un arbre d'exploration complet
+  - En pratique, l'arbre complet est impraticable (echecs : ~10^47 etats)
+  - La performance est critique : le temps de reflexion est limite
 
 ---
 
@@ -965,25 +962,27 @@ Exploration informée et locale
 
 ---
 
-# Décisions imparfaites
+# Decisions imparfaites (1/2)
 
-- Approche
-  - Utilité Fonction d'évaluation heuristique Eval(s) sur des états non terminaux
-  - Test de terminaison  Test d'arrêt Cutoff(s) pour savoir quand appliquer l'évaluation (ex: profondeur limite dlim)
-- Fonction d'évaluation
-  - Cf. Humains  attributs d'un état
-  - Classe d'équivalence  valeur attendue (utilité pondérée)
-  - Mais trop de classes  valeur matérielle  fonction linéaire pondérée
-    - Eval(s) = w1 f1(s) + w2 f2(s) + … + wn fn(s)
-  - Mais non indépendance des attributs  fonction non linéaire
-  - Si pas d'expérience, possibilité d'apprentissage (1 fou = 3 pions !)
-- Exploration avec arrêt
-  - Alpha Beta Itératif pour respecter une limite de temps (+ ordre des coups)
-  - Problème des situation instables au cutoff (prise au prochain tour)
-    - Solution = recherche de stabilité (« quiescence », ex: pas de prise)
-  - Problème plus subtile: Effet d'horizon
-    - Un évènement peut être retardé au-delà du cutoff
-    - Solution = extension de singularité (ex: prises)
+- **Approche** : on ne peut pas explorer l'arbre complet
+  - On remplace l'utilite reelle par une **fonction d'evaluation heuristique** Eval(s) sur des etats non terminaux
+  - On remplace le test terminal par un **test d'arret** Cutoff(s) (ex : profondeur limite)
+- **Fonction d'evaluation** :
+  - S'inspire du jugement humain : attributs d'un etat (materiel, position, mobilite...)
+  - Forme classique : fonction lineaire ponderee Eval(s) = w1 f1(s) + w2 f2(s) + ... + wn fn(s)
+  - En pratique, les attributs ne sont pas independants → fonctions non lineaires ou apprentissage
+  - Exemple aux echecs : 1 fou ≈ 3 pions (appris par experience)
+
+---
+
+# Decisions imparfaites (2/2)
+
+- **Exploration avec arret** :
+  - Alpha-Beta iteratif pour respecter une limite de temps (+ ordre des coups)
+  - **Probleme de stabilite** (quiescence) : une prise au prochain tour fausse l'evaluation
+    - Solution : poursuivre l'exploration dans les positions instables
+  - **Effet d'horizon** : un evenement inevitable peut etre « repousse » au-dela du cutoff
+    - Solution : extensions de singularite (prolonger l'exploration sur les coups forces)
 
 ---
 
@@ -1020,18 +1019,30 @@ Exploration informée et locale
 - Politique de sélection
   - Intervalle de confiance supérieur UCB1=
   - C empirique ou modèle appris (Alpha Go)
-- Combinaison avec heuristique
-  - Critère de terminaison avancée
-  - Apprentissage par renforcement
+- Combinaison avec heuristique et apprentissage
+  - Critere de terminaison avancee
+  - Apprentissage par renforcement des evaluations
 
-<!-- NOTE: img_041 is blank in PPTX original - no diagram present on this slide -->
-<!-- TODO: update MCTS section with MuZero (2019) and Pluribus (2019) references -->
+**Avancees recentes :**
+- **AlphaGo / AlphaZero** (2016-2018) : MCTS + reseaux de neurones profonds
+- **MuZero** (2019) : apprend le modele de l'environnement sans regles connues
+- **Pluribus** (2019) : poker multi-joueurs a information incomplete
 
 ---
 
 # Classes de Jeux complexes
 
-<div style="display: flex; flex-direction: column; gap: 8px; position: absolute; right: 20px; top: 80px; width: 50%;">
+- **Jeux stochastiques** (backgammon, Monopoly)
+  - Element de hasard (des, tirage de cartes)
+  - Minimax espere : ponderation par les probabilites
+- **Jeux a information incomplete** (poker, bridge)
+  - Etat partiellement observable → raisonnement sur les etats de croyance
+  - Pluribus (2019) : IA surhumaine au poker 6 joueurs
+- **Jeux a information imparfaite** (Starcraft, jeux video)
+  - Actions simultanees, brouillard de guerre
+  - AlphaStar (2019) : niveau Grand Maitre a Starcraft II
+
+<div style="display: flex; flex-direction: column; gap: 8px; position: absolute; right: 20px; top: 80px; width: 40%;">
   <img src="images/img_042.png" style="width: 100%; object-fit: contain;">
   <img src="images/img_043.png" style="width: 100%; object-fit: contain;">
   <img src="images/img_044.png" style="width: 100%; object-fit: contain;">
