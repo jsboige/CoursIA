@@ -7,7 +7,7 @@ Introduction a la planification automatique avec Fast Downward, un planificateur
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks | 1 |
-| Kernel | Python 3 |
+| Kernel | .NET C# |
 | Duree estimee | ~45-60 min |
 
 ## Notebook
@@ -98,12 +98,14 @@ cd fast-downward
 ### Environnement
 
 ```bash
-# Linux/WSL recommande
+# .NET SDK 9.0+ requis pour le notebook C#
+dotnet --version
+
+# Linux/WSL pour Fast Downward (optionnel, pour compilation native)
 # Windows : utiliser WSL2
 
-# Dependances
-sudo apt install cmake g++ python3
-pip install unified-planning
+# Dependances .NET
+# Le notebook installe automatiquement les packages NuGet necessaires
 ```
 
 ## Relation avec SymbolicAI
