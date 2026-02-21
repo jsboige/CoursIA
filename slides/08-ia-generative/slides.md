@@ -44,8 +44,6 @@ Intelligence Artificielle -- VIII
   - Hunyuan (video), Whisper (audio/speech-to-text)
   - Audiocraft (musique), Github Copilot (code)
 
-<!-- TODO: ajouter icones/logos des outils cites -->
-
 ---
 
 # IA generative : Une revolution
@@ -67,12 +65,12 @@ Intelligence Artificielle -- VIII
 
 # Systemes ISPO
 
-- **Input, Storage, Process, Output**
-  - Vitesse, precision, regularite
-  - Polyvalence, fiabilite, memoire, programmabilite
-
-<!-- TODO: refaire le diagramme ISPO en plus grand, lisible en projection -->
-<!-- NOTE: Dans le PPTX original, le contenu ISPO etait sur la meme slide que "Une revolution" -->
+- **Input, Storage, Process, Output** : les quatre fonctions fondamentales d'un systeme informatique
+  - **Input** : donnees d'entree (texte, image, audio, video)
+  - **Storage** : memoire des poids du modele et du contexte de la conversation
+  - **Process** : inference par le modele (attention, generation token par token)
+  - **Output** : resultat genere (texte, image, code, audio...)
+- Proprietes : vitesse, precision, regularite, polyvalence, fiabilite, programmabilite
 
 ---
 
@@ -256,7 +254,7 @@ Intelligence Artificielle -- VIII
 - **Agentique avancee** : coordination multi-agents (AutoGen, Semantic Kernel)
 - **Vibe Coding** : Copilot, Cline, Roo (VS Code) + CLIs (Claude Code, Gemini, etc.)
 
-<!-- TODO: schema pipeline RAG ou architecture agents -->
+> **Pipeline RAG** : Question → Embedding → Recherche vectorielle → Contexte + Question → LLM → Reponse fondee
 
 ---
 
@@ -295,8 +293,6 @@ Intelligence Artificielle -- VIII
 
 </div>
 </div>
-
-<!-- TODO: ajouter 1 capture d'ecran par categorie -->
 
 ---
 
@@ -370,7 +366,7 @@ Intelligence Artificielle -- VIII
 - **Droits des IAs**
   - IA surhumaine, conscience artificielle, autonomie economique ?
 
-<!-- TODO: timeline visuelle des regulations -->
+> **Chronologie** : RGPD (2018) → AI Act EU (08/2024) → Executive Order US (02/2025) → MCP standard (12/2025)
 
 ---
 
@@ -386,7 +382,7 @@ Intelligence Artificielle -- VIII
 - **Points critiques** : perte d'emplois, homogeneisation creative, deepfakes
   - **Activite : Constitutional AI** → definir une constitution, tester
 
-<!-- TODO: schema niveaux de securite Anthropic -->
+> **Niveaux Anthropic** : ASL-1 (pas de risque) → ASL-2 (risque modere, garde-fous) → ASL-3 (capacites avancees, controle renforce) → ASL-4+ (autonomie, risque systemique)
 
 ---
 
@@ -401,7 +397,7 @@ Intelligence Artificielle -- VIII
   - Surveillance deforestation, gestion des ressources en eau
 - **Activite : Propositions novatrices** (avec et sans guidance)
 
-<!-- TODO: infographie impact energetique de l'IA -->
+> **Chiffres cles** : GPT-4 entrainement ≈ 50 GWh | 1 requete ChatGPT ≈ 10x une recherche Google | Datacenters IA : 4% electricite mondiale d'ici 2030 (IEA)
 
 ---
 
