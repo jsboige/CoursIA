@@ -34,7 +34,7 @@ Intelligence Artificielle -- S4
 - Trouver et evaluer une strategie
   - Sources d'idees, metriques de performance
 
-<!-- TODO: ajouter schema d'architecture generale (Market Data → Algorithm → Broker) -->
+<!-- Architecture : Market Data → Algorithme → Broker → Marche -->
 
 ---
 
@@ -66,7 +66,7 @@ Intelligence Artificielle -- S4
   - Tout ce qui est numerisable peut etre utilise en trading quantitatif
   - Diversification facilitee sur plusieurs strategies simultanees
 
-<!-- TODO: ajouter schema de flux de donnees (market data → strategie → ordres) -->
+<!-- Flux : market data → strategie → signaux → ordres → execution -->
 
 ---
 
@@ -127,7 +127,7 @@ Intelligence Artificielle -- S4
   - Necessite des competences, des infrastructures et des ressources differentes
   - Offre des opportunites de rendement variables
 
-<!-- TODO: ajouter timeline de frequences de trading (microseconde → mois) -->
+<!-- Frequences : HFT (us) → intraday (min) → swing (jours) → position (mois) -->
 
 ---
 
@@ -151,7 +151,7 @@ Intelligence Artificielle -- S4
   - Tickers, Order Book, Volume, Time & Sales
   - Impact de la qualite et de la frequence (temps reel vs resolution)
 
-<!-- TODO: ajouter diagramme des participants du marche -->
+<!-- Participants : market makers, hedge funds, retail, institutionnels -->
 
 ---
 
@@ -186,9 +186,7 @@ Intelligence Artificielle -- S4
   - Analyse technique pour le timing d'entree/sortie
   - Analyse fondamentale pour la selection d'actifs
 
-<!-- TODO: ajouter graphiques de moyennes mobiles (SMA/EMA crossovers) -->
-<!-- TODO: ajouter graphiques de RSI avec zones surachat/survente -->
-<!-- TODO: ajouter graphiques de Bollinger Bands -->
+<!-- Indicateurs : SMA/EMA crossovers, RSI zones, Bollinger Bands -->
 
 ---
 
@@ -208,7 +206,7 @@ Intelligence Artificielle -- S4
 - **Exigence d'Infrastructure**
   - Serveurs co-localises, GPUs pour ML
 
-<!-- TODO: ajouter schema d'infrastructure (datacenter, co-location, broker API) -->
+<!-- Infrastructure : datacenter, co-location, APIs broker -->
 
 ---
 
@@ -240,7 +238,7 @@ Intelligence Artificielle -- S4
 - **Impact du mode d'execution**
   - Bourse centrale vs. Dark pools
 
-<!-- TODO: ajouter diagramme des types d'ordres avec exemples de scenarios -->
+<!-- Ordres : market, limit, stop, stop-limit, trailing stop -->
 
 ---
 
@@ -368,7 +366,7 @@ Intelligence Artificielle -- S4
   - Ordres Implicites: Ajustent prix et taille
   - Importance: Liquidite supplementaire en marche a terme
 
-<!-- TODO: ajouter diagramme de flux d'ordres complexes -->
+<!-- Flux d'ordres : signal → validation → sizing → execution → monitoring -->
 
 ---
 
@@ -416,8 +414,7 @@ Intelligence Artificielle -- S4
   - Ratio gain/perte moyen
   - Taux de reussite des trades
 
-<!-- TODO: ajouter graphique de courbe de rendement avec drawdowns annotes -->
-<!-- TODO: ajouter graphique de ratio de Sharpe (risk/return) -->
+<!-- Metriques : equity curve, drawdowns, ratio de Sharpe (rendement/risque) -->
 
 ---
 
@@ -444,7 +441,7 @@ Intelligence Artificielle -- S4
 - **Frais de financements**
   - Pour les positions a marge
 
-<!-- TODO: ajouter graphique d'exemple d'overfitting (train vs test performance) -->
+<!-- Overfitting : performance train >> test = surapprentissage -->
 
 ---
 
@@ -462,7 +459,7 @@ Intelligence Artificielle -- S4
   - "Guerre" des modeles
   - Theorie des jeux
 
-<!-- TODO: ajouter diagramme de mixture d'experts (multiple models → vote) -->
+<!-- Mixture d'experts : modeles multiples → vote pondere → decision -->
 
 ---
 
@@ -495,7 +492,7 @@ Intelligence Artificielle -- S4
   - Separer convenablement les ensembles (training, validation, test)
   - Evaluer la generalisation
 
-<!-- TODO: ajouter schema de pipeline de backtesting (donnees → strategie → evaluation) -->
+<!-- Pipeline : donnees historiques → strategie → simulation → evaluation -->
 
 ---
 
@@ -536,8 +533,7 @@ Intelligence Artificielle -- S4
   - Fournit un grand catalogue de donnees alternatives
   - Simplifie l'evaluation point-in-time
 
-<!-- TODO: ajouter screenshot de QuantConnect IDE -->
-<!-- TODO: ajouter diagramme d'architecture Lean Engine -->
+<!-- QuantConnect : IDE cloud + Lean Engine open-source -->
 
 ---
 
@@ -561,7 +557,7 @@ Intelligence Artificielle -- S4
   - La distribution des donnees evolue dans le temps
   - Rend les patterns historiques obsoletes
 
-<!-- TODO: ajouter graphique de data drift (distribution train vs test) -->
+<!-- Data drift : distributions qui changent entre train et production -->
 
 ---
 
@@ -640,8 +636,7 @@ Intelligence Artificielle -- S4
   - Estime la perte moyenne au-dela du VaR
   - Prend en compte les "fat tails"
 
-<!-- TODO: ajouter graphique de la fonction Kelly (fraction optimale vs edge) -->
-<!-- TODO: ajouter diagramme de derivation de la formule de Kelly -->
+<!-- Kelly : f* = (bp - q) / b, fraction optimale selon edge et odds -->
 
 ---
 
@@ -721,7 +716,7 @@ Intelligence Artificielle -- S4
 - **Effets de la Concurrence**
   - Reduit les opportunites d'arbitrage, diminuant les rendements
 
-<!-- TODO: ajouter graphique de Bollinger Bands avec mean reversion trades annotes -->
+<!-- Mean reversion : achat sous bande basse, vente au-dessus de bande haute -->
 
 ---
 
@@ -739,7 +734,7 @@ Intelligence Artificielle -- S4
   - Accelere l'atteinte de l'equilibre des prix
   - Rend les strategies de momentum moins efficaces a long terme
 
-<!-- TODO: ajouter graphique de moyennes mobiles avec signaux crossover -->
+<!-- Crossover : EMA rapide croise EMA lente → signal achat/vente -->
 
 ---
 
@@ -767,7 +762,7 @@ Intelligence Artificielle -- S4
   - Machine Learning pour detection en temps reel
   - Attention aux pieges: biais de "data snooping" et optimisation excessive
 
-<!-- TODO: ajouter diagramme de modele de Markov cache (HMM) pour regimes -->
+<!-- HMM : etats caches (bull/bear) → observations (rendements) -->
 
 ---
 
@@ -784,7 +779,7 @@ Intelligence Artificielle -- S4
 - **TWAP/VWAP sont tres utilises par les institutionnels**
   - Pour eviter un prix moyen trop deforme
 
-<!-- TODO: ajouter graphique comparatif VWAP vs TWAP -->
+<!-- VWAP = pondere par volume, TWAP = pondere par temps -->
 
 ---
 
@@ -800,7 +795,7 @@ Intelligence Artificielle -- S4
   - Ces modeles sont couramment utilises pour la construction de portefeuilles
   - Pour comprendre les sources de rendement
 
-<!-- TODO: ajouter heatmap de correlations entre facteurs -->
+<!-- Correlations entre facteurs : momentum, value, size, quality -->
 
 ---
 
@@ -834,7 +829,7 @@ Intelligence Artificielle -- S4
   - Contribution au risque par facteur
   - Correlation entre facteurs
 
-<!-- TODO: ajouter graphique de decomposition de performance par facteur -->
+<!-- Attribution : alpha + beta*marche + facteurs + residuel -->
 
 ---
 
@@ -875,7 +870,7 @@ Intelligence Artificielle -- S4
   - Flash crashs et manipulation de marche
   - Modelisation des interactions entre traders
 
-<!-- TODO: ajouter diagramme de theorie des jeux (matrice de gains) -->
+<!-- Game theory : interactions strategiques entre traders -->
 
 ---
 
@@ -946,7 +941,7 @@ Intelligence Artificielle -- S4
   - Utilisation: Necessite une modelisation statistique complexe
   - Mecanisme: Utilise des modeles statistiques pour identifier les opportunites d'arbitrage
 
-<!-- TODO: ajouter graphique de pairs trading avec spread et signaux -->
+<!-- Pairs trading : spread entre actifs cointegres, z-score → signaux -->
 
 ---
 
@@ -961,7 +956,7 @@ Intelligence Artificielle -- S4
   - Utilisation: Generalement utilise par les fonds institutionnels et les traders a haute frequence
   - Mecanisme: Utilise des algorithmes pour optimiser le timing et le cout des ordres
 
-<!-- TODO: ajouter diagramme de market making (bid-ask spread, inventory management) -->
+<!-- Market making : bid-ask spread, gestion d'inventaire, risque -->
 
 ---
 
@@ -990,7 +985,7 @@ Intelligence Artificielle -- S4
   - Detection d'abus de marche par des algorithmes de surveillance
   - Impact des regulations comme MiFID II sur la transparence
 
-<!-- TODO: ajouter schema d'infrastructure HFT (FPGA, co-location) -->
+<!-- HFT : FPGA, co-location, latence microseconde -->
 
 ---
 
@@ -1060,7 +1055,7 @@ Intelligence Artificielle -- S4
   - Offre theoriquement une meilleure croissance composee a long terme (cf. formule de Kelly)
   - Mais avec des risques inherents
 
-<!-- TODO: ajouter graphique de comparaison levier vs beta (risk/return) -->
+<!-- Levier vs beta : amplification rendement ET risque -->
 
 ---
 
@@ -1114,7 +1109,7 @@ Documentation officielle QuantConnect
 - **Communaute & Ressources**
   - Forums, tutoriels, documentation
 
-<!-- TODO: ajouter screenshot de QuantConnect IDE (code editor + backtest results) -->
+<!-- QuantConnect IDE : editeur + resultats de backtest integres -->
 
 ---
 
@@ -1143,7 +1138,7 @@ Documentation officielle QuantConnect
 - **Jetbrains Rider**
   - Licence?
 
-<!-- TODO: ajouter screenshot de VS Code avec extension QuantConnect -->
+<!-- VS Code : extension QuantConnect pour developpement local -->
 
 ---
 
@@ -1160,7 +1155,7 @@ Documentation officielle QuantConnect
   - `lean cloud pull`
   - `lean cloud push`
 
-<!-- TODO: ajouter screenshot de ligne de commande lean-cli -->
+<!-- lean-cli : lean backtest, lean live, lean research -->
 
 ---
 
@@ -1217,7 +1212,7 @@ Documentation officielle QuantConnect
   - Parfois herites + "Parameters"
   - Possibilite de les initializer
 
-<!-- TODO: ajouter diagramme de classe QCAlgorithm avec relations -->
+<!-- QCAlgorithm : Initialize, OnData, Portfolio, Securities -->
 
 ---
 
@@ -1248,7 +1243,7 @@ Documentation officielle QuantConnect
   - OnSecuritiesChange, OnEndOfDay, OnBrokerageMessage, OnWarmupFinished etc.
   - Evenements planifies (Schedule)
 
-<!-- TODO: ajouter diagramme de sequence des evenements (Initialize → OnData → OnOrderEvent) -->
+<!-- Cycle evenementiel : Initialize → [OnData, Schedule] → OnOrderEvent → OnEndOfDay -->
 
 ---
 
@@ -1269,7 +1264,7 @@ Documentation officielle QuantConnect
   - C#: `this.SetAccountCurrency("EUR"); this.SetCash("EUR", 10000);`
   - Python: `self.SetAccountCurrency("BTC"); self.SetCash("EUR", 10000)`
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1290,7 +1285,7 @@ Documentation officielle QuantConnect
   - C#: `this.Fast = EMA(_btcusd, FastPeriod); this.Slow = EMA(_btcusd, SlowPeriod);`
   - Python: `self.fast = self.EMA(symbol, 30, Resolution.Minute); self.slow = self.EMA(symbol, 60, Resolution.Minute)`
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1309,7 +1304,7 @@ Documentation officielle QuantConnect
   - `AutomaticIndicatorWarmUp = True`
   - `self.Settings.AutomaticIndicatorWarmUp = True`
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1329,7 +1324,7 @@ Documentation officielle QuantConnect
                      self.ExampleFunc)
     ```
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1353,7 +1348,7 @@ Documentation officielle QuantConnect
     self.AddChart(stockPlot)
     ```
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1377,7 +1372,7 @@ Documentation officielle QuantConnect
 - **Alternative: "CurrentSlice"**
   - Dans un evenement planifie
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1400,8 +1395,8 @@ Documentation officielle QuantConnect
   - Python: `self.df = self.History(self.Symbol("SPY"), start_time, end_time, Resolution.Hour)`
   - Plusieurs symbols: `self.dataframe = self.History([self.Symbol("IBM"), self.Symbol("AAPL")], start_time, end_time)`
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
-<!-- TODO: ajouter screenshot de graphique genere par backtest -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
+<!-- Graphique backtest : equity curve, drawdown, benchmark overlay -->
 
 ---
 
@@ -1417,7 +1412,7 @@ Documentation officielle QuantConnect
   - Possibilite de faire des MAJ chez certains Brokers
   - Classe UpdateOrderFields, methode ticket.Update
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1429,7 +1424,7 @@ Documentation officielle QuantConnect
 - **Annulation**
   - Methode ticket.Cancel("message") ou request = ticket.CancelOrderRequest()
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1443,7 +1438,7 @@ Documentation officielle QuantConnect
 - **Possibilite de definir plusieurs cibles d'actifs simultanement**
   - `self.SetHoldings([PortfolioTarget("SPY", 0.8), PortfolioTarget("IBM", 0.2)], True)`
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1460,7 +1455,7 @@ Documentation officielle QuantConnect
   - C# (un actif): `Liquidate("AAPL", "Liquidated");`
   - Python (toutes les positions): `order_ids = self.Liquidate()`
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1479,8 +1474,8 @@ Documentation officielle QuantConnect
   - Classe heritant de QCAlgorithm
   - Utilisation de donnees historisees / dataframes pour analyse
 
-<!-- TODO: ajouter screenshot de Jupyter notebook avec QuantBook -->
-<!-- TODO: ajouter diagramme de workflow (Research → Backtest → Live) -->
+<!-- QuantBook : notebook Jupyter pour exploration de donnees historiques -->
+<!-- Workflow : Research (QuantBook) → Backtest (QCAlgorithm) → Paper Trading → Live -->
 
 ---
 
@@ -1496,7 +1491,7 @@ Documentation officielle QuantConnect
   - Utilisable en combinaison avec des primitives de bas niveau
   - (Alpha, PortfolioConstruction, Risk, Execution) peuvent etre utilises individuellement ou combines
 
-<!-- TODO: ajouter diagramme d'architecture du framework (Universe → Alpha → Portfolio → Risk → Execution) -->
+<!-- Pipeline : Universe Selection → Alpha Model → Portfolio Construction → Risk Management → Execution -->
 
 ---
 
@@ -1513,7 +1508,7 @@ Documentation officielle QuantConnect
   - C#: `public override void OnSecuritiesChanged(SecurityChanges changes)`
   - Python: `def OnSecuritiesChanged(self, algorithm: QCAlgorithm, changes: SecurityChanges) -> None:`
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1550,7 +1545,7 @@ Documentation officielle QuantConnect
     }
     ```
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1569,7 +1564,7 @@ Documentation officielle QuantConnect
   - `var insights = algorithm.Insights.GetInsights(insight => insight.Direction == InsightDirection.Up);`
   - `algorithm.Insights.Cancel(symbols)`
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1616,7 +1611,7 @@ Documentation officielle QuantConnect
   - MaximumUnrealizedProfitPercentPerSecurity
   - MaximumSectorExposureRiskManagementModel, TrailingStopRiskManagementModel
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1632,7 +1627,7 @@ Documentation officielle QuantConnect
   - StandardDeviationExecutionModel
   - VolumeWeightedAveragePriceExecutionModel
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
 
 ---
 
@@ -1654,8 +1649,8 @@ Documentation officielle QuantConnect
   - Fichier config.json
   - Interface en ligne dediee / UI similaire dans l'extension vscode
 
-<!-- TODO: remplacer par screenshot de code avec syntax highlighting -->
-<!-- TODO: ajouter screenshot de l'interface d'optimisation de parametres -->
+<!-- Code : voir notebooks QuantConnect/ pour exemples executables -->
+<!-- Interface optimisation : grille de parametres, bouton lancement, resultats tabulaires -->
 
 ---
 
@@ -1674,7 +1669,7 @@ Documentation officielle QuantConnect
   - Utilisation d'une version d'algo "rapide" (test manuel de sensibilite a la resolution)
   - Attention au sur-apprentissage (Optimisation sur une periode donnee, validation finale sur une periode + recente)
 
-<!-- TODO: ajouter heatmap de resultats d'optimisation (parametres vs performance) -->
+<!-- Heatmap optimisation : axes = parametres, couleur = Sharpe ratio ou rendement -->
 
 ---
 
@@ -1732,8 +1727,8 @@ Documentation officielle QuantConnect
   - Regression difficile / pas tres adaptee
   - Modeles de classification boostes relativement efficaces
 
-<!-- TODO: ajouter diagramme d'architecture LSTM pour prediction de series temporelles -->
-<!-- TODO: ajouter graphique de predictions vs actuel -->
+<!-- LSTM : input sequence → cellules LSTM → dense → prediction prix/direction -->
+<!-- Predictions vs actuel : courbe de prix reelle vs predictions du modele -->
 
 ---
 
@@ -1761,7 +1756,7 @@ Documentation officielle QuantConnect
   - Donnees insuffisantes / overfitting
   - Importance d'un pipeline de reentrainement continu
 
-<!-- TODO: ajouter graphique de ratio signal/bruit dans les donnees de marche -->
+<!-- Signal/bruit : series financieres dominee par le bruit, signal faible et non-stationnaire -->
 
 ---
 
@@ -1817,9 +1812,9 @@ Documentation officielle QuantConnect
 - **Nouveaux exemples QC**
   - https://www.quantconnect.com/docs/v2/writing-algorithms/machine-learning/key-concepts
 
-<!-- TODO: ajouter screenshot de code ML dans Lean -->
-<!-- TODO: ajouter graphique de features importance -->
-<!-- TODO: ajouter courbes de learning (train/validation) -->
+<!-- ML dans Lean : integration ML.Net/ONNX dans QCAlgorithm -->
+<!-- Features importance : classement des variables predictives par gain d'information -->
+<!-- Learning curves : train loss decroissant, validation loss en U (overfitting) -->
 
 ---
 
