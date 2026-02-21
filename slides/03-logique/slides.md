@@ -6,8 +6,6 @@ header: 'IA 101'
 footer: 'III - Logique'
 ---
 
----
-
 <!-- _class: title -->
 
 # Bases de connaissance et Logique
@@ -73,18 +71,12 @@ footer: 'III - Logique'
 
 # Exemple: le monde du Wumpus
 
-- Jeux de rôle simpliste
-- Environnement:
-  - Grille 4*4 de salles à explorer
-- But/Performance:
-  - **Trouver l'or et sortir**
-  - sans dommages
-- Actions:
-  - **Avancer, tourner, saisir,**
-  - tirer, sortir
-- Percepts:
-  - Odeur, brise, lueur, choc, cri
-  - Vecteur
+- **Jeu de role simpliste** mais riche pour illustrer le raisonnement logique
+- **Environnement** : grille 4x4, salles a explorer, dangers caches (Wumpus, puits)
+- **But** : trouver l'or et sortir vivant
+- **Actions** : avancer, tourner, saisir, tirer une fleche, sortir
+- **Percepts** : odeur (Wumpus adjacent), brise (puits adjacent), lueur (or), choc (mur), cri (Wumpus tue)
+- L'agent doit **raisonner logiquement** sur ses percepts pour deduire la position des dangers
 
 ![bg right:55% vertical](images/img_003.png)
 ![bg](images/img_004.png)
@@ -124,10 +116,15 @@ footer: 'III - Logique'
 
 # Types de logiques
 
-- Ontologie: étude de ce qui existe
-- Epistémologie: étude de ce qui peut être connu
+- **Ontologie** : etude de ce qui existe dans le monde modelise
+- **Epistemologie** : etude de ce qui peut etre connu par l'agent
 
-<!-- TODO: ajouter tableau comparatif des types de logiques (propositionnelle, FOL, HOL, modale) -->
+| Logique | Variables | Quantifie sur | Decidable ? |
+|---------|-----------|---------------|-------------|
+| Propositionnelle | Symboles booleens | -- | Oui (NP-complet) |
+| Premier ordre (FOL) | Objets du domaine | Variables | Semi-decidable |
+| Ordre superieur (HOL) | Relations, fonctions | Relations | Non |
+| Modale | + mondes possibles | Necessaire/possible | Selon variante |
 
 ---
 
@@ -176,9 +173,18 @@ footer: 'III - Logique'
   - H signifie « il fait humide »
   - P signifie « il pleut »
   - (C  H)  P
-- Une tautologie est vrai pour toute interprétation (contradiction toujours fausse)
+- Une tautologie est vraie pour toute interpretation (contradiction : toujours fausse)
 
-<!-- TODO: ajouter table de vérité colorée pour l'exemple (C ∧ H) → P -->
+| C | H | P | C ∧ H | (C ∧ H) → P |
+|---|---|---|-------|-------------|
+| V | V | V | V | **V** |
+| V | V | F | V | **F** |
+| V | F | V | F | V |
+| V | F | F | F | V |
+| F | V | V | F | V |
+| F | V | F | F | V |
+| F | F | V | F | V |
+| F | F | F | F | V |
 
 ---
 
@@ -196,9 +202,8 @@ footer: 'III - Logique'
 
 - Objectif de l'inférence logique:
   - Vérifier qu'un énoncé est une conséquence de la KB, i.e. un théorème
-- Inférence par la preuve: utilisation de règles de dérivation cohérentes pour produire une chaine de conclusions conduisant au but
-
-<!-- TODO: ajouter arbre de preuve visuel pour un exemple simple -->
+- **Inference par la preuve** : utilisation de regles de derivation coherentes pour produire une chaine de conclusions conduisant au but
+  - Exemple : de A et A → B, on deduit B (Modus Ponens), puis de B et B → C, on deduit C
 
 ---
 
@@ -387,9 +392,8 @@ footer: 'III - Logique'
   - Objets: des choses avec des identités individuelles
   - Propriétés des objets qui les distinguent des autres objets
   - Relations qui existent entre les ensembles d'objets
-  - Fonctions qui sont un sous ensemble des relations avec une valeur unique de résultat pour des données entrées
-
-<!-- TODO: ajouter diagramme objets/relations/fonctions avec exemples visuels -->
+  - Fonctions qui sont un sous-ensemble des relations avec une valeur unique de resultat pour des donnees d'entree
+  - Exemple : objets = {Jean, Marie, Paris}, relation = Habite(Jean, Paris), fonction = pere-de(Marie) = Jean
 
 ---
 
@@ -454,9 +458,7 @@ footer: 'III - Logique'
   - Emprise
   - Ordre important entre eux ((x)(y) likes(x,y) != (y) (x) likes(x,y))
 - Connexions
-  - Inversion dans la négation (ex: (x) P(x) ↔ (x) P(x))
-
-<!-- TODO: ajouter schéma de portée des quantificateurs avec négations -->
+  - Inversion dans la negation : ¬∀x P(x) ↔ ∃x ¬P(x) et ¬∃x P(x) ↔ ∀x ¬P(x)
 
 ---
 
@@ -481,8 +483,6 @@ footer: 'III - Logique'
     - x t  person(x) time(t)  can-fool(x,t)
   - On peut tromper tout le monde de temps en temps
     - x t (person(x)  time(t) can-fool(x,t))
-
-<!-- TODO: ajouter arbres syntaxiques pour les formules -->
 
 ---
 
@@ -681,9 +681,8 @@ footer: 'III - Logique'
   - Substitutions (ex: subst({x/IceCream, y/Ziggy}, eats(y,x)) = eats(Ziggy, IceCream) )
   - Recherche d'unificateurs les plus généraux  Élimine l'étape d'instanciation
   - UNIFY(Knows(John, x), Knows(y,Mother (y))) = {y/John, x/Mother (John)}
-- Modus ponens généralisé  inférence naturelle, +Indexation  accélération
-
-<!-- TODO: ajouter exemple d'unification pas-à-pas visuel -->
+- Modus ponens generalise → inference naturelle, + indexation → acceleration
+  - Exemple pas-a-pas : UNIFY(Knows(John, x), Knows(y, Mother(y))) → {y/John, x/Mother(John)}
 
 ---
 
@@ -717,18 +716,17 @@ footer: 'III - Logique'
 
 ---
 
-# Logiques d'ordre supérieur
+# Logiques d'ordre superieur
 
-- FOL quantifie sur des variables, qui représentent des objets
-- HOL (ordre supérieur) quantifie sur les relations
-  - Ex: f g (f = g)  (x f(x) = g(x))
-  - r transitive( r )  (xyz) r(x,y)  r(y,z)  r(x,z))
-- Plus expressif mais indécidable
-  - FOL décidable uniquement avec prédicats à 1 argument
-- Exemple
-  - Tweety
-  - E-prover
-  - Lean
+- **FOL** quantifie sur des variables representant des **objets**
+- **HOL** (Higher-Order Logic) quantifie sur les **relations et fonctions elles-memes**
+  - Ex : ∀f ∀g (f = g) ↔ (∀x f(x) = g(x)) -- extensionnalite
+  - Ex : ∀r transitive(r) ↔ (∀x∀y∀z r(x,y) ∧ r(y,z) → r(x,z))
+- Plus expressif mais **indecidable** (pas d'algorithme complet garanti de terminer)
+- **Outils et demonstrateurs** :
+  - Tweety (framework Java pour logiques argumentatives)
+  - E-prover (demonstrateur automatique pour FOL)
+  - **Lean** (assistant de preuve interactif, tres actif en mathematiques)
 
 ---
 
@@ -766,8 +764,7 @@ footer: 'III - Logique'
 - Logique argumentative abstraite (de Dung)
   - Modèle sous forme de graphe (Noeuds = arguments, arrêtes = attaques )
   - Notion d'ensembles stable / extensions (pas d'attaques internes)
-
-<!-- TODO: ajouter graphe d'attaque de Dung avec exemples d'extensions stables -->
+  - Exemple : si A attaque B et B attaque C, alors {A, C} est une extension stable
 
 ---
 
@@ -1193,9 +1190,8 @@ footer: 'III - Logique'
   - Partitions: Disjoints + décomposition exhaustive
   - Composition
     - PartieDe(x,y)
-    - Partition  assortiment (pas ensemble)
-
-<!-- TODO: ajouter diagramme hiérarchie de classes avec exemples d'héritage -->
+    - Partition → assortiment (pas ensemble)
+  - Exemple : Animal → {Mammifere, Oiseau, Reptile} (partition), Mammifere herite des proprietes d'Animal
 
 ![bg right:40%](images/img_038.png)
 
@@ -1218,19 +1214,15 @@ footer: 'III - Logique'
 
 ---
 
-# Web sémantique
+# Web semantique
 
-- Resource Description Framework
-  - Communauté KR: AAAI, W3C, Berners-Lee
-  - RDF - triplets (faits), classes / sousclasses
-  - RDFS - OWL
-    - Classes définies
-    - contraintes
-  - SPARQL
-    - Requêtes, "Triple Stores",
-    - Linked-Data
-  - SOA
-  - Exemples
+- **Resource Description Framework (RDF)** : standard W3C (Tim Berners-Lee)
+  - Donnees structurees en **triplets** (sujet, predicat, objet)
+  - Hierarchie de classes et sous-classes
+- **RDFS / OWL** : schemas et ontologies avec classes definies et contraintes
+- **SPARQL** : langage de requetes pour interroger les Triple Stores (bases de triplets)
+- **Linked Data** : interconnecter les donnees structurees a l'echelle du web
+- **Architecture orientee services** (SOA) : services web semantiques
 
 ![bg right:50% vertical](images/img_039.png)
 ![bg](images/img_040.png)
