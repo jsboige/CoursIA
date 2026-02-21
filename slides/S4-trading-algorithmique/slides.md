@@ -157,6 +157,8 @@ Intelligence Artificielle -- S4
 
 # Instruments Financiers
 
+![bg right:30%](images/candlestick_patterns.png)
+
 - **Actions**
   - Titres qui representent une fraction de la propriete d'une entreprise
 - **Forex**
@@ -173,6 +175,8 @@ Intelligence Artificielle -- S4
 ---
 
 # Analyse Technique et Fondamentale
+
+![bg right:30%](images/candlestick_anatomy.png)
 
 - **Analyse Technique**
   - Etude des graphiques de prix et de volume
@@ -539,6 +543,8 @@ Intelligence Artificielle -- S4
 
 # Mesures de Performance et Pieges (1/2)
 
+![bg right:25%](images/efficient_frontier.png)
+
 - **Mesures Standard**
   - Ratio de Sharpe: Mesure le rendement ajuste au risque, souvent annualise
   - High Watermark: Rendement cumule maximal a un moment donne
@@ -624,6 +630,8 @@ Intelligence Artificielle -- S4
 
 # Outils et Formules
 
+![bg right:30%](images/normal_distribution.png)
+
 - **Formule de Kelly**
   - Determine la fraction optimale du capital a risquer par trade
   - f* = (p * b - q) / b
@@ -635,8 +643,6 @@ Intelligence Artificielle -- S4
 - **Conditional Value-at-Risk (CVaR)**
   - Estime la perte moyenne au-dela du VaR
   - Prend en compte les "fat tails"
-
-<!-- Kelly : f* = (bp - q) / b, fraction optimale selon edge et odds -->
 
 ---
 
@@ -705,6 +711,8 @@ Intelligence Artificielle -- S4
 
 # Strategies de Moyenne Reversion
 
+![bg right:30%](images/bollinger_bands.png)
+
 - **Moyenne Reversion**
   - Les prix des actions ont tendance a revenir vers une moyenne a long terme
 - **Recherche Academique**
@@ -721,6 +729,8 @@ Intelligence Artificielle -- S4
 ---
 
 # Strategies Fondamentales de Momentum
+
+![bg right:30%](images/macd_chart.png)
 
 - **Momentum**
   - Tendance d'un actif a continuer a se deplacer dans la meme direction pendant une certaine periode
@@ -784,6 +794,8 @@ Intelligence Artificielle -- S4
 ---
 
 # Strategies Basees sur les Donnees - Modeles Factoriels
+
+![bg right:25%](images/security_market_line.png)
 
 - **Exposition Factorielle**
   - Mesure la sensibilite d'un actif a differents facteurs du marche
@@ -882,6 +894,8 @@ Intelligence Artificielle -- S4
 
 # Strategies de Sortie en Trading (1/2)
 
+![bg right:25%](images/payoff_put_option.png)
+
 - **Periode de Detention Fixe**
   - Utilisee par defaut dans divers modeles de trading
   - Momentum: La periode optimale peut etre trouvee via un backtest
@@ -941,7 +955,7 @@ Intelligence Artificielle -- S4
   - Utilisation: Necessite une modelisation statistique complexe
   - Mecanisme: Utilise des modeles statistiques pour identifier les opportunites d'arbitrage
 
-<!-- Pairs trading : spread entre actifs cointegres, z-score → signaux -->
+![bg right:30%](images/ted_spread.png)
 
 ---
 
@@ -1031,6 +1045,8 @@ Intelligence Artificielle -- S4
 ---
 
 # Portefeuille a Haut Levier vs Haut Beta (1/2)
+
+![bg right:25%](images/capital_market_line.png)
 
 - **Beta**
   - Mesure de la sensibilite d'un actif par rapport au marche
@@ -1708,6 +1724,8 @@ Documentation officielle QuantConnect
 
 # Machine Learning pour le Trading (1/2)
 
+![bg right:30%](images/lstm_cell.png)
+
 - **Prediction de Series temporelles**
   - Regression: Prediction du prix
   - Classification: Prediction de la tendance (trend haussier, baissier, neutre)
@@ -1733,6 +1751,8 @@ Documentation officielle QuantConnect
 ---
 
 # Difficultes du ML dans le Trading (1/2)
+
+![bg right:25%](images/rnn_unrolled.png)
 
 - **Non stationnarite**
   - Different des Times series classiques
