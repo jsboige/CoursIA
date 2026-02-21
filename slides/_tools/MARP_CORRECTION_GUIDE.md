@@ -243,31 +243,50 @@ Before committing a corrected deck, verify:
 
 ---
 
-## 6. sk-agent Vision Prompts (calibrated)
+## 6. sk-agent Vision Prompts (calibrated on deck 01)
 
-Use these prompts when sending slide PNGs to sk-agent for automated verification:
+**Important**: Always use French prompts. English prompts cause hallucination
+on logo-heavy slides. Keep prompts under ~50 words per question.
 
-### Layout verification
+### Primary layout verification prompt (recommended)
 ```
-"Analyze this slide image. Is the text readable and well-formatted?
-Are images properly positioned and not overlapping the footer or header?
-Is there any content that appears cut off or misaligned?"
+TEXTE EXTRAIT:
+{texte_slide}
+
+---
+Analyse UNIQUEMENT la mise en forme et les visuels (le texte est deja extrait ci-dessus).
+
+1. VISUELS: Diagrammes, images, icones presents ? Lesquels ? Qualite ?
+2. MISE EN FORME: Disposition, equilibre texte/visuel, hierarchie
+3. LISIBILITE: Note /10 pour projection amphitheatre
+4. 2 SUGGESTIONS concretes d'amelioration
 ```
 
-### PPTX vs Marp comparison
+Providing extracted text prevents the model from needing to read text,
+directing attention to layout and visual quality.
+
+### Retry prompt (on empty or hallucinated response)
 ```
-"Compare these two slide renders. The first is the PPTX original, the second
-is the Marp conversion. Report: (1) Is the content identical? (2) Are images
-in the same relative position? (3) What layout differences do you see?
-(4) Is the Marp version readable for classroom projection?"
+Decris les visuels de cette slide et note la lisibilite /10.
 ```
 
-### Content density check
+### Content completeness check
 ```
-"How many bullet points are on this slide? Is the text density appropriate
-for a classroom presentation, or does it feel cramped? Would you recommend
-splitting this into multiple slides?"
+Verifie le contenu de cette slide :
+1. Y a-t-il du contenu qui semble tronque ou absent ?
+2. Les images sont-elles visibles et correctement positionnees ?
+3. Le texte deborde-t-il du cadre de la slide ?
 ```
+
+### Calibration findings (Phase 1.5)
+
+| Finding | Impact | Mitigation |
+|---------|--------|------------|
+| sk-agent misses content truncation | Over-rates broken slides | Add explicit "tronque ou absent?" question |
+| English prompts cause hallucination | Logo-heavy slides trigger fake web URLs | Always use French |
+| 2-column layouts convert best | Agent reflexe type = 4.5/5 | Prefer columns-layout for complex slides |
+| Logo grids are weakest | Overflow, lost associations | Use constrained img-grid with max-height |
+| sk-agent uses glm-4.6v internally | Ignores model parameter | No workaround needed |
 
 ---
 
