@@ -21,6 +21,8 @@ footer: 'S1 - Argumentation'
 
 # Histoire de l'argumentation
 
+![bg right:25%](images/aristotle_bust.jpg)
+
 - **Importance dans l'histoire de la pensée humaine**
   - Mécanisme par lequel les idées sont exprimées, discutées et évaluées
   - Remise en question des croyances préconçues et la recherche de la vérité
@@ -30,8 +32,6 @@ footer: 'S1 - Argumentation'
   - Exposer les contradictions
 - **La rhétorique aristotélicienne**
   - Ethos, logos et pathos
-
-<!-- Ethos = credibilite, Logos = logique, Pathos = emotion -->
 
 > **Chronologie** : Aristote (IVe s. av. JC) → Scolastique (XIIIe) → Toulmin (1958) → Pragma-dialectique (1984) → Argumentation computationnelle (2000s)
 
@@ -110,6 +110,8 @@ footer: 'S1 - Argumentation'
 
 # Qu'est-ce qu'un argument ?
 
+![bg right:30%](images/ethos_pathos_logos.png)
+
 - **Une proposition supportée par d'autres propositions**
   - **Prémisses** : Les raisons
   - **Conclusion** : Supportée par les prémisses et le raisonnement
@@ -127,6 +129,8 @@ footer: 'S1 - Argumentation'
 ---
 
 # Déduction vs Induction et Arguments particuliers
+
+![bg right:30%](images/inductive_deductive.png)
 
 - **Déduction vs Induction**
   - **Déduction** → nécessité logique
@@ -202,6 +206,8 @@ footer: 'S1 - Argumentation'
 
 # Qu'est-ce qu'un argument fallacieux ?
 
+![bg right:20%](images/fallacy_ad_hominem.png)
+
 - **La violation de l'un des critères définissant un bon argument**
   - Faille structurelle
   - Prémisse non pertinente
@@ -212,11 +218,11 @@ footer: 'S1 - Argumentation'
   - Cf. Taxonomie
   - Nom pas nécessaire, mais utile
 
-<!-- Sophismes formels (non sequitur) vs informels (ad hominem, homme de paille, faux dilemme) -->
-
 ---
 
 # Dénoncer un argument fallacieux
+
+![bg right:20%](images/fallacy_straw_man.png)
 
 - **Autodestruction par reconstruction en forme standard**
 - **Méthode du contre-exemple absurde**
@@ -257,6 +263,8 @@ footer: 'S1 - Argumentation'
 ---
 
 # Analyse d'un débat (1/2)
+
+![bg right:25%](images/debate_pyramid.png)
 
 - **Comprendre le contexte et le but du débat**
   - Tenir compte des spécificités et enjeux
@@ -375,6 +383,8 @@ footer: 'S1 - Argumentation'
 
 # Règles d'inférence
 
+![bg right:25%](images/modus_barbara.png)
+
 - **Objectif de l'inférence logique**
   - Vérifier qu'un énoncé est une conséquence de la KB, i.e. un théorème
 - **Inférence par la preuve**
@@ -482,13 +492,13 @@ footer: 'S1 - Argumentation'
 
 # Logiques argumentatives
 
+![bg right:30%](images/ibis_argument_graph.png)
+
 - **Extension des logiques appliquées à l'argumentation**
   - Analyse de la structure, la validité, la force des arguments
 - **Logique argumentative abstraite (de Dung)**
   - Modèle sous forme de graphe (Nœuds = arguments, arrêtes = attaques)
   - Notion d'ensembles stable / extensions (pas d'attaques internes)
-
-<!-- AF de Dung : graphe oriente (arguments, attaques), extensions admissibles -->
 
 ---
 
