@@ -78,7 +78,7 @@ Intelligence Artificielle -- V
 - **Exemple : Morra**
   - p = 7/12, U(E) = -1/12
 
-<!-- TODO: matrice de gains visuelle pour Morra -->
+<!-- Morra : matrice 3x3 a somme nulle, strategie mixte optimale -->
 
 ---
 
@@ -128,7 +128,7 @@ Intelligence Artificielle -- V
 - **Exemple** : Chasse au cerf
   - Deux equilibres : cooperation (cerf) vs securite (lievre)
 
-<!-- TODO: matrice chasse au cerf avec equilibres de Nash marques -->
+<!-- Chasse au cerf : (Cerf,Cerf)=(5,5) et (Lievre,Lievre)=(3,3) -->
 
 ---
 
@@ -245,7 +245,7 @@ Intelligence Artificielle -- V
   - Sous-jeu du bas → cf simultane : mixte → EU(1) = -1/3 → mixte infini
 - **Exemple** : Jeu de l'escalade a la guerre
 
-<!-- TODO: arbre complet avec induction arriere etape par etape -->
+<!-- Induction arriere : remonter des feuilles vers la racine -->
 
 ---
 
@@ -447,7 +447,7 @@ Intelligence Artificielle -- V
   - Partage de couts (infrastructures communes)
   - Accords internationaux (climat, commerce)
 
-<!-- TODO: diagramme formation de coalitions et calcul Shapley -->
+<!-- Shapley : contribution marginale moyenne sur toutes les permutations -->
 
 ---
 
@@ -466,7 +466,7 @@ Intelligence Artificielle -- V
   - Votes (agregation des preferences)
   - Allocation de ressources (spectre radio, places universitaires)
 
-<!-- TODO: schema pipeline design de mecanisme -->
+<!-- Design de mecanisme : objectif social → regles → equilibre souhaite -->
 
 ---
 
@@ -485,7 +485,7 @@ Intelligence Artificielle -- V
 
 ![bg right:35%](images/img_038.png)
 
-<!-- TODO: comparaison visuelle des 4 formats d'encheres -->
+<!-- Encheres : anglaise (ascendante), hollandaise (descendante), Vickrey (2e prix), scellee -->
 
 ---
 
@@ -501,7 +501,7 @@ Intelligence Artificielle -- V
   - Unanimite, monotonie, independance
   - Resistance a la manipulation strategique
 
-<!-- TODO: exemple visuel du paradoxe de Condorcet -->
+<!-- Condorcet : A>B, B>C, C>A → cycle, pas de vainqueur transitif -->
 
 ---
 
@@ -553,7 +553,7 @@ Intelligence Artificielle -- V
   - Wikimedia Foundation
   - Pirate Party
 
-<!-- TODO: graphe de victoires avec chemins de Schulze -->
+<!-- Schulze : chemins les plus forts dans le graphe de victoires paires -->
 
 ---
 
@@ -649,7 +649,7 @@ Intelligence Artificielle -- V
   - Engagement credible
   - Signalement couteux
 
-<!-- TODO: schema facteurs de pouvoir de negociation -->
+<!-- Negociation : BATNA, zone d'accord, pouvoir relatif -->
 
 ---
 
@@ -673,7 +673,7 @@ Intelligence Artificielle -- V
   - Principe du maximum de Pontryagin
   - Equations d'Hamilton-Jacobi-Bellman
 
-<!-- TODO: schema systeme dynamique avec joueurs et controles -->
+<!-- Jeux differentiels : variables d'etat continues, controle optimal -->
 
 ---
 
@@ -755,7 +755,7 @@ Intelligence Artificielle -- V
 - **Evolution de vaisseaux spatiaux** (Algorithmes genetiques, automates cellulaires, Golly, Encog)
 - **Cluster de cache distribue** (Cloud, Redis, scaling, strategies)
 
-<!-- TODO: pictogrammes pour chaque type de projet -->
+<!-- Projets : equilibres, encheres, votes, negociation, jeux differentiels -->
 
 ---
 
@@ -770,7 +770,7 @@ Intelligence Artificielle -- V
 
 > **Note** : Les notebooks GameTheory utilisent OpenSpiel et necessitent un kernel WSL.
 
-<!-- TODO: ajouter QR codes ou liens cliquables -->
+<!-- Notebooks dans MyIA.AI.Notebooks/GameTheory/ -->
 
 ---
 
