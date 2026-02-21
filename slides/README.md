@@ -38,23 +38,23 @@ Le fichier `themes/ia101.css` definit le style visuel partage :
 
 ## Inventaire des decks
 
-| # | Deck | Slides | Images | Lignes .md | Conversion |
-|---|------|--------|--------|------------|------------|
-| 01 | Introduction | 43 | 40 | 718 | Done |
-| 02 | Resolution de problemes | 95 | 56 | 1423 | Done |
-| 03 | Logique | 68 | 45 | 1201 | Done |
-| 04 | Probabilites | 117 | 110 | 1370 | Done |
-| 05 | Theorie des jeux | 42 | 54 | 729 | Done |
-| 06 | Apprentissage | 126 | 140 | 2096 | Done |
-| 07 | Elargissements | 42 | 2 | 644 | Done |
-| 08 | IA Generative | 27 | 36 | 399 | Done |
-| S1 | Argumentation | 50 | 9 | 656 | Done |
-| S2 | IA exploratoire/symbolique | 58 | 54 | 909 | Done |
-| S3 | Acculturation | 66 | 133 | 1383 | Done |
-| S4 | Trading algorithmique | 81 | 0 | 1388 | Done |
-| | **Total** | **815** | **679** | **12 916** | **12/12** |
+| # | Deck | Slides | Images | Lignes .md | Statut |
+|---|------|--------|--------|------------|--------|
+| 01 | Introduction | 46 | 40 | 706 | Corrige |
+| 02 | Resolution de problemes | 100 | 56 | 1552 | Corrige |
+| 03 | Logique | 100 | 45 | 1399 | Corrige |
+| 04 | Probabilites | 118 | 110 | 1763 | Corrige |
+| 05 | Theorie des jeux | 43 | 54 | 782 | Corrige |
+| 06 | Apprentissage | 127 | 140 | 2206 | Corrige |
+| 07 | Elargissements | 42 | 9 | 683 | Enrichi |
+| 08 | IA Generative | 28 | 36 | 432 | Corrige |
+| S1 | Argumentation | 51 | 20 | 693 | Enrichi |
+| S2 | IA exploratoire/symbolique | 58 | 54 | 1025 | Corrige |
+| S3 | Acculturation | 72 | 133 | 2037 | Corrige |
+| S4 | Trading algorithmique | 128 | 14 | 1873 | Enrichi |
+| | **Total** | **913** | **711** | **15 151** | **12/12** |
 
-Les decks 04, 05, S1 et 07 ont gagne des slides par eclatement de slides trop denses.
+Les decks marques "Enrichi" ont recu des images libres de droits (Wikimedia Commons, CC BY-SA / CC0) en plus des corrections de contenu.
 
 ## Ameliorations appliquees
 
@@ -63,14 +63,9 @@ Chaque deck a beneficie d'une relecture qualitative (guidee par les `analysis/im
 - **Hierarchie des puces** : sous-items indentes correctement (2 espaces)
 - **Eclatement des slides denses** : les slides surchargees ont ete scindees en 2-3 slides
 - **Cross-references notebooks** : liens vers les notebooks Jupyter pertinents en fin de section
-- **Marqueurs TODO** : `<!-- TODO: ... -->` pour les visuels manquants a ajouter ulterieurement
+- **Enrichissement textuel** : reformulation des fragments telegraphiques, ajout d'exemples et de contexte
 - **Slides "Questions?"** : conservees comme pauses respiratoires entre sections
-
-### Decks a ameliorer en priorite (visuels manquants)
-
-1. **S4 - Trading algorithmique** : 81 slides, **0 images** - besoin complet de visuels
-2. **07 - Elargissements** : 42 slides, **2 images** - quasi entierement textuel
-3. **S1 - Argumentation** : 50 slides, **9 images** - ratio faible
+- **Images libres de droits** : ajout d'illustrations Wikimedia Commons (CC BY-SA, CC0) pour les decks pauvres en visuels
 
 ## Structure par deck
 
