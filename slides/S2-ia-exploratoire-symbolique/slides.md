@@ -374,7 +374,7 @@ Grande diversité d'approches -->
 
 ![bg right:50%](images/img_018.png)
 
-<!-- TODO: animation pas-a-pas A* sur carte Roumanie -->
+<!-- Illustration : carte de Roumanie avec chemins explores par A* -->
 
 ---
 
@@ -412,7 +412,7 @@ Grande diversité d'approches -->
 - Ensemble des Nœuds feuilles = Frontière d'exploration
 - Choix des nœuds à développer = Stratégie d'exploration
 
-<!-- TODO: animation pas-a-pas BFS, DFS -->
+<!-- Demo : PathFinding.js pour visualiser BFS et DFS en temps reel -->
 
 ---
 
@@ -470,7 +470,7 @@ Grande diversité d'approches -->
 
 ![bg right:30%](images/img_025.png)
 
-<!-- TODO: animation pas-a-pas A* avec fonction heuristique -->
+<!-- Demo : comparaison visuelle Greedy vs A* sur PathFinding.js -->
 
 ---
 
@@ -520,7 +520,7 @@ Grande diversité d'approches -->
 ![bg right:40% vertical](images/img_028.png)
 ![bg](images/img_029.png)
 
-<!-- TODO: courbes de fitness, visualisation convergence -->
+<!-- Demo : visualisation convergence dans le notebook GeneticSharp -->
 
 ---
 
@@ -828,9 +828,9 @@ Grande diversité d'approches -->
   - **Solveurs:** Z3, Yices, Open SMT, MathSAT etc.
   - **Optimiseurs / solveurs:** MSF, OR-Tools
 - **Exemple**
-  - Linq To Z3
+  - Linq To Z3 (interface C# pour Z3)
 
-<!-- TODO: screenshot Z3 en action -->
+> **Demo** : voir `Sudoku/Sudoku-4-Z3.ipynb` pour une resolution complete en C#
 
 ---
 
@@ -1011,9 +1011,6 @@ Grande diversité d'approches -->
 - **Z3 / SMT** : `Sudoku/Sudoku-4-Z3.ipynb`
 - **Logique formelle** : `SymbolicAI/Lean/` (10 notebooks)
 - **CSP** : `Search/CSPs_Intro.ipynb`, `Sudoku/Sudoku-3-ORTools.ipynb`
-
-<!-- TODO: ajouter liens cliquables -->
-<!-- TODO: syntax highlighting pour code C# -->
 
 ---
 
