@@ -202,11 +202,9 @@ Intelligence Artificielle - IV
   - = P(X₁) P(X₂ | X₁)… P(Xₙ₋₁ | X₁, …, Xₙ₋₂) P(Xₙ | X₁, …, Xₙ₋₁)
   - = πⁿᵢ₌₁ P(Xᵢ | X₁, …, Xᵢ₋₁)
 
-<!-- TODO: diagramme visuel pour accompagner les equations -->
-
 ---
 
-# Inférence par énumération
+# Inference par enumeration
 
 - **Probabilités conjointes:**
   - Proposition φ → sommer les évts atomiques où elle est vraie
@@ -349,7 +347,7 @@ Intelligence Artificielle - IV
   - Une distribution conditionnelle est représentée par une table de probabilités conditionnelles (CPT)
   - Donnant la distribution en Xᵢ pour chaque combinaison de valeur parente
 
-<!-- TODO: diagramme interactif reseau bayesien -->
+<!-- Reseau bayesien : DAG + tables de probabilites conditionnelles (CPT) -->
 
 ---
 
@@ -540,7 +538,7 @@ Intelligence Artificielle - IV
 - **Formulation générale:**
   - Ex: Fièvre vs Maladies → 3 chiffres suffisent
 
-<!-- TODO: diagramme visuel pour accompagner les concepts de distributions canoniques -->
+<!-- Distributions canoniques : OR-bruite, agregation, min/max -->
 
 ---
 
@@ -760,9 +758,8 @@ Intelligence Artificielle - IV
   - Attention d'un utilisateur
   - Monitoring médical
   - Suivi radar
-- **Besoin d'introduire le temps (ou l'espace) dans nos modèles**
-
-<!-- TODO: ajouter exemple moderne (vehicules autonomes, LLMs contextuels) -->
+- **Besoin d'introduire le temps (ou l'espace) dans nos modeles**
+- Exemples modernes : vehicules autonomes (fusion capteurs), LLMs contextuels (attention temporelle)
 
 ---
 
@@ -1219,7 +1216,7 @@ Intelligence Artificielle - IV
   - Tutoriels (en anglais)
   - Guide utilisateur
 
-<!-- TODO: ajouter exemple de code Infer.Net -->
+<!-- Voir notebooks Probas/Infer/ pour exemples de code Infer.NET -->
 
 ---
 
@@ -1754,7 +1751,7 @@ Intelligence Artificielle - IV
 - **Décision et utilité**: `Probas/Infer/Infer-12-Decision.ipynb`, `Infer-14-Decision-Utility.ipynb`
 - **MDP et RL**: `GameTheory/GameTheory-2b-MDP.ipynb`, `GameTheory-14b-RL-Basics.ipynb`
 
-<!-- TODO: ajouter liens cliquables -->
+<!-- Liens vers notebooks dans MyIA.AI.Notebooks/ -->
 
 ---
 
