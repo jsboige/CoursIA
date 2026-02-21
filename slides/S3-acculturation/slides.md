@@ -154,73 +154,32 @@ Linguistique	Représentation de connaissances, grammaire -->
 
 # Développement (2/2)
 
-- 2000s - Data mining, reconnaissances, apprentissage bayésien, web sémantique
-- 2010s L'IA explose
-  - Big data, deep learning,
-  - Chatbots, smart contracts,
-  - Cloud, architectures hybrides
-- 1997 : Echecs - Deep Blue
-- 2000s: Prouveurs
-  - Maths, logistique, planification,
-  - Navigation/ marche autonome
-- 2007: Jeu de dames
-- Backgammon
-- Algotrading: 95% des échanges
-- 2010s: Explosion du deep-learning
-  - 2014 : GANS
-  - 2016 : AlphaGo
-  - 2018 :Alpha zero
-  - 2017 : Libratus
-  - 2019 : Starcraft 2, Pluribus
-- Traitement du langage naturel
-  - LinkedData, Raisonneurs
-  - Bots conversationnels
-  - Transformers, Large Language Models
+- **2000s** : Data mining, apprentissage bayesien, web semantique, prouveurs automatiques
+- **2010s** : Explosion du deep learning et du big data
+  - 2014 : GANs (generation d'images), 2016 : AlphaGo (Go)
+  - 2017 : Transformers ("Attention is All You Need")
+  - 2018 : AlphaZero (echecs, Go, shogi sans connaissances humaines)
+  - 2019 : Pluribus (poker), AlphaStar (Starcraft 2)
+- **2020s** : LLMs et IA generative deviennent grand public
+  - GPT-3 (2020), ChatGPT (2022), GPT-4 (2023), Claude 3 (2024)
+  - Stable Diffusion, Midjourney, DALL-E : generation d'images
+  - 2025 : agents IA autonomes, vibe coding, IA multimodale
 
-<!-- TODO: ajouter timeline visuelle 1950-2025 de l'evolution de l'IA -->
+> **Chronologie cle** : Turing (1950) → Dartmouth (1956) → Hiver IA (1974) → Deep Blue (1997) → AlphaGo (2016) → ChatGPT (2022) → Agents IA (2025)
 
 ---
 
 # Dans la vie de tous les jours
 
-- Poste
-- Banque
-- Médecine
-- Service client
-- Transport
-- Internet
-- Industrie
-- Image numérique
-- Jeux
-- Données…
-
-<!-- notes: Poste
-Reconnaissance des adresses et tri du courrier
-Banque
-Lecture des chèques et vérification des signatures
-Evaluation des demandes de crédits
-Médecine
-Diagnostic
-Prescriptions, procédures
-Suivi, prévention
-Service client
-Synthèse et reconnaissance vocale
-Chatbots
-Internet
-Identification du visiteur / marketing
-Détection de spam, de fraude
-Transport
-Détection de plaques d'immatriculations, de véhicules
-Conduite autonome
-Industrie
-Conception, fabrication, exploitation
-Image numérique
-Détection de visages, mise au point, compression
-Jeux
-Personnages / adversaires intelligents
-Données… -->
-
-<!-- TODO: ajouter exemples concrets avec screenshots (ChatGPT, reconnaissance faciale, voiture autonome) -->
+- **Poste** : reconnaissance des adresses et tri automatique du courrier
+- **Banque** : lecture des cheques, verification des signatures, evaluation de credits
+- **Medecine** : diagnostic assiste, prescriptions, suivi et prevention
+- **Service client** : synthese/reconnaissance vocale, chatbots (ChatGPT, Claude)
+- **Transport** : detection de plaques, conduite autonome (Tesla, Waymo)
+- **Internet** : marketing personnalise, detection de spam et de fraude
+- **Industrie** : conception, fabrication et exploitation assistees par IA
+- **Image numerique** : detection de visages, mise au point, compression
+- **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
 ---
 
@@ -278,16 +237,14 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
 <div class="columns">
 <div class="col-left">
 
-**Environnement de tâche**
+**Environnement de tache**
 
-- Description PEAS
+- Description PEAS : Performance, Environnement, Actionneurs, Senseurs
 
-**Agent réflexe**
+**Agent reflexe**
 
-- Pas de mémoire
-- Percepts courants
-- Règles
-- Conditions / Actions
+- Pas de memoire, reagit aux percepts courants
+- Regles condition → action (si obstacle, alors freiner)
 
 ![w:300](images/img_010.png)
 
@@ -346,9 +303,11 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
 
 # Intelligences
 
-- Procédurale
-  - Automates
-  - Algorithmes
+- **Procedurale** : automates et algorithmes deterministes (instructions pas a pas)
+- **Exploratoire** : recherche dans un espace d'etats (parcours de graphes, A*)
+- **Symbolique** : raisonnement logique, bases de connaissances, planification
+- **Probabiliste** : gestion de l'incertitude, reseaux bayesiens, decision
+- **Apprentissage** : amelioration par l'experience (supervise, renforcement, deep learning)
 
 ![w:200](images/img_013.jpg) ![w:200](images/img_014.png) ![w:200](images/img_015.jpg)
 
@@ -377,10 +336,10 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
 <div class="columns">
 <div class="col-left">
 
-**Agent fondé sur des buts**
+**Agent fonde sur des buts**
 
-- Réactif  Délibératif
-- Exploration, plan
+- Passe du reactif au deliberatif
+- Planifie ses actions par exploration
 
 ![w:300](images/img_016.png)
 
@@ -933,7 +892,7 @@ Valeur la – contraignante -->
 
 <!-- notes: Simplifier pour le public, Passer vite sur les formats de l'ingénierie de connaissance -->
 
-<!-- TODO: ajouter exemples de graphes RDF et ontologies -->
+<!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
 
 ---
 
@@ -952,7 +911,7 @@ Valeur la – contraignante -->
 
 <!-- notes: insister sur smart-contracts -->
 
-<!-- TODO: ajouter diagramme d'architecture blockchain avec smart contracts -->
+<!-- Blockchain : registre distribue, consensus, execution automatique de contrats -->
 
 ---
 
@@ -1019,11 +978,9 @@ Valeur la – contraignante -->
 
 **Fondements**
 
-- Résument
-- Paresse
-- Ignorance
-- Probabilités subjectives
-- Changent % observations
+- Les probabilites resument notre incertitude (paresse, ignorance)
+- Probabilites subjectives : degre de croyance d'un agent
+- Se mettent a jour avec les observations
 
 **Règle de Bayes**
 
@@ -1231,7 +1188,7 @@ effet d'ancrage -->
 </div>
 </div>
 
-<!-- TODO: ajouter diagramme d'arbre de jeu extensif avec exemple concret -->
+<!-- Forme extensive : arbre ou chaque noeud = decision, feuilles = gains -->
 
 ---
 
@@ -1626,7 +1583,7 @@ effet d'ancrage -->
 </div>
 </div>
 
-<!-- TODO: ajouter exemples d'images generees par GANs (portraits, paysages) -->
+<!-- GANs : generateur vs discriminateur, portraits StyleGAN, deepfakes -->
 
 ---
 
@@ -1667,7 +1624,7 @@ effet d'ancrage -->
 </div>
 </div>
 
-<!-- TODO: ajouter schema d'architecture Transformer avec mecanisme d'attention -->
+<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding -->
 
 ---
 
@@ -1707,7 +1664,7 @@ effet d'ancrage -->
 </div>
 </div>
 
-<!-- TODO: ajouter diagramme du processus de diffusion (bruit -> debruitage) -->
+<!-- Diffusion : bruit gaussien progressif → apprentissage du debruitage inverse -->
 
 ---
 
@@ -2021,13 +1978,18 @@ effet d'ancrage -->
 </div>
 </div>
 
-<!-- TODO: ajouter captures d'ecran de chatbots connus (ChatGPT, Claude, Replika) -->
+<!-- Chatbots modernes : ChatGPT (OpenAI), Claude (Anthropic), Gemini (Google) -->
 
 ---
 
 # Intelligence conversationnelle
 
-- Intelligences
+- **Quiz** : quelles formes d'intelligence sont mobilisees par un chatbot ?
+  - Exploratoire : navigation dans l'arbre de dialogue
+  - Symbolique : comprehension des intentions, raisonnement logique
+  - Probabiliste : modeles de langage, prediction du mot suivant
+  - Apprentissage : entrainement sur des corpus massifs, fine-tuning RLHF
+- L'agent conversationnel combine toutes les intelligences du cours
 
 ---
 
