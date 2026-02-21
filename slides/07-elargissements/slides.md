@@ -135,6 +135,8 @@ Son impact réel?
 
 # Mesurer l'intelligence
 
+![bg right:30%](images/turing_test.png)
+
 - **Le Turing Test (1950)**
   - Objectif: Évaluer l'intelligence par une conversation convaincante
   - Limite: Test de la "tromperie" plutôt que de l'intelligence réelle
@@ -233,6 +235,8 @@ Son impact réel?
 
 # L'éthique de l'IA
 
+![bg right:25%](images/trolley_problem.png)
+
 - **L'IA comme double tranchant**
   - **Avantages**: Amélioration des soins médicaux, prédiction des catastrophes, automatisation
   - **Risques**: Inégalités économiques, surveillance de masse, biais dans les décisions critiques
@@ -286,7 +290,7 @@ Son impact réel?
   - Chiffrement homomorphe
   - Augmentation
 
-<!-- Federated learning : entrainement distribue, donnees restent locales -->
+![bg right:30%](images/federated_learning.png)
 
 ---
 
@@ -309,6 +313,8 @@ Son impact réel?
 <style scoped>section { font-size: 20px; padding: 30px 40px; } h1 { font-size: 1.3em; margin-bottom: 8px; } li { margin-bottom: 2px; }</style>
 
 # Transparence et confiance
+
+![bg right:25%](images/decision_tree_xai.png)
 
 - **Exigences de confiance**
   - Vérification et validation (V&V)
@@ -508,6 +514,8 @@ Son impact réel?
 
 # Apprentissage et Deep Learning
 
+![bg right:25%](images/gan_architecture.png)
+
 - **Progrès spectaculaires**
   - Vision par ordinateur, langage naturel, apprentissage par renforcement
 - **Limites**
@@ -557,6 +565,8 @@ Son impact réel?
 ---
 
 # IA Générale
+
+![bg right:25%](images/recursive_self_improvement.png)
 
 - **Objectif**
   - Créer des agents capables de maîtriser plusieurs tâches diverses
