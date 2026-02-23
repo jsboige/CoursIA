@@ -1,0 +1,230 @@
+{
+  "filename": "Intelligence Artificielle - 8 - IA Générative.pptx",
+  "filepath": "d:\\dev\\CoursIA\\slides\\08-ia-generative\\original\\Intelligence Artificielle - 8 - IA Générative.pptx",
+  "slide_count": 20,
+  "total_images": 36,
+  "total_words": 1751,
+  "file_size_mb": 3.12,
+  "slides": [
+    {
+      "number": 1,
+      "title": "Intelligence Artificielle Générative",
+      "text_content": "Intelligence Artificielle – VIII\nIA 101\n1\nIntelligence Artificielle Générative\nPanorama, enjeux et pratiques de l’IA générative\nDécouvrir les bases et les grands principes de l’IA générative\nComprendre les différents usages applicatifs (texte, image, audio…)\nIdentifier les limites et les enjeux éthiques",
+      "word_count": 42,
+      "image_count": 0,
+      "shape_count": 5,
+      "has_title": true,
+      "layout_name": "Title Slide",
+      "notes": ""
+    },
+    {
+      "number": 2,
+      "title": "Plan du cours",
+      "text_content": "Plan du cours\n2\nIntroduction\nRésolution de problèmes\nBases de connaissances et logique\nIncertitude et modèles probabilistes\nApprentissage\nTraitement du langage naturel\nElargissements\nIA Générative\nIA 101",
+      "word_count": 27,
+      "image_count": 0,
+      "shape_count": 4,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 3,
+      "title": "Introduction à l’IA Générative",
+      "text_content": "Introduction à l’IA Générative\nQu’est-ce que l’IA générative :\nCréation de textes, images, audio, vidéo à partir de modèles probabilistes en réponse à des prompts (+ d’autres modalités)\nExploitation d’algorithmes avancés d’apprentissage profond entrainés par des  jeux de données massifs.\nExemples:\nChatGPT (texte)\nStable Diffusion / Flux (images)\nHunyuan (vidéo)\nWhisper (audio/speech-to-text)\nAudiocraft (musique)\nGithub Copilot (code)\nCS 405\n3",
+      "word_count": 60,
+      "image_count": 0,
+      "shape_count": 4,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 4,
+      "title": "IA générative: Une révolution",
+      "text_content": "IA générative: Une révolution\nAdoption rapide, impact massif\n2017 : « Attention is All you need »\nScaling Laws: GPT 1 (117m), GPT 2 (1,5B), GPT 3 (175B), GPT 4 (1000G)\nChatGPT : 1 million d’utilisateurs en 5 jours, 100M en 2 mois.\nImpact sur le marketing, la rédaction et l’assistance client.\nDéfis :\nCoût d’entraînement, biais des modèles, complexité des prompts, intervention/interprétation humaine nécessaire.\nApproche multidisciplinaire\nApprentissage automatique, traitement du langage naturel, vision par ordinateur.\nUtilisation conjointe des embeddings et des mécanismes d’attention.\nSystèmes ISPO\nInput, Storage, Process, Output\nCaractéristiques:\nVitesse, précision, régularité,\npolyvalence, fiabilité, mémoire, programmable\nCS 405\n4",
+      "word_count": 101,
+      "image_count": 1,
+      "shape_count": 5,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 5,
+      "title": "Les données : Fondement des modèles",
+      "text_content": "Les données : Fondement des modèles\nImportance des données en IA générative\nQualité et représentativité des données.\n\"Garbage in, Garbage out\"\nBiais possibles : genre, culture, contexte géographique.\nRisque d’hallucination, nécessite pré-traitement, audit\nPipeline\nAcquisition → Nettoyage → Préparation → Annotation\nDonnées synthétiques : Alternative pour\nCréer des données nouvelles en masse (saturation des données humaines de qualité)\nprotéger la confidentialité.\n2025: Model Collapse\nScalabilité et coût énergétique\nNécessité d’infrastructures puissantes (datacenters).\nOptimisations possibles : modèles distillés, datacenters verts.\nMéthodes d’entraînement\nApprentissage de base\nTrès coûteux, modèles fondationnels\nFine-Tuning\nAjustement spécifique, Loras, RL\nApprentissage en contexte\nPeu couteux, prompt engineering\nActivité: Sources de données\nClasse, Maison, Transport, Loisirs => Mots ?\nCS 405\n5",
+      "word_count": 114,
+      "image_count": 1,
+      "shape_count": 5,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 6,
+      "title": "Fonctionnement des LLMs",
+      "text_content": "Fonctionnement des LLMs\nTokens\nReprésentation numérique des mots\nVocabulaire de 50k/128k\nEmbeddings\nReprésentation vectorielle des mots/phrases\nPermet de calculer leur proximité sémantique.\nKing - Man + Woman = Queen.\nActivité: Mind-Meld\nPar deux, mots aléatoires simultanés\nPuis Mots à « mi-distance »\nRéseaux de neurones\nConstitués de couches interconnectées\nLes poids de ces connexions sont ajustés\nRétropropagation  Autodifférentiation\nConcept d’attention\nImportance relative des mots\nDans un contexte donné\n« I saw the man with the telescope »\nActivité: Mots polysémiques\nDéfinition\nFlèches d’attention\nTransformers\nArchitecture clé des LLMs modernes\nAvancées architecturales:\nMOE, Sparse Attention, Rope Scaling etc.\nMultimodalité\nAlternatives récentes\nMamba (State Space Models), Jamba (scalabilité linéaire)\nDiffusion\nCS 405\n6",
+      "word_count": 112,
+      "image_count": 5,
+      "shape_count": 9,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 7,
+      "title": "Modèles probabilistes",
+      "text_content": "Modèles probabilistes\nGénération de texte / Transformers\nLes Mots sont choisis en séquence\nen fonction de leur probabilité d’occurrence\ndans un contexte donné (= mots qui précèdent).\nParamètres de génération :\nTempérature :\nContrôle la variabilité des résultats.\nDistribution sur le vocabulaire\nTop-n sampling :\nLimite le choix aux mots les plus probables\nTop-p: Jusqu’à un seuil de distribution cumulatif\nTop-k:  k mots les plus probables.\nGénération d’image / Modèle de diffusion\nAjout d’un bruit gaussien probabiliste\nApprentissage du débruitage\nGénération depuis un espace latent\nConditionnement par attention (texte, image etc.)\nParamètres\nN-steps: Nombre d’étapes de débruitage\nCfg-scale (Classifier-Free Guidance)\nConformité au conditionnement\nAccents, Prompts négatifs\nDiriger par le texte\nDenoising strength (img2img)\nQuantité de changement\nParamètres communs\nSeed:\nReproductibilité\nActivité\nExpérimentation de paramètres (seed fixe)\nCS 405\n7",
+      "word_count": 129,
+      "image_count": 5,
+      "shape_count": 9,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 8,
+      "title": "Applications: Usage individuels",
+      "text_content": "Applications: Usage individuels\nDesign et graphisme\nCréation de prototypes visuels, dessins, photos\nOutils : MidJourney, Stable Diffusion, ChatGPT, \u000bGemini nano banana.\nLittérature et rédaction créative\nÉcriture de scénarios, récits interactifs, co-écriture, poésie.\nOutils: ChatGPT, Claude, Llama etc.\nEntreprenariat et innovation\nIdéation, validation d’idées, élaboration de stratégies\nPrototypage, faisabilité\nCompagnons IA\nSoutien psychologique, coaching, romance\nEx: Replika\nCS 405\n8",
+      "word_count": 59,
+      "image_count": 3,
+      "shape_count": 7,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 9,
+      "title": "Applications: Entreprise",
+      "text_content": "Applications: Entreprise\nPositionnement Métier\nEx: Microsoft Copilot\nCommunication d’entreprise\nSynthèse de contenu\nRésumer des textes complexes et extraire les thèmes majeurs.\nStratégies de communication\nStructuration d’arguments persuasifs et réduction des biais\nMarketing et interaction client\nCréation de campagnes\nContenu pour réseaux sociaux, blogs, vidéos publicitaires.\nGénération de slogans et de storyboards publicitaires\nChatbots conversationnels, FAQ dynamique.\nRecrutement et formation\nGénération de descriptions de poste inclusives et attractives.\nRésumé automatique des candidatures\nIdentifier les points forts et faibles.\nConception de scénarios et questions d’entretien personnalisés.\nPersonnalisation des parcours de formation.\nAnalytics et prise de décision\nAutomatisation des pipelines de données : extraction, validation, et nettoyage.\nModélisation avancée : résolution de problèmes complexes\nVisualisation rapide : génération de graphiques interactifs\nSynthèse rapide : résumer des tableaux de bord complexes\nActivité: Campagne Marketing fictive: Nouveau Soda\nUn slogan, 1 visuel, 3 posts réseaux sociaux, 1 scnéario de pub\nCS 405\n9",
+      "word_count": 148,
+      "image_count": 3,
+      "shape_count": 7,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 10,
+      "title": "Applications sectorielles",
+      "text_content": "Applications sectorielles\nSanté\nGénération de rapports médicaux, assistance au diagnostic.\nChatbots médicaux pour le suivi\nGénération de supports pédagogiques\nÉducation\nCréation de supports pédagogiques\nSynthèse et vulgarisation des contenus complexes\nMise en place d’assistants pédagogiques interactifs\nCréation de quiz dynamiques\nFinance et gestion des risques\nExtraction d’informations à partir de rapports financiers\nPrévisions avancées :\nutilisation de données pour suivre les stocks ou indices\nAutomatisation des chaînes d'information\ngénération d’indicateurs, d’alphas\nDétection d’anomalies dans des transactions complexes\nRecherche et sciences\nSynthèse automatique d’articles académiques\nExploration documentaire et rédaction scientifique\nAutomatisation de la validation\noptimisation de modèles mathématiques\nActivité:\nPrévision Trading Crypto par graphiques avec indicateurs\nCS 405\n10",
+      "word_count": 108,
+      "image_count": 4,
+      "shape_count": 8,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 11,
+      "title": "Techniques : Génération de texte",
+      "text_content": "Techniques : Génération de texte\nPrompt Engineering\nInstructions explicites et exemples (« few-shot learning »)\nVariantes lexicales et stylistiques\nQui, Quoi, Pour qui, Quel objectif, Quelle cible, quel format, quel style etc.\nPrompts Systèmes\nStructuration pour des tâches complexes, (COT)\nÉvaluation comparative, Exploration (ToT)\nRetrieval Augmented Generation (RAG)\nCombinaison de modèles génératifs et bases documentaires\nCalibration des données, chunks, embedding, requêtes et contexte\npour éviter le bruit et améliorer la pertinence des réponses.\nFunction Calling et outils intégrés\nAppels de fonctions via des API\nGénération structurée, décoration, paramètres\nOrchestration et pipelines\nOutils pour la structuration des workflows\nFonctions sémantiques, natives\nComposition de prompts, de modèles\nEx: Semantic-kernel, Langchain\nAgentique avancée\nCoordination entre agents pour des tâches complexes\nConversations collaboratives, prompts systèmes et fonctions spécifiques\nEx: AutoGen, Semantic-Kernel\nVibe Coding\nCopilot, Cline, Roo (extensions vscode)\nCLIs (Claude code, Gemini, Qwen, Mistral etc.)\nCS 405\n11",
+      "word_count": 144,
+      "image_count": 0,
+      "shape_count": 4,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 12,
+      "title": "Techniques: Multimodalité",
+      "text_content": "Techniques: Multimodalité\nGraphiques:\nModèles de diffusion pour générer des visuels\nDall-e, Stable diffusion, Flux\nTxt2Img, Img2Img, Inpainting, Outpainting, Finetuning (Loras), Upscaling, ControlNet\nVision\nGPT-4o, O1, QwenVL, InternVL\nNombreux Benchmarks\nGénération Vidéo\nSD: Deforum, AnimateDiff\nAd-hoc: Hunyuan, Wan, Google Veo 3, Sora, Runway, Kling AI\n3D\nReprésentation:\nMeshes, Radiance Fields (Nerfs), VoxNet (Convolution) Point clouds etc.\nGénération:\nDreamFusion, Trellis (ex: Trellis + Comfy)\nAudio\nSpeech-To-Text\nWhisper, Moonshine\nText-To-Speech\nElevenlabs, Kokoro\nMusique\nAudiocraft, AudioLDM, UniAudio\nCode,\nUX Variées, Contexte ?\nVsCode: Copilot, Cline, Continue\nMaths :\nModèles de Reflexion\nPropriétaires: OpenAI, Google\nOpen-Source: Deepseek\nCS 405\n12",
+      "word_count": 95,
+      "image_count": 0,
+      "shape_count": 5,
+      "has_title": true,
+      "layout_name": "Two Content",
+      "notes": ""
+    },
+    {
+      "number": 13,
+      "title": "Ecosystème GenAI",
+      "text_content": "Ecosystème GenAI\nModèles et APIs\nAPIs propriétaires\nOpenAI, Anthropic, Google, Mistral, etc.\nAggrégateur: OpenRouter\nModèles Locaux\nLlama, Mistral, Gemini, Ms Phi, Qwen, DeepSeek etc.\nDiffuseurs: Hugging Face, Github\nNombreux Benchmarks\nHébergement\nCloud\nLLM Hosting\nHugging Face, Groq\nLocation de GPUs\nRunpod, VastAI\nGrand clouds généralistes\nAWS, Azure, Google etc.\nLocal\nOobabooga, Ollama, Vllm\nQuants (gguf, exl2/3, AWQ etc.)\nContainerisation\nDocker/Kubernetes\nHybride\nEx: Tailscale (réseau)\nImage\nModèles: Stable-Diffusion, Flux, Qwen Image Edit, Z-image Turbo, CivitAI\nApps: Forge, ComfyUI\nConversationnel\nGénéralistes:\nOpen-webui, SillyTarvern\nWorkflows Pro / LLMOps:\nDify, Langflow\nCS 405\n13",
+      "word_count": 90,
+      "image_count": 13,
+      "shape_count": 17,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 14,
+      "title": "Enjeux Ethiques et sociétaux",
+      "text_content": "Enjeux Ethiques et sociétaux\nBiais et discrimination\nPrésence de stéréotypes\ndans les données d’entraînement.\nTechnique de débiaisage des modèles\nIllusions\nHallucinations\nRéponses incorrectes mais plausibles\nIllusion de correction\nConfiance exagérée des utilisateurs dans les résultats\nImpact Environnemental\nCoûts énergétiques (GPUs)\nApprentissage\nActivité: Dataset biaisé\nConception d’un dataset synthétique\nAjout d’un biais\nDétection du biais\nCS 405\n14",
+      "word_count": 57,
+      "image_count": 1,
+      "shape_count": 5,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 15,
+      "title": "Régulation et droit",
+      "text_content": "Régulation et droit\nPropriété intellectuelle\nDroits sur les contenus générés.\nModèles open-source vs propriétaires.\nProtection des données\nRisques : Confidentialité et conformité au RGPD.\nBonnes pratiques :\nAnonymisation des données.\nFormation des équipes sur la règlementation.\nNormes émergentes et recommandations\nInitiatives internationales :\nRégulation européenne (AI Act – en vigueur depuis 01/08/2024).\nPosition des États-Unis sur l’IA.\n11/02/25: Trump signe un Executive Order bloquant les régulations IA des états\nExemples pratiques :\nAgentic AI Foundation (9/12/25): OpenAI, Anthropic et Block établissent MCP (Model Context Protocol) comme standard mondial pour les agents IA.\nLicences open-source responsables.\nDroits des IAs\nBientôt: IA surhumaine, émergence de la conscience artificielle\nDroits des agents, autonomie ? Pouvoir économique (Cryptos) ?\nCS 405\n15",
+      "word_count": 118,
+      "image_count": 0,
+      "shape_count": 4,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 16,
+      "title": "Risques et limites",
+      "text_content": "Risques et limites\nFiabilité des modèles\nHallucinations et fabrications\nImpact sur la confiance utilisateur.\nNécessité de tests rigoureux avant le déploiement en entreprise.\nSolutions :\nDéveloppement d’algorithmes robustes.\nMécanismes de vérification croisée entre plusieurs modèles.\nTests et validations\n« Auditeurs IA » identifient des biais dans des scénarios fictifs.\nActivité: Auditeur:\nRecommandation Voyage, classe\nSources de données in/out, Test\nSécurité des modèles\nRisques de mauvaise utilisation\nArmes bactériologiques, nucléaires, pédopornographie etc.\nRisques de perte de contrôle\nCf. Anthropic: niveaux de sécurité\nConstitutional AI\nPoints critiques\nPerte d’emplois liée à l’automatisation.\nHomogénéisation des contenus créatifs.\nRisque d’adopter des modèles insuffisamment audités pour des tâches critiques.\nGestion des biais et des hallucinations.\nSensibilisation aux enjeux de confidentialité.\nDétection et gestion des contenus générés frauduleusement\nDeepfakes\nActivité: Constitutional AI\nDéfinition d’une Constitution\nCréation d’un prompt système\nTest sur modèle ablitéré\nCS 405\n16",
+      "word_count": 140,
+      "image_count": 0,
+      "shape_count": 4,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 17,
+      "title": "Responsabilité sociale",
+      "text_content": "Responsabilité sociale\nRôle des entreprises vs utilisateurs\nEntreprises :\nTransparence des modèles.\nCodes éthiques.\nUtilisateurs :\nFormation sur les limites des modèles IA.\nAdoption responsable dans les secteurs critiques.\nSensibilisation sur les forces et faiblesses des systèmes d’IA générative.\nImpact Environnemental\nRapport IEA 2025\nConsommation des datacenter x2 en 3 ans (= Japon)\nIA pour le bien commun\nIA pour des solutions écologiques ou sociales.\nOutils pour la santé publique ou l’éducation dans des zones sous-développées.\nSurveiller la déforestation ou améliorer la gestion des ressources en eau.\nActivité: Propositions novatrices\nAvec et sans guidance\nCS 405\n17",
+      "word_count": 97,
+      "image_count": 0,
+      "shape_count": 4,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 18,
+      "title": "Défis pratiques de l’adoption",
+      "text_content": "Défis pratiques de l’adoption\nCompatibilité technologique\nAdaptation aux systèmes existants (CRM, ERP).\nGestion des bases vectorielles dans des flux de travail établis.\nConfidentialité\nMaîtrise des flux de données\nScalabilité et coûts\nPMEs avec des budgets limités.\nInfrastructure technique nécessaire pour gérer de grands modèles.\nRéalité du ROI\nGartner 2025: Adoption massive (75% des entreprises) mais « AI Fatigue » et ROI tangibles peu nombreux au-delà (rédaction, code)\nOptimisations possibles :\nSolutions open-source pour réduire les coûts.\nUtilisation de modèles plus légers comme les distillations pour les déploiements locaux.\nModèles spécialisés SOTA sur des tâches\nConfidentialité maîtrisée\nCS 405\n18",
+      "word_count": 99,
+      "image_count": 0,
+      "shape_count": 4,
+      "has_title": true,
+      "layout_name": "Title and Content",
+      "notes": ""
+    },
+    {
+      "number": 19,
+      "title": "Questions?",
+      "text_content": "19\nQuestions?\nIA 101",
+      "word_count": 4,
+      "image_count": 0,
+      "shape_count": 3,
+      "has_title": true,
+      "layout_name": "Title Slide",
+      "notes": ""
+    },
+    {
+      "number": 20,
+      "title": "Merci",
+      "text_content": "20\nMerci\nIA 101\nJean-Sylvain Boige\njsboige@myia.org",
+      "word_count": 7,
+      "image_count": 0,
+      "shape_count": 4,
+      "has_title": true,
+      "layout_name": "Title Slide",
+      "notes": ""
+    }
+  ]
+}

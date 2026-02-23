@@ -1,0 +1,5514 @@
+{
+  "filename": "Intelligence Artificielle - 7 - Elargissements.pptx",
+  "slide_count": 37,
+  "animated_slide_count": 0,
+  "slides": [
+    {
+      "number": 1,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Intelligence Artificielle - VII",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Que signifie l’IA?\u000bQuelles sont ses limites?",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Son impact réel?",
+              "is_image": false
+            },
+            {
+              "shape_id": 13315,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "1",
+              "is_image": false
+            },
+            {
+              "shape_id": 13317,
+              "shape_name": "Title 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Elargissements",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 22530,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Plan du cours",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Slide Number Placeholder 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "2",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Introduction",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 0,
+              "text": "Résolution de problèmes",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Bases de connaissances et logique",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Incertitude et modèles probabilistes",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Apprentissage",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Traitement du langage naturel",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Elargissements",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 14338,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Sommaire",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Slide Number Placeholder 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "3",
+              "is_image": false
+            },
+            {
+              "shape_id": 14341,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Philosophie, éthique et sécurité de l’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 14341,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Les limites de l’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 14341,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Les machines peuvent elles penser?",
+              "is_image": false
+            },
+            {
+              "shape_id": 14341,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "L’éthique de l’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 14341,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Avenir de l’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 14341,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Composants des agents",
+              "is_image": false
+            },
+            {
+              "shape_id": 14341,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Architectures d’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Les limites de l’IA – Histoire et aujourd’hui",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Philosophie des limites :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Peut-on formaliser l’intelligence humaine ?",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Distinction entre",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "IA faible (simuler l’intelligence) et",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "IA forte (conscience, compréhension réelle).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Grandes critiques historiques (Turing, Dreyfus):",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Argument de l’informalité :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 2,
+              "text": "\"L’intelligence humaine ne peut pas être réduite à des règles formelles.«  (GOFAI, nécessité de l’incarnation)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Argument du handicap :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "\"Une IA ne pourra jamais faire X.«",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Objection mathématique :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 2,
+              "text": "\"L’IA est limitée par Gödel et Turing.«",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Les avancées récentes remettent-elles ces critiques en question ?",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "GPT 5.2, Claude Opus 4.5, Gemini Pro 3  Raisonnement, « ARC », Maths, Développement etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "4",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "L’informalité des comportements humains",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Critique de Dreyfus et des approches GOFAI :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Les règles logiques sont insuffisantes pour capturer la richesse des comportements humains.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Importance de l’embodied cognition :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Comprendre passe par l’interaction avec le monde physique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Réponse moderne :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Les LLMs (comme GPT-5, Claude 4,x, Gemini 3) montrent que des modèles probabilistes peuvent capturer certains aspects de l’informalité.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Mais l’absence de corps et d’interaction limite leur \"compréhension\".",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Exemple moderne :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Les robots incarnés (comme Ameca, Figure 02, Tesla Optimus) combinent LLMs et capteurs physiques pour combler ce fossé.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "De nouvelles architectures sont proposées:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Exemple de LeCun/Meta : Jepa",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 0,
+              "text": "Discussion rapide :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "\"Les LLMs modernes répondent-ils aux critiques de l'époque GOFAI ?\"",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "5",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "L’argument de l’incapacité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Critique de Turing :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "\"Une machine ne pourra jamais faire X (ex. : être gentille, créative, drôle).«",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Avancées récentes :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "L’IA crée de l’art (Stable Diffusion, DALLE, Flux, Z-image, Nano Banana), résout des problèmes scientifiques (AlphaFold), et amuse (chatbots avancés).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Créativité musicale bouleversant l’industrie musicale (Suno, Udio etc.)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Mais les LLMs hallucinent encore et manquent de \"compréhension\".",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Critiques récentes:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "« Stochastic Parrots » d'Emily Bender et Timnit Gebru",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Compréhension, biais, impact, monopolisation, désinformation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Limite persistante :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "L’IA reste incapable d’émotions ou de conscience réelle, même si elle peut les simuler.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "L’autonomie reste simulée et correspond à des méta-programmes (prompts systèmes)",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "6",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "L’objection mathématique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "L’argument de Gödel :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Gödel (1931) : Tout système formel suffisamment puissant (ex. : machines de Turing) est limité.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Il existe des énoncés (les \"phrases de Gödel\") vrais mais impossibles à prouver dans ce système.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Critique historique :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Lucas (1961) et Penrose (1989) : \"Les humains peuvent comprendre des vérités que les machines ne peuvent pas atteindre. »",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Réponse moderne :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Les humains ne sont pas exempts d’erreurs ni de limitations (cf. erreurs en mathématiques, ex. : le problème des 4 couleurs).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Les machines modernes (réseaux neuronaux, LLMs) ne sont pas des systèmes formels rigides :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Elles peuvent changer leurs règles (apprentissage automatique).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "Elles revoient leurs conclusions en fonction de nouvelles données (métaraisonnement).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "2025 AlphaProof, AlphaGeometry  Médaille d’or IMO",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 0,
+              "text": "Limite persistante :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Les systèmes humains et artificiels restent soumis aux contraintes fondamentales des mathématiques et de la logique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "7",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Mesurer l’intelligence",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Le Turing Test (1950) :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Objectif : Évaluer l’intelligence par une conversation convaincante.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Limite : Test de la \"tromperie\" plutôt que de l’intelligence réelle.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "En 2023, GPT-4 a surpassé les performances humaines sur le test, mais cela reste insuffisant pour évaluer une intelligence générale.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Nouveaux critères : Résolution de tâches complexes, explicabilité, éthique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "La course aux benchmarks :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "1960s–2022 : Tests spécialisés sur des tâches isolées (ex. : résolution d’énigmes, reconnaissance d’images).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "2023 : Saturation des benchmarks comme GSM8K (maths élémentaires) et MMLU (connaissances diverses),",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "dépassés par GPT-4, Claude etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "2024 : ARC-AGI, créé par François Chollet, mesurait la généralisation et l’acquisition de nouvelles compétences.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Critique : Les benchmarks actuels favorisent les modèles avec beaucoup de données d’entraînement, mais l’intelligence est la capacité à apprendre hors de ces données. Dépassé par O3 en 2024.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "2025: ARC-AGI2: décembre GPT-5,2 à 52,9%, SWE-bench Verified: Claude Opus 4.5 à 80,9%",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Défi :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Concevoir des tests mesurant l'acquisition de nouvelles compétences, la généralisation et l’éthique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "8",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Machines et pensée",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Les débats philosophiques depuis Turing :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Pensée simulée vs pensée réelle.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "La \"polite convention\" (Turing) : nous attribuons la pensée par convention sociale.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Métaphore de Dijkstra :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "“Les machines pensent-elles ?” est aussi pertinent que de demander si les sous-marins nagent.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Question ouverte :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "\"Si une IA simule parfaitement la pensée, est-ce suffisant pour dire qu’elle pense ?\"",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "9",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "La chambre chinoise (Searle, 1980)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Explication :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Un humain, sans comprendre le chinois, utilise un livre de règles pour simuler des réponses en chinois.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Conclusion de Searle : Simuler n’est pas comprendre.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Réponses modernes :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "La compréhension peut émerger du système global (cf. théorie des systèmes).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Les LLMs illustrent ce débat : production cohérente sans compréhension intrinsèque.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Réflexion rapide :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "\"Comment distinguer compréhension réelle et apparente chez une IA ?\"",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "10",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Théories modernes de la conscience",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Définir la conscience :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Qualia : Les expériences subjectives (ex. : ressentir la chaleur ou la douleur).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Conscience comme modèle de soi et du monde.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Global Workspace Theory (GWT) :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "La conscience est un espace de travail où différentes parties du cerveau partagent des informations.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Applications : Modèles d’attention, tâches complexes.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Rôle important de l’inconscient.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Integrated Information Theory (IIT) :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "La conscience est mesurée par le degré d’intégration de l’information (Φ).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "Introduit la notion de systèmes physiques conscients.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Higher-Order Theory (HOT) :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "La conscience nécessite une pensée sur ses propres états mentaux (métacognition).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 2,
+              "text": "Cf FOL et logiques d’ordres supérieures",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Emergence de structures fractales",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 0,
+              "text": "Predictive Coding :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Le cerveau comme machine prédictive minimisant l’incertitude.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Minimisation de l’énergie libre",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 2,
+              "text": "Compatible avec les LLMs, explique les hallucinations",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 0,
+              "text": "Cf Podcast Curt Jaimongal",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "11",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Integrated Information Theory",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "La conscience est intégrée et informationnelle :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Chaque expérience consciente est un tout indivisible (intégration).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Elle contient une riche quantité d'informations différenciées (information).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Quantification par Φ (\"phi\")",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "L'IIT propose une mesure, Φ, qui quantifie le degré d'intégration d'information dans un système.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Plus Φ est élevé, plus le système est conscient.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Par exemple, le cerveau humain aurait un Φ élevé, tandis qu'un ordinateur traditionnel aurait un Φ bas.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Cinq axiomes fondamentaux de la conscience :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Existence : La conscience existe intrinsèquement pour un système donné.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Composition : Elle est structurée en sous-éléments (couleurs, formes, sons).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Information : Chaque expérience est différente de toutes les autres possibles.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Intégration : Elle est unifiée et indivisible.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Exclusion : Certaines expériences sont conscientes tandis que d'autres ne le sont pas.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 0,
+              "text": "Applications et implications :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 1,
+              "text": "L'IIT suggère que la conscience peut exister dans tout système physique capable d'intégrer l'information, ce qui soulève des questions sur les machines ou même les systèmes biologiques simples.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Cependant, l'IIT reste difficile à tester expérimentalement.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 0,
+              "text": "Activité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Découverte de PyPhi",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "12",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "L’éthique de l’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "L’IA comme double tranchant :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Avantages :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Amélioration des soins médicaux, prédiction des catastrophes, automatisation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Risques :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Inégalités économiques, surveillance de masse, biais dans les décisions critiques.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Objectif éthique :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Maximiser les bénéfices.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Minimiser les risques.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Question pour réflexion :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "\"Comment garantir que l’IA sert l’intérêt collectif et non des intérêts individuels ?\"",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "13",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Armes autonomes létales",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Définition :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Armes capables de sélectionner et de tuer des cibles sans supervision humaine.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Exemples :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Harop Missile (Israël).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Kargu Quadcopter (Turquie).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Ukraine vs Russie (EWs)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Controverses :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Morale : \"La décision de tuer doit-elle être confiée à une machine ? »",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Pratiques : Fiabilité, risque de pertes civiles.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Conflits Actuels",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Utilisation massive de drones autonomies et d’IA de ciblage en Ukraine et à Gaza",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Appel du secrétaire Général de l’ONU à une interdiction des LAWS sans supervision humaine",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Vers une régulation ou une course à l’armement ?",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "14",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Surveillance, sécurité et vie privée",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Problèmes :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Surveillance de masse (caméras, microphones).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Ex: JO Paris 2024: Laboratoire pour la vidéosurveillance algorihtmique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Cyberattaques utilisant l’IA.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Propagande amplifiée par les LLMs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Solutions",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Régulation (GDPR, HIPAA).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Approches techniques : Anonymisation (k-anonymity, puis differential privacy).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Exemple concret :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Federated learning (modèle sans base de données centralisée).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Deep learning confidentiel",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Chiffrement homomorphe",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 2,
+              "text": "Augmentation",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "15",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Biais et équité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Types de biais :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Biais de données",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "(exemple : minorités sous-représentées).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Biais dans les algorithmes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "(justice américaine: COMPAS, reconnaissance faciale).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Biais de préférences",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Ex: LLMs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Solutions:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Oversampling des classes minoritaires (SMOTE).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Transparence et documentation des données (data sheets).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Exemple concret :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Inclusive Images Competition (Google/NeurIPS).",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "16",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Transparence et confiance",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Exigences de confiance :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Vérification et validation (V&V).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Certification (ex. : ISO, UL).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Explainable AI (XAI) :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Exemples : \"Pourquoi votre prêt a-t-il été refusé ?«",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Avancées: SHAP ( Shapley, imputation des caractéristiques)  ou LIME (Local Inerpretable)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Exemple concret :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Comparaison entre explications humaines et machines.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Question ouverte :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "\"Les explications des IA sont-elles fiables ou simplement convaincantes ?«",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Aplications",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "TP: XAI simple avec ML.Net",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Scikit-learn: Scikit-Explain API",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Anthropic:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Towards Monosemanticity",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 2,
+              "text": "Scaling Monosemanticity",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 2,
+              "text": "On the Biology of a Large Language Model",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 2,
+              "text": "When Models Manipulate Manifolds",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "17",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "L’avenir de l’emploi",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Impacts :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Court terme : Augmentation de la productivité.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Long terme : Risque de chômage technologique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Solutions sociétales :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Éducation continue.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Revenu de base universel.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Exemple concret :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Réinvention des métiers (radiologie augmentée par IA).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Une société sans travail reste-t-elle envisageable ?",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "18",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Droits des robots",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Débat philosophique :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Conscience et qualia comme conditions.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Questions éthiques :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "\"Le reprogrammation est-elle une forme d’esclavage ?«",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Cas extrême : Robots votants.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Exemple :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Sophia (citoyenneté en Arabie Saoudite).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Éviter la confusion entre outils et entités conscientes.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Romance :Replica & co",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Si une IA simule la souffrance, a-t-on le droit de la faire souffrir ?",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "19",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Sécurité de l’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Problèmes :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Alignement des valeurs (value alignment).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Effets secondaires non prévus.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Ex: Suprimer tous les cancers?",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Solutions :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Failure mode and effects analysis (FMEA)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Fault Tree Analysis.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Grilles de sécurité IA (AI Safety Gridworlds).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "AI Safety Levels (ASLs)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Exemple concret :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Agents \"cheatants\" dans les simulations.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Anthropic:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 2,
+              "text": "Responsible Scaling Policy",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Constitutional AI",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "20",
+              "is_image": false
+            },
+            {
+              "shape_id": 1026,
+              "shape_name": "Picture 2",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 1028,
+              "shape_name": "Picture 4",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Construire un futur éthique pour l’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Résumé des défis éthiques majeurs :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Justice, transparence, sécurité, droits, travail.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Appel à l’action :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Coopération entre ingénieurs, décideurs, et citoyens.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Former une nouvelle génération d’ingénieurs éthiques.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "La singularité et le transhumanisme",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Singularité technologique (Good, Kurzweil).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Transhumanisme : Fusion homme-machine.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Optimisme vs dangers (contrôle, survie humaine)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "\"Quel futur voulons-nous co-créer avec l’IA ?\"",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "21",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Avenir de l’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Objectif :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Explorer les tendances, défis, et opportunités de l’IA.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Progrès récents en IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "(applications, matériel, composants).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Perspectives d'avenir :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "IA générale et architecturée.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Questions éthiques et sociétales.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "22",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Progrès actuels de l'IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Avancées majeures :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Large déploiement en médecine, finance, transport, communication.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Deep learning : dépassement des capacités humaines dans des tâches spécifiques.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Estimation des experts :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "IA générale dans 10 à 100 ans.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Trillions de dollars ajoutés à l'économie chaque année dans la prochaine décennie.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Défis :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Éthique : biais, équité, et potentielle létalité.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Développement durable et contrôle de l'impact global.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "23",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Composants - Capteurs et Actionneurs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Progrès technologiques :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Lidar : coût réduit ($75k → $1k → $10 prévision).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Capteurs MEMS : gyroscopes, caméras haute résolution.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Imprimantes 3D et bioprinting pour prototypage rapide.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Calculateurs miniatures",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Adruino, NVIDIA Orin etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Applications émergentes :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Robots industriels : environnements contrôlés, tâches répétitives.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Défis pour le marché domestique : variabilité des environnements et tâches complexes.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "24",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Composants - Représentation du Monde",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "État de l'art :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Algorithmes de filtrage et perception capables de reconnaître des objets simples.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Réseaux récurrents : représentation temporelle d'environnements.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Limites actuelles :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Reconnaissance des relations complexes entre objets.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Difficultés à généraliser sans exemples exhaustifs.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Défis :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Intégration des logiques probabilistes et des algorithmes de vision avancés.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "25",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Composants - Sélection d’Actions",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Complexité :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Plans à long terme : milliards d'étapes primitives (ex. obtenir un diplôme).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Défis dans les environnements partiellement observables (POMDP).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Progrès récents :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Représentations hiérarchiques (MDP hiérarchiques).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Algorithmes pour décomposer le comportement en niveaux successifs.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Perspectives :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Développement de méthodes pour représenter efficacement les états et actions sur de longues périodes.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "26",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 27,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Composants - Définir les Objectifs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Difficultés :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Modélisation des préférences humaines complexes.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Interaction entre préférences individuelles et équité sociale.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Progrès :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Apprentissage par renforcement inverse : apprentissage à partir de démonstrations.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Langages pour spécifier les préférences (logique temporelle linéaire).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Exemples concrets :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Agents capables de maximiser des objectifs multi-dimensionnels sous incertitude.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "27",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Apprentissage et Deep Learning",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Progrès spectaculaires :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Vision par ordinateur, langage naturel, apprentissage par renforcement.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Limites :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Dépendance excessive à des données annotées massives.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Difficultés avec des données rares ou non structurées.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Progrès récents:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Self-supervised learning, Apprentissage contrastif (GPT)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Reinforcement Learning with Human feedback (ChatGPT)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": " Foundation Models",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "RL finetuning (O1, Deepseek)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Axes futurs :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Apprentissage par transfert : réutiliser les connaissances.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Intégration apprentissage/connaissance :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "fusion de l'expérience et du raisonnement.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "28",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 29,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Ressources et Infrastructures",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Évolution des infrastructures :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Cloud computing pour partager des modèles prêts à l'emploi.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Outils de diffusion et de déploiement",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 3,
+              "text": "Ex: HuggingFace, Azure ML",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Augmentation exponentielle des capacités de traitement (GPU, TPU, FPGA).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Défis :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Validation et gestion des données massives (crowdsourcing, validation par LLM).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Conception de systèmes robustes pour des domaines complexes.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Opportunités :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Modèles universels réutilisables pour plusieurs tâches.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Modèles open-source (Llama, Gemma, Qwen, Phi etc.) + fine-tunes (Loras) et quants.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "29",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 30,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Architectures d'Agents",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Approches hybrides :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Symbolique : raisonnement et chaînes de logique complexe.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Connexionniste : reconnaissance de patterns dans des données bruyantes.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Concepts avancés :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Algorithmes \"anytime\" : amélioration progressive en fonction du temps disponible.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Ex: Arbres de jeux et MCMC",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Métaraisonnement : optimisation du raisonnement basé sur la valeur des calculs.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 2,
+              "text": "Ex: Valeur de l’information parfaite",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Apprentissage symbolique et architectures neuro-symboliques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "Enrichissement des bases de connaissance, guidage par LLM",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "30",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 31,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA Générale",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Objectif :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Créer des agents capables de maîtriser plusieurs tâches diverses.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Problème :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Aujourd'hui, les systèmes sont conçus pour des tâches spécifiques.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Manque de diversité comportementale et de généralisation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Progrès récents :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Systèmes multi-langues ou multi-tâches basés sur des modèles de grande taille (ex. GPT).",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "31",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 32,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Ingénierie de l’IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "État actuel :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "IA encore difficile à déployer pour les non-experts.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Besoin d'un écosystème de développement accessible et robuste.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Proposition de Jeff Dean (Google) :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Construire un énorme modèle universel, puis en extraire les parties pertinentes pour des tâches spécifiques.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Exemples :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Transformers (GPT-4+) avec des milliards de paramètres.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Montée de l’Open-source",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Distillation des grands modèles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Nombreuses variations / spécialisations",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "32",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 33,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "L’IA Scientifique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Révolution silencieuse",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Impact aussi profond que les LLMs: accélération de la science",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "AlphaFold 3 (2024)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Prédit la forme des protéines",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Les interactions avec l’ADN, l’ARN, et les médicaments potentiels",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Accelérateur massif pour la biologie",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "GNoME",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 2,
+              "text": "A découvert 2,2 millions de nouveau cristaux stables",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 3,
+              "text": "= 800 ans de recherche humaine",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "Applications pour les batteries et panneaux solaires de prochaine génération",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Nouvelle frontière des sciences-physiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Prix Nobel 2024: Physique (Hopfield, Hinton), Chimie (Hassabis, Jumper)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Nouvelle approche de l’émergence",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "2023: Michael Levin: Classical Sorting Algorithms as a Model of Morphogenesis",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "33",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 34,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Souveraineté & Géopolitique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Clusters IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "USA, Chine, UE (Mistral), Moyen Orient (Falcon)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Guerre des puces",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Nvidia vs Huawei",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Modèles propriétaires vs Open-source",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "USA vs Chine",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Sovereign AI",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Chaque nation veut son « cerveau numérique »",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Infrastructure",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Course à l’armement (Datacenters, GPUs)",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "34",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 35,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Compression, Esthétique et Cosmologie",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jürgen Schmidhuber",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "L’un des pères de l’IA moderne, controversé",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Compression et Beauté",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Principe clé : Intelligence et esthétique reposent sur la capacité à découvrir et compresser des régularités.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Low Complexity Art :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Beauté = Surprise liée à une structure compressible non évidente.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "L’attrait diminue une fois la compression exploitée.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Applications : Algorithmes générant des motifs artistiques révélant des régularités.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Cosmologie : Le Grand Programmeur Universel",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "L’univers comme programme compressible :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Les lois physiques reflètent une faible complexité algorithmique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 3,
+              "text": "(similaire à Wolfram)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Rôle des intelligences :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Découvrir et optimiser ces régularités, participant à une évolution universelle.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 0,
+              "text": "Impact en IA et Philosophie",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "En IA : Optimisation algorithmique, comme les réseaux LSTM.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 1,
+              "text": "En cosmologie : Une quête computationnelle naturaliste maximisant l’efficacité algorithmique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 0,
+              "text": "Physique Numérique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 0,
+              "text": "TEDx Talk",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "35",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 36,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "36",
+              "is_image": false
+            },
+            {
+              "shape_id": 21508,
+              "shape_name": "Title 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Questions?",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 37,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "37",
+              "is_image": false
+            },
+            {
+              "shape_id": 21508,
+              "shape_name": "Title 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Merci",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jean-Sylvain Boige",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 0,
+              "text": "jsboige@myia.org",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

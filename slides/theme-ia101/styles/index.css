@@ -1,0 +1,102 @@
+/* IA101 Theme for Slidev - Ported from ia101.css (Marp) */
+
+:root {
+  --color-accent: #8B1A1A;
+  --color-accent-light: #C0392B;
+  --color-bg: #F5F5F5;
+  --color-bg-dark: #E8E8E8;
+  --color-text: #2C3E50;
+  --color-text-light: #7F8C8D;
+  --color-header: #34495E;
+  --color-coral: #FF6B6B;
+}
+
+/* Base styles */
+.slidev-layout {
+  font-family: 'Segoe UI', 'Calibri', Arial, sans-serif;
+  font-size: 28px;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  padding: 40px 60px;
+}
+
+/* Headers */
+h1 {
+  color: var(--color-accent);
+  font-size: 1.6em;
+  border-bottom: 2px solid var(--color-accent);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+h2 {
+  color: var(--color-header);
+  font-size: 1.3em;
+  margin-bottom: 12px;
+}
+
+h3 {
+  color: var(--color-accent-light);
+  font-size: 1.1em;
+}
+
+/* Bullet lists */
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+ul > li {
+  padding-left: 24px;
+  position: relative;
+  margin-bottom: 6px;
+}
+
+ul > li::before {
+  content: '\25CF';
+  color: var(--color-accent);
+  position: absolute;
+  left: 0;
+  font-size: 0.7em;
+  top: 4px;
+}
+
+ul ul > li::before {
+  content: '\25CB';
+  color: var(--color-accent-light);
+}
+
+/* Strong text */
+strong {
+  color: var(--color-accent);
+}
+
+/* Code blocks */
+pre {
+  background: var(--color-bg-dark);
+  padding: 16px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+code {
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  background: var(--color-bg-dark);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Links */
+a {
+  color: var(--color-accent);
+}
+
+/* Header/Footer area (Slidev defaults override) */
+.slidev-vflex-root {
+  background: var(--color-bg);
+}

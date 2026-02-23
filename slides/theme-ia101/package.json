@@ -1,0 +1,6 @@
+{
+  "name": "theme-ia101",
+  "private": true,
+  "type": "module",
+  "main": "index.ts"
+}

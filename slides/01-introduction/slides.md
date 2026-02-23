@@ -1,12 +1,15 @@
 ---
-marp: true
-theme: ia101
+theme: ../theme-ia101
+title: "01 Introduction"
+info: Cours Intelligence Artificielle
 paginate: true
-header: 'IA 101'
-footer: 'I - Introduction'
+drawings:
+  persist: false
+transition: slide-left
+mdc: true
 ---
 
-<!-- _class: title -->
+layout: cover
 
 # Intelligence Artificielle
 
@@ -17,6 +20,7 @@ MRes CSAI, Sussex University, Brighton UK
 Aricie -- DNN -- PKP -- My Intelligence Agency
 
 ---
+
 
 # IA 101 -- Ressources et organisation
 
@@ -30,6 +34,7 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
   - Expose final en classe devant le groupe
 
 ---
+
 
 # Sommaire
 
@@ -48,9 +53,11 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
   - Comment utiliser les donnees et l'experience ?
 - Application: le langage naturel
 
-![bg right:35%](images/img_001.jpg)
+layout: image-right
+image: ./images/img_001.jpg
 
 ---
+
 
 # Sommaire
 
@@ -68,6 +75,7 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
 
 ---
 
+
 # Objectifs du cours (1/2)
 
 A l'issue de ce cours, vous serez capables de :
@@ -84,6 +92,7 @@ A l'issue de ce cours, vous serez capables de :
 
 ---
 
+
 # Objectifs du cours (2/2)
 
 - **Concevoir des systemes intelligents en conditions reelles**
@@ -95,6 +104,7 @@ A l'issue de ce cours, vous serez capables de :
   - Comment definir et mesurer la rationalite ?
 
 ---
+
 
 # Plan du cours
 
@@ -109,11 +119,13 @@ A l'issue de ce cours, vous serez capables de :
 
 ---
 
+
 <!-- _class: questions -->
 
 # Questions?
 
 ---
+
 
 # Introduction a l'intelligence artificielle
 
@@ -132,6 +144,7 @@ A l'issue de ce cours, vous serez capables de :
 
 ---
 
+
 # Qu'est-ce que l'intelligence artificielle ?
 
 - **Des definitions multiples et un concept evolutif**
@@ -143,6 +156,7 @@ A l'issue de ce cours, vous serez capables de :
 ![center w:850](images/img_002.png)
 
 ---
+
 
 # Quatre visions de l'IA
 
@@ -159,6 +173,7 @@ A l'issue de ce cours, vous serez capables de :
 
 ---
 
+
 # Les fondements de l'IA
 
 L'IA est une discipline profondement interdisciplinaire :
@@ -173,9 +188,11 @@ L'IA est une discipline profondement interdisciplinaire :
 - **Theorie du controle :** optimisation d'une fonction objective dans le temps
 - **Linguistique :** grammaires, representation du sens
 
-![bg right:30%](images/img_003.png)
+layout: image-right
+image: ./images/img_003.png
 
 ---
+
 
 # Histoire succincte (1/2)
 
@@ -189,9 +206,11 @@ L'IA est une discipline profondement interdisciplinaire :
 - **1965** : Robinson propose un algorithme complet de raisonnement logique
 - **1969-79** : age d'or des systemes experts (bases de connaissances)
 
-![bg right:30%](images/img_004.png)
+layout: image-right
+image: ./images/img_004.png
 
 ---
+
 
 # Histoire succincte (2/2)
 
@@ -209,9 +228,11 @@ L'IA est une discipline profondement interdisciplinaire :
 - **2017** : "Attention Is All You Need" -- naissance des Transformers
 - **2020s** : GPT, DALL-E, ChatGPT, Claude, Gemini, DeepSeek, agents autonomes
 
-![bg right:30%](images/img_004.png)
+layout: image-right
+image: ./images/img_004.png
 
 ---
+
 
 # Etat de l'art (1/2)
 
@@ -236,6 +257,7 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 
+
 # Etat de l'art (2/2)
 
 **Deep Learning et NLP (2010-2019)**
@@ -258,6 +280,7 @@ L'IA est une discipline profondement interdisciplinaire :
 ![bg](images/img_006.jpg)
 
 ---
+
 
 # Qui fait de l'IA ?
 
@@ -285,6 +308,7 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 
+
 # L'IA dans la vie de tous les jours
 
 - **Banque et finance** : scoring de credit, detection de fraude, trading algorithmique
@@ -296,6 +320,7 @@ L'IA est une discipline profondement interdisciplinaire :
 - **Quotidien** : assistants vocaux (Siri, Alexa), traduction automatique, filtres photo
 
 ---
+
 
 # Agir comme l'homme : le Test de Turing
 
@@ -311,9 +336,11 @@ L'IA est une discipline profondement interdisciplinaire :
 
 **Ces competences definissent les grandes disciplines de l'IA** -- dont quatre seront detaillees dans ce cours.
 
-![bg right:40%](images/img_020.png)
+layout: image-right
+image: ./images/img_020.png
 
 ---
+
 
 # Penser comme l'homme : sciences cognitives
 
@@ -328,6 +355,7 @@ L'IA est une discipline profondement interdisciplinaire :
   - Le "hardware" biologique differe fondamentalement du silicium
 
 ---
+
 
 # Penser de facon rationnelle : lois de la raison
 
@@ -344,6 +372,7 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 
+
 # Agir de facon rationnelle : l'agent
 
 - **Un comportement rationnel consiste a faire la bonne chose :**
@@ -358,11 +387,13 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 
+
 <!-- _class: questions -->
 
 # Questions?
 
 ---
+
 
 # Systemes d'agents
 
@@ -380,6 +411,7 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 
+
 # Les agents
 
 **Un agent est une entite autonome qui :**
@@ -390,9 +422,11 @@ L'IA est une discipline profondement interdisciplinaire :
 - Un agent implemente une *fonction d'agent* : **f : P\* → A**
 - A partir de l'historique complet de ses percepts, il choisit une action
 
-![bg right:45%](images/img_021.png)
+layout: image-right
+image: ./images/img_021.png
 
 ---
+
 
 # Les agents rationnels
 
@@ -407,6 +441,7 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 
+
 # Rationalite limitee
 
 - **La rationalite parfaite est rarement atteignable**
@@ -417,8 +452,8 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 
-<!-- _class: columns-layout -->
 
+layout: two-cols
 # Intelligences
 
 <div class="columns">
@@ -448,6 +483,7 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 
+
 # Environnement de tache
 
 **Description PEAS:**
@@ -468,11 +504,13 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 
+
 # Environnements de tache: exemples
 
 ![center w:800](images/img_028.png)
 
 ---
+
 
 # Types d'environnement (1/2)
 
@@ -490,6 +528,7 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 
 ---
 
+
 # Types d'environnement (2/2)
 
 - **Discret vs continu**
@@ -503,11 +542,13 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 
 ---
 
+
 # Types d'environnement: exemples
 
 ![center w:800](images/img_029.png)
 
 ---
+
 
 # Types d'agents
 
@@ -523,12 +564,13 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 4. Agent fonde sur l'utilite
 5. Agent capable d'apprentissage
 
-![bg right:40%](images/img_030.png)
+layout: image-right
+image: ./images/img_030.png
 
 ---
 
-<!-- _class: columns-layout -->
 
+layout: two-cols
 # Agent reflexe
 
 <div class="columns">
@@ -561,8 +603,8 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 
 ---
 
-<!-- _class: columns-layout -->
 
+layout: two-cols
 # Agent reflexe fonde sur un modele
 
 <div class="columns">
@@ -595,6 +637,7 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 
 ---
 
+
 # Agent fonde sur des buts
 
 **Du reactif au deliberatif** : l'agent ne reagit plus seulement a l'instant present, il anticipe le futur.
@@ -603,9 +646,11 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 - Planifie des sequences d'actions pour atteindre un objectif
 - Utilise la recherche (exploration) et la planification
 
-![bg right:50%](images/img_037.png)
+layout: image-right
+image: ./images/img_037.png
 
 ---
+
 
 # Agent fonde sur l'utilite
 
@@ -618,9 +663,11 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 - Probabilite de succes vs importance de l'objectif
 - Risque vs recompense, urgence vs cout
 
-![bg right:50%](images/img_038.png)
+layout: image-right
+image: ./images/img_038.png
 
 ---
+
 
 # Agent capable d'apprentissage
 
@@ -633,9 +680,11 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 
 **Formes d'apprentissage :** supervise, par renforcement, non supervise
 
-![bg right:50%](images/img_039.png)
+layout: image-right
+image: ./images/img_039.png
 
 ---
+
 
 # Fonctionnement interne des agents
 
@@ -649,9 +698,11 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 **Compromis fondamental :** plus la representation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
 
-![bg right:45%](images/img_040.png)
+layout: image-right
+image: ./images/img_040.png
 
 ---
+
 
 # Resume
 
@@ -669,6 +720,7 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 ---
 
+
 # Plan du cours
 
 - Introduction
@@ -680,6 +732,7 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 - Presentations projets
 
 ---
+
 
 <!-- _class: crossref -->
 
@@ -698,7 +751,8 @@ Chaque chapitre du cours est accompagne de travaux pratiques sous forme de noteb
 
 ---
 
-<!-- _class: title -->
+
+layout: cover
 
 # Merci
 
