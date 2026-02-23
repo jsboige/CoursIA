@@ -41,17 +41,17 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
 - Qu'est-ce que l'intelligence artificielle ?
 - Racines, histoire et etat de l'art
 - Structure des agents rationnels
-- Intelligence exploratoire
-  - Comment chercher la solution a un probleme ?
-- Intelligence Symbolique
-  - Comment utiliser le raisonnement et les mathematiques ?
-- Intelligence probabiliste
-  - Comment agir dans l'incertitude ?
-- Intelligence Multi-Agents
-  - Comment tenir compte des autres?
-- Apprentissage
-  - Comment utiliser les donnees et l'experience ?
-- Application: le langage naturel
+<v-click="2">- Intelligence exploratoire</v-click>
+<v-click="2">- Comment chercher la solution a un probleme ?</v-click>
+<v-click="3">- Intelligence Symbolique</v-click>
+<v-click="3">- Comment utiliser le raisonnement et les mathematiques ?</v-click>
+<v-click="4">- Intelligence probabiliste</v-click>
+<v-click="4">- Comment agir dans l'incertitude ?</v-click>
+<v-click="5">- Intelligence Multi-Agents</v-click>
+<v-click="5">- Comment tenir compte des autres?</v-click>
+<v-click="6">- Apprentissage</v-click>
+<v-click="6">- Comment utiliser les donnees et l'experience ?</v-click>
+<v-click="7">- Application: le langage naturel</v-click>
 
 layout: image-right
 image: ./images/img_001.jpg
@@ -526,12 +526,12 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 
 # Types d'environnement (2/2)
 
-- **Discret vs continu**
-  - Les etats, le temps, les percepts et les actions sont-ils denombrables ?
-- **Agent simple vs multiagent**
-  - L'agent est-il seul ou en interaction (cooperation, competition) ?
-- **Connu vs inconnu**
-  - L'agent connait-il les regles de l'environnement ?
+<v-click="5">- **Discret vs continu**</v-click>
+<v-click="5">- Les etats, le temps, les percepts et les actions sont-ils denombrables ?</v-click>
+<v-click="6">- **Agent simple vs multiagent**</v-click>
+<v-click="6">- L'agent est-il seul ou en interaction (cooperation, competition) ?</v-click>
+<v-click="7">- **Connu vs inconnu**</v-click>
+<v-click="7">- L'agent connait-il les regles de l'environnement ?</v-click>
 
 **En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, sequentiel, dynamique, continu, multiagent.
 
@@ -577,7 +577,7 @@ layout: two-cols
 
 **Exemples:**
 
-- Intelligence animale
+<v-click="2">- Intelligence animale</v-click>
 - Behaviourism
 - Artificial Life
 - Cellular Automata
@@ -600,7 +600,7 @@ layout: two-cols
 
 **Caracteristiques:**
 
-- Etat du monde
+<v-click="1">- Etat du monde</v-click>
 - Historique des percepts
 - Memoire du changement
 
@@ -695,13 +695,13 @@ image: ./images/img_040.png
   - Quatre approches : penser/agir comme l'homme ou de facon rationnelle
   - Fondements interdisciplinaires : logique, decision, neurosciences, linguistique...
   - Une histoire ponctuee de "hivers" et de renaissances spectaculaires
-- **Agents rationnels**
-  - Un agent percoit son environnement et agit pour maximiser sa performance
-  - La rationalite parfaite est un ideal ; en pratique, on vise le meilleur compromis
-- **Architectures d'agents**
-  - Reflexes (simples ou avec modele), fondes sur des buts ou l'utilite, apprenants
-  - Les proprietes de l'environnement dictent le choix de l'architecture
-  - La representation des etats (atomique, factorisee, structuree) conditionne les capacites
+<v-click="1">- **Agents rationnels**</v-click>
+<v-click="1">- Un agent percoit son environnement et agit pour maximiser sa performance</v-click>
+<v-click="1">- La rationalite parfaite est un ideal ; en pratique, on vise le meilleur compromis</v-click>
+<v-click="1">- **Architectures d'agents**</v-click>
+<v-click="1">- Reflexes (simples ou avec modele), fondes sur des buts ou l'utilite, apprenants</v-click>
+<v-click="1">- Les proprietes de l'environnement dictent le choix de l'architecture</v-click>
+<v-click="1">- La representation des etats (atomique, factorisee, structuree) conditionne les capacites</v-click>
 
 ---
 

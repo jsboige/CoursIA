@@ -55,6 +55,63 @@ def parse_frontmatter(slide: str) -> tuple:
     return '', slide
 
 
+def apply_click_animations(content: str, slide_animations: dict) -> str:
+    """Apply v-click directives based on PPTX click_groups."""
+    if not slide_animations.get('has_animations', False):
+        return content
+
+    click_groups = slide_animations.get('click_groups', [])
+    if not click_groups or len(click_groups) <= 1:
+        return content
+
+    # Build mapping of level 0 text to click index
+    level0_to_click = {}
+    for group in click_groups[1:]:  # Skip click 0 (visible by default)
+        click_idx = group['click']
+        for item in group.get('items', []):
+            if item.get('type') == 'paragraph' and item.get('level', 0) == 0:
+                text = item.get('text', '').strip()
+                if text:
+                    key = text[:40].lower()
+                    level0_to_click[key] = click_idx
+
+    lines = content.split('\n')
+    result = []
+    parent_click = 0  # Track click for current level 0 parent
+
+    for line in lines:
+        # Detect indentation level
+        indent_match = re.match(r'^(\s*)-', line)
+        if indent_match:
+            indent = len(indent_match.group(1))
+            level = indent // 2 if indent else 0
+            stripped = line.strip()
+
+            if level == 0:
+                # Level 0 bullet - find its click
+                bullet_text = stripped[2:].strip()
+                parent_click = 0
+                for key, click_idx in level0_to_click.items():
+                    if key in bullet_text.lower() or bullet_text.lower() in key:
+                        parent_click = click_idx
+                        break
+
+                if parent_click > 0:
+                    result.append(f'<v-click="{parent_click}">{stripped}</v-click>')
+                else:
+                    result.append(line)
+            else:
+                # Level 1+ bullet - inherit parent's click
+                if parent_click > 0:
+                    result.append(f'<v-click="{parent_click}">{stripped}</v-click>')
+                else:
+                    result.append(line)
+        else:
+            result.append(line)
+
+    return '\n'.join(result)
+
+
 def convert_slide_content(content: str, slide_num: int, animations: dict) -> str:
     """Convert Marp content to Slidev format."""
     lines = content.split('\n')
@@ -181,6 +238,8 @@ def convert_slide_content(content: str, slide_num: int, animations: dict) -> str
     content = re.sub(r' src="(images/[^"]+)"', r' src="./\1"', content)
     # Fix markdown images: ](images/xxx) -> ](./images/xxx)
     content = re.sub(r'\]\((images/[^)]+)\)', r'](./\1)', content)
+    # Apply v-click animations from PPTX
+    content = apply_click_animations(content, slide_animations)
     return content
 
 
