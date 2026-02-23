@@ -61,8 +61,50 @@ def convert_slide_content(content: str, slide_num: int, animations: dict) -> str
     result = []
     i = 0
 
+    # Track animations for this slide
+    slide_animations = animations.get('slides', [{}])[slide_num - 1] if slide_num <= len(animations.get('slides', [])) else {}
+    has_animations = slide_animations.get('has_animations', False)
+    click_groups = slide_animations.get('click_groups', [])
+
+    # Collect multi-image vertical patterns first
+    vertical_images = []
+    in_vertical_block = False
+
+    # Track two-cols layout
+    in_two_cols = False
+    in_right_col = False
+
     while i < len(lines):
         line = lines[i]
+
+        # Detect vertical multi-image pattern start
+        if re.match(r'^!\[bg right:\d+% vertical\]\(images/[^\)]+\)', line):
+            in_vertical_block = True
+            match = re.match(r'^!\[bg right:\d+% vertical\]\(([^)]+)\)', line)
+            if match:
+                vertical_images.append(match.group(1))
+            i += 1
+            # Collect following ![bg] patterns
+            while i < len(lines) and re.match(r'^!\[bg\]\(images/[^\)]+\)', lines[i]):
+                bg_match = re.match(r'^!\[bg\]\(([^)]+)\)', lines[i])
+                if bg_match:
+                    vertical_images.append(bg_match.group(1))
+                i += 1
+            continue
+
+        # If we collected vertical images, output them
+        if vertical_images:
+            result.append('layout: image-right')
+            result.append(f'image: ./{vertical_images[0]}')
+            # Additional images as inline markdown with v-click if animated
+            for idx, img in enumerate(vertical_images[1:], 1):
+                if has_animations:
+                    result.append(f'<div v-click="{idx}"><img src="./{img}" style="max-height:300px; margin-top:8px;"></div>')
+                else:
+                    result.append(f'<img src="./{img}" style="max-height:300px; margin-top:8px;">')
+            vertical_images = []
+            in_vertical_block = False
+            continue
 
         # Class directives
         if '<!-- _class: title -->' in line:
@@ -73,12 +115,13 @@ def convert_slide_content(content: str, slide_num: int, animations: dict) -> str
             result.append('layout: dense')
         elif '<!-- _class: columns-layout -->' in line:
             result.append('layout: two-cols')
+            in_two_cols = True
             # Skip empty lines that followed
             i += 1
             while i < len(lines) and lines[i].strip() == '':
                 i += 1
             continue
-        # Image background patterns
+        # Image background patterns (single, non-vertical)
         elif re.match(r'^!\[bg right:\d+%\]?\(images/[^\)]+\)', line):
             match = re.match(r'^!\[bg right:(\d+)%\]?\(([^)]+)\)', line)
             if match:
@@ -86,15 +129,59 @@ def convert_slide_content(content: str, slide_num: int, animations: dict) -> str
                 img_path = match.group(2)
                 result.append(f'layout: image-right')
                 result.append(f'image: ./{img_path}')
-        # Regular image (inline)
+        # Img-grid div pattern
+        elif '<div class="img-grid"' in line:
+            # Extract images from grid until closing div
+            result.append('<div class="image-grid">')
+            i += 1
+            while i < len(lines) and '</div>' not in lines[i]:
+                img_match = re.search(r'<img src="([^"]+)"', lines[i])
+                if img_match:
+                    img_src = img_match.group(1)
+                    # Ensure path starts with ./
+                    if not img_src.startswith('./'):
+                        img_src = f'./{img_src}'
+                    result.append(f'<img src="{img_src}">')
+                i += 1
+            result.append('</div>')
+        # Columns div pattern - map to two-cols layout
+        elif '<div class="columns">' in line:
+            # We're already in two-cols layout, just skip the div wrapper
+            i += 1
+            continue
+        elif '<div class="col-left">' in line:
+            i += 1
+            continue
+        elif '<div class="col-right">' in line:
+            in_right_col = True
+            result.append('::right::')
+            i += 1
+            continue
+        elif '</div>' in line and (in_two_cols or in_right_col):
+            # End of column content
+            if in_right_col:
+                in_right_col = False
+            i += 1
+            continue
+        # Regular image (inline) - fix path
         elif line.strip().startswith('![') and '](' in line:
-            # Keep inline images as-is
+            # Keep as-is, will be fixed in post-process
             result.append(line)
+        # Skip standalone ![bg] patterns (already handled in vertical block)
+        elif re.match(r'^!\[bg\]\(images/[^\)]+\)', line):
+            i += 1
+            continue
         else:
             result.append(line)
         i += 1
 
-    return '\n'.join(result)
+    # Post-process: fix all image paths to start with ./
+    content = '\n'.join(result)
+    # Fix HTML img tags: src="images/xxx" -> src="./images/xxx"
+    content = re.sub(r' src="(images/[^"]+)"', r' src="./\1"', content)
+    # Fix markdown images: ](images/xxx) -> ](./images/xxx)
+    content = re.sub(r'\]\((images/[^)]+)\)', r'](./\1)', content)
+    return content
 
 
 def convert_marp_to_slidev(marp_path: Path, slidev_path: Path, deck_name: str):

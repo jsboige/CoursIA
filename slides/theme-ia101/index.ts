@@ -8,6 +8,7 @@ export default defineTheme({
     cover: () => import('./layouts/cover.vue'),
     section: () => import('./layouts/section.vue'),
     'image-right': () => import('./layouts/image-right.vue'),
+    'image-grid': () => import('./layouts/image-grid.vue'),
     'two-cols': () => import('./layouts/two-cols.vue'),
     dense: () => import('./layouts/dense.vue'),
   },

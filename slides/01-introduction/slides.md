@@ -153,7 +153,7 @@ A l'issue de ce cours, vous serez capables de :
 - **Une definition qui evolue avec la technologie :**
   - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systemes experts → Apprentissage profond → IA generative
 
-![center w:850](images/img_002.png)
+![center w:850](./images/img_002.png)
 
 ---
 
@@ -252,8 +252,9 @@ image: ./images/img_004.png
 - NASA : planification autonome de missions spatiales
 - Trading algorithmique (85% du volume des marches en 2012)
 
-![bg right:20% vertical](images/img_005.jpg)
-![bg](images/img_006.jpg)
+layout: image-right
+image: ./images/img_005.jpg
+<div v-click="1"><img src="./images/img_006.jpg" style="max-height:300px; margin-top:8px;"></div>
 
 ---
 
@@ -276,8 +277,9 @@ image: ./images/img_004.png
 - **2024** : modeles de reflexion (O1), agents LLM, open source (DeepSeek)
 - **2025-26** : GPT-5, agents autonomes, MCP comme standard d'interoperabilite
 
-![bg right:20% vertical](images/img_005.jpg)
-![bg](images/img_006.jpg)
+layout: image-right
+image: ./images/img_005.jpg
+<div v-click="1"><img src="./images/img_006.jpg" style="max-height:300px; margin-top:8px;"></div>
 
 ---
 
@@ -288,22 +290,20 @@ image: ./images/img_004.png
 - **Laboratoires** : NASA, IBM, AT&T, SRI, DeepMind, FAIR (Meta)...
 - **Industrie** : Google, Apple, Microsoft, Meta, Amazon, OpenAI, Anthropic, Mistral, DeepSeek...
 
-<div class="img-grid" style="gap:8px; margin-top:12px;">
-
-<img src="images/img_007.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_008.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_009.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_010.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_011.jpg" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_012.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_013.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_014.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_015.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_016.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_017.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_018.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-<img src="images/img_019.png" style="max-height:50px; max-width:85px; object-fit:contain;">
-
+<div class="image-grid">
+<img src="./images/img_007.png">
+<img src="./images/img_008.png">
+<img src="./images/img_009.png">
+<img src="./images/img_010.png">
+<img src="./images/img_011.jpg">
+<img src="./images/img_012.png">
+<img src="./images/img_013.png">
+<img src="./images/img_014.png">
+<img src="./images/img_015.png">
+<img src="./images/img_016.png">
+<img src="./images/img_017.png">
+<img src="./images/img_018.png">
+<img src="./images/img_019.png">
 </div>
 
 ---
@@ -456,8 +456,6 @@ image: ./images/img_021.png
 layout: two-cols
 # Intelligences
 
-<div class="columns">
-<div class="col-left">
 
 **Procedurale** -- Automates, Algorithmes
 
@@ -467,19 +465,16 @@ layout: two-cols
 
 **Intelligence probabiliste** -- Inference Bayesienne, Recherche de politique, Analyse strategique
 
-</div>
-<div class="col-right">
+::right::
 
-<img src="images/img_022.jpg" width="130">
+<img src="./images/img_022.jpg" width="130">
 
-<img src="images/img_023.png" width="130">
+<img src="./images/img_023.png" width="130">
 
-<img src="images/img_026.png" width="130">
+<img src="./images/img_026.png" width="130">
 
-<img src="images/img_027.jpg" width="130">
+<img src="./images/img_027.jpg" width="130">
 
-</div>
-</div>
 
 ---
 
@@ -507,7 +502,7 @@ layout: two-cols
 
 # Environnements de tache: exemples
 
-![center w:800](images/img_028.png)
+![center w:800](./images/img_028.png)
 
 ---
 
@@ -545,7 +540,7 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 
 # Types d'environnement: exemples
 
-![center w:800](images/img_029.png)
+![center w:800](./images/img_029.png)
 
 ---
 
@@ -573,8 +568,6 @@ image: ./images/img_030.png
 layout: two-cols
 # Agent reflexe
 
-<div class="columns">
-<div class="col-left">
 
 **Caracteristiques:**
 
@@ -589,17 +582,14 @@ layout: two-cols
 - Artificial Life
 - Cellular Automata
 
-<img src="images/img_033.png" width="80">
+<img src="./images/img_033.png" width="80">
 
-</div>
-<div class="col-right">
+::right::
 
-<img src="images/img_031.png" width="420">
+<img src="./images/img_031.png" width="420">
 
-<img src="images/img_032.png" width="350">
+<img src="./images/img_032.png" width="350">
 
-</div>
-</div>
 
 ---
 
@@ -607,8 +597,6 @@ layout: two-cols
 layout: two-cols
 # Agent reflexe fonde sur un modele
 
-<div class="columns">
-<div class="col-left">
 
 **Caracteristiques:**
 
@@ -623,17 +611,14 @@ layout: two-cols
 - Couches d'automates
 - Emergence
 
-<img src="images/img_036.png" width="80">
+<img src="./images/img_036.png" width="80">
 
-</div>
-<div class="col-right">
+::right::
 
-<img src="images/img_034.png" width="420">
+<img src="./images/img_034.png" width="420">
 
-<img src="images/img_035.png" width="350">
+<img src="./images/img_035.png" width="350">
 
-</div>
-</div>
 
 ---
 
