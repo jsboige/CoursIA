@@ -627,12 +627,7 @@ class ComfyUIClient:
                 "class_type": "CreateVideo",
                 "inputs": {
                     "images": ["8", 0],
-                    "fps": 16,
-                    "loop_count": 1,
-                    "filename_prefix": save_prefix,
-                    "format": "video/h264-mp4",
-                    "save_output": True,
-                    "videopreview": {"hidden": False}
+                    "fps": 16
                 }
             },
             # SaveVideo
@@ -642,6 +637,8 @@ class ComfyUIClient:
                     "video": ["49", 0],
                     "fps": 16,
                     "filename_prefix": save_prefix,
+                    "format": "mp4",
+                    "codec": "auto",
                     "save_output": True
                 }
             }
@@ -716,6 +713,13 @@ class ComfyUIClient:
                     "weight_dtype": "default"
                 }
             },
+            # VAE Loader
+            "41": {
+                "class_type": "VAELoader",
+                "inputs": {
+                    "vae_name": "hunyuan_vae.safetensors"
+                }
+            },
             # Empty Hunyuan Latent Video
             "40": {
                 "class_type": "EmptyHunyuanLatentVideo",
@@ -758,12 +762,12 @@ class ComfyUIClient:
                     "denoise": 1.0
                 }
             },
-            # VAE Decode (utiliser VAE du checkpoint)
+            # VAE Decode (utiliser VAE depuis VAELoader)
             "8": {
                 "class_type": "VAEDecode",
                 "inputs": {
                     "samples": ["3", 0],
-                    "vae": ["12", 2]  # VAE depuis CheckpointLoader
+                    "vae": ["41", 0]  # VAE depuis VAELoader
                 }
             },
             # CreateVideo
@@ -771,11 +775,7 @@ class ComfyUIClient:
                 "class_type": "CreateVideo",
                 "inputs": {
                     "images": ["8", 0],
-                    "fps": 24,
-                    "loop_count": 1,
-                    "filename_prefix": save_prefix,
-                    "format": "video/h264-mp4",
-                    "save_output": True
+                    "fps": 24
                 }
             },
             # SaveVideo
@@ -785,6 +785,8 @@ class ComfyUIClient:
                     "video": ["49", 0],
                     "fps": 24,
                     "filename_prefix": save_prefix,
+                    "format": "mp4",
+                    "codec": "auto",
                     "save_output": True
                 }
             }
