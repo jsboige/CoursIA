@@ -510,3 +510,4 @@ execute_*.py
 
 # Agent memory temporaire (local scope)
 .claude/agent-memory/notebook-*/
+docker-configurations/services/comfyui-video/workspace/
