@@ -1,5 +1,7 @@
 # Vibe-Coding - Ateliers IA Generative pour le Developpement
 
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Claude Discovery](Claude-Code/01-decouverte/README.md)
+
 Ce repertoire contient les ressources pedagogiques pour apprendre le "vibe-coding" avec des assistants IA generatifs. Le contenu couvre deux outils majeurs : **Claude Code** (Anthropic) et **Roo Code**, ainsi qu'une documentation introductive sur l'IA generative.
 
 ## Structure du repertoire

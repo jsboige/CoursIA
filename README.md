@@ -112,7 +112,7 @@ CoursIA/
 |-----------|-----------|---------|---------------|-------------|
 | **Search** | 5 | C#, Python | ~1h10 | - |
 | **Sudoku** | 11 | C#, Python | ~2h | - |
-| **SymbolicAI** | 47 | Python, Lean 4, .NET C# | ~31h | OpenAI (optionnel) |
+| **SymbolicAI** | 60+ | Python, Lean 4 | ~35h | OpenAI (optionnel) |
 | **GameTheory** | 26 | Python, Lean 4 | ~18h30 | OpenAI (optionnel) |
 | **Probas** | 22 | C#, Python | ~17h | - |
 | **ML** | 17 | C#, Python | ~6h | - |

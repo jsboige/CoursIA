@@ -27,6 +27,12 @@
   - Added interpretation after PSO convergence visualization with technical note
   - Replaced seaborn with matplotlib in comparative plots (removed dependency)
   - All cells positioned correctly, BOTTOM-to-TOP strategy used
+- **2026-02-19**: Video GPU Notebooks Pedagogical Enhancement (6 notebooks)
+  - Replaced "désactivé/non disponible" messages with detailed pedagogical outputs
+  - Added MODE PEDAGOGIQUE sections with expected parameters, results, and reproduction code
+  - Notebooks: 01-3-Qwen-VL, 01-4-ESRGAN, 02-1-HunyuanVideo, 02-2-LTX-Video, 02-3-Wan, 02-4-SVD
+  - Used edit_mode="replace" on existing interpretation cells (not insertions)
+  - No cell positioning issues since we replaced existing cells
 
 ### Domain-Specific Patterns
 

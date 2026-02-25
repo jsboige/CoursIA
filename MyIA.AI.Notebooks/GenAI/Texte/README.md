@@ -1,5 +1,7 @@
 # GenAI Texte - Generation de Texte par IA
 
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
+
 Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et les APIs OpenAI modernes (2025-2026).
 
 ## Vue d'ensemble
@@ -10,6 +12,7 @@ Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et l
 | **Sorties Structurees** | 3-4 | Intermediaire |
 | **Augmentation** | 5-7 | Intermediaire |
 | **Avance** | 8-10 | Avance |
+| **Validation** | 100% (10/10 notebooks) |
 
 ## Contenu detaille
 

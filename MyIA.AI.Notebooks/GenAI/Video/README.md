@@ -1,5 +1,7 @@
 # Video - Generation & Comprehension Video par IA
 
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-4-Audio-Video-Sync.ipynb)
+
 Serie complete de notebooks pour la generation, la comprehension et l'edition video par IA generative : text-to-video, image-to-video, video understanding, amelioration et workflows de production.
 
 ## Vue d'ensemble
@@ -10,6 +12,7 @@ Serie complete de notebooks pour la generation, la comprehension et l'edition vi
 | Sous-dossiers | 4 niveaux |
 | Kernel | Python 3 |
 | Duree totale | ~12-15h |
+| Validation | 100% (16/16 notebooks) |
 
 ## Structure
 

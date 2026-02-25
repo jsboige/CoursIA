@@ -496,6 +496,301 @@ class ComfyUIClient:
 
         return result
 
+    def generate_text2video_wan(
+        self,
+        prompt: str,
+        width: int = 832,
+        height: int = 480,
+        num_frames: int = 16,
+        steps: int = 20,
+        seed: Optional[int] = None,
+        negative_prompt: str = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+        cfg: float = 6.0,
+        save_prefix: str = "wan_t2v",
+        timeout: int = 300,
+    ) -> Dict[str, Any]:
+        """
+        Genere une video a partir d'un prompt texte avec Wan 2.1 1.3B.
+
+        NOTE: Cette methode necessite des modeles locaux non telecharges par defaut.
+        Pour utiliser Wan en ComfyUI, vous devez:
+        1. Telecharger les modeles Wan depuis HuggingFace
+        2. Ou utiliser les nodes API WanTextToVideoApi (necessite authentification cloud)
+
+        ALTERNATIVE RECOMMANDEE: Utiliser le mode local diffusers dans les notebooks
+        qui telecharge automatiquement les modeles depuis HuggingFace.
+
+        Modele Wan 2.1 T2V 1.3B - ~8GB VRAM requis
+        Architecture: WanTextToVideo avec ModelSamplingSD3
+
+        Modeles requis (telechargement manuel):
+          - diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors (~2.5GB)
+          - text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors (~4GB)
+          - vae/wan_2.1_vae.safetensors (~360MB)
+
+        Args:
+            prompt: Prompt textuel (FR, EN ou CN supporte)
+            width: Largeur video (defaut: 832, aligne 32px)
+            height: Hauteur video (defaut: 480, aligne 32px)
+            num_frames: Nombre de frames (defaut: 16)
+            steps: Nombre de steps de diffusion (defaut: 20)
+            seed: Seed aleatoire (None = aleatoire)
+            negative_prompt: Prompt negatif (defaut: liste Wan officielle)
+            cfg: CFG scale (defaut: 6.0 pour Wan)
+            save_prefix: Prefixe pour le fichier de sortie
+            timeout: Timeout en secondes (defaut: 300s)
+
+        Returns:
+            Resultat de la generation (historique ComfyUI)
+        """
+        if seed is None:
+            seed = random.randint(0, 2**32 - 1)
+
+        # WORKFLOW WAN 2.1 T2V 1.3B - Based on text_to_video_wan.json
+        workflow = {
+            # Chargement du modele UNE
+            "37": {
+                "class_type": "UNETLoader",
+                "inputs": {
+                    "unet_name": "wan2.1_t2v_1.3B_fp16.safetensors",
+                    "weight_dtype": "default"
+                }
+            },
+            # Chargement CLIP (text encoder)
+            "38": {
+                "class_type": "CLIPLoader",
+                "inputs": {
+                    "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+                    "type": "wan",
+                    "device": "default"
+                }
+            },
+            # Chargement VAE
+            "39": {
+                "class_type": "VAELoader",
+                "inputs": {
+                    "vae_name": "wan_2.1_vae.safetensors"
+                }
+            },
+            # Latent video vide
+            "40": {
+                "class_type": "EmptyHunyuanLatentVideo",
+                "inputs": {
+                    "width": width,
+                    "height": height,
+                    "frame_limit": num_frames,
+                    "batch_size": 1
+                }
+            },
+            # Encodage prompt positif
+            "6": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "clip": ["38", 0],
+                    "text": prompt
+                }
+            },
+            # Encodage prompt negatif
+            "7": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "clip": ["38", 0],
+                    "text": negative_prompt
+                }
+            },
+            # ModelSamplingSD3 (shift=8 pour Wan)
+            "48": {
+                "class_type": "ModelSamplingSD3",
+                "inputs": {
+                    "model": ["37", 0],
+                    "shift": 8
+                }
+            },
+            # KSampler
+            "3": {
+                "class_type": "KSampler",
+                "inputs": {
+                    "model": ["48", 0],
+                    "positive": ["6", 0],
+                    "negative": ["7", 0],
+                    "latent_image": ["40", 0],
+                    "seed": seed,
+                    "steps": steps,
+                    "cfg": cfg,
+                    "sampler_name": "uni_pc",
+                    "scheduler": "simple",
+                    "denoise": 1.0
+                }
+            },
+            # VAE Decode
+            "8": {
+                "class_type": "VAEDecode",
+                "inputs": {
+                    "samples": ["3", 0],
+                    "vae": ["39", 0]
+                }
+            },
+            # CreateVideo
+            "49": {
+                "class_type": "CreateVideo",
+                "inputs": {
+                    "images": ["8", 0],
+                    "fps": 16
+                }
+            },
+            # SaveVideo
+            "50": {
+                "class_type": "SaveVideo",
+                "inputs": {
+                    "video": ["49", 0],
+                    "fps": 16,
+                    "filename_prefix": save_prefix,
+                    "format": "mp4",
+                    "codec": "auto",
+                    "save_output": True
+                }
+            }
+        }
+
+        # Enqueue et attendre la completion
+        prompt_id = self.queue_prompt(workflow)
+        result = self.wait_for_completion(prompt_id, timeout=timeout)
+
+        return result
+
+    def generate_text2video_hunyuan(
+        self,
+        prompt: str,
+        width: int = 848,
+        height: int = 480,
+        num_frames: int = 33,
+        steps: int = 30,
+        seed: Optional[int] = None,
+        save_prefix: str = "hunyuan_t2v",
+        timeout: int = 600,
+    ) -> Dict[str, Any]:
+        """
+        Genere une video a partir d'un prompt texte avec HunyuanVideo 1.5.
+
+        Modele HunyuanVideo T2V 720p fp8 - ~13 GB VRAM requis
+        Architecture: HyVideo native nodes (text encoder auto-downloaded)
+
+        Modeles requis (telechargement manuel dans ComfyUI/models/):
+          - diffusion_models/hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors (~13GB)
+          - vae/hunyuan_video_vae_bf16.safetensors (~470MB)
+
+        Modeles auto-telecharges:
+          - LLM text encoder: Kijai/llava-llama-3-8b-text-encoder-tokenizer
+          - CLIP: openai/clip-vit-large-patch14
+
+        Args:
+            prompt: Prompt textuel
+            width: Largeur video (defaut: 848, multiple de 16)
+            height: Hauteur video (defaut: 480, multiple de 16)
+            num_frames: Nombre de frames (defaut: 33, multiple de 4 + 1)
+            steps: Nombre de steps (defaut: 30)
+            seed: Seed aleatoire (None = aleatoire)
+            save_prefix: Prefixe de sauvegarde
+            timeout: Timeout en secondes (defaut: 600s pour longues generations)
+
+        Returns:
+            Resultat de la generation (historique ComfyUI)
+        """
+        if seed is None:
+            seed = random.randint(0, 2**32 - 1)
+
+        # WORKFLOW HUNYUANVIDEO T2V - Native nodes
+        workflow = {
+            # Text Encoder Loader (auto-download from HuggingFace)
+            "1": {
+                "class_type": "DownloadAndLoadHyVideoTextEncoder",
+                "inputs": {
+                    "llm_model": "Kijai/llava-llama-3-8b-text-encoder-tokenizer",
+                    "clip_model": "openai/clip-vit-large-patch14",
+                    "precision": "bf16",
+                    "quantization": "disabled",
+                    "load_device": "offload_device"
+                }
+            },
+            # Text Encode
+            "2": {
+                "class_type": "HyVideoTextEncode",
+                "inputs": {
+                    "text_encoders": ["1", 0],
+                    "prompt": prompt,
+                    "force_offload": True,
+                    "prompt_template": "video"
+                }
+            },
+            # Model Loader (fp8 for 24GB VRAM)
+            "3": {
+                "class_type": "HyVideoModelLoader",
+                "inputs": {
+                    "model": "hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors",
+                    "base_precision": "bf16",
+                    "quantization": "fp8_e4m3fn",
+                    "load_device": "main_device"
+                }
+            },
+            # VAE Loader
+            "4": {
+                "class_type": "HyVideoVAELoader",
+                "inputs": {
+                    "model_name": "hunyuan_video_vae_bf16.safetensors",
+                    "precision": "bf16"
+                }
+            },
+            # Sampler
+            "5": {
+                "class_type": "HyVideoSampler",
+                "inputs": {
+                    "model": ["3", 0],
+                    "hyvid_embeds": ["2", 0],
+                    "width": width,
+                    "height": height,
+                    "num_frames": num_frames,
+                    "steps": steps,
+                    "embedded_guidance_scale": 1.0,
+                    "flow_shift": 7.0,
+                    "seed": seed,
+                    "force_offload": True
+                }
+            },
+            # Decode
+            "6": {
+                "class_type": "HyVideoDecode",
+                "inputs": {
+                    "vae": ["4", 0],
+                    "samples": ["5", 0],
+                    "enable_vae_tiling": True
+                }
+            },
+            # CreateVideo
+            "7": {
+                "class_type": "CreateVideo",
+                "inputs": {
+                    "images": ["6", 0],
+                    "fps": 24
+                }
+            },
+            # SaveVideo
+            "8": {
+                "class_type": "SaveVideo",
+                "inputs": {
+                    "video": ["7", 0],
+                    "fps": 24,
+                    "filename_prefix": save_prefix,
+                    "format": "auto",
+                    "codec": "auto"
+                }
+            }
+        }
+
+        prompt_id = self.queue_prompt(workflow)
+        result = self.wait_for_completion(prompt_id, timeout=timeout)
+
+        return result
+
 
 def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
     """
