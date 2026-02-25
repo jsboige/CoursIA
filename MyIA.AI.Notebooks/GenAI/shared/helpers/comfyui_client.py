@@ -512,10 +512,18 @@ class ComfyUIClient:
         """
         Genere une video a partir d'un prompt texte avec Wan 2.1 1.3B.
 
+        NOTE: Cette methode necessite des modeles locaux non telecharges par defaut.
+        Pour utiliser Wan en ComfyUI, vous devez:
+        1. Telecharger les modeles Wan depuis HuggingFace
+        2. Ou utiliser les nodes API WanTextToVideoApi (necessite authentification cloud)
+
+        ALTERNATIVE RECOMMANDEE: Utiliser le mode local diffusers dans les notebooks
+        qui telecharge automatiquement les modeles depuis HuggingFace.
+
         Modele Wan 2.1 T2V 1.3B - ~8GB VRAM requis
         Architecture: WanTextToVideo avec ModelSamplingSD3
 
-        Modeles requis:
+        Modeles requis (telechargement manuel):
           - diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors (~2.5GB)
           - text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors (~4GB)
           - vae/wan_2.1_vae.safetensors (~360MB)
@@ -653,39 +661,37 @@ class ComfyUIClient:
     def generate_text2video_hunyuan(
         self,
         prompt: str,
-        width: int = 1280,
-        height: int = 720,
+        width: int = 848,
+        height: int = 480,
         num_frames: int = 33,
         steps: int = 30,
         seed: Optional[int] = None,
-        negative_prompt: str = "bad quality, low quality, blurry, distortion, artifacts",
-        cfg: float = 7.0,
         save_prefix: str = "hunyuan_t2v",
-        timeout: int = 300,
+        timeout: int = 600,
     ) -> Dict[str, Any]:
         """
         Genere une video a partir d'un prompt texte avec HunyuanVideo 1.5.
 
-        Modele HunyuanVideo T2V 720p - ~12 GB VRAM requis
-        Architecture: DualCLIP + UNET avec sampling standard
+        Modele HunyuanVideo T2V 720p fp8 - ~13 GB VRAM requis
+        Architecture: HyVideo native nodes (text encoder auto-downloaded)
 
-        Modeles requis:
-          - diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors (~6GB)
-          - text_encoders/clip_l.safetensors (~475MB)
-          - text_encoders/llava_llama3_fp8_scaled.safetensors (~4GB)
-          - vae/hunyuan_vae.safetensors (~360MB)
+        Modeles requis (telechargement manuel dans ComfyUI/models/):
+          - diffusion_models/hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors (~13GB)
+          - vae/hunyuan_video_vae_bf16.safetensors (~470MB)
+
+        Modeles auto-telecharges:
+          - LLM text encoder: Kijai/llava-llama-3-8b-text-encoder-tokenizer
+          - CLIP: openai/clip-vit-large-patch14
 
         Args:
             prompt: Prompt textuel
-            width: Largeur video (defaut: 1280, 720p)
-            height: Hauteur video (defaut: 720)
-            num_frames: Nombre de frames (defaut: 33 pour HunyuanVideo)
+            width: Largeur video (defaut: 848, multiple de 16)
+            height: Hauteur video (defaut: 480, multiple de 16)
+            num_frames: Nombre de frames (defaut: 33, multiple de 4 + 1)
             steps: Nombre de steps (defaut: 30)
             seed: Seed aleatoire (None = aleatoire)
-            negative_prompt: Prompt negatif
-            cfg: CFG scale (defaut: 7.0)
             save_prefix: Prefixe de sauvegarde
-            timeout: Timeout en secondes
+            timeout: Timeout en secondes (defaut: 600s pour longues generations)
 
         Returns:
             Resultat de la generation (historique ComfyUI)
@@ -693,101 +699,89 @@ class ComfyUIClient:
         if seed is None:
             seed = random.randint(0, 2**32 - 1)
 
-        # WORKFLOW HUNYUANVIDEO T2V - Simplifie (basé sur structure standard)
+        # WORKFLOW HUNYUANVIDEO T2V - Native nodes
         workflow = {
-            # DualCLIP Loader (clip_l + llava_llama3)
-            "11": {
-                "class_type": "DualCLIPLoader",
+            # Text Encoder Loader (auto-download from HuggingFace)
+            "1": {
+                "class_type": "DownloadAndLoadHyVideoTextEncoder",
                 "inputs": {
-                    "clip_name1": "clip_l.safetensors",
-                    "clip_name2": "llava_llama3_fp8_scaled.safetensors",
-                    "type": "hunyuan_video",
-                    "device": "default"
+                    "llm_model": "Kijai/llava-llama-3-8b-text-encoder-tokenizer",
+                    "clip_model": "openai/clip-vit-large-patch14",
+                    "precision": "bf16",
+                    "quantization": "disabled",
+                    "load_device": "offload_device"
                 }
             },
-            # UNET Loader
-            "12": {
-                "class_type": "UNETLoader",
+            # Text Encode
+            "2": {
+                "class_type": "HyVideoTextEncode",
                 "inputs": {
-                    "unet_name": "hunyuan_video_t2v_720p_bf16.safetensors",
-                    "weight_dtype": "default"
+                    "text_encoders": ["1", 0],
+                    "prompt": prompt,
+                    "force_offload": True,
+                    "prompt_template": "video"
+                }
+            },
+            # Model Loader (fp8 for 24GB VRAM)
+            "3": {
+                "class_type": "HyVideoModelLoader",
+                "inputs": {
+                    "model": "hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors",
+                    "base_precision": "bf16",
+                    "quantization": "fp8_e4m3fn",
+                    "load_device": "main_device"
                 }
             },
             # VAE Loader
-            "41": {
-                "class_type": "VAELoader",
+            "4": {
+                "class_type": "HyVideoVAELoader",
                 "inputs": {
-                    "vae_name": "hunyuan_vae.safetensors"
+                    "model_name": "hunyuan_video_vae_bf16.safetensors",
+                    "precision": "bf16"
                 }
             },
-            # Empty Hunyuan Latent Video
-            "40": {
-                "class_type": "EmptyHunyuanLatentVideo",
+            # Sampler
+            "5": {
+                "class_type": "HyVideoSampler",
                 "inputs": {
+                    "model": ["3", 0],
+                    "hyvid_embeds": ["2", 0],
                     "width": width,
                     "height": height,
-                    "frame_limit": num_frames,
-                    "batch_size": 1
-                }
-            },
-            # Positive Prompt
-            "6": {
-                "class_type": "CLIPTextEncode",
-                "inputs": {
-                    "clip": ["11", 0],
-                    "text": prompt
-                }
-            },
-            # Negative Prompt
-            "7": {
-                "class_type": "CLIPTextEncode",
-                "inputs": {
-                    "clip": ["11", 0],
-                    "text": negative_prompt
-                }
-            },
-            # KSampler (standard pour HunyuanVideo)
-            "3": {
-                "class_type": "KSampler",
-                "inputs": {
-                    "model": ["12", 0],
-                    "positive": ["6", 0],
-                    "negative": ["7", 0],
-                    "latent_image": ["40", 0],
-                    "seed": seed,
+                    "num_frames": num_frames,
                     "steps": steps,
-                    "cfg": cfg,
-                    "sampler_name": "euler",
-                    "scheduler": "simple",
-                    "denoise": 1.0
+                    "embedded_guidance_scale": 1.0,
+                    "flow_shift": 7.0,
+                    "seed": seed,
+                    "force_offload": True
                 }
             },
-            # VAE Decode (utiliser VAE depuis VAELoader)
-            "8": {
-                "class_type": "VAEDecode",
+            # Decode
+            "6": {
+                "class_type": "HyVideoDecode",
                 "inputs": {
-                    "samples": ["3", 0],
-                    "vae": ["41", 0]  # VAE depuis VAELoader
+                    "vae": ["4", 0],
+                    "samples": ["5", 0],
+                    "enable_vae_tiling": True
                 }
             },
             # CreateVideo
-            "49": {
+            "7": {
                 "class_type": "CreateVideo",
                 "inputs": {
-                    "images": ["8", 0],
+                    "images": ["6", 0],
                     "fps": 24
                 }
             },
             # SaveVideo
-            "50": {
+            "8": {
                 "class_type": "SaveVideo",
                 "inputs": {
-                    "video": ["49", 0],
+                    "video": ["7", 0],
                     "fps": 24,
                     "filename_prefix": save_prefix,
-                    "format": "mp4",
-                    "codec": "auto",
-                    "save_output": True
+                    "format": "auto",
+                    "codec": "auto"
                 }
             }
         }
