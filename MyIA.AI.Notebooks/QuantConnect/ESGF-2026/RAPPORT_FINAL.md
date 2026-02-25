@@ -1,3 +1,4 @@
+<!-- # Rapport Final - Optimisations QuantConnect -->
 # Rapport Final - Optimisations QuantConnect
 
 **Date** : 2026-02-17
