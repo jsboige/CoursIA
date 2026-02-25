@@ -1,160 +1,164 @@
-# Sudoku - Resolution par Differentes Approches Algorithmiques
+# Sudoku - Résolution par Différentes Approches Algorithmiques
 
-Cette serie de **23 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en deux versions : **C# (.NET Interactive)** et **Python**.
+Cette série de **30 notebooks** explore différentes techniques de résolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux étudiants de choisir leur langage.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 23 (19 C#, 4 Python) |
-| Duree estimee | ~6h |
-| Niveau | Debutant a avance |
+| Notebooks | 30 (15 C#, 15 Python) |
+| Durée estimée | ~8h |
+| Niveau | Débutant à avancé |
 | Langages | C# (.NET Interactive), Python |
 
-## Progression Pedagogique
+## Progression Pédagogique
 
-La serie suit une **progression de complexite des approches IA** en 7 niveaux :
+La série suit une **progression de complexité des approches IA** en 7 niveaux :
 
 ```
 Niveau 1 : Recherche Exhaustive
     └── Backtracking (DFS simple, garanti)
 
-Niveau 2 : Exploration Optimisee
+Niveau 2 : Exploration Optimisée
     └── Dancing Links (couverture exacte, optimisation du backtracking)
 
 Niveau 3 : Metaheuristiques (exploration non exhaustive)
-    ├── Algorithme Genetique
-    ├── Recuit Simule
-    └── PSO (NOUVEAU)
+    ├── Algorithme Génétique
+    ├── Recuit Simulé
+    └── PSO
 
 Niveau 4 : Programmation par Contraintes (CSP)
-    ├── AIMA CSP (NOUVEAU - reference academique)
+    ├── AIMA CSP (référence académique)
     ├── Propagation de Norvig (MRV + Forward Checking)
-    ├── Strategies Humaines (13 techniques d'inference)
-    ├── Graph Coloring (NOUVEAU - formulation graphe du CSP)
-    ├── OR-Tools CP-SAT (bibliotheque industrielle)
-    └── Choco Solver (NOUVEAU - autre bibliotheque CP)
+    ├── Stratégies Humaines (13 techniques d'inférence)
+    ├── Graph Coloring (formulation graphe du CSP)
+    ├── OR-Tools CP-SAT (bibliothèque industrielle)
+    └── Choco Solver (autre bibliothèque CP)
 
 Niveau 5 : IA Symbolique (SMT, Automates)
     ├── Z3 SMT Solver
     ├── Automates Symboliques + Z3
-    └── BDD/MDD (diagrammes de decision)
+    └── BDD/MDD (diagrammes de décision)
 
 Niveau 6 : IA Moderne / Data-Driven
     ├── Infer.NET (probabiliste)
-    ├── Reseaux de Neurones (CNN)
-    └── LLM Solver (NOUVEAU - unique!)
+    ├── Réseaux de Neurones (CNN)
+    └── LLM Solver
 
-Niveau 7 : Synthese
+Niveau 7 : Synthèse
     └── Benchmark Comparatif
 ```
 
-## Structure
+## Structure des Notebooks
 
-### Notebooks C# (.NET Interactive)
+| # | Sujet | C# | Python | Technologie Python |
+|---|-------|----|----|-------------------|
+| 0 | Environment | ✓ | - | - |
+| 1 | Backtracking | ✓ | ✓ | Backtracking + MRV |
+| 2 | Dancing Links | ✓ | ✓ | Algorithm X from scratch |
+| 3 | Genetic | ✓ | ✓ | PyGAD |
+| 4 | Simulated Annealing | ✓ | - | `simanneal` (à créer) |
+| 5 | PSO | ✓ | - | `mealpy` (à créer) |
+| 6 | AIMA CSP | ✓ | - | Port Russell & Norvig (à créer) |
+| 7 | Norvig | ✓ | - | Original Norvig (à créer) |
+| 8 | Human Strategies | ✓ | - | Port C#→Python (à créer) |
+| 9 | Graph Coloring | ✓ | ✓ | **networkx** + `nx.sudoku_graph()` |
+| 10 | OR-Tools | ✓ | ✓ | **ortools** CP-SAT |
+| 11 | Choco | - | ✓ | **JPype** + Choco JAR |
+| 12 | Z3 | ✓ | ✓ | **z3-solver** |
+| 13 | Symbolic Automata | ✓ | - | (C# uniquement) |
+| 14 | BDD | ✓ | - | (C# uniquement) |
+| 15 | Infer.NET | ✓ | - | (C# uniquement) |
+| 16 | Neural Network | - | ✓ | **PyTorch** CNN |
+| 17 | LLM | - | ✓ | **Semantic Kernel** |
+| 18 | Comparison | - | ✓ | Benchmark comparatif |
 
-| # | Notebook | Niveau | Duree | Contenu | Prerequis |
-|---|----------|--------|-------|---------|-----------|
-| 0 | [Sudoku-0-Environment](Sudoku-0-Environment.ipynb) | Base | ~6 min | Classes de base `SudokuGrid`, `ISudokuSolver` | .NET 9.0 |
-| 1 | [Sudoku-1-Backtracking](Sudoku-1-Backtracking.ipynb) | Recherche | ~7 min | DFS exhaustif, garanti | Sudoku-0 |
-| 2 | [Sudoku-2-DancingLinks](Sudoku-2-DancingLinks.ipynb) | Exploration | ~9 min | Algorithme X de Knuth, couverture exacte | Sudoku-0 |
-| 3 | [Sudoku-3-Genetic](Sudoku-3-Genetic.ipynb) | Metaheuristique | ~14 min | GeneticSharp, chromosomes | Sudoku-0 |
-| 4 | [Sudoku-4-SimulatedAnnealing](Sudoku-4-SimulatedAnnealing.ipynb) | Metaheuristique | ~20 min | Recuit simule : energie, refroidissement | Sudoku-0 |
-| 5 | Sudoku-5-PSO | Metaheuristique | ~20 min | Particle Swarm Optimization | Sudoku-0 |
-| 6 | Sudoku-6-AIMA-CSP | CSP | ~25 min | Reference academique : AC-3, Forward Checking | Sudoku-0 |
-| 7 | [Sudoku-7-Norvig](Sudoku-7-Norvig.ipynb) | CSP | ~20 min | Propagation : elimination, naked/hidden singles | Sudoku-0 |
-| 8 | [Sudoku-8-HumanStrategies](Sudoku-8-HumanStrategies.ipynb) | CSP | ~25 min | 13 strategies humaines : X-Wing, Y-Wing, etc. | Sudoku-0 |
-| 9 | Sudoku-9-GraphColoring | CSP | ~15 min | Formulation coloration de graphe, DSATUR | Sudoku-0 |
-| 10 | [Sudoku-10-ORTools](Sudoku-10-ORTools.ipynb) | CSP | ~11 min | CP Solver, SAT Solver, MIP avec Google OR-Tools | Sudoku-0 |
-| 11 | Sudoku-11-Choco | CSP | ~15 min | Solveur Choco, comparaison d'heuristiques | Sudoku-0 |
-| 12 | [Sudoku-12-Z3](Sudoku-12-Z3.ipynb) | Symbolique | ~13 min | Microsoft Z3, solveurs entiers et bitvectors | Sudoku-0 |
-| 13 | [Sudoku-13-SymbolicAutomata](Sudoku-13-SymbolicAutomata.ipynb) | Symbolique | ~30 min | Automates symboliques compiles vers SMT (Z3) | Sudoku-0 |
-| 14 | [Sudoku-14-BDD](Sudoku-14-BDD.ipynb) | Symbolique | ~25 min | Binary Decision Diagrams (approche pure) | Sudoku-13 |
-| 15 | [Sudoku-15-Infer](Sudoku-15-Infer.ipynb) | Data-Driven | ~19 min | Modeles graphiques probabilistes avec Infer.NET | Sudoku-0 |
-| 16 | [Sudoku-16-NeuralNetwork](Sudoku-16-NeuralNetwork.ipynb) | Data-Driven | ~25 min | 4 architectures CNN avec PyTorch | Python, DL |
-| 17 | Sudoku-17-LLM | Data-Driven | ~20 min | Solveur LLM avec Semantic Kernel | Sudoku-0 |
-| 18 | [Sudoku-18-Comparison](Sudoku-18-Comparison.ipynb) | Synthese | ~20 min | Benchmark comparatif final de tous les solveurs | Python |
+**Légende** : ✓ = disponible, - = non applicable ou à créer
 
-### Notebooks Python (annexes)
+## Notebooks avec Versions Miroir C#/Python
 
-| Notebook | Duree | Contenu |
-|----------|-------|---------|
-| [Sudoku-Python-Backtracking](Sudoku-Python-Backtracking.ipynb) | ~11 min | Backtracking + MRV, visualisation matplotlib |
-| [Sudoku-Python-Genetic](Sudoku-Python-Genetic.ipynb) | ~10 min | Algorithme genetique avec PyGAD |
-| [Sudoku-Python-DancingLinks](Sudoku-Python-DancingLinks.ipynb) | ~13 min | Dancing Links from scratch |
-| [Sudoku-Python-ORTools-Z3](Sudoku-Python-ORTools-Z3.ipynb) | ~10 min | OR-Tools CP-SAT, Z3 SMT, comparaison |
+Les notebooks suivants sont disponibles dans les deux langages pour comparaison directe :
+
+| # | Sujet | C# | Python | Intérêt pédagogique |
+|---|-------|----|----|-------------------|
+| 1 | Backtracking | [Sudoku-1-Backtracking-Csharp](Sudoku-1-Backtracking-Csharp.ipynb) | [Sudoku-1-Backtracking-Python](Sudoku-1-Backtracking-Python.ipynb) | Algorithme de base |
+| 2 | Dancing Links | [Sudoku-2-DancingLinks-Csharp](Sudoku-2-DancingLinks-Csharp.ipynb) | [Sudoku-2-DancingLinks-Python](Sudoku-2-DancingLinks-Python.ipynb) | Couverture exacte |
+| 3 | Genetic | [Sudoku-3-Genetic-Csharp](Sudoku-3-Genetic-Csharp.ipynb) | [Sudoku-3-Genetic-Python](Sudoku-3-Genetic-Python.ipynb) | GeneticSharp vs PyGAD |
+| 9 | Graph Coloring | [Sudoku-9-GraphColoring-Csharp](Sudoku-9-GraphColoring-Csharp.ipynb) | [Sudoku-9-GraphColoring-Python](Sudoku-9-GraphColoring-Python.ipynb) | Théorie des graphes |
+| 10 | OR-Tools | [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) | [Sudoku-10-ORTools-Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT solveur |
+| 12 | Z3 | [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) | [Sudoku-12-Z3-Python](Sudoku-12-Z3-Python.ipynb) | SMT solveur |
 
 ## Algorithmes Couverts
 
-| Algorithme | Type | Performance | Fiabilite | Notebook |
-|------------|------|-------------|-----------|----------|
-| **Backtracking** | Recherche exhaustive | Rapide (Easy) | Garantie | 1 |
-| **Dancing Links** | Couverture exacte | Optimal | Garantie | 2 |
-| **Algorithme Genetique** | Metaheuristique | Variable | Non garanti | 3 |
-| **Recuit Simule** | Recherche locale | Variable | Non garanti | 4 |
-| **PSO** | Swarm Intelligence | Variable | Non garanti | 5 (NOUVEAU) |
-| **AIMA CSP** | Contraintes academique | Rapide | Garantie | 6 (NOUVEAU) |
-| **Norvig Propagation** | Propagation | Tres rapide | Garantie | 7 |
-| **Strategies Humaines** | Deduction logique | Variable | Partielle | 8 |
-| **Graph Coloring** | Theorie des graphes | Moyen | Garantie | 9 (NOUVEAU) |
-| **OR-Tools CP-SAT** | CP industrielle | Tres rapide | Garantie | 10 |
-| **Choco Solver** | CP industrielle | Rapide | Garantie | 11 (NOUVEAU) |
-| **Z3 SMT** | Satisfiabilite | Rapide | Garantie | 12 |
-| **Symbolic Automata** | Automates + SMT | Rapide | Garantie | 13 |
-| **BDD/MDD** | Diagrammes decision | Moyen | Garantie | 14 |
-| **Infer.NET** | Inference probabiliste | Experimental | Variable | 15 |
-| **Reseau de Neurones** | Deep Learning | Rapide (inference) | Approx. | 16 |
-| **LLM Solver** | LLM | Variable | ~10-30% | 17 (NOUVEAU) |
+| Algorithme | Type | Performance | Fiabilité | Notebook C# | Notebook Python |
+|------------|------|-------------|-----------|-------------|-----------------|
+| **Backtracking** | Recherche exhaustive | Rapide (Easy) | Garantie | 1 | 1 |
+| **Dancing Links** | Couverture exacte | Optimal | Garantie | 2 | 2 |
+| **Algorithme Génétique** | Metaheuristique | Variable | Non garanti | 3 | 3 |
+| **Recuit Simulé** | Recherche locale | Variable | Non garanti | 4 | - |
+| **PSO** | Swarm Intelligence | Variable | Non garanti | 5 | - |
+| **AIMA CSP** | Contraintes académique | Rapide | Garantie | 6 | - |
+| **Norvig Propagation** | Propagation | Très rapide | Garantie | 7 | - |
+| **Stratégies Humaines** | Déduction logique | Variable | Partielle | 8 | - |
+| **Graph Coloring** | Théorie des graphes | Moyen | Garantie | 9 | 9 |
+| **OR-Tools CP-SAT** | CP industrielle | Très rapide | Garantie | 10 | 10 |
+| **Choco Solver** | CP industrielle | Rapide | Garantie | - | 11 |
+| **Z3 SMT** | Satisfiabilité | Rapide | Garantie | 12 | 12 |
+| **Symbolic Automata** | Automates + SMT | Rapide | Garantie | 13 | - |
+| **BDD/MDD** | Diagrammes décision | Moyen | Garantie | 14 | - |
+| **Infer.NET** | Inference probabiliste | Expérimental | Variable | 15 | - |
+| **Réseau de Neurones** | Deep Learning | Rapide (inference) | Approx. | - | 16 |
+| **LLM Solver** | LLM | Variable | ~10-30% | - | 17 |
 
-## Progression recommandee
+## Progression Recommandée
 
+### Parcours C# (Complet)
 ```
-Sudoku-0  Environment (classes de base)
+Sudoku-0-Csharp (Environment)
     |
-    +---> Niveau 1 : Recherche Exhaustive
-    |     └── Sudoku-1  Backtracking
+    +---> Niveau 1 : Sudoku-1-Backtracking-Csharp
     |
-    +---> Niveau 2 : Exploration Optimisee
-    |     └── Sudoku-2  Dancing Links
+    +---> Niveau 2 : Sudoku-2-DancingLinks-Csharp
     |
-    +---> Niveau 3 : Metaheuristiques
-    |     ├── Sudoku-3  Genetic
-    |     ├── Sudoku-4  Simulated Annealing
-    |     └── Sudoku-5  PSO (NOUVEAU)
+    +---> Niveau 3 : Sudoku-3/4/5-Csharp (Metaheuristiques)
     |
-    +---> Niveau 4 : Programmation par Contraintes
-    |     ├── Sudoku-6  AIMA CSP (NOUVEAU)
-    |     ├── Sudoku-7  Norvig
-    |     ├── Sudoku-8  Human Strategies
-    |     ├── Sudoku-9  Graph Coloring (NOUVEAU)
-    |     ├── Sudoku-10 OR-Tools
-    |     └── Sudoku-11 Choco (NOUVEAU)
+    +---> Niveau 4 : Sudoku-6/7/8/9/10-Csharp (CSP)
     |
-    +---> Niveau 5 : IA Symbolique
-    |     ├── Sudoku-12 Z3
-    |     ├── Sudoku-13 Symbolic Automata
-    |     └── Sudoku-14 BDD
+    +---> Niveau 5 : Sudoku-12/13/14-Csharp (Symbolique)
     |
-    +---> Niveau 6 : IA Moderne
-    |     ├── Sudoku-15 Infer.NET
-    |     ├── Sudoku-16 Neural Network
-    |     └── Sudoku-17 LLM (NOUVEAU)
+    +---> Niveau 6 : Sudoku-15-Csharp (Infer.NET)
     |
-    +---> Niveau 7 : Synthese
-          └── Sudoku-18 Comparison
+    +---> Niveau 7 : Sudoku-18-Comparison-Python (Benchmark)
 ```
 
-## Liens avec les autres series
+### Parcours Python (Sélection)
+```
+Sudoku-0-Csharp (Environment - même en Python)
+    |
+    +---> Niveau 1 : Sudoku-1-Backtracking-Python
+    |
+    +---> Niveau 2 : Sudoku-2-DancingLinks-Python
+    |
+    +---> Niveau 3 : Sudoku-3-Genetic-Python
+    |
+    +---> Niveau 4 : Sudoku-9/10/11/12-Python (CSP)
+    |
+    +---> Niveau 6 : Sudoku-16/17-Python (NN + LLM)
+    |
+    +---> Niveau 7 : Sudoku-18-Comparison-Python
+```
 
-| Serie | Lien |
+## Liens avec les autres séries
+
+| Série | Lien |
 |-------|------|
-| [Search - Foundations](../Search/Foundations/README.md) | Theorie : backtracking, propagation, CP avance |
-| [Search - Applications](../Search/Applications/README.md) | Autres problemes CSP : N-Queens, Minesweeper, Wordle |
+| [Search - Foundations](../Search/Foundations/README.md) | Théorie : backtracking, propagation, CP avancé |
+| [Search - Applications](../Search/Applications/README.md) | Autres problèmes CSP : N-Queens, Minesweeper, Wordle |
 | [SymbolicAI](../SymbolicAI/README.md) | Z3 SMT (approfondi), OR-Tools |
 | [Probas/Infer](../Probas/README.md) | Infer.NET (approfondi) |
 | [GameTheory](../GameTheory/README.md) | Minimax, MCTS (jeux combinatoires) |
 
-## Prerequis
+## Prérequis
 
 ### C# (.NET Interactive)
 
@@ -162,7 +166,7 @@ Sudoku-0  Environment (classes de base)
 # .NET 9.0 requis
 dotnet --version
 
-# Les packages NuGet sont installes dans les notebooks :
+# Les packages NuGet sont installés dans les notebooks :
 # - GeneticSharp
 # - Google.OrTools
 # - Microsoft.Z3
@@ -172,16 +176,16 @@ dotnet --version
 # - Plotly.NET
 ```
 
-**Note sur les outputs** : Les notebooks C# (.NET Interactive) ne contiennent pas de outputs de cellule executes. L'infrastructure Jupyter pour .NET n'etant pas disponible dans tous les environnements, les notebooks sont fournis sans outputs pre-executes.
+**Note sur les outputs** : Les notebooks C# (.NET Interactive) ne contiennent pas de outputs de cellule exécutées.
 
 ### Python
 
 ```bash
-# Creer un environnement
+# Créer un environnement
 python -m venv venv
 
-# Installer les dependances
-pip install numpy matplotlib ortools z3-solver pygad torch
+# Installer les dépendances
+pip install numpy matplotlib ortools z3-solver pygad torch networkx
 ```
 
 ## Performances Attendues
@@ -198,15 +202,16 @@ pip install numpy matplotlib ortools z3-solver pygad torch
 | PSO | ~1s | ~5s | Variable | Variable |
 | Human Strategies | <10ms | ~100ms | Variable | Variable |
 | Choco | <5ms | <10ms | <20ms | <100ms |
+| Graph Coloring | ~10ms | ~50ms | ~100ms | Variable |
 | Neural Network | ~10ms | ~50ms | ~100ms | Approx. |
-| LLM | Variable | Variable | ~10-30% succes | ~10-30% succes |
+| LLM | Variable | Variable | ~10-30% succès | ~10-30% succès |
 | Infer.NET | ~1s | ~5s | Variable | Variable |
 
-## Sources des projets etudiants
+## Sources des Projets Étudiants
 
-Les notebooks sont adaptes des meilleurs projets etudiants des depots GitHub :
+Les notebooks sont adaptés des meilleurs projets étudiants des dépôts GitHub :
 
-| Technique | Source | Repertoire |
+| Technique | Source | Répertoire |
 |-----------|--------|------------|
 | **Norvig** | [jsboigeEpita/2024-Sudoku-NLP](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
 | **Simulated Annealing** | [jsboigeEpita/2023-Sudoku-NLP](https://github.com/jsboigeEpita/2023-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.SimulatedAnnealing` |
@@ -223,29 +228,31 @@ Les notebooks sont adaptes des meilleurs projets etudiants des depots GitHub :
 ```
 Sudoku/
 ├── README.md                              # Ce fichier
-├── Sudoku-0-Environment.ipynb             # Classes de base C#
-├── Sudoku-1-Backtracking.ipynb            # Backtracking C#
-├── Sudoku-2-DancingLinks.ipynb            # Dancing Links C#
-├── Sudoku-3-Genetic.ipynb                 # Algorithme genetique C#
-├── Sudoku-4-SimulatedAnnealing.ipynb      # Recuit simule C#
-├── Sudoku-5-PSO.ipynb                     # PSO C# (NOUVEAU)
-├── Sudoku-6-AIMA-CSP.ipynb                # AIMA CSP C# (NOUVEAU)
-├── Sudoku-7-Norvig.ipynb                  # Propagation de Norvig C#
-├── Sudoku-8-HumanStrategies.ipynb         # Strategies humaines C#
-├── Sudoku-9-GraphColoring.ipynb           # Graph Coloring C# (NOUVEAU)
-├── Sudoku-10-ORTools.ipynb                # OR-Tools C#
-├── Sudoku-11-Choco.ipynb                  # Choco Solver C# (NOUVEAU)
-├── Sudoku-12-Z3.ipynb                     # Z3 SMT C#
-├── Sudoku-13-SymbolicAutomata.ipynb       # Automates symboliques C#
-├── Sudoku-14-BDD.ipynb                    # BDD/MDD C#
-├── Sudoku-15-Infer.ipynb                  # Infer.NET C#
-├── Sudoku-16-NeuralNetwork.ipynb          # Reseau de neurones Python
-├── Sudoku-17-LLM.ipynb                    # LLM Solver C# (NOUVEAU)
-├── Sudoku-18-Comparison.ipynb             # Benchmark comparatif Python
-├── Sudoku-Python-Backtracking.ipynb       # Backtracking Python
-├── Sudoku-Python-Genetic.ipynb            # Algorithme genetique Python
-├── Sudoku-Python-DancingLinks.ipynb       # Dancing Links Python
-├── Sudoku-Python-ORTools-Z3.ipynb         # OR-Tools + Z3 Python
+├── Sudoku-0-Environment-Csharp.ipynb      # Classes de base C#
+├── Sudoku-1-Backtracking-Csharp.ipynb     # Backtracking C#
+├── Sudoku-1-Backtracking-Python.ipynb     # Backtracking Python
+├── Sudoku-2-DancingLinks-Csharp.ipynb     # Dancing Links C#
+├── Sudoku-2-DancingLinks-Python.ipynb     # Dancing Links Python
+├── Sudoku-3-Genetic-Csharp.ipynb          # Algorithme génétique C#
+├── Sudoku-3-Genetic-Python.ipynb          # Algorithme génétique Python
+├── Sudoku-4-SimulatedAnnealing-Csharp.ipynb  # Recuit simulé C#
+├── Sudoku-5-PSO-Csharp.ipynb              # PSO C#
+├── Sudoku-6-AIMA-CSP-Csharp.ipynb         # AIMA CSP C#
+├── Sudoku-7-Norvig-Csharp.ipynb           # Propagation de Norvig C#
+├── Sudoku-8-HumanStrategies-Csharp.ipynb  # Stratégies humaines C#
+├── Sudoku-9-GraphColoring-Csharp.ipynb    # Graph Coloring C#
+├── Sudoku-9-GraphColoring-Python.ipynb    # Graph Coloring Python (networkx)
+├── Sudoku-10-ORTools-Csharp.ipynb         # OR-Tools C#
+├── Sudoku-10-ORTools-Python.ipynb         # OR-Tools Python
+├── Sudoku-11-Choco-Python.ipynb           # Choco Solver Python
+├── Sudoku-12-Z3-Csharp.ipynb              # Z3 SMT C#
+├── Sudoku-12-Z3-Python.ipynb              # Z3 SMT Python
+├── Sudoku-13-SymbolicAutomata-Csharp.ipynb # Automates symboliques C#
+├── Sudoku-14-BDD-Csharp.ipynb             # BDD/MDD C#
+├── Sudoku-15-Infer-Csharp.ipynb           # Infer.NET C#
+├── Sudoku-16-NeuralNetwork-Python.ipynb   # Réseau de neurones Python
+├── Sudoku-17-LLM-Python.ipynb             # LLM Solver Python
+├── Sudoku-18-Comparison-Python.ipynb      # Benchmark comparatif Python
 └── Puzzles/                               # Fichiers de puzzles
     ├── Sudoku_Easy51.txt
     ├── Sudoku_hardest.txt
@@ -259,9 +266,10 @@ Sudoku/
 - [Donald Knuth - Dancing Links (2000)](https://arxiv.org/abs/cs/0011047)
 - [Russell & Norvig - Artificial Intelligence: A Modern Approach (CSP Chapter)](https://aima.cs.berkeley.edu/)
 
-### Bibliotheques
+### Bibliothèques
 - [OR-Tools Documentation](https://developers.google.com/optimization)
 - [Z3 Python API](https://z3prover.github.io/api/html/namespacez3py.html)
+- [NetworkX](https://networkx.org/) - Graphes et algorithmes de coloration
 - [GeneticSharp](https://github.com/giacomelli/GeneticSharp)
 - [Choco Solver](https://choco-solver.org/)
 - [Infer.NET Documentation](https://dotnet.github.io/infer/)
