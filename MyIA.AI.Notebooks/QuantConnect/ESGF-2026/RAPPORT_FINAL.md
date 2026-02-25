@@ -295,3 +295,31 @@ L'analyse de recherche sur BTC (2020-2025) a révélé qu'un seuil de volatilit�
 - **Jupyter Lab** : Container Docker actif sur port 8888
 - **Notebooks de recherche** : 6 notebooks générés pour optimisation itérative
 
+
+### Implémentation Terminée : Filtre Volatilité BTC-MACD-ADX
+
+**Date** : 2026-02-25
+**Projet** : BTC-MACD-ADX-Researcher (28418632)
+**Statut** : BuildSuccess ✅
+
+**Code ajouté** :
+```csharp
+// Variable membre
+private AverageTrueRange _atr;
+[Parameter("volatility-threshold")]
+public decimal VolatilityThreshold = 0.60m;
+
+// Dans Initialize()
+_atr = ATR(_symbol, 14, MovingAverageType.Simple, Resolution.Daily);
+
+// Filtre dans OnData()
+var volatility = CalculateVolatility();
+if (volatility > VolatilityThreshold)
+{
+    Debug($"[Volatility Filter] Skip - Vol: {volatility:P2}");
+    return;
+}
+```
+
+**Prochaine étape** : Lancer backtest via Web UI et comparer Sharpe (attendu: 0.85 → 1.249)
+
