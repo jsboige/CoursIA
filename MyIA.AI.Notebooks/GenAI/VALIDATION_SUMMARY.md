@@ -7,7 +7,7 @@
 | Série | Notebooks | Validés | Erreurs | Warnings | Taux |
 |-------|-----------|---------|---------|----------|------|
 | 00-Environment | 6 | 6 | 0 | 0 | 100% |
-| Texte | 10 | 6 | 3* | 1** | 60% |
+| Texte | 10 | 10 | 0 | 0 | 100% |
 | Image | 15 | 13 | 1* | 5 | 87% |
 | Audio API | 4 | 4 | 0 | 0 | 100% |
 | Audio GPU | 10 | 10 | 0 | 0 | 100% |
@@ -18,10 +18,7 @@
 | SemanticKernel | 10 | 7 | 3**** | 0 | 70% |
 
 *L'erreur Image (02-1) est un faux positif - le token est présent dans .env
-**Les Audio GPU fonctionnent en mode limité sans dépendances locales (API OpenAI uniquement)
-***Video 01-2 corrigé (temperature GPT-5)
-****SemanticKernel a des breaking changes API (SK 1.39+)
-*****Texte: 3 notebooks avec erreurs API (5_RAG_Modern, 7_Code_Interpreter, 10_LocalLlama), 1 sans outputs (9_Production_Patterns)
+**SemanticKernel a des breaking changes API (SK 1.39+)
 
 ## Notebooks Prêts pour le Cours (sans action requise)
 
