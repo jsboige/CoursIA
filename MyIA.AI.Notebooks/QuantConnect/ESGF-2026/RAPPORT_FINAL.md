@@ -263,3 +263,35 @@ Les 3 stratégies optimisées sont **prêtes pour validation via backtest QuantC
 **Généré** : 2026-02-17
 **Auteur** : Claude Opus 4.6
 **Framework** : CoursIA + QuantConnect MCP + qc-research-notebook agents
+
+---
+
+## Session 2026-02-25 : Améliorations Basées sur la Recherche
+
+### Découverte Principale : Filtre de Volatilité 60%
+
+L'analyse de recherche sur BTC (2020-2025) a révélé qu'un seuil de volatilité à 60% maximise le Sharpe ratio :
+
+| Threshold | Jours trading | % Trading | Rendement | Sharpe |
+|-----------|---------------|-----------|-----------|--------|
+| 50 | 1,056 | 57.8% | +101.5% | 0.627 |
+| **60** | **1,393** | **76.2%** | **+1048.4%** | **1.249** |
+| 70 | 1,568 | 85.8% | +1154.0% | 1.116 |
+| 80 | 1,676 | 91.7% | +1781.7% | 1.162 |
+
+**Impact attendu** :
+- Sharpe : +47%
+- Max Drawdown : -19%
+
+### Actions en Cours
+
+1. **Implémentation** : Filtre volatilité 60% sur BTC-MACD-ADX (C#)
+2. **Enrichissement** : Notebooks pédagogiques research_optimization.ipynb
+3. **Backtests** : À lancer via Web UI après implémentation
+
+### Infrastructure Mise en Place
+
+- **lean-cli** : Configuré avec organisation Researcher
+- **Jupyter Lab** : Container Docker actif sur port 8888
+- **Notebooks de recherche** : 6 notebooks générés pour optimisation itérative
+
