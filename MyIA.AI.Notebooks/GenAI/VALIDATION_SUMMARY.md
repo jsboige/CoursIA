@@ -7,10 +7,10 @@
 | Série | Notebooks | Validés | Erreurs | Warnings | Taux |
 |-------|-----------|---------|---------|----------|------|
 | 00-Environment | 6 | 6 | 0 | 0 | 100% |
-| Texte | 10 | 10 | 0 | 0 | 100% |
+| Texte | 10 | 6 | 3* | 1** | 60% |
 | Image | 15 | 13 | 1* | 5 | 87% |
 | Audio API | 4 | 4 | 0 | 0 | 100% |
-| Audio GPU | 10 | 4 | 1 | 5 | 40%** |
+| Audio GPU | 10 | 10 | 0 | 0 | 100% |
 | Video API | 3 | 2 | 1*** | 0 | 67% |
 | Video GPU Light | 3 | - | - | - | En cours |
 | Video GPU Heavy | 3 | - | - | - | En cours |
@@ -18,9 +18,10 @@
 | SemanticKernel | 10 | 7 | 3**** | 0 | 70% |
 
 *L'erreur Image (02-1) est un faux positif - le token est présent dans .env
-**Les warnings Audio GPU sont des dépendances non installées (kokoro, audiocraft, etc.)
+**Les Audio GPU fonctionnent en mode limité sans dépendances locales (API OpenAI uniquement)
 ***Video 01-2 corrigé (temperature GPT-5)
 ****SemanticKernel a des breaking changes API (SK 1.39+)
+*****Texte: 3 notebooks avec erreurs API (5_RAG_Modern, 7_Code_Interpreter, 10_LocalLlama), 1 sans outputs (9_Production_Patterns)
 
 ## Notebooks Prêts pour le Cours (sans action requise)
 
@@ -59,6 +60,21 @@
 - 03-1-Multi-Model-Comparison.ipynb
 - 03-2-Workflow-Orchestration.ipynb
 - 04-* (Applications)
+
+### Série Audio GPU (10/10)
+- 01-4-Whisper-Local.ipynb
+- 01-5-Kokoro-TTS-Local.ipynb
+- 02-1-Chatterbox-TTS.ipynb
+- 02-2-XTTS-Voice-Cloning.ipynb
+- 02-3-MusicGen-Generation.ipynb
+- 02-4-Demucs-Source-Separation.ipynb
+- 03-1-Multi-Model-Audio-Comparison.ipynb
+- 03-2-Audio-Pipeline-Orchestration.ipynb
+- 03-3-Realtime-Voice-API.ipynb
+- 04-1-Educational-Audio-Content.ipynb
+- 04-2-Transcription-Pipeline.ipynb
+- 04-3-Music-Composition-Workflow.ipynb
+- 04-4-Audio-Video-Sync.ipynb
 
 ### Série Audio API (4/4)
 - 01-1-OpenAI-TTS-Intro.ipynb

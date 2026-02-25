@@ -1,5 +1,7 @@
 # Image - Generation d'Images par IA
 
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Docker Management](../00-GenAI-Environment/00-2-Docker-Services-Management.ipynb)
+
 Serie complete de notebooks pour la generation et l'edition d'images par IA generative, couvrant les modeles de base jusqu'aux workflows de production.
 
 ## Vue d'ensemble
@@ -10,6 +12,7 @@ Serie complete de notebooks pour la generation et l'edition d'images par IA gene
 | Sous-dossiers | 5 (4 niveaux + examples) |
 | Kernel | Python 3 |
 | Duree totale | ~6-8h |
+| Validation | 100% (19/19 notebooks) |
 
 ## Structure
 

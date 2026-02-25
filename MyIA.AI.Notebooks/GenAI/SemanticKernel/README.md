@@ -1,5 +1,7 @@
 # SemanticKernel - Microsoft Semantic Kernel
 
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Text Generation](../Texte/README.md)
+
 Serie de notebooks couvrant Microsoft Semantic Kernel, un SDK pour l'integration de LLMs dans les applications .NET et Python.
 
 ## Vue d'ensemble
@@ -11,6 +13,7 @@ Serie de notebooks couvrant Microsoft Semantic Kernel, un SDK pour l'integration
 | Templates | 3 |
 | Duree estimee | ~9h (serie complete) |
 | Version SK cible | 1.39+ |
+| Validation | 80% (11/14 notebooks) |
 
 ## Serie principale (Python)
 

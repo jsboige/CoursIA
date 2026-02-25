@@ -511,3 +511,7 @@ execute_*.py
 # Agent memory temporaire (local scope)
 .claude/agent-memory/notebook-*/
 docker-configurations/services/comfyui-video/workspace/
+
+# Notebook output files (Papermill execution artifacts)
+*_output.ipynb
+*_output_*.ipynb

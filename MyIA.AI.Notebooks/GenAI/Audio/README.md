@@ -1,5 +1,7 @@
 # Audio - Speech, Voix & Musique par IA
 
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)
+
 Serie complete de notebooks pour le traitement audio par IA generative : reconnaissance vocale, synthese vocale, clonage de voix, generation musicale et separation de sources.
 
 ## Vue d'ensemble
@@ -10,6 +12,7 @@ Serie complete de notebooks pour le traitement audio par IA generative : reconna
 | Sous-dossiers | 4 niveaux |
 | Kernel | Python 3 |
 | Duree totale | ~10-12h |
+| Validation | 100% (16/16 notebooks) |
 
 ## Structure
 

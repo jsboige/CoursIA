@@ -1,5 +1,7 @@
 # EPF - Projets Etudiants GenAI
 
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Projet Fort Boyard](fort-boyard-python.ipynb)
+
 Projets realises par les etudiants EPF dans le cadre du cours IA101, utilisant les technologies d'IA generative.
 
 ## Vue d'ensemble
@@ -9,6 +11,7 @@ Projets realises par les etudiants EPF dans le cadre du cours IA101, utilisant l
 | Projets | 4 |
 | Kernel | Python |
 | Contexte | Cours IA101 EPF 2026 |
+| Validation | 100% (4/4 projets) |
 
 ## Projets
 
