@@ -101,9 +101,9 @@ CoursIA/
 │   │   └── forge-turbo/         # Forge SD
 │   └── shared/                  # Modeles et cache partages
 │
-├── GradeBookApp/                # Systeme de notation etudiants
-├── notebook-infrastructure/     # Papermill automation
-└── MyIA.AI.Shared/              # Bibliotheque C# partagee
+├── GradeBookApp/                # Systeme de notation etudiants (grading collegial)
+├── notebook-infrastructure/     # Automation Papermill et maintenance MCP Jupyter
+└── MyIA.AI.Shared/              # Bibliotheque C# partagee pour notebooks .NET
 ```
 
 ### Statistiques globales
