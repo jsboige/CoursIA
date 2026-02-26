@@ -35,7 +35,7 @@
 | forge-turbo | UP | `http://localhost:17861` | `https://turbo.stable-diffusion-webui-forge.myia.io` | GPU 1 (3090) | ~8 GB | OK |
 | vllm-zimage | UP | `http://localhost:8001` | `https://z-image.myia.io` | GPU 1 (3090) | ~15 GB | OK |
 | whisper-webui | Local | `http://localhost:36540` | `https://whisper-webui.myia.io` | GPU 0 (3080 Ti) | ~10 GB | OK |
-| comfyui-qwen | UP | `http://localhost:8188` | `https://qwen-image-edit.myia.io` | GPU 1 (3090) | ~12 GB | Téléchargement GGUF Q4 en cours |
+| comfyui-qwen | UP | `http://localhost:8188` | `https://qwen-image-edit.myia.io` | GPU 1 (3090) | ~18 GB | OK - GGUF Q4_K_M workflow validé |
 
 ### Modèles Locaux (sans container)
 
@@ -353,6 +353,52 @@ mcp__sk-agent__call_agent(
 - [x] Préparer grille de notation
 - [x] Créer fork template pour PRs challenges
 - [x] Planifier sessions de debug individuelles
-- [ ] Télécharger modèles Qwen Image Edit (UNET, VAE, CLIP)
-- [ ] Tester workflow ComfyUI Qwen
+- [x] Télécharger modèles Qwen Image Edit GGUF Q4_K_M
+- [x] Tester workflow ComfyUI Qwen GGUF
 - [ ] Valider tous les challenges avec sk-agent
+
+---
+
+## Workflow ComfyUI Qwen Image Edit - GGUF Q4_K_M
+
+### Modèles (dans container comfyui-qwen)
+
+| Composant | Fichier | Taille | Dossier |
+|-----------|---------|--------|---------|
+| Transformer | `qwen-image-edit-2511-Q4_K_M.gguf` | 13 GB | `/models/unet/` |
+| Text Encoder | `Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf` | 4.4 GB | `/models/clip/` |
+| VAE | `qwen_image_vae.safetensors` | 243 MB | `/models/vae/` |
+
+**Total VRAM**: ~18 GB (fits RTX 3090 24GB)
+
+### Workflow JSON (testé et validé)
+
+```json
+{
+  "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": "qwen-image-edit-2511-Q4_K_M.gguf"}},
+  "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf", "type": "qwen_image"}},
+  "3": {"class_type": "VAELoader", "inputs": {"vae_name": "qwen_image_vae.safetensors"}},
+  "4": {"class_type": "QwenVLEmptyLatent", "inputs": {"width": 1024, "height": 1024, "batch_size": 1}},
+  "5": {"class_type": "TextEncodeQwenImageEdit", "inputs": {"clip": ["2", 0], "prompt": "...", "vae": ["3", 0]}},
+  "6": {"class_type": "ConditioningZeroOut", "inputs": {"conditioning": ["5", 0]}},
+  "7": {"class_type": "ModelSamplingAuraFlow", "inputs": {"model": ["1", 0], "shift": 3.0}},
+  "8": {"class_type": "CFGNorm", "inputs": {"model": ["7", 0], "strength": 1.0}},
+  "9": {"class_type": "KSampler", "inputs": {"model": ["8", 0], "seed": 12345, "steps": 20, "cfg": 1.0, "sampler_name": "euler", "scheduler": "beta", "positive": ["5", 0], "negative": ["6", 0], "latent_image": ["4", 0], "denoise": 1.0}},
+  "10": {"class_type": "VAEDecode", "inputs": {"samples": ["9", 0], "vae": ["3", 0]}},
+  "11": {"class_type": "SaveImage", "inputs": {"filename_prefix": "qwen_gguf", "images": ["10", 0]}}
+}
+```
+
+### Paramètres critiques
+
+- **scheduler**: `beta` (obligatoire pour Qwen)
+- **cfg**: `1.0` (CFGNorm gère le guidance)
+- **shift**: `3.0` (ModelSamplingAuraFlow)
+- **type CLIP**: `qwen_image`
+
+### Authentification API
+
+```bash
+TOKEN='$2b$12$I7V9gQuddnQh12jZCfO4v.RFxI24tRpZ4Y3ymnuGridhmyA3O7ekC'
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8188/prompt -d @workflow.json
+```
