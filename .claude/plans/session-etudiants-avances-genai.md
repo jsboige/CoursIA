@@ -35,7 +35,7 @@
 | forge-turbo | UP | `http://localhost:17861` | `https://turbo.stable-diffusion-webui-forge.myia.io` | GPU 1 (3090) | ~8 GB | OK |
 | vllm-zimage | UP | `http://localhost:8001` | `https://z-image.myia.io` | GPU 1 (3090) | ~15 GB | OK |
 | whisper-webui | Local | `http://localhost:36540` | `https://whisper-webui.myia.io` | GPU 0 (3080 Ti) | ~10 GB | OK |
-| comfyui-qwen | UP | `http://localhost:8188` | `https://qwen-image-edit.myia.io` | GPU 1 (3090) | ~12 GB | Models manquants |
+| comfyui-qwen | UP | `http://localhost:8188` | `https://qwen-image-edit.myia.io` | GPU 1 (3090) | ~12 GB | Téléchargement GGUF Q4 en cours |
 
 ### Modèles Locaux (sans container)
 
