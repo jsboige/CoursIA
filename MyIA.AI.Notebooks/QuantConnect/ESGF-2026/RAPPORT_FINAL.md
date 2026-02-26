@@ -422,3 +422,50 @@ if (volatility > VolatilityThreshold)
 2. **BTC-ML** → Encore besoin d'amélioration (Sharpe 0.166 < 0.5)
 3. **Sector-Momentum** → Abandonner ou remplacer par stratégie différente
 
+---
+
+## Session 2026-02-26 (Passe 3) : Multi-Layer-EMA
+
+### Amélioration avec Filtre de Volatilité 60%
+
+**Stratégie** : Multi-crypto (BTC/ETH/LTC) avec EMA crossover + RSI + Bollinger
+
+**Correction appliquée** : Ajout filtre volatilité 60% sur BTC (ATR/Price annualisé)
+
+| Métrique | Avant | Après | Changement |
+|----------|-------|-------|------------|
+| Sharpe | 0.624 | **0.872** | +40% |
+| CAGR | 26.8% | 40.4% | +51% |
+| Net Profit | +332% | +710% | +114% |
+| Max DD | 58.3% | 50.5% | -13% |
+| Win Rate | 40% | 43% | +8% |
+
+### Validation du Pattern
+
+Le filtre de volatilité 60% fonctionne sur **3 stratégies**:
+1. BTC-MACD-ADX: Sharpe 1.647 ✅
+2. Multi-Layer-EMA: Sharpe 0.872 ✅
+3. BTC-ML: Sharpe 0.166 (amélioré de x23) ✅
+
+### Tableau Récapitulatif Final (Passe 3)
+
+| Stratégie | Sharpe Initial | Sharpe Final | Changement | Verdict |
+|-----------|----------------|--------------|------------|---------|
+| BTC-MACD-ADX | 1.647 | 1.647 | - | ✅ STABLE |
+| Multi-Layer-EMA | 0.624 | **0.872** | +40% | ✅ AMÉLIORÉ |
+| BTC-ML | 0.007 | 0.166 | +2286% | ⬆️ AMÉLIORÉ |
+| Sector-Momentum | 0.114 | -0.117 | -203% | ❌ ÉCHEC |
+
+### Conclusion Passe 3
+
+**2 stratégies validées** (Sharpe > 0.5):
+- BTC-MACD-ADX (1.647) → Prêt pour paper trading
+- Multi-Layer-EMA (0.872) → Prêt pour paper trading
+
+**1 stratégie en amélioration** (Sharpe 0.166 < 0.5):
+- BTC-ML → Nécessite encore du travail
+
+**1 stratégie abandonnée**:
+- Sector-Momentum → Ne fonctionne pas sur période étendue
+
+
