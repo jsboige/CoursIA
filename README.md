@@ -39,12 +39,12 @@ Les notebooks sont en **C# (.NET Interactive)**, **Python** et **Lean 4**, avec 
 ```
 CoursIA/
 ├── MyIA.AI.Notebooks/           # 290+ notebooks interactifs
-│   ├── Search/                  # Recherche et optimisation (5 notebooks)
-│   ├── Sudoku/                  # Resolution Sudoku (11 notebooks)
-│   ├── SymbolicAI/              # IA Symbolique (47+ notebooks)
+│   ├── Search/                  # Recherche et optimisation (20 notebooks)
+│   ├── Sudoku/                  # Resolution Sudoku (31 notebooks)
+│   ├── SymbolicAI/              # IA Symbolique (47 notebooks)
 │   │   ├── Tweety/              # TweetyProject - 10 notebooks
-│   │   ├── SemanticWeb/         # RDF, OWL, SPARQL, reasoners (14 notebooks)
-│   │   ├── Lean/                # Lean 4 - 11 notebooks
+│   │   ├── SemanticWeb/         # RDF, OWL, SPARQL, reasoners (18 notebooks)
+│   │   ├── Lean/                # Lean 4 - 10 notebooks
 │   │   ├── Argument_Analysis/   # Analyse argumentative - 6 notebooks
 │   │   └── Planners/            # Fast-Downward, PDDL
 │   │
@@ -58,7 +58,7 @@ CoursIA/
 │   │   ├── RL/                  # Reinforcement Learning (3 notebooks)
 │   │   └── *                    # ML.NET, Python Data Science (14 notebooks)
 │   │
-│   ├── GenAI/                   # IA Generative (87+ notebooks)
+│   ├── GenAI/                   # IA Generative (96 notebooks)
 │   │   ├── 00-GenAI-Environment/# Setup et configuration (6 notebooks)
 │   │   ├── Image/               # Generation d'images (19 notebooks)
 │   │   │   ├── 01-Foundation/   # DALL-E 3, GPT-5, Forge
@@ -76,12 +76,12 @@ CoursIA/
 │   │   │   ├── 03-Orchestration/# Multi-modeles video, ComfyUI
 │   │   │   └── 04-Applications/ # Video educative, workflows, production
 │   │   ├── Texte/               # LLMs et generation texte (10 notebooks)
-│   │   ├── SemanticKernel/      # Microsoft Semantic Kernel (14 notebooks)
-│   │   └── Vibe-Coding/         # Claude Code et Roo Code tutorials
+│   │   ├── SemanticKernel/      # Microsoft Semantic Kernel (20 notebooks)
+│   │   ├── EPF/                 # Projets etudiants (4 notebooks)
+│   │   └── Vibe-Coding/         # Claude Code et Roo Code tutorials (5 notebooks)
 │   │
 │   ├── QuantConnect/            # Trading algorithmique + AI (27 notebooks Python)
 │   ├── IIT/                     # PyPhi - Information integree (1 notebook)
-│   ├── EPF/                     # Devoirs etudiants (4 notebooks)
 │   └── Config/                  # Configuration API (settings.json)
 │
 ├── .claude/                     # Configuration Claude Code
@@ -110,17 +110,17 @@ CoursIA/
 
 | Categorie | Notebooks | Kernels | Duree estimee | API requise |
 |-----------|-----------|---------|---------------|-------------|
-| **Search** | 5 | C#, Python | ~1h10 | - |
-| **Sudoku** | 11 | C#, Python | ~2h | - |
-| **SymbolicAI** | 60+ | Python, Lean 4 | ~35h | OpenAI (optionnel) |
+| **Search** | 20 | C#, Python | ~4h | - |
+| **Sudoku** | 31 | C#, Python | ~8h | - |
+| **SymbolicAI** | 47 | Python, Lean 4 | ~32h | OpenAI (optionnel) |
 | **GameTheory** | 26 | Python, Lean 4 | ~18h30 | OpenAI (optionnel) |
 | **Probas** | 22 | C#, Python | ~17h | - |
 | **ML** | 17 | C#, Python | ~6h | - |
-| **GenAI** | 87+ | Python | ~75h | OpenAI/Anthropic |
+| **RL** | 3 | Python | ~2h | - |
+| **GenAI** | 96 | Python | ~65h | OpenAI/Anthropic |
 | **QuantConnect** | 27 | Python | ~30h | QuantConnect (gratuit) |
 | **IIT** | 1 | Python | ~1h30 | - |
-| **EPF** | 4 | Mixed | Variable | - |
-| **Total** | **290+** | **Mixed** | **~190h** | - |
+| **Total** | **290+** | **Mixed** | **~185h** | - |
 
 ## Series de notebooks
 
@@ -142,18 +142,18 @@ Algorithmes classiques et metaheuristiques d'optimisation. De la recherche aveug
 
 ### Sudoku - Resolution par Contraintes
 
-Une approche comparative des algorithmes de resolution. Ce qui rend cette serie unique : le meme probleme resolu avec six techniques differentes ! Vous comparerez le backtracking naif, les algorithmes genetiques, la programmation par contraintes (OR-Tools), les solveurs SMT (Z3), et meme une approche probabiliste (Infer.NET). Ideal pour comprendre les compromis performance/complexite de chaque paradigme.
+Une approche comparative des algorithmes de resolution. Ce qui rend cette serie unique : le meme probleme resolu avec de nombreuses techniques differentes ! Vous comparerez le backtracking naif, les algorithmes genetiques, la programmation par contraintes (OR-Tools), les solveurs SMT (Z3), et meme une approche probabiliste (Infer.NET). Ideal pour comprendre les compromis performance/complexite de chaque paradigme.
 
-**11 notebooks** (7 C#, 4 Python) illustrant differentes approches algorithmiques.
+**31 notebooks** (16 C#, 15 Python) illustrant differentes approches algorithmiques avec miroir C#/Python.
 
 | Approche | Notebooks | Technologies | Kernel |
 |----------|-----------|--------------|--------|
-| **Backtracking** | 1, Python | MRV, recherche exhaustive | C#, Python |
-| **Genetique** | 2, Python | GeneticSharp, PyGAD | C#, Python |
-| **Contraintes** | 3, Python | OR-Tools CP/SAT/MIP | C#, Python |
-| **SMT** | 4, Python | Z3, bitvectors | C#, Python |
-| **Couverture exacte** | 5, Python | Dancing Links (DLX) | C#, Python |
-| **Probabiliste** | 6 | Infer.NET | C# |
+| **Backtracking** | 1 | MRV, recherche exhaustive | C#, Python |
+| **Dancing Links** | 2 | Couverture exacte (DLX) | C#, Python |
+| **Metaheuristiques** | 3-5 | Genetique, Recuit simule, PSO | C#, Python |
+| **CSP** | 6-11 | AIMA, Norvig, OR-Tools, Choco, Graph Coloring | C#, Python |
+| **Symbolique** | 12-14 | Z3 SMT, Automates, BDD | C# |
+| **Data-Driven** | 15-18 | Infer.NET/NumPyro, Neural Network, LLM | C#, Python |
 
 **Note** : Les notebooks C# utilisent `#!import` et necessitent une execution cellule par cellule (Papermill incompatible).
 
@@ -163,13 +163,13 @@ Une approche comparative des algorithmes de resolution. Ce qui rend cette serie 
 
 Decouverte des logiques formelles et de l'argumentation computationnelle. Cette serie vous fera explorer les systemes de raisonnement automatique, de la logique propositionnelle aux frameworks d'argumentation de Dung, en passant par la verification de theoremes avec Lean 4. Vous apprendrez a utiliser **TweetyProject** (bibliotheque Java via JPype) pour manipuler des bases de connaissances, calculer des extensions d'argumentation, et modeliser des dialogues multi-agents. La serie couvre egalement les extensions avancees (ASPIC+, DeLP, ADF), la revision de croyances AGM, et les systemes de preferences.
 
-**60+ notebooks** couvrant les logiques formelles, l'argumentation computationnelle, le Web Semantique et la verification formelle.
+**47 notebooks** couvrant les logiques formelles, l'argumentation computationnelle, le Web Semantique et la verification formelle.
 
 | Serie | Notebooks | Contenu | Prerequis | README |
 |-------|-----------|---------|-----------|--------|
 | **Tweety** | 10 | TweetyProject, logiques PL/FOL/DL, argumentation Dung, ASPIC+ | JDK 17+ (auto) | [README](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) |
-| **SemanticWeb** | 14 | RDF, OWL, SPARQL, reasoners, SHACL | Python (rdflib) | [README](MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/README.md) |
-| **Lean** | 11 | Lean 4, types dependants, tactiques, Mathlib, LLM integration | WSL, elan | [README](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
+| **SemanticWeb** | 18 | RDF, OWL, SPARQL, reasoners, SHACL, GraphRAG | Python (rdflib) | [README](MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/README.md) |
+| **Lean** | 10 | Lean 4, types dependants, tactiques, Mathlib, LLM integration | WSL, elan | [README](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
 | **Argument_Analysis** | 6 | Analyse argumentative multi-agents avec Semantic Kernel | OpenAI API | [README](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md) |
 | **Planners** | 1 | Fast-Downward, planification PDDL | Python | [README](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) |
 | **Autres** | 14+ | Z3, OR-Tools, RDF.NET | Varies | - |

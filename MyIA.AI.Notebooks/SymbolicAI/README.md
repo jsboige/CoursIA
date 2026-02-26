@@ -1,18 +1,18 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
-Collection de **44 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique et optimisation.
+Collection de **47 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique et optimisation.
 
 ## Vue d'ensemble
 
 | Serie | Notebooks | Cellules | Theme | Duree |
 |-------|-----------|----------|-------|-------|
 | [Tweety](#tweety---tweetyproject) | 10 | ~200 | Logiques formelles, Argumentation | ~7h |
-| [Lean](#lean---verification-formelle) | 11 | ~454 | Proof assistant, Types dependants, LLMs | ~8h |
-| [SemanticWeb](#semanticweb---web-semantique) | 13+1 | ~460 | RDF, SPARQL, OWL, SHACL, GraphRAG, Reasoners | ~10h45 |
+| [Lean](#lean---verification-formelle) | 10 | ~400 | Proof assistant, Types dependants, LLMs | ~7h |
+| [SemanticWeb](#semanticweb---web-semantique) | 18 | ~500 | RDF, SPARQL, OWL, SHACL, GraphRAG, Reasoners | ~12h |
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | ~76 | Analyse argumentative multi-agents | ~3h |
 | [Autres notebooks](#autres-notebooks) | 3 | ~75 | Z3, OR-Tools, Planification | ~1h30 |
 
-**Total** : 45 notebooks, ~1370 cellules, ~31h15 de contenu
+**Total** : 47 notebooks, ~1450 cellules, ~32h de contenu
 
 ---
 

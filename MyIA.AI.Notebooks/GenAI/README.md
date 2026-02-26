@@ -6,10 +6,10 @@ Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : im
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 127 |
+| Notebooks | 96 |
 | Sous-domaines | 8 (Environment, Image, Audio, Video, Texte, SemanticKernel, EPF, Vibe-Coding) |
-| Duree totale | ~70-80h |
-| Taux validation | 93.7% (119/127) |
+| Duree totale | ~60-70h |
+| Taux validation | 95%+ |
 
 ## Structure
 
@@ -126,8 +126,8 @@ GenAI/
 
 ### SemanticKernel/ - Microsoft Semantic Kernel
 
-*SDK pour integration LLMs dans applications .NET/Python (14 notebooks)*
-*Validation: 80% (11/14 notebooks)*
+*SDK pour integration LLMs dans applications .NET/Python (20 notebooks)*
+*Validation: 85% (17/20 notebooks)*
 
 | Section | Notebooks | Contenu |
 |---------|-----------|---------|
@@ -139,13 +139,14 @@ GenAI/
 
 ### EPF/ - Projets Etudiants
 
-*Projets realises par les etudiants EPF*
+*Projets realises par les etudiants EPF (4 notebooks)*
 
 | Projet | Auteurs | Description |
 |--------|---------|-------------|
 | barbie-schreck | Carole & Cleo | Generation images style Barbie/Shrek |
 | receipe_maker | Dorian & Bastien | Generateur de recettes |
 | medical_chatbot | Louise & Jeanne Celine | Chatbot medical educatif |
+| fort-boyard-python | - | Challenges style Fort Boyard |
 
 [README EPF](EPF/README.md)
 
@@ -188,7 +189,7 @@ GenAI/
 | Audio/ | Complet | 100% (16/16) | 16 notebooks : TTS, STT, voix, musique, separation |
 | Video/ | Complet | 100% (16/16) | 16 notebooks : Operations, comprehension, generation, workflows |
 | Texte/ | Complet | 100% (10/10) | 10 notebooks : OpenAI, Prompts, Structured Outputs, RAG, Reasoning, Production |
-| SemanticKernel/ | En cours | 80% (11/14) | SDK Microsoft pour integration LLMs |
+| SemanticKernel/ | Complet | 85% (17/20) | SDK Microsoft pour integration LLMs |
 
 ---
 
