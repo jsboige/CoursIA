@@ -65,8 +65,10 @@ CoursIA n'est pas un simple catalogue de tutoriels. Chaque serie est concue selo
 
 ```
 CoursIA/
-├── MyIA.AI.Notebooks/           # 290+ notebooks interactifs
-│   ├── Search/                  # Recherche et optimisation (20 notebooks)
+├── MyIA.AI.Notebooks/           # 301+ notebooks interactifs
+│   ├── Search/                  # Recherche et optimisation (31 notebooks)
+│   │   ├── Foundations/         # 12 notebooks theoriques
+│   │   └── Applications/        # 14 notebooks projets etudiants
 │   ├── Sudoku/                  # Resolution Sudoku (31 notebooks)
 │   ├── SymbolicAI/              # IA Symbolique (47 notebooks)
 │   │   ├── Tweety/              # TweetyProject - 10 notebooks
@@ -137,7 +139,7 @@ CoursIA/
 
 | Categorie | Notebooks | Kernels | Duree estimee | API requise |
 |-----------|-----------|---------|---------------|-------------|
-| **Search** | 20 | C#, Python | ~4h | - |
+| **Search** | 31 | Python, C# | ~22h | - |
 | **Sudoku** | 31 | C#, Python | ~8h | - |
 | **SymbolicAI** | 47 | Python, Lean 4 | ~32h | OpenAI (optionnel) |
 | **GameTheory** | 26 | Python, Lean 4 | ~18h30 | OpenAI (optionnel) |
@@ -147,23 +149,29 @@ CoursIA/
 | **GenAI** | 96 | Python | ~65h | OpenAI/Anthropic |
 | **QuantConnect** | 27 | Python | ~30h | QuantConnect (gratuit) |
 | **IIT** | 1 | Python | ~1h30 | - |
-| **Total** | **290+** | **Mixed** | **~185h** | - |
+| **Total** | **301+** | **Mixed** | **~203h** | - |
 
 ## Series de notebooks
 
 ### Search - Recherche et Optimisation
 
-Algorithmes classiques et metaheuristiques d'optimisation. De la recherche aveugle (BFS, DFS) aux heuristiques informees (A*, Hill Climbing) en passant par le recuit simule et les algorithmes genetiques. Les notebooks appliquent ces concepts a des problemes concrets : detection de bords dans une image, optimisation de portefeuille financier, satisfaction de contraintes.
+Les algorithmes de recherche constituent le socle fondamental de l'intelligence artificielle. Cette serie de **31 notebooks** vous guide de la formalisation des espaces d'etats jusqu'aux metaheuristiques les plus avancees, avec une organisation claire en deux volets complementaires.
 
-**5 notebooks** sur les algorithmes de recherche et les metaheuristiques.
+**Organisation en deux volets** :
 
-| Notebook | Kernel | Contenu |
-|----------|--------|---------|
-| CSPs_Intro | Python | Programmation par contraintes, AC-3, N-Queens, Min-Conflicts |
-| Exploration | Python | BFS, DFS, A*, Hill Climbing, Simulated Annealing |
-| GeneticSharp-EdgeDetection | C# | Detection de bords avec GeneticSharp |
-| Portfolio_Optimization | C# | Optimisation de portefeuille financier |
-| PyGad-EdgeDetection | Python | Detection de bords avec PyGAD |
+- **Foundations/** (12 notebooks) : Progression theorique rigoureuse, des espaces d'etats (Search-1) aux automates symboliques (Search-12), en couvrant la recherche non informee (BFS, DFS), informee (A*), les algorithmes genetiques, la programmation par contraintes (CSP), les metaheuristiques (PSO, ABC, SA), le Dancing Links, et la programmation lineaire.
+
+- **Applications/** (14 notebooks) : Problemes du monde reel adaptes de projets etudiants EPITA, EPF et ECE. Planification d'infirmiers, ordonnancement d'atelier, resolution de Wordle, Demineur CSP, Picross, Puissance 4 avec 8 algorithmes IA differents.
+
+**Ce que vous apprendrez** : Formaliser un probleme comme espace d'etats, choisir l'algorithme adapte (complet vs optimal vs efficace), implementer des contraintes avec OR-Tools, comparer metaheuristiques sur des benchmarks, et appliquer ces techniques a des problemes industriels reels.
+
+**31 notebooks** organises en Foundations (12) et Applications (14), plus 5 notebooks legacies.
+
+| Volet | Notebooks | Contenu |
+|-------|-----------|---------|
+| **Foundations** | 12 | StateSpace, Uninformed, Informed, LocalSearch, GA, CSP (3), Metaheuristics, DLX, LP, Automata |
+| **Applications** | 14 | NQueens, GraphColoring, NurseScheduling, JobShop, Timetabling, Minesweeper, Wordle, MiniZinc, EdgeDetection, Portfolio, Picross, ConnectFour |
+| **Legacy** | 5 | CSPs_Intro, Exploration, GeneticSharp, Portfolio, PyGAD |
 
 [README Search](MyIA.AI.Notebooks/Search/README.md)
 
