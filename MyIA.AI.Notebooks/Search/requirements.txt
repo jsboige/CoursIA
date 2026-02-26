@@ -18,6 +18,10 @@ mealpy>=3.0                  # Metaheuristics library (PSO, SA, ABC, etc.)
 networkx>=3.1                # Graphes et algorithmes
 matplotlib>=3.7              # Visualisation
 graphviz>=0.20               # Arbres de recherche (necessite Graphviz installe)
+# NOTE: graphviz Python package requires Graphviz executable
+# Windows: choco install graphviz OR download from https://graphviz.org/download/
+# macOS: brew install graphviz
+# Linux: sudo apt-get install graphviz
 
 # Data & Scientific
 numpy>=1.24
