@@ -6,7 +6,8 @@ from AlgorithmImports import *
 class WheelStrategyAlgorithm(QCAlgorithm):
 
     def Initialize(self):
-        self.SetStartDate(2020, 6, 1)
+        # Extended: covers 2019 low-VIX environment + COVID crash + recovery
+        self.SetStartDate(2019, 1, 1)
         self.SetCash(1_000_000)
         self.backtest_resolution = Resolution.Minute
         self.is_live = self.LiveMode

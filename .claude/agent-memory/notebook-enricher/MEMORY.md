@@ -12,6 +12,23 @@
 
 ### Successful Enrichment Sessions
 
+- **2026-02-15**: QC-Py-24-Autoencoders-Anomaly (11 cells added, 7.5/10 → 9.0/10)
+  - VAE + HMM for anomaly detection and regime switching
+  - BOTTOM-to-TOP insertion strategy flawless (11 cells, no errors)
+  - Fixed code/markdown ratio from 62/38 to 43/57
+  - All interpretations positioned correctly after code outputs
+  - Added interpretations for: data structure, features, VAE training, anomaly detection, VAE comparison, transition matrix, HMM comparison, regime characterization, backtest, model sizes, QC production code
+  - Critical transition cell between VAE and HMM sections
+  - Summary report: `enrichment_summary_qc24.md`
+
+- **2026-02-15**: QC-Py-23-Attention-Transformers (11 cells added, 7/10 → 8.5/10)
+  - Advanced ML/SSM content with PyTorch implementations
+  - BOTTOM-to-TOP insertion strategy flawless (11 cells, no errors)
+  - Fixed code/markdown ratio from 62/38 to 43/57
+  - All interpretations positioned correctly after code outputs
+  - Added interpretations for: complexity viz, SSM demo, S4 test, Mamba test, training results, SST hybrid, benchmark
+  - Summary report: `enrichment_summary_qc23.md`
+
 - **2026-02-07**: DataScienceWithAgents Labs (3 notebooks, 11 cells added) - See [enrichment-log-2026-02-07.md](enrichment-log-2026-02-07.md)
   - All cells positioned correctly on first attempt
   - BOTTOM-to-TOP strategy prevented index conflicts
@@ -40,9 +57,12 @@
 |--------|----------------|-----------------|
 | Data Science with Agents | Pandas, LangChain, DataFrame, agent, tools, reasoning | Progressive questions (simple->complex), data cleaning workflow, agent orchestration |
 | ML | accuracy, loss, overfitting, cross-validation | Train-test split, model evaluation, interpretation tables |
+| ML Advanced (SSM/Transformers) | State Space Models, Mamba, S4, selective, complexity O(n), HiPPO, discretization | Architecture comparisons, complexity analysis, training curves, parameter counts |
+| ML Advanced (VAE/HMM) | VAE, reconstruction error, KL divergence, beta-VAE, HMM, Viterbi, transition matrix, regime switching | Model comparison tables, anomaly detection thresholds, regime characterization, production deployment |
 | Probas | prior, posterior, likelihood, inference | Bayesian updates, factor graphs, distribution visualization |
 | Sudoku/Constraint Solving | CSP, CP-SAT, MIP, DecisionBuilder, AllDifferent, propagation | Solver comparison tables, performance benchmarks, constraint modeling patterns |
 | Search/Optimization | fitness, convergence, population, exploration/exploitation, metaheuristics | Parameter sensitivity analysis, algorithm comparison tables, convergence plots |
+| QuantConnect | backtest, alpha model, features, signals, ObjectStore | Model training → save → deploy, feature engineering, performance metrics |
 
 ### Content Strategy Templates
 

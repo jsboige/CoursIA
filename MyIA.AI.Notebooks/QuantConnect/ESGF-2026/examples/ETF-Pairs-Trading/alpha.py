@@ -5,19 +5,23 @@ from datetime import timedelta, datetime
 #endregion
 
 class FilteredPairsAlphaModel(PearsonCorrelationPairsTradingAlphaModel):
-    def __init__(self, lookback=20, resolution=Resolution.Hour, threshold=2.0, pairs=[], cooldown_days=2):
+    def __init__(self, lookback=20, resolution=Resolution.Hour, threshold=1.5, pairs=[], cooldown_days=2):
         super().__init__(lookback, resolution, threshold)
         self.pairs = pairs
         self.cooldown = timedelta(days=cooldown_days)
         self.spread_stats = {pair: {"beta": 1.0, "mean": 0, "std": 1} for pair in pairs}
         self.last_signal_time = {pair: datetime.min for pair in pairs}
+        self.pair_halflifes = {}  # Store half-life for each pair
 
-    def update_pairs(self, new_pairs):
+    def update_pairs(self, new_pairs, pair_halflifes=None):
         self.pairs = new_pairs
+        if pair_halflifes is not None:
+            self.pair_halflifes = pair_halflifes
         removed_pairs = set(self.spread_stats.keys()) - set(new_pairs)
         for rp in removed_pairs:
             self.spread_stats.pop(rp, None)
             self.last_signal_time.pop(rp, None)
+            self.pair_halflifes.pop(rp, None)
         for p in new_pairs:
             if p not in self.spread_stats:
                 self.spread_stats[p] = {"beta": 1.0, "mean": 0, "std": 1}
@@ -48,15 +52,19 @@ class FilteredPairsAlphaModel(PearsonCorrelationPairsTradingAlphaModel):
             new_std = 0.9 * old_std + 0.1 * abs(spread - new_mean)
             stats["std"] = max(new_std, 1e-5)
             z_score = (spread - new_mean) / stats["std"]
+            # Adaptive insight duration based on half-life
+            # Duration = 2 * half-life, capped at 30 days for safety
+            half_life = self.pair_halflifes.get((etf1, etf2), 5)  # Default 5 days if not available
+            insight_duration = timedelta(days=min(2 * half_life, 30))
             if z_score > self.threshold:
-                insights.append(Insight.price(etf1, timedelta(hours=6), InsightDirection.Down))
-                insights.append(Insight.price(etf2, timedelta(hours=6), InsightDirection.Up))
-                log_messages.append(f"[{algorithm.Time}] SHORT {etf1} / LONG {etf2}, Z-score: {z_score:.2f}")
+                insights.append(Insight.price(etf1, insight_duration, InsightDirection.Down))
+                insights.append(Insight.price(etf2, insight_duration, InsightDirection.Up))
+                log_messages.append(f"[{algorithm.Time}] SHORT {etf1} / LONG {etf2}, Z-score: {z_score:.2f}, Duration: {insight_duration.days}d")
                 self.last_signal_time[(etf1, etf2)] = algorithm.Time
             elif z_score < -self.threshold:
-                insights.append(Insight.price(etf1, timedelta(hours=6), InsightDirection.Up))
-                insights.append(Insight.price(etf2, timedelta(hours=6), InsightDirection.Down))
-                log_messages.append(f"[{algorithm.Time}] LONG {etf1} / SHORT {etf2}, Z-score: {z_score:.2f}")
+                insights.append(Insight.price(etf1, insight_duration, InsightDirection.Up))
+                insights.append(Insight.price(etf2, insight_duration, InsightDirection.Down))
+                log_messages.append(f"[{algorithm.Time}] LONG {etf1} / SHORT {etf2}, Z-score: {z_score:.2f}, Duration: {insight_duration.days}d")
                 self.last_signal_time[(etf1, etf2)] = algorithm.Time
         if log_messages:
             max_logs = 5

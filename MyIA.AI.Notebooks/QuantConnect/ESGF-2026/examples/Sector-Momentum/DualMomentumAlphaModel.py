@@ -3,12 +3,36 @@ from AlgorithmImports import *
 #endregion
 class DualMomentumAlphaModel(AlphaModel):
 
-    def __init__(self):
+    def __init__(self, vix_threshold=30, lookback_period=180, top_n_sectors=4):
         self.sectors = {}
         self.securities_list = []
         self.day = -1
+        self.vix_threshold = vix_threshold
+        self.lookback_period = lookback_period  # OPTIMISÉ: 180 jours (9 mois momentum)
+        self.top_n_sectors = top_n_sectors  # OPTIMISÉ: 4 secteurs pour diversification
+        self.vix = None
+        self.vix_initialized = False
 
     def update(self, algorithm, data):
+        # Initialize VIX indicator on first call
+        if not self.vix_initialized:
+            try:
+                vix_symbol = algorithm.add_index("VIX", Resolution.DAILY).Symbol
+                self.vix = algorithm.Identity(vix_symbol)
+                algorithm.warm_up_indicator(vix_symbol, self.vix, Resolution.DAILY)
+                self.vix_initialized = True
+            except:
+                # VIX may not be available, proceed without filter
+                self.vix_initialized = True
+                algorithm.Log("[VIX Filter] VIX data not available, filter disabled")
+
+        # VIX filter: skip rebalancing during high volatility periods
+        if self.vix is not None and self.vix.IsReady:
+            current_vix = self.vix.Current.Value
+            if current_vix > self.vix_threshold:
+                algorithm.Log(f"[VIX Filter] Skipping rebalance, VIX={current_vix:.1f} > {self.vix_threshold}")
+                return []
+
         insights = []
         for symbol in set(data.splits.keys() + data.dividends.keys()):
             security = algorithm.securities[symbol]
@@ -39,7 +63,7 @@ class DualMomentumAlphaModel(AlphaModel):
         for sector in target_sectors:
             for security in security_momentum[sector]:
                 if security_momentum[sector][security] > 0:
-                    security.SetLeverage(2)
+                    security.SetLeverage(1.25)  # OPTIMISÉ: 1.25x pour meilleur Sharpe (recherche: 1.041)
                     target_securities.append(security)
         target_securities = sorted(target_securities, key = lambda x: algorithm.securities[x.symbol].Fundamentals.MarketCap, reverse=True)[:10]
         for security in target_securities:

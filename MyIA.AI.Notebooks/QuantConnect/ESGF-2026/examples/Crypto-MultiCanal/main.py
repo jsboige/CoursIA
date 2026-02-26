@@ -22,7 +22,7 @@ class MultiChannelStrategyAlgorithm(QCAlgorithm, ChannelCalculationMixin):
         self.strategy_name = "GA_Best_Meso_Breakout_NoTrendFilt"
         self.Log(f"Initializing strategy: {self.strategy_name}")
         self.strategy_params = {
-            'trade_level': 'meso', 'signal_type': 'breakout', 'trend_filter_level': 'none',
+            'trade_level': 'meso', 'signal_type': 'both', 'trend_filter_level': 'macro',
             'risk_per_trade_pct': 0.0199, 'min_channel_width_pct': 0.0062,
             'bounce_sl_type': 'pct_entry', 'bounce_sl_value': 0.0105, 'bounce_tp_type': 'rr_ratio',
             'bounce_tp_value': 2.1194, 'bounce_entry_offset': 0.0015,
@@ -221,9 +221,13 @@ class MultiChannelStrategyAlgorithm(QCAlgorithm, ChannelCalculationMixin):
 
             # Ensure TP is defined (can be None if RR logic fails)
             if target_price is None:
-                 self.Debug(f"Warning: Could not calculate TP for {tag}. Trade might not have TP.")
-                 # Decide: skip trade or place without TP? Let's place without TP for now.
-                 # target_price = # Set a very distant default or handle differently
+                 # Default TP = 2x la distance du stop-loss
+                 default_tp_distance = 2.0 * abs(current_price - stop_price)
+                 if signal == 1:  # Long
+                     target_price = current_price + default_tp_distance
+                 else:  # Short
+                     target_price = current_price - default_tp_distance
+                 self.Debug(f"Warning: Using default TP at {target_price:.2f} (2x SL distance)")
 
             # Place the actual trade
             if stop_price is not None: # Required for sizing and basic safety

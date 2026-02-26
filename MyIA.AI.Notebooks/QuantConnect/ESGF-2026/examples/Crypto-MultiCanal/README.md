@@ -47,10 +47,14 @@ Les canaux sont hierarchiques : Meso utilise les pivots apres le 2e pivot Macro 
 ```python
 strategy_params = {
     'trade_level': 'meso',              # Niveau de trading
-    'signal_type': 'breakout',          # Type de signal
-    'trend_filter_level': 'none',       # Filtre de tendance
+    'signal_type': 'both',              # Type de signal (MODIFIE: breakout + bounce)
+    'trend_filter_level': 'macro',      # Filtre de tendance (MODIFIE: active sur macro)
     'risk_per_trade_pct': 0.0199,       # Risque par trade (~2%)
     'min_channel_width_pct': 0.0062,    # Largeur minimum du canal
+    'bounce_sl_type': 'pct_entry',      # SL bounce en % de l'entree
+    'bounce_sl_value': 0.0105,          # SL bounce = 1.05%
+    'bounce_tp_value': 2.1194,          # TP bounce = ~2.1x le risque
+    'bounce_entry_offset': 0.0015,      # Offset d'entree bounce = 0.15%
     'breakout_sl_type': 'pct_level',    # SL en % du niveau casse
     'breakout_sl_value': 0.0120,        # SL = 1.2% sous le niveau
     'breakout_tp_type': 'rr_ratio',     # TP en ratio Risk/Reward
@@ -106,3 +110,31 @@ channel_params = {
 - **Resolution** : Hourly
 - **Recalcul** : Daily (00:05 UTC)
 - **Warmup** : 510 jours (lookback macro + marge)
+
+## Changelog
+
+### 2026-02-15 - Ameliorations prioritaires
+
+**Modifications appliquees dans `main.py`:**
+
+1. **Default TP robuste** (lignes 223-230)
+   - Ajout d'un Take Profit par defaut = 2x la distance du stop-loss
+   - Evite les trades sans TP si le calcul RR echoue
+   - Preserve la directionnalite (long/short)
+
+2. **Activation du trend filter** (ligne 25)
+   - `trend_filter_level`: 'none' → 'macro'
+   - Filtre les entrees contre-tendance sur l'echelle macro
+   - Ameliore la qualite des signaux
+
+3. **Activation des signaux bounce** (ligne 25)
+   - `signal_type`: 'breakout' → 'both'
+   - Active les signaux de rebond en plus des cassures
+   - Augmente les opportunites de trading
+
+**Statut compilation:** BuildSuccess (warnings linter non-bloquants)
+
+**Prochaines etapes:**
+- Lancer un backtest via l'interface web QC
+- Analyser les metriques (Sharpe, Drawdown, Win Rate)
+- Comparer avec les backtests precedents

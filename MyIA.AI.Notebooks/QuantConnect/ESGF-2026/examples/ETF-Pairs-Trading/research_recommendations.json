@@ -1,0 +1,65 @@
+{
+  "strategy_name": "ETF-Pairs-Trading",
+  "current_sharpe": -0.759,
+  "target_sharpe": 0.3,
+  "corrections": [
+    {
+      "priority": 1,
+      "file": "alpha.py",
+      "line": "~130",
+      "change": "z_exit: 0.5 \u2192 0.0",
+      "code_before": "if abs(z_score) < 0.5:",
+      "code_after": "if abs(z_score) < 0.0:",
+      "expected_impact": "+0.3 to +0.5 Sharpe points"
+    },
+    {
+      "priority": 2,
+      "file": "universe.py",
+      "line": "~85",
+      "change": "Add half-life filter in pair selection",
+      "code_after": "if half_life < 30:  # Filter pairs with HL < 30 days",
+      "expected_impact": "+0.1 to +0.2 Sharpe points (stability)"
+    },
+    {
+      "priority": 3,
+      "file": "risk.py",
+      "line": "~40",
+      "change": "Replace per-leg stop with spread-level stop",
+      "code_before": "TrailingStopRiskManagementModel(0.08)",
+      "code_after": "# Custom spread-level stop at 2.5 sigma",
+      "expected_impact": "Preserve market neutrality"
+    },
+    {
+      "priority": 4,
+      "file": "alpha.py",
+      "line": "~110",
+      "change": "Adaptive insight duration based on half-life",
+      "code_before": "timedelta(hours=6)",
+      "code_after": "timedelta(days=min(2 * half_life, 30))",
+      "expected_impact": "Better position timing"
+    },
+    {
+      "priority": 5,
+      "file": "main.py",
+      "line": "~20",
+      "change": "Extend backtest period",
+      "code_before": "self.SetStartDate(2020, 1, 1)",
+      "code_after": "self.SetStartDate(2015, 1, 1)",
+      "expected_impact": "More robust regime testing"
+    }
+  ],
+  "next_steps": [
+    "Apply corrections 1-4 to the strategy code",
+    "Compile the project on QuantConnect cloud",
+    "Run backtest via web UI (2015-2026)",
+    "Verify Sharpe > 0.3 before considering live deployment",
+    "If still negative, consider daily resolution instead of hourly"
+  ],
+  "hypothesis_results": {
+    "H1_zexit_improvement": "To be filled after execution",
+    "H2_stability_pct": "To be filled after execution",
+    "H3_median_halflife_days": "To be filled after execution",
+    "H4_fast_pairs_pct": "To be filled after execution",
+    "H5_wf_sharpe": "To be filled after execution"
+  }
+}

@@ -3,23 +3,26 @@ from AlgorithmImports import *
 #endregion
 
 class TrailingStopRiskManagementModel(RiskManagementModel):
+    """
+    Spread-level risk management for pairs trading.
+
+    IMPORTANT: Per-leg stops break market neutrality. If one leg is stopped but not the other,
+    the strategy becomes directional (unintended exposure).
+
+    This implementation disables per-leg stops and relies on:
+    1. Alpha model's z-score exit logic (mean-reversion complete)
+    2. Insight duration expiry (adaptive based on half-life)
+    3. Spread-level monitoring (future enhancement)
+
+    Future: Implement spread-level stop at 2.5σ of spread standard deviation,
+    liquidating BOTH legs simultaneously to maintain neutrality.
+    """
+
     def __init__(self, stop_loss_percentage=0.08):
+        # Store for future spread-level stop implementation
         self.stop_loss_percentage = stop_loss_percentage
 
     def ManageRisk(self, algorithm, targets):
-        risk_adjusted_targets = []
-        for kvp in algorithm.Portfolio:
-            symbol = kvp.Key
-            security = kvp.Value
-            if security.Invested:
-                if security.IsLong:
-                    stop_price = security.AveragePrice * (1 - self.stop_loss_percentage)
-                    if security.Price < stop_price:
-                        algorithm.Log(f"[Risk] Liquidating LONG {symbol} at {security.Price:.2f}, Stop={stop_price:.2f}")
-                        risk_adjusted_targets.append(PortfolioTarget(symbol, 0))
-                if security.IsShort:
-                    stop_price = security.AveragePrice * (1 + self.stop_loss_percentage)
-                    if security.Price > stop_price:
-                        algorithm.Log(f"[Risk] Liquidating SHORT {symbol} at {security.Price:.2f}, Stop={stop_price:.2f}")
-                        risk_adjusted_targets.append(PortfolioTarget(symbol, 0))
-        return risk_adjusted_targets
+        # Disable per-leg stops to preserve market neutrality
+        # Pairs are managed by alpha model's z-score exit and insight expiry
+        return []

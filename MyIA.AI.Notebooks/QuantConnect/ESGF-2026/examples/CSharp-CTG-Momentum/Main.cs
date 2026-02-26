@@ -60,7 +60,7 @@ namespace QuantConnect.Algorithm.CSharp
         private int _atrWindow = 20;
 
         /// Daily Risk of each trade on the portfolio (0,5%)
-        private const decimal RiskPerContractOnPortfolio = 0.015m;
+        private const decimal RiskPerContractOnPortfolio = 0.010m;
 
         /// Total number of security symbols in the Universe
         private static int _universeSelectMaxStocks = 100;
@@ -79,7 +79,7 @@ namespace QuantConnect.Algorithm.CSharp
         private int _gapWindow = 90;
 
         ///Minimum annualized slope before buying stock.
-        private decimal _minimumAnnualizedSlope = 0m;
+        private decimal _minimumAnnualizedSlope = 10m;
 
         ///Twice a month rebalance the positions sizes (risk);
         private bool _rebalanceWeek = false;
@@ -103,8 +103,9 @@ namespace QuantConnect.Algorithm.CSharp
         public override void Initialize()
         {
             _isLogging = false;
-            //Set trading window
-            SetStartDate(2021, 1, 1);
+            // Extended: covers 2015 bear, 2016-2017 bull, 2018 vol, 2019 rally,
+            // COVID crash 2020, 2021 bull, 2022 bear, 2023-2025 recovery
+            SetStartDate(2015, 1, 1);
             SetEndDate(DateTime.Now);
 
             //Set cash and brokermodel
@@ -116,11 +117,11 @@ namespace QuantConnect.Algorithm.CSharp
             SetBenchmark(security.Symbol);
 
             // Set the MarketRegimeFilter
-            SimpleMovingAverage spyMovingAverage200 = SMA("SPY", 10, Resolution.Daily);
+            SimpleMovingAverage spyMovingAverage200 = SMA("SPY", 200, Resolution.Daily);
 
             //Warm up SMA
             SetWarmUp(200);
-            IEnumerable<TradeBar> history = History("SPY", 10, Resolution.Daily);
+            IEnumerable<TradeBar> history = History("SPY", 200, Resolution.Daily);
             foreach (TradeBar tradeBar in history)
             {
                 spyMovingAverage200.Update(tradeBar.EndTime, tradeBar.Close);

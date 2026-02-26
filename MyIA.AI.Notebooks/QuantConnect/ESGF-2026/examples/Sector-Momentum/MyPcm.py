@@ -9,5 +9,5 @@ class MyPcm(RiskParityPortfolioConstructionModel):
         for target in targets:
             if target.Quantity != 0:
                 security = algorithm.Securities[target.Symbol]
-                security.SetLeverage(2)
+                security.SetLeverage(1.5)  # Reduced from 2x for robustness
         return targets
