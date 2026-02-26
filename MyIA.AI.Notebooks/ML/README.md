@@ -125,3 +125,9 @@ Documentation complete : [DataScienceWithAgents/README.md](DataScienceWithAgents
 ## Licence
 
 Voir la licence du repository principal.
+
+---
+
+## Voir aussi
+
+**[Reinforcement Learning](../RL/)** - Series dediee a l'apprentissage par renforcement avec Stable Baselines3 (PPO, DQN, experience replay). 3 notebooks complementaires pour approfondir les techniques de RL.

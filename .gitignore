@@ -517,3 +517,10 @@ docker-configurations/services/comfyui-video/workspace/
 *_output_*.ipynb
 lean-workspace/
 tmp/
+
+# Notebook backup files
+**/*.ipynb.backup
+
+# Backup venv directories
+**/venv.backup.*/
+**/venv.backup-*/
