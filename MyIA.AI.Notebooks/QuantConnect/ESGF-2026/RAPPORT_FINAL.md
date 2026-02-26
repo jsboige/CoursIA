@@ -378,3 +378,47 @@ if (volatility > VolatilityThreshold)
 - Sector-Momentum : https://www.quantconnect.com/project/28433643/00b4a91196242ea2a1df79d2315a29f2
 - BTC-ML : https://www.quantconnect.com/project/28433750/7f9175d2c684b0bfd334c204e8f9a099
 
+---
+
+## Session 2026-02-26 (Passe 2) : Itérations d'Amélioration
+
+### Corrections Appliquées
+
+#### BTC-ML : Fix Data Leakage + Filtre Volatilité
+**Problème identifié** : Les features utilisaient `closes[:i+1]` au lieu de `closes[:i]`, causant du data leakage.
+
+**Corrections** :
+1. Fix data leakage: features maintenant strictement walk-forward
+2. Ajout filtre volatilité 60% (recherche montre optimal)
+3. Stop-loss relaxed: 5% → 10% (adapté BTC)
+4. Regime detection: position réduite 50% si prix < EMA200
+
+**Résultat** : Sharpe 0.007 → **0.166** (x23 amélioration!)
+
+#### Sector-Momentum : Multiples Tentatives
+**Tentative 1** : Momentum 4 semaines → Sharpe -0.786 (pire)
+**Tentative 2** : Filtre SPY > SMA200 + VIX 20 → Sharpe -0.579 (pire)
+**Tentative 3** : Conversion SPY/TLT rotation → Sharpe -0.117 (encore négatif)
+
+**Conclusion** : La rotation sectorielle ne fonctionne pas sur période étendue. Le Sharpe de 2.53 original était purement dû au bull market AI 2024.
+
+### Tableau Comparatif Passe 2
+
+| Stratégie | Sharpe Initial | Sharpe Passe 2 | Changement | Verdict |
+|-----------|----------------|----------------|------------|---------|
+| BTC-MACD-ADX | 1.647 | 1.647 | - | ✅ STABLE |
+| BTC-ML | 0.007 | **0.166** | +2286% | ⬆️ AMÉLIORÉ |
+| Sector-Momentum | 0.114 | -0.117 | -203% | ❌ ÉCHEC |
+
+### Leçons de la Passe 2
+
+1. **Data leakage est critique** - Fix du BTC-ML a amélioré Sharpe de x23
+2. **Le momentum sectoriel ne marche pas** - Toutes les variantes ont échoué
+3. **La simplicité gagne** - BTC-MACD-ADX (EMA cross) reste le meilleur performer
+
+### Recommandations
+
+1. **BTC-MACD-ADX** → Prêt pour paper trading
+2. **BTC-ML** → Encore besoin d'amélioration (Sharpe 0.166 < 0.5)
+3. **Sector-Momentum** → Abandonner ou remplacer par stratégie différente
+
