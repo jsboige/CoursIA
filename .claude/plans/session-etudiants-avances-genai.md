@@ -402,3 +402,56 @@ mcp__sk-agent__call_agent(
 TOKEN='$2b$12$I7V9gQuddnQh12jZCfO4v.RFxI24tRpZ4Y3ymnuGridhmyA3O7ekC'
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8188/prompt -d @workflow.json
 ```
+
+---
+
+## Services Exposés pour Étudiants (myia.io)
+
+### Services Actuellement Exposés
+
+| Service | URL | Port Local | Usage | Auth |
+|---------|-----|------------|-------|------|
+| Forge Turbo | `https://turbo.stable-diffusion-webui-forge.myia.io` | 17861 | SDXL Lightning | Basic (admin/changeme) |
+| Qwen Image Edit | `https://qwen-image-edit.myia.io` | 8188 | ComfyUI GGUF | Bearer Token |
+| Whisper WebUI | `https://whisper-webui.myia.io` | 36540 | STT/TTS | Aucune |
+| Z-Image vLLM | `https://z-image.myia.io` | 8001 | Text-to-Image | Aucune |
+
+### Services Additionnels Suggérés
+
+Pour les étudiants sans machine suffisante, les services suivants pourraient être exposés :
+
+| Service | URL Proposée | Port | GPU | Intérêt |
+|---------|--------------|------|-----|---------|
+| OpenAI-Compatible API | `api.genai.myia.io` | 8000 | GPU 0 | Remplace OpenAI API |
+| Kokoro TTS | `tts.genai.myia.io` | 5000 | GPU 0 | Synthèse vocale locale |
+| MusicGen | `music.genai.myia.io` | 7860 | GPU 0 | Génération musicale |
+
+### Pattern de Configuration IIS
+
+1. **Créer le dossier** : `D:\Production\<domaine>.myia.io\`
+2. **Créer web.config** :
+```xml
+<configuration>
+    <system.webServer>
+        <webSocket enabled="true" />
+        <proxy><preserveHostHeader>true</preserveHostHeader></proxy>
+        <rewrite>
+            <rules>
+                <rule name="ReverseProxyInboundRule" stopProcessing="true">
+                    <match url="(.*)" />
+                    <action type="Rewrite" url="http://localhost:<PORT>/{R:1}" />
+                    <serverVariables>
+                        <set name="HTTP_SEC_WEBSOCKET_EXTENSIONS" value="nodata" />
+                    </serverVariables>
+                </rule>
+            </rules>
+        </rewrite>
+    </system.webServer>
+</configuration>
+```
+3. **Créer le site IIS** : `New-Website -Name "<domaine>.myia.io" -PhysicalPath "D:\Production\<domaine>.myia.io" -Port 80 -HostHeader "<domaine>.myia.io"`
+4. **Certificat SSL** : `D:\Production\win-acme.v2.2.9.1701.x64.pluggable\wacs.exe`
+
+### Note Importante
+
+Les services API (OpenAI, Claude) nécessitent que chaque étudiant ait sa propre clé API. Les services exposés sur myia.io sont des **alternatives locales** pour les modèles hébergés sur la machine de l'enseignant.
