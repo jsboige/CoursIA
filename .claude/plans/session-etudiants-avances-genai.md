@@ -422,9 +422,25 @@ Pour les étudiants sans machine suffisante, les services suivants pourraient ê
 
 | Service | URL Proposée | Port | GPU | Intérêt |
 |---------|--------------|------|-----|---------|
+| Whisper GenAI | `whisper.genai.myia.io` | 36540 | GPU 0 | Transcription audio |
 | OpenAI-Compatible API | `api.genai.myia.io` | 8000 | GPU 0 | Remplace OpenAI API |
 | Kokoro TTS | `tts.genai.myia.io` | 5000 | GPU 0 | Synthèse vocale locale |
 | MusicGen | `music.genai.myia.io` | 7860 | GPU 0 | Génération musicale |
+
+### Configuration Whisper GenAI (prête)
+
+Le web.config a été créé dans `D:\Production\whisper.genai.myia.io\web.config`.
+
+**Étapes restantes (nécessite admin)** :
+1. Créer le site IIS :
+   ```powershell
+   New-Website -Name "whisper.genai.myia.io" -PhysicalPath "D:\Production\whisper.genai.myia.io" -Port 80 -HostHeader "whisper.genai.myia.io"
+   ```
+2. Générer le certificat SSL :
+   ```powershell
+   cd D:\Production\win-acme.v2.2.9.1701.x64.pluggable
+   .\wacs.exe --target manual --host whisper.genai.myia.io --webroot D:\Production\whisper.genai.myia.io
+   ```
 
 ### Pattern de Configuration IIS
 
