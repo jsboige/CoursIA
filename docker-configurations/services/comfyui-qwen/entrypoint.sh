@@ -19,9 +19,15 @@ if [ ! -f "main.py" ]; then
 fi
 
 # Installation venv si nécessaire
-if [ ! -d "venv" ]; then
+if [ ! -f "venv/bin/pip" ]; then
     echo "📦 Création du venv..."
-    python3 -m venv venv
+    rm -rf venv 2>/dev/null || true
+    python3 -m venv venv --copies
+    # Installer pip manuellement si ensurepip n'est pas disponible
+    if [ ! -f "venv/bin/pip" ]; then
+        echo "📦 Installation manuelle de pip..."
+        curl -sS https://bootstrap.pypa.io/get-pip.py | venv/bin/python3
+    fi
     venv/bin/pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121
 fi
 

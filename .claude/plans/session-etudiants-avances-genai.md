@@ -19,24 +19,142 @@
 
 ---
 
+## Infrastructure GenAI - Vue Complète
+
+### GPUs Disponibles
+
+| GPU | Modèle | VRAM | Services actifs |
+|-----|--------|------|-----------------|
+| GPU 0 | RTX 3080 Ti Laptop | 16 GB | whisper-webui (local) |
+| GPU 1 | RTX 3090 | 24 GB | forge-turbo, vllm-zimage |
+
+### Services Docker - État Actuel
+
+| Service | Container | URL Locale | URL Distante | GPU | VRAM | Status |
+|---------|-----------|------------|--------------|-----|------|--------|
+| forge-turbo | UP | `http://localhost:17861` | `https://turbo.stable-diffusion-webui-forge.myia.io` | GPU 1 (3090) | ~8 GB | OK |
+| vllm-zimage | UP | `http://localhost:8001` | `https://z-image.myia.io` | GPU 1 (3090) | ~15 GB | OK |
+| whisper-webui | Local | `http://localhost:36540` | `https://whisper-webui.myia.io` | GPU 0 (3080 Ti) | ~10 GB | OK |
+| comfyui-qwen | UP | `http://localhost:8188` | `https://qwen-image-edit.myia.io` | GPU 1 (3090) | ~12 GB | Models manquants |
+
+### Modèles Locaux (sans container)
+
+#### Audio
+| Modèle | Type | GPU | VRAM | Notebook |
+|--------|------|-----|------|----------|
+| Whisper large-v3 | STT | GPU 0 | ~10 GB | Audio/01-4 |
+| Kokoro TTS | TTS | GPU 0 | ~2 GB | Audio/01-5 |
+| Chatterbox TTS | TTS | GPU 0 | ~8 GB | Audio/02-1 |
+| XTTS v2 | TTS | GPU 0 | ~6 GB | Audio/02-2 |
+| MusicGen Large | Music | GPU 0 | ~10 GB | Audio/02-3 |
+| Demucs v4 | Separation | GPU 0 | ~4 GB | Audio/02-4 |
+
+#### Video
+| Modèle | Type | GPU | VRAM | Notebook |
+|--------|------|-----|------|----------|
+| Qwen2.5-VL-7B | VQA | GPU 1 | ~18 GB | Video/01-3 |
+| Real-ESRGAN | Upscale | GPU 0 | ~4 GB | Video/01-4 |
+| RIFE | Interpolation | GPU 0 | ~4 GB | Video/01-4 |
+| AnimateDiff | Animation | GPU 1 | ~12 GB | Video/01-5 |
+| HunyuanVideo | Generation | GPU 1 | ~18 GB | Video/02-1 |
+| LTX-Video | Generation | GPU 0 | ~8 GB | Video/02-2 |
+| Wan 2.1/2.2 | Generation | GPU 1 | ~10 GB | Video/02-3 |
+| SVD | Generation | GPU 1 | ~10 GB | Video/02-4 |
+
+---
+
+## Stratégie GPU - Switch par Domaine
+
+### Profils GPU
+
+| Profil | GPU 0 (3080 Ti) | GPU 1 (3090) | Services |
+|--------|-----------------|--------------|----------|
+| `audio_api` | Libre | forge-turbo | OpenAI TTS/STT |
+| `audio_local_gpu` | Whisper local | forge-turbo | Audio local |
+| `video_local_light` | Libre | forge-turbo + zimage | Video légère |
+| `video_local_heavy` | Tout arrêter | Qwen2.5-VL | Video lourde |
+| `video_comfyui` | Libre | ComfyUI Qwen | Edition image |
+
+### Commandes de Switch
+
+```bash
+# Appliquer un profil GPU
+python scripts/genai-stack/genai.py gpu profile apply <profil>
+
+# Vérifier l'état GPU
+python scripts/genai-stack/genai.py gpu
+
+# Démarrer/arrêter un service
+python scripts/genai-stack/genai.py docker start <service>
+python scripts/genai-stack/genai.py docker stop <service>
+```
+
+---
+
+## Séquence d'Exécution Autonome
+
+### Ordre Optimisé par GPU
+
+**Batch 1 : API-only (pas de GPU)**
+- Texte/1_OpenAI_Intro.ipynb
+- Texte/2_PromptEngineering.ipynb
+- Texte/3_Structured_Outputs.ipynb
+- Texte/4_Function_Calling.ipynb
+- Texte/5_RAG_Modern.ipynb
+- Audio/01-1-OpenAI-TTS-Intro.ipynb
+- Audio/01-2-OpenAI-Whisper-STT.ipynb
+
+**Batch 2 : GPU léger (forge-turbo actif)**
+- Image/01-1-OpenAI-DALL-E-3.ipynb
+- Image/01-4-Stable-Diffusion-Local.ipynb
+- Video/01-1-Video-Operations-Basics.ipynb
+- Video/01-2-GPT-5-Video-Understanding.ipynb
+
+**Batch 3 : Audio GPU (Whisper local)**
+- Profil: `audio_local_gpu`
+- Audio/01-3-Basic-Audio-Operations.ipynb
+- Audio/01-4-Local-Whisper.ipynb
+- Audio/01-5-Kokoro-TTS.ipynb
+- Audio/02-3-MusicGen-Generation.ipynb
+
+**Batch 4 : Video GPU lourde**
+- Profil: `video_local_heavy`
+- Video/01-3-Qwen-Video-Understanding.ipynb
+- Video/02-1-HunyuanVideo.ipynb
+
+### Workflow d'Exécution
+
+```python
+# Pour chaque notebook:
+1. Vérifier profil GPU actuel
+2. Si changement nécessaire: appliquer nouveau profil
+3. Exécuter notebook avec Papermill
+4. Valider outputs (erreurs, warnings)
+5. Extraire images/vidéos générées
+6. Valider avec sk-agent vision
+7. Corriger si nécessaire
+8. Commit par batch
+```
+
+---
+
 ## Séquence pour Étudiants Avancés
 
-*Note: Aucun switch de container nécessaire - tous les notebooks utilis l'OPENAI_API_KEY` ou des APIs locales.*
-
 ### Phase 1 : Setup et Texte (45 min)
+*Profil: `audio_api` - Pas de GPU requis*
 
 1. `00-1-Environment-Setup.ipynb` - Vérifier .env
 2. `Texte/1_OpenAI_Intro.ipynb` - Bases API
 3. `Texte/2_PromptEngineering.ipynb` - Techniques de prompt
 
 **Challenge #1** : Prompt en cascade pour histoire (0.5 pt)
-
 - Générer un personnage JSON, puis un conflit, puis une résolution
 - Pattern : mémoire conversationnelle + few-shot
 
 ---
 
 ### Phase 2 : Texte Avancé (45 min)
+*Profil: `audio_api` - Pas de GPU requis*
 
 1. `Texte/3_Structured_Outputs.ipynb` - JSON structuré
 2. `Texte/4_Function_Calling.ipynb` - Fonctions
@@ -48,6 +166,7 @@
 ---
 
 ### Phase 3 : Audio API (45 min)
+*Profil: `audio_api` - GPU libre pour Whisper local*
 
 1. `Audio/01-1-OpenAI-TTS-Intro.ipynb` - Text-to-Speech
 
@@ -67,6 +186,7 @@
 ---
 
 ### Phase 4 : Image et Video (60 min)
+*Profil: `video_local_light` - forge-turbo actif*
 
 1. `Image/01-1-OpenAI-DALL-E-3.ipynb` - Génération DALL-E
 
@@ -74,16 +194,19 @@
 - Générer une icône style "app store"
 
 2. `Video/01-1-Video-Operations-Basics.ipynb` - Opérations vidéo
+
 **Challenge #7** : Slideshow vidéo (0.5 pt)
 - Créer une vidéo avec 5 frames message
 
 3. `Video/01-2-GPT-5-Video-Understanding.ipynb` - Analyse vidéo
+
 **Challenge #10** : Analyse de vidéo personnalisée (0.5 pt)
 - Analyser une vidéo avec GPT-5
 
 ---
 
 ### Phase 5 : RAG et Musique (optionnel, si temps)
+*Profil: `audio_local_gpu` - Whisper/MusicGen local*
 
 1. `Texte/5_RAG_Modern.ipynb` - Retrieval Augmented Generation
 
@@ -124,51 +247,47 @@
 
 ## Déroulement Optimal (3h)
 
-| Temps | Activité | Notebooks |
-|------|----------|----------|
-| 0-5 min | Introduction et setup | Environment |
-| 5-50 min | Phase 1 : Texte | 3 notebooks |
-| 50-95 min | Phase 2 : Texte avancé | 2 notebooks |
-| 95-140 min | Phase 3 : Audio API | 3 notebooks |
-| 140-200 min | Phase 4 : Image/Video | 3 notebooks |
-| 200-180 min | Phase 5 : RAG/Musique (optionnel) | 2 notebooks |
+| Temps | Activité | Notebooks | Profil GPU |
+|------|----------|----------|------------|
+| 0-5 min | Introduction et setup | Environment | - |
+| 5-50 min | Phase 1 : Texte | 3 notebooks | audio_api |
+| 50-95 min | Phase 2 : Texte avancé | 2 notebooks | audio_api |
+| 95-140 min | Phase 3 : Audio API | 3 notebooks | audio_api |
+| 140-200 min | Phase 4 : Image/Video | 3 notebooks | video_local_light |
+| 200-180 min | Phase 5 : RAG/Musique | 2 notebooks | audio_local_gpu |
 
 ---
 
 ## Pour l'enseignant
 
-### Services Docker et URLs
-
-**Services actifs par défaut (pas de switch nécessaire)** :
-
-| Service      | Container | URL Locale               | URL Distante                                      | GPU         |
-|--------------|-----------|--------------------------|---------------------------------------------------|-------------|
-| forge-turbo  | UP        | `http://localhost:17861` | `https://turbo.stable-diffusion-webui-forge.myia.io` | RTX 3090    |
-| whisper-webui| UP        | `http://localhost:36540` | `https://whisper-webui.myia.io`                   | RTX 3080 Ti |
-
-**Services inactifs (non nécessaires pour les challenges)** :
-
-| Service       | URL Distante                         | GPU requis | Note           |
-|---------------|--------------------------------------|------------|----------------|
-| comfyui-qwen  | `https://qwen-image-edit.myia.io`    | ~29GB      | Container DOWN |
-| vllm-zimage   | `https://z-image.myia.io`            | ~10GB      | Container DOWN |
-
-### Switches si nécessaire
+### Services Docker - Commandes Rapides
 
 ```bash
-# Démarrer un service spécifique
-python scripts/genai-stack/genai.py docker start <service>
-
-# Arrêter un service
-python scripts/genai-stack/genai.py docker stop <service>
-
-# Vérifier le statut
+# Statut complet
 python scripts/genai-stack/genai.py docker status
+
+# Démarrer tout
+python scripts/genai-stack/genai.py docker start all
+
+# Arrêter tout
+python scripts/genai-stack/genai.py docker stop all
+
+# Tester endpoints
+python scripts/genai-stack/genai.py docker test --remote
 ```
+
+### URLs de Production (IIS Reverse Proxy)
+
+| Service | URL | Auth |
+|---------|-----|------|
+| Forge Turbo | `https://turbo.stable-diffusion-webui-forge.myia.io` | Basic (admin/changeme) |
+| Whisper WebUI | `https://whisper-webui.myia.io` | Aucune |
+| Z-Image vLLM | `https://z-image.myia.io` | Aucune |
+| Qwen Image Edit | `https://qwen-image-edit.myia.io` | Bearer Token |
 
 ### Points d'attention
 
-- **Tous les notebooks de challenges fonctionnent avec OpenAI API uniquement**
+- **Tous les challenges principaux fonctionnent avec OpenAI API uniquement**
 - MusicGen utilise le GPU local (pas de container)
 - Vérifier que chaque étudiant a bien configuré son `.env`
 - Les challenges doivent être soumis via PR sur le fork du repo
@@ -178,18 +297,52 @@ python scripts/genai-stack/genai.py docker status
 
 ## Liste complète des Challenges
 
-| # | Notebook | Challenge | Compétences |
-|---|----------|-----------|------------|
-| 1 | `Texte/2_PromptEngineering.ipynb` | Prompt en cascade | Few-shot, mémoire |
-| 2 | `Texte/4_Function_Calling.ipynb` | Assistant planification | Tools, boucle agentique |
-| 3 | `Audio/01-3-Basic-Audio-Operations.ipynb` | Analyse + transformation | librosa, pydub |
-| 4 | `Image/01-1-OpenAI-DALL-E-3.ipynb` | Icône application | DALL-E 3 prompting |
-| 5 | `Texte/5_RAG_Modern.ipynb` | Mini FAQ engine | Embeddings, recherche vectorielle |
-| 6 | `Audio/02-3-MusicGen-Generation.ipynb` | Musique scène vidéo | MusicGen, paramètres |
-| 7 | `Video/01-1-Video-Operations-Basics.ipynb` | Slideshow vidéo | PIL, imageio |
-| 8 | `Audio/01-1-OpenAI-TTS-Intro.ipynb` | Narration multi-voix | TTS, voices |
-| 9 | `Audio/01-2-OpenAI-Whisper-STT.ipynb` | Sous-titrage | Whisper, timestamps |
-| 10 | `Video/01-2-GPT-5-Video-Understanding.ipynb` | Analyse vidéo | GPT-5 multimodal |
+| # | Notebook | Challenge | Compétences | GPU |
+|---|----------|-----------|------------|-----|
+| 1 | `Texte/2_PromptEngineering.ipynb` | Prompt en cascade | Few-shot, mémoire | Non |
+| 2 | `Texte/4_Function_Calling.ipynb` | Assistant planification | Tools, boucle agentique | Non |
+| 3 | `Audio/01-3-Basic-Audio-Operations.ipynb` | Analyse + transformation | librosa, pydub | Non |
+| 4 | `Image/01-1-OpenAI-DALL-E-3.ipynb` | Icône application | DALL-E 3 prompting | Non |
+| 5 | `Texte/5_RAG_Modern.ipynb` | Mini FAQ engine | Embeddings, recherche vectorielle | Non |
+| 6 | `Audio/02-3-MusicGen-Generation.ipynb` | Musique scène vidéo | MusicGen, paramètres | Oui (~10GB) |
+| 7 | `Video/01-1-Video-Operations-Basics.ipynb` | Slideshow vidéo | PIL, imageio | Non |
+| 8 | `Audio/01-1-OpenAI-TTS-Intro.ipynb` | Narration multi-voix | TTS, voices | Non |
+| 9 | `Audio/01-2-OpenAI-Whisper-STT.ipynb` | Sous-titrage | Whisper, timestamps | Non |
+| 10 | `Video/01-2-GPT-5-Video-Understanding.ipynb` | Analyse vidéo | GPT-5 multimodal | Non |
+
+---
+
+## Validation Autonome par Claude
+
+### Utilisation de sk-agent
+
+```python
+# Validation d'image
+mcp__sk-agent__call_agent(
+    agent="vision-local",
+    attachment=str(image_path),
+    prompt="Rate this image 1-10 for quality. Identify artifacts."
+)
+
+# Analyse d'erreur
+mcp__sk-agent__call_agent(
+    agent="analyst",
+    prompt=f"Analyse cette erreur: {error_message}"
+)
+```
+
+### Commandes de Validation
+
+```bash
+# Valider la stack GenAI
+/validate-genai all --local
+
+# Exécuter un notebook
+/execute-notebook <path> --save
+
+# Vérifier les notebooks
+/verify-notebooks GenAI --quick
+```
 
 ---
 
@@ -200,3 +353,6 @@ python scripts/genai-stack/genai.py docker status
 - [x] Préparer grille de notation
 - [x] Créer fork template pour PRs challenges
 - [x] Planifier sessions de debug individuelles
+- [ ] Télécharger modèles Qwen Image Edit (UNET, VAE, CLIP)
+- [ ] Tester workflow ComfyUI Qwen
+- [ ] Valider tous les challenges avec sk-agent
