@@ -137,17 +137,42 @@
 
 ## Pour l'enseignant
 
-### Services Docker nécessaires
+### Services Docker et URLs
 
-Aucun - tous les notebooks API-only fonctionnent avec `OPENAI_API_KEY`.
+**Services actifs par défaut (pas de switch nécessaire)** :
+
+| Service      | Container | URL Locale               | URL Distante                                      | GPU         |
+|--------------|-----------|--------------------------|---------------------------------------------------|-------------|
+| forge-turbo  | UP        | `http://localhost:17861` | `https://turbo.stable-diffusion-webui-forge.myia.io` | RTX 3090    |
+| whisper-webui| UP        | `http://localhost:36540` | `https://whisper-webui.myia.io`                   | RTX 3080 Ti |
+
+**Services inactifs (non nécessaires pour les challenges)** :
+
+| Service       | URL Distante                         | GPU requis | Note           |
+|---------------|--------------------------------------|------------|----------------|
+| comfyui-qwen  | `https://qwen-image-edit.myia.io`    | ~29GB      | Container DOWN |
+| vllm-zimage   | `https://z-image.myia.io`            | ~10GB      | Container DOWN |
+
+### Switches si nécessaire
+
+```bash
+# Démarrer un service spécifique
+python scripts/genai-stack/genai.py docker start <service>
+
+# Arrêter un service
+python scripts/genai-stack/genai.py docker stop <service>
+
+# Vérifier le statut
+python scripts/genai-stack/genai.py docker status
+```
 
 ### Points d'attention
 
+- **Tous les notebooks de challenges fonctionnent avec OpenAI API uniquement**
+- MusicGen utilise le GPU local (pas de container)
 - Vérifier que chaque étudiant a bien configuré son `.env`
 - Les challenges doivent être soumis via PR sur le fork du repo
 - Prévoir des sessions de debug pour les groupes en difficulté
-
-- Avoir les notebooks "Challenge" prêts à l'avance
 
 ---
 
