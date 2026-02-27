@@ -1,0 +1,75 @@
+# Whisper API - Transcription audio avec faster-whisper
+# OpenAI-compatible API for speech-to-text
+#
+# GPU: RTX 3080 Ti (16GB) - GPU 0
+# Port: 8190
+# URL: whisper-api.myia.io
+
+services:
+  whisper-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whisper-api
+    hostname: whisper-api
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-0}']
+              capabilities: [gpu]
+
+    ports:
+      - "${WHISPER_API_PORT:-8190}:8190"
+
+    volumes:
+      - type: bind
+        source: ${MODELS_PATH:-./models}
+        target: /app/models
+      - type: bind
+        source: ../shared
+        target: /app/shared
+        read_only: true
+      - type: volume
+        source: whisper-cache
+        target: /root/.cache
+
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
+      - PYTHONUNBUFFERED=1
+      - WHISPER_MODEL=${WHISPER_MODEL:-large-v3-turbo}
+      - WHISPER_DEVICE=cuda
+      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-float16}
+      - MAX_FILE_SIZE=26214400
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-300}
+      - TZ=${TZ:-Europe/Paris}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8190/health | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    restart: unless-stopped
+
+    networks:
+      - whisper-network
+
+    labels:
+      - "com.myia.service=whisper-api"
+      - "com.myia.gpu=rtx-3080ti"
+      - "com.myia.model=faster-whisper-large-v3-turbo"
+
+networks:
+  whisper-network:
+    driver: bridge
+    name: whisper-network
+
+volumes:
+  whisper-cache:
+    name: whisper-cache

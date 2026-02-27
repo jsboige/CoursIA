@@ -1,0 +1,78 @@
+# MusicGen API - Music generation with Meta's MusicGen
+# HTTP API for music generation
+#
+# GPU: RTX 3090 (24GB) - GPU 1
+# Port: 8192
+# VRAM: ~10GB (medium model)
+
+services:
+  musicgen-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: musicgen-api
+    hostname: musicgen-api
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-1}']
+              capabilities: [gpu]
+
+    ports:
+      - "${MUSICGEN_API_PORT:-8192}:8192"
+
+    volumes:
+      - type: bind
+        source: ${MODELS_PATH:-./models}
+        target: /app/models
+      - type: bind
+        source: ${OUTPUT_PATH:-./outputs}
+        target: /app/outputs
+      - type: bind
+        source: ../shared
+        target: /app/shared
+        read_only: true
+      - type: volume
+        source: musicgen-cache
+        target: /root/.cache
+
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-1}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-1}
+      - PYTHONUNBUFFERED=1
+      - MUSICGEN_MODEL=${MUSICGEN_MODEL:-facebook/musicgen-medium}
+      - MUSICGEN_DEVICE=cuda
+      - MAX_DURATION=30
+      - DEFAULT_DURATION=10
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-300}
+      - TZ=${TZ:-Europe/Paris}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8192/health | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+
+    restart: unless-stopped
+
+    networks:
+      - musicgen-network
+
+    labels:
+      - "com.myia.service=musicgen-api"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=musicgen-medium"
+
+networks:
+  musicgen-network:
+    driver: bridge
+    name: musicgen-network
+
+volumes:
+  musicgen-cache:
+    name: musicgen-cache

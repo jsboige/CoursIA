@@ -1,0 +1,75 @@
+# Demucs API - Source separation with Demucs v4
+# HTTP API for music stem extraction
+#
+# GPU: RTX 3080 Ti (16GB) - GPU 0
+# Port: 8193
+# VRAM: ~4GB
+
+services:
+  demucs-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: demucs-api
+    hostname: demucs-api
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-0}']
+              capabilities: [gpu]
+
+    ports:
+      - "${DEMUCS_API_PORT:-8193}:8193"
+
+    volumes:
+      - type: bind
+        source: ${MODELS_PATH:-./models}
+        target: /app/models
+      - type: bind
+        source: ${OUTPUT_PATH:-./outputs}
+        target: /app/outputs
+      - type: bind
+        source: ../shared
+        target: /app/shared
+        read_only: true
+      - type: volume
+        source: demucs-cache
+        target: /root/.cache
+
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
+      - PYTHONUNBUFFERED=1
+      - DEMUCS_MODEL=${DEMUCS_MODEL:-htdemucs_ft}
+      - DEMUCS_DEVICE=cuda
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-300}
+      - TZ=${TZ:-Europe/Paris}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8193/health | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    restart: unless-stopped
+
+    networks:
+      - demucs-network
+
+    labels:
+      - "com.myia.service=demucs-api"
+      - "com.myia.gpu=rtx-3080ti"
+
+networks:
+  demucs-network:
+    driver: bridge
+    name: demucs-network
+
+volumes:
+  demucs-cache:
+    name: demucs-cache
