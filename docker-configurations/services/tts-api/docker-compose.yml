@@ -1,0 +1,70 @@
+# TTS API - Text-to-Speech with Kokoro
+# OpenAI-compatible TTS API
+#
+# GPU: RTX 3090 (24GB) - shares GPU with other services
+# Port: 8191
+# URL: tts-api.myia.io
+
+services:
+  tts-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tts-api
+    hostname: tts-api
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-1}']
+              capabilities: [gpu]
+
+    ports:
+      - "${TTS_API_PORT:-8191}:8191"
+
+    volumes:
+      - type: bind
+        source: ${MODELS_PATH:-./models}
+        target: /app/models
+      - type: bind
+        source: ../shared
+        target: /app/shared
+        read_only: true
+      - type: volume
+        source: tts-cache
+        target: /root/.cache
+
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-1}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-1}
+      - PYTHONUNBUFFERED=1
+      - TTS_DEVICE=cuda
+      - DEFAULT_TTS_MODEL=kokoro
+      - DEFAULT_TTS_VOICE=af_sky
+      - SAMPLE_RATE=24000
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-300}
+      - TZ=${TZ:-Europe/Paris}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8191/health | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    restart: unless-stopped
+
+    networks:
+      - tts-network
+
+networks:
+  tts-network:
+    driver: bridge
+    name: tts-network
+
+volumes:
+  tts-cache:
+    name: tts-cache

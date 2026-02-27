@@ -53,7 +53,7 @@ Exemples:
     subparsers = parser.add_subparsers(dest='command', help='Commandes disponibles')
 
     # Enregistrer toutes les sous-commandes
-    from commands import docker, validate, notebooks, models, gpu, auth
+    from commands import docker, validate, notebooks, models, gpu, auth, audio_apis
 
     docker.register(subparsers)
     validate.register(subparsers)
@@ -61,6 +61,7 @@ Exemples:
     models.register(subparsers)
     gpu.register(subparsers)
     auth.register(subparsers)
+    audio_apis.register(subparsers)
 
     args = parser.parse_args()
 
@@ -85,6 +86,8 @@ Exemples:
         sys.exit(gpu.execute(args))
     elif args.command == 'auth':
         sys.exit(auth.execute(args))
+    elif args.command == 'audio-apis':
+        sys.exit(audio_apis.execute(args))
     else:
         parser.print_help()
         sys.exit(0)
