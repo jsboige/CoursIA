@@ -29,9 +29,10 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
                 "stop_loss": None
             }
         self.max_positions = 3
-        self.trailing_stop_pct = 0.90
-        self.fixed_stop_pct = 0.85
-        self.take_profit_pct = 1.3
+        self.trailing_stop_pct = 0.92  # Optimized from 0.90
+        self.fixed_stop_pct = 0.88     # Optimized from 0.85
+        self.take_profit_pct = 1.25    # Optimized from 1.30
+        self.transaction_fee = 0.001   # 0.1% transaction fee
 
     def OnData(self, data):
         # Volatility filter: skip trading if BTC volatility > 60%
@@ -57,7 +58,7 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
             bb_upper = indicators["bollinger"].UpperBand.Current.Value
             if (active_positions < self.max_positions and
                 ema_fast > ema_slow and
-                35 < rsi_val < 70 and
+                30 < rsi_val < 75 and  # Widened from 35-70
                 price < bb_upper):
                 if not self.Portfolio[symbol].Invested:
                     allocation = 0.7 / self.max_positions

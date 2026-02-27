@@ -469,3 +469,95 @@ Le filtre de volatilité 60% fonctionne sur **3 stratégies**:
 - Sector-Momentum → Ne fonctionne pas sur période étendue
 
 
+---
+
+## Session 2026-02-27 (Passe 4) : Notebooks Exploratoires + Optimisations
+
+### Méthodologie
+
+1. **Notebooks de recherche créés** pour les 4 stratégies:
+   - `BTC-ML-Researcher/research.ipynb` - Feature importance, grid search confidence/SL/TP
+   - `Multi-Layer-EMA-Researcher/research.ipynb` - EMA periods, RSI thresholds, stops
+   - `Sector-Momentum-Researcher/research.ipynb` - Dual Momentum vs SMA crossover
+   - `Option-Wheel-Researcher/research.ipynb` - DTE, OTM, VIX filter analysis
+
+2. **Améliorations appliquées**:
+   - **BTC-ML**: Trend filter (prix > EMA200), confidence thresholds optimisés (0.58/0.42), SL/TP resserrés (8%/15%)
+   - **Multi-Layer-EMA**: RSI range élargi (30-75), trailing stop 92%, fixed stop 88%
+   - **Sector-Momentum**: Refonte complète en Dual Momentum classique (lookback 12 mois)
+   - **Option-Wheel**: Ajout filtre VIX (skip puts si VIX > 25), réduction exposition max (80%)
+
+### Résultats des Backtests
+
+| Stratégie | Sharpe Passe 3 | Sharpe Passe 4 | Changement | Verdict |
+|-----------|----------------|----------------|------------|---------|
+| **BTC-ML** | 0.166 | **0.254** | +53% | ⬆️ AMÉLIORÉ |
+| **Multi-Layer-EMA** | 0.872 | **0.928** | +6% | ✅ STABLE |
+| **Sector-Momentum** | -0.117 | **0.202** | +268% | ✅ SAUVÉ |
+| **Option-Wheel** | 0.13 | **0.259** | +99% | ⬆️ DOUBLÉ |
+
+### Analyse par Stratégie
+
+#### BTC-ML (Sharpe 0.254)
+- **Amélioration**: +53% vs Passe 3
+- **Facteurs clés**:
+  - Trend filter (skip long si prix < EMA200) réduit les faux signaux
+  - Confidence thresholds resserrés (0.58/0.42) réduisent les trades incertains
+  - SL/TP optimisés (-8%/+15%) adaptés à la volatilité BTC
+- **Statistiques**: Win Rate 78%, CAGR 8%, Max DD 13.8%
+
+#### Multi-Layer-EMA (Sharpe 0.928)
+- **Amélioration**: +6% vs Passe 3
+- **Facteurs clés**:
+  - RSI range élargi (30-75) capture plus d'opportunités
+  - Trailing stop 92% protège mieux les gains
+- **Statistiques**: Win Rate 40%, CAGR 43.1%, Max DD 49.8%
+- **Conclusion**: Prêt pour paper trading
+
+#### Sector-Momentum (Sharpe 0.202)
+- **Amélioration**: De négatif à positif!
+- **Facteurs clés**:
+  - Dual Momentum classique (Gary Antonacci) avec lookback 12 mois
+  - Rotation mensuelle (pas quotidienne) réduit le whipsaw
+  - Sortie vers TLT en bear market protège le capital
+- **Statistiques**: Win Rate 58%, CAGR 6.3%, Max DD 31.4%
+- **Conclusion**: Stratégie sauvée, continue l'amélioration
+
+#### Option-Wheel (Sharpe 0.259)
+- **Amélioration**: +99% vs Passe 3
+- **Facteurs clés**:
+  - Filtre VIX > 25 évite de vendre des puts en période de stress
+  - Exposition réduite à 80% limite le risque
+- **Statistiques**: Win Rate 87%, CAGR 8.2%, Max DD 26.4%
+- **Conclusion**: Stratégie passive viable
+
+### Tableau Récapitulatif Final (Passe 4)
+
+| Stratégie | Sharpe | CAGR | Max DD | Win Rate | Verdict |
+|-----------|--------|------|--------|----------|---------|
+| **Multi-Layer-EMA** | 0.928 | 43.1% | 49.8% | 40% | ✅ PRÊT |
+| **BTC-ML** | 0.254 | 8.0% | 13.8% | 78% | ⬆️ EN PROGRÈS |
+| **Option-Wheel** | 0.259 | 8.2% | 26.4% | 87% | ✅ PASSIF |
+| **Sector-Momentum** | 0.202 | 6.3% | 31.4% | 58% | ✅ SAUVÉ |
+
+### Leçons de la Passe 4
+
+1. **Les notebooks de recherche sont essentiels** - Permettent d'identifier les paramètres optimaux
+2. **Le Dual Momentum classique fonctionne** - Lookback 12 mois, rotation mensuelle
+3. **Le filtre VIX améliore les stratégies passives** - Réduit le risque en période de stress
+4. **Le trend filter améliore le ML** - Évite les longs en bear market
+
+### Recommandations Finales
+
+1. **Multi-Layer-EMA** (0.928) → **Prêt pour paper trading** - Meilleur Sharpe
+2. **BTC-ML** (0.254) → Continuer amélioration - Potentiel avec plus de features
+3. **Option-Wheel** (0.259) → **Prêt pour paper trading** - Stratégie passive stable
+4. **Sector-Momentum** (0.202) → Continuer amélioration - Approche Dual Momentum validée
+
+### URLs des Backtests (Passe 4)
+
+- BTC-ML: https://www.quantconnect.com/project/28433750/2e5d1addc45b9de1d40d6e6dc1cbd9da
+- Multi-Layer-EMA: https://www.quantconnect.com/project/28433748/b85e15fe3c5643d84a3d12e20c465fa7
+- Sector-Momentum: https://www.quantconnect.com/project/28433643/617387cfa1ceb6f918312a2f6edfafb2
+- Option-Wheel: https://www.quantconnect.com/project/28433749/414c4355a9a7b5b43ba880e9dd14abc7
+
