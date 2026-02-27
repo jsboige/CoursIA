@@ -7,9 +7,8 @@ drawings:
   persist: false
 transition: slide-left
 mdc: true
----
-
 layout: cover
+---
 
 # Intelligence Artificielle
 
@@ -34,27 +33,48 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
   - Expose final en classe devant le groupe
 
 ---
-
+layout: image-right
+image: ./images/img_001.jpg
+---
 
 # Sommaire
 
 - Qu'est-ce que l'intelligence artificielle ?
 - Racines, histoire et etat de l'art
 - Structure des agents rationnels
-<v-click="2">- Intelligence exploratoire</v-click>
-<v-click="2">- Comment chercher la solution a un probleme ?</v-click>
-<v-click="3">- Intelligence Symbolique</v-click>
-<v-click="3">- Comment utiliser le raisonnement et les mathematiques ?</v-click>
-<v-click="4">- Intelligence probabiliste</v-click>
-<v-click="4">- Comment agir dans l'incertitude ?</v-click>
-<v-click="5">- Intelligence Multi-Agents</v-click>
-<v-click="5">- Comment tenir compte des autres?</v-click>
-<v-click="6">- Apprentissage</v-click>
-<v-click="6">- Comment utiliser les donnees et l'experience ?</v-click>
-<v-click="7">- Application: le langage naturel</v-click>
-
-layout: image-right
-image: ./images/img_001.jpg
+<div v-click="2">
+- Intelligence exploratoire
+</div>
+<div v-click="2">
+  - Comment chercher la solution a un probleme ?
+</div>
+<div v-click="3">
+- Intelligence Symbolique
+</div>
+<div v-click="3">
+  - Comment utiliser le raisonnement et les mathematiques ?
+</div>
+<div v-click="4">
+- Intelligence probabiliste
+</div>
+<div v-click="4">
+  - Comment agir dans l'incertitude ?
+</div>
+<div v-click="5">
+- Intelligence Multi-Agents
+</div>
+<div v-click="5">
+  - Comment tenir compte des autres?
+</div>
+<div v-click="6">
+- Apprentissage
+</div>
+<div v-click="6">
+  - Comment utiliser les donnees et l'experience ?
+</div>
+<div v-click="7">
+- Application: le langage naturel
+</div>
 
 ---
 
@@ -153,7 +173,9 @@ A l'issue de ce cours, vous serez capables de :
 - **Une definition qui evolue avec la technologie :**
   - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systemes experts → Apprentissage profond → IA generative
 
-![center w:850](./images/img_002.png)
+<div class="center-image">
+<img src="./images/img_002.png" alt="Definition IA" style="max-width: 850px; margin: auto; display: block;">
+</div>
 
 ---
 
@@ -162,17 +184,16 @@ A l'issue de ce cours, vous serez capables de :
 
 **Quatre grandes approches structurent le domaine :**
 
-|  | **Comme l'homme** | **De facon rationnelle** |
-|---|---|---|
-| **Penser** | Sciences cognitives | Logique formelle |
-| **Agir** | Test de Turing | Agents rationnels |
+<ColoredTable />
 
 **Notre angle principal : « Agir de facon rationnelle »**
 - Concevoir des agents qui prennent les meilleures decisions possibles
 - Approche qui unifie les autres : un agent rationnel peut raisonner, apprendre et communiquer
 
 ---
-
+layout: image-right
+image: ./images/img_003.png
+---
 
 # Les fondements de l'IA
 
@@ -188,11 +209,10 @@ L'IA est une discipline profondement interdisciplinaire :
 - **Theorie du controle :** optimisation d'une fonction objective dans le temps
 - **Linguistique :** grammaires, representation du sens
 
-layout: image-right
-image: ./images/img_003.png
-
 ---
-
+layout: image-right
+image: ./images/img_004.png
+---
 
 # Histoire succincte (1/2)
 
@@ -206,11 +226,10 @@ image: ./images/img_003.png
 - **1965** : Robinson propose un algorithme complet de raisonnement logique
 - **1969-79** : age d'or des systemes experts (bases de connaissances)
 
+---
 layout: image-right
 image: ./images/img_004.png
-
 ---
-
 
 # Histoire succincte (2/2)
 
@@ -228,11 +247,10 @@ image: ./images/img_004.png
 - **2017** : "Attention Is All You Need" -- naissance des Transformers
 - **2020s** : GPT, DALL-E, ChatGPT, Claude, Gemini, DeepSeek, agents autonomes
 
-layout: image-right
-image: ./images/img_004.png
-
 ---
-
+layout: image-right
+image: ./images/img_005.jpg
+---
 
 # Etat de l'art (1/2)
 
@@ -252,12 +270,10 @@ image: ./images/img_004.png
 - NASA : planification autonome de missions spatiales
 - Trading algorithmique (85% du volume des marches en 2012)
 
+---
 layout: image-right
 image: ./images/img_005.jpg
-<div v-click="1"><img src="./images/img_006.jpg" style="max-height:300px; margin-top:8px;"></div>
-
 ---
-
 
 # Etat de l'art (2/2)
 
@@ -277,33 +293,32 @@ image: ./images/img_005.jpg
 - **2024** : modeles de reflexion (O1), agents LLM, open source (DeepSeek)
 - **2025-26** : GPT-5, agents autonomes, MCP comme standard d'interoperabilite
 
-layout: image-right
-image: ./images/img_005.jpg
-<div v-click="1"><img src="./images/img_006.jpg" style="max-height:300px; margin-top:8px;"></div>
-
 ---
 
 
 # Qui fait de l'IA ?
 
-- **Recherche academique** : CMU, Stanford, Berkeley, MIT, Caltech, IDSIA...
-- **Laboratoires** : NASA, IBM, AT&T, SRI, DeepMind, FAIR (Meta)...
-- **Industrie** : Google, Apple, Microsoft, Meta, Amazon, OpenAI, Anthropic, Mistral, DeepSeek...
+**Recherche academique**
 
 <div class="image-grid">
-<img src="./images/img_007.png">
-<img src="./images/img_008.png">
-<img src="./images/img_009.png">
-<img src="./images/img_010.png">
-<img src="./images/img_011.jpg">
-<img src="./images/img_012.png">
-<img src="./images/img_013.png">
-<img src="./images/img_014.png">
-<img src="./images/img_015.png">
-<img src="./images/img_016.png">
-<img src="./images/img_017.png">
-<img src="./images/img_018.png">
-<img src="./images/img_019.png">
+<img src="./images/img_007.png" alt="CMU">
+<img src="./images/img_008.png" alt="MIT">
+<img src="./images/img_009.png" alt="IDSIA">
+<img src="./images/img_010.png" alt="Berkeley">
+<img src="./images/img_011.jpg" alt="Stanford">
+</div>
+
+**Industrie et laboratoires**
+
+<div class="image-grid">
+<img src="./images/img_012.png" alt="Google">
+<img src="./images/img_013.png" alt="Microsoft">
+<img src="./images/img_014.png" alt="Honeywell">
+<img src="./images/img_015.png" alt="BodyMedia">
+<img src="./images/img_016.png" alt="MITRE">
+<img src="./images/img_017.png" alt="Fujitsu">
+<img src="./images/img_018.png" alt="Facebook">
+<img src="./images/img_019.png" alt="Amazon">
 </div>
 
 ---
@@ -320,7 +335,9 @@ image: ./images/img_005.jpg
 - **Quotidien** : assistants vocaux (Siri, Alexa), traduction automatique, filtres photo
 
 ---
-
+layout: image-right
+image: ./images/img_020.png
+---
 
 # Agir comme l'homme : le Test de Turing
 
@@ -335,9 +352,6 @@ image: ./images/img_005.jpg
 **« Total Turing » (+ camera)** ajoute la vision et la robotique.
 
 **Ces competences definissent les grandes disciplines de l'IA** -- dont quatre seront detaillees dans ce cours.
-
-layout: image-right
-image: ./images/img_020.png
 
 ---
 
@@ -410,7 +424,9 @@ image: ./images/img_020.png
 - Presentation des projets de groupe
 
 ---
-
+layout: image-right
+image: ./images/img_021.png
+---
 
 # Les agents
 
@@ -419,11 +435,8 @@ image: ./images/img_020.png
 - **Agit** sur cet environnement par des effecteurs (moteurs, ecrans, haut-parleurs...)
 
 **Formalisation :**
-- Un agent implemente une *fonction d'agent* : **f : P\* → A**
+- Un agent implemente une *fonction d'agent* : $f: \mathcal{P}^* \to \mathcal{A}$
 - A partir de l'historique complet de ses percepts, il choisit une action
-
-layout: image-right
-image: ./images/img_021.png
 
 ---
 
@@ -451,9 +464,9 @@ image: ./images/img_021.png
 - **Herbert Simon (1955)** : concept de "satisficing" -- choisir une solution satisfaisante plutot qu'optimale
 
 ---
-
-
 layout: two-cols
+---
+
 # Intelligences
 
 
@@ -502,7 +515,9 @@ layout: two-cols
 
 # Environnements de tache: exemples
 
-![center w:800](./images/img_028.png)
+<div class="center-image">
+<img src="./images/img_028.png" style="max-width: 800px; margin: auto; display: block;">
+</div>
 
 ---
 
@@ -526,12 +541,24 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 
 # Types d'environnement (2/2)
 
-<v-click="5">- **Discret vs continu**</v-click>
-<v-click="5">- Les etats, le temps, les percepts et les actions sont-ils denombrables ?</v-click>
-<v-click="6">- **Agent simple vs multiagent**</v-click>
-<v-click="6">- L'agent est-il seul ou en interaction (cooperation, competition) ?</v-click>
-<v-click="7">- **Connu vs inconnu**</v-click>
-<v-click="7">- L'agent connait-il les regles de l'environnement ?</v-click>
+<div v-click="5">
+
+- **Discret vs continu**
+  - Les etats, le temps, les percepts et les actions sont-ils denombrables ?
+
+</div>
+<div v-click="6">
+
+- **Agent simple vs multiagent**
+  - L'agent est-il seul ou en interaction (cooperation, competition) ?
+
+</div>
+<div v-click="7">
+
+- **Connu vs inconnu**
+  - L'agent connait-il les regles de l'environnement ?
+
+</div>
 
 **En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, sequentiel, dynamique, continu, multiagent.
 
@@ -540,10 +567,14 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 
 # Types d'environnement: exemples
 
-![center w:800](./images/img_029.png)
+<div class="center-image">
+<img src="./images/img_029.png" alt="Tableau des types d'environnement" style="max-width: 800px; margin: auto; display: block;">
+</div>
 
 ---
-
+layout: image-right
+image: ./images/img_030.png
+---
 
 # Types d'agents
 
@@ -559,13 +590,10 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 4. Agent fonde sur l'utilite
 5. Agent capable d'apprentissage
 
-layout: image-right
-image: ./images/img_030.png
-
+---
+layout: two-cols
 ---
 
-
-layout: two-cols
 # Agent reflexe
 
 
@@ -577,7 +605,9 @@ layout: two-cols
 
 **Exemples:**
 
-<v-click="2">- Intelligence animale</v-click>
+<div v-click="2">
+- Intelligence animale
+</div>
 - Behaviourism
 - Artificial Life
 - Cellular Automata
@@ -592,15 +622,17 @@ layout: two-cols
 
 
 ---
-
-
 layout: two-cols
+---
+
 # Agent reflexe fonde sur un modele
 
 
 **Caracteristiques:**
 
-<v-click="1">- Etat du monde</v-click>
+<div v-click="1">
+- Etat du monde
+</div>
 - Historique des percepts
 - Memoire du changement
 
@@ -621,7 +653,9 @@ layout: two-cols
 
 
 ---
-
+layout: image-right
+image: ./images/img_037.png
+---
 
 # Agent fonde sur des buts
 
@@ -631,11 +665,10 @@ layout: two-cols
 - Planifie des sequences d'actions pour atteindre un objectif
 - Utilise la recherche (exploration) et la planification
 
-layout: image-right
-image: ./images/img_037.png
-
 ---
-
+layout: image-right
+image: ./images/img_038.png
+---
 
 # Agent fonde sur l'utilite
 
@@ -648,11 +681,10 @@ image: ./images/img_037.png
 - Probabilite de succes vs importance de l'objectif
 - Risque vs recompense, urgence vs cout
 
-layout: image-right
-image: ./images/img_038.png
-
 ---
-
+layout: image-right
+image: ./images/img_039.png
+---
 
 # Agent capable d'apprentissage
 
@@ -665,11 +697,10 @@ image: ./images/img_038.png
 
 **Formes d'apprentissage :** supervise, par renforcement, non supervise
 
-layout: image-right
-image: ./images/img_039.png
-
 ---
-
+layout: image-right
+image: ./images/img_040.png
+---
 
 # Fonctionnement interne des agents
 
@@ -683,9 +714,6 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 **Compromis fondamental :** plus la representation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
 
-layout: image-right
-image: ./images/img_040.png
-
 ---
 
 
@@ -695,13 +723,17 @@ image: ./images/img_040.png
   - Quatre approches : penser/agir comme l'homme ou de facon rationnelle
   - Fondements interdisciplinaires : logique, decision, neurosciences, linguistique...
   - Une histoire ponctuee de "hivers" et de renaissances spectaculaires
-<v-click="1">- **Agents rationnels**</v-click>
-<v-click="1">- Un agent percoit son environnement et agit pour maximiser sa performance</v-click>
-<v-click="1">- La rationalite parfaite est un ideal ; en pratique, on vise le meilleur compromis</v-click>
-<v-click="1">- **Architectures d'agents**</v-click>
-<v-click="1">- Reflexes (simples ou avec modele), fondes sur des buts ou l'utilite, apprenants</v-click>
-<v-click="1">- Les proprietes de l'environnement dictent le choix de l'architecture</v-click>
-<v-click="1">- La representation des etats (atomique, factorisee, structuree) conditionne les capacites</v-click>
+<div v-click="1">
+
+- **Agents rationnels**
+  - Un agent percoit son environnement et agit pour maximiser sa performance
+  - La rationalite parfaite est un ideal ; en pratique, on vise le meilleur compromis
+- **Architectures d'agents**
+  - Reflexes (simples ou avec modele), fondes sur des buts ou l'utilite, apprenants
+  - Les proprietes de l'environnement dictent le choix de l'architecture
+  - La representation des etats (atomique, factorisee, structuree) conditionne les capacites
+
+</div>
 
 ---
 
@@ -735,9 +767,8 @@ Chaque chapitre du cours est accompagne de travaux pratiques sous forme de noteb
 > **Depot :** `github.com/jsboige/CoursIA` > dossier `MyIA.AI.Notebooks/`
 
 ---
-
-
 layout: cover
+---
 
 # Merci
 

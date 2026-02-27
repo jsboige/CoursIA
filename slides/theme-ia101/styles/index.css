@@ -100,3 +100,134 @@ a {
 .slidev-vflex-root {
   background: var(--color-bg);
 }
+
+/* Image grid for logos (slide "Qui fait de l'IA ?") */
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  justify-items: center;
+  align-items: center;
+}
+
+.image-grid img {
+  max-height: 50px;
+  max-width: 80px;
+  object-fit: contain;
+  filter: grayscale(20%);
+  opacity: 0.9;
+}
+
+.image-grid img:hover {
+  filter: grayscale(0%);
+  opacity: 1;
+}
+
+/* Tables with colored headers */
+.colored-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.colored-table th {
+  background-color: var(--color-accent);
+  color: white;
+  padding: 12px 16px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.colored-table td {
+  padding: 10px 14px;
+  border: 1px solid var(--color-bg-dark);
+  text-align: center;
+}
+
+.colored-table tr:nth-child(even) td {
+  background-color: var(--color-bg-dark);
+}
+
+/* Two-column layout helper */
+.two-column-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.two-column-list ul {
+  margin: 0;
+}
+
+/* Timeline/chronology style */
+.timeline {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  align-items: start;
+}
+
+.timeline .year {
+  color: var(--color-accent);
+  font-weight: bold;
+  text-align: right;
+  min-width: 60px;
+}
+
+.timeline .event {
+  color: var(--color-text);
+}
+
+/* Centered image container (for full-width table images) */
+.center-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.center-image img {
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+}
+
+/* Formula container */
+.formula {
+  text-align: center;
+  font-size: 1.2em;
+  margin: 20px 0;
+  padding: 16px;
+  background: var(--color-bg-dark);
+  border-radius: 8px;
+}
+
+/* Nested sections (Intelligences slide) */
+.intelligence-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.intelligence-block {
+  padding: 12px 16px;
+  border-left: 4px solid var(--color-accent);
+  background: var(--color-bg-dark);
+  border-radius: 0 8px 8px 0;
+}
+
+.intelligence-block h4 {
+  margin: 0 0 8px 0;
+  color: var(--color-accent);
+  font-size: 1em;
+}
+
+.intelligence-block ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.intelligence-block li {
+  margin-bottom: 4px;
+}
