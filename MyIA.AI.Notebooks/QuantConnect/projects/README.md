@@ -18,12 +18,17 @@ MonProjet/
 
 ## Projets Disponibles
 
-| Projet | Description | Notebook Source | Difficulté |
-|--------|-------------|-----------------|------------|
-| [MomentumStrategy](MomentumStrategy/) | Sélection d'univers momentum 12 mois | QC-Py-05 | Intermédiaire |
-| [OptionsIncome](OptionsIncome/) | Stratégies génération de revenus (Covered Call, Iron Condor) | QC-Py-06 | Avancé |
-| [FuturesTrend](FuturesTrend/) | Trend following sur futures (Donchian breakout) | QC-Py-07 | Intermédiaire |
-| [AllWeather](AllWeather/) | Portfolio multi-asset style Ray Dalio | QC-Py-08 | Débutant |
+| Projet | Description | Cloud ID | Sharpe | Difficulte |
+|--------|-------------|----------|--------|------------|
+| [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs sectoriels | 28657837 | 0.216 | Intermediaire |
+| [OptionsIncome](OptionsIncome/) | Covered Call SPY (premium income) | 28657838 | 0.288 | Avance |
+| [FuturesTrend](FuturesTrend/) | Donchian breakout E-mini S&P 500 | 28657834 | 0.019 | Intermediaire |
+| [AllWeather](AllWeather/) | Portfolio multi-asset Ray Dalio | 28657833 | 0.25 | Debutant |
+| [FamaFrench](FamaFrench/) | Factor ETF rotation (Fama-French) | 28657910 | 0.365 | Intermediaire |
+| [MeanReversion](MeanReversion/) | RSI mean reversion long-only | 28657904 | -0.042 | Intermediaire |
+| [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 28657905 | 0.127 | Debutant |
+| [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX | 28657907 | -0.97 | Avance |
+| [ForexCarry](ForexCarry/) | FX momentum G7 currencies | 28657908 | -1.80 | Intermediaire |
 
 ## Comment Utiliser
 

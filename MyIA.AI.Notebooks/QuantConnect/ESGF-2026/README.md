@@ -69,23 +69,68 @@ ESGF-2026/
 
 ---
 
+## Strategies Researcher (org personnelle, Mars 2026)
+
+10 strategies supplementaires deployees sur le cloud QC (org personnelle `d600793e...`) pour exploration et backtesting agentique. Couvrent des classes d'actifs et concepts complementaires aux exemples ESGF.
+
+### ETF / Actions
+
+| Projet | Cloud ID | Description | Sharpe | CAGR | Max DD |
+|--------|----------|-------------|--------|------|--------|
+| **Sector-Momentum-Researcher** | 28433643 | Dual momentum SPY/TLT/GLD, composite multi-lookback, SMA200 filter | **0.554** | 13.1% | 23.0% |
+| **FamaFrench-Researcher** | 28657910 | Factor ETF rotation (VLUE/MTUM/SIZE/QUAL/USMV), risk parity weighting | **0.365** | 8.7% | 31.1% |
+| **MomentumStrategy-Researcher** | 28657837 | Rotation momentum 11 ETFs sectoriels (XLK-XLC), top 3, SMA200 filter | 0.216 | 6.5% | 29.9% |
+| **AllWeather-Researcher** | 28657833 | Portfolio Ray Dalio (SPY 30%/TLT 40%/IEF 15%/GLD 7.5%/DBC 7.5%), rebalancement trimestriel | 0.25 | 5.9% | 23.5% |
+| **MeanReversion-Researcher** | 28657904 | RSI mean reversion long-only, universe top 100, SMA200 regime filter | -0.042 | 0.7% | 46.5% |
+
+### Options
+
+| Projet | Cloud ID | Description | Sharpe | CAGR | Max DD |
+|--------|----------|-------------|--------|------|--------|
+| **OptionsIncome-Researcher** | 28657838 | Covered Call sur SPY (Minute), delta 0.30, roll a 7 jours | 0.288 | 9.6% | 4.0% |
+
+### Futures / Macro
+
+| Projet | Cloud ID | Description | Sharpe | CAGR | Max DD |
+|--------|----------|-------------|--------|------|--------|
+| **FuturesTrend-Researcher** | 28657834 | Donchian breakout E-mini S&P 500, ATR trailing stop | 0.019 | 2.1% | 31.9% |
+| **TurnOfMonth-Researcher** | 28657905 | Anomalie calendaire (J-4 a J+4), SPY+QQQ 1.5x, SMA200 filter | 0.127 | 4.8% | 23.7% |
+
+### Forex / Volatilite
+
+| Projet | Cloud ID | Description | Sharpe | CAGR | Max DD |
+|--------|----------|-------------|--------|------|--------|
+| **ForexCarry-Researcher** | 28657908 | FX momentum G7 (EURUSD, GBPUSD, etc.), SPY SMA200 risk-off | -1.80 | -0.7% | 9.5% |
+| **VIX-TermStructure-Researcher** | 28657907 | Contango/backwardation VIX via VIXY/SVXY, trailing stop 8% | -0.97 | -1.1% | 20.8% |
+
+---
+
 ## Concepts pedagogiques couverts
 
 ### Niveau 1 - Fondations
 - **EMA Crossover** : CSharp-BTC-EMA-Cross, Multi-Layer-EMA
 - **MACD + ADX** : CSharp-BTC-MACD-ADX
 - **Options basiques** : Options-VGT
+- **Anomalie calendaire** : TurnOfMonth-Researcher (saisonnalite, EMH)
 
 ### Niveau 2 - Intermediaire
 - **Alpha Framework QC** : ETF-Pairs-Trading, Sector-Momentum
 - **Multi-indicateurs** : Trend-Following (7+ indicateurs combines)
 - **Wheel Strategy** : Option-Wheel-Strategy
 - **Machine Learning** : BTC-MachineLearning
+- **Multi-Asset / Risk Parity** : AllWeather-Researcher (Ray Dalio)
+- **Momentum sectoriel** : MomentumStrategy-Researcher (rotation ETF)
+- **Factor Investing** : FamaFrench-Researcher (Fama-French via ETFs)
+- **Mean Reversion** : MeanReversion-Researcher (RSI contrarian)
+- **Covered Call** : OptionsIncome-Researcher (premium income)
 
 ### Niveau 3 - Avance
 - **Detecteur hierarchique** : Crypto-MultiCanal (canaux multi-echelles, GA optimization)
 - **Indicateurs custom C#** : CSharp-CTG-Momentum (WindowIndicator, TradeBarIndicator)
 - **Co-integration** : ETF-Pairs-Trading (Engle-Granger, z-score)
+- **Volatilite** : VIX-TermStructure-Researcher (contango, structure a terme)
+- **Forex** : ForexCarry-Researcher (carry trade, UIP puzzle)
+- **Futures** : FuturesTrend-Researcher (Donchian breakout, position sizing)
 
 ---
 
@@ -137,11 +182,11 @@ create_backtest(model: {projectId: 22298373, backtestName: "test-2026"})
 
 ---
 
-## Resultats de Backtest (Fevrier 2026)
+## Resultats de Backtest
+
+### Exemples ESGF (org ESGF, Fevrier 2026)
 
 Compilation : **11/11 projets compilent avec succes** (0 erreurs, warnings non-bloquants uniquement).
-
-### Tableau des metriques (meilleur backtest par projet)
 
 | # | Projet | Periode | Return | CAGR | Sharpe | Max DD | Trades | Win Rate | Statut |
 |---|--------|---------|--------|------|--------|--------|--------|----------|--------|
@@ -157,9 +202,30 @@ Compilation : **11/11 projets compilent avec succes** (0 erreurs, warnings non-b
 | 10 | **Crypto-MultiCanal** | 2024-01 / 2025-01 | 0% | 0% | 0 | 0% | 0 | 0% | BROKEN |
 | 11 | **BTC-MachineLearning** | -- | -- | -- | -- | -- | 0 | -- | NO_DATA |
 
+### Strategies Researcher (org personnelle, Mars 2026)
+
+Compilation : **10/10 projets compilent avec succes**.
+
+| # | Projet | Periode | Return | CAGR | Sharpe | Max DD | Trades | Win Rate | Statut |
+|---|--------|---------|--------|------|--------|--------|--------|----------|--------|
+| 1 | **Sector-Momentum-Researcher** | 2015-01 / 2026-03 | +102.7% | 13.1% | **0.554** | 23.0% | ~120 | 67% | HEALTHY |
+| 2 | **FamaFrench-Researcher** | 2015-01 / 2026-03 | +153.5% | 8.7% | **0.365** | 31.1% | 453 | 74% | NEEDS_IMPROVEMENT |
+| 3 | **OptionsIncome-Researcher** | 2024-01 / 2024-12 | +9.6% | 9.6% | 0.288 | 4.0% | 48 | 43% | NEEDS_IMPROVEMENT |
+| 4 | **AllWeather-Researcher** | 2015-01 / 2026-03 | +86.8% | 5.9% | 0.25 | 23.5% | ~150 | 65% | NEEDS_IMPROVEMENT |
+| 5 | **MomentumStrategy-Researcher** | 2015-01 / 2026-03 | +102.7% | 6.5% | 0.216 | 29.9% | 437 | 67% | NEEDS_IMPROVEMENT |
+| 6 | **TurnOfMonth-Researcher** | 2015-01 / 2026-03 | +66.3% | 4.8% | 0.127 | 23.7% | ~250 | 52% | NEEDS_IMPROVEMENT |
+| 7 | **FuturesTrend-Researcher** | 2020-01 / 2026-03 | +13.4% | 2.1% | 0.019 | 31.9% | ~80 | 50% | NEEDS_IMPROVEMENT |
+| 8 | **MeanReversion-Researcher** | 2018-01 / 2026-03 | +6.3% | 0.7% | -0.042 | 46.5% | ~800 | 55% | BROKEN |
+| 9 | **VIX-TermStructure-Researcher** | 2018-01 / 2026-03 | -8.9% | -1.1% | -0.97 | 20.8% | ~60 | 40% | BROKEN |
+| 10 | **ForexCarry-Researcher** | 2018-01 / 2026-03 | -5.3% | -0.7% | -1.80 | 9.5% | ~300 | 45% | BROKEN |
+
 **Legende** : HEALTHY (Sharpe > 0.5) | NEEDS_IMPROVEMENT (Sharpe 0-0.5) | BROKEN (Sharpe < 0 ou 0 trades) | NO_DATA (pas de backtest)
 
-### Ameliorations appliquees (Phase 3 - Fevrier 2026)
+**Bilan** : 9/21 strategies HEALTHY ou NEEDS_IMPROVEMENT avec Sharpe positif. Les strategies Forex et VIX sont les plus difficiles a rendre rentables (classes d'actifs complexes). Les strategies ETF sectorielles et multi-asset sont les plus robustes.
+
+### Ameliorations appliquees
+
+**Phase 3 (Fevrier 2026) - Exemples ESGF :**
 
 | Projet | Amelioration | Commit |
 |--------|-------------|--------|
@@ -171,11 +237,51 @@ Compilation : **11/11 projets compilent avec succes** (0 erreurs, warnings non-b
 | **Options-VGT** | Reecriture logique multi-equity (local only, projet etudiant) | 801afdb |
 | **Crypto-MultiCanal** | Ajout `import traceback`, lookback 1000->500, fix CalculateOrderQuantity | en cours |
 
+**Phase 4 (Mars 2026) - Strategies Researcher :**
+
+| Projet | Iterations | Ameliorations cles |
+|--------|-----------|-------------------|
+| **Sector-Momentum** | v1 -> v2 | Passage 2 assets -> 3 (SPY/TLT/GLD), multi-lookback composite, SMA200 filter. Sharpe 0.197 -> 0.554 |
+| **VIX-TermStructure** | v1 -> v2 | Ajout trailing stop 8%, VIX SMA regime filter, reduction SVXY 50% -> 30%. Perte -49.7% -> -8.9% |
+| **ForexCarry** | v1 -> v2 | Passage carry trade -> FX pure momentum, SPY SMA200 risk-off filter. Perte -16.2% -> -5.3% |
+| **TurnOfMonth** | v1 -> v2 | Ajout QQQ, leverage 1.5x, SMA200 filter. Sharpe -0.243 -> +0.127 |
+| **MeanReversion** | v1 -> v2 | Passage long/short -> long-only, SMA200 regime filter. Return -45.4% -> +6.3% |
+| **MomentumStrategy** | v1 -> v2 | Remplacement Universe Selection (trop lent) par 11 ETFs sectoriels fixes |
+| **FamaFrench** | v1 -> v2 | Remplacement Universe Selection par 5 ETFs factoriels (VLUE/MTUM/SIZE/QUAL/USMV) |
+| **OptionsIncome** | v1 -> v4 | Resolution Daily -> Minute (options chain vide en Daily), periode raccourcie 1 an |
+
 ### Notes sur les projets BROKEN
 
-- **ETF-Pairs-Trading** : Return negatif (-14.6%) malgre Sharpe decent en intra. Remplacement `arch` par `statsmodels` effectue, nouveau backtest necessaire.
-- **Crypto-MultiCanal** : Runtime error dans le dernier backtest (0 trades). Corrections critiques en cours de push au cloud (import traceback, lookback, sizing).
-- **BTC-MachineLearning** : Aucun backtest existant. Entrainement in-situ ajoute, premier backtest a lancer.
+- **ETF-Pairs-Trading** (ESGF) : Return negatif (-14.6%). Remplacement `arch` par `statsmodels` effectue, nouveau backtest necessaire.
+- **Crypto-MultiCanal** (ESGF) : Runtime error (0 trades). Corrections critiques en cours.
+- **BTC-MachineLearning** (ESGF) : Aucun backtest existant. Entrainement in-situ ajoute.
+- **MeanReversion-Researcher** : Sharpe legerement negatif (-0.042) malgre return positif (+6.3%). Necessite affinage des seuils RSI.
+- **VIX-TermStructure-Researcher** : Classe d'actif difficile (tail risk). Ameliore de -49.7% a -8.9% mais reste negatif.
+- **ForexCarry-Researcher** : FX momentum faible sur la periode. Classe d'actif peu directionnelle.
+
+---
+
+## Mapping pedagogique complet (21 strategies)
+
+| Concept | Strategies | Niveau | Classes d'actifs |
+|---------|-----------|--------|-----------------|
+| **EMA Crossover** | CSharp-BTC-EMA-Cross, Multi-Layer-EMA | 1 | Crypto |
+| **MACD + ADX** | CSharp-BTC-MACD-ADX | 1 | Crypto |
+| **Options basiques** | Options-VGT | 1 | Actions |
+| **Anomalie calendaire** | TurnOfMonth-Researcher | 1 | ETF |
+| **Multi-Asset** | AllWeather-Researcher (3 variantes) | 1-2 | Multi |
+| **Momentum sectoriel** | MomentumStrategy-Researcher, Sector-Momentum, CSharp-CTG | 1-2 | ETF/Actions |
+| **Mean Reversion** | MeanReversion-Researcher, ETF-Pairs-Trading | 1-2 | Actions/ETF |
+| **Trend Following** | FuturesTrend-Researcher, Trend-Following | 2 | Futures/Actions |
+| **Wheel Strategy** | Option-Wheel-Strategy, OptionsIncome-Researcher | 2 | Options |
+| **Factor Investing** | FamaFrench-Researcher (Fama-French via ETFs) | 2-3 | ETF |
+| **Machine Learning** | BTC-MachineLearning | 3 | Crypto |
+| **Volatilite** | VIX-TermStructure-Researcher | 3 | Volatilite |
+| **Forex** | ForexCarry-Researcher | 3 | FX |
+| **Detecteur hierarchique** | Crypto-MultiCanal | 3 | Crypto |
+| **Indicateurs custom** | CSharp-CTG-Momentum | 3 | Actions |
+
+**Couverture** : 8 classes d'actifs (Actions, ETF, Crypto, Options, Futures, FX, Volatilite, Multi-Asset), 10+ concepts de trading.
 
 ---
 
@@ -185,3 +291,4 @@ Compilation : **11/11 projets compilent avec succes** (0 erreurs, warnings non-b
 - Transition vers le format **"Strategies"** en 2026
 - A confirmer avec Jared Broad lors du prochain echange
 - Les etudiants devront participer au format competitif QC en echange du sponsoring
+- **21 strategies** disponibles (11 ESGF + 10 Researcher) couvrant tous les niveaux
