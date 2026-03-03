@@ -21,13 +21,12 @@ Après quelques ajustements, **j'ai réussi à lancer les 3 backtests via l'API 
 3. **Backtest** : `requests.post()` avec compileId + backtestName
 4. **Surveillance** : `check_backtests.py` pour monitorer le statut
 
-### Credentials à Réutiliser
+### Credentials
 
-```
-User ID: 46613
-Access Token: 5dc8bd3dbebd8ef004d3386b6c3ab288
-Compte: jsboige@gmail.com (Payant)
-```
+Voir fichier `.env` (non commite dans git) :
+- `QC_API_USER_ID` : User ID
+- `QC_API_ACCESS_TOKEN` : Access Token
+- Compte : jsboige@gmail.com
 
 ## Optimisations Appliquées
 

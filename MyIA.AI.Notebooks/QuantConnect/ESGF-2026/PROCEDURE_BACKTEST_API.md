@@ -1,10 +1,10 @@
 # Procédure Backtests Automatisés via API QC
 
-## Credentials (jsboige@gmail.com)
+## Credentials
 
-**User ID**: 46613
-**Access Token**: 5dc8bd3dbebd8ef004d3386b6c3ab288
-**Compte**: Payant (backtests autorisés)
+**User ID**: Voir `.env` (`QC_API_USER_ID`)
+**Access Token**: Voir `.env` (`QC_API_ACCESS_TOKEN`)
+**Compte**: jsboige@gmail.com (backtests autorises)
 
 ## Procédure Complète
 
@@ -20,7 +20,7 @@ Parameters: {"projectId": XXXXX}
 ```python
 import requests
 
-access_token = '5dc8bd3dbebd8ef004d3386b6c3ab288'
+access_token = os.getenv('QC_API_ACCESS_TOKEN')
 project_id = 19898232
 compile_id = 'compile_id_from_step_1'
 
