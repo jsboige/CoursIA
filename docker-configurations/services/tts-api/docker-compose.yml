@@ -45,7 +45,7 @@ services:
       - DEFAULT_TTS_VOICE=af_sky
       - SAMPLE_RATE=24000
       - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
-      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-300}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
       - TZ=${TZ:-Europe/Paris}
 
     healthcheck:

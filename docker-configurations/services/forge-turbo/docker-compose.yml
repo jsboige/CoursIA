@@ -15,8 +15,14 @@ services:
       - WEB_PASSWORD=${FORGE_PASSWORD:-changeme}
       - FORGE_ARGS=--ui-settings-file config-turbo.json --api --api-log --listen --gradio-auth ${FORGE_USER:-admin}:${FORGE_PASSWORD:-changeme} --gpu-device-id 1 --xformers --skip-install
     volumes:
-      - ../../shared/models:/opt/storage/stable_diffusion/models
-      - ../../shared/outputs:/opt/storage/stable_diffusion/outputs
+      # Checkpoint models (SDXL Lightning, etc.)
+      - ../../shared/models/checkpoints:/opt/stable-diffusion-webui-forge/models/Stable-diffusion
+      # Lora models
+      - ../../shared/models/loras:/opt/stable-diffusion-webui-forge/models/Lora
+      # VAE models
+      - ../../shared/models/vae:/opt/stable-diffusion-webui-forge/models/VAE
+      # Outputs
+      - ../../shared/outputs:/opt/stable-diffusion-webui-forge/outputs
     deploy:
       resources:
         reservations:

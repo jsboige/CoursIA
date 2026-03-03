@@ -46,7 +46,7 @@ services:
       - DEMUCS_MODEL=${DEMUCS_MODEL:-htdemucs_ft}
       - DEMUCS_DEVICE=cuda
       - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
-      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-300}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
       - TZ=${TZ:-Europe/Paris}
 
     healthcheck:

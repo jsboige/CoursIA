@@ -65,6 +65,8 @@ services:
       - COMFYUI_VIDEO_TOKEN=${COMFYUI_VIDEO_TOKEN}
       - CORS_ENABLED=${CORS_ENABLED:-true}
       - API_TIMEOUT=${API_TIMEOUT:-600}
+      # Idle monitoring (pour documentation, utilise par le sidecar)
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
 
     working_dir: /workspace/ComfyUI
 
@@ -87,6 +89,39 @@ services:
       - "com.myia.gpu=rtx-3090"
       - "com.myia.model=animatediff-video"
       - "com.myia.phase=experimental"
+
+  # Sidecar: Idle Monitor - Unload models after inactivity
+  idle-monitor:
+    build:
+      context: ../shared
+      dockerfile: Dockerfile.idle-monitor
+    container_name: comfyui-video-idle-monitor
+    hostname: comfyui-video-idle-monitor
+
+    environment:
+      - COMFYUI_URL=http://comfyui-video:8188
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-60}
+      - COMFYUI_AUTH_TOKEN=${COMFYUI_VIDEO_TOKEN}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TZ=${TZ:-Europe/Paris}
+
+    working_dir: /app
+
+    command: ["python", "comfyui_idle_monitor.py"]
+
+    depends_on:
+      comfyui-video:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    networks:
+      - comfyui-video-network
+
+    labels:
+      - "com.myia.service=comfyui-video-idle-monitor"
+      - "com.myia.type=sidecar"
 
 networks:
   comfyui-video-network:
