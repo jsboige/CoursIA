@@ -11,8 +11,8 @@ Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et l
 | **Fondations** | 1-2 | Debutant |
 | **Sorties Structurees** | 3-4 | Intermediaire |
 | **Augmentation** | 5-7 | Intermediaire |
-| **Avance** | 8-10 | Avance |
-| **Validation** | 100% (10/10 notebooks) |
+| **Avance** | 8-11 | Avance |
+| **Validation** | 100% (11/11 notebooks) |
 
 ## Contenu detaille
 
@@ -44,7 +44,8 @@ Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et l
 |---|----------|-------------|-------|
 | 8 | `8_Reasoning_Models.ipynb` | o4-mini, gpt-5-thinking, reasoning_effort, comparaisons | 60 min |
 | 9 | `9_Production_Patterns.ipynb` | Conversations API, background mode, retry, batch processing | 70 min |
-| 10 | `10_LocalLlama.ipynb` | vLLM, Ollama, DeepSeek R1, Qwen 2.5, benchmarking local | 60 min |
+| 10 | `10_LocalLlama.ipynb` | vLLM, Qwen3.5-35B-A3B, ZwZ-8B, multi-endpoints, benchmarking | 60 min |
+| 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modeles vision, deploiement vLLM | 60 min |
 
 ## Prerequis
 
@@ -77,6 +78,7 @@ Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et l
 │                 └──────► 6_PDF_Web_Search                      │
 │                                                                 │
 │  10_LocalLlama (independant, prerequis: 1)                     │
+│        └──────► 11_Quantization (prerequis: 10)                │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -96,7 +98,7 @@ Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et l
 
 - **OpenAI API** : GPT-4o, GPT-4o-mini, o4-mini, gpt-5-thinking
 - **Python** : openai, pydantic, tiktoken, semantic-kernel
-- **Local** : vLLM, Ollama, DeepSeek R1, Qwen 2.5
+- **Local** : vLLM, Qwen3.5-35B-A3B, ZwZ-8B, llmcompressor, AWQ/GPTQ
 - **Bases vectorielles** : scikit-learn (demo), Pinecone, Qdrant, Chroma
 
 ## Mode batch
