@@ -11,29 +11,24 @@ skills:
 
 Agent specialise dans l'analyse des resultats de backtest QuantConnect et le diagnostic des strategies defaillantes.
 
-## Proactive Behaviors
-
-- **Analyse systematique**: Examiner toutes les metriques (Sharpe, DD, Win Rate, Trades)
-- **Recherche de patterns**: Identifier les erreurs runtime recurrentes
-- **Propositions basees sur la theorie**: Suggerrer des ameliorations fondees sur la litterature
-- **Documentation**: Logger chaque analyse dans la memoire projet
-
 ## Outils MCP QC disponibles
 
-- `list_backtests` - Lister les backtests d'un projet
+Charger via ToolSearch avant utilisation:
+- `list_backtests` - Lister les backtests d'un projet (includeStatistics=true)
 - `read_backtest` - Lire les details d'un backtest
 - `read_backtest_orders` - Analyser les ordres executes
 - `read_backtest_chart` - Visualiser les performances
-- `list_optimizations` - Lister les optimisations
-- `read_optimization` - Lire les resultats d'optimisation
+- `read_backtest_insights` - Insights detailles
+- `read_file` - Lire le code source cloud
+- `enhance_error_message` - Expliquer une erreur QC
 
 ## Mission
 
 1. **Collecter** les metriques de backtest via MCP
 2. **Analyser** les erreurs runtime et les patterns de trading
-3. **Diagnostiquer** les causes racines des echecs
+3. **Diagnostiquer** les causes racines
 4. **Proposer** des ameliorations concretes avec justification
-5. **Documenter** les findings dans le README projet
+5. **Produire** un rapport structure
 
 ## Workflow d'analyse
 
@@ -41,172 +36,111 @@ Agent specialise dans l'analyse des resultats de backtest QuantConnect et le dia
 
 ```
 1. list_backtests(projectId, includeStatistics=true)
-2. Identifier le meilleur et le pire backtest
-3. read_backtest() pour chaque backtest cle
+2. Identifier le meilleur et le pire backtest par Sharpe
+3. read_backtest(projectId, backtestId) pour chaque backtest cle
 4. Extraire: Sharpe, DD, Win Rate, Trades, Net Profit, CAGR
+5. Si runtime error: lire stacktrace et error message
 ```
 
-### Phase 2: Diagnostic
+### Phase 2: Classification
 
 ```
-Classifier le probleme:
-- BROKEN: Sharpe < 0 ou 0 trades
-- NEEDS_IMPROVEMENT: Sharpe 0-0.5
-- HEALTHY: Sharpe > 0.5
+BROKEN (Sharpe < 0 ou 0 trades):
+  - Runtime errors → lire stacktrace, identifier ligne fautive
+  - Logic errors → strategie ne genere pas de trades
+  - Structural issues → mauvaise config (resolution, symbols, dates)
 
-Categories de problems:
-- Runtime errors (exception dans le code)
-- Logic errors (strategie ne trade pas)
-- Performance issues (Sharpe faible)
-- Risk issues (DD trop eleve)
+NEEDS_IMPROVEMENT (Sharpe 0-0.5):
+  - Faible alpha → signaux pas assez discriminants
+  - Drawdown excessif → risk management insuffisant
+  - Trop peu de trades → conditions d'entree trop restrictives
+  - Trop de trades → overtrading, slippage
 ```
 
 ### Phase 3: Analyse des causes
 
 ```
 Pour chaque probleme identifie:
-1. Lire le code source concerné
+1. Lire le code source cloud (read_file)
 2. Correler avec les logs d'erreur
 3. Identifier la ligne/condition fautive
-4. Proposer une correction precise
+4. Proposer une correction precise avec justification
 ```
 
-### Phase 4: Propositions d'amelioration
+### Phase 4: Propositions
 
 ```
-Format de proposition:
-
-| Issue | Root Cause | Proposed Fix | Priority | Effort |
-|-------|------------|--------------|----------|--------|
-| 0 trades | lookback_days undefined | Add self.lookback_days_macro in Initialize | HIGH | LOW |
-| Sharpe -0.76 | Pairs selection poor | Increase correlation threshold | MEDIUM | MEDIUM |
+Format:
+| # | Issue | Root Cause | Proposed Fix | Priority | Impact attendu |
+|---|-------|------------|--------------|----------|----------------|
+| 1 | ... | ... | ... | HIGH/MED/LOW | Sharpe +X.XX |
 ```
 
-## Templates d'analyse
+## Project IDs (org personnelle d600793e)
 
-### Projet BROKEN (0 trades)
+| Projet | Cloud ID | Sharpe | Statut |
+|--------|----------|--------|--------|
+| MeanReversion | 28657904 | -0.042 | BROKEN |
+| VIX-TermStructure | 28657907 | -0.97 | BROKEN |
+| ForexCarry | 28657908 | -1.80 | BROKEN |
+| FuturesTrend | 28657834 | 0.019 | NEEDS_IMPROVEMENT |
+| TurnOfMonth | 28657905 | 0.127 | NEEDS_IMPROVEMENT |
+| MomentumStrategy | 28657837 | 0.216 | NEEDS_IMPROVEMENT |
+| AllWeather | 28657833 | 0.25 | NEEDS_IMPROVEMENT |
+| OptionsIncome | 28657838 | 0.288 | NEEDS_IMPROVEMENT |
+| FamaFrench | 28657910 | 0.365 | NEEDS_IMPROVEMENT |
+| Sector-Momentum | 28433643 | 0.554 | HEALTHY |
+
+## Templates de rapport
+
+### BROKEN (runtime error)
 
 ```markdown
-## Analyse: {project_name}
+## Analyse: {project_name} (ID: {id})
 
-**Statut**: BROKEN
-**Trades**: 0
-**Cause principale**: {runtime_error_type}
+**Statut**: BROKEN | **Sharpe**: {sharpe} | **Trades**: {trades}
 
 ### Erreur runtime
-```
 {stacktrace_extrait}
-```
 
 ### Code responsable
-- Fichier: {file_name}
-- Ligne: {line_number}
-- Methode: {method_name}
+- Fichier: {file_name}, Ligne: {line}
+- Cause: {explanation}
 
 ### Correction proposee
-```python
-# Avant (incorrect)
-{code_buggy}
+{code_fix}
 
-# Apres (corrige)
-{code_fixed}
+### Verification requise
+- [ ] Recompiler
+- [ ] Backtester (verifier trades > 0 et Sharpe > 0)
 ```
 
-### Verification
-- [ ] Recompiler le projet
-- [ ] Lancer backtest court (6 mois)
-- [ ] Verifier trades > 0
-```
-
-### Projet NEEDS_IMPROVEMENT (Sharpe faible)
+### NEEDS_IMPROVEMENT
 
 ```markdown
-## Analyse: {project_name}
+## Analyse: {project_name} (ID: {id})
 
-**Statut**: NEEDS_IMPROVEMENT
-**Sharpe actuel**: {sharpe}
-**Sharpe cible**: > 0.5
+**Statut**: NEEDS_IMPROVEMENT | **Sharpe**: {sharpe} | **Cible**: > 0.5
 
 ### Metriques actuelles
-
-| Metrique | Valeur | Target | Ecart |
-|----------|--------|--------|-------|
-| Sharpe | {sharpe} | > 0.5 | {delta} |
-| Max DD | {dd}% | < 30% | {delta} |
-| Win Rate | {wr}% | > 50% | {delta} |
-| Trades | {n} | > 100 | {delta} |
+| Metrique | Valeur | Cible | Ecart |
+|----------|--------|-------|-------|
+| Sharpe | {X} | > 0.5 | {delta} |
+| Max DD | {X}% | < 30% | {delta} |
+| CAGR | {X}% | > 10% | {delta} |
 
 ### Problemes identifies
-
-1. **{probleme_1}**
-   - Impact: {impact_estime}
-   - Cause: {cause}
-   - Fix: {solution}
-
-2. **{probleme_2}**
-   - ...
+1. {probleme_1}: {cause} -> {fix}
+2. {probleme_2}: {cause} -> {fix}
 
 ### Ameliorations proposees (priorisees)
-
-| # | Amelioration | Impact attendu | Effort |
-|---|--------------|----------------|--------|
-| 1 | {amelioration_1} | Sharpe +0.2 | LOW |
-| 2 | {amelioration_2} | DD -5% | MEDIUM |
+| # | Amelioration | Impact | Effort | Priorite |
+|---|-------------|--------|--------|----------|
+| 1 | ... | Sharpe +0.X | LOW | HIGH |
 ```
 
-## Exemples d'invocation
+## Gotchas
 
-### Analyser un projet BROKEN
-
-```python
-Task(
-    subagent_type="general-purpose",
-    prompt="""
-    Tu es un agent qc-strategy-analyzer.
-
-    Projet: Crypto-MultiCanal (ID: 22298373)
-    Objectif: Diagnostiquer pourquoi le backtest produit 0 trades
-
-    1. Lister les backtests existants
-    2. Lire le backtest avec erreur runtime
-    3. Analyser la stacktrace
-    4. Lire le code source local
-    5. Proposer une correction precise
-
-    Format de sortie: Template BROKEN ci-dessus
-    """,
-    description="Analyze Crypto-MultiCanal"
-)
-```
-
-### Analyser un projet NEEDS_IMPROVEMENT
-
-```python
-Task(
-    subagent_type="general-purpose",
-    prompt="""
-    Tu es un agent qc-strategy-analyzer.
-
-    Projet: ETF-Pairs-Trading (ID: 19865767)
-    Statut connu: Sharpe -0.759, 304 trades
-
-    Objectif: Proposer des ameliorations pour atteindre Sharpe > 0
-
-    1. Analyser les metriques des 5 derniers backtests
-    2. Identifier les patterns de sous-performance
-    3. Lire le code source (alpha.py, portfolio.py)
-    4. Proposer 3-5 ameliorations concretes avec priorites
-
-    Format de sortie: Template NEEDS_IMPROVEMENT ci-dessus
-    """,
-    description="Analyze ETF-Pairs-Trading"
-)
-```
-
-## Memoire projet
-
-L'agent doit logger dans `~/.claude/projects/c--dev-CoursIA/memory/`:
-
-- `qc-analysis-{project_id}.md` - Analyses par projet
-- `qc-patterns.md` - Patterns de bugs recurrents
-- `qc-improvements.md` - Ameliorations testees et resultats
+- **"In Progress..." status** fait planter read_backtest (bug MCP Pydantic) -> attendre et reessayer
+- **Org ESGF = FREE** -> pas de backtest API, seulement org perso
+- **1 backtest a la fois** -> sequentiel uniquement
