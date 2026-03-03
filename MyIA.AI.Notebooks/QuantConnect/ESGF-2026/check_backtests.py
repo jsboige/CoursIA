@@ -15,7 +15,13 @@ import json
 import time
 from datetime import datetime
 
-ACCESS_TOKEN = '5dc8bd3dbebd8ef004d3386b6c3ab288'
+import os
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+ACCESS_TOKEN = os.getenv("QC_API_ACCESS_TOKEN", "")
+if not ACCESS_TOKEN:
+    raise ValueError("QC_API_ACCESS_TOKEN not set. Copy .env.example to .env and fill in your credentials.")
 HEADERS = {'Authorization': f'Bearer {ACCESS_TOKEN}'}
 
 STRATEGIES = [
