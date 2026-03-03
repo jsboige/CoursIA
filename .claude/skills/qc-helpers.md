@@ -10,254 +10,176 @@ Reference (auto-loaded)
 
 Documente les patterns et helpers pour utiliser les outils MCP QuantConnect.
 
+## Configuration
+
+- **User ID**: 46613
+- **Org personnelle (PAID)**: `d600793ee4caecb03441a09fc2d00f7f` - Backtest API OK
+- **Org ESGF (FREE)**: `94aa4bcb45ff1d1ef286d93817104cce` - Compile OK, backtest API REFUSE
+- **IMPORTANT**: Toujours specifier `organizationId` dans create_project, sinon defaut = ESGF (FREE)
+
 ## Outils MCP disponibles
 
 ### Gestion de projets
 
-| Outil | Description | Exemple |
-|-------|-------------|---------|
-| `list_projects` | Lister tous les projets | `{"model": {}}` |
-| `read_project_nodes` | Lire les noeuds de compilation | `{"model": {"projectId": 123}}` |
-| `update_project` | Modifier nom/description | `{"model": {"projectId": 123, "name": "New Name"}}` |
+| Outil | Description |
+|-------|-------------|
+| `list_projects` | Lister tous les projets |
+| `create_project` | Creer un projet (specifier organizationId!) |
+| `read_project` | Lire details d'un projet |
+| `update_project` | Modifier nom/description |
+| `delete_project` | Supprimer un projet |
 
 ### Fichiers
 
-| Outil | Description | Exemple |
-|-------|-------------|---------|
-| `read_file` | Lire un fichier du cloud | `{"model": {"projectId": 123, "name": "main.py"}}` |
-| `update_file_contents` | Modifier un fichier | `{"model": {"projectId": 123, "name": "main.py", "content": "..."}}` |
-| `update_file_name` | Renommer un fichier | `{"model": {"projectId": 123, "name": "old.py", "newName": "new.py"}}` |
+| Outil | Description |
+|-------|-------------|
+| `read_file` | Lire un fichier du cloud |
+| `update_file_contents` | Modifier un fichier (read_file AVANT!) |
+| `create_file` | Creer un nouveau fichier |
+| `delete_file` | Supprimer un fichier |
+| `update_file_name` | Renommer un fichier |
+| `patch_file` | Modifier des lignes specifiques (plus efficace) |
 
 ### Compilation
 
-| Outil | Description | Exemple |
-|-------|-------------|---------|
-| `create_compile` | Demarrer une compilation | `{"model": {"projectId": 123}}` |
-| `read_compile` | Lire le resultat | `{"model": {"projectId": 123, "compileId": "xxx"}}` |
+| Outil | Description |
+|-------|-------------|
+| `create_compile` | Demarrer une compilation |
+| `read_compile` | Lire le resultat (BuildSuccess ou erreurs) |
 
 ### Backtests
 
-| Outil | Description | Exemple |
-|-------|-------------|---------|
-| `list_backtests` | Lister les backtests | `{"model": {"projectId": 123, "includeStatistics": true}}` |
-| `read_backtest` | Lire un backtest | `{"model": {"projectId": 123, "backtestId": "xxx"}}` |
-| `read_backtest_orders` | Lire les ordres | `{"model": {"projectId": 123, "backtestId": "xxx"}}` |
-| `read_backtest_chart` | Lire un chart | `{"model": {"projectId": 123, "backtestId": "xxx", "name": "Strategy Equity", ...}}` |
+| Outil | Description |
+|-------|-------------|
+| `list_backtests` | Lister les backtests (includeStatistics=true!) |
+| `create_backtest` | Lancer un backtest (1 a la fois!) |
+| `read_backtest` | Lire resultats (Sharpe, CAGR, DD, trades) |
+| `read_backtest_orders` | Analyser les ordres executes |
+| `read_backtest_chart` | Visualiser equity curve |
+| `read_backtest_insights` | Insights detailles |
+| `delete_backtest` | Supprimer un backtest |
 
-### Optimisation
+### Autres
 
-| Outil | Description | Exemple |
-|-------|-------------|---------|
-| `list_optimizations` | Lister les optimisations | `{"model": {"projectId": 123}}` |
-| `read_optimization` | Lire une optimisation | `{"model": {"projectId": 123, "optimizationId": "xxx"}}` |
+| Outil | Description |
+|-------|-------------|
+| `search_quantconnect` | Rechercher dans la doc/forum QC |
+| `check_syntax` | Verifier la syntaxe Python/C# |
+| `update_code_to_pep8` | Convertir en PEP8 style |
+| `enhance_error_message` | Expliquer une erreur QC |
 
-## Patterns courants
+## Patterns critiques
+
+### Pattern: read_file AVANT update_file_contents
+
+```
+OBLIGATOIRE: Toujours lire le fichier avant de le modifier.
+Sinon erreur "prevent code loss" (collaboration lock).
+
+1. read_file(projectId, "main.py")     -> acquiert le lock
+2. update_file_contents(projectId, ...) -> ecrit avec le lock
+```
 
 ### Pattern: Compiler un projet
 
-```python
-# 1. Demarrer la compilation
-result = mcp__qc-mcp__create_compile(model={"projectId": 22298373})
-compile_id = result["compileId"]
-
-# 2. Attendre (5-10 secondes)
-time.sleep(5)
-
-# 3. Lire le resultat
-compile_result = mcp__qc-mcp__read_compile(model={
-    "projectId": 22298373,
-    "compileId": compile_id
-})
-
-# 4. Verifier le statut
-if compile_result["state"] == "BuildSuccess":
-    print("Compilation reussie!")
-else:
-    print(f"Erreur: {compile_result.get('errors')}")
+```
+1. create_compile(projectId) -> compileId
+2. read_compile(projectId, compileId) -> state: "BuildSuccess" ou erreurs
+   - Si "BuildSuccess": pret pour backtest
+   - Si erreurs: lire errors[], corriger, recompiler
 ```
 
-### Pattern: Analyser les backtests
+### Pattern: Lancer et lire un backtest
 
-```python
-# 1. Lister les backtests avec statistiques
-backtests = mcp__qc-mcp__list_backtests(model={
-    "projectId": 19865767,
-    "includeStatistics": True
-})
+```
+1. create_backtest(projectId, compileId, backtestName) -> backtestId
+2. Attendre 60-240s selon la strategie
+3. read_backtest(projectId, backtestId) -> resultats
 
-# 2. Trier par Sharpe
-sorted_backtests = sorted(
-    backtests["backtests"],
-    key=lambda x: x.get("sharpeRatio", -999),
-    reverse=True
-)
-
-# 3. Analyser le meilleur
-best = sorted_backtests[0]
-print(f"Best Sharpe: {best['sharpeRatio']}")
-print(f"Net Profit: {best['netProfit']}%")
-print(f"Max DD: {best['drawdown']}%")
-
-# 4. Lire les details
-details = mcp__qc-mcp__read_backtest(model={
-    "projectId": 19865767,
-    "backtestId": best["backtestId"]
-})
-
-# 5. Analyser les erreurs
-if details["backtest"]["status"] == "Runtime Error":
-    print(f"Error: {details['backtest']['error']}")
+ATTENTION: Si status = "In Progress...", le MCP Pydantic plante!
+Le validator n'accepte que: "Completed.", "In Queue...", "Running: X%", "Runtime Error"
+Solution: attendre 30s et reessayer. Ou utiliser list_backtests pour checker le status.
 ```
 
-### Pattern: Synchroniser local -> cloud
+### Pattern: Creer un projet dans l'org perso
 
-```python
-# 1. Lire le fichier local
-with open("path/to/main.py", "r", encoding="utf-8") as f:
-    content = f.read()
+```
+create_project(name, language="Py", organizationId="d600793ee4caecb03441a09fc2d00f7f")
 
-# 2. Verifier la taille (< 32K)
-if len(content) > 32000:
-    raise ValueError("Fichier trop volumineux, diviser en modules")
-
-# 3. Pousser vers le cloud
-result = mcp__qc-mcp__update_file_contents(model={
-    "projectId": 22298373,
-    "name": "main.py",
-    "content": content,
-    "codeSourceId": "claude-code-iterative"
-})
-
-# 4. Compiler pour verifier
-# ... (voir pattern compilation)
+SANS organizationId -> cree dans ESGF (FREE) -> pas de backtest API!
 ```
 
-### Pattern: Analyser une erreur runtime
+## Project IDs
 
-```python
-# 1. Lire le backtest avec erreur
-backtest = mcp__qc-mcp__read_backtest(model={
-    "projectId": 22298373,
-    "backtestId": "xxx"
-})
+### Org personnelle (d600793e) - Strategies Researcher
 
-# 2. Extraire l'erreur
-if backtest["backtest"]["status"] == "Runtime Error":
-    error = backtest["backtest"]["error"]
-    stacktrace = backtest["backtest"]["stacktrace"]
+| Projet | Cloud ID | Sharpe | Statut |
+|--------|----------|--------|--------|
+| Sector-Momentum | 28433643 | 0.554 | HEALTHY |
+| FamaFrench | 28657910 | 0.365 | NEEDS_IMPROVEMENT |
+| OptionsIncome | 28657838 | 0.288 | NEEDS_IMPROVEMENT |
+| AllWeather | 28657833 | 0.25 | NEEDS_IMPROVEMENT |
+| MomentumStrategy | 28657837 | 0.216 | NEEDS_IMPROVEMENT |
+| TurnOfMonth | 28657905 | 0.127 | NEEDS_IMPROVEMENT |
+| FuturesTrend | 28657834 | 0.019 | NEEDS_IMPROVEMENT |
+| MeanReversion | 28657904 | -0.042 | BROKEN |
+| VIX-TermStructure | 28657907 | -0.97 | BROKEN |
+| ForexCarry | 28657908 | -1.80 | BROKEN |
 
-    # 3. Parser la stacktrace
-    # Exemple: "'ClassName' object has no attribute 'attr_name'"
-    #          in main.py: line 329
+### Org ESGF (94aa4bcb) - Exemples pedagogiques
 
-    import re
-    match = re.search(r"in (\w+\.py): line (\d+)", stacktrace)
-    if match:
-        file_name = match.group(1)
-        line_number = int(match.group(2))
-        print(f"Erreur dans {file_name} ligne {line_number}")
+| Projet | Cloud ID | Sharpe | Lang | Note |
+|--------|----------|--------|------|------|
+| Multi-Layer-EMA | 20216947 | 1.891 | Python | HEALTHY |
+| CSharp-BTC-MACD-ADX | 19898232 | 1.224 | C# | HEALTHY, Docker requis |
+| CSharp-BTC-EMA-Cross | 19050970 | 1.094 | C# | HEALTHY |
+| Option-Wheel | 20216898 | 0.996 | Python | HEALTHY |
+| Options-VGT | 21113806 | 0.892 | Python | HEALTHY |
+| CSharp-CTG-Momentum | 19225388 | 0.507 | C# | HEALTHY |
+| Sector-Momentum | 20216980 | 2.530 | Python | HEALTHY (courte periode) |
+| Trend-Following | 20216930 | 2.157 | Python | HEALTHY (courte periode) |
+| Crypto-MultiCanal | 22298373 | 0 | Python | BROKEN (0 trades) |
+| ETF-Pairs-Trading | 19865767 | -0.759 | Python | BROKEN |
+| BTC-MachineLearning | 21047688 | N/A | Python | NO_DATA |
+
+## Fichiers locaux
+
+Les strategies Researcher ont leur code local dans:
+```
+MyIA.AI.Notebooks/QuantConnect/projects/{StrategyName}/main.py
 ```
 
-## Metriques de reference
+Les exemples ESGF sont dans:
+```
+MyIA.AI.Notebooks/QuantConnect/ESGF-2026/examples/{ProjectName}/main.py
+```
 
-### Classification des projets
+## Classification des performances
 
-| Statut | Sharpe | DD | Trades | Description |
-|--------|--------|-----|--------|-------------|
-| HEALTHY | > 0.5 | < 30% | > 0 | Performances acceptables |
-| NEEDS_IMPROVEMENT | 0-0.5 | 30-50% | > 0 | A ameliorer |
-| BROKEN | < 0 | > 50% | 0 | A corriger |
-| NO_DATA | - | - | 0 | Pas de backtest |
+| Statut | Sharpe | Description |
+|--------|--------|-------------|
+| HEALTHY | > 0.5 | Performances acceptables |
+| NEEDS_IMPROVEMENT | 0-0.5 | A ameliorer |
+| BROKEN | < 0 | Sharpe negatif ou 0 trades |
+| NO_DATA | N/A | Pas de backtest |
 
-### Metriques cibles
+### Cibles
 
-| Metrique | Target | Seuil acceptable |
-|----------|--------|------------------|
+| Metrique | Target | Acceptable |
+|----------|--------|------------|
 | Sharpe Ratio | > 1.0 | > 0.5 |
 | Max Drawdown | < 20% | < 30% |
-| Win Rate | > 55% | > 45% |
-| Profit Factor | > 1.5 | > 1.0 |
-| CAGR | > 15% | > 10% |
+| CAGR | > 15% | > 5% |
 
-## Limitations connues
+## Gotchas et lecons apprises
 
-1. **API Backtest payante**: `create_backtest` necessite un compte payant
-2. **Taille de fichier**: Maximum 32K caracteres par fichier
-3. **MCP timeout**: Connexions peuvent echouer, reessayer apres 5s
-4. **Warnings non-bloquants**: Les linter warnings n'empechent pas la compilation
-
-## Troubleshooting
-
-### Erreur: "All connection attempts failed"
-
-```
-Solution:
-1. Attendre 5-10 secondes
-2. Reessayer la requete
-3. Si persiste, verifier la configuration MCP
-```
-
-### Erreur: "Please upgrade to paid account"
-
-```
-Solution:
-Cette fonctionnalite necessite un compte payant.
-Workaround: Utiliser l'interface web QC pour les backtests.
-```
-
-### Erreur: "File too large"
-
-```
-Solution:
-1. Diviser le fichier en modules (helpers, mixin, etc.)
-2. Utiliser des imports relatifs
-3. Pousser chaque fichier separement
-```
-
-### Warning: "has no attribute"
-
-```
-Ces warnings sont normaux pour:
-- Mixins utilisant des attributs de la classe principale
-- Enums QC (le linter ne connait pas toutes les valeurs)
-- Imports dynamiques
-
-Ils sont non-bloquants si la compilation reussit.
-```
-
-## Configuration MCP
-
-Le MCP `qc-mcp` est configure dans `~/.claude.json`:
-
-```json
-{
-  "mcpServers": {
-    "qc-mcp": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm", "--platform", "linux/amd64",
-        "-e", "QUANTCONNECT_USER_ID=46613",
-        "-e", "QUANTCONNECT_API_TOKEN=***",
-        "-e", "AGENT_NAME=claude-code-coursia",
-        "quantconnect/mcp-server"
-      ]
-    }
-  }
-}
-```
-
-## Project IDs ESGF-2026
-
-| Projet | Cloud ID | Statut |
-|--------|----------|--------|
-| Crypto-MultiCanal | 22298373 | BROKEN (0 trades) |
-| ETF-Pairs-Trading | 19865767 | BROKEN (Sharpe -0.76) |
-| BTC-MachineLearning | 21047688 | NO_DATA |
-| Multi-Layer-EMA | 20216947 | HEALTHY |
-| Sector-Momentum | 20216980 | HEALTHY |
-| Trend-Following | 20216930 | HEALTHY |
-| Options-VGT | 21113806 | HEALTHY |
-| Option-Wheel-Strategy | 20216898 | HEALTHY |
-| CSharp-BTC-MACD-ADX | 19898232 | HEALTHY |
-| CSharp-BTC-EMA-Cross | 19050970 | HEALTHY |
-| CSharp-CTG-Momentum | 19225388 | HEALTHY |
+1. **Options = Resolution.MINUTE** : option_chains est vide avec Resolution.DAILY
+2. **Universe Selection** : 500 stocks x history() = 20+ min. Remplacer par ETFs fixes
+3. **Short selling en bull market** : Mean reversion long-short perd enormement. Long-only + SMA200
+4. **SVXY** : ETN inverse VIX, perd 90% en crise. Max 30% + trailing stop
+5. **FX carry taux statiques** : Ne marche pas, politique monetaire change. Utiliser momentum FX pur
+6. **Factor ETFs** : VLUE, MTUM, SIZE, QUAL, USMV couvrent Fama-French sans Universe Selection
+7. **Sector ETFs** : XLK, XLF, XLE, XLV, XLI, XLY, XLP, XLU, XLB, XLRE, XLC = 11 GICS
+8. **OptionsIncome** : Minute sur 1 an = ~4 min backtest. 2 ans = trop lent
+9. **BTC-MACD-ADX** : C# + Docker lean:latest (42.5 GB), chaque pull renomme le projet cloud
+10. **QC PEP8** : `Futures.Indices.SP_500_E_MINI`, `OptionRight.CALL`, `Resolution.DAILY`
