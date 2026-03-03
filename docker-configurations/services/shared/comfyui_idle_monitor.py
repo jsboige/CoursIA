@@ -42,6 +42,7 @@ class ComfyUIIdleMonitor:
     - Calls /free endpoint to unload models
     - Thread-safe operation
     - Health check endpoint for monitoring
+    - Session-based authentication (ComfyUI-Login)
     """
 
     def __init__(
@@ -49,12 +50,16 @@ class ComfyUIIdleMonitor:
         comfyui_url: str = "http://localhost:8188",
         idle_timeout: int = 1200,  # 20 minutes default
         check_interval: int = 60,   # Check every minute
-        auth_token: Optional[str] = None
+        auth_token: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None
     ):
         self.comfyui_url = comfyui_url.rstrip("/")
         self.idle_timeout = idle_timeout
         self.check_interval = check_interval
         self.auth_token = auth_token
+        self.username = username
+        self.password = password
 
         self._last_activity: Optional[float] = None
         self._last_check: Optional[float] = None
@@ -62,21 +67,70 @@ class ComfyUIIdleMonitor:
         self._monitor_thread: Optional[threading.Thread] = None
         self._unload_count = 0
         self._error_count = 0
+        self._logged_in = False
 
-        # Setup session with optional auth
+        # Setup session for cookie-based auth
         self.session = requests.Session()
-        if auth_token:
-            self.session.headers["Authorization"] = f"Bearer {auth_token}"
+
+    def login(self) -> bool:
+        """Authenticate with ComfyUI-Login using session cookies."""
+        if not self.username or not self.password:
+            logger.debug("No credentials provided, skipping login")
+            return True  # Assume no auth required
+
+        try:
+            login_url = f"{self.comfyui_url}/login"
+            resp = self.session.post(
+                login_url,
+                data={
+                    "username": self.username,
+                    "password": self.password,
+                    "guest_mode": "0"
+                },
+                allow_redirects=False,
+                timeout=10
+            )
+
+            # Check for successful login (redirect to / or session cookie set)
+            if resp.status_code == 302 or resp.status_code == 200:
+                # Check if session cookie was set
+                if "AIOHTTP_SESSION" in self.session.cookies:
+                    self._logged_in = True
+                    logger.info(f"Successfully logged in as {self.username}")
+                    return True
+                # Also accept if we get redirected to /
+                if resp.status_code == 302 and resp.headers.get("Location") == "/":
+                    self._logged_in = True
+                    logger.info(f"Successfully logged in as {self.username}")
+                    return True
+
+            logger.warning(f"Login failed: status={resp.status_code}")
+            return False
+
+        except Exception as e:
+            logger.error(f"Login error: {e}")
+            return False
+
+    def _ensure_authenticated(self) -> bool:
+        """Ensure we have a valid session, re-login if needed."""
+        if not self.username or not self.password:
+            return True  # No auth required
+
+        if self._logged_in:
+            return True
+
+        return self.login()
 
     def _get_headers(self) -> dict:
-        """Get request headers with optional auth."""
-        headers = {"Content-Type": "application/json"}
-        if self.auth_token:
-            headers["Authorization"] = f"Bearer {self.auth_token}"
-        return headers
+        """Get request headers."""
+        return {"Content-Type": "application/json"}
 
     def get_running_prompts(self) -> list:
         """Get list of currently running prompt IDs."""
+        if not self._ensure_authenticated():
+            logger.warning("Not authenticated, skipping queue check")
+            return []
+
         try:
             resp = self.session.get(
                 f"{self.comfyui_url}/queue",
@@ -89,10 +143,17 @@ class ComfyUIIdleMonitor:
             return data.get("queue_running", [])
         except Exception as e:
             logger.warning(f"Failed to get queue status: {e}")
+            # If 401, reset logged_in state to force re-auth next time
+            if hasattr(e, 'response') and e.response.status_code == 401:
+                self._logged_in = False
             return []
 
     def get_recent_history(self, max_items: int = 10) -> dict:
         """Get recent prompt execution history."""
+        if not self._ensure_authenticated():
+            logger.warning("Not authenticated, skipping history check")
+            return {}
+
         try:
             resp = self.session.get(
                 f"{self.comfyui_url}/history?max_items={max_items}",
@@ -103,6 +164,8 @@ class ComfyUIIdleMonitor:
             return resp.json()
         except Exception as e:
             logger.warning(f"Failed to get history: {e}")
+            if hasattr(e, 'response') and e.response.status_code == 401:
+                self._logged_in = False
             return {}
 
     def get_last_activity_time(self) -> Optional[float]:
@@ -150,6 +213,10 @@ class ComfyUIIdleMonitor:
 
     def unload_models(self) -> bool:
         """Call ComfyUI /free endpoint to unload models and free VRAM."""
+        if not self._ensure_authenticated():
+            logger.warning("Not authenticated, cannot unload models")
+            return False
+
         try:
             logger.info("Calling /free to unload models...")
 
@@ -169,6 +236,8 @@ class ComfyUIIdleMonitor:
         except Exception as e:
             logger.error(f"Failed to unload models: {e}")
             self._error_count += 1
+            if hasattr(e, 'response') and e.response.status_code == 401:
+                self._logged_in = False
             return False
 
     def check_and_unload(self) -> bool:
@@ -280,7 +349,17 @@ def run_standalone():
     parser.add_argument(
         "--token",
         default=os.environ.get("COMFYUI_AUTH_TOKEN"),
-        help="Authentication token (optional)"
+        help="Authentication token (optional, deprecated - use --username/--password)"
+    )
+    parser.add_argument(
+        "--username",
+        default=os.environ.get("COMFYUI_USERNAME", "admin"),
+        help="Username for ComfyUI-Login (default: admin)"
+    )
+    parser.add_argument(
+        "--password",
+        default=os.environ.get("COMFYUI_PASSWORD"),
+        help="Password for ComfyUI-Login (required if auth enabled)"
     )
     parser.add_argument(
         "--log-level",
@@ -303,7 +382,9 @@ def run_standalone():
         comfyui_url=args.url,
         idle_timeout=args.timeout,
         check_interval=args.interval,
-        auth_token=args.token
+        auth_token=args.token,
+        username=args.username,
+        password=args.password
     )
 
     logger.info(f"Starting ComfyUI Idle Monitor")
