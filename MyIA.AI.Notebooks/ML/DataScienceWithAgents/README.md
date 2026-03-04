@@ -1,14 +1,14 @@
 # DataScienceWithAgents - Data Science Python avec Agents IA
 
-Formation complete en Data Science Python avec integration d'agents IA. Combine les fondamentaux NumPy/Pandas avec un workshop de 3 jours sur les agents LLM.
+Formation complete en Data Science Python avec integration d'agents IA. Combine les fondamentaux NumPy/Pandas avec deux tracks complementaires : LangChain (3 jours) et Google ADK (4 jours).
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 9 |
-| Kernel | Python 3 |
-| Duree totale | ~3 jours (workshop) |
+| Notebooks | 19 (7 LangChain + 10 ADK + 2 fondations) |
+| Kernel | Python 3.11+ |
+| Duree totale | ~7 jours |
 
 ## Structure
 
@@ -19,10 +19,16 @@ DataScienceWithAgents/
 │       ├── 1.2-NumPy.ipynb
 │       └── 1.3-Pandas.ipynb
 │
-└── PythonAgentsForDataScience/ # Workshop 3 jours (7 labs)
-    ├── Day1/Labs/              # Revision
-    ├── Day2/Labs/              # Agents RFP et CV
-    └── Day3/Labs/              # Data + Agents
+├── PythonAgentsForDataScience/ # Track LangChain (7 labs)
+│   ├── Day1/Labs/              # Revision
+│   ├── Day2/Labs/              # Agents RFP et CV
+│   └── Day3/Labs/              # Data + Agents
+│
+└── AgenticDataScience/         # Track Google ADK (10 labs)
+    ├── Day4-Foundations/       # Introduction ADK
+    ├── Day5-DS-Star/           # Data Science autonome
+    ├── Day6-MLE-Star/          # ML Engineering
+    └── Day7-Production/        # Integration GCP
 ```
 
 ## Fondations (01-PythonForDataScience)
@@ -118,6 +124,51 @@ Day 3: Labs 4-7 (data + agents)
 - [Pandas Documentation](https://pandas.pydata.org/docs/)
 - [LangChain Documentation](https://python.langchain.com/)
 - [OpenAI Cookbook](https://cookbook.openai.com/)
+
+## Track AgenticDataScience (Days 4-7)
+
+Track avance integrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
+
+### Day 4 - ADK Foundations (Labs 8-9)
+
+| Lab | Notebook | Objectif |
+|-----|----------|----------|
+| 8 | [ADK-Introduction](AgenticDataScience/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
+| 9 | [First-ADK-Agent](AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
+
+### Day 5 - DS-STAR (Labs 10-12)
+
+| Lab | Notebook | Objectif |
+|-----|----------|----------|
+| 10 | [File-Analyzer](AgenticDataScience/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers heterogenes |
+| 11 | [Planner-Coder-Loop](AgenticDataScience/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle iterative multi-agents |
+| 12 | [DS-Star-Workshop](AgenticDataScience/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complete |
+
+### Day 6 - MLE-STAR (Labs 13-15)
+
+| Lab | Notebook | Objectif |
+|-----|----------|----------|
+| 13 | [Web-Search-SOTA](AgenticDataScience/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modeles SOTA |
+| 14 | [Ablation-Refinement](AgenticDataScience/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblee |
+| 15 | [Kaggle-Challenge](AgenticDataScience/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Competition Kaggle |
+
+### Day 7 - Production (Labs 16-17)
+
+| Lab | Notebook | Objectif |
+|-----|----------|----------|
+| 16 | [Data-Science-Agent](AgenticDataScience/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
+| 17 | [Final-Project](AgenticDataScience/Day7-Production/Lab17-Final-Project.ipynb) | Projet integre |
+
+### Technologies AgenticDataScience
+
+| Categorie | Technologies |
+|-----------|--------------|
+| **Abstraction** | LiteLLM (multi-provider) |
+| **Google ADK** | google-adk, google-generativeai |
+| **Providers** | Gemini 3.1, vLLM, OpenAI, OpenRouter |
+| **Cloud (Day 7)** | BigQuery, Vertex AI, BQML |
+
+Documentation complete : [AgenticDataScience/README.md](AgenticDataScience/README.md)
 
 ## Licence
 

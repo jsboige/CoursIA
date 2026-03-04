@@ -6,9 +6,9 @@ Serie de notebooks couvrant le Machine Learning avec deux approches complementai
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 14 (5 C#, 9 Python) |
+| Notebooks | 27 (5 C#, 22 Python) |
 | Sous-dossiers | 2 (ML.Net, DataScienceWithAgents) |
-| Duree totale estimee | ~8-10h |
+| Duree totale estimee | ~20h |
 
 ## Structure
 
@@ -24,7 +24,8 @@ ML/
 │
 └── DataScienceWithAgents/            # Data Science Python + AI Agents
     ├── 01-PythonForDataScience/      # Fondations NumPy/Pandas
-    └── PythonAgentsForDataScience/   # Workshop 3 jours (Labs 1-7)
+    ├── PythonAgentsForDataScience/   # Track LangChain (Labs 1-7)
+    └── AgenticDataScience/           # Track Google ADK (Labs 8-17)
 ```
 
 ## ML.NET (C# / .NET Interactive)
@@ -76,6 +77,25 @@ Formation complete en Data Science Python avec integration d'agents IA.
 | **Day 3** | 5 | Viz & ML | Visualisation et intro Scikit-Learn |
 | **Day 3** | 6 | First Agent | Construire un agent simple (LLM + Tools) |
 | **Day 3** | 7 | Data Analysis Agent | Agent pour interroger des DataFrames |
+
+### Track AgenticDataScience (Days 4-7)
+
+Track avance integrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider (Gemini 3.1, vLLM, OpenAI).
+
+| Jour | Lab | Nom | Objectif |
+|------|-----|-----|----------|
+| **Day 4** | 8 | ADK Introduction | Architecture ADK, configuration providers |
+| **Day 4** | 9 | First ADK Agent | Premier agent pour Data Science |
+| **Day 5** | 10 | File Analyzer | Analyse de fichiers heterogenes |
+| **Day 5** | 11 | Planner-Coder Loop | Boucle iterative multi-agents |
+| **Day 5** | 12 | DS-Star Workshop | Application complete DS-STAR |
+| **Day 6** | 13 | Web Search SOTA | Recherche de modeles SOTA |
+| **Day 6** | 14 | Ablation Refinement | Optimisation ciblee par ablation |
+| **Day 6** | 15 | Kaggle Challenge | Competition Kaggle avec MLE-STAR |
+| **Day 7** | 16 | Data Science Agent | Agent BigQuery/BQML |
+| **Day 7** | 17 | Final Project | Projet integre |
+
+Documentation complete : [DataScienceWithAgents/AgenticDataScience/README.md](DataScienceWithAgents/AgenticDataScience/README.md)
 
 ### Prerequis Python
 

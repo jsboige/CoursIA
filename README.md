@@ -144,12 +144,12 @@ CoursIA/
 | **SymbolicAI** | 47 | Python, Lean 4 | ~32h | OpenAI (optionnel) |
 | **GameTheory** | 26 | Python, Lean 4 | ~18h30 | OpenAI (optionnel) |
 | **Probas** | 22 | C#, Python | ~17h | - |
-| **ML** | 17 | C#, Python | ~6h | - |
+| **ML** | 27 | C#, Python | ~12h | - |
 | **RL** | 3 | Python | ~2h | - |
 | **GenAI** | 96 | Python | ~65h | OpenAI/Anthropic |
 | **QuantConnect** | 27 | Python | ~30h | QuantConnect (gratuit) |
 | **IIT** | 1 | Python | ~1h30 | - |
-| **Total** | **301+** | **Mixed** | **~203h** | - |
+| **Total** | **311+** | **Mixed** | **~209h** | - |
 
 ## Series de notebooks
 
@@ -247,13 +247,14 @@ Programmation probabiliste et inference bayesienne. Avec Infer.NET de Microsoft,
 
 ### ML - Machine Learning
 
-**17 notebooks** couvrant ML.NET (C#), Python Data Science et Reinforcement Learning.
+**27 notebooks** couvrant ML.NET (C#), Python Data Science, Reinforcement Learning et Agentic AI.
 
 | Section | Notebooks | Contenu |
 |---------|-----------|---------|
 | **ML.NET** | 5 | Introduction, Features, Entrainement, AutoML, Evaluation |
 | **Python Foundations** | 2 | NumPy, Pandas |
 | **AI Agents Workshop** | 7 | RFP Analysis, CV Screening, Data Wrangling, First Agent |
+| **AgenticDataScience** | 10 | Google ADK, DS-STAR, MLE-STAR (Days 4-7) |
 | **Reinforcement Learning** | 3 | Stable Baselines3, PPO, SAC/DDPG, HER |
 
 [README ML](MyIA.AI.Notebooks/ML/README.md)

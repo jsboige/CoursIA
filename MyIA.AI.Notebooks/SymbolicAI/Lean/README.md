@@ -1,6 +1,6 @@
 # Lean - Solveur Mathematique et Verification Formelle
 
-Cette serie de **11 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves.
+Cette serie de **12 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves et la verification formelle de reseaux de neurones.
 
 ## Navigation
 
@@ -37,8 +37,10 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problemes Erdos | 55 min |
 | 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Semantic Kernel, orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
+| 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: reseaux de neurones verifies, IBP, CROWN | 1h30-2h |
+| 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
 
-**Duree totale** : ~8h
+**Duree totale** : ~10h
 
 ## Statut de maturite
 
@@ -55,6 +57,8 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
 | 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
 | 10 | LeanDojo | ~100 | Demo | - | **COMPLET** |
+| 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
+| 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
@@ -135,6 +139,12 @@ cp .env.example .env
 - [LeanDojo Paper](https://arxiv.org/abs/2306.15626) (NeurIPS 2023)
 - [lean4-example Repository](https://github.com/yangky11/lean4-example)
 
+### TorchLean
+
+- [TorchLean Documentation](https://leandojo.org/torchlean.html)
+- [TorchLean GitHub](https://github.com/lean-dojo/TorchLean)
+- [Papers: IBP, CROWN, LiRPA](https://github.com/lean-dojo/TorchLean#references)
+
 ## Document source
 
 - Notebooks 1-5 bases sur : `D:\Dropbox\IA101\TPs\TP - Z3 - Tweety - Lean.pdf` (Section VI)
@@ -182,6 +192,8 @@ Lean/
 ├── Lean-8-Agentic-Proving.ipynb    # Python kernel - orchestration
 ├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Semantic Kernel
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
+├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
+├── Lean-11-TorchLean-Python.ipynb  # Python kernel - Implementation algorithmes
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
