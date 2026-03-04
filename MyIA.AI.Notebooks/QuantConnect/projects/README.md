@@ -1,73 +1,59 @@
 # QuantConnect Community Projects
 
-Cette section contient des projets complets au format communautaire QuantConnect, prêts à être uploadés sur le forum ou partagés.
+Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec notebooks de recherche standalone (yfinance/pandas).
 
-## Structure d'un Projet Communautaire
+## Projets
 
-Chaque projet suit le format standard utilisé sur les blogs et forums QuantConnect :
+| Projet | Description | Sharpe | CAGR | Max DD | Niveau |
+|--------|-------------|--------|------|--------|--------|
+| [SectorMomentum](SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | **0.554** | 13.1% | 23.0% | Intermediaire |
+| [FamaFrench](FamaFrench/) | Factor ETF rotation (VLUE/MTUM/SIZE/QUAL/USMV) | **0.471** | 11.7% | 33.7% | Intermediaire |
+| [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs sectoriels | **0.411** | 10.8% | 30.1% | Intermediaire |
+| [AllWeather](AllWeather/) | Portfolio multi-asset Dalio (SPY/TLT/IEF/GLD) | **0.365** | 7.2% | 24.1% | Debutant |
+| [MeanReversion](MeanReversion/) | RSI multi-asset mean reversion | **0.294** | - | - | Intermediaire |
+| [FuturesTrend](FuturesTrend/) | Donchian breakout ETFs (trend following) | **0.280** | - | - | Intermediaire |
+| [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.747** | 17.3% | 8.3% | Avance |
+| [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 0.127 | - | - | Debutant |
+| [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX (SVXY) | -0.27 | - | - | Avance |
+| [ForexCarry](ForexCarry/) | FX momentum G7 currencies | -0.654 | - | - | Intermediaire |
+
+*Sharpe et metriques issus des backtests QC Cloud (2015-2025 sauf OptionsIncome: 2024 seulement, MINUTE resolution).*
+
+## Structure d'un Projet
 
 ```
 MonProjet/
-├── main.py              # Algorithme principal (obligatoire)
-├── research.ipynb       # Notebook de recherche (recommandé)
-├── alpha.py             # Alpha model (optionnel)
-├── universe.py          # Universe selection (optionnel)
-├── README.md            # Documentation projet
-└── backtest_results/    # Résultats de backtest (optionnel)
+├── main.py              # Algorithme (deploye sur QC Cloud)
+├── research.ipynb       # Notebook standalone (yfinance, executable partout)
+└── README.md            # Documentation (optionnel)
 ```
 
-## Projets Disponibles
+Chaque `research.ipynb` est **autonome** : il telecharge les donnees via yfinance et ne necessite ni QuantConnect ni Docker.
 
-| Projet | Description | Cloud ID | Sharpe | Difficulte |
-|--------|-------------|----------|--------|------------|
-| [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs sectoriels | 28657837 | 0.216 | Intermediaire |
-| [OptionsIncome](OptionsIncome/) | Covered Call SPY (premium income) | 28657838 | 0.288 | Avance |
-| [FuturesTrend](FuturesTrend/) | Donchian breakout E-mini S&P 500 | 28657834 | 0.019 | Intermediaire |
-| [AllWeather](AllWeather/) | Portfolio multi-asset Ray Dalio | 28657833 | 0.25 | Debutant |
-| [FamaFrench](FamaFrench/) | Factor ETF rotation (Fama-French) | 28657910 | 0.365 | Intermediaire |
-| [MeanReversion](MeanReversion/) | RSI mean reversion long-only | 28657904 | -0.042 | Intermediaire |
-| [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 28657905 | 0.127 | Debutant |
-| [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX | 28657907 | -0.97 | Avance |
-| [ForexCarry](ForexCarry/) | FX momentum G7 currencies | 28657908 | -1.80 | Intermediaire |
+## Lecons Apprises
 
-## Comment Utiliser
+Patterns transversaux decouverts pendant l'optimisation :
 
-### 1. Sur QuantConnect Cloud
+- **TLT risk-off detruit la valeur** sur 2015-2025 (hausse des taux 2022). Alternatives: XLP+XLU, USMV, GLD, cash.
+- **12m simple lookback >= composite** pour la plupart des strategies de rotation.
+- **SMA overlay + low-vol** tue le Sharpe quand CAGR ~ risk-free rate.
+- **VIX filter pour options** : ne vendre que quand VIX > 15.
+- **ETFs > Futures** pour la simplicite (pas de rollover).
+
+## Utilisation
+
+### Sur QuantConnect Cloud
+
+1. Creer un nouveau projet Python
+2. Copier le contenu de `main.py`
+3. Lancer le backtest
+
+### En Local (research)
 
 ```bash
-# 1. Créer un nouveau projet
-File → New Project → Python
-
-# 2. Copier le contenu de main.py
-
-# 3. Uploader le notebook research.ipynb (optionnel)
-File → Upload
-
-# 4. Backtester
-Cliquer sur "Backtest"
+pip install yfinance pandas matplotlib
+jupyter notebook projects/MomentumStrategy/research.ipynb
 ```
-
-### 2. Avec LEAN CLI (Local)
-
-```bash
-# Créer un projet depuis le template
-lean project-create --language python MonProjet
-
-# Copier les fichiers
-cp projects/MomentumStrategy/* MonProjet/
-
-# Backtester
-lean backtest MonProjet
-```
-
-## Contribuer
-
-Pour ajouter un nouveau projet :
-
-1. Créer un dossier dans `projects/`
-2. Inclure au minimum `main.py` et `README.md`
-3. Documenter les paramètres et performances attendues
-4. Ajouter un notebook de recherche si applicable
 
 ## Ressources
 
