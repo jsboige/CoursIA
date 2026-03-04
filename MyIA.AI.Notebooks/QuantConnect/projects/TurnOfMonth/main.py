@@ -5,13 +5,24 @@ from AlgorithmImports import *
 
 class TurnOfMonthEffect(QCAlgorithm):
     """
-    Turn of the Month Effect v2
+    Turn of the Month Effect v2.0
 
-    Achete SPY les derniers 4 jours de trading du mois + premiers 4 jours.
-    Utilise levier 1.5x car on est investi seulement ~40% du temps.
-    Filtre regime SMA200.
+    Calendar anomaly: buy SPY+QQQ around month boundary.
+    Window: last 4 + first 4 trading days. 1.5x leverage.
+    SMA200 regime filter.
 
-    Ref: Ariel (1987), Lakonishok & Smidt (1988)
+    Backtest results:
+    v1.0: Sharpe -0.243, CAGR 1.5%, MaxDD 13.2%
+    v2.0: Sharpe 0.127, CAGR 4.8%, MaxDD 23.7%, Net +69.5%
+
+    Iterations v3.x tested SPY-only and different windows but
+    all performed worse. The ToM effect is structurally weak
+    on 2015-2026 (strong bull market diminishes calendar effects).
+
+    Research: effect confirmed (t=2.38 on day 1), robust 2000-2025,
+    but Sharpe 0.547 in research (2000-2025) vs 0.127 in QC (2015-2026).
+
+    Ref: Ariel (1987), Lakonishok & Smidt (1988), research.ipynb
     """
 
     def initialize(self):
@@ -27,9 +38,8 @@ class TurnOfMonthEffect(QCAlgorithm):
         # Trading day tracking
         self.trading_day_of_month = 0
         self.current_month = -1
-        self.trading_days_in_month = []
 
-        # Parametres
+        # Parameters
         self.entry_days_before_eom = 4   # Last 4 trading days
         self.hold_days_after_bom = 4     # First 4 trading days
         self.leverage = 1.5              # 1.5x leverage
@@ -59,7 +69,6 @@ class TurnOfMonthEffect(QCAlgorithm):
         import calendar
         _, days_in_month = calendar.monthrange(self.time.year, self.time.month)
         calendar_days_remaining = days_in_month - self.time.day
-        # Approx: ~70% of calendar days are trading days
         trading_days_remaining = int(calendar_days_remaining * 0.7)
 
         # Entry: last N trading days OR first N trading days
@@ -72,7 +81,7 @@ class TurnOfMonthEffect(QCAlgorithm):
             spy_above_sma = self.securities[self.spy].price > self.spy_sma.current.value
 
         if in_tom_window and spy_above_sma and not self.is_invested:
-            weight = self.leverage / 2.0  # Split between SPY and QQQ
+            weight = self.leverage / 2.0
             self.set_holdings(self.spy, weight)
             self.set_holdings(self.qqq, weight)
             self.is_invested = True
@@ -84,4 +93,4 @@ class TurnOfMonthEffect(QCAlgorithm):
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"TOM v2: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
+        self.log(f"TOM v2.0: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
