@@ -531,3 +531,7 @@ reports/
 # Backup venv directories
 **/venv.backup.*/
 **/venv.backup-*/
+
+# Claude Code MCP config (contains API tokens)
+.mcp.json
+.claude/qc-mcp-wrapper.py
