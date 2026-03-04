@@ -1,128 +1,117 @@
 # region imports
 from AlgorithmImports import *
-import numpy as np
 # endregion
 
 
 class ShortTermMeanReversion(QCAlgorithm):
     """
-    Long-Only Mean Reversion Strategy v2 (RSI)
+    Sector ETF Mean Reversion Strategy v3.2
 
-    Achete les actions survendues (RSI < 30) du S&P 500.
-    Long-only pour eviter le short-squeeze en bull market.
-    Rebalancement hebdomadaire. SPY SMA200 filter.
+    Research-driven RSI mean reversion on 11 GICS sector ETFs.
+    Replaces slow Universe Selection with fixed ETF basket.
+    Long-only, top 3 most oversold ETFs. Daily scan.
+    SPY SMA200 regime filter. Exit on RSI > 55 or 15-day hold.
 
-    Ref: Jegadeesh (1990), De Bondt & Thaler (1985)
+    Backtest results:
+    v2.0: Sharpe -0.042, CAGR 0.7%, MaxDD 46.5% (Universe Selection)
+    v3.0: Sharpe -0.97, CAGR 0.65%, Net +5.4% (too few trades)
+    v3.1: Sharpe 0.01, CAGR 4.31%, Net +41.2%
+    v3.2: Sharpe 0.294, CAGR 7.53%, Net +80.9%, MaxDD 16.5%
+
+    Ref: research.ipynb, Jegadeesh (1990), De Bondt & Thaler (1985)
     """
 
     def initialize(self):
         self.set_start_date(2018, 1, 1)
         self.set_cash(100000)
 
-        # Parametres
-        self.num_coarse = 100
-        self.num_long = 10
-        self.rsi_period = 14
-        self.rsi_oversold = 35
-        self.lookback_days = 5
+        # 11 GICS sector ETFs
+        self.sector_etfs = [
+            "XLK", "XLF", "XLE", "XLV", "XLI",
+            "XLY", "XLP", "XLU", "XLB", "XLRE", "XLC"
+        ]
+        self.symbols = {}
+        self.rsi_indicators = {}
+
+        for etf in self.sector_etfs:
+            equity = self.add_equity(etf, Resolution.DAILY)
+            self.symbols[etf] = equity.symbol
+            self.rsi_indicators[etf] = self.rsi(equity.symbol, 14)
 
         # SPY regime filter
         self.spy = self.add_equity("SPY", Resolution.DAILY).symbol
         self.spy_sma = self.sma(self.spy, 200, Resolution.DAILY)
 
-        self.universe_settings.resolution = Resolution.DAILY
-        self.add_universe(self.coarse_selection)
+        # Strategy parameters
+        self.rsi_oversold = 40      # Entry threshold
+        self.rsi_exit = 55          # Exit threshold
+        self.num_positions = 3      # Max simultaneous positions
+        self.holding_period = 15    # Days to hold
 
-        # Rebalancement hebdomadaire (lundi)
+        # Position tracking
+        self.entry_days = {}
+        self.day_count = 0
+
+        # Daily scan
         self.schedule.on(
-            self.date_rules.every(DayOfWeek.MONDAY),
+            self.date_rules.every_day("SPY"),
             self.time_rules.after_market_open("SPY", 30),
-            self._rebalance
+            self._daily_scan
         )
 
-        self.rsi_indicators = {}
         self.set_benchmark("SPY")
         self.set_warm_up(200, Resolution.DAILY)
 
-    def coarse_selection(self, coarse):
-        filtered = [x for x in coarse
-                    if x.price > 10
-                    and x.dollar_volume > 5000000
-                    and x.has_fundamental_data]
-
-        sorted_by_volume = sorted(filtered,
-                                  key=lambda x: x.dollar_volume,
-                                  reverse=True)[:self.num_coarse]
-        return [x.symbol for x in sorted_by_volume]
-
-    def on_securities_changed(self, changes):
-        for security in changes.added_securities:
-            symbol = security.symbol
-            if symbol not in self.rsi_indicators:
-                self.rsi_indicators[symbol] = self.rsi(symbol, self.rsi_period)
-
-        for security in changes.removed_securities:
-            symbol = security.symbol
-            if symbol in self.rsi_indicators:
-                self.rsi_indicators.pop(symbol, None)
-            if self.portfolio[symbol].invested:
-                self.liquidate(symbol)
-
-    def _rebalance(self):
+    def _daily_scan(self):
         if self.is_warming_up:
             return
 
-        # SPY regime filter: cash if below SMA200
+        self.day_count += 1
+
+        # SPY regime filter
         if self.spy_sma.is_ready:
-            spy_below_sma = self.securities[self.spy].price < self.spy_sma.current.value
-            if spy_below_sma:
+            spy_price = self.securities[self.spy].price
+            if spy_price < self.spy_sma.current.value:
                 if self.portfolio.invested:
                     self.liquidate()
+                    self.entry_days.clear()
                     self.log("RISK OFF: SPY < SMA200")
                 return
 
-        # Find oversold stocks
-        oversold = []
-        for symbol, rsi in self.rsi_indicators.items():
+        # Check exits
+        to_exit = []
+        for etf, entry_day in self.entry_days.items():
+            days_held = self.day_count - entry_day
+            rsi_val = self.rsi_indicators[etf].current.value
+            if days_held >= self.holding_period or rsi_val > self.rsi_exit:
+                to_exit.append(etf)
+
+        for etf in to_exit:
+            self.liquidate(self.symbols[etf])
+            del self.entry_days[etf]
+
+        # Check entries
+        candidates = []
+        for etf in self.sector_etfs:
+            if etf in self.entry_days:
+                continue
+            rsi = self.rsi_indicators[etf]
             if not rsi.is_ready:
                 continue
-            if not self.securities.contains_key(symbol):
-                continue
-            if self.securities[symbol].price <= 0:
-                continue
+            rsi_val = rsi.current.value
+            if rsi_val < self.rsi_oversold:
+                candidates.append((etf, rsi_val))
 
-            rsi_value = rsi.current.value
-            if rsi_value < self.rsi_oversold:
-                history = self.history(symbol, self.lookback_days + 1, Resolution.DAILY)
-                if len(history) < 2:
-                    continue
-                try:
-                    ret_5d = (history['close'].iloc[-1] / history['close'].iloc[0]) - 1
-                    # Lower RSI + bigger drop = stronger signal
-                    score = rsi_value + ret_5d * 100
-                    oversold.append((symbol, score))
-                except:
-                    continue
+        candidates.sort(key=lambda x: x[1])
 
-        # Sort by score (lowest = most oversold)
-        oversold.sort(key=lambda x: x[1])
-        selected = [s for s, _ in oversold[:self.num_long]]
-
-        # Liquidate non-selected
-        for kvp in self.portfolio:
-            if kvp.value.invested and kvp.key not in selected and kvp.key != self.spy:
-                self.liquidate(kvp.key)
-
-        if len(selected) == 0:
-            return
-
-        # Equal weight long positions
-        weight = 0.9 / len(selected)  # 90% invested, 10% cash buffer
-        for symbol in selected:
+        available = self.num_positions - len(self.entry_days)
+        weight = 0.33  # 33% per position
+        for etf, rsi_val in candidates[:available]:
+            symbol = self.symbols[etf]
             self.set_holdings(symbol, weight)
-
-        self.log(f"MEAN REV v2: {len(selected)} long positions")
+            self.entry_days[etf] = self.day_count
+            self.log(f"ENTER: {etf}, RSI={rsi_val:.1f}")
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"MEAN REVERSION v2: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
+        self.log(f"MEAN REV v3.2: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
