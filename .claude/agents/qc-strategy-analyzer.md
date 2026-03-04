@@ -139,6 +139,38 @@ Format:
 | 1 | ... | Sharpe +0.X | LOW | HIGH |
 ```
 
+## GARDE-FOUS : Alpha vs Beta (CRITIQUE)
+
+### Detection du "beta loading deguise"
+
+Lors de l'analyse, **TOUJOURS verifier** si une amelioration proposee revient simplement a ajouter de l'exposition a un indice/ETF large (SPY, QQQ, IWM, VTI).
+
+**Signaux d'alerte a rapporter:**
+- Strategie qui "parke" en SPY/QQQ quand inactive
+- Core-satellite avec un indice large comme core
+- Remplacement du cash par un ETF broad market
+- Amelioration de Sharpe uniforme sur toutes les strategies (signe de beta, pas d'alpha)
+
+**Dans les propositions d'amelioration, NE JAMAIS suggerer:**
+- Investir en SPY/QQQ pendant les periodes sans signal
+- Ajouter un "core" indiciel a la strategie
+- Remplacer le cash idle par un ETF performant
+
+**Ameliorations valides a proposer:**
+- Ajustement des parametres de signal (lookback, seuils, filtres)
+- Risk management (trailing stops, position sizing, VIX filter)
+- Diversification DANS la meme classe d'actifs
+- Optimisation du timing d'entree/sortie
+- Reduction du drawdown sans ajout de beta
+
+### Metriques d'alpha a inclure dans les rapports
+
+Quand une amelioration est proposee, verifier:
+1. **Alpha** : rendement excedentaire par rapport au benchmark
+2. **Information Ratio** : alpha / tracking error
+3. **Time in market** : % du temps investi (documenter le cash drag)
+4. **Robustesse** : performance stable sur bull, bear, sideways
+
 ## Gotchas
 
 - **"In Progress..." status** fait planter read_backtest (bug MCP Pydantic) -> attendre et reessayer
