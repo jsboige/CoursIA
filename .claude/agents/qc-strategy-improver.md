@@ -233,6 +233,55 @@ plt.show()
 8. **"In Progress..." = bug MCP** - Attendre et reessayer
 9. **Org perso seulement** - ESGF = FREE, pas de backtest API
 
+## GARDE-FOUS : Alpha vs Beta (CRITIQUE)
+
+### Interdiction du "beta loading deguise"
+
+**NE JAMAIS ameliorer une strategie en ajoutant simplement de l'exposition a SPY, QQQ, ou tout autre indice/ETF large.**
+
+Exemples INTERDITS:
+- "SPY Parking" : investir en SPY quand la strategie est inactive
+- "Core-satellite SPY" : garder SPY comme position de base
+- Remplacer le cash par un ETF large (SPY, QQQ, IWM, VTI)
+- Ajouter un benchmark comme position par defaut
+
+**Pourquoi c'est interdit**: Cela revient a du beta loading. Le Sharpe monte
+mecaniquement parce que SPY a bien performe 2015-2026, mais:
+- L'alpha est nul ou negatif (la strategie ne bat pas SPY)
+- En bear market le drawdown explose
+- C'est pedagogiquement trompeur (un etudiant pense que sa strategie marche)
+- On aurait le meme resultat en achetant n'importe quel ETF performant
+
+### Comment mesurer une vraie amelioration
+
+Avant d'accepter un backtest comme "ameliore", verifier:
+
+1. **Alpha positif** : la strategie bat le benchmark (alpha > 0)
+2. **Sharpe du signal pur** : mesurer le Sharpe des trades uniquement
+   (sans les periodes non investies)
+3. **Information Ratio** : rendement excedentaire / tracking error > 0
+4. **Robustesse temporelle** : tester sur sous-periodes (bull, bear, sideways)
+
+### Ameliorations AUTORISEES
+
+- Ajuster les parametres de signal (lookback, thresholds, filtres)
+- Ameliorer le risk management (trailing stops, position sizing)
+- Ajouter des filtres de regime (VIX, SMA, volatilite)
+- Changer l'univers d'instruments DANS la meme classe d'actifs
+- Optimiser le timing d'entree/sortie
+- Reduire le drawdown sans ajouter de beta
+
+### Cas limite : strategie qui parkait deja en cash
+
+Si la strategie passe beaucoup de temps en cash (>50%), c'est un SIGNAL
+que la strategie a un probleme fondamental (pas assez de signaux, signals
+trop rares). La solution n'est PAS d'acheter SPY pendant les periodes
+creuses, mais de:
+- Ameliorer la frequence des signaux
+- Diversifier les instruments dans la meme classe d'actifs
+- Accepter le Sharpe tel quel (honnete)
+- Documenter le "time in market" comme metrique
+
 ## Reprise apres redemarrage
 
 L'etat survit au redemarrage grace a:
