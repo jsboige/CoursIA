@@ -261,15 +261,13 @@ Application de l'IA a la finance quantitative, basee sur le framework LEAN de Qu
 | Multi-Layer-EMA | EMA multi-couches (crypto) | 1.891 |
 | BTC-MACD-ADX | MACD + ADX (crypto) | 1.224 |
 | OptionsIncome | Covered Call SPY + VIX filter | 0.747 |
-| FuturesTrend | Donchian breakout + SPY parking | 0.588 |
 | SectorMomentum | Dual Momentum SPY/TLT/GLD | 0.554 |
-| TurnOfMonth | Anomalie calendaire + SPY parking | 0.536 |
-| MeanReversion | RSI mean reversion + SPY parking | 0.486 |
-| ForexCarry | FX momentum + SPY core-satellite | 0.476 |
 | FamaFrench | Factor ETF rotation (5 facteurs) | 0.471 |
 | MomentumStrategy | Rotation 11 ETFs sectoriels | 0.411 |
 | AllWeather | Portfolio multi-asset (Dalio) | 0.365 |
-| VIX-TermStructure | Contango SVXY + SPY parking | 0.086 |
+| MeanReversion | RSI mean reversion multi-asset | 0.294 |
+| FuturesTrend | Donchian breakout sur ETFs | 0.280 |
+| TurnOfMonth | Anomalie calendaire SPY/QQQ | 0.127 |
 | CryptoMultiCanal | Canaux multi-couches (crypto) | en cours |
 
 **ESGF-2026** (34 notebooks) -- Exemples de projets etudiants et notebooks de recherche issus du cours ESGF. Inclut des exemples de strategies C# et Python avec leurs notebooks d'optimisation et d'analyse de robustesse.

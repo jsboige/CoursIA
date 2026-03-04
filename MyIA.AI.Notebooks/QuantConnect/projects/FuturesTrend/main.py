@@ -6,17 +6,18 @@ import numpy as np
 
 class FuturesTrendFollowing(QCAlgorithm):
     """
-    Multi-Asset Trend Following v3.0 - SPY Parking
+    Multi-Asset Trend Following v2.3
 
-    Donchian breakout on diversified ETFs (ex-SPY for signal purity).
-    SPY parking when no trend signals active. Core-satellite approach.
+    Research-driven Donchian breakout on diversified ETFs.
+    Replaces single-ES futures approach (Sharpe 0.019).
+    Long-only, concentrated positions (33% x 3 max).
+    Donchian 20/10 entry/exit channels.
 
-    History:
-    v2.0: Sharpe 0.144, CAGR 5.5%, MaxDD 16.9%
-    v2.1: Sharpe 0.216, CAGR 6.3%, MaxDD 8.5%
-    v2.3: Sharpe 0.280, CAGR 7.3%, MaxDD 10.2%
-    v3.0: Sharpe 0.588, CAGR 12.6%, Net +164.2%, MaxDD 20.1%
-         Alpha +0.018, Beta 0.545
+    Backtest results:
+    v1.2: Sharpe 0.019, CAGR 2.1%, MaxDD 31.9% (ES only, L/S)
+    v2.0: Sharpe 0.144, CAGR 5.5%, MaxDD 16.9% (4 ETFs, 25%)
+    v2.1: Sharpe 0.216, CAGR 6.3%, MaxDD 8.5% (6 ETFs, dynamic)
+    v2.3: Sharpe 0.280, CAGR 7.3%, MaxDD 10.2%, Net +78.1%
 
     Ref: Curtis Faith (2007), Moskowitz et al. (2012), research.ipynb
     """
@@ -25,11 +26,8 @@ class FuturesTrendFollowing(QCAlgorithm):
         self.set_start_date(2018, 1, 1)
         self.set_cash(100000)
 
-        # SPY for parking (not in signal universe)
-        self.spy = self.add_equity("SPY", Resolution.DAILY).symbol
-
-        # 5 diversified ETFs for trend signals (SPY removed)
-        self.etf_list = ["GLD", "TLT", "EFA", "VNQ", "DBC"]
+        # 6 diversified ETFs across asset classes
+        self.etf_list = ["SPY", "GLD", "TLT", "EFA", "VNQ", "DBC"]
         self.symbols = {}
 
         for etf in self.etf_list:
@@ -39,14 +37,13 @@ class FuturesTrendFollowing(QCAlgorithm):
         # Donchian parameters
         self.entry_period = 20
         self.exit_period = 10
-        self.trend_weight = 0.20   # 20% per trend position (satellite)
-        self.spy_core = 0.40       # 40% SPY core during active trends
-        self.spy_full = 0.95       # 95% SPY when no trends
-        self.max_positions = 3
+        self.weight = 0.33         # 33% per position
+        self.max_positions = 3     # Max 3 at once = 99% max invested
 
         # Position tracking
         self.positions = {etf: 0 for etf in self.etf_list}
 
+        # Daily scan
         self.schedule.on(
             self.date_rules.every_day("SPY"),
             self.time_rules.after_market_open("SPY", 30),
@@ -104,21 +101,10 @@ class FuturesTrendFollowing(QCAlgorithm):
 
         for etf, mom in candidates[:available]:
             symbol = self.symbols[etf]
-            self.set_holdings(symbol, self.trend_weight)
+            self.set_holdings(symbol, self.weight)
             self.positions[etf] = 1
             self.log(f"LONG {etf} at {self.securities[symbol].price:.2f}, mom={mom:.3f}")
 
-        # Phase 3: Adjust SPY parking
-        active_count = sum(self.positions.values())
-        if active_count > 0:
-            spy_target = self.spy_core
-        else:
-            spy_target = self.spy_full
-
-        current_spy = self.portfolio[self.spy].holdings_value / self.portfolio.total_portfolio_value if self.portfolio.total_portfolio_value > 0 else 0
-        if abs(current_spy - spy_target) > 0.05:
-            self.set_holdings(self.spy, spy_target)
-
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"TREND v3.0: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
+        self.log(f"TREND v2.3: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
