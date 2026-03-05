@@ -59,10 +59,10 @@ Arguments:
 
 ```bash
 # Voir la sequence des cellules
-python scripts/notebook_helpers.py sequence <notebook_path> 0 30
+python scripts/notebook_tools/notebook_helpers.py sequence <notebook_path> 0 30
 
 # Detecter le kernel
-python scripts/notebook_helpers.py detect-kernel <notebook_path>
+python scripts/notebook_tools/notebook_helpers.py detect-kernel <notebook_path>
 ```
 
 #### Etape 1.2 : Extraire les dependances
@@ -234,7 +234,7 @@ Pour chaque deprecation avec un remplacement clair :
 
 ```bash
 git diff --stat <notebook_path>
-python scripts/notebook_helpers.py sequence <notebook_path> 0 30
+python scripts/notebook_tools/notebook_helpers.py sequence <notebook_path> 0 30
 ```
 
 **CRITERES** :

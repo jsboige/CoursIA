@@ -36,7 +36,7 @@ Analyser une serie de notebooks et mettre a jour le README.md correspondant avec
 1. **Executer le script d'extraction** pour obtenir la structure des notebooks :
 
 ```bash
-python scripts/extract_notebook_skeleton.py [target_path] --output detailed --code-preview
+python scripts/notebook_tools/extract_notebook_skeleton.py [target_path] --output detailed --code-preview
 ```
 
 2. **Analyser le resultat** pour identifier :
@@ -230,38 +230,38 @@ Task(
 
 ### Option 1 : notebook_tools.py (recommande)
 
-Le script consolide `scripts/notebook_tools.py` offre plusieurs commandes :
+Le script consolide `scripts/notebook_tools/notebook_tools.py` offre plusieurs commandes :
 
 ```bash
 # Extraire le squelette d'un notebook ou repertoire
-python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output markdown
-python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output json
-python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output summary
+python scripts/notebook_tools/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output markdown
+python scripts/notebook_tools/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output json
+python scripts/notebook_tools/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output summary
 
 # Valider la structure des notebooks
-python scripts/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku --quick
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku --quick
 
 # Analyser les sorties
-python scripts/notebook_tools.py analyze MyIA.AI.Notebooks/Sudoku
+python scripts/notebook_tools/notebook_tools.py analyze MyIA.AI.Notebooks/Sudoku
 
 # Verifier l'environnement
-python scripts/notebook_tools.py check-env Sudoku
+python scripts/notebook_tools/notebook_tools.py check-env Sudoku
 ```
 
 ### Option 2 : extract_notebook_skeleton.py (alternatif)
 
-Le script `scripts/extract_notebook_skeleton.py` peut aussi etre utilise :
+Le script `scripts/notebook_tools/extract_notebook_skeleton.py` peut aussi etre utilise :
 
 ```bash
 # Format resume
-python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku
+python scripts/notebook_tools/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku
 
 # Format tableau markdown
-python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output markdown
+python scripts/notebook_tools/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output markdown
 
 # Format detaille avec previews de code
-python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output detailed --code-preview
+python scripts/notebook_tools/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output detailed --code-preview
 
 # Format JSON pour traitement programmatique
-python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output json
+python scripts/notebook_tools/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output json
 ```

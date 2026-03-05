@@ -23,7 +23,7 @@ Add pedagogical markdown content to Jupyter notebooks.
 1. **Parse target** - Discover notebooks to enrich
 2. **For each notebook**, launch a background agent:
    - Read the notebook-enricher agent instructions (`.claude/agents/notebook-enricher.md`)
-   - Analyze structure: `python scripts/notebook_helpers.py list {path} --verbose`
+   - Analyze structure: `python scripts/notebook_tools/notebook_helpers.py list {path} --verbose`
    - Find gaps programmatically (Python API):
      ```python
      from scripts.notebook_helpers import NotebookHelper

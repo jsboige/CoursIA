@@ -6,7 +6,7 @@ paths: MyIA.AI.Notebooks/**/*.ipynb
 
 ## Manipulation
 
-- ALWAYS use `scripts/notebook_helpers.py` and `scripts/notebook_tools.py` for notebook manipulation, NOT ad-hoc Python code
+- ALWAYS use `scripts/notebook_tools/notebook_helpers.py` and `scripts/notebook_tools/notebook_tools.py` for notebook manipulation, NOT ad-hoc Python code
 - Use `NotebookEdit` tool for cell-level changes (insert, replace, delete)
 - When inserting cells, work from BOTTOM to TOP to avoid index shifting
 - Use cell `cell_id` (not index) as reference for NotebookEdit insertions

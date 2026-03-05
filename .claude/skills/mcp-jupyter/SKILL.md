@@ -9,9 +9,9 @@ description: Reference for MCP Jupyter tools (kernel management, cell execution,
 
 | Need | Tool | Why |
 |------|------|-----|
-| Batch validation (Python) | `scripts/notebook_tools.py validate` | Faster, no kernel setup |
-| Batch execution (Python) | `scripts/notebook_tools.py execute` | Papermill CLI, simpler |
-| Structure analysis | `scripts/notebook_helpers.py list --verbose` | Local, instant |
+| Batch validation (Python) | `scripts/notebook_tools/notebook_tools.py validate` | Faster, no kernel setup |
+| Batch execution (Python) | `scripts/notebook_tools/notebook_tools.py execute` | Papermill CLI, simpler |
+| Structure analysis | `scripts/notebook_tools/notebook_helpers.py list --verbose` | Local, instant |
 | Find enrichment gaps | `NotebookHelper.find_cells_needing_enrichment()` | Python API |
 | Cell-by-cell .NET execution | **MCP** `execute_on_kernel` | Only option (Papermill blocked) |
 | Interactive debugging | **MCP** `manage_kernel` + `execute_on_kernel` | Live kernel state |

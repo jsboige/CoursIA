@@ -25,13 +25,13 @@ Execute a Jupyter notebook with full lifecycle management.
 **Local scripts (preferred for batch)**:
 ```bash
 # Full execution via notebook_tools.py
-python scripts/notebook_tools.py execute {path} --timeout 300
+python scripts/notebook_tools/notebook_tools.py execute {path} --timeout 300
 
 # Cell-by-cell with verbose output via notebook_helpers.py
-python scripts/notebook_helpers.py execute {path} --verbose
+python scripts/notebook_tools/notebook_helpers.py execute {path} --verbose
 
 # Specific cell execution
-python scripts/notebook_helpers.py execute {path} --cell 5 --timeout 60
+python scripts/notebook_tools/notebook_helpers.py execute {path} --cell 5 --timeout 60
 ```
 
 **MCP (for interactive debugging)**:

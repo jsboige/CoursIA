@@ -714,13 +714,13 @@ for nb in notebooks:
 
 ```bash
 # Validation via notebook_tools.py (général)
-python scripts/notebook_tools.py validate MyIA.AI.Notebooks/ML/notebook.ipynb --verbose
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/ML/notebook.ipynb --verbose
 
 # Validation famille complète
-python scripts/notebook_tools.py validate MyIA.AI.Notebooks/GameTheory/ --quick
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/GameTheory/ --quick
 
 # Analyse de la structure
-python scripts/notebook_tools.py skeleton notebook.ipynb --output json
+python scripts/notebook_tools/notebook_tools.py skeleton notebook.ipynb --output json
 ```
 
 ### Scripts GenAI (scripts/genai-stack/)

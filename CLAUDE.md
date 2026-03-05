@@ -40,7 +40,7 @@ python scripts/genai-stack/genai.py validate --nunchaku   # Test Nunchaku INT4
 python scripts/genai-stack/genai.py validate --notebooks  # Validation syntaxe notebooks
 python scripts/genai-stack/genai.py notebooks             # Validation Papermill notebooks
 python scripts/genai-stack/genai.py gpu                   # Verification VRAM
-python scripts/notebook_tools.py validate [target]        # Multi-family notebook verification
+python scripts/notebook_tools/notebook_tools.py validate [target]        # Multi-family notebook verification
 ```
 GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 

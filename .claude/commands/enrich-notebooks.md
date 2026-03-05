@@ -2,7 +2,7 @@ Enrich Jupyter notebooks with pedagogical content: $ARGUMENTS
 
 Use the `enrich-notebooks` and `notebook-patterns` skills for detailed patterns.
 
-1. **Analyze structure** - `python scripts/notebook_helpers.py list {path} --verbose` to identify gaps
+1. **Analyze structure** - `python scripts/notebook_tools/notebook_helpers.py list {path} --verbose` to identify gaps
 2. **Find enrichment needs** - Use `NotebookHelper.find_cells_needing_enrichment()` or `find_consecutive_code_cells()`
 3. **For each notebook**, delegate to notebook-enricher agent (model: sonnet):
    - Insert markdown cells via NotebookEdit (work BOTTOM to TOP)

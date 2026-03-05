@@ -35,56 +35,56 @@ iterator = CellIterator(
 
 ```bash
 # List cells (verbose shows source preview)
-python scripts/notebook_helpers.py list notebook.ipynb --verbose
+python scripts/notebook_tools/notebook_helpers.py list notebook.ipynb --verbose
 
 # Execute a specific cell
-python scripts/notebook_helpers.py execute notebook.ipynb --cell 5 --timeout 60
+python scripts/notebook_tools/notebook_helpers.py execute notebook.ipynb --cell 5 --timeout 60
 
 # Execute entire notebook cell-by-cell
-python scripts/notebook_helpers.py execute notebook.ipynb --verbose
+python scripts/notebook_tools/notebook_helpers.py execute notebook.ipynb --verbose
 
 # Detect kernel type
-python scripts/notebook_helpers.py detect-kernel notebook.ipynb
+python scripts/notebook_tools/notebook_helpers.py detect-kernel notebook.ipynb
 
 # Get cell source or output
-python scripts/notebook_helpers.py get-source notebook.ipynb 5
-python scripts/notebook_helpers.py get-output notebook.ipynb 5
+python scripts/notebook_tools/notebook_helpers.py get-source notebook.ipynb 5
+python scripts/notebook_tools/notebook_helpers.py get-output notebook.ipynb 5
 ```
 
 ## notebook_tools.py - High-level CLI
 
 ```bash
 # Validate structure (quick) or full (with execution)
-python scripts/notebook_tools.py validate Sudoku --quick
-python scripts/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku/Sudoku-1.ipynb
+python scripts/notebook_tools/notebook_tools.py validate Sudoku --quick
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku/Sudoku-1.ipynb
 
 # Extract skeleton for README generation
-python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Tweety --output markdown
+python scripts/notebook_tools/notebook_tools.py skeleton MyIA.AI.Notebooks/Tweety --output markdown
 
 # Analyze notebook structure
-python scripts/notebook_tools.py analyze MyIA.AI.Notebooks/SymbolicAI
+python scripts/notebook_tools/notebook_tools.py analyze MyIA.AI.Notebooks/SymbolicAI
 
 # Check environment requirements
-python scripts/notebook_tools.py check-env Lean
+python scripts/notebook_tools/notebook_tools.py check-env Lean
 
 # Execute notebook
-python scripts/notebook_tools.py execute GameTheory --timeout 120 --cell-by-cell
+python scripts/notebook_tools/notebook_tools.py execute GameTheory --timeout 120 --cell-by-cell
 ```
 
 ## extract_notebook_skeleton.py
 
 ```bash
 # Quick summary
-python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku
+python scripts/notebook_tools/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku
 
 # Markdown table for README
-python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output markdown
+python scripts/notebook_tools/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output markdown
 
 # Detailed with code previews
-python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output detailed --code-preview
+python scripts/notebook_tools/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output detailed --code-preview
 
 # JSON for programmatic use
-python scripts/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output json
+python scripts/notebook_tools/extract_notebook_skeleton.py MyIA.AI.Notebooks/Sudoku --output json
 ```
 
 ## GenAI-specific scripts (scripts/genai-stack/)

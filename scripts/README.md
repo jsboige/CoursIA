@@ -41,16 +41,16 @@ Outil CLI multi-fonction pour la gestion des notebooks.
 
 ```bash
 # Extraire la structure d'une serie de notebooks
-python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output markdown
+python scripts/notebook_tools/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output markdown
 
 # Valider les notebooks (structure uniquement)
-python scripts/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku --quick
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku --quick
 
 # Analyser le contenu
-python scripts/notebook_tools.py analyze MyIA.AI.Notebooks/Sudoku
+python scripts/notebook_tools/notebook_tools.py analyze MyIA.AI.Notebooks/Sudoku
 
 # Verifier l'environnement
-python scripts/notebook_tools.py check-env Sudoku
+python scripts/notebook_tools/notebook_tools.py check-env Sudoku
 ```
 
 ### notebook_helpers.py
@@ -59,16 +59,16 @@ Fonctions utilitaires pour la manipulation programmatique de notebooks.
 
 ```bash
 # Lister les cellules
-python scripts/notebook_helpers.py list notebook.ipynb
+python scripts/notebook_tools/notebook_helpers.py list notebook.ipynb
 
 # Analyser un notebook
-python scripts/notebook_helpers.py analyze notebook.ipynb
+python scripts/notebook_tools/notebook_helpers.py analyze notebook.ipynb
 
 # Obtenir le source d'une cellule
-python scripts/notebook_helpers.py get-source notebook.ipynb 5
+python scripts/notebook_tools/notebook_helpers.py get-source notebook.ipynb 5
 
 # Obtenir la sortie d'une cellule
-python scripts/notebook_helpers.py get-output notebook.ipynb 5
+python scripts/notebook_tools/notebook_helpers.py get-output notebook.ipynb 5
 ```
 
 ## Validation GenAI

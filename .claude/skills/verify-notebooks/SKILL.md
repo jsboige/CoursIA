@@ -19,13 +19,13 @@ Verify and test Jupyter notebooks in the CoursIA repository.
 ## Process
 
 1. **Parse target** - Determine individual file, family, or all
-2. **Discover notebooks** - Use `python scripts/notebook_tools.py validate {target} --quick` for rapid discovery and structure check
-3. **Categorize by kernel** - `python scripts/notebook_helpers.py detect-kernel {path}`
+2. **Discover notebooks** - Use `python scripts/notebook_tools/notebook_tools.py validate {target} --quick` for rapid discovery and structure check
+3. **Categorize by kernel** - `python scripts/notebook_tools/notebook_helpers.py detect-kernel {path}`
 4. **Execute tests**:
-   - **Python (preferred)**: `python scripts/notebook_tools.py execute {target} --timeout 300`
-   - **Python (alternative)**: `python scripts/notebook_helpers.py execute {path} --verbose` (cell-by-cell with output)
+   - **Python (preferred)**: `python scripts/notebook_tools/notebook_tools.py execute {target} --timeout 300`
+   - **Python (alternative)**: `python scripts/notebook_tools/notebook_helpers.py execute {path} --verbose` (cell-by-cell with output)
    - **.NET**: MCP cell-by-cell only (see `mcp-jupyter` skill) - Papermill does NOT work
-5. **Analyze errors** - `python scripts/notebook_helpers.py list {path} --verbose` to inspect failed cells
+5. **Analyze errors** - `python scripts/notebook_tools/notebook_helpers.py list {path} --verbose` to inspect failed cells
 6. **If --fix**: Use notebook-cell-iterator agent (model: sonnet) for targeted cell corrections (max 3 attempts)
 7. **Generate summary report**
 

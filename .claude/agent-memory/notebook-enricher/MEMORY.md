@@ -104,7 +104,7 @@ Before completing enrichment:
 
 ```bash
 # Analyze structure
-python scripts/notebook_helpers.py list <path> --verbose
+python scripts/notebook_tools/notebook_helpers.py list <path> --verbose
 
 # Verify consecutive code cells
 grep -A1 "cell_type.*code" <path>

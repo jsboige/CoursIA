@@ -583,15 +583,15 @@ docker-configurations/
 
 ```bash
 # Outil consolide notebook_tools.py
-python scripts/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output markdown
-python scripts/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku --quick
-python scripts/notebook_tools.py analyze MyIA.AI.Notebooks/Sudoku
-python scripts/notebook_tools.py check-env Sudoku
+python scripts/notebook_tools/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output markdown
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku --quick
+python scripts/notebook_tools/notebook_tools.py analyze MyIA.AI.Notebooks/Sudoku
+python scripts/notebook_tools/notebook_tools.py check-env Sudoku
 
 # Helpers pour manipulation de cellules
-python scripts/notebook_helpers.py list notebook.ipynb
-python scripts/notebook_helpers.py analyze notebook.ipynb
-python scripts/notebook_helpers.py get-source notebook.ipynb 5
+python scripts/notebook_tools/notebook_helpers.py list notebook.ipynb
+python scripts/notebook_tools/notebook_helpers.py analyze notebook.ipynb
+python scripts/notebook_tools/notebook_helpers.py get-source notebook.ipynb 5
 
 # Validation stack GenAI
 python scripts/genai-stack/genai.py validate --full
