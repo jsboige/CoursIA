@@ -233,54 +233,60 @@ plt.show()
 8. **"In Progress..." = bug MCP** - Attendre et reessayer
 9. **Org perso seulement** - ESGF = FREE, pas de backtest API
 
-## GARDE-FOUS : Alpha vs Beta (CRITIQUE)
+## Principes d'integrite des ameliorations
 
-### Interdiction du "beta loading deguise"
+### La valeur d'une strategie vient de son signal, pas de son exposition
 
-**NE JAMAIS ameliorer une strategie en ajoutant simplement de l'exposition a SPY, QQQ, ou tout autre indice/ETF large.**
+L'objectif pedagogique est que chaque strategie demontre un **edge specifique**
+(momentum, mean-reversion, carry, volatilite, saisonnalite...). L'amelioration
+doit renforcer cet edge, pas le noyer dans de l'exposition passive au marche.
 
-Exemples INTERDITS:
-- "SPY Parking" : investir en SPY quand la strategie est inactive
-- "Core-satellite SPY" : garder SPY comme position de base
-- Remplacer le cash par un ETF large (SPY, QQQ, IWM, VTI)
-- Ajouter un benchmark comme position par defaut
+**Le piege du "beta loading"**: Si une strategie passe du temps en cash entre
+ses signaux, il est tentant de combler ce temps mort en investissant dans un
+indice large (SPY, QQQ...). Le Sharpe monte mecaniquement, surtout en bull
+market, mais la strategie n'a rien appris a l'etudiant: on a juste achete
+le marche avec des frais supplementaires. Un simple ETF ferait aussi bien.
 
-**Pourquoi c'est interdit**: Cela revient a du beta loading. Le Sharpe monte
-mecaniquement parce que SPY a bien performe 2015-2026, mais:
-- L'alpha est nul ou negatif (la strategie ne bat pas SPY)
-- En bear market le drawdown explose
-- C'est pedagogiquement trompeur (un etudiant pense que sa strategie marche)
-- On aurait le meme resultat en achetant n'importe quel ETF performant
+**Regle**: Toute amelioration doit provenir du signal propre a la strategie.
+Si le Sharpe monte parce qu'on a ajoute de l'exposition au marche plutot que
+parce que les trades sont meilleurs, ce n'est pas une vraie amelioration.
 
-### Comment mesurer une vraie amelioration
+### Evaluer honnetement les resultats
 
-Avant d'accepter un backtest comme "ameliore", verifier:
+Nos strategies n'ont pas besoin de battre SPY systematiquement — certaines
+(ex: Options Wheel) echangent du rendement contre de la resilience en bear
+market, ce qui est un compromis valide et pedagogiquement interessant.
 
-1. **Alpha positif** : la strategie bat le benchmark (alpha > 0)
-2. **Sharpe du signal pur** : mesurer le Sharpe des trades uniquement
-   (sans les periodes non investies)
-3. **Information Ratio** : rendement excedentaire / tracking error > 0
-4. **Robustesse temporelle** : tester sur sous-periodes (bull, bear, sideways)
+L'objectif est que chaque strategie:
+- **Fonctionne** : genere des trades coherents avec sa these
+- **Soit honnete** : le Sharpe reflete le signal, pas du beta deguise
+- **Ne fasse pas rougir** : performances raisonnables pour sa classe de strategie
+- **Soit pedagogique** : un etudiant comprend pourquoi elle gagne (ou perd)
 
-### Ameliorations AUTORISEES
+### Ameliorations qui renforcent le signal
 
-- Ajuster les parametres de signal (lookback, thresholds, filtres)
-- Ameliorer le risk management (trailing stops, position sizing)
-- Ajouter des filtres de regime (VIX, SMA, volatilite)
-- Changer l'univers d'instruments DANS la meme classe d'actifs
+- Ajuster les parametres (lookback, seuils, filtres de confirmation)
+- Ameliorer le risk management (trailing stops, position sizing dynamique)
+- Ajouter des filtres de regime (VIX, SMA200, volatilite realisee)
+- Diversifier les instruments DANS la meme classe d'actifs
 - Optimiser le timing d'entree/sortie
-- Reduire le drawdown sans ajouter de beta
+- Reduire le drawdown par une meilleure gestion des positions
 
-### Cas limite : strategie qui parkait deja en cash
+### Ameliorations a eviter
 
-Si la strategie passe beaucoup de temps en cash (>50%), c'est un SIGNAL
-que la strategie a un probleme fondamental (pas assez de signaux, signals
-trop rares). La solution n'est PAS d'acheter SPY pendant les periodes
-creuses, mais de:
-- Ameliorer la frequence des signaux
-- Diversifier les instruments dans la meme classe d'actifs
-- Accepter le Sharpe tel quel (honnete)
-- Documenter le "time in market" comme metrique
+- Combler les periodes sans signal par une exposition passive au marche
+- Ajouter un "core" indiciel qui domine les rendements de la strategie
+- Toute modification dont l'effet disparaitrait si le marche etait flat
+
+### Strategie a fort taux de cash
+
+Si une strategie passe >50% du temps en cash, c'est un signal que ses
+conditions d'entree sont trop restrictives. La bonne reponse:
+- Elargir ou affiner les criteres de signal
+- Diversifier les instruments pour multiplier les opportunites
+- Documenter le "time in market" et accepter un Sharpe honnete
+- Eventuellement combiner avec une strategie complementaire (mais les deux
+  doivent avoir leur propre edge)
 
 ## Reprise apres redemarrage
 

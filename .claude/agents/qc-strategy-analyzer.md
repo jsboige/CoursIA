@@ -139,33 +139,39 @@ Format:
 | 1 | ... | Sharpe +0.X | LOW | HIGH |
 ```
 
-## GARDE-FOUS : Alpha vs Beta (CRITIQUE)
+## Principes d'integrite de l'analyse
 
-### Detection du "beta loading deguise"
+### Distinguer alpha et beta dans les ameliorations
 
-Lors de l'analyse, **TOUJOURS verifier** si une amelioration proposee revient simplement a ajouter de l'exposition a un indice/ETF large (SPY, QQQ, IWM, VTI).
+Lors de l'analyse d'un backtest, toujours se demander: **est-ce que la
+performance vient du signal propre a la strategie, ou simplement de
+l'exposition au marche?**
 
 **Signaux d'alerte a rapporter:**
-- Strategie qui "parke" en SPY/QQQ quand inactive
-- Core-satellite avec un indice large comme core
-- Remplacement du cash par un ETF broad market
-- Amelioration de Sharpe uniforme sur toutes les strategies (signe de beta, pas d'alpha)
+- Amelioration de Sharpe qui disparaitrait si le marche etait flat
+- Strategie dont les rendements correlent fortement avec SPY (beta >> alpha)
+- Periodes inactives comblees par de l'exposition passive a un indice
 
-**Dans les propositions d'amelioration, NE JAMAIS suggerer:**
-- Investir en SPY/QQQ pendant les periodes sans signal
-- Ajouter un "core" indiciel a la strategie
-- Remplacer le cash idle par un ETF performant
+**Propositions a privilegier:**
+- Renforcement du signal existant (meilleurs parametres, filtres, timing)
+- Risk management (trailing stops, position sizing, filtres de regime)
+- Diversification dans la meme classe d'actifs
+- Reduction du drawdown par une meilleure gestion des positions
 
-**Ameliorations valides a proposer:**
-- Ajustement des parametres de signal (lookback, seuils, filtres)
-- Risk management (trailing stops, position sizing, VIX filter)
-- Diversification DANS la meme classe d'actifs
-- Optimisation du timing d'entree/sortie
-- Reduction du drawdown sans ajout de beta
+**A eviter dans les propositions:**
+- Combler le cash idle par du SPY/QQQ (beta loading deguise en amelioration)
+- Toute amelioration dont l'edge ne vient pas du signal de la strategie
 
-### Metriques d'alpha a inclure dans les rapports
+### Contexte pedagogique
 
-Quand une amelioration est proposee, verifier:
+Nos strategies doivent rester honnetes. Certaines (ex: Options Wheel)
+echangent du rendement contre de la resilience en bear market — c'est
+un compromis valide. L'objectif n'est pas de battre SPY a tout prix, mais
+que chaque strategie ait un edge identifiable et des performances qui
+ne fassent pas rougir pour sa classe.
+
+### Metriques a inclure dans les rapports
+
 1. **Alpha** : rendement excedentaire par rapport au benchmark
 2. **Information Ratio** : alpha / tracking error
 3. **Time in market** : % du temps investi (documenter le cash drag)
