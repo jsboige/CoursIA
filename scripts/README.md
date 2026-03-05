@@ -23,11 +23,14 @@ scripts/
 │   ├── scripts/                 # Scripts de diagnostic
 │   └── config/                  # Variables critiques
 │
+├── environment/                 # Scripts environnement
+│   ├── audit_environment.ps1    # Audit environnement Windows
+│   ├── setup_environment.ps1    # Setup environnement Windows
+│   ├── install-ffmpeg.ps1       # Installation FFmpeg Windows
+│   └── install-ffmpeg.sh        # Installation FFmpeg Linux/macOS
+│
 ├── tests/                       # Tests unitaires
 │
-├── audit_environment.ps1        # Audit environnement Windows
-├── setup_environment.ps1        # Setup environnement Windows
-├── install-ffmpeg.ps1/.sh       # Installation FFmpeg
 └── validate_lean11.py           # Validation Lean11
 ```
 
@@ -80,10 +83,20 @@ Voir [genai-stack/README.md](genai-stack/README.md) pour la documentation comple
 
 ```bash
 # Windows - FFmpeg
-./scripts/install-ffmpeg.ps1
+./scripts/environment/install-ffmpeg.ps1
 
 # Audit environnement
-./scripts/audit_environment.ps1
+./scripts/environment/audit_environment.ps1
+
+# Setup environnement
+./scripts/environment/setup_environment.ps1
+```
+
+## Validation Lean
+
+```bash
+# Valider Lean11
+python scripts/kernels/validate_lean11.py
 ```
 
 ## Tests
