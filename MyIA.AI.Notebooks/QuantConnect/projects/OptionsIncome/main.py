@@ -6,34 +6,27 @@ from datetime import timedelta
 
 class CoveredCallStrategy(QCAlgorithm):
     """
-    Covered Call Strategy v5.0 - VIX-Filtered
+    Covered Call Strategy v6.0 - Robustness and Premium Management
 
-    Improvements over v4:
-    - Lower delta (0.20) for higher win rate (50% vs 43%)
-    - VIX filter: only sell calls when VIX > 15
-    - Wider OTM fallback (3% instead of 2%)
-    - Earlier roll (10 days instead of 7)
-    - 2 contracts (200 shares) for more premium
+    Improvements over v5.0:
+    - Extended period: 2023-2024 (tests recovery + bull, 2 regimes)
+    - Profit target: Buy back call at 50% profit (TastyTrade best practice)
+    - VIX band filter: 15 < VIX < 35 (avoids extreme vol regimes)
+    - Defensive exit: Close call if SPY drops >3% in one session
 
-    Backtest results (2024):
-    v4: Sharpe 0.288, CAGR 9.6%, MaxDD 4.0%, Win 43%
-    v5.0: Sharpe 0.747, CAGR 17.3%, MaxDD 8.3%, Win 50%
-
-    Note: 1 year only (MINUTE resolution), single-year bias possible.
-
-    Ref: CBOE BXM methodology, research.ipynb
+    v4 (2024): Sharpe 0.288, CAGR 9.6%, MaxDD 4.0%
+    v5.0 (2024): Sharpe 0.747, CAGR 17.3%, MaxDD 8.3%
+    v6.0 (2023-2024): target Sharpe >= 0.6 on 2-year period
     """
 
     def initialize(self):
-        self.set_start_date(2024, 1, 1)
+        self.set_start_date(2023, 1, 1)
         self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
-        # Minute resolution required for options chain
         equity = self.add_equity("SPY", Resolution.MINUTE)
         self.underlying = equity.symbol
 
-        # VIX for premium filter
         self.vix = self.add_data(CBOE, "VIX", Resolution.DAILY).symbol
 
         option = self.add_option("SPY", Resolution.MINUTE)
@@ -46,16 +39,22 @@ class CoveredCallStrategy(QCAlgorithm):
             max_expiry=timedelta(days=45)
         )
 
-        # Optimized parameters
-        self.target_delta = 0.20       # Lower delta = higher win rate
-        self.days_to_roll = 10         # Earlier roll
-        self.num_contracts = 2         # 200 shares
+        self.target_delta = 0.20
+        self.days_to_roll = 10
+        self.num_contracts = 2
         self.shares_per_contract = 100
-        self.vix_threshold = 15        # Only sell when VIX > 15
+        self.vix_min = 15
+        self.vix_max = 35
+        self.profit_target = 0.50
+        self.defensive_drop = 0.03
 
         self.current_call = None
+        self.call_entry_price = 0.0
         self.premium_collected = 0
         self.trades_count = 0
+        self.profit_closes = 0
+        self.defensive_closes = 0
+        self.prior_spy_close = None
 
         self.schedule.on(
             self.date_rules.every_day(self.underlying),
@@ -64,11 +63,14 @@ class CoveredCallStrategy(QCAlgorithm):
         )
         self.set_benchmark("SPY")
 
+    def on_end_of_day(self, symbol):
+        if symbol == self.underlying:
+            self.prior_spy_close = self.securities[self.underlying].price
+
     def on_data(self, data):
         pass
 
     def _manage_position(self):
-        # Ensure underlying position
         target_shares = self.shares_per_contract * self.num_contracts
         current_shares = self.portfolio[self.underlying].quantity
         if current_shares < target_shares:
@@ -78,13 +80,46 @@ class CoveredCallStrategy(QCAlgorithm):
         if self.current_call is None:
             self._sell_call()
             return
+
+        if self._check_early_close():
+            return
+
         self._check_roll()
 
+    def _check_early_close(self):
+        if self.current_call not in self.securities:
+            self.current_call = None
+            return True
+
+        option = self.securities[self.current_call]
+        current_price = option.price
+
+        if self.call_entry_price > 0 and current_price <= self.call_entry_price * (1 - self.profit_target):
+            self.market_order(self.current_call, self.num_contracts)
+            self.log(f"PROFIT TARGET: Closed at {current_price:.2f} (entry {self.call_entry_price:.2f})")
+            self.current_call = None
+            self.call_entry_price = 0.0
+            self.profit_closes += 1
+            return True
+
+        if self.prior_spy_close is not None and self.prior_spy_close > 0:
+            spy_price = self.securities[self.underlying].price
+            daily_return = (spy_price - self.prior_spy_close) / self.prior_spy_close
+            if daily_return < -self.defensive_drop:
+                self.market_order(self.current_call, self.num_contracts)
+                self.log(f"DEFENSIVE CLOSE: SPY {daily_return:.1%}")
+                self.current_call = None
+                self.call_entry_price = 0.0
+                self.defensive_closes += 1
+                return True
+
+        return False
+
     def _sell_call(self):
-        # VIX filter: skip if VIX too low (not enough premium)
         vix_price = self.securities[self.vix].price
-        if vix_price > 0 and vix_price < self.vix_threshold:
-            return
+        if vix_price > 0:
+            if vix_price < self.vix_min or vix_price > self.vix_max:
+                return
 
         chain = self.current_slice.option_chains.get(self.option_symbol, None)
         if chain is None:
@@ -99,7 +134,6 @@ class CoveredCallStrategy(QCAlgorithm):
         if len(otm_calls) == 0:
             return
 
-        # Find by delta
         best_call = None
         best_delta_diff = float('inf')
         for call in otm_calls:
@@ -109,25 +143,34 @@ class CoveredCallStrategy(QCAlgorithm):
                     best_delta_diff = delta_diff
                     best_call = call
 
-        # Fallback: ~3% OTM with ~30 days to expiry
         if best_call is None:
             target_expiry = self.time + timedelta(days=30)
             sorted_calls = sorted(otm_calls,
                                   key=lambda x: abs((x.expiry - target_expiry).days))
             if len(sorted_calls) > 0:
-                target_strike = underlying_price * 1.03  # 3% OTM
+                target_strike = underlying_price * 1.03
                 best_call = min(sorted_calls[:5],
                                 key=lambda x: abs(x.strike - target_strike))
 
         if best_call is None:
             return
 
+        entry_price = best_call.last_price
+        if entry_price <= 0:
+            entry_price = best_call.bid_price
+
         self.market_order(best_call.symbol, -self.num_contracts)
         self.current_call = best_call.symbol
-        premium = best_call.last_price * self.shares_per_contract * self.num_contracts
+        self.call_entry_price = entry_price
+        premium = entry_price * self.shares_per_contract * self.num_contracts
         self.premium_collected += premium
         self.trades_count += 1
-        self.log(f"SOLD {self.num_contracts}x CALL: Strike={best_call.strike}, Premium=${premium:.2f}, VIX={vix_price:.1f}")
+        self.log(
+            f"SOLD {self.num_contracts}x CALL: Strike={best_call.strike}, "
+            f"DTE={(best_call.expiry - self.time).days}, "
+            f"Delta={best_call.greeks.delta:.2f}, "
+            f"Premium=${premium:.2f}, VIX={vix_price:.1f}"
+        )
 
     def _check_roll(self):
         if self.current_call is None or self.current_call not in self.securities:
@@ -141,9 +184,17 @@ class CoveredCallStrategy(QCAlgorithm):
 
         if days_to_expiry <= self.days_to_roll or is_deep_itm:
             self.market_order(self.current_call, self.num_contracts)
-            self.log(f"ROLL: Closed {self.current_call}, DTE={days_to_expiry}")
+            self.log(f"ROLL: DTE={days_to_expiry}, DeepITM={is_deep_itm}")
             self.current_call = None
+            self.call_entry_price = 0.0
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"CC v5.0: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}, Premium=${self.premium_collected:,.2f}, Trades={self.trades_count}")
+        self.log(
+            f"CC v6.0: Final=${final:,.2f}, "
+            f"Return={(final-100000)/100000:.2%}, "
+            f"Premium=${self.premium_collected:,.2f}, "
+            f"Trades={self.trades_count}, "
+            f"ProfitCloses={self.profit_closes}, "
+            f"DefensiveCloses={self.defensive_closes}"
+        )
