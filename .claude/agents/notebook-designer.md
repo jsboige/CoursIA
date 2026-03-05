@@ -112,7 +112,7 @@ Créer un plan structuré avec sections et sous-sections :
 
 ### 3. Création du squelette
 
-Utiliser `scripts/notebook_helpers.py` pour créer le notebook :
+Utiliser `scripts/notebook_tools/notebook_helpers.py` pour créer le notebook :
 
 ```python
 from scripts.notebook_helpers import NotebookHelper
@@ -525,13 +525,13 @@ Task(
 
 ```bash
 # Créer un squelette vide
-python scripts/notebook_helpers.py create --kernel python3 --output new_notebook.ipynb
+python scripts/notebook_tools/notebook_helpers.py create --kernel python3 --output new_notebook.ipynb
 
 # Vérifier la structure après création
-python scripts/notebook_tools.py skeleton new_notebook.ipynb --output markdown
+python scripts/notebook_tools/notebook_tools.py skeleton new_notebook.ipynb --output markdown
 
 # Valider la cohérence
-python scripts/notebook_tools.py validate new_notebook.ipynb --quick
+python scripts/notebook_tools/notebook_tools.py validate new_notebook.ipynb --quick
 ```
 
 ### Helpers Python

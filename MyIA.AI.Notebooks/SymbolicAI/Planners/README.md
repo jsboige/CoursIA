@@ -265,10 +265,10 @@ Chaque notebook contient :
 
 ```bash
 # Verifier la structure des notebooks
-python scripts/notebook_tools.py validate MyIA.AI.Notebooks/SymbolicAI/Planners --quick
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/SymbolicAI/Planners --quick
 
 # Execution complete (mode batch)
-BATCH_MODE=true python scripts/notebook_tools.py execute MyIA.AI.Notebooks/SymbolicAI/Planners
+BATCH_MODE=true python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/SymbolicAI/Planners
 ```
 
 ## Ressources externes
@@ -306,8 +306,8 @@ Pour contribuer a cette serie :
 
 1. Suivre les conventions de [CLAUDE.md](../../../CLAUDE.md)
 2. Respecter la structure pedagogique (header, objectifs, interpretations)
-3. Utiliser `scripts/notebook_helpers.py` pour la manipulation
-4. Tester avec `python scripts/notebook_tools.py validate`
+3. Utiliser `scripts/notebook_tools/notebook_helpers.py` pour la manipulation
+4. Tester avec `python scripts/notebook_tools/notebook_tools.py validate`
 
 ## Licence
 

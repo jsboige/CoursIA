@@ -82,10 +82,10 @@ Analyser un notebook Jupyter et ajouter du markdown pedagogique aux endroits sui
 
 ```bash
 # Voir la sequence des cellules
-python scripts/notebook_helpers.py sequence <notebook_path> 0 20
+python scripts/notebook_tools/notebook_helpers.py sequence <notebook_path> 0 20
 
 # Obtenir le plan d'enrichissement
-python scripts/notebook_helpers.py enrichment-plan <notebook_path>
+python scripts/notebook_tools/notebook_helpers.py enrichment-plan <notebook_path>
 ```
 
 Le plan indique exactement quelles cellules ont besoin d'interpretation.
@@ -118,7 +118,7 @@ NotebookEdit(
 
 ```bash
 # Verifier que la cellule est au bon endroit
-python scripts/notebook_helpers.py sequence <notebook_path> <start> <end>
+python scripts/notebook_tools/notebook_helpers.py sequence <notebook_path> <start> <end>
 
 # Verifier le diff
 git diff --stat <notebook_path>
@@ -232,7 +232,7 @@ git diff --stat <notebook_path>
 # Attendu: majoritairement des insertions (+48/-2), pas de grosses suppressions
 
 # Verifier la sequence finale
-python scripts/notebook_helpers.py sequence <notebook_path> 0 30
+python scripts/notebook_tools/notebook_helpers.py sequence <notebook_path> 0 30
 ```
 
 **CRITERES** :
@@ -268,11 +268,11 @@ Task(
     Lis les instructions dans .claude/agents/notebook-enricher.md
 
     PROCESSUS OBLIGATOIRE:
-    1. python scripts/notebook_helpers.py sequence {notebook_path} 0 30
-    2. python scripts/notebook_helpers.py enrichment-plan {notebook_path}
+    1. python scripts/notebook_tools/notebook_helpers.py sequence {notebook_path} 0 30
+    2. python scripts/notebook_tools/notebook_helpers.py enrichment-plan {notebook_path}
     3. Pour CHAQUE insertion du plan (du bas vers le haut):
        a. NotebookEdit avec cell_id du CODE (pas du markdown!)
-       b. Verifier: python scripts/notebook_helpers.py sequence ...
+       b. Verifier: python scripts/notebook_tools/notebook_helpers.py sequence ...
        c. Si erreur: git checkout et recommencer
     4. git diff --stat pour validation finale
 

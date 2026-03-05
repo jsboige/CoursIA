@@ -109,7 +109,7 @@ response = client.chat.completions.create(
    - Réexécuter avec Papermill
 
 3. **Exécuter 9_Production_Patterns.ipynb**:
-   - Lancer avec `python scripts/notebook_tools.py execute 9_Production_Patterns.ipynb --batch-mode`
+   - Lancer avec `python scripts/notebook_tools/notebook_tools.py execute 9_Production_Patterns.ipynb --batch-mode`
 
 ### Améliorations Futures
 

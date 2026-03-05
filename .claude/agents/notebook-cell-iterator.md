@@ -357,7 +357,7 @@ Task(
 
 ## Helper Python disponible
 
-Le script `scripts/notebook_helpers.py` fournit :
+Le script `scripts/notebook_tools/notebook_helpers.py` fournit :
 
 ```python
 from scripts.notebook_helpers import NotebookHelper, CellIterator

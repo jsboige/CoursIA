@@ -4,7 +4,7 @@
 
 ## Raison de l'archivage
 
-Ce package a été archivé car sa fonctionnalité est désormais couverte par `scripts/notebook_tools.py` qui fournit une CLI unifiée pour la gestion des notebooks :
+Ce package a été archivé car sa fonctionnalité est désormais couverte par `scripts/notebook_tools/notebook_tools.py` qui fournit une CLI unifiée pour la gestion des notebooks :
 
 - Validation de notebooks
 - Extraction de squelettes
@@ -13,10 +13,10 @@ Ce package a été archivé car sa fonctionnalité est désormais couverte par `
 
 ## Remplacement
 
-Utiliser `scripts/notebook_tools.py` à la place.
+Utiliser `scripts/notebook_tools/notebook_tools.py` à la place.
 
 ```bash
-python scripts/notebook_tools.py --help
+python scripts/notebook_tools/notebook_tools.py --help
 ```
 
 ## Contenu original
