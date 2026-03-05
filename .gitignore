@@ -517,3 +517,10 @@ docker-configurations/services/comfyui-video/workspace/
 *_output_*.ipynb
 lean-workspace/
 tmp/
+
+# Generated ML artifacts
+*.joblib
+
+# Execution reports (temporary validation artifacts)
+batch*_execution_report.*
+reports/
