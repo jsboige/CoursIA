@@ -3,7 +3,6 @@
   "description": "Get an element from an array or list at a specified index",
   "execution_settings": {
     "default": {
-      "max_tokens": 1024,
       "temperature": 0.0,
       "top_p": 0.0,
       "presence_penalty": 0.0,
