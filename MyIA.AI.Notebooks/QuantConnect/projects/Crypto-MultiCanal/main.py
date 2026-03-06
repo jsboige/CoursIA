@@ -47,6 +47,7 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
         }
         self._day_count = 0
         self._pending_entry = None
+        self._active_sl = None  # {'price': sl_price, 'tag': tag}
 
         self.set_warm_up(TimeSpan.from_days(60))
 
@@ -59,7 +60,26 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
         self._day_count += 1
         self._recalculate_channels()
 
+        # Manual SL check (Binance Cash can't do SL + TP simultaneously)
+        if self.portfolio[self.btc].invested and self._active_sl:
+            price = float(data[self.btc].close)
+            if price <= self._active_sl['price']:
+                self.debug(f"SL HIT: {self._active_sl['tag']} | price={price:.0f} | "
+                           f"sl={self._active_sl['price']:.0f}")
+                # Cancel TP order
+                open_orders = self.transactions.get_open_order_tickets(
+                    lambda t: t.symbol == self.btc
+                )
+                for ticket in open_orders:
+                    ticket.cancel("SL hit")
+                # Sell all BTC
+                qty = self.portfolio[self.btc].quantity
+                if qty > 0:
+                    self.market_order(self.btc, -qty, tag=f"{self._active_sl['tag']} SL")
+                self._active_sl = None
+
         if not self.portfolio[self.btc].invested:
+            self._active_sl = None  # cleanup
             self._check_entry(data)
 
     def _recalculate_channels(self):
@@ -273,14 +293,13 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
             self._pending_entry = None
             actual_qty = self.portfolio[self.btc].quantity
             if actual_qty > 0:
-                self.stop_market_order(self.btc, -actual_qty, entry['sl'],
-                                       tag=f"{entry['tag']} SL")
+                # Only place TP limit order; SL is checked manually in on_data
+                # (Binance Cash can't have both SL and TP - reserves same qty twice)
                 self.limit_order(self.btc, -actual_qty, entry['tp'],
                                   tag=f"{entry['tag']} TP")
+                self._active_sl = {
+                    'price': entry['sl'], 'tag': entry['tag']
+                }
 
-        if "SL" in tag or "TP" in tag:
-            open_orders = self.transactions.get_open_order_tickets(
-                lambda t: t.symbol == self.btc
-            )
-            for ticket in open_orders:
-                ticket.cancel("OCO counterpart filled")
+        if "TP" in tag:
+            self._active_sl = None  # TP filled, cancel SL tracking
