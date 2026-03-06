@@ -46,6 +46,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="QuantConnect\**\*.cs" />
+    <Compile Remove="ML\ML.Net\Infer.NETCacheHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="SemanticKernel\Resources\" />
     <Folder Include="Sudoku\CompiledModels\" />
   </ItemGroup>

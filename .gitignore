@@ -524,3 +524,10 @@ tmp/
 # Backup venv directories
 **/venv.backup.*/
 **/venv.backup-*/
+
+# Generated ML artifacts
+*.joblib
+
+# Execution reports (temporary validation artifacts)
+batch*_execution_report.*
+reports/

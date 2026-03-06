@@ -3,7 +3,6 @@
   "description": "Analyze given text or document and extract key topics worth remembering",
   "execution_settings": {
     "default": {
-      "max_tokens": 128,
       "temperature": 0.0,
       "top_p": 0.0,
       "presence_penalty": 0.0,
