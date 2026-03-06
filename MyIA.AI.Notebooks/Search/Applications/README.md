@@ -1,63 +1,94 @@
 # Search - Applications
 
-Sous-serie de **12+ notebooks** appliquant les algorithmes de recherche et de programmation par contraintes a des problemes du monde reel. Plusieurs notebooks sont adaptes de projets etudiants EPITA, EPF et ECE.
+Sous-serie de **14 notebooks** appliquant les algorithmes de recherche et de programmation par contraintes a des problemes du monde reel. Les notebooks sont desormais organises par categorie technique.
 
-## Notebooks
+## Structure
 
-### Applications principales
+```text
+Applications/
+├── Search/     # Applications purement Search (1 notebook)
+├── CSP/        # Applications CSP (9 notebooks)
+└── Hybrid/     # Metaheuristiques / GA (4 notebooks)
+```
 
-| # | Notebook | Duree | Domaine | Techniques | Source |
-|---|----------|-------|---------|------------|--------|
-| 1 | [App-1-NQueens](App-1-NQueens.ipynb) | ~30 min | Combinatoire | Backtracking, Min-Conflicts, OR-Tools | Classique |
-| 2 | [App-2-GraphColoring](App-2-GraphColoring.ipynb) | ~45 min | Cartographie | Greedy, DSATUR, CP-SAT | ECE 2026 |
-| 3 | [App-3-NurseScheduling](App-3-NurseScheduling.ipynb) | ~60 min | Sante | Hard/soft constraints, CP-SAT | EPITA 2025 |
-| 4 | [App-4-JobShopScheduling](App-4-JobShopScheduling.ipynb) | ~60 min | Industrie | Intervalles, precedences, makespan | EPITA 2025 |
-| 5 | [App-5-Timetabling](App-5-Timetabling.ipynb) | ~50 min | Education | MiniZinc + OR-Tools | EPITA 2025 |
-| 6 | [App-6-Minesweeper](App-6-Minesweeper.ipynb) | ~50 min | Jeux/Puzzles | CSP, probabilites, LLM hybride | EPITA 2025 |
-| 7 | [App-7-Wordle](App-7-Wordle.ipynb) | ~45 min | Jeux/Puzzles | CSP + theorie de l'information | EPITA 2025 |
-| 8 | [App-8-MiniZinc](App-8-MiniZinc.ipynb) | ~50 min | Modelisation | Syntaxe MiniZinc, contraintes globales | Nouveau |
-| 9 | [App-9-EdgeDetection](App-9-EdgeDetection.ipynb) | ~40 min | Vision | GA pour filtres de convolution | Existant |
-| 10 | [App-10-Portfolio](App-10-Portfolio.ipynb) | ~40 min | Finance | Multi-objectif, frontiere de Pareto | Existant |
+---
 
-### Side tracks C#
-
-| # | Notebook | Duree | Contenu |
-|---|----------|-------|---------|
-| 9b | [App-9b-EdgeDetection-CSharp](App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | GeneticSharp pour detection de bords |
-| 10b | [App-10b-Portfolio-CSharp](App-10b-Portfolio-CSharp.ipynb) | ~30 min | GeneticSharp pour portefeuille |
-
-### Notebooks bonus
+## Applications Search (`Search/`)
 
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 11 | [App-11-Picross](App-11-Picross.ipynb) | ~40 min | Nonogrammes : demo CP vs naive (27Mx speedup) | EPITA 2025 |
-| 12 | [App-12-ConnectFour](App-12-ConnectFour.ipynb) | ~50 min | 8 algorithmes IA compares (Minimax a DQN-RL) | EPITA 2025 |
+| 1 | [App-12-ConnectFour](Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | EPITA 2025 |
 
-**Duree totale** : ~8h30
+---
+
+## Applications CSP (`CSP/`)
+
+| # | Notebook | Duree | Contenu | Source |
+|---|----------|-------|---------|--------|
+| 1 | [App-1-NQueens](CSP/App-1-NQueens.ipynb) | ~30 min | Backtracking, Min-Conflicts, OR-Tools | Classique |
+| 2 | [App-2-GraphColoring](CSP/App-2-GraphColoring.ipynb) | ~45 min | Greedy, DSATUR, CP-SAT, departements | ECE 2026 |
+| 3 | [App-3-NurseScheduling](CSP/App-3-NurseScheduling.ipynb) | ~60 min | Hard/soft constraints, CP-SAT | EPITA 2025 |
+| 4 | [App-4-JobShopScheduling](CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Intervalles, precedences, makespan | EPITA 2025 |
+| 5 | [App-5-Timetabling](CSP/App-5-Timetabling.ipynb) | ~50 min | MiniZinc + OR-Tools | EPITA 2025 |
+| 6 | [App-6-Minesweeper](CSP/App-6-Minesweeper.ipynb) | ~50 min | CSP + probabilites + LLM | EPITA 2025 |
+| 7 | [App-7-Wordle](CSP/App-7-Wordle.ipynb) | ~45 min | Filtrage CSP + theorie de l'information | EPITA 2025 |
+| 8 | [App-8-MiniZinc](CSP/App-8-MiniZinc.ipynb) | ~50 min | Syntaxe MiniZinc, contraintes globales | Nouveau |
+| 9 | [App-11-Picross](CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | EPITA 2025 |
+
+---
+
+## Applications Hybrid / Metaheuristiques (`Hybrid/`)
+
+| # | Notebook | Duree | Contenu | Source |
+|---|----------|-------|---------|--------|
+| 1 | [App-9-EdgeDetection](Hybrid/App-9-EdgeDetection.ipynb) | ~40 min | GA pour filtres de convolution | Existant |
+| 2 | [App-9b-EdgeDetection-CSharp](Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | GeneticSharp (C#) | Existant |
+| 3 | [App-10-Portfolio](Hybrid/App-10-Portfolio.ipynb) | ~40 min | Multi-objectif, frontiere de Pareto | Existant |
+| 4 | [App-10b-Portfolio-CSharp](Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | GeneticSharp (C#) | Existant |
+
+---
 
 ## Prerequis par notebook
 
-Tous les notebooks necessitent les [Fondations](../Foundations/README.md). Prerequis specifiques :
+### Applications Search
 
-| Notebook | Fondations requises | Dependances supplementaires |
-|----------|--------------------|-----------------------------|
-| App-1 NQueens | Search-6 (CSP) | - |
-| App-2 GraphColoring | Search-6, Search-7 | networkx |
-| App-3 NurseScheduling | Search-8 (CSP Advanced) | ortools |
-| App-4 JobShopScheduling | Search-4, Search-8 | ortools |
-| App-5 Timetabling | Search-8 | minizinc (optionnel) |
-| App-6 Minesweeper | Search-7 (Consistency) | - |
-| App-7 Wordle | Search-6, Search-7 | - |
-| App-8 MiniZinc | Search-8 | minizinc |
+| Notebook | Fondations requises |
+|----------|--------------------|
+| App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
+
+### Applications CSP
+
+| Notebook | Fondations requises | Dependances |
+|----------|--------------------|-------------|
+| App-1 NQueens | CSP-1 (Fundamentals) | - |
+| App-2 GraphColoring | CSP-1, CSP-2 | networkx |
+| App-3 NurseScheduling | CSP-3, CSP-4 | ortools |
+| App-4 JobShopScheduling | CSP-3, CSP-4 | ortools |
+| App-5 Timetabling | CSP-3 | minizinc |
+| App-6 Minesweeper | CSP-2 (Consistency) | - |
+| App-7 Wordle | CSP-1, CSP-2 | - |
+| App-8 MiniZinc | CSP-3 | minizinc |
+| App-11 Picross | CSP-3, Search-10 (DLX) | ortools |
+
+### Applications Hybrid
+
+| Notebook | Fondations requises | Dependances |
+|----------|--------------------|-------------|
 | App-9 EdgeDetection | Search-5 (GA) | pygad, scikit-image |
+| App-9b EdgeDetection | Search-5 (GA) | GeneticSharp (.NET) |
 | App-10 Portfolio | Search-5 (GA), Search-11 (PL) | pygad |
-| App-11 Picross | Search-10 (DLX) | ortools |
-| App-12 ConnectFour | Search-3 (A*), Search-4 | numpy, matplotlib |
+| App-10b Portfolio | Search-5 (GA) | GeneticSharp (.NET) |
+
+---
 
 ## Sources des projets etudiants
 
-Les notebooks d'application sont adaptes des meilleurs projets etudiants identifies par comparaison croisee de 12 depots :
+- **EPITA PPC 2025** : Nurse Rostering, Job-Shop, Minesweeper, Wordle, Picross, Connect Four
+- **EPF MSMIN5IN52** : Timetabling (MiniZinc)
+- **ECE Ing4 2026** : Graph Coloring
 
-- **EPITA PPC 2025** : Nurse Rostering, Job-Shop, Minesweeper (RDER), Wordle (CSP-Wordle-Solver), Picross, Connect Four
-- **EPF MSMIN5IN52** : Crossword Generator, VRP, Timetabling (MiniZinc)
-- **ECE Ing4 2026** : Graph Coloring (groupe-15)
+---
+
+## Retour
+
+[<- Retour a la serie Search](../README.md)
