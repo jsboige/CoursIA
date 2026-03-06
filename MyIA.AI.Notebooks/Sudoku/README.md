@@ -377,8 +377,8 @@ Sudoku-0-Csharp (Environment - comprendre les structures)
 
 | Serie | Lien |
 |-------|------|
-| [Search - Foundations](../Search/Foundations/README.md) | Theorie : backtracking, propagation, CP avance |
-| [Search - Applications](../Search/Applications/README.md) | Autres problemes CSP : N-Queens, Minesweeper, Wordle |
+| [Search - Part1-Foundations](../Search/Part1-Foundations/README.md) | Theorie : backtracking, metaheuristiques, DLX |
+| [Search - Part2-CSP](../Search/Part2-CSP/README.md) | Programmation par contraintes : AC-3, CP-SAT, scheduling |
 | [SymbolicAI](../SymbolicAI/README.md) | Z3 SMT (approfondi), OR-Tools |
 | [Probas/Infer](../Probas/README.md) | Infer.NET (approfondi) |
 | [GameTheory](../GameTheory/README.md) | Minimax, MCTS (jeux combinatoires) |
