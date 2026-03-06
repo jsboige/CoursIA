@@ -6,10 +6,10 @@ Cette serie explore les algorithmes de recherche et d'optimisation, de la formal
 
 | Partie | Notebooks | Duree |
 |--------|-----------|-------|
-| Partie 1: Search Fondamental | 9 | ~10h |
+| Partie 1: Search Fondamental | 11 | ~12h30 |
 | Partie 2: Programmation par Contraintes | 9 | ~9h |
 | Applications | 14 | ~10h30 |
-| **Total** | **32** | **~29h30** |
+| **Total** | **34** | **~32h** |
 
 | Statistique | Valeur |
 |-------------|--------|
@@ -20,7 +20,7 @@ Cette serie explore les algorithmes de recherche et d'optimisation, de la formal
 
 ## Partie 1 : Search Fondamental (`Part1-Foundations/`)
 
-Algorithmes de recherche classiques et metaheuristiques.
+Algorithmes de recherche classiques, recherche adversariale et metaheuristiques.
 
 | # | Notebook | Duree | Contenu | Prerequis |
 |---|----------|-------|---------|-----------|
@@ -29,10 +29,12 @@ Algorithmes de recherche classiques et metaheuristiques.
 | 3 | [Search-3-Informed](Part1-Foundations/Search-3-Informed.ipynb) | ~50 min | A*, Greedy, IDA*, heuristiques admissibles et consistantes | Search-2 |
 | 4 | [Search-4-LocalSearch](Part1-Foundations/Search-4-LocalSearch.ipynb) | ~45 min | Hill Climbing, Simulated Annealing, Tabu Search, paysages de fitness | Search-2 |
 | 5 | [Search-5-GeneticAlgorithms](Part1-Foundations/Search-5-GeneticAlgorithms.ipynb) | ~50 min | Selection, crossover, mutation, DEAP/PyGAD, theorie unifiee | Search-4 |
-| 6 | [Search-9-Metaheuristics](Part1-Foundations/Search-9-Metaheuristics.ipynb) | ~1h30 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif | Search-4, Search-5 |
-| 7 | [Search-10-DancingLinks](Part1-Foundations/Search-10-DancingLinks.ipynb) | ~1h30 | Algorithme X, DLX, Sudoku, N-Queens, Pentominoes | Search-2 |
-| 8 | [Search-11-LinearProgramming](Part1-Foundations/Search-11-LinearProgramming.ipynb) | ~2h | PuLP, simplex, transport, diet, sensibilite, PLNE | Algebre lineaire |
-| 9 | [Search-12-SymbolicAutomata](Part1-Foundations/Search-12-SymbolicAutomata.ipynb) | ~2h | DFA/NFA (automata-lib), predicats Z3, automates symboliques | Search-1, SymbolicAI/Z3 |
+| 6 | [Search-6-AdversarialSearch](Part1-Foundations/Search-6-AdversarialSearch.ipynb) | ~1h | Minimax, Alpha-Beta pruning, Null-window search, Transposition tables | Search-2, Search-3 |
+| 7 | [Search-7-MCTS-And-Beyond](Part1-Foundations/Search-7-MCTS-And-Beyond.ipynb) | ~1h30 | MCTS, UCB1, OpenSpiel, AlphaGo-style (DQN+MCTS) | Search-6 |
+| 8 | [Search-8-DancingLinks](Part1-Foundations/Search-8-DancingLinks.ipynb) | ~1h30 | Algorithme X, DLX, Sudoku, N-Queens, Pentominoes | Search-2 |
+| 9 | [Search-9-LinearProgramming](Part1-Foundations/Search-9-LinearProgramming.ipynb) | ~2h | PuLP, simplex, transport, diet, sensibilite, PLNE | Algebre lineaire |
+| 10 | [Search-10-SymbolicAutomata](Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | ~2h | DFA/NFA (automata-lib), predicats Z3, automates symboliques | Search-1, SymbolicAI/Z3 |
+| 11 | [Search-11-Metaheuristics](Part1-Foundations/Search-11-Metaheuristics.ipynb) | ~1h30 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif | Search-4, Search-5 |
 
 ---
 
@@ -46,7 +48,7 @@ Algorithmes de recherche classiques et metaheuristiques.
 | 2 | [CSP-2-Consistency](Part2-CSP/CSP-2-Consistency.ipynb) | ~45 min | AC-3, Forward checking, MAC, propagation de contraintes | CSP-1 |
 | 3 | [CSP-3-Advanced](Part2-CSP/CSP-3-Advanced.ipynb) | ~50 min | AllDifferent, cumulative, circuit, symetries, LNS | CSP-2 |
 | 4 | [CSP-4-Scheduling](Part2-CSP/CSP-4-Scheduling.ipynb) | ~1h | Job-Shop (JSSP), RCPSP, Nurse Scheduling, IntervalVar, NoOverlap, Cumulative | CSP-3 |
-| 5 | [CSP-5-Optimization](Part2-CSP/CSP-5-Optimization.ipynb) | ~1h | Bin Packing, Knapsack, Cutting Stock, Portfolio Optimization, cardinalite | CSP-3, Search-11 |
+| 5 | [CSP-5-Optimization](Part2-CSP/CSP-5-Optimization.ipynb) | ~1h | Bin Packing, Knapsack, Cutting Stock, Portfolio Optimization, cardinalite | CSP-3, Search-9 |
 | 6 | [CSP-6-Hybridization](Part2-CSP/CSP-6-Hybridization.ipynb) | ~1h30 | Lazy Clause Generation (LCG), CP+SAT, CP+ML, LLM+CSP, parallelisation | CSP-4, CSP-5 |
 | 7 | [CSP-7-Soft](Part2-CSP/CSP-7-Soft.ipynb) | ~1h | Contraintes souples, Fuzzy CSP, Weighted CSP, Semiring-based CSP | CSP-1, CSP-2 |
 | 8 | [CSP-8-Temporal](Part2-CSP/CSP-8-Temporal.ipynb) | ~1h | Allen's Interval Algebra, STP, TCSP, raisonnement temporel | CSP-1, CSP-2 |
@@ -101,14 +103,22 @@ Problemes du monde reel adaptes de projets etudiants (EPITA PPC 2025, EPF MSMIN5
 Part1-Foundations/              Part2-CSP/                  Applications/
 Search-1  StateSpace     ───>  CSP-1  Fundamentals   ───>  App-1 NQueens, App-2 GraphColoring
 Search-2  Uninformed     ───>  CSP-2  Consistency    ───>  App-6 Minesweeper, App-7 Wordle
-Search-3  Informed              CSP-3  Advanced      ───>  App-3 NurseScheduling, App-4 JobShop
-Search-4  LocalSearch           CSP-4  Scheduling    ───>  App-3, App-4, App-5 Timetabling
-Search-5  GeneticAlgorithms ─┬> CSP-5  Optimization  ───>  App-10 Portfolio
-                             └> Applications/Hybrid/     App-9 EdgeDetection
-Search-9  Metaheuristics   ───>  Benchmark optimisation continue
-Search-10 Dancing Links    ───>  App-11 Picross, Sudoku-5 DLX
-Search-11 Linear Programming ─>  CSP-5 Optimization   ───>  App-10 Portfolio
-Search-12 Symbolic Automata ─>  Sudoku-12 Automates symboliques
+Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12 ConnectFour
+       │                        CSP-3  Advanced      ───>  App-3 NurseScheduling, App-4 JobShop
+       │                        CSP-4  Scheduling    ───>  App-3, App-4, App-5 Timetabling
+       └──> Search-6 (Adversarial)
+                │
+                └──> Search-7 (MCTS)
+
+Search-4  LocalSearch           CSP-5  Optimization  ───>  App-10 Portfolio
+    │                               │
+    └──> Search-5 (Genetic)    CSP-6  Hybridization ───>  LLM+CSP
+            │                       │
+            └──> Search-11 (Meta)   └──> Applications/Hybrid/ App-9 EdgeDetection
+
+Search-8  Dancing Links    ───>  App-11 Picross, Sudoku-5 DLX
+Search-9  Linear Programming ─>  CSP-5 Optimization   ───>  App-10 Portfolio
+Search-10 Symbolic Automata ─>  Sudoku-12 Automates symboliques
 ```
 
 ### Transition vers SymbolicAI
@@ -176,6 +186,8 @@ dotnet --version
 | **BFS/DFS/A*** | Algorithmes de recherche non informee et informee |
 | **Heuristique** | Fonction h(n) estimant le cout restant (f = g + h pour A*) |
 | **Recherche locale** | Hill Climbing, Simulated Annealing, Tabu Search |
+| **Recherche adversariale** | Minimax, Alpha-Beta pruning, Null-window search |
+| **MCTS** | Monte Carlo Tree Search : Selection, Expansion, Simulation, Backpropagation |
 | **Metaheuristiques** | PSO, ABC, SA, BRO - optimisation sans derivees |
 | **CSP** | Constraint Satisfaction Problem : (X, D, C) |
 | **Backtracking** | Exploration systematique avec retour arriere |
@@ -210,6 +222,7 @@ dotnet --version
 - [automata-lib](https://pypi.org/project/automata-lib/) - Automates finis
 - [MiniZinc](https://www.minizinc.org/) - Modelisation declarative
 - [GeneticSharp](https://github.com/giacomelli/GeneticSharp) - GA en C#
+- [OpenSpiel](https://github.com/deepmind/open_spiel) - Framework de jeux et RL
 
 ### Projets etudiants sources
 
@@ -228,16 +241,18 @@ Search/
 ├── search_helpers.py                      # Utilitaires partages
 ├── resources/                             # Images et donnees
 │
-├── Part1-Foundations/                     # Search Fondamental (9 notebooks)
+├── Part1-Foundations/                     # Search Fondamental (11 notebooks)
 │   ├── Search-1-StateSpace.ipynb
 │   ├── Search-2-Uninformed.ipynb
 │   ├── Search-3-Informed.ipynb
 │   ├── Search-4-LocalSearch.ipynb
 │   ├── Search-5-GeneticAlgorithms.ipynb
-│   ├── Search-9-Metaheuristics.ipynb
-│   ├── Search-10-DancingLinks.ipynb
-│   ├── Search-11-LinearProgramming.ipynb
-│   └── Search-12-SymbolicAutomata.ipynb
+│   ├── Search-6-AdversarialSearch.ipynb
+│   ├── Search-7-MCTS-And-Beyond.ipynb
+│   ├── Search-8-DancingLinks.ipynb
+│   ├── Search-9-LinearProgramming.ipynb
+│   ├── Search-10-SymbolicAutomata.ipynb
+│   └── Search-11-Metaheuristics.ipynb
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (9 notebooks)
 │   ├── CSP-1-Fundamentals.ipynb
