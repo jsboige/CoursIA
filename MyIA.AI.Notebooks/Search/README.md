@@ -8,8 +8,8 @@ Cette serie explore les algorithmes de recherche et d'optimisation, de la formal
 |--------|-----------|-------|
 | Partie 1: Search Fondamental | 11 | ~12h30 |
 | Partie 2: Programmation par Contraintes | 9 | ~9h |
-| Applications | 14 | ~10h30 |
-| **Total** | **34** | **~32h** |
+| Applications | 19 | ~14h25 |
+| **Total** | **39** | **~35h55** |
 
 | Statistique | Valeur |
 |-------------|--------|
@@ -85,6 +85,8 @@ Problemes du monde reel adaptes de projets etudiants (EPITA PPC 2025, EPF MSMIN5
 | 7 | [App-7-Wordle](Applications/CSP/App-7-Wordle.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + theorie de l'information | EPITA PPC 2025 |
 | 8 | [App-8-MiniZinc](Applications/CSP/App-8-MiniZinc.ipynb) | ~50 min | Modelisation declarative : syntaxe MiniZinc, contraintes globales | Nouveau |
 | 9 | [App-11-Picross](Applications/CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup 27Mx CP-SAT vs naive | EPITA PPC 2025 |
+| 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, equite, deplacements | ECE 2026 |
+| 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croises : backtracking, OR-Tools, generation | EPF 2025 |
 
 ### Applications Hybrides / Metaheuristiques (`Applications/Hybrid/`)
 
@@ -94,6 +96,9 @@ Problemes du monde reel adaptes de projets etudiants (EPITA PPC 2025, EPF MSMIN5
 | 2 | [App-9b-EdgeDetection-CSharp](Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
 | 3 | [App-10-Portfolio](Applications/Hybrid/App-10-Portfolio.ipynb) | ~40 min | Optimisation de portefeuille : frontiere de Pareto, multi-objectif | Existant (refonte) |
 | 4 | [App-10b-Portfolio-CSharp](Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
+| 5 | [App-13-TSP-Metaheuristics](Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
+| 6 | [App-17-VRP-Logistics](Applications/Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | EPF 2025 |
+| 7 | [App-18-HyperparameterTuning](Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayesienne, GA, PSO, Optuna | Nouveau |
 
 ---
 

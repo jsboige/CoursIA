@@ -1,14 +1,14 @@
 # Search - Applications
 
-Sous-serie de **14 notebooks** appliquant les algorithmes de recherche et de programmation par contraintes a des problemes du monde reel. Les notebooks sont desormais organises par categorie technique.
+Sous-serie de **18 notebooks** appliquant les algorithmes de recherche et de programmation par contraintes a des problemes du monde reel. Les notebooks sont desormais organises par categorie technique.
 
 ## Structure
 
 ```text
 Applications/
 ├── Search/     # Applications purement Search (1 notebook)
-├── CSP/        # Applications CSP (9 notebooks)
-└── Hybrid/     # Metaheuristiques / GA (4 notebooks)
+├── CSP/        # Applications CSP (11 notebooks)
+└── Hybrid/     # Metaheuristiques / GA (6 notebooks)
 ```
 
 ---
@@ -34,6 +34,8 @@ Applications/
 | 7 | [App-7-Wordle](CSP/App-7-Wordle.ipynb) | ~45 min | Filtrage CSP + theorie de l'information | EPITA 2025 |
 | 8 | [App-8-MiniZinc](CSP/App-8-MiniZinc.ipynb) | ~50 min | Syntaxe MiniZinc, contraintes globales | Nouveau |
 | 9 | [App-11-Picross](CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | EPITA 2025 |
+| 10 | [App-15-SportsScheduling](CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, equite, deplacements | ECE 2026 |
+| 11 | [App-16-Crossword-CSP](CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croises : backtracking, OR-Tools, generation | EPF 2025 |
 
 ---
 
@@ -45,6 +47,8 @@ Applications/
 | 2 | [App-9b-EdgeDetection-CSharp](Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | GeneticSharp (C#) | Existant |
 | 3 | [App-10-Portfolio](Hybrid/App-10-Portfolio.ipynb) | ~40 min | Multi-objectif, frontiere de Pareto | Existant |
 | 4 | [App-10b-Portfolio-CSharp](Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | GeneticSharp (C#) | Existant |
+| 5 | [App-13-TSP-Metaheuristics](Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
+| 6 | [App-17-VRP-Logistics](Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | EPF 2025 |
 
 ---
 
@@ -68,7 +72,9 @@ Applications/
 | App-6 Minesweeper | CSP-2 (Consistency) | - |
 | App-7 Wordle | CSP-1, CSP-2 | - |
 | App-8 MiniZinc | CSP-3 | minizinc |
-| App-11 Picross | CSP-3, Search-10 (DLX) | ortools |
+| App-11 Picross | CSP-3, Search-8 (DLX) | ortools |
+| App-15 SportsScheduling | CSP-3, CSP-4 | ortools |
+| App-16 Crossword-CSP | CSP-1, CSP-2 | ortools |
 
 ### Applications Hybrid
 
@@ -76,16 +82,18 @@ Applications/
 |----------|--------------------|-------------|
 | App-9 EdgeDetection | Search-5 (GA) | pygad, scikit-image |
 | App-9b EdgeDetection | Search-5 (GA) | GeneticSharp (.NET) |
-| App-10 Portfolio | Search-5 (GA), Search-11 (PL) | pygad |
+| App-10 Portfolio | Search-5 (GA), Search-9 (PL) | pygad |
 | App-10b Portfolio | Search-5 (GA) | GeneticSharp (.NET) |
+| App-13 TSP-Metaheuristics | Search-4, Search-5 | ortools |
+| App-17 VRP-Logistics | Search-4, Search-5, CSP-3 | ortools |
 
 ---
 
 ## Sources des projets etudiants
 
 - **EPITA PPC 2025** : Nurse Rostering, Job-Shop, Minesweeper, Wordle, Picross, Connect Four
-- **EPF MSMIN5IN52** : Timetabling (MiniZinc)
-- **ECE Ing4 2026** : Graph Coloring
+- **EPF MSMIN5IN52** : Timetabling (MiniZinc), Crossword Generator, VRP
+- **ECE Ing4 2026** : Graph Coloring, Sports Scheduling
 
 ---
 
