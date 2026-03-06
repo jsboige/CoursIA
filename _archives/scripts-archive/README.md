@@ -39,7 +39,7 @@ Legacy GenAI authentication scripts (December 2025).
 
 These scripts are preserved for reference. If you need similar functionality:
 
-1. **Notebook validation**: Use `scripts/notebook_tools.py validate`
+1. **Notebook validation**: Use `scripts/notebook_tools/notebook_tools.py validate`
 2. **Lean-specific validation**: Use `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/verify_lean.py`
 3. **Tweety validation**: Use `MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/verify_all_tweety.py`
 

@@ -93,7 +93,7 @@
 ### Priorité MOYENNE (Amélioration)
 
 3. **Réexécuter 9_Production_Patterns.ipynb**:
-   - Exécuter complètement avec `python scripts/notebook_tools.py execute 9_Production_Patterns.ipynb --batch-mode`
+   - Exécuter complètement avec `python scripts/notebook_tools/notebook_tools.py execute 9_Production_Patterns.ipynb --batch-mode`
 
 ### Priorité BASSE (Optionnel)
 

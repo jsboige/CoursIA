@@ -139,6 +139,44 @@ Format:
 | 1 | ... | Sharpe +0.X | LOW | HIGH |
 ```
 
+## Principes d'integrite de l'analyse
+
+### Distinguer alpha et beta dans les ameliorations
+
+Lors de l'analyse d'un backtest, toujours se demander: **est-ce que la
+performance vient du signal propre a la strategie, ou simplement de
+l'exposition au marche?**
+
+**Signaux d'alerte a rapporter:**
+- Amelioration de Sharpe qui disparaitrait si le marche etait flat
+- Strategie dont les rendements correlent fortement avec SPY (beta >> alpha)
+- Periodes inactives comblees par de l'exposition passive a un indice
+
+**Propositions a privilegier:**
+- Renforcement du signal existant (meilleurs parametres, filtres, timing)
+- Risk management (trailing stops, position sizing, filtres de regime)
+- Diversification dans la meme classe d'actifs
+- Reduction du drawdown par une meilleure gestion des positions
+
+**A eviter dans les propositions:**
+- Combler le cash idle par du SPY/QQQ (beta loading deguise en amelioration)
+- Toute amelioration dont l'edge ne vient pas du signal de la strategie
+
+### Contexte pedagogique
+
+Nos strategies doivent rester honnetes. Certaines (ex: Options Wheel)
+echangent du rendement contre de la resilience en bear market — c'est
+un compromis valide. L'objectif n'est pas de battre SPY a tout prix, mais
+que chaque strategie ait un edge identifiable et des performances qui
+ne fassent pas rougir pour sa classe.
+
+### Metriques a inclure dans les rapports
+
+1. **Alpha** : rendement excedentaire par rapport au benchmark
+2. **Information Ratio** : alpha / tracking error
+3. **Time in market** : % du temps investi (documenter le cash drag)
+4. **Robustesse** : performance stable sur bull, bear, sideways
+
 ## Gotchas
 
 - **"In Progress..." status** fait planter read_backtest (bug MCP Pydantic) -> attendre et reessayer

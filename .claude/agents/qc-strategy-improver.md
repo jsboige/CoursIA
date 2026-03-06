@@ -233,6 +233,61 @@ plt.show()
 8. **"In Progress..." = bug MCP** - Attendre et reessayer
 9. **Org perso seulement** - ESGF = FREE, pas de backtest API
 
+## Principes d'integrite des ameliorations
+
+### La valeur d'une strategie vient de son signal, pas de son exposition
+
+L'objectif pedagogique est que chaque strategie demontre un **edge specifique**
+(momentum, mean-reversion, carry, volatilite, saisonnalite...). L'amelioration
+doit renforcer cet edge, pas le noyer dans de l'exposition passive au marche.
+
+**Le piege du "beta loading"**: Si une strategie passe du temps en cash entre
+ses signaux, il est tentant de combler ce temps mort en investissant dans un
+indice large (SPY, QQQ...). Le Sharpe monte mecaniquement, surtout en bull
+market, mais la strategie n'a rien appris a l'etudiant: on a juste achete
+le marche avec des frais supplementaires. Un simple ETF ferait aussi bien.
+
+**Regle**: Toute amelioration doit provenir du signal propre a la strategie.
+Si le Sharpe monte parce qu'on a ajoute de l'exposition au marche plutot que
+parce que les trades sont meilleurs, ce n'est pas une vraie amelioration.
+
+### Evaluer honnetement les resultats
+
+Nos strategies n'ont pas besoin de battre SPY systematiquement — certaines
+(ex: Options Wheel) echangent du rendement contre de la resilience en bear
+market, ce qui est un compromis valide et pedagogiquement interessant.
+
+L'objectif est que chaque strategie:
+- **Fonctionne** : genere des trades coherents avec sa these
+- **Soit honnete** : le Sharpe reflete le signal, pas du beta deguise
+- **Ne fasse pas rougir** : performances raisonnables pour sa classe de strategie
+- **Soit pedagogique** : un etudiant comprend pourquoi elle gagne (ou perd)
+
+### Ameliorations qui renforcent le signal
+
+- Ajuster les parametres (lookback, seuils, filtres de confirmation)
+- Ameliorer le risk management (trailing stops, position sizing dynamique)
+- Ajouter des filtres de regime (VIX, SMA200, volatilite realisee)
+- Diversifier les instruments DANS la meme classe d'actifs
+- Optimiser le timing d'entree/sortie
+- Reduire le drawdown par une meilleure gestion des positions
+
+### Ameliorations a eviter
+
+- Combler les periodes sans signal par une exposition passive au marche
+- Ajouter un "core" indiciel qui domine les rendements de la strategie
+- Toute modification dont l'effet disparaitrait si le marche etait flat
+
+### Strategie a fort taux de cash
+
+Si une strategie passe >50% du temps en cash, c'est un signal que ses
+conditions d'entree sont trop restrictives. La bonne reponse:
+- Elargir ou affiner les criteres de signal
+- Diversifier les instruments pour multiplier les opportunites
+- Documenter le "time in market" et accepter un Sharpe honnete
+- Eventuellement combiner avec une strategie complementaire (mais les deux
+  doivent avoir leur propre edge)
+
 ## Reprise apres redemarrage
 
 L'etat survit au redemarrage grace a:

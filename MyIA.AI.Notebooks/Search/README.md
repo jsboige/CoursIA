@@ -6,9 +6,9 @@ Cette serie explore les algorithmes de recherche et d'optimisation, de la formal
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | ~24 (Foundations: 12, Applications: 12) |
+| Notebooks | ~30 (Foundations: 18, Applications: 12) |
 | Langages | Python (principal), C# (side tracks) |
-| Duree estimee | ~22h |
+| Duree estimee | ~29h30 |
 | Niveau | Debutant a avance |
 
 ## Structure
@@ -33,6 +33,12 @@ Progression theorique des espaces d'etats aux CSP avances.
 | 10 | [Search-10-DancingLinks](Foundations/Search-10-DancingLinks.ipynb) | ~1h30 | Algorithme X, DLX, Sudoku, N-Queens, Pentominoes | Search-2 |
 | 11 | [Search-11-LinearProgramming](Foundations/Search-11-LinearProgramming.ipynb) | ~2h | PuLP, simplex, transport, diet, sensibilite, PLNE | Algebre lineaire |
 | 12 | [Search-12-SymbolicAutomata](Foundations/Search-12-SymbolicAutomata.ipynb) | ~2h | DFA/NFA (automata-lib), predicats Z3, automates symboliques | Search-1, SymbolicAI/Z3 |
+| 13 | [Search-13-CSP-Scheduling](Foundations/Search-13-CSP-Scheduling.ipynb) | ~1h | Job-Shop (JSSP), RCPSP, Nurse Scheduling, IntervalVar, NoOverlap, Cumulative | Search-8 |
+| 14 | [Search-14-CSP-Optimization](Foundations/Search-14-CSP-Optimization.ipynb) | ~1h | Bin Packing, Knapsack, Cutting Stock, Portfolio Optimization, cardinalite | Search-8, Search-11 |
+| 15 | [Search-15-CSP-Hybridization](Foundations/Search-15-CSP-Hybridization.ipynb) | ~1h30 | Lazy Clause Generation (LCG), CP+SAT, CP+ML, LLM+CSP, parallelisation | Search-13, Search-14 |
+| 16 | [Search-16-CSP-Soft](Foundations/Search-16-CSP-Soft.ipynb) | ~1h | Contraintes souples, Fuzzy CSP, Weighted CSP, Semiring-based CSP | Search-6, Search-7 |
+| 17 | [Search-17-CSP-Temporal](Foundations/Search-17-CSP-Temporal.ipynb) | ~1h | Allen's Interval Algebra, STP, TCSP, raisonnement temporel | Search-6, Search-7 |
+| 18 | [Search-18-CSP-Distributed](Foundations/Search-18-CSP-Distributed.ipynb) | ~1h30 | Asynchronous Backtracking (ABT), AWC, Privacy-preserving CSP | Search-6, Search-7, Search-15 |
 
 ### Partie 2 : Applications (`Applications/`)
 
@@ -75,7 +81,13 @@ Search-8  CSP Advanced     ──>  App-3  NurseScheduling, App-4 JobShop, App-8
 Search-9  Metaheuristics    ──>  Benchmark optimisation continue
 Search-10 Dancing Links    ──>  App-11 Picross, Sudoku-5 DLX
 Search-11 Linear Programming─>  App-10 Portfolio optimisation
-Search-12 Symbolic Automata─>  Sudoku-12 Automata symboliques
+Search-12 Symbolic Automata─>  Sudoku-12 Automates symboliques
+Search-13 CSP Scheduling   ──>  App-3  NurseScheduling, App-4 JobShop
+Search-14 CSP Optimization ──>  App-10 Portfolio, Bin Packing
+Search-15 CSP Hybridization ──>  LLM+CSP, CP+ML, parallelisation
+Search-16 CSP Soft         ──>  Preferences, multi-objectif
+Search-17 CSP Temporal     ──>  Planification temporelle
+Search-18 CSP Distributed  ──>  Multi-agent, privacy
 ```
 
 ## Liens avec les autres series

@@ -8,9 +8,9 @@ Actions:
 - `fix <path> [--max-iter=5]` - Correct execution errors
 
 Iterative loop:
-1. Execute via `python scripts/notebook_tools.py execute {path}` or MCP cell-by-cell
-2. Validate via `python scripts/notebook_tools.py validate {path}`
-3. Analyze errors with `python scripts/notebook_helpers.py list {path} --verbose`
+1. Execute via `python scripts/notebook_tools/notebook_tools.py execute {path}` or MCP cell-by-cell
+2. Validate via `python scripts/notebook_tools/notebook_tools.py validate {path}`
+3. Analyze errors with `python scripts/notebook_tools/notebook_helpers.py list {path} --verbose`
 4. Apply fixes via appropriate sub-agent (enricher, cell-iterator, cleaner)
 5. Re-validate and measure improvement
 

@@ -531,3 +531,7 @@ tmp/
 # Execution reports (temporary validation artifacts)
 batch*_execution_report.*
 reports/
+
+# Claude Code MCP config (contains API tokens)
+.mcp.json
+.claude/qc-mcp-wrapper.py

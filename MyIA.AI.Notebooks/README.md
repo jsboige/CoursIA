@@ -117,11 +117,11 @@ docker-compose up -d
 ### Validation
 ```bash
 # Valider les notebooks
-python scripts/notebook_tools.py validate GenAI --quick
-python scripts/notebook_tools.py validate MyIA.AI.Notebooks/ML --quick
+python scripts/notebook_tools/notebook_tools.py validate GenAI --quick
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/ML --quick
 
 # Exécuter en batch
-python scripts/notebook_tools.py execute GenAI --timeout 300
+python scripts/notebook_tools/notebook_tools.py execute GenAI --timeout 300
 ```
 
 ### Support

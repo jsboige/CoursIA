@@ -116,10 +116,10 @@ Ce mode desactive les interactions utilisateur et utilise des exemples predefini
 
 ```bash
 # Valider la structure
-python scripts/notebook_tools.py validate GenAI/Texte --quick
+python scripts/notebook_tools/notebook_tools.py validate GenAI/Texte --quick
 
 # Executer tous les notebooks
-python scripts/notebook_tools.py execute GenAI/Texte --timeout 300
+python scripts/notebook_tools/notebook_tools.py execute GenAI/Texte --timeout 300
 ```
 
 ## Relation avec les autres series
