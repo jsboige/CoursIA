@@ -8,8 +8,8 @@ Cette serie explore les algorithmes de recherche et d'optimisation, de la formal
 |--------|-----------|-------|
 | Partie 1: Search Fondamental | 11 | ~12h30 |
 | Partie 2: Programmation par Contraintes | 9 | ~9h |
-| Applications | 19 | ~14h25 |
-| **Total** | **39** | **~35h55** |
+| Applications | 20 | ~15h10 |
+| **Total** | **40** | **~36h40** |
 
 | Statistique | Valeur |
 |-------------|--------|
@@ -71,6 +71,7 @@ Problemes du monde reel adaptes de projets etudiants (EPITA PPC 2025, EPF MSMIN5
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-12-ConnectFour](Applications/Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : 8 algorithmes IA (Minimax, MCTS, DQN-RL) | EPITA PPC 2025 |
+| 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | ECE 2026 + EPITA |
 
 ### Applications CSP (`Applications/CSP/`)
 
@@ -271,10 +272,11 @@ Search/
 │   └── CSP-9-Distributed.ipynb
 │
 ├── Applications/
-│   ├── Search/                            # Applications Search (1 notebook)
-│   │   └── App-12-ConnectFour.ipynb
+│   ├── Search/                            # Applications Search (2 notebooks)
+│   │   ├── App-12-ConnectFour.ipynb
+│   │   └── App-14-ConnectFour-Adversarial.ipynb
 │   │
-│   ├── CSP/                               # Applications CSP (9 notebooks)
+│   ├── CSP/                               # Applications CSP (11 notebooks)
 │   │   ├── App-1-NQueens.ipynb
 │   │   ├── App-2-GraphColoring.ipynb
 │   │   ├── App-3-NurseScheduling.ipynb
@@ -283,13 +285,18 @@ Search/
 │   │   ├── App-6-Minesweeper.ipynb
 │   │   ├── App-7-Wordle.ipynb
 │   │   ├── App-8-MiniZinc.ipynb
-│   │   └── App-11-Picross.ipynb
+│   │   ├── App-11-Picross.ipynb
+│   │   ├── App-15-SportsScheduling.ipynb
+│   │   └── App-16-Crossword-CSP.ipynb
 │   │
-│   └── Hybrid/                            # Metaheuristiques (4 notebooks)
+│   └── Hybrid/                            # Metaheuristiques (7 notebooks)
 │       ├── App-9-EdgeDetection.ipynb
 │       ├── App-9b-EdgeDetection-CSharp.ipynb
 │       ├── App-10-Portfolio.ipynb
-│       └── App-10b-Portfolio-CSharp.ipynb
+│       ├── App-10b-Portfolio-CSharp.ipynb
+│       ├── App-13-TSP-Metaheuristics.ipynb
+│       ├── App-17-VRP-Logistics.ipynb
+│       └── App-18-HyperparameterTuning.ipynb
 │
 ├── Foundations/                           # (deprecated) Ancien repertoire
 │   └── README.md
