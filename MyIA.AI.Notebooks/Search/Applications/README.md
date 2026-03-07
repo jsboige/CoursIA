@@ -1,14 +1,14 @@
 # Search - Applications
 
-Sous-serie de **18 notebooks** appliquant les algorithmes de recherche et de programmation par contraintes a des problemes du monde reel. Les notebooks sont desormais organises par categorie technique.
+Sous-serie de **20 notebooks** appliquant les algorithmes de recherche et de programmation par contraintes a des problemes du monde reel. Les notebooks sont desormais organises par categorie technique.
 
 ## Structure
 
 ```text
 Applications/
-├── Search/     # Applications purement Search (1 notebook)
+├── Search/     # Applications purement Search (2 notebooks)
 ├── CSP/        # Applications CSP (11 notebooks)
-└── Hybrid/     # Metaheuristiques / GA (6 notebooks)
+└── Hybrid/     # Metaheuristiques / GA (7 notebooks)
 ```
 
 ---
@@ -18,6 +18,7 @@ Applications/
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-12-ConnectFour](Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | EPITA 2025 |
+| 2 | [App-14-ConnectFour-Adversarial](Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | ECE 2026 + EPITA |
 
 ---
 
@@ -49,6 +50,7 @@ Applications/
 | 4 | [App-10b-Portfolio-CSharp](Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | GeneticSharp (C#) | Existant |
 | 5 | [App-13-TSP-Metaheuristics](Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
 | 6 | [App-17-VRP-Logistics](Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | EPF 2025 |
+| 7 | [App-18-HyperparameterTuning](Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayesienne, GA, PSO, Optuna | Nouveau |
 
 ---
 
@@ -59,6 +61,7 @@ Applications/
 | Notebook | Fondations requises |
 |----------|--------------------|
 | App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
+| App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
 
 ### Applications CSP
 
@@ -86,6 +89,7 @@ Applications/
 | App-10b Portfolio | Search-5 (GA) | GeneticSharp (.NET) |
 | App-13 TSP-Metaheuristics | Search-4, Search-5 | ortools |
 | App-17 VRP-Logistics | Search-4, Search-5, CSP-3 | ortools |
+| App-18 HyperparameterTuning | Search-4, Search-5 | optuna, scikit-learn |
 
 ---
 
