@@ -22,6 +22,50 @@ Agent orchestrateur pour la construction et l'enrichissement itératif de notebo
 - **After each iteration**: Log quality metrics in agent memory; track convergence
 - **On stalled quality**: Try alternative approaches; record what worked/failed in memory
 - **Sub-agent management**: Launch parallel agents where tasks are independent; sequential where dependent
+- **Resume capability**: Check for existing progress before starting; save checkpoints after each iteration
+
+## Resume Capability (Reprise apres interruption)
+
+L'agent peut sauvegarder et reprendre son travail apres un redemarrage VSCode.
+
+### Fichier de checkpoint
+
+Chaque session cree un fichier de checkpoint :
+```
+.claude/progress/notebook-{hash}.json
+```
+
+Structure du checkpoint :
+```json
+{
+  "notebook_path": "MyIA.AI.Notebooks/Search/Search-1.ipynb",
+  "mode": "improve",
+  "started_at": "2026-03-07T10:30:00",
+  "updated_at": "2026-03-07T10:45:00",
+  "current_iteration": 2,
+  "max_iterations": 5,
+  "quality_target": 90,
+  "history": [
+    {"iteration": 1, "score": 65, "actions": ["enriched", "fixed 2 errors"]},
+    {"iteration": 2, "score": 78, "actions": ["added interpretations"]}
+  ],
+  "current_score": 78,
+  "status": "in_progress"
+}
+```
+
+### Processus de reprise
+
+1. **Au demarrage** : Verifier si un checkpoint existe pour le notebook
+2. **Si checkpoint** : Proposer de reprendre ou recommencer
+3. **Apres chaque iteration** : Mettre a jour le checkpoint
+4. **A la fin** : Archiver ou supprimer le checkpoint
+
+### Integration avec series-improver
+
+Cet agent peut etre appele par `series-improver` pour traiter chaque notebook :
+- Le checkpoint individuel est gere par cet agent
+- Le progress global de la serie est gere par `series-improver`
 
 ## Mission
 
