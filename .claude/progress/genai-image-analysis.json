@@ -1,0 +1,130 @@
+[
+  {
+    "path": "GenAI\\Image\\01-Foundation\\01-1-OpenAI-DALL-E-3.ipynb",
+    "md": 2,
+    "code": 9,
+    "total": 11,
+    "ratio": 18.181818181818183,
+    "needs_enrich": true
+  },
+  {
+    "path": "GenAI\\Image\\01-Foundation\\01-2-GPT-5-Image-Generation.ipynb",
+    "md": 2,
+    "code": 11,
+    "total": 13,
+    "ratio": 15.384615384615385,
+    "needs_enrich": true
+  },
+  {
+    "path": "GenAI\\Image\\01-Foundation\\01-3-Basic-Image-Operations.ipynb",
+    "md": 9,
+    "code": 11,
+    "total": 20,
+    "ratio": 45.0,
+    "needs_enrich": false
+  },
+  {
+    "path": "GenAI\\Image\\01-Foundation\\01-4-Forge-SD-XL-Turbo.ipynb",
+    "md": 12,
+    "code": 10,
+    "total": 22,
+    "ratio": 54.54545454545454,
+    "needs_enrich": false
+  },
+  {
+    "path": "GenAI\\Image\\01-Foundation\\01-5-Qwen-Image-Edit.ipynb",
+    "md": 12,
+    "code": 9,
+    "total": 21,
+    "ratio": 57.14285714285714,
+    "needs_enrich": false
+  },
+  {
+    "path": "GenAI\\Image\\02-Advanced\\02-1-Qwen-Image-Edit-2509.ipynb",
+    "md": 14,
+    "code": 11,
+    "total": 25,
+    "ratio": 56.00000000000001,
+    "needs_enrich": false
+  },
+  {
+    "path": "GenAI\\Image\\02-Advanced\\02-2-FLUX-1-Advanced-Generation.ipynb",
+    "md": 9,
+    "code": 11,
+    "total": 20,
+    "ratio": 45.0,
+    "needs_enrich": false
+  },
+  {
+    "path": "GenAI\\Image\\02-Advanced\\02-3-Stable-Diffusion-3-5.ipynb",
+    "md": 8,
+    "code": 10,
+    "total": 18,
+    "ratio": 44.44444444444444,
+    "needs_enrich": false
+  },
+  {
+    "path": "GenAI\\Image\\02-Advanced\\02-4-Z-Image-Lumina2.ipynb",
+    "md": 2,
+    "code": 4,
+    "total": 6,
+    "ratio": 33.33333333333333,
+    "needs_enrich": true
+  },
+  {
+    "path": "GenAI\\Image\\03-Orchestration\\03-1-Multi-Model-Comparison.ipynb",
+    "md": 2,
+    "code": 3,
+    "total": 5,
+    "ratio": 40.0,
+    "needs_enrich": false
+  },
+  {
+    "path": "GenAI\\Image\\03-Orchestration\\03-2-Workflow-Orchestration.ipynb",
+    "md": 8,
+    "code": 10,
+    "total": 18,
+    "ratio": 44.44444444444444,
+    "needs_enrich": false
+  },
+  {
+    "path": "GenAI\\Image\\03-Orchestration\\03-3-Performance-Optimization.ipynb",
+    "md": 15,
+    "code": 24,
+    "total": 39,
+    "ratio": 38.46153846153847,
+    "needs_enrich": true
+  },
+  {
+    "path": "GenAI\\Image\\04-Applications\\04-1-Educational-Content-Generation.ipynb",
+    "md": 2,
+    "code": 6,
+    "total": 8,
+    "ratio": 25.0,
+    "needs_enrich": true
+  },
+  {
+    "path": "GenAI\\Image\\04-Applications\\04-2-Creative-Workflows.ipynb",
+    "md": 2,
+    "code": 6,
+    "total": 8,
+    "ratio": 25.0,
+    "needs_enrich": true
+  },
+  {
+    "path": "GenAI\\Image\\04-Applications\\04-3-Production-Integration.ipynb",
+    "md": 2,
+    "code": 7,
+    "total": 9,
+    "ratio": 22.22222222222222,
+    "needs_enrich": true
+  },
+  {
+    "path": "GenAI\\Image\\04-Applications\\04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb",
+    "md": 6,
+    "code": 6,
+    "total": 12,
+    "ratio": 50.0,
+    "needs_enrich": false
+  }
+]
