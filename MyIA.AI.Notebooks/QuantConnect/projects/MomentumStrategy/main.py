@@ -6,22 +6,21 @@ import numpy as np
 
 class SectorMomentumETFRotation(QCAlgorithm):
     """
-    Sector ETF Momentum Rotation Strategy v3.0
+    Sector ETF Momentum Rotation Strategy v4.0
 
-    Signal-focused improvements over v2.1:
-    1. Volatility-adjusted momentum score (momentum / 63d vol):
-       - Ranks sectors by risk-adjusted return, not raw return
-       - Reduces whipsaws: high-vol sectors need higher raw return to qualify
-       - Source: Asness et al. (2013) "Value and Momentum Everywhere"
-    2. Skip-month (12m-1m): measure momentum from day 252 to day 21
-       - Avoids short-term reversal contamination (Jegadeesh 1990)
-       - Standard in academic momentum literature
-    3. Top 4 sectors instead of 3:
-       - Better diversification (36% selection rate vs 27%)
-       - Still concentrated enough to capture momentum premium
-    4. Secondary SMA20 filter on SPY:
-       - Reduces false risk-off signals in volatile but uptrending markets
-       - Both SMA200 AND SMA20 must be violated to trigger risk-off
+    Changes from v3.0:
+    5. Per-position stop-loss at -10% from entry price:
+       - Checked daily, cuts real breakdowns (XLE 2020, XLRE 2022)
+       - Does NOT truncate normal reversions (typical recovery <15 days)
+       - Finding from research.ipynb: stop-loss reduces MaxDD without
+         degrading Sharpe when combined with monthly momentum signal
+       - Source: research.ipynb H6 analysis
+
+    Unchanged from v3.0:
+    1. Volatility-adjusted momentum score (momentum / 63d vol)
+    2. Skip-month (12m-1m): lookback 252 days, skip last 21 days
+    3. Top 4 sectors (36% selection rate)
+    4. Secondary SMA20 filter on SPY (both SMA200 + SMA20 for risk-off)
 
     Backtest results:
     v1.0: Sharpe 0.216, CAGR 6.5%, MaxDD 29.9% (composite, TLT risk-off)
@@ -29,6 +28,7 @@ class SectorMomentumETFRotation(QCAlgorithm):
     v2.1: Sharpe 0.411, CAGR 10.8%, MaxDD 30.1%, Net +214.7% (BEST prev)
     v2.2: Sharpe 0.414, CAGR 10.9%, MaxDD 31.9% (composite, similar)
     v3.0: Sharpe 0.459, CAGR 11.5%, MaxDD 30.0%, Net +237.0% (vol-adj, skip-month, top4, SMA20)
+    v4.0: TBD (+ stop-loss -10% per position)
 
     ETFs sectoriels: XLK, XLF, XLE, XLV, XLI, XLY, XLP, XLU, XLB, XLRE, XLC
     Ref: Jegadeesh & Titman (1993), Faber (2007), Asness (2013), research.ipynb
@@ -68,7 +68,11 @@ class SectorMomentumETFRotation(QCAlgorithm):
         self.lookback = 252         # 12-month total lookback
         self.skip_days = 21         # Skip last 1 month (avoid short-term reversal)
         self.vol_window = 63        # 3-month window for volatility normalization
+        self.stop_loss_pct = -0.10  # Per-position stop-loss: -10% from entry price
         self.rebalance_month = -1
+
+        # Track entry prices for stop-loss (keyed by ticker string)
+        self.entry_prices = {}
 
         self.set_benchmark("SPY")
         self.set_warm_up(self.lookback + 30, Resolution.DAILY)
@@ -120,6 +124,23 @@ class SectorMomentumETFRotation(QCAlgorithm):
         if not self.spy_sma200.is_ready or not self.spy_sma20.is_ready:
             return
 
+        # Daily stop-loss check: exit any position down more than stop_loss_pct from entry
+        for ticker, entry_price in list(self.entry_prices.items()):
+            symbol = self.symbols.get(ticker)
+            if symbol is None:
+                continue
+            if not self.portfolio[symbol].invested:
+                # Position was closed elsewhere, clean up
+                del self.entry_prices[ticker]
+                continue
+            current_price = self.securities[symbol].price
+            if current_price > 0 and entry_price > 0:
+                pct_change = (current_price / entry_price) - 1
+                if pct_change < self.stop_loss_pct:
+                    self.liquidate(symbol)
+                    del self.entry_prices[ticker]
+                    self.log(f"[STOP-LOSS] {ticker}: {pct_change:.1%} from entry {entry_price:.2f}")
+
         # Monthly rebalancing
         if self.time.month == self.rebalance_month:
             return
@@ -162,13 +183,18 @@ class SectorMomentumETFRotation(QCAlgorithm):
 
             weight = 1.0 / len(top_sectors)
 
-            # Liquidate positions not in top
+            # Liquidate positions not in top, clear their entry prices
             for ticker, symbol in self.symbols.items():
                 if ticker not in top_sectors and self.portfolio[symbol].invested:
                     self.liquidate(symbol)
+                    self.entry_prices.pop(ticker, None)
 
             for ticker in top_sectors:
-                self.set_holdings(self.symbols[ticker], weight)
+                symbol = self.symbols[ticker]
+                # Record entry price for new positions (or rebalanced entries)
+                if not self.portfolio[symbol].invested:
+                    self.entry_prices[ticker] = self.securities[symbol].price
+                self.set_holdings(symbol, weight)
 
             top_str = ", ".join([f"{t}(vol-adj={scores[t]:.2f}, raw={raw_scores[t]:.3f})"
                                   for t in top_sectors])
@@ -178,10 +204,16 @@ class SectorMomentumETFRotation(QCAlgorithm):
             for ticker, symbol in self.symbols.items():
                 if ticker not in ["XLP", "XLU"] and self.portfolio[symbol].invested:
                     self.liquidate(symbol)
+                    self.entry_prices.pop(ticker, None)
+            # Update entry prices for defensive positions
+            for def_ticker in ["XLP", "XLU"]:
+                def_symbol = self.symbols[def_ticker]
+                if not self.portfolio[def_symbol].invested:
+                    self.entry_prices[def_ticker] = self.securities[def_symbol].price
             self.set_holdings(self.symbols["XLP"], 0.5)
             self.set_holdings(self.symbols["XLU"], 0.5)
             self.log(f"[RISK OFF] SPY={spy_price:.2f} < SMA200({self.spy_sma200.current.value:.2f}) & SMA20({self.spy_sma20.current.value:.2f})")
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"MOMENTUM v3.0: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
+        self.log(f"MOMENTUM v4.0: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")

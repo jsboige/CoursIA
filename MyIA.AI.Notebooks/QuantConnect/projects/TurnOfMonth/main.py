@@ -21,17 +21,29 @@ class TurnOfMonthEffect(QCAlgorithm):
     - Stop-loss -4% (v3.4): Sharpe 0.096, MaxDD 21.2% - cuts too many good cycles
     - Window 4/3 (v3.0): Sharpe -0.203 - only better in theory, not practice
 
-    Why 0.127 is the honest ceiling for this period:
+    Iteration 4 learnings (research.ipynb H7-H9, 2026-03-08):
+    - H7: VIX filter (VIX<20/25/30) tested - SMA200 already captures regime change,
+      VIX adds no incremental value. SMA200 is simpler and equally effective.
+    - H8: Dynamic VIX sizing (inv_vix, discrete3, discrete2) tested - no Sharpe gain
+      vs fixed 1.5x. Varying leverage by VIX is beta-loading, not signal amplification.
+    - H9: ToM premium is HIGHER in bear markets (SPY < SMA200), LOWER in bull.
+      2015-2026 is ~90% bull -> ToM premium is structurally diluted.
+      This confirms v2.1 is the correct implementation, period constraint is structural.
+
+    Why 0.128 is the honest ceiling for 2015-2026:
     The ToM effect has Sharpe ~0.36 (research, 2000-2025, 1.5x) because it
-    outperforms in bear markets when institutional flows dominate. In 2015-2026
-    (pure bull), every day has similar returns, diminishing the ToM advantage.
+    outperforms in bear markets (forced institutional rebalancing at month-end).
+    In 2015-2026 (pure bull), every day has similar returns, and only brief
+    bear episodes (Dec 2018, COVID Mar 2020) generate the expected ToM premium.
     The strategy correctly demonstrates the anomaly but is period-constrained.
 
     Honest assessment:
     - Effect exists: t=2.38 on day 1, confirmed by research
-    - 2015-2026 is a hard period for calendar strategies (no bear regime)
-    - Sharpe 0.127 reflects the SIGNAL quality, not a failure of implementation
-    - Pedagogically: demonstrates ToM, SMA200 regime filter, calendar windows
+    - 2015-2026 is a hard period for calendar strategies (no sustained bear regime)
+    - Sharpe 0.128 reflects the SIGNAL quality on this period, not a code failure
+    - The academic Sharpe (0.36 on 2000-2025) includes 2000-02, 2008, 2020 crises
+      where ToM premium is strong. 2015-2026 lacks these bear episodes.
+    - Pedagogically: demonstrates ToM, regime filtering, and period-dependency of signals
 
     Backtest history:
     v1.0: Sharpe -0.243, CAGR  1.5%, MaxDD 13.2%

@@ -8,7 +8,7 @@ Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec not
 
 | Projet | Description | Sharpe | CAGR | Max DD | Periode | Niveau |
 |--------|-------------|--------|------|--------|---------|--------|
-| [EMA-Cross-Crypto](EMA-Cross-Crypto/) | EMA 20/50 crossover BTCUSDT | **1.304** | 44.8% | 49.8% | 2020-2026 | Debutant |
+| [EMA-Cross-Crypto](EMA-Cross-Crypto/) | EMA 20/50 + SMA200 + trailing stop BTCUSDT | **1.272** | 38.2% | 33.1% | 2020-2026 | Debutant |
 | [EMA-Cross-Stocks](EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | **0.872** | 25.7% | 35.7% | 2015-2026 | Debutant |
 | [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.791** | 15.9% | 7.5% | 2023-2025 | Avance |
 | [SectorMomentum](SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | **0.555** | 13.0% | 22.8% | 2015-2026 | Intermediaire |
@@ -16,27 +16,31 @@ Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec not
 | [FamaFrench](FamaFrench/) | Factor ETF rotation (VLUE/MTUM/SIZE/QUAL/USMV) | **0.540** | 12.1% | 24.2% | 2015-2026 | Intermediaire |
 | [AdaptiveAssetAllocation](AdaptiveAssetAllocation/) | Momentum + min-variance multi-asset | **0.518** | 8.0% | 18.8% | 2008-2026 | Avance |
 | [Crypto-MultiCanal](Crypto-MultiCanal/) | ZigZag multi-channel (macro/meso/micro) BTCUSDT | **0.486** | 7.6% | 16.8% | 2020-2026 | Avance |
-| [AllWeather](AllWeather/) | Portfolio multi-asset Dalio (SPY/TLT/IEF/GLD) | **0.482** | 8.2% | 20.7% | 2015-2026 | Debutant |
-| [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs sectoriels | **0.459** | 11.5% | 30.0% | 2015-2026 | Intermediaire |
+| [AllWeather](AllWeather/) | Portfolio multi-asset (SPY/IEF/GLD/XLP, no TLT) | **0.520** | 8.2% | 17.0% | 2015-2026 | Debutant |
+| [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs + stop-loss | **0.472** | 11.1% | 25.8% | 2015-2026 | Intermediaire |
 | [RiskParity](RiskParity/) | Risk parity multi-asset portfolio | **0.399** | 7.8% | 20.9% | 2015-2026 | Intermediaire |
-| [EMA-Cross-Index](EMA-Cross-Index/) | EMA 20/50 crossover SPY | **0.384** | 8.2% | 24.3% | 2015-2026 | Debutant |
+| [EMA-Cross-Index](EMA-Cross-Index/) | EMA 20/60 + cooldown 3d SPY | **0.470** | 9.4% | 17.5% | 2015-2026 | Debutant |
 | [DualMomentum](DualMomentum/) | Absolute + relative momentum ETFs | **0.350** | 9.2% | 33.6% | 2015-2026 | Intermediaire |
 | [FuturesTrend](FuturesTrend/) | Donchian breakout ETFs (trend following) | **0.301** | 8.0% | 12.9% | 2018-2026 | Intermediaire |
 | [MeanReversion](MeanReversion/) | RSI multi-asset mean reversion | **0.294** | 7.5% | 16.5% | 2015-2026 | Intermediaire |
 | [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 0.128 | 4.8% | 23.7% | 2015-2026 | Debutant |
 | [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX (SVXY) | 0.051 | 3.6% | 35.2% | 2010-2026 | Avance |
 | [PairsTrading](PairsTrading/) | Statistical arbitrage equity pairs | -0.361 | 0.9% | 15.1% | 2010-2026 | Intermediaire |
-| [ForexCarry](ForexCarry/) | FX momentum G7 currencies | -0.669 | 0.7% | 12.3% | 2018-2026 | Intermediaire |
+| [ForexCarry](ForexCarry/) | FX momentum IR + skip-month G10 | -0.324 | 1.5% | 10.5% | 2013-2026 | Intermediaire |
 | [ETF-Pairs](ETF-Pairs/) | Cointegration-based ETF pairs | -0.706 | -4.7% | 35.0% | 2020-2026 | Intermediaire |
 
 ### Strategies ESGF (org educative, backtests manuels)
 
 | Projet | Description | Sharpe | Langue |
 |--------|-------------|--------|--------|
+| [Trend-Following](Trend-Following/) | Multi-asset trend following | **2.157** | Python |
 | [Multi-Layer-EMA](Multi-Layer-EMA/) | Multi-layer EMA strategy | **1.891** | Python |
 | [BTC-MACD-ADX](BTC-MACD-ADX/) | MACD + ADX filter BTC | **1.224** | C# |
+| [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | EMA crossover BTC (C#) | **1.094** | C# |
+| [Option-Wheel](Option-Wheel/) | Wheel strategy (sell puts/calls) | **0.996** | Python |
+| [Options-VGT](Options-VGT/) | Options income VGT | **0.892** | Python |
+| [CSharp-CTG-Momentum](CSharp-CTG-Momentum/) | CTG momentum strategy (C#) | **0.507** | C# |
 | [BTC-ML](BTC-ML/) | Machine learning BTC prediction | - | Python |
-| [Option-Wheel](Option-Wheel/) | Wheel strategy (sell puts/calls) | - | Python |
 
 *Sharpe et metriques issus des backtests QC Cloud. Periodes variables selon la strategie.*
 
@@ -46,8 +50,8 @@ Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec not
 
 Strategies simples basees sur le croisement de moyennes mobiles exponentielles (EMA 20/50) :
 
-- **EMA-Cross-Crypto** : Long BTCUSDT quand EMA20 > EMA50, flat sinon. Binance Cash, daily.
-- **EMA-Cross-Index** : Long SPY quand EMA20 > EMA50, flat sinon. Daily.
+- **EMA-Cross-Crypto** : Long BTCUSDT quand EMA20 > EMA50 ET BTC > SMA200 (filtre bull). Trailing stop 10%, position 80%. Binance Cash, daily.
+- **EMA-Cross-Index** : Long SPY quand EMA20 > EMA60, flat sinon. Cooldown 3 jours apres sortie. Daily.
 - **EMA-Cross-Stocks** : Equal-weight portfolio de 5 tech stocks (AAPL, MSFT, GOOGL, AMZN, NVDA). Chaque stock est long individuellement quand son EMA20 > EMA50.
 
 ### Momentum & Rotation (Intermediaire)
@@ -60,7 +64,7 @@ Strategies simples basees sur le croisement de moyennes mobiles exponentielles (
 
 ### Portfolio Construction (Intermediaire/Avance)
 
-- **AllWeather** : Portfolio Bridgewater "All Weather" simplifie (SPY/TLT/IEF/GLD). Rebalancement avec drift 3%.
+- **AllWeather** : Portfolio "All Weather" simplifie (SPY 30%/IEF 40%/GLD 20%/XLP 10%, TLT elimine). Drift rebalancing 3%.
 - **RiskParity** : Allocation inversement proportionnelle a la volatilite.
 - **AdaptiveAssetAllocation (AAA)** : Momentum + minimum-variance sur un univers multi-asset.
 - **RegimeSwitching** : Detection de regimes de marche (bull/bear/crisis) et rotation d'actifs.
@@ -86,7 +90,7 @@ Strategies simples basees sur le croisement de moyennes mobiles exponentielles (
 
 ### Forex (Intermediaire)
 
-- **ForexCarry** : Strategie momentum/carry sur devises G7.
+- **ForexCarry** : Strategie momentum FX G10 risk-adjusted (IR + skip-month). Etendue 2013-2026.
 
 ## Structure d'un Projet
 
