@@ -1,5 +1,7 @@
 # Module 01 - Decouverte de Playwright & Open WebUI
 
+> **Format** : Ce module utilise des fichiers TypeScript `.spec.ts` (pas des Jupyter Notebooks). Le fichier `01-decouverte.spec.ts` contient les tests commentes qui servent d'exercices pratiques. Ouvrez-le dans VS Code, lisez les commentaires, puis lancez les tests pour les voir s'executer.
+
 ## Objectifs pedagogiques
 
 A la fin de ce module, vous serez capable de :

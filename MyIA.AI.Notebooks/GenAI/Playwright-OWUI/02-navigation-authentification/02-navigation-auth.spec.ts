@@ -16,6 +16,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { MODEL, AUTH } from '../helpers/selectors';
+import { dismissModals } from '../helpers/chat';
 
 test.describe('02 — Navigation & Authentification', () => {
 
@@ -32,6 +33,7 @@ test.describe('02 — Navigation & Authentification', () => {
    */
   test('la session authentifiee est valide et persistante', async ({ page }) => {
     await page.goto('/');
+    await dismissModals(page);
 
     // Si la session est valide, on arrive directement sur la page de chat
     // (pas de redirection vers /auth)
@@ -150,6 +152,7 @@ test.describe('02 — Navigation & Authentification', () => {
    */
   test('acceder a la section Channels', async ({ page }) => {
     await page.goto('/');
+    await dismissModals(page);
     await expect(page.locator(MODEL.selectorButton)).toBeVisible({ timeout: 15_000 });
 
     // Essayer de trouver le lien Channels dans la navigation

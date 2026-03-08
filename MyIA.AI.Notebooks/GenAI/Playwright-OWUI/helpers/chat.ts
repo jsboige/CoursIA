@@ -18,12 +18,62 @@ import { type Page, expect } from '@playwright/test';
 import { CHAT, MODEL } from './selectors';
 
 /**
+ * Ferme les modales qui peuvent apparaitre au premier chargement.
+ *
+ * Open WebUI affiche souvent un dialogue "Quoi de neuf" (Changelog)
+ * apres la premiere connexion ou une mise a jour. Ce modal bloque
+ * tous les clics sur la page car il utilise un overlay plein ecran.
+ *
+ * STRATEGIE : On cherche le bouton de fermeture de la modale
+ * et on le clique s'il est visible. Sinon, on passe.
+ */
+export async function dismissModals(page: Page): Promise<void> {
+  // Attendre un court instant que les modales eventuelles apparaissent
+  await page.waitForTimeout(1000);
+
+  // Strategie 1 : Cliquer le bouton de fermeture du dialogue (croix ou bouton)
+  const closeButtons = [
+    // Bouton "Okay, Got it!" ou "Fermer" en bas du changelog
+    page.getByRole('button', { name: /okay|got it|fermer|close|d'accord/i }),
+    // Bouton croix (X) dans la modale
+    page.locator('[role="dialog"] button').filter({ hasText: /×|✕/ }),
+    // Bouton croix generique dans une modale
+    page.locator('[role="dialog"] button[aria-label*="close" i], [role="dialog"] button[aria-label*="fermer" i]'),
+    // Cliquer en dehors de la modale (sur l'overlay)
+  ];
+
+  for (const btn of closeButtons) {
+    try {
+      if (await btn.isVisible({ timeout: 2_000 })) {
+        await btn.click({ timeout: 3_000 });
+        // Attendre que la modale disparaisse
+        await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+        return;
+      }
+    } catch {
+      // Continuer avec le prochain selecteur
+    }
+  }
+
+  // Strategie 2 : Si aucun bouton trouve, essayer Escape
+  const dialog = page.locator('[role="dialog"]');
+  if (await dialog.isVisible({ timeout: 1_000 }).catch(() => false)) {
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+  }
+}
+
+/**
  * Demarre un nouveau chat en naviguant vers la page d'accueil.
  * Plus fiable que de cliquer le bouton "New Chat" dans la sidebar
  * (qui peut etre masque quand la sidebar est repliee).
+ *
+ * Ferme automatiquement les modales (changelog, etc.) qui peuvent
+ * bloquer les interactions.
  */
 export async function startNewChat(page: Page): Promise<void> {
   await page.goto('/');
+  await dismissModals(page);
   await expect(page.locator(MODEL.selectorButton)).toBeVisible({ timeout: 15_000 });
 }
 

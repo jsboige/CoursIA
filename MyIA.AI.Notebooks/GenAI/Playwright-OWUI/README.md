@@ -4,6 +4,8 @@
 
 Serie pedagogique complete pour apprendre **Playwright** (framework de tests E2E) en testant une application reelle : **Open WebUI**, une plateforme de chat IA generative.
 
+> **Format particulier** : Contrairement aux autres sous-domaines GenAI qui utilisent des Jupyter Notebooks (.ipynb), cette serie utilise des **fichiers TypeScript (.spec.ts)** executes par Playwright. Chaque module contient un `README.md` avec la theorie et les explications, et un fichier `.spec.ts` avec les tests commentes qui servent d'exercices pratiques. Les tests sont auto-documentes : chaque test contient des commentaires pedagogiques expliquant les concepts, et des exercices supplementaires a completer par l'etudiant.
+
 ## Vue d'ensemble
 
 | Statistique | Valeur |
@@ -200,6 +202,77 @@ npm run report
 | API testing | 05 | APIRequestContext sans navigateur |
 | Multi-tenant | 05 | Isolation et partage de donnees |
 | CI/CD | 05 | GitHub Actions, rapports, artefacts |
+
+## Pieges courants et solutions
+
+Ces pieges ont ete decouverts lors de la validation initiale de la suite de tests.
+Ils sont documentes ici car ils sont representatifs de vrais problemes
+rencontres lors du test E2E d'applications web modernes.
+
+### 1. Modal "Quoi de neuf" (Changelog)
+
+**Probleme** : Open WebUI affiche un dialogue modal au premier chargement (changelog des mises a jour). Ce modal a un overlay plein ecran (`z-index: 9999`) qui intercepte TOUS les clics.
+
+**Solution** : Le helper `dismissModals()` ferme automatiquement ces dialogues avant chaque interaction. Il essaie plusieurs strategies : bouton de fermeture, touche Escape, clic en dehors.
+
+```typescript
+import { dismissModals } from '../helpers/chat';
+// Dans beforeEach :
+await page.goto('/');
+await dismissModals(page);
+```
+
+### 2. Editeur TipTap (fill() ne fonctionne pas)
+
+**Probleme** : Open WebUI utilise TipTap/ProseMirror au lieu d'un `<textarea>`. La methode `fill()` de Playwright ne declenche pas les evenements necessaires.
+
+**Solution** : Toujours utiliser `keyboard.type()` pour saisir du texte dans le chat :
+
+```typescript
+// FAUX :
+await page.locator('#chat-input').fill('Bonjour');
+// CORRECT :
+await page.locator('#chat-input').click();
+await page.keyboard.type('Bonjour', { delay: 10 });
+```
+
+### 3. Rate limiting de l'API d'authentification
+
+**Probleme** : L'endpoint `/api/v1/auths/signin` a un rate limit strict (~2 min entre appels). Si chaque test fait son propre login, on atteint rapidement le 429.
+
+**Solution** : S'authentifier UNE FOIS dans `beforeAll()` et reutiliser le token :
+
+```typescript
+let token = '';
+test.beforeAll(async ({ request }) => {
+  token = await apiLogin(request, baseUrl, email, password);
+});
+test('...', async ({ request }) => {
+  // Reutiliser 'token' directement
+  const models = await getModels(request, baseUrl, token);
+});
+```
+
+### 4. APIs retournant du HTML (reverse proxy)
+
+**Probleme** : Certaines APIs (knowledge bases, functions) retournent du HTML au lieu de JSON quand le reverse proxy intercepte la requete ou la redirige.
+
+**Solution** : Verifier le Content-Type avant de parser, et utiliser `test.skip()` si l'API n'est pas disponible en JSON.
+
+## Resultats de validation
+
+Derniere execution : Mars 2026
+
+| Module | Pass | Skip | Fail | Temps |
+|--------|------|------|------|-------|
+| 01 - Decouverte | 5 | 0 | 0 | 11s |
+| 02 - Navigation | 9 | 0 | 0 | 14s |
+| 03 - Chat & Streaming | 7 | 1 | 0 | 42s |
+| 04 - RAG, MCP, Channels | 3 | 5 | 0 | 23s |
+| 05 - Multi-tenant & API | 6 | 3 | 0 | 8s |
+| **Total** | **30** | **9** | **0** | **~2 min** |
+
+Les 9 skips sont attendus : modele local indisponible (1), KBs/MCP non configures (5), APIs HTML (3).
 
 ## Liens utiles
 

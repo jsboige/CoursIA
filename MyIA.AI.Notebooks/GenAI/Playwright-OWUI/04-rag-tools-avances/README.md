@@ -1,5 +1,7 @@
 # Module 04 - RAG, Outils MCP & Fonctionnalites avancees
 
+> **Format** : Fichier TypeScript `.spec.ts` avec tests commentes. Ouvrez `04-rag-tools.spec.ts` dans VS Code. Certains tests dependent de la configuration de l'instance (KBs, outils MCP, canaux) — les tests non-applicables seront automatiquement skipped.
+
 ## Objectifs pedagogiques
 
 A la fin de ce module, vous serez capable de :

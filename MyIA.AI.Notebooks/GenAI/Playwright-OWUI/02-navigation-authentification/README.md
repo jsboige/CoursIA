@@ -1,5 +1,7 @@
 # Module 02 - Navigation & Authentification
 
+> **Format** : Fichier TypeScript `.spec.ts` avec tests commentes. Ouvrez `02-navigation-auth.spec.ts` dans VS Code, lisez les commentaires pedagogiques, puis lancez avec `npm run test:module2`.
+
 ## Objectifs pedagogiques
 
 A la fin de ce module, vous serez capable de :

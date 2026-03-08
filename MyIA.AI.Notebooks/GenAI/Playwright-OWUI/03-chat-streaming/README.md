@@ -1,5 +1,7 @@
 # Module 03 - Tests de Chat & Streaming LLM
 
+> **Format** : Fichier TypeScript `.spec.ts` avec tests commentes. Ouvrez `03-chat-streaming.spec.ts` dans VS Code. C'est le module le plus riche — il couvre les defis uniques du test d'applications d'IA generative.
+
 ## Objectifs pedagogiques
 
 A la fin de ce module, vous serez capable de :

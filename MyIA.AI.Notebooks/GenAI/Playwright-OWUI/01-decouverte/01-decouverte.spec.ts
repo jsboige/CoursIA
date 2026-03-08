@@ -17,8 +17,21 @@
  */
 import { test, expect } from '@playwright/test';
 import { MODEL } from '../helpers/selectors';
+import { dismissModals } from '../helpers/chat';
 
 test.describe('01 — Decouverte : Premiers pas avec Playwright', () => {
+
+  /**
+   * HOOK beforeEach : Fermer les modales eventuelles
+   *
+   * Open WebUI peut afficher un dialogue "Quoi de neuf" (changelog)
+   * a la premiere visite. Ce modal bloque TOUS les clics sur la page.
+   * On le ferme systematiquement avant chaque test.
+   */
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await dismissModals(page);
+  });
 
   /**
    * TEST 1 : Verifier que la connexion fonctionne
@@ -31,8 +44,7 @@ test.describe('01 — Decouverte : Premiers pas avec Playwright', () => {
    * et affiche le selecteur de modeles (signe que tout fonctionne).
    */
   test('connexion reussie — la page principale se charge', async ({ page }) => {
-    // Naviguer vers la page d'accueil
-    await page.goto('/');
+    // La navigation est faite dans beforeEach — on verifie juste le resultat
 
     // Attendre que le selecteur de modeles soit visible
     // C'est le premier element interactif qui apparait apres le chargement
@@ -54,7 +66,6 @@ test.describe('01 — Decouverte : Premiers pas avec Playwright', () => {
    * - count() pour compter les elements trouves
    */
   test('le selecteur de modeles liste les modeles disponibles', async ({ page }) => {
-    await page.goto('/');
     await expect(page.locator(MODEL.selectorButton)).toBeVisible({ timeout: 15_000 });
 
     // Ouvrir le selecteur de modeles
@@ -88,7 +99,6 @@ test.describe('01 — Decouverte : Premiers pas avec Playwright', () => {
    * - Regex : /menu/i pour un matching case-insensitive
    */
   test('le menu utilisateur est accessible', async ({ page }) => {
-    await page.goto('/');
     await expect(page.locator(MODEL.selectorButton)).toBeVisible({ timeout: 15_000 });
 
     // Trouver le bouton menu utilisateur
@@ -121,7 +131,6 @@ test.describe('01 — Decouverte : Premiers pas avec Playwright', () => {
    * - testInfo.attach() : Attache des fichiers au rapport
    */
   test('capturer un screenshot de la page principale', async ({ page }, testInfo) => {
-    await page.goto('/');
     await expect(page.locator(MODEL.selectorButton)).toBeVisible({ timeout: 15_000 });
 
     // Capturer un screenshot

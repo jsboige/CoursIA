@@ -105,5 +105,10 @@ export async function getFunctions(
   if (!response.ok()) {
     throw new Error(`Failed to fetch functions: ${response.status()}`);
   }
-  return await response.json();
+  // L'API peut retourner du HTML si redirigee par le reverse proxy
+  const text = await response.text();
+  if (text.startsWith('<!') || text.startsWith('<html')) {
+    throw new Error('Functions API returned HTML instead of JSON (reverse proxy issue)');
+  }
+  return JSON.parse(text);
 }

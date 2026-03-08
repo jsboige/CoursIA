@@ -1,5 +1,7 @@
 # Module 05 - Multi-tenant, API Testing & CI/CD
 
+> **Format** : Fichier TypeScript `.spec.ts` avec tests commentes. Ouvrez `05-api-multi-tenant.spec.ts` dans VS Code. Ce module utilise l'API REST (pas le navigateur) pour la plupart des tests. Configurez `OWUI_TENANT2_*` dans `.env` pour activer les tests multi-tenant.
+
 ## Objectifs pedagogiques
 
 A la fin de ce module, vous serez capable de :
