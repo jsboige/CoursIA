@@ -12,7 +12,7 @@
  * On utilise des verifications de visibilite + test.skip() pour gerer cela.
  */
 import { test, expect } from '@playwright/test';
-import { startNewChat, selectModel, sendMessage, waitForResponse } from '../helpers/chat';
+import { startNewChat, selectModel, sendMessage, waitForResponse, dismissModals } from '../helpers/chat';
 import { CHAT, MODEL } from '../helpers/selectors';
 
 const CLOUD_MODEL = process.env.OWUI_CLOUD_MODEL || 'gpt-4.1-mini';
@@ -194,6 +194,7 @@ test.describe('04c — Channels (canaux de discussion)', () => {
    */
   test('acceder aux canaux de discussion', async ({ page }) => {
     await page.goto('/');
+    await dismissModals(page);
     await expect(page.locator(MODEL.selectorButton)).toBeVisible({ timeout: 15_000 });
 
     const channelsLink = page.getByRole('link', { name: /channels|canaux/i }).first();
