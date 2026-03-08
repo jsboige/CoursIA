@@ -7,8 +7,8 @@ Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : im
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks | 96 |
-| Sous-domaines | 8 (Environment, Image, Audio, Video, Texte, SemanticKernel, EPF, Vibe-Coding) |
-| Duree totale | ~60-70h |
+| Sous-domaines | 9 (Environment, Image, Audio, Video, Texte, SemanticKernel, EPF, Vibe-Coding, Playwright-OWUI) |
+| Duree totale | ~75-85h |
 | Taux validation | 95%+ |
 
 ## Structure
@@ -22,6 +22,7 @@ GenAI/
 ├── Texte/                   # LLMs et generation de texte (10 notebooks)
 ├── SemanticKernel/          # Microsoft Semantic Kernel (14 notebooks)
 ├── EPF/                     # Projets etudiants (4 notebooks)
+├── Playwright-OWUI/         # Tests E2E Playwright sur Open WebUI (5 modules, 30+ tests)
 └── Vibe-Coding/             # Tutorials Claude Code et Roo Code
 ```
 
@@ -150,6 +151,21 @@ GenAI/
 
 [README EPF](EPF/README.md)
 
+### Playwright-OWUI/ - Tests E2E sur Open WebUI
+
+*Serie pedagogique Playwright pour tester une application GenAI reelle (5 modules, 30+ tests)*
+*Technologies: Playwright, TypeScript, Open WebUI*
+
+| Module | Nom | Duree | Niveau |
+|--------|-----|-------|--------|
+| 01 | Decouverte de Playwright & OWUI | 2-3h | Debutant |
+| 02 | Navigation & Authentification | 2-3h | Debutant+ |
+| 03 | Chat & Streaming LLM | 3h | Intermediaire |
+| 04 | RAG, Outils MCP & Avances | 3h | Intermediaire+ |
+| 05 | Multi-tenant, API & CI/CD | 3-4h | Expert |
+
+[README Playwright-OWUI](Playwright-OWUI/README.md)
+
 ### Vibe-Coding/ - Tutorials IA Generative pour Developpeurs
 
 *Ateliers Claude Code et Roo Code*
@@ -173,6 +189,7 @@ GenAI/
 | Texte | [Texte/README.md](Texte/README.md) |
 | SemanticKernel | [SemanticKernel/README.md](SemanticKernel/README.md) |
 | EPF | [EPF/README.md](EPF/README.md) |
+| Playwright-OWUI | [Playwright-OWUI/README.md](Playwright-OWUI/README.md) |
 | Vibe-Coding | [Vibe-Coding/README.md](Vibe-Coding/README.md) |
 
 ---
