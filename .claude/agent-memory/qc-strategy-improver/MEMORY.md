@@ -1,10 +1,10 @@
 # QC Strategy Improver - Agent Memory
 
-## Strategy Status (iter 3 completed 2026-03-05)
+## Strategy Status (iter 3 completed 2026-03-05, EMA-Cross-Index 2026-03-08)
 
 | Strategy | Cloud ID | Issue | Sharpe iter2 | Sharpe iter3 | Status |
 |----------|----------|-------|-------------|-------------|--------|
-| VIX-TermStructure | 28657907 | #18 | -0.27 | **+0.051** | IMPROVED |
+| VIX-TermStructure | 28657907 | #18 | -0.27 | **+0.051** | iter4 v5.0 PENDING BACKTEST |
 | ForexCarry | 28657908 | #17 | -0.654 | **-0.654** | CEILING REACHED |
 | MeanReversion | 28657904 | #19 | 0.294 | **0.365** | IMPROVED |
 | FuturesTrend | 28657834 | #20 | 0.280 | **0.301** | IMPROVED |
@@ -16,6 +16,66 @@
 | Sector-Momentum | 28433643 | #26 | 0.554 | **0.555** | CEILING (marginal) |
 | **DualMomentum** | **28692516** | **#35** | **NEW** | **0.34** | **DONE** |
 | **RiskParity** | **28692653** | **#35** | **NEW** | **0.361** | **DONE** |
+| **EMA-Cross-Index** | **28789945** | **—** | **0.384** | **~0.43 expected** | **RESEARCH DONE, NO BACKTEST YET** |
+
+## EMA-Cross-Index Lessons (2026-03-08)
+
+### v2.0 changes: EMA 20/60 + cooldown 3j
+
+**Grid search finding (25 combos, fast 8-20, slow 30-100)**:
+- EMA 20/60 retained: IS/OOS robustness = 1.55 (best), OOS Sharpe=1.325 (2010-2015)
+- slow=60 captures quarterly trends, less reactive to short corrections than slow=50
+- All tested params have OOS > IS: 2015-2026 is LESS favorable than 2010-2015 for EMA
+  (quasi-uninterrupted bull market, fewer real directional trends)
+
+**What was REJECTED and why**:
+- Triple EMA (8/21/55): Sharpe -10% vs dual. Entry too restrictive, exit too early (fast<medium).
+  On bull 2015-2026, every day of delayed entry costs.
+- Volume filter: Degrades Sharpe -5% to -19%. SPY is hyper-liquid, volume not directional signal
+  for ETFs (volume follows price, not leads). Valid for individual stocks, not index ETFs.
+- Trailing stop 3%: Best IS Sharpe (+11.8%) but 68 trades vs 19 expected. Changes strategy
+  nature from trend-following to micro-trading. NOT aligned with pedagogical objective.
+- Trailing stop 5-8%: Degrades Sharpe. SPY daily vol ~1% means 8% = 8 days, cuts healthy positions.
+- QQQ addition: Rolling correlation 0.92-0.95 with SPY. Signals nearly simultaneous.
+  CAGR increases but Sharpe decreases (-5.4%). Not true diversification on 2015-2026.
+- Cooldown > 5j: Misses legitimate re-entries after short corrections. Optimal = 3j.
+
+**Key metric: beta=0.41 throughout** — confirms signal-driven, not beta loading.
+
+**yfinance vs QC Sharpe discrepancy** (0.765 yfinance vs 0.384 QC):
+- yfinance uses Adj Close (dividends included, ~1.5% CAGR bonus)
+- QC uses raw prices, includes transaction costs
+- ~2x discrepancy is normal and consistent across all EMA strategies tested
+- Relative improvement should transfer (IS/OOS robustness confirmed)
+
+## AllWeather Lessons -> voir allweather-lessons.md
+
+Iter 4 (2026-03-08): v4.0 = TLT 0%, IEF 40%, GLD 20%, XLP 10%. Research H5 confirme
+TLT monotonement negatif. Vol targeting (H7) rejete. TIP (H6) marginal.
+Sharpe attendu v4.0: ~0.51-0.54 (vs 0.482 v3.0).
+
+**Bug QC critique**: `update_file_contents` requiert `name` pas `fileName` dans le model.
+
+## VIX-TermStructure Lessons (v5.0 research - 2026-03-08)
+
+### v5.0 changes vs v4.1 (backtest pending)
+- position_size: 0.45 -> 0.30 (SVXY max 30% safety rule)
+- stop_pct: 0.10 -> 0.07 (tighter stop, whipsaw analysis confirmed)
+- SHY added: 70% allocation at all times (not SPY - would be beta loading)
+- SHY corr with SVXY: ~0 (confirmed by scatter analysis)
+- SPY corr with SVXY: ~0.5-0.7 (confirmed - would be beta loading)
+
+### Key research findings (H1-H5)
+- H1: Sizing dynamique rejeté: corrélation ratio/rdt_t+1 est quasi-nulle -> 30% fixe
+- H2: Stop 7% confirmé: DD > 7% = 8-10% du temps (bon compromis, vs 10% trop large)
+- H3: VIX<22 conservé: VIX 22-25 a un IR plus faible et plus de risque
+- H4: SHY confirmé: +2-3% CAGR sans beta loading (corr~0)
+- H5: VIXplosion 2018 = structurel (-0.5x SVXY), non-corrigeable par le code
+
+### Sharpe target réaliste post-2018: ~0.15-0.25 (pas 0.5+)
+L'edge est divisé par 2 structurellement post-2018. Une stratégie short-vol
+avec SVXY -0.5x dans un bull market 2015-2026 ne peut pas dépasser 0.2-0.3
+sans levier ou sans alpha supplémentaire.
 
 ## VIX-TermStructure Lessons (v4.x iteration)
 
