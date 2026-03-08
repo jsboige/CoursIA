@@ -5,7 +5,7 @@ import pandas as pd
 import traceback
 from datetime import timezone
 from channel_helpers import (
-    classic_chart_zigzag, find_best_channel_line_strict_weighted,
+    classic_chart_zigzag, find_envelope_line,
     get_line_params_time, get_channel_value_at_time
 )
 # endregion
@@ -14,11 +14,12 @@ from channel_helpers import (
 class CryptoMultiChannelAlgorithm(QCAlgorithm):
     """Multi-Channel ZigZag strategy on BTC.
 
-    Concept: 2 nested channels (macro/meso) built from ZigZag pivots.
-    - Macro channel: overall trend context (500d lookback, all pivots)
-    - Meso channel: trading channel (recent pivots within macro)
+    3 nested channels (macro/meso/micro) built from ZigZag pivots.
+    - Macro: overall trend (all pivots, recency-weighted envelope)
+    - Meso: from macro's 3rd chronological anchor onward
+    - Micro: from meso's 3rd chronological anchor onward
 
-    Trade on meso channel, fall back to macro if meso unavailable.
+    Trade on the tightest available channel (micro > meso > macro).
     Signals: bounce off support + breakout above resistance (long only).
     """
 
@@ -30,24 +31,32 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
         self.set_benchmark(self.btc)
         self.set_brokerage_model(BrokerageName.BINANCE, AccountType.CASH)
 
-        # --- Strategy parameters ---
+        # --- Strategy parameters (v17: v15 base + trail 3%) ---
         self.zigzag_threshold = 0.05
         self.lookback_bars = 500
-        self.bounce_entry_offset = 0.05
-        self.breakout_confirm = 0.01
-        self.sl_pct = 0.05
-        self.tp_rr = 2.0
-        self.risk_pct = 0.02
-        self.max_violation_pct = 0.3
+        self.recency_alpha = 0.0
+        self.macro_meso_violation_pct = 0.2
+        self.micro_violation_pct = 0.1
+        self.bounce_entry_offset = 0.03
+        self.breakout_confirm = 0.005
+        self.sl_pct = 0.06
+        self.tp_rr = 2.5
+        self.risk_pct = 0.03
+        self.trail_breakeven_pct = 0.03  # v17: trail earlier (was 0.04)
+
+        # --- Trend filter ---
+        self.sma_period = 50
 
         # --- State ---
         self.channels = {
             "macro": {"resistance": (None, None), "support": (None, None)},
             "meso": {"resistance": (None, None), "support": (None, None)},
+            "micro": {"resistance": (None, None), "support": (None, None)},
         }
         self._day_count = 0
         self._pending_entry = None
-        self._active_sl = None  # {'price': sl_price, 'tag': tag}
+        self._active_sl = None
+        self._entry_price = None
 
         self.set_warm_up(TimeSpan.from_days(60))
 
@@ -63,23 +72,28 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
         # Manual SL check (Binance Cash can't do SL + TP simultaneously)
         if self.portfolio[self.btc].invested and self._active_sl:
             price = float(data[self.btc].close)
+            # Trail SL to breakeven after sufficient gain
+            entry = self._active_sl.get('entry')
+            if entry and price >= entry * (1 + self.trail_breakeven_pct):
+                new_sl = max(self._active_sl['price'], entry * 1.005)
+                if new_sl > self._active_sl['price']:
+                    self._active_sl['price'] = new_sl
             if price <= self._active_sl['price']:
                 self.debug(f"SL HIT: {self._active_sl['tag']} | price={price:.0f} | "
                            f"sl={self._active_sl['price']:.0f}")
-                # Cancel TP order
                 open_orders = self.transactions.get_open_order_tickets(
                     lambda t: t.symbol == self.btc
                 )
                 for ticket in open_orders:
                     ticket.cancel("SL hit")
-                # Sell all BTC
                 qty = self.portfolio[self.btc].quantity
                 if qty > 0:
                     self.market_order(self.btc, -qty, tag=f"{self._active_sl['tag']} SL")
                 self._active_sl = None
+                self._entry_price = None
 
         if not self.portfolio[self.btc].invested:
-            self._active_sl = None  # cleanup
+            self._active_sl = None
             self._check_entry(data)
 
     def _recalculate_channels(self):
@@ -125,29 +139,54 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
             if len(high_df) < 2 or len(low_df) < 2:
                 return
 
-            # === MACRO: all pivots ===
-            self._fit_channel("macro", high_df, low_df)
-            macro_res = self.channels["macro"]["resistance"]
-            macro_sup = self.channels["macro"]["support"]
-            macro_ok = macro_res[0] is not None and macro_sup[0] is not None
+            # All pivots array for containment checking (like v12 legacy)
+            all_pivots_np = pivots_df[['time_numeric', 'price']].values
 
-            # === MESO: recent pivots (last ~40% of time range) ===
-            self.channels["meso"] = {"resistance": (None, None), "support": (None, None)}
-            if macro_ok:
-                # Use the last N pivots as meso window
-                n_total = len(pivots_df)
-                meso_count = max(6, n_total // 3)  # at least 6 pivots, or 1/3 of total
-                recent_pivots = pivots_df.tail(meso_count)
-                meso_high = recent_pivots[recent_pivots['type'] == -1].copy()
-                meso_low = recent_pivots[recent_pivots['type'] == 1].copy()
-                if len(meso_high) >= 2 and len(meso_low) >= 2:
-                    self._fit_channel("meso", meso_high, meso_low)
+            # === MACRO: all pivots, relaxed containment ===
+            self._fit_channel("macro", high_df, low_df,
+                              all_pivots_np, self.macro_meso_violation_pct)
 
-            # Diagnostics
+            # === MESO: from macro's 3rd chronological anchor ===
+            self._reset_channel("meso")
+            self._reset_channel("micro")
+            macro_anchors = self._get_anchor_times("macro")
+            if len(macro_anchors) >= 3:
+                meso_start = macro_anchors[2]
+            elif len(macro_anchors) >= 2:
+                meso_start = macro_anchors[1]
+            else:
+                meso_start = pivots_df['time_numeric'].median()
+
+            meso_pivots = pivots_df[pivots_df['time_numeric'] >= meso_start - 1e-9]
+            meso_high = meso_pivots[meso_pivots['type'] == -1].copy()
+            meso_low = meso_pivots[meso_pivots['type'] == 1].copy()
+            meso_all = meso_pivots[['time_numeric', 'price']].values
+            if len(meso_high) >= 2 and len(meso_low) >= 2:
+                self._fit_channel("meso", meso_high, meso_low,
+                                  meso_all, self.macro_meso_violation_pct)
+
+            # === MICRO: from meso's 3rd chronological anchor ===
+            meso_anchors = self._get_anchor_times("meso")
+            if len(meso_anchors) >= 3:
+                micro_start = meso_anchors[2]
+            elif len(meso_anchors) >= 2:
+                micro_start = meso_anchors[1]
+            else:
+                micro_start = (meso_start + pivots_df['time_numeric'].iloc[-1]) / 2
+
+            micro_pivots = pivots_df[pivots_df['time_numeric'] >= micro_start - 1e-9]
+            micro_high = micro_pivots[micro_pivots['type'] == -1].copy()
+            micro_low = micro_pivots[micro_pivots['type'] == 1].copy()
+            micro_all = micro_pivots[['time_numeric', 'price']].values
+            if len(micro_high) >= 2 and len(micro_low) >= 2:
+                self._fit_channel("micro", micro_high, micro_low,
+                                  micro_all, self.micro_violation_pct)
+
+            # Diagnostics every 60 days
             if self._day_count % 60 == 1:
                 t = self.time.replace(tzinfo=timezone.utc).timestamp()
                 price = self.securities[self.btc].price
-                for scale in ["macro", "meso"]:
+                for scale in ["macro", "meso", "micro"]:
                     res = self.channels[scale]["resistance"]
                     sup = self.channels[scale]["support"]
                     if res[0] and sup[0]:
@@ -160,25 +199,37 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
         except Exception:
             self.error(f"Recalc error: {traceback.format_exc()}")
 
-    def _fit_channel(self, scale, high_df, low_df):
-        high_np = high_df[['time_numeric', 'price']].values
-        low_np = low_df[['time_numeric', 'price']].values
-
-        r1, r2 = find_best_channel_line_strict_weighted(
-            high_df, high_np, True, 2.0, 1.0, self.max_violation_pct
-        )
+    def _fit_channel(self, scale, high_df, low_df,
+                     all_pivots_np=None, max_violation_pct=0.0):
+        r1, r2 = find_envelope_line(
+            high_df, True, recency_alpha=self.recency_alpha,
+            max_violation_pct=max_violation_pct, check_all_pivots=all_pivots_np)
         if r1 is not None and r2 is not None:
             self.channels[scale]["resistance"] = (self._to_dict(r1), self._to_dict(r2))
         else:
             self.channels[scale]["resistance"] = (None, None)
 
-        s1, s2 = find_best_channel_line_strict_weighted(
-            low_df, low_np, False, 2.0, 1.0, self.max_violation_pct
-        )
+        s1, s2 = find_envelope_line(
+            low_df, False, recency_alpha=self.recency_alpha,
+            max_violation_pct=max_violation_pct, check_all_pivots=all_pivots_np)
         if s1 is not None and s2 is not None:
             self.channels[scale]["support"] = (self._to_dict(s1), self._to_dict(s2))
         else:
             self.channels[scale]["support"] = (None, None)
+
+    def _reset_channel(self, scale):
+        self.channels[scale] = {"resistance": (None, None), "support": (None, None)}
+
+    def _get_anchor_times(self, scale):
+        """Extract sorted anchor timestamps from a channel's 4 anchor points."""
+        times = []
+        ch = self.channels[scale]
+        for side in ['resistance', 'support']:
+            for p in ch[side]:
+                if p is not None and 'time_numeric' in p:
+                    times.append(p['time_numeric'])
+        times.sort()
+        return times
 
     def _to_dict(self, series):
         if series is None or not isinstance(series, pd.Series):
@@ -194,65 +245,86 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
         price = float(data[self.btc].close)
         t_num = self.time.replace(tzinfo=timezone.utc).timestamp()
 
-        # Prefer meso channels, fall back to macro
-        for scale in ["meso", "macro"]:
-            res_p = self.channels[scale]["resistance"]
-            sup_p = self.channels[scale]["support"]
-            if sup_p[0] is not None or res_p[0] is not None:
-                active_scale = scale
-                break
-        else:
+        # SMA trend filter: only long above SMA
+        history_sma = self.history(self.btc, self.sma_period, Resolution.DAILY)
+        if history_sma.empty:
+            return
+        if isinstance(history_sma.index, pd.MultiIndex):
+            history_sma = history_sma.loc[self.btc]
+        sma_val = history_sma['close'].mean()
+        if price < sma_val:
             return
 
-        res_p = self.channels[active_scale]["resistance"]
-        sup_p = self.channels[active_scale]["support"]
-        has_sup = sup_p[0] is not None and sup_p[1] is not None
-        has_res = res_p[0] is not None and res_p[1] is not None
-
-        if not has_sup and not has_res:
-            return
-
-        # Check macro trend for filtering
+        # Check macro trend is not down
         macro_trend = self._get_trend("macro")
+        if macro_trend == 'down':
+            return
 
+        # Try each channel scale: micro > meso > macro
+        # Micro: bounce only (no breakout), requires meso/macro trend confirmation
+        # Meso/Macro: bounce + breakout as before
         signal = None
         sl_price = None
         tag = None
 
-        # 1. Bounce off support (long)
-        if has_sup and macro_trend != 'down':
-            sup_val = get_channel_value_at_time(sup_p, t_num)
-            if not pd.isna(sup_val) and sup_val > 0:
-                if price <= sup_val * (1 + self.bounce_entry_offset) and price >= sup_val * 0.95:
-                    signal = 1
-                    sl_price = price * (1 - self.sl_pct)
-                    tag = f"Bounce {active_scale} Sup"
+        for scale in ["micro", "meso", "macro"]:
+            if signal is not None:
+                break
+            sup_p = self.channels[scale]["support"]
+            res_p = self.channels[scale]["resistance"]
+            has_sup = sup_p[0] is not None and sup_p[1] is not None
+            has_res = res_p[0] is not None and res_p[1] is not None
 
-        # 2. Breakout above resistance (long)
-        if signal is None and has_res:
-            res_val = get_channel_value_at_time(res_p, t_num)
-            if not pd.isna(res_val) and res_val > 0:
-                if price > res_val * (1 + self.breakout_confirm):
-                    signal = 1
-                    sl_price = res_val * 0.98
-                    tag = f"Breakout {active_scale} Res"
+            if not has_sup and not has_res:
+                continue
 
-        if signal is not None and sl_price is not None and sl_price < price:
-            risk = price - sl_price
-            tp_price = price + risk * self.tp_rr
+            # Bounce off support
+            if has_sup:
+                sup_val = get_channel_value_at_time(sup_p, t_num)
+                if not pd.isna(sup_val) and sup_val > 0:
+                    if scale == "micro":
+                        # Micro: tighter zone, require parent trend up
+                        meso_trend = self._get_trend("meso")
+                        if meso_trend == 'down':
+                            continue
+                        if sup_val * 0.98 <= price <= sup_val * 1.02:
+                            signal = 1
+                            sl_price = price * (1 - self.sl_pct)
+                            tag = f"Bounce {scale} Sup"
+                    else:
+                        if sup_val * 0.97 <= price <= sup_val * (1 + self.bounce_entry_offset):
+                            signal = 1
+                            sl_price = price * (1 - self.sl_pct)
+                            tag = f"Bounce {scale} Sup"
 
-            usdt_available = self.portfolio.cash_book["USDT"].amount
-            cash_risk = usdt_available * self.risk_pct
-            position_usdt = min((cash_risk / risk) * price, usdt_available * 0.95)
-            qty = round(position_usdt / price, 5)
+            # Breakout above resistance (not for micro, macro uptrend only)
+            if signal is None and scale != "micro" and has_res and macro_trend == 'up':
+                res_val = get_channel_value_at_time(res_p, t_num)
+                if not pd.isna(res_val) and res_val > 0:
+                    if price > res_val * (1 + self.breakout_confirm):
+                        signal = 1
+                        sl_price = res_val * 0.98
+                        tag = f"Breakout {scale} Res"
 
-            if qty > 0 and position_usdt > 10:
-                self.debug(f"TRADE: {tag} | price={price:.0f} | SL={sl_price:.0f} | "
-                           f"TP={tp_price:.0f} | qty={qty}")
-                self._pending_entry = {
-                    'qty': qty, 'sl': sl_price, 'tp': tp_price, 'tag': tag
-                }
-                self.market_order(self.btc, qty, tag=f"{tag} Entry")
+        if signal is None or sl_price is None or sl_price >= price:
+            return
+
+        risk = price - sl_price
+        tp_price = price + risk * self.tp_rr
+
+        usdt_available = self.portfolio.cash_book["USDT"].amount
+        cash_risk = usdt_available * self.risk_pct
+        position_usdt = min((cash_risk / risk) * price, usdt_available * 0.95)
+        qty = round(position_usdt / price, 5)
+
+        if qty > 0 and position_usdt > 10:
+            self.debug(f"TRADE: {tag} | price={price:.0f} | SL={sl_price:.0f} | "
+                       f"TP={tp_price:.0f} | SMA={sma_val:.0f} | qty={qty}")
+            self._pending_entry = {
+                'qty': qty, 'sl': sl_price, 'tp': tp_price,
+                'tag': tag, 'entry': price
+            }
+            self.market_order(self.btc, qty, tag=f"{tag} Entry")
 
     def _get_trend(self, scale):
         """Determine trend from channel slope: up, down, or flat."""
@@ -293,13 +365,13 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
             self._pending_entry = None
             actual_qty = self.portfolio[self.btc].quantity
             if actual_qty > 0:
-                # Only place TP limit order; SL is checked manually in on_data
-                # (Binance Cash can't have both SL and TP - reserves same qty twice)
                 self.limit_order(self.btc, -actual_qty, entry['tp'],
                                   tag=f"{entry['tag']} TP")
                 self._active_sl = {
-                    'price': entry['sl'], 'tag': entry['tag']
+                    'price': entry['sl'], 'tag': entry['tag'],
+                    'entry': entry.get('entry', 0)
                 }
 
         if "TP" in tag:
-            self._active_sl = None  # TP filled, cancel SL tracking
+            self._active_sl = None
+            self._entry_price = None

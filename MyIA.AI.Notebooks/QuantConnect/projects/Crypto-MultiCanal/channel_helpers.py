@@ -25,43 +25,125 @@ def check_point_position(point_time_num, point_price, m, c, check_above, epsilon
         return point_price <= line_y + epsilon
 
 
-def calculate_weighted_sse(p1_time_num, p1_price, p2_time_num, p2_price,
-                           pivots_np, time_min, time_max, weight_power=1.0):
-    """Calculate weighted sum of squared errors for pivots relative to a line."""
-    m, c = get_line_params_time(p1_time_num, p1_price, p2_time_num, p2_price)
-    if m == float('inf'):
-        return float('inf')
+def find_envelope_line(pivots_df, is_resistance, recency_alpha=0.0,
+                       max_violation_pct=0.0, check_all_pivots=None):
+    """Find the tightest envelope line through any pair of same-type pivots.
 
-    if len(pivots_np) == 0:
-        return 0.0
+    Algorithm:
+    1. Try ALL pairs of same-type pivots as anchors
+    2. Check containment against check_all_pivots (if provided) or same-type pivots
+    3. Allow up to max_violation_pct fraction of check points to violate
+    4. Score = (violations, avg_margin) — minimize violations first, then tightness
 
-    total_wsse = 0.0
-    total_weight = 0.0
-    time_range = max(time_max - time_min, 1.0)
+    Args:
+        pivots_df: DataFrame with time_numeric, price columns (same-type pivots)
+        is_resistance: True for resistance (line above), False for support (below)
+        recency_alpha: 0=uniform weighting, >0=recent pivots weighted more
+        max_violation_pct: fraction of check points allowed to violate (0=strict)
+        check_all_pivots: optional (n,2) array of [time_numeric, price] for ALL
+            pivots to check containment against. If None, checks same-type only.
 
-    for k in range(len(pivots_np)):
-        pk_time, pk_price = pivots_np[k, 0], pivots_np[k, 1]
-        if abs(pk_time - p1_time_num) < 1e-9 or abs(pk_time - p2_time_num) < 1e-9:
-            continue
-        normalized_time = max(0.0, (pk_time - time_min) / time_range)
-        weight = normalized_time ** weight_power + 1e-9
-        line_y = m * pk_time + c
-        error = pk_price - line_y
-        total_wsse += weight * (error ** 2)
-        total_weight += weight
+    Returns:
+        (p1_series, p2_series) or (None, None)
+    """
+    n_pivots = len(pivots_df)
+    if n_pivots < 2:
+        return None, None
 
-    return total_wsse / total_weight if total_weight > 1e-9 else 0.0
+    pivots_vals = pivots_df[['time_numeric', 'price']].values
+
+    # Points to check containment against
+    if check_all_pivots is not None:
+        check_vals = check_all_pivots
+    else:
+        check_vals = pivots_vals
+    n_check = len(check_vals)
+    max_violations = max(1, int(n_check * max_violation_pct)) if max_violation_pct > 0 else 0
+
+    best = None
+    best_violations = n_check + 1
+    best_margin = float('inf')
+
+    for i in range(n_pivots):
+        for j in range(i + 1, n_pivots):
+            t1, p1 = pivots_vals[i]
+            t2, p2 = pivots_vals[j]
+            if abs(t2 - t1) < 1e-9:
+                continue
+
+            m, c = get_line_params_time(t1, p1, t2, p2)
+            if m == float('inf'):
+                continue
+
+            # Check containment with violation tolerance
+            violations = 0
+            total_margin = 0.0
+            n_checked = 0
+            valid = True
+            for k in range(n_check):
+                pk_t, pk_p = check_vals[k]
+                # Skip anchor points
+                if abs(pk_t - t1) < 1e-9 or abs(pk_t - t2) < 1e-9:
+                    continue
+                line_val = m * pk_t + c
+                if is_resistance:
+                    margin = line_val - pk_p  # positive = point below line (good)
+                    if margin < -1e-9:
+                        violations += 1
+                        if violations > max_violations:
+                            valid = False
+                            break
+                else:
+                    margin = pk_p - line_val  # positive = point above line (good)
+                    if margin < -1e-9:
+                        violations += 1
+                        if violations > max_violations:
+                            valid = False
+                            break
+                total_margin += margin
+                n_checked += 1
+
+            if not valid:
+                continue
+
+            avg_margin = total_margin / n_checked if n_checked > 0 else float('inf')
+
+            # Score: minimize violations first, then minimize avg_margin (tightest)
+            if (violations < best_violations or
+                    (violations == best_violations and avg_margin < best_margin)):
+                best_violations = violations
+                best_margin = avg_margin
+                best = (i, j)
+
+    if best is None:
+        return None, None
+    return pivots_df.iloc[best[0]], pivots_df.iloc[best[1]]
 
 
+def _check_nesting(inner_m, inner_c, outer_m, outer_c,
+                   t_start, t_end, is_resistance):
+    """Check that inner line stays inside outer line across the time range."""
+    n_checks = 10
+    for i in range(n_checks + 1):
+        t = t_start + (t_end - t_start) * i / n_checks
+        inner_val = inner_m * t + inner_c
+        outer_val = outer_m * t + outer_c
+        if is_resistance:
+            # Inner resistance must be <= outer resistance
+            if inner_val > outer_val + 1e-9:
+                return False
+        else:
+            # Inner support must be >= outer support
+            if inner_val < outer_val - 1e-9:
+                return False
+    return True
+
+
+# Keep old function for backward compatibility with QC algo
 def find_best_channel_line_strict_weighted(pivots_df, all_pivots_np, is_resistance,
                                            weight_power=1.0, recent_pivot_fraction=1.0,
                                            max_violation_pct=0.2):
-    """Find the best support/resistance line through pivot pairs.
-
-    Relaxed containment: allows up to max_violation_pct of pivots to be on the
-    wrong side. Lines are ranked by (violation_count, wsse) so fewer violations
-    is always preferred, with WSSE as tiebreaker.
-    """
+    """Legacy: find line through pivot pairs with relaxed containment against pivots only."""
     n_pivots = len(pivots_df)
     if n_pivots < 2 or len(all_pivots_np) < 1:
         return None, None
@@ -69,12 +151,6 @@ def find_best_channel_line_strict_weighted(pivots_df, all_pivots_np, is_resistan
     check_df = pd.DataFrame(all_pivots_np, columns=['time_numeric', 'price'])
     check_df = check_df.sort_values('time_numeric', ascending=True)
     n_total = len(check_df)
-
-    safe_rpf = max(0.0, min(1.0, recent_pivot_fraction))
-    n_keep = max(1, math.ceil(n_total * safe_rpf))
-    recent_df = check_df.tail(n_keep).copy()
-    if recent_df.empty:
-        return None, None
 
     max_violations = max(1, int(n_total * max_violation_pct))
     valid_lines = []
@@ -92,42 +168,37 @@ def find_best_channel_line_strict_weighted(pivots_df, all_pivots_np, is_resistan
             if m == float('inf'):
                 continue
 
-            # Relaxed containment: count violations
             violations = 0
-            checked = 0
             for k in range(n_total):
                 pk_t, pk_p = all_pivots_np[k, 0], all_pivots_np[k, 1]
                 if abs(pk_t - p1_t) < 1e-9 or abs(pk_t - p2_t) < 1e-9:
                     continue
-                checked += 1
                 if not check_point_position(pk_t, pk_p, m, c, check_above=(not is_resistance)):
                     violations += 1
                     if violations > max_violations:
                         break
 
             if violations <= max_violations:
-                wsse_df = recent_df[
-                    (np.abs(recent_df['time_numeric'] - p1_t) > 1e-9) &
-                    (np.abs(recent_df['time_numeric'] - p2_t) > 1e-9)
-                ]
-                wsse = 0.0
-                if not wsse_df.empty:
-                    wsse = calculate_weighted_sse(
-                        p1_t, p1_p, p2_t, p2_p,
-                        wsse_df[['time_numeric', 'price']].values,
-                        wsse_df['time_numeric'].min(),
-                        wsse_df['time_numeric'].max(),
-                        weight_power
-                    )
-                if wsse != float('inf'):
-                    valid_lines.append({"p1": p1, "p2": p2, "wsse": wsse,
-                                       "violations": violations})
+                # Compute average margin against all checked pivots
+                total_margin = 0.0
+                n_checked = 0
+                for k in range(n_total):
+                    pk_t, pk_p = all_pivots_np[k, 0], all_pivots_np[k, 1]
+                    line_val = m * pk_t + c
+                    if is_resistance:
+                        total_margin += line_val - pk_p
+                    else:
+                        total_margin += pk_p - line_val
+                    n_checked += 1
+                avg_margin = total_margin / n_checked if n_checked > 0 else float('inf')
+                valid_lines.append({"p1": p1, "p2": p2,
+                                   "avg_margin": avg_margin,
+                                   "violations": violations})
 
     if not valid_lines:
         return None, None
 
-    # Prefer fewer violations, then lower WSSE
-    valid_lines.sort(key=lambda x: (x['violations'], x['wsse']))
+    valid_lines.sort(key=lambda x: (x['violations'], x['avg_margin']))
     best = valid_lines[0]
     return best['p1'], best['p2']
 
