@@ -358,7 +358,8 @@ class custom_alpha(AlphaModel):
             algo.register_indicator(x.Symbol, self.Bollingers[x.Symbol], self.bollinger_consolidators[x.Symbol])
             self.Bollingers_rolling_windows[x.Symbol] = deque(maxlen=self.Bollinger_window_size)
 
-            self.RSIS_trend[x.Symbol] = algo.rsi(x.Symbol, 14, Resolution.Hour)
+            self.RSIS_trend[x.Symbol] = RelativeStrengthIndex(14)
+            algo.register_indicator(x.Symbol, self.RSIS_trend[x.Symbol], Resolution.Hour)
             self.RSIS[x.Symbol] = RelativeStrengthIndex(14)
             self.rsi_consolidators[x.Symbol] = TradeBarConsolidator(timedelta(days=1))
             algo.register_indicator(x.Symbol, self.RSIS[x.Symbol], self.rsi_consolidators[x.Symbol])
