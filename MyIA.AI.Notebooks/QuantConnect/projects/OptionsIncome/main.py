@@ -20,8 +20,7 @@ class CoveredCallStrategy(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2023, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        self.set_start_date(2018, 1, 1)
         self.set_cash(100000)
 
         equity = self.add_equity("SPY", Resolution.MINUTE)
