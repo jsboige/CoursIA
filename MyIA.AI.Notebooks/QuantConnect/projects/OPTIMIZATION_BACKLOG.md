@@ -3,7 +3,7 @@
 Fichier commite dans le workspace. Source de verite pour tous les agents (Claude Code, Roo, etc.) sur toutes les machines.
 Objectif : eviter de retester des hypotheses deja explorees et capturer les plafonds structurels.
 
-**Derniere MAJ** : 2026-03-09 (iteration 7 + 12 QuantBook notebooks created, issue #39/#42 DONE)
+**Derniere MAJ** : 2026-03-09 (iteration 7 + 12 QuantBook notebooks created, issue #39/#42 DONE; issue #37 backtest extension 2010-2026 DONE)
 
 ---
 
@@ -43,15 +43,15 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 
 | Strategie | Sharpe | CAGR | MaxDD | Iterations | Raison du plafond |
 |-----------|--------|------|-------|------------|-------------------|
-| **AllWeather** | 0.602 | 9.5% | 16.4% | 5 iter | Poids optimaux trouves (SPY30/IEF30/GLD30/XLP10). Aucun angle restant. |
+| **AllWeather** | 0.667 | 9.3% | 16.4% | 5 iter | Poids optimaux trouves (SPY30/IEF30/GLD30/XLP10). Aucun angle restant. Extended 2010-2026: Sharpe 0.667 (ROBUST, inclut 2010-2014 recovery post-GFC). |
 | **VIX-TermStructure** | 0.051 | 3.6% | 35.2% | 11 variantes | Post-VIXplosion 2018, SVXY -0.5x = premium halve. MaxDD structural (tail events). |
 | **TurnOfMonth** | 0.128 | 4.8% | 23.7% | 6 variantes | ToM effect minimal en bull 2015-2026. Signal period-dependent. |
 | **ForexCarry** | -0.324 | 1.5% | 12.3% | 8+ variantes | G10 FX momentum ~0.8% CAGR < T-bills ~2.5%. Structurellement negatif post-2008. |
 | **OptionsIncome** | 0.234 | 6.8% | 19.3% | v8.0 final | Covered calls = alpha structurellement negatif. Premium ~6%/yr vs crashes -20/-34%. |
-| **MomentumStrategy** | 0.472 | 11.1% | 25.8% | iter5 H10 rej | v4.0 final. Vol-adj, skip-month, top-4, SMA200+SMA20, SL-10%. |
+| **MomentumStrategy** | 0.565 | 11.8% | 25.8% | iter5 H10 rej | v4.0 final. Vol-adj, skip-month, top-4, SMA200+SMA20, SL-10%. Extended 2010-2026: Sharpe 0.565 (ROBUST, MaxDD stable). |
 | **FuturesTrend** | 0.301 | 8.0% | 12.9% | 14 configs | Donchian 20/10 sur 6 ETFs. Grid search exhaustif. |
 | **Crypto-MultiCanal** | 0.486 | 7.6% | 16.8% | 18 versions | 3 canaux ZigZag. Trail breakeven. Alpha=0.012, beta=0.053. |
-| **SectorMomentum** | 0.555 | 13.0% | 22.8% | iter3 stable | Composite lookback + TLT+GLD defensif + daily SMA200 exit. |
+| **SectorMomentum** | 0.621 | 13.2% | 22.8% | iter3 stable | Composite lookback + TLT+GLD defensif + daily SMA200 exit. Extended 2010-2026: Sharpe 0.621 (ROBUST, CAGR stable). |
 | **DualMomentum** | 0.350 | 9.2% | 33.6% | iter2 SHY rej | MaxDD=COVID structural. Signal mensuel ne reagit pas assez vite. |
 | **RiskParity** | 0.399 | 7.8% | 20.9% | H5-H7 all rej | IEF degrade, vol targeting anti-pattern en bull, VIX filter = trop peu de temps. |
 | **Trend-Following** | 0.212 | 7.3% | 40.9% | v2+v3+v3b | 6 gates + MaxDD Per Security 10%. ATR 1.5, SMA200, portfolio stop tous rejetes. MaxDD structural. |
@@ -99,6 +99,7 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 - [x] TIP (TIPS inflation) : marginal, pas de gain significatif.
 - [x] Vol targeting : cash pendant low-vol = anti-pattern en bull. Pas de levier.
 - [x] IEF 40%->30% + GLD 20%->30% : ACCEPTED (v5.0, Sharpe 0.602).
+- [x] Extension 2015->2010 (issue #37) : Sharpe 0.667, CAGR 9.3%, MaxDD 16.4%. ROBUST. GLD/IEF beneficient de 2010-2012 (safe haven demand post-GFC). Pas de regime catastrophique.
 
 ### VIX-TermStructure
 - [x] Double SMA (vix < sma5 < sma20) : trop restrictif, miss entries.
@@ -124,6 +125,7 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 
 ### MomentumStrategy
 - [x] Momentum-proportional weights (H10) : Sharpe 0.472->0.398. Concentration XLK risquee.
+- [x] Extension 2015->2010 (issue #37) : Sharpe 0.565, CAGR 11.8%, MaxDD 25.8%. ROBUST. XLRE/XLC absents 2010-2015 = 9 ETFs actifs au lieu de 11, pas de degradation. Strategie tient sur 16 ans.
 
 ### OptionsIncome
 - [x] Stock stop-loss -15% (v8.0) : Sharpe 0.234->0.090. Whipsaw 2022 slow bear.

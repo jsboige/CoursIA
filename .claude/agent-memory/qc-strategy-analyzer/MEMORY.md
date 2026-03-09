@@ -41,7 +41,22 @@
 - **2008 GFC**: G10 carry premium collapsed, never recovered (ForexCarry ceiling predates backtest)
 - **2022 rate hikes**: Worst year for TOM (-6.1%), OptionsIncome (-8.8%), and covered calls generally
 
+## Robustness Extension Results (Issue #37, 2026-03-09)
+
+Extended 3 strategies from 2015->2010. Results vs MEMORY.md original values:
+
+| Strategy | 2015-2026 Sharpe | 2010-2026 Sharpe | 2010-2026 CAGR | 2010-2026 MaxDD | Verdict |
+|----------|-----------------|-----------------|----------------|-----------------|---------|
+| AllWeather | 0.602 | **0.667** | 9.3% | 16.4% | ROBUST (improved) |
+| SectorMomentum | 0.555 | **0.621** | 13.2% | 22.8% | ROBUST (improved) |
+| MomentumStrategy | 0.472 | **0.565** | 11.8% | 25.8% | ROBUST (improved) |
+
+All 3 strategies are MORE robust on the extended period. Post-GFC 2010-2014 was a strong bull run
+which benefited all 3. MaxDD stayed flat (strategies handled pre-2015 regimes well).
+Note: SectorMomentum project 28433643 (not 28657838 which is OptionsIncome).
+
 ## Workflow Notes
 - Always extract `portfolioStatistics` from rolling windows (not `tradeStatistics`) for return/Sharpe
 - Year-end M12 gives best regime picture: one data point per year = clear annual performance
 - M1 monthly data useful for event analysis (VIXplosion Feb 2018, COVID Mar 2020 etc.)
+- **Project ID correction**: SectorMomentum = 28433643, OptionsIncome = 28657838 (task description had them swapped)
