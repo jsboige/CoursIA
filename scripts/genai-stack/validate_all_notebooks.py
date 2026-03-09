@@ -70,6 +70,7 @@ def execute_notebook(notebook_path: Path, timeout: int = 300) -> Tuple[bool, str
         str(notebook_path),
         str(output_path),
         "-k", "python3",
+        "--cwd", str(notebook_path.parent),
         "--execution-timeout", str(timeout),
     ]
 
