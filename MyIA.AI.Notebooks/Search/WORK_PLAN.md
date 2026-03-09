@@ -156,19 +156,19 @@ Résumé des concepts clés :
 
 ### Batch 2.3: Cellules consécutives (11 notebooks)
 
-**État**: ⏳ En cours (20/35 paires complétées)
+**État**: ✅ Terminé (35/35 paires complétées)
 
 | Notebook | Pairs | Localisation | Status |
 |----------|-------|--------------|--------|
-| Search-3 | 4 | Algorithmes A* | ⏳ À faire |
+| Search-3 | 4 | Algorithmes A* | ✅ 4/4 |
 | Search-7 | 1 | MCTS | ✅ 1/1 |
 | Search-8 | 3 | Algorithm X | ✅ 3/3 |
 | Search-10 | 2 | Z3 | ✅ 2/2 |
 | CSP-1 | 1 | Contraintes | ✅ 1/1 |
 | CSP-2 | 3 | AC algorithms | ✅ 3/3 |
 | CSP-3 | 5 | Techniques avancées | ✅ 5/5 |
-| CSP-4 | 6 | Modèles scheduling | ⏳ À faire |
-| CSP-5 | 5 | Méthodes optimisation | ⏳ À faire |
+| CSP-4 | 6 | Modèles scheduling | ✅ 6/6 |
+| CSP-5 | 5 | Méthodes optimisation | ✅ 5/5 |
 | CSP-6 | 2 | Approches hybrides | ✅ 2/2 |
 | CSP-7 | 4 | Soft constraints | ✅ 4/4 |
 | CSP-8 | 4 | Raisonnement temporel | ✅ 4/4 |
