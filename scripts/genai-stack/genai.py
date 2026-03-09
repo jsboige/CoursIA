@@ -15,6 +15,8 @@ Usage:
     python scripts/genai-stack/genai.py models list-nodes
     python scripts/genai-stack/genai.py gpu [--detailed]
     python scripts/genai-stack/genai.py auth audit
+    python scripts/genai-stack/genai.py quant summary
+    python scripts/genai-stack/genai.py quant apply [--dry-run]
 """
 
 import sys
@@ -44,6 +46,10 @@ Exemples:
   genai.py models list-nodes          Lister custom nodes ComfyUI
   genai.py gpu                        Verification VRAM
   genai.py auth audit                 Audit securite tokens
+  genai.py quant summary              Resume configurations quantification
+  genai.py quant apply                Appliquer quantification maximale
+  genai.py quant apply zimage         Configurer Z-Image FP8 (-50% VRAM)
+  genai.py quant apply qwen           Configurer Qwen Nunchaku INT4 (-67% VRAM)
         """
     )
 
@@ -53,7 +59,7 @@ Exemples:
     subparsers = parser.add_subparsers(dest='command', help='Commandes disponibles')
 
     # Enregistrer toutes les sous-commandes
-    from commands import docker, validate, notebooks, models, gpu, auth
+    from commands import docker, validate, notebooks, models, gpu, auth, quant
 
     docker.register(subparsers)
     validate.register(subparsers)
@@ -61,6 +67,7 @@ Exemples:
     models.register(subparsers)
     gpu.register(subparsers)
     auth.register(subparsers)
+    quant.register(subparsers)
 
     args = parser.parse_args()
 
@@ -85,6 +92,8 @@ Exemples:
         sys.exit(gpu.execute(args))
     elif args.command == 'auth':
         sys.exit(auth.execute(args))
+    elif args.command == 'quant':
+        sys.exit(quant.execute(args))
     else:
         parser.print_help()
         sys.exit(0)
