@@ -50,6 +50,14 @@
   - Notebooks: 01-3-Qwen-VL, 01-4-ESRGAN, 02-1-HunyuanVideo, 02-2-LTX-Video, 02-3-Wan, 02-4-SVD
   - Used edit_mode="replace" on existing interpretation cells (not insertions)
   - No cell positioning issues since we replaced existing cells
+- **2026-03-03**: Lean-11-TorchLean Pedagogical Enhancement (4 cells added, SQUELETTE → COMPLET)
+  - TorchLean: réseaux de neurones formellement vérifiés avec Lean 4
+  - BOTTOM-to-TOP insertion strategy flawless (4 cells, no errors)
+  - Added sections: 3.0 (API philosophy), 4.5 (numerical errors), 5.4 (IBP visualization), 8.6 (visual synthesis)
+  - Rich pedagogical content: API comparison PyTorch vs TorchLean, Float32 error accumulation examples, complete IBP propagation with ASCII diagrams, ecosystem workflow visualization
+  - Domain vocabulary: Semantic gap, IEEE-754 rounding modes (RNE, RTZ, RTP, RTN, RNA), ULP, IBP, CROWN, LiRPA, PINNs, Lyapunov control, FloVerCoq
+  - README status updated from SQUELETTE to COMPLET
+  - Summary report: `enrichment-log-2026-03-03-lean-torchlean.md`
 
 ### Domain-Specific Patterns
 
@@ -63,6 +71,7 @@
 | Sudoku/Constraint Solving | CSP, CP-SAT, MIP, DecisionBuilder, AllDifferent, propagation | Solver comparison tables, performance benchmarks, constraint modeling patterns |
 | Search/Optimization | fitness, convergence, population, exploration/exploitation, metaheuristics | Parameter sensitivity analysis, algorithm comparison tables, convergence plots |
 | QuantConnect | backtest, alpha model, features, signals, ObjectStore | Model training → save → deploy, feature engineering, performance metrics |
+| SymbolicAI/TorchLean | Semantic gap, Float32, IEEE-754, rounding modes, IBP, CROWN, LiRPA, PINNs, Lyapunov, FloVerCoq | API philosophy, numerical error accumulation, interval propagation visualization, ecosystem diagrams |
 
 ### Content Strategy Templates
 
