@@ -21,8 +21,7 @@ class CompetitionAlgorithm(QCAlgorithm):
         if self.universe_type == "equity":
             self.AddUniverse(self.CoarseFilter, self.FineFilter)
         self.UniverseSettings.Resolution = Resolution.Hour
-        # v3: SPY SMA200 for regime filter - must be defined BEFORE set_alpha
-        self.spy_sma200 = self.SMA("SPY", 200, Resolution.Daily)
+        # v3b: SPY SMA200 removed - per-stock EMA50/200 filter sufficient (regime filter degraded results)
         # v2: removed 1.85x leverage multiplier PCM, use standard model
         self.set_portfolio_construction(InsightWeightingPortfolioConstructionModel())
         self.set_alpha(custom_alpha(self))
