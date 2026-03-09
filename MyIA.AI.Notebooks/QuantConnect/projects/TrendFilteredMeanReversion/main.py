@@ -2,7 +2,7 @@ from AlgorithmImports import *
 
 class TrendFilteredMeanReversion(QCAlgorithm):
     """
-    Trend-Filtered Mean Reversion v1.0
+    Trend-Filtered Mean Reversion v1.0 (current best: MaxDD 11.4%)
 
     Buy short-term pullbacks in a confirmed uptrend.
     Edge: RSI(2) extreme oversold in bull regime = high probability bounce.
@@ -14,6 +14,17 @@ class TrendFilteredMeanReversion(QCAlgorithm):
     - Position: 100% SPY
 
     Reference: Connolly & Rapach (2008), Larry Connors RSI(2) strategy
+
+    Iteration history:
+    v1.0: RSI(2) < 10, SPY only         - Sharpe -0.016, CAGR 3.4%, MaxDD 11.4%, ~9 trades/yr (BEST)
+    v2.0: RSI(2) < 20, SPY only         - Sharpe -0.002, CAGR 3.4%, MaxDD 16.2%, ~31 trades/yr (too many)
+    v3.0: RSI(3) < 15, SPY only         - Sharpe -0.050, CAGR 3.2%, MaxDD 10.3%, ~12 trades/yr
+    v4.0: RSI(2) < 10, SPY+QQQ+IWM     - Sharpe -0.129, CAGR 2.7%, MaxDD 14.4%, 550 trades REJECTED
+
+    Root cause: strategy spends ~85% in cash during 2015-2026 bull market.
+    Cash drag vs risk-free rate = negative Sharpe despite positive CAGR.
+    H4 FAILED: QQQ+IWM added noise, 550 trades (too many), Sharpe degraded from -0.016 to -0.129.
+    Structural ceiling: RSI(2)<10 mean reversion on ETFs has too few quality signals in bull market.
     """
 
     def initialize(self):
