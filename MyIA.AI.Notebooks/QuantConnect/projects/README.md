@@ -15,7 +15,7 @@ Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec not
 | [SectorMomentum](SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | **0.555** | 13.0% | 22.8% | 2015-2026 | Py | Intermediaire |
 | [RegimeSwitching](RegimeSwitching/) | Regime detection + asset rotation | **0.553** | 11.7% | 33.0% | 2008-2026 | Py | Avance |
 | [FamaFrench](FamaFrench/) | Factor ETF rotation (VLUE/MTUM/SIZE/QUAL/USMV) | **0.540** | 12.1% | 24.2% | 2015-2026 | Py | Intermediaire |
-| [AllWeather](AllWeather/) | Portfolio multi-asset (SPY/IEF/GLD/XLP, no TLT) | **0.520** | 8.2% | 17.0% | 2015-2026 | Py | Debutant |
+| [AllWeather](AllWeather/) | Portfolio multi-asset (SPY/IEF/GLD/XLP, no TLT) | **0.602** | 9.5% | 16.4% | 2015-2026 | Py | Debutant |
 | [AdaptiveAssetAllocation](AdaptiveAssetAllocation/) | Momentum + min-variance multi-asset | **0.518** | 8.0% | 18.8% | 2008-2026 | Py | Avance |
 | [Options-VGT](Options-VGT/) | Options income VGT (wheel NVDA/ORCL/CSCO/AMD/QCOM) | **0.507** | 14.2% | 16.2% | 2020-2026 | Py | Avance |
 | [CSharp-CTG-Momentum](CSharp-CTG-Momentum/) | CTG momentum strategy (C#) | **0.507** | 17.7% | 36.1% | 2015-2026 | C# | Intermediaire |
@@ -28,8 +28,8 @@ Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec not
 | [MeanReversion](MeanReversion/) | RSI multi-asset mean reversion | **0.294** | 7.5% | 16.5% | 2015-2026 | Py | Intermediaire |
 | [BTC-ML](BTC-ML/) | Machine learning BTC prediction | **0.282** | 8.3% | 13.7% | 2023-2026 | Py | Avance |
 | [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.234** | 6.8% | 19.3% | 2018-2026 | Py | Avance |
+| [Trend-Following](Trend-Following/) | Multi-oracle trend following (MACD/RSI/Bollinger) | **0.212** | 7.3% | 40.9% | 2019-2026 | Py | Avance |
 | [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 0.128 | 4.8% | 23.7% | 2015-2026 | Py | Debutant |
-| [Trend-Following](Trend-Following/) | Multi-oracle trend following (MACD/RSI/Bollinger) | 0.060 | -14.3% | 80.6% | 2019-2026 | Py | Avance |
 | [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX (SVXY) | 0.051 | 3.6% | 35.2% | 2010-2026 | Py | Avance |
 | [ForexCarry](ForexCarry/) | FX momentum IR + skip-month G10 | -0.324 | 1.5% | 10.5% | 2013-2026 | Py | Intermediaire |
 | [PairsTrading](PairsTrading/) | Statistical arbitrage equity pairs | -0.361 | 0.9% | 15.1% | 2010-2026 | Py | Intermediaire |

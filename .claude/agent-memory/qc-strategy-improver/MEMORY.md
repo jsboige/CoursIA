@@ -4,19 +4,86 @@
 
 | Strategy | Cloud ID | Issue | Sharpe iter2 | Sharpe iter3 | Status |
 |----------|----------|-------|-------------|-------------|--------|
-| VIX-TermStructure | 28657907 | #18 | -0.27 | **+0.051** | iter4 v5.0 PENDING BACKTEST |
+| VIX-TermStructure | 28657907 | #18 | -0.27 | **+0.051** | HARD CEILING REACHED - v4.1 is final |
 | ForexCarry | 28657908 | #17 | -0.654 | **-0.654** | CEILING REACHED |
 | MeanReversion | 28657904 | #19 | 0.294 | **0.365** | IMPROVED |
-| FuturesTrend | 28657834 | #20 | 0.280 | **0.301** | IMPROVED |
+| FuturesTrend | 28657834 | #20 | 0.280 | **0.301** | **HARD CEILING iter5 (2026-03-09)** |
 | TurnOfMonth | 28657905 | #21 | 0.127 | 0.128 | CEILING REACHED |
-| MomentumStrategy | 28657837 | #22 | 0.411 | **0.459** | IMPROVED |
-| AllWeather | 28657833 | #23 | 0.365 | **0.482** | IMPROVED |
-| OptionsIncome | 28657838 | #24 | 0.747 | **0.791** | IMPROVED |
+| MomentumStrategy | 28657837 | #22 | 0.411 | **0.472** | HARD CEILING - v4.0 is final (iter5 H10 rejected) |
+| AllWeather | 28657833 | #23 | 0.365 | **0.482** | **iter5: 0.520->0.602 IMPROVED** |
+| OptionsIncome | 28657838 | #24 | 0.791 | **0.234** | HARD CEILING - v7.0 2018-2026 is final |
 | FamaFrench | 28657910 | #25 | 0.471 | **0.540** | IMPROVED (HEALTHY) |
 | Sector-Momentum | 28433643 | #26 | 0.554 | **0.555** | CEILING (marginal) |
-| **DualMomentum** | **28692516** | **#35** | **NEW** | **0.34** | **DONE** |
-| **RiskParity** | **28692653** | **#35** | **NEW** | **0.361** | **DONE** |
+| **DualMomentum** | **28692516** | **#35** | **NEW** | **0.350** | **CEILING REACHED (iter2 revert)** |
+| **RiskParity** | **28692653** | **#35** | **NEW** | **0.399** | **CEILING REACHED** |
 | **EMA-Cross-Index** | **28789945** | **—** | **0.384** | **~0.43 expected** | **RESEARCH DONE, NO BACKTEST YET** |
+
+## MomentumStrategy Lessons (2026-03-09) - iter5
+
+### HARD CEILING: Sharpe 0.472 (v4.0) - H10 rejected
+
+**H10 (momentum-proportional weights) REJECTED**: Sharpe 0.472 -> 0.398, MaxDD 25.8% -> 33.3%.
+Concentration sur XLK (50-70% du poids) cree un risque idiosyncratique eleve.
+Quand XLK corrige, le portefeuille entier souffre.
+
+**Lecon cle**: Dans la rotation sectorielle par ETFs, poids egaux > poids proportionnels au signal.
+Le signal de SELECTION (quel secteur) est informatif. Le signal d'INTENSITE (combien) ne l'est pas.
+Diversification intra-portfolio > concentration par signal pour ETFs sectoriels.
+
+**V4.0 est la version finale**: vol-adj momentum, skip-month 21j, top-4, SMA200+SMA20, SL -10%.
+
+## OptionsIncome Lessons (2026-03-09)
+
+### HARD CEILING: Sharpe 0.234 on 2018-2026. v8.0 REVERTED.
+
+Stock stop-loss -15% (v8.0): Sharpe 0.234 -> 0.090. Whipsaw on 2022 slow bear.
+Win rate paradox: 33% -> 65% (calls improved) but CAGR 6.8% -> 5.0% (stock leg whipsaw).
+Stock stop-loss triggered 2-3x during 2022 slow bear: sell low, buy after 20d, repeat.
+
+**DO NOT re-attempt**: ceiling is structural (alpha=-0.021, beta=0.517).
+Premium ~6%/yr cannot offset -20% to -34% crashes. Covered calls cap gains in bull = negative alpha.
+
+## FuturesTrend Lessons - iter5 (2026-03-09)
+
+### HARD CEILING: Sharpe 0.301 (v3.1) - 5 iterations exhausted
+
+**Grid search 14 configs**: parametres (SMA, positions, exit) tous explores. Aucun ameliore QC.
+- SMA30: yfinance IS 0.864 mais OOS 2022-2025 = -0.010 -> OVERFITTING SEVERE
+- 4x25% / 5x20%: tous < 3x33% baseline
+- Exit=15j: MaxDD monte, Sharpe baisse
+- Sans VNQ: yfinance +11% mais QC cloud -10% -> REVERT
+
+**LECON CRITIQUE: yfinance vs QC pour actifs a dividendes eleves (REITs/VNQ)**
+- yfinance auto_adjust=True: dividendes integres dans le prix historique (retroactif)
+  -> VNQ semble "drag" car ses gains de dividendes disparaissent dans le prix ajuste
+- QC raw prices: dividendes verses en cash, prix monte autour de l'ex-div date
+  -> VNQ contribue positivement via gaps de prix + versements cash
+- Toute analyse yfinance sur REIT, utilities, high-yield peut INVERSER les conclusions
+- Regle: utiliser yfinance uniquement pour signaux de prix purs (trend, momentum).
+  Pour universe selection/comparative analysis incluant dividendes -> tester directement sur QC.
+
+**Plafond structurel**: Donchian 20/10 sur 6 ETFs, 2018-2026. Pas d'amelioration parametrique possible.
+Beta 0.225 = signal-driven. Pedagogiquement honnete.
+
+## Crypto-MultiCanal Lessons (2026-03-09)
+
+### CEILING REACHED at v17: Sharpe 0.486, CAGR 7.6%, MaxDD 16.8%
+
+**v18 REJECTED**: 2-level progressive trailing (lock +3% at +6% gain). Sharpe 0.486 -> 0.232.
+- Rationale: BTC daily vol ~3-5%. A +6% move followed by a -3% pullback is extremely common.
+- The 2nd trail level triggers SL at entry+3%, converting winning positions to partial exits.
+- This cuts the big moves (which drive most CAGR) while barely reducing MaxDD.
+- Rule confirmed: trail to breakeven once is enough. Don't add more levels on daily BTC.
+
+**Why v17 trail=3% works but trail_lock=6% breaks it**:
+- v17: SL moves to entry+0.5% when price hits entry+3%. Most big BTC moves are >15%.
+  The SL rarely triggers on winning trades; it mainly protects against reversal after small gain.
+- v18: SL jumps to entry+3% at entry+6%. This triggers on ~30% of trades, turning many
+  "in progress" winners into sub-TP exits that lower the average win significantly.
+
+**Hard ceiling for this strategy 2020-2026**: Sharpe ~0.486, beta=0.053, alpha=0.012.
+The signal is real (alpha positive, very low beta) but BTC bull market dominates returns.
+No further improvements found after 18 iterations. Signal quality is maxed out.
 
 ## EMA-Cross-Index Lessons (2026-03-08)
 
@@ -48,34 +115,71 @@
 - ~2x discrepancy is normal and consistent across all EMA strategies tested
 - Relative improvement should transfer (IS/OOS robustness confirmed)
 
+## DualMomentum Lessons (iter2 - 2026-03-09)
+
+### MaxDD -33.6% est structurel: la latence du signal mensuel, pas le refuge
+
+Iter2 a teste SHY comme refuge (vs BND v1.0). Resultat QC: REVERT (Sharpe 0.324 < 0.350, MaxDD identique).
+
+**Lecon cle**: Le MaxDD de -33.6% vient du COVID Mars 2020, pas de la crise des taux 2022.
+En Mars 2020, la strategie etait investie en SPY (signal mensuel positif). Le refuge importe peu
+car la strategie n'etait PAS en mode defensif pendant le crash.
+
+**Discordance yfinance vs QC**: yfinance montrait SHY ameliorant le MaxDD (simulation mensuelle).
+QC utilise les prix bruts day-by-day: le MaxDD intramonth (Mars 2020: -34% en 3 semaines) est
+capture fidelement. La simulation mensuelle lisse ces crashes soudains et les sous-estime.
+
+**Pour reduire le MaxDD de DualMomentum, il faut**:
+- Un signal plus rapide (hebdo) - mais augmente le bruit
+- Un stop-loss intramonth - change la nature de la strategie
+- Un filtre VIX (VIX > seuil -> defensif) - possible mais complexe
+Aucune de ces options ne respecte le principe "1 param a la fois" facilement.
+
+**Plafond Sharpe 2015-2026**: 0.350 est honnete. Bull market quasi-uninterrompu = peu de
+periodes de tendance negative durable. Dual Momentum brille sur periodes 1970-2010.
+
 ## AllWeather Lessons -> voir allweather-lessons.md
 
 Iter 4 (2026-03-08): v4.0 = TLT 0%, IEF 40%, GLD 20%, XLP 10%. Research H5 confirme
 TLT monotonement negatif. Vol targeting (H7) rejete. TIP (H6) marginal.
-Sharpe attendu v4.0: ~0.51-0.54 (vs 0.482 v3.0).
+Sharpe v4.0 = 0.520 (vs 0.482 v3.0).
+
+Iter 5 (2026-03-09): v5.0 = IEF 30%, GLD 30%. CONFIRMED IMPROVED: Sharpe 0.520 -> 0.602.
+Weight grid search (40+ combos): shifting IEF->GLD is the last remaining improvement.
+- IEF CAGR 2015-2026: only 1.47% (rate hike drag). GLD: 13.24% with corr~0 to SPY.
+- Beta: 0.326 -> 0.336 (marginal +0.010). Alpha: 0.009 -> 0.017 (genuine improvement).
+- SPY unchanged at 30% confirms no beta loading.
+- yfinance improvement transfered to QC: Sharpe delta was +0.048 in simulation, +0.082 on QC.
+CEILING NOW REACHED for AllWeather. No further angles remain.
 
 **Bug QC critique**: `update_file_contents` requiert `name` pas `fileName` dans le model.
 
-## VIX-TermStructure Lessons (v5.0 research - 2026-03-08)
+## VIX-TermStructure Lessons (v5.x - 2026-03-09 FINAL)
 
-### v5.0 changes vs v4.1 (backtest pending)
-- position_size: 0.45 -> 0.30 (SVXY max 30% safety rule)
-- stop_pct: 0.10 -> 0.07 (tighter stop, whipsaw analysis confirmed)
-- SHY added: 70% allocation at all times (not SPY - would be beta loading)
-- SHY corr with SVXY: ~0 (confirmed by scatter analysis)
-- SPY corr with SVXY: ~0.5-0.7 (confirmed - would be beta loading)
+### v5.0: SHY 70% + stop 7% - Sharpe -0.10 (REVERTED)
+- Too diluted: SVXY at 30% of 30% position = ~13.5% effective exposure
+- Cash drag + SHY yield not compensating for vol premium dilution
 
-### Key research findings (H1-H5)
-- H1: Sizing dynamique rejeté: corrélation ratio/rdt_t+1 est quasi-nulle -> 30% fixe
-- H2: Stop 7% confirmé: DD > 7% = 8-10% du temps (bon compromis, vs 10% trop large)
-- H3: VIX<22 conservé: VIX 22-25 a un IR plus faible et plus de risque
-- H4: SHY confirmé: +2-3% CAGR sans beta loading (corr~0)
-- H5: VIXplosion 2018 = structurel (-0.5x SVXY), non-corrigeable par le code
+### v5.1: position_size 0.45 -> 0.25 - Sharpe -0.125, MaxDD 21.5% (REVERTED)
+- MaxDD improved dramatically (35.2% -> 21.5%)
+- BUT Sharpe degraded (-0.176 vs v4.1)
+- ROOT CAUSE: With 25% position, portfolio earns 2.17% CAGR vs risk-free ~2-3%
+  Cash drag makes Sharpe go negative. The vol premium is too small to overcome
+  the Sharpe penalty of holding 75% idle cash at 0% in a high-rate environment.
 
-### Sharpe target réaliste post-2018: ~0.15-0.25 (pas 0.5+)
-L'edge est divisé par 2 structurellement post-2018. Une stratégie short-vol
-avec SVXY -0.5x dans un bull market 2015-2026 ne peut pas dépasser 0.2-0.3
-sans levier ou sans alpha supplémentaire.
+### CRITICAL LESSON: Position sizing for low-CAGR strategies
+For strategies that generate modest CAGR (2-5%), reducing position size
+proportionally reduces CAGR while the risk-free hurdle stays fixed.
+This tanks the Sharpe ratio even if Sharpe(signal) is maintained.
+The only way to reduce MaxDD without hurting Sharpe is to find a TRUE
+uncorrelated asset for the idle capital (not T-bills, not SPY).
+For SVXY: no such asset exists that is both truly uncorrelated AND has
+positive expected return in a rising-rate environment.
+
+### HARD CEILING: v4.1 = Sharpe 0.051 is the honest ceiling
+Every iteration from v2.0 to v5.1 (11 variants) has failed to beat v4.1.
+The strategy is structurally limited post-2018 VIXplosion (SVXY -0.5x).
+STOP iterating. Accept Sharpe 0.051 as the pedagogical result.
 
 ## VIX-TermStructure Lessons (v4.x iteration)
 
@@ -165,32 +269,29 @@ starts from day 1. Only update `prior_month_td_count` from complete months.
 
 ### Best backtest: 5316dcaa0543b78ec9b78996f65b8248 (v3.2, Sharpe -0.654)
 
-## RiskParity (NEW - 2026-03-05)
+## RiskParity (CEILING REACHED - 2026-03-09)
 
 ### Cloud ID: 28692653 | Issue: #35
 
-**Result**: Sharpe 0.361, CAGR 7.3%, MaxDD -20.9% (v1.0, inverse-vol 5 ETFs)
+**Final result**: Sharpe **0.399**, CAGR 7.82%, MaxDD -20.9% (baseline extended 2015-2026)
 
-**Why 0.361 not 0.5-0.8 (as targeted)**:
-- 2015-2026 is a near-uninterrupted bull market; SPY itself gets Sharpe ~0.55
-- TLT lost ~40% in 2020-2023 (Fed rate hikes), dragging the portfolio despite auto-weight reduction
-- No leverage: academic Risk Parity uses 1.5-2x leverage to match equity returns. At 1x, CAGR < SPY
+**All hypotheses tested and rejected**:
+- H5 IEF (replace TLT): QC backtest Sharpe 0.330 < 0.399. TLT superior on 2015-2026 because
+  bull bond market 2015-2020 (+40% TLT) outweighs 2020-2023 rate hike losses. IEF has less CAGR.
+- H6 Vol Targeting 10%: rejected. Cash during low-vol = anti-pattern on bull market. No leverage.
+- H7 VIX filter >25: rejected. <15% of time in stress regime. Cash time destroys relative return.
 
-**What the strategy demonstrates well (pedagogical value)**:
-- MaxDD 20.9% vs SPY 34%: meaningful downside protection
-- Beta 0.367: genuine diversification, low directional market exposure
-- Automatic rebalancing: 641 trades including drift-triggered ones (5% threshold active)
-
-**Design choices**:
-- SPY, EFA, GLD, DBC, TLT: 5 asset classes with complementary risk profiles
-- 60-day realized vol lookback: robust between 40-120 days (tested)
-- Monthly rebalance + 5% drift trigger
-- STD indicator on prices, normalized by current price to get return-based vol
+**Why IEF degrades on QC but seemed better in yfinance simulation**:
+- yfinance Adj Close includes bond ETF dividends (~2-3% yield/year). On 11 years this creates
+  a significant bias that makes IEF look better in simulation than it is in live trading.
+- QC uses raw prices, so the dividend yield advantage of TLT over IEF shows up correctly.
+- Lesson: for bond ETFs, yfinance simulations are especially unreliable vs QC cloud.
 
 **Key QC implementation note**:
 - Used `self.STD(symbol, 60, Resolution.DAILY)` which triggers a type-hint warning
   ("RiskParity has no attribute STD") but compiles fine - this is a static analysis false positive
 - Vol = std_indicator.current.value / current_price (relative vol from price-level STD)
+- 656 trades: ~130 monthly + ~526 drift-triggered. Fees $828 total = negligible.
 
 ## DualMomentum (NEW - 2026-03-05)
 

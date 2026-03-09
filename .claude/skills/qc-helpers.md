@@ -113,18 +113,27 @@ SANS organizationId -> cree dans ESGF (FREE) -> pas de backtest API!
 
 ### Org personnelle (d600793e) - Strategies Researcher
 
-| Projet | Cloud ID | Sharpe | Statut |
-|--------|----------|--------|--------|
-| Sector-Momentum | 28433643 | 0.554 | HEALTHY |
-| FamaFrench | 28657910 | 0.365 | NEEDS_IMPROVEMENT |
-| OptionsIncome | 28657838 | 0.288 | NEEDS_IMPROVEMENT |
-| AllWeather | 28657833 | 0.25 | NEEDS_IMPROVEMENT |
-| MomentumStrategy | 28657837 | 0.216 | NEEDS_IMPROVEMENT |
-| TurnOfMonth | 28657905 | 0.127 | NEEDS_IMPROVEMENT |
-| FuturesTrend | 28657834 | 0.019 | NEEDS_IMPROVEMENT |
-| MeanReversion | 28657904 | -0.042 | BROKEN |
-| VIX-TermStructure | 28657907 | -0.97 | BROKEN |
-| ForexCarry | 28657908 | -1.80 | BROKEN |
+| Projet | Cloud ID | Sharpe | Statut | Plafond? |
+|--------|----------|--------|--------|----------|
+| AllWeather | 28657833 | 0.602 | HEALTHY | OUI |
+| Sector-Momentum | 28433643 | 0.555 | HEALTHY | OUI |
+| FamaFrench | 28657910 | 0.540 | HEALTHY | OUI |
+| MomentumStrategy | 28657837 | 0.472 | NEEDS_IMPROVEMENT | OUI |
+| EMA-Cross-Index | 28789945 | 0.470 | NEEDS_IMPROVEMENT | OUI |
+| RiskParity | 28692653 | 0.399 | NEEDS_IMPROVEMENT | OUI |
+| MeanReversion | 28657904 | 0.365 | NEEDS_IMPROVEMENT | ~ |
+| DualMomentum | 28692516 | 0.350 | NEEDS_IMPROVEMENT | OUI |
+| FuturesTrend | 28657834 | 0.301 | NEEDS_IMPROVEMENT | OUI |
+| OptionsIncome | 28657838 | 0.234 | NEEDS_IMPROVEMENT | OUI |
+| Trend-Following | 28797562 | 0.212 | NEEDS_IMPROVEMENT | NON |
+| TurnOfMonth | 28657905 | 0.128 | NEEDS_IMPROVEMENT | OUI |
+| VIX-TermStructure | 28657907 | 0.051 | NEEDS_IMPROVEMENT | OUI |
+| ForexCarry | 28657908 | -0.324 | BROKEN | OUI |
+| PairsTrading | 28693651 | -0.361 | BROKEN | ~ |
+| ETF-Pairs | 28433746 | -0.706 | BROKEN | ~ |
+| Crypto-MultiCanal | 28733256 | 0.486 | NEEDS_IMPROVEMENT | OUI |
+| EMA-Cross-Crypto | 28789943 | 1.272 | HEALTHY | — |
+| EMA-Cross-Stocks | 28789946 | 0.872 | HEALTHY | — |
 
 ### Org ESGF (94aa4bcb) - Exemples pedagogiques
 
@@ -170,6 +179,19 @@ MyIA.AI.Notebooks/QuantConnect/ESGF-2026/examples/{ProjectName}/main.py
 | Sharpe Ratio | > 1.0 | > 0.5 |
 | Max Drawdown | < 20% | < 30% |
 | CAGR | > 15% | > 5% |
+
+## Backlog d'optimisation (LIRE EN PREMIER)
+
+**Fichier**: `MyIA.AI.Notebooks/QuantConnect/projects/OPTIMIZATION_BACKLOG.md`
+
+Ce fichier commite contient:
+- Regles universelles confirmees (18 patterns)
+- Plafonds structurels par strategie (ne plus iterer)
+- Hypotheses testees et rejetees (ne pas retester)
+- Divergences yfinance vs QC Cloud
+- Meta-lecons sur le processus d'optimisation
+
+**OBLIGATOIRE**: Lire ce fichier avant toute optimisation de strategie.
 
 ## Gotchas et lecons apprises
 
