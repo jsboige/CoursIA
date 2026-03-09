@@ -58,8 +58,9 @@ export const CHAT = {
   saveEditButton: '#save-edit-message-button',
   closeEditButton: '#close-edit-message-button',
   confirmEditButton: '#confirm-edit-message-button',
-  // Outils MCP
-  availableTools: 'button[aria-label="Available Tools"]',
+  // Outils MCP (v0.8.8+ : le bouton n'a plus d'aria-label stable,
+  // utiliser le 2eme bouton du inputContainer — voir module 04)
+  availableTools: 'button[aria-label="Available Tools"]',  // legacy, peut ne plus matcher
 } as const;
 
 // --- Partage ---

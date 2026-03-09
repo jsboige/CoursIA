@@ -22,33 +22,42 @@ A la fin de ce module, vous serez capable de :
 
 **RAG dans Open WebUI :**
 Le RAG (Retrieval-Augmented Generation) enrichit les reponses du LLM avec des documents.
-Dans OWUI, on "attache" une Knowledge Base (KB) au chat via le raccourci `#`.
+Dans OWUI (v0.8.8+), on "attache" une Knowledge Base (KB) au chat via le bouton `+`
+puis "Joindre une connaissance" :
 
 ```
-Utilisateur tape : #
-  → Popup avec la liste des KBs
+Clic sur le bouton "+" dans la barre de chat
+  → Menu avec "Joindre une connaissance"
+  → Clic → Liste des KBs disponibles
   → Clic sur "Bibliographie IA"
   → La KB est attachee au chat
   → Les questions suivantes utilisent les documents de la KB
 ```
 
+> **Note historique** : Avant v0.8.8, le raccourci `#` dans le chat input
+> declenchait un popup de selection de KB. Ce raccourci a ete remplace.
+
 **Outils MCP :**
 Le Model Context Protocol (MCP) permet d'etendre les capacites du LLM
 avec des outils externes (recherche web, execution de code, etc.).
+Depuis v0.8.8+, les outils sont accessibles via un bouton icone (engrenages)
+dans la barre de chat, qui ouvre un menu avec : Outils, Recherche Web, Image, Code.
 
 **Channels :**
 Les canaux sont des espaces de discussion collaboratifs, similaires a Slack.
+Il n'y a pas de page `/channels` — les canaux sont accessibles via la sidebar
+ou par URL directe `/channels/{id}`.
 
 ### Partie pratique
 
 | Test | Description | Concepts |
 |------|-------------|----------|
-| RAG — raccourci # | Declencher la selection de KB | Evenements clavier, popups |
+| RAG — menu "+" | Attacher une KB via "Joindre une connaissance" | Menus, selecteurs |
 | RAG — chat avec KB | Poser une question avec KB attachee | Workflow multi-etapes |
-| MCP — bouton outils | Verifier la presence des outils | Visibilite conditionnelle |
+| MCP — menu outils | Verifier la presence des outils (bouton engrenages) | Selecteurs positionnels |
 | MCP — activer outils | Ouvrir le selecteur d'outils | Dialogs, menus |
-| MCP — recherche web | Declencher une recherche via outil | Tests fonctionnels integres |
-| Channels — naviguer | Acceder aux canaux | Navigation conditionnelle |
+| MCP — recherche web | Declencher une recherche via outil | Toggles, tests fonctionnels |
+| Channels — naviguer | Acceder a un canal via API + URL directe | API + navigateur combines |
 | Channels — poster | Envoyer un message dans un canal | TipTap dans un autre contexte |
 
 ## Commandes
@@ -60,7 +69,8 @@ npx playwright test --grep "04" --headed
 
 ## Points cles a retenir
 
-- Le raccourci `#` dans le chat ouvre un popup de selection de KB
+- Les KBs s'attachent via le bouton `+` → "Joindre une connaissance" (v0.8.8+)
 - Les outils MCP sont optionnels — utilisez `test.skip()` si absents
 - Les canaux utilisent le meme editeur TipTap que le chat principal
-- Combiner navigation + interaction = tests plus realistes mais plus fragiles
+- Combiner API (pour obtenir les IDs) + navigateur (pour tester l'UI) = tests robustes en headless
+- Les selecteurs positionnels (`nth(1)`) sont un dernier recours quand il n'y a pas d'aria-label stable
