@@ -450,12 +450,35 @@ MyIA.AI.Notebooks/GenAI/temp/*
 !MyIA.AI.Notebooks/GenAI/temp/.gitkeep
 
 # Tweety runtime dependencies (downloaded by notebook)
-# Note: libs/native/ et ext_tools/EProver/ sont versionnés (binaires précieux)
+# Note: Les binaires PRECIEUX sont maintenant versionnés (voir exceptions positives ci-dessous)
 MyIA.AI.Notebooks/SymbolicAI/resources/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/jdk-17-portable/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/resources/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/
+
+# ============================================================================
+# EXCEPTIONS POSITIVES - Binaires Tweety PRECIEUX à versionner
+# ============================================================================
+# Ces binaires ne peuvent pas être téléchargés automatiquement ou sont difficiles à obtenir
+
+# Clingo (ASP solver) - binaire Windows précieux
+!MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/clingo/
+
+# SPASS (Modal Logic Prover) - binaires Windows + documentation
+!MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS.exe
+!MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS-3.0/
+# Mais exclure l'installeur inutile
+MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS_installer.exe
+
+# EProver (FOL theorem prover) - installation complète partagée
+!MyIA.AI.Notebooks/SymbolicAI/ext_tools/EProver/
+
+# Scripts Python helpers (code source)
+!MyIA.AI.Notebooks/SymbolicAI/ext_tools/*.py
+
+# Bibliothèques natives SAT (Minisat, Lingeling, Picosat)
+!MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/native/
 
 # Jupyter/MCP temp files
 kernel_info.json
