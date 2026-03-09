@@ -1,6 +1,6 @@
 # QuantConnect Algorithmic Trading Projects
 
-Bibliotheque pedagogique de 31 strategies de trading algorithmique backtestees sur QuantConnect Cloud.
+Bibliotheque pedagogique de 32 strategies de trading algorithmique backtestees sur QuantConnect Cloud.
 Chaque strategie illustre un concept ou une famille de strategies ; les performances varient volontairement
 pour montrer que toutes les idees academiques ne survivent pas au backtest realiste.
 
@@ -22,15 +22,16 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 
 | Projet | Description | Sharpe | CAGR | Max DD | Periode | Lang | Niveau | Research |
 |--------|-------------|--------|------|--------|---------|------|--------|----------|
-| [Multi-Layer-EMA](Multi-Layer-EMA/) | Multi-layer EMA + vol filter BTCUSDT | **1.891** | 120.9% | 54.4% | 2020-2026 | Py | Intermediaire | QuantBook |
+| [BTC-MACD-ADX](BTC-MACD-ADX/) | MACD + ADX filter BTC daily | **1.647** | 38.1% | 48.8% | 2020-2026 | C# | Intermediaire | — |
+| [Framework_Composite_TrendWeather](Framework_Composite_TrendWeather/) | TrendStocksLite + AllWeather via Algorithm Framework (T75/AW25, Mom3m) | **1.155** | 27.4% | 27.7% | 2015-2026 | Py | Avance | QuantBook |
 | [EMA-Cross-Crypto](EMA-Cross-Crypto/) | EMA 20/50 + SMA200 + trailing stop BTCUSDT | **1.272** | 38.2% | 33.1% | 2020-2026 | Py | Debutant | yfinance |
-| [BTC-MACD-ADX](BTC-MACD-ADX/) | MACD + ADX filter BTC daily | **1.224** | 38.1% | 48.8% | 2009-2026 | C# | Intermediaire | — |
 | [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | EMA crossover BTC (C#) | **1.094** | 36.2% | 40.7% | 2017-2026 | C# | Debutant | — |
 | [Option-Wheel](Option-Wheel/) | Wheel strategy SPY (sell puts/calls) | **0.996** | 12.9% | 7.4% | 2019-2026 | Py | Avance | QuantBook |
 | [EMA-Cross-Stocks](EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | **0.872** | 25.7% | 35.7% | 2015-2026 | Py | Debutant | — |
 | [TrendStocksLite](TrendStocksLite/) | EMA20/50 + SMA200 trend 15 large-caps diversifies | **0.719** | 18.2% | 33.7% | 2015-2026 | Py | Intermediaire | — |
-| [AllWeather](AllWeather/) | Portfolio multi-asset (SPY/IEF/GLD/XLP, no TLT) | **0.602** | 9.5% | 16.4% | 2015-2026 | Py | Debutant | yfinance |
-| [SectorMomentum](SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | **0.555** | 13.0% | 22.8% | 2015-2026 | Py | Intermediaire | yfinance |
+| [AllWeather](AllWeather/) | Portfolio multi-asset (SPY/IEF/GLD/XLP, no TLT) | **0.667** | 9.3% | 16.4% | 2010-2026 | Py | Debutant | yfinance |
+| [SectorMomentum](SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | **0.621** | 13.2% | 22.8% | 2010-2026 | Py | Intermediaire | yfinance |
+| [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs + stop-loss | **0.565** | 11.8% | 25.8% | 2010-2026 | Py | Intermediaire | yfinance |
 | [RegimeSwitching](RegimeSwitching/) | Regime detection + asset rotation | **0.553** | 11.7% | 33.0% | 2008-2026 | Py | Avance | — |
 | [FamaFrench](FamaFrench/) | Factor ETF rotation (VLUE/MTUM/SIZE/QUAL/USMV) | **0.540** | 12.1% | 24.2% | 2015-2026 | Py | Intermediaire | yfinance |
 | [AdaptiveAssetAllocation](AdaptiveAssetAllocation/) | Momentum + min-variance multi-asset | **0.518** | 8.0% | 18.8% | 2008-2026 | Py | Avance | — |
@@ -41,8 +42,8 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 
 | Projet | Description | Sharpe | CAGR | Max DD | Periode | Lang | Niveau | Research | Note |
 |--------|-------------|--------|------|--------|---------|------|--------|----------|------|
+| [Multi-Layer-EMA](Multi-Layer-EMA/) | Multi-layer EMA + vol filter BTCUSDT | **0.928** | 120.9% | 54.4% | 2020-2026 | Py | Intermediaire | QuantBook | NON ROBUSTE: Sharpe chute a 0.38 hors bulle 2017, MaxDD 67.7% |
 | [Crypto-MultiCanal](Crypto-MultiCanal/) | ZigZag multi-channel (macro/meso/micro) BTCUSDT | **0.486** | 7.6% | 16.8% | 2020-2026 | Py | Avance | QuantBook | Plafond apres 18 versions |
-| [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs + stop-loss | **0.472** | 11.1% | 25.8% | 2015-2026 | Py | Intermediaire | yfinance | Plafond v4.0 |
 | [EMA-Cross-Index](EMA-Cross-Index/) | EMA 20/60 + cooldown 3d SPY | **0.470** | 9.4% | 17.5% | 2015-2026 | Py | Debutant | yfinance | 25 combos testees |
 | [DualMomentumNoTLT](DualMomentumNoTLT/) | Momentum rotation SPY/QQQ/IEF/GLD/XLP (no TLT) | **0.469** | 11.0% | 23.6% | 2015-2026 | Py | Intermediaire | — | Variante sans TLT |
 | [RiskParity](RiskParity/) | Risk parity multi-asset portfolio | **0.399** | 7.8% | 20.9% | 2015-2026 | Py | Intermediaire | — | Plafond (3 hyp. rejetees) |
@@ -64,7 +65,8 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [PairsTrading](PairsTrading/) | Statistical arbitrage equity pairs | -0.361 | 0.9% | 15.1% | 2010-2026 | Py | Intermediaire | — | Paires non cointegrees 2010-2026 |
 | [ETF-Pairs](ETF-Pairs/) | Cointegration-based ETF pairs | -0.706 | -4.7% | 35.0% | 2020-2026 | Py | Intermediaire | QuantBook | Cointregration instable |
 
-*31 strategies au total (28 Python, 3 C#). Metriques issues des backtests QC Cloud.*
+*32 strategies au total (29 Python, 3 C#). Metriques issues des backtests QC Cloud.*
+*Multi-Layer-EMA reclassee Historique apres analyse de robustesse (Sharpe gonfle par bulle BTC 2017).*
 *Research: type de notebook de recherche (yfinance = donnees Yahoo, QuantBook = donnees QC natives, — = pas de notebook).*
 
 ## Description des strategies
@@ -97,7 +99,8 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 
 ### Portfolio Construction (Intermediaire/Avance)
 
-- **AllWeather** : Portfolio "All Weather" simplifie (SPY 30%/IEF 40%/GLD 20%/XLP 10%, TLT elimine). Drift rebalancing 3%.
+- **Framework_Composite_TrendWeather** : Composite strategy combinant TrendStocksLite (15 large-caps momentum-weighted) + AllWeather (SPY/IEF/GLD/XLP) via QC Algorithm Framework. T75/AW25 allocation, 3m momentum weighting, monthly rebalance. Itere de v1.0 (Sharpe 0.622) a v1.5 (Sharpe 1.155).
+- **AllWeather** : Portfolio "All Weather" simplifie (SPY 30%/IEF 30%/GLD 30%/XLP 10%, TLT elimine). Drift rebalancing 3%.
 - **RiskParity** : Allocation inversement proportionnelle a la volatilite.
 - **AdaptiveAssetAllocation (AAA)** : Momentum + minimum-variance sur un univers multi-asset.
 - **RegimeSwitching** : Detection de regimes de marche (bull/bear/crisis) et rotation d'actifs.
