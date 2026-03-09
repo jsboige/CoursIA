@@ -67,7 +67,7 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 
 | Strategie | Sharpe | Notes |
 |-----------|--------|-------|
-| **TrendFilteredMeanReversion** | -0.016 | RSI(2)<10 trop rare. Tester RSI(2)<20 ou RSI(3)<15 pour augmenter la frequence. |
+| **TrendFilteredMeanReversion** | -0.016 | RSI<20 et RSI(3)<15 testes et rejetes. Cause : cash drag 85%. Tester multi-instrument (SPY+QQQ+IWM). |
 | **PairsTrading** | -0.361 | Paires structurellement non-cointegrees 2010-2026. OLS hedge ratio teste, echoue. Changer les paires? |
 | **ETF-Pairs** | -0.706 | Meme probleme que PairsTrading. Cointregration instable. |
 | **BTC-ML** | 0.282 | ML prediction. Potentiel features engineering. Object Store pour pre-training. |
@@ -157,7 +157,10 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 
 ### TrendFilteredMeanReversion (NOUVELLE 2026-03-09)
 - [x] RSI(2)<10, SMA200 bull filter, time stop 5j, v1.0 : Sharpe -0.016. Signal reel (73% win, beta 0.108) mais ~9 trades/an trop rare.
-- [ ] RSI(2)<20 ou RSI(3)<15 : non teste. Pourrait augmenter la frequence sans trop degrader le win rate.
+- [x] RSI(2)<20 (v2.0) : Sharpe -0.002, 31 trades/an, 71% win, MaxDD 16.2%. Frequence triple mais qualite diluee et DD double.
+- [x] RSI(3)<15 (v3.0) : Sharpe -0.050, 12 trades/an, 72% win, MaxDD 10.3%. Pas d'amelioration significative.
+- **CAUSE RACINE** : Cash drag structurel (~85% du temps en cash, 0% return vs risk-free 2-5%).
+- [ ] H4 Multi-instrument (SPY+QQQ+IWM) : multiplier les opportunites 3x sans diluer le signal. Non teste.
 
 ### EMA-Cross-Index
 - [x] Triple EMA (8/21/55) : Sharpe -10%. Entree trop restrictive.
