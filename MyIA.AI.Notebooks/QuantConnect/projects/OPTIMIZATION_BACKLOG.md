@@ -3,7 +3,7 @@
 Fichier commite dans le workspace. Source de verite pour tous les agents (Claude Code, Roo, etc.) sur toutes les machines.
 Objectif : eviter de retester des hypotheses deja explorees et capturer les plafonds structurels.
 
-**Derniere MAJ** : 2026-03-09 (iteration 6)
+**Derniere MAJ** : 2026-03-09 (iteration 6 + 3 nouvelles strategies)
 
 ---
 
@@ -53,14 +53,25 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 | **RiskParity** | 0.399 | 7.8% | 20.9% | H5-H7 all rej | IEF degrade, vol targeting anti-pattern en bull, VIX filter = trop peu de temps. |
 | **EMA-Cross-Index** | 0.470 | 9.4% | 17.5% | 25 combos | EMA 20/60 + cooldown 3j optimal. Volume filter, triple EMA, trailing tous rejetes. |
 
+### Nouvelles strategies (2026-03-09, inspirees ChatGPT)
+
+| Strategie | Sharpe | CAGR | MaxDD | Alpha | Beta | Verdict |
+|-----------|--------|------|-------|-------|------|---------|
+| **TrendStocksLite** | **0.719** | 18.2% | 33.7% | 0.049 | 0.822 | EXCELLENT. EMA20/50+SMA200 sur 15 large-caps diversifies. Meilleur Sharpe equity. |
+| **DualMomentumNoTLT** | **0.469** | 11.0% | 23.6% | 0.012 | 0.612 | BON. Mieux que DualMomentum original (0.350). Sans TLT = MaxDD reduit (33.6%->23.6%). |
+| **TrendFilteredMeanReversion** | -0.016 | 3.4% | 11.4% | -0.009 | 0.108 | FAIBLE. Signal reel (73% win rate) mais RSI(2)<10 trop rare (~9 trades/an). Potentiel avec RSI<20. |
+
+**Lecon**: Strategies simples (EMA/SMA + equal weight) > strategies sophistiquees (multi-oracle, factor rotation). Confirme la meta-lecon.
+
 ### Strategies potentiellement ameliorables
 
 | Strategie | Sharpe | Notes |
 |-----------|--------|-------|
+| **TrendFilteredMeanReversion** | -0.016 | RSI(2)<10 trop rare. Tester RSI(2)<20 ou RSI(3)<15 pour augmenter la frequence. |
 | **PairsTrading** | -0.361 | Paires structurellement non-cointegrees 2010-2026. OLS hedge ratio teste, echoue. Changer les paires? |
 | **ETF-Pairs** | -0.706 | Meme probleme que PairsTrading. Cointregration instable. |
-| **BTC-ML** | 0.282 | ML prediction. Potentiel features engineering. |
-| **Trend-Following** | 0.212 | v3 en test (SPY SMA200 filter + risk mgmt 7%/15%). Marge de progression possible. |
+| **BTC-ML** | 0.282 | ML prediction. Potentiel features engineering. Object Store pour pre-training. |
+| **Trend-Following** | 0.212 | v3 degrade (0.011). v2 reste meilleure. Simplifier le design? |
 
 ### Strategies saines (Sharpe > 0.5, pas de degradation)
 
@@ -141,6 +152,13 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 - [x] Vol Targeting 10% (H6) : cash low-vol = anti-pattern.
 - [x] VIX filter >25 (H7) : <15% du temps en stress. Cash drag.
 
+### Trend-Following
+- [x] v3 SPY SMA200 filter + MaxDD 7%/15% : Sharpe 0.212->0.011. Filtre + risk mgmt trop serre coupe trop de positions. REVERT a v2.
+
+### TrendFilteredMeanReversion (NOUVELLE 2026-03-09)
+- [x] RSI(2)<10, SMA200 bull filter, time stop 5j, v1.0 : Sharpe -0.016. Signal reel (73% win, beta 0.108) mais ~9 trades/an trop rare.
+- [ ] RSI(2)<20 ou RSI(3)<15 : non teste. Pourrait augmenter la frequence sans trop degrader le win rate.
+
 ### EMA-Cross-Index
 - [x] Triple EMA (8/21/55) : Sharpe -10%. Entree trop restrictive.
 - [x] Volume filter : Sharpe -5% a -19%. SPY trop liquide, volume non-directionnel pour ETFs.
@@ -177,6 +195,7 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 | SL/TP qty sur Binance | `portfolio[sym].quantity` (fees preleves en BTC) |
 | Universe Selection 500 stocks | Trop lent. Utiliser ETFs fixes |
 | Short selling en bull market | Mean reversion long-short catastrophique. Long-only + SMA200 |
+| `self.rsi(sym, 2, Resolution.DAILY)` : 3e arg = MovingAverageType | Utiliser `self.rsi(sym, 2)` sans 3e argument |
 
 ---
 
