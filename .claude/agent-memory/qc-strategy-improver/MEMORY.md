@@ -19,6 +19,8 @@
 | **EMA-Cross-Index** | **28789945** | **—** | **0.384** | **~0.43 expected** | **RESEARCH DONE, NO BACKTEST YET** |
 | **TrendStocksLite** | **28817425** | **—** | **NEW** | **0.719** | **v1.0 initial (2026-03-09)** |
 | **DualMomentumNoTLT** | **28817424** | **—** | **NEW** | **0.469** | **v1.0 initial (2026-03-09)** |
+| **Trend-Following** | **28797562** | **ESGF** | **0.212** | **0.212** | **CEILING REACHED (iter6, 2026-03-09)** |
+| **TrendFilteredMeanReversion** | **28817422** | **#40** | **NEW** | **-0.016** | **HARD CEILING: H4 multi-instrument REJECTED (-0.129), v1.0 is final** |
 
 ## MomentumStrategy Lessons (2026-03-09) - iter5
 
@@ -182,6 +184,38 @@ positive expected return in a rising-rate environment.
 Every iteration from v2.0 to v5.1 (11 variants) has failed to beat v4.1.
 The strategy is structurally limited post-2018 VIXplosion (SVXY -0.5x).
 STOP iterating. Accept Sharpe 0.051 as the pedagogical result.
+
+## Trend-Following Lessons (2026-03-09) - CEILING REACHED
+
+### Cloud ID: 28797562 | Current best: v2 Sharpe 0.212, CAGR 7.3%, MaxDD 40.9%
+
+**Attempts to reduce MaxDD 40.9%: all failed**
+
+**v3 (ATR 1.5 + SMA200 filter)**: Catastrophic. Sharpe 0.011, MaxDD 62.8%, CAGR -0.55%.
+- Root cause: `MaximumDrawdownPercentPortfolio(0.15)` liquidated ALL positions during COVID 2020.
+  This is the anti-pattern: portfolio-level stops in multi-stock strategies = catastrophic liquidations.
+- The SMA200 filter ALSO contributed: blocked all entries during 2020 corrections, preventing recovery.
+
+**v3b (ATR 1.5 only, no SMA200)**: Sharpe 0.151, MaxDD 54.1%, CAGR 4.3%.
+- ATR 1.5 causes MORE whipsaw than ATR 2.0. Tighter stop = more stop-outs + worse re-entries.
+- The strategy has very restrictive entry conditions (6 gates: EMA trend 210/250, Bollinger, MACD,
+  RSI, ADX at max, OBV). Each exit at ATR 1.5 is often a good trade cut prematurely.
+- MaxDD got WORSE (-54.1% vs -40.9%) because the strategy is now making more, smaller losing trades
+  that compound into a deeper drawdown.
+
+**Root cause of MaxDD 40.9% in v2**: The strategy concentrates in high-momentum stocks during
+market peaks. COVID 2020 crash hit exactly when the strategy was most invested. MaxDD is structural
+for this type of high-conviction momentum strategy. Cannot be reduced without fundamentally changing
+the entry/exit logic.
+
+**LESSONS**:
+1. `MaximumDrawdownPercentPortfolio` = NEVER use on multi-stock strategies. It liquidates everything
+   simultaneously during a crash, locking in losses and missing the recovery.
+2. ATR trailing stop: for multi-indicator momentum strategies with very restrictive entries,
+   a tighter stop increases net losses (more whipsaws > fewer large losses).
+3. SMA200 regime filter: useful for simpler strategies. For strategies with 6+ entry gates,
+   the entry filters themselves provide sufficient regime control.
+4. v2 is the honest ceiling: ATR 2.0, 10% per-security drawdown, 200-stock universe.
 
 ## VIX-TermStructure Lessons (v4.x iteration)
 
