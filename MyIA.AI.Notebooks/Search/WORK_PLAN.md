@@ -212,12 +212,12 @@ Résumé des concepts clés :
 
 ### Batch 3.4: Interprétations (Priorité haute)
 
-**État**: ⏳ À faire
+**État**: ✅ Terminé
 
-- Search-3: Outputs A*
-- Search-8: Outputs Algorithm X
-- CSP-2: Outputs AC algorithms
-- CSP-3: Outputs techniques avancées
+- Search-3: Outputs A* (déjà présents)
+- Search-8: Outputs Algorithm X (déjà présents)
+- CSP-2: Outputs AC algorithms (déjà présents)
+- CSP-3: Outputs techniques avancées (4 cellules ajoutées)
 
 ### Batch 3.5: Cross-références
 
