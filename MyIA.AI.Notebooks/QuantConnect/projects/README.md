@@ -1,44 +1,71 @@
 # QuantConnect Algorithmic Trading Projects
 
-Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec notebooks de recherche standalone (yfinance/pandas).
+Bibliotheque pedagogique de 31 strategies de trading algorithmique backtestees sur QuantConnect Cloud.
+Chaque strategie illustre un concept ou une famille de strategies ; les performances varient volontairement
+pour montrer que toutes les idees academiques ne survivent pas au backtest realiste.
+
+## Classification
+
+Les strategies sont classees en 3 categories pedagogiques :
+
+| Label | Signification | Action |
+|-------|---------------|--------|
+| **Robuste** | Sharpe > 0.5, stable sur longue periode, signal propre | Conserver, iterer si besoin |
+| **Historique** | Prime connue mais regime-dependante ou affaiblie | Conserver comme contre-exemple, documenter les regimes favorables |
+| **Exploratoire** | Implementation naive ou signal insuffisant | Conserver si pedagogique, sinon retravailler |
+
+Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds structurels et hypotheses testees.
 
 ## Performance Summary
 
-| Projet | Description | Sharpe | CAGR | Max DD | Periode | Lang | Niveau |
-|--------|-------------|--------|------|--------|---------|------|--------|
-| [Multi-Layer-EMA](Multi-Layer-EMA/) | Multi-layer EMA + vol filter BTCUSDT | **1.891** | 120.9% | 54.4% | 2020-2026 | Py | Intermediaire |
-| [EMA-Cross-Crypto](EMA-Cross-Crypto/) | EMA 20/50 + SMA200 + trailing stop BTCUSDT | **1.272** | 38.2% | 33.1% | 2020-2026 | Py | Debutant |
-| [BTC-MACD-ADX](BTC-MACD-ADX/) | MACD + ADX filter BTC daily | **1.224** | 38.1% | 48.8% | 2009-2026 | C# | Intermediaire |
-| [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | EMA crossover BTC (C#) | **1.094** | 36.2% | 40.7% | 2017-2026 | C# | Debutant |
-| [Option-Wheel](Option-Wheel/) | Wheel strategy SPY (sell puts/calls) | **0.996** | 12.9% | 7.4% | 2019-2026 | Py | Avance |
-| [EMA-Cross-Stocks](EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | **0.872** | 25.7% | 35.7% | 2015-2026 | Py | Debutant |
-| [TrendStocksLite](TrendStocksLite/) | EMA20/50 + SMA200 trend 15 large-caps diversifies | **0.719** | 18.2% | 33.7% | 2015-2026 | Py | Intermediaire |
-| [SectorMomentum](SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | **0.555** | 13.0% | 22.8% | 2015-2026 | Py | Intermediaire |
-| [RegimeSwitching](RegimeSwitching/) | Regime detection + asset rotation | **0.553** | 11.7% | 33.0% | 2008-2026 | Py | Avance |
-| [FamaFrench](FamaFrench/) | Factor ETF rotation (VLUE/MTUM/SIZE/QUAL/USMV) | **0.540** | 12.1% | 24.2% | 2015-2026 | Py | Intermediaire |
-| [AllWeather](AllWeather/) | Portfolio multi-asset (SPY/IEF/GLD/XLP, no TLT) | **0.602** | 9.5% | 16.4% | 2015-2026 | Py | Debutant |
-| [AdaptiveAssetAllocation](AdaptiveAssetAllocation/) | Momentum + min-variance multi-asset | **0.518** | 8.0% | 18.8% | 2008-2026 | Py | Avance |
-| [Options-VGT](Options-VGT/) | Options income VGT (wheel NVDA/ORCL/CSCO/AMD/QCOM) | **0.507** | 14.2% | 16.2% | 2020-2026 | Py | Avance |
-| [CSharp-CTG-Momentum](CSharp-CTG-Momentum/) | CTG momentum strategy (C#) | **0.507** | 17.7% | 36.1% | 2015-2026 | C# | Intermediaire |
-| [Crypto-MultiCanal](Crypto-MultiCanal/) | ZigZag multi-channel (macro/meso/micro) BTCUSDT | **0.486** | 7.6% | 16.8% | 2020-2026 | Py | Avance |
-| [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs + stop-loss | **0.472** | 11.1% | 25.8% | 2015-2026 | Py | Intermediaire |
-| [EMA-Cross-Index](EMA-Cross-Index/) | EMA 20/60 + cooldown 3d SPY | **0.470** | 9.4% | 17.5% | 2015-2026 | Py | Debutant |
-| [DualMomentumNoTLT](DualMomentumNoTLT/) | Momentum rotation SPY/QQQ/IEF/GLD/XLP (no TLT) | **0.469** | 11.0% | 23.6% | 2015-2026 | Py | Intermediaire |
-| [RiskParity](RiskParity/) | Risk parity multi-asset portfolio | **0.399** | 7.8% | 20.9% | 2015-2026 | Py | Intermediaire |
-| [DualMomentum](DualMomentum/) | Absolute + relative momentum ETFs | **0.350** | 9.2% | 33.6% | 2015-2026 | Py | Intermediaire |
-| [FuturesTrend](FuturesTrend/) | Donchian breakout ETFs (trend following) | **0.301** | 8.0% | 12.9% | 2018-2026 | Py | Intermediaire |
-| [MeanReversion](MeanReversion/) | RSI multi-asset mean reversion | **0.294** | 7.5% | 16.5% | 2015-2026 | Py | Intermediaire |
-| [BTC-ML](BTC-ML/) | Machine learning BTC prediction | **0.282** | 8.3% | 13.7% | 2023-2026 | Py | Avance |
-| [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.234** | 6.8% | 19.3% | 2018-2026 | Py | Avance |
-| [Trend-Following](Trend-Following/) | Multi-oracle trend following (MACD/RSI/Bollinger) | **0.212** | 7.3% | 40.9% | 2019-2026 | Py | Avance |
-| [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 0.128 | 4.8% | 23.7% | 2015-2026 | Py | Debutant |
-| [TrendFilteredMeanReversion](TrendFilteredMeanReversion/) | RSI(2) pullback SPY en bull regime (SMA200) | -0.016 | 3.4% | 11.4% | 2015-2026 | Py | Debutant |
-| [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX (SVXY) | 0.051 | 3.6% | 35.2% | 2010-2026 | Py | Avance |
-| [ForexCarry](ForexCarry/) | FX momentum IR + skip-month G10 | -0.324 | 1.5% | 10.5% | 2013-2026 | Py | Intermediaire |
-| [PairsTrading](PairsTrading/) | Statistical arbitrage equity pairs | -0.361 | 0.9% | 15.1% | 2010-2026 | Py | Intermediaire |
-| [ETF-Pairs](ETF-Pairs/) | Cointegration-based ETF pairs | -0.706 | -4.7% | 35.0% | 2020-2026 | Py | Intermediaire |
+### Robuste (Sharpe > 0.5)
+
+| Projet | Description | Sharpe | CAGR | Max DD | Periode | Lang | Niveau | Research |
+|--------|-------------|--------|------|--------|---------|------|--------|----------|
+| [Multi-Layer-EMA](Multi-Layer-EMA/) | Multi-layer EMA + vol filter BTCUSDT | **1.891** | 120.9% | 54.4% | 2020-2026 | Py | Intermediaire | QuantBook |
+| [EMA-Cross-Crypto](EMA-Cross-Crypto/) | EMA 20/50 + SMA200 + trailing stop BTCUSDT | **1.272** | 38.2% | 33.1% | 2020-2026 | Py | Debutant | yfinance |
+| [BTC-MACD-ADX](BTC-MACD-ADX/) | MACD + ADX filter BTC daily | **1.224** | 38.1% | 48.8% | 2009-2026 | C# | Intermediaire | — |
+| [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | EMA crossover BTC (C#) | **1.094** | 36.2% | 40.7% | 2017-2026 | C# | Debutant | — |
+| [Option-Wheel](Option-Wheel/) | Wheel strategy SPY (sell puts/calls) | **0.996** | 12.9% | 7.4% | 2019-2026 | Py | Avance | QuantBook |
+| [EMA-Cross-Stocks](EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | **0.872** | 25.7% | 35.7% | 2015-2026 | Py | Debutant | — |
+| [TrendStocksLite](TrendStocksLite/) | EMA20/50 + SMA200 trend 15 large-caps diversifies | **0.719** | 18.2% | 33.7% | 2015-2026 | Py | Intermediaire | — |
+| [AllWeather](AllWeather/) | Portfolio multi-asset (SPY/IEF/GLD/XLP, no TLT) | **0.602** | 9.5% | 16.4% | 2015-2026 | Py | Debutant | yfinance |
+| [SectorMomentum](SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | **0.555** | 13.0% | 22.8% | 2015-2026 | Py | Intermediaire | yfinance |
+| [RegimeSwitching](RegimeSwitching/) | Regime detection + asset rotation | **0.553** | 11.7% | 33.0% | 2008-2026 | Py | Avance | — |
+| [FamaFrench](FamaFrench/) | Factor ETF rotation (VLUE/MTUM/SIZE/QUAL/USMV) | **0.540** | 12.1% | 24.2% | 2015-2026 | Py | Intermediaire | yfinance |
+| [AdaptiveAssetAllocation](AdaptiveAssetAllocation/) | Momentum + min-variance multi-asset | **0.518** | 8.0% | 18.8% | 2008-2026 | Py | Avance | — |
+| [Options-VGT](Options-VGT/) | Options income VGT (wheel NVDA/ORCL/CSCO/AMD/QCOM) | **0.507** | 14.2% | 16.2% | 2020-2026 | Py | Avance | — |
+| [CSharp-CTG-Momentum](CSharp-CTG-Momentum/) | CTG momentum strategy (C#) | **0.507** | 17.7% | 36.1% | 2015-2026 | C# | Intermediaire | — |
+
+### Historique / Regime-dependante (Sharpe 0-0.5, prime connue mais affaiblie)
+
+| Projet | Description | Sharpe | CAGR | Max DD | Periode | Lang | Niveau | Research | Note |
+|--------|-------------|--------|------|--------|---------|------|--------|----------|------|
+| [Crypto-MultiCanal](Crypto-MultiCanal/) | ZigZag multi-channel (macro/meso/micro) BTCUSDT | **0.486** | 7.6% | 16.8% | 2020-2026 | Py | Avance | QuantBook | Plafond apres 18 versions |
+| [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs + stop-loss | **0.472** | 11.1% | 25.8% | 2015-2026 | Py | Intermediaire | yfinance | Plafond v4.0 |
+| [EMA-Cross-Index](EMA-Cross-Index/) | EMA 20/60 + cooldown 3d SPY | **0.470** | 9.4% | 17.5% | 2015-2026 | Py | Debutant | yfinance | 25 combos testees |
+| [DualMomentumNoTLT](DualMomentumNoTLT/) | Momentum rotation SPY/QQQ/IEF/GLD/XLP (no TLT) | **0.469** | 11.0% | 23.6% | 2015-2026 | Py | Intermediaire | — | Variante sans TLT |
+| [RiskParity](RiskParity/) | Risk parity multi-asset portfolio | **0.399** | 7.8% | 20.9% | 2015-2026 | Py | Intermediaire | — | Plafond (3 hyp. rejetees) |
+| [DualMomentum](DualMomentum/) | Absolute + relative momentum ETFs | **0.350** | 9.2% | 33.6% | 2015-2026 | Py | Intermediaire | yfinance | MaxDD COVID structurel |
+| [FuturesTrend](FuturesTrend/) | Donchian breakout ETFs (trend following) | **0.301** | 8.0% | 12.9% | 2018-2026 | Py | Intermediaire | yfinance | 14 configs testees |
+| [MeanReversion](MeanReversion/) | RSI multi-asset mean reversion | **0.294** | 7.5% | 16.5% | 2015-2026 | Py | Intermediaire | yfinance | SMA filter rejete |
+| [BTC-ML](BTC-ML/) | Machine learning BTC prediction | **0.282** | 8.3% | 13.7% | 2023-2026 | Py | Avance | QuantBook | Periode courte, potentiel features |
+| [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.234** | 6.8% | 19.3% | 2018-2026 | Py | Avance | — | Alpha CC structurellement faible |
+| [Trend-Following](Trend-Following/) | Multi-oracle trend following (MACD/RSI/Bollinger) | **0.212** | 7.3% | 40.9% | 2019-2026 | Py | Avance | — | v2 apres revert leverage |
+| [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 0.128 | 4.8% | 23.7% | 2015-2026 | Py | Debutant | yfinance | Effet faible en bull 2015-2026 |
+| [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX (SVXY) | 0.051 | 3.6% | 35.2% | 2010-2026 | Py | Avance | yfinance | Post-VIXplosion, SVXY affaibli |
+
+### Exploratoire / Implementation insuffisante (Sharpe < 0)
+
+| Projet | Description | Sharpe | CAGR | Max DD | Periode | Lang | Niveau | Research | Probleme |
+|--------|-------------|--------|------|--------|---------|------|--------|----------|----------|
+| [TrendFilteredMeanReversion](TrendFilteredMeanReversion/) | RSI(2) pullback SPY en bull regime (SMA200) | -0.016 | 3.4% | 11.4% | 2015-2026 | Py | Debutant | — | Signal reel (73% win) mais trop rare (~9 trades/an) |
+| [ForexCarry](ForexCarry/) | FX momentum IR + skip-month G10 | -0.324 | 1.5% | 10.5% | 2013-2026 | Py | Intermediaire | yfinance | CAGR < T-bills, carry prime evaporee |
+| [PairsTrading](PairsTrading/) | Statistical arbitrage equity pairs | -0.361 | 0.9% | 15.1% | 2010-2026 | Py | Intermediaire | — | Paires non cointegrees 2010-2026 |
+| [ETF-Pairs](ETF-Pairs/) | Cointegration-based ETF pairs | -0.706 | -4.7% | 35.0% | 2020-2026 | Py | Intermediaire | QuantBook | Cointregration instable |
 
 *31 strategies au total (28 Python, 3 C#). Metriques issues des backtests QC Cloud.*
+*Research: type de notebook de recherche (yfinance = donnees Yahoo, QuantBook = donnees QC natives, — = pas de notebook).*
 
 ## Description des strategies
 
@@ -108,11 +135,21 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 MonProjet/
 +-- main.py / Main.cs    # Algorithme Python ou C# (deploye sur QC Cloud)
 +-- alpha.py / helpers    # Modules auxiliaires (si applicable)
-+-- research.ipynb        # Notebook standalone (yfinance, executable partout)
++-- research.ipynb        # Notebook de recherche exploratoire
++-- quantbook.ipynb       # Notebook QuantBook (donnees QC natives, optionnel)
 +-- README.md             # Documentation (optionnel)
 ```
 
-Chaque `research.ipynb` est **autonome** : il telecharge les donnees via yfinance et ne necessite ni QuantConnect ni Docker.
+### Types de notebooks de recherche
+
+| Type | Source de donnees | Avantage | Inconvenient |
+|------|-------------------|----------|--------------|
+| **yfinance** (standalone) | Yahoo Finance | Executable partout, pas besoin de QC | Divergences possibles avec QC (REITs, bond ETFs, dividendes) |
+| **QuantBook** (QC native) | QuantConnect | Donnees identiques au backtest, memes indicateurs | Necessite l'environnement QC (Docker lean ou cloud) |
+
+**Recommandation QC** : Passer plus de temps dans la recherche exploratoire (QuantBook) que dans les backtests d'algo.
+Les notebooks yfinance restent utiles pedagogiquement (accessibles aux etudiants sans compte QC)
+mais les conclusions doivent etre validees avec les donnees QC avant implementation.
 
 ## Lecons Apprises
 
