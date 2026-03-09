@@ -63,7 +63,8 @@ export async function getKnowledgeBases(
   baseUrl: string,
   token: string,
 ): Promise<Array<{ id: string; name: string; description: string }>> {
-  const response = await request.get(`${baseUrl}/api/v1/knowledge`, {
+  // IMPORTANT: trailing slash required — IIS reverse proxy redirects to SvelteKit HTML without it
+  const response = await request.get(`${baseUrl}/api/v1/knowledge/`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok()) {
@@ -99,7 +100,8 @@ export async function getFunctions(
   baseUrl: string,
   token: string,
 ): Promise<Array<{ id: string; name: string; type: string }>> {
-  const response = await request.get(`${baseUrl}/api/v1/functions`, {
+  // IMPORTANT: trailing slash required — IIS reverse proxy redirects to SvelteKit HTML without it
+  const response = await request.get(`${baseUrl}/api/v1/functions/`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok()) {
@@ -111,4 +113,23 @@ export async function getFunctions(
     throw new Error('Functions API returned HTML instead of JSON (reverse proxy issue)');
   }
   return JSON.parse(text);
+}
+
+/**
+ * Recupere la liste des channels (canaux de discussion).
+ */
+export async function getChannels(
+  request: APIRequestContext,
+  baseUrl: string,
+  token: string,
+): Promise<Array<{ id: string; name: string; description: string }>> {
+  // IMPORTANT: trailing slash required — IIS reverse proxy redirects to SvelteKit HTML without it
+  const response = await request.get(`${baseUrl}/api/v1/channels/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok()) {
+    throw new Error(`Failed to fetch channels: ${response.status()}`);
+  }
+  const body = await response.json();
+  return body.items || body;
 }
