@@ -17,6 +17,8 @@
 | **DualMomentum** | **28692516** | **#35** | **NEW** | **0.350** | **CEILING REACHED (iter2 revert)** |
 | **RiskParity** | **28692653** | **#35** | **NEW** | **0.399** | **CEILING REACHED** |
 | **EMA-Cross-Index** | **28789945** | **—** | **0.384** | **~0.43 expected** | **RESEARCH DONE, NO BACKTEST YET** |
+| **TrendStocksLite** | **28817425** | **—** | **NEW** | **0.719** | **v1.0 initial (2026-03-09)** |
+| **DualMomentumNoTLT** | **28817424** | **—** | **NEW** | **0.469** | **v1.0 initial (2026-03-09)** |
 
 ## MomentumStrategy Lessons (2026-03-09) - iter5
 

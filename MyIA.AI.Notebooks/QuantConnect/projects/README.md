@@ -12,6 +12,7 @@ Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec not
 | [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | EMA crossover BTC (C#) | **1.094** | 36.2% | 40.7% | 2017-2026 | C# | Debutant |
 | [Option-Wheel](Option-Wheel/) | Wheel strategy SPY (sell puts/calls) | **0.996** | 12.9% | 7.4% | 2019-2026 | Py | Avance |
 | [EMA-Cross-Stocks](EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | **0.872** | 25.7% | 35.7% | 2015-2026 | Py | Debutant |
+| [TrendStocksLite](TrendStocksLite/) | EMA20/50 + SMA200 trend 15 large-caps diversifies | **0.719** | 18.2% | 33.7% | 2015-2026 | Py | Intermediaire |
 | [SectorMomentum](SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | **0.555** | 13.0% | 22.8% | 2015-2026 | Py | Intermediaire |
 | [RegimeSwitching](RegimeSwitching/) | Regime detection + asset rotation | **0.553** | 11.7% | 33.0% | 2008-2026 | Py | Avance |
 | [FamaFrench](FamaFrench/) | Factor ETF rotation (VLUE/MTUM/SIZE/QUAL/USMV) | **0.540** | 12.1% | 24.2% | 2015-2026 | Py | Intermediaire |
@@ -22,6 +23,7 @@ Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec not
 | [Crypto-MultiCanal](Crypto-MultiCanal/) | ZigZag multi-channel (macro/meso/micro) BTCUSDT | **0.486** | 7.6% | 16.8% | 2020-2026 | Py | Avance |
 | [MomentumStrategy](MomentumStrategy/) | Rotation momentum 11 ETFs + stop-loss | **0.472** | 11.1% | 25.8% | 2015-2026 | Py | Intermediaire |
 | [EMA-Cross-Index](EMA-Cross-Index/) | EMA 20/60 + cooldown 3d SPY | **0.470** | 9.4% | 17.5% | 2015-2026 | Py | Debutant |
+| [DualMomentumNoTLT](DualMomentumNoTLT/) | Momentum rotation SPY/QQQ/IEF/GLD/XLP (no TLT) | **0.469** | 11.0% | 23.6% | 2015-2026 | Py | Intermediaire |
 | [RiskParity](RiskParity/) | Risk parity multi-asset portfolio | **0.399** | 7.8% | 20.9% | 2015-2026 | Py | Intermediaire |
 | [DualMomentum](DualMomentum/) | Absolute + relative momentum ETFs | **0.350** | 9.2% | 33.6% | 2015-2026 | Py | Intermediaire |
 | [FuturesTrend](FuturesTrend/) | Donchian breakout ETFs (trend following) | **0.301** | 8.0% | 12.9% | 2018-2026 | Py | Intermediaire |
@@ -30,12 +32,13 @@ Strategies de trading algorithmique backtestees sur QuantConnect Cloud, avec not
 | [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.234** | 6.8% | 19.3% | 2018-2026 | Py | Avance |
 | [Trend-Following](Trend-Following/) | Multi-oracle trend following (MACD/RSI/Bollinger) | **0.212** | 7.3% | 40.9% | 2019-2026 | Py | Avance |
 | [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 0.128 | 4.8% | 23.7% | 2015-2026 | Py | Debutant |
+| [TrendFilteredMeanReversion](TrendFilteredMeanReversion/) | RSI(2) pullback SPY en bull regime (SMA200) | -0.016 | 3.4% | 11.4% | 2015-2026 | Py | Debutant |
 | [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX (SVXY) | 0.051 | 3.6% | 35.2% | 2010-2026 | Py | Avance |
 | [ForexCarry](ForexCarry/) | FX momentum IR + skip-month G10 | -0.324 | 1.5% | 10.5% | 2013-2026 | Py | Intermediaire |
 | [PairsTrading](PairsTrading/) | Statistical arbitrage equity pairs | -0.361 | 0.9% | 15.1% | 2010-2026 | Py | Intermediaire |
 | [ETF-Pairs](ETF-Pairs/) | Cointegration-based ETF pairs | -0.706 | -4.7% | 35.0% | 2020-2026 | Py | Intermediaire |
 
-*28 strategies au total (25 Python, 3 C#). Metriques issues des backtests QC Cloud.*
+*31 strategies au total (28 Python, 3 C#). Metriques issues des backtests QC Cloud.*
 
 ## Description des strategies
 
@@ -46,6 +49,7 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 - **EMA-Cross-Crypto** : Long BTCUSDT quand EMA20 > EMA50 ET BTC > SMA200 (filtre bull). Trailing stop 10%, position 80%. Binance Cash, daily.
 - **EMA-Cross-Index** : Long SPY quand EMA20 > EMA60, flat sinon. Cooldown 3 jours apres sortie. Daily.
 - **EMA-Cross-Stocks** : Equal-weight portfolio de 5 tech stocks (AAPL, MSFT, GOOGL, AMZN, NVDA). Chaque stock est long individuellement quand son EMA20 > EMA50.
+- **TrendStocksLite** : EMA20/50 + SMA200 filter sur 15 large-caps diversifies (5 secteurs). Equal-weight hebdomadaire. Extension de EMA-Cross-Stocks.
 - **Multi-Layer-EMA** : EMA multi-couches sur BTCUSDT avec filtre de volatilite (seuil 60%). Allocation 100%.
 - **CSharp-BTC-EMA-Cross** : EMA crossover BTC en C# avec parametres (45, 120). Daily.
 
@@ -61,6 +65,7 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 - **MomentumStrategy** : Rotation mensuelle parmi 11 ETFs sectoriels, top-3 par momentum + stop-loss -10%.
 - **FamaFrench** : Rotation trimestrielle entre 5 facteurs Fama-French (VLUE/MTUM/SIZE/QUAL/USMV).
 - **DualMomentum** : Momentum absolu + relatif entre equities et bonds.
+- **DualMomentumNoTLT** : Momentum rotation mensuelle sur SPY/QQQ/IEF/GLD/XLP (sans TLT). Top-2 par momentum 12M.
 - **FuturesTrend** : Donchian breakout sur ETFs (trend following classique).
 
 ### Portfolio Construction (Intermediaire/Avance)
@@ -73,6 +78,7 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 ### Mean Reversion & Pairs (Intermediaire)
 
 - **MeanReversion** : Signaux RSI multi-asset, achat en survente, vente en surachat.
+- **TrendFilteredMeanReversion** : RSI(2) pullback sur SPY conditionne par regime bull (SMA200). Time stop 5 jours.
 - **PairsTrading** : Arbitrage statistique sur paires d'actions cointegrees.
 - **ETF-Pairs** : Cointegration-based pairs trading sur ETFs.
 
