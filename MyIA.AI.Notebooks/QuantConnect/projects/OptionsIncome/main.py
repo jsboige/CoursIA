@@ -6,17 +6,11 @@ from datetime import timedelta
 
 class CoveredCallStrategy(QCAlgorithm):
     """
-    Covered Call Strategy v6.0 - Robustness and Premium Management
+    Covered Call Strategy v7.0 - Extended Period
 
-    Improvements over v5.0:
-    - Extended period: 2023-2024 (tests recovery + bull, 2 regimes)
-    - Profit target: Buy back call at 50% profit (TastyTrade best practice)
-    - VIX band filter: 15 < VIX < 35 (avoids extreme vol regimes)
-    - Defensive exit: Close call if SPY drops >3% in one session
-
-    v4 (2024): Sharpe 0.288, CAGR 9.6%, MaxDD 4.0%
-    v5.0 (2024): Sharpe 0.747, CAGR 17.3%, MaxDD 8.3%
-    v6.0 (2023-2024): target Sharpe >= 0.6 on 2-year period
+    v6.0 (2023-2024): Sharpe 0.791, CAGR 15.9%, MaxDD 7.5%
+    v7.0: Extended to 2018-2026 for multi-regime validation
+    (includes 2018 vol spike, 2020 COVID, 2022 rate hikes, 2023-25 recovery)
     """
 
     def initialize(self):
@@ -190,7 +184,7 @@ class CoveredCallStrategy(QCAlgorithm):
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
         self.log(
-            f"CC v6.0: Final=${final:,.2f}, "
+            f"CC v7.0: Final=${final:,.2f}, "
             f"Return={(final-100000)/100000:.2%}, "
             f"Premium=${self.premium_collected:,.2f}, "
             f"Trades={self.trades_count}, "

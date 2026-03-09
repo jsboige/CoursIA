@@ -30,6 +30,13 @@ class TurnOfMonthEffect(QCAlgorithm):
       2015-2026 is ~90% bull -> ToM premium is structurally diluted.
       This confirms v2.1 is the correct implementation, period constraint is structural.
 
+    Iteration 5 learnings (2026-03-09):
+    - Stop-loss -8% (v2.2): Sharpe 0.117, MaxDD 24.4% - WORSE than baseline
+      Short holding period (~8 trading days) means positions recover within window.
+      Stop-loss cuts cycles that would have recovered, reducing wins without
+      meaningfully reducing MaxDD (which comes from sustained market drawdowns).
+      Conclusion: no stop-loss is optimal for this calendar strategy.
+
     Why 0.128 is the honest ceiling for 2015-2026:
     The ToM effect has Sharpe ~0.36 (research, 2000-2025, 1.5x) because it
     outperforms in bear markets (forced institutional rebalancing at month-end).
@@ -49,6 +56,7 @@ class TurnOfMonthEffect(QCAlgorithm):
     v1.0: Sharpe -0.243, CAGR  1.5%, MaxDD 13.2%
     v2.0: Sharpe  0.127, CAGR  4.8%, MaxDD 23.7% (iteration 2)
     v2.1: Sharpe  0.128, CAGR  4.8%, MaxDD 23.7% (iteration 3, best confirmed)
+    v2.2: Sharpe  0.117, CAGR  4.7%, MaxDD 24.4% (iteration 5, stop-loss -8%, REVERTED)
 
     Ref: Ariel (1987), Lakonishok & Smidt (1988), research.ipynb
     """

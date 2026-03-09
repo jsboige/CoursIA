@@ -40,6 +40,21 @@ Charger via ToolSearch("qc-mcp ...") avant utilisation:
 
 ## Workflow d'execution
 
+### Etape 0: Lire le backlog d'optimisation
+
+```
+OBLIGATOIRE avant toute iteration:
+1. Lire projects/OPTIMIZATION_BACKLOG.md
+   -> Verifier si la strategie a un plafond confirme (NE PLUS ITERER)
+   -> Lire les hypotheses deja testees et rejetees (NE PAS RETESTER)
+   -> Appliquer les regles universelles (section "Regles universelles confirmees")
+
+2. A la fin de chaque iteration:
+   -> Mettre a jour OPTIMIZATION_BACKLOG.md avec les nouvelles lecons
+   -> Ajouter les hypotheses testees (acceptees ou rejetees) dans la section correspondante
+   -> Si plafond atteint: ajouter la strategie dans "Plafonds structurels"
+```
+
 ### Etape 1: Lire le contexte
 
 ```
@@ -223,6 +238,7 @@ plt.show()
 
 ## Regles critiques
 
+0. **BACKLOG AVANT TOUT** - Lire `projects/OPTIMIZATION_BACKLOG.md` avant de commencer. Ne pas retester des hypotheses rejetees.
 1. **Notebook AVANT code** - Jamais modifier main.py sans exploration notebook
 2. **read_file AVANT update_file_contents** - Collaboration lock QC
 3. **1 seul backtest a la fois** - Node unique QC

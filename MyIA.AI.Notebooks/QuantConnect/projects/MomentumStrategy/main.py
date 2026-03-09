@@ -25,10 +25,11 @@ class SectorMomentumETFRotation(QCAlgorithm):
     Backtest results:
     v1.0: Sharpe 0.216, CAGR 6.5%, MaxDD 29.9% (composite, TLT risk-off)
     v2.0: Sharpe 0.149, CAGR 5.3%, MaxDD 33.7% (12m, cash risk-off)
-    v2.1: Sharpe 0.411, CAGR 10.8%, MaxDD 30.1%, Net +214.7% (BEST prev)
+    v2.1: Sharpe 0.411, CAGR 10.8%, MaxDD 30.1%, Net +214.7%
     v2.2: Sharpe 0.414, CAGR 10.9%, MaxDD 31.9% (composite, similar)
     v3.0: Sharpe 0.459, CAGR 11.5%, MaxDD 30.0%, Net +237.0% (vol-adj, skip-month, top4, SMA20)
-    v4.0: TBD (+ stop-loss -10% per position)
+    v4.0: Sharpe 0.472, CAGR 11.1%, MaxDD 25.8% (+ stop-loss -10%)
+    v5.0 REJECTED: Sharpe 0.398, MaxDD 33.3% (prop weights degraded, reverted to v4.0)
 
     ETFs sectoriels: XLK, XLF, XLE, XLV, XLI, XLY, XLP, XLU, XLB, XLRE, XLC
     Ref: Jegadeesh & Titman (1993), Faber (2007), Asness (2013), research.ipynb

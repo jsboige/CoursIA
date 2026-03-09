@@ -14,16 +14,21 @@ class CompetitionAlgorithm(QCAlgorithm):
         self.SetWarmUp(10)
         self.spy = self.AddEquity("SPY", Resolution.Hour).Symbol
         self.SetBenchmark(self.spy)
-        self.final_universe_size = 600
+        # v2: reduced from 600 to 200 stocks to reduce noise
+        self.final_universe_size = 200
         self.rebalanceTime = self.time
         self.universe_type = "equity"
         if self.universe_type == "equity":
             self.AddUniverse(self.CoarseFilter, self.FineFilter)
         self.UniverseSettings.Resolution = Resolution.Hour
-        self.set_portfolio_construction(self.MyPCM())
+        # v3: SPY SMA200 for regime filter - must be defined BEFORE set_alpha
+        self.spy_sma200 = self.SMA("SPY", 200, Resolution.Daily)
+        # v2: removed 1.85x leverage multiplier PCM, use standard model
+        self.set_portfolio_construction(InsightWeightingPortfolioConstructionModel())
         self.set_alpha(custom_alpha(self))
         self.set_execution(VolumeWeightedAveragePriceExecutionModel())
-        self.add_risk_management(NullRiskManagementModel())
+        # v3: keep 10% per-security drawdown (same as v2) + SPY SMA200 regime filter as main protection
+        self.add_risk_management(MaximumDrawdownPercentPerSecurity(0.10))
         self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Margin)
 
     def CoarseFilter(self, coarse):
@@ -34,11 +39,6 @@ class CompetitionAlgorithm(QCAlgorithm):
         return [x.Symbol for x in sortedByDollarVolume if x.HasFundamentalData][:1000]
 
     def FineFilter(self, fine):
-        sortedbyVolume = sorted(fine, key=lambda x: x.DollarVolume, reverse=True )
+        sortedbyVolume = sorted(fine, key=lambda x: x.DollarVolume, reverse=True)
         fine_output = [x.Symbol for x in sortedbyVolume if x.price > 10 and x.MarketCap > 2000000000][:self.final_universe_size]
         return fine_output
-
-    class MyPCM(InsightWeightingPortfolioConstructionModel):
-        def CreateTargets(self, algorithm, insights):
-            targets = super().CreateTargets(algorithm, insights)
-            return [PortfolioTarget(x.Symbol, x.Quantity * 1.85) for x in targets]

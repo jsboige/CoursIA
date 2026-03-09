@@ -59,7 +59,8 @@ class custom_alpha(AlphaModel):
         self.obv_threshold = .5 # maybe change around
 
         # ATR parameters
-        self.atr_stop_multiplier = 2
+        # v3: tighter trailing stop - was 2, now 1.5 to reduce per-position drawdown
+        self.atr_stop_multiplier = 1.5
 
         # Trend Parameters
         self.trend_order = 5
@@ -115,6 +116,8 @@ class custom_alpha(AlphaModel):
 
         self.symbols_invested_in_last_iteration = set()
         self.symbols_invested_in_last_iteration.add(algo.AddEquity("TYL", Resolution.Hour).Symbol)
+        # v3: store spy_sma200 reference in alpha to avoid attribute access issues
+        self.spy_sma200 = algo.spy_sma200
 
     def Update(self, algo, data):
         self.nobuyreasons = []
@@ -178,7 +181,9 @@ class custom_alpha(AlphaModel):
             derivative = np.gradient(prices)/self.EMAS50_rolling_windows[symbol][0]
 
             # buy signal
-            if ema_trend >= 210:
+            # v3: regime filter - no new longs if SPY below SMA200 (bear market filter)
+            spy_above_sma200 = (not self.spy_sma200.IsReady) or (algo.Securities["SPY"].Price > self.spy_sma200.Current.Value)
+            if ema_trend >= 210 and spy_above_sma200:
                 # if in ema uptrend, buy if price between midle and upper bollinger
                 if bollinger_score_buy_short == 1:
                     if macd_score == 1:

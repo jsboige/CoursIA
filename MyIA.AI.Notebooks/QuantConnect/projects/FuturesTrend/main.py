@@ -19,13 +19,22 @@ class FuturesTrendFollowing(QCAlgorithm):
     entries, resulting in fewer and smaller positions. The trend filter idea is
     sound but needs to be lighter-touch to preserve signal frequency.
 
+    Research iter5 findings (2026-03-09):
+    - SMA30/SMA20: severe IS/OOS overfitting (OOS Sharpe -0.010)
+    - More positions (4x25%, 5x20%): all degraded vs concentration 3x33%
+    - Exit=15j: increases MaxDD without Sharpe gain
+    - Removing VNQ: yfinance showed +11% but QC cloud showed -10% (REVERTED)
+      -> VNQ contributes via dividends captured in QC raw prices
+    - v3.1 is the structural ceiling for parametric optimization on this universe/period
+
     Backtest results:
     v1.2: Sharpe 0.019, CAGR 2.1%, MaxDD 31.9% (ES only, L/S)
     v2.0: Sharpe 0.144, CAGR 5.5%, MaxDD 16.9% (4 ETFs, 25%)
     v2.1: Sharpe 0.216, CAGR 6.3%, MaxDD 8.5% (6 ETFs, dynamic)
     v2.3: Sharpe 0.280, CAGR 7.3%, MaxDD 10.2%, Net +78.1%
     v3.0: Sharpe 0.209, CAGR 6.7%, MaxDD 12.6% (SMA100 too restrictive)
-    v3.1: Fixed weight + SMA50 filter + XLE replacing TLT
+    v3.1: Sharpe 0.301, CAGR 8.0%, MaxDD 12.9% (BEST - current)
+    v4.0: Sharpe 0.272 (REVERTED - sans VNQ degraded on QC despite yfinance +11%)
 
     Ref: Curtis Faith (2007), Moskowitz et al. (2012), research.ipynb
     """

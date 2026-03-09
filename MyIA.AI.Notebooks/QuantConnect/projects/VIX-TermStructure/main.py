@@ -28,12 +28,16 @@ class VIXTermStructureStrategy(QCAlgorithm):
     v4.1: Sharpe +0.05 (ratio + SMA10 calm filter, 2015 start) <- BEST
     v4.2: Sharpe -0.23 (VIX<18 too tight, too few entries)
     v4.3: Sharpe +0.03 (dynamic sizing, higher MaxDD)
+    v5.0: Sharpe -0.10 (SHY 70% + stop 7%, too diluted)
+    v5.1: Sharpe -0.13 (position 25%, cash drag kills Sharpe in high-rate env)
 
     Known limitations:
     - SVXY post-2018 VIXplosion is -0.5x (was -1x), halving contango premium
     - COVID 2020 and VIXplosion 2018 cause large drawdowns (~35%)
     - Short-vol strategies are inherently positively skewed return, negative tail
     - MaxDD 35% is unavoidable without leverage reduction
+    - Reducing position size creates cash drag, lowering Sharpe in high-rate env
+    - Ceiling: Sharpe ~0.05-0.10 is honest for SVXY short-vol 2015-2026
 
     Pedagogical value:
     - Demonstrates VIX term structure as a quantifiable signal
