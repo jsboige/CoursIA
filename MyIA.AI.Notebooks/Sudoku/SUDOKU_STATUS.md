@@ -25,13 +25,13 @@ Certains notebooks nécessitent des packages externes qui sont installés via di
 
 | Notebook | Dépendance | Directive #r |
 |----------|-----------|-------------|
-| Sudoku-11-Choco-Csharp | IKVM 8.2.0 + Choco-solver 4.10.17 JAR | `#r "nuget: IKVM.Runtime"`, `#r "choco-solver-4.10.17-jar-with-dependencies.jar"` |
+| Sudoku-11-Choco-Csharp | IKVM 7.2 + Choco-solver 4.10.17 JAR | `#r "nuget: IKVM.Runtime, 7.2.4630.5"` + Lazy loading JAR |
 | Sudoku-12-Z3-Csharp | Microsoft.Z3 | `#r "nuget: Microsoft.Z3"` (déjà configuré) |
 | Sudoku-13-SymbolicAutomata-Csharp | Microsoft.Z3 | `#r "nuget:Microsoft.Z3,*"` (déjà configuré) |
 
 **Note important pour Sudoku-11** :
-- Les packages IKVM sont téléchargés automatiquement depuis NuGet
-- Le JAR Choco-solver doit être présent dans le dossier du notebook ou téléchargé depuis Maven
+- IKVM 7.2 est conçu pour .NET Framework ; des avertissements de compatibilité peuvent apparaître avec .NET 10.0
+- Le JAR Choco-solver est téléchargé automatiquement (lazy loading) depuis Maven si absent
 
 ---
 
