@@ -541,19 +541,19 @@ docker-configurations/services/comfyui-video/workspace/
 lean-workspace/
 tmp/
 
-# Generated ML artifacts
-*.joblib
-
-# Execution reports (temporary validation artifacts)
-batch*_execution_report.*
-reports/
-
 # Notebook backup files
 **/*.ipynb.backup
 
 # Backup venv directories
 **/venv.backup.*/
 **/venv.backup-*/
+
+# Generated ML artifacts
+*.joblib
+
+# Execution reports (temporary validation artifacts)
+batch*_execution_report.*
+reports/
 
 # Claude Code MCP config (contains API tokens)
 .mcp.json
