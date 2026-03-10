@@ -5,8 +5,10 @@ class SectorMomentumAlpha(AlphaModel):
     """
     Alpha Model: Sector Dual Momentum signal.
 
-    Emits UP insight for best asset among SPY/TLT/GLD based on
+    Emits UP insight for best asset among SPY/IEF/GLD based on
     multi-lookback composite momentum (1/3/6/12 months).
+
+    Note: IEF used instead of TLT (TLT destroys value 2015-2026).
 
     Monthly emission.
     """
@@ -66,8 +68,8 @@ class SectorMomentumAlpha(AlphaModel):
         # SPY only if positive momentum AND above SMA200
         if best_ticker == "SPY":
             if best_score <= 0 or not spy_above_sma:
-                # Fallback to best defensive
-                defensive_scores = {k: v for k, v in scores.items() if k in ["TLT", "GLD"]}
+                # Fallback to best defensive (IEF instead of TLT)
+                defensive_scores = {k: v for k, v in scores.items() if k in ["IEF", "GLD"]}
                 if defensive_scores:
                     best_ticker = max(defensive_scores, key=lambda k: defensive_scores[k][1])
                     best_symbol = defensive_scores[best_ticker][0]
@@ -144,8 +146,12 @@ class RegimeSwitchingAlpha(AlphaModel):
         self.rsi_exit = 50
         self._last_month = -1
         self._need_rebalance = False
+        self.algorithm = None  # Store algorithm reference for price access
 
     def update(self, algorithm, data):
+        # Store algorithm reference for price access
+        self.algorithm = algorithm
+
         # Monthly emission
         if algorithm.time.month == self._last_month:
             # Check for regime change
@@ -196,8 +202,11 @@ class RegimeSwitchingAlpha(AlphaModel):
             return "sideways"
 
     def _spy_price(self):
-        # Helper to get SPY price - will be set in on_securities_changed
-        return 0  # Placeholder
+        # Helper to get SPY price
+        spy_symbol = self.symbols.get("SPY")
+        if spy_symbol and self.algorithm:
+            return self.algorithm.securities[spy_symbol].price
+        return 0
 
     def _apply_momentum(self, algorithm, period):
         # Risk-adjusted momentum for SPY/QQQ
@@ -298,37 +307,45 @@ class RegimeSwitchingAlpha(AlphaModel):
                 source_model=self.name
             ))
         else:
-            # All risky to FLAT
-            for ticker in self.risky:
+            # No oversold stocks - allocate based on regime
+            if regime == "bear":
+                # Bear: 100% defensive (GLD 50%, IEF 50%)
+                for ticker in self.risky:
+                    insights.append(Insight.price(
+                        self.symbols[ticker], period, InsightDirection.FLAT,
+                        source_model=self.name
+                    ))
                 insights.append(Insight.price(
-                    self.symbols[ticker], period, InsightDirection.FLAT,
+                    self.symbols["GLD"], period, InsightDirection.UP,
+                    weight=0.50,
                     source_model=self.name
                 ))
-
-            # Defensive allocation
-            if regime == "bear":
-                gld_weight = 0.50
-                ief_weight = 0.50
+                insights.append(Insight.price(
+                    self.symbols["IEF"], period, InsightDirection.UP,
+                    weight=0.50,
+                    source_model=self.name
+                ))
             else:  # sideways
-                gld_weight = 0.35
-                ief_weight = 0.35
-                spy_weight = 0.30
+                # Sideways: reduced equity (SPY 30%) + defensive (GLD 35%, IEF 35%)
                 insights.append(Insight.price(
                     self.symbols["SPY"], period, InsightDirection.UP,
-                    weight=spy_weight,
+                    weight=0.30,
                     source_model=self.name
                 ))
-
-            insights.append(Insight.price(
-                self.symbols["GLD"], period, InsightDirection.UP,
-                weight=gld_weight,
-                source_model=self.name
-            ))
-            insights.append(Insight.price(
-                self.symbols["IEF"], period, InsightDirection.UP,
-                weight=ief_weight,
-                source_model=self.name
-            ))
+                insights.append(Insight.price(
+                    self.symbols["QQQ"], period, InsightDirection.FLAT,
+                    source_model=self.name
+                ))
+                insights.append(Insight.price(
+                    self.symbols["GLD"], period, InsightDirection.UP,
+                    weight=0.35,
+                    source_model=self.name
+                ))
+                insights.append(Insight.price(
+                    self.symbols["IEF"], period, InsightDirection.UP,
+                    weight=0.35,
+                    source_model=self.name
+                ))
 
         return insights
 

@@ -31,15 +31,15 @@ class FrameworkCompositeMomentumRegime(QCAlgorithm):
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # Combined universe from both strategies
-        # SectorMomentum: SPY, TLT, GLD
+        # SectorMomentum: SPY, IEF, GLD (IEF instead of TLT - TLT destroys value 2015-2026)
         # RegimeSwitching: SPY, QQQ, IEF, GLD
-        all_tickers = ["SPY", "QQQ", "TLT", "GLD", "IEF"]
+        all_tickers = ["SPY", "QQQ", "IEF", "GLD"]
 
         for ticker in all_tickers:
             self.add_equity(ticker, Resolution.DAILY)
 
         # Create Alpha models
-        sector_mom_tickers = ["SPY", "TLT", "GLD"]
+        sector_mom_tickers = ["SPY", "IEF", "GLD"]  # IEF instead of TLT
         regime_switch_tickers = ["SPY", "QQQ", "IEF", "GLD"]
 
         self.set_alpha(CompositeAlphaModel(
