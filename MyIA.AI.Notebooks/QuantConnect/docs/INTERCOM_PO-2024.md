@@ -32,8 +32,11 @@
     - Helpers/GapIndicator.cs (25 lignes)
     - Helpers/MarketRegimeFilter.cs (23 lignes)
 
-#### 1c. NETTOYAGE ORPHANS ⏳ A FAIRE
-- Identifier et supprimer les projets "-Researcher" orphelins
+#### 1c. NETTOYAGE ORPHANS 🔄 EN COURS
+
+- Message RooSync envoyé à myia-ai-01 (msg-20260310T202252-9wxnr4)
+- Candidats orphelins identifiés (5 projets SANS quantbook.ipynb local)
+- En attente de vérification contenu cloud via MCP QC par myia-ai-01
 
 ---
 
@@ -79,10 +82,10 @@
 ## Prochaines actions (po-2024)
 
 - [x] Déployer CSharp-BTC-EMA-Cross (SESSION 1b) ✅
-- [ ] Déployer CSharp-CTG-Momentum via `lean-cli` (Playwright bloqué par bug QC)
-- [ ] Identifier orphans -Researcher (SESSION 1c)
-- [ ] Commit WORKSPACES.md + INTERCOM
-- [ ] Envoyer message RooSync à myia-ai-01
+- [ ] Déployer CSharp-CTG-Momentum via `lean-cli` (Playwright bloqué par bug QC) - **demande envoyée à myia-ai-01**
+- [x] Identifier orphans -Researcher (SESSION 1c) - **en attente réponse myia-ai-01**
+- [x] Commit WORKSPACES.md + INTERCOM (docs/ directory) ✅
+- [x] Envoyer message RooSync à myia-ai-01 ✅ (msg-20260310T202252-9wxnr4)
 
 ---
 
