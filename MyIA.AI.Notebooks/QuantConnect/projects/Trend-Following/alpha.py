@@ -59,8 +59,8 @@ class custom_alpha(AlphaModel):
         self.obv_threshold = .5 # maybe change around
 
         # ATR parameters
-        # v3b: tighter trailing stop - was 2, now 1.5. SMA200 filter removed (degraded)
-        self.atr_stop_multiplier = 1.5
+        # v2: ATR 2.0 confirmed as optimal (1.5 degraded Sharpe and MaxDD - both with/without SMA200)
+        self.atr_stop_multiplier = 2
 
         # Trend Parameters
         self.trend_order = 5

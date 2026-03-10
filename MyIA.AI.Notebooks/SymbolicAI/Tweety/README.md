@@ -72,6 +72,7 @@ Tweety/
 ├── ext_tools/                     # Outils externes (Clingo, SPASS, EProver)
 ├── jdk-17-portable/              # JDK Zulu (telecharge auto)
 ├── scripts/
+│   ├── download_tweety_tools.py  # Script de téléchargement des dépendances
 │   ├── verify_all_tweety.py      # Script de validation
 │   └── validate_syntax.py        # Validation syntaxe Python
 └── README.md                      # Ce fichier
@@ -79,13 +80,76 @@ Tweety/
 
 ## Outils Externes
 
-| Outil | Usage | Installation |
-|-------|-------|--------------|
-| **Clingo** | ASP (Answer Set Programming) | Auto-telecharge |
-| **SPASS** | Logique Modale | Manuel (Windows) |
-| **EProver** | FOL haute performance | Inclus |
-| **Z3** | SMT solver, MARCO | `pip install z3-solver` |
-| **PySAT** | SAT/MaxSAT moderne | `pip install python-sat` |
+### Script de téléchargement automatisé
+
+Un script autonome est disponible pour télécharger toutes les dépendances :
+
+```bash
+cd MyIA.AI.Notebooks/SymbolicAI/Tweety
+
+# Télécharger tout (JARs, ressources, outils)
+python scripts/download_tweety_tools.py --all
+
+# Télécharger uniquement les JARs
+python scripts/download_tweety_tools.py --jars
+
+# Télécharger uniquement les ressources
+python scripts/download_tweety_tools.py --resources
+
+# Télécharger Clingo (ASP solver)
+python scripts/download_tweety_tools.py --clingo
+
+# Voir toutes les options
+python scripts/download_tweety_tools.py --help
+```
+
+### Liste des dépendances
+
+| Outil | Usage | Téléchargement Auto | Versionné Git |
+|-------|-------|---------------------|---------------|
+| **Clingo** | ASP (Answer Set Programming) | Oui (Win/Linux) | Oui (binaire Windows) |
+| **SPASS** | Logique Modale | Oui (Linux) | Oui (binaire + docs Windows) |
+| **EProver** | FOL haute performance | Non | Oui (installation complète) |
+| **Z3** | SMT solver, MARCO | `pip install z3-solver` | N/A (package Python) |
+| **PySAT** | SAT/MaxSAT moderne | `pip install python-sat` | N/A (package Python) |
+| **Native SAT** | Bibliotheques SAT JNI | Oui | Oui (DLLs Minisat, Lingeling) |
+| **JDK 17** | JVM pour JPype | Oui (Zulu) | Non (trop volumineux) |
+| **JARs Tweety** | Bibliothèques Java | Oui (Maven Central) | Non (trop volumineux) |
+| **Resources** | Fichiers exemples | Oui (GitHub) | Non (fichiers de données) |
+
+### Notes d'installation
+
+#### Clingo
+
+- Télécharge automatiquement pour Windows et Linux
+- Version 5.4.0 depuis GitHub releases (potassco/clingo)
+- Si déjà installé dans le PATH, utilise la version système
+
+#### SPASS (Windows)
+
+- Le téléchargement automatique n'est PAS disponible sur Windows (l'installeur ne peut pas être automatisé)
+- **Deux options** :
+
+  1. Utiliser le binaire déjà inclus dans le dépôt Git (`ext_tools/spass/SPASS.exe`)
+  2. Installation manuelle :
+     - Télécharger depuis <https://www.spass-prover.org/download/binaries/>
+     - Exécuter l'installeur `spass30windows.exe`
+     - Copier `SPASS.exe` et le dossier `SPASS-3.0/` vers `ext_tools/spass/`
+
+#### SPASS (Linux)
+
+- Télécharge automatiquement (version 64-bit ou 32-bit selon l'architecture)
+
+#### EProver
+
+- Doit être installé manuellement : <https://eprover.org/>
+- L'installation complète est déjà incluse dans `../ext_tools/EProver/`
+- Contient tous les utilitaires : eprover, eground, enormalizer, etc.
+
+#### Bibliothèques natives SAT
+
+- DLLs Windows (Minisat, Lingeling, Picosat) pour Tweety JNI
+- Téléchargeables automatiquement ou déjà incluses dans `libs/native/`
 
 ## Limitations Connues (Tweety 1.28/1.29)
 

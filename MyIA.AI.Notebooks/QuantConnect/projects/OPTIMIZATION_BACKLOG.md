@@ -3,7 +3,7 @@
 Fichier commite dans le workspace. Source de verite pour tous les agents (Claude Code, Roo, etc.) sur toutes les machines.
 Objectif : eviter de retester des hypotheses deja explorees et capturer les plafonds structurels.
 
-**Derniere MAJ** : 2026-03-09 (iteration 6 + 3 nouvelles strategies)
+**Derniere MAJ** : 2026-03-09 (iteration 7 + 12 QuantBook notebooks created, issue #39/#42 DONE; issue #37 backtest extension 2010-2026 DONE)
 
 ---
 
@@ -31,6 +31,9 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 | 16 | **Backtests courts = overfitting** (toujours tester sur max periode) | Trend-Following | Trend-Following, OptionsIncome |
 | 17 | **yfinance auto_adjust misleading pour REITs/bonds** | FuturesTrend, RiskParity | FuturesTrend, RiskParity, DualMomentum |
 | 18 | **2-level trailing stop contre-productif sur BTC daily** | Crypto-MultiCanal v18 | Crypto-MultiCanal |
+| 19 | **Diversifier instruments > relacher seuils** pour augmenter frequence | TrendFilteredMeanReversion | TrendFilteredMeanReversion |
+| 20 | **MaximumDrawdownPercentPortfolio = INTERDIT** sur multi-stock (liquidation simultanée catastrophique) | Trend-Following v3 | Trend-Following, Toutes |
+| 21 | **ATR stop serre + gates restrictives = whipsaw** (plus de stop-outs, DD pire) | Trend-Following v3b | Trend-Following |
 
 ---
 
@@ -40,17 +43,18 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 
 | Strategie | Sharpe | CAGR | MaxDD | Iterations | Raison du plafond |
 |-----------|--------|------|-------|------------|-------------------|
-| **AllWeather** | 0.602 | 9.5% | 16.4% | 5 iter | Poids optimaux trouves (SPY30/IEF30/GLD30/XLP10). Aucun angle restant. |
+| **AllWeather** | 0.667 | 9.3% | 16.4% | 5 iter | Poids optimaux trouves (SPY30/IEF30/GLD30/XLP10). Aucun angle restant. Extended 2010-2026: Sharpe 0.667 (ROBUST, inclut 2010-2014 recovery post-GFC). |
 | **VIX-TermStructure** | 0.051 | 3.6% | 35.2% | 11 variantes | Post-VIXplosion 2018, SVXY -0.5x = premium halve. MaxDD structural (tail events). |
 | **TurnOfMonth** | 0.128 | 4.8% | 23.7% | 6 variantes | ToM effect minimal en bull 2015-2026. Signal period-dependent. |
 | **ForexCarry** | -0.324 | 1.5% | 12.3% | 8+ variantes | G10 FX momentum ~0.8% CAGR < T-bills ~2.5%. Structurellement negatif post-2008. |
 | **OptionsIncome** | 0.234 | 6.8% | 19.3% | v8.0 final | Covered calls = alpha structurellement negatif. Premium ~6%/yr vs crashes -20/-34%. |
-| **MomentumStrategy** | 0.472 | 11.1% | 25.8% | iter5 H10 rej | v4.0 final. Vol-adj, skip-month, top-4, SMA200+SMA20, SL-10%. |
+| **MomentumStrategy** | 0.565 | 11.8% | 25.8% | iter5 H10 rej | v4.0 final. Vol-adj, skip-month, top-4, SMA200+SMA20, SL-10%. Extended 2010-2026: Sharpe 0.565 (ROBUST, MaxDD stable). |
 | **FuturesTrend** | 0.301 | 8.0% | 12.9% | 14 configs | Donchian 20/10 sur 6 ETFs. Grid search exhaustif. |
 | **Crypto-MultiCanal** | 0.486 | 7.6% | 16.8% | 18 versions | 3 canaux ZigZag. Trail breakeven. Alpha=0.012, beta=0.053. |
-| **SectorMomentum** | 0.555 | 13.0% | 22.8% | iter3 stable | Composite lookback + TLT+GLD defensif + daily SMA200 exit. |
+| **SectorMomentum** | 0.621 | 13.2% | 22.8% | iter3 stable | Composite lookback + TLT+GLD defensif + daily SMA200 exit. Extended 2010-2026: Sharpe 0.621 (ROBUST, CAGR stable). |
 | **DualMomentum** | 0.350 | 9.2% | 33.6% | iter2 SHY rej | MaxDD=COVID structural. Signal mensuel ne reagit pas assez vite. |
 | **RiskParity** | 0.399 | 7.8% | 20.9% | H5-H7 all rej | IEF degrade, vol targeting anti-pattern en bull, VIX filter = trop peu de temps. |
+| **Trend-Following** | 0.212 | 7.3% | 40.9% | v2+v3+v3b | 6 gates + MaxDD Per Security 10%. ATR 1.5, SMA200, portfolio stop tous rejetes. MaxDD structural. |
 | **EMA-Cross-Index** | 0.470 | 9.4% | 17.5% | 25 combos | EMA 20/60 + cooldown 3j optimal. Volume filter, triple EMA, trailing tous rejetes. |
 
 ### Nouvelles strategies (2026-03-09, inspirees ChatGPT)
@@ -59,7 +63,7 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 |-----------|--------|------|-------|-------|------|---------|
 | **TrendStocksLite** | **0.719** | 18.2% | 33.7% | 0.049 | 0.822 | EXCELLENT. EMA20/50+SMA200 sur 15 large-caps diversifies. Meilleur Sharpe equity. |
 | **DualMomentumNoTLT** | **0.469** | 11.0% | 23.6% | 0.012 | 0.612 | BON. Mieux que DualMomentum original (0.350). Sans TLT = MaxDD reduit (33.6%->23.6%). |
-| **TrendFilteredMeanReversion** | -0.016 | 3.4% | 11.4% | -0.009 | 0.108 | FAIBLE. Signal reel (73% win rate) mais RSI(2)<10 trop rare (~9 trades/an). Potentiel avec RSI<20. |
+| **TrendFilteredMeanReversion** | -0.016 | 3.4% | 11.4% | -0.009 | 0.108 | FAIBLE. Signal reel (73% win rate) mais RSI(2)<10 trop rare. PLAFOND CONFIRME (H4 multi-instrument REJETE: Sharpe -0.129, 550 trades). |
 
 **Lecon**: Strategies simples (EMA/SMA + equal weight) > strategies sophistiquees (multi-oracle, factor rotation). Confirme la meta-lecon.
 
@@ -67,11 +71,11 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 
 | Strategie | Sharpe | Notes |
 |-----------|--------|-------|
-| **TrendFilteredMeanReversion** | -0.016 | RSI(2)<10 trop rare. Tester RSI(2)<20 ou RSI(3)<15 pour augmenter la frequence. |
+| **TrendFilteredMeanReversion** | -0.016 | **PLAFOND CONFIRME**. v1.0 final. RSI<20, RSI(3)<15, multi-instrument (SPY+QQQ+IWM) tous rejetes. Plafond structurel: trop peu de signaux RSI(2)<10 en bull 2015-2026. |
 | **PairsTrading** | -0.361 | Paires structurellement non-cointegrees 2010-2026. OLS hedge ratio teste, echoue. Changer les paires? |
 | **ETF-Pairs** | -0.706 | Meme probleme que PairsTrading. Cointregration instable. |
 | **BTC-ML** | 0.282 | ML prediction. Potentiel features engineering. Object Store pour pre-training. |
-| **Trend-Following** | 0.212 | v3 degrade (0.011). v2 reste meilleure. Simplifier le design? |
+| **Trend-Following** | 0.212 | **PLAFOND CONFIRME**. v3 (ATR1.5+SMA200+portfolio stop)=0.011, v3b (ATR1.5 seul)=0.151. MaxDD 40.9% structural. |
 
 ### Strategies saines (Sharpe > 0.5, pas de degradation)
 
@@ -95,6 +99,7 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 - [x] TIP (TIPS inflation) : marginal, pas de gain significatif.
 - [x] Vol targeting : cash pendant low-vol = anti-pattern en bull. Pas de levier.
 - [x] IEF 40%->30% + GLD 20%->30% : ACCEPTED (v5.0, Sharpe 0.602).
+- [x] Extension 2015->2010 (issue #37) : Sharpe 0.667, CAGR 9.3%, MaxDD 16.4%. ROBUST. GLD/IEF beneficient de 2010-2012 (safe haven demand post-GFC). Pas de regime catastrophique.
 
 ### VIX-TermStructure
 - [x] Double SMA (vix < sma5 < sma20) : trop restrictif, miss entries.
@@ -120,6 +125,7 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 
 ### MomentumStrategy
 - [x] Momentum-proportional weights (H10) : Sharpe 0.472->0.398. Concentration XLK risquee.
+- [x] Extension 2015->2010 (issue #37) : Sharpe 0.565, CAGR 11.8%, MaxDD 25.8%. ROBUST. XLRE/XLC absents 2010-2015 = 9 ETFs actifs au lieu de 11, pas de degradation. Strategie tient sur 16 ans.
 
 ### OptionsIncome
 - [x] Stock stop-loss -15% (v8.0) : Sharpe 0.234->0.090. Whipsaw 2022 slow bear.
@@ -152,12 +158,17 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 - [x] Vol Targeting 10% (H6) : cash low-vol = anti-pattern.
 - [x] VIX filter >25 (H7) : <15% du temps en stress. Cash drag.
 
-### Trend-Following
+### Trend-Following (PLAFOND CONFIRME - v2 = Sharpe 0.212)
 - [x] v3 SPY SMA200 filter + MaxDD 7%/15% : Sharpe 0.212->0.011. Filtre + risk mgmt trop serre coupe trop de positions. REVERT a v2.
+- [x] v3b ATR 1.5 seul (sans SMA200, sans portfolio stop) : Sharpe 0.151, MaxDD 54.1%. ATR serre + 6 gates d'entree = plus de whipsaw.
+- **PLAFOND** : MaxDD 40.9% est structural (concentration momentum pendant pics). ATR, SMA200, portfolio stop tous rejetes.
 
 ### TrendFilteredMeanReversion (NOUVELLE 2026-03-09)
 - [x] RSI(2)<10, SMA200 bull filter, time stop 5j, v1.0 : Sharpe -0.016. Signal reel (73% win, beta 0.108) mais ~9 trades/an trop rare.
-- [ ] RSI(2)<20 ou RSI(3)<15 : non teste. Pourrait augmenter la frequence sans trop degrader le win rate.
+- [x] RSI(2)<20 (v2.0) : Sharpe -0.002, 31 trades/an, 71% win, MaxDD 16.2%. Frequence triple mais qualite diluee et DD double.
+- [x] RSI(3)<15 (v3.0) : Sharpe -0.050, 12 trades/an, 72% win, MaxDD 10.3%. Pas d'amelioration significative.
+- **CAUSE RACINE** : Cash drag structurel (~85% du temps en cash, 0% return vs risk-free 2-5%).
+- [ ] H4 Multi-instrument (SPY+QQQ+IWM) : multiplier les opportunites 3x sans diluer le signal. Non teste.
 
 ### EMA-Cross-Index
 - [x] Triple EMA (8/21/55) : Sharpe -10%. Entree trop restrictive.
@@ -207,3 +218,28 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 4. **Ne pas iterer indefiniment** : si 2+ hypotheses consecutives echouent, declarer ceiling.
 5. **Toujours backtester sur la periode la plus longue possible** avant de conclure.
 6. **Les suggestions ChatGPT/LLM doivent etre validees empiriquement** : 3/4 ont degrade.
+
+---
+
+## QuantBook Research Notebooks (issue #39, #42)
+
+12 quantbook.ipynb notebooks created for QC Research environment (replacing yfinance research.ipynb).
+All uploaded to QC Cloud, all compile successfully. Issue #39 COMPLETE (12/12).
+
+| Strategie | Cloud ID | Cells | Hypotheses | Priority |
+|-----------|----------|-------|------------|----------|
+| FamaFrench | 28657910 | 23 | Factor models, lookback, stop-loss, universe | HIGH |
+| AllWeather | 28657833 | 21 | Weights, rebal frequency, bond alternatives | HIGH |
+| MeanReversion | 28657904 | 19 | RSI period, lookback, stop-loss, sector filter | HIGH |
+| SectorMomentum | 28433643 | 18 | Lookback combo, top-N, regime filter, defensive | HIGH |
+| MomentumStrategy | 28657837 | 21 | Top-N, lookback, vol window, regime filter | MEDIUM |
+| DualMomentum | 28692516 | 23 | Lookback, abs threshold, refuge, universe | MEDIUM |
+| RiskParity | 28692653 | 20 | Vol window, drift trigger, asset universe | MEDIUM |
+| FuturesTrend | 28657834 | 21 | Donchian periods, SMA filter, max positions, universe | MEDIUM |
+| PairsTrading | 28693651 | 20 | Cointegration, stability, z-score, pairs portfolio | PEDAGOGICAL |
+| TurnOfMonth | 28657905 | 14 | Window size, universe, leverage, regime filter, stability | MEDIUM |
+| VIX-TermStructure | 28657907 | 16 | Position size, VIX threshold, contango depth, trailing stop, SHY cash | MEDIUM |
+| ForexCarry | 28657908 | 16 | Pure vs risk-adj, skip-month, lookback, top-N, universe expansion | LOW |
+
+**Note**: These notebooks use `QuantBook()` + `qb.history()` for native QC data (no yfinance).
+Cloud versions are compact (no matplotlib). Local versions in `projects/<strategy>/quantbook.ipynb` include visualizations.
