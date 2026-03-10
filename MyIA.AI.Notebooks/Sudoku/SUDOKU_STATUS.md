@@ -23,15 +23,21 @@ Tous les notebooks C# utilisent `#!import Sudoku-0-Environment-Csharp.ipynb` pou
 
 Certains notebooks nécessitent des packages externes qui sont installés via directives `#r` :
 
-| Notebook | Dépendance | Directive #r |
-|----------|-----------|-------------|
-| Sudoku-11-Choco-Csharp | IKVM 7.2 + Choco-solver 4.10.17 JAR | `#r "nuget: IKVM.Runtime, 7.2.4630.5"` + Lazy loading JAR |
+| Notebook | Dépendance | Statut |
+|----------|-----------|--------|
+| Sudoku-11-Choco-Csharp | IKVM 7.2.4630.5 + Choco-solver JAR | **NE FONCTIONNE PAS** - Avertissement ajouté, utiliser Sudoku-11-Choco-Python.ipynb |
+| Sudoku-11-Choco-Python | JPype + Choco-solver JAR | Fonctionnel |
 | Sudoku-12-Z3-Csharp | Microsoft.Z3 | `#r "nuget: Microsoft.Z3"` (déjà configuré) |
 | Sudoku-13-SymbolicAutomata-Csharp | Microsoft.Z3 | `#r "nuget:Microsoft.Z3,*"` (déjà configuré) |
 
-**Note important pour Sudoku-11** :
-- IKVM 7.2 est conçu pour .NET Framework ; des avertissements de compatibilité peuvent apparaître avec .NET 10.0
-- Le JAR Choco-solver est téléchargé automatiquement (lazy loading) depuis Maven si absent
+**Note importante pour Sudoku-11-Choco-Csharp** (2026-03-10) :
+
+- **NE FONCTIONNE PAS** : IKVM 7.2.4630.5 (seule version NuGet) ne peut pas charger les JAR via `#r`
+- Erreur : `CS0009: Impossible d'ouvrir le fichier de métadonnées '...jar' -- L'image PE ne contient pas de métadonnées gérées`
+- IKVM 8.x existe sur GitHub (compatible .NET 10) mais **N'est PAS publié sur NuGet**
+- **Solution** : Utiliser le notebook Python équivalent [Sudoku-11-Choco-Python.ipynb](Sudoku-11-Choco-Python.ipynb)
+- **Alternatives C#** : Sudoku-10-ORTools-Csharp.ipynb ou Sudoku-12-Z3-Csharp.ipynb
+- **Notebook mis à jour** avec avertissement clair en première page
 
 ---
 
