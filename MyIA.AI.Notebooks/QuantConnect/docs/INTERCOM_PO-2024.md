@@ -32,11 +32,12 @@
     - Helpers/GapIndicator.cs (25 lignes)
     - Helpers/MarketRegimeFilter.cs (23 lignes)
 
-#### 1c. NETTOYAGE ORPHANS 🔄 EN COURS
+#### 1c. NETTOYAGE ORPHANS ✅ TERMINE
 
-- Message RooSync envoyé à myia-ai-01 (msg-20260310T202252-9wxnr4)
-- Candidats orphelins identifiés (5 projets SANS quantbook.ipynb local)
-- En attente de vérification contenu cloud via MCP QC par myia-ai-01
+- myia-ai-01 a vérifié les 5 projets via MCP QC
+- **Verdict**: PAS orphelins - tous ont du vrai code
+- 2 projets n'existent déjà plus (OptionsIncome, ETF-Pairs)
+- **Action**: Aucune suppression nécessaire
 
 ---
 
@@ -44,16 +45,21 @@
 
 ### Framework_Composite_MomentumRegime
 
-**Fichiers créés** (commit a60aea6):
+**Fichiers créés** (commits a60aea6 + 5dc35c8):
 
 - `main.py`: Algorithm setup with CompositeAlpha + MultiStrategyPCM
 - `alpha_models.py`: SectorMomentumAlpha + RegimeSwitchingAlpha
 - `portfolio_construction.py`: MultiStrategyPCM (reuse from TrendWeather)
 - `README.md`: Documentation + deployment instructions
 
+**Bug fixes** (commit 5dc35c8):
+- ✅ Fix `_spy_price()` bug: now uses `self.algorithm.securities` for real price
+- ✅ Replace TLT with IEF (TLT destroys value 2015-2026)
+- ✅ Fix sideways SPY conflict: SPY=UP 30%, QQQ=FLAT
+
 **Target allocation**: T60/RS40 (sweep T55-65)
 
-**En attente**: SESSION 1c completion + deploy sur QC cloud
+**En attente**: Go-ahead myia-ai-01 pour deploy sur QC cloud
 
 ---
 
