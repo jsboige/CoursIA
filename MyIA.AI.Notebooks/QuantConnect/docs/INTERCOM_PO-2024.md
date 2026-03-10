@@ -4,7 +4,7 @@
 
 ---
 
-## 2026-03-10 - Session po-2024 (après-midi)
+## 2026-03-10 - Session po-2024 (après-midi / soir)
 
 ### Etat SESSION 1
 
@@ -37,6 +37,23 @@
 - Message RooSync envoyé à myia-ai-01 (msg-20260310T202252-9wxnr4)
 - Candidats orphelins identifiés (5 projets SANS quantbook.ipynb local)
 - En attente de vérification contenu cloud via MCP QC par myia-ai-01
+
+---
+
+## SESSION 2 - Préparation ✅ TERMINEE
+
+### Framework_Composite_MomentumRegime
+
+**Fichiers créés** (commit a60aea6):
+
+- `main.py`: Algorithm setup with CompositeAlpha + MultiStrategyPCM
+- `alpha_models.py`: SectorMomentumAlpha + RegimeSwitchingAlpha
+- `portfolio_construction.py`: MultiStrategyPCM (reuse from TrendWeather)
+- `README.md`: Documentation + deployment instructions
+
+**Target allocation**: T60/RS40 (sweep T55-65)
+
+**En attente**: SESSION 1c completion + deploy sur QC cloud
 
 ---
 
