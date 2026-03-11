@@ -12,7 +12,8 @@ class FrameworkCompositeFamaFrenchAllWeather(QCAlgorithm):
     Combines Fama-French factor ETF rotation (VLUE, MTUM, SIZE, QUAL, USMV)
     with AllWeather static allocation (SPY, IEF, GLD, XLP) via QC Algorithm Framework.
 
-    Target allocation: FF40/AW60 (FamaFrench 40%, AllWeather 60%)
+    Target allocation: FF20/AW80 (FamaFrench 20%, AllWeather 80%)
+    Sweep result: Sharpe 0.588, CAGR 9.9%, MaxDD 17.1%
 
     Key design principle from lesson learned in MomentumRegime:
     - NO overlap between universes (factor ETFs vs traditional assets)
@@ -48,11 +49,11 @@ class FrameworkCompositeFamaFrenchAllWeather(QCAlgorithm):
             AllWeatherAlpha(aw_tickers)
         ))
 
-        # Target allocation: FF40/AW60
+        # Target allocation: FF20/AW80 (best Sharpe/CAGR tradeoff from sweep)
         self.set_portfolio_construction(MultiStrategyPCM(
             alpha_allocations={
-                "FamaFrench": 0.40,
-                "AllWeather": 0.60,
+                "FamaFrench": 0.20,
+                "AllWeather": 0.80,
             },
             rebalance=timedelta(days=31)  # Monthly rebalance
         ))
@@ -64,4 +65,5 @@ class FrameworkCompositeFamaFrenchAllWeather(QCAlgorithm):
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"FRAMEWORK COMPOSITE (FF40/AW60): Final={final:,.2f}, Return={(final - 100000) / 100000:.2%}")
+        self.log(f"FRAMEWORK COMPOSITE (FF20/AW80): Final=${final:,.2f}, "
+                 f"Return={(final - 100000) / 100000:.2%}")

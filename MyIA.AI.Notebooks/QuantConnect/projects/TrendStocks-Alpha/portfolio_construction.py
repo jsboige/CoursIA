@@ -1,51 +1,58 @@
-# region imports
 from AlgorithmImports import *
-# endregion
 
 
 class MultiStrategyPCM(PortfolioConstructionModel):
-    """Multi-Strategy Portfolio Construction Model.
+    """
+    Custom Portfolio Construction Model for multi-strategy framework.
 
-    Equal weight allocation among all active insights.
-
-    Parameters:
-    - rebalance: Rebalance frequency (Time.DAILY or Time.WEEKLY)
-    - max_active_insights: Maximum number of active insights to consider (default 100)
+    Groups insights by source_model (alpha name), allocates a capital slice
+    per strategy, then aggregates overlapping tickers additively.
     """
 
-    def __init__(self, max_active_insights=100):
+    def __init__(self, alpha_allocations, rebalance=timedelta(days=31)):
         super().__init__()
-        self.max_active_insights = max_active_insights
+        self.alpha_allocations = alpha_allocations
+        self.set_rebalancing_func(lambda dt: dt + rebalance)
 
-    def create_targets(self, algorithm, insights):
-        """Create portfolio targets from insights."""
-        targets = []
-
-        # Filter active insights
-        active_insights = [i for i in insights if i.is_active and i.direction != InsightDirection.FLAT]
+    def determine_target_percent(self, active_insights):
+        result = {}
 
         if not active_insights:
-            # Liquidate all if no active insights
-            for portfolio_target in algorithm.portfolio.values():
-                if portfolio_target.invested:
-                    targets.append(PortfolioTarget(portfolio_target.symbol, 0))
-            return targets
+            return result
 
-        # Equal weight allocation
-        count = min(len(active_insights), self.max_active_insights)
-        weight = 0.95 / count  # Use 95% of capital, keep 5% cash
+        by_alpha = {}
+        for insight in active_insights:
+            source = insight.source_model or "Unknown"
+            if source not in by_alpha:
+                by_alpha[source] = []
+            by_alpha[source].append(insight)
 
-        for insight in active_insights[:count]:
-            # Calculate quantity from portfolio value and weight
-            symbol = insight.symbol
-            security = algorithm.securities[symbol]
-            if security.price > 0:
-                target_value = algorithm.portfolio.total_portfolio_value * weight
-                quantity = target_value / security.price
-                targets.append(PortfolioTarget(symbol, quantity))
+        for alpha_name, insights in by_alpha.items():
+            capital_slice = self.alpha_allocations.get(alpha_name, 0)
+            if capital_slice <= 0:
+                for insight in insights:
+                    result[insight] = 0
+                continue
 
-        return targets
+            active = [i for i in insights if i.direction != InsightDirection.FLAT]
+            flat = [i for i in insights if i.direction == InsightDirection.FLAT]
 
-    def should_rebalance(self, algorithm, insights):
-        """Determine if rebalancing is needed."""
-        return True
+            for insight in flat:
+                result[insight] = 0
+
+            if not active:
+                continue
+
+            has_weights = all(
+                i.weight is not None and i.weight > 0 for i in active
+            )
+
+            if has_weights:
+                for insight in active:
+                    result[insight] = insight.direction * insight.weight * capital_slice
+            else:
+                per_symbol = capital_slice / len(active)
+                for insight in active:
+                    result[insight] = insight.direction * per_symbol
+
+        return result

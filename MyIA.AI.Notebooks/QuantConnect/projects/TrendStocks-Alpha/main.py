@@ -1,63 +1,41 @@
 # region imports
 from AlgorithmImports import *
-# endregion
-
 from alpha_models import TrendStocksAlpha
 from portfolio_construction import MultiStrategyPCM
+# endregion
 
 
 class TrendStocksAlphaAlgorithm(QCAlgorithm):
-    """Trend Stocks Lite Alpha - 15 diversified stocks with trend-following.
-
-    Strategy:
-    - Universe: 15 stocks across 5 sectors (Tech, Financials, Healthcare, Energy, Consumer)
-    - Signal: Price > SMA200 AND EMA20 > EMA50 (double confirmation)
-    - Equal-weight portfolio of trending stocks
-    - Weekly rebalancing (Mondays)
-
-    Alpha Model: TrendStocksAlpha generates DirectionInsights
-    Portfolio: MultiStrategyPCM with equal weight allocation
-    """
 
     def initialize(self):
-        self.set_start_date(2020, 1, 1)
+        self.set_start_date(2015, 1, 1)
         self.set_cash(100000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
-        # Universe selection - 15 diversified stocks
         tickers = [
-            "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA",  # Tech
-            "JPM", "V", "MA",                            # Financials
-            "UNH", "JNJ",                                # Healthcare
-            "XOM", "CVX",                                # Energy
-            "HD", "PG", "KO"                             # Consumer
+            "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA",
+            "JPM", "V", "MA",
+            "UNH", "JNJ",
+            "XOM", "CVX",
+            "HD", "PG", "KO"
         ]
 
         for ticker in tickers:
             self.add_equity(ticker, Resolution.DAILY)
 
-        self.set_benchmark("SPY")
-        self.add_equity("SPY", Resolution.DAILY)
+        self.set_alpha(TrendStocksAlpha(tickers, ema_fast=20, ema_slow=50, sma_trend=200))
 
-        # Set Alpha Model - requires SMA200 confirmation
-        self.set_alpha(TrendStocksAlpha(
-            ema_fast=20,
-            ema_slow=50,
-            sma_trend=200,
-            resolution=Resolution.DAILY
+        self.set_portfolio_construction(MultiStrategyPCM(
+            alpha_allocations={"TrendStocks": 1.0},
+            rebalance=timedelta(days=7)
         ))
 
-        # Set Portfolio Construction
-        self.set_portfolio_construction(MultiStrategyPCM())
-
-        # Set Execution
-        self.set_execution(ImmediateExecutionModel())
-
-        # Set Risk
         self.set_risk_management(NullRiskManagementModel())
+        self.set_execution(ImmediateExecutionModel())
+        self.set_benchmark("SPY")
+        self.set_warm_up(210, Resolution.DAILY)
 
-        # Warmup for SMA200
-        self.set_warm_up(200, Resolution.DAILY)
-
-    def on_data(self, data):
-        """No action needed - Alpha framework handles everything."""
-        pass
+    def on_end_of_algorithm(self):
+        final = self.portfolio.total_portfolio_value
+        self.log(f"TrendStocks-Alpha: Final=${final:,.2f}, "
+                 f"Return={(final - 100000) / 100000:.2%}")
