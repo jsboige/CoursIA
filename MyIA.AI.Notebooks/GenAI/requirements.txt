@@ -55,5 +55,8 @@ bitsandbytes>=0.41.0
 tqdm>=4.66.0
 pillow-heif>=0.13.0
 
+# Authentication
+bcrypt>=4.0.0
+
 # Generation automatique Phase 2.1 - 20251008_050730
 # Mise a jour Audio/Video - 20250216
