@@ -59,7 +59,33 @@
 
 **Target allocation**: T60/RS40 (sweep T55-65)
 
-**En attente**: Go-ahead myia-ai-01 pour deploy sur QC cloud
+**En attente de déploiement QC cloud**: Problème avec projet 28870324 créé comme C# au lieu de Python
+
+---
+
+## SESSION 2b - Déploiement Framework_Composite_MomentumRegime ⚠️ EN COURS
+
+### Problème rencontré
+
+- Projet créé: ID 28870324 ("Upgraded Red Fox")
+- **ISSUE**: Template C# créé par défaut, impossible à convertir en Python via web UI
+- **Tentatives**:
+  1. Suppression Main.cs via web UI → Non fonctionnel (fichier read-only)
+  2. Création main.py → Rejeté ("File extension is not valid")
+  3. lean-cli cloud push → Erreur "Cannot push" (projet cloud en conflit)
+
+### Solution requise
+
+**Option A**: Supprimer le projet 28870324 et recréer un nouveau projet Python vide
+**Option B**: Utiliser `lean-cli` avec un nouveau projet Python local
+**Option C**: Demander à myia-ai-01 de faire le déploiement via son environnement
+
+### Fichiers prêts
+
+Les 3 fichiers Python sont prêts dans `projects/Framework_Composite_MomentumRegime/`:
+- main.py (69 lignes)
+- alpha_models.py (366 lignes, bugs fixés)
+- portfolio_construction.py (74 lignes)
 
 ---
 
