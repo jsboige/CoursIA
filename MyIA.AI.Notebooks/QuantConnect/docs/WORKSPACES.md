@@ -61,7 +61,7 @@ Workspace sponsorise par Jared Broad pour l'enseignement.
 ## Organisation 2 : Jean-Sylvain Boige (Researcher PAID)
 
 **Workspace personnel** - Mode complet avec backtests illimités (compte payant).
-**Mise à jour**: 2026-03-10 - Nettoyage effectué, doublon supprimé (28733256). CSharp-BTC-EMA-Cross déployé (28860180).
+**Mise à jour**: 2026-03-11 - Framework_Composite_FamaFrenchAllWeather déployé (28882145).
 
 | ID | Nom | Lang | Fichiers | Description | Statut |
 |----|-----|------|----------|-------------|--------|
@@ -97,6 +97,10 @@ Workspace sponsorise par Jared Broad pour l'enseignement.
 | 28433668 | ETF-Pairs-Researcher | Py | main.py, alpha.py | ETF pairs trading | ✓ |
 | 28860180 | CSharp-BTC-EMA-Cross | C# | Main.cs | EMA Cross sur BTC (2017-10→now) | ✓ Déployé |
 | 28860278 | CSharp-CTG-Momentum | C# | Main.cs + Helpers/ (4 fichiers) | Momentum CTG (2015→now) | ⚠️ Bloqué par bug QC Monaco |
+| 28871239 | Framework_Composite_MomentumRegime | Py | main.py, alpha_models.py, portfolio_construction.py | Composite MomentumSector + RegimeSwitching (T60/RS40) | ⚠️ Sharpe 0.241 (v3) - trop conservateur |
+| 28882145 | Framework_Composite_FamaFrenchAllWeather | Py | main.py, alpha_models.py, portfolio_construction.py | Composite FamaFrench Factors + AllWeather (FF60/AW40) | ✓ Sharpe 0.51, CAGR 10.5%, DD 25.4% |
+| 28885488 | EMA-Cross-Alpha | Py | main.py, alpha_models.py, portfolio_construction.py | EMA crossover (20/50) on 5 tech stocks (2015→2025) | ✓ Sharpe 0.996 |
+| 28885507 | TrendStocks-Alpha | Py | main.py, alpha_models.py, portfolio_construction.py | Double confirmation (SMA200 + EMA20/50) on 15 stocks (2020→2025) | ✓ Sharpe 0.609 |
 
 ### Note sur CSharp-CTG-Momentum
 
