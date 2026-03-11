@@ -134,6 +134,7 @@ SERVICES: Dict[str, Dict[str, Any]] = {
         "auth_env_var": "COMFYUI_VIDEO_TOKEN",
         "gpu_id": 0,
         "vram_required": "20GB+",
+        "remote_url": "https://comfyui-video.myia.io",
     },
 }
 

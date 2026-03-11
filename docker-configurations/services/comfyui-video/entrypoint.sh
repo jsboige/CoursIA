@@ -138,4 +138,9 @@ venv/bin/pip install bitsandbytes>=0.43.0 || echo "Bitsandbytes: installation op
 # DEMARRAGE
 # =============================================================================
 echo "Demarrage du serveur ComfyUI-Video..."
-exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
+
+# GPU Device ID (defaut: 0)
+GPU_ID=${GPU_DEVICE_ID:-0}
+echo "Utilisation GPU ${GPU_ID}"
+
+exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention --cuda-device ${GPU_ID}

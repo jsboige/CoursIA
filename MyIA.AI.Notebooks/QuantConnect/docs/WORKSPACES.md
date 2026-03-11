@@ -58,16 +58,63 @@ Workspace sponsorise par Jared Broad pour l'enseignement.
 
 ---
 
-## Organisation 2 : Researcher Personnel (d600793e...)
+## Organisation 2 : Jean-Sylvain Boige (Researcher PAID)
 
-Workspace personnel en mode Research.
+**Workspace personnel** - Mode complet avec backtests illimités (compte payant).
+**Mise à jour**: 2026-03-10 - Nettoyage effectué, doublon supprimé (28733256). CSharp-BTC-EMA-Cross déployé (28860180).
 
-| ID | Nom | Lang | Fichiers | Description |
-|----|-----|------|----------|-------------|
-| 20217024 | multi alpha fusion | Py | main.py + alpha.py (13K) + PortfolioConstructor.py (7K) + indicators.py | Fusion multi-alpha avec Framework |
-| 20217040 | Tested mean reversion | Py | main.py (4K), research.ipynb | Strategie mean reversion |
-| 1003996 | Library/Basic Library Template C 1 | C# | - | Template de base |
-| 1003981 | Library/Basic Library Template C | C# | - | Template de base |
+| ID | Nom | Lang | Fichiers | Description | Statut |
+|----|-----|------|----------|-------------|--------|
+| 28418632 | BTC-MACD-ADX-Researcher | Py | main.py, research.ipynb | MACD+ADX avec fenêtre 80, percentiles 5/85 | ✓ Backtest Sharpe 1.649 |
+| 28433643 | Sector-Momentum-Researcher | Py | main.py, alpha.py, pcm.py | Momentum sectoriel 2020-2025 | ⚠️ Sharpe 0.114 (revoir) |
+| 28433750 | BTC-ML-Researcher | Py | main.py, research.ipynb | ML avec filtre volatilité 60% | ✓ Sharpe 1.249 |
+| 28679473 | Crypto-MultiCanal-Researcher | Py | main.py, channel_helpers.py, **channel_mixin.py**, research.ipynb | Multi-canal ZigZag (version complète) | ✓ |
+| 28433748 | Multi-Layer-EMA-Researcher | Py | main.py, alpha.py, pcm.py | Multi-couches EMA avec trailing 10% | ✓ |
+| 28433749 | Option-Wheel-Researcher | Py | main.py + variantes | Wheel strategy options income | ✓ |
+| 28433645 | FuturesTrend-Researcher | Py | main.py | Trend following futures | ✓ |
+| 28433646 | Framework_Composite_TrendWeather | Py | main.py, alpha_models.py, portfolio_construction.py | Composite Trend+AllWeather | ✓ |
+| 28433647 | MomentumStrategy-Researcher | Py | main.py | Momentum simple | ✓ |
+| 28433648 | AllWeather-Researcher | Py | main.py | Ray Dalio All Weather | ✓ |
+| 28433649 | TrendStocksLite | Py | main.py | Trend stocks simplifié | ✓ |
+| 28433650 | VIX-TermStructure-Researcher | Py | main.py | Term structure VIX | ✓ |
+| 28433651 | ForexCarry-Researcher | Py | main.py | Forex carry trade | ✓ |
+| 28433652 | TurnOfMonth-Researcher | Py | main.py | Turn of month effect | ✓ |
+| 28433653 | PairsTrading | Py | main.py | Pairs trading simple | ✓ |
+| 28433654 | RiskParity | Py | main.py | Risk parity portfolio | ✓ |
+| 28433655 | DualMomentum | Py | main.py | Dual momentum classique | ✓ |
+| 28433656 | DualMomentumNoTLT | Py | main.py | Dual momentum sans TLT | ✓ |
+| 28433657 | MeanReversion-Researcher | Py | main.py | Mean reversion | ✓ |
+| 28433658 | FamaFrench-Researcher | Py | main.py | Fama-French factors | ✓ |
+| 28433659 | TrendFilteredMeanReversion | Py | main.py | Trend filtered mean reversion | ✓ |
+| 28433660 | Trend-Following | Py | main.py | Trend following | ✓ |
+| 28433661 | OptionsIncome-Researcher | Py | main.py | Options income strategies | ✓ |
+| 28433662 | Options-VGT | Py | main.py | Options sur VGT | ✓ |
+| 28433663 | EMA-Cross-Index | Py | main.py | EMA cross indices | ✓ |
+| 28433664 | EMA-Cross-Crypto | Py | main.py | EMA cross crypto | ✓ |
+| 28433665 | EMA-Cross-Stocks | Py | main.py | EMA cross stocks | ✓ |
+| 28433666 | RegimeSwitching | Py | main.py | Regime switching | ✓ |
+| 28433667 | AdaptiveAssetAllocation | Py | main.py | Adaptive asset allocation | ✓ |
+| 28433668 | ETF-Pairs-Researcher | Py | main.py, alpha.py | ETF pairs trading | ✓ |
+| 28860180 | CSharp-BTC-EMA-Cross | C# | Main.cs | EMA Cross sur BTC (2017-10→now) | ✓ Déployé |
+| 28860278 | CSharp-CTG-Momentum | C# | Main.cs + Helpers/ (4 fichiers) | Momentum CTG (2015→now) | ⚠️ Bloqué par bug QC Monaco |
+
+### Note sur CSharp-CTG-Momentum
+
+**Projet créé mais bloqué**: Le Monaco Editor de QC a un bug qui empêche la sauvegarde de fichiers "volumineux" (signale 254322 caractères pour ~10000 réels).
+
+**Solution recommandée**: Utiliser `lean-cli` pour compléter le déploiement.
+
+### Projets C# à déployer
+
+| Nom local | Lang | Fichiers | Statut |
+|-----------|------|----------|--------|
+| *(CSharp-CTG-Momentum créé via Playwright, helper files manquants)* | C# | - | ⏳ En attente lean-cli |
+
+---
+
+## Organisation 3 : Researcher Personnel (d600793e...)
+
+**Ancien workspace** - Remplacé par l'organisation Jean-Sylvain Boige (Researcher PAID).
 
 ---
 

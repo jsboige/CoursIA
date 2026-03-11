@@ -2,6 +2,27 @@
 
 Guidance for Claude Code working with the CoursIA repository.
 
+---
+
+## ⚠️ RÈGLE D'OR - Coordination Inter-Machines
+
+**TOUTE coordination entre machines (po-2023, po-2026, etc.) DOIT se faire via RooSync**
+
+### ❌ JAMAIS:
+- Commit de rapports de coordination sur GitHub
+- Messages via SSH
+- Fichiers `*_TEST_REPORT.md`, `*_COORDINATION.md` dans le repo
+- Tout fichier de coordination hors RooSync
+
+### ✅ TOUJOURS:
+- Thread RooSync pour toute coordination inter-machine
+- Les messages RooSync sont persistants et suivis
+- GitHub = code uniquement, pas de coordination
+
+**VIOLATION DE CETTE RÈGLE = ERREUR CRITIQUE**
+
+---
+
 ## Project Overview
 
 CoursIA is an educational AI course platform:
