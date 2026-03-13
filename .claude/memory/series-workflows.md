@@ -192,10 +192,14 @@ Resume: true
 ```
 cat .claude/progress/*.json | jq '.statistics'
 ```
-<<<<<<< HEAD
-=======
-
 ## Historique des sessions
+
+### 2026-03-11: GenAI Series Robust .env Loading
+
+- Correction robust .env loading pour 10/10 notebooks Image
+- Commits: d0a4166 (8 notebooks), 8b609bd (2 notebooks déjà OK)
+- Coordination avec po-2026 via RooSync
+- Voir: [genai-series-sync-20260311.md](genai-series-sync-20260311.md)
 
 ### 2026-03-09: Creation du fichier series-workflows.md
 - Synchronisation avec les memoires des agents notebook-enricher
@@ -221,7 +225,7 @@ cat .claude/progress/*.json | jq '.statistics'
 
 ## Liens vers les memoires specifiques
 
+- [genai-series-sync-20260311.md](genai-series-sync-20260311.md) - Session sync GenAI Series
 - [notebook-enricher/MEMORY.md](../.claude/agent-memory/notebook-enricher/MEMORY.md) - Patterns d'enrichment
 - [notebook-enricher/enrichment-log-*.md](../.claude/agent-memory/notebook-enricher/) - Logs detailles des sessions
-- [MEMORY.md](../.claude/memory/MEMORY.md) - Memoire principale du projet
->>>>>>> origin/main
+- [MEMORY.md](../MEMORY.md) - Memoire principale du projet
