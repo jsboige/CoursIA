@@ -16,7 +16,19 @@ Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans 
 
 ## Safety Rules
 
-- NEVER use `git push --force` or `--force-with-lease` unless explicitly approved by user
+### 🚨 CRITICAL - NEVER FORCE PUSH
+
+**INCIDENT 2026-03-13** : Force push sur main a potentiellement écrasé des commits
+- **Règle** : `git push --force` et `--force-with-lease` sont INTERDITS
+- **Exception** : Uniquement urgence extrême avec validation explicite du user AU PRÉALABLE
+- **Alternative** : Créer feature branch, cherry-pick, revert, ou nouveaux commits
+- **Si PR nécessaire** : Créer feature branch FROM main, ne JAMAIS reset main
+
+---
+
+### Other Safety Rules
+
+- NEVER commit without explicit user approval
 - NEVER commit without explicit user approval
 - If secrets are accidentally committed, create a new clean branch with cherry-pick rather than rewriting history
 - Always commit incrementally to avoid needing force pushes
