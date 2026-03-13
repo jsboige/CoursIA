@@ -564,3 +564,6 @@ reports/
 # Claude Code MCP config (contains API tokens)
 .mcp.json
 .claude/qc-mcp-wrapper.py
+
+# Claude Code memory (local scope, may contain sensitive data)
+.claude/memory/
