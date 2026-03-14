@@ -10,18 +10,18 @@
 
 **Script**: `scripts/audit_genai_corruption.py`
 
-### Résultats globaux
-- **Total notebooks**: 186
-- **Corrompus**: 4 (2%)
-- **Sains**: 182 (98%)
+### Résultats globaux (après PR #63)
+- **Total notebooks**: 183
+- **Corrompus**: 1 (1%)
+- **Sains**: 182 (99%)
 
 ### Détail par catégorie
 
 | Catégorie | Corrompus | Total | % | Status |
 |-----------|-----------|-------|---|--------|
 | Audio | 0 | 32 | 0% | ✅ OK |
-| Image | 2 | 38 | 5% | ⚠️ Artefacts |
-| Video | 2 | 32 | 6% | ⚠️ HunyuanVideo |
+| Image | 0 | 36 | 0% | ✅ OK |
+| Video | 1 | 31 | 3% | ⚠️ HunyuanVideo |
 | Texte | 0 | 22 | 0% | ✅ OK |
 | 00-GenAI-Environment | 0 | 12 | 0% | ✅ OK |
 | SemanticKernel | 0 | 40 | 0% | ✅ OK |
@@ -29,15 +29,10 @@
 
 ### Notebooks corrompus identifiés
 
-#### Image (artefacts de sortie, non-versionnés)
-- `01-4-Forge-SD-XL-Turbo_output.ipynb` - **SUPPRIME** (artefact Papermill)
-- `01-5-Qwen-Image-Edit_output.ipynb` - **SUPPRIME** (artefact Papermill)
-
 #### Video (pris en charge par po-2023)
 - `02-1-HunyuanVideo-Generation.ipynb` - 2 cellules corrompues (lignes > 3000 chars)
-- `02-1-HunyuanVideo-Generation_output.ipynb` - **SUPPRIME** (artefact)
 
-**Note**: Les 2 fichiers `_output.ipynb` n'étaient pas versionnés et ont été supprimés localement.
+**Note**: Ce notebook est déjà pris en charge par po-2023.
 
 ---
 
@@ -69,13 +64,14 @@
 
 | Pattern | Notebooks | % | Description |
 |---------|-----------|---|-------------|
-| `env_loaded + GENAI_ROOT` | 21 | 25% | **Pattern recommandé** |
-| `GENAI_ROOT only` | 19 | 22% | Détection automatique racine |
-| `env_loaded only` | 16 | 19% | Flag d'état simple |
-| `simple load_dotenv()` | 8 | 9% | Pattern basique |
-| Autre / Aucun | 22 | 26% | Pas de pattern détecté |
+| `env_loaded + GENAI_ROOT` | 37 | 41% | **Pattern recommandé** |
+| `simple load_dotenv()` | 20 | 22% | Pattern basique |
+| `env_loaded only` | 16 | 18% | Flag d'état simple |
+| Autre / Aucun | 12 | 13% | Pas de pattern détecté |
+| `GENAI_ROOT only` | 3 | 3% | Détection automatique racine |
+| none | 3 | 3% | Aucun .env |
 
-**Total**: 86 notebooks GenAI analysés (hors 00-GenAI-Environment)
+**Total**: 91 notebooks GenAI analysés (hors 00-GenAI-Environment)
 
 ### Recommandation
 
@@ -107,8 +103,8 @@ Standardiser tous les notebooks sur le pattern **`env_loaded + GENAI_ROOT`**:
 
 ## 6. Statut validation
 
-✅ **Validation syntaxe**: 182/182 notebooks valides (98%)
+✅ **Validation syntaxe**: 182/182 notebooks valides (99%)
 ⚠️ **Structurelle**: 2/184 notebooks avec warnings (1%, pris en charge)
-⚠️ **Patterns .env**: Incohérence à standardiser
+⚠️ **Patterns .env**: Incohérence à standardiser (41% pattern recommandé)
 
 **Conclusion globale**: Les notebooks GenAI sont structurellement sains après PR #63. Le travail restant concerne la standardisation des patterns .env et la correction HunyuanVideo (po-2023).
