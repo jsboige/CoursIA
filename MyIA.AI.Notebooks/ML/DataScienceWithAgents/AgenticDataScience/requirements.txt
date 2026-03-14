@@ -3,6 +3,11 @@
 # === Abstraction LLM ===
 litellm>=1.40.0
 
+# === LangChain (PythonAgentsForDataScience) ===
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-experimental>=0.3.0
+
 # === Google Gemini ===
 google-generativeai>=0.8.0
 
