@@ -72,9 +72,11 @@ def fix_notebook(nb_path):
                 ]):
                     if not skipped_env_code:
                         # Insert robust pattern at first removal
-                        new_lines.extend(ROBUST_PATTERN.split('\n'))
+                        # CRITICAL: each element must end with '\n' for valid
+                        # notebook JSON (cell['source'] format requirement)
+                        for pat_line in ROBUST_PATTERN.split('\n'):
+                            new_lines.append(pat_line + '\n')
                         skipped_env_code = True
-                        new_lines.append('')  # blank line after
                     # Skip this line
                 else:
                     new_lines.append(line)
@@ -85,8 +87,9 @@ def fix_notebook(nb_path):
                 print(f"  Fixed cell {i}")
 
     if modified:
-        with open(nb_path, 'w', encoding='utf-8') as f:
+        with open(nb_path, 'w', encoding='utf-8', newline='\n') as f:
             json.dump(nb, f, indent=1, ensure_ascii=False)
+            f.write('\n')
         print(f"  -> Saved")
         return True
     else:
