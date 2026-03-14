@@ -8,14 +8,16 @@ class MultiStrategyPCM(PortfolioConstructionModel):
     Groups insights by source_model (alpha name), allocates a capital slice
     per strategy, then aggregates overlapping tickers additively.
 
-    Example: If FamaFrench (60% slice) and AllWeather (40% slice)
-    both emit UP for SPY, the final target is the sum of both allocations.
+    Example: If FamaFrench (50% slice) says VLUE=UP and AllWeather (50% slice)
+    says SPY=UP with weight 0.30, final targets are:
+    - VLUE: 0.50 * (1/N_bullish)
+    - SPY: 0.50 * 0.30 (from AllWeather's weight hint)
     """
 
     def __init__(self, alpha_allocations, rebalance=timedelta(days=31)):
         super().__init__()
         self.alpha_allocations = alpha_allocations
-        # Set rebalancing schedule (monthly)
+        # Set rebalancing schedule
         self.set_rebalancing_func(lambda dt: dt + rebalance)
 
     def determine_target_percent(self, active_insights):
@@ -60,11 +62,12 @@ class MultiStrategyPCM(PortfolioConstructionModel):
             )
 
             if has_weights:
-                # Use weight hints (e.g., FamaFrench top-2 proportional weights)
+                # Use weight hints (e.g., AllWeather: SPY=0.30, IEF=0.30, etc.)
+                # Scale by capital slice
                 for insight in active:
                     result[insight] = insight.direction * insight.weight * capital_slice
             else:
-                # Equal weight within this alpha's slice
+                # Equal weight within this alpha's slice (e.g., FamaFrench)
                 per_symbol = capital_slice / len(active)
                 for insight in active:
                     result[insight] = insight.direction * per_symbol
