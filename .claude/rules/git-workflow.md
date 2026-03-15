@@ -29,7 +29,6 @@ Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans 
 ### Other Safety Rules
 
 - NEVER commit without explicit user approval
-- NEVER commit without explicit user approval
 - If secrets are accidentally committed, create a new clean branch with cherry-pick rather than rewriting history
 - Always commit incrementally to avoid needing force pushes
 - Prefer adding specific files by name over `git add -A` or `git add .`
