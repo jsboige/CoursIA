@@ -29,14 +29,26 @@ def setup_genai_logging(level="INFO"):
 
 # Configuration environnement
 def load_genai_config():
-    """Chargement configuration GenAI depuis .env"""
+    """Chargement configuration GenAI depuis .env (Pattern A - Papermill-safe)
+
+    Ce pattern fonctionne meme quand Papermill change le CWD.
+    Il remonte l'arborescence jusqu'au repertoire "GenAI" pour trouver .env.
+    """
     from dotenv import load_dotenv
-    
-    env_file = Path.cwd() / '.env'
-    if env_file.exists():
-        load_dotenv(env_file)
-        return True
-    return False
+
+    current_path = Path.cwd()
+    env_loaded = False
+    while current_path.name != "GenAI" and len(current_path.parts) > 1:
+        env_path = current_path / ".env"
+        if env_path.exists():
+            load_dotenv(env_path)
+            print(f".env charge depuis: {env_path}")
+            env_loaded = True
+            break
+        current_path = current_path.parent
+    if not env_loaded:
+        print("WARNING: .env non trouve, utilisation variables environnement")
+    return env_loaded
 
 # Validation APIs
 def validate_apis():
