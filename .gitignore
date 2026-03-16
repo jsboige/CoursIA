@@ -531,6 +531,7 @@ slides/_assets/*/renders/
 slides/*/modernized/
 # Slides - Marp output HTML/PDF (regenerable via marp CLI)
 slides/*/output/
+slides/_pdfs/
 
 # Fichiers temporaires d'execution notebooks (artefacts bash/Python)
 =*
