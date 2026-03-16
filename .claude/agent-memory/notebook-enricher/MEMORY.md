@@ -50,6 +50,18 @@
   - Notebooks: 01-3-Qwen-VL, 01-4-ESRGAN, 02-1-HunyuanVideo, 02-2-LTX-Video, 02-3-Wan, 02-4-SVD
   - Used edit_mode="replace" on existing interpretation cells (not insertions)
   - No cell positioning issues since we replaced existing cells
+- **2026-03-16**: GameTheory Series Header Standardization (12 notebooks reviewed, 6 fixed)
+  - Systematic review of all 17 GameTheory notebooks for header compliance
+  - Fixed pattern: "**Objectifs pedagogiques** :" (bold) → "### Objectifs d'apprentissage" (header)
+  - Fixed pattern: "### Objectifs pedagogiques" → "### Objectifs d'apprentissage"
+  - Fixed pattern: "**Prerequis**" / "**Duree estimee**" bold → proper ### headers
+  - Notebooks fixed: 8, 11, 12, 13, 14, 15, 16, 16b, 17 (across two sessions)
+  - Notebooks already correct: 1, 2, 4c, 8c, 15b, 15c, 16c
+  - Lean notebooks (4b, 16b): only markdown cells modified, never code/lean cells
+  - Also fixed wrong navigation links: notebook-11 pointing to itself instead of notebook-12
+  - GameTheory domain: CFR, Stackelberg, Fictitious Play, PSRO, AlphaZero, Arrow/Sen, Sprague-Grundy
+  - Key rule confirmed: Lean notebooks follow same header standards as Python notebooks
+
 - **2026-03-03**: Lean-11-TorchLean Pedagogical Enhancement (4 cells added, SQUELETTE → COMPLET)
   - TorchLean: réseaux de neurones formellement vérifiés avec Lean 4
   - BOTTOM-to-TOP insertion strategy flawless (4 cells, no errors)
@@ -72,6 +84,7 @@
 | Search/Optimization | fitness, convergence, population, exploration/exploitation, metaheuristics | Parameter sensitivity analysis, algorithm comparison tables, convergence plots |
 | QuantConnect | backtest, alpha model, features, signals, ObjectStore | Model training → save → deploy, feature engineering, performance metrics |
 | SymbolicAI/TorchLean | Semantic gap, Float32, IEEE-754, rounding modes, IBP, CROWN, LiRPA, PINNs, Lyapunov, FloVerCoq | API philosophy, numerical error accumulation, interval propagation visualization, ecosystem diagrams |
+| GameTheory | Nash equilibrium, Stackelberg, CFR, Fictitious Play, PSRO, AlphaZero, Sprague-Grundy, Nim, Arrow impossibility, Sen paradox, MARL, self-play | Convergence plots, exploitability tables, strategy evolution, P/N-position analysis |
 
 ### Content Strategy Templates
 
