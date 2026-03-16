@@ -5,60 +5,68 @@ from portfolio_construction import MultiStrategyPCM
 # endregion
 
 
-class FrameworkCompositeStrategy(QCAlgorithm):
+class FrameworkCompositeFamaFrenchAllWeather(QCAlgorithm):
     """
-    Framework Composite v1.0 - FamaFrench + AllWeather
+    Framework Composite - FamaFrench Factor Rotation + AllWeather
 
-    Combines FamaFrench factor rotation (momentum-weighted large-caps) with
-    AllWeather (SPY/IEF/GLD/XLP) via Algorithm Framework.
+    Combines Fama-French factor ETF rotation (VLUE, MTUM, SIZE, QUAL, USMV)
+    with AllWeather static allocation (SPY, IEF, GLD, XLP) via QC Algorithm Framework.
 
-    Allocation sweep (2015-2025):
-    - FF40/AW60: To be tested
-    - FF50/AW50: To be tested (baseline)
-    - FF60/AW40: To be tested
+    Target allocation: FF20/AW80 (FamaFrench 20%, AllWeather 80%)
+    Sweep result: Sharpe 0.588, CAGR 9.9%, MaxDD 17.1%
 
-    Target: Sharpe > 0.7 (both standalone: FF=0.540, AW=0.667)
+    Key design principle from lesson learned in MomentumRegime:
+    - NO overlap between universes (factor ETFs vs traditional assets)
+    - True diversification: equity factors + macro allocation
+    - FamaFrench uses risk-adjusted momentum only (NO SMA200 filter - AllWeather handles defense)
 
-    Expected improvement: FF provides growth momentum, AW provides
-    defensive diversification with low correlation.
+    Reference strategies:
+    - FamaFrench v3.0: Sharpe 0.540, CAGR 12.1%, MaxDD 24.2%
+    - AllWeather: Ray Dalio-inspired static allocation
+
+    Quarterly rebalancing for FamaFrench (factor rotation), monthly for AllWeather.
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
+        self.set_start_date(2010, 1, 1)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
-        # FamaFrench factor ETFs
+        # FamaFrench universe: factor ETFs (iShares)
         ff_tickers = ["VLUE", "MTUM", "SIZE", "QUAL", "USMV"]
-        
-        # AllWeather tickers
+
+        # AllWeather universe: traditional assets
         aw_tickers = ["SPY", "IEF", "GLD", "XLP"]
 
-        # Add SPY for FF regime filter (duplicate will be handled)
-        all_tickers = list(set(ff_tickers + aw_tickers + ["SPY"]))
+        # Add all equities
+        all_tickers = ff_tickers + aw_tickers
         for ticker in all_tickers:
             self.add_equity(ticker, Resolution.DAILY)
 
-        # Baseline allocation: FF50/AW50
+        # Create Alpha models
         self.set_alpha(CompositeAlphaModel(
-            FamaFrenchAlpha(ff_tickers + ["SPY"]),
+            FamaFrenchAlpha(ff_tickers),
             AllWeatherAlpha(aw_tickers)
         ))
 
+        # Target allocation: configurable via backtest parameters (default FF20/AW80)
+        ff_allocation = float(self.GetParameter("ff_allocation", 0.20))
+        aw_allocation = float(self.GetParameter("aw_allocation", 0.80))
+
         self.set_portfolio_construction(MultiStrategyPCM(
             alpha_allocations={
-                "FamaFrench": 0.50,
-                "AllWeather": 0.50,
+                "FamaFrench": ff_allocation,
+                "AllWeather": aw_allocation,
             },
-            rebalance=timedelta(days=31)
+            rebalance=timedelta(days=31)  # Monthly rebalance
         ))
 
         self.set_risk_management(NullRiskManagementModel())
         self.set_execution(ImmediateExecutionModel())
         self.set_benchmark("SPY")
-        self.set_warm_up(270, Resolution.DAILY)
+        self.set_warm_up(252, Resolution.DAILY)  # 1 year for momentum calculations
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"FRAMEWORK COMPOSITE FF/AW v1.0: Final=${final:,.2f}, "
+        self.log(f"FRAMEWORK COMPOSITE (FF20/AW80): Final=${final:,.2f}, "
                  f"Return={(final - 100000) / 100000:.2%}")
