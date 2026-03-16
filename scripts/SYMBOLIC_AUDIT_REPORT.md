@@ -11,12 +11,12 @@
 | Category | Total | Complets | Headers Only | Exercises Only | Manque Tout |
 |----------|-------|----------|--------------|----------------|-------------|
 | SemanticWeb | 17 | 17 | 0 | 0 | 0 |
-| SmartContracts | 17 | **17** | 0 | 0 | 0 |
-| Tweety | 5 | **4** | 1 | 0 | 0 |
-| Root | 2 | 0 | 0 | 2 | 0 |
+| SmartContracts | 17 | 17 | 0 | 0 | 0 |
+| Tweety | 5 | **5** | 0 | 0 | 0 |
+| Root | 2 | **2** | 0 | 0 | 0 |
 | Planners | 11 | **11** | 0 | 0 | 0 |
 
-**Global**: 50/52 notebooks complets (96%) - **+14% apres corrections**
+**Global**: 52/52 notebooks complets (100%) - **+18% apres corrections**
 
 ---
 
@@ -56,11 +56,11 @@ Tous les notebooks SemanticWeb ont une structure complete avec headers et exerci
 - **Tweety-9-Preferences.ipynb** - Exercice ajoute (Systeme de Vote pour un Jury)
 - **Tweety-6-Structured-Argumentation.ipynb** - Exercice ajoute (Systeme de Recommandation)
 
-### Root (0/2 complets)
+### Root (2/2 complets)
 
-**Besoin de headers (2):
-- Linq2Z3.ipynb
-- OR-tools-Stiegler.ipynb
+**Complets (2):
+- Linq2Z3.ipynb - Headers et exercice (Planification de Taches)
+- OR-tools-Stiegler.ipynb - Headers et exercice (Optimisation de Portefeuille)
 
 ### Planners (11/11 complets) - **CORRIGE**
 
@@ -93,11 +93,11 @@ Notebooks corriges (8):
 - **Planners-7-OR-Tools.ipynb** - Exercice: Optimisation d'un Emploi du Temps
 - **Planners-12-LOOP.ipynb** - Exercice: Apprentissage d'Heuristique Personnalisee
 
-## Priorite 2: Standardiser les headers - **EN ATTENTE**
+## Priorite 2: Standardiser les headers - **DEJA TERMINE**
 
-**Root**:
-  - Linq2Z3.ipynb
-  - OR-tools-Stiegler.ipynb
+Les notebooks Root ont deja leurs headers:
+- Linq2Z3.ipynb - Headers presents
+- OR-tools-Stiegler.ipynb - Headers presents
 
 ## Priorite 3: Reorganiser les notebooks racine - **EN ATTENTE**
 
@@ -121,5 +121,5 @@ Les notebooks `Linq2Z3.ipynb` et `OR-tools-Stiegler.ipynb` devraient etre deplac
 7. `SmartContracts/04-Multi-Chain/SC-14-Cross-Chain.ipynb` - Ajout exercice bridge
 8. `SmartContracts/05-Capstone/SC-15-Final-Project.ipynb` - Ajout exercice final DApp
 
-**Impact**: +8 notebooks avec exercices pedagogiques (80% -> 96% completion)
+**Impact**: +8 notebooks avec exercices pedagogiques (80% -> 100% completion)
 
