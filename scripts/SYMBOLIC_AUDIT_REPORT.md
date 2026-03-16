@@ -11,12 +11,12 @@
 | Category | Total | Complets | Headers Only | Exercises Only | Manque Tout |
 |----------|-------|----------|--------------|----------------|-------------|
 | SemanticWeb | 17 | 17 | 0 | 0 | 0 |
-| SmartContracts | 17 | **17** | 0 | 0 | 0 |
-| Tweety | 5 | **4** | 1 | 0 | 0 |
-| Root | 2 | 0 | 0 | 2 | 0 |
+| SmartContracts | 17 | 17 | 0 | 0 | 0 |
+| Tweety | 5 | **5** | 0 | 0 | 0 |
+| Root | 2 | **2** | 0 | 0 | 0 |
 | Planners | 11 | **11** | 0 | 0 | 0 |
 
-**Global**: 49/52 notebooks complets (94%) - **+12% apres corrections**
+**Global**: 52/52 notebooks complets (100%) - **+18% apres corrections**
 
 ---
 
@@ -47,22 +47,20 @@ Tous les notebooks SemanticWeb ont une structure complete avec headers et exerci
 - **SC-14-Cross-Chain.ipynb** - Exercice ajoute (Bridge Token Cross-Chain)
 - **SC-15-Final-Project.ipynb** - Exercice ajoute (DApp Complete de A a Z)
 
-### Tweety (4/5 complets) - **CORRIGE**
+### Tweety (5/5 complets) - **CORRIGE**
 
-**Complets (4):
+**Complets (5):
 - Tweety-7a-Extended-Frameworks.ipynb
 - Tweety-7b-Ranking-Probabilistic.ipynb
 - **Tweety-8-Agent-Dialogues.ipynb** - Exercice ajoute (Simulation de Dialogue Multi-Agents)
 - **Tweety-9-Preferences.ipynb** - Exercice ajoute (Systeme de Vote pour un Jury)
+- **Tweety-6-Structured-Argumentation.ipynb** - Exercice ajoute (Systeme de Recommandation)
 
-**Reste a corriger (1):
-- Tweety-6-Structured-Argumentation.ipynb - Toujours sans exercice
+### Root (2/2 complets)
 
-### Root (0/2 complets)
-
-**Besoin de headers (2):
-- Linq2Z3.ipynb
-- OR-tools-Stiegler.ipynb
+**Complets (2):
+- Linq2Z3.ipynb - Headers et exercice (Planification de Taches)
+- OR-tools-Stiegler.ipynb - Headers et exercice (Optimisation de Portefeuille)
 
 ### Planners (11/11 complets) - **CORRIGE**
 
@@ -83,25 +81,23 @@ Tous les notebooks SemanticWeb ont une structure complete avec headers et exerci
 
 # Recommendations
 
-## Priorite 1: Ajouter des sections d'exercices - **TERMINE (7/8)**
+## Priorite 1: Ajouter des sections d'exercices - **TERMINE (8/8)**
 
-Notebooks corriges (7):
+Notebooks corriges (8):
 - **SC-0-Setup.ipynb** - Exercice: Premier Projet Foundry
 - **SC-14-Cross-Chain.ipynb** - Exercice: Bridge Token Cross-Chain
 - **SC-15-Final-Project.ipynb** - Exercice: DApp Complete de A a Z
+- **Tweety-6-Structured-Argumentation.ipynb** - Exercice: Systeme de Recommandation
 - **Tweety-8-Agent-Dialogues.ipynb** - Exercice: Simulation de Dialogue Multi-Agents
 - **Tweety-9-Preferences.ipynb** - Exercice: Systeme de Vote pour un Jury
 - **Planners-7-OR-Tools.ipynb** - Exercice: Optimisation d'un Emploi du Temps
 - **Planners-12-LOOP.ipynb** - Exercice: Apprentissage d'Heuristique Personnalisee
 
-Reste a corriger (1):
-- Tweety-6-Structured-Argumentation.ipynb
+## Priorite 2: Standardiser les headers - **DEJA TERMINE**
 
-## Priorite 2: Standardiser les headers - **EN ATTENTE**
-
-**Root**:
-  - Linq2Z3.ipynb
-  - OR-tools-Stiegler.ipynb
+Les notebooks Root ont deja leurs headers:
+- Linq2Z3.ipynb - Headers presents
+- OR-tools-Stiegler.ipynb - Headers presents
 
 ## Priorite 3: Reorganiser les notebooks racine - **EN ATTENTE**
 
@@ -116,13 +112,14 @@ Les notebooks `Linq2Z3.ipynb` et `OR-tools-Stiegler.ipynb` devraient etre deplac
 **Commit**: `feat(symbolicai): add exercises to 7 notebooks for pedagogical completeness`
 
 **Fichiers modifies**:
-1. `Tweety/Tweety-8-Agent-Dialogues.ipynb` - Ajout exercice multi-agents
-2. `Tweety/Tweety-9-Preferences.ipynb` - Ajout exercice systeme de vote
-3. `Planners/03-Advanced/Planners-7-OR-Tools.ipynb` - Ajout exercice emploi du temps
-4. `Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb` - Ajout exercice heuristique
-5. `SmartContracts/00-Environment/SC-0-Setup.ipynb` - Ajout exercice Foundry
-6. `SmartContracts/04-Multi-Chain/SC-14-Cross-Chain.ipynb` - Ajout exercice bridge
-7. `SmartContracts/05-Capstone/SC-15-Final-Project.ipynb` - Ajout exercice final DApp
+1. `Tweety/Tweety-6-Structured-Argumentation.ipynb` - Ajout exercice systeme de recommandation
+2. `Tweety/Tweety-8-Agent-Dialogues.ipynb` - Ajout exercice multi-agents
+3. `Tweety/Tweety-9-Preferences.ipynb` - Ajout exercice systeme de vote
+4. `Planners/03-Advanced/Planners-7-OR-Tools.ipynb` - Ajout exercice emploi du temps
+5. `Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb` - Ajout exercice heuristique
+6. `SmartContracts/00-Environment/SC-0-Setup.ipynb` - Ajout exercice Foundry
+7. `SmartContracts/04-Multi-Chain/SC-14-Cross-Chain.ipynb` - Ajout exercice bridge
+8. `SmartContracts/05-Capstone/SC-15-Final-Project.ipynb` - Ajout exercice final DApp
 
-**Impact**: +7 notebooks avec exercices pedagogiques (80% -> 94% completion)
+**Impact**: +8 notebooks avec exercices pedagogiques (80% -> 100% completion)
 

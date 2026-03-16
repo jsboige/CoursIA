@@ -38,7 +38,7 @@ def create_interpretation_cell(title: str, content: str) -> Dict[str, Any]:
         "source": [
             f"### Interprétation - {title}\n",
             "\n",
-            *content.split('\n'),
+            *content.splitlines(keepends=True),
             "\n",
             "---\n"
         ]
