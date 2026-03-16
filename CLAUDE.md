@@ -23,6 +23,29 @@ Guidance for Claude Code working with the CoursIA repository.
 
 ---
 
+## 🚨 RÈGLE CRITIQUE - Git Force Push INTERDIT
+
+**INCIDENT 2026-03-13** : Force push accidentel sur main a potentiellement écrasé des commits
+
+### ❌ JAMAIS:
+- `git push --force` ou `--force-with-lease` sur main
+- `git reset --hard` sur main sans validation
+- Modifier l'historique public après publication
+
+### ✅ TOUJOURS:
+- Pour une PR : créer feature branch FROM main, ne pas reset main
+- Utiliser cherry-pick, revert, ou nouveaux commits
+- Demander validation explicite du user pour toute opération destructive
+- En cas d'urgence extrême : user doit valider AVANT le force push
+
+**Exception** : Uniquement urgence confirmée avec validation préalable du user
+
+**Voir aussi** : `.claude/rules/git-workflow.md` pour les règles git complètes
+
+**VIOLATION DE CETTE RÈGLE = ERREUR CRITIQUE**
+
+---
+
 ## Project Overview
 
 CoursIA is an educational AI course platform:
