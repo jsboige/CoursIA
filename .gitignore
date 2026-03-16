@@ -527,6 +527,10 @@ slides/*/extracted/images/
 # Slides - Assets etudiants bruts et rendus
 slides/_assets/raw/
 slides/_assets/*/renders/
+# Slides - PPTX modernises (ancien workflow, remplace par Marp)
+slides/*/modernized/
+# Slides - Marp output HTML/PDF (regenerable via marp CLI)
+slides/*/output/
 
 # Fichiers temporaires d'execution notebooks (artefacts bash/Python)
 =*

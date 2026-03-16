@@ -65,7 +65,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [PairsTrading](PairsTrading/) | Statistical arbitrage equity pairs | -0.361 | 0.9% | 15.1% | 2010-2026 | Py | Intermediaire | — | Paires non cointegrees 2010-2026 |
 | [ETF-Pairs](ETF-Pairs/) | Cointegration-based ETF pairs | -0.706 | -4.7% | 35.0% | 2020-2026 | Py | Intermediaire | QuantBook | Cointregration instable |
 
-*32 strategies au total (29 Python, 3 C#). Metriques issues des backtests QC Cloud.*
+*33 strategies au total (30 Python, 3 C#). Metriques issues des backtests QC Cloud.*
 *Multi-Layer-EMA reclassee Historique apres analyse de robustesse (Sharpe gonfle par bulle BTC 2017).*
 *Research: type de notebook de recherche (yfinance = donnees Yahoo, QuantBook = donnees QC natives, — = pas de notebook).*
 
@@ -100,6 +100,7 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 ### Portfolio Construction (Intermediaire/Avance)
 
 - **Framework_Composite_TrendWeather** : Composite strategy combinant TrendStocksLite (15 large-caps momentum-weighted) + AllWeather (SPY/IEF/GLD/XLP) via QC Algorithm Framework. T75/AW25 allocation, 3m momentum weighting, monthly rebalance. Itere de v1.0 (Sharpe 0.622) a v1.5 (Sharpe 1.155).
+- **Framework_Composite_FamaFrenchAllWeather** : Composite strategy combinant FamaFrench (5 facteurs ETF avec momentum risk-adjusted) + AllWeather (SPY/IEF/GLD/XLP) via QC Algorithm Framework. Baseline FF50/AW50, allocation sweep prevu (FF40/AW60, FF50/AW50, FF60/AW40). **PENDING QC deployment et backtest.**
 - **AllWeather** : Portfolio "All Weather" simplifie (SPY 30%/IEF 30%/GLD 30%/XLP 10%, TLT elimine). Drift rebalancing 3%.
 - **RiskParity** : Allocation inversement proportionnelle a la volatilite.
 - **AdaptiveAssetAllocation (AAA)** : Momentum + minimum-variance sur un univers multi-asset.
