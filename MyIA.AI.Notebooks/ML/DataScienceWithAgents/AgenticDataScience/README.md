@@ -115,28 +115,31 @@ python -m venv venv
 venv\Scripts\activate  # Windows
 source venv/bin/activate  # Linux/Mac
 
-# Dépendances
-pip install -r requirements.txt
+# Toutes les dependances (depuis la racine du repo)
+pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/requirements.txt
 ```
 
 ### Configuration
 
-1. Copier `.env.example` vers `.env`
-2. Configurer votre provider actif :
-
 ```bash
-# Provider actif
-ACTIVE_PROVIDER=gemini  # gemini, vllm, openai, openrouter
+# Depuis le dossier AgenticDataScience/
+cp .env.example .env  # Linux/Mac
+copy .env.example .env  # Windows
 
-# === GEMINI 3.1 (Recommandé production) ===
-GEMINI_API_KEY=your-gemini-key
-GEMINI_MODEL=gemini-3.1-pro
-
-# === vLLM via reverse proxy ===
-VLLM_BASE_URL=https://your-vllm-endpoint.com/v1
-VLLM_MODEL=qwen3.5-35b-a3b
-VLLM_API_KEY=your-key-if-needed
+# Puis editer .env et renseigner les cles API du provider choisi
 ```
+
+### Providers LLM supportes (Labs 8+)
+
+| Provider | Variable cle | Notes |
+|----------|-------------|-------|
+| **Google Gemini** (recommande) | `GEMINI_API_KEY` | Cle gratuite sur aistudio.google.com |
+| **OpenAI** | `OPENAI_API_KEY` | Direct ou via OpenRouter |
+| **OpenRouter** | `OPENROUTER_API_KEY` | Acces multi-modeles |
+| **vLLM local** | `VLLM_BASE_URL` | Via reverse proxy, pas de cle requise |
+| **LM Studio** | `LMSTUDIO_BASE_URL` | Local, http://localhost:1234/v1 |
+
+Definir `ACTIVE_PROVIDER=gemini` (ou `vllm`, `openai`, `openrouter`, `lmstudio`) dans `.env`.
 
 ## Technologies
 

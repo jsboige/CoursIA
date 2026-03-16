@@ -109,33 +109,60 @@ Tous les notebooks incluent :
 
 ## Installation
 
-### 1. Environnement Python
+### Installation rapide (Python standard - notebooks 1-12, 14-16)
 
 ```bash
-# Creer un environnement conda
-conda create -n game-theory python=3.10
-conda activate game-theory
-
-# Installer les dependances
-pip install -r requirements.txt
+pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
+# Note: open_spiel echouera sur Windows (necessite WSL) - c'est normal pour la majorite des notebooks
 ```
 
-### 2. Verification
+### Notebooks necessitant WSL (Windows uniquement)
+
+GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL) necessitent le kernel `Python (GameTheory WSL + OpenSpiel)` :
 
 ```bash
-python -c "import nashpy; import pyspiel; print('OK')"
+# 1. Dans WSL Ubuntu
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_openspiel.sh
 ```
 
-### 3. Configuration API (optionnel)
+```powershell
+# 2. Cote Windows (PowerShell)
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+.\setup_wsl_kernel.ps1
+```
+
+### Notebooks Lean 4 (2b, 4b, 8b, 15b, 16b)
+
+Ces notebooks necessitent le kernel `Lean 4 (WSL)` :
+
+```bash
+# 1. Dans WSL Ubuntu
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_lean4.sh    # installe elan + Lean 4 + REPL + lean4_jupyter
+```
+
+```powershell
+# 2. Cote Windows (PowerShell)
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+.\setup_lean4_kernel.ps1   # enregistre le kernel lean4-wsl
+```
+
+### Verification
+
+```bash
+jupyter kernelspec list
+# Doit montrer : python3, gametheory-wsl (optionnel), lean4-wsl (optionnel)
+```
+
+Pour les details et le depannage, voir [install_wsl_kernel.md](install_wsl_kernel.md).
+
+### Configuration API (optionnel)
 
 ```bash
 cp .env.example .env
 # Editer .env et ajouter les cles API si necessaire
 ```
-
-### 4. Kernel Lean 4 (pour side tracks b)
-
-Voir les instructions dans [Lean-1-Setup](../SymbolicAI/Lean/Lean-1-Setup.ipynb) pour l'installation du kernel Lean 4 WSL.
 
 ## Ressources externes
 

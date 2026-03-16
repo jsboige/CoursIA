@@ -18,7 +18,7 @@ $leanVersion = wsl -d Ubuntu -- bash -c "source ~/.elan/env && lean --version 2>
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Lean n'est pas installe dans WSL." -ForegroundColor Red
     Write-Host "        Executez d'abord dans WSL:"
-    Write-Host "        cd /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts"
+    Write-Host "        cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts"
     Write-Host "        bash setup_wsl_lean4.sh"
     exit 1
 }
