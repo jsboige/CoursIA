@@ -572,3 +572,5 @@ reports/
 
 # Claude Code memory (local scope, may contain sensitive data)
 .claude/memory/
+.claude/local/
+.claude/scheduled_tasks.lock
