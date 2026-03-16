@@ -576,3 +576,4 @@ reports/
 .claude/memory/
 .claude/local/
 .claude/scheduled_tasks.lock
+.claude/mcp.json
