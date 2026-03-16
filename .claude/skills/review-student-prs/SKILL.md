@@ -38,14 +38,24 @@ For each valid PR:
    - Check that exercise cells have been filled (not empty or placeholder)
    - Verify code is syntactically correct
    - Check markdown cells for explanations if required
-4. **Execute locally**:
+4. **Execution validation** (MANDATORY - do not skip):
    - Checkout PR branch locally
-   - Execute modified notebook cells using `python scripts/notebook_tools/notebook_helpers.py execute <path> --verbose`
+   - Execute the modified exercise cell(s) and all prerequisite cells
+   - For Python notebooks: `python scripts/notebook_tools/notebook_helpers.py execute <path> --verbose`
    - For .NET notebooks: use MCP cell-by-cell execution
    - Record execution results (pass/fail, output, errors)
-5. **Quality assessment** (per exercise):
+   - **If cell fails to execute**: mark as PARTIAL, note the error
+   - **If error is environment-only** (missing package on student machine but code is correct): accept with note
+   - **If error is code logic**: mark as INVALID
+5. **Detect copy-paste / uncommenting**:
+   - Compare student's code against the "Exemple guide" in the same notebook
+   - If the exercise cell was solved by uncommenting provided solution code: flag as TRIVIAL
+   - If this was due to solutions being provided in comments (our error): accept but note it
+   - If the student wrote original code different from any example: mark as ORIGINAL
+6. **Quality assessment** (per exercise):
    - Code correctness (executes without error)
-   - Code quality (reasonable approach, not copy-paste from examples)
+   - Code originality (ORIGINAL vs TRIVIAL vs COPY)
+   - Code quality (reasonable approach, variable naming, structure)
    - Explanation quality (if markdown present)
    - Score: VALID / PARTIAL / INVALID
 
