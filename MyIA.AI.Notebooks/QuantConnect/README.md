@@ -32,13 +32,18 @@ La série QuantConnect AI Trading est une formation complète sur le trading alg
 
 **Pour commencer immédiatement**, consultez le guide : [**GETTING-STARTED.md**](GETTING-STARTED.md)
 
-**Résumé en 3 étapes** :
+**Resume en 4 etapes** :
 
-1. Créer un compte gratuit : [https://www.quantconnect.com/signup](https://www.quantconnect.com/signup)
-2. Uploader `QC-Py-01-Setup.ipynb` dans QuantConnect Lab
-3. Exécuter toutes les cellules et suivre les instructions
+1. Creer un compte gratuit : [https://www.quantconnect.com/signup](https://www.quantconnect.com/signup)
+2. Creer un projet Python dans QC Lab (File > New Project)
+3. Copier un `main.py` depuis `projects/` (ex: `EMA-Cross-Alpha`) dans votre projet
+4. Cliquer **Backtest** pour executer
 
-**Temps estimé** : 5-10 minutes
+**Les notebooks QC-Py-XX sont des supports de cours** a lire sur GitHub, pas a uploader dans QC Lab.
+
+**Etudiants ECE Projet 2** : Consultez [ECE-QC-QUICKSTART.md](ECE-QC-QUICKSTART.md) pour le mapping sujets H.1-H.6.
+
+**Temps estime** : 5-10 minutes
 
 ---
 

@@ -66,17 +66,24 @@ class MyFirstAlgorithm(QCAlgorithm):
 
 **Félicitations !** Vous venez d'exécuter votre premier algorithme de trading.
 
-### Étape 4 : Uploader les Notebooks CoursIA
+### Etape 4 : Utiliser les ressources CoursIA
 
-1. **Télécharger** les notebooks depuis GitHub CoursIA
-2. Dans QuantConnect Lab : **File → Upload**
-3. Sélectionner `QC-Py-01-Setup.ipynb` (ou `QC-CS-01-Setup.ipynb` pour C#)
-4. Exécuter toutes les cellules : **Run All**
+Les notebooks `QC-Py-XX` sont des **supports de cours** a lire sur GitHub ou en Jupyter local. Ils ne sont pas conçus pour etre uploades dans QC Lab.
 
-Le notebook vous guidera à travers :
-- La vérification de votre environnement
-- L'explication de l'architecture LEAN
-- Votre premier algorithme personnalisé
+**Pour votre projet QC, utilisez plutot** :
+
+1. **Projets prets a backtester** : Copiez un `main.py` depuis `projects/` dans votre projet QC Lab
+2. **Templates ESGF** : Partez d'un template (`ESGF-2026/templates/starter/`) adapte a votre niveau
+3. **Notebooks de reference** : Lisez les `QC-Py-XX` pour comprendre la theorie et les patterns
+
+**Exemple concret** :
+1. Ouvrez `projects/EMA-Cross-Alpha/main.py` sur GitHub
+2. Copiez le contenu dans le `main.py` de votre projet QC Lab
+3. Cliquez **Backtest** pour verifier que ça marche
+4. Lisez `QC-Py-13-Alpha-Models.ipynb` pour comprendre l'architecture
+5. Modifiez le code pour implementer votre approche
+
+**Pour les etudiants ECE Projet 2** : Consultez le guide detaille [ECE-QC-QUICKSTART.md](ECE-QC-QUICKSTART.md)
 
 ---
 
