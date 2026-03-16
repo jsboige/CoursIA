@@ -22,8 +22,10 @@ def fix_string_cells(notebook_path, dry_run=False):
             lines = source.splitlines(keepends=True)
             if not lines:
                 lines = ['']
-            # Ensure each line ends with \n
-            lines = [line if line.endswith('\n') else line + '\n' for line in lines]
+            # Ensure each line EXCEPT the last ends with \n (nbformat convention)
+            for i in range(len(lines) - 1):
+                if not lines[i].endswith('\n'):
+                    lines[i] = lines[i] + '\n'
             cell['source'] = lines
             changes += 1
     
