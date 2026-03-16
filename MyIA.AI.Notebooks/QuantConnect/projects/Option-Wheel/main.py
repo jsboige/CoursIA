@@ -34,7 +34,7 @@ class WheelStrategyAlgorithm(QCAlgorithm):
         try:
             self._vix = self.AddIndex("VIX", Resolution.DAILY).Symbol
             self._vix_value = self.Identity(self._vix)
-        except:
+        except Exception:
             self._vix = None
             self._vix_value = None
 
