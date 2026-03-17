@@ -6,7 +6,7 @@ Serie de notebooks educatifs couvrant les fondements cryptographiques, le develo
 
 | Metrique | Valeur |
 |----------|--------|
-| **Notebooks** | 26 (cible) |
+| **Notebooks** | 27 (SC-0 a SC-26) |
 | **Duree totale** | ~22 heures |
 | **Niveau** | Debutant a Avance |
 | **Prerequis** | Python 3.10+, programmation de base |
@@ -21,7 +21,7 @@ SmartContracts/
 ├── 03-Foundry-Testing/         # Tests et securite (3 notebooks)
 ├── 04-Privacy-Cryptography/    # ZKP, HE, Vote E2E (3 notebooks)
 ├── 05-Alternative-Chains/      # Vyper, XRP, Bitcoin, Move, Solana (5 notebooks)
-├── 06-Real-World/              # Deploy testnet/mainnet (3 notebooks)
+├── 06-Real-World/              # Cross-chain, deploy testnet/mainnet (4 notebooks)
 └── requirements.txt            # Dependances Python
 ```
 
@@ -41,10 +41,10 @@ SmartContracts/
 
 | # | Notebook | Duree | Contenu |
 |---|----------|-------|---------|
-| 3 | [SC-1-Solidity-Basics](01-Solidity-Foundation/SC-1-Solidity-Basics.ipynb) | 40 min | Types, variables, structure |
-| 4 | [SC-2-Functions-State](01-Solidity-Foundation/SC-2-Functions-State.ipynb) | 45 min | Fonctions, modifiers, storage |
-| 5 | [SC-3-Inheritance](01-Solidity-Foundation/SC-3-Inheritance.ipynb) | 35 min | Heritage, interfaces |
-| 6 | [SC-4-Errors-Events](01-Solidity-Foundation/SC-4-Errors-Events.ipynb) | 30 min | Erreurs, events |
+| 3 | [SC-3-Solidity-Basics](01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb) | 40 min | Types, variables, structure |
+| 4 | [SC-4-Functions-State](01-Solidity-Foundation/SC-4-Functions-State.ipynb) | 45 min | Fonctions, modifiers, storage |
+| 5 | [SC-5-Inheritance](01-Solidity-Foundation/SC-5-Inheritance.ipynb) | 35 min | Heritage, interfaces |
+| 6 | [SC-6-Errors-Events](01-Solidity-Foundation/SC-6-Errors-Events.ipynb) | 30 min | Erreurs, events |
 
 **Objectifs** : Maitriser les bases de Solidity avec deploiement reel sur anvil
 
@@ -52,11 +52,11 @@ SmartContracts/
 
 | # | Notebook | Duree | Contenu |
 |---|----------|-------|---------|
-| 7 | [SC-5-Token-Standards](02-Solidity-Advanced/SC-5-Token-Standards.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
-| 8 | [SC-6-DeFi-Primitives](02-Solidity-Advanced/SC-6-DeFi-Primitives.ipynb) | 55 min | AMM, lending, oracles |
-| 9 | [SC-7-DAO-Governance](02-Solidity-Advanced/SC-7-DAO-Governance.ipynb) | 45 min | Votes, gouvernance on-chain |
-| 10 | [SC-8-Account-Abstraction](02-Solidity-Advanced/SC-8-Account-Abstraction.ipynb) | 50 min | ERC-4337 |
-| 11 | [SC-8b-LLM-Assisted](02-Solidity-Advanced/SC-8b-LLM-Assisted.ipynb) | 45 min | LLM pour smart contracts |
+| 7 | [SC-7-Token-Standards](02-Solidity-Advanced/SC-7-Token-Standards.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
+| 8 | [SC-8-DeFi-Primitives](02-Solidity-Advanced/SC-8-DeFi-Primitives.ipynb) | 55 min | AMM, lending, oracles |
+| 9 | [SC-9-DAO-Governance](02-Solidity-Advanced/SC-9-DAO-Governance.ipynb) | 45 min | Votes, gouvernance on-chain |
+| 10 | [SC-10-Account-Abstraction](02-Solidity-Advanced/SC-10-Account-Abstraction.ipynb) | 50 min | ERC-4337 |
+| 11 | [SC-11-LLM-Assisted](02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb) | 45 min | LLM pour smart contracts |
 
 **Objectifs** : Protocoles DeFi, gouvernance, ERC-4337, LLM-assisted
 
@@ -64,9 +64,9 @@ SmartContracts/
 
 | # | Notebook | Duree | Contenu |
 |---|----------|-------|---------|
-| 12 | [SC-9-Foundry-Basics](03-Foundry-Testing/SC-9-Foundry-Basics.ipynb) | 45 min | Tests unitaires, cheatcodes |
-| 13 | [SC-10-Fuzz-Testing](03-Foundry-Testing/SC-10-Fuzz-Testing.ipynb) | 40 min | Fuzz testing, invariants |
-| 14 | [SC-11-Formal-Verification](03-Foundry-Testing/SC-11-Formal-Verification.ipynb) | 50 min | Verification formelle |
+| 12 | [SC-12-Foundry-Testing](03-Foundry-Testing/SC-12-Foundry-Testing.ipynb) | 45 min | Tests unitaires, cheatcodes |
+| 13 | [SC-13-Fuzz-Invariants](03-Foundry-Testing/SC-13-Fuzz-Invariants.ipynb) | 40 min | Fuzz testing, invariants |
+| 14 | [SC-14-Formal-Verification](03-Foundry-Testing/SC-14-Formal-Verification.ipynb) | 50 min | Verification formelle |
 
 **Objectifs** : Tests Solidity, fuzzing, verification formelle
 
@@ -86,22 +86,22 @@ SmartContracts/
 |---|----------|-------|---------|
 | 18 | [SC-18-Vyper](05-Alternative-Chains/SC-18-Vyper.ipynb) | 45 min | Smart contracts Python-like |
 | 19 | [SC-19-Ripple-XRP](05-Alternative-Chains/SC-19-Ripple-XRP.ipynb) | 50 min | xrpl-py, testnet, trust lines |
-| 20 | SC-20-Bitcoin-Scripting | 50 min | UTXO, Script, python-bitcoinlib |
-| 21 | [SC-12-Move-Sui](04-Multi-Chain/SC-12-Move-Sui.ipynb) | 50 min | Move, modele objet Sui |
-| 22 | [SC-13-Solana-Anchor](04-Multi-Chain/SC-13-Solana-Anchor.ipynb) | 55 min | Solana, Anchor framework |
+| 20 | [SC-20-Bitcoin-Scripting](05-Alternative-Chains/SC-20-Bitcoin-Scripting.ipynb) | 50 min | UTXO, Script, python-bitcoinlib |
+| 21 | [SC-21-Move-Sui](05-Alternative-Chains/SC-21-Move-Sui.ipynb) | 50 min | Move, modele objet Sui |
+| 22 | [SC-22-Solana-Anchor](05-Alternative-Chains/SC-22-Solana-Anchor.ipynb) | 55 min | Solana, Anchor framework |
 
 **Objectifs** : Vyper, XRP, Bitcoin scripting, Move, Solana
 
-### Partie 6 : Real-World (~3h)
+### Partie 6 : Real-World (~3h45)
 
 | # | Notebook | Duree | Contenu |
 |---|----------|-------|---------|
-| 23 | [SC-14-Cross-Chain](04-Multi-Chain/SC-14-Cross-Chain.ipynb) | 45 min | Bridges, interoperabilite |
-| 24 | SC-24-Testnet-Deploy | 50 min | Deploy Sepolia + XRP testnet |
-| 25 | SC-25-Mainnet-Deploy | 40 min | Deploy L2 (Base/Polygon) |
-| 26 | SC-26-Final-Project | 90 min | Projet capstone complet |
+| 23 | [SC-23-Cross-Chain](06-Real-World/SC-23-Cross-Chain.ipynb) | 45 min | Bridges, interoperabilite |
+| 24 | [SC-24-Testnet-Deploy](06-Real-World/SC-24-Testnet-Deploy.ipynb) | 50 min | Deploy Sepolia + XRP testnet |
+| 25 | [SC-25-Mainnet-Deploy](06-Real-World/SC-25-Mainnet-Deploy.ipynb) | 40 min | Deploy L2 (Base/Polygon) |
+| 26 | [SC-26-Final-Project](06-Real-World/SC-26-Final-Project.ipynb) | 90 min | Projet capstone complet |
 
-**Objectifs** : Deploiement reel, testnets, mainnet
+**Objectifs** : Deploiement reel, testnets, mainnet, projet integre
 
 ## Technologies
 
@@ -114,6 +114,7 @@ SmartContracts/
 | **phe** | Chiffrement Paillier | `pip install phe` |
 | **xrpl-py** | Protocole Ripple | `pip install xrpl-py` |
 | **vyper** | Smart contracts Python-like | `pip install vyper` |
+| **python-bitcoinlib** | Bitcoin scripting | `pip install python-bitcoinlib` |
 
 ## Demarrage Rapide
 
