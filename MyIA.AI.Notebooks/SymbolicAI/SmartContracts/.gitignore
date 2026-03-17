@@ -1,0 +1,12 @@
+# Secrets
+.env
+*.key
+
+# Foundry artifacts
+out/
+cache/
+broadcast/
+
+# Python
+__pycache__/
+*.pyc
