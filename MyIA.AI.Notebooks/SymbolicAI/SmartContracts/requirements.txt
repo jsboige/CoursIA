@@ -1,0 +1,28 @@
+# SmartContracts Series - Python Dependencies
+# Install: pip install -r requirements.txt
+
+# === Phase 1: Blockchain Core ===
+web3>=7.0                  # Ethereum interaction (deploy, call, events)
+py-solc-x>=1.1             # Solidity compiler from Python
+
+# === Phase 2: Cryptography & ZKP ===
+pycryptodome>=3.20         # ECC, signatures, hashing primitives
+py_ecc>=7.0                # Ethereum Foundation elliptic curves (bn128)
+
+# === Phase 3: Homomorphic Encryption ===
+phe>=1.5                   # Paillier partially homomorphic encryption
+tenseal>=0.3               # Microsoft SEAL wrapper (CKKS/BFV)
+concrete-python>=2.0       # Zama FHE compiler
+
+# === Phase 4: MPC & Voting ===
+mpyc>=0.10                 # Secure multi-party computation
+electionguard>=1.4         # Microsoft E2E verifiable voting SDK
+
+# === Phase 5: Alternative Chains ===
+xrpl-py>=3.0               # Ripple XRP Ledger
+python-bitcoinlib>=0.12    # Bitcoin scripting & UTXO
+vyper>=0.4                 # Python-like EVM smart contracts
+
+# === Utilities ===
+matplotlib>=3.5            # Visualizations (timelines, graphs)
+tabulate>=0.9              # Pretty tables
