@@ -311,6 +311,8 @@ venv/
 .venv/
 **/venv/
 **/.venv/
+pyvenv.cfg
+lib64
 
 # Cake - Uncomment if you are using it
 # tools/**
