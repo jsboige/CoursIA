@@ -33,7 +33,7 @@ from typing import Dict, List, Optional, Set, Tuple
 # CONFIGURATION
 # =============================================================================
 
-SC_BASE = Path("d:/CoursIA/MyIA.AI.Notebooks/SymbolicAI/SmartContracts")
+SC_BASE = Path(__file__).parent.parent.parent / "MyIA.AI.Notebooks" / "SymbolicAI" / "SmartContracts"
 
 # All 27 notebooks in order, with their execution profiles
 NOTEBOOKS = [
