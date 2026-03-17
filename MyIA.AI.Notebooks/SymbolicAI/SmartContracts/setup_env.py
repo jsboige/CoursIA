@@ -16,7 +16,8 @@ Usage:
     python setup_env.py --with-optional  # Also install optional deps (LLM APIs)
     python setup_env.py --venv           # Create a virtual env first
     python setup_env.py --skip-foundry   # Skip Foundry check
-    python setup_env.py --setup-wsl      # Set up WSL environment (Foundry + venv + kernel)
+    python setup_env.py --setup           # Cross-platform setup (Foundry + venv + kernel)
+    python setup_env.py --setup-wsl      # Set up WSL environment (Windows only, alias for --setup)
     python setup_env.py --start-anvil    # Start anvil via WSL in background
 
 Phases (for --phase):
@@ -193,8 +194,8 @@ def check_wsl_venv() -> bool:
 
 
 def check_wsl_kernel() -> bool:
-    """Check if the SmartContracts WSL Jupyter kernel is registered."""
-    kernel_path = Path(os.environ.get("APPDATA", "")) / "jupyter" / "kernels" / "smartcontracts-wsl"
+    """Check if the SmartContracts Jupyter kernel is registered."""
+    kernel_path = Path(os.environ.get("APPDATA", "")) / "jupyter" / "kernels" / "smartcontracts"
     return (kernel_path / "kernel.json").exists()
 
 
@@ -226,58 +227,40 @@ def check_env_file() -> dict:
 # WSL SETUP & ANVIL
 # =============================================================================
 
-def setup_wsl():
-    """Run the full WSL setup: Foundry + venv + kernel."""
-    setup_script = SCRIPTS_DIR / "setup_wsl_smartcontracts.sh"
-    kernel_script = SCRIPTS_DIR / "setup_wsl_kernel.ps1"
+def setup_environment():
+    """Run cross-platform setup: Foundry + venv + kernel.
+    On Windows: runs setup.sh inside WSL.
+    On Mac/Linux: runs setup.sh natively.
+    """
+    setup_script = SCRIPTS_DIR / "setup.sh"
 
     if not setup_script.exists():
         print(f"  ERROR: {setup_script} not found")
         return False
 
-    print("\n  Step 1/3: Running WSL setup script...")
-    print("  (This installs Foundry, Python venv, and all packages in WSL)")
+    print("\n  Running setup script...")
+    print("  (Installs Foundry, Python venv, all packages, Jupyter kernel)")
     print("  This may take several minutes on first run.\n")
 
-    # Convert Windows path to WSL path
-    wsl_path = f"/mnt/{str(setup_script).replace(os.sep, '/').replace(':', '').lower()}"
-    # Fix drive letter (D: -> /mnt/d/)
-    if wsl_path.startswith("/mnt/") and len(wsl_path) > 5:
-        wsl_path = f"/mnt/{wsl_path[5].lower()}/{wsl_path[6:]}"
+    if sys.platform == "win32":
+        # Windows: run inside WSL
+        wsl_path = str(setup_script).replace("\\", "/")
+        drive = wsl_path[0].lower()
+        wsl_path = f"/mnt/{drive}/{wsl_path[3:]}"
+        result = subprocess.run(
+            ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", wsl_path],
+            timeout=600
+        )
+    else:
+        # Mac/Linux: run natively
+        result = subprocess.run(["bash", str(setup_script)], timeout=600)
 
-    result = subprocess.run(
-        ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", wsl_path],
-        timeout=600
-    )
     if result.returncode != 0:
-        print(f"  WSL setup returned exit code {result.returncode}")
+        print(f"  Setup returned exit code {result.returncode}")
         print("  Check the output above for errors.")
         return False
 
-    print("\n  Step 2/3: Copying kernel wrapper to WSL home...")
-    wrapper_src = SCRIPTS_DIR / "_wrapper_template.sh"
-    if wrapper_src.exists():
-        wsl_wrapper_path = f"/mnt/{str(wrapper_src).replace(os.sep, '/').replace(':', '').lower()}"
-        if wsl_wrapper_path.startswith("/mnt/") and len(wsl_wrapper_path) > 5:
-            wsl_wrapper_path = f"/mnt/{wsl_wrapper_path[5].lower()}/{wsl_wrapper_path[6:]}"
-        subprocess.run(
-            ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", "-c",
-             f'cp "{wsl_wrapper_path}" "$HOME/.smartcontracts-kernel-wrapper.sh" && '
-             f'sed -i "s/\\r$//" "$HOME/.smartcontracts-kernel-wrapper.sh" && '
-             f'chmod +x "$HOME/.smartcontracts-kernel-wrapper.sh"'],
-            timeout=30
-        )
-
-    print("\n  Step 3/3: Registering Jupyter kernel...")
-    if kernel_script.exists():
-        subprocess.run(
-            ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(kernel_script)],
-            timeout=30
-        )
-    else:
-        print(f"  WARNING: {kernel_script} not found, register kernel manually")
-
-    print("\n  WSL setup complete!")
+    print("\n  Setup complete!")
     return True
 
 
@@ -534,8 +517,10 @@ Examples:
                         help="Create virtual environment first")
     parser.add_argument("--skip-foundry", action="store_true",
                         help="Skip Foundry tools check")
+    parser.add_argument("--setup", action="store_true",
+                        help="Cross-platform setup (Foundry + venv + kernel)")
     parser.add_argument("--setup-wsl", action="store_true",
-                        help="Set up WSL environment (Foundry + venv + kernel)")
+                        help="Alias for --setup (Windows)")
     parser.add_argument("--start-anvil", action="store_true",
                         help="Start anvil via WSL in background")
     parser.add_argument("--stop-anvil", action="store_true",
@@ -555,18 +540,16 @@ Examples:
             print("\n  Please activate the venv and re-run this script.")
             return
 
-    # ---- WSL SETUP ----
-    if args.setup_wsl:
-        if sys.platform != "win32":
-            print("  --setup-wsl is only needed on Windows")
-            return
-        wsl_ok, distro, user = check_wsl_available()
-        if not wsl_ok:
-            print("  ERROR: WSL with Ubuntu not found.")
-            print("  Install with: wsl --install -d Ubuntu")
-            return
-        print(f"  WSL detected: {distro} (user: {user})")
-        setup_wsl()
+    # ---- SETUP ----
+    if args.setup or args.setup_wsl:
+        if sys.platform == "win32":
+            wsl_ok, distro, user = check_wsl_available()
+            if not wsl_ok:
+                print("  ERROR: WSL with Ubuntu not found.")
+                print("  Install with: wsl --install -d Ubuntu")
+                return
+            print(f"  WSL detected: {distro} (user: {user})")
+        setup_environment()
         return
 
     # ---- ANVIL MANAGEMENT ----

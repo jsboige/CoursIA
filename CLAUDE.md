@@ -78,14 +78,30 @@ python scripts/genai-stack/genai.py docker stop all  # Arreter tous les services
 
 ### Validation & Testing
 
+**IMPORTANT: Always use existing scripts for notebook validation/execution. Never write ad-hoc execution scripts.**
+
 ```bash
+# === Notebook Tools (multi-family, production CLI) ===
+python scripts/notebook_tools/notebook_tools.py validate [target]         # Structure validation
+python scripts/notebook_tools/notebook_tools.py execute [target]          # Execute via Papermill
+python scripts/notebook_tools/notebook_tools.py execute [target] --cell-by-cell  # Cell-by-cell (.NET/Lean)
+python scripts/notebook_tools/notebook_tools.py analyze [path]            # Analyze structure
+python scripts/notebook_tools/notebook_tools.py skeleton [path]           # Generate skeleton
+
+# === SmartContracts-specific validator ===
+python scripts/smartcontracts/validate_sc_notebooks.py                    # Full SC validation
+python scripts/smartcontracts/validate_sc_notebooks.py --quick            # Structure only
+python scripts/smartcontracts/validate_sc_notebooks.py --execute --anvil  # Execute with anvil
+
+# === GenAI stack ===
 python scripts/genai-stack/genai.py validate --full       # Validation complete ComfyUI
-python scripts/genai-stack/genai.py validate --nunchaku   # Test Nunchaku INT4
-python scripts/genai-stack/genai.py validate --notebooks  # Validation syntaxe notebooks
-python scripts/genai-stack/genai.py notebooks             # Validation Papermill notebooks
-python scripts/genai-stack/genai.py gpu                   # Verification VRAM
-python scripts/notebook_tools/notebook_tools.py validate [target]        # Multi-family notebook verification
+python scripts/genai-stack/genai.py validate --notebooks   # Validation syntaxe notebooks
+python scripts/genai-stack/genai.py notebooks              # Validation Papermill notebooks
+python scripts/genai-stack/genai.py gpu                    # Verification VRAM
 ```
+
+**Kernel auto-detection**: `notebook_tools.py` reads kernel name from notebook metadata and uses it automatically. Custom kernels (smartcontracts, lean4-wsl) are supported with extended startup timeouts.
+
 GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 
 ### Claude Code Skills (slash commands)

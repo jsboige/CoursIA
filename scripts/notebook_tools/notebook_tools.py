@@ -1045,7 +1045,9 @@ class NotebookExecutor:
             return self._base_executor.detect_kernel(str(self.path))
 
         kernel = self.analyzer.kernel.lower()
-        if 'python' in kernel:
+        if kernel == 'smartcontracts':
+            return 'smartcontracts'
+        elif 'python' in kernel:
             return 'python3'
         elif '.net' in kernel or 'csharp' in kernel:
             return '.net-csharp'
@@ -1083,10 +1085,13 @@ class NotebookExecutor:
         if output_path is None:
             output_path = self.path.parent / f"{self.path.stem}_output.ipynb"
 
+        # WSL-based kernels need longer startup
+        start_timeout = 120 if 'wsl' in kernel or kernel == 'smartcontracts' else 60
         cmd = [
             sys.executable, "-m", "papermill",
             str(self.path), str(output_path),
-            "--kernel", kernel, "--cwd", str(self.path.parent)
+            "--kernel", kernel, "--cwd", str(self.path.parent),
+            "--start-timeout", str(start_timeout),
         ]
         if batch_mode:
             cmd.extend(["-p", "BATCH_MODE", "true"])

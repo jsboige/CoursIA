@@ -1,4 +1,8 @@
-"""Helper to compile Solidity with external imports via Foundry (WSL on Windows).
+"""Helper to compile Solidity with external imports via Foundry.
+
+Cross-platform: works on Windows (via WSL), Mac, and Linux.
+When running inside the SmartContracts kernel (WSL on Windows, native on Mac/Linux),
+forge is available directly on PATH.
 
 Usage in notebooks:
     from forge_helper import forge_compile, forge_compile_and_deploy
@@ -13,8 +17,8 @@ Usage in notebooks:
 import json
 import os
 import platform
+import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 
 
@@ -22,33 +26,53 @@ from pathlib import Path
 FOUNDRY_DIR = Path(__file__).parent / "foundry-lib"
 
 
+def _is_forge_available() -> bool:
+    """Check if forge is directly available on PATH (Linux/Mac/WSL)."""
+    return shutil.which("forge") is not None
+
+
 def _run_forge(source_code: str, contract_name: str) -> dict:
     """Write source to foundry-lib/src, run forge build, return artifact JSON."""
     src_file = FOUNDRY_DIR / "src" / f"{contract_name}.sol"
+    src_file.parent.mkdir(parents=True, exist_ok=True)
     src_file.write_text(source_code, encoding="utf-8")
 
     try:
-        foundry_path = str(FOUNDRY_DIR).replace("\\", "/")
+        foundry_path = str(FOUNDRY_DIR)
 
-        if platform.system() == "Windows":
-            # Convert to WSL path
-            drive = foundry_path[0].lower()
-            wsl_path = f"/mnt/{drive}/{foundry_path[3:]}"
+        if _is_forge_available():
+            # Native: forge on PATH (Linux, Mac, or WSL kernel)
+            cmd = ["forge", "build", "--force", "--silent"]
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=60,
+                cwd=foundry_path
+            )
+        elif platform.system() == "Windows":
+            # Windows without forge on PATH: call via WSL
+            wsl_path = foundry_path.replace("\\", "/")
+            drive = wsl_path[0].lower()
+            wsl_path = f"/mnt/{drive}/{wsl_path[3:]}"
             cmd = [
                 "wsl", "-d", "Ubuntu", "--", "bash", "-c",
                 f'export PATH="$HOME/.foundry/bin:$PATH" && '
                 f'cd "{wsl_path}" && forge build --force --silent 2>&1'
             ]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         else:
-            cmd = ["bash", "-c", f'cd "{foundry_path}" && forge build --force --silent']
+            raise RuntimeError(
+                "forge not found on PATH. Install Foundry: "
+                "curl -L https://foundry.paradigm.xyz | bash && foundryup"
+            )
 
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"forge build failed (exit {result.returncode}):\n"
+                f"{result.stdout}\n{result.stderr}"
+            )
 
-        # Read the artifact
-        # Forge creates out/<filename>/<ContractName>.json
+        # Read the artifact: out/<filename>/<ContractName>.json
         artifact_path = FOUNDRY_DIR / "out" / f"{contract_name}.sol" / f"{contract_name}.json"
         if not artifact_path.exists():
-            # Try to find the artifact by listing the output directory
             out_dir = FOUNDRY_DIR / "out" / f"{contract_name}.sol"
             if out_dir.exists():
                 jsons = list(out_dir.glob("*.json"))
@@ -60,14 +84,13 @@ def _run_forge(source_code: str, contract_name: str) -> dict:
                     )
             else:
                 raise FileNotFoundError(
-                    f"Build failed. Forge output: {result.stdout}{result.stderr}"
+                    f"Build output dir not found. Forge output: {result.stdout}{result.stderr}"
                 )
 
         with open(artifact_path, encoding="utf-8") as f:
             return json.load(f)
 
     finally:
-        # Clean up the temp source file
         if src_file.exists():
             src_file.unlink()
 
@@ -77,7 +100,7 @@ def forge_compile(source_code: str, contract_name: str) -> tuple:
 
     Args:
         source_code: Full Solidity source code
-        contract_name: Name of the contract to extract (must match contract name in source)
+        contract_name: Name of the contract (must match contract name in source)
 
     Returns:
         (abi, bytecode) tuple
