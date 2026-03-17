@@ -4,8 +4,10 @@
 This script:
 1. Installs Python dependencies from requirements.txt
 2. Installs the Solidity compiler via py-solc-x
-3. Checks for Foundry tools (forge, cast, anvil)
-4. Reports what's available and what's missing
+3. Checks for Foundry tools (forge, cast, anvil) - native or via WSL
+4. Detects WSL and can set up the full WSL environment
+5. Starts anvil via WSL when needed
+6. Reports what's available and what's missing
 
 Usage:
     python setup_env.py                  # Full setup (install all from requirements.txt)
@@ -14,6 +16,8 @@ Usage:
     python setup_env.py --with-optional  # Also install optional deps (LLM APIs)
     python setup_env.py --venv           # Create a virtual env first
     python setup_env.py --skip-foundry   # Skip Foundry check
+    python setup_env.py --setup-wsl      # Set up WSL environment (Foundry + venv + kernel)
+    python setup_env.py --start-anvil    # Start anvil via WSL in background
 
 Phases (for --phase):
     0: Utilities (matplotlib, tabulate)
@@ -24,9 +28,9 @@ Phases (for --phase):
     5: Alternative Chains (xrpl-py, python-bitcoinlib, vyper)
 
 Known limitations:
-    - concrete-python: Linux only (no Windows wheels)
+    - concrete-python: Linux only (no Windows wheels, available in WSL)
     - electionguard: requires pydantic<2, conflicts with web3>=7
-      -> Install in a separate venv if needed
+      -> Install in a separate venv or via WSL
 """
 
 import argparse
@@ -37,8 +41,11 @@ import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
+SCRIPTS_DIR = SCRIPT_DIR / "scripts"
 REQUIREMENTS_FILE = SCRIPT_DIR / "requirements.txt"
 REQUIREMENTS_OPTIONAL_FILE = SCRIPT_DIR / "requirements-optional.txt"
+ENV_FILE = SCRIPT_DIR / ".env"
+ENV_EXAMPLE_FILE = SCRIPT_DIR / ".env.example"
 
 # Phase -> list of (pip_spec, import_name) tuples
 # import_name is used to check if already installed
@@ -51,6 +58,7 @@ PHASES = {
         ("web3>=7.0", "web3"),
         ("py-solc-x>=1.1", "solcx"),
         ("python-dotenv>=1.0", "dotenv"),
+        ("requests>=2.28", "requests"),
     ],
     2: [  # Cryptography & ZKP
         ("pycryptodome>=3.20", "Crypto"),
@@ -68,6 +76,9 @@ PHASES = {
         ("python-bitcoinlib>=0.12", "bitcoin"),
         ("vyper>=0.4", "vyper"),
     ],
+    6: [  # LLM Integration
+        ("openai>=1.0", "openai"),
+    ],
 }
 
 PHASE_NAMES = {
@@ -77,6 +88,7 @@ PHASE_NAMES = {
     3: "Homomorphic Encryption",
     4: "MPC",
     5: "Alternative Chains",
+    6: "LLM Integration",
 }
 
 # Packages that are known to be problematic
@@ -129,6 +141,194 @@ def check_anvil_running() -> bool:
         with urllib.request.urlopen(req, timeout=2) as resp:
             data = json_mod.loads(resp.read())
             return "result" in data
+    except Exception:
+        return False
+
+
+def check_wsl_available() -> tuple:
+    """Check if WSL is available and Ubuntu is installed.
+    Returns (wsl_ok, distro_name, username)."""
+    if sys.platform != "win32":
+        return False, None, None
+    try:
+        result = subprocess.run(
+            ["wsl", "-d", "Ubuntu", "--", "whoami"],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            username = result.stdout.strip()
+            return True, "Ubuntu", username
+        return False, None, None
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False, None, None
+
+
+def check_wsl_foundry() -> tuple:
+    """Check if Foundry is installed in WSL. Returns (ok, version)."""
+    try:
+        result = subprocess.run(
+            ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", "-c",
+             "$HOME/.foundry/bin/forge --version 2>/dev/null || echo MISSING"],
+            capture_output=True, text=True, timeout=10
+        )
+        output = result.stdout.strip()
+        if "MISSING" not in output and result.returncode == 0:
+            return True, output.split('\n')[0]
+        return False, None
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False, None
+
+
+def check_wsl_venv() -> bool:
+    """Check if the SmartContracts WSL venv exists."""
+    try:
+        result = subprocess.run(
+            ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", "-c",
+             "test -f $HOME/.smartcontracts-venv/bin/python3 && echo OK || echo MISSING"],
+            capture_output=True, text=True, timeout=10
+        )
+        return "OK" in result.stdout
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
+def check_wsl_kernel() -> bool:
+    """Check if the SmartContracts WSL Jupyter kernel is registered."""
+    kernel_path = Path(os.environ.get("APPDATA", "")) / "jupyter" / "kernels" / "smartcontracts-wsl"
+    return (kernel_path / "kernel.json").exists()
+
+
+def check_env_file() -> dict:
+    """Check which .env keys are configured. Returns dict of key->configured."""
+    keys = {
+        "SEPOLIA_RPC": False,
+        "DEPLOYER_PRIVATE_KEY": False,
+        "ANVIL_RPC": False,
+        "LLM_API_KEY": False,
+        "OPENROUTER_API_KEY": False,
+    }
+    if not ENV_FILE.exists():
+        return keys
+    for line in ENV_FILE.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        for key in keys:
+            if line.startswith(f"{key}="):
+                value = line.split("=", 1)[1].strip()
+                # Not set if placeholder or empty
+                if value and "YOUR_" not in value and "0x..." not in value:
+                    keys[key] = True
+    return keys
+
+
+# =============================================================================
+# WSL SETUP & ANVIL
+# =============================================================================
+
+def setup_wsl():
+    """Run the full WSL setup: Foundry + venv + kernel."""
+    setup_script = SCRIPTS_DIR / "setup_wsl_smartcontracts.sh"
+    kernel_script = SCRIPTS_DIR / "setup_wsl_kernel.ps1"
+
+    if not setup_script.exists():
+        print(f"  ERROR: {setup_script} not found")
+        return False
+
+    print("\n  Step 1/3: Running WSL setup script...")
+    print("  (This installs Foundry, Python venv, and all packages in WSL)")
+    print("  This may take several minutes on first run.\n")
+
+    # Convert Windows path to WSL path
+    wsl_path = f"/mnt/{str(setup_script).replace(os.sep, '/').replace(':', '').lower()}"
+    # Fix drive letter (D: -> /mnt/d/)
+    if wsl_path.startswith("/mnt/") and len(wsl_path) > 5:
+        wsl_path = f"/mnt/{wsl_path[5].lower()}/{wsl_path[6:]}"
+
+    result = subprocess.run(
+        ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", wsl_path],
+        timeout=600
+    )
+    if result.returncode != 0:
+        print(f"  WSL setup returned exit code {result.returncode}")
+        print("  Check the output above for errors.")
+        return False
+
+    print("\n  Step 2/3: Copying kernel wrapper to WSL home...")
+    wrapper_src = SCRIPTS_DIR / "_wrapper_template.sh"
+    if wrapper_src.exists():
+        wsl_wrapper_path = f"/mnt/{str(wrapper_src).replace(os.sep, '/').replace(':', '').lower()}"
+        if wsl_wrapper_path.startswith("/mnt/") and len(wsl_wrapper_path) > 5:
+            wsl_wrapper_path = f"/mnt/{wsl_wrapper_path[5].lower()}/{wsl_wrapper_path[6:]}"
+        subprocess.run(
+            ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", "-c",
+             f'cp "{wsl_wrapper_path}" "$HOME/.smartcontracts-kernel-wrapper.sh" && '
+             f'sed -i "s/\\r$//" "$HOME/.smartcontracts-kernel-wrapper.sh" && '
+             f'chmod +x "$HOME/.smartcontracts-kernel-wrapper.sh"'],
+            timeout=30
+        )
+
+    print("\n  Step 3/3: Registering Jupyter kernel...")
+    if kernel_script.exists():
+        subprocess.run(
+            ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(kernel_script)],
+            timeout=30
+        )
+    else:
+        print(f"  WARNING: {kernel_script} not found, register kernel manually")
+
+    print("\n  WSL setup complete!")
+    return True
+
+
+def start_anvil_wsl(port: int = 8545) -> bool:
+    """Start anvil in WSL as a background process."""
+    if check_anvil_running():
+        print(f"  [OK] anvil already running on port {port}")
+        return True
+
+    wsl_ok, _, _ = check_wsl_available()
+    if not wsl_ok:
+        print("  [FAIL] WSL not available")
+        return False
+
+    foundry_ok, _ = check_wsl_foundry()
+    if not foundry_ok:
+        print("  [FAIL] Foundry not installed in WSL. Run: python setup_env.py --setup-wsl")
+        return False
+
+    print(f"  Starting anvil on port {port} via WSL...")
+    # Start anvil in background - use nohup so it survives
+    subprocess.Popen(
+        ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", "-c",
+         f"$HOME/.foundry/bin/anvil --host 0.0.0.0 --port {port} "
+         f"> /tmp/anvil.log 2>&1"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    # Wait for it to be ready
+    import time
+    for _ in range(10):
+        time.sleep(0.5)
+        if check_anvil_running():
+            print(f"  [OK] anvil started on localhost:{port}")
+            return True
+
+    print(f"  [FAIL] anvil did not start. Check WSL: cat /tmp/anvil.log")
+    return False
+
+
+def stop_anvil_wsl() -> bool:
+    """Stop anvil running in WSL."""
+    try:
+        subprocess.run(
+            ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", "-c",
+             "pkill -f anvil 2>/dev/null"],
+            capture_output=True, timeout=5
+        )
+        print("  anvil stopped")
+        return True
     except Exception:
         return False
 
@@ -262,7 +462,11 @@ def check_all_phases():
 
 def print_executability(results: dict):
     """Print which notebooks can run given current deps."""
+    # Check native Foundry, then WSL Foundry as fallback
     foundry_ok = check_tool("forge")[0]
+    if not foundry_ok and sys.platform == "win32":
+        foundry_ok, _ = check_wsl_foundry()
+
     anvil_ok = check_anvil_running()
     web3_ok = results.get("web3", False)
     crypto_ok = results.get("pycryptodome", False) and results.get("py_ecc", False)
@@ -271,28 +475,34 @@ def print_executability(results: dict):
     xrpl_ok = results.get("xrpl-py", False)
     bitcoin_ok = results.get("python-bitcoinlib", False)
 
+    # Check .env for testnet/deploy readiness
+    env_keys = check_env_file()
+    sepolia_ok = env_keys.get("SEPOLIA_RPC", False) and env_keys.get("DEPLOYER_PRIVATE_KEY", False)
+
     groups = [
-        ("SC-0  (Cypherpunk Origins)", results.get("pycryptodome", False)),
-        ("SC-1  (Setup Foundry)", foundry_ok),
-        ("SC-2 to SC-10 (Solidity)", anvil_ok and web3_ok),
-        ("SC-11 (LLM Assisted)", True),  # Has mock fallback
-        ("SC-12 to SC-14 (Foundry Testing)", foundry_ok),
-        ("SC-15 (Zero-Knowledge Proofs)", crypto_ok),
-        ("SC-16 to SC-17 (HE & Voting)", phe_ok),
-        ("SC-18 (Vyper)", anvil_ok and vyper_ok),
-        ("SC-19 (Ripple XRP)", xrpl_ok),
-        ("SC-20 (Bitcoin Scripting)", bitcoin_ok),
-        ("SC-21 to SC-23 (Theory)", True),
-        ("SC-24 to SC-25 (Deploy)", False),  # Needs API keys + testnet ETH
-        ("SC-26 (Final Project)", anvil_ok and phe_ok),
+        ("SC-0  (Cypherpunk Origins)", results.get("pycryptodome", False), ""),
+        ("SC-1  (Setup Foundry)", foundry_ok, "needs forge (native or WSL)"),
+        ("SC-2 to SC-10 (Solidity)", anvil_ok and web3_ok, "needs anvil + web3"),
+        ("SC-11 (LLM Assisted)", True, ""),  # Has mock fallback
+        ("SC-12 to SC-14 (Foundry Testing)", foundry_ok, "needs forge (native or WSL)"),
+        ("SC-15 (Zero-Knowledge Proofs)", crypto_ok, "needs pycryptodome + py_ecc"),
+        ("SC-16 to SC-17 (HE & Voting)", phe_ok, "needs phe"),
+        ("SC-18 (Vyper)", anvil_ok and vyper_ok, "needs anvil + vyper"),
+        ("SC-19 (Ripple XRP)", xrpl_ok, "needs xrpl-py + network"),
+        ("SC-20 (Bitcoin Scripting)", bitcoin_ok, "needs python-bitcoinlib"),
+        ("SC-21 to SC-23 (Theory)", True, ""),
+        ("SC-24 (Testnet Deploy)", sepolia_ok and web3_ok, "needs .env: SEPOLIA_RPC + DEPLOYER_PRIVATE_KEY"),
+        ("SC-25 (Mainnet Deploy)", web3_ok, "needs .env: BASE_RPC (has default)"),
+        ("SC-26 (Final Project)", anvil_ok and phe_ok, "needs anvil + phe"),
     ]
 
-    ready = sum(1 for _, ok in groups if ok)
+    ready = sum(1 for _, ok, _ in groups if ok)
     total = len(groups)
     print(f"\n  Notebook executability: {ready}/{total} groups ready")
-    for name, ok in groups:
+    for name, ok, hint in groups:
         status = "READY" if ok else "BLOCKED"
-        print(f"    [{status:7s}] {name}")
+        suffix = f"  ({hint})" if not ok and hint else ""
+        print(f"    [{status:7s}] {name}{suffix}")
 
 
 # =============================================================================
@@ -309,6 +519,9 @@ Examples:
   python setup_env.py --check        # Check what's installed
   python setup_env.py --phase 1      # Install blockchain core only
   python setup_env.py --venv         # Create virtualenv first
+  python setup_env.py --setup-wsl    # Full WSL setup (Foundry + venv + kernel)
+  python setup_env.py --start-anvil  # Start anvil via WSL
+  python setup_env.py --stop-anvil   # Stop anvil
         """
     )
     parser.add_argument("--check", action="store_true",
@@ -321,6 +534,12 @@ Examples:
                         help="Create virtual environment first")
     parser.add_argument("--skip-foundry", action="store_true",
                         help="Skip Foundry tools check")
+    parser.add_argument("--setup-wsl", action="store_true",
+                        help="Set up WSL environment (Foundry + venv + kernel)")
+    parser.add_argument("--start-anvil", action="store_true",
+                        help="Start anvil via WSL in background")
+    parser.add_argument("--stop-anvil", action="store_true",
+                        help="Stop anvil running in WSL")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -335,6 +554,29 @@ Examples:
         if not str(sys.prefix).endswith("venv"):
             print("\n  Please activate the venv and re-run this script.")
             return
+
+    # ---- WSL SETUP ----
+    if args.setup_wsl:
+        if sys.platform != "win32":
+            print("  --setup-wsl is only needed on Windows")
+            return
+        wsl_ok, distro, user = check_wsl_available()
+        if not wsl_ok:
+            print("  ERROR: WSL with Ubuntu not found.")
+            print("  Install with: wsl --install -d Ubuntu")
+            return
+        print(f"  WSL detected: {distro} (user: {user})")
+        setup_wsl()
+        return
+
+    # ---- ANVIL MANAGEMENT ----
+    if args.start_anvil:
+        start_anvil_wsl()
+        return
+
+    if args.stop_anvil:
+        stop_anvil_wsl()
+        return
 
     # ---- CHECK MODE ----
     if args.check:
@@ -355,19 +597,58 @@ Examples:
             print(f"  [MISSING] py-solc-x not installed")
 
         if not args.skip_foundry:
-            print("\n\nFoundry Tools:")
+            print("\n\nFoundry Tools (native):")
             print("-" * 60)
+            native_foundry = True
             for tool in ["forge", "cast", "anvil"]:
                 ok, version = check_tool(tool)
-                status = f"[OK]      {tool:10s} ({version})" if ok else f"[MISSING] {tool}"
-                print(f"  {status}")
+                if ok:
+                    print(f"  [OK]      {tool:10s} ({version})")
+                else:
+                    print(f"  [MISSING] {tool}")
+                    native_foundry = False
+
+            # WSL Foundry fallback (Windows only)
+            if sys.platform == "win32":
+                print("\n\nWSL Environment:")
+                print("-" * 60)
+                wsl_ok, distro, user = check_wsl_available()
+                if wsl_ok:
+                    print(f"  [OK]      WSL {distro} (user: {user})")
+                    wsl_f_ok, wsl_f_ver = check_wsl_foundry()
+                    if wsl_f_ok:
+                        print(f"  [OK]      Foundry in WSL ({wsl_f_ver})")
+                    else:
+                        print(f"  [MISSING] Foundry in WSL")
+                    if check_wsl_venv():
+                        print(f"  [OK]      SmartContracts venv in WSL")
+                    else:
+                        print(f"  [MISSING] SmartContracts venv in WSL")
+                    if check_wsl_kernel():
+                        print(f"  [OK]      Jupyter kernel registered")
+                    else:
+                        print(f"  [MISSING] Jupyter kernel (run --setup-wsl)")
+                else:
+                    print(f"  [MISSING] WSL Ubuntu not found")
 
         print("\n\nAnvil Service:")
         print("-" * 60)
         if check_anvil_running():
             print("  [OK]      anvil running on localhost:8545")
         else:
-            print("  [OFFLINE] Start with: anvil (in a separate terminal)")
+            print("  [OFFLINE] Start with: python setup_env.py --start-anvil")
+
+        print("\n\nConfiguration (.env):")
+        print("-" * 60)
+        if ENV_FILE.exists():
+            env_keys = check_env_file()
+            for key, configured in env_keys.items():
+                status = "[OK]     " if configured else "[MISSING]"
+                print(f"  {status} {key}")
+        else:
+            print(f"  [MISSING] .env file not found")
+            if ENV_EXAMPLE_FILE.exists():
+                print(f"           Copy from .env.example: cp .env.example .env")
 
         print("\n\n" + "=" * 60)
         print("Summary")
@@ -413,15 +694,29 @@ Examples:
             if ok:
                 print(f"  [OK]      {tool:10s} ({version})")
             else:
-                print(f"  [MISSING] {tool}")
+                print(f"  [MISSING] {tool} (native)")
                 all_foundry = False
-        if not all_foundry:
-            print("\n  To install Foundry:")
-            if sys.platform == "win32":
-                print("    Option 1: winget install foundry")
-                print("    Option 2 (WSL): curl -L https://foundry.paradigm.xyz | bash && foundryup")
+
+        # Check WSL fallback on Windows
+        if not all_foundry and sys.platform == "win32":
+            wsl_ok, _, _ = check_wsl_available()
+            if wsl_ok:
+                wsl_f_ok, wsl_f_ver = check_wsl_foundry()
+                if wsl_f_ok:
+                    print(f"\n  Foundry available via WSL: {wsl_f_ver}")
+                    print("  Notebooks using forge will work via WSL kernel.")
+                    all_foundry = True
+                else:
+                    print("\n  To install Foundry in WSL:")
+                    print("    python setup_env.py --setup-wsl")
             else:
-                print("    curl -L https://foundry.paradigm.xyz | bash && foundryup")
+                print("\n  To install Foundry:")
+                print("    Option 1 (recommended): python setup_env.py --setup-wsl")
+                print("    Option 2: curl -L https://foundry.paradigm.xyz | bash && foundryup")
+
+        elif not all_foundry:
+            print("\n  To install Foundry:")
+            print("    curl -L https://foundry.paradigm.xyz | bash && foundryup")
 
     # Final check
     print("\n\n" + "=" * 60)

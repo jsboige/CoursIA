@@ -3,13 +3,22 @@
 # Install all:    pip install -r requirements.txt
 # Install phases: python setup_env.py --phase 1
 # Check only:     python setup_env.py --check
+# WSL setup:      python setup_env.py --setup-wsl
 #
-# Tested on: Python 3.12, Windows 11 + Linux
+# Tested on: Python 3.12, Windows 11 + WSL Ubuntu + Linux
+#
+# Native tools (Foundry: forge/cast/anvil) are installed via WSL on Windows.
+# See scripts/setup_wsl_smartcontracts.sh for the full WSL setup.
+
+# === Phase 0: Utilities ===
+matplotlib>=3.5            # Visualizations (timelines, graphs)
+tabulate>=0.9              # Pretty tables
 
 # === Phase 1: Blockchain Core (SC-2 to SC-10, SC-18, SC-24 to SC-26) ===
 web3>=7.0                  # Ethereum interaction (deploy, call, events)
 py-solc-x>=1.1             # Solidity compiler from Python
 python-dotenv>=1.0         # .env file loading for API keys
+requests>=2.28             # HTTP requests (API calls, faucets)
 
 # === Phase 2: Cryptography & ZKP (SC-0, SC-15) ===
 pycryptodome>=3.20         # ECC, signatures, hashing primitives
@@ -18,7 +27,7 @@ py_ecc>=7.0                # Ethereum Foundation elliptic curves (bn128)
 # === Phase 3: Homomorphic Encryption (SC-16, SC-17) ===
 phe>=1.5                   # Paillier partially homomorphic encryption
 tenseal>=0.3               # Microsoft SEAL wrapper (CKKS/BFV)
-# concrete-python>=2.0     # Zama FHE compiler - Linux only, see requirements-optional.txt
+# concrete-python>=2.0     # Zama FHE compiler - Linux/WSL only, see requirements-optional.txt
 
 # === Phase 4: MPC & Voting (SC-17) ===
 mpyc>=0.10                 # Secure multi-party computation
@@ -29,6 +38,5 @@ xrpl-py>=3.0               # Ripple XRP Ledger
 python-bitcoinlib>=0.12    # Bitcoin scripting & UTXO
 vyper>=0.4                 # Python-like EVM smart contracts
 
-# === Utilities ===
-matplotlib>=3.5            # Visualizations (timelines, graphs)
-tabulate>=0.9              # Pretty tables
+# === Phase 6: LLM Integration (SC-11, optional - has mock fallback) ===
+openai>=1.0                # OpenAI-compatible API client (works with local LLMs too)
