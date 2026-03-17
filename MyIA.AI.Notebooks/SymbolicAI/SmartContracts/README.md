@@ -1,141 +1,145 @@
-# Smart Contracts - Développement Multi-Plateformes
+# Smart Contracts - Des Cypherpunks aux Blockchains Modernes
 
-Série de notebooks éducatifs pour apprendre le développement de smart contracts, de Solidity aux blockchains multi-chain.
+Serie de notebooks educatifs couvrant les fondements cryptographiques, le developpement Solidity, les tests, la cryptographie avancee (ZKP, HE, vote verifiable), et les blockchains alternatives.
 
 ## Vue d'Ensemble
 
-| Métrique | Valeur |
+| Metrique | Valeur |
 |----------|--------|
-| **Notebooks** | 17 |
-| **Durée totale** | ~13 heures |
-| **Niveau** | Débutant à Avancé |
-| **Prérequis** | Python 3.10+, programmation de base |
+| **Notebooks** | 26 (cible) |
+| **Duree totale** | ~22 heures |
+| **Niveau** | Debutant a Avance |
+| **Prerequis** | Python 3.10+, programmation de base |
 
 ## Structure
 
 ```
 SmartContracts/
-├── 00-Environment/           # Configuration (1 notebook)
-├── 01-Solidity-Foundation/   # Fondements Solidity (4 notebooks)
-├── 02-Solidity-Advanced/     # Solidity avancé (5 notebooks)
-├── 03-Foundry-Testing/       # Tests et sécurité (3 notebooks)
-├── 04-Multi-Chain/           # Multi-chain (3 notebooks)
-└── 05-Capstone/              # Projet final (1 notebook)
+├── 00-Foundations/              # Histoire + Setup (3 notebooks)
+├── 01-Solidity-Foundation/     # Fondements Solidity (4 notebooks)
+├── 02-Solidity-Advanced/       # Solidity avance (5 notebooks)
+├── 03-Foundry-Testing/         # Tests et securite (3 notebooks)
+├── 04-Privacy-Cryptography/    # ZKP, HE, Vote E2E (3 notebooks)
+├── 05-Alternative-Chains/      # Vyper, XRP, Bitcoin, Move, Solana (5 notebooks)
+├── 06-Real-World/              # Deploy testnet/mainnet (3 notebooks)
+└── requirements.txt            # Dependances Python
 ```
 
 ## Progression
 
-### Partie 0: Environnement (30 min)
+### Partie 0 : Fondations et Histoire (~2h10)
 
-| # | Notebook | Durée | Status |
-|---|----------|-------|--------|
-| 0 | [SC-0-Setup](00-Environment/SC-0-Setup.ipynb) | 30 min | [ ] |
+| # | Notebook | Duree | Contenu |
+|---|----------|-------|---------|
+| 0 | [SC-0-Cypherpunk-Origins](00-Foundations/SC-0-Cypherpunk-Origins.ipynb) | 60 min | Hash, Merkle, PoW, signatures, DHT - code executable |
+| 1 | [SC-1-Setup-Foundry](00-Foundations/SC-1-Setup-Foundry.ipynb) | 30 min | Installation Foundry (forge, cast, anvil) |
+| 2 | [SC-2-Setup-Web3py](00-Foundations/SC-2-Setup-Web3py.ipynb) | 40 min | web3.py + py-solcx + compile/deploy reel |
 
-**Objectifs**: Installer Foundry, configurer l'environnement de développement
+**Objectifs** : Comprendre les origines Cypherpunk, installer l'environnement, deployer un premier contrat
 
-### Partie 1: Solidity Fondements (~2h50)
+### Partie 1 : Solidity Fondements (~2h30)
 
-| # | Notebook | Durée | Status |
-|---|----------|-------|--------|
-| 1 | [SC-1-Solidity-Basics](01-Solidity-Foundation/SC-1-Solidity-Basics.ipynb) | 40 min | [ ] |
-| 2 | [SC-2-Functions-State](01-Solidity-Foundation/SC-2-Functions-State.ipynb) | 45 min | [ ] |
-| 3 | [SC-3-Inheritance](01-Solidity-Foundation/SC-3-Inheritance.ipynb) | 35 min | [ ] |
-| 4 | [SC-4-Errors-Events](01-Solidity-Foundation/SC-4-Errors-Events.ipynb) | 30 min | [ ] |
+| # | Notebook | Duree | Contenu |
+|---|----------|-------|---------|
+| 3 | [SC-1-Solidity-Basics](01-Solidity-Foundation/SC-1-Solidity-Basics.ipynb) | 40 min | Types, variables, structure |
+| 4 | [SC-2-Functions-State](01-Solidity-Foundation/SC-2-Functions-State.ipynb) | 45 min | Fonctions, modifiers, storage |
+| 5 | [SC-3-Inheritance](01-Solidity-Foundation/SC-3-Inheritance.ipynb) | 35 min | Heritage, interfaces |
+| 6 | [SC-4-Errors-Events](01-Solidity-Foundation/SC-4-Errors-Events.ipynb) | 30 min | Erreurs, events |
 
-**Objectifs**: Maîtriser les bases de Solidity (types, fonctions, héritage)
+**Objectifs** : Maitriser les bases de Solidity avec deploiement reel sur anvil
 
-### Partie 2: Solidity Avancé (~4h30)
+### Partie 2 : Solidity Avance (~4h30)
 
-| # | Notebook | Durée | Status |
-|---|----------|-------|--------|
-| 5 | [SC-5-Token-Standards](02-Solidity-Advanced/SC-5-Token-Standards.ipynb) | 50 min | [ ] |
-| 6 | [SC-6-DeFi-Primitives](02-Solidity-Advanced/SC-6-DeFi-Primitives.ipynb) | 55 min | [ ] |
-| 7 | [SC-7-DAO-Governance](02-Solidity-Advanced/SC-7-DAO-Governance.ipynb) | 45 min | [ ] |
-| 8 | [SC-8-Account-Abstraction](02-Solidity-Advanced/SC-8-Account-Abstraction.ipynb) | 50 min | [ ] |
-| 8b | [SC-8b-LLM-Assisted](02-Solidity-Advanced/SC-8b-LLM-Assisted.ipynb) | 45 min | [ ] |
+| # | Notebook | Duree | Contenu |
+|---|----------|-------|---------|
+| 7 | [SC-5-Token-Standards](02-Solidity-Advanced/SC-5-Token-Standards.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
+| 8 | [SC-6-DeFi-Primitives](02-Solidity-Advanced/SC-6-DeFi-Primitives.ipynb) | 55 min | AMM, lending, oracles |
+| 9 | [SC-7-DAO-Governance](02-Solidity-Advanced/SC-7-DAO-Governance.ipynb) | 45 min | Votes, gouvernance on-chain |
+| 10 | [SC-8-Account-Abstraction](02-Solidity-Advanced/SC-8-Account-Abstraction.ipynb) | 50 min | ERC-4337 |
+| 11 | [SC-8b-LLM-Assisted](02-Solidity-Advanced/SC-8b-LLM-Assisted.ipynb) | 45 min | LLM pour smart contracts |
 
-**Objectifs**: Implémenter des protocoles DeFi, gouvernance, ERC-4337
+**Objectifs** : Protocoles DeFi, gouvernance, ERC-4337, LLM-assisted
 
-### Partie 3: Foundry Testing (~2h15)
+### Partie 3 : Testing (~2h15)
 
-| # | Notebook | Durée | Status |
-|---|----------|-------|--------|
-| 9 | [SC-9-Foundry-Basics](03-Foundry-Testing/SC-9-Foundry-Basics.ipynb) | 45 min | [ ] |
-| 10 | [SC-10-Fuzz-Testing](03-Foundry-Testing/SC-10-Fuzz-Testing.ipynb) | 40 min | [ ] |
-| 11 | [SC-11-Formal-Verification](03-Foundry-Testing/SC-11-Formal-Verification.ipynb) | 50 min | [ ] |
+| # | Notebook | Duree | Contenu |
+|---|----------|-------|---------|
+| 12 | [SC-9-Foundry-Basics](03-Foundry-Testing/SC-9-Foundry-Basics.ipynb) | 45 min | Tests unitaires, cheatcodes |
+| 13 | [SC-10-Fuzz-Testing](03-Foundry-Testing/SC-10-Fuzz-Testing.ipynb) | 40 min | Fuzz testing, invariants |
+| 14 | [SC-11-Formal-Verification](03-Foundry-Testing/SC-11-Formal-Verification.ipynb) | 50 min | Verification formelle |
 
-**Objectifs**: Tests unitaires, fuzzing, vérification formelle
+**Objectifs** : Tests Solidity, fuzzing, verification formelle
 
-### Partie 4: Multi-Chain (~2h30)
+### Partie 4 : Cryptographie et Vie Privee (~3h)
 
-| # | Notebook | Durée | Status |
-|---|----------|-------|--------|
-| 12 | [SC-12-Move-Sui](04-Multi-Chain/SC-12-Move-Sui.ipynb) | 50 min | [ ] |
-| 13 | [SC-13-Solana-Anchor](04-Multi-Chain/SC-13-Solana-Anchor.ipynb) | 55 min | [ ] |
-| 14 | [SC-14-Cross-Chain](04-Multi-Chain/SC-14-Cross-Chain.ipynb) | 45 min | [ ] |
+| # | Notebook | Duree | Contenu |
+|---|----------|-------|---------|
+| 15 | [SC-15-Zero-Knowledge-Proofs](04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs.ipynb) | 60 min | Schnorr, Fiat-Shamir, Sigma protocols |
+| 16 | [SC-16-Homomorphic-Encryption](04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) | 50 min | Paillier, CKKS/TenSEAL, Shamir |
+| 17 | [SC-17-E2E-Verifiable-Voting](04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) | 70 min | Vote anonyme verifiable, ElectionGuard |
 
-**Objectifs**: Développement sur Sui (Move), Solana (Anchor), cross-chain
+**Objectifs** : ZKP from scratch, chiffrement homomorphique, vote E2E verifiable
 
-### Partie 5: Capstone (1h30)
+### Partie 5 : Blockchains Alternatives (~4h)
 
-| # | Notebook | Durée | Status |
-|---|----------|-------|--------|
-| 15 | [SC-15-Final-Project](05-Capstone/SC-15-Final-Project.ipynb) | 90 min | [ ] |
+| # | Notebook | Duree | Contenu |
+|---|----------|-------|---------|
+| 18 | [SC-18-Vyper](05-Alternative-Chains/SC-18-Vyper.ipynb) | 45 min | Smart contracts Python-like |
+| 19 | [SC-19-Ripple-XRP](05-Alternative-Chains/SC-19-Ripple-XRP.ipynb) | 50 min | xrpl-py, testnet, trust lines |
+| 20 | SC-20-Bitcoin-Scripting | 50 min | UTXO, Script, python-bitcoinlib |
+| 21 | [SC-12-Move-Sui](04-Multi-Chain/SC-12-Move-Sui.ipynb) | 50 min | Move, modele objet Sui |
+| 22 | [SC-13-Solana-Anchor](04-Multi-Chain/SC-13-Solana-Anchor.ipynb) | 55 min | Solana, Anchor framework |
 
-**Objectifs**: Projet complet (Token + Staking + Governance)
+**Objectifs** : Vyper, XRP, Bitcoin scripting, Move, Solana
+
+### Partie 6 : Real-World (~3h)
+
+| # | Notebook | Duree | Contenu |
+|---|----------|-------|---------|
+| 23 | [SC-14-Cross-Chain](04-Multi-Chain/SC-14-Cross-Chain.ipynb) | 45 min | Bridges, interoperabilite |
+| 24 | SC-24-Testnet-Deploy | 50 min | Deploy Sepolia + XRP testnet |
+| 25 | SC-25-Mainnet-Deploy | 40 min | Deploy L2 (Base/Polygon) |
+| 26 | SC-26-Final-Project | 90 min | Projet capstone complet |
+
+**Objectifs** : Deploiement reel, testnets, mainnet
 
 ## Technologies
 
 | Technologie | Usage | Installation |
 |-------------|-------|--------------|
-| **Foundry** | Dev Ethereum | `curl -L https://foundry.paradigm.xyz \| bash` |
-| **Solidity** | Smart contracts | Inclus dans Foundry |
-| **Sui CLI** | Dev Move | `cargo install --locked --git https://github.com/MystenLabs/sui sui` |
-| **Anchor** | Dev Solana | `cargo install --git https://github.com/coral-xyz/anchor anchor-cli` |
-| **Certora** | Vérification formelle | Via site Certora |
+| **Foundry** | Dev + tests Ethereum | `curl -L https://foundry.paradigm.xyz \| bash` |
+| **web3.py** | Interaction Python | `pip install web3` |
+| **py-solc-x** | Compilation Solidity | `pip install py-solc-x` |
+| **pycryptodome** | Crypto primitives | `pip install pycryptodome` |
+| **phe** | Chiffrement Paillier | `pip install phe` |
+| **xrpl-py** | Protocole Ripple | `pip install xrpl-py` |
+| **vyper** | Smart contracts Python-like | `pip install vyper` |
 
-## Prérequis
-
-### Logiciels
-
-- Python 3.10+
-- Git
-- curl (Windows: via Git Bash ou WSL)
-
-### Connaissances
-
-- Programmation de base (variables, fonctions, POO)
-- Notions de cryptographie (utile mais non requis)
-
-## Démarrage Rapide
+## Demarrage Rapide
 
 ```bash
-# 1. Installer Foundry
+# 1. Installer les dependances Python
+pip install -r requirements.txt
+
+# 2. Installer Foundry
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
 
-# 2. Vérifier l'installation
-forge --version
-cast --version
-anvil --version
+# 3. Lancer anvil (blockchain locale)
+anvil  # dans un terminal separe
 
-# 3. Créer un projet test
-mkdir my-project && cd my-project
-forge init
-
-# 4. Compiler et tester
-forge build
-forge test
+# 4. Commencer par SC-0-Cypherpunk-Origins
 ```
 
 ## Ressources Externes
 
 - [Foundry Book](https://book.getfoundry.sh/)
 - [Solidity Docs](https://docs.soliditylang.org/)
-- [Sui Documentation](https://docs.sui.io/)
-- [Anchor Book](https://book.anchor-lang.com/)
+- [web3.py Docs](https://web3py.readthedocs.io/)
 - [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)
+- [ElectionGuard](https://www.electionguard.vote/)
+- [XRP Ledger Docs](https://xrpl.org/docs.html)
 
 ---
 
-*Série créée pour CoursIA - Formation Intelligence Artificielle*
+*Serie creee pour CoursIA (EPITA IA Symbolique) - Issue #129*
