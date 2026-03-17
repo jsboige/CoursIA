@@ -132,6 +132,17 @@ NOTEBOOK_FAMILIES = {
         "notes": "Uses nashpy, some notebooks have Lean proofs",
         "expected_notebooks": [f"GameTheory-{i}-*.ipynb" for i in range(1, 20)]
     },
+    "SmartContracts": {
+        "path": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts",
+        "kernel": "python",
+        "notes": "Blockchain series: SC-0 to SC-26. SC-2 to SC-10 require anvil running (local Ethereum). SC-12 to SC-14 require Foundry (forge). SC-24 requires Alchemy API key. SC-25 requires mainnet ETH.",
+        "expected_notebooks": [f"SC-{i}-*.ipynb" for i in range(27)],
+        "dependencies": {
+            "python": ["web3>=7.0", "py-solc-x>=1.1", "pycryptodome>=3.20", "py_ecc>=7.0",
+                        "phe>=1.5", "xrpl-py>=3.0", "python-bitcoinlib>=0.12", "vyper>=0.4"]
+        },
+        "validation_script": "scripts/smartcontracts/validate_sc_notebooks.py",
+    },
     "QuantConnect": {
         "path": "MyIA.AI.Notebooks/QuantConnect",
         "kernel": "mixed",
