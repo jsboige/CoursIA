@@ -1354,18 +1354,18 @@ footer: 'III - Logique'
 - Création d'une plateforme sémantique LDP à partir d'un index structuré.
   - Structuration et ouverture des données = Linked Data. Lucene.Net, SharpRDF
 - Résolution de Captchas par deep learning
-  - Apprentissage via un Adapteur DNN, Réseaux de dernières génération. TensorFlow, CNTK, Encog
+  - Apprentissage via un réseau de neurones convolutif. PyTorch, TensorFlow, transfer learning
 
 ---
 
 # Projets de groupe (2/2)
 
 - Entrainement de stratégies de trading algorithmiques sur crypto monnaies.
-  - Expérience DNN Bitcoin, Encog et machine learning
+  - Réseaux de neurones récurrents (LSTM), scikit-learn, données Binance API
 - Amélioration par l'apprentissage d'un agent joueur de Go simple
-  - Le Go et l'IA, Récentes avancées. Go Traxx
+  - Le Go et l'IA, récentes avancées (AlphaGo). PyTorch, reinforcement learning
 - Evolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie.
-  - Approches évolutionnistes, automates cellulaires, Bac a sable. Golly, Encog
+  - Approches évolutionnistes, automates cellulaires. DEAP, Golly, Python
 - Pilotage d'un cluster de cache distribué pour le portage d'applications  dans le Cloud
   - Caches distribués, scaling, stratégies et clustering. Redis
 
