@@ -311,6 +311,8 @@ venv/
 .venv/
 **/venv/
 **/.venv/
+pyvenv.cfg
+lib64
 
 # Cake - Uncomment if you are using it
 # tools/**
@@ -575,3 +577,6 @@ reports/
 .claude/local/
 .claude/scheduled_tasks.lock
 .claude/mcp.json
+
+# Roo Code state files (local scope, machine-specific)
+.roo/

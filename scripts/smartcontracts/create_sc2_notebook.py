@@ -1,0 +1,584 @@
+"""Generate SC-2-Setup-Web3py.ipynb - web3.py + py-solcx + anvil pattern."""
+import json
+import os
+
+def md(source_text, cell_id):
+    lines = source_text.split('\n')
+    source = []
+    for i, line in enumerate(lines):
+        if i < len(lines) - 1:
+            source.append(line + '\n')
+        else:
+            if line:
+                source.append(line)
+    return {"cell_type": "markdown", "id": cell_id, "metadata": {}, "source": source}
+
+def code(source_text, cell_id):
+    lines = source_text.split('\n')
+    source = []
+    for i, line in enumerate(lines):
+        if i < len(lines) - 1:
+            source.append(line + '\n')
+        else:
+            if line:
+                source.append(line)
+    return {"cell_type": "code", "id": cell_id, "metadata": {}, "source": source,
+            "outputs": [], "execution_count": None}
+
+cells = []
+
+# === HEADER ===
+cells.append(md(
+"# SC-2-Setup-Web3py - Python et la Blockchain\n"
+"\n"
+"**Navigation** : [Index](../README.md) | [<< Setup Foundry](SC-1-Setup-Foundry.ipynb) | [Solidity Basics >>](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)\n"
+"\n"
+"---\n"
+"\n"
+"## Objectifs d'apprentissage\n"
+"\n"
+"1. Installer et configurer **web3.py** pour interagir avec Ethereum depuis Python\n"
+"2. Installer **py-solc-x** pour compiler du Solidity depuis Python\n"
+"3. Se connecter a **anvil** (blockchain locale Foundry)\n"
+"4. **Compiler, deployer et appeler** un contrat Solidity entierement depuis Python\n"
+"5. Etablir le **pattern reutilisable** pour tous les notebooks suivants\n"
+"\n"
+"### Prerequis\n"
+"\n"
+"- [SC-1-Setup-Foundry](SC-1-Setup-Foundry.ipynb) complete (anvil installe)\n"
+"- Python 3.10+ avec pip\n"
+"- `pip install web3 py-solc-x`\n"
+"\n"
+"### Duree estimee : 40 minutes", "header"))
+
+# === SECTION 1: INSTALLATION ===
+cells.append(md(
+"---\n"
+"\n"
+"## 1. Installation des dependances\n"
+"\n"
+"Deux libraries essentielles :\n"
+"- **web3.py** : client Python pour Ethereum (deploiement, appels, events)\n"
+"- **py-solc-x** : wrapper Python autour du compilateur Solidity `solc`",
+"install-intro"))
+
+cells.append(code(
+'# Installation (decommentez si necessaire)\n'
+'# !pip install web3 py-solc-x\n'
+'\n'
+'import importlib\n'
+'for pkg in ["web3", "solcx"]:\n'
+'    try:\n'
+'        mod = importlib.import_module(pkg)\n'
+'        version = getattr(mod, "__version__", "?")\n'
+'        print(f"{pkg:10s} : v{version}")\n'
+'    except ImportError:\n'
+'        print(f"{pkg:10s} : NON INSTALLE - executez: pip install {\'py-solc-x\' if pkg == \'solcx\' else pkg}")',
+"install-check"))
+
+cells.append(code(
+'# Installer le compilateur Solidity via py-solc-x\n'
+'import solcx\n'
+'\n'
+'# Installer la derniere version stable de solc\n'
+'SOLC_VERSION = "0.8.28"\n'
+'try:\n'
+'    installed = solcx.get_installed_solc_versions()\n'
+'    print(f"Versions solc installees : {installed}")\n'
+'    if not any(str(v).startswith(SOLC_VERSION) for v in installed):\n'
+'        print(f"Installation de solc {SOLC_VERSION}...")\n'
+'        solcx.install_solc(SOLC_VERSION)\n'
+'    solcx.set_solc_version(SOLC_VERSION)\n'
+'    print(f"Compilateur actif : solc {solcx.get_solc_version()}")\n'
+'except Exception as e:\n'
+'    print(f"Erreur installation solc : {e}")\n'
+'    print("Verifiez votre connexion internet et reessayez.")',
+"install-solc"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"`py-solc-x` telecharge et gere les binaires `solc` automatiquement.\n"
+"Cela nous permet de compiler du Solidity directement depuis Python,\n"
+"sans avoir besoin d'un IDE comme Remix ou d'un framework comme Hardhat.",
+"install-interpretation"))
+
+# === SECTION 2: CONNEXION ANVIL ===
+cells.append(md(
+"---\n"
+"\n"
+"## 2. Connexion a anvil (blockchain locale)\n"
+"\n"
+"**anvil** est le noeud Ethereum local de Foundry. Il simule une blockchain\n"
+"complete en memoire avec 10 comptes pre-finances (10 000 ETH chacun).\n"
+"\n"
+"### Demarrer anvil\n"
+"\n"
+"Dans un terminal separe, lancez :\n"
+"```bash\n"
+"anvil\n"
+"```\n"
+"\n"
+"Anvil ecoute par defaut sur `http://127.0.0.1:8545`.", "anvil-intro"))
+
+cells.append(code(
+'from web3 import Web3\n'
+'\n'
+'# Connexion a anvil (blockchain locale)\n'
+'ANVIL_URL = "http://127.0.0.1:8545"\n'
+'w3 = Web3(Web3.HTTPProvider(ANVIL_URL))\n'
+'\n'
+'if w3.is_connected():\n'
+'    print(f"Connecte a : {ANVIL_URL}")\n'
+'    print(f"Chain ID   : {w3.eth.chain_id}")\n'
+'    print(f"Bloc actuel: {w3.eth.block_number}")\n'
+'    print(f"Gas price  : {w3.eth.gas_price} wei")\n'
+'    print()\n'
+'\n'
+'    # Comptes disponibles (pre-finances par anvil)\n'
+'    accounts = w3.eth.accounts\n'
+'    print(f"Comptes disponibles : {len(accounts)}")\n'
+'    for i, account in enumerate(accounts[:3]):\n'
+'        balance = w3.eth.get_balance(account)\n'
+'        print(f"  [{i}] {account} : {w3.from_wei(balance, \'ether\'):.0f} ETH")\n'
+'    print(f"  ... ({len(accounts) - 3} autres comptes)")\n'
+'else:\n'
+'    print(f"ERREUR : Impossible de se connecter a {ANVIL_URL}")\n'
+'    print("Avez-vous lance \'anvil\' dans un terminal separe ?")',
+"anvil-connect"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"Anvil fournit un environnement de test **gratuit et instantane** :\n"
+"- Pas besoin de vrais ETH (comptes pre-finances)\n"
+"- Blocs mines instantanement (pas d'attente)\n"
+"- Etat reinitialise a chaque redemarrage\n"
+"- Compatible avec tous les outils Ethereum (web3.py, ethers.js, Metamask)\n"
+"\n"
+"C'est l'equivalent d'un Ganache modernise, integre a Foundry.",
+"anvil-interpretation"))
+
+# === SECTION 3: COMPILATION ===
+cells.append(md(
+"---\n"
+"\n"
+"## 3. Compiler un contrat Solidity depuis Python\n"
+"\n"
+"Avec `py-solc-x`, on compile du Solidity et on recupere l'**ABI** (interface) et le **bytecode**.",
+"compile-intro"))
+
+cells.append(code(
+'import solcx\n'
+'\n'
+'# Contrat Solidity simple\n'
+'HELLO_SOL = """\n'
+'// SPDX-License-Identifier: MIT\n'
+'pragma solidity ^0.8.28;\n'
+'\n'
+'contract Hello {\n'
+'    string public message;\n'
+'\n'
+'    constructor(string memory _message) {\n'
+'        message = _message;\n'
+'    }\n'
+'\n'
+'    function setMessage(string memory _message) public {\n'
+'        message = _message;\n'
+'    }\n'
+'\n'
+'    function getMessage() public view returns (string memory) {\n'
+'        return message;\n'
+'    }\n'
+'}\n'
+'"""\n'
+'\n'
+'# Compilation\n'
+'compiled = solcx.compile_source(\n'
+'    HELLO_SOL,\n'
+'    output_values=["abi", "bin"],\n'
+'    solc_version=SOLC_VERSION,\n'
+')\n'
+'\n'
+'# Extraire le contrat compile\n'
+'contract_id, contract_interface = compiled.popitem()\n'
+'abi = contract_interface["abi"]\n'
+'bytecode = contract_interface["bin"]\n'
+'\n'
+'print(f"Contrat compile : {contract_id}")\n'
+'print(f"ABI : {len(abi)} fonctions/events")\n'
+'for item in abi:\n'
+'    kind = item.get("type", "?")\n'
+'    name = item.get("name", "(constructor)" if kind == "constructor" else "?")\n'
+'    print(f"  {kind:12s} : {name}")\n'
+'print(f"Bytecode : {len(bytecode)} hex chars ({len(bytecode)//2} bytes)")',
+"compile-code"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"La compilation produit deux artefacts essentiels :\n"
+"\n"
+"| Artefact | Role |\n"
+"|----------|------|\n"
+"| **ABI** (Application Binary Interface) | Decrit les fonctions du contrat (noms, types, parametres) |\n"
+"| **Bytecode** | Le code machine EVM, deploye sur la blockchain |\n"
+"\n"
+"L'ABI est necessaire pour interagir avec le contrat apres deploiement.\n"
+"Le bytecode est envoye dans une transaction de creation de contrat.",
+"compile-interpretation"))
+
+# === SECTION 4: DEPLOY ===
+cells.append(md(
+"---\n"
+"\n"
+"## 4. Deployer le contrat sur anvil\n"
+"\n"
+"Le deploiement envoie le bytecode dans une transaction speciale (sans destinataire).\n"
+"Le contrat reçoit alors une **adresse** sur la blockchain.",
+"deploy-intro"))
+
+cells.append(code(
+'# Deploiement du contrat Hello\n'
+'Hello = w3.eth.contract(abi=abi, bytecode=bytecode)\n'
+'\n'
+'# Compte deployer (premier compte anvil)\n'
+'deployer = w3.eth.accounts[0]\n'
+'\n'
+'# Construire et envoyer la transaction de deploiement\n'
+'tx_hash = Hello.constructor("Bonjour depuis Python !").transact({\n'
+'    "from": deployer,\n'
+'})\n'
+'\n'
+'# Attendre la confirmation\n'
+'tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)\n'
+'\n'
+'contract_address = tx_receipt.contractAddress\n'
+'print(f"Contrat deploye !")\n'
+'print(f"  Adresse    : {contract_address}")\n'
+'print(f"  Tx hash    : {tx_hash.hex()}")\n'
+'print(f"  Bloc       : {tx_receipt.blockNumber}")\n'
+'print(f"  Gas utilise: {tx_receipt.gasUsed:,}")',
+"deploy-code"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"Le contrat est maintenant **vivant** sur la blockchain locale. Il a :\n"
+"- Une **adresse** unique (hash de l'adresse du deployeur + nonce)\n"
+"- Son **code** stocke dans la blockchain (le bytecode)\n"
+"- Son **etat** initialise (la variable `message` = \"Bonjour depuis Python !\")\n"
+"\n"
+"Toute interaction future se fera via cette adresse.",
+"deploy-interpretation"))
+
+# === SECTION 5: INTERACTION ===
+cells.append(md(
+"---\n"
+"\n"
+"## 5. Interagir avec le contrat\n"
+"\n"
+"Deux types d'appels :\n"
+"- **call()** : lecture seule (gratuit, pas de transaction)\n"
+"- **transact()** : modification d'etat (consomme du gas, cree une transaction)",
+"interact-intro"))
+
+cells.append(code(
+'# Creer une instance du contrat a son adresse\n'
+'hello = w3.eth.contract(address=contract_address, abi=abi)\n'
+'\n'
+'# LECTURE : appeler getMessage() (gratuit, pas de gas)\n'
+'message = hello.functions.getMessage().call()\n'
+'print(f"Message actuel : \'{message}\'")\n'
+'print()\n'
+'\n'
+'# ECRITURE : appeler setMessage() (transaction, consomme du gas)\n'
+'tx_hash = hello.functions.setMessage("Hello from web3.py !").transact({\n'
+'    "from": deployer,\n'
+'})\n'
+'receipt = w3.eth.wait_for_transaction_receipt(tx_hash)\n'
+'print(f"setMessage() execute :")\n'
+'print(f"  Gas utilise : {receipt.gasUsed:,}")\n'
+'print(f"  Status      : {\'OK\' if receipt.status == 1 else \'ECHEC\'}")\n'
+'print()\n'
+'\n'
+'# Relire le message\n'
+'new_message = hello.functions.getMessage().call()\n'
+'print(f"Nouveau message : \'{new_message}\'")\n'
+'print()\n'
+'\n'
+'# On peut aussi lire la variable publique directement\n'
+'direct = hello.functions.message().call()\n'
+'print(f"Lecture directe : \'{direct}\'")\n'
+'assert direct == new_message, "Les deux lectures doivent etre identiques"',
+"interact-code"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"| Operation | Methode | Gas | Modifie l'etat |\n"
+"|-----------|---------|-----|----------------|\n"
+"| Lecture | `.call()` | 0 | Non |\n"
+"| Ecriture | `.transact()` | > 0 | Oui |\n"
+"\n"
+"Les variables `public` generent automatiquement un getter (ici `message()`).\n"
+"C'est pourquoi `getMessage()` et `message()` retournent la meme valeur.",
+"interact-interpretation"))
+
+# === SECTION 6: HELPER PATTERN ===
+cells.append(md(
+"---\n"
+"\n"
+"## 6. Pattern helper reutilisable\n"
+"\n"
+"Pour les notebooks suivants, nous utiliserons un helper qui encapsule\n"
+"la connexion, la compilation et le deploiement en quelques lignes.",
+"helper-intro"))
+
+cells.append(code(
+'def compile_and_deploy(w3, source_code, deployer, *constructor_args):\n'
+'    """Compiler et deployer un contrat Solidity en une seule fonction.\n'
+'\n'
+'    Args:\n'
+'        w3: Instance Web3 connectee\n'
+'        source_code: Code Solidity complet\n'
+'        deployer: Adresse du compte deployeur\n'
+'        *constructor_args: Arguments du constructeur\n'
+'\n'
+'    Returns:\n'
+'        tuple: (contract_instance, tx_receipt)\n'
+'    """\n'
+'    import solcx\n'
+'\n'
+'    # Compiler\n'
+'    compiled = solcx.compile_source(\n'
+'        source_code,\n'
+'        output_values=["abi", "bin"],\n'
+'        solc_version=SOLC_VERSION,\n'
+'    )\n'
+'    contract_id, contract_interface = compiled.popitem()\n'
+'    abi = contract_interface["abi"]\n'
+'    bytecode = contract_interface["bin"]\n'
+'\n'
+'    # Deployer\n'
+'    Contract = w3.eth.contract(abi=abi, bytecode=bytecode)\n'
+'    tx_hash = Contract.constructor(*constructor_args).transact({"from": deployer})\n'
+'    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)\n'
+'\n'
+'    # Retourner l\'instance du contrat\n'
+'    instance = w3.eth.contract(address=receipt.contractAddress, abi=abi)\n'
+'    return instance, receipt\n'
+'\n'
+'\n'
+'# Test du helper avec un contrat Counter\n'
+'COUNTER_SOL = """\n'
+'// SPDX-License-Identifier: MIT\n'
+'pragma solidity ^0.8.28;\n'
+'\n'
+'contract Counter {\n'
+'    uint256 public count;\n'
+'\n'
+'    function increment() public {\n'
+'        count += 1;\n'
+'    }\n'
+'\n'
+'    function decrement() public {\n'
+'        require(count > 0, "Cannot go below zero");\n'
+'        count -= 1;\n'
+'    }\n'
+'}\n'
+'"""\n'
+'\n'
+'counter, receipt = compile_and_deploy(w3, COUNTER_SOL, deployer)\n'
+'print(f"Counter deploye a : {counter.address}")\n'
+'print(f"Gas: {receipt.gasUsed:,}")\n'
+'print()\n'
+'\n'
+'# Utilisation\n'
+'print(f"count = {counter.functions.count().call()}")\n'
+'\n'
+'for i in range(5):\n'
+'    counter.functions.increment().transact({"from": deployer})\n'
+'print(f"Apres 5 increments : count = {counter.functions.count().call()}")\n'
+'\n'
+'counter.functions.decrement().transact({"from": deployer})\n'
+'print(f"Apres 1 decrement  : count = {counter.functions.count().call()}")',
+"helper-code"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"Le helper `compile_and_deploy()` sera reutilise dans tous les notebooks suivants.\n"
+"Il reduit le deploiement a **une seule ligne** :\n"
+"\n"
+"```python\n"
+"contract, receipt = compile_and_deploy(w3, SOLIDITY_CODE, deployer)\n"
+"```\n"
+"\n"
+"Cela nous permet de nous concentrer sur le code Solidity et les interactions,\n"
+"plutot que sur la plomberie de compilation/deploiement.",
+"helper-interpretation"))
+
+# === SECTION 7: MULTI-COMPTES ===
+cells.append(md(
+"---\n"
+"\n"
+"## 7. Transactions multi-comptes\n"
+"\n"
+"Anvil fournit 10 comptes pre-finances. Cela permet de simuler\n"
+"des interactions entre plusieurs utilisateurs (votes, transfers, encheres).",
+"multi-intro"))
+
+cells.append(code(
+'# Simuler un transfert d\'ETH entre comptes\n'
+'alice = w3.eth.accounts[0]\n'
+'bob = w3.eth.accounts[1]\n'
+'\n'
+'# Soldes avant\n'
+'balance_alice_before = w3.eth.get_balance(alice)\n'
+'balance_bob_before = w3.eth.get_balance(bob)\n'
+'\n'
+'# Transfert de 1 ETH\n'
+'tx_hash = w3.eth.send_transaction({\n'
+'    "from": alice,\n'
+'    "to": bob,\n'
+'    "value": w3.to_wei(1, "ether"),\n'
+'})\n'
+'receipt = w3.eth.wait_for_transaction_receipt(tx_hash)\n'
+'\n'
+'# Soldes apres\n'
+'balance_alice_after = w3.eth.get_balance(alice)\n'
+'balance_bob_after = w3.eth.get_balance(bob)\n'
+'\n'
+'print("TRANSFERT ETH")\n'
+'print("=" * 60)\n'
+'print(f"Alice ({alice[:10]}...) :")\n'
+'print(f"  Avant : {w3.from_wei(balance_alice_before, \'ether\'):.4f} ETH")\n'
+'print(f"  Apres : {w3.from_wei(balance_alice_after, \'ether\'):.4f} ETH")\n'
+'print(f"  (envoye 1 ETH + gas)")\n'
+'print()\n'
+'print(f"Bob ({bob[:10]}...) :")\n'
+'print(f"  Avant : {w3.from_wei(balance_bob_before, \'ether\'):.4f} ETH")\n'
+'print(f"  Apres : {w3.from_wei(balance_bob_after, \'ether\'):.4f} ETH")\n'
+'print(f"  (recu 1 ETH)")\n'
+'print()\n'
+'print(f"Gas utilise : {receipt.gasUsed:,} ({w3.from_wei(receipt.gasUsed * receipt.effectiveGasPrice, \'ether\'):.6f} ETH)")',
+"multi-code"))
+
+# === SECTION 8: EXERCICE ===
+cells.append(md(
+"---\n"
+"\n"
+"## 8. Exercice : Deployer et tester un contrat Vault\n"
+"\n"
+"Compilez, deployez et testez un coffre-fort Solidity depuis Python.",
+"exercise-intro"))
+
+cells.append(code(
+'# Exercice : Contrat Vault (coffre-fort)\n'
+'VAULT_SOL = """\n'
+'// SPDX-License-Identifier: MIT\n'
+'pragma solidity ^0.8.28;\n'
+'\n'
+'contract Vault {\n'
+'    mapping(address => uint256) public balances;\n'
+'\n'
+'    function deposit() public payable {\n'
+'        balances[msg.sender] += msg.value;\n'
+'    }\n'
+'\n'
+'    function withdraw(uint256 amount) public {\n'
+'        require(balances[msg.sender] >= amount, "Insufficient balance");\n'
+'        balances[msg.sender] -= amount;\n'
+'        payable(msg.sender).transfer(amount);\n'
+'    }\n'
+'\n'
+'    function getBalance() public view returns (uint256) {\n'
+'        return balances[msg.sender];\n'
+'    }\n'
+'}\n'
+'"""\n'
+'\n'
+'# TODO: Deployer le contrat Vault\n'
+'# vault, receipt = compile_and_deploy(w3, VAULT_SOL, deployer)\n'
+'raise NotImplementedError("A vous de jouer !")\n'
+'\n'
+'# TODO: Deposer 2 ETH depuis le compte Alice\n'
+'# vault.functions.deposit().transact({"from": alice, "value": w3.to_wei(2, "ether")})\n'
+'\n'
+'# TODO: Deposer 1 ETH depuis le compte Bob\n'
+'# vault.functions.deposit().transact({"from": bob, "value": w3.to_wei(1, "ether")})\n'
+'\n'
+'# TODO: Verifier les soldes dans le vault\n'
+'# balance_alice = vault.functions.balances(alice).call()\n'
+'# balance_bob = vault.functions.balances(bob).call()\n'
+'# print(f"Vault Alice : {w3.from_wei(balance_alice, \'ether\')} ETH")\n'
+'# print(f"Vault Bob   : {w3.from_wei(balance_bob, \'ether\')} ETH")\n'
+'\n'
+'# TODO: Alice retire 0.5 ETH\n'
+'# vault.functions.withdraw(w3.to_wei(0.5, "ether")).transact({"from": alice})\n'
+'\n'
+'# TODO: Verifier le solde final d\'Alice\n'
+'# print(f"Vault Alice apres retrait : {w3.from_wei(vault.functions.balances(alice).call(), \'ether\')} ETH")',
+"exercise-code"))
+
+# === RESUME ===
+cells.append(md(
+"---\n"
+"\n"
+"## 9. Resume\n"
+"\n"
+"| Outil | Role | Commande |\n"
+"|-------|------|----------|\n"
+"| **web3.py** | Client Python Ethereum | `pip install web3` |\n"
+"| **py-solc-x** | Compilateur Solidity | `pip install py-solc-x` |\n"
+"| **anvil** | Blockchain locale | `anvil` (terminal) |\n"
+"| **solcx** | API de compilation | `solcx.compile_source()` |\n"
+"\n"
+"### Pattern pour les notebooks suivants\n"
+"\n"
+"```python\n"
+"from web3 import Web3\n"
+"import solcx\n"
+"\n"
+"w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))\n"
+"deployer = w3.eth.accounts[0]\n"
+"\n"
+"contract, receipt = compile_and_deploy(w3, SOLIDITY_CODE, deployer)\n"
+"result = contract.functions.myFunction().call()\n"
+"contract.functions.myFunction(arg).transact({'from': deployer})\n"
+"```\n"
+"\n"
+"---\n"
+"\n"
+"**Notebook suivant** : [SC-3-Solidity-Basics](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb) - Types, variables et structures Solidity (avec deploiement reel)",
+"summary"))
+
+# === BUILD ===
+notebook = {
+    "cells": cells,
+    "metadata": {
+        "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+        "language_info": {
+            "codemirror_mode": {"name": "ipython", "version": 3},
+            "file_extension": ".py", "mimetype": "text/x-python",
+            "name": "python", "nbconvert_exporter": "python",
+            "pygments_lexer": "ipython3", "version": "3.10.0"
+        }
+    },
+    "nbformat": 4, "nbformat_minor": 5
+}
+
+output_path = os.path.join(
+    "d:", os.sep, "CoursIA", "MyIA.AI.Notebooks", "SymbolicAI",
+    "SmartContracts", "00-Foundations", "SC-2-Setup-Web3py.ipynb"
+)
+with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
+    json.dump(notebook, f, ensure_ascii=False, indent=1)
+    f.write('\n')
+
+print(f"Notebook cree : {output_path}")
+md_count = sum(1 for c in cells if c['cell_type'] == 'markdown')
+code_count = sum(1 for c in cells if c['cell_type'] == 'code')
+print(f"Cellules : {len(cells)} ({md_count} md + {code_count} code)")
+print("Format OK" if all(isinstance(c['source'], list) for c in cells) else "FORMAT ISSUES")

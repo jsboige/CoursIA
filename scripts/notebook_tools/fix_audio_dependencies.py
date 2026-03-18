@@ -118,7 +118,7 @@ print("=" * 50)
         "execution_count": None,
         "metadata": {},
         "outputs": [],
-        "source": cell_code.strip().split('\n')
+        "source": cell_code.strip().splitlines(keepends=True)
     }
 
 

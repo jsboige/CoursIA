@@ -1059,287 +1059,91 @@ Intelligence Artificielle -- VI
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Linear Classifiers
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x + b)
-- How would you classify this data?
+# Classificateurs Linéaires
+
+- Classer des données en 2 catégories : **positif (+1)** et **négatif (−1)**
+- Décision par **hyperplan** : f(x, w, b) = sign(w · x + b)
+  - **w** : vecteur normal à l'hyperplan
+  - **b** : biais (décalage du seuil de décision)
+- De nombreux hyperplans peuvent séparer des données linéairement séparables
+
+<!-- Classificateur linéaire : frontière w·x + b = 0 sépare les deux classes -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Linear Classifiers
-- f
-- x
-- 
-- yest
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- Any of these would be fine..
-- ..but which is best?
+# La Marge du Classifieur
+
+- La **marge** = distance entre l'hyperplan et les exemples les plus proches de chaque classe
+- Intuition : une grande marge = classifieur plus robuste aux nouvelles données
+- Définition formelle :
+
+| Zone | Équation |
+|------|----------|
+| Plan positif | w · x + b = +1 |
+| Frontière | w · x + b = 0 |
+| Plan négatif | w · x + b = −1 |
+| Marge totale | **M = 2 / ‖w‖** |
+
+<!-- Marge = zone tampon entre les deux classes ; maximiser la marge améliore la généralisation -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Classifier Margin
-- f
-- x
-- 
-- yest
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- Define the margin of a linear classifier as the width that the boundary could be increased by before hitting a datapoint.
+# Marge Maximale — Intuition
+
+- L'hyperplan à **marge maximale** est le "meilleur" classifieur linéaire parmi tous les séparateurs
+- Intuition géométrique :
+  - Une petite perturbation de l'hyperplan ne cause pas d'erreur de classification
+  - Le classifieur est **immune au retrait** de tout exemple non-vecteur-de-support
+- Fondement théorique : lié à la **dimension VC** (Vapnik-Chervonenkis) et à la généralisation
+
+<!-- SVM : maximiser la marge revient à minimiser ||w|| sous contraintes de classification -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Maximum Margin
-- f
-- x
-- 
-- yest
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- The maximum margin linear classifier is the linear classifier with the, um, maximum margin.
-- This is the simplest kind of SVM (Called an LSVM)
-- Linear SVM
+# Vecteurs de Support
+
+- Les **vecteurs de support** sont les exemples d'entraînement exactement sur les plans ±1
+- Ce sont eux qui définissent et "supportent" la frontière optimale
+- Propriétés remarquables :
+  - Le modèle SVM **ne dépend que** de ces quelques exemples (représentation sparse)
+  - Retirer un exemple non-vecteur-de-support **ne change pas** le modèle
+  - Permet une validation croisée leave-one-out (LOOCV) efficace
+
+<!-- Vecteurs de support : seuls exemples critiques qui définissent la frontière optimale -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Maximum Margin
-- f
-- x
-- 
-- yest
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- The maximum margin linear classifier is the linear classifier with the, um, maximum margin.
-- This is the simplest kind of SVM (Called an LSVM)
-- Support Vectors are those datapoints that the margin pushes up against
-- Linear SVM
+# Calcul de la Marge
+
+Soit x⁻ sur le plan négatif, x⁺ le point le plus proche sur le plan positif :
+
+- **x⁺ = x⁻ + λw** (car w est perpendiculaire aux deux plans)
+- De w · x⁺ + b = +1 et w · x⁻ + b = −1, on déduit :
+- Substitution : −1 + λ‖w‖² = 1 → **λ = 2/‖w‖²**
+
+$$M = |x^+ - x^-| = \lambda\|w\| = rac{2}{\|w\|}$$
+
+**Maximiser M revient à minimiser ½ ‖w‖²**
+
+<!-- Dérivation : marge = 2/||w||, optimisé via programmation quadratique convexe -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Why Maximum Margin?
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- The maximum margin linear classifier is the linear classifier with the, um, maximum margin.
-- This is the simplest kind of SVM (Called an LSVM)
-- Support Vectors are those datapoints that the margin pushes up against
-- Intuitively this feels safest.
-- If we’ve made a small error in the location of the boundary (it’s been jolted in its perpendicular direction) this gives us least chance of causing a misclassification.
-- LOOCV is easy since the model is immune to removal of any non-support-vector datapoints.
-- There’s some theory (using VC dimension) that is related to (but not the same as) the proposition that this is a good thing.
-- Empirically it works very very well.
+# Optimisation du SVM Linéaire
 
----
+**Problème primal** : minimiser ½ ‖w‖² sous les contraintes :
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Specifying a line and margin
-- How do we represent this mathematically?
-- …in m input dimensions?
-- Plus-Plane
-- Minus-Plane
-- Classifier Boundary
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
+$$y_i(w \cdot x_i + b) \geq 1 \quad orall i$$
 
----
+- Problème de **programmation quadratique convexe** (QP)
+- **Optimum global garanti** (pas de minimum local)
+- Via la **formulation duale de Lagrange** :
+  - On travaille avec les produits scalaires xᵢ · xⱼ
+  - Seuls les vecteurs de support ont un multiplicateur λᵢ > 0
+  - Ouvre la voie au **kernel trick**
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Specifying a line and margin
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- Plus-Plane
-- Minus-Plane
-- Classifier Boundary
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
+<!-- Formulation duale : base mathématique pour les SVMs à noyaux non-linéaires -->
 
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- Claim: The vector w is perpendicular to the Plus Plane. Why?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- Claim: The vector w is perpendicular to the Plus Plane. Why?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-- Let u and v be two vectors on the Plus Plane. What is w . ( u – v ) ?
-- And so of course the vector w is also perpendicular to the Minus Plane
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- The vector w is perpendicular to the Plus Plane
-- Let x- be any point on the minus plane
-- Let x+ be the closest plus-plane-point to x-.
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- The vector w is perpendicular to the Plus Plane
-- Let x- be any point on the minus plane
-- Let x+ be the closest plus-plane-point to x-.
-- Claim: x+ = x- +  w  for some value of . Why?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- The vector w is perpendicular to the Plus Plane
-- Let x- be any point on the minus plane
-- Let x+ be the closest plus-plane-point to x-.
-- Claim: x+ = x- +  w  for some value of . Why?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-- x-
-- x+
-- The line from x- to x+ is perpendicular to the planes.
-- So to get from  x- to x+ travel some distance in direction w.
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- What we know:
-- w . x+ + b = +1
-- w . x- + b = -1
-- x+ = x- +  w
-- |x+ - x- | = M
-- It’s now easy to get M in terms of w and b
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- What we know:
-- w . x+ + b = +1
-- w . x- + b = -1
-- x+ = x- +  w
-- |x+ - x- | = M
-- It’s now easy to get M in terms of w and b
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- w . (x - + w) + b = 1
-- =>
-- w . x - + b + w .w = 1
-- =>
-- -1 + w .w = 1
-- =>
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- What we know:
-- w . x+ + b = +1
-- w . x- + b = -1
-- x+ = x- +  w
-- |x+ - x- | = M
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width =
-- M = |x+ - x- | =| w |=
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Learning the Maximum Margin Classifier
-- Given a guess of w and b we can
-- Compute whether all data points in the correct half-planes
-- Compute the width of the margin
-- So now we just need to write a program to search the space of w’s and b’s to find the widest margin that matches all the datapoints. How?
-- Gradient descent? Simulated Annealing? Matrix Inversion? EM? Newton’s Method?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width =
-- x-
-- x+
 
 ---
 
@@ -1358,20 +1162,36 @@ Intelligence Artificielle -- VI
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Common SVM basis functions
-- zk = ( polynomial terms of xk of degree 1 to q )
-- zk = ( radial basis functions of xk )
-- zk = ( sigmoid functions of xk )
+# Noyaux SVM — Fonctions de Base
+
+Pour les données **non linéairement séparables**, le **kernel trick** projette implicitement dans un espace de grande dimension :
+
+| Noyau | Formule K(x, z) | Usage |
+|-------|-----------------|-------|
+| **Polynomial** | (x · z + c)^d | Frontières polynomiales |
+| **RBF (Gaussien)** | exp(−‖x−z‖²/2σ²) | Classification généraliste |
+| **Sigmoïde** | tanh(α x·z + c) | Analogue réseau de neurones |
+
+Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce du noyau).
+
+<!-- Kernel trick : SVM non-linéaire par transformation implicite dans un espace haute dimension -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- SVM Performance
-- Anecdotally they work very well indeed.
-- State of art in many domains
-- Maths well understood
-- There was a lot of excitement and religious fervor about SVMs since 2001.
+# Performance Empirique des SVMs
+
+- **Excellents résultats** jusqu'aux années 2010 (texte, bioinformatique, vision, finance)
+- **Avantages** :
+  - Optimum global garanti (problème convexe, pas de minimum local)
+  - Bonne généralisation en haute dimension
+  - Fondements théoriques solides (dimension VC, marges)
+- **Limites et contexte actuel** :
+  - Coût O(n²) à O(n³) — difficile sur grands datasets
+  - Supplanté par le Deep Learning depuis 2012 (AlexNet, ImageNet)
+  - Toujours pertinent : petits datasets, haute dimension, garanties formelles
+
+<!-- SVMs : référence du ML classique, encore utilisés pour petits datasets et haute dimension -->
+
 
 ---
 

@@ -310,12 +310,12 @@ for nb_info in notebooks:
         md_cell = {
             'cell_type': 'markdown',
             'metadata': {},
-            'source': nb_info['exercise']['md'].split('\n')
+            'source': nb_info['exercise']['md'].splitlines(keepends=True)
         }
         code_cell = {
             'cell_type': 'code',
             'metadata': {},
-            'source': nb_info['exercise']['code'].split('\n'),
+            'source': nb_info['exercise']['code'].splitlines(keepends=True),
             'execution_count': None,
             'outputs': []
         }

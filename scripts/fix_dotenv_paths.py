@@ -44,7 +44,7 @@ for nb_path in notebooks_to_fix:
                 for line in lines:
                     if 'load_dotenv' in line and '../' in line:
                         if not skipped_load_dotenv:
-                            new_lines.extend(new_pattern.split('\n'))
+                            new_lines.extend(new_pattern.splitlines(keepends=True))
                             skipped_load_dotenv = True
                         # Skip the old load_dotenv line
                     else:
