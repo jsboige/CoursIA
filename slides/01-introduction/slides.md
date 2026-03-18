@@ -29,8 +29,8 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
 - **En classe**
   - Cours magistraux, corrections d'exercices, travaux pratiques
 - **Projets trimestriels**
-  - Equipes de 2-3 etudiants, travail transversal
-  - Expose final en classe devant le groupe
+  - Équipes de 2-3 étudiants, travail transversal
+  - Exposé final en classe devant le groupe
 
 ---
 layout: image-right
@@ -40,7 +40,7 @@ image: ./images/img_001.jpg
 # Sommaire
 
 - Qu'est-ce que l'intelligence artificielle ?
-- Racines, histoire et etat de l'art
+- Racines, histoire et état de l'art
 - Structure des agents rationnels
 <div v-click="2">
 - Intelligence exploratoire
@@ -86,7 +86,7 @@ image: ./images/img_001.jpg
   - Qu'est-ce que l'intelligence artificielle?
   - Les domaines d'etude
   - Un peu d'histoire
-  - L'etat de l'art
+  - L'état de l'art
 - Systemes d'agents
   - Agents rationnels
   - Environnements taches
@@ -138,9 +138,8 @@ A l'issue de ce cours, vous serez capables de :
 - Presentations des projets
 
 ---
-
-
-<!-- _class: questions -->
+layout: section
+---
 
 # Questions?
 
@@ -154,7 +153,7 @@ A l'issue de ce cours, vous serez capables de :
   - Qu'est-ce que l'intelligence artificielle?
   - Les domaines d'etude
   - Un peu d'histoire
-  - L'etat de l'art
+  - L'état de l'art
 - Systemes d'agents
   - Agents rationnels
   - Environnements taches
@@ -252,7 +251,7 @@ layout: image-right
 image: ./images/img_005.jpg
 ---
 
-# Etat de l'art (1/2)
+# État de l'art (1/2)
 
 **L'IA bat les champions (1997-2019)**
 
@@ -275,7 +274,7 @@ layout: image-right
 image: ./images/img_005.jpg
 ---
 
-# Etat de l'art (2/2)
+# État de l'art (2/2)
 
 **Deep Learning et NLP (2010-2019)**
 
@@ -381,7 +380,7 @@ image: ./images/img_020.png
   - Exemple : prouveurs automatiques de theoremes
 - **Limites de l'approche purement logique**
   - Le monde reel est incertain (capteurs imparfaits, information incomplete)
-  - Tout comportement intelligent ne releve pas d'une deliberation logique
+  - Tout comportement intelligent ne relève pas d'une délibération logique
   - En pratique, il faut aussi definir des buts et evaluer des couts
 
 ---
@@ -392,17 +391,16 @@ image: ./images/img_020.png
 - **Un comportement rationnel consiste a faire la bonne chose :**
   - Choisir l'action qui maximise les chances d'atteindre l'objectif, compte tenu de l'information disponible
 - **Agir rationnellement n'implique pas forcement de penser**
-  - Un reflexe (cligner des yeux) peut etre rationnel sans deliberation
+  - Un réflexe (cligner des yeux) peut être rationnel sans délibération
   - Mais la reflexion reste un outil puissant au service de l'action
 - **Lien avec la theorie de la decision**
-  - Evaluer les etats possibles et les actions disponibles
+  - Evaluer les états possibles et les actions disponibles
   - Maximiser l'utilite esperee, meme sous incertitude
 - **C'est l'approche centrale de ce cours** : concevoir des agents rationnels
 
 ---
-
-
-<!-- _class: questions -->
+layout: section
+---
 
 # Questions?
 
@@ -416,7 +414,7 @@ image: ./images/img_020.png
   - Qu'est-ce que l'intelligence artificielle?
   - Les domaines d'etude
   - Un peu d'histoire
-  - L'etat de l'art
+  - L'état de l'art
 - **Agents rationnels**
 - **Environnements taches**
 - **Types d'agents**
@@ -529,7 +527,7 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 - **Completement vs partiellement observable**
   - L'agent a-t-il acces a l'etat complet de l'environnement ?
 - **Deterministe vs stochastique**
-  - L'etat suivant est-il entierement determine par l'etat courant et l'action ?
+  - L'etat suivant est-il entierement determine par l'état courant et l'action ?
   - Cas particulier : *strategique* = deterministe sauf les actions des autres agents
 - **Episodique vs sequentiel**
   - Les decisions sont-elles independantes ou liees entre elles ?
@@ -544,7 +542,7 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 <div v-click="5">
 
 - **Discret vs continu**
-  - Les etats, le temps, les percepts et les actions sont-ils denombrables ?
+  - Les états, le temps, les percepts et les actions sont-ils denombrables ?
 
 </div>
 <div v-click="6">
@@ -582,10 +580,10 @@ image: ./images/img_030.png
 
 Un agent naif pourrait stocker une table "percepts → action", mais cette approche est impraticable : la table serait gigantesque et impossible a construire.
 
-**Cinq architectures d'agents, par ordre de generalite :**
+**Cinq architectures d'agents, par ordre de généralité :**
 
-1. Agent reflexe simple
-2. Agent reflexe fonde sur un modele
+1. Agent réflexe simple
+2. Agent réflexe fondé sur un modele
 3. Agent fonde sur des buts
 4. Agent fonde sur l'utilite
 5. Agent capable d'apprentissage
@@ -594,12 +592,12 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 layout: two-cols
 ---
 
-# Agent reflexe
+# Agent réflexe
 
 
 **Caracteristiques:**
 
-- Pas de memoire
+- Pas de mémoire
 - Percepts courants
 - Regles Conditions / Actions
 
@@ -608,9 +606,9 @@ layout: two-cols
 <div v-click="2">
 - Intelligence animale
 </div>
-- Behaviourism
-- Artificial Life
-- Cellular Automata
+- Béhaviorisme
+- Vie artificielle
+- Automates cellulaires
 
 <img src="./images/img_033.png" width="80">
 
@@ -625,16 +623,16 @@ layout: two-cols
 layout: two-cols
 ---
 
-# Agent reflexe fonde sur un modele
+# Agent réflexe fondé sur un modele
 
 
 **Caracteristiques:**
 
 <div v-click="1">
-- Etat du monde
+- État du monde
 </div>
 - Historique des percepts
-- Memoire du changement
+- Mémoire du changement
 
 **Exemple: Subsomption (Brooks)**
 
@@ -708,9 +706,9 @@ image: ./images/img_040.png
 
 Trois niveaux de representation des etats, du plus simple au plus expressif :
 
-- **Atomique** : chaque etat est indivisible (ex: un noeud dans un graphe)
-- **Factorise** : un etat est un ensemble de proprietes (ex: variables booleennes)
-- **Structure** : un etat est un objet complexe avec des relations (ex: base de donnees)
+- **Atomique** : chaque état est indivisible (ex: un noeud dans un graphe)
+- **Factorise** : un état est un ensemble de proprietes (ex: variables booleennes)
+- **Structure** : un état est un objet complexe avec des relations (ex: base de donnees)
 
 **Compromis fondamental :** plus la representation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
 
@@ -750,8 +748,6 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 ---
 
-
-<!-- _class: crossref -->
 
 # Pour aller plus loin : Notebooks
 
