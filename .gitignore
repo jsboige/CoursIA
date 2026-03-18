@@ -576,6 +576,7 @@ reports/
 .claude/memory/
 .claude/local/
 .claude/scheduled_tasks.lock
+.claude/mcp.json
 
 # Roo Code state files (local scope, machine-specific)
 .roo/
