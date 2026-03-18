@@ -1977,6 +1977,89 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 
 ---
 
+# RLHF : Aligner les LLMs avec les Préférences Humaines
+
+- **Problème** : les LLMs entraînés sur du texte brut ne suivent pas forcément les instructions ni les valeurs humaines
+- **Comportements problématiques observés** :
+  - Réponses toxiques, biaisées ou dangereuses
+  - Hallucinations présentées avec confiance
+  - Réponses verbeuses mais peu utiles
+- **Solution** : Reinforcement Learning from Human Feedback (RLHF)
+  - Apprendre un **modèle de récompense** à partir des préférences humaines
+  - Optimiser le LLM via RL pour maximiser cette récompense
+
+<!-- RLHF : connexion directe entre RL classique (reward) et alignement des LLMs -->
+
+---
+
+# Pipeline RLHF : 3 Étapes
+
+**Étape 1 — Supervised Fine-Tuning (SFT)**
+- Fine-tuner le LLM pré-entraîné sur des démonstrations d'experts (~10k–100k exemples annotés)
+
+**Étape 2 — Reward Model (RM)**
+- Collecter des comparaisons : pour un prompt, A est préféré à B
+- Entraîner un modèle de récompense : RM(prompt, réponse) → score de qualité
+
+**Étape 3 — PPO Fine-tuning**
+- Optimiser le LLM via PPO pour maximiser RM(prompt, réponse)
+- Contrainte KL pour ne pas trop s'éloigner du modèle SFT
+
+<!-- Pipeline SFT → RM → PPO : fondement d'InstructGPT (2022), ChatGPT, Claude 1 -->
+
+---
+
+# Reward Modeling : Apprendre les Préférences Humaines
+
+**Modèle Bradley-Terry** : P(A ≻ B) = σ(r(A) − r(B))
+
+- Entraîner le RM à prédire quelle réponse les humains préfèrent
+- Données : paires (réponse_A, réponse_B, préférence) pour chaque prompt
+- Architecture : LLM backbone + tête de régression scalaire
+
+| Aspect | Valeur typique |
+|--------|----------------|
+| Données de comparaison | 30k–500k paires |
+| Accord inter-annotateurs | 60–75% |
+| Corrélation RM ↔ humains | ~0.75–0.85 |
+
+<!-- Bradley-Terry : modèle probabiliste de préférence, base de l'InstructGPT reward model -->
+
+---
+
+# PPO et InstructGPT / ChatGPT
+
+**Proximal Policy Optimization (PPO)** pour fine-tuner le LLM :
+
+- **Récompense combinée** : r(x,y) = RM(x,y) − β · KL(π_RL ‖ π_SFT)
+  - RM(x,y) : score du reward model (préférence humaine)
+  - β · KL : pénalité pour rester proche du modèle SFT (β ≈ 0.02–0.5)
+- **InstructGPT** (Ouyang et al., 2022) : première démonstration à grande échelle
+  - GPT-3 fine-tuné par RLHF → suivi d'instructions radicalement amélioré
+  - Base de ChatGPT (déployé Nov. 2022) puis GPT-4
+
+<!-- PPO + KL penalty : équilibre entre optimisation des préférences et préservation des capacités du LLM -->
+
+---
+
+# Constitutional AI : RLAIF sans Labels Humains
+
+**Anthropic Claude** — Constitution de principes plutôt qu'annotateurs massifs :
+
+1. **SFT initial** : fine-tuning sur des réponses bénignes
+2. **AI Feedback (RLAIF)** : un LLM critique génère ses propres préférences selon une **constitution** (principes : utile, inoffensif, honnête)
+3. **RM entraîné sur RLAIF** : scalabilité sans annotateurs humains
+4. **PPO** sur ce reward model constitutionnel
+
+| Méthode | Labels humains | Scalabilité |
+|---------|----------------|-------------|
+| RLHF classique | Requis (coûteux) | Limitée |
+| Constitutional AI (RLAIF) | Minimaux | Haute |
+
+<!-- Constitutional AI (Bai et al., 2022) : alignement scalable, base de Claude 1 et Claude 2 -->
+
+---
+
 <!-- _class: questions -->
 
 # Questions?
