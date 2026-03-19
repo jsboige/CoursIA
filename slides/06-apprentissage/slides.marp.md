@@ -64,7 +64,7 @@ Intelligence Artificielle -- VI
 
 - **4 modules** : performance, apprentissage, critique, generateur de problemes
 - Le module d'apprentissage ameliore le composant de performance a partir du feedback du critique
-- Le generateur de problemes suggere de nouvelles experiences pour enrichir l'apprentissage
+- Le generateur de problemes suggere de nouvelles expériences pour enrichir l'apprentissage
 
 ---
 
@@ -543,9 +543,9 @@ Intelligence Artificielle -- VI
 
 # Classification lineaire
 
-- Separer les classes par un hyperplan dans l'espace des caracteristiques
+- Separer les classes par un hyperplan dans l'espace des caractéristiques
 - Fonction de decision : f(x) = sign(w . x + b)
-- Limite : ne fonctionne que si les donnees sont lineairement separables
+- Limite : ne fonctionne que si les données sont lineairement separables
 
 ![bg right:40%](images/img_021.png)
 
@@ -642,7 +642,7 @@ Intelligence Artificielle -- VI
 - **Principe** : propager l'erreur de la sortie vers les couches cachees
 - Calcul du gradient de l'erreur par la regle de la chaine (chain rule)
 - Mise a jour des poids : W_j ← W_j - alpha * dE/dW_j
-- Permet d'entrainer des reseaux multi-couches (invention cle du deep learning)
+- Permet d'entrainer des réseaux multi-couches (invention cle du deep learning)
 
 ![bg right:35%](images/img_031.png)
 
@@ -692,7 +692,7 @@ Intelligence Artificielle -- VI
 ![bg](images/img_036.png)
 ![bg](images/img_037.png)
 
-<!-- Architecture NN : entree → couches cachees (activation ReLU/sigmoid) → sortie -->
+<!-- Architecture NN : entrée → couches cachees (activation ReLU/sigmoid) → sortie -->
 
 ---
 
@@ -1055,7 +1055,7 @@ Intelligence Artificielle -- VI
 ![bg right:35% vertical](images/img_084.png)
 ![bg](images/img_085.png)
 
-<!-- Clustering : donnees brutes → k-means/DBSCAN → groupes identifies -->
+<!-- Clustering : données brutes → k-means/DBSCAN → groupes identifies -->
 
 ---
 
@@ -1918,7 +1918,7 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 
 - Jeux à information imparfaite:
 - Etats de croyance probabilistes
-- Evaluation du regret:
+- Évaluation du regret:
 - Machine learning + théorie des jeux
 - Quelles actions meilleures -> Mise à jour des mixes
 - Ne converge pas en auto-play
@@ -2082,7 +2082,7 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 - Expérience DNN Bitcoin, Encog et machine learning
 - Amélioration par l'apprentissage d'un agent joueur de Go simple
 - Le Go et l’IA, Récentes avancées. Go Traxx
-- Evolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie.
+- Évolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie.
 - Approches évolutionnistes, automates cellulaires, Bac a sable. Golly, Encog
 - Pilotage d'un cluster de cache distribué pour le portage d’applications  dans le Cloud
 - Caches distribués, scaling, stratégies et clustering. Redis
@@ -2095,7 +2095,7 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 > **Reinforcement Learning** : `RL/` - CartPole, DQN, Stable Baselines3
 > **Algorithmes genetiques** : `Sudoku/Sudoku-2-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 > **Deep Learning et GenAI** : `GenAI/` - Transformers, diffusion, LLMs
-> **Probabilites et inference** : `Probas/` - Infer.NET, reseaux bayesiens
+> **Probabilités et inference** : `Probas/` - Infer.NET, réseaux bayesiens
 
 <!-- Notebooks disponibles dans MyIA.AI.Notebooks/ -->
 
