@@ -23,9 +23,9 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
 
 # IA 101 -- Ressources et organisation
 
-- **Ouvrage de reference**
+- **Ouvrage de référence**
   - *Artificial Intelligence: A Modern Approach* (Russell & Norvig)
-  - 3e edition (2006) et 4e edition (2020, avec deep learning et IA moderne)
+  - 3e édition (2006) et 4e édition (2020, avec deep learning et IA moderne)
 - **En classe**
   - Cours magistraux, corrections d'exercices, travaux pratiques
 - **Projets trimestriels**
@@ -52,7 +52,7 @@ image: ./images/img_001.jpg
 - Intelligence Symbolique
 </div>
 <div v-click="3">
-  - Comment utiliser le raisonnement et les mathematiques ?
+  - Comment utiliser le raisonnement et les mathématiques ?
 </div>
 <div v-click="4">
 - Intelligence probabiliste
@@ -70,7 +70,7 @@ image: ./images/img_001.jpg
 - Apprentissage
 </div>
 <div v-click="6">
-  - Comment utiliser les donnees et l'experience ?
+  - Comment utiliser les données et l'expérience ?
 </div>
 <div v-click="7">
 - Application: le langage naturel
@@ -84,10 +84,10 @@ image: ./images/img_001.jpg
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'etude
+  - Les domaines d'étude
   - Un peu d'histoire
   - L'etat de l'art
-- Systemes d'agents
+- Systèmes d'agents
   - Agents rationnels
   - Environnements taches
   - Types d'Agents
@@ -105,7 +105,7 @@ A l'issue de ce cours, vous serez capables de :
   - Disposer des bases pour approfondir chacun d'entre eux
 - **Concevoir des programmes intelligents dans des domaines varies :**
   - Recherche de solutions et jeux strategiques
-  - Representation de connaissances et raisonnement logique
+  - Représentation de connaissances et raisonnement logique
   - Modelisation probabiliste et prise de decision sous incertitude
   - Apprentissage automatique (supervise, non supervise, par renforcement)
   - Traitement du langage naturel
@@ -115,9 +115,9 @@ A l'issue de ce cours, vous serez capables de :
 
 # Objectifs du cours (2/2)
 
-- **Concevoir des systemes intelligents en conditions reelles**
-  - Integrer les differentes briques pour construire un systeme complet
-  - Gerer les contraintes du monde reel : incertitude, temps de calcul, donnees imparfaites
+- **Concevoir des systèmes intelligents en conditions reelles**
+  - Integrer les differentes briques pour construire un système complet
+  - Gerer les contraintes du monde reel : incertitude, temps de calcul, données imparfaites
 - **BONUS : Mieux comprendre l'intelligence elle-meme**
   - Comment l'intelligence emerge-t-elle dans la nature ?
   - Comment fonctionne le cerveau humain, et en quoi l'IA s'en inspire ?
@@ -152,10 +152,10 @@ A l'issue de ce cours, vous serez capables de :
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'etude
+  - Les domaines d'étude
   - Un peu d'histoire
   - L'etat de l'art
-- Systemes d'agents
+- Systèmes d'agents
   - Agents rationnels
   - Environnements taches
   - Types d'agents
@@ -168,10 +168,10 @@ A l'issue de ce cours, vous serez capables de :
 # Qu'est-ce que l'intelligence artificielle ?
 
 - **Des definitions multiples et un concept evolutif**
-  - L'IA n'a pas de definition unique : elle recouvre des approches tres differentes
-  - Concevoir un systeme intelligent n'implique pas de comprendre l'intelligence
-- **Une definition qui evolue avec la technologie :**
-  - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systemes experts → Apprentissage profond → IA generative
+  - L'IA n'a pas de définition unique : elle recouvre des approches tres differentes
+  - Concevoir un système intelligent n'implique pas de comprendre l'intelligence
+- **Une définition qui évolue avec la technologie :**
+  - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systèmes experts → Apprentissage profond → IA generative
 
 <div class="center-image">
 <img src="./images/img_002.png" alt="Definition IA" style="max-width: 850px; margin: auto; display: block;">
@@ -200,14 +200,14 @@ image: ./images/img_003.png
 L'IA est une discipline profondement interdisciplinaire :
 
 - **Philosophie :** logique, raisonnement, nature de l'esprit
-- **Mathematiques :** algorithmes, complexite, probabilites, decidabilite
+- **Mathematiques :** algorithmes, complexité, probabilités, décidabilité
 - **Economie :** theorie de la decision, utilite, theorie des jeux
-- **Biologie :** intelligence naturelle et animale, evolution
+- **Biologie :** intelligence naturelle et animale, évolution
 - **Neurosciences :** substrat physique de l'activite mentale
 - **Psychologie :** perception, cognition, comportement
 - **Informatique :** puissance de calcul, logiciel, architectures
 - **Theorie du controle :** optimisation d'une fonction objective dans le temps
-- **Linguistique :** grammaires, representation du sens
+- **Linguistique :** grammaires, représentation du sens
 
 ---
 layout: image-right
@@ -217,14 +217,14 @@ image: ./images/img_004.png
 # Histoire succincte (1/2)
 
 **Les debuts (1943-1970)**
-- **1943** : McCulloch & Pitts modelisent le cerveau comme un circuit logique
+- **1943** : McCulloch & Pitts modélisent le cerveau comme un circuit logique
 - **1950** : Turing pose la question "Can machines think?"
 - **1956** : Conference de Dartmouth -- le terme "Artificial Intelligence" est ne
-- **Annees 50** : premiers programmes capables d'apprendre
+- **Années 50** : premiers programmes capables d'apprendre
   - Samuel (jeu de dames), Newell & Simon (theoricien logique)
   - Gelernter (geometrie), naissance de Lisp
 - **1965** : Robinson propose un algorithme complet de raisonnement logique
-- **1969-79** : age d'or des systemes experts (bases de connaissances)
+- **1969-79** : age d'or des systèmes experts (bases de connaissances)
 
 ---
 layout: image-right
@@ -235,10 +235,10 @@ image: ./images/img_004.png
 
 **Maturite et "hivers de l'IA" (1970-2010)**
 
-- **1970s** : l'IA se heurte a la complexite calculatoire -- premier "hiver"
-- **1980s** : l'IA devient une industrie (robotique, vision, systemes experts)
-- **1986** : retour des reseaux de neurones grace a la retropropagation
-- **1990s** : l'IA se mathematise (probabilites, optimisation)
+- **1970s** : l'IA se heurte a la complexité calculatoire -- premier "hiver"
+- **1980s** : l'IA devient une industrie (robotique, vision, systèmes experts)
+- **1986** : retour des réseaux de neurones grace a la retropropagation
+- **1990s** : l'IA se mathematise (probabilités, optimisation)
 - **2000s** : data mining, apprentissage bayesien, web semantique
 
 **Renaissance et explosion (2010-aujourd'hui)**
@@ -264,7 +264,7 @@ image: ./images/img_005.jpg
 
 **Applications dans le monde reel**
 
-- Preuve de conjectures mathematiques (Robbins, 1996)
+- Preuve de conjectures mathématiques (Robbins, 1996)
 - Vehicules autonomes (vol, conduite, marche robotique)
 - Logistique et planification militaire (guerre du Golfe)
 - NASA : planification autonome de missions spatiales
@@ -280,7 +280,7 @@ image: ./images/img_005.jpg
 **Deep Learning et NLP (2010-2019)**
 
 - **2012** : deep learning domine ImageNet (reconnaissance d'images quasi humaine)
-- **2014** : GANs -- les reseaux de neurones deviennent creatifs
+- **2014** : GANs -- les réseaux de neurones deviennent creatifs
 - **2017** : Transformers (Google) -- revolution du traitement du langage
 - **2018-19** : GPT-2, BERT, Watson -- un nouveau paradigme d'interaction
 
@@ -345,7 +345,7 @@ image: ./images/img_020.png
 
 **Competences requises pour reussir le test :**
 - Traitement du langage naturel
-- Representation de connaissances
+- Représentation de connaissances
 - Raisonnement automatique
 - Apprentissage
 
@@ -358,7 +358,7 @@ image: ./images/img_020.png
 
 # Penser comme l'homme : sciences cognitives
 
-- **La "revolution cognitive" (annees 1960)**
+- **La "revolution cognitive" (années 1960)**
   - La psychologie commence a modeliser la pensee comme un traitement de l'information
 - **Deux approches pour etudier le cerveau**
   - *Top-down* : modeliser le comportement humain observable
@@ -378,11 +378,11 @@ image: ./images/img_020.png
 - **La logique au service de l'IA**
   - Representer les faits du monde sous forme formelle
   - Utiliser l'inference pour deduire de nouvelles connaissances
-  - Exemple : prouveurs automatiques de theoremes
+  - Exemple : prouveurs automatiques de théorèmes
 - **Limites de l'approche purement logique**
   - Le monde reel est incertain (capteurs imparfaits, information incomplete)
-  - Tout comportement intelligent ne releve pas d'une deliberation logique
-  - En pratique, il faut aussi definir des buts et evaluer des couts
+  - Tout comportement intelligent ne releve pas d'une délibération logique
+  - En pratique, il faut aussi definir des buts et évaluer des couts
 
 ---
 
@@ -392,10 +392,10 @@ image: ./images/img_020.png
 - **Un comportement rationnel consiste a faire la bonne chose :**
   - Choisir l'action qui maximise les chances d'atteindre l'objectif, compte tenu de l'information disponible
 - **Agir rationnellement n'implique pas forcement de penser**
-  - Un reflexe (cligner des yeux) peut etre rationnel sans deliberation
+  - Un reflexe (cligner des yeux) peut etre rationnel sans délibération
   - Mais la reflexion reste un outil puissant au service de l'action
 - **Lien avec la theorie de la decision**
-  - Evaluer les etats possibles et les actions disponibles
+  - Évaluer les etats possibles et les actions disponibles
   - Maximiser l'utilite esperee, meme sous incertitude
 - **C'est l'approche centrale de ce cours** : concevoir des agents rationnels
 
@@ -409,12 +409,12 @@ image: ./images/img_020.png
 ---
 
 
-# Systemes d'agents
+# Systèmes d'agents
 
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'etude
+  - Les domaines d'étude
   - Un peu d'histoire
   - L'etat de l'art
 - **Agents rationnels**
@@ -449,7 +449,7 @@ image: ./images/img_021.png
 - **Decision basee sur** : la suite des percepts recus et les connaissances prealables
 - **Rationnel ne signifie pas omniscient**
   - L'agent explore pour completer ses connaissances
-  - Il s'adapte par l'experience (apprentissage)
+  - Il s'adapte par l'expérience (apprentissage)
   - Il est reactif *et* proactif
 
 ---
@@ -524,15 +524,15 @@ layout: two-cols
 
 # Types d'environnement (1/2)
 
-Chaque environnement de tache possede des proprietes qui influencent la conception de l'agent :
+Chaque environnement de tache possede des propriétés qui influencent la conception de l'agent :
 
 - **Completement vs partiellement observable**
   - L'agent a-t-il acces a l'etat complet de l'environnement ?
 - **Deterministe vs stochastique**
   - L'etat suivant est-il entierement determine par l'etat courant et l'action ?
-  - Cas particulier : *strategique* = deterministe sauf les actions des autres agents
-- **Episodique vs sequentiel**
-  - Les decisions sont-elles independantes ou liees entre elles ?
+  - Cas particulier : *strategique* = déterministe sauf les actions des autres agents
+- **Episodique vs séquentiel**
+  - Les decisions sont-elles indépendantes ou liees entre elles ?
 - **Statique vs dynamique**
   - L'environnement change-t-il pendant que l'agent delibere ?
 
@@ -544,7 +544,7 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 <div v-click="5">
 
 - **Discret vs continu**
-  - Les etats, le temps, les percepts et les actions sont-ils denombrables ?
+  - Les etats, le temps, les percepts et les actions sont-ils dénombrables ?
 
 </div>
 <div v-click="6">
@@ -560,7 +560,7 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 
 </div>
 
-**En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, sequentiel, dynamique, continu, multiagent.
+**En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, séquentiel, dynamique, continu, multiagent.
 
 ---
 
@@ -582,7 +582,7 @@ image: ./images/img_030.png
 
 Un agent naif pourrait stocker une table "percepts → action", mais cette approche est impraticable : la table serait gigantesque et impossible a construire.
 
-**Cinq architectures d'agents, par ordre de generalite :**
+**Cinq architectures d'agents, par ordre de généralité :**
 
 1. Agent reflexe simple
 2. Agent reflexe fonde sur un modele
@@ -597,9 +597,9 @@ layout: two-cols
 # Agent reflexe
 
 
-**Caracteristiques:**
+**Caractéristiques:**
 
-- Pas de memoire
+- Pas de mémoire
 - Percepts courants
 - Regles Conditions / Actions
 
@@ -628,13 +628,13 @@ layout: two-cols
 # Agent reflexe fonde sur un modele
 
 
-**Caracteristiques:**
+**Caractéristiques:**
 
 <div v-click="1">
 - Etat du monde
 </div>
 - Historique des percepts
-- Memoire du changement
+- Mémoire du changement
 
 **Exemple: Subsomption (Brooks)**
 
@@ -691,7 +691,7 @@ image: ./images/img_039.png
 **Quatre composants internes :**
 
 - **Element de performance** : choisit les actions
-- **Element d'apprentissage** : ameliore la performance a partir de l'experience
+- **Element d'apprentissage** : ameliore la performance a partir de l'expérience
 - **Critique** : evalue les resultats par rapport a un standard fixe
 - **Generateur de problemes** : suggere des actions exploratoires
 
@@ -704,15 +704,15 @@ image: ./images/img_040.png
 
 # Fonctionnement interne des agents
 
-**La representation de la connaissance est determinante**
+**La représentation de la connaissance est determinante**
 
-Trois niveaux de representation des etats, du plus simple au plus expressif :
+Trois niveaux de représentation des etats, du plus simple au plus expressif :
 
 - **Atomique** : chaque etat est indivisible (ex: un noeud dans un graphe)
-- **Factorise** : un etat est un ensemble de proprietes (ex: variables booleennes)
-- **Structure** : un etat est un objet complexe avec des relations (ex: base de donnees)
+- **Factorise** : un etat est un ensemble de propriétés (ex: variables booléennes)
+- **Structure** : un etat est un objet complexe avec des relations (ex: base de données)
 
-**Compromis fondamental :** plus la representation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
+**Compromis fondamental :** plus la représentation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
 
 ---
 
@@ -730,8 +730,8 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
   - La rationalite parfaite est un ideal ; en pratique, on vise le meilleur compromis
 - **Architectures d'agents**
   - Reflexes (simples ou avec modele), fondes sur des buts ou l'utilite, apprenants
-  - Les proprietes de l'environnement dictent le choix de l'architecture
-  - La representation des etats (atomique, factorisee, structuree) conditionne les capacites
+  - Les propriétés de l'environnement dictent le choix de l'architecture
+  - La représentation des etats (atomique, factorisee, structuree) conditionne les capacites
 
 </div>
 
@@ -759,7 +759,7 @@ Chaque chapitre du cours est accompagne de travaux pratiques sous forme de noteb
 
 - **Exploration** : `Search/`, `Sudoku/` -- CSP, algorithmes genetiques, optimisation
 - **Logique** : `SymbolicAI/`, `Lean/` -- Z3, Tweety, Lean 4, argumentation
-- **Probabilites** : `Probas/Infer/` -- inference bayesienne, reseaux de decision
+- **Probabilites** : `Probas/Infer/` -- inference bayesienne, réseaux de decision
 - **Jeux** : `GameTheory/` -- equilibres de Nash, jeux bayesiens, MARL
 - **Apprentissage** : `ML/`, `RL/` -- classification, regression, renforcement
 - **IA Generative** : `GenAI/` -- DALL-E, Stable Diffusion, LLMs, RAG
