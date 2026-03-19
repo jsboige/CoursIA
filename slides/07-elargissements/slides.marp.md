@@ -127,7 +127,7 @@ Son impact réel?
 - **Limite persistante**
   - Les systèmes humains et artificiels restent soumis aux contraintes des mathématiques
 
-<!-- Godel : tout systeme formel coherent contient des enonces indecidables -->
+<!-- Godel : tout système formel coherent contient des enonces indecidables -->
 
 ---
 

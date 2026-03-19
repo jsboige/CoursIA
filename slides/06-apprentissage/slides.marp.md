@@ -553,7 +553,7 @@ Intelligence Artificielle -- VI
 
 # Regression logistique
 
-- Sortie = probabilite d'appartenance a une classe via la fonction sigmoide
+- Sortie = probabilité d'appartenance a une classe via la fonction sigmoide
 - Frontiere de decision lisse, interpretable, rapide a entrainer
 - Base des classificateurs lineaires modernes
 
@@ -640,7 +640,7 @@ Intelligence Artificielle -- VI
 # Apprentissage par retropropagation
 
 - **Principe** : propager l'erreur de la sortie vers les couches cachees
-- Calcul du gradient de l'erreur par la regle de la chaine (chain rule)
+- Calcul du gradient de l'erreur par la règle de la chaine (chain rule)
 - Mise a jour des poids : W_j ← W_j - alpha * dE/dW_j
 - Permet d'entrainer des réseaux multi-couches (invention cle du deep learning)
 
@@ -1152,7 +1152,7 @@ $$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
 - **Astuce 1** : Identifier les points les plus proches du plan de separation optimal (les "vecteurs supports") et travailler directement a partir de ces instances.
 - **Astuce 2** : Formuler comme un probleme d'optimisation quadratique et utiliser les techniques de programmation quadratique.
 - **Astuce 3** (le "kernel trick") :
-  - Au lieu d'utiliser directement les caracteristiques, representer les donnees dans un espace de grande dimension construit a partir de fonctions de base (combinaisons polynomiales et gaussiennes des caracteristiques d'origine).
+  - Au lieu d'utiliser directement les caractéristiques, representer les données dans un espace de grande dimension construit a partir de fonctions de base (combinaisons polynomiales et gaussiennes des caractéristiques d'origine).
   - Trouver un hyperplan separateur / SVM dans cet espace de grande dimension.
   - Resultat : un classifieur non lineaire !
 
