@@ -142,19 +142,26 @@ async def proxy_request(
             params=request.query_params
         )
 
-        # Handle streaming responses (audio)
-        if "audio" in response.headers.get("content-type", ""):
-            return StreamingResponse(
-                response.aiter_bytes(),
+        content_type = response.headers.get("content-type", "")
+
+        # Handle audio responses - return raw bytes directly
+        if "audio" in content_type:
+            from fastapi.responses import Response
+            return Response(
+                content=response.content,
                 status_code=response.status_code,
-                headers=dict(response.headers)
+                media_type=content_type,
+                headers={
+                    "content-disposition": response.headers.get(
+                        "content-disposition", 'attachment; filename="speech.wav"'
+                    )
+                }
             )
         else:
             # Handle JSON responses
             return JSONResponse(
                 content=response.json(),
-                status_code=response.status_code,
-                headers=dict(response.headers)
+                status_code=response.status_code
             )
 
     except httpx.RequestError as e:
