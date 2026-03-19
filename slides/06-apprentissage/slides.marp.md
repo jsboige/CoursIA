@@ -1121,7 +1121,7 @@ Soit x⁻ sur le plan négatif, x⁺ le point le plus proche sur le plan positif
 - De w · x⁺ + b = +1 et w · x⁻ + b = −1, on déduit :
 - Substitution : −1 + λ‖w‖² = 1 → **λ = 2/‖w‖²**
 
-$$M = |x^+ - x^-| = \lambda\|w\| = rac{2}{\|w\|}$$
+$$M = |x^+ - x^-| = \lambda\|w\| = \frac{2}{\|w\|}$$
 
 **Maximiser M revient à minimiser ½ ‖w‖²**
 
@@ -1133,7 +1133,7 @@ $$M = |x^+ - x^-| = \lambda\|w\| = rac{2}{\|w\|}$$
 
 **Problème primal** : minimiser ½ ‖w‖² sous les contraintes :
 
-$$y_i(w \cdot x_i + b) \geq 1 \quad orall i$$
+$$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
 
 - Problème de **programmation quadratique convexe** (QP)
 - **Optimum global garanti** (pas de minimum local)
