@@ -15,15 +15,40 @@ from typing import List
 
 
 def convert_string_to_list(source) -> List[str]:
-    """Convert STRING source to LIST format."""
+    """Convert STRING source to LIST format.
+
+    nbformat convention: each line except the last ends with '\\n'.
+    Example: "a\\nb\\nc" -> ["a\\n", "b\\n", "c"]
+    """
     if isinstance(source, list):
         return source
-    # Split by newline and preserve empty lines
-    return source.split('\n')
+    lines = source.split('\n')
+    # Add '\n' to each line except the last (nbformat convention)
+    return [line + '\n' for line in lines[:-1]] + [lines[-1]] if lines else []
+
+
+def fix_list_newlines(source: List[str]) -> List[str]:
+    """Fix LIST cells missing trailing '\\n' on non-last lines.
+
+    Detects lists where lines are missing '\\n' (from a buggy split)
+    and adds them back per nbformat convention.
+    """
+    if not source or len(source) <= 1:
+        return source
+    # Check if lines are missing '\n' (buggy conversion)
+    needs_fix = False
+    for line in source[:-1]:
+        if line and not line.endswith('\n'):
+            needs_fix = True
+            break
+    if not needs_fix:
+        return source
+    # Fix: add '\n' to all lines except the last
+    return [line + '\n' if not line.endswith('\n') else line for line in source[:-1]] + [source[-1]]
 
 
 def fix_notebook(notebook_path: Path, dry_run: bool = False) -> bool:
-    """Fix STRING cells in a notebook. Returns True if changes were made."""
+    """Fix STRING cells and LIST cells with missing newlines. Returns True if changes were made."""
     with open(notebook_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
@@ -33,6 +58,11 @@ def fix_notebook(notebook_path: Path, dry_run: bool = False) -> bool:
         if source and isinstance(source, str):
             cell['source'] = convert_string_to_list(source)
             modified = True
+        elif source and isinstance(source, list) and len(source) > 1:
+            fixed = fix_list_newlines(source)
+            if fixed != source:
+                cell['source'] = fixed
+                modified = True
 
     if modified and not dry_run:
         with open(notebook_path, 'w', encoding='utf-8') as f:
