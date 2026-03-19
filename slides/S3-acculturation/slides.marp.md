@@ -156,13 +156,13 @@ Linguistique	Représentation de connaissances, grammaire -->
 
 - **2000s** : Data mining, apprentissage bayesien, web semantique, prouveurs automatiques
 - **2010s** : Explosion du deep learning et du big data
-  - 2014 : GANs (generation d'images), 2016 : AlphaGo (Go)
+  - 2014 : GANs (génération d'images), 2016 : AlphaGo (Go)
   - 2017 : Transformers ("Attention is All You Need")
   - 2018 : AlphaZero (echecs, Go, shogi sans connaissances humaines)
   - 2019 : Pluribus (poker), AlphaStar (Starcraft 2)
 - **2020s** : LLMs et IA generative deviennent grand public
   - GPT-3 (2020), ChatGPT (2022), GPT-4 (2023), Claude 3 (2024)
-  - Stable Diffusion, Midjourney, DALL-E : generation d'images
+  - Stable Diffusion, Midjourney, DALL-E : génération d'images
   - 2025 : agents IA autonomes, vibe coding, IA multimodale
 
 > **Chronologie cle** : Turing (1950) → Dartmouth (1956) → Hiver IA (1974) → Deep Blue (1997) → AlphaGo (2016) → ChatGPT (2022) → Agents IA (2025)
@@ -172,7 +172,7 @@ Linguistique	Représentation de connaissances, grammaire -->
 # Dans la vie de tous les jours
 
 - **Poste** : reconnaissance des adresses et tri automatique du courrier
-- **Banque** : lecture des cheques, verification des signatures, evaluation de credits
+- **Banque** : lecture des cheques, verification des signatures, évaluation de credits
 - **Medecine** : diagnostic assiste, prescriptions, suivi et prevention
 - **Service client** : synthese/reconnaissance vocale, chatbots (ChatGPT, Claude)
 - **Transport** : detection de plaques, conduite autonome (Tesla, Waymo)
@@ -243,7 +243,7 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
 
 **Agent reflexe**
 
-- Pas de memoire, reagit aux percepts courants
+- Pas de mémoire, reagit aux percepts courants
 - Regles condition → action (si obstacle, alors freiner)
 
 ![w:300](images/img_010.png)
@@ -303,11 +303,11 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
 
 # Intelligences
 
-- **Procedurale** : automates et algorithmes deterministes (instructions pas a pas)
+- **Procedurale** : automates et algorithmes déterministes (instructions pas a pas)
 - **Exploratoire** : recherche dans un espace d'etats (parcours de graphes, A*)
 - **Symbolique** : raisonnement logique, bases de connaissances, planification
-- **Probabiliste** : gestion de l'incertitude, reseaux bayesiens, decision
-- **Apprentissage** : amelioration par l'experience (supervise, renforcement, deep learning)
+- **Probabiliste** : gestion de l'incertitude, réseaux bayesiens, decision
+- **Apprentissage** : amelioration par l'expérience (supervise, renforcement, deep learning)
 
 ![w:200](images/img_013.jpg) ![w:200](images/img_014.png) ![w:200](images/img_015.jpg)
 
@@ -459,7 +459,7 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
 
 **Informées**
 
-- Evaluation des états
+- Évaluation des états
 - Heuristique
 - Estimation du coût restant
 - Ex: Distance à vol d'oiseau
@@ -978,7 +978,7 @@ Valeur la – contraignante -->
 
 **Fondements**
 
-- Les probabilites resument notre incertitude (paresse, ignorance)
+- Les probabilités resument notre incertitude (paresse, ignorance)
 - Probabilites subjectives : degre de croyance d'un agent
 - Se mettent a jour avec les observations
 
@@ -1259,7 +1259,7 @@ effet d'ancrage -->
 - Conditions byzantines
 - Bitcoin
 - Stratégies sociétales
-  - Evolution de la confiance
+  - Évolution de la confiance
 
 <div class="img-grid">
 ![w:180](images/img_075.png)
@@ -1987,7 +1987,7 @@ effet d'ancrage -->
 - **Quiz** : quelles formes d'intelligence sont mobilisees par un chatbot ?
   - Exploratoire : navigation dans l'arbre de dialogue
   - Symbolique : comprehension des intentions, raisonnement logique
-  - Probabiliste : modeles de langage, prediction du mot suivant
+  - Probabiliste : modèles de langage, prediction du mot suivant
   - Apprentissage : entrainement sur des corpus massifs, fine-tuning RLHF
 - L'agent conversationnel combine toutes les intelligences du cours
 
@@ -2005,7 +2005,7 @@ Ce deck couvre tous les domaines de l'IA. Pour approfondir avec des exemples pra
 
 > **GenAI - IA Generative**
 > `MyIA.AI.Notebooks/GenAI/`
-> Transformers, diffusion models, LLMs, generation d'images
+> Transformers, diffusion models, LLMs, génération d'images
 
 > **Search - Recherche et Optimisation**
 > `MyIA.AI.Notebooks/Search/`
@@ -2021,9 +2021,9 @@ Ce deck couvre tous les domaines de l'IA. Pour approfondir avec des exemples pra
 
 > **Probas - Modeles Probabilistes**
 > `MyIA.AI.Notebooks/Probas/`
-> Infer.NET, reseaux bayesiens, inference probabiliste
+> Infer.NET, réseaux bayesiens, inference probabiliste
 
-> **GameTheory - Theorie des Jeux**
+> **GameTheory - Théorie des Jeux**
 > `MyIA.AI.Notebooks/GameTheory/`
 > OpenSpiel, equilibres de Nash, jeux strategiques
 
