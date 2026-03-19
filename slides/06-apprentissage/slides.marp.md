@@ -1147,14 +1147,14 @@ $$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
 
 ---
 
-# Learning SVMs
+# Apprentissage des SVM
 
-- Trick #1: Just find the points that would be closest to the optimal separating plane (the "support vectors") and work directly from those instances.
-- Trick #2: Represent as a quadratic optimization problem, and use quadratic programming techniques.
-- Trick #3 (the "kernel trick"):
-  - Instead of just using the features, represent the data using a high-dimensional feature space constructed from a set of basis functions (polynomial and Gaussian combinations of the base features are the most common).
-  - Then find a separating plane / SVM in that high-dimensional space
-  - Voila:  A nonlinear classifier!
+- **Astuce 1** : Identifier les points les plus proches du plan de separation optimal (les "vecteurs supports") et travailler directement a partir de ces instances.
+- **Astuce 2** : Formuler comme un probleme d'optimisation quadratique et utiliser les techniques de programmation quadratique.
+- **Astuce 3** (le "kernel trick") :
+  - Au lieu d'utiliser directement les caracteristiques, representer les donnees dans un espace de grande dimension construit a partir de fonctions de base (combinaisons polynomiales et gaussiennes des caracteristiques d'origine).
+  - Trouver un hyperplan separateur / SVM dans cet espace de grande dimension.
+  - Resultat : un classifieur non lineaire !
 
 <!-- SVM : hyperplan optimal, vecteurs supports sur la marge maximale -->
 
