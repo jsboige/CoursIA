@@ -3,12 +3,13 @@
 Multi-Model TTS Gateway - Routes requests to appropriate TTS model
 
 Path routing:
-- /v1/audio/speech → Kokoro (default, backward compatible)
-- /tada/v1/audio/speech → TADA 3B ML
-- /qwen/v1/audio/speech → Qwen3 TTS
+- /v1/audio/speech -> Kokoro (default, backward compatible)
+- /tada/v1/audio/speech -> TADA 3B ML
+- /qwen/v1/audio/speech -> Qwen3 TTS
 """
 
 import os
+import json
 import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -23,6 +24,16 @@ QWEN_SERVICE_URL = os.getenv("QWEN_SERVICE_URL", "http://tts-qwen:8000")
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Voice mapping: OpenAI voice names -> model-specific voice names
+QWEN_VOICE_MAP = {
+    "alloy": "serena",
+    "echo": "aiden",
+    "fable": "vivian",
+    "onyx": "dylan",
+    "nova": "ono_anna",
+    "shimmer": "sohee",
+}
 
 app = FastAPI(
     title="Multi-Model TTS Gateway",
@@ -71,23 +82,37 @@ async def list_models():
 @app.get("/v1/voices")
 async def list_voices():
     """List available voices (OpenAI-compatible format)."""
-    # Map voices for each model
     return {
         "voices": [
             {"id": "alloy", "name": "Alloy", "models": ["kokoro", "tada", "qwen"]},
-            {"id": "echo", "name": "Echo", "models": ["kokoro", "tada"]},
-            {"id": "fable", "name": "Fable", "models": ["kokoro", "tada"]},
-            {"id": "onyx", "name": "Onyx", "models": ["kokoro", "tada"]},
-            {"id": "nova", "name": "Nova", "models": ["kokoro", "tada"]},
-            {"id": "shimmer", "name": "Shimmer", "models": ["kokoro", "tada"]},
+            {"id": "echo", "name": "Echo", "models": ["kokoro", "tada", "qwen"]},
+            {"id": "fable", "name": "Fable", "models": ["kokoro", "tada", "qwen"]},
+            {"id": "onyx", "name": "Onyx", "models": ["kokoro", "tada", "qwen"]},
+            {"id": "nova", "name": "Nova", "models": ["kokoro", "tada", "qwen"]},
+            {"id": "shimmer", "name": "Shimmer", "models": ["kokoro", "tada", "qwen"]},
         ]
     }
+
+
+def remap_voice_for_qwen(body: bytes) -> bytes:
+    """Remap OpenAI voice names to Qwen3 native voice names in request body."""
+    try:
+        data = json.loads(body)
+        voice = data.get("voice", "")
+        if voice in QWEN_VOICE_MAP:
+            data["voice"] = QWEN_VOICE_MAP[voice]
+            logger.info(f"Remapped voice '{voice}' -> '{data['voice']}' for Qwen3")
+            return json.dumps(data).encode("utf-8")
+    except (json.JSONDecodeError, AttributeError):
+        pass
+    return body
 
 
 async def proxy_request(
     request: Request,
     service_url: str,
-    path: str
+    path: str,
+    transform_body=None
 ):
     """Proxy request to upstream TTS service."""
     upstream_url = f"{service_url}{path}"
@@ -98,6 +123,12 @@ async def proxy_request(
 
     # Get request body
     body = await request.body()
+
+    # Apply body transformation if needed
+    if transform_body and request.method == "POST":
+        body = transform_body(body)
+        # Update content-length after transformation
+        headers["content-length"] = str(len(body))
 
     logger.info(f"Proxying {request.method} {upstream_url}")
 
@@ -137,9 +168,9 @@ async def gateway_handler(request: Request, path: str):
     Route requests to appropriate TTS service based on path prefix.
 
     Path patterns:
-    - /tada/* → TADA service
-    - /qwen/* → Qwen service
-    - /v1/*, /* → Kokoro service (default)
+    - /tada/* -> TADA service
+    - /qwen/* -> Qwen service (with voice name remapping)
+    - /v1/*, /* -> Kokoro service (default)
     """
     if path.startswith("tada/"):
         # Strip "tada/" prefix and proxy to TADA service
@@ -147,9 +178,12 @@ async def gateway_handler(request: Request, path: str):
         return await proxy_request(request, TADA_SERVICE_URL, f"/{remaining_path}")
 
     elif path.startswith("qwen/"):
-        # Strip "qwen/" prefix and proxy to Qwen service
+        # Strip "qwen/" prefix and proxy to Qwen service with voice remapping
         remaining_path = path[5:]  # Remove "qwen/"
-        return await proxy_request(request, QWEN_SERVICE_URL, f"/{remaining_path}")
+        return await proxy_request(
+            request, QWEN_SERVICE_URL, f"/{remaining_path}",
+            transform_body=remap_voice_for_qwen
+        )
 
     else:
         # Default to Kokoro service
