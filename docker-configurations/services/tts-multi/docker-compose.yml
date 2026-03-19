@@ -130,6 +130,8 @@ services:
       - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
       - TZ=${TZ:-Europe/Paris}
+      - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_TOKEN}
+      - HF_TOKEN=${HUGGINGFACE_TOKEN}
 
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; print(urllib.request.urlopen('http://localhost:8000/health').read().decode())\" | grep -q healthy"]
