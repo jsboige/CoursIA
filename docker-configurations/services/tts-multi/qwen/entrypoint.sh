@@ -14,7 +14,7 @@ echo "Port: ${PORT:-8000}"
 # The --omni flag enables multi-modal (audio) support
 # The --stage-configs-path is required for Qwen3-TTS
 exec vllm serve "$MODEL_NAME" \
-    --stage-configs-path vllm_omni/model_executor/stage_configs/qwen3_tts.yaml \
+    --stage-configs-path /usr/local/lib/python3.12/dist-packages/vllm_omni/model_executor/stage_configs/qwen3_tts.yaml \
     --omni \
     --host 0.0.0.0 \
     --port "${PORT:-8000}" \
