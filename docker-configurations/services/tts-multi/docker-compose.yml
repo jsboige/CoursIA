@@ -41,8 +41,8 @@ services:
         condition: service_healthy
       tts-tada:
         condition: service_healthy
-      # tts-qwen:
-      #   condition: service_healthy  # Temporarily disabled - qwen3_tts architecture not supported
+      tts-qwen:
+        condition: service_started  # Qwen takes 3-5min to load, don't block gateway
 
   # Kokoro TTS - Existing model, backward compatible
   tts-kokoro:
@@ -132,6 +132,11 @@ services:
       - TZ=${TZ:-Europe/Paris}
       - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_TOKEN}
       - HF_TOKEN=${HUGGINGFACE_TOKEN}
+      - KOKORO_SERVICE_URL=http://tts-kokoro:8000
+
+    depends_on:
+      tts-kokoro:
+        condition: service_healthy
 
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; print(urllib.request.urlopen('http://localhost:8000/health').read().decode())\" | grep -q healthy"]
@@ -181,7 +186,7 @@ services:
       - TZ=${TZ:-Europe/Paris}
 
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; print(urllib.request.urlopen('http://localhost:8000/health').read().decode())\" | grep -q healthy"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
