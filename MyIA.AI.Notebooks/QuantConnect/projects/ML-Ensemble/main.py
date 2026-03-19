@@ -205,7 +205,7 @@ class MLEnsembleAlgorithm(QCAlgorithm):
                 predictions[ticker] = ensemble_pred
                 confidences[ticker] = confidence
 
-            except:
+            except Exception:
                 continue
 
         # Filter by confidence
