@@ -14,6 +14,13 @@ La série QuantConnect AI Trading est une formation complète sur le trading alg
 - **Pédagogique** : Progression structurée de débutant à expert (30h de contenu par langage)
 - **IA-first** : Focus important sur ML/DL/RL/LLM pour stratégies de trading (9 notebooks dédiés)
 - **Cloud-native** : Exécution principale sur QuantConnect cloud (free tier)
+
+  - **QuantBook** : Notebooks de recherche en QuantConnect Lab
+ - **LEAN CLI** : Option locale avec Docker
+
+  - **Approche hybride** : Les notebooks contiennent du code à deux destinations:
+    1. **Algorithm code** : Copier dans QuantConnect Lab (main.py) pour backtests/production
+    2. **Research code** : Exécuter dans QuantBook pour exploration
 - **Dual-language** : Python ET C# en parallèle (27 notebooks × 2 langages)
 - **Production-ready** : De la recherche au déploiement live
 

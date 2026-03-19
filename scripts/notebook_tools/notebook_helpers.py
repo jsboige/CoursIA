@@ -777,11 +777,13 @@ class NotebookExecutor:
     KERNEL_PATTERNS = {
         'python': 'python3',
         'python3': 'python3',
+        'smartcontracts': 'smartcontracts',
         '.net-csharp': '.net-csharp',
         '.net-fsharp': '.net-fsharp',
         'csharp': '.net-csharp',
         'fsharp': '.net-fsharp',
         'lean4': 'lean4',
+        'lean4-wsl': 'lean4-wsl',
         'lean': 'lean4',
     }
 
@@ -911,12 +913,14 @@ class NotebookExecutor:
             )
 
         # Start kernel if not already running
+        # WSL-based kernels (smartcontracts, lean4-wsl) need longer startup
+        startup_timeout = 120 if 'wsl' in kernel_name or kernel_name == 'smartcontracts' else 60
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)
             km.start_kernel()
             kc = km.client()
             kc.start_channels()
-            kc.wait_for_ready(timeout=30)
+            kc.wait_for_ready(timeout=startup_timeout)
         except Exception as e:
             return ExecutionResult(
                 success=False,
@@ -1034,13 +1038,14 @@ class NotebookExecutor:
             total_cells=helper.cell_count
         )
 
-        # Start kernel
+        # Start kernel (WSL-based kernels need longer startup)
+        startup_timeout = 120 if 'wsl' in kernel_name or kernel_name == 'smartcontracts' else 60
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)
             km.start_kernel()
             kc = km.client()
             kc.start_channels()
-            kc.wait_for_ready(timeout=30)
+            kc.wait_for_ready(timeout=startup_timeout)
         except Exception as e:
             result.success = False
             result.errors.append(f"Failed to start {kernel_name} kernel: {e}")
@@ -1168,11 +1173,15 @@ class NotebookExecutor:
         if output_path is None:
             output_path = str(nb_path.parent / f"{nb_path.stem}_output{nb_path.suffix}")
 
+        # WSL-based kernels need longer startup time
+        start_timeout = 120 if 'wsl' in kernel_name or kernel_name == 'smartcontracts' else 60
+
         cmd = [
             sys.executable, '-m', 'papermill',
             str(notebook_path),
             str(output_path),
-            '--kernel', kernel_name
+            '--kernel', kernel_name,
+            '--start-timeout', str(start_timeout),
         ]
 
         # Add parameters

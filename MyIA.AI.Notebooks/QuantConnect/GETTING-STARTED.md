@@ -211,8 +211,8 @@ jupyter lab
 
 1. **Développer dans QuantConnect Lab** (IDE cloud)
 2. **Tester rapidement** avec données cloud gratuites
-3. **Télécharger les notebooks** CoursIA et les exécuter dans le Lab
-4. **Uploader vos algorithmes** depuis les notebooks vers des projets Lab
+3. **Commencer par le notebook QC-Py-04** : C'est le tutorial de référence pour le workflow QuantBook → Algorithm
+4. **Utiliser les projets `projects/`** comme base de code (copier main.py dans votre projet QC Lab)
 
 ### Pour Avancés : Hybride
 
@@ -273,20 +273,24 @@ jupyter lab
 
 Une fois votre environnement configuré :
 
-1. **Suivre la série** dans l'ordre :
+1. **Commencer par QC-Py-04** : Le notebook [QC-Py-04-Research-Workflow.ipynb](Python/QC-Py-04-Research-Workflow.ipynb) est le tutorial de référence pour maîtriser le workflow QuantBook → Algorithm.
+
+2. **Suivre la série** dans l'ordre :
    - Phase 1 : Fondations LEAN (Notebooks 01-04)
    - Phase 2 : Universe et Asset Classes (Notebooks 05-08)
    - Phase 3 : Trading Avancé et Risk Management (Notebooks 09-12)
    - Phase 4 : Algorithm Framework (Notebooks 13-15)
    - Phase 5-8 : Alternative Data, ML, Deep Learning, AI Avancée (Notebooks 16-27)
 
-2. **Lire le README principal** : [`README.md`](README.md) pour la vue d'ensemble complète
+3. **Explorer les projets** : Le dossier `projects/` contient des stratégies prêtes à backtester. Copiez un `main.py` dans votre projet QC Lab pour démarrer rapidement.
 
-3. **Rejoindre la communauté** :
+4. **Lire le README principal** : [`README.md`](README.md) pour la vue d'ensemble complète
+
+5. **Rejoindre la communauté** :
    - [QuantConnect Forum](https://www.quantconnect.com/forum)
    - [GitHub Discussions](https://github.com/QuantConnect/Lean/discussions)
 
-4. **(Optionnel) Configurer MCP QuantConnect** pour automatisation avec Claude Code
+6. **(Optionnel) Configurer MCP QuantConnect** pour automatisation avec Claude Code
 
 ---
 

@@ -17,8 +17,8 @@ Intelligence Artificielle -- S4
 - Comprendre les fondamentaux du trading algorithmique
 - Apprendre a utiliser Lean/QuantConnect
 - Concevoir et implementer un algorithme de trading
-- Evaluer et optimiser une strategie algorithmique
-- Maitriser le traitement de donnees et l'IA pour le trading
+- Évaluer et optimiser une stratégie algorithmique
+- Maitriser le traitement de données et l'IA pour le trading
 
 ---
 
@@ -31,7 +31,7 @@ Intelligence Artificielle -- S4
   - Actions, Forex, Futures, Cryptomonnaies
 - Ordres de trading
   - Types d'ordres, instructions, gestion de la visibilite
-- Trouver et evaluer une strategie
+- Trouver et évaluer une stratégie
   - Sources d'idees, metriques de performance
 
 <!-- Architecture : Market Data → Algorithme → Broker → Marche -->
@@ -60,13 +60,13 @@ Intelligence Artificielle -- S4
   - Elimination des biais emotionnels dans la prise de decision
 - **Methodes d'analyse**
   - Analyse technique (indicateurs, patterns graphiques)
-  - Donnees fondamentales (revenus, indicateurs macroeconomiques)
-  - Donnees extra-financieres (flux d'actualites, sentiment du marche)
+  - Données fondamentales (revenus, indicateurs macroeconomiques)
+  - Données extra-financieres (flux d'actualites, sentiment du marche)
 - **Universalite**
   - Tout ce qui est numerisable peut etre utilise en trading quantitatif
-  - Diversification facilitee sur plusieurs strategies simultanees
+  - Diversification facilitee sur plusieurs stratégies simultanees
 
-<!-- Flux : market data → strategie → signaux → ordres → execution -->
+<!-- Flux : market data → stratégie → signaux → ordres → execution -->
 
 ---
 
@@ -81,7 +81,7 @@ Intelligence Artificielle -- S4
   - Curiosite et capacite d'apprentissage continu
 - **Experience pratique**
   - Finance et programmation cruciales
-  - Avoir des economies pour les periodes sans gains
+  - Avoir des economies pour les périodes sans gains
   - Importance de la discipline et de la gestion du stress
 
 ---
@@ -90,13 +90,13 @@ Intelligence Artificielle -- S4
 
 - **Scalabilite**
   - Facilite a augmenter les volumes de trading
-  - Possibilite de gerer plusieurs strategies de front
+  - Possibilite de gerer plusieurs stratégies de front
 - **Optimisation du temps**
   - Moins consacre aux operations manuelles
   - Plus de temps pour la recherche et l'optimisation
 - **Elimination des biais**
   - Pas de biais emotionnels dans la prise de decision
-  - Execution disciplinee selon le modele
+  - Execution disciplinee selon le modèle
 - **Pas de necessite de marketing**
   - Pas besoin de chercher activement des clients ou investisseurs
   - Focus sur la performance algorithmique
@@ -111,8 +111,8 @@ Intelligence Artificielle -- S4
   - Technologie: Necessite une infrastructure technologique de pointe
 - **MFT (Medium-Frequency Trading)**
   - Operations sur des secondes, minutes a quelques heures
-  - Objectif: Arbitrage, suivi de tendance, et autres strategies
-  - Flexibilite: Moins exigeant technologiquement mais necessite une analyse de donnees robuste
+  - Objectif: Arbitrage, suivi de tendance, et autres stratégies
+  - Flexibilite: Moins exigeant technologiquement mais necessite une analyse de données robuste
 
 ---
 
@@ -147,7 +147,7 @@ Intelligence Artificielle -- S4
 - **Reglementations**
   - MiFID II en Europe
   - Dodd-Frank aux Etats-Unis
-- **Importance des Donnees**
+- **Importance des Données**
   - Tickers, Order Book, Volume, Time & Sales
   - Impact de la qualite et de la frequence (temps reel vs resolution)
 
@@ -160,7 +160,7 @@ Intelligence Artificielle -- S4
 ![bg right:30%](images/candlestick_patterns.png)
 
 - **Actions**
-  - Titres qui representent une fraction de la propriete d'une entreprise
+  - Titres qui representent une fraction de la propriété d'une entreprise
 - **Forex**
   - Echange de devises etrangeres, souvent a des fins de speculation ou de couverture
 - **Futures**
@@ -179,13 +179,13 @@ Intelligence Artificielle -- S4
 ![bg right:30%](images/candlestick_anatomy.png)
 
 - **Analyse Technique**
-  - Etude des graphiques de prix et de volume
+  - Étude des graphiques de prix et de volume
   - Indicateurs: moyennes mobiles, RSI, MACD, Bollinger Bands
   - Patterns graphiques: chandeliers, tete-epaules, triangles
 - **Analyse Fondamentale**
-  - Evaluation de la valeur intrinseque d'un actif
-  - Donnees financieres: revenus, benefices, ratios
-  - Indicateurs macroeconomiques: taux d'interet, inflation, PIB
+  - Évaluation de la valeur intrinseque d'un actif
+  - Données financieres: revenus, benefices, ratios
+  - Indicateurs macroeconomiques: taux d'intérêt, inflation, PIB
 - **Combinaison des deux approches**
   - Analyse technique pour le timing d'entree/sortie
   - Analyse fondamentale pour la selection d'actifs
@@ -201,7 +201,7 @@ Intelligence Artificielle -- S4
 - **API de Trading**
   - Interface de programmation permettant l'automatisation des ordres
   - FIX, REST APIs, WebSocket
-- **Flux de Donnees**
+- **Flux de Données**
   - Fournit des informations en temps reel ou differe sur les marches
   - Certaines plateformes offrent des flux combines
 - **Latence et Couts**
@@ -216,7 +216,7 @@ Intelligence Artificielle -- S4
 
 # Les Ordres de Trading - Types d'Ordres (1/2)
 
-- **Les ordres sont cruciaux pour toute strategie de trading**
+- **Les ordres sont cruciaux pour toute stratégie de trading**
 - **Ordres au marche**
   - Execution: Immédiate au meilleur prix
   - Risque: Prix d'execution incertain
@@ -232,7 +232,7 @@ Intelligence Artificielle -- S4
 
 - **Ordres conditionnels et hybrides**
   - Complexite: Inclut des ordres caches, routes
-  - Utilite: Pour des strategies plus avancees
+  - Utilite: Pour des stratégies plus avancees
 - **Ordres stop**
   - Declenchent un ordre au marche ou limite une fois qu'un prix predefini est atteint
 - **Choix du type d'ordre**
@@ -282,7 +282,7 @@ Intelligence Artificielle -- S4
 - **Preferencement et Instructions Dirigees**
   - Trading Bilateral: Direction vers un courtier specifique
   - On parle d'internalisation
-  - Controverse: Contournent les regles de priorite
+  - Controverse: Contournent les règles de priorite
   - Amelioration de Prix: Mecanismes speciaux pour ameliorer le prix
 
 ---
@@ -329,7 +329,7 @@ Intelligence Artificielle -- S4
 - **Types d'ordres discretionnaires**
   - Ordres non tenus
   - Trader decide de l'execution
-  - Evolution: Plus basees sur des regles
+  - Évolution: Plus basees sur des règles
 
 ---
 
@@ -349,7 +349,7 @@ Intelligence Artificielle -- S4
 
 - **Ordres de croisement**
   - Types varies: Committed, Uncommitted, etc.
-  - Mecanismes varies: Differents reseaux de croisement
+  - Mecanismes varies: Differents réseaux de croisement
 - **Ordres non engages**
   - Similaires aux IOIs: Besoin de confirmation
   - Protection: Tailles minimales, etc.
@@ -384,7 +384,7 @@ Intelligence Artificielle -- S4
 
 - **Sources d'Idees**
   - Articles academiques, blogs, forums, medias
-  - Suivi des meilleures strategies sur plateformes
+  - Suivi des meilleures stratégies sur plateformes
 - **Modification de Strategies**
   - Ajustements pour rentabilite
 - **Echange d'idees**
@@ -406,7 +406,7 @@ Intelligence Artificielle -- S4
 
 ---
 
-# Comment Evaluer une Strategie?
+# Comment Évaluer une Strategie?
 
 - **Mesures Standard**
   - Ratio de Sharpe: Mesure le rendement ajuste au risque
@@ -425,12 +425,12 @@ Intelligence Artificielle -- S4
 # Strategies Plausibles et leurs Pieges (1/2)
 
 - **Drawdowns**
-  - Perte de valeur, profondeur et duree a evaluer
+  - Perte de valeur, profondeur et duree a évaluer
 - **Slippage**
   - Ecart de prix entre ordre et execution
 - **Couts de Transaction**
-  - Impact sur les strategies a haute frequence
-- **Evolution du Marche**
+  - Impact sur les stratégies a haute frequence
+- **Évolution du Marche**
   - Efficacite moindre qu'il y a 10 ans
   - Les marches sont plus efficients
 
@@ -439,9 +439,9 @@ Intelligence Artificielle -- S4
 # Strategies Plausibles et leurs Pieges (2/2)
 
 - **Changements de Regime**
-  - Donnees historiques parfois non pertinentes
+  - Données historiques parfois non pertinentes
 - **Overfitting**
-  - Surajustement aux donnees historiques
+  - Surajustement aux données historiques
 - **Frais de financements**
   - Pour les positions a marge
 
@@ -452,7 +452,7 @@ Intelligence Artificielle -- S4
 # Intelligence Artificielle et Selection de Stocks
 
 - **Scepticisme initial sur l'IA**
-  - Tendance a surajuster les donnees
+  - Tendance a surajuster les données
 - **Pratiques qui fonctionnent en IA**
   - Modeles simples, fondements econometriques
   - Mixture d'experts
@@ -460,10 +460,10 @@ Intelligence Artificielle -- S4
   - Faible capacite
   - Moins d'arbitrage par grands fonds
 - **Avancees recentes**
-  - "Guerre" des modeles
-  - Theorie des jeux
+  - "Guerre" des modèles
+  - Théorie des jeux
 
-<!-- Mixture d'experts : modeles multiples → vote pondere → decision -->
+<!-- Mixture d'experts : modèles multiples → vote pondere → decision -->
 
 ---
 
@@ -476,11 +476,11 @@ Intelligence Artificielle -- S4
 # Backtesting (1/2)
 
 - **Qu'est-ce que c'est?**
-  - Evaluation d'une strategie d'investissement sur des donnees historiques
+  - Évaluation d'une stratégie d'investissement sur des données historiques
 - **Pourquoi c'est important**
   - Valider l'efficacite de la recherche originale
   - Experimenter avec des variations pour l'optimiser
-- **Sources de Donnees**
+- **Sources de Données**
   - Recherche web pour des bases gratuites ou peu couteuses
   - Yahoo Finance, Alpha Vantage, Interactive Brokers, Binance
 
@@ -489,25 +489,25 @@ Intelligence Artificielle -- S4
 # Backtesting (2/2)
 
 - **Pieges et Problemes**
-  - Donnees ajustees pour les splits et les dividendes: Risque de faux signaux
+  - Données ajustees pour les splits et les dividendes: Risque de faux signaux
   - Biais de survie: Surevaluation potentielle des performances
 - **Dans le cas ou le Machine Learning est utilise**
-  - Le backtesting doit prendre en compte les biais de selection de donnees
+  - Le backtesting doit prendre en compte les biais de selection de données
   - Separer convenablement les ensembles (training, validation, test)
-  - Evaluer la generalisation
+  - Évaluer la generalisation
 
-<!-- Pipeline : donnees historiques → strategie → simulation → evaluation -->
+<!-- Pipeline : données historiques → stratégie → simulation → évaluation -->
 
 ---
 
 # Plateformes de Backtesting (1/2)
 
 - **Excel**
-  - Toutes les donnees sont visibles, ce qui reduit le risque de "look-ahead bias"
+  - Toutes les données sont visibles, ce qui reduit le risque de "look-ahead bias"
   - Utilise a la fois pour le backtesting et le trading en direct
-  - Inconvenients: Limite aux modeles simples d'investissement
+  - Inconvenients: Limite aux modèles simples d'investissement
 - **MATLAB**
-  - Utilise en institutionnel, excellent pour tester des strategies sur de grands portefeuilles
+  - Utilise en institutionnel, excellent pour tester des stratégies sur de grands portefeuilles
   - Modules statistiques avances
   - Inconvenients: Couteux et moins efficace pour executer les trades
 
@@ -517,9 +517,9 @@ Intelligence Artificielle -- S4
 
 - **TradeStation et autres plateformes**
   - Execution des trades possible directement depuis la plateforme
-  - Donnees historiques integrees
+  - Données historiques integrees
   - Inconvenients: Langage proprietaire, vous attache a TradeStation comme courtier
-- **Evolution des Plateformes**
+- **Évolution des Plateformes**
   - Python & R: Ont pris le relais de MATLAB dans la plupart des cas
   - Exemple: Zipline et autres frameworks open-source
   - C#: Alternative montante grace aux efforts de Microsoft et Lean
@@ -533,9 +533,9 @@ Intelligence Artificielle -- S4
   - Permettent backtesting, paper trading et live trading
   - Utilisee dans ce cours
 - **Avantages**
-  - Lean gere nativement les ajustements de donnees (splits, dividendes)
-  - Fournit un grand catalogue de donnees alternatives
-  - Simplifie l'evaluation point-in-time
+  - Lean gere nativement les ajustements de données (splits, dividendes)
+  - Fournit un grand catalogue de données alternatives
+  - Simplifie l'évaluation point-in-time
 
 <!-- QuantConnect : IDE cloud + Lean Engine open-source -->
 
@@ -550,8 +550,8 @@ Intelligence Artificielle -- S4
   - High Watermark: Rendement cumule maximal a un moment donne
   - Drawdown Maximum et Duree: La plus grande baisse et le temps pour recuperer
 - **Pieges courants**
-  - Look-ahead bias: Utilisation de donnees futures dans le calcul
-  - Data-Snooping Bias: Overfitting base sur les donnees historiques
+  - Look-ahead bias: Utilisation de données futures dans le calcul
+  - Data-Snooping Bias: Overfitting base sur les données historiques
   - Couts de Transaction: Omission des couts associes aux transactions
 
 ---
@@ -559,8 +559,8 @@ Intelligence Artificielle -- S4
 # Mesures de Performance et Pieges (2/2)
 
 - **Avec Machine Learning**
-  - Derive des donnees (data drift)
-  - La distribution des donnees evolue dans le temps
+  - Derive des données (data drift)
+  - La distribution des données évolue dans le temps
   - Rend les patterns historiques obsoletes
 
 <!-- Data drift : distributions qui changent entre train et production -->
@@ -570,30 +570,30 @@ Intelligence Artificielle -- S4
 # Precautions face aux Pieges (1/2)
 
 - **Look-ahead**
-  - Utilisation de donnees decalees
+  - Utilisation de données decalees
   - Forward-testing (paper trading)
 - **Data-Snooping Bias**
   - Peu de parametres
-  - Augmentation, division et adaptation des donnees de backtest
+  - Augmentation, division et adaptation des données de backtest
 - **Modeles de trading sans parametres**
-  - Pas de surajustement, fiabilite mais complexite computationnelle
+  - Pas de surajustement, fiabilite mais complexité computationnelle
 
 ---
 
 # Precautions face aux Pieges (2/2)
 
 - **Paper Trading**
-  - Test sur des donnees reelles non vues, le plus fiable
+  - Test sur des données reelles non vues, le plus fiable
 - **Analyse de sensibilite**
-  - Variation des parametres pour evaluer la stabilite de la performance
-- **Simplification du modele**
+  - Variation des parametres pour évaluer la stabilite de la performance
+- **Simplification du modèle**
   - Elimination des conditions superflues
 - **Repartition du capital de trading**
-  - Entre differentes strategies pour diminuer la variance
+  - Entre differentes stratégies pour diminuer la variance
 - **Couts de Transaction**
   - A integrer dans le Backtest pour des resultats plus realistes
-- **Derive des donnees (data drift) et non stationnarite**
-  - Revalider regulierement les modeles
+- **Derive des données (data drift) et non stationnarite**
+  - Revalider regulierement les modèles
   - Appliquer des techniques comme la differenciation fractionnaire
 
 ---
@@ -601,7 +601,7 @@ Intelligence Artificielle -- S4
 # Affinement de la Strategie
 
 - **Le Probleme**
-  - Rendements diminuent quand une strategie est populaire
+  - Rendements diminuent quand une stratégie est populaire
 - **Solutions**
   - Variations Mineures: Petites variations peuvent ameliorer les rendements
   - Exclusion de Stocks: Eviter certains types d'actions
@@ -624,7 +624,7 @@ Intelligence Artificielle -- S4
   - Variance des Rendements: ( s^2 )
 - **Eviter la Ruine**
   - Eviter une chute catastrophique du capital a zero
-  - Drawdown: Chute maximale du capital sur une periode donnee
+  - Drawdown: Chute maximale du capital sur une période donnee
 
 ---
 
@@ -635,10 +635,10 @@ Intelligence Artificielle -- S4
 - **Formule de Kelly**
   - Determine la fraction optimale du capital a risquer par trade
   - f* = (p * b - q) / b
-  - p = probabilite de gain, q = probabilite de perte (1-p)
+  - p = probabilité de gain, q = probabilité de perte (1-p)
   - b = ratio gain/perte moyen
 - **Value-at-Risk (VaR)**
-  - Estime la perte maximale potentielle sur une periode
+  - Estime la perte maximale potentielle sur une période
   - Avec un niveau de confiance donne
 - **Conditional Value-at-Risk (CVaR)**
   - Estime la perte moyenne au-dela du VaR
@@ -654,7 +654,7 @@ Intelligence Artificielle -- S4
   - Le risque de propagation des pertes entre les fonds
 - **Evenements Extremes (Black swans)**
   - Limites de la Formule: Ne prend pas en compte les "fat tails"
-  - Gestion des Evenements Imprevus: Utilisation de modeles de Value-at-Risk (VaR)
+  - Gestion des Evenements Imprevus: Utilisation de modèles de Value-at-Risk (VaR)
 - **Utilisation de Stop Loss**
   - Momentum vs Mean-Reverting: L'efficacite varie en fonction du regime du marche
   - Fondamental vs Liquidite: Quand appliquer les stop loss
@@ -664,11 +664,11 @@ Intelligence Artificielle -- S4
 # Autres Types de Risques
 
 - **Risque de Modele**
-  - Biais de survie, biais de lookahead, et erreurs de donnees
+  - Biais de survie, biais de lookahead, et erreurs de données
   - Changements structurels du marche comme l'impact des nouvelles reglementations
 - **Risque Logiciel**
-  - Bugs, latence et decalages de donnees
-  - Assurez-vous que le systeme de trading automatise est bien teste et surveille
+  - Bugs, latence et decalages de données
+  - Assurez-vous que le système de trading automatise est bien teste et surveille
 - **Risques Physiques**
   - Pannes de courant, defaillance du materiel, cyberattaques
   - Solution de secours et plan de recuperation en cas de catastrophe
@@ -678,9 +678,9 @@ Intelligence Artificielle -- S4
 # Preparation Psychologique (1/2)
 
 - **Emotions en Trading**
-  - Overtrading en periode de gains
-  - Aversion au risque en periode de pertes
-  - Importance de suivre scrupuleusement le modele
+  - Overtrading en période de gains
+  - Aversion au risque en période de pertes
+  - Importance de suivre scrupuleusement le modèle
 - **Biais Comportementaux**
   - Effet de dotation
   - Biais du statu quo
@@ -720,7 +720,7 @@ Intelligence Artificielle -- S4
   - Mais certaines conditions permettent la moyenne reversion
 - **Pieges en Backtesting**
   - Biais de Survie: Ignorer les actifs disparus peut fausser les resultats
-  - Erreurs de Base de Donnees: Incoherences dans les donnees financieres
+  - Erreurs de Base de Données: Incoherences dans les données financieres
 - **Effets de la Concurrence**
   - Reduit les opportunites d'arbitrage, diminuant les rendements
 
@@ -733,7 +733,7 @@ Intelligence Artificielle -- S4
 ![bg right:30%](images/macd_chart.png)
 
 - **Momentum**
-  - Tendance d'un actif a continuer a se deplacer dans la meme direction pendant une certaine periode
+  - Tendance d'un actif a continuer a se deplacer dans la meme direction pendant une certaine période
 - **Diffusion Lente de l'Information**
   - Cree des opportunites de momentum
 - **Comportement de Troupeau**
@@ -741,8 +741,8 @@ Intelligence Artificielle -- S4
 - **Horizons Temporels Imprevisibles**
   - Imprevisibilite de la duree du momentum
 - **Effets de la Concurrence**
-  - Accelere l'atteinte de l'equilibre des prix
-  - Rend les strategies de momentum moins efficaces a long terme
+  - Accelere l'atteinte de l'équilibre des prix
+  - Rend les stratégies de momentum moins efficaces a long terme
 
 <!-- Crossover : EMA rapide croise EMA lente → signal achat/vente -->
 
@@ -764,10 +764,10 @@ Intelligence Artificielle -- S4
 
 - **Modeles probabilistes**
   - Modeles de Markov, de Kalman etc.
-  - Necessite un modele de variables hypothetiques ou variables latentes
+  - Necessite un modèle de variables hypothetiques ou variables latentes
   - Tres puissant mais complexe
 - **Data Mining**
-  - Utilise indicateurs techniques, donnees macro, "buzz" mediatique
+  - Utilise indicateurs techniques, données macro, "buzz" mediatique
 - **Application Pratique**
   - Machine Learning pour detection en temps reel
   - Attention aux pieges: biais de "data snooping" et optimisation excessive
@@ -793,38 +793,38 @@ Intelligence Artificielle -- S4
 
 ---
 
-# Strategies Basees sur les Donnees - Modeles Factoriels
+# Strategies Basees sur les Données - Modeles Factoriels
 
 ![bg right:25%](images/security_market_line.png)
 
 - **Exposition Factorielle**
   - Mesure la sensibilite d'un actif a differents facteurs du marche
-  - Taux d'interet, volatilite du marche
+  - Taux d'intérêt, volatilite du marche
 - **Rendement Factoriel & Specifique**
   - Le rendement factoriel est celui qui peut etre attribue a l'exposition a certains facteurs
   - Le rendement specifique est le rendement qui n'est pas explique par ces facteurs
 - **Utilisation**
-  - Ces modeles sont couramment utilises pour la construction de portefeuilles
+  - Ces modèles sont couramment utilises pour la construction de portefeuilles
   - Pour comprendre les sources de rendement
 
 <!-- Correlations entre facteurs : momentum, value, size, quality -->
 
 ---
 
-# Strategies Basees sur les Donnees - Sentiment Analysis
+# Strategies Basees sur les Données - Sentiment Analysis
 
 - **Objectif**
-  - Exploiter les donnees textuelles pour predire les mouvements du marche
+  - Exploiter les données textuelles pour predire les mouvements du marche
 - **Technologie**
   - Utilise des techniques de NLP (Natural Language Processing)
   - Analyse des textes tels que les nouvelles, les tweets, etc.
 - **Mecanisme**
-  - Le sentiment du marche est extrait des donnees textuelles
-  - Utilise pour generer des signaux de trading
+  - Le sentiment du marche est extrait des données textuelles
+  - Utilise pour générer des signaux de trading
 - **Utilisation Pratique**
   - Les hedge funds et les traders algorithmiques utilisent l'analyse du sentiment
-  - Pour ameliorer leurs strategies
-- **Importance de la mise en place d'un pipeline de donnees**
+  - Pour ameliorer leurs stratégies
+- **Importance de la mise en place d'un pipeline de données**
   - Collecte, nettoyage, feature engineering etc.
 
 ---
@@ -845,38 +845,38 @@ Intelligence Artificielle -- S4
 
 ---
 
-# Strategies Basees sur les Donnees 2.0 (1/2)
+# Strategies Basees sur les Données 2.0 (1/2)
 
 - **Methodes Modernes**
-  - Multi-Factoriels: Evolution des modeles 3F de Fama-French vers des modeles multi-factoriels
+  - Multi-Factoriels: Évolution des modèles 3F de Fama-French vers des modèles multi-factoriels
 - **Machine Learning en Trading**
-  - Machine Learning Parametrique: Utilisation de reseaux neuronaux et de modeles sequentiels en deep learning comme LSTM
+  - Machine Learning Parametrique: Utilisation de réseaux neuronaux et de modèles sequentiels en deep learning comme LSTM
   - Machine Learning Non-Parametrique: Emploi de forets aleatoires, k-NN, SVM pour capturer des relations non-lineaires
   - Succes des techniques d'ensemble, Mixture of experts
 
 ---
 
-# Strategies Basees sur les Donnees 2.0 (2/2)
+# Strategies Basees sur les Données 2.0 (2/2)
 
 - **Avancees en ML et RL**
   - Modeles Sequentiels: Utilisation de LSTM, de GRU, de Transformers en deep learning
   - Reseaux bayesiens dynamiques pour capturer des dependances temporelles
-  - Reinforcement Learning (RL): Application a l'optimisation de strategie en temps reel
-  - Prise de decision avec ou sans modele predictif associe
+  - Reinforcement Learning (RL): Application a l'optimisation de stratégie en temps reel
+  - Prise de decision avec ou sans modèle predictif associe
 - **Analyse & Risques Modernes**
   - Metriques Modernes: Transition du R² vers des mesures comme l'Information Ratio
-  - Optimisation Bayesienne: Utilisee pour la selection de modele et l'ajustement de parametres
+  - Optimisation Bayesienne: Utilisee pour la selection de modèle et l'ajustement de parametres
   - Mise a Jour Continue: Adaptation aux changements de comportement du marche via techniques d'apprentissage en ligne
 
 ---
 
-# Workflows Semantique et Theorie des Jeux
+# Workflows Semantique et Théorie des Jeux
 
 - **Workflows semantique**
   - Avenement des LLMs (ChatGPT, Llama etc.)
   - Analyse de sentiment avancee
-  - Generation de signaux a partir de donnees textuelles
-- **Theorie des jeux**
+  - Génération de signaux a partir de données textuelles
+- **Théorie des jeux**
   - Strategies adversariales, poursuite et predation
   - Signalement (baleines etc.)
   - Flash crashs et manipulation de marche
@@ -897,14 +897,14 @@ Intelligence Artificielle -- S4
 ![bg right:25%](images/payoff_put_option.png)
 
 - **Periode de Detention Fixe**
-  - Utilisee par defaut dans divers modeles de trading
-  - Momentum: La periode optimale peut etre trouvee via un backtest
-  - Attention a l'evolution rapide de l'information
-  - Reversion a la Moyenne: Une methode plus robuste pour determiner la periode optimale est disponible
+  - Utilisee par defaut dans divers modèles de trading
+  - Momentum: La période optimale peut etre trouvee via un backtest
+  - Attention a l'évolution rapide de l'information
+  - Reversion a la Moyenne: Une methode plus robuste pour determiner la période optimale est disponible
 - **Prix ou Profit Cible**
   - Utilise pour definir un objectif de sortie
   - Reversion a la Moyenne: Le prix moyen historique peut servir de prix cible
-  - Momentum: Moins fiable car base sur une evaluation fondamentale incertaine
+  - Momentum: Moins fiable car base sur une évaluation fondamentale incertaine
 
 ---
 
@@ -924,11 +924,11 @@ Intelligence Artificielle -- S4
 # Strategies de Sortie 2.0 (1/2)
 
 - **Categories Classiques**
-  - Periode de Detention Fixe: Adaptation via ML pour prediction de la periode optimale
-  - Prix ou Profit Cible: Integration de donnees en temps reel pour ajuster les cibles
+  - Periode de Detention Fixe: Adaptation via ML pour prediction de la période optimale
+  - Prix ou Profit Cible: Integration de données en temps reel pour ajuster les cibles
   - Derniers Signaux d'Entree & Prix Stop: Utilisation rare, mais avec opportunites pour optimisation par RL
 - **Avancees en ML et Analyse Temps Reel**
-  - Deep Learning: Utilisation de CNN ou LSTM pour detection de patterns et ajustement de la strategie de sortie
+  - Deep Learning: Utilisation de CNN ou LSTM pour detection de patterns et ajustement de la stratégie de sortie
   - Reinforcement Learning (RL): Apprentissage pour optimiser la sortie en fonction du rendement et du risque
 
 ---
@@ -936,10 +936,10 @@ Intelligence Artificielle -- S4
 # Strategies de Sortie 2.0 (2/2)
 
 - **Gestion de Risques Avancee**
-  - Options & Derives: Utilisation pour couvrir les positions et ajuster les strategies de sortie
-  - Analyse Sentimentale: Utilisation de NLP pour ajuster les strategies en fonction du sentiment du marche
+  - Options & Derives: Utilisation pour couvrir les positions et ajuster les stratégies de sortie
+  - Analyse Sentimentale: Utilisation de NLP pour ajuster les stratégies en fonction du sentiment du marche
 - **Alertes et Ajustements en Temps Reel**
-  - Web Scraping & API: Collecte en temps reel de donnees de marche pour ajuster les strategies
+  - Web Scraping & API: Collecte en temps reel de données de marche pour ajuster les stratégies
   - Optimisation Continue: Mise a jour en temps reel des parametres via techniques d'apprentissage en ligne
 
 ---
@@ -953,7 +953,7 @@ Intelligence Artificielle -- S4
 - **Statistical Arbitrage**
   - Objectif: Exploiter les ecarts de prix entre des actifs fortement correles
   - Utilisation: Necessite une modelisation statistique complexe
-  - Mecanisme: Utilise des modeles statistiques pour identifier les opportunites d'arbitrage
+  - Mecanisme: Utilise des modèles statistiques pour identifier les opportunites d'arbitrage
 
 ![bg right:30%](images/ted_spread.png)
 
@@ -990,8 +990,8 @@ Intelligence Artificielle -- S4
 # Strategies de Trading a Haute Frequence (2/2)
 
 - **Machine Learning et AI**
-  - Utilisation de modeles de Deep Learning pour prediction de micro-tendances
-  - Reinforcement Learning pour l'ajustement dynamique de strategies
+  - Utilisation de modèles de Deep Learning pour prediction de micro-tendances
+  - Reinforcement Learning pour l'ajustement dynamique de stratégies
 - **Latence Ultra-Faible**
   - Utilisation de FPGA (Field-Programmable Gate Arrays) pour des ordres en microsecondes
   - Co-location de serveurs pres des bourses
@@ -1028,18 +1028,18 @@ Intelligence Artificielle -- S4
   - Strategies Matieres Premieres: Optimisation par RL pour des meilleures entrees et sorties
 - **Innovations en ML & Data Analytics**
   - Time Series Forecasting: LSTM et ARIMA pour predire la saisonnalite
-  - Reinforcement Learning (RL): Maximisation des rendements en adaptant les strategies saisonnieres
-  - Random Forest & SVM: Classification pour detecter les meilleures periodes d'achat/vente
+  - Reinforcement Learning (RL): Maximisation des rendements en adaptant les stratégies saisonnieres
+  - Random Forest & SVM: Classification pour detecter les meilleures périodes d'achat/vente
 
 ---
 
 # Strategies de Trading Saisonnier 2.0 (2/2)
 
 - **Intelligence Contextuelle**
-  - IoT & Big Data: Utilisation de donnees meteorologiques et de flux logistiques pour optimiser les trades en matieres premieres
-  - Sentiment Analysis: Evaluer l'effet du sentiment saisonnier sur les marches
+  - IoT & Big Data: Utilisation de données meteorologiques et de flux logistiques pour optimiser les trades en matieres premieres
+  - Sentiment Analysis: Évaluer l'effet du sentiment saisonnier sur les marches
 - **Gestion de Risques Avancee**
-  - Simulation de Monte Carlo: Estimation des intervalles de confiance pour les strategies
+  - Simulation de Monte Carlo: Estimation des intervalles de confiance pour les stratégies
   - Backtesting Adaptatif: Tests dynamiques pour ajuster aux changements du marche
 
 ---
@@ -1089,12 +1089,12 @@ Intelligence Artificielle -- S4
 # Portefeuille a Haut Levier vs Haut Beta 2.0 (2/2)
 
 - **Optimisation de Ratio de Sharpe avec IA**
-  - Utilisation de reseaux de neurones pour maximiser le ratio de Sharpe
+  - Utilisation de réseaux de neurones pour maximiser le ratio de Sharpe
   - Apprentissage par Renforcement: Pour une allocation d'actifs dynamique et optimisee
 - **Gestion du Risque 2.0**
   - Techniques modernes comme le "Value-at-Risk" (VaR) base sur le deep learning
   - Indicateurs de Sentiment du Marche: Via le traitement du langage naturel pour anticiper les changements de marche
-- **La version 2.0 integre des techniques d'apprentissage machine et d'analyse de donnees pour une gestion plus proactive et adaptative du risque et du rendement**
+- **La version 2.0 integre des techniques d'apprentissage machine et d'analyse de données pour une gestion plus proactive et adaptative du risque et du rendement**
 
 ---
 
@@ -1121,7 +1121,7 @@ Documentation officielle QuantConnect
 - **Fonctionnalites Principales**
   - Notebooks d'analyse, Backtesting, optimisation, paper et live trading
 - **Data Library**
-  - Donnees historiques de plusieurs marches
+  - Données historiques de plusieurs marches
 - **Communaute & Ressources**
   - Forums, tutoriels, documentation
 
@@ -1368,10 +1368,10 @@ Documentation officielle QuantConnect
 
 ---
 
-# Evenements de Donnees
+# Evenements de Données
 
 - **Temps decoupe en "slices"**
-  - Peuvent contenir des Ticks (ponctuel) ou TradeBars, QuoteBars (periodes)
+  - Peuvent contenir des Ticks (ponctuel) ou TradeBars, QuoteBars (périodes)
 - **Methode principale**
   - C#
     ```csharp
@@ -1407,7 +1407,7 @@ Documentation officielle QuantConnect
   - Logs enregistres dans backtest: Eviter de les surcharger pour eviter la saturation
 - **Export de graphiques**
   - Methode Plot (cf initialisation)
-- **Utilisation de donnees historiques**
+- **Utilisation de données historiques**
   - Python: `self.df = self.History(self.Symbol("SPY"), start_time, end_time, Resolution.Hour)`
   - Plusieurs symbols: `self.dataframe = self.History([self.Symbol("IBM"), self.Symbol("AAPL")], start_time, end_time)`
 
@@ -1488,9 +1488,9 @@ Documentation officielle QuantConnect
   - Execution sous container Docker / lean-cli
 - **QuantBooks**
   - Classe heritant de QCAlgorithm
-  - Utilisation de donnees historisees / dataframes pour analyse
+  - Utilisation de données historisees / dataframes pour analyse
 
-<!-- QuantBook : notebook Jupyter pour exploration de donnees historiques -->
+<!-- QuantBook : notebook Jupyter pour exploration de données historiques -->
 <!-- Workflow : Research (QuantBook) → Backtest (QCAlgorithm) → Paper Trading → Live -->
 
 ---
@@ -1530,7 +1530,7 @@ Documentation officielle QuantConnect
 
 # Alphas (1/2)
 
-- **Classes chargees de generer des signaux**
+- **Classes chargees de générer des signaux**
   - = Insights (direction, amplitude et confiance)
   - e.g. A partir d'indicateurs
 - **Ajout a l'initialisation**
@@ -1571,11 +1571,11 @@ Documentation officielle QuantConnect
 - **Exemples**
   - Python: `insight = Insight.Price("IBM", timedelta(minutes = 20), InsightDirection.Up)`
   - C#: `var insight = Insight.Price("IBM", TimeSpan.FromMinutes(20), InsightDirection.Up);`
-- **Caracteristiques**
+- **Caractéristiques**
   - Parametres importants: Direction, Period, Magnitude, Confidence, Weight
   - Possibilite de les regrouper: `return Insight.Group([insight1, insight2, insight3])`
   - Possibilite de les annuler: `self.insight.Cancel(algorithm.UtcTime)`
-- **Si pas de reference utilisation de l'insight manager**
+- **Si pas de référence utilisation de l'insight manager**
   - Filtrage par symbole, par direction etc.
   - `var insights = algorithm.Insights.GetInsights(insight => insight.Direction == InsightDirection.Up);`
   - `algorithm.Insights.Cancel(symbols)`
@@ -1683,7 +1683,7 @@ Documentation officielle QuantConnect
 - **Bon usage**
   - Attention a la combinatoire (Produit cartesien de toutes les possibilites voire + pour Euler)
   - Utilisation d'une version d'algo "rapide" (test manuel de sensibilite a la resolution)
-  - Attention au sur-apprentissage (Optimisation sur une periode donnee, validation finale sur une periode + recente)
+  - Attention au sur-apprentissage (Optimisation sur une période donnee, validation finale sur une période + recente)
 
 <!-- Heatmap optimisation : axes = parametres, couleur = Sharpe ratio ou rendement -->
 
@@ -1696,7 +1696,7 @@ Documentation officielle QuantConnect
   - A priori pas de debug, au besoin utiliser la journalisation
 - **Designation des parametres a optimiser**
   - parameters: name, min, max, step
-- **2 strategies d'exploration**
+- **2 stratégies d'exploration**
   - GridSearch: teste toutes les combinaisons
   - EulerSearch: teste toutes les combinaisons, puis raffine a partir de la meilleure
   - Parametres supplementaires pour la subdivision des steps initiaux: min-step, default-segment-amount
@@ -1730,7 +1730,7 @@ Documentation officielle QuantConnect
   - Regression: Prediction du prix
   - Classification: Prediction de la tendance (trend haussier, baissier, neutre)
   - Detection d'anomalie
-- **Evolution des architectures**
+- **Évolution des architectures**
   - RNN (LSTM)
   - Transformers
   - CNN
@@ -1741,12 +1741,12 @@ Documentation officielle QuantConnect
 # Machine Learning pour le Trading (2/2)
 
 - **Retours sur le trading**
-  - Marche en constante evolution (modeles MAJ)
+  - Marche en constante évolution (modèles MAJ)
   - Regression difficile / pas tres adaptee
   - Modeles de classification boostes relativement efficaces
 
 <!-- LSTM : input sequence → cellules LSTM → dense → prediction prix/direction -->
-<!-- Predictions vs actuel : courbe de prix reelle vs predictions du modele -->
+<!-- Predictions vs actuel : courbe de prix reelle vs predictions du modèle -->
 
 ---
 
@@ -1756,10 +1756,10 @@ Documentation officielle QuantConnect
 
 - **Non stationnarite**
   - Different des Times series classiques
-  - Changements continuels dans les distributions de donnees
+  - Changements continuels dans les distributions de données
   - Pire que ca: adversarial
   - Le marche s'adapte, changement de regimes intentionnels
-  - Necessite de beaucoup de feedback, attention aux modeles statiques
+  - Necessite de beaucoup de feedback, attention aux modèles statiques
 - **Identification de regimes distincts**
   - Duree des transitions assez lente / difficile a detecter
   - Detection d'anomalie difficile
@@ -1770,10 +1770,10 @@ Documentation officielle QuantConnect
 
 # Difficultes du ML dans le Trading (2/2)
 
-- **Donnees inadequates**
+- **Données inadequates**
   - Ratio signal / bruit mauvais
-  - Granularite variable des donnees (e.g. rapports trimestriels)
-  - Donnees insuffisantes / overfitting
+  - Granularite variable des données (e.g. rapports trimestriels)
+  - Données insuffisantes / overfitting
   - Importance d'un pipeline de reentrainement continu
 
 <!-- Signal/bruit : series financieres dominee par le bruit, signal faible et non-stationnaire -->
@@ -1792,7 +1792,7 @@ Documentation officielle QuantConnect
   - https://dotnet.github.io/infer/default.html
   - https://www.mbmlbook.com/toc.html
 - **AutoML**
-  - Choix du modele et hyperparametrisation
+  - Choix du modèle et hyperparametrisation
   - "experiments" sur differents trainers
 - **TimeSeries**
 
@@ -1824,10 +1824,10 @@ Documentation officielle QuantConnect
 
 # ML dans Lean/QC (2/2)
 
-- **Types de modeles**
-  - Accord SVM: Type de noyau + complexite
+- **Types de modèles**
+  - Accord SVM: Type de noyau + complexité
   - ML.Net AutoML: Classification, metrique d'optimisation
-  - A venir: prediction: modele regressif
+  - A venir: prediction: modèle regressif
 - **Integration Lean dans une branche dediee**
 - **Nouveaux exemples QC**
   - https://www.quantconnect.com/docs/v2/writing-algorithms/machine-learning/key-concepts
