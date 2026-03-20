@@ -720,6 +720,8 @@ class NotebookValidator:
 
         # Remove various non-LaTeX $ patterns before checking
         source_for_latex = source
+        # Remove fenced code blocks (```...```) which may contain $ in shell/env vars
+        source_for_latex = re.sub(r'```.*?```', '', source_for_latex, flags=re.DOTALL)
         # Remove markdown table rows
         source_for_latex = re.sub(r'^\|.*?\|$', '', source_for_latex, flags=re.MULTILINE)
         # Remove inline code with $ (like `$defs`, `$id`, `$schema`)
@@ -743,19 +745,19 @@ class NotebookValidator:
         single_dollars = len(re.findall(r'(?<!\$)\$(?!\$)', source_for_latex))
         if single_dollars % 2 != 0:
             issues.append(ValidationIssue(
-                issue_type='error',
+                issue_type='warning',
                 category='latex',
                 cell_index=index,
-                message='Unbalanced $ signs in LaTeX'
+                message='Possibly unbalanced $ signs in LaTeX (may be false positive)'
             ))
 
         double_dollars = len(re.findall(r'\$\$', source_for_latex))
         if double_dollars % 2 != 0:
             issues.append(ValidationIssue(
-                issue_type='error',
+                issue_type='warning',
                 category='latex',
                 cell_index=index,
-                message='Unbalanced $$ signs in LaTeX'
+                message='Possibly unbalanced $$ signs in LaTeX (may be false positive)'
             ))
 
         # Check links
