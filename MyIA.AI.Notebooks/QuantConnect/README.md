@@ -388,6 +388,66 @@ lean cli project-fetch <project-id> --destination MyIA.AI.Notebooks/QuantConnect
 
 ---
 
+## ESGF-2026 - exemples de recherche
+
+Le dossier **ESGF-2026/** contient des exemples de recherche avancée utilisés dans le cours ESGF 2026 (EPITA).
+
+### Structure ESGF-2026
+
+```text
+ESGF-2026/
+├── examples/              # ← Tracké : Exemples pédagogiques complets
+│   ├── BTC-MachineLearning/
+│   ├── Crypto-MultiCanal/
+│   ├── ETF-Pairs-Trading/
+│   ├── Multi-Layer-EMA/
+│   ├── Options-VGT/
+│   ├── Option-Wheel-Strategy/
+│   ├── Sector-Momentum/
+│   └── Trend-Following/
+├── archive-2025/          # ← Archives historiques
+├── templates/             # ← Templates de recherche
+└── *.md                   # ← Documentation (RAPPORT_FINAL.md, etc.)
+```
+
+### Standard de structure (issues #112, #141)
+
+Chaque exemple dans `ESGF-2026/examples/` doit avoir :
+
+- **main.py** : Algorithme déployable
+- **README.md** : Documentation du projet
+- **research.ipynb** ou **research_robustness.ipynb** : Notebook de recherche QuantBook
+
+### Projets correspondants dans projects/
+
+Tous les exemples ESGF-2026 ont des projets correspondants dans `projects/` :
+
+| Exemple ESGF-2026 | Projet projects/ | Statut |
+| :--- | :--- | :--- |
+| BTC-MachineLearning | BTC-ML | ✅ |
+| Crypto-MultiCanal | Crypto-MultiCanal | ✅ |
+| ETF-Pairs-Trading | ETF-Pairs | ✅ |
+| Multi-Layer-EMA | Multi-Layer-EMA | ✅ |
+| Options-VGT | Options-VGT | ✅ |
+| Option-Wheel-Strategy | Option-Wheel | ✅ |
+| Sector-Momentum | SectorMomentum | ✅ |
+| Trend-Following | MomentumStrategy | ✅ |
+| CSharp-BTC-MACD-ADX | CSharp-BTC-MACD-ADX | ✅ (ajouté 2026-03-21) |
+
+### Cleanup 2026-03-21 (issue #112)
+
+**Supprimé (25 dossiers doublons/squelettes) :**
+
+- 16 Researcher racine (doublons de projects/)
+- 6 Researcher ESGF-2026/examples (squelettes TODO non complétés)
+- 3 projets C# (doublons, déjà dans projects/)
+
+**Créé :**
+
+- `projects/CSharp-BTC-MACD-ADX/` avec Main.cs, Research.ipynb, README.md
+
+---
+
 ## Intégration MCP QuantConnect
 
 QuantConnect a lancé un [serveur MCP officiel](https://github.com/QuantConnect/mcp-server) en 2026 avec **60+ API endpoints**.
