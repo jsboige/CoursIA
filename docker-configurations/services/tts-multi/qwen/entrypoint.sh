@@ -10,6 +10,9 @@ echo "Task Type: ${MODEL_TYPE:-CustomVoice}"
 echo "GPU Memory Utilization: ${GPU_MEMORY_UTILIZATION:-0.6}"
 echo "Port: ${PORT:-8000}"
 
+# Force HuggingFace download (not ModelScope) to avoid path mangling
+export VLLM_USE_MODELSCOPE=false
+
 # Launch vLLM-Omni server with TTS support
 # The --omni flag enables multi-modal (audio) support
 # The --stage-configs-path is required for Qwen3-TTS

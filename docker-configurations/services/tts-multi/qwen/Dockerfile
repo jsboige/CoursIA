@@ -15,7 +15,8 @@ EXPOSE 8000
 
 # Set environment variables for Qwen3-TTS
 ENV PYTHONUNBUFFERED=1
-ENV VLLM_USE_MODELSCOPE=False
+ENV VLLM_USE_MODELSCOPE=false
+ENV HF_HUB_ENABLE_HF_TRANSFER=1
 ENV VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
 
 # Default model type (can be overridden by docker-compose)

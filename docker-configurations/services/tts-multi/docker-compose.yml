@@ -181,16 +181,17 @@ services:
       - CUDA_VISIBLE_DEVICES=${QWEN_GPU_ID:-1}
       - NVIDIA_VISIBLE_DEVICES=${QWEN_GPU_ID:-1}
       - PYTHONUNBUFFERED=1
+      - VLLM_USE_MODELSCOPE=false
       - MODEL_TYPE=${QWEN_MODEL_TYPE:-CustomVoice}
       - GPU_MEMORY_UTILIZATION=${QWEN_GPU_MEMORY_UTILIZATION:-0.6}
       - TZ=${TZ:-Europe/Paris}
 
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 240s
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 300s
 
     restart: unless-stopped
 

@@ -8,18 +8,18 @@ Serie complete de notebooks pour le traitement audio par IA generative : reconna
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 16 |
+| Notebooks | 17 |
 | Sous-dossiers | 4 niveaux |
 | Kernel | Python 3 |
 | Duree totale | ~10-12h |
-| Validation | 100% (16/16 notebooks) |
+| Validation | 100% (17/17 notebooks) |
 
 ## Structure
 
 ```
 Audio/
 ├── 01-Foundation/     # STT, TTS, bases audio (5 notebooks)
-├── 02-Advanced/       # Voice cloning, musique, separation (4 notebooks)
+├── 02-Advanced/       # Voice cloning, musique, separation, multi-TTS (5 notebooks)
 ├── 03-Orchestration/  # Multi-modeles, temps reel (3 notebooks)
 └── 04-Applications/   # Education, production, sync A/V (4 notebooks)
 ```
@@ -44,6 +44,7 @@ Audio/
 | [02-2-XTTS-Voice-Cloning](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) | XTTS v2, clonage vocal zero-shot | Local GPU | ~6 GB |
 | [02-3-MusicGen-Generation](02-Advanced/02-3-MusicGen-Generation.ipynb) | Meta MusicGen, text-to-music | Local GPU | ~10 GB |
 | [02-4-Demucs-Source-Separation](02-Advanced/02-4-Demucs-Source-Separation.ipynb) | Demucs v4, extraction stems | Local GPU | ~4 GB |
+| [02-5-Multi-Model-TTS-Gateway](02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb) | Gateway multi-TTS (Kokoro, TADA, Qwen3) | tts-api.myia.io | ~12 GB |
 
 ### 03-Orchestration - Multi-modeles & Temps reel
 
@@ -73,6 +74,7 @@ Audio/
 | **XTTS v2** | 02-2 | GPU ~6 GB VRAM |
 | **MusicGen (Meta)** | 02-3 | GPU ~10 GB VRAM |
 | **Demucs v4 (Meta)** | 02-4 | GPU ~4 GB VRAM |
+| **Multi-TTS Gateway** | 02-5 | `TTS_API_URL` (tts-api.myia.io) |
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
 
 ## Prerequisites
