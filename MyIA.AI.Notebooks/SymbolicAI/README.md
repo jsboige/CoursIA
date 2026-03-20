@@ -1,13 +1,13 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
-Collection de **77 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
+Collection de **92 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
 
 ## Vue d'ensemble
 
 | Serie | Notebooks | Exercices | Environnement | Theme | Duree |
 |-------|-----------|-----------|---------------|-------|-------|
 | [SemanticWeb](#semanticweb---web-semantique) | 17 | 15 (88%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~12h |
-| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 17 | 17 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, Verification | ~12h |
+| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~20h |
 | [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
 | [Lean](#lean---verification-formelle) | 13 | 12 (92%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
 | [Tweety](#tweety---tweetyproject) | 10 | 9 (90%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
@@ -42,15 +42,15 @@ Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibli
 |---|----------|---------|-----------|-----------|
 | **Fondations** |
 | 1 | [Tweety-1-Setup](Tweety/Tweety-1-Setup.ipynb) | Configuration JVM via JPype, JARs (35 modules), outils externes | Setup | Java/JPype |
-| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle, SAT4J, PySAT. FOL : predicats, quantificateurs | AUCUN | Java/JPype |
-| 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | Description Logic, Logique Modale (SPASS), QBF, Conditionnelle | AUCUN | Java/JPype, SPASS |
+| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle, SAT4J, PySAT. FOL : predicats, quantificateurs | 2 | Java/JPype |
+| 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | Description Logic, Logique Modale (SPASS), QBF, Conditionnelle | 2 | Java/JPype, SPASS |
 | **Revision de Croyances** |
-| 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | Postulats AGM, MUS, MaxSAT, mesures d'incoherence | AUCUN | Java/JPype |
+| 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | Postulats AGM, MUS, MaxSAT, mesures d'incoherence | 2 | Java/JPype |
 | **Argumentation** |
 | 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Frameworks de Dung, semantiques (grounded, preferred, stable, CF2) | 2 | Java/JPype |
 | 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP avec Clingo | 2 | Java/JPype, Clingo |
-| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | AUCUN | Java/JPype |
-| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | AUCUN | Java/JPype |
+| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 2 | Java/JPype |
+| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
 | **Applications** |
 | 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
 | 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 2 | Java/JPype |
@@ -174,35 +174,21 @@ Documentation complete : [Planners/README.md](Planners/README.md)
 
 ## SmartContracts - Blockchain et Contrats Intelligents
 
-Serie de **17 notebooks** sur les smart contracts et la blockchain, couvrant Solidity, DeFi, DAO, verification formelle, et les ecosystemes Move/Solana.
+Serie de **27 notebooks** sur les smart contracts et la blockchain, organisee en 7 modules progressifs couvrant Solidity, DeFi, DAO, verification formelle, cryptographie, et les ecosystemes alternatifs (Move, Solana, Bitcoin, Vyper).
 
 ### Structure detaillee
 
-| # | Notebook | Contenu | Exercices | Prerequis manquants |
-|---|----------|---------|-----------|---------------------|
-| **Fondations Solidity** |
-| 0 | [SC-0-Setup](SmartContracts/SC-0-Setup.ipynb) | Configuration Solidity, Foundry | 1 | Non |
-| 1 | [SC-1-Solidity-Basics](SmartContracts/SC-1-Solidity-Basics.ipynb) | Types, variables, structures | 5 | Oui |
-| 2 | [SC-2-Functions-State](SmartContracts/SC-2-Functions-State.ipynb) | Fonctions, gestion d'etat | 5 | Oui |
-| 3 | [SC-3-Inheritance](SmartContracts/SC-3-Inheritance.ipynb) | Heritage, interfaces, abstractions | 5 | Oui |
-| 4 | [SC-4-Errors-Events](SmartContracts/SC-4-Errors-Events.ipynb) | Gestion d'erreurs, evenements | 5 | Oui |
-| **DeFi et Gouvernance** |
-| 5 | [SC-5-Token-Standards](SmartContracts/SC-5-Token-Standards.ipynb) | ERC-20, ERC-721, ERC-1155 | 5 | Oui |
-| 6 | [SC-6-DeFi-Primitives](SmartContracts/SC-6-DeFi-Primitives.ipynb) | Lending, AMM, Flash Loans | 5 | Oui |
-| 7 | [SC-7-DAO-Governance](SmartContracts/SC-7-DAO-Governance.ipynb) | DAO, gouvernance on-chain | 5 | Oui |
-| 8 | [SC-8-Account-Abstraction](SmartContracts/SC-8-Account-Abstraction.ipynb) | Abstraction de comptes, Social Recovery | 2 | Oui |
-| 8b | [SC-8b-LLM-Assisted](SmartContracts/SC-8b-LLM-Assisted.ipynb) | Audit assiste par LLM | 4 | Non |
-| **Test et Verification** |
-| 9 | [SC-9-Foundry-Basics](SmartContracts/SC-9-Foundry-Basics.ipynb) | Foundry, forge test | 3 | Non |
-| 10 | [SC-10-Fuzz-Testing](SmartContracts/SC-10-Fuzz-Testing.ipynb) | Fuzz testing, invariants | 2 | Oui |
-| 11 | [SC-11-Formal-Verification](SmartContracts/SC-11-Formal-Verification.ipynb) | Verification formelle Solidity | 2 | Oui |
-| **Ecosystemes alternatifs** |
-| 12 | [SC-12-Move-Sui](SmartContracts/SC-12-Move-Sui.ipynb) | Move language, Sui blockchain | 2 | Oui |
-| 13 | [SC-13-Solana-Anchor](SmartContracts/SC-13-Solana-Anchor.ipynb) | Solana, Anchor framework | 2 | Oui |
-| 14 | [SC-14-Cross-Chain](SmartContracts/SC-14-Cross-Chain.ipynb) | Bridges, interoperabilite | 1 | Oui |
-| 15 | [SC-15-Final-Project](SmartContracts/SC-15-Final-Project.ipynb) | Projet final DApp complete | 1 | Oui |
+| Module | Notebooks | Contenu |
+|--------|-----------|---------|
+| **00-Foundations** | SC-0 (Cypherpunk Origins), SC-1 (Setup Foundry), SC-2 (Setup Web3py) | Histoire blockchain, configuration environnement |
+| **01-Solidity-Foundation** | SC-3 (Basics), SC-4 (Functions/State), SC-5 (Inheritance), SC-6 (Errors/Events) | Fondations Solidity avec code executable (compile_and_deploy) |
+| **02-Solidity-Advanced** | SC-7 (Token Standards), SC-8 (DeFi), SC-9 (DAO), SC-10 (Account Abstraction), SC-11 (LLM-Assisted) | ERC-20/721, DeFi, gouvernance, audit LLM |
+| **03-Foundry-Testing** | SC-12 (Foundry Testing), SC-13 (Fuzz/Invariants), SC-14 (Formal Verification) | Tests unitaires, fuzz testing, verification formelle |
+| **04-Privacy-Cryptography** | SC-15 (ZK Proofs), SC-16 (Homomorphic Encryption), SC-17 (E2E Voting) | Zero-knowledge, chiffrement homomorphe, vote verifiable |
+| **05-Alternative-Chains** | SC-18 (Vyper), SC-19 (Ripple), SC-20 (Bitcoin), SC-21 (Move/Sui), SC-22 (Solana) | Ecosystemes alternatifs |
+| **06-Real-World** | SC-23 (Cross-Chain), SC-24 (Testnet), SC-25 (Mainnet), SC-26 (Final Project) | Deploiement, interoperabilite, projet final |
 
-> **Attention** : 13/17 notebooks n'ont pas de section prerequis dans le header. A corriger.
+Documentation complete : [SmartContracts/README.md](SmartContracts/README.md)
 
 ---
 
@@ -268,8 +254,14 @@ SymbolicAI/
 │   ├── 04-NeuroSymbolic/     # LLM-Planning, Unified-Planning, LOOP
 │   └── README.md
 │
-├── SmartContracts/            # Blockchain et smart contracts (17 notebooks)
-│   ├── SC-0-Setup.ipynb ... SC-15-Final-Project.ipynb
+├── SmartContracts/            # Blockchain et smart contracts (27 notebooks)
+│   ├── 00-Foundations/        # SC-0 a SC-2 (Origins, Setup)
+│   ├── 01-Solidity-Foundation/ # SC-3 a SC-6 (Basics, Functions, Inheritance, Events)
+│   ├── 02-Solidity-Advanced/  # SC-7 a SC-11 (Tokens, DeFi, DAO, AA, LLM)
+│   ├── 03-Foundry-Testing/    # SC-12 a SC-14 (Testing, Fuzz, Formal)
+│   ├── 04-Privacy-Cryptography/ # SC-15 a SC-17 (ZK, HE, Voting)
+│   ├── 05-Alternative-Chains/ # SC-18 a SC-22 (Vyper, XRP, BTC, Move, Solana)
+│   ├── 06-Real-World/         # SC-23 a SC-26 (Cross-chain, Deploy, Project)
 │   └── README.md
 │
 ├── Argument_Analysis/         # Analyse argumentative (6 notebooks, demo)
