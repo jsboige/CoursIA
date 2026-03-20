@@ -287,6 +287,107 @@ Cette série s'inspire du livre **"Hands-On AI Trading with Python, QuantConnect
 
 ---
 
+## Politique Git - Cloud-First Workflow
+
+### Principe
+
+La série QuantConnect CoursIA utilise un **workflow cloud-first** :
+
+- **Source de vérité** : QuantConnect Cloud (<https://www.quantconnect.com>)
+- **Clones locaux** : SONT IGNORÉS par git (voir `.gitignore`)
+- **Code tracké** : Uniquement les notebooks pédagogiques + projets de référence
+
+### Projets Locaux vs Projets Trackés
+
+#### 📁 Projets Locaux (IGNORÉS par git)
+
+Les clones créés via `lean cli project-fetch` ou `lean git clone` sont dans `.gitignore` :
+
+```bash
+# Exemples de projets locaux ignorés :
+MyIA.AI.Notebooks/QuantConnect/AdaptiveAssetAllocation/
+MyIA.AI.Notebooks/QuantConnect/AllWeather-Researcher/
+MyIA.AI.Notebooks/QuantConnect/BTC-*-Researcher*/
+MyIA.AI.Notebooks/QuantConnect/EMA-Cross-*/
+# ... etc
+```
+
+**Règle** : Ces projets sont des clones de travail, PAS du code source à tracker.
+
+#### 📁 Projets Trackés (DANS git)
+
+Le code déployable et les notebooks de recherche sont trackés :
+
+```text
+MyIA.AI.Notebooks/QuantConnect/
+├── projects/           # ← Tracké : Algorithmes déployables
+│   ├── EMA-Cross-Alpha/
+│   ├── TrendStocks-Alpha/
+│   └── ...
+├── Python/             # ← Tracké : Notebooks pédagogiques
+│   ├── QC-Py-01-Setup.ipynb
+│   └── ...
+├── CSharp/             # ← Tracké : Notebooks pédagogiques
+│   ├── QC-CS-01-Setup.ipynb
+│   └── ...
+├── shared/             # ← Tracké : Bibliothèques partagées
+└── docs/               # ← Tracké : Documentation
+```
+
+### Projets Cloud Actifs
+
+#### 🟢 Actifs (avec notebook de recherche)
+
+Ces projets sont régulièrement utilisés pour la recherche et le développement :
+
+- **EMA-Cross-Stocks** : Momentum EMA cross sur actions US
+- **Trend-Following** : Stratégie trend following multi-actifs
+- **DualMomentum** : Momentum dual avec gestion risque
+- **FamaFrench** : Stratégie factorielle Fama-French 5 facteurs
+- **Framework_Composite_*** : Framework composites multi-stratégies
+
+#### 🟡 Archivés (sans notebook récent)
+
+Ces projets sont conservés pour référence mais ne sont plus activement développés :
+
+- **EMA-Cross-Alpha** : Archivé (code dans `projects/`)
+- **TrendStocks-Alpha** : Archivé (code dans `projects/`)
+- **BTC-MACD-ADX-Researcher** : Versions obsolètes supprimées
+- **ETF-Pairs-Researcher 2** : Remplacé par version plus récente
+
+#### 🔴 Obsolètes (supprimés)
+
+Projets locaux sans notebook de recherche ont été nettoyés (2026-03-20) :
+
+- `BTC-MACD-ADX-Researcher 3/4/5` : Doublons obsolètes
+- `EMA-Cross-Alpha/` : Clone local (code dans `projects/`)
+- `TrendStocks-Alpha/` : Clone local (code dans `projects/`)
+
+### Workflow Recommandé
+
+**Pour créer un nouveau projet** :
+```bash
+# 1. Créer le projet dans le cloud QuantConnect
+# Via QC Lab ou API
+
+# 2. Cloner localement pour développement (ignoré par git)
+lean cli project-fetch <project-id> --destination MyIA.AI.Notebooks/QuantConnect/MonProjet-Researcher
+
+# 3. Développer avec QuantBook (research.ipynb)
+
+# 4. Pour partager : Copier le code déployable dans projects/
+# Et/ou créer un notebook pédagogique dans Python/ ou CSharp/
+```
+
+**Pourquoi cette politique ?**
+
+- ✅ Évite de dupliquer le code QuantConnect dans git
+- ✅ Les notebooks pédagogiques restent la source de vérité
+- ✅ `projects/` contient uniquement les algorithmes "ready-to-deploy"
+- ✅ Les clones locaux servent au développement itératif
+
+---
+
 ## Intégration MCP QuantConnect
 
 QuantConnect a lancé un [serveur MCP officiel](https://github.com/QuantConnect/mcp-server) en 2026 avec **60+ API endpoints**.
