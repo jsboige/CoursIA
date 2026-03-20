@@ -8,9 +8,9 @@ Collection de **77 notebooks Jupyter** pour l'apprentissage de l'IA symbolique :
 |-------|-----------|-----------|---------------|-------|-------|
 | [SemanticWeb](#semanticweb---web-semantique) | 17 | 15 (88%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~12h |
 | [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 17 | 17 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, Verification | ~12h |
-| [Planners](#planners---planification-automatique) | 13 | 9 (69%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
-| [Lean](#lean---verification-formelle) | 13 | 10 (77%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~9h |
-| [Tweety](#tweety---tweetyproject) | 9 | 4 (44%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
+| [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
+| [Lean](#lean---verification-formelle) | 13 | 12 (92%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
+| [Tweety](#tweety---tweetyproject) | 10 | 9 (90%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~3h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
@@ -34,7 +34,7 @@ Collection de **77 notebooks Jupyter** pour l'apprentissage de l'IA symbolique :
 
 ## Tweety - TweetyProject
 
-Serie de **9 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliotheque Java pour l'IA symbolique. Couvre les logiques formelles, la revision de croyances, et l'argumentation computationnelle.
+Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliotheque Java pour l'IA symbolique. Couvre les logiques formelles, la revision de croyances, et l'argumentation computationnelle.
 
 ### Structure detaillee
 
@@ -55,7 +55,7 @@ Serie de **9 notebooks** sur [TweetyProject](https://tweetyproject.org/), biblio
 | 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
 | 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 2 | Java/JPype |
 
-> **Attention** : 5 notebooks de contenu (2, 3, 4, 7a, 7b) n'ont pas d'exercices. A completer pour EPITA.
+> 9/10 notebooks ont des exercices. Seul Tweety-1-Setup (configuration) n'en a pas.
 
 ### Technologies
 
@@ -87,11 +87,11 @@ Serie de **13 notebooks** sur **Lean 4**, proof assistant base sur la theorie de
 | 5 | [Lean-5-Tactics](Lean/Lean-5-Tactics.ipynb) | Lean 4 | Mode tactique, exact, intro, apply, cases, induction, rw, simp, calc | 5 |
 | **Etat de l'art 2024-2026** |
 | 6 | [Lean-6-Mathlib-Essentials](Lean/Lean-6-Mathlib-Essentials.ipynb) | Lean 4 | Mathlib4, tactiques puissantes (ring, linarith, omega), Loogle/Moogle | 4 |
-| 7 | [Lean-7-LLM-Integration](Lean/Lean-7-LLM-Integration.ipynb) | Python WSL | AlphaProof, LeanCopilot, collaboration humain-LLM-Lean | AUCUN |
+| 7 | [Lean-7-LLM-Integration](Lean/Lean-7-LLM-Integration.ipynb) | Python WSL | AlphaProof, LeanCopilot, collaboration humain-LLM-Lean | 2 |
 | 7b | [Lean-7b-Examples](Lean/Lean-7b-Examples.ipynb) | Python WSL | Exemples progressifs, comparaison OpenAI vs Anthropic, Erdos | 8 |
 | 8 | [Lean-8-Agentic-Proving](Lean/Lean-8-Agentic-Proving.ipynb) | Python WSL | Agents autonomes, Harmonic Aristotle, Erdos #124 | 7 |
-| 9 | [Lean-9-SK-Multi-Agents](Lean/Lean-9-SK-Multi-Agents.ipynb) | Python WSL | Semantic Kernel, 5 agents specialises, ProofState | AUCUN |
-| 10 | [Lean-10-LeanDojo](Lean/Lean-10-LeanDojo.ipynb) | Python WSL | LeanDojo, tracing, extraction theoremes, ML pour theorem proving | AUCUN |
+| 9 | [Lean-9-SK-Multi-Agents](Lean/Lean-9-SK-Multi-Agents.ipynb) | Python WSL | Semantic Kernel, 5 agents specialises, ProofState | 2 |
+| 10 | [Lean-10-LeanDojo](Lean/Lean-10-LeanDojo.ipynb) | Python WSL | LeanDojo, tracing, extraction theoremes, ML pour theorem proving | 2 |
 | 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Verification formelle de reseaux de neurones | 2 |
 | 11py | [Lean-11-TorchLean-Python](Lean/Lean-11-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, verification | 7 |
 
@@ -156,17 +156,17 @@ Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classi
 | 3 | [Planners-3-State-Space](Planners/02-Classical/Planners-3-State-Space.ipynb) | Recherche dans l'espace d'etats | 7 | Fast-Downward |
 | 4 | [Planners-4-Fast-Downward](Planners/02-Classical/Planners-4-Fast-Downward.ipynb) | Fast Downward, heuristiques | 6 | Docker, Fast-Downward |
 | 5 | [Planners-5-Heuristics](Planners/02-Classical/Planners-5-Heuristics.ipynb) | Heuristiques (FF, LM-Cut, Merge-and-Shrink) | 5 | Fast-Downward |
-| 6 | [Planners-6-Domains](Planners/02-Classical/Planners-6-Domains.ipynb) | Catalogue de domaines PDDL | AUCUN | Fast-Downward |
+| 6 | [Planners-6-Domains](Planners/02-Classical/Planners-6-Domains.ipynb) | Catalogue de domaines PDDL | 3 | Fast-Downward |
 | **Avance** |
 | 7 | [Planners-7-OR-Tools](Planners/03-Advanced/Planners-7-OR-Tools.ipynb) | CP-SAT, Job Shop, VRP | 2 | ortools |
 | 8 | [Planners-8-Temporal](Planners/03-Advanced/Planners-8-Temporal.ipynb) | Planification temporelle (PDDL 2.1) | 6 | Python |
 | 9 | [Planners-9-HTN](Planners/03-Advanced/Planners-9-HTN.ipynb) | Hierarchical Task Networks | 7 | Python |
 | **Neuro-symbolique** |
-| 10 | [Planners-10-LLM-Planning](Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | LLMs pour la planification | AUCUN | API keys |
-| 11 | [Planners-11-Unified-Planning](Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Unified Planning Framework | AUCUN | unified_planning |
+| 10 | [Planners-10-LLM-Planning](Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | LLMs pour la planification | 2 | API keys |
+| 11 | [Planners-11-Unified-Planning](Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Unified Planning Framework | 3 | unified_planning |
 | 12 | [Planners-12-LOOP](Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb) | LLM + OR-Tools + planification | 2 | Fast-Downward |
 
-> **Attention** : 3 notebooks de contenu (6, 10, 11) n'ont pas d'exercices.
+> 12/13 notebooks ont des exercices. Seul Planners-0-Setup (configuration) n'en a pas.
 
 Documentation complete : [Planners/README.md](Planners/README.md)
 
@@ -343,23 +343,23 @@ dotnet interactive jupyter install
 
 ## Audit Qualite (mars 2026)
 
-### Couverture exercices
+### Couverture exercices (audit 20 mars 2026)
 
-| Serie | Avec exercices | Sans exercices | Priorite |
-|-------|---------------|----------------|----------|
-| SmartContracts | 17/17 (100%) | 0 | - |
-| SemanticWeb | 15/17 (88%) | 2 (Setup, Reasoners) | Basse |
-| Lean | 10/13 (77%) | 3 (7, 9, 10) | Moyenne |
-| Planners | 9/13 (69%) | 4 (0, 6, 10, 11) | Moyenne |
-| Tweety | 4/9 (44%) | 5 (2, 3, 4, 7a, 7b) | **Haute** |
-| Argument Analysis | 0/6 (0%) | 6 (serie demo) | Basse |
+| Serie | Notebooks | Avec exercices | Sans exercices | Status |
+|-------|-----------|----------------|----------------|--------|
+| SmartContracts | 26 | 26 (100%) | 0 | Complet |
+| SemanticWeb | 17 | 16 (94%) | 1 (Setup) | Complet |
+| Lean | 13 | 12 (92%) | 1 (Setup) | Complet |
+| Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
+| Tweety | 10 | 9 (90%) | 1 (Setup) | Complet |
+| Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-### Problemes identifies
+**Total** : 65/79 notebooks de contenu avec exercices (82%). Les seuls notebooks sans exercices sont les notebooks de setup/configuration (attendu) et la serie demo Argument Analysis.
 
-- **Tweety** : 5 notebooks de contenu core sans exercices (logiques, revision, frameworks etendus)
-- **SmartContracts** : 13/17 notebooks sans section prerequis dans le header
-- **Lean-9** : Header incomplet (manque objectifs, prerequis, duree)
-- **Planners-10** : Manque section prerequis
+### Problemes restants
+
+- **Lean-11-TorchLean** : 11 code cells sans outputs (kernel lean4 natif, erreurs PyTorch dtype)
+- **SmartContracts** : Certains notebooks sans section prerequis dans le header
 
 ---
 
@@ -390,4 +390,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-03-16
+**Derniere mise a jour** : 2026-03-20
