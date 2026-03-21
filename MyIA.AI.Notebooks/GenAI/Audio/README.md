@@ -47,6 +47,7 @@ Audio/
 | [02-5-Multi-Model-TTS-Gateway](02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb) | Gateway multi-TTS (Kokoro, TADA, Qwen3) | tts-api.myia.io | ~12 GB |
 | [02-6-MIDI-Generation](02-Advanced/02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), generation symbolique | Local GPU | ~2-4 GB |
 | [02-7-Song-Generation](02-Advanced/02-7-Song-Generation.ipynb) | YuE vs SongGeneration 2, chansons completes | Local GPU | 10-24 GB |
+<<<<<<< HEAD
 | [02-8-Expressive-TTS](02-Advanced/02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
 
 ### 03-Orchestration - Multi-modeles & Temps reel
@@ -81,6 +82,8 @@ Audio/
 | **midi-model (SkyTNT)** | 02-6 | GPU ~2 GB VRAM, FluidSynth |
 | **YuE / SongGeneration 2** | 02-7 | GPU 10-24 GB VRAM |
 | **Fish S2 Pro / Dia TTS** | 02-8 | GPU 6-18 GB VRAM |
+=======
+>>>>>>> origin/main
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
 
 ## Prerequisites
