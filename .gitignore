@@ -580,3 +580,32 @@ reports/
 
 # Roo Code state files (local scope, machine-specific)
 .roo/
+
+# QuantConnect local clones (cloud-first workflow)
+MyIA.AI.Notebooks/QuantConnect/AdaptiveAssetAllocation/
+MyIA.AI.Notebooks/QuantConnect/AllWeather-Researcher/
+MyIA.AI.Notebooks/QuantConnect/BTC-*/
+MyIA.AI.Notebooks/QuantConnect/Crypto-*/
+MyIA.AI.Notebooks/QuantConnect/DualMomentum*/
+MyIA.AI.Notebooks/QuantConnect/EMA-Cross-*/
+MyIA.AI.Notebooks/QuantConnect/ETF-Pairs-Researcher*/
+MyIA.AI.Notebooks/QuantConnect/FamaFrench-Researcher/
+MyIA.AI.Notebooks/QuantConnect/ForexCarry-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Framework_*/
+MyIA.AI.Notebooks/QuantConnect/FuturesTrend-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Library/
+MyIA.AI.Notebooks/QuantConnect/MeanReversion-Researcher/
+MyIA.AI.Notebooks/QuantConnect/MomentumStrategy-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Multi-Layer-EMA-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Option-*/
+MyIA.AI.Notebooks/QuantConnect/Options*/
+MyIA.AI.Notebooks/QuantConnect/PairsTrading/
+MyIA.AI.Notebooks/QuantConnect/RegimeSwitching/
+MyIA.AI.Notebooks/QuantConnect/RiskParity/
+MyIA.AI.Notebooks/QuantConnect/Sector-Momentum-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Trend-*/
+MyIA.AI.Notebooks/QuantConnect/TrendFilteredMeanReversion/
+MyIA.AI.Notebooks/QuantConnect/TrendStocks*/
+MyIA.AI.Notebooks/QuantConnect/TurnOfMonth-Researcher/
+MyIA.AI.Notebooks/QuantConnect/VIX-TermStructure-Researcher/
+MyIA.AI.Notebooks/QuantConnect/lean.json

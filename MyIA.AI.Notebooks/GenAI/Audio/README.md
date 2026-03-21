@@ -47,38 +47,6 @@ Audio/
 | [02-5-Multi-Model-TTS-Gateway](02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb) | Gateway multi-TTS (Kokoro, TADA, Qwen3) | tts-api.myia.io | ~12 GB |
 | [02-6-MIDI-Generation](02-Advanced/02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), generation symbolique | Local GPU | ~2-4 GB |
 | [02-7-Song-Generation](02-Advanced/02-7-Song-Generation.ipynb) | YuE vs SongGeneration 2, chansons completes | Local GPU | 10-24 GB |
-
-### 03-Orchestration - Multi-modeles & Temps reel
-
-| Notebook | Contenu | Service | VRAM |
-|----------|---------|---------|------|
-| [03-1-Multi-Model-Audio-Comparison](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) | Benchmark STT et TTS | Mixed | ~12 GB |
-| [03-2-Audio-Pipeline-Orchestration](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) | Pipelines STT->LLM->TTS, podcast | Mixed | ~14 GB |
-| [03-3-Realtime-Voice-API](03-Orchestration/03-3-Realtime-Voice-API.ipynb) | OpenAI Realtime API, WebSocket | OpenAI API | 0 |
-
-### 04-Applications - Cas d'usage production
-
-| Notebook | Contenu | Service | VRAM |
-|----------|---------|---------|------|
-| [04-1-Educational-Audio-Content](04-Applications/04-1-Educational-Audio-Content.ipynb) | Narration automatique de cours | Mixed | ~10 GB |
-| [04-2-Transcription-Pipeline](04-Applications/04-2-Transcription-Pipeline.ipynb) | Batch transcription, sous-titres SRT | Mixed | ~12 GB |
-| [04-3-Music-Composition-Workflow](04-Applications/04-3-Music-Composition-Workflow.ipynb) | Creation musicale multi-etapes | Local GPU | ~14 GB |
-| [04-4-Audio-Video-Sync](04-Applications/04-4-Audio-Video-Sync.ipynb) | Synchronisation audio-video | Mixed | ~10 GB |
-
-## Technologies
-
-| Technologie | Notebooks | Prerequis |
-|-------------|-----------|-----------|
-| **OpenAI TTS/STT** | 01-1, 01-2 | `OPENAI_API_KEY` |
-| **Whisper V3 Turbo** | 01-4 | GPU ~10 GB VRAM |
-| **Kokoro TTS** | 01-5 | GPU ~2 GB VRAM |
-| **Chatterbox Turbo** | 02-1 | GPU ~8 GB VRAM |
-| **XTTS v2** | 02-2 | GPU ~6 GB VRAM |
-| **MusicGen (Meta)** | 02-3 | GPU ~10 GB VRAM |
-| **Demucs v4 (Meta)** | 02-4 | GPU ~4 GB VRAM |
-| **Multi-TTS Gateway** | 02-5 | `TTS_API_URL` (tts-api.myia.io) |
-| **midi-model (SkyTNT)** | 02-6 | GPU ~2 GB VRAM, FluidSynth |
-| **YuE / SongGeneration 2** | 02-7 | GPU 10-24 GB VRAM |
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
 
 ## Prerequisites
