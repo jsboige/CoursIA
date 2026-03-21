@@ -1,6 +1,6 @@
 # QuantConnect Algorithmic Trading Projects
 
-Bibliotheque pedagogique de 32 strategies de trading algorithmique backtestees sur QuantConnect Cloud.
+Bibliotheque pedagogique de 36 strategies de trading algorithmique backtestees sur QuantConnect Cloud.
 Chaque strategie illustre un concept ou une famille de strategies ; les performances varient volontairement
 pour montrer que toutes les idees academiques ne survivent pas au backtest realiste.
 
@@ -65,7 +65,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [PairsTrading](PairsTrading/) | Statistical arbitrage equity pairs | -0.361 | 0.9% | 15.1% | 2010-2026 | Py | Intermediaire | — | Paires non cointegrees 2010-2026 |
 | [ETF-Pairs](ETF-Pairs/) | Cointegration-based ETF pairs | -0.706 | -4.7% | 35.0% | 2020-2026 | Py | Intermediaire | QuantBook | Cointregration instable |
 
-*33 strategies au total (30 Python, 3 C#). Metriques issues des backtests QC Cloud.*
+*36 strategies au total (33 Python, 3 C#). Metriques issues des backtests QC Cloud (3 projets ML en phase de recherche).*
 *Multi-Layer-EMA reclassee Historique apres analyse de robustesse (Sharpe gonfle par bulle BTC 2017).*
 *Research: type de notebook de recherche (yfinance = donnees Yahoo, QuantBook = donnees QC natives, — = pas de notebook).*
 
@@ -124,6 +124,14 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 
 - **Crypto-MultiCanal** : 3 canaux ZigZag imbriques (macro/meso/micro) sur BTCUSDT. Signaux de rebond sur support et breakout de resistance. Trail SL a breakeven. Binance Cash daily.
 - **BTC-ML** : Prediction BTC par machine learning (features techniques + filtre de volatilite 60%).
+- **Crypto-LSTM-Prediction** : Deep Learning DLinear (AAAI 2023) pour prediction BTCUSDT. PyTorch avec SeriesDecomposition (trend/seasonal). **Research Phase**.
+
+### Machine Learning / Deep Learning (Research Phase)
+
+Projets pedagogiques bases sur HandsOnAITrading book, en phase de recherche :
+
+- **Sector-ML-Classification** : Random Forest pour classification de rotation sectorielle (11 sector ETFs). Features techniques (RSI, MACD, SMA, EMA, ATR, Bollinger). Target: BUY/HOLD/AVOID. **Research Phase**.
+- **Portfolio-Optimization-ML** : MPT (Markowitz) avec covariance Ledoit-Wolf + returns predits par ML. Universe: 15 large-caps US (5 secteurs). Risk Parity weighting. **Research Phase**.
 
 ### Anomalies calendaires (Debutant)
 
