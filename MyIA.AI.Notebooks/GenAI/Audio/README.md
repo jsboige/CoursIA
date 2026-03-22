@@ -8,11 +8,11 @@ Serie complete de notebooks pour le traitement audio par IA generative : reconna
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 20 |
+| Notebooks | 21 |
 | Sous-dossiers | 4 niveaux |
 | Kernel | Python 3 |
 | Duree totale | ~14-16h |
-| Validation | 100% (20/20 notebooks) |
+| Validation | 100% (21/21 notebooks) |
 
 ## Structure
 
@@ -21,7 +21,7 @@ Audio/
 ├── 01-Foundation/     # STT, TTS, bases audio (5 notebooks)
 ├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif (8 notebooks)
 ├── 03-Orchestration/  # Multi-modeles, temps reel (3 notebooks)
-└── 04-Applications/   # Education, production, sync A/V (4 notebooks)
+└── 04-Applications/   # Education, production, sync A/V, live coding (5 notebooks)
 ```
 
 ## Progression par niveau
@@ -47,7 +47,6 @@ Audio/
 | [02-5-Multi-Model-TTS-Gateway](02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb) | Gateway multi-TTS (Kokoro, TADA, Qwen3) | tts-api.myia.io | ~12 GB |
 | [02-6-MIDI-Generation](02-Advanced/02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), generation symbolique | Local GPU | ~2-4 GB |
 | [02-7-Song-Generation](02-Advanced/02-7-Song-Generation.ipynb) | YuE vs SongGeneration 2, chansons completes | Local GPU | 10-24 GB |
-<<<<<<< HEAD
 | [02-8-Expressive-TTS](02-Advanced/02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
 
 ### 03-Orchestration - Multi-modeles & Temps reel
@@ -66,6 +65,7 @@ Audio/
 | [04-2-Transcription-Pipeline](04-Applications/04-2-Transcription-Pipeline.ipynb) | Batch transcription, sous-titres SRT | Mixed | ~12 GB |
 | [04-3-Music-Composition-Workflow](04-Applications/04-3-Music-Composition-Workflow.ipynb) | Creation musicale multi-etapes | Local GPU | ~14 GB |
 | [04-4-Audio-Video-Sync](04-Applications/04-4-Audio-Video-Sync.ipynb) | Synchronisation audio-video | Mixed | ~10 GB |
+| [04-5-LiveCoding-LLM-Music](04-Applications/04-5-LiveCoding-LLM-Music.ipynb) | Strudel.cc + LLM, live coding musical | OpenAI API | 0 |
 
 ## Technologies
 
@@ -82,8 +82,6 @@ Audio/
 | **midi-model (SkyTNT)** | 02-6 | GPU ~2 GB VRAM, FluidSynth |
 | **YuE / SongGeneration 2** | 02-7 | GPU 10-24 GB VRAM |
 | **Fish S2 Pro / Dia TTS** | 02-8 | GPU 6-18 GB VRAM |
-=======
->>>>>>> origin/main
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
 
 ## Prerequisites
