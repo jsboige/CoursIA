@@ -580,6 +580,7 @@ reports/
 
 # Roo Code state files (local scope, machine-specific)
 .roo/
+.roomodes
 
 # QuantConnect local clones (cloud-first workflow)
 MyIA.AI.Notebooks/QuantConnect/AdaptiveAssetAllocation/
