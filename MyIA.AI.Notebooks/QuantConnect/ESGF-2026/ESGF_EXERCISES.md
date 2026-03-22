@@ -49,12 +49,14 @@
 
 **Enonce** :
 
-1. Creer un algorithme avec les actifs suivants et leurs poids cibles :
+1. Creer un algorithme avec l'allocation "All-Weather" classique de Ray Dalio :
    - SPY (actions) : 30%
    - TLT (obligations long terme) : 40%
    - IEF (obligations intermediaires) : 15%
    - GLD (or) : 7.5%
    - DBC (matieres premieres) : 7.5%
+
+   *Note : cette allocation classique differe de la version optimisee v5.0 dans `projects/AllWeather/` qui utilise SPY/IEF/GLD/XLP. L'exercice utilise intentionnellement l'allocation originale Dalio pour sa valeur pedagogique.*
 2. Implementer un rebalancement trimestriel (tous les 3 mois)
 3. Backtester sur 2015-01-01 a 2024-12-31
 4. Calculer et afficher les metriques de performance
@@ -255,7 +257,7 @@
 ## Ressources
 
 - **Notebooks de reference** : QC-Py-01 a QC-Py-15 (phases 1-4 du cours)
-- **Projets exemples** : `projects/` (46 projets avec research notebooks)
+- **Projets exemples** : `projects/` (56 projets avec research notebooks)
 - **Templates** : `ESGF-2026/templates/` (starter, intermediate, advanced)
 - **Documentation QC** : https://www.quantconnect.com/docs
 - **Code education** : `education2025` pour acces Team tier
