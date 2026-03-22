@@ -115,17 +115,17 @@ Serie de **17 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRD
 | # | Notebook | Kernel | Contenu | Exercices |
 |---|----------|--------|---------|-----------|
 | **Partie 1 : Fondations RDF** |
-| 1 | [SW-1-Setup](SemanticWeb/SW-1-Setup.ipynb) | .NET C# | Installation dotNetRDF, pile W3C "Layer Cake" | Setup |
-| 2 | [SW-2-RDFBasics](SemanticWeb/SW-2-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds, serialisation (Turtle, N-Triples, RDF/XML) | 6 |
+| 1 | [SW-1-CSharp-Setup](SemanticWeb/SW-1-CSharp-Setup.ipynb) | .NET C# | Installation dotNetRDF, pile W3C "Layer Cake" | Setup |
+| 2 | [SW-2-CSharp-RDFBasics](SemanticWeb/SW-2-CSharp-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds, serialisation (Turtle, N-Triples, RDF/XML) | 6 |
 | 2b | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.ipynb) | Python | Equivalent Python avec rdflib | 5 |
-| 3 | [SW-3-GraphOperations](SemanticWeb/SW-3-GraphOperations.ipynb) | .NET C# | Parsers/Writers, fusion de graphes, LINQ sur RDF | 7 |
-| 4 | [SW-4-SPARQL](SemanticWeb/SW-4-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL, UNION | 7 |
+| 3 | [SW-3-CSharp-GraphOperations](SemanticWeb/SW-3-CSharp-GraphOperations.ipynb) | .NET C# | Parsers/Writers, fusion de graphes, LINQ sur RDF | 7 |
+| 4 | [SW-4-CSharp-SPARQL](SemanticWeb/SW-4-CSharp-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL, UNION | 7 |
 | 4b | [SW-4b-Python-SPARQL](SemanticWeb/SW-4b-Python-SPARQL.ipynb) | Python | Equivalent Python avec SPARQLWrapper | 5 |
 | **Partie 2 : Donnees Liees et Ontologies** |
-| 5 | [SW-5-LinkedData](SemanticWeb/SW-5-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requetes federees SERVICE | 6 |
+| 5 | [SW-5-CSharp-LinkedData](SemanticWeb/SW-5-CSharp-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requetes federees SERVICE | 6 |
 | 5b | [SW-5b-Python-LinkedData](SemanticWeb/SW-5b-Python-LinkedData.ipynb) | Python | Equivalent Python | 5 |
-| 6 | [SW-6-RDFS](SemanticWeb/SW-6-RDFS.ipynb) | .NET C# | RDFS, inference automatique, OntologyGraph | 4 |
-| 7 | [SW-7-OWL](SemanticWeb/SW-7-OWL.ipynb) | .NET C# | OWL 2, profils (EL/QL/RL), restrictions | 5 |
+| 6 | [SW-6-CSharp-RDFS](SemanticWeb/SW-6-CSharp-RDFS.ipynb) | .NET C# | RDFS, inference automatique, OntologyGraph | 4 |
+| 7 | [SW-7-CSharp-OWL](SemanticWeb/SW-7-CSharp-OWL.ipynb) | .NET C# | OWL 2, profils (EL/QL/RL), restrictions | 5 |
 | 7b | [SW-7b-Python-OWL](SemanticWeb/SW-7b-Python-OWL.ipynb) | Python | Equivalent Python avec OWLReady2 | 5 |
 | **Partie 3 : Standards Modernes (Python)** |
 | 8 | [SW-8-Python-SHACL](SemanticWeb/SW-8-Python-SHACL.ipynb) | Python | SHACL, NodeShape, PropertyShape, pySHACL | 7 |
@@ -149,11 +149,11 @@ Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classi
 | # | Notebook | Contenu | Exercices | Prerequis |
 |---|----------|---------|-----------|-----------|
 | **Fondations** |
-| 0 | [Planners-0-Setup](Planners/01-Foundation/Planners-0-Setup.ipynb) | Configuration environnement, Fast-Downward | Setup | WSL/Docker |
+| 0 | [Planners-0-Setup](Planners/00-Environment/Planners-0-Setup.ipynb) | Configuration environnement, Fast-Downward | Setup | WSL/Docker |
 | 1 | [Planners-1-Introduction](Planners/01-Foundation/Planners-1-Introduction.ipynb) | Concepts de planification, representations | 5 | Python |
 | 2 | [Planners-2-PDDL-Basics](Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb) | Syntaxe PDDL, domaines et problemes | 4 | Fast-Downward |
 | **Classique** |
-| 3 | [Planners-3-State-Space](Planners/02-Classical/Planners-3-State-Space.ipynb) | Recherche dans l'espace d'etats | 7 | Fast-Downward |
+| 3 | [Planners-3-State-Space](Planners/01-Foundation/Planners-3-State-Space.ipynb) | Recherche dans l'espace d'etats | 7 | Fast-Downward |
 | 4 | [Planners-4-Fast-Downward](Planners/02-Classical/Planners-4-Fast-Downward.ipynb) | Fast Downward, heuristiques | 6 | Docker, Fast-Downward |
 | 5 | [Planners-5-Heuristics](Planners/02-Classical/Planners-5-Heuristics.ipynb) | Heuristiques (FF, LM-Cut, Merge-and-Shrink) | 5 | Fast-Downward |
 | 6 | [Planners-6-Domains](Planners/02-Classical/Planners-6-Domains.ipynb) | Catalogue de domaines PDDL | 3 | Fast-Downward |
@@ -242,13 +242,14 @@ SymbolicAI/
 │   └── README.md
 │
 ├── SemanticWeb/               # Web semantique (17 notebooks)
-│   ├── SW-1-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
+│   ├── SW-1-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD
 │   ├── RDF.Net-Legacy/      # Notebook original (reference historique)
 │   └── README.md
 │
 ├── Planners/                  # Planification automatique (13 notebooks)
-│   ├── 01-Foundation/        # Setup, Introduction, PDDL Basics
+│   ├── 00-Environment/       # Setup
+│   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
 │   ├── 02-Classical/         # State Space, Fast-Downward, Heuristics, Domains
 │   ├── 03-Advanced/          # OR-Tools, Temporal, HTN
 │   ├── 04-NeuroSymbolic/     # LLM-Planning, Unified-Planning, LOOP

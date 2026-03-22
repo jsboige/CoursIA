@@ -26,7 +26,7 @@ Après quelques ajustements, **j'ai réussi à lancer les 3 backtests via l'API 
 Voir fichier `.env` (non commite dans git) :
 - `QC_API_USER_ID` : User ID
 - `QC_API_ACCESS_TOKEN` : Access Token
-- Compte : jsboige@gmail.com
+- Compte : <email>
 
 ## Optimisations Appliquées
 

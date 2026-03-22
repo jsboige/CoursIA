@@ -4,8 +4,8 @@ Workspace ESGF pour l'annee scolaire 2025-2026.
 Sponsorise par Jared Broad (CEO QuantConnect) via le tier "Trading Firm".
 
 **Organisation** : Trading Firm ESGF (`94aa4bcb...`)
-**Professeur** : jsboige@gmail.com (User ID: 46613)
-**Credit** : 3457.87 QCC
+**Professeur** : <email> (User ID: 46613)
+**Credit** : <solde QCC>
 
 ---
 

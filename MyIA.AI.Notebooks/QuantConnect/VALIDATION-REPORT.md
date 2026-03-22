@@ -274,7 +274,7 @@ Les notebooks suivent la structure du livre (Jared Broad et al., 2025) :
 
 **Tests MCP effectués** :
 - `list_projects` : ✅ 31 projets trouvés
-- `read_account` : ✅ Credit 3457.87 QCC
+- `read_account` : ✅ Credit <solde QCC>
 - `read_file` : ✅ Lecture code projets
 
 **Next steps avec MCP** :

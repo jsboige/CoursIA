@@ -4,7 +4,7 @@
 
 **User ID**: Voir `.env` (`QC_API_USER_ID`)
 **Access Token**: Voir `.env` (`QC_API_ACCESS_TOKEN`)
-**Compte**: jsboige@gmail.com (backtests autorises)
+**Compte**: <email> (backtests autorises)
 
 ## Procédure Complète
 

@@ -17,7 +17,7 @@
 ## 1. Configuration MCP - Confirmée ✓
 
 **Organisation Researcher**: `d600793ee4caecb03441a09fc2d00f7f`
-**User ID**: 46613 (jsboige@gmail.com)
+**User ID**: 46613
 **Statut**: **FONCTIONNEL** ✅
 
 **Test réussi**:
