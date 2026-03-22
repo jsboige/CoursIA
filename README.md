@@ -29,15 +29,15 @@ Les notebooks sont disponibles en **Python**, **C# (.NET Interactive)** et **Lea
 ```
 CoursIA/
 ├── MyIA.AI.Notebooks/           # 500+ notebooks interactifs
-│   ├── Search/                  # Recherche et optimisation (31 notebooks)
+│   ├── Search/                  # Recherche et optimisation (45 notebooks)
 │   │   ├── Foundations/         # Theorie progressive
 │   │   └── Applications/        # Problemes appliques (projets etudiants)
 │   ├── Sudoku/                  # Resolution multi-paradigme (32 notebooks)
-│   ├── SymbolicAI/              # IA Symbolique (82 notebooks)
+│   ├── SymbolicAI/              # IA Symbolique (91 notebooks)
 │   │   ├── Tweety/              # Logiques formelles, argumentation (10)
 │   │   ├── SemanticWeb/         # RDF, OWL, SPARQL, GraphRAG (18)
 │   │   ├── Lean/                # Verification formelle Lean 4 (13)
-│   │   ├── Planners/            # Planification PDDL, Fast-Downward (14)
+│   │   ├── Planners/            # Planification PDDL, Fast-Downward (13)
 │   │   ├── SmartContracts/      # Solidity, Move, Anchor (27)
 │   │   └── Argument_Analysis/   # Analyse argumentative LLM (6)
 │   ├── GameTheory/              # Theorie des jeux (26 notebooks)
@@ -51,19 +51,19 @@ CoursIA/
 │   │   ├── ML.Net/              # Ecosysteme Microsoft (8)
 │   │   └── DataScienceWithAgents/ # Data Science et agents IA (19)
 │   ├── RL/                      # Reinforcement Learning (3 notebooks)
-│   ├── GenAI/                   # IA Generative (97 notebooks)
+│   ├── GenAI/                   # IA Generative (98 notebooks)
 │   │   ├── 00-GenAI-Environment/# Setup et configuration (6)
 │   │   ├── Image/               # Generation d'images (19)
-│   │   ├── Audio/               # Speech, TTS, musique (17)
+│   │   ├── Audio/               # Speech, TTS, musique (21)
 │   │   ├── Video/               # Generation et comprehension (16)
 │   │   ├── Texte/               # LLMs, RAG, prompt engineering (11)
 │   │   ├── SemanticKernel/      # Microsoft Semantic Kernel (20)
 │   │   ├── Vibe-Coding/         # Claude Code, Roo Code (5)
 │   │   └── EPF/                 # Projets etudiants (4)
-│   ├── QuantConnect/            # Trading algorithmique (71 notebooks)
+│   ├── QuantConnect/            # Trading algorithmique (122 notebooks)
 │   │   ├── Python/              # 27 notebooks pedagogiques
-│   │   ├── projects/            # 11 strategies backtestees (10 research notebooks)
-│   │   └── ESGF-2026/           # Projets etudiants et exemples (34 notebooks)
+│   │   ├── projects/            # 54 strategies backtestees (54 research notebooks)
+│   │   └── ESGF-2026/           # Projets etudiants et exemples (21 notebooks)
 │   ├── EPF/                     # Projets transversaux etudiants (4 notebooks)
 │   ├── IIT/                     # Information integree - PyPhi (1)
 │   └── Config/                  # Configuration API (settings.json)
@@ -92,7 +92,7 @@ Les algorithmes de recherche constituent le socle algorithmique de l'IA. Cette s
 
 La serie est organisee en deux volets : **Foundations** (progression theorique) et **Applications** (problemes concrets : ordonnancement d'atelier, Demineur CSP, Puissance 4 avec 8 IA, detection de bords par algorithmes genetiques, optimisation de portefeuille).
 
-31 notebooks -- Python et C# -- [README detaille](MyIA.AI.Notebooks/Search/README.md)
+45 notebooks -- Python et C# -- [README detaille](MyIA.AI.Notebooks/Search/README.md)
 
 ### Sudoku - Resolution multi-paradigme
 
@@ -123,7 +123,7 @@ L'IA symbolique regroupe les systemes de raisonnement automatique. Cette serie c
 
 **Lean** (13 notebooks) -- Verification formelle avec Lean 4. Types dependants, isomorphisme de Curry-Howard, tactiques Mathlib, assistance par LLMs (LeanCopilot, AlphaProof), TorchLean (reseaux de neurones formellement verifies). Necessite WSL sous Windows.
 
-**Planners** (14 notebooks) -- Planification automatique, organisee en 4 niveaux : fondations PDDL, planification classique (Fast-Downward, heuristiques), avancee (OR-Tools scheduling, planification temporelle, HTN), et neurosymbolique (LLM-planning, Unified Planning, LOOP).
+**Planners** (13 notebooks) -- Planification automatique, organisee en 4 niveaux : fondations PDDL, planification classique (Fast-Downward, heuristiques), avancee (OR-Tools scheduling, planification temporelle, HTN), et neurosymbolique (LLM-planning, Unified Planning, LOOP).
 
 **Smart Contracts** (27 notebooks) -- Des origines cypherpunk a Solidity avancee et aux blockchains multi-chain (Vyper, Move/Sui, Solana/Anchor, Ripple, Bitcoin). Tests avec Foundry, fuzz testing, verification formelle, zero-knowledge proofs, chiffrement homomorphe, DAO governance, account abstraction. Tous les notebooks SC-3 a SC-7 utilisent `compile_and_deploy()` pour executer du code Solidity reel.
 
@@ -134,7 +134,7 @@ L'IA symbolique regroupe les systemes de raisonnement automatique. Cette serie c
 | Tweety | 10 | JDK 17+ (auto-telecharge) | [README](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) |
 | SemanticWeb | 18 | Python (rdflib) | [README](MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/README.md) |
 | Lean | 13 | WSL, elan | [README](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
-| Planners | 14 | Python | [README](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) |
+| Planners | 13 | Python | [README](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) |
 | SmartContracts | 27 | Node.js, Foundry | [README](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/README.md) |
 | Argument_Analysis | 6 | OpenAI API | [README](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md) |
 
@@ -202,7 +202,7 @@ La serie la plus etendue du depot, organisee par modalite. Les domaines Image, A
 | 03-Orchestration | Comparaison multi-modeles, workflows, optimisation |
 | 04-Applications | Contenu educatif, workflows creatifs, production |
 
-**Audio** (17 notebooks) -- Synthese vocale (OpenAI TTS, Kokoro, Chatterbox, XTTS), transcription (Whisper), generation musicale (MusicGen), separation de sources (Demucs), gateway multi-modeles TTS.
+**Audio** (21 notebooks) -- Synthese vocale (OpenAI TTS, Kokoro, Chatterbox, XTTS), transcription (Whisper), generation musicale (MusicGen, MIDI), separation de sources (Demucs), gateway multi-modeles TTS, live coding musical LLM.
 
 | Niveau | Contenu |
 |--------|---------|
