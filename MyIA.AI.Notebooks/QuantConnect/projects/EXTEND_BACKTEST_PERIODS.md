@@ -235,22 +235,137 @@ for start, end in periods_to_test:
 
 ---
 
-## Résultats Attendus
+## RÉSULTATS FINAUX - Task #37 (2026-03-24)
 
-### Scénario Optimiste
-- Sharpe ratio stable ou amélioré
-- Stratégie validée sur période plus longue
-- Classification: Historique → Robuste
+### Résumé Exécutif
 
-### Scénario Réaliste
-- Sharpe ratio diminue légèrement
-- MaxDD augmente (période plus longue)
-- Stratégie reste valide mais avec notes ajustées
+| Stratégie | Période | Sharpe | CAGR | Max DD | Statut |
+|-----------|---------|--------|------|--------|--------|
+| **Option-Wheel** | 2015-2026 | **0.524** | 12.69% | 26.40% | ✅ VALIDÉ |
+| **OptionsIncome** | 2015-2026 | **0.207** | 5.435% | 17.50% | ⚠️ DÉGRADÉ |
+| **FuturesTrend** | 2015-2026 | **0.136** | 4.896% | 18.70% | ⚠️ DÉGRADÉ |
+| **Trend-Following** | 2015-2026 | N/A | 7.22%* | N/A | ❌ TIMEOUT |
+| **EMA-Cross-Crypto** | 2017-2026 | N/A | N/A | N/A | ❌ BUG |
+| **Crypto-MultiCanal** | 2017-2026 | N/A | N/A | N/A | ❌ BUG |
 
-### Scénario Pessimiste
-- Sharpe chute significativement
-- Stratégie reclassée: Historique → Exploratoire
-- Nécessite ré-optimisation des paramètres
+*Return partiel (statistiques complètes non disponibles après 24h+ en queue)
+
+---
+
+### Résultats Détaillés par Phase
+
+#### Phase 1: Crypto Strategies - ❌ BLOQUÉE
+
+**EMA-Cross-Crypto** (Project: 28657962)
+- Code modifié: 2020→2017 ✅
+- Backtest: ❌ BUG - Erreur lors du lancement
+- **Issue**: Bug préexistant empêche le backtest
+
+**Crypto-MultiCanal** (Project: 28657925)
+- Code modifié: 2020→2017 ✅
+- Backtest: ❌ BUG - Erreur lors du lancement
+- **Issue**: Bug préexistant empêche le backtest
+
+**Action requise**: Corriger les bugs avant de relancer les backtests
+
+---
+
+#### Phase 2: Options Strategies - ✅ COMPLÈTE
+
+**Option-Wheel** (Project: 28796164)
+- BacktestId: `57096460-9953-4e94-94dc-a537cc95a24a`
+- Extension: 2019→2015 (+4 ans)
+- **Résultats**:
+  - Sharpe: **0.524**
+  - CAGR: **12.69%**
+  - Max DD: **26.40%**
+  - Win Rate: **81%**
+  - Tradeable Dates: 1865
+- **Conclusion**: ✅ Performance robuste sur période étendue
+
+**OptionsIncome** (Project: 28657838)
+- BacktestId: `d16913cc4b4b03ac3995b7e001ad16fb`
+- Extension: 2018→2015 (+3 ans)
+- **Résultats**:
+  - Sharpe: **0.207** (vs 0.791 original sur 2023-2024)
+  - CAGR: **5.435%**
+  - Max DD: **17.50%**
+  - Win Rate: **67%**
+  - Tradeable Dates: 4099
+- **Analyse**:
+  - ⚠️ **Dégradation significative** du Sharpe (-74%)
+  - La période 2015-2017 (bull market pur sans volatilité) dégrade la performance
+  - Le VIX filter (15-35) pourrait nécessiter ajustement pour les périodes low-VOL
+- **Conclusion**: ⚠️ Stratégie moins robuste que prévu sur période étendue
+
+---
+
+#### Phase 3: Trend Following - ⚠️ PARTIELLEMENT COMPLÈTE
+
+**FuturesTrend** (Project: 28911254)
+- BacktestId: `c5bf3ed71c308ec89cde62ac237016b0`
+- Extension: 2018→2015 (+3 ans)
+- **Résultats**:
+  - Sharpe: **0.136** (vs 0.301 original sur 2018-2026)
+  - CAGR: **4.896%**
+  - Max DD: **18.70%**
+  - Win Rate: **44%**
+  - Tradeable Dates: 2820
+- **Analyse**:
+  - ⚠️ **Dégradation significative** du Sharpe (-55%)
+  - La période 2015-2017 inclut des marchés sans trend clair
+  - Le Donchian 20/10 avec SMA50 filter sur-performe sur périodes trendées
+- **Conclusion**: ⚠️ Stratégie sensible au régime de marché
+
+**Trend-Following** (Project: 28797562)
+- BacktestId: `d1fae9ac0ccdf0a10646f2e29b20396f`
+- Extension: 2019→2015 (+4 ans)
+- **Statut**: ❌ TIMEOUT après 24h+ en queue ("In Queue...")
+- **Statistiques partielles**:
+  - Return: 7.22%
+  - Net Profit: $51,436.47
+  - Tradeable Dates: 2820
+  - Probabilistic Sharpe: 45.727%
+- **Conclusion**: ❌ Backtest timeout - probablement trop de données (universe 200 stocks × 11 ans)
+
+---
+
+### Conclusions Générales
+
+#### 1. Impact de l'Extension de Période
+| Stratégie | Sharpe Original | Sharpe Étendu | Variation |
+|-----------|-----------------|---------------|-----------|
+| Option-Wheel | N/A | 0.524 | N/A |
+| OptionsIncome | 0.791 | 0.207 | **-74%** |
+| FuturesTrend | 0.301 | 0.136 | **-55%** |
+
+**Observation clé**: L'extension de période (2018/2019→2015) dégrade significativement le Sharpe ratio pour les stratégies options et trend following.
+
+#### 2. Facteurs de Dégradation
+
+**OptionsIncome (Covered Calls)**:
+- Période 2015-2017: VIX très bas (10-15), moins de prime sur les options
+- Bull market pur = moins de valeur pour les calls vendus
+- Le VIX filter (15-35) exclut les périodes profitables
+
+**FuturesTrend (Donchian)**:
+- Période 2015-2017: Marchés sans trend clair (range-bound)
+- SMA50 filter trop restrictif en régime absence de trend
+- Donchian 20/10 sur-performe en trend, sous-performe en range
+
+#### 3. Recommandations
+
+1. **Pour OptionsIncome**:
+   - Ajuster le VIX filter pour inclure les périodes low-VOL
+   - Considérer delta-based scaling pour s'adapter à la volatilité
+
+2. **Pour FuturesTrend**:
+   - Tester avec SMA30 au lieu de SMA50 (moins restrictif)
+   - Ajouter régime detection pour désactiver en range-bound markets
+
+3. **Pour Trend-Following**:
+   - Réduire l'universe size ou utiliser daily resolution au lieu de hourly
+   - Le timeout suggère une charge de calcul trop élevée
 
 ---
 
