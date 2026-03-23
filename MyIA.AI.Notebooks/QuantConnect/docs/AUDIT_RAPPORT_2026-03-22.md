@@ -1,119 +1,146 @@
-# Audit Pédagogique README - QuantConnect
+# Audit Pedagogique README - QuantConnect
 
 **Date** : 2026-03-22
 **Issue** : #48
 **Auditeur** : po-2026 (Claude Code)
-**Portée** : 39 READMEs (excluant les fichiers LEAN par défaut dans `data/`)
+**Portee** : 26 READMEs (excluant les fichiers LEAN par defaut dans `data/`)
 
 ---
 
-## Résumé Exécutif
+## Resume Executif
 
-| Métrique | Résultat | Target | Status |
+| Metrique | Resultat | Target | Status |
 |----------|----------|--------|--------|
-| **Liens brisés** | 0 | 0 | ✅ |
-| **READMEs avec titre** | 32/39 (82%) | >80% | ✅ |
-| **READMEs avec description (>50 mots)** | 38/39 (97%) | >90% | ✅ |
-| **Sections manquantes** | 54 (projets uniquement) | - | ⚠️ |
+| **Liens brises** | 0 | 0 | [OK] |
+| **READMEs avec titre** | 26/26 (100%) | >80% | [OK] |
+| **READMEs avec description (>50 mots)** | 26/26 (100%) | >90% | [OK] |
+| **Sections manquantes** | 94 (projets uniquement) | - | [!] |
 
-**Note** : Les 54 sections manquantes sont dans les dossiers `projects/`, qui ont leur propre structure adaptée aux algorithmes de trading. Ce n'est pas un problème pédagogique.
+**Note** : Les 94 sections manquantes sont dans les dossiers `projects/` et `ESGF-2026/examples/`, qui ont leur propre structure adaptee aux algorithmes de trading. Ce n'est pas un probleme pedagogique.
 
 ---
 
-## Corrections Appliquées
+## Corrections Appliquees
 
-### 1. Liens C# brisés (29 liens corrigés)
+### 1. Liens C# brises (29 liens corriges)
 
-**Problème** : Le README principal contenait des liens vers des notebooks C# qui n'existent pas encore.
+**Probleme** : Le README principal contenait des liens vers des notebooks C# qui n'existent pas encore.
 
-**Solution** : Remplacé les liens par du texte avec indication "*(à venir)*"
+**Solution** : Remplace les liens par du texte avec indication "*(a venir)*"
 
 ```markdown
 # Avant
 | QC-Py-01-Setup.ipynb | [QC-CS-01-Setup.ipynb](CSharp/QC-CS-01-Setup.ipynb) |
 
-# Après
-| QC-Py-01-Setup.ipynb | QC-CS-01-Setup *(à venir)* |
+# Apres (entries 01-04)
+| QC-Py-01-Setup.ipynb | QC-CS-01-Setup *(a venir)* |
+
+# Apres (entries 05-27, dernier fix)
+| QC-Py-05-Universe-Selection.ipynb | QC-CS-05-Universe-Selection *(a venir)* |
 ```
 
-**Fichiers modifiés** :
-- `README.md` (27 liens C# corrigés)
+**Fichiers modifies** :
+- `README.md` (27 liens C# corriges)
 
-### 2. Script d'audit créé
+### 2. Script d'audit cree
 
 **Fichier** : `scripts/audit_readme.py`
 
-**Fonctionnalités** :
+**Fonctionnalites** :
 - Analyse structurelle des READMEs (lignes, mots, sections)
-- Détection des liens brisés (liens relatifs uniquement)
+- Detection des liens brises (liens relatifs uniquement)
 - Classification par type (MAIN, PROJECT, ESGF_EXAMPLE, etc.)
-- Vérification des sections attendues (flexible par mots-clés)
+- Verification des sections attendues (flexible par mots-cles)
 - Exclusion automatique du dossier `data/` (fichiers LEAN)
 
-### 3. Amélioration du script d'audit
+### 3. Amelioration du script d'audit
 
-**Corrections** :
-- Exclusion du dossier `data/` (fichiers LEAN par défaut, non pédagogiques)
-- Recherche flexible des sections (mots-clés au lieu de correspondance exacte)
+**Corrections** (commit 0cc9efb) :
+
+- Bug H5 : `"ESGF-2026/examples" in parts` → `"ESGF-2026" in parts and "examples" in parts`
+- Bug H6 : ZeroDivisionError protege par `if total == 0: return`
+- Style : Emojis supprimes (code-style.md compliance)
+- Exclusion du dossier `data/` (fichiers LEAN par defaut, non pedagogiques)
+- Recherche flexible des sections (mots-cles au lieu de correspondance exacte)
 - Ignorage des ancres internes (`#troubleshooting`, etc.)
 
 ---
 
-## Résultats par Catégorie
+## Resultats par Categorie
 
-### MAIN (1 fichier) ✅
-- `README.md` : 726 lignes, 19 sections, 0 liens brisés
+### MAIN (1 fichier) [OK]
+- `README.md` : 726 lignes, 19 sections, 0 liens brises
 
-### ESGF_MAIN (13 fichiers) ✅
-Tous les READMEs ESGF sont OK :
-- ESGF-2026/examples : 9 exemples documentés
-- ESGF-2026/templates : 3 templates (starter, intermediate, advanced)
+### ESGF_MAIN (2 fichiers) [OK]
+- `ESGF-2026/README.md` : 331 lignes, 10 sections
+- `ESGF-2026/archive-2025/README.md` : 46 lignes, 4 sections
 
-### PROJECT (12 fichiers) ⚠️
-Les projets ont leur propre structure adaptée :
-- Les sections manquantes (Description, Stratégie, Performance, etc.) sont optionnelles selon le type de projet
-- Certains projets sont documentés de manière minimale (2 sections seulement)
+### ESGF_EXAMPLE (8 fichiers) [!]
+
+Les exemples ESGF ont leur propre structure :
+
+- BTC-MachineLearning, Crypto-MultiCanal, ETF-Pairs-Trading, Multi-Layer-EMA, Option-Wheel-Strategy, Options-VGT, Sector-Momentum, Trend-Following
+- Sections manquantes : Objectif, Strategie, Resultats, Installation, Utilisation (optionnelles pour exemples)
+
+### ESGF_TEMPLATE (3 fichiers) [OK]
+
+Tous les templates ESGF sont OK :
+
+- `starter/README.md` : 62 lignes, 4 sections
+- `intermediate/README.md` : 112 lignes, 6 sections
+- `advanced/README.md` : 70 lignes, 6 sections
+
+### PROJECT (12 fichiers) [!]
+
+Les projets ont leur propre structure adaptee :
+
+- Les sections manquantes (Description, Strategie, Performance, etc.) sont optionnelles selon le type de projet
+- Certains projets sont documentes de maniere minimale (2 sections seulement)
 - Recommandation : Standardiser la documentation des projets (futur)
-
-### OTHER (13 fichiers) ✅
-Fichiers LEAN par défaut dans `data/` (exclus de l'audit pédagogique)
 
 ---
 
 ## Recommandations
 
-### Court terme (✅ complété)
-1. ✅ Corriger les liens C# brisés dans README principal
-2. ✅ Créer un script d'audit automatisé
-3. ✅ Exclure les fichiers non pédagogiques (data/)
+### Court terme ([OK] complete)
+1. [OK] Corriger les liens C# brises dans README principal
+2. [OK] Creer un script d'audit automatise
+3. [OK] Exclure les fichiers non pedagogiques (data/)
+4. [OK] Corriger les bugs du script (H5, H6, emojis)
 
-### Moyen terme (suggéré)
+### Moyen terme (suggere)
+
 1. **Standardiser la documentation des projets** dans `projects/`
-   - Ajouter des sections "Stratégie" et "Performance" manquantes
-   - Créer un template de README pour les projets
+   - Ajouter des sections "Strategie" et "Performance" manquantes
+   - Creer un template de README pour les projets
 
-2. **Créer les notebooks C#** marqués comme "à venir"
-   - 27 notebooks C# à créer pour parité Python/C#
+2. **Standardiser la documentation des exemples** dans `ESGF-2026/examples/`
+   - Ajouter des sections "Objectif", "Strategie", "Resultats" manquantes
+   - Creer un template de README pour les exemples
+
+3. **Creer les notebooks C#** marques comme "a venir"
+   - 27 notebooks C# a creer pour parite Python/C#
 
 ### Long terme
+
 1. **Automatiser l'audit** dans le CI/CD
-2. **Créer un guide de style** pour les READMEs QuantConnect
+2. **Creer un guide de style** pour les READMEs QuantConnect
 
 ---
 
 ## Conclusion
 
-L'audit pédagogique #48 est **TERMINÉ avec succès**.
+L'audit pedagogique #48 est **TERMINE avec succes**.
 
-- **0 lien brisé** dans les 39 READMEs analysés
-- **82% des READMEs** ont un titre conforme
-- **97% des READMEs** ont une description substantielle (>50 mots)
-- Les sections manquantes restantes sont dans les projets, où elles sont optionnelles
+- **0 lien brise** dans les 26 READMEs analyses
+- **100% des READMEs** ont un titre conforme
+- **100% des READMEs** ont une description substantielle (>50 mots)
+- Les sections manquantes restantes sont dans les projets et exemples, ou elles sont optionnelles
 
-Le script d'audit `scripts/audit_readme.py` peut être réutilisé pour les futurs audits.
+Le script d'audit `scripts/audit_readme.py` peut etre reutilise pour les futurs audits.
 
 ---
 
 **Script d'audit** : `python scripts/audit_readme.py`
 **Issue** : #48
-**Statut** : ✅ TERMINÉ
+**Statut** : [OK] TERMINE

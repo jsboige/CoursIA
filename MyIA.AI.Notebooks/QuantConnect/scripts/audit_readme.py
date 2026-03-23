@@ -71,9 +71,9 @@ class ReadmeAuditor:
     def classify_readme(self, path: Path) -> str:
         """Classifie le type de README."""
         parts = path.parts
-        if "ESGF-2026/examples" in parts:
+        if "ESGF-2026" in parts and "examples" in parts:
             return "ESGF_EXAMPLE"
-        elif "ESGF-2026/templates" in parts:
+        elif "ESGF-2026" in parts and "templates" in parts:
             return "ESGF_TEMPLATE"
         elif "ESGF-2026" in parts:
             return "ESGF_MAIN"
@@ -176,24 +176,28 @@ class ReadmeAuditor:
         """Affiche le rapport d'audit."""
         total = len(self.readmes)
         print(f"\n{'='*70}")
-        print(f"AUDIT PÉDAGOGIQUE README - QuantConnect")
+        print(f"AUDIT PEDAGOGIQUE README - QuantConnect")
         print(f"{'='*70}")
-        print(f"Total READMEs analysés : {total}\n")
+        print(f"Total READMEs analyses : {total}\n")
 
-        # Résumé par catégorie
+        if total == 0:
+            print("Aucun README trouve.")
+            return
+
+        # Resume par categorie
         for category, items in sorted(results.items()):
             print(f"\n{category} : {len(items)} fichiers")
             print("-" * 70)
 
             for stats in items:
-                status_icon = "✅" if not stats.missing_sections and not stats.broken_links else "⚠️"
+                status_icon = "[OK]" if not stats.missing_sections and not stats.broken_links else "[!]"
                 print(f"  {status_icon} {stats.path}")
                 print(f"      {stats.lines} lignes | {len(stats.sections)} sections")
 
                 if stats.missing_sections:
                     print(f"      Sections manquantes: {', '.join(stats.missing_sections)}")
                 if stats.broken_links:
-                    print(f"      Liens brisés: {', '.join(stats.broken_links)}")
+                    print(f"      Liens brises: {', '.join(stats.broken_links)}")
 
         # Statistiques globales
         print(f"\n{'='*70}")
@@ -210,22 +214,22 @@ class ReadmeAuditor:
         print(f"Avec titre : {with_title}/{total} ({100*with_title//total}%)")
         print(f"Avec description (>50 mots) : {with_desc}/{total} ({100*with_desc//total}%)")
         print(f"Avec exemples : {with_examples}/{total} ({100*with_examples//total}%)")
-        print(f"Avec prérequis : {with_reqs}/{total} ({100*with_reqs//total}%)")
+        print(f"Avec prerequis : {with_reqs}/{total} ({100*with_reqs//total}%)")
         print(f"Avec utilisation : {with_usage}/{total} ({100*with_usage//total}%)")
         print(f"Avec liens : {with_links}/{total} ({100*with_links//total}%)")
 
         total_broken = sum(len(r.broken_links) for r in self.readmes)
         total_missing = sum(len(r.missing_sections) for r in self.readmes)
 
-        print(f"\nLiens brisés : {total_broken}")
+        print(f"\nLiens brises : {total_broken}")
         print(f"Sections manquantes : {total_missing}")
 
         # Recommandations
         if total_broken > 0:
-            print(f"\n⚠️  RECOMMANDATION : Corriger les {total_broken} liens brisés")
+            print(f"\n[!] RECOMMANDATION : Corriger les {total_broken} liens brises")
 
         if total_missing > 10:
-            print(f"\n⚠️  RECOMMANDATION : Standardiser les sections manquantes")
+            print(f"\n[!] RECOMMANDATION : Standardiser les sections manquantes")
 
 
 def main():
