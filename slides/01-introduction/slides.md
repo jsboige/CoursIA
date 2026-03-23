@@ -15,7 +15,9 @@ layout: cover
 Intelligence Artificielle -- I
 
 **Jean-Sylvain Boige**
+
 MRes CSAI, Sussex University, Brighton UK
+
 Aricie -- DNN -- PKP -- My Intelligence Agency
 
 ---
@@ -515,9 +517,17 @@ layout: two-cols
 
 # Environnements de tache: exemples
 
-<div class="center-image">
-<img src="./images/img_028.png" style="max-width: 800px; margin: auto; display: block;">
-</div>
+<style>
+table { font-size: 0.7em; }
+</style>
+
+| Agent | Performance | Environnement | Effecteurs | Capteurs |
+|-------|------------|--------------|-----------|---------|
+| Diagnostic | Patients gueris | Hopital | Tests, traitements | Symptomes |
+| Satellites | Categorisation | Orbite | Scene classifiee | Pixels |
+| Robot trieur | % correct | Tapis roulant | Bras articule | Camera |
+| Raffinerie | Purete, securite | Raffinerie | Valves, pompes | Temp., pression |
+| Repetiteur | Notes etudiants | Etudiants | Corrections | Clavier |
 
 ---
 
@@ -567,9 +577,21 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 
 # Types d'environnement: exemples
 
-<div class="center-image">
-<img src="./images/img_029.png" alt="Tableau des types d'environnement" style="max-width: 800px; margin: auto; display: block;">
-</div>
+<style>
+table { font-size: 0.65em; }
+</style>
+
+| Tache | Obs. | Agents | Determ. | Epis. | Stat. | Discr. |
+|-------|------|--------|---------|-------|-------|--------|
+| Echecs | O | Multi | O | N | Semi | O |
+| Poker | N | Multi | N | N | Stat. | O |
+| Backgammon | O | Multi | N | N | Semi | O |
+| Conduite | P | Multi | N | N | N | N |
+| Diagnostic | P | Simple | N | N | N | N |
+| Analyse img | O | Simple | O | O | Semi | N |
+| Robot trieur | P | Simple | N | N | N | N |
+| Raffinerie | P | Simple | N | N | N | N |
+| Repetiteur | N | Multi | N | N | N | N |
 
 ---
 layout: image-right
