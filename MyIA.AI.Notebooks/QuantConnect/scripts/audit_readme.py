@@ -66,7 +66,7 @@ class ReadmeAuditor:
         """Trouve tous les READMEs du projet."""
         all_readmes = list(self.root_dir.rglob("README.md"))
         # Exclure les READMEs du dossier data/ (fichiers LEAN par défaut)
-        return [r for r in all_readmes if 'data/' not in r.parts and r != self.root_dir / 'data' / 'README.md']
+        return [r for r in all_readmes if 'data' not in r.parts and not (self.root_dir / 'data' / 'README.md').resolve() == r.resolve()]
 
     def classify_readme(self, path: Path) -> str:
         """Classifie le type de README."""
