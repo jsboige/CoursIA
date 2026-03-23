@@ -51,7 +51,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [FuturesTrend](FuturesTrend/) | Donchian breakout ETFs (trend following) | **0.301** | 8.0% | 12.9% | 2015-2026 | Py | Intermediaire | yfinance | 14 configs testees. ⏳ Période étendue 2018→2015, backtest en attente |
 | [MeanReversion](MeanReversion/) | RSI multi-asset mean reversion | **0.294** | 7.5% | 16.5% | 2015-2026 | Py | Intermediaire | yfinance | SMA filter rejete |
 | [BTC-ML](BTC-ML/) | Machine learning BTC prediction | **0.282** | 8.3% | 13.7% | 2023-2026 | Py | Avance | QuantBook | Periode courte, potentiel features |
-| [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.234** | 6.8% | 19.3% | 2015-2026 | Py | Avance | — | Alpha CC structurellement faible. ⏳ Période étendue 2018→2015, backtest en attente |
+| [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.225** | 6.7% | 19.3% | 2015-2026 | Py | Avance | — | Alpha CC structurellement faible. ✅ Backtest étendu validé (2015-2025) |
 | [Trend-Following](Trend-Following/) | Multi-oracle trend following (MACD/RSI/Bollinger) | **0.212** | 7.3% | 40.9% | 2015-2026 | Py | Avance | — | v2 apres revert leverage. ⏳ Période étendue 2019→2015, backtest en attente |
 | [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 0.128 | 4.8% | 23.7% | 2015-2026 | Py | Debutant | yfinance | Effet faible en bull 2015-2026 |
 | [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX (SVXY) | 0.051 | 3.6% | 35.2% | 2010-2026 | Py | Avance | yfinance | Post-VIXplosion, SVXY affaibli |
