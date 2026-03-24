@@ -140,14 +140,12 @@ A l'issue de ce cours, vous serez capables de :
 - Presentations des projets
 
 ---
-
-
-<!-- _class: questions -->
+layout: section
+---
 
 # Questions?
 
 ---
-
 
 # Introduction a l'intelligence artificielle
 
@@ -228,9 +226,6 @@ image: ./images/img_004.png
 - **1965** : Robinson propose un algorithme complet de raisonnement logique
 - **1969-79** : age d'or des systèmes experts (bases de connaissances)
 
----
-layout: image-right
-image: ./images/img_004.png
 ---
 
 # Histoire succincte (2/2)
@@ -402,14 +397,12 @@ image: ./images/img_020.png
 - **C'est l'approche centrale de ce cours** : concevoir des agents rationnels
 
 ---
-
-
-<!-- _class: questions -->
+layout: section
+---
 
 # Questions?
 
 ---
-
 
 # Systèmes d'agents
 
