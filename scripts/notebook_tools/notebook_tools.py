@@ -697,7 +697,9 @@ class NotebookValidator:
             return issues
 
         # Check heading structure
-        headings = re.findall(r'^(#{1,6})\s+(.+)$', source, re.MULTILINE)
+        # First, remove fenced code blocks to avoid detecting Python comments (#) as headings
+        source_for_headings = re.sub(r'```.*?```', '', source, flags=re.DOTALL)
+        headings = re.findall(r'^(#{1,6})\s+(.+)$', source_for_headings, re.MULTILINE)
         if headings:
             levels = [len(h[0]) for h in headings]
             for i in range(1, len(levels)):
