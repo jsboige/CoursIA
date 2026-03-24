@@ -190,7 +190,7 @@ Compilation : **11/11 projets compilent avec succes** (0 erreurs, warnings non-b
 
 | # | Projet | Periode | Return | CAGR | Sharpe | Max DD | Trades | Win Rate | Statut |
 |---|--------|---------|--------|------|--------|--------|--------|----------|--------|
-| 1 | **Option-Wheel-Strategy** | 2020-06 / 2024-09 | +68.5% | 12.9% | 0.996 | 7.4% | 91 | 94% | HEALTHY |
+| 1 | **Option-Wheel-Strategy** | 2015-01 / 2026-03 | +12.7% | 12.7% | 0.524 | 26.4% | — | — | HEALTHY |
 | 2 | **CSharp-BTC-EMA-Cross** | 2021-10 / 2024-12 | +166.7% | 36.2% | 1.094 | 40.7% | 7 | 67% | HEALTHY |
 | 3 | **CSharp-BTC-MACD-ADX** | 2013-04 / 2024-12 | +4239.2% | 38.1% | 1.224 | 48.8% | 19 | 78% | HEALTHY |
 | 4 | **Multi-Layer-EMA** | 2020-01 / 2024-01 | +2292.2% | 120.9% | 1.891 | 54.4% | 663 | 37% | HEALTHY |
