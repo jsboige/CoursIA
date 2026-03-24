@@ -9,6 +9,42 @@ Sponsorise par Jared Broad (CEO QuantConnect) via le tier "Trading Firm".
 
 ---
 
+## 🎓 Inscription Étudiants
+
+### Processus d'inscription au cours ESGF
+
+Pour participer au cours ESGF 2026 et bénéficier du sponsoring QuantConnect (Trading Firm tier), suivez ces étapes :
+
+1. **Créer un compte QuantConnect gratuit**
+   - Allez sur [quantconnect.com](https://www.quantconnect.com)
+   - Inscrivez-vous avec votre **email scolaire** (recommandé pour identification étudiante)
+   - Validez votre adresse email
+
+2. **Envoyer votre identifiant QuantConnect au professeur**
+   - Une fois inscrit, votre compte QuantConnect a un username (ex: `john.doe`)
+   - Envoyez ce username par email au professeur : `<email>`
+   - Le professeur vous ajoutera à l'organisation ESGF sponsorisée
+
+3. **Accès à l'organisation sponsorisée**
+   - Une fois ajouté, vous verrez l'organisation "Trading Firm ESGF" dans votre compte
+   - Le code education `education2025` est appliqué automatiquement au niveau de l'organisation
+   - Vous bénéficiez du tier "Trading Firm" (plus de CPU, backtests illimités, etc.)
+
+4. **Commencer les exercices**
+   - Suivez les notebooks QC-Py-01 à QC-Py-04 (prérequis)
+   - Passez aux exercices ESGF dans `ESGF_EXERCISES.md`
+   - Utilisez les templates dans `templates/` comme point de départ
+
+### Workflow Cloud-First
+
+**Important** : Ce cours utilise une approche **cloud-first**. Tout le développement se fait sur QuantConnect Cloud (QC Lab), pas en local avec LEAN CLI.
+
+- **Avantages** : Pas d'installation locale, accès aux données historiques QC, compilation instantanée
+- **Local** : Le dossier `lean-workspace/` contient un seul exemple (`Multi-Layer-EMA-Researcher`) pour illustrer le workflow local, mais les étudiants travaillent sur le cloud
+- **Projets** : Créez vos projets directement dans QuantConnect Lab, puis clonez-les localement si nécessaire pour versioning
+
+---
+
 ## Structure
 
 ```
