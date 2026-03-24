@@ -97,8 +97,6 @@ class PortfolioOptimizationMLAlgorithm(QCAlgorithm):
         for ticker in self.tickers:
             symbol = self.AddEquity(ticker, Resolution.Daily, Market.USA).Symbol
             self.symbols.append(symbol)
-            self.Securities[symbol].SetFeeModel(fee_model)
-            self.Securities[symbol].SetSlippageModel(slippage_model)
 
         # Benchmark = SPY
         self.benchmark = self.AddEquity("SPY", Resolution.Daily, Market.USA).Symbol

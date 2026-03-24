@@ -91,7 +91,7 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
         # Configuration backtest
         self.SetStartDate(self.BACKTEST_START.year, self.BACKTEST_START.month, self.BACKTEST_START.day)
         self.SetEndDate(self.BACKTEST_END.year, self.BACKTEST_END.month, self.BACKTEST_END.day)
-        self.SetCash(STARTING_CASH)
+        self.SetCash(self.STARTING_CASH)
         self.SetBrokerageModel(BrokerageName.AlphaStreams, AccountType.Cash)
 
         # Ajouter les 11 ETFs sectoriels
@@ -101,8 +101,6 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
         for ticker in self.etf_tickers:
             symbol = self.AddEquity(ticker, Resolution.Daily, Market.USA).Symbol
             self.symbols.append(symbol)
-            self.Securities[symbol].SetFeeModel(fee_model)
-            self.Securities[symbol].SetSlippageModel(slippage_model)
 
         # Benchmark = SPY
         self.benchmark = self.AddEquity("SPY", Resolution.Daily, Market.USA).Symbol
