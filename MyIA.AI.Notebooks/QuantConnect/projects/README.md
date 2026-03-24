@@ -24,7 +24,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 |--------|-------------|--------|------|--------|---------|------|--------|----------|------|
 | [BTC-MACD-ADX](BTC-MACD-ADX/) | MACD + ADX filter BTC daily | **1.647** | 38.1% | 48.8% | 2020-2026 | C# | Intermediaire | — | |
 | [Framework_Composite_TrendWeather](Framework_Composite_TrendWeather/) | TrendStocksLite + AllWeather via Algorithm Framework (T75/AW25, Mom3m) | **1.155** | 27.4% | 27.7% | 2015-2026 | Py | Avance | QuantBook | |
-| [EMA-Cross-Crypto](EMA-Cross-Crypto/) | EMA 20/50 + SMA200 + trailing stop BTCUSDT | **1.272** | 38.2% | 33.1% | 2017-2026 | Py | Debutant | yfinance | ⏳ Période étendue 2020→2017, backtest en attente |
+| [EMA-Cross-Crypto](EMA-Cross-Crypto/) | EMA 20/50 + SMA200 + trailing stop BTCUSDT | **0.244** | 3.804% | 37.2% | 2017-2026 | Py | Debutant | yfinance | ✅ Validé 2017-2026 (Sharpe 0.244) |
 | [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | EMA crossover BTC (C#) | **1.094** | 36.2% | 40.7% | 2017-2026 | C# | Debutant | — | |
 | [Option-Wheel](Option-Wheel/) | Wheel strategy SPY (sell puts/calls) | **0.524** | 12.69% | 26.40% | 2015-2026 | Py | Avance | QuantBook | ✅ Validé 2015-2026 (Sharpe 0.524) |
 | [EMA-Cross-Stocks](EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | **0.872** | 25.7% | 35.7% | 2015-2026 | Py | Debutant | — | |
@@ -43,7 +43,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | Projet | Description | Sharpe | CAGR | Max DD | Periode | Lang | Niveau | Research | Note |
 |--------|-------------|--------|------|--------|---------|------|--------|----------|------|
 | [Multi-Layer-EMA](Multi-Layer-EMA/) | Multi-layer EMA + vol filter BTCUSDT | **0.928** | 120.9% | 54.4% | 2020-2026 | Py | Intermediaire | QuantBook | NON ROBUSTE: Sharpe chute a 0.38 hors bulle 2017, MaxDD 67.7% |
-| [Crypto-MultiCanal](Crypto-MultiCanal/) | ZigZag multi-channel (macro/meso/micro) BTCUSDT | **0.486** | 7.6% | 16.8% | 2017-2026 | Py | Avance | QuantBook | Plafond apres 18 versions. ⏳ Période étendue 2020→2017, backtest en attente |
+| [Crypto-MultiCanal](Crypto-MultiCanal/) | ZigZag multi-channel (macro/meso/micro) BTCUSDT | **0.486** | 7.6% | 16.8% | 2017-2026 | Py | Avance | QuantBook | ❌ Runtime Error: cannot import 'find_envelope_line' |
 | [EMA-Cross-Index](EMA-Cross-Index/) | EMA 20/60 + cooldown 3d SPY | **0.470** | 9.4% | 17.5% | 2015-2026 | Py | Debutant | yfinance | 25 combos testees |
 | [DualMomentumNoTLT](DualMomentumNoTLT/) | Momentum rotation SPY/QQQ/IEF/GLD/XLP (no TLT) | **0.469** | 11.0% | 23.6% | 2015-2026 | Py | Intermediaire | — | Variante sans TLT |
 | [RiskParity](RiskParity/) | Risk parity multi-asset portfolio | **0.399** | 7.8% | 20.9% | 2015-2026 | Py | Intermediaire | — | Plafond (3 hyp. rejetees) |
@@ -52,7 +52,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [MeanReversion](MeanReversion/) | RSI multi-asset mean reversion | **0.294** | 7.5% | 16.5% | 2015-2026 | Py | Intermediaire | yfinance | SMA filter rejete |
 | [BTC-ML](BTC-ML/) | Machine learning BTC prediction | **0.282** | 8.3% | 13.7% | 2023-2026 | Py | Avance | QuantBook | Periode courte, potentiel features |
 | [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.207** | 5.435% | 17.50% | 2015-2026 | Py | Avance | — | ✅ Validé 2015-2026 (Sharpe 0.207) |
-| [Trend-Following](Trend-Following/) | Multi-oracle trend following (MACD/RSI/Bollinger) | **0.212** | 7.3% | 40.9% | 2015-2026 | Py | Avance | — | v2 apres revert leverage. ⏳ Période étendue 2019→2015, backtest en attente |
+| [Trend-Following](Trend-Following/) | Multi-oracle trend following (MACD/RSI/Bollinger) | N/A | 5.15% | N/A | 2015-2026 | Py | Avance | — | ❌ Timeout (200 stocks × 11 ans hourly trop large) |
 | [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 0.128 | 4.8% | 23.7% | 2015-2026 | Py | Debutant | yfinance | Effet faible en bull 2015-2026 |
 | [VIX-TermStructure](VIX-TermStructure/) | Contango/backwardation VIX (SVXY) | 0.051 | 3.6% | 35.2% | 2010-2026 | Py | Avance | yfinance | Post-VIXplosion, SVXY affaibli |
 
