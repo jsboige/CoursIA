@@ -96,6 +96,15 @@ a {
   color: var(--color-accent);
 }
 
+/* Section layout override - ensure white text on dark background */
+.slidev-layout.section h1,
+.slidev-layout.section h2,
+.slidev-layout.section h3,
+.slidev-layout.section strong {
+  color: #F5F5F5 !important;
+  border-bottom-color: #F5F5F5 !important;
+}
+
 /* Header/Footer area (Slidev defaults override) */
 .slidev-vflex-root {
   background: var(--color-bg);
