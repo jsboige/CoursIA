@@ -15,7 +15,9 @@ layout: cover
 Intelligence Artificielle -- I
 
 **Jean-Sylvain Boige**
+
 MRes CSAI, Sussex University, Brighton UK
+
 Aricie -- DNN -- PKP -- My Intelligence Agency
 
 ---
@@ -138,14 +140,12 @@ A l'issue de ce cours, vous serez capables de :
 - Presentations des projets
 
 ---
-
-
-<!-- _class: questions -->
-
-# Questions?
-
+layout: section
 ---
 
+<h1 style="color: #F5F5F5 !important; border-bottom: 2px solid #F5F5F5 !important;">Questions?</h1>
+
+---
 
 # Introduction a l'intelligence artificielle
 
@@ -226,9 +226,6 @@ image: ./images/img_004.png
 - **1965** : Robinson propose un algorithme complet de raisonnement logique
 - **1969-79** : age d'or des systèmes experts (bases de connaissances)
 
----
-layout: image-right
-image: ./images/img_004.png
 ---
 
 # Histoire succincte (2/2)
@@ -400,14 +397,12 @@ image: ./images/img_020.png
 - **C'est l'approche centrale de ce cours** : concevoir des agents rationnels
 
 ---
-
-
-<!-- _class: questions -->
-
-# Questions?
-
+layout: section
 ---
 
+<h1 style="color: #F5F5F5 !important; border-bottom: 2px solid #F5F5F5 !important;">Questions?</h1>
+
+---
 
 # Systèmes d'agents
 
@@ -480,13 +475,12 @@ layout: two-cols
 
 ::right::
 
-<img src="./images/img_022.jpg" width="130">
-
-<img src="./images/img_023.png" width="130">
-
-<img src="./images/img_026.png" width="130">
-
-<img src="./images/img_027.jpg" width="130">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
+<img src="./images/img_022.jpg" style="max-height: 140px; object-fit: contain;">
+<img src="./images/img_023.png" style="max-height: 140px; object-fit: contain;">
+<img src="./images/img_026.png" style="max-height: 140px; object-fit: contain;">
+<img src="./images/img_027.jpg" style="max-height: 140px; object-fit: contain;">
+</div>
 
 
 ---
@@ -515,9 +509,17 @@ layout: two-cols
 
 # Environnements de tache: exemples
 
-<div class="center-image">
-<img src="./images/img_028.png" style="max-width: 800px; margin: auto; display: block;">
-</div>
+<style>
+table { font-size: 0.7em; }
+</style>
+
+| Agent | Performance | Environnement | Effecteurs | Capteurs |
+|-------|------------|--------------|-----------|---------|
+| Diagnostic | Patients gueris | Hopital | Tests, traitements | Symptomes |
+| Satellites | Categorisation | Orbite | Scene classifiee | Pixels |
+| Robot trieur | % correct | Tapis roulant | Bras articule | Camera |
+| Raffinerie | Purete, securite | Raffinerie | Valves, pompes | Temp., pression |
+| Repetiteur | Notes etudiants | Etudiants | Corrections | Clavier |
 
 ---
 
@@ -567,9 +569,21 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 
 # Types d'environnement: exemples
 
-<div class="center-image">
-<img src="./images/img_029.png" alt="Tableau des types d'environnement" style="max-width: 800px; margin: auto; display: block;">
-</div>
+<style>
+table { font-size: 0.65em; }
+</style>
+
+| Tache | Obs. | Agents | Determ. | Epis. | Stat. | Discr. |
+|-------|------|--------|---------|-------|-------|--------|
+| Echecs | O | Multi | O | N | Semi | O |
+| Poker | N | Multi | N | N | Stat. | O |
+| Backgammon | O | Multi | N | N | Semi | O |
+| Conduite | P | Multi | N | N | N | N |
+| Diagnostic | P | Simple | N | N | N | N |
+| Analyse img | O | Simple | O | O | Semi | N |
+| Robot trieur | P | Simple | N | N | N | N |
+| Raffinerie | P | Simple | N | N | N | N |
+| Repetiteur | N | Multi | N | N | N | N |
 
 ---
 layout: image-right
