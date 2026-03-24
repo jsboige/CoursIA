@@ -143,7 +143,7 @@ A l'issue de ce cours, vous serez capables de :
 layout: section
 ---
 
-# Questions?
+<h1 style="color: #F5F5F5 !important; border-bottom: 2px solid #F5F5F5 !important;">Questions?</h1>
 
 ---
 
@@ -400,7 +400,7 @@ image: ./images/img_020.png
 layout: section
 ---
 
-# Questions?
+<h1 style="color: #F5F5F5 !important; border-bottom: 2px solid #F5F5F5 !important;">Questions?</h1>
 
 ---
 
@@ -475,13 +475,12 @@ layout: two-cols
 
 ::right::
 
-<img src="./images/img_022.jpg" width="130">
-
-<img src="./images/img_023.png" width="130">
-
-<img src="./images/img_026.png" width="130">
-
-<img src="./images/img_027.jpg" width="130">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
+<img src="./images/img_022.jpg" style="max-height: 140px; object-fit: contain;">
+<img src="./images/img_023.png" style="max-height: 140px; object-fit: contain;">
+<img src="./images/img_026.png" style="max-height: 140px; object-fit: contain;">
+<img src="./images/img_027.jpg" style="max-height: 140px; object-fit: contain;">
+</div>
 
 
 ---
