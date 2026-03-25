@@ -18,9 +18,9 @@
 }
 
 .cover h1 {
-  font-size: 2.2em;
+  font-size: 1.8em;
   border-bottom: none;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   color: var(--color-accent);
 }
 </style>

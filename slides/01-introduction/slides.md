@@ -15,9 +15,7 @@ layout: cover
 Intelligence Artificielle -- I
 
 **Jean-Sylvain Boige**
-
 MRes CSAI, Sussex University, Brighton UK
-
 Aricie -- DNN -- PKP -- My Intelligence Agency
 
 ---
@@ -25,58 +23,36 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
 
 # IA 101 -- Ressources et organisation
 
-- **Ouvrage de référence**
+- **Ouvrage de reference**
   - *Artificial Intelligence: A Modern Approach* (Russell & Norvig)
-  - 3e édition (2006) et 4e édition (2020, avec deep learning et IA moderne)
+  - 3e edition (2006) et 4e edition (2020, avec deep learning et IA moderne)
 - **En classe**
   - Cours magistraux, corrections d'exercices, travaux pratiques
 - **Projets trimestriels**
-  - Equipes de 2-3 etudiants, travail transversal
-  - Expose final en classe devant le groupe
+  - Équipes de 2-3 étudiants, travail transversal
+  - Exposé final en classe devant le groupe
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_001.jpg
 ---
 
 # Sommaire
 
 - Qu'est-ce que l'intelligence artificielle ?
-- Racines, histoire et etat de l'art
-- Structure des agents rationnels
-<div v-click="2">
-- Intelligence exploratoire
-</div>
-<div v-click="2">
+  - Racines, histoire et état de l'art
+  - Structure des agents rationnels
+- Intelligence exploratoire <!-- .element: class="fragment" -->
   - Comment chercher la solution a un probleme ?
-</div>
-<div v-click="3">
-- Intelligence Symbolique
-</div>
-<div v-click="3">
-  - Comment utiliser le raisonnement et les mathématiques ?
-</div>
-<div v-click="4">
-- Intelligence probabiliste
-</div>
-<div v-click="4">
+- Intelligence Symbolique <!-- .element: class="fragment" -->
+  - Comment utiliser le raisonnement et les mathematiques ?
+- Intelligence probabiliste <!-- .element: class="fragment" -->
   - Comment agir dans l'incertitude ?
-</div>
-<div v-click="5">
-- Intelligence Multi-Agents
-</div>
-<div v-click="5">
+- Intelligence Multi-Agents <!-- .element: class="fragment" -->
   - Comment tenir compte des autres?
-</div>
-<div v-click="6">
-- Apprentissage
-</div>
-<div v-click="6">
-  - Comment utiliser les données et l'expérience ?
-</div>
-<div v-click="7">
-- Application: le langage naturel
-</div>
+- Apprentissage <!-- .element: class="fragment" -->
+  - Comment utiliser les donnees et l'experience ?
+- Application: le langage naturel <!-- .element: class="fragment" -->
 
 ---
 
@@ -86,10 +62,10 @@ image: ./images/img_001.jpg
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'étude
+  - Les domaines d'etude
   - Un peu d'histoire
-  - L'etat de l'art
-- Systèmes d'agents
+  - L'état de l'art
+- Systemes d'agents
   - Agents rationnels
   - Environnements taches
   - Types d'Agents
@@ -107,7 +83,7 @@ A l'issue de ce cours, vous serez capables de :
   - Disposer des bases pour approfondir chacun d'entre eux
 - **Concevoir des programmes intelligents dans des domaines varies :**
   - Recherche de solutions et jeux strategiques
-  - Représentation de connaissances et raisonnement logique
+  - Representation de connaissances et raisonnement logique
   - Modelisation probabiliste et prise de decision sous incertitude
   - Apprentissage automatique (supervise, non supervise, par renforcement)
   - Traitement du langage naturel
@@ -117,9 +93,9 @@ A l'issue de ce cours, vous serez capables de :
 
 # Objectifs du cours (2/2)
 
-- **Concevoir des systèmes intelligents en conditions reelles**
-  - Integrer les differentes briques pour construire un système complet
-  - Gerer les contraintes du monde reel : incertitude, temps de calcul, données imparfaites
+- **Concevoir des systemes intelligents en conditions reelles**
+  - Integrer les differentes briques pour construire un systeme complet
+  - Gerer les contraintes du monde reel : incertitude, temps de calcul, donnees imparfaites
 - **BONUS : Mieux comprendre l'intelligence elle-meme**
   - Comment l'intelligence emerge-t-elle dans la nature ?
   - Comment fonctionne le cerveau humain, et en quoi l'IA s'en inspire ?
@@ -147,15 +123,16 @@ layout: section
 
 ---
 
+
 # Introduction a l'intelligence artificielle
 
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'étude
+  - Les domaines d'etude
   - Un peu d'histoire
-  - L'etat de l'art
-- Systèmes d'agents
+  - L'état de l'art
+- Systemes d'agents
   - Agents rationnels
   - Environnements taches
   - Types d'agents
@@ -168,10 +145,10 @@ layout: section
 # Qu'est-ce que l'intelligence artificielle ?
 
 - **Des definitions multiples et un concept evolutif**
-  - L'IA n'a pas de définition unique : elle recouvre des approches tres differentes
-  - Concevoir un système intelligent n'implique pas de comprendre l'intelligence
-- **Une définition qui évolue avec la technologie :**
-  - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systèmes experts → Apprentissage profond → IA generative
+  - L'IA n'a pas de definition unique : elle recouvre des approches tres differentes
+  - Concevoir un systeme intelligent n'implique pas de comprendre l'intelligence
+- **Une definition qui evolue avec la technologie :**
+  - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systemes experts → Apprentissage profond → IA generative
 
 <div class="center-image">
 <img src="./images/img_002.png" alt="Definition IA" style="max-width: 850px; margin: auto; display: block;">
@@ -191,8 +168,9 @@ layout: section
 - Approche qui unifie les autres : un agent rationnel peut raisonner, apprendre et communiquer
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_003.png
+imageClass: mid-right large
 ---
 
 # Les fondements de l'IA
@@ -200,31 +178,31 @@ image: ./images/img_003.png
 L'IA est une discipline profondement interdisciplinaire :
 
 - **Philosophie :** logique, raisonnement, nature de l'esprit
-- **Mathematiques :** algorithmes, complexité, probabilités, décidabilité
+- **Mathematiques :** algorithmes, complexite, probabilites, decidabilite
 - **Economie :** theorie de la decision, utilite, theorie des jeux
-- **Biologie :** intelligence naturelle et animale, évolution
+- **Biologie :** intelligence naturelle et animale, evolution
 - **Neurosciences :** substrat physique de l'activite mentale
 - **Psychologie :** perception, cognition, comportement
 - **Informatique :** puissance de calcul, logiciel, architectures
 - **Theorie du controle :** optimisation d'une fonction objective dans le temps
-- **Linguistique :** grammaires, représentation du sens
+- **Linguistique :** grammaires, representation du sens
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_004.png
 ---
 
 # Histoire succincte (1/2)
 
 **Les debuts (1943-1970)**
-- **1943** : McCulloch & Pitts modélisent le cerveau comme un circuit logique
+- **1943** : McCulloch & Pitts modelisent le cerveau comme un circuit logique
 - **1950** : Turing pose la question "Can machines think?"
 - **1956** : Conference de Dartmouth -- le terme "Artificial Intelligence" est ne
-- **Années 50** : premiers programmes capables d'apprendre
+- **Annees 50** : premiers programmes capables d'apprendre
   - Samuel (jeu de dames), Newell & Simon (theoricien logique)
   - Gelernter (geometrie), naissance de Lisp
 - **1965** : Robinson propose un algorithme complet de raisonnement logique
-- **1969-79** : age d'or des systèmes experts (bases de connaissances)
+- **1969-79** : age d'or des systemes experts (bases de connaissances)
 
 ---
 
@@ -232,10 +210,10 @@ image: ./images/img_004.png
 
 **Maturite et "hivers de l'IA" (1970-2010)**
 
-- **1970s** : l'IA se heurte a la complexité calculatoire -- premier "hiver"
-- **1980s** : l'IA devient une industrie (robotique, vision, systèmes experts)
-- **1986** : retour des réseaux de neurones grace a la retropropagation
-- **1990s** : l'IA se mathematise (probabilités, optimisation)
+- **1970s** : l'IA se heurte a la complexite calculatoire -- premier "hiver"
+- **1980s** : l'IA devient une industrie (robotique, vision, systemes experts)
+- **1986** : retour des reseaux de neurones grace a la retropropagation
+- **1990s** : l'IA se mathematise (probabilites, optimisation)
 - **2000s** : data mining, apprentissage bayesien, web semantique
 
 **Renaissance et explosion (2010-aujourd'hui)**
@@ -245,11 +223,11 @@ image: ./images/img_004.png
 - **2020s** : GPT, DALL-E, ChatGPT, Claude, Gemini, DeepSeek, agents autonomes
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_005.jpg
 ---
 
-# Etat de l'art (1/2)
+# État de l'art (1/2)
 
 **L'IA bat les champions (1997-2019)**
 
@@ -261,23 +239,23 @@ image: ./images/img_005.jpg
 
 **Applications dans le monde reel**
 
-- Preuve de conjectures mathématiques (Robbins, 1996)
+- Preuve de conjectures mathematiques (Robbins, 1996)
 - Vehicules autonomes (vol, conduite, marche robotique)
 - Logistique et planification militaire (guerre du Golfe)
 - NASA : planification autonome de missions spatiales
 - Trading algorithmique (85% du volume des marches en 2012)
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_005.jpg
 ---
 
-# Etat de l'art (2/2)
+# État de l'art (2/2)
 
 **Deep Learning et NLP (2010-2019)**
 
 - **2012** : deep learning domine ImageNet (reconnaissance d'images quasi humaine)
-- **2014** : GANs -- les réseaux de neurones deviennent creatifs
+- **2014** : GANs -- les reseaux de neurones deviennent creatifs
 - **2017** : Transformers (Google) -- revolution du traitement du langage
 - **2018-19** : GPT-2, BERT, Watson -- un nouveau paradigme d'interaction
 
@@ -332,7 +310,7 @@ image: ./images/img_005.jpg
 - **Quotidien** : assistants vocaux (Siri, Alexa), traduction automatique, filtres photo
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_020.png
 ---
 
@@ -342,7 +320,7 @@ image: ./images/img_020.png
 
 **Competences requises pour reussir le test :**
 - Traitement du langage naturel
-- Représentation de connaissances
+- Representation de connaissances
 - Raisonnement automatique
 - Apprentissage
 
@@ -355,7 +333,7 @@ image: ./images/img_020.png
 
 # Penser comme l'homme : sciences cognitives
 
-- **La "revolution cognitive" (années 1960)**
+- **La "revolution cognitive" (annees 1960)**
   - La psychologie commence a modeliser la pensee comme un traitement de l'information
 - **Deux approches pour etudier le cerveau**
   - *Top-down* : modeliser le comportement humain observable
@@ -375,11 +353,11 @@ image: ./images/img_020.png
 - **La logique au service de l'IA**
   - Representer les faits du monde sous forme formelle
   - Utiliser l'inference pour deduire de nouvelles connaissances
-  - Exemple : prouveurs automatiques de théorèmes
+  - Exemple : prouveurs automatiques de theoremes
 - **Limites de l'approche purement logique**
   - Le monde reel est incertain (capteurs imparfaits, information incomplete)
-  - Tout comportement intelligent ne releve pas d'une délibération logique
-  - En pratique, il faut aussi definir des buts et évaluer des couts
+  - Tout comportement intelligent ne relève pas d'une délibération logique
+  - En pratique, il faut aussi definir des buts et evaluer des couts
 
 ---
 
@@ -389,10 +367,10 @@ image: ./images/img_020.png
 - **Un comportement rationnel consiste a faire la bonne chose :**
   - Choisir l'action qui maximise les chances d'atteindre l'objectif, compte tenu de l'information disponible
 - **Agir rationnellement n'implique pas forcement de penser**
-  - Un reflexe (cligner des yeux) peut etre rationnel sans délibération
+  - Un réflexe (cligner des yeux) peut être rationnel sans délibération
   - Mais la reflexion reste un outil puissant au service de l'action
 - **Lien avec la theorie de la decision**
-  - Évaluer les etats possibles et les actions disponibles
+  - Evaluer les états possibles et les actions disponibles
   - Maximiser l'utilite esperee, meme sous incertitude
 - **C'est l'approche centrale de ce cours** : concevoir des agents rationnels
 
@@ -404,14 +382,15 @@ layout: section
 
 ---
 
-# Systèmes d'agents
+
+# Systemes d'agents
 
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'étude
+  - Les domaines d'etude
   - Un peu d'histoire
-  - L'etat de l'art
+  - L'état de l'art
 - **Agents rationnels**
 - **Environnements taches**
 - **Types d'agents**
@@ -419,7 +398,7 @@ layout: section
 - Presentation des projets de groupe
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_021.png
 ---
 
@@ -444,7 +423,7 @@ image: ./images/img_021.png
 - **Decision basee sur** : la suite des percepts recus et les connaissances prealables
 - **Rationnel ne signifie pas omniscient**
   - L'agent explore pour completer ses connaissances
-  - Il s'adapte par l'expérience (apprentissage)
+  - Il s'adapte par l'experience (apprentissage)
   - Il est reactif *et* proactif
 
 ---
@@ -459,28 +438,10 @@ image: ./images/img_021.png
 - **Herbert Simon (1955)** : concept de "satisficing" -- choisir une solution satisfaisante plutot qu'optimale
 
 ---
-layout: two-cols
----
 
 # Intelligences
 
-
-**Procedurale** -- Automates, Algorithmes
-
-**Intelligence exploratoire** -- Recherche de chemin, Exploration locale, Satisfaction de contraintes
-
-**Intelligence symbolique** -- Raisonnement, Bases de connaissances, Plans
-
-**Intelligence probabiliste** -- Inference Bayesienne, Recherche de politique, Analyse strategique
-
-::right::
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
-<img src="./images/img_022.jpg" style="max-height: 140px; object-fit: contain;">
-<img src="./images/img_023.png" style="max-height: 140px; object-fit: contain;">
-<img src="./images/img_026.png" style="max-height: 140px; object-fit: contain;">
-<img src="./images/img_027.jpg" style="max-height: 140px; object-fit: contain;">
-</div>
+<IntelligencePyramid />
 
 
 ---
@@ -509,32 +470,24 @@ layout: two-cols
 
 # Environnements de tache: exemples
 
-<style>
-table { font-size: 0.7em; }
-</style>
-
-| Agent | Performance | Environnement | Effecteurs | Capteurs |
-|-------|------------|--------------|-----------|---------|
-| Diagnostic | Patients gueris | Hopital | Tests, traitements | Symptomes |
-| Satellites | Categorisation | Orbite | Scene classifiee | Pixels |
-| Robot trieur | % correct | Tapis roulant | Bras articule | Camera |
-| Raffinerie | Purete, securite | Raffinerie | Valves, pompes | Temp., pression |
-| Repetiteur | Notes etudiants | Etudiants | Corrections | Clavier |
+<div class="center-image">
+<img src="./images/img_028.png" style="max-width: 800px; margin: auto; display: block;">
+</div>
 
 ---
 
 
 # Types d'environnement (1/2)
 
-Chaque environnement de tache possede des propriétés qui influencent la conception de l'agent :
+Chaque environnement de tache possede des proprietes qui influencent la conception de l'agent :
 
 - **Completement vs partiellement observable**
   - L'agent a-t-il acces a l'etat complet de l'environnement ?
 - **Deterministe vs stochastique**
-  - L'etat suivant est-il entierement determine par l'etat courant et l'action ?
-  - Cas particulier : *strategique* = déterministe sauf les actions des autres agents
-- **Episodique vs séquentiel**
-  - Les decisions sont-elles indépendantes ou liees entre elles ?
+  - L'etat suivant est-il entierement determine par l'état courant et l'action ?
+  - Cas particulier : *strategique* = deterministe sauf les actions des autres agents
+- **Episodique vs sequentiel**
+  - Les decisions sont-elles independantes ou liees entre elles ?
 - **Statique vs dynamique**
   - L'environnement change-t-il pendant que l'agent delibere ?
 
@@ -546,7 +499,7 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 <div v-click="5">
 
 - **Discret vs continu**
-  - Les etats, le temps, les percepts et les actions sont-ils dénombrables ?
+  - Les états, le temps, les percepts et les actions sont-ils denombrables ?
 
 </div>
 <div v-click="6">
@@ -562,56 +515,47 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 
 </div>
 
-**En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, séquentiel, dynamique, continu, multiagent.
+**En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, sequentiel, dynamique, continu, multiagent.
 
 ---
 
 
 # Types d'environnement: exemples
 
-<style>
-table { font-size: 0.65em; }
-</style>
-
-| Tache | Obs. | Agents | Determ. | Epis. | Stat. | Discr. |
-|-------|------|--------|---------|-------|-------|--------|
-| Echecs | O | Multi | O | N | Semi | O |
-| Poker | N | Multi | N | N | Stat. | O |
-| Backgammon | O | Multi | N | N | Semi | O |
-| Conduite | P | Multi | N | N | N | N |
-| Diagnostic | P | Simple | N | N | N | N |
-| Analyse img | O | Simple | O | O | Semi | N |
-| Robot trieur | P | Simple | N | N | N | N |
-| Raffinerie | P | Simple | N | N | N | N |
-| Repetiteur | N | Multi | N | N | N | N |
+<div class="center-image">
+<img src="./images/img_029.png" alt="Tableau des types d'environnement" style="max-width: 800px; margin: auto; display: block;">
+</div>
 
 ---
-layout: image-right
-image: ./images/img_030.png
+layout: two-cols
 ---
 
 # Types d'agents
 
 **f(agent) = Architecture physique + Programme**
 
-Un agent naif pourrait stocker une table "percepts → action", mais cette approche est impraticable : la table serait gigantesque et impossible a construire.
+Un agent naif pourrait stocker une table "percepts → action", mais cette approche est impraticable.
 
 **Cinq architectures d'agents, par ordre de généralité :**
 
-1. Agent reflexe simple
-2. Agent reflexe fonde sur un modele
+1. Agent réflexe simple
+2. Agent réflexe fondé sur un modele
 3. Agent fonde sur des buts
 4. Agent fonde sur l'utilite
 5. Agent capable d'apprentissage
+
+::right::
+
+<img src="./images/img_030.png" width="500">
 
 ---
 layout: two-cols
 ---
 
-# Agent reflexe
+# Agent réflexe
 
 
-**Caractéristiques:**
+**Caracteristiques:**
 
 - Pas de mémoire
 - Percepts courants
@@ -622,11 +566,9 @@ layout: two-cols
 <div v-click="2">
 - Intelligence animale
 </div>
-- Behaviourism
-- Artificial Life
-- Cellular Automata
-
-<img src="./images/img_033.png" width="80">
+- Béhaviorisme
+- Vie artificielle
+- Automates cellulaires
 
 ::right::
 
@@ -634,18 +576,20 @@ layout: two-cols
 
 <img src="./images/img_032.png" width="350">
 
+<img src="./images/img_033.png" width="300">
+
 
 ---
 layout: two-cols
 ---
 
-# Agent reflexe fonde sur un modele
+# Agent réflexe fondé sur un modele
 
 
-**Caractéristiques:**
+**Caracteristiques:**
 
 <div v-click="1">
-- Etat du monde
+- État du monde
 </div>
 - Historique des percepts
 - Mémoire du changement
@@ -657,17 +601,17 @@ layout: two-cols
 - Couches d'automates
 - Emergence
 
-<img src="./images/img_036.png" width="80">
-
 ::right::
 
 <img src="./images/img_034.png" width="420">
 
 <img src="./images/img_035.png" width="350">
 
+<img src="./images/img_036.png" width="300">
+
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_037.png
 ---
 
@@ -680,7 +624,7 @@ image: ./images/img_037.png
 - Utilise la recherche (exploration) et la planification
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_038.png
 ---
 
@@ -696,7 +640,7 @@ image: ./images/img_038.png
 - Risque vs recompense, urgence vs cout
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_039.png
 ---
 
@@ -705,28 +649,28 @@ image: ./images/img_039.png
 **Quatre composants internes :**
 
 - **Element de performance** : choisit les actions
-- **Element d'apprentissage** : ameliore la performance a partir de l'expérience
+- **Element d'apprentissage** : ameliore la performance a partir de l'experience
 - **Critique** : evalue les resultats par rapport a un standard fixe
 - **Generateur de problemes** : suggere des actions exploratoires
 
 **Formes d'apprentissage :** supervise, par renforcement, non supervise
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/img_040.png
 ---
 
 # Fonctionnement interne des agents
 
-**La représentation de la connaissance est determinante**
+**La representation de la connaissance est determinante**
 
-Trois niveaux de représentation des etats, du plus simple au plus expressif :
+Trois niveaux de representation des etats, du plus simple au plus expressif :
 
-- **Atomique** : chaque etat est indivisible (ex: un noeud dans un graphe)
-- **Factorise** : un etat est un ensemble de propriétés (ex: variables booléennes)
-- **Structure** : un etat est un objet complexe avec des relations (ex: base de données)
+- **Atomique** : chaque état est indivisible (ex: un noeud dans un graphe)
+- **Factorise** : un état est un ensemble de proprietes (ex: variables booleennes)
+- **Structure** : un état est un objet complexe avec des relations (ex: base de donnees)
 
-**Compromis fondamental :** plus la représentation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
+**Compromis fondamental :** plus la representation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
 
 ---
 
@@ -744,8 +688,8 @@ Trois niveaux de représentation des etats, du plus simple au plus expressif :
   - La rationalite parfaite est un ideal ; en pratique, on vise le meilleur compromis
 - **Architectures d'agents**
   - Reflexes (simples ou avec modele), fondes sur des buts ou l'utilite, apprenants
-  - Les propriétés de l'environnement dictent le choix de l'architecture
-  - La représentation des etats (atomique, factorisee, structuree) conditionne les capacites
+  - Les proprietes de l'environnement dictent le choix de l'architecture
+  - La representation des etats (atomique, factorisee, structuree) conditionne les capacites
 
 </div>
 
@@ -765,15 +709,13 @@ Trois niveaux de représentation des etats, du plus simple au plus expressif :
 ---
 
 
-<!-- _class: crossref -->
-
 # Pour aller plus loin : Notebooks
 
 Chaque chapitre du cours est accompagne de travaux pratiques sous forme de notebooks Jupyter :
 
 - **Exploration** : `Search/`, `Sudoku/` -- CSP, algorithmes genetiques, optimisation
 - **Logique** : `SymbolicAI/`, `Lean/` -- Z3, Tweety, Lean 4, argumentation
-- **Probabilites** : `Probas/Infer/` -- inference bayesienne, réseaux de decision
+- **Probabilites** : `Probas/Infer/` -- inference bayesienne, reseaux de decision
 - **Jeux** : `GameTheory/` -- equilibres de Nash, jeux bayesiens, MARL
 - **Apprentissage** : `ML/`, `RL/` -- classification, regression, renforcement
 - **IA Generative** : `GenAI/` -- DALL-E, Stable Diffusion, LLMs, RAG
