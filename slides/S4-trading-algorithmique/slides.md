@@ -101,26 +101,18 @@ Intelligence Artificielle -- S4
 
 # Avantages du Trading Algorithmique
 
-- **Scalabilite**
-  - Facilite a augmenter les volumes de trading
-  - Possibilite de gerer plusieurs strategies de front
+- **Scalabilite** -- augmenter les volumes, gerer plusieurs strategies
 <div v-click="2">
 
-- **Optimisation du temps**
-  - Moins consacre aux operations manuelles
-  - Plus de temps pour la recherche et l'optimisation
+- **Optimisation du temps** -- moins d'operations manuelles, plus de recherche
 </div>
 <div v-click="3">
 
-- **Elimination des biais**
-  - Pas de biais emotionnels dans la prise de decision
-  - Execution disciplinee selon le modele
+- **Elimination des biais** -- pas d'emotion, execution disciplinee
 </div>
 <div v-click="4">
 
-- **Pas de necessite de marketing**
-  - Pas besoin de chercher activement des clients ou investisseurs
-  - Focus sur la performance algorithmique
+- **Autonomie** -- pas besoin de clients, focus sur la performance
 </div>
 
 ---
@@ -1506,6 +1498,8 @@ Documentation officielle QuantConnect
 ---
 layout: dense
 ---
+layout: dense
+---
 
 # Initialisation - Consolidation et Graphiques
 
@@ -1703,6 +1697,8 @@ layout: dense
   - BasePairsTradingAlphaModel, PearsonCorrelationPairsTradingAlphaModel etc.
 </div>
 
+---
+layout: dense
 ---
 
 # Alphas (2/2)
