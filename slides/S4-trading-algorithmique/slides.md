@@ -173,8 +173,9 @@ layout: section
 </div>
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/candlestick_patterns.png
+imageClass: mid-right
 ---
 
 # Instruments Financiers
@@ -196,8 +197,9 @@ image: ./images/candlestick_patterns.png
 </div>
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/candlestick_anatomy.png
+imageClass: mid-right
 ---
 
 # Analyse Technique et Fondamentale
@@ -606,8 +608,9 @@ layout: section
 </div>
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/efficient_frontier.png
+imageClass: mid-right
 ---
 
 # Mesures de Performance et Pieges (1/2)
@@ -703,8 +706,9 @@ layout: section
 </div>
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/normal_distribution.png
+imageClass: mid-right
 ---
 
 # Outils et Formules
@@ -803,8 +807,9 @@ layout: section
 # Questions?
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/bollinger_bands.png
+imageClass: mid-right
 ---
 
 # Strategies de Moyenne Reversion
@@ -824,8 +829,9 @@ image: ./images/bollinger_bands.png
 </div>
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/macd_chart.png
+imageClass: mid-right
 ---
 
 # Strategies Fondamentales de Momentum
@@ -893,8 +899,9 @@ image: ./images/macd_chart.png
 </div>
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/security_market_line.png
+imageClass: mid-right
 ---
 
 # Strategies Basees sur les Donnees - Modeles Factoriels
@@ -1002,8 +1009,9 @@ layout: section
 # Questions?
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/payoff_put_option.png
+imageClass: mid-right
 ---
 
 # Strategies de Sortie en Trading (1/2)
@@ -1067,8 +1075,9 @@ image: ./images/payoff_put_option.png
 </div>
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/ted_spread.png
+imageClass: mid-right
 ---
 
 # Arbitrage et Paires
@@ -1185,8 +1194,9 @@ image: ./images/ted_spread.png
   - Backtesting Adaptatif: Tests dynamiques pour ajuster aux changements du marche
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/capital_market_line.png
+imageClass: mid-right
 ---
 
 # Portefeuille a Haut Levier vs Haut Beta (1/2)
@@ -1891,8 +1901,9 @@ layout: section
 # Questions?
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/lstm_cell.png
+imageClass: mid-right
 ---
 
 # Machine Learning pour le Trading (1/2)
@@ -1920,8 +1931,9 @@ image: ./images/lstm_cell.png
   - Modeles de classification boostes relativement efficaces
 
 ---
-layout: image-right
+layout: image-overlay
 image: ./images/rnn_unrolled.png
+imageClass: mid-right
 ---
 
 # Difficultes du ML dans le Trading (1/2)

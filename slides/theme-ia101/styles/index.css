@@ -14,25 +14,25 @@
 /* Base styles */
 .slidev-layout {
   font-family: 'Segoe UI', 'Calibri', Arial, sans-serif;
-  font-size: 28px;
+  font-size: 20px;
   color: var(--color-text);
   background-color: var(--color-bg);
-  padding: 40px 60px;
+  padding: 30px 50px;
 }
 
 /* Headers */
 h1 {
   color: var(--color-accent);
-  font-size: 1.6em;
+  font-size: 1.5em;
   border-bottom: 2px solid var(--color-accent);
-  padding-bottom: 8px;
-  margin-bottom: 16px;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
 }
 
 h2 {
   color: var(--color-header);
-  font-size: 1.3em;
-  margin-bottom: 12px;
+  font-size: 1.25em;
+  margin-bottom: 10px;
 }
 
 h3 {
