@@ -3,13 +3,13 @@ import { default as ia101Styles } from '../styles/index.css'
 </script>
 
 <template>
-  <div class="slidev-layout default">
+  <div class="slidev-layout compact">
     <slot />
   </div>
 </template>
 
 <style scoped>
-.default {
-  @apply px-12 py-8;
+.compact {
+  @apply px-8 py-6;
 }
 </style>
