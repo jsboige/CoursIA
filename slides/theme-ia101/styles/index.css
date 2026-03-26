@@ -240,3 +240,12 @@ a {
 .intelligence-block li {
   margin-bottom: 4px;
 }
+
+/* Pagination / Page Number */
+.slidev-page-number {
+  color: var(--color-text-light);
+  font-size: 0.6em;
+  position: fixed;
+  bottom: 10px;
+  right: 20px;
+}
