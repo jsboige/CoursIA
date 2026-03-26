@@ -60,7 +60,7 @@ Basé sur le contenu réel du repo GitHub `QuantConnect/HandsOnAITradingBook` :
 | 02 Factor Preprocessing for Regime Detection | Régimes de marché | QC-Py-25-Reinforcement-Learning, ESGF-2026/examples/Markov-Regime-Detection | ✅ **NEW** |
 | 03 Reversion vs Trending by Classification | Classification momentum/mean reversion | QC-Py-19-ML-Supervised-Classification | ✅ |
 | 04 Alpha by Hidden Markov Models | HMM pour régimes | QC-Py-25-Reinforcement-Learning, ESGF-2026/examples/Markov-Regime-Detection | ✅ **NEW** |
-| 05 FX SVM Wavelet Forecasting | SVM + ondelettes | QC-Py-22-Deep-Learning-LSTM | ⚠️ Approche différente |
+| 05 FX SVM Wavelet Forecasting | SVM + Wavelet decomposition, QC-Py-22-Deep-Learning-LSTM, ⚠️ Approche différente |
 | 06 Dividend Harvesting Selection | Sélection dividendes | QC-Py-08-Multi-Asset-Strategies | ⚠️ Concept lié |
 | 07 Effect of Positive-Negative Splits | Stock splits | QC-Py-05-Universe-Selection | ⚠️ Concept lié |
 | 08 Stoploss based on Volatility/Drawdown | Stoploss dynamique | QC-Py-10-Risk-Portfolio-Management | ✅ |
