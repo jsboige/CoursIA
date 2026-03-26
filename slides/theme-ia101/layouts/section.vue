@@ -21,8 +21,8 @@
 .section h1,
 .section h2,
 .section h3 {
-  color: #F5F5F5;
-  border-bottom: none;
+  color: #F5F5F5 !important;
+  border-bottom: none !important;
 }
 
 .section h1 {

@@ -24,12 +24,14 @@ const props = defineProps<{
 }
 
 .left {
-  flex: 1.2;
+  flex: 2;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .right {
   flex: 1;
+  max-width: 35%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -38,7 +40,7 @@ const props = defineProps<{
 
 .right img {
   max-width: 100%;
-  max-height: 70vh;
+  max-height: 65vh;
   object-fit: contain;
 }
 </style>

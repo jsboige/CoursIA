@@ -26,7 +26,7 @@
 | **M4-Advanced** | Framework_Composite_TrendWeather | 1.155 | Avance | QuantBook | — |
 | | RegimeSwitching | 0.553 | Avance | — | — |
 | | AdaptiveAssetAllocation | 0.518 | Avance | — | — |
-| **M5-Options** | Option-Wheel | 0.996 | Avance | QuantBook | — |
+| **M5-Options** | Option-Wheel | 0.524 | Avance | QuantBook | — |
 | | Options-VGT | 0.507 | Avance | — | — |
 | **M6-Crypto** | EMA-Cross-Crypto | 1.272 | Debutant | yfinance | — |
 
