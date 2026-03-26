@@ -14,7 +14,7 @@ class CoveredCallStrategy(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2018, 1, 1)
+        self.set_start_date(2015, 1, 1)  # Extended from 2018: +3 years for robustness validation (includes 2017-2019 bull market pre-COVID)
         self.set_cash(100000)
 
         equity = self.add_equity("SPY", Resolution.MINUTE)

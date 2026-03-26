@@ -104,16 +104,16 @@ a {
 /* Image grid for logos (slide "Qui fait de l'IA ?") */
 .image-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 20px 24px;
+  margin-top: 20px;
   justify-items: center;
   align-items: center;
 }
 
 .image-grid img {
-  max-height: 50px;
-  max-width: 80px;
+  max-height: 70px;
+  max-width: 120px;
   object-fit: contain;
   filter: grayscale(20%);
   opacity: 0.9;
