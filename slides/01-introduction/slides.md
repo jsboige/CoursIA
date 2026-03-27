@@ -44,37 +44,37 @@ image: ./images/img_001.jpg
 - Qu'est-ce que l'intelligence artificielle ?
 - Racines, histoire et etat de l'art
 - Structure des agents rationnels
-<div v-click="2">
+<div v-click="1">
 - Intelligence exploratoire
 </div>
-<div v-click="2">
+<div v-click="1">
   - Comment chercher la solution a un probleme ?
 </div>
-<div v-click="3">
+<div v-click="2">
 - Intelligence Symbolique
 </div>
-<div v-click="3">
+<div v-click="2">
   - Comment utiliser le raisonnement et les mathématiques ?
 </div>
-<div v-click="4">
+<div v-click="3">
 - Intelligence probabiliste
 </div>
-<div v-click="4">
+<div v-click="3">
   - Comment agir dans l'incertitude ?
 </div>
-<div v-click="5">
+<div v-click="4">
 - Intelligence Multi-Agents
 </div>
-<div v-click="5">
+<div v-click="4">
   - Comment tenir compte des autres?
 </div>
-<div v-click="6">
+<div v-click="5">
 - Apprentissage
 </div>
-<div v-click="6">
+<div v-click="5">
   - Comment utiliser les données et l'expérience ?
 </div>
-<div v-click="7">
+<div v-click="6">
 - Application: le langage naturel
 </div>
 
@@ -543,19 +543,19 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 
 # Types d'environnement (2/2)
 
-<div v-click="5">
+<div v-click="1">
 
 - **Discret vs continu**
   - Les etats, le temps, les percepts et les actions sont-ils dénombrables ?
 
 </div>
-<div v-click="6">
+<div v-click="2">
 
 - **Agent simple vs multiagent**
   - L'agent est-il seul ou en interaction (cooperation, competition) ?
 
 </div>
-<div v-click="7">
+<div v-click="3">
 
 - **Connu vs inconnu**
   - L'agent connait-il les regles de l'environnement ?
@@ -619,7 +619,7 @@ layout: two-cols
 
 **Exemples:**
 
-<div v-click="2">
+<div v-click="1">
 - Intelligence animale
 </div>
 - Behaviourism
