@@ -90,8 +90,7 @@ Intelligence Artificielle -- S4
 
 </div>
 ---
-layout: dense
----
+
 # Profil du Trader Algorithmique
 
 - **Formation et diplome**
@@ -115,10 +114,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
-layout: dense
----
+
 # Avantages du Trading Algorithmique
 
 - **Scalabilite**
@@ -214,9 +210,7 @@ layout: section
 
 </div>
 ---
----
-layout: dense
----
+
 # Instruments Financiers
 
 - **Actions**
@@ -246,9 +240,7 @@ layout: dense
 
 </div>
 ---
----
-layout: dense
----
+
 # Analyse Technique et Fondamentale
 
 - **Analyse Technique**
@@ -272,8 +264,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Infrastructure de Trading
 
 - **Plateformes et Courtiers**
@@ -408,8 +399,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Ordres - Instructions Specifiques (2/2)
 
 - **Instructions de Routage**
@@ -811,10 +801,7 @@ imageClass: mid-right
 
 </div>
 ---
-layout: dense
----
-layout: dense
----
+
 # Precautions face aux Pieges (2/2)
 
 - **Paper Trading**
@@ -891,8 +878,7 @@ layout: image-overlay
 image: ./images/normal_distribution.png
 imageClass: mid-right
 ---
-layout: dense
----
+
 # Outils et Formules
 
 - **Formule de Kelly**
@@ -963,8 +949,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Preparation Psychologique (1/2)
 
 - **Emotions en Trading**
@@ -1038,8 +1023,7 @@ layout: image-overlay
 image: ./images/macd_chart.png
 imageClass: mid-right
 ---
-layout: dense
----
+
 # Strategies Fondamentales de Momentum
 
 - **Momentum**
@@ -1151,8 +1135,7 @@ imageClass: mid-right
 
 </div>
 ---
-layout: dense
----
+
 # Strategies Basees sur les Donnees - Sentiment Analysis
 
 - **Objectif**
@@ -1407,8 +1390,7 @@ imageClass: mid-right
 
 </div>
 ---
-layout: dense
----
+
 # Strategies de Trading Saisonnier
 
 - **Effet de Janvier**
@@ -1555,8 +1537,7 @@ layout: cover
 Documentation officielle QuantConnect
 
 ---
-layout: dense
----
+
 # Lean/QuantConnect
 
 - **Qu'est-ce que c'est?**
@@ -1692,8 +1673,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Environnement d'Algorithme (1/2)
 
 - **QCAlgorithm**
@@ -1768,8 +1748,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Initialisation - Dates et Monnaies
 
 - **Definition des dates de backtesting**
@@ -1791,8 +1770,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Initialisation - Broker et Securites
 
 - **Choix du Broker et souscription a des securites**
@@ -1814,8 +1792,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Initialisation - Warmup
 
 - **Warmup**
@@ -1835,8 +1812,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Initialisation - Evenements Planifies
 
 - **Evenements planifies**
@@ -1853,14 +1829,7 @@ layout: dense
                      self.ExampleFunc)
     ```
 ---
-layout: dense
----
-layout: dense
----
-layout: dense
----
-layout: dense
----
+
 # Initialisation - Consolidation et Graphiques
 
 - **Consolidation de barres**
@@ -1885,10 +1854,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
-layout: dense
----
+
 # Evenements de Donnees
 
 - **Temps decoupe en "slices"**
@@ -1916,12 +1882,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
-layout: dense
----
-layout: dense
----
+
 # Journalisation et Graphiques
 
 - **Journalisation**
@@ -2023,8 +1984,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Notebooks de Recherche
 
 - **Research Environnement**
@@ -2069,8 +2029,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Selection d'Univers
 
 - **Un univers definit les actifs disponibles pour le portefeuille**
@@ -2118,12 +2077,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
-layout: dense
----
-layout: dense
----
+
 # Alphas (2/2)
 
 - **Alpha personnalise**
@@ -2148,10 +2102,7 @@ layout: dense
     }
     ```
 ---
-layout: dense
----
-layout: dense
----
+
 # Insights
 
 - **Definit les signaux retournes par la methode Update des Alphas**
@@ -2198,10 +2149,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
-layout: dense
----
+
 # Construction de Portefeuille (2/2)
 
 - **Modeles fournis par defaut (suite)**
@@ -2219,8 +2167,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Gestion du Risque
 
 - **Objectif: gestion du risque des cibles**
@@ -2263,10 +2210,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
-layout: dense
----
+
 # Optimisation de Parametres (1/2)
 
 - **Definition de parametres d'algorithmes**
@@ -2290,8 +2234,7 @@ layout: dense
 
 </div>
 ---
-layout: dense
----
+
 # Optimisation de Parametres (2/2)
 
 - **Lanceur d'Optimisation**
@@ -2393,8 +2336,7 @@ layout: image-overlay
 image: ./images/rnn_unrolled.png
 imageClass: mid-right
 ---
-layout: dense
----
+
 # Difficultes du ML dans le Trading (1/2)
 
 - **Non stationnarite**
@@ -2424,8 +2366,7 @@ layout: dense
   - Importance d'un pipeline de reentrainement continu
 
 ---
-layout: dense
----
+
 # ML en .Net
 
 - **ML.Net** https://github.com/dotnet/machinelearning

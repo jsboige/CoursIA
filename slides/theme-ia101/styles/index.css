@@ -14,11 +14,12 @@
 /* Base styles */
 .slidev-layout {
   font-family: 'Segoe UI', 'Calibri', Arial, sans-serif;
-  font-size: 20px;
+  font-size: 18px;
   color: var(--color-text);
   background-color: var(--color-bg);
-  padding: 20px 40px;
+  padding: 16px 36px;
   text-align: left;
+  overflow: hidden;
 }
 
 /* Headers */
