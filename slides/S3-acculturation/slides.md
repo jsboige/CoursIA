@@ -1,12 +1,16 @@
 ---
 theme: ../theme-ia101
 title: "S3 Acculturation IA"
-info: Cours Intelligence Artificielle
+info: Cours Intelligence Artificielle - Seminaire
 paginate: true
 drawings:
   persist: false
 transition: slide-left
 mdc: true
+layout: cover
+---
+
+---
 layout: cover
 ---
 
@@ -18,9 +22,9 @@ layout: cover
 - Cogs, Brighton UK
 - Aricie - DNN - PKP
 
-![w:250](images/img_001.png)
-![w:250](images/img_002.png)
-![w:250](images/img_003.png)
+![w:250](./images/img_001.png)
+![w:250](./images/img_002.png)
+![w:250](./images/img_003.png)
 
 ---
 
@@ -44,12 +48,9 @@ layout: image-right
 image: ./images/img_004.png
 ---
 
-
 <!-- notes: Timing? -->
 
 ---
-
-<!-- _class: section -->
 
 # Intelligence artificielle
 
@@ -58,12 +59,11 @@ image: ./images/img_004.png
 - Intelligences
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Qu'est-ce que l'intelligence artificielle?
 
-<div class="columns">
 <div class="col-left">
 
 - Définitions multiples
@@ -86,7 +86,7 @@ image: ./images/img_004.png
 </div>
 <div class="col-right">
 
-![w:380](images/img_005.png)
+![w:380](./images/img_005.png)
 
 </div>
 </div>
@@ -109,12 +109,11 @@ Théorie du 	Maximiser une fonction objective contrôle	dans le temps
 Linguistique	Représentation de connaissances, grammaire -->
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols
+---
 
 # Développement (1/2)
 
-<div class="columns">
 <div class="col-left">
 
 **Histoire succincte**
@@ -130,7 +129,7 @@ Linguistique	Représentation de connaissances, grammaire -->
 - 1990s : L'IA devient une science
 
 <div style="text-align: center; margin-top: 8px;">
-![h:100](images/img_006.png)
+![h:100](./images/img_006.png)
 </div>
 
 </div>
@@ -147,8 +146,8 @@ Linguistique	Représentation de connaissances, grammaire -->
 - NLP : Transformers, LLMs
 
 <div style="display: flex; gap: 10px; margin-top: 8px;">
-![h:45](images/img_007.jpg)
-![h:45](images/img_008.jpg)
+![h:45](./images/img_007.jpg)
+![h:45](./images/img_008.jpg)
 </div>
 
 </div>
@@ -188,12 +187,11 @@ Linguistique	Représentation de connaissances, grammaire -->
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Les agents
 
-<div class="columns">
 <div class="col-left">
 
 **Définition**
@@ -212,7 +210,7 @@ Linguistique	Représentation de connaissances, grammaire -->
 </div>
 <div class="col-right">
 
-![w:350](images/img_009.png)
+![w:350](./images/img_009.png)
 
 </div>
 </div>
@@ -235,12 +233,11 @@ Rationalité humaine
 Normatif (logique)  Conséquentialiste (succès cognitif) -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Conception d'agents
 
-<div class="columns">
 <div class="col-left">
 
 **Environnement de tache**
@@ -252,12 +249,12 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
 - Pas de mémoire, reagit aux percepts courants
 - Regles condition → action (si obstacle, alors freiner)
 
-![w:300](images/img_010.png)
+![w:300](./images/img_010.png)
 
 </div>
 <div class="col-right">
 
-![w:380](images/img_011.png)
+![w:380](./images/img_011.png)
 
 </div>
 </div>
@@ -266,8 +263,8 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
  design best program for given machine resources -->
 
 ---
-
-<!-- _class: section -->
+layout: center
+---
 
 # Quiz
 
@@ -276,12 +273,11 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
   - Intelligences
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Agent réflexe fondé sur un modèle
 
-<div class="columns">
 <div class="col-left">
 
 **Agent réflexe avec modèle**
@@ -297,13 +293,12 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
 </div>
 <div class="col-right">
 
-![w:380](images/img_012.png)
+![w:380](./images/img_012.png)
 
 </div>
 </div>
 
-<!-- notes: (virer?)
- design best program for given machine resources -->
+<!-- notes: (virer?) -->
 
 ---
 
@@ -313,9 +308,9 @@ Normatif (logique)  Conséquentialiste (succès cognitif) -->
 - **Exploratoire** : recherche dans un espace d'etats (parcours de graphes, A*)
 - **Symbolique** : raisonnement logique, bases de connaissances, planification
 - **Probabiliste** : gestion de l'incertitude, réseaux bayesiens, decision
-- **Apprentissage** : amelioration par l'expérience (supervise, renforcement, deep learning)
+- **Apprentissage** : amelioration par l'experience (supervise, renforcement, deep learning)
 
-![w:200](images/img_013.jpg) ![w:200](images/img_014.png) ![w:200](images/img_015.jpg)
+![w:200](./images/img_013.jpg) ![w:200](./images/img_014.png) ![w:200](./images/img_015.jpg)
 
 ---
 layout: center
@@ -325,8 +320,6 @@ layout: center
 
 ---
 
-<!-- _class: section -->
-
 # Intelligence exploratoire
 
 - Recherches non informée et informée
@@ -334,12 +327,11 @@ layout: center
 - Problèmes à satisfaction de contraintes
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Agent explorateur
 
-<div class="columns">
 <div class="col-left">
 
 **Agent fonde sur des buts**
@@ -347,7 +339,7 @@ layout: center
 - Passe du reactif au deliberatif
 - Planifie ses actions par exploration
 
-![w:300](images/img_016.png)
+![w:300](./images/img_016.png)
 
 </div>
 <div class="col-right">
@@ -358,7 +350,7 @@ layout: center
 - Actions ?
 - Représentation ?
 
-![w:300](images/img_017.png)
+![w:300](./images/img_017.png)
 
 </div>
 </div>
@@ -366,17 +358,16 @@ layout: center
 <!-- notes:  design best program for given machine resources -->
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols
+---
 
 # Formulation de problèmes
 
-<div class="columns">
 <div class="col-left">
 
 **Itinéraire**
 
-![w:300](images/img_018.png)
+![w:300](./images/img_018.png)
 
 - Etat initial, test de but
 - Transitions
@@ -392,20 +383,19 @@ layout: center
 - Assemblage robotique
 - Problèmes jouets
 
-![w:200](images/img_019.png)
-![w:200](images/img_020.png)
-![w:200](images/img_021.png)
+![w:200](./images/img_019.png)
+![w:200](./images/img_020.png)
+![w:200](./images/img_021.png)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Arbre d'exploration
 
-<div class="columns">
 <div class="col-left">
 
 **Idée de base**
@@ -414,7 +404,7 @@ layout: center
 - **Choix des nœuds**
   - = Stratégie d'exploration
 
-![w:320](images/img_022.jpg)
+![w:320](./images/img_022.jpg)
 
 </div>
 <div class="col-right">
@@ -425,15 +415,13 @@ layout: center
   - Barque de 2 places
   - Jamais + de cannibales
 
-![w:280](images/img_023.png)
-![w:100](images/img_024.png)
+![w:280](./images/img_023.png)
+![w:100](./images/img_024.png)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: section -->
 
 # Quiz
 
@@ -441,12 +429,11 @@ layout: center
 - Intelligences
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Stratégies d'exploration (1/2)
 
-<div class="columns">
 <div class="col-left">
 
 **Non informées**
@@ -456,9 +443,9 @@ layout: center
 - Ex: Où sont mes clefs ?
 - Bidirectionnelle
 
-![w:220](images/img_025.png)
-![w:220](images/img_026.png)
-![w:220](images/img_027.png)
+![w:220](./images/img_025.png)
+![w:220](./images/img_026.png)
+![w:220](./images/img_027.png)
 
 </div>
 <div class="col-right">
@@ -474,19 +461,18 @@ layout: center
   - Algorithme A*
   - Demo Pathfinding.js
 
-![w:220](images/img_028.png)
-![w:220](images/img_029.png)
+![w:220](./images/img_028.png)
+![w:220](./images/img_029.png)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Stratégies d'exploration (2/2)
 
-<div class="columns">
 <div class="col-left">
 
 - Si seule la solution compte
@@ -496,8 +482,8 @@ layout: center
   - Optimisation d'une fonction
   - Escalade, descente de gradient
 
-![w:220](images/img_030.png)
-![w:220](images/img_031.png)
+![w:220](./images/img_030.png)
+![w:220](./images/img_031.png)
 
 </div>
 <div class="col-right">
@@ -512,8 +498,8 @@ layout: center
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-![w:220](images/img_032.png)
-![w:220](images/img_033.png)
+![w:220](./images/img_032.png)
+![w:220](./images/img_033.png)
 
 </div>
 </div>
@@ -521,12 +507,11 @@ layout: center
 <!-- notes: Démo GeneticSharp -->
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Jeux
 
-<div class="columns">
 <div class="col-left">
 
 **Jeux vs Exploration**
@@ -559,18 +544,17 @@ layout: center
 - Expectiminimax
 - Méthodes de Monte-Carlo
 
-![w:350](images/img_031.png)
+![w:350](./images/img_031.png)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Problèmes à satisfaction de contraintes
 
-<div class="columns">
 <div class="col-left">
 
 **Définition CSPs**
@@ -601,10 +585,10 @@ layout: center
   - Symétrie (rupture de)
 
 <div class="img-grid-2x2">
-![w:150](images/img_034.jpg)
-![w:150](images/img_035.png)
-![w:150](images/img_036.png)
-![w:150](images/img_037.png)
+![w:150](./images/img_034.jpg)
+![w:150](./images/img_035.png)
+![w:150](./images/img_036.png)
+![w:150](./images/img_037.png)
 </div>
 
 </div>
@@ -622,8 +606,6 @@ layout: center
 
 ---
 
-<!-- _class: section -->
-
 # Intelligence symbolique
 
 - Logique propositionnelle
@@ -634,12 +616,11 @@ layout: center
 <!-- notes: Faire 1 slide des 3 suivants, se concentrer sur les exemples -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Représentation et logique
 
-<div class="columns">
 <div class="col-left">
 
 **Enoncés**
@@ -661,19 +642,18 @@ layout: center
 
 **Raisonnement**
 
-![w:300](images/img_035.png)
-![w:300](images/img_036.png)
+![w:300](./images/img_035.png)
+![w:300](./images/img_036.png)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Logique propositionnelle
 
-<div class="columns">
 <div class="col-left">
 
 - Syntaxe
@@ -694,29 +674,28 @@ layout: center
 <div class="col-right">
 
 <div class="img-grid">
-![w:200](images/img_038.png)
-![w:200](images/img_039.png)
-![w:200](images/img_040.png)
+![w:200](./images/img_038.png)
+![w:200](./images/img_039.png)
+![w:200](./images/img_040.png)
 </div>
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Logique du premier ordre (FOL)
 
-<div class="columns">
 <div class="col-left">
 
 - Modélise
   - Objets, Propriétés
   - Relations, Fonctions
 - Quantificateurs:
-  - Il existe x - x
-  - Pour chaque x - x
+  - Il existe x - ∃x
+  - Pour chaque x - ∀x
 - Sémantiques multiples
   - de base de données
 
@@ -730,18 +709,17 @@ layout: center
 - Enemy(x,America) => Hostile(x)
 - Américain(x) ET Arme(y) ET Vend(x,y,z) ET Hostile(z) => Criminel(x)
 
-![w:300](images/img_040.png)
+![w:300](./images/img_040.png)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Application: argumentation
 
-<div class="columns">
 <div class="col-left">
 
 **Code de conduite**
@@ -780,12 +758,11 @@ layout: center
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Analyse rhétorique
 
-<div class="columns">
 <div class="col-left">
 
 **Un bon argument**
@@ -816,8 +793,8 @@ layout: center
   - Fair-play
 
 <div class="img-grid">
-![w:220](images/img_042.jpg)
-![w:220](images/img_041.jpg)
+![w:220](./images/img_042.jpg)
+![w:220](./images/img_041.jpg)
 </div>
 
 </div>
@@ -826,12 +803,11 @@ layout: center
 <!-- notes: Ne pas passer trop de temps sur la taxonomie, passer sur le Jeu rapidement -->
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Application: Planification
 
-<div class="columns">
 <div class="col-left">
 
 **Expression de problème**
@@ -855,11 +831,11 @@ layout: center
 
 <div class="img-grid">
 
-![](images/img_043.png)
-![](images/img_044.png)
-![](images/img_045.png)
-![](images/img_046.png)
-![](images/img_047.jpg)
+![](./images/img_043.png)
+![](./images/img_044.png)
+![](./images/img_045.png)
+![](./images/img_046.png)
+![](./images/img_047.jpg)
 
 </div>
 
@@ -869,12 +845,11 @@ layout: center
 <!-- notes: Zapper -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Autres Applications (1/2)
 
-<div class="columns">
 <div class="col-left">
 
 - Solveurs Modulo Théorie
@@ -890,8 +865,8 @@ layout: center
 </div>
 <div class="col-right">
 
-![w:300](images/img_048.png)
-![w:300](images/img_049.png)
+![w:300](./images/img_048.png)
+![w:300](./images/img_049.png)
 
 </div>
 </div>
@@ -918,7 +893,6 @@ layout: image-right
 image: ./images/img_050.png
 ---
 
-
 <!-- notes: insister sur smart-contracts -->
 
 <!-- Blockchain : registre distribue, consensus, execution automatique de contrats -->
@@ -931,8 +905,6 @@ layout: center
 
 ---
 
-<!-- _class: section -->
-
 # Intelligence probabiliste
 
 - Quantification de l'incertitude
@@ -941,12 +913,11 @@ layout: center
 - Théorie des jeux
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Agir dans l'incertitude
 
-<div class="columns">
 <div class="col-left">
 
 **Le monde est incertain**
@@ -970,7 +941,7 @@ layout: center
 - Alternatives
 - Niveau de succès espéré
 
-![w:350](images/img_051.png)
+![w:350](./images/img_051.png)
 
 </div>
 </div>
@@ -978,12 +949,11 @@ layout: center
 <!-- notes: Exemple Rainman -->
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Probabilité
 
-<div class="columns">
 <div class="col-left">
 
 **Fondements**
@@ -1009,9 +979,9 @@ layout: center
   - Facteurs de distributions continues
 
 <div class="img-grid">
-![w:180](images/img_052.png)
-![w:180](images/img_053.png)
-![w:180](images/img_054.png)
+![w:180](./images/img_052.png)
+![w:180](./images/img_053.png)
+![w:180](./images/img_054.png)
 </div>
 
 </div>
@@ -1020,12 +990,11 @@ layout: center
 <!-- notes: Faire 1 slide avec le suivant (exemple météo, ne pas rentrer dans le détail Markov & co) -->
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Réseaux bayésiens dynamiques
 
-<div class="columns">
 <div class="col-left">
 
 **Chaînes de Markov**
@@ -1039,9 +1008,9 @@ layout: center
   - Observations bruitées
 
 <div class="img-grid">
-![w:150](images/img_055.png)
-![w:150](images/img_056.png)
-![w:150](images/img_057.png)
+![w:150](./images/img_055.png)
+![w:150](./images/img_056.png)
+![w:150](./images/img_057.png)
 </div>
 
 </div>
@@ -1059,21 +1028,20 @@ layout: center
 - Apprentissage
 
 <div class="img-grid">
-![w:150](images/img_058.png)
-![w:150](images/img_059.png)
-![w:150](images/img_060.jpg)
+![w:150](./images/img_058.png)
+![w:150](./images/img_059.png)
+![w:150](./images/img_060.jpg)
 </div>
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Prise de décision
 
-<div class="columns">
 <div class="col-left">
 
 - Théorie de la décision
@@ -1099,12 +1067,12 @@ layout: center
 
 <div class="img-grid">
 
-![w:150](images/img_061.png)
-![w:150](images/img_062.png)
-![w:150](images/img_063.png)
-![w:150](images/img_064.png)
-![w:150](images/img_065.jpg)
-![w:150](images/img_066.jpg)
+![w:150](./images/img_061.png)
+![w:150](./images/img_062.png)
+![w:150](./images/img_063.png)
+![w:150](./images/img_064.png)
+![w:150](./images/img_065.jpg)
+![w:150](./images/img_066.jpg)
 
 </div>
 
@@ -1124,12 +1092,11 @@ effet de cadrage
 effet d'ancrage -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Théorie des jeux (1/2)
 
-<div class="columns">
 <div class="col-left">
 
 **Environnement multi-agents**
@@ -1152,9 +1119,9 @@ effet d'ancrage -->
 - Utilité espérée
 
 <div class="img-grid">
-![w:180](images/img_067.png)
-![w:180](images/img_068.png)
-![w:180](images/img_069.png)
+![w:180](./images/img_067.png)
+![w:180](./images/img_068.png)
+![w:180](./images/img_069.png)
 </div>
 
 </div>
@@ -1163,12 +1130,11 @@ effet d'ancrage -->
 <!-- notes: Aller plus vite, se concentrer sur les exemples -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Théorie des jeux (2/2)
 
-<div class="columns">
 <div class="col-left">
 
 **Jeux simultanés**
@@ -1179,7 +1145,7 @@ effet d'ancrage -->
 - Purs et mixtes (2n+1)
 - Topologie
 
-![w:300](images/img_070.png)
+![w:300](./images/img_070.png)
 
 </div>
 <div class="col-right">
@@ -1193,7 +1159,7 @@ effet d'ancrage -->
 - Induction
   - avant/arrière
 
-![w:300](images/img_071.jpg)
+![w:300](./images/img_071.jpg)
 
 </div>
 </div>
@@ -1201,12 +1167,11 @@ effet d'ancrage -->
 <!-- Forme extensive : arbre ou chaque noeud = decision, feuilles = gains -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Extensions
 
-<div class="columns">
 <div class="col-left">
 
 **Algorithmes**
@@ -1230,9 +1195,9 @@ effet d'ancrage -->
 - Deepstack
 
 <div class="img-grid">
-![w:180](images/img_072.png)
-![w:180](images/img_073.png)
-![w:180](images/img_074.png)
+![w:180](./images/img_072.png)
+![w:180](./images/img_073.png)
+![w:180](./images/img_074.png)
 </div>
 
 </div>
@@ -1241,12 +1206,11 @@ effet d'ancrage -->
 <!-- notes: Faire 1 slide des 3 avec Exemple de Bayrou -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Conception de mécanismes
 
-<div class="columns">
 <div class="col-left">
 
 **Concepts**
@@ -1272,21 +1236,20 @@ effet d'ancrage -->
   - Évolution de la confiance
 
 <div class="img-grid">
-![w:180](images/img_075.png)
-![w:180](images/img_076.png)
-![w:180](images/img_077.jpg)
+![w:180](./images/img_075.png)
+![w:180](./images/img_076.png)
+![w:180](./images/img_077.jpg)
 </div>
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Décisions collectives
 
-<div class="columns">
 <div class="col-left">
 
 **Théorie du choix social**
@@ -1308,15 +1271,13 @@ effet d'ancrage -->
   - Jugement majoritaire
   - Scrutin bipartipludique
 
-![w:280](images/img_078.png)
-![w:280](images/img_079.jpg)
+![w:280](./images/img_078.png)
+![w:280](./images/img_079.jpg)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: section -->
 
 # Quiz
 
@@ -1331,8 +1292,6 @@ layout: center
 
 ---
 
-<!-- _class: section -->
-
 # Apprentissage
 
 - Apprentissage supervisé
@@ -1343,12 +1302,11 @@ layout: center
 - Apprentissage par renforcement
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Apprentissage
 
-<div class="columns">
 <div class="col-left">
 
 **Enjeux**
@@ -1369,7 +1327,7 @@ layout: center
   - Critique
   - Générateur de problème
 
-![w:350](images/img_080.png)
+![w:350](./images/img_080.png)
 
 </div>
 </div>
@@ -1377,12 +1335,11 @@ layout: center
 <!-- notes: En parler au début (chatpGPT & co), diminuer de moitié les slides -->
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Caractéristiques (1/2)
 
-<div class="columns">
 <div class="col-left">
 
 **Composants d'apprentissage**
@@ -1405,8 +1362,8 @@ layout: center
   - Connaissance a priori / modèles
   - Feedback pour apprendre
 
-![w:280](images/img_081.png)
-![w:280](images/img_082.png)
+![w:280](./images/img_081.png)
+![w:280](./images/img_082.png)
 
 </div>
 </div>
@@ -1414,12 +1371,11 @@ layout: center
 <!-- notes: Passer vite -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Caractéristiques (2/2)
 
-<div class="columns">
 <div class="col-left">
 
 - On construit une hypothèse
@@ -1438,19 +1394,18 @@ layout: center
 </div>
 <div class="col-right">
 
-![w:300](images/img_083.png)
-![w:300](images/img_084.png)
+![w:300](./images/img_083.png)
+![w:300](./images/img_084.png)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Arbres de décision
 
-<div class="columns">
 <div class="col-left">
 
 **Principe**
@@ -1474,10 +1429,10 @@ layout: center
 
 <div class="img-grid-2x2">
 
-![](images/img_085.png)
-![](images/img_086.png)
-![](images/img_087.png)
-![](images/img_088.png)
+![](./images/img_085.png)
+![](./images/img_086.png)
+![](./images/img_087.png)
+![](./images/img_088.png)
 
 </div>
 
@@ -1496,14 +1451,12 @@ layout: image-right
 image: ./images/img_089.png
 ---
 
-
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Réseaux de neurones artificiels
 
-<div class="columns">
 <div class="col-left">
 
 - Inspiration biologique
@@ -1517,10 +1470,10 @@ image: ./images/img_089.png
 
 <div class="img-grid-2x2">
 
-![](images/img_090.png)
-![](images/img_091.png)
-![](images/img_092.png)
-![](images/img_093.png)
+![](./images/img_090.png)
+![](./images/img_091.png)
+![](./images/img_092.png)
+![](./images/img_093.png)
 
 </div>
 
@@ -1528,12 +1481,11 @@ image: ./images/img_089.png
 </div>
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Apprentissage profond
 
-<div class="columns">
 <div class="col-left">
 
 - Réseaux profonds
@@ -1552,10 +1504,10 @@ image: ./images/img_089.png
 
 <div class="img-grid-2x2">
 
-![](images/img_094.png)
-![](images/img_095.png)
-![](images/img_096.png)
-![](images/img_097.png)
+![](./images/img_094.png)
+![](./images/img_095.png)
+![](./images/img_096.png)
+![](./images/img_097.png)
 
 </div>
 
@@ -1563,12 +1515,11 @@ image: ./images/img_089.png
 </div>
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Extensions 2010+
 
-<div class="columns">
 <div class="col-left">
 
 - Réseaux récurrents
@@ -1585,12 +1536,12 @@ image: ./images/img_089.png
 
 <div class="img-grid">
 
-![w:150](images/img_098.png)
-![w:150](images/img_099.png)
-![w:150](images/img_100.png)
-![w:150](images/img_101.png)
-![w:150](images/img_102.png)
-![w:150](images/img_103.png)
+![w:150](./images/img_098.png)
+![w:150](./images/img_099.png)
+![w:150](./images/img_100.png)
+![w:150](./images/img_101.png)
+![w:150](./images/img_102.png)
+![w:150](./images/img_103.png)
 
 </div>
 
@@ -1600,12 +1551,11 @@ image: ./images/img_089.png
 <!-- GANs : generateur vs discriminateur, portraits StyleGAN, deepfakes -->
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Extensions 2015+
 
-<div class="columns">
 <div class="col-left">
 
 - Modèles Bayésiens
@@ -1626,12 +1576,12 @@ image: ./images/img_089.png
 
 <div class="img-grid">
 
-![w:150](images/img_104.png)
-![w:150](images/img_105.jpg)
-![w:150](images/img_106.png)
-![w:150](images/img_107.png)
-![w:150](images/img_108.png)
-![w:150](images/img_109.png)
+![w:150](./images/img_104.png)
+![w:150](./images/img_105.jpg)
+![w:150](./images/img_106.png)
+![w:150](./images/img_107.png)
+![w:150](./images/img_108.png)
+![w:150](./images/img_109.png)
 
 </div>
 
@@ -1641,12 +1591,11 @@ image: ./images/img_089.png
 <!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Extensions 2020+
 
-<div class="columns">
 <div class="col-left">
 
 **Modèles multimodaux**
@@ -1668,10 +1617,10 @@ image: ./images/img_089.png
 
 <div class="img-grid-2x2">
 
-![](images/img_110.png)
-![](images/img_111.png)
-![](images/img_112.png)
-![](images/img_113.png)
+![](./images/img_110.png)
+![](./images/img_111.png)
+![](./images/img_112.png)
+![](./images/img_113.png)
 
 </div>
 
@@ -1681,12 +1630,11 @@ image: ./images/img_089.png
 <!-- Diffusion : bruit gaussien progressif → apprentissage du debruitage inverse -->
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Apprentissage non paramétrique
 
-<div class="columns">
 <div class="col-left">
 
 **Principes**
@@ -1708,10 +1656,10 @@ image: ./images/img_089.png
 
 <div class="img-grid-2x2">
 
-![](images/img_114.png)
-![](images/img_115.png)
-![](images/img_116.png)
-![](images/img_117.png)
+![](./images/img_114.png)
+![](./images/img_115.png)
+![](./images/img_116.png)
+![](./images/img_117.png)
 
 </div>
 
@@ -1719,12 +1667,11 @@ image: ./images/img_089.png
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Apprentissage et connaissances
 
-<div class="columns">
 <div class="col-left">
 
 - Utilisation de la connaissance
@@ -1745,19 +1692,18 @@ image: ./images/img_089.png
 </div>
 <div class="col-right">
 
-![w:350](images/img_118.png)
-![w:350](images/img_119.png)
+![w:350](./images/img_118.png)
+![w:350](./images/img_119.png)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Apprentissage par renforcement
 
-<div class="columns">
 <div class="col-left">
 
 - Pas d'exemple
@@ -1779,8 +1725,8 @@ image: ./images/img_089.png
 </div>
 <div class="col-right">
 
-![w:350](images/img_120.png)
-![w:350](images/img_121.png)
+![w:350](./images/img_120.png)
+![w:350](./images/img_121.png)
 
 </div>
 </div>
@@ -1793,8 +1739,6 @@ layout: center
 
 ---
 
-<!-- _class: section -->
-
 # Langage naturel (NLP)
 
 - Modèle du langage
@@ -1802,12 +1746,11 @@ layout: center
 - Agents conversationnels (chatbots)
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Modèles du langage
 
-<div class="columns">
 <div class="col-left">
 
 - N-grams
@@ -1834,21 +1777,20 @@ layout: center
   - Machine reading
 
 <div class="img-grid">
-![w:180](images/img_122.png)
-![w:180](images/img_123.png)
-![w:180](images/img_124.png)
+![w:180](./images/img_122.png)
+![w:180](./images/img_123.png)
+![w:180](./images/img_124.png)
 </div>
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Grammaires
 
-<div class="columns">
 <div class="col-left">
 
 **Caractéristiques**
@@ -1876,20 +1818,19 @@ layout: center
   - Ambiguités, Modèles imbriqués
 
 <div class="img-grid">
-![w:220](images/img_125.png)
-![w:220](images/img_126.png)
+![w:220](./images/img_125.png)
+![w:220](./images/img_126.png)
 </div>
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout -->
+layout: two-cols
+---
 
 # Speech/Text to Text/Speech
 
-<div class="columns">
 <div class="col-left">
 
 - Traduction automatisée
@@ -1906,10 +1847,10 @@ layout: center
 
 <div class="img-grid-2x2">
 
-![](images/img_127.png)
-![](images/img_128.png)
-![](images/img_129.png)
-![](images/img_130.png)
+![](./images/img_127.png)
+![](./images/img_128.png)
+![](./images/img_129.png)
+![](./images/img_130.png)
 
 </div>
 
@@ -1917,12 +1858,11 @@ layout: center
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Agents conversationnels
 
-<div class="columns">
 <div class="col-left">
 
 - Agents algorithmiques couplé au NLP
@@ -1943,20 +1883,19 @@ layout: center
 </div>
 <div class="col-right">
 
-![w:280](images/img_131.png)
-![w:250](images/img_132.png)
-![w:250](images/img_133.png)
+![w:280](./images/img_131.png)
+![w:250](./images/img_132.png)
+![w:250](./images/img_133.png)
 
 </div>
 </div>
 
 ---
-
-<!-- _class: columns-layout dense -->
+layout: two-cols dense
+---
 
 # Applications des chatbots
 
-<div class="columns">
 <div class="col-left">
 
 **Processus de création**
@@ -2041,6 +1980,8 @@ Ce deck couvre tous les domaines de l'IA. Pour approfondir avec des exemples pra
 > `MyIA.AI.Notebooks/GameTheory/`
 > OpenSpiel, equilibres de Nash, jeux strategiques
 
+---
+layout: cover
 ---
 
 # Merci

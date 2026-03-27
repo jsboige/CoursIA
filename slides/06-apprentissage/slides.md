@@ -2577,3 +2577,418 @@ image: ./images/img_053.png
 - Apprentissage non-supervisé
 - Jeu à somme nulle
 - Deux NN en compétition
+
+
+---
+
+# Réseaux antagonistes génératifs (GANs)
+
+- Deux NN en compétition
+- Générateur
+- Produit des faux
+- Déconvolution
+- Discriminateur
+- Détecte les faux des vrais
+- Applications
+- Génération d'images
+- Texte à image
+- Image à image
+- Transfert de style
+- Arithmétique d'images
+- Découverte de médicaments
+- Génération en 3D
+- Nettoyage audio
+
+---
+layout: image-right
+image: ./images/img_054.png
+---
+
+# Réseaux récurrents - RNNs
+
+- Réseaux récurrents
+- Pensées persistantes  Connexions réentrantes
+- Peuvent être vus « dépliés »
+- Objectif= mémoire à court terme
+- Dans les signaux séquentiels
+- Ex: « Il y a des nuages dans le ???? »
+- Réseaux LSTM
+- MAJ d'un état de cellule
+- Des portes (σ) contrôlent les MAJ
+- Opérations simples
+- Passe ou pas / Ajout du signal / Activation  tanh
+- Ex. Sujet de la phrase
+- Porte 1: On oublie le précédent
+- Porte 2: On MAJ le sujet courant
+- Porte 3: On le passe en sortie pour le verbe
+- Variante : Gated Recurrent Unit
+- Simplification des portes
+- RNNs profonds
+- Interactions Observation / états latents
+- + d'expressivité Ajout de couches
+- Réseaux bidirectionnels
+- J'ai ___ faim, je pourrais manger un bœuf.
+- But= tirer profit du futur
+
+---
+layout: image-right
+image: ./images/img_055.png
+---
+layout: image-right
+image: ./images/img_056.png
+---
+layout: image-right
+image: ./images/img_057.png
+---
+layout: image-right
+image: ./images/img_058.png
+---
+layout: image-right
+image: ./images/img_059.png
+---
+layout: image-right
+image: ./images/img_060.png
+---
+layout: image-right
+image: ./images/img_061.png
+---
+
+# Mécanisme d'attention
+
+- Inspiration naturelle
+- Focalisation  économie de ressources
+- Principe algorithmique
+- Filtrage contextuel en sortie
+- Seq2Seq
+- Encodeur/décodeur
+- Délocalisation
+- Implémentation RNN
+- Problème: Expressivité
+- Création d'un contexte
+- Filtrage de proximité
+- Transformers
+- Construits sur le MA
+- Encodage positionnel
+- Auto-attention multi-tête
+- Produit scalaire
+- Transfer learning
+- Modèles agnostiques pré-entraînés
+- Exemples NLP
+- Bert (Google)
+- GPT-2 (Open AI)
+- Vulgarisation
+- 3Blue1Brown
+- Attention
+- Tranformers
+- LLM VIzualisation
+
+---
+
+# Modèles multimodaux
+
+- Combinaison de plusieurs modalités
+- E.g. Texte + Image, 3D, Audio etc.
+- Datasets fournissant les combinaisons
+- Encodeurs
+- Dans les modalités respectives
+- Entrainement
+- Rapprochement des embeddings
+- Encodeurs réutilisables
+
+---
+layout: image-right
+image: ./images/img_070.png
+---
+layout: image-right
+image: ./images/img_071.png
+---
+
+# Modèles de diffusion
+
+---
+layout: image-right
+image: ./images/img_072.png
+---
+layout: image-right
+image: ./images/img_073.png
+---
+layout: image-right
+image: ./images/img_074.png
+---
+
+# Graphs Neural Networks (GNNs)
+
+- Graphes G = (V,E)
+- GNN opère sur la structure de G
+- Ex: Classification des noeuds: Xv  Tv
+- Caractéristiques x de v, Plongement h de v:
+-  agrégation =Contraction itérative (Banach)
+- GNN opérant sur h et x
+- Perte optimisée (GD)
+- Variantes
+- Point fixe abandonné
+-  Couches distinctes plus flexibles (MLPs)
+- DeepWalk (plongement appris)
+- Random Walk  skip-grams (~Word2Vec)
+- Softmax hierarchique (optimisation)
+- GraphSage
+-  DeepWalk pas adaptatif
+- Solution: Agrégation de voisinage
+- Ex: Moyenne, MaxPooling
+- Librairies
+- PyTorch Geometric
+- Deep Graph Library
+- tf_geometric
+
+---
+layout: image-right
+image: ./images/img_075.png
+---
+layout: image-right
+image: ./images/img_076.png
+---
+layout: image-right
+image: ./images/img_077.png
+---
+layout: image-right
+image: ./images/img_078.png
+---
+layout: image-right
+image: ./images/img_079.png
+---
+layout: image-right
+image: ./images/img_080.png
+---
+layout: image-right
+image: ./images/img_081.png
+---
+layout: image-right
+image: ./images/img_082.png
+---
+layout: image-right
+image: ./images/img_083.png
+---
+
+# Résumé réseaux de neurones
+
+- Les Perceptrons (1 couche) sont insuffisamment expressifs
+- Les réseaux multi-couches sont suffisamment expressifs
+- Ils peuvent être entrainés par rétropropagation / Autodiff
+- Récents progrès avec Deep learning, convolutions, RNNs, GANs, Tranformers, Diffusion, GNNs etc.
+- Applications multiples
+- Discours, conduite, écriture, fraude, Image, 3D, Musique etc.
+- Ingénierie, modélisation cognitive et neurosciences ont largement divergé
+
+---
+layout: center
+---
+
+# Questions?
+
+---
+
+# Modèles non paramétriques
+
+- Decision trees and neural nets are a kind of model-based learning
+- We take the training instances and use them to build a model of the mapping from inputs to outputs
+- This model (e.g., a decision tree) can be used to make predictions on new (test) instances
+- Another option is to do instance-based learning
+- Save all (or some subset) of the instances
+- Given a test instance, use some of the stored instances in some way to make a prediction
+- Instance-based methods:
+- Nearest neighbor and its variants
+- Support vector machines
+
+---
+
+# Plus proche voisin
+
+
+---
+
+# Plus proche voisin simple :
+- Sauvegarder toutes les instances d'entraînement Xi = (Ci, Fi) in T
+- Etant donnée une nouvelle instance de test Y, trouver l'instance Xj qui est la plus proche de Y
+- Prédire la classe Cj
+- Qu'est-ce que « proche » veut dire?
+- En pratique: distance Euclidienne dans l'espace des caractéristiques
+- = Distance de Minkowski Lp avec P = 2
+- Alternatives:
+- distance Manhattan,
+- Hamming (Booléen)
+-  # de caractéristiques différentes
+- Ou tout autre métrique sophistiquée
+- La Normalisation peut être importante (moyenne et écard type - l'échelle a un impact)
+- You can make anything up, so long as it respects the Triangular Inequality
+- Ex: Mahalanobis (covariance entre dimension)
+
+---
+
+# Nearest Neighbor Example: Run Outside (+) or Inside (-)
+
+- Humidity
+- Temperature
+- 0
+- 100
+- 0
+- 100
+- +
+- +
+- +
+- +
+- -
+- -
+- -
+- -
+- -
+- -
+- -
+- -
+- +
+- +
+- Noisy data
+- Not linearly separable
+- ?
+- ?
+- ?
+- ?
+- -
+- -
+- ?
+- ?
+- ?
+- +
+
+
+---
+
+# K-Nearest Neighbor
+
+- What if the data is noisy?
+- Generalize to k-nearest neighbor
+- Find the k closest training instances to Y
+- Use majority voting to predict the class label of Y
+- Better yet: use weighted (by distance) voting to predict the class label
+- Choosing K:
+- Avoid ties: choose k to be odd!
+- K too low: overfitting the model
+- K too high: underfitting the model
+- Limites: malédiction de la dimensionalité
+- En grande dimension, les voisins ne sont plus proche du tout.
+- Speed considerations:
+- Can we use binary trees to speed up search? Arbres k-d
+- Mais limites
+- Ok dimension 10 avec des 1000ers d'exemple, dimension 20 avec des millions
+-  Hachage sensible à l'emplacement (Locally Sensitive Hash)  projections probabilisée
+- Regression par les k-plus proches voisins
+- 2 voisins = Manières de relier les points
+- Mieux: moyenne ou regression sur k-voisins
+- Mieux: un noyau pour pondérer les poids des voisins
+-  idée reprise par les SVMs
+
+---
+layout: image-right
+image: ./images/img_084.png
+---
+layout: image-right
+image: ./images/img_085.png
+---
+
+# Classificateurs Linéaires
+
+- Classer des données en 2 catégories : **positif (+1)** et **négatif (−1)**
+- Décision par **hyperplan** : f(x, w, b) = sign(w · x + b)
+  - **w** : vecteur normal à l'hyperplan
+  - **b** : biais (décalage du seuil de décision)
+- De nombreux hyperplans peuvent séparer des données linéairement séparables
+
+---
+
+# La Marge du Classifieur
+
+- La **marge** = distance entre l'hyperplan et les exemples les plus proches de chaque classe
+- Intuition : une grande marge = classifieur plus robuste aux nouvelles données
+- Définition formelle :
+
+| Zone | Équation |
+|------|----------|
+| Plan positif | w · x + b = +1 |
+| Frontière | w · x + b = 0 |
+| Plan négatif | w · x + b = −1 |
+| Marge totale | **M = 2 / ‖w‖** |
+
+---
+
+# Marge Maximale — Intuition
+
+- L'hyperplan à **marge maximale** est le meilleur classifieur linéaire parmi tous les séparateurs
+- Intuition géométrique :
+  - Une petite perturbation de l'hyperplan ne cause pas d'erreur de classification
+  - Le classifieur est **immune au retrait** de tout exemple non-vecteur-de-support
+- Fondement théorique : lié à la **dimension VC** (Vapnik-Chervonenkis) et à la généralisation
+
+---
+
+# Vecteurs de Support
+
+- Les **vecteurs de support** sont les exemples d'entraînement exactement sur les plans ±1
+- Ce sont eux qui définissent et supportent la frontière optimale
+- Propriétés remarquables :
+  - Le modèle SVM **ne dépend que** de ces quelques exemples (représentation sparse)
+  - Retirer un exemple non-vecteur-de-support **ne change pas** le modèle
+  - Permet une validation croisée leave-one-out (LOOCV) efficace
+
+---
+
+# Calcul de la Marge
+
+Soit x⁻ sur le plan négatif, x⁺ le point le plus proche sur le plan positif :
+
+- **x⁺ = x⁻ + λw** (car w est perpendiculaire aux deux plans)
+- De w · x⁺ + b = +1 et w · x⁻ + b = −1, on déduit :
+- Substitution : −1 + λ‖w‖² = 1 → **λ = 2/‖w‖²**
+
+394M = |x^+ - x^-| = \lambda\|w\| = \frac{2}{\|w\|}394
+
+**Maximiser M revient à minimiser ½ ‖w‖²**
+
+---
+
+# Optimisation du SVM Linéaire
+
+**Problème primal** : minimiser ½ ‖w‖² sous les contraintes :
+
+394y_i(w \cdot x_i + b) \geq 1 \quad \forall i394
+
+- Problème de **programmation quadratique convexe** (QP)
+- **Optimum global garanti** (pas de minimum local)
+- Via la **formulation duale de Lagrange** :
+  - On travaille avec les produits scalaires xᵢ · xⱼ
+  - Seuls les vecteurs de support ont un multiplicateur λᵢ > 0
+  - Ouvre la voie au **kernel trick**
+
+---
+
+# Apprentissage des SVM
+
+- **Astuce 1** : Identifier les points les plus proches du plan de separation optimal (les "vecteurs supports") et travailler directement a partir de ces instances.
+- **Astuce 2** : Formuler comme un probleme d'optimisation quadratique et utiliser les techniques de programmation quadratique.
+- **Astuce 3** (le "kernel trick") :
+  - Au lieu d'utiliser directement les caractéristiques, representer les données dans un espace de grande dimension construit a partir de fonctions de base (combinaisons polynomiales et gaussiennes des caractéristiques d'origine).
+  - Trouver un hyperplan separateur / SVM dans cet espace de grande dimension.
+  - Resultat : un classifieur non lineaire !
+
+---
+layout: image-right
+image: ./images/img_086.png
+---
+
+# Noyaux SVM — Fonctions de Base
+
+Pour les données **non linéairement séparables**, le **kernel trick** projette implicitement dans un espace de grande dimension :
+
+| Noyau | Formule K(x, z) | Usage |
+|-------|-----------------|-------|
+| **Polynomial** | (x · z + c)^d | Frontières polynomiales |
+| **RBF (Gaussien)** | exp(−‖x−z‖²/2σ²) | Classification généraliste |
+| **Sigmoïde** | tanh(α x·z + c) | Analogue réseau de neurones |

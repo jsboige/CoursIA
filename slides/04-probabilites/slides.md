@@ -234,8 +234,14 @@ layout: section
     - = (0.016 + 0.064) / (0.108 + 0.012 + 0.016 + 0.064)
     - = 0.4
 
-![bg right:35% vertical](./images/img_004.png)
-![bg](./images/img_005.png)
+---
+layout: image-right
+image: ./images/img_004.png
+---
+---
+layout: image-right
+image: ./images/img_005.png
+---
 
 ---
 
@@ -260,7 +266,10 @@ layout: section
   - Complexité en espace en O(dⁿ) pour stocker la distribution conjointe
   - Comment trouver les nombres pour O(dⁿ) entrées?
 
-![bg right:35%](./images/img_006.png)
+---
+layout: image-right
+image: ./images/img_006.png
+---
 
 ---
 
@@ -275,7 +284,10 @@ layout: section
   - Puissant mais rare
   - Ex du dentiste: des centaines de variables dépendantes
 
-![bg right:35%](./images/img_007.png)
+---
+layout: image-right
+image: ./images/img_007.png
+---
 
 ---
 
@@ -321,7 +333,10 @@ layout: section
   - P(Cause, Effet₁, …, Effetₙ) = P(Cause) πᵢ P(Effetᵢ | Cause)
   - Le nombre de paramètres est linéaire en n
 
-![bg right:35%](./images/img_008.png)
+---
+layout: image-right
+image: ./images/img_008.png
+---
 
 ---
 
@@ -379,7 +394,10 @@ layout: center
   - Weather est indépendant des autres variables
   - Toothache et Catch sont conditionnellement indépendants, étant donné Cavity
 
-![bg right:35%](./images/img_009.png)
+---
+layout: image-right
+image: ./images/img_009.png
+---
 
 ---
 
@@ -399,7 +417,10 @@ layout: center
 
 # Example (suite)
 
-![bg right:55%](./images/img_010.png)
+---
+layout: image-right
+image: ./images/img_010.png
+---
 
 ---
 
@@ -413,7 +434,10 @@ layout: center
 - **Pour le réseau burglary:**
   - 1 + 1 + 4 + 2 + 2 = 10 nombres (vs. 2⁵ - 1 = 31)
 
-![bg right:35%](./images/img_011.png)
+---
+layout: image-right
+image: ./images/img_011.png
+---
 
 ---
 
@@ -425,7 +449,10 @@ layout: center
   - P(j ∧ m ∧ a ∧ ¬b ∧ ¬e)
   - = P(j | a) P(m | a) P(a | ¬b, ¬e) P(¬b) P(¬e)
 
-![bg right:35%](./images/img_012.png)
+---
+layout: image-right
+image: ./images/img_012.png
+---
 
 ---
 
@@ -447,7 +474,10 @@ layout: center
 - **Supposons qu'on choisisse l'ordre M, J, A, B, E**
   - P(J | M) = P(J)?
 
-![bg right:35%](./images/img_013.png)
+---
+layout: image-right
+image: ./images/img_013.png
+---
 
 ---
 
@@ -458,7 +488,10 @@ layout: center
   - Non
   - P(A | J, M) = P(A | J)? P(A | J, M) = P(A)?
 
-![bg right:35%](./images/img_014.png)
+---
+layout: image-right
+image: ./images/img_014.png
+---
 
 ---
 
@@ -471,7 +504,10 @@ layout: center
   - P(B | A, J, M) = P(B | A)?
   - P(B | A, J, M) = P(B)?
 
-![bg right:35%](./images/img_015.png)
+---
+layout: image-right
+image: ./images/img_015.png
+---
 
 ---
 
@@ -486,7 +522,10 @@ layout: center
   - P(E | B, A, J, M) = P(E | A)?
   - P(E | B, A, J, M) = P(E | A, B)?
 
-![bg right:35%](./images/img_016.png)
+---
+layout: image-right
+image: ./images/img_016.png
+---
 
 ---
 
@@ -501,7 +540,10 @@ layout: center
   - P(E | B, A, J, M) = P(E | A)? No
   - P(E | B, A, J, M) = P(E | A, B)? Yes
 
-![bg right:35%](./images/img_017.png)
+---
+layout: image-right
+image: ./images/img_017.png
+---
 
 ---
 
@@ -512,7 +554,10 @@ layout: center
 - **Le réseau est moins compact:**
   - 1 + 2 + 4 + 2 + 4 = 13 nombres nécessaires
 
-![bg right:35%](./images/img_018.png)
+---
+layout: image-right
+image: ./images/img_018.png
+---
 
 ---
 
@@ -637,7 +682,10 @@ layout: two-cols
   - Gaussienne: moyenne → Gaussienne, précision → Gamma
   - https://en.wikipedia.org/wiki/Conjugate_prior
 
-![bg right:35%](./images/img_027.jpg)
+---
+layout: image-right
+image: ./images/img_027.jpg
+---
 
 ---
 
@@ -805,13 +853,19 @@ layout: center
 
 # Modèles de Markov
 
-![bg right:60%](./images/img_033.png)
+---
+layout: image-right
+image: ./images/img_033.png
+---
 
 ---
 
 # Distribution de probabilités
 
-![bg right:60%](./images/img_034.png)
+---
+layout: image-right
+image: ./images/img_034.png
+---
 
 ---
 
@@ -824,37 +878,55 @@ layout: center
 - **On note que la chaîne est simplement un Réseau bayésien (extensible):**
   - On peut toujours utiliser le raisonnement des RB classiques si on tronque la chaîne à une longueur donnée
 
-![bg right:40%](./images/img_035.png)
+---
+layout: image-right
+image: ./images/img_035.png
+---
 
 ---
 
 # Exemple: Chaîne de Markov
 
-![bg right:60%](./images/img_036.png)
+---
+layout: image-right
+image: ./images/img_036.png
+---
 
 ---
 
 # Inférence sur chaînes de Markov
 
-![bg right:60%](./images/img_037.png)
+---
+layout: image-right
+image: ./images/img_037.png
+---
 
 ---
 
 # Distribution conjointe de modèle de Markov
 
-![bg right:60%](./images/img_038.png)
+---
+layout: image-right
+image: ./images/img_038.png
+---
 
 ---
 
 # Récapitulatif modèles de Markov
 
-![bg right:60%](./images/img_039.png)
+---
+layout: image-right
+image: ./images/img_039.png
+---
 
 ---
 
 # Algorithme Mini-Forward
 
-![bg right:60%](./images/img_040.png)
+---
+layout: image-right
+image: ./images/img_040.png
+---
 
 ---
 
@@ -864,9 +936,18 @@ layout: center
 - **Depuis une observation initiale de pluie:**
 - **Depuis une autre distribution initiale P(X₁):**
 
-![bg right:50% vertical](./images/img_041.png)
-![bg](./images/img_042.png)
-![bg](./images/img_043.png)
+---
+layout: image-right
+image: ./images/img_041.png
+---
+---
+layout: image-right
+image: ./images/img_042.png
+---
+---
+layout: image-right
+image: ./images/img_043.png
+---
 
 ---
 
@@ -878,9 +959,18 @@ layout: center
 
 - **Question: Quel est P(X) au temps t = infini?**
 
-![bg right:50% vertical](./images/img_044.png)
-![bg](./images/img_045.png)
-![bg](./images/img_046.png)
+---
+layout: image-right
+image: ./images/img_044.png
+---
+---
+layout: image-right
+image: ./images/img_045.png
+---
+---
+layout: image-right
+image: ./images/img_046.png
+---
 
 ---
 
@@ -900,7 +990,10 @@ layout: center
   - Renvoyait la liste de pages contenant vos mots clés par ordre décroissant de page rank
   - Maintenant tous les moteurs de recherche utilisent l'analyse de lien avec d'autres facteurs (le page rank devient en fait de moins en moins important)
 
-![bg right:35%](./images/img_047.png)
+---
+layout: image-right
+image: ./images/img_047.png
+---
 
 ---
 
@@ -914,19 +1007,28 @@ layout: center
   - You observe outputs (effects) at each time step
 - **As a Bayes' net:**
 
-![bg right:40%](./images/img_048.png)
+---
+layout: image-right
+image: ./images/img_048.png
+---
 
 ---
 
 # Example
 
-![bg right:60%](./images/img_049.png)
+---
+layout: image-right
+image: ./images/img_049.png
+---
 
 ---
 
 # Hidden Markov Models
 
-![bg right:60%](./images/img_050.png)
+---
+layout: image-right
+image: ./images/img_050.png
+---
 
 ---
 
@@ -948,7 +1050,10 @@ layout: center
   - Observations are acoustic signals (continuous valued)
   - States are specific positions in specific words (so, tens of thousands)
 
-![bg right:45%](./images/img_051.png)
+---
+layout: image-right
+image: ./images/img_051.png
+---
 
 ---
 
@@ -958,7 +1063,10 @@ layout: center
   - Observations are words (tens of thousands)
   - States are translation options
 
-![bg right:45%](./images/img_052.png)
+---
+layout: image-right
+image: ./images/img_052.png
+---
 
 ---
 
@@ -968,7 +1076,10 @@ layout: center
   - Observations are range readings (continuous)
   - States are positions on a map (continuous)
 
-![bg right:45%](./images/img_053.png)
+---
+layout: image-right
+image: ./images/img_053.png
+---
 
 ---
 
@@ -977,7 +1088,10 @@ layout: center
 - **HMMs have two important independence properties:**
   - Markov hidden process, future depends on past via the present
 
-![bg right:45%](./images/img_054.png)
+---
+layout: image-right
+image: ./images/img_054.png
+---
 
 ---
 
@@ -987,7 +1101,10 @@ layout: center
   - Markov hidden process, future depends on past via the present
   - Current observation independent of all else given current state
 
-![bg right:45%](./images/img_055.png)
+---
+layout: image-right
+image: ./images/img_055.png
+---
 
 ---
 
@@ -998,7 +1115,10 @@ layout: center
   - Current observation independent of all else given current state
 - **Quiz: does this mean that observations are independent given no evidence?**
 
-![bg right:45%](./images/img_056.png)
+---
+layout: image-right
+image: ./images/img_056.png
+---
 
 <!-- notes: [No, correlated by the hidden state] -->
 
@@ -1033,7 +1153,10 @@ layout: center
 - **Learning: Generating a HMM from a sequence of observations**
 - **Solution: Forward-Backward Algorithm**
 
-![bg right:50%](./images/img_057.png)
+---
+layout: image-right
+image: ./images/img_057.png
+---
 
 ---
 
@@ -1044,7 +1167,10 @@ layout: center
   - Damp
   - Soggy
 
-![bg right:45%](./images/img_058.png)
+---
+layout: image-right
+image: ./images/img_058.png
+---
 
 ---
 
@@ -1057,7 +1183,10 @@ layout: center
   - + ...
   - + Pr(dry, damp, soggy | rainy, rainy, rainy)
 
-![bg right:45%](./images/img_059.png)
+---
+layout: image-right
+image: ./images/img_059.png
+---
 
 ---
 
@@ -1065,7 +1194,10 @@ layout: center
 
 - **We can calculate the probability of reaching an intermediate state in the trellis as the sum of all possible paths to that state**
 
-![bg right:50%](./images/img_060.png)
+---
+layout: image-right
+image: ./images/img_060.png
+---
 
 ---
 
@@ -1073,19 +1205,28 @@ layout: center
 
 - **αₜ(j) = Pr(observation | hidden state is j) × Pr(all paths to state j at time t)**
 
-![bg right:50%](./images/img_061.png)
+---
+layout: image-right
+image: ./images/img_061.png
+---
 
 ---
 
 # A better solution: dynamic programming
 
-![bg right:60%](./images/img_062.png)
+---
+layout: image-right
+image: ./images/img_062.png
+---
 
 ---
 
 # A better solution: dynamic programming
 
-![bg right:60%](./images/img_063.png)
+---
+layout: image-right
+image: ./images/img_063.png
+---
 
 ---
 
@@ -1298,7 +1439,10 @@ layout: center
   - Urgent
   - …
 
-![bg right:50%](./images/img_076.png)
+---
+layout: image-right
+image: ./images/img_076.png
+---
 
 <!-- notes: design best program for given machine resources -->
 
