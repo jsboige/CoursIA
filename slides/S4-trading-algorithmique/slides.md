@@ -73,13 +73,19 @@ Intelligence Artificielle -- S4
 - **Definition**
   - Achat et vente d'actifs financiers pilotes par des algorithmes
   - Elimination des biais emotionnels dans la prise de decision
+<div v-click="2">
+
 - **Methodes d'analyse**
   - Analyse technique (indicateurs, patterns graphiques)
   - Donnees fondamentales (revenus, indicateurs macroeconomiques)
   - Donnees extra-financieres (flux d'actualites, sentiment du marche)
+</div>
+<div v-click="3">
+
 - **Universalite**
   - Tout ce qui est numerisable peut etre utilise en trading quantitatif
   - Diversification facilitee sur plusieurs strategies simultanees
+</div>
 
 ---
 
@@ -88,14 +94,20 @@ Intelligence Artificielle -- S4
 - **Formation et diplome**
   - Pas necessairement un diplome avance
   - Origines variees: sciences physiques, ingenierie, informatique
+<div v-click="2">
+
 - **Competences requises**
   - Mathematiques, statistiques et programmation
   - Comprehension des marches financiers
   - Curiosite et capacite d'apprentissage continu
+</div>
+<div v-click="3">
+
 - **Experience pratique**
   - Finance et programmation cruciales
   - Avoir des economies pour les periodes sans gains
   - Importance de la discipline et de la gestion du stress
+</div>
 
 ---
 
