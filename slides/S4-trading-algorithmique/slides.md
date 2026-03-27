@@ -417,11 +417,14 @@ imageClass: mid-right
 
 - **Ordres ajustes (Pegged)**
   - Prix dynamique: Suivre la meilleure offre ou demande
+<div v-click="2">
+
 - **Ordres achemines (Routed)**
   - Strategies complexes: Routage vers differents lieux
   - Smart Order Routing: Strategies complexes
   - Ex: Interactive Brokers SmartRouting
   - Permet d'eviter le slippage ou optimise l'execution
+</div>
 
 ---
 
@@ -449,9 +452,12 @@ imageClass: mid-right
 - **Order-Contingent Order Types**
   - Ordres Lies-Alternatifs: Liste d'ordres alternatifs
   - Ordres Contingents: Ajustent prix et taille
+<div v-click="2">
+
 - **Implied Orders**
   - Ordres Implicites: Ajustent prix et taille
   - Importance: Liquidite supplementaire en marche a terme
+</div>
 
 ---
 layout: section
@@ -485,8 +491,11 @@ layout: section
 - **Votre Capital de Trading**
   - Ancien minimum conseille de 50 000 $
   - Nouveaux minima grace aux cryptos et frais reduits
+<div v-click="2">
+
 - **Votre Objectif**
   - Revenu regulier vs gains en capital
+</div>
 
 ---
 
