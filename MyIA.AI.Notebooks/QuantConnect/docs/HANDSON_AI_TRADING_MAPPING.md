@@ -57,10 +57,10 @@ Basé sur le contenu réel du repo GitHub `QuantConnect/HandsOnAITradingBook` :
 | Exemple Livre | Concept | Notebook CoursIA | Statut |
 |---------------|---------|------------------|--------|
 | 01 ML Trend Scanning with MLFinlab | Trend scanning ML | QC-Py-11-Technical-Indicators | ⚠️ Partiel |
-| 02 Factor Preprocessing for Regime Detection | Régimes de marché | QC-Py-25-Reinforcement-Learning | ⚠️ Concept lié |
+| 02 Factor Preprocessing for Regime Detection | Régimes de marché | QC-Py-25-Reinforcement-Learning, ESGF-2026/examples/Markov-Regime-Detection | ✅ **NEW** |
 | 03 Reversion vs Trending by Classification | Classification momentum/mean reversion | QC-Py-19-ML-Supervised-Classification | ✅ |
-| 04 Alpha by Hidden Markov Models | HMM pour régimes | QC-Py-25-Reinforcement-Learning | ⚠️ Concept lié |
-| 05 FX SVM Wavelet Forecasting | SVM + ondelettes | QC-Py-22-Deep-Learning-LSTM | ⚠️ Approche différente |
+| 04 Alpha by Hidden Markov Models | HMM pour régimes | QC-Py-25-Reinforcement-Learning, ESGF-2026/examples/Markov-Regime-Detection | ✅ **NEW** |
+| 05 FX SVM Wavelet Forecasting | SVM + Wavelet decomposition, QC-Py-22-Deep-Learning-LSTM, ⚠️ Approche différente |
 | 06 Dividend Harvesting Selection | Sélection dividendes | QC-Py-08-Multi-Asset-Strategies | ⚠️ Concept lié |
 | 07 Effect of Positive-Negative Splits | Stock splits | QC-Py-05-Universe-Selection | ⚠️ Concept lié |
 | 08 Stoploss based on Volatility/Drawdown | Stoploss dynamique | QC-Py-10-Risk-Portfolio-Management | ✅ |
@@ -70,7 +70,7 @@ Basé sur le contenu réel du repo GitHub `QuantConnect/HandsOnAITradingBook` :
 | 12 Trading Costs Optimization | Coûts de trading | QC-Py-14-Portfolio-Construction-Execution | ✅ |
 | 13 PCA Statistical Arbitrage Mean Reversion | PCA stat-arb | QC-Py-13-Alpha-Models | ✅ |
 | 14 Temporal CNN Prediction | CNN temporelle | QC-Py-22-Deep-Learning-LSTM | ⚠️ CNN vs LSTM |
-| 15 Gaussian Classifier for Direction Prediction | Gaussian Naive Bayes | QC-Py-19-ML-Supervised-Classification | ✅ |
+| 15 Gaussian Classifier for Direction Prediction | Gaussian Naive Bayes | QC-Py-19-ML-Supervised-Classification, ESGF-2026/examples/Gaussian-Direction-Classifier | ✅ **NEW** |
 | 16 LLM Summarization of Tiingo News | LLM pour sentiment news | QC-Py-26-LLM-Trading-Signals | ✅ |
 | 17 Head Shoulders Pattern Matching with CNN | CNN pour patterns | QC-Py-22-Deep-Learning-LSTM | ⚠️ CNN vs LSTM |
 | 18 Amazon Chronos Model | Chronos (prévision) | QC-Py-22-Deep-Learning-LSTM | ⚠️ Modèles différents |
@@ -103,6 +103,8 @@ Le livre se concentre sur ML/AI appliqué au trading. Voici les projets CoursIA 
 | [AllWeather](../projects/AllWeather/) | Portfolio optimisation | ✅ |
 | [ETF-Pairs-Trading](../ESGF-2026/examples/ETF-Pairs-Trading/) | Pairs trading (PCA stat-arb) | ✅ |
 | [Sector-Momentum](../ESGF-2026/examples/Sector-Momentum/) | Momentum sectoriel | ✅ |
+| [Markov-Regime-Detection](../ESGF-2026/examples/Markov-Regime-Detection/) | HMM pour régimes (Ex04) | ✅ **NEW** |
+| [Gaussian-Direction-Classifier](../ESGF-2026/examples/Gaussian-Direction-Classifier/) | Gaussian Naive Bayes (Ex15) | ✅ **NEW** |
 
 ---
 

@@ -9,7 +9,7 @@ from alpha import custom_alpha
 class CompetitionAlgorithm(QCAlgorithm):
 
     def Initialize(self):
-        self.SetStartDate(2019, 1, 1)
+        self.SetStartDate(2015, 1, 1)  # Extended from 2019: +4 years for robustness validation (includes 2017-2019 bull pre-COVID)
         self.SetCash(1000000)
         self.SetWarmUp(10)
         self.spy = self.AddEquity("SPY", Resolution.Hour).Symbol
