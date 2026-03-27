@@ -7,7 +7,9 @@ const props = defineProps<{
 
 <template>
   <div class="slidev-layout image-overlay">
-    <slot />
+    <div :class="['overlay-content', { 'has-image': !!image }]">
+      <slot />
+    </div>
     <img
       v-if="image"
       :src="image"
@@ -22,12 +24,20 @@ const props = defineProps<{
   position: relative;
 }
 
+.overlay-content {
+  width: 100%;
+}
+
+.overlay-content.has-image {
+  max-width: 65%;
+}
+
 .overlay-img {
   position: absolute;
   top: 40px;
-  right: 60px;
+  right: 40px;
   max-width: 30%;
-  max-height: 40%;
+  max-height: 45%;
   object-fit: contain;
   z-index: 1;
 }

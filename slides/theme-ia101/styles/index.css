@@ -14,25 +14,25 @@
 /* Base styles */
 .slidev-layout {
   font-family: 'Segoe UI', 'Calibri', Arial, sans-serif;
-  font-size: 28px;
+  font-size: 20px;
   color: var(--color-text);
   background-color: var(--color-bg);
-  padding: 40px 60px;
+  padding: 20px 40px;
 }
 
 /* Headers */
 h1 {
   color: var(--color-accent);
-  font-size: 1.6em;
+  font-size: 1.5em;
   border-bottom: 2px solid var(--color-accent);
-  padding-bottom: 8px;
-  margin-bottom: 16px;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
 }
 
 h2 {
   color: var(--color-header);
-  font-size: 1.3em;
-  margin-bottom: 12px;
+  font-size: 1.25em;
+  margin-bottom: 10px;
 }
 
 h3 {
@@ -94,6 +94,15 @@ pre code {
 /* Links */
 a {
   color: var(--color-accent);
+}
+
+/* Section layout override - ensure white text on dark background */
+.slidev-layout.section h1,
+.slidev-layout.section h2,
+.slidev-layout.section h3,
+.slidev-layout.section strong {
+  color: #F5F5F5 !important;
+  border-bottom-color: #F5F5F5 !important;
 }
 
 /* Header/Footer area (Slidev defaults override) */
@@ -230,4 +239,13 @@ a {
 
 .intelligence-block li {
   margin-bottom: 4px;
+}
+
+/* Pagination / Page Number */
+.slidev-page-number {
+  color: var(--color-text-light);
+  font-size: 0.6em;
+  position: fixed;
+  bottom: 10px;
+  right: 20px;
 }
