@@ -151,10 +151,13 @@ Intelligence Artificielle -- S4
   - Operations sur des jours, semaines ou mois
   - Objectif: Investissement base sur des facteurs fondamentaux ou des indicateurs techniques
   - Gestion du Risque: Focalisation sur la reduction du risque a long terme
+<div v-click="2">
+
 - **Chaque type a ses specificites**
   - Avantages et inconvenients propres
   - Necessite des competences, des infrastructures et des ressources differentes
   - Offre des opportunites de rendement variables
+</div>
 
 ---
 layout: section
@@ -320,9 +323,12 @@ imageClass: mid-right
   - FOK: Fill-or-Kill: Execution totale immediate ou annulation
   - AON: All-or-None: Execution totale requise
   - Minimum-Volume: Volume minimum requis
+<div v-click="2">
+
 - **Importance pour l'efficacite**
   - Comprendre ces instructions ameliore l'efficacite de trading
   - Permettent d'adapter vos ordres a differentes situations de marche
+</div>
 
 ---
 
@@ -348,15 +354,24 @@ imageClass: mid-right
 - **Instructions de Routage**
   - Do-Not-Route: Execution locale uniquement
   - Directed-Routing: Routage vers un marche specifique
+<div v-click="2">
+
 - **Inter-Market Sweeps**
   - Balayage: Balaye le carnet d'ordres sur un marche donne
+</div>
+<div v-click="3">
+
 - **Instructions de Liaison**
   - One-Cancels-Other (OCO): Deux ordres sont mutuellement exclusifs
   - One-Triggers-Other (OTO): Un ordre declenche un autre ordre
+</div>
+<div v-click="4">
+
 - **Instructions Diverses**
   - Anonymat: Certains marches offrent l'anonymat
   - Ventes a Decouvert: Drapeau requis sur certains marches
   - Lots Impairs: Appariement de lots ronds avec lots impairs
+</div>
 
 ---
 
