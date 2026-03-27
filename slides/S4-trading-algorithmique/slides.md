@@ -596,10 +596,13 @@ layout: section
 - **Pieges et Problemes**
   - Donnees ajustees pour les splits et les dividendes: Risque de faux signaux
   - Biais de survie: Surevaluation potentielle des performances
+<div v-click="2">
+
 - **Dans le cas ou le Machine Learning est utilise**
   - Le backtesting doit prendre en compte les biais de selection de donnees
   - Separer convenablement les ensembles (training, validation, test)
   - Evaluer la generalisation
+</div>
 
 ---
 
@@ -704,15 +707,21 @@ layout: dense
   - Test sur des donnees reelles non vues, le plus fiable
 - **Analyse de sensibilite**
   - Variation des parametres pour evaluer la stabilite de la performance
+<div v-click="2">
+
 - **Simplification du modele**
   - Elimination des conditions superflues
 - **Repartition du capital de trading**
   - Entre differentes strategies pour diminuer la variance
+</div>
+<div v-click="3">
+
 - **Couts de Transaction**
   - A integrer dans le Backtest pour des resultats plus realistes
 - **Derive des donnees (data drift) et non stationnarite**
   - Revalider regulierement les modeles
   - Appliquer des techniques comme la differenciation fractionnaire
+</div>
 
 ---
 
@@ -720,10 +729,13 @@ layout: dense
 
 - **Le Probleme**
   - Rendements diminuent quand une strategie est populaire
+<div v-click="2">
+
 - **Solutions**
   - Variations Mineures: Petites variations peuvent ameliorer les rendements
   - Exclusion de Stocks: Eviter certains types d'actions
   - Changement de Timing: Ajuster les points d'entree et de sortie
+</div>
 
 ---
 layout: section
@@ -836,11 +848,14 @@ imageClass: mid-right
 - **Desespoir et Avidite**
   - Importance de la gestion du stress et de la psychologie
   - Mettre en place des garde-fous pour eviter la prise de decisions impulsives
+<div v-click="2">
+
 - **Conseils Pratiques**
   - Commencez petit pour tester votre discipline
   - Avoir un tampon financier ou des sources de revenus alternatives
   - Reduire la pression financiere et psychologique
   - Necessite parfois d'un support psychologique ou d'un coaching (cf. Athletes)
+</div>
 
 ---
 layout: section
@@ -901,9 +916,12 @@ imageClass: mid-right
   - Les Marches varient entre differents regimes
   - (haussiers/baissiers, inflation/recession, volatilite)
   - La Prediction de ces regimes est un defi
+<div v-click="2">
+
 - **Outils & Approches - GARCH**
   - Modele "autoregressif conditionnellement heteroscedastique generalise"
   - Utile pour mesurer la volatilite, moins pour le prix d'actions
+</div>
 
 ---
 
@@ -1005,10 +1023,13 @@ imageClass: mid-right
 
 - **Methodes Modernes**
   - Multi-Factoriels: Evolution des modeles 3F de Fama-French vers des modeles multi-factoriels
+<div v-click="2">
+
 - **Machine Learning en Trading**
   - Machine Learning Parametrique: Utilisation de reseaux neuronaux et de modeles sequentiels en deep learning comme LSTM
   - Machine Learning Non-Parametrique: Emploi de forets aleatoires, k-NN, SVM pour capturer des relations non-lineaires
   - Succes des techniques d'ensemble, Mixture of experts
+</div>
 
 ---
 
@@ -1231,9 +1252,12 @@ imageClass: mid-right
 - **Intelligence Contextuelle**
   - IoT & Big Data: Utilisation de donnees meteorologiques et de flux logistiques pour optimiser les trades en matieres premieres
   - Sentiment Analysis: Evaluer l'effet du sentiment saisonnier sur les marches
+<div v-click="2">
+
 - **Gestion de Risques Avancee**
   - Simulation de Monte Carlo: Estimation des intervalles de confiance pour les strategies
   - Backtesting Adaptatif: Tests dynamiques pour ajuster aux changements du marche
+</div>
 
 ---
 layout: image-overlay
@@ -1279,9 +1303,12 @@ imageClass: mid-right
 - **Beta Adaptatif**
   - Utilisation de l'apprentissage machine pour ajuster dynamiquement le beta
   - Predictions de Volatilite: Utilisation de series temporelles pour anticiper les changements de volatilite
+<div v-click="2">
+
 - **Levier avec Machine Learning**
   - Algorithmes pour decider du moment optimal pour appliquer un levier
   - Risques de Catastrophe: Utilisation d'alertes algorithmiques pour reduire le levier en cas de signaux de crash
+</div>
 
 ---
 
@@ -1356,9 +1383,12 @@ Documentation officielle QuantConnect
   - Extensions: C# dev kit, polyglot, python, git extension pack, Python extension pack, QuantConnect
 - **Visual Studio Community / for Mac**
   - Charge de developpement Desktop (Windows) / .Net (Mac)
+<div v-click="2">
+
 - **DotPeek (desassembleur)**
 - **Jetbrains Rider**
   - Licence?
+</div>
 
 ---
 
@@ -1385,11 +1415,17 @@ Documentation officielle QuantConnect
 - **Fork/Clone git de Lean**
   - Dans le repertoire de votre choix
   - Depot personnalise: https://github.com/myintelligenceagency/Lean
+<div v-click="2">
+
 - **Ouvrir la solution**
   - QuantConnect.Lean.sln
   - Affichage des projets, projet de demarrage par defaut
+</div>
+<div v-click="3">
+
 - **Generer la solution**
   - Restauration des packages, compilation des projets
+</div>
 
 ---
 
@@ -1434,10 +1470,13 @@ Documentation officielle QuantConnect
 - **Objets fondamentaux (suite)**
   - Indicateurs (e.g. EMA)
   - History
+<div v-click="2">
+
 - **Membres locaux**
   - Manipules par les methodes
   - Parfois herites + "Parameters"
   - Possibilite de les initializer
+</div>
 
 ---
 
@@ -1489,9 +1528,12 @@ Documentation officielle QuantConnect
     self.SetStartDate(2018, 4, 1)
     self.SetEndDate(datetime.now() - timedelta(7))
     ```
+<div v-click="2">
+
 - **Definition des monnaies et montants initiaux**
   - C#: `this.SetAccountCurrency("EUR"); this.SetCash("EUR", 10000);`
   - Python: `self.SetAccountCurrency("BTC"); self.SetCash("EUR", 10000)`
+</div>
 
 ---
 
@@ -1508,9 +1550,12 @@ Documentation officielle QuantConnect
     self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Cash)
     self.spy = self.AddEquity("SPY", Resolution.Hour, Market.Oanda)
     ```
+<div v-click="2">
+
 - **Ajout d'indicateurs**
   - C#: `this.Fast = EMA(_btcusd, FastPeriod); this.Slow = EMA(_btcusd, SlowPeriod);`
   - Python: `self.fast = self.EMA(symbol, 30, Resolution.Minute); self.slow = self.EMA(symbol, 60, Resolution.Minute)`
+</div>
 
 ---
 
@@ -1525,9 +1570,12 @@ Documentation officielle QuantConnect
     ```python
     self.SetWarmUp(200)
     ```
+<div v-click="2">
+
 - **Possibilite de Warmup automatique**
   - `AutomaticIndicatorWarmUp = True`
   - `self.Settings.AutomaticIndicatorWarmUp = True`
+</div>
 
 ---
 
@@ -1558,6 +1606,8 @@ layout: dense
 - **Consolidation de barres**
   - C#: `this._consolidator = Consolidate(_symbol, TimeSpan.FromMinutes(10), ConsolidationHandler);`
   - Python: `self.consolidator = self.Consolidate(self.symbol, timedelta(minutes=10), self.consolidation_handler)`
+<div v-click="2">
+
 - **Creations de graphiques**
   - C#
     ```csharp
@@ -1572,6 +1622,7 @@ layout: dense
     stockPlot.AddSeries(Series("Price", SeriesType.Line, 0))
     self.AddChart(stockPlot)
     ```
+</div>
 
 ---
 
@@ -1592,8 +1643,11 @@ layout: dense
     def OnData(self, slice: Slice) -> None:
         data = slice[self.symbol]
     ```
+<div v-click="2">
+
 - **Alternative: "CurrentSlice"**
   - Dans un evenement planifie
+</div>
 
 ---
 layout: dense
@@ -1614,9 +1668,12 @@ layout: dense
   - Logs enregistres dans backtest: Eviter de les surcharger pour eviter la saturation
 - **Export de graphiques**
   - Methode Plot (cf initialisation)
+<div v-click="2">
+
 - **Utilisation de donnees historiques**
   - Python: `self.df = self.History(self.Symbol("SPY"), start_time, end_time, Resolution.Hour)`
   - Plusieurs symbols: `self.dataframe = self.History([self.Symbol("IBM"), self.Symbol("AAPL")], start_time, end_time)`
+</div>
 
 ---
 
@@ -1642,8 +1699,11 @@ layout: dense
 - **Methode OnOrderEvent**
   - C#: `public override void OnOrderEvent(OrderEvent orderEvent)`
   - Python: `def OnOrderEvent(self, orderEvent: OrderEvent) -> None:`
+<div v-click="2">
+
 - **Annulation**
   - Methode ticket.Cancel("message") ou request = ticket.CancelOrderRequest()
+</div>
 
 ---
 
@@ -1791,10 +1851,13 @@ layout: dense
   - Parametres importants: Direction, Period, Magnitude, Confidence, Weight
   - Possibilite de les regrouper: `return Insight.Group([insight1, insight2, insight3])`
   - Possibilite de les annuler: `self.insight.Cancel(algorithm.UtcTime)`
+<div v-click="2">
+
 - **Si pas de reference utilisation de l'insight manager**
   - Filtrage par symbole, par direction etc.
   - `var insights = algorithm.Insights.GetInsights(insight => insight.Direction == InsightDirection.Up);`
   - `algorithm.Insights.Cancel(symbols)`
+</div>
 
 ---
 
@@ -1826,9 +1889,12 @@ layout: dense
   - BlackLittermanOptimizationPortfolioConstructionModel: Utilise un optimiseur
   - MeanReversionPortfolioConstructionModel: Retour a la moyenne
   - RiskParityPortfolioConstructionModel: Minimisation du risque
+<div v-click="2">
+
 - **Optimiseurs fournis**
   - MaximumSharpeRatioPortfolioOptimizer, MinimumVariancePortfolioOptimizer
   - UnconstrainedMeanVariancePortfolioOptimizer, RiskParityPortfolioOptimizer
+</div>
 
 ---
 
@@ -1857,11 +1923,14 @@ layout: dense
 - **Definition**
   - C#: `this.SetExecution(new ImmediateExecutionModel());`
   - Python: `self.SetExecution(ImmediateExecutionModel())`
+<div v-click="2">
+
 - **Modeles fournis**
   - ImmediateExecutionModel
   - SpreadExecutionModel (Necessite des QuoteBars)
   - StandardDeviationExecutionModel
   - VolumeWeightedAveragePriceExecutionModel
+</div>
 
 ---
 
@@ -1932,9 +2001,12 @@ layout: dense
   - Parametre target a maximiser ou minimiser (extremum)
   - Cf class PerformanceMetrics
   - Cible a atteindre target-value (Permet d'arreter l'optimisation de facon prematuree)
+<div v-click="2">
+
 - **Ajout de contraintes**
   - Parametres target, operator, target-value
   - Permet de disqualifier certaines configurations (risque trop eleve)
+</div>
 
 ---
 layout: section
@@ -2014,14 +2086,23 @@ imageClass: mid-right
 - **Tensorflow.Net** https://medium.com/@mariusmuntean/operationalize-tensorflow-models-with-ml-net-8b7389628d70
 - **TorchSharp** https://github.com/dotnet/TorchSharp
   - Similaire a Pytorch (Bridge), Base de Autodiff.Net
+<div v-click="2">
+
 - **Infer**
   - Programmation probabiliste
   - https://dotnet.github.io/infer/default.html
   - https://www.mbmlbook.com/toc.html
+</div>
+<div v-click="3">
+
 - **AutoML**
   - Choix du modele et hyperparametrisation
   - "experiments" sur differents trainers
+</div>
+<div v-click="4">
+
 - **TimeSeries**
+</div>
 
 ---
 
@@ -2030,10 +2111,13 @@ imageClass: mid-right
 - **Exemples**
   - https://github.com/dotnet/machinelearning-samples/tree/main
   - https://github.com/dotnet/csharp-notebooks/tree/main/machine-learning
+<div v-click="2">
+
 - **Accord** http://accord-framework.net/
   - Complet mais obsolete/vieillissant
   - SVM toujours d'actualite
   - Autres algos pris en charge par ML.Net
+</div>
 
 ---
 
@@ -2043,9 +2127,12 @@ imageClass: mid-right
   - Exemple simpliste
   - Entrainement a la volee
   - A utiliser en combinaison avec d'autres indicateurs/signaux
+<div v-click="2">
+
 - **Integration MyIA.Backtesting**
   - Nombreux parametres
   - Entrainement en batch
+</div>
 
 ---
 
@@ -2055,9 +2142,15 @@ imageClass: mid-right
   - Accord SVM: Type de noyau + complexite
   - ML.Net AutoML: Classification, metrique d'optimisation
   - A venir: prediction: modele regressif
+<div v-click="2">
+
 - **Integration Lean dans une branche dediee**
+</div>
+<div v-click="3">
+
 - **Nouveaux exemples QC**
   - https://www.quantconnect.com/docs/v2/writing-algorithms/machine-learning/key-concepts
+</div>
 
 ---
 layout: section
