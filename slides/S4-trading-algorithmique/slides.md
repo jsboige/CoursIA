@@ -117,6 +117,8 @@ layout: dense
 ---
 layout: dense
 ---
+layout: dense
+---
 # Avantages du Trading Algorithmique
 
 - **Scalabilite**
@@ -212,9 +214,6 @@ layout: section
 
 </div>
 ---
-layout: image-overlay
-image: ./images/candlestick_patterns.png
-imageClass: mid-right
 ---
 layout: dense
 ---
@@ -247,9 +246,6 @@ layout: dense
 
 </div>
 ---
-layout: image-overlay
-image: ./images/candlestick_anatomy.png
-imageClass: mid-right
 ---
 layout: dense
 ---
@@ -1863,6 +1859,8 @@ layout: dense
 ---
 layout: dense
 ---
+layout: dense
+---
 # Initialisation - Consolidation et Graphiques
 
 - **Consolidation de barres**
@@ -1886,6 +1884,8 @@ layout: dense
     ```
 
 </div>
+---
+layout: dense
 ---
 layout: dense
 ---
@@ -1915,6 +1915,8 @@ layout: dense
   - Dans un evenement planifie
 
 </div>
+---
+layout: dense
 ---
 layout: dense
 ---
@@ -2120,6 +2122,8 @@ layout: dense
 ---
 layout: dense
 ---
+layout: dense
+---
 # Alphas (2/2)
 
 - **Alpha personnalise**
@@ -2258,6 +2262,8 @@ layout: dense
   - VolumeWeightedAveragePriceExecutionModel
 
 </div>
+---
+layout: dense
 ---
 layout: dense
 ---
