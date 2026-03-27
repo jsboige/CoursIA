@@ -537,10 +537,16 @@ layout: section
 
 - **Changements de Regime**
   - Donnees historiques parfois non pertinentes
+<div v-click="2">
+
 - **Overfitting**
   - Surajustement aux donnees historiques
+</div>
+<div v-click="3">
+
 - **Frais de financements**
   - Pour les positions a marge
+</div>
 
 ---
 
