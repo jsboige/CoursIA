@@ -90,7 +90,8 @@ Intelligence Artificielle -- S4
 
 </div>
 ---
-
+layout: dense
+---
 # Profil du Trader Algorithmique
 
 - **Formation et diplome**
@@ -114,25 +115,34 @@ Intelligence Artificielle -- S4
 
 </div>
 ---
-
+layout: dense
+---
 # Avantages du Trading Algorithmique
 
-- **Scalabilite** -- augmenter les volumes, gerer plusieurs strategies
-
+- **Scalabilite**
+  - Augmenter les volumes sans effort supplementaire
+  - Gerer plusieurs strategies en parallele, sur differents marches
+  - Passage a l'echelle impossible en trading manuel
 <div v-click="1">
 
-- **Optimisation du temps** -- moins d'operations manuelles, plus de recherche
-
+- **Optimisation du temps**
+  - Automatisation des taches repetitives (screening, execution)
+  - Plus de temps pour la recherche et l'amelioration des modeles
+  - Execution 24/7 sur les marches crypto et forex
 </div>
 <div v-click="2">
 
-- **Elimination des biais** -- pas d'emotion, execution disciplinee
-
+- **Elimination des biais emotionnels**
+  - Pas de peur, de cupidite ou d'hesitation
+  - Execution disciplinee selon des regles predefinies
+  - Resultats reproductibles et mesurables
 </div>
 <div v-click="3">
 
-- **Autonomie** -- pas besoin de clients, focus sur la performance
-
+- **Autonomie et independance**
+  - Pas besoin de clients ni de mandats de gestion
+  - Focus sur la performance pure du modele
+  - Possibilite de demarrer avec un capital modeste
 </div>
 ---
 
@@ -206,7 +216,8 @@ layout: image-overlay
 image: ./images/candlestick_patterns.png
 imageClass: mid-right
 ---
-
+layout: dense
+---
 # Instruments Financiers
 
 - **Actions**
@@ -240,7 +251,8 @@ layout: image-overlay
 image: ./images/candlestick_anatomy.png
 imageClass: mid-right
 ---
-
+layout: dense
+---
 # Analyse Technique et Fondamentale
 
 - **Analyse Technique**
@@ -264,7 +276,8 @@ imageClass: mid-right
 
 </div>
 ---
-
+layout: dense
+---
 # Infrastructure de Trading
 
 - **Plateformes et Courtiers**
@@ -399,7 +412,8 @@ imageClass: mid-right
 
 </div>
 ---
-
+layout: dense
+---
 # Ordres - Instructions Specifiques (2/2)
 
 - **Instructions de Routage**
@@ -803,7 +817,8 @@ imageClass: mid-right
 ---
 layout: dense
 ---
-
+layout: dense
+---
 # Precautions face aux Pieges (2/2)
 
 - **Paper Trading**
@@ -880,7 +895,8 @@ layout: image-overlay
 image: ./images/normal_distribution.png
 imageClass: mid-right
 ---
-
+layout: dense
+---
 # Outils et Formules
 
 - **Formule de Kelly**
@@ -951,7 +967,8 @@ imageClass: mid-right
 
 </div>
 ---
-
+layout: dense
+---
 # Preparation Psychologique (1/2)
 
 - **Emotions en Trading**
@@ -1025,7 +1042,8 @@ layout: image-overlay
 image: ./images/macd_chart.png
 imageClass: mid-right
 ---
-
+layout: dense
+---
 # Strategies Fondamentales de Momentum
 
 - **Momentum**
@@ -1137,7 +1155,8 @@ imageClass: mid-right
 
 </div>
 ---
-
+layout: dense
+---
 # Strategies Basees sur les Donnees - Sentiment Analysis
 
 - **Objectif**
@@ -1392,7 +1411,8 @@ imageClass: mid-right
 
 </div>
 ---
-
+layout: dense
+---
 # Strategies de Trading Saisonnier
 
 - **Effet de Janvier**
@@ -1539,7 +1559,8 @@ layout: cover
 Documentation officielle QuantConnect
 
 ---
-
+layout: dense
+---
 # Lean/QuantConnect
 
 - **Qu'est-ce que c'est?**
@@ -1675,7 +1696,8 @@ Documentation officielle QuantConnect
 
 </div>
 ---
-
+layout: dense
+---
 # Environnement d'Algorithme (1/2)
 
 - **QCAlgorithm**
@@ -1750,7 +1772,8 @@ Documentation officielle QuantConnect
 
 </div>
 ---
-
+layout: dense
+---
 # Initialisation - Dates et Monnaies
 
 - **Definition des dates de backtesting**
@@ -1772,7 +1795,8 @@ Documentation officielle QuantConnect
 
 </div>
 ---
-
+layout: dense
+---
 # Initialisation - Broker et Securites
 
 - **Choix du Broker et souscription a des securites**
@@ -1794,7 +1818,8 @@ Documentation officielle QuantConnect
 
 </div>
 ---
-
+layout: dense
+---
 # Initialisation - Warmup
 
 - **Warmup**
@@ -1814,7 +1839,8 @@ Documentation officielle QuantConnect
 
 </div>
 ---
-
+layout: dense
+---
 # Initialisation - Evenements Planifies
 
 - **Evenements planifies**
@@ -1830,13 +1856,13 @@ Documentation officielle QuantConnect
                      self.TimeRules.Every(timedelta(minutes=10)),
                      self.ExampleFunc)
     ```
-
 ---
 layout: dense
 ---
 layout: dense
 ---
-
+layout: dense
+---
 # Initialisation - Consolidation et Graphiques
 
 - **Consolidation de barres**
@@ -1861,7 +1887,8 @@ layout: dense
 
 </div>
 ---
-
+layout: dense
+---
 # Evenements de Donnees
 
 - **Temps decoupe en "slices"**
@@ -1891,7 +1918,8 @@ layout: dense
 ---
 layout: dense
 ---
-
+layout: dense
+---
 # Journalisation et Graphiques
 
 - **Journalisation**
@@ -1993,7 +2021,8 @@ layout: dense
 
 </div>
 ---
-
+layout: dense
+---
 # Notebooks de Recherche
 
 - **Research Environnement**
@@ -2038,7 +2067,8 @@ layout: dense
 
 </div>
 ---
-
+layout: dense
+---
 # Selection d'Univers
 
 - **Un univers definit les actifs disponibles pour le portefeuille**
@@ -2088,7 +2118,8 @@ layout: dense
 ---
 layout: dense
 ---
-
+layout: dense
+---
 # Alphas (2/2)
 
 - **Alpha personnalise**
@@ -2112,11 +2143,11 @@ layout: dense
             QCAlgorithm algorithm, SecurityChanges changes)
     }
     ```
-
 ---
 layout: dense
 ---
-
+layout: dense
+---
 # Insights
 
 - **Definit les signaux retournes par la methode Update des Alphas**
@@ -2165,7 +2196,8 @@ layout: dense
 ---
 layout: dense
 ---
-
+layout: dense
+---
 # Construction de Portefeuille (2/2)
 
 - **Modeles fournis par defaut (suite)**
@@ -2183,7 +2215,8 @@ layout: dense
 
 </div>
 ---
-
+layout: dense
+---
 # Gestion du Risque
 
 - **Objectif: gestion du risque des cibles**
@@ -2226,7 +2259,8 @@ layout: dense
 
 </div>
 ---
-
+layout: dense
+---
 # Optimisation de Parametres (1/2)
 
 - **Definition de parametres d'algorithmes**
@@ -2250,7 +2284,8 @@ layout: dense
 
 </div>
 ---
-
+layout: dense
+---
 # Optimisation de Parametres (2/2)
 
 - **Lanceur d'Optimisation**
@@ -2352,7 +2387,8 @@ layout: image-overlay
 image: ./images/rnn_unrolled.png
 imageClass: mid-right
 ---
-
+layout: dense
+---
 # Difficultes du ML dans le Trading (1/2)
 
 - **Non stationnarite**
@@ -2382,7 +2418,8 @@ imageClass: mid-right
   - Importance d'un pipeline de reentrainement continu
 
 ---
-
+layout: dense
+---
 # ML en .Net
 
 - **ML.Net** https://github.com/dotnet/machinelearning
