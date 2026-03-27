@@ -115,7 +115,7 @@ Intelligence Artificielle -- S4
 </div>
 ---
 
-# Avantages du Trading Algorithmique
+# Avantages du Trading Algorithmique (1/2)
 
 - **Scalabilite**
   - Augmenter les volumes sans effort supplementaire
@@ -128,14 +128,16 @@ Intelligence Artificielle -- S4
   - Plus de temps pour la recherche et l'amelioration des modeles
   - Execution 24/7 sur les marches crypto et forex
 </div>
-<div v-click="2">
+
+---
+
+# Avantages du Trading Algorithmique (2/2)
 
 - **Elimination des biais emotionnels**
   - Pas de peur, de cupidite ou d'hesitation
   - Execution disciplinee selon des regles predefinies
   - Resultats reproductibles et mesurables
-</div>
-<div v-click="3">
+<div v-click="1">
 
 - **Autonomie et independance**
   - Pas besoin de clients ni de mandats de gestion
