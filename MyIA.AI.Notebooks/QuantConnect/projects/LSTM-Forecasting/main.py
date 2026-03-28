@@ -137,10 +137,10 @@ class LSTMForecasting(QCAlgorithm):
         # Concatenate input and hidden state
         combined = np.concatenate([h, x])
 
-        # Simplified gate computations (using learned patterns)
-        # In reality, these would be learned weights
-        forget_gate = self._sigmoid(0.5 * np.sum(combined))
-        input_gate = self._sigmoid(0.5 * np.sum(combined))
+        # Simplified gate computations (using fixed weights)
+        # In a trained LSTM, each gate has separate learned weights
+        forget_gate = self._sigmoid(0.7 * np.sum(combined))
+        input_gate = self._sigmoid(0.3 * np.sum(combined))
         candidate = self._tanh(np.sum(combined) * 0.3)
 
         # Update cell state

@@ -166,7 +166,7 @@ class ChronosFoundationForecasting(QCAlgorithm):
         attention_weights = self._attention(query, keys)
 
         # Weighted sum of embeddings
-        context_vector = np.sum(attention_weights[:, np.newaxis] * keys[:, np.newaxis])
+        context_vector = np.dot(attention_weights, keys)
 
         # Predict next token (simplified)
         # In reality, this would be a language model head
@@ -218,9 +218,9 @@ class ChronosFoundationForecasting(QCAlgorithm):
         uncertainty = q90 - q10
         confidence = 1 / (1 + uncertainty * 50)
 
-        # Direction confidence
-        prob_up = np.mean([s > 0 for s in [median]])
-        direction_confidence = abs(prob_up - 0.5) * 2
+        # Direction confidence: higher when q10 and q90 agree on direction
+        direction_confidence = 1.0 if (q10 > 0 or q90 < 0) else abs(median) / max(uncertainty, 0.001)
+        direction_confidence = min(direction_confidence, 1.0)
 
         # Signal smoothing: average recent predictions
         self._recent_signals.append(median)
