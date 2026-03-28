@@ -19,7 +19,6 @@
   background-color: var(--color-bg);
   padding: 16px 36px;
   text-align: left;
-  overflow: hidden;
 }
 
 /* Headers */
@@ -80,9 +79,9 @@ ul ul > li::before {
   color: var(--color-accent-light);
 }
 
-/* Level 3 bullets: even smaller */
+/* Level 3 bullets: smaller (effective ~15px at base 18px) */
 ul ul ul > li {
-  font-size: 0.82em;
+  font-size: 0.88em;
 }
 
 ul ul ul > li::before {

@@ -2063,6 +2063,7 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
                      self.TimeRules.Every(timedelta(minutes=10)),
                      self.ExampleFunc)
     ```
+
 ---
 
 # Initialisation - Consolidation et Graphiques
@@ -2341,6 +2342,7 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
             QCAlgorithm algorithm, SecurityChanges changes)
     }
     ```
+
 ---
 
 # Insights
@@ -2785,5 +2787,5 @@ layout: cover
 Jean-Sylvain Boige
 jsboige@myia.org
 
-> **Notebooks associes:** `QuantConnect/` (~27 notebooks)
+> **Notebooks associes:** `QuantConnect/` (28 notebooks)
 > Strategies de trading, backtesting, optimisation, machine learning
