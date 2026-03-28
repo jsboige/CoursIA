@@ -32,21 +32,21 @@ class MLSVMAlgorithm(QCAlgorithm):
         self.gamma = 'scale'
         self.rebalance_freq = 5
 
-        # Rebalance schedule
+        # rebalance schedule
         self.Schedule.On(self.DateRules.Every(DayOfWeek.Monday),
                          self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.Rebalance)
+                         self.rebalance)
 
         # Train model monthly
         self.Schedule.On(self.DateRules.MonthStart("SPY"),
                          self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.TrainModel)
+                         self.train_model)
 
         self.model = None
         self.scaler = None
         self.feature_names = None
 
-    def CalculateFeatures(self, history, ticker):
+    def calculate_features(self, history, ticker):
         """Calculate features optimized for SVM."""
         closes = history['close']
         volumes = history['volume']
@@ -98,7 +98,7 @@ class MLSVMAlgorithm(QCAlgorithm):
         price_to_sma50 = closes / sma_50 - 1
 
         # Trend strength
-        adx = self.CalculateADX(highs, lows, closes, 14)
+        adx = self.calculate_adx(highs, lows, closes, 14)
 
         # Combine features
         features = pd.DataFrame({
@@ -119,7 +119,7 @@ class MLSVMAlgorithm(QCAlgorithm):
 
         return features.fillna(0)
 
-    def CalculateADX(self, highs, lows, closes, period=14):
+    def calculate_adx(self, highs, lows, closes, period=14):
         """Calculate Average Directional Index."""
         high_diff = highs.diff()
         low_diff = -lows.diff()
@@ -142,7 +142,7 @@ class MLSVMAlgorithm(QCAlgorithm):
 
         return adx.fillna(25)  # Default neutral value
 
-    def TrainModel(self):
+    def train_model(self):
         """Train SVM classifier."""
         self.Debug("Training SVM model...")
 
@@ -159,7 +159,7 @@ class MLSVMAlgorithm(QCAlgorithm):
                 if history.empty or len(history) < self.lookback:
                     continue
 
-                features = self.CalculateFeatures(history, ticker)
+                features = self.calculate_features(history, ticker)
                 closes = history['close']
 
                 # Target: direction (1 if up, 0 if down)
@@ -205,12 +205,12 @@ class MLSVMAlgorithm(QCAlgorithm):
         train_accuracy = (self.model.predict(X_scaled) == y).mean()
         self.Debug(f"SVM trained. Accuracy: {train_accuracy:.2%}")
 
-    def Predict(self, ticker, history):
-        """Predict probability of positive return."""
+    def predict(self, ticker, history):
+        """predict probability of positive return."""
         if self.model is None:
             return 0.5
 
-        features = self.CalculateFeatures(history, ticker)
+        features = self.calculate_features(history, ticker)
 
         if len(features) == 0:
             return 0.5
@@ -225,12 +225,12 @@ class MLSVMAlgorithm(QCAlgorithm):
         proba = self.model.predict_proba(latest_features)[0]
         return proba[1]
 
-    def GetDecisionMargin(self, ticker, history):
+    def get_decision_margin(self, ticker, history):
         """Get decision function margin for confidence."""
         if self.model is None:
             return 0
 
-        features = self.CalculateFeatures(history, ticker)
+        features = self.calculate_features(history, ticker)
 
         if len(features) == 0:
             return 0
@@ -242,8 +242,8 @@ class MLSVMAlgorithm(QCAlgorithm):
 
         return self.model.decision_function(latest_features)[0]
 
-    def Rebalance(self):
-        """Rebalance based on SVM predictions with confidence weighting."""
+    def rebalance(self):
+        """rebalance based on SVM predictions with confidence weighting."""
         if self.model is None:
             return
 
@@ -256,8 +256,8 @@ class MLSVMAlgorithm(QCAlgorithm):
                 if history.empty:
                     continue
 
-                prob = self.Predict(ticker, history)
-                margin = self.GetDecisionMargin(ticker, history)
+                prob = self.predict(ticker, history)
+                margin = self.get_decision_margin(ticker, history)
 
                 predictions[ticker] = {
                     'prob': prob,

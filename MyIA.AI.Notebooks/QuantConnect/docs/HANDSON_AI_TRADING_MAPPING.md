@@ -104,7 +104,12 @@ Le livre se concentre sur ML/AI appliqué au trading. Voici les projets CoursIA 
 | [ETF-Pairs-Trading](../ESGF-2026/examples/ETF-Pairs-Trading/) | Pairs trading (PCA stat-arb) | ✅ |
 | [Sector-Momentum](../ESGF-2026/examples/Sector-Momentum/) | Momentum sectoriel | ✅ |
 | [Markov-Regime-Detection](../ESGF-2026/examples/Markov-Regime-Detection/) | HMM pour régimes (Ex04) | ✅ **NEW** |
+| [SVM-Wavelet-Forecasting](../ESGF-2026/examples/SVM-Wavelet-Forecasting/) | SVM + Wavelet decomposition (Ex05) | ✅ **NEW** |
 | [Gaussian-Direction-Classifier](../ESGF-2026/examples/Gaussian-Direction-Classifier/) | Gaussian Naive Bayes (Ex15) | ✅ **NEW** |
+| [Temporal-CNN-Prediction](../projects/Temporal-CNN-Prediction/) | Temporal CNN (Ex14) | ✅ **NEW** |
+| [LSTM-Forecasting](../projects/LSTM-Forecasting/) | LSTM Forecasting (Ex07) | ✅ **NEW** |
+| [Reinforcement-Learning-Trading](../projects/Reinforcement-Learning-Trading/) | DQN Trading (Ex08) | ✅ **NEW** |
+| [Chronos-Foundation-Forecasting](../projects/Chronos-Foundation-Forecasting/) | Chronos Foundation Model (Ex18) | ✅ **NEW** |
 
 ---
 
