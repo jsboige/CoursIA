@@ -982,6 +982,31 @@ imageClass: mid-right
 
 </div>
 ---
+
+# Panorama des Strategies du Depot
+
+<div class="colored-table">
+
+| Strategie | Type | Sharpe | Commentaire |
+|-----------|------|--------|-------------|
+| BTC-MACD-ADX | Technique crypto | 1.65 | Meilleur Sharpe, marche crypto |
+| Framework_Composite | Multi-facteur | 1.16 | Architecture modulaire |
+| EMA-Cross-Stocks | Trend following | 0.87 | Simple et robuste |
+| AllWeather | Allocation | 0.67 | Faible drawdown |
+| SectorMomentum | Rotation | 0.62 | Dual momentum + bonds |
+| RegimeSwitching | Adaptatif | 0.55 | Adapte l'allocation au regime |
+| PairsTrading | Stat-arb | -0.36 | Echec : co-integration instable |
+| ForexCarry | FX carry | -0.32 | Echec : prime epuisee |
+
+</div>
+
+<div v-click="1">
+
+- Les strategies simples (EMA, momentum) fonctionnent souvent mieux que les complexes
+- Les echecs sont aussi pedagogiques que les succes
+
+</div>
+---
 layout: section
 ---
 
@@ -1008,6 +1033,7 @@ layout: section
   - Eviter une chute catastrophique du capital a zero (risque de ruine)
   - Drawdown : mesure de la pire chute depuis le dernier sommet
   - Regle pratique : limiter le risque a 1-2% du capital par trade
+  - Theorie : `Probas/Infer-15-Decision-Utility-Money.ipynb` (aversion au risque)
 
 </div>
 ---
@@ -1174,10 +1200,10 @@ imageClass: mid-right
 </div>
 <div v-click="2">
 
-- **Projets du depot**
-  - `projects/MeanReversion` -- Strategie classique z-score
-  - `projects/PairsTrading` -- Pairs co-integrees (ETFs)
-  - `projects/TrendFilteredMeanReversion` -- Mean reversion + filtre tendance
+- **Projets du depot** (resultats backtestes)
+  - `MeanReversion` (Sharpe 0.29) -- RSI mean-reversion classique
+  - `PairsTrading` (Sharpe -0.36) -- Echec pedagogique : co-integration instable
+  - `TrendFilteredMeanReversion` -- Mean reversion + filtre tendance
   - Notebook : `QC-Py-11-Technical-Indicators.ipynb`
 
 </div>
@@ -1208,11 +1234,11 @@ imageClass: mid-right
 </div>
 <div v-click="3">
 
-- **Projets du depot**
-  - `projects/MomentumStrategy` -- Momentum classique
-  - `projects/DualMomentum` -- Dual momentum (absolue + relative)
-  - `projects/SectorMomentum` -- Rotation sectorielle
-  - `projects/TrendStocks-Alpha` -- Alpha model base sur le trend
+- **Projets du depot** (resultats backtestes)
+  - `MomentumStrategy` (Sharpe 0.57) -- Rotation sur 11 ETFs
+  - `DualMomentum` (Sharpe 0.35) -- Antonacci dual momentum
+  - `SectorMomentum` (Sharpe 0.62) -- Rotation sectorielle + bonds
+  - `TrendStocks-Alpha` -- Alpha model base sur le trend
 
 </div>
 ---
@@ -1498,8 +1524,8 @@ imageClass: mid-right
 - **Statistical Arbitrage**
   - Exploiter les ecarts de prix entre actifs fortement correles
   - Modelisation statistique complexe (spread z-score, half-life)
-  - Projets : `projects/PairsTrading`, `projects/ETF-Pairs`
-  - ML-augmente : `projects/ML-EnhancedPairs`
+  - `PairsTrading` (Sharpe -0.36), `ETF-Pairs` (Sharpe -0.71) -- echecs pedagogiques
+  - Lecon : la co-integration n'est PAS stable dans le temps -- c'est le piege principal
 
 </div>
 ---
@@ -1660,10 +1686,10 @@ imageClass: mid-right
 </div>
 <div v-click="2">
 
-- **Projets du depot**
-  - `projects/AllWeather` -- Portefeuille "toutes saisons" (Ray Dalio)
-  - `projects/AdaptiveAssetAllocation` -- Allocation adaptive
-  - `projects/Portfolio-Optimization-ML` -- Optimisation par ML
+- **Projets du depot** (resultats backtestes)
+  - `AllWeather` (Sharpe 0.67) -- "Toutes saisons" (Ray Dalio)
+  - `AdaptiveAssetAllocation` (Sharpe 0.52) -- Momentum + min-variance
+  - `RiskParity` (Sharpe 0.40) -- Allocation par parite de risque
   - Notebook : `QC-Py-21-Portfolio-Optimization-ML.ipynb`
 
 </div>
@@ -2715,8 +2741,10 @@ layout: section
 - Crypto : BTC-MACD-ADX, EMA-Cross-Crypto, Crypto-LSTM-Prediction
 
 **Autres notebooks pertinents**
-- Optimisation de portefeuille: `Search/Portfolio_Optimization_GeneticSharp.ipynb`
-- Modeles probabilistes: `Probas/` (Infer.NET)
+- Optimisation de portefeuille : `Search/Portfolio_Optimization_GeneticSharp.ipynb`
+- Algorithmes genetiques : `Search/Search-5-GeneticAlgorithms.ipynb`
+- Metaheuristiques : `Search/Search-11-Metaheuristics.ipynb`
+- Theorie de la decision : `Probas/Infer-14` a `Infer-20` (utilite, risque, decisions sequentielles)
 
 ---
 
