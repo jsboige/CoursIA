@@ -35,21 +35,21 @@ class MLRandomForestAlgorithm(QCAlgorithm):
         self.min_samples_split = 5
         self.rebalance_freq = 5
 
-        # Rebalance schedule
+        # rebalance schedule
         self.Schedule.On(self.DateRules.Every(DayOfWeek.Monday),
                          self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.Rebalance)
+                         self.rebalance)
 
         # Train model bi-weekly
         self.Schedule.On(self.DateRules.Every(DayOfWeek.Monday),
                          self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.TrainModel)
+                         self.train_model)
 
         self.model = None
         self.scaler = None
         self.feature_names = None
 
-    def CalculateFeatures(self, history, ticker):
+    def calculate_features(self, history, ticker):
         """Calculate technical features for Random Forest."""
         closes = history['close']
         volumes = history['volume']
@@ -126,7 +126,7 @@ class MLRandomForestAlgorithm(QCAlgorithm):
 
         return features.fillna(0)
 
-    def TrainModel(self):
+    def train_model(self):
         """Train Random Forest classifier on all stocks."""
         self.Debug("Training Random Forest model...")
 
@@ -143,7 +143,7 @@ class MLRandomForestAlgorithm(QCAlgorithm):
                 if history.empty or len(history) < self.lookback:
                     continue
 
-                features = self.CalculateFeatures(history, ticker)
+                features = self.calculate_features(history, ticker)
                 closes = history['close']
 
                 # Target: direction (1 if up, 0 if down)
@@ -193,12 +193,12 @@ class MLRandomForestAlgorithm(QCAlgorithm):
 
         self.Debug(f"Random Forest trained. Top feature: {importance.iloc[0]['feature']}")
 
-    def Predict(self, ticker, history):
-        """Predict probability of positive return."""
+    def predict(self, ticker, history):
+        """predict probability of positive return."""
         if self.model is None:
             return 0.5
 
-        features = self.CalculateFeatures(history, ticker)
+        features = self.calculate_features(history, ticker)
 
         if len(features) == 0:
             return 0.5
@@ -213,8 +213,8 @@ class MLRandomForestAlgorithm(QCAlgorithm):
         proba = self.model.predict_proba(latest_features)[0]
         return proba[1]  # Probability of class 1 (up)
 
-    def Rebalance(self):
-        """Rebalance based on Random Forest predictions."""
+    def rebalance(self):
+        """rebalance based on Random Forest predictions."""
         if self.model is None:
             return
 
@@ -227,7 +227,7 @@ class MLRandomForestAlgorithm(QCAlgorithm):
                 if history.empty:
                     continue
 
-                prob = self.Predict(ticker, history)
+                prob = self.predict(ticker, history)
                 predictions[ticker] = prob
 
             except Exception as e:

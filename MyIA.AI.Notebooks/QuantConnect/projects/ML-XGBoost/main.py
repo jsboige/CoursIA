@@ -35,21 +35,21 @@ class MLXGBoostAlgorithm(QCAlgorithm):
         self.max_depth = 5
         self.learning_rate = 0.05
 
-        # Rebalance schedule
+        # rebalance schedule
         self.Schedule.On(self.DateRules.Every(DayOfWeek.Monday),
                          self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.Rebalance)
+                         self.rebalance)
 
         # Train models bi-weekly
         self.Schedule.On(self.DateRules.Every(DayOfWeek.Monday),
                          self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.TrainModels)
+                         self.train_models)
 
         self.models = {}
         self.scalers = {}
         self.feature_names = None
 
-    def CalculateFeatures(self, history, ticker):
+    def calculate_features(self, history, ticker):
         """Calculate comprehensive features for XGBoost."""
         closes = history['close']
         volumes = history['volume']
@@ -144,9 +144,9 @@ class MLXGBoostAlgorithm(QCAlgorithm):
             'sma_ratio_10_50': sma_10 / sma_50,
         })
 
-        return features.fillna(0)
+        return features.fillna(0).replace([np.inf, -np.inf], 0)
 
-    def TrainModels(self):
+    def train_models(self):
         """Train XGBoost models for each stock."""
         self.Debug("Training XGBoost models...")
 
@@ -161,7 +161,7 @@ class MLXGBoostAlgorithm(QCAlgorithm):
                 if history.empty or len(history) < self.lookback:
                     continue
 
-                features = self.CalculateFeatures(history, ticker)
+                features = self.calculate_features(history, ticker)
                 closes = history['close']
 
                 # Target: next day return
@@ -214,14 +214,14 @@ class MLXGBoostAlgorithm(QCAlgorithm):
 
         self.Debug(f"XGBoost models trained. Top feature: {importance.iloc[0]['feature']}")
 
-    def Predict(self, ticker, history):
+    def predict(self, ticker, history):
         """Make prediction for a stock."""
         if 'ensemble' not in self.models:
             return 0
 
         model = self.models['ensemble']
 
-        features = self.CalculateFeatures(history, ticker)
+        features = self.calculate_features(history, ticker)
 
         if len(features) == 0:
             return 0
@@ -236,8 +236,8 @@ class MLXGBoostAlgorithm(QCAlgorithm):
 
         return prediction
 
-    def Rebalance(self):
-        """Rebalance based on XGBoost predictions."""
+    def rebalance(self):
+        """rebalance based on XGBoost predictions."""
         if 'ensemble' not in self.models:
             return
 
@@ -250,7 +250,7 @@ class MLXGBoostAlgorithm(QCAlgorithm):
                 if history.empty:
                     continue
 
-                pred = self.Predict(ticker, history)
+                pred = self.predict(ticker, history)
                 predictions[ticker] = pred
 
             except:
