@@ -69,7 +69,8 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
     # Features techniques (inspirées de QC-Py-18)
     RSI_PERIOD = 14
     SMA_SHORT = 20
-    SMA_LONG = 50
+    SMA_LONG = 100  # v6: 100 au lieu de 50 pour un signal de tendance plus stable
+    SMA_REGIME = 200  # v6: filtre de regime macro (prix > SMA200 = bull)
     EMA_SHORT = 12
     EMA_LONG = 26
     MACD_SIGNAL = 9
@@ -119,21 +120,25 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
         for symbol in self.symbols:
             self.indicators[symbol.ID] = self.initialize_indicators(symbol)
 
+        # v6: SMA200 regime filter sur SPY (benchmark)
+        self.spy_sma200 = self.SMA(self.benchmark, self.SMA_REGIME, Resolution.Daily)
+
         # Dictionnaire pour stocker les features
         self.features_history = {}
 
-        # Schedule: Rebalance mensuel (1er jour du mois)
+        # Schedule: Training mensuel (v6: mensuel pour adaptation plus rapide)
+        # Training a l'ouverture pour que le modele soit pret pour le rebalance
         self.Schedule.On(self.DateRules.MonthStart(self.etf_tickers),
-                         self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.Rebalance)
-
-        # Schedule: Training annuel (1er janvier)
-        self.Schedule.On(self.DateRules.YearBegin(),
-                         self.TimeRules.AfterMarketOpen("SPY", 30),
+                         self.TimeRules.AfterMarketOpen("SPY", 10),
                          self.TrainModel)
 
+        # Schedule: Rebalance mensuel (1er jour du mois, apres training)
+        self.Schedule.On(self.DateRules.MonthStart(self.etf_tickers),
+                         self.TimeRules.AfterMarketOpen("SPY", 45),
+                         self.Rebalance)
+
         # Warm-up pour les indicateurs
-        self.SetWarmUp(max(self.SMA_LONG, self.BB_PERIOD, self.MACD_SIGNAL) + self.ATR_PERIOD, Resolution.Daily)
+        self.SetWarmUp(max(self.SMA_REGIME, self.BB_PERIOD, self.MACD_SIGNAL) + self.ATR_PERIOD, Resolution.Daily)
 
         self.Debug("SectorMLClassificationAlgorithm initialized")
         self.Debug(f"Sectors: {', '.join(self.etf_tickers)}")
@@ -457,6 +462,17 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 
     def Rebalance(self):
         """Rebalance le portfolio mensuellement basé sur les prédictions ML."""
+
+        # v6: Filtre de regime macro - si SPY < SMA200, reduire l'exposition
+        spy_price = self.Securities[self.benchmark].Price
+        spy_above_sma200 = (self.spy_sma200.IsReady and
+                            spy_price > self.spy_sma200.Current.Value)
+
+        # v6: Bear regime defense - liquidate if SPY below SMA200
+        if self.spy_sma200.IsReady and not spy_above_sma200:
+            self.Debug(f"BEAR regime: SPY ({spy_price:.2f}) < SMA200 ({self.spy_sma200.Current.Value:.2f}). Liquidating.")
+            self.Liquidate()
+            return
 
         # Si pas de modèle, entraîner d'abord
         if self.model is None:

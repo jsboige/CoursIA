@@ -52,6 +52,9 @@ class ChronosFoundationForecasting(QCAlgorithm):
 
         self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
 
+        # v3: SMA200 regime filter for macro trend
+        self._sma200 = self.SMA(self._spy, 200, Resolution.DAILY)
+
         # Model parameters
         self._context_length = self.get_parameter('context_length', 64)
         self._prediction_length = self.get_parameter('prediction_length', 1)
@@ -243,10 +246,18 @@ class ChronosFoundationForecasting(QCAlgorithm):
         })
 
         # Trading logic: use smoothed signal for direction
+        # v3: SMA200 regime filter - only go long when SPY > SMA200
+        spy_price = self.Securities[self._spy].Price
+        in_bull_regime = (not self._sma200.IsReady) or (spy_price > self._sma200.Current.Value)
+
         if combined_confidence > self._confidence_threshold:
-            if smooth_median > 0:
+            if smooth_median > 0 and in_bull_regime:
                 self.set_holdings(self._spy, 1.0)
-                self.log(f"Chronos: UP forecast={smooth_median:.4f}, confidence={combined_confidence:.2%}")
+                self.log(f"Chronos: UP forecast={smooth_median:.4f}, confidence={combined_confidence:.2%}, regime=BULL")
+            elif smooth_median > 0 and not in_bull_regime:
+                # Bear regime: reduce exposure instead of full long
+                self.set_holdings(self._spy, 0.5)
+                self.log(f"Chronos: UP forecast={smooth_median:.4f}, confidence={combined_confidence:.2%}, regime=BEAR(50%)")
             else:
                 self.set_holdings(self._spy, 0.0)
                 self.log(f"Chronos: DOWN forecast={smooth_median:.4f}, confidence={combined_confidence:.2%}")
