@@ -222,12 +222,6 @@ Intelligence Artificielle -- S4
 
 </div>
 
-<div v-click="1">
-
-- **Conseil pour debuter** : Commencer par le LFT, migrer vers le MFT avec l'experience
-- La plupart des strategies dans ce cours sont MFT ou LFT
-
-</div>
 ---
 layout: section
 ---
@@ -782,7 +776,6 @@ layout: section
 
 - **Avancees recentes (2023-2026)**
   - LLMs pour l'analyse de sentiment et la generation de signaux
-  - Theorie des jeux : modeliser le marche comme un jeu adversarial
   - Foundation models pre-entraines sur les series temporelles financieres
 
 </div>
@@ -995,17 +988,11 @@ imageClass: mid-right
 | AllWeather | Allocation | 0.67 | Faible drawdown |
 | SectorMomentum | Rotation | 0.62 | Dual momentum + bonds |
 | RegimeSwitching | Adaptatif | 0.55 | Adapte l'allocation au regime |
-| PairsTrading | Stat-arb | -0.36 | Echec : co-integration instable |
-| ForexCarry | FX carry | -0.32 | Echec : prime epuisee |
 
 </div>
 
-<div v-click="1">
+Echecs pedagogiques : PairsTrading (-0.36), ForexCarry (-0.32) -- aussi dans le depot
 
-- Les strategies simples (EMA, momentum) fonctionnent souvent mieux que les complexes
-- Les echecs sont aussi pedagogiques que les succes
-
-</div>
 ---
 layout: section
 ---
@@ -1234,11 +1221,7 @@ imageClass: mid-right
 </div>
 <div v-click="3">
 
-- **Projets du depot** (resultats backtestes)
-  - `MomentumStrategy` (Sharpe 0.57) -- Rotation sur 11 ETFs
-  - `DualMomentum` (Sharpe 0.35) -- Antonacci dual momentum
-  - `SectorMomentum` (Sharpe 0.62) -- Rotation sectorielle + bonds
-  - `TrendStocks-Alpha` -- Alpha model base sur le trend
+- **Projets du depot** : `SectorMomentum` (Sharpe 0.62), `MomentumStrategy` (0.57), `DualMomentum` (0.35)
 
 </div>
 ---
@@ -1351,14 +1334,7 @@ imageClass: mid-right
 
 - **Utilisation Pratique**
   - Les hedge funds et les traders algorithmiques utilisent l'analyse du sentiment
-  - Pour ameliorer leurs strategies
-</div>
-<div v-click="4">
-
-- **Pratique dans le depot**
-  - Notebook : `QC-Py-17-Sentiment-Analysis.ipynb`
-  - Projet : `projects/ML-TextClassification`
-  - Pipeline complet : `QC-Py-18-ML-Features-Engineering.ipynb`
+  - Notebooks : `QC-Py-17-Sentiment-Analysis.ipynb`, `QC-Py-18-ML-Features-Engineering.ipynb`
 
 </div>
 ---
@@ -2736,17 +2712,9 @@ layout: section
 | **Deep Learning** | QC-Py-22 a 25 | LSTM, Transformers, Autoencoders, RL |
 | **Avance** | QC-Py-26 a 28 | LLM Trading, Production, Regime Detection |
 
-**57 projets de strategies** dans `QuantConnect/projects/`
-- Strategies classiques : EMA-Cross, MeanReversion, DualMomentum, PairsTrading
-- ML : ML-RandomForest, ML-SVM, ML-XGBoost, ML-Ensemble, DL-LSTM
-- Framework composites : 4 strategies combinees (Trend, FamaFrench, Momentum, Weather)
-- Crypto : BTC-MACD-ADX, EMA-Cross-Crypto, Crypto-LSTM-Prediction
+**57 projets de strategies** dans `QuantConnect/projects/` : classiques (EMA, MeanReversion), ML (RandomForest, XGBoost, LSTM), Framework composites, Crypto (BTC-MACD-ADX)
 
-**Autres notebooks pertinents**
-- Optimisation de portefeuille : `Search/Portfolio_Optimization_GeneticSharp.ipynb`
-- Algorithmes genetiques : `Search/Search-5-GeneticAlgorithms.ipynb`
-- Metaheuristiques : `Search/Search-11-Metaheuristics.ipynb`
-- Theorie de la decision : `Probas/Infer-14` a `Infer-20` (utilite, risque, decisions sequentielles)
+**Voir aussi** : `Search/` (optimisation, genetiques), `Probas/Infer-14` a `Infer-20` (decision sous incertitude)
 
 ---
 
@@ -2765,17 +2733,15 @@ layout: section
 <div v-click="2">
 
 - **La pratique avec Lean/QuantConnect**
-  - 28 notebooks progressifs (`QC-Py-01` a `QC-Py-28`)
-  - 57 projets de strategies prets a backtester
-  - 4 strategies composites Framework pour apprendre l'architecture
+  - 28 notebooks progressifs, 57 projets prets a backtester
+  - Commencez par `QC-Py-01-Setup.ipynb` puis explorez `projects/EMA-Cross-Stocks`
 </div>
 <div v-click="3">
 
 - **Conseil final**
   - Commencez simple, mesurez, iterez
-  - La gestion du risque est plus importante que la generation de signaux
-  - "Il vaut mieux un Sharpe de 1.5 stable qu'un Sharpe de 3 qui explose tous les 2 ans"
-  - Commencez par `QC-Py-01-Setup.ipynb` puis explorez `projects/EMA-Cross-Stocks`
+  - La gestion du risque > la generation de signaux
+  - "Mieux vaut un Sharpe de 1.5 stable qu'un Sharpe de 3 qui explose tous les 2 ans"
 
 </div>
 ---
