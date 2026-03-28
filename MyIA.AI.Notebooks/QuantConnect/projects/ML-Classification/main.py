@@ -40,17 +40,17 @@ class MLClassificationAlgorithm(QCAlgorithm):
         self.symbol = self.AddEquity(self.SYMBOL, Resolution.Daily).Symbol
 
         # Charger le modele depuis ObjectStore
-        self.LoadModel()
+        self.load_model()
 
         # Configurer les indicateurs pour generer les features
-        self.SetupIndicators()
+        self.setup_indicators()
 
         # Warm-up pour les indicateurs
         self.SetWarmUp(50)
 
         self.Log(f"MLClassificationAlgorithm initialise pour {self.SYMBOL}")
 
-    def LoadModel(self):
+    def load_model(self):
         """Charger le modele et la configuration depuis ObjectStore."""
         try:
             # Verifier que les cles existent
@@ -85,7 +85,7 @@ class MLClassificationAlgorithm(QCAlgorithm):
             self.Log(f"ERREUR chargement modele: {e}")
             self.model = None
 
-    def SetupIndicators(self):
+    def setup_indicators(self):
         """Configurer les indicateurs techniques pour les features."""
         # RSI
         self.rsi = self.RSI(self.symbol, 14, Resolution.Daily)
@@ -122,7 +122,7 @@ class MLClassificationAlgorithm(QCAlgorithm):
             return
 
         # Construire le vecteur de features
-        features = self.BuildFeatures(data)
+        features = self.build_features(data)
 
         if features is None:
             return
@@ -134,12 +134,12 @@ class MLClassificationAlgorithm(QCAlgorithm):
             confidence_up = proba[1]  # Probabilite de hausse
 
             # Logique de trading basee sur la confiance
-            self.ExecuteTradingLogic(confidence_up, close)
+            self.execute_trading_logic(confidence_up, close)
 
         except Exception as e:
             self.Log(f"Erreur prediction: {e}")
 
-    def BuildFeatures(self, data: Slice) -> list:
+    def build_features(self, data: Slice) -> list:
         """
         Construire le vecteur de features pour la prediction.
         Doit correspondre exactement aux features du notebook de recherche.
@@ -209,7 +209,7 @@ class MLClassificationAlgorithm(QCAlgorithm):
             self.Log(f"Erreur construction features: {e}")
             return None
 
-    def ExecuteTradingLogic(self, confidence_up: float, current_price: float):
+    def execute_trading_logic(self, confidence_up: float, current_price: float):
         """
         Executer la logique de trading basee sur la confiance du modele.
 
