@@ -24,6 +24,32 @@ Intelligence Artificielle -- S4
 
 ---
 
+# Pourquoi le Trading Algorithmique ?
+
+- **Un marche en pleine transformation**
+  - Plus de 70% des transactions sur les marches americains sont automatisees
+  - Les hedge funds quantitatifs (Renaissance, Two Sigma, Citadel) dominent la performance
+  - L'acces aux outils s'est democratise : Python, APIs gratuites, cloud computing
+
+<div v-click="1">
+
+- **Pourquoi ce cours ?**
+  - Comprendre les mecanismes qui regissent les marches modernes
+  - Acquerir les competences pratiques avec Lean/QuantConnect
+  - Developper une pensee critique face aux promesses du trading automatise
+  - Preparer une carriere en finance quantitative ou en data science financiere
+
+</div>
+<div v-click="2">
+
+- **Ce que ce cours n'est PAS**
+  - Une promesse de gains faciles
+  - Un cours de day trading ou de speculation
+  - Le trading algorithmique demande rigueur, patience et discipline
+
+</div>
+---
+
 # Plan du Cours - Partie 1: Fondamentaux
 
 - Introduction au trading algorithmique
@@ -179,6 +205,30 @@ Intelligence Artificielle -- S4
 
 </div>
 ---
+
+# Comparaison HFT / MFT / LFT
+
+<div class="colored-table">
+
+| Critere | HFT | MFT | LFT |
+|---------|-----|-----|-----|
+| **Horizon** | Microsecondes a secondes | Minutes a heures | Jours a mois |
+| **Trades/jour** | 10 000+ | 10 - 100 | 0 - 5 |
+| **Sharpe typique** | > 5 | 1 - 3 | 0.5 - 1.5 |
+| **Capital min.** | > 1M$ | 10K - 100K$ | 1K - 50K$ |
+| **Infrastructure** | Co-location, FPGA | Serveur dedie | PC personnel |
+| **Competences** | C++, reseaux, hardware | Python, stats | Finance, analyse |
+| **Barriere a l'entree** | Tres haute | Moyenne | Basse |
+
+</div>
+
+<div v-click="1">
+
+- **Conseil pour debuter** : Commencer par le LFT, migrer vers le MFT avec l'experience
+- La plupart des strategies dans ce cours sont MFT ou LFT
+
+</div>
+---
 layout: section
 ---
 
@@ -242,6 +292,10 @@ layout: section
 
 </div>
 ---
+layout: image-overlay
+image: ./images/candlestick_anatomy.png
+imageClass: mid-right
+---
 
 # Analyse Technique et Fondamentale
 
@@ -249,12 +303,13 @@ layout: section
   - Etude des graphiques de prix et de volume
   - Indicateurs: moyennes mobiles, RSI, MACD, Bollinger Bands
   - Patterns graphiques: chandeliers, tete-epaules, triangles
+  - Les chandeliers japonais (a droite) encodent 4 informations : ouverture, fermeture, plus haut, plus bas
 
 <div v-click="1">
 
 - **Analyse Fondamentale**
   - Evaluation de la valeur intrinseque d'un actif
-  - Donnees financieres: revenus, benefices, ratios
+  - Donnees financieres: revenus, benefices, ratios (P/E, P/B, EV/EBITDA)
   - Indicateurs macroeconomiques: taux d'interet, inflation, PIB
 
 </div>
@@ -263,6 +318,36 @@ layout: section
 - **Combinaison des deux approches**
   - Analyse technique pour le timing d'entree/sortie
   - Analyse fondamentale pour la selection d'actifs
+  - En pratique, la plupart des traders quantitatifs combinent les deux
+
+</div>
+---
+layout: image-overlay
+image: ./images/candlestick_patterns.png
+imageClass: mid-right large
+---
+
+# Patterns Graphiques Courants
+
+- **Chandeliers japonais** (a droite)
+  - Doji : indecision du marche (ouverture = fermeture)
+  - Marteau / Pendu : retournement potentiel
+  - Englobante : signal fort de changement de tendance
+
+<div v-click="1">
+
+- **Figures classiques**
+  - Tete-Epaules : retournement de tendance majeur
+  - Double Top / Double Bottom : niveaux de support/resistance
+  - Triangles : compression de volatilite avant cassure
+
+</div>
+<div v-click="2">
+
+- **Limites de l'analyse graphique**
+  - Subjectivite dans l'interpretation
+  - Les patterns fonctionnent mieux en combinaison avec des indicateurs
+  - Le trading algorithmique permet de tester objectivement ces patterns sur des donnees historiques
 
 </div>
 ---
@@ -295,6 +380,35 @@ layout: section
 
 - **Exigence d'Infrastructure**
   - Serveurs co-localises, GPUs pour ML
+
+</div>
+---
+layout: image-overlay
+image: ./images/order_book_depth.gif
+imageClass: mid-right large
+---
+
+# Le Carnet d'Ordres (Order Book)
+
+- **Structure du carnet**
+  - **Bid** (offre d'achat) : prix que les acheteurs sont prets a payer
+  - **Ask** (offre de vente) : prix que les vendeurs demandent
+  - **Spread** : ecart entre le meilleur bid et le meilleur ask
+
+<div v-click="1">
+
+- **Profondeur de marche** (a droite)
+  - Visualise les volumes cumules d'ordres a chaque niveau de prix
+  - Un carnet "epais" = marche liquide (faible impact des ordres)
+  - Un carnet "mince" = risque de slippage eleve
+
+</div>
+<div v-click="2">
+
+- **Pourquoi c'est important**
+  - Comprendre le carnet d'ordres est fondamental pour toute strategie
+  - Les market makers profitent du spread
+  - Les ordres iceberg cachent la vraie profondeur
 
 </div>
 ---
@@ -578,17 +692,25 @@ layout: section
 # Comment Evaluer une Strategie?
 
 - **Mesures Standard**
-  - Ratio de Sharpe: Mesure le rendement ajuste au risque
-  - High Watermark: Rendement cumule maximal a un moment donne
-  - Drawdown Maximum et Duree: La plus grande baisse et le temps pour recuperer
+  - **Ratio de Sharpe** : SR = (R_p - R_f) / sigma_p -- le "Saint Graal" de l'evaluation
+  - **High Watermark** : Rendement cumule maximal a un moment donne
+  - **Drawdown Maximum** : La plus grande baisse (profondeur + duree de recuperation)
 
 <div v-click="1">
 
 - **Criteres de performance**
-  - Rendement annualise
-  - Volatilite des rendements
-  - Ratio gain/perte moyen
-  - Taux de reussite des trades
+  - Rendement annualise (CAGR) : le rendement compose annuel
+  - Volatilite des rendements : mesure du risque
+  - Ratio gain/perte moyen : taille moyenne des gains vs pertes
+  - Taux de reussite (win rate) : attention, un win rate de 30% peut etre tres profitable !
+
+</div>
+<div v-click="2">
+
+- **Exemple concret**
+  - Strategie A : Rendement 15%, Volatilite 20% => Sharpe = 0.75
+  - Strategie B : Rendement 10%, Volatilite 8% => Sharpe = 1.25
+  - La strategie B est meilleure sur base ajustee au risque malgre un rendement brut plus faible
 
 </div>
 ---
@@ -639,25 +761,29 @@ layout: section
 # Intelligence Artificielle et Selection de Stocks
 
 - **Scepticisme initial sur l'IA**
-  - Tendance a surajuster les donnees
+  - Tendance a surajuster les donnees historiques
+  - Les marches financiers ne sont pas comme la vision par ordinateur : les patterns changent
 <div v-click="1">
 
 - **Pratiques qui fonctionnent en IA**
-  - Modeles simples, fondements econometriques
-  - Mixture d'experts
+  - Modeles simples avec fondements econometriques solides
+  - Mixture d'experts : combiner plusieurs modeles specialises
+  - Features engineering soigne > architectures complexes
 
 </div>
 <div v-click="2">
 
 - **Strategies "Sous le Radar"**
-  - Faible capacite
-  - Moins d'arbitrage par grands fonds
+  - Marches de niche a faible capacite (small caps, crypto alt coins)
+  - Moins d'arbitrage par les grands fonds qui ne s'y interessent pas
+  - Opportunite pour les traders individuels et les petites equipes
 </div>
 <div v-click="3">
 
-- **Avancees recentes**
-  - "Guerre" des modeles
-  - Theorie des jeux
+- **Avancees recentes (2023-2026)**
+  - LLMs pour l'analyse de sentiment et la generation de signaux
+  - Theorie des jeux : modeliser le marche comme un jeu adversarial
+  - Foundation models pre-entraines sur les series temporelles financieres
 
 </div>
 ---
@@ -671,19 +797,22 @@ layout: section
 # Backtesting (1/2)
 
 - **Qu'est-ce que c'est?**
-  - Evaluation d'une strategie d'investissement sur des donnees historiques
+  - Simulation d'une strategie sur des donnees historiques
+  - "Si j'avais applique cette strategie en 2015, qu'aurais-je obtenu ?"
 <div v-click="1">
 
 - **Pourquoi c'est important**
-  - Valider l'efficacite de la recherche originale
-  - Experimenter avec des variations pour l'optimiser
+  - Valider l'efficacite de la recherche avant d'engager du capital reel
+  - Experimenter avec des variations (parametres, periodes, actifs)
+  - Estimer les metriques cles : Sharpe, drawdown, win rate
 
 </div>
 <div v-click="2">
 
 - **Sources de Donnees**
-  - Recherche web pour des bases gratuites ou peu couteuses
-  - Yahoo Finance, Alpha Vantage, Interactive Brokers, Binance
+  - Gratuites : Yahoo Finance, Alpha Vantage, Binance (crypto)
+  - Professionnelles : Interactive Brokers, Bloomberg, Refinitiv
+  - QuantConnect fournit gratuitement des donnees ajustees (splits, dividendes)
 
 </div>
 ---
@@ -740,16 +869,18 @@ layout: section
 # Lean / QuantConnect
 
 - **Solution open-core en Python et C#**
-  - 3 environnements (Lean, Lean-cli-QC)
-  - Permettent backtesting, paper trading et live trading
-  - Utilisee dans ce cours
+  - 3 environnements : QuantConnect Cloud, Lean-cli + VS Code, Lean local
+  - Pipeline complet : recherche -> backtest -> paper trading -> live trading
+  - **Utilisee dans ce cours** pour tous les exercices pratiques
 
 <div v-click="1">
 
 - **Avantages**
-  - Lean gere nativement les ajustements de donnees (splits, dividendes)
-  - Fournit un grand catalogue de donnees alternatives
-  - Simplifie l'evaluation point-in-time
+  - Gestion native des ajustements de donnees (splits, dividendes, delistings)
+  - Grand catalogue de donnees : actions US, forex, crypto, futures, options
+  - Donnees alternatives : sentiment, fundamentals, SEC filings
+  - Framework de haut niveau : Alpha, Portfolio Construction, Risk Management
+  - Communaute active et documentation riche
 
 </div>
 ---
@@ -859,20 +990,23 @@ layout: section
 
 # Gestion du Risque - Introduction
 
-- **La gestion du risque permet de "preserver" le capital initial tout en optimisant la croissance sur le long terme**
+- **"Rule #1: Never lose money. Rule #2: Never forget rule #1"** -- Warren Buffett
+  - La gestion du risque est plus importante que la generation de signaux
+  - Un drawdown de 50% necessite un gain de 100% pour revenir a l'equilibre
 <div v-click="1">
 
 - **Maximisation de la Croissance**
-  - Objectif de maximiser la croissance du capital a long terme
-  - Rendement Moyen: ( m )
-  - Variance des Rendements: ( s^2 )
+  - Objectif : maximiser la croissance **composee** du capital a long terme
+  - Rendement Moyen (m) et Variance (s^2) sont les deux parametres cles
+  - La croissance composee est reduite par la variance : g = m - s^2/2
 
 </div>
 <div v-click="2">
 
 - **Eviter la Ruine**
-  - Eviter une chute catastrophique du capital a zero
-  - Drawdown: Chute maximale du capital sur une periode donnee
+  - Eviter une chute catastrophique du capital a zero (risque de ruine)
+  - Drawdown : mesure de la pire chute depuis le dernier sommet
+  - Regle pratique : limiter le risque a 1-2% du capital par trade
 
 </div>
 ---
@@ -885,21 +1019,49 @@ imageClass: mid-right
 
 - **Formule de Kelly**
   - Determine la fraction optimale du capital a risquer par trade
-  - f* = (p * b - q) / b
-  - p = probabilite de gain, q = probabilite de perte (1-p)
-  - b = ratio gain/perte moyen
+  - f* = (p x b - q) / b
+  - p = probabilite de gain, q = probabilite de perte (1-p), b = ratio gain/perte moyen
 
 <div v-click="1">
 
 - **Value-at-Risk (VaR)**
-  - Estime la perte maximale potentielle sur une periode
-  - Avec un niveau de confiance donne
+  - Estime la perte maximale potentielle sur une periode avec un niveau de confiance
+  - Exemple : VaR 95% = 2% signifie qu'on a 5% de chances de perdre plus de 2%
 </div>
 <div v-click="2">
 
 - **Conditional Value-at-Risk (CVaR)**
-  - Estime la perte moyenne au-dela du VaR
-  - Prend en compte les "fat tails"
+  - Estime la perte moyenne au-dela du VaR (pire scenario)
+  - Plus conservateur que le VaR, prend en compte les "fat tails"
+
+</div>
+---
+layout: image-overlay
+image: ./images/normal_distribution_pdf.png
+imageClass: mid-right
+---
+
+# Exemple : Formule de Kelly en Pratique
+
+- **Scenario**
+  - Probabilite de gain (p) = 55%, Probabilite de perte (q) = 45%
+  - Gains moyens = 2%, Pertes moyennes = 1.5%
+  - Ratio gain/perte (b) = 2% / 1.5% = 1.33
+
+<div v-click="1">
+
+- **Calcul**
+  - f* = (0.55 x 1.33 - 0.45) / 1.33
+  - f* = (0.73 - 0.45) / 1.33 = 0.21 soit **21% du capital**
+  - En pratique, on utilise souvent le **demi-Kelly** (10.5%) pour plus de securite
+
+</div>
+<div v-click="2">
+
+- **Intuition**
+  - Kelly maximise la croissance a long terme mais la volatilite est tres elevee
+  - Un sur-levier (miser plus que Kelly) garantit la ruine a long terme
+  - La distribution normale (a droite) sous-estime les evenements extremes
 
 </div>
 ---
@@ -954,19 +1116,18 @@ imageClass: mid-right
 
 # Preparation Psychologique (1/2)
 
-- **Emotions en Trading**
-  - Overtrading en periode de gains
-  - Aversion au risque en periode de pertes
-  - Importance de suivre scrupuleusement le modele
+- **Emotions en Trading** (meme en algo, le trader doit gerer sa psychologie)
+  - Overtrading en periode de gains : "je suis un genie, augmentons le levier"
+  - Aversion au risque en periode de pertes : desactiver l'algo au pire moment
+  - Tentation de modifier les parametres apres chaque perte
 
 <div v-click="1">
 
 - **Biais Comportementaux**
-  - Effet de dotation
-  - Biais du statu quo
-  - Aversion a la perte
-  - Biais de representativite
-  - Comment ces biais affectent la prise de decision en trading
+  - Effet de dotation : surestimer ce qu'on possede deja
+  - Aversion a la perte : une perte de 1000$ fait plus mal qu'un gain de 1000$ ne fait plaisir
+  - Biais de confirmation : ne chercher que les preuves qui confirment notre these
+  - Biais de representativite : "la derniere fois que ca ressemblait a ca, le marche a monte"
 
 </div>
 ---
@@ -1000,24 +1161,27 @@ imageClass: mid-right
 # Strategies de Moyenne Reversion
 
 - **Moyenne Reversion**
-  - Les prix des actions ont tendance a revenir vers une moyenne a long terme
+  - Les prix tendent a revenir vers une moyenne a long terme
+  - Indicateurs : Bollinger Bands (a droite), z-score, RSI
+  - Acheter "trop bas", vendre "trop haut"
 <div v-click="1">
 
 - **Recherche Academique**
-  - Proximite a une marche aleatoire
-  - Mais certaines conditions permettent la moyenne reversion
+  - Proches d'une marche aleatoire a court terme
+  - Documentee sur certains horizons (pairs trading, ETFs)
 
 </div>
 <div v-click="2">
 
-- **Pieges en Backtesting**
-  - Biais de Survie: Ignorer les actifs disparus peut fausser les resultats
-  - Erreurs de Base de Donnees: Incoherences dans les donnees financieres
+- **Pieges courants**
+  - Biais de Survie : actifs delistes faussent les resultats
+  - Co-integration necessaire (pas juste la correlation)
 </div>
 <div v-click="3">
 
-- **Effets de la Concurrence**
-  - Reduit les opportunites d'arbitrage, diminuant les rendements
+- **Concurrence**
+  - Plus une anomalie est connue, plus elle s'erode
+  - Chercher des paires moins evidentes ou des marches de niche
 
 </div>
 ---
@@ -1029,28 +1193,27 @@ imageClass: mid-right
 # Strategies Fondamentales de Momentum
 
 - **Momentum**
-  - Tendance d'un actif a continuer a se deplacer dans la meme direction pendant une certaine periode
+  - Un actif qui monte a tendance a continuer a monter (et inversement)
+  - Le MACD (a droite) est un indicateur classique de momentum
+  - Principe : acheter les "gagnants", vendre les "perdants"
 <div v-click="1">
 
-- **Diffusion Lente de l'Information**
-  - Cree des opportunites de momentum
+- **Sources du momentum**
+  - Diffusion lente de l'information : le marche reagit avec retard aux nouvelles
+  - Comportement de troupeau : les investisseurs suivent les tendances
 
 </div>
 <div v-click="2">
 
-- **Comportement de Troupeau**
-  - Les investisseurs suivent les autres, amplifiant les tendances
+- **Risques specifiques**
+  - "Momentum crash" : retournement brutal (ex: mars 2009, aout 2023)
+  - Duree imprevisible : quand le momentum s'arrete, les pertes sont rapides
 </div>
 <div v-click="3">
 
-- **Horizons Temporels Imprevisibles**
-  - Imprevisibilite de la duree du momentum
-</div>
-<div v-click="4">
-
-- **Effets de la Concurrence**
-  - Accelere l'atteinte de l'equilibre des prix
-  - Rend les strategies de momentum moins efficaces a long terme
+- **Concurrence et erosion**
+  - Plus les strategies momentum sont populaires, plus elles s'auto-detruisent
+  - Necessite d'innover : momentum cross-asset, momentum sur donnees alternatives
 
 </div>
 ---
@@ -1221,18 +1384,20 @@ imageClass: mid-right
 
 # Workflows Semantique et Theorie des Jeux
 
-- **Workflows semantique**
-  - Avenement des LLMs (ChatGPT, Llama etc.)
-  - Analyse de sentiment avancee
-  - Generation de signaux a partir de donnees textuelles
+- **Workflows semantique (LLM-powered trading)**
+  - Les LLMs (GPT-4, Claude, Llama) revolutionnent l'analyse de texte financier
+  - Analyse de sentiment en temps reel sur earnings calls, tweets, rapports d'analystes
+  - Generation de signaux : "le CEO a utilise un langage plus prudent que d'habitude"
+  - Extraction structuree : transformer des 10-K SEC en features quantitatives
 
 <div v-click="1">
 
-- **Theorie des jeux**
-  - Strategies adversariales, poursuite et predation
-  - Signalement (baleines etc.)
-  - Flash crashs et manipulation de marche
-  - Modelisation des interactions entre traders
+- **Theorie des jeux appliquee**
+  - Le marche est un jeu a somme nulle : chaque gain est la perte d'un autre
+  - Strategies adversariales : predire ce que les autres algorithmes vont faire
+  - Signalement : detecter les "baleines" (gros ordres caches) par leur empreinte
+  - Flash crashs : cascades algorithmiques auto-amplifiees (ex: Flash Crash 2010)
+  - Importance de la robustesse face a la manipulation
 
 </div>
 ---
@@ -1353,20 +1518,23 @@ imageClass: mid-right
 
 # Strategies de Trading a Haute Frequence (1/2)
 
-- **Exploite de petites inefficacites sur le marche ou fournit une liquidite temporaire en echange d'une petite commission**
+- **Principe : exploiter des micro-inefficacites a tres grande vitesse**
+  - Profit par trade minuscule (< 0.01%) mais multiplie par des milliers de trades/jour
+  - Fournit de la liquidite au marche en echange d'un spread (market making HFT)
 <div v-click="1">
 
 - **Ratio de Sharpe Eleve**
-  - Loi des grands nombres stabilise le rendement
-  - Centaines de paris par jour minimisent les ecarts de rendement
+  - Loi des grands nombres : des milliers de petits paris independants
+  - Sharpe > 5 courant (vs < 2 pour la plupart des strategies)
+  - Volatilite du P&L tres faible sur une base journaliere
 
 </div>
 <div v-click="2">
 
 - **Difficultes et Defis**
-  - Couts de transaction cruciaux pour les tests
-  - Execution a haute vitesse pour maximiser profits/pertes
-  - Risque de liquidation rapide (slippage, anomalies de marche)
+  - Couts de transaction : a cette echelle, chaque centime compte
+  - Course a la latence : difference de microsecondes = avantage competitif
+  - Risque de "flash crash" : pertes catastrophiques en quelques millisecondes
 
 </div>
 ---
@@ -1536,8 +1704,39 @@ layout: cover
 
 # Initiation a Lean
 
-Documentation officielle QuantConnect
+De la theorie a la pratique -- Documentation officielle QuantConnect
 
+---
+
+# Du Concept au Code : le Workflow du Trader Quant
+
+- **1. Hypothese** : Identifier une anomalie ou un pattern exploitable
+  - "Les actions qui baissent de plus de 5% en 3 jours tendent a rebondir"
+<div v-click="1">
+
+- **2. Recherche** : Valider l'hypothese sur les donnees (notebooks Jupyter)
+  - Statistiques, visualisations, tests de significativite
+</div>
+<div v-click="2">
+
+- **3. Implementation** : Coder la strategie dans Lean (Python ou C#)
+  - Initialize, OnData, gestion des ordres
+</div>
+<div v-click="3">
+
+- **4. Backtest** : Simuler sur donnees historiques
+  - Sharpe, drawdown, nombre de trades, couts
+</div>
+<div v-click="4">
+
+- **5. Paper Trading** : Tester en temps reel sans capital
+  - Derniere validation avant engagement de capital
+</div>
+<div v-click="5">
+
+- **6. Live Trading** : Deployer avec capital reel, monitorer en continu
+
+</div>
 ---
 
 # Lean/QuantConnect
@@ -2016,18 +2215,20 @@ Documentation officielle QuantConnect
 
 # Framework de Haut Niveau
 
-- **Ensemble de modules de haut niveau**
-  - Universe Selection: Choix des instruments disponible
-  - Alpha Creation: Construction de signaux (insights)
-  - Portfolio construction: construction et maintenance du portefeuille (targets)
-  - Risk management (minimization de risque)
-  - Execution (immediate ou optimisee)
+- **Architecture modulaire en 5 etapes (pipeline)**
+  - **Universe Selection** : Quels actifs surveiller ? (filtrage, screening)
+  - **Alpha Creation** : Quels signaux generer ? (insights : direction, magnitude, confiance)
+  - **Portfolio Construction** : Comment allouer le capital ? (poids, targets)
+  - **Risk Management** : Comment limiter les pertes ? (drawdown max, exposure max)
+  - **Execution** : Comment passer les ordres ? (immediat, VWAP, spread-based)
 
 <div v-click="1">
 
-- **Abstractions facilitant la gestion de portefeuille**
-  - Utilisable en combinaison avec des primitives de bas niveau
-  - (Alpha, PortfolioConstruction, Risk, Execution) peuvent etre utilises individuellement ou combines
+- **Avantage du framework**
+  - Chaque module est interchangeable et testable independamment
+  - Combiner un Alpha momentum avec un Portfolio equal-weight et un Risk drawdown-max
+  - Possible de mixer primitives bas niveau (SetHoldings) et modules haut niveau
+  - Facilite la composition : plusieurs Alphas peuvent contribuer au meme portefeuille
 
 </div>
 ---
@@ -2310,29 +2511,38 @@ imageClass: mid-right
 
 # Machine Learning pour le Trading (1/2)
 
-- **Prediction de Series temporelles**
-  - Regression: Prediction du prix
-  - Classification: Prediction de la tendance (trend haussier, baissier, neutre)
-  - Detection d'anomalie
+- **Trois approches principales**
+  - **Regression** : Predire le prix futur (difficile, signal faible)
+  - **Classification** : Predire la direction -- hausse, baisse, neutre (plus robuste)
+  - **Detection d'anomalie** : Identifier les regimes inhabituels du marche
 
 <div v-click="1">
 
-- **Evolution des architectures**
-  - RNN (LSTM)
-  - Transformers
-  - CNN
-  - Diffusion
+- **Evolution des architectures** (a droite : cellule LSTM)
+  - RNN/LSTM : capturent les dependances temporelles, reference historique
+  - Transformers : attention mechanism, dominent depuis 2023
+  - CNN temporelles : efficaces pour les patterns locaux
+  - Modeles de diffusion : nouvelle frontiere pour la generation de scenarios
 
 </div>
 ---
 
 # Machine Learning pour le Trading (2/2)
 
-- **Retours sur le trading**
-  - Marche en constante evolution (modeles MAJ)
-  - Regression difficile / pas tres adaptee
-  - Modeles de classification boostes relativement efficaces
+- **Retours d'experience sur le ML en trading**
+  - Le marche evolue constamment : les modeles doivent etre revalides et reentraines
+  - La regression du prix est rarement efficace (signal trop faible, bruit trop fort)
+  - Les modeles de classification (XGBoost, Random Forest) sont les plus fiables en pratique
 
+<div v-click="1">
+
+- **Bonnes pratiques**
+  - Walk-forward validation : entrainer sur une fenetre glissante, jamais sur le futur
+  - Ensemble methods : combiner plusieurs modeles reduit le risque de sur-apprentissage
+  - Features > Architecture : le choix des features prime sur la complexite du modele
+  - Pipeline de reentrainement automatique : detecter la degradation et re-entrainer
+
+</div>
 ---
 layout: image-overlay
 image: ./images/rnn_unrolled.png
@@ -2341,20 +2551,19 @@ imageClass: mid-right
 
 # Difficultes du ML dans le Trading (1/2)
 
-- **Non stationnarite**
-  - Different des Times series classiques
-  - Changements continuels dans les distributions de donnees
-  - Pire que ca: adversarial
-  - Le marche s'adapte, changement de regimes intentionnels
-  - Necessite de beaucoup de feedback, attention aux modeles statiques
+- **Non stationnarite** (le defi fondamental)
+  - Contrairement a la meteo ou la parole, les marches CHANGENT volontairement
+  - Les distributions de donnees evoluent : ce qui marchait hier ne marche plus demain
+  - Environnement adversarial : les autres traders s'adaptent a votre strategie
+  - Un modele statique est condamne a echouer a moyen terme
 
 <div v-click="1">
 
-- **Identification de regimes distincts**
-  - Duree des transitions assez lente / difficile a detecter
-  - Detection d'anomalie difficile
-  - Emprise du regime localisee / globale
-  - Intensite des changements des regimes
+- **Identification de regimes** (a droite : architecture RNN)
+  - Bull market, bear market, marche range, crise de liquidite...
+  - Les transitions entre regimes sont lentes et difficiles a detecter en temps reel
+  - Un regime peut etre local (un secteur) ou global (toute une classe d'actifs)
+  - Modeles de Markov caches (HMM) utilises pour cette detection
 
 </div>
 ---
@@ -2362,11 +2571,21 @@ imageClass: mid-right
 # Difficultes du ML dans le Trading (2/2)
 
 - **Donnees inadequates**
-  - Ratio signal / bruit mauvais
-  - Granularite variable des donnees (e.g. rapports trimestriels)
-  - Donnees insuffisantes / overfitting
-  - Importance d'un pipeline de reentrainement continu
+  - Ratio signal/bruit extremement faible : ~55% de precision est deja excellent
+  - Granularite variable : prix tick-by-tick vs rapports trimestriels
+  - Donnees insuffisantes : 20 ans de daily data = seulement ~5000 points
+  - Le sur-apprentissage est presque garanti sans precautions strictes
 
+<div v-click="1">
+
+- **Bonnes pratiques essentielles**
+  - Walk-forward analysis : entrainer sur t-N..t, tester sur t..t+k, avancer
+  - Cross-validation temporelle : jamais de shuffle, respecter la chronologie
+  - Regularisation aggressive : L1/L2, dropout, early stopping
+  - Pipeline de reentrainement : detecter le drift, re-entrainer automatiquement
+  - Simplicite : un XGBoost bien calibre bat souvent un Transformer mal entraine
+
+</div>
 ---
 
 # ML en .Net
@@ -2472,6 +2691,35 @@ layout: section
 - Optimisation de portefeuille: `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 - Modeles probabilistes pour le risque: `Probas/`
 
+---
+
+# Synthese et Points Cles
+
+- **Les fondamentaux**
+  - Le trading algorithmique elimine les biais emotionnels mais introduit des risques techniques
+  - Comprendre les ordres, les marches et les metriques (Sharpe, drawdown) est indispensable
+<div v-click="1">
+
+- **Les strategies**
+  - Mean reversion, momentum, regime switching sont les trois piliers
+  - Le ML apporte de la puissance mais le sur-apprentissage est le piege principal
+  - Toujours backtester, puis paper-trader avant de risquer du capital reel
+</div>
+<div v-click="2">
+
+- **La pratique avec Lean/QuantConnect**
+  - Framework complet : de la recherche au live trading
+  - Python pour le prototypage, C# pour la performance
+  - Le framework de haut niveau (Alpha, Portfolio, Risk, Execution) structure vos strategies
+</div>
+<div v-click="3">
+
+- **Conseil final**
+  - Commencez simple, mesurez, iterez
+  - La gestion du risque est plus importante que la generation de signaux
+  - "Il vaut mieux un Sharpe de 1.5 stable qu'un Sharpe de 3 qui explose tous les 2 ans"
+
+</div>
 ---
 layout: cover
 ---
