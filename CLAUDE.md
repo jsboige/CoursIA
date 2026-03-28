@@ -64,6 +64,27 @@ Les agents Roo sur les machines po-2023, po-2024, po-2025, po-2026 travaillent s
 - Ne pas creer de fichiers de planification (EXTEND_*.md, PROCEDURE_*.md) dans le repo — utiliser RooSync
 - Les rapports d'audit, inventaires, et status vont sur le **dashboard RooSync**, pas dans le repo
 
+### Review PR : validation explicite des objectifs
+
+Toute PR doit faire l'objet d'une **review complete** avant merge :
+
+1. **Relire l'issue ou le contexte d'origine** : identifier les objectifs precis (layout, positionnement, contenu, format)
+2. **Valider chaque objectif explicitement** : verifier dans le code ET visuellement que chaque exigence est satisfaite
+3. **Verification visuelle obligatoire pour les slides** :
+   - Lancer le serveur Slidev et verifier CHAQUE slide modifie (pas un echantillon)
+   - Verifier avec `?clicks=99` pour voir le contenu complet revele
+   - Verifier l'absence d'overflow (contenu coupe en bas)
+   - Verifier les layouts d'images (overlay uniquement, jamais colonne droite)
+4. **Verification visuelle obligatoire pour les notebooks** : executer ou au moins valider la structure
+5. **Ne jamais merger une PR sur la seule base du CI green** : CI valide la syntaxe, pas le rendu visuel ni la conformite aux specifications
+
+**Slides : images en overlay uniquement**
+- Les images de fond doivent utiliser `layout: image-overlay` avec le texte par-dessus, jamais en colonne droite
+- Cette regle a ete specifiee dans l'issue #221 et confirmee 5+ fois dans les discussions
+- Verifier que chaque image est bien positionnee sur le bon slide
+
+**VIOLATION = PR a rejeter, meme si le code compile**
+
 ### Pas de duplication
 
 - Avant de creer un fichier (README, docs, shared library), verifier qu'il n'existe pas deja
