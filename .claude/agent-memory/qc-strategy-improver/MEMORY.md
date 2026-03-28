@@ -1,26 +1,81 @@
 # QC Strategy Improver - Agent Memory
 
-## Strategy Status (iter 3 completed 2026-03-05, EMA-Cross-Index 2026-03-08)
+## Strategy Status (last update 2026-03-28, RL-DQN-Trading v2.0.1)
 
-| Strategy | Cloud ID | Issue | Sharpe iter2 | Sharpe iter3 | Status |
-|----------|----------|-------|-------------|-------------|--------|
+| Strategy | Cloud ID | Issue | Sharpe v1 | Sharpe latest | Status |
+|----------|----------|-------|-----------|--------------|--------|
+| **RL-DQN-Trading** | **29443478** | **—** | **0.136** | **0.533** | **v2.0.1: MLPRegressor DQN, 5-ETF, risk-adj reward, target-fix. Beta=0.452, Alpha=0.019. STRONGLY IMPROVED.** |
 | VIX-TermStructure | 28657907 | #18 | -0.27 | **+0.051** | HARD CEILING REACHED - v4.1 is final |
 | ForexCarry | 28657908 | #17 | -0.654 | **-0.654** | CEILING REACHED |
 | MeanReversion | 28657904 | #19 | 0.294 | **0.365** | IMPROVED |
 | FuturesTrend | 28657834 | #20 | 0.280 | **0.301** | **HARD CEILING iter5 (2026-03-09)** |
 | TurnOfMonth | 28657905 | #21 | 0.127 | 0.128 | CEILING REACHED |
 | MomentumStrategy | 28657837 | #22 | 0.411 | **0.472** | HARD CEILING - v4.0 is final (iter5 H10 rejected) |
-| AllWeather | 28657833 | #23 | 0.365 | **0.482** | **iter5: 0.520->0.602 IMPROVED** |
+| AllWeather | 28657833 | #23 | 0.365 | **0.602** | CEILING (iter5 GLD30/IEF30) |
 | OptionsIncome | 28657838 | #24 | 0.791 | **0.234** | HARD CEILING - v7.0 2018-2026 is final |
 | FamaFrench | 28657910 | #25 | 0.471 | **0.540** | IMPROVED (HEALTHY) |
 | Sector-Momentum | 28433643 | #26 | 0.554 | **0.555** | CEILING (marginal) |
-| **DualMomentum** | **28692516** | **#35** | **NEW** | **0.350** | **CEILING REACHED (iter2 revert)** |
-| **RiskParity** | **28692653** | **#35** | **NEW** | **0.399** | **CEILING REACHED** |
-| **EMA-Cross-Index** | **28789945** | **—** | **0.384** | **~0.43 expected** | **RESEARCH DONE, NO BACKTEST YET** |
-| **TrendStocksLite** | **28817425** | **—** | **NEW** | **0.719** | **v1.0 initial (2026-03-09)** |
-| **DualMomentumNoTLT** | **28817424** | **—** | **NEW** | **0.469** | **v1.0 initial (2026-03-09)** |
-| **Trend-Following** | **28797562** | **ESGF** | **0.212** | **0.212** | **CEILING REACHED (iter6, 2026-03-09)** |
-| **TrendFilteredMeanReversion** | **28817422** | **#40** | **NEW** | **-0.016** | **HARD CEILING: H4 multi-instrument REJECTED (-0.129), v1.0 is final** |
+| DualMomentum | 28692516 | #35 | NEW | **0.350** | CEILING REACHED (iter2 revert) |
+| RiskParity | 28692653 | #35 | NEW | **0.399** | CEILING REACHED |
+| EMA-Cross-Index | 28789945 | — | 0.384 | ~0.43 expected | RESEARCH DONE, NO BACKTEST YET |
+| TrendStocksLite | 28817425 | — | NEW | **0.719** | v1.0 initial (2026-03-09) |
+| DualMomentumNoTLT | 28817424 | — | NEW | **0.469** | v1.0 initial (2026-03-09) |
+| Trend-Following | 28797562 | ESGF | 0.212 | 0.212 | CEILING REACHED (iter6, 2026-03-09) |
+| TrendFilteredMeanReversion | 28817422 | #40 | NEW | **-0.016** | HARD CEILING: H4 multi-instrument REJECTED (-0.129) |
+| Gaussian-Direction-Classifier | 29398513 | — | 0.864 | **0.761** | v2.0: Beta 1.133->0.540, MaxDD 36.8%->25.6% |
+| **LSTM-Forecasting** | **29443476** | **—** | **0.366** | **0.525** | **v2.1: real MLPClassifier, 7-ETF, alpha -0.008->+0.016. IMPROVED.** |
+| **Temporal-CNN-Prediction** | **29443034** | **—** | **0.169** | **0.536** | **v2: real MLPClassifier(128,64,32), 8-ETF, 18 features. Beta=0.997 (high).** |
+| **Chronos-Foundation-Forecasting** | **29443479** | **—** | **0.114** | **0.253** | **v2: GBM+Ridge ensemble, SMA200 regime, 8-ETF. Beta 0.643->0.252, Alpha +0.002, MaxDD 22.4%. IMPROVED.** |
+
+## Chronos-Foundation-Forecasting Lessons (2026-03-28) - iter1
+
+### IMPROVED: Sharpe 0.114 -> 0.253, Beta 0.643 -> 0.252, MaxDD 31.4% -> 22.4%
+
+**Root cause v1-v5**: Fake Chronos using hardcoded attention weights + random noise. Not learning anything.
+4/7 versions had 0 trades (wrong schedule pattern).
+
+**v1 ensemble (GBM+Ridge, SPY only -> 8-ETF)**: Sharpe 0.234, Beta 0.643, Alpha -0.023.
+Real ML but high beta = bull market bias. Predicts positive returns for all equity ETFs in bull market.
+MaxDD 31.4% because all equity ETFs drop simultaneously in 2022 bear.
+
+**v2 (SMA200 regime + threshold=0.002) WINNER**: Sharpe 0.253, Beta 0.252, Alpha +0.002, MaxDD 22.4%.
+SMA200 bear regime -> only consider GLD/IEF/TLT (defensive), max 2 positions.
+Minimum threshold 0.002 (0.2% over 10 days) filters noise predictions.
+KEY INSIGHT: SMA200 filter reduces beta from 0.643 to 0.252 (-61%) - transforms beta-loading to signal-driven.
+
+**Critical lesson: High beta in ML multi-ETF strategies**
+If beta > 0.5 on a multi-ETF strategy, the ML model is predicting "always long equities" (training in bull market).
+Fix: SMA200 regime filter to reduce equity exposure in bear markets.
+This same pattern likely applies to Temporal-CNN-Prediction (Beta=0.997).
+
+**GBM+Ridge ensemble design validated**:
+- 21 features: lag returns (1,2,3,5,10,20), rolling vol (5,10,20), rolling mean (5,10,20), price/SMA (20,50), SPY cross-asset (1,5,20)
+- 252-day rolling training window, monthly retraining
+- 60% GBM + 40% Ridge weighted ensemble
+- Pipeline with StandardScaler before each model
+
+## LSTM-Forecasting Lessons (2026-03-28) - iter1
+
+### IMPROVED: Sharpe 0.366 -> 0.525, Alpha -0.008 -> +0.016
+
+**Root cause v1.0**: Fixed gate weights (0.7/0.3) = NOT training. 50% momentum blend hid the fake LSTM.
+Beta=0.886 meant the strategy was just buying SPY 88% of the time.
+
+**v2 (threshold=0.55, no min_pos) INTERMEDIATE**: Sharpe 0.278, Beta 0.292.
+Real MLP but cash drag: 0 positions when all scores < 0.55. Cash earns 0% vs risk-free ~2-5%.
+
+**v2.1 (threshold=0.52, min_pos=2) WINNER**: Sharpe 0.525, Beta 0.544, Alpha +0.016.
+Two fixes combined: lower threshold (more signals) + min_positions=2 (no cash drag).
+
+**Critical QC pattern for multi-symbol history warmup:**
+- `self.history[TradeBar](symbols_list, ...)` returns a slice dict. Iterating gives `TradeBars` objects, NOT individual bars.
+- `TradeBars` has no `.symbol` attribute -> runtime error if you try `bar.symbol`
+- CORRECT pattern: loop per symbol, call `self.history[TradeBar](sym, timedelta, Resolution.DAILY)`
+
+**sklearn availability on QC Cloud:** CONFIRMED. MLPClassifier, StandardScaler, Pipeline all work.
+
+**Pedagogical value:** Shows the contrast between a fake "LSTM" (fixed weights) and a real trained classifier.
+Alpha turns from -0.008 to +0.016 when you use actual ML.
 
 ## MomentumStrategy Lessons (2026-03-09) - iter5
 
@@ -546,6 +601,36 @@ Key findings:
 - **Only genuine improvement**: Daily SMA200 exit (v3.2). If holding SPY and SMA200 breaks
   intra-month, exit immediately. Entry stays monthly (avoids whipsaw). Result: Beta 0.145->0.098.
 - **This is a structural ceiling** for this period. Strategy is well-calibrated.
+
+## Gaussian-Direction-Classifier Lessons (2026-03-28) - iter1
+
+### Cloud ID: 29398513 | v2.0: Sharpe 0.761, Beta 0.540, CAGR 23.1%, MaxDD 25.6%
+
+**Key finding: SMA200 regime filter is the most powerful single improvement for HIGH-BETA stock-picking strategies**
+
+v1.0 had Beta 1.133 - meaning this GaussianNB stock picker was essentially a leveraged SPY with a thin alpha layer.
+Adding `if SPY < SMA200: go to cash` transformed the risk profile dramatically:
+- Beta: 1.133 -> 0.540 (halved)
+- MaxDD: 36.8% -> 25.6% (-11pp)
+- Treynor: 0.177 -> 0.283 (+60% - better return per unit of systematic risk)
+- Alpha: 0.112 -> 0.111 (essentially unchanged - signal quality preserved)
+
+**The tradeoff**: Sharpe 0.864 -> 0.761 because CAGR dropped from 29.1% to 23.1%.
+The missing ~6% comes from the periods when the strategy was in cash due to the regime filter.
+But those periods had lower signal reliability anyway. An honest assessment: the v2.0 is pedagogically
+superior because it demonstrates genuine alpha (beta 0.540, not 1.133).
+
+**Why this is different from AllWeather SMA200 (Regle #8)**:
+AllWeather SMA200 overlay FAILED (0.858->0.264) because static portfolio allocation was disrupted.
+Gaussian NB is a STOCK PICKER - being in cash during bear markets is natural and improves the signal.
+The difference: static portfolios lose rebalancing benefits when one leg is removed. Dynamic strategies
+benefit from regime awareness.
+
+**Remaining hypotheses for future iterations:**
+1. 5-day labels (instead of 1-day): Less noise but longer holding period
+2. RSI/BB z-score features instead of raw returns
+3. Retrain interval 10d vs 21d (faster regime adaptation)
+4. Sector ETFs universe (XLK, XLF, etc.) instead of individual stocks
 
 ## Critical Rules (from MEMORY in user system prompt)
 

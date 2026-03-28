@@ -3,7 +3,7 @@
 Fichier commite dans le workspace. Source de verite pour tous les agents (Claude Code, Roo, etc.) sur toutes les machines.
 Objectif : eviter de retester des hypotheses deja explorees et capturer les plafonds structurels.
 
-**Derniere MAJ** : 2026-03-09 (iteration 7 + 12 QuantBook notebooks created, issue #39/#42 DONE; issue #37 backtest extension 2010-2026 DONE)
+**Derniere MAJ** : 2026-03-28 (Temporal-CNN-Prediction v2: real MLPClassifier 8-ETF 18-features, Sharpe 0.169->0.536, alpha -0.018->+0.003)
 
 ---
 
@@ -76,6 +76,9 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 | **ETF-Pairs** | -0.706 | Meme probleme que PairsTrading. Cointregration instable. |
 | **BTC-ML** | 0.282 | ML prediction. Potentiel features engineering. Object Store pour pre-training. |
 | **Trend-Following** | 0.212 | **PLAFOND CONFIRME**. v3 (ATR1.5+SMA200+portfolio stop)=0.011, v3b (ATR1.5 seul)=0.151. MaxDD 40.9% structural. |
+| **LSTM-Forecasting** | 0.525 | **v2.1 IMPROVED**. Real MLPClassifier (64,32), 7-ETF universe, threshold=0.52, min_pos=2. Potentiel: biweekly vs weekly, threshold tuning, feature selection. |
+| **Chronos-Foundation-Forecasting** | 0.253 | **v2 IMPROVED** (2026-03-28). Replaced fake Chronos (hardcoded weights) with real GBM+Ridge ensemble. SMA200 regime filter + threshold=0.002. Beta 0.643->0.252, Alpha -0.023->+0.002, MaxDD 31.4%->22.4%. Signal-driven (beta=0.252). |
+| **RL-DQN-Trading** | 0.533 | **v2.0.1 IMPROVED** (2026-03-28). Fake linear DQN -> real MLPRegressor(64,32). 5-ETF universe, risk-adj reward. Beta=0.452, Alpha=+0.019, CAGR 10.9%, MaxDD 25.8%. Pistes: SMA200 regime, 4th allocation (cash-heavy). |
 
 ### Strategies saines (Sharpe > 0.5, pas de degradation)
 
@@ -87,6 +90,7 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 | **CSharp-BTC-EMA-Cross** | 1.094 | EMA crossover BTC C#. Stable. |
 | **Option-Wheel** | 0.996 | Wheel SPY. Stable. |
 | **EMA-Cross-Stocks** | 0.872 | 5 tech stocks. Stable. |
+| **Gaussian-Direction-Classifier** | 0.761 | v2.0 (2015-2026). GaussianNB manuelle. SMA200 regime filter. Beta 0.540. MaxDD 25.6%. Treynor 0.283 (meilleur que v1.0). |
 | **FamaFrench** | 0.540 | Factor rotation. Stable apres iter3. |
 
 ---
@@ -115,6 +119,14 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 - [x] Stop-loss 4% : Sharpe 0.096, MaxDD -2.5% seulement. Pas worth it.
 - [x] IWM addition : dilue l'alpha de QQQ.
 - [x] SPY seul (sans QQQ) : Sharpe -0.026.
+
+### Chronos-Foundation-Forecasting (2026-03-28)
+- [x] Fake Chronos v1-v5 (hardcoded attention weights + random noise) : Sharpe 0.114, Beta 0.341, 4/7 versions had 0 trades. Not a real model.
+- [x] Real GBM+Ridge ensemble, SPY only : Sharpe 0.234, Beta 0.643, Alpha -0.023. High beta = bull market bias.
+- [x] SMA200 regime filter + threshold=0.002, 8-ETF universe (v2) : Sharpe 0.253, Beta 0.252, Alpha +0.002, MaxDD 22.4%. ACCEPTED.
+  - SMA200 bear regime -> only GLD/IEF/TLT max 2 positions. Dramatically reduces Beta and MaxDD.
+  - threshold=0.002 filters noise predictions and reduces false positives.
+  - Key insight: regime filter transforms a beta-loading strategy into a signal-driven one.
 
 ### ForexCarry
 - [x] Vol filter "skip rebalance" : change Sharpe < 0.1.
@@ -177,6 +189,142 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 - [x] Trailing stop 5-8% : degrade. SPY vol ~1%/jour = triggers trop vite.
 - [x] QQQ addition : corr 0.92-0.95 avec SPY. Pas de vraie diversification.
 - [x] Cooldown > 5j : miss re-entries legitimes.
+
+### RL-DQN-Trading (iter1 - 2026-03-28)
+
+**Cloud ID** : 29443478 | Projet: RL-DQN-Trading
+
+**Probleme v1.0 (fake DQN)**: Linear Q-function (matrix dot product state x n_actions).
+SPY seul. 5 features. Sharpe 0.136, Beta 0.276, Alpha -0.009. Signaux aleatoires sans vrai apprentissage.
+
+**v2.0.1 baseline** (2015-2026): Sharpe **0.533**, Beta 0.452, Alpha +0.019, CAGR 10.9%, MaxDD 25.8%
+- Net profit 211.8%, 1944 trades, 65% win rate, fees $2,467
+
+**Ce qui a marche:**
+- [x] MLPRegressor(64,32) + StandardScaler Pipeline comme Q-network (state-action -> Q-value)
+- [x] 5-ETF universe (SPY, QQQ, IWM, TLT, GLD) avec 3 allocations portfolio (AGGRESSIVE/MODERATE/DEFENSIVE)
+- [x] 11 features: ROC (1/5/20j), RSI, BB position, vol regime (std20/std60), trend (price/SMA50),
+      TLT-SPY spread (flight-to-safety), GLD momentum, QQQ-SPY spread (tech), action memory
+- [x] Risk-adjusted reward: r - 0.5*r^2 (penalise asymetriquement les grosses pertes)
+- [x] Transaction cost penalty (2bp) pour decourager le churning
+- [x] Replay buffer 5000, batch 128, training weekly, target update monthly
+- [x] Epsilon decay 0.5 -> 0.05 sur ~2 ans (0.9978 par step)
+- [x] Period 2015-2026, weekly rebalance (Monday), training (Friday)
+
+**Bug critique corrige (v2.0 -> v2.0.1)**: _target_network.predict() avant premier fit() -> NotFittedError.
+FIX: _target_initialized = False separement de _network_initialized.
+Utiliser Q-network comme fallback jusqu'a la premiere mise a jour mensuelle du target network.
+Insidieux: build reussit, echec uniquement a l'execution apres quelques semaines.
+
+**Pistes restantes (non testees):**
+- [ ] SMA200 regime filter (SPY < SMA200 -> DEFENSIVE only) pour reduire Beta 0.452
+- [ ] 4 allocations au lieu de 3 (ajouter CASH_HEAVY: 5% SPY + 40% TLT + 40% GLD + 15% IEF)
+- [ ] Reward base sur le vrai portfolio return du jour precedent (pas approximation equity_weight*SPY_return)
+- [ ] Lookback 30j pour std60 feature (contexte plus long)
+
+### Temporal-CNN-Prediction (iter1 - 2026-03-28)
+
+**Cloud ID** : 29443034 | Projet: Temporal-CNN-Prediction
+
+**Probleme v1.0 (fake CNN)**: Hardcoded kernel weights (momentum/balanced/recent-weighted).
+Weighted average of returns dressed up as convolution. SPY only. 2018-2024.
+Resultat: Sharpe 0.169, beta=0.507, alpha=-0.018. Pas un vrai CNN.
+
+**v1.0 baseline** (2018-2024): Sharpe 0.169, Alpha -0.018, Beta 0.507, CAGR 5.1%, MaxDD 20.6%
+
+**v2.0** (real MLPClassifier 128/64/32, 8-ETF, 18 features, 2015-2026):
+- Sharpe 0.536, Alpha +0.003, Beta 0.997, CAGR 13.8%, MaxDD 33.9%
+- Net profit 315%, Total return $415K from $100K over 11 years
+- 1584 trades, fees $3,205, Win rate 65%, Profit-Loss ratio 1.18
+
+**Ce qui a marche:**
+- [x] Remplacer fake convolution par sklearn MLPClassifier(128,64,32) avec StandardScaler pipeline
+- [x] Universe 1->8 ETFs: SPY, QQQ, IWM, XLK, XLF, XLV, DIA, EFA
+- [x] 18 features temporelles multi-echelle (5d/10d/20d): mean, vol, lags, cumulative, autocorr, vol-ratio
+- [x] 3-class target: UP(>0.5%), DOWN(<-0.5%), NEUTRAL sur 10-day horizon
+- [x] Warmup per-symbol `self.history[TradeBar](sym, timedelta(...))` (pattern oblige)
+- [x] min_positions=2 pour eviter cash drag
+- [x] Biweekly rebalance (10 jours) pour reduire friction vs daily
+- [x] Periode 2018->2015 pour plus de training data
+
+**Probleme observe: Beta=0.997 tres eleve.**
+La strategie est presque pleinement investie (8 ETFs, min 2 toujours), ce qui
+explique le beta proche de 1. L'alpha est modeste (+0.003). Le Sharpe 0.536 vient
+principalement du bull market 2015-2026, pas du signal ML pur.
+
+**Pistes restantes:**
+- [ ] Ajouter SMA200 regime filter (SPY < SMA200 -> reduire to 2 positions defensives)
+- [ ] Threshold plus eleve (0.45 ou 0.50) pour etre plus selectif -> beta plus bas
+- [ ] Features: MACD signal, BB z-score pour signaux de retournement
+- [ ] Lookback 30j au lieu de 20j (plus de contexte CNN)
+- [ ] Retrain sur 2 ans (504j) au lieu de 1 an (252j)
+
+**Lecon cle**: MLPClassifier(128,64,32) fonctionne sur QC Cloud.
+La force du signal est limitee par la nature des features (returns/vol patterns
+ne capturent pas toujours les reversals). Beta=1 indique que le min_positions=2
+empeche les periodes defensives. Pour un vrai edge ML, il faut gerer le beta.
+
+### LSTM-Forecasting (iter1 - 2026-03-28)
+
+**Cloud ID** : 29443476 | Projet: LSTM-Forecasting
+
+**Probleme v1.0 (fake LSTM)**: Fixed weights (0.7 forget, 0.3 input) + 0.5 momentum blend.
+Resultat: beta=0.886 (essentiellement buy-and-hold SPY), alpha=-0.008. PAS un vrai LSTM.
+
+**v1.0 baseline** (2018-2024): Sharpe 0.366, Beta 0.886, CAGR 9.75%, MaxDD 37.2%, Alpha -0.008
+
+**v2.0** (real MLPClassifier, threshold=0.55, min_pos=0, 2015-2026): Sharpe 0.278, Beta 0.292, CAGR 6.1%, MaxDD 15.1%
+- Beta chute dramatiquement (0.886->0.292) = vrai signal ML
+- Mais Sharpe baisse car trop de periodes en cash (0 positions si aucun ETF > 0.55)
+- 1422 trades, fees $1,955
+
+**v2.1** (threshold=0.52, min_pos=2, 2015-2026): Sharpe 0.525, Beta 0.544, CAGR 11.3%, MaxDD 32.5%, Alpha +0.016
+- min_positions=2 eliminele cash drag structurel
+- Alpha devient POSITIF (+0.016): vrai edge ML confirme
+- Total return 224.9% sur 11 ans (vs 74.7% fake LSTM sur 6 ans)
+- 2094 trades, fees $3,961 (absorbables sur $227K profit)
+
+**Ce qui a marche:**
+- [x] Remplacer fake LSTM par sklearn MLPClassifier (64,32) avec StandardScaler pipeline
+- [x] 7-ETF universe (SPY, QQQ, IWM, EFA, TLT, GLD, IEF) au lieu de SPY seul
+- [x] 20 features temporelles: lag returns, rolling vol, RSI-like, momentum, autocorr, mean returns
+- [x] Warmup per-symbol avec `self.history[TradeBar](sym, timedelta, Resolution.DAILY)` (vs multi-symbol qui donne TradeBars objects)
+- [x] min_positions=2 pour eviter cash drag (toujours investis dans au moins 2 ETFs)
+- [x] threshold=0.52 au lieu de 0.55 (plus de trades, meilleure couverture)
+
+**Pistes restantes:**
+- [ ] Biweekly au lieu de weekly (reduire trades de ~2094 a ~1000, baisser fees)
+- [ ] Features: MACD, BB z-score pour signaux de retournement
+- [ ] Lookback 90j au lieu de 60j (plus de contexte historique)
+- [ ] Poids proportionnels a la confiance (scores[sym] - 0.5) au lieu d'equal-weight
+- [ ] Augmenter train_window a 504j (2 ans) pour plus de data
+
+**Lecon cle**: sklearn is available on QC Cloud. MLPClassifier(64,32) fonctionne. La cle est:
+1. Warmup per-symbol (pas multi-symbol history)
+2. min_positions pour eviter cash drag
+3. Threshold pas trop eleve (0.52 > 0.55 pour ce type de signal)
+
+### Gaussian-Direction-Classifier (iter1 - 2026-03-28)
+
+**v1.0 baseline** (cloud ID 29398513): Sharpe 0.864, Beta 1.133, CAGR 29.1%, MaxDD 36.8%, Alpha 0.112
+**v2.0** (universe8 + SMA200 + threshold 0.60 + prob-weighted): Sharpe 0.761, Beta 0.540, CAGR 23.1%, MaxDD 25.6%, Alpha 0.111
+
+**Ce qui a ete change en v2.0:**
+- [x] Universe 5->8 (AAPL, MSFT, GOOGL, AMZN, NVDA + META, TSLA, NFLX): diversification candidate pool
+- [x] SMA200 regime filter: SPY < SMA200 = go to cash. Beta 1.133 -> 0.540. MaxDD -11pp.
+- [x] Confidence threshold 0.55->0.60: signaux plus propres
+- [x] Feature [5,10,21] -> [2,5,10,21]: added 2-day short-term reversal
+- [x] Probability-weighted positions: poids proportionnels a (p - 0.5)
+
+**Verdict v2.0**: Sharpe baisse (0.864->0.761) car CAGR reduit par periodes cash en bear market.
+MAIS: Treynor 0.177->0.283 (meilleur), MaxDD -11pp, Beta halved. Trade-off valide pedagogiquement.
+Le signal propre (Alpha~0.111) est preserve identiquement. La reduction vient du regime filter, pas d'une degradation du signal.
+
+**Pistes restantes:**
+- [ ] Holdingperiod: 1-day label est tres bruity (53% accuracy theorique max). Essayer 5-day label?
+- [ ] Feature engineering: RSI, BB z-score au lieu de raw returns?
+- [ ] Reduce universe to SPY sectors (XLK, XLF, XLE, etc.) au lieu de single stocks?
+- [ ] Retrain interval: 10j au lieu de 21j pour s'adapter plus vite aux regimes?
 
 ---
 
