@@ -813,6 +813,7 @@ layout: section
   - Gratuites : Yahoo Finance, Alpha Vantage, Binance (crypto)
   - Professionnelles : Interactive Brokers, Bloomberg, Refinitiv
   - QuantConnect fournit gratuitement des donnees ajustees (splits, dividendes)
+  - Notebooks : `QC-Py-03-Data-Management.ipynb`, `QC-Py-12-Backtesting-Analysis.ipynb`
 
 </div>
 ---
@@ -871,16 +872,16 @@ layout: section
 - **Solution open-core en Python et C#**
   - 3 environnements : QuantConnect Cloud, Lean-cli + VS Code, Lean local
   - Pipeline complet : recherche -> backtest -> paper trading -> live trading
-  - **Utilisee dans ce cours** pour tous les exercices pratiques
+  - **Utilisee dans ce cours** : 28 notebooks + 57 projets
 
 <div v-click="1">
 
 - **Avantages**
   - Gestion native des ajustements de donnees (splits, dividendes, delistings)
   - Grand catalogue de donnees : actions US, forex, crypto, futures, options
-  - Donnees alternatives : sentiment, fundamentals, SEC filings
-  - Framework de haut niveau : Alpha, Portfolio Construction, Risk Management
-  - Communaute active et documentation riche
+  - Framework de haut niveau : Alpha, Portfolio, Risk, Execution
+  - Exemples crypto : `projects/EMA-Cross-Crypto`, `projects/BTC-MACD-ADX`
+  - Debut : `QC-Py-01-Setup.ipynb` puis `QC-Py-02-Platform-Fundamentals.ipynb`
 
 </div>
 ---
@@ -1166,22 +1167,18 @@ imageClass: mid-right
   - Acheter "trop bas", vendre "trop haut"
 <div v-click="1">
 
-- **Recherche Academique**
-  - Proches d'une marche aleatoire a court terme
-  - Documentee sur certains horizons (pairs trading, ETFs)
-
-</div>
-<div v-click="2">
-
 - **Pieges courants**
   - Biais de Survie : actifs delistes faussent les resultats
   - Co-integration necessaire (pas juste la correlation)
-</div>
-<div v-click="3">
-
-- **Concurrence**
   - Plus une anomalie est connue, plus elle s'erode
-  - Chercher des paires moins evidentes ou des marches de niche
+</div>
+<div v-click="2">
+
+- **Projets du depot**
+  - `projects/MeanReversion` -- Strategie classique z-score
+  - `projects/PairsTrading` -- Pairs co-integrees (ETFs)
+  - `projects/TrendFilteredMeanReversion` -- Mean reversion + filtre tendance
+  - Notebook : `QC-Py-11-Technical-Indicators.ipynb`
 
 </div>
 ---
@@ -1211,9 +1208,11 @@ imageClass: mid-right
 </div>
 <div v-click="3">
 
-- **Concurrence et erosion**
-  - Plus les strategies momentum sont populaires, plus elles s'auto-detruisent
-  - Necessite d'innover : momentum cross-asset, momentum sur donnees alternatives
+- **Projets du depot**
+  - `projects/MomentumStrategy` -- Momentum classique
+  - `projects/DualMomentum` -- Dual momentum (absolue + relative)
+  - `projects/SectorMomentum` -- Rotation sectorielle
+  - `projects/TrendStocks-Alpha` -- Alpha model base sur le trend
 
 </div>
 ---
@@ -1229,6 +1228,8 @@ imageClass: mid-right
 - **Outils & Approches - GARCH**
   - Modele "autoregressif conditionnellement heteroscedastique generalise"
   - Utile pour mesurer la volatilite, moins pour le prix d'actions
+  - Voir `projects/RegimeSwitching` et `projects/Markov-Regime-Detection`
+  - Notebook : `QC-Py-28-Market-Regime-Detection.ipynb`
 
 </div>
 ---
@@ -1294,9 +1295,11 @@ imageClass: mid-right
 </div>
 <div v-click="2">
 
-- **Utilisation**
-  - Ces modeles sont couramment utilises pour la construction de portefeuilles
-  - Pour comprendre les sources de rendement
+- **Utilisation et projets du depot**
+  - Construction de portefeuilles et comprehension des sources de rendement
+  - `projects/FamaFrench` -- Modele Fama-French classique
+  - `projects/RiskParity` -- Allocation parite de risque
+  - Notebook : `QC-Py-10-Risk-Portfolio-Management.ipynb`
 
 </div>
 ---
@@ -1326,8 +1329,10 @@ imageClass: mid-right
 </div>
 <div v-click="4">
 
-- **Importance de la mise en place d'un pipeline de donnees**
-  - Collecte, nettoyage, feature engineering etc.
+- **Pratique dans le depot**
+  - Notebook : `QC-Py-17-Sentiment-Analysis.ipynb`
+  - Projet : `projects/ML-TextClassification`
+  - Pipeline complet : `QC-Py-18-ML-Features-Engineering.ipynb`
 
 </div>
 ---
@@ -1392,12 +1397,11 @@ imageClass: mid-right
 
 <div v-click="1">
 
-- **Theorie des jeux appliquee**
-  - Le marche est un jeu a somme nulle : chaque gain est la perte d'un autre
-  - Strategies adversariales : predire ce que les autres algorithmes vont faire
-  - Signalement : detecter les "baleines" (gros ordres caches) par leur empreinte
-  - Flash crashs : cascades algorithmiques auto-amplifiees (ex: Flash Crash 2010)
-  - Importance de la robustesse face a la manipulation
+- **Theorie des jeux et projets du depot**
+  - Le marche est un jeu a somme nulle : strategies adversariales
+  - Flash crashs : cascades algorithmiques auto-amplifiees
+  - Notebook LLM : `QC-Py-26-LLM-Trading-Signals.ipynb`
+  - Projet : `projects/Gaussian-Direction-Classifier` (classification bayesienne)
 
 </div>
 ---
@@ -1485,16 +1489,17 @@ imageClass: mid-right
 # Arbitrage et Paires
 
 - **Pairs Trading**
-  - Objectif: Capitaliser sur la relation entre deux actifs similaires
-  - Utilisation: Necessite une analyse de co-integration
-  - Mecanisme: Achete un actif et vend un actif similaire en anticipation d'une convergence des prix
+  - Capitaliser sur la relation entre deux actifs co-integres
+  - Mecanisme: Acheter l'actif sous-evalue, vendre le sur-evalue
+  - Necessite un test de co-integration (Engle-Granger, Johansen)
 
 <div v-click="1">
 
 - **Statistical Arbitrage**
-  - Objectif: Exploiter les ecarts de prix entre des actifs fortement correles
-  - Utilisation: Necessite une modelisation statistique complexe
-  - Mecanisme: Utilise des modeles statistiques pour identifier les opportunites d'arbitrage
+  - Exploiter les ecarts de prix entre actifs fortement correles
+  - Modelisation statistique complexe (spread z-score, half-life)
+  - Projets : `projects/PairsTrading`, `projects/ETF-Pairs`
+  - ML-augmente : `projects/ML-EnhancedPairs`
 
 </div>
 ---
@@ -1581,9 +1586,10 @@ imageClass: mid-right
 </div>
 <div v-click="3">
 
-- **Precautions**
-  - Biais de Data-Snooping
-  - Verifier la fiabilite et le sens economique
+- **Precautions et projets**
+  - Biais de Data-Snooping, verifier le sens economique
+  - Projet : `projects/TurnOfMonth` -- Strategie calendaire
+  - Projet : `projects/VIX-TermStructure` -- Structure des termes VIX
 
 </div>
 ---
@@ -1654,9 +1660,11 @@ imageClass: mid-right
 </div>
 <div v-click="2">
 
-- **Un faible beta avec un levier modere**
-  - Offre theoriquement une meilleure croissance composee a long terme (cf. formule de Kelly)
-  - Mais avec des risques inherents
+- **Projets du depot**
+  - `projects/AllWeather` -- Portefeuille "toutes saisons" (Ray Dalio)
+  - `projects/AdaptiveAssetAllocation` -- Allocation adaptive
+  - `projects/Portfolio-Optimization-ML` -- Optimisation par ML
+  - Notebook : `QC-Py-21-Portfolio-Optimization-ML.ipynb`
 
 </div>
 ---
@@ -2226,9 +2234,10 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
 
 - **Avantage du framework**
   - Chaque module est interchangeable et testable independamment
-  - Combiner un Alpha momentum avec un Portfolio equal-weight et un Risk drawdown-max
-  - Possible de mixer primitives bas niveau (SetHoldings) et modules haut niveau
-  - Facilite la composition : plusieurs Alphas peuvent contribuer au meme portefeuille
+  - Possible de mixer primitives bas niveau et modules haut niveau
+  - Facilite la composition : plusieurs Alphas contribuent au meme portefeuille
+  - Exemples complets : `projects/Framework_Composite_*` (4 strategies composites)
+  - Notebooks : `QC-Py-13-Alpha-Models.ipynb`, `QC-Py-14-Portfolio-Construction-Execution.ipynb`
 
 </div>
 ---
@@ -2256,7 +2265,8 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
 
 - **Methode OnSecurityChanged quand des actifs sont rajoutes ou enleves**
   - C#: `public override void OnSecuritiesChanged(SecurityChanges changes)`
-  - Python: `def OnSecuritiesChanged(self, algorithm: QCAlgorithm, changes: SecurityChanges) -> None:`
+  - Python: `def OnSecuritiesChanged(self, algorithm, changes) -> None:`
+  - Notebook : `QC-Py-05-Universe-Selection.ipynb`
 
 </div>
 ---
@@ -2275,8 +2285,9 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
 <div v-click="2">
 
 - **Alphas par defaut**
-  - ConstantAlphaModel, HistoricalReturnsAlphaModel, EmaCrossAlphaModel, MacdAlphaModel, RsiAlphaModel
-  - BasePairsTradingAlphaModel, PearsonCorrelationPairsTradingAlphaModel etc.
+  - EmaCrossAlphaModel, MacdAlphaModel, RsiAlphaModel
+  - PearsonCorrelationPairsTradingAlphaModel
+  - Exemple custom : `projects/EMA-Cross-Alpha` (Alpha standalone)
 
 </div>
 ---
@@ -2455,9 +2466,10 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
 <div v-click="2">
 
 - **Bon usage**
-  - Attention a la combinatoire (Produit cartesien de toutes les possibilites voire + pour Euler)
-  - Utilisation d'une version d'algo "rapide" (test manuel de sensibilite a la resolution)
-  - Attention au sur-apprentissage (Optimisation sur une periode donnee, validation finale sur une periode + recente)
+  - Attention a la combinatoire (produit cartesien des possibilites)
+  - Version d'algo "rapide" pour tester la sensibilite
+  - Validation finale sur une periode hors-echantillon
+  - Notebook : `QC-Py-15-Parameter-Optimization.ipynb`
 
 </div>
 ---
@@ -2519,10 +2531,10 @@ imageClass: mid-right
 <div v-click="1">
 
 - **Evolution des architectures** (a droite : cellule LSTM)
-  - RNN/LSTM : capturent les dependances temporelles, reference historique
-  - Transformers : attention mechanism, dominent depuis 2023
-  - CNN temporelles : efficaces pour les patterns locaux
-  - Modeles de diffusion : nouvelle frontiere pour la generation de scenarios
+  - RNN/LSTM : `QC-Py-22-Deep-Learning-LSTM.ipynb`, `projects/DL-LSTM`
+  - Transformers : `QC-Py-23-Attention-Transformers.ipynb`
+  - Autoencoders : `QC-Py-24-Autoencoders-Anomaly.ipynb`
+  - Reinforcement Learning : `QC-Py-25-Reinforcement-Learning.ipynb`
 
 </div>
 ---
@@ -2536,11 +2548,11 @@ imageClass: mid-right
 
 <div v-click="1">
 
-- **Bonnes pratiques**
-  - Walk-forward validation : entrainer sur une fenetre glissante, jamais sur le futur
-  - Ensemble methods : combiner plusieurs modeles reduit le risque de sur-apprentissage
-  - Features > Architecture : le choix des features prime sur la complexite du modele
-  - Pipeline de reentrainement automatique : detecter la degradation et re-entrainer
+- **Bonnes pratiques et exemples du depot**
+  - Walk-forward : `QC-Py-19-ML-Supervised-Classification.ipynb`
+  - Features engineering : `QC-Py-18-ML-Features-Engineering.ipynb`
+  - Projets ML : `ML-RandomForest`, `ML-SVM`, `ML-XGBoost`, `ML-Ensemble`
+  - Portfolio ML : `QC-Py-21-Portfolio-Optimization-ML.ipynb`
 
 </div>
 ---
@@ -2675,21 +2687,36 @@ layout: section
 
 ---
 
-# Pour aller plus loin : Notebooks
+# Pour aller plus loin : Notebooks (1/2)
 
-**Notebooks QuantConnect (~27 notebooks disponibles)**
-- Strategies de base: `QuantConnect/BasicTemplateAlgorithm.ipynb`
-- Moyennes mobiles: `QuantConnect/MovingAverageCrossover.ipynb`
-- RSI Strategy: `QuantConnect/RSIStrategy.ipynb`
-- Mean Reversion: `QuantConnect/MeanReversion.ipynb`
-- Backtesting: `QuantConnect/BacktestAnalysis.ipynb`
-- Optimisation: `QuantConnect/ParameterOptimization.ipynb`
-- LSTM pour prediction: `QuantConnect/LSTM-Prediction.ipynb`
-- Reinforcement Learning: `QuantConnect/ReinforcementLearning.ipynb`
+**28 notebooks progressifs** dans `QuantConnect/Python/`
+
+| Bloc | Notebooks | Theme |
+|------|-----------|-------|
+| **Fondamentaux** | QC-Py-01 a 04 | Setup, Plateforme, Donnees, Recherche |
+| **Instruments** | QC-Py-05 a 09 | Univers, Options, Futures/Forex, Multi-asset, Ordres |
+| **Strategies** | QC-Py-10 a 15 | Risk/Portfolio, Indicateurs, Backtest, Alpha, Execution, Optimisation |
+| **Donnees alt.** | QC-Py-16 a 17 | Donnees alternatives, Sentiment |
+
+---
+
+# Pour aller plus loin : Notebooks (2/2)
+
+| Bloc | Notebooks | Theme |
+|------|-----------|-------|
+| **ML classique** | QC-Py-18 a 21 | Features, Classification, Regression, Portfolio ML |
+| **Deep Learning** | QC-Py-22 a 25 | LSTM, Transformers, Autoencoders, RL |
+| **Avance** | QC-Py-26 a 28 | LLM Trading, Production, Regime Detection |
+
+**57 projets de strategies** dans `QuantConnect/projects/`
+- Strategies classiques : EMA-Cross, MeanReversion, DualMomentum, PairsTrading
+- ML : ML-RandomForest, ML-SVM, ML-XGBoost, ML-Ensemble, DL-LSTM
+- Framework composites : 4 strategies combinees (Trend, FamaFrench, Momentum, Weather)
+- Crypto : BTC-MACD-ADX, EMA-Cross-Crypto, Crypto-LSTM-Prediction
 
 **Autres notebooks pertinents**
 - Optimisation de portefeuille: `Search/Portfolio_Optimization_GeneticSharp.ipynb`
-- Modeles probabilistes pour le risque: `Probas/`
+- Modeles probabilistes: `Probas/` (Infer.NET)
 
 ---
 
@@ -2708,9 +2735,9 @@ layout: section
 <div v-click="2">
 
 - **La pratique avec Lean/QuantConnect**
-  - Framework complet : de la recherche au live trading
-  - Python pour le prototypage, C# pour la performance
-  - Le framework de haut niveau (Alpha, Portfolio, Risk, Execution) structure vos strategies
+  - 28 notebooks progressifs (`QC-Py-01` a `QC-Py-28`)
+  - 57 projets de strategies prets a backtester
+  - 4 strategies composites Framework pour apprendre l'architecture
 </div>
 <div v-click="3">
 
@@ -2718,6 +2745,7 @@ layout: section
   - Commencez simple, mesurez, iterez
   - La gestion du risque est plus importante que la generation de signaux
   - "Il vaut mieux un Sharpe de 1.5 stable qu'un Sharpe de 3 qui explose tous les 2 ans"
+  - Commencez par `QC-Py-01-Setup.ipynb` puis explorez `projects/EMA-Cross-Stocks`
 
 </div>
 ---
