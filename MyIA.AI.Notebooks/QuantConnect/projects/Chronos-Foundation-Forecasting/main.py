@@ -59,9 +59,13 @@ class ChronosFoundationForecasting(QCAlgorithm):
         self._confidence_threshold = self.get_parameter('confidence_threshold', 0.6)
 
         # Tokenizer parameters (simplified quantization)
-        self._num_tokens = 4096  # Vocabulary size
+        self._num_tokens = self.get_parameter('num_tokens', 32)
         self._center = 0.0
         self._scale = 0.02  # For returns normalization
+
+        # Signal smoothing
+        self._smooth_window = self.get_parameter('smooth_window', 5)
+        self._recent_signals = deque(maxlen=self._smooth_window)
 
         # Data collection
         self._price_window = deque(maxlen=self._context_length * 2)
@@ -218,6 +222,10 @@ class ChronosFoundationForecasting(QCAlgorithm):
         prob_up = np.mean([s > 0 for s in [median]])
         direction_confidence = abs(prob_up - 0.5) * 2
 
+        # Signal smoothing: average recent predictions
+        self._recent_signals.append(median)
+        smooth_median = np.mean(list(self._recent_signals))
+
         # Combined confidence
         combined_confidence = confidence * direction_confidence
 
@@ -234,14 +242,14 @@ class ChronosFoundationForecasting(QCAlgorithm):
             'confidence': combined_confidence
         })
 
-        # Trading logic
+        # Trading logic: use smoothed signal for direction
         if combined_confidence > self._confidence_threshold:
-            if median > 0:
+            if smooth_median > 0:
                 self.set_holdings(self._spy, 1.0)
-                self.log(f"Chronos: UP forecast={median:.4f}, confidence={combined_confidence:.2%}")
+                self.log(f"Chronos: UP forecast={smooth_median:.4f}, confidence={combined_confidence:.2%}")
             else:
                 self.set_holdings(self._spy, 0.0)
-                self.log(f"Chronos: DOWN forecast={median:.4f}, confidence={combined_confidence:.2%}")
+                self.log(f"Chronos: DOWN forecast={smooth_median:.4f}, confidence={combined_confidence:.2%}")
 
     def on_end_of_algorithm(self):
         final_value = self.portfolio.total_portfolio_value

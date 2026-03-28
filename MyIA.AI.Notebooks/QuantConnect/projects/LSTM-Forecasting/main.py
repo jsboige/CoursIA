@@ -38,6 +38,8 @@ class LSTMForecasting(QCAlgorithm):
     - hidden_size: LSTM hidden state size (default: 32)
     - prediction_threshold: Minimum confidence to trade (default: 0.55)
     - retrain_frequency: Days between model updates (default: 60)
+    - momentum_weight: Blend weight for momentum signal (default: 0.5)
+    - momentum_lookback: Days for momentum calculation (default: 10)
     """
 
     def initialize(self):
@@ -52,6 +54,8 @@ class LSTMForecasting(QCAlgorithm):
         self._hidden_size = self.get_parameter('hidden_size', 32)
         self._prediction_threshold = self.get_parameter('prediction_threshold', 0.55)
         self._retrain_frequency = self.get_parameter('retrain_frequency', 60)
+        self._momentum_weight = self.get_parameter('momentum_weight', 0.5)
+        self._momentum_lookback = self.get_parameter('momentum_lookback', 10)
 
         # Feature collection
         self._returns_window = deque(maxlen=self._lookback_days * 3)
@@ -150,7 +154,7 @@ class LSTMForecasting(QCAlgorithm):
 
     def _lstm_forward(self, sequence):
         """
-        Forward pass through LSTM network.
+        Forward pass through LSTM network with momentum blend.
         """
         h = np.zeros(self._hidden_size)
         c = np.zeros(self._hidden_size)
@@ -161,8 +165,17 @@ class LSTMForecasting(QCAlgorithm):
             x = np.full(self._hidden_size, val)
             h, c = self._lstm_cell(x, h, c)
 
-        # Final prediction from hidden state
-        output = self._sigmoid(np.mean(h))
+        # LSTM signal
+        lstm_signal = np.mean(h)
+
+        # Momentum signal (simple trailing average)
+        momentum_signal = 0.0
+        if len(sequence) >= self._momentum_lookback:
+            momentum_signal = np.mean(sequence[-self._momentum_lookback:])
+
+        # Blend signals
+        combined = (1 - self._momentum_weight) * lstm_signal + self._momentum_weight * momentum_signal
+        output = self._sigmoid(combined)
         return output
 
     def _train_model(self):

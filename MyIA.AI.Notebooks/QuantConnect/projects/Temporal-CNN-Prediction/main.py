@@ -43,8 +43,9 @@ class TemporalCNNPrediction(QCAlgorithm):
 
         # Model parameters
         self._lookback_days = self.get_parameter('lookback_days', 20)
-        self._prediction_threshold = self.get_parameter('prediction_threshold', 0.6)
+        self._prediction_threshold = self.get_parameter('prediction_threshold', 0.52)
         self._retrain_frequency = self.get_parameter('retrain_frequency', 30)
+        self._use_ensemble = self.get_parameter('use_ensemble', True)
 
         # Feature collection
         self._returns_window = deque(maxlen=self._lookback_days * 2)
@@ -95,8 +96,7 @@ class TemporalCNNPrediction(QCAlgorithm):
         """
         Simplified CNN-like prediction using 1D convolution simulation.
 
-        In production, this would use PyTorch/TensorFlow with proper
-        Conv1D layers. Here we use a simplified version for demonstration.
+        Supports multi-kernel ensemble for more robust predictions.
         """
         if len(features) < self._lookback_days:
             return 0.5
@@ -104,17 +104,30 @@ class TemporalCNNPrediction(QCAlgorithm):
         # Normalize features
         x = self._normalize_features(np.array(features[-self._lookback_days:]))
 
-        # Simulate Conv1D with local pattern detection
-        # Kernel size = 3, stride = 1
-        kernel_size = 3
-        conv_features = []
-        for i in range(len(x) - kernel_size + 1):
-            # Local pattern: sum of weighted consecutive returns
-            local_sum = np.sum(x[i:i+kernel_size] * np.array([0.3, 0.4, 0.3]))
-            conv_features.append(np.tanh(local_sum))
-
-        # Global average pooling
-        pooled = np.mean(conv_features)
+        if self._use_ensemble:
+            # Multi-kernel ensemble (momentum, balanced, recent-weighted)
+            kernels = [
+                np.array([0.5, 0.3, 0.2]),
+                np.array([0.3, 0.4, 0.3]),
+                np.array([0.2, 0.3, 0.5]),
+            ]
+            pool_values = []
+            for kernel in kernels:
+                kernel_size = len(kernel)
+                conv_features = []
+                for i in range(len(x) - kernel_size + 1):
+                    local_sum = np.sum(x[i:i + kernel_size] * kernel)
+                    conv_features.append(np.tanh(local_sum))
+                pool_values.append(np.mean(conv_features))
+            pooled = np.mean(pool_values)
+        else:
+            # Single kernel (original)
+            kernel_size = 3
+            conv_features = []
+            for i in range(len(x) - kernel_size + 1):
+                local_sum = np.sum(x[i:i + kernel_size] * np.array([0.3, 0.4, 0.3]))
+                conv_features.append(np.tanh(local_sum))
+            pooled = np.mean(conv_features)
 
         # Dense layer (sigmoid for probability)
         probability = 1 / (1 + np.exp(-pooled * 2))
