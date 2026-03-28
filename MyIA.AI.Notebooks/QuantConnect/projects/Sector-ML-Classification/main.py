@@ -93,7 +93,7 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
         self.SetStartDate(self.BACKTEST_START.year, self.BACKTEST_START.month, self.BACKTEST_START.day)
         self.SetEndDate(self.BACKTEST_END.year, self.BACKTEST_END.month, self.BACKTEST_END.day)
         self.SetCash(self.STARTING_CASH)
-        self.SetBrokerageModel(BrokerageName.AlphaStreams, AccountType.Cash)
+        self.SetBrokerageModel(BrokerageName.QuantConnectBrokerage, AccountType.MARGIN)
 
         # Ajouter les 11 ETFs sectoriels
         self.symbols = []
