@@ -23,6 +23,23 @@ Guidance for Claude Code working with the CoursIA repository.
 
 ---
 
+## RÈGLE - RooSync Dashboard : toujours lire le contenu complet
+
+Le **dashboard RooSync workspace CoursIA** (`roosync_dashboard` type=workspace, workspace=CoursIA) est le canal central de coordination cross-machine. Il contient le status du coordinateur (ai-01), les missions assignees, les resultats backtests, les decisions de consolidation, et l'intercom entre agents.
+
+### Obligations lors d'un tour de coordination :
+1. **Lire le contenu complet** du dashboard — l'API retourne parfois un JSON tronque en preview ("Output too large"). Dans ce cas, TOUJOURS utiliser `Read` sur le fichier persiste pour lire l'integralite.
+2. **Verifier l'inbox** RooSync pour les messages directs non lus.
+3. **Verifier le heartbeat** cluster pour savoir quelles machines sont actives.
+4. **Si aucune mission assignee** : envoyer un message RooSync a ai-01 (coordinateur) pour demander des instructions. Ne pas attendre passivement.
+
+### Ne JAMAIS :
+- Resumer le dashboard a partir du seul preview tronque
+- Omettre la lecture de l'intercom (contient l'historique des decisions)
+- Se considerer "disponible" sans prevenir le coordinateur
+
+---
+
 ## 🚨 RÈGLE CRITIQUE - Git Force Push INTERDIT
 
 **INCIDENT 2026-03-13** : Force push accidentel sur main a potentiellement écrasé des commits
