@@ -121,10 +121,14 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
 
             # Train Ridge regression
             model = Ridge()
-            model.fit(factors.loc[idx], label.loc[idx])
+            model.fit(
+                factors.loc[idx].values, label.loc[idx].values
+            )
 
             # Predict volatility
-            prediction = model.predict([factors.iloc[-1]])[0]
+            prediction = model.predict(
+                [factors.iloc[-1].values]
+            )[0]
             if prediction > 0:
                 expected_volatility_by_security[security] = prediction
             self.plot(

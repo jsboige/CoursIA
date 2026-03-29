@@ -1,5 +1,6 @@
 #region imports
 from AlgorithmImports import *
+from QuantConnect.Data.Custom.CBOE import CBOE
 
 from sklearn.linear_model import Lasso
 # endregion
@@ -63,9 +64,13 @@ class StoplossVolatilityMLAlgorithm(QCAlgorithm):
         self._std = StandardDeviation(period)
 
         # Warm up VIX history
-        self._samples['vix'] = self.history(
+        vix_history = self.history(
             self._vix, self._samples_lookback, Resolution.DAILY
-        ).loc[self._vix]['value']
+        )
+        if not vix_history.empty:
+            if isinstance(vix_history.index, pd.MultiIndex):
+                vix_history = vix_history.loc[self._vix]
+            self._samples['vix'] = vix_history['value']
         self._warm_up_samples()
 
         # Schedule weekly trading

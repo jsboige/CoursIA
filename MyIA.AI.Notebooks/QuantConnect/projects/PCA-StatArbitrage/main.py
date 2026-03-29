@@ -97,7 +97,9 @@ class PCAStatArbitrageAlgorithm(QCAlgorithm):
         # Compute portfolio weights via PCA stat-arb
         weights = self._get_weights(history)
 
-        if not weights:
+        if isinstance(weights, dict) and not weights:
+            return
+        if hasattr(weights, 'empty') and weights.empty:
             return
 
         # Enter mean-reversion positions (negative weights = contrarian)
