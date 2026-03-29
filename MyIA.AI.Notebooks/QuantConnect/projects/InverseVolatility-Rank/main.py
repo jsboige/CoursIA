@@ -34,6 +34,9 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
     - std_months: Months for std indicator (default: 3)
     - atr_months: Months for ATR indicator (default: 3)
     - training_set_duration: Days of training data (default: 365)
+    - weight_multiplier: Portfolio leverage (default: 1.0, was 3.0)
+    - max_position_pct: Max weight per contract (default: 0.12 = 12%)
+    - stop_loss_pct: Stop-loss per position (default: 0.08 = 8%)
     """
 
     def initialize(self):
@@ -47,6 +50,16 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
             self.get_parameter('training_set_duration', 365)
         )
         self._future_std_period = 6
+        self._weight_multiplier = float(
+            self.get_parameter('weight_multiplier', 2.0)
+        )
+        self._max_position_pct = float(
+            self.get_parameter('max_position_pct', 0.15)
+        )
+        self._stop_loss_pct = float(
+            self.get_parameter('stop_loss_pct', 0.08)
+        )
+        self._entry_prices = {}
 
         self._contracts = []
 
@@ -77,6 +90,13 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
             self.date_rules.week_start(schedule_symbol),
             self.time_rules.after_market_open(schedule_symbol, 1),
             self._trade
+        )
+
+        # Daily stop-loss check
+        self.schedule.on(
+            self.date_rules.every_day(schedule_symbol),
+            self.time_rules.after_market_open(schedule_symbol, 30),
+            self._check_stop_loss
         )
 
     def _trade(self):
@@ -143,19 +163,49 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
             1 / vol
             for vol in expected_volatility_by_security.values()
         )
+
         for security, expected_vol in (
             expected_volatility_by_security.items()
         ):
-            weight = (
-                3
+            raw_weight = (
+                self._weight_multiplier
                 / expected_vol
                 / std_sum
                 / security.symbol_properties.contract_multiplier
             )
+            # Cap individual position size
+            weight = min(raw_weight, self._max_position_pct)
             portfolio_targets.append(
                 PortfolioTarget(security.symbol, weight)
             )
+            # Track entry price for stop-loss
+            if security.symbol not in self._entry_prices:
+                self._entry_prices[security.symbol] = security.price
         self.set_holdings(portfolio_targets, True)
+
+    def _check_stop_loss(self):
+        """Liquidate positions that exceeded stop-loss threshold."""
+        for security in list(self._contracts):
+            symbol = security.symbol
+            if symbol not in self._entry_prices:
+                continue
+            if not self.portfolio.ContainsKey(symbol):
+                continue
+            holding = self.portfolio[symbol]
+            if holding.quantity == 0:
+                self._entry_prices.pop(symbol, None)
+                continue
+            entry = self._entry_prices[symbol]
+            if entry == 0:
+                continue
+            pnl_pct = (security.price - entry) / entry
+            # For short positions, invert PnL
+            if holding.quantity < 0:
+                pnl_pct = -pnl_pct
+            if pnl_pct < -self._stop_loss_pct:
+                self.liquidate(symbol)
+                self._entry_prices.pop(symbol, None)
+                self.plot("Risk", "StopLoss", -self._stop_loss_pct)
 
     def on_securities_changed(self, changes):
         """Handle futures contract rollovers."""
