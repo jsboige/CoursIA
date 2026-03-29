@@ -12,23 +12,6 @@
 
 ### Successful Enrichment Sessions
 
-- **2026-02-15**: QC-Py-24-Autoencoders-Anomaly (11 cells added, 7.5/10 → 9.0/10)
-  - VAE + HMM for anomaly detection and regime switching
-  - BOTTOM-to-TOP insertion strategy flawless (11 cells, no errors)
-  - Fixed code/markdown ratio from 62/38 to 43/57
-  - All interpretations positioned correctly after code outputs
-  - Added interpretations for: data structure, features, VAE training, anomaly detection, VAE comparison, transition matrix, HMM comparison, regime characterization, backtest, model sizes, QC production code
-  - Critical transition cell between VAE and HMM sections
-  - Summary report: `enrichment_summary_qc24.md`
-
-- **2026-02-15**: QC-Py-23-Attention-Transformers (11 cells added, 7/10 → 8.5/10)
-  - Advanced ML/SSM content with PyTorch implementations
-  - BOTTOM-to-TOP insertion strategy flawless (11 cells, no errors)
-  - Fixed code/markdown ratio from 62/38 to 43/57
-  - All interpretations positioned correctly after code outputs
-  - Added interpretations for: complexity viz, SSM demo, S4 test, Mamba test, training results, SST hybrid, benchmark
-  - Summary report: `enrichment_summary_qc23.md`
-
 - **2026-02-07**: DataScienceWithAgents Labs (3 notebooks, 11 cells added) - See [enrichment-log-2026-02-07.md](enrichment-log-2026-02-07.md)
   - All cells positioned correctly on first attempt
   - BOTTOM-to-TOP strategy prevented index conflicts
@@ -44,32 +27,15 @@
   - Added interpretation after PSO convergence visualization with technical note
   - Replaced seaborn with matplotlib in comparative plots (removed dependency)
   - All cells positioned correctly, BOTTOM-to-TOP strategy used
-- **2026-02-19**: Video GPU Notebooks Pedagogical Enhancement (6 notebooks)
-  - Replaced "désactivé/non disponible" messages with detailed pedagogical outputs
-  - Added MODE PEDAGOGIQUE sections with expected parameters, results, and reproduction code
-  - Notebooks: 01-3-Qwen-VL, 01-4-ESRGAN, 02-1-HunyuanVideo, 02-2-LTX-Video, 02-3-Wan, 02-4-SVD
-  - Used edit_mode="replace" on existing interpretation cells (not insertions)
-  - No cell positioning issues since we replaced existing cells
-- **2026-03-16**: GameTheory Series Header Standardization (12 notebooks reviewed, 6 fixed)
-  - Systematic review of all 17 GameTheory notebooks for header compliance
-  - Fixed pattern: "**Objectifs pedagogiques** :" (bold) → "### Objectifs d'apprentissage" (header)
-  - Fixed pattern: "### Objectifs pedagogiques" → "### Objectifs d'apprentissage"
-  - Fixed pattern: "**Prerequis**" / "**Duree estimee**" bold → proper ### headers
-  - Notebooks fixed: 8, 11, 12, 13, 14, 15, 16, 16b, 17 (across two sessions)
-  - Notebooks already correct: 1, 2, 4c, 8c, 15b, 15c, 16c
-  - Lean notebooks (4b, 16b): only markdown cells modified, never code/lean cells
-  - Also fixed wrong navigation links: notebook-11 pointing to itself instead of notebook-12
-  - GameTheory domain: CFR, Stackelberg, Fictitious Play, PSRO, AlphaZero, Arrow/Sen, Sprague-Grundy
-  - Key rule confirmed: Lean notebooks follow same header standards as Python notebooks
-
-- **2026-03-03**: Lean-11-TorchLean Pedagogical Enhancement (4 cells added, SQUELETTE → COMPLET)
-  - TorchLean: réseaux de neurones formellement vérifiés avec Lean 4
-  - BOTTOM-to-TOP insertion strategy flawless (4 cells, no errors)
-  - Added sections: 3.0 (API philosophy), 4.5 (numerical errors), 5.4 (IBP visualization), 8.6 (visual synthesis)
-  - Rich pedagogical content: API comparison PyTorch vs TorchLean, Float32 error accumulation examples, complete IBP propagation with ASCII diagrams, ecosystem workflow visualization
-  - Domain vocabulary: Semantic gap, IEEE-754 rounding modes (RNE, RTZ, RTP, RTN, RNA), ULP, IBP, CROWN, LiRPA, PINNs, Lyapunov control, FloVerCoq
-  - README status updated from SQUELETTE to COMPLET
-  - Summary report: `enrichment-log-2026-03-03-lean-torchlean.md`
+- **2026-02-25**: Sudoku Python Series Enrichment (15+ cells added across 7 notebooks)
+  - Sudoku-10-ORTools-Python: 2 interpretations after OR-Tools and Z3 benchmark results
+  - Sudoku-12-Z3-Python: 2 interpretations after Z3 Int and BitVec comparison
+  - Sudoku-9-GraphColoring-Python: 2 interpretations after MRV test and benchmark
+  - Sudoku-7-Norvig-Python: 1 interpretation after benchmark
+  - Sudoku-1-Backtracking-Python: 3 interpretations (simple test, benchmark, MRV comparison)
+  - Sudoku-3-Genetic-Python: 3 interpretations (cells approach, permutations approach, benchmark)
+  - Key pattern: Add interpretations AFTER benchmark/comparison results showing solver performance
+  - All interpretation cells include structured tables and technical notes
 
 ### Domain-Specific Patterns
 
@@ -77,14 +43,9 @@
 |--------|----------------|-----------------|
 | Data Science with Agents | Pandas, LangChain, DataFrame, agent, tools, reasoning | Progressive questions (simple->complex), data cleaning workflow, agent orchestration |
 | ML | accuracy, loss, overfitting, cross-validation | Train-test split, model evaluation, interpretation tables |
-| ML Advanced (SSM/Transformers) | State Space Models, Mamba, S4, selective, complexity O(n), HiPPO, discretization | Architecture comparisons, complexity analysis, training curves, parameter counts |
-| ML Advanced (VAE/HMM) | VAE, reconstruction error, KL divergence, beta-VAE, HMM, Viterbi, transition matrix, regime switching | Model comparison tables, anomaly detection thresholds, regime characterization, production deployment |
 | Probas | prior, posterior, likelihood, inference | Bayesian updates, factor graphs, distribution visualization |
 | Sudoku/Constraint Solving | CSP, CP-SAT, MIP, DecisionBuilder, AllDifferent, propagation | Solver comparison tables, performance benchmarks, constraint modeling patterns |
 | Search/Optimization | fitness, convergence, population, exploration/exploitation, metaheuristics | Parameter sensitivity analysis, algorithm comparison tables, convergence plots |
-| QuantConnect | backtest, alpha model, features, signals, ObjectStore | Model training → save → deploy, feature engineering, performance metrics |
-| SymbolicAI/TorchLean | Semantic gap, Float32, IEEE-754, rounding modes, IBP, CROWN, LiRPA, PINNs, Lyapunov, FloVerCoq | API philosophy, numerical error accumulation, interval propagation visualization, ecosystem diagrams |
-| GameTheory | Nash equilibrium, Stackelberg, CFR, Fictitious Play, PSRO, AlphaZero, Sprague-Grundy, Nim, Arrow impossibility, Sen paradox, MARL, self-play | Convergence plots, exploitability tables, strategy evolution, P/N-position analysis |
 
 ### Content Strategy Templates
 
@@ -126,7 +87,7 @@ Before completing enrichment:
 
 ```bash
 # Analyze structure
-python scripts/notebook_tools/notebook_helpers.py list <path> --verbose
+python scripts/notebook_helpers.py list <path> --verbose
 
 # Verify consecutive code cells
 grep -A1 "cell_type.*code" <path>

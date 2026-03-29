@@ -108,39 +108,8 @@ else
     echo "ComfyUI-HunyuanVideoWrapper deja present"
 fi
 
-# 5. ComfyUI-GGUF (Support modeles GGUF - Qwen/Hunyuan quantizes)
-GGUF_DIR="custom_nodes/ComfyUI-GGUF"
-if [ ! -d "$GGUF_DIR" ]; then
-    echo "Installation de ComfyUI-GGUF (quantization GGUF)..."
-    git clone https://github.com/city96/ComfyUI-GGUF.git "$GGUF_DIR" || echo "GGUF: echec clone (optionnel)"
-    if [ -d "$GGUF_DIR" ]; then
-        venv/bin/pip install gguf
-    fi
-else
-    echo "ComfyUI-GGUF deja present"
-fi
-
-# =============================================================================
-# QUANTIZATION SUPPORT (INT8/FP8)
-# =============================================================================
-echo "Installation des outils de quantization INT8/FP8..."
-
-# TorchAO pour INT8 quantization (PyTorch native)
-venv/bin/pip install torchao>=0.4.0 || echo "TorchAO: installation optionnelle echouee"
-
-# Optimum Quanto pour quantization Hugging Face
-venv/bin/pip install optimum-quanto>=0.2.0 || echo "Optimum-Quanto: installation optionnelle echouee"
-
-# bitsandbytes pour INT8 linear layers
-venv/bin/pip install bitsandbytes>=0.43.0 || echo "Bitsandbytes: installation optionnelle echouee (Windows peut echouer)"
-
 # =============================================================================
 # DEMARRAGE
 # =============================================================================
 echo "Demarrage du serveur ComfyUI-Video..."
-
-# GPU Device ID (defaut: 0)
-GPU_ID=${GPU_DEVICE_ID:-0}
-echo "Utilisation GPU ${GPU_ID}"
-
-exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention --cuda-device ${GPU_ID}
+exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention

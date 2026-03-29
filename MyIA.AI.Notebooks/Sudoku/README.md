@@ -1,6 +1,6 @@
 # Sudoku - Resolution par Differentes Approches Algorithmiques
 
-Cette serie de **33 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
+Cette serie de **30 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
 
 ## Pourquoi etudier le Sudoku en IA ?
 
@@ -41,7 +41,7 @@ Chaque approche reflete une philosophie differente de la resolution de problemes
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 33 (16 C#, 17 Python) |
+| Notebooks | 30 (15 C#, 15 Python) |
 | Duree estimee | ~8h |
 | Niveau | Debutant a avance |
 | Langages | C# (.NET Interactive), Python |
@@ -377,8 +377,8 @@ Sudoku-0-Csharp (Environment - comprendre les structures)
 
 | Serie | Lien |
 |-------|------|
-| [Search - Part1-Foundations](../Search/Part1-Foundations/README.md) | Theorie : backtracking, metaheuristiques, DLX |
-| [Search - Part2-CSP](../Search/Part2-CSP/README.md) | Programmation par contraintes : AC-3, CP-SAT, scheduling |
+| [Search - Foundations](../Search/Foundations/README.md) | Theorie : backtracking, propagation, CP avance |
+| [Search - Applications](../Search/Applications/README.md) | Autres problemes CSP : N-Queens, Minesweeper, Wordle |
 | [SymbolicAI](../SymbolicAI/README.md) | Z3 SMT (approfondi), OR-Tools |
 | [Probas/Infer](../Probas/README.md) | Infer.NET (approfondi) |
 | [GameTheory](../GameTheory/README.md) | Minimax, MCTS (jeux combinatoires) |
@@ -401,7 +401,7 @@ dotnet --version
 # - Plotly.NET
 ```
 
-**Note sur les outputs** : Les notebooks C# contiennent des outputs de cellule executees. Les notebooks avec dependances `#!import` doivent etre executes dans l'ordre (0 -> 1 -> 2...).
+**Note sur les outputs** : Les notebooks C# (.NET Interactive) ne contiennent pas de outputs de cellule executees.
 
 ### Python
 
