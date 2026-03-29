@@ -756,7 +756,8 @@ layout: section
 
 - **Scepticisme initial sur l'IA**
   - Tendance a surajuster les donnees historiques
-  - Les marches financiers ne sont pas comme la vision par ordinateur : les patterns changent
+  - Les marches financiers ne sont pas comme la vision par ordinateur
+  - Les patterns changent constamment
 <div v-click="1">
 
 - **Pratiques qui fonctionnent en IA**
@@ -1926,7 +1927,8 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
   - Setxxx, Addxxx, ajout de handlers (InsightsGenerated etc.)
   - Gestion des dates + Consolidateurs
   - Cash / AddEquities/AddForex etc. (+ resolution) vs SetUniverseSelection
-  - SetBrokerageModel, SetPortfolioConstruction, SetDataNormalisationMode
+  - SetBrokerageModel, SetPortfolioConstruction
+  - SetDataNormalisationMode
 
 <div v-click="1">
 
@@ -2481,8 +2483,9 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
 # Optimisation de Parametres - Configuration (1/2)
 
 - **Configuration**
-  - Designation de l'algo C# ou Python identique: "algorithm-type-name", etc.
-  - A priori pas de debug, au besoin utiliser la journalisation
+  - Designation de l'algo C# ou Python identique
+  - "algorithm-type-name", etc.
+  - Pas de debug, utiliser la journalisation
 <div v-click="1">
 
 - **Designation des parametres a optimiser**
@@ -2493,8 +2496,9 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
 
 - **2 strategies d'exploration**
   - GridSearch: teste toutes les combinaisons
-  - EulerSearch: teste toutes les combinaisons, puis raffine a partir de la meilleure
-  - Parametres supplementaires pour la subdivision des steps initiaux: min-step, default-segment-amount
+  - EulerSearch: teste toutes les combinaisons, puis
+    raffine a partir de la meilleure
+  - Subdivision: min-step, default-segment-amount
 
 </div>
 ---
@@ -2505,7 +2509,7 @@ De la theorie a la pratique -- Documentation officielle QuantConnect
   - Parametre optimization-criterion a optimiser
   - Parametre target a maximiser ou minimiser (extremum)
   - Cf class PerformanceMetrics
-  - Cible a atteindre target-value (Permet d'arreter l'optimisation de facon prematuree)
+  - target-value: arreter l'optimisation de facon prematuree
 <div v-click="1">
 
 - **Ajout de contraintes**
