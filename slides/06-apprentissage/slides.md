@@ -83,7 +83,6 @@ layout: dense
 ---
 
 
-
 # Composant d'apprentissage
 
 - La conception d'un composant d'apprentissage est affecté par:
@@ -147,7 +146,6 @@ layout: dense
 ---
 layout: dense
 ---
-
 
 
 # Exemple: l'attente au restaurant
@@ -283,11 +281,19 @@ layout: dense
 - **avec Probabilités des symboles**
   - des puissances entières de ½
 - Construction du code:
+
+<div v-click="2">
 - **Tri des symboles selon**
   - la fréquence
+</div>
+
+<div v-click="3">
 - **Combinaison de symboles**
   - les moins fréquents
 - Tracé d’un chemin
+</div>
+
+<div v-click="4">
 - ** Arbre de décision**
   - optimal
 - encodage robuste
@@ -296,8 +302,7 @@ layout: dense
 - B		.125
 - C		.25
 - D		.5
-
-
+</div>
 ---
 
 
@@ -416,18 +421,18 @@ layout: dense
 - L’induction d’arbres de decision est l’une des methodes d’apprentissage les plus utilisees
 - Surpasse les humains dans de nombreux problemes, apprentissage par gain informationnel
 - **Points forts** : rapide, simple, comprehensible, empiriquement valide, robuste au bruit
+
+<div v-click="2">
 - **Points faibles** :
   - Decoupe a un seul attribut : limite les types de problemes supportes
   - Les arbres de grande taille deviennent difficiles a interpreter
   - Necessite des vecteurs de taille fixe, non incremental (batch)
 
 <!-- Frontiere de decision : arbre = decoupage orthogonal, foret = ensemble lisse -->
-
-
+</div>
 ---
 layout: section
 ---
-
 
 
 # Questions?
@@ -453,10 +458,18 @@ layout: two-cols
   - de l’ensemble d’apprentissage
   - Et parfois double-descente
 - Et parfois double-descente
+
+<div v-click="2">
 - **Attention au dévoilement**
   - de l’ensemble de test:
+</div>
+
+<div v-click="3">
 - **Si on change d’hypothèse,**
   - il faut régénérer l’ensemble de test
+</div>
+
+<div v-click="4">
 - **Sinon l’ensemble de test a « fuité »**
   - dans l’apprentissage.
 
@@ -466,8 +479,7 @@ layout: two-cols
 
 <img src="images/img_011.png" width="380">
 <img src="images/img_012.png" width="380">
-
-
+</div>
 ---
 layout: two-cols
 ---
@@ -568,7 +580,6 @@ layout: dense
 ---
 
 
-
 # Méthodes d'ensemble
 
 - Jusqu’à présent: 1 seule hypothèse
@@ -602,7 +613,6 @@ layout: dense
 ---
 layout: section
 ---
-
 
 
 # Questions?
@@ -697,12 +707,17 @@ layout: two-cols
 - **Fonctions continues**
   - avec 2 couches
 - 2 seuils  1 crète
+
+<div v-click="2">
 - **Toute fonction avec**
   - 3 couche
 - 2 crètes  1 bosse
 - Niveaux d’abstractions:
 - Ajouter des couches
 -  ajouter des dimensions
+</div>
+
+<div v-click="3">
 - **Similaire à une classification**
   - par hyperplan dans l’espace cible
 
@@ -710,8 +725,7 @@ layout: two-cols
 <!-- Image: images/img_028.png -->
 <!-- Image: images/img_029.png -->
 <!-- Image: images/img_030.png -->
-
-
+</div>
 ---
 
 
@@ -762,8 +776,13 @@ layout: two-cols
 - Hiérarchisation naturelle
 - **Pixel, bord, teston, motif,**
   - partie, objet
+
+<div v-click="2">
 - **Caractère, mot, groupe,**
   - clause, phrase, histoire
+</div>
+
+<div v-click="3">
 - ** fonctionne bien car**
   - le monde est hiérarchique
 - Librairies de Deep learning
@@ -775,8 +794,7 @@ layout: two-cols
 <!-- Image: images/img_037.png -->
 
 <!-- Architecture NN : entrée → couches cachees (activation ReLU/sigmoid) → sortie -->
-
-
+</div>
 ---
 
 
@@ -1054,7 +1072,6 @@ layout: section
 ---
 
 
-
 # Questions?
 
 
@@ -1137,7 +1154,6 @@ layout: section
 ---
 layout: dense
 ---
-
 
 
 # K-Nearest Neighbor
@@ -1269,14 +1285,18 @@ $$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
 <!-- Formulation duale : base mathématique pour les SVMs à noyaux non-linéaires -->
 
 
-
 ---
 
 
 # Apprentissage des SVM
 
 - **Astuce 1** : Identifier les points les plus proches du plan de separation optimal (les "vecteurs supports") et travailler directement a partir de ces instances.
+
+<div v-click="2">
 - **Astuce 2** : Formuler comme un probleme d'optimisation quadratique et utiliser les techniques de programmation quadratique.
+</div>
+
+<div v-click="3">
 - **Astuce 3** (le "kernel trick") :
   - Au lieu d'utiliser directement les caractéristiques, representer les données dans un espace de grande dimension construit a partir de fonctions de base (combinaisons polynomiales et gaussiennes des caractéristiques d'origine).
   - Trouver un hyperplan separateur / SVM dans cet espace de grande dimension.
@@ -1285,8 +1305,7 @@ $$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
 <!-- SVM : hyperplan optimal, vecteurs supports sur la marge maximale -->
 
 <!-- Image: images/img_086.png -->
-
-
+</div>
 ---
 
 
@@ -1311,23 +1330,25 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 # Performance Empirique des SVMs
 
 - **Excellents résultats** jusqu'aux années 2010 (texte, bioinformatique, vision, finance)
+
+<div v-click="2">
 - **Avantages** :
   - Optimum global garanti (problème convexe, pas de minimum local)
   - Bonne généralisation en haute dimension
   - Fondements théoriques solides (dimension VC, marges)
+</div>
+
+<div v-click="3">
 - **Limites et contexte actuel** :
   - Coût O(n²) à O(n³) — difficile sur grands datasets
   - Supplanté par le Deep Learning depuis 2012 (AlexNet, ImageNet)
   - Toujours pertinent : petits datasets, haute dimension, garanties formelles
 
 <!-- SVMs : référence du ML classique, encore utilisés pour petits datasets et haute dimension -->
-
-
-
+</div>
 ---
 layout: section
 ---
-
 
 
 # Questions?
@@ -1336,7 +1357,6 @@ layout: section
 ---
 layout: dense
 ---
-
 
 
 # Apprentissage et logique
@@ -1364,7 +1384,6 @@ layout: dense
 ---
 layout: dense
 ---
-
 
 
 # Exploration à moindre engagement
@@ -1420,7 +1439,6 @@ layout: dense
 ---
 
 
-
 # Apprentissage par explication (EBL)
 
 - Principes
@@ -1466,7 +1484,6 @@ layout: dense
 ---
 
 
-
 # Programmation logique inductive (ILP)
 
 - Principe
@@ -1483,6 +1500,8 @@ layout: dense
 - **Règle générale puis spécialisation ≈ DTL,**
   - hypothèse = clauses plutôt qu’arbre
 - Algorithme FOIL (1990): clauses de but/horn
+
+<div v-click="2">
 - **Ex: Père(x,y)GrandPère(x,y) a des contre-exemples,**
   - Père(x,z) ∧ Père(z,y) GrandPère(x,y) fonctionne
 - Couverture de tous les exemples positifs:+ Père(x,z) ∧ Mère(z,y) GrandPère(x,y)
@@ -1490,12 +1509,14 @@ layout: dense
 - Utilisant des prédicats (au moins une variable commune)
 - Egalités/inégalités (variables + constantes)
 - Comparaisons arithmétiques (cf hiérarchie de généralisation)
+</div>
+
+<div v-click="3">
 - **b très grand mais restrictions de types + utilisation du gain**
   - informationnel  + heuristique d’Occam (ex: longueur de la clause)
 
 <!-- Image: images/img_097.png -->
-
-
+</div>
 ---
 
 
@@ -1534,7 +1555,6 @@ layout: section
 ---
 
 
-
 # Questions?
 
 
@@ -1569,19 +1589,26 @@ layout: section
 - Assuming conditional independence
 - **p(C | F1, ..., Fn) = p(C) p(F1, ..., Fn | C) / P(F1, ..., Fn)**
   - = α p(C) p(F1, ..., Fn | C)
+
+<div v-click="2">
 - **Assume that each feature Fi is conditionally independent of the other features given the class C.  Then:**
   - p(C | F1, ..., Fn)  = α p(C) Πi p(Fi | C)
+</div>
+
+<div v-click="3">
 - **We can estimate each of these conditional probabilities from the observed counts in the training data:**
   - p(Fi | C)  = N(Fi ∧ C) / N(C)
 - Dealing with zeros
 - One subtlety of using the algorithm in practice:  When your estimated probabilities are zero, ugly things happen
 - The fix: Add one to every count (aka “Laplacian smoothing”)
 - Example
+</div>
+
+<div v-click="4">
 - **p(Wait | Cuisine, Patrons, Rainy?)  =**
   - α p(Wait) p(Cuisine | Wait) p(Patrons | Wait)
   - p(Rainy? | Wait)
-
-
+</div>
 ---
 
 
@@ -1790,6 +1817,8 @@ layout: section
   - earthquake, alarm, light-level, and
   - moon-phase, but not burglary
 - Should we throw that data away??
+
+<div v-click="2">
 - **Idea: Guess the missing values**
   - based on the other data
 - Earthquake
@@ -1797,8 +1826,7 @@ layout: section
 - Alarm
 - Moon-phase
 - Light-level
-
-
+</div>
 ---
 
 
@@ -1819,17 +1847,27 @@ layout: section
 - New Data: [4, 10, 0, 0]
 - **Step 1: New Mean: 3.5**
   - New Data:[4, 10, 3.5, 3.5]
+
+<div v-click="2">
 - **Step 2: New Mean: 5.25**
   - New Data: [4, 10, 5.25, 5.25]
+</div>
+
+<div v-click="3">
 - **Step 3: New Mean: 6.125**
   - New Data: [4, 10, 6.125, 6.125]
+</div>
+
+<div v-click="4">
 - **Step 4: New Mean: 6.5625**
   - New Data: [4, 10, 6.5625, 6.5625]
+</div>
+
+<div v-click="5">
 - **Step 5: New Mean: 6.7825**
   - New Data: [4, 10, 6.7825, 6.7825]
 - Result: New Mean: 6.890625
-
-
+</div>
 ---
 
 
@@ -1895,7 +1933,6 @@ layout: section
 ---
 
 
-
 # Questions?
 
 
@@ -1911,7 +1948,6 @@ layout: section
 ---
 layout: dense
 ---
-
 
 
 # Renforcement passif
@@ -1995,7 +2031,6 @@ layout: dense
 ---
 
 
-
 # Q-learning
 
 - = Apprentissage d’utilité action
@@ -2025,7 +2060,6 @@ layout: dense
 ---
 layout: dense
 ---
-
 
 
 # Généralisation et approximations
@@ -2079,7 +2113,6 @@ layout: dense
 ---
 layout: dense
 ---
-
 
 
 # Deep Q learning
@@ -2211,17 +2244,21 @@ layout: dense
 # RLHF : Aligner les LLMs avec les Préférences Humaines
 
 - **Problème** : les LLMs entraînés sur du texte brut ne suivent pas forcément les instructions ni les valeurs humaines
+
+<div v-click="2">
 - **Comportements problématiques observés** :
   - Réponses toxiques, biaisées ou dangereuses
   - Hallucinations présentées avec confiance
   - Réponses verbeuses mais peu utiles
+</div>
+
+<div v-click="3">
 - **Solution** : Reinforcement Learning from Human Feedback (RLHF)
   - Apprendre un **modèle de récompense** à partir des préférences humaines
   - Optimiser le LLM via RL pour maximiser cette récompense
 
 <!-- RLHF : connexion directe entre RL classique (reward) et alignement des LLMs -->
-
-
+</div>
 ---
 
 
@@ -2271,13 +2308,14 @@ layout: dense
 - **Récompense combinée** : r(x,y) = RM(x,y) − β · KL(π_RL ‖ π_SFT)
   - RM(x,y) : score du reward model (préférence humaine)
   - β · KL : pénalité pour rester proche du modèle SFT (β ≈ 0.02–0.5)
+
+<div v-click="2">
 - **InstructGPT** (Ouyang et al., 2022) : première démonstration à grande échelle
   - GPT-3 fine-tuné par RLHF → suivi d'instructions radicalement amélioré
   - Base de ChatGPT (déployé Nov. 2022) puis GPT-4
 
 <!-- PPO + KL penalty : équilibre entre optimisation des préférences et préservation des capacités du LLM -->
-
-
+</div>
 ---
 
 
@@ -2301,7 +2339,6 @@ layout: dense
 ---
 layout: section
 ---
-
 
 
 # Questions?
@@ -2349,7 +2386,6 @@ layout: section
 ---
 layout: end
 ---
-
 
 
 # Merci
