@@ -83,15 +83,16 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [Chronos-Foundation-Forecasting](Chronos-Foundation-Forecasting/) | GBM+Ridge ensemble forecasting (8 ETFs) | **0.253** | --- | 22.4% | 2015-2026 | Ch06-Ex18 | v2, SMA200 regime filter |
 | [ML-SVM](ML-SVM/) | SVM linear kernel equity-only ETFs | **0.147** | 5.2% | 27.1% | 2015-2026 | — | v3, plafond structurel |
 | [Dividend-Harvesting-ML](Dividend-Harvesting-ML/) | DecisionTree dividend yield prediction (QQQ top 100) | **0.469** | 12.7% | 30.5% | 2015-2026 | Ch06-Ex06 | v1, fundamental factors |
-| [PCA-StatArb](PCA-StatArb/) | PCA + OLS stat-arb mean reversion (top 100 liquid) | **0.165** | 5.3% | 35.9% | 2015-2026 | Ch06-Ex13 | v1, z-score threshold 1.5 |
+| [PCA-StatArbitrage](PCA-StatArbitrage/) | PCA + LinearRegression stat-arb mean reversion (top 100) | **0.399** | 12.65% | 31.8% | 2019-2024 | Ch06-Ex13 | v1, sklearn, book period |
+| [PCA-StatArb](PCA-StatArb/) | PCA + OLS stat-arb mean reversion (top 100 liquid) | **0.165** | 5.3% | 35.9% | 2015-2026 | Ch06-Ex13 | v1, statsmodels, extended period |
 | [Clustering-Fundamentals-ML](Clustering-Fundamentals-ML/) | PCA + GBR fundamental ranking (top 10 of 100) | -0.052 | -1.2% | 15.3% | 2015-2026 | Ch06-Ex10 | v1.1, Runtime Error, a ameliorer |
-| [Stoploss-Volatility-ML](Stoploss-Volatility-ML/) | Lasso regression stop-loss optimization (KO equity) | --- | --- | --- | 2015-2026 | Ch06-Ex08 | v1, backtest pending |
-| [InverseVolatility-Rank](InverseVolatility-Rank/) | Ridge regression inverse-vol futures allocation | --- | --- | --- | 2015-2026 | Ch06-Ex11 | v1, backtest pending |
-| [TradingCosts-Optimization](TradingCosts-Optimization/) | DecisionTree crypto cost optimization (BTCUSDC) | --- | --- | --- | 2015-2026 | Ch06-Ex12 | v1, backtest pending |
+| [Stoploss-Volatility-ML](Stoploss-Volatility-ML/) | Lasso regression stop-loss optimization (KO equity) | --- | --- | --- | --- | Ch06-Ex08 | BROKEN: CBOE data unavailable (#233) |
+| [InverseVolatility-Rank](InverseVolatility-Rank/) | Ridge regression inverse-vol futures allocation | **0.212** | 5.85% | 54.7% | 2015-2026 | Ch06-Ex11 | v1, MaxDD inacceptable |
+| [TradingCosts-Optimization](TradingCosts-Optimization/) | DecisionTree crypto cost optimization (BTCUSDC) | -13.354 | -0.015% | 0.4% | 2015-2026 | Ch06-Ex12 | v1, educatif (quasi flat) |
 | [SVM-Wavelet-Forecasting](SVM-Wavelet-Forecasting/) | SVM + wavelet decomposition FX | --- | --- | --- | --- | Ch06-Ex05 | Local only, pas de backtest |
 | [Reinforcement-Learning-Trading](Reinforcement-Learning-Trading/) | DQN experience replay (book implementation) | --- | --- | --- | --- | Ch07-Ex01 | Variant pedagogique |
 
-*54 strategies au total (51 Python, 3 C#). Metriques issues des backtests QC Cloud.*
+*55 strategies au total (52 Python, 3 C#). Metriques issues des backtests QC Cloud.*
 *Multi-Layer-EMA reclassee Historique apres analyse de robustesse (Sharpe gonfle par bulle BTC 2017).*
 *Research: type de notebook de recherche (yfinance = donnees Yahoo, QuantBook = donnees QC natives, — = pas de notebook).*
 *ML/AI: implementations sklearn (RF, XGBoost, MLP) validees sur QC Cloud. Les fake implementations (poids hardcodes) ont ete remplacees en mars 2026.*
