@@ -1,6 +1,6 @@
 # QuantConnect Algorithmic Trading Projects
 
-Bibliotheque pedagogique de 54 strategies de trading algorithmique backtestees sur QuantConnect Cloud.
+Bibliotheque pedagogique de 65 strategies de trading algorithmique sur QuantConnect Cloud.
 Chaque strategie illustre un concept ou une famille de strategies ; les performances varient volontairement
 pour montrer que toutes les idees academiques ne survivent pas au backtest realiste.
 
@@ -91,8 +91,17 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [TradingCosts-Optimization](TradingCosts-Optimization/) | DecisionTree crypto cost optimization (BTCUSDC) | -13.354 | -0.015% | 0.4% | 2015-2026 | Ch06-Ex12 | v1, educatif (quasi flat) |
 | [SVM-Wavelet-Forecasting](SVM-Wavelet-Forecasting/) | SVM + wavelet decomposition FX | --- | --- | --- | --- | Ch06-Ex05 | Local only, pas de backtest |
 | [Reinforcement-Learning-Trading](Reinforcement-Learning-Trading/) | DQN experience replay (book implementation) | --- | --- | --- | --- | Ch07-Ex01 | Variant pedagogique |
+| [ML-Classification](ML-Classification/) | RandomForest classification direction J+1 (SPY, ObjectStore model) | --- | --- | --- | --- | — | Non backtestee (Cloud ID 29434754) |
+| [ML-Regression](ML-Regression/) | Ridge Regression prediction returns J+1 (20 stocks, RSI/EMA/vol features) | --- | --- | --- | --- | — | Non backtestee |
+| [ML-Ensemble](ML-Ensemble/) | Ensemble Ridge/RF/LightGBM, 30 large-caps, confidence-based sizing | --- | --- | --- | --- | — | Non backtestee |
+| [ML-EnhancedPairs](ML-EnhancedPairs/) | ML-enhanced pairs trading (Engle-Granger cointegration + classifier) | --- | --- | --- | --- | — | Non backtestee |
+| [ML-DeepLearning](ML-DeepLearning/) | LSTM/GRU deep learning prediction series temporelles (SPY/QQQ/IWM) | --- | --- | --- | --- | — | Non backtestee (PyTorch) |
+| [DL-LSTM](DL-LSTM/) | LSTM bidirectionnel pre-entraine (PyTorch, ObjectStore model) | --- | --- | --- | --- | — | Non backtestee (PyTorch) |
+| [ML-TextClassification](ML-TextClassification/) | NLP Naive Bayes sentiment simule (TF-IDF headlines, 5 tech stocks) | --- | --- | --- | --- | — | Non backtestee |
+| [RL-Portfolio](RL-Portfolio/) | Q-Learning allocation multi-asset (SPY/TLT/GLD/Cash, epsilon-greedy) | --- | --- | --- | --- | — | Non backtestee |
+| [Crypto-LSTM-Prediction](Crypto-LSTM-Prediction/) | DLinear (AAAI 2023) SeriesDecomposition BTCUSDT (PyTorch) | --- | --- | --- | --- | — | Research phase |
 
-*55 strategies au total (52 Python, 3 C#). Metriques issues des backtests QC Cloud.*
+*61 strategies documentees dans les tables ci-dessus (57 Python, 4 C#) + 2 projets research-only. 67 projets avec code au total. Metriques issues des backtests QC Cloud.*
 *Multi-Layer-EMA reclassee Historique apres analyse de robustesse (Sharpe gonfle par bulle BTC 2017).*
 *Research: type de notebook de recherche (yfinance = donnees Yahoo, QuantBook = donnees QC natives, — = pas de notebook).*
 *ML/AI: implementations sklearn (RF, XGBoost, MLP) validees sur QC Cloud. Les fake implementations (poids hardcodes) ont ete remplacees en mars 2026.*
@@ -133,6 +142,15 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 - **RiskParity** : Allocation inversement proportionnelle a la volatilite.
 - **AdaptiveAssetAllocation (AAA)** : Momentum + minimum-variance sur un univers multi-asset.
 - **RegimeSwitching** : Detection de regimes de marche (bull/bear/crisis) et rotation d'actifs.
+- **Framework_Composite_EMATrend** : Composite EMA-Cross + TrendStocks via Algorithm Framework. EMA40/Trend60 allocation. Non backtestee.
+- **Framework_Composite_MomentumRegime** : Composite SectorMomentum + RegimeSwitching via Algorithm Framework. T60/RS40 allocation. Non backtestee.
+- **EMA-Cross-Alpha** : Building block Framework Alpha: EMA 20/50 crossover (5 tech stocks). Composant pour composites.
+- **TrendStocks-Alpha** : Building block Framework Alpha: EMA 20/50 + SMA200 trend filter (15 large-caps). Composant pour composites.
+
+### Research & Tools (pas de backtest)
+
+- **Alpha-Correlation-Analysis** : QuantBook notebook pour analyse de correlation entre alphas complementaires (issue #140).
+- **ML-FeatureEngineering** : QuantBook reference pedagogique feature engineering (RSI, momentum, vol, volume, PCA, pipeline). 32 cellules.
 
 ### Mean Reversion & Pairs (Intermediaire)
 
@@ -178,6 +196,16 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **TradingCosts-Optimization** (Book Ex12) : DecisionTreeRegressor pour optimiser les couts d'execution BTCUSDC. Facteurs: ATR, volume moyen, spread. Vend quand cout predit < moyenne mobile. v1.
 - **SVM-Wavelet-Forecasting** (Book Ex05) : SVM + decomposition wavelet pour prediction FX. Local only.
 - **BTC-ML** : Prediction BTC par machine learning (features techniques + filtre volatilite 60%). Periode courte 2023-2026.
+- **PCA-StatArbitrage** (Book Ex13) : PCA + sklearn LinearRegression pour stat-arb. Meme concept que PCA-StatArb mais avec sklearn sur la periode du livre (2019-2024). Sharpe 0.399. v1.
+- **ML-Classification** : RandomForest classification direction J+1 sur SPY. Modele charge depuis ObjectStore. Non backtestee.
+- **ML-Regression** : Ridge Regression prediction returns J+1 sur 20 stocks. Features: RSI, EMA, volume. Non backtestee.
+- **ML-Ensemble** : Ensemble Ridge/RF/LightGBM sur 30 large-caps. Weighted averaging, confidence-based sizing. Non backtestee.
+- **ML-EnhancedPairs** : Pairs trading ML-enhanced avec cointegration Engle-Granger + classifier entree/sortie sur ETFs sectoriels. Non backtestee.
+- **ML-DeepLearning** : LSTM/GRU deep learning prediction series temporelles (SPY/QQQ/IWM). PyTorch. Non backtestee.
+- **DL-LSTM** : LSTM bidirectionnel pre-entraine charge depuis ObjectStore. PyTorch. Non backtestee.
+- **ML-TextClassification** : NLP Naive Bayes sur sentiment simule (TF-IDF headlines). 5 tech stocks. Non backtestee.
+- **RL-Portfolio** : Q-Learning agent allocation multi-asset (SPY/TLT/GLD/Cash). Epsilon-greedy exploration. Non backtestee.
+- **Crypto-LSTM-Prediction** : DLinear (AAAI 2023) avec SeriesDecomposition (trend/seasonal) pour BTCUSDT. PyTorch. Research phase.
 
 ### Anomalies calendaires (Debutant)
 
