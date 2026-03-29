@@ -3,7 +3,7 @@
 Fichier commite dans le workspace. Source de verite pour tous les agents (Claude Code, Roo, etc.) sur toutes les machines.
 Objectif : eviter de retester des hypotheses deja explorees et capturer les plafonds structurels.
 
-**Derniere MAJ** : 2026-03-28 (Temporal-CNN-Prediction v2: real MLPClassifier 8-ETF 18-features, Sharpe 0.169->0.536, alpha -0.018->+0.003)
+**Derniere MAJ** : 2026-03-28 (Sector-ML-Classification v5: always top-N bull + SMA200 bear + 11 features + equal-weight, Sharpe 0.352->0.473, Alpha -0.007->+0.009, MaxDD 41.7%->34.4%)
 
 ---
 
@@ -79,6 +79,7 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 | **LSTM-Forecasting** | 0.525 | **v2.1 IMPROVED**. Real MLPClassifier (64,32), 7-ETF universe, threshold=0.52, min_pos=2. Potentiel: biweekly vs weekly, threshold tuning, feature selection. |
 | **Chronos-Foundation-Forecasting** | 0.253 | **v2 IMPROVED** (2026-03-28). Replaced fake Chronos (hardcoded weights) with real GBM+Ridge ensemble. SMA200 regime filter + threshold=0.002. Beta 0.643->0.252, Alpha -0.023->+0.002, MaxDD 31.4%->22.4%. Signal-driven (beta=0.252). |
 | **RL-DQN-Trading** | 0.533 | **v2.0.1 IMPROVED** (2026-03-28). Fake linear DQN -> real MLPRegressor(64,32). 5-ETF universe, risk-adj reward. Beta=0.452, Alpha=+0.019, CAGR 10.9%, MaxDD 25.8%. Pistes: SMA200 regime, 4th allocation (cash-heavy). |
+| **Sector-ML-Classification** | 0.473 | **v5 IMPROVED** (2026-03-28). RandomForest 3-class (BUY/HOLD/AVOID). Always top-N bull + bear cash threshold + 11 features + equal weight. Sharpe 0.352->0.473, Alpha -0.007->+0.009, Beta 0.964->0.799, MaxDD 41.7%->34.4%, CAGR 11%->11.9%. Pistes: more features (volume, sector breadth), stricter bear threshold, stop-loss. |
 
 ### Strategies saines (Sharpe > 0.5, pas de degradation)
 
@@ -119,6 +120,18 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 - [x] Stop-loss 4% : Sharpe 0.096, MaxDD -2.5% seulement. Pas worth it.
 - [x] IWM addition : dilue l'alpha de QQQ.
 - [x] SPY seul (sans QQQ) : Sharpe -0.026.
+
+### Sector-ML-Classification (2026-03-28)
+- [x] v2b baseline (2018-2026, quarterly train, top-3, equal-weight, no regime) : Sharpe 0.352, Beta 0.964, Alpha -0.007, MaxDD 41.7%. Beta almost pure SPY tracking.
+- [x] v3: SMA200 + biweekly + 10d target + 9 features + BUY_THRESH 1.5% + fallback: Sharpe 0.288, Beta 0.832, MaxDD 36%. Reduced beta but hurt Sharpe. Forced fallback (always 1-2 positions) caused noisy trades.
+- [x] v3.1: biweekly via month_start+14 + depth=4 + min_leaf=15 : Sharpe 0.253. REGRESSED. Deeper tuning of RF hyperparams while keeping forced fallback made things worse.
+- [x] v4: monthly train + prob-weighted + 11 features (add 50d mom + 52w high) + BUY_PROB 0.50 + BUY_THRESH 1.2% + BEAR_N=3 : Sharpe 0.308, Beta 0.639, Alpha +0.003, MaxDD 32.7%. First positive alpha! But still below v2b. Prob-weighted sizing with 0.50 threshold caused cash drag in bull markets when RF is conservative.
+- [x] v5: always top-N in bull (no threshold) + bear cash only if best prob < 0.35 + equal weight : Sharpe 0.473, Beta 0.799, Alpha +0.009, MaxDD 34.4%, CAGR 11.9%. ACCEPTED. Key insight: RF is used for RANKING sectors, not as a binary gate.
+  - In bull: always hold top 4 sectors by RF buy probability. No threshold = no cash drag.
+  - In bear (SPY < SMA200): only hold if best defensive prob >= 0.35, else go to cash.
+  - Equal weight > confidence-weighted for 8 sector ETFs (simpler, avoids concentration).
+  - 11 features (vs 9 in v3): add 50d momentum + 52-week high ratio.
+  - Monthly retraining (vs quarterly in v3.1): more adaptive model.
 
 ### Chronos-Foundation-Forecasting (2026-03-28)
 - [x] Fake Chronos v1-v5 (hardcoded attention weights + random noise) : Sharpe 0.114, Beta 0.341, 4/7 versions had 0 trades. Not a real model.

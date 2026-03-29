@@ -1,42 +1,37 @@
+# region imports
 from AlgorithmImports import *
 import numpy as np
-try:
-    import joblib
-except ImportError:
-    joblib = None
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
+# endregion
+
 
 class SectorMLClassificationAlgorithm(QCAlgorithm):
     """
-    Strategie de Rotation Sectorielle avec Machine Learning.
+    Sector Rotation with ML Classification - v5.
 
-    Concept:
-    - Utilise Random Forest pour classer les secteurs en 3 classes:
-      * BUY: Secteur avec fort potentiel de hausse
-      * HOLD: Secteur neutre
-      * AVOID: Secteur avec risque de baisse
-    - Rotation mensuelle basée sur les prédictions ML
-    - Features techniques inspirées de QC-Py-18 (Feature Engineering)
-    - Top 3 secteurs classés "BUY" sont achetés (equal-weight)
+    v5 changes (from v4 Sharpe 0.308, Beta 0.639, Alpha +0.003, MaxDD 32.7%):
+    - Always select top-N sectors by buy probability (no cash drag in bull)
+    - In bull market: always hold top 4 sectors ranked by RF buy probability
+    - In bear market: hold top 2 defensive sectors OR go cash if best prob < 0.35
+    - Equal weight (simpler, more robust than confidence-weighted for 8 sectors)
+    - Keep monthly retraining and 11 features from v4
 
-    ETFs Sectoriels utilisés:
-    - XLK: Technology
-    - XLF: Financials
-    - XLV: Healthcare
-    - XLE: Energy
-    - XLY: Consumer Discretionary
-    - XLP: Consumer Staples
-    - XLI: Industrials
-    - XLB: Materials
-    - XLU: Utilities
-    - XLRE: Real Estate
-    - XLC: Communication Services
+    v4 analysis:
+    - Alpha +0.003 is good (first positive alpha!)
+    - Beta 0.639 confirms signal-driven (not beta-loading)
+    - But Sharpe 0.308 < v2b 0.352: cash drag in bull markets
+    - When all RF proba < 0.50 threshold, strategy holds stale positions
+    - Fix: always rebalance to top-N, threshold only filters bear cash decision
 
-    Basé sur: QC-Py-19 (ML Supervised Classification)
+    Performance history:
+    - v2b (2018-2026): Sharpe 0.352, Beta 0.964, Alpha -0.007, MaxDD 41.7%
+    - v3   (2015-2026): Sharpe 0.288, Beta 0.832, Alpha -0.012, MaxDD 36.0%
+    - v3.1 (2015-2026): Sharpe 0.253, Beta 0.833, Alpha -0.018, MaxDD 39.1%
+    - v4   (2015-2026): Sharpe 0.308, Beta 0.639, Alpha +0.003, MaxDD 32.7%
+    - v5   (2015-2026): Sharpe 0.473, Beta 0.799, Alpha +0.009, MaxDD 34.4%
     """
 
-    # 11 Sector ETFs
     SECTOR_ETFS = {
         "XLK": "Technology",
         "XLF": "Financials",
@@ -45,509 +40,386 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
         "XLY": "Consumer Discretionary",
         "XLP": "Consumer Staples",
         "XLI": "Industrials",
-        "XLB": "Materials",
-        "XLU": "Utilities",
-        "XLRE": "Real Estate",
-        "XLC": "Communication Services"
+        "XLU": "Utilities"
     }
 
-    # Paramètres ML
-    MODEL_KEY = "sector_ml_model.pkl"
-    SCALER_KEY = "sector_ml_scaler.pkl"
+    DEFENSIVE_SECTORS = ["XLU", "XLP", "XLV"]
 
-    # Périodes pour le training
-    TRAIN_START = datetime(2015, 1, 1)
-    TRAIN_END = datetime(2022, 12, 31)
-    BACKTEST_START = datetime(2023, 1, 1)
-    BACKTEST_END = datetime(2026, 3, 1)
-
-    # Paramètres de trading
-    STARTING_CASH = 100000
-    TOP_N_SECTORS = 3  # Nombre de secteurs à acheter (top-3 classés BUY)
-    REBALANCE_DAY = 1  # 1er jour de chaque mois
-
-    # Features techniques (inspirées de QC-Py-18)
-    RSI_PERIOD = 14
-    SMA_SHORT = 20
-    SMA_LONG = 50
-    EMA_SHORT = 12
-    EMA_LONG = 26
-    MACD_SIGNAL = 9
-    BB_PERIOD = 20
-    BB_STD = 2
-    ATR_PERIOD = 14
-
-    # Paramètres Random Forest
+    TRAIN_LOOKBACK_DAYS = 252 * 4  # 4-year rolling window
+    FORWARD_DAYS = 10              # 10-day forward return (biweekly cycle)
+    BUY_THRESHOLD = 0.012          # 1.2% over 10 days = buy signal
+    AVOID_THRESHOLD = -0.008       # -0.8% over 10 days = avoid signal
+    TOP_N_SECTORS = 4              # positions in bull regime
+    BEAR_N_SECTORS = 2             # positions in bear regime
+    BEAR_MIN_PROB = 0.35           # in bear: go cash if best defensive prob < this
     RF_N_ESTIMATORS = 100
     RF_MAX_DEPTH = 5
-    RF_MIN_SAMPLES_SPLIT = 10
+    RF_MIN_SAMPLES_LEAF = 10
+    SMA_SHORT = 20
+    SMA_LONG = 50
+    SMA200_PERIOD = 200
 
-    # Seuils de classification pour labels
-    # Utilisés pour créer les labels pendant le training
-    BUY_THRESHOLD = 0.02   # Rendement > 2% sur le mois = BUY
-    AVOID_THRESHOLD = -0.01 # Rendement < -1% sur le mois = AVOID
+    def initialize(self):
+        self.set_start_date(2015, 1, 1)
+        self.set_cash(100000)
 
-    def Initialize(self):
-        # Configuration backtest
-        self.SetStartDate(self.BACKTEST_START.year, self.BACKTEST_START.month, self.BACKTEST_START.day)
-        self.SetEndDate(self.BACKTEST_END.year, self.BACKTEST_END.month, self.BACKTEST_END.day)
-        self.SetCash(self.STARTING_CASH)
-        self.SetBrokerageModel(BrokerageName.AlphaStreams, AccountType.Cash)
-
-        # Ajouter les 11 ETFs sectoriels
-        self.symbols = []
         self.etf_tickers = list(self.SECTOR_ETFS.keys())
+        self.symbols = []
+        self.symbol_map = {}  # ticker -> symbol
 
         for ticker in self.etf_tickers:
-            symbol = self.AddEquity(ticker, Resolution.Daily, Market.USA).Symbol
+            symbol = self.add_equity(ticker, Resolution.DAILY, Market.USA).Symbol
             self.symbols.append(symbol)
+            self.symbol_map[ticker] = symbol
 
-        # Benchmark = SPY
-        self.benchmark = self.AddEquity("SPY", Resolution.Daily, Market.USA).Symbol
-        self.SetBenchmark(self.benchmark)
+        self._spy = self.add_equity("SPY", Resolution.DAILY, Market.USA).Symbol
+        self.set_benchmark(self._spy)
 
-        # ML Model et Scaler
         self.model = None
         self.scaler = None
 
-        # Charger depuis Object Store si disponible
-        if joblib:
-            self.load_model_from_object_store()
-
-        # Initialiser les indicateurs pour chaque ETF
+        # Indicators per sector
         self.indicators = {}
         for symbol in self.symbols:
-            self.indicators[symbol.ID] = self.initialize_indicators(symbol)
+            self.indicators[symbol.ID] = {
+                'rsi': self.RSI(symbol, 14, MovingAverageType.Wilders, Resolution.DAILY),
+                'sma_short': self.SMA(symbol, self.SMA_SHORT, Resolution.DAILY),
+                'sma_long': self.SMA(symbol, self.SMA_LONG, Resolution.DAILY),
+            }
 
-        # Dictionnaire pour stocker les features
-        self.features_history = {}
+        # SPY SMA200 for bear market regime
+        self._spy_sma200 = self.SMA(self._spy, self.SMA200_PERIOD, Resolution.DAILY)
 
-        # Schedule: Rebalance mensuel (1er jour du mois)
-        self.Schedule.On(self.DateRules.MonthStart(self.etf_tickers),
-                         self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.Rebalance)
+        # Biweekly rebalance: month-start + approx mid-month
+        self.schedule.on(self.date_rules.month_start("SPY"),
+                         self.time_rules.after_market_open("SPY", 30),
+                         self.rebalance)
+        self.schedule.on(self.date_rules.month_start("SPY", 14),
+                         self.time_rules.after_market_open("SPY", 30),
+                         self.rebalance)
 
-        # Schedule: Training annuel (1er janvier)
-        self.Schedule.On(self.DateRules.YearBegin(),
-                         self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.TrainModel)
+        # Monthly retraining
+        self.schedule.on(self.date_rules.month_start("SPY"),
+                         self.time_rules.after_market_open("SPY", 60),
+                         self.train_model)
 
-        # Warm-up pour les indicateurs
-        self.SetWarmUp(max(self.SMA_LONG, self.BB_PERIOD, self.MACD_SIGNAL) + self.ATR_PERIOD, Resolution.Daily)
+        self.set_warm_up(self.SMA200_PERIOD + 20, Resolution.DAILY)
 
-        self.Debug("SectorMLClassificationAlgorithm initialized")
-        self.Debug(f"Sectors: {', '.join(self.etf_tickers)}")
-        self.Debug(f"Training period: {self.TRAIN_START} to {self.TRAIN_END}")
+    def is_bear_market(self):
+        """Return True if SPY is below its 200-day SMA."""
+        if not self._spy_sma200.is_ready:
+            return False
+        spy_price = self.securities[self._spy].price
+        return spy_price < self._spy_sma200.current.value
 
-    def initialize_indicators(self, symbol):
-        """Initialise les indicateurs techniques pour un symbole."""
-        return {
-            'rsi': self.RSI(symbol, self.RSI_PERIOD, MovingAverageType.Wilders, Resolution.Daily),
-            'sma_short': self.SMA(symbol, self.SMA_SHORT, Resolution.Daily),
-            'sma_long': self.SMA(symbol, self.SMA_LONG, Resolution.Daily),
-            'ema_short': self.EMA(symbol, self.EMA_SHORT, Resolution.Daily),
-            'ema_long': self.EMA(symbol, self.EMA_LONG, Resolution.Daily),
-            'atr': self.ATR(symbol, self.ATR_PERIOD, MovingAverageType.Simple, Resolution.Daily)
-        }
-
-    def calculate_features(self, symbol):
-        """
-        Calcule les features techniques pour un symbole.
-
-        Features inspirées de QC-Py-18 (Feature Engineering):
-        - Price-based: returns, volatility, range
-        - Indicator-based: RSI, MACD, Bollinger Bands, position in range
-        """
-        security = self.Securities[symbol]
+    def get_features_live(self, symbol):
+        """Calculate 11 features for live prediction."""
         indicators = self.indicators[symbol.ID]
-
-        # Vérifier que les indicateurs sont prêts
-        if not all(ind.Current.Value is not None for ind in indicators.values()):
+        if not all(ind.is_ready for ind in indicators.values()):
             return None
 
-        # Prix actuel
-        current_price = security.Price
-        history = self.History(symbol, self.SMA_LONG + 10, Resolution.Daily)
+        current_price = self.securities[symbol].price
+        spy_price = self.securities[self._spy].price
+        history = self.history(symbol, 260, Resolution.DAILY)
+        spy_history = self.history(self._spy, 260, Resolution.DAILY)
 
-        if len(history) < self.SMA_LONG:
+        if history is None or len(history) < self.SMA_LONG:
+            return None
+        if 'close' not in history.columns:
             return None
 
-        # === PRICE FEATURES ===
-        # Rendements sur différentes périodes
-        returns_5d = (current_price / history['close'].iloc[-5] - 1) if len(history) >= 5 else 0
-        returns_10d = (current_price / history['close'].iloc[-10] - 1) if len(history) >= 10 else 0
-        returns_20d = (current_price / history['close'].iloc[-20] - 1) if len(history) >= 20 else 0
+        closes = history['close']
+        if len(closes) < 50:
+            return None
 
-        # Volatilité (écart-type des rendements sur 20 jours)
-        daily_returns = history['close'].pct_change().dropna()
-        volatility = daily_returns.rolling(20).std().iloc[-1] if len(daily_returns) >= 20 else 0
+        returns_5d = (current_price / closes.iloc[-5] - 1) if len(closes) >= 5 else 0.0
+        returns_10d = (current_price / closes.iloc[-10] - 1) if len(closes) >= 10 else 0.0
+        returns_20d = (current_price / closes.iloc[-20] - 1) if len(closes) >= 20 else 0.0
+        returns_50d = (current_price / closes.iloc[-50] - 1) if len(closes) >= 50 else 0.0
 
-        # === INDICATOR FEATURES ===
-        rsi = indicators['rsi'].Current.Value
-        rsi_normalized = (rsi - 50) / 50  # Normalize [-1, 1]
+        daily_returns = closes.pct_change().dropna()
+        vol = daily_returns.rolling(20).std().iloc[-1]
+        volatility = float(vol) if not np.isnan(float(vol)) else 0.01
 
-        sma_short = indicators['sma_short'].Current.Value
-        sma_long = indicators['sma_long'].Current.Value
-        ma_ratio = sma_short / sma_long if sma_long > 0 else 1
+        rsi = indicators['rsi'].current.value
+        rsi_normalized = (rsi - 50) / 50
 
-        # Position dans le range 20D
-        high_20d = history['high'].rolling(20).max().iloc[-1]
-        low_20d = history['low'].rolling(20).min().iloc[-1]
-        position_in_range = (current_price - low_20d) / (high_20d - low_20d) if high_20d > low_20d else 0.5
+        sma_short = indicators['sma_short'].current.value
+        sma_long = indicators['sma_long'].current.value
+        ma_ratio = sma_short / sma_long if sma_long > 0 else 1.0
 
-        # EMA pour MACD
-        ema_short = indicators['ema_short'].Current.Value
-        ema_long = indicators['ema_long'].Current.Value
-        macd = ema_short - ema_long
-        macd_normalized = macd / current_price if current_price > 0 else 0
+        if 'high' in history.columns and 'low' in history.columns:
+            high_20d = float(history['high'].rolling(20).max().iloc[-1])
+            low_20d = float(history['low'].rolling(20).min().iloc[-1])
+            position_in_range = (
+                (current_price - low_20d) / (high_20d - low_20d)
+                if high_20d > low_20d else 0.5
+            )
+        else:
+            position_in_range = 0.5
 
-        # Distance from high/low
-        dist_from_high = (high_20d - current_price) / current_price if current_price > 0 else 0
-        dist_from_low = (current_price - low_20d) / current_price if current_price > 0 else 0
+        high_52w = closes.rolling(252).max().iloc[-1] if len(closes) >= 252 else closes.max()
+        ratio_52w_high = current_price / high_52w if high_52w > 0 else 1.0
 
-        # ATR normalisé
-        atr = indicators['atr'].Current.Value
-        atr_normalized = atr / current_price if current_price > 0 else 0
+        spy_ret_5d = 0.0
+        spy_ret_10d = 0.0
+        if (spy_history is not None and len(spy_history) >= 10
+                and 'close' in spy_history.columns):
+            spy_closes = spy_history['close']
+            spy_ret_5d = (spy_price / spy_closes.iloc[-5] - 1) if len(spy_closes) >= 5 else 0.0
+            spy_ret_10d = (spy_price / spy_closes.iloc[-10] - 1) if len(spy_closes) >= 10 else 0.0
 
-        features = {
-            'returns_5d': returns_5d,
-            'returns_10d': returns_10d,
-            'returns_20d': returns_20d,
-            'volatility': volatility,
-            'rsi_normalized': rsi_normalized,
-            'ma_ratio': ma_ratio,
-            'position_in_range': position_in_range,
-            'macd_normalized': macd_normalized,
-            'dist_from_high': dist_from_high,
-            'dist_from_low': dist_from_low,
-            'atr_normalized': atr_normalized
-        }
+        relative_5d = returns_5d - spy_ret_5d
+        relative_10d = returns_10d - spy_ret_10d
+
+        features = [
+            returns_5d, returns_10d, returns_20d, returns_50d,
+            volatility, rsi_normalized, ma_ratio, position_in_range,
+            ratio_52w_high, relative_5d, relative_10d
+        ]
+
+        if any(np.isnan(f) for f in features):
+            return None
 
         return features
 
-    def create_training_labels(self, lookahead_days=20):
-        """
-        Crée les labels pour le training (3 classes).
+    def get_features_historical(self, sector_prices, spy_prices, date):
+        """Calculate 11 features from historical price series up to date."""
+        data = sector_prices[:date]
+        spy_data = spy_prices[:date]
 
-        Classes:
-        - 2 (BUY): Rendement futur > BUY_THRESHOLD (2%)
-        - 1 (HOLD): Rendement entre AVOID_THRESHOLD et BUY_THRESHOLD
-        - 0 (AVOID): Rendement futur < AVOID_THRESHOLD (-1%)
-        """
-        labels = {}
-
-        for symbol in self.symbols:
-            # Récupérer l'historique pour calculer le rendement futur
-            history = self.History([symbol], self.TRAIN_START, self.TRAIN_END, Resolution.Daily)
-
-            if len(history) < lookahead_days + 1:
-                continue
-
-            df = history['close'].unstack(level=0)
-            future_returns = df.shift(-lookahead_days) / df - 1
-
-            # Créer les labels (2 = BUY, 1 = HOLD, 0 = AVOID)
-            label_series = future_returns.apply(
-                lambda x: 2 if x > self.BUY_THRESHOLD else (0 if x < self.AVOID_THRESHOLD else 1)
-            )
-
-            labels[symbol.ID] = label_series
-
-        return labels
-
-    def prepare_training_data(self):
-        """
-        Prépare les données de training (features + labels).
-        """
-        self.Debug("Preparing training data...")
-
-        # Récupérer les labels
-        labels = self.create_training_labels()
-
-        # Récupérer l'historique complet
-        history = self.History(self.symbols, self.TRAIN_START, self.TRAIN_END, Resolution.Daily)
-
-        if 'close' in history.columns:
-            price_data = history['close'].unstack(level=0)
-        else:
-            price_data = history.unstack(level=0)
-
-        X_list = []
-        y_list = []
-
-        # Pour chaque date dans la période de training
-        for date in price_data.index[50:-20]:  # Skip warmup et lookahead
-            # Calculer les features pour chaque secteur à cette date
-            features_list = []
-            labels_list = []
-
-            for symbol in self.symbols:
-                symbol_id = symbol.ID
-
-                # Récupérer le label pour cette date
-                if symbol_id in labels and date in labels[symbol_id].index:
-                    label = labels[symbol_id].loc[date]
-
-                    # Skip si NaN
-                    if pd.isna(label):
-                        continue
-
-                    # Calculer les features (simplifié pour le training)
-                    # En pratique, on utiliserait l'historique jusqu'à cette date
-                    features = self.calculate_features_for_training(symbol, date, price_data)
-
-                    if features is not None:
-                        features_list.append(features)
-                        labels_list.append(label)
-
-            if features_list:
-                X_list.extend(features_list)
-                y_list.extend(labels_list)
-
-        if len(X_list) == 0:
-            self.Debug("Warning: No training data prepared!")
-            return None, None
-
-        X = np.array(X_list)
-        y = np.array(y_list)
-
-        self.Debug(f"Training data prepared: {X.shape[0]} samples, {X.shape[1]} features")
-        return X, y
-
-    def calculate_features_for_training(self, symbol, date, price_data):
-        """
-        Calcule les features pour une date donnée (training).
-
-        Version simplifiée pour le training avec données historiques.
-        """
-        try:
-            symbol_id = symbol.ID
-            if symbol_id not in price_data.columns:
-                return None
-
-            # Prix jusqu'à cette date
-            prices = price_data[symbol_id][:date]
-
-            if len(prices) < self.SMA_LONG:
-                return None
-
-            current_price = prices.iloc[-1]
-
-            # Features calculées sur l'historique jusqu'à cette date
-            returns_5d = (current_price / prices.iloc[-5] - 1) if len(prices) >= 5 else 0
-            returns_10d = (current_price / prices.iloc[-10] - 1) if len(prices) >= 10 else 0
-            returns_20d = (current_price / prices.iloc[-20] - 1) if len(prices) >= 20 else 0
-
-            # Volatilité
-            daily_returns = prices.pct_change().dropna()
-            volatility = daily_returns.rolling(20).std().iloc[-1] if len(daily_returns) >= 20 else 0
-
-            # RSI
-            delta = prices.diff()
-            gain = delta.clip(lower=0)
-            loss = -delta.clip(lower=0)
-            avg_gain = gain.rolling(14).mean().iloc[-1]
-            avg_loss = loss.rolling(14).mean().iloc[-1]
-            rs = avg_gain / avg_loss if avg_loss > 0 else 0
-            rsi = 100 - (100 / (1 + rs))
-            rsi_normalized = (rsi - 50) / 50
-
-            # MA ratio
-            sma_short = prices.rolling(20).mean().iloc[-1]
-            sma_long = prices.rolling(50).mean().iloc[-1]
-            ma_ratio = sma_short / sma_long if sma_long > 0 else 1
-
-            # Position in range
-            high_20d = prices.rolling(20).max().iloc[-1]
-            low_20d = prices.rolling(20).min().iloc[-1]
-            position_in_range = (current_price - low_20d) / (high_20d - low_20d) if high_20d > low_20d else 0.5
-
-            return [
-                returns_5d, returns_10d, returns_20d,
-                volatility, rsi_normalized, ma_ratio, position_in_range
-            ]
-
-        except Exception as e:
-            self.Debug(f"Error calculating features for {symbol.ID} at {date}: {e}")
+        if len(data) < self.SMA_LONG or len(spy_data) < 10:
             return None
 
-    def TrainModel(self):
-        """Entraîne le modèle Random Forest avec les données historiques."""
-        self.Debug(f"Training ML model at {self.Time}")
+        current_price = data.iloc[-1]
+        spy_price = spy_data.iloc[-1]
+
+        if pd.isna(current_price) or current_price == 0:
+            return None
+
+        returns_5d = (current_price / data.iloc[-5] - 1) if len(data) >= 5 else 0.0
+        returns_10d = (current_price / data.iloc[-10] - 1) if len(data) >= 10 else 0.0
+        returns_20d = (current_price / data.iloc[-20] - 1) if len(data) >= 20 else 0.0
+        returns_50d = (current_price / data.iloc[-50] - 1) if len(data) >= 50 else 0.0
+
+        daily_returns = data.pct_change().dropna()
+        vol_val = daily_returns.rolling(20).std().iloc[-1]
+        volatility = (
+            float(vol_val) if len(daily_returns) >= 20 and not pd.isna(vol_val) else 0.01
+        )
+
+        delta = data.diff()
+        gain = delta.clip(lower=0)
+        loss = -delta.clip(lower=0)
+        avg_gain = gain.rolling(14).mean().iloc[-1]
+        avg_loss = loss.rolling(14).mean().iloc[-1]
+        rs = avg_gain / avg_loss if avg_loss > 0 else 0.0
+        rsi = 100 - (100 / (1 + rs))
+        rsi_normalized = (rsi - 50) / 50
+
+        sma_short = data.rolling(self.SMA_SHORT).mean().iloc[-1]
+        sma_long = data.rolling(self.SMA_LONG).mean().iloc[-1]
+        ma_ratio = sma_short / sma_long if sma_long > 0 else 1.0
+
+        high_20d = data.rolling(20).max().iloc[-1]
+        low_20d = data.rolling(20).min().iloc[-1]
+        position_in_range = (
+            (current_price - low_20d) / (high_20d - low_20d)
+            if high_20d > low_20d else 0.5
+        )
+
+        high_52w = data.rolling(252).max().iloc[-1] if len(data) >= 252 else data.max()
+        ratio_52w_high = current_price / high_52w if high_52w > 0 else 1.0
+
+        spy_ret_5d = (spy_price / spy_data.iloc[-5] - 1) if len(spy_data) >= 5 else 0.0
+        spy_ret_10d = (spy_price / spy_data.iloc[-10] - 1) if len(spy_data) >= 10 else 0.0
+        relative_5d = returns_5d - spy_ret_5d
+        relative_10d = returns_10d - spy_ret_10d
+
+        features = [
+            returns_5d, returns_10d, returns_20d, returns_50d,
+            volatility, rsi_normalized, ma_ratio, position_in_range,
+            ratio_52w_high, relative_5d, relative_10d
+        ]
+
+        if any(np.isnan(f) for f in features):
+            return None
+
+        return features
+
+    def train_model(self):
+        """Train on rolling 4-year window with 10-day forward returns."""
+        if self.is_warming_up:
+            return
+
+        train_end = self.time - timedelta(days=15)
+        train_start = train_end - timedelta(days=self.TRAIN_LOOKBACK_DAYS)
 
         try:
-            # Préparer les données
-            X, y = self.prepare_training_data()
+            all_symbols = self.symbols + [self._spy]
+            history = self.history(all_symbols, train_start, train_end, Resolution.DAILY)
 
-            if X is None or len(X) == 0:
-                self.Debug("No training data available. Skipping training.")
+            if history is None or len(history) == 0:
                 return
 
-            # Normaliser les features
+            if 'close' not in history.columns:
+                self.error("Training: no close column")
+                return
+
+            price_data = history['close'].unstack(level=0)
+
+            if len(price_data) < 100:
+                return
+
+            spy_sid = self._spy.ID
+            if spy_sid not in price_data.columns:
+                return
+            spy_prices = price_data[spy_sid]
+
+            X_list, y_list = [], []
+
+            # Sample every 5 days to reduce autocorrelation
+            dates_to_use = price_data.index[self.SMA_LONG:-self.FORWARD_DAYS:5]
+
+            for date in dates_to_use:
+                for symbol in self.symbols:
+                    sid = symbol.ID
+                    if sid not in price_data.columns:
+                        continue
+
+                    future_idx = price_data.index.get_loc(date)
+                    if isinstance(future_idx, slice):
+                        future_idx = future_idx.start
+                    if future_idx + self.FORWARD_DAYS >= len(price_data):
+                        continue
+
+                    future_price = price_data[sid].iloc[future_idx + self.FORWARD_DAYS]
+                    current_price_val = price_data[sid].iloc[future_idx]
+
+                    if (pd.isna(future_price) or pd.isna(current_price_val)
+                            or current_price_val == 0):
+                        continue
+
+                    future_return = future_price / current_price_val - 1
+
+                    if future_return > self.BUY_THRESHOLD:
+                        label = 2
+                    elif future_return < self.AVOID_THRESHOLD:
+                        label = 0
+                    else:
+                        label = 1
+
+                    features = self.get_features_historical(
+                        price_data[sid], spy_prices, date
+                    )
+                    if features is not None:
+                        X_list.append(features)
+                        y_list.append(label)
+
+            if len(X_list) < 50:
+                self.debug(f"Not enough training samples: {len(X_list)}")
+                return
+
+            X = np.array(X_list)
+            y = np.array(y_list)
+
             self.scaler = StandardScaler()
             X_scaled = self.scaler.fit_transform(X)
 
-            # Entraîner Random Forest
             self.model = RandomForestClassifier(
                 n_estimators=self.RF_N_ESTIMATORS,
                 max_depth=self.RF_MAX_DEPTH,
-                min_samples_split=self.RF_MIN_SAMPLES_SPLIT,
+                min_samples_leaf=self.RF_MIN_SAMPLES_LEAF,
                 random_state=42,
                 n_jobs=-1
             )
-
             self.model.fit(X_scaled, y)
-
-            # Feature importance (pour debug)
-            feature_names = [
-                'returns_5d', 'returns_10d', 'returns_20d',
-                'volatility', 'rsi_normalized', 'ma_ratio', 'position_in_range'
-            ]
-
-            self.Debug("Model trained successfully")
-            self.Debug(f"Feature importances:")
-            for name, importance in zip(feature_names, self.model.feature_importances_):
-                self.Debug(f"  {name}: {importance:.4f}")
-
-            # Sauvegarder dans Object Store
-            if joblib:
-                self.save_model_to_object_store()
+            unique, counts = np.unique(y, return_counts=True)
+            class_dist = dict(zip(unique.tolist(), counts.tolist()))
+            self.debug(f"Model trained: {len(X)} samples, classes={class_dist}")
 
         except Exception as e:
-            self.Error(f"Error training model: {e}")
+            self.error(f"Training error: {e}")
 
-    def predict_sector_class(self, symbol):
-        """
-        Prédit la classe pour un secteur (BUY=2, HOLD=1, AVOID=0).
-        """
-        if self.model is None or self.scaler is None:
-            return 1  # HOLD par défaut si pas de modèle
+    def rebalance(self):
+        """Biweekly rebalance with SMA200 bear regime filter."""
+        if self.is_warming_up:
+            return
 
-        try:
-            # Calculer les features
-            features_dict = self.calculate_features(symbol)
-
-            if features_dict is None:
-                return 1  # HOLD si features pas prêtes
-
-            # Extraire dans le bon ordre (7 features pour training)
-            features = [
-                features_dict['returns_5d'],
-                features_dict['returns_10d'],
-                features_dict['returns_20d'],
-                features_dict['volatility'],
-                features_dict['rsi_normalized'],
-                features_dict['ma_ratio'],
-                features_dict['position_in_range']
-            ]
-
-            # Prédire
-            X = np.array(features).reshape(1, -1)
-            X_scaled = self.scaler.transform(X)
-            prediction = self.model.predict(X_scaled)[0]
-
-            # Probabilités pour debug
-            probs = self.model.predict_proba(X_scaled)[0]
-
-            return prediction
-
-        except Exception as e:
-            self.Debug(f"Error predicting for {symbol.ID}: {e}")
-            return 1  # HOLD par défaut
-
-    def Rebalance(self):
-        """Rebalance le portfolio mensuellement basé sur les prédictions ML."""
-
-        # Si pas de modèle, entraîner d'abord
         if self.model is None:
-            self.Debug("No model available. Training...")
-            self.TrainModel()
+            self.train_model()
             if self.model is None:
                 return
 
-        self.Debug(f"Rebalancing at {self.Time}")
+        bear_market = self.is_bear_market()
 
-        # Prédire la classe pour chaque secteur
-        sector_predictions = {}
+        if bear_market:
+            # In bear: score only defensive sectors
+            candidates = [
+                self.symbol_map[t] for t in self.DEFENSIVE_SECTORS
+                if t in self.symbol_map
+            ]
+            max_positions = self.BEAR_N_SECTORS
+        else:
+            candidates = self.symbols
+            max_positions = self.TOP_N_SECTORS
 
+        # ML scoring - probability of BUY class (class 2)
+        sector_scores = {}
+        for symbol in candidates:
+            features = self.get_features_live(symbol)
+            if features is None:
+                continue
+            try:
+                x_arr = np.array(features).reshape(1, -1)
+                x_scaled = self.scaler.transform(x_arr)
+                proba = self.model.predict_proba(x_scaled)[0]
+                class_list = list(self.model.classes_)
+                buy_idx = class_list.index(2) if 2 in class_list else -1
+                buy_prob = float(proba[buy_idx]) if buy_idx >= 0 else 0.0
+                sector_scores[symbol] = buy_prob
+            except Exception:
+                continue
+
+        if not sector_scores:
+            # No features available: keep current positions
+            return
+
+        # Rank by buy probability
+        ranked = sorted(sector_scores.items(), key=lambda x: x[1], reverse=True)
+        top_candidates = ranked[:max_positions]
+
+        if bear_market:
+            # In bear: only hold if best defensive sector has meaningful signal
+            best_prob = top_candidates[0][1] if top_candidates else 0.0
+            if best_prob < self.BEAR_MIN_PROB:
+                self.liquidate()
+                self.debug(f"BEAR | best_prob={best_prob:.3f} < {self.BEAR_MIN_PROB} | Full cash")
+                return
+            selected = [s for s, _ in top_candidates]
+        else:
+            # In bull: always hold top N sectors (RF ranks which to prefer)
+            selected = [s for s, _ in top_candidates]
+
+        if not selected:
+            return
+
+        # Equal weight allocation
+        weight = 1.0 / len(selected)
+
+        # Selective liquidation: only exit positions no longer selected
+        target_set = set(selected)
         for symbol in self.symbols:
-            prediction = self.predict_sector_class(symbol)
-            sector_predictions[symbol] = prediction
+            if self.portfolio[symbol].invested and symbol not in target_set:
+                self.liquidate(symbol)
 
-        # Sélectionner les top-N secteurs classés BUY (prediction = 2)
-        buy_sectors = [s for s, p in sector_predictions.items() if p == 2]
+        for symbol in selected:
+            self.set_holdings(symbol, weight)
 
-        # Si moins de TOP_N secteurs BUY, inclure les HOLD
-        if len(buy_sectors) < self.TOP_N_SECTORS:
-            hold_sectors = [s for s, p in sector_predictions.items() if p == 1]
-            buy_sectors.extend(hold_sectors[:self.TOP_N_SECTORS - len(buy_sectors)])
-
-        # Limiter à TOP_N_SECTORS
-        selected_sectors = buy_sectors[:self.TOP_N_SECTORS]
-
-        self.Debug(f"Selected sectors for long: {[self.Securities[s].Symbol for s in selected_sectors]}")
-
-        # Calculer le poids pour chaque secteur (equal-weight)
-        weight = 1.0 / len(selected_sectors) if len(selected_sectors) > 0 else 0
-
-        # Liquid toutes les positions
-        self.Liquidate()
-
-        # Ouvrir les positions
-        for symbol in selected_sectors:
-            self.SetHoldings(symbol, weight)
-
-        self.Debug(f"Rebalance complete: {len(selected_sectors)} positions, weight={weight:.2%}")
-
-    def save_model_to_object_store(self):
-        """Sauvegarde le modèle et le scaler dans l'Object Store."""
-        try:
-            import tempfile
-            import os
-
-            # Sauvegarder le modèle
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp:
-                joblib.dump(self.model, tmp.name)
-                self.ObjectStore.Save(self.MODEL_KEY, tmp.name)
-                os.unlink(tmp.name)
-
-            # Sauvegarder le scaler
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp:
-                joblib.dump(self.scaler, tmp.name)
-                self.ObjectStore.Save(self.SCALER_KEY, tmp.name)
-                os.unlink(tmp.name)
-
-            self.Debug(f"Model and scaler saved to Object Store")
-
-        except Exception as e:
-            self.Error(f"Error saving to Object Store: {e}")
-
-    def load_model_from_object_store(self):
-        """Charge le modèle et le scaler depuis l'Object Store."""
-        try:
-            import tempfile
-            import os
-
-            # Charger le modèle
-            if self.ObjectStore.ContainsKey(self.MODEL_KEY):
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp:
-                    self.ObjectStore.GetFilePath(self.MODEL_KEY, tmp.name)
-                    self.model = joblib.load(tmp.name)
-                    os.unlink(tmp.name)
-
-                self.Debug(f"Model loaded from Object Store")
-
-            # Charger le scaler
-            if self.ObjectStore.ContainsKey(self.SCALER_KEY):
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp:
-                    self.ObjectStore.GetFilePath(self.SCALER_KEY, tmp.name)
-                    self.scaler = joblib.load(tmp.name)
-                    os.unlink(tmp.name)
-
-                self.Debug(f"Scaler loaded from Object Store")
-
-            return True
-
-        except Exception as e:
-            self.Debug(f"Error loading from Object Store: {e}")
-            return False
+        regime_str = "BEAR" if bear_market else "BULL"
+        tickers = [
+            t for t in self.etf_tickers
+            if self.symbol_map.get(t) in target_set
+        ]
+        probs = [f"{sector_scores.get(s, 0):.2f}" for s in selected]
+        self.debug(f"{regime_str} | {tickers} | probs={probs}")

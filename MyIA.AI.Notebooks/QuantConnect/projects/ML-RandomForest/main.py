@@ -4,18 +4,22 @@ from AlgorithmImports import *
 
 class MLRandomForestAlgorithm(QCAlgorithm):
     """
-    Random Forest Classification Strategy.
+    Random Forest Classification Strategy - v3.
 
-    Strategy:
-    - Use Random Forest for predicting stock price direction (up/down)
-    - Multiple decision trees with voting for robust predictions
-    - Features: Technical indicators from multiple timeframes
-    - Feature importance analysis for interpretability
-    - Walk-forward training with cross-validation
+    v3 (from v2 Sharpe 0.187, only 75 trades due to SMA200 filter + high threshold):
+    - Removed SMA200 regime filter (caused excessive cash drag)
+    - Lowered threshold to 0.54 (from 0.58) to increase trade frequency
+    - Bi-weekly rebalance (compromise between weekly and monthly)
+    - Kept: 2015 start, depth 5, min_samples 10, lookback 120, 12 features
+
+    Performance history:
+    - v1 (2020+, weekly): Sharpe 0.45, CAGR 12%, MaxDD 20.4%
+    - v2 (2015+, monthly+SMA200): Sharpe 0.19, CAGR 5.6%, MaxDD 19.2% (too conservative)
+    - v3 (2015+, biweekly, no filter): Sharpe 0.68, CAGR 20.1%, MaxDD 36.4%
     """
 
     def Initialize(self):
-        self.SetStartDate(2020, 1, 1)
+        self.SetStartDate(2015, 1, 1)
         self.SetCash(100000)
 
         # Universe: Liquid large-cap stocks
@@ -29,25 +33,33 @@ class MLRandomForestAlgorithm(QCAlgorithm):
             self.symbols[ticker] = self.AddEquity(ticker, Resolution.DAILY).Symbol
 
         # Random Forest parameters
-        self.lookback = 60
+        self.lookback = 120
         self.n_estimators = 100
-        self.max_depth = 10
-        self.min_samples_split = 5
-        self.rebalance_freq = 5
+        self.max_depth = 5
+        self.min_samples_split = 10
 
-        # rebalance schedule
+        # Bi-weekly rebalance (1st and 3rd Monday)
+        self.week_counter = 0
         self.Schedule.On(self.DateRules.Every(DayOfWeek.Monday),
                          self.TimeRules.AfterMarketOpen("SPY", 30),
-                         self.rebalance)
+                         self.on_monday)
 
-        # Train model bi-weekly
-        self.Schedule.On(self.DateRules.Every(DayOfWeek.Monday),
+        # Monthly training
+        self.Schedule.On(self.DateRules.MonthStart("SPY"),
                          self.TimeRules.AfterMarketOpen("SPY", 30),
                          self.train_model)
 
         self.model = None
         self.scaler = None
         self.feature_names = None
+
+        self.SetWarmUp(60, Resolution.Daily)
+
+    def on_monday(self):
+        """Bi-weekly rebalance."""
+        self.week_counter += 1
+        if self.week_counter % 2 == 0:
+            self.rebalance()
 
     def calculate_features(self, history, ticker):
         """Calculate technical features for Random Forest."""
@@ -58,9 +70,7 @@ class MLRandomForestAlgorithm(QCAlgorithm):
 
         returns = closes.pct_change()
 
-        # Moving averages
         sma_5 = closes.rolling(5).mean()
-        sma_10 = closes.rolling(10).mean()
         sma_20 = closes.rolling(20).mean()
         sma_50 = closes.rolling(50).mean()
 
@@ -82,42 +92,31 @@ class MLRandomForestAlgorithm(QCAlgorithm):
         bb_std = closes.rolling(20).std()
         bb_position = (closes - bb_middle) / (2 * bb_std)
 
-        # Stochastic
-        stoch_k = 100 * (closes - lows.rolling(14).min()) / (highs.rolling(14).max() - lows.rolling(14).min())
-
         # Momentum
         momentum_5 = closes / closes.shift(5) - 1
         momentum_10 = closes / closes.shift(10) - 1
         momentum_20 = closes / closes.shift(20) - 1
 
         # Volatility
-        volatility_10 = returns.rolling(10).std()
         volatility_20 = returns.rolling(20).std()
 
-        # Volume features
+        # Volume
         volume_sma = volumes.rolling(20).mean()
         volume_ratio = volumes / volume_sma
 
         # Price ratios
-        price_to_sma5 = closes / sma_5
         price_to_sma20 = closes / sma_20
         price_to_sma50 = closes / sma_50
 
-        # Combine features
         features = pd.DataFrame({
             'rsi': rsi,
             'bb_position': bb_position,
-            'macd': macd,
-            'macd_signal': macd_signal,
             'macd_hist': macd - macd_signal,
-            'stoch_k': stoch_k,
             'mom_5': momentum_5,
             'mom_10': momentum_10,
             'mom_20': momentum_20,
-            'vol_10': volatility_10,
             'vol_20': volatility_20,
             'volume_ratio': volume_ratio,
-            'price_sma5': price_to_sma5,
             'price_sma20': price_to_sma20,
             'price_sma50': price_to_sma50,
             'sma_ratio_5_20': sma_5 / sma_20,
@@ -127,8 +126,9 @@ class MLRandomForestAlgorithm(QCAlgorithm):
         return features.fillna(0)
 
     def train_model(self):
-        """Train Random Forest classifier on all stocks."""
-        self.Debug("Training Random Forest model...")
+        """Train Random Forest classifier."""
+        if self.IsWarmingUp:
+            return
 
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.preprocessing import MinMaxScaler
@@ -139,14 +139,12 @@ class MLRandomForestAlgorithm(QCAlgorithm):
         for ticker in self.tickers:
             try:
                 history = self.History(self.symbols[ticker], self.lookback, Resolution.Daily)
-
-                if history.empty or len(history) < self.lookback:
+                if history.empty or len(history) < 60:
                     continue
 
                 features = self.calculate_features(history, ticker)
                 closes = history['close']
 
-                # Target: direction (1 if up, 0 if down)
                 future_return = closes.pct_change().shift(-1)
                 target = (future_return > 0).astype(int)
 
@@ -158,23 +156,19 @@ class MLRandomForestAlgorithm(QCAlgorithm):
                     all_targets.append(features['target'])
 
             except Exception as e:
-                self.Debug(f"Error processing {ticker}: {e}")
+                self.Debug(f"Error {ticker}: {e}")
                 continue
 
         if not all_features:
             return
 
-        # Combine all data
         X = pd.concat(all_features, ignore_index=True)
         y = pd.concat(all_targets, ignore_index=True)
-
         self.feature_names = X.columns.tolist()
 
-        # Scale features (MinMaxScaler for compatibility)
         self.scaler = MinMaxScaler()
         X_scaled = self.scaler.fit_transform(X)
 
-        # Train Random Forest
         self.model = RandomForestClassifier(
             n_estimators=self.n_estimators,
             max_depth=self.max_depth,
@@ -182,75 +176,58 @@ class MLRandomForestAlgorithm(QCAlgorithm):
             random_state=42,
             n_jobs=-1
         )
-
         self.model.fit(X_scaled, y)
 
-        # Feature importance
-        importance = pd.DataFrame({
-            'feature': self.feature_names,
-            'importance': self.model.feature_importances_
-        }).sort_values('importance', ascending=False)
-
-        self.Debug(f"Random Forest trained. Top feature: {importance.iloc[0]['feature']}")
-
     def predict(self, ticker, history):
-        """predict probability of positive return."""
+        """Predict probability of positive return."""
         if self.model is None:
             return 0.5
 
         features = self.calculate_features(history, ticker)
-
         if len(features) == 0:
             return 0.5
 
         latest_features = features.iloc[-1:].values
-
-        # Scale
         if self.scaler is not None:
             latest_features = self.scaler.transform(latest_features)
 
-        # Get probability of positive return
         proba = self.model.predict_proba(latest_features)[0]
-        return proba[1]  # Probability of class 1 (up)
+        return proba[1]
 
     def rebalance(self):
-        """rebalance based on Random Forest predictions."""
-        if self.model is None:
+        """Rebalance based on RF predictions."""
+        if self.IsWarmingUp or self.model is None:
             return
 
         predictions = {}
-
         for ticker in self.tickers:
             try:
-                history = self.History(self.symbols[ticker], 60, Resolution.Daily)
-
+                history = self.History(self.symbols[ticker], self.lookback, Resolution.Daily)
                 if history.empty:
                     continue
-
                 prob = self.predict(ticker, history)
                 predictions[ticker] = prob
-
             except Exception as e:
-                self.Debug(f"Error predicting {ticker}: {e}")
                 continue
 
         if not predictions:
             return
 
-        # Sort by probability
         sorted_preds = sorted(predictions.items(), key=lambda x: x[1], reverse=True)
 
-        # Liquidate
-        self.Liquidate()
-
-        # Enter long positions for top predictions
-        count = 0
         max_positions = 5
-        position_size = 0.18
+        threshold = 0.54
+        selected = [(t, p) for t, p in sorted_preds if p > threshold][:max_positions]
 
-        for ticker, prob in sorted_preds:
-            if prob > 0.55 and count < max_positions:
-                self.SetHoldings(self.symbols[ticker], position_size)
-                count += 1
+        target_symbols = {self.symbols[t] for t, _ in selected}
 
-        self.Debug(f"Positions: {count}, Best prob: {sorted_preds[0][1]:.2%}" if sorted_preds else "No positions")
+        # Liquidate non-target positions
+        for holding in self.Portfolio.Values:
+            if holding.Invested and holding.Symbol not in target_symbols:
+                self.Liquidate(holding.Symbol)
+
+        # Set target positions
+        if selected:
+            weight = 0.90 / len(selected)
+            for ticker, prob in selected:
+                self.SetHoldings(self.symbols[ticker], weight)

@@ -1,6 +1,6 @@
 # QuantConnect Algorithmic Trading Projects
 
-Bibliotheque pedagogique de 36 strategies de trading algorithmique backtestees sur QuantConnect Cloud.
+Bibliotheque pedagogique de 54 strategies de trading algorithmique backtestees sur QuantConnect Cloud.
 Chaque strategie illustre un concept ou une famille de strategies ; les performances varient volontairement
 pour montrer que toutes les idees academiques ne survivent pas au backtest realiste.
 
@@ -65,9 +65,36 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [PairsTrading](PairsTrading/) | Statistical arbitrage equity pairs | -0.361 | 0.9% | 15.1% | 2010-2026 | Py | Intermediaire | — | Paires non cointegrees 2010-2026 |
 | [ETF-Pairs](ETF-Pairs/) | Cointegration-based ETF pairs | -0.706 | -4.7% | 35.0% | 2020-2026 | Py | Intermediaire | QuantBook | Cointregration instable |
 
-*36 strategies au total (33 Python, 3 C#). Metriques issues des backtests QC Cloud (3 projets ML en phase de recherche).*
+### Machine Learning / Deep Learning / RL (backtestees)
+
+Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations internes. Toutes backtestees sur QC Cloud (2015-2026 sauf mention contraire). Les implementations utilisent `sklearn` (RandomForest, XGBoost, MLPClassifier/Regressor) compatible QC Cloud.
+
+| Projet | Description | Sharpe | CAGR | Max DD | Periode | Book | Note |
+|--------|-------------|--------|------|--------|---------|------|------|
+| [Portfolio-Optimization-ML](Portfolio-Optimization-ML/) | Markowitz + ML returns prediction (15 large-caps) | **0.896** | 27.6% | 41.6% | 2015-2026 | — | Beta 1.14 |
+| [Gaussian-Direction-Classifier](Gaussian-Direction-Classifier/) | Gaussian classifier direction (8 stocks, prob-weighted) | **0.761** | --- | 25.6% | 2015-2026 | Ch06-Ex15 | Beta 0.54, Treynor +60% vs v1 |
+| [ML-RandomForest](ML-RandomForest/) | Random Forest classification multi-asset (8 ETFs) | **0.682** | 20.1% | 36.4% | 2015-2026 | — | v3, anti-overfitting |
+| [ML-XGBoost](ML-XGBoost/) | XGBoost gradient boosting (9 positions, biweekly) | **0.566** | 14.8% | 38.6% | 2015-2026 | — | v2, train/trade separation |
+| [Temporal-CNN-Prediction](Temporal-CNN-Prediction/) | MLP multi-scale temporal features (8 ETFs) | **0.536** | 13.8% | 33.9% | 2015-2026 | Ch06-Ex14 | v2, real MLP(128,64,32) |
+| [RL-DQN-Trading](RL-DQN-Trading/) | DQN portfolio-level actions (MLPRegressor) | **0.533** | 10.9% | 25.8% | 2015-2026 | Ch07-Ex01 | v2.0.1, 3 action templates |
+| [LSTM-Forecasting](LSTM-Forecasting/) | MLP temporal features multi-ETF (7 assets) | **0.525** | 11.3% | 32.5% | 2015-2026 | Ch06-Ex07 | v2.1, real MLP(64,32) |
+| [Sector-ML-Classification](Sector-ML-Classification/) | RF rank classifier rotation sectorielle (11 ETFs) | **0.473** | 11.9% | 34.4% | 2015-2026 | — | v5, RF as rank not filter |
+| [Markov-Regime-Detection](Markov-Regime-Detection/) | Hidden Markov Model regime detection + allocation | **0.408** | --- | --- | 2015-2024 | Ch06-Ex04 | v1.0, TLT risk-off |
+| [Chronos-Foundation-Forecasting](Chronos-Foundation-Forecasting/) | GBM+Ridge ensemble forecasting (8 ETFs) | **0.253** | --- | 22.4% | 2015-2026 | Ch06-Ex18 | v2, SMA200 regime filter |
+| [ML-SVM](ML-SVM/) | SVM linear kernel equity-only ETFs | **0.147** | 5.2% | 27.1% | 2015-2026 | — | v3, plafond structurel |
+| [Dividend-Harvesting-ML](Dividend-Harvesting-ML/) | DecisionTree dividend yield prediction (QQQ top 100) | **0.469** | 12.7% | 30.5% | 2015-2026 | Ch06-Ex06 | v1, fundamental factors |
+| [PCA-StatArb](PCA-StatArb/) | PCA + OLS stat-arb mean reversion (top 100 liquid) | **0.165** | 5.3% | 35.9% | 2015-2026 | Ch06-Ex13 | v1, z-score threshold 1.5 |
+| [Clustering-Fundamentals-ML](Clustering-Fundamentals-ML/) | PCA + GBR fundamental ranking (top 10 of 100) | -0.052 | -1.2% | 15.3% | 2015-2026 | Ch06-Ex10 | v1.1, Runtime Error, a ameliorer |
+| [Stoploss-Volatility-ML](Stoploss-Volatility-ML/) | Lasso regression stop-loss optimization (KO equity) | --- | --- | --- | 2015-2026 | Ch06-Ex08 | v1, backtest pending |
+| [InverseVolatility-Rank](InverseVolatility-Rank/) | Ridge regression inverse-vol futures allocation | --- | --- | --- | 2015-2026 | Ch06-Ex11 | v1, backtest pending |
+| [TradingCosts-Optimization](TradingCosts-Optimization/) | DecisionTree crypto cost optimization (BTCUSDC) | --- | --- | --- | 2015-2026 | Ch06-Ex12 | v1, backtest pending |
+| [SVM-Wavelet-Forecasting](SVM-Wavelet-Forecasting/) | SVM + wavelet decomposition FX | --- | --- | --- | --- | Ch06-Ex05 | Local only, pas de backtest |
+| [Reinforcement-Learning-Trading](Reinforcement-Learning-Trading/) | DQN experience replay (book implementation) | --- | --- | --- | --- | Ch07-Ex01 | Variant pedagogique |
+
+*54 strategies au total (51 Python, 3 C#). Metriques issues des backtests QC Cloud.*
 *Multi-Layer-EMA reclassee Historique apres analyse de robustesse (Sharpe gonfle par bulle BTC 2017).*
 *Research: type de notebook de recherche (yfinance = donnees Yahoo, QuantBook = donnees QC natives, — = pas de notebook).*
+*ML/AI: implementations sklearn (RF, XGBoost, MLP) validees sur QC Cloud. Les fake implementations (poids hardcodes) ont ete remplacees en mars 2026.*
 
 ## Description des strategies
 
@@ -126,12 +153,30 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 - **BTC-ML** : Prediction BTC par machine learning (features techniques + filtre de volatilite 60%).
 - **Crypto-LSTM-Prediction** : Deep Learning DLinear (AAAI 2023) pour prediction BTCUSDT. PyTorch avec SeriesDecomposition (trend/seasonal). **Research Phase**.
 
-### Machine Learning / Deep Learning (Research Phase)
+### Machine Learning / Deep Learning / RL (Intermediaire/Avance)
 
-Projets pedagogiques bases sur HandsOnAITrading book, en phase de recherche :
+Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur le livre *Hands-On AI Trading* de Jared Broad et implementations internes.
 
-- **Sector-ML-Classification** : Random Forest pour classification de rotation sectorielle (11 sector ETFs). Features techniques (RSI, MACD, SMA, EMA, ATR, Bollinger). Target: BUY/HOLD/AVOID. **Research Phase**.
-- **Portfolio-Optimization-ML** : MPT (Markowitz) avec covariance Ledoit-Wolf + returns predits par ML. Universe: 15 large-caps US (5 secteurs). Risk Parity weighting. **Research Phase**.
+- **ML-RandomForest** : Random Forest classification sur 8 ETFs (SPY/QQQ/IWM/DIA/EFA/VEA/VWO/GLD). Biweekly rebalance, anti-overfitting (max_depth 5, min_samples 10). v3.
+- **ML-XGBoost** : XGBoost gradient boosting sur 9 positions. Train/trade separation (odd/even Mondays), 10-day forward target, biweekly. v2.
+- **ML-SVM** : SVM kernel lineaire sur ETFs equity-only. Plafond structurel confirme (0.147). v3.
+- **Sector-ML-Classification** : Random Forest comme classifieur de rang (pas filtre binaire) pour rotation sectorielle (11 sector ETFs). Bull: top-4 par proba RF. Bear: defensifs si proba > 0.35. v5.
+- **Portfolio-Optimization-ML** : MPT (Markowitz) avec covariance Ledoit-Wolf + returns predits par ML. Universe: 15 large-caps US (5 secteurs). Risk Parity weighting.
+- **Gaussian-Direction-Classifier** (Book Ex15) : Classifieur gaussien pour prediction de direction. 8 stocks, seuil confiance 0.60, sizing par probabilite, SMA200 regime filter. v2 risk-adjusted.
+- **Temporal-CNN-Prediction** (Book Ex14) : MLPClassifier(128,64,32) avec 18 features temporelles multi-echelle (5j/10j/20j) mimetisant des noyaux CNN. 3 classes (UP/DOWN/NEUTRAL). 8 ETFs. v2.
+- **LSTM-Forecasting** (Book Ex07) : MLPClassifier(64,32) avec Pipeline+StandardScaler. 20 features temporelles par symbole. 7 ETFs, rebalance hebdo, min_positions=2. v2.1.
+- **Chronos-Foundation-Forecasting** (Book Ex18) : Ensemble GBM(50 estimators)+Ridge(alpha=10) avec StandardScaler. 21 features par asset. SMA200 regime filter (bear = defensifs). 8 ETFs. v2.
+- **RL-DQN-Trading** (Book Ch07) : MLPRegressor(64,32) avec actions portfolio-level (AGGRESSIVE/MODERATE/DEFENSIVE). Reward risk-adjusted. Replay buffer 5000. 5 ETFs. v2.0.1.
+- **Reinforcement-Learning-Trading** (Book Ch07) : Variante pedagogique DQN avec experience replay.
+- **Markov-Regime-Detection** (Book Ex04) : HMM 3 regimes (bull/neutral/bear) avec allocation dynamique (SPY/TLT). Monthly rebalance. v1.0.
+- **Dividend-Harvesting-ML** (Book Ex06) : DecisionTreeRegressor pour prediction du rendement dividende. Facteurs fondamentaux (PE ratio, revenue growth, free cash flow %, dividend payout ratio, current ratio). Universe QQQ top 100, monthly rebalance. v1.
+- **PCA-StatArb** (Book Ex13) : PCA + OLS pour arbitrage statistique mean-reversion. 3 composantes principales, z-score des residus (seuil 1.5). Universe top 100 par dollar volume. Monthly. v1.
+- **Clustering-Fundamentals-ML** (Book Ex10) : PCA (5 composantes) + GradientBoostingRegressor sur 26 facteurs fondamentaux. Selectionne top-10 par rendement predit. Equal-weight, monthly. v1.
+- **Stoploss-Volatility-ML** (Book Ex08) : Lasso regression pour stop-loss optimal base sur VIX, ATR et std des rendements. Cycles hebdomadaires (lundi-vendredi) sur KO equity. v1.
+- **InverseVolatility-Rank** (Book Ex11) : Ridge regression pour prevision volatilite future. Allocation inversement proportionnelle a la volatilite predite sur 12 contrats futures (indices, energie, grains). v1.
+- **TradingCosts-Optimization** (Book Ex12) : DecisionTreeRegressor pour optimiser les couts d'execution BTCUSDC. Facteurs: ATR, volume moyen, spread. Vend quand cout predit < moyenne mobile. v1.
+- **SVM-Wavelet-Forecasting** (Book Ex05) : SVM + decomposition wavelet pour prediction FX. Local only.
+- **BTC-ML** : Prediction BTC par machine learning (features techniques + filtre volatilite 60%). Periode courte 2023-2026.
 
 ### Anomalies calendaires (Debutant)
 

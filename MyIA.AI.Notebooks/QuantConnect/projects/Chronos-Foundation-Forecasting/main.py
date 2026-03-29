@@ -1,274 +1,360 @@
 #region imports
 from AlgorithmImports import *
 import numpy as np
-from collections import deque
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.linear_model import Ridge
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 # endregion
 
 
 class ChronosFoundationForecasting(QCAlgorithm):
     """
-    Chronos Foundation Model for Time Series Forecasting.
+    Ensemble Time-Series Forecasting Strategy - v2 with Regime Filter.
 
-    This strategy demonstrates how to use the Chronos foundation model
-    (Amazon's pretrained time-series model) for financial forecasting.
+    Replaces the fake Chronos model (hardcoded attention weights) with a
+    real sklearn ensemble: GradientBoostingRegressor + Ridge regression.
+
+    v2 improvements vs v1:
+    - Regime filter: SMA200 on SPY. When SPY < SMA200 (bear regime),
+      reduce risk exposure (max 2 positions from defensive assets).
+    - Minimum prediction threshold: 0.002 (0.2% over 10 days) to filter
+      noise predictions and reduce false positives.
+    - Defensive set: GLD + IEF allowed in bear regime.
+    - This reduces MaxDD while preserving the ML signal integrity.
 
     Reference: Hands-On AI Trading with Python, QuantConnect, and AWS
     Chapter 06 - Applied Machine Learning, Example 18
 
-    About Chronos:
-    - Developed by Amazon Science (2024)
-    - Pretrained on large corpus of time series data
-    - Zero-shot forecasting capability
-    - Based on T5 transformer architecture
-    - Tokenizes continuous values into discrete tokens
-    - Treats forecasting as language modeling
+    Features per asset (21 total):
+    - Lag returns: 1, 2, 3, 5, 10, 20 days
+    - Rolling volatility: 5, 10, 20 days
+    - Rolling mean returns: 5, 10, 20 days
+    - Price vs SMA: 20, 50 days
+    - Cross-asset: SPY return as market feature (1, 5, 20 days)
 
-    How it works:
-    1. Collect historical price data
-    2. Quantize values into discrete tokens
-    3. Use transformer to predict future tokens
-    4. Dequantize to get forecast distribution
-    5. Trade based on predicted direction
-
-    Note: This is a simplified implementation demonstrating the concept.
-    Full implementation would use the chronos-forecasting package:
-    ```
-    from chronos import ChronosPipeline
-    pipeline = ChronosPipeline.from_pretrained("amazon/chronos-t5-small")
-    forecast = pipeline.predict(context, prediction_length=1)
-    ```
-
-    Parameters:
-    - context_length: Number of historical points (default: 64)
-    - prediction_length: Forecast horizon (default: 1)
-    - num_samples: Monte Carlo samples for uncertainty (default: 100)
-    - confidence_threshold: Minimum confidence to trade (default: 0.6)
+    Target: 10-day forward return (regression)
+    Portfolio: Long top 4 assets with positive predicted return
+    Regime: Bull -> 4 positions / Bear -> max 2 defensive positions
     """
 
     def initialize(self):
-        self.set_start_date(2019, 1, 1)
-        self.set_end_date(2024, 1, 1)
+        self.set_start_date(2015, 1, 1)
+        self.set_end_date(2026, 1, 1)
         self.set_cash(100_000)
 
-        self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
+        # Diversified ETF universe
+        self._tickers = ["SPY", "QQQ", "IWM", "EFA", "TLT", "GLD", "IEF", "VNQ"]
+        self._defensive_tickers = {"GLD", "IEF", "TLT"}  # allowed in bear regime
+        self._symbols = {}
+        for ticker in self._tickers:
+            sym = self.add_equity(ticker, Resolution.DAILY).symbol
+            self._symbols[ticker] = sym
 
-        # Model parameters
-        self._context_length = self.get_parameter('context_length', 64)
-        self._prediction_length = self.get_parameter('prediction_length', 1)
-        self._num_samples = self.get_parameter('num_samples', 100)
-        self._confidence_threshold = self.get_parameter('confidence_threshold', 0.6)
+        # Strategy parameters
+        self._forecast_horizon = 10       # predict 10-day forward return
+        self._training_window = 252       # 1 year of training data
+        self._min_training_samples = 120  # min samples to train
+        self._top_n = 4                   # hold top N assets in bull regime
+        self._bear_top_n = 2              # max positions in bear regime
+        self._total_alloc = 0.90          # 90% total allocation
+        self._history_days = 300          # history to fetch
+        self._min_pred_threshold = 0.002  # min 0.2% predicted 10-day return
+        self._sma200_window = 200         # SMA for regime detection
 
-        # Tokenizer parameters (simplified quantization)
-        self._num_tokens = self.get_parameter('num_tokens', 32)
-        self._center = 0.0
-        self._scale = 0.02  # For returns normalization
+        # Ensemble models (one per symbol)
+        self._models = {}
+        self._is_trained = {}
+        self._last_train_month = -1
 
-        # Signal smoothing
-        self._smooth_window = self.get_parameter('smooth_window', 5)
-        self._recent_signals = deque(maxlen=self._smooth_window)
+        for ticker in self._tickers:
+            self._is_trained[ticker] = False
 
-        # Data collection
-        self._price_window = deque(maxlen=self._context_length * 2)
-        self._return_window = deque(maxlen=self._context_length * 2)
+        # Warm-up period
+        self.set_warm_up(self._history_days, Resolution.DAILY)
 
-        # ROC for return calculation
-        roc = self.roc(self._spy, 1, Resolution.DAILY)
-        roc.updated += self._on_roc_updated
-
-        # Warm up with historical data
-        history = self.history[TradeBar](
-            self._spy, timedelta(days=self._context_length * 2), Resolution.DAILY
-        )
-        for bar in history:
-            roc.update(bar.end_time, bar.close)
-            self._price_window.append(bar.close)
-
-        # Transformer-like attention weights (simplified)
-        # In reality, these would be learned during pretraining
-        self._attention_scale = 1.0 / np.sqrt(self._context_length)
-
-        # Predictions tracking
-        self._predictions = deque(maxlen=100)
-        self._forecast_samples = []
-
-        # Schedule trading
+        # Schedule biweekly rebalance (Monday)
         self.schedule.on(
-            self.date_rules.every_day(self._spy),
-            self.time_rules.after_market_open(self._spy, 30),
-            self._trade
+            self.date_rules.every(DayOfWeek.MONDAY),
+            self.time_rules.after_market_open(self._symbols["SPY"], 30),
+            self._rebalance
         )
 
-        self.log(f"Chronos initialized: context={self._context_length}, confidence={self._confidence_threshold}")
+        # Schedule monthly model training
+        self.schedule.on(
+            self.date_rules.month_start(self._symbols["SPY"]),
+            self.time_rules.after_market_open(self._symbols["SPY"], 10),
+            self._train_models
+        )
 
-    def _on_roc_updated(self, indicator, indicator_data_point):
-        """Collect daily returns."""
-        if not indicator.is_ready:
-            return
-        self._return_window.append(indicator_data_point.value / 100)
+        self.log("Ensemble Forecasting v2 initialized: 8-ETF, GBM+Ridge, SMA200 regime")
 
-    def _quantize(self, values):
+    def _is_bull_regime(self, spy_closes):
         """
-        Quantize continuous values to discrete tokens.
-
-        Chronos uses learned quantization. Here we use a simplified
-        uniform quantization scheme.
+        Regime detection: bull if SPY price > 200-day SMA.
+        Returns True for bull, False for bear.
         """
-        normalized = (np.array(values) - self._center) / self._scale
-        tokens = np.clip(
-            np.floor(normalized + self._num_tokens / 2),
-            0, self._num_tokens - 1
-        ).astype(int)
-        return tokens
+        if len(spy_closes) < self._sma200_window:
+            return True  # assume bull if insufficient data
+        sma200 = np.mean(spy_closes[-self._sma200_window:])
+        return spy_closes[-1] > sma200
 
-    def _dequantize(self, tokens):
+    def _get_price_data(self):
+        """Fetch price history for all symbols. Returns dict ticker->np.array."""
+        prices = {}
+        for ticker, sym in self._symbols.items():
+            bars = self.history[TradeBar](sym, self._history_days, Resolution.DAILY)
+            closes = np.array([bar.close for bar in bars])
+            if len(closes) >= self._min_training_samples + self._forecast_horizon:
+                prices[ticker] = closes
+        return prices
+
+    def _build_features(self, closes, spy_closes):
         """
-        Dequantize tokens back to continuous values.
+        Build feature matrix and targets for training.
+
+        Features (per row): 21 total
+        - Lag returns: 1, 2, 3, 5, 10, 20
+        - Rolling vol: 5, 10, 20
+        - Rolling mean return: 5, 10, 20
+        - Price/SMA20, price/SMA50
+        - SPY lag returns: 1, 5, 20
+
+        Target: 10-day forward log return
         """
-        return (tokens - self._num_tokens / 2) * self._scale + self._center
+        log_r = np.diff(np.log(closes))
+        spy_log_r = np.diff(np.log(spy_closes))
 
-    def _attention(self, query, keys):
-        """
-        Simplified attention mechanism.
+        n = len(log_r)
+        min_lookback = 51  # max lookback for SMA50 + 1
+        start = min_lookback
+        end = n - self._forecast_horizon
 
-        In Chronos, this would be a full transformer attention.
-        """
-        # Dot-product attention
-        scores = np.dot(keys, query) * self._attention_scale
-        weights = np.exp(scores - np.max(scores))
-        weights = weights / np.sum(weights)
-        return weights
+        if end <= start:
+            return None, None
 
-    def _transformer_forward(self, context):
-        """
-        Simplified transformer forward pass.
+        rows = []
+        targets = []
 
-        Demonstrates the concept of using attention for time series.
-        Real Chronos uses T5 encoder-decoder architecture.
-        """
-        if len(context) < self._context_length:
-            return 0.0, 0.5
+        for i in range(start, end):
+            feat = self._make_feature_vector(log_r, spy_log_r, closes, i)
+            rows.append(feat)
 
-        # Get recent context
-        recent = np.array(context[-self._context_length:])
+            # Target: sum of next forecast_horizon returns
+            target = np.sum(log_r[i + 1:i + 1 + self._forecast_horizon])
+            targets.append(target)
 
-        # Quantize to tokens
-        tokens = self._quantize(recent)
+        if len(rows) < self._min_training_samples:
+            return None, None
 
-        # Embed tokens (simplified: use token values directly)
-        embeddings = tokens / self._num_tokens - 0.5
+        return np.array(rows), np.array(targets)
 
-        # Self-attention (simplified)
-        # Query: last token embedding
-        query = embeddings[-1]
-        # Keys: all token embeddings
-        keys = embeddings
+    def _make_feature_vector(self, log_r, spy_log_r, closes, i):
+        """Build a single feature vector at index i."""
+        feat = []
 
-        attention_weights = self._attention(query, keys)
-
-        # Weighted sum of embeddings
-        context_vector = np.dot(attention_weights, keys)
-
-        # Predict next token (simplified)
-        # In reality, this would be a language model head
-        predicted_token_offset = np.tanh(context_vector * 2) * 100
-        predicted_token = tokens[-1] + predicted_token_offset
-
-        # Dequantize prediction
-        predicted_value = self._dequantize(predicted_token)
-
-        return predicted_value, np.std(attention_weights)
-
-    def _forecast_with_uncertainty(self, context, num_samples=100):
-        """
-        Generate forecast samples with uncertainty quantification.
-
-        Chronos provides probabilistic forecasts via sampling.
-        """
-        samples = []
-        for _ in range(num_samples):
-            # Add noise for Monte Carlo sampling
-            noisy_context = np.array(context) + np.random.normal(0, 0.001, len(context))
-            prediction, _ = self._transformer_forward(noisy_context)
-            samples.append(prediction)
-
-        samples = np.array(samples)
-        median = np.median(samples)
-        q10 = np.percentile(samples, 10)
-        q90 = np.percentile(samples, 90)
-
-        return median, q10, q90
-
-    def _trade(self):
-        """
-        Make forecast and execute trade.
-        """
-        if len(self._return_window) < self._context_length:
-            return
-
-        # Update normalization statistics
-        returns = np.array(list(self._return_window))
-        self._center = np.mean(returns[-self._context_length:])
-        self._scale = max(np.std(returns[-self._context_length:]), 0.001)
-
-        # Get forecast with uncertainty
-        context = list(self._return_window)
-        median, q10, q90 = self._forecast_with_uncertainty(context, self._num_samples)
-
-        # Calculate confidence based on uncertainty
-        uncertainty = q90 - q10
-        confidence = 1 / (1 + uncertainty * 50)
-
-        # Direction confidence: higher when q10 and q90 agree on direction
-        direction_confidence = 1.0 if (q10 > 0 or q90 < 0) else abs(median) / max(uncertainty, 0.001)
-        direction_confidence = min(direction_confidence, 1.0)
-
-        # Signal smoothing: average recent predictions
-        self._recent_signals.append(median)
-        smooth_median = np.mean(list(self._recent_signals))
-
-        # Combined confidence
-        combined_confidence = confidence * direction_confidence
-
-        # Plot
-        self.plot('Chronos', 'MedianForecast', median)
-        self.plot('Chronos', 'Confidence', combined_confidence)
-        self.plot('Chronos', 'Uncertainty', uncertainty)
-
-        # Track predictions
-        actual_return = self._return_window[-1] if self._return_window else 0
-        self._predictions.append({
-            'predicted': median,
-            'actual': actual_return,
-            'confidence': combined_confidence
-        })
-
-        # Trading logic: use smoothed signal for direction
-        if combined_confidence > self._confidence_threshold:
-            if smooth_median > 0:
-                self.set_holdings(self._spy, 1.0)
-                self.log(f"Chronos: UP forecast={smooth_median:.4f}, confidence={combined_confidence:.2%}")
+        # Lag returns: 1, 2, 3, 5, 10, 20
+        for lag in [1, 2, 3, 5, 10, 20]:
+            if i - lag >= 0:
+                feat.append(log_r[i - lag])
             else:
-                self.set_holdings(self._spy, 0.0)
-                self.log(f"Chronos: DOWN forecast={smooth_median:.4f}, confidence={combined_confidence:.2%}")
+                feat.append(0.0)
+
+        # Rolling vol: 5, 10, 20
+        for w in [5, 10, 20]:
+            window = log_r[max(0, i - w):i]
+            feat.append(np.std(window) if len(window) > 1 else 0.0)
+
+        # Rolling mean return: 5, 10, 20
+        for w in [5, 10, 20]:
+            window = log_r[max(0, i - w):i]
+            feat.append(np.mean(window) if len(window) > 0 else 0.0)
+
+        # Price/SMA: 20, 50 (use closes[i] as current price)
+        for sma_w in [20, 50]:
+            sma = np.mean(closes[max(0, i - sma_w + 1):i + 1])
+            feat.append(closes[i] / sma - 1.0 if sma > 0 else 0.0)
+
+        # SPY cross-asset: lag 1, 5, 20
+        spy_i = min(i, len(spy_log_r) - 1)
+        for lag in [1, 5, 20]:
+            if spy_i - lag >= 0:
+                feat.append(spy_log_r[spy_i - lag])
+            else:
+                feat.append(0.0)
+
+        return feat
+
+    def _build_current_features(self, closes, spy_closes):
+        """Build feature vector for the most recent observation."""
+        log_r = np.diff(np.log(closes))
+        spy_log_r = np.diff(np.log(spy_closes))
+
+        i = len(log_r) - 1  # most recent index
+        if i < 50:
+            return None
+
+        feat = self._make_feature_vector(log_r, spy_log_r, closes, i)
+        return np.array(feat).reshape(1, -1)
+
+    def _train_models(self):
+        """Train ensemble models monthly on 252-day window."""
+        if self.is_warming_up:
+            return
+
+        current_month = self.time.month
+        if current_month == self._last_train_month:
+            return
+        self._last_train_month = current_month
+
+        prices = self._get_price_data()
+        if "SPY" not in prices:
+            self.log("Training skipped: SPY data not available")
+            return
+
+        spy_closes = prices["SPY"]
+        trained_count = 0
+
+        for ticker in self._tickers:
+            if ticker not in prices:
+                continue
+
+            closes = prices[ticker]
+            # Use only the last training_window bars
+            if len(closes) > self._training_window:
+                closes_train = closes[-self._training_window:]
+                spy_train = spy_closes[-self._training_window:]
+            else:
+                closes_train = closes
+                spy_train = spy_closes[:len(closes)]
+
+            X, y = self._build_features(closes_train, spy_train)
+            if X is None or len(X) < self._min_training_samples:
+                continue
+
+            try:
+                # GradientBoosting pipeline
+                gbm_pipe = Pipeline([
+                    ("scaler", StandardScaler()),
+                    ("gbm", GradientBoostingRegressor(
+                        n_estimators=50,
+                        max_depth=3,
+                        learning_rate=0.05,
+                        min_samples_leaf=5,
+                        random_state=42
+                    ))
+                ])
+                gbm_pipe.fit(X, y)
+
+                # Ridge pipeline
+                ridge_pipe = Pipeline([
+                    ("scaler", StandardScaler()),
+                    ("ridge", Ridge(alpha=10.0))
+                ])
+                ridge_pipe.fit(X, y)
+
+                self._models[ticker] = (gbm_pipe, ridge_pipe)
+                self._is_trained[ticker] = True
+                trained_count += 1
+
+            except Exception as e:
+                self.log(f"Training error for {ticker}: {e}")
+                self._is_trained[ticker] = False
+
+        self.log(f"Models trained: {trained_count}/{len(self._tickers)} assets, "
+                 f"date={self.time.date()}")
+
+    def _predict(self, ticker, closes, spy_closes):
+        """Generate ensemble prediction for one asset."""
+        if ticker not in self._models or not self._is_trained[ticker]:
+            return None
+
+        feat = self._build_current_features(closes, spy_closes)
+        if feat is None:
+            return None
+
+        try:
+            gbm_pipe, ridge_pipe = self._models[ticker]
+            gbm_pred = gbm_pipe.predict(feat)[0]
+            ridge_pred = ridge_pipe.predict(feat)[0]
+
+            # Weighted ensemble: 60% GBM + 40% Ridge
+            return 0.60 * gbm_pred + 0.40 * ridge_pred
+
+        except Exception as e:
+            self.log(f"Prediction error for {ticker}: {e}")
+            return None
+
+    def _rebalance(self):
+        """Biweekly rebalance with regime-aware portfolio construction."""
+        if self.is_warming_up:
+            return
+
+        # Check if any model is trained
+        any_trained = any(self._is_trained.values())
+        if not any_trained:
+            return
+
+        prices = self._get_price_data()
+        if "SPY" not in prices:
+            return
+
+        spy_closes = prices["SPY"]
+
+        # Regime detection
+        bull_regime = self._is_bull_regime(spy_closes)
+        max_positions = self._top_n if bull_regime else self._bear_top_n
+
+        # Generate predictions
+        predictions = {}
+        for ticker in self._tickers:
+            if ticker not in prices:
+                continue
+            # In bear regime: only consider defensive assets
+            if not bull_regime and ticker not in self._defensive_tickers:
+                continue
+            pred = self._predict(ticker, prices[ticker], spy_closes)
+            if pred is not None:
+                predictions[ticker] = pred
+
+        # Rank by predicted return, apply minimum threshold
+        ranked = sorted(predictions.items(), key=lambda x: x[1], reverse=True)
+        top_picks = [
+            (t, p) for t, p in ranked[:max_positions]
+            if p > self._min_pred_threshold
+        ]
+
+        # Portfolio construction: equal weight among top picks
+        current_holdings = set(
+            t for t in self._tickers
+            if self.portfolio[self._symbols[t]].invested
+        )
+        target_holdings = set(t for t, _ in top_picks)
+
+        # Exit positions not in target
+        for ticker in current_holdings - target_holdings:
+            self.liquidate(self._symbols[ticker])
+
+        # Enter/rebalance target positions
+        if len(top_picks) > 0:
+            weight = self._total_alloc / len(top_picks)
+            for ticker, pred in top_picks:
+                self.set_holdings(self._symbols[ticker], weight)
+
+        # Log monthly
+        if self.time.day <= 7:
+            regime_str = "BULL" if bull_regime else "BEAR"
+            pred_str = ", ".join([f"{t}:{p:.4f}" for t, p in ranked[:5]])
+            self.log(
+                f"Regime={regime_str} | Predictions: {pred_str} "
+                f"| Holding: {[t for t, _ in top_picks]}"
+            )
 
     def on_end_of_algorithm(self):
         final_value = self.portfolio.total_portfolio_value
-        returns = (final_value - 100000) / 100000
-
-        # Calculate forecast accuracy
-        correct = 0
-        total = 0
-        predictions_list = list(self._predictions)
-        for i in range(len(predictions_list) - 1):
-            pred = predictions_list[i]['predicted']
-            next_actual = predictions_list[i + 1]['actual']
-            predicted_up = pred > 0
-            actual_up = next_actual > 0
-            if predicted_up == actual_up:
-                correct += 1
-            total += 1
-
-        accuracy = correct / total if total > 0 else 0
-
-        self.log(f"Chronos Foundation: Final=${final_value:,.0f}, Return={returns:.2%}")
-        self.log(f"Direction Accuracy: {accuracy:.2%}, Samples: {total}")
+        ret = (final_value - 100_000) / 100_000
+        trained = sum(1 for v in self._is_trained.values() if v)
+        self.log(
+            f"Ensemble Forecasting v2: Final=${final_value:,.0f}, "
+            f"Return={ret:.2%}, Models trained={trained}/{len(self._tickers)}"
+        )

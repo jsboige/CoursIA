@@ -2,221 +2,349 @@
 from AlgorithmImports import *
 import numpy as np
 from collections import deque
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 # endregion
 
 
 class TemporalCNNPrediction(QCAlgorithm):
     """
-    Temporal CNN for Price Direction Prediction.
+    Temporal CNN for Price Direction Prediction - v2 (Real MLPClassifier).
 
-    This strategy demonstrates how to use a 1D Convolutional Neural Network
-    to predict the direction of future price movements based on historical returns.
+    This strategy replaces the fake hardcoded-kernel CNN with a real trained
+    MLPClassifier that mimics temporal convolutional pattern recognition.
 
     Reference: Hands-On AI Trading with Python, QuantConnect, and AWS
     Chapter 06 - Applied Machine Learning, Example 14
 
-    How it works:
-    1. Collect trailing daily returns as features
-    2. Normalize returns using rolling z-score
-    3. Use a simplified 1D CNN architecture for pattern recognition
-    4. Predict next-day direction (up/down)
-    5. Trade based on prediction confidence
+    Key improvements vs v1 (fake CNN, SPY only, Sharpe 0.169):
+    - Real sklearn MLPClassifier(128, 64, 32) trained on historical data
+    - 3-class prediction: UP (>0.5%), DOWN (<-0.5%), NEUTRAL
+    - 8 diversified ETFs: SPY, QQQ, IWM, XLK, XLF, XLV, DIA, EFA
+    - Temporal features at multiple scales (5, 10, 20 days) mimicking CNN kernels
+    - Monthly retraining on 252-day rolling window
+    - Biweekly rebalancing (every 10 days) to reduce transaction costs
+    - Only trade UP predictions with probability > 0.40
+    - min_positions=2 to avoid cash drag
 
-    The CNN architecture:
-    - Input: sequence of N daily returns
-    - Conv1D layer: learns local patterns in the return sequence
-    - Global pooling: aggregates temporal features
-    - Dense layer: outputs probability of positive return
-
-    Parameters:
-    - lookback_days: Number of days for feature window (default: 20)
-    - prediction_threshold: Minimum confidence to trade (default: 0.6)
-    - retrain_frequency: Days between model updates (default: 30)
+    Feature engineering (CNN-inspired temporal patterns, 18 features):
+    - Multi-scale returns and volatility (5d, 10d, 20d windows)
+    - Trend consistency: higher-high count, up-day fraction, sign-change rate
+    - Cumulative returns (momentum) at 3 scales
+    - Vol ratio (short/long): regime indicator
+    - Autocorrelation lag-1: mean-reversion vs momentum detection
     """
 
     def initialize(self):
-        self.set_start_date(2018, 1, 1)
-        self.set_end_date(2024, 1, 1)
+        self.set_start_date(2015, 1, 1)
+        self.set_end_date(2026, 1, 1)
         self.set_cash(100_000)
 
-        self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
+        # Universe: 8 diversified ETFs
+        self._tickers = ["SPY", "QQQ", "IWM", "XLK", "XLF", "XLV", "DIA", "EFA"]
+        self._symbols = []
+        for ticker in self._tickers:
+            sym = self.add_equity(ticker, Resolution.DAILY).symbol
+            self._symbols.append(sym)
 
-        # Model parameters
-        self._lookback_days = self.get_parameter('lookback_days', 20)
-        self._prediction_threshold = self.get_parameter('prediction_threshold', 0.52)
-        self._retrain_frequency = self.get_parameter('retrain_frequency', 30)
-        self._use_ensemble = self.get_parameter('use_ensemble', True)
+        # Parameters
+        self._lookback = 20          # Feature window (mimics CNN receptive field)
+        self._train_window = 252     # Training data: 1 year
+        self._up_threshold = 0.005   # +0.5% over horizon = UP class
+        self._down_threshold = -0.005  # -0.5% over horizon = DOWN class
+        self._pred_threshold = 0.40  # Minimum UP probability to take a position
+        self._min_positions = 2      # Always hold at least 2 to avoid cash drag
+        self._horizon = 10           # Predict 10-day forward return
+        self._rebalance_freq = 10    # Biweekly rebalancing (trading days)
 
-        # Feature collection
-        self._returns_window = deque(maxlen=self._lookback_days * 2)
-        self._daily_returns = []
+        # State per symbol: store raw close prices
+        buf_size = self._train_window + self._horizon + self._lookback + 20
+        self._price_history = {sym: deque(maxlen=buf_size) for sym in self._symbols}
 
-        # ROC for return calculation
-        roc = self.roc(self._spy, 1, Resolution.DAILY)
-        roc.updated += self._on_roc_updated
+        # ML models per symbol (one MLP per ETF)
+        self._models = {sym: None for sym in self._symbols}
+        self._models_trained = {sym: False for sym in self._symbols}
+        self._last_train_month = -1
+        self._days_since_rebalance = 0
 
-        # Warm up
-        history = self.history[TradeBar](
-            self._spy, timedelta(days=self._lookback_days * 3), Resolution.DAILY
-        )
-        for bar in history:
-            roc.update(bar.end_time, bar.close)
+        # Warmup: load initial price history per symbol (individual calls avoid TradeBars issue)
+        warmup_days = buf_size + 100
+        for sym in self._symbols:
+            bars = self.history[TradeBar](sym, timedelta(days=warmup_days), Resolution.DAILY)
+            for bar in bars:
+                self._price_history[sym].append(bar.close)
 
-        # Simple model state (simplified CNN weights)
-        self._model_weights = None
-        self._days_since_retrain = 0
-        self._predictions = deque(maxlen=100)
+        self.log(f"TemporalCNN v2 initialized. Universe: {self._tickers}")
+        self.log(f"Features: 18 multi-scale temporal (5/10/20d). MLPClassifier(128,64,32)")
+        self.log(f"Period: 2015-2026, horizon={self._horizon}d, retrain=monthly, rebal={self._rebalance_freq}d")
 
-        # Schedule trading
+        # Schedule
         self.schedule.on(
-            self.date_rules.every_day(self._spy),
-            self.time_rules.after_market_open(self._spy, 30),
-            self._trade
+            self.date_rules.every_day(self._symbols[0]),
+            self.time_rules.after_market_open(self._symbols[0], 30),
+            self._daily_update
         )
 
-        self.log(f"TemporalCNNPrediction initialized: lookback={self._lookback_days}, threshold={self._prediction_threshold}")
+    def on_data(self, data):
+        """Collect price data each bar."""
+        for sym in self._symbols:
+            if data.bars.contains_key(sym):
+                self._price_history[sym].append(data.bars[sym].close)
 
-    def _on_roc_updated(self, indicator, indicator_data_point):
-        """Collect daily returns."""
-        if not indicator.is_ready:
-            return
-        self._returns_window.append(indicator_data_point.value)
-
-    def _normalize_features(self, returns):
+    def _compute_features(self, prices):
         """
-        Normalize returns using z-score.
+        Compute 18 temporal features that mimic CNN pattern detection at 3 scales.
+
+        CNN analogy:
+        - 5-day kernel: captures recent micro-patterns (lag returns, micro-vol)
+        - 10-day kernel: swing / medium-term patterns
+        - 20-day kernel: trend regime (long-term direction)
+
+        Returns numpy array of 18 features, or None if insufficient data.
         """
-        mean = np.mean(returns)
-        std = np.std(returns)
-        if std < 1e-8:
-            return np.zeros_like(returns)
-        return (returns - mean) / std
+        if len(prices) < self._lookback + 1:
+            return None
 
-    def _simple_cnn_predict(self, features):
-        """
-        Simplified CNN-like prediction using 1D convolution simulation.
+        p = np.array(prices[-(self._lookback + 1):])
+        rets = np.diff(p) / p[:-1]  # daily returns, length = lookback = 20
 
-        Supports multi-kernel ensemble for more robust predictions.
-        """
-        if len(features) < self._lookback_days:
-            return 0.5
+        # Safety check
+        if len(rets) < 20:
+            return None
 
-        # Normalize features
-        x = self._normalize_features(np.array(features[-self._lookback_days:]))
+        r = rets  # 20 daily returns
 
-        if self._use_ensemble:
-            # Multi-kernel ensemble (momentum, balanced, recent-weighted)
-            kernels = [
-                np.array([0.5, 0.3, 0.2]),
-                np.array([0.3, 0.4, 0.3]),
-                np.array([0.2, 0.3, 0.5]),
-            ]
-            pool_values = []
-            for kernel in kernels:
-                kernel_size = len(kernel)
-                conv_features = []
-                for i in range(len(x) - kernel_size + 1):
-                    local_sum = np.sum(x[i:i + kernel_size] * kernel)
-                    conv_features.append(np.tanh(local_sum))
-                pool_values.append(np.mean(conv_features))
-            pooled = np.mean(pool_values)
+        features = []
+
+        # -- Scale 1: short (5d) --
+        r5 = r[-5:]
+        features.append(float(np.mean(r5)))           # mean return 5d
+        features.append(float(np.std(r5) + 1e-8))     # volatility 5d
+        features.append(float(r[-1]))                  # lag-1 return
+        features.append(float(r[-2]))                  # lag-2 return
+        features.append(float(r[-3]))                  # lag-3 return
+        # Trend direction consistency (5d): fraction of higher returns
+        hh_count = sum(1 for i in range(1, len(r5)) if r5[i] > r5[i-1])
+        features.append(float(hh_count) / max(len(r5) - 1, 1))
+
+        # -- Scale 2: medium (10d) --
+        r10 = r[-10:]
+        features.append(float(np.mean(r10)))           # mean return 10d
+        features.append(float(np.std(r10) + 1e-8))    # volatility 10d
+        features.append(float(np.sum(r10 > 0)) / len(r10))  # up-day fraction 10d
+        # Noise: sign changes per period
+        sign_changes = sum(1 for i in range(1, len(r10))
+                           if np.sign(r10[i]) != np.sign(r10[i-1]))
+        features.append(float(sign_changes) / max(len(r10) - 1, 1))
+
+        # -- Scale 3: long (20d) --
+        r20 = r[-20:]
+        features.append(float(np.mean(r20)))           # mean return 20d
+        features.append(float(np.std(r20) + 1e-8))    # volatility 20d
+        features.append(float(np.sum(r20 > 0)) / len(r20))  # up-day fraction 20d
+
+        # Cumulative momentum at 3 scales
+        cum5 = float(np.prod(1 + r[-5:]) - 1)
+        cum10 = float(np.prod(1 + r[-10:]) - 1)
+        cum20 = float(np.prod(1 + r[-20:]) - 1)
+        features.append(cum5)
+        features.append(cum10)
+        features.append(cum20)
+
+        # Vol regime: short/long vol ratio (expansion = trending, compression = ranging)
+        vol_ratio = (np.std(r5) + 1e-8) / (np.std(r20) + 1e-8)
+        features.append(float(vol_ratio))
+
+        # Autocorrelation lag-1 (mean reversion < 0, momentum > 0)
+        if len(r20) > 2:
+            autocorr = float(np.corrcoef(r20[:-1], r20[1:])[0, 1])
+            features.append(0.0 if np.isnan(autocorr) else autocorr)
         else:
-            # Single kernel (original)
-            kernel_size = 3
-            conv_features = []
-            for i in range(len(x) - kernel_size + 1):
-                local_sum = np.sum(x[i:i + kernel_size] * np.array([0.3, 0.4, 0.3]))
-                conv_features.append(np.tanh(local_sum))
-            pooled = np.mean(conv_features)
+            features.append(0.0)
 
-        # Dense layer (sigmoid for probability)
-        probability = 1 / (1 + np.exp(-pooled * 2))
+        return np.array(features, dtype=float)
 
-        return probability
-
-    def _train_model(self):
+    def _build_training_data(self, sym):
         """
-        Train the simplified CNN on historical data.
+        Build (X, y) training dataset from price history.
 
-        Uses rolling windows of returns as features and
-        next-day direction as labels.
+        Target: 3-class label based on forward horizon return.
+        - 2 = UP (> +0.5% over 10 days)
+        - 0 = DOWN (< -0.5% over 10 days)
+        - 1 = NEUTRAL
         """
-        if len(self._returns_window) < self._lookback_days * 2:
-            return
+        prices = list(self._price_history[sym])
+        min_needed = self._train_window + self._horizon + self._lookback + 2
+        if len(prices) < min_needed:
+            return None, None
 
-        returns = list(self._returns_window)
+        # Use most recent slice
+        prices = prices[-min_needed:]
 
-        # Create training samples
-        X = []
-        y = []
-        for i in range(self._lookback_days, len(returns) - 1):
-            features = returns[i - self._lookback_days:i]
-            label = 1 if returns[i + 1] > 0 else 0
+        X, y = [], []
+        for i in range(self._lookback + 1, len(prices) - self._horizon):
+            window = prices[i - self._lookback - 1: i + 1]
+            features = self._compute_features(window)
+            if features is None:
+                continue
+
+            # Forward return: price at i+horizon vs price at i
+            fwd_return = prices[i + self._horizon - 1] / prices[i] - 1
+
+            if fwd_return > self._up_threshold:
+                label = 2
+            elif fwd_return < self._down_threshold:
+                label = 0
+            else:
+                label = 1
+
             X.append(features)
             y.append(label)
 
-        if len(X) < 10:
+        if len(X) < 30:
+            return None, None
+
+        return np.array(X, dtype=float), np.array(y, dtype=int)
+
+    def _train_models(self):
+        """Train one MLPClassifier per symbol on rolling 252-day window."""
+        self.log(f"Training models ({self.time.date()})...")
+        trained_count = 0
+
+        for sym in self._symbols:
+            X, y = self._build_training_data(sym)
+            if X is None:
+                continue
+
+            # Need at least 2 classes
+            unique_classes = np.unique(y)
+            if len(unique_classes) < 2:
+                continue
+
+            try:
+                model = Pipeline([
+                    ('scaler', StandardScaler()),
+                    ('clf', MLPClassifier(
+                        hidden_layer_sizes=(128, 64, 32),
+                        activation='relu',
+                        solver='adam',
+                        max_iter=300,
+                        random_state=42,
+                        early_stopping=True,
+                        validation_fraction=0.1,
+                        n_iter_no_change=15,
+                        tol=1e-4
+                    ))
+                ])
+                model.fit(X, y)
+                self._models[sym] = model
+                self._models_trained[sym] = True
+                trained_count += 1
+            except Exception as e:
+                self.log(f"Training error {sym.value}: {e}")
+
+        self.log(f"Trained {trained_count}/{len(self._symbols)} models")
+
+    def _get_up_probability(self, sym):
+        """
+        Get probability that symbol will go UP over next horizon days.
+        Returns (prob_up, is_trained).
+        """
+        if not self._models_trained.get(sym, False):
+            return 0.0, False
+
+        prices = list(self._price_history[sym])
+        if len(prices) < self._lookback + 2:
+            return 0.0, False
+
+        window = prices[-(self._lookback + 2):]
+        features = self._compute_features(window)
+        if features is None:
+            return 0.0, False
+
+        try:
+            proba = self._models[sym].predict_proba(features.reshape(1, -1))[0]
+            classes = self._models[sym].named_steps['clf'].classes_
+            up_idx = np.where(classes == 2)[0]
+            prob_up = float(proba[up_idx[0]]) if len(up_idx) > 0 else 0.0
+            return prob_up, True
+        except Exception as e:
+            self.log(f"Prediction error {sym.value}: {e}")
+            return 0.0, False
+
+    def _daily_update(self):
+        """Daily handler: retrain monthly, rebalance biweekly."""
+        current_month = self.time.month
+
+        # Monthly retraining: first day of new month
+        if current_month != self._last_train_month:
+            price_ready = all(
+                len(self._price_history[s]) >= self._train_window + self._horizon + self._lookback + 2
+                for s in self._symbols
+            )
+            if price_ready:
+                self._train_models()
+                self._last_train_month = current_month
+
+        # Biweekly rebalancing
+        self._days_since_rebalance += 1
+        if self._days_since_rebalance >= self._rebalance_freq:
+            self._rebalance()
+            self._days_since_rebalance = 0
+
+    def _rebalance(self):
+        """
+        Allocate equal weight to ETFs predicted UP with prob > threshold.
+        Always hold at least min_positions to avoid cash drag.
+        """
+        any_trained = any(self._models_trained.values())
+        if not any_trained:
             return
 
-        # Store for simplified prediction
-        self._training_data = (X, y)
-        self.log(f"Model trained on {len(X)} samples")
+        # Score all symbols
+        scores = {}
+        for sym in self._symbols:
+            prob_up, is_trained = self._get_up_probability(sym)
+            if is_trained:
+                scores[sym] = prob_up
 
-    def _trade(self):
-        """
-        Make prediction and execute trade.
-        """
-        if len(self._returns_window) < self._lookback_days:
+        if not scores:
             return
 
-        # Retrain periodically
-        self._days_since_retrain += 1
-        if self._days_since_retrain >= self._retrain_frequency:
-            self._train_model()
-            self._days_since_retrain = 0
+        # Primary filter: prob_up > threshold
+        candidates = [(sym, prob) for sym, prob in scores.items()
+                      if prob > self._pred_threshold]
+        candidates.sort(key=lambda x: x[1], reverse=True)
 
-        # Get prediction
-        returns = list(self._returns_window)
-        probability = self._simple_cnn_predict(returns)
+        # Fallback: ensure minimum positions
+        if len(candidates) < self._min_positions:
+            all_sorted = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+            candidates = all_sorted[:self._min_positions]
 
-        # Track prediction accuracy
-        if len(self._predictions) > 0:
-            # Check previous prediction
-            prev_prob, prev_return = self._predictions[-1]
-            actual_direction = 1 if returns[-1] > 0 else 0
-            predicted_direction = 1 if prev_prob > 0.5 else 0
+        selected = [sym for sym, _ in candidates]
+        weight = 1.0 / len(selected)
 
-        # Store current prediction
-        self._predictions.append((probability, returns[-1] if returns else 0))
+        # Log
+        score_str = ", ".join(
+            f"{sym.value}={scores.get(sym, 0):.3f}" for sym in selected[:4]
+        )
+        self.log(f"Rebal {self.time.date()}: {len(selected)} ETFs @ {weight:.1%} each | {score_str}")
 
-        # Plot
-        self.plot('CNN', 'UpProbability', probability)
+        # Execute
+        for sym in self._symbols:
+            if sym in selected:
+                self.set_holdings(sym, weight)
+            else:
+                self.liquidate(sym)
 
-        # Trading logic
-        if probability > self._prediction_threshold:
-            # Predict up - buy
-            self.set_holdings(self._spy, 1.0)
-            self.log(f"CNN predicts UP: prob={probability:.2%}")
-        elif probability < (1 - self._prediction_threshold):
-            # Predict down - go to cash
-            self.set_holdings(self._spy, 0.0)
-            self.log(f"CNN predicts DOWN: prob={probability:.2%}")
+        # Plots
+        best_prob = candidates[0][1] if candidates else 0.0
+        self.plot('CNN', 'BestUpProb', best_prob)
+        self.plot('CNN', 'NumPositions', float(len(selected)))
 
     def on_end_of_algorithm(self):
         final_value = self.portfolio.total_portfolio_value
-        returns = (final_value - 100000) / 100000
-
-        # Calculate prediction accuracy
-        correct = 0
-        total = 0
-        for i in range(len(self._predictions) - 1):
-            prob, _ = self._predictions[i]
-            _, next_return = self._predictions[i + 1]
-            predicted = 1 if prob > 0.5 else 0
-            actual = 1 if next_return > 0 else 0
-            if predicted == actual:
-                correct += 1
-            total += 1
-
-        accuracy = correct / total if total > 0 else 0
-        self.log(f"Temporal CNN: Final=${final_value:,.0f}, Return={returns:.2%}, Accuracy={accuracy:.2%}")
+        total_return = (final_value - 100_000) / 100_000
+        trained = sum(1 for v in self._models_trained.values() if v)
+        self.log(f"TemporalCNN v2: Final=${final_value:,.0f} | Return={total_return:.2%} | Models={trained}/{len(self._symbols)}")

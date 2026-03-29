@@ -1,9 +1,10 @@
 # QC Strategy Improver - Agent Memory
 
-## Strategy Status (last update 2026-03-28, RL-DQN-Trading v2.0.1)
+## Strategy Status (last update 2026-03-28, Sector-ML-Classification v5)
 
 | Strategy | Cloud ID | Issue | Sharpe v1 | Sharpe latest | Status |
 |----------|----------|-------|-----------|--------------|--------|
+| **Sector-ML-Classification** | **29318875** | **—** | **0.352** | **0.473** | **v5: always top-N bull + bear cash 0.35 threshold + 11 features + equal-weight. Alpha -0.007->+0.009, Beta 0.964->0.799, MaxDD 41.7%->34.4%. IMPROVED.** |
 | **RL-DQN-Trading** | **29443478** | **—** | **0.136** | **0.533** | **v2.0.1: MLPRegressor DQN, 5-ETF, risk-adj reward, target-fix. Beta=0.452, Alpha=0.019. STRONGLY IMPROVED.** |
 | VIX-TermStructure | 28657907 | #18 | -0.27 | **+0.051** | HARD CEILING REACHED - v4.1 is final |
 | ForexCarry | 28657908 | #17 | -0.654 | **-0.654** | CEILING REACHED |
@@ -26,6 +27,38 @@
 | **LSTM-Forecasting** | **29443476** | **—** | **0.366** | **0.525** | **v2.1: real MLPClassifier, 7-ETF, alpha -0.008->+0.016. IMPROVED.** |
 | **Temporal-CNN-Prediction** | **29443034** | **—** | **0.169** | **0.536** | **v2: real MLPClassifier(128,64,32), 8-ETF, 18 features. Beta=0.997 (high).** |
 | **Chronos-Foundation-Forecasting** | **29443479** | **—** | **0.114** | **0.253** | **v2: GBM+Ridge ensemble, SMA200 regime, 8-ETF. Beta 0.643->0.252, Alpha +0.002, MaxDD 22.4%. IMPROVED.** |
+
+## Sector-ML-Classification Lessons (2026-03-28) - iter1
+
+### IMPROVED: Sharpe 0.352 -> 0.473, Alpha -0.007 -> +0.009, Beta 0.964 -> 0.799, MaxDD 41.7% -> 34.4%
+
+**Key insight: RF as RANKER vs RF as GATE**
+- v3/v3.1/v4 used RF as a binary gate (prob >= 0.5 to hold). When all sectors have prob < threshold,
+  strategy either holds stale positions (bull) or goes to cash (bear). Cash drag kills bull Sharpe.
+- v5 solution: always hold top-N in bull market. RF ranks which sectors to prefer, but never gates out.
+  Only in BEAR (SPY < SMA200) does a threshold (0.35) decide cash vs defensive.
+
+**Why equal-weight beat confidence-weighted (v4 vs v5)**:
+- With only 8 sectors and a RF model, confidence differences between top-4 are small (~0.40-0.60 range).
+- Confidence-weighting creates slight concentration in 1-2 sectors = higher vol, similar return.
+- Equal weight over top-N is simpler and more robust for ETF sector rotation.
+
+**v4 was important stepping stone** (first positive Alpha +0.003):
+- Monthly retraining (vs quarterly): catches regime changes earlier.
+- 11 features (vs 9): 50d momentum + 52-week high ratio add long-term trend context.
+- Lower BUY_THRESHOLD 1.2% (vs 1.5%): more training samples, better balanced classes.
+- These improvements carried over to v5 and explain the Alpha improvement.
+
+**Bear market regime handling**:
+- SPY < SMA200 activates defensive mode: only XLU, XLP, XLV candidates.
+- BEAR_MIN_PROB = 0.35: go to cash if even the best defensive sector looks weak.
+- This is softer than v3 (2 positions) - allows 2 positions if signals are there.
+
+**Evolution summary**:
+- v2b: Beta 0.964 (pure SPY beta). No regime filter.
+- v3: SMA200 added, Beta 0.832. But forced fallback = noisy. Quarterly train.
+- v4: Monthly train + 11 features + prob-weighted. Alpha turns positive. But threshold gate = cash drag.
+- v5: No gate in bull + BEAR_MIN_PROB 0.35 + equal weight. Best Sharpe so far.
 
 ## Chronos-Foundation-Forecasting Lessons (2026-03-28) - iter1
 
