@@ -347,7 +347,7 @@ Intelligence Artificielle - IV
   - Une distribution conditionnelle est représentée par une table de probabilités conditionnelles (CPT)
   - Donnant la distribution en Xᵢ pour chaque combinaison de valeur parente
 
-<!-- Reseau bayesien : DAG + tables de probabilites conditionnelles (CPT) -->
+<!-- Reseau bayesien : DAG + tables de probabilités conditionnelles (CPT) -->
 
 ---
 
@@ -758,7 +758,7 @@ Intelligence Artificielle - IV
   - Attention d'un utilisateur
   - Monitoring médical
   - Suivi radar
-- **Besoin d'introduire le temps (ou l'espace) dans nos modeles**
+- **Besoin d'introduire le temps (ou l'espace) dans nos modèles**
 - Exemples modernes : vehicules autonomes (fusion capteurs), LLMs contextuels (attention temporelle)
 
 ---
@@ -968,9 +968,9 @@ Intelligence Artificielle - IV
 
 ---
 
-# HMM Problem 1: Evaluation
+# HMM Problem 1: Évaluation
 
-- **Evaluation**
+- **Évaluation**
   - Consider the problem where we have a number of HMMs (that is, a set of (π, A, B) triples) describing different systems, and a sequence of observations
   - We may want to know which HMM most probably generated the given sequence
 - **Solution: Forward Algorithm**
@@ -1508,12 +1508,12 @@ Intelligence Artificielle - IV
 
 <!-- _class: columns-layout -->
 
-# Evaluation des politiques
+# Évaluation des politiques
 
 <div class="columns">
 <div class="col-left">
 
-- **Evaluation d'une politique π**
+- **Évaluation d'une politique π**
   - Utilité espérée
   - Valeur de chaque état
 
@@ -1530,7 +1530,7 @@ Intelligence Artificielle - IV
 
 <!-- _class: columns-layout -->
 
-# Evaluation des politiques (suite)
+# Évaluation des politiques (suite)
 
 <div class="columns">
 <div class="col-left">
@@ -1581,7 +1581,7 @@ Intelligence Artificielle - IV
 <div class="col-left">
 
 - **Policy Iteration**
-  - Evaluation de politique
+  - Évaluation de politique
   - Amélioration de politique
 
 </div>
@@ -1735,7 +1735,7 @@ Intelligence Artificielle - IV
   - Expérience DNN Bitcoin, Encog et machine learning
 - **Amélioration par l'apprentissage d'un agent joueur de Go simple**
   - Le Go et l'IA, Récentes avancées. Go Traxx
-- **Evolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie**
+- **Évolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie**
   - Approches évolutionnistes, automates cellulaires, Bac à sable. Golly, Encog
 - **Pilotage d'un cluster de cache distribué pour le portage d'applications dans le Cloud**
   - Caches distribués, scaling, stratégies et clustering. Redis

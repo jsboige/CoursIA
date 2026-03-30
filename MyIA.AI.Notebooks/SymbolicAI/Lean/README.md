@@ -56,7 +56,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
 | 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
 | 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
-| 10 | LeanDojo | ~100 | Demo | - | **COMPLET** |
+| 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
 | 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
 | 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 

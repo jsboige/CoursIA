@@ -1,0 +1,10 @@
+# Probas - Python Dependencies
+# Install: pip install -r requirements.txt
+#
+# Note: 20 notebooks are C# (.NET Interactive) using Infer.NET.
+# This file covers the Python notebook (Pyro_RSA_Hyperbole).
+
+# Core
+pyro-ppl>=1.8                # Probabilistic programming (Pyro)
+torch>=2.0                   # PyTorch (Pyro backend)
+matplotlib>=3.7              # Visualization

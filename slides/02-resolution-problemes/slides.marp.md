@@ -112,7 +112,7 @@ L'agent passe du mode **reactif** au mode **deliberatif** : il anticipe les cons
   - L'agent sait exactement dans quel etat il sera ; la solution est une sequence d'actions predeterminee
 - **Non-observable** → probleme sans capteur (dit *conformant*)
   - L'agent ne connait pas sa position ; la solution doit fonctionner quel que soit l'etat reel
-- **Non deterministe et/ou partiellement observable** → probleme de contingence
+- **Non déterministe et/ou partiellement observable** → probleme de contingence
   - Les percepts fournissent de nouvelles informations sur l'etat courant
   - Necessite un entrelacement {calcul, action, observation}
 - **Espace d'etats inconnu** → probleme d'exploration en ligne
@@ -230,7 +230,7 @@ L'agent passe du mode **reactif** au mode **deliberatif** : il anticipe les cons
 
 - Developpement progressif depuis Arad
 - A chaque etape, on developpe un noeud feuille de la frontiere
-- L'ordre de developpement depend de la **strategie d'exploration** choisie
+- L'ordre de developpement depend de la **stratégie d'exploration** choisie
 
 ![center w:650](images/img_007.png)
 
@@ -295,7 +295,7 @@ L'agent passe du mode **reactif** au mode **deliberatif** : il anticipe les cons
 - Variantes
   - Bidirectionnelle
 
-<!-- Le tableau comparatif complet est presente plus loin (img_018) -->
+<!-- Le tableau comparatif complet est présenté plus loin (img_018) -->
 
 ---
 
@@ -792,14 +792,14 @@ Exploration informée et locale
   - Utilisees massivement en apprentissage profond
 - **Optimisation sous contrainte** :
   - Les variables sont soumises a des inegalites formant un ensemble convexe
-  - **Programmation lineaire** : objectif et contraintes lineaires → complexite polynomiale
+  - **Programmation lineaire** : objectif et contraintes lineaires → complexité polynomiale
   - Tres etudiee, nombreux solveurs efficaces (Simplex, points interieurs)
 
 ---
 
 # Exploration avec actions non déterministes
 
-- Quand les actions ont des **resultats imprevisibles**, la solution n'est plus une simple sequence mais un **plan contingent** (strategie avec branchements)
+- Quand les actions ont des **resultats imprevisibles**, la solution n'est plus une simple sequence mais un **plan contingent** (stratégie avec branchements)
 - **Arbres Et-Ou** : entrelacement de deux types de noeuds
   - Noeuds **Ou** = choix de l'agent (exploration classique)
   - Noeuds **Et** = « choix » de l'environnement (tous les resultats possibles)
@@ -829,16 +829,16 @@ Exploration informée et locale
 
 # Exploration en ligne
 
-- **Entrelacement calcul et action** : l'agent explore en temps reel, sans modele prealable
+- **Entrelacement calcul et action** : l'agent explore en temps reel, sans modèle prealable
 - **Problemes de decouverte** :
   - Ratio de competitivite : performance vs un agent omniscient connaissant l'espace
   - Presence possible d'impasses (sinon l'espace est explorable sans risque)
 - **Algorithmes** :
   - DFS en ligne, escalade avec reprise aleatoire
-  - Memoire : estimation H de l'heuristique h, mise a jour apres chaque action
+  - Mémoire : estimation H de l'heuristique h, mise a jour apres chaque action
   - **LRTA*** (Learning Real-Time A*) : converge vers le chemin optimal
 - **Apprentissage en ligne** :
-  - De la « carte » (etats decouverts), du cout d'etape, des regles de transition
+  - De la « carte » (etats decouverts), du cout d'etape, des règles de transition
 
 ![bg right:40%](images/img_036.png)
 
@@ -890,7 +890,7 @@ Exploration informée et locale
 
 - **Environnements multi-agents concurrentiels** : l'adversaire est une source d'incertitude
 - Classe de jeux la plus etudiee en IA (echecs, Go, dames) :
-  - Tours alternes, deterministes, a somme nulle (le gain de l'un = la perte de l'autre)
+  - Tours alternes, déterministes, a somme nulle (le gain de l'un = la perte de l'autre)
   - Information parfaite (tous les joueurs voient l'etat complet)
 - **Difficultes specifiques** :
   - L'adversaire rend le resultat imprevisible → il faut envisager un arbre d'exploration complet
@@ -965,13 +965,13 @@ Exploration informée et locale
 # Decisions imparfaites (1/2)
 
 - **Approche** : on ne peut pas explorer l'arbre complet
-  - On remplace l'utilite reelle par une **fonction d'evaluation heuristique** Eval(s) sur des etats non terminaux
+  - On remplace l'utilite reelle par une **fonction d'évaluation heuristique** Eval(s) sur des etats non terminaux
   - On remplace le test terminal par un **test d'arret** Cutoff(s) (ex : profondeur limite)
-- **Fonction d'evaluation** :
+- **Fonction d'évaluation** :
   - S'inspire du jugement humain : attributs d'un etat (materiel, position, mobilite...)
   - Forme classique : fonction lineaire ponderee Eval(s) = w1 f1(s) + w2 f2(s) + ... + wn fn(s)
   - En pratique, les attributs ne sont pas independants → fonctions non lineaires ou apprentissage
-  - Exemple aux echecs : 1 fou ≈ 3 pions (appris par experience)
+  - Exemple aux echecs : 1 fou ≈ 3 pions (appris par expérience)
 
 ---
 
@@ -979,7 +979,7 @@ Exploration informée et locale
 
 - **Exploration avec arret** :
   - Alpha-Beta iteratif pour respecter une limite de temps (+ ordre des coups)
-  - **Probleme de stabilite** (quiescence) : une prise au prochain tour fausse l'evaluation
+  - **Probleme de stabilite** (quiescence) : une prise au prochain tour fausse l'évaluation
     - Solution : poursuivre l'exploration dans les positions instables
   - **Effet d'horizon** : un evenement inevitable peut etre « repousse » au-dela du cutoff
     - Solution : extensions de singularite (prolonger l'exploration sur les coups forces)
@@ -1024,8 +1024,8 @@ Exploration informée et locale
   - Apprentissage par renforcement des evaluations
 
 **Avancees recentes :**
-- **AlphaGo / AlphaZero** (2016-2018) : MCTS + reseaux de neurones profonds
-- **MuZero** (2019) : apprend le modele de l'environnement sans regles connues
+- **AlphaGo / AlphaZero** (2016-2018) : MCTS + réseaux de neurones profonds
+- **MuZero** (2019) : apprend le modèle de l'environnement sans règles connues
 - **Pluribus** (2019) : poker multi-joueurs a information incomplete
 
 ---
@@ -1034,7 +1034,7 @@ Exploration informée et locale
 
 - **Jeux stochastiques** (backgammon, Monopoly)
   - Element de hasard (des, tirage de cartes)
-  - Minimax espere : ponderation par les probabilites
+  - Minimax espere : ponderation par les probabilités
 - **Jeux a information incomplete** (poker, bridge)
   - Etat partiellement observable → raisonnement sur les etats de croyance
   - Pluribus (2019) : IA surhumaine au poker 6 joueurs
@@ -1149,7 +1149,7 @@ Exploration informée et locale
   - Backjumping
 - Contraintes modernes et Hybridation
   - Intégration CP/SAT/SMT
-  - Utilisation de techniques telles que Lazy Clause Generation pour apprendre des conflits
+  - Utilisation de techniques telles que Lazy Clause Génération pour apprendre des conflits
   - Exemple: Le seolver CP-SAT de Google OR-Tools
   - Hybridation avec métaheuristiques
     - Combinaison d'exploration locale (min-conflicts) avec des phases de réparation par CP (Large Neighborhood Search)

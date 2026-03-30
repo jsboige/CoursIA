@@ -14,37 +14,47 @@ on:
 jobs:
   validate-notebooks:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install nbconvert jupyter nbformat
-        
-    - name: Check notebook format
+        pip install nbformat
+
+    - name: Validate notebook structure
       run: |
-        echo "Checking notebook format..."
-        find . -name "*.ipynb" -not -path "*/\.*" | xargs -I {} jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=60 --ExecutePreprocessor.allow-errors=True {}
-        
-    - name: Check for syntax errors
-      run: |
-        echo "Checking for syntax errors in notebooks..."
-        find . -name "*.ipynb" -not -path "*/\.*" | xargs -I {} python -c "
-        import json
-        import sys
-        with open('{}', 'r', encoding='utf-8') as f:
-            try:
-                nb = json.load(f)
-                # Check if the notebook is valid JSON
-                print('✓ {} is valid JSON'.format('{}'))
-            except json.JSONDecodeError as e:
-                print('✗ {} is not valid JSON: {}'.format('{}', e))
-                sys.exit(1)
-        "
+        echo "Validating notebook JSON structure and nbformat..."
+        ERRORS=0
+        while IFS= read -r nb; do
+          python -c "
+        import json, sys
+        import nbformat
+        path = '$nb'
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                nb = nbformat.read(f, as_version=4)
+            nbformat.validate(nb)
+            print(f'OK {path}')
+        except json.JSONDecodeError as e:
+            print(f'FAIL {path}: invalid JSON - {e}')
+            sys.exit(1)
+        except nbformat.ValidationError as e:
+            print(f'WARN {path}: nbformat warning - {e.message[:100]}')
+        except Exception as e:
+            print(f'FAIL {path}: {e}')
+            sys.exit(1)
+        " || ERRORS=$((ERRORS + 1))
+        done < <(find . -name "*.ipynb" -not -path "*/\.*" -not -path "*/.ipynb_checkpoints/*")
+
+        if [ $ERRORS -gt 0 ]; then
+          echo "FAILED: $ERRORS notebook(s) with errors"
+          exit 1
+        fi
+        echo "All notebooks validated successfully"

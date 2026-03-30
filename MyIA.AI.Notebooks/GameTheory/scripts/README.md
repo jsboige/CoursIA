@@ -27,23 +27,42 @@ Ce repertoire contient les scripts de configuration et validation pour les noteb
 
 ## Installation complete
 
-### Etape 1 : Configuration WSL (Lean 4)
+### Etape 0 : Python standard (notebooks 1-12, 14-16)
+
+```bash
+pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
+# open_spiel echoue sur Windows - c'est normal, les notebooks Python natifs n'en ont pas besoin
+```
+
+### Etape 1a : Configuration WSL OpenSpiel (GT-13, GT-17)
 
 ```bash
 # Dans WSL Ubuntu
-cd /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
-bash setup_wsl_lean4.sh
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_openspiel.sh
 ```
-
-### Etape 2 : Kernel Windows
 
 ```powershell
 # PowerShell Windows
-cd C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+.\setup_wsl_kernel.ps1
+```
+
+### Etape 1b : Configuration WSL Lean 4 (notebooks b)
+
+```bash
+# Dans WSL Ubuntu
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_lean4.sh
+```
+
+```powershell
+# PowerShell Windows
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 .\setup_lean4_kernel.ps1
 ```
 
-### Etape 3 : Validation
+### Etape 2 : Validation
 
 ```bash
 # Windows

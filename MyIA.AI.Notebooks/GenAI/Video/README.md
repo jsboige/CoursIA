@@ -1,6 +1,6 @@
 # Video - Generation & Comprehension Video par IA
 
-[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-4-Audio-Video-Sync.ipynb)
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
 
 Serie complete de notebooks pour la generation, la comprehension et l'edition video par IA generative : text-to-video, image-to-video, video understanding, amelioration et workflows de production.
 

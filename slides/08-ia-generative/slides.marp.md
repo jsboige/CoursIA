@@ -25,7 +25,7 @@ Intelligence Artificielle -- VIII
 - I. Introduction
 - II. Resolution de problemes
 - III. Bases de connaissances et logique
-- IV. Incertitude et modeles probabilistes
+- IV. Incertitude et modèles probabilistes
 - V. Apprentissage
 - VI. Traitement du langage naturel
 - VII. Elargissements
@@ -36,9 +36,9 @@ Intelligence Artificielle -- VIII
 # Introduction a l'IA Generative
 
 - **Qu'est-ce que l'IA generative ?**
-  - Creation de textes, images, audio, video a partir de modeles probabilistes
+  - Creation de textes, images, audio, video a partir de modèles probabilistes
   - En reponse a des prompts (+ autres modalites)
-  - Exploitation d'algorithmes d'apprentissage profond sur des jeux de donnees massifs
+  - Exploitation d'algorithmes d'apprentissage profond sur des jeux de données massifs
 - **Exemples :**
   - ChatGPT (texte), Stable Diffusion / Flux (images)
   - Hunyuan (video), Whisper (audio/speech-to-text)
@@ -53,7 +53,7 @@ Intelligence Artificielle -- VIII
   - Scaling Laws : GPT-1 (117M) → GPT-2 (1.5B) → GPT-3 (175B) → GPT-4 (1T+)
   - ChatGPT : 1M utilisateurs en 5 jours, 100M en 2 mois
 - **Defis :**
-  - Cout d'entrainement, biais des modeles
+  - Cout d'entrainement, biais des modèles
   - Complexite des prompts, intervention humaine necessaire
 - **Approche multidisciplinaire**
   - ML + NLP + Vision par ordinateur
@@ -63,27 +63,27 @@ Intelligence Artificielle -- VIII
 
 ---
 
-# Systemes ISPO
+# Systèmes ISPO
 
-- **Input, Storage, Process, Output** : les quatre fonctions fondamentales d'un systeme informatique
-  - **Input** : donnees d'entree (texte, image, audio, video)
-  - **Storage** : memoire des poids du modele et du contexte de la conversation
-  - **Process** : inference par le modele (attention, generation token par token)
+- **Input, Storage, Process, Output** : les quatre fonctions fondamentales d'un système informatique
+  - **Input** : données d'entree (texte, image, audio, video)
+  - **Storage** : mémoire des poids du modèle et du contexte de la conversation
+  - **Process** : inference par le modèle (attention, génération token par token)
   - **Output** : resultat genere (texte, image, code, audio...)
 - Proprietes : vitesse, precision, regularite, polyvalence, fiabilite, programmabilite
 
 ---
 
-# Les donnees : Qualite et biais
+# Les données : Qualite et biais
 
-- **Importance des donnees en IA generative**
-  - Qualite et representativite des donnees
+- **Importance des données en IA generative**
+  - Qualite et representativite des données
   - "Garbage in, Garbage out"
   - Biais possibles : genre, culture, contexte geographique
   - Risque d'hallucination → pre-traitement, audit
-- **Pipeline de donnees**
+- **Pipeline de données**
   - Acquisition → Nettoyage → Preparation → Annotation
-- **Donnees synthetiques**
+- **Données synthetiques**
   - Alternative pour creer en masse, proteger la confidentialite
   - 2025 : risque de Model Collapse
 
@@ -91,16 +91,16 @@ Intelligence Artificielle -- VIII
 
 ---
 
-# Les donnees : Entrainement et cout
+# Les données : Entrainement et cout
 
 - **Scalabilite et cout energetique**
   - Necessite d'infrastructures puissantes (datacenters)
-  - Optimisations : modeles distilles, datacenters verts
+  - Optimisations : modèles distilles, datacenters verts
 - **Methodes d'entrainement**
-  - *Apprentissage de base* : tres couteux, modeles fondationnels
+  - *Apprentissage de base* : tres couteux, modèles fondationnels
   - *Fine-Tuning* : ajustement specifique, LoRAs, RL
   - *Apprentissage en contexte* : peu couteux, prompt engineering
-- **Activite : Sources de donnees**
+- **Activite : Sources de données**
   - Classe, Maison, Transport, Loisirs → Mots ?
 
 ![bg right:33% contain](images/img_005.png)
@@ -110,10 +110,10 @@ Intelligence Artificielle -- VIII
 # Fonctionnement des LLMs : Tokens et Embeddings
 
 - **Tokens**
-  - Representation numerique des mots
+  - Représentation numerique des mots
   - Vocabulaire de 50k a 128k tokens
 - **Embeddings**
-  - Representation vectorielle des mots/phrases
+  - Représentation vectorielle des mots/phrases
   - Permet de calculer la proximite semantique
   - *King - Man + Woman = Queen*
 - **Activite : Mind-Meld**
@@ -130,7 +130,7 @@ Intelligence Artificielle -- VIII
 - **Concept d'attention**
   - Importance relative des mots dans un contexte donne
   - *"I saw the man with the telescope"*
-- **Activite : Mots polysemiques** -- definition + fleches d'attention
+- **Activite : Mots polysemiques** -- définition + fleches d'attention
 - **Transformers** : architecture cle des LLMs modernes
   - Avancees : MoE, Sparse Attention, RoPE Scaling, Multimodalite
 - **Alternatives recentes** : Mamba, Jamba, Diffusion
@@ -140,12 +140,12 @@ Intelligence Artificielle -- VIII
 
 ---
 
-# Modeles probabilistes : Generation de texte
+# Modeles probabilistes : Génération de texte
 
 - **Les mots sont choisis en sequence**
-  - En fonction de leur probabilite d'occurrence
+  - En fonction de leur probabilité d'occurrence
   - Dans un contexte donne (= mots qui precedent)
-- **Parametres de generation :**
+- **Parametres de génération :**
   - *Temperature* : controle la variabilite des resultats
   - *Top-p sampling* : seuil de distribution cumulatif
   - *Top-k sampling* : k mots les plus probables
@@ -156,11 +156,11 @@ Intelligence Artificielle -- VIII
 
 ---
 
-# Modeles probabilistes : Generation d'images
+# Modeles probabilistes : Génération d'images
 
 - **Modele de diffusion**
   - Ajout de bruit gaussien, apprentissage du debruitage
-  - Generation depuis un espace latent
+  - Génération depuis un espace latent
   - Conditionnement par attention (texte, image, etc.)
 - **Parametres :**
   - *N-steps* : etapes de debruitage
@@ -200,7 +200,7 @@ Intelligence Artificielle -- VIII
   - Synthese de contenu, themes majeurs
   - Structuration d'arguments persuasifs
 - **Marketing et interaction client**
-  - Contenu reseaux sociaux, blogs, videos publicitaires
+  - Contenu réseaux sociaux, blogs, videos publicitaires
   - Slogans, storyboards publicitaires
   - Chatbots conversationnels, FAQ dynamique
 
@@ -216,11 +216,11 @@ Intelligence Artificielle -- VIII
   - Scenarios d'entretien personnalises
   - Parcours de formation adaptatifs
 - **Analytics et prise de decision**
-  - Automatisation des pipelines de donnees
+  - Automatisation des pipelines de données
   - Modelisation avancee, visualisation rapide
   - Synthese de tableaux de bord complexes
 - **Activite : Campagne Marketing fictive : Nouveau Soda**
-  - Un slogan, 1 visuel, 3 posts reseaux sociaux, 1 scenario de pub
+  - Un slogan, 1 visuel, 3 posts réseaux sociaux, 1 scenario de pub
 
 ![bg right:33% vertical contain](images/img_017.png)
 ![bg contain](images/img_018.jpg)
@@ -232,7 +232,7 @@ Intelligence Artificielle -- VIII
 - **Sante** : rapports medicaux, assistance au diagnostic, chatbots de suivi
 - **Education** : supports pedagogiques, vulgarisation, quiz dynamiques, assistants interactifs
 - **Finance** : extraction de rapports, previsions, detection d'anomalies
-- **Recherche** : synthese d'articles, exploration documentaire, optimisation de modeles
+- **Recherche** : synthese d'articles, exploration documentaire, optimisation de modèles
 - **Activite :** Prevision Trading Crypto par graphiques avec indicateurs
 
 ![bg right:35% vertical contain](images/img_021.png)
@@ -242,14 +242,14 @@ Intelligence Artificielle -- VIII
 
 ---
 
-# Techniques : Generation de texte
+# Techniques : Génération de texte
 
 - **Prompt Engineering** : instructions explicites, few-shot learning, variantes stylistiques
-- **Prompts Systemes** : structuration pour taches complexes (CoT, ToT)
-- **RAG** (Retrieval Augmented Generation)
-  - Combinaison modeles generatifs + bases documentaires
+- **Prompts Systèmes** : structuration pour taches complexes (CoT, ToT)
+- **RAG** (Retrieval Augmented Génération)
+  - Combinaison modèles generatifs + bases documentaires
   - Chunks, embeddings, requetes contextuelles
-- **Function Calling** : appels API, generation structuree
+- **Function Calling** : appels API, génération structuree
 - **Orchestration** : Semantic Kernel, LangChain
 - **Agentique avancee** : coordination multi-agents (AutoGen, Semantic Kernel)
 - **Vibe Coding** : Copilot, Cline, Roo (VS Code) + CLIs (Claude Code, Gemini, etc.)
@@ -274,8 +274,8 @@ Intelligence Artificielle -- VIII
   - SD: Deforum, AnimateDiff
   - Hunyuan, Wan, Veo 3, Sora, Runway, Kling AI
 - **3D**
-  - Representation: Meshes, NeRFs, VoxNet, Point Clouds
-  - Generation: DreamFusion, Trellis
+  - Représentation: Meshes, NeRFs, VoxNet, Point Clouds
+  - Génération: DreamFusion, Trellis
 
 </div>
 <div class="col-right">
@@ -338,8 +338,8 @@ Intelligence Artificielle -- VIII
 # Enjeux ethiques et societaux
 
 - **Biais et discrimination**
-  - Stereotypes dans les donnees d'entrainement
-  - Techniques de debiaisage des modeles
+  - Stereotypes dans les données d'entrainement
+  - Techniques de debiaisage des modèles
 - **Illusions**
   - Hallucinations : reponses incorrectes mais plausibles
   - Confiance exageree des utilisateurs
@@ -357,7 +357,7 @@ Intelligence Artificielle -- VIII
 - **Propriete intellectuelle**
   - Droits sur les contenus generes
   - Modeles open-source vs proprietaires
-- **Protection des donnees**
+- **Protection des données**
   - Conformite RGPD, anonymisation
 - **Normes emergentes**
   - AI Act europeen (en vigueur 01/08/2024)
@@ -373,10 +373,10 @@ Intelligence Artificielle -- VIII
 # Risques et limites
 
 - **Fiabilite** : hallucinations, fabrications, impact confiance
-  - Solutions : algorithmes robustes, verification croisee multi-modeles
+  - Solutions : algorithmes robustes, verification croisee multi-modèles
 - **Tests et validation**
   - "Auditeurs IA" : detection de biais en scenarios fictifs
-  - **Activite :** recommandation voyage, sources de donnees in/out
+  - **Activite :** recommandation voyage, sources de données in/out
 - **Securite** : risques de mauvaise utilisation, perte de controle
   - Niveaux de securite Anthropic, Constitutional AI
 - **Points critiques** : perte d'emplois, homogeneisation creative, deepfakes
@@ -404,13 +404,13 @@ Intelligence Artificielle -- VIII
 # Defis pratiques de l'adoption
 
 - **Compatibilite technologique** : adaptation CRM/ERP, bases vectorielles
-- **Confidentialite** : maitrise des flux de donnees
+- **Confidentialite** : maitrise des flux de données
 - **Scalabilite et couts** : PMEs, infrastructure technique
 - **Realite du ROI**
   - Gartner 2025 : 75% d'adoption mais "AI Fatigue"
   - ROI tangibles limites (redaction, code)
 - **Optimisations :**
-  - Solutions open-source, modeles distilles
+  - Solutions open-source, modèles distilles
   - Modeles specialises SOTA, confidentialite maitrisee
 
 ---

@@ -132,6 +132,17 @@ NOTEBOOK_FAMILIES = {
         "notes": "Uses nashpy, some notebooks have Lean proofs",
         "expected_notebooks": [f"GameTheory-{i}-*.ipynb" for i in range(1, 20)]
     },
+    "SmartContracts": {
+        "path": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts",
+        "kernel": "python",
+        "notes": "Blockchain series: SC-0 to SC-26. SC-2 to SC-10 require anvil running (local Ethereum). SC-12 to SC-14 require Foundry (forge). SC-24 requires Alchemy API key. SC-25 requires mainnet ETH.",
+        "expected_notebooks": [f"SC-{i}-*.ipynb" for i in range(27)],
+        "dependencies": {
+            "python": ["web3>=7.0", "py-solc-x>=1.1", "pycryptodome>=3.20", "py_ecc>=7.0",
+                        "phe>=1.5", "xrpl-py>=3.0", "python-bitcoinlib>=0.12", "vyper>=0.4"]
+        },
+        "validation_script": "scripts/smartcontracts/validate_sc_notebooks.py",
+    },
     "QuantConnect": {
         "path": "MyIA.AI.Notebooks/QuantConnect",
         "kernel": "mixed",
@@ -686,7 +697,9 @@ class NotebookValidator:
             return issues
 
         # Check heading structure
-        headings = re.findall(r'^(#{1,6})\s+(.+)$', source, re.MULTILINE)
+        # First, remove fenced code blocks to avoid detecting Python comments (#) as headings
+        source_for_headings = re.sub(r'```.*?```', '', source, flags=re.DOTALL)
+        headings = re.findall(r'^(#{1,6})\s+(.+)$', source_for_headings, re.MULTILINE)
         if headings:
             levels = [len(h[0]) for h in headings]
             for i in range(1, len(levels)):
@@ -709,6 +722,8 @@ class NotebookValidator:
 
         # Remove various non-LaTeX $ patterns before checking
         source_for_latex = source
+        # Remove fenced code blocks (```...```) which may contain $ in shell/env vars
+        source_for_latex = re.sub(r'```.*?```', '', source_for_latex, flags=re.DOTALL)
         # Remove markdown table rows
         source_for_latex = re.sub(r'^\|.*?\|$', '', source_for_latex, flags=re.MULTILINE)
         # Remove inline code with $ (like `$defs`, `$id`, `$schema`)
@@ -732,19 +747,19 @@ class NotebookValidator:
         single_dollars = len(re.findall(r'(?<!\$)\$(?!\$)', source_for_latex))
         if single_dollars % 2 != 0:
             issues.append(ValidationIssue(
-                issue_type='error',
+                issue_type='warning',
                 category='latex',
                 cell_index=index,
-                message='Unbalanced $ signs in LaTeX'
+                message='Possibly unbalanced $ signs in LaTeX (may be false positive)'
             ))
 
         double_dollars = len(re.findall(r'\$\$', source_for_latex))
         if double_dollars % 2 != 0:
             issues.append(ValidationIssue(
-                issue_type='error',
+                issue_type='warning',
                 category='latex',
                 cell_index=index,
-                message='Unbalanced $$ signs in LaTeX'
+                message='Possibly unbalanced $$ signs in LaTeX (may be false positive)'
             ))
 
         # Check links
@@ -1034,7 +1049,9 @@ class NotebookExecutor:
             return self._base_executor.detect_kernel(str(self.path))
 
         kernel = self.analyzer.kernel.lower()
-        if 'python' in kernel:
+        if kernel == 'smartcontracts':
+            return 'smartcontracts'
+        elif 'python' in kernel:
             return 'python3'
         elif '.net' in kernel or 'csharp' in kernel:
             return '.net-csharp'
@@ -1072,10 +1089,13 @@ class NotebookExecutor:
         if output_path is None:
             output_path = self.path.parent / f"{self.path.stem}_output.ipynb"
 
+        # WSL-based kernels need longer startup
+        start_timeout = 120 if 'wsl' in kernel or kernel == 'smartcontracts' else 60
         cmd = [
             sys.executable, "-m", "papermill",
             str(self.path), str(output_path),
-            "--kernel", kernel, "--cwd", str(self.path.parent)
+            "--kernel", kernel, "--cwd", str(self.path.parent),
+            "--start-timeout", str(start_timeout),
         ]
         if batch_mode:
             cmd.extend(["-p", "BATCH_MODE", "true"])

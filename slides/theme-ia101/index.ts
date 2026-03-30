@@ -11,6 +11,7 @@ export default defineTheme({
     'image-grid': () => import('./layouts/image-grid.vue'),
     'two-cols': () => import('./layouts/two-cols.vue'),
     dense: () => import('./layouts/dense.vue'),
+    compact: () => import('./layouts/compact.vue'),
   },
   // Include default animations
   animations,

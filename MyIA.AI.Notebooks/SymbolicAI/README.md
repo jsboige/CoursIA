@@ -1,70 +1,71 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
-Collection de **47 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique et optimisation.
+Collection de **92 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
 
 ## Vue d'ensemble
 
-| Serie | Notebooks | Cellules | Theme | Duree |
-|-------|-----------|----------|-------|-------|
-| [Tweety](#tweety---tweetyproject) | 10 | ~200 | Logiques formelles, Argumentation | ~7h |
-| [Lean](#lean---verification-formelle) | 10 | ~400 | Proof assistant, Types dependants, LLMs | ~7h |
-| [SemanticWeb](#semanticweb---web-semantique) | 18 | ~500 | RDF, SPARQL, OWL, SHACL, GraphRAG, Reasoners | ~12h |
-| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | ~76 | Analyse argumentative multi-agents | ~3h |
-| [Autres notebooks](#autres-notebooks) | 3 | ~75 | Z3, OR-Tools, Planification | ~1h30 |
+| Serie | Notebooks | Exercices | Environnement | Theme | Duree |
+|-------|-----------|-----------|---------------|-------|-------|
+| [SemanticWeb](#semanticweb---web-semantique) | 17 | 15 (88%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~12h |
+| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~20h |
+| [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
+| [Lean](#lean---verification-formelle) | 13 | 12 (92%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
+| [Tweety](#tweety---tweetyproject) | 10 | 9 (90%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
+| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~3h |
+| [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 47 notebooks, ~1450 cellules, ~32h de contenu
+**Total** : 77 notebooks actifs, ~52h de contenu
+
+---
+
+## Prerequis par serie
+
+| Serie | Kernel | Environnement special | Packages principaux | API Keys |
+|-------|--------|----------------------|---------------------|----------|
+| **Tweety** | Python | Java/JPype, JDK 17 | jpype1, pysat, clingo | Non |
+| **Lean** | Lean 4 / Python (WSL) | WSL, elan, Lean 4 | lean4_jupyter | OPENAI_API_KEY (7-10) |
+| **SemanticWeb** | .NET C# / Python | Node.js (certains) | dotNetRDF, rdflib, pySHACL | Non |
+| **Planners** | Python | WSL ou Docker (Fast-Downward) | ortools, unified_planning | Non |
+| **SmartContracts** | Python | Solidity/solc, Foundry | py-solc-x, web3 | OPENAI_API_KEY (8b) |
+| **Argument Analysis** | Python | Java/JPype | semantic-kernel | OPENAI_API_KEY |
+| **Autres** | .NET C# | Aucun | Google.OrTools, Z3.Linq | Non |
 
 ---
 
 ## Tweety - TweetyProject
 
-Serie complete de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliotheque Java pour l'IA symbolique. Couvre les logiques formelles, la revision de croyances, et l'argumentation computationnelle.
+Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliotheque Java pour l'IA symbolique. Couvre les logiques formelles, la revision de croyances, et l'argumentation computationnelle.
 
 ### Structure detaillee
 
-| # | Notebook | Cellules | Contenu detaille |
-|---|----------|----------|------------------|
+| # | Notebook | Contenu | Exercices | Prerequis |
+|---|----------|---------|-----------|-----------|
 | **Fondations** |
-| 1 | [Tweety-1-Setup](Tweety/Tweety-1-Setup.ipynb) | 34 | Configuration JVM via JPype, telechargement automatique JARs (35 modules), outils externes (Clingo, SPASS, EProver), JDK Zulu 17 portable |
-| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | 31 | **Logique Propositionnelle** : syntaxe, parseurs, SAT4J, comparaison solveurs PySAT (CaDiCaL, Glucose, MiniSat). **FOL** : predicats, fonctions, quantificateurs, unification |
-| 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | 23 | **Description Logic (DL)** : concepts, roles, TBox/ABox. **Logique Modale** : operateurs box/diamond, SPASS. **QBF** : formules booleennes quantifiees. **Conditionnelle** |
+| 1 | [Tweety-1-Setup](Tweety/Tweety-1-Setup.ipynb) | Configuration JVM via JPype, JARs (35 modules), outils externes | Setup | Java/JPype |
+| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle, SAT4J, PySAT. FOL : predicats, quantificateurs | 2 | Java/JPype |
+| 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | Description Logic, Logique Modale (SPASS), QBF, Conditionnelle | 2 | Java/JPype, SPASS |
 | **Revision de Croyances** |
-| 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | 22 | Postulats AGM, operateurs de contraction/revision, **MUS** (Minimal Unsatisfiable Subsets), **MaxSAT**, mesures d'incoherence (MI, MIC, Eta, Contension) |
+| 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | Postulats AGM, MUS, MaxSAT, mesures d'incoherence | 2 | Java/JPype |
 | **Argumentation** |
-| 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | 14 | **Frameworks de Dung** : graphes d'attaque, semantiques (grounded, preferred, stable, semi-stable, CF2), acceptabilite, ensembles admissibles |
-| 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | 18 | **ASPIC+** : regles strictes/defeasibles, preferences. **DeLP** : Defeasible Logic Programming. **ABA** : Assumption-Based. **ASP** avec Clingo |
-| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | 24 | **ADF** (Abstract Dialectical Frameworks) : conditions d'acceptation. **Bipolar** : support + attaque. **WAF** : poids. **SAF** : social. **SetAF** : attaques collectives. **EAF** : attaques sur attaques |
-| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | 10 | **Ranking semantics** : classement des arguments (Categoriser, Burden, Discussion). **Probabiliste** : degres de croyance |
+| 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Frameworks de Dung, semantiques (grounded, preferred, stable, CF2) | 2 | Java/JPype |
+| 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP avec Clingo | 2 | Java/JPype, Clingo |
+| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 2 | Java/JPype |
+| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
 | **Applications** |
-| 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | 11 | **Agents argumentatifs** : ArguingAgent. **Protocoles de dialogue** : Grounded Game. **Loteries argumentatives** |
-| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | 11 | **Ordres de preference** : totaux, partiels, lexicographiques. **Theorie du vote** : Borda, Copeland, agregation sociale |
+| 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
+| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 2 | Java/JPype |
 
-### Technologies utilisees
+> 9/10 notebooks ont des exercices. Seul Tweety-1-Setup (configuration) n'en a pas.
 
-| Technologie | Usage dans Tweety |
-|-------------|-------------------|
+### Technologies
+
+| Technologie | Usage |
+|-------------|-------|
 | **JPype** | Bridge Java/Python pour appeler les classes Tweety |
 | **PySAT** | Solveurs SAT natifs Python (CaDiCaL, Glucose4, MiniSat) |
 | **Clingo** | Answer Set Programming pour ABA et logiques non-monotones |
 | **SPASS** | Prouveur de theoremes pour logique modale |
 | **EProver** | Prouveur FOL haute performance |
-| **Z3** | SMT solver pour MARCO (enumeration MUS) |
-
-### Modules TweetyProject couverts
-
-```
-logics.pl          Logique Propositionnelle      logics.fol         Premier Ordre
-logics.dl          Description Logic             logics.ml          Modale
-logics.qbf         QBF                           logics.cl          Conditionnelle
-beliefdynamics     Revision AGM                  arg.dung           Frameworks Dung
-arg.aspic          ASPIC+                        arg.delp           DeLP
-arg.aba            ABA                           arg.adf            ADF
-arg.bipolar        Bipolaire                     arg.weighted       Pondere
-arg.social         Social                        arg.setaf          SetAF
-arg.extended       Attaques recursives           arg.rankings       Classement
-arg.prob           Probabiliste                  agents.dialogues   Dialogues
-preferences        Vote et preferences           lp.asp             ASP
-```
 
 Documentation complete : [Tweety/README.md](Tweety/README.md)
 
@@ -72,39 +73,32 @@ Documentation complete : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Verification Formelle
 
-Serie de **11 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves.
+Serie de **13 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves.
 
 ### Structure detaillee
 
-| # | Notebook | Cellules | Kernel | Contenu detaille |
-|---|----------|----------|--------|------------------|
+| # | Notebook | Kernel | Contenu | Exercices |
+|---|----------|--------|---------|-----------|
 | **Fondations** |
-| 1 | [Lean-1-Setup](Lean/Lean-1-Setup.ipynb) | 21 | Python WSL | Diagnostic environnement, installation automatique elan, Lean 4, lean4_jupyter, verification complete |
-| 2 | [Lean-2-Dependent-Types](Lean/Lean-2-Dependent-Types.ipynb) | 50 | Lean 4 | **Calcul des Constructions** : types de base, fonctions, produits, hierarchie d'univers (Type, Prop), `let`, `variable`, Pi-types, Sigma-types, inductifs (Nat, List) |
-| 3 | [Lean-3-Propositions-Proofs](Lean/Lean-3-Propositions-Proofs.ipynb) | 50 | Lean 4 | **Curry-Howard** : Prop, connecteurs (And, Or, Not, Iff), preuves comme fonctions, transitivite, elimination, egalite et substitution, logique classique vs constructive |
-| 4 | [Lean-4-Quantifiers](Lean/Lean-4-Quantifiers.ipynb) | 46 | Lean 4 | `forall` : introduction/elimination. `exists` : Exists.intro/elim. Proprietes arithmetiques Nat, combinaison de quantificateurs, hypotheses anonymes |
-| 5 | [Lean-5-Tactics](Lean/Lean-5-Tactics.ipynb) | 70 | Lean 4 | **Mode tactique** : `by`, etat de preuve. Tactiques : `exact`, `intro`, `apply`, `have`, `show`, `cases`, `induction`, `rw`, `simp`, `calc`, `constructor`, `left`/`right` |
+| 1 | [Lean-1-Setup](Lean/Lean-1-Setup.ipynb) | Python WSL | Diagnostic environnement, installation elan, Lean 4, lean4_jupyter | Setup |
+| 2 | [Lean-2-Dependent-Types](Lean/Lean-2-Dependent-Types.ipynb) | Lean 4 | Calcul des Constructions, types, fonctions, Pi/Sigma-types, inductifs | 9 |
+| 3 | [Lean-3-Propositions-Proofs](Lean/Lean-3-Propositions-Proofs.ipynb) | Lean 4 | Curry-Howard, connecteurs, preuves comme fonctions, logique classique vs constructive | 8 |
+| 4 | [Lean-4-Quantifiers](Lean/Lean-4-Quantifiers.ipynb) | Lean 4 | Quantificateurs universels et existentiels, proprietes arithmetiques | 7 |
+| 5 | [Lean-5-Tactics](Lean/Lean-5-Tactics.ipynb) | Lean 4 | Mode tactique, exact, intro, apply, cases, induction, rw, simp, calc | 5 |
 | **Etat de l'art 2024-2026** |
-| 6 | [Lean-6-Mathlib-Essentials](Lean/Lean-6-Mathlib-Essentials.ipynb) | 44 | Lean 4 | **Mathlib4** : installation Lake, structure (4M+ lignes), tactiques puissantes (`ring`, `linarith`, `omega`, `norm_num`, `field_simp`), recherche Loogle/Moogle |
-| 7 | [Lean-7-LLM-Integration](Lean/Lean-7-LLM-Integration.ipynb) | 32 | Python WSL | **AlphaProof** : architecture DeepMind, IMO 2024. **LeanCopilot** : integration VSCode. Patterns collaboration humain-LLM-Lean, prompting efficace |
-| 7b | [Lean-7b-Examples](Lean/Lean-7b-Examples.ipynb) | 22 | Python WSL | Exemples progressifs, theoremes simples, theoremes Mathlib, visualisations, comparaison OpenAI vs Anthropic, problemes d'Erdos comme benchmark |
-| 8 | [Lean-8-Agentic-Proving](Lean/Lean-8-Agentic-Proving.ipynb) | 21 | Python WSL | **Agents autonomes** : recherche theoremes, generation tactiques, verification, orchestration. **Harmonic Aristotle** : decomposition recursive, resolution Erdos #124 |
-| 9 | [Lean-9-SK-Multi-Agents](Lean/Lean-9-SK-Multi-Agents.ipynb) | 48 | Python WSL | **Semantic Kernel** : 5 agents specialises (SearchAgent, TacticAgent, VerifyAgent, ErrorAgent, Orchestrator), etat partage `ProofState`, plugins SK |
-| 10 | [Lean-10-LeanDojo](Lean/Lean-10-LeanDojo.ipynb) | 50 | Python WSL | **LeanDojo** : tracing de repos Lean, extraction theoremes, environnement Dojo interactif, machine learning pour theorem proving |
-
-### Percees majeures 2024-2026
-
-| Systeme | Accomplissement | Date |
-|---------|-----------------|------|
-| **AlphaProof** (DeepMind) | Medaille d'argent IMO 2024, 4/6 problemes resolus | Jul 2024 |
-| **DeepSeek-Prover** | Problemes Erdos 379, 987, 730, 198 | 2024-2025 |
-| **Harmonic Aristotle** | Erdos #124 variant (~30 ans ouvert) en 6h | Dec 2025 |
-| **Mathlib4** v4.27.0 | 4M+ lignes, utilise par Terry Tao | Jan 2026 |
+| 6 | [Lean-6-Mathlib-Essentials](Lean/Lean-6-Mathlib-Essentials.ipynb) | Lean 4 | Mathlib4, tactiques puissantes (ring, linarith, omega), Loogle/Moogle | 4 |
+| 7 | [Lean-7-LLM-Integration](Lean/Lean-7-LLM-Integration.ipynb) | Python WSL | AlphaProof, LeanCopilot, collaboration humain-LLM-Lean | 2 |
+| 7b | [Lean-7b-Examples](Lean/Lean-7b-Examples.ipynb) | Python WSL | Exemples progressifs, comparaison OpenAI vs Anthropic, Erdos | 8 |
+| 8 | [Lean-8-Agentic-Proving](Lean/Lean-8-Agentic-Proving.ipynb) | Python WSL | Agents autonomes, Harmonic Aristotle, Erdos #124 | 7 |
+| 9 | [Lean-9-SK-Multi-Agents](Lean/Lean-9-SK-Multi-Agents.ipynb) | Python WSL | Semantic Kernel, 5 agents specialises, ProofState | 2 |
+| 10 | [Lean-10-LeanDojo](Lean/Lean-10-LeanDojo.ipynb) | Python WSL | LeanDojo, tracing, extraction theoremes, ML pour theorem proving | 2 |
+| 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Verification formelle de reseaux de neurones | 2 |
+| 11py | [Lean-11-TorchLean-Python](Lean/Lean-11-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, verification | 7 |
 
 ### Kernels requis
 
-- **Lean 4 (WSL)** : Notebooks 2-6 (preuves Lean natives)
-- **Python 3 (WSL)** : Notebooks 1, 7-10 (setup, LLM, LeanDojo)
+- **Lean 4 (WSL)** : Notebooks 2-6, 11 (preuves Lean natives)
+- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py (setup, LLM, LeanDojo)
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problemes chemins)
 
@@ -112,123 +106,35 @@ Documentation complete : [Lean/README.md](Lean/README.md)
 
 ---
 
-## Argument Analysis - Analyse Argumentative LLM
-
-Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine detection de sophismes, formalisation logique, et validation par TweetyProject.
-
-### Architecture Multi-Agents
-
-```
-                    +-------------------+
-                    | ProjectManager    |
-                    | (Orchestration)   |
-                    +--------+----------+
-                             |
-           +-----------------+-----------------+
-           |                                   |
-+----------v----------+            +-----------v---------+
-| InformalAnalysisAgent|           | PropositionalLogic  |
-| - Detection arguments |           | Agent               |
-| - Taxonomie sophismes |           | - Formalisation PL  |
-| - Analyse rhetorique  |           | - Validation Tweety |
-+---------------------+            +---------------------+
-```
-
-### Structure detaillee
-
-| # | Notebook | Cellules | Role |
-|---|----------|----------|------|
-| 0 | [Argument_Analysis_Agentic-0-init](Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb) | 23 | **Configuration** : LLM (OpenAI/Anthropic), JPype/Tweety, `RhetoricalAnalysisState`, `StateManagerPlugin`, Service LLM global, `ProjectManagerAgent` |
-| 1 | [Argument_Analysis_Agentic-1-informal_agent](Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb) | 9 | **InformalAnalysisAgent** : `InformalAnalysisPlugin`, prompts semantiques, detection d'arguments et sophismes, taxonomie CSV |
-| 2 | [Argument_Analysis_Agentic-2-pl_agent](Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb) | 9 | **PropositionalLogicAgent** : `PropositionalLogicPlugin`, formalisation PL, integration Tweety, validation logique |
-| 3 | [Argument_Analysis_Agentic-3-orchestration](Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb) | 8 | **Orchestration** : strategies de conversation, execution collaborative, conclusion |
-| 4 | [Argument_Analysis_Executor](Argument_Analysis/Argument_Analysis_Executor.ipynb) | 15 | **Pipeline complet** : chargement environnement, UI, execution, rapport de validation JSON, cross-validation |
-| 5 | [Argument_Analysis_UI_configuration](Argument_Analysis/Argument_Analysis_UI_configuration.ipynb) | 12 | **Interface** : widgets ipywidgets, selection texte, configuration tache, cache optionnel |
-
-### Composants cles
-
-| Composant | Description |
-|-----------|-------------|
-| `RhetoricalAnalysisState` | Etat partage entre agents (arguments detectes, formalisations, validations) |
-| `StateManagerPlugin` | Plugin SK pour lecture/ecriture de l'etat |
-| `InformalAnalysisPlugin` | Detection arguments informels, classification sophismes |
-| `PropositionalLogicPlugin` | Formalisation en logique propositionnelle, appels Tweety |
-| Taxonomie CSV | Base de 50+ sophismes classes (ad hominem, pente glissante, faux dilemme, etc.) |
-
-### Configuration
-
-```bash
-cd Argument_Analysis
-cp .env.example .env
-# Editer .env :
-#   OPENAI_API_KEY=sk-...
-#   BATCH_MODE=true     # Pour tests automatises (skip widgets)
-#   BATCH_TEXT="..."    # Texte optionnel pour mode batch
-```
-
-Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.md)
-
----
-
 ## SemanticWeb - Web Semantique
 
-Serie complete de **14 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF, fondations) et **Python** (rdflib, standards modernes, IA). Cette serie couvre l'ensemble du spectre : des fondations RDF aux graphes de connaissances integres aux LLMs (GraphRAG).
-
-### Parcours pedagogique
-
-La serie est divisee en 4 parties progressives, plus un notebook bonus sur les raisonneurs OWL.
-
-**Partie 1 : Fondations RDF (.NET C#)** - Les 4 premiers notebooks etablissent les bases avec dotNetRDF, depuis l'installation jusqu'aux requetes SPARQL.
-
-**Partie 2 : Donnees Liees et Ontologies (.NET C#)** - Les notebooks 5-7 explorent les donnees du Web ouvert (DBpedia, Wikidata) et les ontologies (RDFS, OWL).
-
-**Partie 3 : Ecosysteme Python et Standards Modernes** - Les notebooks 8-11 font la transition vers Python et couvrent les standards modernes (SHACL, JSON-LD, RDF-Star).
-
-**Partie 4 : Graphes de Connaissances et IA** - Les notebooks 12-13 connectent le Web Semantique avec l'IA moderne (construction de KGs, GraphRAG).
-
-**Bonus** - Le notebook 14 compare differents raisonneurs OWL (owlrl, HermiT, reasonable, Growl).
+Serie de **17 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
 
 ### Structure detaillee
 
-| # | Notebook | Kernel | Contenu detaille |
-|---|----------|--------|------------------|
-| **Partie 1 : Fondations RDF** | | |
-| 1 | [SW-1-Setup](SemanticWeb/SW-1-Setup.ipynb) | .NET C# | Installation dotNetRDF, vision Tim Berners-Lee, pile W3C "Layer Cake", premier graphe RDF "Hello World" |
-| 2 | [SW-2-RDFBasics](SemanticWeb/SW-2-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds (URI, blank, litteraux avec types/langues), formats de serialisation (Turtle, N-Triples, RDF/XML) |
-| 3 | [SW-3-GraphOperations](SemanticWeb/SW-3-GraphOperations.ipynb) | .NET C# | Parsers/Writers, fusion de graphes, `GetTriplesWithXxx()`, LINQ sur RDF, listes RDF (`AssertList`, `GetListItems`) |
-| 4 | [SW-4-SPARQL](SemanticWeb/SW-4-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL (LEFT JOIN), UNION, ORDER BY, `SparqlParameterizedString` |
-| **Partie 2 : Donnees Liees et Ontologies** | | |
-| 5 | [SW-5-LinkedData](SemanticWeb/SW-5-LinkedData.ipynb) | .NET C# | DBpedia (Wikipedia en RDF), Wikidata (Q-items/P-properties), requetes federees `SERVICE`, endpoints SPARQL publics |
-| 6 | [SW-6-RDFS](SemanticWeb/SW-6-RDFS.ipynb) | .NET C# | Vocabulaire RDFS (`rdfs:Class`, `subClassOf`, `domain`, `range`), inference automatique, `OntologyGraph` |
-| 7 | [SW-7-OWL](SemanticWeb/SW-7-OWL.ipynb) | .NET C# | OWL 2 vs. RDFS, profils (EL/QL/RL), restrictions (∃/∀), `owl:unionOf`/`intersectionOf`, raisonnement |
-| **Partie 3 : Ecosysteme Python et Standards Modernes** | | |
-| 8 | [SW-8-PythonRDF](SemanticWeb/SW-8-PythonRDF.ipynb) | Python | rdflib (`Graph`, `URIRef`, `Literal`), SPARQLWrapper, equivalences dotNetRDF ↔ rdflib |
-| 9 | [SW-9-SHACL](SemanticWeb/SW-9-SHACL.ipynb) | Python | SHACL (`NodeShape`, `PropertyShape`), contraintes (`sh:minCount`, `sh:pattern`), pySHACL, rapports de validation |
-| 10 | [SW-10-JSONLD](SemanticWeb/SW-10-JSONLD.ipynb) | Python | JSON-LD (`@context`, `@id`, `@type`), Schema.org (SEO, rich snippets Google), compactage/expansion |
-| 11 | [SW-11-RDFStar](SemanticWeb/SW-11-RDFStar.ipynb) | Python | RDF 1.2, quoted triples (`<<<:s :p :o>>>`), annotations, provenance, SPARQL-Star |
-| **Partie 4 : Graphes de Connaissances et IA** | | |
-| 12 | [SW-12-KnowledgeGraphs](SemanticWeb/SW-12-KnowledgeGraphs.ipynb) | Python | kglab, OWLReady2, import CSV/JSON→RDF, visualisation NetworkX/pyvis, integration Wikidata/DBpedia |
-| 13 | [SW-13-GraphRAG](SemanticWeb/SW-13-GraphRAG.ipynb) | Python | RAP (Retrieval-Augmented Generation), Microsoft GraphRAG, extraction entites LLM, prompt engineering |
-| **Bonus** | | |
-| 14 | [SW-14-Reasoners](SemanticWeb/SW-14-Reasoners.ipynb) | Python | Comparaison owlrl/HermiT/reasonable/Growl, benchmarks temps d'execution, OWL 2 RL vs. DL |
-
-### Technologies utilisees
-
-| Technologie | Version | Usage |
-|-------------|---------|-------|
-| **dotNetRDF** | 3.2.1 | Core RDF/SPARQL en .NET (SW-1 a SW-7) |
-| **rdflib** | 7.5.0 | Core RDF/SPARQL en Python (SW-8 a SW-14) |
-| **pySHACL** | 0.27.0 | Validation SHACL (SW-9) |
-| **OWLReady2** | 0.50+ | Manipulation ontologies (SW-12, SW-14) |
-| **kglab** | 0.6.1+ | Abstraction graphes de connaissances (SW-12) |
-| **owlrl** | 6.0+ | Raisonneur OWL 2 RL Python pur (SW-14) |
-| **reasonable** | 0.1+ | Raisonneur OWL 2 RL Rust (SW-14) |
-
-### Standards W3C couverts
-
-RDF 1.1/1.2, SPARQL 1.1, RDFS 1.0, OWL 2, SHACL 1.0, JSON-LD 1.1
-
-> **Note** : Cette serie est une refonte complete du notebook monolithique `RDF.Net.ipynb` (173 cellules). L'original est conserve dans [SemanticWeb/RDF.Net-Legacy/](SemanticWeb/RDF.Net-Legacy/) a titre de reference historique.
+| # | Notebook | Kernel | Contenu | Exercices |
+|---|----------|--------|---------|-----------|
+| **Partie 1 : Fondations RDF** |
+| 1 | [SW-1-CSharp-Setup](SemanticWeb/SW-1-CSharp-Setup.ipynb) | .NET C# | Installation dotNetRDF, pile W3C "Layer Cake" | Setup |
+| 2 | [SW-2-CSharp-RDFBasics](SemanticWeb/SW-2-CSharp-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds, serialisation (Turtle, N-Triples, RDF/XML) | 6 |
+| 2b | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.ipynb) | Python | Equivalent Python avec rdflib | 5 |
+| 3 | [SW-3-CSharp-GraphOperations](SemanticWeb/SW-3-CSharp-GraphOperations.ipynb) | .NET C# | Parsers/Writers, fusion de graphes, LINQ sur RDF | 7 |
+| 4 | [SW-4-CSharp-SPARQL](SemanticWeb/SW-4-CSharp-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL, UNION | 7 |
+| 4b | [SW-4b-Python-SPARQL](SemanticWeb/SW-4b-Python-SPARQL.ipynb) | Python | Equivalent Python avec SPARQLWrapper | 5 |
+| **Partie 2 : Donnees Liees et Ontologies** |
+| 5 | [SW-5-CSharp-LinkedData](SemanticWeb/SW-5-CSharp-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requetes federees SERVICE | 6 |
+| 5b | [SW-5b-Python-LinkedData](SemanticWeb/SW-5b-Python-LinkedData.ipynb) | Python | Equivalent Python | 5 |
+| 6 | [SW-6-CSharp-RDFS](SemanticWeb/SW-6-CSharp-RDFS.ipynb) | .NET C# | RDFS, inference automatique, OntologyGraph | 4 |
+| 7 | [SW-7-CSharp-OWL](SemanticWeb/SW-7-CSharp-OWL.ipynb) | .NET C# | OWL 2, profils (EL/QL/RL), restrictions | 5 |
+| 7b | [SW-7b-Python-OWL](SemanticWeb/SW-7b-Python-OWL.ipynb) | Python | Equivalent Python avec OWLReady2 | 5 |
+| **Partie 3 : Standards Modernes (Python)** |
+| 8 | [SW-8-Python-SHACL](SemanticWeb/SW-8-Python-SHACL.ipynb) | Python | SHACL, NodeShape, PropertyShape, pySHACL | 7 |
+| 9 | [SW-9-Python-JSONLD](SemanticWeb/SW-9-Python-JSONLD.ipynb) | Python | JSON-LD, Schema.org, SEO | 7 |
+| 10 | [SW-10-Python-RDFStar](SemanticWeb/SW-10-Python-RDFStar.ipynb) | Python | RDF 1.2, quoted triples, SPARQL-Star | 5 |
+| **Partie 4 : Graphes de Connaissances et IA** |
+| 11 | [SW-11-Python-KnowledgeGraphs](SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) | Python | kglab, OWLReady2, visualisation NetworkX | 6 |
+| 12 | [SW-12-Python-GraphRAG](SemanticWeb/SW-12-Python-GraphRAG.ipynb) | Python | GraphRAG, extraction entites LLM | 6 |
+| 13 | [SW-13-Python-Reasoners](SemanticWeb/SW-13-Python-Reasoners.ipynb) | Python | Comparaison raisonneurs OWL (owlrl, HermiT, reasonable) | 2 (faible) |
 
 Documentation complete : [SemanticWeb/README.md](SemanticWeb/README.md)
 
@@ -236,13 +142,74 @@ Documentation complete : [SemanticWeb/README.md](SemanticWeb/README.md)
 
 ## Planners - Planification Automatique
 
-Introduction a la planification automatique avec Fast Downward, un planificateur PDDL de reference.
+Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, et integration LLM.
 
-| Notebook | Cellules | Kernel | Contenu |
-|----------|----------|--------|---------|
-| [Fast-Downward](Planners/Fast-Downward.ipynb) | 46 | Python | Planification PDDL, heuristiques, A*, Blocks World |
+### Structure detaillee
+
+| # | Notebook | Contenu | Exercices | Prerequis |
+|---|----------|---------|-----------|-----------|
+| **Fondations** |
+| 0 | [Planners-0-Setup](Planners/00-Environment/Planners-0-Setup.ipynb) | Configuration environnement, Fast-Downward | Setup | WSL/Docker |
+| 1 | [Planners-1-Introduction](Planners/01-Foundation/Planners-1-Introduction.ipynb) | Concepts de planification, representations | 5 | Python |
+| 2 | [Planners-2-PDDL-Basics](Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb) | Syntaxe PDDL, domaines et problemes | 4 | Fast-Downward |
+| **Classique** |
+| 3 | [Planners-3-State-Space](Planners/01-Foundation/Planners-3-State-Space.ipynb) | Recherche dans l'espace d'etats | 7 | Fast-Downward |
+| 4 | [Planners-4-Fast-Downward](Planners/02-Classical/Planners-4-Fast-Downward.ipynb) | Fast Downward, heuristiques | 6 | Docker, Fast-Downward |
+| 5 | [Planners-5-Heuristics](Planners/02-Classical/Planners-5-Heuristics.ipynb) | Heuristiques (FF, LM-Cut, Merge-and-Shrink) | 5 | Fast-Downward |
+| 6 | [Planners-6-Domains](Planners/02-Classical/Planners-6-Domains.ipynb) | Catalogue de domaines PDDL | 3 | Fast-Downward |
+| **Avance** |
+| 7 | [Planners-7-OR-Tools](Planners/03-Advanced/Planners-7-OR-Tools.ipynb) | CP-SAT, Job Shop, VRP | 2 | ortools |
+| 8 | [Planners-8-Temporal](Planners/03-Advanced/Planners-8-Temporal.ipynb) | Planification temporelle (PDDL 2.1) | 6 | Python |
+| 9 | [Planners-9-HTN](Planners/03-Advanced/Planners-9-HTN.ipynb) | Hierarchical Task Networks | 7 | Python |
+| **Neuro-symbolique** |
+| 10 | [Planners-10-LLM-Planning](Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | LLMs pour la planification | 2 | API keys |
+| 11 | [Planners-11-Unified-Planning](Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Unified Planning Framework | 3 | unified_planning |
+| 12 | [Planners-12-LOOP](Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb) | LLM + OR-Tools + planification | 2 | Fast-Downward |
+
+> 12/13 notebooks ont des exercices. Seul Planners-0-Setup (configuration) n'en a pas.
 
 Documentation complete : [Planners/README.md](Planners/README.md)
+
+---
+
+## SmartContracts - Blockchain et Contrats Intelligents
+
+Serie de **27 notebooks** sur les smart contracts et la blockchain, organisee en 7 modules progressifs couvrant Solidity, DeFi, DAO, verification formelle, cryptographie, et les ecosystemes alternatifs (Move, Solana, Bitcoin, Vyper).
+
+### Structure detaillee
+
+| Module | Notebooks | Contenu |
+|--------|-----------|---------|
+| **00-Foundations** | SC-0 (Cypherpunk Origins), SC-1 (Setup Foundry), SC-2 (Setup Web3py) | Histoire blockchain, configuration environnement |
+| **01-Solidity-Foundation** | SC-3 (Basics), SC-4 (Functions/State), SC-5 (Inheritance), SC-6 (Errors/Events) | Fondations Solidity avec code executable (compile_and_deploy) |
+| **02-Solidity-Advanced** | SC-7 (Token Standards), SC-8 (DeFi), SC-9 (DAO), SC-10 (Account Abstraction), SC-11 (LLM-Assisted) | ERC-20/721, DeFi, gouvernance, audit LLM |
+| **03-Foundry-Testing** | SC-12 (Foundry Testing), SC-13 (Fuzz/Invariants), SC-14 (Formal Verification) | Tests unitaires, fuzz testing, verification formelle |
+| **04-Privacy-Cryptography** | SC-15 (ZK Proofs), SC-16 (Homomorphic Encryption), SC-17 (E2E Voting) | Zero-knowledge, chiffrement homomorphe, vote verifiable |
+| **05-Alternative-Chains** | SC-18 (Vyper), SC-19 (Ripple), SC-20 (Bitcoin), SC-21 (Move/Sui), SC-22 (Solana) | Ecosystemes alternatifs |
+| **06-Real-World** | SC-23 (Cross-Chain), SC-24 (Testnet), SC-25 (Mainnet), SC-26 (Final Project) | Deploiement, interoperabilite, projet final |
+
+Documentation complete : [SmartContracts/README.md](SmartContracts/README.md)
+
+---
+
+## Argument Analysis - Analyse Argumentative LLM
+
+Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine detection de sophismes, formalisation logique, et validation par TweetyProject.
+
+> **Note** : Cette serie est un projet/demo, pas un cours. Aucun exercice etudiant. Non adaptee en l'etat pour EPITA.
+
+### Structure detaillee
+
+| # | Notebook | Role |
+|---|----------|------|
+| 0 | [Agentic-0-init](Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb) | Configuration LLM, JPype/Tweety, ProjectManagerAgent |
+| 1 | [Agentic-1-informal_agent](Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb) | InformalAnalysisAgent, detection sophismes |
+| 2 | [Agentic-2-pl_agent](Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb) | PropositionalLogicAgent, formalisation PL |
+| 3 | [Agentic-3-orchestration](Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb) | Orchestration multi-agents |
+| 4 | [Executor](Argument_Analysis/Argument_Analysis_Executor.ipynb) | Pipeline complet, rapport JSON |
+| 5 | [UI_configuration](Argument_Analysis/Argument_Analysis_UI_configuration.ipynb) | Interface widgets ipywidgets |
+
+Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.md)
 
 ---
 
@@ -250,27 +217,10 @@ Documentation complete : [Planners/README.md](Planners/README.md)
 
 ### Optimisation et Contraintes (2 notebooks)
 
-| Notebook | Cellules | Kernel | Contenu |
-|----------|----------|--------|---------|
-| [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | 17 | .NET C# | **Probleme de Stigler** : regime optimal a cout minimal. Programmation lineaire avec OR-Tools, contraintes nutritionnelles, resolution LP |
-| [Linq2Z3](Linq2Z3.ipynb) | 12 | .NET C# | **SMT avec LINQ** : integration Z3.Linq, syntaxe declarative. **Missionnaires et Cannibales** : modelisation, recherche solution optimale |
-
-### Web Semantique
-
-> **Note** : Le notebook monolithique `RDF.Net.ipynb` a ete remplace par la serie complete [SemanticWeb](SemanticWeb/README.md) (13 notebooks, ~10h). L'original est conserve dans [SemanticWeb/RDF.Net-Legacy/](SemanticWeb/RDF.Net-Legacy/). Voir la section [SemanticWeb](#semanticweb---web-semantique) ci-dessus.
-
-### Planification Automatique (1 notebook)
-
-| Notebook | Cellules | Kernel | Contenu |
-|----------|----------|--------|---------|
-| [Fast-Downward](Planners/Fast-Downward.ipynb) | 46 | .NET C# | **Planification classique** : modele STRIPS, limites, PDDL. **Fast Downward** : heuristiques (FF, LM-Cut, Merge-and-Shrink), A*, recherche avant/arriere. **Probleme Gripper** : domaine et probleme PDDL, execution |
-
-Sections detaillees :
-- Presentation Fast Downward et OR-Tools
-- Representation STRIPS et PDDL
-- Syntaxe ligne de commande
-- Options de traduction
-- Heuristiques et strategies de recherche
+| Notebook | Kernel | Contenu | Exercices |
+|----------|--------|---------|-----------|
+| [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | .NET C# | Probleme de Stigler, programmation lineaire avec OR-Tools | 2 |
+| [Linq2Z3](Linq2Z3.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 1 |
 
 ---
 
@@ -278,71 +228,51 @@ Sections detaillees :
 
 ```
 SymbolicAI/
-├── Tweety/                    # Serie TweetyProject (10 notebooks, ~200 cellules)
-│   ├── Tweety-1-Setup.ipynb
-│   ├── Tweety-2-Basic-Logics.ipynb
-│   ├── Tweety-3-Advanced-Logics.ipynb
-│   ├── Tweety-4-Belief-Revision.ipynb
-│   ├── Tweety-5-Abstract-Argumentation.ipynb
-│   ├── Tweety-6-Structured-Argumentation.ipynb
-│   ├── Tweety-7a-Extended-Frameworks.ipynb
-│   ├── Tweety-7b-Ranking-Probabilistic.ipynb
-│   ├── Tweety-8-Agent-Dialogues.ipynb
-│   ├── Tweety-9-Preferences.ipynb
+├── Tweety/                    # Serie TweetyProject (9 notebooks)
+│   ├── Tweety-1-Setup.ipynb ... Tweety-9-Preferences.ipynb
 │   ├── tweety_init.py         # Module d'initialisation partage
 │   ├── libs/                  # JARs TweetyProject (35 modules)
-│   ├── resources/             # Fichiers exemples (.aspic, .aba, .delp)
 │   ├── ext_tools/             # Clingo, SPASS, EProver
-│   ├── jdk-17-portable/       # JDK Zulu (auto-telecharge)
-│   ├── scripts/               # Validation, benchmarks SAT
 │   └── README.md
 │
-├── Lean/                      # Serie Lean 4 (11 notebooks, ~454 cellules)
-│   ├── Lean-1-Setup.ipynb
-│   ├── Lean-2-Dependent-Types.ipynb
-│   ├── Lean-3-Propositions-Proofs.ipynb
-│   ├── Lean-4-Quantifiers.ipynb
-│   ├── Lean-5-Tactics.ipynb
-│   ├── Lean-6-Mathlib-Essentials.ipynb
-│   ├── Lean-7-LLM-Integration.ipynb
-│   ├── Lean-7b-Examples.ipynb
-│   ├── Lean-8-Agentic-Proving.ipynb
-│   ├── Lean-9-SK-Multi-Agents.ipynb
-│   ├── Lean-10-LeanDojo.ipynb
+├── Lean/                      # Serie Lean 4 (13 notebooks)
+│   ├── Lean-1-Setup.ipynb ... Lean-11-TorchLean-Python.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
-│   ├── .env.example           # Config API LLM
 │   ├── scripts/               # Installation, validation WSL
-│   ├── examples/              # Fichiers .lean exemples
-│   ├── tests/                 # Tests LeanDojo, kernel WSL
 │   └── README.md
 │
-├── Argument_Analysis/         # Analyse argumentative (6 notebooks, ~76 cellules)
-│   ├── Argument_Analysis_Agentic-0-init.ipynb
-│   ├── Argument_Analysis_Agentic-1-informal_agent.ipynb
-│   ├── Argument_Analysis_Agentic-2-pl_agent.ipynb
-│   ├── Argument_Analysis_Agentic-3-orchestration.ipynb
-│   ├── Argument_Analysis_Executor.ipynb
-│   ├── Argument_Analysis_UI_configuration.ipynb
-│   ├── .env.example           # Config OpenAI
-│   ├── data/                  # Taxonomie sophismes CSV
-│   └── ontologies/            # Ontologies OWL argumentation
-│
-├── SemanticWeb/               # Web semantique (13+1 notebooks, ~460 cellules)
-│   ├── SW-1-Setup.ipynb ... SW-13-GraphRAG.ipynb
-│   ├── SW-14-Reasoners.ipynb  # Bonus comparaison raisonneurs
-│   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD, CSV
+├── SemanticWeb/               # Web semantique (17 notebooks)
+│   ├── SW-1-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
+│   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD
 │   ├── RDF.Net-Legacy/      # Notebook original (reference historique)
-│   ├── requirements.txt
 │   └── README.md
 │
-├── Planners/                  # Planification PDDL (46 cellules)
-│   └── Fast-Downward.ipynb
+├── Planners/                  # Planification automatique (13 notebooks)
+│   ├── 00-Environment/       # Setup
+│   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
+│   ├── 02-Classical/         # State Space, Fast-Downward, Heuristics, Domains
+│   ├── 03-Advanced/          # OR-Tools, Temporal, HTN
+│   ├── 04-NeuroSymbolic/     # LLM-Planning, Unified-Planning, LOOP
+│   └── README.md
 │
-├── OR-tools-Stiegler.ipynb    # Optimisation LP (17 cellules)
-├── Linq2Z3.ipynb              # SMT LINQ (12 cellules)
+├── SmartContracts/            # Blockchain et smart contracts (27 notebooks)
+│   ├── 00-Foundations/        # SC-0 a SC-2 (Origins, Setup)
+│   ├── 01-Solidity-Foundation/ # SC-3 a SC-6 (Basics, Functions, Inheritance, Events)
+│   ├── 02-Solidity-Advanced/  # SC-7 a SC-11 (Tokens, DeFi, DAO, AA, LLM)
+│   ├── 03-Foundry-Testing/    # SC-12 a SC-14 (Testing, Fuzz, Formal)
+│   ├── 04-Privacy-Cryptography/ # SC-15 a SC-17 (ZK, HE, Voting)
+│   ├── 05-Alternative-Chains/ # SC-18 a SC-22 (Vyper, XRP, BTC, Move, Solana)
+│   ├── 06-Real-World/         # SC-23 a SC-26 (Cross-chain, Deploy, Project)
+│   └── README.md
+│
+├── Argument_Analysis/         # Analyse argumentative (6 notebooks, demo)
+│   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
+│   └── README.md
+│
+├── OR-tools-Stiegler.ipynb    # Optimisation LP
+├── Linq2Z3.ipynb              # SMT LINQ
 │
 ├── scripts/                   # Scripts utilitaires
-│   └── extract_notebook_content.py  # Extraction contenu notebooks
 ├── archive/                   # Versions historiques
 ├── data/                      # Donnees partagees
 ├── ext_tools/                 # Outils externes partages
@@ -368,55 +298,61 @@ dotnet interactive jupyter install
 
 ### Par serie
 
-| Serie | Installation |
-|-------|--------------|
-| **Tweety** | Executer `Tweety-1-Setup.ipynb` - telechargement automatique JDK 17 + JARs |
-| **Lean** | Executer `Lean-1-Setup.ipynb` - installation elan + Lean 4 + lean4_jupyter |
-| **Lean (LLM)** | Configurer `.env` avec `OPENAI_API_KEY` pour notebooks 7-10 |
-| **Argument Analysis** | Configurer `.env` avec `OPENAI_API_KEY` |
-| **Autres** | Executer `dotnet restore MyIA.CoursIA.sln` |
+| Serie | Installation | Environnement special |
+|-------|--------------|----------------------|
+| **Tweety** | Executer `Tweety-1-Setup.ipynb` | JDK 17 + JARs (auto-telecharges) |
+| **Lean** | Executer `Lean-1-Setup.ipynb` sous WSL | elan + Lean 4 + lean4_jupyter |
+| **Lean (LLM)** | Configurer `.env` avec `OPENAI_API_KEY` | Notebooks 7-10 |
+| **SemanticWeb (.NET)** | `dotnet restore MyIA.CoursIA.sln` | dotNetRDF via NuGet |
+| **SemanticWeb (Python)** | `pip install -r SemanticWeb/requirements.txt` | rdflib, pySHACL |
+| **Planners** | `pip install ortools unified-planning` | Fast-Downward via WSL ou Docker |
+| **SmartContracts** | `pip install py-solc-x web3` | Solidity/solc, optionnel: Foundry |
+| **Argument Analysis** | Configurer `.env` avec `OPENAI_API_KEY` | Java/JPype |
+| **Autres** | `dotnet restore MyIA.CoursIA.sln` | OR-Tools, Z3 via NuGet |
 
 ---
 
 ## Outils Externes
 
-| Outil | Version | Usage | Serie |
-|-------|---------|-------|-------|
-| **JPype** | 1.4+ | Bridge Java/Python | Tweety, Argument Analysis |
-| **Clingo** | 5.6+ | Answer Set Programming | Tweety |
-| **SPASS** | 3.9 | Prouveur modal | Tweety |
-| **EProver** | 3.0+ | Prouveur FOL | Tweety |
-| **Z3** | 4.12+ | SMT solver | Tweety, Linq2Z3 |
-| **PySAT** | 1.8+ | SAT solvers natifs | Tweety |
-| **elan** | latest | Gestionnaire Lean | Lean |
-| **Mathlib4** | 4.27+ | Bibliotheque maths | Lean |
-| **Semantic Kernel** | 1.0+ | Orchestration LLM | Argument Analysis, Lean |
-| **OR-Tools** | 9.8+ | Optimisation | OR-Tools, Planners |
-| **Fast Downward** | latest | Planification PDDL | Planners |
-| **dotNetRDF** | 3.2+ | RDF/SPARQL | SemanticWeb |
-| **rdflib** | 7.5+ | RDF/SPARQL Python | SemanticWeb |
-| **pySHACL** | 0.27+ | Validation SHACL | SemanticWeb |
+| Outil | Usage | Series |
+|-------|-------|--------|
+| **JPype** | Bridge Java/Python | Tweety, Argument Analysis |
+| **PySAT** | Solveurs SAT natifs | Tweety |
+| **Clingo** | Answer Set Programming | Tweety |
+| **SPASS / EProver** | Prouveurs de theoremes | Tweety |
+| **Z3** | SMT solver | Tweety, Linq2Z3 |
+| **elan / Lean 4** | Proof assistant | Lean |
+| **Mathlib4** | Bibliotheque maths Lean | Lean |
+| **Semantic Kernel** | Orchestration LLM | Argument Analysis, Lean |
+| **OR-Tools** | Optimisation, CP-SAT, VRP | OR-Tools, Planners |
+| **Fast Downward** | Planification PDDL | Planners |
+| **dotNetRDF** | RDF/SPARQL .NET | SemanticWeb |
+| **rdflib** | RDF/SPARQL Python | SemanticWeb |
+| **pySHACL** | Validation SHACL | SemanticWeb |
+| **Solidity/solc** | Smart contracts | SmartContracts |
+| **Foundry** | Test framework Solidity | SmartContracts |
 
 ---
 
-## Validation
+## Audit Qualite (mars 2026)
 
-```bash
-# Tweety - validation rapide
-cd Tweety/scripts && python verify_all_tweety.py --quick
+### Couverture exercices (audit 20 mars 2026)
 
-# Tweety - verification environnement complet
-python verify_all_tweety.py --check-env
+| Serie | Notebooks | Avec exercices | Sans exercices | Status |
+|-------|-----------|----------------|----------------|--------|
+| SmartContracts | 26 | 26 (100%) | 0 | Complet |
+| SemanticWeb | 17 | 16 (94%) | 1 (Setup) | Complet |
+| Lean | 13 | 12 (92%) | 1 (Setup) | Complet |
+| Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
+| Tweety | 10 | 9 (90%) | 1 (Setup) | Complet |
+| Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-# Lean - validation
-cd Lean && python scripts/validate_lean_setup.py
+**Total** : 65/79 notebooks de contenu avec exercices (82%). Les seuls notebooks sans exercices sont les notebooks de setup/configuration (attendu) et la serie demo Argument Analysis.
 
-# Lean - avec WSL
-python scripts/validate_lean_setup.py --wsl
+### Problemes restants
 
-# Notebooks .NET
-dotnet restore MyIA.CoursIA.sln
-```
+- **Lean-11-TorchLean** : 11 code cells sans outputs (kernel lean4 natif, erreurs PyTorch dtype)
+- **SmartContracts** : Certains notebooks sans section prerequis dans le header
 
 ---
 
@@ -424,30 +360,19 @@ dotnet restore MyIA.CoursIA.sln
 
 ### TweetyProject
 - Site officiel : https://tweetyproject.org/
-- Documentation API : https://tweetyproject.org/api/
 - GitHub : https://github.com/TweetyProjectTeam/TweetyProject
 
 ### Lean 4
 - Theorem Proving in Lean 4 : https://leanprover.github.io/theorem_proving_in_lean4/
-- Documentation : https://leanprover.github.io/lean4/doc/
 - Mathlib4 : https://leanprover-community.github.io/mathlib4_docs/
-- Loogle (recherche syntaxique) : https://loogle.lean-lang.org/
-- Moogle (recherche semantique) : https://www.moogle.ai/
-
-### LLM et Theorem Proving
-- LeanCopilot : https://github.com/lean-dojo/LeanCopilot
 - LeanDojo : https://leandojo.readthedocs.io/
-- AlphaProof : https://deepmind.google/discover/blog/ai-solves-imo-problems-at-silver-medal-level/
-
-### Semantic Kernel
-- Documentation : https://learn.microsoft.com/semantic-kernel/
-- GitHub Python : https://github.com/microsoft/semantic-kernel
 
 ### Autres
 - OR-Tools : https://developers.google.com/optimization
 - Z3 : https://github.com/Z3Prover/z3
 - dotNetRDF : https://dotnetrdf.org/
 - Fast Downward : https://www.fast-downward.org/
+- Solidity : https://docs.soliditylang.org/
 
 ---
 
@@ -458,4 +383,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-02-13
+**Derniere mise a jour** : 2026-03-20

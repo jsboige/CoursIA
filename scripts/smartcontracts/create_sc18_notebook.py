@@ -1,0 +1,808 @@
+"""Generate SC-18-Vyper.ipynb - Smart Contracts en Python-like. Delete after use."""
+import json
+import os
+
+def md(source_text, cell_id):
+    lines = source_text.split('\n')
+    source = []
+    for i, line in enumerate(lines):
+        if i < len(lines) - 1:
+            source.append(line + '\n')
+        else:
+            if line:
+                source.append(line)
+    return {"cell_type": "markdown", "id": cell_id, "metadata": {}, "source": source}
+
+def code(source_text, cell_id):
+    lines = source_text.split('\n')
+    source = []
+    for i, line in enumerate(lines):
+        if i < len(lines) - 1:
+            source.append(line + '\n')
+        else:
+            if line:
+                source.append(line)
+    return {"cell_type": "code", "id": cell_id, "metadata": {}, "source": source,
+            "outputs": [], "execution_count": None}
+
+cells = []
+
+# === HEADER ===
+cells.append(md(
+"# SC-18-Vyper - Smart Contracts en Python-like\n"
+"\n"
+"**Navigation** : [Index](../README.md) | [<< E2E Voting](../04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) | [Ripple XRP >>](SC-19-Ripple-XRP.ipynb)\n"
+"\n"
+"---\n"
+"\n"
+"## Objectifs d'apprentissage\n"
+"\n"
+"1. Comprendre la **philosophie de conception** de Vyper et ses differences avec Solidity\n"
+"2. Maitriser la **syntaxe Vyper** pour les types de base, fonctions et decorateurs\n"
+"3. Ecrire et compiler un **contrat de stockage** et un **contrat de token** en Vyper\n"
+"4. Deployer un contrat Vyper sur une blockchain locale via **web3.py**\n"
+"5. Comparer les approches Vyper et Solidity sur des exemples equivalents\n"
+"\n"
+"### Prerequis\n"
+"\n"
+"- Python 3.10+ avec `web3.py`\n"
+"- Compilateur `vyper` (optionnel, le notebook fonctionne en mode degrade sans)\n"
+"- `anvil` (Foundry) pour le deploiement local\n"
+"\n"
+"### Duree estimee : 45 minutes", "header"))
+
+# === SECTION 1: INTRODUCTION ===
+cells.append(md(
+"---\n"
+"\n"
+"## 1. Introduction a Vyper\n"
+"\n"
+"**Vyper** est un langage de smart contracts pour l'EVM (Ethereum Virtual Machine)\n"
+"dont la syntaxe s'inspire directement de **Python**. Contrairement a Solidity, Vyper\n"
+"a ete concu avec une philosophie radicalement minimaliste : tout ce qui complique\n"
+"l'audit ou introduit des vecteurs d'attaque est **deliberement exclu**.\n"
+"\n"
+"### Philosophie de conception\n"
+"\n"
+"- **Simplicite** : le code doit etre lisible et previsible\n"
+"- **Securite** : reduire la surface d'attaque en limitant les fonctionnalites\n"
+"- **Auditabilite** : un lecteur humain doit pouvoir comprendre le contrat rapidement\n"
+"\n"
+"### Ce que Vyper n'a PAS (volontairement)\n"
+"\n"
+"| Fonctionnalite exclue | Raison |\n"
+"|----------------------|--------|\n"
+"| Heritage de classes | Rend le flux de controle difficile a suivre |\n"
+"| Surcharge d'operateurs | Masque le comportement reel du code |\n"
+"| Boucles infinies (`while True`) | Risque de gas infini, DOS |\n"
+"| Assembleur inline | Empeche l'analyse statique et l'audit |\n"
+"| Appels recursifs | Vulnerabilite de reentrancy (cf. hack DAO 2016) |\n"
+"| Modificateurs (`modifier`) | Logique cachee, flux non lineaire |\n"
+"\n"
+"### Comparaison Vyper vs Solidity\n"
+"\n"
+"| Critere | Solidity | Vyper |\n"
+"|---------|----------|-------|\n"
+"| Syntaxe | C-like / JavaScript | Python-like |\n"
+"| Heritage | Oui (multiple) | Non |\n"
+"| Boucles | `for`, `while` illimites | `for` avec borne fixe uniquement |\n"
+"| Surcharge fonctions | Oui | Non |\n"
+"| Assembleur inline | Oui (`assembly {}`) | Non |\n"
+"| Modificateurs | Oui (`modifier`) | Non (decorateurs natifs) |\n"
+"| Reentrancy guard | Manuel ou via OpenZeppelin | Protection integree (`@nonreentrant`) |\n"
+"| Maturite ecosysteme | Tres large | Plus restreint, en croissance |\n"
+"| Utilisation notable | Uniswap V2/V3, AAVE | Curve Finance, Lido |\n"
+"\n"
+"Vyper est utilise en production par des protocoles DeFi majeurs comme **Curve Finance**,\n"
+"qui gerent des milliards de dollars en valeur verrouillee (TVL).", "vyper-intro"))
+
+cells.append(code(
+'# Verification de l\'environnement\n'
+'import sys\n'
+'print(f"Python {sys.version}")\n'
+'\n'
+'# Verifier si vyper est installe\n'
+'try:\n'
+'    import vyper\n'
+'    print(f"Vyper {vyper.__version__} : installe")\n'
+'    VYPER_AVAILABLE = True\n'
+'except ImportError:\n'
+'    print("Vyper : non installe (mode demonstration)")\n'
+'    print("  -> pip install vyper  (pour compiler les contrats)")\n'
+'    VYPER_AVAILABLE = False\n'
+'\n'
+'# Verifier web3.py\n'
+'try:\n'
+'    from web3 import Web3\n'
+'    print(f"web3.py : installe")\n'
+'    WEB3_AVAILABLE = True\n'
+'except ImportError:\n'
+'    print("web3.py : non installe")\n'
+'    print("  -> pip install web3")\n'
+'    WEB3_AVAILABLE = False', "env-check"))
+
+cells.append(md(
+"### Observation\n"
+"\n"
+"Le notebook fonctionne en deux modes :\n"
+"- **Mode complet** : si `vyper` et `web3.py` sont installes, les contrats sont compiles et deployes\n"
+"- **Mode demonstration** : sinon, le code Vyper est affiche et explique comme chaines de caracteres\n"
+"\n"
+"Les deux modes sont pedagogiquement equivalents pour comprendre la syntaxe Vyper.",
+"env-interpretation"))
+
+# === SECTION 2: SYNTAXE VYPER ===
+cells.append(md(
+"---\n"
+"\n"
+"## 2. Syntaxe Vyper\n"
+"\n"
+"La syntaxe Vyper est proche de Python, avec quelques specificites liees au contexte blockchain.\n"
+"Les elements principaux sont :\n"
+"\n"
+"- **Variables d'etat** : declarees au niveau du module (pas dans une classe)\n"
+"- **Types** : `uint256`, `int128`, `address`, `bool`, `String`, `Bytes`, `HashMap`\n"
+"- **Decorateurs** : `@external`, `@internal`, `@view`, `@pure`, `@payable`, `@nonreentrant`\n"
+"- **Pragmas** : `#pragma version` pour specifier la version du compilateur\n"
+"\n"
+"### Types de base Vyper\n"
+"\n"
+"| Type | Description | Equivalent Python |\n"
+"|------|-------------|------------------|\n"
+"| `uint256` | Entier non signe 256 bits | `int` (positif) |\n"
+"| `int128` | Entier signe 128 bits | `int` |\n"
+"| `bool` | Booleen | `bool` |\n"
+"| `address` | Adresse Ethereum (20 octets) | `str` hex |\n"
+"| `String[N]` | Chaine de taille max N | `str` |\n"
+"| `Bytes[N]` | Octets bruts de taille max N | `bytes` |\n"
+"| `HashMap[K, V]` | Table de hachage | `dict` |\n"
+"| `DynArray[T, N]` | Tableau dynamique borne | `list` |", "syntax-intro"))
+
+cells.append(code(
+'# Contrat Vyper : stockage simple\n'
+'# Equivalent du "Hello World" des smart contracts\n'
+'\n'
+'STORAGE_CONTRACT = """\n'
+'# @version ^0.4.0\n'
+'\n'
+'# Variable d\'etat : stockee sur la blockchain\n'
+'stored_value: public(uint256)\n'
+'\n'
+'# Variable d\'etat : proprietaire du contrat\n'
+'owner: public(address)\n'
+'\n'
+'@deploy\n'
+'def __init__(initial_value: uint256):\n'
+'    \"\"\"Constructeur : appele une seule fois au deploiement.\"\"\"\n'
+'    self.stored_value = initial_value\n'
+'    self.owner = msg.sender\n'
+'\n'
+'@external\n'
+'def set_value(new_value: uint256):\n'
+'    \"\"\"Modifier la valeur stockee (seul le proprietaire peut le faire).\"\"\"\n'
+'    assert msg.sender == self.owner, "Seul le proprietaire peut modifier"\n'
+'    self.stored_value = new_value\n'
+'\n'
+'@view\n'
+'@external\n'
+'def get_value() -> uint256:\n'
+'    \"\"\"Lire la valeur stockee (gratuit, pas de transaction).\"\"\"\n'
+'    return self.stored_value\n'
+'"""\n'
+'\n'
+'print("CONTRAT VYPER : STOCKAGE SIMPLE")\n'
+'print("=" * 60)\n'
+'print(STORAGE_CONTRACT)\n'
+'print()\n'
+'print("Points cles :")\n'
+'print("  - @deploy / __init__ : constructeur (anciennement @external __init__)")\n'
+'print("  - @external : fonction appelable depuis l\'exterieur")\n'
+'print("  - @view : lecture seule, ne modifie pas l\'etat")\n'
+'print("  - public(uint256) : genere automatiquement un getter")\n'
+'print("  - assert : verification avec message d\'erreur")\n'
+'print("  - self.variable : acces aux variables d\'etat")\n'
+'print("  - msg.sender : adresse de l\'appelant")', "storage-contract"))
+
+cells.append(code(
+'# Contrat Vyper : token ERC-20 simplifie\n'
+'\n'
+'TOKEN_CONTRACT = """\n'
+'# @version ^0.4.0\n'
+'\n'
+'# Evenements (logs sur la blockchain)\n'
+'event Transfer:\n'
+'    sender: indexed(address)\n'
+'    receiver: indexed(address)\n'
+'    amount: uint256\n'
+'\n'
+'event Approval:\n'
+'    owner: indexed(address)\n'
+'    spender: indexed(address)\n'
+'    amount: uint256\n'
+'\n'
+'# Variables d\'etat\n'
+'name: public(String[32])\n'
+'symbol: public(String[8])\n'
+'decimals: public(uint8)\n'
+'total_supply: public(uint256)\n'
+'\n'
+'balances: HashMap[address, uint256]\n'
+'allowances: HashMap[address, HashMap[address, uint256]]\n'
+'\n'
+'@deploy\n'
+'def __init__(name_: String[32], symbol_: String[8], supply: uint256):\n'
+'    self.name = name_\n'
+'    self.symbol = symbol_\n'
+'    self.decimals = 18\n'
+'    self.total_supply = supply\n'
+'    self.balances[msg.sender] = supply\n'
+'    log Transfer(empty(address), msg.sender, supply)\n'
+'\n'
+'@view\n'
+'@external\n'
+'def balanceOf(account: address) -> uint256:\n'
+'    return self.balances[account]\n'
+'\n'
+'@external\n'
+'def transfer(to: address, amount: uint256) -> bool:\n'
+'    assert self.balances[msg.sender] >= amount, \"Solde insuffisant\"\n'
+'    self.balances[msg.sender] -= amount\n'
+'    self.balances[to] += amount\n'
+'    log Transfer(msg.sender, to, amount)\n'
+'    return True\n'
+'\n'
+'@external\n'
+'def approve(spender: address, amount: uint256) -> bool:\n'
+'    self.allowances[msg.sender][spender] = amount\n'
+'    log Approval(msg.sender, spender, amount)\n'
+'    return True\n'
+'\n'
+'@external\n'
+'def transferFrom(owner: address, to: address, amount: uint256) -> bool:\n'
+'    assert self.allowances[owner][msg.sender] >= amount, \"Allowance insuffisante\"\n'
+'    assert self.balances[owner] >= amount, \"Solde insuffisant\"\n'
+'    self.allowances[owner][msg.sender] -= amount\n'
+'    self.balances[owner] -= amount\n'
+'    self.balances[to] += amount\n'
+'    log Transfer(owner, to, amount)\n'
+'    return True\n'
+'"""\n'
+'\n'
+'print("CONTRAT VYPER : TOKEN ERC-20 SIMPLIFIE")\n'
+'print("=" * 60)\n'
+'print(TOKEN_CONTRACT)\n'
+'print()\n'
+'print("Points cles :")\n'
+'print("  - event : declaration d\'evenements (logs on-chain)")\n'
+'print("  - indexed(address) : permet le filtrage dans les logs")\n'
+'print("  - HashMap[K, V] : equivalent de mapping() en Solidity")\n'
+'print("  - log Event(...) : emettre un evenement (emit en Solidity)")\n'
+'print("  - empty(address) : adresse zero (0x000...000)")\n'
+'print("  - uint8 : entier non signe 8 bits (0-255)")', "token-contract"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"En comparant les deux contrats ci-dessus avec leurs equivalents Solidity :\n"
+"\n"
+"| Aspect | Solidity | Vyper |\n"
+"|--------|----------|-------|\n"
+"| Constructeur | `constructor()` | `@deploy def __init__()` |\n"
+"| Visibilite | `public`, `private`, `internal`, `external` | Decorateurs `@external`, `@internal` |\n"
+"| Lecture seule | `view` dans la signature | `@view` decorateur |\n"
+"| Evenements | `event Transfer(...)` + `emit Transfer(...)` | `event Transfer:` + `log Transfer(...)` |\n"
+"| Assertion | `require(condition, \"msg\")` | `assert condition, \"msg\"` |\n"
+"| Mapping | `mapping(address => uint256)` | `HashMap[address, uint256]` |\n"
+"\n"
+"La syntaxe Vyper est systematiquement plus proche de Python, ce qui la rend\n"
+"accessible aux developpeurs Python sans experience blockchain.", "syntax-interpretation"))
+
+# === SECTION 3: COMPILATION ET DEPLOIEMENT ===
+cells.append(md(
+"---\n"
+"\n"
+"## 3. Compilation et deploiement\n"
+"\n"
+"Le workflow de deploiement d'un contrat Vyper est similaire a Solidity :\n"
+"\n"
+"1. **Compilation** : le code source Vyper est compile en bytecode EVM + ABI\n"
+"2. **Deploiement** : le bytecode est envoye comme transaction sur la blockchain\n"
+"3. **Interaction** : les fonctions sont appelees via l'ABI (comme tout contrat EVM)\n"
+"\n"
+"La compilation peut se faire via :\n"
+"- Le compilateur `vyper` en ligne de commande\n"
+"- La bibliotheque Python `vyper` (ce que nous utilisons ici)\n"
+"- L'outil `ape` (Apeworx, equivalent de Foundry pour Vyper)", "compile-intro"))
+
+cells.append(code(
+'# Compilation du contrat de stockage\n'
+'\n'
+'STORAGE_SOURCE = """\n'
+'# @version ^0.4.0\n'
+'\n'
+'stored_value: public(uint256)\n'
+'owner: public(address)\n'
+'\n'
+'@deploy\n'
+'def __init__(initial_value: uint256):\n'
+'    self.stored_value = initial_value\n'
+'    self.owner = msg.sender\n'
+'\n'
+'@external\n'
+'def set_value(new_value: uint256):\n'
+'    assert msg.sender == self.owner, "Seul le proprietaire peut modifier"\n'
+'    self.stored_value = new_value\n'
+'\n'
+'@view\n'
+'@external\n'
+'def get_value() -> uint256:\n'
+'    return self.stored_value\n'
+'"""\n'
+'\n'
+'if VYPER_AVAILABLE:\n'
+'    from vyper.compiler import compile_code\n'
+'    # Compiler en bytecode + ABI\n'
+'    compiled = compile_code(\n'
+'        STORAGE_SOURCE,\n'
+'        output_formats=["abi", "bytecode"]\n'
+'    )\n'
+'    abi = compiled["abi"]\n'
+'    bytecode = compiled["bytecode"]\n'
+'    print("COMPILATION VYPER REUSSIE")\n'
+'    print("=" * 60)\n'
+'    print(f"Bytecode : {bytecode[:80]}...")\n'
+'    print(f"Taille bytecode : {len(bytecode)//2 - 1} octets")\n'
+'    print(f"ABI : {len(abi)} fonctions/evenements")\n'
+'    for item in abi:\n'
+'        kind = item.get("type", "?")\n'
+'        name = item.get("name", "constructor")\n'
+'        print(f"  [{kind}] {name}")\n'
+'else:\n'
+'    print("COMPILATION VYPER (mode demonstration)")\n'
+'    print("=" * 60)\n'
+'    print("Le compilateur vyper n\'est pas installe.")\n'
+'    print("Voici ce que la compilation produirait :")\n'
+'    print()\n'
+'    print("1. BYTECODE : code machine EVM (identique a un contrat Solidity compile)")\n'
+'    print("2. ABI (Application Binary Interface) :")\n'
+'    print("   - constructor(uint256 initial_value)")\n'
+'    print("   - set_value(uint256 new_value) [external]")\n'
+'    print("   - get_value() -> uint256 [view, external]")\n'
+'    print("   - stored_value() -> uint256 [view, auto-generated]")\n'
+'    print("   - owner() -> address [view, auto-generated]")\n'
+'    print()\n'
+'    print("-> Le bytecode EVM est le meme format que Solidity.")\n'
+'    print("   Un contrat Vyper deploye est indistinguable d\'un contrat Solidity")\n'
+'    print("   du point de vue de l\'EVM.")\n'
+'    # ABI manuelle pour la suite\n'
+'    abi = [\n'
+'        {"type": "constructor", "inputs": [{"name": "initial_value", "type": "uint256"}], "stateMutability": "nonpayable"},\n'
+'        {"type": "function", "name": "set_value", "inputs": [{"name": "new_value", "type": "uint256"}], "outputs": [], "stateMutability": "nonpayable"},\n'
+'        {"type": "function", "name": "get_value", "inputs": [], "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view"},\n'
+'        {"type": "function", "name": "stored_value", "inputs": [], "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view"},\n'
+'        {"type": "function", "name": "owner", "inputs": [], "outputs": [{"name": "", "type": "address"}], "stateMutability": "view"},\n'
+'    ]\n'
+'    bytecode = None', "compile-code"))
+
+cells.append(code(
+'# Deploiement sur blockchain locale (anvil)\n'
+'\n'
+'if WEB3_AVAILABLE and VYPER_AVAILABLE and bytecode:\n'
+'    from web3 import Web3\n'
+'\n'
+'    # Connexion a anvil (blockchain locale Foundry)\n'
+'    w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))\n'
+'\n'
+'    if w3.is_connected():\n'
+'        print("DEPLOIEMENT SUR ANVIL")\n'
+'        print("=" * 60)\n'
+'\n'
+'        # Utiliser le premier compte de test\n'
+'        deployer = w3.eth.accounts[0]\n'
+'        print(f"Deployer : {deployer}")\n'
+'\n'
+'        # Creer le contrat\n'
+'        contract = w3.eth.contract(abi=abi, bytecode=bytecode)\n'
+'\n'
+'        # Deployer avec valeur initiale = 42\n'
+'        tx_hash = contract.constructor(42).transact({"from": deployer})\n'
+'        tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)\n'
+'        contract_address = tx_receipt.contractAddress\n'
+'\n'
+'        print(f"Contrat deploye : {contract_address}")\n'
+'        print(f"Gas utilise : {tx_receipt.gasUsed:,}")\n'
+'        print()\n'
+'\n'
+'        # Interagir avec le contrat\n'
+'        deployed = w3.eth.contract(address=contract_address, abi=abi)\n'
+'\n'
+'        # Lire la valeur (appel view, gratuit)\n'
+'        value = deployed.functions.get_value().call()\n'
+'        print(f"Valeur initiale : {value}")\n'
+'\n'
+'        # Modifier la valeur (transaction, coute du gas)\n'
+'        tx = deployed.functions.set_value(100).transact({"from": deployer})\n'
+'        w3.eth.wait_for_transaction_receipt(tx)\n'
+'\n'
+'        value = deployed.functions.get_value().call()\n'
+'        print(f"Apres set_value(100) : {value}")\n'
+'\n'
+'        owner = deployed.functions.owner().call()\n'
+'        print(f"Owner : {owner}")\n'
+'        print(f"Owner == deployer : {owner == deployer}")\n'
+'    else:\n'
+'        print("Anvil non disponible. Lancez : anvil")\n'
+'        print("Le deploiement sera simule.")\n'
+'else:\n'
+'    print("DEPLOIEMENT (mode demonstration)")\n'
+'    print("=" * 60)\n'
+'    print("Sans vyper et/ou anvil, voici le deroulement du deploiement :")\n'
+'    print()\n'
+'    print("1. Compilation : vyper source -> bytecode EVM + ABI")\n'
+'    print("2. Transaction de deploiement :")\n'
+'    print("   - from: adresse du deployer")\n'
+'    print("   - data: bytecode + arguments du constructeur encodes")\n'
+'    print("   - to: None (creation de contrat)")\n'
+'    print("3. Le contrat recoit une adresse unique")\n'
+'    print("4. Interaction via ABI :")\n'
+'    print("   - call() pour les fonctions @view (gratuit)")\n'
+'    print("   - transact() pour les fonctions qui modifient l\'etat (coute du gas)")\n'
+'    print()\n'
+'    print("-> Le processus est identique a Solidity car l\'EVM ne connait")\n'
+'    print("   que le bytecode, pas le langage source.")', "deploy-code"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"Le deploiement d'un contrat Vyper est **identique** a celui d'un contrat Solidity :\n"
+"l'EVM ne fait pas de difference entre les deux langages. Seul le bytecode compte.\n"
+"\n"
+"| Etape | Solidity | Vyper |\n"
+"|-------|----------|-------|\n"
+"| Compilation | `solc` ou `forge build` | `vyper` ou `ape compile` |\n"
+"| Output | ABI + bytecode | ABI + bytecode (meme format) |\n"
+"| Deploiement | web3.py / ethers.js | web3.py / ethers.js (identique) |\n"
+"| Interaction | Via ABI | Via ABI (identique) |\n"
+"\n"
+"Un contrat Vyper deploye est **indistinguable** d'un contrat Solidity\n"
+"pour les utilisateurs et les autres contrats.", "deploy-interpretation"))
+
+# === SECTION 4: COMPARAISON VYPER VS SOLIDITY ===
+cells.append(md(
+"---\n"
+"\n"
+"## 4. Comparaison Vyper vs Solidity\n"
+"\n"
+"Pour mieux comprendre les differences, comparons des implementations equivalentes\n"
+"dans les deux langages. Chaque exemple montre le meme contrat ecrit en Solidity\n"
+"puis en Vyper.", "comparison-intro"))
+
+cells.append(code(
+'# Comparaison 1 : Variable d\'etat et getter\n'
+'\n'
+'solidity_example_1 = """\n'
+'// SPDX-License-Identifier: MIT\n'
+'pragma solidity ^0.8.0;\n'
+'\n'
+'contract Counter {\n'
+'    uint256 public count;\n'
+'\n'
+'    constructor(uint256 _initial) {\n'
+'        count = _initial;\n'
+'    }\n'
+'\n'
+'    function increment() external {\n'
+'        count += 1;\n'
+'    }\n'
+'\n'
+'    function decrement() external {\n'
+'        require(count > 0, "Underflow");\n'
+'        count -= 1;\n'
+'    }\n'
+'}\n'
+'"""\n'
+'\n'
+'vyper_example_1 = """\n'
+'# @version ^0.4.0\n'
+'\n'
+'count: public(uint256)\n'
+'\n'
+'@deploy\n'
+'def __init__(initial: uint256):\n'
+'    self.count = initial\n'
+'\n'
+'@external\n'
+'def increment():\n'
+'    self.count += 1\n'
+'\n'
+'@external\n'
+'def decrement():\n'
+'    assert self.count > 0, "Underflow"\n'
+'    self.count -= 1\n'
+'"""\n'
+'\n'
+'print("COMPARAISON 1 : COMPTEUR")\n'
+'print("=" * 60)\n'
+'print("--- Solidity ---")\n'
+'print(solidity_example_1)\n'
+'print("--- Vyper ---")\n'
+'print(vyper_example_1)\n'
+'print()\n'
+'\n'
+'# Comptage des lignes de code (hors lignes vides et commentaires)\n'
+'def count_loc(source):\n'
+'    return sum(1 for line in source.strip().split("\\n")\n'
+'              if line.strip() and not line.strip().startswith("//") and not line.strip().startswith("#"))\n'
+'\n'
+'sol_loc = count_loc(solidity_example_1)\n'
+'vyp_loc = count_loc(vyper_example_1)\n'
+'print(f"Lignes de code : Solidity={sol_loc}, Vyper={vyp_loc}")\n'
+'print(f"Reduction : {(1 - vyp_loc/sol_loc)*100:.0f}% moins de code en Vyper")', "comparison-counter"))
+
+cells.append(code(
+'# Comparaison 2 : Controle d\'acces (Ownable)\n'
+'\n'
+'solidity_example_2 = """\n'
+'// SPDX-License-Identifier: MIT\n'
+'pragma solidity ^0.8.0;\n'
+'\n'
+'contract Ownable {\n'
+'    address public owner;\n'
+'\n'
+'    modifier onlyOwner() {\n'
+'        require(msg.sender == owner, "Not owner");\n'
+'        _;\n'
+'    }\n'
+'\n'
+'    constructor() {\n'
+'        owner = msg.sender;\n'
+'    }\n'
+'\n'
+'    function transferOwnership(address newOwner) external onlyOwner {\n'
+'        require(newOwner != address(0), "Zero address");\n'
+'        owner = newOwner;\n'
+'    }\n'
+'\n'
+'    function doSomething() external onlyOwner {\n'
+'        // logique protegee\n'
+'    }\n'
+'}\n'
+'"""\n'
+'\n'
+'vyper_example_2 = """\n'
+'# @version ^0.4.0\n'
+'\n'
+'owner: public(address)\n'
+'\n'
+'@deploy\n'
+'def __init__():\n'
+'    self.owner = msg.sender\n'
+'\n'
+'@external\n'
+'def transfer_ownership(new_owner: address):\n'
+'    assert msg.sender == self.owner, "Not owner"\n'
+'    assert new_owner != empty(address), "Zero address"\n'
+'    self.owner = new_owner\n'
+'\n'
+'@external\n'
+'def do_something():\n'
+'    assert msg.sender == self.owner, "Not owner"\n'
+'    # logique protegee\n'
+'    pass\n'
+'"""\n'
+'\n'
+'print("COMPARAISON 2 : CONTROLE D\'ACCES (OWNABLE)")\n'
+'print("=" * 60)\n'
+'print("--- Solidity (avec modifier) ---")\n'
+'print(solidity_example_2)\n'
+'print("--- Vyper (assertions explicites) ---")\n'
+'print(vyper_example_2)\n'
+'print()\n'
+'print("Analyse :")\n'
+'print("  Solidity utilise un \'modifier\' pour factoriser la verification.")\n'
+'print("  Le modifier cache le flux de controle (le \'_;\' est remplace par le corps).")\n'
+'print()\n'
+'print("  Vyper exige de repeter l\'assertion dans chaque fonction.")\n'
+'print("  C\'est plus verbeux mais le flux est 100% lineaire et auditable.")\n'
+'print("  -> Chaque fonction se lit de haut en bas, sans indirection.")', "comparison-ownable"))
+
+cells.append(code(
+'# Comparaison 3 : Boucles\n'
+'\n'
+'solidity_example_3 = """\n'
+'// Solidity : boucle sans limite fixe (dangereux)\n'
+'function sumAll(uint256[] memory values) external pure returns (uint256) {\n'
+'    uint256 total = 0;\n'
+'    for (uint256 i = 0; i < values.length; i++) {\n'
+'        total += values[i];\n'
+'    }\n'
+'    return total;\n'
+'}\n'
+'// -> Si values.length = 10 millions, la transaction echoue (out of gas)\n'
+'// -> Le compilateur ne previent pas de ce risque\n'
+'"""\n'
+'\n'
+'vyper_example_3 = """\n'
+'# Vyper : boucle avec borne obligatoire\n'
+'MAX_VALUES: constant(uint256) = 100\n'
+'\n'
+'@view\n'
+'@external\n'
+'def sum_all(values: DynArray[uint256, MAX_VALUES]) -> uint256:\n'
+'    total: uint256 = 0\n'
+'    for v: uint256 in values:\n'
+'        total += v\n'
+'    return total\n'
+'# -> DynArray borne a 100 elements : impossible de depasser\n'
+'# -> Le compilateur garantit que la boucle termine\n'
+'"""\n'
+'\n'
+'print("COMPARAISON 3 : BOUCLES")\n'
+'print("=" * 60)\n'
+'print("--- Solidity ---")\n'
+'print(solidity_example_3)\n'
+'print("--- Vyper ---")\n'
+'print(vyper_example_3)\n'
+'print()\n'
+'print("Analyse :")\n'
+'print("  En Solidity, une boucle peut iterer sur un tableau de taille arbitraire.")\n'
+'print("  Si le tableau est trop grand, la transaction echoue par manque de gas.")\n'
+'print("  C\'est un vecteur classique d\'attaque (DOS par gas limit).")\n'
+'print()\n'
+'print("  Vyper force une borne maximale (DynArray[T, N] ou range(N)).")\n'
+'print("  Le compilateur peut prouver que la boucle termine.")\n'
+'print("  -> Pas de boucle infinie possible, par construction.")', "comparison-loops"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"Les trois comparaisons illustrent la philosophie de Vyper :\n"
+"\n"
+"| Aspect | Approche Solidity | Approche Vyper | Compromis |\n"
+"|--------|------------------|---------------|----------|\n"
+"| Factorisation | `modifier` (indirection) | `assert` repete (explicite) | Lisibilite vs DRY |\n"
+"| Boucles | Taille arbitraire | Borne obligatoire | Flexibilite vs securite |\n"
+"| Heritage | Multiple possible | Interdit | Reutilisation vs simplicite |\n"
+"\n"
+"**Points cles** :\n"
+"1. Vyper sacrifie volontairement la flexibilite pour la securite\n"
+"2. Chaque restriction de Vyper repond a une vulnerabilite connue en Solidity\n"
+"3. Les deux langages compilent vers le meme bytecode EVM\n"
+"4. Le choix depend du contexte : Vyper pour la DeFi critique, Solidity pour l'ecosysteme large",
+"comparison-interpretation"))
+
+# === SECTION 5: EXERCICE ===
+cells.append(md(
+"---\n"
+"\n"
+"## 5. Exercice : Contrat d'enchere en Vyper\n"
+"\n"
+"Implementez un contrat d'enchere (auction) en Vyper. Le contrat doit :\n"
+"\n"
+"- Avoir un proprietaire (beneficiaire de l'enchere)\n"
+"- Accepter des mises (`bid`) superieures a la mise actuelle\n"
+"- Rembourser automatiquement le precedent meilleur encherisseur\n"
+"- Permettre au beneficiaire de retirer les fonds a la fin\n"
+"\n"
+"**Contraintes Vyper** :\n"
+"- Pas de boucle infinie : utiliser un nombre maximum d'encherisseurs\n"
+"- Protection reentrancy : `@nonreentrant`\n"
+"- Assertions explicites pour chaque verification", "exercise-intro"))
+
+cells.append(code(
+'# Exercice : Contrat d\'enchere en Vyper\n'
+'# Completez le code Vyper ci-dessous\n'
+'\n'
+'def write_auction_contract():\n'
+'    """Generer le code Vyper d\'un contrat d\'enchere.\n'
+'\n'
+'    Le contrat doit inclure :\n'
+'    - Variables : beneficiary, highest_bidder, highest_bid, ended\n'
+'    - HashMap pour les remboursements en attente (pending_returns)\n'
+'    - Fonction bid() : @payable, @nonreentrant\n'
+'    - Fonction withdraw() : retirer les fonds non gagnes\n'
+'    - Fonction end_auction() : seul le beneficiaire peut terminer\n'
+'\n'
+'    Retourner le code Vyper sous forme de chaine.\n'
+'    """\n'
+'    # TODO: Implementez le contrat\n'
+'    raise NotImplementedError(\n'
+'        "Implementez le contrat d\'enchere Vyper.\\n"\n'
+'        "Indices :\\n"\n'
+'        "  - Utilisez @payable pour accepter de l\'ETH\\n"\n'
+'        "  - Utilisez @nonreentrant pour proteger withdraw()\\n"\n'
+'        "  - msg.value contient le montant envoye\\n"\n'
+'        "  - send(address, amount) pour envoyer de l\'ETH\\n"\n'
+'        "  - Stockez les remboursements dans un HashMap\\n"\n'
+'    )\n'
+'\n'
+'\n'
+'# Test (decommentez apres implementation)\n'
+'# auction_source = write_auction_contract()\n'
+'# print("CONTRAT D\'ENCHERE VYPER")\n'
+'# print("=" * 60)\n'
+'# print(auction_source)\n'
+'#\n'
+'# if VYPER_AVAILABLE:\n'
+'#     from vyper.compiler import compile_code\n'
+'#     compiled = compile_code(auction_source, output_formats=["abi"])\n'
+'#     print(f"\\nCompilation reussie : {len(compiled[\'abi\'])} elements dans l\'ABI")', "exercise-code"))
+
+# === SECTION 6: RESUME ===
+cells.append(md(
+"---\n"
+"\n"
+"## 6. Resume\n"
+"\n"
+"| Aspect | Detail |\n"
+"|--------|--------|\n"
+"| **Langage** | Vyper : syntaxe Python-like pour l'EVM |\n"
+"| **Philosophie** | Simplicite, securite, auditabilite |\n"
+"| **Exclusions volontaires** | Heritage, surcharge, boucles infinies, assembleur inline, recursion |\n"
+"| **Types principaux** | `uint256`, `address`, `bool`, `HashMap`, `DynArray`, `String` |\n"
+"| **Decorateurs** | `@external`, `@internal`, `@view`, `@pure`, `@payable`, `@nonreentrant` |\n"
+"| **Compilation** | `vyper source.vy` produit bytecode EVM + ABI (meme format que Solidity) |\n"
+"| **Ecosysteme** | Curve Finance, Lido, Yearn Finance |\n"
+"| **Outils** | compilateur vyper, Apeworx (ape), Titanoboa, web3.py |\n"
+"\n"
+"### Points cles\n"
+"\n"
+"- Vyper est un choix pertinent pour les contrats **critiques en securite** (DeFi, tresoreries)\n"
+"- La syntaxe Python rend le langage accessible aux developpeurs non-blockchain\n"
+"- Les restrictions de Vyper ne sont pas des limitations mais des **garanties de securite**\n"
+"- Un contrat Vyper deploye est indistinguable d'un contrat Solidity pour l'EVM\n"
+"- L'ecosysteme Vyper est plus restreint mais soutenu par des protocoles majeurs\n"
+"\n"
+"---\n"
+"\n"
+"**Notebook suivant** : [SC-19-Ripple-XRP](SC-19-Ripple-XRP.ipynb) - Contrats sur le reseau Ripple",
+"summary"))
+
+# === BUILD NOTEBOOK ===
+notebook = {
+    "cells": cells,
+    "metadata": {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3"
+        },
+        "language_info": {
+            "codemirror_mode": {"name": "ipython", "version": 3},
+            "file_extension": ".py",
+            "mimetype": "text/x-python",
+            "name": "python",
+            "nbconvert_exporter": "python",
+            "pygments_lexer": "ipython3",
+            "version": "3.10.0"
+        }
+    },
+    "nbformat": 4,
+    "nbformat_minor": 5
+}
+
+output_dir = os.path.join(
+    "d:", os.sep, "CoursIA", "MyIA.AI.Notebooks", "SymbolicAI",
+    "SmartContracts", "05-Alternative-Chains"
+)
+os.makedirs(output_dir, exist_ok=True)
+
+output_path = os.path.join(output_dir, "SC-18-Vyper.ipynb")
+with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
+    json.dump(notebook, f, ensure_ascii=False, indent=1)
+    f.write('\n')
+
+print(f"Notebook cree : {output_path}")
+print(f"Cellules : {len(cells)} ({sum(1 for c in cells if c['cell_type']=='markdown')} md + {sum(1 for c in cells if c['cell_type']=='code')} code)")
+
+# Verify format
+issues = 0
+for i, cell in enumerate(cells):
+    src = cell['source']
+    if isinstance(src, str):
+        print(f"  ISSUE cell {i}: bare string")
+        issues += 1
+    elif isinstance(src, list) and len(src) == 1 and '\n' in src[0]:
+        print(f"  ISSUE cell {i}: single-string with newlines")
+        issues += 1
+print("Format OK" if issues == 0 and all(isinstance(c['source'], list) for c in cells) else "FORMAT ISSUES")

@@ -21,8 +21,8 @@
 .section :deep(h1),
 .section :deep(h2),
 .section :deep(h3) {
-  color: #F5F5F5;
-  border-bottom: none;
+  color: #F5F5F5 !important;
+  border-bottom: none !important;
 }
 
 .section :deep(h1) {

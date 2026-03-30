@@ -3,7 +3,7 @@ marp: true
 theme: ia101
 paginate: true
 header: 'IA 101'
-footer: 'V - Theorie des jeux'
+footer: 'V - Théorie des jeux'
 ---
 
 <!-- _class: title -->
@@ -26,8 +26,8 @@ Intelligence Artificielle -- V
 - I. Introduction
 - II. Resolution de problemes
 - III. Bases de connaissances et logique
-- IV. Incertitude et modeles probabilistes
-- **V. Theorie des jeux** ← *vous etes ici*
+- IV. Incertitude et modèles probabilistes
+- **V. Théorie des jeux** ← *vous etes ici*
 - VI. Apprentissage
 - VII. Traitement du langage naturel
 - VIII. Presentation projets
@@ -40,7 +40,7 @@ Intelligence Artificielle -- V
   - Un seul Decideur : planification / synchronisation
   - Multi-Effecteurs / Multi-corps (decouplage)
   - Centralise (state = pool) vs decentralise
-- **Decideurs multiples** → theorie des jeux
+- **Decideurs multiples** → théorie des jeux
   - But commun / buts propres
   - Degre d'adversite et/ou collaboration
   - Information parfaite / imparfaite
@@ -53,32 +53,32 @@ Intelligence Artificielle -- V
 
 # Pourquoi la théorie des jeux?
 
-- **Etude des interdependances strategiques**
+- **Étude des interdependances strategiques**
 - **Objectif double**
-  - *Design d'agent* : Quelle est la meilleure strategie?
-  - *Design de mecanisme* : Quelles sont les bonnes regles?
+  - *Design d'agent* : Quelle est la meilleure stratégie?
+  - *Design de mecanisme* : Quelles sont les bonnes règles?
 - **Justifications**
   - Les maths deviennent compliquees
   - Fournit des outils de comptabilite
   - Identifier les situations analogues
   - Comprehension des schemas habituels
-- **Optimisation de strategies**
+- **Optimisation de stratégies**
   - Pure / mixte (randomisee)
-  - Solution = profil rationnel = assignation de strategies
+  - Solution = profil rationnel = assignation de stratégies
 
 ---
 
 # Fondements : Von Neumann et Maximin
 
 - **Jeux a somme nulle**
-  - Von Neumann → strategie Maximin
+  - Von Neumann → stratégie Maximin
   - Maximiser le pire gain possible
-- **Changement de regles**
+- **Changement de règles**
   - Sequence UE,O ≤ U ≤ UO,E
 - **Exemple : Morra**
   - p = 7/12, U(E) = -1/12
 
-<!-- Morra : matrice 3x3 a somme nulle, strategie mixte optimale -->
+<!-- Morra : matrice 3x3 a somme nulle, stratégie mixte optimale -->
 
 ---
 
@@ -93,7 +93,7 @@ Intelligence Artificielle -- V
 - **Strategie pure strictement dominante** (stable)
   - Mais Pareto dominee (global mais instable)
 - **IESDS**
-  - Elimination iterative des strategies strictement dominees
+  - Elimination iterative des stratégies strictement dominees
   - Reduction progressive de la matrice
 
 </div>
@@ -116,15 +116,15 @@ Intelligence Artificielle -- V
 
 ---
 
-# Equilibre de Nash
+# Équilibre de Nash
 
 - **Optimum local dans l'espace des politiques**
-- **Definition** : Aucun agent n'a de motivation a changer de strategie
+- **Definition** : Aucun agent n'a de motivation a changer de stratégie
   - = Une loi que personne n'enfreint sans la police (ex: feu rouge)
   - Garanti d'exister / importance de la Coordination
 - **Meilleure reponse**
-  - Etant donnees les autres choix
-  - Equilibre de Nash = meilleure reponse pour tous
+  - Etant données les autres choix
+  - Équilibre de Nash = meilleure reponse pour tous
 - **Exemple** : Chasse au cerf
   - Deux equilibres : cooperation (cerf) vs securite (lievre)
 
@@ -138,13 +138,13 @@ Intelligence Artificielle -- V
 <div class="col-left">
 
 - **Strategies mixtes**
-  - Randomisation sur les strategies pures
-  - Distribution de probabilite sur les actions
+  - Randomisation sur les stratégies pures
+  - Distribution de probabilité sur les actions
 - **Theoreme de Nash**
-  - Tout jeu fini possede au moins un equilibre de Nash (pur ou mixte)
+  - Tout jeu fini possede au moins un équilibre de Nash (pur ou mixte)
 - **Principe d'indifference**
-  - A l'equilibre mixte, le joueur est indifferent entre ses strategies pures
-  - Chaque strategie pure jouee avec probabilite > 0 donne la meme esperance
+  - A l'équilibre mixte, le joueur est indifferent entre ses stratégies pures
+  - Chaque stratégie pure jouee avec probabilité > 0 donne la meme esperance
 
 </div>
 <div class="col-right">
@@ -171,12 +171,12 @@ Intelligence Artificielle -- V
 
 - **Calcul des equilibres mixtes**
   - Egalisation des esperances de gain
-  - Resolution d'un systeme d'equations lineaires
+  - Resolution d'un système d'equations lineaires
 - **Interpretation**
   - Incertitude sur les choix adverses
   - Impredictibilite strategique
 - **Exemples classiques**
-  - Pierre-Feuille-Ciseaux : equilibre (1/3, 1/3, 1/3)
+  - Pierre-Feuille-Ciseaux : équilibre (1/3, 1/3, 1/3)
   - Penalité au football : gauche/droite
 
 </div>
@@ -210,9 +210,9 @@ Intelligence Artificielle -- V
   - Accept, out = equilibres possibles
   - Matrice → dominance faible
   - Mais difference = menace credible?
-- **Equilibre parfait de sous-jeu (SPE)**
+- **Équilibre parfait de sous-jeu (SPE)**
   - Sous-jeu Firm 2 → accept
-  - "out" plus en equilibre → question des menaces credibles
+  - "out" plus en équilibre → question des menaces credibles
   - Induction arriere pour resoudre
 
 </div>
@@ -237,7 +237,7 @@ Intelligence Artificielle -- V
 
 - **On demarre par la fin**
   - Les sous-jeux finaux eclairent les premiers
-  - → "Accept" strategie optimale
+  - → "Accept" stratégie optimale
 - **Equilibres parfaits de sous-jeu**
   - Importance de reperer tous les chemins / nœuds de decision
   - Ex: <Accept, War>; <Escalade>
@@ -257,13 +257,13 @@ Intelligence Artificielle -- V
   - Connaissance du passe
   - Difficile a dessiner (exponentiel)
 - **Theoremes**
-  - Derniere etape → Equilibre de Nash (passe pas modifiable)
-  - Autres : jouer equilibres de Nash = 1 equilibre de sous-jeu
+  - Derniere etape → Équilibre de Nash (passe pas modifiable)
+  - Autres : jouer equilibres de Nash = 1 équilibre de sous-jeu
   - Mais autres equilibres de sous-jeu possibles (cooperation)
 - **Strategies de punition**
   - Ex: Prisonnier puis Argent gratuit
-  - → Equilibre faible (0,0) = menace de punition
-  - → Meilleur equilibre
+  - → Équilibre faible (0,0) = menace de punition
+  - → Meilleur équilibre
 
 ![bg right:38% vertical](images/img_016.png)
 ![bg](images/img_017.png)
@@ -284,7 +284,7 @@ Intelligence Artificielle -- V
   - → L'ordre est important
 - **Problemes de l'induction arriere**
   - Ex: le millepattes
-  - Equilibre pessimiste, pas constate dans la pratique
+  - Équilibre pessimiste, pas constate dans la pratique
   - Hypotheses → Maths → conclusions
   - Pb ici : hypotheses de rationalite limitee
 
@@ -298,12 +298,12 @@ Intelligence Artificielle -- V
 - **Induction avant**
   - Induction arriere = futur rationnel
   - Induction avant = passe rationnel
-  - Ex: "pub hunt" → supprime un equilibre
+  - Ex: "pub hunt" → supprime un équilibre
   - Mais parfois solutions controversees
 - **Version societale : dilemmes repetes**
   - Punition perpetuelle
   - Œil pour œil (Tit-for-Tat)
-  - Evolution de la confiance
+  - Évolution de la confiance
 - **Applications**
   - Negociations commerciales repetees
   - Cooperation internationale
@@ -324,7 +324,7 @@ Intelligence Artificielle -- V
   - Jeux en forme extensive avec information incomplete
   - Jeux stochastiques
   - Jeux a champs moyens
-- **Raffinements d'equilibre**
+- **Raffinements d'équilibre**
   - Equilibres tremblants
   - Equilibres sequentiels
   - Proper equilibria
@@ -357,16 +357,16 @@ Intelligence Artificielle -- V
 
 # Espaces de stratégies infinis
 
-- **Jeux sans equilibre**
-  - Jusqu'ici, nombre fini de strategies pures
-  - Matrices + theoremes de Nash
-- **Certains jeux ont une infinite de strategies pures**
-  - → Pas de matrice et pas forcement d'equilibre de Nash
+- **Jeux sans équilibre**
+  - Jusqu'ici, nombre fini de stratégies pures
+  - Matrices + théorèmes de Nash
+- **Certains jeux ont une infinite de stratégies pures**
+  - → Pas de matrice et pas forcement d'équilibre de Nash
   - Ex: Joueur 1 : x>0, Joueur 2 : y>0, gain xy pour les deux
 - **Duels**
   - 100 m, 2 balles, se rapprochent, peuvent tirer quand ils souhaitent
   - Precisions differentes mais 0% a 100m, 100% a 0m
-  - → Equilibre = meme distance (preuve par contradiction)
+  - → Équilibre = meme distance (preuve par contradiction)
 - **Ex** : Date de sortie de produits concurrents
 
 ![bg right:30% vertical](images/img_029.png)
@@ -378,7 +378,7 @@ Intelligence Artificielle -- V
 
 - **2 vendeurs de glace sur la plage**
   - Choix de l'emplacement
-  - Equilibre = les deux au milieu
+  - Équilibre = les deux au milieu
 - **Principe important en politique**
   - Theoremes de l'electeur median
   - Vainqueur de Condorcet (cf Choix social)
@@ -397,9 +397,9 @@ Intelligence Artificielle -- V
   - Ex: poker (cartes cachees), negociation (valuations privees)
 - **Types et croyances**
   - Chaque joueur a un "type" prive
-  - Distribution de probabilite (croyances) sur les types adverses
-- **Equilibre Bayesien de Nash**
-  - Extension de l'equilibre de Nash
+  - Distribution de probabilité (croyances) sur les types adverses
+- **Équilibre Bayesien de Nash**
+  - Extension de l'équilibre de Nash
   - Meilleure reponse en esperance sur les types adverses
 
 ![bg right:30% vertical](images/img_032.png)
@@ -414,8 +414,8 @@ Intelligence Artificielle -- V
   - Extension aux jeux sequentiels avec information incomplete
   - Combine rationalite sequentielle + croyances coherentes
 - **Deux exigences**
-  - Rationalite sequentielle : strategies optimales a chaque nœud
-  - Croyances coherentes : actualisees par la regle de Bayes
+  - Rationalite sequentielle : stratégies optimales a chaque nœud
+  - Croyances coherentes : actualisees par la règle de Bayes
 - **Applications**
   - Signalisation (education comme signal de competence)
   - Negociations avec asymetrie d'information
@@ -453,20 +453,20 @@ Intelligence Artificielle -- V
 
 # Conception de mécanismes
 
-- **Design de regles du jeu**
+- **Design de règles du jeu**
   - Objectif : obtenir un resultat souhaite via incitations individuelles
   - "Reverse game theory"
 - **Compatibilite incitative**
-  - Verite comme strategie dominante (strategy-proof)
-  - Equilibre Bayesien incitatif
+  - Vérité comme stratégie dominante (strategy-proof)
+  - Équilibre Bayesien incitatif
 - **Principe de revelation**
   - Tout mecanisme peut etre transforme en mecanisme direct veridique
 - **Applications**
   - Encheres (maximiser revenus)
-  - Votes (agregation des preferences)
+  - Votes (agregation des préférences)
   - Allocation de ressources (spectre radio, places universitaires)
 
-<!-- Design de mecanisme : objectif social → regles → equilibre souhaite -->
+<!-- Design de mecanisme : objectif social → règles → équilibre souhaite -->
 
 ---
 
@@ -492,11 +492,11 @@ Intelligence Artificielle -- V
 # Allocation par les votes
 
 - **Choix social et procedures de vote**
-  - Agregation de preferences individuelles
+  - Agregation de préférences individuelles
   - Pas de "meilleure" methode universelle
 - **Paradoxes du vote**
-  - Paradoxe de Condorcet : cycles de preferences
-  - Paradoxe d'Arrow : pas de systeme parfait
+  - Paradoxe de Condorcet : cycles de préférences
+  - Paradoxe d'Arrow : pas de système parfait
 - **Criteres de qualite**
   - Unanimite, monotonie, independance
   - Resistance a la manipulation strategique
@@ -523,9 +523,9 @@ Intelligence Artificielle -- V
 
 # Critère de Condorcet : Théorèmes de l'électeur médian
 
-- **1er theoreme**
+- **1er théorème**
   - Gauche – droite → existence du vainqueur → electeur median
-- **2e theoreme**
+- **2e théorème**
   - Gauche – droite + valeur intrinseque
 - **Si pas de vainqueur de Condorcet**
   - Methodes de Condorcet → resolution
@@ -562,12 +562,12 @@ Intelligence Artificielle -- V
 - **Referendum**
   - 2 options → methode de la majorite robuste a la manipulation (et c'est la seule)
 - **Vote pluraliste uninominal** (n candidats)
-  - Critique : vote utile + pas de preferences
+  - Critique : vote utile + pas de préférences
 - **Vote a second-tour instantane**
   - Preferences completes
   - Si pas de majorite, elimination du dernier et second tour
   - → Pas de critere de Condorcet
-- **Methode de Condorcet** : vote a regle de vraie majorite
+- **Methode de Condorcet** : vote a règle de vraie majorite
   - Preferences completes, puis comparaisons paires a paires
   - → Bons resultats mais ne marche pas tout le temps (paradoxe de Condorcet)
   - → Methodes de Condorcet → Schulze
@@ -604,7 +604,7 @@ Intelligence Artificielle -- V
   - Seule methode avec critere d'unanimite non strategique
 - **Methode de Condorcet randomisee**
   - Loterie ponderee dans le peloton de tete
-  - Ponderation selon equilibre de Nash
+  - Ponderation selon équilibre de Nash
   - Ex: Shifumi
   - Critere de Condorcet ET Non strategique (seul)
 - **Comparaison detaillee**
@@ -666,9 +666,9 @@ Intelligence Artificielle -- V
   - Equations differentielles decrivent la dynamique
 - **Applications**
   - Economie : croissance, investissement, ressources
-  - Ingenierie : poursuite-evasion, controle de systemes
+  - Ingenierie : poursuite-evasion, controle de systèmes
   - Ecologie : gestion de ressources naturelles
-- **Outils mathematiques**
+- **Outils mathématiques**
   - Calcul variationnel
   - Principe du maximum de Pontryagin
   - Equations d'Hamilton-Jacobi-Bellman
@@ -683,7 +683,7 @@ Intelligence Artificielle -- V
   - J1(u1,u2) + J2(u1,u2) = 0
 - **Equilibres de point de selle**
   - P1 maximise, P2 minimise
-  - → Equilibre ssi point de selle existe
+  - → Équilibre ssi point de selle existe
 - **Equilibres de Stackelberg**
   - Le "leader" annonce
   - En tenant compte du fait que les autres maximisent leur reponse
@@ -699,16 +699,16 @@ Intelligence Artificielle -- V
 # Equilibres différentiels : Boucle ouverte et Markovien
 
 - **Equilibres en boucle ouverte**
-  - Equilibre de Nash : u* est un equilibre ssi
+  - Équilibre de Nash : u* est un équilibre ssi
   - J1, J2 → 2 optimisations, conditions d'existence et de calcul
-  - + Equilibre de Stackelberg : conditions d'existence et de calcul
+  - + Équilibre de Stackelberg : conditions d'existence et de calcul
   - Ex: croissance economique avec u1 taxe sur le capital et u2 consommation
-  - → Equilibre de S avec gouvernement leader
+  - → Équilibre de S avec gouvernement leader
 - **Equilibres Markovien**
-  - Equilibre de Nash : σ* est un equilibre ssi
+  - Équilibre de Nash : σ* est un équilibre ssi
   - Resolution d'equations differentielles partielles
   - Cas general → Solutions non hyperboliques
-  - Jeux a somme nulle ou dimension 1 → systeme hyperbolique
+  - Jeux a somme nulle ou dimension 1 → système hyperbolique
 - **Jeux lineaires quadratiques**
   - Dynamique lineaire, recompense quadratique → solution analytique
 
@@ -730,7 +730,7 @@ Intelligence Artificielle -- V
   - Convergence avec nombre d'echantillons suffisant
   - → Similaire au filtrage particulaire
 - **Pour aller plus loin**
-  - Details mathematiques dans les notebooks
+  - Details mathématiques dans les notebooks
 
 ![bg right:38% vertical](images/img_053.png)
 ![bg](images/img_054.png)
@@ -752,8 +752,8 @@ Intelligence Artificielle -- V
 - **Resolution de Captchas** (Deep Learning, TensorFlow, CNTK, Encog)
 - **Strategies de trading algorithmiques** (Crypto monnaies, DNN Bitcoin, Encog)
 - **Agent joueur de Go** (Monte Carlo Tree Search, apprentissage, Go Traxx)
-- **Evolution de vaisseaux spatiaux** (Algorithmes genetiques, automates cellulaires, Golly, Encog)
-- **Cluster de cache distribue** (Cloud, Redis, scaling, strategies)
+- **Évolution de vaisseaux spatiaux** (Algorithmes genetiques, automates cellulaires, Golly, Encog)
+- **Cluster de cache distribue** (Cloud, Redis, scaling, stratégies)
 
 <!-- Projets : equilibres, encheres, votes, negociation, jeux differentiels -->
 
@@ -762,7 +762,7 @@ Intelligence Artificielle -- V
 # Pour aller plus loin : Notebooks
 
 - **Introduction** : `GameTheory/GameTheory-1b-Intro.ipynb`
-- **Equilibre de Nash** : `GameTheory/GameTheory-3b-Nash.ipynb`, `GameTheory-4b-Nash-Computation.ipynb`
+- **Équilibre de Nash** : `GameTheory/GameTheory-3b-Nash.ipynb`, `GameTheory-4b-Nash-Computation.ipynb`
 - **Jeux Bayesiens** : `GameTheory/GameTheory-5b-Bayesian-Games.ipynb`
 - **Mecanismes** : `GameTheory/GameTheory-7b-Mechanism-Design.ipynb`, `GameTheory-8b-Auctions.ipynb`
 - **Jeux differentiels** : `GameTheory/GameTheory-13b-Differential-Games.ipynb`

@@ -64,7 +64,7 @@ Intelligence Artificielle -- VI
 
 - **4 modules** : performance, apprentissage, critique, generateur de problemes
 - Le module d'apprentissage ameliore le composant de performance a partir du feedback du critique
-- Le generateur de problemes suggere de nouvelles experiences pour enrichir l'apprentissage
+- Le generateur de problemes suggere de nouvelles expériences pour enrichir l'apprentissage
 
 ---
 
@@ -543,9 +543,9 @@ Intelligence Artificielle -- VI
 
 # Classification lineaire
 
-- Separer les classes par un hyperplan dans l'espace des caracteristiques
+- Separer les classes par un hyperplan dans l'espace des caractéristiques
 - Fonction de decision : f(x) = sign(w . x + b)
-- Limite : ne fonctionne que si les donnees sont lineairement separables
+- Limite : ne fonctionne que si les données sont lineairement separables
 
 ![bg right:40%](images/img_021.png)
 
@@ -553,7 +553,7 @@ Intelligence Artificielle -- VI
 
 # Regression logistique
 
-- Sortie = probabilite d'appartenance a une classe via la fonction sigmoide
+- Sortie = probabilité d'appartenance a une classe via la fonction sigmoide
 - Frontiere de decision lisse, interpretable, rapide a entrainer
 - Base des classificateurs lineaires modernes
 
@@ -640,9 +640,9 @@ Intelligence Artificielle -- VI
 # Apprentissage par retropropagation
 
 - **Principe** : propager l'erreur de la sortie vers les couches cachees
-- Calcul du gradient de l'erreur par la regle de la chaine (chain rule)
+- Calcul du gradient de l'erreur par la règle de la chaine (chain rule)
 - Mise a jour des poids : W_j ← W_j - alpha * dE/dW_j
-- Permet d'entrainer des reseaux multi-couches (invention cle du deep learning)
+- Permet d'entrainer des réseaux multi-couches (invention cle du deep learning)
 
 ![bg right:35%](images/img_031.png)
 
@@ -692,7 +692,7 @@ Intelligence Artificielle -- VI
 ![bg](images/img_036.png)
 ![bg](images/img_037.png)
 
-<!-- Architecture NN : entree → couches cachees (activation ReLU/sigmoid) → sortie -->
+<!-- Architecture NN : entrée → couches cachees (activation ReLU/sigmoid) → sortie -->
 
 ---
 
@@ -1055,302 +1055,106 @@ Intelligence Artificielle -- VI
 ![bg right:35% vertical](images/img_084.png)
 ![bg](images/img_085.png)
 
-<!-- Clustering : donnees brutes → k-means/DBSCAN → groupes identifies -->
+<!-- Clustering : données brutes → k-means/DBSCAN → groupes identifies -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Linear Classifiers
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x + b)
-- How would you classify this data?
+# Classificateurs Linéaires
+
+- Classer des données en 2 catégories : **positif (+1)** et **négatif (−1)**
+- Décision par **hyperplan** : f(x, w, b) = sign(w · x + b)
+  - **w** : vecteur normal à l'hyperplan
+  - **b** : biais (décalage du seuil de décision)
+- De nombreux hyperplans peuvent séparer des données linéairement séparables
+
+<!-- Classificateur linéaire : frontière w·x + b = 0 sépare les deux classes -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Linear Classifiers
-- f
-- x
-- 
-- yest
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- Any of these would be fine..
-- ..but which is best?
+# La Marge du Classifieur
+
+- La **marge** = distance entre l'hyperplan et les exemples les plus proches de chaque classe
+- Intuition : une grande marge = classifieur plus robuste aux nouvelles données
+- Définition formelle :
+
+| Zone | Équation |
+|------|----------|
+| Plan positif | w · x + b = +1 |
+| Frontière | w · x + b = 0 |
+| Plan négatif | w · x + b = −1 |
+| Marge totale | **M = 2 / ‖w‖** |
+
+<!-- Marge = zone tampon entre les deux classes ; maximiser la marge améliore la généralisation -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Classifier Margin
-- f
-- x
-- 
-- yest
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- Define the margin of a linear classifier as the width that the boundary could be increased by before hitting a datapoint.
+# Marge Maximale — Intuition
+
+- L'hyperplan à **marge maximale** est le "meilleur" classifieur linéaire parmi tous les séparateurs
+- Intuition géométrique :
+  - Une petite perturbation de l'hyperplan ne cause pas d'erreur de classification
+  - Le classifieur est **immune au retrait** de tout exemple non-vecteur-de-support
+- Fondement théorique : lié à la **dimension VC** (Vapnik-Chervonenkis) et à la généralisation
+
+<!-- SVM : maximiser la marge revient à minimiser ||w|| sous contraintes de classification -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Maximum Margin
-- f
-- x
-- 
-- yest
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- The maximum margin linear classifier is the linear classifier with the, um, maximum margin.
-- This is the simplest kind of SVM (Called an LSVM)
-- Linear SVM
+# Vecteurs de Support
+
+- Les **vecteurs de support** sont les exemples d'entraînement exactement sur les plans ±1
+- Ce sont eux qui définissent et "supportent" la frontière optimale
+- Propriétés remarquables :
+  - Le modèle SVM **ne dépend que** de ces quelques exemples (représentation sparse)
+  - Retirer un exemple non-vecteur-de-support **ne change pas** le modèle
+  - Permet une validation croisée leave-one-out (LOOCV) efficace
+
+<!-- Vecteurs de support : seuls exemples critiques qui définissent la frontière optimale -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Maximum Margin
-- f
-- x
-- 
-- yest
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- The maximum margin linear classifier is the linear classifier with the, um, maximum margin.
-- This is the simplest kind of SVM (Called an LSVM)
-- Support Vectors are those datapoints that the margin pushes up against
-- Linear SVM
+# Calcul de la Marge
+
+Soit x⁻ sur le plan négatif, x⁺ le point le plus proche sur le plan positif :
+
+- **x⁺ = x⁻ + λw** (car w est perpendiculaire aux deux plans)
+- De w · x⁺ + b = +1 et w · x⁻ + b = −1, on déduit :
+- Substitution : −1 + λ‖w‖² = 1 → **λ = 2/‖w‖²**
+
+$$M = |x^+ - x^-| = \lambda\|w\| = \frac{2}{\|w\|}$$
+
+**Maximiser M revient à minimiser ½ ‖w‖²**
+
+<!-- Dérivation : marge = 2/||w||, optimisé via programmation quadratique convexe -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Why Maximum Margin?
-- denotes +1
-- denotes -1
-- f(x,w,b) = sign(w. x - b)
-- The maximum margin linear classifier is the linear classifier with the, um, maximum margin.
-- This is the simplest kind of SVM (Called an LSVM)
-- Support Vectors are those datapoints that the margin pushes up against
-- Intuitively this feels safest.
-- If we’ve made a small error in the location of the boundary (it’s been jolted in its perpendicular direction) this gives us least chance of causing a misclassification.
-- LOOCV is easy since the model is immune to removal of any non-support-vector datapoints.
-- There’s some theory (using VC dimension) that is related to (but not the same as) the proposition that this is a good thing.
-- Empirically it works very very well.
+# Optimisation du SVM Linéaire
+
+**Problème primal** : minimiser ½ ‖w‖² sous les contraintes :
+
+$$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
+
+- Problème de **programmation quadratique convexe** (QP)
+- **Optimum global garanti** (pas de minimum local)
+- Via la **formulation duale de Lagrange** :
+  - On travaille avec les produits scalaires xᵢ · xⱼ
+  - Seuls les vecteurs de support ont un multiplicateur λᵢ > 0
+  - Ouvre la voie au **kernel trick**
+
+<!-- Formulation duale : base mathématique pour les SVMs à noyaux non-linéaires -->
+
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Specifying a line and margin
-- How do we represent this mathematically?
-- …in m input dimensions?
-- Plus-Plane
-- Minus-Plane
-- Classifier Boundary
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
+# Apprentissage des SVM
 
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Specifying a line and margin
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- Plus-Plane
-- Minus-Plane
-- Classifier Boundary
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- Claim: The vector w is perpendicular to the Plus Plane. Why?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- Claim: The vector w is perpendicular to the Plus Plane. Why?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-- Let u and v be two vectors on the Plus Plane. What is w . ( u – v ) ?
-- And so of course the vector w is also perpendicular to the Minus Plane
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- The vector w is perpendicular to the Plus Plane
-- Let x- be any point on the minus plane
-- Let x+ be the closest plus-plane-point to x-.
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- The vector w is perpendicular to the Plus Plane
-- Let x- be any point on the minus plane
-- Let x+ be the closest plus-plane-point to x-.
-- Claim: x+ = x- +  w  for some value of . Why?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- Plus-plane   =    { x : w . x + b = +1 }
-- Minus-plane =   { x : w . x + b = -1 }
-- The vector w is perpendicular to the Plus Plane
-- Let x- be any point on the minus plane
-- Let x+ be the closest plus-plane-point to x-.
-- Claim: x+ = x- +  w  for some value of . Why?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- How do we compute M in terms of w and b?
-- x-
-- x+
-- The line from x- to x+ is perpendicular to the planes.
-- So to get from  x- to x+ travel some distance in direction w.
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- What we know:
-- w . x+ + b = +1
-- w . x- + b = -1
-- x+ = x- +  w
-- |x+ - x- | = M
-- It’s now easy to get M in terms of w and b
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- What we know:
-- w . x+ + b = +1
-- w . x- + b = -1
-- x+ = x- +  w
-- |x+ - x- | = M
-- It’s now easy to get M in terms of w and b
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width
-- w . (x - + w) + b = 1
-- =>
-- w . x - + b + w .w = 1
-- =>
-- -1 + w .w = 1
-- =>
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Computing the margin width
-- What we know:
-- w . x+ + b = +1
-- w . x- + b = -1
-- x+ = x- +  w
-- |x+ - x- | = M
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width =
-- M = |x+ - x- | =| w |=
-- x-
-- x+
-
----
-
-- Copyright © 2001, 2003, Andrew W. Moore
-- Learning the Maximum Margin Classifier
-- Given a guess of w and b we can
-- Compute whether all data points in the correct half-planes
-- Compute the width of the margin
-- So now we just need to write a program to search the space of w’s and b’s to find the widest margin that matches all the datapoints. How?
-- Gradient descent? Simulated Annealing? Matrix Inversion? EM? Newton’s Method?
-- “Predict Class = +1” zone
-- “Predict Class = -1” zone
-- wx+b=1
-- wx+b=0
-- wx+b=-1
-- M = Margin Width =
-- x-
-- x+
-
----
-
-# Learning SVMs
-
-- Trick #1: Just find the points that would be closest to the optimal separating plane (the "support vectors") and work directly from those instances.
-- Trick #2: Represent as a quadratic optimization problem, and use quadratic programming techniques.
-- Trick #3 (the "kernel trick"):
-  - Instead of just using the features, represent the data using a high-dimensional feature space constructed from a set of basis functions (polynomial and Gaussian combinations of the base features are the most common).
-  - Then find a separating plane / SVM in that high-dimensional space
-  - Voila:  A nonlinear classifier!
+- **Astuce 1** : Identifier les points les plus proches du plan de separation optimal (les "vecteurs supports") et travailler directement a partir de ces instances.
+- **Astuce 2** : Formuler comme un probleme d'optimisation quadratique et utiliser les techniques de programmation quadratique.
+- **Astuce 3** (le "kernel trick") :
+  - Au lieu d'utiliser directement les caractéristiques, representer les données dans un espace de grande dimension construit a partir de fonctions de base (combinaisons polynomiales et gaussiennes des caractéristiques d'origine).
+  - Trouver un hyperplan separateur / SVM dans cet espace de grande dimension.
+  - Resultat : un classifieur non lineaire !
 
 <!-- SVM : hyperplan optimal, vecteurs supports sur la marge maximale -->
 
@@ -1358,20 +1162,36 @@ Intelligence Artificielle -- VI
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- Common SVM basis functions
-- zk = ( polynomial terms of xk of degree 1 to q )
-- zk = ( radial basis functions of xk )
-- zk = ( sigmoid functions of xk )
+# Noyaux SVM — Fonctions de Base
+
+Pour les données **non linéairement séparables**, le **kernel trick** projette implicitement dans un espace de grande dimension :
+
+| Noyau | Formule K(x, z) | Usage |
+|-------|-----------------|-------|
+| **Polynomial** | (x · z + c)^d | Frontières polynomiales |
+| **RBF (Gaussien)** | exp(−‖x−z‖²/2σ²) | Classification généraliste |
+| **Sigmoïde** | tanh(α x·z + c) | Analogue réseau de neurones |
+
+Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce du noyau).
+
+<!-- Kernel trick : SVM non-linéaire par transformation implicite dans un espace haute dimension -->
 
 ---
 
-- Copyright © 2001, 2003, Andrew W. Moore
-- SVM Performance
-- Anecdotally they work very well indeed.
-- State of art in many domains
-- Maths well understood
-- There was a lot of excitement and religious fervor about SVMs since 2001.
+# Performance Empirique des SVMs
+
+- **Excellents résultats** jusqu'aux années 2010 (texte, bioinformatique, vision, finance)
+- **Avantages** :
+  - Optimum global garanti (problème convexe, pas de minimum local)
+  - Bonne généralisation en haute dimension
+  - Fondements théoriques solides (dimension VC, marges)
+- **Limites et contexte actuel** :
+  - Coût O(n²) à O(n³) — difficile sur grands datasets
+  - Supplanté par le Deep Learning depuis 2012 (AlexNet, ImageNet)
+  - Toujours pertinent : petits datasets, haute dimension, garanties formelles
+
+<!-- SVMs : référence du ML classique, encore utilisés pour petits datasets et haute dimension -->
+
 
 ---
 
@@ -2098,7 +1918,7 @@ Intelligence Artificielle -- VI
 
 - Jeux à information imparfaite:
 - Etats de croyance probabilistes
-- Evaluation du regret:
+- Évaluation du regret:
 - Machine learning + théorie des jeux
 - Quelles actions meilleures -> Mise à jour des mixes
 - Ne converge pas en auto-play
@@ -2157,6 +1977,89 @@ Intelligence Artificielle -- VI
 
 ---
 
+# RLHF : Aligner les LLMs avec les Préférences Humaines
+
+- **Problème** : les LLMs entraînés sur du texte brut ne suivent pas forcément les instructions ni les valeurs humaines
+- **Comportements problématiques observés** :
+  - Réponses toxiques, biaisées ou dangereuses
+  - Hallucinations présentées avec confiance
+  - Réponses verbeuses mais peu utiles
+- **Solution** : Reinforcement Learning from Human Feedback (RLHF)
+  - Apprendre un **modèle de récompense** à partir des préférences humaines
+  - Optimiser le LLM via RL pour maximiser cette récompense
+
+<!-- RLHF : connexion directe entre RL classique (reward) et alignement des LLMs -->
+
+---
+
+# Pipeline RLHF : 3 Étapes
+
+**Étape 1 — Supervised Fine-Tuning (SFT)**
+- Fine-tuner le LLM pré-entraîné sur des démonstrations d'experts (~10k–100k exemples annotés)
+
+**Étape 2 — Reward Model (RM)**
+- Collecter des comparaisons : pour un prompt, A est préféré à B
+- Entraîner un modèle de récompense : RM(prompt, réponse) → score de qualité
+
+**Étape 3 — PPO Fine-tuning**
+- Optimiser le LLM via PPO pour maximiser RM(prompt, réponse)
+- Contrainte KL pour ne pas trop s'éloigner du modèle SFT
+
+<!-- Pipeline SFT → RM → PPO : fondement d'InstructGPT (2022), ChatGPT, Claude 1 -->
+
+---
+
+# Reward Modeling : Apprendre les Préférences Humaines
+
+**Modèle Bradley-Terry** : P(A ≻ B) = σ(r(A) − r(B))
+
+- Entraîner le RM à prédire quelle réponse les humains préfèrent
+- Données : paires (réponse_A, réponse_B, préférence) pour chaque prompt
+- Architecture : LLM backbone + tête de régression scalaire
+
+| Aspect | Valeur typique |
+|--------|----------------|
+| Données de comparaison | 30k–500k paires |
+| Accord inter-annotateurs | 60–75% |
+| Corrélation RM ↔ humains | ~0.75–0.85 |
+
+<!-- Bradley-Terry : modèle probabiliste de préférence, base de l'InstructGPT reward model -->
+
+---
+
+# PPO et InstructGPT / ChatGPT
+
+**Proximal Policy Optimization (PPO)** pour fine-tuner le LLM :
+
+- **Récompense combinée** : r(x,y) = RM(x,y) − β · KL(π_RL ‖ π_SFT)
+  - RM(x,y) : score du reward model (préférence humaine)
+  - β · KL : pénalité pour rester proche du modèle SFT (β ≈ 0.02–0.5)
+- **InstructGPT** (Ouyang et al., 2022) : première démonstration à grande échelle
+  - GPT-3 fine-tuné par RLHF → suivi d'instructions radicalement amélioré
+  - Base de ChatGPT (déployé Nov. 2022) puis GPT-4
+
+<!-- PPO + KL penalty : équilibre entre optimisation des préférences et préservation des capacités du LLM -->
+
+---
+
+# Constitutional AI : RLAIF sans Labels Humains
+
+**Anthropic Claude** — Constitution de principes plutôt qu'annotateurs massifs :
+
+1. **SFT initial** : fine-tuning sur des réponses bénignes
+2. **AI Feedback (RLAIF)** : un LLM critique génère ses propres préférences selon une **constitution** (principes : utile, inoffensif, honnête)
+3. **RM entraîné sur RLAIF** : scalabilité sans annotateurs humains
+4. **PPO** sur ce reward model constitutionnel
+
+| Méthode | Labels humains | Scalabilité |
+|---------|----------------|-------------|
+| RLHF classique | Requis (coûteux) | Limitée |
+| Constitutional AI (RLAIF) | Minimaux | Haute |
+
+<!-- Constitutional AI (Bai et al., 2022) : alignement scalable, base de Claude 1 et Claude 2 -->
+
+---
+
 <!-- _class: questions -->
 
 # Questions?
@@ -2179,7 +2082,7 @@ Intelligence Artificielle -- VI
 - Expérience DNN Bitcoin, Encog et machine learning
 - Amélioration par l'apprentissage d'un agent joueur de Go simple
 - Le Go et l’IA, Récentes avancées. Go Traxx
-- Evolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie.
+- Évolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie.
 - Approches évolutionnistes, automates cellulaires, Bac a sable. Golly, Encog
 - Pilotage d'un cluster de cache distribué pour le portage d’applications  dans le Cloud
 - Caches distribués, scaling, stratégies et clustering. Redis
@@ -2192,7 +2095,7 @@ Intelligence Artificielle -- VI
 > **Reinforcement Learning** : `RL/` - CartPole, DQN, Stable Baselines3
 > **Algorithmes genetiques** : `Sudoku/Sudoku-2-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 > **Deep Learning et GenAI** : `GenAI/` - Transformers, diffusion, LLMs
-> **Probabilites et inference** : `Probas/` - Infer.NET, reseaux bayesiens
+> **Probabilités et inference** : `Probas/` - Infer.NET, réseaux bayesiens
 
 <!-- Notebooks disponibles dans MyIA.AI.Notebooks/ -->
 
