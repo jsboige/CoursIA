@@ -133,14 +133,36 @@ Toute modification d'une strategie QC (main.py, parametres, periodes) **DOIT** e
 
 **Changer une date ou un parametre sans backtest = travail invalide.**
 
-### MCP qc-mcp
+### QC Cloud API - Acces via MCP Docker (OBLIGATOIRE)
 
-Le MCP `qc-mcp` est disponible sur ai-01 et doit etre utilise pour toute interaction avec QuantConnect Cloud. Les infos de connexion (User ID, Org IDs, tokens) sont sur le **dashboard RooSync** et dans les memoires agents — **pas dans le CLAUDE.md** pour raisons de securite.
+**Methode d'acces** : Utiliser le MCP Docker `quantconnect/mcp-server` configure dans `.mcp.json` a la racine du projet.
+- **NE PAS** utiliser de scripts Python avec l'API REST directe (provoque du rate-limiting et des erreurs d'auth)
+- Le MCP gere l'authentification et le rate-limiting automatiquement
+- Fichier de config : `.mcp.json` (deja dans `.gitignore`, JAMAIS committer)
 
-Pour retrouver les infos QC :
+**Configuration** (`.mcp.json`) :
+```json
+{
+  "mcpServers": {
+    "quantconnect": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "-e", "QUANTCONNECT_USER_ID", "-e", "QUANTCONNECT_API_TOKEN", "-e", "QUANTCONNECT_ORGANIZATION_ID", "quantconnect/mcp-server"],
+      "env": {
+        "QUANTCONNECT_USER_ID": "<voir dashboard RooSync>",
+        "QUANTCONNECT_API_TOKEN": "<voir dashboard RooSync>",
+        "QUANTCONNECT_ORGANIZATION_ID": "<voir dashboard RooSync>"
+      }
+    }
+  }
+}
+```
+
+**Rate limiting strict** : MAX 10 appels/minute entre TOUS les agents. Avant de lancer un backtest, poster sur le dashboard. Un seul agent a la fois sur l'API QC.
+
+**Pour retrouver les tokens** :
 - Dashboard workspace CoursIA : section status
-- Memoire ai-01 : `jared_qc_partnership.md`, `qc_strategies_catalog.md`
-- Messages RooSync : rechercher tag `quantconnect`
+- Messages RooSync : tag `quantconnect` ou `TOKEN`
+- En cas de token invalide : demander au coordinateur (ai-01) via RooSync
 
 ### Structure QC dans le depot
 
