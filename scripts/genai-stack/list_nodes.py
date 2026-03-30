@@ -1,32 +1,19 @@
+#!/usr/bin/env python3
+"""
+list_nodes.py - Wrapper de retrocompatibilite
+
+DEPRECATION: Utiliser 'genai.py models list-nodes' a la place.
+
+Ce script conserve la compatibilite avec les appels existants:
+    python list_nodes.py
+"""
+
 import sys
 from pathlib import Path
 
-# Ajout du dossier courant au path pour trouver le module core local
-current_dir = Path(__file__).resolve().parent
-sys.path.append(str(current_dir))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core.auth_manager import GenAIAuthManager
-from core.comfyui_client import ComfyUIClient, ComfyUIConfig
-
-def list_nodes():
-    auth_manager = GenAIAuthManager()
-    config = auth_manager.load_config()
-    token = config.get('bcrypt_hash')
-    
-    client = ComfyUIClient(ComfyUIConfig(api_key=token))
-    
-    print("Récupération des infos des nœuds...")
-    info = client.get_object_info()
-    
-    qwen_nodes = [k for k in info.keys() if "Qwen" in k]
-    print(f"Nœuds Qwen trouvés ({len(qwen_nodes)}) :")
-    for node in qwen_nodes:
-        print(f" - {node}")
-        
-    wrapper_nodes = [k for k in info.keys() if "Wrapper" in k]
-    print(f"\nNœuds Wrapper trouvés ({len(wrapper_nodes)}) :")
-    for node in wrapper_nodes:
-        print(f" - {node}")
+from commands.models import list_nodes
 
 if __name__ == "__main__":
     list_nodes()

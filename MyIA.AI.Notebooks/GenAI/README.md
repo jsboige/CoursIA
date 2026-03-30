@@ -1,26 +1,36 @@
-# 🖼️ GenAI Images Ecosystem - CoursIA
+# GenAI - Ecosysteme IA Generative
 
-> **Écosystème modulaire de génération d'images par Intelligence Artificielle**  
-> Architecture production-ready | 18 notebooks spécialisés | Compatible MCP
+Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : images, texte, agents et vibe-coding.
 
----
+## Vue d'ensemble
 
-## 📋 **Vue d'Ensemble**
+| Statistique | Valeur |
+|-------------|--------|
+| Notebooks | 96 |
+| Sous-domaines | 9 (Environment, Image, Audio, Video, Texte, SemanticKernel, EPF, Vibe-Coding, Playwright-OWUI) |
+| Duree totale | ~75-85h |
+| Taux validation | 95%+ |
 
-L'écosystème GenAI Images CoursIA est une architecture modulaire complète pour l'exploration, l'apprentissage et la production d'images générées par IA. Cette structure suit les principes **SDDD (Semantic-Documentation-Driven-Design)** et s'intègre parfaitement avec l'infrastructure **MCP (MyIA Control Plane)**.
+## Structure
 
-### 🎯 **Objectifs**
-- **🎓 Pédagogique** : Progression structurée de l'initiation à l'expertise
-- **🔬 Expérimental** : Comparaison et évaluation des modèles
-- **🏭 Production** : Intégration dans workflows professionnels
-- **🔄 Évolutif** : Architecture modulaire extensible
+```
+GenAI/
+├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
+├── Image/                   # Generation d'images (19 notebooks)
+├── Audio/                   # Speech, TTS, musique, separation (16 notebooks)
+├── Video/                   # Generation et comprehension video (16 notebooks)
+├── Texte/                   # LLMs et generation de texte (10 notebooks)
+├── SemanticKernel/          # Microsoft Semantic Kernel (14 notebooks)
+├── EPF/                     # Projets etudiants (4 notebooks)
+├── Playwright-OWUI/         # Tests E2E Playwright sur Open WebUI (5 modules, 30+ tests)
+└── Vibe-Coding/             # Tutorials Claude Code et Roo Code
+```
 
----
+## Sous-domaines
 
-## 🏗️ **Architecture Modulaire**
-
-### 📖 **00-GenAI-Environment** (Setup & Infrastructure)
-*🟢 Niveau Débutant | Prérequis obligatoires*
+### 00-GenAI-Environment - Setup et Infrastructure
+*Niveau Debutant | Prerequis obligatoires*
+*Validation: 100% (6/6 notebooks)*
 
 | Notebook | Description | Technologies |
 |----------|-------------|--------------|
@@ -28,9 +38,12 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 | **00-2-Docker-Services-Management** | Gestion services conteneurisés | Docker Compose, Portainer |
 | **00-3-API-Endpoints-Configuration** | Configuration endpoints API | OpenAI, Hugging Face, Local |
 | **00-4-Environment-Validation** | Tests et validation setup | Pytest, Monitoring |
+| **00-5-ComfyUI-Local-Test** | Test local des services ComfyUI | ComfyUI, Bearer Token |
+| **00-6-Local-Docker-Deployment** | Deploiement Docker local complet | Docker Compose, GPU |
 
 ### 🖼️ **01-Images-Foundation** (Modèles Base)
 *🟢 Niveau Débutant | Introduction aux fondamentaux*
+*Validation: 100% (5/5 notebooks)*
 
 | Notebook | Description | Technologies |
 |----------|-------------|--------------|
@@ -40,6 +53,7 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 
 ### 🎨 **02-Images-Advanced** (Techniques Avancées)
 *🟠 Niveau Intermédiaire | Modèles spécialisés*
+*Validation: 100% (4/4 notebooks)*
 
 | Notebook | Description | Technologies |
 |----------|-------------|--------------|
@@ -50,6 +64,7 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 
 ### 🔄 **03-Images-Orchestration** (Multi-Modèles)
 *🔴 Niveau Expert | Orchestration complexe*
+*Validation: 100% (3/3 notebooks)*
 
 | Notebook | Description | Technologies |
 |----------|-------------|--------------|
@@ -59,6 +74,7 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 
 ### 🏗️ **04-Images-Applications** (Applications Métier)
 *🔴 Niveau Expert | Cas d'usage production*
+*Validation: 100% (4/4 notebooks)*
 
 | Notebook | Description | Technologies |
 |----------|-------------|--------------|
@@ -67,28 +83,130 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 | **04-3-Production-Integration** | Intégration systèmes production | APIs, Microservices |
 | **04-3-Cross-Stitch-Pattern-Maker-Legacy** | Générateur motifs point de croix | DMC Colors, Pattern Generation |
 
-### 📝 **Texte/** (Generation de Texte)
-*Reference | Complementaire aux modules Images*
+### Audio/ - Speech, Voix & Musique par IA
 
-| Notebook | Description | Technologies |
-|----------|-------------|--------------|
-| **1_OpenAI_Intro** | Introduction a l'API OpenAI | GPT-4, Chat Completions |
-| **2_PromptEngineering** | Techniques de prompt engineering | Few-shot, Chain-of-Thought |
-| **3_RAG** | Retrieval Augmented Generation | Embeddings, Vector Search |
-| **4_LocalLlama** | Utilisation de LLMs locaux | Llama, Ollama |
+*Serie complete pour le traitement audio par IA generative (16 notebooks)*
+*Validation: 100% (16/16 notebooks)*
+
+| Niveau | Notebooks | Contenu |
+|--------|-----------|---------|
+| **Foundation** | 01-1 a 01-5 | OpenAI TTS, Whisper STT, operations audio, Whisper local, Kokoro TTS |
+| **Advanced** | 02-1 a 02-4 | Chatterbox TTS, XTTS voice cloning, MusicGen, Demucs separation |
+| **Orchestration** | 03-1 a 03-3 | Multi-model comparison, pipelines, temps reel |
+| **Applications** | 04-1 a 04-4 | Contenu educatif, transcription, composition musicale, sync A/V |
+
+[README Audio](Audio/README.md)
+
+### Video/ - Generation & Comprehension Video par IA
+
+*Serie complete pour la generation et comprehension video par IA (16 notebooks)*
+*Validation: 100% (16/16 notebooks)*
+
+| Niveau | Notebooks | Contenu |
+|--------|-----------|---------|
+| **Foundation** | 01-1 a 01-5 | Operations video, GPT-5 understanding, Qwen-VL, ESRGAN, AnimateDiff |
+| **Advanced** | 02-1 a 02-4 | HunyuanVideo, LTX-Video, Wan, SVD image-to-video |
+| **Orchestration** | 03-1 a 03-3 | Multi-model comparison, workflows, ComfyUI Video |
+| **Applications** | 04-1 a 04-4 | Video educative, workflows creatifs, Sora API, production |
+
+[README Video](Video/README.md)
+
+### Texte/ - Generation de Texte par IA
+
+*Serie complete sur les LLMs et APIs OpenAI modernes (10 notebooks)*
+*Validation: 100% (10/10 notebooks)*
+
+| Tier | Notebooks | Contenu |
+|------|-----------|---------|
+| **Fondations** | 1-2 | OpenAI Intro, Prompt Engineering |
+| **Sorties Structurees** | 3-4 | Structured Outputs, Function Calling |
+| **Augmentation** | 5-7 | RAG moderne, PDF/Web Search, Code Interpreter |
+| **Avance** | 8-10 | Reasoning Models, Production Patterns, Local LLMs |
+
+[README Texte](Texte/README.md)
+
+### SemanticKernel/ - Microsoft Semantic Kernel
+
+*SDK pour integration LLMs dans applications .NET/Python (20 notebooks)*
+*Validation: 85% (17/20 notebooks)*
+
+| Section | Notebooks | Contenu |
+|---------|-----------|---------|
+| **Serie principale** | 01-08 | Fundamentals, Functions, Agents, Filters, VectorStores, Process, MultiModal, MCP |
+| **Interop avancee** | 09-10 | Python/C# CLR, NotebookMaker (3 variantes) |
+| **Templates** | 3 | Templates C# et Python |
+
+[README SemanticKernel](SemanticKernel/README.md)
+
+### EPF/ - Projets Etudiants
+
+*Projets realises par les etudiants EPF (4 notebooks)*
+
+| Projet | Auteurs | Description |
+|--------|---------|-------------|
+| barbie-schreck | Carole & Cleo | Generation images style Barbie/Shrek |
+| receipe_maker | Dorian & Bastien | Generateur de recettes |
+| medical_chatbot | Louise & Jeanne Celine | Chatbot medical educatif |
+| fort-boyard-python | - | Challenges style Fort Boyard |
+
+[README EPF](EPF/README.md)
+
+### Playwright-OWUI/ - Tests E2E sur Open WebUI
+
+*Serie pedagogique Playwright pour tester une application GenAI reelle (5 modules, 30+ tests)*
+*Technologies: Playwright, TypeScript, Open WebUI*
+
+| Module | Nom | Duree | Niveau |
+|--------|-----|-------|--------|
+| 01 | Decouverte de Playwright & OWUI | 2-3h | Debutant |
+| 02 | Navigation & Authentification | 2-3h | Debutant+ |
+| 03 | Chat & Streaming LLM | 3h | Intermediaire |
+| 04 | RAG, Outils MCP & Avances | 3h | Intermediaire+ |
+| 05 | Multi-tenant, API & CI/CD | 3-4h | Expert |
+
+[README Playwright-OWUI](Playwright-OWUI/README.md)
+
+### Vibe-Coding/ - Tutorials IA Generative pour Developpeurs
+
+*Ateliers Claude Code et Roo Code*
+
+| Section | Contenu | Duree |
+|---------|---------|-------|
+| Claude-Code | 5 modules (decouverte a automatisation) | 13-16h |
+| Roo-Code | 5 modules + ateliers avances | ~15h |
+
+[README Vibe-Coding](Vibe-Coding/README.md)
+
+---
+
+## Liens vers sous-README
+
+| Sous-domaine | README |
+|--------------|--------|
+| Image | [Image/README.md](Image/README.md) |
+| Audio | [Audio/README.md](Audio/README.md) |
+| Video | [Video/README.md](Video/README.md) |
+| Texte | [Texte/README.md](Texte/README.md) |
+| SemanticKernel | [SemanticKernel/README.md](SemanticKernel/README.md) |
+| EPF | [EPF/README.md](EPF/README.md) |
+| Playwright-OWUI | [Playwright-OWUI/README.md](Playwright-OWUI/README.md) |
+| Vibe-Coding | [Vibe-Coding/README.md](Vibe-Coding/README.md) |
 
 ---
 
 ## Statut des Modules
 
-| Module | Statut | Description |
-|--------|--------|-------------|
-| 00-GenAI-Environment | Complet | Setup et configuration |
-| 01-Images-Foundation | Complet | DALL-E 3, GPT-5, Forge, Qwen |
-| 02-Images-Advanced | Complet | Qwen 2509, FLUX, SD 3.5, Z-Image |
-| 03-Images-Orchestration | Complet | Comparaison, Workflows, Optimisation |
-| 04-Images-Applications | Complet | Applications pedagogiques |
-| Texte/ | Reference | OpenAI Intro, Prompts, RAG, Local LLMs |
+| Module | Statut | Validation | Description |
+|--------|--------|------------|-------------|
+| 00-GenAI-Environment | Complet | 100% (6/6) | Setup et configuration |
+| 01-Images-Foundation | Complet | 100% (5/5) | DALL-E 3, GPT-5, Forge, Qwen |
+| 02-Images-Advanced | Complet | 100% (4/4) | Qwen 2509, FLUX, SD 3.5, Z-Image |
+| 03-Images-Orchestration | Complet | 100% (3/3) | Comparaison, Workflows, Optimisation |
+| 04-Images-Applications | Complet | 100% (4/4) | Applications pedagogiques |
+| Audio/ | Complet | 100% (16/16) | 16 notebooks : TTS, STT, voix, musique, separation |
+| Video/ | Complet | 100% (16/16) | 16 notebooks : Operations, comprehension, generation, workflows |
+| Texte/ | Complet | 100% (10/10) | 10 notebooks : OpenAI, Prompts, Structured Outputs, RAG, Reasoning, Production |
+| SemanticKernel/ | Complet | 85% (17/20) | SDK Microsoft pour integration LLMs |
 
 ---
 
@@ -100,8 +218,8 @@ L'écosystème GenAI Images CoursIA est une architecture modulaire complète pou
 cd MyIA.AI.Notebooks/GenAI
 
 # Configuration environnement
-cp .env.template .env
-# Éditer .env avec vos API keys
+cp .env.example .env
+# Éditer .env avec vos API keys (token fourni par l'enseignant pour le cours)
 ```
 
 ### 2. **Installation**
@@ -184,6 +302,18 @@ Pillow>=10.0.0
 opencv-python>=4.8.0
 numpy>=1.24.0
 
+# Audio Processing
+librosa>=0.10.0
+soundfile>=0.12.0
+pydub>=0.25.0
+faster-whisper>=0.10.0
+
+# Video Processing
+moviepy>=2.0.0
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.9
+decord>=0.6.0
+
 # Jupyter & Notebooks
 jupyter>=1.0.0
 ipywidgets>=8.0.0
@@ -195,29 +325,89 @@ anthropic>=0.7.0
 huggingface-hub>=0.19.0
 ```
 
+### 🎬 **FFmpeg Installation (Requis pour Video/Audio)**
+
+FFmpeg est indispensable pour les notebooks Video et certains notebooks Audio. Il permet :
+- **Decodage video** : lecture, conversion, extraction de metadonnees
+- **Operations audio** : decoupage, mixing, format conversion
+- **Integration Python** : moviepy, pydub, ffmpeg-python
+
+#### Installation Windows
+
+```powershell
+# Option 1: Script automatique (recommande)
+powershell -ExecutionPolicy Bypass -File scripts/install-ffmpeg.ps1
+
+# Option 2: Installation manuelle winget
+winget install FFmpeg
+
+# Option 3: Installation locale (pour developpement)
+# Le script installera dans: D:\Dev\CoursIA\tools\ffmpeg\
+# Le notebook execution script l'ajoutera automatiquement au PATH
+```
+
+#### Installation Linux
+
+```bash
+# Ubuntu/Debian
+sudo apt update && sudo apt install -y ffmpeg
+
+# Fedora
+sudo dnf install -y ffmpeg
+
+# Verifier l'installation
+ffmpeg -version
+```
+
+#### Installation macOS
+
+```bash
+# Via Homebrew
+brew install ffmpeg
+
+# Verifier l'installation
+ffmpeg -version
+```
+
+#### Verification dans Python
+
+```python
+# Tester FFmpeg depuis Python
+import subprocess
+result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
+print(result.stdout.split('\n')[0])  # Affiche la version
+```
+
+**Note** : Le script `scripts/genai-stack/commands/notebooks.py` ajoute automatiquement
+`D:/Dev/CoursIA/tools/ffmpeg/bin` au PATH lors de l'execution des notebooks.
+
 ---
 
 ## 📊 **Progression Pédagogique**
 
 ### 🎯 **Parcours Recommandés**
 
-#### **👨‍🎓 Débutant (20h)**
+#### **👨‍🎓 Débutant (30h)**
 1. `00-GenAI-Environment/` - Setup complet (4h)
 2. `01-Images-Foundation/` - Bases DALL-E & GPT-5 (8h)
-3. `01-3-Basic-Image-Operations` - Manipulation images (4h)
-4. Premier projet pratique (4h)
+3. `Audio/01-Foundation/` - TTS & STT basics (6h)
+4. `Video/01-Foundation/` - Operations video basics (6h)
+5. Premier projet pratique (6h)
 
-#### **👨‍💻 Intermédiaire (40h)**
-1. Révision Débutant (4h)
+#### **👨‍💻 Intermédiaire (60h)**
+1. Révision Débutant (6h)
 2. `02-Images-Advanced/` - Modèles spécialisés (16h)
-3. `03-1-Multi-Model-Comparison` - Évaluation (8h)
-4. Projet intégration multi-modèles (12h)
+3. `Audio/02-Advanced/` - Voix, musique, separation (10h)
+4. `Video/02-Advanced/` - Generation video (12h)
+5. Projet intégration multi-modales (16h)
 
-#### **🚀 Expert (80h)**
-1. Révision Intermédiaire (8h)
-2. `03-Images-Orchestration/` - Architecture complexe (24h)
-3. `04-Images-Applications/` - Production (32h)
-4. Projet production complet (16h)
+#### **🚀 Expert (120h)**
+1. Révision Intermédiaire (12h)
+2. `03-Images-Orchestration/` - Architecture complexe (16h)
+3. `Audio/03-Orchestration/` + `04-Applications/` - Pipelines audio (14h)
+4. `Video/03-Orchestration/` + `04-Applications/` - Workflows video (16h)
+5. `04-Images-Applications/` - Production (20h)
+6. Projet production complet (42h)
 
 ---
 
@@ -300,19 +490,23 @@ huggingface-hub>=0.19.0
 Après completion de cet écosystème, vous maîtriserez :
 
 ### 🎯 **Compétences Techniques**
-- ✅ **Multi-modal AI** : Texte → Image, Image → Image
-- ✅ **Model comparison** : Évaluation objective performances  
+- ✅ **Multi-modal AI** : Texte → Image, Audio, Video
+- ✅ **Model comparison** : Évaluation objective performances
 - ✅ **Production deployment** : Architecture scalable
 - ✅ **Workflow automation** : Chaînes traitement complexes
+- ✅ **Speech processing** : STT, TTS, voice cloning, musique
+- ✅ **Video understanding** : Compréhension, génération, édition
 
 ### 🚀 **Projets Réalisables**
 - 🎨 **Générateur contenu visuel** automatisé
-- 📚 **Plateforme éducative** avec images adaptatives
+- 🎙️ **Podcast/TTS generator** avec voix personnalisées
+- 🎬 **Video pédagogique** generée automatiquement
+- 📚 **Plateforme éducative** avec contenus multimédia adaptatifs
 - 🏭 **Service production** génération à la demande
-- 🔬 **Benchmark suite** comparaison modèles
+- 🔬 **Benchmark suite** comparaison modèles multi-modaux
 
 ---
 
-**🎓 Bon apprentissage avec l'écosystème GenAI Images CoursIA !**
+**🎓 Bon apprentissage avec l'écosystème GenAI CoursIA !**
 
 *Créé avec ❤️ par l'équipe CoursIA | Architecture SDDD | Compatible MCP*

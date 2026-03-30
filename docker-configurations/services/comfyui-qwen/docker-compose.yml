@@ -61,7 +61,9 @@ services:
       - API_TIMEOUT=${API_TIMEOUT:-30}
       - MAX_LOGIN_ATTEMPTS=${MAX_LOGIN_ATTEMPTS:-3}
       - SESSION_EXPIRE_HOURS=${SESSION_EXPIRE_HOURS:-24}
-    
+      # Idle monitoring (pour documentation, utilise par le sidecar)
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
+
     working_dir: /workspace/ComfyUI
     
     entrypoint: ["/bin/bash", "/entrypoint.sh"]
@@ -85,6 +87,41 @@ services:
       - "com.myia.gpu=rtx-3090"
       - "com.myia.model=qwen-image-edit-2509"
       - "com.myia.phase=production-secure"
+
+  # Sidecar: Idle Monitor - Unload models after inactivity
+  idle-monitor:
+    build:
+      context: ../shared
+      dockerfile: Dockerfile.idle-monitor
+    container_name: comfyui-qwen-idle-monitor
+    hostname: comfyui-qwen-idle-monitor
+
+    environment:
+      - COMFYUI_URL=http://comfyui-qwen:8188
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-60}
+      - COMFYUI_AUTH_TOKEN=${COMFYUI_RAW_TOKEN}
+      - COMFYUI_USERNAME=${COMFYUI_USERNAME:-admin}
+      - COMFYUI_PASSWORD=${COMFYUI_RAW_TOKEN}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TZ=${TZ:-Europe/Paris}
+
+    working_dir: /app
+
+    command: ["python", "comfyui_idle_monitor.py"]
+
+    depends_on:
+      comfyui-qwen:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    networks:
+      - comfyui-network
+
+    labels:
+      - "com.myia.service=comfyui-qwen-idle-monitor"
+      - "com.myia.type=sidecar"
 
 networks:
   comfyui-network:

@@ -1,0 +1,158 @@
+# ===============================
+# QuantConnect AI Trading Series
+# Python Dependencies
+# ===============================
+
+# ===============================
+# Core QuantConnect
+# ===============================
+quantconnect-lean>=2.5.14000
+quantconnect-stubs>=14.0.0  # Type hints for IDE support
+
+# ===============================
+# Data Science & Numerical Computing
+# ===============================
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+scikit-learn>=1.3.0
+
+# ===============================
+# Visualization
+# ===============================
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.14.0
+ipywidgets>=8.0.0  # For interactive Jupyter widgets
+
+# ===============================
+# Machine Learning - Classical
+# ===============================
+xgboost>=2.0.0
+lightgbm>=4.0.0
+catboost>=1.2.0
+
+# ===============================
+# Deep Learning
+# ===============================
+# TensorFlow (CPU-first, GPU optional)
+tensorflow>=2.15.0
+tensorflow-probability>=0.23.0
+
+# PyTorch (CPU-first, GPU optional)
+# torch>=2.1.0
+# torchvision>=0.16.0
+
+# Keras (standalone, not tf.keras)
+keras>=3.0.0
+
+# ===============================
+# Reinforcement Learning
+# ===============================
+stable-baselines3>=2.2.0
+gymnasium>=0.29.0  # Successor to gym
+shimmy>=1.3.0  # For gym compatibility
+
+# ===============================
+# LLM & AI Services
+# ===============================
+openai>=1.12.0
+anthropic>=0.18.0
+langchain>=0.1.0
+langchain-openai>=0.0.5
+
+# ===============================
+# Alternative Data & APIs
+# ===============================
+newsapi-python>=0.2.7  # NewsAPI for sentiment analysis (free tier)
+yfinance>=0.2.36  # Yahoo Finance data (fallback)
+requests>=2.31.0
+
+# ===============================
+# NLP & Sentiment Analysis
+# ===============================
+transformers>=4.37.0
+textblob>=0.17.0
+vaderSentiment>=3.3.2
+spacy>=3.7.0
+
+# ===============================
+# Technical Analysis
+# ===============================
+ta-lib>=0.4.28  # Requires manual installation on Windows
+pandas-ta>=0.3.14b0
+
+# ===============================
+# Portfolio Optimization
+# ===============================
+cvxpy>=1.4.0
+PyPortfolioOpt>=1.5.5
+
+# ===============================
+# Backtesting & Metrics
+# ===============================
+empyrical>=0.5.5
+pyfolio>=0.9.2
+
+# ===============================
+# Configuration & Environment
+# ===============================
+python-dotenv>=1.0.0
+pydantic>=2.6.0
+pydantic-settings>=2.1.0
+
+# ===============================
+# Development & Testing
+# ===============================
+jupyter>=1.0.0
+jupyterlab>=4.0.0
+ipykernel>=6.29.0
+pytest>=8.0.0
+black>=24.0.0
+flake8>=7.0.0
+
+# ===============================
+# Utilities
+# ===============================
+tqdm>=4.66.0
+loguru>=0.7.0
+joblib>=1.3.0
+cloudpickle>=3.0.0
+
+# ===============================
+# Notes
+# ===============================
+
+# Installation Instructions:
+# 1. Create virtual environment:
+#    python -m venv venv
+#
+# 2. Activate environment:
+#    Windows: venv\Scripts\activate
+#    Linux/Mac: source venv/bin/activate
+#
+# 3. Install dependencies:
+#    pip install -r requirements.txt
+#
+# 4. Install TA-Lib (Windows):
+#    - Download from: https://github.com/cgohlke/talib-build/releases
+#    - Install: pip install TA_Lib-0.4.28-cp311-cp311-win_amd64.whl
+#
+# 5. Install spaCy language model:
+#    python -m spacy download en_core_web_sm
+#
+# GPU Support (optional):
+# - For TensorFlow GPU:
+#   pip install tensorflow[and-cuda]>=2.15.0
+#
+# - For PyTorch GPU (Windows CUDA 12.1):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+#
+# LEAN CLI (optional for local development):
+# - Install separately: pip install lean
+# - Requires Docker Desktop running
+#
+# Version Compatibility:
+# - Python 3.11+ recommended
+# - Compatible with QuantConnect cloud (Python 3.11)
+# - NumPy < 2.0 for compatibility with some libraries

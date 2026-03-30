@@ -1,0 +1,151 @@
+version: '3.8'
+
+# QuantConnect LEAN Local Development Environment
+# Docker Compose configuration for running LEAN Engine locally
+
+services:
+  lean-engine:
+    image: quantconnect/lean:latest
+    container_name: quantconnect-lean
+    hostname: lean-engine
+
+    # Volumes - Mount notebooks and data
+    volumes:
+      # Notebooks directory (read/write)
+      - type: bind
+        source: ../../MyIA.AI.Notebooks/QuantConnect
+        target: /Lean/Launcher/notebooks
+        read_only: false
+
+      # Algorithms directory (read/write)
+      - type: bind
+        source: ../../MyIA.AI.Notebooks/QuantConnect/algorithms
+        target: /Lean/Launcher/algorithms
+        read_only: false
+
+      # Local data directory (market data)
+      - type: bind
+        source: ../../MyIA.AI.Notebooks/QuantConnect/data
+        target: /Lean/Data
+        read_only: false
+
+      # Results directory
+      - type: bind
+        source: ./results
+        target: /Lean/Results
+        read_only: false
+
+      # Logs directory
+      - type: bind
+        source: ./logs
+        target: /Lean/Logs
+        read_only: false
+
+      # LEAN configuration
+      - type: bind
+        source: ./lean.json
+        target: /Lean/Launcher/config.json
+        read_only: true
+
+      # Python shared libraries
+      - type: bind
+        source: ../../MyIA.AI.Notebooks/QuantConnect/shared
+        target: /Lean/Launcher/shared
+        read_only: true
+
+    # Environment variables
+    environment:
+      # QuantConnect API credentials (for cloud sync)
+      - QC_API_ACCESS_TOKEN=${QC_API_ACCESS_TOKEN}
+      - QC_API_USER_ID=${QC_API_USER_ID}
+
+      # Python environment
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+
+      # Timezone
+      - TZ=${TZ:-UTC}
+
+      # LEAN configuration
+      - LEAN_MODE=${LEAN_MODE:-release}
+      - LEAN_ENVIRONMENT=${LEAN_ENVIRONMENT:-backtesting}
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # API Keys (optional, for alternative data)
+      - NEWSAPI_KEY=${NEWSAPI_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
+
+    # Ports
+    ports:
+      # Python debugger (ptvsd)
+      - "${DEBUG_PORT:-5678}:5678"
+
+      # Jupyter (if running notebooks in container)
+      - "${JUPYTER_PORT:-8888}:8888"
+
+    # Working directory
+    working_dir: /Lean/Launcher
+
+    # Command (override to run specific algorithm)
+    # Default: keep container alive for manual commands
+    command: tail -f /dev/null
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Network
+    networks:
+      - lean-network
+
+    # Resource limits (adjust based on your system)
+    deploy:
+      resources:
+        limits:
+          cpus: '${CPU_LIMIT:-4}'
+          memory: ${MEMORY_LIMIT:-8G}
+        reservations:
+          cpus: '${CPU_RESERVE:-2}'
+          memory: ${MEMORY_RESERVE:-4G}
+
+    # GPU support (optional, for Deep Learning notebooks)
+    # Uncomment if you have NVIDIA GPU + nvidia-docker
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           device_ids: ['${GPU_DEVICE_ID:-0}']
+    #           capabilities: [gpu]
+
+    labels:
+      - "com.coursia.service=quantconnect-lean"
+      - "com.coursia.phase=development"
+
+networks:
+  lean-network:
+    driver: bridge
+    name: quantconnect-lean-network
+
+# Notes:
+# - Pour lancer un backtest :
+#   docker-compose exec lean-engine lean backtest <project-name>
+#
+# - Pour compiler un algorithme :
+#   docker-compose exec lean-engine lean build <project-name>
+#
+# - Pour accéder au shell :
+#   docker-compose exec lean-engine bash
+#
+# - Pour voir les logs :
+#   docker-compose logs -f lean-engine
+#
+# - GPU support :
+#   Décommenter la section deploy avec nvidia si GPU disponible
+#   Requiert nvidia-docker : https://github.com/NVIDIA/nvidia-docker
+#
+# - Data download :
+#   docker-compose exec lean-engine lean data download --dataset us-equity

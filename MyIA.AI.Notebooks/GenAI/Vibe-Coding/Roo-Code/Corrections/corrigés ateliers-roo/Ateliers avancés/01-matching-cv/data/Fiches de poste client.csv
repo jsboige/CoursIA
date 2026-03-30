@@ -1,0 +1,41 @@
+Titre,Description brute,Secteur,Compétences clés,Langues,Localisation,Remote,Date de début,Durée,Type de contrat
+Senior Software Engineer,Developpement de solutions innovantes pour offrir une experience d'achat engageante et personnalisee,e-commerce,"PHP, Node.js, Golang, Symfony, Javascript, Typescript, Angular, MongoDB, MySQL, GCP, AWS","Francais, Anglais",Paris,2j/semaine,2025-05-01,6 mois,"Freelance, CDI"
+Senior Security Engineer,Garantir une experience securisee et fiable pour les utilisateurs,e-commerce,AWS,"Francais, Anglais",Paris,2j/semaine,2025-08-01,6 mois,"Freelance, CDI"
+Senior Product Designer,Ameliorer l'experience utilisateur sur la marketplace,e-commerce,Figma,"Francais, Anglais",Paris,2j/semaine,2025-07-01,6 mois,"Freelance, CDI"
+Senior Data Analyst Marketing,Modeliser et monitorer les datasets marketing,e-commerce,"Python, SQL, ML, DL, AB testing, AWS, GCP, Azure","Francais, Anglais",Paris,2j/semaine,2025-05-01,3 a 6 mois,"Freelance, CDI"
+DevOps,Assurer l'automatisation et la securisation des deploiements applicatifs,e-commerce,"Powershell, Python, Google Cloud, Kubernetes, Docker",Francais,Paris,3j/semaine,2025-01-01,6 mois,"Freelance, CDI"
+Chef de projet AMOA,Piloter la coordination globale d'un projet de reorganisation,Service aux personnes,,Francais,Paris,2j/semaine,2025-01-01,6 mois,"Freelance, CDI"
+Product Owner,Refonte d'outils de suivi des leads et generation de devis,BFA,"Jira, Confluence, MS Office",Francais,Paris,2j/semaine,2025-01-01,6 mois,CDI
+Data Architecte,Moderniser la chaine BI et les outils analytiques,Medias et Publicite,"Azure, Azure Data Factory, Oracle, PowerBI","Francais, Anglais",Paris,2j/semaine,2025-01-01,6 mois,"Freelance, CDI"
+Tech Lead Data,Moderniser la chaine BI et les outils analytiques,Medias et Publicite,"Azure, Azure Data Factory, Oracle, PowerBI","Francais, Anglais",Paris,2j/semaine,2025-01-01,6 mois,"Freelance, CDI"
+Architecte technique AWS,Acceleration Move2Cloud,BFA,"AWS, Terraform, Python, Jenkins","Francais, Anglais",Paris,2j/semaine,2025-02-01,6 mois,"Freelance, CDI"
+Architecte Cloud,Mettre en place une plateforme de qualifications cloud,Cybersecurite,"Linux, Red Hat, OpenShift, Kubernetes, GitHub",,Paris,2j/semaine,2025-02-01,6 mois,"Freelance, CDI"
+Chef de projet Monetique,Faire evoluer les systemes de paiement en points de vente,Restauration et hotellerie,,"Francais, Anglais",Paris,2j/semaine,2025-01-01,6 mois,"Freelance, CDI"
+Data Engineer Senior,Optimiser la conception et l'industrialisation de modeles d'IA,Defense,,"Francais, Anglais",Paris,2j/semaine,2025-12-01,6 mois,"Freelance, CDI"
+Engineering Manager Front-end,Developper une application de gestion de formation,Service aux personnes,"Ruby, Angular, Nest.js",Francais,Paris,2j/semaine,2025-12-01,6 mois,"Freelance, CDI"
+Data Lead,Piloter la valorisation strategique de la donnee,Service et restauration,"MySQL, Google Cloud, Python","Francais, Anglais",Paris,2j/semaine,2025-02-01,8 mois,CDI
+Responsable d'exploitation,Piloter l'industrialisation et la securite des infrastructures IT,Service numerique,"Unix, NoSQL, Ansible",Francais,Paris,2j/semaine,2025-02-01,6 mois,"Freelance, CDI"
+Ingenieur developpement Web Interface,Developper et maintenir des interfaces web complexes,Ingenierie,"VueJS, Node.JS, Json","Francais, Anglais",Paris,2j/semaine,2025-02-01,6 mois,CDI
+PMO,Transformation du SI avec mise en oeuvre de la politique de securite,Distribution,MS Office,"Francais, Anglais",Paris,2j/semaine,2025-08-01,6 mois,CDI
+QA,Assurer la conception et l'execution des tests e-commerce,e-commerce,"API, Jira, Confluence, Cypress","Francais, Anglais",Paris,2j/semaine,2025-07-01,6 mois,"Freelance, CDI"
+Delivery Manager,Piloter l'industrialisation et l'automatisation des infrastructures IT,Service numerique,,Francais,Paris,2j/semaine,2025-11-01,6 mois,"Freelance, CDI"
+Product Owner,Piloter le developpement et le suivi de l'outil CRM,BFA,"Jira, Confluence, Squash, MS Excel",Francais,Paris,2j/semaine,2025-10-01,6 mois,"Freelance, CDI"
+Architecte Cybersecurite,Analyse de risques et validation d'architectures securite,BFA,IAM,"Francais, Anglais",Paris,2j/semaine,2025-11-01,6 mois,"Freelance, CDI"
+Architecte securite,Analyse de risques et definition des exigences securite,BFA,"Kubernetes, Docker, Terraform","Francais, Anglais",Paris,2j/semaine,2025-11-01,6 mois,"Freelance, CDI"
+Developpeur fullstack,Migration des sites existants sur la nouvelle plateforme,Service et hotellerie,"Javascript, VueJS, Jquery, HTML, CSS","Francais, Anglais",Paris,2j/semaine,2025-01-01,6 mois,"Freelance, CDI"
+Chef de projet technique,Conception et mise en oeuvre des solutions logicielles,Service numerique,"Ubuntu, PostgreSQL, Ansible, Cassandra, Elasticsearch",Francais,Paris,2j/semaine,2025-11-01,6 mois,"Freelance, CDI"
+Ingenieur test et validation,Pilotage des plans de services,Medias,"Jira, Confluence, Squash","Francais, Anglais",Paris,1j/semaine,2025-04-01,6 mois,CDI
+Ingenieur test et validation,CRM et Parcours client,Medias,"Jira, Confluence, Squash","Francais, Anglais",Paris,1j/semaine,2025-05-01,7 mois,CDI
+Ingenieur test et validation,Valider les evolutions logicielles des decodeurs,Medias,"Jira, Confluence, Squash","Francais, Anglais",Paris,1j/semaine,2025-06-01,8 mois,CDI
+Senior R&D Security Engineer,Piloter la securite produit Secure by Design,Telecommunication,Linux,"Francais, Anglais",Paris,2j/semaine,2025-03-01,6 mois,"CDI, Freelance"
+Chef de projet AMOA,Refonte et fiabilisation de 2 Datamart,BFA,"MySQL, IBM Mainframe",Francais,Roubaix,2j/semaine,2025-05-01,6 mois,"CDI, Freelance"
+Developpeur Android AOSP,Garantir la securite des produits de paiement,Fintech,"Kotlin, Linux, Android","Francais, Anglais",Paris,2j/semaine,2025-04-01,6 mois,"Freelance, CDI"
+Project Manager,Securiser les systemes et donnees selon les standards IT,Fintech,ITIL,"Francais, Anglais",Paris,2j/semaine,2025-04-01,6 mois,"Freelance, CDI"
+Lead Front-end,Developper des interfaces mobiles performantes,Foodtech,"React Native, React","Francais, Anglais",Paris,2j/semaine,2025-05-01,6 mois,CDI
+Chef de projet validation,Validation logicielle de nouveaux decodeurs,Medias,"Squash, Jira","Francais, Anglais",Paris,1j/semaine,2025-01-01,6 mois,CDI
+PMO Cybersecurite,Assurer la bonne mise en place de la politique de securite,Distribution,MS Office,"Francais, Anglais",Paris,2j/semaine,2025-06-01,6 mois,CDI
+Solution Architecte,Integration Workday,Cosmetique,Workday finance,"Francais, Anglais",Paris,full remote,2025-07-01,6 mois,"Freelance, CDI"
+Senior Expert Engineer,Support technique de haut niveau aux clients internationaux,Telecommunication,5G,"Francais, Anglais",Paris,2j/semaine,2025-10-01,8 mois,CDI
+Chef de projet AMOA,Piloter les projets web,Logistique,"HTML, CSS, PL/SQL",Francais,Paris,2j/semaine,2025-09-01,6 mois,"Freelance, CDI"
+DevOps,Conception et maintien des infras et outils de deploiement,Medias et Publicite,"Azure, AWS, Linux","Francais, Anglais",Paris,2j/semaine,2025-08-01,6 mois,"Freelance, CDI"
+Test et validation engineer,Refonte outils internes,Telecommunication,"Powershell, Python","Francais, Anglais",Paris,2j/semaine,2025-10-01,8 mois,CDI

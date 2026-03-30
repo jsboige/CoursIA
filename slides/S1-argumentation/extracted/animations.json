@@ -1,0 +1,5288 @@
+{
+  "filename": "IA et Argumentation.pptx",
+  "slide_count": 30,
+  "animated_slide_count": 18,
+  "slides": [
+    {
+      "number": 1,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Histoire et théories",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Principes de l’argumentation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Bons et mauvais arguments",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Fondements logiques du raisonnement",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Références bibliographiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 13315,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "1",
+              "is_image": false
+            },
+            {
+              "shape_id": 13317,
+              "shape_name": "Title 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Introduction à l’argumentation",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 4,
+              "shape_name": "Titre 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Histoire de l'argumentation",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Importance dans l'histoire de la pensée humaine.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Mécanisme par lequel les idées sont exprimées, discutées et évaluées",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Remise en question des croyances préconçues et la recherche de la vérité.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Influence profonde sur des domaines clés tels que la philosophie, la politique et la science",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "La méthode socratique:",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Poser des questions pour",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "stimuler la pensée critique",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 2,
+              "text": "exposer les contradictions",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "La rhétorique aristotélicienne :",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "ethos, logos et pathos.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "L'argumentation au Moyen Âge:",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "la scolastique et Thomas d'Aquin.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "La pensée de la Renaissance et l'humanisme :",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "éloquence et persuasion.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Dans l'âge des Lumières:",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "raison et débat public.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Au 19è siècle:",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Forme logique moderne",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Au 20e siècle:",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Toulmin, Perelman, etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "A l'ère numérique:",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "nouveaux défis et opportunités.",
+              "is_image": false
+            },
+            {
+              "shape_id": 2,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du numéro de diapositive 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "2",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 4,
+              "shape_name": "Titre 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Théories de l'argumentation",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Principales approches théoriques de l'argumentation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 0,
+              "text": "Dans la logique formelle:",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Utilise des règles et des symboles",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "logiques propositionnelle, des prédicats, modale, argumentative.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Dans la rhétorique:",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Aristote, Cicéron, Quintilien.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Art de persuader les auditeurs",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Invention, disposition, élocution, mémoire et prononciation",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Dans la linguistique:",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Contextes langagiers: construction et interprétations (performativité)",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Pragmatique (intentions, implicatures, relations locuteur/auditeur/contexte)",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Analyse du discours (structures discursives).",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "En psychologie sociale:",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Persuasion, mécanismes psychologiques sous-jacents",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 1,
+              "text": "changement d'attitude.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "processus cognitifs impliqués, théorie de l'élan cognitif (état émotionnel)",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 0,
+              "text": "En communication:",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Influencer les croyances, les attitudes et les comportements",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 1,
+              "text": "Théories de l'influence sociale, du comportement de communication.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 1,
+              "text": "Persuasion stratégique, communication persuasive",
+              "is_image": false
+            },
+            {
+              "shape_id": 2,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du numéro de diapositive 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "3",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "has_animations": true,
+      "animation_count": 10,
+      "click_count": 10,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Un code de conduite intellectuelle",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "4",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Un standard procédural efficace",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Les règles de bases pour une discussion fructueuse",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Un standard éthique important",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Les parties s’engagent à être honnêtes",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Principes de conduite intellectuelle",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Faillibilité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Accepter de pouvoir se tromper",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 8,
+              "level": 2,
+              "text": "s’engager à rechercher la position la plus défendable",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Pas de confusion linguistique et séparé d’autres problématiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 12,
+              "level": 2,
+              "text": "Repose sur celui qui avance une position",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Donner à l’adversaire le bénéfice du doute",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 17,
+              "level": 2,
+              "text": "Si pas de preuve ou des arguments égaux, sauf si nécessaire  conséquences?",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 19,
+              "level": 2,
+              "text": "Si tout le reste est respecté, accepter la conclusion",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 20,
+              "level": 2,
+              "text": "Accepter un nouvel examen au besoin",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Recherche de la vérité",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 5,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Clarté",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 6,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Charge de la preuve",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 7,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 7,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Charité",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 8,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 8,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Structure, Pertinence, Acceptabilité, Suffisance, Réfutation",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 9,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 9,
+              "para_idx": 16,
+              "level": 1,
+              "text": "Suspension du jugement",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 10,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 10,
+              "para_idx": 18,
+              "level": 1,
+              "text": "Résolution",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "has_animations": true,
+      "animation_count": 5,
+      "click_count": 5,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Qu’est-ce qu’un argument?",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "5",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Une proposition supportée par d’autres propositions",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Prémisses",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Les raisons",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Conclusion",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Supportée par les prémisses et le raisonnement",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Argument =/= Opinion",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Une opinion n’est pas supportée",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Forme standard pouvant être reconstituée:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Puisque (prémisse 1), qui est une conclusion supportée par (sous-prémisse 1.1)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 9,
+              "level": 1,
+              "text": "et (prémisse 2)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 10,
+              "level": 1,
+              "text": "[et (prémisse implicite)]",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 11,
+              "level": 1,
+              "text": "et (prémisse de réfutation)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Alors (Conclusion)",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 13,
+              "level": 0,
+              "text": "Déduction vs Induction",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 14,
+              "level": 1,
+              "text": "Déduction  nécessité logique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Induction  Corroboration",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 5,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 16,
+              "level": 0,
+              "text": "Arguments particuliers",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Moral  prémisse morale (principe)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 18,
+              "level": 1,
+              "text": "Légal  prémisse légale (loi, jurisprudence etc.)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 19,
+              "level": 1,
+              "text": "Esthétique  prémisse esthétique (Critère esthétique)",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "has_animations": true,
+      "animation_count": 6,
+      "click_count": 6,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Qu’est-ce qu’un bon argument?",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "6",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Respecte 5 critères:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Structure bien formée",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Pas de contradictions entre prémisses et avec la conclusion",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Pas de vérité par principe, ou de déduction invalide",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Pas de prémisses inutiles, les liens doivent être explicites",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 7,
+              "level": 2,
+              "text": "Connaissance commune, ou confirmée par l’expérience",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Défendue ou défendable par une source accessible",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 9,
+              "level": 2,
+              "text": "Témoignage non controversée par une autorité compétente",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Conclusion d’un autre bon argument",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Proposition mineure constituant une hypothèse raisonnable",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Difficile à systématiser,",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Cf. certaines sciences (échantillons statistiques) ou expérience",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Le plus difficile, manque le plus souvent",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 17,
+              "level": 2,
+              "text": "Permet de départager de « presque » bons arguments",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Prémisse pertinentes pour la vérité de la conclusion",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Prémisses acceptables par une personne raisonnable",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Prémisses suffisantes à démontrer la conclusion",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 5,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Prémisses fournissant une réfutation effective des critiques anticipées",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 6,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 18,
+              "level": 0,
+              "text": "Renforcer un argument:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 19,
+              "level": 1,
+              "text": "Balayer ces 5 critères et le modifier en conséquence",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 4,
+              "shape_name": "Titre 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Qualités argumentatives",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Clarté :",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "l'argument est-il clairement exprimé et facile à comprendre?",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Terminologie, structuration, exemples concrets, explications",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Pertinence :",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "l'argument est-il directement lié à la question à trancher?",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Contribution significative  impact",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Précision :",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "l'argument est-il suffisamment précis et détaillé?",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Malentendus, interprétations, concision, exemples spécifiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Profondeur :",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "l'argument traite-t-il tous les aspects de la question?",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Nuances, contre-arguments potentiels, élargissements, différents angles, dimensions",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Cohérence :",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "l'argument est-il logique et sans contradiction?",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Interne et entre les différents arguments",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 0,
+              "text": "Preuve :",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 1,
+              "text": "l'argument est-il appuyé par des faits, des statistiques, des exemples concrets?",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 2,
+              "text": "Vérifiabilité des faits, qualité des sources, pertinence des autorités",
+              "is_image": false
+            },
+            {
+              "shape_id": 2,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du numéro de diapositive 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "7",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "has_animations": true,
+      "animation_count": 4,
+      "click_count": 4,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Qu’est-ce qu’un argument fallacieux?",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "8",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "La violation de l’un des critères définissant un bon argument",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Faille structurelle",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Prémisse non pertinente",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Prémisse sous le standard d’acceptabilité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Prémisses insuffisantes à établir la conclusion",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Pas de réfutation effective des critiques anticipées",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Nommées ou non",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Cf. Taxonomie",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Nom pas nécessaire, mais utile",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Dénoncer un argument fallacieux",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Autodestruction par reconstruction en forme standard",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Méthode du contre-exemple absurde",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Fair-play:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Pas trop en faire,",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 14,
+              "level": 1,
+              "text": "Que si nécessaire,",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Accepter ses propres erreurs,",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 16,
+              "level": 1,
+              "text": "Eviter si possible de mentionner la notion d’argument fallacieux",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 4,
+              "shape_name": "Titre 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Préparation d'un argumentaire",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Définir le but de l'argumentation:",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Persuader, convaincre, négocier, informer, éduquer etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Permet de diriger la préparation, la stratégie, les techniques",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Identifier son public :",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Connaissances, attitudes, valeurs.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Ajustement du langage, des exemples, des preuves",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Recherche et sélection des preuves:",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Identification de sources et de leurs qualités",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Organiser ses arguments :",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Du plus fort au plus faible, général au particulier, ou inversements.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Structure problème-solution, etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Impact et cheminement des idées",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Construire des arguments :",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Prémisse, preuve, conclusion.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 0,
+              "text": "Réfutation des arguments adverses.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Examiner les arguments contraires, renforcer et anticiper les objections",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 1,
+              "text": "Stratégies de réfutation (prémisses, contre-arguments, preuves contradictoires, biais, faiblesse)",
+              "is_image": false
+            },
+            {
+              "shape_id": 2,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du numéro de diapositive 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "9",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 4,
+              "shape_name": "Titre 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Analyse d'un débat",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Comprendre le contexte et le but du débat.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Tenir compte des spécificités et enjeux",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Différents types (politiques, académiques, médiatiques etc.)",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Identifier les parties et leurs positions.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Intérêts, affiliations, motivations",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Positions déclarées vs positions réelles",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Analyser les arguments : validité, pertinence, force.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "validité logique, pertinence vs enjeu, capacité à convaincre",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Sans partialité, forces et faiblesses",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Identifier les stratégies rhétoriques utilisées.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Anecdotes, émotions, preuves scientifiques, autorité etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Conviction, persuasion, manipulation",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Déceler les failles logiques et les erreurs de raisonnement.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Biais, sophismes, causalité, généralisations, attaques, diversions etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 0,
+              "text": "Évaluer l'efficacité globale de chaque participant.",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Présentation, réfutation, consistance",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du contenu 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 1,
+              "text": "Eviter préjugés et favoritismes",
+              "is_image": false
+            },
+            {
+              "shape_id": 2,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du numéro de diapositive 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "10",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "has_animations": true,
+      "animation_count": 5,
+      "click_count": 5,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 12,
+              "shape_name": "Titre 6",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Raisonnement logique: Intelligences",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 6,
+              "shape_name": "Groupe 5",
+              "type": "other",
+              "click": 1,
+              "text": "",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 11,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "other",
+              "click": 2,
+              "text": "",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 15,
+              "shape_name": "Image 14",
+              "type": "image",
+              "click": 3,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 13,
+              "shape_name": "Image 12",
+              "type": "image",
+              "click": 4,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        },
+        {
+          "click": 5,
+          "items": [
+            {
+              "shape_id": 14,
+              "shape_name": "Image 13",
+              "type": "image",
+              "click": 5,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "has_animations": true,
+      "animation_count": 9,
+      "click_count": 9,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 16386,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Représentation et logique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Slide Number Placeholder 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "12",
+              "is_image": false
+            },
+            {
+              "shape_id": 2,
+              "shape_name": "Image 1",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Image 3",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Image 4",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Représentation de connaissance",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Forme manipulable par la pensée / l’ordinateur",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Base de connaissance (KB)",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 2,
+              "text": "= énoncés dans un langage formel",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Langage de représentation:",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Syntaxe: séquences possibles de symboles",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Sémantique: faits auxquels les énoncés correspondent",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 5,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Raisonnement:",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Conséquence logique  inférence",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 6,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Propriétés:",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 11,
+              "level": 2,
+              "text": "préserve la validité sémantique",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Pas de contradiction",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 15,
+              "level": 2,
+              "text": "Dériver tout ce qui est valide",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 16,
+              "level": 1,
+              "text": "Problème:",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 17,
+              "level": 2,
+              "text": "Gödel: théorèmes d’incomplétude",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 7,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 7,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Correction:",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 8,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 8,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Cohérence / consistance:",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 9,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 9,
+              "para_idx": 14,
+              "level": 1,
+              "text": "Complétude:",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "has_animations": true,
+      "animation_count": 4,
+      "click_count": 4,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 16386,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Types de logiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Slide Number Placeholder 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "13",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 8,
+              "shape_name": "Group 16",
+              "type": "other",
+              "click": 1,
+              "text": "",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 1,
+              "level": 0,
+              "text": "Epistémologie: étude de ce qui peut être connu",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Rectangle 6",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Ontologie: étude de ce qui existe",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "has_animations": true,
+      "animation_count": 6,
+      "click_count": 6,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 20482,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Logique propositionnelle",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Slide Number Placeholder 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "14",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Image 2",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Image 3",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 10,
+              "shape_name": "Picture 3",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 2,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Syntaxe",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Constantes (V,F)",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Symboles",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Connecteurs",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 5,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Sémantique",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 6,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Tables de vérité",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "has_animations": true,
+      "animation_count": 2,
+      "click_count": 2,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 20482,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Règles d’inférence",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Slide Number Placeholder 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "15",
+              "is_image": false
+            },
+            {
+              "shape_id": 2,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Objectif de l’inférence logique:",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Vérifier qu’un énoncé est une conséquence de la KB, i.e. un théorème",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Inférence par la preuve: utilisation de règles de dérivation cohérentes pour produire une chaine de conclusions conduisant au but",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Exemple de règles cohérentes",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 4,
+              "level": 1,
+              "text": "REGLE\t\t\tPREMISSES\t\tCONCLUSION",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Modus Ponens\t\tA, A  B\t\tB",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Introduction du Et\t\tA, B\t\t\tA  B",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Elimination du Et\t\tA  B\t\t\tA",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Double Négation\t\tA\t\t\tA",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Résolution\td’unité\t\tA  B, B\t\tA",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Reductio ad absurdum\t A  B\t\t\t(A  B)",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Résolution\t\t\tA  B, B  C\t\tA  C",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "has_animations": true,
+      "animation_count": 5,
+      "click_count": 5,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 20482,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Procédures d’inférence",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Slide Number Placeholder 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "16",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Inférence naturelle",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "1 Humide\t\tPremisse\t\t\t“Il fait humide”",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 1,
+              "text": "2 HumideChaud \tPremisse\t\t\t“S’il fait humide, il fait chaud”",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 1,
+              "text": "3 Chaud \t\tModus Ponens(1,2)\t\t“Il fait chaud”",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 4,
+              "level": 0,
+              "text": "= Chainages avant",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Raisonnement par les données",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Chainage arrière",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Raisonnement par les buts",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Ex: Où ai-je mis mes clés?",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Autres procédures",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Résolution",
+              "is_image": false
+            },
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 11,
+              "level": 1,
+              "text": "DPLL (la plus populaire)",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 5,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Solveurs SAT",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "has_animations": true,
+      "animation_count": 13,
+      "click_count": 13,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 20482,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Logique du premier ordre",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Slide Number Placeholder 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "17",
+              "is_image": false
+            },
+            {
+              "shape_id": 2,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "La logique du premier ordre modélise le monde en termes de:",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Objets: des choses avec des identités individuelles",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Etudiants, cours, société, voitures",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Propriétés des objets qui les distinguent des autres objets",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 5,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 4,
+              "level": 2,
+              "text": "bleu, oval, pair, large",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 6,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Relations qui existent entre les ensembles d’objets",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 7,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 7,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Frère de, plus grand que, partie de, a la couleur, se passe après, visite",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 8,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 8,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Fonctions: relations avec une valeur résultat pour des données entrées",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 9,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 9,
+              "para_idx": 8,
+              "level": 2,
+              "text": "père de, meilleur ami, deuxième moitié, un de plus que",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 10,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 10,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Quantificateurs:",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 11,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 11,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Il existe x: x",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 12,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 12,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Pour chaque x: x",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 13,
+          "items": [
+            {
+              "shape_id": 20483,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 13,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Règles : (x) student(x)  smart(x) = “Il y a un étudiant intelligent”",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "has_animations": true,
+      "animation_count": 2,
+      "click_count": 2,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Exemple: investigation",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "18",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Enoncé",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 2,
+              "text": "« la loi stipule que c’est un crime pour un américain de vendre des armes à des nations hostiles. La Corée du Nord, un ennemi de l’Amérique, possède des missiles et tous ses missiles lui ont été vendu",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Solution par chaînage avant",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Missile(x) ET Possède(Corée, x) => Vend(West, x ,Corée)                                  Missile(x) => Arme(x)                                                           Enemy(x,America) => Hostile(x) ",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Logique modale",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Sémantique: mondes possibles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 0,
+              "text": "Applications:",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "19",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Extension avec les modalités",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "de la logique propositionnelle",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Ou de la logique du premier ordre",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Modalités",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Possibilité (peut être vrai)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Nécessité (doit être vrai)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Contingence (vrai dans certains cas)",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Syntaxe: opérateurs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 8,
+              "level": 1,
+              "text": "\"◊\" (diamant = possibilité)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 9,
+              "level": 1,
+              "text": "\"□\" (carré = nécessité)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Philosophie (modalités épistémiques)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Informatique (systèmes muli-agents, vérification formelle)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 14,
+              "level": 1,
+              "text": "Mathématiques (théorie des ensembles, des jeux, de la preuve)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Argumentation (raisonnement modal) Mondes possibles",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Logiques argumentatives",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "ABA (Assumption-Based Argumentation)",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "20",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Extension des logiques appliquées à l’argumentation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Analyse de la structure, la validité, la force des arguments",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Logique argumentative abstraite (de Dung)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Modèle sous forme de graphe (Noeuds = arguments, arrêtes = attaques )",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Notion d’ensembles stable / extensions (pas d’attaques internes)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Autres logiques argumentatives extensions de Dung",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Aspic (SPecification, and Interrogation with Constraints)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Règles, contraintes, attaques entre arguments",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Satisfaction des règles, validité des arguments, résolution des conflits",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Utilisation d’ ensembles d’hypothèses",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Relations de soutien et d’attaques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Cohérences des ensembles et forces contextuels des arguments",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "has_animations": true,
+      "animation_count": 1,
+      "click_count": 1,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Les attendus du programme",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "21",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Lycée - Français",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "22",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "ARGUMENTUM comme opportunité ludique et pédagogique d'aborder les compétences attendues en français :",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 1,
+              "level": 0,
+              "text": "\"Les finalités propres de l’enseignement du français au lycée sont les suivantes :\"",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 2,
+              "level": 1,
+              "text": "\"améliorer les capacités d’expression\"",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 3,
+              "level": 1,
+              "text": "\"faire lire les élèves et leur permettre de comprendre et d’apprécier les œuvres, de manière à construire une culture littéraire commune, ouverte sur les autres arts, sur les différents champs du savo",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 4,
+              "level": 1,
+              "text": "\"structurer cette culture en faisant droit à la sensibilité et à la créativité des élèves dans l’approche des formes\"; or, comment mieux retenir une situation politique clé qu'en ayant \"théâtralisé\" c",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 5,
+              "level": 1,
+              "text": "\"en renforçant leurs capacités d’analyse et d’interprétation\"",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 6,
+              "level": 1,
+              "text": "\"approfondir et exercer le jugement et l’esprit critique des élèves, les rendre capables de développer une réflexion personnelle et une argumentation convaincante, à l’écrit comme à l’oral mais aussi ",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 7,
+              "level": 1,
+              "text": "\"les amener à adopter une attitude autonome et responsable, notamment en matière de recherche d’information et de documentation\"",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Programme de français de première des voies générale et technologique",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "has_animations": true,
+      "animation_count": 2,
+      "click_count": 2,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Lycée – Français (1)",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "23",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Analyser des parties ARGUMENTUM ou réaliser des \"baratins\" ARGUMENTUM à l'écrit permettrait de revenir sur :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "l’expression de la condition",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 1,
+              "text": "l’expression de la cause, de la conséquence et du but",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 1,
+              "text": "l’expression de la comparaison",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 4,
+              "level": 1,
+              "text": "l’expression de l’opposition et de la concession",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 5,
+              "level": 1,
+              "text": "adapter son expression aux différentes situations de communication",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 6,
+              "level": 1,
+              "text": "organiser le développement logique d’un propos",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 7,
+              "level": 1,
+              "text": "reformuler et synthétiser un propos",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 8,
+              "level": 1,
+              "text": "discuter et réfuter une opinion",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 9,
+              "level": 1,
+              "text": "exprimer et nuancer une opinion",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Analyser les discours des situations réelles, notamment en politique ou histoire, qui ont inspiré certains scénarii, permettrait de revenir sur :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 11,
+              "level": 1,
+              "text": "\"l'étude de la langue\" comme \"objet d'étude\". Avec notamment la rhétorique et les choix stylistiques au service de l'argumentation.",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "has_animations": true,
+      "animation_count": 1,
+      "click_count": 1,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Lycée – Français (2)",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "24",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Références: Histoire de la pensée",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 1,
+              "text": "Aristote. La rhétorique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Rowe, Christopher. The Cambridge History of Greek and Roman Political Thought.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Saint Thomas d’Aquin. Somme théologique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Corbett, Edward P. J., Robert J. Connors. Classical Rhetoric for the Modern Student.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Pascal, Blaise. De l'art de persuader.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Kant, I. Critique de la raison pure.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Mill, J. S. Trois essais sur la liberté.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 1,
+              "text": "Schopenhauer, A. L'Art d'avoir toujours raison.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Locke, J. An Essay Concerning Human Understanding.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Boole, G. An Investigation of the Laws of Thought, on Which are Founded the Mathematical Theories of Logic and Probabilities.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Hume, D. A Treatise of Human Nature.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Moore, G. E. Principia Ethica.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Hamblin, C. L. Fallacies.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du numéro de diapositive 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "25",
+              "is_image": false
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Références: Analyse du discours",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 1,
+              "text": "Delisle, Jean. L'analyse du discours comme méthode de traduction: initiation à la traduction française de textes pragmatiques anglais : théorie et pratique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Anscombre, Jean-Claude, et Oswald Ducrot. L'argumentation dans la langue.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Maingueneau, Dominique. Discours et analyse du discours - 2e éd. Une introduction.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Doury, M. Argumentation - 2e éd: Analyser textes et discours.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du numéro de diapositive 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "26",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 27,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Références: Rhétorique et communication",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 1,
+              "text": "Bernays, E. L. Propaganda: Comment manipuler l'opinion en démocratie.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Cialdini, R. B. Influence et manipulation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Amossy, Ruth. L'argumentation dans le discours - 4e éd.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Winkin, Yves (directeur d'ouvrage). La Nouvelle Communication.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "van Eemeren, Frans H., A. Francisca Sn Henkemans. Argumentation: Analysis and Evaluation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Billig, M. Arguing and Thinking: A Rhetorical Approach to Social Psychology",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Graff, G., Birkenstein, C., & Durst, R. K. \"They Say, I Say\": The Moves that Matter in Academic Writing",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 1,
+              "text": "Ong, W. J., & Hartley, J. Orality and Literacy: The Technologizing of the Word. Routledge",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Viktorovitch, C. Le Pouvoir rhétorique",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Branham, R. J. Debate and Critical Analysis: The Harmony of Conflict. Taylor & Francis",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Pinker, S. The Sense of Style: The Thinking Person's Guide to Writing in the 21st Century.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Adler, M. J., & Van Doren, C. How to Read a Book.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Burke, K. A Rhetoric of Motives.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du numéro de diapositive 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "27",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Refs: Pensée critique, scientifique et méthodo",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 1,
+              "text": "Monvoisin, R. Pour une didactique de l'esprit critique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Booth, W. C., Colomb, G. G., Williams, J. M., Bizup, J., & FitzGerald, W. T. The Craft of Research.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Sagan, C. The Demon-Haunted World: Science as a Candle in the Dark.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Kahneman, D. Système 1 / Système 2: Les deux vitesses de la pensée.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Barnet, S., Bedau, H., & O'Hara, J. Critical Thinking, Reading and Writing: A Brief Guide to Argument.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Bassham, G., Irwin, W., Nardone, H., Wallace, J. M. Critical Thinking: A Student's Introduction.",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Espace réservé du contenu 6",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 1,
+              "text": "Rainbolt, G. W., & Dwyer, S. L. Critical Thinking: The Art of Argument.",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Espace réservé du contenu 6",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Reboul, O. Introduction à la rhétorique: théorie et pratique",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Espace réservé du contenu 6",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Baillargeon, N., & Charb. Petit cours d'autodéfense intellectuelle.",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Espace réservé du contenu 6",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Moore, B. N., & Parker, R. Critical Thinking.",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Espace réservé du contenu 6",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Chaffee, J. Thinking Critically",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Espace réservé du contenu 6",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Walton, D. Methods of Argumentation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du numéro de diapositive 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "28",
+              "is_image": false
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 29,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Références: Théorie de l’argumentation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 1,
+              "text": "Meyer, Michel. La Rhétorique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Meyer, Michel. Principia Rhetorica: Une théorie générale de l’argumentation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Toulmin, S. E. The Uses of Argument.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Von Wright, G. H. Norm and Action: A Logical Enquiry.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Perelman, Chaïm, et Lucie Olbrechts-Tyteca. Traité de l'argumentation, la nouvelle rhétorique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Perelman, Chaïm. L'empire rhétorique: rhétorique et argumentation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Walton, Douglas, Christopher Reed, Fabrizio Macagno. Argumentation Schemes.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du numéro de diapositive 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "29",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 30,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Références: Théorie des Sophismes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 1,
+              "text": "Davies, Richard. \"Can we have a Theory of Fallacies?\"Meyer, Michel.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Larsen, Aaron, Joelle Hodge, Chris Perrin. The Art of Argument: An Introduction to the Informal Fallacies.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "LaBossiere, M. 42 Fallacies.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Damer, T. E. Attacking Faulty Reasoning: A Practical Guide to Fallacy-free Arguments.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Maxwell, E. A. Fallacies in Mathematics.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Walton, Douglas. Informal Logic: A Handbook for Critical Argument.",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du numéro de diapositive 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "30",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Argumentum",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

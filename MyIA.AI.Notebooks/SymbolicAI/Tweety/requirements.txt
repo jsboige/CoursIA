@@ -1,0 +1,20 @@
+# Tweety - Dependencies
+# Install: pip install -r requirements.txt
+#
+# IMPORTANT: Tweety requires a Java Runtime (JRE 11+) and JPype bridge.
+# The notebooks use 35+ JAR modules from the TweetyProject.
+# See Tweety-1-Setup notebook for full environment setup.
+
+# Java bridge
+jpype1>=1.4                   # Java-Python bridge for Tweety JARs
+
+# Visualization
+matplotlib>=3.7
+networkx>=3.1                 # Graph visualization for argumentation
+
+# Optional: SAT/Logic solvers (some notebooks)
+# python-sat>=0.1             # PySAT (optional, for SAT-based reasoning)
+# clingo>=5.6                 # ASP solver (optional)
+
+# Note: SPASS, EProver, and other external reasoners require
+# separate installation. See README.md for details.

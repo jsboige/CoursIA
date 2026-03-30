@@ -1,148 +1,282 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code working with the CoursIA repository.
+
+---
+
+## ⚠️ RÈGLE D'OR - Coordination Inter-Machines
+
+**TOUTE coordination entre machines (po-2023, po-2026, etc.) DOIT se faire via RooSync**
+
+### ❌ JAMAIS:
+- Commit de rapports de coordination sur GitHub
+- Messages via SSH
+- Fichiers `*_TEST_REPORT.md`, `*_COORDINATION.md` dans le repo
+- Tout fichier de coordination hors RooSync
+
+### ✅ TOUJOURS:
+- Thread RooSync pour toute coordination inter-machine
+- Les messages RooSync sont persistants et suivis
+- GitHub = code uniquement, pas de coordination
+
+**VIOLATION DE CETTE RÈGLE = ERREUR CRITIQUE**
+
+---
+
+## RÈGLE - RooSync Dashboard : toujours lire le contenu complet
+
+Le **dashboard RooSync workspace CoursIA** (`roosync_dashboard` type=workspace, workspace=CoursIA) est le canal central de coordination cross-machine. Il contient le status du coordinateur (ai-01), les missions assignees, les resultats backtests, les decisions de consolidation, et l'intercom entre agents.
+
+### Obligations lors d'un tour de coordination :
+1. **Lire le contenu complet** du dashboard — l'API retourne parfois un JSON tronque en preview ("Output too large"). Dans ce cas, TOUJOURS utiliser `Read` sur le fichier persiste pour lire l'integralite.
+2. **Verifier l'inbox** RooSync pour les messages directs non lus.
+3. **Verifier le heartbeat** cluster pour savoir quelles machines sont actives.
+4. **Si aucune mission assignee** : envoyer un message RooSync a ai-01 (coordinateur) pour demander des instructions. Ne pas attendre passivement.
+
+### Ne JAMAIS :
+- Resumer le dashboard a partir du seul preview tronque
+- Omettre la lecture de l'intercom (contient l'historique des decisions)
+- Se considerer "disponible" sans prevenir le coordinateur
+
+---
+
+## 🚨 RÈGLE CRITIQUE - Git Force Push INTERDIT
+
+**INCIDENT 2026-03-13** : Force push accidentel sur main a potentiellement écrasé des commits
+
+### ❌ JAMAIS:
+- `git push --force` ou `--force-with-lease` sur main
+- `git reset --hard` sur main sans validation
+- Modifier l'historique public après publication
+
+### ✅ TOUJOURS:
+- Pour une PR : créer feature branch FROM main, ne pas reset main
+- Utiliser cherry-pick, revert, ou nouveaux commits
+- Demander validation explicite du user pour toute opération destructive
+- En cas d'urgence extrême : user doit valider AVANT le force push
+
+**Exception** : Uniquement urgence confirmée avec validation préalable du user
+
+**Voir aussi** : `.claude/rules/git-workflow.md` pour les règles git complètes
+
+**VIOLATION DE CETTE RÈGLE = ERREUR CRITIQUE**
+
+---
+
+## Regles Agents (Roo Code / machines distantes)
+
+Les agents Roo sur les machines po-2023, po-2024, po-2025, po-2026 travaillent sur ce depot via RooSync. Ces regles sont **OBLIGATOIRES** pour tout agent.
+
+### Git : PRs obligatoires
+
+- **JAMAIS** de push direct sur `main`. Creer une feature branch, pousser, creer une PR
+- Nommage branche : `feature/<sujet>` ou `fix/<sujet>`
+- Un seul sujet par PR (pas de mega-PR multi-issues)
+- Le coordinateur (ai-01) review et merge. Les agents ne mergent pas eux-memes
+
+### Qualite : code avant documentation
+
+- **Priorite** : code fonctionnel > tests/validation > documentation
+- Ne pas generer de markdown (README, MAPPING, RAPPORT) sans code fonctionnel associe
+- Ne pas creer de fichiers de planification (EXTEND_*.md, PROCEDURE_*.md) dans le repo — utiliser RooSync
+- Les rapports d'audit, inventaires, et status vont sur le **dashboard RooSync**, pas dans le repo
+
+### Review PR : validation explicite des objectifs
+
+Toute PR doit faire l'objet d'une **review complete** avant merge :
+
+1. **Relire l'issue ou le contexte d'origine** : identifier les objectifs precis (layout, positionnement, contenu, format)
+2. **Valider chaque objectif explicitement** : verifier dans le code ET visuellement que chaque exigence est satisfaite
+3. **Verification visuelle obligatoire pour les slides** :
+   - Lancer le serveur Slidev et verifier CHAQUE slide modifie (pas un echantillon)
+   - Verifier avec `?clicks=99` pour voir le contenu complet revele
+   - Verifier l'absence d'overflow (contenu coupe en bas)
+   - Verifier les layouts d'images (overlay uniquement, jamais colonne droite)
+4. **Verification visuelle obligatoire pour les notebooks** : executer ou au moins valider la structure
+5. **Ne jamais merger une PR sur la seule base du CI green** : CI valide la syntaxe, pas le rendu visuel ni la conformite aux specifications
+
+**Slides : images en overlay uniquement**
+- Les images de fond doivent utiliser `layout: image-overlay` avec le texte par-dessus, jamais en colonne droite
+- Cette regle a ete specifiee dans l'issue #221 et confirmee 5+ fois dans les discussions
+- Verifier que chaque image est bien positionnee sur le bon slide
+
+**VIOLATION = PR a rejeter, meme si le code compile**
+
+### Pas de duplication
+
+- Avant de creer un fichier (README, docs, shared library), verifier qu'il n'existe pas deja
+- Utiliser `grep` et `find` pour chercher les doublons
+- Si un fichier similaire existe, le mettre a jour plutot qu'en creer un nouveau
+
+### Enrichissement notebooks : regles strictes
+
+- Chaque cellule de transition doit avoir du **contenu pedagogique specifique** (pas de "Suite du traitement" generique)
+- Les cellules d'interpretation doivent etre placees **apres** la cellule de code qu'elles interpretent
+- Ne pas enrichir le meme notebook dans deux sessions paralleles (risque de doublons)
+- Verifier l'absence de doublons avec `git diff` avant de committer
+
+### Emojis interdits
+
+Regle code-style.md : **Pas d'emojis** dans le code, les noms de variables, les fichiers generes, ni les messages de commit. Utiliser des mots.
+
+---
+
+## QuantConnect (QC) - Regles specifiques
+
+### Backtests obligatoires
+
+Toute modification d'une strategie QC (main.py, parametres, periodes) **DOIT** etre validee par un backtest :
+1. `create_compile` pour verifier la compilation
+2. `create_backtest` pour lancer le backtest
+3. `read_backtest` pour recuperer les metriques (Sharpe, CAGR, MaxDD)
+4. Reporter les resultats dans le message de commit ET sur RooSync
+
+**Changer une date ou un parametre sans backtest = travail invalide.**
+
+### MCP qc-mcp
+
+Le MCP `qc-mcp` est disponible sur ai-01 et doit etre utilise pour toute interaction avec QuantConnect Cloud. Les infos de connexion (User ID, Org IDs, tokens) sont sur le **dashboard RooSync** et dans les memoires agents — **pas dans le CLAUDE.md** pour raisons de securite.
+
+Pour retrouver les infos QC :
+- Dashboard workspace CoursIA : section status
+- Memoire ai-01 : `jared_qc_partnership.md`, `qc_strategies_catalog.md`
+- Messages RooSync : rechercher tag `quantconnect`
+
+### Structure QC dans le depot
+
+```
+MyIA.AI.Notebooks/QuantConnect/
+  Python/           # 27 notebooks progressifs (QC-Py-01 a QC-Py-27)
+  projects/          # ~50 strategies avec main.py + research.ipynb
+  shared/            # Librairie utilitaire (backtestlib, indicators, plotting)
+  ESGF-2026/         # Cours ESGF : exercices, templates, lean-workspace
+  docs/              # Documentation technique (pas de coordination)
+```
+
+### Livre de reference
+
+*Hands-On AI Trading* de Jared Broad — https://www.hands-on-ai-trading.com/
+Repo exemples : https://github.com/QuantConnect/HandsOnAITradingBook
+Issues associees : #107 (mapping), #143 (implementation ML)
+
+---
 
 ## Project Overview
 
-CoursIA is an educational AI course platform combining:
+CoursIA is an educational AI course platform:
 - **Jupyter notebooks** for AI learning (C# with .NET Interactive and Python)
 - **Docker infrastructure** for GenAI services (ComfyUI + Qwen image editing)
 - **GradeBookApp** for student evaluation with collegial grading
-- **Production-ready ecosystem** with authentication, orchestration, and validation
 
 Repository: https://github.com/jsboige/CoursIA
 
 ## Common Commands
 
-### Python Environment Setup
+### Environment Setup
 
 ```bash
-python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/macOS
+# Python
+python -m venv venv && venv\Scripts\activate
 pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt
-python -m ipykernel install --user --name=coursia --display-name "Python (CoursIA)"
-```
 
-### C# Notebooks (.NET Interactive)
-```bash
+# C# (.NET 9.0)
 dotnet restore MyIA.CoursIA.sln
 ```
-Target framework: .NET 9.0. Configuration: Copy `MyIA.AI.Notebooks/Config/settings.json.openai-example` to `settings.json`
 
 ### Docker/ComfyUI Services
+
 ```bash
-cd docker-configurations/services/comfyui-qwen
-cp .env.example .env
-docker-compose up -d
+python scripts/genai-stack/genai.py docker status    # Statut des services
+python scripts/genai-stack/genai.py docker start all # Demarrer tous les services
+python scripts/genai-stack/genai.py docker stop all  # Arreter tous les services
 ```
-Access: http://localhost:8188 (requires Bearer token authentication)
 
 ### Validation & Testing
 
+**IMPORTANT: Always use existing scripts for notebook validation/execution. Never write ad-hoc execution scripts.**
+
 ```bash
-python scripts/genai-stack/validate_notebooks.py  # Notebook validation
-python scripts/genai-stack/validate_stack.py      # GenAI stack validation
-python scripts/genai-stack/check_vram.py          # VRAM check
-python scripts/verify_notebooks.py [target]       # Multi-family notebook verification
+# === Notebook Tools (multi-family, production CLI) ===
+python scripts/notebook_tools/notebook_tools.py validate [target]         # Structure validation
+python scripts/notebook_tools/notebook_tools.py execute [target]          # Execute via Papermill
+python scripts/notebook_tools/notebook_tools.py execute [target] --cell-by-cell  # Cell-by-cell (.NET/Lean)
+python scripts/notebook_tools/notebook_tools.py analyze [path]            # Analyze structure
+python scripts/notebook_tools/notebook_tools.py skeleton [path]           # Generate skeleton
+
+# === SmartContracts-specific validator ===
+python scripts/smartcontracts/validate_sc_notebooks.py                    # Full SC validation
+python scripts/smartcontracts/validate_sc_notebooks.py --quick            # Structure only
+python scripts/smartcontracts/validate_sc_notebooks.py --execute --anvil  # Execute with anvil
+
+# === GenAI stack ===
+python scripts/genai-stack/genai.py validate --full       # Validation complete ComfyUI
+python scripts/genai-stack/genai.py validate --notebooks   # Validation syntaxe notebooks
+python scripts/genai-stack/genai.py notebooks              # Validation Papermill notebooks
+python scripts/genai-stack/genai.py gpu                    # Verification VRAM
 ```
+
+**Kernel auto-detection**: `notebook_tools.py` reads kernel name from notebook metadata and uses it automatically. Custom kernels (smartcontracts, lean4-wsl) are supported with extended startup timeouts.
+
 GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 
-### Claude Code Commands
+### Claude Code Skills (slash commands)
 
 ```
-/verify-notebooks [target] [options]    # Verify and test notebooks with iterative fixing
-```
-
-**Arguments:**
-- `target`: Notebook path, family name (`Sudoku`, `Search`, `SymbolicAI`, `Argument_Analysis`, etc.), or `all`
-- `--quick`: Structure validation only (no execution)
-- `--fix`: Attempt automatic fixes iteratively
-- `--python-only` / `--dotnet-only`: Filter by kernel type
-
-**Examples:**
-```
-/verify-notebooks Sudoku --quick
-/verify-notebooks Argument_Analysis --fix
-/verify-notebooks MyIA.AI.Notebooks/Search/CSPs_Intro.ipynb --fix
+/verify-notebooks [target] [--quick] [--fix]      # Verify and test notebooks
+/enrich-notebooks [target] [--execute] [--strict]  # Add pedagogical content
+/cleanup-notebooks [target] [--dry-run]             # Clean markdown structure
+/build-notebook <action> <path> [--quality=90]      # Create/improve/fix notebooks
+/execute-notebook <path> [--batch] [--save]         # Execute via MCP
+/validate-genai [target] [--local]                  # Validate GenAI stack
 ```
 
 ### GradeBookApp
+
 ```bash
-python GradeBookApp/gradebook.py           # Python version
-dotnet run --project GradeBookApp          # C# version
-python GradeBookApp/run_epf_mis_2026.py    # EPF MIS multi-epreuves
+python GradeBookApp/gradebook.py               # Python grading pipeline
+python GradeBookApp/run_epf_mis_2026.py         # EPF MIS multi-epreuves
 ```
 
 ## Architecture
 
 ```
-MyIA.AI.Notebooks/           # Interactive notebooks by topic
-├── GenAI/                   # GenAI ecosystem (18 notebooks: image generation, LLMs)
-├── ML/                      # ML.NET tutorials
-├── Sudoku/                  # Constraint solving (Backtracking, Z3, OR-Tools, Genetic)
-├── Search/                  # Optimization algorithms (GeneticSharp, PyGad)
-├── SymbolicAI/              # RDF, Z3 solver, OR-Tools
-├── Probas/                  # Infer.NET probabilistic programming
-├── IIT/                     # PyPhi - Integrated Information Theory
-├── EPF/                     # Student assignments (CC1, CC2)
+MyIA.AI.Notebooks/           # Jupyter notebooks by topic
+├── GenAI/                   # Image, Audio, Video generation, LLMs (Python)
+│   ├── Image/               # Image generation (19 notebooks)
+│   ├── Audio/               # Speech, Voice & Music (16 notebooks)
+│   ├── Video/               # Video generation & comprehension (16 notebooks)
+│   └── Texte/               # Text generation (10 notebooks)
+├── ML/                      # ML.NET tutorials (.NET C#)
+├── Sudoku/                  # Constraint solving (.NET C#)
+├── Search/                  # Optimization (Mixed Python/C#)
+├── SymbolicAI/              # RDF, Z3, Tweety, Lean (Mixed)
+├── Probas/                  # Infer.NET probabilistic programming (.NET C#)
+├── GameTheory/              # OpenSpiel (Python WSL)
+├── IIT/                     # PyPhi (Python)
 └── Config/                  # API settings (settings.json)
 
-MyIA.AI.Shared/              # Shared C# library
+scripts/
+├── notebook_helpers.py      # Notebook manipulation (NotebookHelper, CellIterator)
+├── notebook_tools.py        # CLI: validate, skeleton, analyze, execute
+├── extract_notebook_skeleton.py  # README generation
+└── genai-stack/             # GenAI validation scripts
+
+.claude/
+├── agents/                  # 10 specialized sub-agents (auto-discovered)
+├── skills/                  # 9 skills: 6 user-invocable + 3 reference
+└── rules/                   # 5 modular rules (notebook, git, style, genai, wsl)
 
 GradeBookApp/                # Student grading system
-├── configs/                 # Course-specific grading configs (EPF, EPITA)
-├── legacy/                  # Archived/deprecated scripts
-└── gradebook.py             # Main grading logic (unified pipeline)
-
-docker-configurations/       # Production infrastructure
-├── comfyui-qwen/           # Main ComfyUI + Qwen service
-├── models/                 # Shared model storage
-├── cache/                  # Shared cache layer
-└── orchestrator/           # Service orchestration
-
-scripts/
-├── genai-stack/            # Validation and management scripts
-├── archive/                # Legacy scripts
-└── notebook-fixes/         # Notebook repair utilities
-
+docker-configurations/       # ComfyUI + Qwen Docker services
 notebook-infrastructure/     # Papermill automation & MCP maintenance
 ```
 
-### GenAI Notebooks Structure (4 levels)
-- **00-GenAI-Environment**: Setup and configuration
-- **01-Images-Foundation**: DALL-E 3, GPT-5, basic operations
-- **02-Images-Advanced**: Qwen, FLUX, Stable Diffusion 3.5, Z-Image
-- **03-Images-Orchestration**: Multi-model comparison, workflows
-- **04-Images-Applications**: Educational content, production integration
-
-## Code Style Guidelines
-
-- **No emojis** in code, variable names, or generated files
-- Follow PEP 8 for Python, standard conventions for C#
-- Keep naming professional and descriptive
-- Avoid prefixes like "Pure", "Enhanced", "Advanced", "Ultimate" - use descriptive names instead
-- Do not commit without explicit user approval
-
-### Branch Naming
-```
-type/name-short-descriptif
-```
-Examples: `feature/notebook-transformers`, `fix/ml-example-bug`, `docs/improve-readme`
-
-### Commit Messages
-```
-Type: description courte de la modification
-```
-Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans l'exemple ML.NET`
-
 ## Key Technologies
 
-**AI/ML**: OpenAI API, Anthropic Claude, Qwen 2.5-VL, Hugging Face, Diffusers
-**ComfyUI**: Custom Qwen nodes (16-channel VAE, vision tokens, multi-image editing)
-**Docker**: Containerized GPU services (RTX 3090, 24GB VRAM recommended)
-**.NET**: ML.NET, .NET Interactive, Microsoft.SemanticKernel, AutoGen
-**Jupyter**: Python and C# kernels, papermill for execution
+- **AI/ML**: OpenAI API, Anthropic Claude, Qwen 2.5-VL, Hugging Face, Semantic Kernel
+- **Notebooks**: Python 3.10+, .NET 9.0 Interactive, Papermill, MCP Jupyter
+- **Docker**: ComfyUI GPU services (RTX 3090, 24GB VRAM)
+- **GenAI Models**: DALL-E 3, GPT-5, Qwen Image Edit, Lumina/Z-Image
 
 ---
 
@@ -218,513 +352,162 @@ SaveImage
 | Z-Image GGUF | Incompatibilite dimensionnelle (2560 vs 2304) entre RecurrentGemma et Gemma-2 |
 | Qwen GGUF | Non teste, prefer les poids fp8 pour qualite |
 
+### Scripts de gestion GenAI (scripts/genai-stack/)
+
+**IMPORTANT pour agents** : Utiliser le CLI unifie `genai.py` au lieu de demarrer des kernels MCP directement.
+
+```bash
+# CLI unifie - aide
+python scripts/genai-stack/genai.py --help
+
+# Gestion services Docker
+python scripts/genai-stack/genai.py docker status          # Statut services
+python scripts/genai-stack/genai.py docker start all       # Demarrer tous les services
+python scripts/genai-stack/genai.py docker test --remote   # Tester endpoints (local + remote)
+
+# Validation stack ComfyUI
+python scripts/genai-stack/genai.py validate --full        # Validation complete
+python scripts/genai-stack/genai.py validate --nunchaku    # Test Nunchaku INT4 Lightning
+
+# Validation notebooks
+python scripts/genai-stack/genai.py validate --notebooks   # Syntaxe notebooks GenAI
+python scripts/genai-stack/genai.py notebooks              # Execution Papermill
+
+# GPU et modeles
+python scripts/genai-stack/genai.py gpu                    # Verification VRAM
+python scripts/genai-stack/genai.py models list-nodes      # Custom nodes ComfyUI
+python scripts/genai-stack/genai.py models list-checkpoints # Checkpoints disponibles
+
+# Authentification
+python scripts/genai-stack/genai.py auth audit             # Audit securite tokens
+python scripts/genai-stack/genai.py auth sync              # Synchroniser tokens
+```
+
+### Mapping notebooks GenAI Image → services
+
+| Notebooks | Service | Prerequis |
+|-----------|---------|-----------|
+| 01-1, 01-3 | OpenAI API (cloud) | OPENAI_API_KEY |
+| 01-4, 02-3 | SD Forge | Service local ou myia.io |
+| 01-5, 02-1 | ComfyUI Qwen | COMFYUI_AUTH_TOKEN, ~29GB VRAM |
+| 02-4 | Z-Image/vLLM | ~10GB VRAM |
+| 03-* | Multi-modeles | Tous les services |
+| 04-* | Applications | Variable |
+
+### Mapping notebooks Audio → services
+
+| Notebooks | Service | Prerequis |
+|-----------|---------|-----------|
+| Audio/01-1, 01-2 | OpenAI API (TTS/STT) | OPENAI_API_KEY |
+| Audio/01-3 | Local (librosa, pydub) | Aucun |
+| Audio/01-4 | Whisper local | GPU ~10 GB |
+| Audio/01-5 | Kokoro TTS | GPU ~2 GB |
+| Audio/02-1 | Chatterbox TTS | GPU ~8 GB |
+| Audio/02-2 | XTTS v2 | GPU ~6 GB |
+| Audio/02-3 | MusicGen | GPU ~10 GB |
+| Audio/02-4 | Demucs v4 | GPU ~4 GB |
+| Audio/03-* | Multi-modeles | Mixed |
+| Audio/04-* | Applications | Mixed |
+
+### Mapping notebooks Video → services
+
+| Notebooks | Service | Prerequis |
+|-----------|---------|-----------|
+| Video/01-1 | Local (moviepy, FFmpeg) | FFmpeg installe |
+| Video/01-2 | OpenAI GPT-5 | OPENAI_API_KEY |
+| Video/01-3 | Qwen2.5-VL local | GPU ~18 GB |
+| Video/01-4 | Real-ESRGAN/RIFE | GPU ~4 GB |
+| Video/01-5 | AnimateDiff | GPU ~12 GB |
+| Video/02-1 | HunyuanVideo | GPU ~18 GB |
+| Video/02-2 | LTX-Video | GPU ~8 GB |
+| Video/02-3 | Wan 2.1/2.2 | GPU ~10 GB |
+| Video/02-4 | SVD | GPU ~10 GB |
+| Video/03-3 | ComfyUI Video | Docker, nodes video |
+| Video/04-3 | Sora 2 API | OPENAI_API_KEY |
+
+### Configuration .env GenAI
+
+Fichier : `MyIA.AI.Notebooks/GenAI/.env`
+
+```bash
+# Mode local (Docker) vs remote (myia.io)
+LOCAL_MODE=false
+
+# ComfyUI
+COMFYUI_API_URL=https://qwen-image-edit.myia.io
+COMFYUI_AUTH_TOKEN=<bearer_token_bcrypt>
+
+# OpenAI via OpenRouter
+OPENAI_API_KEY=sk-or-v1-...
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+
+# Mode batch pour execution automatisee
+BATCH_MODE=false
+```
+
 ## Configuration
 
-- **OpenAI/API keys**: `MyIA.AI.Notebooks/GenAI/.env` (template: `.env.example`)
-  - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_BEARER_TOKEN`, `HUGGINGFACE_TOKEN`
+- **API keys**: `MyIA.AI.Notebooks/GenAI/.env` (template: `.env.example`)
 - **C# settings**: `MyIA.AI.Notebooks/Config/settings.json`
-- **Docker env**: Variables in `docker-compose.yml` (ports, memory limits)
+- **Docker**: `docker-configurations/services/comfyui-qwen/.env`
+
+## Claude Code Extension Points
+
+### Agents (`.claude/agents/`)
+
+Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model, tools, memory, and skills configuration. Key agents:
+
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| notebook-iterative-builder | inherit | Orchestrate build/improve/fix cycles |
+| notebook-executor | sonnet | Execute notebooks via MCP |
+| notebook-validator | sonnet | Validate all quality aspects |
+| notebook-enricher | sonnet | Add pedagogical content |
+| notebook-cleaner | sonnet | Fix markdown structure |
+| notebook-designer | inherit | Create new notebooks |
+| notebook-cell-iterator | sonnet | Fix specific cells iteratively |
+| readme-updater | haiku | Update README files |
+| readme-hierarchy-auditor | haiku | Audit README hierarchy |
+
+### Skills (`.claude/skills/`)
+
+| Skill | Type | Description |
+|-------|------|-------------|
+| notebook-helpers | Reference (auto) | Script reference for notebook manipulation |
+| mcp-jupyter | Reference (auto) | MCP Jupyter tools and patterns |
+| notebook-patterns | Reference (auto) | Enrichment patterns (GameTheory model) |
+| verify-notebooks | User (`/command`) | Verify and test notebooks |
+| enrich-notebooks | User (`/command`) | Enrich with pedagogical content |
+| cleanup-notebooks | User (`/command`) | Clean markdown structure |
+| build-notebook | User (`/command`) | Create/improve/fix notebooks |
+| execute-notebook | User (`/command`) | Execute via MCP |
+| validate-genai | User (`/command`) | Validate GenAI stack |
+
+### Rules (`.claude/rules/`)
+
+| Rule | Scope | Content |
+|------|-------|---------|
+| notebook-conventions | `*.ipynb` files | Manipulation, structure, execution rules |
+| git-workflow | All files | Branch naming, commit messages, safety |
+| code-style | All files | PEP 8, .NET, no emojis, naming |
+| genai-config | `GenAI/**/*` | Services, env, scripts, architecture |
+| wsl-kernels | `GameTheory/**`, `Lean/**` | WSL kernel issues and workarounds |
+
+### Model Selection Strategy
+
+When delegating to sub-agents, use intelligent model selection:
+- **haiku**: Quick tasks (README updates, structure scans, simple validation)
+- **sonnet**: Standard tasks (enrichment, execution, cleanup, validation)
+- **inherit/opus**: Complex tasks (design, orchestration, debugging)
+
+### Proactive Behaviors
+
+- After completing notebook work, **update agent memory** with lessons learned
+- After enrichment, **verify cell placement** with git diff
+- Before executing GenAI notebooks, **validate the stack** with `/validate-genai`
+- When encountering repeated errors, **record the pattern** in memory for future reference
+- When working with notebooks, **use the helper scripts** (not ad-hoc Python)
 
 ## Language
 
-Primary documentation language is French. Code comments may be in French or English.
-
----
-
-## MCP Jupyter Papermill - Exécution de Notebooks
-
-Claude Code dispose d'un MCP (Model Context Protocol) pour exécuter les notebooks Jupyter de ce repository.
-
-### Capacités
-
-| Catégorie | Outils disponibles |
-|-----------|-------------------|
-| **Lecture/Écriture** | `read_notebook`, `write_notebook`, `create_notebook`, `read_cells`, `add_cell`, `update_cell`, `remove_cell` |
-| **Inspection** | `inspect_notebook`, `list_notebook_files`, `get_notebook_info` |
-| **Kernels** | `list_kernels`, `manage_kernel` (start/stop/restart/interrupt) |
-| **Exécution interactive** | `execute_on_kernel` (code brut, cellule spécifique, notebook complet) |
-| **Exécution Papermill** | `execute_notebook` (sync/async avec injection de paramètres) |
-| **Jobs asynchrones** | `manage_async_job` (status, logs, cancel, list, cleanup) |
-
-### Kernels supportés
-
-- **Python 3** : `python3` (via ipykernel dans conda `mcp-jupyter-py310`)
-- **.NET Interactive** : `.net-csharp`, `.net-fsharp`, `.net-powershell` (via dotnet interactive)
-
-### Configuration MCP (référence)
-
-Le MCP est configuré dans `~/.claude.json` avec les variables d'environnement nécessaires pour :
-- L'environnement conda `mcp-jupyter-py310`
-- Le SDK .NET et MSBuild pour les notebooks C#
-- Les chemins Jupyter pour trouver tous les kernels
-
-### Installation des kernels .NET
-
-Les kernels .NET Interactive doivent être installés dans le répertoire de l'environnement conda :
-
-```
-C:/Users/<user>/.conda/envs/mcp-jupyter-py310/share/jupyter/kernels/
-├── .net-csharp/
-├── .net-fsharp/
-└── .net-powershell/
-```
-
-**Configuration requise dans `kernel.json`** : Utiliser le chemin absolu vers `dotnet-interactive.exe` :
-
-```json
-{
-  "argv": [
-    "C:\\Users\\<user>\\.dotnet\\tools\\dotnet-interactive.exe",
-    "jupyter",
-    "--default-kernel",
-    "csharp",
-    "{connection_file}",
-    "--http-port-range",
-    "2048-3000"
-  ],
-  "env": {
-    "DOTNET_ROOT": "C:\\Program Files\\dotnet"
-  },
-  "display_name": ".NET (C#)",
-  "language": "C#"
-}
-```
-
-### Exemples d'utilisation
-
-```
-# Lister les notebooks du repo
-list_notebook_files(directory="MyIA.AI.Notebooks", recursive=true)
-
-# Lire les cellules d'un notebook
-read_cells(path="MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking.ipynb", mode="list")
-
-# Exécuter un notebook Python complet
-execute_notebook(input_path="MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb", mode="sync")
-
-# Démarrer un kernel et exécuter du code interactif
-manage_kernel(action="start", kernel_name="python3")
-execute_on_kernel(kernel_id="...", mode="code", code="print('Hello')")
-```
-
-### Notebooks .NET avec `#!import` - Exécution cellule par cellule
-
-Les notebooks .NET utilisant la directive `#!import` (comme les notebooks Sudoku) **ne fonctionnent pas bien avec Papermill**. Utiliser l'exécution cellule par cellule :
-
-```python
-# 1. Démarrer un kernel .NET
-manage_kernel(action="start", kernel_name=".net-csharp")
-
-# 2. Définir le répertoire de travail (important pour les chemins relatifs)
-execute_on_kernel(
-    kernel_id="...",
-    mode="code",
-    code='System.IO.Directory.SetCurrentDirectory(@"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")'
-)
-
-# 3. Exécuter les cellules une par une
-execute_on_kernel(kernel_id="...", mode="notebook_cell", path="notebook.ipynb", cell_index=0)
-execute_on_kernel(kernel_id="...", mode="notebook_cell", path="notebook.ipynb", cell_index=1)
-# ...
-
-# 4. Arrêter le kernel à la fin
-manage_kernel(action="stop", kernel_id="...")
-```
-
-### Répertoire de travail pour notebooks
-
-Les notebooks Sudoku et autres utilisant des chemins relatifs (ex: `puzzles/Easy.txt`) nécessitent de définir le répertoire de travail :
-
-```csharp
-// En C# (.NET Interactive)
-System.IO.Directory.SetCurrentDirectory(@"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku");
-```
-
-```python
-# En Python
-import os
-os.chdir(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Sudoku")
-```
-
-### Limitations et problèmes connus
-
-| Problème | Impact | Contournement |
-| -------- | ------ | ------------- |
-| **Papermill + `#!import`** | L'exécution reste bloquée | Utiliser `execute_on_kernel` cellule par cellule |
-| **Papermill + kernels .NET** | Le kernel reste bloqué au démarrage (>60s) | Préférer exécution manuelle ou cellule par cellule |
-| **Cold start .NET** | Premier démarrage peut timeout (30-60s) | Relancer une seconde fois après timeout |
-| **Progression async** | Valeurs incorrectes (ex: 100/50 pour 21 cellules) | Bug connu, ignorer les chiffres de progression |
-| **Kernel unresponsive** | Après exécution Papermill échouée | Arrêter et redémarrer le kernel |
-| **Chemins relatifs** | "File not found" dans notebooks | Définir `Directory.SetCurrentDirectory()` |
-| **PyGad long runtime** | Algorithme génétique >300s avec 100 générations | Réduire `num_generations` pour tests rapides |
-
-### Résolution de problèmes
-
-**Le kernel .NET ne démarre pas** :
-
-1. Vérifier que `dotnet-interactive` est installé : `dotnet tool list -g`
-2. Vérifier le chemin absolu dans `kernel.json`
-3. Vérifier que `DOTNET_ROOT` pointe vers l'installation .NET
-
-**Le notebook échoue avec "couldn't find file"** :
-
-1. Vérifier le répertoire de travail avec `System.IO.Directory.GetCurrentDirectory()`
-2. Définir explicitement le répertoire avec `SetCurrentDirectory()`
-
-**Timeout au premier démarrage** :
-
-- Normal pour .NET Interactive (compilation JIT). Relancer après timeout.
-
-### Kernels WSL - Problemes connus (Janvier 2026)
-
-Lors de la creation de kernels Jupyter qui s'executent dans WSL (comme pour OpenSpiel, Lean4, etc.), plusieurs pieges sont a eviter :
-
-| Probleme | Cause | Solution |
-| -------- | ----- | -------- |
-| **Backslashes completement supprimes** | Le shell WSL consomme TOUS les `\` avant que le script les recoive | Utiliser un wrapper **bash** (pas Python) avec regex de reconstruction |
-| **Chemin recu sans separateurs** | `~\AppData\...\kernel.json` devient `c:UsersjsboiAppDataRoaming...` | Regex: `^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$` |
-| **SyntaxWarning: invalid escape sequence** | Docstrings Python avec `\A`, `\U`, etc. | Utiliser `#` commentaires, pas docstrings |
-| **Variables heredoc interpolees** | `cat << 'EOF'` dans `bash -c '...'` interprete quand meme `$VAR` | Ecrire le script via fichier temporaire Windows, puis copier vers WSL |
-| **Kernel timeout 60s** | Wrapper script a des erreurs silencieuses | Verifier `/tmp/kernel-wrapper.log` dans WSL |
-
-**IMPORTANT** : Un wrapper Python direct ne fonctionne PAS car les backslashes sont consommes par le shell WSL avant que Python les recoive. Il faut un wrapper **bash**.
-
-**kernel.json correct** :
-
-```json
-{
-  "argv": [
-    "wsl.exe", "-d", "Ubuntu", "--",
-    "bash", "/home/<user>/.gametheory-kernel-wrapper.sh",
-    "-f", "{connection_file}"
-  ],
-  "display_name": "Python (GameTheory WSL + OpenSpiel)",
-  "language": "python"
-}
-```
-
-**Template de wrapper BASH** (seul qui fonctionne) :
-
-```bash
-#!/bin/bash
-# Kernel wrapper for WSL - handles stripped backslashes
-# VSCode envoie: ~\AppData\Roaming\jupyter\runtime\kernel-xxx.json
-# Wrapper recoit: c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json
-
-LOGFILE="/tmp/kernel-wrapper.log"
-echo "=== Kernel wrapper started ===" > "$LOGFILE"
-echo "Args: $@" >> "$LOGFILE"
-
-ARGS=()
-NEXT_IS_CONN=false
-
-for arg in "$@"; do
-    if [ "$NEXT_IS_CONN" = true ]; then
-        echo "Original path: $arg" >> "$LOGFILE"
-
-        # Case 1: Tilde notation (rare, mais possible)
-        if [[ "$arg" == ~* ]]; then
-            WIN_HOME=$(cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d "\r\n")
-            arg="${WIN_HOME}${arg:1}"
-        fi
-
-        # Case 2: Backslashes strippes - CRITIQUE
-        # Pattern: c:Users<user>AppDataRoamingjupyterruntimekernel-xxx.json
-        if [[ "$arg" =~ ^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$ ]]; then
-            USERNAME="${BASH_REMATCH[1]}"
-            FILENAME="${BASH_REMATCH[2]}"
-            arg="C:\\Users\\${USERNAME}\\AppData\\Roaming\\jupyter\\runtime\\${FILENAME}"
-            echo "Reconstructed path: $arg" >> "$LOGFILE"
-        fi
-
-        # Convert to Linux path
-        if [[ "$arg" == *":"* ]] || [[ "$arg" == *"\\"* ]]; then
-            LINUX_PATH=$(wslpath -u "$arg" 2>/dev/null)
-            if [ -n "$LINUX_PATH" ]; then
-                arg="$LINUX_PATH"
-            fi
-        fi
-
-        echo "Final path: $arg" >> "$LOGFILE"
-        ARGS+=("$arg")
-        NEXT_IS_CONN=false
-    elif [ "$arg" = "-f" ]; then
-        ARGS+=("$arg")
-        NEXT_IS_CONN=true
-    else
-        ARGS+=("$arg")
-    fi
-done
-
-export PATH="/home/<user>/.gametheory-venv/bin:$PATH"
-cd ~
-exec /home/<user>/.gametheory-venv/bin/python3 -m ipykernel_launcher "${ARGS[@]}"
-```
-
-**Scripts de deploiement** : Voir `MyIA.AI.Notebooks/GameTheory/scripts/` et `install_wsl_kernel.md`
-
----
-
-## État des Notebooks - Vérifications et Corrections (Janvier 2026)
-
-### Corrections effectuées
-
-| Notebook | Problème | Correction |
-| -------- | -------- | ---------- |
-| **CSPs_Intro.ipynb** | min_conflicts O(n²) par itération, timeout avec n=256 | Version optimisée avec compteurs incrémentaux (O(n)), supporte n=256 en 0.036s et n=1000 en 0.5s |
-| **Sudoku-0-Environment.ipynb** | `DisplayResults()` affichage inversé | Paramètres `values`/`Keys` de `Chart2D.Chart.Bar` corrigés |
-| **GeneticSharp-EdgeDetection.ipynb** | `#load "../Config/SkiaUtils.cs"` échoue avec Papermill | Code SkiaUtils intégré directement dans le notebook |
-| **RDF.Net.ipynb** | Erreur DBpedia + fichiers manquants | Try/catch DBpedia + exemples in-memory pour cellules 107-113 |
-| **PyGad-EdgeDetection.ipynb** | `plt.show()` bloque en mode batch, timeout >300s | Ajout `plt.close()` après chaque `plt.show()`, support `BATCH_MODE` |
-| **Tweety.ipynb** | Warning trompeur sur InformationObject | Message corrigé : seule section CrMas affectée, reste du notebook OK |
-
-### Notebooks vérifiés
-
-| Notebook | Statut | Notes |
-| -------- | ------ | ----- |
-| **Tweety.ipynb** (72 cellules) | OK | JVM démarre avec JDK portable, InformationObject manquant (Tweety 1.28 API) n'affecte que CrMas |
-| **Argument_Analysis_Agentic-0-init.ipynb** | OK | Exécution Python 43.4s, config OpenAI validée |
-| **Argument_Analysis_Executor.ipynb** | OK (batch) | Mode batch ajouté (`BATCH_MODE=true` dans `.env`), analyse complète en 122s |
-| **PyGad-EdgeDetection.ipynb** | OK (corrigé) | `plt.close()` ajouté, supporte `BATCH_MODE`, reste long (~300s avec 100 générations) |
-| **Exploration_non_informée...ipynb** | OK | Exécution Papermill réussie |
-| **OR-Tools-Stiegler.ipynb** | Kernel .NET | Papermill bloque au démarrage, exécution manuelle requise |
-| **Sudoku-2-Genetic.ipynb** | Manuel | Utilise `#!import`, test manuel requis |
-| **Sudoku-6-Infer.ipynb** | Manuel | Utilise `#!import` + Infer.NET, test manuel requis |
-
-### Notebooks avec dépendances externes
-
-| Notebook | Dépendance | Notes |
-| -------- | ---------- | ----- |
-| **Tweety.ipynb** | JDK 17+ | Auto-téléchargement JDK portable Zulu 17, JARs dans `libs/` |
-| **Argument_Analysis/** | OpenAI API (`.env`) | 6 notebooks avec Semantic Kernel, mode batch supporté |
-| **RDF.Net.ipynb** | DBpedia (service web) | Peut échouer si DBpedia indisponible, exemples in-memory en fallback |
-| **Fast-Downward.ipynb** | Exécutable Fast Downward | Auto-compilation si manquant |
-
-### Structure Argument_Analysis (après nettoyage Janvier 2026)
-
-```
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/
-├── .env / .env.example          # Configuration API (OPENAI_API_KEY, BATCH_MODE)
-├── Argument_Analysis_*.ipynb    # 6 notebooks du workflow
-├── install_jdk_portable.py      # Utilitaire installation JDK
-├── data/                        # Données (taxonomie sophismes, etc.)
-├── ext_tools/                   # Outils externes
-├── jdk-17-portable/             # JDK Zulu 17 (ignoré git)
-├── libs/                        # JARs Tweety
-├── ontologies/                  # Ontologies OWL
-└── resources/                   # Ressources Tweety
-```
-
-**Fichiers supprimés** (nettoyage) :
-- Scripts temporaires : `fix_*.py`, `text_sanitizer.py`
-- Fichiers exemples obsolètes : `ExemplesTweetyJava*.txt`
-- Notebook dupliqué : `Tweety.ipynb` (copie dans Argument_Analysis)
-
-### Mode batch pour Argument_Analysis
-
-Le notebook **Argument_Analysis_Executor.ipynb** supporte un mode batch pour les tests automatisés (Papermill/MCP) :
-
-**Configuration dans `.env`** :
-
-```bash
-# Mode batch pour exécution non-interactive
-BATCH_MODE="true"
-# Texte personnalisé optionnel (sinon texte d'exemple utilisé)
-# BATCH_TEXT="Votre texte à analyser..."
-```
-
-**Comportement** :
-
-- `BATCH_MODE=true` : Skip le chargement de `UI_configuration.ipynb` (widgets bloquants), utilise texte d'exemple ou `BATCH_TEXT`
-- `BATCH_MODE=false` (défaut) : Mode interactif avec interface widgets
-
-**Notebooks testables en mode batch** :
-
-- `Argument_Analysis_Executor.ipynb` - Orchestrateur complet (~122s)
-- `Argument_Analysis_Agentic-0-init.ipynb` - Config uniquement (~43s)
-- `Argument_Analysis_Agentic-1-informal_agent.ipynb` - Définition agent (~5s)
-- `Argument_Analysis_Agentic-2-pl_agent.ipynb` - Définition agent (~5s)
-
-**Notebooks NON testables automatiquement** :
-
-- `Argument_Analysis_UI_configuration.ipynb` - Widgets interactifs (polling loop)
-- `Argument_Analysis_Agentic-3-orchestration.ipynb` - Dépend de 0/1/2 chargés
-
-### Mises à jour Janvier 2026 - Notebooks Search, Sudoku, SymbolicAI
-
-**Division de Tweety.ipynb** : Le notebook monolithique (72 cellules, 307KB) a été divisé en 6 notebooks thématiques :
-
-| Notebook | Contenu | Cellules originales |
-| -------- | ------- | ------------------- |
-| Tweety-1-Setup.ipynb | Configuration JDK/JPype, téléchargement JARs | 0-14 |
-| Tweety-2-Basic-Logics.ipynb | Logique Propositionnelle, FOL | 15-20 |
-| Tweety-3-Advanced-Logics.ipynb | DL, Modale, QBF, Conditional | 21-26 |
-| Tweety-4-Belief-Revision.ipynb | CrMas, mesures incohérence, MUS | 27-35 |
-| Tweety-5-Abstract-Argumentation.ipynb | Dung, ASPIC+, DeLP, ABA, ASP | 36-54 |
-| Tweety-6-Advanced-Argumentation.ipynb | ADF, Weighted, Social, Ranking | 55-71 |
-
-Le notebook original `Tweety.ipynb` est conservé pour référence. Chaque notebook 2-6 inclut une cellule d'initialisation JVM partagée.
-
-**Nouveaux notebooks Python Sudoku** :
-
-| Notebook | Description |
-| -------- | ----------- |
-| Sudoku-Python-Backtracking.ipynb | Backtracking simple + MRV, visualisation matplotlib |
-| Sudoku-Python-ORTools-Z3.ipynb | OR-Tools CP-SAT + Z3 SMT, comparaison performances |
-
-**Amélioration Argument_Analysis_Executor.ipynb** : Ajout d'une cellule de validation finale qui génère un rapport JSON structuré avec :
-- Cross-validation (COMPLETE_VALIDATED, PARTIAL, MINIMAL, INCOMPLETE)
-- Score de confiance (0-100%)
-- Checks : ARGUMENTS_IDENTIFIED, FALLACIES_ANALYZED, BELIEF_SET_CREATED, QUERIES_EXECUTED, CONCLUSION_GENERATED
-- Export JSON vers `output/analysis_report.json`
-
----
-
-## Lean - Proof Assistant et Verification Formelle (8 notebooks)
-
-### Vue d'ensemble
-
-Serie de notebooks pour Lean 4, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Les notebooks 6-8 couvrent l'etat de l'art 2025-2026 : Mathlib4, integration LLM, et agents autonomes pour les preuves.
-
-**Repertoire** : `MyIA.AI.Notebooks/SymbolicAI/Lean/`
-**Kernel** : `lean4_jupyter` (installation via pip)
-**Duree totale** : ~5h55
-
-### Structure des notebooks
-
-| # | Notebook | Contenu | Duree |
-|---|----------|---------|-------|
-| **Partie 1 : Fondations** | | | |
-| 1 | Lean-1-Setup | Installation elan, kernel Jupyter, verification | 15 min |
-| 2 | Lean-2-Dependent-Types | Calcul des Constructions, types, polymorphisme | 35 min |
-| 3 | Lean-3-Propositions-Proofs | Prop, connecteurs, Curry-Howard, preuves par termes | 45 min |
-| 4 | Lean-4-Quantifiers | forall, exists, egalite, arithmetique Nat | 40 min |
-| 5 | Lean-5-Tactics | Mode tactique, apply/exact/intro/rw/simp | 50 min |
-| **Partie 2 : Etat de l'art** | | | |
-| 6 | Lean-6-Mathlib-Essentials | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
-| 7 | Lean-7-LLM-Integration | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
-| 8 | Lean-8-Agentic-Proving | Agents autonomes, APOLLO, problemes Erdos | 55 min |
-
-### Installation
-
-```bash
-# Installer elan (gestionnaire de versions Lean)
-# Windows (PowerShell)
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1 | Invoke-Expression
-
-# Linux/macOS
-curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
-
-# Installer Lean 4 stable
-elan default leanprover/lean4:stable
-
-# Environnement Python pour lean4_jupyter
-conda create -n lean4-jupyter python=3.10
-conda activate lean4-jupyter
-pip install lean4_jupyter
-
-# Pour notebooks LLM (optionnel)
-pip install openai anthropic
-```
-
-### Configuration
-
-```bash
-cd MyIA.AI.Notebooks/SymbolicAI/Lean
-cp .env.example .env
-# Ajouter OPENAI_API_KEY ou ANTHROPIC_API_KEY pour notebooks 7-8
-```
-
-### Validation
-
-```bash
-python scripts/verify_lean.py --quick              # Validation structurelle rapide
-python scripts/verify_lean.py --check-env          # Verifier installation Lean
-python scripts/verify_lean.py --execute --verbose  # Execution complete
-```
-
-### Percees recentes (2024-2026)
-
-| Systeme | Accomplissement |
-|---------|-----------------|
-| **AlphaProof** (DeepMind) | Medaille d'argent IMO 2024, publie dans Nature |
-| **Harmonic Aristotle** | Resolution Erdos #124 variant (~30 ans ouvert) en 6h |
-| **DeepSeek-Prover** | Resolution de problemes Erdos 379, 987, 730, 198 |
-| **Mathlib4** v4.27.0-rc1 | 4M+ lignes, utilise par Terry Tao |
-
-### Concepts cles
-
-- **Lean 4** (pas Lean 3) - syntaxe moderne
-- **Curry-Howard** : propositions = types, preuves = termes
-- **Tactiques** : apply, exact, intro, rw, simp, omega, ring, linarith
-- **Preuves constructives** + logique classique (via `open Classical`)
-- **Progression** : termes -> tactiques -> Mathlib -> LLMs -> agents
-
-### Fichiers de support
-
-```
-Lean/
-├── Lean-1-Setup.ipynb ... Lean-8-Agentic-Proving.ipynb
-├── README.md                    # Documentation complete
-├── .env.example                 # Template API keys
-└── examples/
-    ├── basic_logic.lean         # Logique propositionnelle
-    ├── quantifiers.lean         # Quantificateurs
-    ├── tactics_demo.lean        # Tactiques
-    ├── mathlib_examples.lean    # Usage Mathlib
-    └── llm_assisted_proof.lean  # Preuves assistees LLM
-```
-
-### Document source
-
-- Notebooks 1-5 : `D:\Dropbox\IA101\TPs\TP - Z3 - Tweety - Lean.pdf` (Section VI)
-- Notebooks 6-8 : Recherches etat de l'art 2025-2026 (Mathlib4, AlphaProof, APOLLO, Harmonic Aristotle)
-
----
-
-## GradeBookApp - Systeme de Notation par Evaluations Collegiales
-
-### Vue d'ensemble
-
-GradeBookApp est un systeme de notation qui combine les evaluations collegiales des etudiants avec celle du professeur. Le pipeline existe en deux versions :
-
-- **Notebook C#** : `MyIA.AI.Notebooks/GradeBook.ipynb` (version interactive originale)
-- **Python** : `GradeBookApp/gradebook.py` (version consolidee pour production)
-
-### Pipeline de notation
-
-1. **Chargement des donnees** - Fichiers inscription CSV + evaluations Google Forms
-2. **Filtrage** - Notes hors limites, dates incoherentes, auto-evaluations, doublons
-3. **Calcul note brute** - Moyenne ponderee (etudiants + professeur avec TEACHER_WEIGHT)
-4. **Rectification** - Bonus/malus taille groupe + centrage-reduction statistique
-5. **Generation Excel** - Resume etudiants + feedbacks par epreuve
-
-### Configuration multi-epreuves
-
-```python
-CONFIG = {
-    'nom_classe': 'EPF MIS 2026',
-    'inscriptions_path': 'chemin/inscriptions.csv',
-    'epreuves': [
-        {'nom': 'CC1', 'inscription_col': 'Groupe CC1', 'poids': 0.5, 'target_mean': 15.0},
-        {'nom': 'Projet ML', 'inscription_col': 'Sujet', 'poids': 0.5, 'target_mean': 15.5}
-    ],
-    'output_path': 'chemin/Notes_Finales.xlsx',
-    'professor_email': 'jsboige@gmail.com'
-}
-```
-
-### Fonctions principales (gradebook.py)
-
-| Fonction | Description |
-| -------- | ----------- |
-| `run_pipeline(config)` | Pipeline mono-epreuve |
-| `run_multi_epreuve_pipeline(config)` | Pipeline multi-epreuves avec moyenne ponderee |
-| `apply_rectification(proj_eval, mean, std)` | Applique bonus/malus + centrage-reduction |
-| `generate_excel_workbook(...)` | Genere l'Excel avec filtrage NaN |
-
-### Dependances Python GradeBookApp
-
-```bash
-pip install pandas numpy openpyxl rapidfuzz unidecode
-```
+Primary documentation language: French. Code comments: French or English.

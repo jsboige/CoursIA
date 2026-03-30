@@ -1,262 +1,669 @@
-# 📘 CoursIA
+# CoursIA
 
-Bienvenue dans le dépôt **CoursIA**, qui contient les ressources et TPs pour le cours d'intelligence artificielle en C# et Python.
+**Notebooks Jupyter pour l'enseignement de l'intelligence artificielle, de la theorie aux applications.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 📋 Table des matières
+## Table des matieres
 
-- [Introduction](#introduction)
-- [Structure du dépôt](#structure-du-dépôt)
+- [Presentation](#presentation)
+- [Structure du depot](#structure-du-depot)
+- [Series de notebooks](#series-de-notebooks)
+- [Configuration et API Keys](#configuration-et-api-keys)
+- [Kernels Jupyter](#kernels-jupyter)
+- [Outils et dependances externes](#outils-et-dependances-externes)
 - [Mise en route](#mise-en-route)
-- [Parcours d'apprentissage](#parcours-dapprentissage)
-- [Contenu des modules](#contenu-des-modules)
-- [Suivis Projets](#suivis-projets)
+- [Infrastructure Docker](#infrastructure-docker)
+- [Scripts et validation](#scripts-et-validation)
+- [Outils Claude Code](#outils-claude-code)
 - [Contribution](#contribution)
-- [Licence](#licence)
 
-## 🚀 Introduction
+## Presentation
 
-Ce dépôt contient un ensemble de notebooks Jupyter interactifs et de ressources pour l'apprentissage de l'intelligence artificielle, couvrant un large éventail de sujets allant du machine learning classique aux techniques d'IA générative modernes, en passant par l'IA symbolique et les algorithmes de recherche.
+CoursIA est un depot de notebooks Jupyter couvrant l'ensemble du spectre de l'intelligence artificielle : algorithmes de recherche et d'optimisation, resolution de problemes par contraintes, IA symbolique et raisonnement formel, theorie des jeux, programmation probabiliste, machine learning, IA generative multimodale et trading algorithmique.
 
-Les notebooks sont principalement en C# (utilisant .NET Interactive) et Python, offrant une approche pratique et hands-on pour comprendre les concepts d'IA.
+Les notebooks sont disponibles en **Python**, **C# (.NET Interactive)** et **Lean 4**. Chaque serie suit une progression pedagogique, des concepts fondamentaux vers les applications avancees. La plupart des series fonctionnent entierement en local sans configuration ; seules les series GenAI et QuantConnect necessitent des cles API.
 
-## 🗂️ Structure du dépôt
-
-Le dépôt est organisé en plusieurs sections thématiques :
+## Structure du depot
 
 ```
-MyIA.AI.Notebooks/
-├── GenAI/               # IA Générative (OpenAI, LLMs, RAG, etc.)
-├── ML/                  # Machine Learning avec ML.NET
-├── IIT/                 # Integrated Information Theory
-├── Probas/              # Probabilités et inférence bayésienne
-├── Search/              # Algorithmes de recherche et optimisation
-├── Sudoku/              # Résolution de Sudoku avec différentes approches
-├── SymbolicAI/          # IA Symbolique (RDF, Z3, OR-Tools)
-└── Config/              # Configuration pour les notebooks
+CoursIA/
+├── MyIA.AI.Notebooks/           # 500+ notebooks interactifs
+│   ├── Search/                  # Recherche et optimisation (45 notebooks)
+│   │   ├── Foundations/         # Theorie progressive
+│   │   └── Applications/        # Problemes appliques (projets etudiants)
+│   ├── Sudoku/                  # Resolution multi-paradigme (32 notebooks)
+│   ├── SymbolicAI/              # IA Symbolique (91 notebooks)
+│   │   ├── Tweety/              # Logiques formelles, argumentation (10)
+│   │   ├── SemanticWeb/         # RDF, OWL, SPARQL, GraphRAG (18)
+│   │   ├── Lean/                # Verification formelle Lean 4 (13)
+│   │   ├── Planners/            # Planification PDDL, Fast-Downward (13)
+│   │   ├── SmartContracts/      # Solidity, Move, Anchor (27)
+│   │   └── Argument_Analysis/   # Analyse argumentative LLM (6)
+│   ├── GameTheory/              # Theorie des jeux (26 notebooks)
+│   │   ├── GameTheory-1 to 17   # Notebooks principaux (Python)
+│   │   ├── *b variants          # Formalisations Lean 4
+│   │   └── *c variants          # Approfondissements Python
+│   ├── Probas/                  # Programmation probabiliste (22 notebooks)
+│   │   ├── Infer/               # Infer.NET (20 notebooks C#)
+│   │   └── Pyro_RSA_Hyperbole   # Pragmatique du langage (Python)
+│   ├── ML/                      # Machine Learning (27 notebooks)
+│   │   ├── ML.Net/              # Ecosysteme Microsoft (8)
+│   │   └── DataScienceWithAgents/ # Data Science et agents IA (19)
+│   ├── RL/                      # Reinforcement Learning (3 notebooks)
+│   ├── GenAI/                   # IA Generative (98 notebooks)
+│   │   ├── 00-GenAI-Environment/# Setup et configuration (6)
+│   │   ├── Image/               # Generation d'images (19)
+│   │   ├── Audio/               # Speech, TTS, musique (21)
+│   │   ├── Video/               # Generation et comprehension (16)
+│   │   ├── Texte/               # LLMs, RAG, prompt engineering (11)
+│   │   ├── SemanticKernel/      # Microsoft Semantic Kernel (20)
+│   │   ├── Vibe-Coding/         # Claude Code, Roo Code (5)
+│   │   └── EPF/                 # Projets etudiants (4)
+│   ├── QuantConnect/            # Trading algorithmique (122 notebooks)
+│   │   ├── Python/              # 27 notebooks pedagogiques
+│   │   ├── projects/            # 54 strategies backtestees (54 research notebooks)
+│   │   └── ESGF-2026/           # Projets etudiants et exemples (21 notebooks)
+│   ├── EPF/                     # Projets transversaux etudiants (4 notebooks)
+│   ├── IIT/                     # Information integree - PyPhi (1)
+│   └── Config/                  # Configuration API (settings.json)
+│
+├── scripts/                     # Scripts utilitaires
+│   ├── notebook_tools.py        # CLI : validate, skeleton, analyze, check-env
+│   ├── notebook_helpers.py      # Helpers pour manipulation notebooks
+│   ├── extract_notebook_skeleton.py  # Extraction structure pour README
+│   └── genai-stack/             # Validation GenAI (Docker, Papermill)
+│
+├── docker-configurations/       # Infrastructure Docker GPU
+│   └── services/                # ComfyUI, FLUX, SD3.5, Z-Image
+│
+├── GradeBookApp/                # Systeme de notation etudiants
+├── notebook-infrastructure/     # Automation Papermill et maintenance MCP
+└── MyIA.AI.Shared/              # Bibliotheque C# partagee
 ```
-
-## 🛠️ Mise en route
-
-### Prérequis
-
-Avant de commencer, assurez-vous d'avoir installé :
-
-- [Python 3.9+](https://www.python.org/downloads/)
-- [Visual Studio Code](https://code.visualstudio.com/)
-- L'extension **Python** et **Jupyter** dans VSCode
-- [Extension **.Net extension pack**](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-pack)
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download) (pour les notebooks C#)
-- [OpenAI API key](https://platform.openai.com/signup/) (pour les notebooks GenAI)
-
-### Installation des dépendances
-
-1. **Créer et activer un environnement virtuel Python :**
-
-   ```sh
-   python -m venv venv
-   source venv/bin/activate  # macOS/Linux
-   venv\Scripts\activate      # Windows
-   ```
-
-2. **Installer Jupyter et les bibliothèques nécessaires :**
-
-   ```sh
-   pip install --upgrade pip
-   pip install jupyter openai
-   ```
-
-3. **Ajouter l'environnement à Jupyter :**
-
-   ```sh
-   python -m ipykernel install --user --name=coursia --display-name "Python (CoursIA)"
-   ```
-
-4. **Configurer les clés API (pour GenAI) :**
-   
-   Créez un fichier `.env` dans le dossier `MyIA.AI.Notebooks/GenAI/` en vous basant sur le fichier `.env.example`.
-
-### Configuration pour les notebooks C#
-
-Pour les notebooks C#, vous devez également :
-
-1. **Restaurer les packages NuGet :**
-
-   ```sh
-   dotnet restore MyIA.CoursIA.sln
-   ```
-
-2. **Configurer les paramètres API :**
-   
-   Copiez `MyIA.AI.Notebooks/Config/settings.json.openai-example` vers `MyIA.AI.Notebooks/Config/settings.json` et ajoutez votre clé API.
-
-## 🎓 Parcours d'apprentissage
-
-Voici un parcours d'apprentissage suggéré pour explorer ce dépôt :
-
-1. **Introduction au Machine Learning** - Commencez par les notebooks dans `ML/`
-2. **Algorithmes de recherche** - Explorez les notebooks dans `Search/` et `Sudoku/`
-3. **IA Symbolique** - Découvrez les notebooks dans `SymbolicAI/`
-4. **Probabilités et inférence** - Étudiez les notebooks dans `Probas/`
-5. **IA Générative** - Terminez avec les notebooks dans `GenAI/`
-
-## 📚 Contenu des modules
-
-### 🤖 GenAI (IA Générative)
-
-Notebooks sur l'IA générative, les grands modèles de langage (LLMs), et les techniques associées :
-
-- `OpenAI_Intro.ipynb` - Introduction à l'API OpenAI
-- `PromptEngineering.ipynb` - Techniques d'ingénierie de prompts
-- `RAG.ipynb` - Retrieval Augmented Generation
-- `LocalLlama.ipynb` - Utilisation de modèles locaux comme Llama
-- `SemanticKernel/` - Notebooks sur Microsoft Semantic Kernel
-
-### 📊 ML (Machine Learning)
-
-Série de notebooks sur le machine learning avec ML.NET :
-
-- `ML-1-Introduction.ipynb` - Introduction au ML avec ML.NET
-- `ML-2-Data&Features.ipynb` - Préparation des données et ingénierie des caractéristiques
-- `ML-3-Entrainement&AutoML.ipynb` - Entraînement de modèles et AutoML
-- `ML-4-Evaluation.ipynb` - Évaluation des modèles
-- `TP-prevision-ventes.ipynb` - TP sur la prévision des ventes
-
-### 🧩 Sudoku
-
-Notebooks illustrant différentes approches pour résoudre des Sudokus :
-
-- `Sudoku-0-Environment.ipynb` - Mise en place de l'environnement
-- `Sudoku-1-Backtracking.ipynb` - Résolution par backtracking
-- `Sudoku-2-Genetic.ipynb` - Algorithmes génétiques
-- `Sudoku-3-ORTools.ipynb` - Utilisation d'OR-Tools
-- `Sudoku-4-Z3.ipynb` - Résolution avec le solveur Z3
-- `Sudoku-5-DancingLinks.ipynb` - Algorithme de Dancing Links
-- `Sudoku-6-Infer.ipynb` - Inférence probabiliste
-
-### 🔍 Search (Recherche)
-
-Notebooks sur les algorithmes de recherche et d'optimisation :
-
-- `GeneticSharp-EdgeDetection.ipynb` - Détection de contours avec algorithmes génétiques
-- `Portfolio_Optimization_GeneticSharp.ipynb` - Optimisation de portefeuille
-- `PyGad-EdgeDetection.ipynb` - Détection de contours avec PyGad
-
-### 🧠 SymbolicAI (IA Symbolique)
-
-Notebooks sur l'IA symbolique et les approches formelles :
-
-- `Linq2Z3.ipynb` - Utilisation du solveur Z3 avec LINQ
-- `OR-tools-Stiegler.ipynb` - Résolution de problèmes avec OR-Tools
-- `RDF.Net/` - Utilisation de RDF avec .NET
-
-### 🔢 Probas (Probabilités)
-
-Notebooks sur les probabilités et l'inférence bayésienne :
-
-- `Infer-101.ipynb` - Introduction à l'inférence probabiliste
-
-### 🧪 IIT (Integrated Information Theory)
-
-Notebooks sur la théorie de l'information intégrée :
-
-- `Intro_to_PyPhi.ipynb` - Introduction à PyPhi pour IIT
-
-## 🧪 Scripts GenAI Auth - Écosystème ComfyUI-Qwen Sécurisé
-
-Cette section contient les scripts pour l'installation, la validation et la gestion de l'écosystème ComfyUI-Qwen avec authentification sécurisée.
-
-### 🚀 Installation Complète
-Pour installer l'écosystème complet de manière automatisée :
-
-```bash
-# Installation complète automatisée
-python scripts/genai-auth/core/setup_complete_qwen.py
-```
-
-### 🔍 Validation et Diagnostic
-Pour valider et diagnostiquer l'écosystème :
-
-```bash
-# Validation complète de l'écosystème
-python scripts/genai-auth/core/validate_genai_ecosystem.py --verbose
-
-# Diagnostic de l'authentification
-python scripts/genai-auth/core/diagnose_comfyui_auth.py
-
-# Synchronisation des tokens
-python scripts/genai-auth/utils/token_synchronizer.py --unify
-```
-
-### 📚 Documentation Complète
-La documentation complète de l'écosystème est disponible dans :
-
-- **[Index de l'écosystème](docs/suivis/genai-image/README-ECOSYSTEME-COMFYUI-QWEN-20251125.md)** : Vue d'ensemble et navigation
-- **[Guide d'utilisation](docs/suivis/genai-image/GUIDE-UTILISATION-COMFYUI-QWEN-20251125.md)** : Instructions complètes (567 lignes)
-- **[Architecture technique](docs/suivis/genai-image/ARCHITECTURE-FINALE-COMFYUI-QWEN-20251125.md)** : Architecture détaillée (456 lignes)
-- **[Rapport de mission](docs/suivis/genai-image/RAPPORT-FINAL-MISSION-COMFYUI-LOGIN-20251125.md)** : Mission accomplie (334 lignes)
-
-### Structure des Scripts
-L'écosystème est organisé de manière modulaire et maintenable :
-
-```
-scripts/genai-auth/
-├── README.md                          (376 lignes - Documentation complète)
-├── core/                              Scripts principaux
-│   ├── setup_complete_qwen.py         (527 lignes - Installation complète)
-│   ├── validate_genai_ecosystem.py    (Validation écosystème)
-│   ├── diagnose_comfyui_auth.py       (Diagnostic authentification)
-│   └── install_comfyui_login.py       (Installation ComfyUI-Login)
-├── utils/                             Utilitaires spécialisés
-│   ├── token_synchronizer.py          (608 lignes - Synchroniseur unifié)
-│   ├── comfyui_client_helper.py       (1305 lignes - Client HTTP)
-│   ├── workflow_utils.py              (489 lignes - Manipulation workflows)
-│   └── diagnostic_utils.py            (426 lignes - Utilitaires diagnostic)
-└── tests/                             Scripts de test
-    └── genai-improvements/           Tests et débogage
-```
-
-### 🐳 Configuration Docker
-La configuration Docker est organisée dans `docker-configurations/` :
-
-```
-docker-configurations/
-├── README.md                    (170 lignes - Documentation infrastructure)
-├── comfyui-qwen/              (Configuration principale)
-│   ├── docker-compose.yml
-│   ├── .env
-│   └── workspace/
-├── models/                      (Modèles partagés)
-├── cache/                       (Cache partagé)
-└── orchestrator/                (Service d'orchestration)
-```
-```
-
-## 📂 Suivis Projets
-
-Cette section regroupe les suivis détaillés des projets en cours et terminés.
-
-### 🖼️ Projet GenAI Image
-
-- **Description** : Déploiement d'une infrastructure locale ComfyUI + Qwen pour la génération et l'édition d'images par IA. Inclut la mise en production SSL/IIS, le monitoring et le design de workflows pédagogiques.
-- **Statut** : Phase 13A complétée, Phase 13B en planification
-- **Accès** : [`docs/suivis/genai-image/README.md`](docs/suivis/genai-image/README.md)
-
-## 👥 Contribution
-
-Les contributions à ce dépôt sont les bienvenues ! Si vous souhaitez contribuer :
-
-1. Forkez le dépôt
-2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/nouvelle-fonctionnalite`)
-3. Committez vos changements (`git commit -m 'Ajout d'une nouvelle fonctionnalité'`)
-4. Poussez vers la branche (`git push origin feature/nouvelle-fonctionnalite`)
-5. Ouvrez une Pull Request
-
-## 📄 Licence
-
-Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ---
 
-🚀 Bon apprentissage et bonnes expérimentations avec l'IA !
+## Series de notebooks
+
+### Search - Recherche et Optimisation
+
+Les algorithmes de recherche constituent le socle algorithmique de l'IA. Cette serie couvre la formalisation des espaces d'etats, les algorithmes de recherche non informee (BFS, DFS) et informee (A*, Hill Climbing), les metaheuristiques (recuit simule, algorithmes genetiques, PSO), et la programmation par contraintes (OR-Tools, Z3).
+
+La serie est organisee en deux volets : **Foundations** (progression theorique) et **Applications** (problemes concrets : ordonnancement d'atelier, Demineur CSP, Puissance 4 avec 8 IA, detection de bords par algorithmes genetiques, optimisation de portefeuille).
+
+45 notebooks -- Python et C# -- [README detaille](MyIA.AI.Notebooks/Search/README.md)
+
+### Sudoku - Resolution multi-paradigme
+
+Le meme probleme -- la resolution de grilles de Sudoku -- est aborde par une dizaine de paradigmes differents. Cela permet de comparer concretement les compromis performance/complexite/expressivite de chaque approche sur un probleme identique.
+
+| Approche | Notebooks | Technologies |
+|----------|-----------|--------------|
+| Backtracking | 1 | MRV, recherche exhaustive |
+| Dancing Links | 2 | Couverture exacte (DLX) |
+| Metaheuristiques | 3-5 | Algorithme genetique, recuit simule, PSO |
+| CSP | 6-11 | AIMA, Norvig, OR-Tools, Choco, Graph Coloring |
+| Symbolique | 12-14 | Z3 SMT, Automates, BDD |
+| Data-Driven | 15-18 | Infer.NET/NumPyro, reseaux de neurones, LLM |
+
+Chaque approche dispose d'une version C# et d'une version Python (miroir).
+
+32 notebooks -- C# et Python -- [README detaille](MyIA.AI.Notebooks/Sudoku/README.md)
+
+**Note** : Les notebooks C# utilisent `#!import` et necessitent une execution cellule par cellule (incompatible Papermill).
+
+### SymbolicAI - Raisonnement Formel
+
+L'IA symbolique regroupe les systemes de raisonnement automatique. Cette serie couvre plusieurs sous-domaines complementaires :
+
+**Tweety** (10 notebooks) -- Logiques formelles (propositionnelle, premier ordre, description) et argumentation computationnelle avec TweetyProject. Extensions de Dung, dialogues multi-agents, ASPIC+, DeLP, revision de croyances AGM.
+
+**Semantic Web** (18 notebooks) -- Du RDF/OWL aux graphes de connaissances integres aux LLMs. Les fondations sont couvertes en .NET (dotNetRDF), puis les standards modernes en Python (SHACL, JSON-LD, RDF-Star). La serie se conclut par GraphRAG et la comparaison de raisonneurs OWL (owlrl, HermiT, reasonable, Growl).
+
+**Lean** (13 notebooks) -- Verification formelle avec Lean 4. Types dependants, isomorphisme de Curry-Howard, tactiques Mathlib, assistance par LLMs (LeanCopilot, AlphaProof), TorchLean (reseaux de neurones formellement verifies). Necessite WSL sous Windows.
+
+**Planners** (13 notebooks) -- Planification automatique, organisee en 4 niveaux : fondations PDDL, planification classique (Fast-Downward, heuristiques), avancee (OR-Tools scheduling, planification temporelle, HTN), et neurosymbolique (LLM-planning, Unified Planning, LOOP).
+
+**Smart Contracts** (27 notebooks) -- Des origines cypherpunk a Solidity avancee et aux blockchains multi-chain (Vyper, Move/Sui, Solana/Anchor, Ripple, Bitcoin). Tests avec Foundry, fuzz testing, verification formelle, zero-knowledge proofs, chiffrement homomorphe, DAO governance, account abstraction. Tous les notebooks SC-3 a SC-7 utilisent `compile_and_deploy()` pour executer du code Solidity reel.
+
+**Argument Analysis** (6 notebooks) -- Analyse argumentative multi-agents avec Semantic Kernel et LLMs.
+
+| Sous-serie | Notebooks | Prerequis | README |
+|------------|-----------|-----------|--------|
+| Tweety | 10 | JDK 17+ (auto-telecharge) | [README](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) |
+| SemanticWeb | 18 | Python (rdflib) | [README](MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/README.md) |
+| Lean | 13 | WSL, elan | [README](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) |
+| Planners | 13 | Python | [README](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) |
+| SmartContracts | 27 | Node.js, Foundry | [README](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/README.md) |
+| Argument_Analysis | 6 | OpenAI API | [README](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md) |
+
+89 notebooks -- Python, Lean 4, C# -- [README detaille](MyIA.AI.Notebooks/SymbolicAI/README.md)
+
+### GameTheory - Theorie des Jeux
+
+Cette serie couvre les fondamentaux de la theorie des jeux et leurs extensions : equilibres de Nash, strategies mixtes, jeux evolutionnaires et repetes, backward induction, jeux bayesiens, CFR (Counterfactual Regret Minimization, l'algorithme a la base des IA de poker), jeux differentiels, jeux cooperatifs, mechanism design et MARL (Multi-Agent Reinforcement Learning).
+
+L'implementation utilise Nashpy et OpenSpiel. Des side tracks en Lean 4 proposent des formalisations et preuves des theoremes classiques.
+
+| Partie | Notebooks | Contenu |
+|--------|-----------|---------|
+| Fondations | 1-6 | Forme normale, Nash, minimax, jeux evolutionnaires |
+| Jeux dynamiques | 7-12 | Forme extensive, backward induction, jeux bayesiens |
+| Avances | 13-17 | CFR, jeux differentiels, cooperatifs, mechanism design, MARL |
+| Side tracks b | 2b, 4b, 8b, 15b, 16b | Formalisations Lean 4 |
+| Side tracks c | 2c, 4c, 8c, 15c, 16c | Approfondissements Python |
+
+26 notebooks -- Python et Lean 4 -- [README detaille](MyIA.AI.Notebooks/GameTheory/README.md)
+
+### Probas - Programmation Probabiliste
+
+La programmation probabiliste permet de definir des modeles generatifs, propager l'incertitude et mettre a jour des croyances face a de nouvelles observations. Cette serie utilise principalement Infer.NET de Microsoft (C#) et couvre : distributions fondamentales (Gaussienne, Beta, Dirichlet), reseaux bayesiens, modeles de melange, et theorie de la decision sous incertitude.
+
+Un notebook supplementaire explore la pragmatique du langage avec Pyro (modele RSA -- Rational Speech Acts).
+
+| Section | Notebooks | Kernel | Contenu |
+|---------|-----------|--------|---------|
+| Racine | 2 | Python/C# | Infer-101 (intro), Pyro RSA (pragmatique) |
+| Infer/ 1-13 | 13 | C# | Fondamentaux, modeles classiques, debugging |
+| Infer/ 14-20 | 7 | C# | Theorie de la decision bayesienne |
+
+22 notebooks -- C# (Infer.NET) et Python (Pyro) -- [README Probas](MyIA.AI.Notebooks/Probas/README.md) | [README Infer](MyIA.AI.Notebooks/Probas/Infer/README.md)
+
+### ML - Machine Learning
+
+Les fondamentaux de l'apprentissage automatique, organises en deux volets principaux :
+
+**ML.Net** (8 notebooks, C#) -- Introduction a l'ecosysteme Microsoft ML.NET : features, entrainement, AutoML, evaluation.
+
+**DataScienceWithAgents** (19 notebooks, Python) -- Parcours progressif en trois sous-series :
+- *PythonForDataScience* (2 notebooks) -- NumPy et Pandas pour le pipeline Data Science.
+- *PythonAgentsForDataScience* (7 notebooks, Labs 1-7) -- Construction d'agents IA pour l'analyse RFP, le screening CV, le data wrangling et la visualisation.
+- *AgenticDataScience* (10 notebooks, Labs 8-17) -- Google ADK, DS-STAR et MLE-STAR pour la data science augmentee par agents, jusqu'au projet final Kaggle.
+
+27 notebooks -- C# et Python -- [README detaille](MyIA.AI.Notebooks/ML/README.md)
+
+### RL - Reinforcement Learning
+
+Introduction a l'apprentissage par renforcement avec Stable Baselines3 : PPO sur CartPole, wrappers et callbacks, experience replay et DQN.
+
+3 notebooks -- Python
+
+### GenAI - IA Generative
+
+La serie la plus etendue du depot, organisee par modalite. Les domaines Image, Audio et Video suivent une progression en 4 niveaux : Foundation, Advanced, Orchestration, Applications.
+
+**Image** (19 notebooks) -- Generation et edition d'images : DALL-E 3, GPT-5, FLUX, Stable Diffusion 3.5, Qwen Image Edit. Workflows multi-modeles avec ComfyUI.
+
+| Niveau | Contenu |
+|--------|---------|
+| 01-Foundation | DALL-E 3, GPT-5, Forge SD-XL Turbo, Qwen |
+| 02-Advanced | Qwen Image Edit 2509, FLUX, SD 3.5, Z-Image/Lumina |
+| 03-Orchestration | Comparaison multi-modeles, workflows, optimisation |
+| 04-Applications | Contenu educatif, workflows creatifs, production |
+
+**Audio** (21 notebooks) -- Synthese vocale (OpenAI TTS, Kokoro, Chatterbox, XTTS), transcription (Whisper), generation musicale (MusicGen, MIDI), separation de sources (Demucs), gateway multi-modeles TTS, live coding musical LLM.
+
+| Niveau | Contenu |
+|--------|---------|
+| 01-Foundation | OpenAI TTS/Whisper, operations audio (librosa, pydub), Whisper local, Kokoro |
+| 02-Advanced | Chatterbox TTS, XTTS voice cloning, MusicGen, Demucs |
+| 03-Orchestration | Multi-model comparison, pipelines audio, temps reel (Realtime API) |
+| 04-Applications | Contenu educatif, transcription pipeline, composition, sync A/V |
+
+**Video** (16 notebooks) -- Comprehension video (GPT-5, Qwen-VL), generation (AnimateDiff, HunyuanVideo, LTX-Video, Wan, SVD), super-resolution (Real-ESRGAN).
+
+| Niveau | Contenu |
+|--------|---------|
+| 01-Foundation | Operations video (moviepy, ffmpeg), GPT-5, Qwen-VL, ESRGAN, AnimateDiff |
+| 02-Advanced | HunyuanVideo, LTX-Video, Wan, SVD |
+| 03-Orchestration | Multi-model comparison, workflows video, ComfyUI Video |
+| 04-Applications | Video educative, Sora API, workflows creatifs, production |
+
+**Texte** (11 notebooks) -- Prompt engineering, structured outputs, RAG, reasoning, LLMs locaux, deploiement en production.
+
+**Semantic Kernel** (20 notebooks) -- L'orchestrateur IA de Microsoft, des fondamentaux a MCP et la creation de notebooks automatisee.
+
+**Vibe-Coding** (5 notebooks) -- Ateliers pratiques sur Claude Code et Roo Code pour le developpement assiste par IA.
+
+| Sous-domaine | Notebooks | Services requis |
+|--------------|-----------|-----------------|
+| 00-Environment | 6 | - |
+| Image/ | 19 | OpenAI / Docker GPU |
+| Audio/ | 17 | OpenAI / GPU local |
+| Video/ | 16 | OpenAI / GPU local |
+| Texte/ | 11 | OpenAI API |
+| SemanticKernel/ | 20 | OpenAI API |
+| Vibe-Coding/ | 5 | Claude/Roo |
+| EPF/ | 4 | Variable |
+
+98 notebooks -- Python -- [README detaille](MyIA.AI.Notebooks/GenAI/README.md)
+
+### QuantConnect - Trading Algorithmique
+
+Application de l'IA a la finance quantitative, basee sur le framework LEAN de QuantConnect. La serie comprend trois volets :
+
+**Notebooks pedagogiques** (27 notebooks) -- Du cycle de vie d'un algorithme LEAN aux strategies ML/DL/RL/LLM, en passant par les options, futures, risk management et analyse de sentiment.
+
+| Phase | Notebooks | Contenu |
+|-------|-----------|---------|
+| Fondations LEAN | 01-04 | Setup, Platform Fundamentals, Data Management, Research |
+| Universe & Assets | 05-08 | Universe Selection, Options, Futures/Forex, Multi-Asset |
+| Trading Avance | 09-12 | Order Types, Risk Management, Indicators, Backtesting |
+| Algorithm Framework | 13-15 | Alpha Models, Portfolio Construction, Optimization |
+| Data Alternatives | 16-17 | Alternative Data, Sentiment Analysis |
+| ML/DL/AI | 18-27 | Features, Classification, Regression, Deep Learning, RL, LLM |
+
+**Strategies backtestees** (11 projets) -- Strategies completes avec notebooks de recherche standalone (yfinance/pandas). Chaque strategie est accompagnee de son code source et de ses resultats de backtest.
+
+| Strategie | Approche | Sharpe |
+|-----------|----------|--------|
+| Multi-Layer-EMA | EMA multi-couches (crypto) | 1.891 |
+| BTC-MACD-ADX | MACD + ADX (crypto) | 1.224 |
+| OptionsIncome | Covered Call SPY + VIX filter | 0.747 |
+| SectorMomentum | Dual Momentum SPY/TLT/GLD | 0.554 |
+| FamaFrench | Factor ETF rotation (5 facteurs) | 0.471 |
+| MomentumStrategy | Rotation 11 ETFs sectoriels | 0.411 |
+| AllWeather | Portfolio multi-asset (Dalio) | 0.365 |
+| MeanReversion | RSI mean reversion multi-asset | 0.294 |
+| FuturesTrend | Donchian breakout sur ETFs | 0.280 |
+| TurnOfMonth | Anomalie calendaire SPY/QQQ | 0.127 |
+| CryptoMultiCanal | Canaux multi-couches (crypto) | en cours |
+
+**ESGF-2026** (34 notebooks) -- Exemples de projets etudiants et notebooks de recherche issus du cours ESGF. Inclut des exemples de strategies C# et Python avec leurs notebooks d'optimisation et d'analyse de robustesse.
+
+71 notebooks au total -- Python -- [README detaille](MyIA.AI.Notebooks/QuantConnect/README.md) | [Projets](MyIA.AI.Notebooks/QuantConnect/projects/README.md)
+
+### EPF - Projets Etudiants Transversaux
+
+Notebooks de projets transversaux realises dans le cadre de cours EPF. Contenus variables selon les promotions.
+
+4 notebooks -- Python
+
+### IIT - Theorie de l'Information Integree
+
+La theorie de l'information integree (Tononi) propose une approche mathematique de la conscience : un systeme est conscient dans la mesure ou il integre l'information de maniere non reducible. Ce notebook utilise PyPhi pour calculer le coefficient Phi, identifier les complexes maximaux, et explorer les concepts de cause et d'effet en information.
+
+1 notebook -- Python -- [README detaille](MyIA.AI.Notebooks/IIT/README.md)
+
+---
+
+## Configuration et API Keys
+
+La majorite des series (Search, Sudoku, ML.NET, Probas, Tweety, SemanticWeb) fonctionnent sans aucune cle API. Les series GenAI, Lean (notebooks 7-10), Argument_Analysis et QuantConnect necessitent des cles API ou des comptes sur des plateformes externes.
+
+### Fichiers de configuration par famille
+
+| Famille | Fichier .env | Variables cles |
+|---------|--------------|----------------|
+| GenAI | `MyIA.AI.Notebooks/GenAI/.env` | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_API_TOKEN` |
+| Argument_Analysis | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/.env` | `OPENAI_API_KEY`, `GLOBAL_LLM_SERVICE`, `BATCH_MODE` |
+| Lean | `MyIA.AI.Notebooks/SymbolicAI/Lean/.env` | `OPENAI_API_KEY`, `GITHUB_TOKEN`, `LEAN_VERSION` |
+| GameTheory | `MyIA.AI.Notebooks/GameTheory/.env` | `BATCH_MODE`, `OPENSPIEL_NUM_THREADS` |
+| QuantConnect | `MyIA.AI.Notebooks/QuantConnect/.env` | `QC_USER_ID`, `QC_API_TOKEN`, `QC_ORG_ID` |
+| C# Notebooks | `MyIA.AI.Notebooks/Config/settings.json` | `apikey`, `model`, `type` (openai/azure) |
+| Docker ComfyUI | `docker-configurations/services/comfyui-qwen/.env` | `CIVITAI_TOKEN`, `HF_TOKEN`, `COMFYUI_BEARER_TOKEN` |
+
+### Configuration initiale
+
+```bash
+# GenAI
+cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
+# Editer et ajouter: OPENAI_API_KEY, ANTHROPIC_API_KEY
+
+# Argument Analysis
+cp MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/.env.example MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/.env
+
+# Lean (pour notebooks 7-10)
+cp MyIA.AI.Notebooks/SymbolicAI/Lean/.env.example MyIA.AI.Notebooks/SymbolicAI/Lean/.env
+
+# GameTheory
+cp MyIA.AI.Notebooks/GameTheory/.env.example MyIA.AI.Notebooks/GameTheory/.env
+
+# C# Notebooks
+cp MyIA.AI.Notebooks/Config/settings.json.openai-example MyIA.AI.Notebooks/Config/settings.json
+
+# QuantConnect
+cp MyIA.AI.Notebooks/QuantConnect/.env.example MyIA.AI.Notebooks/QuantConnect/.env
+
+# Docker ComfyUI
+cp docker-configurations/services/comfyui-qwen/.env.example docker-configurations/services/comfyui-qwen/.env
+```
+
+### Variables d'environnement detaillees
+
+**GenAI** :
+```bash
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+OPENROUTER_API_KEY=sk-or-...          # Alternative multi-modeles
+COMFYUI_API_URL=http://localhost:8188
+COMFYUI_API_TOKEN=...
+DEFAULT_VISION_MODEL=gpt-5-mini
+GENAI_TIMEOUT_SECONDS=120
+```
+
+**Lean** :
+```bash
+OPENAI_API_KEY=sk-...                 # LLM Integration (notebooks 7-10)
+ANTHROPIC_API_KEY=sk-ant-...
+GITHUB_TOKEN=ghp_...                  # LeanDojo (notebook 10)
+LEAN_VERSION=4.3.0
+LEAN_TIMEOUT=30
+```
+
+---
+
+## Kernels Jupyter
+
+### Kernels par famille
+
+| Famille | Kernel | Installation |
+|---------|--------|--------------|
+| Python notebooks | `python3` | Environnement virtuel standard |
+| C# notebooks | `.net-csharp` | `dotnet tool install -g Microsoft.dotnet-interactive` |
+| Lean 4 | `lean4_jupyter` | Via `elan` (WSL uniquement) |
+
+### Installation des kernels
+
+**Python** :
+```bash
+python -m venv venv
+venv\Scripts\activate          # Windows
+pip install jupyter ipykernel
+python -m ipykernel install --user --name=coursia --display-name "Python (CoursIA)"
+```
+
+**.NET Interactive** :
+```bash
+dotnet tool install -g Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+```
+
+**Lean 4** (WSL uniquement) :
+```bash
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+pip install lean4_jupyter
+python -m lean4_jupyter.install
+```
+
+### Limitations connues
+
+| Probleme | Impact | Contournement |
+|----------|--------|---------------|
+| Papermill + `#!import` | Notebooks C# avec imports ne s'executent pas en batch | Execution cellule par cellule |
+| Lean sur Windows | `signal.SIGPIPE` non supporte | Utiliser WSL |
+| Cold start .NET | Premier demarrage 30-60s | Relancer apres timeout |
+
+---
+
+## Outils et dependances externes
+
+### Outils principaux
+
+| Outil | Version | Series | Installation |
+|-------|---------|--------|--------------|
+| Z3 SMT Solver | 4.12+ | Sudoku, SymbolicAI, Search | `pip install z3-solver` |
+| OR-Tools | 9.8+ | Sudoku, Search, SymbolicAI | `pip install ortools` |
+| Tweety | 1.28 | Tweety | Auto-telecharge (JARs) |
+| JDK | 17+ | Tweety, Argument_Analysis | Auto-telecharge (Zulu portable) |
+| PyPhi | 1.2+ | IIT | `pip install pyphi` |
+| Lean 4 | 4.3+ | Lean, GameTheory | Via `elan` (WSL) |
+| Mathlib4 | Latest | Lean 6+ | Auto avec `lake` |
+| OpenSpiel | 1.4+ | GameTheory 13-15 | `pip install open_spiel` |
+| Infer.NET | 0.4+ | Probas/Infer | Via NuGet |
+| Clingo | 5.6+ | Tweety-6 | Installation manuelle |
+| pySAT | 1.8+ | Tweety-2 | `pip install python-sat` |
+
+### Outils optionnels
+
+| Outil | Usage | Note |
+|-------|-------|------|
+| SPASS | Logique modale (Tweety-3) | Requiert droits admin Windows |
+| EProver | FOL prover | Linux uniquement |
+| MARCO | MUS enumeration | Avec Z3 |
+| Fast-Downward | Planification PDDL | Auto-compilation |
+
+---
+
+## Mise en route
+
+### Prerequis
+
+- **Python 3.10+** avec pip
+- **.NET 9.0 SDK** (pour notebooks C#)
+- **VS Code** avec extensions Python, Jupyter, .NET Interactive
+- **WSL** (pour Lean et certains outils SymbolicAI)
+- **Docker + GPU** (optionnel, pour GenAI avance)
+
+### Installation rapide
+
+```bash
+# 1. Cloner le depot
+git clone https://github.com/jsboige/CoursIA.git
+cd CoursIA
+
+# 2. Environnement Python
+python -m venv venv
+venv\Scripts\activate          # Windows
+pip install jupyter openai anthropic python-dotenv
+
+# 3. Kernel Python
+python -m ipykernel install --user --name=coursia --display-name "Python (CoursIA)"
+
+# 4. Packages .NET (si notebooks C#)
+dotnet restore MyIA.CoursIA.sln
+
+# 5. Configuration API (copier et editer selon besoins)
+cp MyIA.AI.Notebooks/Config/settings.json.openai-example MyIA.AI.Notebooks/Config/settings.json
+cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
+```
+
+### Installation par famille
+
+**Sudoku / Search** (aucune config requise) :
+```bash
+pip install z3-solver ortools numpy matplotlib
+```
+
+**Tweety** (JDK auto-telecharge) :
+```bash
+pip install jpype1 python-sat
+# Executer Tweety-1-Setup.ipynb pour telecharger JDK et JARs
+```
+
+**Lean** (WSL requis) :
+```bash
+# Dans WSL
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+pip install lean4_jupyter openai anthropic
+python -m lean4_jupyter.install
+```
+
+**GameTheory** :
+```bash
+pip install numpy scipy matplotlib nashpy open_spiel networkx
+cp MyIA.AI.Notebooks/GameTheory/.env.example MyIA.AI.Notebooks/GameTheory/.env
+```
+
+**GenAI** (Docker GPU recommande pour modeles locaux) :
+```bash
+pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt
+cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
+# Editer .env avec les cles API
+```
+
+**QuantConnect** :
+```bash
+pip install yfinance pandas numpy matplotlib
+cp MyIA.AI.Notebooks/QuantConnect/.env.example MyIA.AI.Notebooks/QuantConnect/.env
+# Editer .env avec les identifiants QuantConnect
+```
+
+---
+
+## Infrastructure Docker
+
+Pour les notebooks GenAI avances utilisant des modeles locaux, une infrastructure Docker est fournie avec ComfyUI comme orchestrateur.
+
+### Services disponibles
+
+| Service | Description | VRAM requise |
+|---------|-------------|--------------|
+| comfyui-qwen | Qwen Image Edit 2509 (ComfyUI) | ~29 Go |
+| comfyui-video | Generation video (ComfyUI) | ~12 Go |
+| forge-turbo | Stable Diffusion WebUI Forge | ~10 Go |
+| vllm-zimage | Z-Image / Lumina-Next-SFT | ~10 Go |
+| demucs-api | Separation de sources audio | ~4 Go |
+| musicgen-api | Generation musicale | ~10 Go |
+| tts-api | Synthese vocale | ~2 Go |
+| whisper-api | Transcription audio (API) | ~4 Go |
+| whisper-webui | Transcription audio (WebUI) | ~4 Go |
+| orchestrator | Gestion multi-services | - |
+
+### Demarrage rapide
+
+```bash
+# ComfyUI seul
+cd docker-configurations/services/comfyui-qwen
+cp .env.example .env
+docker-compose up -d
+
+# Multi-services (orchestrator)
+cd docker-configurations/services/orchestrator
+docker-compose up -d
+```
+
+### Configuration Docker
+
+```bash
+# Tokens pour telecharger les modeles
+CIVITAI_TOKEN=...
+HF_TOKEN=...
+
+# Authentification ComfyUI
+COMFYUI_BEARER_TOKEN=...
+COMFYUI_USERNAME=admin
+COMFYUI_PASSWORD=...
+
+# GPU
+GPU_DEVICE_ID=0
+CUDA_VISIBLE_DEVICES=0
+```
+
+### Volumes partages
+
+```
+docker-configurations/
+├── shared/
+│   ├── models/    # Cache modeles (~50 Go+)
+│   ├── cache/     # HuggingFace cache
+│   └── outputs/   # Images generees
+└── .secrets/      # Tokens (read-only)
+```
+
+---
+
+## Scripts et validation
+
+### Scripts principaux
+
+| Script | Chemin | Usage |
+|--------|--------|-------|
+| `notebook_tools.py` | `scripts/` | CLI consolide : skeleton, validate, analyze, check-env |
+| `notebook_helpers.py` | `scripts/` | Helpers pour manipulation notebooks et iteration cellules |
+| `extract_notebook_skeleton.py` | `scripts/` | Extraction structure pour generation README |
+| `validate_notebooks.py` | `scripts/genai-stack/` | Validation GenAI via Papermill |
+| `validate_stack.py` | `scripts/genai-stack/` | Validation ecosysteme GenAI complet |
+| `check_vram.py` | `scripts/genai-stack/` | Verification VRAM disponible |
+| `validate_lean_setup.py` | `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/` | Validation environnement Lean |
+| `test_notebooks.py` | `MyIA.AI.Notebooks/Probas/Infer/scripts/` | Tests Infer.NET |
+
+### Utilisation
+
+```bash
+# Outil consolide notebook_tools.py
+python scripts/notebook_tools/notebook_tools.py skeleton MyIA.AI.Notebooks/Sudoku --output markdown
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku --quick
+python scripts/notebook_tools/notebook_tools.py analyze MyIA.AI.Notebooks/Sudoku
+python scripts/notebook_tools/notebook_tools.py check-env Sudoku
+
+# Helpers pour manipulation de cellules
+python scripts/notebook_tools/notebook_helpers.py list notebook.ipynb
+python scripts/notebook_tools/notebook_helpers.py analyze notebook.ipynb
+python scripts/notebook_tools/notebook_helpers.py get-source notebook.ipynb 5
+
+# Validation stack GenAI
+python scripts/genai-stack/genai.py validate --full
+
+# Validation Lean
+python MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/validate_lean_setup.py --wsl
+```
+
+### GitHub Actions
+
+Le workflow `.github/workflows/notebook-validation.yml` valide automatiquement a chaque pull request :
+- Format des notebooks (JSON valide)
+- Syntaxe Python/C#
+- Execution de base (timeout 60s)
+
+---
+
+## Outils Claude Code
+
+Ce depot inclut une configuration pour Claude Code avec des agents specialises et des commandes slash pour la maintenance des notebooks.
+
+### Commandes slash
+
+| Commande | Description |
+|----------|-------------|
+| `/verify-notebooks [target]` | Verifier et tester les notebooks |
+| `/enrich-notebooks [target]` | Enrichir avec du contenu pedagogique |
+| `/cleanup-notebooks [target]` | Nettoyer et reorganiser le markdown |
+| `/build-notebook [topic]` | Construire un nouveau notebook |
+| `/execute-notebook [path]` | Executer un notebook via MCP Jupyter |
+| `/validate-genai` | Valider le stack GenAI complet |
+| `/qc-iterative-improve [strategy]` | Amelioration iterative de strategies QC |
+
+Options : `--quick`, `--fix`, `--python-only`, `--dotnet-only`, `--consecutive`, `--dry-run`
+
+### Agents specialises
+
+| Agent | Mission |
+|-------|---------|
+| notebook-enricher | Enrichissement pedagogique |
+| infer-notebook-enricher | Specialisation Infer.NET |
+| notebook-cleaner | Nettoyage markdown |
+| notebook-cell-iterator | Iteration sur cellules |
+| notebook-designer | Conception de notebooks |
+| notebook-executor | Execution de notebooks |
+| notebook-iterative-builder | Construction iterative |
+| notebook-validator | Validation de notebooks |
+| notebook-modernizer | Modernisation bibliotheques |
+| qc-strategy-analyzer | Analyse backtests QuantConnect |
+| qc-strategy-improver | Amelioration iterative strategies |
+| qc-robustness-researcher | Recherche robustesse strategies |
+| qc-research-notebook | Notebooks de recherche QC |
+| readme-updater | Mise a jour README |
+| readme-hierarchy-auditor | Audit hierarchie README |
+
+Configuration dans `.claude/agents/` et `.claude/skills/`.
+
+---
+
+## Contribution
+
+1. Fork le depot
+2. Creer une branche (`git checkout -b feature/nouveau-notebook`)
+3. Commit (`git commit -m 'Add: notebook sur les Transformers'`)
+4. Push et ouvrir une Pull Request
+
+Conventions : PEP 8 pour Python, conventions standard pour C#, pas d'emojis dans le code, documentation en francais. Chaque famille de notebooks doit inclure un `.env.example` documentant les variables requises.
+
+## Licence
+
+Ce projet est sous licence MIT - voir [LICENSE](LICENSE).
+
+---
+
+Repository : https://github.com/jsboige/CoursIA

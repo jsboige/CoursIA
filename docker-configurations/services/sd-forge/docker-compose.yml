@@ -1,0 +1,22 @@
+services:
+  sd-forge:
+    image: ghcr.io/myia-org/sd-forge:latest
+    container_name: sd-forge
+    ports:
+      - "7860:7860"
+    environment:
+      - COMMANDLINE_ARGS=--listen --xformers --enable-insecure-extension-access --api
+      - API_KEY=${SD_FORGE_API_KEY}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']
+              capabilities: [gpu]
+    volumes:
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+    restart: unless-stopped
+    stdin_open: true
+    tty: true

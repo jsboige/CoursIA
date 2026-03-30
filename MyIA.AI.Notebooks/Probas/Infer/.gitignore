@@ -1,0 +1,13 @@
+# Test outputs
+test_outputs/
+output_validation/
+
+# Generated source code from Infer.NET
+GeneratedSource/
+
+# Graphviz outputs
+*.gv
+*.svg
+
+# Notebook checkpoints
+.ipynb_checkpoints/

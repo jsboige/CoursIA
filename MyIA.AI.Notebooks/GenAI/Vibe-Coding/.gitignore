@@ -1,0 +1,42 @@
+# Vibe-Coding .gitignore
+# ========================
+
+# User workspaces - contains user-specific work that should not be versioned
+workspaces/*/
+!workspaces/.gitkeep
+
+# Windows system files
+desktop.ini
+Thumbs.db
+
+# Log files
+*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Node.js
+node_modules/
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+
+# Generated databases (ChromaDB, SQLite, etc.)
+**/chroma_*/
+**/chroma.sqlite3
+*.bin

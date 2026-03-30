@@ -3,7 +3,6 @@
   "description": "Retrieve a list of calendar events",
   "execution_settings": {
     "default": {
-      "max_tokens": 100,
       "temperature": 0.2,
       "top_p": 0.0,
       "presence_penalty": 0.0,

@@ -1,0 +1,16 @@
+# Secrets
+.env
+*.key
+
+# Foundry artifacts
+out/
+cache/
+broadcast/
+
+# Python
+__pycache__/
+*.pyc
+foundry-lib/lib/
+foundry-lib/cache/
+foundry-lib/out/
+foundry-lib/src/

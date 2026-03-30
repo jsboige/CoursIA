@@ -1,0 +1,26 @@
+# SemanticWeb series - Python dependencies (SW-8 to SW-13)
+
+# Core RDF/Semantic Web
+rdflib>=7.0.0,<8.0.0
+SPARQLWrapper>=2.0.0
+pyshacl>=0.27.0
+owlready2>=0.45
+
+# Knowledge Graph tools
+kglab>=0.6.0
+
+# Visualization
+networkx>=3.0
+matplotlib>=3.7
+pyvis>=0.3.0
+
+# Data processing
+pandas>=2.0
+
+# LLM integration (SW-13 only, optional)
+openai>=1.0.0
+anthropic>=0.25.0
+
+# Utilities
+requests>=2.31
+tqdm>=4.65

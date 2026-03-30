@@ -10,13 +10,16 @@ services:
       - ../../shared/models:/models:ro
     environment:
       - HF_TOKEN=${HF_TOKEN}
-      - CUDA_VISIBLE_DEVICES=0
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - NCCL_P2P_DISABLE=1
+      # Quantization: fp8 (recommande), int8 (experimental), bfloat16 (defaut)
+      - VLLM_QUANTIZATION=${VLLM_QUANTIZATION:-bfloat16}
     # vLLM Omni serve command for Z-Image-Turbo text-to-image
     # API endpoint: /v1/chat/completions (OpenAI-compatible)
     # Supported resolutions: 1328x1328, 1664x928, 928x1664, 1472x1140, etc.
-    # Note: L'entrypoint de l'image est déjà "vllm serve --omni", on passe juste les arguments
-    # Optimizations: GPU memory utilization, max sequences, VAE slicing/tiling
+    # Note: L'entrypoint de l'image est deja "vllm serve --omni", on passe juste les arguments
+    # Optimizations: GPU memory utilization reduced for coexistence with forge-turbo
+    # Quantization: FP8 reduces VRAM from ~10GB to ~5GB (50% savings)
     command:
       - "Tongyi-MAI/Z-Image-Turbo"
       - "--served-model-name"
@@ -24,12 +27,12 @@ services:
       - "--port"
       - "8000"
       - "--dtype"
-      - "bfloat16"
+      - "${VLLM_QUANTIZATION:-bfloat16}"
       - "--trust-remote-code"
       - "--gpu-memory-utilization"
-      - "0.3"
+      - "0.5"
       - "--max-num-seqs"
-      - "4"
+      - "2"
       - "--vae-use-slicing"
       - "--vae-use-tiling"
     deploy:
@@ -44,7 +47,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 180s
+      start_period: 300s
     restart: unless-stopped
     networks:
       - genai-network

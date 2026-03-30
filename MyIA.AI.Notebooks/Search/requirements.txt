@@ -1,0 +1,40 @@
+# Search & Constraint Programming - Dependencies
+# Install: pip install -r requirements.txt
+
+# Core CSP/Search
+python-constraint>=1.4.0     # CSP basique (backtracking, forward checking)
+ortools>=9.8                 # Google OR-Tools CP-SAT solver
+z3-solver>=4.13              # Microsoft Z3 SMT solver
+
+# Automata
+automata-lib>=9.2.0          # Finite automata library (NFA, DFA)
+
+# Metaheuristics
+deap>=1.4                    # Genetic algorithms framework
+pygad>=3.3                   # GA simplifie
+mealpy>=3.0                  # Metaheuristics library (PSO, SA, ABC, etc.)
+
+# Graph & Visualization
+networkx>=3.1                # Graphes et algorithmes
+matplotlib>=3.7              # Visualisation
+graphviz>=0.20               # Arbres de recherche (necessite Graphviz installe)
+# NOTE: graphviz Python package requires Graphviz executable
+# Windows: choco install graphviz OR download from https://graphviz.org/download/
+# macOS: brew install graphviz
+# Linux: sudo apt-get install graphviz
+
+# Data & Scientific
+numpy>=1.24
+scipy>=1.10
+pandas>=2.0                  # DataFrames pour analyse et benchmarks
+scikit-learn>=1.3            # ML pour App-18 hyperparameter tuning
+
+# Linear Programming
+pulp>=2.8.0                 # Linear programming with CBC, HiGHS solvers
+
+# Jupyter
+ipywidgets>=8.1
+papermill>=2.4
+
+# Optional: MiniZinc (requires MiniZinc IDE installed separately)
+# minizinc>=0.9

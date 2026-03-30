@@ -1,6 +1,6 @@
 # Lean - Solveur Mathematique et Verification Formelle
 
-Cette serie de **9 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves.
+Cette serie de **12 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves et la verification formelle de reseaux de neurones.
 
 ## Navigation
 
@@ -12,8 +12,8 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |------|-----------|-------|-------------|
 | **Fondations** | 1-5 | ~3h | Base theorique complete (types, logique, tactiques) |
 | **Avec Mathlib** | 1-6 | ~3h45 | Ajoute les tactiques Mathlib |
-| **Integration IA** | 1-7 | ~4h35 | Ajoute LLMs et preuves assistees |
-| **Complet** | 1-9 | ~6h40 | Toutes les fonctionnalites incluant LeanDojo |
+| **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
+| **Complet** | 1-10 | ~8h | Toutes les fonctionnalites incluant LeanDojo |
 
 ## Structure
 
@@ -33,10 +33,14 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 6 | [Lean-6-Mathlib-Essentials](Lean-6-Mathlib-Essentials.ipynb) | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
 | 7 | [Lean-7-LLM-Integration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
+| 7b | [Lean-7b-Examples](Lean-7b-Examples.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
 | 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problemes Erdos | 55 min |
-| 9 | [Lean-9-LeanDojo](Lean-9-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
+| 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Semantic Kernel, orchestration multi-agents | 45 min |
+| 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
+| 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: reseaux de neurones verifies, IBP, CROWN | 1h30-2h |
+| 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
 
-**Duree totale** : ~6h40
+**Duree totale** : ~10h
 
 ## Statut de maturite
 
@@ -49,8 +53,12 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 5 | Tactics | ~70 | 3 | 3 | **COMPLET** |
 | 6 | Mathlib-Essentials | ~45 | 3 | 3 | **COMPLET** |
 | 7 | LLM-Integration | ~50 | 2 | 2 | **COMPLET** |
+| 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
 | 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
-| 9 | LeanDojo | ~100 | Demo | - | **COMPLET** |
+| 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
+| 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
+| 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
+| 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
@@ -131,6 +139,12 @@ cp .env.example .env
 - [LeanDojo Paper](https://arxiv.org/abs/2306.15626) (NeurIPS 2023)
 - [lean4-example Repository](https://github.com/yangky11/lean4-example)
 
+### TorchLean
+
+- [TorchLean Documentation](https://leandojo.org/torchlean.html)
+- [TorchLean GitHub](https://github.com/lean-dojo/TorchLean)
+- [Papers: IBP, CROWN, LiRPA](https://github.com/lean-dojo/TorchLean#references)
+
 ## Document source
 
 - Notebooks 1-5 bases sur : `D:\Dropbox\IA101\TPs\TP - Z3 - Tweety - Lean.pdf` (Section VI)
@@ -174,8 +188,12 @@ Lean/
 ├── Lean-5-Tactics.ipynb
 ├── Lean-6-Mathlib-Essentials.ipynb
 ├── Lean-7-LLM-Integration.ipynb    # Python kernel - APIs LLM
+├── Lean-7b-Examples.ipynb          # Python kernel - benchmarks
 ├── Lean-8-Agentic-Proving.ipynb    # Python kernel - orchestration
-├── Lean-9-LeanDojo.ipynb           # Python kernel - LeanDojo
+├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Semantic Kernel
+├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
+├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
+├── Lean-11-TorchLean-Python.ipynb  # Python kernel - Implementation algorithmes
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example

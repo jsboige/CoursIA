@@ -1,0 +1,49 @@
+{
+  "strategy_name": "Sector-Momentum",
+  "current_period": "2024-01-01 to 2024-07-20 (7 months)",
+  "current_sharpe": 2.53,
+  "current_leverage": 2.0,
+  "recommended_changes": [
+    {
+      "change": "Extend backtest period",
+      "from": "set_start_date(2024, 1, 1); set_end_date(2024, 7, 20)",
+      "to": "set_start_date(2015, 1, 1); # Remove set_end_date",
+      "file": "main.py",
+      "reason": "7 months is too short, must include bear markets (2022, 2020)"
+    },
+    {
+      "change": "Reduce leverage in PCM",
+      "from": "self.SetLeverage(2)",
+      "to": "self.SetLeverage(1.5)",
+      "file": "MyPcm.py",
+      "reason": "Walk-forward analysis shows 1.5x is optimal compromise"
+    },
+    {
+      "change": "Reduce leverage in Alpha model",
+      "from": "leverage=1 in CustomImmediateExecutionModel",
+      "to": "Ensure PCM leverage 1.5x is respected",
+      "file": "DualMomentumAlphaModel.py",
+      "reason": "Consistency with PCM leverage reduction"
+    },
+    {
+      "change": "Add VIX filter (optional)",
+      "from": "No regime filter",
+      "to": "if self.VIX(\"VIX\").Current.Value > 25: return []; # Skip rebalancing",
+      "file": "DualMomentumAlphaModel.py (OnSecuritiesChanged)",
+      "reason": "Avoid rebalancing during high volatility periods"
+    }
+  ],
+  "expected_impact": {
+    "sharpe_after_extension": "0.5 to 0.8 (down from 2.53)",
+    "max_drawdown_2022": "Reduced from -40% to -25% with 1.5x leverage",
+    "robustness": "Strategy will be tested on 2015-2025 (10 years) including bear markets",
+    "sharpe_compression": "Expected 70% drop due to inclusion of 2022 bear market"
+  },
+  "next_steps": [
+    "1. Implement recommended changes in main.py and MyPcm.py",
+    "2. Compile the project via MCP QC",
+    "3. Run backtest via web UI (API requires paid account)",
+    "4. Verify Sharpe is in 0.5-0.8 range (realistic)",
+    "5. If Sharpe < 0.5, consider removing strategy from portfolio"
+  ]
+}

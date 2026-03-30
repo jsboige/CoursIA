@@ -1,0 +1,6 @@
+# GenAI Stack - Dependencies
+requests>=2.28.0
+bcrypt>=4.0.0
+python-dotenv>=1.0.0
+huggingface_hub>=0.20.0
+papermill>=2.4.0

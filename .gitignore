@@ -306,9 +306,20 @@ paket-files/
 __pycache__/
 *.pyc
 
+# Python virtual environments (ALL venv directories - CRITICAL)
+venv/
+.venv/
+**/venv/
+**/.venv/
+pyvenv.cfg
+lib64
+
 # Cake - Uncomment if you are using it
 # tools/**
 # !tools/packages.config
+
+# FFmpeg local installation (keep scripts in tools/)
+tools/ffmpeg/
 
 # Tabs Studio
 *.tss
@@ -447,12 +458,35 @@ MyIA.AI.Notebooks/GenAI/temp/*
 !MyIA.AI.Notebooks/GenAI/temp/.gitkeep
 
 # Tweety runtime dependencies (downloaded by notebook)
-# Note: libs/native/ et ext_tools/EProver/ sont versionnés (binaires précieux)
+# Note: Les binaires PRECIEUX sont maintenant versionnés (voir exceptions positives ci-dessous)
 MyIA.AI.Notebooks/SymbolicAI/resources/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/jdk-17-portable/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/resources/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/
+
+# ============================================================================
+# EXCEPTIONS POSITIVES - Binaires Tweety PRECIEUX à versionner
+# ============================================================================
+# Ces binaires ne peuvent pas être téléchargés automatiquement ou sont difficiles à obtenir
+
+# Clingo (ASP solver) - binaire Windows précieux
+!MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/clingo/
+
+# SPASS (Modal Logic Prover) - binaires Windows + documentation
+!MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS.exe
+!MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS-3.0/
+# Mais exclure l'installeur inutile
+MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS_installer.exe
+
+# EProver (FOL theorem prover) - installation complète partagée
+!MyIA.AI.Notebooks/SymbolicAI/ext_tools/EProver/
+
+# Scripts Python helpers (code source)
+!MyIA.AI.Notebooks/SymbolicAI/ext_tools/*.py
+
+# Bibliothèques natives SAT (Minisat, Lingeling, Picosat)
+!MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/native/
 
 # Jupyter/MCP temp files
 kernel_info.json
@@ -470,8 +504,109 @@ GeneratedSource/
 
 # Lean build artifacts
 .lake/
-mathlib_examples/
+mathlib_examples/.lake/
 
 # External tools binaries (too large to track)
 MyIA.AI.Notebooks/SymbolicAI/ext_tools/clingo/
 MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
+
+# Claude Code agent memory - local scope only (project scope is versioned)
+.claude/agent-memory-local/
+
+# Windows artifact
+nul
+
+# Rapports de validation notebooks
+notebook_validation_report.json
+rapports/
+
+# Slides - Originaux Dropbox (reference, pas dupliques dans git)
+slides/*/original/
+# Slides - Rendus PNG (regenerables via PowerPoint COM)
+slides/*/extracted/renders/
+# Slides - Images extraites en masse (regenerables)
+slides/*/extracted/images/
+# Slides - Assets etudiants bruts et rendus
+slides/_assets/raw/
+slides/_assets/*/renders/
+# Slides - PPTX modernises (ancien workflow, remplace par Marp)
+slides/*/modernized/
+# Slides - Marp output HTML/PDF (regenerable via marp CLI)
+slides/*/output/
+slides/_pdfs/
+
+# Fichiers temporaires d'execution notebooks (artefacts bash/Python)
+=*
+[0-9].*
+[0-9][0-9].*
+[0-9].[0-9].*
+*.tmp.*
+execute_*.py
+*_temp.py
+
+# Agent memory temporaire (local scope)
+.claude/agent-memory/notebook-*/
+docker-configurations/services/comfyui-video/workspace/
+
+# Notebook output files (Papermill execution artifacts)
+*_output.ipynb
+*_output_*.ipynb
+lean-workspace/
+tmp/
+
+# Notebook backup files
+**/*.ipynb.backup
+
+# Backup venv directories
+**/venv.backup.*/
+**/venv.backup-*/
+
+# Generated ML artifacts
+*.joblib
+
+# Execution reports (temporary validation artifacts)
+batch*_execution_report.*
+reports/
+
+# Claude Code MCP config (contains API tokens)
+.mcp.json
+.claude/qc-mcp-wrapper.py
+
+# Claude Code memory (local scope, may contain sensitive data)
+.claude/memory/
+.claude/local/
+.claude/scheduled_tasks.lock
+.claude/mcp.json
+
+# Roo Code state files (local scope, machine-specific)
+.roo/
+.roomodes
+
+# QuantConnect local clones (cloud-first workflow)
+MyIA.AI.Notebooks/QuantConnect/AdaptiveAssetAllocation/
+MyIA.AI.Notebooks/QuantConnect/AllWeather-Researcher/
+MyIA.AI.Notebooks/QuantConnect/BTC-*/
+MyIA.AI.Notebooks/QuantConnect/Crypto-*/
+MyIA.AI.Notebooks/QuantConnect/DualMomentum*/
+MyIA.AI.Notebooks/QuantConnect/EMA-Cross-*/
+MyIA.AI.Notebooks/QuantConnect/ETF-Pairs-Researcher*/
+MyIA.AI.Notebooks/QuantConnect/FamaFrench-Researcher/
+MyIA.AI.Notebooks/QuantConnect/ForexCarry-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Framework_*/
+MyIA.AI.Notebooks/QuantConnect/FuturesTrend-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Library/
+MyIA.AI.Notebooks/QuantConnect/MeanReversion-Researcher/
+MyIA.AI.Notebooks/QuantConnect/MomentumStrategy-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Multi-Layer-EMA-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Option-*/
+MyIA.AI.Notebooks/QuantConnect/Options*/
+MyIA.AI.Notebooks/QuantConnect/PairsTrading/
+MyIA.AI.Notebooks/QuantConnect/RegimeSwitching/
+MyIA.AI.Notebooks/QuantConnect/RiskParity/
+MyIA.AI.Notebooks/QuantConnect/Sector-Momentum-Researcher/
+MyIA.AI.Notebooks/QuantConnect/Trend-*/
+MyIA.AI.Notebooks/QuantConnect/TrendFilteredMeanReversion/
+MyIA.AI.Notebooks/QuantConnect/TrendStocks*/
+MyIA.AI.Notebooks/QuantConnect/TurnOfMonth-Researcher/
+MyIA.AI.Notebooks/QuantConnect/VIX-TermStructure-Researcher/
+MyIA.AI.Notebooks/QuantConnect/lean.json

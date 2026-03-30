@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Le Petit Pain - Contactez-nous et trouvez nos horaires d'ouverture">
+    <title>Contact | Le Petit Pain</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Polices Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Raleway:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Icônes Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- En-tête et Navigation -->
+    <header>
+        <div class="container">
+            <div class="logo">
+                <a href="index.html">Le Petit<span>Pain</span></a>
+            </div>
+            <nav>
+                <ul class="menu">
+                    <li><a href="index.html">Accueil</a></li>
+                    <li><a href="about.html">À propos</a></li>
+                    <li><a href="contact.html" class="active">Contact</a></li>
+                </ul>
+                <button class="menu-toggle" id="menu-toggle" aria-expanded="false">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Section Bannière -->
+    <section class="page-banner">
+        <div class="container">
+            <h1>Contactez-nous</h1>
+            <p>Nous sommes à votre écoute pour toutes vos questions et suggestions</p>
+        </div>
+    </section>
+
+    <!-- Section Contact -->
+    <section id="contact" class="contact-page">
+        <div class="container">
+            <div class="contact-container">
+                <!-- Informations de contact -->
+                <div class="contact-info">
+                    <div class="info-item">
+                        <i class="fas fa-clock"></i>
+                        <h3>Horaires d'ouverture</h3>
+                        <div class="hours-table">
+                            <div class="hours-row">
+                                <span class="day">Lundi</span>
+                                <span class="hours">7h00 - 19h30</span>
+                            </div>
+                            <div class="hours-row">
+                                <span class="day">Mardi</span>
+                                <span class="hours">7h00 - 19h30</span>
+                            </div>
+                            <div class="hours-row">
+                                <span class="day">Mercredi</span>
+                                <span class="hours">7h00 - 19h30</span>
+                            </div>
+                            <div class="hours-row">
+                                <span class="day">Jeudi</span>
+                                <span class="hours">7h00 - 19h30</span>
+                            </div>
+                            <div class="hours-row">
+                                <span class="day">Vendredi</span>
+                                <span class="hours">7h00 - 19h30</span>
+                            </div>
+                            <div class="hours-row">
+                                <span class="day">Samedi</span>
+                                <span class="hours">7h00 - 20h00</span>
+                            </div>
+                            <div class="hours-row">
+                                <span class="day">Dimanche</span>
+                                <span class="hours">7h00 - 13h00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h3>Adresse</h3>
+                        <p>123 Rue du Fournil<br>75000 Paris</p>
+                        <div class="directions">
+                            <h4>Comment nous trouver</h4>
+                            <p>Nous sommes situés en plein cœur du quartier historique, à deux pas de la place centrale. Facilement accessible en transports en commun (métro ligne 3, arrêt "Boulangerie") ou en voiture (parking public à 100m).</p>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <i class="fas fa-phone"></i>
+                        <h3>Téléphone</h3>
+                        <p>01 23 45 67 89</p>
+                    </div>
+                    
+                    <div class="info-item">
+                        <i class="fas fa-envelope"></i>
+                        <h3>Email</h3>
+                        <p>contact@lepetitpain.fr</p>
+                    </div>
+                    
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+                
+                <!-- Formulaire de contact -->
+                <div class="contact-form">
+                    <h3>Envoyez-nous un message</h3>
+                    <p>Vous avez une question, une suggestion ou une commande spéciale ? N'hésitez pas à nous contacter via ce formulaire.</p>
+                    
+                    <form id="contactForm">
+                        <div class="form-group">
+                            <label for="name">Nom</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Sujet</label>
+                            <input type="text" id="subject" name="subject" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea id="message" name="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">Envoyer le message</button>
+                    </form>
+                    
+                    <div class="form-note">
+                        <p><small>* Ce formulaire est non fonctionnel dans cette démo. Dans un site réel, il serait connecté à un système d'envoi d'emails.</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Carte (simulée) -->
+    <section class="map-section">
+        <div class="map-placeholder">
+            <i class="fas fa-map"></i>
+            <p>Carte interactive</p>
+        </div>
+    </section>
+
+    <!-- Pied de page -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <a href="index.html">Le Petit<span>Pain</span></a>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">Accueil</a>
+                    <a href="about.html">À propos</a>
+                    <a href="contact.html">Contact</a>
+                </div>
+                <div class="footer-social">
+                    <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Le Petit Pain. Tous droits réservés.</p>
+                <div class="footer-info">
+                    <p><i class="fas fa-map-marker-alt"></i> 123 Rue du Fournil, 75000 Paris</p>
+                    <p><i class="fas fa-phone"></i> 01 23 45 67 89</p>
+                    <p><i class="fas fa-envelope"></i> contact@lepetitpain.fr</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bouton de retour en haut -->
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <!-- Script JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>

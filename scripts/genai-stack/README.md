@@ -1,202 +1,168 @@
-# GenAI Stack - Scripts de Gestion
+# GenAI Stack - CLI Unifie
 
-Scripts Python et PowerShell pour la gestion de l'infrastructure GenAI (ComfyUI + Forge).
+CLI Python pour la gestion de l'infrastructure GenAI (ComfyUI + Forge + vLLM Z-Image).
+
+## Quick Start
+
+```bash
+# Installation des dependances
+pip install -r scripts/genai-stack/requirements.txt
+
+# Aide globale
+python scripts/genai-stack/genai.py --help
+
+# Statut des services Docker
+python scripts/genai-stack/genai.py docker status
+
+# Validation complete
+python scripts/genai-stack/genai.py validate --full
+
+# Verification GPU
+python scripts/genai-stack/genai.py gpu
+```
+
+## Commandes
+
+### docker - Gestion des services Docker
+
+```bash
+genai.py docker status [--remote]          # Statut de tous les services
+genai.py docker start <service|all> [--build]  # Demarrer un service
+genai.py docker stop <service|all>         # Arreter un service
+genai.py docker restart <service|all>      # Redemarrer un service
+genai.py docker logs <service> [--tail N]  # Afficher les logs
+genai.py docker test [--remote]            # Tester les endpoints
+```
+
+Services disponibles : `comfyui-qwen`, `forge-turbo`, `vllm-zimage`, `all`
+
+### validate - Validation stack ComfyUI + services
+
+```bash
+genai.py validate --full                   # Validation complete (auth + nodes + generation)
+genai.py validate --auth-only              # Authentification uniquement
+genai.py validate --nodes-only             # Custom nodes uniquement
+genai.py validate --nunchaku               # Test Nunchaku INT4 Lightning (4GB VRAM)
+genai.py validate --notebooks              # Validation syntaxe notebooks GenAI
+genai.py validate --notebooks --group qwen # Validation d'un groupe specifique
+genai.py validate --check-forge            # Verifier aussi Forge-Turbo
+genai.py validate --check-vllm             # Verifier aussi vLLM Z-Image
+```
+
+### notebooks - Validation par Papermill
+
+```bash
+genai.py notebooks                         # Valider tous les notebooks GenAI
+genai.py notebooks <target>                # Valider un dossier ou fichier
+genai.py notebooks --cleanup               # Nettoyer apres validation
+```
+
+### models - Gestion des modeles
+
+```bash
+genai.py models download-qwen [--dest DIR] [--docker]  # Modeles Qwen FP8 (~29GB)
+genai.py models download-nunchaku [--model NAME]        # Modeles Nunchaku INT4 (~4GB)
+genai.py models download-nunchaku --list                # Lister variantes Nunchaku
+genai.py models setup-zimage                            # Configurer Z-Image/Lumina
+genai.py models list-checkpoints                        # Lister checkpoints ComfyUI
+genai.py models list-nodes                              # Lister custom nodes ComfyUI
+```
+
+### gpu - Verification GPU
+
+```bash
+genai.py gpu                               # Verification VRAM (nvidia-smi)
+genai.py gpu --detailed                    # Docker + PyTorch validation
+genai.py gpu --json                        # Sortie JSON
+```
+
+### auth - Gestion authentification
+
+```bash
+genai.py auth init                         # Initialiser les tokens
+genai.py auth sync                         # Synchroniser tokens
+genai.py auth audit                        # Audit securite
+genai.py auth get-token                    # Afficher le token actuel
+genai.py auth reconstruct-env              # Reconstruire .env
+```
+
+## Architecture des services
+
+| Service | Port | GPU | VRAM | URL Remote |
+|---------|------|-----|------|-----------|
+| **comfyui-qwen** | 8188 | 0 | 20GB+ | qwen-image-edit.myia.io |
+| **forge-turbo** | 17861 | 1 | 8GB+ | turbo.stable-diffusion-webui-forge.myia.io |
+| **vllm-zimage** | 8001 | 1 | 15GB+ | z-image.myia.io |
+
+### Authentification
+
+- **ComfyUI** : Bearer Token (hash bcrypt), gere par `genai.py auth`
+- **Forge-Turbo** : Basic Auth (variables `FORGE_USER` / `FORGE_PASSWORD` dans `.env`)
+- **vLLM Z-Image** : Pas d'authentification
 
 ## Structure
 
 ```
 scripts/genai-stack/
-├── manage-genai-stack.ps1     # Script principal de gestion
-├── check_vram.py              # Verification VRAM GPUs
-├── validate_stack.py          # Suite de validation ComfyUI
-├── validate_notebooks.py      # Validation notebooks Jupyter
-├── list_models.py             # Liste des modeles disponibles
-├── list_nodes.py              # Liste des custom nodes ComfyUI
-├── setup_z_image.py           # Installation modele Z-Image
-│
-├── core/                      # Modules principaux
-│   ├── auth_manager.py        # Gestion authentification
-│   ├── comfyui_client.py      # Client API ComfyUI
-│   ├── deploy_comfyui_auth.py # Deploiement auth
-│   ├── cleanup_comfyui_auth.py
-│   ├── diagnose_comfyui_auth.py
-│   └── validate_genai_ecosystem.py
-│
-├── utils/                     # Utilitaires
-│   ├── docker-setup.ps1       # Setup Docker
-│   ├── docker-start.ps1       # Demarrage Docker
-│   ├── docker-stop.ps1        # Arret Docker
-│   ├── benchmark.py           # Benchmarks performance
-│   ├── diagnostic_utils.py    # Outils de diagnostic
-│   ├── token_manager.py       # Gestion tokens
-│   ├── workflow_utils.py      # Utilitaires workflows
-│   └── validate_gpu_cuda.py   # Validation GPU/CUDA
-│
-├── config/                    # Configuration
-│   └── models_config.json     # Config modeles
-│
-└── workflows/                 # Workflows de test
-    ├── workflow_benchmark.json
-    ├── workflow_test_simple.json
-    ├── workflow_z_image_reboot.json
-    └── workflow_z_image_green_apple.json
+|-- genai.py                    # CLI unifie (point d'entree principal)
+|-- config.py                   # Configuration partagee (services, chemins, constantes)
+|-- requirements.txt            # Dependances Python
+|-- README.md
+|-- NUNCHAKU_INSTALLATION.md
+|
+|-- core/                       # Bibliotheque noyau
+|   |-- auth_manager.py         # Gestion authentification centralisee
+|   |-- comfyui_client.py       # Client API ComfyUI
+|
+|-- commands/                   # Sous-commandes du CLI
+|   |-- docker.py               # Gestion services Docker
+|   |-- validate.py             # Validation ComfyUI + services
+|   |-- notebooks.py            # Validation notebooks Papermill
+|   |-- models.py               # Telechargement et gestion modeles
+|   |-- gpu.py                  # Verification GPU/VRAM
+|   |-- auth.py                 # Facade authentification
+|
+|-- config/models_config.json   # Configuration modeles
+|-- workflows/                  # Workflows de test ComfyUI (6 JSON)
+|
+|-- archive/                    # Scripts legacy archives (voir ARCHIVE_README.md)
+|
+|-- Wrappers retrocompatibilite (appellent commands/) :
+|   docker_manager.py, validate_stack.py, validate_notebooks.py,
+|   check_vram.py, list_models.py, list_nodes.py, download_qwen_models.py,
+|   download_nunchaku_model.py, setup_z_image.py, test_nunchaku_generation.py
 ```
 
-## Script Principal
+## Installation
 
-### manage-genai-stack.ps1
-
-Orchestrateur unifie pour gerer la stack dual-GPU.
-
-```powershell
-# Afficher le statut
-.\manage-genai-stack.ps1 -Action status
-
-# Demarrer la stack complete
-.\manage-genai-stack.ps1 -Action start
-
-# Arreter la stack
-.\manage-genai-stack.ps1 -Action stop
-
-# Redemarrer
-.\manage-genai-stack.ps1 -Action restart
+```bash
+pip install -r scripts/genai-stack/requirements.txt
 ```
 
-**Fonctionnalites**:
-- Gestion des deux conteneurs (comfyui-qwen, forge-turbo)
-- Verification VRAM via `check_vram.py`
-- Test de connectivite endpoints
-- Affichage statut colore
+Dependances : `requests`, `bcrypt`, `python-dotenv`, `huggingface_hub`, `papermill`
 
-## Validation
+## Workflows de test ComfyUI
 
-### validate_stack.py
+| Workflow | Description | VRAM | Temps |
+|----------|-------------|------|-------|
+| `workflow_qwen_native_t2i.json` | Qwen Phase 29 natif | ~29GB | ~60s |
+| `workflow_qwen_nunchaku_t2i.json` | Nunchaku INT4 Lightning | ~4GB | ~4s warm |
+| `workflow_z_image_reboot.json` | Z-Image/Lumina | ~10GB | ~20s |
+| `workflow_test_simple.json` | Test minimal | <1GB | <5s |
+| `workflow_benchmark.json` | Benchmark performance | Variable | Variable |
 
-Suite de validation complete pour ComfyUI.
+## Variables d'environnement
 
-```powershell
-# Validation complete (auth + nodes + generation)
-python validate_stack.py --full
+Fichier : `MyIA.AI.Notebooks/GenAI/.env`
 
-# Test authentification uniquement
-python validate_stack.py --auth-only
-
-# Test custom nodes uniquement
-python validate_stack.py --nodes-only
-
-# Avec workflow specifique
-python validate_stack.py --workflow workflow_z_image_green_apple.json
-```
-
-**Tests effectues**:
-1. Health check service ComfyUI
-2. Authentification Bearer Token
-3. Verification 4 noeuds Qwen critiques
-4. Execution workflow Z-Image (optionnel)
-
-### check_vram.py
-
-Affiche l'etat memoire des GPUs.
-
-```powershell
-python check_vram.py
-```
-
-**Sortie exemple**:
-```
-Index  | Nom                            | Libre / Total (MiB)       | Utilise
---------------------------------------------------------------------------------
-0      | NVIDIA GeForce RTX 3080 Ti     | 14000 / 16384 MiB         | 2384 MiB (14.5%)
-1      | NVIDIA GeForce RTX 3090        | 20000 / 24576 MiB         | 4576 MiB (18.6%)
-```
-
-## Configuration
-
-### core/auth_manager.py
-
-Gestion centralisee de l'authentification ComfyUI.
-
-**Fonctions principales**:
-- `load_config()`: Charge la config depuis `.env`
-- `get_bearer_token()`: Recupere le token bcrypt
-- `validate_token()`: Valide un token contre l'API
-
-### config/models_config.json
-
-Configuration des modeles disponibles:
-- Chemins des checkpoints
-- Parametres de chargement
-- Mappings GPU
-
-## Workflows de Test
-
-| Workflow | Description | VRAM |
-|----------|-------------|------|
-| `workflow_test_simple.json` | Test basique connectivite | < 1 GB |
-| `workflow_benchmark.json` | Benchmark performance | Variable |
-| `workflow_z_image_reboot.json` | Test Z-Image standard | ~6 GB |
-| `workflow_z_image_green_apple.json` | Test Z-Image avance | ~8 GB |
-
-## Integration Docker
-
-Les scripts interagissent avec les conteneurs definis dans:
-- `docker-configurations/services/comfyui-qwen/`
-- `docker-configurations/services/forge-turbo/`
-
-**Chemins relatifs utilises**:
-```powershell
-$RepoRoot = Resolve-Path "$PSScriptRoot/../.."
-$ComfyPath = "$RepoRoot/docker-configurations/services/comfyui-qwen/docker-compose.yml"
-$ForgePath = "$RepoRoot/docker-configurations/services/forge-turbo/docker-compose.yml"
-```
-
-## Dependances Python
-
-```
-requests>=2.28.0
-websocket-client>=1.4.0
-bcrypt>=4.0.0
-python-dotenv>=1.0.0
-```
-
-## Exemples d'Usage
-
-### Workflow complet de developpement
-
-```powershell
-# 1. Verifier l'etat des GPUs
-python scripts/genai-stack/check_vram.py
-
-# 2. Demarrer la stack
-.\scripts\genai-stack\manage-genai-stack.ps1 -Action start
-
-# 3. Valider l'authentification
-python scripts/genai-stack/validate_stack.py --auth-only
-
-# 4. Lister les noeuds disponibles
-python scripts/genai-stack/list_nodes.py
-
-# 5. Executer un workflow de test
-python scripts/genai-stack/validate_stack.py --workflow workflow_z_image_green_apple.json
-
-# 6. Arreter la stack
-.\scripts\genai-stack\manage-genai-stack.ps1 -Action stop
-```
-
-### Diagnostic en cas de probleme
-
-```powershell
-# Diagnostic authentification
-python scripts/genai-stack/core/diagnose_comfyui_auth.py
-
-# Validation ecosysteme complet
-python scripts/genai-stack/core/validate_genai_ecosystem.py
-
-# Verification GPU/CUDA
-python scripts/genai-stack/utils/validate_gpu_cuda.py
-```
+| Variable | Description |
+|----------|-------------|
+| `COMFYUI_BEARER_TOKEN` | Hash bcrypt pour auth ComfyUI |
+| `COMFYUI_RAW_TOKEN` | Token brut (pour login UI) |
+| `HF_TOKEN` | Token HuggingFace (telechargement modeles) |
+| `FORGE_USER` / `FORGE_PASSWORD` | Auth Forge-Turbo |
+| `LOCAL_MODE` | `true` pour Docker local, `false` pour myia.io |
 
 ---
 
-**Derniere mise a jour**: 2025-01-19
-**Version**: 1.0.0 (Phase 43)
+**Version** : 3.0.0 (Consolidation CLI - Fevrier 2026)
