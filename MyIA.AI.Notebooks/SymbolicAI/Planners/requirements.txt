@@ -1,0 +1,15 @@
+# Planners - Dependencies
+# Install: pip install -r requirements.txt
+#
+# Note: Fast-Downward planner requires WSL or Docker.
+# See Planners-0-Setup notebook and README.md for environment setup.
+
+# Core Planning
+unified-planning>=1.1         # AI Planning framework (Planners-11)
+
+# Graph & Visualization
+networkx>=3.1                 # State space graphs (Planners-3)
+matplotlib>=3.7               # Visualization
+
+# Scientific
+numpy>=1.24                   # Numerical operations (Planners-12 LOOP)

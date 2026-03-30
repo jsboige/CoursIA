@@ -72,10 +72,8 @@ def fix_notebook(nb_path):
                 ]):
                     if not skipped_env_code:
                         # Insert robust pattern at first removal
-                        # CRITICAL: each element must end with '\n' for valid
-                        # notebook JSON (cell['source'] format requirement)
-                        for pat_line in ROBUST_PATTERN.split('\n'):
-                            new_lines.append(pat_line + '\n')
+                        for pat_line in ROBUST_PATTERN.splitlines(keepends=True):
+                            new_lines.append(pat_line if pat_line.endswith('\n') else pat_line + '\n')
                         skipped_env_code = True
                     # Skip this line
                 else:

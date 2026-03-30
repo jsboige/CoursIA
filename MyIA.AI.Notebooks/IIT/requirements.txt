@@ -1,0 +1,14 @@
+# IIT (Integrated Information Theory) - Dependencies
+# Install: pip install -r requirements.txt
+#
+# IMPORTANT: PyPhi requires Python 3.7-3.9 (incompatible with 3.10+)
+# Recommended setup:
+#   conda create --name pyphi python=3.7 -y
+#   conda activate pyphi
+#   pip install -r requirements.txt
+
+# Core
+pyphi>=1.2.0                 # IIT computation library
+
+# Scientific
+numpy>=1.21,<1.22            # PyPhi requires numpy <1.22 on Python 3.7

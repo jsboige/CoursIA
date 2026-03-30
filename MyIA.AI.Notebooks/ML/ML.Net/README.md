@@ -113,13 +113,25 @@ Serie de notebooks couvrant ML.NET, la bibliotheque open-source de Microsoft pou
 |---------|-------------|
 | [taxi-fare.csv](taxi-fare.csv) | Donnees courses taxi NYC |
 
+## Installation
+
+```bash
+# 1. Installer .NET SDK 9.0+
+#    https://dotnet.microsoft.com/download
+dotnet --version  # doit afficher 9.x.x
+
+# 2. Installer .NET Interactive
+dotnet tool install -g Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+
+# 3. Verification
+jupyter kernelspec list  # doit montrer .net-csharp
+```
+
 ## Prerequisites
 
 ```bash
-# .NET SDK 9.0 requis
-dotnet --version
-
-# Packages (installes via #r dans notebooks)
+# Packages (installes via #r dans notebooks, pas de pip)
 # Fondamentaux:
 # - Microsoft.ML
 # - Microsoft.ML.AutoML

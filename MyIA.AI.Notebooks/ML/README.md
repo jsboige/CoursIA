@@ -40,17 +40,15 @@ Serie de 5 notebooks couvrant ML.NET de l'introduction a l'evaluation avancee.
 | 4 | [ML-4-Evaluation](ML.Net/ML-4-Evaluation.ipynb) | Cross-validation, metriques, PFI | Evaluation |
 | 5 | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Regression bayesienne (Infer.NET) | Application pratique |
 
-### Prerequis ML.NET
+### Installation ML.NET
 
 ```bash
-# .NET SDK 9.0 requis
-dotnet --version
+# 1. Installer .NET SDK 9.0+ depuis https://dotnet.microsoft.com/download
+dotnet tool install -g Microsoft.dotnet-interactive
+dotnet interactive jupyter install
 
-# Packages NuGet (installes dans les notebooks)
-# - Microsoft.ML
-# - Microsoft.ML.AutoML
-# - Microsoft.Data.Analysis
-# - Microsoft.ML.Probabilistic
+# Verification
+jupyter kernelspec list  # doit montrer .net-csharp
 ```
 
 Documentation complete : [ML.Net/README.md](ML.Net/README.md)
@@ -97,17 +95,23 @@ Track avance integrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec suppor
 
 Documentation complete : [DataScienceWithAgents/AgenticDataScience/README.md](DataScienceWithAgents/AgenticDataScience/README.md)
 
-### Prerequis Python
+### Installation Python DataScience Labs (Days 1-3)
 
 ```bash
-# Environnement Python
-python -m venv venv
-venv\Scripts\activate  # Windows
-
-# Dependances
-pip install numpy pandas scikit-learn matplotlib seaborn
-pip install langchain openai python-dotenv  # Pour agents
+pip install pandas numpy matplotlib seaborn scikit-learn ipywidgets
+# Labs 2-3 et 6-7 necessitent aussi :
+pip install langchain langchain-openai langchain-experimental
+# + variable d'environnement OPENAI_API_KEY dans un fichier .env
 ```
+
+### Installation AgenticDataScience Labs (Days 4-7)
+
+```bash
+pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/requirements.txt
+cp .env.example .env  # puis configurer les cles API
+```
+
+Providers LLM supportes (Labs 8+) : Google Gemini (recommande), OpenAI, OpenRouter, vLLM local, LM Studio.
 
 Documentation complete : [DataScienceWithAgents/README.md](DataScienceWithAgents/README.md)
 

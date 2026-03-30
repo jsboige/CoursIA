@@ -1,0 +1,1108 @@
+"""Generate SC-15-Zero-Knowledge-Proofs.ipynb - Temporary script, delete after use."""
+import json
+import os
+
+
+def md(source_text, cell_id):
+    lines = source_text.split('\n')
+    source = []
+    for i, line in enumerate(lines):
+        if i < len(lines) - 1:
+            source.append(line + '\n')
+        else:
+            if line:
+                source.append(line)
+    return {"cell_type": "markdown", "id": cell_id, "metadata": {}, "source": source}
+
+
+def code(source_text, cell_id):
+    lines = source_text.split('\n')
+    source = []
+    for i, line in enumerate(lines):
+        if i < len(lines) - 1:
+            source.append(line + '\n')
+        else:
+            if line:
+                source.append(line)
+    return {"cell_type": "code", "id": cell_id, "metadata": {}, "source": source,
+            "outputs": [], "execution_count": None}
+
+
+cells = []
+
+# === HEADER ===
+cells.append(md(
+"# SC-15-Zero-Knowledge-Proofs - Preuves a Divulgation Nulle\n"
+"\n"
+"**Navigation** : [Index](../README.md) | [<< Formal Verification](../03-Foundry-Testing/SC-11-Formal-Verification.ipynb) | [Homomorphic Encryption >>](SC-16-Homomorphic-Encryption.ipynb)\n"
+"\n"
+"---\n"
+"\n"
+"## Objectifs d'apprentissage\n"
+"\n"
+"A la fin de ce notebook, vous saurez :\n"
+"1. Comprendre les **preuves a divulgation nulle** (Zero-Knowledge Proofs)\n"
+"2. Implementer le **protocole de Schnorr** from scratch\n"
+"3. Comprendre la **transformation de Fiat-Shamir** (interactif -> non-interactif)\n"
+"4. Explorer les **Sigma protocols** et le protocole de Chaum-Pedersen\n"
+"\n"
+"### Prerequis\n"
+"\n"
+"- Python 3.10+ avec `hashlib` (stdlib)\n"
+"- `pycryptodome` pour la generation de grands nombres premiers\n"
+"- Notions de base en arithmetique modulaire\n"
+"\n"
+"### Duree estimee : 60 minutes", "header"))
+
+# === SECTION 1: INTRODUCTION ===
+cells.append(md(
+"---\n"
+"\n"
+"## 1. Introduction aux preuves a divulgation nulle\n"
+"\n"
+"### Qu'est-ce qu'une preuve a divulgation nulle ?\n"
+"\n"
+"Une **Zero-Knowledge Proof (ZKP)** est un protocole cryptographique qui permet\n"
+"a un **prouveur** (Prover) de convaincre un **verificateur** (Verifier) qu'une\n"
+"affirmation est vraie, **sans reveler aucune information au-dela de la veracite\n"
+"de l'affirmation elle-meme**.\n"
+"\n"
+"### L'analogie de la caverne d'Ali Baba\n"
+"\n"
+"Imaginez une caverne en forme d'anneau avec une porte magique au fond.\n"
+"Peggy (le prouveur) connait le mot de passe de la porte. Victor (le verificateur) veut s'en assurer\n"
+"sans apprendre le mot de passe.\n"
+"\n"
+"```\n"
+"     Entree\n"
+"       |\n"
+"      / \\\n"
+"     A   B\n"
+"      \\ /\n"
+"    [Porte]\n"
+"```\n"
+"\n"
+"1. Peggy entre dans la caverne par A ou B (au hasard, Victor ne voit pas)\n"
+"2. Victor crie \"sors par A\" ou \"sors par B\" (au hasard)\n"
+"3. Si Peggy connait le mot de passe, elle peut toujours sortir du bon cote\n"
+"4. Si elle ne le connait pas, elle a 50% de chance d'echouer a chaque tour\n"
+"5. Apres N tours, la probabilite de tricher est de 2^(-N)\n"
+"\n"
+"### Trois proprietes fondamentales\n"
+"\n"
+"| Propriete | Description | Formellement |\n"
+"|-----------|-------------|-------------|\n"
+"| **Completude** | Si l'affirmation est vraie, le verificateur sera convaincu | Pr[Accept | vrai] = 1 |\n"
+"| **Solidite** | Si l'affirmation est fausse, le prouveur ne peut pas tricher | Pr[Accept | faux] <= 2^(-N) |\n"
+"| **Zero-knowledge** | Le verificateur n'apprend rien de plus que la veracite | Simulation indistinguable |",
+"zkp-intro"))
+
+cells.append(code(
+'import random\n'
+'\n'
+'def cave_simulation(knows_password: bool, num_rounds: int = 20) -> bool:\n'
+'    """Simuler le protocole de la caverne d\'Ali Baba.\n'
+'    Retourne True si le verificateur est convaincu apres tous les rounds.\n'
+'    """\n'
+'    for round_num in range(num_rounds):\n'
+'        # Peggy choisit un cote au hasard\n'
+'        peggy_side = random.choice(["A", "B"])\n'
+'        # Victor demande un cote au hasard\n'
+'        victor_request = random.choice(["A", "B"])\n'
+'\n'
+'        if peggy_side == victor_request:\n'
+'            # Pas besoin de la porte, elle est deja du bon cote\n'
+'            continue\n'
+'        elif knows_password:\n'
+'            # Peggy traverse la porte magique\n'
+'            continue\n'
+'        else:\n'
+'            # Peggy ne peut pas traverser -> echec\n'
+'            return False\n'
+'    return True\n'
+'\n'
+'# Simuler un prouveur honnete (connait le mot de passe)\n'
+'print("ANALOGIE DE LA CAVERNE D\'ALI BABA")\n'
+'print("=" * 60)\n'
+'\n'
+'honnete_succes = sum(cave_simulation(True, 20) for _ in range(1000))\n'
+'print(f"Prouveur honnete  (1000 essais, 20 rounds) : {honnete_succes}/1000 reussis")\n'
+'\n'
+'# Simuler un prouveur malhonnete (ne connait PAS le mot de passe)\n'
+'malhonnete_succes = sum(cave_simulation(False, 20) for _ in range(1000))\n'
+'print(f"Prouveur fraudeur (1000 essais, 20 rounds) : {malhonnete_succes}/1000 reussis")\n'
+'print()\n'
+'print(f"Probabilite theorique de fraude sur 20 rounds : 2^(-20) = {2**-20:.10f}")\n'
+'print(f"-> Environ 1 chance sur {2**20:,} de tromper le verificateur")',
+"cave-simulation"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"Le prouveur honnete reussit **toujours** (completude), tandis que le fraudeur\n"
+"echoue presque certainement apres 20 rounds (solidite).\n"
+"\n"
+"La propriete zero-knowledge vient du fait que Victor ne peut pas distinguer\n"
+"\"Peggy connait le mot de passe\" de \"Peggy a eu de la chance sur le cote\".\n"
+"Victor n'apprend que \"oui, elle sait\" ou \"non, elle ne sait pas\".\n"
+"\n"
+"Ce principe se generalise a des problemes mathematiques utiles en cryptographie,\n"
+"comme le **logarithme discret** que nous explorons dans la section suivante.",
+"cave-interpretation"))
+
+# === SECTION 2: DISCRETE LOG ZKP ===
+cells.append(md(
+"---\n"
+"\n"
+"## 2. ZKP du logarithme discret (version simplifiee)\n"
+"\n"
+"Le probleme du **logarithme discret** est fondamental en cryptographie :\n"
+"\n"
+"> Etant donne un groupe cyclique de generateur g, et une valeur y = g^x mod p,\n"
+"> retrouver x est (en pratique) impossible pour de grands nombres premiers.\n"
+"\n"
+"Un prouveur qui connait x (le \"secret\") peut prouver qu'il le connait\n"
+"sans jamais le reveler, grace au protocole suivant :\n"
+"\n"
+"### Protocole interactif\n"
+"\n"
+"1. **Engagement (Commit)** : Le prouveur choisit r aleatoire, calcule R = g^r mod p, envoie R\n"
+"2. **Defi (Challenge)** : Le verificateur envoie un challenge aleatoire c\n"
+"3. **Reponse (Response)** : Le prouveur calcule s = r + c*x mod q, envoie s\n"
+"4. **Verification** : Le verificateur verifie que g^s == R * y^c (mod p)\n"
+"\n"
+"### Pourquoi ca marche ?\n"
+"\n"
+"```\n"
+"g^s = g^(r + c*x) = g^r * g^(c*x) = R * (g^x)^c = R * y^c  (mod p)\n"
+"```\n"
+"\n"
+"Le prouveur ne revele jamais x directement. La valeur s = r + c*x est\n"
+"\"masquee\" par le nonce aleatoire r, rendant impossible de deduire x.",
+"dlog-intro"))
+
+cells.append(code(
+'from Crypto.Util.number import getPrime, getRandomRange\n'
+'import hashlib\n'
+'\n'
+'def generate_dlog_params(bits=256):\n'
+'    """Generer les parametres pour un groupe de Schnorr.\n'
+'    On genere p premier tel que p = 2q + 1 (premier sur),\n'
+'    et g generateur du sous-groupe d\'ordre q.\n'
+'    """\n'
+'    # Pour la pedagogie, on utilise une methode simplifiee\n'
+'    # En production, on utiliserait des parametres standardises (RFC 7919)\n'
+'    while True:\n'
+'        q = getPrime(bits)\n'
+'        p = 2 * q + 1\n'
+'        # Verifier que p est premier (safe prime)\n'
+'        if pow(2, p - 1, p) == 1:  # Test de Fermat rapide\n'
+'            break\n'
+'\n'
+'    # Trouver un generateur du sous-groupe d\'ordre q\n'
+'    while True:\n'
+'        h = getRandomRange(2, p - 1)\n'
+'        g = pow(h, 2, p)  # g = h^2 mod p est d\'ordre q (car p = 2q+1)\n'
+'        if g > 1:\n'
+'            break\n'
+'\n'
+'    return p, q, g\n'
+'\n'
+'# Generer les parametres du groupe\n'
+'print("GENERATION DES PARAMETRES DU GROUPE")\n'
+'print("=" * 60)\n'
+'p, q, g = generate_dlog_params(bits=128)  # 128 bits pour la demo (rapide)\n'
+'print(f"p (premier sur) : {str(p)[:40]}... ({p.bit_length()} bits)")\n'
+'print(f"q (ordre)       : {str(q)[:40]}... ({q.bit_length()} bits)")\n'
+'print(f"g (generateur)  : {str(g)[:40]}... ({g.bit_length()} bits)")\n'
+'print()\n'
+'\n'
+'# Le secret du prouveur\n'
+'x = getRandomRange(1, q)  # Cle privee\n'
+'y = pow(g, x, p)          # Cle publique\n'
+'print(f"Cle privee x    : {str(x)[:40]}... (SECRET)")\n'
+'print(f"Cle publique y  : {str(y)[:40]}... (g^x mod p)")',
+"dlog-params"))
+
+cells.append(md(
+"### Execution du protocole interactif\n"
+"\n"
+"Avec ces parametres en place, executons le protocole en 4 etapes.\n"
+"A chaque round, le prouveur genere un nonce frais r, ce qui masque\n"
+"completement le secret x dans la reponse s = r + c*x.",
+"dlog-transition"))
+
+cells.append(code(
+'# Protocole interactif du logarithme discret\n'
+'from Crypto.Util.number import getRandomRange\n'
+'\n'
+'def zkp_dlog_interactive(g, y, x, p, q):\n'
+'    """Executer une ronde du protocole ZKP interactif.\n'
+'    g, y, p, q : parametres publics\n'
+'    x : secret du prouveur\n'
+'    Retourne (succes, details)\n'
+'    """\n'
+'    # Etape 1 : Engagement (Prover)\n'
+'    r = getRandomRange(1, q)  # Nonce aleatoire\n'
+'    R = pow(g, r, p)          # Commitment\n'
+'\n'
+'    # Etape 2 : Challenge (Verifier)\n'
+'    c = getRandomRange(1, q)  # Challenge aleatoire\n'
+'\n'
+'    # Etape 3 : Response (Prover)\n'
+'    s = (r + c * x) % q       # Reponse\n'
+'\n'
+'    # Etape 4 : Verification (Verifier)\n'
+'    lhs = pow(g, s, p)        # g^s mod p\n'
+'    rhs = (R * pow(y, c, p)) % p  # R * y^c mod p\n'
+'\n'
+'    return lhs == rhs, {"R": R, "c": c, "s": s, "lhs": lhs, "rhs": rhs}\n'
+'\n'
+'\n'
+'# Executer le protocole plusieurs fois\n'
+'print("PROTOCOLE ZKP DU LOGARITHME DISCRET (INTERACTIF)")\n'
+'print("=" * 60)\n'
+'\n'
+'num_rounds = 10\n'
+'all_valid = True\n'
+'\n'
+'for i in range(num_rounds):\n'
+'    valid, details = zkp_dlog_interactive(g, y, x, p, q)\n'
+'    status = "OK" if valid else "ECHEC"\n'
+'    print(f"  Round {i+1:2d} : g^s == R*y^c ? {status}")\n'
+'    if not valid:\n'
+'        all_valid = False\n'
+'\n'
+'print()\n'
+'print(f"Resultat apres {num_rounds} rounds : {\"CONVAINCU\" if all_valid else \"ECHEC\"}")\n'
+'print(f"Probabilite de fraude : 2^(-{num_rounds}) = {2**-num_rounds:.2e}")\n'
+'print()\n'
+'print("Points cles :")\n'
+'print("  - Le secret x n\'a JAMAIS ete transmis au verificateur")\n'
+'print("  - Chaque round utilise un nonce r different (aleatoire)")\n'
+'print("  - s = r + c*x est masque par r, impossible de deduire x")',
+"dlog-interactive"))
+
+cells.append(md(
+"### Et si le prouveur triche ?\n"
+"\n"
+"Pour comprendre la solidite du protocole, voyons ce qui se passe\n"
+"quand un prouveur ne connait **pas** le secret x et tente de generer\n"
+"une reponse valide.",
+"dlog-cheat-transition"))
+
+cells.append(code(
+'# Demonstration : un prouveur frauduleux echoue\n'
+'print("TENTATIVE DE FRAUDE (prouveur ne connait PAS x)")\n'
+'print("=" * 60)\n'
+'\n'
+'def zkp_dlog_cheat(g, y, p, q):\n'
+'    """Tentative de fraude : le prouveur ne connait pas x."""\n'
+'    # Le fraudeur choisit un r au hasard\n'
+'    r = getRandomRange(1, q)\n'
+'    R = pow(g, r, p)\n'
+'\n'
+'    # Challenge du verificateur\n'
+'    c = getRandomRange(1, q)\n'
+'\n'
+'    # Le fraudeur ne peut pas calculer s = r + c*x car il ne connait pas x\n'
+'    # Il essaie un s au hasard\n'
+'    s_fake = getRandomRange(1, q)\n'
+'\n'
+'    lhs = pow(g, s_fake, p)\n'
+'    rhs = (R * pow(y, c, p)) % p\n'
+'\n'
+'    return lhs == rhs\n'
+'\n'
+'\n'
+'num_attempts = 1000\n'
+'frauds_reussies = sum(zkp_dlog_cheat(g, y, p, q) for _ in range(num_attempts))\n'
+'print(f"Tentatives de fraude : {num_attempts}")\n'
+'print(f"Fraudes reussies     : {frauds_reussies}")\n'
+'print(f"-> La probabilite de deviner s correctement est 1/q ~ 2^(-{q.bit_length()})")\n'
+'print("-> Un seul round suffit pour une securite de 128 bits avec de grands parametres")',
+"dlog-cheat"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"| Scenario | Resultat | Explication |\n"
+"|----------|----------|-------------|\n"
+"| Prouveur honnete (connait x) | Toujours accepte | s = r + c*x verifie l'equation |\n"
+"| Prouveur fraudeur (ne connait pas x) | Toujours rejete | Impossible de calculer s sans x |\n"
+"\n"
+"La securite repose sur le **probleme du logarithme discret** : meme en observant\n"
+"y = g^x, R = g^r, et s = r + c*x, il est calculatoirement infaisable de retrouver x.\n"
+"\n"
+"Limitation de la version interactive : elle necessite un echange en temps reel\n"
+"entre le prouveur et le verificateur. La section suivante resout ce probleme.",
+"dlog-interpretation"))
+
+# === SECTION 3: SCHNORR + FIAT-SHAMIR ===
+cells.append(md(
+"---\n"
+"\n"
+"## 3. Protocole de Schnorr et transformation de Fiat-Shamir\n"
+"\n"
+"Le **protocole de Schnorr** (1989) est la version formalisee du protocole\n"
+"de la section 2, avec une amelioration cruciale : la **transformation de Fiat-Shamir**\n"
+"qui le rend **non-interactif**.\n"
+"\n"
+"### Idee de Fiat-Shamir (1986)\n"
+"\n"
+"Au lieu d'attendre un challenge aleatoire du verificateur, le prouveur le\n"
+"**genere lui-meme** a partir du hash de l'engagement :\n"
+"\n"
+"```\n"
+"c = SHA-256(g || y || R)\n"
+"```\n"
+"\n"
+"Cela fonctionne car le hash est imprevisible et lie a l'engagement R.\n"
+"Le prouveur ne peut pas choisir c a l'avance (il faudrait inverser SHA-256).\n"
+"\n"
+"### Consequence fondamentale\n"
+"\n"
+"La preuve non-interactive (R, s) est en fait une **signature numerique** !\n"
+"Les signatures de Schnorr sont exactement des ZKP non-interactives du logarithme discret.\n"
+"C'est la base de nombreux schemas modernes (BIP-340/Taproot dans Bitcoin).",
+"schnorr-intro"))
+
+cells.append(code(
+'from Crypto.Util.number import getPrime, getRandomRange\n'
+'from Crypto.Hash import SHA256\n'
+'\n'
+'class SchnorrZKP:\n'
+'    """Implementation du protocole de Schnorr (interactif et non-interactif)."""\n'
+'\n'
+'    def __init__(self, bits=128):\n'
+'        """Generer les parametres du groupe."""\n'
+'        while True:\n'
+'            self.q = getPrime(bits)\n'
+'            self.p = 2 * self.q + 1\n'
+'            if pow(2, self.p - 1, self.p) == 1:\n'
+'                break\n'
+'        while True:\n'
+'            h = getRandomRange(2, self.p - 1)\n'
+'            self.g = pow(h, 2, self.p)\n'
+'            if self.g > 1:\n'
+'                break\n'
+'\n'
+'    def keygen(self):\n'
+'        """Generer une paire cle privee / cle publique."""\n'
+'        x = getRandomRange(1, self.q)  # Cle privee\n'
+'        y = pow(self.g, x, self.p)     # Cle publique\n'
+'        return x, y\n'
+'\n'
+'    # --- Version interactive ---\n'
+'\n'
+'    def prove_interactive_step1(self, x):\n'
+'        """Prouveur : etape 1 - engagement."""\n'
+'        r = getRandomRange(1, self.q)\n'
+'        R = pow(self.g, r, self.p)\n'
+'        return r, R\n'
+'\n'
+'    def verify_challenge(self):\n'
+'        """Verificateur : generer un challenge aleatoire."""\n'
+'        return getRandomRange(1, self.q)\n'
+'\n'
+'    def prove_interactive_step3(self, r, c, x):\n'
+'        """Prouveur : etape 3 - reponse."""\n'
+'        s = (r + c * x) % self.q\n'
+'        return s\n'
+'\n'
+'    def verify_interactive(self, y, R, c, s):\n'
+'        """Verificateur : verification finale."""\n'
+'        lhs = pow(self.g, s, self.p)\n'
+'        rhs = (R * pow(y, c, self.p)) % self.p\n'
+'        return lhs == rhs\n'
+'\n'
+'    # --- Version non-interactive (Fiat-Shamir) ---\n'
+'\n'
+'    def _fiat_shamir_challenge(self, y, R, message=b""):\n'
+'        """Calculer le challenge via hash (transformation de Fiat-Shamir)."""\n'
+'        h = SHA256.new()\n'
+'        h.update(self.g.to_bytes(256, \'big\'))\n'
+'        h.update(y.to_bytes(256, \'big\'))\n'
+'        h.update(R.to_bytes(256, \'big\'))\n'
+'        h.update(message)\n'
+'        # Convertir le hash en entier modulo q\n'
+'        return int.from_bytes(h.digest(), \'big\') % self.q\n'
+'\n'
+'    def prove_non_interactive(self, x, y, message=b""):\n'
+'        """Preuve non-interactive (Fiat-Shamir)."""\n'
+'        r = getRandomRange(1, self.q)\n'
+'        R = pow(self.g, r, self.p)\n'
+'        c = self._fiat_shamir_challenge(y, R, message)\n'
+'        s = (r + c * x) % self.q\n'
+'        return R, s  # La preuve = (R, s)\n'
+'\n'
+'    def verify_non_interactive(self, y, R, s, message=b""):\n'
+'        """Verification non-interactive."""\n'
+'        c = self._fiat_shamir_challenge(y, R, message)\n'
+'        lhs = pow(self.g, s, self.p)\n'
+'        rhs = (R * pow(y, c, self.p)) % self.p\n'
+'        return lhs == rhs\n'
+'\n'
+'\n'
+'# Instancier le protocole\n'
+'schnorr = SchnorrZKP(bits=128)\n'
+'x, y = schnorr.keygen()\n'
+'\n'
+'print("PROTOCOLE DE SCHNORR")\n'
+'print("=" * 60)\n'
+'print(f"Parametres : p={str(schnorr.p)[:30]}... ({schnorr.p.bit_length()} bits)")\n'
+'print(f"Cle publique y = g^x mod p")\n'
+'print()',
+"schnorr-class"))
+
+cells.append(md(
+"### Utilisation : interactif vs non-interactif\n"
+"\n"
+"La classe `SchnorrZKP` ci-dessus implemente les deux variantes.\n"
+"Comparons les en execution pour voir la difference pratique :\n"
+"l'interactif necessite 3 messages, le non-interactif un seul.",
+"schnorr-usage-transition"))
+
+cells.append(code(
+'# Comparaison interactive vs non-interactive\n'
+'print("COMPARAISON : INTERACTIF vs NON-INTERACTIF (Fiat-Shamir)")\n'
+'print("=" * 60)\n'
+'\n'
+'# 1. Version interactive\n'
+'print("\\n--- Version INTERACTIVE ---")\n'
+'print("  Etape 1 (Prouveur -> Verificateur) : envoyer R")\n'
+'r, R = schnorr.prove_interactive_step1(x)\n'
+'print(f"    R = g^r = {str(R)[:30]}...")\n'
+'\n'
+'print("  Etape 2 (Verificateur -> Prouveur) : envoyer c")\n'
+'c = schnorr.verify_challenge()\n'
+'print(f"    c = {str(c)[:30]}...")\n'
+'\n'
+'print("  Etape 3 (Prouveur -> Verificateur) : envoyer s")\n'
+'s = schnorr.prove_interactive_step3(r, c, x)\n'
+'print(f"    s = r + c*x mod q = {str(s)[:30]}...")\n'
+'\n'
+'valid_inter = schnorr.verify_interactive(y, R, c, s)\n'
+'print(f"  Verification : g^s == R*y^c ? {\"OUI\" if valid_inter else \"NON\"}")\n'
+'print(f"  -> Necessite 3 messages (2 allers-retours)")\n'
+'\n'
+'# 2. Version non-interactive (Fiat-Shamir)\n'
+'print("\\n--- Version NON-INTERACTIVE (Fiat-Shamir) ---")\n'
+'message = b"Je prouve que je connais x"\n'
+'R_ni, s_ni = schnorr.prove_non_interactive(x, y, message)\n'
+'print(f"  Preuve (R, s) calculee localement")\n'
+'print(f"    R = {str(R_ni)[:30]}...")\n'
+'print(f"    s = {str(s_ni)[:30]}...")\n'
+'print(f"    c = SHA256(g || y || R || message) (calcule automatiquement)")\n'
+'\n'
+'valid_ni = schnorr.verify_non_interactive(y, R_ni, s_ni, message)\n'
+'print(f"  Verification : {\"VALIDE\" if valid_ni else \"INVALIDE\"}")\n'
+'print(f"  -> Un seul message, pas besoin d\'interaction !")\n'
+'\n'
+'# 3. Tentative de falsification du message\n'
+'print("\\n--- Falsification du message ---")\n'
+'fake_message = b"Message modifie"\n'
+'valid_fake = schnorr.verify_non_interactive(y, R_ni, s_ni, fake_message)\n'
+'print(f"  Verification avec message modifie : {\"VALIDE\" if valid_fake else \"INVALIDE\"}")\n'
+'print(f"  -> La preuve est liee au message (c\'est une signature !)")',
+"schnorr-comparison"))
+
+cells.append(md(
+"### ZKP = Signature numerique\n"
+"\n"
+"Un resultat remarquable : la preuve non-interactive (R, s) est exactement\n"
+"une **signature de Schnorr** sur un message. Signer, c'est prouver la\n"
+"connaissance de la cle privee sans la reveler.",
+"schnorr-sig-transition"))
+
+cells.append(code(
+'# La preuve non-interactive de Schnorr EST une signature\n'
+'print("SCHNORR : ZKP = SIGNATURE")\n'
+'print("=" * 60)\n'
+'print()\n'
+'print("Schema de signature de Schnorr :")\n'
+'print("  Signer(x, message)   -> (R, s) = preuve ZKP non-interactive")\n'
+'print("  Verifier(y, message, R, s) -> vrai/faux")\n'
+'print()\n'
+'\n'
+'# Signer plusieurs messages\n'
+'messages = [\n'
+'    b"Transferer 10 ETH a 0xBob",\n'
+'    b"Approuver le contrat 0xDefi",\n'
+'    b"Voter OUI pour la proposition 42",\n'
+']\n'
+'\n'
+'print("Signatures de Schnorr sur differents messages :")\n'
+'for msg in messages:\n'
+'    R_sig, s_sig = schnorr.prove_non_interactive(x, y, msg)\n'
+'    valid = schnorr.verify_non_interactive(y, R_sig, s_sig, msg)\n'
+'    print(f"  Message  : {msg.decode()}")\n'
+'    print(f"  Sig (R)  : {str(R_sig)[:30]}...")\n'
+'    print(f"  Valide   : {valid}")\n'
+'    print()\n'
+'\n'
+'print("Points cles :")\n'
+'print("  - Chaque signature a un R different (nonce aleatoire)")\n'
+'print("  - La verification ne necessite que la cle publique y")\n'
+'print("  - Bitcoin utilise les signatures Schnorr depuis Taproot (BIP-340)")\n'
+'print("  - Avantage sur ECDSA : linearite -> aggregation de signatures possible")',
+"schnorr-signature"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"La transformation de Fiat-Shamir est un resultat fondamental en cryptographie :\n"
+"\n"
+"| Aspect | Interactif | Non-interactif (Fiat-Shamir) |\n"
+"|--------|-----------|------------------------------|\n"
+"| Messages | 3 (aller-retour) | 1 (prouveur -> verificateur) |\n"
+"| Challenge | Aleatoire (verificateur) | Hash deterministe (SHA-256) |\n"
+"| Utilisation | Identification temps reel | Signatures, blockchain |\n"
+"| Securite | Random Oracle Model | CRS Model (+ hash) |\n"
+"\n"
+"**Consequence pratique** : une preuve ZKP non-interactive peut etre verifiee\n"
+"par n'importe qui, a n'importe quel moment, sans interaction avec le prouveur.\n"
+"C'est exactement ce dont on a besoin pour les transactions blockchain.",
+"schnorr-interpretation"))
+
+# === SECTION 4: SIGMA PROTOCOLS ===
+cells.append(md(
+"---\n"
+"\n"
+"## 4. Sigma Protocols\n"
+"\n"
+"Les protocoles de Schnorr et du logarithme discret sont des cas particuliers\n"
+"d'une famille plus large : les **Sigma protocols** (protocoles en 3 etapes).\n"
+"\n"
+"### Structure generale\n"
+"\n"
+"Tout Sigma protocol suit le schema :\n"
+"\n"
+"```\n"
+"Prouveur                          Verificateur\n"
+"  |                                    |\n"
+"  |--- (1) Engagement (a) ----------->|\n"
+"  |                                    |\n"
+"  |<-- (2) Challenge (c) -------------|  (forme Sigma: la lettre grecque)\n"
+"  |                                    |\n"
+"  |--- (3) Reponse (z) ------------->|\n"
+"  |                                    |\n"
+"  |          Verification : V(a, c, z) = vrai/faux\n"
+"```\n"
+"\n"
+"La forme du diagramme d'echange ressemble a la lettre grecque Sigma, d'ou le nom.\n"
+"\n"
+"### Protocole de Chaum-Pedersen\n"
+"\n"
+"Le protocole de **Chaum-Pedersen** (1992) prouve que deux logarithmes discrets\n"
+"sont **egaux** sans reveler leur valeur :\n"
+"\n"
+"> Prouver que log_g(y1) == log_h(y2) sans reveler l'exposant commun x\n"
+">\n"
+"> Ou : y1 = g^x mod p et y2 = h^x mod p\n"
+"\n"
+"Ceci est utile pour les **votes electroniques**, les **transferts confidentiels**,\n"
+"et les **preuves d'egalite** de Diffie-Hellman.",
+"sigma-intro"))
+
+cells.append(code(
+'from Crypto.Util.number import getRandomRange\n'
+'from Crypto.Hash import SHA256\n'
+'\n'
+'class ChaumPedersen:\n'
+'    """Protocole de Chaum-Pedersen : prouver log_g(y1) == log_h(y2).\n'
+'    Utilise les memes parametres de groupe que Schnorr.\n'
+'    """\n'
+'\n'
+'    def __init__(self, p, q, g):\n'
+'        self.p = p\n'
+'        self.q = q\n'
+'        self.g = g\n'
+'        # Generer un second generateur h (independant de g)\n'
+'        while True:\n'
+'            k = getRandomRange(2, q)\n'
+'            self.h = pow(g, k, p)\n'
+'            if self.h > 1 and self.h != g:\n'
+'                break\n'
+'\n'
+'    def setup(self, x):\n'
+'        """Calculer y1 = g^x et y2 = h^x."""\n'
+'        y1 = pow(self.g, x, self.p)\n'
+'        y2 = pow(self.h, x, self.p)\n'
+'        return y1, y2\n'
+'\n'
+'    def prove(self, x, y1, y2):\n'
+'        """Generer la preuve (non-interactive via Fiat-Shamir)."""\n'
+'        # Engagement : r aleatoire, R1 = g^r, R2 = h^r\n'
+'        r = getRandomRange(1, self.q)\n'
+'        R1 = pow(self.g, r, self.p)\n'
+'        R2 = pow(self.h, r, self.p)\n'
+'\n'
+'        # Challenge (Fiat-Shamir)\n'
+'        hasher = SHA256.new()\n'
+'        for val in [self.g, self.h, y1, y2, R1, R2]:\n'
+'            hasher.update(val.to_bytes(256, \'big\'))\n'
+'        c = int.from_bytes(hasher.digest(), \'big\') % self.q\n'
+'\n'
+'        # Reponse\n'
+'        s = (r + c * x) % self.q\n'
+'\n'
+'        return R1, R2, s\n'
+'\n'
+'    def verify(self, y1, y2, R1, R2, s):\n'
+'        """Verifier la preuve."""\n'
+'        # Recalculer le challenge\n'
+'        hasher = SHA256.new()\n'
+'        for val in [self.g, self.h, y1, y2, R1, R2]:\n'
+'            hasher.update(val.to_bytes(256, \'big\'))\n'
+'        c = int.from_bytes(hasher.digest(), \'big\') % self.q\n'
+'\n'
+'        # Verifier les deux equations simultanement\n'
+'        check1 = pow(self.g, s, self.p) == (R1 * pow(y1, c, self.p)) % self.p\n'
+'        check2 = pow(self.h, s, self.p) == (R2 * pow(y2, c, self.p)) % self.p\n'
+'\n'
+'        return check1 and check2\n'
+'\n'
+'\n'
+'# Utiliser les parametres de Schnorr\n'
+'cp = ChaumPedersen(schnorr.p, schnorr.q, schnorr.g)\n'
+'\n'
+'# Le secret x et les deux \"cles publiques\"\n'
+'secret_x = getRandomRange(1, schnorr.q)\n'
+'y1, y2 = cp.setup(secret_x)\n'
+'\n'
+'print("PROTOCOLE DE CHAUM-PEDERSEN")\n'
+'print("=" * 60)\n'
+'print(f"Secret x : {str(secret_x)[:30]}... (cache)")\n'
+'print(f"y1 = g^x : {str(y1)[:30]}...")\n'
+'print(f"y2 = h^x : {str(y2)[:30]}...")\n'
+'print(f"\\nObjectif : prouver que log_g(y1) == log_h(y2) sans reveler x")\n'
+'print()',
+"chaum-pedersen-impl"))
+
+cells.append(md(
+"### Verification et test de solidite\n"
+"\n"
+"Verifions que la preuve passe pour des logarithmes egaux, et\n"
+"echoue quand les logarithmes sont differents (le prouveur tente de\n"
+"prouver une affirmation fausse).",
+"chaum-pedersen-transition"))
+
+cells.append(code(
+'# Generer et verifier la preuve de Chaum-Pedersen\n'
+'R1, R2, s = cp.prove(secret_x, y1, y2)\n'
+'valid = cp.verify(y1, y2, R1, R2, s)\n'
+'\n'
+'print("VERIFICATION CHAUM-PEDERSEN")\n'
+'print("=" * 60)\n'
+'print(f"Preuve (R1, R2, s) :")\n'
+'print(f"  R1 = {str(R1)[:30]}...")\n'
+'print(f"  R2 = {str(R2)[:30]}...")\n'
+'print(f"  s  = {str(s)[:30]}...")\n'
+'print(f"\\nVerification : g^s == R1*y1^c  ET  h^s == R2*y2^c")\n'
+'print(f"Resultat : {\"VALIDE\" if valid else \"INVALIDE\"}")\n'
+'print()\n'
+'\n'
+'# Test avec des exposants differents (la preuve doit echouer)\n'
+'print("--- Test avec exposants differents ---")\n'
+'x_diff = getRandomRange(1, schnorr.q)\n'
+'y2_fake = pow(cp.h, x_diff, cp.p)  # y2 = h^(x_diff) avec x_diff != x\n'
+'\n'
+'# Tenter de prouver avec le mauvais secret\n'
+'R1_f, R2_f, s_f = cp.prove(secret_x, y1, y2_fake)\n'
+'valid_fake = cp.verify(y1, y2_fake, R1_f, R2_f, s_f)\n'
+'print(f"y1 = g^x, y2 = h^x_diff (x != x_diff)")\n'
+'print(f"La preuve avec le secret x pour y2 = h^x_diff : {\"VALIDE\" if valid_fake else \"INVALIDE\"}")\n'
+'print()\n'
+'print("-> La preuve ne fonctionne que si les deux logarithmes sont identiques")\n'
+'print()\n'
+'print("Applications :")\n'
+'print("  - Vote electronique : prouver qu\'un bulletin chiffre est bien forme")\n'
+'print("  - Transferts confidentiels : prouver qu\'un montant est conserve")\n'
+'print("  - Echange de cles : prouver la coherence de Diffie-Hellman")',
+"chaum-pedersen-verify"))
+
+cells.append(md(
+"### Notion de OR-proofs\n"
+"\n"
+"Les Sigma protocols se **composent** naturellement :\n"
+"\n"
+"- **AND-proof** : prouver que l'on connait x1 ET x2 (facile : executer deux preuves)\n"
+"- **OR-proof** : prouver que l'on connait x1 OU x2 sans reveler lequel\n"
+"\n"
+"L'OR-proof est plus subtile. L'idee est de **simuler** la branche que l'on\n"
+"ne connait pas (grace a la propriete zero-knowledge) et de calculer la vraie\n"
+"preuve pour l'autre branche, en liant les deux challenges par c = c1 + c2.\n"
+"\n"
+"```\n"
+"Prouveur connait x1 (mais pas x2) :\n"
+"  1. Simuler la preuve pour x2 : choisir c2, s2, calculer R2 en arriere\n"
+"  2. Calculer R1 honnetement avec r1 aleatoire\n"
+"  3. Recevoir le challenge global c\n"
+"  4. Calculer c1 = c - c2, puis s1 = r1 + c1*x1\n"
+"  -> Le verificateur ne peut pas distinguer quelle branche est simulee\n"
+"```\n"
+"\n"
+"Applications : systemes de **vote anonyme** (prouver que mon bulletin\n"
+"est 0 ou 1 sans dire lequel), **ring signatures** (Monero).",
+"or-proof-concept"))
+
+# === SECTION 5: ZK-SNARKS OVERVIEW ===
+cells.append(md(
+"---\n"
+"\n"
+"## 5. zk-SNARKs : vue d'ensemble\n"
+"\n"
+"Les protocoles vus jusqu'ici prouvent des relations algebriques simples\n"
+"(logarithme discret, egalite de logarithmes). Les **zk-SNARKs** generalisent\n"
+"les ZKP a des calculs arbitraires.\n"
+"\n"
+"### Qu'est-ce qu'un zk-SNARK ?\n"
+"\n"
+"**zk-SNARK** = Zero-Knowledge Succinct Non-interactive ARgument of Knowledge\n"
+"\n"
+"| Composante | Signification |\n"
+"|-----------|---------------|\n"
+"| **Zero-Knowledge** | Ne revele rien au-dela de la veracite |\n"
+"| **Succinct** | Preuve courte (~200 octets), verification rapide (~ms) |\n"
+"| **Non-interactive** | Pas d'echange entre prouveur et verificateur |\n"
+"| **ARgument** | Securite computationnelle (pas information-theorique) |\n"
+"| **of Knowledge** | Le prouveur connait reellement le temoin (extractabilite) |\n"
+"\n"
+"### Pipeline de construction\n"
+"\n"
+"```\n"
+"Programme -> Circuit Arithmetique -> R1CS -> QAP -> Preuve\n"
+"```\n"
+"\n"
+"1. **Circuit arithmetique** : le calcul est decompose en additions et multiplications\n"
+"   sur un corps fini (comme une puce electronique logique)\n"
+"2. **R1CS** (Rank-1 Constraint System) : chaque porte du circuit devient une contrainte\n"
+"   de la forme `(A.s) * (B.s) = (C.s)` ou s est le vecteur temoin\n"
+"3. **QAP** (Quadratic Arithmetic Program) : les contraintes R1CS sont encodees comme\n"
+"   des polynomes, et la verification se reduit a une identite polynomiale\n"
+"4. **Preuve** : le prouveur calcule la preuve via des pairings sur courbes elliptiques\n"
+"\n"
+"### Applications blockchain\n"
+"\n"
+"| Projet | Utilisation des zk-SNARKs |\n"
+"|--------|-------------------------|\n"
+"| **Zcash** | Transactions privees (montants et adresses caches) |\n"
+"| **zk-Rollups** (zkSync, StarkNet) | Scalabilite L2 : prouver N transactions en 1 preuve |\n"
+"| **Tornado Cash** | Mixer : prouver l'appartenance a un ensemble sans reveler laquelle |\n"
+"| **Filecoin** | Proof-of-Replication (stocker des donnees) |\n"
+"| **Mina Protocol** | Blockchain de taille fixe (22 Ko) grace aux preuves recursives |",
+"zk-snarks-intro"))
+
+cells.append(code(
+'# Demonstration simplifiee : circuit arithmetique et R1CS\n'
+'# On veut prouver que l\'on connait x tel que x^3 + x + 5 == 35 (reponse : x=3)\n'
+'# sans reveler x\n'
+'\n'
+'print("CIRCUIT ARITHMETIQUE SIMPLIFIE")\n'
+'print("=" * 60)\n'
+'print("Equation a prouver : x^3 + x + 5 == 35")\n'
+'print("(Le prouveur connait x=3, le verificateur ne doit pas l\'apprendre)")\n'
+'print()\n'
+'\n'
+'# Decomposition en circuit (chaque ligne = une porte multiplication)\n'
+'# Variables : x, sym1, y, sym2, out\n'
+'# Porte 1 : sym1 = x * x        (x^2)\n'
+'# Porte 2 : y    = sym1 * x      (x^3)\n'
+'# Porte 3 : sym2 = y + x         (x^3 + x)  -- addition, pas une porte R1CS\n'
+'# Porte 4 : out  = sym2 + 5      (x^3 + x + 5)\n'
+'# Contrainte : out == 35\n'
+'\n'
+'# Le "temoin" complet (toutes les variables intermediaires)\n'
+'x_secret = 3\n'
+'sym1 = x_secret * x_secret       # 9\n'
+'y_val = sym1 * x_secret          # 27\n'
+'sym2 = y_val + x_secret          # 30\n'
+'out = sym2 + 5                   # 35\n'
+'\n'
+'witness = {\n'
+'    "1": 1,          # Constante\n'
+'    "x": x_secret,\n'
+'    "sym1": sym1,    # x^2\n'
+'    "y": y_val,      # x^3\n'
+'    "sym2": sym2,    # x^3 + x\n'
+'    "out": out,      # x^3 + x + 5\n'
+'}\n'
+'\n'
+'print("Temoin (witness) - toutes les variables intermediaires :")\n'
+'for name, val in witness.items():\n'
+'    print(f"  {name:5s} = {val}")\n'
+'print()\n'
+'\n'
+'# Contraintes R1CS : (A.s) * (B.s) = (C.s)\n'
+'# Format : chaque contrainte est un triplet (A, B, C) de vecteurs\n'
+'# Les vecteurs indexent : [1, x, sym1, y, sym2, out]\n'
+'constraints = [\n'
+'    # Porte 1 : sym1 = x * x -> (0,1,0,0,0,0)*(0,1,0,0,0,0) = (0,0,1,0,0,0)\n'
+'    {"A": {"x": 1}, "B": {"x": 1}, "C": {"sym1": 1}},\n'
+'    # Porte 2 : y = sym1 * x -> (0,0,1,0,0,0)*(0,1,0,0,0,0) = (0,0,0,1,0,0)\n'
+'    {"A": {"sym1": 1}, "B": {"x": 1}, "C": {"y": 1}},\n'
+'    # Porte 3+4 combinee : (y + x + 5) * 1 = out\n'
+'    {"A": {"y": 1, "x": 1, "1": 5}, "B": {"1": 1}, "C": {"out": 1}},\n'
+']\n'
+'\n'
+'print("Contraintes R1CS (Rank-1 Constraint System) :")\n'
+'print("  Chaque contrainte : (A . witness) * (B . witness) = (C . witness)")\n'
+'print()\n'
+'\n'
+'all_valid = True\n'
+'for i, con in enumerate(constraints):\n'
+'    # Calculer les produits scalaires\n'
+'    a_val = sum(coeff * witness[var] for var, coeff in con["A"].items())\n'
+'    b_val = sum(coeff * witness[var] for var, coeff in con["B"].items())\n'
+'    c_val = sum(coeff * witness[var] for var, coeff in con["C"].items())\n'
+'\n'
+'    valid = (a_val * b_val) == c_val\n'
+'    all_valid = all_valid and valid\n'
+'\n'
+'    a_str = " + ".join(f"{c}*{v}" for v, c in con["A"].items())\n'
+'    b_str = " + ".join(f"{c}*{v}" for v, c in con["B"].items())\n'
+'    c_str = " + ".join(f"{c}*{v}" for v, c in con["C"].items())\n'
+'    print(f"  Contrainte {i+1}: ({a_str}) * ({b_str}) = ({c_str})")\n'
+'    print(f"    => {a_val} * {b_val} = {c_val} ? {\"OK\" if valid else \"ECHEC\"}")\n'
+'\n'
+'print(f"\\nToutes les contraintes satisfaites : {all_valid}")\n'
+'print(f"Le prouveur connait x tel que x^3 + x + 5 == {out}")\n'
+'print()\n'
+'print("En vrai zk-SNARK :")\n'
+'print("  1. Le temoin serait encode comme polynomes sur un corps fini")\n'
+'print("  2. La preuve serait ~200 octets (2 elements de courbe elliptique)")\n'
+'print("  3. La verification prendrait ~5ms (3 pairings)")\n'
+'print("  4. Le verificateur n\'apprendrait pas x")',
+"r1cs-demo"))
+
+cells.append(md(
+"### Comparaison des systemes de preuves\n"
+"\n"
+"| Systeme | Taille preuve | Temps verif. | Setup de confiance | Utilise par |\n"
+"|---------|--------------|-------------|-------------------|------------|\n"
+"| **Schnorr** | ~64 octets | ~1ms | Non | Bitcoin (Taproot) |\n"
+"| **Groth16** (zk-SNARK) | ~200 octets | ~5ms | Oui (trusted setup) | Zcash, Tornado Cash |\n"
+"| **PLONK** (zk-SNARK) | ~400 octets | ~10ms | Universel | zkSync, Aztec |\n"
+"| **zk-STARK** | ~50 Ko | ~50ms | Non | StarkNet, Polygon Miden |\n"
+"| **Bulletproofs** | ~700 octets | ~50ms | Non | Monero |\n"
+"\n"
+"**Compromis fondamental** : taille de preuve vs. hypotheses de confiance.\n"
+"Les zk-STARKs sont plus gros mais n'ont pas besoin de \"trusted setup\",\n"
+"ce qui les rend plus transparents pour les systemes decentralises.\n"
+"\n"
+"> **Note** : les implementations completes de zk-SNARKs et zk-STARKs depassent\n"
+"> le cadre de ce notebook. Elles reposent sur des pairings de courbes elliptiques\n"
+"> (BN254, BLS12-381) et de l'algebre polynomiale avancee.",
+"snarks-comparison"))
+
+# === SECTION 6: EXERCICE ===
+cells.append(md(
+"---\n"
+"\n"
+"## 6. Exercice : ZKP de preimage de hash\n"
+"\n"
+"### Objectif\n"
+"\n"
+"Implementer un protocole ZKP qui prouve que l'on connait la **preimage**\n"
+"d'un hash SHA-256 sans la reveler.\n"
+"\n"
+"Concretement : etant donne `h = SHA256(secret)`, prouver que l'on connait\n"
+"`secret` sans le communiquer au verificateur.\n"
+"\n"
+"### Approche\n"
+"\n"
+"On utilise un schema de **commit-and-reveal** avec defi aleatoire :\n"
+"\n"
+"1. Le prouveur genere un nonce `r` aleatoire\n"
+"2. Il calcule `commitment = SHA256(secret || r)`\n"
+"3. Le verificateur envoie un challenge `c` (0 ou 1)\n"
+"4. Si c=0 : le prouveur revele `r` et le verificateur verifie que\n"
+"   `SHA256(secret || r)` correspond au commitment (sans apprendre secret)\n"
+"   -- en fait le verificateur ne peut pas verifier sans secret !\n"
+"\n"
+"**Approche corrigee** (schema de Guillou-Quisquater simplifie) :\n"
+"\n"
+"On utilise plutot une approche basee sur le logarithme discret.\n"
+"Le prouveur encode son secret comme exposant et utilise le protocole de Schnorr.\n"
+"\n"
+"### A implementer\n"
+"\n"
+"Completez la classe `HashPreimageZKP` ci-dessous.\n"
+"\n"
+"**Indice** : convertissez le hash de la preimage en un element du groupe\n"
+"et utilisez le protocole de Schnorr pour prouver la connaissance de cet element.",
+"exercise-intro"))
+
+cells.append(code(
+'import hashlib\n'
+'from Crypto.Util.number import getRandomRange\n'
+'from Crypto.Hash import SHA256\n'
+'\n'
+'\n'
+'class HashPreimageZKP:\n'
+'    """ZKP prouvant la connaissance d\'une preimage de hash.\n'
+'\n'
+'    Strategie : convertir le secret en un scalaire dans le groupe de Schnorr,\n'
+'    puis utiliser le protocole de Schnorr pour prouver la connaissance.\n'
+'\n'
+'    Le verificateur connait :\n'
+'      - Le hash public h_pub = SHA256(secret)\n'
+'      - Les parametres du groupe (p, q, g)\n'
+'      - La valeur y = g^(int(h_pub) mod q) mod p\n'
+'\n'
+'    Le prouveur connait :\n'
+'      - Le secret (dont le hash donne h_pub)\n'
+'    """\n'
+'\n'
+'    def __init__(self, p, q, g):\n'
+'        """Initialiser avec les parametres du groupe."""\n'
+'        self.p = p\n'
+'        self.q = q\n'
+'        self.g = g\n'
+'\n'
+'    def register(self, secret: bytes):\n'
+'        """Enregistrer un secret et publier (h_pub, y).\n'
+'\n'
+'        TODO:\n'
+'        1. Calculer h_pub = SHA256(secret).hexdigest()\n'
+'        2. Convertir h_pub en entier x_derived = int(h_pub, 16) % self.q\n'
+'        3. Calculer y = pow(self.g, x_derived, self.p)\n'
+'        4. Retourner (h_pub, y, x_derived)\n'
+'           h_pub et y sont publics, x_derived est le secret du prouveur\n'
+'        """\n'
+'        raise NotImplementedError("Implementez register()")\n'
+'\n'
+'    def prove(self, x_derived, y):\n'
+'        """Generer une preuve ZKP non-interactive (Fiat-Shamir).\n'
+'\n'
+'        TODO:\n'
+'        1. Choisir r aleatoire dans [1, q)\n'
+'        2. Calculer R = g^r mod p\n'
+'        3. Calculer c = int(SHA256(g || y || R).hexdigest(), 16) % q\n'
+'        4. Calculer s = (r + c * x_derived) % q\n'
+'        5. Retourner (R, s)\n'
+'        """\n'
+'        raise NotImplementedError("Implementez prove()")\n'
+'\n'
+'    def verify(self, y, R, s):\n'
+'        """Verifier la preuve.\n'
+'\n'
+'        TODO:\n'
+'        1. Recalculer c = int(SHA256(g || y || R).hexdigest(), 16) % q\n'
+'        2. Verifier que g^s == R * y^c (mod p)\n'
+'        3. Retourner True ou False\n'
+'        """\n'
+'        raise NotImplementedError("Implementez verify()")\n'
+'\n'
+'\n'
+'# Test (decommentez apres implementation)\n'
+'# zkp = HashPreimageZKP(schnorr.p, schnorr.q, schnorr.g)\n'
+'# h_pub, y, x_derived = zkp.register(b"mon_secret_password_123")\n'
+'# print(f"Hash public  : {h_pub[:32]}...")\n'
+'# print(f"Cle publique : {str(y)[:30]}...")\n'
+'#\n'
+'# R, s = zkp.prove(x_derived, y)\n'
+'# valid = zkp.verify(y, R, s)\n'
+'# print(f"Preuve valide : {valid}")\n'
+'#\n'
+'# # Verification que le hash correspond\n'
+'# assert h_pub == hashlib.sha256(b"mon_secret_password_123").hexdigest()\n'
+'# print("Le verificateur sait que le prouveur connait une preimage de h_pub")\n'
+'# print("mais n\'a aucune information sur la preimage elle-meme")',
+"exercise-code"))
+
+cells.append(md(
+"### Indices\n"
+"\n"
+"Si vous etes bloque :\n"
+"\n"
+"1. Pour `register` : utilisez `hashlib.sha256(secret).hexdigest()` puis `int(..., 16) % self.q`\n"
+"2. Pour `prove` : c'est exactement le protocole de Schnorr non-interactif avec x_derived comme secret\n"
+"3. Pour `verify` : recalculez le challenge de la meme maniere et verifiez l'equation\n"
+"4. Pour le hash dans `prove`/`verify`, concatenez les representations en bytes des grands entiers :\n"
+"   `SHA256.new(g.to_bytes(256, 'big') + y.to_bytes(256, 'big') + R.to_bytes(256, 'big'))`",
+"exercise-hints"))
+
+# === SECTION 7: RESUME ===
+cells.append(md(
+"---\n"
+"\n"
+"## 7. Resume\n"
+"\n"
+"### Recapitulatif des protocoles\n"
+"\n"
+"| Protocole | Prouve que... | Interactif ? | Complexite |\n"
+"|-----------|---------------|-------------|------------|\n"
+"| **Caverne Ali Baba** | \"Je connais le mot de passe\" | Oui (N rounds) | O(N) |\n"
+"| **Schnorr** | \"Je connais x tel que g^x = y\" | Les deux | O(1) |\n"
+"| **Chaum-Pedersen** | \"log_g(y1) = log_h(y2)\" | Les deux | O(1) |\n"
+"| **OR-proof** | \"Je connais x1 ou x2\" | Les deux | O(1) |\n"
+"| **zk-SNARK** | \"Je connais un temoin w pour C(w)=1\" | Non | O(1) verification |\n"
+"\n"
+"### Concepts cles\n"
+"\n"
+"| Concept | Description |\n"
+"|---------|-------------|\n"
+"| **Completude** | Le prouveur honnete convainc toujours |\n"
+"| **Solidite** | Le fraudeur echoue avec forte probabilite |\n"
+"| **Zero-knowledge** | Le verificateur n'apprend rien de plus |\n"
+"| **Fiat-Shamir** | Transformer interactif en non-interactif via hash |\n"
+"| **Sigma protocol** | Framework general : engagement -> challenge -> reponse |\n"
+"| **R1CS** | Representation des calculs en contraintes rang-1 |\n"
+"\n"
+"### Points cles\n"
+"\n"
+"- Les ZKP permettent de prouver sans reveler : un changement de paradigme en cryptographie\n"
+"- Le protocole de Schnorr est la brique de base, utilisee dans Bitcoin (Taproot)\n"
+"- La transformation de Fiat-Shamir convertit toute preuve interactive en signature\n"
+"- Les zk-SNARKs generalisent les ZKP a des calculs arbitraires (zk-rollups, confidentialite)\n"
+"- Les applications blockchain sont en pleine explosion : scalabilite L2, votes, identite\n"
+"\n"
+"---\n"
+"\n"
+"**Notebook suivant** : [SC-16-Homomorphic-Encryption](SC-16-Homomorphic-Encryption.ipynb) - Chiffrement homomorphe",
+"summary"))
+
+# === BUILD NOTEBOOK ===
+notebook = {
+    "cells": cells,
+    "metadata": {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3"
+        },
+        "language_info": {
+            "codemirror_mode": {"name": "ipython", "version": 3},
+            "file_extension": ".py",
+            "mimetype": "text/x-python",
+            "name": "python",
+            "nbconvert_exporter": "python",
+            "pygments_lexer": "ipython3",
+            "version": "3.10.0"
+        }
+    },
+    "nbformat": 4,
+    "nbformat_minor": 5
+}
+
+output_path = os.path.join(
+    "d:", os.sep, "CoursIA", "MyIA.AI.Notebooks", "SymbolicAI",
+    "SmartContracts", "04-Privacy-Cryptography", "SC-15-Zero-Knowledge-Proofs.ipynb"
+)
+with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
+    json.dump(notebook, f, ensure_ascii=False, indent=1)
+    f.write('\n')
+
+print(f"Notebook cree : {output_path}")
+print(f"Cellules : {len(cells)} ({sum(1 for c in cells if c['cell_type']=='markdown')} md + {sum(1 for c in cells if c['cell_type']=='code')} code)")
+
+# Verify format
+for i, cell in enumerate(cells):
+    src = cell['source']
+    if isinstance(src, str):
+        print(f"  ISSUE cell {i}: bare string")
+    elif isinstance(src, list) and len(src) == 1 and '\n' in src[0]:
+        print(f"  ISSUE cell {i}: single-string with newlines")
+print("Format OK" if all(isinstance(c['source'], list) for c in cells) else "FORMAT ISSUES")

@@ -23,6 +23,23 @@ Guidance for Claude Code working with the CoursIA repository.
 
 ---
 
+## RÈGLE - RooSync Dashboard : toujours lire le contenu complet
+
+Le **dashboard RooSync workspace CoursIA** (`roosync_dashboard` type=workspace, workspace=CoursIA) est le canal central de coordination cross-machine. Il contient le status du coordinateur (ai-01), les missions assignees, les resultats backtests, les decisions de consolidation, et l'intercom entre agents.
+
+### Obligations lors d'un tour de coordination :
+1. **Lire le contenu complet** du dashboard — l'API retourne parfois un JSON tronque en preview ("Output too large"). Dans ce cas, TOUJOURS utiliser `Read` sur le fichier persiste pour lire l'integralite.
+2. **Verifier l'inbox** RooSync pour les messages directs non lus.
+3. **Verifier le heartbeat** cluster pour savoir quelles machines sont actives.
+4. **Si aucune mission assignee** : envoyer un message RooSync a ai-01 (coordinateur) pour demander des instructions. Ne pas attendre passivement.
+
+### Ne JAMAIS :
+- Resumer le dashboard a partir du seul preview tronque
+- Omettre la lecture de l'intercom (contient l'historique des decisions)
+- Se considerer "disponible" sans prevenir le coordinateur
+
+---
+
 ## 🚨 RÈGLE CRITIQUE - Git Force Push INTERDIT
 
 **INCIDENT 2026-03-13** : Force push accidentel sur main a potentiellement écrasé des commits
@@ -43,6 +60,104 @@ Guidance for Claude Code working with the CoursIA repository.
 **Voir aussi** : `.claude/rules/git-workflow.md` pour les règles git complètes
 
 **VIOLATION DE CETTE RÈGLE = ERREUR CRITIQUE**
+
+---
+
+## Regles Agents (Roo Code / machines distantes)
+
+Les agents Roo sur les machines po-2023, po-2024, po-2025, po-2026 travaillent sur ce depot via RooSync. Ces regles sont **OBLIGATOIRES** pour tout agent.
+
+### Git : PRs obligatoires
+
+- **JAMAIS** de push direct sur `main`. Creer une feature branch, pousser, creer une PR
+- Nommage branche : `feature/<sujet>` ou `fix/<sujet>`
+- Un seul sujet par PR (pas de mega-PR multi-issues)
+- Le coordinateur (ai-01) review et merge. Les agents ne mergent pas eux-memes
+
+### Qualite : code avant documentation
+
+- **Priorite** : code fonctionnel > tests/validation > documentation
+- Ne pas generer de markdown (README, MAPPING, RAPPORT) sans code fonctionnel associe
+- Ne pas creer de fichiers de planification (EXTEND_*.md, PROCEDURE_*.md) dans le repo — utiliser RooSync
+- Les rapports d'audit, inventaires, et status vont sur le **dashboard RooSync**, pas dans le repo
+
+### Review PR : validation explicite des objectifs
+
+Toute PR doit faire l'objet d'une **review complete** avant merge :
+
+1. **Relire l'issue ou le contexte d'origine** : identifier les objectifs precis (layout, positionnement, contenu, format)
+2. **Valider chaque objectif explicitement** : verifier dans le code ET visuellement que chaque exigence est satisfaite
+3. **Verification visuelle obligatoire pour les slides** :
+   - Lancer le serveur Slidev et verifier CHAQUE slide modifie (pas un echantillon)
+   - Verifier avec `?clicks=99` pour voir le contenu complet revele
+   - Verifier l'absence d'overflow (contenu coupe en bas)
+   - Verifier les layouts d'images (overlay uniquement, jamais colonne droite)
+4. **Verification visuelle obligatoire pour les notebooks** : executer ou au moins valider la structure
+5. **Ne jamais merger une PR sur la seule base du CI green** : CI valide la syntaxe, pas le rendu visuel ni la conformite aux specifications
+
+**Slides : images en overlay uniquement**
+- Les images de fond doivent utiliser `layout: image-overlay` avec le texte par-dessus, jamais en colonne droite
+- Cette regle a ete specifiee dans l'issue #221 et confirmee 5+ fois dans les discussions
+- Verifier que chaque image est bien positionnee sur le bon slide
+
+**VIOLATION = PR a rejeter, meme si le code compile**
+
+### Pas de duplication
+
+- Avant de creer un fichier (README, docs, shared library), verifier qu'il n'existe pas deja
+- Utiliser `grep` et `find` pour chercher les doublons
+- Si un fichier similaire existe, le mettre a jour plutot qu'en creer un nouveau
+
+### Enrichissement notebooks : regles strictes
+
+- Chaque cellule de transition doit avoir du **contenu pedagogique specifique** (pas de "Suite du traitement" generique)
+- Les cellules d'interpretation doivent etre placees **apres** la cellule de code qu'elles interpretent
+- Ne pas enrichir le meme notebook dans deux sessions paralleles (risque de doublons)
+- Verifier l'absence de doublons avec `git diff` avant de committer
+
+### Emojis interdits
+
+Regle code-style.md : **Pas d'emojis** dans le code, les noms de variables, les fichiers generes, ni les messages de commit. Utiliser des mots.
+
+---
+
+## QuantConnect (QC) - Regles specifiques
+
+### Backtests obligatoires
+
+Toute modification d'une strategie QC (main.py, parametres, periodes) **DOIT** etre validee par un backtest :
+1. `create_compile` pour verifier la compilation
+2. `create_backtest` pour lancer le backtest
+3. `read_backtest` pour recuperer les metriques (Sharpe, CAGR, MaxDD)
+4. Reporter les resultats dans le message de commit ET sur RooSync
+
+**Changer une date ou un parametre sans backtest = travail invalide.**
+
+### MCP qc-mcp
+
+Le MCP `qc-mcp` est disponible sur ai-01 et doit etre utilise pour toute interaction avec QuantConnect Cloud. Les infos de connexion (User ID, Org IDs, tokens) sont sur le **dashboard RooSync** et dans les memoires agents — **pas dans le CLAUDE.md** pour raisons de securite.
+
+Pour retrouver les infos QC :
+- Dashboard workspace CoursIA : section status
+- Memoire ai-01 : `jared_qc_partnership.md`, `qc_strategies_catalog.md`
+- Messages RooSync : rechercher tag `quantconnect`
+
+### Structure QC dans le depot
+
+```
+MyIA.AI.Notebooks/QuantConnect/
+  Python/           # 27 notebooks progressifs (QC-Py-01 a QC-Py-27)
+  projects/          # ~50 strategies avec main.py + research.ipynb
+  shared/            # Librairie utilitaire (backtestlib, indicators, plotting)
+  ESGF-2026/         # Cours ESGF : exercices, templates, lean-workspace
+  docs/              # Documentation technique (pas de coordination)
+```
+
+### Livre de reference
+
+*Hands-On AI Trading* de Jared Broad — https://www.hands-on-ai-trading.com/
+Repo exemples : https://github.com/QuantConnect/HandsOnAITradingBook
+Issues associees : #107 (mapping), #143 (implementation ML)
 
 ---
 
@@ -78,14 +193,30 @@ python scripts/genai-stack/genai.py docker stop all  # Arreter tous les services
 
 ### Validation & Testing
 
+**IMPORTANT: Always use existing scripts for notebook validation/execution. Never write ad-hoc execution scripts.**
+
 ```bash
+# === Notebook Tools (multi-family, production CLI) ===
+python scripts/notebook_tools/notebook_tools.py validate [target]         # Structure validation
+python scripts/notebook_tools/notebook_tools.py execute [target]          # Execute via Papermill
+python scripts/notebook_tools/notebook_tools.py execute [target] --cell-by-cell  # Cell-by-cell (.NET/Lean)
+python scripts/notebook_tools/notebook_tools.py analyze [path]            # Analyze structure
+python scripts/notebook_tools/notebook_tools.py skeleton [path]           # Generate skeleton
+
+# === SmartContracts-specific validator ===
+python scripts/smartcontracts/validate_sc_notebooks.py                    # Full SC validation
+python scripts/smartcontracts/validate_sc_notebooks.py --quick            # Structure only
+python scripts/smartcontracts/validate_sc_notebooks.py --execute --anvil  # Execute with anvil
+
+# === GenAI stack ===
 python scripts/genai-stack/genai.py validate --full       # Validation complete ComfyUI
-python scripts/genai-stack/genai.py validate --nunchaku   # Test Nunchaku INT4
-python scripts/genai-stack/genai.py validate --notebooks  # Validation syntaxe notebooks
-python scripts/genai-stack/genai.py notebooks             # Validation Papermill notebooks
-python scripts/genai-stack/genai.py gpu                   # Verification VRAM
-python scripts/notebook_tools/notebook_tools.py validate [target]        # Multi-family notebook verification
+python scripts/genai-stack/genai.py validate --notebooks   # Validation syntaxe notebooks
+python scripts/genai-stack/genai.py notebooks              # Validation Papermill notebooks
+python scripts/genai-stack/genai.py gpu                    # Verification VRAM
 ```
+
+**Kernel auto-detection**: `notebook_tools.py` reads kernel name from notebook metadata and uses it automatically. Custom kernels (smartcontracts, lean4-wsl) are supported with extended startup timeouts.
+
 GitHub Actions validates notebooks on PR (`.github/workflows/notebook-validation.yml`)
 
 ### Claude Code Skills (slash commands)

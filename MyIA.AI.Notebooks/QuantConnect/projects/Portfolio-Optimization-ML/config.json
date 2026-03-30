@@ -1,0 +1,10 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {
+        "cash": 100000
+    },
+    "description": "Portfolio Optimization with Machine Learning - Modern Portfolio Theory (Markowitz 1952) with Ledoit-Wolf covariance shrinkage, momentum + mean-reversion return prediction, and monthly rebalancing on 15 large-cap US stocks (5 sectors)",
+    "name": "Portfolio-Optimization-ML",
+    "cloud-id": null,
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

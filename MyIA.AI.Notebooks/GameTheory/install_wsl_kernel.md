@@ -27,13 +27,13 @@ Installer un kernel Python dans WSL Ubuntu avec OpenSpiel, accessible depuis Jup
 
 ```bash
 # 1. Dans WSL Ubuntu
-cd /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
 bash setup_wsl_openspiel.sh
 ```
 
 ```powershell
 # 2. Dans PowerShell Windows
-cd C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 .\setup_wsl_kernel.ps1
 ```
 
@@ -314,13 +314,13 @@ Installer Lean 4 et lean4_jupyter dans WSL Ubuntu, avec un kernel accessible dep
 
 ```bash
 # 1. Dans WSL Ubuntu
-cd /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
 bash setup_wsl_lean4.sh
 ```
 
 ```powershell
 # 2. Dans PowerShell Windows
-cd C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 .\setup_lean4_kernel.ps1
 ```
 

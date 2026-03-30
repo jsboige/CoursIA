@@ -116,8 +116,8 @@ footer: 'III - Logique'
 
 # Types de logiques
 
-- **Ontologie** : etude de ce qui existe dans le monde modelise
-- **Epistemologie** : etude de ce qui peut etre connu par l'agent
+- **Ontologie** : étude de ce qui existe dans le monde modélise
+- **Epistemologie** : étude de ce qui peut etre connu par l'agent
 
 | Logique | Variables | Quantifie sur | Decidable ? |
 |---------|-----------|---------------|-------------|
@@ -202,7 +202,7 @@ footer: 'III - Logique'
 
 - Objectif de l'inférence logique:
   - Vérifier qu'un énoncé est une conséquence de la KB, i.e. un théorème
-- **Inference par la preuve** : utilisation de regles de derivation coherentes pour produire une chaine de conclusions conduisant au but
+- **Inference par la preuve** : utilisation de règles de derivation coherentes pour produire une chaine de conclusions conduisant au but
   - Exemple : de A et A → B, on deduit B (Modus Ponens), puis de B et B → C, on deduit C
 
 ---
@@ -290,7 +290,7 @@ footer: 'III - Logique'
 # Exploration locale
 
 - Equivaut à Min-Conflits pour les CSPs
-- Evaluation = nb de clauses non satisfaites
+- Évaluation = nb de clauses non satisfaites
 - Problèmes simples sous-contraints / sur-contraints
 - Ratio nb clauses / nb symboles  seuil de satisfiabilité
 - NP-complet souvent au seuil.
@@ -392,7 +392,7 @@ footer: 'III - Logique'
   - Objets: des choses avec des identités individuelles
   - Propriétés des objets qui les distinguent des autres objets
   - Relations qui existent entre les ensembles d'objets
-  - Fonctions qui sont un sous-ensemble des relations avec une valeur unique de resultat pour des donnees d'entree
+  - Fonctions qui sont un sous-ensemble des relations avec une valeur unique de resultat pour des données d'entree
   - Exemple : objets = {Jean, Marie, Paris}, relation = Habite(Jean, Paris), fonction = pere-de(Marie) = Jean
 
 ---
@@ -726,7 +726,7 @@ footer: 'III - Logique'
 - **Outils et demonstrateurs** :
   - Tweety (framework Java pour logiques argumentatives)
   - E-prover (demonstrateur automatique pour FOL)
-  - **Lean** (assistant de preuve interactif, tres actif en mathematiques)
+  - **Lean** (assistant de preuve interactif, tres actif en mathématiques)
 
 ---
 
@@ -1191,7 +1191,7 @@ footer: 'III - Logique'
   - Composition
     - PartieDe(x,y)
     - Partition → assortiment (pas ensemble)
-  - Exemple : Animal → {Mammifere, Oiseau, Reptile} (partition), Mammifere herite des proprietes d'Animal
+  - Exemple : Animal → {Mammifere, Oiseau, Reptile} (partition), Mammifere herite des propriétés d'Animal
 
 ![bg right:40%](images/img_038.png)
 
@@ -1217,11 +1217,11 @@ footer: 'III - Logique'
 # Web semantique
 
 - **Resource Description Framework (RDF)** : standard W3C (Tim Berners-Lee)
-  - Donnees structurees en **triplets** (sujet, predicat, objet)
+  - Données structurees en **triplets** (sujet, predicat, objet)
   - Hierarchie de classes et sous-classes
 - **RDFS / OWL** : schemas et ontologies avec classes definies et contraintes
 - **SPARQL** : langage de requetes pour interroger les Triple Stores (bases de triplets)
-- **Linked Data** : interconnecter les donnees structurees a l'echelle du web
+- **Linked Data** : interconnecter les données structurees a l'echelle du web
 - **Architecture orientee services** (SOA) : services web semantiques
 
 ![bg right:50% vertical](images/img_039.png)
@@ -1354,18 +1354,18 @@ footer: 'III - Logique'
 - Création d'une plateforme sémantique LDP à partir d'un index structuré.
   - Structuration et ouverture des données = Linked Data. Lucene.Net, SharpRDF
 - Résolution de Captchas par deep learning
-  - Apprentissage via un Adapteur DNN, Réseaux de dernières génération. TensorFlow, CNTK, Encog
+  - Apprentissage via un réseau de neurones convolutif. PyTorch, TensorFlow, transfer learning
 
 ---
 
 # Projets de groupe (2/2)
 
 - Entrainement de stratégies de trading algorithmiques sur crypto monnaies.
-  - Expérience DNN Bitcoin, Encog et machine learning
+  - Réseaux de neurones récurrents (LSTM), scikit-learn, données Binance API
 - Amélioration par l'apprentissage d'un agent joueur de Go simple
-  - Le Go et l'IA, Récentes avancées. Go Traxx
-- Evolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie.
-  - Approches évolutionnistes, automates cellulaires, Bac a sable. Golly, Encog
+  - Le Go et l'IA, récentes avancées (AlphaGo). PyTorch, reinforcement learning
+- Évolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie.
+  - Approches évolutionnistes, automates cellulaires. DEAP, Golly, Python
 - Pilotage d'un cluster de cache distribué pour le portage d'applications  dans le Cloud
   - Caches distribués, scaling, stratégies et clustering. Redis
 

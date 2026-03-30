@@ -71,24 +71,25 @@ DataScienceWithAgents/
 | **Agents IA** | LangChain, OpenAI GPT |
 | **Orchestration** | python-dotenv |
 
-## Prerequisites
+## Installation
 
 ```bash
 # Environnement Python
 python -m venv venv
 venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
 
-# Dependances Data Science
-pip install numpy pandas matplotlib seaborn scikit-learn
+# Labs 1 et 4-5 (Data Science de base)
+pip install pandas numpy matplotlib seaborn scikit-learn ipywidgets
 
-# Dependances Agents (Day 2-3)
-pip install langchain openai python-dotenv
+# Labs 2-3 et 6-7 (Agents LangChain)
+pip install langchain langchain-openai langchain-experimental python-dotenv
 ```
 
-### Configuration API
+### Configuration API (Labs 2-3, 6-7)
 
 ```bash
-# Dans .env
+# Creer un fichier .env a la racine du projet
 OPENAI_API_KEY=sk-...
 ```
 

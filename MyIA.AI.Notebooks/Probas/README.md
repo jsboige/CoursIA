@@ -76,12 +76,45 @@ La serie complete est documentee dans [Infer/README.md](Infer/README.md).
 | 13 | Debugging | EP vs VMP, diagnostic erreurs |
 | 14-20 | Decision Theory | Utilite, MAUT, influence diagrams, MDPs |
 
+## Installation
+
+### Notebooks Infer.NET (C# .NET Interactive)
+
+```bash
+# 1. Installer .NET SDK 9.0+ depuis https://dotnet.microsoft.com/download
+# 2. Installer le kernel dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+
+# 3. Ou utiliser le script PowerShell (installe tout automatiquement) :
+cd MyIA.AI.Notebooks/Probas/Infer/scripts
+.\setup_environment.ps1
+```
+
+### Notebooks Python (Infer-101, Pyro_RSA)
+
+```bash
+pip install pyro-ppl torch matplotlib numpy
+```
+
+### Verification
+
+```bash
+jupyter kernelspec list  # doit afficher .net-csharp et python3
+```
+
+### Tester tous les notebooks
+
+```bash
+python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
+```
+
 ## Prerequisites
 
 ### Pour Infer.NET (C#)
 
 ```bash
-# .NET SDK 6.0+
+# .NET SDK 9.0+
 dotnet --version
 
 # VS Code + extension Polyglot Notebooks

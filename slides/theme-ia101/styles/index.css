@@ -14,10 +14,11 @@
 /* Base styles */
 .slidev-layout {
   font-family: 'Segoe UI', 'Calibri', Arial, sans-serif;
-  font-size: 28px;
+  font-size: 18px;
   color: var(--color-text);
   background-color: var(--color-bg);
-  padding: 40px 60px;
+  padding: 16px 36px;
+  text-align: left;
 }
 
 /* Headers */
@@ -25,31 +26,37 @@ h1 {
   color: var(--color-accent);
   font-size: 1.6em;
   border-bottom: 2px solid var(--color-accent);
-  padding-bottom: 8px;
-  margin-bottom: 16px;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  text-align: left;
 }
 
 h2 {
   color: var(--color-header);
   font-size: 1.3em;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  text-align: left;
 }
 
 h3 {
   color: var(--color-accent-light);
-  font-size: 1.1em;
+  font-size: 1.15em;
+  text-align: left;
 }
 
 /* Bullet lists */
 ul {
   list-style: none;
   padding-left: 0;
+  text-align: left;
 }
 
+/* Level 1 bullets: larger, bold-like weight */
 ul > li {
   padding-left: 24px;
   position: relative;
   margin-bottom: 6px;
+  font-size: 1.05em;
 }
 
 ul > li::before {
@@ -61,9 +68,25 @@ ul > li::before {
   top: 4px;
 }
 
+/* Level 2 bullets: smaller, lighter */
+ul ul > li {
+  font-size: 0.88em;
+  margin-bottom: 3px;
+}
+
 ul ul > li::before {
   content: '\25CB';
   color: var(--color-accent-light);
+}
+
+/* Level 3 bullets: smaller (effective ~15px at base 18px) */
+ul ul ul > li {
+  font-size: 0.88em;
+}
+
+ul ul ul > li::before {
+  content: '\2013';
+  color: var(--color-text-light);
 }
 
 /* Strong text */
@@ -96,6 +119,15 @@ a {
   color: var(--color-accent);
 }
 
+/* Section layout override - ensure white text on dark background */
+.slidev-layout.section h1,
+.slidev-layout.section h2,
+.slidev-layout.section h3,
+.slidev-layout.section strong {
+  color: #F5F5F5 !important;
+  border-bottom-color: #F5F5F5 !important;
+}
+
 /* Header/Footer area (Slidev defaults override) */
 .slidev-vflex-root {
   background: var(--color-bg);
@@ -104,16 +136,16 @@ a {
 /* Image grid for logos (slide "Qui fait de l'IA ?") */
 .image-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 20px 24px;
+  margin-top: 20px;
   justify-items: center;
   align-items: center;
 }
 
 .image-grid img {
-  max-height: 50px;
-  max-width: 80px;
+  max-height: 70px;
+  max-width: 120px;
   object-fit: contain;
   filter: grayscale(20%);
   opacity: 0.9;
@@ -230,4 +262,13 @@ a {
 
 .intelligence-block li {
   margin-bottom: 4px;
+}
+
+/* Pagination / Page Number */
+.slidev-page-number {
+  color: var(--color-text-light);
+  font-size: 0.6em;
+  position: fixed;
+  bottom: 10px;
+  right: 20px;
 }

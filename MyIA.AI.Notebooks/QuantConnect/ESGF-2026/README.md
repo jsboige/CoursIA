@@ -4,8 +4,44 @@ Workspace ESGF pour l'annee scolaire 2025-2026.
 Sponsorise par Jared Broad (CEO QuantConnect) via le tier "Trading Firm".
 
 **Organisation** : Trading Firm ESGF (`94aa4bcb...`)
-**Professeur** : jsboige@gmail.com (User ID: 46613)
-**Credit** : 3457.87 QCC
+**Professeur** : <email> (User ID: 46613)
+**Credit** : <solde QCC>
+
+---
+
+## 🎓 Inscription Étudiants
+
+### Processus d'inscription au cours ESGF
+
+Pour participer au cours ESGF 2026 et bénéficier du sponsoring QuantConnect (Trading Firm tier), suivez ces étapes :
+
+1. **Créer un compte QuantConnect gratuit**
+   - Allez sur [quantconnect.com](https://www.quantconnect.com)
+   - Inscrivez-vous avec votre **email scolaire** (recommandé pour identification étudiante)
+   - Validez votre adresse email
+
+2. **Envoyer votre identifiant QuantConnect au professeur**
+   - Une fois inscrit, votre compte QuantConnect a un username (ex: `john.doe`)
+   - Envoyez ce username par email au professeur : `<email>`
+   - Le professeur vous ajoutera à l'organisation ESGF sponsorisée
+
+3. **Accès à l'organisation sponsorisée**
+   - Une fois ajouté, vous verrez l'organisation "Trading Firm ESGF" dans votre compte
+   - Le code education `education2025` est appliqué automatiquement au niveau de l'organisation
+   - Vous bénéficiez du tier "Trading Firm" (plus de CPU, backtests illimités, etc.)
+
+4. **Commencer les exercices**
+   - Suivez les notebooks QC-Py-01 à QC-Py-04 (prérequis)
+   - Passez aux exercices ESGF dans `ESGF_EXERCISES.md`
+   - Utilisez les templates dans `templates/` comme point de départ
+
+### Workflow Cloud-First
+
+**Important** : Ce cours utilise une approche **cloud-first**. Tout le développement se fait sur QuantConnect Cloud (QC Lab), pas en local avec LEAN CLI.
+
+- **Avantages** : Pas d'installation locale, accès aux données historiques QC, compilation instantanée
+- **Local** : Le dossier `lean-workspace/` contient un seul exemple (`Multi-Layer-EMA-Researcher`) pour illustrer le workflow local, mais les étudiants travaillent sur le cloud
+- **Projets** : Créez vos projets directement dans QuantConnect Lab, puis clonez-les localement si nécessaire pour versioning
 
 ---
 
@@ -190,7 +226,7 @@ Compilation : **11/11 projets compilent avec succes** (0 erreurs, warnings non-b
 
 | # | Projet | Periode | Return | CAGR | Sharpe | Max DD | Trades | Win Rate | Statut |
 |---|--------|---------|--------|------|--------|--------|--------|----------|--------|
-| 1 | **Option-Wheel-Strategy** | 2020-06 / 2024-09 | +68.5% | 12.9% | 0.996 | 7.4% | 91 | 94% | HEALTHY |
+| 1 | **Option-Wheel-Strategy** | 2015-01 / 2026-03 | +12.7% | 12.7% | 0.524 | 26.4% | — | — | HEALTHY |
 | 2 | **CSharp-BTC-EMA-Cross** | 2021-10 / 2024-12 | +166.7% | 36.2% | 1.094 | 40.7% | 7 | 67% | HEALTHY |
 | 3 | **CSharp-BTC-MACD-ADX** | 2013-04 / 2024-12 | +4239.2% | 38.1% | 1.224 | 48.8% | 19 | 78% | HEALTHY |
 | 4 | **Multi-Layer-EMA** | 2020-01 / 2024-01 | +2292.2% | 120.9% | 1.891 | 54.4% | 663 | 37% | HEALTHY |
