@@ -18,14 +18,14 @@
   height: 100%;
 }
 
-.section h1,
-.section h2,
-.section h3 {
+.section :deep(h1),
+.section :deep(h2),
+.section :deep(h3) {
   color: #F5F5F5 !important;
   border-bottom: none !important;
 }
 
-.section h1 {
+.section :deep(h1) {
   font-size: 2em;
 }
 </style>

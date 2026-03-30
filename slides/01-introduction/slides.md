@@ -18,10 +18,10 @@ Intelligence Artificielle -- I
 
 MRes CSAI, Sussex University, Brighton UK
 
+
 Aricie -- DNN -- PKP -- My Intelligence Agency
 
 ---
-
 
 # IA 101 -- Ressources et organisation
 
@@ -35,11 +35,10 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
   - Expose final en classe devant le groupe
 
 ---
-layout: image-right
-image: ./images/img_001.jpg
----
 
 # Sommaire
+
+<img src="./images/img_001.jpg" style="position:absolute; top:72px; right:24px; height:210px; border-radius:4px; box-shadow:2px 2px 8px rgba(0,0,0,0.3);" alt="Russell &amp; Norvig" />
 
 - Qu'est-ce que l'intelligence artificielle ?
 - Racines, histoire et etat de l'art
@@ -54,7 +53,7 @@ image: ./images/img_001.jpg
 - Intelligence Symbolique
 </div>
 <div v-click="2">
-  - Comment utiliser le raisonnement et les mathématiques ?
+  - Comment utiliser le raisonnement et les mathematiques ?
 </div>
 <div v-click="3">
 - Intelligence probabiliste
@@ -72,14 +71,12 @@ image: ./images/img_001.jpg
 - Apprentissage
 </div>
 <div v-click="5">
-  - Comment utiliser les données et l'expérience ?
+  - Comment utiliser les donnees et l'experience ?
 </div>
 <div v-click="6">
 - Application: le langage naturel
-</div>
 
 ---
-
 
 # Sommaire
 
@@ -97,7 +94,6 @@ image: ./images/img_001.jpg
 
 ---
 
-
 # Objectifs du cours (1/2)
 
 A l'issue de ce cours, vous serez capables de :
@@ -114,7 +110,6 @@ A l'issue de ce cours, vous serez capables de :
 
 ---
 
-
 # Objectifs du cours (2/2)
 
 - **Concevoir des systèmes intelligents en conditions reelles**
@@ -127,17 +122,18 @@ A l'issue de ce cours, vous serez capables de :
 
 ---
 
-
 # Plan du cours
 
-- Introduction
-- Resolution de problemes
-- Bases de connaissances et logique
-- Raisonnement probabiliste
-- Theorie des jeux
-- Apprentissage
-- Traitement du langage naturel
-- Presentations des projets
+<ol class="roman-list">
+<li>Introduction</li>
+<li>Resolution de problemes</li>
+<li>Bases de connaissances et logique</li>
+<li>Raisonnement probabiliste</li>
+<li>Theorie des jeux</li>
+<li>Apprentissage</li>
+<li>Traitement du langage naturel</li>
+<li>Presentations des projets</li>
+</ol>
 
 ---
 layout: section
@@ -150,7 +146,7 @@ layout: section
 # Introduction a l'intelligence artificielle
 
 - Presentation du cursus
-- Introduction
+- **Introduction**
   - Qu'est-ce que l'intelligence artificielle?
   - Les domaines d'étude
   - Un peu d'histoire
@@ -164,7 +160,6 @@ layout: section
 
 ---
 
-
 # Qu'est-ce que l'intelligence artificielle ?
 
 - **Des definitions multiples et un concept evolutif**
@@ -173,12 +168,9 @@ layout: section
 - **Une définition qui évolue avec la technologie :**
   - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systèmes experts → Apprentissage profond → IA generative
 
-<div class="center-image">
-<img src="./images/img_002.png" alt="Definition IA" style="max-width: 850px; margin: auto; display: block;">
-</div>
+![](./images/img_002.png)
 
 ---
-
 
 # Quatre visions de l'IA
 
@@ -191,23 +183,20 @@ layout: section
 - Approche qui unifie les autres : un agent rationnel peut raisonner, apprendre et communiquer
 
 ---
-layout: image-right
-image: ./images/img_003.png
----
 
 # Les fondements de l'IA
 
 L'IA est une discipline profondement interdisciplinaire :
 
 - **Philosophie :** logique, raisonnement, nature de l'esprit
-- **Mathematiques :** algorithmes, complexité, probabilités, décidabilité
+- **Mathematiques :** algorithmes, complexite, probabilites, decidabilite
 - **Economie :** theorie de la decision, utilite, theorie des jeux
-- **Biologie :** intelligence naturelle et animale, évolution
+- **Biologie :** intelligence naturelle et animale, evolution
 - **Neurosciences :** substrat physique de l'activite mentale
 - **Psychologie :** perception, cognition, comportement
 - **Informatique :** puissance de calcul, logiciel, architectures
 - **Theorie du controle :** optimisation d'une fonction objective dans le temps
-- **Linguistique :** grammaires, représentation du sens
+- **Linguistique :** grammaires, representation du sens
 
 ---
 layout: image-right
@@ -245,9 +234,6 @@ image: ./images/img_004.png
 - **2020s** : GPT, DALL-E, ChatGPT, Claude, Gemini, DeepSeek, agents autonomes
 
 ---
-layout: image-right
-image: ./images/img_005.jpg
----
 
 # Etat de l'art (1/2)
 
@@ -263,13 +249,10 @@ image: ./images/img_005.jpg
 
 - Preuve de conjectures mathématiques (Robbins, 1996)
 - Vehicules autonomes (vol, conduite, marche robotique)
-- Logistique et planification militaire (guerre du Golfe)
+- Logistique et planification militaire (guerre du Golfe) <img src="./images/img_005.jpg" style="display:inline; height:1.4em; vertical-align:middle;" />
 - NASA : planification autonome de missions spatiales
 - Trading algorithmique (85% du volume des marches en 2012)
 
----
-layout: image-right
-image: ./images/img_005.jpg
 ---
 
 # Etat de l'art (2/2)
@@ -277,7 +260,7 @@ image: ./images/img_005.jpg
 **Deep Learning et NLP (2010-2019)**
 
 - **2012** : deep learning domine ImageNet (reconnaissance d'images quasi humaine)
-- **2014** : GANs -- les réseaux de neurones deviennent creatifs
+- **2014** : GANs -- les reseaux de neurones deviennent creatifs
 - **2017** : Transformers (Google) -- revolution du traitement du langage
 - **2018-19** : GPT-2, BERT, Watson -- un nouveau paradigme d'interaction
 
@@ -288,14 +271,13 @@ image: ./images/img_005.jpg
 - **2022** : ChatGPT (1M utilisateurs en 5 jours), Stable Diffusion
 - **2023** : GPT-4, Claude, LLaMA, Gemini -- competition ouverte
 - **2024** : modeles de reflexion (O1), agents LLM, open source (DeepSeek)
-- **2025-26** : GPT-5, agents autonomes, MCP comme standard d'interoperabilite
+- **2025** : GPT-5, agents autonomes, MCP (interoperabilite)
 
 ---
 
-
 # Qui fait de l'IA ?
 
-**Recherche academique**
+**Recherche academique** : CMU, Stanford, Berkeley, MIT, Caltech, U Austin, IDSIA...
 
 <div class="image-grid">
 <img src="./images/img_007.png" alt="CMU">
@@ -305,7 +287,9 @@ image: ./images/img_005.jpg
 <img src="./images/img_011.jpg" alt="Stanford">
 </div>
 
-**Industrie et laboratoires**
+**Gouvernements et laboratoires prives** : NASA, NRL, NIST, IBM, AT&T, SRI, ISI, MERL...
+
+**Beaucoup de societes** : Google, Microsoft, Facebook, Amazon, Honeywell, MITRE, Fujitsu...
 
 <div class="image-grid">
 <img src="./images/img_012.png" alt="Google">
@@ -319,7 +303,6 @@ image: ./images/img_005.jpg
 </div>
 
 ---
-
 
 # L'IA dans la vie de tous les jours
 
@@ -352,7 +335,6 @@ image: ./images/img_020.png
 
 ---
 
-
 # Penser comme l'homme : sciences cognitives
 
 - **La "revolution cognitive" (années 1960)**
@@ -366,7 +348,6 @@ image: ./images/img_020.png
   - Le "hardware" biologique differe fondamentalement du silicium
 
 ---
-
 
 # Penser de facon rationnelle : lois de la raison
 
@@ -382,7 +363,6 @@ image: ./images/img_020.png
   - En pratique, il faut aussi definir des buts et évaluer des couts
 
 ---
-
 
 # Agir de facon rationnelle : l'agent
 
@@ -404,7 +384,7 @@ layout: section
 
 ---
 
-# Systèmes d'agents
+# Systemes d'agents
 
 - Presentation du cursus
 - Introduction
@@ -435,7 +415,6 @@ image: ./images/img_021.png
 
 ---
 
-
 # Les agents rationnels
 
 **Un agent rationnel choisit l'action qui maximise sa mesure de performance.**
@@ -449,7 +428,6 @@ image: ./images/img_021.png
 
 ---
 
-
 # Rationalite limitee
 
 - **La rationalite parfaite est rarement atteignable**
@@ -458,8 +436,6 @@ image: ./images/img_021.png
 - **Objectif realiste** : obtenir les meilleures performances possibles compte tenu des ressources disponibles
 - **Herbert Simon (1955)** : concept de "satisficing" -- choisir une solution satisfaisante plutot qu'optimale
 
----
-layout: two-cols
 ---
 
 # Intelligences
@@ -485,6 +461,41 @@ layout: two-cols
 
 ---
 
+# Intelligence de la recherche
+
+<IntelligenceTaxonomy :rows="[
+  {label:'Type', items:['Exploratoire']},
+  {label:'Inférence', items:['Recherche de chemin','Exploration locale','Satisfaction de contraintes']},
+  {label:'Modèles', items:['Cartes heuristiques','Modèles paramétriques','Modèles de contraintes']},
+  {label:'Apprentissage', items:['Apprentissage de carte','Meta-learning','Descente de gradient','Algorithmes génétiques','Meta-heuristiques']},
+  {label:'Agents', items:['Fondés sur des buts','Fondés sur un modèle','Agents Evolutifs']}
+]" />
+
+---
+
+# Intelligence de la pensée logique
+
+<IntelligenceTaxonomy :rows="[
+  {label:'Type', items:['Symbolique']},
+  {label:'Inférence', items:['Raisonnement']},
+  {label:'Modèles', items:['Bases de connaissances','Plans','Smart-contracts']},
+  {label:'Apprentissage', items:['Apprentissage inductif','Apprentissage déductif','Solveurs SMTs','Planificateur','Maintenance de la vérité']},
+  {label:'Agents', items:['Fondés sur des connaissances','Fondés sur des hypothèses','Agents optimiseurs','Fondés sur des buts','Agents certifiants']}
+]" />
+
+---
+
+# Intelligence de l'incertitude
+
+<IntelligenceTaxonomy :rows="[
+  {label:'Type', items:['Probabiliste']},
+  {label:'Inférences', items:['Inférence Bayésienne','Recherche de politique','Analyse stratégique']},
+  {label:'Modèles', items:['Modèles graphiques','Réseaux de décision','Processus de Markov','Modèles stratégiques']},
+  {label:'Apprentissage', items:['Apprentissage Bayésien','Système expert','Apprentissage par renforcement','Minimisation de regret']},
+  {label:'Agents', items:['Agents diagnostic','Fondés sur l\'utilité','Agents politiques','Agents stratégiques']}
+]" />
+
+---
 
 # Environnement de tache
 
@@ -506,7 +517,6 @@ layout: two-cols
 
 ---
 
-
 # Environnements de tache: exemples
 
 <style>
@@ -522,7 +532,6 @@ table { font-size: 0.7em; }
 | Repetiteur | Notes etudiants | Etudiants | Corrections | Clavier |
 
 ---
-
 
 # Types d'environnement (1/2)
 
@@ -540,13 +549,12 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 
 ---
 
-
 # Types d'environnement (2/2)
 
 <div v-click="1">
 
 - **Discret vs continu**
-  - Les etats, le temps, les percepts et les actions sont-ils dénombrables ?
+  - Les etats, le temps, les percepts et les actions sont-ils denombrables ?
 
 </div>
 <div v-click="2">
@@ -562,10 +570,9 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 
 </div>
 
-**En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, séquentiel, dynamique, continu, multiagent.
+**En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, sequentiel, dynamique, continu, multiagent.
 
 ---
-
 
 # Types d'environnement: exemples
 
@@ -620,8 +627,11 @@ layout: two-cols
 **Exemples:**
 
 <div v-click="1">
+
 - Intelligence animale
+
 </div>
+
 - Behaviourism
 - Artificial Life
 - Cellular Automata
@@ -645,8 +655,11 @@ layout: two-cols
 **Caractéristiques:**
 
 <div v-click="1">
+
 - Etat du monde
+
 </div>
+
 - Historique des percepts
 - Mémoire du changement
 
@@ -712,24 +725,22 @@ image: ./images/img_039.png
 **Formes d'apprentissage :** supervise, par renforcement, non supervise
 
 ---
-layout: image-right
-image: ./images/img_040.png
----
 
 # Fonctionnement interne des agents
 
 **La représentation de la connaissance est determinante**
 
-Trois niveaux de représentation des etats, du plus simple au plus expressif :
+Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 - **Atomique** : chaque etat est indivisible (ex: un noeud dans un graphe)
-- **Factorise** : un etat est un ensemble de propriétés (ex: variables booléennes)
-- **Structure** : un etat est un objet complexe avec des relations (ex: base de données)
+- **Factorise** : un etat est un ensemble de proprietes (ex: variables booleennes)
+- **Structure** : un etat est un objet complexe avec des relations (ex: base de donnees)
 
-**Compromis fondamental :** plus la représentation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
+**Compromis fondamental :** plus la representation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
+
+<img src="./images/img_040.png" style="display:block; margin:8px auto; max-height:30vh;" alt="Representations: Atomique, Factorisee, Structuree" />
 
 ---
-
 
 # Resume
 
@@ -737,8 +748,6 @@ Trois niveaux de représentation des etats, du plus simple au plus expressif :
   - Quatre approches : penser/agir comme l'homme ou de facon rationnelle
   - Fondements interdisciplinaires : logique, decision, neurosciences, linguistique...
   - Une histoire ponctuee de "hivers" et de renaissances spectaculaires
-<div v-click="1">
-
 - **Agents rationnels**
   - Un agent percoit son environnement et agit pour maximiser sa performance
   - La rationalite parfaite est un ideal ; en pratique, on vise le meilleur compromis
@@ -747,25 +756,22 @@ Trois niveaux de représentation des etats, du plus simple au plus expressif :
   - Les propriétés de l'environnement dictent le choix de l'architecture
   - La représentation des etats (atomique, factorisee, structuree) conditionne les capacites
 
-</div>
-
 ---
-
 
 # Plan du cours
 
-- Introduction
-- Resolution de problemes
-- Bases de connaissances et logique
-- Raisonnement probabiliste
-- Apprentissage
-- Traitement du langage naturel
-- Presentations projets
+<ol class="roman-list">
+<li>Introduction</li>
+<li>Resolution de problemes</li>
+<li>Bases de connaissances et logique</li>
+<li>Raisonnement probabiliste</li>
+<li>Theorie des jeux</li>
+<li>Apprentissage</li>
+<li>Traitement du langage naturel</li>
+<li>Presentations des projets</li>
+</ol>
 
 ---
-
-
-<!-- _class: crossref -->
 
 # Pour aller plus loin : Notebooks
 

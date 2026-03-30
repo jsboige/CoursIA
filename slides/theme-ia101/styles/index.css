@@ -9,6 +9,7 @@
   --color-text-light: #7F8C8D;
   --color-header: #34495E;
   --color-coral: #FF6B6B;
+  --color-teal: #6b9696;
 }
 
 /* Base styles */
@@ -24,7 +25,7 @@
 /* Headers */
 h1 {
   color: var(--color-accent);
-  font-size: 1.6em;
+  font-size: 1.5em;
   border-bottom: 2px solid var(--color-accent);
   padding-bottom: 6px;
   margin-bottom: 12px;
@@ -53,7 +54,7 @@ ul {
 
 /* Level 1 bullets: larger, bold-like weight */
 ul > li {
-  padding-left: 24px;
+  padding-left: 20px;
   position: relative;
   margin-bottom: 6px;
   font-size: 1.05em;
@@ -64,7 +65,7 @@ ul > li::before {
   color: var(--color-accent);
   position: absolute;
   left: 0;
-  font-size: 0.7em;
+  font-size: 0.6em;
   top: 4px;
 }
 
@@ -89,6 +90,37 @@ ul ul ul > li::before {
   color: var(--color-text-light);
 }
 
+/* Ordered lists */
+ol {
+  padding-left: 24px;
+}
+
+ol > li {
+  margin-bottom: 3px;
+}
+
+ol > li::marker {
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+/* Roman numeral list for Plan du cours */
+ol.roman-list {
+  list-style-type: upper-roman;
+  padding-left: 56px;
+}
+
+ol.roman-list > li {
+  margin-bottom: 6px;
+  font-size: 1.1em;
+  padding-left: 8px;
+}
+
+ol.roman-list > li::marker {
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
 /* Strong text */
 strong {
   color: var(--color-accent);
@@ -97,7 +129,7 @@ strong {
 /* Code blocks */
 pre {
   background: var(--color-bg-dark);
-  padding: 16px;
+  padding: 12px;
   border-radius: 4px;
   overflow-x: auto;
 }
@@ -105,7 +137,7 @@ pre {
 code {
   font-family: 'Cascadia Code', 'Consolas', monospace;
   background: var(--color-bg-dark);
-  padding: 2px 6px;
+  padding: 2px 4px;
   border-radius: 3px;
 }
 
@@ -131,6 +163,15 @@ a {
 /* Header/Footer area (Slidev defaults override) */
 .slidev-vflex-root {
   background: var(--color-bg);
+}
+
+/* Standalone images in paragraphs (for table slides etc.) */
+.slidev-layout p > img {
+  display: block;
+  margin: 8px auto;
+  max-height: 65vh;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 /* Image grid for logos (slide "Qui fait de l'IA ?") */
@@ -160,19 +201,19 @@ a {
 .colored-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 16px 0;
+  margin: 12px 0;
 }
 
 .colored-table th {
   background-color: var(--color-accent);
   color: white;
-  padding: 12px 16px;
+  padding: 10px 14px;
   text-align: center;
   font-weight: bold;
 }
 
 .colored-table td {
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--color-bg-dark);
   text-align: center;
 }
@@ -185,7 +226,7 @@ a {
 .two-column-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 16px;
 }
 
 .two-column-list ul {
@@ -196,7 +237,7 @@ a {
 .timeline {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 8px 16px;
+  gap: 6px 12px;
   align-items: start;
 }
 
@@ -204,7 +245,7 @@ a {
   color: var(--color-accent);
   font-weight: bold;
   text-align: right;
-  min-width: 60px;
+  min-width: 50px;
 }
 
 .timeline .event {
@@ -216,21 +257,21 @@ a {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 16px 0;
+  margin: 12px 0;
 }
 
 .center-image img {
   max-width: 100%;
-  max-height: 65vh;
+  max-height: 60vh;
   object-fit: contain;
 }
 
 /* Formula container */
 .formula {
   text-align: center;
-  font-size: 1.2em;
-  margin: 20px 0;
-  padding: 16px;
+  font-size: 1.1em;
+  margin: 16px 0;
+  padding: 12px;
   background: var(--color-bg-dark);
   border-radius: 8px;
 }
@@ -239,29 +280,29 @@ a {
 .intelligence-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .intelligence-block {
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-left: 4px solid var(--color-accent);
   background: var(--color-bg-dark);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 6px 6px 0;
 }
 
 .intelligence-block h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   color: var(--color-accent);
-  font-size: 1em;
+  font-size: 0.9em;
 }
 
 .intelligence-block ul {
   margin: 0;
-  padding-left: 16px;
+  padding-left: 12px;
 }
 
 .intelligence-block li {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 /* Pagination / Page Number */
