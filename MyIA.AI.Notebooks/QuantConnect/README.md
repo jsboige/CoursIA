@@ -1,223 +1,301 @@
 # QuantConnect AI Trading - Série Éducative CoursIA
 
 > **Trading algorithmique + Intelligence Artificielle**
-> 27 notebooks Python | C# planifié | Cloud-first | Free Tier compatible
+> 27 notebooks Python | Cloud-first | Free Tier compatible
+
+---
+
+## Pour Commencer (4 étapes)
+
+1. **Créer un compte gratuit** : [https://www.quantconnect.com/signup](https://www.quantconnect.com/signup)
+2. **Créer un projet Python** dans QC Lab (File > New Project)
+3. **Copier un `main.py`** depuis `projects/` (ex: `EMA-Cross-Stocks/`) dans votre projet
+4. **Cliquer Backtest** pour exécuter
+
+**Temps estimé** : 5-10 minutes
+
+> **Note** : Les notebooks QC-Py-XX sont des supports de cours à lire sur GitHub, pas à uploader dans QC Lab.
 
 ---
 
 ## Vue d'Ensemble
 
-La série QuantConnect AI Trading est une formation complète sur le trading algorithmique avec la plateforme **QuantConnect LEAN**, inspirée du livre **"Hands-On AI Trading"** (2025) coécrit par Jared Broad (CEO QuantConnect).
+Cette série est une formation complète sur le **trading algorithmique** avec la plateforme **QuantConnect LEAN**, inspirée du livre *"Hands-On AI Trading"* (2025).
 
 ### Objectifs
 
-- **Pédagogique** : Progression structurée de débutant à expert (30h de contenu par langage)
-- **IA-first** : Focus important sur ML/DL/RL/LLM pour stratégies de trading (9 notebooks dédiés)
+- **Pédagogique** : Progression de débutant à expert (30h de contenu)
+- **IA-first** : Focus important sur ML/DL/RL/LLM pour stratégies de trading
 - **Cloud-native** : Exécution principale sur QuantConnect cloud (free tier)
-
-  - **QuantBook** : Notebooks de recherche en QuantConnect Lab
- - **LEAN CLI** : Option locale avec Docker
-
-  - **Approche hybride** : Les notebooks contiennent du code à deux destinations:
-    1. **Algorithm code** : Copier dans QuantConnect Lab (main.py) pour backtests/production
-    2. **Research code** : Exécuter dans QuantBook pour exploration
-- **Dual-language** : Python (27 notebooks), C# planifié en parallèle
 - **Production-ready** : De la recherche au déploiement live
 
-### Caractéristiques
+### Contenu
 
-- **27 notebooks Python** (C# planifié pour le futur)
-- **18 notebooks sur fondations** (Universe, Asset Classes, Risk, Framework) avant ML
+- **27 notebooks Python** organisés en 8 phases
+- **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
 - **9 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM)
-- **Approche cloud-first** avec option locale Docker + LEAN CLI
 - **Free tier compatible** avec workarounds pour fonctionnalités payantes
-- **Intégration MCP** pour automatisation avec Claude Code
-
----
-
-## Démarrage Rapide
-
-**Pour commencer immédiatement**, consultez le guide : [**GETTING-STARTED.md**](GETTING-STARTED.md)
-
-**Resume en 4 etapes** :
-
-1. Creer un compte gratuit : [https://www.quantconnect.com/signup](https://www.quantconnect.com/signup)
-2. Creer un projet Python dans QC Lab (File > New Project)
-3. Copier un `main.py` depuis `projects/` (ex: `EMA-Cross-Alpha`) dans votre projet
-4. Cliquer **Backtest** pour executer
-
-**Les notebooks QC-Py-XX sont des supports de cours** a lire sur GitHub, pas a uploader dans QC Lab.
-
-**Etudiants ECE Projet 2** : Consultez [ECE-QC-QUICKSTART.md](ECE-QC-QUICKSTART.md) pour le mapping sujets H.1-H.6.
-
-**Temps estime** : 5-10 minutes
 
 ---
 
 ## Structure de la Série
 
-### Phase 1 : Fondations LEAN (4 notebooks, ~4.5h par langage)
+### Phase 1 : Fondations LEAN (4 notebooks, ~4.5h)
 
 Maîtriser les bases de QuantConnect : architecture, lifecycle d'algorithme, gestion des données, workflow de recherche.
 
-| # | Python | C# | Durée | Contenu |
-|---|--------|----|----|---------|
-| 01 | [QC-Py-01-Setup](Python/QC-Py-01-Setup.ipynb) | QC-CS-01-Setup *(à venir)* | 45 min | Compte QC, premier backtest cloud, option LEAN CLI local, architecture LEAN |
-| 02 | [QC-Py-02-Platform-Fundamentals](Python/QC-Py-02-Platform-Fundamentals.ipynb) | QC-CS-02-Platform-Fundamentals *(à venir)* | 60 min | QCAlgorithm lifecycle, Initialize/OnData, securities, Moving Average Crossover |
-| 03 | [QC-Py-03-Data-Management](Python/QC-Py-03-Data-Management.ipynb) | QC-CS-03-Data-Management *(à venir)* | 75 min | History API, data normalization, consolidators, multi-timeframe analysis |
-| 04 | [QC-Py-04-Research-Workflow](Python/QC-Py-04-Research-Workflow.ipynb) | QC-CS-04-Research-Workflow *(à venir)* | 75 min | QuantBook, pandas/DataFrame integration, notebook→algorithm transition |
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 01 | [QC-Py-01-Setup](Python/QC-Py-01-Setup.ipynb) | 45 min | Compte QC, premier backtest cloud, architecture LEAN |
+| 02 | [QC-Py-02-Platform-Fundamentals](Python/QC-Py-02-Platform-Fundamentals.ipynb) | 60 min | QCAlgorithm lifecycle, Initialize/OnData, Moving Average Crossover |
+| 03 | [QC-Py-03-Data-Management](Python/QC-Py-03-Data-Management.ipynb) | 75 min | History API, data normalization, consolidators, multi-timeframe |
+| 04 | [QC-Py-04-Research-Workflow](Python/QC-Py-04-Research-Workflow.ipynb) | 75 min | QuantBook, pandas integration, notebook→algorithm transition |
 
-**Objectifs** : Créer compte gratuit, maîtriser cycle de vie algorithme, gestion des données, outils de recherche.
+**Objectifs** : Créer compte gratuit, maîtriser cycle de vie algorithme, gestion des données.
 
 ---
 
-### Phase 2 : Universe et Asset Classes (4 notebooks, ~5h par langage)
+### Phase 2 : Universe et Asset Classes (4 notebooks, ~5h)
 
 Sélection dynamique d'univers, comprendre les particularités de chaque classe d'actifs (Equities, Options, Futures, Forex).
 
-| # | Python | C# | Durée | Contenu |
-|---|--------|----|----|---------|
-| 05 | [QC-Py-05-Universe-Selection](Python/QC-Py-05-Universe-Selection.ipynb) | QC-CS-05-Universe-Selection *(à venir)* | 75 min | Manual universe, coarse/fine selection, dynamic rebalancing, filters (dollar volume, fundamentals) |
-| 06 | [QC-Py-06-Options-Trading](Python/QC-Py-06-Options-Trading.ipynb) | QC-CS-06-Options-Trading *(à venir)* | 75 min | Options chains, Greeks, covered calls, protective puts, iron condors |
-| 07 | [QC-Py-07-Futures-Forex](Python/QC-Py-07-Futures-Forex.ipynb) | QC-CS-07-Futures-Forex *(à venir)* | 75 min | Futures contracts, rollover, Forex pairs, leverage management |
-| 08 | [QC-Py-08-Multi-Asset-Strategies](Python/QC-Py-08-Multi-Asset-Strategies.ipynb) | QC-CS-08-Multi-Asset-Strategies *(à venir)* | 75 min | Portfolio avec Equity + Options + Futures, corrélations, hedging |
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 05 | [QC-Py-05-Universe-Selection](Python/QC-Py-05-Universe-Selection.ipynb) | 75 min | Manual universe, coarse/fine selection, dynamic rebalancing |
+| 06 | [QC-Py-06-Options-Trading](Python/QC-Py-06-Options-Trading.ipynb) | 75 min | Options chains, Greeks, covered calls, protective puts |
+| 07 | [QC-Py-07-Futures-Forex](Python/QC-Py-07-Futures-Forex.ipynb) | 75 min | Futures contracts, rollover, Forex pairs, leverage |
+| 08 | [QC-Py-08-Multi-Asset-Strategies](Python/QC-Py-08-Multi-Asset-Strategies.ipynb) | 75 min | Portfolio Equity + Options + Futures, corrélations |
 
-**Objectifs** : Maîtriser sélection dynamique d'univers, comprendre les particularités de chaque classe d'actifs.
+**Objectifs** : Maîtriser sélection dynamique d'univers, comprendre chaque classe d'actifs.
 
 ---
 
-### Phase 3 : Trading Avancé et Risk Management (4 notebooks, ~5.5h par langage)
+### Phase 3 : Trading Avancé et Risk Management (4 notebooks, ~5.5h)
 
 Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie de backtests.
 
-| # | Python | C# | Durée | Contenu |
-|---|--------|----|----|---------|
-| 09 | [QC-Py-09-Order-Types](Python/QC-Py-09-Order-Types.ipynb) | QC-CS-09-Order-Types *(à venir)* | 75 min | Market, Limit, Stop, Stop-Limit, MOO/MOC, combo orders, order management |
-| 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | QC-CS-10-Risk-Portfolio-Management *(à venir)* | 90 min | Position sizing (Kelly, fixed fractional), stop-loss, take-profit, portfolio heat |
-| 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | QC-CS-11-Technical-Indicators *(à venir)* | 75 min | Indicateurs intégrés, custom indicators, rolling windows, signal generation |
-| 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | QC-CS-12-Backtesting-Analysis *(à venir)* | 75 min | Performance metrics (Sharpe, Sortino, max drawdown), equity curve analysis, insights |
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 09 | [QC-Py-09-Order-Types](Python/QC-Py-09-Order-Types.ipynb) | 75 min | Market, Limit, Stop, Stop-Limit, combo orders |
+| 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | 90 min | Position sizing (Kelly, fixed fractional), stop-loss, take-profit |
+| 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | 75 min | Indicateurs intégrés, custom indicators, signal generation |
+| 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | 75 min | Performance metrics (Sharpe, Sortino, max drawdown), equity curve |
 
-**Objectifs** : Maîtriser gestion du risque, ordres avancés, analyse approfondie de backtests.
+**Objectifs** : Maîtriser gestion du risque, ordres avancés, analyse de backtests.
 
 ---
 
-### Phase 4 : Algorithm Framework (3 notebooks, ~4h par langage)
+### Phase 4 : Algorithm Framework (3 notebooks, ~4h)
 
 Architecture modulaire QuantConnect pour stratégies scalables (Alpha, Portfolio Construction, Execution, Risk).
 
-| # | Python | C# | Durée | Contenu |
-|---|--------|----|----|---------|
-| 13 | [QC-Py-13-Alpha-Models](Python/QC-Py-13-Alpha-Models.ipynb) | QC-CS-13-Alpha-Models *(à venir)* | 75 min | Algorithm Framework intro, Alpha models (manual, technical, fundamental), insights |
-| 14 | [QC-Py-14-Portfolio-Construction-Execution](Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) | QC-CS-14-Portfolio-Construction-Execution *(à venir)* | 90 min | Portfolio construction models (equal weighting, mean-variance), execution models, risk models |
-| 15 | [QC-Py-15-Parameter-Optimization](Python/QC-Py-15-Parameter-Optimization.ipynb) | QC-CS-15-Parameter-Optimization *(à venir)* | 75 min | Parameter sets, optimization targets (Sharpe, return), genetic algorithms, overfitting prevention |
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 13 | [QC-Py-13-Alpha-Models](Python/QC-Py-13-Alpha-Models.ipynb) | 75 min | Algorithm Framework intro, Alpha models, insights |
+| 14 | [QC-Py-14-Portfolio-Construction-Execution](Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) | 90 min | Portfolio construction models, execution models, risk models |
+| 15 | [QC-Py-15-Parameter-Optimization](Python/QC-Py-15-Parameter-Optimization.ipynb) | 75 min | Parameter sets, optimization targets, overfitting prevention |
 
-**Alignement QuantConnect** : [Algorithm Framework Documentation](https://www.quantconnect.com/docs/v2/writing-algorithms/algorithm-framework/overview)
-
-**Objectifs** : Maîtriser architecture modulaire QuantConnect, optimisation systématique de paramètres.
+**Objectifs** : Maîtriser architecture modulaire, optimisation systématique.
 
 ---
 
-### Phase 5 : Alternative Data et Préparation ML (3 notebooks, ~4h par langage)
+### Phase 5 : Alternative Data et Préparation ML (3 notebooks, ~4h)
 
 Intégrer données alternatives (news, sentiment, fundamentals), préparer datasets pour Machine Learning.
 
-| # | Python | C# | Durée | Contenu |
-|---|--------|----|----|---------|
-| 16 | [QC-Py-16-Alternative-Data](Python/QC-Py-16-Alternative-Data.ipynb) | QC-CS-16-Alternative-Data *(à venir)* | 75 min | NewsAPI (gratuit), fundamentals (P/E, EPS), custom data sources, event-driven strategies |
-| 17 | [QC-Py-17-Sentiment-Analysis](Python/QC-Py-17-Sentiment-Analysis.ipynb) | QC-CS-17-Sentiment-Analysis *(à venir)* | 75 min | Sentiment scoring (TextBlob, VADER), news aggregation, sentiment-driven signals |
-| 18 | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | QC-CS-18-ML-Features-Engineering *(à venir)* | 90 min | Feature extraction (technical, fundamental, sentiment), labeling, train/test split, feature importance |
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 16 | [QC-Py-16-Alternative-Data](Python/QC-Py-16-Alternative-Data.ipynb) | 75 min | NewsAPI (gratuit), fundamentals, custom data sources |
+| 17 | [QC-Py-17-Sentiment-Analysis](Python/QC-Py-17-Sentiment-Analysis.ipynb) | 75 min | Sentiment scoring (TextBlob, VADER), news aggregation |
+| 18 | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | 90 min | Feature extraction, labeling, train/test split, feature importance |
 
-**Alignement livre** : Chapitres 3-4 (Data Preparation, Feature Engineering), Chapitre 8 (Sentiment Analysis)
-
-**Objectifs** : Intégrer données alternatives, préparer datasets pour ML avec features engineering.
+**Objectifs** : Intégrer données alternatives, préparer datasets pour ML.
 
 ---
 
-### Phase 6 : Machine Learning Traditionnel (3 notebooks, ~4h par langage)
+### Phase 6 : Machine Learning Traditionnel (3 notebooks, ~4h)
 
-Appliquer ML classique au trading : classification directionnelle, régression pour prédiction de prix, optimisation de portfolio ML-enhanced.
+Appliquer ML classique au trading : classification directionnelle, régression pour prédiction de prix.
 
-| # | Python | C# | Durée | Contenu |
-|---|--------|----|----|---------|
-| 19 | [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb) | QC-CS-19-ML-Supervised-Classification *(à venir)* | 75 min | Random Forest, XGBoost, direction prediction (up/down), walk-forward validation, ObjectStore persistence |
-| 20 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) | QC-CS-20-ML-Regression-Prediction *(à venir)* | 75 min | Linear regression, SVR, price target prediction, backtesting ML signals |
-| 21 | [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | QC-CS-21-Portfolio-Optimization-ML *(à venir)* | 90 min | ML-enhanced Markowitz, covariance estimation via ML, risk-adjusted allocation |
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 19 | [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb) | 75 min | Random Forest, XGBoost, direction prediction, walk-forward |
+| 20 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) | 75 min | Linear regression, SVR, price target prediction |
+| 21 | [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | 90 min | ML-enhanced Markowitz, covariance estimation via ML |
 
-**Alignement livre** : Chapitres 5-7 (Supervised Learning, Random Forests, XGBoost), Chapitre 12 (Portfolio Optimization)
-
-**Objectifs** : Appliquer ML classique au trading, persistence modèles avec ObjectStore, validation robuste.
+**Objectifs** : Appliquer ML classique au trading, persistence modèles avec ObjectStore.
 
 ---
 
-### Phase 7 : Deep Learning (3 notebooks, ~4.5h par langage)
+### Phase 7 : Deep Learning (3 notebooks, ~4.5h)
 
-Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders. Design CPU-first avec GPU optionnel.
+Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 
-| # | Python | C# | Durée | Contenu |
-|---|--------|----|----|---------|
-| 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | QC-CS-22-Deep-Learning-LSTM *(à venir)* | 90 min | LSTM time series, TensorFlow/Keras (Python), TensorFlow.NET (C#), CPU-first, sequence prediction |
-| 23 | [QC-Py-23-Attention-Transformers](Python/QC-Py-23-Attention-Transformers.ipynb) | QC-CS-23-Attention-Transformers *(à venir)* | 90 min | Transformer architecture, multi-head attention, temporal fusion, GPU optionnel |
-| 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | QC-CS-24-Autoencoders-Anomaly *(à venir)* | 75 min | Autoencoders pour détection anomalies, regime change detection, unsupervised signals |
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | 90 min | LSTM time series, TensorFlow/Keras, CPU-first |
+| 23 | [QC-Py-23-Attention-Transformers](Python/QC-Py-23-Attention-Transformers.ipynb) | 90 min | Transformer architecture, multi-head attention, temporal fusion |
+| 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | 75 min | Autoencoders pour détection anomalies, regime change |
 
-**Alignement livre** : Chapitres 9-10 (LSTMs, Attention Mechanisms)
-
-**Objectifs** : Maîtriser deep learning pour séries temporelles, design CPU-optimized par défaut.
+**Objectifs** : Maîtriser deep learning pour séries temporelles, design CPU-optimized.
 
 ---
 
-### Phase 8 : IA Avancée et Production (3 notebooks, ~4.5h par langage)
+### Phase 8 : IA Avancée et Production (3 notebooks, ~4.5h)
 
 État de l'art : Reinforcement Learning, LLM pour trading signals, déploiement production.
 
-| # | Python | C# | Durée | Contenu |
-|---|--------|----|----|---------|
-| 25 | [QC-Py-25-Reinforcement-Learning](Python/QC-Py-25-Reinforcement-Learning.ipynb) | QC-CS-25-Reinforcement-Learning *(à venir)* | 90 min | PPO/DQN agents, Stable-Baselines3, Gym environment custom, reward shaping, CPU-first |
-| 26 | [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb) | QC-CS-26-LLM-Trading-Signals *(à venir)* | 90 min | OpenAI/Anthropic API, prompt engineering pour trading, LLM+indicators hybrid, cost management |
-| 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | QC-CS-27-Production-Deployment *(à venir)* | 75 min | Paper trading, live trading setup, monitoring, multi-strategy orchestration, deployment checklist |
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 25 | [QC-Py-25-Reinforcement-Learning](Python/QC-Py-25-Reinforcement-Learning.ipynb) | 90 min | PPO/DQN agents, Stable-Baselines3, Gym environment custom |
+| 26 | [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb) | 90 min | OpenAI/Anthropic API, prompt engineering, LLM+indicators hybrid |
+| 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | 75 min | Paper trading, live trading setup, monitoring, deployment |
 
-**Alignement livre** : Chapitres 11-13 (Deep RL, Portfolio RL, LLMs for Trading), Chapitre 19 (Scaling and Deployment)
-
-**Objectifs** : IA state-of-the-art pour trading, déploiement production, monitoring.
+**Objectifs** : IA state-of-the-art pour trading, déploiement production.
 
 ---
 
 ## Résumé de la Progression
 
-**Total** : **27 notebooks Python** (~30 heures de contenu), C# planifié pour le futur
+**Total** : **27 notebooks Python** (~30 heures de contenu)
 
 **Répartition** :
-- **18 notebooks non-ML** (Fondations, Universe, Asset Classes, Trading Avancé, Risk, Framework, Alternative Data) : ~18h
+- **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
 - **9 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM) : ~12h
 
 **Progression pédagogique** : Maîtriser les fondations QuantConnect **avant** d'aborder le Machine Learning.
 
 ---
 
+## Notebooks Progressifs
+
+**Recommandé pour débuter** :
+
+1. **Phase 1** : Fondations LEAN (4.5h)
+2. **Phase 2** : Universe et Asset Classes (5h)
+3. **Phase 3** : Trading Avancé et Risk (5.5h)
+4. **Notebooks 13-15** : Algorithm Framework (4h)
+5. Premier projet : Stratégie momentum avec risk management
+
+**Intermédiaire** (40h) : Phases 4-6 complètes + ML traditionnel
+
+**Expert** (60h) : Phases 6-8 complètes + Deep dive LSTMs, Transformers, RL + déploiement
+
+---
+
+## Projets de Stratégies
+
+Le dossier [`projects/`](projects/) contient **67 stratégies de trading** prêtes à backtester.
+
+### Comment utiliser les projets
+
+1. Choisir une stratégie dans [`projects/README.md`](projects/README.md)
+2. Copier le `main.py` dans votre projet QuantConnect Lab
+3. Lancer le backtest
+4. Analyser les résultats (Sharpe, Max Drawdown, CAGR)
+
+### Exemples de stratégies populaires
+
+| Stratégie | Description | Niveau |
+|-----------|-------------|--------|
+| [EMA-Cross-Stocks](projects/EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | Débutant |
+| [TrendStocksLite](projects/TrendStocksLite/) | EMA20/50 + SMA200 trend 15 large-caps | Intermédiaire |
+| [SectorMomentum](projects/SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | Intermédiaire |
+| [ML-RandomForest](projects/ML-RandomForest/) | Random Forest classification multi-asset | Avancé |
+| [Option-Wheel](projects/Option-Wheel/) | Wheel strategy SPY (sell puts/calls) | Avancé |
+
+---
+
+## ESGF-2026 - Exemples de Recherche
+
+Le dossier **ESGF-2026/** contient des exemples de recherche avancée utilisés dans le cours ESGF 2026.
+
+### Structure ESGF-2026
+
+```
+ESGF-2026/
+├── examples/           # 11 projets d'exemples du professeur
+├── templates/          # Templates pour projets étudiants
+│   ├── starter/        # Niveau débutant
+│   ├── intermediate/   # Niveau intermédiaire
+│   └── advanced/       # Niveau avancé
+└── archive-2025/       # Archives historiques
+```
+
+Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et templates.
+
+---
+
+## Documentation Complémentaire
+
+### Guides de démarrage
+
+- **[GETTING-STARTED.md](GETTING-STARTED.md)** : Guide de démarrage détaillé
+- **[ECE-QC-QUICKSTART.md](ECE-QC-QUICKSTART.md)** : Guide pour étudiants ECE
+- **[HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
+
+### Bibliothèques partagées
+
+Le dossier [`shared/`](shared/) contient des modules Python réutilisables :
+
+- **features.py** : Feature engineering ML
+- **indicators.py** : Custom indicators QuantConnect
+- **ml_utils.py** : ML training, persistence (ObjectStore)
+- **plotting.py** : Visualisations standardisées
+- **backtest_helpers.py** : Helpers configuration backtests
+
+### Scripts de validation
+
+| Script | Description |
+|--------|-------------|
+| `scripts/validate_qc_notebooks.py` | Validation structure notebooks |
+| `scripts/test_algorithms.py` | Automated backtest runner |
+
+---
+
+## Ressources Externes
+
+### Documentation QuantConnect
+
+- [Documentation officielle](https://www.quantconnect.com/docs)
+- [LEAN Engine GitHub](https://github.com/QuantConnect/Lean)
+- [Algorithm Framework](https://www.quantconnect.com/docs/v2/writing-algorithms/algorithm-framework/overview)
+
+### Livre de référence
+
+**"Hands-On AI Trading with Python, QuantConnect, and AWS"** (Janvier 2025, Wiley)
+
+- [Site officiel](https://www.hands-on-ai-trading.com)
+- [GitHub du livre](https://github.com/QuantConnect/HandsOnAITradingBook)
+- [Amazon (livre)](https://www.amazon.com/dp/1394268432)
+
+### Communauté
+
+- [QuantConnect Forum](https://www.quantconnect.com/forum)
+- [LEAN Discussions](https://github.com/QuantConnect/Lean/discussions)
+- [CoursIA Main README](../../README.md)
+
+---
+
 ## Configuration
 
-### Variables d'Environnement (`.env`)
+### Variables d'environnement (.env)
 
 Copiez `.env.example` vers `.env` et configurez :
 
 ```bash
-# Authentification QuantConnect Cloud (pour MCP et déploiement)
+# Authentification QuantConnect Cloud
 QC_API_USER_ID=your_user_id_here
 QC_API_ACCESS_TOKEN=your_access_token_here
 
-# APIs IA/ML (pour notebooks 17, 26)
-OPENAI_API_KEY=sk-...              # LLM trading signals
-ANTHROPIC_API_KEY=sk-ant-...       # Alternative LLM
-HUGGINGFACE_TOKEN=hf_...           # Téléchargement modèles
+# APIs IA/ML (optionnel, pour notebooks 17, 26)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+HUGGINGFACE_TOKEN=hf_...
 
-# NewsAPI (FREE, pour notebook 17 - Sentiment Analysis)
-NEWSAPI_KEY=your_newsapi_key_here  # https://newsapi.org/
-
-# Local LEAN CLI (optionnel)
-LEAN_DATA_PATH=./data
-LEAN_RESULTS_PATH=./results
+# NewsAPI (gratuit, pour notebook 17)
+NEWSAPI_KEY=your_newsapi_key_here
 ```
-
-**Modèle complet** : Voir [`.env.example`](.env.example)
 
 ### Dépendances Python
 
@@ -234,10 +312,6 @@ pip install -r requirements.txt
 python -m ipykernel install --user --name=quantconnect --display-name "Python (QuantConnect)"
 ```
 
-**Dépendances principales** : QuantConnect LEAN, pandas, numpy, scikit-learn, TensorFlow, PyTorch (optionnel), Stable-Baselines3, OpenAI, LangChain
-
-Voir [`requirements.txt`](requirements.txt) pour la liste complète.
-
 ---
 
 ## Free Tier vs Paid
@@ -247,441 +321,14 @@ Voir [`requirements.txt`](requirements.txt) pour la liste complète.
 | **Backtesting** | ✅ Illimité (8h calcul/mois) | ✅ Illimité (plus d'heures) |
 | **Paper trading** | ✅ | ✅ |
 | **Données Equity/Crypto/Forex** | ✅ Depuis 2010 | ✅ Depuis 1998 |
-| **Alternative data (news, sentiment)** | ❌ (workaround : NewsAPI gratuit) | ✅ TiingoNews, etc. |
-| **GPU pour Deep Learning** | ❌ (CPU local ou cloud trial) | ✅ GPU cloud |
+| **Alternative data** | ❌ (workaround : NewsAPI gratuit) | ✅ TiingoNews, etc. |
+| **GPU pour Deep Learning** | ❌ (CPU local) | ✅ GPU cloud |
 | **Live trading** | ❌ | ✅ |
-| **API Cloud access** | Limité | ✅ Full |
 
 **Workarounds Free Tier** :
-- **QC-17 Sentiment** : NewsAPI gratuit (100 req/jour) au lieu de TiingoNews payant
-- **QC-22/23/24 Deep Learning** : CPU-optimized (ou GPU local via Docker)
-- **QC-25 RL** : CPU-first avec Stable-Baselines3
+- **QC-17 Sentiment** : NewsAPI gratuit au lieu de TiingoNews payant
+- **QC-22/23/24 Deep Learning** : CPU-optimized
 - **QC-27 Production** : Paper trading (simulation gratuite)
-
-**Sponsoring universitaire** : Le CEO Jared Broad a précédemment sponsorisé des programmes avec tier Team gratuit. Contact : [https://www.quantconnect.com/contact](https://www.quantconnect.com/contact)
-
----
-
-## Alignement avec "Hands-On AI Trading"
-
-Cette série s'inspire du livre **"Hands-On AI Trading with Python, QuantConnect, and AWS"** (Janvier 2025, Wiley).
-
-**Auteurs** : Jiri Pik, Ernest Chan, **Jared Broad** (CEO QuantConnect), et al.
-
-> 📘 **Mapping complet** : Pour un alignement détaillé chapitre par chapitre, consultez [**HANDSON_AI_TRADING_MAPPING.md**](docs/HANDSON_AI_TRADING_MAPPING.md)
-
-| Notebooks CoursIA | Chapitres Livre |
-|-------------------|-----------------|
-| QC-16 | Ch 3-4 : Data Preparation, Feature Engineering |
-| QC-17 | Ch 8 : Sentiment Analysis with Transformers |
-| QC-18 | Ch 4 : Feature Engineering for ML |
-| QC-19 | Ch 5-7 : Supervised Learning, Random Forests, XGBoost |
-| QC-20 | Ch 6 : Regression Models |
-| QC-21 | Ch 12 : Portfolio Optimization (adapté avec ML) |
-| QC-22 | Ch 9 : LSTMs for Time Series |
-| QC-23 | Ch 10 : Attention Mechanisms and Transformers |
-| QC-24 | Ch 9 : Autoencoders (adapté pour anomaly detection) |
-| QC-25 | Ch 11-12 : Deep Reinforcement Learning, Portfolio RL |
-| QC-26 | Ch 13 : LLMs for Trading Signals |
-| QC-27 | Ch 19 : Scaling and Deployment |
-
-**Liens** :
-
-- [Amazon (livre)](https://www.amazon.com/dp/1394268432)
-- [Site officiel](https://www.hands-on-ai-trading.com)
-- [GitHub du livre](https://github.com/QuantConnect/HandsOnAITradingBook)
-
----
-
-## Politique Git - Cloud-First Workflow
-
-### Principe
-
-La série QuantConnect CoursIA utilise un **workflow cloud-first** :
-
-- **Source de vérité** : QuantConnect Cloud (<https://www.quantconnect.com>)
-- **Clones locaux** : SONT IGNORÉS par git (voir `.gitignore`)
-- **Code tracké** : Uniquement les notebooks pédagogiques + projets de référence
-
-### Projets Locaux vs Projets Trackés
-
-#### 📁 Projets Locaux (IGNORÉS par git)
-
-Les clones créés via `lean cli project-fetch` ou `lean git clone` sont dans `.gitignore` :
-
-```bash
-# Exemples de projets locaux ignorés :
-MyIA.AI.Notebooks/QuantConnect/AdaptiveAssetAllocation/
-MyIA.AI.Notebooks/QuantConnect/AllWeather-Researcher/
-MyIA.AI.Notebooks/QuantConnect/BTC-*-Researcher*/
-MyIA.AI.Notebooks/QuantConnect/EMA-Cross-*/
-# ... etc
-```
-
-**Règle** : Ces projets sont des clones de travail, PAS du code source à tracker.
-
-#### 📁 Projets Trackés (DANS git)
-
-Le code déployable et les notebooks de recherche sont trackés :
-
-```text
-MyIA.AI.Notebooks/QuantConnect/
-├── projects/           # ← Tracké : Algorithmes déployables
-│   ├── EMA-Cross-Alpha/
-│   ├── TrendStocks-Alpha/
-│   └── ...
-├── Python/             # ← Tracké : Notebooks pédagogiques
-│   ├── QC-Py-01-Setup.ipynb
-│   └── ...
-├── CSharp/             # ← Tracké : Notebooks pédagogiques
-│   ├── QC-CS-01-Setup.ipynb
-│   └── ...
-├── shared/             # ← Tracké : Bibliothèques partagées
-└── docs/               # ← Tracké : Documentation
-```
-
-### Projets Cloud Actifs
-
-#### 🟢 Actifs (avec notebook de recherche)
-
-Ces projets sont régulièrement utilisés pour la recherche et le développement :
-
-- **EMA-Cross-Stocks** : Momentum EMA cross sur actions US
-- **Trend-Following** : Stratégie trend following multi-actifs
-- **DualMomentum** : Momentum dual avec gestion risque
-- **FamaFrench** : Stratégie factorielle Fama-French 5 facteurs
-- **Framework_Composite_*** : Framework composites multi-stratégies
-
-#### 🟡 Archivés (sans notebook récent)
-
-Ces projets sont conservés pour référence mais ne sont plus activement développés :
-
-- **EMA-Cross-Alpha** : Archivé (code dans `projects/`)
-- **TrendStocks-Alpha** : Archivé (code dans `projects/`)
-- **BTC-MACD-ADX-Researcher** : Versions obsolètes supprimées
-- **ETF-Pairs-Researcher 2** : Remplacé par version plus récente
-
-#### 🔴 Obsolètes (supprimés)
-
-Projets locaux sans notebook de recherche ont été nettoyés (2026-03-20) :
-
-- `BTC-MACD-ADX-Researcher 3/4/5` : Doublons obsolètes
-- `EMA-Cross-Alpha/` : Clone local (code dans `projects/`)
-- `TrendStocks-Alpha/` : Clone local (code dans `projects/`)
-
-### Workflow Recommandé
-
-**Pour créer un nouveau projet** :
-```bash
-# 1. Créer le projet dans le cloud QuantConnect
-# Via QC Lab ou API
-
-# 2. Cloner localement pour développement (ignoré par git)
-lean cli project-fetch <project-id> --destination MyIA.AI.Notebooks/QuantConnect/MonProjet-Researcher
-
-# 3. Développer avec QuantBook (research.ipynb)
-
-# 4. Pour partager : Copier le code déployable dans projects/
-# Et/ou créer un notebook pédagogique dans Python/ ou CSharp/
-```
-
-**Pourquoi cette politique ?**
-
-- ✅ Évite de dupliquer le code QuantConnect dans git
-- ✅ Les notebooks pédagogiques restent la source de vérité
-- ✅ `projects/` contient uniquement les algorithmes "ready-to-deploy"
-- ✅ Les clones locaux servent au développement itératif
-
----
-
-## ESGF-2026 - exemples de recherche
-
-Le dossier **ESGF-2026/** contient des exemples de recherche avancée utilisés dans le cours ESGF 2026 (EPITA).
-
-### Structure ESGF-2026
-
-```text
-ESGF-2026/
-├── examples/              # ← Tracké : Exemples pédagogiques complets
-│   ├── BTC-MachineLearning/
-│   ├── Crypto-MultiCanal/
-│   ├── ETF-Pairs-Trading/
-│   ├── Multi-Layer-EMA/
-│   ├── Options-VGT/
-│   ├── Option-Wheel-Strategy/
-│   ├── Sector-Momentum/
-│   └── Trend-Following/
-├── archive-2025/          # ← Archives historiques
-├── templates/             # ← Templates de recherche
-└── *.md                   # ← Documentation (RAPPORT_FINAL.md, etc.)
-```
-
-### Standard de structure (issues #112, #141)
-
-Chaque exemple dans `ESGF-2026/examples/` doit avoir :
-
-- **main.py** : Algorithme déployable
-- **README.md** : Documentation du projet
-- **research.ipynb** ou **research_robustness.ipynb** : Notebook de recherche QuantBook
-
-### Projets correspondants dans projects/
-
-Tous les exemples ESGF-2026 ont des projets correspondants dans `projects/` :
-
-| Exemple ESGF-2026 | Projet projects/ | Statut |
-| :--- | :--- | :--- |
-| BTC-MachineLearning | BTC-ML | ✅ |
-| Crypto-MultiCanal | Crypto-MultiCanal | ✅ |
-| ETF-Pairs-Trading | ETF-Pairs | ✅ |
-| Multi-Layer-EMA | Multi-Layer-EMA | ✅ |
-| Options-VGT | Options-VGT | ✅ |
-| Option-Wheel-Strategy | Option-Wheel | ✅ |
-| Sector-Momentum | SectorMomentum | ✅ |
-| Trend-Following | MomentumStrategy | ✅ |
-| CSharp-BTC-MACD-ADX | CSharp-BTC-MACD-ADX | ✅ (ajouté 2026-03-21) |
-
-### Cleanup 2026-03-21 (issue #112)
-
-**Supprimé (25 dossiers doublons/squelettes) :**
-
-- 16 Researcher racine (doublons de projects/)
-- 6 Researcher ESGF-2026/examples (squelettes TODO non complétés)
-- 3 projets C# (doublons, déjà dans projects/)
-
-**Créé :**
-
-- `projects/CSharp-BTC-MACD-ADX/` avec Main.cs, Research.ipynb, README.md
-
----
-
-## Intégration MCP QuantConnect
-
-QuantConnect a lancé un [serveur MCP officiel](https://github.com/QuantConnect/mcp-server) en 2026 avec **60+ API endpoints**.
-
-### Capacités MCP
-
-- **Gestion projets** : Créer, lire, modifier, supprimer projets
-- **Backtesting** : Lancer backtests, analyser résultats, lire charts/orders/insights
-- **Live trading** : Déployer, monitorer, liquider algorithmes
-- **Compilation** : Compiler algorithmes en cloud
-
-### Configuration Claude Code
-
-Dans `~/.claude.json` :
-
-```json
-{
-  "mcpServers": {
-    "quantconnect": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm",
-               "-e", "QC_USER_ID=${QC_API_USER_ID}",
-               "-e", "QC_API_TOKEN=${QC_API_ACCESS_TOKEN}",
-               "quantconnect/mcp-server:latest"],
-      "env": {
-        "QC_API_USER_ID": "your_user_id",
-        "QC_API_ACCESS_TOKEN": "your_token"
-      }
-    }
-  }
-}
-```
-
-**Prérequis** : Claude Pro ($20/mois) + Compte QuantConnect
-
-**Cas d'usage** :
-- Créer projets QuantConnect depuis Claude Code
-- Lancer backtests et récupérer résultats via chat
-- Déployer algorithmes en paper/live trading
-- Analyser performance via conversation
-
-### MCP Jupyter (Alternative)
-
-Pour itération locale sur notebooks de recherche : `mcps\internal\servers\jupyter-papermill-mcp-server` (CoursIA)
-
----
-
-## Bibliothèques Partagées
-
-### Python (`shared/`)
-
-- **`features.py`** : Feature engineering (returns multi-period, technical features, labeling, walk-forward split)
-- **`indicators.py`** : Custom indicators QuantConnect
-- **`ml_utils.py`** : ML training, persistence (ObjectStore), métriques
-- **`plotting.py`** : Visualisations standardisées (backtest results, feature importance, confusion matrix)
-- **`backtest_helpers.py`** : Helpers configuration backtests
-
-**Usage** :
-```python
-from shared.features import calculate_returns, add_technical_features
-from shared.ml_utils import train_classifier, save_to_objectstore
-from shared.plotting import plot_backtest_results
-```
-
-### C# (`SharedLib/`)
-
-- **`Features.cs`** : Feature engineering (Accord.NET DataFrame)
-- **`CustomIndicators.cs`** : Indicateurs personnalisés
-- **`MLHelpers.cs`** : ML training (Accord.NET), persistence
-- **`BacktestHelpers.cs`** : Configuration backtests
-
-**Usage** :
-```csharp
-using CoursIA.QuantConnect.SharedLib;
-var returns = FeatureEngineering.CalculateReturns(prices, new[] {1, 5, 20});
-var model = MLHelpers.TrainClassifier(X, y);
-```
-
----
-
-## Scripts et Validation
-
-### Scripts Disponibles
-
-| Script | Description |
-|--------|-------------|
-| `scripts/validate_qc_notebooks.py` | Validation structure notebooks (Python + C#) |
-| `scripts/test_algorithms.py` | Automated backtest runner (via MCP ou LEAN CLI) |
-| `scripts/sync_to_cloud.py` | Upload vers QuantConnect cloud |
-
-**Validation structure** :
-```bash
-python scripts/validate_qc_notebooks.py MyIA.AI.Notebooks/QuantConnect/Python --quick
-python scripts/validate_qc_notebooks.py MyIA.AI.Notebooks/QuantConnect --all --fix
-```
-
-**Test algorithmes** :
-```bash
-# Test single algorithm
-python scripts/test_algorithms.py --algorithm MovingAverageCrossover.py \
-  --start 2020-01-01 --end 2023-12-31 --language python
-
-# Test all Python algorithms
-python scripts/test_algorithms.py --language python --all --report output/report.html
-```
-
----
-
-## Troubleshooting
-
-### Cloud QuantConnect
-
-**Problème** : "Backtest timed out"
-**Solution** : Réduire date range ou résolution (Daily au lieu de Minute)
-
-**Problème** : "Data not available"
-**Solution** : Vérifier que l'asset est dans free tier (Equity US, Crypto, Forex OK)
-
-**Problème** : "Out of compute hours"
-**Solution** : Free tier = 8h/mois. Attendre reset mensuel ou optimiser algorithme
-
-### Local LEAN CLI
-
-**Problème** : "Docker container won't start"
-**Solution** : Vérifier Docker Desktop running, volumes avec paths absolus
-
-**Problème** : "Market data not found"
-**Solution** : Télécharger données avec `lean data download --dataset us-equity`
-
-**Problème** : "GPU not detected"
-**Solution** : Installer nvidia-docker, vérifier `--gpus all` dans docker-compose
-
-Pour plus de détails : voir la section [Troubleshooting](#troubleshooting) ci-dessous (guide détaillé à venir)
-
----
-
-## Parcours Pédagogiques Recommandés
-
-### Débutant (20h)
-
-1. **Phase 1** : Fondations LEAN (4.5h)
-2. **Phase 2** : Universe et Asset Classes (5h)
-3. **Phase 3** : Trading Avancé et Risk (5.5h)
-4. **Notebooks 13-15** : Algorithm Framework (4h)
-5. Premier projet : Stratégie momentum avec risk management
-
-### Intermédiaire (40h)
-
-1. Révision Débutant (optionnel, 4h)
-2. **Phase 4-5** : Algorithm Framework + Alternative Data (8h)
-3. **Phase 6** : Machine Learning Traditionnel (4h)
-4. Notebooks 19-21 en profondeur
-5. Projet : Stratégie ML multi-actifs avec optimisation
-
-### Expert (60h)
-
-1. Révision Intermédiaire (optionnel, 8h)
-2. **Phases 6-8** complètes : ML + DL + IA Avancée (12h)
-3. Deep dive LSTMs, Transformers, RL
-4. Notebook 26 : LLM trading signals
-5. Notebook 27 : Déploiement production
-6. Projet final : Stratégie RL avec LLM-augmented signals, déploiement paper trading
-
----
-
-## Librairie Utilitaire
-
-**[SHARED_LIBRARY.md](SHARED_LIBRARY.md)** - Documentation complète de la librairie partagée
-
-La `shared/` library contient 5 modules Python utilisés dans tous les notebooks :
-
-| Module | Usage | Fonctions principales |
-| :--- | :--- | :--- |
-| **features.py** | Feature engineering ML | `calculate_returns()`, `add_technical_features()`, `walk_forward_split()` |
-| **backtest_helpers.py** | Config & métriques | `default_backtest_config()`, `calculate_metrics()`, `format_backtest_summary()` |
-| **ml_utils.py** | Entraînement ML | `train_classifier()`, `evaluate_model()`, `save_to_objectstore()` |
-| **plotting.py** | Visualisations | `plot_backtest_results()`, `plot_feature_importance()`, `plot_cumulative_returns()` |
-| **indicators.py** | Indicateurs custom | `CustomMomentumIndicator`, `TrendStrengthIndicator`, `VolatilityBandIndicator` |
-
-**Import rapide** :
-
-```python
-from shared import features, backtest_helpers, ml_utils, plotting, indicators
-```
-
----
-
-## Ressources Complémentaires
-
-### Documentation QuantConnect
-
-- [Documentation officielle](https://www.quantconnect.com/docs)
-- [LEAN Engine GitHub](https://github.com/QuantConnect/Lean)
-- [LEAN CLI Documentation](https://www.quantconnect.com/docs/v2/lean-cli)
-- [Algorithm Framework](https://www.quantconnect.com/docs/v2/writing-algorithms/algorithm-framework/overview)
-
-### MCP & Intégrations
-
-- [QuantConnect MCP Server](https://github.com/QuantConnect/mcp-server)
-- [MCP Announcement](https://www.quantconnect.com/announcements/19439/quantconnect-mcp-server/)
-- [PulseMCP - QuantConnect](https://www.pulsemcp.com/servers/quantconnect)
-
-### Livre & Ressources IA Trading
-
-- [Hands-On AI Trading Book](https://www.hands-on-ai-trading.com)
-- [Book GitHub Repository](https://github.com/QuantConnect/HandsOnAITradingBook)
-- [Amazon (livre)](https://www.amazon.com/dp/1394268432)
-
-### Communauté
-
-- [QuantConnect Forum](https://www.quantconnect.com/forum)
-- [LEAN Discussions](https://github.com/QuantConnect/Lean/discussions)
-- [CoursIA Main README](../../README.md)
-
----
-
-## Note Pédagogique - Sponsoring Jared Broad
-
-Le CEO de QuantConnect, **Jared Broad**, a précédemment sponsorisé cette formation avec :
-- Masterclass en direct pour la promotion
-- Tier Team gratuit (alternative data, live trading, GPU)
-- Accès à la League universitaire QuantConnect
-
-**Pour demander un sponsoring** : [https://www.quantconnect.com/contact](https://www.quantconnect.com/contact)
-
-**Historique** : Programme sponsorisé en 2024-2025, participation League universitaire non complétée.
-
-**Objectif 2026** : Relancer contact pour nouveau sponsoring + participation active League.
 
 ---
 
@@ -691,32 +338,20 @@ Après completion de cette série, vous maîtriserez :
 
 ### Compétences Techniques
 
-- ✅ **QuantConnect LEAN** : Architecture, lifecycle, Universe selection, multi-asset trading
-- ✅ **Risk Management** : Position sizing, stop-loss, take-profit, portfolio heat
-- ✅ **Algorithm Framework** : Alpha, Portfolio Construction, Execution, Risk models
-- ✅ **Alternative Data** : News, sentiment, fundamentals, custom data sources
-- ✅ **Machine Learning** : Supervised (RF, XGBoost), Deep Learning (LSTM, Transformers), RL (PPO, DQN)
-- ✅ **LLM Integration** : Prompt engineering, LLM-augmented signals, cost management
-- ✅ **Production Deployment** : Paper trading, live trading, monitoring, orchestration
+- ✅ **QuantConnect LEAN** : Architecture, lifecycle, Universe selection
+- ✅ **Risk Management** : Position sizing, stop-loss, take-profit
+- ✅ **Algorithm Framework** : Alpha, Portfolio Construction, Execution, Risk
+- ✅ **Machine Learning** : Supervised (RF, XGBoost), Deep Learning (LSTM), RL (PPO)
+- ✅ **LLM Integration** : Prompt engineering, LLM-augmented signals
+- ✅ **Production Deployment** : Paper trading, live trading, monitoring
 
 ### Projets Réalisables
 
-- 🎯 **Stratégie momentum multi-actifs** avec risk management professionnel
-- 🤖 **Bot ML directionnel** avec Random Forest + XGBoost
-- 🧠 **Stratégie LSTM** pour prédiction prix court-terme
-- 🏆 **Agent RL adaptatif** avec environnement custom
-- 💡 **LLM-augmented strategy** combinant GPT-4 + indicateurs techniques
-- 🏭 **Déploiement production** en paper trading avec monitoring
-
----
-
-## Prochaines Étapes
-
-1. **Démarrage rapide** : [GETTING-STARTED.md](GETTING-STARTED.md)
-2. **Configuration** : Copier `.env.example` vers `.env` et remplir vos API keys
-3. **Premier notebook** : [QC-Py-01-Setup.ipynb](Python/QC-Py-01-Setup.ipynb) ou QC-CS-01-Setup.ipynb *(à venir)*
-4. **Suivre la progression** : Phases 1-8 dans l'ordre
-5. **(Optionnel) Configurer MCP** pour automatisation avec Claude Code
+- 🎯 Stratégie momentum multi-actifs avec risk management
+- 🤖 Bot ML directionnel avec Random Forest + XGBoost
+- 🧠 Stratégie LSTM pour prédiction prix court-terme
+- 💡 LLM-augmented strategy combinant GPT-4 + indicateurs
+- 🏭 Déploiement production en paper trading
 
 ---
 

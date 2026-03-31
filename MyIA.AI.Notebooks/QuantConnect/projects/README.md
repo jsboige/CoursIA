@@ -1,10 +1,10 @@
 # QuantConnect Algorithmic Trading Projects
 
-Derniere mise a jour : 2026-03-30
+Dernière mise à jour : 2026-03-30
 
-Bibliotheque pedagogique de 67 strategies de trading algorithmique sur QuantConnect Cloud.
-Chaque strategie illustre un concept ou une famille de strategies ; les performances varient volontairement
-pour montrer que toutes les idees academiques ne survivent pas au backtest realiste.
+Bibliothèque pédagogique de **60+ stratégies** de trading algorithmique sur QuantConnect Cloud.
+Chaque stratégie illustre un concept ou une famille de stratégies ; les performances varient
+volontairement pour montrer que toutes les idées académiques ne survivent pas au backtest réaliste.
 
 ## Classification
 
