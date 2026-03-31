@@ -141,9 +141,9 @@ $env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE_OPENROUTER"
 $env:ANTHROPIC_API_KEY = ""
 
 # Mapping des aliases de modeles (optionnel - voir section Modeles Alternatifs)
-$env:ANTHROPIC_DEFAULT_OPUS_MODEL = "z-ai/glm-4.7"
-$env:ANTHROPIC_DEFAULT_SONNET_MODEL = "qwen/qwen3-coder-next"
-$env:ANTHROPIC_DEFAULT_HAIKU_MODEL = "z-ai/glm-4.7-flash"
+$env:ANTHROPIC_DEFAULT_OPUS_MODEL = "moonshotai/kimi-k2.5"
+$env:ANTHROPIC_DEFAULT_SONNET_MODEL = "qwen/qwen3.5-397b-a17b"
+$env:ANTHROPIC_DEFAULT_HAIKU_MODEL = "qwen/qwen3.5-27b"
 ```
 
 Sauvegardez et rechargez :
@@ -194,9 +194,9 @@ export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE_OPENROUTER"
 export ANTHROPIC_API_KEY=""
 
 # Mapping des aliases de modeles (optionnel - voir section Modeles Alternatifs)
-export ANTHROPIC_DEFAULT_OPUS_MODEL="z-ai/glm-4.7"
-export ANTHROPIC_DEFAULT_SONNET_MODEL="qwen/qwen3-coder-next"
-export ANTHROPIC_DEFAULT_HAIKU_MODEL="z-ai/glm-4.7-flash"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="moonshotai/kimi-k2.5"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="qwen/qwen3.5-397b-a17b"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="qwen/qwen3.5-27b"
 ```
 
 Rechargez le fichier (adaptez selon le fichier que vous avez modifie) :
@@ -228,9 +228,9 @@ Contenu :
     "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
     "ANTHROPIC_API_KEY": "",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "z-ai/glm-4.7",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen/qwen3-coder-next",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "z-ai/glm-4.7-flash"
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "moonshotai/kimi-k2.5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen/qwen3.5-397b-a17b",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen/qwen3.5-27b"
   }
 }
 ```
@@ -278,7 +278,7 @@ Vous devriez voir :
 
 ```text
 Connected to OpenRouter
-Model: qwen/qwen3-coder-next (sonnet alias)
+Model: qwen/qwen3.5-397b-a17b (sonnet alias)
 Base URL: https://openrouter.ai/api
 ```
 
@@ -316,73 +316,73 @@ OpenRouter permet d'utiliser des modeles alternatifs a Claude, souvent moins che
 - **Experimentation** : Comparer les performances sur vos cas d'usage
 - **Disponibilite** : Avoir des alternatives en cas d'indisponibilite
 
-### Modeles Recommandes (Fevrier 2026)
+### Modeles Recommandes (Mars 2026)
 
 | Alias Claude | Modele Alternatif | Identifiant OpenRouter | Context | Prix (Input/Output per M) |
 | ------------ | ----------------- | ---------------------- | ------- | ------------------------- |
-| `opus` | GLM-4.7 | `z-ai/glm-4.7` | 200K | $0.40 / $1.50 |
-| `sonnet` | Qwen3 Coder Next | `qwen/qwen3-coder-next` | 256K | Variable |
-| `haiku` | GLM-4.7 Flash | `z-ai/glm-4.7-flash` | 200K | $0.07 / $0.40 |
+| `opus` | Kimi K2.5 | `moonshotai/kimi-k2.5` | 262K | $0.42 / $2.20 |
+| `sonnet` | Qwen 3.5 397B-A17B | `qwen/qwen3.5-397b-a17b` | 262K | $0.39 / $2.34 |
+| `haiku` | Qwen 3.5 27B | `qwen/qwen3.5-27b` | 262K | $0.20 / $1.56 |
 
 ### Commandes CLI
 
 ```bash
-# Utiliser le modele par defaut (Sonnet -> Qwen3 Coder Next)
+# Utiliser le modele par defaut (Sonnet -> Qwen 3.5 397B)
 claude -p "Explique ce code"
 
 # Utiliser explicitement un modele
-claude --model opus -p "Refactore ce projet"    # GLM-4.7
-claude --model sonnet -p "Corrige ce bug"       # Qwen3 Coder Next
-claude --model haiku -p "Liste les fichiers"    # GLM-4.7 Flash
+claude --model opus -p "Refactore ce projet"    # Kimi K2.5
+claude --model sonnet -p "Corrige ce bug"       # Qwen 3.5 397B
+claude --model haiku -p "Liste les fichiers"    # Qwen 3.5 27B
 
 # Forcer un modele specifique (bypass alias)
-claude --model z-ai/glm-4.7 -p "Question complexe"
+claude --model moonshotai/kimi-k2.5 -p "Question complexe"
 ```
 
 ### Presentation des Modeles
 
-#### GLM-4.7 (Alias Opus)
+#### Kimi K2.5 (Alias Opus)
 
-**Identifiant :** `z-ai/glm-4.7`
+**Identifiant :** `moonshotai/kimi-k2.5`
 
-GLM-4.7 est le modele flagship de Z.AI (anciennement Zhipu AI) :
+Kimi K2.5 est le modele flagship de Moonshot AI :
 
-- **Context window** : 200K tokens
-- **Forces** : Programmation avancee, raisonnement multi-etapes, taches agentiques complexes
+- **Context window** : 262K tokens
+- **Forces** : Raisonnement avance, programmation complexe, taches agentiques multi-etapes
 - **Cas d'usage ideaux** : Refactoring complexe, architecture de projets, documentation technique
-- **Prix** : $0.40 / $1.50 per million tokens (input/output)
+- **Prix** : $0.42 / $2.20 per million tokens (input/output)
 
-#### Qwen3 Coder Next (Alias Sonnet)
+#### Qwen 3.5 397B-A17B (Alias Sonnet)
 
-**Identifiant :** `qwen/qwen3-coder-next`
+**Identifiant :** `qwen/qwen3.5-397b-a17b`
 
-Modele MoE (Mixture of Experts) optimise pour le code :
+Modele MoE (Mixture of Experts) de derniere generation :
 
-- **Architecture** : 80B parametres totaux, 3B actives par token
-- **Context window** : 256K tokens (extensible a 1M)
-- **Forces** : Coding agentique, function calling, raisonnement sur larges codebases, tres rapide
+- **Architecture** : 397B parametres totaux, 17B actives par token
+- **Context window** : 262K tokens
+- **Forces** : Coding agentique, raisonnement sur larges codebases, excellent rapport qualite/prix
 - **Cas d'usage ideaux** : Developpement quotidien, debug, generation de tests, refactoring
-- **Prix** : Variable selon le provider
+- **Prix** : $0.39 / $2.34 per million tokens (input/output)
 
-#### GLM-4.7 Flash (Alias Haiku)
+#### Qwen 3.5 27B (Alias Haiku)
 
-**Identifiant :** `z-ai/glm-4.7-flash`
+**Identifiant :** `qwen/qwen3.5-27b`
 
-Version optimisee pour la vitesse :
+Modele dense compact et rapide :
 
-- **Taille** : ~30B parametres
-- **Context window** : 200K tokens
-- **Forces** : Equilibre performance/cout, coding renforce, planification long-horizon
+- **Taille** : 27B parametres (dense)
+- **Context window** : 262K tokens
+- **Forces** : Rapidite, bon rapport qualite/cout, coding solide pour sa taille
 - **Cas d'usage ideaux** : Exploration rapide, questions simples, taches repetitives, prototypage
-- **Prix** : $0.07 / $0.40 per million tokens (input/output)
+- **Prix** : $0.20 / $1.56 per million tokens (input/output)
 
 ### Comparaison avec les Modeles Claude Natifs
 
-| Aspect | Claude Opus | GLM-4.7 | Claude Sonnet | Qwen3 Coder Next | Claude Haiku | GLM-4.7 Flash |
-| ---------------- | ----------- | ------- | ------------- | ---------------- | ------------ | ------------- |
-| **Context** | 200K | 200K | 200K | 256K | 200K | 200K |
-| **Prix Input** | $15.00 | $0.40 | $3.00 | Variable | $0.25 | $0.07 |
-| **Prix Output** | $75.00 | $1.50 | $15.00 | Variable | $1.25 | $0.40 |
+| Aspect | Claude Opus | Kimi K2.5 | Claude Sonnet | Qwen 3.5 397B | Claude Haiku | Qwen 3.5 27B |
+| ---------------- | ----------- | --------- | ------------- | ------------- | ------------ | ------------ |
+| **Context** | 200K | 262K | 200K | 262K | 200K | 262K |
+| **Prix Input** | $15.00 | $0.42 | $3.00 | $0.39 | $0.25 | $0.20 |
+| **Prix Output** | $75.00 | $2.20 | $15.00 | $2.34 | $1.25 | $1.56 |
 | **Coding** | Excellent | Excellent | Tres bon | Excellent | Bon | Tres bon |
 | **Raisonnement** | Excellent | Excellent | Tres bon | Tres bon | Bon | Bon |
 
@@ -760,10 +760,9 @@ Editez `.claude/settings.json` :
 - [Documentation OpenRouter](https://openrouter.ai/docs)
 - [Guide d'integration Claude Code](https://openrouter.ai/docs/guides/claude-code-integration)
 - [Tarifs et modeles](https://openrouter.ai/models)
-- [GLM-4.7 sur OpenRouter](https://openrouter.ai/z-ai/glm-4.7)
-- [GLM-4.7 Flash sur OpenRouter](https://openrouter.ai/z-ai/glm-4.7-flash)
-- [Qwen3 Coder sur OpenRouter](https://openrouter.ai/qwen/qwen3-coder-next)
-- [Z.AI Blog - GLM-4.7](https://z.ai/blog/glm-4.7)
+- [Kimi K2.5 sur OpenRouter](https://openrouter.ai/moonshotai/kimi-k2.5)
+- [Qwen 3.5 397B sur OpenRouter](https://openrouter.ai/qwen/qwen3.5-397b-a17b)
+- [Qwen 3.5 27B sur OpenRouter](https://openrouter.ai/qwen/qwen3.5-27b)
 
 ### Communaute
 

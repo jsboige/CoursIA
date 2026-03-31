@@ -72,11 +72,9 @@ Les profils vous permettent de basculer rapidement entre différents modèles d'
 | `OpenAI-o3-mini`                 | `openai/o3-mini`                   |
 | `OpenAI-o3`                 | `openai/o3`                   |
 | `Deepseek-Deepseek-r1`       | `deepseek/deepseek-r1`                 |
-| `Qwen-Qwen-3-235b-a22b`      | `qwen/Qwen-3-235b-a22b`               |
-| `Qwen-Qwen-3-32B`            | `qwen/Qwen-3-32b`                |
-| `Qwen3-Coder-Next`           | `qwen/qwen3-coder-next`                 |
-| `GLM-4.7`                    | `z-ai/glm-4.7`                           |
-| `GLM-4.7-Flash`              | `z-ai/glm-4.7-flash`                     |
+| `Qwen-3.5-397B`              | `qwen/qwen3.5-397b-a17b`              |
+| `Qwen-3.5-27B`               | `qwen/qwen3.5-27b`                    |
+| `Kimi-K2.5`                  | `moonshotai/kimi-k2.5`                |
 | `Mistral-Mistral-Small`    | `mistralai/mistral-small`         |
 
 *Note : Certains noms de modèles demandés ont été adaptés aux identifiants disponibles sur OpenRouter.*
