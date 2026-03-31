@@ -6,15 +6,25 @@
 
 <style scoped>
 .dense {
-  font-size: 18px !important;
-  padding: 20px 40px !important;
+  font-size: 15px !important;
+  padding: 14px 36px !important;
 }
 
 .dense ul > li {
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .dense h1 {
-  margin-bottom: 8px;
+  font-size: 1.4em;
+  margin-bottom: 6px;
+}
+
+.dense table {
+  font-size: 0.95em;
+}
+
+.dense table th,
+.dense table td {
+  padding: 4px 8px;
 }
 </style>

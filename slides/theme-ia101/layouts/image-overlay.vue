@@ -30,16 +30,20 @@ const props = defineProps<{
   z-index: 2;
 }
 
+.overlay-content.has-image {
+  padding-right: 0;
+}
+
 .overlay-img {
   position: absolute;
   top: 50%;
   right: 30px;
   transform: translateY(-50%);
-  max-width: 35%;
+  max-width: 28%;
   max-height: 70%;
   object-fit: contain;
   z-index: 1;
-  opacity: 0.15;
+  opacity: 0.35;
 }
 
 /* Utility classes for positioning */
@@ -73,6 +77,6 @@ const props = defineProps<{
 
 /* Higher opacity variant for images that need more visibility */
 .overlay-img.visible {
-  opacity: 0.3;
+  opacity: 0.55;
 }
 </style>
