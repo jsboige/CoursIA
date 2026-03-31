@@ -611,7 +611,6 @@ imageClass: mid-right visible
 
 - 20+ exemples implementes, code sur GitHub
 - Repo: `github.com/QuantConnect/HandsOnAITradingBook`
-- Coupon QC: `education2025`
 
 </div>
 

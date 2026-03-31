@@ -107,7 +107,7 @@ Intelligence Artificielle -- S4 -- Partie 3
 - **Pourquoi le Cloud d'abord ?**
   - Zero configuration, donnees incluses
   - Backtests rapides sans installation locale
-  - Coupon `education2025` pour votre organisation
+  - Creez un compte gratuit sur quantconnect.com
 
 </div>
 
@@ -145,7 +145,7 @@ Intelligence Artificielle -- S4 -- Partie 3
 
 - **Sur QuantConnect**
   - My Account -- Request Token Information
-  - Coupon `education2025` pour votre organisation QC
+  - Creez un compte gratuit sur quantconnect.com
 
 </div>
 <div v-click="2">
@@ -902,7 +902,7 @@ class EMACrossStocksAlgorithm(QCAlgorithm):
 
 Vous avez maintenant les outils pour passer de l'idee au backtest. Voici votre feuille de route :
 
-**1. Creez votre compte QC Cloud** avec coupon `education2025`
+**1. Creez votre compte QC Cloud** (gratuit sur quantconnect.com)
 <div v-click="1">
 
 **2. Completez Ex01 et Ex02** (debutant, ~2h chacun)
@@ -938,7 +938,7 @@ Jean-Sylvain Boige -- jsboige@myia.org
 
 **Tout est dans le depot pour demarrer des aujourd'hui :**
 
-- **QC Cloud** : quantconnect.com (coupon `education2025`)
+- **QC Cloud** : quantconnect.com (compte gratuit)
 - **Repo GitHub** : github.com/jsboige/CoursIA (28 notebooks + 67 projets)
 - **Livre** : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wiley 2025)
 - **Documentation QC** : quantconnect.com/docs
