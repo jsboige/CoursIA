@@ -1,6 +1,8 @@
 # QuantConnect Algorithmic Trading Projects
 
-Bibliotheque pedagogique de 65 strategies de trading algorithmique sur QuantConnect Cloud.
+Derniere mise a jour : 2026-03-30
+
+Bibliotheque pedagogique de 67 strategies de trading algorithmique sur QuantConnect Cloud.
 Chaque strategie illustre un concept ou une famille de strategies ; les performances varient volontairement
 pour montrer que toutes les idees academiques ne survivent pas au backtest realiste.
 
@@ -24,7 +26,6 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 |--------|-------------|--------|------|--------|---------|------|--------|----------|------|
 | [BTC-MACD-ADX](BTC-MACD-ADX/) | MACD + ADX filter BTC daily | **1.647** | 38.1% | 48.8% | 2020-2026 | C# | Intermediaire | — | |
 | [Framework_Composite_TrendWeather](Framework_Composite_TrendWeather/) | TrendStocksLite + AllWeather via Algorithm Framework (T75/AW25, Mom3m) | **1.155** | 27.4% | 27.7% | 2015-2026 | Py | Avance | QuantBook | |
-| [EMA-Cross-Crypto](EMA-Cross-Crypto/) | EMA 20/50 + SMA200 + trailing stop BTCUSDT | **0.244** | 3.804% | 37.2% | 2017-2026 | Py | Debutant | yfinance | ✅ Validé 2017-2026 (Sharpe 0.244) |
 | [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | EMA crossover BTC (C#) | **1.094** | 36.2% | 40.7% | 2017-2026 | C# | Debutant | — | |
 | [Option-Wheel](Option-Wheel/) | Wheel strategy SPY (sell puts/calls) | **0.524** | 12.69% | 26.40% | 2015-2026 | Py | Avance | QuantBook | ✅ Validé 2015-2026 (Sharpe 0.524) |
 | [EMA-Cross-Stocks](EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | **0.872** | 25.7% | 35.7% | 2015-2026 | Py | Debutant | — | |
@@ -51,6 +52,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [FuturesTrend](FuturesTrend/) | Donchian breakout ETFs (trend following) | **0.136** | 4.896% | 18.70% | 2015-2026 | Py | Intermediaire | yfinance | ✅ Validé 2015-2026 (Sharpe 0.136) |
 | [MeanReversion](MeanReversion/) | RSI multi-asset mean reversion | **0.294** | 7.5% | 16.5% | 2015-2026 | Py | Intermediaire | yfinance | SMA filter rejete |
 | [BTC-ML](BTC-ML/) | Machine learning BTC prediction | **0.282** | 8.3% | 13.7% | 2023-2026 | Py | Avance | QuantBook | Periode courte, potentiel features |
+| [EMA-Cross-Crypto](EMA-Cross-Crypto/) | EMA 20/50 + SMA200 + trailing stop BTCUSDT | **0.244** | 3.804% | 37.2% | 2017-2026 | Py | Debutant | yfinance | Sharpe < 0.5, classe Historique |
 | [OptionsIncome](OptionsIncome/) | Covered Call SPY + VIX filter | **0.207** | 5.435% | 17.50% | 2015-2026 | Py | Avance | — | ✅ Validé 2015-2026 (Sharpe 0.207) |
 | [Trend-Following](Trend-Following/) | Multi-oracle trend following (MACD/RSI/Bollinger) | N/A | 5.15% | N/A | 2015-2026 | Py | Avance | — | ❌ Timeout (200 stocks × 11 ans hourly trop large) |
 | [TurnOfMonth](TurnOfMonth/) | Anomalie calendaire (Turn of Month) | 0.128 | 4.8% | 23.7% | 2015-2026 | Py | Debutant | yfinance | Effet faible en bull 2015-2026 |
@@ -101,7 +103,7 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [RL-Portfolio](RL-Portfolio/) | Q-Learning allocation multi-asset (SPY/TLT/GLD/Cash, epsilon-greedy) | --- | --- | --- | --- | — | Non backtestee |
 | [Crypto-LSTM-Prediction](Crypto-LSTM-Prediction/) | DLinear (AAAI 2023) SeriesDecomposition BTCUSDT (PyTorch) | --- | --- | --- | --- | — | Research phase |
 
-*61 strategies documentees dans les tables ci-dessus (57 Python, 4 C#) + 2 projets research-only. 67 projets avec code au total. Metriques issues des backtests QC Cloud.*
+*61 strategies documentees dans les tables ci-dessus (58 Python, 3 C#) + 2 projets research-only + 6 composants Framework/building-blocks. 69 projets au total dont 67 avec code. Metriques issues des backtests QC Cloud.*
 *Multi-Layer-EMA reclassee Historique apres analyse de robustesse (Sharpe gonfle par bulle BTC 2017).*
 *Research: type de notebook de recherche (yfinance = donnees Yahoo, QuantBook = donnees QC natives, — = pas de notebook).*
 *ML/AI: implementations sklearn (RF, XGBoost, MLP) validees sur QC Cloud. Les fake implementations (poids hardcodes) ont ete remplacees en mars 2026.*
@@ -122,7 +124,7 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 ### Trend Following & Indicateurs Techniques (Intermediaire/Avance)
 
 - **Trend-Following** : Multi-oracle scoring (MACD, RSI, Bollinger) + detection HH/HL/LL/LH + ATR trailing stop. Universe equity top 600. Multi-fichiers (alpha.py, oracles). Hourly resolution.
-- **BTC-MACD-ADX** : MACD + ADX filter sur BTC daily en C#. Backtest long (2009-2026).
+- **BTC-MACD-ADX** : MACD + ADX filter sur BTC daily en C#. Backtest long (2019-2026).
 - **CSharp-CTG-Momentum** : Momentum strategy avec indicateurs custom en C#.
 
 ### Momentum & Rotation (Intermediaire)
