@@ -463,7 +463,7 @@ export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"
 
 # Aliases de modeles OpenRouter
 export ANTHROPIC_DEFAULT_OPUS_MODEL="moonshotai/kimi-k2.5"
-export ANTHROPIC_DEFAULT_SONNET_MODEL="qwen/qwen3.5-397b-a17b"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="minimax/minimax-m2.7"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="qwen/qwen3.5-27b"
 
 # Tokens max en sortie (defaut: 32000, max: 64000)
