@@ -16,7 +16,7 @@ Pour participer au cours ESGF 2026 et bénéficier du sponsoring QuantConnect (T
 
 1. **Créer un compte gratuit** sur [quantconnect.com](https://www.quantconnect.com) avec votre **email scolaire**
 2. **Envoyer votre username** au professeur : `<email>`
-3. **Attendre l'ajout** à l'organisation "Trading Firm ESGF" (code `education2025` appliqué automatiquement)
+3. **Attendre l'ajout** à l'organisation "Trading Firm ESGF" par le professeur
 4. **Commencer les exercices** : notebooks QC-Py-01 à QC-Py-04, puis exercices ESGF
 
 ### Workflow Cloud-First
@@ -233,7 +233,7 @@ Les exemples et templates couvrent **8 classes d'actifs** et **10+ concepts de t
 
 ## Notebooks d'Accompagnement
 
-27 notebooks Python progressifs dans `../Python/` (QC-Py-01 à QC-Py-27) :
+28 notebooks Python progressifs dans `../Python/` (QC-Py-01 à QC-Py-28) :
 
 1. **Setup** : Compte, IDE, premier algorithme
 2. **Fondations** : API, Resolution, Consolidators, QuantBook

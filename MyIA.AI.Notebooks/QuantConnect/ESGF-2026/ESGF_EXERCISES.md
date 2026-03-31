@@ -3,7 +3,7 @@
 **Cours** : Trading Algorithmique avec QuantConnect
 **Mastere** : ESGF Big Data & Data Science en Finance
 **Prerequis** : Compte QuantConnect gratuit, notebooks QC-Py-01 a QC-Py-04 completes
-**Code education** : `education2025` (sponsoring Jared Broad)
+**Sponsoring** : Jared Broad (CEO QuantConnect) - organisation "Trading Firm ESGF"
 
 ---
 
@@ -260,4 +260,4 @@
 - **Projets exemples** : `projects/` (56 projets avec research notebooks)
 - **Templates** : `ESGF-2026/templates/` (starter, intermediate, advanced)
 - **Documentation QC** : https://www.quantconnect.com/docs
-- **Code education** : `education2025` pour acces Team tier
+- **Organisation QC** : "Trading Firm ESGF" (ajout par le professeur)

@@ -1,7 +1,7 @@
 # QuantConnect AI Trading - Série Éducative CoursIA
 
 > **Trading algorithmique + Intelligence Artificielle**
-> 27 notebooks Python | Cloud-first | Free Tier compatible
+> 28 notebooks Python | Cloud-first | Free Tier compatible
 
 ---
 
@@ -31,7 +31,7 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
-- **27 notebooks Python** organisés en 8 phases
+- **28 notebooks Python** organisés en 8 phases
 - **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
 - **9 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM)
 - **Free tier compatible** avec workarounds pour fonctionnalités payantes
@@ -150,6 +150,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 | 25 | [QC-Py-25-Reinforcement-Learning](Python/QC-Py-25-Reinforcement-Learning.ipynb) | 90 min | PPO/DQN agents, Stable-Baselines3, Gym environment custom |
 | 26 | [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb) | 90 min | OpenAI/Anthropic API, prompt engineering, LLM+indicators hybrid |
 | 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | 75 min | Paper trading, live trading setup, monitoring, deployment |
+| 28 | [QC-Py-28-Market-Regime-Detection](Python/QC-Py-28-Market-Regime-Detection.ipynb) | 75 min | HMM, regime detection, allocation adaptative |
 
 **Objectifs** : IA state-of-the-art pour trading, déploiement production.
 
@@ -157,7 +158,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 
 ## Résumé de la Progression
 
-**Total** : **27 notebooks Python** (~30 heures de contenu)
+**Total** : **28 notebooks Python** (~32 heures de contenu)
 
 **Répartition** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
