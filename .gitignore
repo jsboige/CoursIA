@@ -610,3 +610,10 @@ MyIA.AI.Notebooks/QuantConnect/TrendStocks*/
 MyIA.AI.Notebooks/QuantConnect/TurnOfMonth-Researcher/
 MyIA.AI.Notebooks/QuantConnect/VIX-TermStructure-Researcher/
 MyIA.AI.Notebooks/QuantConnect/lean.json
+
+# Temporary screenshots (slide reviews, debug)
+/*.png
+/*.jpeg
+/*.jpg
+.playwright-mcp/
+slides/S4-trading-algorithmique/screenshots/
