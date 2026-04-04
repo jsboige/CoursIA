@@ -52,9 +52,11 @@ class AdvancedMLAlgorithm(QCAlgorithm):
             self.Debug("Modele ML charge depuis l'ObjectStore")
 
         # --- Re-entrainement programme le 1er de chaque mois ---
+        # Note: Crypto trade 24/7, AfterMarketOpen n'existe pas.
+        # On utilise Noon comme substitut.
         self.Schedule.On(
             self.DateRules.MonthStart(self.symbol),
-            self.TimeRules.AfterMarketOpen(self.symbol, 1),
+            self.TimeRules.Noon,
             self.RetrainModel
         )
 
