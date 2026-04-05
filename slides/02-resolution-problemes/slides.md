@@ -547,8 +547,6 @@ layout: section
 
 # Exploration Informee
 ---
-layout: default
----
 
 # Exploration gloutonne
 
@@ -565,8 +563,6 @@ layout: default
 - Espace? O(b^m)
 - Optimal? Non
 
----
-layout: default
 ---
 
 # Exploration A*
@@ -1175,7 +1171,7 @@ layout: default
 
 ## Domaines
 
-- {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+- `{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}`
 
 ## Contraintes
 
@@ -1385,7 +1381,7 @@ layout: default
 - Contraintes avec 3 variables ou plus
 - Ex: problemes cryptarithmetiques
   - Variables: F T U W R O x X1 X2 X3
-  - Domaines: {0,1,2,3,4,5,6,7,8,9}
+  - Domaines: `{0,1,2,3,4,5,6,7,8,9}`
   - Contraintes: Alldiff(F,T,U,W,R,O), O + O = R + 10, etc.
 
 ## Representation

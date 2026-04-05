@@ -75,6 +75,7 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
 </div>
 <div v-click="6">
 - Application: le langage naturel
+</div>
 
 ---
 

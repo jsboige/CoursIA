@@ -487,7 +487,7 @@ layout: default
 ## Unification
 
 - Trouver une substitution qui rend deux termes identiques
-- Ex: unifier P(x, Jean) et P(Marie, y) -> {x/Marie, y/Jean}
+- Ex: unifier P(x, Jean) et P(Marie, y) -> `{x/Marie, y/Jean}`
 
 ## Modus Ponens generalise
 
@@ -509,7 +509,7 @@ layout: default
 ## Exemples
 
 - Unifier P(x, Jean) et P(Marie, y)
-  - MGU: {x/Marie, y/Jean}
+  - MGU: `{x/Marie, y/Jean}`
   - Resultat: P(Marie, Jean)
 
 - Unifier P(x, x) et P(Jean, Marie)
@@ -537,7 +537,7 @@ layout: default
 
 - Faits: Humain(Socrate)
 - Regle: ∀x (Humain(x) => Mortel(x))
-- Substitution: {x/Socrate}
+- Substitution: `{x/Socrate}`
 - Nouveau fait: Mortel(Socrate)
 
 ---
@@ -557,7 +557,7 @@ layout: default
 
 - But: Mortel(Socrate)
 - Regle: ∀x (Humain(x) => Mortel(x))
-- Substitution: {x/Socrate}
+- Substitution: `{x/Socrate}`
 - Nouveau but: Humain(Socrate)
 - Fait connu: Humain(Socrate) -> Succes!
 
@@ -580,7 +580,7 @@ layout: default
 
 - Unifier des clauses complementaires
 - (P(x) OU Q(x)), (NON P(Jean) OU R(y))
-- Substitution: {x/Jean}
+- Substitution: `{x/Jean}`
 - Resolvante: (Q(Jean) OU R(y))
 
 ---
