@@ -153,11 +153,12 @@ Une serie de **5 notebooks Jupyter** pour apprendre et experimenter avec `claude
 
 | Document | Emplacement | Description |
 |----------|-------------|-------------|
-| **Introduction** | [docs/claude-code/INTRO-CLAUDE-CODE.md](../docs/claude-code/INTRO-CLAUDE-CODE.md) | Concepts et fonctionnalités |
+| **Quickstart OpenRouter** | [docs/OPENROUTER_SETUP.md](docs/OPENROUTER_SETUP.md) | 15 min, prise en main etape par etape |
+| **Introduction** | [docs/claude-code/INTRO-CLAUDE-CODE.md](../docs/claude-code/INTRO-CLAUDE-CODE.md) | Concepts et fonctionnalites |
 | **Installation** | [docs/claude-code/INSTALLATION-CLAUDE-CODE.md](../docs/claude-code/INSTALLATION-CLAUDE-CODE.md) | Guide complet avec OpenRouter |
 | **Modeles alternatifs** | [docs/claude-code/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter](../docs/claude-code/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter) | GLM-4.7, Qwen3 Coder via OpenRouter |
-| **Aide-mémoire** | [docs/claude-code/CHEAT-SHEET.md](../docs/claude-code/CHEAT-SHEET.md) | Commandes essentielles |
-| **Concepts avancés** | [docs/claude-code/CONCEPTS-AVANCES.md](../docs/claude-code/CONCEPTS-AVANCES.md) | Skills, Subagents, Hooks, MCP |
+| **Aide-memoire** | [docs/claude-code/CHEAT-SHEET.md](../docs/claude-code/CHEAT-SHEET.md) | Commandes essentielles |
+| **Concepts avances** | [docs/claude-code/CONCEPTS-AVANCES.md](../docs/claude-code/CONCEPTS-AVANCES.md) | Skills, Subagents, Hooks, MCP |
 | **Comparaison** | [docs/claude-code/COMPARAISON-CLAUDE-ROO.md](../docs/claude-code/COMPARAISON-CLAUDE-ROO.md) | Claude Code vs Roo Code |
 
 ### Documentation officielle
