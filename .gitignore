@@ -610,6 +610,7 @@ MyIA.AI.Notebooks/QuantConnect/TrendStocks*/
 MyIA.AI.Notebooks/QuantConnect/TurnOfMonth-Researcher/
 MyIA.AI.Notebooks/QuantConnect/VIX-TermStructure-Researcher/
 MyIA.AI.Notebooks/QuantConnect/lean.json
+MyIA.AI.Notebooks/QuantConnect/ESGF-Workspace/
 
 # Temporary screenshots (slide reviews, debug)
 /*.png
