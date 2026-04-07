@@ -113,7 +113,7 @@ class VolatilityHarvestML(QCAlgorithm):
 
         for i in range(200, len(spy_closes) - 21):
             features = self.GetFeatures(vix_closes[:i], spy_closes[:i])
-            label = 1 if spy_closes[i+21] / spy_closes[i] > 0.02 else 0
+            label = 1 if spy_closes[i+21] / spy_closes[i] > 1.02 else 0
 
             if features:
                 X.append(features)

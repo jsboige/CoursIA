@@ -324,7 +324,7 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
             feats = self.GetFeatures(vix_closes[:i], spy_closes[:i])
             if feats is None:
                 continue
-            label = 1 if spy_closes[i + 21] / spy_closes[i] > 0.02 else 0
+            label = 1 if spy_closes[i + 21] / spy_closes[i] > 1.02 else 0
             X.append(feats)
             y.append(label)
 
