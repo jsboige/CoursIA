@@ -185,15 +185,15 @@ layout: section
 
 L'IA est une discipline profondement interdisciplinaire :
 
-- **Philosophie :** logique, raisonnement, nature de l'esprit
-- **Mathematiques :** algorithmes, complexite, probabilites, decidabilite
-- **Economie :** theorie de la decision, utilite, theorie des jeux
+- **Philosophie :** logique, methodes de raisonnement, nature de l'esprit, langage, apprentissage
+- **Mathematiques :** representation formelle et preuve, algorithmes, calcul, complexite, (in)decidabilite, probabilites
+- **Economie :** utilite, theorie de la decision, theorie des jeux, agents economiques rationnels
 - **Biologie :** intelligence naturelle et animale, evolution
-- **Neurosciences :** substrat physique de l'activite mentale
-- **Psychologie :** perception, cognition, comportement
-- **Informatique :** puissance de calcul, logiciel, architectures
-- **Theorie du controle :** optimisation d'une fonction objective dans le temps
-- **Linguistique :** grammaires, representation du sens
+- **Neurosciences :** substrat physique de l'activite mentale (cerveau, neurones, plasticite)
+- **Psychologie :** perception, cognition, controle moteur, comportement, techniques experimentales
+- **Informatique :** puissance de calcul, logiciel, architectures, langages
+- **Theorie du controle :** maximiser une fonction objective dans le temps, retroaction
+- **Linguistique :** grammaires, representation du sens, semantique
 
 ---
 
@@ -306,6 +306,7 @@ L'IA est une discipline profondement interdisciplinaire :
 
 # L'IA dans la vie de tous les jours
 
+- **Poste** : reconnaissance des adresses manuscrites, tri automatique du courrier
 - **Banque et finance** : scoring de credit, detection de fraude, trading algorithmique
 - **Service client** : chatbots, reconnaissance vocale, routage intelligent
 - **Internet** : recommandation (Netflix, Spotify), detection de spam, publicite ciblee
@@ -313,6 +314,7 @@ L'IA est une discipline profondement interdisciplinaire :
 - **Transport** : navigation GPS, vehicules autonomes, optimisation logistique
 - **Sante** : aide au diagnostic, analyse d'imagerie medicale, decouverte de medicaments
 - **Quotidien** : assistants vocaux (Siri, Alexa), traduction automatique, filtres photo
+- **Jeux** : personnages non-joueurs, adversaires intelligents (echecs, Go, jeux video)
 
 ---
 
@@ -333,6 +335,12 @@ L'IA est une discipline profondement interdisciplinaire :
 **« Total Turing » (+ camera)** ajoute la vision et la robotique.
 
 **Ces competences definissent les grandes disciplines de l'IA** -- dont quatre seront detaillees dans ce cours.
+
+<div style="font-size:0.78em; opacity:0.8; margin-top:6px;">
+
+*En pratique : Dnn + Portal Keeper -- plateforme web d'agents conversationnels*
+
+</div>
 
 </div>
 
@@ -444,68 +452,7 @@ layout: section
 
 ---
 
-# Intelligences
-
-<div style="position:absolute; top:70px; left:25px; right:25px; bottom:35px;">
-  <!-- Procedurale (outermost) -->
-  <div style="background:#c0522e; border-radius:20px; padding:12px 14px 10px; height:100%; position:relative; color:white; display:flex; flex-direction:column;">
-    <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
-      <span style="font-size:1.5em; font-weight:bold;">Procedurale</span>
-      <img src="./images/img_023.png" style="height:60px; background:white; border-radius:6px; padding:2px; object-fit:contain;" />
-    </div>
-    <div style="position:absolute; top:12px; right:14px; display:flex; flex-direction:column; gap:4px;">
-      <span style="background:white; color:#333; padding:3px 12px; border-radius:4px; font-size:0.7em;">Automates</span>
-      <span style="background:white; color:#333; padding:3px 12px; border-radius:4px; font-size:0.7em;">Algorithmes</span>
-    </div>
-    <!-- Exploratoire -->
-    <div style="background:#d07050; border:2px dashed rgba(255,255,255,0.5); border-radius:12px; padding:8px 12px; flex:1; position:relative; display:flex; flex-direction:column;">
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
-        <span style="font-size:1.25em; font-weight:bold;">Exploratoire</span>
-        <img src="./images/img_024.jpg" style="height:55px; border-radius:5px; object-fit:cover;" />
-      </div>
-      <div style="display:flex; gap:8px; flex:1;">
-        <!-- Left column: Exploratoire items -->
-        <div style="display:flex; flex-direction:column; gap:4px; min-width:110px; justify-content:center;">
-          <span style="background:white; color:#333; padding:2px 8px; border-radius:4px; font-size:0.6em; white-space:nowrap;">Recherche de chemin</span>
-          <span style="background:white; color:#333; padding:2px 8px; border-radius:4px; font-size:0.6em;">Escalades</span>
-          <span style="background:white; color:#333; padding:2px 8px; border-radius:4px; font-size:0.6em;">Arbres de jeux</span>
-          <span style="background:white; color:#333; padding:2px 8px; border-radius:4px; font-size:0.6em; white-space:nowrap;">Satisfaction de contraintes</span>
-        </div>
-        <!-- Symbolique -->
-        <div style="flex:1; background:#d8886e; border:2px dashed rgba(255,255,255,0.5); border-radius:10px; padding:6px 10px; position:relative; display:flex; flex-direction:column;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px;">
-            <span style="font-size:1.1em; font-weight:bold;">Symbolique</span>
-            <img src="./images/img_025.jpg" style="height:45px; border-radius:4px; object-fit:cover;" />
-          </div>
-          <div style="display:flex; gap:6px; flex:1;">
-            <!-- Symbolique items -->
-            <div style="display:flex; flex-direction:column; gap:3px; min-width:100px; justify-content:center;">
-              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Raisonnement</span>
-              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em; white-space:nowrap;">Bases de connaissances</span>
-              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Solveurs</span>
-              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Planificateurs</span>
-              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Smart-contracts</span>
-            </div>
-            <!-- Probabiliste (innermost) -->
-            <div style="flex:1; background:#dea08a; border:2px dashed rgba(255,255,255,0.5); border-radius:8px; padding:5px 8px; display:flex; flex-direction:column; justify-content:center; position:relative;">
-              <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <div style="font-size:0.95em; font-weight:bold;">Probabiliste</div>
-                <img src="./images/img_026.png" style="height:35px; background:white; border-radius:4px; padding:2px; object-fit:contain;" />
-              </div>
-              <div style="display:flex; flex-wrap:wrap; gap:4px; align-content:center;">
-                <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Modeles graphiques</span>
-                <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Reseaux de decision</span>
-                <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em; white-space:nowrap;">Politiques Markoviennes</span>
-                <span style="background:#8b5cf6; color:white; padding:2px 6px; border-radius:3px; font-size:0.55em;">Theorie des jeux</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
+<img src="./pptx-reference/slide-25.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligences - taxonomie en pyramide imbriquee" />
 
 ---
 
