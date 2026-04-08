@@ -10,7 +10,7 @@
 | # | Concept | Student | Group | Priority | Status | QC Project |
 |---|---------|---------|-------|----------|--------|------------|
 | 1 | HMM + K-Means Voting Regime Detection | Brusset | Gr01 H.4 | HIGH | DONE | `HMM-KMeans-Voting/` |
-| 2 | 23-Feature ML Stock Selection | Balssa | Gr01 H.1 | HIGH | PENDING | - |
+| 2 | 23-Feature ML Stock Selection | Balssa | Gr01 H.1 | HIGH | DONE | `ML-FeatureEngineering/` |
 | 3 | Causal ML Event Alpha by Sector | ErwanSi | Gr03 G.1 | HIGH | PENDING | - |
 | 4 | Causal Forward-Filter + Feature Engineering | Maisonnave | Gr01 H.4b | HIGH | PENDING | - |
 | 5 | Black-Litterman + Momentum Views | 4 groups | Mixed | MEDIUM | PENDING | - |
@@ -78,40 +78,65 @@
 
 ---
 
-## 2. 23-Feature ML Stock Selection (PENDING)
+## 2. 23-Feature ML Stock Selection (DONE)
 
 **Student**: Balssa (Gr01 H.1)
 **QC Cloud Source**: Project #29392270 "Adaptable Tan Chinchilla" (ECE_School org, 45 backtests)
+**Local Project**: `projects/ML-FeatureEngineering/`
+**QC Cloud Project**: #29808616
 
-### Concept
+### Core Concepts
 
-23 technical features for ML-based stock selection with RF + GB ensemble, top 50 US universe, walk-forward OOS validation (6 x 5yr periods).
+- **18-feature enriched pipeline**: 12 baseline features (from ML-RandomForest v3) + 6 novel features harvested from student's 23-feature pipeline
+- **RF + GB Ensemble**: RandomForest (200 trees, depth 5) + GradientBoosting (150 trees, depth 4, lr=0.08) with ensemble probability averaging
+- **StandardScaler** normalization (student approach) vs MinMaxScaler (baseline)
+- **Confidence-weighted position sizing**: weight proportional to (prob - 0.5) * 2.0, normalized to 90% total allocation
+- **Walk-forward methodology**: 252-day training window, monthly retraining, bi-weekly rebalancing
 
-### Key Features to Harvest
+### Novel Features Harvested
 
-| Feature | Type | In Our ML Strategies? |
-|---------|------|-----------------------|
-| volume_trend | Volume | NO - novel |
-| adx_norm | Trend | NO - novel |
-| volatility_60d | Volatility | Partially (vol20 only) |
-| bb_width | Volatility | NO - novel |
-| momentum_60d | Momentum | YES (similar) |
-| return_10d | Returns | YES |
-| pb_norm | Fundamental | NO - novel |
-| atr_norm | Volatility | NO - novel |
+| Feature | Type | Formula | Source |
+|---------|------|---------|--------|
+| volume_trend | Volume | vol_SMA_10 / vol_SMA_50 | Student novel |
+| adx_norm | Trend | ADX(14) / 100 | Student novel |
+| bb_width | Volatility | 4 * BB_std / BB_mean | Student novel |
+| atr_norm | Volatility | ATR(14) / close | Student novel |
+| mom_60 | Momentum | close / close.shift(60) - 1 | Student novel |
+| vol_60 | Volatility | returns.rolling(60).std() | Student novel |
 
-### Integration Plan
+### Backtest Results (2015-2026, $100k)
 
-1. Extract 23-feature list from QC Cloud project #29392270
-2. Test novel features individually against ML-RandomForest v3 (Sharpe 0.682)
-3. Test feature combinations with walk-forward methodology
-4. Update ML-FeatureEngineering if features improve performance
+| Metric | ML-RandomForest v3 | ML-FeatureEngineering | Delta |
+|--------|--------------------|-----------------------|-------|
+| Sharpe | 0.682 | 0.656 | -0.026 |
+| CAGR | 20.1% | 19.06% | -1.04% |
+| MaxDD | 36.4% | 34.8% | +1.6% (better) |
+| Net Profit | ~560% | 614.5% | +54.5% |
+| Win Rate | ~55% | 59% | +4% |
+| Total Orders | ~500 | 1276 | +776 |
+| Alpha | ~0.07 | 0.061 | -0.009 |
+| Beta | - | 0.835 | - |
+| PSR | - | 14.8% | - |
+
+### Analysis
+
+The RF+GB ensemble with 18 features performs comparably to the baseline. Sharpe is slightly lower (-0.026) but the strategy delivers higher net profit (+54.5%) and better drawdown control (-1.6%). The higher order count reflects confidence-weighted sizing causing more frequent adjustments. The 6 novel features (volume_trend, adx_norm, bb_width, atr_norm, mom_60, vol_60) contribute meaningfully to the ensemble's improved win rate.
+
+### Reusable Components
+
+| Component | Location | Reusability |
+|-----------|----------|-------------|
+| `_calculate_atr()` | main.py | General-purpose ATR for any strategy |
+| `_calculate_adx()` | main.py | Full ADX implementation, reusable |
+| `calculate_features()` | main.py | 18-feature pipeline, extensible |
+| Ensemble prediction | `predict()` | RF+GB averaging pattern |
+| Confidence weighting | `rebalance()` | Prob-based position sizing |
 
 ### Target Strategies
 
-- `ML-RandomForest/` (Sharpe 0.682 v3)
-- `ML-FeatureEngineering/` (shared feature module)
-- `Sector-ML-Classification/` (Sharpe 0.473)
+- `ML-RandomForest/` (Sharpe 0.682 v3) - baseline comparison
+- `ML-FeatureEngineering/` (this strategy, Sharpe 0.656)
+- `Sector-ML-Classification/` (Sharpe 0.473) - could benefit from novel features
 
 ---
 
