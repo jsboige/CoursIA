@@ -294,37 +294,31 @@ Ce cours est organise en 3 decks thematiques :
 
 Un processus iteratif en 6 etapes :
 
-1. **Hypothese** : Idee de strategie (observation de marche, papier academique)
+<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: center; margin: 0.2em 0;">
+  <div style="background: #3b82f6; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>1. Hypothese</b><br><span style="opacity:0.8; font-size:0.85em;">Idee, papier</span></div>
+  <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
+  <div style="background: #8b5cf6; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>2. Recherche</b><br><span style="opacity:0.8; font-size:0.85em;">Notebook QC</span></div>
+  <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
+  <div style="background: #06b6d4; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>3. Code</b><br><span style="opacity:0.8; font-size:0.85em;">main.py</span></div>
+  <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
+  <div style="background: #f59e0b; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>4. Backtest</b><br><span style="opacity:0.8; font-size:0.85em;">Sharpe, MaxDD</span></div>
+  <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
+  <div style="background: #f97316; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>5. Paper</b><br><span style="opacity:0.8; font-size:0.85em;">Temps reel</span></div>
+  <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
+  <div style="background: #10b981; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>6. Live</b><br><span style="opacity:0.8; font-size:0.85em;">Capital reel</span></div>
+</div>
+<div style="text-align: center; color: #94a3b8; font-size: 0.65em; font-style: italic; margin-top: 2px;">&#x21A9; Retour iteratif (majorite du temps sur etapes 1-4)</div>
 
 <div v-click="1">
 
-2. **Recherche** : Exploration dans un notebook QC (QuantBook, pandas, plots)
+- **Etapes 1-2** : Generer et valider une hypothese (notebook de recherche QC)
+- **Etapes 3-4** : Coder et backtester sur donnees historiques (Sharpe, CAGR, MaxDD)
 
 </div>
 <div v-click="2">
 
-3. **Implementation** : Codage dans `main.py` (QCAlgorithm, Initialize, OnData)
-
-</div>
-<div v-click="3">
-
-4. **Backtest** : Execution historique et analyse des metriques (Sharpe, MaxDD, CAGR)
-
-</div>
-<div v-click="4">
-
-5. **Paper Trading** : Validation en temps reel sans argent reel
-
-</div>
-<div v-click="5">
-
-6. **Live Trading** : Deploiement avec capital reel et monitoring continu
-
-</div>
-<div v-click="6">
-
+- **Etapes 5-6** : Paper trading puis deploiement live avec monitoring
 - A chaque etape, on peut revenir en arriere pour affiner
-- La majorite du temps est passe dans les etapes 1-4
 
 </div>
 

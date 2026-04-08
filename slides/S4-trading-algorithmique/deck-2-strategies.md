@@ -1196,31 +1196,33 @@ La question cle n'est pas "quel modele utiliser ?" mais "ai-je assez de signal d
 
 # ML en pratique : le pipeline complet
 
-Le livre *Hands-On AI Trading* structure le ML en finance en 5 etapes claires. Chaque etape a ses pieges specifiques.
+<div style="display: flex; gap: 4px; align-items: center; justify-content: center; margin: 0.2em 0;">
+  <div style="background: #6366f1; color: white; padding: 6px 8px; border-radius: 6px; text-align: center; font-size: 0.65em; min-width: 90px;"><b>1. Problem Def.</b><br><span style="opacity:0.8; font-size:0.85em;">Direction, horizon</span></div>
+  <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
+  <div style="background: #0ea5e9; color: white; padding: 6px 8px; border-radius: 6px; text-align: center; font-size: 0.65em; min-width: 90px;"><b>2. Data Prep</b><br><span style="opacity:0.8; font-size:0.85em;">EDA, features, PCA</span></div>
+  <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
+  <div style="background: #8b5cf6; color: white; padding: 6px 8px; border-radius: 6px; text-align: center; font-size: 0.65em; min-width: 90px;"><b>3. Model Choice</b><br><span style="opacity:0.8; font-size:0.85em;">Simple first (RF)</span></div>
+  <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
+  <div style="background: #f59e0b; color: white; padding: 6px 8px; border-radius: 6px; text-align: center; font-size: 0.65em; min-width: 90px;"><b>4. Applied ML</b><br><span style="opacity:0.8; font-size:0.85em;">19 exemples (Ch6)</span></div>
+  <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
+  <div style="background: #10b981; color: white; padding: 6px 8px; border-radius: 6px; text-align: center; font-size: 0.65em; min-width: 90px;"><b>5. Validation</b><br><span style="opacity:0.8; font-size:0.85em;">Walk-forward, OOS</span></div>
+</div>
 
 <div v-click="1">
 
-**1. Problem Definition** (Ch3) -- classifier la direction (up/down) plutot que predire le prix exact. Definir l'horizon.
+- **Etape 1** (Ch3) : Classifier direction (up/down) plutot que predire le prix. Definir l'horizon.
+- **Etape 2** (Ch4) : 80% du travail -- EDA, outliers, feature engineering, normalisation, PCA. Attention au data leakage.
 
 </div>
 <div v-click="2">
 
-**2. Data Preparation** (Ch4) -- 80% du travail : EDA, outliers, feature engineering, normalisation, PCA. Attention aux fuites de donnees (data leakage).
+- **Etape 3** (Ch5) : Commencer simple (RF avant LSTM). Plus de parametres != meilleur modele.
+- **Etape 4** (Ch6) : 19 exemples concrets du trend scanning (Ex01) au FinBERT (Ex19).
 
 </div>
 <div v-click="3">
 
-**3. Model Choice** (Ch5) -- commencer simple (RF avant LSTM). Plus de parametres != meilleur modele.
-
-</div>
-<div v-click="4">
-
-**4. Applied ML** (Ch6) -- 19 exemples concrets du trend scanning (Ex01) au FinBERT (Ex19), tous dans le depot QC.
-
-</div>
-<div v-click="5">
-
-**5. Validation** -- walk-forward (respecter la chronologie), split 60/20/20, out-of-sample obligatoire.
+- **Etape 5** : Walk-forward (respecter la chronologie), split 60/20/20, out-of-sample obligatoire.
 
 </div>
 
@@ -1267,39 +1269,30 @@ layout: compact
 
 # Reinforcement Learning pour le trading
 
+<div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0.3em 0;">
+  <div style="background: #6366f1; color: white; padding: 10px 16px; border-radius: 10px; text-align: center; font-size: 0.7em; min-width: 130px;"><b>Agent (DQN)</b><br><span style="opacity:0.8; font-size:0.85em;">MLP(64,32)</span><br><span style="opacity:0.7; font-size:0.8em;">epsilon-greedy</span></div>
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.6em;">
+    <div style="color: #f59e0b; font-weight: bold;">Action (allocation) &#x2192;</div>
+    <div style="color: #3b82f6; font-weight: bold;">&#x2190; State + Reward (Sharpe)</div>
+  </div>
+  <div style="background: #10b981; color: white; padding: 10px 16px; border-radius: 10px; text-align: center; font-size: 0.7em; min-width: 130px;"><b>Environnement</b><br><span style="opacity:0.8; font-size:0.85em;">Marche (SPY, TLT...)</span><br><span style="opacity:0.7; font-size:0.8em;">20j features</span></div>
+</div>
+
 <div v-click="1">
 
-- **1. L'agent observe** l'etat du marche (state representation)
-  - Features techniques (RSI, MACD, Bollinger %B) + fondamentales (P/E, volume)
-  - Fenetre glissante de 20 jours (~60 features)
+- **State** : Features techniques + fondamentales, fenetre 20j (~60 features)
+- **Action** : AGGRESSIVE (80/20) / MODERATE (50/50) / DEFENSIVE (20/80)
 
 </div>
 <div v-click="2">
 
-- **2. Choisit une action** parmi les allocations (discrete action space)
-  - AGGRESSIVE (80/20) / MODERATE (50/50) / DEFENSIVE (20/80)
-  - Exploration epsilon-greedy : 1.0 -> 0.01 sur 1000 episodes
-  - DQN : reseau de neurones approximant la Q-function
+- **Reward** : Sharpe ratio glissant 30j, replay buffer 5000 experiences
+- **Notre implementation** : `RL-DQN-Trading` (Sharpe 0.53), MLP(64,32), surpasse 60/40
 
 </div>
 <div v-click="3">
 
-- **3. Recoit une recompense** basee sur le rendement risk-adjusted
-  - Sharpe ratio glissant (30 jours), replay buffer de 5000 experiences
-
-</div>
-<div v-click="4">
-
-- **Notre implementation** : `RL-DQN-Trading` (Sharpe 0.53)
-  - MLPRegressor(64, 32) -- reseau simple, efficace sur QC Cloud (pas de GPU)
-  - Surpasse une allocation statique 60/40
-
-</div>
-<div v-click="5">
-
-- **Limites du RL en finance**
-  - Environnement non-stationnaire, signal de recompense retarde et bruite
-  - Plus prometteur pour l'execution (VWAP adaptatif) que pour les signaux
+- **Limites** : environnement non-stationnaire, signal bruite, plus prometteur pour l'execution (VWAP adaptatif) que pour les signaux alpha
 
 </div>
 
