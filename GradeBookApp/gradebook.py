@@ -1111,8 +1111,9 @@ def process_epreuve(students_df, evaluations, epreuve_config, professor_email_cf
         evals_indices = group_df.index
         evals = [e for i, e in enumerate(evaluations) if i in evals_indices]
         
-        # Trouver les membres du groupe
-        members = [s for s in student_records if fuzzy_match_group(name, s.sujets[0])]
+        # Trouver les membres du groupe (avec seuil configurable par épreuve)
+        threshold = epreuve_config.get('group_match_threshold', 90)
+        members = [s for s in student_records if fuzzy_match_group(name, s.sujets[0], threshold)]
         
         group_evals.append(GroupEvaluation(name, evals, members))
     
