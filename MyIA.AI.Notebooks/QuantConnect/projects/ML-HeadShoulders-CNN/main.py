@@ -2,6 +2,9 @@
 from AlgorithmImports import *
 
 from keras.saving import load_model
+from tensorflow.keras.layers import Input, Conv1D, Dense, Flatten
+from tensorflow.keras import Model
+from tensorflow.keras.losses import BinaryCrossentropy
 # endregion
 # Hands-On AI Trading - Ex17: Head and Shoulders Pattern Matching with CNN
 # Loads a pre-trained Keras CNN model from the Object Store to detect
@@ -9,8 +12,9 @@ from keras.saving import load_model
 # windows at multiple scales, downsamples to 25 points, and classifies.
 # Source: HandsOnAITradingBook, Section 06, Example 17
 #
-# IMPORTANT: Run research.ipynb first to train and save the model
-# to the Object Store before running this algorithm.
+# If `head-and-shoulders-model.keras` is absent from the Object Store,
+# the algorithm trains a small CNN on synthetic patterns at startup.
+# Run research.ipynb to train a richer model and persist it.
 
 
 def downsample(values, num_points=25):
@@ -92,11 +96,16 @@ class CNNPatternDetectionAlgorithm(QCAlgorithm):
             self.get_parameter('holding_period', 10)
         )
 
-        self._model = load_model(
-            self.object_store.get_file_path(
-                "head-and-shoulders-model.keras"
+        model_key = "head-and-shoulders-model.keras"
+        if self.object_store.contains_key(model_key):
+            self._model = load_model(
+                self.object_store.get_file_path(model_key)
             )
-        )
+        else:
+            self.log(
+                "Object Store model missing, training synthetic CNN"
+            )
+            self._model = self._train_synthetic_model()
         self._trailing_prices = pd.Series()
         self._liquidation_quantities = []
 
@@ -196,3 +205,53 @@ class CNNPatternDetectionAlgorithm(QCAlgorithm):
                 self.portfolio.cash_book['CAD'].amount
                 - self._cad_before_sell
             )
+
+    def _train_synthetic_model(self):
+        """Train a small CNN on synthetic HS vs random-walk patterns.
+
+        Used when the pre-trained model is not present in Object Store.
+        Same architecture and training data generation as research.ipynb.
+        """
+        n_samples = 2000
+        n_points = self._min_size
+        np.random.seed(0)
+
+        def gen_hs():
+            x = np.linspace(0, 1, n_points)
+            pattern = (
+                0.3 * np.exp(-((x - 0.2) ** 2) / 0.01)
+                + 0.5 * np.exp(-((x - 0.5) ** 2) / 0.015)
+                + 0.3 * np.exp(-((x - 0.8) ** 2) / 0.01)
+            )
+            return pattern + np.random.normal(0, 0.01, n_points)
+
+        def gen_rw():
+            return np.cumsum(np.random.normal(0, 0.02, n_points))
+
+        X = []
+        y = []
+        for _ in range(n_samples // 2):
+            hs = gen_hs()
+            X.append(((hs - hs.mean()) / hs.std()).reshape(n_points, 1))
+            y.append(1)
+            rw = gen_rw()
+            X.append(((rw - rw.mean()) / rw.std()).reshape(n_points, 1))
+            y.append(0)
+        X = np.array(X)
+        y = np.array(y)
+
+        inputs = Input(shape=(n_points, 1))
+        x = Conv1D(16, 3, activation='relu')(inputs)
+        x = Conv1D(32, 3, activation='relu')(x)
+        x = Flatten()(x)
+        x = Dense(32, activation='relu')(x)
+        outputs = Dense(1, activation='sigmoid')(x)
+
+        model = Model(inputs=inputs, outputs=outputs)
+        model.compile(
+            optimizer='adam',
+            loss=BinaryCrossentropy(),
+            metrics=['accuracy']
+        )
+        model.fit(X, y, epochs=20, batch_size=32, verbose=0)
+        return model
