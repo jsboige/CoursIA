@@ -25,6 +25,10 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
 
 # IA 101 -- Ressources et organisation
 
+<img src="./images/img_001.jpg" style="position:absolute; top:90px; right:40px; height:340px; border-radius:4px; box-shadow:2px 2px 8px rgba(0,0,0,0.3);" alt="Russell &amp; Norvig - Intelligence artificielle" />
+
+<div style="max-width:65%;">
+
 - **Ouvrage de référence**
   - *Artificial Intelligence: A Modern Approach* (Russell & Norvig)
   - 3e édition (2006) et 4e édition (2020, avec deep learning et IA moderne)
@@ -34,48 +38,36 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
   - Equipes de 2-3 etudiants, travail transversal
   - Expose final en classe devant le groupe
 
+</div>
+
 ---
 
 # Sommaire
 
-<img src="./images/img_001.jpg" style="position:absolute; top:72px; right:24px; height:210px; border-radius:4px; box-shadow:2px 2px 8px rgba(0,0,0,0.3);" alt="Russell &amp; Norvig" />
-
-- Qu'est-ce que l'intelligence artificielle ?
-- Racines, histoire et etat de l'art
-- Structure des agents rationnels
-<div v-click="1">
-- Intelligence exploratoire
-</div>
-<div v-click="1">
-  - Comment chercher la solution a un probleme ?
-</div>
-<div v-click="2">
-- Intelligence Symbolique
-</div>
-<div v-click="2">
-  - Comment utiliser le raisonnement et les mathematiques ?
-</div>
-<div v-click="3">
-- Intelligence probabiliste
-</div>
-<div v-click="3">
-  - Comment agir dans l'incertitude ?
-</div>
-<div v-click="4">
-- Intelligence Multi-Agents
-</div>
-<div v-click="4">
-  - Comment tenir compte des autres?
-</div>
-<div v-click="5">
-- Apprentissage
-</div>
-<div v-click="5">
-  - Comment utiliser les donnees et l'experience ?
-</div>
-<div v-click="6">
-- Application: le langage naturel
-</div>
+<ul>
+  <li>Qu'est-ce que l'intelligence artificielle ?
+    <ul>
+      <li>Racines, histoire et etat de l'art</li>
+      <li>Structure des agents rationnels</li>
+    </ul>
+  </li>
+  <li v-click>Intelligence exploratoire
+    <ul><li>Comment chercher la solution a un probleme ?</li></ul>
+  </li>
+  <li v-click>Intelligence Symbolique
+    <ul><li>Comment utiliser le raisonnement et les mathematiques ?</li></ul>
+  </li>
+  <li v-click>Intelligence probabiliste
+    <ul><li>Comment agir dans l'incertitude ?</li></ul>
+  </li>
+  <li v-click>Intelligence Multi-Agents
+    <ul><li>Comment tenir compte des autres ?</li></ul>
+  </li>
+  <li v-click>Apprentissage
+    <ul><li>Comment utiliser les donnees et l'experience ?</li></ul>
+  </li>
+  <li v-click>Application : le langage naturel</li>
+</ul>
 
 ---
 
@@ -163,13 +155,17 @@ layout: section
 
 # Qu'est-ce que l'intelligence artificielle ?
 
+<img src="./images/img_002.png" style="position:absolute; top:80px; right:20px; width:340px;" alt="Quatre definitions de l'IA" />
+
+<div style="max-width:55%;">
+
 - **Des definitions multiples et un concept evolutif**
   - L'IA n'a pas de définition unique : elle recouvre des approches tres differentes
   - Concevoir un système intelligent n'implique pas de comprendre l'intelligence
 - **Une définition qui évolue avec la technologie :**
   - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systèmes experts → Apprentissage profond → IA generative
 
-<img src="./images/img_002.png" style="max-height:320px; margin-top:8px;" alt="Quatre definitions de l'IA" />
+</div>
 
 ---
 
@@ -205,6 +201,8 @@ L'IA est une discipline profondement interdisciplinaire :
 
 <img src="./images/img_004.png" style="position:absolute; top:60px; right:20px; width:340px;" alt="Frise chronologique IA" />
 
+<div style="max-width:55%;">
+
 **Les debuts (1943-1970)**
 - **1943** : McCulloch & Pitts modélisent le cerveau comme un circuit logique
 - **1950** : Turing pose la question "Can machines think?"
@@ -214,6 +212,8 @@ L'IA est une discipline profondement interdisciplinaire :
   - Gelernter (geometrie), naissance de Lisp
 - **1965** : Robinson propose un algorithme complet de raisonnement logique
 - **1969-79** : age d'or des systèmes experts (bases de connaissances)
+
+</div>
 
 ---
 
@@ -320,6 +320,8 @@ L'IA est une discipline profondement interdisciplinaire :
 
 <img src="./images/img_020.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Test de Turing" />
 
+<div style="max-width:60%;">
+
 **Alan Turing (1950)** propose un test operationnel : une machine est "intelligente" si un humain ne peut la distinguer d'un autre humain en conversant avec elle.
 
 **Competences requises pour reussir le test :**
@@ -331,6 +333,8 @@ L'IA est une discipline profondement interdisciplinaire :
 **« Total Turing » (+ camera)** ajoute la vision et la robotique.
 
 **Ces competences definissent les grandes disciplines de l'IA** -- dont quatre seront detaillees dans ce cours.
+
+</div>
 
 ---
 
@@ -447,7 +451,7 @@ layout: section
   <div style="background:#c0522e; border-radius:20px; padding:12px 14px 10px; height:100%; position:relative; color:white; display:flex; flex-direction:column;">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
       <span style="font-size:1.5em; font-weight:bold;">Procedurale</span>
-      <img src="./images/img_022.jpg" style="height:60px; border-radius:6px; object-fit:cover;" />
+      <img src="./images/img_023.png" style="height:60px; background:white; border-radius:6px; padding:2px; object-fit:contain;" />
     </div>
     <div style="position:absolute; top:12px; right:14px; display:flex; flex-direction:column; gap:4px;">
       <span style="background:white; color:#333; padding:3px 12px; border-radius:4px; font-size:0.7em;">Automates</span>
@@ -483,8 +487,11 @@ layout: section
               <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Smart-contracts</span>
             </div>
             <!-- Probabiliste (innermost) -->
-            <div style="flex:1; background:#dea08a; border:2px dashed rgba(255,255,255,0.5); border-radius:8px; padding:5px 8px; display:flex; flex-direction:column; justify-content:center;">
-              <div style="font-size:0.95em; font-weight:bold; margin-bottom:4px;">Probabiliste</div>
+            <div style="flex:1; background:#dea08a; border:2px dashed rgba(255,255,255,0.5); border-radius:8px; padding:5px 8px; display:flex; flex-direction:column; justify-content:center; position:relative;">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <div style="font-size:0.95em; font-weight:bold;">Probabiliste</div>
+                <img src="./images/img_026.png" style="height:35px; background:white; border-radius:4px; padding:2px; object-fit:contain;" />
+              </div>
               <div style="display:flex; flex-wrap:wrap; gap:4px; align-content:center;">
                 <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Modeles graphiques</span>
                 <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Reseaux de decision</span>
@@ -502,39 +509,15 @@ layout: section
 
 ---
 
-# Intelligence de la recherche
-
-<IntelligenceTaxonomy :rows="[
-  {label:'Type', items:['Exploratoire']},
-  {label:'Inférence', items:['Recherche de chemin','Exploration locale','Satisfaction de contraintes']},
-  {label:'Modèles', items:['Cartes heuristiques','Modèles paramétriques','Modèles de contraintes']},
-  {label:'Apprentissage', items:['Apprentissage de carte','Meta-learning','Descente de gradient','Algorithmes génétiques','Meta-heuristiques']},
-  {label:'Agents', items:['Fondés sur des buts','Fondés sur un modèle','Agents Evolutifs']}
-]" />
+<img src="./pptx-reference/slide-27.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de la recherche - taxonomie" />
 
 ---
 
-# Intelligence de la pensée logique
-
-<IntelligenceTaxonomy :rows="[
-  {label:'Type', items:['Symbolique']},
-  {label:'Inférence', items:['Raisonnement']},
-  {label:'Modèles', items:['Bases de connaissances','Plans','Smart-contracts']},
-  {label:'Apprentissage', items:['Apprentissage inductif','Apprentissage déductif','Solveurs SMTs','Planificateur','Maintenance de la vérité']},
-  {label:'Agents', items:['Fondés sur des connaissances','Fondés sur des hypothèses','Agents optimiseurs','Fondés sur des buts','Agents certifiants']}
-]" />
+<img src="./pptx-reference/slide-28.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de la pensée logique - taxonomie" />
 
 ---
 
-# Intelligence de l'incertitude
-
-<IntelligenceTaxonomy :rows="[
-  {label:'Type', items:['Probabiliste']},
-  {label:'Inférences', items:['Inférence Bayésienne','Recherche de politique','Analyse stratégique']},
-  {label:'Modèles', items:['Modèles graphiques','Réseaux de décision','Processus de Markov','Modèles stratégiques']},
-  {label:'Apprentissage', items:['Apprentissage Bayésien','Système expert','Apprentissage par renforcement','Minimisation de regret']},
-  {label:'Agents', items:['Agents diagnostic','Fondés sur l\'utilité','Agents politiques','Agents stratégiques']}
-]" />
+<img src="./pptx-reference/slide-29.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de l'incertitude - taxonomie" />
 
 ---
 
@@ -560,18 +543,7 @@ layout: section
 
 # Environnements de tache: exemples
 
-<style>
-table { font-size: 0.58em; }
-td, th { padding: 3px 6px; }
-</style>
-
-| Type d'agent | Mesure de performance | Environnement | Effecteurs | Capteurs |
-|-------|------------|--------------|-----------|---------|
-| Diagnostic medical | Retablissement patients, minimisation couts | Patient, hopital, personnel | Affichage questions, tests, diagnostics, traitements | Clavier symptomes, recherches, reponses patient |
-| Analyse images satellites | Categorisation correcte des images | Liaison depuis satellite en orbite | Affichage categorisation de la scene | Tableaux de pixels colores |
-| Robot controleur pieces | % pieces dans bonnes corbeilles | Tapis roulant, pieces, corbeilles | Bras et main articules | Camera, capteurs articules |
-| Controleur raffinerie | Purete, production, securite | Raffinerie, operateurs | Valves, pompes, rechauffeurs, affichages | Capteurs temperature, pression, chimiques |
-| Repetiteur anglais | Notes etudiants aux controles | Etudiants, organisme de tests | Exercices, suggestions, corrections | Entrees au clavier |
+<img src="./images/img_028.png" style="display:block; margin:8px auto; max-height:78vh;" alt="Tableau d'exemples d'environnements de tache" />
 
 ---
 
@@ -622,29 +594,13 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 
 # Types d'environnement: exemples
 
-<style>
-table { font-size: 0.55em; }
-td, th { padding: 2px 5px; }
-</style>
-
-| Environnement | Observable | Agents | Deterministe | Episodique | Statique | Discret |
-|-------|------|--------|---------|-------|-------|--------|
-| Mots croises | Entierement | Mono | Deterministe | Sequentiel | Statique | Discret |
-| Echecs chrono. | Entierement | Multi | Deterministe | Sequentiel | Semi | Discret |
-| Poker | Partiellement | Multi | Stochastique | Sequentiel | Statique | Discret |
-| Backgammon | Entierement | Multi | Stochastique | Sequentiel | Statique | Discret |
-| Conduite taxi | Partiellement | Multi | Stochastique | Sequentiel | Dynamique | Continu |
-| Diagnostic med. | Partiellement | Mono | Stochastique | Sequentiel | Dynamique | Continu |
-| Analyse images | Entierement | Mono | Deterministe | Episodique | Semi | Continu |
-| Robot detecteur | Partiellement | Mono | Stochastique | Episodique | Dynamique | Continu |
-| Raffinerie | Partiellement | Mono | Stochastique | Sequentiel | Dynamique | Continu |
-| Repetiteur anglais | Partiellement | Multi | Stochastique | Sequentiel | Dynamique | Discret |
+<img src="./images/img_029.png" style="display:block; margin:8px auto; max-height:78vh;" alt="Tableau de types d'environnement" />
 
 ---
 
 # Types d'agents
 
-<img src="./images/img_030.png" style="position:absolute; top:100px; right:20px; width:280px;" alt="Pseudocode agent par table" />
+<img src="./images/img_030.png" style="position:absolute; top:75px; right:20px; width:380px; background:white; padding:6px; border-radius:4px;" alt="Pseudocode agent pilote par table" />
 
 <div style="max-width:55%;">
 
@@ -654,7 +610,11 @@ td, th { padding: 2px 5px; }
 
 - Taille ? Duree ? Autonomie ?
 
-Un agent naif pourrait stocker une table "percepts → action", mais cette approche est impraticable : la table serait gigantesque et impossible a construire.
+</div>
+
+<div style="max-width:95%; margin-top:8px;">
+
+Un agent naif pourrait stocker une table "percepts → action" : la table serait gigantesque et impossible a construire.
 
 **Cinq architectures d'agents, par ordre de generalite :**
 
@@ -670,58 +630,60 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 
 # Agent reflexe
 
-<img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Schema agent reflexe" />
+<img src="./images/img_031.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent reflexe" />
 
-<img src="./images/img_032.png" style="position:absolute; bottom:60px; right:20px; width:320px;" alt="Pseudocode agent reflexe" />
+<img src="./images/img_032.png" style="position:absolute; bottom:30px; right:30px; width:340px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent reflexe" />
 
-**Caracteristiques :**
+<div style="max-width:48%;">
 
-- Pas de memoire
-- Percepts courants
-- Regles Conditions / Actions
-
-**Exemples :**
+- **Pas de memoire**
+- **Percepts courants**
+- **Regles Conditions / Actions**
 
 <div v-click="1">
 
-- Intelligence animale
-
-</div>
+**Intelligence animale**
 
 - Behaviourism
 - Artificial Life
 - Cellular Automata
 
-<img src="./images/img_033.png" width="80">
+</div>
+
+</div>
+
+<img src="./images/img_033.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="A New Kind of Science - Wolfram" />
 
 
 ---
 
 # Agent reflexe fonde sur un modele
 
-<img src="./images/img_034.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Schema agent modele" />
+<img src="./images/img_034.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent modele" />
 
-<img src="./images/img_035.png" style="position:absolute; bottom:60px; right:20px; width:320px;" alt="Architecture subsomption" />
+<img src="./images/img_035.png" style="position:absolute; bottom:30px; right:30px; width:320px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent fonde sur un modele" />
 
-**Caracteristiques :**
+<div style="max-width:48%;">
 
-<div v-click="1">
-
-- Etat du monde
-
-</div>
+**Etat du monde**
 
 - Historique des percepts
 - Memoire du changement
 
-**Exemple : Subsomption (Brooks)**
+<div v-click="1">
+
+**Ex : Subsomption (Brooks)**
 
 - Modele non representatif
 - Comportements simples
 - Couches d'automates
 - Emergence
 
-<img src="./images/img_036.png" width="80">
+</div>
+
+</div>
+
+<img src="./images/img_036.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="Robot Brooks" />
 
 
 ---
