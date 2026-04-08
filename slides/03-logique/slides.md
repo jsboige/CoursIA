@@ -501,7 +501,7 @@ layout: default
 ## Unification
 
 - Trouver une substitution qui rend deux termes identiques
-- Ex: unifier P(x, Jean) et P(Marie, y) -> `{x/Marie, y/Jean}`
+- Ex: unifier P(x, Jean) et P(Marie, y) -> &#123;x/Marie, y/Jean&#125;
 
 ## Modus Ponens generalise
 
@@ -523,7 +523,7 @@ layout: default
 ## Exemples
 
 - Unifier P(x, Jean) et P(Marie, y)
-  - MGU: `{x/Marie, y/Jean}`
+  - MGU: &#123;x/Marie, y/Jean&#125;
   - Resultat: P(Marie, Jean)
 
 - Unifier P(x, x) et P(Jean, Marie)
@@ -551,7 +551,7 @@ layout: default
 
 - Faits: Humain(Socrate)
 - Regle: ∀x (Humain(x) => Mortel(x))
-- Substitution: `{x/Socrate}`
+- Substitution: &#123;x/Socrate&#125;
 - Nouveau fait: Mortel(Socrate)
 
 ---
@@ -573,7 +573,7 @@ layout: default
 
 - But: Mortel(Socrate)
 - Regle: ∀x (Humain(x) => Mortel(x))
-- Substitution: `{x/Socrate}`
+- Substitution: &#123;x/Socrate&#125;
 - Nouveau but: Humain(Socrate)
 - Fait connu: Humain(Socrate) -> Succes!
 
@@ -596,7 +596,7 @@ layout: default
 
 - Unifier des clauses complementaires
 - (P(x) OU Q(x)), (NON P(Jean) OU R(y))
-- Substitution: `{x/Jean}`
+- Substitution: &#123;x/Jean&#125;
 - Resolvante: (Q(Jean) OU R(y))
 
 ---
@@ -852,7 +852,14 @@ layout: default
 
 # Calcul situationnel
 
-<img src="./images/img_024.png" style="position:absolute; top:50px; right:10px; width:420px;" alt="Sequence etats Wumpus S0-S3" />
+<img src="./images/img_024.png" style="position:absolute; top:50px; right:10px; width:350px;" alt="Sequence etats Wumpus S0-S3" />
+
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+<div style="max-width:58%;">
 
 ## Limitations de PDDL
 
@@ -866,12 +873,14 @@ layout: default
 
 ## Etat initial
 
-- Une phrase logique a propos de la situation S0
+- Phrase logique a propos de la situation S0
 - At(Home, S0) ET NON Have(Milk, S0) ET NON Have(Bananas, S0) ET NON Have(Drill, S0)
 
 ## Etat but
 
 - (∃s) At(Home, s) ET Have(Milk, s) ET Have(Bananas, s) ET Have(Drill, s)
+
+</div>
 
 ---
 layout: default
@@ -903,6 +912,11 @@ layout: default
 
 # Planification a ordre partiel
 
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
 ## Planificateur non lineaire
 
 - Construit une liste d'etapes avec des contraintes temporelles
@@ -919,10 +933,10 @@ layout: default
 
 ## Plan non lineaire
 
-- Etapes {S1, S2, S3...}
+- Etapes &#123;S1, S2, S3...&#125;
   - Description d'operateurs + pre et post-conditions
-- Liens causaux {... (Si, C, Sj) ...}
-- Contraintes d'ordre {... Si < Sj ...}
+- Liens causaux &#123;... (Si, C, Sj) ...&#125;
+- Contraintes d'ordre &#123;... Si &lt; Sj ...&#125;
 
 ## Plan complet
 
@@ -987,7 +1001,14 @@ layout: default
 
 # Ontologies
 
-<img src="./images/img_020.png" style="position:absolute; top:50px; right:10px; width:280px;" alt="Ontologie - graphe de connaissances" />
+<img src="./images/img_020.png" style="position:absolute; top:50px; right:10px; width:280px; max-height:400px;" alt="Ontologie - graphe de connaissances" />
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+<div style="max-width:65%;">
 
 ## Objectifs
 
@@ -1008,6 +1029,8 @@ layout: default
 
 - Connaissances sur les croyances
 - Logique modale: mondes possibles
+
+</div>
 
 ---
 layout: default
@@ -1066,6 +1089,11 @@ layout: default
 ---
 
 # Systemes a maintenance de verite
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
 
 ## Revision des croyances
 

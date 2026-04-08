@@ -169,7 +169,7 @@ layout: section
 - **Une définition qui évolue avec la technologie :**
   - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systèmes experts → Apprentissage profond → IA generative
 
-![](./images/img_002.png)
+<img src="./images/img_002.png" style="max-height:320px; margin-top:8px;" alt="Quatre definitions de l'IA" />
 
 ---
 
@@ -403,6 +403,8 @@ layout: section
 
 <img src="./images/img_021.png" style="position:absolute; top:60px; right:20px; width:320px;" alt="Schema agent" />
 
+<div style="max-width:55%;">
+
 **Un agent est une entite autonome qui :**
 - **Percoit** son environnement grace a des capteurs (cameras, micros, senseurs...)
 - **Agit** sur cet environnement par des effecteurs (moteurs, ecrans, haut-parleurs...)
@@ -410,6 +412,8 @@ layout: section
 **Formalisation :**
 - Un agent implemente une *fonction d'agent* : $f: \mathcal{P}^* \to \mathcal{A}$
 - A partir de l'historique complet de ses percepts, il choisit une action
+
+</div>
 
 ---
 
@@ -726,17 +730,23 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 
 <img src="./images/img_037.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent buts" />
 
+<div style="max-width:55%;">
+
 **Du reactif au deliberatif** : l'agent ne reagit plus seulement a l'instant present, il anticipe le futur.
 
 - Considere les consequences de ses actions
 - Planifie des sequences d'actions pour atteindre un objectif
 - Utilise la recherche (exploration) et la planification
 
+</div>
+
 ---
 
 # Agent fonde sur l'utilite
 
 <img src="./images/img_038.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent utilite" />
+
+<div style="max-width:55%;">
 
 **Quand plusieurs chemins menent au but, lequel choisir ?**
 
@@ -747,11 +757,15 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 - Probabilite de succes vs importance de l'objectif
 - Risque vs recompense, urgence vs cout
 
+</div>
+
 ---
 
 # Agent capable d'apprentissage
 
 <img src="./images/img_039.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent apprentissage" />
+
+<div style="max-width:55%;">
 
 **Quatre composants internes :**
 
@@ -761,6 +775,8 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 - **Generateur de problemes** : suggere des actions exploratoires
 
 **Formes d'apprentissage :** supervise, par renforcement, non supervise
+
+</div>
 
 ---
 

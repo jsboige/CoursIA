@@ -129,7 +129,7 @@ fonction Agent-Simple-Resolution-Probleme(percept) retourne une action
   - L'agent peut ne pas savoir ou il est, la solution est une sequence
 - **Non deterministe et/ou partiellement observable** → **probleme de contingence**
   - Les percepts fournissent une **nouvelle** information a propos de l'etat courant
-  - Entrelacement `{calcul, action}`
+  - Entrelacement &#123;calcul, action&#125;
 - **Espaces d'etats inconnu** → **problemes d'exploration en ligne**
 
 ---
@@ -140,7 +140,7 @@ Un **probleme** est defini par les elements suivants :
 
 1. **Etat initial** e.g., "a Arad"
 2. **Actions** ou **fonction successeur** S(x) = ensemble de paires actions - etat
-   - e.g., S(Arad) = `{(Arad → Zerind, Zerind), ... }`
+   - e.g., S(Arad) = &#123;(Arad → Zerind, Zerind), ... &#125;
    - AIMA : ActionsFunction et ResultFunction = **modele de transition**
    - 1+2 = Espace des etats → graphe → chemins
 3. **Test de but**, qui peut etre
@@ -186,7 +186,7 @@ Un **probleme** est defini par les elements suivants :
 <img src="./images/img_005.png" style="position:absolute; top:60px; right:30px; width:350px;" alt="Le taquin 8-puzzle" />
 
 - **Etats** : Position des 8 pieces + case vide
-- **Test de but** : Etat == `{ 0, 1, 2, 3, 4, 5, 6, 7, 8 }`
+- **Test de but** : Etat == &#123; 0, 1, 2, 3, 4, 5, 6, 7, 8 &#125;
 - **Etat initial** : La moitie des etats possibles
 - **Actions** : case vide → gauche, droite, haut, bas
 - **Cout de chemin** : 1 par etape
@@ -425,6 +425,11 @@ fonction EPL-Recursive(noeud, probleme, limite) retourne une solution, ou echec/
 
 ---
 
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+h2 { font-size: 1.1em !important; margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
 # Exploration iterative en profondeur (IDS)
 
 On augmente graduellement l
@@ -444,14 +449,9 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 ## Caracteristiques
 
-- Complet: Oui
-- Complexite en temps: O(b^d)
-- Complexite en espace: O(b^d)
-- Optimale: Oui si cout d'etape = 1
+- Complet: Oui | Temps: O(b^d) | Espace: O(b*d) | Optimale: Oui si cout d'etape = 1
 
-## De facon analogue pour l'exploration a cout uniforme
-
-- Exploration iterative par allongement (ILS)
+**Analogue :** Exploration iterative par allongement (ILS) pour cout uniforme
 
 ---
 
@@ -1099,7 +1099,7 @@ layout: section
 ## Exemple : Coloration de carte
 
 - Variables : WA, NT, Q, NSW, V, T, SA
-- Domaines : `{rouge, vert, bleu}`
+- Domaines : &#123;rouge, vert, bleu&#125;
 - Contraintes : WA != NT, NT != Q, SA != NSW, NSW != V, V != SA
 
 ## Objectif
@@ -1118,7 +1118,7 @@ layout: section
 
 ## Domaines
 
-- `{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}`
+- &#123;0, 1, 2, 3, 4, 5, 6, 7, 8, 9&#125;
 
 ## Contraintes
 
@@ -1200,12 +1200,16 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 # CSPs: Heuristiques de variables et valeurs
 
-<img src="./images/img_054.png" style="position:absolute; top:50px; right:10px; width:420px;" alt="Reduction domaines AC" />
+<img src="./images/img_054.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Reduction domaines AC" />
+
+<div style="max-width:55%;">
 
 ## Choix de variable (MRV, LCV)
 
 - **Most Constrained Variable**: Variable avec le plus petit domaine
 - **Least Constraining Value**: Valeur qui elimine le moins de choix pour les autres variables
+
+</div>
 
 ## Choix de valeur (LCV)
 
@@ -1318,7 +1322,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 - Contraintes avec 3 variables ou plus
 - Ex: problemes cryptarithmetiques
   - Variables: F T U W R O x X1 X2 X3
-  - Domaines: `{0,1,2,3,4,5,6,7,8,9}`
+  - Domaines: &#123;0,1,2,3,4,5,6,7,8,9&#125;
   - Contraintes: Alldiff(F,T,U,W,R,O), O + O = R + 10, etc.
 
 ## Representation
