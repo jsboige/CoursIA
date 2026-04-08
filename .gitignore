@@ -621,3 +621,5 @@ MyIA.AI.Notebooks/QuantConnect/ESGF-Workspace/
 /*.jpg
 .playwright-mcp/
 slides/S4-trading-algorithmique/screenshots/
+# Slidev renders (regenerable via `npx slidev export --format png`)
+slides/*/slidev-render/
