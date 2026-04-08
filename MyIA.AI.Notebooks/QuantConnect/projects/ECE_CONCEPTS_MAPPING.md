@@ -13,7 +13,7 @@
 | 2 | 23-Feature ML Stock Selection | Balssa | Gr01 H.1 | HIGH | DONE | `ML-FeatureEngineering/` |
 | 3 | Causal ML Event Alpha by Sector | ErwanSi | Gr03 G.1 | HIGH | PENDING | - |
 | 4 | Causal Forward-Filter + Feature Engineering | Maisonnave | Gr01 H.4b | HIGH | DONE | `RegimeSwitching/` + `Markov-Regime-Detection/` |
-| 5 | Black-Litterman + Momentum Views | 4 groups | Mixed | MEDIUM | PENDING | - |
+| 5 | Black-Litterman + Momentum Views | 4 groups | Mixed | MEDIUM | DONE | `BlackLitterman-Momentum/` |
 | 6 | Adaptive Conformal Inference Risk Overlay | El Bakkali | Gr02 | MEDIUM | PENDING | - |
 | 7 | Dynamic Delta/Skew Options Logic | Asseli | Gr01 H.5 | MEDIUM | PENDING | - |
 | 8 | RL Environment Design Improvements | Rebot | Gr03 | MEDIUM | PENDING | - |
@@ -234,11 +234,65 @@ MarkovRegime extended from 2024 to 2026, which includes the 2024-2025 bull run w
 
 ---
 
-## 5-8. Medium Priority Concepts (Deferred)
+## 5. Black-Litterman + Momentum Views (DONE)
 
-### 5. Black-Litterman + Momentum Views
+**Student**: 4 groups (Tour/Monteiro, ilhan/Farhan)
+**Local Project**: `projects/BlackLitterman-Momentum/`
+**QC Cloud Project**: #29816300
 
-Four student groups implemented BL variants. Best elements: He & Litterman Omega calibration (ilhan/Farhan), multi-window momentum views with sigmoid confidence (Tour/Monteiro), sector constraints. Would complement Portfolio-Optimization-ML (Sharpe 0.896).
+### Core Concepts
+
+- **He & Litterman (1999) Omega calibration**: View uncertainty matrix proportional to asset covariance, scaled by confidence: omega_i = (P_i * tau*Sigma * P_i') / confidence. No arbitrary diagonal.
+- **Multi-window momentum views with sigmoid confidence**: Momentum over 1m/3m/6m/12m windows, agreement fraction, sigmoid mapping to [0,1] confidence
+- **Black-Litterman posterior**: mu_BL = [(tau*Sigma)^-1 + P'*Omega^-1*P]^-1 * [(tau*Sigma)^-1*pi + P'*Omega^-1*Q]
+- **CAPM implied equilibrium**: pi = delta * Sigma * w_market (price*volume proxy for market cap)
+- **Sector concentration constraints**: Max 30% per sector in SLSQP optimization
+- **Ledoit-Wolf shrinkage covariance**: Pure numpy implementation (no sklearn dependency)
+- **Vol targeting**: Scale weights to target 15% annualized portfolio volatility
+
+### Backtest Results (2015-2026, $100k, IB Margin)
+
+| Metric | BlackLitterman-Momentum | Portfolio-Optimization-ML | Delta |
+|--------|------------------------|---------------------------|-------|
+| Sharpe | 0.779 | 0.896 | -0.117 |
+| CAGR | 16.75% | - | - |
+| Net Profit | 449.7% | - | - |
+| MaxDD | 22.1% | - | - |
+| Win Rate | 58% | - | - |
+| Total Orders | 2437 | - | - |
+| Alpha | 0.046 | - | - |
+| Beta | 0.655 | - | - |
+| PSR | 38.4% | - | - |
+| Sortino | 0.848 | - | - |
+
+### Analysis
+
+The BL-Momentum strategy delivers strong absolute performance (Sharpe 0.779, CAGR 16.75%) but trails the Portfolio-Optimization-ML benchmark (Sharpe 0.896) by 0.117. The BL framework's strength is incorporating investor views (momentum signals) into a theoretically sound equilibrium model, but the pure momentum-based view generation is less powerful than the ML-based return prediction (RF ensemble) used in the benchmark.
+
+Key observations:
+- Annual std dev of 12.4% is well-controlled (vol targeting works)
+- Beta of 0.655 shows moderate market exposure
+- Alpha of 0.046 demonstrates genuine edge
+- 2437 trades over 11 years = ~19 trades/month (monthly liquidate+reallocate)
+
+### Reusable Components
+
+| Component | Location | Reusability |
+|-----------|----------|-------------|
+| `_black_litterman()` | main.py:213-272 | Complete BL posterior with He-Litterman Omega, drop-in for any BL strategy |
+| `_implied_equilibrium_returns()` | main.py:274-291 | CAPM implied returns from any covariance + market weights |
+| `_estimate_covariance()` | main.py:110-157 | Pure numpy Ledoit-Wolf shrinkage, no sklearn dependency |
+| `_compute_momentum_views()` | main.py:159-211 | Multi-window momentum with sigmoid confidence pattern |
+| `_optimize_portfolio()` | main.py:293-353 | SLSQP with sector constraints template |
+
+### Target Strategies
+
+- `Portfolio-Optimization-ML/` (Sharpe 0.896) - benchmark comparison
+- `BlackLitterman-Momentum/` (this strategy, Sharpe 0.779)
+
+---
+
+## 6-8. Medium Priority Concepts (Deferred)
 
 ### 6. Adaptive Conformal Inference Risk Overlay
 
