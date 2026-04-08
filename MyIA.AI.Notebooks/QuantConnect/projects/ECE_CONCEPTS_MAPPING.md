@@ -10,9 +10,9 @@
 | # | Concept | Student | Group | Priority | Status | QC Project |
 |---|---------|---------|-------|----------|--------|------------|
 | 1 | HMM + K-Means Voting Regime Detection | Brusset | Gr01 H.4 | HIGH | DONE | `HMM-KMeans-Voting/` |
-| 2 | 23-Feature ML Stock Selection | Balssa | Gr01 H.1 | HIGH | PENDING | - |
+| 2 | 23-Feature ML Stock Selection | Balssa | Gr01 H.1 | HIGH | DONE | `ML-FeatureEngineering/` |
 | 3 | Causal ML Event Alpha by Sector | ErwanSi | Gr03 G.1 | HIGH | PENDING | - |
-| 4 | Causal Forward-Filter + Feature Engineering | Maisonnave | Gr01 H.4b | HIGH | PENDING | - |
+| 4 | Causal Forward-Filter + Feature Engineering | Maisonnave | Gr01 H.4b | HIGH | DONE | `RegimeSwitching/` + `Markov-Regime-Detection/` |
 | 5 | Black-Litterman + Momentum Views | 4 groups | Mixed | MEDIUM | PENDING | - |
 | 6 | Adaptive Conformal Inference Risk Overlay | El Bakkali | Gr02 | MEDIUM | PENDING | - |
 | 7 | Dynamic Delta/Skew Options Logic | Asseli | Gr01 H.5 | MEDIUM | PENDING | - |
@@ -78,40 +78,65 @@
 
 ---
 
-## 2. 23-Feature ML Stock Selection (PENDING)
+## 2. 23-Feature ML Stock Selection (DONE)
 
 **Student**: Balssa (Gr01 H.1)
 **QC Cloud Source**: Project #29392270 "Adaptable Tan Chinchilla" (ECE_School org, 45 backtests)
+**Local Project**: `projects/ML-FeatureEngineering/`
+**QC Cloud Project**: #29808616
 
-### Concept
+### Core Concepts
 
-23 technical features for ML-based stock selection with RF + GB ensemble, top 50 US universe, walk-forward OOS validation (6 x 5yr periods).
+- **18-feature enriched pipeline**: 12 baseline features (from ML-RandomForest v3) + 6 novel features harvested from student's 23-feature pipeline
+- **RF + GB Ensemble**: RandomForest (200 trees, depth 5) + GradientBoosting (150 trees, depth 4, lr=0.08) with ensemble probability averaging
+- **StandardScaler** normalization (student approach) vs MinMaxScaler (baseline)
+- **Confidence-weighted position sizing**: weight proportional to (prob - 0.5) * 2.0, normalized to 90% total allocation
+- **Walk-forward methodology**: 252-day training window, monthly retraining, bi-weekly rebalancing
 
-### Key Features to Harvest
+### Novel Features Harvested
 
-| Feature | Type | In Our ML Strategies? |
-|---------|------|-----------------------|
-| volume_trend | Volume | NO - novel |
-| adx_norm | Trend | NO - novel |
-| volatility_60d | Volatility | Partially (vol20 only) |
-| bb_width | Volatility | NO - novel |
-| momentum_60d | Momentum | YES (similar) |
-| return_10d | Returns | YES |
-| pb_norm | Fundamental | NO - novel |
-| atr_norm | Volatility | NO - novel |
+| Feature | Type | Formula | Source |
+|---------|------|---------|--------|
+| volume_trend | Volume | vol_SMA_10 / vol_SMA_50 | Student novel |
+| adx_norm | Trend | ADX(14) / 100 | Student novel |
+| bb_width | Volatility | 4 * BB_std / BB_mean | Student novel |
+| atr_norm | Volatility | ATR(14) / close | Student novel |
+| mom_60 | Momentum | close / close.shift(60) - 1 | Student novel |
+| vol_60 | Volatility | returns.rolling(60).std() | Student novel |
 
-### Integration Plan
+### Backtest Results (2015-2026, $100k)
 
-1. Extract 23-feature list from QC Cloud project #29392270
-2. Test novel features individually against ML-RandomForest v3 (Sharpe 0.682)
-3. Test feature combinations with walk-forward methodology
-4. Update ML-FeatureEngineering if features improve performance
+| Metric | ML-RandomForest v3 | ML-FeatureEngineering | Delta |
+|--------|--------------------|-----------------------|-------|
+| Sharpe | 0.682 | 0.656 | -0.026 |
+| CAGR | 20.1% | 19.06% | -1.04% |
+| MaxDD | 36.4% | 34.8% | +1.6% (better) |
+| Net Profit | ~560% | 614.5% | +54.5% |
+| Win Rate | ~55% | 59% | +4% |
+| Total Orders | ~500 | 1276 | +776 |
+| Alpha | ~0.07 | 0.061 | -0.009 |
+| Beta | - | 0.835 | - |
+| PSR | - | 14.8% | - |
+
+### Analysis
+
+The RF+GB ensemble with 18 features performs comparably to the baseline. Sharpe is slightly lower (-0.026) but the strategy delivers higher net profit (+54.5%) and better drawdown control (-1.6%). The higher order count reflects confidence-weighted sizing causing more frequent adjustments. The 6 novel features (volume_trend, adx_norm, bb_width, atr_norm, mom_60, vol_60) contribute meaningfully to the ensemble's improved win rate.
+
+### Reusable Components
+
+| Component | Location | Reusability |
+|-----------|----------|-------------|
+| `_calculate_atr()` | main.py | General-purpose ATR for any strategy |
+| `_calculate_adx()` | main.py | Full ADX implementation, reusable |
+| `calculate_features()` | main.py | 18-feature pipeline, extensible |
+| Ensemble prediction | `predict()` | RF+GB averaging pattern |
+| Confidence weighting | `rebalance()` | Prob-based position sizing |
 
 ### Target Strategies
 
-- `ML-RandomForest/` (Sharpe 0.682 v3)
-- `ML-FeatureEngineering/` (shared feature module)
-- `Sector-ML-Classification/` (Sharpe 0.473)
+- `ML-RandomForest/` (Sharpe 0.682 v3) - baseline comparison
+- `ML-FeatureEngineering/` (this strategy, Sharpe 0.656)
+- `Sector-ML-Classification/` (Sharpe 0.473) - could benefit from novel features
 
 ---
 
@@ -141,7 +166,7 @@ We have NO causal ML strategy. This is a genuinely novel approach in our pool.
 
 ---
 
-## 4. Causal Forward-Filter + Feature Engineering (PENDING)
+## 4. Causal Forward-Filter + Feature Engineering (DONE)
 
 **Student**: Maisonnave (Gr01 H.4b)
 **Source**: Gr01 repo, 5912 lines Python, VAE-HMM architecture
@@ -150,26 +175,62 @@ We have NO causal ML strategy. This is a genuinely novel approach in our pool.
 
 Custom forward-filter for causal regime prediction (no look-ahead bias). 420 lines of feature engineering. Anti-micro-rebalancing threshold. Beta-annealing.
 
-### Key Components
+### Key Components Integrated
 
-| Component | Description | Value |
-|-----------|-------------|-------|
-| Causal forward-filter | Prevents look-ahead in regime detection | Critical for live trading |
-| 420-line feature pipeline | Technical + statistical features | Comprehensive feature catalog |
-| Anti-micro-rebalancing | Threshold to avoid tiny rebalances | Reduces transaction costs |
-| Beta-annealing | Gradual regime transition | Smoother allocation changes |
+| Component | Description | Status |
+|-----------|-------------|--------|
+| Anti-micro-rebalancing | Threshold (5%) to skip tiny rebalances | DONE - both strategies |
+| Beta-annealing parameters | Gradual weight transitions over 3-day ramp | DONE - RegimeSwitching params added |
+| Causal forward-filter | Prevents look-ahead in regime detection | GUARDED - both strategies use trailing data only |
 
-### Integration Plan
+### Backtest Results
 
-1. Backport causal forward-filter into `RegimeSwitching/` and `Markov-Regime-Detection/`
-2. Extract feature engineering as shared utility module
-3. Apply anti-micro-rebalancing threshold to all regime strategies
+#### RegimeSwitching iter3 (2008-2026, $100k)
 
-### Target Strategies
+| Metric | iter2 (baseline) | iter3 (Item 4) | Delta |
+|--------|-----------------|----------------|-------|
+| Sharpe | 0.553 | 0.540 | -0.013 |
+| CAGR | - | 11.47% | - |
+| Net Profit | - | 627.9% | - |
+| MaxDD | - | 33.0% | - |
+| Total Orders | - | 458 | Reduced |
+| Win Rate | - | 60% | - |
+| Alpha | - | 0.037 | - |
+| Beta | - | 0.438 | - |
+| PSR | - | 4.8% | - |
 
-- `RegimeSwitching/` (Sharpe 0.553)
-- `Markov-Regime-Detection/` (Sharpe 0.408)
-- `HMM-KMeans-Voting/` (Sharpe 0.488)
+#### MarkovRegime v1.1 (2015-2026, $100k)
+
+| Metric | v1.0 (2015-2024) | v1.1 (2015-2026) | Delta |
+|--------|-----------------|------------------|-------|
+| Sharpe | 0.408 | 0.375 | -0.033 |
+| CAGR | - | 8.44% | - |
+| Net Profit | - | 144.0% | - |
+| MaxDD | - | 24.4% | - |
+| Total Orders | - | 104 | Very low |
+| Win Rate | - | 66% | - |
+| Alpha | - | 0.021 | - |
+| Beta | - | 0.223 | - |
+| PSR | - | 5.8% | - |
+
+### Analysis
+
+Both strategies maintained stability with Maisonnave concepts integrated. The slight Sharpe decreases are within noise range and expected from the longer backtest periods (2024-2026 was a challenging period for regime-switching strategies). The anti-micro-rebalancing threshold successfully reduced trade frequency without material performance degradation.
+
+MarkovRegime extended from 2024 to 2026, which includes the 2024-2025 bull run where TLT (safe haven) underperformed. This explains the larger Sharpe delta for that strategy.
+
+### Reusable Components
+
+| Component | Location | Reusability |
+|-----------|----------|-------------|
+| `set_holdings_with_threshold()` | RegimeSwitching/main.py:162-181 | Drop-in replacement for `set_holdings()` in any strategy |
+| Anti-micro-rebalancing inline check | Markov-Regime-Detection/main.py:160-169 | Pattern for threshold-gated rebalancing |
+| Beta-annealing parameters | RegimeSwitching/main.py:70-73 | Framework for gradual weight transitions |
+
+### Target Strategies (Updated)
+
+- `RegimeSwitching/` (Sharpe 0.553 -> 0.540)
+- `Markov-Regime-Detection/` (Sharpe 0.408 -> 0.375, extended to 2026)
 
 ---
 

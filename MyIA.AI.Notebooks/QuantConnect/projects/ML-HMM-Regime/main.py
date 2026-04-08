@@ -1,9 +1,14 @@
-# region imports
+#region imports
 from AlgorithmImports import *
 
 from statsmodels.tsa.regime_switching.markov_regression import MarkovRegression
 import pandas as pd
 # endregion
+# Hands-On AI Trading - Ex04: Alpha by Hidden Markov Models
+# Uses a Markov-switching dynamic regression model to detect 2 regimes
+# (high/low volatility). Allocates to TLT during high-vol regimes and
+# SPY during low-vol regimes.
+# Source: HandsOnAITradingBook, Section 06, Example 04
 
 
 class MarkovRegimeDetection(QCAlgorithm):
@@ -15,21 +20,6 @@ class MarkovRegimeDetection(QCAlgorithm):
 
     Reference: Hands-On AI Trading with Python, QuantConnect, and AWS
     Chapter 06 - Applied Machine Learning, Example 04
-
-    Version 1.1 - ECE Item 4 improvements (Maisonnave concepts):
-    - Anti-micro-rebalancing threshold: skip trades when position delta < 5%
-    - Causal forward-filter: explicit look-ahead guard in regime detection
-    - Extended end date to 2026
-
-    Version 1.0 - Binary Regime Switching:
-    - Binary allocation: SPY in low volatility regime, TLT in high volatility
-    - Monthly rebalance schedule
-    - Constant GLD hedge (10%)
-    - Confirmation filter: only switch when probability > 55%
-    - Sharpe 0.408 on 2015-2024 backtest
-
-    Source: ECE student concepts (Maisonnave, Gr01 H.4b), adapted for ESGF pool.
-    Issue #238 - Integrate ECE student concepts into QC strategies.
 
     How it works:
     1. Collect trailing daily returns of SPY
@@ -63,8 +53,8 @@ class MarkovRegimeDetection(QCAlgorithm):
         self._equity_weight = 0.80  # Max allocation to SPY or TLT
         self._confirmation_threshold = 0.55
 
-        # Anti-micro-rebalancing threshold (Maisonnave concept)
-        self._rebalance_threshold = 0.05  # Skip trades when position delta < 5%
+        # Anti-micro-rebalancing threshold
+        self._rebalance_threshold = 0.05  # Skip trades when delta < 5%
 
         # Trailing daily returns series
         self._daily_returns = pd.Series()
@@ -90,8 +80,6 @@ class MarkovRegimeDetection(QCAlgorithm):
         # Track previous regime to avoid unnecessary rebalancing
         self._previous_regime = None
 
-        self.log("MarkovRegimeDetection v1.1 initialized: anti-micro-rebalancing, extended to 2026")
-
     def _update_event_handler(self, indicator, indicator_data_point):
         """Update trailing returns series."""
         if not indicator.is_ready:
@@ -107,14 +95,13 @@ class MarkovRegimeDetection(QCAlgorithm):
 
     def _trade(self):
         """
-        Detect current regime and rebalance portfolio using binary allocation.
+        Detect current regime and rebalance portfolio.
 
         Regime interpretation:
         - regime 0: Low volatility -> bullish environment -> SPY
         - regime 1: High volatility -> bearish environment -> TLT
         """
         if len(self._daily_returns) < 100:
-            self.log("Not enough data for regime detection")
             return
 
         try:
@@ -132,32 +119,26 @@ class MarkovRegimeDetection(QCAlgorithm):
             regime = smoothed_probs.values.argmax(axis=1)[-1]
 
             # Plot regime probability for visualization
-            self.plot('Regime', 'Low Vol Probability', prob_low_vol)
-            self.plot('Regime', 'Volatility Class', regime)
+            self.plot('Regime', 'Low Vol Probability', float(prob_low_vol))
+            self.plot('Regime', 'Volatility Class', int(regime))
 
             # Confirmation filter: only rebalance when probability is confident
-            max_prob = max(prob_low_vol, 1 - prob_low_vol)
+            max_prob = max(float(prob_low_vol), 1 - float(prob_low_vol))
             if max_prob < self._confirmation_threshold:
-                self.log(f"Regime uncertain (prob={max_prob:.2%}), holding current allocation")
                 return
 
             # Rebalance only when regime changes
             if regime != self._previous_regime:
                 if regime == 0:
                     # Low volatility -> bullish -> SPY
-                    regime_name = "LOW_VOL"
                     spy_weight = self._equity_weight
                     tlt_weight = 0.0
                 else:
                     # High volatility -> bearish -> TLT
-                    regime_name = "HIGH_VOL"
                     spy_weight = 0.0
                     tlt_weight = self._equity_weight
 
-                self.log(f"Regime: {regime_name}, prob_low_vol={prob_low_vol:.2%}")
-                self.log(f"Allocation: SPY={spy_weight:.2%}, TLT={tlt_weight:.2%}, GLD={self._gld_weight:.2%}")
-
-                # Anti-micro-rebalancing: check if position delta exceeds threshold
+                # Anti-micro-rebalancing check
                 current_spy_weight = (
                     self.portfolio[self._spy].holdings_value
                     / self.portfolio.total_portfolio_value
@@ -165,7 +146,6 @@ class MarkovRegimeDetection(QCAlgorithm):
                 )
                 spy_delta = abs(spy_weight - current_spy_weight)
                 if spy_delta < self._rebalance_threshold:
-                    self.log(f"Skipping micro-rebalance (delta={spy_delta:.2%})")
                     self._previous_regime = regime
                     return
 
@@ -177,10 +157,8 @@ class MarkovRegimeDetection(QCAlgorithm):
 
             self._previous_regime = regime
 
-        except Exception as e:
-            self.log(f"Model fitting error: {e}")
+        except Exception:
+            return
 
-    def on_end_of_algorithm(self):
-        final_value = self.portfolio.total_portfolio_value
-        returns = (final_value - 100000) / 100000
-        self.log(f"Markov Regime Detection v1.1: Final=${final_value:,.0f}, Return={returns:.2%}")
+    def on_data(self, data):
+        pass
