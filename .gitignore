@@ -465,6 +465,9 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/jdk-17-portable/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/resources/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/
 
+# Choco solver JAR (downloaded by Sudoku-11 notebook)
+MyIA.AI.Notebooks/Sudoku/choco-solver-*-jar-with-dependencies.jar
+
 # ============================================================================
 # EXCEPTIONS POSITIVES - Binaires Tweety PRECIEUX à versionner
 # ============================================================================
