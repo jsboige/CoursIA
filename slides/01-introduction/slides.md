@@ -200,11 +200,10 @@ L'IA est une discipline profondement interdisciplinaire :
 - **Linguistique :** grammaires, representation du sens
 
 ---
-layout: image-right
-image: ./images/img_004.png
----
 
 # Histoire succincte (1/2)
+
+<img src="./images/img_004.png" style="position:absolute; top:60px; right:20px; width:340px;" alt="Frise chronologique IA" />
 
 **Les debuts (1943-1970)**
 - **1943** : McCulloch & Pitts modélisent le cerveau comme un circuit logique
@@ -316,11 +315,10 @@ image: ./images/img_004.png
 - **Quotidien** : assistants vocaux (Siri, Alexa), traduction automatique, filtres photo
 
 ---
-layout: image-right
-image: ./images/img_020.png
----
 
 # Agir comme l'homme : le Test de Turing
+
+<img src="./images/img_020.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Test de Turing" />
 
 **Alan Turing (1950)** propose un test operationnel : une machine est "intelligente" si un humain ne peut la distinguer d'un autre humain en conversant avec elle.
 
@@ -400,11 +398,10 @@ layout: section
 - Presentation des projets de groupe
 
 ---
-layout: image-right
-image: ./images/img_021.png
----
 
 # Les agents
+
+<img src="./images/img_021.png" style="position:absolute; top:60px; right:20px; width:320px;" alt="Schema agent" />
 
 **Un agent est une entite autonome qui :**
 - **Percoit** son environnement grace a des capteurs (cameras, micros, senseurs...)
@@ -441,22 +438,61 @@ image: ./images/img_021.png
 
 # Intelligences
 
-
-**Procedurale** -- Automates, Algorithmes
-
-**Intelligence exploratoire** -- Recherche de chemin, Exploration locale, Satisfaction de contraintes
-
-**Intelligence symbolique** -- Raisonnement, Bases de connaissances, Plans
-
-**Intelligence probabiliste** -- Inference Bayesienne, Recherche de politique, Analyse strategique
-
-::right::
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
-<img src="./images/img_022.jpg" style="max-height: 140px; object-fit: contain;">
-<img src="./images/img_023.png" style="max-height: 140px; object-fit: contain;">
-<img src="./images/img_026.png" style="max-height: 140px; object-fit: contain;">
-<img src="./images/img_027.jpg" style="max-height: 140px; object-fit: contain;">
+<div style="position:absolute; top:70px; left:25px; right:25px; bottom:35px;">
+  <!-- Procedurale (outermost) -->
+  <div style="background:#c0522e; border-radius:20px; padding:12px 14px 10px; height:100%; position:relative; color:white; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+      <span style="font-size:1.5em; font-weight:bold;">Procedurale</span>
+      <img src="./images/img_022.jpg" style="height:60px; border-radius:6px; object-fit:cover;" />
+    </div>
+    <div style="position:absolute; top:12px; right:14px; display:flex; flex-direction:column; gap:4px;">
+      <span style="background:white; color:#333; padding:3px 12px; border-radius:4px; font-size:0.7em;">Automates</span>
+      <span style="background:white; color:#333; padding:3px 12px; border-radius:4px; font-size:0.7em;">Algorithmes</span>
+    </div>
+    <!-- Exploratoire -->
+    <div style="background:#d07050; border:2px dashed rgba(255,255,255,0.5); border-radius:12px; padding:8px 12px; flex:1; position:relative; display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <span style="font-size:1.25em; font-weight:bold;">Exploratoire</span>
+        <img src="./images/img_024.jpg" style="height:55px; border-radius:5px; object-fit:cover;" />
+      </div>
+      <div style="display:flex; gap:8px; flex:1;">
+        <!-- Left column: Exploratoire items -->
+        <div style="display:flex; flex-direction:column; gap:4px; min-width:110px; justify-content:center;">
+          <span style="background:white; color:#333; padding:2px 8px; border-radius:4px; font-size:0.6em; white-space:nowrap;">Recherche de chemin</span>
+          <span style="background:white; color:#333; padding:2px 8px; border-radius:4px; font-size:0.6em;">Escalades</span>
+          <span style="background:white; color:#333; padding:2px 8px; border-radius:4px; font-size:0.6em;">Arbres de jeux</span>
+          <span style="background:white; color:#333; padding:2px 8px; border-radius:4px; font-size:0.6em; white-space:nowrap;">Satisfaction de contraintes</span>
+        </div>
+        <!-- Symbolique -->
+        <div style="flex:1; background:#d8886e; border:2px dashed rgba(255,255,255,0.5); border-radius:10px; padding:6px 10px; position:relative; display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px;">
+            <span style="font-size:1.1em; font-weight:bold;">Symbolique</span>
+            <img src="./images/img_025.jpg" style="height:45px; border-radius:4px; object-fit:cover;" />
+          </div>
+          <div style="display:flex; gap:6px; flex:1;">
+            <!-- Symbolique items -->
+            <div style="display:flex; flex-direction:column; gap:3px; min-width:100px; justify-content:center;">
+              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Raisonnement</span>
+              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em; white-space:nowrap;">Bases de connaissances</span>
+              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Solveurs</span>
+              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Planificateurs</span>
+              <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Smart-contracts</span>
+            </div>
+            <!-- Probabiliste (innermost) -->
+            <div style="flex:1; background:#dea08a; border:2px dashed rgba(255,255,255,0.5); border-radius:8px; padding:5px 8px; display:flex; flex-direction:column; justify-content:center;">
+              <div style="font-size:0.95em; font-weight:bold; margin-bottom:4px;">Probabiliste</div>
+              <div style="display:flex; flex-wrap:wrap; gap:4px; align-content:center;">
+                <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Modeles graphiques</span>
+                <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em;">Reseaux de decision</span>
+                <span style="background:white; color:#333; padding:2px 6px; border-radius:3px; font-size:0.55em; white-space:nowrap;">Politiques Markoviennes</span>
+                <span style="background:#8b5cf6; color:white; padding:2px 6px; border-radius:3px; font-size:0.55em;">Theorie des jeux</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 
@@ -521,16 +557,17 @@ image: ./images/img_021.png
 # Environnements de tache: exemples
 
 <style>
-table { font-size: 0.7em; }
+table { font-size: 0.58em; }
+td, th { padding: 3px 6px; }
 </style>
 
-| Agent | Performance | Environnement | Effecteurs | Capteurs |
+| Type d'agent | Mesure de performance | Environnement | Effecteurs | Capteurs |
 |-------|------------|--------------|-----------|---------|
-| Diagnostic | Patients gueris | Hopital | Tests, traitements | Symptomes |
-| Satellites | Categorisation | Orbite | Scene classifiee | Pixels |
-| Robot trieur | % correct | Tapis roulant | Bras articule | Camera |
-| Raffinerie | Purete, securite | Raffinerie | Valves, pompes | Temp., pression |
-| Repetiteur | Notes etudiants | Etudiants | Corrections | Clavier |
+| Diagnostic medical | Retablissement patients, minimisation couts | Patient, hopital, personnel | Affichage questions, tests, diagnostics, traitements | Clavier symptomes, recherches, reponses patient |
+| Analyse images satellites | Categorisation correcte des images | Liaison depuis satellite en orbite | Affichage categorisation de la scene | Tableaux de pixels colores |
+| Robot controleur pieces | % pieces dans bonnes corbeilles | Tapis roulant, pieces, corbeilles | Bras et main articules | Camera, capteurs articules |
+| Controleur raffinerie | Purete, production, securite | Raffinerie, operateurs | Valves, pompes, rechauffeurs, affichages | Capteurs temperature, pression, chimiques |
+| Repetiteur anglais | Notes etudiants aux controles | Etudiants, organisme de tests | Exercices, suggestions, corrections | Entrees au clavier |
 
 ---
 
@@ -571,40 +608,51 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 
 </div>
 
+<div v-click="4">
+
 **En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, sequentiel, dynamique, continu, multiagent.
+
+</div>
 
 ---
 
 # Types d'environnement: exemples
 
 <style>
-table { font-size: 0.65em; }
+table { font-size: 0.55em; }
+td, th { padding: 2px 5px; }
 </style>
 
-| Tache | Obs. | Agents | Determ. | Epis. | Stat. | Discr. |
+| Environnement | Observable | Agents | Deterministe | Episodique | Statique | Discret |
 |-------|------|--------|---------|-------|-------|--------|
-| Echecs | O | Multi | O | N | Semi | O |
-| Poker | N | Multi | N | N | Stat. | O |
-| Backgammon | O | Multi | N | N | Semi | O |
-| Conduite | P | Multi | N | N | N | N |
-| Diagnostic | P | Simple | N | N | N | N |
-| Analyse img | O | Simple | O | O | Semi | N |
-| Robot trieur | P | Simple | N | N | N | N |
-| Raffinerie | P | Simple | N | N | N | N |
-| Repetiteur | N | Multi | N | N | N | N |
+| Mots croises | Entierement | Mono | Deterministe | Sequentiel | Statique | Discret |
+| Echecs chrono. | Entierement | Multi | Deterministe | Sequentiel | Semi | Discret |
+| Poker | Partiellement | Multi | Stochastique | Sequentiel | Statique | Discret |
+| Backgammon | Entierement | Multi | Stochastique | Sequentiel | Statique | Discret |
+| Conduite taxi | Partiellement | Multi | Stochastique | Sequentiel | Dynamique | Continu |
+| Diagnostic med. | Partiellement | Mono | Stochastique | Sequentiel | Dynamique | Continu |
+| Analyse images | Entierement | Mono | Deterministe | Episodique | Semi | Continu |
+| Robot detecteur | Partiellement | Mono | Stochastique | Episodique | Dynamique | Continu |
+| Raffinerie | Partiellement | Mono | Stochastique | Sequentiel | Dynamique | Continu |
+| Repetiteur anglais | Partiellement | Multi | Stochastique | Sequentiel | Dynamique | Discret |
 
----
-layout: image-right
-image: ./images/img_030.png
 ---
 
 # Types d'agents
 
+<img src="./images/img_030.png" style="position:absolute; top:100px; right:20px; width:280px;" alt="Pseudocode agent par table" />
+
+<div style="max-width:55%;">
+
 **f(agent) = Architecture physique + Programme**
+
+**Programme agent pilote par table**
+
+- Taille ? Duree ? Autonomie ?
 
 Un agent naif pourrait stocker une table "percepts → action", mais cette approche est impraticable : la table serait gigantesque et impossible a construire.
 
-**Cinq architectures d'agents, par ordre de généralité :**
+**Cinq architectures d'agents, par ordre de generalite :**
 
 1. Agent reflexe simple
 2. Agent reflexe fonde sur un modele
@@ -612,20 +660,23 @@ Un agent naif pourrait stocker une table "percepts → action", mais cette appro
 4. Agent fonde sur l'utilite
 5. Agent capable d'apprentissage
 
----
-layout: two-cols
+</div>
+
 ---
 
 # Agent reflexe
 
+<img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Schema agent reflexe" />
 
-**Caractéristiques:**
+<img src="./images/img_032.png" style="position:absolute; bottom:60px; right:20px; width:320px;" alt="Pseudocode agent reflexe" />
 
-- Pas de mémoire
+**Caracteristiques :**
+
+- Pas de memoire
 - Percepts courants
 - Regles Conditions / Actions
 
-**Exemples:**
+**Exemples :**
 
 <div v-click="1">
 
@@ -639,21 +690,16 @@ layout: two-cols
 
 <img src="./images/img_033.png" width="80">
 
-::right::
 
-<img src="./images/img_031.png" width="420">
-
-<img src="./images/img_032.png" width="350">
-
-
----
-layout: two-cols
 ---
 
 # Agent reflexe fonde sur un modele
 
+<img src="./images/img_034.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Schema agent modele" />
 
-**Caractéristiques:**
+<img src="./images/img_035.png" style="position:absolute; bottom:60px; right:20px; width:320px;" alt="Architecture subsomption" />
+
+**Caracteristiques :**
 
 <div v-click="1">
 
@@ -662,9 +708,9 @@ layout: two-cols
 </div>
 
 - Historique des percepts
-- Mémoire du changement
+- Memoire du changement
 
-**Exemple: Subsomption (Brooks)**
+**Exemple : Subsomption (Brooks)**
 
 - Modele non representatif
 - Comportements simples
@@ -673,19 +719,12 @@ layout: two-cols
 
 <img src="./images/img_036.png" width="80">
 
-::right::
 
-<img src="./images/img_034.png" width="420">
-
-<img src="./images/img_035.png" width="350">
-
-
----
-layout: image-right
-image: ./images/img_037.png
 ---
 
 # Agent fonde sur des buts
+
+<img src="./images/img_037.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent buts" />
 
 **Du reactif au deliberatif** : l'agent ne reagit plus seulement a l'instant present, il anticipe le futur.
 
@@ -694,11 +733,10 @@ image: ./images/img_037.png
 - Utilise la recherche (exploration) et la planification
 
 ---
-layout: image-right
-image: ./images/img_038.png
----
 
 # Agent fonde sur l'utilite
+
+<img src="./images/img_038.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent utilite" />
 
 **Quand plusieurs chemins menent au but, lequel choisir ?**
 
@@ -710,16 +748,15 @@ image: ./images/img_038.png
 - Risque vs recompense, urgence vs cout
 
 ---
-layout: image-right
-image: ./images/img_039.png
----
 
 # Agent capable d'apprentissage
+
+<img src="./images/img_039.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent apprentissage" />
 
 **Quatre composants internes :**
 
 - **Element de performance** : choisit les actions
-- **Element d'apprentissage** : ameliore la performance a partir de l'expérience
+- **Element d'apprentissage** : ameliore la performance a partir de l'experience
 - **Critique** : evalue les resultats par rapport a un standard fixe
 - **Generateur de problemes** : suggere des actions exploratoires
 
@@ -729,17 +766,29 @@ image: ./images/img_039.png
 
 # Fonctionnement interne des agents
 
-**La représentation de la connaissance est determinante**
+**La representation de la connaissance est determinante**
 
 Trois niveaux de representation des etats, du plus simple au plus expressif :
 
+<div v-click="1">
+
 - **Atomique** : chaque etat est indivisible (ex: un noeud dans un graphe)
+
+</div>
+<div v-click="2">
+
 - **Factorise** : un etat est un ensemble de proprietes (ex: variables booleennes)
+
+</div>
+<div v-click="3">
+
 - **Structure** : un etat est un objet complexe avec des relations (ex: base de donnees)
+
+</div>
 
 **Compromis fondamental :** plus la representation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
 
-<img src="./images/img_040.png" style="display:block; margin:8px auto; max-height:30vh;" alt="Representations: Atomique, Factorisee, Structuree" />
+<img src="./images/img_040.png" style="display:block; margin:8px auto; max-height:25vh;" alt="Representations: Atomique, Factorisee, Structuree" />
 
 ---
 
@@ -778,12 +827,13 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 Chaque chapitre du cours est accompagne de travaux pratiques sous forme de notebooks Jupyter :
 
-- **Exploration** : `Search/`, `Sudoku/` -- CSP, algorithmes genetiques, optimisation
-- **Logique** : `SymbolicAI/`, `Lean/` -- Z3, Tweety, Lean 4, argumentation
-- **Probabilites** : `Probas/Infer/` -- inference bayesienne, réseaux de decision
-- **Jeux** : `GameTheory/` -- equilibres de Nash, jeux bayesiens, MARL
-- **Apprentissage** : `ML/`, `RL/` -- classification, regression, renforcement
-- **IA Generative** : `GenAI/` -- DALL-E, Stable Diffusion, LLMs, RAG
+- **Exploration** : `Search/Part1-Foundations/` (11 notebooks), `Search/Part2-CSP/` (9 notebooks), `Sudoku/` (16 notebooks) -- recherche, CSP, algorithmes genetiques, optimisation
+- **Logique** : `SymbolicAI/` -- Z3, Tweety, Lean 4, argumentation, smart-contracts
+- **Probabilites** : `Probas/Infer/` -- inference bayesienne, réseaux de decision (Infer.NET)
+- **Jeux** : `GameTheory/` -- equilibres de Nash, jeux bayesiens, MARL (OpenSpiel)
+- **Apprentissage** : `ML/` -- classification, regression, renforcement (ML.NET)
+- **IA Generative** : `GenAI/` -- Image (19 notebooks), Audio (16), Video (16), Texte (10)
+- **Trading** : `QuantConnect/` -- 28 notebooks + 67 strategies backtestees
 
 > **Depot :** `github.com/jsboige/CoursIA` > dossier `MyIA.AI.Notebooks/`
 

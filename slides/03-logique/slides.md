@@ -88,6 +88,8 @@ layout: default
 
 # Exemple: le monde du Wumpus
 
+<img src="./images/img_003.png" style="position:absolute; top:50px; right:10px; height:320px;" alt="Grille du monde du Wumpus" />
+
 ## Jeu de role simpliste
 
 ### Environnement
@@ -123,6 +125,8 @@ layout: default
 ---
 
 # Representation et logique
+
+<img src="./images/img_007.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Relation semantique enonces et monde reel" />
 
 ## Syntaxe
 
@@ -179,6 +183,8 @@ layout: default
 ---
 
 # Syntaxe de la logique propositionnelle
+
+<img src="./images/img_008.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Grammaire BNF logique propositionnelle" />
 
 ## Symboles
 
@@ -248,6 +254,8 @@ layout: default
 
 # Regles d'infrence
 
+<img src="./images/img_011.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques" />
+
 ## Modus Ponens
 
 - Si P est vrai et P => Q est vrai, alors Q est vrai
@@ -279,6 +287,8 @@ layout: default
 
 # Resolution
 
+<img src="./images/img_012.png" style="position:absolute; top:50px; right:20px; width:200px;" alt="Arbre de resolution" />
+
 ## Clause
 
 - Disjonction de litteraux: P1 OU P2 OU ... OU Pn OU NON Q1 OU ... OU NON Qm
@@ -308,6 +318,8 @@ layout: default
 ---
 
 # Forward et Backward Chaining
+
+<img src="./images/img_013.png" style="position:absolute; top:60px; right:20px; width:180px;" alt="Clauses Forward Chaining" />
 
 ## Forward Chaining (chaine avant)
 
@@ -382,6 +394,8 @@ layout: default
 ---
 
 # Syntaxe de la logique du premier ordre
+
+<img src="./images/img_019.png" style="position:absolute; top:50px; right:10px; width:320px;" alt="Grammaire BNF FOL" />
 
 ## Termes
 
@@ -546,6 +560,8 @@ layout: default
 
 # Backward chaining en FOL
 
+<img src="./images/img_022.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Arbre backward chaining Criminal(West)" />
+
 ## Principe
 
 1. Partir du but
@@ -638,6 +654,8 @@ layout: default
 
 # Definition d'un domaine de planification
 
+<img src="./images/img_025.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Domaine PDDL Air Cargo" />
+
 ## Planning Domain Definition Language (PDDL)
 
 - Similaire a la logique du premier ordre (FOL)
@@ -720,6 +738,8 @@ layout: default
 
 # Exploration de l'espace des etats
 
+<img src="./images/img_027.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Graphe espace etats planification" />
+
 ## Complexite de la planification classique
 
 - PlanSAT: Y-a-t-il un plan? -> PSPACE > NP
@@ -764,6 +784,8 @@ layout: default
 
 # Graphes de planification
 
+<img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:500px;" alt="Graphe de planification Have/Eat/Bake Cake" />
+
 ## Structure de donnees
 
 - Generee a partir d'un probleme de planification
@@ -788,6 +810,8 @@ layout: default
 ---
 
 # Algorithme GraphPlan
+
+<img src="./images/img_030.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Algorithme GraphPlan" />
 
 ```
 fonction GRAPHPLAN(probleme) retourne solution ou echec
@@ -827,6 +851,8 @@ layout: default
 ---
 
 # Calcul situationnel
+
+<img src="./images/img_024.png" style="position:absolute; top:50px; right:10px; width:420px;" alt="Sequence etats Wumpus S0-S3" />
 
 ## Limitations de PDDL
 
@@ -961,6 +987,8 @@ layout: default
 
 # Ontologies
 
+<img src="./images/img_020.png" style="position:absolute; top:50px; right:10px; width:280px;" alt="Ontologie - graphe de connaissances" />
+
 ## Objectifs
 
 - Representation des connaissances a grande echelle
@@ -986,6 +1014,8 @@ layout: default
 ---
 
 # Web semantique
+
+<img src="./images/img_042.jpg" style="position:absolute; top:60px; right:20px; width:200px;" alt="dotNetRDF" />
 
 ## Resource Description Framework (RDF)
 
