@@ -389,17 +389,27 @@ The ACI overlay on multi-factor momentum delivers Sharpe 0.604, outperforming Se
 - **Black-Scholes pricing model**: Enabled for Greeks computation during backtests
 - **Dynamic delta targeting**: 0.40 delta (low IV) to 0.20 delta (high IV), with skew adjustment
 
-### Backtest Results (2020-2026, $100k, v4 interim)
+### Backtest Results (2020-2026, $100k SPY Options Wheel)
 
 | Metric | Dynamic-Options-Wheel | Option-Wheel (benchmark) |
 |--------|----------------------|--------------------------|
-| PSR | 21.3% (interim) | - |
-| Net Profit (closed) | $2,451 | - |
-| Return (total) | -6.25% (interim) | - |
-| Fees | $5.85 | - |
-| Volume | $3,198 | - |
+| CAGR | 5.592% | - |
+| Net Profit | 38.651% | - |
+| Sharpe Ratio | 0.119 | - |
+| PSR | 3.827% | - |
+| Max Drawdown | 31.4% | - |
+| Win Rate | 74% | - |
+| Average Win | 0.83% | - |
+| Average Loss | -6.21% | - |
+| Total Trades | 179 | - |
+| Total Orders | 179 | - |
+| Total Fees | $118.55 | - |
+| Alpha | -0.036 | - |
+| Beta | 0.571 | - |
+| Profit-Loss Ratio | 0.13 | - |
+| Expectancy | -0.158 | - |
 
-Note: Full backtest still processing on QC Cloud (backtest ID: 9e881c62). Minute-resolution options with Greeks is computationally intensive. Interim runtime stats show the strategy executing the wheel correctly: collecting premium in calm periods, experiencing drawdowns when assigned during market stress (typical wheel behavior), and recovering through covered calls. Results will be updated when backtest completes.
+Analysis: The strategy achieves positive CAGR (5.6%) and high win rate (74%), typical of premium-selling strategies. The low profit-loss ratio (0.13) and negative expectancy (-0.158) indicate that occasional large losses from assignment erode premium income. Sharpe 0.119 is positive but modest. The dynamic IV-based strike selection shows the intended adaptive behavior: tighter strikes in low IV, wider in high IV. This is a functional proof-of-concept for IV-adaptive options wheel logic.
 
 ### Reusable Components
 
