@@ -23,6 +23,12 @@ Guidance for Claude Code working with the CoursIA repository.
 
 ---
 
+## RÈGLE - Traitement des missions dans l'ordre
+
+**Les missions dispatchees par le coordinateur sont traitees dans l'ordre chronologique, sans demander a l'utilisateur de choisir.** Le coordinateur (ai-01) priorise via le dashboard RooSync. L'agent execute dans l'ordre et rapporte les resultats. Pas de AskUserQuestion pour le choix de missions.
+
+---
+
 ## RÈGLE - RooSync Dashboard : toujours lire le contenu complet
 
 Le **dashboard RooSync workspace CoursIA** (`roosync_dashboard` type=workspace, workspace=CoursIA) est le canal central de coordination cross-machine. Il contient le status du coordinateur (ai-01), les missions assignees, les resultats backtests, les decisions de consolidation, et l'intercom entre agents.
