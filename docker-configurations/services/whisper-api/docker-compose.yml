@@ -47,6 +47,7 @@ services:
       - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
       - TZ=${TZ:-Europe/Paris}
+      - API_KEY=${WHISPER_API_KEY:-}
 
     healthcheck:
       test: ["CMD-SHELL", "curl -s http://localhost:8190/health | grep -q healthy"]

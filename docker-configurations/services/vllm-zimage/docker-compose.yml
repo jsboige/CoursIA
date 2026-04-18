@@ -35,6 +35,8 @@ services:
       - "2"
       - "--vae-use-slicing"
       - "--vae-use-tiling"
+      - "--api-key"
+      - "${VLLM_API_KEY:-}"
     deploy:
       resources:
         reservations:
