@@ -61,9 +61,9 @@ Basé sur le contenu réel du repo GitHub `QuantConnect/HandsOnAITradingBook` :
 | 03 Reversion vs Trending by Classification | Classification momentum/mean reversion | QC-Py-19-ML-Supervised-Classification | ✅ |
 | 04 Alpha by Hidden Markov Models | HMM pour régimes | QC-Py-25-Reinforcement-Learning, ESGF-2026/examples/Markov-Regime-Detection | ✅ **NEW** |
 | 05 FX SVM Wavelet Forecasting | SVM + Wavelet decomposition, QC-Py-22-Deep-Learning-LSTM, ⚠️ Approche différente |
-| 06 Dividend Harvesting Selection | Sélection dividendes | QC-Py-08-Multi-Asset-Strategies | ⚠️ Concept lié |
+| 06 Dividend Harvesting Selection | Sélection dividendes | QC-Py-08-Multi-Asset-Strategies, [Dividend-Harvesting-ML](../projects/Dividend-Harvesting-ML/) | ✅ **NEW** |
 | 07 Effect of Positive-Negative Splits | Stock splits | QC-Py-05-Universe-Selection | ⚠️ Concept lié |
-| 08 Stoploss based on Volatility/Drawdown | Stoploss dynamique | QC-Py-10-Risk-Portfolio-Management | ✅ |
+| 08 Stoploss based on Volatility/Drawdown | Stoploss dynamique | QC-Py-10-Risk-Portfolio-Management, [Stoploss-Volatility-ML](../projects/Stoploss-Volatility-ML/) | ✅ **NEW** |
 | 09 ML Trading Pairs Selection | Pairs trading ML | QC-Py-13-Alpha-Models | ✅ |
 | 10 Stock Selection by Clustering | Clustering fundamental data | QC-Py-19-ML-Supervised-Classification | ✅ |
 | 11 Inverse Volatility Rank and Allocate | Volatilité inverse | QC-Py-10-Risk-Portfolio-Management | ✅ |
@@ -110,6 +110,8 @@ Le livre se concentre sur ML/AI appliqué au trading. Voici les projets CoursIA 
 | [LSTM-Forecasting](../projects/LSTM-Forecasting/) | LSTM Forecasting (Ex07) | ✅ **NEW** |
 | [Reinforcement-Learning-Trading](../projects/Reinforcement-Learning-Trading/) | DQN Trading (Ex08) | ✅ **NEW** |
 | [Chronos-Foundation-Forecasting](../projects/Chronos-Foundation-Forecasting/) | Chronos Foundation Model (Ex18) | ✅ **NEW** |
+| [Stoploss-Volatility-ML](../projects/Stoploss-Volatility-ML/) | Lasso stop-loss with SPY vol proxy (Ex08) | ✅ **NEW** |
+| [Dividend-Harvesting-ML](../projects/Dividend-Harvesting-ML/) | DecisionTree dividend yield prediction (Ex06) | ✅ **NEW** |
 
 ---
 
