@@ -105,7 +105,9 @@ class TradeCostEstimationAlgorithm(QCAlgorithm):
             )
 
     def _entry(self):
-        """Buy BTC at midnight."""
+        """Buy BTC at midnight, only if not already holding."""
+        if self.portfolio[self._symbol].quantity > 0:
+            return
         self.market_order(self._symbol, self._quantity)
 
     def _exit_schedule(self):
@@ -123,9 +125,16 @@ class TradeCostEstimationAlgorithm(QCAlgorithm):
             return
         if self._model is None:
             self._model = DecisionTreeRegressor(
-                max_depth=10, random_state=0
+                max_depth=5, random_state=0
             )
-        self._model.fit(self._factors, self._costs)
+        # Align factors and costs on common indices
+        common_idx = self._factors.index.intersection(self._costs.index)
+        if len(common_idx) < 20:
+            return
+        self._model.fit(
+            self._factors.loc[common_idx],
+            self._costs.loc[common_idx]
+        )
 
     def _trim_samples(self):
         """Keep only recent samples within lookback window."""
@@ -237,4 +246,4 @@ class SpreadSlippageModel:
     """Simple spread-based slippage model for crypto market orders."""
 
     def get_slippage_approximation(self, asset, order):
-        return asset.ask_price - asset.bid_price
+        return (asset.ask_price - asset.bid_price) / 2
