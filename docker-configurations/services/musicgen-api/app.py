@@ -28,6 +28,7 @@ import scipy.io.wavfile as wavfile
 # Add shared module to path
 sys.path.insert(0, "/app/shared")
 from lazy_model import LazyModelManager, idle_checker_task, get_all_status
+from auth_middleware import setup_auth
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -57,6 +58,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Bearer token authentication
+setup_auth(app)
 
 
 class MusicGenModelWrapper:
