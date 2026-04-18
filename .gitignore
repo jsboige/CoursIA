@@ -580,3 +580,7 @@ MyIA.AI.Notebooks/QuantConnect/VIX-TermStructure-Researcher/
 MyIA.AI.Notebooks/QuantConnect/lean.json
 MyIA.AI.Notebooks/QuantConnect/ESGF-Workspace/
 
+# Reports and temporary assets (use RooSync dashboard instead)
+rapports/
+*.png.bak
+
