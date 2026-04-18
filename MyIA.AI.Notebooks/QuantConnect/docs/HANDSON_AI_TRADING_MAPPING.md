@@ -60,20 +60,20 @@ Basé sur le contenu réel du repo GitHub `QuantConnect/HandsOnAITradingBook` :
 | 02 Factor Preprocessing for Regime Detection | Régimes de marché | QC-Py-25-Reinforcement-Learning, ESGF-2026/examples/Markov-Regime-Detection | ✅ **NEW** |
 | 03 Reversion vs Trending by Classification | Classification momentum/mean reversion | QC-Py-19-ML-Supervised-Classification | ✅ |
 | 04 Alpha by Hidden Markov Models | HMM pour régimes | QC-Py-25-Reinforcement-Learning, ESGF-2026/examples/Markov-Regime-Detection | ✅ **NEW** |
-| 05 FX SVM Wavelet Forecasting | SVM + Wavelet decomposition, QC-Py-22-Deep-Learning-LSTM, ⚠️ Approche différente |
-| 06 Dividend Harvesting Selection | Sélection dividendes | QC-Py-08-Multi-Asset-Strategies | ⚠️ Concept lié |
-| 07 Effect of Positive-Negative Splits | Stock splits | QC-Py-05-Universe-Selection | ⚠️ Concept lié |
-| 08 Stoploss based on Volatility/Drawdown | Stoploss dynamique | QC-Py-10-Risk-Portfolio-Management | ✅ |
+| 05 FX SVM Wavelet Forecasting | SVM + Wavelet decomposition | projects/SVM-Wavelet-Forecasting | ✅ **NEW** (Sharpe 0.17) |
+| 06 Dividend Harvesting Selection | Sélection dividendes | projects/Dividend-Harvesting-ML | ✅ **NEW** |
+| 07 Effect of Positive-Negative Splits | Stock splits ML | projects/Positive-Negative-Splits-ML | ✅ **NEW** (Sharpe 1.74) |
+| 08 Stoploss based on Volatility/Drawdown | Stoploss ML (Lasso) | projects/Stoploss-Volatility-ML | ✅ **NEW** |
 | 09 ML Trading Pairs Selection | Pairs trading ML | QC-Py-13-Alpha-Models | ✅ |
 | 10 Stock Selection by Clustering | Clustering fundamental data | QC-Py-19-ML-Supervised-Classification | ✅ |
 | 11 Inverse Volatility Rank and Allocate | Volatilité inverse | QC-Py-10-Risk-Portfolio-Management | ✅ |
 | 12 Trading Costs Optimization | Coûts de trading | QC-Py-14-Portfolio-Construction-Execution | ✅ |
 | 13 PCA Statistical Arbitrage Mean Reversion | PCA stat-arb | QC-Py-13-Alpha-Models | ✅ |
-| 14 Temporal CNN Prediction | CNN temporelle | QC-Py-22-Deep-Learning-LSTM | ⚠️ CNN vs LSTM |
+| 14 Temporal CNN Prediction | Temporal features + MLPClassifier | projects/Temporal-CNN-Prediction | ✅ **NEW** (Sharpe 0.73) |
 | 15 Gaussian Classifier for Direction Prediction | Gaussian Naive Bayes | QC-Py-19-ML-Supervised-Classification, ESGF-2026/examples/Gaussian-Direction-Classifier | ✅ **NEW** |
 | 16 LLM Summarization of Tiingo News | LLM pour sentiment news | QC-Py-26-LLM-Trading-Signals | ✅ |
-| 17 Head Shoulders Pattern Matching with CNN | CNN pour patterns | QC-Py-22-Deep-Learning-LSTM | ⚠️ CNN vs LSTM |
-| 18 Amazon Chronos Model | Chronos (prévision) | QC-Py-22-Deep-Learning-LSTM | ⚠️ Modèles différents |
+| 17 Head Shoulders Pattern Matching with CNN | CNN pattern detection | projects/ML-HeadShoulders-CNN | ✅ **NEW** |
+| 18 Amazon Chronos Model | Ensemble ML forecasting | projects/Chronos-Foundation-Forecasting | ✅ **NEW** (Sharpe 0.28) |
 | 19 FinBERT Model | FinBERT sentiment | QC-Py-26-LLM-Trading-Signals | ✅ |
 
 ### 07 Better Hedging with Reinforcement Learning
@@ -104,7 +104,11 @@ Le livre se concentre sur ML/AI appliqué au trading. Voici les projets CoursIA 
 | [ETF-Pairs-Trading](../ESGF-2026/examples/ETF-Pairs-Trading/) | Pairs trading (PCA stat-arb) | ✅ |
 | [Sector-Momentum](../ESGF-2026/examples/Sector-Momentum/) | Momentum sectoriel | ✅ |
 | [Markov-Regime-Detection](../ESGF-2026/examples/Markov-Regime-Detection/) | HMM pour régimes (Ex04) | ✅ **NEW** |
-| [SVM-Wavelet-Forecasting](../ESGF-2026/examples/SVM-Wavelet-Forecasting/) | SVM + Wavelet decomposition (Ex05) | ✅ **NEW** |
+| [SVM-Wavelet-Forecasting](../projects/SVM-Wavelet-Forecasting/) | SVM + Wavelet decomposition (Ex05) | ✅ **NEW** |
+| [Positive-Negative-Splits-ML](../projects/Positive-Negative-Splits-ML/) | Stock splits ML (Ex07) | ✅ **NEW** |
+| [Stoploss-Volatility-ML](../projects/Stoploss-Volatility-ML/) | Stoploss ML Lasso (Ex08) | ✅ **NEW** |
+| [Dividend-Harvesting-ML](../projects/Dividend-Harvesting-ML/) | Dividend selection ML (Ex06) | ✅ **NEW** |
+| [ML-HeadShoulders-CNN](../projects/ML-HeadShoulders-CNN/) | CNN pattern detection (Ex17) | ✅ **NEW** |
 | [Gaussian-Direction-Classifier](../ESGF-2026/examples/Gaussian-Direction-Classifier/) | Gaussian Naive Bayes (Ex15) | ✅ **NEW** |
 | [Temporal-CNN-Prediction](../projects/Temporal-CNN-Prediction/) | Temporal CNN (Ex14) | ✅ **NEW** |
 | [LSTM-Forecasting](../projects/LSTM-Forecasting/) | LSTM Forecasting (Ex07) | ✅ **NEW** |
@@ -151,7 +155,7 @@ Les étudiants ESGF doivent d'abord maîtriser les fondations (01-15) avant de p
 
 ---
 
-**Version** : 2.0 (basé sur la vraie structure du repo)
+**Version** : 3.0 (Batch 6: all 19 Applied ML examples implemented)
 **Auteur** : CoursIA - po-2026
-**Date** : 2026-03-23
-**Issue** : #107
+**Date** : 2026-04-19
+**Issue** : #143

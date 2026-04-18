@@ -185,11 +185,9 @@ class SVMWaveletForecasting(QCAlgorithm):
             # Trading logic: go long EUR if predicted positive return
             current_price = self._price_history[-1]
             if next_return > 0.001:  # 0.1% threshold
-                self.log(f"LONG EURUSD: predicted return={next_return:.4%}")
-                self.set_holdings(PortfolioTarget(self._eurusd, 0.5))
+                self.set_holdings(self._eurusd, 0.5)
             elif next_return < -0.001:
-                self.log(f"SHORT EURUSD: predicted return={next_return:.4%}")
-                self.set_holdings(PortfolioTarget(self._eurusd, -0.5))
+                self.set_holdings(self._eurusd, -0.5)
             else:
                 # Close position if uncertain
                 self.liquidate(self._eurusd)
