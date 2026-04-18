@@ -15,7 +15,7 @@
 | 4 | Causal Forward-Filter + Feature Engineering | Maisonnave | Gr01 H.4b | HIGH | DONE | `RegimeSwitching/` + `Markov-Regime-Detection/` |
 | 5 | Black-Litterman + Momentum Views | 4 groups | Mixed | MEDIUM | DONE | `BlackLitterman-Momentum/` |
 | 6 | Adaptive Conformal Inference Risk Overlay | El Bakkali | Gr02 | MEDIUM | DONE | `Adaptive-Conformal-Risk/` |
-| 7 | Dynamic Delta/Skew Options Logic | Asseli | Gr01 H.5 | MEDIUM | PENDING | - |
+| 7 | Dynamic Delta/Skew Options Logic | Asseli | Gr01 H.5 | MEDIUM | DONE | `Dynamic-Options-Wheel/` |
 | 8 | RL Environment Design Improvements | Rebot | Gr03 | MEDIUM | PENDING | - |
 
 ---
@@ -374,9 +374,64 @@ The ACI overlay on multi-factor momentum delivers Sharpe 0.604, outperforming Se
 - `Multi-Layer-EMA/` (Sharpe ~0.3) - could benefit from ACI overlay
 - Any momentum strategy in the pool - ACI is a universal risk overlay
 
-### 7. Dynamic Delta/Skew Options Logic
+### 7. Dynamic Delta/Skew Options Logic (DONE)
 
-IV percentile-based delta selection + 25-delta skew adjustment for Wheel strategy. More sophisticated than our Option-Wheel (fixed OTM 5%, VIX filter).
+**Student**: Asseli (Gr01 H.5)
+**QC Cloud Source**: Project #30119363 "Dynamic-Options-Wheel"
+**Local Project**: `projects/Dynamic-Options-Wheel/`
+
+### Core Concepts
+
+- **IV percentile-based OTM targeting**: Adjusts strike distance dynamically (2.5% in low IV, 7.5% in high IV) instead of fixed 5% OTM
+- **25-delta put-call skew measurement**: `(put_IV_25d - call_IV_25d) / ATM_IV`, shifts puts further OTM when skew indicates bearish sentiment
+- **Rolling IV regime classification**: 252-day lookback, 30th/70th percentile thresholds
+- **Dual contract selection**: Greeks-based delta targeting (preferred) with OTM percentage fallback
+- **Black-Scholes pricing model**: Enabled for Greeks computation during backtests
+- **Dynamic delta targeting**: 0.40 delta (low IV) to 0.20 delta (high IV), with skew adjustment
+
+### Backtest Results (2020-2026, $100k SPY Options Wheel)
+
+| Metric | Dynamic-Options-Wheel | Option-Wheel (benchmark) |
+|--------|----------------------|--------------------------|
+| CAGR | 5.592% | - |
+| Net Profit | 38.651% | - |
+| Sharpe Ratio | 0.119 | - |
+| PSR | 3.827% | - |
+| Max Drawdown | 31.4% | - |
+| Win Rate | 74% | - |
+| Average Win | 0.83% | - |
+| Average Loss | -6.21% | - |
+| Total Trades | 179 | - |
+| Total Orders | 179 | - |
+| Total Fees | $118.55 | - |
+| Alpha | -0.036 | - |
+| Beta | 0.571 | - |
+| Profit-Loss Ratio | 0.13 | - |
+| Expectancy | -0.158 | - |
+
+Analysis: The strategy achieves positive CAGR (5.6%) and high win rate (74%), typical of premium-selling strategies. The low profit-loss ratio (0.13) and negative expectancy (-0.158) indicate that occasional large losses from assignment erode premium income. Sharpe 0.119 is positive but modest. The dynamic IV-based strike selection shows the intended adaptive behavior: tighter strikes in low IV, wider in high IV. This is a functional proof-of-concept for IV-adaptive options wheel logic.
+
+### Reusable Components
+
+| Component | Location | Reusability |
+|-----------|----------|-------------|
+| `_update_iv_metrics()` | main.py:112-155 | IV percentile + 25-delta skew from any option chain |
+| `_get_target_otm()` | main.py:157-182 | IV-regime-based OTM targeting |
+| `_get_target_delta()` | main.py:184-210 | IV-regime-based delta targeting |
+| `_find_contract_by_delta()` | main.py:212-242 | Greeks-based contract scoring |
+| `_find_contract_by_otm()` | main.py:244-283 | Strike-based contract scoring (fallback) |
+| `_find_contract()` | main.py:285-303 | Dual selection: delta preferred, OTM fallback |
+
+### Comparison with Option-Wheel (benchmark)
+
+| Aspect | Option-Wheel | Dynamic-Options-Wheel |
+|--------|-------------|----------------------|
+| Strike selection | Fixed 5% OTM | IV percentile: 2.5% - 7.5% OTM |
+| Volatility filter | VIX > 20 skip | IV percentile regime classification |
+| Skew awareness | None | 25-delta put-call skew adjustment |
+| Greeks usage | None | Delta-based targeting with OTM fallback |
+| Pricing model | Default | Black-Scholes for Greeks |
+| Universe | SPY | SPY |
 
 ### 8. RL Environment Design Improvements
 
