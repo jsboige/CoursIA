@@ -14,7 +14,7 @@
 | 3 | Causal ML Event Alpha by Sector | ErwanSi | Gr03 G.1 | HIGH | DONE | `CausalEventAlpha/` |
 | 4 | Causal Forward-Filter + Feature Engineering | Maisonnave | Gr01 H.4b | HIGH | DONE | `RegimeSwitching/` + `Markov-Regime-Detection/` |
 | 5 | Black-Litterman + Momentum Views | 4 groups | Mixed | MEDIUM | DONE | `BlackLitterman-Momentum/` |
-| 6 | Adaptive Conformal Inference Risk Overlay | El Bakkali | Gr02 | MEDIUM | PENDING | - |
+| 6 | Adaptive Conformal Inference Risk Overlay | El Bakkali | Gr02 | MEDIUM | DONE | `Adaptive-Conformal-Risk/` |
 | 7 | Dynamic Delta/Skew Options Logic | Asseli | Gr01 H.5 | MEDIUM | PENDING | - |
 | 8 | RL Environment Design Improvements | Rebot | Gr03 | MEDIUM | PENDING | - |
 
@@ -324,9 +324,55 @@ Key observations:
 
 ## 6-8. Medium Priority Concepts (Deferred)
 
-### 6. Adaptive Conformal Inference Risk Overlay
+### 6. Adaptive Conformal Inference Risk Overlay (DONE)
 
-ACI (Gibbs-Candes 2021) for dynamic confidence intervals with online alpha adjustment. Novel risk management applicable as overlay to any strategy.
+**Student**: El Bakkali (Gr02)
+**QC Cloud Source**: Project #29841071 "Adaptive-Conformal-Risk" (main org)
+**Local Project**: `projects/Adaptive-Conformal-Risk/`
+
+#### Core Concepts
+
+- **ACI Algorithm (Gibbs & Candès 2021)**: Online-adjusted prediction intervals with guaranteed marginal coverage. Alpha_t+1 = alpha_t + gamma * (1{error} - target_alpha)
+- **Nonconformity-based position sizing**: Wider prediction intervals = smaller positions, directly translating uncertainty into allocation
+- **Rolling calibration window**: 60-day window with finite-sample correction (1 + 1/sqrt(n))
+- **Multi-factor momentum base**: 3-window (21/63/126 day) weighted momentum with agreement confidence
+- **Sector-balanced universe**: 15 large-caps across 5 sectors, 30% sector cap
+- **Target volatility framework**: 15% annualized with equal-correlation portfolio vol estimate
+
+#### Backtest Results (2015-2026, $100k, 15 assets)
+
+| Metric | Adaptive-Conformal-Risk | SectorMomentum (benchmark) | Delta |
+|--------|------------------------|---------------------------|-------|
+| Sharpe | 0.604 | 0.57 | +0.034 |
+| CAGR | 13.70% | - | - |
+| MaxDD | 33.1% | - | - |
+| Net Profit | 310.8% | - | - |
+| Win Rate | 62% | - | - |
+| Total Orders | 1533 | - | - |
+| Alpha | 0.025 | - | - |
+| Beta | 0.658 | - | - |
+| Sortino | 0.613 | - | - |
+| PSR | 17.8% | - | - |
+
+#### Analysis
+
+The ACI overlay on multi-factor momentum delivers Sharpe 0.604, outperforming SectorMomentum (0.57) by +0.034. The ACI mechanism provides genuine value: nonconformity-based position sizing dynamically reduces exposure when prediction intervals widen (high uncertainty), and increases exposure when intervals narrow (high confidence). The 62% win rate and positive expectancy (0.41) confirm the risk-adjusted approach. The 33.1% max drawdown is within acceptable range for a 15-asset long-only strategy over 11 years.
+
+#### Reusable Components
+
+| Component | Location | Reusability |
+|-----------|----------|-------------|
+| `_update_aci()` | main.py:105-141 | Drop-in ACI alpha update for any strategy |
+| `_compute_prediction_interval()` | main.py:183-214 | Quantile-based interval with correction |
+| `_apply_sector_constraints()` | main.py:260-301 | Iterative sector capping pattern |
+| `_apply_vol_targeting()` | main.py:303-349 | Equal-correlation portfolio vol scaling |
+| ACI state tracking | `initialize()` | Pattern: aci_alpha dict + nonconformity scores |
+
+#### Target Strategies
+
+- `SectorMomentum/` (Sharpe 0.57) - benchmark outperformed
+- `Multi-Layer-EMA/` (Sharpe ~0.3) - could benefit from ACI overlay
+- Any momentum strategy in the pool - ACI is a universal risk overlay
 
 ### 7. Dynamic Delta/Skew Options Logic
 
