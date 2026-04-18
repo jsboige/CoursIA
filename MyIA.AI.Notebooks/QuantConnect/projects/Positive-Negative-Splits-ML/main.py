@@ -119,9 +119,12 @@ class SplitEventsAlgorithm(QCAlgorithm):
                 if exit_series.empty or np.isnan(exit_series[0]):
                     continue
                 exit_price = exit_series[0]
-                sector_roc = self._sector_etf.roc_history[
+                roc_before = self._sector_etf.roc_history[
                     self._sector_etf.roc_history.index <= t
-                ].iloc[-1]
+                ]
+                if roc_before.empty:
+                    continue
+                sector_roc = roc_before.iloc[-1]
                 sample = np.array([
                     split.split_factor,
                     sector_roc,
