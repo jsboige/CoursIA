@@ -106,9 +106,71 @@ Si vous souhaitez creer votre propre compte OpenRouter :
 1. Accedez a [Settings > API Keys](https://openrouter.ai/settings/keys)
 1. Creez une nouvelle cle API
 
-### Etape 2 : Configuration des Variables d'Environnement
+### Etape 2 : Configuration via fichier settings.json (Recommandee)
 
-Pour utiliser Claude Code avec OpenRouter, vous devez configurer trois variables de base, plus optionnellement les aliases de modeles alternatifs.
+La methode la plus fiable pour configurer Claude Code est le fichier `settings.json`. Contrairement aux variables d'environnement, cette methode fonctionne dans **tous les contextes** (terminal, VS Code, scripts) sans manipuler votre profil shell.
+
+#### Option A : Fichier machine (recommande)
+
+Creez ou editez le fichier de settings de votre machine :
+
+- **Windows** : `C:\Users\<UTILISATEUR>\.claude\settings.json`
+- **macOS / Linux** : `~/.claude/settings.json`
+
+Contenu :
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
+    "ANTHROPIC_API_KEY": "",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimax/minimax-m2.7",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen/qwen3.5-27b"
+  }
+}
+```
+
+**Pourquoi cette methode est preferable :**
+
+- Fonctionne immediatement dans le terminal, VS Code et les scripts
+- Pas besoin de modifier votre profil shell
+- Pas besoin de redemarrer VS Code pour prendre en compte les changements
+- Le fichier `~/.claude/settings.json` est propre a votre machine et ne sera jamais commite dans un depot git
+
+#### Option B : Fichier projet (si configuration specifique)
+
+Creez `.claude/settings.json` a la racine du projet :
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
+    "ANTHROPIC_API_KEY": ""
+  }
+}
+```
+
+**Important :** Ajoutez-le a votre `.gitignore` pour ne pas exposer votre cle API :
+
+```bash
+echo ".claude/settings.json" >> .gitignore
+```
+
+#### Ordre de priorite des settings
+
+Claude Code charge les configurations dans cet ordre (la derniere ecrase les precedentes) :
+
+1. Configuration par defaut de Claude Code
+1. `~/.claude/settings.json` (fichier machine)
+1. `.claude/settings.json` (fichier projet)
+1. Variables d'environnement (PowerShell/Bash, cf. Etape 3)
+
+### Etape 3 : Configuration via Variables d'Environnement (Alternative)
+
+Si vous preferez utiliser les variables d'environnement, cette methode fonctionne egalement. **Choisissez l'une ou l'autre methode, pas les deux a la fois.**
 
 #### Windows (PowerShell)
 
@@ -208,63 +270,6 @@ source ~/.zprofile    # Si vous avez edite .zprofile
 ```
 
 > **Important :** Apres avoir recharge, **fermez et rouvrez votre terminal** (et VSCode si vous l'utilisez) pour que les variables soient prises en compte partout. Un simple `source` ne suffit pas toujours pour les applications lancees depuis le Finder ou Spotlight.
-
-### Etape 3 : Configuration via fichier settings.json (Alternative)
-
-Au lieu des variables d'environnement, vous pouvez configurer Claude Code via un fichier JSON. **Choisissez l'une ou l'autre methode, pas les deux a la fois.**
-
-#### Option A : Fichier machine (recommande)
-
-Creez ou editez le fichier de settings de votre machine :
-
-- **Windows** : `C:\Users\<UTILISATEUR>\.claude\settings.json`
-- **macOS / Linux** : `~/.claude/settings.json`
-
-Contenu :
-
-```json
-{
-  "env": {
-    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
-    "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
-    "ANTHROPIC_API_KEY": "",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimax/minimax-m2.7",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen/qwen3.5-27b"
-  }
-}
-```
-
-Ce fichier s'applique a **tous vos projets** sur cette machine et ne risque pas d'etre commite dans un depot git.
-
-#### Option B : Fichier projet (si configuration specifique)
-
-Creez `.claude/settings.json` a la racine du projet :
-
-```json
-{
-  "env": {
-    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
-    "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
-    "ANTHROPIC_API_KEY": ""
-  }
-}
-```
-
-**Important :** Ajoutez-le a votre `.gitignore` pour ne pas exposer votre cle API :
-
-```bash
-echo ".claude/settings.json" >> .gitignore
-```
-
-#### Ordre de priorite des settings
-
-Claude Code charge les configurations dans cet ordre (la derniere ecrase les precedentes) :
-
-1. Configuration par defaut de Claude Code
-1. `~/.claude/settings.json` (fichier machine)
-1. `.claude/settings.json` (fichier projet)
-1. Variables d'environnement (PowerShell/Bash, cf. Etape 2)
 
 ### Etape 4 : Verification de la Configuration
 
@@ -699,7 +704,7 @@ echo $ANTHROPIC_API_KEY        # Doit afficher une ligne vide
 
 Verifiez votre cle API sur [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys).
 
-Sur macOS, verifiez que les exports sont dans le bon fichier de profil (voir Etape 2).
+Sur macOS, verifiez que les exports sont dans le bon fichier de profil (voir Etape 3).
 
 ### Probleme : Extension VS Code ne se connecte pas
 
@@ -866,7 +871,7 @@ Editez `.claude/settings.json` :
 
 - [ ] Claude Code CLI installe et fonctionnel (`claude --version`)
 - [ ] Extension VS Code installee
-- [ ] Variables d'environnement OpenRouter configurees (ou settings.json)
+- [ ] Fichier settings.json configure (ou variables d'environnement)
 - [ ] Test CLI reussi (`claude /status`)
 - [ ] Test Extension VS Code reussi
 - [ ] Au moins 1 serveur MCP configure
