@@ -8,8 +8,8 @@ Cette serie explore les algorithmes de recherche et d'optimisation, de la formal
 |--------|-----------|-------|
 | Partie 1: Search Fondamental | 11 | ~12h30 |
 | Partie 2: Programmation par Contraintes | 9 | ~9h |
-| Applications | 27 | ~18h05 |
-| **Total** | **45** | **~41h15** |
+| Applications | 20 | ~13h20 |
+| **Total** | **40** | **~34h50** |
 
 | Statistique | Valeur |
 |-------------|--------|
@@ -72,8 +72,6 @@ Problemes du monde reel adaptes de projets etudiants (EPITA PPC 2025, EPF MSMIN5
 |---|----------|-------|---------|--------|
 | 1 | [App-12-ConnectFour](Applications/Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : 8 algorithmes IA (Minimax, MCTS, DQN-RL) | EPITA PPC 2025 |
 | 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | ECE 2026 + EPITA |
-| 3 | [App-19-TicTacToe-MiniMax](Applications/Search/App-19-TicTacToe-MiniMax.ipynb) | ~30 min | Morpion : Minimax vs Alpha-Beta, analyse du nombre d'états | EPF 2025 |
-| 4 | [App-20-TicTacToe-Reinforcement](Applications/Search/App-20-TicTacToe-Reinforcement.ipynb) | ~45 min | Morpion : Q-Learning vs SARSA, apprentissage par renforcement | EPF 2025 |
 
 ### Applications CSP (`Applications/CSP/`)
 
@@ -90,8 +88,6 @@ Problemes du monde reel adaptes de projets etudiants (EPITA PPC 2025, EPF MSMIN5
 | 9 | [App-11-Picross](Applications/CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup 27Mx CP-SAT vs naive | EPITA PPC 2025 |
 | 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, equite, deplacements | ECE 2026 |
 | 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croises : backtracking, OR-Tools, generation | EPF 2025 |
-| 12 | [App-21-Puzzle-8-Puzzle](Applications/CSP/App-21-Puzzle-8-Puzzle.ipynb) | ~35 min | Puzzle 8-puzzle : A*, IDA*, heuristiques Manhattan et Hamming | EPF 2025 |
-| 13 | [App-22-Sudoku-Constraint](Applications/CSP/App-22-Sudoku-Constraint.ipynb) | ~40 min | Sudoku CSP : 5 solveurs (backtracking, MRV, OR-Tools, AC-3) | EPF 2025 |
 
 ### Applications Hybrides / Metaheuristiques (`Applications/Hybrid/`)
 
@@ -104,8 +100,6 @@ Problemes du monde reel adaptes de projets etudiants (EPITA PPC 2025, EPF MSMIN5
 | 5 | [App-13-TSP-Metaheuristics](Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
 | 6 | [App-17-VRP-Logistics](Applications/Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | EPF 2025 |
 | 7 | [App-18-HyperparameterTuning](Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayesienne, GA, PSO, Optuna | Nouveau |
-| 8 | [App-23-Function-Optimization](Applications/Hybrid/App-23-Function-Optimization.ipynb) | ~45 min | Optimisation de fonctions : PSO, ABC, GA, benchmark sur fonctions test | EPF 2025 |
-| 9 | [App-24-Traveling-Salesman-LocalSearch](Applications/Hybrid/App-24-Traveling-Salesman-LocalSearch.ipynb) | ~50 min | TSP local search : Hill Climbing, 2-opt, Tabu Search | EPF 2025 |
 
 ---
 
