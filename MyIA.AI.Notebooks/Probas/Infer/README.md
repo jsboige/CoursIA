@@ -27,7 +27,7 @@ Serie de **20 notebooks** couvrant la programmation probabiliste avec Microsoft 
 | 19 | [Infer-19-Decision-Expert-Systems](Infer-19-Decision-Expert-Systems.ipynb) | 50 min | Systemes experts, Minimax, regret |
 | 20 | [Infer-20-Decision-Sequential](Infer-20-Decision-Sequential.ipynb) | 60 min | MDPs, iteration valeur/politique |
 
-**Duree totale** : ~17h
+**Duree totale** : ~19h
 
 **Ressource complementaire** : [Glossaire](Infer-Glossary.md) - Definitions des termes techniques
 
