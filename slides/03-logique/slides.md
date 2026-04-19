@@ -38,7 +38,7 @@ layout: default
 - Logique du premier ordre
 - Planification
 - Representation de connaissances
-- TP: Mise en oeuvre de l'infrence en logique propositionnelle et en logique du premier ordre
+- TP: Mise en oeuvre de l'inférence en logique propositionnelle et en logique du premier ordre
 
 ---
 layout: section
@@ -68,11 +68,11 @@ fonction KB-AGENT(percept) retourne une action
 ## Composants
 
 - Une base de connaissance (KB), composee d'enonces formules dans un langage formel de representation des connaissances
-- Un systeme d'infrence (raisonnement) qui produit de nouveaux enonces pour prendre des decisions
+- Un systeme d'inférence (raisonnement) qui produit de nouveaux enonces pour prendre des decisions
 
 ## Fonctions principales
 
-- Tell (-> KB) : Ajouter des connaissances
+- Tell (→ KB) : Ajouter des connaissances
 - Ask (<- KB) : Interroger la base
 
 ## Niveaux de l'architecture
@@ -82,12 +82,12 @@ fonction KB-AGENT(percept) retourne une action
 - Implementation (representation physique des enonces)
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/img_003.png
+imageClass: mid-right visible
 ---
 
 # Exemple: le monde du Wumpus
-
-<img src="./images/img_003.png" style="position:absolute; top:50px; right:10px; height:320px;" alt="Grille du monde du Wumpus" />
 
 ## Jeu de role simpliste
 
@@ -106,7 +106,7 @@ layout: default
 ### Percepts
 
 - Odeur, brise, lueur, choc, cri
-  -> Vecteur
+  → Vecteur
 
 ## Symboles
 
@@ -120,12 +120,12 @@ layout: default
 - W = Wumpus
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/img_007.png
+imageClass: mid-right visible
 ---
 
 # Representation et logique
-
-<img src="./images/img_007.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Relation semantique enonces et monde reel" />
 
 ## Syntaxe
 
@@ -142,9 +142,9 @@ layout: default
 
 ## Connecteurs logiques
 
-- NON (negation)
-- ET (conjonction)
-- OU (disjonction)
+- ¬ (negation)
+- ∧ (conjonction)
+- ∨ (disjonction)
 - IMPLIQUE (implication)
 - EQUIVAUT (equivalence)
 
@@ -167,35 +167,35 @@ layout: default
 ## Enonces complexes
 
 - Combinaisons de propositions avec des connecteurs logiques
-- Ex: "Il pleut ET il fait froid"
+- Ex: "Il pleut ∧ il fait froid"
 
 ## Connecteurs logiques
 
-- P ET Q : vrai si P et Q sont vrais
-- P OU Q : vrai si au moins un est vrai
-- NON P : vrai si P est faux
-- P => Q : vrai si P est faux ou Q est vrai
-- P <=> Q : vrai si P et Q ont meme valeur de verite
+- P ∧ Q : vrai si P et Q sont vrais
+- P ∨ Q : vrai si au moins un est vrai
+- ¬ P : vrai si P est faux
+- P ⇒ Q : vrai si P est faux ou Q est vrai
+- P ↔ Q : vrai si P et Q ont meme valeur de verite
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/img_008.png
+imageClass: mid-right large visible
 ---
 
 # Syntaxe de la logique propositionnelle
 
-<img src="./images/img_008.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Grammaire BNF logique propositionnelle" />
-
 ## Symboles
 
 - Propositions: P, Q, R, ...
-- Connecteurs: ET, OU, NON, =>, <=>
+- Connecteurs: ∧, ∨, ¬, ⇒, ↔
 - Parentheses: (, )
 
 ## Formules bien formees (FBF)
 
 1. Toute proposition est une FBF
-2. Si P est une FBF, NON P est une FBF
-3. Si P et Q sont des FBF, (P ET Q), (P OU Q), (P => Q), (P <=> Q) sont des FBF
+2. Si P est une FBF, ¬ P est une FBF
+3. Si P et Q sont des FBF, (P ∧ Q), (P ∨ Q), (P ⇒ Q), (P ↔ Q) sont des FBF
 4. Rien d'autre n'est une FBF
 
 ---
@@ -210,7 +210,7 @@ layout: default
 
 ## Tables de verite
 
-| P | Q | P ET Q | P OU Q | P => Q | P <=> Q |
+| P | Q | P ∧ Q | P ∨ Q | P ⇒ Q | P ↔ Q |
 |---|---|--------|--------|--------|---------|
 | V | V | V      | V      | V      | V       |
 | V | F | F      | V      | F      | F       |
@@ -236,89 +236,89 @@ layout: default
 
 ## Theoreme de deduction
 
-- KB |= alpha si et seulement si (KB => alpha) est valide
+- KB |= alpha si et seulement si (KB ⇒ alpha) est valide
 
-## Demonstration d'infrence
+## Demonstration d'inférence
 
 1. **Methodes de verification de modele**
    - Enumerer toutes les interpretations
    - Verifier que alpha est vrai quand KB est vrai
 
 2. **Methodes de preuve**
-   - Deriver alpha a partir de KB en utilisant des regles d'infrence
+   - Deriver alpha a partir de KB en utilisant des regles d'inférence
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/img_011.png
+imageClass: mid-right large visible
 ---
 
-# Regles d'infrence
-
-<img src="./images/img_011.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques" />
+# Regles d'inférence
 
 ## Modus Ponens
 
-- Si P est vrai et P => Q est vrai, alors Q est vrai
-- P, P => Q |- Q
+- Si P est vrai et P ⇒ Q est vrai, alors Q est vrai
+- P, P ⇒ Q ⊢ Q
 
 ## Et-introduction
 
-- Si P est vrai et Q est vrai, alors P ET Q est vrai
-- P, Q |- P ET Q
+- Si P est vrai et Q est vrai, alors P ∧ Q est vrai
+- P, Q ⊢ P ∧ Q
 
 ## Et-elimination
 
-- Si P ET Q est vrai, alors P est vrai et Q est vrai
-- P ET Q |- P
-- P ET Q |- Q
+- Si P ∧ Q est vrai, alors P est vrai et Q est vrai
+- P ∧ Q ⊢ P
+- P ∧ Q ⊢ Q
 
 ## Ou-introduction
 
-- Si P est vrai, alors P OU Q est vrai
-- P |- P OU Q
+- Si P est vrai, alors P ∨ Q est vrai
+- P ⊢ P ∨ Q
 
 ## Double negation
 
-- NON(NON P) equivaut a P
+- ¬(¬ P) equivaut a P
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/img_012.png
+imageClass: mid-right small visible
 ---
 
 # Resolution
 
-<img src="./images/img_012.png" style="position:absolute; top:50px; right:20px; width:200px;" alt="Arbre de resolution" />
-
 ## Clause
 
-- Disjonction de litteraux: P1 OU P2 OU ... OU Pn OU NON Q1 OU ... OU NON Qm
+- Disjonction de litteraux: P1 ∨ P2 ∨ ... ∨ Pn ∨ ¬ Q1 ∨ ... ∨ ¬ Qm
 
 ## Clause de Horn
 
-- Au plus un litteral positif: P OU NON Q1 OU ... OU NON Qm
-- Equivaut a: (Q1 ET Q2 ET ... ET Qm) => P
+- Au plus un litteral positif: P ∨ ¬ Q1 ∨ ... ∨ ¬ Qm
+- Equivaut a: (Q1 ∧ Q2 ∧ ... ∧ Qm) ⇒ P
 
 ## Regle de resolution
 
 - Deux clauses avec des litteraux complementaires peuvent etre combinees
-- (P OU Q), (NON P OU R) |- (Q OU R)
+- (P ∨ Q), (¬ P ∨ R) ⊢ (Q ∨ R)
 
 ## Resolution unitaire
 
-- Si une clause a un seul litteral: P, (NON P OU Q) |- Q
+- Si une clause a un seul litteral: P, (¬ P ∨ Q) ⊢ Q
 
 ## Algorithme de resolution
 
 1. Convertir KB en CNF (forme normale conjonctive)
-2. Ajouter NON alpha a l'ensemble de clauses
+2. Ajouter ¬ alpha a l'ensemble de clauses
 3. Appliquer la resolution jusqu'a obtenir la clause vide (contradiction) ou ne plus pouvoir progresser
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/img_013.png
+imageClass: mid-right small visible
 ---
 
 # Forward et Backward Chaining
-
-<img src="./images/img_013.png" style="position:absolute; top:60px; right:20px; width:180px;" alt="Clauses Forward Chaining" />
 
 ## Forward Chaining (chaine avant)
 
@@ -341,16 +341,16 @@ layout: default
 layout: default
 ---
 
-# Proprietes des systemes d'infrence
+# Proprietes des systemes d'inférence
 
 ## Correctitude (Soundness)
 
-- Si KB |- alpha, alors KB |= alpha
+- Si KB ⊢ alpha, alors KB |= alpha
 - Tout ce qui est prouvable est vrai
 
 ## Completude
 
-- Si KB |= alpha, alors KB |- alpha
+- Si KB |= alpha, alors KB ⊢ alpha
 - Tout ce qui est vrai peut etre prouve
 
 ## Decidabilite
@@ -377,8 +377,8 @@ layout: default
 
 - "Il y a une odeur dans toutes les cases adjacentes au Wumpus"
 - En logique propositionnelle:
-  - O1,1 <=> (W1,1 OU W1,2 OU W2,1)
-  - O1,2 <=> (W1,1 OU W1,2 OU W1,3 OU W2,2)
+  - O1,1 ↔ (W1,1 ∨ W1,2 ∨ W2,1)
+  - O1,2 ↔ (W1,1 ∨ W1,2 ∨ W1,3 ∨ W2,2)
   - ...
 - Besoin d'une regle par case!
 
@@ -389,12 +389,12 @@ layout: default
 - Une seule formule pour toutes les cases
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/img_019.png
+imageClass: mid-right large visible
 ---
 
 # Syntaxe de la logique du premier ordre
-
-<img src="./images/img_019.png" style="position:absolute; top:50px; right:10px; width:320px;" alt="Grammaire BNF FOL" />
 
 ## Termes
 
@@ -445,17 +445,17 @@ layout: default
 ## Quantificateur universel (∀)
 
 - ∀x P(x) : "Pour tout x, P(x)"
-- Ex: ∀x (Humain(x) => Mortel(x))
+- Ex: ∀x (Humain(x) ⇒ Mortel(x))
 
 ## Quantificateur existentiel (∃)
 
 - ∃x P(x) : "Il existe un x tel que P(x)"
-- Ex: ∃x (Humain(x) ET Philosophe(x))
+- Ex: ∃x (Humain(x) ∧ Philosophe(x))
 
 ## Equivalences
 
-- ∀x P(x) equivaut a NON ∃x NON P(x)
-- ∃x P(x) equivaut a NON ∀x NON P(x)
+- ∀x P(x) equivaut a ¬ ∃x ¬ P(x)
+- ∃x P(x) equivaut a ¬ ∀x ¬ P(x)
 
 ## Portee des quantificateurs
 
@@ -481,9 +481,9 @@ layout: default
 ## Exemple: Monde du Wumpus
 
 - "Toutes les cases adjacentes au Wumpus sentent mauvais"
-  - ∀x (Wumpus(x) => ∀y (Adjacent(y,x) => Odeur(y)))
+  - ∀x (Wumpus(x) ⇒ ∀y (Adjacent(y,x) ⇒ Odeur(y)))
 - "Il n'y a pas de Wumpus dans la case de depart"
-  - NON Wumpus([1,1])
+  - ¬ Wumpus([1,1])
 
 ---
 layout: default
@@ -500,11 +500,11 @@ layout: default
 ## Unification
 
 - Trouver une substitution qui rend deux termes identiques
-- Ex: unifier P(x, Jean) et P(Marie, y) -> &#123;x/Marie, y/Jean&#125;
+- Ex: unifier P(x, Jean) et P(Marie, y) → &#123;x/Marie, y/Jean&#125;
 
 ## Modus Ponens generalise
 
-- Si P et (P => Q) sont vrais, alors Q est vrai
+- Si P et (P ⇒ Q) sont vrais, alors Q est vrai
 - Avec substitution appropriee
 
 ---
@@ -549,17 +549,17 @@ layout: default
 ## Exemple
 
 - Faits: Humain(Socrate)
-- Regle: ∀x (Humain(x) => Mortel(x))
+- Regle: ∀x (Humain(x) ⇒ Mortel(x))
 - Substitution: &#123;x/Socrate&#125;
 - Nouveau fait: Mortel(Socrate)
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/img_022.png
+imageClass: mid-right large visible
 ---
 
 # Backward chaining en FOL
-
-<img src="./images/img_022.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Arbre backward chaining Criminal(West)" />
 
 ## Principe
 
@@ -571,10 +571,10 @@ layout: default
 ## Exemple
 
 - But: Mortel(Socrate)
-- Regle: ∀x (Humain(x) => Mortel(x))
+- Regle: ∀x (Humain(x) ⇒ Mortel(x))
 - Substitution: &#123;x/Socrate&#125;
 - Nouveau but: Humain(Socrate)
-- Fait connu: Humain(Socrate) -> Succes!
+- Fait connu: Humain(Socrate) → Succes!
 
 ---
 layout: default
@@ -584,19 +584,19 @@ layout: default
 
 ## Conversion en forme normale conjonctive (CNF)
 
-1. Eliminer => et <=>
-2. Deplacer NON vers l'interieur
+1. Eliminer ⇒ et ↔
+2. Deplacer ¬ vers l'interieur
 3. Standardiser les variables
 4. Skolemiser (eliminer ∃)
 5. Eliminer ∀
-6. Distribuer ET sur OU
+6. Distribuer ∧ sur ∨
 
 ## Resolution generalisee
 
 - Unifier des clauses complementaires
-- (P(x) OU Q(x)), (NON P(Jean) OU R(y))
+- (P(x) ∨ Q(x)), (¬ P(Jean) ∨ R(y))
 - Substitution: &#123;x/Jean&#125;
-- Resolvante: (Q(Jean) OU R(y))
+- Resolvante: (Q(Jean) ∨ R(y))
 
 ---
 layout: default
@@ -611,7 +611,7 @@ layout: default
 
 ## Systemes experts
 
-- Base de connaissances + Moteur d'infrence
+- Base de connaissances + Moteur d'inférence
 - Domaines: medecine, diagnostic, configuration
 
 ## Web semantique
@@ -658,7 +658,7 @@ layout: default
 ## Planning Domain Definition Language (PDDL)
 
 - Similaire a la logique du premier ordre (FOL)
-- Etat: At(Truck1, Melbourne) ET At(Truck2, Sydney)
+- Etat: At(Truck1, Melbourne) ∧ At(Truck2, Sydney)
 - Chaque etat est appele un fluent
 - Semantique de DB (ce qui n'est pas explicite est presume faux)
 - Les enonces sont fermes, sans fonction
@@ -668,7 +668,7 @@ layout: default
 - Noms: ex: Go
 - Liste de variables (here, there)
 - Preconditions: At(here), Path(here, there)
-- Effets: At(there), NON At(here)
+- Effets: At(there), ¬ At(here)
 
 ## Application d'une action
 
@@ -741,8 +741,8 @@ layout: default
 
 ## Complexite de la planification classique
 
-- PlanSAT: Y-a-t-il un plan? -> PSPACE > NP
-- PlanSAT "borne": Y-a-t-il un plan de longueur <k? -> PSPACE
+- PlanSAT: Y-a-t-il un plan? → PSPACE > NP
+- PlanSAT "borne": Y-a-t-il un plan de longueur <k? → PSPACE
 - Pour de nombreux domaines (e.g. logistique):
   - PlanSAT borne NP-Complet (optimalite difficile)
   - PlanSAT dans P (suboptimalite plus facile)
@@ -800,8 +800,8 @@ layout: default
 
 ## Liens
 
-- Fluents -> Preconditions
-- Effets -> Fluents
+- Fluents → Preconditions
+- Effets → Fluents
 - Mutexes: actions incompatibles, fluents incompatibles
 
 ---
@@ -873,11 +873,11 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 ## Etat initial
 
 - Phrase logique a propos de la situation S0
-- At(Home, S0) ET NON Have(Milk, S0) ET NON Have(Bananas, S0) ET NON Have(Drill, S0)
+- At(Home, S0) ∧ ¬ Have(Milk, S0) ∧ ¬ Have(Bananas, S0) ∧ ¬ Have(Drill, S0)
 
 ## Etat but
 
-- (∃s) At(Home, s) ET Have(Milk, s) ET Have(Bananas, s) ET Have(Drill, s)
+- (∃s) At(Home, s) ∧ Have(Milk, s) ∧ Have(Bananas, s) ∧ Have(Drill, s)
 
 </div>
 
@@ -887,11 +887,11 @@ layout: default
 
 # Axiomes du calcul situationnel
 
-## Preconditions -> Axiomes de Possibilite
+## Preconditions → Axiomes de Possibilite
 
 ## Operateurs: descriptions de comment le monde change
 
-- ∀(a,s) Have(Milk, Result(a,s)) <=> ((a=Buy(Milk) ET At(Grocery,s)) OU (Have(Milk, s) ET a≠Drop(Milk)))
+- ∀(a,s) Have(Milk, Result(a,s)) ↔ ((a=Buy(Milk) ∧ At(Grocery,s)) ∨ (Have(Milk, s) ∧ a≠Drop(Milk)))
 
 ## Axiomes d'action unique
 
@@ -903,7 +903,7 @@ layout: default
 
 ## Solution
 
-- At(Home, Result'(p, S0)) ET Have(Milk, Result'(p, S0)) ET Have(Bananas, Result'(p, S0)) ET Have(Drill, Result'(p, S0))
+- At(Home, Result'(p, S0)) ∧ Have(Milk, Result'(p, S0)) ∧ Have(Bananas, Result'(p, S0)) ∧ Have(Drill, Result'(p, S0))
 
 ---
 layout: default
@@ -952,18 +952,18 @@ layout: default
 ## Conditions reelles plus difficiles
 
 - Gestion des ressources, du temps, des abstractions
-- Planning -> scheduling
+- Planning → scheduling
 - Actions conditionnelles, incertaines, dynamiques
 
 ## Planifier =/= Programmer un evenement
 
 - Allouer des ressources, respecter des contraintes
-- Planifier -> raisonnement
-- Programmer -> CSPs
+- Planifier → raisonnement
+- Programmer → CSPs
 
 ## Decomposition hierarchique
 
-- Operateurs abstraits -> vers les Buts intermediaires
+- Operateurs abstraits → vers les Buts intermediaires
 - Primitives de bas niveau: Executable
 - Operateurs non primitifs: Buts, actions abstraites
 
@@ -1018,7 +1018,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 ## Besoins de categorisation
 
 - Reification: predicats et constantes
-  - BallonDeBasket(b) -> Membre(b, BallonsDeBasket)
+  - BallonDeBasket(b) → Membre(b, BallonsDeBasket)
 - Hierarchie: taxonomies (sous-classes), heritage
 - Partitions: Disjoints + decomposition exhaustive
 - Composition: PartieDe(x,y)
@@ -1096,9 +1096,9 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 ## Revision des croyances
 
-- Statut par defaut -> revision des faits infenes faux
-- Tell(KB, not P) -> Retract(KB, P)
-- Probleme: si P->Q doit-on annuler Q?
+- Statut par defaut → revision des faits inférées faux
+- Tell(KB, not P) → Retract(KB, P)
+- Probleme: si P→Q doit-on annuler Q?
 
 ## Fondes sur la justification (JTMS)
 
@@ -1156,7 +1156,7 @@ layout: default
 - Conception de bots de services sur reseaux sociaux
   - Chat Bots, AIML, Reddit et agents de service, NLP, RDF, APIs
 
-- Conception d'un modele d'infrence pour l'analyse de sentiment
+- Conception d'un modele d'inférence pour l'analyse de sentiment
   - Modele probabiliste, Infer.Net, demarche experimentale, Reddit
 
 - Creation d'une plateforme semantique LDP a partir d'un index structure
