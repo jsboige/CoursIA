@@ -12,6 +12,7 @@ Projets realises par les etudiants EPF dans le cadre du cours IA101, utilisant l
 | Kernel | Python |
 | Contexte | Cours IA101 EPF 2026 |
 | Validation | 100% (4/4 projets) |
+| Sous-READMEs | 3 |
 
 ## Projets
 
@@ -27,13 +28,18 @@ Projets realises par les etudiants EPF dans le cadre du cours IA101, utilisant l
 ```
 EPF/
 ├── Carole & Cleo/
-│   └── barbie-schreck.ipynb
+│   ├── barbie-schreck.ipynb
+│   └── README.md
 ├── Dorian & Bastien/
-│   └── cuisine/
-│       └── receipe_maker.ipynb
+│   ├── cuisine/
+│   │   ├── receipe_maker.ipynb
+│   │   └── README.md
+│   └── README.md
 ├── Louise et Jeanne Celine/
-│   └── medical_chatbot.ipynb
-└── fort-boyard-python.ipynb
+│   ├── medical_chatbot.ipynb
+│   └── README.md
+├── fort-boyard-python.ipynb
+└── README.md
 ```
 
 ## Technologies utilisees

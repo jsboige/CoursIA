@@ -8,15 +8,15 @@ Application de calcul et gestion des notes pour etudiants EPF/EPITA avec support
 |-----------|-------------|-------------|
 | Pipeline Python | Python 3.10+ | Calcul automatique des notes |
 | Interface C# | .NET 9.0 | Visualisation et export |
-| Configurations | Python modules | Parametrage par cours |
+| Configurations | Python modules | Paramétrage par cours |
 
-### Fonctionnalites
+### Fonctionnalités
 
-- **Grading collegial** : Les etudiants s'evaluent entre eux, le professeur a un poids configurable
-- **Fuzzy matching** : Correspondance tolerante pour les noms d'etudiants
+- **Grading collégial** : Les étudiants s'évaluent entre eux, le professeur a un poids configurable
+- **Fuzzy matching** : Correspondance tolérante pour les noms d'étudiants
 - **Multi-projets** : Support de plusieurs projets par cours avec poids configurables
-- **Integration Google** : Lecture des evaluations depuis Google Forms/Sheets
-- **Export Excel** : Generation de rapports avec mise en forme automatique
+- **Intégration Google** : Lecture des évaluations depuis Google Forms/Sheets
+- **Export Excel** : Génération de rapports avec mise en forme automatique
 
 ## Structure
 
@@ -32,8 +32,8 @@ GradeBookApp/
 │
 └── configs/                  # Configurations par cours
     ├── epf_2026_genai.py     # EPF 2026 - GenAI
-    ├── epf_2026_min1.py      # EPF 2026 - Mathematiques 1
-    ├── epf_2026_min2.py      # EPF 2026 - Mathematiques 2
+    ├── epf_2026_min1.py      # EPF 2026 - Mathématiques 1
+    ├── epf_2026_min2.py      # EPF 2026 - Mathématiques 2
     └── epf_2026_ml.py        # EPF 2026 - Machine Learning
 ```
 
@@ -42,10 +42,10 @@ GradeBookApp/
 ### Pipeline Python
 
 ```bash
-# Execution avec configuration par defaut
+# Exécution avec configuration par défaut
 python GradeBookApp/gradebook.py
 
-# Execution pour un cours specifique
+# Exécution pour un cours spécifique
 python GradeBookApp/run_grading.py --course epf_2026_genai
 ```
 

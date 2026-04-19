@@ -6,9 +6,9 @@ Serie de notebooks couvrant le Machine Learning avec deux approches complementai
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 27 (5 C#, 22 Python) |
+| Notebooks | 30 (8 C#, 22 Python) |
 | Sous-dossiers | 2 (ML.Net, DataScienceWithAgents) |
-| Duree totale estimee | ~20h |
+| Duree totale estimee | ~25h |
 
 ## Structure
 
@@ -19,6 +19,9 @@ ML/
 │   ├── ML-2-Data&Features.ipynb
 │   ├── ML-3-Entrainement&AutoML.ipynb
 │   ├── ML-4-Evaluation.ipynb
+│   ├── ML-5-TimeSeries.ipynb
+│   ├── ML-6-ONNX.ipynb
+│   ├── ML-7-Recommendation.ipynb
 │   ├── TP-prevision-ventes.ipynb
 │   └── taxi-fare.csv
 │
@@ -38,7 +41,10 @@ Serie de 5 notebooks couvrant ML.NET de l'introduction a l'evaluation avancee.
 | 2 | [ML-2-Data&Features](ML.Net/ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | Preparation donnees |
 | 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | Entrainement |
 | 4 | [ML-4-Evaluation](ML.Net/ML-4-Evaluation.ipynb) | Cross-validation, metriques, PFI | Evaluation |
-| 5 | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Regression bayesienne (Infer.NET) | Application pratique |
+| 5 | [ML-5-TimeSeries](ML.Net/ML-5-TimeSeries.ipynb) | Forecasts temporelles, windowing | Series temporelles |
+| 6 | [ML-6-ONNX](ML.Net/ML-6-ONNX.ipynb) | Export ONNX, inference en production | Deployement |
+| 7 | [ML-7-Recommendation](ML.Net/ML-7-Recommendation.ipynb) | Système de recommandation | Recommandations |
+| 8 | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Regression bayesienne (Infer.NET) | Application pratique |
 
 ### Installation ML.NET
 

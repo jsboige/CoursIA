@@ -1,12 +1,12 @@
 # Profils de Deploiement GenAI
 
-Ce repertoire definit les profils de deploiement pour la stack GenAI.
+Ce répertoire définit les profils de déploiement pour la stack GenAI.
 
 ## Contrainte Materielle
 
-La machine dispose de deux GPUs avec des contraintes memoire:
+La machine dispose de deux GPUs avec des contraintes mémoire:
 
-| GPU Index (nvidia-smi) | Modele | VRAM | PyTorch ID | Usage Recommande |
+| GPU Index (nvidia-smi) | Modèle | VRAM | PyTorch ID | Usage Recommandé |
 |-------------------------|--------|------|------------|------------------|
 | 0 | RTX 3080 Ti Laptop | 16 GB | 1 | Forge SD XL Turbo |
 | 1 | RTX 3090 | 24 GB | 0 | ComfyUI Qwen/Video, Whisper |
@@ -19,20 +19,20 @@ La machine dispose de deux GPUs avec des contraintes memoire:
 
 | Service | Port | GPU | VRAM | Description |
 |---------|------|-----|------|-------------|
-| comfyui-qwen | 8188 | RTX 3090 | 20GB+ | Edition d'images Qwen-Image-Edit |
-| forge-turbo | 17861 | RTX 3080 Ti | 8GB+ | Generation SDXL Turbo |
+| comfyui-qwen | 8188 | RTX 3090 | 20GB+ | Édition d'images Qwen-Image-Edit |
+| forge-turbo | 17861 | RTX 3080 Ti | 8GB+ | Génération SDXL Turbo |
 | vllm-zimage | 8001 | RTX 3080 Ti | 15GB+ | Text-to-image Lumina/Z-Image |
 | whisper-webui | 36540 | RTX 3090 | 10GB+ | Transcription Whisper (Gradio) |
-| comfyui-video | 8189 | RTX 3090 | 20GB+ | Generation video (AnimateDiff) |
+| comfyui-video | 8189 | RTX 3090 | 20GB+ | Génération video (AnimateDiff) |
 
 ## Profils GPU
 
 Gestion via CLI: `python scripts/genai-stack/genai.py gpu profile <action>`
 
-### 1. `image_default` - Services Image (par defaut)
+### 1. `image_default` - Services Image (par défaut)
 
-**Demarrer**: comfyui-qwen, forge-turbo
-**Arreter**: comfyui-video
+**Démarrer**: comfyui-qwen, forge-turbo
+**Arrêter**: comfyui-video
 **GPU 0 (RTX 3090)**: comfyui-qwen (20GB)
 **GPU 1 (RTX 3080 Ti)**: forge-turbo (6GB)
 

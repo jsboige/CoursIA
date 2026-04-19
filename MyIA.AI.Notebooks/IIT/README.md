@@ -9,12 +9,13 @@ Introduction a la Theorie de l'Information Integree (IIT) avec PyPhi, une biblio
 | Notebooks | 1 |
 | Kernel | Python 3 |
 | Duree estimee | ~60-90 min |
+| Version | PyPhi 1.2.0+ |
 
 ## Notebook
 
-| Notebook | Contenu | Duree |
-|----------|---------|-------|
-| [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Introduction complete a PyPhi et IIT | 60-90 min |
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
+| 1 | [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Introduction complète à PyPhi et IIT | 60-90 min |
 
 ## Contenu detaille
 

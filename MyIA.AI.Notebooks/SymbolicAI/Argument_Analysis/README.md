@@ -8,7 +8,7 @@ Pipeline complet d'analyse argumentative combinant Semantic Kernel, TweetyProjec
 |-------------|--------|
 | Notebooks | 6 |
 | Kernel | Python 3 |
-| Duree estimee | ~3-4h |
+| Duree estimee | ~4-5h |
 | API requise | OpenAI |
 
 ## Notebooks
