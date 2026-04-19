@@ -653,7 +653,7 @@ layout: default
 
 # Definition d'un domaine de planification
 
-<img src="./images/img_025.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Domaine PDDL Air Cargo" />
+<img src="./images/img_025.png" style="position:absolute; top:130px; right:10px; width:380px;" alt="Domaine PDDL Air Cargo" />
 
 ## Planning Domain Definition Language (PDDL)
 
@@ -737,7 +737,7 @@ layout: default
 
 # Exploration de l'espace des etats
 
-<img src="./images/img_027.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Graphe espace etats planification" />
+<img src="./images/img_027.png" style="position:absolute; top:130px; right:10px; width:380px;" alt="Graphe espace etats planification" />
 
 ## Complexite de la planification classique
 
@@ -783,7 +783,7 @@ layout: default
 
 # Graphes de planification
 
-<img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:500px;" alt="Graphe de planification Have/Eat/Bake Cake" />
+<img src="./images/img_031.png" style="position:absolute; top:130px; right:10px; width:360px;" alt="Graphe de planification Have/Eat/Bake Cake" />
 
 ## Structure de donnees
 
@@ -810,7 +810,7 @@ layout: default
 
 # Algorithme GraphPlan
 
-<img src="./images/img_030.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Algorithme GraphPlan" />
+<img src="./images/img_030.png" style="position:absolute; top:130px; right:10px; width:400px;" alt="Algorithme GraphPlan" />
 
 ```
 fonction GRAPHPLAN(probleme) retourne solution ou echec
@@ -851,7 +851,7 @@ layout: default
 
 # Calcul situationnel
 
-<img src="./images/img_024.png" style="position:absolute; top:50px; right:10px; width:350px;" alt="Sequence etats Wumpus S0-S3" />
+<img src="./images/img_024.png" style="position:absolute; top:130px; right:10px; width:350px;" alt="Sequence etats Wumpus S0-S3" />
 
 <style scoped>
 .slidev-layout { font-size: 0.85em; }
@@ -1000,7 +1000,7 @@ layout: default
 
 # Ontologies
 
-<img src="./images/img_020.png" style="position:absolute; top:50px; right:10px; width:280px; max-height:400px;" alt="Ontologie - graphe de connaissances" />
+<img src="./images/img_020.png" style="position:absolute; top:130px; right:10px; width:280px; max-height:400px;" alt="Ontologie - graphe de connaissances" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1037,7 +1037,7 @@ layout: default
 
 # Web semantique
 
-<img src="./images/img_042.jpg" style="position:absolute; top:60px; right:20px; width:200px;" alt="dotNetRDF" />
+<img src="./images/img_042.jpg" style="position:absolute; top:130px; right:20px; width:200px;" alt="dotNetRDF" />
 
 ## Resource Description Framework (RDF)
 
