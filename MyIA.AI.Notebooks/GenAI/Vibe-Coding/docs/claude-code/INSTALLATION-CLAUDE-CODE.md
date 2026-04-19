@@ -490,6 +490,97 @@ claude mcp add --transport stdio serena -- uvx --from git+https://github.com/ora
 
 **Note** : Utilisez `--context claude-code` pour eviter les conflits avec les outils natifs de Claude Code.
 
+#### 7. QuantConnect (Trading Algorithmique - Cours ESGF)
+
+Le serveur MCP QuantConnect permet a Claude Code d'interagir directement avec la plateforme QuantConnect : creer des projets, compiler du code, lancer des backtests, analyser les resultats. Indispensable pour le cours de trading algorithmique.
+
+**Prerequis :**
+
+- Un compte QuantConnect (gratuit sur [quantconnect.com](https://www.quantconnect.com/))
+- Docker Desktop installe et en cours d'execution
+- Vos identifiants QC fournis par le formateur
+
+**Configuration :**
+
+1. Recuperez vos identifiants QuantConnect :
+   - **User ID** : Trouvez-le dans [Account Settings](https://www.quantconnect.com/account)
+   - **API Token** : Generez-le dans [API Credentials](https://www.quantconnect.com/account/api)
+   - **Organization ID** : Visible dans [Organizations](https://www.quantconnect.com/organization)
+
+2. Creez un fichier `.mcp.json` a la racine de votre projet :
+
+```json
+{
+  "mcpServers": {
+    "qc-mcp": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-e", "QUANTCONNECT_USER_ID",
+        "-e", "QUANTCONNECT_API_TOKEN",
+        "-e", "QUANTCONNECT_ORGANIZATION_ID",
+        "quantconnect/mcp-server"
+      ],
+      "env": {
+        "QUANTCONNECT_USER_ID": "VOTRE_USER_ID",
+        "QUANTCONNECT_API_TOKEN": "VOTRE_API_TOKEN",
+        "QUANTCONNECT_ORGANIZATION_ID": "VOTRE_ORG_ID"
+      }
+    }
+  }
+}
+```
+
+**Important :** Ajoutez `.mcp.json` a votre `.gitignore` pour ne jamais exposer vos identifiants :
+
+```bash
+echo ".mcp.json" >> .gitignore
+```
+
+1. Verifiez que Docker est lance :
+
+```bash
+docker ps
+```
+
+Si Docker n'est pas lance, demarrez Docker Desktop et attendez qu'il soit pret.
+
+1. Redemarrez Claude Code pour charger le serveur MCP :
+
+```bash
+# Dans VS Code : fermez et rouvrez le panneau Claude Code
+# Ou en CLI : relancez votre session claude
+```
+
+1. Verifiez la connexion dans Claude Code :
+
+```text
+/mcp
+```
+
+Vous devriez voir le serveur `qc-mcp` avec le statut "Connected" et environ 60 outils disponibles.
+
+**Cas d'usage typiques avec Claude Code + QuantConnect :**
+
+```text
+> Cree un projet QuantConnect Python appele "Mon-Strategy" avec une strategie EMA cross
+
+> Compile le projet actuel et dis-moi s'il y a des erreurs
+
+> Lance un backtest sur le projet avec les dates 2023-01-01 a 2024-12-31
+
+> Analyse les resultats du dernier backtest : Sharpe, CAGR, Max Drawdown
+```
+
+**Resolution de problemes :**
+
+| Probleme | Solution |
+| ---------- | ---------- |
+| "Docker not found" | Installez Docker Desktop et redemarrez votre terminal |
+| "Authentication failed" | Verifiez vos identifiants dans `.mcp.json` |
+| "No spare nodes" | Attendez quelques minutes, les ressources QC sont partagees |
+| Rate limiting | Max 10 appels/minute. Postez sur le dashboard si blocage persistant |
+
 ### Gestion des Serveurs MCP
 
 **Lister les serveurs configures :**
