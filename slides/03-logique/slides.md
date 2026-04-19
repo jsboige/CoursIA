@@ -22,10 +22,24 @@ INTELLIGENCE ARTIFICIELLE -- III
 - Representation des connaissances
 
 ---
-layout: section
+layout: default
 ---
 
 # Plan du cours
+
+I. Introduction
+
+II. Resolution de problemes
+
+III. **Bases de connaissances et logique**
+
+IV. Raisonnement probabiliste
+
+V. Apprentissage
+
+VI. Traitement du langage naturel
+
+VII. TP final projets trimestriels
 
 ---
 layout: default
