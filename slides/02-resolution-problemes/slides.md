@@ -1296,25 +1296,30 @@ layout: section
 
 <img src="./images/img_050.png" style="position:absolute; top:130px; right:20px; width:420px;" alt="Arbre backtracking CSP Australie" />
 
-## Principe
+<div style="max-width:52%;">
 
-- Etendre progressivement une assignation partielle
-- Des qu'une contrainte est violee → retour en arriere (backtrack)
+## Exploration vs Inférence
 
-## Fonction BACKTRACK
+- Exploration $\neq$ inférence
+  - Sudoku = inférence uniquement
 
-```
-fonction BACKTRACK(csp, assignation) retourne solution ou echec
-  si assignation est complete alors retourner assignation
-  var <- variable non assignee
-  pour chaque valeur dans var.domaine faire
-    si valeur consistante avec assignation alors
-      ajouter var=valeur a assignation
-      resultat <- BACKTRACK(csp, assignation)
-      si resultat != echec alors retourner resultat
-      retirer var=valeur de assignation
-  retourner echec
-```
+## Commutativité
+
+- Les assignations de variables sont **commutatives**
+  - [WA=rouge puis NT=vert] $\leftrightarrow$ [NT=vert puis WA=rouge]
+  - $\rightarrow$ assignation d'1 seule variable par noeud
+  - $\rightarrow$ $b=d$ et il y a $d^n$ feuilles
+
+## Améliorations
+
+- = DFS avec prise en compte de la commutativité
+- **Heuristiques spécifiques:**
+  - Prochaine variable à assigner ?
+  - Prochaines valeurs du domaine ?
+  - Quelles inférences ?
+  - Comment éviter les assignations illégales ?
+
+</div>
 
 ---
 
@@ -1363,35 +1368,61 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 <img src="./images/img_055.png" style="position:absolute; top:120px; right:20px; width:240px;" alt="Décomposition arbre contraintes" />
 
-## Graphe de contraintes
+<div style="max-width:72%;">
 
-- Noeuds = variables
-- Arcs = contraintes binaires
+## Décomposition en sous-problèmes
 
-## Composantes connexes
+- **Composantes connexes** du graphe: sous-problèmes indépendants
+  - Ex: Tasmanie vs Australie continentale
+  - Complexité: si $c$ variables par sous-problème, $O(d^{n/c})$
+    - Exponentielle $\rightarrow$ linéaire en $n$
 
-- Sous-ensembles de variables interconnectees
-- Résolution indépendante possible
+## Structure d'arbre
 
-## Clusters et arbres
+- Rare mais structure d'arbre $\rightarrow$ résolution linéaire
+  - **Cohérence d'arc dirigée (DAC):** tri topologique puis DAC en $O(nd^2)$
+  - Assignation sans retour arrière
 
-- Structure en arbres -> résolution en temps linéaire O(n)
-- Graphe complet -> NP-complet
+## Approximations de l'arbre
+
+- **Coupe-cycle (cutset):** choix d'un ensemble coupe-cycle
+  - Coupe-cycle minimal: NP-complet, mais bonnes heuristiques
+- **Décomposition en arbre** de sous-problèmes connexes
+  - Largeur d'arbre $w$ $\rightarrow$ $O(nd^{w+1})$
+
+## Symétrie des valeurs
+
+- Ex: coloration $\rightarrow$ $n!$ permutations équivalentes
+- $\rightarrow$ Contrainte de rupture de symétrie (ex: ordre alphabétique NT<SA<WA)
+
+</div>
 
 ---
 
 # CSPs: Exploration locale
 
-## Min-conflicts
+## Algorithmes très efficaces
 
-- Choisir la variable qui viole le plus de contraintes
-- Changer sa valeur pour minimiser les conflits
-- Tres efficace pour les problèmes àvec de nombreuses variables
+- Quand les solutions sont denses
+- **Formulation par états complets:** modification d'une variable à la fois
 
-## Example: 8 reines
+## Heuristique Min-Conflicts
 
-- Chaque reine sur une colonne différente
-- Deplacer la reine qui à le plus de conflits
+- Choix d'une valeur qui minimise le nombre de conflits
+- N-reines: nombre d'étapes quasi constant (solutions denses)
+- **Avantage:** changement du problème à la volée
+  - Ex: trafic aérien et météo
+
+## Plateaux et améliorations
+
+- De nombreux plateaux $\rightarrow$ déplacements latéraux
+- **Exploration taboue**
+- **Pondération de contraintes:** poids mis à jour à chaque étape
+
+## Hybridation CP + Métaheuristiques
+
+- **Large Neighborhood Search (LNS):** relâchement partiel + réparation par CP
+- Combinaison recherche locale stochastique + propagation de contraintes
 
 ---
 
@@ -1479,22 +1510,20 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 # CSPs courants
 
-## Principaux solveurs actuels
+## Problèmes d'assignation
 
-- MiniZinc: Langage de modelisation indépendant et front-end pour divers solveurs
-- Google OR-Tools: Solveur hybride CP/SAT avec API pour Python, C#, Java et C++
-- Choco Solver: Alternative open-source en Java et C++ respectivement
-- Z3: Solveur SMT pour contraintes logiques complexes
+- Dits de "mariage"
+- Ex: Quelles classes / projets sont attribués ?
 
-## Interoperabilite multi-langages
+## Problèmes de répartition
 
-- Bindings natifs OR-Tools et Z3 offrent des interfaces officielles pour plusieurs langages
+- Ex: Quelle classe est enseignée quand et où ?
 
-## Ponts technologiques
+## Autres domaines
 
-- pythonnet pour integration Python et .NET
-- IKVM pour utiliser des bibliothèques Java en C#
-- JPype pour appeler du code Java depuis Python
+- **Logistique:** tournées de véhicules, gestion d'entrepôts
+- **Planification d'usines:** allocation de ressources
+- Les problèmes en conditions réelles impliquent souvent des **variables continues**
 
 ---
 
