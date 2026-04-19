@@ -22,7 +22,6 @@ INTELLIGENCE ARTIFICIELLE -- III
 - Representation des connaissances
 
 ---
-
 layout: section
 ---
 
