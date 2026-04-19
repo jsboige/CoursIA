@@ -244,10 +244,31 @@ fonction EXPLORER-ARBRE(probleme) retourne une solution, ou echec
 
 # Arbre d'exploration: exemple
 
+<div class="grid grid-cols-2 gap-4">
+<div>
 Arbre de recherche avec la racine **Arad** : développement des successeurs Sibiu, Timisoara, Zerind, puis de leurs propres successeurs.
 
 - Noeuds en **tirets verts** : successeurs non encore développés (frontière)
 - Les états répétés (Arad) apparaissent mais ne doivent pas être réexplorés
+
+</div>
+<div>
+
+```
+          Arad
+       /   |    \
+    Sibiu Timisoara Zerind
+   / | | \   | \     | \
+  A  F O Rv  A  L    A  O
+  - frontier (tirets verts)
+```
+
+<small>
+A=Arad, F=Fagaras, O=Oradea, Rv=Rimnicu Vilcea, L=Lugoj
+</small>
+
+</div>
+</div>
 
 ---
 
@@ -668,6 +689,7 @@ layout: section
 
 # Algorithmes d'exploration locale
 
+<img src="./images/img_043_local_search.png" style="position:absolute; top:120px; right:20px; width:320px;" alt="Exemple 8 reines avec échiquiers" />
 ## Objectif: but = solution (chemin secondaire)
 
 - Espace états = configurations complètes (ex: 8 reines)

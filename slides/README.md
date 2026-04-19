@@ -45,14 +45,14 @@ Les images pleine-largeur utilisent le layout **`image-overlay`** (fond d'image 
 
 | # | Deck | Dossier | Ligne `slides.md` | Images | Sessions |
 |---|------|---------|-------------------|--------|----------|
-| 01 | Introduction a l'IA | `01-introduction/` | ~772 | 40 | EPITA, ECE |
-| 02 | Resolution de problemes | `02-resolution-problemes/` | ~1551 | 56 | EPITA |
-| 03 | Logique | `03-logique/` | ~1969 | 45 | EPITA |
-| 04 | Probabilites | `04-probabilites/` | ~1945 | 110 | EPITA, ECE |
-| 05 | Theorie des jeux | `05-theorie-des-jeux/` | ~705 | 54 | EPITA |
-| 06 | Apprentissage | `06-apprentissage/` | ~2394 | 140 | EPITA, ECE |
-| 07 | Elargissements | `07-elargissements/` | ~642 | 9 | EPITA |
-| 08 | IA Generative | `08-ia-generative/` | ~464 | 36 | EPITA, ECE |
+| 01 | Introduction a l'IA | `01-introduction/` | ~772 | 40 | EPITA, ECE, EPF |
+| 02 | Resolution de problemes | `02-resolution-problemes/` | ~1551 | 56 | EPITA, EPF |
+| 03 | Logique | `03-logique/` | ~1969 | 45 | EPITA, EPF |
+| 04 | Probabilites | `04-probabilites/` | ~1945 | 110 | EPITA, ECE, EPF |
+| 05 | Theorie des jeux | `05-theorie-des-jeux/` | ~705 | 54 | EPITA, EPF |
+| 06 | Apprentissage | `06-apprentissage/` | ~2394 | 140 | EPITA, ECE, EPF |
+| 07 | Elargissements | `07-elargissements/` | ~642 | 9 | EPITA, EPF |
+| 08 | IA Generative | `08-ia-generative/` | ~464 | 36 | EPITA, ECE, EPF |
 | S1 | Argumentation | `S1-argumentation/` | ~791 | 20 | Sessions avancees |
 | S2 | IA exploratoire/symbolique | `S2-ia-exploratoire-symbolique/` | ~1112 | 54 | Sessions avancees |
 | S3 | Acculturation IA | `S3-acculturation/` | ~2039 | 133 | Sessions avancees |
