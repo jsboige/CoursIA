@@ -50,7 +50,7 @@ except ImportError:
 # CONFIGURATION
 # ============================================================================
 
-TWEETY_VERSION = "1.28"  # Version TweetyProject à télécharger
+TWEETY_VERSION = "1.29"  # Version TweetyProject à télécharger
 
 # URLs de téléchargement
 TWEETY_MAVEN_BASE = "https://repo1.maven.org/maven2/org/tweetyproject/"
@@ -180,23 +180,35 @@ def download_with_requests(url: str, dest: pathlib.Path, desc: str) -> bool:
 
 def download_jar(module_name: str, dest_dir: pathlib.Path, version: str) -> bool:
     """Télécharge un JAR Tweety depuis Maven Central."""
-    jar_name = f"org.tweetyproject.{module_name}-{version}-with-dependencies.jar"
-    jar_path = dest_dir / jar_name
+    # Maven artifact path: dots become slashes in the URL path
+    maven_path = module_name.replace('.', '/')
+    # Maven artifact name: use last segment only (arg.dung -> dung)
+    artifact_name = module_name.split('.')[-1]
 
-    if jar_path.exists():
-        print(f"  ✓ Already exists: {jar_name}")
-        return True
+    # v1.28 and earlier: -with-dependencies.jar
+    # v1.29+: plain .jar (no fat jar published)
+    candidates = [
+        (f"org.tweetyproject.{module_name}-{version}-with-dependencies.jar",
+         f"{TWEETY_MAVEN_BASE}{maven_path}/{version}/org.tweetyproject.{module_name}-{version}-with-dependencies.jar"),
+        (f"{artifact_name}-{version}-with-dependencies.jar",
+         f"{TWEETY_MAVEN_BASE}{maven_path}/{version}/{artifact_name}-{version}-with-dependencies.jar"),
+        (f"{artifact_name}-{version}.jar",
+         f"{TWEETY_MAVEN_BASE}{maven_path}/{version}/{artifact_name}-{version}.jar"),
+    ]
 
-    # Construction URL Maven (structure standard)
-    path_parts = module_name.replace('.', '/')
-    url = f"{TWEETY_MAVEN_BASE}{module_name}/{version}/{jar_name}"
+    for jar_name, url in candidates:
+        jar_path = dest_dir / jar_name
 
-    if download_with_progress(url, jar_path, desc=f"{module_name}"):
-        print(f"  ✓ Downloaded: {jar_name}")
-        return True
-    else:
-        print(f"  ✗ Failed: {jar_name}")
-        return False
+        if jar_path.exists():
+            print(f"  ✓ Already exists: {jar_name}")
+            return True
+
+        if download_with_progress(url, jar_path, desc=f"{module_name}"):
+            print(f"  ✓ Downloaded: {jar_name}")
+            return True
+
+    print(f"  ✗ Failed: {module_name}")
+    return False
 
 
 # ============================================================================
