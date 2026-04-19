@@ -1119,6 +1119,37 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 layout: default
 ---
 
+# Smart Contracts
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Cryptographie
+
+- Signature numérique
+- Chiffrement symétrique / asymétrique
+- Cypherpunks Manifesto
+
+## Blockchain
+
+- Ex: Bitcoin (Blockchain, POW/POS)
+- Non divulgation de connaissance
+  - Preuves interactives / non-interactives
+  - Chiffrement Homomorphe: C(A+B) = C(A)+C(B)
+- Ex: Helios voting
+
+## Contrats à clauses complexes
+
+- Signatures composites
+- Clauses scriptées
+- Ex: EtherCoin Hack
+
+---
+layout: default
+---
+
 # Resume representation des connaissances
 
 ## Ontologies
@@ -1144,6 +1175,7 @@ layout: section
 ---
 
 # TP
+
 ---
 layout: default
 ---
@@ -1164,6 +1196,15 @@ layout: default
 
 - Resolution de Captchas par deep learning
   - TensorFlow, CNTK, Encog
+
+- Trading algorithmique sur crypto-monnaies
+  - Backtesting, indicateurs techniques, QuantConnect, stratégies trend-following
+
+- Evolution de vaisseaux spatiaux par algorithmes génétiques
+  - Algorithmes évolutionnaires, optimisation, simulation physique
+
+- Pilotage d'un cluster de cache distribué
+  - Redis, cohérence distribuée, politiques d'éviction, monitoring
 
 ---
 layout: end
