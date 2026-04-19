@@ -141,7 +141,7 @@ $env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE_OPENROUTER"
 $env:ANTHROPIC_API_KEY = ""
 
 # Mapping des aliases de modeles (optionnel - voir section Modeles Alternatifs)
-$env:ANTHROPIC_DEFAULT_OPUS_MODEL = "moonshotai/kimi-k2.5"
+$env:ANTHROPIC_DEFAULT_OPUS_MODEL = "qwen/qwen3.6-plus"
 $env:ANTHROPIC_DEFAULT_SONNET_MODEL = "minimax/minimax-m2.7"
 $env:ANTHROPIC_DEFAULT_HAIKU_MODEL = "qwen/qwen3.5-27b"
 ```
@@ -194,7 +194,7 @@ export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE_OPENROUTER"
 export ANTHROPIC_API_KEY=""
 
 # Mapping des aliases de modeles (optionnel - voir section Modeles Alternatifs)
-export ANTHROPIC_DEFAULT_OPUS_MODEL="moonshotai/kimi-k2.5"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="qwen/qwen3.6-plus"
 export ANTHROPIC_DEFAULT_SONNET_MODEL="minimax/minimax-m2.7"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="qwen/qwen3.5-27b"
 ```
@@ -228,7 +228,7 @@ Contenu :
     "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
     "ANTHROPIC_API_KEY": "",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "moonshotai/kimi-k2.5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimax/minimax-m2.7",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen/qwen3.5-27b"
   }
@@ -320,7 +320,7 @@ OpenRouter permet d'utiliser des modeles alternatifs a Claude, souvent moins che
 
 | Alias Claude | Modele Alternatif | Identifiant OpenRouter | Context | Prix (Input/Output per M) |
 | ------------ | ----------------- | ---------------------- | ------- | ------------------------- |
-| `opus` | Kimi K2.5 | `moonshotai/kimi-k2.5` | 262K | $0.42 / $2.20 |
+| `opus` | Qwen 3.6 Plus | `qwen/qwen3.6-plus` | 262K | voir OpenRouter |
 | `sonnet` | MiniMax M2.7 | `minimax/minimax-m2.7` | 205K | $0.30 / $1.20 |
 | `haiku` | Qwen 3.5 27B | `qwen/qwen3.5-27b` | 262K | $0.20 / $1.56 |
 
@@ -331,26 +331,26 @@ OpenRouter permet d'utiliser des modeles alternatifs a Claude, souvent moins che
 claude -p "Explique ce code"
 
 # Utiliser explicitement un modele
-claude --model opus -p "Refactore ce projet"    # Kimi K2.5
+claude --model opus -p "Refactore ce projet"    # Qwen 3.6 Plus
 claude --model sonnet -p "Corrige ce bug"       # MiniMax M2.7
 claude --model haiku -p "Liste les fichiers"    # Qwen 3.5 27B
 
 # Forcer un modele specifique (bypass alias)
-claude --model moonshotai/kimi-k2.5 -p "Question complexe"
+claude --model qwen/qwen3.6-plus -p "Question complexe"
 ```
 
 ### Presentation des Modeles
 
-#### Kimi K2.5 (Alias Opus)
+#### Qwen 3.6 Plus (Alias Opus)
 
-**Identifiant :** `moonshotai/kimi-k2.5`
+**Identifiant :** `qwen/qwen3.6-plus`
 
-Kimi K2.5 est le modele flagship de Moonshot AI :
+Qwen 3.6 Plus est le modele flagship de la famille Qwen 3.6 (Alibaba, avril 2026), plus recent et plus performant que Kimi K2.5 sur les taches de raisonnement et de coding agentique :
 
 - **Context window** : 262K tokens
 - **Forces** : Raisonnement avance, programmation complexe, taches agentiques multi-etapes
 - **Cas d'usage ideaux** : Refactoring complexe, architecture de projets, documentation technique
-- **Prix** : $0.42 / $2.20 per million tokens (input/output)
+- **Prix** : voir [openrouter.ai/qwen/qwen3.6-plus](https://openrouter.ai/qwen/qwen3.6-plus)
 
 #### MiniMax M2.7 (Alias Sonnet)
 
@@ -377,11 +377,11 @@ Modele dense compact et rapide :
 
 ### Comparaison avec les Modeles Claude Natifs
 
-| Aspect | Claude Opus | Kimi K2.5 | Claude Sonnet | MiniMax M2.7 | Claude Haiku | Qwen 3.5 27B |
-| ---------------- | ----------- | --------- | ------------- | ------------ | ------------ | ------------ |
+| Aspect | Claude Opus | Qwen 3.6 Plus | Claude Sonnet | MiniMax M2.7 | Claude Haiku | Qwen 3.5 27B |
+| ---------------- | ----------- | ------------- | ------------- | ------------ | ------------ | ------------ |
 | **Context** | 200K | 262K | 200K | 205K | 200K | 262K |
-| **Prix Input** | $15.00 | $0.42 | $3.00 | $0.30 | $0.25 | $0.20 |
-| **Prix Output** | $75.00 | $2.20 | $15.00 | $1.20 | $1.25 | $1.56 |
+| **Prix Input** | $15.00 | voir OR | $3.00 | $0.30 | $0.25 | $0.20 |
+| **Prix Output** | $75.00 | voir OR | $15.00 | $1.20 | $1.25 | $1.56 |
 | **Coding** | Excellent | Excellent | Tres bon | Excellent | Bon | Tres bon |
 | **Raisonnement** | Excellent | Excellent | Tres bon | Tres bon | Bon | Bon |
 
@@ -759,8 +759,8 @@ Editez `.claude/settings.json` :
 - [Documentation OpenRouter](https://openrouter.ai/docs)
 - [Guide d'integration Claude Code](https://openrouter.ai/docs/guides/claude-code-integration)
 - [Tarifs et modeles](https://openrouter.ai/models)
-- [Kimi K2.5 sur OpenRouter](https://openrouter.ai/moonshotai/kimi-k2.5)
-- [Qwen 3.5 397B sur OpenRouter](https://openrouter.ai/minimax/minimax-m2.7)
+- [Qwen 3.6 Plus sur OpenRouter](https://openrouter.ai/qwen/qwen3.6-plus)
+- [MiniMax M2.7 sur OpenRouter](https://openrouter.ai/minimax/minimax-m2.7)
 - [Qwen 3.5 27B sur OpenRouter](https://openrouter.ai/qwen/qwen3.5-27b)
 
 ### Communaute
