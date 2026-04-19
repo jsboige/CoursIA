@@ -134,32 +134,29 @@ Données (BTCUSDT Daily)
 
 ## Exemples du Professeur
 
-Le dossier `examples/` contient 11 projets de référence illustrant différents concepts de trading.
+Le dossier `examples/` contient 8 projets validés avec backtests positifs.
 
-### Python - Stratégies Crypto
+### Python - Crypto
 
 | Projet | Cloud ID | Description |
 |--------|----------|-------------|
-| **Crypto-MultiCanal** | 22298373 | Détecteur hiérarchique multi-canaux (ZigZag Macro/Meso/Micro) |
-| **BTC-MachineLearning** | 21047688 | ML sur BTC (RandomForest/SVC/XGBoost) + ObjectStore |
 | **Multi-Layer-EMA** | 20216947 | EMA crossover multi-crypto (BTC/ETH/LTC) + filtre RSI |
 
-### Python - Stratégies Actions/ETF
+### Python - Actions/ETF
 
 | Projet | Cloud ID | Description |
 |--------|----------|-------------|
-| **ETF-Pairs-Trading** | 19865767 | Pairs trading avec co-intégration Engle-Granger + z-score |
 | **Sector-Momentum** | 20216980 | Momentum dual SPY/TLT/GLD + Risk Parity PCM |
 | **Trend-Following** | 20216930 | Multi-oracles (MACD/RSI/Bollinger) + ATR trailing stop |
 
-### Python - Stratégies Options
+### Python - Options
 
 | Projet | Cloud ID | Description |
 |--------|----------|-------------|
 | **Options-VGT** | 21113806 | Vente de PUTs OTM sur 5 valeurs tech (NVDA, ORCL, CSCO, AMD, QCOM) |
 | **Option-Wheel-Strategy** | 20216898 | Wheel strategy SPY : PUT selling → assignment → covered CALL |
 
-### C# - Stratégies
+### C#
 
 | Projet | Cloud ID | Description |
 |--------|----------|-------------|
@@ -171,38 +168,30 @@ Le dossier `examples/` contient 11 projets de référence illustrant différents
 
 ## Concepts Pédagogiques Couverts
 
-Les exemples et templates couvrent **8 classes d'actifs** et **10+ concepts de trading** :
+Les exemples et templates couvrent **4 classes d'actifs** et **8+ concepts de trading** :
 
 | Niveau | Concepts | Stratégies |
 |--------|----------|------------|
-| **1 - Fondations** | EMA Crossover, MACD+ADX, Options basiques, Anomalie calendaire | Multi-Layer-EMA, CSharp-BTC-EMA-Cross, Options-VGT, TurnOfMonth |
-| **2 - Intermédiaire** | Alpha Framework, Multi-indicateurs, Wheel Strategy, ML basique | ETF-Pairs-Trading, Sector-Momentum, Option-Wheel, BTC-ML |
-| **3 - Avancé** | Détecteur hiérarchique, Co-intégration, Volatilité, Forex, Futures | Crypto-MultiCanal, CSharp-CTG, ETF-Pairs, VIX-TermStructure, ForexCarry |
+| **1 - Fondations** | EMA Crossover, MACD+ADX, Options basiques | Multi-Layer-EMA, CSharp-BTC-EMA-Cross, Options-VGT |
+| **2 - Intermédiaire** | Alpha Framework, Multi-indicateurs, Wheel Strategy | Sector-Momentum, Option-Wheel-Strategy, Trend-Following |
+| **3 - Avancé** | Momentum ranking, Risk Parity | CSharp-CTG-Momentum, Sector-Momentum |
 
 ---
 
 ## Résultats de Backtest
 
-### Exemples ESGF (org ESGF)
+### Exemples ESGF (org ESGF) - 8 projets validés
 
-| # | Projet | Sharpe | CAGR | Max DD | Statut |
-|---|--------|--------|------|--------|--------|
-| 1 | **Option-Wheel-Strategy** | 0.524 | 12.7% | 26.4% | ✅ HEALTHY |
-| 2 | **CSharp-BTC-EMA-Cross** | 1.094 | 36.2% | 40.7% | ✅ HEALTHY |
-| 3 | **CSharp-BTC-MACD-ADX** | 1.224 | 38.1% | 48.8% | ✅ HEALTHY |
-| 4 | **Multi-Layer-EMA** | 1.891 | 120.9% | 54.4% | ✅ HEALTHY |
-| 5 | **Sector-Momentum** | 2.530 | 66.1% | 5.6% | ✅ HEALTHY |
-| 6 | **Options-VGT** | 0.892 | 25.3% | 15.6% | ✅ HEALTHY |
-| 7 | **Trend-Following** | 2.157 | 136.0% | 20.5% | ✅ HEALTHY |
-| 8 | **CSharp-CTG-Momentum** | 0.507 | 17.7% | 36.1% | ✅ HEALTHY |
-| 9 | **ETF-Pairs-Trading** | -0.759 | -3.7% | 19.8% | ❌ BROKEN |
-| 10 | **Crypto-MultiCanal** | 0 | 0% | 0% | ❌ BROKEN |
-| 11 | **BTC-MachineLearning** | — | — | — | ⏳ NO_DATA |
-
-**Légende** :
-- ✅ HEALTHY : Sharpe > 0.5 (stratégie robuste)
-- ⚠️ NEEDS_IMPROVEMENT : Sharpe 0-0.5 (à améliorer)
-- ❌ BROKEN : Sharpe < 0 ou 0 trades (problème majeur)
+| # | Projet | Sharpe | CAGR | Max DD |
+|---|--------|--------|------|--------|
+| 1 | **Sector-Momentum** | 2.530 | 66.1% | 5.6% |
+| 2 | **Trend-Following** | 2.157 | 136.0% | 20.5% |
+| 3 | **Multi-Layer-EMA** | 1.891 | 120.9% | 54.4% |
+| 4 | **CSharp-BTC-MACD-ADX** | 1.224 | 38.1% | 48.8% |
+| 5 | **CSharp-BTC-EMA-Cross** | 1.094 | 36.2% | 40.7% |
+| 6 | **Options-VGT** | 0.892 | 25.3% | 15.6% |
+| 7 | **Option-Wheel-Strategy** | 0.524 | 12.7% | 26.4% |
+| 8 | **CSharp-CTG-Momentum** | 0.507 | 17.7% | 36.1% |
 
 ---
 
@@ -219,7 +208,7 @@ Les exemples et templates couvrent **8 classes d'actifs** et **10+ concepts de t
 
 1. **Notebooks Alpha Framework** : QC-Py-13 à QC-Py-15 (~4h)
 2. **Template Intermediate** : Étudier `templates/intermediate/main.py`
-3. **Projets exemples** : Analyser `Sector-Momentum`, `ETF-Pairs-Trading`
+3. **Projets exemples** : Analyser `Sector-Momentum`, `Trend-Following`
 3. **Projet personnel** : Créer votre propre stratégie avec Alpha Framework
 
 ### Pour les avancés
