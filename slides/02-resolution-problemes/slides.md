@@ -236,9 +236,19 @@ fonction EXPLORER-ARBRE(probleme) retourne une solution, ou echec
 
 # Arbre d'exploration: exemple
 
-<img src="./images/img_003.png" style="display:block; margin:12px auto; max-height:60vh;" alt="Arbre d'exploration - Itineraire Roumanie" />
-
 Arbre de recherche avec la racine **Arad** : developpement des successeurs Sibiu, Timisoara, Zerind, puis de leurs propres successeurs.
+
+```
+                       Arad
+              /         |          \
+           Sibiu    Timisoara     Zerind
+          / | \ \    /    \       /   \
+       Arad Fag Ora RilV Arad  Lugoj Arad Oradea
+                   ...  (...)        (...)
+```
+
+- Noeuds en **tirets verts** : successeurs non encore developpes (frontiere)
+- Les etats repetes (Arad) apparaissent mais ne doivent pas etre re-explores
 
 ---
 
@@ -337,10 +347,12 @@ Les strategies non informees (aveugle) utilisent uniquement la definition du pro
 
 # Exploration en largeur d'abord (BFS)
 
-<img src="./images/img_011.png" style="position:absolute; top:60px; right:20px; width:480px;" alt="Expansion BFS" />
+<img src="./images/img_011.png" style="position:absolute; top:60px; right:20px; width:460px;" alt="Expansion BFS" />
 
 - Developpe les noeuds les **moins profonds** en premier
 - La frontiere est une **queue** (File ou FIFO)
+
+<img src="./images/img_012.png" style="display:block; margin:8px 0 0 0; max-width:55%; max-height:34vh;" alt="Pseudocode BFS" />
 
 ---
 
@@ -974,6 +986,8 @@ layout: section
 
 # Minimax
 
+<img src="./images/img_038.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Arbre Minimax" />
+
 ## Decisions optimales
 
 - Espace Non deterministe
@@ -998,7 +1012,7 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 # Algorithme Minimax
 
-<img src="./images/img_038.png" style="position:absolute; top:60px; right:20px; width:380px;" alt="Arbre Minimax" />
+<img src="./images/img_039.png" style="position:absolute; top:60px; right:20px; width:380px;" alt="Pseudocode Minimax: DECISION-MINIMAX, VALEUR-MAX, VALEUR-MIN" />
 
 ## Faire "remonter" les valeurs Minimax
 
@@ -1377,31 +1391,34 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 ---
 
-# Resume CSPs
+# Resume CSPs (1/2)
 
 ## Problemes a satisfaction de contraintes
 
-- Variables, domaines
-- + Graphes (binaires) ou hypergraphes des contraintes
+- Variables et domaines
+- Graphes (binaires) ou hypergraphes des contraintes
 
 ## Techniques d'inference
 
-- Coherence de noeuds, arcs, K-coherence
+- Coherence de noeuds, d'arcs, K-coherence
 
 ## Exploration avec Backtracking
 
-- En profondeur d'abord
-- Couplage Inference + exploration
-- Heuristiques choix de variables, de valeurs
-- Forward checking et Backjumping orientent conflit accerent aussi
-- Exploration locale
-  - Min-conflicts est tres efficace memes avec de nombreuses variables
+- Parcours en profondeur d'abord
+- Couplage inference + exploration
+- Heuristiques de choix de variables et de valeurs
+- Forward checking et Backjumping : orientent vers les conflits et accelerent la recherche
+- Exploration locale : Min-Conflicts tres efficace, meme avec de nombreuses variables
 
-## Structure des problemes: complexite des problemes
+---
 
-  - Coupe cycle ideal pour reduire a un arbre
-  - Decomposition en arbre pratique, nombre de sous-ensembles connexes
-  - Symetrie des valeurs important
+# Resume CSPs (2/2)
+
+## Structure des problemes et complexite
+
+- **Coupe de cycle** : ideal pour reduire a un arbre (complexite lineaire)
+- **Decomposition en sous-arbres** : pratique et courante, exploite les sous-ensembles connexes independants
+- **Symetrie des valeurs** : eliminer les solutions symmetriques reduit l'espace de recherche
 
 ---
 layout: section
