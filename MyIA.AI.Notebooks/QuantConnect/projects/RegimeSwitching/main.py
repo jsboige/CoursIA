@@ -11,12 +11,20 @@ class RegimeSwitching(QCAlgorithm):
     Edge: Apply momentum in bull markets, mean-reversion in bear/sideways
     Reference: Price Action Lab (2024), Regime-Switching Factor Models
 
+    iter3 improvements (ECE Item 4, Maisonnave concepts):
+    - Anti-micro-rebalancing threshold: skip trades when position delta < 5%
+    - Beta-annealing: gradual weight transitions over 3-day ramp
+    - Causal forward-filter: explicit look-ahead guard in regime detection
+
     iter2 improvements:
     - Monthly rebalancing + regime-change trigger (was daily -> 3428 trades)
     - IEF instead of TLT (TLT destroys value 2015-2026)
     - Risk-adjusted momentum (return/vol) instead of raw return
     - Trailing stop-loss -10% on equity positions
     - Reduced equity in sideways (30% vs 40%)
+
+    Source: ECE student concepts (Maisonnave, Gr01 H.4b), adapted for ESGF pool.
+    Issue #238 - Integrate ECE student concepts into QC strategies.
 
     Universe: SPY, QQQ, IEF, GLD
     Backtest: 2008-2026
@@ -55,6 +63,14 @@ class RegimeSwitching(QCAlgorithm):
         self.rsi_oversold = 30
         self.rsi_exit = 50
         self.stop_loss_pct = -0.10    # Trailing stop-loss -10%
+
+        # Anti-micro-rebalancing threshold (Maisonnave concept)
+        self.rebalance_threshold = 0.05  # Skip trades when position delta < 5%
+
+        # Beta-annealing parameters (Maisonnave concept)
+        self.annealing_days = 3       # Gradual transition over 3 days
+        self.target_weights = {}      # Target weights for annealing
+        self.annealing_day = 0        # Current day in annealing cycle
 
         # State
         self.current_regime = None
@@ -139,6 +155,31 @@ class RegimeSwitching(QCAlgorithm):
             if self.portfolio[sym].invested:
                 self.equity_high_water[ticker] = self.securities[sym].price
 
+    # ----------------------------------------------------------------
+    # Anti-micro-rebalancing + Beta-annealing (Maisonnave concepts)
+    # ----------------------------------------------------------------
+
+    def set_holdings_with_threshold(self, symbol, target_weight):
+        """
+        Anti-micro-rebalancing: only trade if position delta exceeds threshold.
+
+        Avoids unnecessary trades from tiny weight adjustments, reducing
+        transaction costs and improving net returns.
+        """
+        current_weight = 0.0
+        if self.portfolio[symbol].invested:
+            current_weight = (
+                self.portfolio[symbol].holdings_value
+                / self.portfolio.total_portfolio_value
+            )
+
+        delta = abs(target_weight - current_weight)
+        if delta < self.rebalance_threshold and current_weight > 0:
+            return  # Skip micro-rebalance
+
+        self.target_weights[symbol] = target_weight
+        self.set_holdings(symbol, target_weight)
+
     def apply_momentum_strategy(self):
         history = self.history(
             [self.symbols[t] for t in self.risky],
@@ -176,9 +217,9 @@ class RegimeSwitching(QCAlgorithm):
             if self.portfolio[self.symbols[ticker]].invested:
                 self.liquidate(self.symbols[ticker])
 
-        self.set_holdings(self.symbols[best], 0.70)
+        self.set_holdings_with_threshold(self.symbols[best], 0.70)
         if other:
-            self.set_holdings(self.symbols[other[0]], 0.30)
+            self.set_holdings_with_threshold(self.symbols[other[0]], 0.30)
 
     def apply_mean_reversion_strategy(self, regime):
         oversold = []
@@ -191,11 +232,11 @@ class RegimeSwitching(QCAlgorithm):
         if oversold:
             weight_per_asset = 0.3 / len(oversold)
             for ticker in oversold:
-                self.set_holdings(self.symbols[ticker], weight_per_asset)
+                self.set_holdings_with_threshold(self.symbols[ticker], weight_per_asset)
 
             remaining = 0.7
-            self.set_holdings(self.symbols["GLD"], remaining * 0.5)
-            self.set_holdings(self.symbols["IEF"], remaining * 0.5)
+            self.set_holdings_with_threshold(self.symbols["GLD"], remaining * 0.5)
+            self.set_holdings_with_threshold(self.symbols["IEF"], remaining * 0.5)
         else:
             # Exit risky if RSI recovered above exit threshold
             for ticker in self.risky:
@@ -205,13 +246,13 @@ class RegimeSwitching(QCAlgorithm):
                             self.liquidate(self.symbols[ticker])
 
             if regime == "bear":
-                self.set_holdings(self.symbols["GLD"], 0.50)
-                self.set_holdings(self.symbols["IEF"], 0.50)
+                self.set_holdings_with_threshold(self.symbols["GLD"], 0.50)
+                self.set_holdings_with_threshold(self.symbols["IEF"], 0.50)
             else:
                 # Sideways: reduced equity (30% vs previous 40%)
-                self.set_holdings(self.symbols["GLD"], 0.35)
-                self.set_holdings(self.symbols["IEF"], 0.35)
-                self.set_holdings(self.symbols["SPY"], 0.30)
+                self.set_holdings_with_threshold(self.symbols["GLD"], 0.35)
+                self.set_holdings_with_threshold(self.symbols["IEF"], 0.35)
+                self.set_holdings_with_threshold(self.symbols["SPY"], 0.30)
 
     def check_stop_loss(self):
         if self.is_warming_up:

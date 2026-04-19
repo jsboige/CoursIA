@@ -408,30 +408,9 @@ logs_comfy.txt
 .env.docker.example
 docker-compose.test.yml
 
-# Fichiers temporaires et de validation (Mission Sécurisation Critique)
-qwen_validation_report_*.json
-diagnostic-*.json
-temp_*.json
-test_qwen_simple.py
-get_token*.py
-
-# Backups temporaires (Phase 29 - Post-Nettoyage)
+# Backups
 *.backup_*
 .env.backup_*
-
-# Backups centralisés dans _backups/
-_backups/
-
-# Fichiers temporaires racine (Phase 29 - Post-Nettoyage)
-temp_*.py
-temp_*.txt
-temp_*/
-
-# Fichiers de debug (Phase 29 - Post-Nettoyage)
-*_nodes_available.json
-
-# Répertoires aberrants historiques
-coursIA/
 
 # JDK Portable - Exclure tout le répertoire au lieu de lister chaque fichier
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/
@@ -519,10 +498,6 @@ MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
 # Windows artifact
 nul
 
-# Rapports de validation notebooks
-notebook_validation_report.json
-rapports/
-
 # Slides - Originaux Dropbox (reference, pas dupliques dans git)
 slides/*/original/
 # Slides - Rendus PNG (regenerables via PowerPoint COM)
@@ -537,15 +512,9 @@ slides/*/modernized/
 # Slides - Marp output HTML/PDF (regenerable via marp CLI)
 slides/*/output/
 slides/_pdfs/
-
-# Fichiers temporaires d'execution notebooks (artefacts bash/Python)
-=*
-[0-9].*
-[0-9][0-9].*
-[0-9].[0-9].*
-*.tmp.*
-execute_*.py
-*_temp.py
+# Slides - Slidev export screenshots (regenerable)
+slides/*/slidev-export/
+slides/*/slidev-export.local/
 
 # Agent memory temporaire (local scope)
 .claude/agent-memory/notebook-*/
@@ -567,8 +536,7 @@ tmp/
 # Generated ML artifacts
 *.joblib
 
-# Execution reports (temporary validation artifacts)
-batch*_execution_report.*
+# ECE grading reports (student PII - never commit)
 reports/
 
 # Claude Code MCP config (contains API tokens)
@@ -615,9 +583,7 @@ MyIA.AI.Notebooks/QuantConnect/VIX-TermStructure-Researcher/
 MyIA.AI.Notebooks/QuantConnect/lean.json
 MyIA.AI.Notebooks/QuantConnect/ESGF-Workspace/
 
-# Temporary screenshots (slide reviews, debug)
-/*.png
-/*.jpeg
-/*.jpg
-.playwright-mcp/
-slides/S4-trading-algorithmique/screenshots/
+# Reports and temporary assets (use RooSync dashboard instead)
+rapports/
+*.png.bak
+

@@ -14,37 +14,40 @@ layout: cover
 
 INTELLIGENCE ARTIFICIELLE -- II
 
-**Explorations non informee et informee**
+- Explorations non informee et informee
+  - Jeux
+  - Problemes a satisfaction de contraintes
 
-- Jeux
-
-- Problemes a satisfaction de contraintes
-
----
-
-layout: section
 ---
 
 # Plan du cours
 
----
-layout: default
+<ol class="roman-list">
+<li>Introduction</li>
+<li><strong>Resolution de problemes</strong></li>
+<li>Bases de connaissances et logique</li>
+<li>Raisonnement probabiliste</li>
+<li>Apprentissage</li>
+<li>Traitement du langage naturel</li>
+<li>TP final projets trimestriels</li>
+</ol>
+
 ---
 
 # Sommaire
 
-- Agents de resolution de problemes
-- Resolution de problemes par exploration
+- **Agents de resolution de problemes**
+- **Resolution de problemes par exploration**
   - Exploration non informee
-  - Exploration informee (heuristiques)
-- Exploration en situation d'adversite: les jeux
+  - Heuristiques et exploration informee
+- **Exploration en situation d'adversite : les jeux**
   - Minimax et Alpha-Beta
   - Decisions imparfaites
-- Problemes a satisfaction de contraintes
+- **Problemes a satisfaction de contraintes**
   - Backtracking
   - Exploration locale
   - Structure des problemes
-- TP: Mise en oeuvre de l'exploration et de la satisfaction de contrainte dans un contexte ludique
+- **TP** : Mise en oeuvre de l'exploration et de la satisfaction de contrainte dans un contexte ludique
 
 ---
 layout: section
@@ -52,36 +55,31 @@ layout: section
 
 # Agents de resolution de Problemes
 ---
-layout: default
----
 
 # Agent fonde sur des buts
 
-- Reactif -> Deliberatif
+<img src="./images/img_001.png" style="position:absolute; top:80px; right:30px; height:340px;" alt="Agent fonde sur des buts" />
+
+- **Reactif → Deliberatif**
   - Exploration du Futur, sequences d'actions
   - Recherche, planification
 
-- Diagramme: Agent <-> Environnement
-  - Composants: Etats, Buts, Capteurs, Effecteurs
-  - Questions cles:
-    - "Comment le monde evolue-t-il ?"
-    - "Quel est l'impact de mes actions ?"
-    - "A quoi ressemble le monde maintenant ?"
-    - "A quoi ressemblerait-t-il si j'entreprends l'action A ?"
-    - "Quelle action entreprendre maintenant ?"
+- **Composants :**
+  - Etats, Buts, Capteurs, Effecteurs
+- **Questions cles :**
+  - "Comment le monde evolue-t-il ?"
+  - "Quel est l'impact de mes actions ?"
+  - "A quoi ressemble le monde maintenant ?"
+  - "Quelle action entreprendre maintenant ?"
 
----
-layout: default
 ---
 
 # Resolution de problemes
 
-- Quel est l'objectif a atteindre ?
-- Quelles sont les actions possibles ?
-- Quel est la representation de l'etat courant ?
+- Quel est **l'objectif** a atteindre ?
+- Quelles sont les **actions** possibles ?
+- Quelle est la **representation** de l'etat courant ?
 
----
-layout: default
 ---
 
 # Agents de resolution de problemes
@@ -106,111 +104,105 @@ fonction Agent-Simple-Resolution-Probleme(percept) retourne une action
 ```
 
 ---
-layout: default
----
 
 # Exemple: Itineraire
 
+<img src="./images/img_003.png" style="position:absolute; top:60px; right:20px; width:420px;" alt="Carte de Roumanie" />
+
 - En vacances en Roumanie; actuellement a Arad.
 - Le vol part demain de Bucharest
-- Formuler le but:
+- **Formuler le but :**
   - Etre a Bucharest
-- Formuler le probleme:
-  - Etats: plusieurs villes
-  - Actions: conduire d'une ville a l'autre
-- Trouver la solution:
+- **Formuler le probleme :**
+  - **Etats** : plusieurs villes
+  - **Actions** : conduire d'une ville a l'autre
+- **Trouver la solution :**
   - Sequence de villes e.g., Arad, Sibiu, Fagaras, Bucharest
 
----
-layout: default
 ---
 
 # Types de problemes
 
-- **Deterministes, completement observables** -> probleme a etat simple
-  - L'agent sait exactement dans quel etat il sera; la solution est une sequence
-- **Non-observable** -> probleme sans capteur dit conformant
+- **Deterministes, completement observables** → **probleme a etat simple**
+  - L'agent sait exactement dans quel etat il sera ; la solution est une sequence
+- **Non-observable** → **probleme sans capteur** dit conformant
   - L'agent peut ne pas savoir ou il est, la solution est une sequence
-- **Non deterministe et / ou partiellement observable** -> probleme de contingence
-  - Les percepts fournissent une nouvelle information a propos de l'etat courant
-  - Entrelacement {calcul, action}
-- **Espaces d'etats inconnu** -> problemes d'exploration en ligne
+- **Non deterministe et/ou partiellement observable** → **probleme de contingence**
+  - Les percepts fournissent une **nouvelle** information a propos de l'etat courant
+  - Entrelacement &#123;calcul, action&#125;
+- **Espaces d'etats inconnu** → **problemes d'exploration en ligne**
 
----
-layout: default
 ---
 
 # Formulation de problemes
 
-Un probleme est defini par les elements suivants:
+Un **probleme** est defini par les elements suivants :
 
 1. **Etat initial** e.g., "a Arad"
-2. **Actions ou fonction successeur** S(x) = ensemble de paires actions - etat
-   - e.g., S(Arad) = {<Arad -> Zerind, Zerind>, ... }
+2. **Actions** ou **fonction successeur** S(x) = ensemble de paires actions - etat
+   - e.g., S(Arad) = &#123;(Arad → Zerind, Zerind), ... &#125;
    - AIMA : ActionsFunction et ResultFunction = **modele de transition**
-   - 1+2 = Espace des etats -> graphe -> chemins
+   - 1+2 = Espace des etats → graphe → chemins
 3. **Test de but**, qui peut etre
-   - explicite, e.g. x = "a Bucharest"
-   - implicite, e.g. EchecEtMat(x)
+   - *explicite*, e.g. x = "a Bucharest"
+   - *implicite*, e.g. EchecEtMat(x)
 4. **Cout de chemin** (optionnel, additif)
    - e.g., Somme des distances, Nombre d'actions executees, etc.
    - c(x,a,y) est le **cout d'etape**, (>= 0)
 
-- **Une solution** est une sequence d'actions (chemin) qui condition de l'etat initial a un etat but
-  - Optimale = cout minimum
+- Une **solution** est une sequence d'actions (chemin) qui conduit de l'etat initial a un etat but
+  - **Optimale** = cout minimum
 
----
-layout: default
 ---
 
 # Selection d'un espace des etats
 
 - Le monde reel est tres complexe
-  - L'espace des etats doit l'objet d'une abstraction
-- Etat (abstrait) = ensemble d'etats reels
-- Action (abstraite) = combinaison complexe d'action reelles
-  - e.g. "Arad -> Zerind" represente un ensemble de routes, detours, pauses etc.
+  - L'espace des etats doit faire l'objet d'une **abstraction**
+- **Etat** (abstrait) = ensemble d'etats reels
+- **Action** (abstraite) = combinaison complexe d'actions reelles
+  - e.g. "Arad → Zerind" represente un ensemble de routes, detours, pauses etc.
   - Pour une realisation garantie, chaque etat reel "a Arad" doit conduire a un etat reel "a Zerind"
-- Solution (abstraite) = ensemble de chemins reels qui sont solutions dans le monde reel
-  - Chaque action abstraite doit etre plus "facile" que dans le probleme reel.
-- Probleme jouet: Experimenter avec les methodes de resolution
+- **Solution** (abstraite) = ensemble de chemins reels qui sont solutions dans le monde reel
+  - Chaque action abstraite doit etre plus "facile" que dans le probleme reel
+- **Probleme jouet** : experimenter avec les methodes de resolution
 
----
-layout: default
 ---
 
 # Exemple Abstraction: Assemblage robotique
 
-- Etats: Coordonnees reelles des joints du robot et des objets
-- Test de but: Objet assemble
-- Etat initial: Pieces detachees, bras au repos
-- Actions: Mouvement continu des joints du bras robotique
-- Cout de chemin: temps d'execution
+<img src="./images/img_004.png" style="position:absolute; top:60px; right:30px; width:380px;" alt="Bras robotique" />
 
----
-layout: default
+- **Etats** : Coordonnees reelles des joints du robot et des objets
+- **Test de but** : Objet assemble
+- **Etat initial** : Pieces detachees, bras au repos
+- **Actions** : Mouvement continu des joints du bras robotique
+- **Cout de chemin** : temps d'execution
+
 ---
 
 # Probleme jouet: Le taquin
 
-- Etats: Position des 8 pieces + case vide
-- Test de but: Etat == { 0, 1, 2, 3, 4, 5, 6, 7, 8 }
-- Etat initial: La moitie des etats possible
-- Actions: case vide -> gauche, droite, haut, bas
-- Cout de chemin: 1 par etape
-- Note: puzzle a glissement de pieces: problemes NP-complet (durs)
+<img src="./images/img_005.png" style="position:absolute; top:60px; right:30px; width:350px;" alt="Le taquin 8-puzzle" />
 
----
-layout: default
+- **Etats** : Position des 8 pieces + case vide
+- **Test de but** : Etat == &#123; 0, 1, 2, 3, 4, 5, 6, 7, 8 &#125;
+- **Etat initial** : La moitie des etats possibles
+- **Actions** : case vide → gauche, droite, haut, bas
+- **Cout de chemin** : 1 par etape
+- Note : puzzle a glissement de pieces : problemes NP-complet (durs)
+
 ---
 
 # Probleme jouet: Les 8 reines
 
-- Etats: Disposition de 0-8 reines
-- Test de but: 8 reines sont presentes, et aucune n'est menacee
-- Etat initial: Echiquier vide
-- Actions: Poser une reine
-- Cout de chemin: N.A / 1 par etape
+<img src="./images/img_006.png" style="position:absolute; top:60px; right:30px; width:280px;" alt="Les 8 reines" />
+
+- **Etats** : Disposition de 0-8 reines
+- **Test de but** : 8 reines sont presentes, et aucune n'est menacee
+- **Etat initial** : Echiquier vide
+- **Actions** : Poser une reine
+- **Cout de chemin** : N.A / 1 par etape
 - Meilleure formulation: une reine par colonne, de gauche a droite, legale. 1,8* 10^14 positions (dur) -> 2057 positions (facile)
 
 ---
@@ -219,16 +211,14 @@ layout: section
 
 # Resolution de Problemes par Exploration
 ---
-layout: default
----
 
 # Arbre d'exploration
 
 ## Idee de base
 
-- Exploration simulee (hors ligne) de l'espace des etats en generant les successeurs des etats deja explores (Developpement des etats)
-- Ensemble des Noeuds feuilles = Frontiere d'exploration
-- Choix des noeuds a developper = Strategie d'exploration
+- Exploration simulee (hors ligne) de l'espace des etats en generant les successeurs des etats deja explores (**developpement** des etats)
+- Ensemble des noeuds feuilles = **frontiere** d'exploration
+- Choix des noeuds a developper = **strategie** d'exploration
 
 ## Fonction EXPLORER-ARBRE
 
@@ -243,28 +233,22 @@ fonction EXPLORER-ARBRE(probleme) retourne une solution, ou echec
 ```
 
 ---
-layout: default
----
 
 # Arbre d'exploration: exemple
 
-- Diagramme: Arbre de recherche avec la racine "Arad"
-  - Branches vers "Sibiu", "Timisoara", "Zerind"
-  - "Sibiu" a des branches vers "Arad", "Fagaras", "Oradea", "Himnicu Vilcea"
-  - "Timisoara" a des branches vers "Arad" (vert), "Lugoj" (vert)
-  - "Zerind" a des branches vers "Arad" (vert), "Oradea" (vert)
+<img src="./images/img_003.png" style="display:block; margin:12px auto; max-height:60vh;" alt="Arbre d'exploration - Itineraire Roumanie" />
 
----
-layout: default
+Arbre de recherche avec la racine **Arad** : developpement des successeurs Sibiu, Timisoara, Zerind, puis de leurs propres successeurs.
+
 ---
 
 # Exploration de graphe
 
 ## Idee de base
 
-- Etats repetes -> chemins avec boucle
-- Solution : memoire = ensemble explore
-- Frontiere: separe espace explore et espace inconnu
+- Etats repetes → chemins avec boucle
+- **Solution** : memoire = ensemble explore
+- **Frontiere** : separe espace explore et espace inconnu
 
 ## Fonction EXPLORER-GRAPHE
 
@@ -278,37 +262,32 @@ fonction EXPLORER-GRAPHE(probleme) retourne une solution, ou echec
     si le noeud contient un etat but alors retourner la solution correspondante
     ajouter le noeud a l'ensemble des noeuds explores
     developper le noeud choisi, en ajoutant les noeuds obtenus a la frontiere
-    seulement si ils ne sont ni dans la frontiere, ni dans l'ensemble des noeuds explores.
+    seulement si ils ne sont ni dans la frontiere, ni dans l'ensemble explores.
 ```
 
----
-layout: default
 ---
 
 # Infrastructure: Etats vs Noeuds
 
-## Etats != Noeud
+<img src="./images/img_010.png" style="position:absolute; top:60px; right:20px; width:360px;" alt="Structure d'un noeud" />
 
-- Un Etat est une representation de la configuration reelle
-- Un Noeud est une structure de donnees constitutive d'une exploration
-  - Inclut l'etat, le noeud parent, l'action, le cout d'etape g(x), la profondeur
+## Etats != Noeuds
 
-## Fonction de developpement
-
-Cree de nouveaux noeuds, et utilise la fonction successeur pour determiner les etats enfants
+- Un **Etat** est une representation de la configuration reelle
+- Un **Noeud** est une structure de donnees constitutive d'une exploration
+  - Inclut l'etat, le noeud parent, l'action, le cout g(x), la profondeur
 
 ## Fonction NOEUD-FILS
 
 ```
 fonction NOEUD-FILS(probleme, parent, action) retourne un noeud
   retourner un noeud avec
-    Etat = probleme.Resultat(parent.Etat, action),
-    Parent = parent, ACTION = action,
-    COUT-CHEMIN = parent.COUT-CHEMIN + probleme.COUT-ETAPE(parent.Etat, action)
+    ETAT = probleme.Resultat(parent.Etat, action),
+    PARENT = parent, ACTION = action,
+    COUT-CHEMIN = parent.COUT-CHEMIN
+                + probleme.COUT-ETAPE(parent.Etat, action)
 ```
 
----
-layout: default
 ---
 
 # Strategies d'exploration
@@ -317,24 +296,22 @@ Une strategie d'exploration definit l'ordre de developpement des noeuds.
 
 ## Criteres d'evaluation
 
-- **Completude**: Garantie d'obtenir une solution si elle existe
-- **Optimalite**: Garantie d'obtenir une solution de cout minimal
-- **Complexite en temps**: ~ nombre de noeuds developpes
-- **Complexite en espace**: ~ nombre max de noeuds en memoire
+- **Completude** : garantie d'obtenir une solution si elle existe
+- **Optimalite** : garantie d'obtenir une solution de cout minimal
+- **Complexite en temps** : ~ nombre de noeuds developpes
+- **Complexite en espace** : ~ nombre max de noeuds en memoire
 
-## Complexites en temps et en espace s'evaluent selon
+## Complexites s'evaluent selon
 
-- b: Facteur maximal de branchement dans l'arbre de recherche
-- d: (depth) profondeur de la solution de moindre cout
-- m: profondeur maximale de l'espace d'etats (souvent infini)
+- **b** : facteur maximal de branchement dans l'arbre de recherche
+- **d** : (depth) profondeur de la solution de moindre cout
+- **m** : profondeur maximale de l'espace d'etats (souvent infini)
 
 ---
 layout: section
 ---
 
 # Exploration Non Informee
----
-layout: default
 ---
 
 # Strategies d'exploration non informee
@@ -343,42 +320,41 @@ Les strategies non informees (aveugle) utilisent uniquement la definition du pro
 
 ## Strategies d'exploration en largeur
 
-- En largeur d'abord (BFS: Breadth First Search)
-- A cout uniforme (UCS: Uniform Cost Search)
+- **BFS** : En largeur d'abord (Breadth First Search)
+- **UCS** : A cout uniforme (Uniform Cost Search)
 
 ## Strategies d'exploration en profondeur
 
-- En profondeur d'abord (DFS: Depth First Search)
-- En profondeur limitee (DLS: Depth Limited Search)
-- Itinerative en profondeur (IDS: Iterative Depth Search)
+- **DFS** : En profondeur d'abord (Depth First Search)
+- **DLS** : En profondeur limitee (Depth Limited Search)
+- **IDS** : Iterative en profondeur (Iterative Depth Search)
 
 ## Variantes
 
 - Bidirectionnelle
 
 ---
-layout: default
----
 
 # Exploration en largeur d'abord (BFS)
 
-- Developpe les noeuds les moins profonds en premier
-- La frontiere est une queue (File ou FIFO)
+<img src="./images/img_011.png" style="position:absolute; top:60px; right:20px; width:480px;" alt="Expansion BFS" />
 
----
-layout: default
+- Developpe les noeuds les **moins profonds** en premier
+- La frontiere est une **queue** (File ou FIFO)
+
 ---
 
 # Proprietes de l'exploration en largeur
 
-- Complet ? Oui (si b est fini)
-- Complexite en temps ? O(b^(d+1))
-- Complexite en espace ? O(b^(d+1)) chaque noeud est garde en memoire
-- Optimale? Oui si cout d'etape = 1
-- L'espace est le plus gros probleme
+<img src="./images/img_013.png" style="position:absolute; top:60px; right:20px; width:440px;" alt="Tableau complexite BFS" />
 
----
-layout: default
+- **Complet** ? Oui (si b est fini)
+- **Complexite en temps** ? O(b^(d+1))
+- **Complexite en espace** ? O(b^(d+1))
+  - chaque noeud est garde en memoire
+- **Optimale** ? Oui si cout d'etape = 1
+- L'**espace** est le plus gros probleme
+
 ---
 
 # Exploration a cout uniforme (UCS)
@@ -396,14 +372,14 @@ layout: default
 - Optimal ? Oui: les noeuds sont developpes dans l'ordre des cout de chemin
 
 ---
-layout: default
----
 
 # Exploration en profondeur d'abord (DFS)
 
-- Developpe les noeuds les plus profonds en premier
-  - La frontiere est une Pile (LIFO)
-  - Les branches deja explores ne sont pas conservees en memoire
+<img src="./images/img_014.png" style="position:absolute; top:60px; right:20px; width:480px;" alt="Expansion DFS" />
+
+- Developpe les noeuds les **plus profonds** en premier
+  - La frontiere est une **Pile** (LIFO)
+  - Les branches deja explorees ne sont pas conservees en memoire
 
 ## Caracteristiques
 
@@ -419,8 +395,6 @@ layout: default
 - On developpe 1 seul successeur a la fois -> O(m) en espace
 - + Optimisation en modifiant les etats plutot qu'en les copiant (retour arriere = annulation)
 
----
-layout: default
 ---
 
 # Exploration en profondeur limitee (DLS)
@@ -450,8 +424,11 @@ fonction EPL-Recursive(noeud, probleme, limite) retourne une solution, ou echec/
 ```
 
 ---
-layout: default
----
+
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+h2 { font-size: 1.1em !important; margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
 
 # Exploration iterative en profondeur (IDS)
 
@@ -472,25 +449,20 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 ## Caracteristiques
 
-- Complet: Oui
-- Complexite en temps: O(b^d)
-- Complexite en espace: O(b^d)
-- Optimale: Oui si cout d'etape = 1
+- Complet: Oui | Temps: O(b^d) | Espace: O(b*d) | Optimale: Oui si cout d'etape = 1
 
-## De facon analogue pour l'exploration a cout uniforme
+**Analogue :** Exploration iterative par allongement (ILS) pour cout uniforme
 
-- Exploration iterative par allongement (ILS)
-
----
-layout: default
 ---
 
 # Exploration Bidirectionnelle
 
+<img src="./images/img_017.png" style="position:absolute; top:60px; right:20px; width:360px;" alt="Recherche bidirectionnelle" />
+
 ## Quand on connait l'etat but
 
 - Double exploration vers l'aval et vers l'amont
-- Interet: O(b^(d/2)) + O(b^(d/2)) est tres inferieur a O(b^d)
+- Interet : O(b^(d/2)) + O(b^(d/2)) est tres inferieur a O(b^d)
 
 ## Exemple courant
 
@@ -506,8 +478,6 @@ layout: default
   - Plusieurs etats buts -> Etat but fictif en l'aval des etats buts
   - Description implicite (ex: 8 reines) -> difficile
 
----
-layout: default
 ---
 
 # Resume Exploration non informee
@@ -531,15 +501,14 @@ layout: default
 | Optimal? | Oui (cout=1) | Oui | Non | Non | Oui (cout=1) | Oui |
 
 ---
-layout: default
----
 
 # Les missionnaires et cannibales
 
+<img src="./images/img_019.png" style="position:absolute; top:60px; right:20px; width:360px;" alt="Missionnaires et cannibales" />
+
 - Les missionnaires et cannibales doivent traverser la riviere
 - Pas plus de 2 personnes en meme temps sur la barque
-- Si + de cannibales que de missionnaires d'un cote ou de l'autre
-  -> ils se font manger
+- Si + de cannibales que de missionnaires d'un cote ou de l'autre → ils se font manger
 
 ---
 layout: section
@@ -550,9 +519,11 @@ layout: section
 
 # Exploration gloutonne
 
+<img src="./images/img_020.png" style="position:absolute; top:60px; right:20px; width:340px;" alt="Valeurs heuristiques h(n)" />
+
 ## Idee
 
-- Utiliser une heuristique h(n) = cout estime pour atteindre le but depuis n
+- Utiliser une **heuristique** h(n) = cout estime pour atteindre le but depuis n
   - f(n) = g(n) + h(n)
   - Developpe le noeud avec le plus petit f(n)
 
@@ -566,6 +537,8 @@ layout: section
 ---
 
 # Exploration A*
+
+<img src="./images/img_022.png" style="position:absolute; top:60px; right:20px; width:160px;" alt="Triangle consistance A*" />
 
 ## Idee
 
@@ -588,10 +561,10 @@ layout: section
   - Demonstration: f est monotone puis par l'absurde en developpant
 
 ---
-layout: default
----
 
 # Caracteristiques de A*
+
+<img src="./images/img_023.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Contours A* sur carte Roumanie" />
 
 ## Optimalite de A*
 
@@ -612,8 +585,6 @@ layout: default
 - Nombre d'etats dans l'espace d'exploration des contours souvent exponentiel.
 - Souvent, le principal probleme est la memoire
 
----
-layout: default
 ---
 
 # Variations
@@ -637,8 +608,6 @@ layout: default
 - Techniques d'apprentissage au metaniveau -> compromis entre cout de calcul et cout de chemin
 
 ---
-layout: default
----
 
 # Effet de l'exactitude de l'heuristique
 
@@ -657,8 +626,6 @@ layout: default
 - Si h1 et h2 admissibles et h2(n) >= h1(n) pour tout n, h2 domine h1
 - Si h2 domine h1, h2 est meilleure
 
----
-layout: default
 ---
 
 # Production d'heuristiques
@@ -687,8 +654,6 @@ layout: section
 
 # Algorithmes d'Exploration Locale
 ---
-layout: default
----
 
 # Algorithmes d'exploration locale
 
@@ -708,10 +673,10 @@ layout: default
 ## Exemple: 8 reines
 
 ---
-layout: default
----
 
 # Paysage de l'espace des etats
+
+<img src="./images/img_025.png" style="display:block; margin:12px auto; max-height:55vh;" alt="Paysage espace des etats" />
 
 ## Problemes d'optimisation
 
@@ -724,10 +689,10 @@ layout: default
 - **Optimal**: trouve maximum global
 
 ---
-layout: default
----
 
 # Exploration par escalade (HCS)
+
+<img src="./images/img_028.png" style="position:absolute; top:60px; right:20px; width:200px;" alt="8 reines escalade" />
 
 ## Escalade par la plus forte pente
 
@@ -750,12 +715,12 @@ retourne maximum local
 ## Escalade reprise aleatoire (complet)
 
 ---
-layout: default
----
 
 # Exploration par recuit simule (SA)
 
-## Idee: echapper aux maxima locaux
+<img src="./images/img_027.png" style="position:absolute; top:60px; right:20px; width:120px;" alt="Courbes temperature SA" />
+
+## Idee : echapper aux maxima locaux
 
 - Autoriser mauvais deplacements, diminuer leur frequence progressivement
 
@@ -776,8 +741,6 @@ boucle t -> infini
 - Utilise dans circuits, ordonnancement (ex: carton de babioles)
 
 ---
-layout: default
----
 
 # Exploration locale en faisceau (LBS)
 
@@ -794,8 +757,6 @@ layout: default
 - Analogue escalade stochastique; k choix aleatoire (proba = valeur)
 - Analogue selection naturelle -> GAs
 
----
-layout: default
 ---
 
 # Algorithmes genetiques (GAs)
@@ -817,14 +778,12 @@ algorithme genetique (selection, reproduction, mutation, retour meilleur individ
 ```
 
 ---
-layout: default
----
 
 # Algorithme genetique pour les 8 reines
 
-## Genetique
+<img src="./images/img_031.png" style="display:block; margin:8px auto; max-height:35vh;" alt="Algorithme genetique: population, fitness, selection, crossover, mutation" />
 
-- Diagramme: (a) population initiale, (b) fonction adaptation, (c) selection, (d) recombinaison, (e) mutation (pourcentages)
+<img src="./images/img_032.png" style="display:block; margin:8px auto; max-height:20vh;" alt="Croisement 8 reines" />
 
 ## Phenotype
 
@@ -836,10 +795,10 @@ layout: section
 
 # Exploration Locale - Espaces Continus
 ---
-layout: default
----
 
 # Exploration locale d'espaces continus
+
+<img src="./images/img_033.gif" style="position:absolute; top:60px; right:20px; width:300px;" alt="Trajectoires optimiseurs SGD" />
 
 ## Etats definis par des variables reelles
 
@@ -873,8 +832,6 @@ layout: section
 
 # Extensions
 ---
-layout: default
----
 
 # Exploration avec actions non deterministes
 
@@ -892,8 +849,6 @@ layout: default
 
 - Ou l'action de deplacement peut echouer
 
----
-layout: default
 ---
 
 # Exploration avec observations partielles
@@ -919,8 +874,6 @@ layout: default
 - Etape de prevision d'observations
 - Etape de mise a jour
 
----
-layout: default
 ---
 
 # Exploration en ligne
@@ -949,8 +902,6 @@ layout: default
 - Du cout d'etape
 - Des regles (transitions)
 
----
-layout: default
 ---
 
 # Resume Exploration Informee
@@ -983,8 +934,6 @@ layout: section
 
 # Jeux vs Exploration
 ---
-layout: default
----
 
 # Jeux vs Exploration
 
@@ -1007,22 +956,20 @@ layout: default
 - Performance critique: temps -> victoire
 
 ---
-layout: default
----
 
 # Arbre de jeu
 
-## Ex: Morpion
+<img src="./images/img_037.png" style="position:absolute; top:50px; right:10px; width:500px;" alt="Arbre de jeu morpion" />
 
-- Etat initial S0
-- Joueurs: Max, Min
-- Actions: Coups
-- Resultat(s,a): Modele de transition
-- Test-Terminal(s): Fin de partie
-- Utilite(s,p): Score final de p
+## Ex : Morpion
 
----
-layout: default
+- **Etat initial** S0
+- **Joueurs** : Max, Min
+- **Actions** : Coups
+- **Resultat**(s,a) : Modele de transition
+- **Test-Terminal**(s) : Fin de partie
+- **Utilite**(s,p) : Score final de p
+
 ---
 
 # Minimax
@@ -1048,10 +995,10 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 ```
 
 ---
-layout: default
----
 
 # Algorithme Minimax
+
+<img src="./images/img_038.png" style="position:absolute; top:60px; right:20px; width:380px;" alt="Arbre Minimax" />
 
 ## Faire "remonter" les valeurs Minimax
 
@@ -1076,12 +1023,12 @@ layout: default
 - Souvent, alliances naturelles
 
 ---
-layout: default
----
 
 # Elagage Alpha-Beta
 
-## Idee: Diminuer le nombre d'etats a examiner
+<img src="./images/img_040.png" style="position:absolute; top:60px; right:20px; width:380px;" alt="Elagage Alpha-Beta" />
+
+## Idee : Diminuer le nombre d'etats a examiner
 
 - Sans perdre l'optimalite
 - Les branches mauvaises sont ignorees (elaguees)
@@ -1107,10 +1054,10 @@ layout: default
 - Ex: raisonnement oriente buts ou autres types d'IA
 
 ---
-layout: default
----
 
 # Decisions imparfaites
+
+<img src="./images/img_042.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Formule ExpectiMinimax" />
 
 ## Approche
 
@@ -1138,32 +1085,32 @@ layout: section
 
 # Problemes a Satisfaction de Contraintes
 ---
-layout: default
----
 
 # Problemes a satisfaction de contraintes (CSPs)
 
+<img src="./images/img_047.png" style="position:absolute; top:50px; right:10px; width:320px;" alt="Carte Australie coloree" />
+
 ## Definition
 
-- Variables X1, ..., Xn
-- Domaines D1, ..., Dn
-- Contraintes C1, ..., Cm
+- **Variables** X1, ..., Xn
+- **Domaines** D1, ..., Dn
+- **Contraintes** C1, ..., Cm
 
-## Exemple: Coloration de carte
+## Exemple : Coloration de carte
 
-- Variables: WA, NT, Q, NSW, V, T, SA
-- Domaines: {rouge, vert, bleu}
-- Contraintes: WA != NT, NT != Q, SA != NSW, NSW != V, V != SA
+- Variables : WA, NT, Q, NSW, V, T, SA
+- Domaines : &#123;rouge, vert, bleu&#125;
+- Contraintes : WA != NT, NT != Q, SA != NSW, NSW != V, V != SA
 
 ## Objectif
 
 - Trouver une assignation complete satisfaisant toutes les contraintes
 
 ---
-layout: default
----
 
 # CSP: Exemple cryptarithme
+
+<img src="./images/img_049.png" style="position:absolute; top:60px; right:20px; width:280px;" alt="Graphe contraintes TWO+TWO=FOUR" />
 
 ## Variables
 
@@ -1171,7 +1118,7 @@ layout: default
 
 ## Domaines
 
-- `{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}`
+- &#123;0, 1, 2, 3, 4, 5, 6, 7, 8, 9&#125;
 
 ## Contraintes
 
@@ -1186,8 +1133,6 @@ layout: default
 
 - Essayer les valeurs pour F,T,U,W,R,O
 
----
-layout: default
 ---
 
 # Resolution de CSPs: Generation et test
@@ -1205,15 +1150,15 @@ layout: default
   - Ex: 8 reines -> 64^8 = 2.8 * 10^14
 
 ---
-layout: default
----
 
 # CSPs: Exploration avec backtracking
+
+<img src="./images/img_050.png" style="position:absolute; top:50px; right:10px; width:440px;" alt="Arbre backtracking CSP Australie" />
 
 ## Principe
 
 - Etendre progressivement une assignation partielle
-- Des qu'une contrainte est violee -> retour en arriere (backtrack)
+- Des qu'une contrainte est violee → retour en arriere (backtrack)
 
 ## Fonction BACKTRACK
 
@@ -1231,10 +1176,10 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 ```
 
 ---
-layout: default
----
 
 # CSPs: Propagation de contraintes
+
+<img src="./images/img_053.png" style="position:absolute; top:50px; right:10px; width:440px;" alt="Forward Checking Australie" />
 
 ## Idee
 
@@ -1252,15 +1197,19 @@ layout: default
 - Tres efficace mais complexe
 
 ---
-layout: default
----
 
 # CSPs: Heuristiques de variables et valeurs
+
+<img src="./images/img_054.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Reduction domaines AC" />
+
+<div style="max-width:55%;">
 
 ## Choix de variable (MRV, LCV)
 
 - **Most Constrained Variable**: Variable avec le plus petit domaine
 - **Least Constraining Value**: Valeur qui elimine le moins de choix pour les autres variables
+
+</div>
 
 ## Choix de valeur (LCV)
 
@@ -1268,10 +1217,10 @@ layout: default
 - Maximise les chances de succes
 
 ---
-layout: default
----
 
 # CSPs: Structure des problemes
+
+<img src="./images/img_055.png" style="position:absolute; top:60px; right:20px; width:250px;" alt="Decomposition arbre contraintes" />
 
 ## Graphe de contraintes
 
@@ -1289,8 +1238,6 @@ layout: default
 - Graphe complet -> NP-complet
 
 ---
-layout: default
----
 
 # CSPs: Exploration locale
 
@@ -1305,8 +1252,6 @@ layout: default
 - Chaque reine sur une colonne differente
 - Deplacer la reine qui a le plus de conflits
 
----
-layout: default
 ---
 
 # Techniques de resolution des CSPs
@@ -1327,8 +1272,6 @@ layout: default
   - Large Neighborhood Search
 
 ---
-layout: default
----
 
 # Domaines des CSPs
 
@@ -1345,10 +1288,10 @@ layout: default
 - Contraintes lineaires solubles en temps polynomial par la programmation lineaire
 
 ---
-layout: default
----
 
 # Graphe de contraintes
+
+<img src="./images/img_048.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Graphe contraintes Australie" />
 
 ## CSP Binaire: chaque contrainte relie 2 variables
 
@@ -1362,8 +1305,6 @@ layout: default
 - Graphe avec noeuds (WA, NT, SA, Q, NSW, V, T)
 - Arcs entre noeuds adjacents (e.g., WA-NT, NT-SA, SA-Q, etc.)
 
----
-layout: default
 ---
 
 # Types de contraintes
@@ -1381,7 +1322,7 @@ layout: default
 - Contraintes avec 3 variables ou plus
 - Ex: problemes cryptarithmetiques
   - Variables: F T U W R O x X1 X2 X3
-  - Domaines: `{0,1,2,3,4,5,6,7,8,9}`
+  - Domaines: &#123;0,1,2,3,4,5,6,7,8,9&#125;
   - Contraintes: Alldiff(F,T,U,W,R,O), O + O = R + 10, etc.
 
 ## Representation
@@ -1393,8 +1334,6 @@ layout: default
     - CSP -> contraintes absolues
     - -> Problemes a optimisation de contraintes (COP)
 
----
-layout: default
 ---
 
 # CSPs courants
@@ -1417,8 +1356,6 @@ layout: default
 - JPype pour appeler du code Java depuis Python
 
 ---
-layout: default
----
 
 # Applications et cas d'usage modernes
 
@@ -1438,8 +1375,6 @@ layout: default
 
 - Planification de missions robotiques, satellites, et autres systemes autonomes
 
----
-layout: default
 ---
 
 # Resume CSPs
@@ -1473,8 +1408,6 @@ layout: section
 ---
 
 # TP
----
-layout: default
 ---
 
 # TP
