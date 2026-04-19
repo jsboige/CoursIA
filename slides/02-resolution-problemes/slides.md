@@ -1105,6 +1105,105 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
   - Solution = recherche de stabilite ("quiescence", ex: pas de prise)
 
 ---
+
+# Techniques avancees
+
+## Elagage avant (forward pruning)
+
+- Idee : ignorer certains coups sans les evaluer
+- **Dangereux** : pas de consideration des noeuds elagues
+- **Beam search** : n meilleurs coups par tour
+- **ProbCut** : probabilite que le noeud soit hors [α, β]
+
+## Exploration vs Consultation
+
+- Echecs -- **debuts** et **fins de partie** documentes :
+  - **Debut** : consultation de **livres d'ouverture** + statistiques de bases de parties
+  - **Fin** : utilisation d'une **politique** (correspondance directe coup optimal), exploration retrograde
+
+## Leçon
+
+- Combiner **exploration** (milieu de partie) et **consultation** (bibliotheques)
+- Alpha Beta iteratif pour respecter une limite de temps + ordre des coups
+- Recherche de **quiescence** aux cutoffs instables
+
+---
+
+# Exploration d'arbre de Monte-Carlo (MCTS)
+
+## Principe -- simulations statistiques
+
+Pas d'heuristique d'evaluation : **remplacee par des rollouts** (simulations aleatoires jusqu'a fin de partie).
+
+## Algorithme (boucle)
+
+1. **Selection** : descente guidee par une **politique de selection** (compromis exploration / exploitation)
+2. **Expansion** : creation d'un ou plusieurs noeuds enfants
+3. **Simulation (rollout)** : jeu aleatoire jusqu'a resultat
+4. **Retropropagation** : les noeuds parents voient leur compteur de victoires / visites incremente
+
+## Politique de selection -- UCB1
+
+$$
+UCB1 = \bar{X_i} + C \sqrt{\frac{\ln N}{n_i}}
+$$
+
+- `C` : constante empirique ou apprise (cf. **AlphaGo / AlphaZero**)
+- Combinaison avec **heuristique** possible
+- Critere de terminaison avancee (apprentissage par renforcement)
+
+## Applications
+
+Go, Echecs (AlphaZero), planification en jeux partiellement observables.
+
+---
+
+# Classes de Jeux complexes
+
+## Jeux stochastiques
+
+- Presence d'aleatoire (des, cartes)
+- **Valeur Minimax esperee** :
+  - Noeud chance intercale entre MAX et MIN
+  - `EU(n) = Σ P(resultat) × Minimax(resultat)`
+- Ex : Backgammon, Monopoly, jeux de cartes
+
+## Jeux partiellement observables
+
+- **Information cachee** : cartes adverses, positions non revelees
+- **Etat de croyance** (belief state) : distribution sur etats compatibles avec l'observation
+- Decision optimale : maximiser l'utilite **moyennee sur la croyance**
+- Ex : Poker, Bridge, jeux de guerre a brouillard de guerre
+
+## Defis
+
+- **Explosion combinatoire** des etats de croyance
+- Approches modernes : **CFR** (Counterfactual Regret Minimization, Libratus/Pluribus au poker)
+
+---
+
+# Resume -- Jeux
+
+## Decisions optimales
+
+- **Arbre de jeu** : etats, actions, resultats, test terminal, utilite
+- **Minimax** : valeur optimale, algorithme recursif
+- **Alpha-Beta** : elagage pour reduire la taille de l'arbre explore
+
+## Decisions imparfaites
+
+- **Fonction d'evaluation heuristique** (lineaire ponderee des attributs)
+- **Test d'arret** : complications liees a la stabilite et a l'horizon
+- **Elagage avant** (beam search, ProbCut) : efficace mais dangereux
+- **Consultation** et **politiques** pour debut et fin de partie
+
+## Classes complexes
+
+- **Jeux stochastiques** : valeur Minimax esperee (noeuds chance)
+- **Jeux partiellement observables** : etat de croyance
+- **MCTS** : methode generale qui scale a de tres grands jeux (Go, Echecs, Poker)
+
+---
 layout: section
 ---
 
