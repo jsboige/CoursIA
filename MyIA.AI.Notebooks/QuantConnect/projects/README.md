@@ -1,8 +1,9 @@
 # QuantConnect Algorithmic Trading Projects
 
-Dernière mise à jour : 2026-04-08
+Dernière mise à jour : 2026-04-19
 
-Bibliothèque pédagogique de **66 stratégies** de trading algorithmique sur QuantConnect Cloud.
+Bibliothèque pédagogique de **78 stratégies** de trading algorithmique sur QuantConnect Cloud
++ **8 clones QC Strategy Library** + **6 composants Framework** + **3 research/tools** = **95 projets**.
 Chaque stratégie illustre un concept ou une famille de stratégies ; les performances varient
 volontairement pour montrer que toutes les idées académiques ne survivent pas au backtest réaliste.
 
@@ -107,11 +108,45 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [ML-TextClassification](ML-TextClassification/) | NLP Naive Bayes sentiment simule (TF-IDF headlines, 5 tech stocks) | --- | --- | --- | --- | — | Non backtestee |
 | [RL-Portfolio](RL-Portfolio/) | Q-Learning allocation multi-asset (SPY/TLT/GLD/Cash, epsilon-greedy) | --- | --- | --- | --- | — | Non backtestee |
 | [Crypto-LSTM-Prediction](Crypto-LSTM-Prediction/) | DLinear (AAAI 2023) SeriesDecomposition BTCUSDT (PyTorch) | --- | --- | --- | --- | — | Research phase |
+| [ML-Trend-Scanning](ML-Trend-Scanning/) | t-statistic linear regression slope across multiple windows (SPY/TLT/GLD) | **0.292** | --- | --- | 2015-2026 | Ch06-Ex01 | Trend regime classification |
+| [ML-Reversion-Trending](ML-Reversion-Trending/) | GradientBoosting regime classifier (mean-revert vs trend-follow) 5 ETFs | **0.375** | 8.44% | 24.4% | 2015-2026 | Ch06-Ex03 | Dual-strategy switching |
+| [ML-HMM-Regime](ML-HMM-Regime/) | Markov-switching dynamic regression 2-regime detection (SPY/TLT) | **0.571** | --- | --- | 2015-2024 | Ch06-Ex04 | statsmodels MarkovRegression |
+| [ML-Gaussian-Classifier](ML-Gaussian-Classifier/) | GaussianNB direction prediction tech stocks, prob-weighted sizing | **0.361** | 12.49% | 47.4% | 2015-2026 | Ch06-Ex15 | Cross-sectional features |
+| [ML-LLM-Summarization](ML-LLM-Summarization/) | Tiingo news sentiment + optional OpenAI LLM summarization (SPY) | **0.686** | 15.45% | 22.7% | 2015-2026 | Ch06-Ex16 | Keyword fallback, Tiingo data |
+| [ML-PCA-StatArb](ML-PCA-StatArb/) | PCA + OLS stat-arb mean-reversion, Z-score residuals (top 100) | **0.399** | 12.65% | 31.8% | 2019-2024 | Ch06-Ex13 | Book period, sklearn |
+| [ML-Pairs-PCA-Selection](ML-Pairs-PCA-Selection/) | PCA-based pair selection research | --- | --- | --- | --- | Ch06-Ex09 | Research only (no main.py) |
+| [ML-Chronos-Foundation](ML-Chronos-Foundation/) | Amazon Chronos-t5-tiny foundation model portfolio allocation (8 ETFs) | **0.277** | 7.23% | 13.5% | 2015-2026 | Ch06-Ex18 | Foundation model, SMA200 regime |
+| [ML-FinBERT-Sentiment](ML-FinBERT-Sentiment/) | ProsusAI/finbert sentiment from Tiingo news, most volatile tech stock | N/A | N/A | N/A | --- | Ch06-Ex19 | TF unavailable on QC Cloud, 0 trades |
+| [Positive-Negative-Splits-ML](Positive-Negative-Splits-ML/) | LinearRegression split-event return prediction, sector momentum | **1.736** | 90.83% | 42.4% | 2015-2026 | Ch06-Ex07 | Split factor + XLK ROC features |
+| [Adaptive-Conformal-Risk](Adaptive-Conformal-Risk/) | Adaptive Conformal Inference risk overlay on multi-factor momentum (15 large-caps) | --- | --- | --- | --- | ECE-Item6 | ACI algorithm (Gibbs & Candès 2021) |
+| [Dynamic-Options-Wheel](Dynamic-Options-Wheel/) | Dynamic delta/skew options wheel, IV percentile OTM targeting (SPY) | **0.119** | 5.59% | --- | 2015-2026 | ECE-Item7 | Extends Option-Wheel with IV regime |
+| [CSharp-BTC-MACD-ADX](CSharp-BTC-MACD-ADX/) | MACD + ADX filter BTC daily (C# variant with robustness research) | **1.647** | 38.1% | 48.8% | 2020-2026 | — | C# variant, same as BTC-MACD-ADX |
 
-*66 strategies documentees dans les tables ci-dessus (63 Python, 3 C#) + 2 projets research-only + 6 composants Framework/building-blocks. 74 projets au total dont 72 avec code. Metriques issues des backtests QC Cloud.*
+*78 strategies documentees dans les tables ci-dessus (71 Python, 4 C#) + 8 clones QC Strategy Library + 3 projets research/tools + 6 composants Framework. 95 projets au total dont 89 avec code. Metriques issues des backtests QC Cloud.*
 *Multi-Layer-EMA reclassee Historique apres analyse de robustesse (Sharpe gonfle par bulle BTC 2017).*
 *Research: type de notebook de recherche (yfinance = donnees Yahoo, QuantBook = donnees QC natives, — = pas de notebook).*
 *ML/AI: implementations sklearn (RF, XGBoost, MLP) + tensorflow/Keras (Conv1D, Ex14/Ex17) + pywt (Ex05) validees sur QC Cloud. Les fake implementations (poids hardcodes) ont ete remplacees en mars 2026. Les vrais CNN Keras HandsOn ont ete ajoutes le 2026-04-08 (PR #271).*
+
+### QC Strategy Library Clones (8 projets)
+
+Clones de strategiesQC Cloud Library, ajoutes en avril 2026 comme references avancees.
+
+| Projet | Description | OOS 1Y Sharpe | 5Y CAGR | Source |
+|--------|-------------|---------------|---------|--------|
+| [AssetClassMomentum-QC](AssetClassMomentum-QC/) | Top-3 momentum 5 ETFs (SPY/EFA/BND/VNQ/GSG), Quantpedia #2 | --- | --- | Quantpedia Strategy #2 |
+| [DynamicVIXSpyRegime-QC](DynamicVIXSpyRegime-QC/) | RandomForestClassifier + VIX regime switching SPY/TLT/GLD/BIL | **1.72** | 29.76% | QC Strategy Library #50 |
+| [HighBookToMarketFScore-QC](HighBookToMarketFScore-QC/) | Piotroski F-Score >= 8 value screen, top 20% book-to-market | **2.09** | 18.44% | QC Strategy Library #343 |
+| [LeveragedETFMomentum-QC](LeveragedETFMomentum-QC/) | RSI + SMA regime conditional leveraged ETF rotation | **1.80** | 101.03% | QC Strategy Library #60 |
+| [LongShortHarvest-QC](LongShortHarvest-QC/) | Long-short equity ML overlay, Hurst regime, ATR filters | **3.39** | 57.94% | QC Strategy Library #238 |
+| [MacroFactorRotation-QC](MacroFactorRotation-QC/) | DecisionTreeRegressor cross-asset rotation SPY/GLD/BND/BTC | **1.23** | 33.45% | QC Strategy Library #72 |
+| [PuppiesOfTheDow-QC](PuppiesOfTheDow-QC/) | Dogs of the Dow value-income tilt, top-5 by dividend yield | **1.99** | 10.16% | QC Strategy Library #211 |
+| [TermStructureCommodities-QC](TermStructureCommodities-QC/) | Commodity futures roll returns (backwardation/contango) | -0.041 | -15.71% | Quantpedia Strategy #22 |
+
+*Les metriques OOS proviennent de la QC Strategy Library et n'ont pas ete re-backtestees localement.*
+
+### HMM-KMeans-Voting (Research)
+
+- **HMM-KMeans-Voting** : Custom K-Means clustering (pure numpy) + Hidden Markov Model voting ensemble pour regime detection. Implementation pedagogique sans dependance sklearn. Research notebook uniquement (pas de backtest QC Cloud).
 
 ## Description des strategies
 
@@ -173,6 +208,8 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 - **Option-Wheel** : Wheel strategy sur SPY (sell puts, si assigne sell calls). DTE 30, OTM 5%.
 - **Options-VGT** : Covered calls sur VGT ETF (NVDA/ORCL/CSCO/AMD/QCOM). Resolution MINUTE.
 - **VIX-TermStructure** : Trading de la structure a terme du VIX (contango/backwardation).
+- **Dynamic-Options-Wheel** (ECE Item 7) : Extension du Option-Wheel avec selection dynamique de strike basee sur IV percentile (2.5-7.5% OTM) et ajustement skew 25-delta. SPY, resolution MINUTE. Concept etudiant ECE (Asseli, Gr01 H.5).
+- **Adaptive-Conformal-Risk** (ECE Item 6) : Overlay de risque par inference conforme adaptive (ACI, Gibbs & Candès 2021) sur strategie momentum multi-facteurs. 15 large-caps US (5 secteurs). Concept etudiant ECE (El Bakkali, Gr02). Non backtestee.
 
 ### Crypto avancee (Avance)
 
@@ -218,6 +255,31 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **ML-TextClassification** : NLP Naive Bayes sur sentiment simule (TF-IDF headlines). 5 tech stocks. Non backtestee.
 - **RL-Portfolio** : Q-Learning agent allocation multi-asset (SPY/TLT/GLD/Cash). Epsilon-greedy exploration. Non backtestee.
 - **Crypto-LSTM-Prediction** : DLinear (AAAI 2023) avec SeriesDecomposition (trend/seasonal) pour BTCUSDT. PyTorch. Research phase.
+- **ML-Trend-Scanning** (Book Ex01) : t-statistique de la pente de regression lineaire sur fenetres multiples (5/10/21/42/63j) pour classifier le regime de tendance. SPY/TLT/GLD, regime bull/bear/neutral.
+- **ML-Reversion-Trending** (Book Ex03) : GradientBoosting classifieur de regime (mean-reversion vs trending). Applique RSI+Bollinger en regime mean-reversion, MA crossover en trending. 5 ETFs.
+- **ML-HMM-Regime** (Book Ex04) : Modele Markov-switching 2 regimes (haute/basse volatilite) via statsmodels MarkovRegression. Allocation SPY (low-vol) / TLT (high-vol).
+- **ML-Gaussian-Classifier** (Book Ex15) : GaussianNB prediction de direction sur tech stocks. Features: rendements open-close cross-sectionnels. Sizing par probabilite.
+- **ML-LLM-Summarization** (Book Ex16) : Sentiment news Tiingo + optional OpenAI LLM summarization. Fallback keyword-based. SPY, 2015-2026. Sharpe 0.686.
+- **ML-PCA-StatArb** (Book Ex13, book period) : PCA + sklearn LinearRegression stat-arb mean-reversion. Meme concept que PCA-StatArb mais periode du livre (2019-2024). Sharpe 0.399.
+- **ML-Pairs-PCA-Selection** (Book Ex09) : PCA-based pair selection. Research uniquement (notebook, pas de main.py).
+- **ML-Chronos-Foundation** (Book Ex18) : Modele fondation Chronos-t5-tiny (Amazon) pour prevision de series temporelles. Allocation par Sharpe ratio predit. 8 ETFs.
+- **ML-FinBERT-Sentiment** (Book Ex19) : ProsusAI/finbert pour sentiment de news financieres. TF non disponible sur QC Cloud, 0 trades. Reference pedagogique.
+- **Positive-Negative-Splits-ML** (Book Ex07) : Prediction du rendement apres split par LinearRegression. Features: split factor, secteur momentum (XLK ROC 22j). Sharpe 1.736, CAGR 90.83%.
+- **CSharp-BTC-MACD-ADX** : Variante C# de BTC-MACD-ADX avec recherches de robustesse. Meme algorithme, plus de documentation.
+- **HMM-KMeans-Voting** : K-Means clustering custom (numpy pur) + HMM voting ensemble pour regime detection. Implementation pedagogique sans sklearn. Research uniquement.
+
+### QC Strategy Library Clones (Avance)
+
+Strategies clonees depuis la bibliotheque QuantConnect, ajoutees en avril 2026 comme references avancees :
+
+- **AssetClassMomentum-QC** : Top-3 momentum annuel parmi 5 ETFs multi-asset (SPY/EFA/BND/VNQ/GSG). Equal-weight, rebalance mensuel. Source: Quantpedia Strategy #2.
+- **DynamicVIXSpyRegime-QC** : RandomForest + StandardScaler ML overlay sur regime VIX. Universe SPY/TLT/GLD/BIL. OOS Sharpe 1.72. Source: QC Library #50.
+- **HighBookToMarketFScore-QC** : Piotroski F-Score >= 8 + top 20% book-to-market. Value + quality screen. OOS Sharpe 2.09, Win Rate 62%. Source: QC Library #343.
+- **LeveragedETFMomentum-QC** : Rotation sectorielle conditionnelle via ETFs leverages avec RSI + SMA regime detection. OOS Sharpe 1.80, CAGR 101%. Source: QC Library #60.
+- **LongShortHarvest-QC** : Long-short equity avec ML overlay, regime detection Hurst, filtres ATR. OOS Sharpe 3.39, Win Rate 76%. Source: QC Library #238.
+- **MacroFactorRotation-QC** : DecisionTreeRegressor cross-asset rotation (SPY/GLD/BND/BTC) avec features macro (VIX, yield curve, fed funds). Source: QC Library #72.
+- **PuppiesOfTheDow-QC** : Dogs of the Dow : top-10 dividend yield, puis top-5 lowest priced. Annual rebalance. OOS Sharpe 1.99. Source: QC Library #211.
+- **TermStructureCommodities-QC** : Long-short commodity futures par roll returns (backwardation = long, contango = short). 5Y Sharpe -0.041. Source: Quantpedia #22.
 
 ### Anomalies calendaires (Debutant)
 
