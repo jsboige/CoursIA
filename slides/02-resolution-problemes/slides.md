@@ -80,6 +80,13 @@ layout: section
 - Quelles sont les **actions** possibles ?
 - Quelle est la **representation** de l'etat courant ?
 
+<div style="display:flex; align-items:center; justify-content:center; gap:0; margin-top:24px;">
+  <div style="background:#2563EB; color:white; font-weight:bold; padding:18px 20px; clip-path:polygon(0 20%, 15% 0, 100% 0, 100% 100%, 15% 100%, 0 80%); text-align:center; min-width:110px;">Etat<br>Initial</div>
+  <div style="background:#9CA3AF; color:white; padding:18px 16px; clip-path:polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%); text-align:center; min-width:120px;">Actions</div>
+  <div style="background:#9CA3AF; color:white; padding:18px 16px; clip-path:polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%); text-align:center; min-width:120px; opacity:0.7;"></div>
+  <div style="background:#2563EB; color:white; font-weight:bold; padding:18px 20px; clip-path:polygon(0 0, 85% 0, 100% 20%, 100% 80%, 85% 100%, 0 100%); text-align:center; min-width:110px;">Etat<br>Final</div>
+</div>
+
 ---
 
 # Agents de resolution de problemes
@@ -171,7 +178,7 @@ Un **probleme** est defini par les elements suivants :
 
 # Exemple Abstraction: Assemblage robotique
 
-<img src="./images/img_004.png" style="position:absolute; top:60px; right:30px; width:380px;" alt="Bras robotique" />
+<img src="./images/img_004.png" style="position:absolute; top:140px; right:30px; width:360px;" alt="Bras robotique" />
 
 - **Etats** : Coordonnees reelles des joints du robot et des objets
 - **Test de but** : Objet assemble
@@ -196,14 +203,15 @@ Un **probleme** est defini par les elements suivants :
 
 # Probleme jouet: Les 8 reines
 
-<img src="./images/img_006.png" style="position:absolute; top:60px; right:30px; width:280px;" alt="Les 8 reines" />
+<img src="./images/img_006.png" style="position:absolute; top:120px; right:30px; width:260px;" alt="Les 8 reines" />
 
 - **Etats** : Disposition de 0-8 reines
-- **Test de but** : 8 reines sont presentes, et aucune n'est menacee
+- **Test de but** : 8 reines presentes, aucune n'est menacee
 - **Etat initial** : Echiquier vide
 - **Actions** : Poser une reine
 - **Cout de chemin** : N.A / 1 par etape
-- Meilleure formulation: une reine par colonne, de gauche a droite, legale. 1,8* 10^14 positions (dur) -> 2057 positions (facile)
+- **Meilleure formulation:** une reine par colonne, legale
+  - 1,8 * 10^14 positions (dur) → 2057 positions (facile)
 
 ---
 layout: section
@@ -236,9 +244,19 @@ fonction EXPLORER-ARBRE(probleme) retourne une solution, ou echec
 
 # Arbre d'exploration: exemple
 
-<img src="./images/img_003.png" style="display:block; margin:12px auto; max-height:60vh;" alt="Arbre d'exploration - Itineraire Roumanie" />
-
 Arbre de recherche avec la racine **Arad** : developpement des successeurs Sibiu, Timisoara, Zerind, puis de leurs propres successeurs.
+
+```
+                       Arad
+              /         |          \
+           Sibiu    Timisoara     Zerind
+          / | \ \    /    \       /   \
+       Arad Fag Ora RilV Arad  Lugoj Arad Oradea
+                   ...  (...)        (...)
+```
+
+- Noeuds en **tirets verts** : successeurs non encore developpes (frontiere)
+- Les etats repetes (Arad) apparaissent mais ne doivent pas etre re-explores
 
 ---
 
@@ -269,13 +287,13 @@ fonction EXPLORER-GRAPHE(probleme) retourne une solution, ou echec
 
 # Infrastructure: Etats vs Noeuds
 
-<img src="./images/img_010.png" style="position:absolute; top:60px; right:20px; width:360px;" alt="Structure d'un noeud" />
+<img src="./images/img_010.png" style="position:absolute; top:140px; right:20px; width:340px;" alt="Structure d'un noeud" />
 
 ## Etats != Noeuds
 
-- Un **Etat** est une representation de la configuration reelle
-- Un **Noeud** est une structure de donnees constitutive d'une exploration
-  - Inclut l'etat, le noeud parent, l'action, le cout g(x), la profondeur
+- Un **Etat** : representation de la configuration reelle
+- Un **Noeud** : structure de donnees de l'exploration
+  - etat, parent, action, cout g(x), profondeur
 
 ## Fonction NOEUD-FILS
 
@@ -337,16 +355,18 @@ Les strategies non informees (aveugle) utilisent uniquement la definition du pro
 
 # Exploration en largeur d'abord (BFS)
 
-<img src="./images/img_011.png" style="position:absolute; top:60px; right:20px; width:480px;" alt="Expansion BFS" />
+<img src="./images/img_011.png" style="position:absolute; top:130px; right:20px; width:440px;" alt="Expansion BFS" />
 
 - Developpe les noeuds les **moins profonds** en premier
 - La frontiere est une **queue** (File ou FIFO)
+
+<img src="./images/img_012.png" style="display:block; margin:8px 0 0 0; max-width:55%; max-height:34vh;" alt="Pseudocode BFS" />
 
 ---
 
 # Proprietes de l'exploration en largeur
 
-<img src="./images/img_013.png" style="position:absolute; top:60px; right:20px; width:440px;" alt="Tableau complexite BFS" />
+<img src="./images/img_013.png" style="position:absolute; top:130px; right:20px; width:420px;" alt="Tableau complexite BFS" />
 
 - **Complet** ? Oui (si b est fini)
 - **Complexite en temps** ? O(b^(d+1))
@@ -375,25 +395,23 @@ Les strategies non informees (aveugle) utilisent uniquement la definition du pro
 
 # Exploration en profondeur d'abord (DFS)
 
-<img src="./images/img_014.png" style="position:absolute; top:60px; right:20px; width:480px;" alt="Expansion DFS" />
+<img src="./images/img_014.png" style="position:absolute; top:130px; right:20px; width:400px;" alt="Expansion DFS" />
 
 - Developpe les noeuds les **plus profonds** en premier
-  - La frontiere est une **Pile** (LIFO)
-  - Les branches deja explorees ne sont pas conservees en memoire
+  - Frontiere = **Pile** (LIFO)
+  - Branches explorees non conservees
 
 ## Caracteristiques
 
-- Complet ? Non: echoue dans les espaces de profondeur infinie
-  - ou avec des boucles -> exploration de graphe
-- Complexite en temps: O(b^m) terrible si m beaucoup plus grand que d
-  - mais si les solutions sont denses, plus rapide qu'en largeur
-- Complexite en espace: O(b^m), lineaire en espace !
-- Optimal: Non
+- **Complet ?** Non : profondeur infinie ou boucles
+- **Temps** : O(b^m), mauvais si m >> d
+- **Espace** : O(b^m) -- lineaire !
+- **Optimal** : Non
 
-## Variante: Exploration avec retour arriere (backtracking)
+## Variante : backtracking
 
-- On developpe 1 seul successeur a la fois -> O(m) en espace
-- + Optimisation en modifiant les etats plutot qu'en les copiant (retour arriere = annulation)
+- 1 seul successeur a la fois -> O(m) en espace
+- Modifier l'etat plutot que le copier
 
 ---
 
@@ -457,7 +475,7 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 # Exploration Bidirectionnelle
 
-<img src="./images/img_017.png" style="position:absolute; top:60px; right:20px; width:360px;" alt="Recherche bidirectionnelle" />
+<img src="./images/img_017.png" style="position:absolute; top:120px; right:20px; width:340px;" alt="Recherche bidirectionnelle" />
 
 ## Quand on connait l'etat but
 
@@ -504,11 +522,12 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 # Les missionnaires et cannibales
 
-<img src="./images/img_019.png" style="position:absolute; top:60px; right:20px; width:360px;" alt="Missionnaires et cannibales" />
+<img src="./images/img_019.png" style="position:absolute; top:120px; right:20px; width:340px;" alt="Missionnaires et cannibales" />
 
 - Les missionnaires et cannibales doivent traverser la riviere
-- Pas plus de 2 personnes en meme temps sur la barque
-- Si + de cannibales que de missionnaires d'un cote ou de l'autre → ils se font manger
+- Pas plus de 2 personnes sur la barque
+- Si + de cannibales que de missionnaires d'un cote
+  - → les missionnaires sont manges
 
 ---
 layout: section
@@ -519,11 +538,12 @@ layout: section
 
 # Exploration gloutonne
 
-<img src="./images/img_020.png" style="position:absolute; top:60px; right:20px; width:340px;" alt="Valeurs heuristiques h(n)" />
+<img src="./images/img_020.png" style="position:absolute; top:120px; right:20px; width:320px;" alt="Valeurs heuristiques h(n)" />
 
 ## Idee
 
-- Utiliser une **heuristique** h(n) = cout estime pour atteindre le but depuis n
+- Utiliser une **heuristique** h(n)
+  - = cout estime pour atteindre le but depuis n
   - f(n) = g(n) + h(n)
   - Developpe le noeud avec le plus petit f(n)
 
@@ -538,7 +558,7 @@ layout: section
 
 # Exploration A*
 
-<img src="./images/img_022.png" style="position:absolute; top:60px; right:20px; width:160px;" alt="Triangle consistance A*" />
+<img src="./images/img_022.png" style="position:absolute; top:110px; right:30px; width:160px;" alt="Triangle consistance A*" />
 
 ## Idee
 
@@ -564,7 +584,7 @@ layout: section
 
 # Caracteristiques de A*
 
-<img src="./images/img_023.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Contours A* sur carte Roumanie" />
+<img src="./images/img_023.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Contours A* sur carte Roumanie" />
 
 ## Optimalite de A*
 
@@ -692,7 +712,7 @@ layout: section
 
 # Exploration par escalade (HCS)
 
-<img src="./images/img_028.png" style="position:absolute; top:60px; right:20px; width:200px;" alt="8 reines escalade" />
+<img src="./images/img_028.png" style="position:absolute; top:120px; right:30px; width:200px;" alt="8 reines escalade" />
 
 ## Escalade par la plus forte pente
 
@@ -718,7 +738,7 @@ retourne maximum local
 
 # Exploration par recuit simule (SA)
 
-<img src="./images/img_027.png" style="position:absolute; top:60px; right:20px; width:120px;" alt="Courbes temperature SA" />
+<img src="./images/img_027.png" style="position:absolute; top:120px; right:30px; width:120px;" alt="Courbes temperature SA" />
 
 ## Idee : echapper aux maxima locaux
 
@@ -798,7 +818,7 @@ layout: section
 
 # Exploration locale d'espaces continus
 
-<img src="./images/img_033.gif" style="position:absolute; top:60px; right:20px; width:300px;" alt="Trajectoires optimiseurs SGD" />
+<img src="./images/img_033.gif" style="position:absolute; top:130px; right:20px; width:280px;" alt="Trajectoires optimiseurs SGD" />
 
 ## Etats definis par des variables reelles
 
@@ -809,7 +829,8 @@ layout: section
 ## Pente pour l'escalade = gradient du paysage
 
 - Parfois resolution analytique de nabla f = 0 (rare)
-- Si valable localement: x <- x + alpha*nabla f ou alpha est le pas de l'etape
+- Si valable localement: x <- x + alpha * nabla f
+  - alpha = pas de l'etape
 - Si pas analytique: gradient empirique
   - Exploration lineaire
     - alpha trop petit ou trop grand -> on double le pas jusqu'a observer une diminution
@@ -959,7 +980,7 @@ layout: section
 
 # Arbre de jeu
 
-<img src="./images/img_037.png" style="position:absolute; top:50px; right:10px; width:500px;" alt="Arbre de jeu morpion" />
+<img src="./images/img_037.png" style="position:absolute; top:130px; right:10px; width:480px;" alt="Arbre de jeu morpion" />
 
 ## Ex : Morpion
 
@@ -973,6 +994,8 @@ layout: section
 ---
 
 # Minimax
+
+<img src="./images/img_038.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Arbre Minimax" />
 
 ## Decisions optimales
 
@@ -998,7 +1021,7 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 # Algorithme Minimax
 
-<img src="./images/img_038.png" style="position:absolute; top:60px; right:20px; width:380px;" alt="Arbre Minimax" />
+<img src="./images/img_039.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Pseudocode Minimax: DECISION-MINIMAX, VALEUR-MAX, VALEUR-MIN" />
 
 ## Faire "remonter" les valeurs Minimax
 
@@ -1026,7 +1049,7 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 # Elagage Alpha-Beta
 
-<img src="./images/img_040.png" style="position:absolute; top:60px; right:20px; width:380px;" alt="Elagage Alpha-Beta" />
+<img src="./images/img_040.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Elagage Alpha-Beta" />
 
 ## Idee : Diminuer le nombre d'etats a examiner
 
@@ -1057,12 +1080,14 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 # Decisions imparfaites
 
-<img src="./images/img_042.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Formule ExpectiMinimax" />
+<img src="./images/img_042.png" style="position:absolute; top:130px; right:20px; width:360px;" alt="Formule ExpectiMinimax" />
 
 ## Approche
 
-- Utilite -> Fonction d'evaluation heuristique Eval(s) sur des etats non terminaux
-- Test de terminaison -> Test d'arret Cutoff(s) pour savoir quand appliquer l'evaluation (ex: profondeur limite d_lim)
+- Utilite -> Eval(s) heuristique
+  - sur des etats non terminaux
+- Test de terminaison -> Cutoff(s)
+  - ex: profondeur limite d_lim
 
 ## Fonction d'evaluation
 
@@ -1088,7 +1113,7 @@ layout: section
 
 # Problemes a satisfaction de contraintes (CSPs)
 
-<img src="./images/img_047.png" style="position:absolute; top:50px; right:10px; width:320px;" alt="Carte Australie coloree" />
+<img src="./images/img_047.png" style="position:absolute; top:140px; right:20px; width:300px;" alt="Carte Australie coloree" />
 
 ## Definition
 
@@ -1110,7 +1135,7 @@ layout: section
 
 # CSP: Exemple cryptarithme
 
-<img src="./images/img_049.png" style="position:absolute; top:60px; right:20px; width:280px;" alt="Graphe contraintes TWO+TWO=FOUR" />
+<img src="./images/img_049.png" style="position:absolute; top:120px; right:20px; width:280px;" alt="Graphe contraintes TWO+TWO=FOUR" />
 
 ## Variables
 
@@ -1153,7 +1178,7 @@ layout: section
 
 # CSPs: Exploration avec backtracking
 
-<img src="./images/img_050.png" style="position:absolute; top:50px; right:10px; width:440px;" alt="Arbre backtracking CSP Australie" />
+<img src="./images/img_050.png" style="position:absolute; top:130px; right:20px; width:420px;" alt="Arbre backtracking CSP Australie" />
 
 ## Principe
 
@@ -1179,7 +1204,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 # CSPs: Propagation de contraintes
 
-<img src="./images/img_053.png" style="position:absolute; top:50px; right:10px; width:440px;" alt="Forward Checking Australie" />
+<img src="./images/img_053.png" style="position:absolute; top:130px; right:20px; width:420px;" alt="Forward Checking Australie" />
 
 ## Idee
 
@@ -1200,7 +1225,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 # CSPs: Heuristiques de variables et valeurs
 
-<img src="./images/img_054.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Reduction domaines AC" />
+<img src="./images/img_054.png" style="position:absolute; top:140px; right:20px; width:360px;" alt="Reduction domaines AC" />
 
 <div style="max-width:55%;">
 
@@ -1220,7 +1245,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 # CSPs: Structure des problemes
 
-<img src="./images/img_055.png" style="position:absolute; top:60px; right:20px; width:250px;" alt="Decomposition arbre contraintes" />
+<img src="./images/img_055.png" style="position:absolute; top:120px; right:20px; width:240px;" alt="Decomposition arbre contraintes" />
 
 ## Graphe de contraintes
 
@@ -1291,7 +1316,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 # Graphe de contraintes
 
-<img src="./images/img_048.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Graphe contraintes Australie" />
+<img src="./images/img_048.png" style="position:absolute; top:120px; right:20px; width:280px;" alt="Graphe contraintes Australie" />
 
 ## CSP Binaire: chaque contrainte relie 2 variables
 
@@ -1377,31 +1402,34 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 ---
 
-# Resume CSPs
+# Resume CSPs (1/2)
 
 ## Problemes a satisfaction de contraintes
 
-- Variables, domaines
-- + Graphes (binaires) ou hypergraphes des contraintes
+- Variables et domaines
+- Graphes (binaires) ou hypergraphes des contraintes
 
 ## Techniques d'inference
 
-- Coherence de noeuds, arcs, K-coherence
+- Coherence de noeuds, d'arcs, K-coherence
 
 ## Exploration avec Backtracking
 
-- En profondeur d'abord
-- Couplage Inference + exploration
-- Heuristiques choix de variables, de valeurs
-- Forward checking et Backjumping orientent conflit accerent aussi
-- Exploration locale
-  - Min-conflicts est tres efficace memes avec de nombreuses variables
+- Parcours en profondeur d'abord
+- Couplage inference + exploration
+- Heuristiques de choix de variables et de valeurs
+- Forward checking et Backjumping : orientent vers les conflits et accelerent la recherche
+- Exploration locale : Min-Conflicts tres efficace, meme avec de nombreuses variables
 
-## Structure des problemes: complexite des problemes
+---
 
-  - Coupe cycle ideal pour reduire a un arbre
-  - Decomposition en arbre pratique, nombre de sous-ensembles connexes
-  - Symetrie des valeurs important
+# Resume CSPs (2/2)
+
+## Structure des problemes et complexite
+
+- **Coupe de cycle** : ideal pour reduire a un arbre (complexite lineaire)
+- **Decomposition en sous-arbres** : pratique et courante, exploite les sous-ensembles connexes independants
+- **Symetrie des valeurs** : eliminer les solutions symmetriques reduit l'espace de recherche
 
 ---
 layout: section

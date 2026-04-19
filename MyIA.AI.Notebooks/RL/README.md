@@ -8,11 +8,12 @@ Introduction au Reinforcement Learning (apprentissage par renforcement) avec **S
 |-------------|--------|
 | Notebooks | 3 |
 | Kernel | Python 3 |
-| Duree totale | ~100-115 min |
+| Durée totale | ~100-115 min |
+| Version | Stable Baselines3 2.0.0+ |
 
 ## Notebooks
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 1 | [stable_baseline_1_intro_cartpole](stable_baseline_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
 | 2 | [stable_baseline_2_wrappers_sauvegarde_callbacks](stable_baseline_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |

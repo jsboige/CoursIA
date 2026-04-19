@@ -6,9 +6,9 @@ Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : im
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 96 |
+| Notebooks | 119 |
 | Sous-domaines | 9 (Environment, Image, Audio, Video, Texte, SemanticKernel, EPF, Vibe-Coding, Playwright-OWUI) |
-| Duree totale | ~75-85h |
+| Duree totale | ~90-100h |
 | Taux validation | 95%+ |
 
 ## Structure
@@ -16,12 +16,12 @@ Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : im
 ```
 GenAI/
 ├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
-├── Image/                   # Generation d'images (19 notebooks)
-├── Audio/                   # Speech, TTS, musique, separation (16 notebooks)
-├── Video/                   # Generation et comprehension video (16 notebooks)
+├── Image/                   # Generation d'images (19 notebooks + 4 sub-READMEs)
+├── Audio/                   # Speech, TTS, musique, separation (21 notebooks + 4 sub-READMEs)
+├── Video/                   # Generation et comprehension video (16 notebooks + 4 sub-READMEs)
 ├── Texte/                   # LLMs et generation de texte (10 notebooks)
 ├── SemanticKernel/          # Microsoft Semantic Kernel (14 notebooks)
-├── EPF/                     # Projets etudiants (4 notebooks)
+├── EPF/                     # Projets etudiants (4 notebooks + 3 sub-READMEs)
 ├── Playwright-OWUI/         # Tests E2E Playwright sur Open WebUI (5 modules, 30+ tests)
 └── Vibe-Coding/             # Tutorials Claude Code et Roo Code
 ```
@@ -199,14 +199,24 @@ GenAI/
 | Module | Statut | Validation | Description |
 |--------|--------|------------|-------------|
 | 00-GenAI-Environment | Complet | 100% (6/6) | Setup et configuration |
-| 01-Images-Foundation | Complet | 100% (5/5) | DALL-E 3, GPT-5, Forge, Qwen |
-| 02-Images-Advanced | Complet | 100% (4/4) | Qwen 2509, FLUX, SD 3.5, Z-Image |
-| 03-Images-Orchestration | Complet | 100% (3/3) | Comparaison, Workflows, Optimisation |
-| 04-Images-Applications | Complet | 100% (4/4) | Applications pedagogiques |
-| Audio/ | Complet | 100% (16/16) | 16 notebooks : TTS, STT, voix, musique, separation |
-| Video/ | Complet | 100% (16/16) | 16 notebooks : Operations, comprehension, generation, workflows |
+| 01-Images-Foundation | Complet | 100% (5/5) + README | DALL-E 3, GPT-5, Forge, Qwen |
+| 02-Images-Advanced | Complet | 100% (4/4) + README | Qwen 2509, FLUX, SD 3.5, Z-Image |
+| 03-Images-Orchestration | Complet | 100% (3/3) + README | Comparaison, Workflows, Optimisation |
+| 04-Images-Applications | Complet | 100% (4/4) + README | Applications pedagogiques |
+| Image/examples | Complet | 100% (3/3) + README | Cas d'usage spécifiques |
+| Audio/01-Foundation | Complet | 100% (5/5) + README | TTS, STT basics |
+| Audio/02-Advanced | Complet | 100% (8/8) + README | Voix, musique, separation |
+| Audio/03-Orchestration | Complet | 100% (3/3) + README | Multi-model, pipelines |
+| Audio/04-Applications | Complet | 100% (5/5) + README | Production workflows |
+| Video/01-Foundation | Complet | 100% (5/5) + README | Operations, comprehension |
+| Video/02-Advanced | Complet | 100% (4/4) + README | Generation video avancée |
+| Video/03-Orchestration | Complet | 100% (3/3) + README | Multi-model, workflows |
+| Video/04-Applications | Complet | 100% (4/4) + README | Production pipelines |
 | Texte/ | Complet | 100% (10/10) | 10 notebooks : OpenAI, Prompts, Structured Outputs, RAG, Reasoning, Production |
 | SemanticKernel/ | Complet | 85% (17/20) | SDK Microsoft pour integration LLMs |
+| EPF/ | Complet | 100% (4/4) + 3 sub-README | Projets étudiants spécifiques |
+| Playwright-OWUI/ | Complet | 100% (5 modules) | Tests E2E Playwright sur Open WebUI |
+| Vibe-Coding/ | Complet | 100% (10 modules) | Tutorials Claude Code et Roo Code |
 
 ---
 

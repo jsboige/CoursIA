@@ -1,20 +1,20 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
-Collection de **92 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
+Collection de **84 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
 
 ## Vue d'ensemble
 
 | Serie | Notebooks | Exercices | Environnement | Theme | Duree |
 |-------|-----------|-----------|---------------|-------|-------|
-| [SemanticWeb](#semanticweb---web-semantique) | 17 | 15 (88%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~12h |
-| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~20h |
+| [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
+| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
 | [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
 | [Lean](#lean---verification-formelle) | 13 | 12 (92%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
-| [Tweety](#tweety---tweetyproject) | 10 | 9 (90%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
-| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~3h |
+| [Tweety](#tweety---tweetyproject) | 10 | 11 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
+| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 77 notebooks actifs, ~52h de contenu
+**Total** : 84 notebooks actifs, ~56h de contenu
 
 ---
 
@@ -53,9 +53,9 @@ Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibli
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
 | **Applications** |
 | 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
-| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 2 | Java/JPype |
+| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 1 | Java/JPype |
 
-> 9/10 notebooks ont des exercices. Seul Tweety-1-Setup (configuration) n'en a pas.
+> 10/10 notebooks ont des exercices. Tweety-1-Setup (configuration) est le seul sans exercice.
 
 ### Technologies
 
@@ -134,7 +134,7 @@ Serie de **17 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRD
 | **Partie 4 : Graphes de Connaissances et IA** |
 | 11 | [SW-11-Python-KnowledgeGraphs](SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) | Python | kglab, OWLReady2, visualisation NetworkX | 6 |
 | 12 | [SW-12-Python-GraphRAG](SemanticWeb/SW-12-Python-GraphRAG.ipynb) | Python | GraphRAG, extraction entites LLM | 6 |
-| 13 | [SW-13-Python-Reasoners](SemanticWeb/SW-13-Python-Reasoners.ipynb) | Python | Comparaison raisonneurs OWL (owlrl, HermiT, reasonable) | 2 (faible) |
+| **Bonus** | [SW-13-Python-Reasoners](SemanticWeb/SW-13-Python-Reasoners.ipynb) | Python | Comparaison raisonneurs OWL (owlrl, HermiT, reasonable) | 3 (faible) |
 
 Documentation complete : [SemanticWeb/README.md](SemanticWeb/README.md)
 
@@ -340,14 +340,14 @@ dotnet interactive jupyter install
 
 | Serie | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
-| SmartContracts | 26 | 26 (100%) | 0 | Complet |
-| SemanticWeb | 17 | 16 (94%) | 1 (Setup) | Complet |
+| SmartContracts | 27 | 27 (100%) | 0 | Complet |
+| SemanticWeb | 18 | 16 (89%) | 2 (Setup + Bonus) | Complet |
 | Lean | 13 | 12 (92%) | 1 (Setup) | Complet |
 | Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
-| Tweety | 10 | 9 (90%) | 1 (Setup) | Complet |
+| Tweety | 10 | 10 (100%) | 0 | Complet |
 | Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-**Total** : 65/79 notebooks de contenu avec exercices (82%). Les seuls notebooks sans exercices sont les notebooks de setup/configuration (attendu) et la serie demo Argument Analysis.
+**Total** : 67/82 notebooks de contenu avec exercices (82%). Les notebooks sans exercices sont les notebooks de setup/configuration et le bonus SemanticWeb, ainsi que la série demo Argument Analysis.
 
 ### Problemes restants
 
