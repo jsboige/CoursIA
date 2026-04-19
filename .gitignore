@@ -512,6 +512,9 @@ slides/*/modernized/
 # Slides - Marp output HTML/PDF (regenerable via marp CLI)
 slides/*/output/
 slides/_pdfs/
+# Slides - Slidev export screenshots (regenerable)
+slides/*/slidev-export/
+slides/*/slidev-export.local/
 
 # Agent memory temporaire (local scope)
 .claude/agent-memory/notebook-*/
