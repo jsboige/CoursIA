@@ -50,7 +50,7 @@ except ImportError:
 # CONFIGURATION
 # ============================================================================
 
-TWEETY_VERSION = "1.29"  # Version TweetyProject à télécharger
+TWEETY_VERSION = "1.28"  # Version TweetyProject à télécharger
 
 # URLs de téléchargement
 TWEETY_MAVEN_BASE = "https://repo1.maven.org/maven2/org/tweetyproject/"
