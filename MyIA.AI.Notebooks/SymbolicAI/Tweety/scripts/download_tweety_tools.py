@@ -50,7 +50,7 @@ except ImportError:
 # CONFIGURATION
 # ============================================================================
 
-TWEETY_VERSION = "1.29"  # Version TweetyProject à télécharger
+TWEETY_VERSION = "1.30"  # Version TweetyProject à télécharger
 
 # URLs de téléchargement
 TWEETY_MAVEN_BASE = "https://repo1.maven.org/maven2/org/tweetyproject/"
@@ -75,12 +75,25 @@ REQUIRED_MODULES = [
     "beliefdynamics", "agents.dialogues", "action", "preferences",
     "logics.pl", "logics.fol", "logics.ml", "logics.dl", "logics.cl",
     "logics.qbf", "logics.pcl", "logics.rcl", "logics.rpcl", "logics.mln", "logics.bpm",
-    "lp.asp", "math", "commons", "agents"
+    "logics.commons",
+    "lp.asp", "math", "commons", "graphs", "agents"
 ]
 
-# Ajouter arg.eaf pour Tweety 1.29+
+# Dependances externes (non-Tweety) requises par certains modules
+EXTERNAL_DEPENDENCIES = {
+    "org.ow2.sat4j.core-2.3.5.jar":
+        "https://repo1.maven.org/maven2/org/ow2/sat4j/org.ow2.sat4j.core/2.3.5/org.ow2.sat4j.core-2.3.5.jar",
+    "args4j-2.33.jar":
+        "https://repo1.maven.org/maven2/args4j/args4j/2.33/args4j-2.33.jar",
+}
+
+# Modules conditionnels par version
 if TWEETY_VERSION >= "1.29":
     REQUIRED_MODULES.append("arg.eaf")
+if TWEETY_VERSION >= "1.30":
+    REQUIRED_MODULES.append("causal")
+    REQUIRED_MODULES.append("arg.explanations")
+    REQUIRED_MODULES.append("comparator")
 
 REQUIRED_MODULES = sorted(set(REQUIRED_MODULES))
 
@@ -185,6 +198,13 @@ def download_jar(module_name: str, dest_dir: pathlib.Path, version: str) -> bool
     # Maven artifact name: use last segment only (arg.dung -> dung)
     artifact_name = module_name.split('.')[-1]
 
+    # Modules whose last segment collides with a top-level module get a prefixed name
+    COLLISION_MODULES = {"logics.commons"}  # shares "commons" with top-level commons
+    if module_name in COLLISION_MODULES:
+        local_jar_name = f"{module_name.replace('.', '-')}-{version}.jar"
+    else:
+        local_jar_name = f"{artifact_name}-{version}.jar"
+
     # v1.28 and earlier: -with-dependencies.jar
     # v1.29+: plain .jar (no fat jar published)
     candidates = [
@@ -196,18 +216,17 @@ def download_jar(module_name: str, dest_dir: pathlib.Path, version: str) -> bool
          f"{TWEETY_MAVEN_BASE}{maven_path}/{version}/{artifact_name}-{version}.jar"),
     ]
 
-    for jar_name, url in candidates:
-        jar_path = dest_dir / jar_name
+    local_path = dest_dir / local_jar_name
+    if local_path.exists():
+        print(f"  Already exists: {local_jar_name}")
+        return True
 
-        if jar_path.exists():
-            print(f"  ✓ Already exists: {jar_name}")
+    for _, url in candidates:
+        if download_with_progress(url, local_path, desc=f"{module_name}"):
+            print(f"  Downloaded: {local_jar_name}")
             return True
 
-        if download_with_progress(url, jar_path, desc=f"{module_name}"):
-            print(f"  ✓ Downloaded: {jar_name}")
-            return True
-
-    print(f"  ✗ Failed: {module_name}")
+    print(f"  Failed: {module_name}")
     return False
 
 
@@ -238,11 +257,28 @@ def download_tweety_jars(lib_dir: Optional[pathlib.Path] = None) -> bool:
         else:
             failed_modules.append(module)
 
-    print(f"\n✓ Successfully downloaded: {success_count}/{len(REQUIRED_MODULES)} JARs")
+    print(f"\nSuccessfully downloaded: {success_count}/{len(REQUIRED_MODULES)} JARs")
 
     if failed_modules:
-        print(f"✗ Failed modules: {', '.join(failed_modules)}")
+        print(f"Failed modules: {', '.join(failed_modules)}")
         return False
+
+    # External dependencies (non-Tweety)
+    if EXTERNAL_DEPENDENCIES:
+        print(f"\nExternal dependencies: {len(EXTERNAL_DEPENDENCIES)}")
+        ext_ok = 0
+        for jar_name, url in EXTERNAL_DEPENDENCIES.items():
+            dest = lib_dir / jar_name
+            if dest.exists():
+                print(f"  Already exists: {jar_name}")
+                ext_ok += 1
+            elif download_with_progress(url, dest, desc=jar_name):
+                print(f"  Downloaded: {jar_name}")
+                ext_ok += 1
+            else:
+                print(f"  Failed: {jar_name}")
+        if ext_ok < len(EXTERNAL_DEPENDENCIES):
+            return False
 
     return True
 
