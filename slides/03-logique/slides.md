@@ -327,8 +327,8 @@ layout: default
 
 # Resolution
 
-<img src="./images/img_012.png" style="position:absolute; top:50px; right:20px; width:200px;" alt="Arbre de resolution" />
-<img src="./images/img_015.png" style="position:absolute; bottom:10px; right:20px; width:250px;" alt="Preuve par resolution CNF" />
+<img src="./images/img_012.png" style="position:absolute; top:50px; right:20px; width:160px;" alt="Arbre de resolution" />
+<img src="./images/img_015.png" style="position:absolute; bottom:20px; right:20px; width:180px;" alt="Preuve par resolution CNF" />
 
 ## Clause
 
@@ -1546,7 +1546,7 @@ layout: default
 
 # Graphes de planification
 
-<img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:500px;" alt="Graphe de planification Have/Eat/Bake Cake" />
+<img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:350px;" alt="Graphe de planification Have/Eat/Bake Cake" />
 
 ## Structure de donnees
 
@@ -1614,8 +1614,8 @@ layout: default
 
 # Calcul situationnel
 
-<img src="./images/img_024.png" style="position:absolute; top:50px; right:10px; width:350px;" alt="Sequence etats Wumpus S0-S3" />
-<img src="./images/img_033.png" style="position:absolute; bottom:10px; right:20px; width:250px;" alt="Calcul situationnel branches" />
+<img src="./images/img_024.png" style="position:absolute; top:50px; right:10px; width:240px;" alt="Sequence etats Wumpus S0-S3" />
+<img src="./images/img_033.png" style="position:absolute; bottom:20px; right:20px; width:180px;" alt="Calcul situationnel branches" />
 
 <style scoped>
 .slidev-layout { font-size: 0.85em; }
