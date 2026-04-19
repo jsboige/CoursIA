@@ -80,6 +80,13 @@ layout: section
 - Quelles sont les **actions** possibles ?
 - Quelle est la **representation** de l'etat courant ?
 
+<div style="display:flex; align-items:center; justify-content:center; gap:0; margin-top:24px;">
+  <div style="background:#2563EB; color:white; font-weight:bold; padding:18px 20px; clip-path:polygon(0 20%, 15% 0, 100% 0, 100% 100%, 15% 100%, 0 80%); text-align:center; min-width:110px;">Etat<br>Initial</div>
+  <div style="background:#9CA3AF; color:white; padding:18px 16px; clip-path:polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%); text-align:center; min-width:120px;">Actions</div>
+  <div style="background:#9CA3AF; color:white; padding:18px 16px; clip-path:polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%); text-align:center; min-width:120px; opacity:0.7;"></div>
+  <div style="background:#2563EB; color:white; font-weight:bold; padding:18px 20px; clip-path:polygon(0 0, 85% 0, 100% 20%, 100% 80%, 85% 100%, 0 100%); text-align:center; min-width:110px;">Etat<br>Final</div>
+</div>
+
 ---
 
 # Agents de resolution de problemes
