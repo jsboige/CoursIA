@@ -1,7 +1,7 @@
 ---
 theme: ../theme-ia101
-title: "Intelligence Artificielle - Resolution de problemes"
-info: IA 101 - Resolution de problemes
+title: "Intelligence Artificielle - Résolution de problèmes"
+info: IA 101 - Résolution de problèmes
 paginate: true
 drawings:
   persist: false
@@ -10,13 +10,13 @@ mdc: true
 layout: cover
 ---
 
-# Resolution de problemes
+# Résolution de problèmes
 
 INTELLIGENCE ARTIFICIELLE -- II
 
-- Explorations non informee et informee
+- Explorations non informée et informée
   - Jeux
-  - Problemes a satisfaction de contraintes
+  - Problèmes à satisfaction de contraintes
 
 ---
 
@@ -24,7 +24,7 @@ INTELLIGENCE ARTIFICIELLE -- II
 
 <ol class="roman-list">
 <li>Introduction</li>
-<li><strong>Resolution de problemes</strong></li>
+<li><strong>Résolution de problèmes</strong></li>
 <li>Bases de connaissances et logique</li>
 <li>Raisonnement probabiliste</li>
 <li>Apprentissage</li>
@@ -36,49 +36,49 @@ INTELLIGENCE ARTIFICIELLE -- II
 
 # Sommaire
 
-- **Agents de resolution de problemes**
-- **Resolution de problemes par exploration**
-  - Exploration non informee
-  - Heuristiques et exploration informee
-- **Exploration en situation d'adversite : les jeux**
+- **Agents de résolution de problèmes**
+- **Résolution de problèmes par exploration**
+  - Exploration non informée
+  - Heuristiques et exploration informée
+- **Exploration en situation d'adversité : les jeux**
   - Minimax et Alpha-Beta
-  - Decisions imparfaites
-- **Problemes a satisfaction de contraintes**
+  - Décisions imparfaites
+- **Problèmes à satisfaction de contraintes**
   - Backtracking
   - Exploration locale
-  - Structure des problemes
+  - Structure des problèmes
 - **TP** : Mise en oeuvre de l'exploration et de la satisfaction de contrainte dans un contexte ludique
 
 ---
 layout: section
 ---
 
-# Agents de resolution de Problemes
+# Agents de résolution de Problèmes
 ---
 
-# Agent fonde sur des buts
+# Agent fondé sur des buts
 
-<img src="./images/img_001.png" style="position:absolute; top:80px; right:30px; height:340px;" alt="Agent fonde sur des buts" />
+<img src="./images/img_001.png" style="position:absolute; top:80px; right:30px; height:340px;" alt="Agent fondé sur des buts" />
 
-- **Reactif → Deliberatif**
-  - Exploration du Futur, sequences d'actions
+- **Réactif → Délibératif**
+  - Exploration du Futur, séquences d'actions
   - Recherche, planification
 
 - **Composants :**
-  - Etats, Buts, Capteurs, Effecteurs
-- **Questions cles :**
+  - États, Buts, Capteurs, Effecteurs
+- **Questions clés :**
   - "Comment le monde evolue-t-il ?"
   - "Quel est l'impact de mes actions ?"
-  - "A quoi ressemble le monde maintenant ?"
+  - "À quoi ressemble le monde maintenant ?"
   - "Quelle action entreprendre maintenant ?"
 
 ---
 
-# Resolution de problemes
+# Résolution de problèmes
 
-- Quel est **l'objectif** a atteindre ?
+- Quel est **l'objectif** à atteindre ?
 - Quelles sont les **actions** possibles ?
-- Quelle est la **representation** de l'etat courant ?
+- Quelle est la **représentation** de l'état courant ?
 
 <div style="display:flex; align-items:center; justify-content:center; gap:0; margin-top:24px;">
   <div style="background:#2563EB; color:white; font-weight:bold; padding:18px 20px; clip-path:polygon(0 20%, 15% 0, 100% 0, 100% 100%, 15% 100%, 0 80%); text-align:center; min-width:110px;">Etat<br>Initial</div>
@@ -89,9 +89,9 @@ layout: section
 
 ---
 
-# Agents de resolution de problemes
+# Agents de résolution de problèmes
 
-## Fonction Agent-Simple-Resolution-Probleme
+## Fonction Agent-Simple-Resolution-Problème
 
 ```
 fonction Agent-Simple-Resolution-Probleme(percept) retourne une action
@@ -116,63 +116,63 @@ fonction Agent-Simple-Resolution-Probleme(percept) retourne une action
 
 <img src="./images/img_003.png" style="position:absolute; top:60px; right:20px; width:420px;" alt="Carte de Roumanie" />
 
-- En vacances en Roumanie; actuellement a Arad.
+- En vacances en Roumanie; actuellement à Arad.
 - Le vol part demain de Bucharest
 - **Formuler le but :**
-  - Etre a Bucharest
-- **Formuler le probleme :**
-  - **Etats** : plusieurs villes
-  - **Actions** : conduire d'une ville a l'autre
+  - Etre à Bucharest
+- **Formuler le problème :**
+  - **États** : plusieurs villes
+  - **Actions** : conduire d'une ville à l'autre
 - **Trouver la solution :**
-  - Sequence de villes e.g., Arad, Sibiu, Fagaras, Bucharest
+  - Séquence de villes e.g., Arad, Sibiu, Fagaras, Bucharest
 
 ---
 
-# Types de problemes
+# Types de problèmes
 
-- **Deterministes, completement observables** → **probleme a etat simple**
-  - L'agent sait exactement dans quel etat il sera ; la solution est une sequence
-- **Non-observable** → **probleme sans capteur** dit conformant
-  - L'agent peut ne pas savoir ou il est, la solution est une sequence
-- **Non deterministe et/ou partiellement observable** → **probleme de contingence**
-  - Les percepts fournissent une **nouvelle** information a propos de l'etat courant
+- **Déterministes, complètement observables** → **problème à état simple**
+  - L'agent sait exactement dans quel état il sera ; la solution est une séquence
+- **Non-observable** → **problème sans capteur** dit conformant
+  - L'agent peut ne pas savoir ou il est, la solution est une séquence
+- **Non déterministe et/ou partiellement observable** → **problème de contingence**
+  - Les percepts fournissent une **nouvelle** information à propos de l'état courant
   - Entrelacement &#123;calcul, action&#125;
-- **Espaces d'etats inconnu** → **problemes d'exploration en ligne**
+- **Espaces d'états inconnu** → **problèmes d'exploration en ligne**
 
 ---
 
-# Formulation de problemes
+# Formulation de problèmes
 
-Un **probleme** est defini par les elements suivants :
+Un **problème** est défini par les éléments suivants :
 
-1. **Etat initial** e.g., "a Arad"
-2. **Actions** ou **fonction successeur** S(x) = ensemble de paires actions - etat
+1. **Etat initial** e.g., "à Arad"
+2. **Actions** ou **fonction successeur** S(x) = ensemble de paires actions - état
    - e.g., S(Arad) = &#123;(Arad → Zerind, Zerind), ... &#125;
-   - AIMA : ActionsFunction et ResultFunction = **modele de transition**
-   - 1+2 = Espace des etats → graphe → chemins
-3. **Test de but**, qui peut etre
-   - *explicite*, e.g. x = "a Bucharest"
-   - *implicite*, e.g. EchecEtMat(x)
-4. **Cout de chemin** (optionnel, additif)
+   - AIMA : ActionsFunction et ResultFunction = **modèle de transition**
+   - 1+2 = Espace des états → graphe → chemins
+3. **Test de but**, qui peut être
+   - *explicite*, e.g. x = "à Bucharest"
+   - *implicite*, e.g. ÉchecEtMat(x)
+4. **Coût de chemin** (optionnel, additif)
    - e.g., Somme des distances, Nombre d'actions executees, etc.
-   - c(x,a,y) est le **cout d'etape**, (>= 0)
+   - c(x,a,y) est le **coût d'étape**, (>= 0)
 
-- Une **solution** est une sequence d'actions (chemin) qui conduit de l'etat initial a un etat but
-  - **Optimale** = cout minimum
+- Une **solution** est une séquence d'actions (chemin) qui conduit de l'état initial à un état but
+  - **Optimale** = coût minimum
 
 ---
 
-# Selection d'un espace des etats
+# Sélection d'un espace des états
 
-- Le monde reel est tres complexe
-  - L'espace des etats doit faire l'objet d'une **abstraction**
-- **Etat** (abstrait) = ensemble d'etats reels
-- **Action** (abstraite) = combinaison complexe d'actions reelles
-  - e.g. "Arad → Zerind" represente un ensemble de routes, detours, pauses etc.
-  - Pour une realisation garantie, chaque etat reel "a Arad" doit conduire a un etat reel "a Zerind"
-- **Solution** (abstraite) = ensemble de chemins reels qui sont solutions dans le monde reel
-  - Chaque action abstraite doit etre plus "facile" que dans le probleme reel
-- **Probleme jouet** : experimenter avec les methodes de resolution
+- Le monde réel est très complexe
+  - L'espace des états doit faire l'objet d'une **abstraction**
+- **Etat** (abstrait) = ensemble d'états réels
+- **Action** (abstraite) = combinaison complexe d'actions réelles
+  - e.g. "Arad → Zerind" représente un ensemble de routes, détours, pauses etc.
+  - Pour une réalisation garantie, chaque état réel "à Arad" doit conduire à un état réel "à Zerind"
+- **Solution** (abstraite) = ensemble de chemins réels qui sont solutions dans le monde réel
+  - Chaque action abstraite doit être plus "facile" que dans le problème réel
+- **Problème jouet** : expérimenter avec les méthodes de résolution
 
 ---
 
@@ -180,36 +180,36 @@ Un **probleme** est defini par les elements suivants :
 
 <img src="./images/img_004.png" style="position:absolute; top:140px; right:30px; width:360px;" alt="Bras robotique" />
 
-- **Etats** : Coordonnees reelles des joints du robot et des objets
-- **Test de but** : Objet assemble
-- **Etat initial** : Pieces detachees, bras au repos
+- **États** : Coordonnées réelles des joints du robot et des objets
+- **Test de but** : Objet assemblé
+- **Etat initial** : Pièces détachées, bras au repos
 - **Actions** : Mouvement continu des joints du bras robotique
-- **Cout de chemin** : temps d'execution
+- **Coût de chemin** : temps d'exécution
 
 ---
 
-# Probleme jouet: Le taquin
+# Problème jouet: Le taquin
 
 <img src="./images/img_005.png" style="position:absolute; top:60px; right:30px; width:350px;" alt="Le taquin 8-puzzle" />
 
-- **Etats** : Position des 8 pieces + case vide
+- **États** : Position des 8 pièces + case vide
 - **Test de but** : Etat == &#123; 0, 1, 2, 3, 4, 5, 6, 7, 8 &#125;
-- **Etat initial** : La moitie des etats possibles
+- **Etat initial** : La moitié des états possibles
 - **Actions** : case vide → gauche, droite, haut, bas
-- **Cout de chemin** : 1 par etape
-- Note : puzzle a glissement de pieces : problemes NP-complet (durs)
+- **Coût de chemin** : 1 par étape
+- Note : puzzle à glissement de pièces : problèmes NP-complet (durs)
 
 ---
 
-# Probleme jouet: Les 8 reines
+# Problème jouet: Les 8 reines
 
 <img src="./images/img_006.png" style="position:absolute; top:120px; right:30px; width:260px;" alt="Les 8 reines" />
 
-- **Etats** : Disposition de 0-8 reines
+- **États** : Disposition de 0-8 reines
 - **Test de but** : 8 reines presentes, aucune n'est menacee
-- **Etat initial** : Echiquier vide
+- **Etat initial** : Échiquier vide
 - **Actions** : Poser une reine
-- **Cout de chemin** : N.A / 1 par etape
+- **Coût de chemin** : N.A / 1 par étape
 - **Meilleure formulation:** une reine par colonne, legale
   - 1,8 * 10^14 positions (dur) → 2057 positions (facile)
 
@@ -217,16 +217,16 @@ Un **probleme** est defini par les elements suivants :
 layout: section
 ---
 
-# Resolution de Problemes par Exploration
+# Résolution de Problèmes par Exploration
 ---
 
 # Arbre d'exploration
 
 ## Idee de base
 
-- Exploration simulee (hors ligne) de l'espace des etats en generant les successeurs des etats deja explores (**developpement** des etats)
+- Exploration simulée (hors ligne) de l'espace des états en générant les successeurs des états déjà explorés (**développement** des états)
 - Ensemble des noeuds feuilles = **frontiere** d'exploration
-- Choix des noeuds a developper = **strategie** d'exploration
+- Choix des noeuds à développer = **stratégie** d'exploration
 
 ## Fonction EXPLORER-ARBRE
 
@@ -244,29 +244,22 @@ fonction EXPLORER-ARBRE(probleme) retourne une solution, ou echec
 
 # Arbre d'exploration: exemple
 
-Arbre de recherche avec la racine **Arad** : developpement des successeurs Sibiu, Timisoara, Zerind, puis de leurs propres successeurs.
+<img src="./pptx-reference/slide-17.png" style="position:absolute; bottom:30px; right:20px; height:420px; opacity:0.95;" alt="Arbre d'exploration visuel" />
 
-```
-                       Arad
-              /         |          \
-           Sibiu    Timisoara     Zerind
-          / | \ \    /    \       /   \
-       Arad Fag Ora RilV Arad  Lugoj Arad Oradea
-                   ...  (...)        (...)
-```
+Arbre de recherche avec la racine **Arad** : développement des successeurs Sibiu, Timisoara, Zerind, puis de leurs propres successeurs.
 
-- Noeuds en **tirets verts** : successeurs non encore developpes (frontiere)
-- Les etats repetes (Arad) apparaissent mais ne doivent pas etre re-explores
+- Noeuds en **tirets verts** : successeurs non encore développés (frontière)
+- Les états répétés (Arad) apparaissent mais ne doivent pas être réexplorés
 
 ---
 
 # Exploration de graphe
 
-## Idee de base
+## Idée de base
 
-- Etats repetes → chemins avec boucle
-- **Solution** : memoire = ensemble explore
-- **Frontiere** : separe espace explore et espace inconnu
+- États répétés → chemins avec boucle
+- **Solution** : mémoire = ensemble exploré
+- **Frontière** : sépare espace exploré et espace inconnu
 
 ## Fonction EXPLORER-GRAPHE
 
@@ -285,15 +278,15 @@ fonction EXPLORER-GRAPHE(probleme) retourne une solution, ou echec
 
 ---
 
-# Infrastructure: Etats vs Noeuds
+# Infrastructure: États vs Noeuds
 
 <img src="./images/img_010.png" style="position:absolute; top:140px; right:20px; width:340px;" alt="Structure d'un noeud" />
 
-## Etats != Noeuds
+## États != Noeuds
 
-- Un **Etat** : representation de la configuration reelle
+- Un **Etat** : représentation de la configuration réelle
 - Un **Noeud** : structure de donnees de l'exploration
-  - etat, parent, action, cout g(x), profondeur
+  - état, parent, action, coût g(x), profondeur
 
 ## Fonction NOEUD-FILS
 
@@ -308,43 +301,43 @@ fonction NOEUD-FILS(probleme, parent, action) retourne un noeud
 
 ---
 
-# Strategies d'exploration
+# Stratégies d'exploration
 
-Une strategie d'exploration definit l'ordre de developpement des noeuds.
+Une stratégie d'exploration définit l'ordre de développement des noeuds.
 
-## Criteres d'evaluation
+## Criteres d'évaluation
 
 - **Completude** : garantie d'obtenir une solution si elle existe
-- **Optimalite** : garantie d'obtenir une solution de cout minimal
-- **Complexite en temps** : ~ nombre de noeuds developpes
-- **Complexite en espace** : ~ nombre max de noeuds en memoire
+- **Optimalite** : garantie d'obtenir une solution de coût minimal
+- **Complexité en temps** : ~ nombre de noeuds développés
+- **Complexité en espace** : ~ nombre max de noeuds en mémoire
 
-## Complexites s'evaluent selon
+## Complexités s'évaluént selon
 
 - **b** : facteur maximal de branchement dans l'arbre de recherche
-- **d** : (depth) profondeur de la solution de moindre cout
-- **m** : profondeur maximale de l'espace d'etats (souvent infini)
+- **d** : (depth) profondeur de la solution de moindre coût
+- **m** : profondeur maximale de l'espace d'états (souvent infini)
 
 ---
 layout: section
 ---
 
-# Exploration Non Informee
+# Exploration Non Informée
 ---
 
-# Strategies d'exploration non informee
+# Stratégies d'exploration non informée
 
-Les strategies non informees (aveugle) utilisent uniquement la definition du probleme.
+Les stratégies non informées (aveugle) utilisent uniquement la définition du problème.
 
-## Strategies d'exploration en largeur
+## Stratégies d'exploration en largeur
 
 - **BFS** : En largeur d'abord (Breadth First Search)
-- **UCS** : A cout uniforme (Uniform Cost Search)
+- **UCS** : A coût uniforme (Uniform Cost Search)
 
-## Strategies d'exploration en profondeur
+## Stratégies d'exploration en profondeur
 
 - **DFS** : En profondeur d'abord (Depth First Search)
-- **DLS** : En profondeur limitee (Depth Limited Search)
+- **DLS** : En profondeur limitée (Depth Limitéd Search)
 - **IDS** : Iterative en profondeur (Iterative Depth Search)
 
 ## Variantes
@@ -357,39 +350,39 @@ Les strategies non informees (aveugle) utilisent uniquement la definition du pro
 
 <img src="./images/img_011.png" style="position:absolute; top:130px; right:20px; width:440px;" alt="Expansion BFS" />
 
-- Developpe les noeuds les **moins profonds** en premier
-- La frontiere est une **queue** (File ou FIFO)
+- Développé les noeuds les **moins profonds** en premier
+- La frontière est une **queue** (File ou FIFO)
 
 <img src="./images/img_012.png" style="display:block; margin:8px 0 0 0; max-width:55%; max-height:34vh;" alt="Pseudocode BFS" />
 
 ---
 
-# Proprietes de l'exploration en largeur
+# Propriétés de l'exploration en largeur
 
-<img src="./images/img_013.png" style="position:absolute; top:130px; right:20px; width:420px;" alt="Tableau complexite BFS" />
+<img src="./images/img_013.png" style="position:absolute; top:130px; right:20px; width:420px;" alt="Tableau complexité BFS" />
 
 - **Complet** ? Oui (si b est fini)
-- **Complexite en temps** ? O(b^(d+1))
-- **Complexite en espace** ? O(b^(d+1))
-  - chaque noeud est garde en memoire
-- **Optimale** ? Oui si cout d'etape = 1
-- L'**espace** est le plus gros probleme
+- **Complexité en temps** ? O(b^(d+1))
+- **Complexité en espace** ? O(b^(d+1))
+  - chaque noeud est gardé en mémoire
+- **Optimale** ? Oui si coût d'étape = 1
+- L'**espace** est le plus gros problème
 
 ---
 
-# Exploration a cout uniforme (UCS)
+# Exploration à coût uniforme (UCS)
 
-- Developpe les noeuds les moins couteux en premier
-  - La frontiere est une queue triee par cout de chemin
-- Equivaut a l'exploration en largeur d'abord si le cout d'etapes est uniforme
-- En theorie de graphes = algorithme de Dijkstra
+- Développé les noeuds les moins coûteux en premier
+  - La frontiere est une queue triee par coût de chemin
+- Equivaut à l'exploration en largeur d'abord si le coût d'étapes est uniforme
+- En théorie de graphes = algorithme de Dijkstra
 
 ## Caracteristiques
 
-- Complet? Oui, si cout d'etape >= epsilon
-- Complexite en temps et en espace: O(b^(1+plafond(C*/epsilon)))
-  - avec C* le cout d'une solution optimale
-- Optimal ? Oui: les noeuds sont developpes dans l'ordre des cout de chemin
+- Complet? Oui, si coût d'étape >= epsilon
+- Complexité en temps et en espace: O(b^(1+plafond(C*/epsilon)))
+  - avec C* le coût d'une solution optimale
+- Optimal ? Oui: les noeuds sont développés dans l'ordre des coût de chemin
 
 ---
 
@@ -397,7 +390,7 @@ Les strategies non informees (aveugle) utilisent uniquement la definition du pro
 
 <img src="./images/img_014.png" style="position:absolute; top:130px; right:20px; width:400px;" alt="Expansion DFS" />
 
-- Developpe les noeuds les **plus profonds** en premier
+- Développé les noeuds les **plus profonds** en premier
   - Frontiere = **Pile** (LIFO)
   - Branches explorees non conservees
 
@@ -405,22 +398,22 @@ Les strategies non informees (aveugle) utilisent uniquement la definition du pro
 
 - **Complet ?** Non : profondeur infinie ou boucles
 - **Temps** : O(b^m), mauvais si m >> d
-- **Espace** : O(b^m) -- lineaire !
+- **Espace** : O(b^m) -- linéaire !
 - **Optimal** : Non
 
 ## Variante : backtracking
 
-- 1 seul successeur a la fois -> O(m) en espace
-- Modifier l'etat plutot que le copier
+- 1 seul successeur à la fois -> O(m) en espace
+- Modifier l'état plutot que le copier
 
 ---
 
-# Exploration en profondeur limitee (DLS)
+# Exploration en profondeur limitée (DLS)
 
-= Exploration en profondeur d'abord avec une profondeur limite l
+= Exploration en profondeur d'abord avec une profondeur limité l
 
 - Les noeuds de profondeur l n'ont pas de successeur
-- Complet si l >= d = diametre de l'espace des etats
+- Complet si l >= d = diamêtre de l'espace des états
 
 ## Implementation recursive
 
@@ -459,7 +452,7 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
     si resultat != arret alors retourner resultat
 ```
 
-## Cout du meme ordre que l'exploration en profondeur limitee
+## Coût du même ordre que l'exploration en profondeur limitée
 
 - Pour b = 10, d = 5: ~+10% (contre intuition)
   - N_DLS = 1 + 10 + 100 + 1,000 + 10,000 + 100,000 = 111,111
@@ -467,9 +460,9 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 ## Caracteristiques
 
-- Complet: Oui | Temps: O(b^d) | Espace: O(b*d) | Optimale: Oui si cout d'etape = 1
+- Complet: Oui | Temps: O(b^d) | Espace: O(b*d) | Optimale: Oui si coût d'étape = 1
 
-**Analogue :** Exploration iterative par allongement (ILS) pour cout uniforme
+**Analogue :** Exploration iterative par allongement (ILS) pour coût uniforme
 
 ---
 
@@ -477,10 +470,10 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 <img src="./images/img_017.png" style="position:absolute; top:120px; right:20px; width:340px;" alt="Recherche bidirectionnelle" />
 
-## Quand on connait l'etat but
+## Quand on connait l'état but
 
 - Double exploration vers l'aval et vers l'amont
-- Interet : O(b^(d/2)) + O(b^(d/2)) est tres inferieur a O(b^d)
+- Interet : O(b^(d/2)) + O(b^(d/2)) est tres inferieur à O(b^d)
 
 ## Exemple courant
 
@@ -488,35 +481,35 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 ## Difficultes
 
-- Necessite une fonction Predecesseurs
+- Nécessite une fonction Prédécesseurs
 - Controle de l'intersection
-  - maintient de la frontiere, meme en profondeur + hachage pour comparaison
-  - + Solution non optimale meme en largeur -> continuer pour trouver les raccourcis
-- Etats buts complexes
-  - Plusieurs etats buts -> Etat but fictif en l'aval des etats buts
+  - maintient de la frontiere, même en profondeur + hachage pour comparaison
+  - + Solution non optimale même en largeur -> continuer pour trouver les raccourcis
+- États buts complexes
+  - Plusieurs états buts -> Etat but fictif en l'aval des états buts
   - Description implicite (ex: 8 reines) -> difficile
 
 ---
 
-# Resume Exploration non informee
+# Résumé Exploration non informée
 
-## Necessite d'une abstraction du monde reel
+## Nécessite d'une abstraction du monde réel
 
-## Varie des strategies non informees
+## Varie des stratégies non informées
 
 - En largeur = Queue
 - En profondeur = Pile
-- Compromis complexite espace vs temps
+- Compromis complexité espace vs temps
 - Presence de cycles -> exploration de graphe
 
-## Comparaison des explorations non informees
+## Comparaison des explorations non informées
 
-| Critere | Largeur d'abord | Cout uniforme | Profondeur d'abord | Profondeur limitee | Profondeur iterative | Bidirectionnelle |
+| Critere | Largeur d'abord | Coût uniforme | Profondeur d'abord | Profondeur limitée | Profondeur iterative | Bidirectionnelle |
 |--------|-----------------|---------------|--------------------|--------------------|-----------------------|------------------|
 | Complete? | Oui | Oui | Non | Oui (si l>=d) | Oui | Oui |
 | Temps | O(b^(d+1)) | O(b^(1+C*/epsilon)) | O(b^m) | O(b^l) | O(b^d) | O(b^(d/2)) |
 | Espace | O(b^(d+1)) | O(b^(1+C*/epsilon)) | O(b^m) | O(b^l) | O(b^d) | O(b^(d/2)) |
-| Optimal? | Oui (cout=1) | Oui | Non | Non | Oui (cout=1) | Oui |
+| Optimal? | Oui (coût=1) | Oui | Non | Non | Oui (coût=1) | Oui |
 
 ---
 
@@ -533,7 +526,7 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 layout: section
 ---
 
-# Exploration Informee
+# Exploration Informée
 ---
 
 # Exploration gloutonne
@@ -543,14 +536,14 @@ layout: section
 ## Idee
 
 - Utiliser une **heuristique** h(n)
-  - = cout estime pour atteindre le but depuis n
+  - = coût estime pour atteindre le but depuis n
   - f(n) = g(n) + h(n)
-  - Developpe le noeud avec le plus petit f(n)
+  - Développé le noeud avec le plus petit f(n)
 
 ## Caracteristiques
 
-- Complet? Non, peut etre piege dans un maximum local
-- Temps? O(b^m) mais un bon heuristique donne des bons resultats
+- Complet? Non, peut être piégé dans un maximum local
+- Temps? O(b^m) mais un bon heuristique donne des bons résultats
 - Espace? O(b^m)
 - Optimal? Non
 
@@ -562,23 +555,23 @@ layout: section
 
 ## Idee
 
-- Eviter de developper les noeuds deja couteux
-  - Minimisation du cout total estime de la solution
+- Eviter de développer les noeuds déjà coûteux
+  - Minimisation du coût total estime de la solution
 
-## Fonction d'evaluation f(n) = g(n) + h(n)
+## Fonction d'évaluation f(n) = g(n) + h(n)
 
-- g(n) = cout pour atteindre n
-- h(n) = cout estime de n au but
-- f(n) = cout total estime du chemin au but en passant par n
+- g(n) = coût pour atteindre n
+- h(n) = coût estime de n au but
+- f(n) = coût total estime du chemin au but en passant par n
 
-## Identique a UCS avec g+h au lieu de g
+## Identique à UCS avec g+h au lieu de g
 
-## Theoremes
+## Théorèmes
 
 - Si h(n) est admissible, A* est optimal en exploration d'arbre
-  - Demonstration par l'absurde en developpant
+  - Demonstration par l'absurde en développant
 - Si h(n) est consistante, A* est optimal en exploration de graphe
-  - Demonstration: f est monotone puis par l'absurde en developpant
+  - Demonstration: f est monotone puis par l'absurde en développant
 
 ---
 
@@ -589,57 +582,57 @@ layout: section
 ## Optimalite de A*
 
 - Ajoute graduellement des "f-contours" de noeuds
-- Le contour i a tous les noeuds avec f=f_i ou f_i < f_(i+1)
+- Le contour i à tous les noeuds avec f=f_i ou f_i < f_(i+1)
 
-## Proprietes de A*
+## Propriétés de A*
 
 - Complet: Oui
   - Sauf s'il existe une infinite de noeuds avec f <= f(G)
-- Complexite en temps: Exponentielle
-- Complexite en espace: Idem
-- Optimal? Oui (cf. theoremes)
+- Complexité en temps: Exponentielle
+- Complexité en espace: Idem
+- Optimal? Oui (cf. théorèmes)
   - + optimalement efficace pour toute heuristique consistante donnee
 
-## Limites
+## Limités
 
-- Nombre d'etats dans l'espace d'exploration des contours souvent exponentiel.
-- Souvent, le principal probleme est la memoire
+- Nombre d'états dans l'espace d'exploration des contours souvent exponentiel.
+- Souvent, le principal problème est la mémoire
 
 ---
 
 # Variations
 
-## Exploration heuristique a memoire limitee
+## Exploration heuristique à mémoire limitée
 
-- A* avec approfondissement iteratif (IDA*)
-  - Coupe: cout f le plus faible parmi les noeuds en depassement
+- A* avec approfondissement itératif (IDA*)
+  - Coupe: coût f le plus faible parmi les noeuds en depassement
 - Exploration recursive par le meilleur d'abord (RBFS)
-  - Espace en memoire lineaire: valeur f du meilleur chemin alternatif
+  - Espace en mémoire linéaire: valeur f du meilleur chemin alternatif
   - Recursion avec valeur rapportee: meilleure valeur f des enfants oublies
-  - Mais exces inverse: trop peu de memoire et trop de "redeveloppements"
-- Utilisation de toute la memoire disponible
-  - MA* (A* sous contrainte de memoire)
+  - Mais exces inverse: trop peu de mémoire et trop de "redéveloppements"
+- Utilisation de toute la mémoire disponible
+  - MA* (A* sous contrainte de mémoire)
   - SMA* (simplified MA*)
     - On oublie quand plus de place disponible, le noeud le plus mauvais
 
 ## Exploration avec apprentissage
 
-- Espace des etats de metaniveau = etats de l'algorithme d'exploration (noeuds, arbres etc.)
-- Techniques d'apprentissage au metaniveau -> compromis entre cout de calcul et cout de chemin
+- Espace des états de metaniveau = états de l'algorithme d'exploration (noeuds, arbres etc.)
+- Techniques d'apprentissage au metaniveau -> compromis entre coût de calcul et coût de chemin
 
 ---
 
 # Effet de l'exactitude de l'heuristique
 
-## Efficacite fonction de l'erreur absolue ou relative de l'heuristique
+## Efficacité fonction de l'erreur absolue ou relative de l'heuristique
 
 - Delta = h* - h, epsilon = (h* - h)/h*
-- Complexite en O(b^epsilon*d) ou O(b^(epsilon*d)) a cout d'etape constant
+- Complexité en O(b^epsilon*d) ou O(b^(epsilon*d)) à coût d'étape constant
 
 ## Facteur de branchement effectif b*
 
-- Facteur de branchement equivalent sans heuristique (exploration a cout uniforme)
-- Bonne indication de l'utilite globale de l'heuristique
+- Facteur de branchement équivalent sans heuristique (exploration à coût uniforme)
+- Bonne indication de l'utilité globale de l'heuristique
 
 ## Dominance
 
@@ -650,21 +643,21 @@ layout: section
 
 # Production d'heuristiques
 
-## Problemes relaxes
+## Problèmes relaxes
 
-- Probleme avec moins de restrictions = **probleme relaxe**
-- Cout exact = heuristique admissible
+- Problème avec moins de restrictions = **problème relaxé**
+- Coût exact = heuristique admissible
 - Exemple du Taquin: h1 (nb pieces mal placees), h2 (distance Manhattan)
 
-## Sous-problemes
+## Sous-problèmes
 
 - Exemple: taquin (pieces 1,2,3,4)
-- **Bases de donnees de motifs**: cout exact sous-problemes = heuristique generale
-- **Motifs disjoints**: question de l'additivite des heuristiques admissibles
+- **Bases de donnees de motifs**: coût exact sous-problèmes = heuristique générale
+- **Motifs disjoints** : question de l'additivité des heuristiques admissibles
 
 ## Apprentissage d'heuristiques
 
-- Utilisation de l'experience sur solutions connues
+- Utilisation de l'expérience sur solutions connues
 - Apprentissage inductif (ex: h(n) = c1*x1(n) + c2*x2(n))
 - Domaine vaste: apprentissage = machine learning
 
@@ -677,32 +670,34 @@ layout: section
 
 # Algorithmes d'exploration locale
 
+<img src="./pptx-reference/slide-43.png" style="position:absolute; bottom:20px; right:20px; height:260px; opacity:0.95;" alt="Exemple 8 reines avec échiquiers" />
+
 ## Objectif: but = solution (chemin secondaire)
 
-- Espace etats = configurations completes (ex: 8 reines)
+- Espace états = configurations complètes (ex: 8 reines)
 
 ## Algorithme d'exploration locale
 
-- Conserve un etat "courant" a ameliorer
+- Conserve un état "courant" à améliorer
 
 ## Avantages
 
-- Peu de memoire
+- Peu de mémoire
 - Fonctionne dans espaces grands/infinis
 
 ## Exemple: 8 reines
 
 ---
 
-# Paysage de l'espace des etats
+# Paysage de l'espace des états
 
-<img src="./images/img_025.png" style="display:block; margin:12px auto; max-height:55vh;" alt="Paysage espace des etats" />
+<img src="./images/img_025.png" style="display:block; margin:12px auto; max-height:55vh;" alt="Paysage espace des états" />
 
-## Problemes d'optimisation
+## Problèmes d'optimisation
 
-- Objectif = meilleur etat selon **fonction objectif**
+- Objectif = meilleur état selon **fonction objectif**
 
-## Utilite du paysage
+## Utilité du paysage
 
 - Recherche maximum (f = -h)
 - **Complet**: trouve toujours un but
@@ -724,19 +719,19 @@ retourne maximum local
 
 ## Exploration locale "gloutonne"
 
-- Maxima locaux, cretes, plateaux, paliers
+- Maxima locaux, crêtes, plateaux, paliers
 
-## Solution: deplacement lateraux
+## Solution: deplacement latéraux
 
-- Necessite de limites
+- Nécessite de limités
 
-## Escalade stochastique: premier choix aleatoire (incomplet)
+## Escalade stochastique: premier choix aléatoire (incomplet)
 
-## Escalade reprise aleatoire (complet)
+## Escalade reprise aléatoire (complet)
 
 ---
 
-# Exploration par recuit simule (SA)
+# Exploration par recuit simulé (SA)
 
 <img src="./images/img_027.png" style="position:absolute; top:120px; right:30px; width:120px;" alt="Courbes temperature SA" />
 
@@ -749,7 +744,7 @@ retourne maximum local
 ```python
 boucle t -> infini
   si T=1 retourner courant
-  sinon -> voisin aleatoire
+  sinon -> voisin aléatoire
   DeltaE = voisin - courant
   suivant si DeltaE > 0
   sinon courant avec proba e^(DeltaE/T)
@@ -764,9 +759,9 @@ boucle t -> infini
 
 # Exploration locale en faisceau (LBS)
 
-## Idee: suivre k etats (ex: *Perdus en foret*)
+## Idee: suivre k états (ex: *Perdus en foret*)
 
-- k etats aleatoires, generation tous succes, selection k meilleurs
+- k états aléatoires, generation tous succes, sélection k meilleurs
 
 ## Transfere progressif ressources
 
@@ -774,12 +769,12 @@ boucle t -> infini
 
 ## Variante: exploration en faisceau stochastique
 
-- Analogue escalade stochastique; k choix aleatoire (proba = valeur)
-- Analogue selection naturelle -> GAs
+- Analogue escalade stochastique; k choix aléatoire (proba = valeur)
+- Analogue sélection naturelle -> GAs
 
 ---
 
-# Algorithmes genetiques (GAs)
+# Algorithmes génétiques (GAs)
 
 ## Variante faisceau stochastique
 
@@ -787,27 +782,27 @@ boucle t -> infini
 
 ## Population (individus, taille constante)
 
-## Genes (recombinaison, mutations aleatoires)
+## Genes (recombinaison, mutations aléatoires)
 
 ## Phenotype (fonction d'adaptation: *fitness function*)
 
 ## Code
 
 ```
-algorithme genetique (selection, reproduction, mutation, retour meilleur individu)
+algorithme génétique (selection, reproduction, mutation, retour meilleur individu)
 ```
 
 ---
 
-# Algorithme genetique pour les 8 reines
+# Algorithme génétique pour les 8 reines
 
-<img src="./images/img_031.png" style="display:block; margin:8px auto; max-height:35vh;" alt="Algorithme genetique: population, fitness, selection, crossover, mutation" />
+<img src="./images/img_031.png" style="display:block; margin:8px auto; max-height:35vh;" alt="Algorithme génétique: population, fitness, sélection, crossover, mutation" />
 
 <img src="./images/img_032.png" style="display:block; margin:8px auto; max-height:20vh;" alt="Croisement 8 reines" />
 
 ## Phenotype
 
-- Diagramme: 3 echiquiers (addition de deux, resultat)
+- Diagramme: 3 échiquiers (addition de deux, résultat)
 
 ---
 layout: section
@@ -820,21 +815,21 @@ layout: section
 
 <img src="./images/img_033.gif" style="position:absolute; top:130px; right:20px; width:280px;" alt="Trajectoires optimiseurs SGD" />
 
-## Etats definis par des variables reelles
+## États définis par des variables réelles
 
-## Problemes de discontinuites
+## Problèmes de discontinuites
 
 - Une solution = Discretisation des voisinages
 
 ## Pente pour l'escalade = gradient du paysage
 
-- Parfois resolution analytique de nabla f = 0 (rare)
+- Parfois résolution analytique de nabla f = 0 (rare)
 - Si valable localement: x <- x + alpha * nabla f
-  - alpha = pas de l'etape
+  - alpha = pas de l'étape
 - Si pas analytique: gradient empirique
-  - Exploration lineaire
+  - Exploration linéaire
     - alpha trop petit ou trop grand -> on double le pas jusqu'a observer une diminution
-  - Methode de Newton-Raphson
+  - Méthode de Newton-Raphson
     - Formule de Newton pour trouver g(x) = 0 : x <- x - g(x) / g'(x)
     - En prenant pour g le gradient de f: x <- x - H^-1(x) nabla f(x)
       - avec H matrice Hessienne des derivees secondes de f
@@ -843,9 +838,9 @@ layout: section
 ## Optimisation sous contrainte
 
 - Contraintes sur les variables
-- Programmation lineaire
+- Programmation linéaire
   - <- inegalites formant ensemble convexe (pas de trous)
-  - Tres etudie -> complexite polynomiale
+  - Tres etudie -> complexité polynomiale
 
 ---
 layout: section
@@ -854,46 +849,50 @@ layout: section
 # Extensions
 ---
 
-# Exploration avec actions non deterministes
+# Exploration avec actions non déterministes
 
-## Cf. cours precedent -> utilite des percepts
+## Cf. cours précédent → utilité des percepts
 
-- Solution != sequence -> plan contingent ou strategie
+- Solution != séquence → plan contingent ou stratégie
 
-## Arbres Et-Ou: entrelacement de noeuds
+## Arbres ET-OU : entrelacement de nœuds
 
-- Noeuds Ou = Choix d'exploration classique
-- Noeuds Et = "Choix" de l'environnement
-- solutions cycliques -> possibilite d'etiquettes (tant que...)
+- Nœuds OU = Choix d'exploration classique
+- Nœuds ET = "Choix" de l'environnement
+- Solutions cycliques → possibilité d'étiquettes (tant que...)
 
 ## Ex: Aspirateur glissant
 
-- Ou l'action de deplacement peut echouer
+- Où l'action de déplacement peut échouer
+
+<img src="./images/img_pptx_52_aspirateur.png" style="position:absolute; bottom:20px; right:20px; max-height:35vh; border:1px solid #ccc; border-radius:4px;" alt="Arbre ET-OU aspirateur glissant" />
 
 ---
 
 # Exploration avec observations partielles
 
-## Cf. cours precedent -> Etat pas situe precisement
+## Cf. cours précédent → État pas situé précisément
 
-- Analogue a non deterministe
-- Etat de croyance: etats physiques possibles
+- Analogue à non déterministe
+- État de croyance : états physiques possibles
 
-## Exploration sans observation: probleme conformant
+## Exploration sans observation : problème conformant
 
-- Parfois parfaitement soluble. Ex: positionnement de pieces
-- Idee -> contraindre le monde
-- N etats physiques -> 2^N etats de croyance
-- Modele de transition -> etape de prevision
+- Parfois parfaitement soluble. Ex : positionnement de pièces
+- Idée → contraindre le monde
+- N états physiques → 2^N états de croyance
+- Modèle de transition → étape de prévision
 
-## Exploration incrementale
+## Exploration incrémentale
 
-- -> Arbres Et-Ou complets
+- → Arbres ET-OU complets
 
 ## Exploration avec observation
 
-- Etape de prevision d'observations
-- Etape de mise a jour
+- Étape de prévision d'observations
+- Étape de mise à jour
+
+<img src="./images/img_pptx_53_belief.png" style="position:absolute; bottom:20px; right:20px; max-height:30vh; border:1px solid #ccc; border-radius:4px;" alt="Arbre états de croyance" />
 
 ---
 
@@ -901,31 +900,49 @@ layout: section
 
 ## Entrelacement calcul et action
 
-- Problemes de decouverte
+- Problèmes de découverte
 
-## Ratio de competitivite
+## Ratio de compétitivité
 
-- En temps, vis-a-vis d'un espace connu
+- En temps, vis-à-vis d'un espace connu
 
 ## Il y a parfois des impasses
 
-- sinon l'espace est explorablesans risque
+- Sinon l'espace est explorable sans risque
 
 ## Algorithmes
 
-- DFS, Escalade avec reprise aleatoire
-- Memoire -> estimation H de l'heuristique h
-  - LRTA* (learning real time A*)
+- DFS, Escalade avec reprise aléatoire
+- Mémoire → estimation H de l'heuristique h
+  - LRTA\* (learning real time A\*)
+
+## Code
+
+```text
+fonction LRTA*-Agent(s') retourne une action
+  entrées: s', un percept qui identifie l'état courant
+  persistante: résultat, une table indexée par état et action
+               H, une table d'estimation des coûts indexée par état
+               s, a, l'action et l'état précédents, initialement nuls
+  si Test-But(s') alors retourner stop
+  si s' est un nouvel état (pas dans H) alors H[s'] ← h(s')
+  si s n'est pas nul
+    résultat[s, a] ← s'
+    H[s] ← min_b Actions(s) COUT-LRTA*(s, b, résultat[s, b], H)
+  a ← action b dans Actions(s) minimisant COUT-LRTA*(s', b, résultat[s', b], H)
+  s ← s'
+  retourner a
+```
 
 ## Apprentissage
 
-- De la "carte" (Etats)
-- Du cout d'etape
-- Des regles (transitions)
+- De la "carte" (États)
+- Du coût d'étape
+- Des règles (transitions)
 
 ---
 
-# Resume Exploration Informee
+# Résumé Exploration Informée
 
 ## Heuristiques
 
@@ -935,19 +952,19 @@ layout: section
 ## Meilleur d'abord
 
 - Exploration Gloutonne (h)
-- A* (g+h) + variantes limitees en memoire
+- A* (g+h) + variantes limitées en mémoire
 
 ## Exploration Locale
 
-- Paysage de l'espace d'etats
-- Escalade, Recuit simule
-- Exploration en Faisceau, stochastique, algorithmes genetiques
+- Paysage de l'espace d'états
+- Escalade, Recuit simulé
+- Exploration en Faisceau, stochastique, algorithmes génétiques
 
 ## Extensions
 
-- Espaces continus -> gradients, programmation lineaire
-- Actions Non deterministe -> Arbres Et-Ou
-- Observations partielles -> previsions, exploration en ligne
+- Espaces continus -> gradients, programmation linéaire
+- Actions Non déterministe -> Arbres Et-Ou
+- Observations partielles -> prévisions, exploration en ligne
 
 ---
 layout: section
@@ -963,10 +980,10 @@ layout: section
 - multi-agents
 - concurrentiels
 
-## Classe de jeux la plus etudiee (echecs, Go)
+## Classe de jeux la plus etudiee (échecs, Go)
 
 - Alternes
-- Deterministes
+- Déterministes
 - A somme nulle (h1 = -h2)
 - A information parfaite
 
@@ -987,9 +1004,9 @@ layout: section
 - **Etat initial** S0
 - **Joueurs** : Max, Min
 - **Actions** : Coups
-- **Resultat**(s,a) : Modele de transition
+- **Résultat**(s,a) : Modèle de transition
 - **Test-Terminal**(s) : Fin de partie
-- **Utilite**(s,p) : Score final de p
+- **Utilité**(s,p) : Score final de p
 
 ---
 
@@ -997,16 +1014,16 @@ layout: section
 
 <img src="./images/img_038.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Arbre Minimax" />
 
-## Decisions optimales
+## Décisions optimales
 
-- Espace Non deterministe
-  - Strategie contingente
+- Espace Non déterministe
+  - Stratégie contingente
   - Arbre Et-Ou
 - 1 tour = 2 coups (Max, Min)
 
 ## Valeur Minimax
 
-- Strategie theorique optimale
+- Stratégie théorique optimale
 - Les 2 joueurs jouent au mieux
 
 ## Formules Minimax
@@ -1025,14 +1042,14 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 ## Faire "remonter" les valeurs Minimax
 
-## Proprietes
+## Propriétés
 
 - Complet? Oui (si l'arbre est fini)
 - Optimal? Oui (avec adversaire optimal)
-- Complexite en temps: O(b^m)
-- Complexite en espace: O(b^m) (DFS)
-- Echecs: b ~ 35, m ~ 100
-  -> completement infaillable
+- Complexité en temps: O(b^m)
+- Complexité en espace: O(b^m) (DFS)
+- Échecs: b ~ 35, m ~ 100
+  -> complètement infaillable
 
 ## Mais c'est la base de
 
@@ -1041,35 +1058,35 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 ## Cadre Multi-joueurs
 
-- Meme approche
-- Vecteurs Utilite
+- Même approche
+- Vecteurs Utilité
 - Souvent, alliances naturelles
 
 ---
 
-# Elagage Alpha-Beta
+# Élagage Alpha-Bêta
 
-<img src="./images/img_040.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Elagage Alpha-Beta" />
+<img src="./images/img_040.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Élagage Alpha-Bêta" />
 
-## Idee : Diminuer le nombre d'etats a examiner
+## Idee : Diminuer le nombre d'états à examiner
 
-- Sans perdre l'optimalite
-- Les branches mauvaises sont ignorees (elaguees)
+- Sans perdre l'optimalité
+- Les branches mauvaises sont ignorées (élaguées)
   - alpha = meilleur coup pour Max
   - beta = meilleur coup pour Min
 
-## L'ordre d'evaluation des coups est important
+## L'ordre d'évaluation des coups est important
 
 - Si l'ordre est "parfait":
-  - la complexite devient O(b^(m/2))
+  - la complexité devient O(b^(m/2))
   - facteur de branchement effectif sqrt(b)
   - profondeur double
 
-## Approfondissement iteratif: Heuristiques des coups de maitre
+## Approfondissement itératif : Heuristiques des coups de maître
 
 ## Permutations
 
-- Certaines sequences distinctes sont equivalentes
+- Certaines séquences distinctes sont équivalentes
 - Maintiennent une table de transposition
 
 ## Exemple raisonnement au metaniveau
@@ -1078,53 +1095,53 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 ---
 
-# Decisions imparfaites
+# Décisions imparfaites
 
 <img src="./images/img_042.png" style="position:absolute; top:130px; right:20px; width:360px;" alt="Formule ExpectiMinimax" />
 
 ## Approche
 
-- Utilite -> Eval(s) heuristique
-  - sur des etats non terminaux
+- Utilité -> Eval(s) heuristique
+  - sur des états non terminaux
 - Test de terminaison -> Cutoff(s)
-  - ex: profondeur limite d_lim
+  - ex: profondeur limité d_lim
 
-## Fonction d'evaluation
+## Fonction d'évaluation
 
-- Cf. Humains <- attributs d'un etat
-- Classe d'equivalence -> valeur attendue (utilite ponderee)
-- Mais trop de classes -> valeur materielle -> fonction lineaire ponderee
+- Cf. Humains <- attributs d'un état
+- Classe d'équivalence -> valeur attendue (utilité pondérée)
+- Mais trop de classes -> valeur matérielle -> fonction linéaire pondérée
   - Eval(s) = w1*f1(s) + w2*f2(s) + ... + wn*fn(s)
-- Mais non independance des attributs -> fonction non lineaire
-- Si pas d'experience, possibilite d'apprentissage (1 fou = 3 pions!)
+- Mais non independance des attributs -> fonction non linéaire
+- Si pas d'expérience, possibilité d'apprentissage (1 fou = 3 pions!)
 
 ## Exploration avec arret
 
-- Alpha Beta Iteratif pour respecter une limite de temps (+ ordre des coups)
-- Probleme des situation instables au cutoff (prise au prochain tour)
+- Alpha Beta Iteratif pour respecter une limité de temps (+ ordre des coups)
+- Problème des situation instables au cutoff (prise au prochain tour)
   - Solution = recherche de stabilite ("quiescence", ex: pas de prise)
 
 ---
 
 # Techniques avancees
 
-## Elagage avant (forward pruning)
+## Élagage avant (forward pruning)
 
-- Idee : ignorer certains coups sans les evaluer
+- Idee : ignorer certains coups sans les évaluér
 - **Dangereux** : pas de consideration des noeuds elagues
 - **Beam search** : n meilleurs coups par tour
 - **ProbCut** : probabilite que le noeud soit hors [α, β]
 
 ## Exploration vs Consultation
 
-- Echecs -- **debuts** et **fins de partie** documentes :
+- Échecs -- **debuts** et **fins de partie** documentes :
   - **Debut** : consultation de **livres d'ouverture** + statistiques de bases de parties
   - **Fin** : utilisation d'une **politique** (correspondance directe coup optimal), exploration retrograde
 
 ## Leçon
 
-- Combiner **exploration** (milieu de partie) et **consultation** (bibliotheques)
-- Alpha Beta iteratif pour respecter une limite de temps + ordre des coups
+- Combiner **exploration** (milieu de partie) et **consultation** (bibliothèques)
+- Alpha Beta itératif pour respecter une limité de temps + ordre des coups
 - Recherche de **quiescence** aux cutoffs instables
 
 ---
@@ -1133,16 +1150,16 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 ## Principe -- simulations statistiques
 
-Pas d'heuristique d'evaluation : **remplacee par des rollouts** (simulations aleatoires jusqu'a fin de partie).
+Pas d'heuristique d'évaluation : **remplacee par des rollouts** (simulations aléatoires jusqu'a fin de partie).
 
 ## Algorithme (boucle)
 
-1. **Selection** : descente guidee par une **politique de selection** (compromis exploration / exploitation)
+1. **Sélection** : descente guidee par une **politique de sélection** (compromis exploration / exploitation)
 2. **Expansion** : creation d'un ou plusieurs noeuds enfants
-3. **Simulation (rollout)** : jeu aleatoire jusqu'a resultat
-4. **Retropropagation** : les noeuds parents voient leur compteur de victoires / visites incremente
+3. **Simulation (rollout)** : jeu aléatoire jusqu'a résultat
+4. **Retropropagation** : les noeuds parents voient leur compteur de victoires / visites incrémenté
 
-## Politique de selection -- UCB1
+## Politique de sélection -- UCB1
 
 $$
 UCB1 = \bar{X_i} + C \sqrt{\frac{\ln N}{n_i}}
@@ -1154,7 +1171,7 @@ $$
 
 ## Applications
 
-Go, Echecs (AlphaZero), planification en jeux partiellement observables.
+Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 
 ---
 
@@ -1162,57 +1179,57 @@ Go, Echecs (AlphaZero), planification en jeux partiellement observables.
 
 ## Jeux stochastiques
 
-- Presence d'aleatoire (des, cartes)
+- Presence d'aléatoire (des, cartes)
 - **Valeur Minimax esperee** :
   - Noeud chance intercale entre MAX et MIN
-  - `EU(n) = Σ P(resultat) × Minimax(resultat)`
+  - `EU(n) = Σ P(résultat) × Minimax(résultat)`
 - Ex : Backgammon, Monopoly, jeux de cartes
 
 ## Jeux partiellement observables
 
-- **Information cachee** : cartes adverses, positions non revelees
-- **Etat de croyance** (belief state) : distribution sur etats compatibles avec l'observation
-- Decision optimale : maximiser l'utilite **moyennee sur la croyance**
-- Ex : Poker, Bridge, jeux de guerre a brouillard de guerre
+- **Information cachee** : cartes adverses, positions non révélées
+- **Etat de croyance** (belief state) : distribution sur états compatibles avec l'observation
+- Décision optimale : maximiser l'utilité **moyennée sur la croyance**
+- Ex : Poker, Bridge, jeux de guerre à brouillard de guerre
 
 ## Defis
 
-- **Explosion combinatoire** des etats de croyance
+- **Explosion combinatoire** des états de croyance
 - Approches modernes : **CFR** (Counterfactual Regret Minimization, Libratus/Pluribus au poker)
 
 ---
 
-# Resume -- Jeux
+# Résumé -- Jeux
 
-## Decisions optimales
+## Décisions optimales
 
-- **Arbre de jeu** : etats, actions, resultats, test terminal, utilite
+- **Arbre de jeu** : états, actions, résultats, test terminal, utilité
 - **Minimax** : valeur optimale, algorithme recursif
-- **Alpha-Beta** : elagage pour reduire la taille de l'arbre explore
+- **Alpha-Beta** : élagage pour réduire la taille de l'arbre explore
 
-## Decisions imparfaites
+## Décisions imparfaites
 
-- **Fonction d'evaluation heuristique** (lineaire ponderee des attributs)
-- **Test d'arret** : complications liees a la stabilite et a l'horizon
-- **Elagage avant** (beam search, ProbCut) : efficace mais dangereux
+- **Fonction d'évaluation heuristique** (linéaire pondérée des attributs)
+- **Test d'arret** : complications liees à la stabilite et à l'horizon
+- **Élagage avant** (beam search, ProbCut) : efficace mais dangereux
 - **Consultation** et **politiques** pour debut et fin de partie
 
 ## Classes complexes
 
 - **Jeux stochastiques** : valeur Minimax esperee (noeuds chance)
-- **Jeux partiellement observables** : etat de croyance
-- **MCTS** : methode generale qui scale a de tres grands jeux (Go, Echecs, Poker)
+- **Jeux partiellement observables** : état de croyance
+- **MCTS** : méthode générale qui scale à de très grands jeux (Go, Échecs, Poker)
 
 ---
 layout: section
 ---
 
-# Problemes a Satisfaction de Contraintes
+# Problèmes à Satisfaction de Contraintes
 ---
 
-# Problemes a satisfaction de contraintes (CSPs)
+# Problèmes à satisfaction de contraintes (CSPs)
 
-<img src="./images/img_047.png" style="position:absolute; top:140px; right:20px; width:300px;" alt="Carte Australie coloree" />
+<img src="./images/img_047.png" style="position:absolute; top:140px; right:20px; width:300px;" alt="Carte Australie colorée" />
 
 ## Definition
 
@@ -1259,15 +1276,15 @@ layout: section
 
 ---
 
-# Resolution de CSPs: Generation et test
+# Résolution de CSPs: Génération et test
 
 ## Approche la plus simple
 
-1. Generer une assignation complete aleatoire
+1. Générer une assignation complete aléatoire
 2. Tester si elle satisfait toutes les contraintes
 3. Recommencer jusqu'a succes
 
-## Probleme
+## Problème
 
 - Nombre d'assignations: produit des domaines
   - Ex: coloration 7 pays -> 3^7 = 2187
@@ -1307,17 +1324,17 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 ## Idee
 
-- Reduire les domaines avant developpement
-- Si domaine vide -> echec immediat
+- Réduire les domaines avant développement
+- Si domaine vide -> échec immediat
 
 ## Techniques
 
-- **Forward Checking**: Apres assignation, eliminer les valeurs incompatibles des variables non assignees
-- **Arc Consistency (AC)**: Pour chaque contrainte binaire (X,Y), eliminer les valeurs de X qui n'ont pas de support dans Y
+- **Forward Checking**: Apres assignation, éliminer les valeurs incompatibles des variables non assignees
+- **Arc Consistency (AC)**: Pour chaque contrainte binaire (X,Y), éliminer les valeurs de X qui n'ont pas de support dans Y
 
 ## Algorithme AC-3
 
-- Propage la coherence d'arc a travers le reseau de contraintes
+- Propage la coherence d'arc à travers le reseau de contraintes
 - Tres efficace mais complexe
 
 ---
@@ -1331,7 +1348,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 ## Choix de variable (MRV, LCV)
 
 - **Most Constrained Variable**: Variable avec le plus petit domaine
-- **Least Constraining Value**: Valeur qui elimine le moins de choix pour les autres variables
+- **Least Constraining Value**: Valeur qui élimine le moins de choix pour les autres variables
 
 </div>
 
@@ -1342,9 +1359,9 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 ---
 
-# CSPs: Structure des problemes
+# CSPs: Structure des problèmes
 
-<img src="./images/img_055.png" style="position:absolute; top:120px; right:20px; width:240px;" alt="Decomposition arbre contraintes" />
+<img src="./images/img_055.png" style="position:absolute; top:120px; right:20px; width:240px;" alt="Décomposition arbre contraintes" />
 
 ## Graphe de contraintes
 
@@ -1354,11 +1371,11 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 ## Composantes connexes
 
 - Sous-ensembles de variables interconnectees
-- Resolution independante possible
+- Résolution indépendante possible
 
 ## Clusters et arbres
 
-- Structure en arbres -> resolution en temps lineaire O(n)
+- Structure en arbres -> résolution en temps linéaire O(n)
 - Graphe complet -> NP-complet
 
 ---
@@ -1369,16 +1386,16 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 - Choisir la variable qui viole le plus de contraintes
 - Changer sa valeur pour minimiser les conflits
-- Tres efficace pour les problemes avec de nombreuses variables
+- Tres efficace pour les problèmes àvec de nombreuses variables
 
 ## Example: 8 reines
 
-- Chaque reine sur une colonne differente
-- Deplacer la reine qui a le plus de conflits
+- Chaque reine sur une colonne différente
+- Deplacer la reine qui à le plus de conflits
 
 ---
 
-# Techniques de resolution des CSPs
+# Techniques de résolution des CSPs
 
 ## Methodes traditionnelles
 
@@ -1399,9 +1416,9 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 # Domaines des CSPs
 
-## Variables discretes
+## Variables discrêtes
 
-- Domaines finis: n variables, taille de domaine d -> O(d^n) assignations completes
+- Domaines finis: n variables, taille de domaine d -> O(d^n) assignations complètes
 - Domaines infinis: Entiers, chaines de caracteres etc.
   - Ex: planification de cours
   - Besoin d'un langage de contraintes (DebutCours1 + 5 <= DebutCours2)
@@ -1409,7 +1426,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 ## Variables continues
 
 - Exemple: Planifications des observation du Telescope Hubble
-- Contraintes lineaires solubles en temps polynomial par la programmation lineaire
+- Contraintes linéaires solubles en temps polynomial par la programmation linéaire
 
 ---
 
@@ -1435,28 +1452,28 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 ## Unaires
 
-- Contraintes a 1 variable (Ex: SA != vert)
+- Contraintes à 1 variable (Ex: SA != vert)
 
 ## Binaires
 
 - Contraintes impliquant 1 paire de variables (Ex: SA != WA)
 
-## Globales ou d'ordre superieur
+## Globales ou d'ordre supérieur
 
 - Contraintes avec 3 variables ou plus
-- Ex: problemes cryptarithmetiques
+- Ex: problèmes cryptarithmetiques
   - Variables: F T U W R O x X1 X2 X3
   - Domaines: &#123;0,1,2,3,4,5,6,7,8,9&#125;
   - Contraintes: Alldiff(F,T,U,W,R,O), O + O = R + 10, etc.
 
-## Representation
+## Représentation
 
 - Hypergraphe des contraintes
   - Xi sont des variables auxiliaires
-  - Possible de reduire a des contraintes binaires (ex: Graphe Biparti)
-  - Contraintes de preferences
+  - Possible de réduire à des contraintes binaires (ex: Graphe Biparti)
+  - Contraintes de préférences
     - CSP -> contraintes absolues
-    - -> Problemes a optimisation de contraintes (COP)
+    - -> Problèmes à optimisation de contraintes (COP)
 
 ---
 
@@ -1464,7 +1481,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 ## Principaux solveurs actuels
 
-- MiniZinc: Langage de modelisation independant et front-end pour divers solveurs
+- MiniZinc: Langage de modelisation indépendant et front-end pour divers solveurs
 - Google OR-Tools: Solveur hybride CP/SAT avec API pour Python, C#, Java et C++
 - Choco Solver: Alternative open-source en Java et C++ respectivement
 - Z3: Solveur SMT pour contraintes logiques complexes
@@ -1476,7 +1493,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 ## Ponts technologiques
 
 - pythonnet pour integration Python et .NET
-- IKVM pour utiliser des bibliotheques Java en C#
+- IKVM pour utiliser des bibliothèques Java en C#
 - JPype pour appeler du code Java depuis Python
 
 ---
@@ -1489,7 +1506,7 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 ## Logistique et transport
 
-- Problemes de tournees de vehicules (VRP), gestion d'entrepots
+- Problèmes de tournees de vehicules (VRP), gestion d'entrepots
 
 ## Optimisation combinatoire
 
@@ -1497,38 +1514,38 @@ fonction BACKTRACK(csp, assignation) retourne solution ou echec
 
 ## Planification en IA
 
-- Planification de missions robotiques, satellites, et autres systemes autonomes
+- Planification de missions robotiques, satellites, et autres systèmes autonomes
 
 ---
 
-# Resume CSPs (1/2)
+# Résumé CSPs (1/2)
 
-## Problemes a satisfaction de contraintes
+## Problèmes à satisfaction de contraintes
 
 - Variables et domaines
 - Graphes (binaires) ou hypergraphes des contraintes
 
-## Techniques d'inference
+## Techniques d'inférence
 
 - Coherence de noeuds, d'arcs, K-coherence
 
 ## Exploration avec Backtracking
 
 - Parcours en profondeur d'abord
-- Couplage inference + exploration
+- Couplage inférence + exploration
 - Heuristiques de choix de variables et de valeurs
 - Forward checking et Backjumping : orientent vers les conflits et accelerent la recherche
-- Exploration locale : Min-Conflicts tres efficace, meme avec de nombreuses variables
+- Exploration locale : Min-Conflicts tres efficace, même avec de nombreuses variables
 
 ---
 
-# Resume CSPs (2/2)
+# Résumé CSPs (2/2)
 
-## Structure des problemes et complexite
+## Structure des problèmes et complexité
 
-- **Coupe de cycle** : ideal pour reduire a un arbre (complexite lineaire)
-- **Decomposition en sous-arbres** : pratique et courante, exploite les sous-ensembles connexes independants
-- **Symetrie des valeurs** : eliminer les solutions symmetriques reduit l'espace de recherche
+- **Coupe de cycle** : ideal pour réduire à un arbre (complexité linéaire)
+- **Décomposition en sous-arbres** : pratique et courante, exploite les sous-ensembles connexes indépendants
+- **Symétrie des valeurs** : éliminer les solutions symmetriques réduit l'espace de recherche
 
 ---
 layout: section
