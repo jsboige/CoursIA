@@ -89,12 +89,17 @@ TWEETY_VERSIONS = {
     "1.29": {
         "release_date": "July 2025",
         "new_features": ["arg.eaf (Epistemic AF)", "graph rendering", "minor bugfixes"],
+        "status": "stable"
+    },
+    "1.30": {
+        "release_date": "January 2026",
+        "new_features": ["causal reasoning (abstract argumentation)", "arg.explanations (serialisability methods)", "equivalence checking for abstract AFs"],
         "status": "latest"
     }
 }
 
 # Known issues per notebook (expected failures)
-# These limitations are present in both Tweety 1.28 and 1.29
+# These limitations are present in Tweety 1.28, 1.29, and 1.30
 KNOWN_ISSUES = {
     "Tweety-3-Advanced-Logics.ipynb": [
         "SimpleMlReasoner may hang indefinitely without SPASS external prover",
