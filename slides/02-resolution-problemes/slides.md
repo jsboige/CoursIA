@@ -244,8 +244,6 @@ fonction EXPLORER-ARBRE(probleme) retourne une solution, ou echec
 
 # Arbre d'exploration: exemple
 
-<img src="./pptx-reference/slide-17.png" style="position:absolute; bottom:30px; right:20px; height:420px; opacity:0.95;" alt="Arbre d'exploration visuel" />
-
 Arbre de recherche avec la racine **Arad** : développement des successeurs Sibiu, Timisoara, Zerind, puis de leurs propres successeurs.
 
 - Noeuds en **tirets verts** : successeurs non encore développés (frontière)
@@ -670,8 +668,6 @@ layout: section
 
 # Algorithmes d'exploration locale
 
-<img src="./pptx-reference/slide-43.png" style="position:absolute; bottom:20px; right:20px; height:260px; opacity:0.95;" alt="Exemple 8 reines avec échiquiers" />
-
 ## Objectif: but = solution (chemin secondaire)
 
 - Espace états = configurations complètes (ex: 8 reines)
@@ -865,7 +861,7 @@ layout: section
 
 - Où l'action de déplacement peut échouer
 
-<img src="./images/img_pptx_52_aspirateur.png" style="position:absolute; bottom:20px; right:20px; max-height:35vh; border:1px solid #ccc; border-radius:4px;" alt="Arbre ET-OU aspirateur glissant" />
+<img src="./images/img_034.png" style="position:absolute; bottom:20px; right:20px; max-height:45vh;" alt="Arbre ET-OU aspirateur glissant" />
 
 ---
 
@@ -892,7 +888,7 @@ layout: section
 - Étape de prévision d'observations
 - Étape de mise à jour
 
-<img src="./images/img_pptx_53_belief.png" style="position:absolute; bottom:20px; right:20px; max-height:30vh; border:1px solid #ccc; border-radius:4px;" alt="Arbre états de croyance" />
+<img src="./images/img_035.png" style="position:absolute; bottom:20px; right:20px; max-height:45vh;" alt="Arbre états de croyance" />
 
 ---
 
@@ -939,6 +935,8 @@ fonction LRTA*-Agent(s') retourne une action
 - De la "carte" (États)
 - Du coût d'étape
 - Des règles (transitions)
+
+<img src="./images/img_036.png" style="position:absolute; top:60px; right:20px; max-height:40vh;" alt="LRTA* exploration en ligne" />
 
 ---
 
