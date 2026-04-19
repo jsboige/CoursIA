@@ -61,7 +61,7 @@ C'est l'etape la plus importante. Vous devez definir **3 variables obligatoires*
 | `ANTHROPIC_BASE_URL` | `https://openrouter.ai/api` | Dit a Claude Code d'utiliser OpenRouter au lieu d'Anthropic |
 | `ANTHROPIC_AUTH_TOKEN` | `sk-or-v1-VOTRE_CLE` | Votre cle d'authentification OpenRouter |
 | `ANTHROPIC_API_KEY` | *(vide)* | Doit etre vide pour ne pas conflit avec OpenRouter |
-| `ANTHROPIC_DEFAULT_OPUS_MODEL` | `moonshotai/kimi-k2.5` | Modele "opus" = Kimi K2.5 (raisonnement complexe) |
+| `ANTHROPIC_DEFAULT_OPUS_MODEL` | `qwen/qwen3.6-plus` | Modele "opus" = Qwen 3.6 Plus (raisonnement complexe) |
 | `ANTHROPIC_DEFAULT_SONNET_MODEL` | `minimax/minimax-m2.7` | Modele "sonnet" = MiniMax M2.7 (usage quotidien) |
 | `ANTHROPIC_DEFAULT_HAIKU_MODEL` | `qwen/qwen3.5-27b` | Modele "haiku" = Qwen 3.5 27B (taches rapides) |
 
@@ -87,7 +87,7 @@ Contenu (remplacez `sk-or-v1-VOTRE_CLE` par votre vraie cle) :
     "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
     "ANTHROPIC_API_KEY": "",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "moonshotai/kimi-k2.5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimax/minimax-m2.7",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen/qwen3.5-27b"
   }
@@ -109,7 +109,7 @@ Ajoutez a la fin :
 $env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
 $env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE"
 $env:ANTHROPIC_API_KEY = ""
-$env:ANTHROPIC_DEFAULT_OPUS_MODEL = "moonshotai/kimi-k2.5"
+$env:ANTHROPIC_DEFAULT_OPUS_MODEL = "qwen/qwen3.6-plus"
 $env:ANTHROPIC_DEFAULT_SONNET_MODEL = "minimax/minimax-m2.7"
 $env:ANTHROPIC_DEFAULT_HAIKU_MODEL = "qwen/qwen3.5-27b"
 ```
@@ -135,7 +135,7 @@ Ajoutez a la fin :
 export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
 export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"
 export ANTHROPIC_API_KEY=""
-export ANTHROPIC_DEFAULT_OPUS_MODEL="moonshotai/kimi-k2.5"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="qwen/qwen3.6-plus"
 export ANTHROPIC_DEFAULT_SONNET_MODEL="minimax/minimax-m2.7"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="qwen/qwen3.5-27b"
 ```
@@ -197,7 +197,7 @@ Vous devez recevoir une reponse du modele (MiniMax M2.7 par defaut).
 # Modele par defaut (sonnet = MiniMax M2.7)
 claude -p "Reponds 'Sonnet OK'"
 
-# Modele opus (Kimi K2.5)
+# Modele opus (Qwen 3.6 Plus)
 claude --model opus -p "Reponds 'Opus OK'"
 
 # Modele haiku (Qwen 3.5 27B)
@@ -238,13 +238,13 @@ Claude Code va analyser votre projet et creer un fichier `CLAUDE.md` avec le con
 | Alias | Modele | Quand l'utiliser |
 |-------|--------|-----------------|
 | **sonnet** (defaut) | MiniMax M2.7 | Developpement quotidien, debug, questions |
-| **opus** | Kimi K2.5 | Refactoring complexe, architecture, documentation |
+| **opus** | Qwen 3.6 Plus | Refactoring complexe, architecture, documentation |
 | **haiku** | Qwen 3.5 27B | Questions rapides, exploration, prototypage |
 
 Pour changer de modele dans une session :
 
 ```bash
-claude --model opus    # utilise Kimi K2.5
+claude --model opus    # utilise Qwen 3.6 Plus
 claude --model sonnet  # utilise MiniMax M2.7 (defaut)
 claude --model haiku   # utilise Qwen 3.5 27B
 ```
