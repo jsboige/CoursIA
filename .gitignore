@@ -515,6 +515,11 @@ slides/_pdfs/
 # Slides - Slidev export screenshots (regenerable)
 slides/*/slidev-export/
 slides/*/slidev-export.local/
+deck0[0-9]-slide-*.png
+slide-*-*.png
+slides-overview.png
+deck03-*.png
+.playwright-mcp/
 
 # Agent memory temporaire (local scope)
 .claude/agent-memory/notebook-*/
