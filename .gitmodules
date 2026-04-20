@@ -1,9 +1,0 @@
-[submodule "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/foundry-lib/lib/forge-std"]
-	path = MyIA.AI.Notebooks/SymbolicAI/SmartContracts/foundry-lib/lib/forge-std
-	url = https://github.com/foundry-rs/forge-std
-[submodule "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/foundry-lib/lib/openzeppelin-contracts"]
-	path = MyIA.AI.Notebooks/SymbolicAI/SmartContracts/foundry-lib/lib/openzeppelin-contracts
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts
-[submodule "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/foundry-lib/lib/account-abstraction"]
-	path = MyIA.AI.Notebooks/SymbolicAI/SmartContracts/foundry-lib/lib/account-abstraction
-	url = https://github.com/eth-infinitism/account-abstraction

@@ -1,7 +1,0 @@
-# Exclure tous fichiers modèles (trop volumineux pour Git)
-*
-
-# Garder structure répertoire
-!.gitkeep
-!.gitignore
-!README.md
