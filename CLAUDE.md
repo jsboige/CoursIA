@@ -69,6 +69,62 @@ Le **dashboard RooSync workspace CoursIA** (`roosync_dashboard` type=workspace, 
 
 ---
 
+## 🚨 RÈGLE CRITIQUE - Exigence et esprit critique (2026-04-20)
+
+**INCIDENT 2026-04-20** : Un étudiant a remonté qu'un exercice Sudoku-8 Hidden Pair est confus/redondant avec Naked Pair ; la même session a révélé 20+ cellules de notebooks d'exercices aplaties en une seule ligne illisible, un agent ayant rapporté "DONE" alors que le travail contenait encore 7 cellules brisées.
+
+**Diagnostic user** : "la moitié du dépôt est de la slop complaisante". L'agent review manque de scepticisme, merge des PRs sans lancer les notebooks ni vérifier la cohérence pédagogique, et propage des rapports de succès non vérifiés.
+
+### ❌ INTERDIT : les mensonges de succès
+
+- Rapporter "DONE" / "fixed" / "validated" sans avoir relancé la validation complète APRÈS le fix
+- Mark un todo `completed` alors que même une seule itération de test n'a pas été passée
+- Approuver une PR parce que "le CI est vert" — CI = syntaxe, pas pédagogie ni conformité
+- Fermer une issue sans vérifier que le problème concret qu'elle décrit est résolu sur le code actuel
+- Accepter les rapports d'autres agents sans recouper contre les faits (code, diff, exécution)
+- Créer des fichiers markdown de "RAPPORT", "AUDIT", "SYNTHESE" comme preuve de travail sans que le code sous-jacent soit validé
+- Répéter "propre" / "valide" / "clean" comme incantation sans preuve concrète
+
+### ✅ OBLIGATOIRE : review exigeante d'une PR
+
+Avant de merger une PR (y compris les siennes), VÉRIFIER les 5 points :
+
+1. **Scope réel** : comparer la PR à l'objectif déclaré. La PR fait-elle ce qu'elle dit ? Rien de plus, rien de moins ?
+2. **Validation automatisée complète** : script de validation qui CHECK le livrable (pas le code source), relancé APRÈS le dernier commit de la PR
+3. **Cohérence pédagogique (notebooks/slides)** :
+   - Les exercices sont-ils alignés sur le contenu enseigné au-dessus ?
+   - Un exercice redemande-t-il ce qui est déjà résolu plus haut ?
+   - Les stubs `TODO` ont-ils un sens (TODO bien placé, commentaires cohérents) ?
+   - L'ordre des cellules est-il logique (interprétation APRÈS code) ?
+4. **Exécution au moins une fois** :
+   - Notebooks : exécuter via Papermill ou ouvrir dans Jupyter et lancer chaque cellule. "Compile OK" n'est PAS suffisant.
+   - Slides : lancer Slidev et vérifier chaque slide avec `?clicks=99`.
+5. **Regression check** : le fix a-t-il cassé autre chose ? (grep des symboles touchés dans le reste du dépôt)
+
+Si un seul de ces 5 points n'est pas vérifié personnellement : **ne pas merger**. Demander le complément au user/auteur.
+
+### ✅ OBLIGATOIRE : attitude sceptique envers soi-même
+
+- Après un fix, RELANCER la validation complète. Ne jamais faire confiance à une correction "at sight"
+- Lister les cas limites que la correction pourrait avoir manqués. Les tester.
+- Un fix sur N fichiers nécessite N validations, pas 1
+- Quand le user signale un problème pédagogique (redondance, incohérence, bug dans un exercice) : ne pas tenter de le justifier, investiguer et confirmer/infirmer factuellement
+- Les retours étudiants sont des bugs à traiter, pas des "feedbacks à noter pour plus tard"
+- Un bug préexistant dans un notebook d'enseignement est un bug à fixer (règle 2026-04-20)
+
+### ✅ OBLIGATOIRE : honnêteté du rapport
+
+- Si un fix a corrigé 5/7 cellules : rapporter "5/7 corrigées, 2 restantes identifiées mais non traitées", PAS "DONE"
+- Mentionner explicitement les cas non testés, non validés, non vérifiés
+- Si le user exprime de la déception ou parle de "honte" : reconnaître précisément ce qui a été raté, ne pas minimiser ni déborder en justifications
+- Pas d'euphémismes : "bug" > "léger oubli", "cassé" > "perfectible"
+
+**VIOLATION = le dépôt se remplit de slop et le cours part en vrille. Impact pédagogique réel.**
+
+**Voir aussi** : `~/.claude/projects/d--CoursIA/memory/feedback_postmortem_epita_slides_20260408.md`, `feedback_exigence_application_20260408.md`, `feedback_no_preexisting_excuse.md`
+
+---
+
 ## Regles Agents (Roo Code / machines distantes)
 
 Les agents Roo sur les machines po-2023, po-2024, po-2025, po-2026 travaillent sur ce depot via RooSync. Ces regles sont **OBLIGATOIRES** pour tout agent.
