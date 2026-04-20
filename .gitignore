@@ -601,3 +601,7 @@ rapports/
 slides/*/export-current.pdf
 slides/*/_fallback*.pdf
 
+# Slides - title diffs (regenerable via audit tooling)
+slides/*/analysis/titles-pptx.txt
+slides/*/analysis/titles-slidev.txt
+
