@@ -590,3 +590,18 @@ MyIA.AI.Notebooks/QuantConnect/ESGF-Workspace/
 rapports/
 *.png.bak
 
+# Visual audit artifacts at repo root (Playwright + sk-agent screenshots)
+# regenerable via the audit tooling under slides/_tools
+/deck[0-9][0-9]-*.png
+/review-d[0-9][0-9]-*.png
+/.playwright-mcp/
+/calib/
+
+# Slidev one-shot PDF exports (regenerable via `npx slidev export`)
+slides/*/export-current.pdf
+slides/*/_fallback*.pdf
+
+# Slides - title diffs (regenerable via audit tooling)
+slides/*/analysis/titles-pptx.txt
+slides/*/analysis/titles-slidev.txt
+
