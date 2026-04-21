@@ -1,3 +1,4 @@
+# [ARCHIVED - Sharpe ceiling ~0.13, cf ARCHIVE.md]
 # region imports
 from AlgorithmImports import *
 # endregion
