@@ -1169,18 +1169,21 @@ class NotebookExecutor:
         kernel_name = kernel_name or self.detect_kernel(notebook_path)
         timeout = timeout or self.timeout
 
-        nb_path = Path(notebook_path)
+        nb_path = Path(notebook_path).resolve()
         if output_path is None:
             output_path = str(nb_path.parent / f"{nb_path.stem}_output{nb_path.suffix}")
+        abs_output = str(Path(output_path).resolve())
+        abs_cwd = str(nb_path.parent)
 
         # WSL-based kernels need longer startup time
         start_timeout = 120 if 'wsl' in kernel_name or kernel_name == 'smartcontracts' else 60
 
         cmd = [
             sys.executable, '-m', 'papermill',
-            str(notebook_path),
-            str(output_path),
+            str(nb_path),
+            abs_output,
             '--kernel', kernel_name,
+            '--cwd', abs_cwd,
             '--start-timeout', str(start_timeout),
         ]
 
@@ -1205,15 +1208,39 @@ class NotebookExecutor:
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                cwd=str(nb_path.parent)
             )
 
             result.duration = time.time() - start_time
 
             if proc_result.returncode == 0:
-                result.success = True
-                if self.verbose:
-                    print(f"Success in {result.duration:.1f}s")
+                # Papermill returns 0 even on cell errors — check output
+                cell_errors = []
+                try:
+                    import json as _json
+                    with open(abs_output, encoding="utf-8") as _f:
+                        _nb = _json.load(_f)
+                    for _i, _c in enumerate(_nb.get("cells", [])):
+                        for _o in _c.get("outputs", []):
+                            if _o.get("output_type") == "error":
+                                cell_errors.append(
+                                    f"Cell {_i}: {_o.get('ename')}: {_o.get('evalue', '')[:100]}"
+                                )
+                except Exception:
+                    pass
+
+                if cell_errors:
+                    result.errors.extend(cell_errors)
+                    if self.verbose:
+                        print(f"Cell errors: {'; '.join(cell_errors[:3])}")
+                else:
+                    result.success = True
+                    if self.verbose:
+                        print(f"Success in {result.duration:.1f}s")
+
+                # Copy output back to source notebook
+                if Path(abs_output).exists() and abs_output != str(nb_path):
+                    import shutil
+                    shutil.copy2(abs_output, str(nb_path))
             else:
                 result.errors.append(proc_result.stderr[-500:] if proc_result.stderr else "Unknown error")
                 if self.verbose:
