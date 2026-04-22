@@ -1089,12 +1089,19 @@ class NotebookExecutor:
         if output_path is None:
             output_path = self.path.parent / f"{self.path.stem}_output.ipynb"
 
+        # Resolve to absolute paths before passing to papermill.
+        # Papermill changes cwd via --cwd, so relative input/output paths
+        # would break after the directory change.
+        abs_input = self.path.resolve()
+        abs_output = output_path.resolve()
+        abs_cwd = self.path.parent.resolve()
+
         # WSL-based kernels need longer startup
         start_timeout = 120 if 'wsl' in kernel or kernel == 'smartcontracts' else 60
         cmd = [
             sys.executable, "-m", "papermill",
-            str(self.path), str(output_path),
-            "--kernel", kernel, "--cwd", str(self.path.parent),
+            str(abs_input), str(abs_output),
+            "--kernel", kernel, "--cwd", str(abs_cwd),
             "--start-timeout", str(start_timeout),
         ]
         if batch_mode:
@@ -1103,10 +1110,39 @@ class NotebookExecutor:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             execution_time = time.time() - start_time
-            if result.returncode == 0:
+
+            # Papermill returns 0 even when cells fail — check output notebook
+            cell_errors = []
+            if abs_output.exists():
+                try:
+                    import json as _json
+                    with open(abs_output, encoding="utf-8") as _f:
+                        _nb = _json.load(_f)
+                    for _i, _c in enumerate(_nb.get("cells", [])):
+                        for _o in _c.get("outputs", []):
+                            if _o.get("output_type") == "error":
+                                cell_errors.append(f"Cell {_i}: {_o.get('ename')}: {_o.get('evalue', '')[:100]}")
+                except Exception:
+                    pass
+
+            if result.returncode == 0 and not cell_errors:
+                # Copy executed output back to source notebook
+                if abs_output.exists() and abs_output != abs_input:
+                    import shutil
+                    shutil.copy2(str(abs_output), str(abs_input))
                 return NotebookExecutionResult(
                     path=str(self.path), success=True, kernel=kernel,
                     execution_time=execution_time, message=f"SUCCESS (kernel={kernel})"
+                )
+            elif result.returncode == 0 and cell_errors:
+                # Still copy so user can see which cells failed
+                if abs_output.exists() and abs_output != abs_input:
+                    import shutil
+                    shutil.copy2(str(abs_output), str(abs_input))
+                return NotebookExecutionResult(
+                    path=str(self.path), success=False, kernel=kernel,
+                    execution_time=execution_time,
+                    message=f"CELL ERRORS: {'; '.join(cell_errors[:5])}"
                 )
             else:
                 return NotebookExecutionResult(
