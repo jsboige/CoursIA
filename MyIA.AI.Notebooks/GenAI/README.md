@@ -262,10 +262,7 @@ jupyter lab
 2. **Configuration** : Créez un fichier `.env` dans `MyIA.AI.Notebooks/GenAI/`
 3. **Utilisation** : Les notebooks chargent automatiquement les credentials
 
-📖 **Documentation complète** :
-- **Guide Étudiants** : [`README-ETUDIANTS-AUTH.md`](README-ETUDIANTS-AUTH.md) - Configuration pas-à-pas
-- **Documentation Technique** : [`README-AUTH.md`](README-AUTH.md) - Architecture d'authentification
-- **Scripts Admin** : [`scripts/genai-auth/`](../../scripts/genai-auth/) - Gestion des tokens
+📖 **Documentation complète** : voir `00-GenAI-Environment/` pour la configuration pas-à-pas.
 
 ### ⚠️ **Important**
 - ✅ Tous les notebooks supportent l'authentification (graceful degradation si désactivée)
@@ -450,10 +447,7 @@ print(result.stdout.split('\n')[0])  # Affiche la version
 - `shared/` - Utilitaires Python partagés
 
 ### 📖 **Documentation**
-- [Architecture Complète](../../docs/genai-image-architecture.md)
-- [Templates Phase 2](../../docs/genai-phase2-templates.md)  
-- [Standards Développement](../../docs/genai-images-development-standards.md)
-- [Guide Déploiement](../../docs/genai-deployment-production-ready.md)
+- [Mission Images GenAI](../../docs/genai-images-mission-complete.md)
 
 ### 🔗 **Intégrations**
 - **MCP Jupyter** : Exécution notebooks automatisée
