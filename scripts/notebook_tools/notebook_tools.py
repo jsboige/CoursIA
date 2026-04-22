@@ -43,6 +43,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+# Register Papermill translators for non-Python kernels so parameter
+# translation doesn't crash even when we skip injection for lean4.
+try:
+    from papermill.translators import PapermillTranslators, PythonTranslator
+    _pm_translators = PapermillTranslators()
+    for _k in ('lean4', 'lean4-wsl', 'lean'):
+        if _k not in _pm_translators._translators:
+            _pm_translators.register(_k, PythonTranslator)
+except ImportError:
+    pass
+
 # Import base classes from notebook_helpers
 try:
     from notebook_helpers import (
@@ -1098,6 +1109,34 @@ class NotebookExecutor:
 
         # WSL-based kernels need longer startup
         start_timeout = 120 if 'wsl' in kernel or kernel == 'smartcontracts' else 60
+
+        # lean4 kernels need in-process Papermill (subprocess can't register translators)
+        is_lean_kernel = 'lean' in kernel.lower()
+        if is_lean_kernel:
+            try:
+                import papermill as pm
+                from papermill.translators import PapermillTranslators, PythonTranslator
+                _t = PapermillTranslators()
+                for _k in ('lean4', 'lean4-wsl', 'lean'):
+                    _t.register(_k, PythonTranslator)
+                pm.execute_notebook(
+                    str(self.path), str(output_path),
+                    kernel_name=kernel,
+                    start_timeout=start_timeout,
+                    cwd=str(self.path.parent)
+                )
+                execution_time = time.time() - start_time
+                return NotebookExecutionResult(
+                    path=str(self.path), success=True, kernel=kernel,
+                    execution_time=execution_time, message=f"SUCCESS (kernel={kernel}, in-process)"
+                )
+            except Exception as e:
+                execution_time = time.time() - start_time
+                return NotebookExecutionResult(
+                    path=str(self.path), success=False, kernel=kernel,
+                    execution_time=execution_time, message=f"FAILED: {e}"
+                )
+
         cmd = [
             sys.executable, "-m", "papermill",
             str(abs_input), str(abs_output),
