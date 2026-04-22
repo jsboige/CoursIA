@@ -47,7 +47,3 @@ _:8 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02
 <http://example.org/company.owl#Alice> <http://example.org/company.owl#works_in> <http://example.org/company.owl#HR> .
 <http://example.org/company.owl#Charlie> <http://example.org/company.owl#manages> <http://example.org/company.owl#IT> .
 <http://example.org/company.owl#Charlie> <http://example.org/company.owl#works_in> <http://example.org/company.owl#IT> .
-<http://example.org/company.owl#Bob> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/company.owl#Employee> .
-<http://example.org/company.owl#Charlie> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/company.owl#Manager> .
-<http://example.org/company.owl#Charlie> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/company.owl#Employee> .
-<http://example.org/company.owl#Alice> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/company.owl#Employee> .
