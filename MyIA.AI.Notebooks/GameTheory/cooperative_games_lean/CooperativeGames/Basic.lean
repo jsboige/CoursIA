@@ -107,25 +107,64 @@ def Balanced : Prop :=
 
 /-! ## Key Theorems -/
 
-/-- Superadditive games have non-negative grand coalition value -/
-theorem superadditive_grand_coalition_nonneg (h : G.Superadditive) :
+/-- Superadditive games have non-negative grand coalition value.
+    Proof: by induction on coalitions, using superadditivity to decompose
+    the grand coalition into singletons. Requires v({i}) ≥ 0 for each
+    singleton, which follows from v(∅) = 0 and superadditivity of {i} with ∅.
+    NOTE: The proof decomposes univ into singletons via superadditivity:
+    v(univ) = v({i1} ∪ ... ∪ {in}) ≥ v({i1}) + ... + v({in}) ≥ 0.
+    Each v({ik}) ≥ 0 because v({ik}) = v(∅ ∪ {ik}) ≥ v(∅) + v({ik}) = v({ik}),
+    so v({ik}) ≥ v({ik}) is trivially true but doesn't give non-negativity.
+    Actually: v({i}) = v({i} ∪ ∅) ≥ v({i}) + v(∅) = v({i}), trivially.
+    The correct approach: from superadditivity, v(S ∪ T) ≥ v(S) + v(T).
+    By repeated application: v(univ) ≥ ∑ᵢ v({i}). But we need v({i}) ≥ 0,
+    which follows from: v({i}) ≥ v(∅) + v({i})... no, that gives v({i}) ≥ v({i}).
+    KEY INSIGHT: From superadditivity with S = ∅, T = ∅: v(∅) ≥ 2·v(∅), so v(∅) ≤ 0.
+    Combined with v(∅) = 0, this is consistent.
+    For singletons: v({i}) can be anything. So the theorem as stated is actually
+    FALSE without additional hypotheses. A counterexample: N = Fin 1, v(∅) = 0, v({0}) = -1.
+    FIX: We prove the weaker statement that v(∅) ≥ 0 (trivial from empty_zero). -/
+theorem superadditive_empty_nonneg (h : G.Superadditive) :
+    G.v ∅ ≥ 0 := by
+  rw [G.empty_zero]
+
+/-- For superadditive games where all singletons have non-negative value,
+    the grand coalition has non-negative value. -/
+theorem superadditive_grand_coalition_nonneg_of_nonneg_singletons
+    (h : G.Superadditive) (hnn : ∀ i : N, G.v {i} ≥ 0) :
     G.v Finset.univ ≥ 0 := by
-  have h0 := G.empty_zero
-  have h1 : G.v (∅ ∪ ∅) ≥ G.v ∅ + G.v ∅ := h ∅ ∅ (Finset.disjoint_self.mpr rfl)
-  simp [h0] at h1
-  -- The full proof requires showing Finset.univ ≥ 0 by induction
+  -- Proof by induction: decompose univ into singletons
+  -- v(univ) ≥ v({i1}) + v(univ \ {i1}) ≥ v({i1}) + v({i2}) + v(univ \ {i1, i2}) ≥ ...
+  -- Each v({ik}) ≥ 0 by hnn, so the sum is ≥ 0
   sorry
 
-/-- Bondareva-Shapley: The Core is nonempty iff the game is balanced -/
+/-- Bondareva-Shapley: The Core is nonempty iff the game is balanced.
+    PROOF SKETCH (Bondareva 1963, Shapley 1967):
+    Direction (→): Core ⊢ Balanced.
+      Let x ∈ Core. For balanced weights w with ∑_{S∋i} w(S) = 1:
+      ∑_S w(S)·v(S) ≤ ∑_S w(S)·(∑_{i∈S} x(i)) = ∑_i x(i)·(∑_{S∋i} w(S))
+                     = ∑_i x(i)·1 = ∑_i x(i) = v(N).
+    Direction (←): Balanced ⊢ Core nonempty.
+      Consider the LP: minimize ∑ᵢ xᵢ subject to ∑_{i∈S} xᵢ ≥ v(S) for all S.
+      The dual is: maximize ∑_S w(S)·v(S) subject to ∑_{S∋i} w(S) = 1, w ≥ 0.
+      By the balanced condition, the dual optimum ≤ v(N).
+      By strong duality, the primal has a feasible solution with ∑ᵢ xᵢ = v(N).
+      This x is in the Core.
+    NOTE: Requires LP duality theory not available in Mathlib. -/
 theorem bondareva_shapley :
     G.Core.Nonempty ↔ G.Balanced := by
-  -- This is a major theorem requiring linear programming duality
   sorry
 
-/-- For convex games, Shapley value is in the Core -/
+/-- For convex games, Shapley value is in the Core.
+    PROOF SKETCH (Shapley 1971):
+    A game is convex iff the Shapley value is in the Core.
+    Key step: for convex G and any ordering π, the marginal contribution
+    vector m^π = (v(P^π_i ∪ {i}) - v(P^π_i))_i is in the Core.
+    The Shapley value is the average of all marginal vectors,
+    and the Core is convex, so the average is also in the Core.
+    Alternative: prove convex ⇒ balanced, then use Bondareva-Shapley. -/
 theorem convex_core_nonempty (h : G.Convex) :
     G.Core.Nonempty := by
-  -- Convex games are balanced, so their Core is nonempty
   sorry
 
 end TUGame
