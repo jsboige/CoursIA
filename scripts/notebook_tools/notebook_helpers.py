@@ -1187,8 +1187,9 @@ class NotebookExecutor:
             '--start-timeout', str(start_timeout),
         ]
 
-        # Add parameters
-        if parameters:
+        # Add parameters (lean4 kernels don't support Python parameter injection)
+        is_lean_kernel = 'lean' in kernel_name.lower()
+        if parameters and not is_lean_kernel:
             for key, value in parameters.items():
                 cmd.extend(['-p', str(key), str(value)])
 
@@ -1198,6 +1199,36 @@ class NotebookExecutor:
             output_path=output_path,
             kernel=kernel_name
         )
+
+        # lean4 kernels need in-process Papermill with registered translator
+        if is_lean_kernel:
+            try:
+                import papermill as pm
+                from papermill.translators import PapermillTranslators, PythonTranslator
+                _t = PapermillTranslators()
+                for _k in ('lean4', 'lean4-wsl', 'lean'):
+                    _t.register(_k, PythonTranslator)
+
+                if self.verbose:
+                    print(f"Executing with Papermill in-process (kernel={kernel_name})...")
+
+                pm.execute_notebook(
+                    str(notebook_path),
+                    str(output_path),
+                    kernel_name=kernel_name,
+                    start_timeout=start_timeout,
+                    cwd=str(nb_path.parent)
+                )
+                result.success = True
+                result.duration = time.time() - start_time
+                if self.verbose:
+                    print(f"Success in {result.duration:.1f}s")
+            except Exception as e:
+                result.duration = time.time() - start_time
+                result.errors.append(str(e))
+                if self.verbose:
+                    print(f"Failed: {str(e)[:200]}")
+            return result
 
         try:
             if self.verbose:
