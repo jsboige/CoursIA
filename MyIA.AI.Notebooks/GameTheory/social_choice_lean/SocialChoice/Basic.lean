@@ -16,7 +16,7 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Logic.Relation
 import Mathlib.Tactic
 
-variable {σ : Type*} {ι : Type*}
+variable {σ : Type*} {ι : Type*} [DecidableEq σ]
 
 /-! ## Finset Utility Lemmas -/
 
@@ -24,12 +24,12 @@ lemma exists_distinct_mem_of_ne_singleton {s : Finset σ} {a : σ}
     (hs₁ : s.Nonempty) (hs₂ : s ≠ {a}) : ∃ b ∈ s, b ≠ a := by
   by_contra h
   push_neg at h
-  have : s ⊆ {a} := fun x hx => Finset.mem_singleton.mpr (h x hx)
-  have : s = {a} := by
-    apply Finset.Subset.antisymm this
-    obtain ⟨x, hx⟩ := hs₁
-    simp only [Finset.singleton_subset_iff]
-    rwa [h x hx]
+  have hsub : s ⊆ {a} := fun x hx => Finset.mem_singleton.mpr (h x hx)
+  have : s = {a} := Finset.Subset.antisymm hsub (by
+    obtain ⟨a', ha'⟩ := hs₁
+    rw [Finset.singleton_subset_iff]
+    rw [← h a' ha']
+    exact ha')
   exact hs₂ this
 
 lemma exists_second_distinct_mem {s : Finset σ} {a : σ}
@@ -76,15 +76,15 @@ lemma I_trans {R : σ → σ → Prop} {x y z : σ}
 
 lemma P_trans_I {R : σ → σ → Prop} {x y z : σ}
     (htrans : Transitive R) (h1 : P R x y) (h2 : I R y z) : P R x z :=
-  ⟨htrans h1.1 h2.1, fun h => h1.2 (htrans h2.2 h)⟩
+  ⟨htrans h1.1 h2.1, fun h => h1.2 (htrans h2.1 h)⟩
 
 lemma I_trans_P {R : σ → σ → Prop} {x y z : σ}
     (htrans : Transitive R) (h1 : I R y z) (h2 : P R x y) : P R x z :=
-  ⟨htrans h2.1 h1.1, fun h => h2.2 (htrans h h1.2)⟩
+  ⟨htrans h2.1 h1.1, fun h => h2.2 (htrans h1.1 h)⟩
 
 lemma P_trans {R : σ → σ → Prop} {x y z : σ}
     (htrans : Transitive R) (h1 : P R x y) (h2 : P R y z) : P R x z :=
-  ⟨htrans h1.1 h2.1, fun h => h1.2 (htrans h2.2 h)⟩
+  ⟨htrans h1.1 h2.1, fun h => h1.2 (htrans h2.1 h)⟩
 
 lemma R_of_nP_total {R : σ → σ → Prop} {x y : σ}
     (htot : Total R) (h : ¬P R y x) : R x y := by
@@ -113,10 +113,12 @@ def is_best_element (x : σ) (S : Finset σ) (R : σ → σ → Prop) : Prop :=
 
 /-- The maximal set: all maximal elements of S -/
 noncomputable def maximal_set (S : Finset σ) (R : σ → σ → Prop) : Finset σ :=
+  haveI : DecidablePred (fun x => is_maximal_element x S R) := Classical.decPred _
   S.filter (fun x => is_maximal_element x S R)
 
 /-- The choice set: all best elements of S -/
 noncomputable def choice_set (S : Finset σ) (R : σ → σ → Prop) : Finset σ :=
+  haveI : DecidablePred (fun x => is_best_element x S R) := Classical.decPred _
   S.filter (fun x => is_best_element x S R)
 
 /-! ## Quasi-Order Structure -/
@@ -173,20 +175,11 @@ theorem choice_subset_maximal (S : Finset σ) (R : σ → σ → Prop) :
   simp only [choice_set, maximal_set, Finset.mem_filter] at hx ⊢
   exact ⟨hx.1, best_is_maximal hx.2⟩
 
-/-- For quasi-orders, choice and maximal sets coincide -/
+/-- For total quasi-orders (i.e. preference orders), choice and maximal sets coincide -/
 theorem choice_eq_maximal_of_quasi {S : Finset σ} {Q : QuasiOrder σ}
-    (hS : S.Nonempty) : choice_set S Q.rel = maximal_set S Q.rel := by
+    (hS : S.Nonempty) (htot : Total Q.rel) :
+    choice_set S Q.rel = maximal_set S Q.rel := by
   apply Finset.Subset.antisymm (choice_subset_maximal S Q.rel)
   intro x hx
   simp only [maximal_set, choice_set, Finset.mem_filter] at hx ⊢
-  constructor
-  · exact hx.1
-  · intro y hy
-    by_contra hny
-    have : P Q.rel y x := ⟨by
-      cases Q.total y x with
-      | inl h => exact h
-      | inr h => exact absurd h hny, hny⟩
-    exact hx.2 y hy this
-
-end
+  exact ⟨hx.1, fun y hy => R_of_nP_total htot (hx.2 y hy)⟩
