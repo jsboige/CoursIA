@@ -277,7 +277,7 @@ claude mcp add --transport stdio db -- \
     ]
   },
   "env": {
-    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
     "ANTHROPIC_API_KEY": ""
   }
@@ -289,7 +289,7 @@ claude mcp add --transport stdio db -- \
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
     "ANTHROPIC_API_KEY": ""
   },
@@ -445,12 +445,12 @@ A configurer dans `settings.json` :
 
 ```bash
 # Windows (PowerShell)
-$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
+$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:8899/api"
 $env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE"
 $env:ANTHROPIC_API_KEY = ""
 
 # Linux/macOS (bash/zsh)
-export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
+export ANTHROPIC_BASE_URL="http://127.0.0.1:8899/api"
 export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"
 export ANTHROPIC_API_KEY=""
 ```
@@ -520,7 +520,7 @@ export IS_DEMO=1
 - [Introduction Claude Code](./INTRO-CLAUDE-CODE.md) - Vue d'ensemble et concepts de base
 - [Installation](./INSTALLATION-CLAUDE-CODE.md) - Guide d'installation avec OpenRouter
 - [Concepts Avances](./CONCEPTS-AVANCES.md) - Skills, Subagents, Hooks, MCP en detail
-- [Comparaison Claude/Roo](./COMPARAISON-CLAUDE-ROO.md) - Choisir son outil
+- [Comparaison Claude/Roo](../../docs/COMPARAISON-CLAUDE-ROO.md) - Choisir son outil
 
 ---
 

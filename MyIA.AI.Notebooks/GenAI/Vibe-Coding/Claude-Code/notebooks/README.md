@@ -141,7 +141,7 @@ Le repertoire `examples/` contient des fichiers pour les exercices des notebooks
    echo $ANTHROPIC_BASE_URL
    echo $ANTHROPIC_AUTH_TOKEN
    ```
-2. Consultez [INSTALLATION-CLAUDE-CODE.md](../../docs/claude-code/INSTALLATION-CLAUDE-CODE.md)
+2. Consultez [INSTALLATION-CLAUDE-CODE.md](../docs/INSTALLATION-CLAUDE-CODE.md)
 
 ### Timeout lors de l'execution
 
@@ -153,9 +153,9 @@ stdout, stderr, code = run_claude("Question complexe", timeout=120)
 
 ## Ressources
 
-- [Guide Installation](../../docs/claude-code/INSTALLATION-CLAUDE-CODE.md)
-- [Modeles Alternatifs OpenRouter](../../docs/claude-code/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter)
-- [Cheat Sheet](../../docs/claude-code/CHEAT-SHEET.md)
+- [Guide Installation](../docs/INSTALLATION-CLAUDE-CODE.md)
+- [Modeles Alternatifs OpenRouter](../docs/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter)
+- [Cheat Sheet](../docs/CHEAT-SHEET.md)
 - [Documentation Officielle Claude Code](https://docs.claude.com/code)
 
 ---

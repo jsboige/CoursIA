@@ -95,6 +95,45 @@ Cliquez sur ce lien : [Installer Claude Code pour VS Code](vscode:extension/anth
 
 ## Configuration avec OpenRouter
 
+### Etape 0 : Installer le proxy OpenRouter (Requis)
+
+Les requetes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilise par Claude Code (bug connu : reponses mal formatees, erreurs d'authentification intermittentes). Le proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) traduit les requetes correctement.
+
+**Installation :**
+
+```bash
+npm install -g openrouter-proxy
+```
+
+**Lancement :**
+
+```bash
+# Lance le proxy sur le port 8899 par defaut
+openrouter-proxy
+```
+
+Le proxy doit tourner en arriere-plan tant que vous utilisez Claude Code. Verifiez qu'il fonctionne :
+
+```bash
+curl http://127.0.0.1:8899/api/v1/models
+```
+
+Une reponse JSON avec la liste des modeles confirme que le proxy est actif.
+
+**Lancement automatique (optionnel) :**
+
+Windows - Ajoutez a votre profil PowerShell (`notepad $PROFILE`) :
+
+```powershell
+Start-Process -WindowStyle Hidden -FilePath "openrouter-proxy"
+```
+
+macOS / Linux - Ajoutez a `~/.zshrc` ou `~/.bashrc` :
+
+```bash
+(openrouter-proxy &>/dev/null &)
+```
+
 ### Etape 1 : Obtenir la Cle API OpenRouter
 
 **La cle API vous sera fournie par le formateur.** Conservez-la precieusement.
@@ -122,7 +161,7 @@ Contenu :
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
     "ANTHROPIC_API_KEY": "",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus",
@@ -146,7 +185,7 @@ Creez `.claude/settings.json` a la racine du projet :
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
     "ANTHROPIC_API_KEY": ""
   }
@@ -177,7 +216,7 @@ Si vous preferez utiliser les variables d'environnement, cette methode fonctionn
 **Configuration temporaire (session actuelle) :**
 
 ```powershell
-$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
+$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:8899/api"
 $env:ANTHROPIC_AUTH_TOKEN = "VOTRE_CLE_OPENROUTER"
 $env:ANTHROPIC_API_KEY = ""
 ```
@@ -198,7 +237,7 @@ Ajoutez les lignes suivantes :
 # ============================================
 
 # Configuration de base OpenRouter
-$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
+$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:8899/api"
 $env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE_OPENROUTER"
 $env:ANTHROPIC_API_KEY = ""
 
@@ -251,7 +290,7 @@ Ajoutez les lignes suivantes a la fin du fichier :
 # ============================================
 
 # Configuration de base OpenRouter
-export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
+export ANTHROPIC_BASE_URL="http://127.0.0.1:8899/api"
 export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE_OPENROUTER"
 export ANTHROPIC_API_KEY=""
 
@@ -284,7 +323,7 @@ Vous devriez voir :
 ```text
 Connected to OpenRouter
 Model: minimax/minimax-m2.7 (sonnet alias)
-Base URL: https://openrouter.ai/api
+Base URL: http://127.0.0.1:8899/api
 ```
 
 #### Via VS Code Extension
@@ -697,7 +736,7 @@ Claude generera automatiquement un fichier `CLAUDE.md` adapte a votre projet.
 Verifiez que les variables d'environnement sont bien definies :
 
 ```bash
-echo $ANTHROPIC_BASE_URL       # Doit afficher https://openrouter.ai/api
+echo $ANTHROPIC_BASE_URL       # Doit afficher http://127.0.0.1:8899/api
 echo $ANTHROPIC_AUTH_TOKEN     # Doit afficher votre cle sk-or-v1-...
 echo $ANTHROPIC_API_KEY        # Doit afficher une ligne vide
 ```
