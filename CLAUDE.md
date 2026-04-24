@@ -125,6 +125,52 @@ Si un seul de ces 5 points n'est pas vérifié personnellement : **ne pas merger
 
 ---
 
+## 🚨 RÈGLE CRITIQUE - Anti-régression : ne jamais effacer du travail existant sous prétexte de "fix" (2026-04-24)
+
+**INCIDENT 2026-04-24** : Un commit prétendument "Mathlib compilation fixes" (`47975400`, merge PR #524) a remplacé **9 preuves structurelles fonctionnelles** d'Arrow.lean (`refl`/`total`/`trans` pour `maketop`/`makebot`/`makeabove`) par des `sorry`, et supprimé 3 proof sketches Geanakoplos 2005. -163 lignes nettes sur un port Lean qui avait coûté **une semaine de travail** en janvier 2026 (commit `1ce6a047`, port de [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice)).
+
+**Diagnostic user** : "Ou est-ce que c'est passé ? Encore remplacé par de l'AI slop ?" L'agent a confondu "faire passer la compilation" avec "supprimer ce qui ne compile pas". Pattern récurrent identifié : remplacer une preuve/implémentation par `sorry` / `pass` / `NotImplementedError` pour obtenir un état "qui compile" au lieu de **diagnostiquer pourquoi ça ne compilait plus**.
+
+### ❌ INTERDIT : les régressions disguisées
+
+- **Remplacer une preuve/implémentation fonctionnelle existante par `sorry`/`pass`/`NotImplementedError`/`return None`/stub vide** sans preuve explicite que la version précédente était cassée **et** que le fix tactique est hors de portée
+- Commits "compilation fix" / "test fix" / "lint fix" / "Mathlib fix" / "typing fix" avec **deletions > insertions** sur du code métier — red flag systématique, investiguer avant tout autre geste
+- Supprimer des commentaires pédagogiques (proof sketches, docstrings, notes d'implémentation) "pour simplifier" sans accord explicite
+- Justifier la suppression par "le code ne compilait pas / ne passait pas les tests" sans citer l'erreur précise rencontrée
+- Traiter les fichiers de vérification formelle (Lean, Coq, Agda, Z3) comme du code ordinaire : y introduire un `sorry` = **injection d'axiome** = perte de confiance totale dans le théorème
+- Prétendre qu'un `rename` massif rend nécessaire de re-prouver tout : un rename (`P → prof`) se fait tactiquement sans toucher aux preuves
+
+### ✅ OBLIGATOIRE : protocole de préservation
+
+Avant tout commit qui supprime des lignes de code/preuve non-triviales :
+
+1. **Diagnostic explicite** : citer l'erreur précise que la version précédente produisait (erreur compilateur exact, test échoué nommé, output comparaison). "Ça ne compilait pas" n'est **pas** un diagnostic.
+2. **Minimiser la suppression** : essayer d'adapter (tactique alternative, hypothèse ajoutée, rename localisé) avant de supprimer. `split_ifs <;>` cassé ? Essayer `split_ifs with h1 h2; · ...; · ...`. `Typeclass not found` ? Ajouter l'instance au lieu de supprimer la preuve.
+3. **Prouver l'équivalence** : si on remplace une preuve A par une preuve B, la signature doit être identique. Si on supprime une fonction, prouver qu'elle n'est plus appelée.
+4. **PR dédiée** : tout commit qui introduit `sorry`/`pass`/`NotImplementedError` **à la place de code existant** doit être dans une PR **explicitement labellisée `debt`/`regression-accepted`** avec sign-off utilisateur. Jamais dans une PR "fix" anodine.
+5. **Diff check avant push** : relire `git diff` ligne par ligne sur chaque suppression et justifier. `git diff --stat` doit être cohérent avec l'intention.
+
+### ✅ OBLIGATOIRE : review spécifique anti-régression
+
+Lors de la review d'une PR prétendant "fix compilation" / "simplification" :
+
+- **Comparer avec l'historique** : `git log --all -- <file>` pour voir les versions antérieures. Si le commit initial contient plus de code que la PR, poser la question.
+- **Checker les patterns red-flag** : `sorry`, `pass  # TODO`, `raise NotImplementedError`, `return None  # placeholder`, cellules `# Solution` remplacées par stubs
+- **Fichiers Lean/Coq** : `grep -c sorry <file>` avant/après. Toute augmentation = PR à contester sauf justification explicite
+- **Ne jamais auto-merger un commit "fix compilation"** avec deletions > insertions sur fichier Lean/formel/cœur métier
+
+### ✅ OBLIGATOIRE : mémoire du patrimoine
+
+- Le dépôt contient du travail accumulé sur des mois (port Lean social_choice = 1 semaine, notebooks enseignement = itérations multiples avec étudiants). **Tout contenu non-trivial mérite d'être traité comme patrimoine** avant d'être "simplifié".
+- Quand un commentaire dit "Port of X" ou "Original: <url>", c'est un signal qu'il y a un travail à préserver. Lire la source avant de toucher.
+- Quand un commit ancien ajoute du contenu avec `git log --grep` cherchant des mots-clés du sujet, comprendre son intention avant de supprimer.
+
+**Voir `.claude/rules/anti-regression.md` pour les critères de détection détaillés (patterns red-flag, workflow de review, audit rogue commits).**
+
+**VIOLATION = perte silencieuse de travail antérieur. Le patrimoine pédagogique du cours se dissout en faux "fix".**
+
+---
+
 ## Regles Agents (Roo Code / machines distantes)
 
 Les agents Roo sur les machines po-2023, po-2024, po-2025, po-2026 travaillent sur ce depot via RooSync. Ces regles sont **OBLIGATOIRES** pour tout agent.
