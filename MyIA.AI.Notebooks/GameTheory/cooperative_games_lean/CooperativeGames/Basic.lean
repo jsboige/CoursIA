@@ -15,7 +15,7 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Real.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic
 
 /-! ## Basic Types -/
@@ -60,16 +60,13 @@ def marginalContribution (i : N) (S : Finset N) : ℝ :=
 
 /-! ## Classic Examples -/
 
-/-- The unanimity game for coalition T:
+/-- The unanimity game for coalition T (non-empty):
     v(S) = 1 if T ⊆ S, else 0 -/
-def unanimityGame (T : Finset N) : TUGame N where
+def unanimityGame (T : Finset N) (hT : T.Nonempty) : TUGame N where
   v := fun S => if T ⊆ S then 1 else 0
   empty_zero := by
-    simp only
-    by_cases hT : T = ∅
-    · simp [hT]
-    · have : ¬(T ⊆ ∅) := fun h => hT (Finset.subset_empty.mp h)
-      simp [this]
+    simp only [Finset.subset_empty]
+    simp [hT.ne_empty]
 
 /-- The majority game: v(S) = 1 if |S| > n/2, else 0 -/
 def majorityGame : TUGame N where
@@ -124,7 +121,7 @@ def Balanced : Prop :=
     For singletons: v({i}) can be anything. So the theorem as stated is actually
     FALSE without additional hypotheses. A counterexample: N = Fin 1, v(∅) = 0, v({0}) = -1.
     FIX: We prove the weaker statement that v(∅) ≥ 0 (trivial from empty_zero). -/
-theorem superadditive_empty_nonneg (h : G.Superadditive) :
+theorem superadditive_empty_nonneg (_h : G.Superadditive) :
     G.v ∅ ≥ 0 := by
   rw [G.empty_zero]
 

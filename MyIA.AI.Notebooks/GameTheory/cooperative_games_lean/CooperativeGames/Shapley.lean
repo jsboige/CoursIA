@@ -111,8 +111,8 @@ theorem shapley_null_player (G : TUGame N) (i : N)
       So each gets 1/|T|.
       Direct argument: marginalContribution i S = 1 iff T\{i} ⊆ S and i ∉ S.
       Count such S of size s: C(n-|T|-1+1, s-|T|+1) ... leads to 1/|T|. -/
-theorem shapley_unanimity (T : Finset N) (i : N) :
-    shapleyValue (TUGame.unanimityGame T) i =
+theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
+    shapleyValue (TUGame.unanimityGame T hT) i =
     if i ∈ T then (1 : ℝ) / T.card else 0 := by
   sorry
 
@@ -198,17 +198,19 @@ theorem shapley_uniqueness (φ : Solution N)
 
 /-! ## Voting Games -/
 
-/-- A weighted voting game [q; w₁, ..., wₙ] -/
-def WeightedVotingGame (weights : N → ℝ) (quota : ℝ) : TUGame N where
+/-- A weighted voting game [q; w₁, ..., wₙ] with positive quota -/
+noncomputable def WeightedVotingGame (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota) : TUGame N where
   v := fun S => if ∑ i ∈ S, weights i ≥ quota then 1 else 0
-  empty_zero := by simp
+  empty_zero := by simp [hquota]
 
 /-- Player i is critical in coalition S if removing them causes S to lose -/
 def Critical (G : TUGame N) (i : N) (S : Finset N) : Prop :=
   i ∈ S ∧ G.v S = 1 ∧ G.v (S.erase i) = 0
 
-/-- Raw Banzhaf index: number of coalitions where i is critical -/
-def BanzhafRaw (G : TUGame N) (i : N) : ℕ :=
+/-- Raw Banzhaf index: number of coalitions where i is critical.
+    Uses Classical.decPred since Critical involves noncomputable real comparisons. -/
+noncomputable def BanzhafRaw (G : TUGame N) (i : N) : ℕ :=
+  haveI : DecidablePred (fun S => Critical G i S) := Classical.decPred _
   (Finset.univ.filter fun S => Critical G i S).card
 
 /-- Player with veto power -/
