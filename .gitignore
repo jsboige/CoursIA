@@ -385,6 +385,9 @@ docker-configurations/services/comfyui-qwen/.secrets/
 # VSCode settings
 .vscode/settings.json
 
+# .NET notebook config (contains API keys)
+MyIA.AI.Notebooks/Config/settings.json
+
 # VSCode specific
 .vscode/
 
