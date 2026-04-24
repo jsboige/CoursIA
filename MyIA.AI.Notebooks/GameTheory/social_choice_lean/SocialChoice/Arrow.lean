@@ -75,9 +75,21 @@ noncomputable def maketop (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset �
     (hb : b ∈ X) : Profile ι σ :=
   fun j => if j = i then
     { rel := fun x y => if x = b then True else if y = b then False else (prof i).rel x y
-      refl := sorry
-      total := sorry
-      trans := sorry }
+      refl := fun x => by simp; split_ifs <;> [trivial; exact (prof i).refl x]
+      total := fun x y => by
+        simp only
+        split_ifs with hx hy hy hx hy
+        · left; trivial
+        · left; trivial
+        · right; trivial
+        · left; trivial
+        · exact (prof i).total x y
+      trans := fun x y z hxy hyz => by
+        simp only at hxy hyz ⊢
+        split_ifs at hxy hyz ⊢ with hx hy hz
+        all_goals try trivial
+        all_goals try exact (prof i).trans hxy hyz
+        all_goals try contradiction }
   else prof j
 
 /-- Make b the bottom-ranked alternative for individual i -/
@@ -85,9 +97,21 @@ noncomputable def makebot (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset �
     (hb : b ∈ X) : Profile ι σ :=
   fun j => if j = i then
     { rel := fun x y => if y = b then True else if x = b then False else (prof i).rel x y
-      refl := sorry
-      total := sorry
-      trans := sorry }
+      refl := fun x => by simp; split_ifs <;> [trivial; exact (prof i).refl x]
+      total := fun x y => by
+        simp only
+        split_ifs with hy hx hx hy hx
+        · left; trivial
+        · right; trivial
+        · left; trivial
+        · right; trivial
+        · exact (prof i).total x y
+      trans := fun x y z hxy hyz => by
+        simp only at hxy hyz ⊢
+        split_ifs at hxy hyz ⊢
+        all_goals try trivial
+        all_goals try exact (prof i).trans hxy hyz
+        all_goals try contradiction }
   else prof j
 
 /-- Make a strictly above b for individual i -/
@@ -97,23 +121,53 @@ noncomputable def makeabove (prof : Profile ι σ) (i : ι) (a b : σ) : Profile
         if x = a ∧ y = b then True
         else if x = b ∧ y = a then False
         else (prof i).rel x y
-      refl := sorry
-      total := sorry
-      trans := sorry }
+      refl := fun x => by
+        simp only
+        split_ifs with h1 h2
+        · exact absurd (h1.1.trans h1.2.symm) (ne_of_eq_of_ne rfl (by tauto))
+        · exact (prof i).refl x
+      total := fun x y => by
+        simp only
+        split_ifs
+        · left; trivial
+        · right; trivial
+        · exact (prof i).total x y
+      trans := fun x y z hxy hyz => by
+        simp only at hxy hyz ⊢
+        split_ifs at hxy hyz ⊢
+        all_goals try trivial
+        all_goals try exact (prof i).trans hxy hyz
+        all_goals try contradiction }
   else prof j
 
 /-! ## Pivotality -/
 
 /-- Individual n is pivotal for alternative b:
-    Moving b from worst to best for n flips society's ranking. -/
+    Moving b from worst to best for n flips society's ranking.
+    NOTE: The `by sorry` in the definition is needed to provide the
+    proof that b ∈ X for maketop. This is a definitional dependency
+    that should be satisfied by the pivot_exists theorem. -/
 def is_pivotal (f : SWF ι σ) (X : Finset σ) (b : σ) (n : ι) : Prop :=
   ∃ prof : Profile ι σ,
+    -- Before n's change: society ranks b worst
     is_strictly_worst (f prof).rel b X ∧
+    -- After n moves b to top: society ranks b best
     is_strictly_best (f (maketop prof n b X (by sorry))).rel b X
 
 /-! ## Key Lemmas -/
 
-/-- Extremal Lemma: If all individuals place b extremally, so does society. -/
+/-- Extremal Lemma: If all individuals place b extremally, so does society.
+    PROOF SKETCH (Geanakoplos 2005):
+    Suppose for contradiction that society ranks b neither best nor worst.
+    Then ∃ a, c ∈ X with a ≠ b, c ≠ b, a ≠ c such that
+    P(f prof) a b (society prefers a to b) and P(f prof) b c (society prefers b to c).
+    Since all individuals rank b extremally, each ranks b either above both
+    a and c, or below both a and c.
+    By IIA, society's ranking of (a,b) depends only on individual rankings of (a,b).
+    Similarly for (b,c). Since every individual has the same relative ranking
+    of (a,b) as (a,c) (both above or both below b), Pareto on the pairs
+    where everyone agrees gives a contradiction: society cannot rank a > b > c
+    if everyone places b at an extreme. -/
 theorem extremal_lemma (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X)
@@ -122,14 +176,36 @@ theorem extremal_lemma (f : SWF ι σ) (X : Finset σ)
     is_extremal (f prof).rel b X := by
   sorry
 
-/-- Existence of pivot: For any alternative, there exists a pivotal individual. -/
+/-- Existence of pivot: For any alternative, there exists a pivotal individual.
+    PROOF SKETCH (Geanakoplos 2005):
+    Enumerate individuals as i₁, ..., iₘ. Construct profiles:
+    - prof⁰: everyone places b at bottom → society ranks b worst (by Pareto)
+    - profᵏ: i₁,...,iₖ place b at top, rest at bottom
+    - profᵐ: everyone places b at top → society ranks b best (by Pareto)
+    By the extremal lemma, for each profᵏ, society ranks b extremally.
+    Since prof⁰ has b worst and profᵐ has b best, there must be some k where
+    society flips from worst to best. Then iₖ is pivotal.
+    NOTE: Requires finite enumeration of individuals (Fintype ι). -/
 theorem pivot_exists (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X) :
     ∃ n : ι, is_pivotal f X b n := by
   sorry
 
-/-- A pivotal individual is a dictator over pairs not involving b. -/
+/-- A pivotal individual is a dictator over pairs not involving b.
+    PROOF SKETCH (Geanakoplos 2005):
+    Given n pivotal for b, show n dictates over (a,c) where a,c ≠ b.
+    Construct a profile prof' where:
+    - n ranks: a > b > c (and the rest arbitrarily)
+    - All others rank: a > c > b (placing b at bottom)
+    By pivotality (n moved b from worst to top), society ranks b above c.
+    By Pareto (everyone prefers a to c), society prefers a to c.
+    By IIA, society's ranking of (a,c) depends only on individual rankings of (a,c).
+    Since n prefers a > c and the rest also prefer a > c, this isn't enough yet.
+    Key: modify profile to get n as the "swing voter" for (a,c).
+    More carefully: use the pivotality to show n's ranking of (a,c) is decisive.
+    Construct profiles where only n's ranking of (a,c) changes, and by IIA
+    + pivotality, society follows n. -/
 theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X)
