@@ -138,13 +138,43 @@ theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
     is_dictator_on f n a c := by
   sorry
 
-/-- A dictator over all pairs except those involving b is actually a full dictator. -/
+/-- A dictator over all pairs except those involving b is actually a full dictator.
+
+    Proof structure:
+    - Case x ≠ b ∧ y ≠ b: direct from hn
+    - Case x = b ∧ y ≠ b: use a third alternative c to bridge via IIA
+    - Case x ≠ b ∧ y = b: symmetric to above
+    -/
 theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X)
     (n : ι) (hn : ∀ a c : σ, a ∈ X → c ∈ X → a ≠ b → c ≠ b → a ≠ c → is_dictator_on f n a c) :
     ∀ x y : σ, x ∈ X → y ∈ X → x ≠ y → is_dictator_on f n x y := by
-  sorry
+  intro x y hx hy hxy
+  by_cases hxb : x = b
+  · -- x = b, y ≠ b (since x ≠ y)
+    have hyb : y ≠ b := by
+      intro h
+      have : x = y := hxb.trans h.symm
+      exact hxy this
+    -- Need: n dictates over (b, y). Use a third alternative c ≠ b, c ≠ y.
+    have ⟨c, hc, hcb, hcy⟩ := exists_third_distinct_mem (by omega : 2 < X.card) hb hy (Ne.symm hyb)
+    -- n dictates over (c, y) since c ≠ b ∧ y ≠ b ∧ c ≠ y
+    have hncz := hn c y hc hy hcb hyb hcy
+    -- n dictates over (y, c) since y ≠ b ∧ c ≠ b ∧ y ≠ c
+    have hnzc := hn y c hy hc hyb hcb (Ne.symm hcy)
+    -- IIA argument: construct profiles that agree on (b, y) and use
+    -- the dictatorship over (c, y) to pin down society's ranking.
+    -- TODO: This requires constructing specific profiles and using hind (IIA).
+    -- The proof goes via: if n prefers b > y, construct prof' where n ranks
+    -- c > b > y, everyone ranks c > y, then use transitivity + IIA.
+    sorry
+  · by_cases hyb : y = b
+    · -- x ≠ b, y = b
+      -- Symmetric to the previous case: need n dictates over (x, b)
+      sorry
+    · -- x ≠ b, y ≠ b: direct from hn
+      exact hn x y hx hy hxb hyb hxy
 
 /-! ## Main Theorem -/
 
