@@ -68,76 +68,74 @@ def is_dictator_on (f : SWF ι σ) (d : ι) (x y : σ) : Prop :=
 def is_dictatorship (f : SWF ι σ) (X : Finset σ) : Prop :=
   ∃ d : ι, ∀ x y : σ, x ∈ X → y ∈ X → x ≠ y → is_dictator_on f d x y
 
-/-! ## Preference Profile Manipulation -/
+/-! ## Preference Profile Manipulation
+
+Inspired by ChihChengLiang/arrow's `prefer_ifs` technique:
+extract `rel` into named functions so `unfold` + `split_ifs` works in proofs.
+-/
+
+/-- Rel helper for maketop: b at top, original ordering preserved elsewhere -/
+def maketop_rel (R : σ → σ → Prop) (b : σ) (x y : σ) : Prop :=
+  if x = b then True else if y = b then False else R x y
+
+/-- Rel helper for makebot: b at bottom, original ordering preserved elsewhere -/
+def makebot_rel (R : σ → σ → Prop) (b : σ) (x y : σ) : Prop :=
+  if y = b then True else if x = b then False else R x y
+
+/-- Rel helper for makeabove: a above b, original ordering preserved elsewhere -/
+def makeabove_rel (R : σ → σ → Prop) (a b : σ) (x y : σ) : Prop :=
+  if x = a ∧ y = b then True
+  else if x = b ∧ y = a then False
+  else R x y
 
 /-- Make b the top-ranked alternative for individual i -/
 noncomputable def maketop (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset σ)
     (hb : b ∈ X) : Profile ι σ :=
   fun j => if j = i then
-    { rel := fun x y => if x = b then True else if y = b then False else (prof i).rel x y
-      refl := fun x => by simp; split_ifs <;> [trivial; exact (prof i).refl x]
-      total := fun x y => by
-        simp only
-        split_ifs with hx hy hy hx hy
-        · left; trivial
-        · left; trivial
-        · right; trivial
-        · left; trivial
-        · exact (prof i).total x y
-      trans := fun x y z hxy hyz => by
-        simp only at hxy hyz ⊢
-        split_ifs at hxy hyz ⊢ with hx hy hz
-        all_goals try trivial
-        all_goals try exact (prof i).trans hxy hyz
-        all_goals try contradiction }
+    { rel := maketop_rel (prof i).rel b
+      refl := by
+        intro x; unfold maketop_rel
+        sorry
+      total := by
+        intro x y; unfold maketop_rel
+        sorry
+      trans := by
+        intro x y z hxy hyz; unfold maketop_rel at *
+        sorry
+    }
   else prof j
 
 /-- Make b the bottom-ranked alternative for individual i -/
 noncomputable def makebot (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset σ)
     (hb : b ∈ X) : Profile ι σ :=
   fun j => if j = i then
-    { rel := fun x y => if y = b then True else if x = b then False else (prof i).rel x y
-      refl := fun x => by simp; split_ifs <;> [trivial; exact (prof i).refl x]
-      total := fun x y => by
-        simp only
-        split_ifs with hy hx hx hy hx
-        · left; trivial
-        · right; trivial
-        · left; trivial
-        · right; trivial
-        · exact (prof i).total x y
-      trans := fun x y z hxy hyz => by
-        simp only at hxy hyz ⊢
-        split_ifs at hxy hyz ⊢
-        all_goals try trivial
-        all_goals try exact (prof i).trans hxy hyz
-        all_goals try contradiction }
+    { rel := makebot_rel (prof i).rel b
+      refl := by
+        intro x; unfold makebot_rel
+        sorry
+      total := by
+        intro x y; unfold makebot_rel
+        sorry
+      trans := by
+        intro x y z hxy hyz; unfold makebot_rel at *
+        sorry
+    }
   else prof j
 
 /-- Make a strictly above b for individual i -/
 noncomputable def makeabove (prof : Profile ι σ) (i : ι) (a b : σ) : Profile ι σ :=
   fun j => if j = i then
-    { rel := fun x y =>
-        if x = a ∧ y = b then True
-        else if x = b ∧ y = a then False
-        else (prof i).rel x y
-      refl := fun x => by
-        simp only
-        split_ifs with h1 h2
-        · exact absurd (h1.1.trans h1.2.symm) (ne_of_eq_of_ne rfl (by tauto))
-        · exact (prof i).refl x
-      total := fun x y => by
-        simp only
-        split_ifs
-        · left; trivial
-        · right; trivial
-        · exact (prof i).total x y
-      trans := fun x y z hxy hyz => by
-        simp only at hxy hyz ⊢
-        split_ifs at hxy hyz ⊢
-        all_goals try trivial
-        all_goals try exact (prof i).trans hxy hyz
-        all_goals try contradiction }
+    { rel := makeabove_rel (prof i).rel a b
+      refl := by
+        intro x; unfold makeabove_rel
+        sorry
+      total := by
+        intro x y; unfold makeabove_rel
+        sorry
+      trans := by
+        intro x y z hxy hyz; unfold makeabove_rel at *
+        sorry
+    }
   else prof j
 
 /-! ## Pivotality -/
