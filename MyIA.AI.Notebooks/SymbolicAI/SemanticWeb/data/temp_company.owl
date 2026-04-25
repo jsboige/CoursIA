@@ -67,17 +67,21 @@
 <owl:NamedIndividual rdf:about="#Bob">
   <rdf:type rdf:resource="#Person"/>
   <works_in rdf:resource="#IT"/>
+  <rdf:type rdf:resource="#Employee"/>
 </owl:NamedIndividual>
 
 <owl:NamedIndividual rdf:about="#Alice">
   <rdf:type rdf:resource="#Person"/>
   <works_in rdf:resource="#HR"/>
+  <rdf:type rdf:resource="#Employee"/>
 </owl:NamedIndividual>
 
 <owl:NamedIndividual rdf:about="#Charlie">
   <rdf:type rdf:resource="#Person"/>
   <manages rdf:resource="#IT"/>
   <works_in rdf:resource="#IT"/>
+  <rdf:type rdf:resource="#Manager"/>
+  <rdf:type rdf:resource="#Employee"/>
 </owl:NamedIndividual>
 
 
