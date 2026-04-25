@@ -613,3 +613,8 @@ slides/*/_fallback*.pdf
 slides/*/analysis/titles-pptx.txt
 slides/*/analysis/titles-slidev.txt
 
+# Sudoku neural network model checkpoints (large binary files)
+sudoku_models/*.pt
+sudoku_models/*.pth
+sudoku_models/data_cache/
+
