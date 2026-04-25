@@ -82,10 +82,11 @@ def maketop_rel (R : σ → σ → Prop) (b : σ) (x y : σ) : Prop :=
 def makebot_rel (R : σ → σ → Prop) (b : σ) (x y : σ) : Prop :=
   if y = b then True else if x = b then False else R x y
 
-/-- Rel helper for makeabove: a above b, original ordering preserved elsewhere -/
+/-- Rel helper for makeabove: a above b, original ordering preserved elsewhere.
+    Uses nested ifs (not conjunctions) so split_ifs generates simple equality cases. -/
 def makeabove_rel (R : σ → σ → Prop) (a b : σ) (x y : σ) : Prop :=
-  if x = a ∧ y = b then True
-  else if x = b ∧ y = a then False
+  if x = a then (if y = b then True else R x y)
+  else if x = b then (if y = a then False else R x y)
   else R x y
 
 /-- Make b the top-ranked alternative for individual i -/
@@ -94,14 +95,15 @@ noncomputable def maketop (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset �
   fun j => if j = i then
     { rel := maketop_rel (prof i).rel b
       refl := by
-        intro x; unfold maketop_rel
-        sorry
+        intro x; simp only [maketop_rel]; split_ifs
+        all_goals first | trivial | contradiction | exact (prof i).refl x
       total := by
-        intro x y; unfold maketop_rel
-        sorry
+        intro x y; simp only [maketop_rel]; split_ifs
+        all_goals first | left; trivial | right; trivial | contradiction
+                         | exact (prof i).total x y
       trans := by
-        intro x y z hxy hyz; unfold maketop_rel at *
-        sorry
+        intro x y z hxy hyz; simp only [maketop_rel] at hxy hyz ⊢; split_ifs at hxy hyz ⊢
+        all_goals first | trivial | contradiction | exact (prof i).trans hxy hyz
     }
   else prof j
 
@@ -111,14 +113,15 @@ noncomputable def makebot (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset �
   fun j => if j = i then
     { rel := makebot_rel (prof i).rel b
       refl := by
-        intro x; unfold makebot_rel
-        sorry
+        intro x; simp only [makebot_rel]; split_ifs
+        all_goals first | trivial | contradiction | exact (prof i).refl x
       total := by
-        intro x y; unfold makebot_rel
-        sorry
+        intro x y; simp only [makebot_rel]; split_ifs
+        all_goals first | left; trivial | right; trivial | contradiction
+                         | exact (prof i).total x y
       trans := by
-        intro x y z hxy hyz; unfold makebot_rel at *
-        sorry
+        intro x y z hxy hyz; simp only [makebot_rel] at hxy hyz ⊢; split_ifs at hxy hyz ⊢
+        all_goals first | trivial | contradiction | exact (prof i).trans hxy hyz
     }
   else prof j
 
@@ -127,14 +130,18 @@ noncomputable def makeabove (prof : Profile ι σ) (i : ι) (a b : σ) : Profile
   fun j => if j = i then
     { rel := makeabove_rel (prof i).rel a b
       refl := by
-        intro x; unfold makeabove_rel
-        sorry
+        intro x; simp only [makeabove_rel]; split_ifs
+        all_goals first | trivial | contradiction | exact (prof i).refl x
       total := by
-        intro x y; unfold makeabove_rel
-        sorry
-      trans := by
-        intro x y z hxy hyz; unfold makeabove_rel at *
-        sorry
+        intro x y; simp only [makeabove_rel]; split_ifs
+        all_goals first | left; trivial | right; trivial | contradiction
+                         | exact (prof i).total x y
+      -- NOTE: makeabove_rel is NOT transitive for arbitrary PrefOrders R.
+      -- Counterexample: R = total indifference, then makeabove b c ∧ makeabove c a
+      -- but ¬makeabove b a (since makeabove forces a > b). This only works when R
+      -- is a strict linear order. The Geanakoplos proof should construct profiles
+      -- using maketop/makebot instead. See also ChihChengLiang/arrow approach.
+      trans := by sorry
     }
   else prof j
 
