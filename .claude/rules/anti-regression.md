@@ -20,23 +20,38 @@ Un commit qui introduit l'un de ces patterns **à la place de code existant** do
 
 **Commande de détection** : `grep -c sorry file.lean` avant et après le commit. Toute augmentation non justifiée = PR à contester.
 
-### Fichiers Python / code applicatif
+### Fichiers Python / code applicatif (code de production)
+
+Ces patterns concernent le **code métier appelé par d'autres modules**, pas les cellules d'exercice étudiant (voir section "Cellules d'exercice" ci-dessous).
 
 | Pattern avant | Pattern après | Verdict |
 |---------------|---------------|---------|
-| `def foo(...):` avec corps calculé | `def foo(...): pass` ou `raise NotImplementedError` | Régression sauf si intention explicite stub |
-| `return <calcul>` | `return None  # TODO` | Régression |
-| Cellule notebook labellée `# Solution` avec code | Cellule avec `# TODO` ou `pass` | Régression si la cellule était un exemple pédagogique |
-| Test avec assertions | Test avec `@pytest.skip` ou `assert True` | Régression |
+| `def foo(...):` avec corps calculé (fonction appelée) | `def foo(...): pass` | Régression sauf si la fonction n'est plus appelée nulle part |
+| `return <calcul>` (fonction utilisée) | `return None  # TODO` | Régression |
+| Test avec assertions | Test avec `@pytest.skip` sans issue référencée ou `assert True` | Régression |
 
-### Notebooks pédagogiques
+### Notebooks pédagogiques (cellules d'exercice)
+
+**Règle user 2026-04-26 (cf CLAUDE.md)** : **TOUTES** les occurrences de `raise NotImplementedError` (et toute autre erreur intentionnelle qui fait échouer une cellule) dans un notebook sont **INTERDITES**, où qu'elles se trouvent (top-level, méthode, fonction utilitaire). Raison : les scripts de validation trackent les cellules en erreur comme bugs à corriger, donc une erreur volontaire pollue les rapports et masque les vraies erreurs ; elle fait aussi planter Papermill sur la suite du notebook.
+
+**Pattern correct pour stub d'exercice** : `print("Exercice a completer")` ou `pass` ou `return None` selon contexte, **avec préservation de tous les commentaires `# TODO` et `# Indice`** au-dessus. Le notebook doit s'exécuter de bout en bout sans erreur même avec exercices non complétés.
 
 | Pattern avant | Pattern après | Verdict |
 |---------------|---------------|---------|
+| `raise NotImplementedError(...)` n'importe où dans un notebook | `pass` / `print("Exercice a completer")` / `return None` (commentaires TODO/Indice conservés) | **Conforme règle user — PAS une régression** |
+| Cellule de notebook qui lève une erreur intentionnelle (`raise X`, `assert False`, `1/0`) | Code qui s'exécute proprement (avec stub de retour si nécessaire) | **Conforme règle user — PAS une régression** |
+| Cellule exercice avec scaffold (TODO + Indice + signature) | Cellule fusionnée perdant les TODO | Régression de scaffolding pédagogique |
 | Cellule exercice + cellule solution séparées | Fusion en une seule cellule stub | Perte de structure |
 | Narration markdown détaillée (200+ chars) | Commentaire laconique (< 50 chars) | Perte pédagogique |
-| Exemple résolu complet | Stub `# A COMPLETER` | Régression de contenu |
+| Cellule `# Solution` (exemple **résolu** complet, démonstration pédagogique) avec code | Stub `# A COMPLETER` ou cellule vidée | Régression de contenu (c'est un exemple résolu, pas un exercice) |
 | 5 exercices numérotés | 2 exercices (3 supprimés) | Régression de contenu |
+
+**Distinction critique** : 
+- Cellule **d'exercice** = scaffold à compléter par l'étudiant → stub `pass`/`print`/`return None` **obligatoire**, **toute** erreur volontaire (`raise`, `assert False`, `1/0`) **INTERDITE**
+- Cellule **de solution** ou **exemple résolu** = démonstration pédagogique complète → suppression INTERDITE (sauf cleanup leak intentionnel ailleurs)
+- Tests unitaires Python en dehors d'un notebook (`pytest` standalone) : la règle "pas d'erreur volontaire" ne s'applique pas — un test peut légitimement échouer s'il révèle un bug
+
+**Conséquence pour la review** : tout commit qui remplace `raise NotImplementedError` par `pass`/`print`/`return None` dans un notebook pédagogique est **conforme** et doit être mergé sans contestation sur ce point. Inversement, ajouter ou laisser un `raise NotImplementedError` dans un notebook est un **bug à corriger**, pas un choix pédagogique.
 
 ### Commits messages suspects
 
@@ -59,7 +74,7 @@ Ces formulations exigent une review attentive :
 
 3. **`git show <commit> -- <fichier>`** : inspecter les hunks. Pour chaque hunk avec suppressions, demander : "qu'est-ce qui remplace cette fonctionnalité ?"
 
-4. **Recherche des patterns red-flag** : grep sur `sorry`, `pass`, `NotImplementedError`, `@pytest.skip`, `return None  #`, `# TODO` avant/après.
+4. **Recherche des patterns red-flag (code de production)** : grep sur `sorry` (Lean), `@pytest.skip` (tests), suppressions de corps de fonctions appelées. **Ne PAS** considérer `NotImplementedError` ni `pass`/`return None` dans des notebooks pédagogiques comme red-flag — ce sont les patterns corrects pour les stubs d'exercice (cf règle user 2026-04-26 dans CLAUDE.md).
 
 5. **Cross-check avec l'historique conversationnel** : si le fichier est mentionné dans les sessions d'enrichissement passées (memory, dashboard), son contenu est probablement intentionnel.
 
