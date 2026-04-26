@@ -1,0 +1,78 @@
+# Qwen ASR API - Multilingual ASR with Qwen3-ASR-1.7B
+# OpenAI-compatible API with auto language detection and auto-unload
+#
+# GPU: RTX 3090 (24GB) - GPU 1 (shared with other services)
+# Port: 8195
+# URL: stt.myia.io/qwen (reverse proxy path)
+
+services:
+  qwen-asr-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qwen-asr-api
+    hostname: qwen-asr-api
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-1}']
+              capabilities: [gpu]
+
+    ports:
+      - "${QWEN_ASR_PORT:-8195}:8195"
+
+    volumes:
+      - type: bind
+        source: ${MODELS_PATH:-./models}
+        target: /app/models
+      - type: bind
+        source: ../shared
+        target: /app/shared
+        read_only: true
+      - type: volume
+        source: qwen-asr-cache
+        target: /root/.cache
+
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-1}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-1}
+      - PYTHONUNBUFFERED=1
+      - QWEN_ASR_MODEL=${QWEN_ASR_MODEL:-Qwen/Qwen3-ASR-1.7B}
+      - QWEN_ASR_DTYPE=${QWEN_ASR_DTYPE:-bfloat16}
+      - FORCED_ALIGNER=${FORCED_ALIGNER:-Qwen/Qwen3-ForcedAligner-0.6B}
+      - QWEN_ASR_DEVICE=cuda
+      - MAX_FILE_SIZE=52428800
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-300}
+      - TZ=${TZ:-Europe/Paris}
+      - API_KEY=${QWEN_ASR_API_KEY:-}
+      - HF_TOKEN=${HF_TOKEN:-}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8195/health | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    restart: unless-stopped
+
+    networks:
+      - qwen-asr-network
+
+    labels:
+      - "com.myia.service=qwen-asr-api"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=Qwen3-ASR-1.7B"
+
+networks:
+  qwen-asr-network:
+    driver: bridge
+    name: qwen-asr-network
+
+volumes:
+  qwen-asr-cache:
+    name: qwen-asr-cache
