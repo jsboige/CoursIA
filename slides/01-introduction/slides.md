@@ -176,6 +176,7 @@ layout: section
 layout: image-overlay
 image: ./images/img_003.png
 imageClass: mid-right large
+---
 
 # Les fondements de l'IA
 
@@ -194,6 +195,7 @@ L'IA est une discipline profondement interdisciplinaire :
 ---
 layout: image-overlay
 image: ./images/img_004.png
+---
 
 # Histoire succincte (1/2)
 
@@ -624,8 +626,6 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 <img src="./images/img_033.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="A New Kind of Science - Wolfram" />
 
-<img src="./images/img_033.png" width="300">
-
 
 ---
 
@@ -657,8 +657,6 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 </div>
 
 <img src="./images/img_036.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="Robot Brooks" />
-
-<img src="./images/img_036.png" width="300">
 
 
 ---
