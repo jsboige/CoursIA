@@ -840,16 +840,37 @@ theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
     have hncz := hn c y hc hy hcb hyb hcy
     -- n dictates over (y, c) since y ≠ b ∧ c ≠ b ∧ y ≠ c
     have hnzc := hn y c hy hc hyb hcb (Ne.symm hcy)
-    -- IIA argument: construct profiles that agree on (b, y) and use
-    -- the dictatorship over (c, y) to pin down society's ranking.
-    -- TODO: This requires constructing specific profiles and using hind (IIA).
-    -- The proof goes via: if n prefers b > y, construct prof' where n ranks
-    -- c > b > y, everyone ranks c > y, then use transitivity + IIA.
-    sorry
+    -- Proof strategy (Profile B sandwich construction):
+    -- Given: n is dictator on (c,y) and (y,c) via hn (since c,y ≠ b).
+    -- Need: P (f prof) b y whenever P (prof n).rel b y.
+    --
+    -- Step 1: Assume P (prof₀ n).rel b y (n strictly prefers b > y).
+    -- Step 2: Construct prof₁ where:
+    --   - n ranks: b > c > y (insert c between b and y)
+    --   - each j ≠ n: if P (prof₀ j).rel b y then b > c > y, else y > b > c
+    --   - c is ranked consistently; b,y rankings match prof₀
+    -- Step 3: All individuals rank c > y (WP) → P (f prof₁).rel c y (unanimity).
+    -- Step 4: n has P c y → dictatorship on (c,y) gives P (f prof₁).rel c y. ✓
+    -- Step 5: prof₁ agrees with prof₀ on (b,y) for all individuals →
+    --         by IIA (hind): P (f prof₀).rel b y ↔ P (f prof₁).rel b y.
+    -- Step 6: From Step 4: P (f prof₁).rel c y. Also n ranks b > c,
+    --         so P (f prof₁).rel b c (via WP on b>c if unanimous, else need IIA on (b,c)).
+    -- Step 7: P_trans: P (f prof₁).rel b c → P (f prof₁).rel c y → P (f prof₁).rel b y.
+    -- Step 8: By IIA (Step 5): P (f prof₀).rel b y. ∎
+    --
+    -- Formalization requires: a profile builder that inserts c between b,y
+    -- while preserving PrefOrder (refl, total, trans). This is the missing piece.
+    sorry  -- NOTE: substantive gap - needs sandwich profile constructor
   · by_cases hyb : y = b
     · -- x ≠ b, y = b
-      -- Symmetric to the previous case: need n dictates over (x, b)
-      sorry
+      -- Symmetric case: need n dictates over (x, b).
+      -- Same sandwich construction with third alternative c ≠ x, c ≠ b.
+      -- Have ⟨c, hc, hcx, hcb⟩ via exists_third_distinct_mem.
+      -- n dictates on (x,c) and (c,x) since x,c ≠ b.
+      -- Construct prof₁: n ranks x > c > b; others rank c > b if they prefer c > b.
+      -- WP on (c,b) → society c > b. Dictatorship on (x,c) → society x > c.
+      -- P_trans: society x > c > b → society x > b. IIA closes the gap.
+      sorry  -- NOTE: substantive gap - symmetric sandwich profile constructor
     · -- x ≠ b, y ≠ b: direct from hn
       exact hn x y hx hy hxb hyb hxy
 
