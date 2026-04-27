@@ -1,7 +1,7 @@
 # CC1 - IA Exploratoire et Symbolique
 ## Système de Diagnostic Médical Multi-Contraintes pour le Diabète de Type 2
 
-### 📋 Vue d'Ensemble
+### Vue d'ensemble
 
 Ce projet implémente un système de diagnostic médical intelligent combinant quatre approches algorithmiques complémentaires :
 
@@ -10,7 +10,7 @@ Ce projet implémente un système de diagnostic médical intelligent combinant q
 3. **Algorithmes Génétiques** : Optimisation évolutionnaire des paramètres diagnostiques
 4. **Solveur Z3** : Validation par contraintes des protocoles thérapeutiques
 
-### 🎯 Objectifs Pédagogiques
+### Objectifs pédagogiques
 
 - Maîtriser les algorithmes de recherche (BFS, DFS, A*)
 - Comprendre la programmation par contraintes (Z3, CSP)
@@ -18,7 +18,7 @@ Ce projet implémente un système de diagnostic médical intelligent combinant q
 - Analyser la complexité et les performances
 - Appliquer l'IA au domaine biomédical (diabète type 2)
 
-### 📁 Structure du Projet
+### Structure du projet
 
 ```
 CC1-Exploratoire-Symbolique/
@@ -30,7 +30,7 @@ CC1-Exploratoire-Symbolique/
 └── README.md                             # Ce fichier
 ```
 
-### 🔧 Installation
+### Installation
 
 #### Prérequis
 
@@ -68,7 +68,7 @@ source venv/bin/activate
 pip install jupyter notebook numpy pandas matplotlib seaborn z3-solver
 ```
 
-### 📦 Dépendances Requises
+### Dépendances requises
 
 | Package | Version | Description |
 |---------|---------|-------------|
@@ -78,7 +78,7 @@ pip install jupyter notebook numpy pandas matplotlib seaborn z3-solver
 | `seaborn` | >= 0.11.0 | Visualisation statistique |
 | `z3-solver` | >= 4.8.0 | Solveur de contraintes SMT |
 
-### 🚀 Utilisation
+### Utilisation
 
 #### 1. Pour les Étudiants
 
@@ -109,7 +109,7 @@ jupyter notebook CC1-Diagnostic-Medical-corrigé.ipynb
 3. Comparer avec les travaux étudiants
 4. Utiliser la grille d'évaluation du fichier `enonce/sujet.md`
 
-### 📊 Données de Test
+### Données de test
 
 Le fichier `data/patients.csv` contient 10 patients avec des profils variés :
 
@@ -125,7 +125,7 @@ Le fichier `data/patients.csv` contient 10 patients avec des profils variés :
 - **Symptômes** : Séparés par `;` (exemple: `fatigue;soif intense`)
 - **Antécédents** : Séparés par `;` (exemple: `hypertension;surpoids`)
 
-### 🧪 Tests et Validation
+### Tests et validation
 
 #### Tests Intégrés
 
@@ -161,7 +161,7 @@ tester_validation_z3()
 main()
 ```
 
-### ⚠️ Problèmes Courants et Solutions
+### Problèmes courants et solutions
 
 #### 1. ImportError: No module named 'z3'
 
@@ -193,7 +193,7 @@ max_iterations = 2000  # au lieu de 1000
 self.solver.set("timeout", 5000)  # 5 secondes
 ```
 
-### 📚 Ressources Complémentaires
+### Ressources complémentaires
 
 #### Théorie IA
 
@@ -214,7 +214,7 @@ self.solver.set("timeout", 5000)  # 5 secondes
 - **WHO Diabetes** : Recommandations internationales
 - **Medical CSP** : Programmation par contraintes en santé
 
-### 📈 Critères d'Évaluation
+### Critères d'évaluation
 
 Chaque cellule a remplir ou compléter sera évaluée pour constituer la note finale sur 20.
 
@@ -224,7 +224,7 @@ Chaque cellule a remplir ou compléter sera évaluée pour constituer la note fi
 - Tests exhaustifs
 - Performance exceptionnelle
 
-### 🎓 Compétences Développées
+### Compétences développées
 
 À la fin de ce devoir, vous aurez acquis :
 
@@ -237,4 +237,4 @@ Chaque cellule a remplir ou compléter sera évaluée pour constituer la note fi
 
 ---
 
-**Bonne chance avec votre implémentation !** 🎯
+**Bonne chance avec votre implémentation !**

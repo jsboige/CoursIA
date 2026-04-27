@@ -24,7 +24,7 @@ variable {ι : Type*} {σ : Type*} [Fintype ι] [DecidableEq ι] [DecidableEq σ
 /-- Individual i is decisive over the pair (x, y):
     If i strictly prefers x to y, society does too -/
 def is_decisive_over (f : SWF ι σ) (i : ι) (x y : σ) : Prop :=
-  ∀ P : Profile ι σ, P (P i).rel x y → P (f P).rel x y
+  ∀ prof : Profile ι σ, P (prof i).rel x y → P (f prof).rel x y
 
 /-- Minimal liberalism: At least two individuals each have at least one
     pair over which they are decisive -/
@@ -33,14 +33,14 @@ def minimal_liberal (f : SWF ι σ) (X : Finset σ) : Prop :=
     (∃ x y : σ, x ∈ X ∧ y ∈ X ∧ x ≠ y ∧ is_decisive_over f i x y) ∧
     (∃ x y : σ, x ∈ X ∧ y ∈ X ∧ x ≠ y ∧ is_decisive_over f j x y)
 
-/-- Unrestricted domain: The SWF accepts any profile -/
+-- Unrestricted domain: The SWF accepts any profile
 -- (This is implicit in our definition of SWF)
 
 /-! ## Sen's Paradox Construction -/
 
-/-- A preference profile that demonstrates the paradox -/
--- Consider: Prude prefers (not-read, not-read) > (read-by-other, not-read) > (read, read-by-other)
---           Lewd prefers (read-by-other, read) > (read, not-read) > (not-read, not-read)
+-- A preference profile that demonstrates the paradox:
+-- Prude prefers (not-read, not-read) > (read-by-other, not-read) > (read, read-by-other)
+-- Lewd prefers (read-by-other, read) > (read, not-read) > (not-read, not-read)
 
 /-! ## Sen's Impossibility Theorem -/
 
@@ -48,15 +48,26 @@ def minimal_liberal (f : SWF ι σ) (X : Finset σ) : Prop :=
 Sen's Liberal Paradox:
 There exists no social welfare function that satisfies both
 Weak Pareto and Minimal Liberalism for all preference profiles.
--/
+PROOF SKETCH:
+From minimal_liberal, get two individuals i, j with decisive pairs:
+  i is decisive over (x, y), j is decisive over (z, w).
+These pairs may overlap. The standard construction uses:
+  i decisive over (a, b), j decisive over (b, c) (or disjoint pairs).
+Case 1 (overlapping): i decisive over (a,b), j decisive over (b,c).
+  Construct prof where i prefers a > b (exercises right → society: a > b)
+  and j prefers b > c (exercises right → society: b > c)
+  and everyone prefers c > a (Pareto → society: c > a).
+  Cycle: a > b > c > a. No best element exists.
+Case 2 (disjoint): i decisive over (a,b), j decisive over (c,d).
+  Similar cycle construction using the four alternatives.
+  Requires |X| >= 4 in this case (guaranteed by hX : 3 ≤ |X| only
+  gives 3, so the proof uses the overlapping case). -/
 theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
     (hne : (2 : ℕ) ≤ Fintype.card ι)
     (hX : 3 ≤ X.card)
     (hwp : weak_pareto f X)
     (hml : minimal_liberal f X) :
-    ∃ P : Profile ι σ, ¬∃ best : σ, is_best_element best X (f P).rel := by
-  -- The proof constructs a preference cycle using liberal rights
-  -- and Pareto to show that no element can be best
+    ∃ prof : Profile ι σ, ¬∃ best : σ, is_best_element best X (f prof).rel := by
   sorry
 
 /-! ## Example: The Book Reading Paradox -/
@@ -79,13 +90,13 @@ theorem book_paradox_demonstrates_sen
     (hX : X = {np, pr, lr})
     (hwp : weak_pareto f X)
     (hprude : is_decisive_over f prude pr lr)
-    (hlewd : is_decisive_over f lewd np lr) :
-    ∃ P : Profile ι σ,
+    (hlewd : is_decisive_over f lewd lr np) :
+    ∃ prof : Profile ι σ,
       -- Prude prefers pr > lr (exercises right)
       -- Lewd prefers lr > np (exercises right)
       -- Both prefer np > pr (Pareto condition)
       -- Result: Society has cycle np > pr > lr > np
-      (P (f P).rel np pr) ∧ (P (f P).rel pr lr) ∧ (P (f P).rel lr np) := by
+      P (f prof).rel np pr ∧ P (f prof).rel pr lr ∧ P (f prof).rel lr np := by
   sorry
 
 /-! ## Resolution Approaches -/
@@ -98,5 +109,3 @@ theorem book_paradox_demonstrates_sen
 
 -- The paradox remains philosophically important as it shows
 -- a fundamental tension between efficiency and individual rights.
-
-end

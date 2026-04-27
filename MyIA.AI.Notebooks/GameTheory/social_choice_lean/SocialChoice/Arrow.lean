@@ -51,148 +51,211 @@ def is_extremal (R : σ → σ → Prop) (b : σ) (X : Finset σ) : Prop :=
 
 /-- Weak Pareto: If everyone strictly prefers x to y, so does society -/
 def weak_pareto (f : SWF ι σ) (X : Finset σ) : Prop :=
-  ∀ P : Profile ι σ, ∀ x y : σ, x ∈ X → y ∈ X →
-    (∀ i : ι, P (P i).rel x y) → P (f P).rel x y
+  ∀ prof : Profile ι σ, ∀ x y : σ, x ∈ X → y ∈ X →
+    (∀ i : ι, (prof i).rel x y) → (f prof).rel x y
 
 /-- Independence of Irrelevant Alternatives (IIA) -/
 def ind_of_irr_alts (f : SWF ι σ) (X : Finset σ) : Prop :=
-  ∀ P P' : Profile ι σ, ∀ x y : σ, x ∈ X → y ∈ X →
-    (∀ i : ι, same_order' (P i).rel (P' i).rel x y x y) →
-    same_order' (f P).rel (f P').rel x y x y
+  ∀ prof prof' : Profile ι σ, ∀ x y : σ, x ∈ X → y ∈ X →
+    (∀ i : ι, same_order' (prof i).rel (prof' i).rel x y x y) →
+    same_order' (f prof).rel (f prof').rel x y x y
 
 /-- Individual d is a dictator over pair (x, y) -/
 def is_dictator_on (f : SWF ι σ) (d : ι) (x y : σ) : Prop :=
-  ∀ P : Profile ι σ, P (P d).rel x y → P (f P).rel x y
+  ∀ prof : Profile ι σ, (prof d).rel x y → (f prof).rel x y
 
 /-- Individual d is a dictator over all pairs in X -/
 def is_dictatorship (f : SWF ι σ) (X : Finset σ) : Prop :=
   ∃ d : ι, ∀ x y : σ, x ∈ X → y ∈ X → x ≠ y → is_dictator_on f d x y
 
-/-! ## Preference Profile Manipulation -/
+/-! ## Preference Profile Manipulation
+
+Inspired by ChihChengLiang/arrow's `prefer_ifs` technique:
+extract `rel` into named functions so `unfold` + `split_ifs` works in proofs.
+-/
+
+/-- Rel helper for maketop: b at top, original ordering preserved elsewhere -/
+def maketop_rel (R : σ → σ → Prop) (b : σ) (x y : σ) : Prop :=
+  if x = b then True else if y = b then False else R x y
+
+/-- Rel helper for makebot: b at bottom, original ordering preserved elsewhere -/
+def makebot_rel (R : σ → σ → Prop) (b : σ) (x y : σ) : Prop :=
+  if y = b then True else if x = b then False else R x y
+
+/-- Rel helper for makeabove: a above b, original ordering preserved elsewhere.
+    Uses nested ifs (not conjunctions) so split_ifs generates simple equality cases. -/
+def makeabove_rel (R : σ → σ → Prop) (a b : σ) (x y : σ) : Prop :=
+  if x = a then (if y = b then True else R x y)
+  else if x = b then (if y = a then False else R x y)
+  else R x y
 
 /-- Make b the top-ranked alternative for individual i -/
-noncomputable def maketop (P : Profile ι σ) (i : ι) (b : σ) (X : Finset σ)
+noncomputable def maketop (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset σ)
     (hb : b ∈ X) : Profile ι σ :=
   fun j => if j = i then
-    { rel := fun x y => if x = b then True else if y = b then False else (P i).rel x y
-      refl := fun x => by simp; split_ifs <;> [trivial; exact (P i).refl x]
-      total := fun x y => by
-        simp only
-        split_ifs with hx hy hy hx hy
-        · left; trivial
-        · left; trivial
-        · right; trivial
-        · left; trivial
-        · exact (P i).total x y
-      trans := fun x y z hxy hyz => by
-        simp only at hxy hyz ⊢
-        split_ifs at hxy hyz ⊢ with hx hy hz
-        all_goals try trivial
-        all_goals try exact (P i).trans hxy hyz
-        all_goals try contradiction }
-  else P j
+    { rel := maketop_rel (prof i).rel b
+      refl := by
+        intro x; simp only [maketop_rel]; split_ifs
+        all_goals first | trivial | contradiction | exact (prof i).refl x
+      total := by
+        intro x y; simp only [maketop_rel]; split_ifs
+        all_goals first | left; trivial | right; trivial | contradiction
+                         | exact (prof i).total x y
+      trans := by
+        intro x y z hxy hyz; simp only [maketop_rel] at hxy hyz ⊢; split_ifs at hxy hyz ⊢
+        all_goals first | trivial | contradiction | exact (prof i).trans hxy hyz
+    }
+  else prof j
 
 /-- Make b the bottom-ranked alternative for individual i -/
-noncomputable def makebot (P : Profile ι σ) (i : ι) (b : σ) (X : Finset σ)
+noncomputable def makebot (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset σ)
     (hb : b ∈ X) : Profile ι σ :=
   fun j => if j = i then
-    { rel := fun x y => if y = b then True else if x = b then False else (P i).rel x y
-      refl := fun x => by simp; split_ifs <;> [trivial; exact (P i).refl x]
-      total := fun x y => by
-        simp only
-        split_ifs with hy hx hx hy hx
-        · left; trivial
-        · right; trivial
-        · left; trivial
-        · right; trivial
-        · exact (P i).total x y
-      trans := fun x y z hxy hyz => by
-        simp only at hxy hyz ⊢
-        split_ifs at hxy hyz ⊢
-        all_goals try trivial
-        all_goals try exact (P i).trans hxy hyz
-        all_goals try contradiction }
-  else P j
+    { rel := makebot_rel (prof i).rel b
+      refl := by
+        intro x; simp only [makebot_rel]; split_ifs
+        all_goals first | trivial | contradiction | exact (prof i).refl x
+      total := by
+        intro x y; simp only [makebot_rel]; split_ifs
+        all_goals first | left; trivial | right; trivial | contradiction
+                         | exact (prof i).total x y
+      trans := by
+        intro x y z hxy hyz; simp only [makebot_rel] at hxy hyz ⊢; split_ifs at hxy hyz ⊢
+        all_goals first | trivial | contradiction | exact (prof i).trans hxy hyz
+    }
+  else prof j
 
 /-- Make a strictly above b for individual i -/
-noncomputable def makeabove (P : Profile ι σ) (i : ι) (a b : σ) : Profile ι σ :=
+noncomputable def makeabove (prof : Profile ι σ) (i : ι) (a b : σ) : Profile ι σ :=
   fun j => if j = i then
-    { rel := fun x y =>
-        if x = a ∧ y = b then True
-        else if x = b ∧ y = a then False
-        else (P i).rel x y
-      refl := fun x => by
-        simp only
-        split_ifs with h1 h2
-        · exact absurd (h1.1.trans h1.2.symm) (ne_of_eq_of_ne rfl (by tauto))
-        · exact (P i).refl x
-      total := fun x y => by
-        simp only
-        split_ifs
-        · left; trivial
-        · right; trivial
-        · exact (P i).total x y
-      trans := fun x y z hxy hyz => by
-        simp only at hxy hyz ⊢
-        split_ifs at hxy hyz ⊢
-        all_goals try trivial
-        all_goals try exact (P i).trans hxy hyz
-        all_goals try contradiction }
-  else P j
+    { rel := makeabove_rel (prof i).rel a b
+      refl := by
+        intro x; simp only [makeabove_rel]; split_ifs
+        all_goals first | trivial | contradiction | exact (prof i).refl x
+      total := by
+        intro x y; simp only [makeabove_rel]; split_ifs
+        all_goals first | left; trivial | right; trivial | contradiction
+                         | exact (prof i).total x y
+      -- NOTE: makeabove_rel is NOT transitive for arbitrary PrefOrders R.
+      -- Counterexample: R = total indifference, then makeabove b c ∧ makeabove c a
+      -- but ¬makeabove b a (since makeabove forces a > b). This only works when R
+      -- is a strict linear order. The Geanakoplos proof should construct profiles
+      -- using maketop/makebot instead. See also ChihChengLiang/arrow approach.
+      trans := by sorry
+    }
+  else prof j
 
 /-! ## Pivotality -/
 
 /-- Individual n is pivotal for alternative b:
-    Moving b from worst to best for n flips society's ranking -/
+    Moving b from worst to best for n flips society's ranking.
+    NOTE: The `by sorry` in the definition is needed to provide the
+    proof that b ∈ X for maketop. This is a definitional dependency
+    that should be satisfied by the pivot_exists theorem. -/
 def is_pivotal (f : SWF ι σ) (X : Finset σ) (b : σ) (n : ι) : Prop :=
-  ∃ P : Profile ι σ,
+  ∃ prof : Profile ι σ,
     -- Before n's change: society ranks b worst
-    is_strictly_worst (f P).rel b X ∧
+    is_strictly_worst (f prof).rel b X ∧
     -- After n moves b to top: society ranks b best
-    is_strictly_best (f (maketop P n b X (by sorry))).rel b X
+    is_strictly_best (f (maketop prof n b X (by sorry))).rel b X
 
 /-! ## Key Lemmas -/
 
-/-- Extremal Lemma: If all individuals place b extremally, so does society -/
+/-- Extremal Lemma: If all individuals place b extremally, so does society.
+    PROOF SKETCH (Geanakoplos 2005):
+    Suppose for contradiction that society ranks b neither best nor worst.
+    Then ∃ a, c ∈ X with a ≠ b, c ≠ b, a ≠ c such that
+    P(f prof) a b (society prefers a to b) and P(f prof) b c (society prefers b to c).
+    Since all individuals rank b extremally, each ranks b either above both
+    a and c, or below both a and c.
+    By IIA, society's ranking of (a,b) depends only on individual rankings of (a,b).
+    Similarly for (b,c). Since every individual has the same relative ranking
+    of (a,b) as (a,c) (both above or both below b), Pareto on the pairs
+    where everyone agrees gives a contradiction: society cannot rank a > b > c
+    if everyone places b at an extreme. -/
 theorem extremal_lemma (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X)
-    (P : Profile ι σ)
-    (hall : ∀ i : ι, is_extremal (P i).rel b X) :
-    is_extremal (f P).rel b X := by
-  -- The proof shows that if everyone places b at top or bottom,
-  -- society must also place b at top or bottom
+    (prof : Profile ι σ)
+    (hall : ∀ i : ι, is_extremal (prof i).rel b X) :
+    is_extremal (f prof).rel b X := by
   sorry
 
-/-- Existence of pivot: For any alternative, there exists a pivotal individual -/
+/-- Existence of pivot: For any alternative, there exists a pivotal individual.
+    PROOF SKETCH (Geanakoplos 2005):
+    Enumerate individuals as i₁, ..., iₘ. Construct profiles:
+    - prof⁰: everyone places b at bottom → society ranks b worst (by Pareto)
+    - profᵏ: i₁,...,iₖ place b at top, rest at bottom
+    - profᵐ: everyone places b at top → society ranks b best (by Pareto)
+    By the extremal lemma, for each profᵏ, society ranks b extremally.
+    Since prof⁰ has b worst and profᵐ has b best, there must be some k where
+    society flips from worst to best. Then iₖ is pivotal.
+    NOTE: Requires finite enumeration of individuals (Fintype ι). -/
 theorem pivot_exists (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X) :
     ∃ n : ι, is_pivotal f X b n := by
-  -- Start with everyone placing b at bottom (society must too by Pareto)
-  -- Move individuals one by one to place b at top
-  -- At some point, society flips: that individual is pivotal
   sorry
 
-/-- Third step: A pivotal individual is a dictator over pairs not involving b -/
+/-- A pivotal individual is a dictator over pairs not involving b.
+    PROOF SKETCH (Geanakoplos 2005):
+    Given n pivotal for b, show n dictates over (a,c) where a,c ≠ b.
+    Construct a profile prof' where:
+    - n ranks: a > b > c (and the rest arbitrarily)
+    - All others rank: a > c > b (placing b at bottom)
+    By pivotality (n moved b from worst to top), society ranks b above c.
+    By Pareto (everyone prefers a to c), society prefers a to c.
+    By IIA, society's ranking of (a,c) depends only on individual rankings of (a,c).
+    Since n prefers a > c and the rest also prefer a > c, this isn't enough yet.
+    Key: modify profile to get n as the "swing voter" for (a,c).
+    More carefully: use the pivotality to show n's ranking of (a,c) is decisive.
+    Construct profiles where only n's ranking of (a,c) changes, and by IIA
+    + pivotality, society follows n. -/
 theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X)
     (n : ι) (hn : is_pivotal f X b n)
     (a c : σ) (ha : a ∈ X) (hc : c ∈ X) (hab : a ≠ b) (hcb : c ≠ b) (hac : a ≠ c) :
     is_dictator_on f n a c := by
-  -- Use pivotality to show n can dictate over any pair (a, c) where a, c ≠ b
   sorry
 
-/-- Fourth step: A dictator over all pairs except those involving b
-    is actually a full dictator -/
+/-- A dictator over all pairs except those involving b is actually a full dictator.
+
+    Proof structure:
+    - Case x ≠ b ∧ y ≠ b: direct from hn
+    - Case x = b ∧ y ≠ b: use a third alternative c to bridge via IIA
+    - Case x ≠ b ∧ y = b: symmetric to above
+    -/
 theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X)
     (n : ι) (hn : ∀ a c : σ, a ∈ X → c ∈ X → a ≠ b → c ≠ b → a ≠ c → is_dictator_on f n a c) :
     ∀ x y : σ, x ∈ X → y ∈ X → x ≠ y → is_dictator_on f n x y := by
-  -- Extend dictatorship to pairs involving b using transitivity
-  sorry
+  intro x y hx hy hxy
+  by_cases hxb : x = b
+  · -- x = b, y ≠ b (since x ≠ y)
+    have hyb : y ≠ b := by
+      intro h
+      have : x = y := hxb.trans h.symm
+      exact hxy this
+    -- Need: n dictates over (b, y). Use a third alternative c ≠ b, c ≠ y.
+    have ⟨c, hc, hcb, hcy⟩ := exists_third_distinct_mem (by omega : 2 < X.card) hb hy (Ne.symm hyb)
+    -- n dictates over (c, y) since c ≠ b ∧ y ≠ b ∧ c ≠ y
+    have hncz := hn c y hc hy hcb hyb hcy
+    -- n dictates over (y, c) since y ≠ b ∧ c ≠ b ∧ y ≠ c
+    have hnzc := hn y c hy hc hyb hcb (Ne.symm hcy)
+    -- IIA argument: construct profiles that agree on (b, y) and use
+    -- the dictatorship over (c, y) to pin down society's ranking.
+    -- TODO: This requires constructing specific profiles and using hind (IIA).
+    -- The proof goes via: if n prefers b > y, construct prof' where n ranks
+    -- c > b > y, everyone ranks c > y, then use transitivity + IIA.
+    sorry
+  · by_cases hyb : y = b
+    · -- x ≠ b, y = b
+      -- Symmetric to the previous case: need n dictates over (x, b)
+      sorry
+    · -- x ≠ b, y ≠ b: direct from hn
+      exact hn x y hx hy hxb hyb hxy
 
 /-! ## Main Theorem -/
 
@@ -204,15 +267,11 @@ Weak Pareto and Independence of Irrelevant Alternatives must be a dictatorship.
 theorem arrow (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X) (hX : 3 ≤ X.card) :
     is_dictatorship f X := by
-  -- Step 1: Pick any alternative b ∈ X
   have hne : X.Nonempty := Finset.card_pos.mp (Nat.lt_of_lt_of_le (by norm_num : 0 < 3) hX)
   obtain ⟨b, hb⟩ := hne
-  -- Step 2: Find a pivotal individual for b
   obtain ⟨n, hn⟩ := pivot_exists f X hwp hind hX b hb
-  -- Step 3: Show n is a dictator over all pairs not involving b
   have h3 : ∀ a c, a ∈ X → c ∈ X → a ≠ b → c ≠ b → a ≠ c → is_dictator_on f n a c :=
     fun a c ha hc hab hcb hac => pivot_is_dictator_except_b f X hwp hind hX b hb n hn a c ha hc hab hcb hac
-  -- Step 4: Extend to full dictatorship
   have h4 := partial_dictator_is_full_dictator f X hwp hind hX b hb n h3
   exact ⟨n, h4⟩
 
@@ -228,5 +287,3 @@ theorem no_perfect_swf (f : SWF ι σ) (X : Finset σ)
     ¬non_dictatorial f X := by
   intro hnd
   exact hnd (arrow f X hwp hind hX)
-
-end

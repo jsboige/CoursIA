@@ -8,8 +8,8 @@ Cette serie explore les algorithmes de recherche et d'optimisation, de la formal
 |--------|-----------|-------|
 | Partie 1: Search Fondamental | 11 | ~12h30 |
 | Partie 2: Programmation par Contraintes | 9 | ~9h |
-| Applications | 20 | ~15h10 |
-| **Total** | **40** | **~36h40** |
+| Applications | 20 | ~13h20 |
+| **Total** | **40** | **~34h50** |
 
 | Statistique | Valeur |
 |-------------|--------|

@@ -82,8 +82,8 @@ Le repertoire `docs/` contient :
 | Document | Description |
 |----------|-------------|
 | [INTRO-GENAI.md](docs/INTRO-GENAI.md) | Introduction pratique a l'IA generative |
-| [claude-code/](docs/claude-code/) | Documentation Claude Code (installation, concepts, aide-memoire) |
-| [roo-code/](docs/roo-code/) | Documentation Roo Code (installation, guide) |
+| [Claude-Code/docs/](Claude-Code/docs/) | Documentation Claude Code (installation, concepts, aide-memoire) |
+| [Roo-Code/docs/](Roo-Code/docs/) | Documentation Roo Code (installation, guide) |
 | [activites/](docs/activites/) | Activites pedagogiques |
 | [sessions/](docs/sessions/) | Sessions de formation |
 

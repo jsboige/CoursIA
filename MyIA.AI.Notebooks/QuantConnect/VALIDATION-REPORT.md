@@ -2,13 +2,13 @@
 
 **Date** : 2026-02-09
 **Validateur** : Claude Code (Sonnet 4.5) + scripts automatisés
-**Scope** : 27 notebooks Python (QC-Py-01 à QC-Py-27)
+**Scope** : 28 notebooks Python (QC-Py-01 à QC-Py-28)
 
 ---
 
 ## Résumé Exécutif
 
-✅ **Validation structurelle : 100% (27/27 notebooks)**
+✅ **Validation structurelle : 100% (28/28 notebooks)**
 - Tous les notebooks ont une structure JSON valide
 - Tous respectent le format de nommage `QC-Py-XX-Description.ipynb`
 - Tous contiennent les métadonnées attendues (kernel, cells, etc.)
@@ -112,10 +112,12 @@
 | 25 | QC-Py-25-Reinforcement-Learning | ✅ VALIDE | PPO/DQN, Stable-Baselines3, CPU-first |
 | 26 | QC-Py-26-LLM-Trading-Signals | ✅ VALIDE | OpenAI/Anthropic API, prompt engineering |
 | 27 | QC-Py-27-Production-Deployment | ✅ VALIDE | Paper/live trading, monitoring |
+| 28 | QC-Py-28-Walk-Forward-Validation | ✅ VALIDE | Walk-forward analysis, regime detection |
 
 **Recommandations** :
 - QC-Py-26 : Nécessite API keys externes (OpenAI, Anthropic) - à configurer dans `.env`
 - QC-Py-27 : Live trading nécessite paid tier, paper trading gratuit
+- QC-Py-28 : Walk-forward validation renforce la robustesse des strategies ML
 
 ---
 
@@ -232,7 +234,7 @@ Les notebooks suivent la structure du livre (Jared Broad et al., 2025) :
 ### Statut Global : ✅ VALIDE (avec réserves mineures)
 
 **Points forts** :
-- Structure cohérente et progressive (8 phases, 27 notebooks)
+- Structure cohérente et progressive (8 phases, 28 notebooks)
 - Documentation pédagogique riche (markdown, exemples, explications)
 - Design cloud-first adapté au free tier
 - Workarounds pour fonctionnalités payantes
@@ -247,7 +249,7 @@ Les notebooks suivent la structure du livre (Jared Broad et al., 2025) :
 ### Actions Recommandées
 
 **Court terme (avant déploiement ESGF 2026)** :
-1. ✅ **FAIT** : Validation structurelle (27/27 notebooks)
+1. ✅ **FAIT** : Validation structurelle (28/28 notebooks)
 2. ⏳ **TODO** : Test manuel QC-Py-01 (premier backtest)
 3. ⏳ **TODO** : Vérifier API NewsAPI (QC-Py-16)
 4. ⏳ **TODO** : Test ObjectStore (QC-Py-19)

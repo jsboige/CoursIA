@@ -71,7 +71,8 @@ CoursIA/
 ├── scripts/                     # Scripts utilitaires
 │   ├── notebook_tools.py        # CLI : validate, skeleton, analyze, check-env
 │   ├── notebook_helpers.py      # Helpers pour manipulation notebooks
-│   ├── extract_notebook_skeleton.py  # Extraction structure pour README
+│   ├── notebook_tools/          # Notebook tools subdirectory
+│   │   └── extract_notebook_skeleton.py  # Extraction structure pour README
 │   └── genai-stack/             # Validation GenAI (Docker, Papermill)
 │
 ├── docker-configurations/       # Infrastructure Docker GPU
@@ -572,7 +573,7 @@ docker-configurations/
 |--------|--------|-------|
 | `notebook_tools.py` | `scripts/` | CLI consolide : skeleton, validate, analyze, check-env |
 | `notebook_helpers.py` | `scripts/` | Helpers pour manipulation notebooks et iteration cellules |
-| `extract_notebook_skeleton.py` | `scripts/` | Extraction structure pour generation README |
+| `extract_notebook_skeleton.py` | `scripts/notebook_tools/` | Extraction structure pour generation README |
 | `validate_notebooks.py` | `scripts/genai-stack/` | Validation GenAI via Papermill |
 | `validate_stack.py` | `scripts/genai-stack/` | Validation ecosysteme GenAI complet |
 | `check_vram.py` | `scripts/genai-stack/` | Verification VRAM disponible |

@@ -7,7 +7,7 @@ Serie complete de notebooks sur la programmation probabiliste, couvrant l'infere
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks | 22 (20 Infer.NET + 2 Python) |
-| Duree totale | ~18h |
+| Duree totale | ~20h |
 | Langages | C# (.NET), Python |
 
 ## Structure

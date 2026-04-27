@@ -10,6 +10,6 @@ import { default as ia101Styles } from '../styles/index.css'
 
 <style scoped>
 .default {
-  @apply px-16 py-12;
+  @apply px-12 py-8;
 }
 </style>

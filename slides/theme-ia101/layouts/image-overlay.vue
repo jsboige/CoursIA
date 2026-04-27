@@ -7,7 +7,9 @@ const props = defineProps<{
 
 <template>
   <div class="slidev-layout image-overlay">
-    <slot />
+    <div :class="['overlay-content', { 'has-image': !!image }]">
+      <slot />
+    </div>
     <img
       v-if="image"
       :src="image"
@@ -22,41 +24,59 @@ const props = defineProps<{
   position: relative;
 }
 
+.overlay-content {
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.overlay-content.has-image {
+  padding-right: 0;
+}
+
 .overlay-img {
   position: absolute;
-  top: 40px;
-  right: 60px;
-  max-width: 30%;
-  max-height: 40%;
+  top: 50%;
+  right: 30px;
+  transform: translateY(-50%);
+  max-width: 28%;
+  max-height: 70%;
   object-fit: contain;
   z-index: 1;
+  opacity: 0.35;
 }
 
 /* Utility classes for positioning */
 .overlay-img.top-right {
   top: 40px;
-  right: 60px;
+  transform: none;
 }
 
 .overlay-img.mid-right {
   top: 50%;
-  right: 60px;
+  right: 30px;
   transform: translateY(-50%);
 }
 
 .overlay-img.bottom-right {
-  bottom: 60px;
+  bottom: 40px;
   top: auto;
-  right: 60px;
+  right: 30px;
+  transform: none;
 }
 
 .overlay-img.small {
-  max-width: 20%;
-  max-height: 30%;
+  max-width: 25%;
+  max-height: 50%;
 }
 
 .overlay-img.large {
-  max-width: 40%;
-  max-height: 50%;
+  max-width: 45%;
+  max-height: 80%;
+}
+
+/* Higher opacity variant for images that need more visibility */
+.overlay-img.visible {
+  opacity: 0.55;
 }
 </style>

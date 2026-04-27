@@ -1,20 +1,20 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
-Collection de **92 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
+Collection de **84 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
 
 ## Vue d'ensemble
 
 | Serie | Notebooks | Exercices | Environnement | Theme | Duree |
 |-------|-----------|-----------|---------------|-------|-------|
-| [SemanticWeb](#semanticweb---web-semantique) | 17 | 15 (88%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~12h |
-| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~20h |
+| [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
+| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
 | [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
 | [Lean](#lean---verification-formelle) | 13 | 12 (92%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
-| [Tweety](#tweety---tweetyproject) | 10 | 9 (90%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
-| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~3h |
+| [Tweety](#tweety---tweetyproject) | 10 | 11 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
+| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 77 notebooks actifs, ~52h de contenu
+**Total** : 84 notebooks actifs, ~56h de contenu
 
 ---
 
@@ -53,9 +53,9 @@ Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibli
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
 | **Applications** |
 | 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
-| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 2 | Java/JPype |
+| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 1 | Java/JPype |
 
-> 9/10 notebooks ont des exercices. Seul Tweety-1-Setup (configuration) n'en a pas.
+> 10/10 notebooks ont des exercices. Tweety-1-Setup (configuration) est le seul sans exercice.
 
 ### Technologies
 
@@ -134,7 +134,7 @@ Serie de **17 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRD
 | **Partie 4 : Graphes de Connaissances et IA** |
 | 11 | [SW-11-Python-KnowledgeGraphs](SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) | Python | kglab, OWLReady2, visualisation NetworkX | 6 |
 | 12 | [SW-12-Python-GraphRAG](SemanticWeb/SW-12-Python-GraphRAG.ipynb) | Python | GraphRAG, extraction entites LLM | 6 |
-| 13 | [SW-13-Python-Reasoners](SemanticWeb/SW-13-Python-Reasoners.ipynb) | Python | Comparaison raisonneurs OWL (owlrl, HermiT, reasonable) | 2 (faible) |
+| **Bonus** | [SW-13-Python-Reasoners](SemanticWeb/SW-13-Python-Reasoners.ipynb) | Python | Comparaison raisonneurs OWL (owlrl, HermiT, reasonable) | 3 (faible) |
 
 Documentation complete : [SemanticWeb/README.md](SemanticWeb/README.md)
 
@@ -291,24 +291,106 @@ SymbolicAI/
 # Python 3.10+
 pip install jupyter ipykernel
 
-# Pour notebooks .NET (C#)
+# Pour notebooks .NET (C#) -- ATTENTION: Windows policy peut bloquer dotnet-interactive.exe
 dotnet tool install -g Microsoft.dotnet-interactive
 dotnet interactive jupyter install
 ```
 
-### Par serie
+> **Windows Policy** : Si `dotnet-interactive.exe` est bloque (Win32Exception 4551), executer en admin PowerShell :
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` puis relancer.
 
-| Serie | Installation | Environnement special |
-|-------|--------------|----------------------|
-| **Tweety** | Executer `Tweety-1-Setup.ipynb` | JDK 17 + JARs (auto-telecharges) |
-| **Lean** | Executer `Lean-1-Setup.ipynb` sous WSL | elan + Lean 4 + lean4_jupyter |
-| **Lean (LLM)** | Configurer `.env` avec `OPENAI_API_KEY` | Notebooks 7-10 |
-| **SemanticWeb (.NET)** | `dotnet restore MyIA.CoursIA.sln` | dotNetRDF via NuGet |
-| **SemanticWeb (Python)** | `pip install -r SemanticWeb/requirements.txt` | rdflib, pySHACL |
-| **Planners** | `pip install ortools unified-planning` | Fast-Downward via WSL ou Docker |
-| **SmartContracts** | `pip install py-solc-x web3` | Solidity/solc, optionnel: Foundry |
-| **Argument Analysis** | Configurer `.env` avec `OPENAI_API_KEY` | Java/JPype |
-| **Autres** | `dotnet restore MyIA.CoursIA.sln` | OR-Tools, Z3 via NuGet |
+### Tweety
+
+**Status execution : 10/10 SUCCESS**
+
+Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
+
+1. **JDK 17 portable** : Auto-telecharge dans `Tweety/jdk-17-portable/` (Azul Zulu, ~180MB). Aucune installation systeme requise, pas de UAC.
+2. **JARs TweetyProject** : Auto-telecharges dans `Tweety/libs/` depuis Maven Central (35 modules, ~50MB total).
+3. **Outils externes** : Clingo, SPASS, EProver dans `Tweety/ext_tools/` (inclus dans le depot).
+
+**Problemes connus :**
+- `asp-1.30.jar` et `rpcl-1.30.jar` : Modules absents de Maven Central pour la version 1.30. Non bloquant -- les notebooks gerent l'absence avec try/except.
+- Si un JAR fait 0 bytes ou ~554 bytes : re-telecharger manuellement depuis `https://repo1.maven.org/maven2/org/tweetyproject/`.
+
+### Planners
+
+**Status execution : 13/14 SUCCESS** (Fast-Downward-Legacy.ipynb echoue -- kernel .NET bloque)
+
+1. **Packages Python** : `pip install ortools unified_planning`
+2. **Fast-Downward** (requis pour notebooks 2-6, 12) : Installer via WSL ou Docker
+   - WSL : `sudo apt install fast-downward` ou compiler depuis source
+   - Docker : Image `aiblazor/fast-downward` disponible
+3. **Notebooks theoriques** (7-11) : Ne necessitent que Python + les packages ci-dessus
+
+### SmartContracts
+
+**Status execution : 15/27 (avec anvil lance : 25/27)**
+
+1. **Kernel Jupyter** : Enregistrer le kernel custom :
+   ```bash
+   python -m ipykernel install --user --name smartcontracts --display-name "Python (SmartContracts + Foundry)"
+   ```
+2. **Foundry** (requis pour SC-12 a SC-14) : Installer dans WSL :
+   ```bash
+   # Dans WSL Ubuntu
+   curl -L https://foundry.paradigm.xyz | bash
+   source ~/.bashrc
+   foundryup
+   ```
+   Versions testees : forge/cast/anvil/chisel 1.5.1-stable
+3. **Solidity** : `pip install py-solc-x web3` -- solc auto-installe par py-solc-x
+4. **Anvil** (requis pour SC-3 a SC-10) : Lancer avant l'execution :
+   ```bash
+   # Dans un terminal WSL
+   anvil --host 0.0.0.0
+   ```
+   Ou en arriere-plan : `wsl -d Ubuntu -- bash -c 'anvil --host 0.0.0.0 &'`
+5. **Fichier `.env`** : Configurer dans `SmartContracts/.env` :
+   - `ANVIL_RPC=http://127.0.0.1:8545` (local)
+   - `LLM_API_KEY` pour SC-11 (via OpenRouter)
+   - `DEPLOYER_PRIVATE_KEY` : Mettre une cle de testnet reelle pour SC-24/25, ou laisser le placeholder (ces notebooks echoueront)
+
+**Problemes connus :**
+- **SC-3 a SC-10** : Echouent si anvil n'est pas lance sur le port 8545. Solution : lancer `anvil` avant l'execution.
+- **SC-15 Zero-Knowledge-Proofs** : SyntaxError f-string imbriquee (`{"CONVAINCU" if ...}`) -- incompatible Python 3.11. Fix : utiliser des parentheses ou une variable intermediaire.
+- **SC-24/25** : `hexstr_to_bytes` erreur si `DEPLOYER_PRIVATE_KEY` contient un placeholder non-hex.
+
+### Argument_Analysis
+
+**Status execution : 3/5 (demo, pas cours etudiant)**
+
+1. **JDK 17 portable** : Partage avec Tweety (meme `jdk-17-portable/` si configure)
+2. **Fichier `.env`** : Configurer dans `Argument_Analysis/.env` :
+   - `OPENAI_API_KEY` (via OpenRouter : `sk-or-v1-...`)
+   - `OPENAI_BASE_URL=https://openrouter.ai/api/v1`
+   - `TEXT_CONFIG_PASSPHRASE=Propaganda`
+   - `BATCH_MODE=true`
+3. **Packages** : `pip install semantic-kernel jpype1`
+
+**Problemes connus :**
+- **AA-3 orchestration** : Papermill ne preserve pas l'etat entre notebooks. Les definitions de AA-0/1/2 ne sont pas disponibles. Ce notebook doit etre execute manuellement apres les 3 precedents.
+- **AA Executor** : Timeout a 300s (pipeline multi-agents long).
+
+### Lean
+
+**Status execution : NON TESTE (WSL kernel timeout)**
+
+1. **WSL obligatoire** : Les notebooks Lean ne fonctionnent pas sous Windows natif (SIGPIPE, problemes de chemins)
+2. **Installation** : Executer `Lean-1-Setup.ipynb` sous WSL (installe elan + Lean 4 + lean4_jupyter)
+3. **Kernels** :
+   - `Lean 4 (WSL)` : Notebooks 2-6, 11 (preuves natives)
+   - `Python 3 (WSL)` : Notebooks 1, 7-10, 11py (setup, LLM, LeanDojo)
+4. **Fichier `.env`** (pour notebooks 7-10) : `OPENAI_API_KEY` via OpenRouter
+
+### SemanticWeb
+
+**Python : 10/10 SUCCESS | C# : 0/7 (Windows policy)**
+
+1. **Python** : `pip install rdflib pySHACL owlready2 kglab` -- tous les notebooks Python passent
+2. **C#** : `dotnet restore MyIA.CoursIA.sln` -- necessite dotnet-interactive fonctionnel
+3. **Win32Exception 4551** : Windows peut bloquer dotnet-interactive.exe. Fix admin PowerShell :
+   `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 ---
 
@@ -340,14 +422,14 @@ dotnet interactive jupyter install
 
 | Serie | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
-| SmartContracts | 26 | 26 (100%) | 0 | Complet |
-| SemanticWeb | 17 | 16 (94%) | 1 (Setup) | Complet |
+| SmartContracts | 27 | 27 (100%) | 0 | Complet |
+| SemanticWeb | 18 | 16 (89%) | 2 (Setup + Bonus) | Complet |
 | Lean | 13 | 12 (92%) | 1 (Setup) | Complet |
 | Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
-| Tweety | 10 | 9 (90%) | 1 (Setup) | Complet |
+| Tweety | 10 | 10 (100%) | 0 | Complet |
 | Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-**Total** : 65/79 notebooks de contenu avec exercices (82%). Les seuls notebooks sans exercices sont les notebooks de setup/configuration (attendu) et la serie demo Argument Analysis.
+**Total** : 67/82 notebooks de contenu avec exercices (82%). Les notebooks sans exercices sont les notebooks de setup/configuration et le bonus SemanticWeb, ainsi que la série demo Argument Analysis.
 
 ### Problemes restants
 

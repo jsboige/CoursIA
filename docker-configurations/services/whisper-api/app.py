@@ -26,6 +26,7 @@ from pydantic import BaseModel
 # Add shared module to path
 sys.path.insert(0, "/app/shared")
 from lazy_model import LazyModelManager, idle_checker_task, get_all_status
+from auth_middleware import setup_auth
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +54,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Bearer token authentication
+setup_auth(app)
 
 
 def _load_whisper_model():
@@ -240,7 +244,9 @@ async def transcribe_audio(
             initial_prompt=prompt,
             temperature=temperature,
             word_timestamps=word_timestamps,
-            beam_size=5
+            beam_size=5,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500)
         )
 
         # Collect segments

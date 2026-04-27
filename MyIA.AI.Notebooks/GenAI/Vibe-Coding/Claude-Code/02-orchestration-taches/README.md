@@ -141,7 +141,7 @@ claude --permission-mode plan
 ## Ressources
 
 - [Documentation agents Claude Code](https://code.claude.com/docs/en/agents)
-- [Guide Explore](../../docs/claude-code/CONCEPTS-AVANCES.md#agents)
+- [Guide Explore](../docs/CONCEPTS-AVANCES.md#agents)
 - [Best Practices](https://www.anthropic.com/engineering/claude-code-best-practices)
 
 ## Checklist de validation
