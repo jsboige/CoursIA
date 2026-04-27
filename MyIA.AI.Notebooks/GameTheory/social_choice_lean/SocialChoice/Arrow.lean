@@ -594,13 +594,11 @@ theorem pivot_exists (f : SWF ι σ) (X : Finset σ)
         · -- Society flipped: i is pivotal!
           -- prof'' is maketop prof' i b X hb. For j ≠ i, prof'' j = prof' j.
           -- We construct the others-agree proof by unfolding maketop.
-          -- NOTE: Lean 4 v4.28.0-rc1 elaboration bug — cannot intro/close Prop binders
-          -- over Iff after rewriting. Workaround: sorry for the refl-Iff goal.
           have hagree : ∀ (j : ι), j ≠ i → ∀ (x y : σ), x ∈ X → y ∈ X →
               (prof' j).rel x y ↔ (prof'' j).rel x y := by
-            intro j hj x y
+            intro j hj x y hx hy
             rw [hother j hj]
-            sorry
+            exact Iff.rfl
           exact ⟨i, prof', prof'', hagree, hD'ext, hD''ext,
             hD'worst i hiD, hi''_best, hsoc'worst, hsoc''_best⟩
         · -- Society still worst: recurse on D' \ {i}
@@ -763,11 +761,12 @@ theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
         have hPab₀ : P (prof₀ j).rel a b := hbot₀.2 a ha hab
         have hRab₀ : (prof₀ j).rel a b := hPab₀.1
         have hnRba₀ : ¬(prof₀ j).rel b a := hPab₀.2
-        -- NOTE: Lean 4 v4.28.0-rc1 elaboration bug — hothers j hjn a b ha hb
-        -- produces "Function expected" despite type being a Pi type.
-        -- Workaround: sorry. Semantic proof is prof₀↔prof₁ on X-pairs via hothers.
-        have habIff : (prof₀ j).rel a b ↔ (prof₁ j).rel a b := sorry
-        have hbaIff : (prof₀ j).rel b a ↔ (prof₁ j).rel b a := sorry
+        have habIff : (prof₀ j).rel a b ↔ (prof₁ j).rel a b := by
+          have h := hothers j hjn
+          rw [h] <;> first | rfl | assumption
+        have hbaIff : (prof₀ j).rel b a ↔ (prof₁ j).rel b a := by
+          have h := hothers j hjn
+          rw [h] <;> first | rfl | assumption
         have hRab₁ : (prof₁ j).rel a b := habIff.mp hRab₀
         have hnRba₁ : ¬(prof₁ j).rel b a :=
           fun h => hnRba₀ (hbaIff.mpr h)
@@ -788,12 +787,25 @@ theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
         have hPba₀ : P (prof₀ j).rel b a := htop₀.2 a ha hab
         have hRba₀ : (prof₀ j).rel b a := hPba₀.1
         have hnRab₀ : ¬(prof₀ j).rel a b := hPba₀.2
-        -- NOTE: Lean 4 v4.28.0-rc1 elaboration bug — same as above, using sorry.
-        have hbaIff : (prof₀ j).rel b a ↔ (prof₁ j).rel b a := sorry
-        have habIff : (prof₀ j).rel a b ↔ (prof₁ j).rel a b := sorry
+        have hbaIff : (prof₀ j).rel b a ↔ (prof₁ j).rel b a := by
+          have h := hothers j hjn
+          rw [h] <;> first | rfl | assumption
+        have habIff : (prof₀ j).rel a b ↔ (prof₁ j).rel a b := by
+          have hRba₁ : (prof₁ j).rel b a := hbaIff.mp hRba₀
+          have hnWorst₁ : ¬is_strictly_worst (prof₁ j).rel b X := by
+            intro h
+            have hPab₁ : P (prof₁ j).rel a b := h.2 a ha hab
+            exact hPab₁.2 hRba₁
+          have htop₁ : is_strictly_best (prof₁ j).rel b X :=
+            (hall₁ j).is_strictly_best hnWorst₁
+          have hnRab₁ : ¬(prof₁ j).rel a b :=
+            (htop₁.2 a ha hab).2
+          constructor
+          · intro h; exact absurd h hnRab₀
+          · intro h; exact absurd h hnRab₁
         have hRba₁ : (prof₁ j).rel b a := hbaIff.mp hRba₀
         have hnRab₁ : ¬(prof₁ j).rel a b :=
-          fun h => hnRab₀ (habIff.mpr h)
+          fun h => habIff.mpr h |> hnRab₀
         have hPba₁ : P (prof₁ j).rel b a := ⟨hRba₁, hnRab₁⟩
         have this' : Q' j = maketop_pref (prof j) b := hQ'top j hjn hbot₀
         rw [this']
