@@ -828,9 +828,10 @@ theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
   exact hIIA_ca.1.mpr hPfQ'ca
 
 /-- A dictator over all pairs except those involving b is actually a full dictator.
-    Port of asouther4's fourth_step: uses uniqueness of pivot.
-    If n is dictator-except-b and j ≠ n is pivot for c, get contradiction.
-    Therefore n is also pivot for c, hence dictator-except-c, hence full dictator.
+    Proof via pivot uniqueness (asouther4's fourth_step):
+    For any c ∈ X, ∃ j pivotal for c. If j ≠ n, derive contradiction using
+    n's pivotal profiles and j's dictatorship on pairs not involving c.
+    Therefore j = n, so n is pivotal for c, hence dictator on (b,y) via pivot_is_dictator_except_b.
     -/
 theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
     (hind : ind_of_irr_alts f X)
@@ -841,48 +842,66 @@ theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
     ∀ x y : σ, x ∈ X → y ∈ X → x ≠ y → is_dictator_on f n x y := by
   intro x y hx hy hxy
   by_cases hxb : x = b
-  · -- x = b, y ≠ b (since x ≠ y)
-    have hyb : y ≠ b := by
-      intro h
-      have : x = y := hxb.trans h.symm
-      exact hxy this
-    -- Need: n dictates over (b, y). Use a third alternative c ≠ b, c ≠ y.
+  · -- x = b, y ≠ b
+    have hyb : y ≠ b := fun h => hxy (hxb.trans h.symm)
     have ⟨c, hc, hcb, hcy⟩ := exists_third_distinct_mem (by omega : 2 < X.card) hb hy (Ne.symm hyb)
-    -- n dictates over (c, y) since c ≠ b ∧ y ≠ b ∧ c ≠ y
-    have hncz := hn c y hc hy hcb hyb hcy
-    -- n dictates over (y, c) since y ≠ b ∧ c ≠ b ∧ y ≠ c
-    have hnzc := hn y c hy hc hyb hcb (Ne.symm hcy)
-    -- Proof strategy (Profile B sandwich construction):
-    -- Given: n is dictator on (c,y) and (y,c) via hn (since c,y ≠ b).
-    -- Need: P (f prof) b y whenever P (prof n).rel b y.
-    --
-    -- Step 1: Assume P (prof₀ n).rel b y (n strictly prefers b > y).
-    -- Step 2: Construct prof₁ where:
-    --   - n ranks: b > c > y (insert c between b and y)
-    --   - each j ≠ n: if P (prof₀ j).rel b y then b > c > y, else y > b > c
-    --   - c is ranked consistently; b,y rankings match prof₀
-    -- Step 3: All individuals rank c > y (WP) → P (f prof₁).rel c y (unanimity).
-    -- Step 4: n has P c y → dictatorship on (c,y) gives P (f prof₁).rel c y. ✓
-    -- Step 5: prof₁ agrees with prof₀ on (b,y) for all individuals →
-    --         by IIA (hind): P (f prof₀).rel b y ↔ P (f prof₁).rel b y.
-    -- Step 6: From Step 4: P (f prof₁).rel c y. Also n ranks b > c,
-    --         so P (f prof₁).rel b c (via WP on b>c if unanimous, else need IIA on (b,c)).
-    -- Step 7: P_trans: P (f prof₁).rel b c → P (f prof₁).rel c y → P (f prof₁).rel b y.
-    -- Step 8: By IIA (Step 5): P (f prof₀).rel b y. ∎
-    --
-    -- Formalization requires: a profile builder that inserts c between b,y
-    -- while preserving PrefOrder (refl, total, trans). This is the missing piece.
-    sorry  -- NOTE: substantive gap - needs sandwich profile constructor
+    obtain ⟨j, hj_piv⟩ := pivot_exists f X hwp hind hX c hc
+    by_cases hjn : j = n
+    · -- j = n: n is pivotal for c, hence dictator on (b,y)
+      subst hjn
+      exact pivot_is_dictator_except_b f X hind c hc n hj_piv b y hb hy
+        (Ne.symm hcb) (Ne.symm hcy) (Ne.symm hyb)
+    · -- j ≠ n: derive contradiction via n's pivotal profiles
+      obtain ⟨prof₀, prof₁, hothers, hall₀, hall₁, hworst₀, hbest₁, hsoc_worst, hsoc_best⟩ := hn_piv
+      have hj_by : is_dictator_on f j b y :=
+        pivot_is_dictator_except_b f X hind c hc j hj_piv b y hb hy
+          (Ne.symm hcb) (Ne.symm hcy) (Ne.symm hyb)
+      have hj_yb : is_dictator_on f j y b :=
+        pivot_is_dictator_except_b f X hind c hc j hj_piv y b hy hb
+          (Ne.symm hcy) (Ne.symm hcb) hyb
+      have hnPyb₁ : ¬P (f prof₁).rel y b := nP_of_reverseP (hsoc_best.2 y hy hyb)
+      have hnPby₀ : ¬P (f prof₀).rel b y := nP_of_reverseP (hsoc_worst.2 y hy hyb)
+      have hby_iff : (prof₀ j).rel b y ↔ (prof₁ j).rel b y := hothers j hjn b y hb hy
+      have hyb_iff : (prof₀ j).rel y b ↔ (prof₁ j).rel y b := hothers j hjn y b hy hb
+      rcases hall₁ j with hbest_j | hworst_j
+      · -- j places b best in prof₁: transfer to prof₀, contradict society worst
+        have hP₁ : P (prof₁ j).rel b y := hbest_j.2 y hy hyb
+        have hP₀ : P (prof₀ j).rel b y :=
+          ⟨hby_iff.mp hP₁.1, fun h => hP₁.2 (hyb_iff.mpr h)⟩
+        exact absurd (hj_by prof₀ hP₀) hnPby₀
+      · -- j places b worst in prof₁: contradict society best
+        have hP₁ : P (prof₁ j).rel y b := hworst_j.2 y hy hyb
+        exact absurd (hj_yb prof₁ hP₁) hnPyb₁
   · by_cases hyb : y = b
-    · -- x ≠ b, y = b
-      -- Symmetric case: need n dictates over (x, b).
-      -- Same sandwich construction with third alternative c ≠ x, c ≠ b.
-      -- Have ⟨c, hc, hcx, hcb⟩ via exists_third_distinct_mem.
-      -- n dictates on (x,c) and (c,x) since x,c ≠ b.
-      -- Construct prof₁: n ranks x > c > b; others rank c > b if they prefer c > b.
-      -- WP on (c,b) → society c > b. Dictatorship on (x,c) → society x > c.
-      -- P_trans: society x > c > b → society x > b. IIA closes the gap.
-      sorry  -- NOTE: substantive gap - symmetric sandwich profile constructor
+    · -- x ≠ b, y = b: symmetric argument
+      have ⟨c, hc, hcx, hcb⟩ := exists_third_distinct_mem (by omega : 2 < X.card) hx hb hxb
+      obtain ⟨j, hj_piv⟩ := pivot_exists f X hwp hind hX c hc
+      by_cases hjn : j = n
+      · -- j = n: n is pivotal for c, hence dictator on (x,b)
+        subst hjn
+        exact pivot_is_dictator_except_b f X hind c hc n hj_piv x b hx hb
+          (Ne.symm hcx) (Ne.symm hcb) hxb
+      · -- j ≠ n: derive contradiction
+        obtain ⟨prof₀, prof₁, hothers, hall₀, hall₁, hworst₀, hbest₁, hsoc_worst, hsoc_best⟩ := hn_piv
+        have hj_xb : is_dictator_on f j x b :=
+          pivot_is_dictator_except_b f X hind c hc j hj_piv x b hx hb
+            (Ne.symm hcx) (Ne.symm hcb) hxb
+        have hj_bx : is_dictator_on f j b x :=
+          pivot_is_dictator_except_b f X hind c hc j hj_piv b x hb hx
+            (Ne.symm hcb) (Ne.symm hcx) (Ne.symm hxb)
+        have hnPxb₁ : ¬P (f prof₁).rel x b := nP_of_reverseP (hsoc_best.2 x hx hxb)
+        have hnPbx₀ : ¬P (f prof₀).rel b x := nP_of_reverseP (hsoc_worst.2 x hx hxb)
+        have hbx_iff : (prof₀ j).rel b x ↔ (prof₁ j).rel b x := hothers j hjn b x hb hx
+        have hxb_iff : (prof₀ j).rel x b ↔ (prof₁ j).rel x b := hothers j hjn x b hx hb
+        rcases hall₁ j with hbest_j | hworst_j
+        · -- j places b best in prof₁: transfer to prof₀, contradict society worst
+          have hP₁ : P (prof₁ j).rel b x := hbest_j.2 x hx hxb
+          have hP₀ : P (prof₀ j).rel b x :=
+            ⟨hbx_iff.mp hP₁.1, fun h => hP₁.2 (hxb_iff.mpr h)⟩
+          exact absurd (hj_bx prof₀ hP₀) hnPbx₀
+        · -- j places b worst in prof₁: contradict society best
+          have hP₁ : P (prof₁ j).rel x b := hworst_j.2 x hx hxb
+          exact absurd (hj_xb prof₁ hP₁) hnPxb₁
     · -- x ≠ b, y ≠ b: direct from hn
       exact hn x y hx hy hxb hyb hxy
 
