@@ -159,13 +159,11 @@ layout: section
 
 # Quatre visions de l'IA
 
-**Quatre grandes approches structurent le domaine :**
-
 <ColoredTable />
 
-**Notre angle principal : « Agir de facon rationnelle »**
-- Concevoir des agents qui prennent les meilleures decisions possibles
-- Approche qui unifie les autres : un agent rationnel peut raisonner, apprendre et communiquer
+**Notre angle : « Agir de facon rationnelle »**
+- Des agents qui prennent les meilleures decisions possibles
+- Unifie les autres : raisonner, apprendre, communiquer
 
 ---
 layout: image-overlay
@@ -617,7 +615,8 @@ image: ./images/img_037.png
 
 # Agent fonde sur des buts
 
-**Du reactif au deliberatif** : l'agent ne reagit plus seulement a l'instant present, il anticipe le futur.
+**Du reactif au deliberatif** : l'agent ne reagit plus seulement a l'instant present,
+il anticipe le futur.
 
 - Considere les consequences de ses actions
 - Planifie des sequences d'actions pour atteindre un objectif
