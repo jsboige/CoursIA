@@ -5,15 +5,19 @@ from AlgorithmImports import *
 
 class DualMomentum(QCAlgorithm):
     """
-    Dual Momentum v4 (BEST): Core5 + AQR Dual Signal
+    Dual Momentum v5 (BEST): Momentum-Weighted + DBC
     ==================================================
-    Best variant: Sharpe 0.391, CAGR 9.15%, MaxDD 23.9%
+    Best variant: Sharpe 0.526, CAGR 11.31%, MaxDD 19.0%
 
-    Universe (risky): SPY, EFA, EEM, TLT, GLD
+    Universe (risky): SPY, EFA, EEM, TLT, GLD, DBC
     Safe refuge: BND
     Absolute filter: price > SMA200 AND 6m return > 0
-    Relative ranking: 12m return, top 2 by return
-    Rebalance: Monthly, equal weight among selected
+    Relative ranking: 12m return, top 3 by return, momentum-weighted
+    Rebalance: Monthly
+
+    Iteration results:
+    v4: Sharpe 0.391, CAGR 9.15%, MaxDD 23.9% (Core5, top-2, equal)
+    v5: Sharpe 0.526, CAGR 11.31%, MaxDD 19.0% (+DBC, top-3, weighted) <-- BEST
 
     Reference: Antonacci (2014) + AQR Trend Following
     """
@@ -23,7 +27,7 @@ class DualMomentum(QCAlgorithm):
         self.set_cash(100_000)
         self.set_benchmark("SPY")
 
-        self.risky_tickers = ["SPY", "EFA", "EEM", "TLT", "GLD"]
+        self.risky_tickers = ["SPY", "EFA", "EEM", "TLT", "GLD", "DBC"]
         self.safe_ticker = "BND"
         self.all_tickers = self.risky_tickers + [self.safe_ticker]
 
@@ -39,7 +43,7 @@ class DualMomentum(QCAlgorithm):
 
         self.lookback_12m = 252
         self.lookback_6m = 126
-        self.num_holdings = 2
+        self.num_holdings = 3
 
         self.schedule.on(
             self.date_rules.month_start("SPY"),
@@ -74,14 +78,21 @@ class DualMomentum(QCAlgorithm):
                 candidates[ticker] = ret_12m
 
         sorted_assets = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-        selected = [t for t, _ in sorted_assets[:self.num_holdings]]
+        selected = sorted_assets[:self.num_holdings]
 
-        n_selected = len(selected)
         targets = {}
-        if n_selected > 0:
-            weight = 1.0 / n_selected
-            for ticker in selected:
-                targets[ticker] = weight
+        if len(selected) >= 2:
+            n = len(selected)
+            raw_weights = []
+            for i, (ticker, ret) in enumerate(selected):
+                rank_score = (n - i) / n
+                raw_weights.append((ticker, rank_score))
+            total = sum(w for _, w in raw_weights)
+            for ticker, w in raw_weights:
+                targets[ticker] = w / total
+        elif len(selected) == 1:
+            targets[selected[0][0]] = 0.5
+            targets[self.safe_ticker] = 0.5
         else:
             targets[self.safe_ticker] = 1.0
 
