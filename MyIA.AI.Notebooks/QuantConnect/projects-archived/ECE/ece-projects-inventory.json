@@ -1,0 +1,17 @@
+{
+  "org_id": "dc6b9eb03ab9546b1cc240282f7b4f83",
+  "org_name": "ECE",
+  "archived_date": "2026-04-28",
+  "reason": "Cours ECE termine. Tous les projets ont des equivalents locaux dans projects/.",
+  "projects": [
+    {"id": 29049549, "name": "H4_Regime_Switching", "sharpe": 0.797, "cagr": 0.1334, "max_dd": 0.168, "backtests": 31, "local_equivalent": "regime-switching"},
+    {"id": 29364141, "name": "Projet aya asseli (Wheel)", "sharpe": -0.351, "cagr": 0.0289, "max_dd": 0.109, "backtests": 15, "local_equivalent": "wheel-strategy"},
+    {"id": 29392270, "name": "Adaptable Tan Chinchilla", "sharpe": 0.488, "cagr": 0.0699, "max_dd": 0.238, "backtests": 18, "local_equivalent": "ML-Ensemble"},
+    {"id": 29520736, "name": "ECE-ML-Regression", "sharpe": 0.171, "cagr": 0.0657, "max_dd": 0.277, "backtests": 1, "local_equivalent": "ML-Regression"},
+    {"id": 29520744, "name": "ECE-ML-Ensemble", "sharpe": 0.689, "cagr": 0.2384, "max_dd": 0.451, "backtests": 1, "local_equivalent": "ML-Ensemble"},
+    {"id": 29520745, "name": "ECE-ML-EnhancedPairs", "sharpe": -3.324, "cagr": -0.0057, "max_dd": 0.049, "backtests": 1, "local_equivalent": "ML-EnhancedPairs"},
+    {"id": 29520746, "name": "ECE-ML-TextClassification", "sharpe": 0.518, "cagr": 0.1367, "max_dd": 0.230, "backtests": 2, "local_equivalent": "ML-TextClassification"},
+    {"id": 29520747, "name": "ECE-RL-Portfolio", "sharpe": 0.420, "cagr": 0.1238, "max_dd": 0.324, "backtests": 1, "local_equivalent": "RL-Portfolio"},
+    {"id": 29540974, "name": "ECE-ML-Classification-Test", "sharpe": null, "cagr": 0.0, "max_dd": 0.0, "backtests": 1, "local_equivalent": "ML-Classification", "note": "ERROR - backtest failed"}
+  ]
+}
