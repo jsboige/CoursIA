@@ -5,19 +5,21 @@ from AlgorithmImports import *
 
 class DualMomentum(QCAlgorithm):
     """
-    Dual Momentum v5 (BEST): Momentum-Weighted + DBC
-    ==================================================
-    Best variant: Sharpe 0.526, CAGR 11.31%, MaxDD 19.0%
+    Dual Momentum v6b: All Candidates + Momentum Tilt (BEST)
+    ========================================================
+    Best variant: Sharpe 0.557, CAGR 11.22%, MaxDD 15.3%
 
     Universe (risky): SPY, EFA, EEM, TLT, GLD, DBC
     Safe refuge: BND
     Absolute filter: price > SMA200 AND 6m return > 0
-    Relative ranking: 12m return, top 3 by return, momentum-weighted
+    Relative ranking: 12m return, ALL candidates, momentum-tilt weighted
     Rebalance: Monthly
 
     Iteration results:
     v4: Sharpe 0.391, CAGR 9.15%, MaxDD 23.9% (Core5, top-2, equal)
-    v5: Sharpe 0.526, CAGR 11.31%, MaxDD 19.0% (+DBC, top-3, weighted) <-- BEST
+    v5: Sharpe 0.526, CAGR 11.31%, MaxDD 19.0% (+DBC, top-3, weighted)
+    v6: Sharpe 0.473, CAGR 9.42%, MaxDD 16.4% (defensive 80/20 - worse Sharpe)
+    v6b: Sharpe 0.557, CAGR 11.22%, MaxDD 15.3% (all candidates, mom tilt) <-- BEST
 
     Reference: Antonacci (2014) + AQR Trend Following
     """
@@ -43,7 +45,7 @@ class DualMomentum(QCAlgorithm):
 
         self.lookback_12m = 252
         self.lookback_6m = 126
-        self.num_holdings = 3
+        self.min_trending = 2
 
         self.schedule.on(
             self.date_rules.month_start("SPY"),
@@ -78,25 +80,27 @@ class DualMomentum(QCAlgorithm):
                 candidates[ticker] = ret_12m
 
         sorted_assets = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-        selected = sorted_assets[:self.num_holdings]
 
         targets = {}
-        if len(selected) >= 2:
-            n = len(selected)
+        if len(sorted_assets) >= self.min_trending:
+            n = len(sorted_assets)
             raw_weights = []
-            for i, (ticker, ret) in enumerate(selected):
+            for i, (ticker, ret) in enumerate(sorted_assets):
                 rank_score = (n - i) / n
                 raw_weights.append((ticker, rank_score))
             total = sum(w for _, w in raw_weights)
             for ticker, w in raw_weights:
                 targets[ticker] = w / total
-        elif len(selected) == 1:
-            targets[selected[0][0]] = 0.5
-            targets[self.safe_ticker] = 0.5
+        elif len(sorted_assets) > 0:
+            risky_weight = len(sorted_assets) * 0.25
+            per_asset = risky_weight / len(sorted_assets)
+            for ticker, _ in sorted_assets:
+                targets[ticker] = per_asset
+            targets[self.safe_ticker] = 1.0 - risky_weight
         else:
             targets[self.safe_ticker] = 1.0
 
-        passing_str = ", ".join(f"{t}:{r:.1%}" for t, r in sorted_assets[:5])
+        passing_str = ", ".join(f"{t}:{r:.1%}" for t, r in sorted_assets[:6])
         self.log(f"Trending ({len(candidates)}/{len(self.risky_tickers)}): [{passing_str}]")
 
         for ticker in self.all_tickers:
