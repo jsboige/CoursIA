@@ -101,6 +101,28 @@ lemma nP_of_nR {R : σ → σ → Prop} {x y : σ} (h : ¬R x y) : ¬P R x y :=
 lemma false_of_P_self {R : σ → σ → Prop} {x : σ} (h : P R x x) : False :=
   h.2 h.1
 
+/-! ## Same Order Equivalence for Total Orders -/
+
+/-- For total orders, R x y ↔ ¬P R y x -/
+lemma R_iff_nP_rev {R : σ → σ → Prop} {x y : σ} (hR : Total R) :
+    R x y ↔ ¬P R y x :=
+  ⟨fun h hp => hp.2 h, R_of_nP_total hR⟩
+
+/-- For total orders, same_order and same_order' are equivalent -/
+lemma same_order_iff_same_order' {R R' : σ → σ → Prop} {x y : σ}
+    (hR : Total R) (hR' : Total R') :
+    same_order R R' x y x y ↔ same_order' R R' x y x y := by
+  refine ⟨fun h => h.2, fun h => ?_⟩
+  refine ⟨⟨⟨fun hxy => ?_, fun hxy => ?_⟩, ⟨fun hyx => ?_, fun hyx => ?_⟩⟩, h⟩
+  · -- R x y → R' x y: via ¬P R y x → ¬P R' y x
+    exact (R_iff_nP_rev hR').mpr (mt h.2.mpr ((R_iff_nP_rev hR).mp hxy))
+  · -- R' x y → R x y
+    exact (R_iff_nP_rev hR).mpr (mt h.2.mp ((R_iff_nP_rev hR').mp hxy))
+  · -- R y x → R' y x: via ¬P R x y → ¬P R' x y
+    exact (R_iff_nP_rev hR').mpr (mt h.1.mpr ((R_iff_nP_rev hR).mp hyx))
+  · -- R' y x → R y x
+    exact (R_iff_nP_rev hR).mpr (mt h.1.mp ((R_iff_nP_rev hR').mp hyx))
+
 /-! ## Choice Sets and Maximal Elements -/
 
 /-- x is a maximal element of S under R: nothing in S is strictly better -/
