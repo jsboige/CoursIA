@@ -5,21 +5,13 @@ from AlgorithmImports import *
 
 class GlobalMacroRegime(QCAlgorithm):
     """
-    Global Macro Regime v3: Rank-based Risk Parity + Regime Switch (BEST)
+    Global Macro Regime v3 BEST: Rank-based Risk Parity + Regime Switch
     =====================================================================
-    Best variant: Sharpe 0.607, CAGR 11.62%, MaxDD 23.6%
-
-    Bull regime: rank-based risk parity across trending assets.
-    Bear regime: risk parity across BND, TLT, GLD.
-    Regime signal: SPY > SMA200 AND SPY 6m return > 0.
-
-    Iteration results:
     v1: Sharpe 0.499, CAGR 9.87%, MaxDD 18.0% (equal defensive)
     v2: Sharpe 0.583, CAGR 11.55%, MaxDD 21.6% (RP defensive + 6m filter)
-    v3: Sharpe 0.607, CAGR 11.62%, MaxDD 23.6% (rank * inv_vol in risky) <-- BEST
-    v4: Sharpe 0.604, CAGR 11.61%, MaxDD 23.6% (12m regime - no improvement)
-    v5: Sharpe 0.582, CAGR 10.89%, MaxDD 23.7% (BND cushion - worse)
-    v6: Sharpe 0.581, CAGR 11.20%, MaxDD 22.6% (max 25% cap - marginal)
+    v3: Sharpe 0.607, CAGR 11.62%, MaxDD 23.6% (rank * inv_vol in risky) BEST
+    v4: Sharpe 0.603, CAGR 11.53%, MaxDD 23.5% (+ vol targeting - no improvement)
+    v4-v6: no improvement
 
     Reference: Bridgewater Risk Parity, Antonacci (2014)
     """

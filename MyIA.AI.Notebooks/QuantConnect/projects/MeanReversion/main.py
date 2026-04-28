@@ -5,20 +5,19 @@ from AlgorithmImports import *
 
 class ShortTermMeanReversion(QCAlgorithm):
     """
-    Sector ETF Mean Reversion Strategy v4.2 (BEST)
-    ==================================================
-    Best variant: Sharpe 0.413, CAGR 8.76%, MaxDD 26.4%
+    Sector ETF Mean Reversion Strategy v5.2 (BEST)
+    ==========================================
+    v4.2: Sharpe 0.413, CAGR 8.76%, MaxDD 26.4%
+    v5.0: Sharpe 0.598, CAGR 6.07%, MaxDD 4.7% (RS > SPY, too few trades)
+    v5.1: Sharpe 0.596, CAGR 7.73%, MaxDD 8.5% (relaxed RS -0.10)
+    v5.2: Sharpe 0.810, CAGR 10.04%, MaxDD 7.5% (RSI65/stop10 BEST)
+    v5.3: Sharpe 0.677, CAGR 8.91%, MaxDD 11.1% (hold20 - too long)
+    v5.4: Sharpe 0.743, CAGR 7.45%, MaxDD 4.3% (RSI35 - fewer trades)
 
-    RSI(14) oversold entries on 11 sector ETFs.
+    RSI(14) oversold entries on 11 sector ETFs, filtered by relative strength.
+    Only enter oversold sectors with 3m return >= SPY return - 10%.
     Half weight (12.5%) in bear market (SPY < SMA200), full weight (25%) in bull.
-    Exit: RSI > 60, 15-day holding period, 8% stop-loss.
-
-    Iteration results:
-    v4.0: Sharpe 0.312, CAGR 6.68%, MaxDD 14.7% (full bear filter)
-    v4.1: Sharpe 0.359, CAGR 9.43%, MaxDD 40.0% (no bear filter)
-    v4.2: Sharpe 0.413, CAGR 8.76%, MaxDD 26.4% (half weight in bear) <-- BEST
-    v4.3: Sharpe 0.407, CAGR 8.37%, MaxDD 26.4% (tighter stops - worse CAGR)
-    v4.4: Sharpe 0.363, CAGR 8.00%, MaxDD 26.8% (trailing stop - much worse)
+    Exit: RSI > 65, 15-day holding period, 10% stop-loss.
 
     Ref: research.ipynb, Jegadeesh (1990), De Bondt & Thaler (1985)
     """
@@ -43,12 +42,13 @@ class ShortTermMeanReversion(QCAlgorithm):
         self.spy_sma = self.sma(self.spy, 200, Resolution.DAILY)
 
         self.rsi_oversold = 40
-        self.rsi_exit = 60
+        self.rsi_exit = 65
         self.num_positions = 4
         self.holding_period = 15
-        self.stop_loss_pct = 0.08
+        self.stop_loss_pct = 0.10
         self.bull_weight = 0.25
         self.bear_weight = 0.125
+        self.rs_lookback = 63  # 3-month relative strength
 
         self.entry_days = {}
         self.entry_prices = {}
@@ -62,6 +62,12 @@ class ShortTermMeanReversion(QCAlgorithm):
 
         self.set_benchmark("SPY")
         self.set_warm_up(200, Resolution.DAILY)
+
+    def _get_3m_return(self, symbol):
+        hist = self.history(symbol, self.rs_lookback + 5, Resolution.DAILY)
+        if len(hist) < self.rs_lookback * 0.8:
+            return 0.0
+        return float(hist["close"].iloc[-1] / hist["close"].iloc[-self.rs_lookback] - 1)
 
     def _daily_scan(self):
         if self.is_warming_up:
@@ -98,6 +104,8 @@ class ShortTermMeanReversion(QCAlgorithm):
             self.entry_days.pop(etf, None)
             self.entry_prices.pop(etf, None)
 
+        spy_ret_3m = self._get_3m_return(self.spy)
+
         candidates = []
         for etf in self.sector_etfs:
             if etf in self.entry_days:
@@ -107,7 +115,9 @@ class ShortTermMeanReversion(QCAlgorithm):
                 continue
             rsi_val = rsi.current.value
             if rsi_val < self.rsi_oversold:
-                candidates.append((etf, rsi_val))
+                etf_ret_3m = self._get_3m_return(self.symbols[etf])
+                if etf_ret_3m >= spy_ret_3m - 0.10:
+                    candidates.append((etf, rsi_val))
 
         candidates.sort(key=lambda x: x[1])
 
@@ -122,4 +132,4 @@ class ShortTermMeanReversion(QCAlgorithm):
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"MEAN REV v4.2: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
+        self.log(f"MEAN REV v5.2: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
