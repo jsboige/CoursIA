@@ -616,5 +616,7 @@ slides/*/analysis/titles-slidev.txt
 # Sudoku neural network model checkpoints (large binary files)
 sudoku_models/*.pt
 sudoku_models/*.pth
+sudoku_models/*.h5
 sudoku_models/data_cache/
+sudoku_models/_archived/
 

@@ -1,43 +1,78 @@
 # region imports
-from datetime import datetime
 from AlgorithmImports import *
-from alpha import custom_alpha
-
 # endregion
 
 
-class CompetitionAlgorithm(QCAlgorithm):
+class TrendFollowingAQR(QCAlgorithm):
+    """
+    Trend Following Multi-Asset (AQR-style)
+    ========================================
+    Dual signal: SMA(200) + 6m momentum confirmation.
+    Asset must be above SMA200 AND have positive 6m return.
 
-    def Initialize(self):
-        self.SetStartDate(2015, 1, 1)  # Extended from 2019: +4 years for robustness validation (includes 2017-2019 bull pre-COVID)
-        self.SetCash(1000000)
-        self.SetWarmUp(10)
-        self.spy = self.AddEquity("SPY", Resolution.Hour).Symbol
-        self.SetBenchmark(self.spy)
-        # v2: reduced from 600 to 200 stocks to reduce noise
-        self.final_universe_size = 200
-        self.rebalanceTime = self.time
-        self.universe_type = "equity"
-        if self.universe_type == "equity":
-            self.AddUniverse(self.CoarseFilter, self.FineFilter)
-        self.UniverseSettings.Resolution = Resolution.Hour
-        # v3b: SPY SMA200 removed - per-stock EMA50/200 filter sufficient (regime filter degraded results)
-        # v2: removed 1.85x leverage multiplier PCM, use standard model
-        self.set_portfolio_construction(InsightWeightingPortfolioConstructionModel())
-        self.set_alpha(custom_alpha(self))
-        self.set_execution(VolumeWeightedAveragePriceExecutionModel())
-        # v3: keep 10% per-security drawdown (same as v2) + SPY SMA200 regime filter as main protection
-        self.add_risk_management(MaximumDrawdownPercentPerSecurity(0.10))
-        self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Margin)
+    Universe: SPY, EFA, EEM, TLT, GLD, DBC
+    Rebalance: Monthly, Allocation: 1/N among trending
+    """
 
-    def CoarseFilter(self, coarse):
-        if self.Time <= self.rebalanceTime:
-            return self.Universe.Unchanged
-        self.rebalanceTime = self.Time + timedelta(days=300)
-        sortedByDollarVolume = sorted(coarse, key=lambda x: x.DollarVolume, reverse=True)
-        return [x.Symbol for x in sortedByDollarVolume if x.HasFundamentalData][:1000]
+    def initialize(self):
+        self.set_start_date(2015, 1, 1)
+        self.set_cash(100_000)
+        self.set_benchmark("SPY")
 
-    def FineFilter(self, fine):
-        sortedbyVolume = sorted(fine, key=lambda x: x.DollarVolume, reverse=True)
-        fine_output = [x.Symbol for x in sortedbyVolume if x.price > 10 and x.MarketCap > 2000000000][:self.final_universe_size]
-        return fine_output
+        self.tickers = ["SPY", "EFA", "EEM", "TLT", "GLD", "DBC"]
+        self.symbols = {}
+        self.sma_ind = {}
+
+        for ticker in self.tickers:
+            security = self.add_equity(ticker, Resolution.DAILY)
+            self.symbols[ticker] = security.symbol
+            self.sma_ind[ticker] = self.sma(security.symbol, 200, Resolution.DAILY)
+
+        self.mom_lookback = 126
+
+        self.schedule.on(
+            self.date_rules.month_start("SPY"),
+            self.time_rules.after_market_open("SPY", 30),
+            self.rebalance,
+        )
+
+        self.set_warm_up(timedelta(days=280))
+
+    def rebalance(self):
+        if self.is_warming_up:
+            return
+
+        trending = []
+        for ticker in self.tickers:
+            ind = self.sma_ind[ticker]
+            if not ind.is_ready:
+                continue
+            sma_val = ind.current.value
+            close = self.securities[self.symbols[ticker]].close
+            if close <= sma_val:
+                continue
+            history = self.history(self.symbols[ticker], self.mom_lookback, Resolution.DAILY)
+            if len(history) < self.mom_lookback * 0.8:
+                continue
+            ret_6m = history["close"].iloc[-1] / history["close"].iloc[0] - 1
+            if ret_6m > 0:
+                trending.append(ticker)
+
+        if not trending:
+            self.liquidate()
+            self.log("All flat: no trending assets")
+            return
+
+        weight = 1.0 / len(trending)
+        self.log(f"Trending ({len(trending)}/{len(self.tickers)}): {trending}")
+
+        for ticker in self.tickers:
+            if ticker not in trending:
+                if self.portfolio[self.symbols[ticker]].invested:
+                    self.liquidate(self.symbols[ticker])
+
+        for ticker in trending:
+            self.set_holdings(self.symbols[ticker], weight)
+
+    def on_data(self, data: Slice):
+        pass
