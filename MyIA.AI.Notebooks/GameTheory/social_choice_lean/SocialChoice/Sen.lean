@@ -92,12 +92,52 @@ theorem book_paradox_demonstrates_sen
     (hprude : is_decisive_over f prude pr lr)
     (hlewd : is_decisive_over f lewd lr np) :
     ∃ prof : Profile ι σ,
-      -- Prude prefers pr > lr (exercises right)
-      -- Lewd prefers lr > np (exercises right)
-      -- Both prefer np > pr (Pareto condition)
-      -- Result: Society has cycle np > pr > lr > np
       P (f prof).rel np pr ∧ P (f prof).rel pr lr ∧ P (f prof).rel lr np := by
-  sorry
+  -- Construct a base PrefOrder (using Classical.choice)
+  have ⟨hnppr, hprlr, hnp_lr⟩ := hdist
+  let base : PrefOrder σ := ⟨fun _ _ => True, fun _ => trivial,
+    fun _ _ => Or.inl trivial, fun _ _ _ _ _ => trivial⟩
+  -- Profile construction:
+  --   Prude: np top, lr bottom → P np pr, P pr lr
+  --   Lewd: lr top, pr bottom → P lr np, P np pr
+  --   Others: np top → P np pr
+  let prof : Profile ι σ := fun i =>
+    if i = prude then
+      maketop_pref (makebot_pref base lr) np
+    else if i = lewd then
+      maketop_pref (makebot_pref base pr) lr
+    else
+      maketop_pref base np
+  use prof
+  -- Step 1: Everyone prefers np > pr (Weak Pareto)
+  have hpr_np : pr ≠ np := fun h => hnppr h.symm
+  have hlr_np : lr ≠ np := fun h => hnp_lr h.symm
+  have hpr_lr : pr ≠ lr := hprlr
+  have hAllNpPr : ∀ i : ι, P (prof i).rel np pr := by
+    intro i
+    unfold prof
+    split_ifs with hi_p hi_l
+    · -- Prude: maketop(makebot(base, lr), np) → np is top → P np pr
+      simp [P, maketop_pref, maketop_rel, hpr_np, hlr_np]
+    · -- Lewd: maketop(makebot(base, pr), lr) → np, pr ≠ lr
+      simp [P, maketop_pref, maketop_rel, makebot_pref, makebot_rel, hnppr, hnp_lr, hpr_lr]
+    · -- Others: maketop(base, np) → np is top → P np pr
+      simp [P, maketop_pref, maketop_rel, hpr_np]
+  have hPnpPr : P (f prof).rel np pr := hwp prof np pr
+    (by rw [hX]; simp) (by rw [hX]; simp) hAllNpPr
+  -- Step 2: Prude prefers pr > lr (decisive)
+  have hPrudePrLr : P (prof prude).rel pr lr := by
+    unfold prof; simp only [hne]
+    simp [P, maketop_pref, maketop_rel, makebot_pref, makebot_rel, hpr_np, hlr_np, hpr_lr]
+  have hPprLr : P (f prof).rel pr lr :=
+    hprude prof hPrudePrLr
+  -- Step 3: Lewd prefers lr > np (decisive)
+  have hLewdLrNp : P (prof lewd).rel lr np := by
+    unfold prof; simp only [hne.symm]
+    simp [P, maketop_pref, maketop_rel, makebot_pref, makebot_rel, hnp_lr]
+  have hPlrNp : P (f prof).rel lr np :=
+    hlewd prof hLewdLrNp
+  exact ⟨hPnpPr, hPprLr, hPlrNp⟩
 
 /-! ## Resolution Approaches -/
 

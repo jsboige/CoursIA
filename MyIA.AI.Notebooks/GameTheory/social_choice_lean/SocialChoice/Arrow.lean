@@ -400,25 +400,37 @@ theorem is_strictly_worst_of_forall_is_strictly_worst {f : SWF ι σ} {X : Finse
 
 /-! ## Pivotality -/
 
-/-- Individual n is pivotal for alternative b:
-    There exist two profiles where everyone places b extremally,
-    all others agree, n moves b from worst to best,
-    and society correspondingly moves b from worst to best.
-    (Port of asouther4's is_pivotal definition.) -/
+/-- Witness data for pivotality. Type-valued so that field projections
+    (e.g. .hothers) produce proper functions. -/
+structure PivotalData (f : SWF ι σ) (X : Finset σ) (n : ι) (b : σ) : Type _ where
+  prof : Profile ι σ
+  prof' : Profile ι σ
+  /-- Others' preferences identical between prof and prof' -/
+  hothers : ∀ j : ι, j ≠ n → prof' j = prof j
+  /-- Everyone places b extremally in prof -/
+  hall : ∀ i : ι, is_extremal (prof i).rel b X
+  /-- Everyone places b extremally in prof' -/
+  hall' : ∀ i : ι, is_extremal (prof' i).rel b X
+  /-- n has b worst in prof -/
+  hworst : is_strictly_worst (prof n).rel b X
+  /-- n has b best in prof' -/
+  hbest : is_strictly_best (prof' n).rel b X
+  /-- society ranks b worst -/
+  hsoc_worst : is_strictly_worst (f prof).rel b X
+  /-- society ranks b best -/
+  hsoc_best : is_strictly_best (f prof').rel b X
+
+/-- Individual n is pivotal for alternative b. -/
 def is_pivotal (f : SWF ι σ) (X : Finset σ) (n : ι) (b : σ) : Prop :=
-  ∃ (prof prof' : Profile ι σ),
-    -- Others' preferences unchanged on pairs in X
-    (∀ j : ι, j ≠ n → ∀ x y : σ, x ∈ X → y ∈ X →
-      (prof j).rel x y ↔ (prof' j).rel x y) ∧
-    -- Everyone places b extremally in both profiles
-    (∀ i : ι, is_extremal (prof i).rel b X) ∧
-    (∀ i : ι, is_extremal (prof' i).rel b X) ∧
-    -- n has b worst in prof, b best in prof'
-    is_strictly_worst (prof n).rel b X ∧
-    is_strictly_best (prof' n).rel b X ∧
-    -- society ranks b worst/best accordingly
-    is_strictly_worst (f prof).rel b X ∧
-    is_strictly_best (f prof').rel b X
+  Nonempty (PivotalData f X n b)
+
+/-- Derive pairwise agreement from profile equality for others. -/
+def apply_hothers {ι σ : Type*} {n : ι}
+    {prof prof' : Profile ι σ}
+    (h : ∀ j : ι, j ≠ n → prof' j = prof j)
+    (j : ι) (hj : j ≠ n) (x y : σ) :
+    (prof j).rel x y ↔ (prof' j).rel x y := by
+  rw [h j hj]
 
 /-! ## Key Lemmas -/
 
@@ -594,13 +606,9 @@ theorem pivot_exists (f : SWF ι σ) (X : Finset σ)
         · -- Society flipped: i is pivotal!
           -- prof'' is maketop prof' i b X hb. For j ≠ i, prof'' j = prof' j.
           -- We construct the others-agree proof by unfolding maketop.
-          have hagree : ∀ (j : ι), j ≠ i → ∀ (x y : σ), x ∈ X → y ∈ X →
-              (prof' j).rel x y ↔ (prof'' j).rel x y := by
-            intro j hj x y hx hy
-            rw [hother j hj]
-            exact Iff.rfl
-          exact ⟨i, prof', prof'', hagree, hD'ext, hD''ext,
-            hD'worst i hiD, hi''_best, hsoc'worst, hsoc''_best⟩
+          have hagree := hother
+          exact ⟨i, ⟨prof', prof'', hagree, hD'ext, hD''ext,
+            hD'worst i hiD, hi''_best, hsoc'worst, hsoc''_best⟩⟩
         · -- Society still worst: recurse on D' \ {i}
           let D'' := D'.erase i
           have hD''card_lt : D''.card < D'.card := by
@@ -656,7 +664,8 @@ theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
   intro prof hPca
   -- h is ¬(prof n).rel a c, the second component of P (prof n).rel c a
   have h : ¬(prof n).rel a c := hPca.2
-  obtain ⟨prof₀, prof₁, hothers, hall₀, hall₁, hn_worst₀, hn_best₁, hsoc_worst, hsoc_best⟩ := hn
+  obtain ⟨w⟩ := hn
+  obtain ⟨prof₀, prof₁, hothers, hall₀, hall₁, hn_worst₀, hn_best₁, hsoc_worst, hsoc_best⟩ := w
   -- Build Q': n uses makeabove (b above a), others use makebot/maketop based on prof₀
   let Q' : Profile ι σ :=
     fun j => if j = n then makeabove_pref (prof j) a b
@@ -761,12 +770,10 @@ theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
         have hPab₀ : P (prof₀ j).rel a b := hbot₀.2 a ha hab
         have hRab₀ : (prof₀ j).rel a b := hPab₀.1
         have hnRba₀ : ¬(prof₀ j).rel b a := hPab₀.2
-        have habIff : (prof₀ j).rel a b ↔ (prof₁ j).rel a b := by
-          have h := hothers j hjn
-          rw [h] <;> first | rfl | assumption
-        have hbaIff : (prof₀ j).rel b a ↔ (prof₁ j).rel b a := by
-          have h := hothers j hjn
-          rw [h] <;> first | rfl | assumption
+        have habIff : (prof₀ j).rel a b ↔ (prof₁ j).rel a b :=
+          apply_hothers hothers j hjn a b
+        have hbaIff : (prof₀ j).rel b a ↔ (prof₁ j).rel b a :=
+          apply_hothers hothers j hjn b a
         have hRab₁ : (prof₁ j).rel a b := habIff.mp hRab₀
         have hnRba₁ : ¬(prof₁ j).rel b a :=
           fun h => hnRba₀ (hbaIff.mpr h)
@@ -787,9 +794,8 @@ theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
         have hPba₀ : P (prof₀ j).rel b a := htop₀.2 a ha hab
         have hRba₀ : (prof₀ j).rel b a := hPba₀.1
         have hnRab₀ : ¬(prof₀ j).rel a b := hPba₀.2
-        have hbaIff : (prof₀ j).rel b a ↔ (prof₁ j).rel b a := by
-          have h := hothers j hjn
-          rw [h] <;> first | rfl | assumption
+        have hbaIff : (prof₀ j).rel b a ↔ (prof₁ j).rel b a :=
+          apply_hothers hothers j hjn b a
         have habIff : (prof₀ j).rel a b ↔ (prof₁ j).rel a b := by
           have hRba₁ : (prof₁ j).rel b a := hbaIff.mp hRba₀
           have hnWorst₁ : ¬is_strictly_worst (prof₁ j).rel b X := by
@@ -848,26 +854,30 @@ theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
     obtain ⟨j, hj_piv⟩ := pivot_exists f X hwp hind hX c hc
     by_cases hjn : j = n
     · -- j = n: n is pivotal for c, hence dictator on (b,y)
-      subst hjn
-      exact pivot_is_dictator_except_b f X hind c hc n hj_piv b y hb hy
-        (Ne.symm hcb) (Ne.symm hcy) (Ne.symm hyb)
+      have h := pivot_is_dictator_except_b f X hind c hc j hj_piv y b hy hb
+        (Ne.symm hcy) (Ne.symm hcb) hyb
+      rw [hjn] at h
+      exact hxb ▸ h
     · -- j ≠ n: derive contradiction via n's pivotal profiles
-      obtain ⟨prof₀, prof₁, hothers, hall₀, hall₁, hworst₀, hbest₁, hsoc_worst, hsoc_best⟩ := hn_piv
-      have hj_by : is_dictator_on f j b y :=
+      obtain ⟨w⟩ := hn_piv
+      obtain ⟨prof₀, prof₁, hothers, hall₀, hall₁, hworst₀, hbest₁, hsoc_worst, hsoc_best⟩ := w
+      have hj_yb : is_dictator_on f j y b :=
         pivot_is_dictator_except_b f X hind c hc j hj_piv b y hb hy
           (Ne.symm hcb) (Ne.symm hcy) (Ne.symm hyb)
-      have hj_yb : is_dictator_on f j y b :=
+      have hj_by : is_dictator_on f j b y :=
         pivot_is_dictator_except_b f X hind c hc j hj_piv y b hy hb
           (Ne.symm hcy) (Ne.symm hcb) hyb
       have hnPyb₁ : ¬P (f prof₁).rel y b := nP_of_reverseP (hsoc_best.2 y hy hyb)
       have hnPby₀ : ¬P (f prof₀).rel b y := nP_of_reverseP (hsoc_worst.2 y hy hyb)
-      have hby_iff : (prof₀ j).rel b y ↔ (prof₁ j).rel b y := hothers j hjn b y hb hy
-      have hyb_iff : (prof₀ j).rel y b ↔ (prof₁ j).rel y b := hothers j hjn y b hy hb
+      have hby_iff : (prof₀ j).rel b y ↔ (prof₁ j).rel b y :=
+        apply_hothers hothers j hjn b y
+      have hyb_iff : (prof₀ j).rel y b ↔ (prof₁ j).rel y b :=
+        apply_hothers hothers j hjn y b
       rcases hall₁ j with hbest_j | hworst_j
       · -- j places b best in prof₁: transfer to prof₀, contradict society worst
         have hP₁ : P (prof₁ j).rel b y := hbest_j.2 y hy hyb
         have hP₀ : P (prof₀ j).rel b y :=
-          ⟨hby_iff.mp hP₁.1, fun h => hP₁.2 (hyb_iff.mpr h)⟩
+          ⟨hby_iff.mpr hP₁.1, fun h => hP₁.2 (hyb_iff.mp h)⟩
         exact absurd (hj_by prof₀ hP₀) hnPby₀
       · -- j places b worst in prof₁: contradict society best
         have hP₁ : P (prof₁ j).rel y b := hworst_j.2 y hy hyb
@@ -878,26 +888,30 @@ theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
       obtain ⟨j, hj_piv⟩ := pivot_exists f X hwp hind hX c hc
       by_cases hjn : j = n
       · -- j = n: n is pivotal for c, hence dictator on (x,b)
-        subst hjn
-        exact pivot_is_dictator_except_b f X hind c hc n hj_piv x b hx hb
-          (Ne.symm hcx) (Ne.symm hcb) hxb
+        have h := pivot_is_dictator_except_b f X hind c hc j hj_piv b x hb hx
+          (Ne.symm hcb) (Ne.symm hcx) (Ne.symm hxb)
+        rw [hjn] at h
+        exact hyb ▸ h
       · -- j ≠ n: derive contradiction
-        obtain ⟨prof₀, prof₁, hothers, hall₀, hall₁, hworst₀, hbest₁, hsoc_worst, hsoc_best⟩ := hn_piv
-        have hj_xb : is_dictator_on f j x b :=
+        obtain ⟨w⟩ := hn_piv
+        obtain ⟨prof₀, prof₁, hothers, hall₀, hall₁, hworst₀, hbest₁, hsoc_worst, hsoc_best⟩ := w
+        have hj_bx : is_dictator_on f j b x :=
           pivot_is_dictator_except_b f X hind c hc j hj_piv x b hx hb
             (Ne.symm hcx) (Ne.symm hcb) hxb
-        have hj_bx : is_dictator_on f j b x :=
+        have hj_xb : is_dictator_on f j x b :=
           pivot_is_dictator_except_b f X hind c hc j hj_piv b x hb hx
             (Ne.symm hcb) (Ne.symm hcx) (Ne.symm hxb)
         have hnPxb₁ : ¬P (f prof₁).rel x b := nP_of_reverseP (hsoc_best.2 x hx hxb)
         have hnPbx₀ : ¬P (f prof₀).rel b x := nP_of_reverseP (hsoc_worst.2 x hx hxb)
-        have hbx_iff : (prof₀ j).rel b x ↔ (prof₁ j).rel b x := hothers j hjn b x hb hx
-        have hxb_iff : (prof₀ j).rel x b ↔ (prof₁ j).rel x b := hothers j hjn x b hx hb
+        have hbx_iff : (prof₀ j).rel b x ↔ (prof₁ j).rel b x :=
+          apply_hothers hothers j hjn b x
+        have hxb_iff : (prof₀ j).rel x b ↔ (prof₁ j).rel x b :=
+          apply_hothers hothers j hjn x b
         rcases hall₁ j with hbest_j | hworst_j
         · -- j places b best in prof₁: transfer to prof₀, contradict society worst
           have hP₁ : P (prof₁ j).rel b x := hbest_j.2 x hx hxb
           have hP₀ : P (prof₀ j).rel b x :=
-            ⟨hbx_iff.mp hP₁.1, fun h => hP₁.2 (hxb_iff.mpr h)⟩
+            ⟨hbx_iff.mpr hP₁.1, fun h => hP₁.2 (hxb_iff.mp h)⟩
           exact absurd (hj_bx prof₀ hP₀) hnPbx₀
         · -- j places b worst in prof₁: contradict society best
           have hP₁ : P (prof₁ j).rel x b := hworst_j.2 x hx hxb
