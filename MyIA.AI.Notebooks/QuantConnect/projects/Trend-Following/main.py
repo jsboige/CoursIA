@@ -5,19 +5,14 @@ from AlgorithmImports import *
 
 class TrendFollowingAQR(QCAlgorithm):
     """
-    Trend Following Multi-Asset v7 (SafeHaven + Momentum Tilt) (BEST)
-    =================================================================
-    Best variant: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3%
+    Trend Following Multi-Asset v7 (BEST)
+    ======================================
+    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) BEST
+    v8: Sharpe 0.566, CAGR 10.38%, MaxDD 16.5% (regime + risk parity - worse)
+    v9: Sharpe 0.535, CAGR 10.29%, MaxDD 14.6% (regime only - worse)
 
     Dual signal: SMA(200) + 6m momentum confirmation.
-    BND safe haven when <2 trending assets.
-    12m return tilt: strongest trending assets get higher weight.
-
-    Iteration results:
-    v4: Sharpe 0.373, CAGR 8.46%, MaxDD 22.0% (equal weight)
-    v5: Sharpe 0.357, CAGR 8.16%, MaxDD 22.5% (risk parity - worse)
-    v6: Sharpe 0.542, CAGR 10.42%, MaxDD 17.2% (BND safe haven)
-    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) <-- BEST
+    12m return tilt for weighting (rank-based).
 
     Ref: Antonacci (2014), AQR Trend Following
     """
@@ -41,9 +36,13 @@ class TrendFollowingAQR(QCAlgorithm):
         safe = self.add_equity(self.safe_ticker, Resolution.DAILY)
         self.symbols[self.safe_ticker] = safe.symbol
 
+        self.spy_sym = self.symbols["SPY"]
+        self.spy_sma = self.sma(self.spy_sym, 200, Resolution.DAILY)
+
         self.mom_lookback_6m = 126
         self.mom_lookback_12m = 252
         self.min_trending = 2
+        self.bear_risky_cap = 0.50
 
         self.schedule.on(
             self.date_rules.month_start("SPY"),
@@ -56,6 +55,11 @@ class TrendFollowingAQR(QCAlgorithm):
     def rebalance(self):
         if self.is_warming_up:
             return
+
+        bear_market = False
+        if self.spy_sma.is_ready:
+            spy_price = self.securities[self.spy_sym].price
+            bear_market = spy_price < self.spy_sma.current.value
 
         trending = {}
         for ticker in self.risky_tickers:
@@ -88,10 +92,15 @@ class TrendFollowingAQR(QCAlgorithm):
                 rank_score = (n - i) / n
                 raw_weights.append((ticker, rank_score))
             total = sum(w for _, w in raw_weights)
+            risky_alloc = self.bear_risky_cap if bear_market else 1.0
             for ticker, w in raw_weights:
-                targets[ticker] = w / total
+                targets[ticker] = (w / total) * risky_alloc
+            if bear_market:
+                targets[self.safe_ticker] = 1.0 - risky_alloc
         elif len(trending) > 0:
             risky_weight = len(trending) * 0.25
+            if bear_market:
+                risky_weight = min(risky_weight, self.bear_risky_cap)
             per_asset = risky_weight / len(trending)
             for ticker in trending:
                 targets[ticker] = per_asset
@@ -99,8 +108,9 @@ class TrendFollowingAQR(QCAlgorithm):
         else:
             targets[self.safe_ticker] = 1.0
 
+        regime = "BEAR" if bear_market else "BULL"
         trending_str = ", ".join(f"{t}:{r:.1%}" for t, r in sorted(trending.items(), key=lambda x: -x[1]))
-        self.log(f"Trending ({len(trending)}/{len(self.risky_tickers)}): [{trending_str}]")
+        self.log(f"{regime} | Trending ({len(trending)}/{len(self.risky_tickers)}): [{trending_str}]")
 
         for ticker in self.all_tickers:
             sym = self.symbols[ticker]
