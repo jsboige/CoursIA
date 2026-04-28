@@ -1,0 +1,531 @@
+{
+  "args": {
+    "n_total": 200000,
+    "skip_gen": true,
+    "models": [
+      "rrn",
+      "cnn",
+      "mlp"
+    ],
+    "epochs": 60,
+    "patience": 12,
+    "batch_size": 384,
+    "lr": 0.001,
+    "seed": 42,
+    "quick": false,
+    "no_hf": false
+  },
+  "results": [
+    {
+      "config": {
+        "type": "rrn",
+        "hidden_dim": 32,
+        "msg_dim": 32,
+        "n_steps": 4,
+        "dropout": 0.1
+      },
+      "n_params": 11177,
+      "test_cell_acc": 0.3626324342270035,
+      "test_grid_acc": 0.0,
+      "best_val_cell_acc": 0.36687790650001756,
+      "best_val_grid_acc": 0.0,
+      "n_epochs": 30,
+      "training_time_s": 219.73652243614197,
+      "model_path": "C:\\dev\\CoursIA\\scripts\\..\\sudoku_models\\sudoku_rrn_hid32_msg32_n_s4_dro0.1_best.pt",
+      "history_summary": [
+        {
+          "epoch": 26,
+          "train_loss": 1.4666994644473101,
+          "train_acc": 0.3418130200212997,
+          "val_cell_acc": 0.36594079818200986,
+          "val_grid_acc": 0.0,
+          "lr": 4.322727117869953e-05,
+          "time_s": 8.645475625991821
+        },
+        {
+          "epoch": 27,
+          "train_loss": 1.4649378858495803,
+          "train_acc": 0.34239012448915296,
+          "val_cell_acc": 0.3656948072485328,
+          "val_grid_acc": 0.0,
+          "lr": 2.447174185242324e-05,
+          "time_s": 8.44840669631958
+        },
+        {
+          "epoch": 28,
+          "train_loss": 1.463489536168489,
+          "train_acc": 0.34285737257851484,
+          "val_cell_acc": 0.36673148332532884,
+          "val_grid_acc": 0.0,
+          "lr": 1.092619963309716e-05,
+          "time_s": 6.9786906242370605
+        },
+        {
+          "epoch": 29,
+          "train_loss": 1.4623357939336652,
+          "train_acc": 0.3439164732093257,
+          "val_cell_acc": 0.36687204957303005,
+          "val_grid_acc": 0.0,
+          "lr": 2.7390523158633003e-06,
+          "time_s": 7.055322647094727
+        },
+        {
+          "epoch": 30,
+          "train_loss": 1.4626727769111274,
+          "train_acc": 0.34364282268321567,
+          "val_cell_acc": 0.36687790650001756,
+          "val_grid_acc": 0.0,
+          "lr": 0.0,
+          "time_s": 7.439093589782715
+        }
+      ]
+    },
+    {
+      "config": {
+        "type": "rrn",
+        "hidden_dim": 32,
+        "msg_dim": 32,
+        "n_steps": 16,
+        "dropout": 0.1
+      },
+      "n_params": 11177,
+      "test_cell_acc": 0.33472606560425255,
+      "test_grid_acc": 0.0,
+      "best_val_cell_acc": 0.3354089636570027,
+      "best_val_grid_acc": 0.0,
+      "n_epochs": 30,
+      "training_time_s": 578.3956696987152,
+      "model_path": "C:\\dev\\CoursIA\\scripts\\..\\sudoku_models\\sudoku_rrn_hid32_msg32_n_s16_dro0.1_best.pt",
+      "history_summary": [
+        {
+          "epoch": 26,
+          "train_loss": 1.6417038069660048,
+          "train_acc": 0.3280862802051507,
+          "val_cell_acc": 0.3340292656575648,
+          "val_grid_acc": 0.0,
+          "lr": 4.322727117869953e-05,
+          "time_s": 19.909271955490112
+        },
+        {
+          "epoch": 27,
+          "train_loss": 1.6393814680557381,
+          "train_acc": 0.3285402291921279,
+          "val_cell_acc": 0.33439426512831555,
+          "val_grid_acc": 0.0,
+          "lr": 2.447174185242324e-05,
+          "time_s": 19.49786901473999
+        },
+        {
+          "epoch": 28,
+          "train_loss": 1.637767573346843,
+          "train_acc": 0.32882889877627597,
+          "val_cell_acc": 0.3352593138739949,
+          "val_grid_acc": 0.0,
+          "lr": 1.092619963309716e-05,
+          "time_s": 19.441468477249146
+        },
+        {
+          "epoch": 29,
+          "train_loss": 1.6365548173378368,
+          "train_acc": 0.32933694440892236,
+          "val_cell_acc": 0.33504761418095946,
+          "val_grid_acc": 0.0,
+          "lr": 2.7390523158633003e-06,
+          "time_s": 19.90631079673767
+        },
+        {
+          "epoch": 30,
+          "train_loss": 1.6360874971127117,
+          "train_acc": 0.3294730024991596,
+          "val_cell_acc": 0.3354089636570027,
+          "val_grid_acc": 0.0,
+          "lr": 0.0,
+          "time_s": 20.44700527191162
+        }
+      ]
+    },
+    {
+      "config": {
+        "type": "rrn",
+        "hidden_dim": 64,
+        "msg_dim": 64,
+        "n_steps": 16,
+        "dropout": 0.1
+      },
+      "n_params": 42825,
+      "test_cell_acc": 0.4866311011600793,
+      "test_grid_acc": 0.07272727272727272,
+      "best_val_cell_acc": 0.4916176790768561,
+      "best_val_grid_acc": 0.07345454545454545,
+      "n_epochs": 30,
+      "training_time_s": 1624.0094180107117,
+      "model_path": "C:\\dev\\CoursIA\\scripts\\..\\sudoku_models\\sudoku_rrn_hid64_msg64_n_s16_dro0.1_best.pt",
+      "history_summary": [
+        {
+          "epoch": 26,
+          "train_loss": 1.1662627967867678,
+          "train_acc": 0.4874285727575276,
+          "val_cell_acc": 0.4910123039832619,
+          "val_grid_acc": 0.07345454545454545,
+          "lr": 4.322727117869953e-05,
+          "time_s": 56.82485866546631
+        },
+        {
+          "epoch": 27,
+          "train_loss": 1.1648528803806637,
+          "train_acc": 0.48808379155107395,
+          "val_cell_acc": 0.49114771683314484,
+          "val_grid_acc": 0.07389090909090909,
+          "lr": 2.447174185242324e-05,
+          "time_s": 54.286548376083374
+        },
+        {
+          "epoch": 28,
+          "train_loss": 1.163824942786416,
+          "train_acc": 0.4884429840590592,
+          "val_cell_acc": 0.4913070260683012,
+          "val_grid_acc": 0.07389090909090909,
+          "lr": 1.092619963309716e-05,
+          "time_s": 54.71025824546814
+        },
+        {
+          "epoch": 29,
+          "train_loss": 1.1630389182564458,
+          "train_acc": 0.4890014396291053,
+          "val_cell_acc": 0.49157254146022844,
+          "val_grid_acc": 0.07345454545454545,
+          "lr": 2.7390523158633003e-06,
+          "time_s": 55.240424156188965
+        },
+        {
+          "epoch": 30,
+          "train_loss": 1.1628466067776857,
+          "train_acc": 0.48893996646289906,
+          "val_cell_acc": 0.4916176790768561,
+          "val_grid_acc": 0.07345454545454545,
+          "lr": 0.0,
+          "time_s": 55.141398668289185
+        }
+      ]
+    },
+    {
+      "config": {
+        "type": "rrn",
+        "hidden_dim": 128,
+        "msg_dim": 128,
+        "n_steps": 16,
+        "dropout": 0.1,
+        "batch_size": 192
+      },
+      "n_params": 167561,
+      "test_cell_acc": 0.506544579077375,
+      "test_grid_acc": 0.11862857142857143,
+      "best_val_cell_acc": 0.5091927427034432,
+      "best_val_grid_acc": 0.12137142857142857,
+      "n_epochs": 30,
+      "training_time_s": 3936.5247960090637,
+      "model_path": "C:\\dev\\CoursIA\\scripts\\..\\sudoku_models\\sudoku_rrn_hid128_msg128_n_s16_dro0.1_best.pt",
+      "history_summary": [
+        {
+          "epoch": 26,
+          "train_loss": 1.0971173957723155,
+          "train_acc": 0.5145457373988799,
+          "val_cell_acc": 0.5090444726598393,
+          "val_grid_acc": 0.12068571428571429,
+          "lr": 4.322727117869953e-05,
+          "time_s": 134.34913516044617
+        },
+        {
+          "epoch": 27,
+          "train_loss": 1.0952492312510878,
+          "train_acc": 0.515446200364177,
+          "val_cell_acc": 0.5091927427034432,
+          "val_grid_acc": 0.12137142857142857,
+          "lr": 2.447174185242324e-05,
+          "time_s": 131.83682894706726
+        },
+        {
+          "epoch": 28,
+          "train_loss": 1.0940526791777356,
+          "train_acc": 0.5159680070830869,
+          "val_cell_acc": 0.5089818233456405,
+          "val_grid_acc": 0.12194285714285714,
+          "lr": 1.092619963309716e-05,
+          "time_s": 134.15209817886353
+        },
+        {
+          "epoch": 29,
+          "train_loss": 1.0931784016770165,
+          "train_acc": 0.516390325316341,
+          "val_cell_acc": 0.5090382077284193,
+          "val_grid_acc": 0.12262857142857143,
+          "lr": 2.7390523158633003e-06,
+          "time_s": 132.90500903129578
+        },
+        {
+          "epoch": 30,
+          "train_loss": 1.092505815572999,
+          "train_acc": 0.5167242521951193,
+          "val_cell_acc": 0.5089734701037473,
+          "val_grid_acc": 0.12171428571428572,
+          "lr": 0.0,
+          "time_s": 130.0964834690094
+        }
+      ]
+    },
+    {
+      "config": {
+        "type": "cnn",
+        "hidden_dim": 64,
+        "n_layers": 6,
+        "dropout": 0.1
+      },
+      "n_params": 228745,
+      "test_cell_acc": 0.38570700859802315,
+      "test_grid_acc": 0.0,
+      "best_val_cell_acc": 0.3851109778044391,
+      "best_val_grid_acc": 0.0,
+      "n_epochs": 30,
+      "training_time_s": 483.9873480796814,
+      "model_path": "C:\\dev\\CoursIA\\scripts\\..\\sudoku_models\\sudoku_cnn_hid64_n_l6_dro0.1_best.pt",
+      "history_summary": [
+        {
+          "epoch": 26,
+          "train_loss": 1.4871105744194455,
+          "train_acc": 0.35609885820732307,
+          "val_cell_acc": 0.3845762276116205,
+          "val_grid_acc": 0.0,
+          "lr": 4.322727117869953e-05,
+          "time_s": 11.924932956695557
+        },
+        {
+          "epoch": 27,
+          "train_loss": 1.4859877032344992,
+          "train_acc": 0.35637629758602424,
+          "val_cell_acc": 0.3848093238495158,
+          "val_grid_acc": 0.0,
+          "lr": 2.447174185242324e-05,
+          "time_s": 13.273496627807617
+        },
+        {
+          "epoch": 28,
+          "train_loss": 1.4850257505700684,
+          "train_acc": 0.3566260581317556,
+          "val_cell_acc": 0.38485902819436113,
+          "val_grid_acc": 0.0,
+          "lr": 1.092619963309716e-05,
+          "time_s": 11.13175892829895
+        },
+        {
+          "epoch": 29,
+          "train_loss": 1.4844302368866675,
+          "train_acc": 0.35701525533775846,
+          "val_cell_acc": 0.3850407061444854,
+          "val_grid_acc": 0.0,
+          "lr": 2.7390523158633003e-06,
+          "time_s": 10.983651638031006
+        },
+        {
+          "epoch": 30,
+          "train_loss": 1.484486521297275,
+          "train_acc": 0.35647467769613234,
+          "val_cell_acc": 0.3851109778044391,
+          "val_grid_acc": 0.0,
+          "lr": 0.0,
+          "time_s": 11.233806371688843
+        }
+      ]
+    },
+    {
+      "config": {
+        "type": "cnn",
+        "hidden_dim": 128,
+        "n_layers": 8,
+        "dropout": 0.1
+      },
+      "n_params": 1195529,
+      "test_cell_acc": 0.4809010001011936,
+      "test_grid_acc": 0.0,
+      "best_val_cell_acc": 0.4796554974719342,
+      "best_val_grid_acc": 0.0,
+      "n_epochs": 30,
+      "training_time_s": 864.2486786842346,
+      "model_path": "C:\\dev\\CoursIA\\scripts\\..\\sudoku_models\\sudoku_cnn_hid128_n_l8_dro0.1_best.pt",
+      "history_summary": [
+        {
+          "epoch": 26,
+          "train_loss": 1.183989882330774,
+          "train_acc": 0.4728378224066447,
+          "val_cell_acc": 0.47898191790213385,
+          "val_grid_acc": 0.0,
+          "lr": 4.322727117869953e-05,
+          "time_s": 38.64737367630005
+        },
+        {
+          "epoch": 27,
+          "train_loss": 1.1832742573006985,
+          "train_acc": 0.47336026340529475,
+          "val_cell_acc": 0.4794224012340389,
+          "val_grid_acc": 0.0,
+          "lr": 2.447174185242324e-05,
+          "time_s": 39.713383197784424
+        },
+        {
+          "epoch": 28,
+          "train_loss": 1.1825216284522995,
+          "train_acc": 0.47372902474157014,
+          "val_cell_acc": 0.4794395406632959,
+          "val_grid_acc": 0.0,
+          "lr": 1.092619963309716e-05,
+          "time_s": 37.84523963928223
+        },
+        {
+          "epoch": 29,
+          "train_loss": 1.1824294511303315,
+          "train_acc": 0.47386702221504867,
+          "val_cell_acc": 0.47960236524123745,
+          "val_grid_acc": 0.0,
+          "lr": 2.7390523158633003e-06,
+          "time_s": 32.59682559967041
+        },
+        {
+          "epoch": 30,
+          "train_loss": 1.1819731102433504,
+          "train_acc": 0.4740173593217334,
+          "val_cell_acc": 0.4796554974719342,
+          "val_grid_acc": 0.0,
+          "lr": 0.0,
+          "time_s": 21.318704843521118
+        }
+      ]
+    },
+    {
+      "config": {
+        "type": "mlp",
+        "hidden_dim": 256,
+        "n_layers": 4,
+        "dropout": 0.1,
+        "batch_size": 256
+      },
+      "n_params": 592345,
+      "test_cell_acc": 0.16405554547937268,
+      "test_grid_acc": 0.0,
+      "best_val_cell_acc": 0.1640913878142629,
+      "best_val_grid_acc": 0.0,
+      "n_epochs": 13,
+      "training_time_s": 218.44026637077332,
+      "model_path": "C:\\dev\\CoursIA\\scripts\\..\\sudoku_models\\sudoku_mlp_hid256_n_l4_dro0.1_best.pt",
+      "history_summary": [
+        {
+          "epoch": 9,
+          "train_loss": 2.146514648151898,
+          "train_acc": 0.16899817162117994,
+          "val_cell_acc": 0.1633843939978519,
+          "val_grid_acc": 0.0,
+          "lr": 0.0007938926261462366,
+          "time_s": 16.400624752044678
+        },
+        {
+          "epoch": 10,
+          "train_loss": 2.1447477995930235,
+          "train_acc": 0.1694924589992756,
+          "val_cell_acc": 0.16271911073108167,
+          "val_grid_acc": 0.0,
+          "lr": 0.00075,
+          "time_s": 16.1705219745636
+        },
+        {
+          "epoch": 11,
+          "train_loss": 2.142816034169656,
+          "train_acc": 0.16998664213155765,
+          "val_cell_acc": 0.16256478169741082,
+          "val_grid_acc": 0.0,
+          "lr": 0.0007033683215379003,
+          "time_s": 15.910630464553833
+        },
+        {
+          "epoch": 12,
+          "train_loss": 2.140203068500596,
+          "train_acc": 0.17033166549064047,
+          "val_cell_acc": 0.1633468545031752,
+          "val_grid_acc": 0.0,
+          "lr": 0.0006545084971874739,
+          "time_s": 15.83830976486206
+        },
+        {
+          "epoch": 13,
+          "train_loss": 2.1377647050089137,
+          "train_acc": 0.17098835269677698,
+          "val_cell_acc": 0.16356583488878926,
+          "val_grid_acc": 0.0,
+          "lr": 0.0006039558454088797,
+          "time_s": 15.516839504241943
+        }
+      ]
+    },
+    {
+      "config": {
+        "type": "mlp",
+        "hidden_dim": 512,
+        "n_layers": 6,
+        "dropout": 0.1,
+        "batch_size": 192
+      },
+      "n_params": 2102489,
+      "test_cell_acc": 0.1115020456118125,
+      "test_grid_acc": 0.0,
+      "best_val_cell_acc": 0.11125915501167928,
+      "best_val_grid_acc": 0.0,
+      "n_epochs": 8,
+      "training_time_s": 142.9091444015503,
+      "model_path": "C:\\dev\\CoursIA\\scripts\\..\\sudoku_models\\sudoku_mlp_hid512_n_l6_dro0.1_best.pt",
+      "history_summary": [
+        {
+          "epoch": 4,
+          "train_loss": 2.197239319100317,
+          "train_acc": 0.11216643898917986,
+          "val_cell_acc": 0.11068247775524735,
+          "val_grid_acc": 0.0,
+          "lr": 0.0009567727288213003,
+          "time_s": 17.84839701652527
+        },
+        {
+          "epoch": 5,
+          "train_loss": 2.1972364892562566,
+          "train_acc": 0.11240204100978747,
+          "val_cell_acc": 0.1110405589397466,
+          "val_grid_acc": 0.0,
+          "lr": 0.0009330127018922195,
+          "time_s": 17.927481174468994
+        },
+        {
+          "epoch": 6,
+          "train_loss": 2.1972294771415504,
+          "train_acc": 0.11240412002202958,
+          "val_cell_acc": 0.11084278154133131,
+          "val_grid_acc": 0.0,
+          "lr": 0.0009045084971874739,
+          "time_s": 17.837483406066895
+        },
+        {
+          "epoch": 7,
+          "train_loss": 2.1972298377939175,
+          "train_acc": 0.11233149596614028,
+          "val_cell_acc": 0.11113632483792663,
+          "val_grid_acc": 0.0,
+          "lr": 0.0008715724127386972,
+          "time_s": 17.59808373451233
+        },
+        {
+          "epoch": 8,
+          "train_loss": 2.1972270039650827,
+          "train_acc": 0.11222687661303106,
+          "val_cell_acc": 0.11093646557215961,
+          "val_grid_acc": 0.0,
+          "lr": 0.0008345653031794292,
+          "time_s": 17.698965549468994
+        }
+      ]
+    }
+  ]
+}
