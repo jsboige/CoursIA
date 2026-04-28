@@ -1,6 +1,6 @@
 ---
 theme: ../theme-ia101
-title: "S4 Trading Algorithmique - Seance 3 : Workflow Agentique"
+title: "Trading Algorithmique - Workflow Agentique"
 info: Cours Intelligence Artificielle - Workflow Agentique VSCode + MCP QuantConnect
 paginate: true
 drawings:
@@ -12,14 +12,14 @@ layout: cover
 
 # Workflow Agentique pour le Trading
 
-Intelligence Artificielle -- S4 -- Seance 3
+Intelligence Artificielle -- Trading Algorithmique
 
 **De l'idee au backtest en 5 minutes avec VSCode + Claude Code + MCP QuantConnect**
 
 - Comprendre le concept d'agent IA codeur
 - Installer et configurer le workflow agentique
 - Demonstrer le cycle complet : idee, code, backtest, analyse
-- Preparer les projets pour la soutenance
+- Preparer un projet de strategie algorithmique
 
 ---
 
@@ -29,14 +29,13 @@ Intelligence Artificielle -- S4 -- Seance 3
   - Marches, ordres, metriques de performance
 - **Seance 2** : Strategies et framework Lean
   - Alpha models, portfolio construction, risk management
-  - 28 notebooks progressifs, 67 projets prets a backtester
+  - Notebooks progressifs, projets prets a backtester
 
 <div v-click="1">
 
-- **Aujourd'hui (Seance 3)** : Workflow agentique
+- **Maintenant** : Workflow agentique
   - Comment un agent IA peut ecrire, tester et deployer votre strategie
   - Demonstration live avec VSCode + Claude Code
-  - Preparation soutenance (deadline 5 mai)
 
 </div>
 
@@ -57,8 +56,8 @@ Intelligence Artificielle -- S4 -- Seance 3
    - Resultats C4.1, C4.2, C4.3
    - Architecture multi-Alpha
 
-4. **Preparation soutenance** (3 slides)
-   - Criteres d'evaluation, deadline upload
+4. **Preparation projet** (3 slides)
+   - Criteres de qualite, rendu
 
 5. **Q&A et ressources** (3 slides)
 
@@ -216,7 +215,7 @@ Intelligence Artificielle -- S4 -- Seance 3
 **Prompt initial a l'agent** :
 
 ```
-"Upload le projet EMA-Cross-Stocks dans l'organisation ESGF
+"Upload le projet EMA-Cross-Stocks dans mon organisation QuantConnect
 et backteste-le sur 2015-2025 avec 100k USD"
 ```
 
@@ -225,7 +224,7 @@ et backteste-le sur 2015-2025 avec 100k USD"
 **Ce que l'agent fait automatiquement** :
 
 1. Lit le fichier `main.py` du projet local
-2. Appelle `create_project` dans l'organisation ESGF
+2. Appelle `create_project` dans l'organisation QuantConnect
 3. Appelle `create_file` pour uploader `main.py`
 4. Appelle `create_compile` et attend le resultat
 5. Si erreur de syntaxe : corrige et recompile
@@ -425,7 +424,7 @@ Agent : "Le backtest donne Sharpe 0.45, MaxDD -22%.
 </div>
 <div v-click="2">
 
-- **Pour votre soutenance** : inspirez-vous de ces architectures
+- **Pour votre projet** : inspirez-vous de ces architectures
   - Vous pouvez les cloner, modifier les parametres, changer les actifs
   - L'agent peut vous aider a les adapter a votre idee
 
@@ -433,11 +432,11 @@ Agent : "Le backtest donne Sharpe 0.45, MaxDD -22%.
 
 ---
 
-# Preparation Soutenance (1/2)
+# Preparation Projet (1/2)
 
-- **Deadline upload** : **5 mai 2026**
-  - Upload dans l'organisation ESGF sur QuantConnect
-  - Organisation : `Trading Firm ESGF` sur quantconnect.com
+- **Objectif** : deployer une strategie fonctionnelle sur QuantConnect Cloud
+  - Upload dans une organisation QuantConnect (fournie par le formateur)
+
 <div v-click="1">
 
 - **Format attendu** :
@@ -450,9 +449,9 @@ Agent : "Le backtest donne Sharpe 0.45, MaxDD -22%.
 
 ---
 
-# Preparation Soutenance (2/2)
+# Preparation Projet (2/2)
 
-- **Criteres d'evaluation** :
+- **Criteres de qualite** :
 
 | Critere | Poids | Description |
 |---------|-------|-------------|
@@ -464,7 +463,7 @@ Agent : "Le backtest donne Sharpe 0.45, MaxDD -22%.
 
 <div v-click="1">
 
-- **Conseil** : commencez par modifier une strategie existante (Ex01-Ex06)
+- **Conseil** : commencez par modifier une strategie existante
 - Le workflow agentique accelere l'iteration, mais la comprehension reste votre responsabilite
 
 </div>
@@ -493,8 +492,9 @@ Agent : "Le backtest donne Sharpe 0.45, MaxDD -22%.
 
 # Workflow Recommande pour la Soutenance
 
-1. **Choisir une strategie de base** parmi les 67 projets du depot
-   - Ex01-Ex02 pour debuter, Ex05-Ex06 pour les plus ambitieux
+1. **Choisir une strategie de base** parmi les projets du depot
+   - Projects simples pour debuter, composites pour les plus ambitieux
+
 <div v-click="1">
 
 2. **Utiliser l'agent pour personnaliser** :
@@ -542,10 +542,8 @@ Agent : "Le backtest donne Sharpe 0.45, MaxDD -22%.
 # Ressources
 
 - **QuantConnect Cloud** : quantconnect.com (compte gratuit)
-- **Organisation ESGF** : quantconnect.com/organization/94aa4bcb45ff1d1ef286d93817104cce
 - **Depot GitHub** : github.com/jsboige/CoursIA
-  - 28 notebooks progressifs (QC-Py-01 a 28)
-  - 67 projets prets a backtester
+  - Notebooks progressifs et projets prets a backtester
   - Documentation : `QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md`
 <div v-click="1">
 
@@ -582,12 +580,12 @@ layout: cover
 
 Jean-Sylvain Boige -- jsboige@myia.org
 
-**Votre mission pour le 5 mai** :
+**Votre mission** :
 
 1. Choisissez une strategie (ou creez la votre)
 2. Utilisez le workflow agentique pour iterer rapidement
-3. Upload dans l'organisation ESGF
-4. Preparez votre presentation (5 min + questions)
+3. Deployez sur QuantConnect Cloud
+4. Preparez votre presentation
 
 > Le meilleur apprentissage : modifiez, backtestez, analysez, iterez.
 > L'agent accelere le cycle, mais la comprehension vous appartient.
