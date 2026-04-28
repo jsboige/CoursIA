@@ -1,3 +1,9 @@
+"""DEPRECATED — Archived 2026-04-28.
+Superseded by: scripts/sudoku/core/ + scripts/sudoku/train_v4.py
+Original: scripts/sudoku_epf_gpu_train.py
+This file is kept for reference only. Do not use for new work.
+"""
+
 """
 Sudoku Neural Network - GPU Training Script
 =============================================

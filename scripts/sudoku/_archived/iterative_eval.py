@@ -1,3 +1,9 @@
+"""DEPRECATED — Archived 2026-04-28.
+Superseded by: scripts/sudoku/core/ + scripts/sudoku/train_v4.py
+Original: scripts/sudoku_iterative_eval.py
+This file is kept for reference only. Do not use for new work.
+"""
+
 """
 Sudoku Iterative Solver Evaluation
 ====================================

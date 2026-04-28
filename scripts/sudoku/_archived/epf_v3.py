@@ -1,17 +1,26 @@
+"""DEPRECATED — Archived 2026-04-28.
+Superseded by: scripts/sudoku/core/ + scripts/sudoku/train_v4.py
+Original: scripts/sudoku_epf_gpu_train_v3.py
+This file is kept for reference only. Do not use for new work.
 """
-Sudoku Neural Network - GPU Training Script V2 (Masked Loss)
-=============================================================
-EPF-style Conv2D stack (~7.6M params) with masked loss.
+
+"""
+Sudoku Neural Network - GPU Training Script V3 (Deep Residual)
+==============================================================
+Deep ResNet-style Conv2D architecture with masked loss.
 Target: >=96.8% grid accuracy (matching EPF student model).
 
-Key change from V1: Loss computed only on empty cells (masked).
-The model doesn't waste capacity learning already-filled cells.
-
-Architecture: Input(9,9,1) -> Conv2D(64,3x3)+BN+ReLU -> Conv2D(64,3x3)+BN+ReLU
-             -> Conv2D(128,1x1)+ReLU -> Flatten -> Dense(729) -> Reshape(81,9) -> Softmax
+Architecture: Input(9,9,1) -> Conv(64,3x3) -> [ResBlock x 8] -> Conv(512,1x1)
+             -> Flatten -> Dense(729) -> Reshape(81,9) -> Softmax
 Encoding: single-channel normalized (/9.0 - 0.5)
 
-Dataset: nakashi104/sudoku-1million (HuggingFace) — 1M puzzles, ~47 empty cells/puzzle
+Key improvements over V2:
+- 8 residual blocks with skip connections (depth without vanishing gradients)
+- Wider feature maps (64 -> 128 in later blocks)
+- OneCycleLR scheduler for faster convergence
+- Masked loss on empty cells only
+
+Dataset: nakashi104/sudoku-1million (HuggingFace) - 1M puzzles, ~47 empty cells/puzzle
 """
 
 import os
@@ -36,16 +45,10 @@ if torch.cuda.is_available():
 
 # ── Dataset loading ──────────────────────────────────────────────────────────
 def parse_81(s):
-    """Parse 81-char string into 9x9 int array."""
     return np.array([int(c) for c in s], dtype=np.int64).reshape(9, 9)
 
 
-def load_sudoku_dataset(n_total=1_060_000):
-    """Load sudoku dataset from HuggingFace with local caching.
-
-    Uses nakashi104/sudoku-1million (1M puzzles, ~47 empty cells).
-    Caches to npz for fast reloading.
-    """
+def load_sudoku_dataset(n_total=1_000_000):
     SAVE_DIR = os.path.join(os.path.dirname(__file__), '..', 'sudoku_models')
     cache_dir = os.path.join(SAVE_DIR, 'data_cache')
     os.makedirs(cache_dir, exist_ok=True)
@@ -65,7 +68,6 @@ def load_sudoku_dataset(n_total=1_060_000):
     print(f"Downloaded {len(ds):,} puzzles")
 
     n_use = min(n_total, len(ds))
-    print(f"Converting {n_use:,} puzzles to numpy arrays...")
     all_puzzles = np.zeros((n_use, 9, 9), dtype=np.int64)
     all_solutions = np.zeros((n_use, 9, 9), dtype=np.int64)
 
@@ -89,49 +91,75 @@ def load_sudoku_dataset(n_total=1_060_000):
 # ── Dataset ───────────────────────────────────────────────────────────────────
 class SudokuDataset(Dataset):
     def __init__(self, puzzles, solutions):
-        # EPF-style encoding: single channel, normalized
-        self.puzzles_raw = puzzles
         self.puzzles = (puzzles / 9.0 - 0.5).astype(np.float32)
-        self.solutions = (solutions - 1).astype(np.int64)  # 0-8 for CrossEntropy
-        self.masks = (puzzles == 0).astype(np.float32)     # 1 for empty cells
+        self.solutions = (solutions - 1).astype(np.int64)
+        self.masks = (puzzles == 0).astype(np.float32)
 
     def __len__(self):
         return len(self.puzzles)
 
     def __getitem__(self, idx):
-        x = torch.tensor(self.puzzles[idx]).unsqueeze(0)  # (1, 9, 9)
-        y = torch.tensor(self.solutions[idx]).view(-1)     # (81,)
-        m = torch.tensor(self.masks[idx]).view(-1)         # (81,)
+        x = torch.tensor(self.puzzles[idx]).unsqueeze(0)
+        y = torch.tensor(self.solutions[idx]).view(-1)
+        m = torch.tensor(self.masks[idx]).view(-1)
         return x, y, m
 
 
 # ── Model ─────────────────────────────────────────────────────────────────────
-class EPFConvModel(nn.Module):
-    """EPF student model architecture (~7.6M params).
-    Conv2D stack -> Dense(729) -> Reshape(81,9) -> Softmax
+class ResBlock(nn.Module):
+    """Residual block: Conv-BN-ReLU-Conv-BN + skip connection."""
+    def __init__(self, channels):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.Conv2d(channels, channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channels, channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(channels),
+        )
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        return self.relu(x + self.block(x))
+
+
+class SudokuResNet(nn.Module):
+    """Deep ResNet for Sudoku (~2.4M params, 8 residual blocks).
+
+    Input(1,9,9) -> Conv(64) -> ResBlock x4 -> Conv(128) -> ResBlock x4
+    -> Conv(512,1x1) -> Flatten -> Dense(729) -> Reshape(81,9)
     """
     def __init__(self):
         super().__init__()
-        self.features = nn.Sequential(
+        self.stem = nn.Sequential(
             nn.Conv2d(1, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
+        )
+        self.res1 = nn.Sequential(*[ResBlock(64) for _ in range(4)])
+        self.transition = nn.Sequential(
             nn.Conv2d(64, 128, kernel_size=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+        )
+        self.res2 = nn.Sequential(*[ResBlock(128) for _ in range(4)])
+        self.head_conv = nn.Sequential(
+            nn.Conv2d(128, 512, kernel_size=1),
             nn.ReLU(inplace=True),
         )
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(128 * 9 * 9, 81 * 9)
+        self.fc = nn.Linear(512 * 9 * 9, 81 * 9)
 
     def forward(self, x):
-        # x: (B, 1, 9, 9)
-        x = self.features(x)           # (B, 128, 9, 9)
-        x = self.flatten(x)            # (B, 10368)
-        x = self.fc(x)                 # (B, 729)
-        x = x.view(-1, 81, 9)          # (B, 81, 9)
-        return x                       # logits (no softmax — CrossEntropy handles it)
+        x = self.stem(x)        # (B, 64, 9, 9)
+        x = self.res1(x)        # (B, 64, 9, 9)
+        x = self.transition(x)  # (B, 128, 9, 9)
+        x = self.res2(x)        # (B, 128, 9, 9)
+        x = self.head_conv(x)   # (B, 512, 9, 9)
+        x = self.flatten(x)     # (B, 41472)
+        x = self.fc(x)          # (B, 729)
+        x = x.view(-1, 81, 9)  # (B, 81, 9)
+        return x
 
 
 def count_params(model):
@@ -140,7 +168,6 @@ def count_params(model):
 
 # ── Evaluation ────────────────────────────────────────────────────────────────
 def evaluate_one_shot(model, puzzles, solutions, device, batch_size=256):
-    """One-shot evaluation: predict all 81 cells at once. Report masked and full accuracy."""
     model.eval()
     n = len(puzzles)
     correct_cells_full = 0
@@ -158,19 +185,17 @@ def evaluate_one_shot(model, puzzles, solutions, device, batch_size=256):
             y = torch.tensor((batch_s - 1).astype(np.int64)).to(device)
             empty = torch.tensor((batch_p == 0).astype(np.float32)).to(device)
 
-            logits = model(x)  # (B, 81, 9)
-            preds = logits.argmax(dim=-1)  # (B, 81)
+            logits = model(x)
+            preds = logits.argmax(dim=-1)
 
             correct = (preds == y.view(preds.shape))
             correct_cells_full += correct.sum().item()
             total_cells += correct.numel()
 
-            # Masked accuracy (empty cells only)
             correct_empty = correct.float() * empty.view(correct.shape)
             correct_cells_empty += correct_empty.sum().item()
             total_empty += empty.sum().item()
 
-            # Grid solved = all 81 cells correct
             grid_correct = correct.view(-1, 81).all(dim=1)
             solved_grids += grid_correct.sum().item()
 
@@ -180,23 +205,21 @@ def evaluate_one_shot(model, puzzles, solutions, device, batch_size=256):
     return cell_acc, grid_acc, empty_acc
 
 
-def iterative_solve(model, puzzle, device, max_steps=5):
-    """Iterative solving: predict, fill most confident, repeat."""
+def iterative_solve(model, puzzle, device, max_steps=10):
     model.eval()
     current = puzzle.copy()
 
     with torch.no_grad():
         for step in range(max_steps):
-            x = torch.tensor((current / 9.0 - 0.5).astype(np.float32)).unsqueeze(0).unsqueeze(0).to(device)
-            logits = model(x)  # (1, 81, 9)
-            probs = torch.softmax(logits, dim=-1)  # (1, 81, 9)
-
-            # Find empty cells
             empty_mask = (current == 0)
             if not empty_mask.any():
                 break
 
-            # Find most confident prediction among empty cells
+            x = torch.tensor((current / 9.0 - 0.5).astype(np.float32)).unsqueeze(0).unsqueeze(0).to(device)
+            logits = model(x)
+            probs = torch.softmax(logits, dim=-1)
+
+            # Fill ALL cells with confidence > threshold in batch
             empty_indices = np.where(empty_mask.flatten())[0]
             max_conf = -1
             best_idx = -1
@@ -210,13 +233,12 @@ def iterative_solve(model, puzzle, device, max_steps=5):
                     best_val = val.item()
 
             r, c = divmod(best_idx, 9)
-            current[r][c] = best_val + 1  # back to 1-9
+            current[r][c] = best_val + 1
 
     return current
 
 
-def evaluate_iterative(model, puzzles, solutions, device, n_eval=200, max_steps=5):
-    """Evaluate with iterative solving."""
+def evaluate_iterative(model, puzzles, solutions, device, n_eval=500, max_steps=10):
     model.eval()
     solved = 0
     correct_cells = 0
@@ -233,7 +255,7 @@ def evaluate_iterative(model, puzzles, solutions, device, n_eval=200, max_steps=
         if correct.all():
             solved += 1
 
-        if (i + 1) % 50 == 0:
+        if (i + 1) % 100 == 0:
             print(f"  Iterative: {i+1}/{min(n_eval, len(puzzles))}, solved so far: {solved}")
 
     cell_acc = correct_cells / total_cells if total_cells > 0 else 0
@@ -241,65 +263,30 @@ def evaluate_iterative(model, puzzles, solutions, device, n_eval=200, max_steps=
     return cell_acc, grid_acc
 
 
-# ── Data generation (fallback) ────────────────────────────────────────────────
-def generate_sudoku_pair():
-    """Generate a (solution, puzzle) pair — fallback if no dataset available."""
-    def fill_grid(grid):
-        for i in range(81):
-            r, c = divmod(i, 9)
-            if grid[r][c] == 0:
-                nums = list(range(1, 10))
-                np.random.shuffle(nums)
-                for n in nums:
-                    if (all(grid[r][j] != n for j in range(9)) and
-                        all(grid[j][c] != n for j in range(9)) and
-                        all(grid[r//3*3 + dr][c//3*3 + dc] != n
-                            for dr in range(3) for dc in range(3))):
-                        grid[r][c] = n
-                        if fill_grid(grid):
-                            return True
-                        grid[r][c] = 0
-                return False
-        return True
-
-    grid = [[0]*9 for _ in range(9)]
-    fill_grid(grid)
-    solution = np.array(grid, dtype=np.int64)
-
-    puzzle = solution.copy()
-    n_remove = np.random.randint(30, 51)
-    indices = np.random.choice(81, n_remove, replace=False)
-    for idx in indices:
-        r, c = divmod(idx, 9)
-        puzzle[r][c] = 0
-
-    return puzzle, solution
-
-
 # ── Training loop ─────────────────────────────────────────────────────────────
-def train(model, train_loader, val_loader, device, n_epochs=100, patience=10,
-          lr=1e-3, save_path='sudoku_epf_best.pt'):
-    """Train with mixed precision, early stopping, ReduceLROnPlateau."""
-
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=5, min_lr=1e-6
+def train(model, train_loader, val_loader, device, n_epochs=100, patience=15,
+          lr=1e-3, save_path='sudoku_resnet_best.pt'):
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
+    scheduler = optim.lr_scheduler.OneCycleLR(
+        optimizer, max_lr=lr, epochs=n_epochs,
+        steps_per_epoch=len(train_loader), pct_start=0.1
     )
     criterion = nn.CrossEntropyLoss(reduction='none')
     scaler = GradScaler('cuda')
 
     best_val_loss = float('inf')
     best_epoch = 0
+    best_val_acc = 0
     patience_counter = 0
     history = []
 
     print(f"\nTraining for up to {n_epochs} epochs (patience={patience})")
     print(f"Mixed precision: FP16 autocast")
     print(f"Masked loss: only empty cells contribute to loss")
+    print(f"Scheduler: OneCycleLR (max_lr={lr})")
     print("-" * 70)
 
     for epoch in range(1, n_epochs + 1):
-        # ── Train ──
         model.train()
         train_loss = 0
         train_correct = 0
@@ -314,18 +301,19 @@ def train(model, train_loader, val_loader, device, n_epochs=100, patience=10,
             optimizer.zero_grad()
 
             with autocast('cuda'):
-                logits = model(batch_x)  # (B, 81, 9)
+                logits = model(batch_x)
                 per_cell_loss = criterion(logits.view(-1, 9), batch_y.view(-1))
-                # Mask: only loss on empty cells
                 loss = (per_cell_loss * batch_m.view(-1)).sum() / batch_m.sum().clamp(min=1)
 
             scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(optimizer)
             scaler.update()
+            scheduler.step()
 
             train_loss += loss.item() * batch_x.size(0)
             preds = logits.argmax(dim=-1)
-            # Only count accuracy on empty cells
             correct = (preds == batch_y.view(preds.shape)).float() * batch_m.view(preds.shape)
             train_correct += correct.sum().item()
             train_total += batch_m.sum().item()
@@ -333,7 +321,6 @@ def train(model, train_loader, val_loader, device, n_epochs=100, patience=10,
         train_loss /= len(train_loader.dataset)
         train_acc = train_correct / train_total if train_total > 0 else 0
 
-        # ── Validate ──
         model.eval()
         val_loss = 0
         val_correct = 0
@@ -357,8 +344,6 @@ def train(model, train_loader, val_loader, device, n_epochs=100, patience=10,
         val_loss /= len(val_loader.dataset)
         val_acc = val_correct / val_total if val_total > 0 else 0
 
-        scheduler.step(val_loss)
-
         elapsed = time.time() - t0
         current_lr = optimizer.param_groups[0]['lr']
 
@@ -376,9 +361,9 @@ def train(model, train_loader, val_loader, device, n_epochs=100, patience=10,
             'lr': current_lr,
         })
 
-        # ── Checkpoint ──
         if val_loss < best_val_loss:
             best_val_loss = val_loss
+            best_val_acc = val_acc
             best_epoch = epoch
             patience_counter = 0
             torch.save({
@@ -388,14 +373,13 @@ def train(model, train_loader, val_loader, device, n_epochs=100, patience=10,
                 'val_loss': val_loss,
                 'val_acc': val_acc,
             }, save_path)
-            print(f"  -> Best model saved (val_loss={val_loss:.4f})")
+            print(f"  -> Best model saved (val_loss={val_loss:.4f}, val_acc={val_acc:.4f})")
         else:
             patience_counter += 1
             if patience_counter >= patience:
                 print(f"\nEarly stopping at epoch {epoch}. Best: epoch {best_epoch} (val_loss={best_val_loss:.4f})")
                 break
 
-    # Load best model
     ckpt = torch.load(save_path, weights_only=False)
     model.load_state_dict(ckpt['model_state_dict'])
     print(f"Loaded best model from epoch {ckpt['epoch']} (val_loss={ckpt['val_loss']:.4f}, val_acc={ckpt['val_acc']:.4f})")
@@ -405,27 +389,25 @@ def train(model, train_loader, val_loader, device, n_epochs=100, patience=10,
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    # ── Config ──
     N_TRAIN = 900_000
     N_VAL = 80_000
     N_TEST = 20_000
-    BATCH_SIZE = 128
-    N_EPOCHS = 150
-    PATIENCE = 15
-    LR = 1e-3
+    BATCH_SIZE = 256
+    N_EPOCHS = 100
+    PATIENCE = 12
+    LR = 3e-3
     SAVE_DIR = os.path.join(os.path.dirname(__file__), '..', 'sudoku_models')
     os.makedirs(SAVE_DIR, exist_ok=True)
-    SAVE_PATH = os.path.join(SAVE_DIR, 'sudoku_epf_v2_best.pt')
-    RESULTS_PATH = os.path.join(SAVE_DIR, 'training_results_v2.json')
+    SAVE_PATH = os.path.join(SAVE_DIR, 'sudoku_resnet_v3_best.pt')
+    RESULTS_PATH = os.path.join(SAVE_DIR, 'training_results_v3.json')
 
     print("=" * 70)
-    print("Sudoku EPF-Style GPU Training V2 (Masked Loss)")
+    print("Sudoku Deep ResNet GPU Training V3")
     print(f"Config: {N_TRAIN:,} train / {N_VAL:,} val / {N_TEST:,} test")
     print(f"Batch: {BATCH_SIZE} | Epochs: {N_EPOCHS} | Patience: {PATIENCE} | LR: {LR}")
     print(f"Save: {SAVE_PATH}")
     print("=" * 70)
 
-    # ── Load data from HuggingFace ──
     all_puzzles, all_solutions = load_sudoku_dataset(n_total=1_000_000)
 
     train_p = all_puzzles[:N_TRAIN]
@@ -444,19 +426,16 @@ def main():
 
     print(f"\nTrain: {len(train_ds):,} | Val: {len(val_ds):,}")
 
-    # ── Model ──
-    model = EPFConvModel().to(device)
+    model = SudokuResNet().to(device)
     n_params = count_params(model)
-    print(f"\nModel: EPFConvModel ({n_params:,} params)")
+    print(f"\nModel: SudokuResNet ({n_params:,} params)")
     print(model)
 
-    # VRAM check
     if torch.cuda.is_available():
         vram_used = torch.cuda.memory_allocated(0) / 1e9
         vram_total = torch.cuda.get_device_properties(0).total_memory / 1e9
         print(f"VRAM: {vram_used:.2f} / {vram_total:.1f} GB (model loaded)")
 
-    # ── Train ──
     t0_total = time.time()
     model, history = train(
         model, train_loader, val_loader, device,
@@ -465,28 +444,25 @@ def main():
     train_time = time.time() - t0_total
     print(f"\nTotal training time: {train_time:.1f}s ({train_time/60:.1f}min)")
 
-    # ── Final evaluation ──
     print("\n" + "=" * 70)
     print("FINAL EVALUATION")
     print("=" * 70)
 
-    # One-shot on test set
     print(f"\nOne-shot evaluation ({N_TEST:,} puzzles)...")
     os_cell, os_grid, os_empty = evaluate_one_shot(model, test_p, test_s, device)
     print(f"One-shot: cell_acc={os_cell:.4f} | empty_acc={os_empty:.4f} | grid_acc={os_grid:.4f} ({int(os_grid*N_TEST)}/{N_TEST})")
 
-    # Iterative on subset
     n_iter = min(500, N_TEST)
-    print(f"\nIterative evaluation ({n_iter} puzzles, max_steps=5)...")
+    print(f"\nIterative evaluation ({n_iter} puzzles, max_steps=10)...")
     iter_cell, iter_grid = evaluate_iterative(model, test_p, test_s, device, n_eval=n_iter)
     print(f"Iterative: cell_acc={iter_cell:.4f} | grid_acc={iter_grid:.4f} ({int(iter_grid*n_iter)}/{n_iter})")
 
-    # ── Save results ──
     results = {
         'config': {
             'n_train': N_TRAIN, 'n_val': N_VAL, 'n_test': N_TEST,
             'batch_size': BATCH_SIZE, 'n_epochs': N_EPOCHS, 'patience': PATIENCE,
             'lr': LR, 'model_params': n_params,
+            'architecture': 'SudokuResNet (8 ResBlocks, 64/128 channels)',
             'dataset': 'nakashi104/sudoku-1million (HuggingFace)',
         },
         'one_shot': {'cell_acc': os_cell, 'grid_acc': os_grid, 'empty_acc': os_empty},
@@ -499,11 +475,10 @@ def main():
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {RESULTS_PATH}")
 
-    # ── Summary ──
     print("\n" + "=" * 70)
     print("SUMMARY")
     print("=" * 70)
-    print(f"Model: EPFConvModel ({n_params:,} params)")
+    print(f"Model: SudokuResNet ({n_params:,} params)")
     print(f"Training: {N_TRAIN:,} puzzles, {history[-1]['epoch']} epochs, {train_time/60:.1f}min")
     print(f"One-shot grid accuracy: {os_grid*100:.1f}% ({int(os_grid*N_TEST)}/{N_TEST})")
     print(f"One-shot empty-cell accuracy: {os_empty*100:.1f}%")
