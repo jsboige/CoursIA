@@ -26,14 +26,15 @@
 
 ---
 
-## Services AUDIO (4)
+## Services AUDIO (5)
 
 | Service | Modèle | VRAM | URL Cloud | Port Local | Docker | Status |
 |---------|--------|------|-----------|------------|--------|--------|
-| **Whisper STT** | faster-whisper large-v3 | ~10GB | https://whisper-api.myia.io | 8190/36540 | ✅ whisper-api | ✅ UP |
+| **Whisper STT** | faster-whisper large-v3-turbo | ~10GB | https://whisper-api.myia.io | 8190/36540 | ✅ whisper-api | ✅ UP |
 | **Kokoro TTS** | kokoro-v0_19 | ~2GB | https://tts-api.myia.io | 8191 | ✅ tts-api | ✅ UP |
 | **MusicGen** | facebook/musicgen-medium | ~10GB | https://musicgen-api.myia.io | 8192 | ✅ musicgen-api | ✅ UP |
 | **Demucs** | htdemucs_ft | ~4GB | https://demucs-api.myia.io | 8193 | ✅ demucs-api | ✅ UP |
+| **Qwen ASR** | Qwen3-ASR-1.7B + ForcedAligner-0.6B | ~4GB | https://stt.myia.io/qwen | 8195 | ✅ qwen-asr-api | ✅ UP |
 
 **Docker existants** : `docker-configurations/services/`
 
@@ -41,6 +42,7 @@
 - `tts-api/` - ✅ UP (API depuis main, avec lazy loading)
 - `musicgen-api/` - ✅ UP (API depuis main, avec lazy loading)
 - `demucs-api/` - ✅ UP (API depuis main, avec lazy loading)
+- `qwen-asr-api/` - ✅ UP (FastAPI, lazy loading, ISO 639-1 support, 52 langues)
 - `whisper-webui/` - ✅ UP (WebUI alternative)
 
 **Configurations hybrides disponibles** :
@@ -90,6 +92,18 @@ python scripts/genai-stack/genai.py auth sync
 
 ## Actions requises
 
+### Qwen ASR - Details techniques
+
+- **Modele** : Qwen3-ASR-1.7B (1.7B params, bfloat16)
+- **Forced Aligner** : Qwen3-ForcedAligner-0.6B (timestamps mot-niveau)
+- **Langues** : 52 langues auto-detectees (FR, EN, DE, ES, ZH, JA, KO, AR, etc.)
+- **API** : OpenAI-compatible `/v1/audio/transcriptions`
+- **Support ISO 639-1** : `language=fr` normalise en `French` automatiquement
+- **Lazy loading** : Chargement paresseux, dechargement apres 300s d'inactivite
+- **GPU** : GPU 1 (RTX 3090), ~4GB VRAM
+- **PR** : #547 (fix language normalization)
+- **Endpoint NanoClaw** : `https://stt.myia.io/qwen/v1/audio/transcriptions`
+
 ### ✅ Services créés et démarrés
 
 **Image** :
@@ -101,6 +115,7 @@ python scripts/genai-stack/genai.py auth sync
 - [x] Kokoro TTS (port 8191) - ✅ UP
 - [x] MusicGen (port 8192) - ✅ UP
 - [x] Demucs (port 8193) - ✅ UP
+- [x] Qwen ASR (port 8195) - ✅ UP (depuis avril 2026)
 
 **Video** :
 - [x] ComfyUI Video (port 8189) - ✅ UP
@@ -132,11 +147,11 @@ services:
 
 ---
 
-## Mise à jour : 2026-03-09
+## Mise à jour : 2026-04-26
 
-**Services opérationnels** : 10/10 ✅
+**Services opérationnels** : 11/11 ✅
 - Image: 5/5 UP (Qwen Edit, Z-Image, Forge Turbo, SD Forge, SD.Next)
-- Audio: 4/4 UP (Whisper, Kokoro TTS, MusicGen, Demucs)
+- Audio: 5/5 UP (Whisper, Kokoro TTS, MusicGen, Demucs, Qwen ASR)
 - Video: 1/1 UP (ComfyUI Video)
 
 **Tous les services GenAI sur po-2023 sont opérationnels.**
