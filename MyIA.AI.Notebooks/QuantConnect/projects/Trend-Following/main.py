@@ -5,17 +5,19 @@ from AlgorithmImports import *
 
 class TrendFollowingAQR(QCAlgorithm):
     """
-    Trend Following Multi-Asset v6 (Safe Haven) (BEST)
-    ==================================================
-    Best variant: Sharpe 0.542, CAGR 10.42%, MaxDD 17.2%
+    Trend Following Multi-Asset v7 (SafeHaven + Momentum Tilt) (BEST)
+    =================================================================
+    Best variant: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3%
 
     Dual signal: SMA(200) + 6m momentum confirmation.
-    BND safe haven: when <2 trending assets, put remainder in BND.
+    BND safe haven when <2 trending assets.
+    12m return tilt: strongest trending assets get higher weight.
 
     Iteration results:
     v4: Sharpe 0.373, CAGR 8.46%, MaxDD 22.0% (equal weight)
     v5: Sharpe 0.357, CAGR 8.16%, MaxDD 22.5% (risk parity - worse)
-    v6: Sharpe 0.542, CAGR 10.42%, MaxDD 17.2% (BND safe haven) <-- BEST
+    v6: Sharpe 0.542, CAGR 10.42%, MaxDD 17.2% (BND safe haven)
+    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) <-- BEST
 
     Ref: Antonacci (2014), AQR Trend Following
     """
@@ -39,7 +41,8 @@ class TrendFollowingAQR(QCAlgorithm):
         safe = self.add_equity(self.safe_ticker, Resolution.DAILY)
         self.symbols[self.safe_ticker] = safe.symbol
 
-        self.mom_lookback = 126
+        self.mom_lookback_6m = 126
+        self.mom_lookback_12m = 252
         self.min_trending = 2
 
         self.schedule.on(
@@ -48,13 +51,13 @@ class TrendFollowingAQR(QCAlgorithm):
             self.rebalance,
         )
 
-        self.set_warm_up(timedelta(days=280))
+        self.set_warm_up(timedelta(days=300))
 
     def rebalance(self):
         if self.is_warming_up:
             return
 
-        trending = []
+        trending = {}
         for ticker in self.risky_tickers:
             ind = self.sma_ind[ticker]
             if not ind.is_ready:
@@ -63,18 +66,30 @@ class TrendFollowingAQR(QCAlgorithm):
             close = self.securities[self.symbols[ticker]].close
             if close <= sma_val:
                 continue
-            history = self.history(self.symbols[ticker], self.mom_lookback, Resolution.DAILY)
-            if len(history) < self.mom_lookback * 0.8:
+            hist_6m = self.history(self.symbols[ticker], self.mom_lookback_6m + 5, Resolution.DAILY)
+            if len(hist_6m) < self.mom_lookback_6m * 0.8:
                 continue
-            ret_6m = history["close"].iloc[-1] / history["close"].iloc[0] - 1
-            if ret_6m > 0:
-                trending.append(ticker)
+            ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.mom_lookback_6m] - 1
+            if ret_6m <= 0:
+                continue
+            hist_12m = self.history(self.symbols[ticker], self.mom_lookback_12m + 5, Resolution.DAILY)
+            if len(hist_12m) < self.mom_lookback_12m * 0.8:
+                ret_12m = ret_6m
+            else:
+                ret_12m = hist_12m["close"].iloc[-1] / hist_12m["close"].iloc[-self.mom_lookback_12m] - 1
+            trending[ticker] = ret_12m
 
         targets = {}
         if len(trending) >= self.min_trending:
-            weight = 1.0 / len(trending)
-            for ticker in trending:
-                targets[ticker] = weight
+            sorted_trending = sorted(trending.items(), key=lambda x: x[1], reverse=True)
+            n = len(sorted_trending)
+            raw_weights = []
+            for i, (ticker, ret) in enumerate(sorted_trending):
+                rank_score = (n - i) / n
+                raw_weights.append((ticker, rank_score))
+            total = sum(w for _, w in raw_weights)
+            for ticker, w in raw_weights:
+                targets[ticker] = w / total
         elif len(trending) > 0:
             risky_weight = len(trending) * 0.25
             per_asset = risky_weight / len(trending)
@@ -84,7 +99,7 @@ class TrendFollowingAQR(QCAlgorithm):
         else:
             targets[self.safe_ticker] = 1.0
 
-        trending_str = ", ".join(trending) if trending else "none"
+        trending_str = ", ".join(f"{t}:{r:.1%}" for t, r in sorted(trending.items(), key=lambda x: -x[1]))
         self.log(f"Trending ({len(trending)}/{len(self.risky_tickers)}): [{trending_str}]")
 
         for ticker in self.all_tickers:
