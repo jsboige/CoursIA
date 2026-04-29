@@ -1,4 +1,4 @@
-{"version": "1.2.0",
+{"version": "1.1.0",
  "packagesDir": ".lake/packages",
  "packages":
  [{"url": "https://github.com/DominikPeters/SocialChoiceLean.git",
@@ -15,10 +15,10 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "85e6e1b45ac3992b8b08b789e314e2b2adf4d5c5",
+   "rev": "8cb9319191fd34b6f23d7ffea58a4f8fb674cefd",
    "name": "mathlib",
    "manifestFile": "lake-manifest.json",
-   "inputRev": null,
+   "inputRev": "8cb9319191fd34b6f23d7ffea58a4f8fb674cefd",
    "inherited": false,
    "configFile": "lakefile.lean"},
   {"url": "https://github.com/leanprover-community/plausible",
@@ -102,5 +102,4 @@
    "inherited": true,
    "configFile": "lakefile.toml"}],
  "name": "social_choice_peters",
- "lakeDir": ".lake",
- "fixedToolchain": false}
+ "lakeDir": ".lake"}
