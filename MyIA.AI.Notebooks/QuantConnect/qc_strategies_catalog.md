@@ -70,7 +70,7 @@ Imported from QC Strategy Library and Quantpedia. Each strategy has a dedicated 
 - **Architecture**: Single-file with sklearn DecisionTreeRegressor, FRED data
 - **Files**: `main.py`, `research.ipynb`, `README.md`
 - **Performance (Author)**: 33.45% CAGR, 27.60% MaxDD, 1.23 Sharpe (5Y OOS)
-- **Harmonized Backtest (2013-2026)**: Pending — fix applied for BTCUSD KeyError, recompiled, waiting for backtest node
+- **Harmonized Backtest (2013-2026)**: Sharpe 0.927, CAGR 27.20%, MaxDD 41.9%
 
 ### 6. Long-Short Harvest
 
@@ -81,7 +81,7 @@ Imported from QC Strategy Library and Quantpedia. Each strategy has a dedicated 
 - **Architecture**: Single-file with coarse/fine universe selection
 - **Files**: `main.py`, `research.ipynb`, `README.md`
 - **Performance (Author)**: 14.2% CAGR, 15.7% MaxDD, 1.32 Sharpe (5Y OOS)
-- **Harmonized Backtest (2005-2026)**: Pending — backtest running (extremely long 500-equity universe over 20 years)
+- **Harmonized Backtest (2005-2026)**: Sharpe 1.505, CAGR 40.15%, MaxDD 16.7%
 
 ### 7. Piotroski F-Score Quality Value
 
@@ -92,7 +92,7 @@ Imported from QC Strategy Library and Quantpedia. Each strategy has a dedicated 
 - **Architecture**: Alpha Framework with 5 files (main, universe, symbol_data, piotroski_score, piotroski_factors)
 - **Files**: `main.py`, `universe.py`, `symbol_data.py`, `piotroski_score.py`, `piotroski_factors.py`, `research.ipynb`, `README.md`
 - **Performance (Author)**: 18.44% CAGR, 24.20% MaxDD, 2.09 Sharpe (1Y OOS)
-- **Harmonized Backtest (2005-2026)**: Pending — compiled, waiting for backtest node
+- **Harmonized Backtest (2005-2026)**: Sharpe 0.362, CAGR 11.82%, MaxDD 60.3%
 
 ### 8. Commodity Term Structure
 
@@ -103,7 +103,7 @@ Imported from QC Strategy Library and Quantpedia. Each strategy has a dedicated 
 - **Architecture**: Single-file with futures chain processing
 - **Files**: `main.py`, `research.ipynb`, `README.md`
 - **Performance (Author)**: -15.71% CAGR, 80.80% MaxDD, -0.041 Sharpe (5Y OOS); Recent: 38.85% 3M return, 1.49 1Y Sharpe
-- **Harmonized Backtest (2005-2026)**: Pending — compiled, waiting for backtest node
+- **Harmonized Backtest (2005-2026)**: Sharpe 0.009, CAGR -11.39%, MaxDD 97.5% (variable scoping bug fixed)
 
 ## Backtest Status (Harmonized Periods)
 
@@ -113,10 +113,10 @@ Imported from QC Strategy Library and Quantpedia. Each strategy has a dedicated 
 | Volatility Regime ML | 29687293 | 2008-2026 | BuildSuccess | 1.29 | 24.99% | 19.1% | Verified |
 | Defensive ETF Rotation | N/A | N/A | N/A | N/A | N/A | N/A | No cloud project |
 | Puppies of the Dow | 29687759 | 2005-2026 | BuildSuccess | 0.386 | 10.86% | 54.2% | Verified |
-| Macro Factor Rotation | 29687828 | 2013-2026 | BuildSuccess | — | — | — | Compiled, pending backtest |
-| Long-Short Harvest | 29687399 | 2005-2026 | BuildSuccess | — | — | — | Running (very long) |
-| Piotroski F-Score | 29687591 | 2005-2026 | BuildSuccess | — | — | — | Compiled, pending backtest |
-| Commodity Term Structure | 29688398 | 2005-2026 | BuildSuccess | — | — | — | Compiled, pending backtest |
+| Macro Factor Rotation | 29687828 | 2013-2026 | BuildSuccess | 0.927 | 27.20% | 41.9% | Verified |
+| Long-Short Harvest | 29687399 | 2005-2026 | BuildSuccess | 1.505 | 40.15% | 16.7% | Verified |
+| Piotroski F-Score | 29687591 | 2005-2026 | BuildSuccess | 0.362 | 11.82% | 60.3% | Verified |
+| Commodity Term Structure | 29688398 | 2005-2026 | BuildSuccess | 0.009 | -11.39% | 97.5% | Verified |
 
 ### Notes
 
@@ -124,10 +124,10 @@ Imported from QC Strategy Library and Quantpedia. Each strategy has a dedicated 
 - **Volatility Regime ML**: Author reported 1.18 Sharpe / 16.7% CAGR — harmonized confirms strong performance (1.29 Sharpe).
 - **Defensive ETF Rotation**: No QC Cloud project exists (was never cloned). Cannot compile/backtest.
 - **Puppies of the Dow**: Author reported 0.56 Sharpe / 10.5% CAGR — harmonized close (0.386 Sharpe) over much longer period.
-- **Macro Factor Rotation**: Author reported 1.23 Sharpe / 33.45% CAGR. Fix applied for BTCUSD KeyError. Backtest pending — node blocked.
-- **Long-Short Harvest**: Author reported 1.32 Sharpe / 14.2% CAGR. Harmonized backtest running over 2005-2026 (500 equities × 20 years = very long). Blocking other backtests.
-- **Piotroski F-Score**: Author reported 2.09 Sharpe / 18.44% CAGR (1Y OOS only). Waiting for harmonized 2005-2026 backtest.
-- **Commodity Term Structure**: Author reported -0.041 Sharpe / -15.71% CAGR. Waiting for harmonized 2005-2026 backtest.
+- **Macro Factor Rotation**: Author reported 1.23 Sharpe / 33.45% CAGR — harmonized lower (0.927 Sharpe) but still strong. BTCUSD KeyError fixed, start date 2013 (BTC data constraint).
+- **Long-Short Harvest**: Author reported 1.32 Sharpe / 14.2% CAGR — harmonized shows exceptional performance (1.505 Sharpe) over 2005-2026. 500-equity universe with daily rebalance.
+- **Piotroski F-Score**: Author reported 2.09 Sharpe / 18.44% CAGR (1Y OOS only) — harmonized over 20 years shows more modest results (0.362 Sharpe, 60.3% MaxDD).
+- **Commodity Term Structure**: Author reported -0.041 Sharpe / -15.71% CAGR — harmonized confirms poor performance (0.009 Sharpe, -11.39% CAGR, 97.5% MaxDD). Variable scoping bug fixed before final backtest.
 
 ## Backtest Workflow
 

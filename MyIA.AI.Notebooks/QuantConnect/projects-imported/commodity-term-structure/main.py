@@ -66,9 +66,12 @@ class CommodityTermStructureAlgorithm(QCAlgorithm):
                 continue
             expire_range = 365 / (distant_contract.expiry - near_contract.expiry).days
             roll_returns[symbol] = (np.log(float(price_near)) - np.log(float(price_distant))) * expire_range
-            positive_roll_returns = {symbol: returns for symbol, returns in roll_returns.items() if returns > 0}
-            negative_roll_returns = {symbol: returns for symbol, returns in roll_returns.items() if returns < 0}
 
+        if not roll_returns:
+            return
+
+        positive_roll_returns = {s: r for s, r in roll_returns.items() if r > 0}
+        negative_roll_returns = {s: r for s, r in roll_returns.items() if r < 0}
         quintile = floor(len(roll_returns) / 5)
 
         backwardation = sorted(positive_roll_returns, key=lambda x: positive_roll_returns[x], reverse=True)[:quintile]
