@@ -544,6 +544,9 @@ tmp/
 # Generated ML artifacts
 *.joblib
 
+# PyTorch training checkpoints (resumable, too large to commit)
+*_checkpoint.pt
+
 # ECE grading reports (student PII - never commit)
 reports/
 

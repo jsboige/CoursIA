@@ -26,6 +26,7 @@ try:
     from . import ml_utils
     from . import plotting
     from . import backtest_helpers
+    from . import gpu_training
 except ImportError:
     # Modules pas encore créés, ignore silencieusement
     pass
@@ -35,5 +36,6 @@ __all__ = [
     'indicators',
     'ml_utils',
     'plotting',
-    'backtest_helpers'
+    'backtest_helpers',
+    'gpu_training'
 ]
