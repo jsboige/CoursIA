@@ -95,6 +95,38 @@ social_choice_lean/
 
 Le projet `social_choice_lean_peters/` (adjacent) contient un projet Lake séparé qui importe DominikPeters/SocialChoiceLean en dépendance. Il sert de vérification de build et de référence pour le notebook 16e.
 
+## Choix de design
+
+### Préférences faibles vs strictes
+
+Notre framework utilise des **préférences faibles** (`PrefOrder α` : réflexif, total, transitif) plutôt que des ordres linéaires stricts. Ce choix suit la tradition de l'économie du bien-être (Sen 1970, Arrow 1951) où la préférence stricte `P R x y` et l'indifférence `I R x y` sont dérivées d'une relation sous-jacente `R`. L'alternative — utiliser `LinearOrder` de Mathlib directement — est adoptée par DominikPeters/SocialChoiceLean mais rend les définitions moins directement comparables aux textes classiques de choix social.
+
+### Dictateur directionnel
+
+La définition de `is_dictatorship` dans `Arrow.lean` utilise un **dictateur directionnel** : un individu `d` tel que pour toute paire `(x, y)`, si `d` préfère strictement `x` à `y`, la société préfère strictement `x` à `y`. C'est suffisant dans le contexte d'une SWF qui produit une préférence totale — un dictateur directionnel est automatiquement un dictateur complet. Ce formulation simplifie la preuve d'extension (étape 4 de Geanakoplos 2005) par rapport à une définition exigerait la coïncidence exacte entre préférences individuelles et sociales.
+
+### Décisivité bidirectionnelle dans Sen
+
+Le paradoxe de Sen (`Sen.lean`) utilise `is_decisive_over` comme décisivité **bidirectionnelle** : un individu est décisif sur `{a, b}` s'il détermine le classement social dans les deux sens (a > b et b > a). Certains textes formulent la décisivité de manière unidirectionnelle. La version bidirectionnelle renforce l'hypothèse de libéralisme minimal et produit un paradoxe plus fort — tout résultat prouvé avec la version bidirectionnelle s'applique aussi à la version unidirectionnelle.
+
+### Sources académiques
+
+| Résultat | Source | Approche de preuve |
+| ---------- | ------ | ------------------ |
+| Arrow | Geanakoplos (2005), "Three Brief Proofs of Arrow's Impossibility Theorem" | Preuve par profils manipulés (maketop/makebot) |
+| Sen | Sen (1970), "The Impossibility of a Paretian Liberal" | Contre-exemple direct par cas |
+| Median Voter | Black (1948), "On the Rationale of Group Decision-making" | Comptage majoritaire sur single-peaked |
+| Split Cycle | Holliday & Pacuit (2023) | Élimination des défaites dans les cycles |
+
+### Port depuis Lean 3
+
+Ce projet est un port depuis [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) (Lean 3). Les adaptations principales :
+
+- Remplacement des `definition` Lean 3 par `def` Lean 4
+- Migration des tactiques Lean 3 vers Lean 4 (syntaxe `split_ifs`, `rcases`)
+- Utilisation de `Classical.dec` pour les instances `Decidable` non-constructives
+- Conservation du framework `PrefOrder` (pas de migration vers les typeclasses Mathlib)
+
 ## Dépendances
 
 - **Lean 4** : Version stable (via `lean-toolchain`)
