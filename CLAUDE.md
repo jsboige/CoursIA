@@ -2,13 +2,21 @@
 
 Guidance pour Claude Code travaillant avec le repository CoursIA.
 
-**Documentation deportee :**
+**Documentation deportee — `docs/` :**
 - [docs/common-commands.md](docs/common-commands.md) - Setup environnement, validation notebooks, slash commands
 - [docs/genai-services.md](docs/genai-services.md) - Architectures Qwen/Lumina, scripts genai-stack, mappings notebooks
 - [docs/claude-code-config.md](docs/claude-code-config.md) - Agents, skills, rules, model selection
 - [docs/quantconnect.md](docs/quantconnect.md) - Backtests, MCP Docker, structure, livre reference
 - [docs/ece-grading.md](docs/ece-grading.md) - ECE student repos, autres ecoles
-- [.claude/rules/](.claude/rules/) - Regles modulaires auto-loaded (notebook, git, code-style, anti-regression, genai, wsl)
+- [docs/architecture_mcp_roo.md](docs/architecture_mcp_roo.md) - Architecture MCP roo-state-manager (34 outils, RooSync)
+
+**Regles modulaires `.claude/rules/` (auto-loaded a chaque session)** — chaque section critique ci-dessous renvoie a la regle complete :
+- [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md) - Branches, commits, force push (section A)
+- [.claude/rules/anti-regression.md](.claude/rules/anti-regression.md) - Patterns red-flag, audit historique (section D)
+- [.claude/rules/notebook-conventions.md](.claude/rules/notebook-conventions.md) - Manipulation, structure pedagogique, execution kernel (section C)
+- [.claude/rules/code-style.md](.claude/rules/code-style.md) - PEP 8, .NET 9.0, no emojis, langue (section E)
+- [.claude/rules/genai-config.md](.claude/rules/genai-config.md) - GenAI Docker config, GPU, .env
+- [.claude/rules/wsl-kernels.md](.claude/rules/wsl-kernels.md) - WSL pour kernels notebook (NoteBookApp Linux)
 
 ---
 
@@ -61,6 +69,8 @@ Conserver tous les `# TODO`, `# Indice`, `# Etape N`. Le notebook doit s'execute
 
 **C.3 - Scope strict des re-executions Papermill.** Un agent ne commit QUE les notebooks qu'il a effectivement modifies (cellule source code/markdown). Les re-executions Papermill de notebooks dont aucune cellule source n'a change ne doivent pas etre stagees (verification `git diff "$nb" | grep -cE '^\+\s*"source"' > 0`). Pour audit/inventaire : Papermill dans `/tmp/audit_<famille>_$(date +%s)/`, rapport sur dashboard, pas dans le repo. Incidents 2026-04-25 : 2 collisions PR par re-executions paralleles (#540 vs #541, #541 vs #542).
 
+**Patterns notebook detailles** (manipulation, structure pedagogique, .NET cell-by-cell, BATCH_MODE, working directory) : cf [.claude/rules/notebook-conventions.md](.claude/rules/notebook-conventions.md).
+
 ### D. Anti-regression (code de production)
 
 S'applique aux **preuves Lean/Coq, fonctions metier appelees, tests, librairies**. **Pas** aux cellules d'exercice etudiant (qui doivent justement etre stubbees, cf C.1).
@@ -76,6 +86,18 @@ S'applique aux **preuves Lean/Coq, fonctions metier appelees, tests, librairies*
 **Detection** : `grep -c sorry` avant/apres sur fichiers Lean/Coq, suppressions de corps de fonction metier appelee, cellules `# Solution` (exemple resolu) -> stubs.
 
 Incident 2026-04-24 : commit "Mathlib compilation fixes" (#524) a remplace 9 preuves d'Arrow.lean par `sorry`, perte d'une semaine de port Lean ; restoration via #527. Cf [.claude/rules/anti-regression.md](.claude/rules/anti-regression.md).
+
+### E. Code style (resume)
+
+| Aspect | Regle |
+|--------|-------|
+| Emojis | Interdits dans code, variables, fichiers generes, messages de commit |
+| Python | PEP 8, type hints, Python 3.10+, `venv` + `requirements.txt` |
+| C# / .NET | .NET 9.0, .NET Interactive pour notebooks, `Microsoft.SemanticKernel` |
+| Notebooks | Documentation primaire en francais, code en francais ou anglais |
+| Naming | Pas de prefixes "Pure"/"Enhanced"/"Advanced"/"Ultimate" |
+
+Detail complet : [.claude/rules/code-style.md](.claude/rules/code-style.md) (auto-loaded a chaque session).
 
 ---
 
