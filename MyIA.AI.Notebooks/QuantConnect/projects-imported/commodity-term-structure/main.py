@@ -16,7 +16,7 @@ from math import floor
 class CommodityTermStructureAlgorithm(QCAlgorithm):
 
     def initialize(self):
-        self.set_start_date(self.end_date - timedelta(15*365))
+        self.set_start_date(2005, 1, 1)
         self.set_cash(1000000)
         self.settings.seed_initial_prices = True
         tickers = [

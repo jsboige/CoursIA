@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 class AIStocksBondsRotationAlgorithm(QCAlgorithm):
 
     def initialize(self):
-        self.set_start_date(self.end_date - timedelta(10 * 365))
+        self.set_start_date(2013, 1, 1)
         self.settings.daily_precise_end_time = False
         self.settings.seed_initial_prices = True
 
@@ -71,8 +71,14 @@ class AIStocksBondsRotationAlgorithm(QCAlgorithm):
         prediction_by_symbol = pd.Series()
 
         for symbol in self._symbols:
+            if symbol not in labels.columns:
+                continue
             asset_labels = labels[symbol].dropna()
+            if len(asset_labels) == 0:
+                continue
             idx = factors.index.intersection(asset_labels.index)
+            if len(idx) == 0:
+                continue
 
             self._model.fit(
                 self._scaler.fit_transform(factors.loc[idx]),
@@ -85,6 +91,8 @@ class AIStocksBondsRotationAlgorithm(QCAlgorithm):
 
             if prediction > 0:
                 prediction_by_symbol.loc[symbol] = prediction
+        if len(prediction_by_symbol) == 0:
+            return
 
         weight_by_symbol = (
             1.5 * prediction_by_symbol / prediction_by_symbol.sum()

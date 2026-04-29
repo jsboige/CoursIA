@@ -16,7 +16,7 @@ from collections import deque
 class VolatilityHarvestMLLongShort(QCAlgorithm):
 
     def initialize(self):
-        self.set_start_date(2012, 1, 1)
+        self.set_start_date(2005, 1, 1)
         self.set_cash(100000)
         self.set_brokerage_model(
             BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN,

@@ -11,7 +11,7 @@ from AlgorithmImports import *
 class PuppiesOfTheDow(QCAlgorithm):
 
     def initialize(self):
-        self.set_start_date(self.end_date - timedelta(12 * 365))
+        self.set_start_date(2005, 1, 1)
         self.set_cash(100_000)
 
         self._portfolio_size = 5
@@ -57,7 +57,10 @@ class PuppiesOfTheDow(QCAlgorithm):
         targets = [
             PortfolioTarget(s, 1 / self._portfolio_size)
             for s in self._universe.selected
+            if self.securities.contains_key(s)
         ]
+        if not targets:
+            return
         self.set_holdings(targets, True)
 
     def on_warmup_finished(self):
