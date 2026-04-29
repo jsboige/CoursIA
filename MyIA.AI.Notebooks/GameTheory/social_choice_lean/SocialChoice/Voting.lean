@@ -19,6 +19,8 @@
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Sort
+import Mathlib.Order.Defs.LinearOrder
 import Mathlib.Tactic
 
 import SocialChoice.Basic
@@ -150,5 +152,85 @@ theorem margin_pos_of_unanimous [Nonempty ι] (prof : ι → PrefOrder σ) {x y 
     simp [h_univ, h_empty, Finset.card_univ]
   rw [hkey]
   exact mod_cast (Finset.card_pos.mpr Finset.univ_nonempty)
+
+/-! ## Single-Peaked Preferences
+
+Reference: Black (1948), "On the Rationale of Group Decision-making"
+
+A preference ordering over a linearly ordered set is single-peaked if there
+exists a unique most-preferred alternative (the peak) and preferences decline
+monotonically away from the peak in both directions.
+-/
+
+section SinglePeaked
+
+variable [LinearOrder σ]
+
+/-- The peak of a preference relation: the unique strictly most-preferred element -/
+def is_peak (R : σ → σ → Prop) (p : σ) : Prop :=
+  ∀ x, x ≠ p → P R p x
+
+/-- R is single-peaked with peak p on a linearly ordered set.
+    1. p is the peak (strictly preferred to everything else)
+    2. Left of peak: closer to peak is weakly preferred (a ≤ b ≤ p → R b a)
+    3. Right of peak: closer to peak is weakly preferred (p ≤ a ≤ b → R a b) -/
+def single_peaked (R : σ → σ → Prop) (p : σ) : Prop :=
+  is_peak R p ∧
+  (∀ a b, a ≤ b → b ≤ p → R b a) ∧
+  (∀ a b, p ≤ a → a ≤ b → R a b)
+
+/-- The peak is unique -/
+theorem single_peaked_peak_unique {R : σ → σ → Prop} {p q : σ}
+    (hsp : single_peaked R p) (hsq : single_peaked R q) (hne : p ≠ q) : False := by
+  have hPpq : P R p q := hsp.1 q hne.symm
+  have hPqp : P R q p := hsq.1 p hne
+  exact hPpq.2 hPqp.1
+
+/-- Single-peaked implies the peak is the best element (under Reflexive R) -/
+theorem single_peaked_peak_best {R : σ → σ → Prop} {p : σ} {S : Finset σ}
+    (hrefl : Reflexive R) (hsp : single_peaked R p) (hpS : p ∈ S) :
+    is_best_element p S R := by
+  intro y hy
+  by_cases heq : y = p
+  · subst heq; exact hrefl y
+  · exact (hsp.1 y heq).1
+
+/-- A profile is single-peaked if every voter has single-peaked preferences -/
+def single_peaked_profile (prof : ι → PrefOrder σ) (peaks : ι → σ) : Prop :=
+  ∀ i : ι, single_peaked (prof i).rel (peaks i)
+
+/-! ## Median Voter Theorem (Black 1948)
+
+For an odd number of voters with single-peaked preferences over a linearly
+ordered set, the median peak (the middle element of sorted peaks) is a
+Condorcet winner under majority rule.
+
+Proof sketch:
+- For any y < median: strictly more than n/2 voters have peak >= median,
+  and by single-peakedness they prefer median to y
+- For any y > median: strictly more than n/2 voters have peak <= median,
+  and by single-peakedness they prefer median to y
+-/
+
+/-- Sorted list of peaks (with duplicates preserved) -/
+noncomputable def sorted_peaks_list (peaks : ι → σ) : List σ :=
+  (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)
+
+/-- The median peak: the middle element of sorted peaks.
+    For odd n, this is the unique middle element. -/
+noncomputable def median_peak [Inhabited σ] (peaks : ι → σ) : σ :=
+  let s := sorted_peaks_list peaks
+  s.getD (s.length / 2) default
+
+/-- **Median Voter Theorem (Black 1948)**: For an odd number of voters with
+    single-peaked preferences, the median peak is a Condorcet winner. -/
+theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
+    (hsp : single_peaked_profile prof peaks)
+    (hodd : Odd (Fintype.card ι)) :
+    ∃ m, condorcet_winner prof (Finset.univ.image peaks) m := by
+  sorry -- Proof requires Finset counting + sorting machinery
+        -- Core argument: majority of voters have peak on same side as median
+
+end SinglePeaked
 
 end SocialChoice
