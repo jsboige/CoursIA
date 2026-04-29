@@ -16,6 +16,7 @@
 -/
 
 import SocialChoice.Basic
+import SocialChoice.Framework
 import SocialChoice.Arrow
 import SocialChoice.Sen
 import SocialChoice.Voting
