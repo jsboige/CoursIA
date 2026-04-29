@@ -1,7 +1,7 @@
 # QuantConnect AI Trading - Série Éducative CoursIA
 
 > **Trading algorithmique + Intelligence Artificielle**
-> 28 notebooks Python | Cloud-first | Free Tier compatible
+> 43 notebooks Python | Cloud-first | Free Tier compatible
 
 ---
 
