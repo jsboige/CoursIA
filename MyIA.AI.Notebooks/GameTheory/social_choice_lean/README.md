@@ -12,6 +12,34 @@ Ce répertoire contient les formalisations mathématiques de la théorie du choi
 
 ## Théorèmes formalisés
 
+### 0. DominikPeters/SocialChoiceLean (reference externe)
+
+Un dépôt de référence majeur pour la formalisation du choix social en Lean 4 :
+
+- **Auteur** : Dominik Peters (University of Glasgow)
+- **Dépôt** : https://github.com/DominikPeters/SocialChoiceLean
+- **Licence** : MIT
+
+Résultats formalisés par Peters :
+- **Gibbard-Satterthwaite** : Manipulabilité stratégique implique dictature (>= 3 candidats)
+- **Duggan-Schwartz** : Extension au multi-winner avec optimist/pessimist strategyproofness
+- **4 impossibilités Condorcet** : Participation, Reinforcement, Strategyproofness, Anon+Neutral+Resolute
+- **15+ règles de vote** avec vérification d'axiomes : Split Cycle, Schulze, Copeland, Black, IRV, Borda, etc.
+
+**Intégration dans notre projet** (3 phases) :
+1. **Phase 1** (ce dépôt) : Citations et références croisées
+2. **Phase 2** : Notebook dédié (`GameTheory-16e-SocialChoiceLean-Tour.ipynb`) + projet Lake séparé (`social_choice_lean_peters/`)
+3. **Phase 3** : Portage sélectif dans notre framework `PrefOrder` (impossibilités Condorcet, règles de scoring)
+
+**Différences de framework** :
+| Aspect | Notre projet (ChaseNorman) | DominikPeters |
+|--------|---------------------------|---------------|
+| Type de préférence | `PrefOrder α` (réflexif, total, transitif) | `LinearOrder A` (strict, Mathlib) |
+| Règle de vote | `SCC ι σ` (types fixés) | `VotingRule` (polymorphe sur V, A) |
+| Toolchain | `v4.28.0-rc1` | `v4.27.0-rc1` |
+
+```
+
 ### 1. Théorème d'Impossibilité d'Arrow (Arrow's Impossibility Theorem)
 
 **Dans `SocialChoice/Arrow.lean`** :
@@ -42,20 +70,18 @@ Ce répertoire contient les formalisations mathématiques de la théorie du choi
 
 ## Structure des fichiers
 
-```
+```text
 social_choice_lean/
 ├── README.md                          # Documentation générale
 ├── lakefile.lean                      # Configuration du projet Lake
-├── lean-toolchain                     # Version de Lean
+├── lean-toolchain                     # Version de Lean (v4.28.0-rc1)
 ├── SocialChoice.lean                  # Fichier d'imports principaux
 ├── SocialChoice/                      # Module principal
-│   ├── Basic.lean                    # Définitions de base
-│   │   ├── Preferences (P, I)       # Préférences strictes/indifférentes
-│   │   ├── QuasiOrder               # Relation quasi-ordonnée
-│   │   ├── PrefOrder                # Relation de préférence complète
-│   │   └── Profile                  | Profil de préférences
-│   ├── Arrow.lean                   # Théorème d'Arrow
-│   └── Sen.lean                     # Paradoxe de Sen
+│   ├── Basic.lean                    # Définitions de base (P, I, PrefOrder, Profile)
+│   ├── Arrow.lean                   # Théorème d'Arrow (Geanakoplos 2005)
+│   ├── Sen.lean                     # Paradoxe de Sen (bidirectionnel)
+│   └── Voting.lean                  # Définitions de vote (margin, Condorcet, SCC,
+│                                     # critères de vote, single-peaked, Split Cycle, clones)
 └── examples/
     ├── arrow_simple.lean            # Exemple simple d'Arrow
     └── sen_liberal_paradox.lean     # Exemple du paradoxe de Sen
@@ -96,13 +122,16 @@ lake test
 ## Intégration avec la série GameTheory
 
 Ces formalisations Lean sont les bases théoriques pour les notebooks :
+
 - **GameTheory-16b-Lean-SocialChoice** : Applications pratiques
 - **GameTheory-16c-SocialChoice-Python** : Simulations numériques
+- **GameTheory-16e-SocialChoiceLean-Tour** : Tour des résultats de DominikPeters/SocialChoiceLean
 
 ## Liens utiles
 
 - [Documentation Mathlib4](https://leanprover-community.github.io/mathlib4_docs/)
-- [Référence originale](https://github.com/asouther4/lean-social-choice) (Lean 3)
+- [Référence originale Arrow/Sen](https://github.com/asouther4/lean-social-choice) (Lean 3)
+- [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) (Lean 4, MIT)
 - [Série GameTheory](../README.md)
 
 ## Licence
