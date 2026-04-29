@@ -179,6 +179,30 @@ Trois MCP majeurs configures dans `.mcp.json` (root) ou `~/.claude.json` (global
 - **qc-mcp** (Docker `quantconnect/mcp-server`) : creation projets/backtests QC Cloud, lecture resultats. Rate limit MAX 10 appels/min entre TOUS les agents
 - **playwright** (22 outils) : automatisation web (utile pour Quantbooks online quand qc-mcp insuffisant)
 
+### GenAI services (notebooks `MyIA.AI.Notebooks/GenAI/`)
+
+| Service | Modele | VRAM | URL prod |
+|---------|--------|------|----------|
+| Qwen Image Edit | qwen_image_edit_2509 | ~29GB | qwen-image-edit.myia.io |
+| Z-Image / Lumina | Lumina-Next-SFT | ~10GB | z-image.myia.io |
+| Whisper STT | large-v3 (FunASR upgrade en cours) | ~5GB | whisper-api.myia.io |
+| Kokoro TTS, MusicGen, Demucs | (audio stack) | varie | port-forwarded |
+| ComfyUI Video | ComfyUI core | varie | comfyui-video |
+
+API keys dans `MyIA.AI.Notebooks/GenAI/.env` (template `.env.example`). Validation : `/validate-genai [target] [--local]` ou `python scripts/genai-stack/genai.py validate --full`.
+
+Detail config (services hostes po-2023 GPUs, .env keys, scripts) : [.claude/rules/genai-config.md](.claude/rules/genai-config.md) + [docs/genai-services.md](docs/genai-services.md).
+
+### Kernels WSL (notebooks Lean / GameTheory / OpenSpiel)
+
+Notebooks dans `GameTheory/` et `SymbolicAI/Lean/` requierent un kernel WSL specifique :
+- `Python (GameTheory WSL + OpenSpiel)` pour GameTheory
+- `Python 3 (WSL)` ou `Lean 4 (WSL)` pour SymbolicAI/Lean
+
+Pieges connus : backslashes consommes par WSL shell, paths sans separateurs, kernel timeout 60s au cold start, heredoc variables interpolees. Wrapper bash obligatoire (Python wrapper ne marche PAS).
+
+Detail diagnostic + workarounds : [.claude/rules/wsl-kernels.md](.claude/rules/wsl-kernels.md).
+
 ---
 
 ## PROCEDURES RECURRENTES
