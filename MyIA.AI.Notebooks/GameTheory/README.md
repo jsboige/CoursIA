@@ -4,7 +4,7 @@ Cette serie de notebooks introduit la **Theorie des Jeux**, combinant **Python**
 
 ## Structure
 
-**17 notebooks principaux** + **9 side tracks** (b = Lean, c = Python approfondissement) = **26 notebooks**
+**17 notebooks principaux** + **10 side tracks** (b = Lean, c = Python approfondissement, d/e = Social Choice) = **27 notebooks**
 
 ### Partie 1 : Fondations et Jeux statiques (Notebooks 1-6)
 
@@ -45,6 +45,8 @@ Cette serie de notebooks introduit la **Theorie des Jeux**, combinant **Python**
 | 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de revelation, VCG, matching | 65 min |
 | 16b | [GameTheory-16b-Lean-SocialChoice](GameTheory-16b-Lean-SocialChoice.ipynb) | Lean 4 | Arrow, Sen, Electeur Median | 70 min |
 | 16c | [GameTheory-16c-SocialChoice-Python](GameTheory-16c-SocialChoice-Python.ipynb) | Python | Condorcet, simulations, modele Downs | 45 min |
+| 16d | [GameTheory-16d-SocialChoice-SAT](GameTheory-16d-SocialChoice-SAT.ipynb) | Python | Arrow encode en SAT, z3, UNSAT | 50 min |
+| 16e | [GameTheory-16e-SocialChoiceLean-Tour](GameTheory-16e-SocialChoiceLean-Tour.ipynb) | Lean 4 | Tour DominikPeters, definitions simplifiees | 40 min |
 | 17 | [GameTheory-17-MultiAgent-RL](GameTheory-17-MultiAgent-RL.ipynb) | Python | NFSP, PSRO, AlphaZero intro | 55 min |
 
 **Duree totale** : ~18h30
@@ -57,6 +59,8 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 |-------|------|-------------|
 | **b** | Lean 4 | Formalisation mathematique, preuves formelles |
 | **c** | Python | Approfondissement, exemples avances, visualisations |
+| **d** | Python | Social Choice as SAT/CSP (z3, Arrow encoding) |
+| **e** | Lean 4 | Tour des resultats DominikPeters/SocialChoiceLean |
 
 **Organisation** :
 - Chaque notebook principal inclut des liens vers ses side tracks
@@ -92,6 +96,8 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 | 16 | MechanismDesign | ~40 | 3 | **COMPLET** |
 | 16b | Lean-SocialChoice | ~30 | 3 | **COMPLET** |
 | 16c | SocialChoice-Python | ~25 | 3 | **COMPLET** |
+| 16d | SocialChoice-SAT | ~20 | 2 | **COMPLET** |
+| 16e | SocialChoiceLean-Tour | ~24 | 0 | **COMPLET** |
 | 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
 
 Tous les notebooks incluent :
@@ -185,7 +191,8 @@ cp .env.example .env
 - [math-xmum/Brouwer](https://github.com/math-xmum/Brouwer) - Nash existence
 - [MixedMatched/formalizing-game-theory](https://github.com/MixedMatched/formalizing-game-theory)
 - [mathlib4 PGame](https://leanprover-community.github.io/mathlib4_docs/Mathlib/SetTheory/PGame/Basic.html)
-- [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) - Arrow (Lean 3)
+- [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) - Arrow (Lean 3, source originale)
+- [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) - Gibbard-Satterthwaite, Split Cycle, 15+ regles (Lean 4, MIT)
 
 ## Structure des fichiers
 
@@ -201,6 +208,8 @@ GameTheory/
 ├── GameTheory-8c-CombinatorialGames-Python.ipynb
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
 ├── GameTheory-16c-SocialChoice-Python.ipynb
+├── GameTheory-16d-SocialChoice-SAT.ipynb
+├── GameTheory-16e-SocialChoiceLean-Tour.ipynb
 ├── README.md
 ├── requirements.txt
 ├── .env.example

@@ -6,9 +6,12 @@ Ce répertoire contient les formalisations mathématiques de la théorie du choi
 
 | Statistique | Valeur |
 |-------------|--------|
-| Formalisations Lean | 3 théorèmes majeurs |
-| Preuves | Complètes et vérifiées |
-| dépendances | Mathlib4, Lake |
+| Théorèmes formels | 2 certifiés (0 sorry) + 1 en cours |
+| sorry restants | 3 (dans Voting.lean : median voter) |
+| Référence commit | `d679d950` (main, 29/04/2026) |
+| Dépendances | Mathlib4, Lake |
+
+**Statut formel** : Arrow.lean et Sen.lean sont **FORMAL-CERTIFIED** (0 sorry). Voting.lean contient 3 sorry dans les preuves du Median Voter Theorem (en cours de complétion). Voir `FORMAL_STATUS.md` (PR-G) pour le détail par fichier.
 
 ## Théorèmes formalisés
 
@@ -36,7 +39,7 @@ Résultats formalisés par Peters :
 |--------|---------------------------|---------------|
 | Type de préférence | `PrefOrder α` (réflexif, total, transitif) | `LinearOrder A` (strict, Mathlib) |
 | Règle de vote | `SCC ι σ` (types fixés) | `VotingRule` (polymorphe sur V, A) |
-| Toolchain | `v4.28.0-rc1` | `v4.27.0-rc1` |
+| Toolchain | `v4.28.0-rc1` | `v4.27.0-rc1` (pin commit `d679d950`) |
 
 ```
 
@@ -66,7 +69,10 @@ Résultats formalisés par Peters :
 
 ### 3. Théorème de l'Électeur Médian (Median Voter Theorem)
 
-*À venir*
+**Dans `SocialChoice/Voting.lean`** :
+
+- **Énoncé** : Pour des préférences single-peaked, la règle de la majorité sélectionne l'alternative préférée de l'électeur médian.
+- **Statut** : **FORMAL-SKETCH** (3 sorry). Définitions complètes (single-peaked, peak), preuve en cours.
 
 ## Structure des fichiers
 
@@ -86,6 +92,8 @@ social_choice_lean/
     ├── arrow_simple.lean            # Exemple simple d'Arrow
     └── sen_liberal_paradox.lean     # Exemple du paradoxe de Sen
 ```
+
+Le projet `social_choice_lean_peters/` (adjacent) contient un projet Lake séparé qui importe DominikPeters/SocialChoiceLean en dépendance. Il sert de vérification de build et de référence pour le notebook 16e.
 
 ## Dépendances
 
