@@ -4,7 +4,7 @@ Cette serie de notebooks introduit la **Theorie des Jeux**, combinant **Python**
 
 ## Structure
 
-**17 notebooks principaux** + **10 side tracks** (b = Lean, c = Python approfondissement, d/e = Social Choice) = **27 notebooks**
+**17 notebooks principaux** + **12 side tracks** (b = Lean, c = Python approfondissement, d/e/f = Social Choice) = **29 notebooks**
 
 ### Partie 1 : Fondations et Jeux statiques (Notebooks 1-6)
 
@@ -47,9 +47,10 @@ Cette serie de notebooks introduit la **Theorie des Jeux**, combinant **Python**
 | 16c | [GameTheory-16c-SocialChoice-Python](GameTheory-16c-SocialChoice-Python.ipynb) | Python | Condorcet, simulations, modele Downs | 45 min |
 | 16d | [GameTheory-16d-SocialChoice-SAT](GameTheory-16d-SocialChoice-SAT.ipynb) | Python | Arrow encode en SAT, z3, UNSAT | 50 min |
 | 16e | [GameTheory-16e-SocialChoiceLean-Tour](GameTheory-16e-SocialChoiceLean-Tour.ipynb) | Lean 4 | Tour DominikPeters, definitions simplifiees | 40 min |
+| 16f | [GameTheory-16f-SocialChoice-Z3](GameTheory-16f-SocialChoice-Z3.ipynb) | Python | Arrow/Gibbard-Satterthwaite via Z3 solver | 45 min |
 | 17 | [GameTheory-17-MultiAgent-RL](GameTheory-17-MultiAgent-RL.ipynb) | Python | NFSP, PSRO, AlphaZero intro | 55 min |
 
-**Duree totale** : ~18h30
+**Duree totale** : ~19h15
 
 ## Navigation et Side Tracks
 
@@ -61,6 +62,7 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 | **c** | Python | Approfondissement, exemples avances, visualisations |
 | **d** | Python | Social Choice as SAT/CSP (z3, Arrow encoding) |
 | **e** | Lean 4 | Tour des resultats DominikPeters/SocialChoiceLean |
+| **f** | Python | Social Choice via Z3 solver (Arrow, Gibbard-Satterthwaite) |
 
 **Organisation** :
 - Chaque notebook principal inclut des liens vers ses side tracks
@@ -98,6 +100,7 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 | 16c | SocialChoice-Python | ~25 | 3 | **COMPLET** |
 | 16d | SocialChoice-SAT | ~20 | 2 | **COMPLET** |
 | 16e | SocialChoiceLean-Tour | ~24 | 0 | **COMPLET** |
+| 16f | SocialChoice-Z3 | ~20 | 2 | **COMPLET** |
 | 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
 
 Tous les notebooks incluent :
@@ -210,6 +213,7 @@ GameTheory/
 ├── GameTheory-16c-SocialChoice-Python.ipynb
 ├── GameTheory-16d-SocialChoice-SAT.ipynb
 ├── GameTheory-16e-SocialChoiceLean-Tour.ipynb
+├── GameTheory-16f-SocialChoice-Z3.ipynb
 ├── README.md
 ├── requirements.txt
 ├── .env.example
