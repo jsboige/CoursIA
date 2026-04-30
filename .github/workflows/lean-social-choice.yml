@@ -1,0 +1,94 @@
+name: Lean Social Choice CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lean-toolchain'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  fail-on-sorry:
+    name: "Proof integrity (no sorry)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/social_choice_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Mathlib oleans
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/GameTheory/social_choice_lean/.lake
+        key: lake-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lean-toolchain') }}
+        restore-keys: lake-${{ runner.os }}-
+
+    - name: Check for sorry in certified modules
+      run: |
+        echo "Checking sorry count in certified modules (Arrow, Sen, Framework, Basic)..."
+        SORRY_COUNT=0
+        for f in SocialChoice/Arrow.lean SocialChoice/Sen.lean SocialChoice/Framework.lean SocialChoice/Basic.lean; do
+          if [ -f "$f" ]; then
+            COUNT=$(grep -c "sorry" "$f" || true)
+            if [ "$COUNT" -gt 0 ]; then
+              echo "FAIL: $f has $COUNT sorry"
+              grep -n "sorry" "$f"
+              SORRY_COUNT=$((SORRY_COUNT + COUNT))
+            else
+              echo "OK: $f (0 sorry)"
+            fi
+          fi
+        done
+        if [ "$SORRY_COUNT" -gt 0 ]; then
+          echo ""
+          echo "FAILED: $SORRY_COUNT sorry found in certified modules"
+          echo "These modules are formally verified and must not contain sorry."
+          exit 1
+        fi
+        echo "All certified modules are sorry-free."
+
+  build:
+    name: "Lake build"
+    runs-on: ubuntu-latest
+    needs: fail-on-sorry
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/social_choice_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Mathlib oleans
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/GameTheory/social_choice_lean/.lake
+        key: lake-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lean-toolchain') }}
+        restore-keys: lake-${{ runner.os }}-
+
+    - name: Lake build
+      run: |
+        lake -R build 2>&1 | tail -20
