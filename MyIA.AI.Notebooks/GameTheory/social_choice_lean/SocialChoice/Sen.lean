@@ -13,8 +13,7 @@
   This is a fundamental result showing tension between efficiency and liberty.
 -/
 
-import SocialChoice.Basic
-import SocialChoice.Arrow
+import SocialChoice.Framework
 import Mathlib.Tactic
 
 variable {ι : Type*} {σ : Type*} [Fintype ι] [DecidableEq ι] [DecidableEq σ]
