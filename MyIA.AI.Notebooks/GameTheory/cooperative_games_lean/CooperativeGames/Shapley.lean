@@ -151,13 +151,106 @@ theorem shapley_efficient (G : TUGame N) :
 theorem shapley_symmetric (G : TUGame N) (i j : N)
     (h : Solution.SymmetricPlayers G i j) :
     shapleyValue G i = shapleyValue G j := by
+  classical
   by_cases heq : i = j
   · subst heq; rfl
+  -- Swap bijection proof using Finset.sum_bij
+  -- The forward function maps {S | i ∉ S} → {T | j ∉ T} by swapping j↔i
   unfold shapleyValue TUGame.marginalContribution
-  haveI : DecidableEq N := Classical.decEq _
-  -- TODO: Formalize the swap bijection using Finset.sum_bij
-  -- Key lemma needed: swap_preserves_marginal
-  sorry
+  set src := Finset.univ.filter (fun S : Finset N => i ∉ S)
+  set tgt := Finset.univ.filter (fun S : Finset N => j ∉ S)
+  have hmem_src {S} : S ∈ src ↔ i ∉ S := by simp [src]
+  have hmem_tgt {T} : T ∈ tgt ↔ j ∉ T := by simp [tgt]
+  -- Define the forward and inverse as separate definitions so they reduce properly
+  let fwd (S : Finset N) (_ : S ∈ src) : Finset N :=
+    if hSj : j ∈ S then (S.erase j) ∪ {i} else S
+  let inv (T : Finset N) (_ : T ∈ tgt) : Finset N :=
+    if hTi : i ∈ T then (T.erase i) ∪ {j} else T
+  refine Finset.sum_bij' fwd inv ?fwd_mem ?inv_mem ?left_inv ?right_inv ?hfg
+  case fwd_mem =>
+    intro S hS
+    rw [hmem_src] at hS
+    rw [hmem_tgt]
+    -- Goal: j ∉ fwd S hS✝ where fwd S _ = if j ∈ S then (S.erase j) ∪ {i} else S
+    simp only [fwd]
+    split_ifs with hSj
+    · -- fwd = (S.erase j) ∪ {i}, prove j ∉ (S.erase j) ∪ {i}
+      rw [Finset.mem_union]
+      intro h
+      rcases h with h | h
+      · exact Finset.notMem_erase j S h
+      · exact heq (Finset.mem_singleton.mp h).symm
+    · exact hSj
+  case inv_mem =>
+    intro T hT
+    rw [hmem_tgt] at hT
+    rw [hmem_src]
+    simp only [inv]
+    split_ifs with hTi
+    · -- inv = (T.erase i) ∪ {j}, prove i ∉ (T.erase i) ∪ {j}
+      rw [Finset.mem_union]
+      intro h
+      rcases h with h | h
+      · exact Finset.notMem_erase i T h
+      · exact heq (Finset.mem_singleton.mp h)
+    · exact hTi
+  case left_inv =>
+    intro S hS
+    rw [hmem_src] at hS
+    dsimp only [fwd, inv]
+    split_ifs with hSj hTi
+    · -- j ∈ S, i ∈ (S.erase j) ∪ {i}: the real case
+      have hnI : i ∉ S.erase j := fun h' => hS (Finset.mem_of_mem_erase h')
+      have : ((S.erase j) ∪ {i}).erase i = S.erase j := by
+        rw [Finset.erase_union_distrib]
+        simp [Finset.erase_eq_self.mpr hnI]
+      rw [this, Finset.union_comm, ← Finset.insert_eq, Finset.insert_erase hSj]
+    · -- j ∈ S, i ∉ (S.erase j) ∪ {i}: impossible
+      exact absurd (Finset.mem_union.mpr (Or.inr (Finset.mem_singleton.mpr rfl))) hTi
+    · -- j ∉ S: fwd(S) = S, inner condition i ∈ S auto-closed by hS, identity
+      rfl
+  case right_inv =>
+    intro T hT
+    rw [hmem_tgt] at hT
+    dsimp only [fwd, inv]
+    split_ifs with hSj hTi
+    · -- hSj : i ∈ T, hTi : j ∈ T.erase i ∪ {j}: the real case
+      have hnJ : j ∉ T.erase i := fun h => hT (Finset.mem_of_mem_erase h)
+      have : ((T.erase i) ∪ {j}).erase j = T.erase i := by
+        rw [Finset.erase_union_distrib]
+        simp [Finset.erase_eq_self.mpr hnJ]
+      rw [this, Finset.union_comm, ← Finset.insert_eq, Finset.insert_erase hSj]
+    · -- hSj : i ∈ T, hTi : j ∉ T.erase i ∪ {j}: impossible
+      exact absurd (Finset.mem_union.mpr (Or.inr (Finset.mem_singleton.mpr rfl))) hTi
+    · -- i ∉ T: inv(T) = T, inner condition j ∈ T auto-closed by hT, identity
+      rfl
+  case hfg =>
+    intro S hS
+    rw [hmem_src] at hS
+    dsimp only [fwd]
+    split_ifs with hSj
+    · -- j ∈ S: fwd(S) = (S.erase j) ∪ {i}
+      have hnI : i ∉ S.erase j := fun h' => hS (Finset.mem_of_mem_erase h')
+      have hcard : ((S.erase j) ∪ {i} : Finset N).card = S.card := by
+        have hge : 0 < S.card := Finset.card_pos.mpr ⟨j, hSj⟩
+        rw [Finset.card_union_of_disjoint (Finset.disjoint_singleton_right.mpr hnI),
+          Finset.card_erase_of_mem hSj, Finset.card_singleton]
+        omega
+      simp only [hcard]
+      have hv1 : G.v (S ∪ {i}) = G.v ((S.erase j) ∪ {i} ∪ {j}) := by
+        congr 1
+        rw [Finset.union_assoc, Finset.union_comm {i} {j}, ← Finset.union_assoc,
+          Finset.union_comm (S.erase j) {j}, ← Finset.insert_eq,
+          Finset.insert_erase hSj]
+      have hv2 : G.v S = G.v ((S.erase j) ∪ {i}) := by
+        have hsym := h (S.erase j) hnI (Finset.notMem_erase j S)
+        rw [hsym]
+        congr 1
+        rw [Finset.union_comm, ← Finset.insert_eq, Finset.insert_erase hSj]
+      rw [hv1, hv2]
+    · -- j ∉ S: fwd(S) = S
+      have hsym := h S hS hSj
+      rw [hsym]
 
 /-- Shapley value satisfies additivity -/
 theorem shapley_additive (G H : TUGame N) (i : N) :
