@@ -6,16 +6,19 @@ Complete training pipeline for ML models on financial OHLCV data. Designed for R
 
 ```
 scripts/
+  features.py                # Reusable feature engineering (indicators + caching)
   train_classification.py    # RandomForest + XGBoost (CPU/GPU)
   train_lstm.py              # PyTorch LSTM/GRU (GPU recommended)
   train_transformer.py       # Financial Transformer (GPU required for full scale)
   train_dqn_rl.py            # DQN Reinforcement Learning (GPU recommended)
   validate_training_package.py  # Validate all scripts with --dry-run
+  registry_update.py         # Build REGISTRY.md from checkpoints
 checkpoints/                 # Saved models + metadata (auto-created)
   classification/<timestamp>/
   lstm/<timestamp>/
   transformer/<timestamp>/
   dqn/<timestamp>/
+REGISTRY.md                  # Auto-generated checkpoint catalog
 ```
 
 ## Quick Start
@@ -63,7 +66,14 @@ Uses synthetic data, minimal epochs. Validates the full pipeline without GPU or 
 
 ## Features Engineered
 
-All models share the same feature set from OHLCV data:
+All indicators are available via `scripts/features.py` — composable functions with Parquet caching:
+
+```python
+from features import FeatureEngineer
+
+engineer = FeatureEngineer(lookback=20)
+features = engineer.transform(df, cache_path="cache/spy.parquet")
+```
 
 | Feature | Description |
 |---------|-------------|
@@ -74,8 +84,8 @@ All models share the same feature set from OHLCV data:
 | rsi_14 | Relative Strength Index (14-period) |
 | macd, macd_signal | MACD indicator |
 | bb_width | Bollinger Band width |
-
-LSTM/Transformer additionally use **true_range** and **atr_14** when OHLC data is available.
+| true_range, atr_14 | True Range and ATR (requires OHLC) |
+| obv, obv_norm | On-Balance Volume (raw and normalized) |
 
 ## Checkpoints
 
