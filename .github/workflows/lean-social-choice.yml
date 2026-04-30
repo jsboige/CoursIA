@@ -91,4 +91,5 @@ jobs:
 
     - name: Lake build
       run: |
+        lake exe cache get || true
         lake -R build 2>&1 | tail -20
