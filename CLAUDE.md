@@ -32,6 +32,8 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 3. Verifier le heartbeat cluster (machines actives)
 4. Sans mission assignee : envoyer un message a ai-01, ne pas attendre passivement
 
+**Reporting dashboard** : poster sur le dashboard workspace CoursIA au minimum au debut de session, apres chaque livraison significative, et en fin de session. Le coordinateur (ai-01) ne doit jamais constater un silence > 2h d'un agent actif. Si une session depasse 30 min sans post dashboard, c'est un signe d'isolement. Les posts `[INFO]` courts sont preferables au silence.
+
 **Git** : pas de push direct sur `main`, pas de force push (`--force` / `--force-with-lease`) ni `reset --hard` sans validation user. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-memes. Cf [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md). Incident 2026-03-13 : force push accidentel sur main = commits potentiellement ecrases.
 
 ### B. Reviews PR (5 points obligatoires)
@@ -277,6 +279,10 @@ git diff <base>..<pr-branch> -- '*.ipynb' | grep -E "^[-+].*Solution|^[-+].*pass
 ```
 
 Cf [.claude/rules/anti-regression.md](.claude/rules/anti-regression.md) pour les patterns red-flag complets.
+
+### Productivite pendant les operations longues
+
+Quand un processus long tourne (training GPU, backtest QC, build Lean, docker pull) : **ne pas attendre passivement**. Utiliser le temps pour du travail parallele : preparation de PRs, mise a jour de documentation, review de code, commits de fichiers deja prets. Poser un monitor sur le processus et travailler sur autre chose en parallele. L'inaction pendant un training de 40 minutes est un gaspillage de temps agent.
 
 ### Execution Quantbooks (regle user 29/04)
 
