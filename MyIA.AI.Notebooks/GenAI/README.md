@@ -6,7 +6,7 @@ Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : im
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 119 |
+| Notebooks | 105 |
 | Sous-domaines | 9 (Environment, Image, Audio, Video, Texte, SemanticKernel, EPF, Vibe-Coding, Playwright-OWUI) |
 | Duree totale | ~90-100h |
 | Taux validation | 95%+ |
