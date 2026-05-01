@@ -31,6 +31,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "shared"))
+from gpu_training import (
+    get_gpu_temp,
+    setup_amp,
+    thermal_check,
+)
+
 
 # --- Trading Environment ---
 
@@ -269,6 +276,8 @@ def train_dqn(
     buffer = ReplayBuffer(replay_size)
     criterion = nn.SmoothL1Loss()
 
+    use_amp, grad_scaler = setup_amp()
+
     epsilon = eps_start
     episode_rewards = []
     episode_trades = []
@@ -276,6 +285,7 @@ def train_dqn(
     best_state = None
 
     for episode in range(num_episodes):
+        thermal_check(max_temp=80, cool_sleep=30)
         state = env.reset()
         total_reward = 0.0
         trades = 0
@@ -308,14 +318,23 @@ def train_dqn(
 
                 q_values = policy_net(s_t).gather(1, a_t)
                 with torch.no_grad():
-                    next_q = target_net(ns_t).max(1, keepdim=True)[0]
-                    target_q = r_t + gamma * next_q * (1 - d_t)
+                    with torch.amp.autocast("cuda", enabled=use_amp):
+                        next_q = target_net(ns_t).max(1, keepdim=True)[0]
+                        target_q = r_t + gamma * next_q * (1 - d_t)
 
-                loss = criterion(q_values, target_q)
-                optimizer.zero_grad()
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 1.0)
-                optimizer.step()
+                with torch.amp.autocast("cuda", enabled=use_amp):
+                    loss = criterion(q_values, target_q)
+                if use_amp:
+                    grad_scaler.scale(loss).backward()
+                    grad_scaler.unscale_(optimizer)
+                    torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 1.0)
+                    grad_scaler.step(optimizer)
+                    grad_scaler.update()
+                else:
+                    optimizer.zero_grad()
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 1.0)
+                    optimizer.step()
 
             if done:
                 break
@@ -337,8 +356,10 @@ def train_dqn(
 
         if (episode + 1) % max(1, num_episodes // 5) == 0:
             recent = np.mean(episode_rewards[-10:]) if len(episode_rewards) >= 10 else np.mean(episode_rewards)
+            temp = get_gpu_temp()
+            temp_str = f"  GPU={temp}C" if temp > 0 else ""
             print(f"  Episode {episode+1}/{num_episodes}  reward={total_reward:.4f}  "
-                  f"avg10={recent:.4f}  trades={trades}  eps={epsilon:.3f}")
+                  f"avg10={recent:.4f}  trades={trades}  eps={epsilon:.3f}{temp_str}")
 
     # Load best model
     if best_state:

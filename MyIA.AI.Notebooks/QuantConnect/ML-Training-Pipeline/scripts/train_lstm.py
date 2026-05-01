@@ -30,6 +30,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "shared"))
+from gpu_training import (
+    batch_thermal_check,
+    get_gpu_temp,
+    setup_amp,
+)
+
 
 def generate_features(df: pd.DataFrame, lookback: int = 20) -> pd.DataFrame:
     """Engineer features from OHLCV data for LSTM input."""
@@ -218,6 +225,8 @@ def train_and_evaluate(
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
     criterion = nn.MSELoss()
 
+    use_amp, grad_scaler = setup_amp()
+
     history = {"train_loss": [], "val_loss": []}
     best_val_loss = float("inf")
     best_state = None
@@ -227,13 +236,22 @@ def train_and_evaluate(
         epoch_loss = 0.0
         n_batches = 0
         for X_batch, y_batch in train_loader:
+            batch_thermal_check(n_batches, check_every=5, max_temp=80, cool_sleep=30)
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
             optimizer.zero_grad()
-            pred = model(X_batch)
-            loss = criterion(pred, y_batch)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
+            with torch.amp.autocast("cuda", enabled=use_amp):
+                pred = model(X_batch)
+                loss = criterion(pred, y_batch)
+            if use_amp:
+                grad_scaler.scale(loss).backward()
+                grad_scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                grad_scaler.step(optimizer)
+                grad_scaler.update()
+            else:
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                optimizer.step()
             epoch_loss += loss.item()
             n_batches += 1
 
@@ -259,7 +277,9 @@ def train_and_evaluate(
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
 
         if (epoch + 1) % max(1, epochs // 5) == 0:
-            print(f"  Epoch {epoch+1}/{epochs}  train={avg_train:.6f}  val={avg_val:.6f}")
+            temp = get_gpu_temp()
+            temp_str = f"  GPU={temp}C" if temp > 0 else ""
+            print(f"  Epoch {epoch+1}/{epochs}  train={avg_train:.6f}  val={avg_val:.6f}{temp_str}")
 
     # Load best model for final evaluation
     if best_state:
