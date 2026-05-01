@@ -166,7 +166,7 @@ Contenu :
     "ANTHROPIC_API_KEY": "",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimax/minimax-m2.7",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen/qwen3.5-27b"
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen/qwen3.6-35b-a3b"
   }
 }
 ```
@@ -244,7 +244,7 @@ $env:ANTHROPIC_API_KEY = ""
 # Mapping des aliases de modeles (optionnel - voir section Modeles Alternatifs)
 $env:ANTHROPIC_DEFAULT_OPUS_MODEL = "qwen/qwen3.6-plus"
 $env:ANTHROPIC_DEFAULT_SONNET_MODEL = "minimax/minimax-m2.7"
-$env:ANTHROPIC_DEFAULT_HAIKU_MODEL = "qwen/qwen3.5-27b"
+$env:ANTHROPIC_DEFAULT_HAIKU_MODEL = "qwen/qwen3.6-35b-a3b"
 ```
 
 Sauvegardez et rechargez :
@@ -297,7 +297,7 @@ export ANTHROPIC_API_KEY=""
 # Mapping des aliases de modeles (optionnel - voir section Modeles Alternatifs)
 export ANTHROPIC_DEFAULT_OPUS_MODEL="qwen/qwen3.6-plus"
 export ANTHROPIC_DEFAULT_SONNET_MODEL="minimax/minimax-m2.7"
-export ANTHROPIC_DEFAULT_HAIKU_MODEL="qwen/qwen3.5-27b"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="qwen/qwen3.6-35b-a3b"
 ```
 
 Rechargez le fichier (adaptez selon le fichier que vous avez modifie) :
@@ -366,7 +366,7 @@ OpenRouter permet d'utiliser des modeles alternatifs a Claude, souvent moins che
 | ------------ | ----------------- | ---------------------- | ------- | ------------------------- |
 | `opus` | Qwen 3.6 Plus | `qwen/qwen3.6-plus` | 262K | voir OpenRouter |
 | `sonnet` | MiniMax M2.7 | `minimax/minimax-m2.7` | 205K | $0.30 / $1.20 |
-| `haiku` | Qwen 3.5 27B | `qwen/qwen3.5-27b` | 262K | $0.20 / $1.56 |
+| `haiku` | Qwen 3.6 35B-A3B | `qwen/qwen3.6-35b-a3b` | 262K | $0.20 / $1.56 |
 
 ### Commandes CLI
 
@@ -377,7 +377,7 @@ claude -p "Explique ce code"
 # Utiliser explicitement un modele
 claude --model opus -p "Refactore ce projet"    # Qwen 3.6 Plus
 claude --model sonnet -p "Corrige ce bug"       # MiniMax M2.7
-claude --model haiku -p "Liste les fichiers"    # Qwen 3.5 27B
+claude --model haiku -p "Liste les fichiers"    # Qwen 3.6 35B-A3B
 
 # Forcer un modele specifique (bypass alias)
 claude --model qwen/qwen3.6-plus -p "Question complexe"
@@ -407,9 +407,9 @@ Modele de derniere generation optimise pour la productivite et le coding :
 - **Cas d'usage ideaux** : Developpement quotidien, debug, generation de tests, refactoring
 - **Prix** : $0.30 / $1.20 per million tokens (input/output)
 
-#### Qwen 3.5 27B (Alias Haiku)
+#### Qwen 3.6 35B-A3B (Alias Haiku)
 
-**Identifiant :** `qwen/qwen3.5-27b`
+**Identifiant :** `qwen/qwen3.6-35b-a3b`
 
 Modele dense compact et rapide :
 
@@ -421,7 +421,7 @@ Modele dense compact et rapide :
 
 ### Comparaison avec les Modeles Claude Natifs
 
-| Aspect | Claude Opus | Qwen 3.6 Plus | Claude Sonnet | MiniMax M2.7 | Claude Haiku | Qwen 3.5 27B |
+| Aspect | Claude Opus | Qwen 3.6 Plus | Claude Sonnet | MiniMax M2.7 | Claude Haiku | Qwen 3.6 35B-A3B |
 | ---------------- | ----------- | ------------- | ------------- | ------------ | ------------ | ------------ |
 | **Context** | 200K | 262K | 200K | 205K | 200K | 262K |
 | **Prix Input** | $15.00 | voir OR | $3.00 | $0.30 | $0.25 | $0.20 |
@@ -896,7 +896,7 @@ Editez `.claude/settings.json` :
 - [Tarifs et modeles](https://openrouter.ai/models)
 - [Qwen 3.6 Plus sur OpenRouter](https://openrouter.ai/qwen/qwen3.6-plus)
 - [MiniMax M2.7 sur OpenRouter](https://openrouter.ai/minimax/minimax-m2.7)
-- [Qwen 3.5 27B sur OpenRouter](https://openrouter.ai/qwen/qwen3.5-27b)
+- [Qwen 3.6 35B-A3B sur OpenRouter](https://openrouter.ai/qwen/qwen3.6-35b-a3b)
 
 ### Communaute
 
