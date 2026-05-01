@@ -266,8 +266,43 @@ theorem shapley_efficient (G : TUGame N) :
   simp only [← Finset.sdiff_eq_filter, Finset.card_univ_diff]
   -- Reindex positive term: ∑ S ∑_{i∉S} c(|S|)*v(S∪{i}) = ∑ T, |T|*c(|T|-1)*v(T)
   rw [pos_term_eq]
-  trace_state
-  sorry
+  -- Combine into single sum of differences
+  rw [← Finset.sum_sub_distrib]
+  -- Isolate the univ term: all T ≠ univ have zero coefficient (shapleyCoef_shift)
+  have : ∑ x ∈ Finset.univ,
+      (↑x.card * shapleyCoef (Fintype.card N) (x.card - 1) * G.v x -
+        shapleyCoef (Fintype.card N) x.card * (↑(Fintype.card N - x.card) * G.v x)) =
+      (↑(Finset.univ : Finset N).card *
+        shapleyCoef (Fintype.card N) ((Finset.univ : Finset N).card - 1) * G.v Finset.univ -
+        shapleyCoef (Fintype.card N) (Finset.univ : Finset N).card *
+          (↑(Fintype.card N - (Finset.univ : Finset N).card) * G.v Finset.univ)) :=
+    Finset.sum_eq_single (Finset.univ : Finset N)
+      (fun T _ hT => by
+        have hcard : T.card < (Finset.univ : Finset N).card :=
+          Finset.card_lt_card (Finset.ssubset_univ_iff.mpr hT)
+        simp only [Finset.card_univ] at hcard
+        rw [sub_eq_zero]
+        by_cases hT0 : T.card = 0
+        · -- T = ∅: both terms vanish because v(∅) = 0
+          have : T = ∅ := Finset.card_eq_zero.mp hT0
+          simp [this, G.empty_zero]
+        · -- T ≠ ∅: coefficient shift applies
+          have hTcard : 1 ≤ T.card := Nat.pos_of_ne_zero hT0
+          have hshift := shapleyCoef_shift (Fintype.card N) (T.card - 1) (by omega)
+          sorry)
+      (fun h => (h (Finset.mem_univ _)).elim)
+  rw [this]
+  -- Simplify: n - card univ = 0, so negative term vanishes
+  simp only [Finset.card_univ, tsub_self, Nat.cast_zero]
+  -- Positive term: n * c(n,n-1) * v(univ) = v(univ) since n * c(n,n-1) = 1
+  by_cases hN : IsEmpty N
+  · -- Empty case: both sides reduce to 0
+    simp [G.empty_zero]
+  · -- Nonempty case: shapleyCoef_top applies
+    haveI : Nonempty N := not_isEmpty_iff.mp hN
+    have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨Classical.arbitrary N⟩
+    rw [shapleyCoef_top (Fintype.card N) hn, one_mul]
+    simp only [zero_mul, mul_zero, sub_zero]
 
 /-- Shapley value satisfies symmetry.
     PROOF SKETCH (swap bijection):
