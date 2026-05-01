@@ -116,6 +116,23 @@ theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     if i ∈ T then (1 : ℝ) / T.card else 0 := by
   sorry
 
+/-! ## Helper lemmas for efficiency proof -/
+
+private theorem shapleyCoef_shift (n s : ℕ) (hs : s + 2 ≤ n) :
+    (s + 1 : ℝ) * shapleyCoef n s = (n - s - 1 : ℝ) * shapleyCoef n (s + 1) := by
+  unfold shapleyCoef
+  rw [← mul_div_assoc, ← mul_div_assoc]
+  congr 1
+  rw [show n - (s + 1) - 1 = n - s - 2 from by omega]
+  rw [Nat.factorial_succ s]
+  have hm : n - s - 1 = (n - s - 2) + 1 := by omega
+  rw [hm, Nat.factorial_succ (n - s - 2)]
+  simp only [Nat.cast_mul, Nat.cast_add, Nat.cast_one]
+  -- Convert ↑(n - s - 2) to ↑n - ↑s - 2 using Nat subtraction cast lemmas
+  rw [Nat.cast_sub (by omega : (2 : ℕ) ≤ n - s)]
+  rw [Nat.cast_sub (by omega : (s : ℕ) ≤ n)]
+  ring
+
 /-- Shapley value satisfies efficiency.
     PROOF SKETCH:
     ∑ᵢ φᵢ(G) = ∑ᵢ ∑_{S:i∉S} c(|S|,n) · [v(S∪{i}) - v(S)]
