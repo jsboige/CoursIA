@@ -1,0 +1,259 @@
+{
+  "experiments": [
+    {
+      "name": "h128_s16",
+      "config": {
+        "name": "h128_s16",
+        "hidden_dim": 128,
+        "msg_dim": 128,
+        "n_steps": 16,
+        "dropout": 0.1,
+        "data_source": "diverse_200k",
+        "batch_size": 64,
+        "n_epochs": 40,
+        "patience": 10,
+        "lr": 0.0005
+      },
+      "n_params": 161929,
+      "cell_acc": 0.62486440070249,
+      "grid_acc": 0.3349818454989358,
+      "test_loss": 0.8501262558814411,
+      "n_test": 15974,
+      "n_solved": 5351,
+      "elapsed_s": 8153.4,
+      "actual_epochs": 38,
+      "best_val_epoch": 30,
+      "history_summary": [
+        {
+          "epoch": 1,
+          "val_acc": 0.5002657504277724,
+          "val_loss": 1.2984263912689438
+        },
+        {
+          "epoch": 6,
+          "val_acc": 0.6207232755083263,
+          "val_loss": 0.910968796126808
+        },
+        {
+          "epoch": 11,
+          "val_acc": 0.6241385971349246,
+          "val_loss": 0.8981511141305605
+        },
+        {
+          "epoch": 16,
+          "val_acc": 0.6263228941993254,
+          "val_loss": 0.8924923702232049
+        },
+        {
+          "epoch": 21,
+          "val_acc": 0.6274681928170802,
+          "val_loss": 0.8902172935088859
+        },
+        {
+          "epoch": 26,
+          "val_acc": 0.6277790922422593,
+          "val_loss": 0.8899415525446431
+        },
+        {
+          "epoch": 31,
+          "val_acc": 0.627824812745962,
+          "val_loss": 0.8898322556310341
+        },
+        {
+          "epoch": 36,
+          "val_acc": 0.6274396175022661,
+          "val_loss": 0.8908358315956404
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "name": "h192_s16",
+      "config": {
+        "name": "h192_s16",
+        "hidden_dim": 192,
+        "msg_dim": 192,
+        "n_steps": 16,
+        "dropout": 0.1,
+        "data_source": "diverse_200k",
+        "batch_size": 48,
+        "n_epochs": 40,
+        "patience": 10,
+        "lr": 0.0005
+      },
+      "n_params": 353481,
+      "cell_acc": 0.6247136713781,
+      "grid_acc": 0.3350444472267435,
+      "test_loss": 0.8504525885263582,
+      "n_test": 15974,
+      "n_solved": 5352,
+      "elapsed_s": 11340.6,
+      "actual_epochs": 28,
+      "best_val_epoch": 18,
+      "history_summary": [
+        {
+          "epoch": 1,
+          "val_acc": 0.537729131161838,
+          "val_loss": 1.1733225206169615
+        },
+        {
+          "epoch": 6,
+          "val_acc": 0.6226709689660651,
+          "val_loss": 0.9019842625171802
+        },
+        {
+          "epoch": 11,
+          "val_acc": 0.6255033541704529,
+          "val_loss": 0.8941638909874089
+        },
+        {
+          "epoch": 16,
+          "val_acc": 0.6264714858363595,
+          "val_loss": 0.891531415721675
+        },
+        {
+          "epoch": 21,
+          "val_acc": 0.6264429105215452,
+          "val_loss": 0.8911255978839411
+        },
+        {
+          "epoch": 26,
+          "val_acc": 0.625718240537856,
+          "val_loss": 0.8922145424135146
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "name": "h256_s16",
+      "config": {
+        "name": "h256_s16",
+        "hidden_dim": 256,
+        "msg_dim": 256,
+        "n_steps": 16,
+        "dropout": 0.1,
+        "data_source": "diverse_200k",
+        "batch_size": 32,
+        "n_epochs": 40,
+        "patience": 10,
+        "lr": 0.0005
+      },
+      "n_params": 618761,
+      "cell_acc": 0.6255198448858226,
+      "grid_acc": 0.3351696506823588,
+      "test_loss": 0.8501302980033869,
+      "n_test": 15974,
+      "n_solved": 5354,
+      "elapsed_s": 19373.4,
+      "actual_epochs": 39,
+      "best_val_epoch": 24,
+      "history_summary": [
+        {
+          "epoch": 1,
+          "val_acc": 0.6003239297687343,
+          "val_loss": 0.9921211103741321
+        },
+        {
+          "epoch": 6,
+          "val_acc": 0.6236059532667871,
+          "val_loss": 0.9001568548965788
+        },
+        {
+          "epoch": 11,
+          "val_acc": 0.6253970539993439,
+          "val_loss": 0.8953051194441324
+        },
+        {
+          "epoch": 16,
+          "val_acc": 0.6262428833178455,
+          "val_loss": 0.892915359952742
+        },
+        {
+          "epoch": 21,
+          "val_acc": 0.626964124263757,
+          "val_loss": 0.8892449352055077
+        },
+        {
+          "epoch": 26,
+          "val_acc": 0.6272921688778246,
+          "val_loss": 0.8879792976415217
+        },
+        {
+          "epoch": 31,
+          "val_acc": 0.6269504081126461,
+          "val_loss": 0.8886854428501065
+        },
+        {
+          "epoch": 36,
+          "val_acc": 0.6260611443156269,
+          "val_loss": 0.8918994861091526
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "name": "h128_s24",
+      "config": {
+        "name": "h128_s24",
+        "hidden_dim": 128,
+        "msg_dim": 128,
+        "n_steps": 24,
+        "dropout": 0.1,
+        "data_source": "diverse_200k",
+        "batch_size": 48,
+        "n_epochs": 40,
+        "patience": 10,
+        "lr": 0.0003
+      },
+      "n_params": 161929,
+      "cell_acc": 0.6249854409175305,
+      "grid_acc": 0.3350444472267435,
+      "test_loss": 0.8501085333264624,
+      "n_test": 15974,
+      "n_solved": 5352,
+      "elapsed_s": 23000.8,
+      "actual_epochs": 35,
+      "best_val_epoch": 26,
+      "history_summary": [
+        {
+          "epoch": 1,
+          "val_acc": 0.49225780420422893,
+          "val_loss": 1.3314534467156094
+        },
+        {
+          "epoch": 6,
+          "val_acc": 0.6198351547238996,
+          "val_loss": 0.8980255221884708
+        },
+        {
+          "epoch": 11,
+          "val_acc": 0.6235065111712336,
+          "val_loss": 0.8865770838685006
+        },
+        {
+          "epoch": 16,
+          "val_acc": 0.6259799904215545,
+          "val_loss": 0.8797210822800677
+        },
+        {
+          "epoch": 21,
+          "val_acc": 0.6263606136148802,
+          "val_loss": 0.877770263964521
+        },
+        {
+          "epoch": 26,
+          "val_acc": 0.6271230030141242,
+          "val_loss": 0.8769080316550982
+        },
+        {
+          "epoch": 31,
+          "val_acc": 0.6269481220874611,
+          "val_loss": 0.8773105987988737
+        }
+      ],
+      "status": "completed"
+    }
+  ],
+  "iterative_tests": [],
+  "start_time": "2026-04-27 01:19:23"
+}

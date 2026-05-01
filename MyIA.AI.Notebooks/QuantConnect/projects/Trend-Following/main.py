@@ -1,43 +1,123 @@
 # region imports
-from datetime import datetime
 from AlgorithmImports import *
-from alpha import custom_alpha
-
 # endregion
 
 
-class CompetitionAlgorithm(QCAlgorithm):
+class TrendFollowingAQR(QCAlgorithm):
+    """
+    Trend Following Multi-Asset v7 (BEST)
+    ======================================
+    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) BEST
+    v8: Sharpe 0.566, CAGR 10.38%, MaxDD 16.5% (regime + risk parity - worse)
+    v9: Sharpe 0.535, CAGR 10.29%, MaxDD 14.6% (regime only - worse)
 
-    def Initialize(self):
-        self.SetStartDate(2015, 1, 1)  # Extended from 2019: +4 years for robustness validation (includes 2017-2019 bull pre-COVID)
-        self.SetCash(1000000)
-        self.SetWarmUp(10)
-        self.spy = self.AddEquity("SPY", Resolution.Hour).Symbol
-        self.SetBenchmark(self.spy)
-        # v2: reduced from 600 to 200 stocks to reduce noise
-        self.final_universe_size = 200
-        self.rebalanceTime = self.time
-        self.universe_type = "equity"
-        if self.universe_type == "equity":
-            self.AddUniverse(self.CoarseFilter, self.FineFilter)
-        self.UniverseSettings.Resolution = Resolution.Hour
-        # v3b: SPY SMA200 removed - per-stock EMA50/200 filter sufficient (regime filter degraded results)
-        # v2: removed 1.85x leverage multiplier PCM, use standard model
-        self.set_portfolio_construction(InsightWeightingPortfolioConstructionModel())
-        self.set_alpha(custom_alpha(self))
-        self.set_execution(VolumeWeightedAveragePriceExecutionModel())
-        # v3: keep 10% per-security drawdown (same as v2) + SPY SMA200 regime filter as main protection
-        self.add_risk_management(MaximumDrawdownPercentPerSecurity(0.10))
-        self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Margin)
+    Dual signal: SMA(200) + 6m momentum confirmation.
+    12m return tilt for weighting (rank-based).
 
-    def CoarseFilter(self, coarse):
-        if self.Time <= self.rebalanceTime:
-            return self.Universe.Unchanged
-        self.rebalanceTime = self.Time + timedelta(days=300)
-        sortedByDollarVolume = sorted(coarse, key=lambda x: x.DollarVolume, reverse=True)
-        return [x.Symbol for x in sortedByDollarVolume if x.HasFundamentalData][:1000]
+    Ref: Antonacci (2014), AQR Trend Following
+    """
 
-    def FineFilter(self, fine):
-        sortedbyVolume = sorted(fine, key=lambda x: x.DollarVolume, reverse=True)
-        fine_output = [x.Symbol for x in sortedbyVolume if x.price > 10 and x.MarketCap > 2000000000][:self.final_universe_size]
-        return fine_output
+    def initialize(self):
+        self.set_start_date(2015, 1, 1)
+        self.set_cash(100_000)
+        self.set_benchmark("SPY")
+
+        self.risky_tickers = ["SPY", "EFA", "EEM", "TLT", "GLD", "DBC"]
+        self.safe_ticker = "BND"
+        self.all_tickers = self.risky_tickers + [self.safe_ticker]
+        self.symbols = {}
+        self.sma_ind = {}
+
+        for ticker in self.risky_tickers:
+            security = self.add_equity(ticker, Resolution.DAILY)
+            self.symbols[ticker] = security.symbol
+            self.sma_ind[ticker] = self.sma(security.symbol, 200, Resolution.DAILY)
+
+        safe = self.add_equity(self.safe_ticker, Resolution.DAILY)
+        self.symbols[self.safe_ticker] = safe.symbol
+
+        self.spy_sym = self.symbols["SPY"]
+        self.spy_sma = self.sma(self.spy_sym, 200, Resolution.DAILY)
+
+        self.mom_lookback_6m = 126
+        self.mom_lookback_12m = 252
+        self.min_trending = 2
+        self.bear_risky_cap = 0.50
+
+        self.schedule.on(
+            self.date_rules.month_start("SPY"),
+            self.time_rules.after_market_open("SPY", 30),
+            self.rebalance,
+        )
+
+        self.set_warm_up(timedelta(days=300))
+
+    def rebalance(self):
+        if self.is_warming_up:
+            return
+
+        bear_market = False
+        if self.spy_sma.is_ready:
+            spy_price = self.securities[self.spy_sym].price
+            bear_market = spy_price < self.spy_sma.current.value
+
+        trending = {}
+        for ticker in self.risky_tickers:
+            ind = self.sma_ind[ticker]
+            if not ind.is_ready:
+                continue
+            sma_val = ind.current.value
+            close = self.securities[self.symbols[ticker]].close
+            if close <= sma_val:
+                continue
+            hist_6m = self.history(self.symbols[ticker], self.mom_lookback_6m + 5, Resolution.DAILY)
+            if len(hist_6m) < self.mom_lookback_6m * 0.8:
+                continue
+            ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.mom_lookback_6m] - 1
+            if ret_6m <= 0:
+                continue
+            hist_12m = self.history(self.symbols[ticker], self.mom_lookback_12m + 5, Resolution.DAILY)
+            if len(hist_12m) < self.mom_lookback_12m * 0.8:
+                ret_12m = ret_6m
+            else:
+                ret_12m = hist_12m["close"].iloc[-1] / hist_12m["close"].iloc[-self.mom_lookback_12m] - 1
+            trending[ticker] = ret_12m
+
+        targets = {}
+        if len(trending) >= self.min_trending:
+            sorted_trending = sorted(trending.items(), key=lambda x: x[1], reverse=True)
+            n = len(sorted_trending)
+            raw_weights = []
+            for i, (ticker, ret) in enumerate(sorted_trending):
+                rank_score = (n - i) / n
+                raw_weights.append((ticker, rank_score))
+            total = sum(w for _, w in raw_weights)
+            risky_alloc = self.bear_risky_cap if bear_market else 1.0
+            for ticker, w in raw_weights:
+                targets[ticker] = (w / total) * risky_alloc
+            if bear_market:
+                targets[self.safe_ticker] = 1.0 - risky_alloc
+        elif len(trending) > 0:
+            risky_weight = len(trending) * 0.25
+            if bear_market:
+                risky_weight = min(risky_weight, self.bear_risky_cap)
+            per_asset = risky_weight / len(trending)
+            for ticker in trending:
+                targets[ticker] = per_asset
+            targets[self.safe_ticker] = 1.0 - risky_weight
+        else:
+            targets[self.safe_ticker] = 1.0
+
+        regime = "BEAR" if bear_market else "BULL"
+        trending_str = ", ".join(f"{t}:{r:.1%}" for t, r in sorted(trending.items(), key=lambda x: -x[1]))
+        self.log(f"{regime} | Trending ({len(trending)}/{len(self.risky_tickers)}): [{trending_str}]")
+
+        for ticker in self.all_tickers:
+            sym = self.symbols[ticker]
+            if ticker in targets:
+                self.set_holdings(sym, targets[ticker])
+            elif self.portfolio[sym].invested:
+                self.liquidate(sym)
+
+    def on_data(self, data: Slice):
+        pass

@@ -1,0 +1,80 @@
+[
+  {
+    "config": {
+      "type": "cnn",
+      "hidden_dim": 128,
+      "n_layers": 8,
+      "dropout": 0.1
+    },
+    "n_params": 1195529,
+    "notebook_cell_acc": 0.37037037037037035,
+    "notebook_grid_acc": 0.0,
+    "train_val_cell": 0.4796554974719342,
+    "train_val_grid": 0.0,
+    "train_test_cell": 0.4809010001011936,
+    "train_test_grid": 0.0
+  },
+  {
+    "config": {
+      "type": "cnn",
+      "hidden_dim": 64,
+      "n_layers": 6,
+      "dropout": 0.1
+    },
+    "n_params": 228745,
+    "notebook_cell_acc": 0.3045267489711934,
+    "notebook_grid_acc": 0.0,
+    "train_val_cell": 0.3851109778044391,
+    "train_val_grid": 0.0,
+    "train_test_cell": 0.38570700859802315,
+    "train_test_grid": 0.0
+  },
+  {
+    "config": {
+      "type": "rrn",
+      "hidden_dim": 32,
+      "msg_dim": 32,
+      "n_steps": 16,
+      "dropout": 0.1
+    },
+    "n_params": 11177,
+    "notebook_cell_acc": 0.4074074074074074,
+    "notebook_grid_acc": 0.0,
+    "train_val_cell": 0.3354089636570027,
+    "train_val_grid": 0.0,
+    "train_test_cell": 0.33472606560425255,
+    "train_test_grid": 0.0
+  },
+  {
+    "config": {
+      "type": "rrn",
+      "hidden_dim": 32,
+      "msg_dim": 32,
+      "n_steps": 4,
+      "dropout": 0.1
+    },
+    "n_params": 11177,
+    "notebook_cell_acc": 0.3991769547325103,
+    "notebook_grid_acc": 0.0,
+    "train_val_cell": 0.36687790650001756,
+    "train_val_grid": 0.0,
+    "train_test_cell": 0.3626324342270035,
+    "train_test_grid": 0.0
+  },
+  {
+    "config": {
+      "type": "rrn",
+      "hidden_dim": 64,
+      "msg_dim": 64,
+      "n_steps": 16,
+      "dropout": 0.1
+    },
+    "n_params": 42825,
+    "notebook_cell_acc": 0.6378600823045267,
+    "notebook_grid_acc": 0.0,
+    "train_val_cell": 0.4916176790768561,
+    "train_val_grid": 0.07345454545454545,
+    "train_test_cell": 0.4866311011600793,
+    "train_test_grid": 0.07272727272727272
+  }
+]

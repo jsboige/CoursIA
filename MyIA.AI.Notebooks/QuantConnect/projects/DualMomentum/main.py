@@ -5,29 +5,23 @@ from AlgorithmImports import *
 
 class DualMomentum(QCAlgorithm):
     """
-    Dual Momentum Strategy (Gary Antonacci)
-    =========================================
-    Edge: Combine absolute momentum (time-series) and relative momentum (cross-section)
-    Reference: "Dual Momentum Investing" (Antonacci, 2014)
+    Dual Momentum v6b: All Candidates + Momentum Tilt (BEST)
+    ========================================================
+    Best variant: Sharpe 0.557, CAGR 11.22%, MaxDD 15.3%
 
-    Mechanism:
-    1. Relative momentum: Among risky assets (SPY, EFA), pick the best 12m performer
-    2. Absolute momentum: If best performer 12m return > 0 -> stay in risky asset
-                          If negative -> go to BND (bond refuge)
+    Universe (risky): SPY, EFA, EEM, TLT, GLD, DBC
+    Safe refuge: BND
+    Absolute filter: price > SMA200 AND 6m return > 0
+    Relative ranking: 12m return, ALL candidates, momentum-tilt weighted
+    Rebalance: Monthly
 
-    Signal:
-    - Monthly rebalance
-    - 100% concentration in single chosen asset
-    - No leverage, long-only
+    Iteration results:
+    v4: Sharpe 0.391, CAGR 9.15%, MaxDD 23.9% (Core5, top-2, equal)
+    v5: Sharpe 0.526, CAGR 11.31%, MaxDD 19.0% (+DBC, top-3, weighted)
+    v6: Sharpe 0.473, CAGR 9.42%, MaxDD 16.4% (defensive 80/20 - worse Sharpe)
+    v6b: Sharpe 0.557, CAGR 11.22%, MaxDD 15.3% (all candidates, mom tilt) <-- BEST
 
-    Universe:
-    - SPY: US equities (S&P 500) -- primary risky asset
-    - EFA: International equities (MSCI EAFE) -- secondary risky asset
-    - BND: Vanguard Total Bond ETF -- defensive refuge
-
-    Backtest: 2015-2026
-    Expected Sharpe: 0.3-0.5 on 2015-2026 (literature reports 0.7-1.0
-    on longer periods starting 1970s; 2015-2026 has bull market headwinds)
+    Reference: Antonacci (2014) + AQR Trend Following
     """
 
     def initialize(self):
@@ -35,92 +29,86 @@ class DualMomentum(QCAlgorithm):
         self.set_cash(100_000)
         self.set_benchmark("SPY")
 
-        # Universe: risky assets and defensive refuge
-        self.risky_assets = ["SPY", "EFA"]
-        self.safe_asset = "BND"  # BND tested better than SHY on 2015-2026
-        self.all_tickers = self.risky_assets + [self.safe_asset]
+        self.risky_tickers = ["SPY", "EFA", "EEM", "TLT", "GLD", "DBC"]
+        self.safe_ticker = "BND"
+        self.all_tickers = self.risky_tickers + [self.safe_ticker]
 
-        # Add equities at daily resolution (sufficient for monthly rebalance)
-        for ticker in self.all_tickers:
-            self.add_equity(ticker, Resolution.DAILY)
+        self.symbols = {}
+        self.sma_ind = {}
+        for ticker in self.risky_tickers:
+            security = self.add_equity(ticker, Resolution.DAILY)
+            self.symbols[ticker] = security.symbol
+            self.sma_ind[ticker] = self.sma(security.symbol, 200, Resolution.DAILY)
 
-        # Lookback: 12 months = ~252 trading days
-        # Antonacci uses 12-month return -- academically the most robust period
-        self.lookback_days = 252
+        safe = self.add_equity(self.safe_ticker, Resolution.DAILY)
+        self.symbols[self.safe_ticker] = safe.symbol
 
-        self.current_holding = None
+        self.lookback_12m = 252
+        self.lookback_6m = 126
+        self.min_trending = 2
 
-        # Monthly rebalance: first trading day of each month
         self.schedule.on(
             self.date_rules.month_start("SPY"),
             self.time_rules.after_market_open("SPY", 30),
-            self.rebalance
+            self.rebalance,
         )
 
-        # Warm-up: 12 months of history needed
-        self.set_warm_up(timedelta(days=self.lookback_days + 30))
+        self.set_warm_up(timedelta(days=280))
 
     def rebalance(self):
-        """
-        Dual Momentum monthly rebalancing.
-
-        Decision tree:
-        1. Get 12m returns for SPY and EFA
-        2. Pick the best (relative momentum)
-        3. If best return > 0 (absolute momentum) -> invest in best
-           Else -> go to BND (defensive)
-        """
         if self.is_warming_up:
             return
 
-        # Fetch 12-month price history for risky assets
-        history = self.history(
-            [self.symbol(t) for t in self.risky_assets],
-            self.lookback_days,
-            Resolution.DAILY
-        )
+        candidates = {}
+        for ticker in self.risky_tickers:
+            ind = self.sma_ind[ticker]
+            if not ind.is_ready:
+                continue
+            sym = self.symbols[ticker]
+            close = self.securities[sym].close
+            if close <= ind.current.value:
+                continue
+            hist_12m = self.history(sym, self.lookback_12m + 5, Resolution.DAILY)
+            if len(hist_12m) < self.lookback_12m * 0.8:
+                continue
+            ret_12m = hist_12m["close"].iloc[-1] / hist_12m["close"].iloc[-self.lookback_12m] - 1
+            hist_6m = self.history(sym, self.lookback_6m + 5, Resolution.DAILY)
+            if len(hist_6m) < self.lookback_6m * 0.8:
+                continue
+            ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.lookback_6m] - 1
+            if ret_6m > 0:
+                candidates[ticker] = ret_12m
 
-        if history.empty:
-            self.log("Rebalance: No history, skipping")
-            return
+        sorted_assets = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
 
-        # Compute 12m returns
-        returns = {}
-        for ticker in self.risky_assets:
-            sym = self.symbol(ticker)
-            if sym in history.index.get_level_values("symbol"):
-                prices = history.loc[sym]["close"]
-                if len(prices) >= self.lookback_days * 0.8:
-                    ret = (prices.iloc[-1] / prices.iloc[0]) - 1
-                    returns[ticker] = ret
-                    self.log(f"{ticker} 12m: {ret:.2%}")
-
-        if not returns:
-            self.log("No valid return data, skipping")
-            return
-
-        # Relative momentum: best risky asset
-        best_risky = max(returns, key=returns.get)
-        best_return = returns[best_risky]
-
-        # Absolute momentum: is best risky > risk-free (0% proxy)?
-        if best_return > 0:
-            target = best_risky
+        targets = {}
+        if len(sorted_assets) >= self.min_trending:
+            n = len(sorted_assets)
+            raw_weights = []
+            for i, (ticker, ret) in enumerate(sorted_assets):
+                rank_score = (n - i) / n
+                raw_weights.append((ticker, rank_score))
+            total = sum(w for _, w in raw_weights)
+            for ticker, w in raw_weights:
+                targets[ticker] = w / total
+        elif len(sorted_assets) > 0:
+            risky_weight = len(sorted_assets) * 0.25
+            per_asset = risky_weight / len(sorted_assets)
+            for ticker, _ in sorted_assets:
+                targets[ticker] = per_asset
+            targets[self.safe_ticker] = 1.0 - risky_weight
         else:
-            target = self.safe_asset
+            targets[self.safe_ticker] = 1.0
 
-        self.log(
-            f"Signal: best={best_risky}({best_return:.2%}) -> {target}"
-            + (" [defensive]" if target == self.safe_asset else "")
-        )
+        passing_str = ", ".join(f"{t}:{r:.1%}" for t, r in sorted_assets[:6])
+        self.log(f"Trending ({len(candidates)}/{len(self.risky_tickers)}): [{passing_str}]")
 
-        # Execute only if position changes
-        if self.current_holding != target:
-            self.liquidate()
-            self.set_holdings(target, 1.0)
-            self.current_holding = target
-            self.log(f"Rebalanced -> {target}")
+        for ticker in self.all_tickers:
+            sym = self.symbols[ticker]
+            if ticker in targets:
+                self.set_holdings(sym, targets[ticker])
+            elif self.portfolio[sym].invested:
+                self.liquidate(sym)
 
     def on_data(self, data: Slice):
-        """All logic handled by scheduled rebalance."""
         pass
