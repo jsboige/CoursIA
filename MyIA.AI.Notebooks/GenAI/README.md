@@ -3,8 +3,9 @@
 <!-- CATALOG-STATUS
 series: GenAI
 pedagogical_count: 99
-breakdown: 00-GenAI-Environment=6, Audio=21, EPF=4, Image=16, SemanticKernel=20, Texte=11, Vibe-Coding=5, Video=16
-updated: 2026-05-01
+breakdown: Audio=21, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, Vibe-Coding=5, EPF=4
+maturity: ALPHA=61, DRAFT=28, BETA=5, PRODUCTION=5
+updated: 2026-05-02
 -->
 
 Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : images, texte, agents et vibe-coding.
