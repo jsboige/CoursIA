@@ -297,11 +297,27 @@ theorem rotate_cycle {X : Type*} {R : X → X → Prop} {a : X} {l : List X}
   refine ⟨List.append_ne_nil_of_right_ne_nil l (List.cons_ne_nil a []), ?_⟩
   sorry -- Needs IsChain construction for rotated list
 
+private theorem isChain_lt_head_lt_mem [LinearOrder σ] {l : List σ} {a b : σ}
+    (h : List.IsChain (fun x y => x < y) (a :: l)) (hb : b ∈ l) : a < b := by
+  induction l with
+  | nil => simp at hb
+  | cons c l' ih =>
+    cases h with
+    | cons_cons hac hchain =>
+      simp at hb
+      rcases hb with rfl | hb'
+      · exact hac
+      · exact lt_trans hac (ih hchain hb')
+
+private theorem isChain_lt_head_in_tail_false [LinearOrder σ] {l : List σ} {a : σ}
+    (h : List.IsChain (fun x y => x < y) (a :: l)) (ha : a ∈ l) : False :=
+  lt_irrefl a (isChain_lt_head_lt_mem h ha)
+
 /-- Cycles are acyclic on strict linear orders. -/
 theorem lt_acyclic [LinearOrder σ] : acyclic (fun (x y : σ) => x < y) := by
   intro c hc
   rcases hc with ⟨hne, hchain⟩
-  sorry -- Needs List.IsChain contradiction on irreflexive transitive relation
+  exact isChain_lt_head_in_tail_false hchain (List.getLast_mem hne)
 
 end SplitCycle
 

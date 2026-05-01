@@ -181,6 +181,17 @@ theorem shapley_efficient (G : TUGame N) :
         shapleyCoef (Fintype.card N) S.card * (G.v (S ∪ {i}) - G.v S)) :=
     Finset.sum_comm' (fun i S => by simp)
   rw [hswap]
+  -- Factor shapleyCoef out of inner sum
+  simp only [← Finset.mul_sum]
+  -- Split subtraction in inner sums: ∑ (a - b) = ∑ a - ∑ b
+  simp only [Finset.sum_sub_distrib]
+  -- Distribute mul_sub inside the sum
+  simp only [mul_sub]
+  rw [Finset.sum_sub_distrib]
+  -- Simplify negative term: v(x) constant in x_1, sum = (n - |x|) • v(x)
+  simp only [Finset.sum_const, nsmul_eq_mul]
+  simp only [← Finset.sdiff_eq_filter, Finset.card_univ_diff]
+  trace_state
   sorry
 
 /-- Shapley value satisfies symmetry.
