@@ -7,7 +7,7 @@ breakdown: _root=32
 updated: 2026-05-01
 -->
 
-Cette serie de **33 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
+Cette serie de **32 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
 
 ## Pourquoi etudier le Sudoku en IA ?
 

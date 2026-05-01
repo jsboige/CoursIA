@@ -7,7 +7,7 @@ breakdown: Argument_Analysis=7, Lean=13, Planners=13, SemanticWeb=18, SmartContr
 updated: 2026-05-01
 -->
 
-Collection de **151 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
+Collection de **90 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
 
 ## Vue d'ensemble
 
@@ -21,7 +21,7 @@ Collection de **151 notebooks Jupyter** pour l'apprentissage de l'IA symbolique 
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 9 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 151 notebooks actifs, ~56h de contenu
+**Total** : 90 notebooks actifs, ~56h de contenu
 
 ---
 

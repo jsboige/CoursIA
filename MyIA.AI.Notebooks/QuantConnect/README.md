@@ -2,13 +2,13 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 93
-breakdown: ML-Training-Pipeline=1, Python=45, projects=47
+pedagogical_count: 140
+breakdown: ML-Training-Pipeline=1, Python=45, projects=47, Python-Cloud=11, Python-Training=4, Python-Platform=27, projects-imported=2, Dataset-Workflow=1, PaperTrading=2
 updated: 2026-05-01
 -->
 
 > **Trading algorithmique + Intelligence Artificielle**
-> 43 notebooks Python | Cloud-first | Free Tier compatible
+> 140 notebooks Python | Cloud-first | Free Tier compatible
 
 ---
 
