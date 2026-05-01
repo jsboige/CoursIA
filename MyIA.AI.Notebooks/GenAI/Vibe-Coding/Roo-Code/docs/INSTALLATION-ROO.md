@@ -73,7 +73,7 @@ Les profils vous permettent de basculer rapidement entre différents modèles d'
 | `OpenAI-o3`                 | `openai/o3`                   |
 | `Deepseek-Deepseek-r1`       | `deepseek/deepseek-r1`                 |
 | `MiniMax-M2.7`               | `minimax/minimax-m2.7`                 |
-| `Qwen-3.5-27B`               | `qwen/qwen3.5-27b`                    |
+| `Qwen-3.6-35B-A3B`               | `qwen/qwen3.6-35b-a3b`                    |
 | `Qwen-3.6-Plus`              | `qwen/qwen3.6-plus`                   |
 | `Mistral-Mistral-Small`    | `mistralai/mistral-small`         |
 
