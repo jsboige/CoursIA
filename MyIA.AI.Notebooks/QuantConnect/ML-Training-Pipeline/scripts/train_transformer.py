@@ -42,8 +42,8 @@ from gpu_training import (
     get_gpu_temp,
     setup_amp,
 )
-from features import FeatureEngineer
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
+from features import FeatureEngineer
 
 
 def build_sequences(
