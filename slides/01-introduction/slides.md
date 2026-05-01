@@ -15,31 +15,25 @@ layout: cover
 Intelligence Artificielle -- I
 
 **Jean-Sylvain Boige**
-
 MRes CSAI, Sussex University, Brighton UK
-
-
 Aricie -- DNN -- PKP -- My Intelligence Agency
 
 ---
 
 # IA 101 -- Ressources et organisation
 
-<img src="./images/img_001.jpg" style="position:absolute; top:90px; right:40px; height:340px; border-radius:4px; box-shadow:2px 2px 8px rgba(0,0,0,0.3);" alt="Russell &amp; Norvig - Intelligence artificielle" />
-
-<div style="max-width:65%;">
-
-- **Ouvrage de référence**
+- **Ouvrage de reference**
   - *Artificial Intelligence: A Modern Approach* (Russell & Norvig)
-  - 3e édition (2006) et 4e édition (2020, avec deep learning et IA moderne)
+  - 3e edition (2006) et 4e edition (2020, avec deep learning et IA moderne)
 - **En classe**
   - Cours magistraux, corrections d'exercices, travaux pratiques
 - **Projets trimestriels**
-  - Equipes de 2-3 etudiants, travail transversal
-  - Expose final en classe devant le groupe
+  - Équipes de 2-3 étudiants, travail transversal
+  - Exposé final en classe devant le groupe
 
-</div>
-
+---
+layout: image-overlay
+image: ./images/img_001.jpg
 ---
 
 # Sommaire
@@ -76,10 +70,10 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'étude
+  - Les domaines d'etude
   - Un peu d'histoire
-  - L'etat de l'art
-- Systèmes d'agents
+  - L'état de l'art
+- Systemes d'agents
   - Agents rationnels
   - Environnements taches
   - Types d'Agents
@@ -96,7 +90,7 @@ A l'issue de ce cours, vous serez capables de :
   - Disposer des bases pour approfondir chacun d'entre eux
 - **Concevoir des programmes intelligents dans des domaines varies :**
   - Recherche de solutions et jeux strategiques
-  - Représentation de connaissances et raisonnement logique
+  - Representation de connaissances et raisonnement logique
   - Modelisation probabiliste et prise de decision sous incertitude
   - Apprentissage automatique (supervise, non supervise, par renforcement)
   - Traitement du langage naturel
@@ -105,9 +99,9 @@ A l'issue de ce cours, vous serez capables de :
 
 # Objectifs du cours (2/2)
 
-- **Concevoir des systèmes intelligents en conditions reelles**
-  - Integrer les differentes briques pour construire un système complet
-  - Gerer les contraintes du monde reel : incertitude, temps de calcul, données imparfaites
+- **Concevoir des systemes intelligents en conditions reelles**
+  - Integrer les differentes briques pour construire un systeme complet
+  - Gerer les contraintes du monde reel : incertitude, temps de calcul, donnees imparfaites
 - **BONUS : Mieux comprendre l'intelligence elle-meme**
   - Comment l'intelligence emerge-t-elle dans la nature ?
   - Comment fonctionne le cerveau humain, et en quoi l'IA s'en inspire ?
@@ -136,15 +130,16 @@ layout: section
 
 ---
 
+
 # Introduction a l'intelligence artificielle
 
 - Presentation du cursus
 - **Introduction**
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'étude
+  - Les domaines d'etude
   - Un peu d'histoire
-  - L'etat de l'art
-- Systèmes d'agents
+  - L'état de l'art
+- Systemes d'agents
   - Agents rationnels
   - Environnements taches
   - Types d'agents
@@ -160,10 +155,10 @@ layout: section
 <div style="max-width:55%;">
 
 - **Des definitions multiples et un concept evolutif**
-  - L'IA n'a pas de définition unique : elle recouvre des approches tres differentes
-  - Concevoir un système intelligent n'implique pas de comprendre l'intelligence
-- **Une définition qui évolue avec la technologie :**
-  - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systèmes experts → Apprentissage profond → IA generative
+  - L'IA n'a pas de definition unique : elle recouvre des approches tres differentes
+  - Concevoir un systeme intelligent n'implique pas de comprendre l'intelligence
+- **Une definition qui evolue avec la technologie :**
+  - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systemes experts → Apprentissage profond → IA generative
 
 </div>
 
@@ -171,14 +166,16 @@ layout: section
 
 # Quatre visions de l'IA
 
-**Quatre grandes approches structurent le domaine :**
-
 <ColoredTable />
 
-**Notre angle principal : « Agir de facon rationnelle »**
-- Concevoir des agents qui prennent les meilleures decisions possibles
-- Approche qui unifie les autres : un agent rationnel peut raisonner, apprendre et communiquer
+**Notre angle : « Agir de facon rationnelle »**
+- Des agents qui prennent les meilleures decisions possibles
+- Unifie les autres : raisonner, apprendre, communiquer
 
+---
+layout: image-overlay
+image: ./images/img_003.png
+imageClass: mid-right large
 ---
 
 # Les fondements de l'IA
@@ -196,6 +193,9 @@ L'IA est une discipline profondement interdisciplinaire :
 - **Linguistique :** grammaires, representation du sens, semantique
 
 ---
+layout: image-overlay
+image: ./images/img_004.png
+---
 
 # Histoire succincte (1/2)
 
@@ -204,14 +204,14 @@ L'IA est une discipline profondement interdisciplinaire :
 <div style="max-width:55%;">
 
 **Les debuts (1943-1970)**
-- **1943** : McCulloch & Pitts modélisent le cerveau comme un circuit logique
+- **1943** : McCulloch & Pitts modelisent le cerveau comme un circuit logique
 - **1950** : Turing pose la question "Can machines think?"
 - **1956** : Conference de Dartmouth -- le terme "Artificial Intelligence" est ne
-- **Années 50** : premiers programmes capables d'apprendre
+- **Annees 50** : premiers programmes capables d'apprendre
   - Samuel (jeu de dames), Newell & Simon (theoricien logique)
   - Gelernter (geometrie), naissance de Lisp
 - **1965** : Robinson propose un algorithme complet de raisonnement logique
-- **1969-79** : age d'or des systèmes experts (bases de connaissances)
+- **1969-79** : age d'or des systemes experts (bases de connaissances)
 
 </div>
 
@@ -221,10 +221,10 @@ L'IA est une discipline profondement interdisciplinaire :
 
 **Maturite et "hivers de l'IA" (1970-2010)**
 
-- **1970s** : l'IA se heurte a la complexité calculatoire -- premier "hiver"
-- **1980s** : l'IA devient une industrie (robotique, vision, systèmes experts)
-- **1986** : retour des réseaux de neurones grace a la retropropagation
-- **1990s** : l'IA se mathematise (probabilités, optimisation)
+- **1970s** : l'IA se heurte a la complexite calculatoire -- premier "hiver"
+- **1980s** : l'IA devient une industrie (robotique, vision, systemes experts)
+- **1986** : retour des reseaux de neurones grace a la retropropagation
+- **1990s** : l'IA se mathematise (probabilites, optimisation)
 - **2000s** : data mining, apprentissage bayesien, web semantique
 
 **Renaissance et explosion (2010-aujourd'hui)**
@@ -234,8 +234,11 @@ L'IA est une discipline profondement interdisciplinaire :
 - **2020s** : GPT, DALL-E, ChatGPT, Claude, Gemini, DeepSeek, agents autonomes
 
 ---
+layout: image-overlay
+image: ./images/img_005.jpg
+---
 
-# Etat de l'art (1/2)
+# État de l'art (1/2)
 
 **L'IA bat les champions (1997-2019)**
 
@@ -247,15 +250,18 @@ L'IA est une discipline profondement interdisciplinaire :
 
 **Applications dans le monde reel**
 
-- Preuve de conjectures mathématiques (Robbins, 1996)
+- Preuve de conjectures mathematiques (Robbins, 1996)
 - Vehicules autonomes (vol, conduite, marche robotique)
 - Logistique et planification militaire (guerre du Golfe) <img src="./images/img_005.jpg" style="display:inline; height:1.4em; vertical-align:middle;" />
 - NASA : planification autonome de missions spatiales
 - Trading algorithmique (85% du volume des marches en 2012)
 
 ---
+layout: image-overlay
+image: ./images/img_005.jpg
+---
 
-# Etat de l'art (2/2)
+# État de l'art (2/2)
 
 **Deep Learning et NLP (2010-2019)**
 
@@ -317,6 +323,9 @@ L'IA est une discipline profondement interdisciplinaire :
 - **Jeux** : personnages non-joueurs, adversaires intelligents (echecs, Go, jeux video)
 
 ---
+layout: image-overlay
+image: ./images/img_020.png
+---
 
 # Agir comme l'homme : le Test de Turing
 
@@ -328,7 +337,7 @@ L'IA est une discipline profondement interdisciplinaire :
 
 **Competences requises pour reussir le test :**
 - Traitement du langage naturel
-- Représentation de connaissances
+- Representation de connaissances
 - Raisonnement automatique
 - Apprentissage
 
@@ -348,7 +357,7 @@ L'IA est une discipline profondement interdisciplinaire :
 
 # Penser comme l'homme : sciences cognitives
 
-- **La "revolution cognitive" (années 1960)**
+- **La "revolution cognitive" (annees 1960)**
   - La psychologie commence a modeliser la pensee comme un traitement de l'information
 - **Deux approches pour etudier le cerveau**
   - *Top-down* : modeliser le comportement humain observable
@@ -367,11 +376,11 @@ L'IA est une discipline profondement interdisciplinaire :
 - **La logique au service de l'IA**
   - Representer les faits du monde sous forme formelle
   - Utiliser l'inference pour deduire de nouvelles connaissances
-  - Exemple : prouveurs automatiques de théorèmes
+  - Exemple : prouveurs automatiques de theoremes
 - **Limites de l'approche purement logique**
   - Le monde reel est incertain (capteurs imparfaits, information incomplete)
-  - Tout comportement intelligent ne releve pas d'une délibération logique
-  - En pratique, il faut aussi definir des buts et évaluer des couts
+  - Tout comportement intelligent ne relève pas d'une délibération logique
+  - En pratique, il faut aussi definir des buts et evaluer des couts
 
 ---
 
@@ -380,10 +389,10 @@ L'IA est une discipline profondement interdisciplinaire :
 - **Un comportement rationnel consiste a faire la bonne chose :**
   - Choisir l'action qui maximise les chances d'atteindre l'objectif, compte tenu de l'information disponible
 - **Agir rationnellement n'implique pas forcement de penser**
-  - Un reflexe (cligner des yeux) peut etre rationnel sans délibération
+  - Un réflexe (cligner des yeux) peut être rationnel sans délibération
   - Mais la reflexion reste un outil puissant au service de l'action
 - **Lien avec la theorie de la decision**
-  - Évaluer les etats possibles et les actions disponibles
+  - Evaluer les états possibles et les actions disponibles
   - Maximiser l'utilite esperee, meme sous incertitude
 - **C'est l'approche centrale de ce cours** : concevoir des agents rationnels
 
@@ -395,20 +404,24 @@ layout: section
 
 ---
 
+
 # Systemes d'agents
 
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'étude
+  - Les domaines d'etude
   - Un peu d'histoire
-  - L'etat de l'art
+  - L'état de l'art
 - **Agents rationnels**
 - **Environnements taches**
 - **Types d'agents**
 - TP: Mise en place de l'environnement de travail
 - Presentation des projets de groupe
 
+---
+layout: image-overlay
+image: ./images/img_021.png
 ---
 
 # Les agents
@@ -437,7 +450,7 @@ layout: section
 - **Decision basee sur** : la suite des percepts recus et les connaissances prealables
 - **Rationnel ne signifie pas omniscient**
   - L'agent explore pour completer ses connaissances
-  - Il s'adapte par l'expérience (apprentissage)
+  - Il s'adapte par l'experience (apprentissage)
   - Il est reactif *et* proactif
 
 ---
@@ -451,6 +464,10 @@ layout: section
 - **Herbert Simon (1955)** : concept de "satisficing" -- choisir une solution satisfaisante plutot qu'optimale
 
 ---
+
+# Intelligences
+
+<IntelligencePyramid />
 
 <img src="./pptx-reference/slide-25.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligences - taxonomie en pyramide imbriquee" />
 
@@ -490,21 +507,23 @@ layout: section
 
 # Environnements de tache: exemples
 
-<img src="./images/img_028.png" style="display:block; margin:8px auto; max-height:78vh;" alt="Tableau d'exemples d'environnements de tache" />
+<div class="center-image">
+<img src="./images/img_028.png" style="max-width: 800px; margin: auto; display: block;">
+</div>
 
 ---
 
 # Types d'environnement (1/2)
 
-Chaque environnement de tache possede des propriétés qui influencent la conception de l'agent :
+Chaque environnement de tache possede des proprietes qui influencent la conception de l'agent :
 
 - **Completement vs partiellement observable**
   - L'agent a-t-il acces a l'etat complet de l'environnement ?
 - **Deterministe vs stochastique**
-  - L'etat suivant est-il entierement determine par l'etat courant et l'action ?
-  - Cas particulier : *strategique* = déterministe sauf les actions des autres agents
-- **Episodique vs séquentiel**
-  - Les decisions sont-elles indépendantes ou liees entre elles ?
+  - L'etat suivant est-il entierement determine par l'état courant et l'action ?
+  - Cas particulier : *strategique* = deterministe sauf les actions des autres agents
+- **Episodique vs sequentiel**
+  - Les decisions sont-elles independantes ou liees entre elles ?
 - **Statique vs dynamique**
   - L'environnement change-t-il pendant que l'agent delibere ?
 
@@ -541,8 +560,11 @@ Chaque environnement de tache possede des propriétés qui influencent la concep
 
 # Types d'environnement: exemples
 
-<img src="./images/img_029.png" style="display:block; margin:8px auto; max-height:78vh;" alt="Tableau de types d'environnement" />
+<div class="center-image">
+<img src="./images/img_029.png" alt="Tableau des types d'environnement" style="max-width: 800px; margin: auto; display: block;">
+</div>
 
+---
 ---
 
 # Types d'agents
@@ -565,8 +587,8 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 **Cinq architectures d'agents, par ordre de generalite :**
 
-1. Agent reflexe simple
-2. Agent reflexe fonde sur un modele
+1. Agent réflexe simple
+2. Agent réflexe fondé sur un modele
 3. Agent fonde sur des buts
 4. Agent fonde sur l'utilite
 5. Agent capable d'apprentissage
@@ -575,7 +597,7 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 ---
 
-# Agent reflexe
+# Agent réflexe
 
 <img src="./images/img_031.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent reflexe" />
 
@@ -591,6 +613,9 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 **Intelligence animale**
 
+<div v-click="2">
+- Intelligence animale
+</div>
 - Behaviourism
 - Artificial Life
 - Cellular Automata
@@ -604,7 +629,7 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 ---
 
-# Agent reflexe fonde sur un modele
+# Agent réflexe fondé sur un modele
 
 <img src="./images/img_034.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent modele" />
 
@@ -612,8 +637,9 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 <div style="max-width:48%;">
 
-**Etat du monde**
+**Caracteristiques :**
 
+- Etat du monde
 - Historique des percepts
 - Memoire du changement
 
@@ -728,8 +754,8 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
   - La rationalite parfaite est un ideal ; en pratique, on vise le meilleur compromis
 - **Architectures d'agents**
   - Reflexes (simples ou avec modele), fondes sur des buts ou l'utilite, apprenants
-  - Les propriétés de l'environnement dictent le choix de l'architecture
-  - La représentation des etats (atomique, factorisee, structuree) conditionne les capacites
+  - Les proprietes de l'environnement dictent le choix de l'architecture
+  - La representation des etats (atomique, factorisee, structuree) conditionne les capacites
 
 ---
 
@@ -754,7 +780,7 @@ Chaque chapitre du cours est accompagne de travaux pratiques sous forme de noteb
 
 - **Exploration** : `Search/Part1-Foundations/` (11 notebooks), `Search/Part2-CSP/` (9 notebooks), `Sudoku/` (16 notebooks) -- recherche, CSP, algorithmes genetiques, optimisation
 - **Logique** : `SymbolicAI/` -- Z3, Tweety, Lean 4, argumentation, smart-contracts
-- **Probabilites** : `Probas/Infer/` -- inference bayesienne, réseaux de decision (Infer.NET)
+- **Probabilites** : `Probas/Infer/` -- inference bayesienne, reseaux de decision (Infer.NET)
 - **Jeux** : `GameTheory/` -- equilibres de Nash, jeux bayesiens, MARL (OpenSpiel)
 - **Apprentissage** : `ML/` -- classification, regression, renforcement (ML.NET)
 - **IA Generative** : `GenAI/` -- Image (19 notebooks), Audio (16), Video (16), Texte (10)

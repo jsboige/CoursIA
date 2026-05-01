@@ -30,7 +30,7 @@ from config import SERVICES, SERVICES_DIR
 logger = logging.getLogger("AudioAPIs")
 
 # Services audio API
-AUDIO_API_SERVICES = ["whisper-api", "tts-api", "musicgen-api", "demucs-api"]
+AUDIO_API_SERVICES = ["whisper-api", "tts-api", "musicgen-api", "demucs-api", "funasr-api"]
 
 # GPU allocation map
 GPU_ALLOCATION = {

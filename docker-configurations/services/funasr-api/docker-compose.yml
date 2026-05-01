@@ -1,0 +1,77 @@
+# FunASR API - Multilingual ASR with Fun-ASR-Nano-2512
+# OpenAI-compatible API with VAD and auto-unload
+#
+# GPU: RTX 3090 (24GB) - GPU 1 (shared with other services)
+# Port: 8194
+# URL: stt.myia.io/funasr (reverse proxy path)
+
+services:
+  funasr-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: funasr-api
+    hostname: funasr-api
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-1}']
+              capabilities: [gpu]
+
+    ports:
+      - "${FUNASR_API_PORT:-8194}:8194"
+
+    volumes:
+      - type: bind
+        source: ${MODELS_PATH:-./models}
+        target: /app/models
+      - type: bind
+        source: ../shared
+        target: /app/shared
+        read_only: true
+      - type: volume
+        source: funasr-cache
+        target: /root/.cache
+
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-1}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-1}
+      - PYTHONUNBUFFERED=1
+      - FUNASR_MODEL=${FUNASR_MODEL:-FunAudioLLM/Fun-ASR-Nano-2512}
+      - FUNASR_DEVICE=cuda
+      - MAX_FILE_SIZE=26214400
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-300}
+      - MAX_SINGLE_SEGMENT_TIME=30000
+      - TZ=${TZ:-Europe/Paris}
+      - API_KEY=${FUNASR_API_KEY:-}
+      - HF_TOKEN=${HF_TOKEN:-}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8194/health | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    restart: unless-stopped
+
+    networks:
+      - funasr-network
+
+    labels:
+      - "com.myia.service=funasr-api"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=Fun-ASR-Nano-2512"
+
+networks:
+  funasr-network:
+    driver: bridge
+    name: funasr-network
+
+volumes:
+  funasr-cache:
+    name: funasr-cache

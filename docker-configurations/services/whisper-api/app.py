@@ -244,7 +244,9 @@ async def transcribe_audio(
             initial_prompt=prompt,
             temperature=temperature,
             word_timestamps=word_timestamps,
-            beam_size=5
+            beam_size=5,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500)
         )
 
         # Collect segments
