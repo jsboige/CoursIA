@@ -12,7 +12,8 @@ from AlgorithmImports import *
 class ConditionalSectorRotation(QCAlgorithm):
 
     def initialize(self):
-        self.set_start_date(2011, 1, 1)
+        self.set_start_date(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
         rsi_period_str = self.get_parameter("rsi_period", 10)

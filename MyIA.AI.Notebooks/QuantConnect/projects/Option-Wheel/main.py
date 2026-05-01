@@ -7,7 +7,8 @@ class WheelStrategyAlgorithm(QCAlgorithm):
 
     def Initialize(self):
         # Extended: covers 2019 low-VIX environment + COVID crash + recovery
-        self.SetStartDate(2015, 1, 1)  # Extended from 2019: +4 years for robustness validation (includes 2017-2019 bull market pre-COVID)
+        self.SetStartDate(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)  # Extended from 2019: +4 years for robustness validation (includes 2017-2019 bull market pre-COVID)
         self.SetCash(1_000_000)
         self.backtest_resolution = Resolution.Minute
         self.is_live = self.LiveMode

@@ -14,7 +14,8 @@ class PiotroskiScoreAlgorithm(QCAlgorithm):
 
     def initialize(self):
         self.set_cash(10_000_000)
-        self.set_start_date(2005, 1, 1)
+        self.set_start_date(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         # Configure settings to rebalance monthly.
         rebalance_date = self.date_rules.month_start('SPY')
         # Define the universe settings.

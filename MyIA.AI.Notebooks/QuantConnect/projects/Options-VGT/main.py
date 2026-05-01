@@ -4,7 +4,8 @@ import math
 
 class GainStrategy(QCAlgorithm):
     def Initialize(self):
-        self.SetStartDate(2020, 1, 1)
+        self.SetStartDate(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.SetCash(50_000)
         self.SetBenchmark("VGT")
         self.days_to_expiry = int(self.GetParameter("days_to_expiry", 30))

@@ -3,7 +3,8 @@ from AlgorithmImports import *
 class OptimizedCryptoAlgorithm(QCAlgorithm):
     def Initialize(self):
         # Extended: covers COVID crash (Mar 2020), bull 2020-2021, bear 2022, recovery 2023-2025
-        self.SetStartDate(2020, 1, 1)
+        self.SetStartDate(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.SetCash(100000)
         self.symbols = [
             self.AddCrypto("BTCUSD", Resolution.HOUR).Symbol,
