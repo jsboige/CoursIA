@@ -30,49 +30,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-
-def generate_features(df: pd.DataFrame, lookback: int = 20) -> pd.DataFrame:
-    """Engineer features from OHLCV data for classification."""
-    feat = pd.DataFrame(index=df.index)
-
-    # Returns at multiple horizons
-    for window in [1, 5, 10, 20]:
-        feat[f"ret_{window}d"] = df["Close"].pct_change(window)
-
-    # Volatility
-    feat["vol_5d"] = df["Close"].pct_change().rolling(5).std()
-    feat["vol_20d"] = df["Close"].pct_change().rolling(20).std()
-
-    # Volume features
-    feat["vol_ratio"] = df["Volume"] / df["Volume"].rolling(20).mean()
-
-    # Moving average ratios
-    for window in [5, 10, 20, 60]:
-        feat[f"ma_ratio_{window}"] = df["Close"] / df["Close"].rolling(window).mean()
-
-    # RSI
-    delta = df["Close"].diff()
-    gain = delta.where(delta > 0, 0.0).rolling(14).mean()
-    loss = (-delta.where(delta < 0, 0.0)).rolling(14).mean()
-    rs = gain / loss.replace(0, 1e-10)
-    feat["rsi_14"] = 100 - (100 / (1 + rs))
-
-    # MACD
-    ema12 = df["Close"].ewm(span=12, adjust=False).mean()
-    ema26 = df["Close"].ewm(span=26, adjust=False).mean()
-    feat["macd"] = ema12 - ema26
-    feat["macd_signal"] = feat["macd"].ewm(span=9, adjust=False).mean()
-
-    # Bollinger Band width
-    sma20 = df["Close"].rolling(20).mean()
-    std20 = df["Close"].rolling(20).std()
-    feat["bb_width"] = (df["Close"] - sma20) / (2 * std20.replace(0, 1e-10))
-
-    # Target: next-period direction (1=up, 0=flat/down using threshold)
-    feat["target"] = (df["Close"].pct_change().shift(-1) > 0.001).astype(int)
-
-    feat = feat.dropna()
-    return feat
+from features import FeatureEngineer
 
 
 def load_data(
@@ -237,6 +195,14 @@ def main():
     parser.add_argument(
         "--dry-run", action="store_true", help="Run with synthetic data (100 rows, 1 pass)"
     )
+    parser.add_argument(
+        "--advanced", action="store_true",
+        help="Use advanced features (regime, momentum, statistical, price_acceleration)",
+    )
+    parser.add_argument(
+        "--indicators", nargs="+", default=None,
+        help="Specific indicators to use (overrides --advanced)",
+    )
     args = parser.parse_args()
 
     # Load data
@@ -255,7 +221,20 @@ def main():
         print(f"Loaded {len(raw)} rows for {args.symbol} ({raw.index.min().date()} -> {raw.index.max().date()})")
 
     # Engineer features
-    features = generate_features(raw, lookback=args.lookback)
+    if args.indicators:
+        indicators = args.indicators
+    elif args.advanced:
+        indicators = FeatureEngineer.ALL_INDICATORS
+    else:
+        indicators = [
+            "returns", "volatility", "volume_ratio", "ma_ratios",
+            "rsi", "macd", "bollinger", "true_range_atr", "obv",
+        ]
+
+    engineer = FeatureEngineer(lookback=args.lookback, indicators=indicators)
+    features = engineer.transform(raw, add_target=False)
+    features["target"] = (raw["Close"].pct_change().shift(-1) > 0.001).astype(int)
+    features = features.dropna()
     print(f"Features: {len(features)} rows, {len(features.columns) - 1} columns")
 
     # Train

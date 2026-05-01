@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir \
     python-multipart \
     torch \
     torchaudio \
+    torchcodec \
     demucs \
     soundfile \
     numpy \

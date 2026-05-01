@@ -351,6 +351,174 @@ def test_service(service_name: str) -> bool:
     return True
 
 
+# ============================================================================
+# E2E Tests — real generation/transcription/separation
+# ============================================================================
+
+def _get_auth_headers(service_name: str = None) -> dict:
+    """Load API key from .env file (service-specific key or generic)."""
+    from pathlib import Path
+    env_file = Path(__file__).resolve().parent.parent.parent.parent / "MyIA.AI.Notebooks" / "GenAI" / ".env"
+    api_key = None
+    if env_file.exists():
+        # Try service-specific key first (e.g. MUSICGEN_API_KEY)
+        env_vars = {}
+        for line in env_file.read_text().splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.split("=", 1)
+                env_vars[k.strip()] = v.strip().strip("'\"")
+        if service_name:
+            svc_key = service_name.replace("-", "_").upper() + "_API_KEY"
+            api_key = env_vars.get(svc_key)
+        if not api_key:
+            api_key = env_vars.get("VLLM_API_KEY")  # shared fallback
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    return headers
+
+
+def e2e_test_service(service_name: str, timeout: int = 120) -> dict:
+    """Run end-to-end test hitting real generation endpoints."""
+    import requests
+
+    result = {"service": service_name, "status": "SKIP", "detail": "", "size_bytes": 0, "time_s": 0.0}
+    headers = _get_auth_headers(service_name)
+
+    if service_name not in SERVICES:
+        result["detail"] = f"Unknown service"
+        return result
+
+    port = SERVICES[service_name]["port"]
+    base = f"http://localhost:{port}"
+
+    try:
+        if service_name == "whisper-api":
+            t0 = time.time()
+            resp = requests.post(
+                f"{base}/v1/audio/transcriptions",
+                headers={k: v for k, v in headers.items() if k != "Content-Type"},
+                files={"file": ("test.wav", _make_silence_wav(), "audio/wav")},
+                data={"language": "en"},
+                timeout=timeout,
+            )
+            result["time_s"] = time.time() - t0
+            result["status"] = "OK" if resp.status_code == 200 else f"HTTP_{resp.status_code}"
+            result["size_bytes"] = len(resp.content)
+            result["detail"] = resp.text[:200]
+
+        elif service_name == "tts-api":
+            t0 = time.time()
+            resp = requests.post(
+                f"{base}/v1/audio/speech",
+                headers=headers,
+                json={"input": "Hello, this is a test.", "voice": "af_bella"},
+                timeout=timeout,
+            )
+            result["time_s"] = time.time() - t0
+            result["status"] = "OK" if resp.status_code == 200 else f"HTTP_{resp.status_code}"
+            result["size_bytes"] = len(resp.content)
+            result["detail"] = f"audio/{resp.headers.get('Content-Type', '?')}"
+
+        elif service_name == "musicgen-api":
+            t0 = time.time()
+            resp = requests.post(
+                f"{base}/v1/generate",
+                headers=headers,
+                json={"prompt": "short piano note", "duration": 2},
+                timeout=timeout,
+            )
+            result["time_s"] = time.time() - t0
+            result["status"] = "OK" if resp.status_code == 200 else f"HTTP_{resp.status_code}"
+            result["size_bytes"] = len(resp.content)
+            result["detail"] = resp.headers.get("X-Duration", "?") + "s audio"
+
+        elif service_name == "demucs-api":
+            t0 = time.time()
+            resp = requests.post(
+                f"{base}/v1/separate/vocals",
+                headers={k: v for k, v in headers.items() if k != "Content-Type"},
+                files={"file": ("test.wav", _make_silence_wav(), "audio/wav")},
+                timeout=timeout,
+            )
+            result["time_s"] = time.time() - t0
+            result["status"] = "OK" if resp.status_code == 200 else f"HTTP_{resp.status_code}"
+            result["size_bytes"] = len(resp.content)
+            result["detail"] = resp.headers.get("X-Stem", "?")
+
+        elif service_name == "funasr-api":
+            t0 = time.time()
+            resp = requests.post(
+                f"{base}/v1/audio/transcriptions",
+                headers={k: v for k, v in headers.items() if k != "Content-Type"},
+                files={"file": ("test.wav", _make_silence_wav(), "audio/wav")},
+                timeout=timeout,
+            )
+            result["time_s"] = time.time() - t0
+            result["status"] = "OK" if resp.status_code == 200 else f"HTTP_{resp.status_code}"
+            result["size_bytes"] = len(resp.content)
+            result["detail"] = resp.text[:200]
+
+    except requests.exceptions.Timeout:
+        result["status"] = "TIMEOUT"
+        result["detail"] = f">{timeout}s"
+    except Exception as e:
+        result["status"] = "ERROR"
+        result["detail"] = str(e)[:100]
+
+    return result
+
+
+def _make_silence_wav() -> bytes:
+    """Generate a minimal valid WAV file (1s silence, 16kHz mono)."""
+    import struct, io
+    sample_rate = 16000
+    duration = 1
+    num_samples = sample_rate * duration
+    buf = io.BytesIO()
+    # WAV header
+    buf.write(b'RIFF')
+    data_size = num_samples * 2  # 16-bit
+    buf.write(struct.pack('<I', 36 + data_size))  # file size - 8
+    buf.write(b'WAVE')
+    buf.write(b'fmt ')
+    buf.write(struct.pack('<I', 16))  # chunk size
+    buf.write(struct.pack('<H', 1))   # PCM
+    buf.write(struct.pack('<H', 1))   # mono
+    buf.write(struct.pack('<I', sample_rate))
+    buf.write(struct.pack('<I', sample_rate * 2))  # byte rate
+    buf.write(struct.pack('<H', 2))   # block align
+    buf.write(struct.pack('<H', 16))  # bits per sample
+    buf.write(b'data')
+    buf.write(struct.pack('<I', data_size))
+    buf.write(b'\x00' * data_size)
+    return buf.getvalue()
+
+
+def e2e_test_all(services: List[str] = None, timeout: int = 120) -> List[dict]:
+    """Run E2E tests on all (or specified) audio services."""
+    if services is None:
+        services = AUDIO_API_SERVICES
+
+    results = []
+    print(f"\n{'='*80}")
+    print(f"  E2E SERVICE TESTS (timeout: {timeout}s)")
+    print(f"{'='*80}\n")
+
+    for svc in services:
+        print(f"  Testing {svc}...", end=" ", flush=True)
+        r = e2e_test_service(svc, timeout=timeout)
+        results.append(r)
+        marker = "[OK]" if r["status"] == "OK" else "[FAIL]"
+        size_str = f"{r['size_bytes']/1024:.1f}KB" if r["size_bytes"] else "-"
+        print(f"{marker} {r['status']} | {size_str} | {r['time_s']:.1f}s | {r['detail'][:60]}")
+
+    ok = sum(1 for r in results if r["status"] == "OK")
+    print(f"\n  Results: {ok}/{len(results)} passed")
+    print(f"{'='*80}\n")
+    return results
+
+
 def build_service(service_name: str) -> bool:
     """Construit l'image Docker d'un service."""
     if service_name not in SERVICES:
@@ -434,6 +602,12 @@ def register(subparsers):
     p_logs.add_argument('service', choices=AUDIO_API_SERVICES, help='Service')
     p_logs.add_argument('--tail', type=int, default=50, help='Nombre de lignes')
 
+    # e2e
+    p_e2e = sub.add_parser('e2e', help='End-to-end test (real generation endpoints)')
+    p_e2e.add_argument('service', nargs='?', choices=AUDIO_API_SERVICES, help='Service (default: all)')
+    p_e2e.add_argument('--timeout', type=int, default=120, help='Timeout per test (seconds)')
+    p_e2e.add_argument('--quick', action='store_true', help='Skip services that are not running')
+
 
 def execute(args) -> int:
     """Execute la commande audio-apis."""
@@ -464,6 +638,14 @@ def execute(args) -> int:
         show_logs(service, tail=getattr(args, 'tail', 50))
         return 0
 
+    elif action == 'e2e':
+        svc = getattr(args, 'service', None)
+        if svc:
+            results = [e2e_test_service(svc, timeout=args.timeout)]
+        else:
+            results = e2e_test_all(timeout=args.timeout)
+        return 0 if all(r["status"] == "OK" for r in results) else 1
+
     return 1
 
 
@@ -486,6 +668,9 @@ def main():
     p_build.add_argument('service', choices=AUDIO_API_SERVICES)
     p_logs = sub.add_parser('logs')
     p_logs.add_argument('service', choices=AUDIO_API_SERVICES)
+    p_e2e = sub.add_parser('e2e')
+    p_e2e.add_argument('service', nargs='?', choices=AUDIO_API_SERVICES)
+    p_e2e.add_argument('--timeout', type=int, default=120)
 
     args = parser.parse_args()
 
@@ -503,6 +688,13 @@ def main():
         build_service(args.service)
     elif args.action == 'logs':
         show_logs(args.service)
+    elif args.action == 'e2e':
+        svc = args.service
+        if svc:
+            results = [e2e_test_service(svc, timeout=args.timeout)]
+        else:
+            results = e2e_test_all(timeout=args.timeout)
+        sys.exit(0 if all(r["status"] == "OK" for r in results) else 1)
 
 
 if __name__ == "__main__":

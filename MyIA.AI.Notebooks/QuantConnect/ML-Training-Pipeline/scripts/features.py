@@ -124,6 +124,89 @@ def compute_obv(df: pd.DataFrame) -> pd.DataFrame:
     return feat
 
 
+def compute_regime(df: pd.DataFrame, ma_window: int = 200, vol_window: int = 63) -> pd.DataFrame:
+    """Market regime indicators: trend and volatility regime."""
+    feat = pd.DataFrame(index=df.index)
+    sma = df["Close"].rolling(ma_window).mean()
+    feat["trend_regime"] = (df["Close"] > sma).astype(float)
+    feat["trend_strength"] = (df["Close"] - sma) / sma
+    realized_vol = df["Close"].pct_change().rolling(vol_window).std()
+    vol_rank = realized_vol.rolling(252, min_periods=63).rank(pct=True)
+    feat["vol_regime"] = vol_rank
+    feat["vol_zscore"] = (realized_vol - realized_vol.rolling(252, min_periods=63).mean()) / \
+        realized_vol.rolling(252, min_periods=63).std().replace(0, 1e-10)
+    return feat
+
+
+def compute_momentum(df: pd.DataFrame, windows: list[int] | None = None) -> pd.DataFrame:
+    """Advanced momentum: ROC, Stochastic oscillator, Williams %R."""
+    if windows is None:
+        windows = [5, 10, 21]
+    feat = pd.DataFrame(index=df.index)
+    for w in windows:
+        feat[f"roc_{w}"] = df["Close"].pct_change(w)
+    if "High" in df.columns and "Low" in df.columns:
+        for w in [14, 28]:
+            low_min = df["Low"].rolling(w).min()
+            high_max = df["High"].rolling(w).max()
+            range_val = (high_max - low_min).replace(0, 1e-10)
+            feat[f"stoch_k_{w}"] = 100 * (df["Close"] - low_min) / range_val
+            feat[f"williams_r_{w}"] = -100 * (high_max - df["Close"]) / range_val
+    return feat
+
+
+def compute_statistical(df: pd.DataFrame, window: int = 20) -> pd.DataFrame:
+    """Higher-order statistical features: skewness, kurtosis, autocorrelation."""
+    feat = pd.DataFrame(index=df.index)
+    ret = df["Close"].pct_change()
+    feat["skewness"] = ret.rolling(window).skew()
+    feat["kurtosis"] = ret.rolling(window).kurt()
+    feat["autocorr"] = ret.rolling(window).apply(
+        lambda x: x.autocorr(lag=1) if len(x) > 2 else 0, raw=False
+    )
+    feat["downside_vol"] = ret.where(ret < 0, 0).rolling(window).std()
+    feat["upside_vol"] = ret.where(ret > 0, 0).rolling(window).std()
+    return feat
+
+
+def compute_price_acceleration(df: pd.DataFrame, windows: list[int] | None = None) -> pd.DataFrame:
+    """Second derivative of price: momentum of momentum."""
+    if windows is None:
+        windows = [5, 10, 20]
+    feat = pd.DataFrame(index=df.index)
+    mom1 = df["Close"].pct_change()
+    for w in windows:
+        mom2 = mom1 - mom1.shift(w)
+        feat[f"acceleration_{w}"] = mom2
+    return feat
+
+
+def compute_cross_sectional(
+    df: pd.DataFrame, panel: dict[str, pd.DataFrame] | None = None
+) -> pd.DataFrame:
+    """Cross-sectional features: relative rank and spread vs panel assets.
+
+    Args:
+        df: Primary asset OHLCV data.
+        panel: Dict of {symbol: DataFrame} for panel assets.
+            If None, returns empty DataFrame (no panel data).
+    """
+    feat = pd.DataFrame(index=df.index)
+    if panel is None:
+        return feat
+    primary_ret = df["Close"].pct_change()
+    panel_rets = {"primary": primary_ret}
+    for sym, panel_df in panel.items():
+        if "Close" in panel_df.columns:
+            panel_rets[sym] = panel_df["Close"].pct_change()
+    panel_df_all = pd.DataFrame(panel_rets)
+    feat["rel_rank"] = panel_df_all.rank(axis=1).loc[:, "primary"]
+    n_assets = len(panel_rets)
+    feat["rel_spread"] = primary_ret - panel_df_all.drop(columns="primary").mean(axis=1)
+    feat["rel_rank_norm"] = feat["rel_rank"] / n_assets
+    return feat
+
+
 class FeatureEngineer:
     """Composable feature engineering for OHLCV data.
 
@@ -134,7 +217,8 @@ class FeatureEngineer:
         lookback: Minimum rows to keep after NaN removal (default 20).
         indicators: List of indicator names to compute. Default: all.
             Options: returns, volatility, volume_ratio, ma_ratios, rsi,
-                     macd, bollinger, true_range_atr, obv
+                     macd, bollinger, true_range_atr, obv, regime,
+                     momentum, statistical, price_acceleration
     """
 
     ALL_INDICATORS = [
@@ -147,15 +231,21 @@ class FeatureEngineer:
         "bollinger",
         "true_range_atr",
         "obv",
+        "regime",
+        "momentum",
+        "statistical",
+        "price_acceleration",
     ]
 
     def __init__(
         self,
         lookback: int = 20,
         indicators: list[str] | None = None,
+        panel: dict[str, pd.DataFrame] | None = None,
     ):
         self.lookback = lookback
         self.indicators = indicators or self.ALL_INDICATORS
+        self.panel = panel
 
     def transform(
         self,
@@ -202,6 +292,16 @@ class FeatureEngineer:
                 parts.append(compute_true_range_atr(df))
             elif ind == "obv":
                 parts.append(compute_obv(df))
+            elif ind == "regime":
+                parts.append(compute_regime(df))
+            elif ind == "momentum":
+                parts.append(compute_momentum(df))
+            elif ind == "statistical":
+                parts.append(compute_statistical(df))
+            elif ind == "price_acceleration":
+                parts.append(compute_price_acceleration(df))
+            elif ind == "cross_sectional":
+                parts.append(compute_cross_sectional(df, panel=self.panel))
 
         features = pd.concat(parts, axis=1)
 
