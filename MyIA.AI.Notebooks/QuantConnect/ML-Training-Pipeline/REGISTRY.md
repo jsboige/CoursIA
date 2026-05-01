@@ -1,19 +1,51 @@
 # Checkpoint Registry
 
-Auto-generated: 2026-05-01 13:14
+Auto-generated: 2026-05-01 14:30
 
-Total checkpoints: 13
+Total checkpoints: 18
+
+## Advanced Features (Track A3)
+
+Comparison of baseline vs advanced-feature training on SPY 2015-2024.
+
+| Model | Baseline DirAcc | Advanced DirAcc | Delta | Features |
+| ------- | --------------- | --------------- | ----- | -------- |
+| Transformer | 48.72% | **57.95%** | +9.23pp | 38 (all 13 indicators) |
+| Classification (RF) | 49.66% | **50.86%** | +1.20pp | 38 (all 13 indicators) |
+| LSTM | 51.49% | **50.98%** | -0.51pp | 38 (all 13 indicators) |
+| DQN | Sharpe 0.89 | Sharpe -0.02 | -0.91 | 38 (all 13 indicators) |
+
+Key finding: Transformer with d_model=256, nhead=8, num_layers=6 shows major improvement
+with advanced features (regime, momentum, statistical, price_acceleration).
+DQN underperforms with larger state space (762 vs 242) — needs more episodes or
+state dimensionality reduction.
 
 ## dqn
 
-Checkpoints: 3
+Checkpoints: 5
 
-### 20260501_120415 [OK]
+### 20260501_120415 [OK] [BASELINE]
 
 - Data hash: `17cb43b404e3ddf1`
 - Metrics: best_avg_reward_10=2.2865, max_reward=3.0876, mean_reward=1.0177, mean_trades=749.3, min_reward=-1.8051, sharpe_estimate=0.8921
 - Architecture: hidden_size=256, n_actions=3, state_size=242
 - Config: device=cuda, hidden_size=256, num_episodes=50, symbol=SPY
+- Files: metadata.json, model.pt
+
+### 20260501_142319 [OK] [ADVANCED-FEATURES]
+
+- Data hash: `4ec8b44b93f4024f`
+- Metrics: best_avg_reward_10=0.3888, max_reward=1.8077, mean_reward=-0.0138, mean_trades=782.5, min_reward=-1.2372, sharpe_estimate=-0.0171
+- Architecture: hidden_size=256, n_actions=3, state_size=762
+- Config: device=cuda, hidden_size=256, num_episodes=20, symbol=SPY, advanced=true
+- Files: metadata.json, model.pt
+
+### 20260501_140955 [OK]
+
+- Data hash: `4ec8b44b93f4024f`
+- Metrics: best_avg_reward_10=-0.4572, max_reward=-0.0334, mean_reward=-0.4572, mean_trades=759.3, min_reward=-0.836, sharpe_estimate=-1.6905
+- Architecture: hidden_size=128, n_actions=3, state_size=762
+- Config: device=cuda, hidden_size=128, num_episodes=10, symbol=SPY, advanced=true
 - Files: metadata.json, model.pt
 
 ### 20260501_112641 [OK]
@@ -34,7 +66,15 @@ Checkpoints: 3
 
 ## lstm
 
-Checkpoints: 3
+Checkpoints: 4
+
+### 20260501_133929 [OK] [ADVANCED-FEATURES]
+
+- Data hash: `4ec8b44b93f4024f`
+- Metrics: direction_accuracy=0.5098, direction_accuracy_significant=0.503, epochs_trained=50, mae=0.005954, mse=6.2e-05
+- Architecture: hidden_size=256, input_size=38, num_layers=3
+- Config: device=cuda, epochs=50, hidden_size=256, num_layers=3, symbol=SPY, advanced=true
+- Files: metadata.json, model.pt
 
 ### 20260501_113924 [OK]
 
@@ -62,7 +102,14 @@ Checkpoints: 3
 
 ## rf
 
-Checkpoints: 4
+Checkpoints: 5
+
+### 20260501_133837 [OK] [ADVANCED-FEATURES]
+
+- Data hash: `4ec8b44b93f4024f`
+- Metrics: accuracy=0.5086, f1=0.5031, precision=0.5077, recall=0.5086, test_samples=464, train_samples=1852
+- Config: model_type=rf, n_estimators=500, max_depth=10, symbol=SPY, advanced=true
+- Files: metadata.json, model.joblib
 
 ### 20260501_113900 [OK]
 
@@ -94,7 +141,15 @@ Checkpoints: 4
 
 ## transformer
 
-Checkpoints: 3
+Checkpoints: 4
+
+### 20260501_134056 [OK] [ADVANCED-FEATURES] [BEST]
+
+- Data hash: `4ec8b44b93f4024f`
+- Metrics: direction_accuracy=0.5795, direction_accuracy_significant=0.5804, epochs_trained=50, mae=0.005895, mse=6.1e-05, total_params=3189633
+- Architecture: d_model=256, input_size=38, nhead=8, num_layers=6
+- Config: device=cuda, d_model=256, epochs=50, nhead=8, num_layers=6, symbol=SPY, advanced=true
+- Files: metadata.json, model.pt
 
 ### 20260501_113923 [OK]
 

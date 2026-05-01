@@ -37,6 +37,7 @@ from gpu_training import (
     setup_amp,
     thermal_check,
 )
+from features import FeatureEngineer
 
 
 # --- Trading Environment ---
@@ -117,32 +118,6 @@ class TradingEnv:
             "step_reward": reward,
         }
         return self._get_state(), reward, self.done, info
-
-
-# --- Feature Engineering ---
-
-def generate_features(df: pd.DataFrame, lookback: int = 20) -> pd.DataFrame:
-    """Engineer features from OHLCV data for DQN state."""
-    feat = pd.DataFrame(index=df.index)
-
-    for window in [1, 5, 10, 20]:
-        feat[f"ret_{window}d"] = df["Close"].pct_change(window)
-
-    feat["vol_5d"] = df["Close"].pct_change().rolling(5).std()
-    feat["vol_20d"] = df["Close"].pct_change().rolling(20).std()
-    feat["vol_ratio"] = df["Volume"] / df["Volume"].rolling(20).mean()
-
-    for window in [5, 10, 20, 60]:
-        feat[f"ma_ratio_{window}"] = df["Close"] / df["Close"].rolling(window).mean()
-
-    delta = df["Close"].diff()
-    gain = delta.where(delta > 0, 0.0).rolling(14).mean()
-    loss = (-delta.where(delta < 0, 0.0)).rolling(14).mean()
-    rs = gain / loss.replace(0, 1e-10)
-    feat["rsi_14"] = 100 - (100 / (1 + rs))
-
-    feat = feat.dropna()
-    return feat
 
 
 # --- Data Loading ---
@@ -456,6 +431,14 @@ def main():
         default=str(Path(__file__).resolve().parent.parent / "checkpoints" / "dqn"),
     )
     parser.add_argument("--dry-run", action="store_true", help="Synthetic, 50 episodes")
+    parser.add_argument(
+        "--advanced", action="store_true",
+        help="Use advanced features (regime, momentum, statistical, price_acceleration)",
+    )
+    parser.add_argument(
+        "--indicators", nargs="+", default=None,
+        help="Specific indicators to use (overrides --advanced)",
+    )
     args = parser.parse_args()
 
     try:
@@ -467,8 +450,8 @@ def main():
         sys.exit(1)
 
     if args.dry_run:
-        print("DRY-RUN: Using synthetic data (200 rows, 10 episodes)")
-        raw = generate_synthetic_data(200)
+        print("DRY-RUN: Using synthetic data (2000 rows, 10 episodes)")
+        raw = generate_synthetic_data(2000)
         data_hash = "synthetic-dryrun"
         args.num_episodes = 10
     else:
@@ -480,7 +463,18 @@ def main():
         data_hash = compute_data_hash(raw)
         print(f"Loaded {len(raw)} rows for {args.symbol}")
 
-    features_df = generate_features(raw, lookback=args.lookback)
+    if args.indicators:
+        indicators = args.indicators
+    elif args.advanced:
+        indicators = FeatureEngineer.ALL_INDICATORS
+    else:
+        indicators = [
+            "returns", "volatility", "volume_ratio", "ma_ratios",
+            "rsi", "macd", "bollinger", "true_range_atr", "obv",
+        ]
+
+    engineer = FeatureEngineer(lookback=args.lookback, indicators=indicators)
+    features_df = engineer.transform(raw, add_target=False)
     feature_cols = [c for c in features_df.columns]
     features_arr = features_df.values.astype(np.float32)
 

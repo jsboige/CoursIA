@@ -43,47 +43,11 @@ from gpu_training import (
     get_gpu_temp,
     setup_amp,
 )
-
-
-def generate_features(df: pd.DataFrame, lookback: int = 20) -> pd.DataFrame:
-    """Engineer features from OHLCV data for Transformer input."""
-    feat = pd.DataFrame(index=df.index)
-
-    for window in [1, 5, 10, 20]:
-        feat[f"ret_{window}d"] = df["Close"].pct_change(window)
-
-    feat["vol_5d"] = df["Close"].pct_change().rolling(5).std()
-    feat["vol_20d"] = df["Close"].pct_change().rolling(20).std()
-    feat["vol_ratio"] = df["Volume"] / df["Volume"].rolling(20).mean()
-
-    for window in [5, 10, 20, 60]:
-        feat[f"ma_ratio_{window}"] = df["Close"] / df["Close"].rolling(window).mean()
-
-    delta = df["Close"].diff()
-    gain = delta.where(delta > 0, 0.0).rolling(14).mean()
-    loss = (-delta.where(delta < 0, 0.0)).rolling(14).mean()
-    rs = gain / loss.replace(0, 1e-10)
-    feat["rsi_14"] = 100 - (100 / (1 + rs))
-
-    ema12 = df["Close"].ewm(span=12, adjust=False).mean()
-    ema26 = df["Close"].ewm(span=26, adjust=False).mean()
-    feat["macd"] = ema12 - ema26
-    feat["macd_signal"] = feat["macd"].ewm(span=9, adjust=False).mean()
-
-    sma20 = df["Close"].rolling(20).mean()
-    std20 = df["Close"].rolling(20).std()
-    feat["bb_width"] = (df["Close"] - sma20) / (2 * std20.replace(0, 1e-10))
-
-    if "High" in df.columns and "Low" in df.columns:
-        feat["true_range"] = (
-            df["High"] - df["Low"]
-        ) / df["Close"]
-        feat["atr_14"] = feat["true_range"].rolling(14).mean()
-
-    feat["target"] = df["Close"].pct_change().shift(-1)
-
-    feat = feat.dropna()
+from features import FeatureEngineer
     return feat
+=======
+from features import FeatureEngineer
+>>>>>>> 20c865a2 (feat(ml): Track A3 advanced features — shared FeatureEngineer + GPU training (#641))
 
 
 def build_sequences(
@@ -456,6 +420,14 @@ def main():
     parser.add_argument(
         "--dry-run", action="store_true", help="Synthetic data, 2 epochs"
     )
+    parser.add_argument(
+        "--advanced", action="store_true",
+        help="Use advanced features (regime, momentum, statistical, price_acceleration)",
+    )
+    parser.add_argument(
+        "--indicators", nargs="+", default=None,
+        help="Specific indicators to use (overrides --advanced)",
+    )
     args = parser.parse_args()
 
     try:
@@ -480,7 +452,19 @@ def main():
         data_hash = compute_data_hash(raw)
         print(f"Loaded {len(raw)} rows for {args.symbol}")
 
-    features = generate_features(raw, lookback=args.lookback)
+    # Select indicators
+    if args.indicators:
+        indicators = args.indicators
+    elif args.advanced:
+        indicators = FeatureEngineer.ALL_INDICATORS
+    else:
+        indicators = [
+            "returns", "volatility", "volume_ratio", "ma_ratios",
+            "rsi", "macd", "bollinger", "true_range_atr", "obv",
+        ]
+
+    engineer = FeatureEngineer(lookback=args.lookback, indicators=indicators)
+    features = engineer.transform(raw)
     print(f"Features: {len(features)} rows, {len(features.columns) - 1} columns")
 
     X, y, feature_cols = build_sequences(features, seq_len=args.seq_len)
