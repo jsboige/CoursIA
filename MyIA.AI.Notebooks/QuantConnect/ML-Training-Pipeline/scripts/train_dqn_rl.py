@@ -33,6 +33,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "shared"))
 from gpu_training import (
+    batch_thermal_check,
     get_gpu_temp,
     setup_amp,
     thermal_check,
@@ -264,6 +265,7 @@ def train_dqn(
         state = env.reset()
         total_reward = 0.0
         trades = 0
+        step = 0
 
         while True:
             # Epsilon-greedy action selection
@@ -310,6 +312,9 @@ def train_dqn(
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 1.0)
                     optimizer.step()
+
+            step += 1
+            batch_thermal_check(step, check_every=10, max_temp=80, cool_sleep=30)
 
             if done:
                 break
