@@ -1,0 +1,75 @@
+name: Catalog Drift Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'MyIA.AI.Notebooks/**/README.md'
+  workflow_dispatch:
+
+jobs:
+  check-drift:
+    name: "Notebook catalog drift"
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check notebook catalog drift
+      run: |
+        python3 -c "
+        import os, re, sys
+
+        ERRORS = 0
+        WARNINGS = 0
+
+        # Find all series directories with a README
+        base = 'MyIA.AI.Notebooks'
+        for series in sorted(os.listdir(base)):
+            series_path = os.path.join(base, series)
+            readme_path = os.path.join(series_path, 'README.md')
+            if not os.path.isdir(series_path) or not os.path.isfile(readme_path):
+                continue
+
+            # Collect actual .ipynb files (excluding checkpoints and subdirs with their own README)
+            actual_notebooks = set()
+            for root, dirs, files in os.walk(series_path):
+                # Skip .ipynb_checkpoints
+                dirs[:] = [d for d in dirs if d != '.ipynb_checkpoints']
+                # Skip subdirectories that have their own README (sub-series)
+                if root != series_path and os.path.isfile(os.path.join(root, 'README.md')):
+                    continue
+                for f in files:
+                    if f.endswith('.ipynb'):
+                        actual_notebooks.add(f)
+
+            # Parse README for .ipynb references
+            with open(readme_path, 'r', encoding='utf-8') as f:
+                readme_content = f.read()
+            readme_notebooks = set(re.findall(r'[\w\-\.]+\.ipynb', readme_content))
+
+            # Only flag notebooks that are actual files (not just referenced in prose)
+            # Check for drift: notebooks in directory but not in README
+            missing_from_readme = actual_notebooks - readme_notebooks
+            # Check for stale references: notebooks in README but not on disk
+            stale_references = readme_notebooks - actual_notebooks
+
+            if missing_from_readme:
+                for nb in sorted(missing_from_readme):
+                    print(f'WARN: {series}/{nb} exists on disk but not referenced in README.md')
+                    WARNINGS += 1
+
+            if stale_references:
+                for nb in sorted(stale_references):
+                    print(f'WARN: {series} README.md references {nb} but file not found')
+                    WARNINGS += 1
+
+        print()
+        print(f'Catalog drift check complete: {WARNINGS} warning(s), {ERRORS} error(s)')
+
+        # Warnings are informational for now (not blocking)
+        # Errors would block the PR
+        if ERRORS > 0:
+            sys.exit(1)
+        "
