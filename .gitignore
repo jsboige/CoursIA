@@ -639,4 +639,15 @@ slides/*/_fallback*.pdf
 slides/*/analysis/titles-pptx.txt
 slides/*/analysis/titles-slidev.txt
 
+# Sudoku NN training artifacts (large binary files)
+sudoku_models/
+*_dqn_model.pt
+best_dqn_model.pt
+dqn_backtest.png
+dqn_trading_model.json
+dqn_training_curves.png
+MyIA.AI.Notebooks/QuantConnect/Python/dqn_backtest.png
+MyIA.AI.Notebooks/QuantConnect/Python/dqn_trading_model.json
+MyIA.AI.Notebooks/QuantConnect/Python/dqn_training_curves.png
+
 
