@@ -650,4 +650,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/dqn_backtest.png
 MyIA.AI.Notebooks/QuantConnect/Python/dqn_trading_model.json
 MyIA.AI.Notebooks/QuantConnect/Python/dqn_training_curves.png
 
+# Generated catalog (regenerate with scripts/notebook_tools/generate_catalog.py)
+COURSE_CATALOG.generated.*
+
 
