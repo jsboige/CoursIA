@@ -117,8 +117,14 @@ theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
   classical
   split_ifs with hiT
   · -- Case i ∈ T: direct computation
-    -- marginalContribution i S = 1 iff T \ {i} ⊆ S
-    -- The sum over all such S gives 1/|T|
+    -- marginal contribution = 1 iff T\{i} ⊆ S (and i ∉ S, given by filter)
+    -- = ∑_{S : i∉S, T\{i} ⊆ S} c(|S|, n) = 1/|T|
+    unfold shapleyValue TUGame.marginalContribution shapleyCoef
+    simp only [TUGame.unanimityGame]
+    -- marginal = if T ⊆ S∪{i} then 1 else 0 - if T ⊆ S then 1 else 0
+    -- Since i ∈ T: T ⊆ S∪{i} iff T\{i} ⊆ S (i is in T and in S∪{i})
+    -- And ¬(T ⊆ S) since i ∉ S and i ∈ T
+    -- So marginal = 1 iff T\{i} ⊆ S
     sorry
   · -- Case i ∉ T: i is a null player in unanimityGame T
     apply ShapleyValue.shapley_null_player
@@ -165,6 +171,16 @@ private theorem shapleyCoef_shift (n s : ℕ) (hs : s + 2 ≤ n) :
     and as -v(S) with coefficient c(|S|,n)·(n-|S|), which cancel. -/
 theorem shapley_efficient (G : TUGame N) :
     ∑ i : N, shapleyValue G i = G.v Finset.univ := by
+  classical
+  unfold shapleyValue TUGame.marginalContribution
+  -- Swap: ∑ᵢ ∑_{S:i∉S} f(i,S) = ∑_S ∑_{i:i∉S} f(i,S)
+  have hswap :
+    (∑ i ∈ Finset.univ, ∑ S ∈ Finset.univ.filter (fun S => i ∉ S),
+        shapleyCoef (Fintype.card N) S.card * (G.v (S ∪ {i}) - G.v S)) =
+    (∑ S ∈ Finset.univ, ∑ i ∈ Finset.univ.filter (fun i => i ∉ S),
+        shapleyCoef (Fintype.card N) S.card * (G.v (S ∪ {i}) - G.v S)) :=
+    Finset.sum_comm' (fun i S => by simp)
+  rw [hswap]
   sorry
 
 /-- Shapley value satisfies symmetry.
