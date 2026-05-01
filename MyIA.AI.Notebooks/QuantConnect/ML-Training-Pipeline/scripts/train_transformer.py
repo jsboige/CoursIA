@@ -44,10 +44,6 @@ from gpu_training import (
     setup_amp,
 )
 from features import FeatureEngineer
-    return feat
-=======
-from features import FeatureEngineer
->>>>>>> 20c865a2 (feat(ml): Track A3 advanced features — shared FeatureEngineer + GPU training (#641))
 
 
 def build_sequences(
