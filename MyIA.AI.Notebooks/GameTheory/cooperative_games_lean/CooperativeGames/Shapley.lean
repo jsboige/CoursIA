@@ -114,7 +114,26 @@ theorem shapley_null_player (G : TUGame N) (i : N)
 theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     shapleyValue (TUGame.unanimityGame T hT) i =
     if i ∈ T then (1 : ℝ) / T.card else 0 := by
-  sorry
+  classical
+  split_ifs with hiT
+  · -- Case i ∈ T: direct computation
+    -- marginalContribution i S = 1 iff T \ {i} ⊆ S
+    -- The sum over all such S gives 1/|T|
+    sorry
+  · -- Case i ∉ T: i is a null player in unanimityGame T
+    apply ShapleyValue.shapley_null_player
+    intro S hiS
+    simp only [TUGame.unanimityGame]
+    -- T ⊆ S ∪ {i} iff T ⊆ S since i ∉ T
+    have hto : T ⊆ S ∪ {i} → T ⊆ S := fun h j hj => by
+      obtain hj' | hj' := Finset.mem_union.mp (h hj)
+      · exact hj'
+      · exact absurd (Finset.mem_singleton.mp hj') (fun heq => hiT (heq ▸ hj))
+    split_ifs
+    · rfl
+    · exfalso; exact ‹¬T ⊆ S› (hto ‹T ⊆ S ∪ {i}›)
+    · exfalso; exact ‹¬T ⊆ S ∪ {i}› (fun j hj => Finset.mem_union_left {i} (‹T ⊆ S› hj))
+    · rfl
 
 /-! ## Helper lemmas for efficiency proof -/
 
