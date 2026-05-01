@@ -3,8 +3,9 @@
 <!-- CATALOG-STATUS
 series: RL
 pedagogical_count: 6
-breakdown: _root=6
-updated: 2026-05-01
+breakdown: =6
+maturity: ALPHA=6
+updated: 2026-05-02
 -->
 
 Introduction au Reinforcement Learning (apprentissage par renforcement) couvrant les **fondements theoriques**, les **algorithmes avec reseaux de neurones** et les **frameworks de production**.

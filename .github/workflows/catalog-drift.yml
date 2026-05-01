@@ -6,6 +6,7 @@ on:
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'MyIA.AI.Notebooks/**/README.md'
+      - 'COURSE_CATALOG.generated.json'
   workflow_dispatch:
 
 jobs:
@@ -15,6 +16,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Check CATALOG-STATUS marker drift
+      run: |
+        python3 scripts/notebook_tools/expand_catalog_markers.py --check
 
     - name: Check notebook catalog drift
       run: |
