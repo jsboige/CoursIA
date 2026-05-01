@@ -2,8 +2,8 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 26
-breakdown: _root=26
+pedagogical_count: 29
+breakdown: _root=29
 updated: 2026-05-01
 -->
 
