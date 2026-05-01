@@ -7,7 +7,7 @@
 | Lean toolchain | `leanprover/lean4:v4.29.1` |
 | Mathlib | `v4.29.1` (`5e932f97dd25`) |
 | Last CI verified | 2026-04-30 (CI GREEN) |
-| Total sorry | **0** (all files) |
+| Total sorry | **3** (Voting.lean only) |
 | Total lines | 1,872 |
 | Total theorems | 62 |
 | Total definitions | 60 |
@@ -78,13 +78,18 @@ Theorems:
 | Lines | 340 |
 | Definitions | 20 |
 | Theorems | 14 |
-| sorry | **0** |
-| Status | FORMAL-CERTIFIED |
+| sorry | **3** |
+| Status | FORMAL-PARTIAL |
 
 Key results: margin function antisymmetry, Condorcet winner uniqueness,
 Condorcet loser disjointness, single-peaked preferences, Split Cycle, clone properties.
 
 Port of chasenorman/Formalized-Voting.
+
+Sorry locations:
+- Line 231: proof requires Finset counting + sorting machinery
+- Line 298: needs IsChain construction for rotated list
+- Line 304: needs List.IsChain contradiction on irreflexive transitive relation
 
 ## Theorem Inventory
 
@@ -101,9 +106,11 @@ Port of chasenorman/Formalized-Voting.
 | `pivot_is_dictator_except_b` | Arrow.lean | Pivot = dictator on non-b pairs |
 | `partial_dictator_is_full_dictator` | Arrow.lean | Partial = full dictatorship |
 
-### In Progress
+### In Progress (contains sorry)
 
-None. All production theorems are sorry-free.
+| Theorem | File | sorry | Statement |
+|---------|------|-------|-----------|
+| Various | Voting.lean | 3 | Condorcet/sorting/IsChain proofs (see sorry locations above) |
 
 ## Certification Level
 
@@ -113,9 +120,9 @@ None. All production theorems are sorry-free.
 | Framework.lean | CERTIFIED (0 sorry) |
 | Arrow.lean | CERTIFIED (0 sorry) |
 | Sen.lean | CERTIFIED (0 sorry) |
-| Voting.lean | CERTIFIED (0 sorry) |
+| Voting.lean | PARTIAL (3 sorry — in progress) |
 
-**Project certification: FULL** — all source files compile with 0 sorry.
+**Project certification: PARTIAL** — Arrow/Sen/Basic/Framework fully certified (0 sorry), Voting.lean has 3 sorry remaining.
 
 ## References
 

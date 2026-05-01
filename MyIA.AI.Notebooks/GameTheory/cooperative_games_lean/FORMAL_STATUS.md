@@ -57,23 +57,24 @@ sorry locations:
 
 ### Fully Certified (0 sorry)
 
-None yet.
+| Theorem | File | Statement |
+|---------|------|-----------|
+| `superadditive_empty_nonneg` | Basic.lean | Superadditive games have v(empty) >= 0 |
+| `superadditive_grand_coalition_nonneg_of_nonneg_singletons` | Basic.lean | Grand coalition value nonneg |
+| `shapley_efficient` | Shapley.lean | Shapley value is efficient |
+| `shapley_additive` | Shapley.lean | Shapley value is additive |
+| `dummy_shapley_zero` | Shapley.lean | Dummy players get zero Shapley value |
 
 ### Partially Proved (contains sorry)
 
 | Theorem | File | sorry | Statement |
 |---------|------|-------|-----------|
-| `superadditive_empty_nonneg` | Basic.lean | 0 | Superadditive games have v(empty) >= 0 |
-| `superadditive_grand_coalition_nonneg_of_nonneg_singletons` | Basic.lean | 0 | Grand coalition value nonneg |
 | `bondareva_shapski` | Basic.lean | 3 | Core nonempty iff balanced (Bondareva-Shapley) |
 | `convex_core_nonempty` | Basic.lean | 2 | Convex games have nonempty core |
 | `shapley_null_player` | Shapley.lean | 1 | Shapley value = 0 for null players |
 | `shapley_unanimity` | Shapley.lean | 1 | Shapley value on unanimity games |
-| `shapley_efficient` | Shapley.lean | 0 | Shapley value is efficient |
 | `shapley_symmetric` | Shapley.lean | 1 | Shapley value treats symmetric players equally |
-| `shapley_additive` | Shapley.lean | 0 | Shapley value is additive |
 | `shapley_uniqueness` | Shapley.lean | 1 | Shapley value is the unique solution satisfying axioms |
-| `dummy_shapley_zero` | Shapley.lean | 0 | Dummy players get zero Shapley value |
 
 ## Certification Level
 
