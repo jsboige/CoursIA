@@ -432,6 +432,52 @@ pip install numpy matplotlib ortools z3-solver pygad torch networkx mealpy siman
 | LLM | Variable | Variable | ~10-30% succes | ~10-30% succes |
 | Infer.NET | ~1s | ~5s | Variable | Variable |
 
+### Resultats d'Entrainement RRN (Recurrent Relational Network)
+
+Les experiences suivantes ont ete conduites sur GPU (RTX 3070 Laptop 8GB et RTX 4090 24GB) pour tester differentes architectures de RRN sur la resolution de Sudoku. Le modele RRN (Palm et al., 2018) utilise un graphe de contraintes avec passage de messages iteratifs entre les cellules de la grille.
+
+#### Architecture sweep (diverse_200k, 106K puzzles, RTX 3070)
+
+| Architecture | Hidden | Steps | Parametres | Cell Acc | Grid Acc | Test Grids | Temps |
+| ------------- | ------ | ----- | ---------- | -------- | -------- | ---------- | ----- |
+| h128_s16 | 128 | 16 | 162K | 62.5% | 33.5% | 5,351/15,974 | 2.3h |
+| h192_s16 | 192 | 16 | 353K | 62.5% | 33.5% | 5,352/15,974 | 3.2h |
+| h256_s16 | 256 | 16 | 619K | 62.6% | 33.5% | 5,354/15,974 | 5.4h |
+| h128_s24 | 128 | 24 | 162K | 62.5% | 33.5% | 5,352/15,974 | 6.4h |
+| h192_s24 | 192 | 24 | 353K | - | OOM | - | - |
+
+**Constat** : Avec 106K puzzles d'entrainement, toutes les architectures plafonnent a ~33.5% de grilles completes. Augmenter la taille du modele n'apporte pas de gain -- le goulot d'etranglement est le volume de donnees.
+
+#### Fine-tuning avec dataset augmente (400K puzzles, RTX 3070)
+
+A partir des modeles pre-entraines sur diverse_200k, fine-tuning avec un dataset combine (300K easy HF + 100K hard), strategie curriculum progressive sur les niveaux de difficulte.
+
+| Architecture | Source | Epochs | Cell Acc | Grid Acc | Test Grids |
+|-------------|--------|--------|----------|----------|------------|
+| **h192_s16** | sweep_h192_s16 | 19 (ES) | **89.7%** | **83.5%** | 50,087/60,000 |
+| h256_s16 | sweep_h256_s16 | 17 (ES) | 89.8% | 83.5% | 50,084/60,000 |
+| h192_s24 | - | OOM | - | - | - |
+
+**Meilleur modele** : h192_s16 fine-tune atteint **83.5% de grilles completes** (50,087/60,000) sur le jeu de test. Le h256_s16 obtient des resultats quasi-identiques (83.5%) pour 75% de parametres en plus -- h192_s16 est le meilleur compromis taille/performance.
+
+#### Entrainement complet RTX 4090 (24GB VRAM)
+
+| Modele | Dataset | Epochs | Grid Acc | Remarque |
+|--------|---------|--------|----------|----------|
+| track_a_h256_s24 | diversifie, 1M+ | 2/60 | **99.7%** | Convergence quasi-totale en 2 epochs |
+| curriculum_h256_s24 | curriculum 400K | 14/80 | 53.8% | Stagne, oscillations de loss |
+
+**Constats cles** :
+- Avec suffisamment de donnees (1M+ puzzles) et un grand modele (h256, 24 steps) sur RTX 4090, le RRN atteint **99.7% de grilles completes** en seulement 2 epochs (val_loss=0.001)
+- L'approche curriculum sur un dataset plus petit stagne a ~54% : le volume de donnees reste le facteur determinant
+- Le modele final `sudoku_solver_final.h5` (format Keras) atteint un niveau quasi-optimal en inference
+
+#### Enseignements pedagogiques
+
+1. **Volume de donnees > taille du modele** : Passer de 106K a 400K puzzles fait sauter la precision de 33.5% a 83.5%, alors qu'augmenter les parametres de 162K a 619K n'apporte rien sur petit dataset
+2. **Curriculum learning** : Pas de benefice demontre ici. La strategie progressive ralentit l'apprentissage et provoque des oscillations
+3. **RRN vs solveurs classiques** : Meme a 99.7% de succes, le RRN reste un approximateur -- les solveurs exacts (OR-Tools, Norvig) garantissent 100% et sont plus rapides en inference
+
 ## Sources des Projets Etudiants
 
 Les notebooks sont adaptes des meilleurs projets etudiants des depots GitHub :
