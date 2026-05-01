@@ -6,6 +6,8 @@ on:
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'MyIA.AI.Notebooks/**/README.md'
+      - 'scripts/notebook_tools/generate_catalog.py'
+      - 'scripts/notebook_tools/expand_catalog_markers.py'
   workflow_dispatch:
 
 jobs:
@@ -15,6 +17,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Generate catalog (prerequisite)
+      run: python3 scripts/notebook_tools/generate_catalog.py --json-only
+
+    - name: Check CATALOG-STATUS marker drift
+      run: |
+        if [ -f scripts/notebook_tools/expand_catalog_markers.py ]; then
+          python3 scripts/notebook_tools/expand_catalog_markers.py --check
+        else
+          echo "SKIP: expand_catalog_markers.py not yet available"
+        fi
 
     - name: Check notebook catalog drift
       run: |
