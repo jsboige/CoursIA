@@ -1,5 +1,12 @@
 # Theorie des Jeux - Game Theory
 
+<!-- CATALOG-STATUS
+series: GameTheory
+pedagogical_count: 26
+breakdown: _root=26
+updated: 2026-05-01
+-->
+
 Cette serie de notebooks introduit la **Theorie des Jeux**, combinant **Python** (simulations, algorithmes) et **Lean 4** (formalisations, preuves).
 
 ## Structure

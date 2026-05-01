@@ -1,5 +1,12 @@
 # RL - Reinforcement Learning
 
+<!-- CATALOG-STATUS
+series: RL
+pedagogical_count: 6
+breakdown: _root=6
+updated: 2026-05-01
+-->
+
 Introduction au Reinforcement Learning (apprentissage par renforcement) couvrant les **fondements theoriques**, les **algorithmes avec reseaux de neurones** et les **frameworks de production**.
 
 La serie se decompose en deux parties :
