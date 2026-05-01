@@ -145,7 +145,19 @@ def main():
             f.write(f"# CMD: {' '.join(str(c) for c in cmd)}\n")
             f.write(f"# MAX_TEMP=80C, batch_size=32, AMP enabled\n\n")
             f.flush()
-            proc = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, env={**os.environ})
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                env={**os.environ},
+                text=True,
+                bufsize=1,
+            )
+            assert proc.stdout is not None
+            for line in proc.stdout:
+                f.write(line)
+                f.flush()
+            proc.wait()
             elapsed = time.time() - start
             f.write(f"\n# {name} END returncode={proc.returncode} elapsed={elapsed:.1f}s\n")
 

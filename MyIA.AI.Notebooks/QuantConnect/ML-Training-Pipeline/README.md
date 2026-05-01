@@ -1,6 +1,6 @@
 # ML Training Pipeline for Financial Prediction
 
-Complete training pipeline for ML models on financial OHLCV data. Designed for RTX 4090 24GB GPU training with CPU dry-run validation.
+Complete training pipeline for ML models on financial OHLCV data. Designed for GPU training with CPU dry-run validation. All GPU scripts use thermal-safe training via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
 
 ## Architecture
 
@@ -11,6 +11,8 @@ scripts/
   train_lstm.py              # PyTorch LSTM/GRU (GPU recommended)
   train_transformer.py       # Financial Transformer (GPU required for full scale)
   train_dqn_rl.py            # DQN Reinforcement Learning (GPU recommended)
+  launch_po2025_track_a1.py  # Sequential launcher: Transformer -> DQN -> LSTM
+  launch_ai01_track_b.py     # Track B launcher (ai-01 RTX 4090 baselines)
   validate_training_package.py  # Validate all scripts with --dry-run
   registry_update.py         # Build REGISTRY.md from checkpoints
 checkpoints/                 # Saved models + metadata (auto-created)
@@ -18,6 +20,7 @@ checkpoints/                 # Saved models + metadata (auto-created)
   lstm/<timestamp>/
   transformer/<timestamp>/
   dqn/<timestamp>/
+outputs/                     # Training logs and run artifacts
 REGISTRY.md                  # Auto-generated checkpoint catalog
 ```
 
@@ -145,6 +148,34 @@ Designed to work with datasets from `scripts/datasets/` (Track A):
 | Binance | `download_binance_klines.py` | `../datasets/binance/` |
 | Crypto archive | `manage_crypto_archive.py` | `../datasets/crypto_archive/` |
 | QC lean-cli | `download_qc_data.py` | `../datasets/qc/` |
+
+## Thermal Safety (GPU Training)
+
+All GPU training scripts import from `shared/gpu_training.py` for thermal protection:
+
+```python
+from shared.gpu_training import batch_thermal_check, setup_amp, get_gpu_temp
+```
+
+| Function | Usage | Default |
+|----------|-------|---------|
+| `batch_thermal_check(temp, max_temp)` | Pause 30s if GPU exceeds threshold | max_temp=80C |
+| `thermal_check(max_temp)` | Check between episodes (DQN) | max_temp=80C |
+| `setup_amp(model, optimizer)` | Enable Automatic Mixed Precision | Enabled by default |
+| `get_gpu_temp()` | Read GPU temperature via nvidia-smi | n/a |
+
+**Thermal behavior**: When GPU exceeds MAX_TEMP, training pauses 30s. On laptops (MSI GE76 RTX 3080 Ti), expect ~80C baseline, meaning frequent thermal pauses. Training efficiency is ~2-5% wall time on thermally constrained hardware.
+
+## Sequential Launchers
+
+Track A1 (`launch_po2025_track_a1.py`) runs models sequentially with full thermal safety:
+
+```bash
+# Full Track A1: Transformer -> DQN -> LSTM
+python scripts/launch_po2025_track_a1.py --symbol SPY --data-dir ../datasets/yfinance
+```
+
+Track B (`launch_ai01_track_b.py`) runs baselines on ai-01 (RTX 4090, no thermal issues).
 
 ## Dependencies
 
