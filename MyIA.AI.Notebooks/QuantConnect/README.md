@@ -8,7 +8,7 @@ updated: 2026-05-01
 -->
 
 > **Trading algorithmique + Intelligence Artificielle**
-> 43 notebooks Python | Cloud-first | Free Tier compatible
+> 140 notebooks Python | Cloud-first | Free Tier compatible
 
 ---
 
