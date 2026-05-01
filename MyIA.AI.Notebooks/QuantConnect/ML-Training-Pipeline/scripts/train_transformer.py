@@ -4,6 +4,9 @@ Train a Financial Transformer model for time-series prediction.
 Uses multi-head self-attention on sequential features to predict returns.
 Target architecture for RTX 4090 24GB: d_model=256, 8 heads, 6 layers.
 
+Thermal-safe: uses shared.gpu_training for AMP, thermal watchdog (intra-epoch),
+and checkpoint resume. MAX_TEMP=80C default for RTX 3080 Ti Laptop.
+
 Usage:
     # Dry-run (CPU, synthetic data, 2 epochs)
     python train_transformer.py --dry-run
@@ -24,12 +27,22 @@ Output:
 import argparse
 import hashlib
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+# Import thermal-safe training utilities
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "shared"))
+from gpu_training import (
+    TrainingCheckpoint,
+    batch_thermal_check,
+    get_gpu_temp,
+    setup_amp,
+)
 
 
 def generate_features(df: pd.DataFrame, lookback: int = 20) -> pd.DataFrame:
@@ -61,7 +74,6 @@ def generate_features(df: pd.DataFrame, lookback: int = 20) -> pd.DataFrame:
     std20 = df["Close"].rolling(20).std()
     feat["bb_width"] = (df["Close"] - sma20) / (2 * std20.replace(0, 1e-10))
 
-    # Intra-day features (if OHLC available)
     if "High" in df.columns and "Low" in df.columns:
         feat["true_range"] = (
             df["High"] - df["Low"]
@@ -233,7 +245,7 @@ def train_and_evaluate(
     warmup_steps: int = 200,
     device: str = "cpu",
 ) -> dict:
-    """Train Transformer model with cosine scheduling and warmup."""
+    """Train Transformer with AMP and thermal watchdog via shared.gpu_training."""
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
@@ -258,6 +270,8 @@ def train_and_evaluate(
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Model params: {total_params:,} total, {trainable_params:,} trainable")
 
+    use_amp, grad_scaler = setup_amp()
+
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=10, T_mult=2
@@ -274,13 +288,27 @@ def train_and_evaluate(
         n_batches = 0
 
         for X_batch, y_batch in train_loader:
+            # Intra-epoch thermal check via shared utility
+            batch_thermal_check(n_batches, check_every=5, max_temp=80, cool_sleep=30)
+
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
             optimizer.zero_grad()
-            pred = model(X_batch)
-            loss = criterion(pred, y_batch)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
-            optimizer.step()
+
+            with torch.amp.autocast("cuda", enabled=use_amp):
+                pred = model(X_batch)
+                loss = criterion(pred, y_batch)
+
+            if use_amp:
+                grad_scaler.scale(loss).backward()
+                grad_scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
+                grad_scaler.step(optimizer)
+                grad_scaler.update()
+            else:
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
+                optimizer.step()
+
             epoch_loss += loss.item()
             n_batches += 1
 
@@ -293,7 +321,8 @@ def train_and_evaluate(
         with torch.no_grad():
             for X_batch, y_batch in test_loader:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-                val_loss += criterion(model(X_batch), y_batch).item()
+                with torch.amp.autocast("cuda", enabled=use_amp):
+                    val_loss += criterion(model(X_batch), y_batch).item()
                 val_batches += 1
 
         avg_val = val_loss / max(val_batches, 1)
@@ -307,8 +336,9 @@ def train_and_evaluate(
             best_val_loss = avg_val
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
 
+        temp = get_gpu_temp() if device == "cuda" else 0
         if (epoch + 1) % max(1, epochs // 5) == 0:
-            print(f"  Epoch {epoch+1}/{epochs}  train={avg_train:.6f}  val={avg_val:.6f}  lr={current_lr:.2e}")
+            print(f"  Epoch {epoch+1}/{epochs}  train={avg_train:.6f}  val={avg_val:.6f}  lr={current_lr:.2e}  gpu={temp}C")
 
     if best_state:
         model.load_state_dict(best_state)
@@ -318,7 +348,8 @@ def train_and_evaluate(
     with torch.no_grad():
         for X_batch, y_batch in test_loader:
             X_batch = X_batch.to(device)
-            all_preds.append(model(X_batch).cpu().numpy())
+            with torch.amp.autocast("cuda", enabled=use_amp):
+                all_preds.append(model(X_batch).cpu().numpy())
             all_targets.append(y_batch.numpy())
 
     preds = np.concatenate(all_preds).flatten()

@@ -1,5 +1,12 @@
 # Search - Algorithmes de Recherche et Programmation par Contraintes
 
+<!-- CATALOG-STATUS
+series: Search
+pedagogical_count: 45
+breakdown: Applications=20, Part1-Foundations=11, Part2-CSP=9, _root=5
+updated: 2026-05-01
+-->
+
 Cette serie explore les algorithmes de recherche et d'optimisation, de la formalisation des espaces d'etats a la programmation par contraintes, en passant par les metaheuristiques. Elle combine **fondements theoriques** et **applications du monde reel** adaptees de projets etudiants EPITA, EPF et ECE.
 
 ## Vue d'ensemble

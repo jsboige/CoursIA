@@ -1,5 +1,12 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
+<!-- CATALOG-STATUS
+series: SymbolicAI
+pedagogical_count: 90
+breakdown: Argument_Analysis=7, Lean=13, Planners=13, SemanticWeb=18, SmartContracts=27, Tweety=10, _root=2
+updated: 2026-05-01
+-->
+
 Collection de **151 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
 
 ## Vue d'ensemble

@@ -1,5 +1,12 @@
 # QuantConnect AI Trading - Série Éducative CoursIA
 
+<!-- CATALOG-STATUS
+series: QuantConnect
+pedagogical_count: 93
+breakdown: ML-Training-Pipeline=1, Python=45, projects=47
+updated: 2026-05-01
+-->
+
 > **Trading algorithmique + Intelligence Artificielle**
 > 43 notebooks Python | Cloud-first | Free Tier compatible
 

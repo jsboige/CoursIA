@@ -1,5 +1,12 @@
 # IIT - Integrated Information Theory
 
+<!-- CATALOG-STATUS
+series: IIT
+pedagogical_count: 1
+breakdown: _root=1
+updated: 2026-05-01
+-->
+
 Introduction a la Theorie de l'Information Integree (IIT) avec PyPhi, une bibliotheque Python pour le calcul de Phi et l'analyse de la conscience computationnelle.
 
 ## Vue d'ensemble
