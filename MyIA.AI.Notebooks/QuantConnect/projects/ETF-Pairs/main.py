@@ -10,7 +10,8 @@ class ETFPairsTrading(QCAlgorithm):
 
     def Initialize(self):
         # Extended: run to present to cover recent market turbulence (2024-2026)
-        self.SetStartDate(2020, 1, 1)
+        self.SetStartDate(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.SetCash(1000000)
         self.resolution = Resolution.Hour
         self.Settings.FillForwardDataEnabled = True

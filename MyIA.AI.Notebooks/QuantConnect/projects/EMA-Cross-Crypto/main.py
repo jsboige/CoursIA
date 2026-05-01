@@ -20,7 +20,8 @@ class EMACrossCryptoAlgorithm(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2017, 1, 1)  # Extended from 2020: +3 years for robustness validation (includes 2017 bull & 2018 crash)
+        self.set_start_date(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)  # Extended from 2020: +3 years for robustness validation (includes 2017 bull & 2018 crash)
         self.set_account_currency("USDT")
         self.set_cash(10000)
         self.btc = self.add_crypto("BTCUSDT", Resolution.DAILY, Market.BINANCE).symbol

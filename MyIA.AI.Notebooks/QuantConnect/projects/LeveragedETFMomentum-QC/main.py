@@ -12,7 +12,8 @@ class ConditionalSectorRotation(QCAlgorithm):
 
     def Initialize(self):
         # 1. Set Strategy Settings
-        self.SetStartDate(2011, 1, 1)  # Extended for robustness (UVXY from Oct 2011)
+        self.SetStartDate(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)  # Extended for robustness (UVXY from Oct 2011)
         self.SetCash(100000)  # Set your starting capital
         rsi_period_str = self.get_parameter("rsi_period", 10)
         self.rsi_period = int(rsi_period_str)

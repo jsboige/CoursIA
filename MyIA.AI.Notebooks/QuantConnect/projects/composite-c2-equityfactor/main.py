@@ -16,7 +16,7 @@ class CompositeC2EquityFactor(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2014, 1, 1)
+        self.set_start_date(2015, 1, 1)
         self.set_end_date(2025, 1, 1)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)

@@ -39,7 +39,7 @@ class TradeCostEstimationAlgorithm(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2023, 1, 1)
+        self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash('USDC', 10_000_000)
 
