@@ -21,7 +21,6 @@ Output:
 """
 
 import argparse
-import hashlib
 import json
 import sys
 from collections import deque
@@ -31,7 +30,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
+sys.path.append(str(Path(__file__).resolve().parent.parent_parent / "shared"))
 from gpu_training import (
     batch_thermal_check,
     get_gpu_temp,
@@ -39,6 +38,7 @@ from gpu_training import (
     thermal_check,
 )
 from features import FeatureEngineer
+from data_utils import compute_data_hash, generate_synthetic_data, load_data
 
 
 # --- Trading Environment ---
@@ -119,53 +119,6 @@ class TradingEnv:
             "step_reward": reward,
         }
         return self._get_state(), reward, self.done, info
-
-
-# --- Data Loading ---
-
-def load_data(
-    data_dir: Path, symbol: str, start: str | None = None, end: str | None = None
-) -> pd.DataFrame:
-    candidates = sorted(data_dir.glob(f"{symbol}_*.csv"))
-    if not candidates:
-        raise FileNotFoundError(f"No CSV files found for {symbol} in {data_dir}")
-
-    dfs = []
-    for f in candidates:
-        chunk = pd.read_csv(f, parse_dates=["Date"], index_col="Date")
-        dfs.append(chunk)
-
-    df = pd.concat(dfs).sort_index()
-    df = df[~df.index.duplicated(keep="first")]
-
-    if start:
-        df = df[df.index >= start]
-    if end:
-        df = df[df.index <= end]
-
-    return df
-
-
-def generate_synthetic_data(n_rows: int = 5000) -> pd.DataFrame:
-    np.random.seed(42)
-    dates = pd.date_range("2010-01-01", periods=n_rows, freq="B")
-    close = 100.0 * np.exp(np.cumsum(np.random.normal(0.0003, 0.015, n_rows)))
-
-    df = pd.DataFrame(
-        {
-            "Close": close,
-            "Open": close * (1 + np.random.normal(0, 0.003, n_rows)),
-            "High": close * (1 + np.abs(np.random.normal(0, 0.008, n_rows))),
-            "Low": close * (1 - np.abs(np.random.normal(0, 0.008, n_rows))),
-            "Volume": np.random.lognormal(15, 1, n_rows),
-        },
-        index=dates,
-    )
-    return df
-
-
-def compute_data_hash(df: pd.DataFrame) -> str:
-    return hashlib.sha256(pd.util.hash_pandas_object(df).values.tobytes()).hexdigest()[:16]
 
 
 # --- DQN Network ---
