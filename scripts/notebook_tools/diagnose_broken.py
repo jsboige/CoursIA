@@ -38,7 +38,7 @@ ERROR_PATTERNS = [
     (r"OSError.*cannot load library|DLL load failed", "MISSING_DEP"),
     (r".*kernel.*not found|No such kernel|Kernel not available", "KERNEL_ERROR"),
     (r".*interactive.*not supported|C# kernel", "KERNEL_ERROR"),
-    (r"api_key|API_KEY|OPENAI_API|ANTHROPIC_API|HUGGINGFACE", "API_KEY"),
+    (r"api_key|API_KEY|OPENAI_API|ANTHROPIC_API|HUGGINGFACE|OpenAIError|The api_key client option", "API_KEY"),
     (r"401|403|Unauthorized|Authentication", "API_KEY"),
     (r"FileNotFoundError|No such file or directory", "RUNTIME_ERROR"),
     (r"TypeError|ValueError|AttributeError|KeyError|IndexError", "RUNTIME_ERROR"),
@@ -123,14 +123,23 @@ def diagnose_notebook(entry: dict) -> dict:
     if not errors and entry["cells_with_outputs"] == 0:
         root_cause = "NO_OUTPUTS"
     elif errors:
-        # Classify by first error (include evalue for better matching)
-        first = errors[0]
-        text = f"{first['ename']}\n{first['evalue']}\n{first['traceback']}"
-        root_cause = "UNKNOWN"
-        for pattern, category in ERROR_PATTERNS:
-            if re.search(pattern, text, re.IGNORECASE):
-                root_cause = category
-                break
+        # Classify ALL errors, prefer API_KEY over MISSING_DEP when both present
+        # (many ML notebooks first fail on langchain import, then reveal api_key issue)
+        all_causes = []
+        for err in errors:
+            text = f"{err['ename']}\n{err['evalue']}\n{err['traceback']}"
+            cause = "UNKNOWN"
+            for pattern, category in ERROR_PATTERNS:
+                if re.search(pattern, text, re.IGNORECASE):
+                    cause = category
+                    break
+            all_causes.append(cause)
+
+        # Prefer API_KEY over MISSING_DEP if both present
+        if "API_KEY" in all_causes:
+            root_cause = "API_KEY"
+        else:
+            root_cause = all_causes[0]
     else:
         root_cause = "UNKNOWN"
 
