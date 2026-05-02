@@ -114,7 +114,122 @@ theorem shapley_null_player (G : TUGame N) (i : N)
 theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     shapleyValue (TUGame.unanimityGame T hT) i =
     if i ∈ T then (1 : ℝ) / T.card else 0 := by
-  sorry
+  classical
+  split_ifs with hiT
+  · -- Case i ∈ T: direct computation
+    -- marginal contribution = 1 iff T\{i} ⊆ S (and i ∉ S, given by filter)
+    -- = ∑_{S : i∉S, T\{i} ⊆ S} c(|S|, n) = 1/|T|
+    unfold shapleyValue TUGame.marginalContribution shapleyCoef
+    simp only [TUGame.unanimityGame]
+    -- marginal = if T ⊆ S∪{i} then 1 else 0 - if T ⊆ S then 1 else 0
+    -- Since i ∈ T: T ⊆ S∪{i} iff T\{i} ⊆ S (i is in T and in S∪{i})
+    -- And ¬(T ⊆ S) since i ∉ S and i ∈ T
+    -- So marginal = 1 iff T\{i} ⊆ S
+    sorry
+  · -- Case i ∉ T: i is a null player in unanimityGame T
+    apply ShapleyValue.shapley_null_player
+    intro S hiS
+    simp only [TUGame.unanimityGame]
+    -- T ⊆ S ∪ {i} iff T ⊆ S since i ∉ T
+    have hto : T ⊆ S ∪ {i} → T ⊆ S := fun h j hj => by
+      obtain hj' | hj' := Finset.mem_union.mp (h hj)
+      · exact hj'
+      · exact absurd (Finset.mem_singleton.mp hj') (fun heq => hiT (heq ▸ hj))
+    split_ifs
+    · rfl
+    · exfalso; exact ‹¬T ⊆ S› (hto ‹T ⊆ S ∪ {i}›)
+    · exfalso; exact ‹¬T ⊆ S ∪ {i}› (fun j hj => Finset.mem_union_left {i} (‹T ⊆ S› hj))
+    · rfl
+
+/-! ## Helper lemmas for efficiency proof -/
+
+private theorem shapleyCoef_shift (n s : ℕ) (hs : s + 2 ≤ n) :
+    (s + 1 : ℝ) * shapleyCoef n s = (n - s - 1 : ℝ) * shapleyCoef n (s + 1) := by
+  unfold shapleyCoef
+  rw [← mul_div_assoc, ← mul_div_assoc]
+  congr 1
+  rw [show n - (s + 1) - 1 = n - s - 2 from by omega]
+  rw [Nat.factorial_succ s]
+  have hm : n - s - 1 = (n - s - 2) + 1 := by omega
+  rw [hm, Nat.factorial_succ (n - s - 2)]
+  simp only [Nat.cast_mul, Nat.cast_add, Nat.cast_one]
+  -- Convert ↑(n - s - 2) to ↑n - ↑s - 2 using Nat subtraction cast lemmas
+  rw [Nat.cast_sub (by omega : (2 : ℕ) ≤ n - s)]
+  rw [Nat.cast_sub (by omega : (s : ℕ) ≤ n)]
+  ring
+
+private theorem shapleyCoef_top (n : ℕ) (hn : 0 < n) :
+    (n : ℝ) * shapleyCoef n (n - 1) = 1 := by
+  unfold shapleyCoef
+  rw [show n - (n - 1) - 1 = 0 from by omega]
+  simp only [Nat.factorial_zero, Nat.cast_one, mul_one]
+  -- Goal: ↑n * (↑(n-1)! / ↑n!) = 1
+  have : ↑(Nat.factorial n) = ↑n * ↑(Nat.factorial (n - 1)) := by
+    rw [show n = (n - 1) + 1 from by omega, Nat.factorial_succ (n - 1)]
+    simp [Nat.cast_mul, Nat.cast_add, Nat.cast_one]
+  rw [← div_mul_cancel_left _ (by exact mod_cast (Ne.symm (Nat.factorial_ne_zero n)))]
+  rw [← this]
+  ring
+
+private theorem pos_term_eq (G : TUGame N) :
+    (∑ S, shapleyCoef (Fintype.card N) S.card * ∑ i ∈ Finset.univ \ S, G.v (S ∪ {i})) =
+    (∑ T, (T.card : ℝ) * shapleyCoef (Fintype.card N) (T.card - 1) * G.v T) := by
+  classical
+  -- Step 1: Move coefficient inside inner sum on LHS
+  simp only [Finset.mul_sum]
+  -- Step 2: Prove pointwise: ↑|T| * c * v = ∑ j ∈ T, c * v
+  have hT (T : Finset N) :
+      (T.card : ℝ) * shapleyCoef (Fintype.card N) (T.card - 1) * G.v T =
+      ∑ j ∈ (T : Finset N), shapleyCoef (Fintype.card N) (T.card - 1) * G.v T := by
+    rw [mul_assoc, ← nsmul_eq_mul, ← Finset.sum_const]
+  -- Step 3: Rewrite RHS using hT pointwise
+  rw [Finset.sum_congr rfl (fun T _ => hT T)]
+  -- Step 4: Flatten both sides to sigma sums, then apply bijection
+  -- LHS: ∑ x, ∑ i ∈ univ\x, f(x,i) → ∑ p ∈ univ.sigma(fun x => univ\x), f(p.1,p.2)
+  rw [Finset.sum_sigma']
+  -- RHS: ∑ T, ∑ j ∈ T, g(T,j) → ∑ p ∈ univ.sigma(fun T => T), g(p.1,p.2)
+  rw [Finset.sum_sigma']
+  -- Now bijection on sigma types: (S, i) with i∉S ↦ (S∪{i}, i)
+  -- f : (S, i) ↦ (S∪{i}, i), g : (T, j) ↦ (T\{j}, j)
+  refine Finset.sum_bij' (fun p _ => ⟨p.1 ∪ {p.2}, p.2⟩)
+      (fun p _ => ⟨p.1 \ {p.2}, p.2⟩) ?_ ?_ ?_ ?_ ?_
+  -- f in range: p.2 ∈ p.1 ∪ {p.2}
+  · intro p hp
+    simp only [Finset.mem_sigma] at hp ⊢
+    exact ⟨Finset.mem_univ _, by
+      rw [Finset.union_comm]
+      exact Finset.mem_insert_self _ _⟩
+  -- g in range: p.2 ∈ univ \ (p.1 \ {p.2}) (i.e. p.2 ∉ p.1 \ {p.2})
+  · intro p hp
+    simp only [Finset.mem_sigma] at hp ⊢
+    exact ⟨Finset.mem_univ _, Finset.mem_sdiff.mpr ⟨Finset.mem_univ _, by
+      intro h
+      exact Finset.notMem_sdiff_of_mem_right (Finset.mem_singleton_self _) h⟩⟩
+  -- g∘f = id: (S∪{i})\{i} = S when i∉S
+  · intro p hp
+    simp only [Finset.mem_sigma] at hp
+    have hni : p.2 ∉ p.1 := (Finset.mem_sdiff.mp hp.2).2
+    simp only
+    -- goal: ⟨(p.fst ∪ {p.snd}) \ {p.snd}, p.snd⟩ = p
+    ext1
+    · exact Finset.union_sdiff_cancel_right (Finset.disjoint_singleton_right.mpr hni)
+    · rfl
+  -- f∘g = id: (T\{j})∪{j} = T when j∈T
+  · intro p hp
+    simp only [Finset.mem_sigma] at hp
+    simp only
+    ext1
+    · rw [Finset.union_comm, ← Finset.insert_eq,
+        (Finset.insert_sdiff_self_of_mem hp.2)]
+    · rfl
+  -- values agree: c(|S|) * v(S∪{i}) = c(|S∪{i}|-1) * v(S∪{i})
+  · intro p hp
+    simp only [Finset.mem_sigma] at hp
+    have hni : p.2 ∉ p.1 := (Finset.mem_sdiff.mp hp.2).2
+    have : p.1.card = (p.1 ∪ {p.2}).card - 1 := by
+      rw [Finset.union_comm, ← Finset.insert_eq,
+        Finset.card_insert_of_notMem hni, Nat.add_sub_cancel]
+    simp only [this]
 
 /-- Shapley value satisfies efficiency.
     PROOF SKETCH:
@@ -129,7 +244,65 @@ theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     and as -v(S) with coefficient c(|S|,n)·(n-|S|), which cancel. -/
 theorem shapley_efficient (G : TUGame N) :
     ∑ i : N, shapleyValue G i = G.v Finset.univ := by
-  sorry
+  classical
+  unfold shapleyValue TUGame.marginalContribution
+  -- Swap: ∑ᵢ ∑_{S:i∉S} f(i,S) = ∑_S ∑_{i:i∉S} f(i,S)
+  have hswap :
+    (∑ i ∈ Finset.univ, ∑ S ∈ Finset.univ.filter (fun S => i ∉ S),
+        shapleyCoef (Fintype.card N) S.card * (G.v (S ∪ {i}) - G.v S)) =
+    (∑ S ∈ Finset.univ, ∑ i ∈ Finset.univ.filter (fun i => i ∉ S),
+        shapleyCoef (Fintype.card N) S.card * (G.v (S ∪ {i}) - G.v S)) :=
+    Finset.sum_comm' (fun i S => by simp)
+  rw [hswap]
+  -- Factor shapleyCoef out of inner sum
+  simp only [← Finset.mul_sum]
+  -- Split subtraction in inner sums: ∑ (a - b) = ∑ a - ∑ b
+  simp only [Finset.sum_sub_distrib]
+  -- Distribute mul_sub inside the sum
+  simp only [mul_sub]
+  rw [Finset.sum_sub_distrib]
+  -- Simplify negative term: v(x) constant in x_1, sum = (n - |x|) • v(x)
+  simp only [Finset.sum_const, nsmul_eq_mul]
+  simp only [← Finset.sdiff_eq_filter, Finset.card_univ_diff]
+  -- Reindex positive term: ∑ S ∑_{i∉S} c(|S|)*v(S∪{i}) = ∑ T, |T|*c(|T|-1)*v(T)
+  rw [pos_term_eq]
+  -- Combine into single sum of differences
+  rw [← Finset.sum_sub_distrib]
+  -- Isolate the univ term: all T ≠ univ have zero coefficient (shapleyCoef_shift)
+  have : ∑ x ∈ Finset.univ,
+      (↑x.card * shapleyCoef (Fintype.card N) (x.card - 1) * G.v x -
+        shapleyCoef (Fintype.card N) x.card * (↑(Fintype.card N - x.card) * G.v x)) =
+      (↑(Finset.univ : Finset N).card *
+        shapleyCoef (Fintype.card N) ((Finset.univ : Finset N).card - 1) * G.v Finset.univ -
+        shapleyCoef (Fintype.card N) (Finset.univ : Finset N).card *
+          (↑(Fintype.card N - (Finset.univ : Finset N).card) * G.v Finset.univ)) :=
+    Finset.sum_eq_single (Finset.univ : Finset N)
+      (fun T _ hT => by
+        have hcard : T.card < (Finset.univ : Finset N).card :=
+          Finset.card_lt_card (Finset.ssubset_univ_iff.mpr hT)
+        simp only [Finset.card_univ] at hcard
+        rw [sub_eq_zero]
+        by_cases hT0 : T.card = 0
+        · -- T = ∅: both terms vanish because v(∅) = 0
+          have : T = ∅ := Finset.card_eq_zero.mp hT0
+          simp [this, G.empty_zero]
+        · -- T ≠ ∅: coefficient shift applies
+          have hTcard : 1 ≤ T.card := Nat.pos_of_ne_zero hT0
+          have hshift := shapleyCoef_shift (Fintype.card N) (T.card - 1) (by omega)
+          sorry)
+      (fun h => (h (Finset.mem_univ _)).elim)
+  rw [this]
+  -- Simplify: n - card univ = 0, so negative term vanishes
+  simp only [Finset.card_univ, tsub_self, Nat.cast_zero]
+  -- Positive term: n * c(n,n-1) * v(univ) = v(univ) since n * c(n,n-1) = 1
+  by_cases hN : IsEmpty N
+  · -- Empty case: both sides reduce to 0
+    simp [G.empty_zero]
+  · -- Nonempty case: shapleyCoef_top applies
+    haveI : Nonempty N := not_isEmpty_iff.mp hN
+    have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨Classical.arbitrary N⟩
+    rw [shapleyCoef_top (Fintype.card N) hn, one_mul]
+    simp only [zero_mul, mul_zero, sub_zero]
 
 /-- Shapley value satisfies symmetry.
     PROOF SKETCH (swap bijection):
