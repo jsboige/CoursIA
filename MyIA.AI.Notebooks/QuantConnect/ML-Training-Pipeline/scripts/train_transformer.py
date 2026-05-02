@@ -36,7 +36,7 @@ import numpy as np
 import pandas as pd
 
 # Import thermal-safe training utilities
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "shared"))
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
 from gpu_training import (
     TrainingCheckpoint,
     batch_thermal_check,
