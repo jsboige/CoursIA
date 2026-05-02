@@ -301,39 +301,65 @@ class LeanRunner:
                 "error": str(e)
             }
 
-    def run(self, code: str, filename: str = "Main.lean") -> LeanResult:
+    def run(
+        self,
+        code: str,
+        filename: str = "Main.lean",
+        project_dir: Optional[str] = None
+    ) -> LeanResult:
         """
         Execute Lean code and return the result.
 
         Args:
             code: Lean 4 source code to execute.
             filename: Name for the temporary file (affects error messages).
+            project_dir: Optional Lake project directory. When set, code is written
+                to <project_dir>/_AgentScratch/ and executed via `lake env lean`
+                to reuse the Mathlib cache. Defaults to LEAN_PROJECT_DIR env var.
 
         Returns:
             LeanResult with output, errors, and success status.
         """
+        # Resolve project_dir from env var if not specified
+        if project_dir is None:
+            project_dir = os.getenv("LEAN_PROJECT_DIR")
+
         if self.backend == Backend.SUBPROCESS:
-            return self._run_subprocess(code, filename)
+            return self._run_subprocess(code, filename, project_dir)
         elif self.backend == Backend.WSL:
-            return self._run_wsl(code)
+            return self._run_wsl(code, project_dir)
         elif self.backend == Backend.LEANDOJO:
             return self._run_leandojo(code)
 
-    def _run_subprocess(self, code: str, filename: str) -> LeanResult:
-        """Execute Lean code via subprocess."""
-        # Create temp directory if needed
-        if self._temp_dir is None:
-            self._temp_dir = tempfile.mkdtemp(prefix="lean_runner_")
-
-        # Write code to temp file
-        file_path = Path(self._temp_dir) / filename
-        file_path.write_text(code, encoding="utf-8")
+    def _run_subprocess(
+        self, code: str, filename: str, project_dir: Optional[str] = None
+    ) -> LeanResult:
+        """Execute Lean code via subprocess, optionally using a Lake project cache."""
+        if project_dir:
+            # Write to _AgentScratch/ in the Lake project for cache reuse
+            scratch_dir = Path(project_dir) / "_AgentScratch"
+            scratch_dir.mkdir(exist_ok=True)
+            import uuid, time
+            session_id = f"session_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+            file_path = scratch_dir / f"{session_id}_{filename}"
+            file_path.write_text(code, encoding="utf-8")
+            work_dir = str(Path(project_dir).resolve())
+            # Use `lake env lean` to get Mathlib dependencies
+            cmd = ["lake", "env", self.lean_path, str(file_path)]
+        else:
+            # Original behavior: tempdir without Lake cache
+            if self._temp_dir is None:
+                self._temp_dir = tempfile.mkdtemp(prefix="lean_runner_")
+            file_path = Path(self._temp_dir) / filename
+            file_path.write_text(code, encoding="utf-8")
+            work_dir = self._temp_dir
+            cmd = [self.lean_path, str(file_path)]
 
         try:
             result = subprocess.run(
-                [self.lean_path, str(file_path)],
+                cmd,
                 capture_output=True, text=True,
-                timeout=self.timeout, cwd=self._temp_dir
+                timeout=self.timeout, cwd=work_dir
             )
 
             # IMPORTANT: Lean outputs errors to stdout, not stderr!
@@ -387,9 +413,66 @@ class LeanRunner:
                 code=code, exit_code=-1, backend="subprocess"
             )
 
-    def _run_wsl(self, code: str) -> LeanResult:
-        """Execute Lean code via WSL lean4_jupyter REPL."""
-        # Build JSON command for REPL
+    def _run_wsl(self, code: str, project_dir: Optional[str] = None) -> LeanResult:
+        """Execute Lean code via WSL. Uses lake env when project_dir is set."""
+        # Convert Windows path to WSL path
+        def _to_wsl_path(p: str) -> str:
+            p = p.replace("\\", "/")
+            if len(p) >= 2 and p[1] == ":":
+                drive = p[0].lower()
+                rest = p[2:]
+                return f"/mnt/{drive}{rest}"
+            return p
+
+        if project_dir:
+            # Write code to /tmp/ (WSL) to avoid Lake scanning it as project modules
+            import uuid, time
+            session_id = f"lean_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+            wsl_project = _to_wsl_path(str(Path(project_dir).resolve()))
+            wsl_file = f"/tmp/{session_id}.lean"
+
+            # Escape code for safe bash heredoc (single quotes don't interpolate)
+            escaped_code = code.replace("'", "'\\''")
+            try:
+                result = subprocess.run(
+                    ["wsl", "-d", "Ubuntu", "--", "bash", "-c",
+                     f"cat > {wsl_file} << 'LEANEOF'\n{code}\nLEANEOF\n"
+                     f"source ~/.elan/env && cd \"{wsl_project}\" && lake env lean \"{wsl_file}\""],
+                    capture_output=True, text=True, timeout=self.timeout
+                )
+                stdout = result.stdout.strip()
+                stderr = result.stderr.strip()
+                has_errors = (
+                    ": error:" in stdout or
+                    ": warning: declaration uses 'sorry'" in stdout or
+                    "unsolved goals" in stdout
+                )
+                error_lines = [l for l in stdout.split('\n') if ": error:" in l or ": warning:" in l]
+                output_lines = [l for l in stdout.split('\n') if ": error:" not in l and ": warning:" not in l]
+                errors = '\n'.join(error_lines)
+                if stderr:
+                    errors = f"{errors}\n{stderr}" if errors else stderr
+                return LeanResult(
+                    success=not has_errors and result.returncode == 0,
+                    output='\n'.join(output_lines).strip(),
+                    errors=errors.strip(),
+                    code=code,
+                    exit_code=result.returncode if has_errors else 0,
+                    backend="wsl-lake"
+                )
+            except subprocess.TimeoutExpired:
+                return LeanResult(
+                    success=False, output="",
+                    errors=f"Timeout after {self.timeout} seconds",
+                    code=code, exit_code=-1, backend="wsl-lake"
+                )
+            except Exception as e:
+                return LeanResult(
+                    success=False, output="", errors=str(e),
+                    code=code, exit_code=-1, backend="wsl-lake"
+                )
+
+        # Original REPL-based execution (no project cache)
         json_cmd = json.dumps({"cmd": code})
 
         try:

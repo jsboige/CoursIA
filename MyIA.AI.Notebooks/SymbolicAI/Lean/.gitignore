@@ -5,3 +5,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Agent scratch files
+_AgentScratch/
+
+# Agent test traces
+agent_tests/traces/
