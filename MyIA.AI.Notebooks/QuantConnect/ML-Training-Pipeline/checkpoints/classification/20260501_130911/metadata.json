@@ -1,0 +1,25 @@
+{
+  "timestamp": "20260501_130911",
+  "model_type": "xgb",
+  "hyperparams": {
+    "model_type": "xgb",
+    "n_estimators": 1000,
+    "max_depth": 12,
+    "lookback": 20,
+    "test_ratio": 0.2,
+    "symbol": "SPY"
+  },
+  "metrics": {
+    "accuracy": 0.5305,
+    "f1": 0.5297,
+    "precision": 0.5301,
+    "recall": 0.5305,
+    "train_samples": 1965,
+    "test_samples": 492
+  },
+  "data_hash": "af00c16f035f4f73",
+  "files": [
+    "model.joblib",
+    "metadata.json"
+  ]
+}

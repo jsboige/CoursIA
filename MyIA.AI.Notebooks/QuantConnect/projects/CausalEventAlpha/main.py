@@ -54,6 +54,7 @@ class CausalEventAlphaAlgorithm(QCAlgorithm):
 
     def initialize(self):
         self.set_start_date(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
         # Add sector ETFs

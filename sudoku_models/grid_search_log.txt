@@ -1,0 +1,413 @@
+Device: cuda
+GPU: NVIDIA GeForce RTX 3070 Laptop GPU
+VRAM: 8.6 GB
+Loading cached diverse dataset from C:\dev\CoursIA\scripts\..\sudoku_models\data_cache\diverse_200k.npz...
+  106,487 puzzles, givens: 17-37, mean=26.2
+
+============================================================
+Run 1: {'type': 'rrn', 'hidden_dim': 32, 'msg_dim': 32, 'n_steps': 4, 'dropout': 0.1}
+Model: RRN (11,177 params)
+Train: 25,000 | Val: 3,125
+============================================================
+  Epoch   1/30 | loss=2.1716 acc=0.144 | val_cell=0.175 val_grid=0.000 | lr=1.0e-03 | 6.8s *
+  Epoch   2/30 | loss=2.0876 acc=0.183 | val_cell=0.193 val_grid=0.000 | lr=9.9e-04 | 6.8s *
+  Epoch   3/30 | loss=2.0206 acc=0.212 | val_cell=0.230 val_grid=0.000 | lr=9.8e-04 | 7.1s *
+  Epoch   4/30 | loss=1.9542 acc=0.237 | val_cell=0.257 val_grid=0.000 | lr=9.6e-04 | 6.7s *
+  Epoch   5/30 | loss=1.8923 acc=0.255 | val_cell=0.266 val_grid=0.000 | lr=9.3e-04 | 6.7s *
+  Epoch   6/30 | loss=1.8692 acc=0.263 | val_cell=0.274 val_grid=0.000 | lr=9.0e-04 | 6.7s *
+  Epoch   7/30 | loss=1.8331 acc=0.277 | val_cell=0.286 val_grid=0.000 | lr=8.7e-04 | 7.4s *
+  Epoch   8/30 | loss=1.7603 acc=0.290 | val_cell=0.301 val_grid=0.000 | lr=8.3e-04 | 6.6s *
+  Epoch   9/30 | loss=1.7098 acc=0.298 | val_cell=0.312 val_grid=0.000 | lr=7.9e-04 | 6.8s *
+  Epoch  10/30 | loss=1.6842 acc=0.305 | val_cell=0.321 val_grid=0.000 | lr=7.5e-04 | 8.6s *
+  Epoch  11/30 | loss=1.6531 acc=0.314 | val_cell=0.332 val_grid=0.000 | lr=7.0e-04 | 7.6s *
+  Epoch  12/30 | loss=1.6225 acc=0.317 | val_cell=0.336 val_grid=0.000 | lr=6.5e-04 | 7.0s *
+  Epoch  13/30 | loss=1.5964 acc=0.321 | val_cell=0.339 val_grid=0.000 | lr=6.0e-04 | 6.9s *
+  Epoch  14/30 | loss=1.5780 acc=0.324 | val_cell=0.339 val_grid=0.000 | lr=5.5e-04 | 7.4s
+  Epoch  15/30 | loss=1.5503 acc=0.324 | val_cell=0.341 val_grid=0.000 | lr=5.0e-04 | 6.8s *
+  Epoch  16/30 | loss=1.5245 acc=0.326 | val_cell=0.344 val_grid=0.000 | lr=4.5e-04 | 6.9s *
+  Epoch  17/30 | loss=1.5099 acc=0.328 | val_cell=0.346 val_grid=0.000 | lr=4.0e-04 | 6.9s *
+  Epoch  18/30 | loss=1.5006 acc=0.331 | val_cell=0.350 val_grid=0.000 | lr=3.5e-04 | 7.1s *
+  Epoch  19/30 | loss=1.4943 acc=0.332 | val_cell=0.354 val_grid=0.000 | lr=3.0e-04 | 6.9s *
+  Epoch  20/30 | loss=1.4881 acc=0.334 | val_cell=0.355 val_grid=0.000 | lr=2.5e-04 | 7.5s *
+  Epoch  21/30 | loss=1.4832 acc=0.336 | val_cell=0.357 val_grid=0.000 | lr=2.1e-04 | 7.8s *
+  Epoch  22/30 | loss=1.4790 acc=0.337 | val_cell=0.360 val_grid=0.000 | lr=1.7e-04 | 7.8s *
+  Epoch  23/30 | loss=1.4744 acc=0.339 | val_cell=0.362 val_grid=0.000 | lr=1.3e-04 | 7.7s *
+  Epoch  24/30 | loss=1.4712 acc=0.340 | val_cell=0.362 val_grid=0.000 | lr=9.5e-05 | 8.9s *
+  Epoch  25/30 | loss=1.4688 acc=0.341 | val_cell=0.364 val_grid=0.000 | lr=6.7e-05 | 7.9s *
+  Epoch  26/30 | loss=1.4667 acc=0.342 | val_cell=0.366 val_grid=0.000 | lr=4.3e-05 | 8.6s *
+  Epoch  27/30 | loss=1.4649 acc=0.342 | val_cell=0.366 val_grid=0.000 | lr=2.4e-05 | 8.4s
+  Epoch  28/30 | loss=1.4635 acc=0.343 | val_cell=0.367 val_grid=0.000 | lr=1.1e-05 | 7.0s *
+  Epoch  29/30 | loss=1.4623 acc=0.344 | val_cell=0.367 val_grid=0.000 | lr=2.7e-06 | 7.1s *
+  Epoch  30/30 | loss=1.4627 acc=0.344 | val_cell=0.367 val_grid=0.000 | lr=0.0e+00 | 7.4s *
+
+  TEST: cell_acc=0.3626, grid_acc=0.0000
+  Best val: cell_acc=0.3669, grid_acc=0.0000
+  Saved to C:\dev\CoursIA\scripts\..\sudoku_models\sudoku_rrn_hid32_msg32_n_s4_dro0.1_best.pt
+
+============================================================
+Run 2: {'type': 'rrn', 'hidden_dim': 32, 'msg_dim': 32, 'n_steps': 16, 'dropout': 0.1}
+Model: RRN (11,177 params)
+Train: 40,000 | Val: 5,000
+============================================================
+  Epoch   1/30 | loss=2.1823 acc=0.127 | val_cell=0.156 val_grid=0.000 | lr=1.0e-03 | 17.2s *
+  Epoch   2/30 | loss=2.0806 acc=0.184 | val_cell=0.209 val_grid=0.000 | lr=9.9e-04 | 19.0s *
+  Epoch   3/30 | loss=1.9901 acc=0.225 | val_cell=0.227 val_grid=0.000 | lr=9.8e-04 | 17.7s *
+  Epoch   4/30 | loss=1.9394 acc=0.237 | val_cell=0.243 val_grid=0.000 | lr=9.6e-04 | 18.0s *
+  Epoch   5/30 | loss=1.9191 acc=0.242 | val_cell=0.248 val_grid=0.000 | lr=9.3e-04 | 19.2s *
+  Epoch   6/30 | loss=1.8984 acc=0.251 | val_cell=0.261 val_grid=0.000 | lr=9.0e-04 | 17.5s *
+  Epoch   7/30 | loss=1.8556 acc=0.262 | val_cell=0.270 val_grid=0.000 | lr=8.7e-04 | 18.4s *
+  Epoch   8/30 | loss=1.8376 acc=0.266 | val_cell=0.273 val_grid=0.000 | lr=8.3e-04 | 18.8s *
+  Epoch   9/30 | loss=1.8261 acc=0.270 | val_cell=0.277 val_grid=0.000 | lr=7.9e-04 | 19.0s *
+  Epoch  10/30 | loss=1.8140 acc=0.277 | val_cell=0.289 val_grid=0.000 | lr=7.5e-04 | 19.4s *
+  Epoch  11/30 | loss=1.7756 acc=0.294 | val_cell=0.310 val_grid=0.000 | lr=7.0e-04 | 19.6s *
+  Epoch  12/30 | loss=1.7311 acc=0.307 | val_cell=0.318 val_grid=0.000 | lr=6.5e-04 | 19.5s *
+  Epoch  13/30 | loss=1.7083 acc=0.313 | val_cell=0.321 val_grid=0.000 | lr=6.0e-04 | 19.0s *
+  Epoch  14/30 | loss=1.6974 acc=0.316 | val_cell=0.323 val_grid=0.000 | lr=5.5e-04 | 19.3s *
+  Epoch  15/30 | loss=1.6881 acc=0.318 | val_cell=0.326 val_grid=0.000 | lr=5.0e-04 | 20.2s *
+  Epoch  16/30 | loss=1.6807 acc=0.320 | val_cell=0.326 val_grid=0.000 | lr=4.5e-04 | 18.5s *
+  Epoch  17/30 | loss=1.6751 acc=0.321 | val_cell=0.329 val_grid=0.000 | lr=4.0e-04 | 19.8s *
+  Epoch  18/30 | loss=1.6704 acc=0.322 | val_cell=0.331 val_grid=0.000 | lr=3.5e-04 | 19.8s *
+  Epoch  19/30 | loss=1.6662 acc=0.323 | val_cell=0.330 val_grid=0.000 | lr=3.0e-04 | 19.4s
+  Epoch  20/30 | loss=1.6621 acc=0.325 | val_cell=0.330 val_grid=0.000 | lr=2.5e-04 | 20.5s
+  Epoch  21/30 | loss=1.6587 acc=0.325 | val_cell=0.332 val_grid=0.000 | lr=2.1e-04 | 19.2s *
+  Epoch  22/30 | loss=1.6553 acc=0.326 | val_cell=0.327 val_grid=0.000 | lr=1.7e-04 | 21.0s
+  Epoch  23/30 | loss=1.6517 acc=0.326 | val_cell=0.334 val_grid=0.000 | lr=1.3e-04 | 20.1s *
+  Epoch  24/30 | loss=1.6480 acc=0.326 | val_cell=0.333 val_grid=0.000 | lr=9.5e-05 | 20.0s
+  Epoch  25/30 | loss=1.6447 acc=0.327 | val_cell=0.333 val_grid=0.000 | lr=6.7e-05 | 19.4s
+  Epoch  26/30 | loss=1.6417 acc=0.328 | val_cell=0.334 val_grid=0.000 | lr=4.3e-05 | 19.9s *
+  Epoch  27/30 | loss=1.6394 acc=0.329 | val_cell=0.334 val_grid=0.000 | lr=2.4e-05 | 19.5s *
+  Epoch  28/30 | loss=1.6378 acc=0.329 | val_cell=0.335 val_grid=0.000 | lr=1.1e-05 | 19.4s *
+  Epoch  29/30 | loss=1.6366 acc=0.329 | val_cell=0.335 val_grid=0.000 | lr=2.7e-06 | 19.9s
+  Epoch  30/30 | loss=1.6361 acc=0.329 | val_cell=0.335 val_grid=0.000 | lr=0.0e+00 | 20.4s *
+
+  TEST: cell_acc=0.3347, grid_acc=0.0000
+  Best val: cell_acc=0.3354, grid_acc=0.0000
+  Saved to C:\dev\CoursIA\scripts\..\sudoku_models\sudoku_rrn_hid32_msg32_n_s16_dro0.1_best.pt
+
+============================================================
+Run 3: {'type': 'rrn', 'hidden_dim': 64, 'msg_dim': 64, 'n_steps': 16, 'dropout': 0.1}
+Model: RRN (42,825 params)
+Train: 55,000 | Val: 6,875
+============================================================
+  Epoch   1/30 | loss=2.1351 acc=0.159 | val_cell=0.222 val_grid=0.000 | lr=1.0e-03 | 48.7s *
+  Epoch   2/30 | loss=1.9212 acc=0.250 | val_cell=0.281 val_grid=0.000 | lr=9.9e-04 | 49.7s *
+  Epoch   3/30 | loss=1.7407 acc=0.307 | val_cell=0.332 val_grid=0.000 | lr=9.8e-04 | 50.7s *
+  Epoch   4/30 | loss=1.5888 acc=0.345 | val_cell=0.371 val_grid=0.000 | lr=9.6e-04 | 51.4s *
+  Epoch   5/30 | loss=1.5042 acc=0.372 | val_cell=0.387 val_grid=0.000 | lr=9.3e-04 | 52.1s *
+  Epoch   6/30 | loss=1.3966 acc=0.398 | val_cell=0.420 val_grid=0.000 | lr=9.0e-04 | 53.0s *
+  Epoch   7/30 | loss=1.3546 acc=0.415 | val_cell=0.422 val_grid=0.000 | lr=8.7e-04 | 54.0s *
+  Epoch   8/30 | loss=1.3292 acc=0.425 | val_cell=0.440 val_grid=0.000 | lr=8.3e-04 | 57.4s *
+  Epoch   9/30 | loss=1.3074 acc=0.433 | val_cell=0.446 val_grid=0.000 | lr=7.9e-04 | 53.2s *
+  Epoch  10/30 | loss=1.2871 acc=0.441 | val_cell=0.454 val_grid=0.002 | lr=7.5e-04 | 52.5s *
+  Epoch  11/30 | loss=1.2667 acc=0.449 | val_cell=0.462 val_grid=0.006 | lr=7.0e-04 | 53.4s *
+  Epoch  12/30 | loss=1.2501 acc=0.456 | val_cell=0.465 val_grid=0.011 | lr=6.5e-04 | 54.0s *
+  Epoch  13/30 | loss=1.2344 acc=0.462 | val_cell=0.472 val_grid=0.028 | lr=6.0e-04 | 55.7s *
+  Epoch  14/30 | loss=1.2209 acc=0.467 | val_cell=0.474 val_grid=0.031 | lr=5.5e-04 | 54.6s *
+  Epoch  15/30 | loss=1.2100 acc=0.471 | val_cell=0.478 val_grid=0.042 | lr=5.0e-04 | 54.5s *
+  Epoch  16/30 | loss=1.2016 acc=0.474 | val_cell=0.481 val_grid=0.047 | lr=4.5e-04 | 55.2s *
+  Epoch  17/30 | loss=1.1952 acc=0.477 | val_cell=0.482 val_grid=0.055 | lr=4.0e-04 | 54.8s *
+  Epoch  18/30 | loss=1.1895 acc=0.479 | val_cell=0.484 val_grid=0.054 | lr=3.5e-04 | 55.4s *
+  Epoch  19/30 | loss=1.1846 acc=0.481 | val_cell=0.485 val_grid=0.059 | lr=3.0e-04 | 54.4s *
+  Epoch  20/30 | loss=1.1813 acc=0.482 | val_cell=0.486 val_grid=0.061 | lr=2.5e-04 | 57.0s *
+  Epoch  21/30 | loss=1.1776 acc=0.483 | val_cell=0.488 val_grid=0.066 | lr=2.1e-04 | 54.8s *
+  Epoch  22/30 | loss=1.1745 acc=0.484 | val_cell=0.489 val_grid=0.067 | lr=1.7e-04 | 54.7s *
+  Epoch  23/30 | loss=1.1717 acc=0.486 | val_cell=0.489 val_grid=0.069 | lr=1.3e-04 | 56.3s *
+  Epoch  24/30 | loss=1.1694 acc=0.486 | val_cell=0.489 val_grid=0.071 | lr=9.5e-05 | 55.9s *
+  Epoch  25/30 | loss=1.1678 acc=0.487 | val_cell=0.491 val_grid=0.072 | lr=6.7e-05 | 54.6s *
+  Epoch  26/30 | loss=1.1663 acc=0.487 | val_cell=0.491 val_grid=0.073 | lr=4.3e-05 | 56.8s *
+  Epoch  27/30 | loss=1.1649 acc=0.488 | val_cell=0.491 val_grid=0.074 | lr=2.4e-05 | 54.3s *
+  Epoch  28/30 | loss=1.1638 acc=0.488 | val_cell=0.491 val_grid=0.074 | lr=1.1e-05 | 54.7s *
+  Epoch  29/30 | loss=1.1630 acc=0.489 | val_cell=0.492 val_grid=0.073 | lr=2.7e-06 | 55.2s *
+  Epoch  30/30 | loss=1.1628 acc=0.489 | val_cell=0.492 val_grid=0.073 | lr=0.0e+00 | 55.1s *
+
+  TEST: cell_acc=0.4866, grid_acc=0.0727
+  Best val: cell_acc=0.4916, grid_acc=0.0735
+  Saved to C:\dev\CoursIA\scripts\..\sudoku_models\sudoku_rrn_hid64_msg64_n_s16_dro0.1_best.pt
+
+============================================================
+Run 4: {'type': 'rrn', 'hidden_dim': 128, 'msg_dim': 128, 'n_steps': 16, 'dropout': 0.1}
+Model: RRN (167,561 params)
+Train: 70,000 | Val: 8,750
+============================================================
+  Epoch   1/30 | loss=1.9967 acc=0.204 | val_cell=0.286 val_grid=0.000 | lr=1.0e-03 | 232.3s *
+  Epoch   2/30 | loss=1.4951 acc=0.331 | val_cell=0.392 val_grid=0.000 | lr=9.9e-04 | 230.8s *
+  Epoch   3/30 | loss=1.3580 acc=0.409 | val_cell=0.447 val_grid=0.002 | lr=9.8e-04 | 232.8s *
+  Epoch   4/30 | loss=1.2571 acc=0.454 | val_cell=0.473 val_grid=0.041 | lr=9.6e-04 | 231.7s *
+  Epoch   5/30 | loss=1.2070 acc=0.472 | val_cell=0.486 val_grid=0.064 | lr=9.3e-04 | 232.0s *
+  Epoch   6/30 | loss=1.1800 acc=0.482 | val_cell=0.490 val_grid=0.092 | lr=9.0e-04 | 231.3s *
+  Epoch   7/30 | loss=1.1657 acc=0.487 | val_cell=0.495 val_grid=0.083 | lr=8.7e-04 | 232.6s *
+  Epoch   8/30 | loss=1.1573 acc=0.490 | val_cell=0.495 val_grid=0.081 | lr=8.3e-04 | 230.7s *
+  Epoch   9/30 | loss=1.1499 acc=0.493 | val_cell=0.498 val_grid=0.086 | lr=7.9e-04 | 235.3s *
+Device: cuda
+GPU: NVIDIA GeForce RTX 3070 Laptop GPU
+VRAM: 8.6 GB
+Loading cached diverse dataset from C:\dev\CoursIA\scripts\..\sudoku_models\data_cache\diverse_200k.npz...
+  106,487 puzzles, givens: 17-37, mean=26.2
+
+Skip run 1: {'type': 'rrn', 'hidden_dim': 32, 'msg_dim': 32, 'n_steps': 4, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 2: {'type': 'rrn', 'hidden_dim': 32, 'msg_dim': 32, 'n_steps': 16, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 3: {'type': 'rrn', 'hidden_dim': 64, 'msg_dim': 64, 'n_steps': 16, 'dropout': 0.1} (checkpoint exists)
+
+FAILED run 4: {'type': 'rrn', 'hidden_dim': 128, 'msg_dim': 128, 'n_steps': 16, 'dropout': 0.1, 'batch_size': 192}
+  Error: SudokuRRN.__init__() got an unexpected keyword argument 'batch_size'
+Traceback (most recent call last):
+  File "C:\dev\CoursIA\scripts\sudoku_train.py", line 952, in main
+    result = run_single_training(puzzles, solutions, config, effective_args,
+                                 run_id, max_train=max_train)
+  File "C:\dev\CoursIA\scripts\sudoku_train.py", line 701, in run_single_training
+    model = SudokuRRN(**params).to(DEVICE)
+            ~~~~~~~~~^^^^^^^^^^
+TypeError: SudokuRRN.__init__() got an unexpected keyword argument 'batch_size'
+
+Skip run 5: {'type': 'cnn', 'hidden_dim': 64, 'n_layers': 6, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 6: {'type': 'cnn', 'hidden_dim': 128, 'n_layers': 8, 'dropout': 0.1} (checkpoint exists)
+
+============================================================
+Run 7: {'type': 'mlp', 'hidden_dim': 256, 'n_layers': 4, 'dropout': 0.1}
+Model: MLP (592,345 params)
+Train: 70,000 | Val: 8,750
+============================================================
+  Epoch   1/30 | loss=2.1944 acc=0.121 | val_cell=0.143 val_grid=0.000 | lr=1.0e-03 | 149.6s *
+  Epoch   2/30 | loss=2.1711 acc=0.154 | val_cell=0.164 val_grid=0.000 | lr=9.9e-04 | 56.3s *
+  Epoch   3/30 | loss=2.1552 acc=0.167 | val_cell=0.172 val_grid=0.000 | lr=9.8e-04 | 51.4s *
+  Epoch   4/30 | loss=2.1460 acc=0.173 | val_cell=0.177 val_grid=0.000 | lr=9.6e-04 | 55.5s *
+  Epoch   5/30 | loss=2.1399 acc=0.177 | val_cell=0.178 val_grid=0.000 | lr=9.3e-04 | 59.6s *
+  Epoch   6/30 | loss=2.1354 acc=0.179 | val_cell=0.179 val_grid=0.000 | lr=9.0e-04 | 54.4s *
+=========================================================
+Run 4: {'type': 'rrn', 'hidden_dim': 128, 'msg_dim': 128, 'n_steps': 16, 'dropout': 0.1, 'batch_size': 192}
+Model: RRN (167,561 params)
+Train: 70,000 | Val: 8,750
+============================================================
+Device: cuda
+GPU: NVIDIA GeForce RTX 3070 Laptop GPU
+VRAM: 8.6 GB
+Loading cached diverse dataset from C:\dev\CoursIA\scripts\..\sudoku_models\data_cache\diverse_200k.npz...
+  106,487 puzzles, givens: 17-37, mean=26.2
+
+Skip run 1: {'type': 'rrn', 'hidden_dim': 32, 'msg_dim': 32, 'n_steps': 4, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 2: {'type': 'rrn', 'hidden_dim': 32, 'msg_dim': 32, 'n_steps': 16, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 3: {'type': 'rrn', 'hidden_dim': 64, 'msg_dim': 64, 'n_steps': 16, 'dropout': 0.1} (checkpoint exists)
+
+============================================================
+Run 4: {'type': 'rrn', 'hidden_dim': 128, 'msg_dim': 128, 'n_steps': 16, 'dropout': 0.1, 'batch_size': 192}
+Model: RRN (167,561 params)
+Train: 70,000 | Val: 8,750
+============================================================
+  Epoch   1/30 | loss=1.8025 acc=0.253 | val_cell=0.383 val_grid=0.000 | lr=1.0e-03 | 112.1s *
+  Epoch   2/30 | loss=1.3170 acc=0.426 | val_cell=0.476 val_grid=0.051 | lr=9.9e-04 | 130.6s *
+  Epoch   3/30 | loss=1.1995 acc=0.474 | val_cell=0.491 val_grid=0.090 | lr=9.8e-04 | 129.7s *
+  Epoch   4/30 | loss=1.1705 acc=0.484 | val_cell=0.494 val_grid=0.090 | lr=9.6e-04 | 132.7s *
+  Epoch   5/30 | loss=1.1567 acc=0.490 | val_cell=0.497 val_grid=0.091 | lr=9.3e-04 | 129.2s *
+  Epoch   6/30 | loss=1.1495 acc=0.493 | val_cell=0.498 val_grid=0.093 | lr=9.0e-04 | 129.7s *
+  Epoch   7/30 | loss=1.1440 acc=0.495 | val_cell=0.502 val_grid=0.100 | lr=8.7e-04 | 130.8s *
+  Epoch   8/30 | loss=1.1403 acc=0.496 | val_cell=0.500 val_grid=0.097 | lr=8.3e-04 | 130.0s
+  Epoch   9/30 | loss=1.1374 acc=0.497 | val_cell=0.502 val_grid=0.104 | lr=7.9e-04 | 129.4s *
+  Epoch  10/30 | loss=1.1343 acc=0.499 | val_cell=0.503 val_grid=0.095 | lr=7.5e-04 | 130.0s *
+  Epoch  11/30 | loss=1.1323 acc=0.499 | val_cell=0.503 val_grid=0.088 | lr=7.0e-04 | 129.9s *
+  Epoch  12/30 | loss=1.1297 acc=0.501 | val_cell=0.503 val_grid=0.098 | lr=6.5e-04 | 129.9s
+  Epoch  13/30 | loss=1.1269 acc=0.501 | val_cell=0.505 val_grid=0.102 | lr=6.0e-04 | 131.9s *
+  Epoch  14/30 | loss=1.1253 acc=0.502 | val_cell=0.505 val_grid=0.097 | lr=5.5e-04 | 133.7s *
+  Epoch  15/30 | loss=1.1223 acc=0.503 | val_cell=0.505 val_grid=0.103 | lr=5.0e-04 | 132.4s
+  Epoch  16/30 | loss=1.1201 acc=0.504 | val_cell=0.506 val_grid=0.108 | lr=4.5e-04 | 131.8s *
+  Epoch  17/30 | loss=1.1171 acc=0.505 | val_cell=0.507 val_grid=0.109 | lr=4.0e-04 | 132.9s *
+  Epoch  18/30 | loss=1.1152 acc=0.506 | val_cell=0.507 val_grid=0.112 | lr=3.5e-04 | 134.9s *
+  Epoch  19/30 | loss=1.1131 acc=0.507 | val_cell=0.508 val_grid=0.117 | lr=3.0e-04 | 133.3s *
+  Epoch  20/30 | loss=1.1101 acc=0.509 | val_cell=0.508 val_grid=0.117 | lr=2.5e-04 | 133.1s *
+  Epoch  21/30 | loss=1.1080 acc=0.509 | val_cell=0.508 val_grid=0.116 | lr=2.1e-04 | 133.1s *
+  Epoch  22/30 | loss=1.1059 acc=0.510 | val_cell=0.509 val_grid=0.115 | lr=1.7e-04 | 132.9s *
+  Epoch  23/30 | loss=1.1033 acc=0.512 | val_cell=0.509 val_grid=0.119 | lr=1.3e-04 | 131.9s
+  Epoch  24/30 | loss=1.1011 acc=0.513 | val_cell=0.509 val_grid=0.121 | lr=9.5e-05 | 133.4s *
+  Epoch  25/30 | loss=1.0990 acc=0.514 | val_cell=0.509 val_grid=0.119 | lr=6.7e-05 | 133.8s
+  Epoch  26/30 | loss=1.0971 acc=0.515 | val_cell=0.509 val_grid=0.121 | lr=4.3e-05 | 134.3s
+  Epoch  27/30 | loss=1.0952 acc=0.515 | val_cell=0.509 val_grid=0.121 | lr=2.4e-05 | 131.8s *
+  Epoch  28/30 | loss=1.0941 acc=0.516 | val_cell=0.509 val_grid=0.122 | lr=1.1e-05 | 134.2s
+  Epoch  29/30 | loss=1.0932 acc=0.516 | val_cell=0.509 val_grid=0.123 | lr=2.7e-06 | 132.9s
+  Epoch  30/30 | loss=1.0925 acc=0.517 | val_cell=0.509 val_grid=0.122 | lr=0.0e+00 | 130.1s
+
+  TEST: cell_acc=0.5065, grid_acc=0.1186
+  Best val: cell_acc=0.5092, grid_acc=0.1214
+  Saved to C:\dev\CoursIA\scripts\..\sudoku_models\sudoku_rrn_hid128_msg128_n_s16_dro0.1_best.pt
+
+Skip run 5: {'type': 'cnn', 'hidden_dim': 64, 'n_layers': 6, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 6: {'type': 'cnn', 'hidden_dim': 128, 'n_layers': 8, 'dropout': 0.1} (checkpoint exists)
+
+============================================================
+Run 7: {'type': 'mlp', 'hidden_dim': 256, 'n_layers': 4, 'dropout': 0.1, 'batch_size': 256}
+Model: MLP (592,345 params)
+Train: 70,000 | Val: 8,750
+============================================================
+  Epoch   1/30 | loss=2.1939 acc=0.122 | val_cell=0.144 val_grid=0.000 | lr=1.0e-03 | 19.0s *
+  Epoch   2/30 | loss=2.1743 acc=0.150 | val_cell=0.157 val_grid=0.000 | lr=9.9e-04 | 18.3s *
+  Epoch   3/30 | loss=2.1641 acc=0.159 | val_cell=0.161 val_grid=0.000 | lr=9.8e-04 | 17.6s *
+  Epoch   4/30 | loss=2.1589 acc=0.163 | val_cell=0.162 val_grid=0.000 | lr=9.6e-04 | 17.3s *
+  Epoch   5/30 | loss=2.1557 acc=0.165 | val_cell=0.163 val_grid=0.000 | lr=9.3e-04 | 17.0s *
+  Epoch   6/30 | loss=2.1533 acc=0.166 | val_cell=0.164 val_grid=0.000 | lr=9.0e-04 | 16.6s *
+  Epoch   7/30 | loss=2.1504 acc=0.168 | val_cell=0.164 val_grid=0.000 | lr=8.7e-04 | 16.3s *
+  Epoch   8/30 | loss=2.1482 acc=0.169 | val_cell=0.164 val_grid=0.000 | lr=8.3e-04 | 16.4s
+  Epoch   9/30 | loss=2.1465 acc=0.169 | val_cell=0.163 val_grid=0.000 | lr=7.9e-04 | 16.4s
+  Epoch  10/30 | loss=2.1447 acc=0.169 | val_cell=0.163 val_grid=0.000 | lr=7.5e-04 | 16.2s
+  Epoch  11/30 | loss=2.1428 acc=0.170 | val_cell=0.163 val_grid=0.000 | lr=7.0e-04 | 15.9s
+  Epoch  12/30 | loss=2.1402 acc=0.170 | val_cell=0.163 val_grid=0.000 | lr=6.5e-04 | 15.8s
+  Epoch  13/30 | loss=2.1378 acc=0.171 | val_cell=0.164 val_grid=0.000 | lr=6.0e-04 | 15.5s
+  Early stopping at epoch 13
+
+  TEST: cell_acc=0.1641, grid_acc=0.0000
+  Best val: cell_acc=0.1641, grid_acc=0.0000
+  Saved to C:\dev\CoursIA\scripts\..\sudoku_models\sudoku_mlp_hid256_n_l4_dro0.1_best.pt
+
+============================================================
+Run 8: {'type': 'mlp', 'hidden_dim': 512, 'n_layers': 6, 'dropout': 0.1, 'batch_size': 192}
+Model: MLP (2,102,489 params)
+Train: 70,000 | Val: 8,750
+============================================================
+  Epoch   1/30 | loss=2.1974 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=1.0e-03 | 18.0s *
+  Epoch   2/30 | loss=2.1973 acc=0.112 | val_cell=0.111 val_grid=0.000 | lr=9.9e-04 | 18.0s *
+  Epoch   3/30 | loss=2.1972 acc=0.112 | val_cell=0.111 val_grid=0.000 | lr=9.8e-04 | 18.0s
+  Epoch   4/30 | loss=2.1972 acc=0.112 | val_cell=0.111 val_grid=0.000 | lr=9.6e-04 | 17.8s
+  Epoch   5/30 | loss=2.1972 acc=0.112 | val_cell=0.111 val_grid=0.000 | lr=9.3e-04 | 17.9s
+  Epoch   6/30 | loss=2.1972 acc=0.112 | val_cell=0.111 val_grid=0.000 | lr=9.0e-04 | 17.8s
+  Epoch   7/30 | loss=2.1972 acc=0.112 | val_cell=0.111 val_grid=0.000 | lr=8.7e-04 | 17.6s
+  Epoch   8/30 | loss=2.1972 acc=0.112 | val_cell=0.111 val_grid=0.000 | lr=8.3e-04 | 17.7s
+  Early stopping at epoch 8
+
+  TEST: cell_acc=0.1115, grid_acc=0.0000
+  Best val: cell_acc=0.1113, grid_acc=0.0000
+  Saved to C:\dev\CoursIA\scripts\..\sudoku_models\sudoku_mlp_hid512_n_l6_dro0.1_best.pt
+
+======================================================================
+GRID SEARCH SUMMARY
+======================================================================
+#    Type      Params   Val Cell   Val Grid  Test Cell  Test Grid  Epochs     Time
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\CoursIA\scripts\sudoku_train.py", line 1069, in <module>
+    main()
+    ~~~~^^
+  File "C:\dev\CoursIA\scripts\sudoku_train.py", line 978, in main
+    f"{r['best_val_cell_acc']:>10.4f} {r['best_val_grid_acc']:>10.4f} "
+       ~^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'best_val_cell_acc'
+Device: cuda
+GPU: NVIDIA GeForce RTX 3070 Laptop GPU
+VRAM: 8.6 GB
+Loading cached diverse dataset from C:\dev\CoursIA\scripts\..\sudoku_models\data_cache\diverse_200k.npz...
+  106,487 puzzles, givens: 17-37, mean=26.2
+
+Skip run 1: {'type': 'rrn', 'hidden_dim': 32, 'msg_dim': 32, 'n_steps': 4, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 2: {'type': 'rrn', 'hidden_dim': 32, 'msg_dim': 32, 'n_steps': 16, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 3: {'type': 'rrn', 'hidden_dim': 64, 'msg_dim': 64, 'n_steps': 16, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 4: {'type': 'rrn', 'hidden_dim': 128, 'msg_dim': 128, 'n_steps': 16, 'dropout': 0.1, 'batch_size': 192} (checkpoint exists)
+
+Skip run 5: {'type': 'cnn', 'hidden_dim': 64, 'n_layers': 6, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 6: {'type': 'cnn', 'hidden_dim': 128, 'n_layers': 8, 'dropout': 0.1} (checkpoint exists)
+
+Skip run 7: {'type': 'mlp', 'hidden_dim': 256, 'n_layers': 4, 'dropout': 0.1, 'batch_size': 256} (checkpoint exists)
+
+Skip run 8: {'type': 'mlp', 'hidden_dim': 512, 'n_layers': 6, 'dropout': 0.1, 'batch_size': 192} (checkpoint exists)
+
+======================================================================
+GRID SEARCH SUMMARY
+======================================================================
+#    Type      Params   Val Cell   Val Grid  Test Cell  Test Grid  Epochs     Time
+--------------------------------------------------------------------------------
+1    rrn       11,177     0.3669     0.0000     0.3626     0.0000      30     220s
+2    rrn       11,177     0.3354     0.0000     0.3347     0.0000      30     578s
+3    rrn       42,825     0.4916     0.0735     0.4866     0.0727      30    1624s
+4    rrn      167,561     0.5092     0.1214     0.5065     0.1186      30    3937s
+5    cnn      228,745     0.3851     0.0000     0.3857     0.0000      30     484s
+6    cnn    1,195,529     0.4797     0.0000     0.4809     0.0000      30     864s
+7    mlp      592,345     0.1641     0.0000     0.1641     0.0000      13     218s
+8    mlp    2,102,489     0.1113     0.0000     0.1115     0.0000       8     143s
+
+Best RRN: 167,561 params, test_cell=0.5065, test_grid=0.1186
+
+Best CNN: 228,745 params, test_cell=0.3857, test_grid=0.0000
+
+Best MLP: 592,345 params, test_cell=0.1641, test_grid=0.0000
+
+Results saved to C:\dev\CoursIA\scripts\..\sudoku_models\grid_search_results.json
+
+======================================================================
+REFINEMENT — Best config (RRN) with more capacity
+  Sweep best: {'type': 'rrn', 'hidden_dim': 128, 'msg_dim': 128, 'n_steps': 16, 'dropout': 0.1, 'batch_size': 192} -> test_cell=0.5065
+  Refining to: {'type': 'rrn', 'hidden_dim': 128, 'msg_dim': 128, 'n_steps': 32, 'dropout': 0.1, 'batch_size': 96}
+======================================================================
+
+============================================================
+Run 100: {'type': 'rrn', 'hidden_dim': 128, 'msg_dim': 128, 'n_steps': 32, 'dropout': 0.1, 'batch_size': 96}
+Model: RRN (167,561 params)
+Train: 85,189 | Val: 10,648
+============================================================
+  Epoch   1/60 | loss=1.5293 acc=0.345 | val_cell=0.464 val_grid=0.043 | lr=1.0e-03 | 214.1s *
+  Epoch   2/60 | loss=1.2034 acc=0.474 | val_cell=0.488 val_grid=0.096 | lr=1.0e-03 | 292.9s *
+  Epoch   3/60 | loss=1.1644 acc=0.487 | val_cell=0.493 val_grid=0.094 | lr=9.9e-04 | 300.9s *
+  Epoch   4/60 | loss=1.1544 acc=0.491 | val_cell=0.496 val_grid=0.101 | lr=9.9e-04 | 310.1s *
+  Epoch   5/60 | loss=1.1469 acc=0.494 | val_cell=0.497 val_grid=0.098 | lr=9.8e-04 | 311.9s *
+  Epoch   6/60 | loss=1.1429 acc=0.495 | val_cell=0.497 val_grid=0.087 | lr=9.8e-04 | 308.8s *
+  Epoch   7/60 | loss=1.1712 acc=0.487 | val_cell=0.499 val_grid=0.093 | lr=9.7e-04 | 317.0s *
+  Epoch   8/60 | loss=1.1393 acc=0.497 | val_cell=0.499 val_grid=0.097 | lr=9.6e-04 | 312.0s
+  Epoch   9/60 | loss=1.1578 acc=0.492 | val_cell=0.474 val_grid=0.078 | lr=9.5e-04 | 306.8s
+  Epoch  10/60 | loss=1.1449 acc=0.494 | val_cell=0.498 val_grid=0.091 | lr=9.3e-04 | 305.9s
+  Epoch  11/60 | loss=1.1362 acc=0.498 | val_cell=0.499 val_grid=0.110 | lr=9.2e-04 | 306.6s *
+  Epoch  12/60 | loss=1.1376 acc=0.497 | val_cell=0.497 val_grid=0.095 | lr=9.0e-04 | 303.7s
+  Epoch  13/60 | loss=1.1527 acc=0.492 | val_cell=0.497 val_grid=0.090 | lr=8.9e-04 | 303.2s
+  Epoch  14/60 | loss=1.7305 acc=0.445 | val_cell=0.111 val_grid=0.000 | lr=8.7e-04 | 302.3s
+  Epoch  15/60 | loss=2.2415 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=8.5e-04 | 276.9s
+  Epoch  16/60 | loss=2.2468 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=8.3e-04 | 274.8s
+  Epoch  17/60 | loss=2.2606 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=8.1e-04 | 273.5s
+  Epoch  18/60 | loss=2.2465 acc=0.111 | val_cell=0.110 val_grid=0.000 | lr=7.9e-04 | 276.6s
+  Epoch  19/60 | loss=3.1018 acc=0.109 | val_cell=0.111 val_grid=0.000 | lr=7.7e-04 | 274.8s
+  Epoch  20/60 | loss=3.0055 acc=0.110 | val_cell=0.112 val_grid=0.000 | lr=7.5e-04 | 277.9s
+  Epoch  21/60 | loss=2.8688 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=7.3e-04 | 279.0s
+  Epoch  22/60 | loss=2.7879 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=7.0e-04 | 274.8s
+  Epoch  23/60 | loss=3.1074 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=6.8e-04 | 280.1s
+  Early stopping at epoch 23
+
+  TEST: cell_acc=0.4995, grid_acc=0.1107
+  Best val: cell_acc=0.4990, grid_acc=0.1102
+  Saved to C:\dev\CoursIA\scripts\..\sudoku_models\sudoku_rrn_hid128_msg128_n_s32_dro0.1_best.pt
+
+  Also trying steps=64 (batch=48)...
+
+============================================================
+Run 101: {'type': 'rrn', 'hidden_dim': 128, 'msg_dim': 128, 'n_steps': 64, 'dropout': 0.1, 'batch_size': 48}
+Model: RRN (167,561 params)
+Train: 85,189 | Val: 10,648
+============================================================
+  Epoch   1/40 | loss=2.1990 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=1.0e-03 | 482.8s *
+  Epoch   2/40 | loss=2.1989 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=9.9e-04 | 473.1s
+  Epoch   3/40 | loss=2.1988 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=9.9e-04 | 474.3s
+  Epoch   4/40 | loss=2.1981 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=9.8e-04 | 468.6s
+  Epoch   5/40 | loss=2.1979 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=9.6e-04 | 475.1s *
+  Epoch   6/40 | loss=2.1975 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=9.5e-04 | 472.2s
+  Epoch   7/40 | loss=2.1972 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=9.3e-04 | 466.8s
+  Epoch   8/40 | loss=2.1972 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=9.0e-04 | 470.1s
+  Epoch   9/40 | loss=2.1973 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=8.8e-04 | 467.4s
+  Epoch  10/40 | loss=2.1974 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=8.5e-04 | 472.0s
+  Epoch  11/40 | loss=2.1974 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=8.2e-04 | 469.6s
+  Epoch  12/40 | loss=2.1975 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=7.9e-04 | 473.2s
+  Epoch  13/40 | loss=2.1975 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=7.6e-04 | 497.5s
+  Epoch  14/40 | loss=2.1975 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=7.3e-04 | 497.5s
+  Epoch  15/40 | loss=2.1974 acc=0.111 | val_cell=0.111 val_grid=0.000 | lr=6.9e-04 | 482.9s
+  Early stopping at epoch 15
+
+  TEST: cell_acc=0.1111, grid_acc=0.0000
+  Best val: cell_acc=0.1113, grid_acc=0.0000
+  Saved to C:\dev\CoursIA\scripts\..\sudoku_models\sudoku_rrn_hid128_msg128_n_s64_dro0.1_best.pt
+
+======================================================================
+REFINEMENT RESULTS
+======================================================================
+  RRN (167,561 params): test_cell=0.4995, test_grid=0.1107, epochs=23
+  RRN (167,561 params): test_cell=0.1111, test_grid=0.0000, epochs=15
+  Saved to C:\dev\CoursIA\scripts\..\sudoku_models\grid_search_refinement.json

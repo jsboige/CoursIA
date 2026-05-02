@@ -14,7 +14,8 @@ from sklearn.preprocessing import StandardScaler
 class AIStocksBondsRotationAlgorithm(QCAlgorithm):
 
     def initialize(self):
-        self.set_start_date(2013, 1, 1)
+        self.set_start_date(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.settings.daily_precise_end_time = False
         self.settings.seed_initial_prices = True
 

@@ -1,5 +1,13 @@
 # EPF - Devoirs et Evaluations
 
+<!-- CATALOG-STATUS
+series: EPF
+pedagogical_count: 4
+breakdown: IA101-Devoirs=4
+maturity: DRAFT=2, PRODUCTION=1, ALPHA=1
+updated: 2026-05-02
+-->
+
 Controles continus du cours **IA101 - Intelligence Artificielle** (EPF 2026). Ces devoirs integrent les concepts des autres sections du repository (Probas, SymbolicAI, Search).
 
 ## Vue d'ensemble

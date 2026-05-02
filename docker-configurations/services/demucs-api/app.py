@@ -243,9 +243,9 @@ async def separate_sources(
 
         # Apply model
         with torch.no_grad():
-            sources = apply_fn(demucs_model, wav[None], progress=None)[0]
+            sources = apply_fn(demucs_model, wav, progress=None)
 
-        # sources shape: [batch, sources, channels, time]
+        # sources shape: [sources, channels, time] (single batch item)
         sources = sources.cpu()
 
         # Duration
@@ -257,7 +257,7 @@ async def separate_sources(
         stem_audios = {}
         for i, stem_name in enumerate(STEM_NAMES):
             if stem_name in requested_stems:
-                stem_audio = sources[0, i].numpy()
+                stem_audio = sources[i].numpy()
                 # Transpose to (samples, channels)
                 stem_audio = stem_audio.T
                 stem_audios[stem_name] = stem_audio

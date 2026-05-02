@@ -1,0 +1,63 @@
+{
+  "checkpoint": "sudoku_models/sweep_h192_s24_best.pt",
+  "phase": "curriculum",
+  "architecture": {
+    "hidden_dim": 192,
+    "msg_dim": 192,
+    "n_steps": 24,
+    "n_params": 353481
+  },
+  "dataset": {
+    "n_easy": 300000,
+    "n_hard": 100000,
+    "n_train": 280000,
+    "n_val": 60000,
+    "n_test": 60000
+  },
+  "training": {
+    "lr": 0.0001,
+    "epochs": 16,
+    "best_epoch": 14,
+    "curriculum": [
+      [
+        1,
+        [
+          0.5,
+          0.3,
+          0.1
+        ]
+      ],
+      [
+        6,
+        [
+          0.75,
+          0.6,
+          0.4
+        ]
+      ],
+      [
+        12,
+        [
+          0.9,
+          0.8,
+          0.7
+        ]
+      ],
+      [
+        18,
+        [
+          1.0,
+          1.0,
+          1.0
+        ]
+      ]
+    ]
+  },
+  "results": {
+    "cell_acc": 0.8962358702538414,
+    "grid_acc": 0.83505,
+    "test_loss": 0.23574933123995997,
+    "n_solved": 50103
+  },
+  "note": "Training process died after epoch 16 (log flush issue). Best checkpoint at epoch 14."
+}

@@ -228,8 +228,10 @@ theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
     (hsp : single_peaked_profile prof peaks)
     (hodd : Odd (Fintype.card ι)) :
     ∃ m, condorcet_winner prof (Finset.univ.image peaks) m := by
-  sorry -- Proof requires Finset counting + sorting machinery
+  sorry -- Open problem: requires Finset counting + sorted list median properties
         -- Core argument: majority of voters have peak on same side as median
+        -- Key lemmas needed: sorted_peaks correctness, median index for odd n,
+        -- cardinality bounds on left/right voter blocks, single-peakedness → margin
 
 end SinglePeaked
 
@@ -290,34 +292,60 @@ theorem cycle_length_pos {X : Type*} {R : X → X → Prop} {c : List X} (hc : c
   rcases hc with ⟨h, _⟩
   exact List.length_pos_of_ne_nil h
 
-/-- Rotating a cycle preserves the cycle property. -/
+/-- Appending an element to a chain: if the chain's last element relates to x,
+    we can extend the chain with x. Uses structural recursion via match. -/
+private theorem isChain_append_last {α : Type*} {R : α → α → Prop}
+    {l : List α} (hne : l ≠ []) {x : α}
+    (hchain : List.IsChain R l)
+    (hR : R (l.getLast hne) x) :
+    List.IsChain R (l ++ [x]) :=
+  match l, hne, hchain with
+  | [], h, _ => absurd rfl h
+  | [_], _, _ => List.IsChain.cons_cons hR (List.IsChain.singleton x)
+  | _ :: b :: l'', _, .cons_cons hab hrest =>
+    List.IsChain.cons_cons hab (isChain_append_last (List.cons_ne_nil b l'') hrest hR)
+
+/-- Rotating a cycle preserves the cycle property.
+    For `a :: l`, the cycle `IsChain R (getLast (a::l) :: a :: l)` rotates to
+    `IsChain R (a :: l ++ [a])`. -/
 theorem rotate_cycle {X : Type*} {R : X → X → Prop} {a : X} {l : List X}
     (hc : cycle R (a :: l)) : cycle R (l ++ [a]) := by
   rcases hc with ⟨hne, hchain⟩
   refine ⟨List.append_ne_nil_of_right_ne_nil l (List.cons_ne_nil a []), ?_⟩
-  sorry -- Needs IsChain construction for rotated list
+  -- getLast (l ++ [a]) = a, so need IsChain R (a :: l ++ [a])
+  simp only [List.getLast_append, List.getLast_singleton]
+  cases l with
+  | nil => exact hchain
+  | cons b l' =>
+    simp only [List.cons_append]
+    match hchain with
+    | .cons_cons hRza (.cons_cons hRab hchain_bl) =>
+      -- hRza : R (getLast(b::l')) a, hRab : R a b, hchain_bl : IsChain R (b :: l')
+      -- Build IsChain R (b :: l' ++ [a]) from hchain_bl + hRza
+      -- Then IsChain R (a :: b :: l' ++ [a]) from hRab + above
+      have h := isChain_append_last (List.cons_ne_nil b l') hchain_bl hRza
+      exact List.IsChain.cons_cons hRab h
 
-private theorem isChain_lt_head_lt_mem [LinearOrder σ] {l : List σ} {a b : σ}
-    (h : List.IsChain (fun x y => x < y) (a :: l)) (hb : b ∈ l) : a < b := by
-  induction l with
-  | nil => simp at hb
-  | cons c l' ih =>
-    cases h with
-    | cons_cons hac hchain =>
-      simp at hb
-      rcases hb with rfl | hb'
-      · exact hac
-      · exact lt_trans hac (ih hchain hb')
+/-- From a chain `IsChain R (l.head :: l)`, the head relates to every member of l.
+    Uses pairwise: `Pairwise R (l.head :: l)` means head relates to all of l. -/
+private theorem chain_head_rel_mem {α : Type*} {R : α → α → Prop} [Trans R R R]
+    {a : α} {l : List α} (hchain : List.IsChain R (a :: l))
+    {x : α} (hmem : x ∈ l) : R a x := by
+  have hp := hchain.pairwise
+  rw [List.pairwise_cons] at hp
+  exact hp.1 x hmem
 
-private theorem isChain_lt_head_in_tail_false [LinearOrder σ] {l : List σ} {a : σ}
-    (h : List.IsChain (fun x y => x < y) (a :: l)) (ha : a ∈ l) : False :=
-  lt_irrefl a (isChain_lt_head_lt_mem h ha)
-
-/-- Cycles are acyclic on strict linear orders. -/
+set_option linter.unusedSectionVars false in
+/-- Cycles are impossible on strict linear orders.
+    A cycle `getLast c :: c` under `<` means the last element relates to itself
+    via the chain, contradicting irreflexivity of `<`. -/
 theorem lt_acyclic [LinearOrder σ] : acyclic (fun (x y : σ) => x < y) := by
   intro c hc
   rcases hc with ⟨hne, hchain⟩
-  exact isChain_lt_head_in_tail_false hchain (List.getLast_mem hne)
+  have hmem : c.getLast hne ∈ c := List.getLast_mem hne
+  have hlt : c.getLast hne < c.getLast hne :=
+    chain_head_rel_mem hchain hmem
+  exact lt_irrefl _ hlt
 
 end SplitCycle
 

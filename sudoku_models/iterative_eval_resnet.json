@@ -1,0 +1,33 @@
+{
+  "one_shot": {
+    "cell_acc": 0.946395061728395,
+    "grid_acc": 0.048,
+    "empty_acc": 0.9398024502946288
+  },
+  "iterative": {
+    "single": {
+      "cell_acc": 0.9969876543209877,
+      "grid_acc": 0.958,
+      "avg_steps": 48.178,
+      "time_s": 572.2482452392578,
+      "n_eval": 500,
+      "max_steps": 81
+    },
+    "batch": {
+      "cell_acc": 0.9930864197530864,
+      "grid_acc": 0.866,
+      "avg_steps": 4.858,
+      "time_s": 41.70080018043518,
+      "n_eval": 500,
+      "max_steps": 81
+    },
+    "constraint": {
+      "cell_acc": 1.0,
+      "grid_acc": 1.0,
+      "avg_steps": 4.296,
+      "time_s": 0.7723166942596436,
+      "n_eval": 500,
+      "max_steps": 81
+    }
+  }
+}

@@ -1,5 +1,13 @@
 # ML - Machine Learning
 
+<!-- CATALOG-STATUS
+series: ML
+pedagogical_count: 30
+breakdown: DataScienceWithAgents=22, ML.Net=8
+maturity: ALPHA=25, BETA=4, DRAFT=1
+updated: 2026-05-02
+-->
+
 Serie de notebooks couvrant le Machine Learning avec deux approches complementaires : **ML.NET** pour l'ecosysteme .NET/C# et **Python Data Science with Agents** pour les pipelines modernes avec LLMs.
 
 ## Vue d'ensemble

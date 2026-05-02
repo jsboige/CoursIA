@@ -1,0 +1,12 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {
+        "fastPeriod": 10,
+        "slowPeriod": 50
+    },
+    "description": "Multi-Layer EMA Crypto - Robustness iteration-2",
+    "id": 1,
+    "name": "Multi-Layer-EMA",
+    "cloud-id": 28433748,
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

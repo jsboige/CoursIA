@@ -1,20 +1,28 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
-Collection de **84 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
+<!-- CATALOG-STATUS
+series: SymbolicAI
+pedagogical_count: 90
+breakdown: SmartContracts=27, SemanticWeb=18, Lean=13, Planners=13, Tweety=10, Argument_Analysis=7, =2
+maturity: ALPHA=53, BETA=29, DRAFT=7, PRODUCTION=1
+updated: 2026-05-02
+-->
+
+Collection de **90 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
 
 ## Vue d'ensemble
 
 | Serie | Notebooks | Exercices | Environnement | Theme | Duree |
 |-------|-----------|-----------|---------------|-------|-------|
-| [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
-| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
-| [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
-| [Lean](#lean---verification-formelle) | 13 | 12 (92%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
-| [Tweety](#tweety---tweetyproject) | 10 | 11 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
-| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
+| [SemanticWeb](#semanticweb---web-semantique) | 26 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
+| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 54 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
+| [Planners](#planners---planification-automatique) | 28 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
+| [Lean](#lean---verification-formelle) | 14 | 12 (92%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
+| [Tweety](#tweety---tweetyproject) | 20 | 11 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
+| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 9 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 84 notebooks actifs, ~56h de contenu
+**Total** : 90 notebooks actifs, ~56h de contenu
 
 ---
 
@@ -34,7 +42,7 @@ Collection de **84 notebooks Jupyter** pour l'apprentissage de l'IA symbolique :
 
 ## Tweety - TweetyProject
 
-Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliotheque Java pour l'IA symbolique. Couvre les logiques formelles, la revision de croyances, et l'argumentation computationnelle.
+Serie de **20 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliotheque Java pour l'IA symbolique. Couvre les logiques formelles, la revision de croyances, et l'argumentation computationnelle.
 
 ### Structure detaillee
 

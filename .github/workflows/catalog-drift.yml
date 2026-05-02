@@ -1,0 +1,88 @@
+name: Catalog Drift Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'MyIA.AI.Notebooks/**/README.md'
+      - 'COURSE_CATALOG.generated.json'
+  workflow_dispatch:
+
+jobs:
+  check-drift:
+    name: "Notebook catalog drift"
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check CATALOG-STATUS marker drift
+      run: |
+        python3 scripts/notebook_tools/expand_catalog_markers.py --check
+
+    - name: Check notebook catalog drift
+      run: |
+        python3 scripts/notebook_tools/verify_catalog_readme.py 2>/dev/null || python3 -c "
+        import os, re, sys
+
+        # Fallback if verify_catalog_readme.py is not available
+        ERRORS = 0
+        WARNINGS = 0
+
+        base = 'MyIA.AI.Notebooks'
+        EXCLUDE_ALWAYS = {'.ipynb_checkpoints', 'obj', 'bin', '__pycache__', '.git'}
+        EXCLUDE_PED = {'research', 'archive', '_output', 'ESGF', 'examples'}
+        CATALOG_RE = re.compile(r'<!--\s*CATALOG-STATUS\s*\n(.*?)\n\s*-->', re.DOTALL)
+
+        for series in sorted(os.listdir(base)):
+            series_path = os.path.join(base, series)
+            readme_path = os.path.join(series_path, 'README.md')
+            if not os.path.isdir(series_path) or not os.path.isfile(readme_path):
+                continue
+
+            # Count actual pedagogical notebooks
+            actual = 0
+            for root, dirs, files in os.walk(series_path):
+                dirs[:] = [d for d in dirs if d not in EXCLUDE_ALWAYS]
+                rel = os.path.relpath(root, series_path)
+                if any(exc in rel for exc in EXCLUDE_PED):
+                    continue
+                for f in files:
+                    if f.endswith('.ipynb'):
+                        actual += 1
+
+            if actual == 0:
+                continue
+
+            # Parse CATALOG-STATUS marker
+            with open(readme_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+            m = CATALOG_RE.search(text)
+            if not m:
+                print(f'WARN: {series} has no CATALOG-STATUS marker ({actual} notebooks)')
+                WARNINGS += 1
+                continue
+
+            declared = None
+            for line in m.group(1).strip().splitlines():
+                key, _, val = line.partition(':')
+                if key.strip() == 'pedagogical_count':
+                    declared = int(val.strip())
+
+            if declared is None:
+                print(f'WARN: {series} CATALOG-STATUS missing pedagogical_count')
+                WARNINGS += 1
+                continue
+
+            if declared != actual:
+                print(f'ERROR: {series} declared={declared} actual={actual} (drift={actual - declared:+d})')
+                ERRORS += 1
+            else:
+                print(f'OK: {series} {declared} notebooks')
+
+        print()
+        print(f'Catalog drift check: {WARNINGS} warning(s), {ERRORS} error(s)')
+        if ERRORS > 0:
+            sys.exit(1)
+        "

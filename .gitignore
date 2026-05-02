@@ -450,6 +450,15 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/
 # Choco solver JAR (downloaded by Sudoku-11 notebook)
 MyIA.AI.Notebooks/Sudoku/choco-solver-*-jar-with-dependencies.jar
 
+# Sudoku NN - large generated files
+sudoku_models/_archived/
+sudoku_models/data_cache/
+sudoku_models/*.pt
+sudoku_models/*.pth
+sudoku_models/*.h5
+sudoku_models/*.log
+sudoku_models/*.json
+
 # ============================================================================
 # EXCEPTIONS POSITIVES - Binaires Tweety PRECIEUX à versionner
 # ============================================================================
@@ -629,4 +638,19 @@ slides/*/_fallback*.pdf
 # Slides - title diffs (regenerable via audit tooling)
 slides/*/analysis/titles-pptx.txt
 slides/*/analysis/titles-slidev.txt
+
+# Sudoku NN training artifacts (large binary files)
+sudoku_models/
+*_dqn_model.pt
+best_dqn_model.pt
+dqn_backtest.png
+dqn_trading_model.json
+dqn_training_curves.png
+MyIA.AI.Notebooks/QuantConnect/Python/dqn_backtest.png
+MyIA.AI.Notebooks/QuantConnect/Python/dqn_trading_model.json
+MyIA.AI.Notebooks/QuantConnect/Python/dqn_training_curves.png
+
+# Generated catalog (regenerate with scripts/notebook_tools/generate_catalog.py)
+COURSE_CATALOG.generated.*
+
 
