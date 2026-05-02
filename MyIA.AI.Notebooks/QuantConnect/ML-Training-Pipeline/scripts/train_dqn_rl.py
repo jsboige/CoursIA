@@ -31,7 +31,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "shared"))
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
 from gpu_training import (
     batch_thermal_check,
     get_gpu_temp,
