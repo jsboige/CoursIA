@@ -30,7 +30,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent_parent / "shared"))
+sys.path.append(str(Path(__file__).resolve().parent.parent_parent / "shared"))
 from gpu_training import (
     batch_thermal_check,
     get_gpu_temp,
@@ -187,6 +187,8 @@ def train_dqn(
     replay_size: int = 50000,
     target_update: int = 10,
     device: str = "cpu",
+    intermediate_save_every: int = 0,
+    intermediate_save_dir: "Path | None" = None,
 ) -> dict:
     """Train DQN agent on trading environment."""
     import torch
@@ -294,6 +296,28 @@ def train_dqn(
             print(f"  Episode {episode+1}/{num_episodes}  reward={total_reward:.4f}  "
                   f"avg10={recent:.4f}  trades={trades}  eps={epsilon:.3f}{temp_str}")
 
+        if (
+            intermediate_save_every > 0
+            and intermediate_save_dir is not None
+            and best_state is not None
+            and (episode + 1) % intermediate_save_every == 0
+        ):
+            intermediate_save_dir.mkdir(parents=True, exist_ok=True)
+            torch.save(best_state, intermediate_save_dir / "best_state.pt")
+            (intermediate_save_dir / "progress.json").write_text(
+                json.dumps({
+                    "episode": int(episode + 1),
+                    "best_avg_reward_10": round(float(best_avg_reward), 4),
+                    "epsilon": round(float(epsilon), 4),
+                }),
+                encoding="utf-8",
+            )
+            print(
+                f"  [intermediate-save] episode={episode+1} "
+                f"best_avg10={best_avg_reward:.4f} -> {intermediate_save_dir}",
+                flush=True,
+            )
+
     # Load best model
     if best_state:
         policy_net.load_state_dict(best_state)
@@ -390,6 +414,14 @@ def main():
     )
     parser.add_argument("--dry-run", action="store_true", help="Synthetic, 50 episodes")
     parser.add_argument(
+        "--intermediate-save-every", type=int, default=0,
+        help="Save best_state every N episodes (0 = disabled). Useful for crash-resilient long runs.",
+    )
+    parser.add_argument(
+        "--intermediate-save-dir", default=None,
+        help="Directory for intermediate best_state.pt + progress.json (defaults to checkpoint-dir/intermediate)",
+    )
+    parser.add_argument(
         "--advanced", action="store_true",
         help="Use advanced features (regime, momentum, statistical, price_acceleration)",
     )
@@ -469,6 +501,14 @@ def main():
         "device": device,
     }
 
+    intermediate_dir = None
+    if args.intermediate_save_every > 0:
+        intermediate_dir = (
+            Path(args.intermediate_save_dir)
+            if args.intermediate_save_dir
+            else Path(args.checkpoint_dir) / "intermediate"
+        )
+
     result = train_dqn(
         env,
         hidden_size=args.hidden_size,
@@ -482,6 +522,8 @@ def main():
         replay_size=args.replay_size,
         target_update=args.target_update,
         device=device,
+        intermediate_save_every=args.intermediate_save_every,
+        intermediate_save_dir=intermediate_dir,
     )
 
     ckpt_dir = Path(args.checkpoint_dir)
