@@ -13,7 +13,7 @@ Stratégie simple et robuste basée sur le croisement de deux moyennes mobiles (
 - symbol: Ticker à trader (défaut: SPY)
 - resolution: Résolution des données (défaut: Daily)
 
-**Performance Typique (SPY 2020-2023):**
+**Performance Typique (SPY 2015-2024):**
 - Sharpe Ratio: ~0.8-1.2
 - Max Drawdown: ~-20% à -25%
 - Win Rate: ~45-55%
@@ -48,8 +48,8 @@ class MovingAverageCrossover(QCAlgorithm):
         Configure les dates, le capital, les securities et les indicateurs.
         """
         # Configuration de base
-        self.SetStartDate(2020, 1, 1)    # Date de début du backtest
-        self.SetEndDate(2023, 12, 31)    # Date de fin du backtest
+        self.SetStartDate(2015, 1, 1)    # Date de début du backtest
+        self.SetEndDate(2024, 12, 31)    # Date de fin du backtest
         self.SetCash(100000)              # Capital initial: $100,000
 
         # Ajouter le security (SPY = S&P 500 ETF)
@@ -180,8 +180,8 @@ class MovingAverageCrossoverAdvanced(QCAlgorithm):
     """
 
     def Initialize(self):
-        self.SetStartDate(2020, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetStartDate(2015, 1, 1)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         self.symbol = self.AddEquity("SPY", Resolution.Daily).Symbol
