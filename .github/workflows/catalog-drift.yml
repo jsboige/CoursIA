@@ -8,6 +8,7 @@ on:
       - 'MyIA.AI.Notebooks/**/README.md'
       - 'scripts/notebook_tools/generate_catalog.py'
       - 'scripts/notebook_tools/expand_catalog_markers.py'
+      - 'COURSE_CATALOG.generated.json'
   workflow_dispatch:
 
 jobs:
@@ -22,12 +23,7 @@ jobs:
       run: python3 scripts/notebook_tools/generate_catalog.py --json-only
 
     - name: Check CATALOG-STATUS marker drift
-      run: |
-        if [ -f scripts/notebook_tools/expand_catalog_markers.py ]; then
-          python3 scripts/notebook_tools/expand_catalog_markers.py --check
-        else
-          echo "SKIP: expand_catalog_markers.py not yet available"
-        fi
+      run: python3 scripts/notebook_tools/expand_catalog_markers.py --check
 
     - name: Check notebook catalog drift
       run: |

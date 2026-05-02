@@ -135,6 +135,86 @@ def determine_status(
     return "READY"
 
 
+def count_todos(notebook: dict) -> int:
+    """Count # TODO markers across all code cells."""
+    count = 0
+    for cell in notebook.get("cells", []):
+        if cell["cell_type"] == "code":
+            src = "".join(cell.get("source", []))
+            count += src.upper().count("# TODO")
+    return count
+
+
+def has_markdown_intro_conclusion(cells: list) -> tuple[bool, bool]:
+    """Check if notebook has intro (first md cell with heading) and conclusion markers."""
+    md_cells = [c for c in cells if c["cell_type"] == "markdown"]
+    if not md_cells:
+        return False, False
+
+    first_src = "".join(md_cells[0].get("source", [])).lower()
+    has_intro = any(kw in first_src for kw in ["introduction", "objectif", "overview", "prérequis", "contexte"])
+
+    last_src = "".join(md_cells[-1].get("source", [])).lower()
+    has_conclusion = any(
+        kw in last_src for kw in ["conclusion", "résumé", "summary", "pour aller plus loin", "next steps"]
+    )
+    return has_intro, has_conclusion
+
+
+def classify_maturity(
+    notebook: dict,
+    code_cells: list,
+    kernel: str,
+) -> str:
+    """Classify notebook maturity level.
+
+    Heuristics (B-2 from #656):
+        PRODUCTION — kernel defined, all outputs, <3 TODO, intro+conclusion, structured
+        BETA       — outputs present, <5 TODO, markdown structure
+        ALPHA      — partial outputs OR 5-10 TODO
+        DRAFT      — no outputs OR >10 TODO OR no markdown cells
+    """
+    cells = notebook.get("cells", [])
+    md_cells = [c for c in cells if c["cell_type"] == "markdown"]
+    todo_count = count_todos(notebook)
+    has_intro, has_conclusion = has_markdown_intro_conclusion(cells)
+
+    total_code = len(code_cells)
+    code_with_outputs = sum(1 for c in code_cells if c.get("outputs"))
+    all_have_outputs = total_code > 0 and code_with_outputs == total_code
+    has_outputs = code_with_outputs > 0
+
+    # No markdown at all → DRAFT
+    if not md_cells:
+        return "DRAFT"
+
+    # No outputs on any code cell → DRAFT
+    if total_code > 0 and not has_outputs:
+        return "DRAFT"
+
+    # >10 TODO → DRAFT
+    if todo_count > 10:
+        return "DRAFT"
+
+    # 5-10 TODO or partial outputs → ALPHA
+    if 5 <= todo_count <= 10:
+        return "ALPHA"
+    if total_code > 0 and not all_have_outputs:
+        return "ALPHA"
+
+    # BETA: outputs present, <5 TODO, has some markdown structure
+    kernel_defined = kernel and kernel != "unknown"
+    has_structure = has_intro or has_conclusion or len(md_cells) >= 3
+
+    if has_outputs and todo_count < 5 and has_structure:
+        # PRODUCTION: stricter requirements
+        if kernel_defined and all_have_outputs and todo_count < 3 and has_intro and has_conclusion:
+            return "PRODUCTION"
+        return "BETA"
+
+    return "ALPHA"
+
+
 def analyze_notebook(nb_path: Path, pedagogical: bool) -> dict | None:
     """Analyze a single notebook and return its catalog entry."""
     try:
@@ -155,6 +235,7 @@ def analyze_notebook(nb_path: Path, pedagogical: bool) -> dict | None:
     kernel = detect_kernel(notebook)
     requirements = detect_requirements(notebook)
     status = determine_status(nb_path, notebook, code_cells, requirements, pedagogical)
+    maturity = classify_maturity(notebook, code_cells, kernel)
 
     code_with_outputs = sum(1 for c in code_cells if c.get("outputs"))
     code_without_outputs = len(code_cells) - code_with_outputs
@@ -167,6 +248,7 @@ def analyze_notebook(nb_path: Path, pedagogical: bool) -> dict | None:
         "sous_serie": sous_serie,
         "kernel": kernel,
         "status": status,
+        "maturity": maturity,
         "cells_total": len(cells),
         "cells_code": len(code_cells),
         "cells_markdown": md_cells,
@@ -240,6 +322,17 @@ def generate_markdown_report(entries: list[dict]) -> str:
         count = status_counts.get(status, 0)
         lines.append(f"- **{status}**: {count}")
 
+    # Maturity summary
+    maturity_counts = {}
+    for e in entries:
+        maturity_counts[e.get("maturity", "UNKNOWN")] = (
+            maturity_counts.get(e.get("maturity", "UNKNOWN"), 0) + 1
+        )
+    lines.extend(["", "## Maturity Summary", ""])
+    for maturity in ["PRODUCTION", "BETA", "ALPHA", "DRAFT"]:
+        count = maturity_counts.get(maturity, 0)
+        lines.append(f"- **{maturity}**: {count}")
+
     lines.extend(["", "## By Series", ""])
     for serie in SERIES_ORDER:
         if serie not in by_serie:
@@ -251,14 +344,23 @@ def generate_markdown_report(entries: list[dict]) -> str:
         status_str = ", ".join(
             f"{s}:{c}" for s, c in sorted(statuses.items())
         )
-        lines.append(f"### {serie} ({len(items)} notebooks) — {status_str}")
+        maturities = {}
+        for e in items:
+            maturities[e.get("maturity", "UNKNOWN")] = (
+                maturities.get(e.get("maturity", "UNKNOWN"), 0) + 1
+            )
+        mat_str = ", ".join(
+            f"{m}:{c}" for m, c in sorted(maturities.items())
+        )
+        lines.append(f"### {serie} ({len(items)} notebooks) — {status_str} | {mat_str}")
         lines.append("")
-        lines.append(f"| # | Notebook | Kernel | Status |")
-        lines.append(f"|---|----------|--------|--------|")
+        lines.append(f"| # | Notebook | Kernel | Status | Maturity |")
+        lines.append(f"|---|----------|--------|--------|----------|")
         for i, e in enumerate(items, 1):
             name = e["title"][:50]
             kernel = e["kernel"][:30]
-            lines.append(f"| {i} | {name} | {kernel} | {e['status']} |")
+            maturity = e.get("maturity", "UNKNOWN")
+            lines.append(f"| {i} | {name} | {kernel} | {e['status']} | {maturity} |")
         lines.append("")
 
     # Requirements summary
@@ -302,6 +404,11 @@ def main():
         help="Filter entries by status",
     )
     parser.add_argument(
+        "--maturity", type=str, default=None,
+        choices=["PRODUCTION", "BETA", "ALPHA", "DRAFT"],
+        help="Filter entries by maturity level",
+    )
+    parser.add_argument(
         "--all", action="store_true",
         help="Include research, examples, and archive notebooks",
     )
@@ -317,15 +424,25 @@ def main():
     if args.status:
         entries = [e for e in entries if e["status"] == args.status]
 
+    if args.maturity:
+        entries = [e for e in entries if e.get("maturity") == args.maturity]
+
     if args.check:
         status_counts = {}
+        maturity_counts = {}
         for e in entries:
             status_counts[e["status"]] = status_counts.get(e["status"], 0) + 1
+            m = e.get("maturity", "UNKNOWN")
+            maturity_counts[m] = maturity_counts.get(m, 0) + 1
         print(f"\nCatalog Status Summary ({len(entries)} notebooks)")
         print("=" * 40)
         for status in ["READY", "DEMO", "RESEARCH", "BROKEN"]:
             count = status_counts.get(status, 0)
             print(f"  {status:<12} {count:>4}")
+        print("-" * 40)
+        for maturity in ["PRODUCTION", "BETA", "ALPHA", "DRAFT"]:
+            count = maturity_counts.get(maturity, 0)
+            print(f"  {maturity:<12} {count:>4}")
         print("=" * 40)
         print(f"  {'TOTAL':<12} {len(entries):>4}")
         return
