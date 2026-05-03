@@ -42,8 +42,14 @@ C1_PATTERNS = [
     (r"(?<!\w)1\s*/\s*0(?!\w)", "1/0"),
 ]
 
-# Allowed C.1 exception: inside comments (pedagogical explanations)
-C1_ALLOW_PATTERN = r"^\s*#\s*(TODO|Indice|Etape|NOTE|EXERCICE|Exemple)"
+def _is_in_docstring(line: str, in_doc: bool) -> tuple[bool, bool]:
+    """Track triple-quote state. Returns (in_docstring_after_line, line_is_inside_docstring)."""
+    for quote in ('"""', "'''"):
+        count = line.count(quote)
+        if count % 2 == 1:
+            in_doc = not in_doc
+    # A line is "inside" if it was in_doc at start or toggled within it
+    return in_doc, in_doc
 
 
 def check_c1(notebook: dict) -> list[dict]:
@@ -53,8 +59,15 @@ def check_c1(notebook: dict) -> list[dict]:
         if cell.get("cell_type") != "code":
             continue
         source = "".join(cell.get("source", []))
+        in_docstring = False
         for line in source.split("\n"):
-            if re.match(C1_ALLOW_PATTERN, line):
+            stripped = line.lstrip()
+            # Skip any comment line (commented-out code is not executable)
+            if stripped.startswith("#"):
+                continue
+            # Track and skip docstring content
+            in_docstring, is_inside = _is_in_docstring(line, in_docstring)
+            if is_inside:
                 continue
             for pattern, desc in C1_PATTERNS:
                 if re.search(pattern, line):
