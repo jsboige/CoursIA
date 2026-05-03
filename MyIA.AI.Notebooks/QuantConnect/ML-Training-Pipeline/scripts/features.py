@@ -267,7 +267,7 @@ class FeatureEngineer:
             cache_path = Path(cache_path)
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             if cache_path.exists():
-                cached = pd.read_parquet(cache_path)
+                cached = self.load_cache(cache_path)
                 data_hash = self._data_hash(df)
                 if cached.attrs.get("data_hash") == data_hash:
                     return cached
@@ -311,8 +311,12 @@ class FeatureEngineer:
         features = features.dropna()
 
         if cache_path:
-            features.attrs["data_hash"] = self._data_hash(df)
+            data_hash = self._data_hash(df)
+            features.attrs["data_hash"] = data_hash
             features.to_parquet(cache_path)
+            # Store hash separately (Parquet attrs not reliably preserved)
+            hash_path = Path(cache_path).with_suffix(".hash")
+            hash_path.write_text(data_hash, encoding="utf-8")
 
         return features
 
@@ -324,8 +328,13 @@ class FeatureEngineer:
 
     @staticmethod
     def load_cache(cache_path: str | Path) -> pd.DataFrame:
-        """Load features from Parquet cache."""
-        return pd.read_parquet(Path(cache_path))
+        """Load features from Parquet cache, restoring hash from sidecar file."""
+        cache_path = Path(cache_path)
+        features = pd.read_parquet(cache_path)
+        hash_path = cache_path.with_suffix(".hash")
+        if hash_path.exists():
+            features.attrs["data_hash"] = hash_path.read_text(encoding="utf-8").strip()
+        return features
 
     @property
     def feature_columns(self) -> list[str]:
