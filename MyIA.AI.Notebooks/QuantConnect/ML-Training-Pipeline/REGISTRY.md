@@ -1,8 +1,8 @@
 # Checkpoint Registry
 
-Auto-generated: 2026-05-01 14:30
+Auto-generated: 2026-05-03 22:29
 
-Total checkpoints: 18
+Total checkpoints: 20
 
 ## Advanced Features (Track A3)
 
@@ -10,15 +10,22 @@ Comparison of baseline vs advanced-feature training on SPY 2015-2024.
 
 | Model | Baseline DirAcc | Advanced DirAcc | Delta | Features |
 | ------- | --------------- | --------------- | ----- | -------- |
-| Transformer | 48.72% | **57.95%** | +9.23pp | 38 (all 13 indicators) |
+| Transformer (50ep) | 48.72% | **57.95%** | +9.23pp | 38 (all 13 indicators) |
+| Transformer (30ep prod) | 48.72% | **56.43%** | +7.71pp | 38 (all 13 indicators) |
+| LSTM (h=64 prod) | 51.49% | **54.25%** | +2.76pp | 38 (all 13 indicators) |
+| LSTM (h=256) | 51.49% | 50.98% | -0.51pp | 38 (all 13 indicators) |
 | Classification (RF) | 49.66% | **50.86%** | +1.20pp | 38 (all 13 indicators) |
-| LSTM | 51.49% | **50.98%** | -0.51pp | 38 (all 13 indicators) |
 | DQN | Sharpe 0.89 | Sharpe -0.02 | -0.91 | 38 (all 13 indicators) |
 
-Key finding: Transformer with d_model=256, nhead=8, num_layers=6 shows major improvement
-with advanced features (regime, momentum, statistical, price_acceleration).
-DQN underperforms with larger state space (762 vs 242) — needs more episodes or
-state dimensionality reduction.
+Key findings:
+
+- Transformer (d=256, h=8, L=6) shows major improvement with advanced features (+9.23pp).
+  30ep run validates architecture at 56.43% but 50ep (57.95%) remains best — more epochs
+  consistently help this architecture with 38 features.
+- LSTM h=64 outperforms h=256 for advanced features (54.25% vs 50.98%) — smaller hidden
+  size generalizes better with 38 features, likely due to reduced overfitting.
+- DQN underperforms with larger state space (762 vs 242) — needs more episodes or
+  state dimensionality reduction.
 
 ## dqn
 
@@ -66,7 +73,15 @@ Checkpoints: 5
 
 ## lstm
 
-Checkpoints: 4
+Checkpoints: 5
+
+### 20260503_221944 [OK] [ADVANCED-FEATURES] [PRODUCTION]
+
+- Data hash: `4ec8b44b93f4024f`
+- Metrics: direction_accuracy=0.5425, direction_accuracy_significant=0.5506, epochs_trained=50, mae=0.005944, mse=6.2e-05
+- Architecture: hidden_size=64, input_size=38, num_layers=2
+- Config: device=cuda, epochs=50, hidden_size=64, num_layers=2, symbol=SPY, advanced=true
+- Files: metadata.json, model.pt
 
 ### 20260501_133929 [OK] [ADVANCED-FEATURES]
 
@@ -141,7 +156,7 @@ Checkpoints: 5
 
 ## transformer
 
-Checkpoints: 4
+Checkpoints: 5
 
 ### 20260501_134056 [OK] [ADVANCED-FEATURES] [BEST]
 
@@ -149,6 +164,14 @@ Checkpoints: 4
 - Metrics: direction_accuracy=0.5795, direction_accuracy_significant=0.5804, epochs_trained=50, mae=0.005895, mse=6.1e-05, total_params=3189633
 - Architecture: d_model=256, input_size=38, nhead=8, num_layers=6
 - Config: device=cuda, d_model=256, epochs=50, nhead=8, num_layers=6, symbol=SPY, advanced=true
+- Files: metadata.json, model.pt
+
+### 20260503_222904 [OK] [ADVANCED-FEATURES] [PRODUCTION]
+
+- Data hash: `4ec8b44b93f4024f`
+- Metrics: direction_accuracy=0.5643, direction_accuracy_significant=0.5595, epochs_trained=30, mae=0.005932, mse=6.1e-05, total_params=3189633
+- Architecture: d_model=256, input_size=38, nhead=8, num_layers=6
+- Config: device=cuda, d_model=256, epochs=30, nhead=8, num_layers=6, symbol=SPY, advanced=true
 - Files: metadata.json, model.pt
 
 ### 20260501_113923 [OK]
