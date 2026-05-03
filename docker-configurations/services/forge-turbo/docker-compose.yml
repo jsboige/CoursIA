@@ -13,7 +13,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - WEB_USER=${FORGE_USER:-admin}
       - WEB_PASSWORD=${FORGE_PASSWORD:-changeme}
-      - FORGE_ARGS=--ui-settings-file config-turbo.json --api --api-log --listen --gradio-auth ${FORGE_USER:-admin}:${FORGE_PASSWORD:-changeme} --gpu-device-id 1 --xformers --skip-install
+      - FORGE_ARGS=--ui-settings-file config-turbo.json --api --api-log --listen --gradio-auth ${FORGE_USER:-admin}:${FORGE_PASSWORD:-changeme} --gpu-device-id 0 --xformers --skip-install
     volumes:
       # Checkpoint models (SDXL Lightning, etc.)
       - ../../shared/models/checkpoints:/opt/stable-diffusion-webui-forge/models/Stable-diffusion
@@ -28,6 +28,6 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              device_ids: ['1']
               capabilities: [gpu]
     restart: unless-stopped
