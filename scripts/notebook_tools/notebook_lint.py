@@ -39,17 +39,19 @@ EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "ESGF", "examples"}
 C1_PATTERNS = [
     (r"raise\s+NotImplementedError", "raise NotImplementedError"),
     (r"assert\s+False", "assert False"),
-    (r"(?<!\w)1\s*/\s*0(?!\w)", "1/0"),
+    (r"(?<!\d)1\s*/\s*0(?!\d)", "1/0"),
 ]
 
 def _is_in_docstring(line: str, in_doc: bool) -> tuple[bool, bool]:
     """Track triple-quote state. Returns (in_docstring_after_line, line_is_inside_docstring)."""
+    was_in_doc = in_doc
     for quote in ('"""', "'''"):
         count = line.count(quote)
         if count % 2 == 1:
             in_doc = not in_doc
-    # A line is "inside" if it was in_doc at start or toggled within it
-    return in_doc, in_doc
+    toggled = was_in_doc != in_doc
+    is_inside = was_in_doc or toggled
+    return in_doc, is_inside
 
 
 def check_c1(notebook: dict) -> list[dict]:
@@ -65,12 +67,14 @@ def check_c1(notebook: dict) -> list[dict]:
             # Skip any comment line (commented-out code is not executable)
             if stripped.startswith("#"):
                 continue
+            # Strip inline comments before checking patterns
+            code_part = line.split("#")[0].rstrip()
             # Track and skip docstring content
             in_docstring, is_inside = _is_in_docstring(line, in_docstring)
             if is_inside:
                 continue
             for pattern, desc in C1_PATTERNS:
-                if re.search(pattern, line):
+                if re.search(pattern, code_part):
                     violations.append({
                         "check": "C1",
                         "cell_index": i,
@@ -166,6 +170,8 @@ def lint_notebook(nb_path: Path, checks: set[str]) -> dict:
     """Run all requested checks on a single notebook."""
     try:
         notebook = json.loads(nb_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {"path": str(nb_path), "error": "File not found", "violations": []}
     except (json.JSONDecodeError, UnicodeDecodeError) as e:
         return {"path": str(nb_path), "error": f"Cannot parse: {e}", "violations": []}
 
