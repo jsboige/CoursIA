@@ -241,7 +241,11 @@ def main():
         print(f"Error: {CATALOG_PATH} not found. Run generate_catalog.py first.")
         return 2
 
-    entries = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    try:
+        entries = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        print(f"Error: Cannot parse catalog: {e}")
+        return 2
 
     if args.json:
         report = {

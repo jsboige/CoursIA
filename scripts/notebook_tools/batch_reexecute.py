@@ -121,7 +121,11 @@ def main():
         targets = [{"path": str(nb_path.relative_to(NOTEBOOKS_DIR)),
                      "kernel": "python3", "cells_without_outputs": 1}]
     elif CATALOG_PATH.exists():
-        catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+        try:
+            catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            print(f"Error: Cannot parse catalog: {e}")
+            return 2
         targets = catalog
         if args.serie:
             targets = [e for e in targets if e.get("serie") == args.serie]
