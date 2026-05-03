@@ -44,7 +44,7 @@ SERIES_ORDER = [
 # Keywords indicating special requirements
 API_KEYWORDS = {"openai", "anthropic", "api_key", "API_KEY", "bearer", "endpoint"}
 GPU_KEYWORDS = {"cuda", "gpu", "torch.device", "ComfyUI", "VRAM"}
-CLOUD_KEYWORDS = {"QuantBook", "quantconnect", "qc-api", "lean-cli"}
+CLOUD_KEYWORDS = {"QuantBook", "quantconnect", "qc-api", "lean-cli", "AlgorithmImports", "QCAlgorithm"}
 WSL_KEYWORDS = {"wsl", "WSL"}
 
 OWNER_MAP = {
@@ -320,6 +320,13 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
     title = extract_title(notebook)
     kernel = detect_kernel(notebook)
     requirements = detect_requirements(notebook)
+
+    # Directory-based requirement overrides (stronger than keyword detection)
+    if serie == "QuantConnect":
+        requirements["requires_cloud"] = True
+    if serie in ("GameTheory", "SymbolicAI") and any("Lean" in p for p in parts):
+        requirements["requires_wsl"] = True
+
     status = determine_status(nb_path, notebook, code_cells, requirements, pedagogical)
     maturity = classify_maturity(notebook, code_cells, kernel)
 
