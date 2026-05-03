@@ -24,44 +24,6 @@
 | 14 | BlackLitterman-Momentum | 29816300 | **0.766** | 6 | Alpha |
 | 15 | CSharp-BTC-MACD-ADX | 30751067 | **0.787** | 8 | Alpha |
 
-## Performance Top 10 by Sharpe (Active projects only)
-
-| # | Strategy | ID | Sharpe | BTs | Category |
-|---|----------|----|--------|-----|----------|
-| 1 | HandsOn-Ex07-Positive-Negative-Splits | 30317350 | **1.736** | 2 | HandsOn |
-| 2 | BTC-MACD-ADX-Researcher 5 | 28418632 | **1.171** | 4 | Researcher |
-| 3 | Framework_Composite_TrendWeather | 28825960 | **1.156** | 11 | Framework |
-| 4 | EMA-Cross-Alpha | 28885488 | **0.996** | 9 | Alpha |
-| 5 | Multi-Layer-EMA-Crypto | 30395392 | **0.900** | 2 | Alpha |
-| 6 | Multi-Layer-EMA-Researcher | 28433748 | **0.900** | 9 | Researcher |
-| 7 | Portfolio-Optimization-ML | 29318874 | **0.896** | 2 | ML |
-| 8 | Framework_Composite_EMATrend | 28911253 | **0.867** | 6 | Framework |
-| 9 | EMA-Cross-Stocks | 28789946 | **0.867** | 2 | Alpha |
-| 10 | CSharp-BTC-MACD-ADX | 30751067 | **0.787** | 8 | Alpha |
-
-## Top 5 by Backtest Count (most iterated projects)
-
-| # | Strategy | ID | BTs | Sharpe | Category |
-| --- | ---------- | --- | --- | -------- | ---------- |
-| 1 | Sector-ML-Classification | 29318875 | **31** | 0.505 | ML |
-| 2 | DualMomentum | 28693650 | **19** | 0.600 | Alpha |
-| 3 | HandsOn-Ex08-Stoploss-Volatility-ML | 29463529 | **19** | N/A | HandsOn |
-| 4 | Framework_Composite_FamaFrenchAllWeather | 28882145 | **19** | 0.546 | Framework |
-| 5 | MeanReversion | 30776121 | **18** | 0.461 | Alpha |
-
-## Category Distribution
-
-| Category | Total | Active |
-| ---------- | ------- | -------- |
-| Alpha | 29 | 25 |
-| ML/RL | 22 | 16 |
-| HandsOn | 21 | 15 |
-| ESGF | 18 | 4 |
-| Researcher | 15 | 11 |
-| Cloud | 6 | 6 |
-| Framework | 6 | 6 |
-| Imported | 8 | 8 |
-
 ## All ALIVE Projects by Family
 
 ### Alpha Strategies (single-signal, systematic)
