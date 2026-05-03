@@ -130,10 +130,21 @@ theorem superadditive_empty_nonneg (_h : G.Superadditive) :
 theorem superadditive_grand_coalition_nonneg_of_nonneg_singletons
     (h : G.Superadditive) (hnn : ∀ i : N, G.v {i} ≥ 0) :
     G.v Finset.univ ≥ 0 := by
-  -- Proof by induction: decompose univ into singletons
-  -- v(univ) ≥ v({i1}) + v(univ \ {i1}) ≥ v({i1}) + v({i2}) + v(univ \ {i1, i2}) ≥ ...
-  -- Each v({ik}) ≥ 0 by hnn, so the sum is ≥ 0
-  sorry
+  -- Decompose univ into singletons via superadditivity
+  have hsum : ∀ S : Finset N, G.v S ≥ ∑ i ∈ S, G.v ({i} : Finset N) := by
+    intro S
+    induction S using Finset.induction_on with
+    | empty => simp [G.empty_zero]
+    | insert a S ha ih =>
+      rw [Finset.sum_insert ha]
+      have hsup : G.v (insert a S) ≥ G.v ({a} : Finset N) + G.v S := by
+        rw [Finset.insert_eq]
+        exact h {a} S (Finset.disjoint_singleton_left.mpr ha)
+      linarith
+  have h1 := hsum Finset.univ
+  have h2 : (0 : ℝ) ≤ ∑ (i : N), G.v ({i} : Finset N) :=
+    Finset.sum_nonneg (fun i _ => hnn i)
+  linarith
 
 /-- Bondareva-Shapley: The Core is nonempty iff the game is balanced.
     PROOF SKETCH (Bondareva 1963, Shapley 1967):
