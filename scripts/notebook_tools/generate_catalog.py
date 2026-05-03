@@ -25,6 +25,7 @@ Status heuristics (B-2 from #623):
 import argparse
 import json
 import re
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -45,6 +46,91 @@ API_KEYWORDS = {"openai", "anthropic", "api_key", "API_KEY", "bearer", "endpoint
 GPU_KEYWORDS = {"cuda", "gpu", "torch.device", "ComfyUI", "VRAM"}
 CLOUD_KEYWORDS = {"QuantBook", "quantconnect", "qc-api", "lean-cli"}
 WSL_KEYWORDS = {"wsl", "WSL"}
+
+OWNER_MAP = {
+    "GenAI": "po-2025",
+    "Search": "po-2025",
+    "ML": "po-2023",
+    "SymbolicAI": "po-2024",
+    "QuantConnect": "po-2026",
+    "GameTheory": "po-2024",
+    "Sudoku": "po-2023",
+    "Probas": "po-2023",
+    "IIT": "po-2025",
+    "RL": "po-2025",
+    "EPF": "ai-01",
+}
+
+
+def estimate_duration(cells_code: int, kernel: str, requirements: dict) -> str:
+    """Estimate notebook execution duration (heuristic)."""
+    if cells_code == 0:
+        return "5min"
+    is_dotnet = ".net" in kernel.lower() or "c#" in kernel.lower()
+    minutes_per_cell = 3 if is_dotnet else 2
+    total = max(5, cells_code * minutes_per_cell)
+    if requirements.get("requires_gpu") or requirements.get("requires_cloud"):
+        total = int(total * 1.5)
+    if total >= 120:
+        return "2h+"
+    if total >= 90:
+        return "1h30"
+    if total >= 60:
+        return "1h"
+    if total >= 30:
+        return "45min"
+    if total >= 15:
+        return "30min"
+    return "15min"
+
+
+def build_git_metadata() -> dict[str, dict]:
+    """Build last-commit metadata for all notebooks via git log.
+
+    Returns dict keyed by relative path (forward slashes) with:
+        last_validation: ISO date of last commit touching the file
+        last_validator: email of last committer
+        issues_prs: list of '#NNN' references from commit messages
+    """
+    try:
+        result = subprocess.run(
+            ["git", "log", "--name-only", "--format=COMMIT:%ai|%ae|%s"],
+            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=30,
+        )
+        if result.returncode != 0:
+            return {}
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return {}
+
+    metadata: dict[str, dict] = {}
+    current_date = ""
+    current_email = ""
+    current_subject = ""
+    prefix = "MyIA.AI.Notebooks/"
+
+    for line in result.stdout.split("\n"):
+        if line.startswith("COMMIT:"):
+            parts = line[7:].split("|", 2)
+            if len(parts) >= 3:
+                current_date = parts[0][:10]
+                current_email = parts[1]
+                current_subject = parts[2]
+        elif line.strip() and current_date:
+            path = line.strip()
+            if not path.endswith(".ipynb"):
+                continue
+            if not path.startswith(prefix):
+                continue
+            rel = path[len(prefix):].replace("\\", "/")
+            if rel not in metadata:
+                issues = re.findall(r"#(\d+)", current_subject)
+                metadata[rel] = {
+                    "last_validation": current_date,
+                    "last_validator": current_email,
+                    "issues_prs": [f"#{n}" for n in issues[:5]],
+                }
+
+    return metadata
 
 
 def detect_kernel(notebook: dict) -> str:
@@ -215,7 +301,7 @@ def classify_maturity(
     return "ALPHA"
 
 
-def analyze_notebook(nb_path: Path, pedagogical: bool) -> dict | None:
+def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = None) -> dict | None:
     """Analyze a single notebook and return its catalog entry."""
     try:
         notebook = json.loads(nb_path.read_text(encoding="utf-8"))
@@ -241,14 +327,22 @@ def analyze_notebook(nb_path: Path, pedagogical: bool) -> dict | None:
     code_without_outputs = len(code_cells) - code_with_outputs
     md_cells = sum(1 for c in cells if c["cell_type"] == "markdown")
 
+    rel_str = str(rel).replace("\\", "/")
+    gm = (git_meta or {}).get(rel_str, {})
+
     return {
-        "path": str(rel).replace("\\", "/"),
+        "path": rel_str,
         "title": title or nb_path.stem,
         "serie": serie,
         "sous_serie": sous_serie,
         "kernel": kernel,
         "status": status,
         "maturity": maturity,
+        "duree_estimee": estimate_duration(len(code_cells), kernel, requirements),
+        "owner_logique": OWNER_MAP.get(serie, ""),
+        "last_validation": gm.get("last_validation", ""),
+        "last_validator": gm.get("last_validator", ""),
+        "issue_pr_associee": ", ".join(gm.get("issues_prs", [])),
         "cells_total": len(cells),
         "cells_code": len(code_cells),
         "cells_markdown": md_cells,
@@ -270,6 +364,7 @@ def analyze_notebook(nb_path: Path, pedagogical: bool) -> dict | None:
 def scan_all_notebooks(
     pedagogical: bool = True,
     series_filter: str | None = None,
+    git_meta: dict | None = None,
 ) -> list[dict]:
     """Scan all notebooks and return catalog entries."""
     entries = []
@@ -293,7 +388,7 @@ def scan_all_notebooks(
             ):
                 continue
 
-            entry = analyze_notebook(nb_path, pedagogical)
+            entry = analyze_notebook(nb_path, pedagogical, git_meta=git_meta)
             if entry:
                 entries.append(entry)
 
@@ -354,13 +449,15 @@ def generate_markdown_report(entries: list[dict]) -> str:
         )
         lines.append(f"### {serie} ({len(items)} notebooks) — {status_str} | {mat_str}")
         lines.append("")
-        lines.append(f"| # | Notebook | Kernel | Status | Maturity |")
-        lines.append(f"|---|----------|--------|--------|----------|")
+        lines.append(f"| # | Notebook | Kernel | Status | Maturity | Duration | Owner |")
+        lines.append(f"|---|----------|--------|--------|----------|----------|-------|")
         for i, e in enumerate(items, 1):
             name = e["title"][:50]
             kernel = e["kernel"][:30]
             maturity = e.get("maturity", "UNKNOWN")
-            lines.append(f"| {i} | {name} | {kernel} | {e['status']} | {maturity} |")
+            duration = e.get("duree_estimee", "")
+            owner = e.get("owner_logique", "")
+            lines.append(f"| {i} | {name} | {kernel} | {e['status']} | {maturity} | {duration} | {owner} |")
         lines.append("")
 
     # Requirements summary
@@ -419,7 +516,8 @@ def main():
     args = parser.parse_args()
 
     pedagogical = not args.all
-    entries = scan_all_notebooks(pedagogical=pedagogical, series_filter=args.series)
+    git_meta = build_git_metadata()
+    entries = scan_all_notebooks(pedagogical=pedagogical, series_filter=args.series, git_meta=git_meta)
 
     if args.status:
         entries = [e for e in entries if e["status"] == args.status]
