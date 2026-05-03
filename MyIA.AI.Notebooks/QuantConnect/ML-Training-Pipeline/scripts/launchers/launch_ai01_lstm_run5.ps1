@@ -54,8 +54,10 @@ $verCheck = & $PythonExe -c "import sys; print(sys.version)" 2>&1
 Write-Host "[PRE-CHECK] Python: $verCheck"
 
 # Verify FeatureEngineer import (post-#673 sys.path.append fix)
+# FeatureEngineer lives in ML-Training-Pipeline/scripts/features.py, not shared/features.py
 $importCheck = & $PythonExe -c @"
 import sys
+sys.path.insert(0, r'$ScriptsDir')
 sys.path.append(r'$SharedDir')
 from features import FeatureEngineer
 print('OK')
