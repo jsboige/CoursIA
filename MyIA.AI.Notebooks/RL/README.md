@@ -5,7 +5,7 @@ series: RL
 pedagogical_count: 6
 breakdown: =6
 maturity: ALPHA=6
-updated: 2026-05-03
+updated: 2026-05-04
 -->
 
 Introduction au Reinforcement Learning (apprentissage par renforcement) couvrant les **fondements theoriques**, les **algorithmes avec reseaux de neurones** et les **frameworks de production**.
