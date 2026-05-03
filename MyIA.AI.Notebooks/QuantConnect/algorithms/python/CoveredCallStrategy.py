@@ -41,8 +41,8 @@ class CoveredCallStrategy(QCAlgorithm):
         Configuration initiale.
         """
         # Configuration de base
-        self.SetStartDate(2020, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetStartDate(2015, 1, 1)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         # Ajouter l'equity sous-jacente
@@ -263,8 +263,8 @@ class IronCondorStrategy(QCAlgorithm):
     """
 
     def Initialize(self):
-        self.SetStartDate(2020, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetStartDate(2015, 1, 1)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         equity = self.AddEquity("SPY", Resolution.Minute)

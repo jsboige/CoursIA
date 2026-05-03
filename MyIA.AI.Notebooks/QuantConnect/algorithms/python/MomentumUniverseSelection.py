@@ -10,7 +10,7 @@ Sélectionne les top 20 actions par performance et rebalance mensuellement.
 - Allocation: Equal-weight (5% par position)
 - Rebalancement: Premier jour du mois
 
-**Performance Typique (2015-2023):**
+**Performance Typique (2015-2024):**
 - Sharpe Ratio: ~0.8-1.2
 - Max Drawdown: ~-30% à -40%
 - Tendance à surperformer en bull markets
@@ -42,8 +42,8 @@ class MomentumUniverseSelection(QCAlgorithm):
         Configuration initiale de l'algorithme.
         """
         # Configuration de base
-        self.SetStartDate(2018, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetStartDate(2015, 1, 1)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         # Paramètres de la stratégie
@@ -221,8 +221,8 @@ class MomentumWithVolatilityFilter(QCAlgorithm):
     """
 
     def Initialize(self):
-        self.SetStartDate(2018, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetStartDate(2015, 1, 1)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         self.num_coarse = 500
