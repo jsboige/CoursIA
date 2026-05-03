@@ -4,7 +4,7 @@
 series: ML
 pedagogical_count: 30
 breakdown: DataScienceWithAgents=22, ML.Net=8
-maturity: ALPHA=26, BETA=3, DRAFT=1
+maturity: ALPHA=25, BETA=3, DRAFT=2
 updated: 2026-05-03
 -->
 
