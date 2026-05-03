@@ -1143,11 +1143,15 @@ class NotebookExecutor:
             "--kernel", kernel, "--cwd", str(abs_cwd),
             "--start-timeout", str(start_timeout),
         ]
+        # Build subprocess environment with BATCH_MODE propagated as env var
+        # (notebooks read os.getenv("BATCH_MODE"), not Papermill -p params)
+        sub_env = None
         if batch_mode:
             cmd.extend(["-p", "BATCH_MODE", "true"])
+            sub_env = {**os.environ, "BATCH_MODE": "true"}
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=sub_env)
             execution_time = time.time() - start_time
 
             # Papermill returns 0 even when cells fail — check output notebook

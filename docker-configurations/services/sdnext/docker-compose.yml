@@ -12,7 +12,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - WEB_USER=${FORGE_USER:-admin}
       - WEB_PASSWORD=${FORGE_PASSWORD:-changeme}
-      - FORGE_ARGS=--api --api-log --listen --gradio-auth ${FORGE_USER:-admin}:${FORGE_PASSWORD:-changeme} --gpu-device-id 1 --xformers --skip-install
+      - FORGE_ARGS=--api --api-log --listen --gradio-auth ${FORGE_USER:-admin}:${FORGE_PASSWORD:-changeme} --gpu-device-id 0 --xformers --skip-install
     volumes:
       - ../../shared/models:/opt/storage/stable_diffusion/models
       - ../../shared/outputs:/opt/storage/stable_diffusion/outputs
@@ -21,7 +21,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              device_ids: ['1']
               capabilities: [gpu]
     restart: unless-stopped
     stdin_open: true

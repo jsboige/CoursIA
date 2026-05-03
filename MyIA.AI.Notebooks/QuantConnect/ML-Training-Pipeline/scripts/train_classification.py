@@ -29,8 +29,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from features import FeatureEngineer
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
+from features import FeatureEngineer
 
 
 def train_and_evaluate(

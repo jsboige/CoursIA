@@ -44,7 +44,7 @@ services:
       - WHISPER_DEVICE=cuda
       - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-float16}
       - MAX_FILE_SIZE=26214400
-      - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
       - TZ=${TZ:-Europe/Paris}
       - API_KEY=${WHISPER_API_KEY:-}
