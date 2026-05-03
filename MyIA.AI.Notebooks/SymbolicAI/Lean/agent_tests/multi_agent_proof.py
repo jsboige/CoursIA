@@ -68,6 +68,7 @@ import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic
+import CooperativeGames.Basic
 """
 
 
@@ -279,8 +280,9 @@ class ProofState:
 # LEAN VERIFICATION PLUGIN
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Global LSP server instance (shared across all verifications in a session)
+# Global LeanVerifier instance (shared across all verifications in a session)
 _lsp_server = None
+_verifier = None
 
 
 def start_lsp_server(project_dir: str, warmup: bool = True,
@@ -320,27 +322,27 @@ def stop_lsp_server():
 def verify_with_lean(theorem: str, tactic: str, imports: Optional[str],
                      project_dir: Optional[str], trace: TraceLogger,
                      agent_name: str = "LeanVerifier") -> dict:
-    """Verify a Lean proof. Uses LeanVerifier with LEAN_PATH or lake env.
+    """Verify a Lean proof using LeanVerifier with LEAN_PATH.
 
     Strategy:
-      - No imports → fast LEAN_PATH (~5s)
-      - With imports → lake env lean (~60s, needs compatible oleans)
-      - Falls back to lean_runner if LeanVerifier unavailable
+      - No imports → fast LEAN_PATH (~5-6s)
+      - With imports → full LEAN_PATH with Mathlib deps (~130-150s)
+      - Uses persistent LeanVerifier instance for session reuse
 
     Returns {success, errors, time_s, backend}.
     """
-    global _lsp_server
+    global _lsp_server, _verifier
 
     if imports:
         code = f"{imports}\n{theorem} := by {tactic}"
     else:
         code = f"{theorem} := by {tactic}"
 
-    # Use LeanVerifier (wraps LEAN_PATH or lake env)
+    # Use LSP server wrapper if available (--lsp mode)
     if _lsp_server is not None:
         use_lake_env = imports is not None
         start = time.time()
-        result = _lsp_server.verify(code, timeout=120, use_lake_env=use_lake_env)
+        result = _lsp_server.verify(code, timeout=300, use_lake_env=use_lake_env)
         duration = time.time() - start
 
         if result is not None:
@@ -362,7 +364,38 @@ def verify_with_lean(theorem: str, tactic: str, imports: Optional[str],
                 "backend": backend,
             }
 
-    # Fallback: lean_runner subprocess
+    # Use LeanVerifier directly (fast_path for no imports, full_path for Mathlib)
+    if project_dir:
+        if _verifier is None:
+            from lean_server import LeanVerifier
+            _verifier = LeanVerifier(project_dir=project_dir, verbose=False)
+
+        start = time.time()
+        result = _verifier.verify(code)
+        duration = time.time() - start
+
+        success = result["success"]
+        backend = result.get("backend", "lean_verifier")
+        errors = result.get("errors", "")
+
+        trace.log(
+            agent=agent_name, role="verification",
+            content=f"{theorem[:60]} := by {tactic[:60]}",
+            duration_s=duration, tool_name="verify_proof",
+            tool_args={"theorem": theorem[:80], "proof": tactic[:80]},
+            tool_result=f"success={success}, backend={backend}, "
+                        f"errors={errors[:200]}",
+            phase="verify",
+        )
+
+        return {
+            "success": success,
+            "errors": errors,
+            "time_s": duration,
+            "backend": backend,
+        }
+
+    # Last resort fallback: lean_runner subprocess
     from lean_runner import LeanRunner
     runner = LeanRunner(backend="auto", timeout=300)
     start = time.time()
@@ -469,10 +502,6 @@ Output EXACTLY ONE of:
 - LEMMA: <name> -- a specific lemma to use
 - GIVE_UP -- if too many failures
 
-Key insight: For goals involving sums over Finset with subtraction, the standard pattern is:
-  have h := Finset.sum_erase_add s f ha; linarith
-Do NOT suggest exact Finset.sum_erase (wrong API). Use sum_erase_add, not sum_erase.
-
 Keep your response under 3 lines. No markdown."""
 
 TACTIC_PROMPT = """You are a Lean 4 tactic generator. Given a theorem statement and context, provide ONLY the tactic sequence.
@@ -483,29 +512,27 @@ Rules:
 - Reply with ONLY the tactic(s), no explanation, no markdown, no code fences
 - DO NOT prefix with `by` - it is already present
 - Chain tactics with `;` or use `<;>` for branching
+- Use `<;> try` for optional subgoals after branching tactics
 
-Tactic priority for Nat goals:
-1. omega - linear arithmetic
+Tactic priority:
+1. omega / linarith - linear arithmetic (Nat/Int/Real)
 2. simp - simplification engine
 3. rfl - ONLY for definitional equality (a = a)
 4. exact <term> - provide a proof term
 5. rw [lemma] - rewrite with a lemma
-
-Tactic priority for Finset/BigOperator goals:
-1. have h := Finset.sum_erase_add s f ha; linarith -- BEST for sum = sum - element
-2. simp [Finset.sum_erase_add, Finset.sum_insert]
-3. exact? - let Mathlib suggest
-
-IMPORTANT: Finset.sum_erase_add has signature: sum (s.erase a) f + f a = sum s f
-  Arguments: s (Finset), f (function), ha (membership proof) -- ALL EXPLICIT
-  Use `have h := Finset.sum_erase_add s f ha; linarith` to introduce and solve.
-  Do NOT use Finset.sum_erase (different lemma, different signature).
+6. ring - ring equalities
+7. field_simp / ring_nf - field/ring normalization
+8. aesop - automated search
+9. exact? - let Mathlib suggest
 
 Common pitfalls:
 - `rfl` fails on `0 + n = n`: use omega or simp
-- `ring` needs Mathlib.Tactic import
-- If omega fails on nonlinear goals, try simp [Nat.mul_add, Nat.add_mul]
-- For Real subtraction goals, use `linarith` not `omega` (omega is for Nat/Int)"""
+- `omega` only works for Nat/Int linear goals. Use `linarith` for Real
+- `simp` can close many goals if given the right lemmas: simp [lemma1, lemma2]
+- If `rw [lemma]` solves the goal completely, do NOT add `rfl` after it
+- If error says "No goals to be solved", your previous tactic already closed the goal — remove the trailing tactic
+- If error says "made no progress", the tactic didn't change the goal — try a different approach
+- For distributivity: use `ring` or `omega` for linear cases, `Nat.mul_add` / `Nat.add_mul` for rewriting"""
 
 CRITIC_PROMPT = """You are a Lean 4 proof critic. Analyze why a tactic failed and suggest what to try differently.
 
@@ -514,6 +541,67 @@ Given the theorem, the failed tactic, and the Lean error, output:
 - SUGGESTION: <tactic or approach to try>
 
 Keep your response under 4 lines. No markdown."""
+
+
+def extract_tactic(raw_output: str) -> str:
+    """Extract a clean tactic from LLM output that may contain prose.
+
+    Strategy:
+      1. If the output is already a clean tactic (no prose markers), return as-is
+      2. Try to extract from code fences (```...```)
+      3. Try to extract the first Lean-like expression
+      4. Fall back to the raw output stripped
+    """
+    text = raw_output.strip()
+
+    # If it starts with common tactic keywords, it's probably clean
+    tactic_starters = (
+        "rfl", "omega", "linarith", "simp", "exact", "rw [", "rw[",
+        "have ", "constructor", "cases ", "induction ", "intro ",
+        "apply ", "use ", "conv ", "funext ", "ext ", "field_simp",
+        "ring", "aesop", "exact?", "norm_num", "decide", "trivial",
+        "by_contra ", "by_cases ", "push_neg ", "itauto", "omega",
+        "Nat.", "Finset.", "Mathlib.", "split", "left", "right",
+        "tauto", "contradiction", "exfalso", "assumption",
+        "rcases ", "obtain ", "choose ", "open ", "set ",
+        "show ", "suffices ", "refine ", "subst ", "rename ",
+        "dsimp", "change ", "replace ", "specialize ",
+        "convert ", "symm", "trans ", "calc ", "unfold ",
+    )
+    first_line = text.split("\n")[0].strip()
+    if any(first_line.startswith(s) or first_line == s for s in tactic_starters):
+        return first_line
+
+    # Try extracting from code fences
+    import re
+    code_fence = re.search(r'```(?:lean|lean4)?\s*\n(.*?)```', text, re.DOTALL)
+    if code_fence:
+        return code_fence.group(1).strip().split("\n")[0].strip()
+
+    # Try extracting after "SUGGESTION:" or "tactic:" prefix
+    for prefix in ("SUGGESTION: ", "Tactic: ", "Answer: ", "Proof: "):
+        if prefix.lower() in text.lower():
+            idx = text.lower().index(prefix.lower())
+            remainder = text[idx + len(prefix):].strip()
+            line = remainder.split("\n")[0].strip()
+            if line:
+                return line
+
+    # Try finding the first line that looks like a tactic
+    for line in text.split("\n"):
+        line = line.strip()
+        if not line or line.startswith("#") or line.startswith("//"):
+            continue
+        if any(line.startswith(s) or line == s for s in tactic_starters):
+            return line
+
+    # Last resort: return the first non-empty line
+    for line in text.split("\n"):
+        line = line.strip()
+        if line and not line.startswith("#") and len(line) > 2:
+            return line
+
+    return text
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -637,7 +725,7 @@ class MultiAgentOrchestrator:
             )
             tactic_history.append({"role": "assistant", "content": tactic_content})
 
-            tactic = tactic_content.strip()
+            tactic = extract_tactic(tactic_content)
             state.total_llm_s += tactic_tokens.get("total", 0) / 1000
             print(f"  Tactic: {tactic[:100]}")
 
@@ -659,7 +747,20 @@ class MultiAgentOrchestrator:
                                   lean_time=result["time_s"])
                 break
             else:
-                error = result["errors"][:500]
+                raw_error = result["errors"][:500]
+                # Add actionable hints for common error patterns
+                hints = []
+                if "No goals to be solved" in raw_error:
+                    hints.append("HINT: Your first tactic already closed the goal. Remove the trailing tactics (like `rfl`).")
+                elif "made no progress" in raw_error:
+                    hints.append("HINT: The tactic didn't change the goal. Try a different approach.")
+                elif "unknown tactic" in raw_error:
+                    hints.append("HINT: This tactic requires Mathlib import. Try omega, simp, or rw instead.")
+                elif "could not prove the goal" in raw_error:
+                    hints.append("HINT: The tactic was applicable but couldn't close the goal. Try a more powerful tactic or split the goal.")
+                error = raw_error
+                if hints:
+                    error = raw_error + "\n" + "\n".join(hints)
                 state.add_attempt(tactic, success=False, error=error,
                                   agent="TacticAgent", lean_time=result["time_s"])
                 print(f"  FAILED: {error[:200]}")
@@ -759,7 +860,7 @@ class SingleAgentProver:
             messages.append({"role": "assistant", "content": content})
             state.total_llm_s += tokens.get("total", 0) / 1000
 
-            tactic = content.strip()
+            tactic = extract_tactic(content)
             print(f"  Tactic: {tactic[:100]}")
 
             # Verify
@@ -775,7 +876,18 @@ class SingleAgentProver:
                                   lean_time=result["time_s"])
                 break
             else:
-                state.add_attempt(tactic, success=False, error=result["errors"][:500],
+                raw_error = result["errors"][:500]
+                hints = []
+                if "No goals to be solved" in raw_error:
+                    hints.append("Your first tactic already closed the goal. Remove the trailing tactics (like `rfl`).")
+                elif "made no progress" in raw_error:
+                    hints.append("The tactic didn't change the goal. Try a different approach.")
+                elif "unknown tactic" in raw_error:
+                    hints.append("This tactic requires Mathlib import. Try omega, simp, or rw instead.")
+                error = raw_error
+                if hints:
+                    error = raw_error + "\n" + "\n".join(hints)
+                state.add_attempt(tactic, success=False, error=error,
                                   agent="TacticAgent", lean_time=result["time_s"])
                 print(f"  FAILED: {result['errors'][:200]}")
 
