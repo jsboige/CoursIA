@@ -653,4 +653,5 @@ MyIA.AI.Notebooks/QuantConnect/Python/dqn_training_curves.png
 # Generated catalog (regenerate with scripts/notebook_tools/generate_catalog.py)
 COURSE_CATALOG.generated.*
 
-
+# QC projects snapshot (regenerate with scripts/quantconnect/audit_projects.py)
+scripts/quantconnect/projects_snapshot.json

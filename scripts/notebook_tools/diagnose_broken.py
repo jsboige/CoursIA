@@ -54,14 +54,6 @@ ERROR_PATTERNS = [
 ]
 
 
-def classify_error(ename: str, traceback: str) -> str:
-    """Classify an error by its name and traceback."""
-    text = f"{ename}\n{traceback}"
-    for pattern, category in ERROR_PATTERNS:
-        if re.search(pattern, text, re.IGNORECASE):
-            return category
-    return "UNKNOWN"
-
 
 def extract_errors(notebook: dict) -> list[dict]:
     """Extract error details from notebook cells."""
