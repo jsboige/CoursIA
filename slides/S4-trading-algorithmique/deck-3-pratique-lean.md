@@ -40,7 +40,6 @@ Intelligence Artificielle -- S4
    - Criteres, anti-biais, troubleshooting, ressources
 
 ---
-
 layout: section
 ---
 
@@ -113,7 +112,6 @@ layout: section
 > Notebook: QC-Py-01-Setup.ipynb
 
 ---
-
 layout: section
 ---
 
@@ -471,7 +469,6 @@ layout: section
 > Notebook: QC-Py-10-Risk-Portfolio-Management
 
 ---
-
 layout: dense
 ---
 
@@ -526,7 +523,6 @@ class EMACrossStocksAlgorithm(QCAlgorithm):
 **15 lignes de code, 5 actions, 11 ans de backtest.** Sharpe ~0.87, soit +74% de mieux que le buy-and-hold.
 
 ---
-
 layout: section
 ---
 
@@ -730,7 +726,6 @@ et backteste-le sur 2015-2025 avec 100k USD"
 </div>
 
 ---
-
 layout: section
 ---
 
@@ -811,14 +806,12 @@ layout: section
 </div>
 
 ---
-
 layout: section
 ---
 
 # Partie 5 : Preparation Projet et Soutenance
 
 ---
-
 layout: dense
 ---
 
@@ -910,7 +903,6 @@ layout: dense
 </div>
 
 ---
-
 layout: cover
 ---
 
