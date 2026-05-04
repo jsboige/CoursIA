@@ -116,11 +116,11 @@ python scripts/datasets/stitch_crypto.py --data-root /path/to/data --output-dir 
 python scripts/datasets/stitch_crypto.py --skip-download
 ```
 
-Output: `datasets/crypto/BTC_USD_1h_stitched.csv` (107K rows, 2012-2024)
+Output: `datasets/crypto/BTC_USD_1h_stitched.csv` (~101K rows, 2013-2024)
 
 Sources (priority order): Bitstamp 1h (primary 2018-2024), Binance BTC/USDT (pre-2018 extension), yfinance (gap fill to present).
 
-Note: 2011 data excluded by default (`--start-date 2012-01-01`). Only 307/8760 hours in 2011 with massive gaps and negligible volume ($2-15 BTC).
+Note: 2011-2012 data excluded by default (`--start-date 2013-01-01`). 2011 had only 307/8760 hours with massive gaps. 2012 had only 62.6% coverage (5501/8784h) with recurrent 10-22h gaps.
 
 ### Anti-bias panier (multi-asset)
 

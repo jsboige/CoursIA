@@ -1,13 +1,14 @@
 """
-Stitch crypto datasets into continuous BTC/USD series (2012-2026).
+Stitch crypto datasets into continuous BTC/USD series (2013-2026).
 
 Data sources (in priority order):
 1. Bitstamp BTC/USD 1h (2014-08 to 2024-08) — personal dataset, USD
 2. Binance BTC/USDT 1h (2011-09 to 2023-11) — for pre-2014 extension
 3. yfinance BTC-USD (2024-08 to present) — for recent gap fill
 
-Default start date is 2012-01-01 (2011 data excluded: only 307/8760 hours,
-massive gaps, BTC at $2-15 with negligible volume — unreliable for training).
+Default start date is 2013-01-01:
+- 2011 excluded: only 307/8760 hours, massive gaps, BTC at $2-15
+- 2012 excluded: 62.6% coverage only (5501/8784h), recurrent 10-22h gaps
 
 Output: continuous hourly CSV + quality report.
 
@@ -33,7 +34,7 @@ log = logging.getLogger(__name__)
 # Default paths
 DEFAULT_DATA_ROOT = r"G:\Mon Drive\MyIA\Dev\Trading\Data"
 DEFAULT_OUTPUT_DIR = "MyIA.AI.Notebooks/QuantConnect/datasets/crypto"
-DEFAULT_START_DATE = "2012-01-01"  # 2011 excluded: 307/8760h, massive gaps, unreliable
+DEFAULT_START_DATE = "2013-01-01"  # 2011 (307/8760h) and 2012 (62.6% coverage) excluded
 
 # Anti-bias policy: these symbols are FORBIDDEN in new trainings
 FORBIDDEN_SYMBOLS = {"AAPL", "MSFT", "GOOG", "AMZN", "NVDA", "TSLA", "META"}
