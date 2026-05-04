@@ -3470,24 +3470,40 @@ def main():
 
     # ── Autonomous mode for sorry-demos ──
     if is_sorry_mode and args.mode == "autonomous":
-        trace = TraceLogger()
-        prover = AutonomousProver(
-            trace=trace, provider=args.tactic,
-            thinking=not args.no_thinking,
-        )
-        result = prover.prove_sorry(
-            demo=demo,
-            max_iterations=args.max_iterations,
-            strategic_hints=args.hints,
-        )
-        trace.save(f"auto_{demo['name']}")
-        print(f"\n{'='*60}")
-        print(f"RESULT: {'SUCCESS' if result['success'] else 'FAILED'}")
-        print(f"  Sorry evolution: {result['sorry_evolution']}")
-        print(f"  Best sorry: {result['best_sorry']}")
-        print(f"  Compiles: {result['compile_count']} ({result['compile_time_s']}s)")
-        print(f"  Time: {result['total_s']:.1f}s, Iterations: {result['iterations']}")
-        print(f"{'='*60}")
+        # Support batch demos in autonomous mode
+        demo_list = [demo]
+        if args.demos:
+            demo_list = [DEMOS[d] for d in args.demos if d in DEMOS and "file" in DEMOS[d]]
+
+        all_results = []
+        for d in demo_list:
+            trace = TraceLogger()
+            prover = AutonomousProver(
+                trace=trace, provider=args.tactic,
+                thinking=not args.no_thinking,
+            )
+            result = prover.prove_sorry(
+                demo=d,
+                max_iterations=args.max_iterations,
+                strategic_hints=args.hints,
+            )
+            trace.save(f"auto_{d['name']}")
+            all_results.append((d['name'], result))
+            print(f"\n{'='*60}")
+            print(f"RESULT: {'SUCCESS' if result['success'] else 'FAILED'}")
+            print(f"  Sorry evolution: {result['sorry_evolution']}")
+            print(f"  Best sorry: {result['best_sorry']}")
+            print(f"  Compiles: {result['compile_count']} ({result['compile_time_s']}s)")
+            print(f"  Time: {result['total_s']:.1f}s, Iterations: {result['iterations']}")
+            print(f"{'='*60}")
+
+        if len(all_results) > 1:
+            print(f"\n{'='*60}")
+            print("BATCH SUMMARY:")
+            for name, r in all_results:
+                status = "OK" if r['success'] else "FAIL"
+                print(f"  {name}: {status} ({r['sorry_evolution']}, {r['total_s']:.0f}s)")
+            print(f"{'='*60}")
         return
 
     # ── Sorry-mode demos (6-8) ──
