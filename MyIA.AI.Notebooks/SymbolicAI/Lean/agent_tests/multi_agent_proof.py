@@ -130,19 +130,19 @@ DEMOS = {
     },
     # ── Real Shapley.lean sorry targets ──
     6: {
-        "name": "SHAPLEY_UNANIMITY_IN_T",
+        "name": "SHAPLEY_UNIQUENESS",
         "file": str(SHAPLEY_FILE),
-        "line": 128,
-        "sorry_type": "partial_proof",
-        "theorem_name": "shapley_unanimity (i ∈ T case)",
-        "theorem": "shapley_unanimity",
+        "line": 513,
+        "sorry_type": "full_proof",
+        "theorem_name": "shapley_uniqueness",
+        "theorem": "shapley_uniqueness",
         "imports": SHAPLEY_IMPORTS,
         "description": (
-            "Replace sorry at line 128 of Shapley.lean. Context: proving φᵢ(u_T) = 1/|T| when i ∈ T.\n"
-            "Goal state after unfold/simp: need to simplify the Finset sum of shapleyCoef * marginalContrib.\n"
-            "Key insight: marginal = 1 iff T\\{i} ⊆ S. Sum over such S gives 1/|T|.\n"
-            "Available helpers: shapleyCoef_shift, shapleyCoef_top, shapley_symmetric, shapley_null_player.\n"
-            "The sorry is inside `split_ifs with hiT`, case `hiT : i ∈ T`.\n"
+            "Replace sorry at line 513 of Shapley.lean. Prove shapley_uniqueness:\n"
+            "any solution satisfying all 4 axioms equals Shapley value.\n"
+            "Uses Mobius decomposition of games into unanimity games.\n"
+            "Depends on: shapley_unanimity, shapley_efficient, shapley_symmetric, shapley_null_player.\n"
+            "All helper theorems are now proved (0 sorry in their proofs).\n"
             "Pre-sorry code:\n"
             "```\n"
             "  unfold shapleyValue TUGame.marginalContribution shapleyCoef\n"
@@ -191,18 +191,18 @@ DEMOS = {
         "context_after": "      (fun h => (h (Finset.mem_univ _)).elim)",
     },
     8: {
-        "name": "SHAPLEY_UNIQUENESS",
+        "name": "SHAPLEY_UNIQUENESS_ALT",
         "file": str(SHAPLEY_FILE),
-        "line": 463,
+        "line": 513,
         "sorry_type": "full_proof",
-        "theorem_name": "shapley_uniqueness",
+        "theorem_name": "shapley_uniqueness (alternative entry)",
         "theorem": "shapley_uniqueness",
         "imports": SHAPLEY_IMPORTS,
         "description": (
+            "Same target as Demo 6 (line 513). Alias for batch/testing.\n"
             "Prove shapley_uniqueness: any solution satisfying all 4 axioms equals Shapley value.\n"
             "Uses Mobius decomposition of games into unanimity games.\n"
-            "Depends on: shapley_unanimity, shapley_efficient, shapley_symmetric, shapley_null_player.\n"
-            "NOTE: shapley_unanimity still has a sorry (demo 6). May need that fixed first."
+            "All helper theorems proved."
         ),
         "difficulty": "very_hard",
     },
@@ -1584,13 +1584,8 @@ class SimpleAgent:
         for iteration in range(max_tool_calls):
             start = time.time()
             try:
-                # Force function calling on first iteration, auto on follow-ups
-                if tools and iteration == 0:
-                    tc = {"type": "function", "function": {"name": tools[0]["function"]["name"]}}
-                elif tools:
-                    tc = "auto"
-                else:
-                    tc = None
+                # Let model choose which tool to call (auto mode)
+                tc = "auto" if tools else None
                 response = self._client.chat.completions.create(
                     model=self._model,
                     messages=messages,
@@ -2638,10 +2633,40 @@ class MultiAgentSorryProver:
 class LeanFilePlugin:
     """Plugin giving agents direct read/write access to the .lean file."""
 
-    def __init__(self, filepath: str):
+    _global_locks: Dict[str, str] = {}  # filepath → session_id
+
+    def __init__(self, filepath: str, session_id: str = ""):
         self._filepath = filepath
+        self._session_id = session_id or str(uuid.uuid4())[:8]
         self._best_content: Optional[str] = None
         self._best_sorry_count: int = 999
+        self._lock_file = Path(filepath).with_suffix(".prover.lock")
+
+    def _acquire_lock(self) -> bool:
+        """Acquire file lock. Returns False if another session holds it."""
+        if self._lock_file.exists():
+            existing = self._lock_file.read_text().strip()
+            if existing and existing != self._session_id:
+                return False
+        self._lock_file.write_text(self._session_id, encoding="utf-8")
+        LeanFilePlugin._global_locks[self._filepath] = self._session_id
+        return True
+
+    def _release_lock(self):
+        """Release file lock."""
+        if self._lock_file.exists():
+            content = self._lock_file.read_text().strip()
+            if content == self._session_id:
+                self._lock_file.unlink(missing_ok=True)
+        LeanFilePlugin._global_locks.pop(self._filepath, None)
+
+    def _check_lock(self) -> Optional[str]:
+        """Check if another session holds the lock. Returns session_id or None."""
+        if self._lock_file.exists():
+            existing = self._lock_file.read_text().strip()
+            if existing and existing != self._session_id:
+                return existing
+        return None
 
     @kernel_function(
         description="Read the current content of the .lean file being edited",
@@ -2674,89 +2699,115 @@ class LeanFilePlugin:
         name="replace_lines",
     )
     def replace_lines(self, start: int, end: int, new_content: str) -> str:
-        content = Path(self._filepath).read_text(encoding="utf-8")
-        lines = content.split("\n")
-        old_lines = lines[start - 1:end] if end <= len(lines) else lines[start - 1:]
-        old_text = "\n".join(old_lines)
+        lock_holder = self._check_lock()
+        if lock_holder:
+            return json.dumps({"error": f"File locked by session {lock_holder}. Wait or use restore_best()."})
 
-        new_lines = new_content.split("\n")
-        lines[start - 1:end if end <= len(lines) else len(lines)] = new_lines
-        new_file_content = "\n".join(lines)
+        if not self._acquire_lock():
+            return json.dumps({"error": "Could not acquire file lock"})
 
-        Path(self._filepath).write_text(new_file_content, encoding="utf-8")
-        sorry_count = new_file_content.count("sorry")
+        try:
+            content = Path(self._filepath).read_text(encoding="utf-8")
+            lines = content.split("\n")
+            old_lines = lines[start - 1:end] if end <= len(lines) else lines[start - 1:]
+            old_text = "\n".join(old_lines)
 
-        # Track best state
-        if sorry_count < self._best_sorry_count:
-            self._best_sorry_count = sorry_count
-            self._best_content = new_file_content
+            new_lines = new_content.split("\n")
+            lines[start - 1:end if end <= len(lines) else len(lines)] = new_lines
+            new_file_content = "\n".join(lines)
 
-        return json.dumps({
-            "replaced_lines": f"{start}-{end}",
-            "old_text_preview": old_text[:200],
-            "new_sorry_count": sorry_count,
-            "best_sorry_count": self._best_sorry_count,
-        }, ensure_ascii=False)
+            Path(self._filepath).write_text(new_file_content, encoding="utf-8")
+            sorry_count = new_file_content.count("sorry")
+
+            # Track best state
+            if sorry_count < self._best_sorry_count:
+                self._best_sorry_count = sorry_count
+                self._best_content = new_file_content
+
+            return json.dumps({
+                "replaced_lines": f"{start}-{end}",
+                "old_text_preview": old_text[:200],
+                "new_sorry_count": sorry_count,
+                "best_sorry_count": self._best_sorry_count,
+            }, ensure_ascii=False)
+        finally:
+            self._release_lock()
 
     @kernel_function(
         description="Replace the sorry at a given line number with new tactic text. Auto-detects indentation.",
         name="replace_sorry",
     )
     def replace_sorry(self, sorry_line: int, replacement: str) -> str:
-        content = Path(self._filepath).read_text(encoding="utf-8")
-        lines = content.split("\n")
+        lock_holder = self._check_lock()
+        if lock_holder:
+            return json.dumps({"error": f"File locked by session {lock_holder}."})
+        if not self._acquire_lock():
+            return json.dumps({"error": "Could not acquire file lock"})
+        try:
+            content = Path(self._filepath).read_text(encoding="utf-8")
+            lines = content.split("\n")
 
-        if sorry_line < 1 or sorry_line > len(lines):
-            return json.dumps({"error": f"Line {sorry_line} out of range"})
+            if sorry_line < 1 or sorry_line > len(lines):
+                return json.dumps({"error": f"Line {sorry_line} out of range"})
 
-        sorry_text = lines[sorry_line - 1]
-        if "sorry" not in sorry_text:
-            return json.dumps({"error": f"Line {sorry_line} doesn't contain 'sorry': {sorry_text[:80]}"})
+            sorry_text = lines[sorry_line - 1]
+            if "sorry" not in sorry_text:
+                return json.dumps({"error": f"Line {sorry_line} doesn't contain 'sorry': {sorry_text[:80]}"})
 
-        indent = len(sorry_text) - len(sorry_text.lstrip())
-        indent_str = " " * indent
+            indent = len(sorry_text) - len(sorry_text.lstrip())
+            indent_str = " " * indent
 
-        replacement_lines = []
-        for line in replacement.strip().split("\n"):
-            if line.strip():
-                replacement_lines.append(indent_str + line.strip())
+            replacement_lines = []
+            for line in replacement.strip().split("\n"):
+                if line.strip():
+                    replacement_lines.append(indent_str + line.strip())
 
-        old_line = lines[sorry_line - 1]
-        lines[sorry_line - 1:sorry_line] = replacement_lines
-        new_content = "\n".join(lines)
+            old_line = lines[sorry_line - 1]
+            lines[sorry_line - 1:sorry_line] = replacement_lines
+            new_content = "\n".join(lines)
 
-        Path(self._filepath).write_text(new_content, encoding="utf-8")
-        sorry_count = new_content.count("sorry")
+            Path(self._filepath).write_text(new_content, encoding="utf-8")
+            sorry_count = new_content.count("sorry")
 
-        if sorry_count < self._best_sorry_count:
-            self._best_sorry_count = sorry_count
-            self._best_content = new_content
+            if sorry_count < self._best_sorry_count:
+                self._best_sorry_count = sorry_count
+                self._best_content = new_content
 
-        return json.dumps({
-            "replaced": old_line.strip(),
-            "new_lines": len(replacement_lines),
-            "new_sorry_count": sorry_count,
-            "best_sorry_count": self._best_sorry_count,
-        }, ensure_ascii=False)
+            return json.dumps({
+                "replaced": old_line.strip(),
+                "new_lines": len(replacement_lines),
+                "new_sorry_count": sorry_count,
+                "best_sorry_count": self._best_sorry_count,
+            }, ensure_ascii=False)
+        finally:
+            self._release_lock()
 
     @kernel_function(
         description="Write the complete .lean file content. Use for major rewrites.",
         name="write_file",
     )
     def write_file(self, content: str) -> str:
-        Path(self._filepath).write_text(content, encoding="utf-8")
-        sorry_count = content.count("sorry")
+        lock_holder = self._check_lock()
+        if lock_holder:
+            return json.dumps({"error": f"File locked by session {lock_holder}."})
+        if not self._acquire_lock():
+            return json.dumps({"error": "Could not acquire file lock"})
+        try:
+            Path(self._filepath).write_text(content, encoding="utf-8")
+            sorry_count = content.count("sorry")
 
-        if sorry_count < self._best_sorry_count:
-            self._best_sorry_count = sorry_count
-            self._best_content = content
+            if sorry_count < self._best_sorry_count:
+                self._best_sorry_count = sorry_count
+                self._best_content = content
 
-        return json.dumps({
-            "written": True,
-            "sorry_count": sorry_count,
-            "best_sorry_count": self._best_sorry_count,
-            "total_lines": len(content.split("\n")),
-        }, ensure_ascii=False)
+            return json.dumps({
+                "written": True,
+                "sorry_count": sorry_count,
+                "best_sorry_count": self._best_sorry_count,
+                "total_lines": len(content.split("\n")),
+            }, ensure_ascii=False)
+        finally:
+            self._release_lock()
 
     @kernel_function(
         description="Find all sorry lines in the file with their line numbers and surrounding context",
@@ -3016,6 +3067,15 @@ class AutonomousProver:
         original_content = Path(filepath).read_text(encoding="utf-8")
         original_sorry_count = original_content.count("sorry")
 
+        # Auto-detect actual sorry line if the configured one is stale
+        actual_sorry_lines = [
+            i + 1 for i, line in enumerate(original_content.split("\n"))
+            if "sorry" in line
+        ]
+        if actual_sorry_lines and sorry_line not in actual_sorry_lines:
+            sorry_line = actual_sorry_lines[0]
+            print(f"  [AutoFix] Configured line {demo['line']} has no sorry. Using actual sorry at line {sorry_line}")
+
         print(f"\n{'='*70}")
         print(f"AUTONOMOUS PROVER: {demo['name']}")
         print(f"File: {filepath}:{sorry_line}")
@@ -3026,7 +3086,7 @@ class AutonomousProver:
         print(f"{'='*70}")
 
         # Create plugins
-        file_plugin = LeanFilePlugin(filepath)
+        file_plugin = LeanFilePlugin(filepath, session_id=self.config_label)
         compile_plugin = CompilePlugin(filepath, trace=self.trace)
         state = ProofState(
             theorem_statement=demo.get("theorem", demo["name"]),
