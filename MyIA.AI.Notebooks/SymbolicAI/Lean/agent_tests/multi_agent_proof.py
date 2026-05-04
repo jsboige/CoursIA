@@ -721,6 +721,9 @@ class ProofState:
     total_lean_time_ms: float = 0.0
 
     _next_agent: Optional[str] = field(default=None, repr=False)
+    sorry_context: Optional["SorryContext"] = field(default=None, repr=False)
+    strategy_mode: str = "direct"  # "direct" | "decompose" | "search_first"
+    decomposition_depth: int = 0  # track how deep we've decomposed
 
     def add_tactic_attempt(self, tactic: str, state_before: Optional[str] = None,
                            confidence: Optional[float] = None, explanation: Optional[str] = None,
@@ -815,6 +818,20 @@ class ProofState:
             "error_count": self.error_count,
             "last_error": self.last_error,
         }
+
+
+@dataclass
+class SorryContext:
+    """Context for sorry replacement in a .lean file."""
+    filepath: str
+    sorry_line: int
+    goal_state: Optional[str] = None
+    context_before: str = ""
+    context_after: str = ""
+    indentation: int = 0
+    indent_str: str = ""
+    full_file: str = ""
+    sorry_count_before: int = 0  # number of sorry in the original file
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -917,10 +934,13 @@ class ProofStateManagerPlugin:
     )
     def log_tactic_attempt(self, tactic: str, state_before: str = "",
                            confidence: float = 0.5, explanation: str = "") -> str:
-        attempt_id = self._state.add_tactic_attempt(
-            tactic=tactic, state_before=state_before,
-            confidence=confidence, explanation=explanation,
-        )
+        # Don't overwrite last_error — log without error field
+        attempt_id = f"log_{len(self._state.tactic_history) + 1}"
+        self._state.tactic_history.append(TacticAttempt(
+            tactic=tactic, success=False, error=None,
+            state_before=state_before, confidence=confidence,
+            explanation=explanation,
+        ))
         return f"Logged: {attempt_id} ({tactic})"
 
     @kernel_function(
@@ -1087,15 +1107,38 @@ class LeanTacticPlugin:
             "hints": hints, "suggestion": hints[0] if hints else "Try a different tactic.",
         }, indent=2, ensure_ascii=False)
 
+    @kernel_function(
+        description="Submit a decomposition: split the current goal into sub-goals using 'have'. Each sub-goal starts as sorry.",
+        name="submit_decomposition",
+    )
+    def submit_decomposition(self, have_name: str, have_type: str,
+                             have_proof: str = "sorry",
+                             main_tactic: str = "sorry") -> str:
+        indent = "  "
+        lines = [
+            f"have {have_name} : {have_type} := by {have_proof}",
+            main_tactic,
+        ]
+        decomposition = f"\n{indent}".join(lines)
+        return json.dumps({
+            "decomposition": decomposition,
+            "have_name": have_name,
+            "have_type": have_type,
+            "have_proof": have_proof,
+            "main_tactic": main_tactic,
+        }, indent=2, ensure_ascii=False)
+
 
 class LeanVerificationPlugin:
     """Plugin for Lean verification using LeanVerifier (adapted from notebook cell 14)."""
 
     def __init__(self, project_dir: Optional[str] = None, imports: Optional[str] = None,
-                 trace: Optional[TraceLogger] = None):
+                 trace: Optional[TraceLogger] = None,
+                 sorry_context: Optional[SorryContext] = None):
         self._project_dir = project_dir
         self._imports = imports or ""
         self._trace = trace
+        self._sorry_context = sorry_context
 
     @kernel_function(
         description="Verify a complete Lean proof (theorem + tactics). Returns JSON with success/errors/time.",
@@ -1133,6 +1176,55 @@ class LeanVerificationPlugin:
             "backend": result.get("backend", "lean_verifier"),
         }, indent=2, ensure_ascii=False)
 
+    @kernel_function(
+        description="Verify a tactic as sorry replacement in the actual .lean file. Returns success/errors/residual_goals/sorry_count.",
+        name="verify_sorry_replacement",
+    )
+    def verify_sorry_replacement(self, tactic: str) -> str:
+        if not self._sorry_context:
+            return json.dumps({"success": False, "errors": "No sorry context"})
+        start = time.time()
+        result = verify_sorry_replacement(
+            filepath=self._sorry_context.filepath,
+            sorry_line=self._sorry_context.sorry_line,
+            replacement=tactic,
+        )
+        duration = time.time() - start
+
+        # Count sorry in modified file for decomposition detection
+        sorry_count = self._count_sorry_after_replacement(tactic)
+
+        if self._trace:
+            self._trace.log(
+                agent="Verification", role="sorry_verify",
+                content=f"tactic={tactic[:80]} → success={result['success']}",
+                duration_s=duration, tool_name="verify_sorry_replacement",
+                tool_result=f"success={result['success']}, sorry_count={sorry_count}",
+                phase="verify",
+            )
+
+        return json.dumps({
+            "success": result["success"],
+            "errors": result.get("errors", "")[:500],
+            "error_type": result.get("error_type"),
+            "residual_goals": result.get("residual_goals", []),
+            "sorry_count": sorry_count,
+            "time_s": round(duration, 2),
+        }, indent=2, ensure_ascii=False)
+
+    def _count_sorry_after_replacement(self, tactic: str) -> int:
+        """Count sorry occurrences in the file after replacing sorry with tactic."""
+        if not self._sorry_context:
+            return -1
+        content = self._sorry_context.full_file
+        lines = content.split("\n")
+        sorry_idx = self._sorry_context.sorry_line - 1
+        indent = self._sorry_context.indentation
+        indent_str = " " * indent
+        replacement_lines = [indent_str + l.strip() for l in tactic.strip().split("\n") if l.strip()]
+        new_lines = lines[:sorry_idx] + replacement_lines + lines[sorry_idx + 1:]
+        return "\n".join(new_lines).count("sorry")
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # AGENT INSTRUCTIONS (from notebook cell 17)
@@ -1161,6 +1253,7 @@ TACTIC_AGENT_INSTRUCTIONS = """Tu es l'agent de GENERATION DE TACTIQUES pour le 
 TON ROLE UNIQUE:
 - Generer des sequences de tactiques Lean pour prouver le but
 - Utiliser OBLIGATOIREMENT submit_tactic() pour proposer une tactique
+- Quand une preuve directe echoue, utiliser submit_decomposition() pour decomposer le but
 
 MODES DE TRAVAIL:
 
@@ -1187,18 +1280,36 @@ STRATEGIE D'EXPLORATION (du plus simple au plus avance):
 9. Finset: Finset.sum_eq_single, Finset.sum_bij
 10. Cast: Nat.cast_sub, Nat.cast_mul, mod_cast
 
+DECOMPOSITION (quand la preuve directe echoue):
+Si le but est complexe et qu'une tactique directe echoue avec "type mismatch" ou "unsolved goals",
+decompose le but en sous-buts avec submit_decomposition():
+
+Exemple 1 - Somme Finset:
+  Goal: ∑ x ∈ S, f x = g x
+  → submit_decomposition("h_eq", "∀ x ∈ S, f x = h x", "sorry", "simp [h_eq]")
+  Cela cree: have h_eq : ∀ x ∈ S, f x = h x := by sorry
+              simp [h_eq]
+
+Exemple 2 - Egalite avec reecriture:
+  Goal: a * b + c = d
+  → submit_decomposition("h_mul", "a * b = e", "sorry", "rw [h_mul]; sorry")
+  Cela cree: have h_mul : a * b = e := by sorry
+              rw [h_mul]; sorry
+
+IMPORTANT: La decomposition reussit si le fichier compile avec des sous-sorry.
+Le systeme ciblera ensuite chaque sous-sorry separement.
+
 WORKFLOW:
 1. get_proof_state() pour comprendre le contexte complet
 2. generate_tactics() pour des suggestions basees sur le goal
-3. submit_tactic() pour soumettre UNE SEQUENCE de tactiques
+3. submit_tactic() ou submit_decomposition() pour soumettre
 4. Attendre le resultat de verification
 
-IMPORTANT:
-- Proposer UNE SEULE sequence de tactiques a la fois via submit_tactic()
+CONTRAINTES:
+- Proposer UNE SEULE sequence de tactiques a la fois
 - Si echec, lire le message d'erreur Lean attentivement et adapter
-- Pour les preuves structurelles: decomposer en sous-buts avec `have`
-- Si le sorry est dans un `by_cases` ou `split_ifs`, adapter au cas specifique
-- COMMENTARES: ajoute des `--` inline pour guider si la preuve est longue
+- Ne PAS repeter une tactique qui a deja echoue (voir FAILED ATTEMPTS)
+- COMMENTAIRES: ajoute des `--` inline pour guider si la preuve est longue
 """
 
 VERIFIER_AGENT_INSTRUCTIONS = """Tu es l'agent de VERIFICATION pour le theorem proving en Lean 4.
@@ -1223,18 +1334,45 @@ IMPORTANT:
 CRITIC_AGENT_INSTRUCTIONS = """Tu es l'agent CRITIQUE pour le theorem proving en Lean 4.
 
 TON ROLE UNIQUE:
-- Analyser les echecs de verification
-- Diagnostiquer les erreurs Lean
-- Orienter vers la bonne strategie de correction
+- Analyser les echecs de verification Lean
+- Classifier le type d'erreur
+- Decider de la prochaine action (quel agent appeler et avec quelle strategie)
+
+CLASSIFICATION DES ERREURS:
+
+1. "type mismatch" → La tactique produit le mauvais type
+   - Si 2+ fois avec le meme type → TacticAgent en mode "decompose"
+   - Sinon → TacticAgent avec correction ciblee
+
+2. "unknown identifier" → Lemme ou variable introuvable
+   - → SearchAgent pour chercher le bon nom de lemme
+
+3. "unsolved goals" → La tactique s'execute mais laisse des buts ouverts
+   - Si les buts restants sont plus simples → TacticAgent (ajouter des tactiques)
+   - Si les buts restants sont aussi complexes → TacticAgent en mode "decompose"
+
+4. "tactic failed" → La tactique ne s'applique pas du tout
+   - Analyser pourquoi (pattern non trouve, precondition non satisfaite...)
+   - → TacticAgent avec une approche completement differente
+
+5. "sorry detected" → La decomposition a introduit des sorry (SUCCES PARTIEL)
+   - C'est BON signe! La decomposition reussit si le fichier compile avec des sous-sorry
+   - → CoordinatorAgent pour cibler le sous-sorry suivant
+
+DECISIONS STRATEGIQUES:
+- Apres 3+ echecs avec le MEME type d'erreur → CoordinatorAgent (changement strategie)
+- Apres 5+ echecs totaux → CoordinatorAgent (escalade)
+- Si une decomposition compile avec sorry → SUCCES, rapporter
 
 WORKFLOW:
 1. Lis l'etat avec get_proof_state()
 2. Utilise analyze_failure() pour comprendre l'erreur
-3. Decide: delegue a TacticAgent (nouvelle tentative) ou CoordinatorAgent (changement strategie)
+3. Decide et indique le prochain agent via designate_next_agent()
 
 IMPORTANT:
 - Analyse les 3 derniers echecs pour detecter des patterns
-- Si >3 echecs similaires, delegue a CoordinatorAgent
+- Si une tactique produit un "unsolved goals" plus simple, c'est du PROGRES
+- Toujours fournir une EXPLICATION de pourquoi l'erreur s'est produite
 """
 
 COORDINATOR_AGENT_INSTRUCTIONS = """Tu es l'agent COORDINATEUR pour le theorem proving en Lean 4.
@@ -1303,6 +1441,7 @@ class SimpleAgent:
         from openai import OpenAI
         self._client = OpenAI(api_key=cfg["api_key"], base_url=cfg["base_url"])
         self._model = cfg["models"]["reasoning"] if thinking else cfg["models"]["fast"]
+        self.last_tool_results: List[Dict[str, str]] = []  # [{name, result}]
 
     def _build_openai_tools(self) -> list:
         """Convert @kernel_function methods to OpenAI tool format (from notebook)."""
@@ -1398,6 +1537,7 @@ class SimpleAgent:
     def invoke(self, message: str, state: ProofState, skip_state: bool = False,
                max_tool_calls: int = 10) -> str:
         """Execute agent with function calling (from notebook _call_llm)."""
+        self.last_tool_results = []
         state_summary = json.dumps(state.get_state_snapshot(summarize=True), indent=2)
         tools = self._build_openai_tools()
 
@@ -1450,6 +1590,10 @@ class SimpleAgent:
 
                         result = self._execute_tool_call(func_name, arguments)
                         tool_results.append(func_name.split("__")[-1])
+                        self.last_tool_results.append({
+                            "name": func_name.split("__")[-1],
+                            "result": result,
+                        })
 
                         if self.trace:
                             self.trace.log(
@@ -2029,6 +2173,434 @@ class SingleAgentProver:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# MULTI-AGENT SORRY PROVER - Full 5-agent architecture with auto-verification
+# ══════════════════════════════════════════════════════════════════════════════
+
+class MultiAgentSorryProver:
+    """Multi-agent sorry replacement using 5-agent architecture.
+
+    Flow: Coordinator → Search → Tactic → [auto-verify] → Critic → (loop)
+    Verification happens automatically between Tactic and Critic (no LLM needed).
+    """
+
+    def __init__(self, trace: TraceLogger, provider: str = "zai",
+                 thinking: bool = True, local_provider: str = "local"):
+        self.trace = trace
+        self.provider = provider
+        self.thinking = thinking
+        self.local_provider = local_provider
+        self.config_label = f"multi-sorry={provider}_{'thinkON' if thinking else 'thinkOFF'}"
+
+    def prove_sorry(self, demo: dict, max_iterations: int = 10) -> dict:
+        filepath = demo["file"]
+        sorry_line = demo["line"]
+
+        # 1. Extract sorry context
+        ctx = extract_sorry_block(filepath, sorry_line)
+        if "error" in ctx:
+            return {"success": False, "proof": None, "error": ctx["error"]}
+
+        # 2. Get goal state from Lean
+        print(f"  Extracting goal state from Lean...")
+        goal_state = get_goal_state(filepath, sorry_line)
+        if goal_state:
+            print(f"  GOAL: {goal_state[:200]}")
+        else:
+            print(f"  Could not extract goal (using hints)")
+
+        # Count initial sorry
+        initial_sorry_count = ctx["full_file"].count("sorry")
+
+        # 3. Build SorryContext
+        sorry_ctx = SorryContext(
+            filepath=filepath,
+            sorry_line=sorry_line,
+            goal_state=goal_state,
+            context_before=ctx.get("context_before", ""),
+            context_after=ctx.get("context_after", ""),
+            indentation=ctx.get("indentation", 0),
+            indent_str=ctx.get("indent_str", ""),
+            full_file=ctx.get("full_file", ""),
+            sorry_count_before=initial_sorry_count,
+        )
+
+        # 4. Create shared state
+        state = ProofState(
+            theorem_statement=demo.get("theorem", demo["name"]),
+            imports=demo.get("imports"),
+            max_iterations=max_iterations,
+            start_time=datetime.now(),
+            sorry_context=sorry_ctx,
+        )
+        state.current_goal = goal_state or ""
+
+        print(f"\n{'='*70}")
+        print(f"MULTI-AGENT SORRY: {demo['name']}")
+        print(f"File: {filepath}:{sorry_line}")
+        print(f"Config: {self.config_label}")
+        print(f"Goal: {goal_state[:150] if goal_state else '(unknown)'}")
+        print(f"{'='*70}")
+
+        if ctx.get("context_before"):
+            print(f"\n--- Context before sorry ---")
+            for line in ctx["context_before"].split("\n"):
+                if line.strip():
+                    print(f"  {line}")
+
+        # 5. Create plugins
+        state_plugin = ProofStateManagerPlugin(state)
+        search_plugin = LeanSearchPlugin()
+        tactic_plugin = LeanTacticPlugin()
+        verify_plugin = LeanVerificationPlugin(
+            project_dir=str(Path(filepath).parent.parent),
+            imports=demo.get("imports"),
+            trace=self.trace,
+            sorry_context=sorry_ctx,
+        )
+        submit_plugin = SubmitTacticPlugin(state, trace=self.trace)
+
+        # 6. Create agents with restricted plugin access
+        search_plugins = {"state": state_plugin, "search": search_plugin}
+        tactic_plugins = {"state": state_plugin, "tactic": tactic_plugin, "submit": submit_plugin}
+        critic_plugins = {"state": state_plugin, "tactic": tactic_plugin}
+        coordinator_plugins = {"state": state_plugin, "search": search_plugin}
+
+        agents = {
+            "SearchAgent": SimpleAgent(
+                "SearchAgent", SEARCH_AGENT_INSTRUCTIONS, search_plugins,
+                provider=self.local_provider, trace=self.trace, thinking=False,
+            ),
+            "TacticAgent": SimpleAgent(
+                "TacticAgent", TACTIC_AGENT_INSTRUCTIONS, tactic_plugins,
+                provider=self.provider, trace=self.trace, thinking=self.thinking,
+            ),
+            "CriticAgent": SimpleAgent(
+                "CriticAgent", CRITIC_AGENT_INSTRUCTIONS, critic_plugins,
+                provider=self.provider, trace=self.trace, thinking=False,
+            ),
+            "CoordinatorAgent": SimpleAgent(
+                "CoordinatorAgent", COORDINATOR_AGENT_INSTRUCTIONS, coordinator_plugins,
+                provider=self.provider, trace=self.trace, thinking=False,
+            ),
+        }
+
+        # 7. Build context message for agents
+        context_msg = (
+            f"Replace the `sorry` in this Lean 4 proof.\n\n"
+            f"THEOREM: {demo.get('theorem_name', demo['name'])}\n\n"
+        )
+        if demo.get("description"):
+            context_msg += f"CONTEXT:\n{demo['description']}\n\n"
+        if ctx.get("context_before"):
+            context_msg += f"CODE BEFORE sorry:\n```lean\n{ctx['context_before']}\n```\n\n"
+        if goal_state:
+            context_msg += f"ACTUAL LEAN GOAL:\n```\n{goal_state}\n```\n\n"
+        elif ctx.get("goal_hints"):
+            context_msg += f"GOAL HINTS:\n{ctx['goal_hints']}\n\n"
+        context_msg += "Provide the tactic(s) to replace `sorry`."
+
+        # 8. Multi-agent loop with auto-verification
+        failed_tactics = []
+        sorry_count = initial_sorry_count
+        session_start = time.time()
+        phase_sequence = ["search", "generate", "verify", "analyze"]
+        phase_idx = 0
+        consecutive_failures = 0
+
+        # Start with search phase
+        current_agent_name = "SearchAgent"
+        current_message = context_msg
+
+        for iteration in range(1, max_iterations + 1):
+            state.iteration = iteration
+            iter_start = time.time()
+            elapsed = time.time() - session_start
+
+            print(f"\n--- Iteration {iteration}/{max_iterations} | {current_agent_name} [+{elapsed:.1f}s] ---")
+
+            # === SEARCH PHASE ===
+            if current_agent_name == "SearchAgent":
+                agent = agents["SearchAgent"]
+                response = agent.invoke(current_message, state)
+
+                # Check if search found lemmas
+                lemmas_found = len(state.discovered_lemmas)
+                print(f"  Lemmas found: {lemmas_found}")
+
+                # Always move to TacticAgent after search
+                current_agent_name = "TacticAgent"
+                current_message = context_msg + (
+                    f"\n\nLEMmas found ({lemmas_found}): "
+                    + "\n".join(state.discovered_lemmas[-5:])
+                    if state.discovered_lemmas else context_msg
+                )
+                continue
+
+            # === TACTIC PHASE ===
+            if current_agent_name == "TacticAgent":
+                agent = agents["TacticAgent"]
+
+                # Build retry message if we have failures
+                if failed_tactics:
+                    failed_list = "\n".join(
+                        f"  - `{t}` → {e[:100]}" for t, e in failed_tactics[-3:]
+                    )
+                    retry_msg = current_message + (
+                        f"\n\nFAILED ATTEMPTS (do NOT repeat these):\n{failed_list}\n\n"
+                        f"Error classification: {state.last_error[:200] if state.last_error else 'none'}\n"
+                    )
+                    if state.strategy_mode == "decompose":
+                        retry_msg += "\nSTRATEGY: Use submit_decomposition() to split the goal into sub-goals.\n"
+                else:
+                    retry_msg = current_message
+
+                # Track history before invocation
+                history_before = len(state.tactic_history)
+                response = agent.invoke(retry_msg, state, skip_state=True, max_tool_calls=5)
+
+                # Extract submitted tactic
+                tactic = None
+                is_decomposition = False
+
+                if len(state.tactic_history) > history_before:
+                    tactic = state.tactic_history[-1].tactic
+
+                if tactic is None:
+                    # Try extraction from response
+                    lean_blocks = re.findall(r'```lean\n(.*?)```', response, re.DOTALL)
+                    if lean_blocks:
+                        tactic = lean_blocks[0].strip()
+                    else:
+                        clean = re.sub(r'^\[.*?\]\s*', '', response).strip()
+                        # Check if decomposition was submitted via tool call
+                        decomp_from_tools = None
+                        for tr in agent.last_tool_results:
+                            if tr["name"] == "submit_decomposition":
+                                try:
+                                    data = json.loads(tr["result"])
+                                    decomp_from_tools = data.get("decomposition", "")
+                                except (json.JSONDecodeError, TypeError):
+                                    pass
+                                break
+
+                        if decomp_from_tools:
+                            is_decomposition = True
+                            tactic = decomp_from_tools
+                        elif "submit_decomposition" in clean:
+                            is_decomposition = True
+                            decomp_match = re.search(r'"decomposition":\s*"(.*?)"', clean, re.DOTALL)
+                            if decomp_match:
+                                tactic = decomp_match.group(1).replace("\\n", "\n")
+                            else:
+                                print(f"  Tactic: (decomposition submitted but lost)")
+                                consecutive_failures += 1
+                                continue
+                        elif "Max tool calls" in clean:
+                            print(f"  Tactic: (max tool calls reached — skipping)")
+                            consecutive_failures += 1
+                            continue
+                        elif clean and clean != "(no response)":
+                            tactic = clean
+
+                if tactic is None:
+                    print(f"  Tactic: (none — retrying)")
+                    consecutive_failures += 1
+                    if consecutive_failures >= 3:
+                        current_agent_name = "CoordinatorAgent"
+                        current_message = (
+                            f"No tactics generated after {consecutive_failures} attempts. "
+                            f"Goal: {goal_state}\nErrors: {state.last_error}"
+                        )
+                    continue
+
+                # Dedup check
+                tactic_stripped = tactic.strip()
+                if any(tactic_stripped == ft.strip() for ft, _ in failed_tactics):
+                    print(f"  Tactic: (duplicate — skipping)")
+                    continue
+
+                # Check if decomposition (have statement introduces sub-goals)
+                if re.search(r"\bhave\s+\w+\s*:", tactic):
+                    is_decomposition = True
+                    print(f"  DECOMPOSITION detected (have statement)")
+
+                print(f"  Tactic: {tactic[:120]}")
+                consecutive_failures = 0
+
+                # === AUTO-VERIFICATION PHASE ===
+                print(f"  Verifying...")
+                verify_result = verify_sorry_replacement(
+                    filepath=filepath,
+                    sorry_line=sorry_line,
+                    replacement=tactic,
+                    imports=demo.get("imports"),
+                )
+
+                # Check sorry count for decomposition detection
+                new_sorry_count = verify_plugin._count_sorry_after_replacement(tactic)
+
+                if verify_result["success"]:
+                    # PROOF COMPLETE!
+                    print(f"  PROOF VALID! ({verify_result['time_s']:.1f}s Lean)")
+                    state.add_tactic_attempt(tactic, success=True)
+                    state.set_proof_complete(tactic)
+                    self._log_iteration(iteration, "TacticAgent", tactic, True, None,
+                                        time.time() - iter_start)
+                    break
+
+                elif is_decomposition and new_sorry_count > sorry_count:
+                    # Decomposition succeeded! More sorry = we split the goal
+                    print(f"  DECOMPOSITION SUCCESS! sorry: {sorry_count} → {new_sorry_count}")
+                    state.add_tactic_attempt(tactic, success=False,
+                                             error=f"Decomposition: {sorry_count} → {new_sorry_count} sorry")
+                    sorry_count = new_sorry_count
+                    state.strategy_mode = "decompose"
+                    # Continue trying to close the new sorry
+                    failed_tactics.append((tactic, "decomposition (progress)"))
+                    current_agent_name = "TacticAgent"
+                    current_message = context_msg + (
+                        f"\n\nDecomposition reussie! sorry count: {sorry_count}. "
+                        f"Cible maintenant le sous-sorry le plus simple."
+                    )
+                    self._log_iteration(iteration, "TacticAgent", tactic, False,
+                                        "decomposition_progress", time.time() - iter_start)
+                    continue
+
+                else:
+                    # Failed — classify error and route to CriticAgent
+                    raw_error = verify_result.get("errors", "")[:500]
+                    error_type = verify_result.get("error_type", "unknown")
+                    residual_goals = verify_result.get("residual_goals", [])
+
+                    # Add contextual hints
+                    if error_type == "unsolved_goals" and residual_goals:
+                        goals_str = "\n".join(f"  ⊢ {g}" for g in residual_goals[:3])
+                        hint = f"Unsolved goals:\n{goals_str}"
+                        raw_error = hint + "\n" + raw_error
+
+                    state.add_tactic_attempt(tactic, success=False, error=raw_error)
+                    failed_tactics.append((tactic, raw_error[:200]))
+                    print(f"  FAILED [{error_type}]: {raw_error[:200]}")
+
+                    self._log_iteration(iteration, "TacticAgent", tactic, False,
+                                        raw_error[:200], time.time() - iter_start)
+
+                    # Route to CriticAgent for error analysis
+                    current_agent_name = "CriticAgent"
+                    current_message = (
+                        f"Tactic FAILED:\n```lean\n{tactic}\n```\n\n"
+                        f"Error type: {error_type}\n"
+                        f"Error: {raw_error[:300]}\n\n"
+                        f"Goal: {goal_state}\n"
+                        f"Failed tactics count: {len(failed_tactics)}\n"
+                        f"Classify the error and decide the next agent."
+                    )
+                    continue
+
+            # === CRITIC PHASE ===
+            if current_agent_name == "CriticAgent":
+                agent = agents["CriticAgent"]
+                response = agent.invoke(current_message, state, skip_state=True, max_tool_calls=3)
+
+                # Parse critic's decision
+                critic_text = response.lower()
+
+                if "decompos" in critic_text or "split" in critic_text or "have" in critic_text:
+                    state.strategy_mode = "decompose"
+                    current_agent_name = "TacticAgent"
+                    current_message = context_msg + (
+                        f"\n\nCRITIC DECISION: Switch to DECOMPOSITION mode. "
+                        f"Use submit_decomposition() to split the goal.\n"
+                        f"Failed: {len(failed_tactics)} attempts\n"
+                        f"Last error: {state.last_error[:200] if state.last_error else 'none'}"
+                    )
+                elif "search" in critic_text or "lemma" in critic_text:
+                    current_agent_name = "SearchAgent"
+                    current_message = (
+                        f"Search for lemmas relevant to this goal:\n{goal_state}\n\n"
+                        f"Error encountered: {state.last_error[:200] if state.last_error else 'unknown'}"
+                    )
+                elif "coordinat" in critic_text or "strateg" in critic_text:
+                    current_agent_name = "CoordinatorAgent"
+                    current_message = (
+                        f"CriticAgent escalates after {len(failed_tactics)} failures.\n"
+                        f"Goal: {goal_state}\n"
+                        f"Last errors: {[e[:100] for _, e in failed_tactics[-3:]]}"
+                    )
+                else:
+                    # Default: retry with TacticAgent
+                    current_agent_name = "TacticAgent"
+                    current_message = context_msg + (
+                        f"\n\nPrevious tactic failed. Try a DIFFERENT approach.\n"
+                        f"Error: {state.last_error[:200] if state.last_error else 'unknown'}"
+                    )
+                continue
+
+            # === COORDINATOR PHASE ===
+            if current_agent_name == "CoordinatorAgent":
+                agent = agents["CoordinatorAgent"]
+                response = agent.invoke(current_message, state, skip_state=True, max_tool_calls=2)
+
+                coord_text = response.lower()
+
+                if "decompos" in coord_text:
+                    state.strategy_mode = "decompose"
+                    current_agent_name = "TacticAgent"
+                    current_message = context_msg + (
+                        f"\n\nCOORDINATOR: Switch to DECOMPOSITION mode.\n"
+                        f"Decompose the goal into sub-goals using 'have'."
+                    )
+                elif "search" in coord_text:
+                    current_agent_name = "SearchAgent"
+                    current_message = f"Search for lemmas for goal:\n{goal_state}"
+                elif "give up" in coord_text or "abort" in coord_text:
+                    print(f"  Coordinator: GIVING UP")
+                    state.phase = ProofPhase.FAILED
+                    break
+                else:
+                    # Try one more time with TacticAgent
+                    current_agent_name = "TacticAgent"
+                    current_message = context_msg + (
+                        f"\n\nCOORDINATOR: Try a completely new approach.\n"
+                        f"Failed: {len(failed_tactics)} attempts"
+                    )
+                continue
+
+        total_s = (datetime.now() - state.start_time).total_seconds()
+        if not state.is_done:
+            state.phase = ProofPhase.FAILED
+
+        print(f"\n{'='*60}")
+        print(f"RESULT: {'SUCCESS' if state.proof_complete else 'FAILED'}")
+        if state.final_proof:
+            print(f"  Proof: {state.final_proof[:200]}")
+        print(f"  Iterations: {state.iteration}, Time: {total_s:.1f}s")
+        print(f"  Sorry count: {initial_sorry_count} → {sorry_count}")
+        print(f"  Tactics tried: {len(state.tactic_history)}")
+        print(f"  Decompositions: {sum(1 for a in state.tactic_history if 'Decomposition' in (a.error or ''))}")
+        print(f"{'='*60}")
+
+        return {
+            "success": state.final_proof is not None,
+            "proof": state.final_proof,
+            "iterations": state.iteration,
+            "attempts": len(state.tactic_history),
+            "total_s": round(total_s, 1),
+            "config": self.config_label,
+            "sorry_evolution": f"{initial_sorry_count} → {sorry_count}",
+        }
+
+    def _log_iteration(self, iteration: int, agent: str, tactic: str,
+                       success: bool, error: Optional[str], duration: float):
+        self.trace.log(
+            agent=agent, role="iteration",
+            content=f"iter={iteration}, tactic={tactic[:100]}, success={success}",
+            duration_s=duration, tool_name="verify_sorry" if not success else "proof_found",
+            tool_result=error[:200] if error else "SUCCESS",
+        )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # BATCH RUNNER
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -2122,8 +2694,8 @@ def main():
                         help="Comma-separated demo numbers for batch")
     parser.add_argument("--max-iterations", type=int, default=6,
                         help="Max proof iterations")
-    parser.add_argument("--mode", choices=["multi", "single", "both"], default="single",
-                        help="Agent mode")
+    parser.add_argument("--mode", choices=["multi", "single", "both"], default="multi",
+                        help="Agent mode (default: multi for sorry-mode, single for simple demos)")
     parser.add_argument("--tactic", default="zai", help="Tactic agent provider")
     parser.add_argument("--no-thinking", action="store_true")
     parser.add_argument("--verify-only", action="store_true",
@@ -2159,17 +2731,34 @@ def main():
 
     # ── Sorry-mode demos (6-8) ──
     if is_sorry_mode:
-        print(f"\n>>> SORRY-REPLACEMENT ({demo['name']})...")
+        mode = args.mode if args.mode != "both" else "multi"
+        print(f"\n>>> SORRY-REPLACEMENT ({demo['name']})... [mode={mode}]")
         trace = TraceLogger()
-        prover = SingleAgentProver(trace=trace, provider=args.tactic,
-                                   thinking=not args.no_thinking)
-        result = prover.prove_sorry(demo=demo, max_iterations=args.max_iterations)
+
+        if mode == "multi":
+            prover = MultiAgentSorryProver(
+                trace=trace, provider=args.tactic,
+                thinking=not args.no_thinking,
+            )
+        else:
+            prover = SingleAgentProver(
+                trace=trace, provider=args.tactic,
+                thinking=not args.no_thinking,
+            )
+
+        if isinstance(prover, MultiAgentSorryProver):
+            result = prover.prove_sorry(demo=demo, max_iterations=args.max_iterations)
+        else:
+            result = prover.prove_sorry(demo=demo, max_iterations=args.max_iterations)
+
         trace.save(f"sorry_{demo['name']}")
         print(f"\n{'='*60}")
         print(f"RESULT: {'SUCCESS' if result['success'] else 'FAILED'}")
         if result.get("proof"):
             print(f"  Proof: {result['proof'][:200]}")
         print(f"  Time: {result['total_s']:.1f}s, Iterations: {result['iterations']}")
+        if result.get("sorry_evolution"):
+            print(f"  Sorry evolution: {result['sorry_evolution']}")
         print(f"{'='*60}")
         return
 
