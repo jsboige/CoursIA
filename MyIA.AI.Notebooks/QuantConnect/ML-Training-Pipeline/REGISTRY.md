@@ -1,7 +1,7 @@
 # Checkpoint Registry
 
 Auto-generated: 2026-05-03 22:29
-Updated: 2026-05-04 — anti-bias audit, majority class baseline
+Updated: 2026-05-04 — Track B: walk-forward OOS evaluation columns
 
 Total checkpoints: 20
 
@@ -37,6 +37,23 @@ Key findings:
 - RF accuracy (50.86%) is BELOW majority class (-3.73pp). No predictive power.
 - DQN Sharpe 0.89 is in-sample (no train/test split). Must be re-evaluated with proper time-series split (Issue #703).
 - All checkpoints are single-asset (SPY), single-regime (2015-2024 bull market). Not robust.
+
+## Walk-Forward OOS Evaluation (Track B)
+
+Evaluation harness: `scripts/eval_existing_checkpoints.py`
+Method: 5-fold walk-forward (3yr train, 1yr test, 5-day gap), per-regime, transaction costs.
+
+| Model | Checkpoint | OOS DirAcc | vs Majority | Regime Avg DirAcc | Gross Sharpe | Net Sharpe | Cost Drag (bps) |
+| ----- | ---------- | ---------- | ----------- | ----------------- | ------------ | ---------- | --------------- |
+| Transformer | 20260501_134056 (BEST) | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
+| Transformer | 20260503_222904 (PROD) | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
+| LSTM | 20260503_221944 (PROD) | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
+| LSTM | 20260501_133929 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
+| RF | 20260501_133837 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
+| DQN | 20260501_120415 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
+
+**Status**: Evaluation harness ready (27/27 tests pass). OOS metrics to be populated after GPU evaluation run.
+SPY majority class baseline = **54.59%**. Values will be populated by `python eval_existing_checkpoints.py --all`.
 
 ## Data Sources
 
