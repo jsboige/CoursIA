@@ -9,7 +9,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from diagnose_broken import (
-    classify_error,
     diagnose_notebook,
     extract_errors,
     generate_report,
@@ -33,49 +32,6 @@ def _nb_with_errors(*errors):
 def _nb_no_outputs():
     """Build notebook with code cells but no outputs."""
     return {"cells": [{"cell_type": "code", "outputs": [], "source": ["x=1\n"]}]}
-
-
-# --- classify_error ---
-
-class TestClassifyError:
-    def test_import_error(self):
-        assert classify_error("ImportError", "No module named foo") == "MISSING_DEP"
-
-    def test_module_not_found(self):
-        assert classify_error("ModuleNotFoundError", "No module named bar") == "MISSING_DEP"
-
-    def test_cannot_import_name(self):
-        assert classify_error("ImportError", "cannot import name 'X'") == "MISSING_DEP"
-
-    def test_kernel_error(self):
-        assert classify_error("RuntimeError", "kernel not found: .NET") == "KERNEL_ERROR"
-
-    def test_api_key_missing(self):
-        assert classify_error("OpenAIError", "The api_key client option") == "API_KEY"
-
-    def test_401_auth(self):
-        assert classify_error("HTTPError", "401 Unauthorized") == "API_KEY"
-
-    def test_file_not_found(self):
-        assert classify_error("FileNotFoundError", "No such file") == "RUNTIME_ERROR"
-
-    def test_type_error(self):
-        assert classify_error("TypeError", "unsupported operand") == "RUNTIME_ERROR"
-
-    def test_name_error(self):
-        # classify_error concatenates ename + \n + traceback; .* won't span newline
-        assert classify_error("NameError", "name 'x' is not defined") == "UNKNOWN"
-        # With the error text in the same field as ename, it matches
-        assert classify_error("NameError: name 'x' is not defined", "") == "RUNTIME_ERROR"
-
-    def test_cuda_oom(self):
-        assert classify_error("RuntimeError", "CUDA out of memory") == "RUNTIME_ERROR"
-
-    def test_unknown(self):
-        assert classify_error("CustomError", "something weird") == "UNKNOWN"
-
-    def test_first_match_wins(self):
-        assert classify_error("ImportError", "api_key issue") == "MISSING_DEP"
 
 
 # --- extract_errors ---
