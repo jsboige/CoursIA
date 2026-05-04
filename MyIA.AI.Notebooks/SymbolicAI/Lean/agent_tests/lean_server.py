@@ -230,6 +230,63 @@ class LeanVerifier:
             "warm": self._warm,
         }
 
+    def verify_project_file(self, relative_path: str, timeout: float = 300.0) -> Optional[dict]:
+        """Verify a file already on disk in the WSL project directory.
+
+        Uses `lake env lean` directly — no base64 encoding, no command-line limits.
+        """
+        proj = self._wsl_project
+        filepath = f"{proj}/{relative_path}"
+        lean_bin = self._get_lean_bin()
+
+        script = f"""#!/bin/bash
+source ~/.elan/env
+cd "{proj}"
+export LEAN_PATH="{self._lean_path_full}"
+{lean_bin} "{filepath}" 2>&1
+"""
+        script_path = f"{proj}/_verify_file.sh"
+
+        # Write script via wsl (small enough for command line — no lean content)
+        write_cmd = f'cat > "{script_path}" << \'SCRIPT_EOF\'\n{script}\nSCRIPT_EOF'
+        start = time.time()
+
+        try:
+            subprocess.run(
+                ["wsl", "-d", "Ubuntu", "--", "bash", "-c", write_cmd],
+                capture_output=True, text=True, timeout=10,
+            )
+            r = subprocess.run(
+                ["wsl", "-d", "Ubuntu", "--", "bash", script_path],
+                capture_output=True, text=True, timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            duration = time.time() - start
+            self._log(f"verify_project_file timed out after {duration:.1f}s")
+            return {"success": False, "errors": "Timeout", "time_s": duration, "backend": "full_path"}
+
+        duration = time.time() - start
+        output = r.stdout
+        errors = []
+        has_sorry = False
+
+        for line in output.split("\n"):
+            if "error:" in line.lower():
+                errors.append(line.strip())
+            if "sorry" in line.lower() and "declaration uses" in line.lower():
+                has_sorry = True
+
+        success = len(errors) == 0 and not has_sorry
+        self._log(f"verify_project_file: {'OK' if success else 'FAIL'} in {duration:.1f}s ({len(errors)} err)")
+
+        return {
+            "success": success,
+            "errors": "\n".join(errors),
+            "raw_output": output,
+            "time_s": duration,
+            "backend": "full_path",
+        }
+
     @staticmethod
     def _code_needs_deps(code: str) -> bool:
         """Detect if code imports Mathlib or project modules."""

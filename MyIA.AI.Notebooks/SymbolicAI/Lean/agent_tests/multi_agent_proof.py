@@ -1,13 +1,13 @@
 """
 Multi-Agent Lean 4 Proof System
 ================================
-Standalone script for testing multi-agent proof strategies.
+Port of Lean-9-SK-Multi-Agents.ipynb — Semantic Kernel architecture.
 
-Architecture:
-  - ProofState: shared state between agents
-  - 3 Agent roles: Coordinator, Tactic, Critic
-  - Lean verification plugin (reuses lean_runner + WSL backend)
-  - Turn-taking orchestration based on proof state
+Architecture (from notebook):
+  - Kernel + @kernel_function plugins → agents call tools via function calling
+  - 5 Agent roles: Search, Tactic, Verifier, Critic, Coordinator
+  - Shared ProofState updated through plugin tool calls
+  - LeanVerifier backend (fast_path ~5s, full_path ~130s)
   - Full trace instrumentation with timings
 
 Usage:
@@ -15,7 +15,7 @@ Usage:
     python multi_agent_proof.py --demo 1
     python multi_agent_proof.py --demo 5 --verbose
     python multi_agent_proof.py --batch --demos 1,2,3,4,5
-    python multi_agent_proof.py --demo 3 --coordinator zai --tactic local --critic zai
+    python multi_agent_proof.py --demo 3 --tactic zai --critic zai
 """
 
 import os
@@ -23,7 +23,9 @@ import sys
 import json
 import time
 import re
+import uuid
 import argparse
+import asyncio
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, Any, List
@@ -49,7 +51,7 @@ PROVIDERS = {
         "api_key": os.getenv("ZAI_API_KEY", ""),
         "models": {
             "reasoning": os.getenv("ZAI_CHAT_MODEL_ID", "glm-5.1"),
-            "fast": os.getenv("ZAI_FAST_MODEL_ID", "glm-4.7"),
+            "fast": os.getenv("ZAI_FAST_MODEL_ID", "glm-5.1"),
         }
     },
     "local": {
@@ -71,6 +73,8 @@ import Mathlib.Tactic
 import CooperativeGames.Basic
 """
 
+SHAPLEY_FILE = Path(LEAN_PROJECT_DIR) / "CooperativeGames" / "Shapley.lean" if LEAN_PROJECT_DIR else None
+BASIC_FILE = Path(LEAN_PROJECT_DIR) / "CooperativeGames" / "Basic.lean" if LEAN_PROJECT_DIR else None
 
 # ── Demo Theorems ─────────────────────────────────────────────────────────────
 
@@ -109,13 +113,482 @@ DEMOS = {
     },
     5: {
         "name": "DEMO_5_FINSET_SUM_REAL",
-        "theorem": "theorem demo_finset_sum_erase {α : Type*} [DecidableEq α] [Fintype α] (s : Finset α) (a : α) (f : α → Real) (ha : a ∈ s) : ∑ x ∈ s.erase a, f x = ∑ x ∈ s, f x - f a",
+        "theorem": "theorem demo_finset_sum_erase {a : Type*} [DecidableEq a] [Fintype a] (s : Finset a) (x : a) (f : a -> Real) (ha : x in s) : Sum x in s.erase x, f x = Sum x in s, f x - f x",
         "proof": "have h := Finset.sum_erase_add s f ha; linarith",
         "imports": SHAPLEY_IMPORTS,
         "description": "Finset sum with erase + Real subtraction (Shapley-style)",
         "difficulty": "advanced",
     },
+    # ── Real Shapley.lean sorry targets ──
+    6: {
+        "name": "SHAPLEY_UNANIMITY_IN_T",
+        "file": str(SHAPLEY_FILE),
+        "line": 128,
+        "sorry_type": "partial_proof",
+        "theorem_name": "shapley_unanimity (i ∈ T case)",
+        "theorem": "shapley_unanimity",
+        "imports": SHAPLEY_IMPORTS,
+        "description": (
+            "Replace sorry at line 128 of Shapley.lean. Context: proving φᵢ(u_T) = 1/|T| when i ∈ T.\n"
+            "Goal state after unfold/simp: need to simplify the Finset sum of shapleyCoef * marginalContrib.\n"
+            "Key insight: marginal = 1 iff T\\{i} ⊆ S. Sum over such S gives 1/|T|.\n"
+            "Available helpers: shapleyCoef_shift, shapleyCoef_top, shapley_symmetric, shapley_null_player.\n"
+            "The sorry is inside `split_ifs with hiT`, case `hiT : i ∈ T`.\n"
+            "Pre-sorry code:\n"
+            "```\n"
+            "  unfold shapleyValue TUGame.marginalContribution shapleyCoef\n"
+            "  simp only [TUGame.unanimityGame]\n"
+            "```\n"
+            "Goal should involve Finset.sum with if-then-else filters."
+        ),
+        "difficulty": "hard",
+        "context_before": (
+            "  · -- Case i ∈ T: direct computation\n"
+            "    -- marginal contribution = 1 iff T\\{i} ⊆ S (and i ∉ S, given by filter)\n"
+            "    -- = ∑_{S : i∉S, T\\{i} ⊆ S} c(|S|, n) = 1/|T|\n"
+            "    unfold shapleyValue TUGame.marginalContribution shapleyCoef\n"
+            "    simp only [TUGame.unanimityGame]\n"
+        ),
+        "context_after": "  · -- Case i ∉ T: i is a null player",
+    },
+    7: {
+        "name": "SHAPLEY_EFFICIENT_COEFF",
+        "file": str(SHAPLEY_FILE),
+        "line": 292,
+        "sorry_type": "partial_proof",
+        "theorem_name": "shapley_efficient (T ≠ ∅ case)",
+        "theorem": "shapley_efficient",
+        "imports": SHAPLEY_IMPORTS,
+        "description": (
+            "Replace sorry at line 292 of Shapley.lean. Context: proving efficiency.\n"
+            "We're inside `Finset.sum_eq_single` proving that T ≠ univ has zero coefficient.\n"
+            "Case T ≠ ∅: need to show that coefficient |T|*c(|T|-1) equals c(|T|)*(n-|T|).\n"
+            "We have `hshift := shapleyCoef_shift n (T.card - 1) (by omega)`.\n"
+            "Pre-sorry code:\n"
+            "```\n"
+            "  have hTcard : 1 ≤ T.card := Nat.pos_of_ne_zero hT0\n"
+            "  have hshift := shapleyCoef_shift (Fintype.card N) (T.card - 1) (by omega)\n"
+            "```\n"
+            "Goal: `↑T.card * shapleyCoef (Fintype.card N) (T.card - 1) * G.v T -\n"
+            "  shapleyCoef (Fintype.card N) T.card * (↑(Fintype.card N - T.card) * G.v T) = 0`\n"
+            "Key: rewrite using hshift, then use Nat subtraction properties."
+        ),
+        "difficulty": "hard",
+        "context_before": (
+            "        · -- T ≠ ∅: coefficient shift applies\n"
+            "          have hTcard : 1 ≤ T.card := Nat.pos_of_ne_zero hT0\n"
+            "          have hshift := shapleyCoef_shift (Fintype.card N) (T.card - 1) (by omega)\n"
+        ),
+        "context_after": "      (fun h => (h (Finset.mem_univ _)).elim)",
+    },
+    8: {
+        "name": "SHAPLEY_UNIQUENESS",
+        "file": str(SHAPLEY_FILE),
+        "line": 463,
+        "sorry_type": "full_proof",
+        "theorem_name": "shapley_uniqueness",
+        "theorem": "shapley_uniqueness",
+        "imports": SHAPLEY_IMPORTS,
+        "description": (
+            "Prove shapley_uniqueness: any solution satisfying all 4 axioms equals Shapley value.\n"
+            "Uses Mobius decomposition of games into unanimity games.\n"
+            "Depends on: shapley_unanimity, shapley_efficient, shapley_symmetric, shapley_null_player.\n"
+            "NOTE: shapley_unanimity still has a sorry (demo 6). May need that fixed first."
+        ),
+        "difficulty": "very_hard",
+    },
 }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SORRY EXTRACTION - Read .lean files and extract sorry contexts
+# ══════════════════════════════════════════════════════════════════════════════
+
+def extract_sorry_block(filepath: str, sorry_line: int, context_lines: int = 15) -> dict:
+    """Extract the sorry context from a .lean file.
+
+    Returns dict with:
+      - full_file: complete file content
+      - sorry_line: 1-based line number of sorry
+      - context_before: lines before sorry (indented proof context)
+      - context_after: lines after sorry (continuation)
+      - proof_block: the full proof block containing the sorry
+      - indentation: indentation level of the sorry
+      - goal_hint: extracted from comments before sorry
+    """
+    content = Path(filepath).read_text(encoding="utf-8")
+    lines = content.split("\n")
+
+    if sorry_line < 1 or sorry_line > len(lines):
+        return {"error": f"sorry_line {sorry_line} out of range (1-{len(lines)})"}
+
+    sorry_text = lines[sorry_line - 1]
+    indent = len(sorry_text) - len(sorry_text.lstrip())
+    indent_str = sorry_text[:indent]
+
+    # Extract goal hints from comments before sorry
+    goal_hints = []
+    for i in range(sorry_line - 2, max(sorry_line - 20, -1), -1):
+        line = lines[i].strip()
+        if line.startswith("--"):
+            goal_hints.insert(0, line)
+        elif line and not line.startswith("--"):
+            break
+
+    # Find the start of the proof block (theorem/lemma line)
+    proof_start = sorry_line - 1
+    for i in range(sorry_line - 2, -1, -1):
+        stripped = lines[i].strip()
+        if stripped.startswith("theorem ") or stripped.startswith("lemma ") or \
+           stripped.startswith("private theorem ") or stripped.startswith("private lemma "):
+            proof_start = i
+            break
+        if stripped.startswith("def ") or stripped.startswith("noncomputable def "):
+            proof_start = i
+            break
+
+    # Find the next top-level declaration after sorry to bound the proof
+    proof_end = sorry_line
+    for i in range(sorry_line, min(sorry_line + 30, len(lines))):
+        stripped = lines[i].strip()
+        if stripped.startswith("theorem ") or stripped.startswith("lemma ") or \
+           stripped.startswith("/-!") or stripped.startswith("end ") or \
+           (stripped and not stripped.startswith("--") and not stripped.startswith("·")
+            and not stripped.startswith("have ") and not stripped.startswith("rw ")
+            and not stripped.startswith("simp") and not stripped.startswith("exact")
+            and not stripped.startswith("intro") and not stripped.startswith("apply")
+            and not stripped.startswith("cases") and not stripped.startswith("obtain")
+            and not stripped.startswith("by_cases") and not stripped.startswith("refine")
+            and not stripped.startswith("fun") and not stripped.startswith("ext")
+            and not stripped.startswith("constructor") and indent > 0
+            and lines[i][:1] not in (" ", "\t")):
+            proof_end = i
+            break
+
+    context_before_lines = lines[max(0, sorry_line - 1 - context_lines):sorry_line - 1]
+    context_after_lines = lines[sorry_line:min(len(lines), sorry_line + context_lines)]
+
+    return {
+        "filepath": filepath,
+        "sorry_line": sorry_line,
+        "sorry_text": sorry_text.strip(),
+        "indentation": indent,
+        "indent_str": indent_str,
+        "goal_hints": "\n".join(goal_hints),
+        "context_before": "\n".join(context_before_lines),
+        "context_after": "\n".join(context_after_lines),
+        "proof_block": "\n".join(lines[proof_start:proof_end + 1]),
+        "full_file": content,
+    }
+
+
+def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
+    """Extract the actual Lean goal state at a sorry by provoking a type-mismatch error.
+
+    Tries multiple probes in sequence: exact (), exact rfl.
+    Only considers errors at the EXACT sorry line to avoid cascade errors.
+    For deeply nested sorries (indent >= 8), skips probing and uses heuristics.
+    """
+    content = Path(filepath).read_text(encoding="utf-8")
+    lines = content.split("\n")
+
+    if sorry_line < 1 or sorry_line > len(lines):
+        return None
+
+    sorry_text = lines[sorry_line - 1]
+    indent = len(sorry_text) - len(sorry_text.lstrip())
+    indent_str = " " * indent
+
+    # Skip probing for deeply nested sorries — cascade errors make it unreliable
+    if indent >= 8:
+        print(f"  [GoalExtract] Deeply nested sorry (indent={indent}), using heuristic")
+        return _heuristic_goal_extract(lines, sorry_line)
+
+    project_dir = Path(filepath).parent.parent
+    verifier = get_verifier(str(project_dir))
+    subdir = Path(filepath).parent.name
+    relative_path = f"{subdir}/_GoalExtract.lean"
+    tmp_path = Path(filepath).parent / "_GoalExtract.lean"
+
+    # Try multiple probes to extract goal state
+    probes = [
+        "exact ()",    # Works for Unit goals; also produces type mismatch for others
+        "exact rfl",   # Works for equality goals (a = b)
+    ]
+
+    for probe in probes:
+        new_lines = lines[:sorry_line - 1] + [indent_str + probe] + lines[sorry_line:]
+        new_content = "\n".join(new_lines)
+        tmp_path.write_text(new_content, encoding="utf-8")
+
+        result = verifier.verify_project_file(relative_path)
+
+        raw_output = result.get("raw_output", "")
+
+        # For nested sorries (inside lambdas/by blocks), cascade errors
+        # appear at adjacent lines. Only use errors at the EXACT sorry line
+        # to avoid capturing misleading cascade errors.
+        target_errors = []
+        collecting = False
+        for line in raw_output.split("\n"):
+            m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
+            if m_err:
+                err_line = int(m_err.group(1))
+                if err_line == sorry_line:
+                    target_errors.append(line)
+                    collecting = True
+                else:
+                    collecting = False
+            elif collecting:
+                # Continuation lines for the error at the exact sorry line
+                # Stop if we hit another error line or empty separator
+                if line.strip() == "" or re.match(r".*?\d+:\d+: ", line):
+                    collecting = False
+                else:
+                    target_errors.append(line)
+
+        if not target_errors:
+            print(f"  [GoalExtract] Probe '{probe}': no error at exact line {sorry_line}")
+            continue
+
+        target_error_text = "\n".join(target_errors)
+        print(f"  [GoalExtract] Probe '{probe}': {target_error_text[:300]}")
+
+        goal = _parse_goal_from_error(target_error_text)
+        if goal:
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+            return goal
+
+    # Cleanup
+    try:
+        tmp_path.unlink()
+    except OSError:
+        pass
+
+    # All probes failed to produce parseable goal — try heuristic from context
+    return _heuristic_goal_extract(lines, sorry_line)
+
+
+def _parse_goal_from_error(error_text: str) -> Optional[str]:
+    """Parse Lean error text to extract the goal type."""
+    # Pattern 1: "but is expected to have type ..."
+    m = re.search(
+        r"but is expected to have type\n?(.*?)(?:\n\n|\n[a-z]|\Z)",
+        error_text, re.DOTALL,
+    )
+    if m:
+        goal = m.group(1).strip()
+        return re.sub(r'\s+', ' ', goal)
+
+    # Pattern 2: "expected to have type ..."
+    m = re.search(r"expected to have type\n?(.*?)(?:\n\n|\Z)", error_text, re.DOTALL)
+    if m:
+        goal = m.group(1).strip()
+        return re.sub(r'\s+', ' ', goal)
+
+    # Pattern 3: "type mismatch" followed by term and expected type
+    m = re.search(
+        r"type mismatch\n.*?has type\n.*?\nbut is expected to have type\n?(.*?)(?:\n\n|\Z)",
+        error_text, re.DOTALL,
+    )
+    if m:
+        goal = m.group(1).strip()
+        return re.sub(r'\s+', ' ', goal)
+
+    # Pattern 4: "⊢ ..." (goal display in error context)
+    m = re.search(r"⊢ (.*?)$", error_text, re.MULTILINE)
+    if m:
+        return m.group(1).strip()
+
+    return None
+
+
+def _heuristic_goal_extract(lines: list, sorry_line: int) -> Optional[str]:
+    """Extract goal heuristically from proof context when Lean probing fails.
+
+    Looks at the enclosing proof statement, recent tactics, and hypotheses.
+    """
+    # Look backwards for the proof statement (theorem/lemma/have)
+    proof_start = sorry_line - 1
+    for i in range(sorry_line - 1, max(0, sorry_line - 60), -1):
+        line = lines[i].strip()
+        if line.startswith("theorem ") or line.startswith("lemma ") or line.startswith("have "):
+            proof_start = i
+            break
+        if line.startswith("by ") and i < sorry_line - 3:
+            # "by" without theorem = inline tactic proof
+            proof_start = i
+            break
+
+    # Collect context around the sorry
+    context_lines = lines[proof_start:min(sorry_line + 2, len(lines))]
+    context = "\n".join(context_lines)
+
+    # Look for the most recent goal-transforming tactic before sorry
+    last_rw = None
+    last_show = None
+    for i in range(sorry_line - 1, max(0, sorry_line - 20), -1):
+        stripped = lines[i].strip()
+        if stripped.startswith("rw [") or stripped.startswith("rewrite "):
+            last_rw = stripped
+        if stripped.startswith("show "):
+            last_show = stripped[5:].rstrip(" :=")
+        if stripped.startswith("·") or stripped.startswith("case "):
+            # Branch marker — the goal was set up around here
+            break
+
+    if last_show:
+        print(f"  [GoalExtract] Heuristic: found 'show' → {last_show[:200]}")
+        return last_show
+
+    # Build a hint from the enclosing proof and recent tactics
+    hints = []
+    if last_rw:
+        hints.append(f"After rewrite: {last_rw}")
+
+    # Look at hypotheses declared right before sorry
+    for i in range(sorry_line - 1, max(0, sorry_line - 8), -1):
+        stripped = lines[i].strip()
+        if stripped.startswith("have ") and " := " in stripped:
+            hints.append(stripped)
+        if stripped.startswith("by_cases "):
+            hints.append(stripped)
+
+    if hints:
+        hint_str = " | ".join(hints[-3:])
+        print(f"  [GoalExtract] Heuristic hints: {hint_str[:200]}")
+        return None  # Return None but print hints for debugging
+
+    return None
+
+
+def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
+                             imports: Optional[str] = None) -> dict:
+    """Verify a sorry replacement by writing modified file to disk and checking Lean.
+
+    Args:
+        filepath: Path to .lean file
+        sorry_line: 1-based line number of the sorry
+        replacement: Tactic(s) to replace the sorry (will be indented to match)
+        imports: Unused (file already has imports)
+
+    Returns: dict with success, errors, time_s
+    """
+    content = Path(filepath).read_text(encoding="utf-8")
+    lines = content.split("\n")
+
+    if sorry_line < 1 or sorry_line > len(lines):
+        return {"success": False, "errors": f"Line {sorry_line} out of range"}
+
+    sorry_text = lines[sorry_line - 1]
+    indent = len(sorry_text) - len(sorry_text.lstrip())
+    indent_str = " " * indent
+
+    # Build replacement lines with correct indentation
+    replacement_lines = []
+    for line in replacement.strip().split("\n"):
+        if line.strip():
+            replacement_lines.append(indent_str + line.strip())
+
+    # Replace the sorry line in the full file
+    new_lines = lines[:sorry_line - 1] + replacement_lines + lines[sorry_line:]
+    new_content = "\n".join(new_lines)
+
+    # Write modified file to disk (Lean project directory)
+    tmp_path = Path(filepath).parent / "_SorryVerify.lean"
+    tmp_path.write_text(new_content, encoding="utf-8")
+
+    # Verify using verify_project_file (no command-line length limit)
+    verifier = get_verifier(str(Path(filepath).parent.parent))
+    subdir = Path(filepath).parent.name
+    relative_path = f"{subdir}/_SorryVerify.lean"
+    result = verifier.verify_project_file(relative_path)
+
+    # Clean up temp file
+    try:
+        tmp_path.unlink()
+    except OSError:
+        pass
+
+    # Filter errors to only those near the target sorry line.
+    # Pre-existing errors elsewhere in the file should NOT cause failure.
+    n_replacement_lines = len(replacement_lines)
+    line_shift = max(0, n_replacement_lines - 1)
+    raw_output = result.get("raw_output", "")
+
+    # Collect ALL error locations first
+    all_error_lines = []  # [(line_num, error_text)]
+    current_error = []
+    for line in raw_output.split("\n"):
+        m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
+        if m_err:
+            if current_error:
+                all_error_lines.append(current_error)
+            current_error = [(int(m_err.group(1)), line)]
+        elif current_error:
+            current_error.append((current_error[0][0], line))
+    if current_error:
+        all_error_lines.append(current_error)
+
+    # Separate: direct errors (at exact sorry line) vs cascade errors (nearby)
+    direct_errors = []  # errors at the exact sorry line
+    cascade_errors = []  # errors within ±5 lines but not at exact line
+    preexisting_errors = []  # errors far from sorry (pre-existing)
+    nearby_range = 5 + line_shift
+
+    for err_block in all_error_lines:
+        first_line_num = err_block[0][0]
+        text = "\n".join(line_text for _, line_text in err_block)
+        if first_line_num == sorry_line:
+            direct_errors.append(text)
+        elif abs(first_line_num - sorry_line) <= nearby_range:
+            cascade_errors.append(text)
+        else:
+            preexisting_errors.append(text)
+
+    # Build result
+    has_direct_error = len(direct_errors) > 0
+    has_cascade_error = len(cascade_errors) > 0
+    is_success = not has_direct_error and not has_cascade_error
+
+    # Extract residual goals from cascade errors (lines starting with ⊢)
+    residual_goals = []
+    cascade_text = "\n".join(cascade_errors)
+    for line in cascade_text.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("⊢ ") or stripped.startswith("| ⊢ "):
+            goal = stripped.lstrip("| ").lstrip("⊢ ").strip()
+            if goal and goal not in residual_goals:
+                residual_goals.append(goal)
+
+    # Build error message with context
+    if has_direct_error:
+        error_msg = "\n".join(direct_errors)
+        error_type = "tactic_failed"
+    elif has_cascade_error:
+        error_msg = (
+            "Tactic left UNSOLVED GOALS. The tactic at line "
+            f"{sorry_line} executed but did not close all goals. "
+            "Cascade error:\n" + "\n".join(cascade_errors[:2])
+        )
+        error_type = "unsolved_goals"
+    else:
+        error_msg = ""
+        error_type = None
+
+    return {
+        "success": is_success,
+        "errors": error_msg,
+        "raw_error": error_msg[:500],
+        "error_type": error_type,
+        "residual_goals": residual_goals,
+        "all_errors": result.get("errors", ""),
+        "time_s": result.get("time_s", 0),
+        "backend": result.get("backend", ""),
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -157,11 +630,9 @@ class TraceLogger:
             entry["state"] = state_snapshot
         self.entries.append(entry)
 
-        # Track phase timings
         if phase:
             self.phase_timings[phase] = self.phase_timings.get(phase, 0) + duration_s
 
-        # Console output
         ts = f"[+{entry['timestamp']:.1f}s]"
         if tool_name:
             print(f"  {ts} {agent} -> {tool_name}({json.dumps(tool_args or {})[:80]}) -> {duration_s:.2f}s")
@@ -194,15 +665,21 @@ class TraceLogger:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PROOF STATE - Shared state between agents
+# PROOF STATE - Shared state between agents (from notebook cell 5)
 # ══════════════════════════════════════════════════════════════════════════════
+
+class ProofStrategy(Enum):
+    EXPLORATION = "exploration"
+    REFINEMENT = "refinement"
+    VALIDATION = "validation"
+    RECOVERY = "recovery"
 
 class ProofPhase(Enum):
     INIT = "init"
-    ANALYZE = "analyze"
+    SEARCH = "search"
     GENERATE = "generate"
     VERIFY = "verify"
-    CRITIQUE = "critique"
+    ANALYZE = "analyze"
     COMPLETE = "complete"
     FAILED = "failed"
 
@@ -211,623 +688,1030 @@ class TacticAttempt:
     tactic: str
     success: bool
     error: Optional[str] = None
-    agent: Optional[str] = None
-    timestamp: float = 0
-    lean_time_s: float = 0
+    timestamp: datetime = field(default_factory=datetime.now)
+    state_before: Optional[str] = None
+    confidence: Optional[float] = None
+    explanation: Optional[str] = None
 
 @dataclass
 class ProofState:
-    """Shared state for multi-agent proof sessions."""
+    """Shared state for multi-agent proof sessions (ported from notebook)."""
+    session_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
     theorem_name: str = ""
     theorem_statement: str = ""
     imports: Optional[str] = None
 
+    current_goal: str = ""
+    current_proof: List[str] = field(default_factory=list)
     phase: ProofPhase = ProofPhase.INIT
-    iteration: int = 0
-    max_iterations: int = 6
+    strategy: ProofStrategy = ProofStrategy.EXPLORATION
 
-    current_tactic: Optional[str] = None
-    tactic_history: List[TacticAttempt] = field(default_factory=list)
     discovered_lemmas: List[str] = field(default_factory=list)
+    tactic_history: List[TacticAttempt] = field(default_factory=list)
+
+    iteration: int = 0
+    max_iterations: int = 10
+    start_time: datetime = field(default_factory=datetime.now)
 
     last_error: Optional[str] = None
-    error_count: int = 0
     final_proof: Optional[str] = None
+    error_count: int = 0
 
-    # Agent communication
-    coordinator_directive: Optional[str] = None
-    critic_feedback: Optional[str] = None
+    verification_results: List[Dict[str, Any]] = field(default_factory=list)
+    total_lean_time_ms: float = 0.0
 
-    # Timing
-    start_time: float = 0
-    total_llm_s: float = 0
-    total_lean_s: float = 0
+    _next_agent: Optional[str] = field(default=None, repr=False)
 
-    def add_attempt(self, tactic: str, success: bool, error: str = None,
-                    agent: str = None, lean_time: float = 0):
+    def add_tactic_attempt(self, tactic: str, state_before: Optional[str] = None,
+                           confidence: Optional[float] = None, explanation: Optional[str] = None,
+                           success: bool = False, error: Optional[str] = None) -> str:
+        attempt_id = f"attempt_{len(self.tactic_history) + 1}"
         self.tactic_history.append(TacticAttempt(
             tactic=tactic, success=success, error=error,
-            agent=agent, timestamp=time.time(), lean_time_s=lean_time,
+            state_before=state_before, confidence=confidence,
+            explanation=explanation,
         ))
         if success:
-            self.final_proof = tactic
-            self.phase = ProofPhase.COMPLETE
+            self.current_proof.append(tactic)
         else:
             self.error_count += 1
             self.last_error = error
+        return attempt_id
 
-    def snapshot(self) -> dict:
-        """Lightweight state snapshot for agent context."""
-        return {
-            "theorem": self.theorem_statement,
-            "iteration": f"{self.iteration}/{self.max_iterations}",
-            "phase": self.phase.value,
-            "attempts": len(self.tactic_history),
-            "errors": self.error_count,
-            "last_error": (self.last_error or "")[:300],
-            "discovered_lemmas": self.discovered_lemmas[-5:],
-            "coordinator_directive": self.coordinator_directive,
-            "critic_feedback": (self.critic_feedback or "")[:300],
-            "previous_tactics": [a.tactic for a in self.tactic_history[-3:]],
-        }
+    def add_lemma(self, name: str, statement: str = "", namespace: str = "",
+                  relevance: float = 0.5) -> str:
+        lemma_id = f"{namespace}.{name}" if namespace else name
+        lemma_info = f"{lemma_id}: {statement} (relevance: {relevance})"
+        if lemma_info not in self.discovered_lemmas:
+            self.discovered_lemmas.append(lemma_info)
+        return lemma_id
+
+    def add_verification(self, attempt_id: str, success: bool, output: str,
+                         errors: str, exec_time_ms: float = 0.0) -> str:
+        verif_id = f"verif_{len(self.verification_results) + 1}"
+        self.verification_results.append({
+            "id": verif_id, "attempt_id": attempt_id,
+            "success": success, "output": output, "errors": errors,
+            "exec_time_ms": exec_time_ms,
+            "timestamp": datetime.now().isoformat(),
+        })
+        return verif_id
+
+    def set_proof_complete(self, proof: str):
+        self.final_proof = proof
+        self.phase = ProofPhase.COMPLETE
+
+    def increment_iteration(self):
+        self.iteration += 1
+
+    def designate_next_agent(self, agent_name: str):
+        self._next_agent = agent_name
+
+    def consume_next_agent_designation(self) -> Optional[str]:
+        agent = self._next_agent
+        self._next_agent = None
+        return agent
+
+    def get_state_snapshot(self, summarize: bool = True) -> Dict[str, Any]:
+        if summarize:
+            return {
+                "session_id": self.session_id,
+                "theorem": self.theorem_statement,
+                "goal": self.current_goal,
+                "phase": self.phase.value,
+                "strategy": self.strategy.value,
+                "iteration": f"{self.iteration}/{self.max_iterations}",
+                "proof_steps": len(self.current_proof),
+                "discovered_lemmas": len(self.discovered_lemmas),
+                "errors": self.error_count,
+                "last_error": self.last_error,
+                "previous_tactics": [a.tactic for a in self.tactic_history[-3:]],
+            }
+        return self.to_dict()
+
+    @property
+    def proof_complete(self) -> bool:
+        return self.phase == ProofPhase.COMPLETE
 
     @property
     def is_done(self) -> bool:
         return self.phase in (ProofPhase.COMPLETE, ProofPhase.FAILED)
 
+    def snapshot(self) -> dict:
+        return self.get_state_snapshot(summarize=True)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "session_id": self.session_id,
+            "theorem_name": self.theorem_name,
+            "theorem_statement": self.theorem_statement,
+            "current_goal": self.current_goal,
+            "current_proof": self.current_proof,
+            "phase": self.phase.value,
+            "strategy": self.strategy.value,
+            "discovered_lemmas": self.discovered_lemmas,
+            "iteration": self.iteration,
+            "max_iterations": self.max_iterations,
+            "error_count": self.error_count,
+            "last_error": self.last_error,
+        }
+
 
 # ══════════════════════════════════════════════════════════════════════════════
-# LEAN VERIFICATION PLUGIN
+# LEAN VERIFICATION BACKEND
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Global LeanVerifier instance (shared across all verifications in a session)
-_lsp_server = None
 _verifier = None
 
-
-def start_lsp_server(project_dir: str, warmup: bool = True,
-                     verbose: bool = False) -> bool:
-    """Start the persistent LSP server. Returns True if successful."""
-    global _lsp_server
-    from lean_server import LeanLSPServer
-
-    _lsp_server = LeanLSPServer(project_dir=project_dir, verbose=verbose)
-    print("  [LSP] Starting persistent lake serve server...")
-    t0 = time.time()
-    if not _lsp_server.start(timeout=60):
-        print("  [LSP] FAILED to start server")
-        _lsp_server = None
-        return False
-    print(f"  [LSP] Server initialized in {time.time()-t0:.1f}s")
-
-    if warmup:
-        print("  [LSP] Warming up (loading Mathlib)...")
-        t1 = time.time()
-        ok = _lsp_server.warmup(timeout=300)
-        print(f"  [LSP] Warmup {'OK' if ok else 'FAILED'} in {time.time()-t1:.1f}s")
-        if not ok:
-            print("  [LSP] Continuing without warmup...")
-
-    return True
-
-
-def stop_lsp_server():
-    """Stop the persistent LSP server."""
-    global _lsp_server
-    if _lsp_server:
-        _lsp_server.stop()
-        _lsp_server = None
+def get_verifier(project_dir: str = None) -> "LeanVerifier":
+    """Get or create the persistent LeanVerifier instance."""
+    global _verifier
+    if _verifier is None:
+        from lean_server import LeanVerifier
+        pd = project_dir or LEAN_PROJECT_DIR
+        _verifier = LeanVerifier(project_dir=pd, verbose=False)
+    return _verifier
 
 
 def verify_with_lean(theorem: str, tactic: str, imports: Optional[str],
                      project_dir: Optional[str], trace: TraceLogger,
                      agent_name: str = "LeanVerifier") -> dict:
-    """Verify a Lean proof using LeanVerifier with LEAN_PATH.
-
-    Strategy:
-      - No imports → fast LEAN_PATH (~5-6s)
-      - With imports → full LEAN_PATH with Mathlib deps (~130-150s)
-      - Uses persistent LeanVerifier instance for session reuse
-
-    Returns {success, errors, time_s, backend}.
-    """
-    global _lsp_server, _verifier
-
+    """Verify a Lean proof using LeanVerifier."""
     if imports:
         code = f"{imports}\n{theorem} := by {tactic}"
     else:
         code = f"{theorem} := by {tactic}"
 
-    # Use LSP server wrapper if available (--lsp mode)
-    if _lsp_server is not None:
-        use_lake_env = imports is not None
-        start = time.time()
-        result = _lsp_server.verify(code, timeout=300, use_lake_env=use_lake_env)
-        duration = time.time() - start
-
-        if result is not None:
-            success = result["success"]
-            backend = result.get("backend", "lean_path")
-            trace.log(
-                agent=agent_name, role="verification",
-                content=f"{theorem[:60]} := by {tactic[:60]}",
-                duration_s=duration, tool_name="verify_proof",
-                tool_args={"theorem": theorem[:80], "proof": tactic[:80]},
-                tool_result=f"success={success}, backend={backend}, "
-                            f"errors={result['errors'][:200]}",
-                phase="verify",
-            )
-            return {
-                "success": success,
-                "errors": result["errors"],
-                "time_s": duration,
-                "backend": backend,
-            }
-
-    # Use LeanVerifier directly (fast_path for no imports, full_path for Mathlib)
-    if project_dir:
-        if _verifier is None:
-            from lean_server import LeanVerifier
-            _verifier = LeanVerifier(project_dir=project_dir, verbose=False)
-
-        start = time.time()
-        result = _verifier.verify(code)
-        duration = time.time() - start
-
-        success = result["success"]
-        backend = result.get("backend", "lean_verifier")
-        errors = result.get("errors", "")
-
-        trace.log(
-            agent=agent_name, role="verification",
-            content=f"{theorem[:60]} := by {tactic[:60]}",
-            duration_s=duration, tool_name="verify_proof",
-            tool_args={"theorem": theorem[:80], "proof": tactic[:80]},
-            tool_result=f"success={success}, backend={backend}, "
-                        f"errors={errors[:200]}",
-            phase="verify",
-        )
-
-        return {
-            "success": success,
-            "errors": errors,
-            "time_s": duration,
-            "backend": backend,
-        }
-
-    # Last resort fallback: lean_runner subprocess
-    from lean_runner import LeanRunner
-    runner = LeanRunner(backend="auto", timeout=300)
+    verifier = get_verifier(project_dir)
     start = time.time()
-    result = runner.run(code, project_dir=project_dir)
+    result = verifier.verify(code)
     duration = time.time() - start
 
-    success = result.success and "error" not in (result.errors or "").lower()
+    success = result["success"]
+    errors = result.get("errors", "")
+    backend = result.get("backend", "lean_verifier")
 
     trace.log(
         agent=agent_name, role="verification",
         content=f"{theorem[:60]} := by {tactic[:60]}",
         duration_s=duration, tool_name="verify_proof",
         tool_args={"theorem": theorem[:80], "proof": tactic[:80]},
-        tool_result=f"success={success}, errors={(result.errors or '')[:200]}",
+        tool_result=f"success={success}, backend={backend}, errors={errors[:200]}",
         phase="verify",
     )
 
     return {
         "success": success,
-        "errors": result.errors or "",
+        "errors": errors,
         "time_s": duration,
-        "backend": "subprocess",
+        "backend": backend,
+        "raw_output": result.get("raw_output", ""),
     }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# LLM CLIENT (shared across agents)
+# SEMANTIC KERNEL DETECTION (from notebook cell 17)
 # ══════════════════════════════════════════════════════════════════════════════
 
-class LLMClient:
-    """Unified LLM client with per-call model override for agent heterogeneity."""
+SK_AVAILABLE = False
 
-    def __init__(self, provider: str = "zai", trace: TraceLogger = None):
-        self.provider = provider
-        self.trace = trace
-        cfg = PROVIDERS.get(provider, PROVIDERS["zai"])
+try:
+    from semantic_kernel import Kernel
+    from semantic_kernel.agents import ChatCompletionAgent
+    from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+    from semantic_kernel.functions import kernel_function
+    SK_AVAILABLE = True
+    print("Semantic Kernel available - using ChatCompletionAgent")
+except ImportError as e:
+    print(f"Semantic Kernel not available: {e}")
+    # Fallback decorator (from notebook cell 8)
+    def kernel_function(description="", name=None):
+        def decorator(func):
+            func._sk_function = True
+            func._sk_description = description
+            func._sk_name = name or func.__name__
+            return func
+        return decorator
 
-        from openai import OpenAI
-        self.client = OpenAI(api_key=cfg["api_key"], base_url=cfg["base_url"])
-        self.model_reasoning = cfg["models"]["reasoning"]
-        self.model_fast = cfg["models"]["fast"]
 
-    def chat(self, messages: list, model: str = None, thinking: bool = True,
-             agent_name: str = "LLM", max_tokens: int = 4096,
-             temperature: float = 0.3) -> tuple:
-        """Returns (content, reasoning, tokens_dict)."""
-        model_id = model or (self.model_reasoning if thinking else self.model_fast)
-        start = time.time()
+# ══════════════════════════════════════════════════════════════════════════════
+# PLUGINS - @kernel_function decorated (from notebook cells 8, 10, 12, 14)
+# ══════════════════════════════════════════════════════════════════════════════
 
-        kwargs = {
-            "model": model_id,
-            "messages": messages,
-            "max_tokens": max(max_tokens, 4096),
-            "temperature": temperature,
+class ProofStateManagerPlugin:
+    """Plugin exposing ProofState methods to agents via @kernel_function."""
+
+    def __init__(self, state: ProofState):
+        self._state = state
+
+    @kernel_function(
+        description="Get a summary of the current proof state (theorem, phase, errors, previous tactics)",
+        name="get_proof_state",
+    )
+    def get_proof_state(self) -> str:
+        return json.dumps(self._state.get_state_snapshot(summarize=True), indent=2, ensure_ascii=False)
+
+    @kernel_function(
+        description="Record a tactic attempt with confidence and explanation",
+        name="log_tactic_attempt",
+    )
+    def log_tactic_attempt(self, tactic: str, state_before: str = "",
+                           confidence: float = 0.5, explanation: str = "") -> str:
+        attempt_id = self._state.add_tactic_attempt(
+            tactic=tactic, state_before=state_before,
+            confidence=confidence, explanation=explanation,
+        )
+        return f"Logged: {attempt_id} ({tactic})"
+
+    @kernel_function(
+        description="Add a discovered lemma to the shared state",
+        name="add_discovered_lemma",
+    )
+    def add_discovered_lemma(self, name: str, statement: str = "",
+                             namespace: str = "", relevance: float = 0.5) -> str:
+        lemma_id = self._state.add_lemma(name, statement, namespace, relevance)
+        return f"Added lemma: {lemma_id}"
+
+    @kernel_function(
+        description="Record a Lean verification result",
+        name="add_verification_result",
+    )
+    def add_verification_result(self, attempt_id: str, success: bool,
+                                output: str = "", errors: str = "",
+                                exec_time_ms: float = 0.0) -> str:
+        verif_id = self._state.add_verification(
+            attempt_id=attempt_id, success=success,
+            output=output, errors=errors, exec_time_ms=exec_time_ms,
+        )
+        return f"Recorded: {verif_id} (success={success})"
+
+    @kernel_function(
+        description="Mark the proof as complete with the final tactic",
+        name="set_proof_complete",
+    )
+    def set_proof_complete(self, proof: str) -> str:
+        self._state.set_proof_complete(proof)
+        return f"Proof complete: {proof}"
+
+
+class LeanSearchPlugin:
+    """Plugin for Mathlib lemma search (from notebook cell 10)."""
+
+    def __init__(self):
+        self._known_lemmas = {
+            "Nat.add_zero": ("n + 0 = n", "Nat"),
+            "Nat.zero_add": ("0 + n = n", "Nat"),
+            "Nat.add_comm": ("n + m = m + n", "Nat"),
+            "Nat.add_assoc": ("(n + m) + k = n + (m + k)", "Nat"),
+            "Nat.mul_one": ("n * 1 = n", "Nat"),
+            "Nat.one_mul": ("1 * n = n", "Nat"),
+            "Nat.mul_comm": ("n * m = m * n", "Nat"),
+            "Nat.add_mul": ("(a + b) * c = a * c + b * c", "Nat"),
+            "Nat.mul_add": ("a * (b + c) = a * b + a * c", "Nat"),
+            "Nat.left_distrib": ("n * (m + k) = n * m + n * k", "Nat"),
+            "Nat.right_distrib": ("(n + m) * k = n * k + m * k", "Nat"),
+            "Eq.refl": ("a = a", "Logic"),
+            "Eq.symm": ("a = b -> b = a", "Logic"),
+            "Finset.sum_erase_add": ("sum s f = sum (s.erase a) f + f a", "Finset"),
         }
 
-        try:
-            response = self.client.chat.completions.create(**kwargs)
-            duration = time.time() - start
-            msg = response.choices[0].message
-            content = msg.content or ""
-            reasoning = getattr(msg, "reasoning_content", None) or ""
-
-            # Extract from reasoning if content is empty
-            if not content.strip() and reasoning.strip():
-                m = re.search(r'```\w*\n(.*?)```', reasoning, re.DOTALL)
-                if m:
-                    content = m.group(1).strip()
-                else:
-                    lines = [l.strip() for l in reasoning.strip().split('\n') if l.strip()]
-                    if lines:
-                        content = lines[-1]
-
-            tokens = {
-                "prompt": response.usage.prompt_tokens if response.usage else 0,
-                "completion": response.usage.completion_tokens if response.usage else 0,
-                "total": response.usage.total_tokens if response.usage else 0,
-            }
-
-            if self.trace:
-                self.trace.log(agent=agent_name, role="assistant", content=content,
-                               duration_s=duration, model=model_id, tokens=tokens)
-                if reasoning:
-                    self.trace.log(agent=agent_name, role="thinking", content=reasoning,
-                                   duration_s=0, model=model_id)
-
-            return content, reasoning, tokens
-
-        except Exception as e:
-            duration = time.time() - start
-            if self.trace:
-                self.trace.log(agent=agent_name, role="error", content=str(e), duration_s=duration)
-            return f"ERROR: {e}", "", {}
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# AGENT SYSTEM PROMPTS
-# ══════════════════════════════════════════════════════════════════════════════
-
-COORDINATOR_PROMPT = """You are a Lean 4 proof coordinator. Analyze the proof state and direct the next tactic.
-
-Output EXACTLY ONE of:
-- STRATEGY: <approach> -- what tactic pattern to try
-- LEMMA: <name> -- a specific lemma to use
-- GIVE_UP -- if too many failures
-
-Keep your response under 3 lines. No markdown."""
-
-TACTIC_PROMPT = """You are a Lean 4 tactic generator. Given a theorem statement and context, provide ONLY the tactic sequence.
-
-The theorem already has `:= by` so provide ONLY the tactic(s) after `by`.
-
-Rules:
-- Reply with ONLY the tactic(s), no explanation, no markdown, no code fences
-- DO NOT prefix with `by` - it is already present
-- Chain tactics with `;` or use `<;>` for branching
-- Use `<;> try` for optional subgoals after branching tactics
-
-Tactic priority:
-1. omega / linarith - linear arithmetic (Nat/Int/Real)
-2. simp - simplification engine
-3. rfl - ONLY for definitional equality (a = a)
-4. exact <term> - provide a proof term
-5. rw [lemma] - rewrite with a lemma
-6. ring - ring equalities
-7. field_simp / ring_nf - field/ring normalization
-8. aesop - automated search
-9. exact? - let Mathlib suggest
-
-Common pitfalls:
-- `rfl` fails on `0 + n = n`: use omega or simp
-- `omega` only works for Nat/Int linear goals. Use `linarith` for Real
-- `simp` can close many goals if given the right lemmas: simp [lemma1, lemma2]
-- If `rw [lemma]` solves the goal completely, do NOT add `rfl` after it
-- If error says "No goals to be solved", your previous tactic already closed the goal — remove the trailing tactic
-- If error says "made no progress", the tactic didn't change the goal — try a different approach
-- For distributivity: use `ring` or `omega` for linear cases, `Nat.mul_add` / `Nat.add_mul` for rewriting"""
-
-CRITIC_PROMPT = """You are a Lean 4 proof critic. Analyze why a tactic failed and suggest what to try differently.
-
-Given the theorem, the failed tactic, and the Lean error, output:
-- DIAGNOSIS: <1-line root cause>
-- SUGGESTION: <tactic or approach to try>
-
-Keep your response under 4 lines. No markdown."""
-
-
-def extract_tactic(raw_output: str) -> str:
-    """Extract a clean tactic from LLM output that may contain prose.
-
-    Strategy:
-      1. If the output is already a clean tactic (no prose markers), return as-is
-      2. Try to extract from code fences (```...```)
-      3. Try to extract the first Lean-like expression
-      4. Fall back to the raw output stripped
-    """
-    text = raw_output.strip()
-
-    # If it starts with common tactic keywords, it's probably clean
-    tactic_starters = (
-        "rfl", "omega", "linarith", "simp", "exact", "rw [", "rw[",
-        "have ", "constructor", "cases ", "induction ", "intro ",
-        "apply ", "use ", "conv ", "funext ", "ext ", "field_simp",
-        "ring", "aesop", "exact?", "norm_num", "decide", "trivial",
-        "by_contra ", "by_cases ", "push_neg ", "itauto", "omega",
-        "Nat.", "Finset.", "Mathlib.", "split", "left", "right",
-        "tauto", "contradiction", "exfalso", "assumption",
-        "rcases ", "obtain ", "choose ", "open ", "set ",
-        "show ", "suffices ", "refine ", "subst ", "rename ",
-        "dsimp", "change ", "replace ", "specialize ",
-        "convert ", "symm", "trans ", "calc ", "unfold ",
+    @kernel_function(
+        description="Search for Mathlib lemmas relevant to a goal",
+        name="search_mathlib_lemmas",
     )
-    first_line = text.split("\n")[0].strip()
-    if any(first_line.startswith(s) or first_line == s for s in tactic_starters):
-        return first_line
+    def search_mathlib_lemmas(self, goal: str, max_results: int = 10) -> str:
+        goal_lower = goal.lower()
+        results = []
+        keywords = goal_lower.replace("+", "add").replace("*", "mul").replace("=", "eq").split()
 
-    # Try extracting from code fences
-    import re
-    code_fence = re.search(r'```(?:lean|lean4)?\s*\n(.*?)```', text, re.DOTALL)
-    if code_fence:
-        return code_fence.group(1).strip().split("\n")[0].strip()
+        for name, (statement, namespace) in self._known_lemmas.items():
+            score = 0.0
+            name_lower = name.lower()
+            for kw in keywords:
+                if kw in name_lower:
+                    score += 0.3
+                if kw in statement.lower():
+                    score += 0.2
+            if "comm" in goal_lower and "comm" in name_lower:
+                score += 0.4
+            if "distrib" in goal_lower and "distrib" in name_lower:
+                score += 0.4
+            if "erase" in goal_lower and "erase" in name_lower:
+                score += 0.5
+            if "sum" in goal_lower and "sum" in name_lower:
+                score += 0.4
+            if score > 0:
+                results.append({
+                    "name": name, "statement": statement,
+                    "namespace": namespace, "relevance": min(score, 1.0),
+                })
 
-    # Try extracting after "SUGGESTION:" or "tactic:" prefix
-    for prefix in ("SUGGESTION: ", "Tactic: ", "Answer: ", "Proof: "):
-        if prefix.lower() in text.lower():
-            idx = text.lower().index(prefix.lower())
-            remainder = text[idx + len(prefix):].strip()
-            line = remainder.split("\n")[0].strip()
-            if line:
-                return line
+        results.sort(key=lambda x: x["relevance"], reverse=True)
+        return json.dumps(results[:max_results], indent=2, ensure_ascii=False)
 
-    # Try finding the first line that looks like a tactic
-    for line in text.split("\n"):
-        line = line.strip()
-        if not line or line.startswith("#") or line.startswith("//"):
-            continue
-        if any(line.startswith(s) or line == s for s in tactic_starters):
-            return line
 
-    # Last resort: return the first non-empty line
-    for line in text.split("\n"):
-        line = line.strip()
-        if line and not line.startswith("#") and len(line) > 2:
-            return line
+class LeanTacticPlugin:
+    """Plugin for tactic generation heuristics (from notebook cell 12)."""
 
-    return text
+    def __init__(self):
+        self._heuristics = {
+            "equality": ["rfl", "exact", "simp", "ring", "omega"],
+            "nat_arithmetic": ["omega", "simp", "decide"],
+            "ring_expression": ["ring", "ring_nf"],
+            "forall": ["intro", "intros", "apply"],
+            "exists": ["use", "exists", "exact"],
+            "and": ["constructor", "exact And.intro"],
+            "or": ["left", "right"],
+            "implication": ["intro", "apply", "exact"],
+        }
+
+    @kernel_function(
+        description="Generate tactic suggestions based on the goal pattern",
+        name="generate_tactics",
+    )
+    def generate_tactics(self, goal: str, difficulty: str = "simple") -> str:
+        suggestions = []
+        goal_lower = goal.lower()
+        detected = []
+
+        if "=" in goal:
+            detected.append("equality")
+        if any(x in goal_lower for x in ["nat", "n +", "m +", "+ 0", "0 +"]):
+            detected.append("nat_arithmetic")
+        if any(x in goal for x in ["*", "+"]) and "=" in goal:
+            detected.append("ring_expression")
+        if "forall" in goal_lower or "∀" in goal:
+            detected.append("forall")
+        if "exists" in goal_lower or "∃" in goal:
+            detected.append("exists")
+
+        seen = set()
+        for pattern in detected:
+            for tactic in self._heuristics.get(pattern, []):
+                if tactic not in seen:
+                    seen.add(tactic)
+                    confidence = 0.7 if difficulty == "simple" else 0.5
+                    suggestions.append({
+                        "tactic": tactic, "confidence": confidence,
+                        "pattern": pattern,
+                    })
+
+        if not suggestions:
+            suggestions = [
+                {"tactic": "rfl", "confidence": 0.3, "pattern": "default"},
+                {"tactic": "simp", "confidence": 0.3, "pattern": "default"},
+                {"tactic": "omega", "confidence": 0.3, "pattern": "default"},
+            ]
+
+        return json.dumps(suggestions, indent=2, ensure_ascii=False)
+
+    @kernel_function(
+        description="Analyze why a tactic failed and suggest corrections",
+        name="analyze_failure",
+    )
+    def analyze_failure(self, tactic: str, error: str, goal: str = "") -> str:
+        hints = []
+        if "No goals to be solved" in error:
+            hints.append("First tactic already closed the goal. Remove trailing tactics like `rfl`.")
+        elif "made no progress" in error:
+            hints.append("Tactic didn't change the goal. Try a different approach.")
+        elif "unknown tactic" in error:
+            hints.append("Tactic requires Mathlib import. Try omega, simp, or rw instead.")
+        elif "could not prove the goal" in error:
+            hints.append("Tactic applicable but couldn't close the goal. Try a more powerful tactic.")
+        elif "unknown identifier" in error:
+            hints.append("Lemma name not found. Check exact spelling or search for alternatives.")
+
+        return json.dumps({
+            "tactic": tactic, "error_type": "progress" if "progress" in error else "type_error",
+            "hints": hints, "suggestion": hints[0] if hints else "Try a different tactic.",
+        }, indent=2, ensure_ascii=False)
+
+
+class LeanVerificationPlugin:
+    """Plugin for Lean verification using LeanVerifier (adapted from notebook cell 14)."""
+
+    def __init__(self, project_dir: Optional[str] = None, imports: Optional[str] = None,
+                 trace: Optional[TraceLogger] = None):
+        self._project_dir = project_dir
+        self._imports = imports or ""
+        self._trace = trace
+
+    @kernel_function(
+        description="Verify a complete Lean proof (theorem + tactics). Returns JSON with success/errors/time.",
+        name="verify_proof",
+    )
+    def verify_proof(self, theorem_statement: str, proof_tactics: str) -> str:
+        start = time.time()
+        verifier = get_verifier(self._project_dir)
+
+        if "by" not in proof_tactics and ":=" not in proof_tactics:
+            body = f"{theorem_statement} := by {proof_tactics}"
+        elif ":=" in proof_tactics:
+            body = f"{theorem_statement} {proof_tactics}"
+        else:
+            body = f"{theorem_statement} := {proof_tactics}"
+
+        code = f"{self._imports}\n{body}" if self._imports else body
+        result = verifier.verify(code)
+        exec_time_ms = (time.time() - start) * 1000
+
+        if self._trace:
+            self._trace.log(
+                agent="LeanVerification", role="verification",
+                content=f"{theorem_statement[:60]} := by {proof_tactics[:60]}",
+                duration_s=exec_time_ms / 1000, tool_name="verify_proof",
+                tool_args={"theorem": theorem_statement[:80], "proof": proof_tactics[:80]},
+                tool_result=f"success={result['success']}, errors={result.get('errors', '')[:200]}",
+                phase="verify",
+            )
+
+        return json.dumps({
+            "success": result["success"],
+            "errors": result.get("errors", ""),
+            "exec_time_ms": round(exec_time_ms, 2),
+            "backend": result.get("backend", "lean_verifier"),
+        }, indent=2, ensure_ascii=False)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# MULTI-AGENT ORCHESTRATOR
+# AGENT INSTRUCTIONS (from notebook cell 17)
 # ══════════════════════════════════════════════════════════════════════════════
 
-class MultiAgentOrchestrator:
-    """
-    Orchestrates 3 agents (Coordinator, Tactic, Critic) with turn-taking.
+SEARCH_AGENT_INSTRUCTIONS = """Tu es l'agent de RECHERCHE de lemmes pour le theorem proving en Lean 4.
 
-    Turn order per iteration:
-      1. Coordinator analyzes state, sets directive
-      2. Tactic generates tactic based on directive + state
-      3. Lean verifies the tactic
-      4. If failed: Critic analyzes error, feeds back to Coordinator
+TON ROLE UNIQUE:
+- Chercher des lemmes Mathlib pertinents pour le theoreme courant
+- Identifier les lemmes qui peuvent aider a la preuve
+- Enregistrer les lemmes trouves dans l'etat partage
 
-    Agent model configuration:
-      - All agents can use different providers/models
-      - Start with GLM-5.1 for all, then try downgrading
-    """
+WORKFLOW:
+1. Lis l'etat avec get_proof_state() pour comprendre le theoreme
+2. Utilise search_mathlib_lemmas() avec des mots-cles pertinents
+3. Enregistre les lemmes utiles avec add_discovered_lemma()
+4. Delegue a TacticAgent quand tu as trouve des lemmes
 
-    def __init__(
-        self,
-        trace: TraceLogger,
-        coordinator_provider: str = "zai",
-        coordinator_thinking: bool = True,
-        tactic_provider: str = "zai",
-        tactic_thinking: bool = True,
-        critic_provider: str = "zai",
-        critic_thinking: bool = False,  # Critic can use fast model
-    ):
+IMPORTANT:
+- Cherche des lemmes LIES au but (egalites, arithmetique, logique)
+- Delegation: Apres avoir trouve 2-3 lemmes, delegue a TacticAgent
+"""
+
+TACTIC_AGENT_INSTRUCTIONS = """Tu es l'agent de GENERATION DE TACTIQUES pour le theorem proving en Lean 4.
+
+TON ROLE UNIQUE:
+- Generer des sequences de tactiques Lean pour prouver le but
+- Utiliser OBLIGATOIREMENT submit_tactic() pour proposer une tactique
+
+MODES DE TRAVAIL:
+
+A) Theoreme autonome (mode demo simple):
+   Le but est un theoreme complet. Genere la tactique apres `:= by`.
+
+B) Remplacement de sorry (mode proof partial):
+   Tu dois remplacer un `sorry` dans une preuve partielle existante.
+   IMPORTANT: tes tactiques doivent etre COHERENTES avec le contexte.
+   - Respecte l'indentation du sorry
+   - Utilise les hypotheses deja introduites (pas de `intro` si deja fait)
+   - Utilise les lemmes locaux deja prouves (have/let dans le contexte)
+   - Ne repete PAS les tactiques deja executees avant le sorry
+
+STRATEGIE D'EXPLORATION (du plus simple au plus avance):
+1. rfl, trivial, omega (arithmetique lineaire)
+2. simp sans arguments, simp [hypothesis]
+3. exact Lemma_name (lemmes Mathlib ou locaux)
+4. rw [Lemma_name], rw [← Lemma_name]
+5. linarith, ring, field_simp
+6. Construction: constructor, exists, use
+7. Cas: cases h, split_ifs, by_cases
+8. Induction: induction n, strongInduction
+9. Finset: Finset.sum_eq_single, Finset.sum_bij
+10. Cast: Nat.cast_sub, Nat.cast_mul, mod_cast
+
+WORKFLOW:
+1. get_proof_state() pour comprendre le contexte complet
+2. generate_tactics() pour des suggestions basees sur le goal
+3. submit_tactic() pour soumettre UNE SEQUENCE de tactiques
+4. Attendre le resultat de verification
+
+IMPORTANT:
+- Proposer UNE SEULE sequence de tactiques a la fois via submit_tactic()
+- Si echec, lire le message d'erreur Lean attentivement et adapter
+- Pour les preuves structurelles: decomposer en sous-buts avec `have`
+- Si le sorry est dans un `by_cases` ou `split_ifs`, adapter au cas specifique
+- COMMENTARES: ajoute des `--` inline pour guider si la preuve est longue
+"""
+
+VERIFIER_AGENT_INSTRUCTIONS = """Tu es l'agent de VERIFICATION pour le theorem proving en Lean 4.
+
+TON ROLE UNIQUE:
+- Verifier les tactiques proposees avec le compilateur Lean
+- Enregistrer les resultats de verification
+- Determiner si la preuve est complete ou s'il faut continuer
+
+WORKFLOW:
+1. Lis l'etat avec get_proof_state()
+2. Utilise verify_proof() pour tester la preuve
+3. Enregistre le resultat avec add_verification_result()
+4. Si succes: set_proof_complete() et termine
+5. Si echec: delegue a CriticAgent pour analyse
+
+IMPORTANT:
+- Teste TOUJOURS la derniere tactique proposee
+- Si succes, utilise set_proof_complete()
+"""
+
+CRITIC_AGENT_INSTRUCTIONS = """Tu es l'agent CRITIQUE pour le theorem proving en Lean 4.
+
+TON ROLE UNIQUE:
+- Analyser les echecs de verification
+- Diagnostiquer les erreurs Lean
+- Orienter vers la bonne strategie de correction
+
+WORKFLOW:
+1. Lis l'etat avec get_proof_state()
+2. Utilise analyze_failure() pour comprendre l'erreur
+3. Decide: delegue a TacticAgent (nouvelle tentative) ou CoordinatorAgent (changement strategie)
+
+IMPORTANT:
+- Analyse les 3 derniers echecs pour detecter des patterns
+- Si >3 echecs similaires, delegue a CoordinatorAgent
+"""
+
+COORDINATOR_AGENT_INSTRUCTIONS = """Tu es l'agent COORDINATEUR pour le theorem proving en Lean 4.
+
+TON ROLE UNIQUE:
+- Superviser la session de preuve
+- Debloquer les situations cycliques
+- Ajuster la strategie globale
+
+QUAND TU INTERVIENS:
+- Appele par CriticAgent apres echecs repetes
+- Pour decisions strategiques majeures
+
+IMPORTANT:
+- Tu es le dernier recours, prends des decisions audacieuses
+"""
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SUBMIT TACTIC PLUGIN - Forces structured tactic submission
+# ══════════════════════════════════════════════════════════════════════════════
+
+class SubmitTacticPlugin:
+    """Plugin that forces the LLM to call submit_tactic() instead of free text."""
+
+    def __init__(self, state: ProofState, trace: Optional[TraceLogger] = None):
+        self._state = state
+        self._trace = trace
+
+    @kernel_function(
+        description="Submit a Lean 4 tactic to prove the theorem. The theorem has `:= by` already — provide ONLY the tactic(s) after `by`.",
+        name="submit_tactic",
+    )
+    def submit_tactic(self, tactic: str, confidence: float = 0.5,
+                      reasoning: str = "") -> str:
+        """Agent MUST call this to submit a tactic. Returns verification result."""
+        attempt_id = self._state.add_tactic_attempt(
+            tactic=tactic, confidence=confidence,
+            explanation=reasoning,
+        )
+        return json.dumps({
+            "attempt_id": attempt_id,
+            "tactic": tactic,
+            "confidence": confidence,
+            "status": "submitted",
+        }, ensure_ascii=False)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SIMPLE AGENT - Fallback with OpenAI function calling (from notebook cell 19)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class SimpleAgent:
+    """Agent using OpenAI client with function calling (from notebook's SimpleAgent)."""
+
+    def __init__(self, name: str, instructions: str, plugins: Dict[str, Any],
+                 provider: str = "zai", trace: TraceLogger = None,
+                 thinking: bool = True):
+        self.name = name
+        self.instructions = instructions
+        self.plugins = plugins
+        self.thinking = thinking
         self.trace = trace
 
-        # Create separate LLM clients per agent (allows different providers)
-        self.coordinator_llm = LLMClient(provider=coordinator_provider, trace=trace)
-        self.tactic_llm = LLMClient(provider=tactic_provider, trace=trace)
-        self.critic_llm = LLMClient(provider=critic_provider, trace=trace)
+        cfg = PROVIDERS.get(provider, PROVIDERS["zai"])
+        from openai import OpenAI
+        self._client = OpenAI(api_key=cfg["api_key"], base_url=cfg["base_url"])
+        self._model = cfg["models"]["reasoning"] if thinking else cfg["models"]["fast"]
 
-        self.coordinator_thinking = coordinator_thinking
-        self.tactic_thinking = tactic_thinking
-        self.critic_thinking = critic_thinking
+    def _build_openai_tools(self) -> list:
+        """Convert @kernel_function methods to OpenAI tool format (from notebook)."""
+        import inspect
+        tools = []
+        for plugin_name, plugin in self.plugins.items():
+            for attr_name in dir(plugin):
+                attr = getattr(plugin, attr_name)
+                if not callable(attr):
+                    continue
+                is_sk = hasattr(attr, '_sk_function') or hasattr(attr, '__kernel_function__')
+                if not is_sk:
+                    continue
 
-        # Labels for trace
-        self.config_label = (
-            f"coord={coordinator_provider}"
-            f" tactic={tactic_provider}"
-            f" critic={critic_provider}"
-        )
+                sig = inspect.signature(attr)
+                properties = {}
+                required = []
+                for param_name, param in sig.parameters.items():
+                    if param_name == 'self':
+                        continue
+                    param_type = "string"
+                    if param.annotation != inspect.Parameter.empty:
+                        if param.annotation == bool:
+                            param_type = "boolean"
+                        elif param.annotation in (int, float):
+                            param_type = "number"
+                    properties[param_name] = {
+                        "type": param_type,
+                        "description": f"Parameter {param_name}",
+                    }
+                    if param.default == inspect.Parameter.empty:
+                        required.append(param_name)
 
-    def prove(self, theorem: str, imports: Optional[str] = None,
-              max_iterations: int = 6) -> dict:
-        """Run multi-agent proof attempt. Returns {success, proof, iterations, ...}."""
+                if hasattr(attr, '__kernel_function_name__'):
+                    func_name = attr.__kernel_function_name__
+                    func_desc = getattr(attr, "__kernel_function_description__", "")
+                elif hasattr(attr, '_sk_name'):
+                    func_name = attr._sk_name
+                    func_desc = getattr(attr, "_sk_description", "")
+                else:
+                    func_name = attr_name
+                    func_desc = ""
 
-        state = ProofState(
-            theorem_statement=theorem,
-            imports=imports,
-            max_iterations=max_iterations,
-            start_time=time.time(),
-        )
-        state.phase = ProofPhase.ANALYZE
+                tools.append({
+                    "type": "function",
+                    "function": {
+                        "name": f"{plugin_name}__{func_name}",
+                        "description": func_desc,
+                        "parameters": {
+                            "type": "object",
+                            "properties": properties,
+                            "required": required,
+                        },
+                    },
+                })
+        return tools
 
-        print(f"\n{'='*70}")
-        print(f"MULTI-AGENT PROOF: {theorem[:80]}...")
-        print(f"Config: {self.config_label}")
-        print(f"{'='*70}")
+    def _execute_tool_call(self, tool_name: str, arguments: dict) -> str:
+        """Route tool call to the plugin method (from notebook)."""
+        parts = tool_name.split("__", 1)
+        if len(parts) != 2:
+            return f"Error: invalid format: {tool_name}"
 
-        # Conversation histories per agent (for multi-turn within session)
-        tactic_history = [{"role": "system", "content": TACTIC_PROMPT}]
-        coordinator_history = [{"role": "system", "content": COORDINATOR_PROMPT}]
-        critic_history = [{"role": "system", "content": CRITIC_PROMPT}]
+        plugin_name, func_name = parts
+        plugin = self.plugins.get(plugin_name)
+        if not plugin:
+            return f"Error: plugin {plugin_name} not found"
 
-        for iteration in range(1, max_iterations + 1):
-            state.iteration = iteration
-            print(f"\n--- Iteration {iteration}/{max_iterations} ---")
-
-            # ── Turn 1: Coordinator analyzes state ─────────────────────────
-            snap = state.snapshot()
-            coord_msg = (
-                f"Theorem: {theorem}\n"
-                f"State: {json.dumps(snap, ensure_ascii=False)}\n"
-                f"What strategy should we try?"
-            )
-            coordinator_history.append({"role": "user", "content": coord_msg})
-
-            coord_content, _, coord_tokens = self.coordinator_llm.chat(
-                messages=coordinator_history,
-                thinking=self.coordinator_thinking,
-                agent_name="Coordinator",
-            )
-            coordinator_history.append({"role": "assistant", "content": coord_content})
-
-            # Parse coordinator directive
-            state.coordinator_directive = coord_content.strip()
-            state.total_llm_s += coord_tokens.get("total", 0) / 1000  # rough proxy
-            print(f"  Coordinator: {coord_content[:100]}")
-
-            # Check if coordinator says give up
-            if "GIVE_UP" in coord_content.upper():
-                print("  Coordinator gave up.")
-                state.phase = ProofPhase.FAILED
-                break
-
-            # ── Turn 2: Tactic agent generates tactic ──────────────────────
-            tactic_msg = f"Prove this Lean 4 theorem:\n{theorem}"
-            if imports:
-                tactic_msg += "\n\nAvailable imports: Mathlib (Finset, Real, BigOperators, Tactic)"
-            if state.coordinator_directive:
-                tactic_msg += f"\n\nCoordinator suggests: {state.coordinator_directive}"
-            if state.critic_feedback:
-                tactic_msg += f"\n\nPrevious failure analysis: {state.critic_feedback}"
-            if state.tactic_history:
-                tried = [a.tactic for a in state.tactic_history[-3:]]
-                tactic_msg += f"\n\nAlready tried (DO NOT repeat): {tried}"
-
-            tactic_history.append({"role": "user", "content": tactic_msg})
-
-            tactic_content, _, tactic_tokens = self.tactic_llm.chat(
-                messages=tactic_history,
-                thinking=self.tactic_thinking,
-                agent_name="TacticAgent",
-            )
-            tactic_history.append({"role": "assistant", "content": tactic_content})
-
-            tactic = extract_tactic(tactic_content)
-            state.total_llm_s += tactic_tokens.get("total", 0) / 1000
-            print(f"  Tactic: {tactic[:100]}")
-
-            if tactic.startswith("ERROR:"):
-                state.critic_feedback = f"LLM error: {tactic}"
+        for attr_name in dir(plugin):
+            attr = getattr(plugin, attr_name)
+            if not callable(attr):
+                continue
+            is_sk = hasattr(attr, '_sk_function') or hasattr(attr, '__kernel_function__')
+            if not is_sk:
                 continue
 
-            # ── Turn 3: Lean verification ──────────────────────────────────
-            state.phase = ProofPhase.VERIFY
-            result = verify_with_lean(
-                theorem=theorem, tactic=tactic, imports=imports,
-                project_dir=LEAN_PROJECT_DIR, trace=self.trace,
-            )
-            state.total_lean_s += result["time_s"]
-
-            if result["success"]:
-                print(f"  PROOF VALID! ({result['time_s']:.1f}s Lean)")
-                state.add_attempt(tactic, success=True, agent="TacticAgent",
-                                  lean_time=result["time_s"])
-                break
+            if hasattr(attr, '__kernel_function_name__'):
+                name = attr.__kernel_function_name__
+            elif hasattr(attr, '_sk_name'):
+                name = attr._sk_name
             else:
-                raw_error = result["errors"][:500]
-                # Add actionable hints for common error patterns
-                hints = []
-                if "No goals to be solved" in raw_error:
-                    hints.append("HINT: Your first tactic already closed the goal. Remove the trailing tactics (like `rfl`).")
-                elif "made no progress" in raw_error:
-                    hints.append("HINT: The tactic didn't change the goal. Try a different approach.")
-                elif "unknown tactic" in raw_error:
-                    hints.append("HINT: This tactic requires Mathlib import. Try omega, simp, or rw instead.")
-                elif "could not prove the goal" in raw_error:
-                    hints.append("HINT: The tactic was applicable but couldn't close the goal. Try a more powerful tactic or split the goal.")
-                error = raw_error
-                if hints:
-                    error = raw_error + "\n" + "\n".join(hints)
-                state.add_attempt(tactic, success=False, error=error,
-                                  agent="TacticAgent", lean_time=result["time_s"])
-                print(f"  FAILED: {error[:200]}")
+                name = attr_name
 
-            # ── Turn 4: Critic analyzes error (only on failure) ────────────
-            state.phase = ProofPhase.CRITIQUE
-            critic_msg = (
-                f"Theorem: {theorem}\n"
-                f"Failed tactic: {tactic}\n"
-                f"Lean error: {error}\n"
-                f"Why did this fail and what should we try next?"
-            )
-            critic_history.append({"role": "user", "content": critic_msg})
+            if name == func_name:
+                try:
+                    result = attr(**arguments)
+                    return str(result)
+                except Exception as e:
+                    return f"Error {func_name}: {e}"
 
-            critic_content, _, critic_tokens = self.critic_llm.chat(
-                messages=critic_history,
-                thinking=self.critic_thinking,
-                agent_name="CriticAgent",
-            )
-            critic_history.append({"role": "assistant", "content": critic_content})
+        return f"Error: {func_name} not found in {plugin_name}"
 
-            state.critic_feedback = critic_content.strip()
-            state.total_llm_s += critic_tokens.get("total", 0) / 1000
-            print(f"  Critic: {critic_content[:100]}")
+    def invoke(self, message: str, state: ProofState, skip_state: bool = False,
+               max_tool_calls: int = 10) -> str:
+        """Execute agent with function calling (from notebook _call_llm)."""
+        state_summary = json.dumps(state.get_state_snapshot(summarize=True), indent=2)
+        tools = self._build_openai_tools()
 
-            # Loop back to coordinator with updated state
+        user_content = message if skip_state else f"ETAT ACTUEL:\n{state_summary}\n\nTACHE:\n{message}"
+        messages = [
+            {"role": "system", "content": self.instructions},
+            {"role": "user", "content": user_content},
+        ]
 
-        # ── Final result ───────────────────────────────────────────────────
-        total_s = time.time() - state.start_time
+        tool_results = []
+        duration = 0
 
-        if not state.is_done:
-            state.phase = ProofPhase.FAILED
+        for iteration in range(max_tool_calls):
+            start = time.time()
+            try:
+                # Force function calling on first iteration, auto on follow-ups
+                if tools and iteration == 0:
+                    tc = {"type": "function", "function": {"name": tools[0]["function"]["name"]}}
+                elif tools:
+                    tc = "auto"
+                else:
+                    tc = None
+                response = self._client.chat.completions.create(
+                    model=self._model,
+                    messages=messages,
+                    tools=tools if tools else None,
+                    tool_choice=tc,
+                    temperature=0.3,
+                    max_tokens=16384,
+                )
+                duration += time.time() - start
+                assistant_message = response.choices[0].message
 
-        return {
-            "success": state.final_proof is not None,
-            "proof": state.final_proof,
-            "iterations": state.iteration,
-            "attempts": len(state.tactic_history),
-            "total_s": round(total_s, 1),
-            "lean_s": round(state.total_lean_s, 1),
-            "config": self.config_label,
-            "state": state.snapshot(),
-        }
+                if self.trace:
+                    reasoning = getattr(assistant_message, "reasoning_content", None) or ""
+                    if reasoning:
+                        self.trace.log(agent=self.name, role="thinking",
+                                       content=reasoning[:500], duration_s=0,
+                                       model=self._model)
+
+                if assistant_message.tool_calls:
+                    messages.append(assistant_message.model_dump())
+
+                    for tool_call in assistant_message.tool_calls:
+                        func_name = tool_call.function.name
+                        try:
+                            arguments = json.loads(tool_call.function.arguments)
+                        except json.JSONDecodeError:
+                            arguments = {}
+
+                        result = self._execute_tool_call(func_name, arguments)
+                        tool_results.append(func_name.split("__")[-1])
+
+                        if self.trace:
+                            self.trace.log(
+                                agent=self.name, role="tool_call",
+                                content=f"{func_name}({json.dumps(arguments)[:120]})",
+                                duration_s=0, model=self._model,
+                                tool_name=func_name, tool_args=arguments,
+                                tool_result=result[:500],
+                            )
+
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "content": result,
+                        })
+                else:
+                    final_response = assistant_message.content or "(no response)"
+                    if tool_results:
+                        actions = ", ".join(tool_results[:5])
+                        final_response = f"Actions: {actions}\n{final_response}"
+
+                    # Workaround: if model produced no tool call but has reasoning,
+                    # try to extract a Lean tactic from the reasoning content
+                    reasoning_text = getattr(assistant_message, "reasoning_content", None) or ""
+                    if reasoning_text and final_response in ("(no response)", ""):
+                        # Debug: save reasoning content for analysis
+                        if self.trace:
+                            self.trace.log(
+                                agent=self.name, role="reasoning_debug",
+                                content=f"reasoning length={len(reasoning_text)}, blocks found in reasoning text",
+                                duration_s=0, model=self._model,
+                            )
+                        # Look for tactic patterns in reasoning:
+                        # 1. ```lean ... ``` blocks — take the LONGEST (most complete)
+                        lean_blocks = re.findall(r'```lean\s*\n(.*?)```', reasoning_text, re.DOTALL)
+                        if lean_blocks:
+                            extracted = max(lean_blocks, key=len).strip()
+                            if self.trace:
+                                self.trace.log(
+                                    agent=self.name, role="reasoning_extract",
+                                    content=f"extracted from {len(lean_blocks)} blocks (picked longest, {len(extracted)} chars):\n{extracted[:300]}",
+                                    duration_s=0, model=self._model,
+                                )
+                            final_response = f"[{self.name}] EXTRACTED_FROM_REASONING:\n```lean\n{extracted}\n```"
+                        else:
+                            # Look for tactic-like patterns after "use" or "apply"
+                            tactic_match = re.search(
+                                r'(?:use|apply|submit|try|propose|suggest)[:\s]+(\w.*?)(?:\n|$)',
+                                reasoning_text, re.IGNORECASE
+                            )
+                            if tactic_match:
+                                final_response = f"[{self.name}] {tactic_match.group(1).strip()}"
+                            else:
+                                # Last resort: find lines with common Lean tactic starters
+                                lean_lines = []
+                                for line in reasoning_text.split("\n"):
+                                    stripped = line.strip()
+                                    if re.match(r'^(rw|simp|exact|apply|omega|ring|linarith|have|calc|conv|field_simp|push_cast|norm_cast|mod_cast)\b', stripped):
+                                        lean_lines.append(stripped)
+                                if lean_lines:
+                                    final_response = f"[{self.name}] " + "\n".join(lean_lines[:3])
+
+                    if self.trace:
+                        tokens = {
+                            "total": response.usage.total_tokens if response.usage else 0,
+                        }
+                        self.trace.log(agent=self.name, role="assistant",
+                                       content=final_response[:500], duration_s=duration,
+                                       model=self._model, tokens=tokens)
+
+                    return f"[{self.name}] {final_response}"
+
+            except Exception as e:
+                if self.trace:
+                    self.trace.log(agent=self.name, role="error", content=str(e), duration_s=0)
+                return f"[{self.name}] Error: {e}"
+
+        actions = ", ".join(tool_results[:5])
+        return f"[{self.name}] Max tool calls reached. Actions: {actions}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SINGLE AGENT (baseline comparison)
+# PROOF AGENT GROUP CHAT - Orchestrator (from notebook cell 33)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ProofAgentGroupChat:
+    """Orchestrates agents for proof sessions (ported from notebook cell 33)."""
+
+    def __init__(self, agents: Dict[str, Any], state: ProofState,
+                 trace: Optional[TraceLogger] = None):
+        self.agents = agents
+        self.state = state
+        self.trace = trace
+        self.history = []
+
+    def run(self, initial_message: str, verbose: bool = True) -> str:
+        """Execute multi-agent proof session."""
+        session_start = time.time()
+
+        if verbose:
+            print(f"\n{'='*70}")
+            print(f"MULTI-AGENT PROOF: {initial_message[:80]}...")
+            print(f"Agents: {list(self.agents.keys())}")
+            print(f"{'='*70}")
+
+        current_message = initial_message
+        agent_order = ["SearchAgent", "TacticAgent", "VerifierAgent",
+                       "CriticAgent", "CoordinatorAgent"]
+
+        for i in range(self.state.max_iterations):
+            self.state.iteration = i + 1
+            self.state.increment_iteration()
+            iter_start = time.time()
+
+            # Determine which agent to use
+            designated = self.state.consume_next_agent_designation()
+            if designated and designated in self.agents:
+                agent_name = designated
+            else:
+                agent_name = agent_order[i % len(agent_order)]
+
+            agent = self.agents.get(agent_name)
+            if not agent:
+                continue
+
+            if verbose:
+                elapsed = time.time() - session_start
+                print(f"\n--- Tour {self.state.iteration} | {agent_name} [+{elapsed:.1f}s] ---")
+
+            # Invoke agent
+            response = agent.invoke(current_message, self.state)
+            iter_duration = time.time() - iter_start
+
+            self.history.append({
+                "iteration": self.state.iteration,
+                "agent": agent_name,
+                "response": response,
+                "duration_s": iter_duration,
+            })
+
+            if verbose:
+                for line in response.split('\n')[:10]:
+                    if line.strip():
+                        print(f"  {line}")
+
+            if self.state.proof_complete:
+                if verbose:
+                    elapsed = time.time() - session_start
+                    print(f"\nPROOF FOUND! [{elapsed:.1f}s]")
+                    print(f"  Final tactic: {self.state.final_proof}")
+                break
+
+            current_message = response
+
+        total_s = time.time() - session_start
+
+        if not self.state.is_done:
+            self.state.phase = ProofPhase.FAILED
+
+        if verbose:
+            print(f"\n{'='*60}")
+            print(f"RESULT: {'SUCCESS' if self.state.proof_complete else 'FAILED'}")
+            print(f"  Iterations: {self.state.iteration}")
+            print(f"  Total time: {total_s:.1f}s")
+            print(f"  Lemmas found: {len(self.state.discovered_lemmas)}")
+            print(f"  Tactics tried: {len(self.state.tactic_history)}")
+            print(f"{'='*60}")
+
+        return self.state.final_proof or "Proof not found"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FACTORY - Create agents with plugins (from notebook cell 22)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def create_proof_session(
+    theorem: str,
+    imports: Optional[str] = None,
+    project_dir: Optional[str] = None,
+    provider: str = "zai",
+    max_iterations: int = 6,
+    verbose: bool = False,
+) -> tuple:
+    """Create a complete proof session: state + plugins + agents + orchestrator.
+
+    Returns (ProofAgentGroupChat, ProofState, TraceLogger).
+    """
+    trace = TraceLogger()
+
+    # Shared state
+    state = ProofState(
+        theorem_statement=theorem,
+        imports=imports,
+        max_iterations=max_iterations,
+        start_time=datetime.now(),
+    )
+    state.phase = ProofPhase.SEARCH
+
+    # Plugins
+    state_plugin = ProofStateManagerPlugin(state)
+    search_plugin = LeanSearchPlugin()
+    tactic_plugin = LeanTacticPlugin()
+    verify_plugin = LeanVerificationPlugin(
+        project_dir=project_dir, imports=imports, trace=trace,
+    )
+    submit_plugin = SubmitTacticPlugin(state, trace=trace)
+
+    # Plugin dicts per agent (each agent sees relevant plugins)
+    search_plugins = {"state": state_plugin, "search": search_plugin}
+    tactic_plugins = {"state": state_plugin, "tactic": tactic_plugin, "submit": submit_plugin}
+    verifier_plugins = {"state": state_plugin, "verification": verify_plugin}
+    critic_plugins = {"state": state_plugin, "tactic": tactic_plugin}
+    coordinator_plugins = {"state": state_plugin, "search": search_plugin}
+
+    # Create agents
+    agents = {
+        "SearchAgent": SimpleAgent(
+            "SearchAgent", SEARCH_AGENT_INSTRUCTIONS, search_plugins,
+            provider=provider, trace=trace, thinking=True,
+        ),
+        "TacticAgent": SimpleAgent(
+            "TacticAgent", TACTIC_AGENT_INSTRUCTIONS, tactic_plugins,
+            provider=provider, trace=trace, thinking=True,
+        ),
+        "VerifierAgent": SimpleAgent(
+            "VerifierAgent", VERIFIER_AGENT_INSTRUCTIONS, verifier_plugins,
+            provider=provider, trace=trace, thinking=False,
+        ),
+        "CriticAgent": SimpleAgent(
+            "CriticAgent", CRITIC_AGENT_INSTRUCTIONS, critic_plugins,
+            provider=provider, trace=trace, thinking=False,
+        ),
+        "CoordinatorAgent": SimpleAgent(
+            "CoordinatorAgent", COORDINATOR_AGENT_INSTRUCTIONS, coordinator_plugins,
+            provider=provider, trace=trace, thinking=False,
+        ),
+    }
+
+    orchestrator = ProofAgentGroupChat(agents, state, trace=trace)
+    return orchestrator, state, trace
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SINGLE-AGENT PROVER (baseline, uses submit_tactic function calling)
 # ══════════════════════════════════════════════════════════════════════════════
 
 class SingleAgentProver:
-    """Single agent baseline (like test_agent_trace.py but compatible interface)."""
+    """Single agent with function calling for baseline comparison."""
 
     def __init__(self, trace: TraceLogger, provider: str = "zai", thinking: bool = True):
         self.trace = trace
-        self.llm = LLMClient(provider=provider, trace=trace)
-        self.thinking = thinking
         self.provider = provider
+        self.thinking = thinking
         self.config_label = f"single={provider}_{'thinkON' if thinking else 'thinkOFF'}"
 
     def prove(self, theorem: str, imports: Optional[str] = None,
-              max_iterations: int = 3) -> dict:
-        """Single-agent proof with retry loop."""
+              max_iterations: int = 4) -> dict:
         state = ProofState(
             theorem_statement=theorem,
             imports=imports,
             max_iterations=max_iterations,
-            start_time=time.time(),
+            start_time=datetime.now(),
         )
 
         print(f"\n{'='*70}")
@@ -835,7 +1719,16 @@ class SingleAgentProver:
         print(f"Config: {self.config_label}")
         print(f"{'='*70}")
 
-        messages = [{"role": "system", "content": TACTIC_PROMPT}]
+        # Create submit_tactic plugin for this session
+        submit_plugin = SubmitTacticPlugin(state, trace=self.trace)
+
+        # Build OpenAI tools from the plugin
+        agent = SimpleAgent(
+            "TacticAgent", TACTIC_AGENT_INSTRUCTIONS,
+            {"submit": submit_plugin},
+            provider=self.provider, trace=self.trace,
+            thinking=self.thinking,
+        )
 
         for attempt in range(1, max_iterations + 1):
             state.iteration = attempt
@@ -847,51 +1740,66 @@ class SingleAgentProver:
                     user_msg += "\n\nAvailable imports: Mathlib (Finset, Real, BigOperators, Tactic)"
             else:
                 user_msg = (
-                    f"That tactic failed. Lean error:\n{state.last_error}\n\n"
+                    f"That tactic FAILED. Lean error:\n{state.last_error}\n\n"
                     f"Try a DIFFERENT tactic to prove:\n{theorem}"
                 )
-            messages.append({"role": "user", "content": user_msg})
 
-            content, _, tokens = self.llm.chat(
-                messages=messages,
-                thinking=self.thinking,
-                agent_name="TacticAgent",
-            )
-            messages.append({"role": "assistant", "content": content})
-            state.total_llm_s += tokens.get("total", 0) / 1000
+            response = agent.invoke(user_msg, state)
 
-            tactic = extract_tactic(content)
+            # Extract submitted tactic from state (plugin records it)
+            if state.tactic_history and not state.tactic_history[-1].success:
+                tactic = state.tactic_history[-1].tactic
+            elif state.tactic_history and state.tactic_history[-1].success:
+                tactic = state.tactic_history[-1].tactic
+            else:
+                # Fallback: extract from response text
+                tactic = response.strip()
+
             print(f"  Tactic: {tactic[:100]}")
 
-            # Verify
+            if "ERROR:" in tactic:
+                state.last_error = tactic
+                continue
+
+            # Verify with Lean
             result = verify_with_lean(
                 theorem=theorem, tactic=tactic, imports=imports,
                 project_dir=LEAN_PROJECT_DIR, trace=self.trace,
             )
-            state.total_lean_s += result["time_s"]
 
             if result["success"]:
                 print(f"  PROOF VALID! ({result['time_s']:.1f}s Lean)")
-                state.add_attempt(tactic, success=True, agent="TacticAgent",
-                                  lean_time=result["time_s"])
+                state.add_tactic_attempt(tactic, success=True,
+                                         explanation=f"Verified in {result['time_s']:.1f}s")
+                state.set_proof_complete(tactic)
                 break
             else:
                 raw_error = result["errors"][:500]
+                error_type = result.get("error_type", "unknown")
                 hints = []
+                if error_type == "unsolved_goals":
+                    hints.append(
+                        "Your tactic executed but LEFT GOALS UNSOLVED. "
+                        "Add more tactics (ring, omega, simp) after your rewrite."
+                    )
+                elif error_type == "tactic_failed":
+                    if "rewrite" in raw_error.lower() and "did not find" in raw_error.lower():
+                        hints.append(
+                            "rw could not find the pattern. Try simp only [...] or conv."
+                        )
                 if "No goals to be solved" in raw_error:
-                    hints.append("Your first tactic already closed the goal. Remove the trailing tactics (like `rfl`).")
+                    hints.append("First tactic already closed the goal. Remove trailing tactics.")
                 elif "made no progress" in raw_error:
-                    hints.append("The tactic didn't change the goal. Try a different approach.")
+                    hints.append("Tactic didn't change the goal. Try different approach.")
                 elif "unknown tactic" in raw_error:
-                    hints.append("This tactic requires Mathlib import. Try omega, simp, or rw instead.")
+                    hints.append("Requires Mathlib import. Try omega, simp, or rw.")
                 error = raw_error
                 if hints:
                     error = raw_error + "\n" + "\n".join(hints)
-                state.add_attempt(tactic, success=False, error=error,
-                                  agent="TacticAgent", lean_time=result["time_s"])
-                print(f"  FAILED: {result['errors'][:200]}")
+                state.add_tactic_attempt(tactic, success=False, error=error)
+                print(f"  FAILED [{error_type}]: {error[:200]}")
 
-        total_s = time.time() - state.start_time
+        total_s = (datetime.now() - state.start_time).total_seconds()
         if not state.is_done:
             state.phase = ProofPhase.FAILED
 
@@ -901,7 +1809,221 @@ class SingleAgentProver:
             "iterations": state.iteration,
             "attempts": len(state.tactic_history),
             "total_s": round(total_s, 1),
-            "lean_s": round(state.total_lean_s, 1),
+            "config": self.config_label,
+        }
+
+    def prove_sorry(self, demo: dict, max_iterations: int = 6) -> dict:
+        """Prove a sorry replacement from a .lean file.
+
+        Instead of proving a standalone theorem, this replaces a `sorry`
+        in the actual proof context.
+        """
+        filepath = demo["file"]
+        sorry_line = demo["line"]
+        sorry_type = demo.get("sorry_type", "partial_proof")
+
+        # Extract context
+        ctx = extract_sorry_block(filepath, sorry_line)
+        if "error" in ctx:
+            return {"success": False, "proof": None, "error": ctx["error"]}
+
+        state = ProofState(
+            theorem_statement=demo.get("theorem", demo["name"]),
+            imports=demo.get("imports"),
+            max_iterations=max_iterations,
+            start_time=datetime.now(),
+        )
+
+        print(f"\n{'='*70}")
+        print(f"SORRY-REPLACEMENT: {demo['name']}")
+        print(f"File: {filepath}:{sorry_line}")
+        print(f"Config: {self.config_label}")
+        print(f"{'='*70}")
+
+        # Show context
+        if ctx.get("context_before"):
+            print(f"\n--- Context before sorry ---")
+            for line in ctx["context_before"].split("\n"):
+                if line.strip():
+                    print(f"  {line}")
+
+        # Extract actual goal state from Lean
+        print(f"  Extracting goal state from Lean...")
+        goal_state = get_goal_state(filepath, sorry_line)
+        if goal_state:
+            print(f"  GOAL: {goal_state[:200]}")
+        else:
+            print(f"  Could not extract goal state (using hints only)")
+
+        # Build the user message with full context
+        context_msg = (
+            f"Replace the `sorry` in this Lean 4 proof.\n\n"
+            f"THEOREM: {demo.get('theorem_name', demo['name'])}\n\n"
+        )
+
+        if demo.get("description"):
+            context_msg += f"CONTEXT:\n{demo['description']}\n\n"
+
+        if ctx.get("context_before"):
+            context_msg += f"CODE BEFORE sorry:\n```lean\n{ctx['context_before']}\n```\n\n"
+
+        if goal_state:
+            context_msg += f"ACTUAL LEAN GOAL (the type Lean expects):\n```\n{goal_state}\n```\n\n"
+        elif ctx.get("goal_hints"):
+            context_msg += f"GOAL HINTS (from comments):\n{ctx['goal_hints']}\n\n"
+
+        context_msg += "Provide the tactic(s) to replace `sorry`."
+
+        submit_plugin = SubmitTacticPlugin(state, trace=self.trace)
+        agent = SimpleAgent(
+            "TacticAgent", TACTIC_AGENT_INSTRUCTIONS,
+            {"submit": submit_plugin},
+            provider=self.provider, trace=self.trace,
+            thinking=self.thinking,
+        )
+
+        failed_tactics = []  # Track failed attempts to prevent repetition
+        skip_count = 0  # Count skipped attempts (no-tactic + duplicates)
+        consecutive_skips = 0  # Track consecutive skips for fallback logic
+
+        attempt = 0
+        while attempt < max_iterations:
+            if skip_count >= max_iterations * 2:
+                print(f"\n  Too many skipped attempts ({skip_count}), giving up.")
+                break
+
+            # Fallback: if too many consecutive skips, retry with thinking disabled
+            if consecutive_skips >= 3 and self.thinking:
+                print(f"\n  [FALLBACK] {consecutive_skips} consecutive reasoning-based skips, disabling thinking")
+                agent = SimpleAgent(
+                    "TacticAgent", TACTIC_AGENT_INSTRUCTIONS,
+                    {"submit": submit_plugin},
+                    provider=self.provider, trace=self.trace,
+                    thinking=False,
+                )
+                consecutive_skips = 0  # Reset after creating new agent
+
+            attempt += 1
+            state.iteration = attempt
+            print(f"\n--- Attempt {attempt}/{max_iterations} ---")
+
+            if attempt == 1:
+                user_msg = context_msg
+            else:
+                # Build retry message with goal state and failed tactics history
+                failed_list = "\n".join(
+                    f"  - `{t}` → {e[:100]}" for t, e in failed_tactics[-3:]
+                )
+                retry_msg = (
+                    f"That tactic FAILED. Lean error:\n{state.last_error}\n\n"
+                )
+                if goal_state:
+                    retry_msg += f"GOAL STATE:\n```\n{goal_state}\n```\n\n"
+                retry_msg += (
+                    f"FAILED ATTEMPTS (do NOT repeat these):\n{failed_list}\n\n"
+                    f"Try a COMPLETELY DIFFERENT tactic. Context:\n"
+                    f"CODE BEFORE sorry:\n```lean\n{ctx['context_before']}\n```\n"
+                )
+                user_msg = retry_msg
+
+            # Track history before invocation to detect new submissions
+            history_before = len(state.tactic_history)
+            response = agent.invoke(user_msg, state, skip_state=True, max_tool_calls=1)
+
+            # Extract submitted tactic — only use new submissions from this invocation
+            tactic = None
+            if len(state.tactic_history) > history_before:
+                # Agent submitted a new tactic via tool call
+                tactic = state.tactic_history[-1].tactic
+            else:
+                # Fallback: extract tactic from text response (reasoning extraction)
+                lean_blocks = re.findall(r'```lean\n(.*?)```', response, re.DOTALL)
+                if lean_blocks:
+                    tactic = lean_blocks[0].strip()
+                else:
+                    # Last resort: strip agent prefix and brackets
+                    tactic = re.sub(r'^\[.*?\]\s*', '', response).strip()
+                    if not tactic or tactic == "(no response)":
+                        tactic = None
+
+            if tactic is None:
+                # Agent didn't submit a tactic — don't count this as an attempt
+                print(f"  Tactic: (none — skipping, not counted)")
+                skip_count += 1
+                consecutive_skips += 1
+                attempt -= 1
+                continue
+
+            # Dedup: skip if identical to a previously failed tactic
+            if any(tactic.strip() == ft.strip() for ft, _ in failed_tactics):
+                print(f"  Tactic: (duplicate — skipping, not counted)")
+                skip_count += 1
+                consecutive_skips += 1
+                attempt -= 1
+                continue
+
+            # Tactic is valid and new — reset consecutive skip counter
+            consecutive_skips = 0
+
+            print(f"  Tactic: {tactic[:120]}")
+
+            # Verify by replacing sorry in the actual file
+            print(f"  Verifying sorry replacement in {Path(filepath).name}...")
+            result = verify_sorry_replacement(
+                filepath=filepath, sorry_line=sorry_line,
+                replacement=tactic, imports=demo.get("imports"),
+            )
+
+            if result["success"]:
+                print(f"  PROOF VALID! ({result['time_s']:.1f}s Lean)")
+                state.add_tactic_attempt(tactic, success=True,
+                                         explanation=f"Verified in {result['time_s']:.1f}s")
+                state.set_proof_complete(tactic)
+                break
+            else:
+                raw_error = result["errors"][:500]
+                error_type = result.get("error_type", "unknown")
+
+                # Add contextual hints based on error type
+                if error_type == "unsolved_goals":
+                    residual = result.get("residual_goals", [])
+                    if residual:
+                        residual_str = "\n".join(f"  ⊢ {g}" for g in residual[:3])
+                        hint = (
+                            "Your tactic executed but LEFT THESE GOALS UNSOLVED:\n"
+                            f"{residual_str}\n"
+                            "Add more tactics after your rewrite to close these goals."
+                        )
+                    else:
+                        hint = (
+                            "Your tactic executed but did not close ALL goals. "
+                            "The proof needs additional tactics after your rewrite. "
+                            "Consider: `ring`, `omega`, `simp`, or `linarith`."
+                        )
+                    raw_error = hint + "\n" + raw_error
+                elif error_type == "tactic_failed":
+                    if "rewrite" in raw_error.lower() and "did not find" in raw_error.lower():
+                        hint = (
+                            "The `rw` tactic could not find the pattern in the goal. "
+                            "The lemma may not match the current expression. "
+                            "Try `simp only [...]` or `conv` to target the rewrite."
+                        )
+                        raw_error = hint + "\n" + raw_error
+
+                state.add_tactic_attempt(tactic, success=False, error=raw_error)
+                failed_tactics.append((tactic, raw_error[:200]))
+                print(f"  FAILED [{error_type}]: {raw_error[:200]}")
+
+        total_s = (datetime.now() - state.start_time).total_seconds()
+        if not state.is_done:
+            state.phase = ProofPhase.FAILED
+
+        return {
+            "success": state.final_proof is not None,
+            "proof": state.final_proof,
+            "iterations": state.iteration,
+            "attempts": len(state.tactic_history),
+            "total_s": round(total_s, 1),
             "config": self.config_label,
         }
 
@@ -910,34 +2032,9 @@ class SingleAgentProver:
 # BATCH RUNNER
 # ══════════════════════════════════════════════════════════════════════════════
 
-def run_batch(demos: list = None, configs: list = None, max_iterations: int = 3):
-    """
-    Run multiple demo x config combinations.
-
-    configs format: list of dicts with keys:
-        - name: label
-        - mode: "multi" or "single"
-        - coordinator_provider, tactic_provider, critic_provider (multi)
-        - coordinator_thinking, tactic_thinking, critic_thinking (multi)
-        - provider, thinking (single)
-    """
+def run_batch(demos: list = None, provider: str = "zai", max_iterations: int = 3):
     if demos is None:
         demos = [1, 2, 3]
-    if configs is None:
-        configs = [
-            {
-                "name": "multi-all-zai-thinkON",
-                "mode": "multi",
-                "coordinator_provider": "zai", "coordinator_thinking": True,
-                "tactic_provider": "zai", "tactic_thinking": True,
-                "critic_provider": "zai", "critic_thinking": False,
-            },
-            {
-                "name": "single-zai-thinkON",
-                "mode": "single",
-                "provider": "zai", "thinking": True,
-            },
-        ]
 
     results = []
     for demo_num in demos:
@@ -945,8 +2042,8 @@ def run_batch(demos: list = None, configs: list = None, max_iterations: int = 3)
         if not demo:
             continue
 
-        for cfg in configs:
-            label = f"{demo['name']} | {cfg['name']}"
+        for mode in ["multi", "single"]:
+            label = f"{demo['name']} | {mode}-{provider}"
             print(f"\n{'#'*70}")
             print(f"# BATCH: {label}")
             print(f"{'#'*70}")
@@ -955,93 +2052,60 @@ def run_batch(demos: list = None, configs: list = None, max_iterations: int = 3)
             t0 = time.time()
 
             try:
-                if cfg["mode"] == "multi":
-                    prover = MultiAgentOrchestrator(
-                        trace=trace,
-                        coordinator_provider=cfg.get("coordinator_provider", "zai"),
-                        coordinator_thinking=cfg.get("coordinator_thinking", True),
-                        tactic_provider=cfg.get("tactic_provider", "zai"),
-                        tactic_thinking=cfg.get("tactic_thinking", True),
-                        critic_provider=cfg.get("critic_provider", "zai"),
-                        critic_thinking=cfg.get("critic_thinking", False),
+                if mode == "multi":
+                    orchestrator, state, _ = create_proof_session(
+                        theorem=demo["theorem"],
+                        imports=demo.get("imports"),
+                        project_dir=LEAN_PROJECT_DIR,
+                        provider=provider,
+                        max_iterations=max_iterations,
                     )
+                    orchestrator.run(f"Prove: {demo['theorem']}", verbose=True)
+                    success = state.proof_complete
+                    proof = state.final_proof
+                    iterations = state.iteration
                 else:
-                    prover = SingleAgentProver(
-                        trace=trace,
-                        provider=cfg.get("provider", "zai"),
-                        thinking=cfg.get("thinking", True),
+                    prover = SingleAgentProver(trace=trace, provider=provider)
+                    result = prover.prove(
+                        theorem=demo["theorem"],
+                        imports=demo.get("imports"),
+                        max_iterations=max_iterations,
                     )
+                    success = result["success"]
+                    proof = result["proof"]
+                    iterations = result["iterations"]
 
-                result = prover.prove(
-                    theorem=demo["theorem"],
-                    imports=demo.get("imports"),
-                    max_iterations=max_iterations,
-                )
-
-                trace_name = f"{demo['name']}_{cfg['name']}"
+                trace_name = f"{demo['name']}_{mode}_{provider}"
                 trace.save(trace_name)
 
-                # Extract LLM time from trace
-                llm_time = sum(e["duration_s"] for e in trace.entries
-                               if e["role"] in ("assistant", "thinking"))
-
+                total_s = time.time() - t0
                 results.append({
-                    "demo": demo_num,
-                    "demo_name": demo["name"],
-                    "config": cfg["name"],
-                    "mode": cfg["mode"],
-                    "success": result["success"],
-                    "iterations": result["iterations"],
-                    "proof": result.get("proof", ""),
-                    "total_s": result["total_s"],
-                    "llm_s": round(llm_time, 1),
-                    "lean_s": result["lean_s"],
-                    "trace_file": f"traces/{trace_name}.json",
+                    "demo": demo_num, "demo_name": demo["name"],
+                    "mode": mode, "provider": provider,
+                    "success": success, "iterations": iterations,
+                    "proof": proof or "",
+                    "total_s": round(total_s, 1),
                 })
 
             except Exception as e:
-                total_s = time.time() - t0
                 print(f"  ERROR: {e}")
                 results.append({
                     "demo": demo_num, "demo_name": demo["name"],
-                    "config": cfg["name"], "mode": cfg.get("mode", "?"),
-                    "success": False, "iterations": 0, "proof": f"ERROR: {e}",
-                    "total_s": round(total_s, 1), "llm_s": 0, "lean_s": 0,
-                    "trace_file": None,
+                    "mode": mode, "provider": provider,
+                    "success": False, "iterations": 0,
+                    "proof": f"ERROR: {e}", "total_s": 0,
                 })
 
     # Print summary table
-    print(f"\n{'='*100}")
+    print(f"\n{'='*90}")
     print("BATCH SUMMARY")
-    print(f"{'='*100}")
-    print(f"{'Demo':<28} {'Config':<30} {'OK?':<5} {'Iter':<5} "
-          f"{'Total':>7} {'LLM':>6} {'Lean':>6} {'Proof'}")
-    print("-" * 110)
+    print(f"{'='*90}")
+    print(f"{'Demo':<28} {'Mode':<10} {'OK?':<5} {'Iter':<5} {'Time':>7} {'Proof'}")
+    print("-" * 90)
     for r in results:
-        print(f"{r['demo_name']:<28} {r['config']:<30} "
+        print(f"{r['demo_name']:<28} {r['mode']:<10} "
               f"{'OK' if r['success'] else 'FAIL':<5} {r['iterations']:<5} "
-              f"{r['total_s']:>6.1f}s {r['llm_s']:>5.1f}s {r['lean_s']:>5.1f}s "
-              f"{(r.get('proof') or '')[:35]}")
-
-    # Save summary
-    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-    summary_path = Path("traces") / f"batch_summary_{ts}.json"
-    with open(summary_path, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
-    print(f"\nBatch summary saved: {summary_path}")
-
-    # Performance analysis
-    print(f"\n{'='*60}")
-    print("PERFORMANCE ANALYSIS")
-    print(f"{'='*60}")
-    for r in results:
-        if r["success"]:
-            lean_pct = (r["lean_s"] / r["total_s"] * 100) if r["total_s"] > 0 else 0
-            llm_pct = (r["llm_s"] / r["total_s"] * 100) if r["total_s"] > 0 else 0
-            print(f"  {r['demo_name'][:25]:25s} | "
-                  f"Lean: {lean_pct:4.0f}% ({r['lean_s']:.1f}s) | "
-                  f"LLM: {llm_pct:4.0f}% ({r['llm_s']:.1f}s) | "
-                  f"Config: {r['config']}")
+              f"{r['total_s']:>6.1f}s {(r.get('proof') or '')[:35]}")
 
     return results
 
@@ -1051,22 +2115,19 @@ def run_batch(demos: list = None, configs: list = None, max_iterations: int = 3)
 # ══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    parser = argparse.ArgumentParser(description="Multi-Agent Lean Proof System")
-    parser.add_argument("--demo", type=int, default=1, help="Demo number (1-5)")
-    parser.add_argument("--batch", action="store_true", help="Run batch over demos x configs")
-    parser.add_argument("--demos", type=str, default="1,2,3,4,5",
+    parser = argparse.ArgumentParser(description="Multi-Agent Lean Proof System (SK port)")
+    parser.add_argument("--demo", type=int, default=1, help="Demo number (1-8)")
+    parser.add_argument("--batch", action="store_true", help="Run batch over demos")
+    parser.add_argument("--demos", type=str, default="1,2,3",
                         help="Comma-separated demo numbers for batch")
-    parser.add_argument("--max-iterations", type=int, default=3,
-                        help="Max proof iterations per attempt")
-    parser.add_argument("--mode", choices=["multi", "single", "both"], default="both",
-                        help="Agent mode to test")
-    parser.add_argument("--coordinator", default="zai", help="Coordinator provider")
+    parser.add_argument("--max-iterations", type=int, default=6,
+                        help="Max proof iterations")
+    parser.add_argument("--mode", choices=["multi", "single", "both"], default="single",
+                        help="Agent mode")
     parser.add_argument("--tactic", default="zai", help="Tactic agent provider")
-    parser.add_argument("--critic", default="zai", help="Critic agent provider")
-    parser.add_argument("--no-thinking", action="store_true", help="Disable thinking for all agents")
-    parser.add_argument("--verify-only", action="store_true", help="Just verify known proof")
-    parser.add_argument("--lsp", action="store_true",
-                        help="Use persistent LSP server for fast verification")
+    parser.add_argument("--no-thinking", action="store_true")
+    parser.add_argument("--verify-only", action="store_true",
+                        help="Just verify known proof")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -1075,123 +2136,89 @@ def main():
         print(f"Unknown demo {args.demo}. Available: {list(DEMOS.keys())}")
         sys.exit(1)
 
-    # Start persistent LSP server if requested
-    if args.lsp and LEAN_PROJECT_DIR:
-        start_lsp_server(LEAN_PROJECT_DIR, warmup=True, verbose=args.verbose)
+    # Sorry-mode demos (6-8) use SingleAgentProver.prove_sorry()
+    is_sorry_mode = demo.get("sorry_type") is not None
 
-    try:
-        _run_main(args, demo)
-    finally:
-        stop_lsp_server()
-
-
-def _run_main(args, demo):
-    """Main logic, separated for LSP cleanup wrapping."""
     # Verify-only mode
-    if args.verify_only:
+    if args.verify_only and not is_sorry_mode:
         trace = TraceLogger()
         result = verify_with_lean(
             theorem=demo["theorem"], tactic=demo["proof"],
-            imports=demo.get("imports"), project_dir=LEAN_PROJECT_DIR,
-            trace=trace,
+            imports=demo.get("imports"), project_dir=LEAN_PROJECT_DIR, trace=trace,
         )
-        backend = result.get("backend", "subprocess")
         print(f"Known proof '{demo['proof']}': {'VALID' if result['success'] else 'INVALID'} "
-              f"({result['time_s']:.1f}s via {backend})")
+              f"({result['time_s']:.1f}s via {result.get('backend', '?')})")
         if result["errors"]:
             print(f"Errors: {result['errors'][:300]}")
         return
 
-    thinking = not args.no_thinking
-
     if args.batch:
         demo_nums = [int(x.strip()) for x in args.demos.split(",")]
-        configs = []
-
-        if args.mode in ("multi", "both"):
-            configs.append({
-                "name": f"multi-c={args.coordinator}_t={args.tactic}_cr={args.critic}",
-                "mode": "multi",
-                "coordinator_provider": args.coordinator,
-                "coordinator_thinking": thinking,
-                "tactic_provider": args.tactic,
-                "tactic_thinking": thinking,
-                "critic_provider": args.critic,
-                "critic_thinking": False,  # critic uses fast model
-            })
-        if args.mode in ("single", "both"):
-            configs.append({
-                "name": f"single={args.tactic}_{'thinkON' if thinking else 'thinkOFF'}",
-                "mode": "single",
-                "provider": args.tactic,
-                "thinking": thinking,
-            })
-
-        run_batch(demos=demo_nums, configs=configs, max_iterations=args.max_iterations)
+        run_batch(demos=demo_nums, provider=args.tactic, max_iterations=args.max_iterations)
         return
 
-    # Single demo run
-    trace = TraceLogger()
+    # ── Sorry-mode demos (6-8) ──
+    if is_sorry_mode:
+        print(f"\n>>> SORRY-REPLACEMENT ({demo['name']})...")
+        trace = TraceLogger()
+        prover = SingleAgentProver(trace=trace, provider=args.tactic,
+                                   thinking=not args.no_thinking)
+        result = prover.prove_sorry(demo=demo, max_iterations=args.max_iterations)
+        trace.save(f"sorry_{demo['name']}")
+        print(f"\n{'='*60}")
+        print(f"RESULT: {'SUCCESS' if result['success'] else 'FAILED'}")
+        if result.get("proof"):
+            print(f"  Proof: {result['proof'][:200]}")
+        print(f"  Time: {result['total_s']:.1f}s, Iterations: {result['iterations']}")
+        print(f"{'='*60}")
+        return
 
-    if args.mode == "multi":
-        prover = MultiAgentOrchestrator(
-            trace=trace,
-            coordinator_provider=args.coordinator,
-            coordinator_thinking=thinking,
-            tactic_provider=args.tactic,
-            tactic_thinking=thinking,
-            critic_provider=args.critic,
-            critic_thinking=False,
-        )
-    elif args.mode == "single":
-        prover = SingleAgentProver(trace=trace, provider=args.tactic, thinking=thinking)
-    else:  # both
-        print("\n>>> Running MULTI-AGENT first...")
-        multi_prover = MultiAgentOrchestrator(
-            trace=trace,
-            coordinator_provider=args.coordinator,
-            coordinator_thinking=thinking,
-            tactic_provider=args.tactic,
-            tactic_thinking=thinking,
-            critic_provider=args.critic,
-            critic_thinking=False,
-        )
-        multi_result = multi_prover.prove(
-            theorem=demo["theorem"], imports=demo.get("imports"),
+    # ── Standard demos (1-5) ──
+    if args.mode in ("multi", "both"):
+        print("\n>>> MULTI-AGENT (SK function calling)...")
+        orchestrator, state, trace = create_proof_session(
+            theorem=demo["theorem"],
+            imports=demo.get("imports"),
+            project_dir=LEAN_PROJECT_DIR,
+            provider=args.tactic,
             max_iterations=args.max_iterations,
+            verbose=args.verbose,
         )
+        orchestrator.run(f"Prove: {demo['theorem']}", verbose=True)
+        trace.save(f"multi_{demo['name']}")
+        multi_success = state.proof_complete
+        multi_proof = state.final_proof
 
-        print("\n>>> Running SINGLE-AGENT baseline...")
+    if args.mode in ("single", "both"):
+        print("\n>>> SINGLE-AGENT baseline...")
         trace2 = TraceLogger()
-        single_prover = SingleAgentProver(trace=trace2, provider=args.tactic, thinking=thinking)
-        single_result = single_prover.prove(
-            theorem=demo["theorem"], imports=demo.get("imports"),
+        prover = SingleAgentProver(trace=trace2, provider=args.tactic,
+                                   thinking=not args.no_thinking)
+        result = prover.prove(
+            theorem=demo["theorem"],
+            imports=demo.get("imports"),
             max_iterations=args.max_iterations,
         )
+        trace2.save(f"single_{demo['name']}")
 
+    if args.mode == "both":
         print(f"\n{'='*60}")
         print("COMPARISON")
         print(f"{'='*60}")
-        print(f"  Multi:  {'OK' if multi_result['success'] else 'FAIL'} "
-              f"({multi_result['iterations']} iter, {multi_result['total_s']}s)")
-        print(f"  Single: {'OK' if single_result['success'] else 'FAIL'} "
-              f"({single_result['iterations']} iter, {single_result['total_s']}s)")
-        trace.save(f"comparison_{demo['name']}")
-        return
-
-    result = prover.prove(
-        theorem=demo["theorem"], imports=demo.get("imports"),
-        max_iterations=args.max_iterations,
-    )
-    trace.save(f"{args.mode}_{demo['name']}")
-
-    print(f"\n{'='*60}")
-    print(f"RESULT: {'SUCCESS' if result['success'] else 'FAILED'}")
-    if result["success"]:
-        print(f"  Proof: {result['proof']}")
-        print(f"  Iterations: {result['iterations']}")
-        print(f"  Time: {result['total_s']}s (LLM: {result.get('llm_s', 0):.1f}s, Lean: {result['lean_s']}s)")
-    print(f"{'='*60}")
+        print(f"  Multi:  {'OK' if multi_success else 'FAIL'} (proof: {multi_proof})")
+        print(f"  Single: {'OK' if result['success'] else 'FAIL'} (proof: {result.get('proof')})")
+    elif args.mode == "multi":
+        print(f"\n{'='*60}")
+        print(f"RESULT: {'SUCCESS' if multi_success else 'FAILED'}")
+        if multi_proof:
+            print(f"  Proof: {multi_proof}")
+        print(f"{'='*60}")
+    elif args.mode == "single":
+        print(f"\n{'='*60}")
+        print(f"RESULT: {'SUCCESS' if result['success'] else 'FAILED'}")
+        if result.get("proof"):
+            print(f"  Proof: {result['proof']}")
+        print(f"{'='*60}")
 
 
 if __name__ == "__main__":
