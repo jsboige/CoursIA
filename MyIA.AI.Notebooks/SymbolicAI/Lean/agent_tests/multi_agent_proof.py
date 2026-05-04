@@ -2601,6 +2601,532 @@ class MultiAgentSorryProver:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# AUTONOMOUS PROVER — Minimal orchestrator: agent proposes edit → compile → feed
+# ══════════════════════════════════════════════════════════════════════════════
+
+class LeanFilePlugin:
+    """Plugin giving agents direct read/write access to the .lean file."""
+
+    def __init__(self, filepath: str):
+        self._filepath = filepath
+        self._best_content: Optional[str] = None
+        self._best_sorry_count: int = 999
+
+    @kernel_function(
+        description="Read the current content of the .lean file being edited",
+        name="read_file",
+    )
+    def read_file(self) -> str:
+        content = Path(self._filepath).read_text(encoding="utf-8")
+        sorry_count = content.count("sorry")
+        return json.dumps({
+            "filepath": str(self._filepath),
+            "content": content,
+            "sorry_count": sorry_count,
+            "total_lines": len(content.split("\n")),
+        }, ensure_ascii=False)
+
+    @kernel_function(
+        description="Read a specific range of lines from the .lean file (1-based inclusive)",
+        name="read_lines",
+    )
+    def read_lines(self, start: int, end: int) -> str:
+        content = Path(self._filepath).read_text(encoding="utf-8")
+        lines = content.split("\n")
+        start = max(1, start)
+        end = min(len(lines), end)
+        selected = lines[start - 1:end]
+        return "\n".join(f"{start + i}: {line}" for i, line in enumerate(selected))
+
+    @kernel_function(
+        description="Replace a range of lines in the .lean file. Lines are 1-based, inclusive. Returns the new sorry count.",
+        name="replace_lines",
+    )
+    def replace_lines(self, start: int, end: int, new_content: str) -> str:
+        content = Path(self._filepath).read_text(encoding="utf-8")
+        lines = content.split("\n")
+        old_lines = lines[start - 1:end] if end <= len(lines) else lines[start - 1:]
+        old_text = "\n".join(old_lines)
+
+        new_lines = new_content.split("\n")
+        lines[start - 1:end if end <= len(lines) else len(lines)] = new_lines
+        new_file_content = "\n".join(lines)
+
+        Path(self._filepath).write_text(new_file_content, encoding="utf-8")
+        sorry_count = new_file_content.count("sorry")
+
+        # Track best state
+        if sorry_count < self._best_sorry_count:
+            self._best_sorry_count = sorry_count
+            self._best_content = new_file_content
+
+        return json.dumps({
+            "replaced_lines": f"{start}-{end}",
+            "old_text_preview": old_text[:200],
+            "new_sorry_count": sorry_count,
+            "best_sorry_count": self._best_sorry_count,
+        }, ensure_ascii=False)
+
+    @kernel_function(
+        description="Replace the sorry at a given line number with new tactic text. Auto-detects indentation.",
+        name="replace_sorry",
+    )
+    def replace_sorry(self, sorry_line: int, replacement: str) -> str:
+        content = Path(self._filepath).read_text(encoding="utf-8")
+        lines = content.split("\n")
+
+        if sorry_line < 1 or sorry_line > len(lines):
+            return json.dumps({"error": f"Line {sorry_line} out of range"})
+
+        sorry_text = lines[sorry_line - 1]
+        if "sorry" not in sorry_text:
+            return json.dumps({"error": f"Line {sorry_line} doesn't contain 'sorry': {sorry_text[:80]}"})
+
+        indent = len(sorry_text) - len(sorry_text.lstrip())
+        indent_str = " " * indent
+
+        replacement_lines = []
+        for line in replacement.strip().split("\n"):
+            if line.strip():
+                replacement_lines.append(indent_str + line.strip())
+
+        old_line = lines[sorry_line - 1]
+        lines[sorry_line - 1:sorry_line] = replacement_lines
+        new_content = "\n".join(lines)
+
+        Path(self._filepath).write_text(new_content, encoding="utf-8")
+        sorry_count = new_content.count("sorry")
+
+        if sorry_count < self._best_sorry_count:
+            self._best_sorry_count = sorry_count
+            self._best_content = new_content
+
+        return json.dumps({
+            "replaced": old_line.strip(),
+            "new_lines": len(replacement_lines),
+            "new_sorry_count": sorry_count,
+            "best_sorry_count": self._best_sorry_count,
+        }, ensure_ascii=False)
+
+    @kernel_function(
+        description="Write the complete .lean file content. Use for major rewrites.",
+        name="write_file",
+    )
+    def write_file(self, content: str) -> str:
+        Path(self._filepath).write_text(content, encoding="utf-8")
+        sorry_count = content.count("sorry")
+
+        if sorry_count < self._best_sorry_count:
+            self._best_sorry_count = sorry_count
+            self._best_content = content
+
+        return json.dumps({
+            "written": True,
+            "sorry_count": sorry_count,
+            "best_sorry_count": self._best_sorry_count,
+            "total_lines": len(content.split("\n")),
+        }, ensure_ascii=False)
+
+    @kernel_function(
+        description="Find all sorry lines in the file with their line numbers and surrounding context",
+        name="find_sorry_lines",
+    )
+    def find_sorry_lines(self, context_chars: int = 80) -> str:
+        content = Path(self._filepath).read_text(encoding="utf-8")
+        lines = content.split("\n")
+        sorry_lines = []
+        for i, line in enumerate(lines):
+            if "sorry" in line:
+                start_ctx = max(0, i - 2)
+                end_ctx = min(len(lines), i + 3)
+                ctx = "\n".join(
+                    f"  {start_ctx + j + 1}: {lines[start_ctx + j]}"
+                    for j in range(end_ctx - start_ctx)
+                )
+                sorry_lines.append({
+                    "line": i + 1,
+                    "content": line.strip(),
+                    "context": ctx,
+                })
+        return json.dumps({
+            "sorry_count": len(sorry_lines),
+            "sorry_lines": sorry_lines,
+        }, ensure_ascii=False)
+
+    @kernel_function(
+        description="Restore the best state seen so far (lowest sorry count). Returns True if restored.",
+        name="restore_best",
+    )
+    def restore_best(self) -> str:
+        if self._best_content:
+            Path(self._filepath).write_text(self._best_content, encoding="utf-8")
+            return json.dumps({
+                "restored": True,
+                "sorry_count": self._best_sorry_count,
+            }, ensure_ascii=False)
+        return json.dumps({"restored": False, "reason": "no best state recorded"})
+
+    @property
+    def best_sorry_count(self) -> int:
+        return self._best_sorry_count
+
+    @property
+    def best_content(self) -> Optional[str]:
+        return self._best_content
+
+
+class CompilePlugin:
+    """Plugin that compiles the .lean file and returns structured results."""
+
+    def __init__(self, filepath: str, trace: Optional[TraceLogger] = None):
+        self._filepath = filepath
+        self._project_dir = str(Path(filepath).parent.parent)
+        self._trace = trace
+        self._compile_count = 0
+        self._total_compile_s = 0.0
+
+    @kernel_function(
+        description="Compile the current .lean file and return errors, sorry count, and compilation time. This is the MAIN feedback mechanism.",
+        name="compile",
+    )
+    def compile(self) -> str:
+        self._compile_count += 1
+        start = time.time()
+
+        verifier = get_verifier(self._project_dir)
+        subdir = Path(self._filepath).parent.name
+        filename = Path(self._filepath).name
+        relative_path = f"{subdir}/{filename}"
+        result = verifier.verify_project_file(relative_path)
+
+        duration = time.time() - start
+        self._total_compile_s += duration
+
+        raw_output = result.get("raw_output", "")
+        success = result.get("success", False)
+
+        # Parse errors
+        errors = []
+        for line in raw_output.split("\n"):
+            m = re.match(r".*?(\d+):\d+: error: (.*)", line)
+            if m:
+                errors.append({"line": int(m.group(1)), "message": m.group(2)})
+
+        # Parse warnings
+        warnings = []
+        for line in raw_output.split("\n"):
+            m = re.match(r".*?(\d+):\d+: warning: (.*)", line)
+            if m:
+                warnings.append({"line": int(m.group(1)), "message": m.group(2)})
+
+        # Count sorry in current file
+        content = Path(self._filepath).read_text(encoding="utf-8")
+        sorry_count = content.count("sorry")
+
+        if self._trace:
+            self._trace.log(
+                agent="CompilePlugin", role="compile",
+                content=f"compile #{self._compile_count}: success={success}, "
+                        f"{len(errors)} errors, {sorry_count} sorry, {duration:.1f}s",
+                duration_s=duration,
+                tool_name="compile",
+                tool_result=raw_output[:500],
+            )
+
+        return json.dumps({
+            "success": success,
+            "sorry_count": sorry_count,
+            "error_count": len(errors),
+            "errors": errors[:10],
+            "warnings": warnings[:5],
+            "compile_time_s": round(duration, 1),
+            "compile_number": self._compile_count,
+            "raw_output_preview": raw_output[:500],
+        }, ensure_ascii=False)
+
+    @kernel_function(
+        description="Extract the Lean goal state at a specific sorry line by probing with 'exact ()'. Returns the goal text.",
+        name="probe_goal",
+    )
+    def probe_goal(self, sorry_line: int) -> str:
+        goal = get_goal_state(self._filepath, sorry_line)
+        if goal:
+            return json.dumps({"goal": goal, "line": sorry_line})
+        return json.dumps({"goal": None, "line": sorry_line, "hint": "Could not extract goal (timeout or syntax error)"})
+
+    @property
+    def compile_count(self) -> int:
+        return self._compile_count
+
+    @property
+    def total_compile_s(self) -> float:
+        return self._total_compile_s
+
+
+# --- Unified agent instructions for the autonomous prover ---
+
+AUTONOMOUS_PROVER_INSTRUCTIONS = """Tu es un systeme de preuve Lean 4 multi-agent. Tu as un accès direct au fichier .lean via des outils.
+
+OUTILS DISPONIBLES:
+- read_file() — lire le fichier complet
+- read_lines(start, end) — lire une plage de lignes
+- replace_lines(start, end, new_content) — remplacer des lignes
+- replace_sorry(line, replacement) — remplacer un sorry par des tactiques
+- write_file(content) — réécrire le fichier complet
+- find_sorry_lines() — trouver tous les sorry avec contexte
+- compile() — compiler et obtenir les erreurs
+- probe_goal(line) — extraire le but Lean à une ligne sorry
+- restore_best() — restaurer le meilleur état vu (plus bas sorry count)
+- get_proof_state() — voir l'état de la preuve
+- search_mathlib_lemmas(goal) — chercher des lemmes pertinents
+- generate_tactics(goal) — suggestions de tactiques
+- add_discovered_lemma(name, statement) — enregistrer un lemme
+
+STRATÉGIE GÉNÉRALE:
+1. Commence par read_file() pour comprendre le fichier
+2. find_sorry_lines() pour identifier les cibles
+3. probe_goal(line) pour comprendre le but à chaque sorry
+4. Propose une modification (replace_sorry, replace_lines, ou write_file)
+5. compile() pour vérifier
+6. Si erreur → analyse → adapte → recommence
+7. Si une décomposition (have ... := by sorry) compile → c'est du PROGRÈS (plus de sorry mais le fichier compile)
+8. restore_best() si tu as cassé le fichier
+
+APPROCHES POSSIBLES (pas seulement la décomposition):
+- Tactique directe: rfl, omega, simp, ring, exact, apply, rw
+- Lemmes: exact LemmaName, rw [LemmaName], simp [LemmaName]
+- Décomposition: have h : sub_goal := by sorry
+- Réécriture: modifier le proof structure, ajouter des hypothèses
+- Imports: ajouter des imports Mathlib si nécessaire
+- Helpers: prouver des lemmes auxiliaires dans le fichier
+
+RÈGLES:
+- Propose UNE modification à la fois, compile, analyse le résultat
+- Ne répète PAS une modification qui vient d'échouer
+- Si 3 échecs consécutifs sur le même sorry → essaie une approche radicalement différente
+- Si le sorry count diminue → c'est du progrès (même si le fichier a plus d'erreurs par ailleurs)
+- Tu peux modifier N'IMPORTE QUELLE partie du fichier, pas seulement les sorry
+"""
+
+
+class AutonomousProver:
+    """Minimal orchestrator: single agent with full file editing powers.
+
+    The agent has complete freedom to edit the .lean file. The orchestrator
+    only: (1) lets the agent call tools, (2) auto-compiles after each edit,
+    (3) feeds compilation results back, (4) tracks best state, (5) stops
+    when done or budget exhausted.
+    """
+
+    def __init__(self, trace: TraceLogger, provider: str = "zai",
+                 thinking: bool = True):
+        self.trace = trace
+        self.provider = provider
+        self.thinking = thinking
+        self.config_label = f"auto-{provider}_{'thinkON' if thinking else 'thinkOFF'}"
+
+    def prove_sorry(self, demo: dict, max_iterations: int = 10,
+                    strategic_hints: str = "") -> dict:
+        filepath = demo["file"]
+        sorry_line = demo["line"]
+
+        # Read original content for backup
+        original_content = Path(filepath).read_text(encoding="utf-8")
+        original_sorry_count = original_content.count("sorry")
+
+        print(f"\n{'='*70}")
+        print(f"AUTONOMOUS PROVER: {demo['name']}")
+        print(f"File: {filepath}:{sorry_line}")
+        print(f"Config: {self.config_label}")
+        print(f"Original sorry count: {original_sorry_count}")
+        if strategic_hints:
+            print(f"Strategic hints: {strategic_hints[:200]}")
+        print(f"{'='*70}")
+
+        # Create plugins
+        file_plugin = LeanFilePlugin(filepath)
+        compile_plugin = CompilePlugin(filepath, trace=self.trace)
+        state = ProofState(
+            theorem_statement=demo.get("theorem", demo["name"]),
+            imports=demo.get("imports"),
+            max_iterations=max_iterations,
+            start_time=datetime.now(),
+        )
+        state_plugin = ProofStateManagerPlugin(state)
+        search_plugin = LeanSearchPlugin()
+        tactic_plugin = LeanTacticPlugin()
+
+        # Single agent with ALL plugins — full freedom
+        all_plugins = {
+            "file": file_plugin,
+            "compile": compile_plugin,
+            "state": state_plugin,
+            "search": search_plugin,
+            "tactic": tactic_plugin,
+        }
+
+        agent = SimpleAgent(
+            "AutonomousProver",
+            AUTONOMOUS_PROVER_INSTRUCTIONS,
+            all_plugins,
+            provider=self.provider,
+            trace=self.trace,
+            thinking=self.thinking,
+        )
+
+        # Build initial context
+        goal_state = get_goal_state(filepath, sorry_line)
+        context_msg = (
+            f"Prouve le sorry à la ligne {sorry_line} du fichier {Path(filepath).name}.\n\n"
+        )
+        if demo.get("description"):
+            context_msg += f"DESCRIPTION:\n{demo['description']}\n\n"
+        if goal_state:
+            context_msg += f"BUT LEAN (ligne {sorry_line}):\n```\n{goal_state}\n```\n\n"
+        if strategic_hints:
+            context_msg += f"CONSEILS STRATÉGIQUES:\n{strategic_hints}\n\n"
+        context_msg += (
+            f"SORRY COUNT INITIAL: {original_sorry_count}\n"
+            f"OBJECTIF: réduire le sorry count ou prouver complètement.\n"
+            f"Commence par read_file() et find_sorry_lines() pour comprendre le contexte."
+        )
+
+        # Main loop
+        session_start = time.time()
+        consecutive_no_edit = 0
+        compile_data = {}
+
+        for iteration in range(1, max_iterations + 1):
+            state.iteration = iteration
+            iter_start = time.time()
+            elapsed = time.time() - session_start
+
+            print(f"\n--- Iteration {iteration}/{max_iterations} [+{elapsed:.1f}s] ---")
+
+            # Let agent think and act
+            response = agent.invoke(context_msg, state, skip_state=True, max_tool_calls=10)
+
+            # Check if agent made a file edit
+            edited = any(
+                tr["name"] in ("replace_lines", "replace_sorry", "write_file")
+                for tr in agent.last_tool_results
+            )
+            compiled = any(
+                tr["name"] == "compile"
+                for tr in agent.last_tool_results
+            )
+            # Capture compile results from agent's own compile call
+            if compiled:
+                for tr in agent.last_tool_results:
+                    if tr["name"] == "compile":
+                        try:
+                            compile_data = json.loads(tr["result"])
+                        except (json.JSONDecodeError, TypeError):
+                            compile_data = {}
+                        break
+
+            if edited:
+                consecutive_no_edit = 0
+            else:
+                consecutive_no_edit += 1
+
+            # Auto-compile if edited but not yet compiled
+            current_sorry_count = Path(filepath).read_text(encoding="utf-8").count("sorry")
+            if edited and not compiled:
+                print(f"  Auto-compiling after edit...")
+                compile_result_str = compile_plugin.compile()
+                try:
+                    compile_data = json.loads(compile_result_str)
+                except json.JSONDecodeError:
+                    compile_data = {}
+                compiled = True
+                current_sorry_count = compile_data.get("sorry_count", current_sorry_count)
+
+            # Log iteration
+            self.trace.log(
+                agent="AutonomousProver", role="iteration",
+                content=f"iter={iteration}, edited={edited}, sorry={current_sorry_count}",
+                duration_s=time.time() - iter_start,
+            )
+
+            # Check termination conditions
+            if current_sorry_count == 0 and compiled:
+                # Check if actually compiles clean
+                if compile_data.get("success"):
+                    print(f"  ALL SORRY ELIMINATED! Proof complete!")
+                    state.set_proof_complete("full_file_proof")
+                    break
+
+            if current_sorry_count < original_sorry_count:
+                print(f"  PROGRESS: sorry {original_sorry_count} → {current_sorry_count}")
+
+            if consecutive_no_edit >= 3:
+                print(f"  No edits for 3 iterations — feeding compilation feedback")
+                context_msg = (
+                    f"Tu n'as pas fait d'edition depuis 3 iterations. "
+                    f"Sorry count actuel: {current_sorry_count} (objectif: < {original_sorry_count})\n"
+                    f"Utilise read_file() ou find_sorry_lines() pour voir l'etat actuel, "
+                    f"puis propose une modification avec replace_sorry() ou replace_lines()."
+                )
+                consecutive_no_edit = 0
+                continue
+
+            # Build feedback for next iteration
+            feedback_parts = []
+            if edited:
+                feedback_parts.append(f"Modification appliquee. Sorry count: {current_sorry_count}")
+            if compiled:
+                if compile_data.get("success"):
+                    feedback_parts.append("COMPILATION: SUCCES (pas d'erreurs)")
+                else:
+                    errors = compile_data.get("errors", [])
+                    if errors:
+                        err_summary = "\n".join(
+                            f"  L{e['line']}: {e['message'][:120]}" for e in errors[:5]
+                        )
+                        feedback_parts.append(f"COMPILATION: {len(errors)} ERREURS:\n{err_summary}")
+
+            context_msg = "\n".join(feedback_parts) if feedback_parts else (
+                f"Continue. Sorry count: {current_sorry_count}/{original_sorry_count}. "
+                f"Propose ta prochaine modification."
+            )
+
+        # Session end
+        total_s = (datetime.now() - state.start_time).total_seconds()
+        final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
+
+        # Write back best state if current is worse
+        if file_plugin.best_content and file_plugin.best_sorry_count < final_sorry:
+            print(f"  Restoring best state ({file_plugin.best_sorry_count} sorry vs current {final_sorry})")
+            Path(filepath).write_text(file_plugin.best_content, encoding="utf-8")
+            final_sorry = file_plugin.best_sorry_count
+
+        success = final_sorry == 0 or final_sorry < original_sorry_count
+
+        print(f"\n{'='*60}")
+        print(f"RESULT: {'SUCCESS' if success else 'FAILED'}")
+        print(f"  Sorry: {original_sorry_count} → {final_sorry}")
+        print(f"  Best seen: {file_plugin.best_sorry_count}")
+        print(f"  Iterations: {state.iteration}")
+        print(f"  Compiles: {compile_plugin.compile_count} ({compile_plugin.total_compile_s:.1f}s total)")
+        print(f"  Total time: {total_s:.1f}s")
+        print(f"{'='*60}")
+
+        return {
+            "success": success,
+            "proof": state.final_proof,
+            "iterations": state.iteration,
+            "attempts": len(state.tactic_history),
+            "total_s": round(total_s, 1),
+            "config": self.config_label,
+            "sorry_evolution": f"{original_sorry_count} → {final_sorry}",
+            "best_sorry": file_plugin.best_sorry_count,
+            "compile_count": compile_plugin.compile_count,
+            "compile_time_s": round(compile_plugin.total_compile_s, 1),
+        }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # BATCH RUNNER
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -2694,14 +3220,67 @@ def main():
                         help="Comma-separated demo numbers for batch")
     parser.add_argument("--max-iterations", type=int, default=6,
                         help="Max proof iterations")
-    parser.add_argument("--mode", choices=["multi", "single", "both"], default="multi",
-                        help="Agent mode (default: multi for sorry-mode, single for simple demos)")
+    parser.add_argument("--mode", choices=["multi", "single", "both", "autonomous"], default="multi",
+                        help="Agent mode (autonomous = minimal orchestrator with full file editing)")
     parser.add_argument("--tactic", default="zai", help="Tactic agent provider")
     parser.add_argument("--no-thinking", action="store_true")
     parser.add_argument("--verify-only", action="store_true",
                         help="Just verify known proof")
     parser.add_argument("--verbose", action="store_true")
+
+    # Autonomous mode arguments
+    parser.add_argument("--lean", type=str, default=None,
+                        help="Path to .lean file for autonomous proof (bypasses demos)")
+    parser.add_argument("--sorry-line", type=int, default=0,
+                        help="Line number of sorry to target (0 = auto-detect first sorry)")
+    parser.add_argument("--hints", type=str, default="",
+                        help="Strategic hints for the autonomous prover")
+    parser.add_argument("--all-sorry", action="store_true",
+                        help="Try to eliminate ALL sorry in the file (not just one)")
     args = parser.parse_args()
+
+    # ── Autonomous mode: direct .lean file ──
+    if args.lean:
+        lean_path = Path(args.lean)
+        if not lean_path.exists():
+            print(f"File not found: {lean_path}")
+            sys.exit(1)
+
+        content = lean_path.read_text(encoding="utf-8")
+        sorry_count = content.count("sorry")
+        if sorry_count == 0:
+            print(f"No sorry found in {lean_path}")
+            sys.exit(0)
+
+        # Auto-detect sorry line if not specified
+        sorry_line = args.sorry_line
+        if sorry_line == 0:
+            for i, line in enumerate(content.split("\n"), 1):
+                if "sorry" in line:
+                    sorry_line = i
+                    break
+
+        # Build a synthetic demo dict
+        demo = {
+            "name": lean_path.stem,
+            "file": str(lean_path),
+            "line": sorry_line,
+            "theorem": lean_path.stem,
+            "description": f"Autonomous proof on {lean_path.name}, {sorry_count} sorry, targeting line {sorry_line}",
+        }
+
+        trace = TraceLogger()
+        prover = AutonomousProver(
+            trace=trace, provider=args.tactic,
+            thinking=not args.no_thinking,
+        )
+        result = prover.prove_sorry(
+            demo=demo,
+            max_iterations=args.max_iterations,
+            strategic_hints=args.hints,
+        )
+        trace.save(f"auto_{demo['name']}")
+        return
 
     demo = DEMOS.get(args.demo)
     if not demo:
@@ -2727,6 +3306,28 @@ def main():
     if args.batch:
         demo_nums = [int(x.strip()) for x in args.demos.split(",")]
         run_batch(demos=demo_nums, provider=args.tactic, max_iterations=args.max_iterations)
+        return
+
+    # ── Autonomous mode for sorry-demos ──
+    if is_sorry_mode and args.mode == "autonomous":
+        trace = TraceLogger()
+        prover = AutonomousProver(
+            trace=trace, provider=args.tactic,
+            thinking=not args.no_thinking,
+        )
+        result = prover.prove_sorry(
+            demo=demo,
+            max_iterations=args.max_iterations,
+            strategic_hints=args.hints,
+        )
+        trace.save(f"auto_{demo['name']}")
+        print(f"\n{'='*60}")
+        print(f"RESULT: {'SUCCESS' if result['success'] else 'FAILED'}")
+        print(f"  Sorry evolution: {result['sorry_evolution']}")
+        print(f"  Best sorry: {result['best_sorry']}")
+        print(f"  Compiles: {result['compile_count']} ({result['compile_time_s']}s)")
+        print(f"  Time: {result['total_s']:.1f}s, Iterations: {result['iterations']}")
+        print(f"{'='*60}")
         return
 
     # ── Sorry-mode demos (6-8) ──
