@@ -325,16 +325,16 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
 
         raw_output = result.get("raw_output", "")
 
-        # For nested sorries (inside lambdas/by blocks), cascade errors
-        # appear at adjacent lines. Only use errors at the EXACT sorry line
-        # to avoid capturing misleading cascade errors.
+        # Accept errors within ±3 lines of the sorry — nested tactic blocks
+        # can shift error reporting to adjacent lines.
+        LINE_TOLERANCE = 3
         target_errors = []
         collecting = False
         for line in raw_output.split("\n"):
             m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
             if m_err:
                 err_line = int(m_err.group(1))
-                if err_line == sorry_line:
+                if abs(err_line - sorry_line) <= LINE_TOLERANCE:
                     target_errors.append(line)
                     collecting = True
                 else:
@@ -3412,4 +3412,7 @@ def main():
 
 
 if __name__ == "__main__":
+    import sys
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
     main()
