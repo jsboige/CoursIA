@@ -30,7 +30,7 @@ Scripts for building multi-asset datasets.
 
 | Script | Input | Output | Status |
 |--------|-------|--------|--------|
-| `stitch_crypto.py` | Bitstamp + Binance + yfinance | BTC/USD 1h continuous (2011-2026) | Done (107K rows) |
+| `stitch_crypto.py` | Bitstamp + Binance + yfinance | BTC/USD 1h continuous (2012-2024) | Done (107K rows) |
 | `build_panier_anti_bias.py` | yfinance (26 symbols) | Multi-asset panier CSVs | Done (26/26 OK) |
 | `dezip_forex.py` | FXCM/Oanda zip archives | Forex bid/ask OHLCV | Done (16 files) |
 
