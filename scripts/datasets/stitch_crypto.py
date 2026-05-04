@@ -1,17 +1,21 @@
 """
-Stitch crypto datasets into continuous BTC/USD series (2014-2026).
+Stitch crypto datasets into continuous BTC/USD series (2013-2026).
 
 Data sources (in priority order):
 1. Bitstamp BTC/USD 1h (2014-08 to 2024-08) — personal dataset, USD
 2. Binance BTC/USDT 1h (2011-09 to 2023-11) — for pre-2014 extension
 3. yfinance BTC-USD (2024-08 to present) — for recent gap fill
 
+Default start date is 2013-01-01:
+- 2011 excluded: only 307/8760 hours, massive gaps, BTC at $2-15
+- 2012 excluded: 62.6% coverage only (5501/8784h), recurrent 10-22h gaps
+
 Output: continuous hourly CSV + quality report.
 
 Usage:
     python scripts/datasets/stitch_crypto.py
-    python scripts/datasets/stitch_crypto.py --output-dir MyIA.AI.Notebooks/QuantConnect/datasets/crypto/
-    python scripts/datasets/stitch_crypto.py --skip-download  # offline mode, existing files only
+    python scripts/datasets/stitch_crypto.py --start-date 2014-01-01
+    python scripts/datasets/stitch_crypto.py --skip-download  # offline mode
 """
 
 import argparse
@@ -30,6 +34,7 @@ log = logging.getLogger(__name__)
 # Default paths
 DEFAULT_DATA_ROOT = r"G:\Mon Drive\MyIA\Dev\Trading\Data"
 DEFAULT_OUTPUT_DIR = "MyIA.AI.Notebooks/QuantConnect/datasets/crypto"
+DEFAULT_START_DATE = "2013-01-01"  # 2011 (307/8760h) and 2012 (62.6% coverage) excluded
 
 # Anti-bias policy: these symbols are FORBIDDEN in new trainings
 FORBIDDEN_SYMBOLS = {"AAPL", "MSFT", "GOOG", "AMZN", "NVDA", "TSLA", "META"}
@@ -203,6 +208,7 @@ def main():
     parser.add_argument("--data-root", default=DEFAULT_DATA_ROOT, help="Root of personal trading data")
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="Output directory")
     parser.add_argument("--skip-download", action="store_true", help="Skip yfinance download")
+    parser.add_argument("--start-date", default=DEFAULT_START_DATE, help="Earliest date to include (default: 2012-01-01, 2011 unreliable)")
     parser.add_argument("--overlap-threshold", type=float, default=0.5, help="Max close price diff %% for overlap validation")
     args = parser.parse_args()
 
@@ -258,6 +264,13 @@ def main():
 
     # Stitch (priority: first source wins on overlap)
     stitched = stitch_datasets(sources)
+
+    # Filter early unreliable data (2011 has only 307/8760 hours, massive gaps)
+    start_dt = pd.Timestamp(args.start_date)
+    before_filter = len(stitched)
+    stitched = stitched[stitched["timestamp"] >= start_dt].reset_index(drop=True)
+    if before_filter != len(stitched):
+        log.info("Filtered %d rows before %s (unreliable early data)", before_filter - len(stitched), args.start_date)
 
     # Quality report
     report = quality_report(stitched)

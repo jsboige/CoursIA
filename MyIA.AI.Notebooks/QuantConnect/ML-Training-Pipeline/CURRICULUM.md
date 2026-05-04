@@ -30,13 +30,13 @@ Scripts for building multi-asset datasets.
 
 | Script | Input | Output | Status |
 |--------|-------|--------|--------|
-| `stitch_crypto.py` | Bitstamp + Binance + yfinance | BTC/USD 1h continuous (2011-2026) | Done (107K rows) |
+| `stitch_crypto.py` | Bitstamp + Binance + yfinance | BTC/USD 1h continuous (2013-2024) | Done (~101K rows) |
 | `build_panier_anti_bias.py` | yfinance (26 symbols) | Multi-asset panier CSVs | Done (26/26 OK) |
 | `dezip_forex.py` | FXCM/Oanda zip archives | Forex bid/ask OHLCV | Done (16 files) |
 
 Data locations:
 - `datasets/yfinance/SPY_2015-01-01_2026-05-01.csv` — SPY daily baseline
-- `datasets/crypto/BTC_USD_1h_stitched.csv` — BTC/USD hourly 2011-2026
+- `datasets/crypto/BTC_USD_1h_stitched.csv` — BTC/USD hourly 2013-2024
 - `datasets/panier/` — 26 symbols across 7 asset classes
 - `datasets/forex/` — 10+ currency pairs, daily + hourly
 
