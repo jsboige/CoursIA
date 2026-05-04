@@ -515,6 +515,8 @@ imageClass: mid-right visible
 </div>
 
 ---
+layout: compact
+---
 
 # Autres Types de Risques
 
