@@ -3111,6 +3111,29 @@ class AutonomousProver:
             context_msg += f"DESCRIPTION:\n{demo['description']}\n\n"
         if goal_state:
             context_msg += f"BUT LEAN (ligne {sorry_line}):\n```\n{goal_state}\n```\n\n"
+
+        # Auto-discover proven helpers in the file (theorems with complete proofs)
+        try:
+            file_text = Path(filepath).read_text(encoding="utf-8")
+            proven_helpers = re.findall(
+                r'^(?:theorem|lemma|def)\s+(\w+)',
+                file_text, re.MULTILINE
+            )
+            sorry_lines_in_file = [i+1 for i, l in enumerate(file_text.split("\n")) if "sorry" in l]
+            # Only list helpers that are NOT on sorry lines (i.e., fully proven)
+            clean_helpers = []
+            for h in proven_helpers[:30]:
+                pattern = re.compile(rf'(?:theorem|lemma|def)\s+{re.escape(h)}\b', re.MULTILINE)
+                match = pattern.search(file_text)
+                if match:
+                    start_line = file_text[:match.start()].count("\n") + 1
+                    if start_line not in sorry_lines_in_file:
+                        clean_helpers.append(h)
+            if clean_helpers:
+                context_msg += f"HELPERS PROUVES dans le fichier: {', '.join(clean_helpers[:20])}\n\n"
+        except Exception:
+            pass
+
         if strategic_hints:
             context_msg += f"CONSEILS STRATÉGIQUES:\n{strategic_hints}\n\n"
         context_msg += (
