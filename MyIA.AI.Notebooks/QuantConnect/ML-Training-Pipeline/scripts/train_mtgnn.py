@@ -427,22 +427,19 @@ def build_sequences(
 
 
 def normalize_sequences(
-    X_train: np.ndarray, X_test: np.ndarray, X_val: np.ndarray | None = None
+    X_train: np.ndarray, X_val: np.ndarray | None = None, X_test: np.ndarray | None = None
 ) -> tuple:
     """Z-normalize using training statistics only (anti-leakage)."""
     mean = X_train.mean(axis=(0, 1), keepdims=True)
     std = X_train.std(axis=(0, 1), keepdims=True)
     std = np.where(std < 1e-8, 1.0, std)
 
-    result = [
-        (X_train - mean) / std,
-        (X_test - mean) / std,
-        mean.squeeze(),
-        std.squeeze(),
-    ]
+    result = [(X_train - mean) / std]
     if X_val is not None:
-        result.insert(2, (X_val - mean) / std)
-        return tuple(result)
+        result.append((X_val - mean) / std)
+    if X_test is not None:
+        result.append((X_test - mean) / std)
+    result.extend([mean.squeeze(), std.squeeze()])
     return tuple(result)
 
 
@@ -486,6 +483,8 @@ def train_and_evaluate(
     beta: float = 0.2,
     gamma: float = 0.2,
     device: str = "cpu",
+    X_val: np.ndarray | None = None,
+    y_val: np.ndarray | None = None,
 ) -> dict:
     """Train MTGNN model and return metrics with baseline comparison."""
     from torch.utils.data import DataLoader, TensorDataset
@@ -513,8 +512,14 @@ def train_and_evaluate(
 
     train_ds = TensorDataset(torch.tensor(X_train), torch.tensor(y_train))
     test_ds = TensorDataset(torch.tensor(X_test), torch.tensor(y_test))
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_ds, batch_size=batch_size)
+
+    if X_val is not None and y_val is not None:
+        val_ds = TensorDataset(torch.tensor(X_val), torch.tensor(y_val))
+        val_loader = DataLoader(val_ds, batch_size=batch_size)
+    else:
+        val_loader = None
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
@@ -523,6 +528,11 @@ def train_and_evaluate(
     criterion = nn.MSELoss()
 
     use_amp, grad_scaler = setup_amp()
+
+    if static_adj is not None:
+        static_adj = static_adj.to(device)
+    if dynamic_adj is not None:
+        dynamic_adj = dynamic_adj.to(device)
 
     history = {"train_loss": [], "val_loss": []}
     best_val_loss = float("inf")
@@ -560,11 +570,13 @@ def train_and_evaluate(
         scheduler.step()
         avg_train = epoch_loss / max(n_batches, 1)
 
+        # Evaluate on val set for early stopping (NOT test set)
         model.eval()
+        eval_loader = val_loader if val_loader is not None else test_loader
         val_loss = 0.0
         val_batches = 0
         with torch.no_grad():
-            for X_batch, y_batch in test_loader:
+            for X_batch, y_batch in eval_loader:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 with torch.amp.autocast("cuda", enabled=use_amp):
                     val_loss += criterion(model(X_batch, dynamic_adj=dynamic_adj), y_batch).item()
@@ -587,6 +599,7 @@ def train_and_evaluate(
         model.load_state_dict(best_state)
     model.eval()
 
+    # Final evaluation on TEST set only (untouched during training)
     all_preds, all_targets = [], []
     with torch.no_grad():
         for X_batch, y_batch in test_loader:
@@ -757,40 +770,88 @@ def main():
         sys.exit(1)
 
     symbols = [s.strip() for s in args.symbols.split(",")]
+    multi_asset = len(symbols) > 1
 
     if args.dry_run:
-        print("DRY-RUN: Using synthetic data (1000 rows, 2 epochs)")
-        raw = generate_synthetic_data(1000)
-        data_hash = "synthetic-dryrun"
+        print("DRY-RUN: Using synthetic multi-asset data (4 assets, 2 epochs)")
+        symbols = ["SPY", "RSP", "IWM", "VIX"]
+        multi_asset = True
         args.epochs = 2
-        symbols = [symbols[0]] if symbols else ["SPY"]
+        data_hash = "synthetic-dryrun"
     else:
         data_dir = Path(args.data_dir)
         if not data_dir.exists():
             print(f"ERROR: Data directory not found: {data_dir}", file=sys.stderr)
             sys.exit(1)
-        raw = load_data(data_dir, symbols[0], args.start, args.end)
-        data_hash = compute_data_hash(raw)
-        print(f"Loaded {len(raw)} rows for {symbols[0]}")
+        data_hash = None
 
-    if args.indicators:
-        indicators = args.indicators
-    elif args.advanced:
-        indicators = FeatureEngineer.ALL_INDICATORS
+    static_adj = None
+    dynamic_adj = None
+    feature_cols = []
+
+    if multi_asset:
+        # Cross-asset mode: each asset is a graph node, adjacencies at [n_assets, n_assets]
+        if args.dry_run:
+            np.random.seed(args.seed)
+            T = 1000
+            returns_data = np.random.randn(T, len(symbols)).astype(np.float32) * 0.01
+            returns_df = pd.DataFrame(returns_data, columns=symbols)
+        else:
+            asset_returns = {}
+            for sym in symbols:
+                raw_sym = load_data(data_dir, sym, args.start, args.end)
+                asset_returns[sym] = raw_sym["Close"].pct_change().dropna()
+            returns_df = pd.DataFrame(asset_returns).dropna()
+            data_hash = compute_data_hash(returns_df)
+            print(f"Loaded {len(returns_df)} rows for {len(symbols)} assets")
+
+        n_vars = len(symbols)
+        data = returns_df.values.astype(np.float32)
+
+        X_list, y_list = [], []
+        for i in range(args.seq_len, len(data) - args.pred_len + 1):
+            X_list.append(data[i - args.seq_len : i])
+            forward = np.array([np.mean(data[i + h]) for h in range(args.pred_len)])
+            y_list.append(forward)
+        X = np.array(X_list, dtype=np.float32)
+        y = np.array(y_list, dtype=np.float32)
+        feature_cols = symbols
+
+        static_adj_np = build_sector_adjacency(symbols)
+        static_adj = torch.tensor(static_adj_np, dtype=torch.float32)
+        dynamic_adj_np = build_pearson_adjacency(data)
+        dynamic_adj = torch.tensor(dynamic_adj_np, dtype=torch.float32)
+
+        print(f"Multi-asset: {len(symbols)} assets, adj shapes: "
+              f"sector={static_adj.shape}, pearson={dynamic_adj.shape}")
     else:
-        indicators = [
-            "returns", "volatility", "volume_ratio", "ma_ratios",
-            "rsi", "macd", "bollinger", "true_range_atr", "obv",
-        ]
+        # Single-asset mode: standard feature engineering, adaptive-only graph
+        if args.dry_run:
+            raw = generate_synthetic_data(1000)
+        else:
+            raw = load_data(data_dir, symbols[0], args.start, args.end)
+            data_hash = compute_data_hash(raw)
+            print(f"Loaded {len(raw)} rows for {symbols[0]}")
 
-    engineer = FeatureEngineer(lookback=args.lookback, indicators=indicators)
-    features = engineer.transform(raw)
-    n_features = len(features.columns) - 1
-    print(f"Features: {len(features)} rows, {n_features} columns")
+        if args.indicators:
+            indicators = args.indicators
+        elif args.advanced:
+            indicators = FeatureEngineer.ALL_INDICATORS
+        else:
+            indicators = [
+                "returns", "volatility", "volume_ratio", "ma_ratios",
+                "rsi", "macd", "bollinger", "true_range_atr", "obv",
+            ]
 
-    X, y, feature_cols = build_sequences(
-        features, seq_len=args.seq_len, pred_len=args.pred_len
-    )
+        engineer = FeatureEngineer(lookback=args.lookback, indicators=indicators)
+        features = engineer.transform(raw)
+        n_vars = len(features.columns) - 1
+        print(f"Features: {len(features)} rows, {n_vars} columns")
+
+        X, y, feature_cols = build_sequences(
+            features, seq_len=args.seq_len, pred_len=args.pred_len
+        )
+
     print(f"Sequences: {len(X)} samples, seq_len={args.seq_len}, pred_len={args.pred_len}")
 
     n = len(X)
@@ -810,15 +871,11 @@ def main():
     if args.walk_forward and WalkForwardSplitter is not None:
         print(f"Walk-forward validation: {args.n_splits} splits, gap={args.gap}, purge={args.purge}")
 
-    # Build adjacency matrices
-    static_adj_np = build_sector_adjacency(symbols)
-    static_adj = torch.tensor(static_adj_np, dtype=torch.float32)
-
-    dynamic_adj_np = build_pearson_adjacency(raw["Close"].pct_change().dropna().values)
-    dynamic_adj = torch.tensor(dynamic_adj_np, dtype=torch.float32)
-
-    print(f"Device: {device}, n_vars={n_features}, n_assets={len(symbols)}")
-    print(f"Graph: alpha={args.alpha} (adaptive), beta={args.beta} (sector), gamma={args.gamma} (pearson)")
+    adj_info = "adaptive-only" if static_adj is None else (
+        f"alpha={args.alpha} (adaptive), beta={args.beta} (sector), gamma={args.gamma} (pearson)"
+    )
+    print(f"Device: {device}, n_vars={n_vars}, mode={'multi-asset' if multi_asset else 'single-asset'}")
+    print(f"Graph: {adj_info}")
 
     hyperparams = {
         "model_type": "mtgnn",
@@ -836,8 +893,10 @@ def main():
         "epochs": args.epochs,
         "batch_size": args.batch_size,
         "learning_rate": args.lr,
-        "lookback": args.lookback,
+        "lookback": args.lookback if not multi_asset else None,
         "symbols": symbols,
+        "multi_asset": multi_asset,
+        "n_vars": n_vars,
         "train_ratio": args.train_ratio,
         "val_ratio": args.val_ratio,
         "test_ratio": args.test_ratio,
@@ -848,7 +907,7 @@ def main():
 
     result = train_and_evaluate(
         X_train, y_train, X_test, y_test,
-        n_vars=n_features,
+        n_vars=n_vars,
         seq_len=args.seq_len,
         pred_len=args.pred_len,
         d_model=args.d_model,
@@ -866,6 +925,8 @@ def main():
         beta=args.beta,
         gamma=args.gamma,
         device=device,
+        X_val=X_val,
+        y_val=y_val,
     )
 
     output_dir = Path(args.output_dir)

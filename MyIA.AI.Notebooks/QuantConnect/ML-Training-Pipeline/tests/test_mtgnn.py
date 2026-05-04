@@ -200,7 +200,7 @@ class TestNormalizeSequences:
         np.random.seed(42)
         X_train = np.random.randn(50, 10, 3).astype(np.float32) * 5 + 3
         X_test = np.random.randn(20, 10, 3).astype(np.float32)
-        X_tr, X_te, mean, std = normalize_sequences(X_train, X_test)
+        X_tr, X_te, mean, std = normalize_sequences(X_train, X_test=X_test)
         assert abs(X_tr.mean()) < 0.1
         assert abs(X_tr.std() - 1.0) < 0.2
 
