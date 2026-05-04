@@ -1,14 +1,34 @@
 // Screenshot all Slidev slides across 3 decks
-// Usage: node screenshot-all.js
+// Usage: node screenshot-all.js [--deck N]
 const { chromium } = require('playwright-core');
 const fs = require('fs');
 const path = require('path');
 
-const DECKS = [
-  { name: 'deck-1', port: 3030, slides: 31 },
-  { name: 'deck-2', port: 3031, slides: 49 },
-  { name: 'deck-3', port: 3032, slides: 37 },
-];
+const DECK_FILES = {
+  'deck-1': 'deck-1-fondamentaux.md',
+  'deck-2': 'deck-2-strategies.md',
+  'deck-3': 'deck-3-pratique-lean.md',
+};
+
+const PORTS = { 'deck-1': 3030, 'deck-2': 3031, 'deck-3': 3032 };
+
+function countSlides(mdPath) {
+  const content = fs.readFileSync(mdPath, 'utf-8');
+  const matches = content.match(/^# /gm);
+  return matches ? matches.length : 0;
+}
+
+const targetDeck = process.argv.includes('--deck')
+  ? `deck-${process.argv[process.argv.indexOf('--deck') + 1]}`
+  : null;
+
+const DECKS = Object.keys(DECK_FILES)
+  .filter((name) => !targetDeck || name === targetDeck)
+  .map((name) => ({
+    name,
+    port: PORTS[name],
+    slides: countSlides(path.join(__dirname, DECK_FILES[name])),
+  }));
 
 const OUT_DIR = path.join(__dirname, 'screenshots');
 
@@ -22,7 +42,7 @@ const OUT_DIR = path.join(__dirname, 'screenshots');
   });
 
   for (const deck of DECKS) {
-    console.log(`\n=== ${deck.name} (port ${deck.port}) ===`);
+    console.log(`\n=== ${deck.name} (${deck.slides} slides, port ${deck.port}) ===`);
     for (let i = 1; i <= deck.slides; i++) {
       const url = `http://localhost:${deck.port}/${i}?clicks=99`;
       const page = await context.newPage();
