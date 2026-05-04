@@ -555,6 +555,8 @@ tmp/
 
 # PyTorch training checkpoints (resumable, too large to commit)
 *_checkpoint.pt
+**/checkpoints/**/*.pt
+**/checkpoints/**/*.pth
 
 # ECE grading reports (student PII - never commit)
 reports/
