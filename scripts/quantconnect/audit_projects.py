@@ -44,15 +44,29 @@ MIN_SHARPE = -0.5  # Below this = structurally broken
 
 def load_projects(json_path: str) -> list[dict]:
     """Load project list from MCP JSON output."""
-    with open(json_path, encoding="utf-8") as f:
-        data = json.load(f)
+    try:
+        with open(json_path, encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        print(f"ERROR: File not found: {json_path}", file=sys.stderr)
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Invalid JSON in {json_path}: {e}", file=sys.stderr)
+        sys.exit(1)
     return data.get("projects", [])
 
 
 def load_catalog(catalog_path: str) -> dict[int, dict]:
     """Load catalog enrichment data keyed by project ID."""
-    with open(catalog_path, encoding="utf-8") as f:
-        data = json.load(f)
+    try:
+        with open(catalog_path, encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        print(f"ERROR: Catalog not found: {catalog_path}", file=sys.stderr)
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Invalid JSON in catalog {catalog_path}: {e}", file=sys.stderr)
+        sys.exit(1)
     catalog = {}
     for entry in data.get("projects", []):
         pid = entry.get("projectId", 0)
@@ -76,7 +90,7 @@ def get_catalog_bt_count(catalog: dict[int, dict] | None, pid: int) -> int | Non
 
 def classify_project(
     project: dict,
-    all_projects: list[dict],
+    name_index: dict[str, dict],
     catalog: dict[int, dict] | None = None,
 ) -> tuple[str, str]:
     """Classify a project. Returns (category, reason).
@@ -88,9 +102,6 @@ def classify_project(
     modified = project.get("modified", "")
     created = project.get("created", "")
     org_id = project.get("organizationId", "")
-
-    # Build name index for supersedure detection
-    name_index = {p.get("name", ""): p for p in all_projects}
 
     # 1. TEST category — explicit naming
     test_patterns = ["-Validation", "-Staging", "-Sandbox"]
@@ -212,9 +223,10 @@ def generate_report(
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     categories = defaultdict(list)
     reasons = {}
+    name_index = {p.get("name", ""): p for p in projects}
 
     for proj in projects:
-        cat, reason = classify_project(proj, projects, catalog)
+        cat, reason = classify_project(proj, name_index, catalog)
         categories[cat].append(proj)
         reasons[proj.get("projectId")] = (cat, reason)
 
@@ -340,10 +352,11 @@ def main():
         Path(args.output).write_text(report, encoding="utf-8")
         print(f"Report written to {args.output}")
 
-        # Print summary
+        # Print summary (reuse classification from generate_report)
+        name_index = {p.get("name", ""): p for p in projects}
         cats = defaultdict(int)
         for proj in projects:
-            cat, _ = classify_project(proj, projects, catalog)
+            cat, _ = classify_project(proj, name_index, catalog)
             cats[cat] += 1
         print(f"\nClassification: {dict(cats)}")
     else:

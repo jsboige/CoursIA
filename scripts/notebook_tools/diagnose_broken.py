@@ -54,14 +54,6 @@ ERROR_PATTERNS = [
 ]
 
 
-def classify_error(ename: str, traceback: str) -> str:
-    """Classify an error by its name and traceback."""
-    text = f"{ename}\n{traceback}"
-    for pattern, category in ERROR_PATTERNS:
-        if re.search(pattern, text, re.IGNORECASE):
-            return category
-    return "UNKNOWN"
-
 
 def extract_errors(notebook: dict) -> list[dict]:
     """Extract error details from notebook cells."""
@@ -258,7 +250,11 @@ def main():
         print(f"Error: {CATALOG_PATH} not found. Run generate_catalog.py first.")
         return
 
-    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    try:
+        catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        print(f"Error: Cannot parse catalog: {e}")
+        return
 
     broken = [
         e for e in catalog
