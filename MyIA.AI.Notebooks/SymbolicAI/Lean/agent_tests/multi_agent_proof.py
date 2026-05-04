@@ -3192,9 +3192,9 @@ class AutonomousProver:
                 print(f"  No edits for 3 iterations — feeding compilation feedback")
                 context_msg = (
                     f"Tu n'as pas fait d'edition depuis 3 iterations. "
-                    f"Sorry count actuel: {current_sorry_count} (objectif: < {original_sorry_count})\n"
-                    f"Utilise read_file() ou find_sorry_lines() pour voir l'etat actuel, "
-                    f"puis propose une modification avec replace_sorry() ou replace_lines()."
+                    f"Sorry count: {current_sorry_count} (objectif: < {original_sorry_count})\n"
+                    f"Utilise find_sorry_lines() pour voir l'etat, "
+                    f"puis propose IMMEDIATEMENT une modification avec replace_sorry() ou replace_lines()."
                 )
                 consecutive_no_edit = 0
                 continue
@@ -3213,6 +3213,15 @@ class AutonomousProver:
                             f"  L{e['line']}: {e['message'][:120]}" for e in errors[:5]
                         )
                         feedback_parts.append(f"COMPILATION: {len(errors)} ERREURS:\n{err_summary}")
+
+            # Include sorry locations to help agent focus
+            if current_sorry_count > 0 and edited:
+                try:
+                    file_content_now = Path(filepath).read_text(encoding="utf-8")
+                    sorry_locs = [str(i+1) for i, l in enumerate(file_content_now.split("\n")) if "sorry" in l]
+                    feedback_parts.append(f"Sorry restants aux lignes: {', '.join(sorry_locs)}")
+                except Exception:
+                    pass
 
             context_msg = "\n".join(feedback_parts) if feedback_parts else (
                 f"Continue. Sorry count: {current_sorry_count}/{original_sorry_count}. "
