@@ -2785,6 +2785,45 @@ class LeanFilePlugin:
         }, ensure_ascii=False)
 
     @kernel_function(
+        description="Find all build errors (not sorry) in the file. Returns line numbers, error messages, and context. Call this FIRST if the build fails — fix build errors before sorry.",
+        name="find_errors",
+    )
+    def find_errors(self, context_chars: int = 200) -> str:
+        verifier = get_verifier(self._project_dir)
+        subdir = Path(self._filepath).parent.name
+        filename = Path(self._filepath).name
+        relative_path = f"{subdir}/{filename}"
+        result = verifier.verify_project_file(relative_path)
+
+        raw_output = result.get("raw_output", "")
+        content = Path(self._filepath).read_text(encoding="utf-8")
+        lines = content.split("\n")
+
+        build_errors = []
+        for m in re.finditer(r".*?(\d+):\d+: error: (.*)", raw_output):
+            line_num = int(m.group(1))
+            msg = m.group(2)
+            if "sorry" in msg.lower():
+                continue
+            start_ctx = max(0, line_num - 4)
+            end_ctx = min(len(lines), line_num + 3)
+            ctx = "\n".join(
+                f"  {start_ctx + j + 1}: {lines[start_ctx + j]}"
+                for j in range(end_ctx - start_ctx)
+            )
+            build_errors.append({
+                "line": line_num,
+                "message": msg,
+                "context": ctx,
+            })
+
+        return json.dumps({
+            "error_count": len(build_errors),
+            "build_errors": build_errors[:10],
+            "sorry_count": content.count("sorry"),
+        }, ensure_ascii=False)
+
+    @kernel_function(
         description="Restore the best state seen so far (lowest sorry count). Returns True if restored.",
         name="restore_best",
     )
@@ -2905,6 +2944,7 @@ OUTILS DISPONIBLES:
 - replace_sorry(line, replacement) — remplacer un sorry par des tactiques
 - write_file(content) — réécrire le fichier complet
 - find_sorry_lines() — trouver tous les sorry avec contexte
+- find_errors() — trouver toutes les erreurs de build (NON sorry). APPELLE EN PREMIER si build échoue
 - compile() — compiler et obtenir les erreurs
 - probe_goal(line) — extraire le but Lean à une ligne sorry
 - restore_best() — restaurer le meilleur état vu (plus bas sorry count)
@@ -2913,15 +2953,14 @@ OUTILS DISPONIBLES:
 - generate_tactics(goal) — suggestions de tactiques
 - add_discovered_lemma(name, statement) — enregistrer un lemme
 
-STRATÉGIE GÉNÉRALE:
-1. Commence par read_file() pour comprendre le fichier
-2. find_sorry_lines() pour identifier les cibles
-3. probe_goal(line) pour comprendre le but à chaque sorry
-4. Propose une modification (replace_sorry, replace_lines, ou write_file)
-5. compile() pour vérifier
-6. Si erreur → analyse → adapte → recommence
-7. Si une décomposition (have ... := by sorry) compile → c'est du PROGRÈS (plus de sorry mais le fichier compile)
-8. restore_best() si tu as cassé le fichier
+STRATÉGIE GÉNÉRALE (ORDRE DE PRIORITÉ):
+1. compile() — vérifier l'état du build
+2. Si erreurs de build (non-sorry): find_errors() → fix EN PREMIER (bloquant pour tout le reste)
+3. Si build OK: find_sorry_lines() → probe_goal() → proposer modification
+4. compile() pour vérifier
+5. Si erreur → analyse → adapte → recommence
+6. Si une décomposition (have ... := by sorry) compile → c'est du PROGRÈS
+7. restore_best() si tu as cassé le fichier
 
 APPROCHES POSSIBLES (pas seulement la décomposition):
 - Tactique directe: rfl, omega, simp, ring, exact, apply, rw
@@ -2930,11 +2969,20 @@ APPROCHES POSSIBLES (pas seulement la décomposition):
 - Réécriture: modifier le proof structure, ajouter des hypothèses
 - Imports: ajouter des imports Mathlib si nécessaire
 - Helpers: prouver des lemmes auxiliaires dans le fichier
+- Fix build: pour "rewrite failed", "unknown identifier" → read le contexte, adapter la tactique
+
+FIX BUILD ERRORS — patterns courants:
+- "Tactic `rewrite` failed" → le pattern n'existe pas dans le but. Relire le but, adapter le rw
+- "Unknown identifier" → le nom n'existe pas. Chercher le bon nom dans le fichier ou Mathlib
+- "Type mismatch" → le type ne correspond pas. Essayer norm_cast, push_cast, ou change
+- "omega could not prove" → omega ne peut pas. Essayer norm_cast; omega ou linarith
+- Pour chaque erreur: d'abord read_lines autour de l'erreur, comprendre le but, puis fix
 
 RÈGLES:
 - Propose UNE modification à la fois, compile, analyse le résultat
+- BUILD ERRORS D'ABORD — un fichier qui ne compile pas bloque tout progrès
 - Ne répète PAS une modification qui vient d'échouer
-- Si 3 échecs consécutifs sur le même sorry → essaie une approche radicalement différente
+- Si 3 échecs consécutifs sur le même sorry/erreur → essaie une approche radicalement différente
 - Si le sorry count diminue → c'est du progrès (même si le fichier a plus d'erreurs par ailleurs)
 - Tu peux modifier N'IMPORTE QUELLE partie du fichier, pas seulement les sorry
 - NE PAS passer plus de 2 appels d'outils en lecture avant de proposer une modification
