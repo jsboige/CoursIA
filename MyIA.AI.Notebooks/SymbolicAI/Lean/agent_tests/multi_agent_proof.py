@@ -76,6 +76,15 @@ import CooperativeGames.Basic
 SHAPLEY_FILE = Path(LEAN_PROJECT_DIR) / "CooperativeGames" / "Shapley.lean" if LEAN_PROJECT_DIR else None
 BASIC_FILE = Path(LEAN_PROJECT_DIR) / "CooperativeGames" / "Basic.lean" if LEAN_PROJECT_DIR else None
 
+# Social Choice (separate Lake project)
+SOCIAL_CHOICE_DIR = Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean")
+VOTING_FILE = SOCIAL_CHOICE_DIR / "SocialChoice" / "Voting.lean" if SOCIAL_CHOICE_DIR.exists() else None
+VOTING_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.List.Sort
+import SocialChoice.Definitions
+"""
+
 # ── Demo Theorems ─────────────────────────────────────────────────────────────
 
 DEMOS = {
@@ -194,6 +203,28 @@ DEMOS = {
             "Uses Mobius decomposition of games into unanimity games.\n"
             "Depends on: shapley_unanimity, shapley_efficient, shapley_symmetric, shapley_null_player.\n"
             "NOTE: shapley_unanimity still has a sorry (demo 6). May need that fixed first."
+        ),
+        "difficulty": "very_hard",
+    },
+    9: {
+        "name": "VOTING_MEDIAN_VOTER",
+        "file": str(VOTING_FILE),
+        "line": 231,
+        "sorry_type": "full_proof",
+        "theorem_name": "median_voter_theorem",
+        "theorem": "median_voter_theorem",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove median_voter_theorem (Black 1948): for odd number of single-peaked voters,\n"
+            "the median peak is a Condorcet winner.\n"
+            "Goal: ∃ m, condorcet_winner prof (Finset.univ.image peaks) m\n"
+            "Witness: median_peak peaks\n"
+            "Key steps:\n"
+            "1. For y < median: > n/2 voters have peak ≥ median, prefer median by single-peakedness\n"
+            "2. For y > median: > n/2 voters have peak ≤ median, prefer median by single-peakedness\n"
+            "3. Strict majority prefers median to any alternative\n"
+            "Available: single_peaked_peak_unique, single_peaked_peak_best, sorted_peaks_list, median_peak\n"
+            "NOTE: Requires Finset counting + sorted list median properties (hard)."
         ),
         "difficulty": "very_hard",
     },
@@ -2906,6 +2937,9 @@ RÈGLES:
 - Si 3 échecs consécutifs sur le même sorry → essaie une approche radicalement différente
 - Si le sorry count diminue → c'est du progrès (même si le fichier a plus d'erreurs par ailleurs)
 - Tu peux modifier N'IMPORTE QUELLE partie du fichier, pas seulement les sorry
+- NE PAS passer plus de 2 appels d'outils en lecture avant de proposer une modification
+- Chaque itération DOIT tenter au moins une modification (replace_sorry, replace_lines, ou write_file)
+- LECTURE SEULE SANS ÉDITION = itération gaspillée. Propose vite, même si tu n'es pas sûr
 """
 
 

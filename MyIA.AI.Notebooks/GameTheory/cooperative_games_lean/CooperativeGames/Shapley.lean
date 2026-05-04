@@ -289,7 +289,16 @@ theorem shapley_efficient (G : TUGame N) :
         · -- T ≠ ∅: coefficient shift applies
           have hTcard : 1 ≤ T.card := Nat.pos_of_ne_zero hT0
           have hshift := shapleyCoef_shift (Fintype.card N) (T.card - 1) (by omega)
-          sorry)
+          have h1 : (↑(T.card - 1) + 1 : ℝ) = ↑T.card := by
+            norm_cast; exact Nat.sub_add_cancel hTcard
+          have h2 : (T.card - 1 + 1 : ℕ) = T.card := Nat.sub_add_cancel hTcard
+          have h3 : (↑(Fintype.card N) - ↑(T.card - 1) - 1 : ℝ) = ↑(Fintype.card N - T.card) := by
+            have hle : T.card ≤ Fintype.card N := Finset.card_le_univ T
+            rw [Nat.cast_sub hle, ← h1]
+            ring
+          rw [h1, h2, h3] at hshift
+          rw [hshift]
+          ring)
       (fun h => (h (Finset.mem_univ _)).elim)
   rw [this]
   -- Simplify: n - card univ = 0, so negative term vanishes
