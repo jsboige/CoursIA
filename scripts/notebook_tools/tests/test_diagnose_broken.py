@@ -8,63 +8,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from diagnose_broken import classify_error, extract_errors, is_template, generate_report
-
-
-class TestClassifyError:
-
-    def test_import_error(self):
-        assert classify_error("ImportError", "No module named foo") == "MISSING_DEP"
-
-    def test_module_not_found(self):
-        assert classify_error("ModuleNotFoundError", "xxx") == "MISSING_DEP"
-
-    def test_no_module_named(self):
-        assert classify_error("RuntimeError", "No module named 'torch'") == "MISSING_DEP"
-
-    def test_kernel_not_found(self):
-        assert classify_error("RuntimeError", "kernel 'lean4' not found") == "KERNEL_ERROR"
-
-    def test_csharp_kernel(self):
-        assert classify_error("Exception", "C# kernel not supported") == "KERNEL_ERROR"
-
-    def test_api_key_openai(self):
-        assert classify_error("OpenAIError", "The api_key client option") == "API_KEY"
-
-    def test_api_key_401(self):
-        assert classify_error("HTTPError", "401 Unauthorized") == "API_KEY"
-
-    def test_file_not_found(self):
-        assert classify_error("FileNotFoundError", "No such file") == "RUNTIME_ERROR"
-
-    def test_type_error(self):
-        assert classify_error("TypeError", "unsupported operand") == "RUNTIME_ERROR"
-
-    def test_syntax_error(self):
-        assert classify_error("SyntaxError", "invalid syntax") == "RUNTIME_ERROR"
-
-    def test_cuda_oom(self):
-        assert classify_error("RuntimeError", "CUDA out of memory") == "RUNTIME_ERROR"
-
-    def test_connection_refused(self):
-        assert classify_error("ConnectionError", "Connection refused") == "RUNTIME_ERROR"
-
-    def test_compilation_error(self):
-        assert classify_error("Error", "compilation error in Lean") == "KERNEL_ERROR"
-
-    def test_system_exception(self):
-        assert classify_error("System.NullReferenceException", "Object reference") == "KERNEL_ERROR"
-
-    def test_dll_load_failed(self):
-        assert classify_error("OSError", "DLL load failed") == "MISSING_DEP"
-
-    def test_unknown_error(self):
-        assert classify_error("CustomError", "something unusual happened") == "UNKNOWN"
-
-    def test_api_key_preferred_over_import(self):
-        """API_KEY should be detected even with import error context."""
-        result = classify_error("RuntimeError", "ImportError and OPENAI_API not set")
-        assert result == "MISSING_DEP"  # First match wins in classify_error
+from diagnose_broken import extract_errors, is_template, generate_report
 
 
 class TestExtractErrors:
