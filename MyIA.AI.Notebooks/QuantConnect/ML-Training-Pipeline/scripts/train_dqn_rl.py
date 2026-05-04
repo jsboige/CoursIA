@@ -37,8 +37,10 @@ from gpu_training import (
     setup_amp,
     thermal_check,
 )
+from baselines import majority_class_baseline
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
+from walk_forward import WalkForwardSplitter
 
 
 # --- Trading Environment ---
@@ -397,6 +399,128 @@ def evaluate_dqn(
     }
 
 
+def train_walk_forward_dqn(
+    prices: np.ndarray,
+    features: np.ndarray,
+    window: int = 20,
+    commission: float = 0.001,
+    hidden_size: int = 256,
+    num_episodes: int = 200,
+    batch_size: int = 64,
+    gamma: float = 0.99,
+    lr: float = 1e-3,
+    eps_start: float = 1.0,
+    eps_end: float = 0.01,
+    eps_decay: float = 0.995,
+    replay_size: int = 50000,
+    target_update: int = 10,
+    device: str = "cpu",
+    n_splits: int = 5,
+    train_size: int | None = None,
+    test_size: int | None = None,
+    gap: int = 5,
+) -> dict:
+    """Walk-forward DQN training with per-fold normalization and majority-class baseline.
+
+    For each fold, trains a fresh DQN on the training window and evaluates
+    the greedy policy on the test window. Aggregates OOS direction accuracy
+    across all folds.
+    """
+    import torch
+
+    splitter = WalkForwardSplitter(
+        n_splits=n_splits, train_size=train_size, test_size=test_size, gap=gap,
+    )
+
+    fold_results = []
+    oos_direction_correct = 0
+    oos_direction_total = 0
+    best_model = None
+    best_fold_reward = float("-inf")
+
+    for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(prices)):
+        if len(test_idx) == 0:
+            continue
+
+        # Per-fold train-only normalization
+        train_features = features[train_idx]
+        test_features = features[test_idx]
+        mean = train_features.mean(axis=0)
+        std = train_features.std(axis=0)
+        std = np.where(std < 1e-8, 1.0, std)
+        train_norm = (train_features - mean) / std
+        test_norm = (test_features - mean) / std
+
+        train_prices = prices[train_idx]
+        test_prices_fold = prices[test_idx]
+
+        # Train DQN on this fold
+        env = TradingEnv(train_prices, train_norm, window=window, commission=commission)
+        fold_result = train_dqn(
+            env,
+            hidden_size=hidden_size,
+            num_episodes=num_episodes,
+            batch_size=batch_size,
+            gamma=gamma,
+            lr=lr,
+            eps_start=eps_start,
+            eps_end=eps_end,
+            eps_decay=eps_decay,
+            replay_size=replay_size,
+            target_update=target_update,
+            device=device,
+        )
+
+        # Evaluate greedy policy on test fold
+        test_env = TradingEnv(test_prices_fold, test_norm, window=window, commission=commission)
+        oos_eval = evaluate_dqn(fold_result["model"], test_env, device=device, num_episodes=1)
+
+        fold_results.append({
+            "fold": fold_idx,
+            "train_size": len(train_idx),
+            "test_size": len(test_idx),
+            "oos_reward": oos_eval["oos_mean_reward"],
+            "in_sample_reward": fold_result["metrics"]["mean_reward"],
+        })
+
+        # Direction accuracy: did agent's test reward have correct sign vs buy-and-hold?
+        test_returns = np.diff(test_prices_fold) / test_prices_fold[:-1]
+        buy_hold_return = float(test_returns.sum())
+        agent_return = oos_eval["oos_mean_reward"]
+        if np.sign(agent_return) == np.sign(buy_hold_return):
+            oos_direction_correct += 1
+        oos_direction_total += 1
+
+        if oos_eval["oos_mean_reward"] > best_fold_reward:
+            best_fold_reward = oos_eval["oos_mean_reward"]
+            best_model = fold_result["model"]
+
+        print(f"  Fold {fold_idx+1}/{n_splits}  oos_reward={oos_eval['oos_mean_reward']:.4f}  "
+              f"train={len(train_idx)}  test={len(test_idx)}")
+
+    oos_diracc = oos_direction_correct / max(1, oos_direction_total)
+
+    # Majority-class baseline for direction (up vs down)
+    returns = np.diff(prices) / prices[:-1]
+    directions = (returns > 0).astype(int)
+    y_train_proxy = directions[: len(directions) // 2]
+    y_test_proxy = directions[len(directions) // 2 :]
+    majority_bl = majority_class_baseline(y_train_proxy, y_test_proxy)
+
+    return {
+        "model": best_model,
+        "metrics": {
+            "oos_direction_accuracy": round(oos_diracc, 4),
+            "majority_class_acc": majority_bl["accuracy"],
+            "majority_class_freq": majority_bl["majority_freq"],
+            "vs_majority_class": round(oos_diracc - majority_bl["accuracy"], 4),
+            "n_wf_folds": len(fold_results),
+        },
+        "fold_details": fold_results,
+        "history": {"fold_details": fold_results},
+    }
+
+
 def save_checkpoint(
     model, result: dict, hyperparams: dict, data_hash: str, checkpoint_dir: Path
 ) -> Path:
@@ -479,6 +603,14 @@ def main():
         "--indicators", nargs="+", default=None,
         help="Specific indicators to use (overrides --advanced)",
     )
+    parser.add_argument(
+        "--walk-forward", action="store_true",
+        help="Use walk-forward cross-validation instead of simple split",
+    )
+    parser.add_argument("--n-splits", type=int, default=5, help="Walk-forward splits")
+    parser.add_argument("--wf-train-size", type=int, default=None, help="Walk-forward train window (None=expanding)")
+    parser.add_argument("--wf-test-size", type=int, default=None, help="Walk-forward test window per fold")
+    parser.add_argument("--gap", type=int, default=5, help="Gap between train and test in walk-forward")
     args = parser.parse_args()
 
     try:
@@ -518,29 +650,7 @@ def main():
     feature_cols = [c for c in features_df.columns]
     features_arr = features_df.values.astype(np.float32)
 
-    # Normalize features using training portion only (avoid lookahead bias)
-    n = len(features_arr)
-    train_end = int(n * (1 - args.test_ratio))
-    mean = features_arr[:train_end].mean(axis=0)
-    std = features_arr[:train_end].std(axis=0)
-    std = np.where(std < 1e-8, 1.0, std)
-    features_arr = (features_arr - mean) / std
-
     prices = raw.loc[features_df.index, "Close"].values.astype(np.float32)
-
-    # Train/test split (time-series: train = first 80%, test = last 20%)
-    train_prices = prices[:train_end]
-    train_features = features_arr[:train_end]
-    test_prices = prices[train_end:]
-    test_features = features_arr[train_end:]
-
-    print(f"Features: {len(features_df)} rows, {len(feature_cols)} columns")
-    print(f"Train/test split: {len(train_prices)} train ({100*(1-args.test_ratio):.0f}%) / "
-          f"{len(test_prices)} test ({100*args.test_ratio:.0f}%)")
-    print(f"Device: {device}")
-
-    env = TradingEnv(train_prices, train_features, window=args.window, commission=args.commission)
-    print(f"State size: {env.state_size}, Actions: 3 (hold/buy/sell)")
 
     hyperparams = {
         "model_type": "dqn",
@@ -560,9 +670,91 @@ def main():
         "symbol": args.symbol,
         "device": device,
         "test_ratio": args.test_ratio,
+    }
+
+    # --- Walk-forward mode ---
+    if args.walk_forward:
+        print(f"Mode: WALK-FORWARD (n_splits={args.n_splits}, gap={args.gap})")
+        hyperparams.update({
+            "walk_forward": True,
+            "n_splits": args.n_splits,
+            "wf_train_size": args.wf_train_size,
+            "wf_test_size": args.wf_test_size,
+            "gap": args.gap,
+        })
+
+        wf_result = train_walk_forward_dqn(
+            prices,
+            features_arr,
+            window=args.window,
+            commission=args.commission,
+            hidden_size=args.hidden_size,
+            num_episodes=args.num_episodes,
+            batch_size=args.batch_size,
+            gamma=args.gamma,
+            lr=args.lr,
+            eps_start=args.eps_start,
+            eps_end=args.eps_end,
+            eps_decay=args.eps_decay,
+            replay_size=args.replay_size,
+            target_update=args.target_update,
+            device=device,
+            n_splits=args.n_splits,
+            train_size=args.wf_train_size,
+            test_size=args.wf_test_size,
+            gap=args.gap,
+        )
+
+        ckpt_dir = Path(args.checkpoint_dir)
+        if wf_result["model"] is not None:
+            save_checkpoint(wf_result["model"], {
+                "metrics": wf_result["metrics"],
+                "episode_rewards": [],
+                "episode_trades": [],
+                "state_size": 0,
+                "hidden_size": args.hidden_size,
+                "n_actions": 3,
+            }, hyperparams, data_hash, ckpt_dir)
+
+        m = wf_result["metrics"]
+        print(f"\nWalk-Forward OOS Results:")
+        print(f"  OOS DirAcc:     {m['oos_direction_accuracy']:.4f}")
+        print(f"  Majority Class: {m['majority_class_acc']:.4f} (freq={m['majority_class_freq']:.4f})")
+        print(f"  vs Majority:    {m['vs_majority_class']:+.4f}")
+        print(f"  Folds:          {m['n_wf_folds']}")
+
+        if args.dry_run:
+            print("DRY-RUN complete. Walk-forward pipeline validated.")
+        return
+
+    # --- Simple split mode (default) ---
+
+    # Normalize features using training portion only (avoid lookahead bias)
+    n = len(features_arr)
+    train_end = int(n * (1 - args.test_ratio))
+    mean = features_arr[:train_end].mean(axis=0)
+    std = features_arr[:train_end].std(axis=0)
+    std = np.where(std < 1e-8, 1.0, std)
+    features_arr = (features_arr - mean) / std
+
+    # Train/test split (time-series: train = first 80%, test = last 20%)
+    train_prices = prices[:train_end]
+    train_features = features_arr[:train_end]
+    test_prices = prices[train_end:]
+    test_features = features_arr[train_end:]
+
+    print(f"Features: {len(features_df)} rows, {len(feature_cols)} columns")
+    print(f"Train/test split: {len(train_prices)} train ({100*(1-args.test_ratio):.0f}%) / "
+          f"{len(test_prices)} test ({100*args.test_ratio:.0f}%)")
+    print(f"Device: {device}")
+
+    env = TradingEnv(train_prices, train_features, window=args.window, commission=args.commission)
+    print(f"State size: {env.state_size}, Actions: 3 (hold/buy/sell)")
+
+    hyperparams.update({
         "train_samples": len(train_prices),
         "test_samples": len(test_prices),
-    }
+    })
 
     intermediate_dir = None
     if args.intermediate_save_every > 0:
