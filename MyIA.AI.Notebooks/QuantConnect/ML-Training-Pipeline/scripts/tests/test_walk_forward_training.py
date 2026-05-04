@@ -305,3 +305,89 @@ class TestTrainOnlyNormalization:
         non_constant = stds[stds > 0]
         assert len(non_constant) > 0, "At least one non-constant feature expected"
         assert all(s > 0.9 for s in non_constant)
+
+
+# ---------------------------------------------------------------------------
+# Walk-forward integration: DQN
+# ---------------------------------------------------------------------------
+
+
+def _make_prices_and_features(n_rows: int = 500, lookback: int = 10) -> tuple:
+    """Generate synthetic prices + features arrays for DQN."""
+    raw = generate_synthetic_data(n_rows)
+    engineer = FeatureEngineer(lookback=lookback)
+    features_df = engineer.transform(raw, add_target=False)
+    features_arr = features_df.values.astype(np.float32)
+    prices = raw.loc[features_df.index, "Close"].values.astype(np.float32)
+    return prices, features_arr
+
+
+class TestWalkForwardDQN:
+    def test_walk_forward_returns_required_metrics(self):
+        from train_dqn_rl import train_walk_forward_dqn
+
+        prices, features = _make_prices_and_features(500, lookback=10)
+        result = train_walk_forward_dqn(
+            prices, features,
+            window=5,
+            commission=0.001,
+            hidden_size=32,
+            num_episodes=2,
+            batch_size=16,
+            n_splits=2,
+            train_size=150,
+            test_size=50,
+            gap=3,
+            device="cpu",
+        )
+
+        metrics = result["metrics"]
+        assert "oos_direction_accuracy" in metrics
+        assert "majority_class_acc" in metrics
+        assert "majority_class_freq" in metrics
+        assert "vs_majority_class" in metrics
+        assert "n_wf_folds" in metrics
+
+    def test_walk_forward_produces_fold_details(self):
+        from train_dqn_rl import train_walk_forward_dqn
+
+        prices, features = _make_prices_and_features(500, lookback=10)
+        result = train_walk_forward_dqn(
+            prices, features,
+            window=5,
+            hidden_size=32,
+            num_episodes=2,
+            batch_size=16,
+            n_splits=2,
+            train_size=150,
+            test_size=50,
+            gap=3,
+            device="cpu",
+        )
+
+        assert len(result["fold_details"]) >= 1
+        fold = result["fold_details"][0]
+        assert "fold" in fold
+        assert "train_size" in fold
+        assert "test_size" in fold
+        assert "oos_reward" in fold
+
+    def test_walk_forward_model_returned(self):
+        from train_dqn_rl import train_walk_forward_dqn
+
+        prices, features = _make_prices_and_features(500, lookback=10)
+        result = train_walk_forward_dqn(
+            prices, features,
+            window=5,
+            hidden_size=32,
+            num_episodes=2,
+            batch_size=16,
+            n_splits=2,
+            train_size=150,
+            test_size=50,
+            gap=3,
+            device="cpu",
+        )
+
+        assert result["model"] is not None
+        assert "history" in result
