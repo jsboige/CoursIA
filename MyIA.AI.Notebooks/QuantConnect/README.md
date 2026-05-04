@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 93
-breakdown: projects=47, Python=45, ML-Training-Pipeline=1
-maturity: DRAFT=78, PRODUCTION=12, ALPHA=2, BETA=1
+pedagogical_count: 94
+breakdown: projects=48, Python=45, ML-Training-Pipeline=1
+maturity: PRODUCTION=51, DRAFT=34, BETA=7, ALPHA=2
 updated: 2026-05-04
 -->
 
