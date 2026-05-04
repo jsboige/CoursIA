@@ -2986,59 +2986,45 @@ class CompilePlugin:
 
 # --- Unified agent instructions for the autonomous prover ---
 
-AUTONOMOUS_PROVER_INSTRUCTIONS = """Tu es un systeme de preuve Lean 4 multi-agent. Tu as un accès direct au fichier .lean via des outils.
+AUTONOMOUS_PROVER_INSTRUCTIONS = """Tu es un prouveur Lean 4. Tu édites directement le fichier .lean.
 
-OUTILS DISPONIBLES:
-- read_file() — lire le fichier complet
-- read_lines(start, end) — lire une plage de lignes
-- replace_lines(start, end, new_content) — remplacer des lignes
-- replace_sorry(line, replacement) — remplacer un sorry par des tactiques
-- write_file(content) — réécrire le fichier complet
-- find_sorry_lines() — trouver tous les sorry avec contexte
-- find_errors() — trouver toutes les erreurs de build (NON sorry). APPELLE EN PREMIER si build échoue
-- compile() — compiler et obtenir les erreurs
-- probe_goal(line) — extraire le but Lean à une ligne sorry
-- restore_best() — restaurer le meilleur état vu (plus bas sorry count)
-- get_proof_state() — voir l'état de la preuve
-- search_mathlib_lemmas(goal) — chercher des lemmes pertinents
-- generate_tactics(goal) — suggestions de tactiques
-- add_discovered_lemma(name, statement) — enregistrer un lemme
+FLUX OBLIGATOIRE (max 3 appels d'outils par itération):
+1. find_sorry_lines() — localise les sorry
+2. read_lines(sorry_line-10, sorry_line+5) — lis le contexte LOCAL seulement
+3. probe_goal(sorry_line) — extrais le but Lean
+4. replace_sorry(sorry_line, tactique) — PROPOSE IMMÉDIATEMENT
+5. compile() — vérifie
 
-STRATÉGIE GÉNÉRALE (ORDRE DE PRIORITÉ):
-1. compile() — vérifier l'état du build
-2. Si erreurs de build (non-sorry): find_errors() → fix EN PREMIER (bloquant pour tout le reste)
-3. Si build OK: find_sorry_lines() → probe_goal() → proposer modification
-4. compile() pour vérifier
-5. Si erreur → analyse → adapte → recommence
-6. Si une décomposition (have ... := by sorry) compile → c'est du PROGRÈS
-7. restore_best() si tu as cassé le fichier
+SI BUILD ERREURS (non-sorry):
+1. find_errors() — liste les erreurs
+2. read_lines autour de l'erreur
+3. replace_lines pour corriger
+4. compile() — vérifie
 
-APPROCHES POSSIBLES (pas seulement la décomposition):
-- Tactique directe: rfl, omega, simp, ring, exact, apply, rw
-- Lemmes: exact LemmaName, rw [LemmaName], simp [LemmaName]
-- Décomposition: have h : sub_goal := by sorry
-- Réécriture: modifier le proof structure, ajouter des hypothèses
-- Imports: ajouter des imports Mathlib si nécessaire
-- Helpers: prouver des lemmes auxiliaires dans le fichier
-- Fix build: pour "rewrite failed", "unknown identifier" → read le contexte, adapter la tactique
+INTERDIT:
+- read_file() — trop long, gaspille des tokens. Utilise read_lines(start, end)
+- Plus de 2 lectures sans édition = gaspillage d'itération
+- Répéter une tactique qui vient d'échouer
 
-FIX BUILD ERRORS — patterns courants:
-- "Tactic `rewrite` failed" → le pattern n'existe pas dans le but. Relire le but, adapter le rw
-- "Unknown identifier" → le nom n'existe pas. Chercher le bon nom dans le fichier ou Mathlib
-- "Type mismatch" → le type ne correspond pas. Essayer norm_cast, push_cast, ou change
-- "omega could not prove" → omega ne peut pas. Essayer norm_cast; omega ou linarith
-- Pour chaque erreur: d'abord read_lines autour de l'erreur, comprendre le but, puis fix
+TACTIQUES UTILES:
+- Arithmétique: omega, ring, linarith, norm_cast; omega
+- Simplification: simp, simp [LemmaName], simp only [lemme]
+- Réécriture: rw [lemme], rw [← lemmem], rw [show ... from ...]
+- Casting: norm_cast, push_cast, Nat.cast_sub, Nat.cast_add
+- Décomposition: have h : sub_goal := by sorry (crée un nouveau sorry = progrès)
+- Contrôle: exact, apply, constructor, split_ifs, by_cases
+
+FIX PATTERNS:
+- "rewrite failed" → le pattern n'existe pas dans le but. Relire le but avec probe_goal
+- "unknown identifier" → chercher le bon nom avec read_lines dans les imports/définitions
+- "type mismatch" → essayer norm_cast, push_cast, change
+- "omega failed" → essayer norm_cast; omega ou linarith
 
 RÈGLES:
-- Propose UNE modification à la fois, compile, analyse le résultat
-- BUILD ERRORS D'ABORD — un fichier qui ne compile pas bloque tout progrès
-- Ne répète PAS une modification qui vient d'échouer
-- Si 3 échecs consécutifs sur le même sorry/erreur → essaie une approche radicalement différente
-- Si le sorry count diminue → c'est du progrès (même si le fichier a plus d'erreurs par ailleurs)
-- Tu peux modifier N'IMPORTE QUELLE partie du fichier, pas seulement les sorry
-- NE PAS passer plus de 2 appels d'outils en lecture avant de proposer une modification
-- Chaque itération DOIT tenter au moins une modification (replace_sorry, replace_lines, ou write_file)
-- LECTURE SEULE SANS ÉDITION = itération gaspillée. Propose vite, même si tu n'es pas sûr
+- BUILD ERRORS AVANT SORRY — un fichier cassé bloque tout
+- 3 échecs consécutifs → change d'approche radicalement
+- sorry qui diminue = progrès valide
+- Propose VITE, même si incertain. L'essai coûte moins cher que la réflexion.
 """
 
 
@@ -3130,7 +3116,7 @@ class AutonomousProver:
         context_msg += (
             f"SORRY COUNT INITIAL: {original_sorry_count}\n"
             f"OBJECTIF: réduire le sorry count ou prouver complètement.\n"
-            f"Commence par read_file() et find_sorry_lines() pour comprendre le contexte."
+            f"Commence par find_sorry_lines() puis read_lines() autour du sorry, puis propose une tactique."
         )
 
         # Main loop
