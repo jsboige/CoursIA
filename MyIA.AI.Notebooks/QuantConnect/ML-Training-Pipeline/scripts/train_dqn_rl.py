@@ -348,6 +348,55 @@ def train_dqn(
     }
 
 
+def evaluate_dqn(
+    model: "torch.nn.Module",
+    env: TradingEnv,
+    device: str = "cpu",
+    num_episodes: int = 10,
+) -> dict:
+    """Evaluate a trained DQN on a test environment (greedy policy, no exploration)."""
+    import torch
+
+    rewards = []
+    trades_list = []
+    model.eval()
+
+    for _ in range(num_episodes):
+        state = env.reset()
+        total_reward = 0.0
+        ep_trades = 0
+
+        while True:
+            with torch.no_grad():
+                state_t = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(device)
+                action = model(state_t).argmax(dim=1).item()
+
+            next_state, reward, done, info = env.step(action)
+            total_reward += reward
+            if info.get("trade"):
+                ep_trades += 1
+            state = next_state
+
+            if done:
+                break
+
+        rewards.append(total_reward)
+        trades_list.append(ep_trades)
+
+    rewards_arr = np.array(rewards)
+    sharpe = float(rewards_arr.mean() / (rewards_arr.std() + 1e-8))
+
+    return {
+        "oos_mean_reward": round(float(rewards_arr.mean()), 4),
+        "oos_std_reward": round(float(rewards_arr.std()), 4),
+        "oos_sharpe": round(sharpe, 4),
+        "oos_max_reward": round(float(rewards_arr.max()), 4),
+        "oos_min_reward": round(float(rewards_arr.min()), 4),
+        "oos_mean_trades": round(float(np.mean(trades_list)), 1),
+        "oos_episodes": num_episodes,
+    }
+
+
 def save_checkpoint(
     model, result: dict, hyperparams: dict, data_hash: str, checkpoint_dir: Path
 ) -> Path:
@@ -407,7 +456,8 @@ def main():
     parser.add_argument("--target-update", type=int, default=10)
     parser.add_argument("--commission", type=float, default=0.001, help="Trading commission")
     parser.add_argument("--lookback", type=int, default=20)
-    parser.add_argument("--test-ratio", type=float, default=0.2)
+    parser.add_argument("--test-ratio", type=float, default=0.2, help="Fraction of data for OOS test set")
+    parser.add_argument("--val-ratio", type=float, default=0.0, help="Fraction of training data for validation (0=disabled)")
     parser.add_argument(
         "--checkpoint-dir",
         default=str(Path(__file__).resolve().parent.parent / "checkpoints" / "dqn"),
@@ -468,18 +518,28 @@ def main():
     feature_cols = [c for c in features_df.columns]
     features_arr = features_df.values.astype(np.float32)
 
-    # Normalize features
-    mean = features_arr[: int(len(features_arr) * 0.8)].mean(axis=0)
-    std = features_arr[: int(len(features_arr) * 0.8)].std(axis=0)
+    # Normalize features using training portion only (avoid lookahead bias)
+    n = len(features_arr)
+    train_end = int(n * (1 - args.test_ratio))
+    mean = features_arr[:train_end].mean(axis=0)
+    std = features_arr[:train_end].std(axis=0)
     std = np.where(std < 1e-8, 1.0, std)
     features_arr = (features_arr - mean) / std
 
     prices = raw.loc[features_df.index, "Close"].values.astype(np.float32)
 
+    # Train/test split (time-series: train = first 80%, test = last 20%)
+    train_prices = prices[:train_end]
+    train_features = features_arr[:train_end]
+    test_prices = prices[train_end:]
+    test_features = features_arr[train_end:]
+
     print(f"Features: {len(features_df)} rows, {len(feature_cols)} columns")
+    print(f"Train/test split: {len(train_prices)} train ({100*(1-args.test_ratio):.0f}%) / "
+          f"{len(test_prices)} test ({100*args.test_ratio:.0f}%)")
     print(f"Device: {device}")
 
-    env = TradingEnv(prices, features_arr, window=args.window, commission=args.commission)
+    env = TradingEnv(train_prices, train_features, window=args.window, commission=args.commission)
     print(f"State size: {env.state_size}, Actions: 3 (hold/buy/sell)")
 
     hyperparams = {
@@ -499,6 +559,9 @@ def main():
         "lookback": args.lookback,
         "symbol": args.symbol,
         "device": device,
+        "test_ratio": args.test_ratio,
+        "train_samples": len(train_prices),
+        "test_samples": len(test_prices),
     }
 
     intermediate_dir = None
@@ -529,11 +592,28 @@ def main():
     ckpt_dir = Path(args.checkpoint_dir)
     save_checkpoint(result["model"], result, hyperparams, data_hash, ckpt_dir)
 
+    # Out-of-sample evaluation on test set
+    test_env = TradingEnv(test_prices, test_features, window=args.window, commission=args.commission)
+    oos_metrics = evaluate_dqn(result["model"], test_env, device=device)
+    result["oos_metrics"] = oos_metrics
+
+    # Update saved metadata with OOS results
+    import glob
+    ckpt_subdirs = sorted(ckpt_dir.glob("*"))
+    if ckpt_subdirs:
+        latest_meta = ckpt_subdirs[-1] / "metadata.json"
+        if latest_meta.exists():
+            meta = json.loads(latest_meta.read_text(encoding="utf-8"))
+            meta["oos_metrics"] = oos_metrics
+            latest_meta.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+
+    o = oos_metrics
+    m = result["metrics"]
+    print(f"Training complete (in-sample). MeanReward={m['mean_reward']}, Sharpe~={m['sharpe_estimate']}")
+    print(f"OOS evaluation.       MeanReward={o['oos_mean_reward']}, OOS Sharpe={o['oos_sharpe']}")
+
     if args.dry_run:
         print("DRY-RUN complete. Pipeline validated successfully.")
-    else:
-        m = result["metrics"]
-        print(f"Training complete. MeanReward={m['mean_reward']}, Sharpe~={m['sharpe_estimate']}")
 
 
 if __name__ == "__main__":
