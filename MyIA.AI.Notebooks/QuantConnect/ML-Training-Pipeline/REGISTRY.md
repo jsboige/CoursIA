@@ -68,7 +68,11 @@ SPY majority class baseline = **54.59%**. Values will be populated by `python ev
 
 Checkpoints: 5
 
-### 20260501_120415 [OK] [BASELINE] [SPY-ONLY]
+**WARNING**: All DQN checkpoints below trained WITHOUT train/test split (Issue #703).
+Sharpe estimates are in-sample only, NOT reliable out-of-sample metrics.
+Marked `[INVALID-NO-SPLIT]` until re-trained with `--test-ratio 0.2`.
+
+### 20260501_120415 [INVALID-NO-SPLIT] [BASELINE] [SPY-ONLY]
 
 - Data hash: `17cb43b404e3ddf1`
 - Metrics: best_avg_reward_10=2.2865, max_reward=3.0876, mean_reward=1.0177, mean_trades=749.3, min_reward=-1.8051, sharpe_estimate=0.8921
@@ -76,7 +80,7 @@ Checkpoints: 5
 - Config: device=cuda, hidden_size=256, num_episodes=50, symbol=SPY
 - Files: metadata.json, model.pt
 
-### 20260501_142319 [OK] [ADVANCED-FEATURES] [SPY-ONLY]
+### 20260501_142319 [INVALID-NO-SPLIT] [ADVANCED-FEATURES] [SPY-ONLY]
 
 - Data hash: `4ec8b44b93f4024f`
 - Metrics: best_avg_reward_10=0.3888, max_reward=1.8077, mean_reward=-0.0138, mean_trades=782.5, min_reward=-1.2372, sharpe_estimate=-0.0171
@@ -84,7 +88,7 @@ Checkpoints: 5
 - Config: device=cuda, hidden_size=256, num_episodes=20, symbol=SPY, advanced=true
 - Files: metadata.json, model.pt
 
-### 20260501_140955 [OK] [SPY-ONLY]
+### 20260501_140955 [INVALID-NO-SPLIT] [SPY-ONLY]
 
 - Data hash: `4ec8b44b93f4024f`
 - Metrics: best_avg_reward_10=-0.4572, max_reward=-0.0334, mean_reward=-0.4572, mean_trades=759.3, min_reward=-0.836, sharpe_estimate=-1.6905
@@ -92,7 +96,7 @@ Checkpoints: 5
 - Config: device=cuda, hidden_size=128, num_episodes=10, symbol=SPY, advanced=true
 - Files: metadata.json, model.pt
 
-### 20260501_112641 [OK] [SPY-ONLY]
+### 20260501_112641 [INVALID-NO-SPLIT] [SPY-ONLY]
 
 - Data hash: `17cb43b404e3ddf1`
 - Metrics: best_avg_reward_10=-0.1559, max_reward=0.9312, mean_reward=-0.5358, mean_trades=739.6, min_reward=-1.5861, sharpe_estimate=-0.8096
@@ -100,7 +104,7 @@ Checkpoints: 5
 - Config: device=cpu, hidden_size=32, num_episodes=20, symbol=SPY
 - Files: metadata.json, model.pt
 
-### 20260501_111005 [OK] [SPY-ONLY]
+### 20260501_111005 [INVALID-NO-SPLIT] [SPY-ONLY]
 
 - Data hash: `synthetic-dryrun`
 - Metrics: best_avg_reward_10=-0.0017, max_reward=0.1665, mean_reward=-0.0017, mean_trades=44.1, min_reward=-0.2395, sharpe_estimate=-0.0134
