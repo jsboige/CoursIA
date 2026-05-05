@@ -94,7 +94,7 @@ Walk-forward: 5 folds, train=500, test=100, gap=10. All models use advanced feat
 | BTC-USD | LSTM | **54.60%** | **+3.51pp** | 5 | h=64, L=2, ep=30 | 20260505_012529 |
 | BTC-USD | Transformer | 51.00% | -0.09pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_012554 |
 | BTC-USD | RF (200 trees) | 49.40% | +0.15pp | 5 | max_depth=8, 19 features | 20260505_012321 |
-| BTC-USD | DQN | PENDING | PENDING | 3 | h=128, ep=50, w=20 | training |
+| BTC-USD | DQN | 0.00% | -51.14pp | 3 | h=256, ep=100, w=20 | 20260505_021359 |
 | GLD | LSTM | **53.80%** | +0.84pp | 5 | h=64, L=2, ep=30 | 20260505_013925 |
 | GLD | RF (200 trees) | 53.00% | +1.09pp | 5 | max_depth=8, 38 features | 20260505_010142 |
 | GLD | Transformer | 53.80% | +1.19pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_015628 |
@@ -106,7 +106,7 @@ Walk-forward: 5 folds, train=500, test=100, gap=10. All models use advanced feat
 | EEM | Transformer | 47.20% | -4.11pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_020058 |
 | EFA | LSTM | 52.20% | -0.50pp | 5 | h=64, L=2, ep=30 | 20260505_020022 |
 | EFA | RF (200 trees) | 50.00% | -2.46pp | 5 | max_depth=8, 38 features | 20260505_015821 |
-| EFA | Transformer | PENDING | PENDING | 5 | d=64, h=4, L=2, ep=30 | training |
+| EFA | Transformer | 50.40% | -2.55pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_021553 |
 | DBC | LSTM | **55.80%** | +0.49pp | 5 | h=64, L=2, ep=30 | 20260505_020144 |
 | DBC | RF (200 trees) | 49.60% | +2.40pp | 5 | max_depth=8, 38 features | 20260505_015829 |
 | DBC | Transformer | PENDING | PENDING | 5 | d=64, h=4, L=2, ep=30 | training |
@@ -121,6 +121,7 @@ Key findings:
 - **RF has no reliable edge** — mixed results across all assets, never the best model.
 - **EEM is the hardest asset** — all models struggle, LSTM -0.96pp, Transformer -4.11pp.
 - **DBC (commodities) LSTM = best absolute DirAcc** at 55.80%, but majority class is already low (47.20%).
+- **DQN completely fails OOS** — 0.00% DirAcc on BTC-USD. All 3 folds have negative OOS reward. The agent overfits training episodes (avg reward 4.7-6.4 in-sample) but produces zero actionable signals out-of-sample. RL approach needs fundamental redesign for this problem.
 
 ## Walk-Forward OOS Evaluation (Track B)
 
