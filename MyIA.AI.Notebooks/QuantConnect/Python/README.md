@@ -7,6 +7,76 @@ Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnec
 
 ---
 
+## État réel d'exécution (audit 2026-05-05)
+
+Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Aucun output theatrical** (cellules qui printent des métadonnées en se faisant passer pour une exécution) ne subsiste après nettoyage de la PR `chore/qc-strip-fake-outputs`.
+
+**Légende** :
+- **EXÉCUTÉ** : cellules avec outputs réels issus d'une vraie exécution kernel
+- **NON EXÉCUTÉ** : code source réel mais jamais exécuté (commit attendu après run kernel — préférable au théâtre)
+- **doc cloud** : notebook markdown-only documentant un backtest QC Cloud (résultats sur la plateforme, pas dans le notebook)
+
+| Notebook | Statut | Détail |
+|----------|--------|--------|
+| QC-Py-01-Setup | NON EXÉCUTÉ | 7 cellules code, 0 output |
+| QC-Py-02-Platform-Fundamentals | NON EXÉCUTÉ | 5 cellules code, 0 output |
+| QC-Py-03-Data-Management | NON EXÉCUTÉ | 10 cellules code, 0 output |
+| QC-Py-04-Research-Workflow | NON EXÉCUTÉ | 25 cellules code, 0 output |
+| QC-Py-05-Universe-Selection | NON EXÉCUTÉ | 11 cellules code, 0 output |
+| QC-Py-06-Options-Trading | NON EXÉCUTÉ | 10 cellules code, 0 output |
+| QC-Py-07-Futures-Forex | NON EXÉCUTÉ | 15 cellules code, 0 output |
+| QC-Py-08-Multi-Asset-Strategies | NON EXÉCUTÉ | 17 cellules code, 0 output |
+| QC-Py-09-Order-Types | NON EXÉCUTÉ | 17 cellules code, 0 output |
+| QC-Py-10-Risk-Portfolio-Management | NON EXÉCUTÉ | 17 cellules code, 0 output |
+| QC-Py-11-Technical-Indicators | NON EXÉCUTÉ | 15 cellules code, 0 output |
+| QC-Py-12-Backtesting-Analysis | NON EXÉCUTÉ | 31 cellules code, 0 output |
+| QC-Py-13-Alpha-Models | NON EXÉCUTÉ | 15 cellules code, 0 output |
+| QC-Py-14-Portfolio-Construction-Execution | NON EXÉCUTÉ | 21 cellules code, 0 output |
+| QC-Py-15-Parameter-Optimization | NON EXÉCUTÉ | 29 cellules code, 0 output |
+| QC-Py-16-Alternative-Data | NON EXÉCUTÉ | 15 cellules code, 0 output |
+| QC-Py-17-Sentiment-Analysis | NON EXÉCUTÉ | 19 cellules code, 0 output |
+| QC-Py-18-ML-Features-Engineering | EXÉCUTÉ | 21/22 cellules avec outputs |
+| QC-Py-19-ML-Supervised-Classification | NON EXÉCUTÉ | 24 cellules code, 0 output |
+| QC-Py-20-ML-Regression-Prediction | NON EXÉCUTÉ | 22 cellules code, 0 output |
+| QC-Py-21-Portfolio-Optimization-ML | NON EXÉCUTÉ | 20 cellules code, 0 output |
+| QC-Py-22-Deep-Learning-LSTM | NON EXÉCUTÉ | 26 cellules code, 0 output |
+| QC-Py-23-Attention-Transformers | EXÉCUTÉ | 14/14 cellules avec outputs |
+| QC-Py-23b-PatchTST-iTransformer | EXÉCUTÉ | 13/13 cellules avec outputs |
+| QC-Py-24-Autoencoders-Anomaly | EXÉCUTÉ | 18/18 cellules avec outputs |
+| QC-Py-25-Reinforcement-Learning | EXÉCUTÉ | 12/12 cellules avec outputs |
+| QC-Py-26-LLM-Trading-Signals | NON EXÉCUTÉ | 11 cellules code, 0 output |
+| QC-Py-27-Production-Deployment | NON EXÉCUTÉ | 9 cellules code, 0 output |
+| QC-Py-28-Market-Regime-Detection | NON EXÉCUTÉ | 14 cellules code, 0 output |
+| QC-Py-30-LSTM-Training | EXÉCUTÉ | 16/16 cellules avec outputs |
+| QC-Py-31-Transformer-Training | EXÉCUTÉ | 14/14 cellules avec outputs |
+| QC-Py-32-RL-DQN-Trading | EXÉCUTÉ | 12/12 cellules avec outputs |
+| QC-Py-40-PaperTrading-Binance | EXÉCUTÉ | 10/10 cellules avec outputs |
+| QC-Py-41-PaperTrading-IBKR | EXÉCUTÉ | 9/9 cellules avec outputs |
+| QC-Py-Cloud-01-FinBERT-Sentiment | EXÉCUTÉ | 5/6 cellules avec outputs |
+| QC-Py-Cloud-01-RiskParity-Composite | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-02-ML-Classification | EXÉCUTÉ | 2/3 cellules avec outputs |
+| QC-Py-Cloud-02-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-03-DualMomentum | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-03-Risk-Parity | EXÉCUTÉ | 1/2 cellules avec outputs |
+| QC-Py-Cloud-04-MeanReversion | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-04-RL-DQN-Trading | EXÉCUTÉ | 1/2 cellules avec outputs |
+| QC-Py-Cloud-05-MLP-Forecasting | EXÉCUTÉ | 1/2 cellules avec outputs |
+| QC-Py-Cloud-05-RegimeSwitching | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-06-VolTargeting | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Dataset-Workflow | NON EXÉCUTÉ | 11 cellules code, 0 output |
+
+**Récapitulatif** : 46 notebooks total — 14 exécutés, 26 non exécutés, 6 doc cloud.
+
+**Politique** : un notebook NON EXÉCUTÉ avec du code réel est préférable à un notebook avec des outputs théâtraux (print de métadonnées prétendant être une exécution). Les patterns théâtraux suivants sont désormais détectés comme erreur par [`scripts/validate_qc_notebooks.py`](../scripts/validate_qc_notebooks.py) :
+- `print("Algorithme charge : {len(qc_code)} caracteres")` — métadonnée d'une string, pas une exécution
+- `print("Workflow de deploiement...")` — workflow MCP imprimé comme texte
+- `print("Placeholder pour les resultats")` — résultats hardcodés
+- `print("Resultats sync depuis QC Cloud projet XXXX")` — sans fetch réel
+
+Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les indépendants, QC Cloud pour ceux qui requièrent QuantBook) avant de pouvoir être marqués EXÉCUTÉ. Aucun raccourci toléré.
+
+---
+
 ## Phase 1 : Fondations LEAN (QC-Py-01 a 04)
 
 | Notebook | Contenu |
