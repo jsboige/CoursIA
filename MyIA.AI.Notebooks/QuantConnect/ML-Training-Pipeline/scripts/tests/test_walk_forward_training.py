@@ -97,7 +97,7 @@ class TestWalkForwardClassification:
         assert "fold" in fold
         assert "train_size" in fold
         assert "test_size" in fold
-        assert "accuracy" in fold
+        assert "oos_accuracy" in fold
 
     def test_walk_forward_model_is_fitted(self):
         from train_classification import train_walk_forward_classification
