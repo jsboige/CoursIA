@@ -25,9 +25,6 @@ class DynamicOptionsWheel(QCAlgorithm):
     sells puts even further OTM (adds 2.5% to OTM target) to account
     for the bearish sentiment embedded in the skew.
 
-    Source: ECE student project (Asseli, Gr01 H.5), adapted for ESGF pool.
-    Issue #238 - Integrate ECE student concepts into QC strategies.
-
     Universe: SPY
     Benchmark: Option-Wheel (fixed 5% OTM, VIX filter)
     """

@@ -7,10 +7,7 @@ class MLFeatureEngineeringAlgorithm(QCAlgorithm):
     """
     Enriched Feature ML Stock Selection Strategy.
 
-    Source: ECE student project (Balssa, Gr01 H.1), adapted for ESGF pool.
-    Issue #238 - Integrate ECE student concepts into QC strategies.
-
-    Harvests novel features from student 23-feature pipeline:
+    23-feature pipeline:
     - volume_trend, adx_norm, bb_width, atr_norm (technical)
     - pe_norm, pb_norm, roe_norm, debt_equity_norm (fundamental)
 
@@ -83,7 +80,7 @@ class MLFeatureEngineeringAlgorithm(QCAlgorithm):
             vol_20, volume_ratio, price_sma20, price_sma50,
             sma_ratio_5_20, sma_ratio_20_50
 
-        6 novel features (from Balssa student project):
+        6 novel features:
             volume_trend, adx_norm, bb_width, atr_norm,
             mom_60, vol_60
         """
@@ -134,7 +131,7 @@ class MLFeatureEngineeringAlgorithm(QCAlgorithm):
         price_to_sma20 = closes / sma_20
         price_to_sma50 = closes / sma_50
 
-        # --- Novel features (from Balssa student project) ---
+        # --- Novel features ---
 
         # 1. Volume trend: 10-day volume vs 50-day volume (momentum of volume)
         vol_sma_10 = volumes.rolling(10).mean()
