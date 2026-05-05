@@ -109,7 +109,7 @@ Walk-forward: 5 folds, train=500, test=100, gap=10. All models use advanced feat
 | EFA | Transformer | 50.40% | -2.55pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_021553 |
 | DBC | LSTM | **55.80%** | +0.49pp | 5 | h=64, L=2, ep=30 | 20260505_020144 |
 | DBC | RF (200 trees) | 49.60% | +2.40pp | 5 | max_depth=8, 38 features | 20260505_015829 |
-| DBC | Transformer | PENDING | PENDING | 5 | d=64, h=4, L=2, ep=30 | training |
+| DBC | Transformer | 51.80% | -2.48pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_021816 |
 
 Majority class baselines: BTC-USD=55.10%, GLD=53.04%, TLT=48.09%, EEM=52.44%, EFA=52.46%, DBC=47.20%.
 
