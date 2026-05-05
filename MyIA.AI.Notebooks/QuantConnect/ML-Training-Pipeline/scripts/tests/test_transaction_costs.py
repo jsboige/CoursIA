@@ -73,7 +73,7 @@ class TestTransactionCostModel:
         np.testing.assert_array_equal(net, gross)
 
     def test_round_trip_cost(self):
-        """Each trade gets one deduction (half spread + commission)."""
+        """Each trade incurs round-trip cost (buy + sell), deducted twice."""
         model = TransactionCostModel(
             commission_bps=2.0,
             bid_ask_spread_bps=2.0,
@@ -83,7 +83,7 @@ class TestTransactionCostModel:
         gross = np.array([0.0, 0.0, 0.0])
         trades = np.array([1.0, 0.0, 1.0])
         net = model.apply_to_returns(gross, trades, order_size=100)
-        expected_cost = 4.0 / 10_000  # commission + spread
+        expected_cost = 2 * 4.0 / 10_000  # round-trip: 2x (commission + spread)
         assert net[0] == pytest.approx(-expected_cost)
         assert net[1] == pytest.approx(0.0)
         assert net[2] == pytest.approx(-expected_cost)

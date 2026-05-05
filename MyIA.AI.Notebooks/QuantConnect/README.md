@@ -2,10 +2,10 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 94
-breakdown: projects=48, Python=45, ML-Training-Pipeline=1
+pedagogical_count: 92
+breakdown: projects=46, Python=46
 maturity: PRODUCTION=51, DRAFT=34, BETA=7, ALPHA=2
-updated: 2026-05-04
+updated: 2026-05-05
 -->
 
 > **Trading algorithmique + Intelligence Artificielle**
@@ -39,9 +39,9 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
-- **28 notebooks Python** organisés en 8 phases
+- **46 notebooks Python** (28 cours + 4 training local + 2 paper-trading + 12 Cloud-ready)
 - **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
-- **9 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM)
+- **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
 - **Free tier compatible** avec workarounds pour fonctionnalités payantes
 
 ---
@@ -240,7 +240,6 @@ Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et 
 ### Guides de démarrage
 
 - **[GETTING-STARTED.md](GETTING-STARTED.md)** : Guide de démarrage détaillé
-- **[ECE-QC-QUICKSTART.md](ECE-QC-QUICKSTART.md)** : Guide pour étudiants ECE
 - **[HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
 
 ### Bibliothèques partagées

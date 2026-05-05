@@ -237,8 +237,7 @@ Les exemples et templates couvrent **4 classes d'actifs** et **8+ concepts de tr
 ## Documentation
 
 - **[GETTING-STARTED.md](../GETTING-STARTED.md)** : Guide de démarrage détaillé
-- **[ECE-QC-QUICKSTART.md](../ECE-QC-QUICKSTART.md)** : Guide pour étudiants ECE
-- **[projects/README.md](../projects/README.md)** : Catalogue de 67 stratégies
+- **[projects/README.md](../projects/README.md)** : Catalogue de stratégies
 
 ---
 

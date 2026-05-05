@@ -202,9 +202,20 @@ def train_and_evaluate(
     batch_size: int = 64,
     learning_rate: float = 5e-4,
     device: str = "cpu",
+    val_ratio: float = 0.15,
 ) -> dict:
-    """Train iTransformer model and return metrics with baseline comparison."""
+    """Train iTransformer model and return metrics with baseline comparison.
+
+    Test-set contamination fix: validation/early-stopping uses an internal
+    split from the training data only. test_loader is used exclusively for
+    final OOS metrics (never influences model selection).
+    """
     from torch.utils.data import DataLoader, TensorDataset
+
+    # Internal train/val split from training data only (prevent test leakage)
+    val_cutoff = int(len(X_train) * (1 - val_ratio))
+    X_tr, X_val = X_train[:val_cutoff], X_train[val_cutoff:]
+    y_tr, y_val = y_train[:val_cutoff], y_train[val_cutoff:]
 
     model = iTransformerModel(
         n_vars=n_vars,
@@ -221,13 +232,11 @@ def train_and_evaluate(
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"iTransformer params: {total_params:,}")
 
-    train_ds = TensorDataset(
-        torch.tensor(X_train), torch.tensor(y_train)
-    )
-    test_ds = TensorDataset(
-        torch.tensor(X_test), torch.tensor(y_test)
-    )
+    train_ds = TensorDataset(torch.tensor(X_tr), torch.tensor(y_tr))
+    val_ds = TensorDataset(torch.tensor(X_val), torch.tensor(y_val))
+    test_ds = TensorDataset(torch.tensor(X_test), torch.tensor(y_test))
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(val_ds, batch_size=batch_size)
     test_loader = DataLoader(test_ds, batch_size=batch_size)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
@@ -274,12 +283,12 @@ def train_and_evaluate(
         scheduler.step()
         avg_train = epoch_loss / max(n_batches, 1)
 
-        # Validation
+        # Validation on internal val set (NOT test set)
         model.eval()
         val_loss = 0.0
         val_batches = 0
         with torch.no_grad():
-            for X_batch, y_batch in test_loader:
+            for X_batch, y_batch in val_loader:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 with torch.amp.autocast("cuda", enabled=use_amp):
                     val_loss += criterion(model(X_batch), y_batch).item()
@@ -330,7 +339,7 @@ def train_and_evaluate(
         "edge_over_majority": round(direction_acc - majority_baseline["majority_class_accuracy"], 4),
         "best_val_loss": round(best_val_loss, 6),
         "total_params": total_params,
-        "train_samples": len(X_train),
+        "train_samples": len(X_tr),
         "test_samples": len(X_test),
         "epochs_trained": epochs,
     }

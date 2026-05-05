@@ -96,8 +96,8 @@ class TransactionCostModel:
         trades = np.asarray(trades, dtype=float)
 
         cost_frac = self.cost_per_trade(order_size)
-        # Round-trip cost per trade signal
-        trade_costs = trades * cost_frac
+        # Round-trip cost: each position change requires buy AND sell
+        trade_costs = trades * 2 * cost_frac
 
         net_returns = strategy_returns - trade_costs
         return net_returns
@@ -146,7 +146,7 @@ def compare_gross_vs_net(
     gross_sharpe = _sharpe_from_array(gross_returns)
     net_sharpe = _sharpe_from_array(net_returns)
 
-    total_costs = np.sum(trades) * cost_model.cost_per_trade(order_size)
+    total_costs = np.sum(trades) * 2 * cost_model.cost_per_trade(order_size)
     n_trades = int(np.sum(trades))
 
     gross_total = float(np.prod(1 + gross_returns) - 1)

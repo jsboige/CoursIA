@@ -361,6 +361,8 @@ def evaluate_dqn(
 
     rewards = []
     trades_list = []
+    direction_correct = 0
+    direction_total = 0
     model.eval()
 
     for _ in range(num_episodes):
@@ -377,6 +379,11 @@ def evaluate_dqn(
             total_reward += reward
             if info.get("trade"):
                 ep_trades += 1
+            # Per-step direction accuracy: non-hold actions with positive reward = correct
+            if action != 0:
+                direction_total += 1
+                if reward > 0:
+                    direction_correct += 1
             state = next_state
 
             if done:
@@ -387,6 +394,7 @@ def evaluate_dqn(
 
     rewards_arr = np.array(rewards)
     sharpe = float(rewards_arr.mean() / (rewards_arr.std() + 1e-8))
+    diracc = direction_correct / max(1, direction_total)
 
     return {
         "oos_mean_reward": round(float(rewards_arr.mean()), 4),
@@ -396,6 +404,8 @@ def evaluate_dqn(
         "oos_min_reward": round(float(rewards_arr.min()), 4),
         "oos_mean_trades": round(float(np.mean(trades_list)), 1),
         "oos_episodes": num_episodes,
+        "oos_direction_accuracy": round(diracc, 4),
+        "oos_direction_total": direction_total,
     }
 
 
@@ -437,6 +447,7 @@ def train_walk_forward_dqn(
     oos_direction_total = 0
     best_model = None
     best_fold_reward = float("-inf")
+    fold_state_size = 0
 
     for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(prices)):
         if len(test_idx) == 0:
@@ -475,27 +486,31 @@ def train_walk_forward_dqn(
         test_env = TradingEnv(test_prices_fold, test_norm, window=window, commission=commission)
         oos_eval = evaluate_dqn(fold_result["model"], test_env, device=device, num_episodes=1)
 
+        # Direction accuracy: did agent's test reward have correct sign vs buy-and-hold?
+        test_returns = np.diff(test_prices_fold) / test_prices_fold[:-1]
+        buy_hold_return = float(test_returns.sum())
+        agent_return = oos_eval["oos_mean_reward"]
+        fold_diracc = 1.0 if np.sign(agent_return) == np.sign(buy_hold_return) else 0.0
+        if np.sign(agent_return) == np.sign(buy_hold_return):
+            oos_direction_correct += 1
+        oos_direction_total += 1
+
         fold_results.append({
             "fold": fold_idx,
             "train_size": len(train_idx),
             "test_size": len(test_idx),
             "oos_reward": oos_eval["oos_mean_reward"],
+            "oos_sharpe": oos_eval["oos_sharpe"],
+            "oos_direction_accuracy": fold_diracc,
             "in_sample_reward": fold_result["metrics"]["mean_reward"],
         })
-
-        # Direction accuracy: did agent's test reward have correct sign vs buy-and-hold?
-        test_returns = np.diff(test_prices_fold) / test_prices_fold[:-1]
-        buy_hold_return = float(test_returns.sum())
-        agent_return = oos_eval["oos_mean_reward"]
-        if np.sign(agent_return) == np.sign(buy_hold_return):
-            oos_direction_correct += 1
-        oos_direction_total += 1
 
         # Select best fold model by in-sample reward, NOT OOS (issue #722)
         in_sample_reward = fold_result["metrics"]["mean_reward"]
         if in_sample_reward > best_fold_reward:
             best_fold_reward = in_sample_reward
             best_model = fold_result["model"]
+            fold_state_size = int(fold_result["state_size"])
 
         print(f"  Fold {fold_idx+1}/{n_splits}  oos_reward={oos_eval['oos_mean_reward']:.4f}  "
               f"train={len(train_idx)}  test={len(test_idx)}")
@@ -509,10 +524,17 @@ def train_walk_forward_dqn(
     y_test_proxy = directions[len(directions) // 2 :]
     majority_bl = majority_class_baseline(y_train_proxy, y_test_proxy)
 
+    oos_sharpes = [f["oos_sharpe"] for f in fold_results if "oos_sharpe" in f]
+    avg_oos_sharpe = float(np.mean(oos_sharpes)) if oos_sharpes else 0.0
+
     return {
         "model": best_model,
+        "state_size": fold_state_size if fold_results else 0,
+        "hidden_size": hidden_size,
+        "n_actions": 3,
         "metrics": {
             "oos_direction_accuracy": round(oos_diracc, 4),
+            "oos_sharpe": round(avg_oos_sharpe, 4),
             "majority_class_acc": majority_bl["accuracy"],
             "majority_class_freq": majority_bl["majority_freq"],
             "vs_majority_class": round(oos_diracc - majority_bl["accuracy"], 4),
@@ -583,7 +605,6 @@ def main():
     parser.add_argument("--commission", type=float, default=0.001, help="Trading commission")
     parser.add_argument("--lookback", type=int, default=20)
     parser.add_argument("--test-ratio", type=float, default=0.2, help="Fraction of data for OOS test set")
-    parser.add_argument("--val-ratio", type=float, default=0.0, help="Fraction of training data for validation (0=disabled)")
     parser.add_argument(
         "--checkpoint-dir",
         default=str(Path(__file__).resolve().parent.parent / "checkpoints" / "dqn"),
@@ -792,7 +813,6 @@ def main():
     result["oos_metrics"] = oos_metrics
 
     # Update saved metadata with OOS results
-    import glob
     ckpt_subdirs = sorted(ckpt_dir.glob("*"))
     if ckpt_subdirs:
         latest_meta = ckpt_subdirs[-1] / "metadata.json"

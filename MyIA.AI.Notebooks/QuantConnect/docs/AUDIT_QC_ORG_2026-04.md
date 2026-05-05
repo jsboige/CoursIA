@@ -13,7 +13,7 @@
 | Total projects | 134 |
 | Org d600793e (Trading Firm ESGF) | ~50 |
 | Org 94aa4bcb (Researcher) | ~4 |
-| Org dc6b9eb0 (ECE Students) | ~80 |
+| Org dc6b9eb0 (Student org) | ~80 |
 | Active strategies (best Sharpe) | 12 |
 | HandsOn book examples | 19 |
 | Composites | 2 |
@@ -124,7 +124,7 @@ Projects with zero completed backtests, runtime errors only, or abandoned:
 1. **RiskParity (28692653)**: Superseded by RiskParity-v2 (30780629). Delete original?
 2. **Chronos-Foundation (29443479)**: 0.253 Sharpe, many runtime errors. Keep for reference or delete?
 3. **Sector-ML runtime errors**: 12+ Runtime Error backtests. Clean up failed attempts?
-4. **ECE student projects (dc6b9eb0)**: Audit separately?
+4. **Student org (dc6b9eb0)**: Audit separately?
 
 ### Strategy Health Check
 
@@ -144,7 +144,7 @@ Projects with zero completed backtests, runtime errors only, or abandoned:
 - Sharpe ratio = best completed backtest per project
 - Runtime Error backtests excluded from best-Sharpe selection
 - 17/134 projects fully audited (all active strategies + key reference projects)
-- ECE student projects (org dc6b9eb0, ~80 projects) not individually audited
+- Student org projects (dc6b9eb0, ~80 projects) not individually audited
 
 ---
 

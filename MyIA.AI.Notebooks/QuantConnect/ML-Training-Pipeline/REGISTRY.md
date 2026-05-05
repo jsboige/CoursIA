@@ -1,9 +1,9 @@
 # Checkpoint Registry
 
 Auto-generated: 2026-05-03 22:29
-Updated: 2026-05-04 — Track B: walk-forward OOS evaluation columns
+Updated: 2026-05-05 — POST-FIX verdict: 0 BEATS, 14 FAILS (contamination fix #726/#730 + audit #736-#739)
 
-Total checkpoints: 20
+Total checkpoints: 20 (all PRE-FIX except where noted)
 
 ## Anti-Bias Audit (2026-05-04)
 
@@ -15,7 +15,43 @@ Future trainings MUST use anti-bias panier (26 symbols, 7 asset classes) per Iss
 
 **Forbidden symbols**: AAPL, MSFT, GOOG, AMZN, NVDA, TSLA, META
 
-## Advanced Features (Track A3)
+## POST-FIX Verdict (2026-05-05) — DEFINITIVE
+
+**Methodology**: Deterministic (seed=42), walk-forward, OOS-aware majority baseline (#737),
+last-fold checkpoint (#738), RSI Wilder EMA (#736), internal val split from train only (#726/#730).
+14 runs across 7 architectures on SPY/BTC/Multi-asset.
+
+| Model | SPY single | BTC single | Multi 4-asset |
+| -------- | ---------- | ---------- | ------------- |
+| MTGNN | -0.0452 FAILS | -0.0094 FAILS | -0.0116 FAILS |
+| LSTM | -0.0186 FAILS | -0.0337 FAILS | n/a |
+| Transformer | -0.0497 FAILS | -0.0207 FAILS | n/a |
+| PatchTST | -0.1076 FAILS | -0.0030 FAILS | n/a |
+| iTransformer | -0.0082 FAILS | -0.0186 FAILS | n/a |
+| Mamba | -0.0370 FAILS | -0.0306 FAILS | n/a |
+| STGAT | n/a | n/a | -0.0480 FAILS |
+
+**Result: 0 BEATS, 14 FAILS.** No baseline architecture beats the majority predictor under rigorous methodology.
+
+Key findings:
+
+- Pre-fix results (Track A3 below) were **inflated by test-set contamination** — validation early-stopping
+  used test_loader directly, creating lookahead bias. PatchTST SPY dropped from -2.10pp to -10.76pp post-fix.
+- MTGNN (graph adaptive) previously claimed +0.0005 SPY and +0.0044 multi BEATS — both **non-reproducible**
+  after audit fixes (#737 OOS baseline, #738 no cherry-pick, #736 RSI Wilder).
+- SPY is pathological (majority 56-58% up days in 2015-2024 bull market). All models learn "predict up"
+  and fail when the regime shifts. BTC majority is closer to 50%, but still no edge.
+- po-2024 claimed Mamba BTC +3.24pp and PatchTST BTC +1.98pp BEATS — **non-reproducible** on RTX 4090
+  with identical hyperparams (d_model=64, batch=16, seed=42). Likely variance from non-determinism or
+  thermal throttling on RTX 3070.
+- **Implication for EPIC #705**: Current baseline architectures are a dead end on SPY/BTC single-asset.
+  Multi-asset panier (Stage 3a, #727) and advanced methods (Stages 5-8: Kronos, Flow Matching,
+  FinRL, FinGPT) are the viable path forward.
+
+## Advanced Features (Track A3) — PRE-FIX (INFLATED, superseded by POST-FIX above)
+
+**WARNING**: These results were computed BEFORE contamination fix (#726/#730). Validation early-stopping
+used test_loader, inflating direction accuracy. See POST-FIX Verdict above for honest metrics.
 
 Comparison of baseline vs advanced-feature training on SPY 2015-2024.
 Majority class baseline: **54.59%** (freq of up days).
@@ -29,18 +65,22 @@ Majority class baseline: **54.59%** (freq of up days).
 | Classification (RF) | 49.66% | **50.86%** | -3.73pp | +1.20pp | 38 (all 13 indicators) |
 | DQN | Sharpe 0.89 | Sharpe -0.02 | N/A (in-sample) | -0.91 | 38 (all 13 indicators) |
 
-Key findings:
+Key findings (pre-fix):
 
-- Transformer (d=256, h=8, L=6) is the only model consistently beating majority class (+3.36pp).
-  However 3.36pp edge is marginal for 3.2M parameters — likely overfitting to SPY momentum regime.
-- LSTM h=64 barely matches majority class (-0.34pp). Not a real edge.
-- RF accuracy (50.86%) is BELOW majority class (-3.73pp). No predictive power.
-- DQN Sharpe 0.89 is in-sample (no train/test split). Must be re-evaluated with proper time-series split (Issue #703).
+- Transformer (d=256, h=8, L=6) appeared to beat majority class (+3.36pp) — **this was inflated**.
+  POST-FIX reveals -0.0497 FAILS (6.33pp swing).
+- LSTM h=64 barely matched majority class (-0.34pp). POST-FIX confirms -0.0186 FAILS.
+- RF accuracy (50.86%) was BELOW majority class (-3.73pp). Confirmed no predictive power.
+- DQN Sharpe 0.89 was in-sample (no train/test split). Fixed via #729.
 - All checkpoints are single-asset (SPY), single-regime (2015-2024 bull market). Not robust.
 
-## Asset Diversity Matters (Cross-Asset Evidence)
+## Asset Diversity Matters (Cross-Asset Evidence) — PRE-FIX (superseded by POST-FIX)
 
 **Key thesis confirmed (PR #724): Asset selection > model selection.**
+
+**NOTE**: These walk-forward baselines were computed before audit fixes (#737 OOS baseline, #738 last-fold).
+The LSTM edges shown below (+3.51pp BTC, +3.68pp TLT) have not been re-validated POST-FIX.
+POST-FIX verdict above shows 0 BEATS across all architectures on SPY/BTC deterministic runs.
 
 Cross-asset walk-forward baselines (5-fold, train=500, test=100, gap=10) reveal that
 SPY is the *worst* asset for ML training — its 58.7% majority-class frequency (up-day bias
@@ -65,7 +105,7 @@ during 2015-2024 bull market) makes it pathological. No model architecture beats
 
 **Source**: PR #724 Stage 1 cross-asset walk-forward baselines, ai-01 comparative runs.
 
-## Stage 1: BTC-USD Walk-Forward Baselines (2026-05-05)
+## Stage 1: BTC-USD Walk-Forward Baselines (2026-05-05) — PRE-FIX (superseded)
 
 Anti-bias training on BTC-USD 2015-2025 (3653 daily rows, 3594 after feature engineering).
 Walk-forward: 5 folds, train=500, test=100, gap=10. BTC majority class (up days) = **55.10%**.
@@ -84,7 +124,7 @@ Key findings:
 - RF barely matches random — no feature-based signal in BTC daily returns.
 - BTC-USD majority class (55.1%) is higher than SPY (54.6%) — crypto has more up days in this period.
 
-## Stage 1: Cross-Asset Walk-Forward Baselines (2026-05-05)
+## Stage 1: Cross-Asset Walk-Forward Baselines (2026-05-05) — PRE-FIX (superseded)
 
 Anti-bias training on 6 non-FAANG assets (GLD, TLT, EEM, EFA, DBC + BTC-USD).
 Walk-forward: 5 folds, train=500, test=100, gap=10. All models use advanced features (38 dims).

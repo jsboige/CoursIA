@@ -31,7 +31,6 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from walk_forward import WalkForwardSplitter
-from baselines import majority_class_baseline
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
 from gpu_training import (
@@ -330,7 +329,6 @@ def train_walk_forward(
     fold_results = []
     oos_preds = np.full(len(y), np.nan)
     best_model_state = None
-    best_fold_diracc = -1.0
 
     for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(X)):
         if len(test_idx) == 0:
@@ -371,9 +369,8 @@ def train_walk_forward(
             preds = fold_result["model"](X_test_t).squeeze(-1).cpu().numpy()
         oos_preds[test_idx] = preds
 
-        if fold_diracc > best_fold_diracc:
-            best_fold_diracc = fold_diracc
-            best_model_state = {k: v.cpu().clone() for k, v in fold_result["model"].state_dict().items()}
+        # Save last fold model (avoids test-set selection bias from cherry-picking best fold)
+        best_model_state = {k: v.cpu().clone() for k, v in fold_result["model"].state_dict().items()}
 
         print(f"  Fold {fold_idx+1}/{n_splits}  diracc={fold_diracc:.4f}  "
               f"train={len(train_idx)}  test={len(test_idx)}")
@@ -385,9 +382,16 @@ def train_walk_forward(
 
     oos_diracc = float(np.mean((oos_predictions > 0) == (oos_targets > 0)))
 
-    # Majority-class baseline on first half (train proxy) vs second half (test proxy)
-    y_binary = (y > 0).astype(int)
-    majority_bl = majority_class_baseline(y_binary[: len(y) // 2], y_binary[len(y) // 2 :])
+    # Majority-class baseline on actual OOS targets
+    y_binary_oos = (oos_targets > 0).astype(int)
+    majority_freq = float(np.mean(y_binary_oos == 1))
+    majority_bl = {
+        "accuracy": max(majority_freq, 1.0 - majority_freq),
+        "majority_class": 1 if majority_freq >= 0.5 else 0,
+        "majority_freq": majority_freq,
+        "n_train": 0,
+        "n_test": len(y_binary_oos),
+    }
 
     # Rebuild best model
     input_size = X.shape[2]

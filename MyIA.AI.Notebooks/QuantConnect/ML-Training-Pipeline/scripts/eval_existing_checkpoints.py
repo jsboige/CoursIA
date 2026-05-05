@@ -188,8 +188,8 @@ def evaluate_checkpoint(
         2. Load data and build features
         3. Walk-forward split evaluation
         4. Baseline comparison
-        5. Per-regime evaluation
-        6. Transaction cost analysis
+        5. Per-regime evaluation (OOS only)
+        6. Transaction cost analysis (OOS only)
 
     Returns
     -------
@@ -243,6 +243,7 @@ def evaluate_checkpoint(
     wf_diraccs = []
     wf_predictions = np.zeros(n)
     wf_actual = y.copy()
+    oos_indices = np.zeros(n, dtype=bool)
 
     for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(X)):
         if len(test_idx) == 0:
@@ -263,6 +264,7 @@ def evaluate_checkpoint(
         diracc = np.mean(fold_preds == (fold_actual > 0).astype(int))
         wf_diraccs.append(diracc)
         wf_predictions[test_idx] = fold_preds
+        oos_indices[test_idx] = True
 
     oos_diracc = np.mean(wf_diraccs) if wf_diraccs else float("nan")
 
@@ -275,21 +277,32 @@ def evaluate_checkpoint(
     hold_bl = buy_and_hold_baseline(prices_series)
     momentum_bl = naive_momentum_baseline(prices_series, lookback=min(seq_len, 20))
 
-    # --- 3. Per-regime evaluation ---
-    regime_results = eval_per_regime(
-        model=_wrap_model(model, model_type),
-        X=X,
-        y=y_binary,
-        prices=close_prices,
-    )
+    # --- 3. Per-regime evaluation (OOS only) ---
+    X_oos = X[oos_indices]
+    y_oos = y_binary[oos_indices]
+    prices_oos = close_prices[oos_indices]
 
-    # --- 4. Transaction cost analysis ---
-    gross_returns = y.copy()
-    positions = np.zeros(n)
-    # Build positions from predictions where available
-    wf_preds_full = predict_direction(model, X, model_type)
-    positions[wf_preds_full == 1] = 1.0
-    positions[wf_preds_full == 0] = -1.0
+    if len(X_oos) > 0:
+        # Normalize OOS data using global stats for regime evaluation
+        global_mean = X.mean(axis=(0, 1), keepdims=True)
+        global_std = X.std(axis=(0, 1), keepdims=True)
+        global_std = np.where(global_std < 1e-8, 1.0, global_std)
+        X_oos_norm = (X_oos - global_mean) / global_std
+
+        regime_results = eval_per_regime(
+            model=_wrap_model(model, model_type),
+            X=X_oos_norm,
+            y=y_oos,
+            prices=prices_oos,
+        )
+    else:
+        regime_results = {"weighted_avg": {"sharpe": float("nan"), "diracc": float("nan")}}
+
+    # --- 4. Transaction cost analysis (OOS predictions only) ---
+    gross_returns = y[oos_indices]
+    positions = np.zeros(int(np.sum(oos_indices)))
+    positions[wf_predictions[oos_indices] == 1] = 1.0
+    positions[wf_predictions[oos_indices] == 0] = -1.0
 
     cost_model = TransactionCostModel()
     cost_analysis = compare_gross_vs_net(gross_returns, positions, cost_model)
