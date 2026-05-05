@@ -40,35 +40,7 @@ from gpu_training import (
 )
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
-
-
-def build_sequences(
-    features: pd.DataFrame, seq_len: int = 20, target_col: str = "target"
-) -> tuple:
-    """Build sequence-to-one arrays for LSTM training."""
-    feature_cols = [c for c in features.columns if c != target_col]
-    data = features[feature_cols].values
-    targets = features[target_col].values
-
-    X, y = [], []
-    for i in range(seq_len, len(data)):
-        X.append(data[i - seq_len : i])
-        y.append(targets[i])
-
-    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32), feature_cols
-
-
-def normalize_sequences(
-    X_train: np.ndarray, X_test: np.ndarray
-) -> tuple:
-    """Z-normalize features using training statistics only."""
-    mean = X_train.mean(axis=(0, 1), keepdims=True)
-    std = X_train.std(axis=(0, 1), keepdims=True)
-    std = np.where(std < 1e-8, 1.0, std)
-
-    X_train_norm = (X_train - mean) / std
-    X_test_norm = (X_test - mean) / std
-    return X_train_norm, X_test_norm, mean.squeeze(), std.squeeze()
+from sequence_utils import build_sequences, normalize_sequences
 
 
 def build_model(

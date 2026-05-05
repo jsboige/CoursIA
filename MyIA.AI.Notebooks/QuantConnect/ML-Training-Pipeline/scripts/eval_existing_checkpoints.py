@@ -44,6 +44,7 @@ from scripts.baselines import (
 from scripts.data_utils import generate_synthetic_data, load_data
 from scripts.eval_finstsb import eval_per_regime
 from scripts.features import FeatureEngineer
+from scripts.sequence_utils import build_sequences
 from scripts.transaction_costs import TransactionCostModel, compare_gross_vs_net
 from scripts.walk_forward import WalkForwardSplitter
 
@@ -157,22 +158,6 @@ def predict_direction(model, X: np.ndarray, model_type: str) -> np.ndarray:
     if model_type == "rf":
         return raw.astype(int)
     return (raw > 0).astype(int)
-
-
-def build_sequences(
-    features: pd.DataFrame, seq_len: int = 20, target_col: str = "target"
-) -> tuple:
-    """Build sequence arrays from feature DataFrame."""
-    feature_cols = [c for c in features.columns if c != target_col]
-    data = features[feature_cols].values
-    targets = features[target_col].values
-
-    X, y = [], []
-    for i in range(seq_len, len(data)):
-        X.append(data[i - seq_len : i])
-        y.append(targets[i])
-
-    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32), feature_cols
 
 
 def evaluate_checkpoint(

@@ -56,6 +56,7 @@ import torch.nn.functional as F
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
+from sequence_utils import build_sequences, normalize_sequences
 
 try:
     from gpu_training import batch_thermal_check, get_gpu_temp, setup_amp
@@ -392,57 +393,6 @@ class MambaTSModel(nn.Module):
 # ---------------------------------------------------------------------------
 # Data pipeline (shared with PatchTST)
 # ---------------------------------------------------------------------------
-
-
-def build_sequences(
-    features: pd.DataFrame,
-    seq_len: int = 96,
-    pred_len: int = 24,
-    target_col: str = "target",
-) -> tuple:
-    """Build sequence arrays from feature DataFrame.
-
-    Returns
-    -------
-    X : [n_samples, seq_len, n_features]
-    y : [n_samples, pred_len]
-    feature_cols : list of column names
-    """
-    feature_cols = [c for c in features.columns if c != target_col]
-    data = features[feature_cols].values
-    targets = features[target_col].values
-
-    X, y = [], []
-    for i in range(seq_len, len(data) - pred_len + 1):
-        X.append(data[i - seq_len : i])
-        y.append(targets[i : i + pred_len])
-
-    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32), feature_cols
-
-
-def normalize_sequences(
-    X_train: np.ndarray,
-    X_test: np.ndarray,
-    X_val: np.ndarray | None = None,
-) -> tuple:
-    """Z-normalize using training statistics only (anti-leakage).
-
-    Returns (normalized arrays, mean, std).
-    """
-    mean = X_train.mean(axis=(0, 1), keepdims=True)
-    std = X_train.std(axis=(0, 1), keepdims=True)
-    std = np.where(std < 1e-8, 1.0, std)
-
-    result = [
-        (X_train - mean) / std,
-        (X_test - mean) / std,
-        mean.squeeze(),
-        std.squeeze(),
-    ]
-    if X_val is not None:
-        result.insert(2, (X_val - mean) / std)
-        return tuple(result)  # (X_train_n, X_val_n, X_test_n, mean, std)
-    return tuple(result)
 
 
 def compute_majority_class_baseline(y_test: np.ndarray) -> dict:
