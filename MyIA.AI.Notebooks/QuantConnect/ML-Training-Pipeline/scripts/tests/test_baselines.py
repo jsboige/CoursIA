@@ -10,6 +10,7 @@ from scripts.baselines import (
     buy_and_hold_baseline,
     majority_class_baseline,
     naive_momentum_baseline,
+    oos_direction_distribution,
     random_walk_baseline,
     _sharpe_from_returns,
 )
@@ -198,3 +199,42 @@ class TestSharpeFromReturns:
         s_ann = _sharpe_from_returns(r, annualize=True)
         s_raw = _sharpe_from_returns(r, annualize=False)
         assert abs(s_ann) > abs(s_raw)
+
+
+class TestOOSDirectionDistribution:
+    def test_balanced_returns(self):
+        y = np.array([1.0, -1.0] * 50)
+        result = oos_direction_distribution(y)
+        assert result["pct_up"] == pytest.approx(0.5)
+        assert result["pct_down"] == pytest.approx(0.5)
+        assert result["majority_class_accuracy"] == pytest.approx(0.5)
+
+    def test_all_positive(self):
+        y = np.ones(100)
+        result = oos_direction_distribution(y)
+        assert result["pct_up"] == 1.0
+        assert result["pct_down"] == 0.0
+        assert result["majority_class_accuracy"] == 1.0
+
+    def test_all_negative(self):
+        y = -np.ones(100)
+        result = oos_direction_distribution(y)
+        assert result["pct_up"] == 0.0
+        assert result["majority_class_accuracy"] == 1.0
+
+    def test_zeros_counted_as_down(self):
+        y = np.zeros(10)
+        result = oos_direction_distribution(y)
+        assert result["pct_up"] == 0.0
+        assert result["majority_class_accuracy"] == 1.0
+
+    def test_multidimensional_flattened(self):
+        y = np.array([[1.0, -1.0], [1.0, -1.0]])
+        result = oos_direction_distribution(y)
+        assert result["pct_up"] == pytest.approx(0.5)
+
+    def test_rounded_output(self):
+        y = np.array([1.0, -1.0, 1.0])
+        result = oos_direction_distribution(y)
+        assert result["pct_up"] == pytest.approx(2 / 3, abs=0.0001)
+        assert isinstance(result["pct_up"], float)
