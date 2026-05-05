@@ -27,7 +27,7 @@ def prices():
 class TestMajorityClassBaseline:
     def test_balanced(self):
         y_train = np.array([0, 1, 0, 1, 0, 1])
-        y_test = np.array([0, 1, 0])
+        y_test = np.array([0, 1, 0, 1])
         result = majority_class_baseline(y_train, y_test)
         assert result["accuracy"] == pytest.approx(0.5, abs=0.01)
 
