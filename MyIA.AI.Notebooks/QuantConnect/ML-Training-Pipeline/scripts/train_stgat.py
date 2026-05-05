@@ -457,7 +457,16 @@ def train_and_evaluate(
         val_ds = TensorDataset(torch.tensor(X_val), torch.tensor(y_val))
         val_loader = DataLoader(val_ds, batch_size=batch_size)
     else:
-        val_loader = None
+        # Auto-split validation from training data (issue #722)
+        val_cutoff = int(len(X_train) * 0.85)
+        val_ds = TensorDataset(
+            torch.tensor(X_train[val_cutoff:]), torch.tensor(y_train[val_cutoff:])
+        )
+        train_ds = TensorDataset(
+            torch.tensor(X_train[:val_cutoff]), torch.tensor(y_train[:val_cutoff])
+        )
+        train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=batch_size)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
@@ -508,11 +517,10 @@ def train_and_evaluate(
 
         # Evaluate on val set for early stopping (NOT test set)
         model.eval()
-        eval_loader = val_loader if val_loader is not None else test_loader
         val_loss = 0.0
         val_batches = 0
         with torch.no_grad():
-            for X_batch, y_batch in eval_loader:
+            for X_batch, y_batch in val_loader:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 with torch.amp.autocast("cuda", enabled=use_amp):
                     val_loss += criterion(model(X_batch, adj=static_adj), y_batch).item()
@@ -568,7 +576,8 @@ def train_and_evaluate(
         "edge_over_majority": round(direction_acc - majority_baseline["majority_class_accuracy"], 4),
         "best_val_loss": round(best_val_loss, 6),
         "total_params": total_params,
-        "train_samples": len(X_train),
+        "train_samples": len(X_train) if X_val is not None else int(len(X_train) * 0.85),
+        "val_samples": len(X_val) if X_val is not None else int(len(X_train) * 0.15),
         "test_samples": len(X_test),
         "epochs_trained": epochs,
     }

@@ -122,21 +122,35 @@ def train_and_evaluate(
     learning_rate: float = 1e-3,
     model_type: str = "lstm",
     device: str = "cpu",
+    val_ratio: float = 0.15,
 ) -> dict:
-    """Train LSTM/GRU model and return metrics + training history."""
+    """Train LSTM/GRU model and return metrics + training history.
+
+    Splits X_train into train+val internally so test data is never used
+    for model selection (fixes test-set contamination, issue #722).
+    """
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
 
     input_size = X_train.shape[2]
 
+    # Internal train/val split from training data only
+    val_cutoff = int(len(X_train) * (1 - val_ratio))
+    X_tr, X_val = X_train[:val_cutoff], X_train[val_cutoff:]
+    y_tr, y_val = y_train[:val_cutoff], y_train[val_cutoff:]
+
     train_ds = TensorDataset(
-        torch.tensor(X_train), torch.tensor(y_train).unsqueeze(1)
+        torch.tensor(X_tr), torch.tensor(y_tr).unsqueeze(1)
+    )
+    val_ds = TensorDataset(
+        torch.tensor(X_val), torch.tensor(y_val).unsqueeze(1)
     )
     test_ds = TensorDataset(
         torch.tensor(X_test), torch.tensor(y_test).unsqueeze(1)
     )
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(val_ds, batch_size=batch_size)
     test_loader = DataLoader(test_ds, batch_size=batch_size)
 
     model = build_model(input_size, hidden_size, num_layers, dropout, model_type)
@@ -183,7 +197,7 @@ def train_and_evaluate(
         val_loss = 0.0
         val_batches = 0
         with torch.no_grad():
-            for X_batch, y_batch in test_loader:
+            for X_batch, y_batch in val_loader:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 pred = model(X_batch)
                 val_loss += criterion(pred, y_batch).item()
@@ -237,7 +251,8 @@ def train_and_evaluate(
         "direction_accuracy": round(direction_acc, 4),
         "direction_accuracy_significant": round(dir_acc_sig, 4) if dir_acc_sig else None,
         "best_val_loss": round(best_val_loss, 6),
-        "train_samples": len(X_train),
+        "train_samples": len(X_tr),
+        "val_samples": len(X_val),
         "test_samples": len(X_test),
         "epochs_trained": epochs,
     }

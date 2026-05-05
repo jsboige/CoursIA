@@ -161,21 +161,35 @@ def train_and_evaluate(
     learning_rate: float = 5e-4,
     warmup_steps: int = 200,
     device: str = "cpu",
+    val_ratio: float = 0.15,
 ) -> dict:
-    """Train Transformer with AMP and thermal watchdog via shared.gpu_training."""
+    """Train Transformer with AMP and thermal watchdog via shared.gpu_training.
+
+    Splits X_train into train+val internally so test data is never used
+    for model selection (fixes test-set contamination, issue #722).
+    """
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
 
     input_size = X_train.shape[2]
 
+    # Internal train/val split from training data only
+    val_cutoff = int(len(X_train) * (1 - val_ratio))
+    X_tr, X_val = X_train[:val_cutoff], X_train[val_cutoff:]
+    y_tr, y_val = y_train[:val_cutoff], y_train[val_cutoff:]
+
     train_ds = TensorDataset(
-        torch.tensor(X_train), torch.tensor(y_train).unsqueeze(1)
+        torch.tensor(X_tr), torch.tensor(y_tr).unsqueeze(1)
+    )
+    val_ds = TensorDataset(
+        torch.tensor(X_val), torch.tensor(y_val).unsqueeze(1)
     )
     test_ds = TensorDataset(
         torch.tensor(X_test), torch.tensor(y_test).unsqueeze(1)
     )
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(val_ds, batch_size=batch_size)
     test_loader = DataLoader(test_ds, batch_size=batch_size)
 
     model = build_transformer_model(
@@ -236,7 +250,7 @@ def train_and_evaluate(
         val_loss = 0.0
         val_batches = 0
         with torch.no_grad():
-            for X_batch, y_batch in test_loader:
+            for X_batch, y_batch in val_loader:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 with torch.amp.autocast("cuda", enabled=use_amp):
                     val_loss += criterion(model(X_batch), y_batch).item()
@@ -292,7 +306,8 @@ def train_and_evaluate(
         "best_val_loss": round(best_val_loss, 6),
         "total_params": total_params,
         "trainable_params": trainable_params,
-        "train_samples": len(X_train),
+        "train_samples": len(X_tr),
+        "val_samples": len(X_val),
         "test_samples": len(X_test),
         "epochs_trained": epochs,
     }
