@@ -5,8 +5,9 @@ Anti-bias multi-asset training pipeline for quantitative trading research.
 **Principle**: No single-asset, single-regime training. All stages use diversified data
 from 7 asset classes (see anti-bias policy below).
 
-**Current state**: Stage -1 complete (data engineering). Baseline checkpoints (Stage 0)
-trained on SPY only are **NOT valid for production**.
+**Current state**: Stage 1 cross-asset baselines complete (PR #724). Stage 0 SPY-only
+checkpoints confirmed pathological — **asset selection > model selection** (SPY edge -6.08pp,
+BTC +1.71pp, TLT +1.16pp, GLD +2.67pp).
 
 ---
 
@@ -40,28 +41,36 @@ Data locations:
 - `datasets/panier/` — 26 symbols across 7 asset classes
 - `datasets/forex/` — 10+ currency pairs, daily + hourly
 
-### Stage 0: Baselines (IN PROGRESS)
+### Stage 0: Baselines (DONE)
 
 Establish majority-class and simple-model baselines on the anti-bias panier.
 
-| Model | Target | Metric | Baseline (SPY) | Target (Panier) |
-|-------|--------|--------|----------------|-----------------|
-| Majority class | DirAcc | 54.59% (SPY up days) | Compute per-symbol | Beat on >50% symbols |
-| Random Forest | DirAcc | 50.86% (SPY) | Beat majority class on avg | |
-| LSTM (h=64) | DirAcc | 54.25% (SPY) | Beat majority + RF | |
-| Transformer (d=256) | DirAcc | 57.95% (SPY) | Beat majority + LSTM consistently | |
-| DQN | Sharpe | 0.89 (in-sample) | Out-of-sample Sharpe > 0 | |
+| Model | Target | Metric | Baseline (SPY) | Cross-Asset Best | Target (Panier) |
+|-------|--------|--------|----------------|------------------|-----------------|
+| Majority class | DirAcc | 54.59% (SPY) | 0.5873 (SPY pathological) | Compute per-symbol | Beat on >50% symbols |
+| Random Forest | DirAcc | 50.86% (SPY) | 0.5200 (EEM) | Beat majority class on avg | |
+| LSTM (h=64) | DirAcc | 54.25% (SPY) | 0.5467 (GLD, +2.67pp edge) | Beat majority + RF | |
+| Transformer (d=256) | DirAcc | 57.95% (SPY) | 0.5533 (TLT, +1.16pp edge) | Beat majority + LSTM | |
+| MTGNN | DirAcc | N/A | 0.5235 (SPY, +0.05pp only model beating) | Cross-asset graph | |
+| DQN | Sharpe | 0.89 (in-sample, INVALID) | Walk-forward OOS pending (#703) | Out-of-sample Sharpe > 0 | |
 
-Key requirement: **walk-forward validation** (train 2015-2019, val 2019-2021, test 2021-2024).
-No in-sample Sharpe reporting.
+Key requirement: **walk-forward validation** (5-fold, train=500, test=100, gap=10).
+No in-sample Sharpe reporting. All DQN Sharpe values marked INVALID until #703 resolved.
 
-### Stage 1: Multi-Asset Training
+**SPY pathology confirmed**: 58.73% majority class makes SPY the worst asset for ML.
+BTC (+1.71pp), TLT (+1.16pp), GLD (+2.67pp) show genuine edges over their baselines.
 
-Train on panier (26 symbols) instead of single asset.
+### Stage 1: Multi-Asset Training (IN PROGRESS)
 
-- Cross-asset features (relative momentum, sector rotation signals)
-- Regime-conditional models (bull/bear/sideways across asset classes)
-- Walk-forward across 3 market regimes (COVID crash, 2022 rate hike, 2024-2025)
+Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM, DBC).
+
+**Completed (PR #724)**: Walk-forward OOS evaluation across all architectures.
+- Transformer best on BTC (+1.71pp) and TLT (+1.16pp)
+- LSTM best on GLD (+2.67pp, best single-asset edge)
+- SPY confirmed pathological (-6.08pp vs majority)
+- MTGNN only model beating SPY baseline (+0.05pp)
+
+**Next**: Panier 19-asset expansion (Stage 3a), cross-asset features, regime-conditional models.
 
 ### Stage 2: Feature Engineering
 
@@ -128,7 +137,8 @@ Deploy to QuantConnect paper trading.
 
 See [REGISTRY.md](REGISTRY.md) for complete checkpoint catalog.
 
-Current: 20 checkpoints (all SPY-only, biased). Target: 50+ checkpoints across panier.
+Current: 20 SPY-only checkpoints (all biased). 7 cross-asset walk-forward baselines (PR #724).
+Target: 50+ checkpoints across panier.
 
 ---
 

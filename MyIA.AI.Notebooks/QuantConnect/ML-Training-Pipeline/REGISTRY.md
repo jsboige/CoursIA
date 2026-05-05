@@ -38,6 +38,33 @@ Key findings:
 - DQN Sharpe 0.89 is in-sample (no train/test split). Must be re-evaluated with proper time-series split (Issue #703).
 - All checkpoints are single-asset (SPY), single-regime (2015-2024 bull market). Not robust.
 
+## Asset Diversity Matters (Cross-Asset Evidence)
+
+**Key thesis confirmed (PR #724): Asset selection > model selection.**
+
+Cross-asset walk-forward baselines (5-fold, train=500, test=100, gap=10) reveal that
+SPY is the *worst* asset for ML training — its 58.7% majority-class frequency (up-day bias
+during 2015-2024 bull market) makes it pathological. No model architecture beats this baseline.
+
+| Asset | Best Model | OOS DirAcc | Majority | Edge (pp) | Verdict |
+|-------|-----------|------------|----------|-----------|---------|
+| BTC-USD | Transformer | 0.5400 | 0.5229 | **+1.71** | Positive edge |
+| TLT | Transformer | 0.5533 | 0.5417 | **+1.16** | Positive edge |
+| GLD | LSTM | 0.5467 | 0.5200 | **+2.67** | Best single-asset edge |
+| EFA | LSTM | 0.5133 | 0.5200 | -0.67 | Near baseline |
+| EEM | RF | 0.5200 | 0.5200 | 0.00 | At baseline |
+| DBC | LSTM | 0.5067 | 0.5417 | -3.50 | Negative |
+| SPY | Transformer | 0.5265 | 0.5873 | **-6.08** | Pathological |
+
+**Implications for curriculum:**
+1. Training on SPY alone teaches the wrong lesson — ML appears useless because the asset is too biased.
+2. Non-equity assets (BTC, TLT, GLD) show genuine ML edges, validating the approach.
+3. Future stages MUST use multi-asset panier (Stage 3a, 19 assets) to demonstrate real ML value.
+4. MTGNN (graph neural network) is the only architecture beating baseline even on SPY (+0.05pp),
+   suggesting cross-asset graph structure captures signal that single-asset models miss.
+
+**Source**: PR #724 Stage 1 cross-asset walk-forward baselines, ai-01 comparative runs.
+
 ## Walk-Forward OOS Evaluation (Track B)
 
 Evaluation harness: `scripts/eval_existing_checkpoints.py`
