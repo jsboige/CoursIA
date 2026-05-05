@@ -491,8 +491,10 @@ def train_walk_forward_dqn(
             oos_direction_correct += 1
         oos_direction_total += 1
 
-        if oos_eval["oos_mean_reward"] > best_fold_reward:
-            best_fold_reward = oos_eval["oos_mean_reward"]
+        # Select best fold model by in-sample reward, NOT OOS (issue #722)
+        in_sample_reward = fold_result["metrics"]["mean_reward"]
+        if in_sample_reward > best_fold_reward:
+            best_fold_reward = in_sample_reward
             best_model = fold_result["model"]
 
         print(f"  Fold {fold_idx+1}/{n_splits}  oos_reward={oos_eval['oos_mean_reward']:.4f}  "

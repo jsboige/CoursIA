@@ -171,8 +171,16 @@ def train_walk_forward_classification(
         y_test_fold = y[test_idx]
 
         # Per-fold train-only normalization (StandardScaler)
+        # Internal train/val split to avoid test-set contamination (issue #722)
+        val_cutoff = int(len(X_train_fold) * 0.85)
+        X_tr_fold = X_train_fold[:val_cutoff]
+        X_val_fold = X_train_fold[val_cutoff:]
+        y_tr_fold = y_train_fold[:val_cutoff]
+        y_val_fold = y_train_fold[val_cutoff:]
+
         scaler = StandardScaler()
-        X_train_norm = scaler.fit_transform(X_train_fold)
+        X_tr_norm = scaler.fit_transform(X_tr_fold)
+        X_val_norm = scaler.transform(X_val_fold)
         X_test_norm = scaler.transform(X_test_fold)
 
         if model_type == "xgb":
@@ -198,26 +206,34 @@ def train_walk_forward_classification(
                 n_estimators=n_estimators, max_depth=max_depth, random_state=42, n_jobs=-1,
             )
 
-        model.fit(X_train_norm, y_train_fold)
+        model.fit(X_tr_norm, y_tr_fold)
+
+        # Use validation accuracy for model selection (NOT test)
+        val_preds = model.predict(X_val_norm)
+        val_acc = accuracy_score(y_val_fold, val_preds)
+
+        # Test predictions for OOS reporting only
         fold_preds = model.predict(X_test_norm)
         fold_acc = accuracy_score(y_test_fold, fold_preds)
 
         fold_results.append({
             "fold": fold_idx,
-            "train_size": len(train_idx),
+            "train_size": val_cutoff,
+            "val_size": len(X_train_fold) - val_cutoff,
             "test_size": len(test_idx),
-            "accuracy": round(fold_acc, 4),
+            "val_accuracy": round(val_acc, 4),
+            "oos_accuracy": round(fold_acc, 4),
         })
 
         oos_preds[test_idx] = fold_preds
 
-        if fold_acc > best_fold_acc:
-            best_fold_acc = fold_acc
+        if val_acc > best_fold_acc:
+            best_fold_acc = val_acc
             import pickle
             best_model = pickle.loads(pickle.dumps(model))
 
-        print(f"  Fold {fold_idx+1}/{n_splits}  acc={fold_acc:.4f}  "
-              f"train={len(train_idx)}  test={len(test_idx)}")
+        print(f"  Fold {fold_idx+1}/{n_splits}  val_acc={val_acc:.4f}  oos_acc={fold_acc:.4f}  "
+              f"train={val_cutoff}  val={len(X_train_fold) - val_cutoff}  test={len(test_idx)}")
 
     # Aggregate OOS metrics
     valid_mask = ~np.array([p is np.nan for p in oos_preds]) if hasattr(np, 'nan') else np.array([not (isinstance(p, float) and np.isnan(p)) for p in oos_preds])
