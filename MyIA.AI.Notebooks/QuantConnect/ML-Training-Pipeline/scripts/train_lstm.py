@@ -330,7 +330,6 @@ def train_walk_forward(
     fold_results = []
     oos_preds = np.full(len(y), np.nan)
     best_model_state = None
-    best_fold_diracc = -1.0
 
     for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(X)):
         if len(test_idx) == 0:
@@ -371,9 +370,8 @@ def train_walk_forward(
             preds = fold_result["model"](X_test_t).squeeze(-1).cpu().numpy()
         oos_preds[test_idx] = preds
 
-        if fold_diracc > best_fold_diracc:
-            best_fold_diracc = fold_diracc
-            best_model_state = {k: v.cpu().clone() for k, v in fold_result["model"].state_dict().items()}
+        # Save last fold model (avoids test-set selection bias from cherry-picking best fold)
+        best_model_state = {k: v.cpu().clone() for k, v in fold_result["model"].state_dict().items()}
 
         print(f"  Fold {fold_idx+1}/{n_splits}  diracc={fold_diracc:.4f}  "
               f"train={len(train_idx)}  test={len(test_idx)}")
