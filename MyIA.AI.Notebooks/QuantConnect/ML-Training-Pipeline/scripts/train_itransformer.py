@@ -22,9 +22,7 @@ Output:
 """
 
 import argparse
-import json
 import sys
-from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +36,7 @@ from gpu_training import (
     get_gpu_temp,
     setup_amp,
 )
+from checkpoint_utils import save_pytorch_checkpoint
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
 from sequence_utils import build_sequences, normalize_sequences
@@ -316,34 +315,6 @@ def train_and_evaluate(
     }
 
 
-def save_checkpoint(
-    model, result: dict, hyperparams: dict, data_hash: str, output_dir: Path
-) -> Path:
-    """Save iTransformer checkpoint and metadata."""
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    ckpt_path = output_dir / timestamp
-    ckpt_path.mkdir(parents=True, exist_ok=True)
-
-    model_file = ckpt_path / "model.pt"
-    torch.save(model.state_dict(), model_file)
-
-    metadata = {
-        "timestamp": timestamp,
-        "model_type": "itransformer",
-        "hyperparams": hyperparams,
-        "metrics": result["metrics"],
-        "history": result["history"],
-        "data_hash": data_hash,
-        "files": ["model.pt", "metadata.json"],
-    }
-    meta_file = ckpt_path / "metadata.json"
-    meta_file.write_text(json.dumps(metadata, indent=2, default=str), encoding="utf-8")
-
-    print(f"Checkpoint saved: {ckpt_path}")
-    print(f"  Metrics: {result['metrics']}")
-    return ckpt_path
-
 
 def main():
     parser = argparse.ArgumentParser(
@@ -499,7 +470,10 @@ def main():
     )
 
     output_dir = Path(args.output_dir)
-    save_checkpoint(result["model"], result, hyperparams, data_hash, output_dir)
+    save_pytorch_checkpoint(
+        result["model"], result, hyperparams, data_hash, output_dir,
+        model_type="itransformer",
+    )
 
     m = result["metrics"]
     edge = m["edge_over_majority"]
