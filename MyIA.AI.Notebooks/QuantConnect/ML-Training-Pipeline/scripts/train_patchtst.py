@@ -501,6 +501,7 @@ def main():
         "--indicators", nargs="+", default=None,
         help="Specific indicators to use (overrides --advanced)",
     )
+    parser.add_argument("--device", default=None, help="Force device (cpu/cuda)")
     args = parser.parse_args()
 
     # Seed
@@ -510,7 +511,10 @@ def main():
     try:
         import torch
         torch.manual_seed(args.seed)
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if args.device:
+            device = args.device
+        else:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
     except ImportError:
         print("ERROR: PyTorch not installed. Run: pip install torch", file=sys.stderr)
         sys.exit(1)
