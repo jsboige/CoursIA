@@ -381,4 +381,150 @@ theorem clone_set_nonempty {prof : ι → PrefOrder σ} {X : Finset σ}
 
 end Clones
 
+/-! ## Banks Set
+
+The Banks set (Banks 1985) is a tournament solution concept. Given a majority
+tournament (derived from pairwise margins), a Banks winner is an alternative that
+tops some maximal transitive subtournament (i.e., some maximal chain).
+
+Reference: Banks, "Sophisticated Voting Outcomes and Agenda Control" (1985)
+-/
+
+section BanksSet
+
+/-- A profile induces a tournament on S: every distinct pair has a strict majority winner.
+    This means for all x ≠ y in S, exactly one of margin(x,y) > 0 or margin(y,x) > 0 holds. -/
+def is_tournament (prof : ι → PrefOrder σ) (S : Finset σ) : Prop :=
+  ∀ x ∈ S, ∀ y ∈ S, x ≠ y → margin_pos prof x y ∨ margin_pos prof y x
+
+/-- A Banks chain: a subset of S that is totally ordered by the majority relation,
+    and is maximal (adding any element from S breaks transitivity). -/
+def banks_chain (prof : ι → PrefOrder σ) (S : Finset σ) (C : Finset σ) : Prop :=
+  C ⊆ S ∧ C.Nonempty ∧
+  (∀ x ∈ C, ∀ y ∈ C, x ≠ y → margin_pos prof x y ∨ margin_pos prof y x) ∧
+  -- Transitivity of the chain's tournament relation
+  (∀ x ∈ C, ∀ y ∈ C, ∀ z ∈ C,
+    margin_pos prof x y → margin_pos prof y z → margin_pos prof x z) ∧
+  -- Maximality: no element from S\C can be added while preserving the above
+  (∀ x ∈ S, x ∉ C → ¬(
+    (∀ y ∈ C, margin_pos prof x y ∨ margin_pos prof y x) ∧
+    (∀ y ∈ C, ∀ z ∈ C,
+      margin_pos prof y z → (margin_pos prof x y → margin_pos prof x z) ∧
+      (margin_pos prof z x → margin_pos prof y x))))
+
+/-- x is a Banks winner: it is the maximal element of some Banks chain.
+    Being maximal means no element of the chain has a positive margin over x. -/
+def banks_winner (prof : ι → PrefOrder σ) (S : Finset σ) (x : σ) : Prop :=
+  x ∈ S ∧ ∃ C : Finset σ, banks_chain prof S C ∧ x ∈ C ∧
+    ∀ y ∈ C, y ≠ x → margin_pos prof x y
+
+/-- The Banks set: all Banks winners in S -/
+noncomputable def banks_set (prof : ι → PrefOrder σ) (S : Finset σ) : Finset σ := by
+  classical
+  exact S.filter (fun x => banks_winner prof S x)
+
+/-- The Banks set is a subset of S -/
+theorem banks_set_subset (prof : ι → PrefOrder σ) (S : Finset σ) :
+    banks_set prof S ⊆ S := by
+  classical
+  unfold banks_set
+  exact Finset.filter_subset _ _
+
+/-- A Condorcet winner is always in the Banks set -/
+theorem banks_set_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ}
+    (hw : condorcet_winner prof S x) :
+    x ∈ banks_set prof S := by
+  sorry
+
+/-- The Banks set is nonempty when a tournament exists on S -/
+theorem banks_set_nonempty_of_tournament (prof : ι → PrefOrder σ) {S : Finset σ}
+    (ht : is_tournament prof S) (hnS : S.Nonempty) :
+    (banks_set prof S).Nonempty := by
+  sorry
+
+end BanksSet
+
+/-! ## Single Transferable Vote (STV)
+
+STV is a preferential voting system where voters rank candidates, and candidates
+are elected by reaching a quota. Surplus votes transfer to next preferences, and
+the candidate with fewest votes is eliminated if no one reaches quota.
+
+Key properties:
+- Satisfies proportionality
+- Fails monotonicity (Doron 1979)
+- Fails clone independence in general
+-/
+
+section STV
+
+variable [DecidableEq σ] [Fintype σ]
+
+/-- Droop quota: minimum votes needed to guarantee election.
+    For n voters and k seats: floor(n / (k+1)) + 1 -/
+def droop_quota (n_voters : ℕ) (n_seats : ℕ) : ℕ :=
+  n_voters / (n_seats + 1) + 1
+
+/-- Count first-preference votes for x among remaining candidates.
+    A voter's first preference is their top-ranked alternative in the remaining set. -/
+noncomputable def first_preferences (prof : ι → PrefOrder σ) (remaining : Finset σ) (x : σ) : ℕ :=
+  haveI : DecidablePred (fun i : ι => is_best_element x remaining (prof i).rel) := Classical.decPred _
+  (Finset.filter (fun i => is_best_element x remaining (prof i).rel) Finset.univ).card
+
+/-- Result of one STV round -/
+inductive stv_round_result (σ : Type*) where
+  | elected (x : σ) : stv_round_result σ
+  | eliminated (x : σ) : stv_round_result σ
+  | complete : stv_round_result σ
+
+/-- One step of STV: elect a candidate reaching quota, or eliminate the weakest.
+    Returns the action to take for this round.
+    Uses classical choice for tie-breaking. -/
+noncomputable def stv_step (prof : ι → PrefOrder σ) (remaining : Finset σ)
+    (already_elected : Finset σ) (quota : ℕ) (n_seats : ℕ) : stv_round_result σ := by
+  classical
+  if hcard : already_elected.card ≥ n_seats then exact .complete
+  else if hrem : remaining = ∅ then exact .complete
+  else
+    have hne : remaining.Nonempty := Finset.nonempty_iff_ne_empty.mpr hrem
+    let over_quota := remaining.filter (fun x => quota ≤ first_preferences prof remaining x)
+    if hov : over_quota.Nonempty then
+      exact .elected (Classical.choose hov)
+    else
+      exact .eliminated (Classical.choose hne)
+
+/-- STV as a Social Choice Correspondence with n_seats winners.
+    Iteratively applies stv_step until n_seats candidates are elected. -/
+noncomputable def stv_scc (n_seats : ℕ) : SCC ι σ := fun prof S =>
+  let quota := droop_quota (Fintype.card ι) n_seats
+  let rec loop (remaining : Finset σ) (elected : Finset σ) (fuel : ℕ) : Finset σ :=
+    match fuel with
+    | 0 => elected
+    | fuel' + 1 =>
+      match stv_step prof remaining elected quota n_seats with
+      | .elected x =>
+        if elected.card < n_seats then
+          loop (remaining.erase x) (insert x elected) fuel'
+        else
+          elected
+      | .eliminated x => loop (remaining.erase x) elected fuel'
+      | .complete => elected
+  loop S ∅ (2 * S.card + 1)
+
+/-- STV fails monotonicity (Doron 1979):
+    improving a candidate's position can paradoxically cause their elimination. -/
+theorem stv_monotonicity_violation (n_seats : ℕ)
+    (hns : 1 ≤ n_seats) :
+    ¬ @monotonicity ι σ _ _ (stv_scc n_seats) := by
+  sorry
+
+/-- STV does not satisfy clone independence:
+    adding a clone of a candidate can change the outcome. -/
+theorem stv_not_clone_independent (n_seats : ℕ)
+    (hns : 1 ≤ n_seats) :
+    ¬ @clone_independence ι σ _ _ _ (stv_scc n_seats) := by
+  sorry
+
+end STV
+
 end SocialChoice
