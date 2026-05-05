@@ -46,15 +46,6 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
 
 from data_utils import load_data
 
-try:
-    from eval_finstsb import DirectionModel, detect_regimes
-except ImportError:
-    detect_regimes = None
-
-try:
-    from walk_forward import WalkForwardSplitter
-except ImportError:
-    WalkForwardSplitter = None
 
 KRONOS_MODEL_IDS = {
     "small": "shiyu-coder/Kronos-Small",
