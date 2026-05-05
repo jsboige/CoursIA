@@ -39,7 +39,6 @@ from walk_forward import WalkForwardSplitter
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
 from gpu_training import (
-    TrainingCheckpoint,
     batch_thermal_check,
     get_gpu_temp,
     setup_amp,
