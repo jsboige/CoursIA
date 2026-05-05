@@ -26,7 +26,6 @@ Output:
 
 import argparse
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -436,8 +435,8 @@ def train_walk_forward(
     y_binary_oos = (oos_targets > 0).astype(int)
     majority_freq = float(np.mean(y_binary_oos == 1))
     majority_bl = {
-        "accuracy": majority_freq,
-        "majority_class": 1,
+        "accuracy": max(majority_freq, 1.0 - majority_freq),
+        "majority_class": 1 if majority_freq >= 0.5 else 0,
         "majority_freq": majority_freq,
         "n_train": 0,
         "n_test": len(y_binary_oos),

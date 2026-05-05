@@ -1,1 +1,495 @@
-IiIiCkV2YWx1YXRpb24gaGFybmVzcyBmb3IgZXhpc3RpbmcgTUwvVHJhZGluZyBjaGVja3BvaW50cy4KClRpZXMgdG9nZXRoZXIgdGhlIDQgZGlzY2lwbGluZSBzY3JpcHRzICh3YWxrX2ZvcndhcmQsIGJhc2VsaW5lcywgZXZhbF9maW5zdHNiLAp0cmFuc2FjdGlvbl9jb3N0cykgdG8gcHJvZHVjZSBjb21wcmVoZW5zaXZlIGV2YWx1YXRpb24gcmVwb3J0cyBmb3IgZWFjaCBjaGVja3BvaW50LgoKRWFjaCBjaGVja3BvaW50IGdldHM6CiAgICAtIFdhbGstZm9yd2FyZCBvdXQtb2Ytc2FtcGxlIG1ldHJpY3MgKG5vIGluLXNhbXBsZSBsZWFrYWdlKQogICAgLSBDb21wYXJpc29uIHZzIG1ham9yaXR5LWNsYXNzIGFuZCBidXktYW5kLWhvbGQgYmFzZWxpbmVzCiAgICAtIFBlci1yZWdpbWUgZXZhbHVhdGlvbiAodXB0cmVuZC9kb3dudHJlbmQvdm9sYXRpbGl0eS9ibGFja19zd2FuKQogICAgLSBUcmFuc2FjdGlvbiBjb3N0IGFuYWx5c2lzIChncm9zcyB2cyBuZXQgU2hhcnBlKQoKVXNhZ2U6CiAgICAjIEV2YWx1YXRlIGEgc2luZ2xlIGNoZWNrcG9pbnQKICAgIHB5dGhvbiBldmFsX2V4aXN0aW5nX2NoZWNrcG9pbnRzLnB5IC0tY2hlY2twb2ludCBjaGVja3BvaW50cy90cmFuc2Zvcm1lci8yMDI2MDUwMV8xMzQwNTYKCiAgICAjIEV2YWx1YXRlIGFsbCBjaGVja3BvaW50cwogICAgcHl0aG9uIGV2YWxfZXhpc3RpbmdfY2hlY2twb2ludHMucHkgLS1hbGwgLS1jaGVja3BvaW50LWRpciBjaGVja3BvaW50cwoKICAgICMgRHJ5LXJ1biAoc3ludGhldGljIGRhdGEsIG5vIHJlYWwgY2hlY2twb2ludHMgbmVlZGVkKQogICAgcHl0aG9uIGV2YWxfZXhpc3RpbmdfY2hlY2twb2ludHMucHkgLS1kcnktcnVuCgpSZWZlcmVuY2VzOgogICAgLSBBRk1MIENoLjctMTIgKExvcGV6IGRlIFByYWRvKTogd2Fsay1mb3J3YXJkLCBwdXJnZWQgQ1YsIENQQ1YKICAgIC0gRmluVFNCOiBwZXItcmVnaW1lIGV2YWx1YXRpb24KICAgIC0gQWxtZ3Jlbi1DaHJpc3M6IHRyYW5zYWN0aW9uIGNvc3QgbW9kZWxpbmcKIiIiCgpmcm9tIF9fZnV0dXJlX18gaW1wb3J0IGFubm90YXRpb25zCgppbXBvcnQgYXJncGFyc2UKaW1wb3J0IGpzb24KaW1wb3J0IHN5cwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKCmltcG9ydCBudW1weSBhcyBucAppbXBvcnQgcGFuZGFzIGFzIHBkCgpmcm9tIHNjcmlwdHMuYmFzZWxpbmVzIGltcG9ydCAoCiAgICBidXlfYW5kX2hvbGRfYmFzZWxpbmUsCiAgICBtYWpvcml0eV9jbGFzc19iYXNlbGluZSwKICAgIG5haXZlX21vbWVudHVtX2Jhc2VsaW5lLAopCmZyb20gc2NyaXB0cy5kYXRhX3V0aWxzIGltcG9ydCBnZW5lcmF0ZV9zeW50aGV0aWNfZGF0YSwgbG9hZF9kYXRhCmZyb20gc2NyaXB0cy5ldmFsX2ZpbnN0c2IgaW1wb3J0IGV2YWxfcGVyX3JlZ2ltZQpmcm9tIHNjcmlwdHMuZmVhdHVyZXMgaW1wb3J0IEZlYXR1cmVFbmdpbmVlcgpmcm9tIHNjcmlwdHMudHJhbnNhY3Rpb25fY29zdHMgaW1wb3J0IFRyYW5zYWN0aW9uQ29zdE1vZGVsLCBjb21wYXJlX2dyb3NzX3ZzX25ldApmcm9tIHNjcmlwdHMud2Fsa19mb3J3YXJkIGltcG9ydCBXYWxrRm9yd2FyZFNwbGl0dGVyCgoKZGVmIGxvYWRfY2hlY2twb2ludF9tb2RlbChjaGVja3BvaW50X2RpcjogUGF0aCkgLT4gdHVwbGU6CiAgICAiIiJMb2FkIG1vZGVsIGFuZCBtZXRhZGF0YSBmcm9tIGEgY2hlY2twb2ludCBkaXJlY3RvcnkuCgogICAgUmV0dXJucwogICAgLS0tLS0tLQogICAgKG1vZGVsLCBtZXRhZGF0YSwgbW9kZWxfdHlwZSkgOiB0dXBsZSBvZiBtb2RlbCBvYmplY3QsIG1ldGFkYXRhIGRpY3QsIGFuZCB0eXBlIHN0cmluZy4KICAgICIiIgogICAgbWV0YWRhdGFfcGF0aCA9IGNoZWNrcG9pbnRfZGlyIC8gIm1ldGFkYXRhLmpzb24iCiAgICBpZiBub3QgbWV0YWRhdGFfcGF0aC5leGlzdHMoKToKICAgICAgICByYWlzZSBGaWxlTm90Rm91bmRFcnJvcihmIk5vIG1ldGFkYXRhLmpzb24gaW4ge2NoZWNrcG9pbnRfZGlyfSIpCgogICAgd2l0aCBvcGVuKG1ldGFkYXRhX3BhdGgpIGFzIGY6CiAgICAgICAgbWV0YWRhdGEgPSBqc29uLmxvYWQoZikKCiAgICBtb2RlbF90eXBlID0gbWV0YWRhdGEuZ2V0KCJtb2RlbF90eXBlIiwgInVua25vd24iKQogICAgaHAgPSBtZXRhZGF0YS5nZXQoImh5cGVycGFyYW1zIiwge30pCgogICAgbW9kZWxfcGF0aCA9IGNoZWNrcG9pbnRfZGlyIC8gIm1vZGVsLnB0IgogICAgbW9kZWxfam9ibGliID0gY2hlY2twb2ludF9kaXIgLyAibW9kZWwuam9ibGliIgoKICAgIGlmIG1vZGVsX3R5cGUgPT0gInJmIjoKICAgICAgICBpbXBvcnQgam9ibGliCgogICAgICAgIG1vZGVsID0gam9ibGliLmxvYWQobW9kZWxfam9ibGliKQogICAgZWxpZiBtb2RlbF90eXBlIGluICgidHJhbnNmb3JtZXIiLCAibHN0bSIpOgogICAgICAgIGltcG9ydCB0b3JjaAoKICAgICAgICBtb2RlbCA9IF9idWlsZF9tb2RlbF9mcm9tX21ldGFkYXRhKG1vZGVsX3R5cGUsIGhwKQogICAgICAgIHN0YXRlID0gdG9yY2gubG9hZChtb2RlbF9wYXRoLCBtYXBfbG9jYXRpb249ImNwdSIsIHdlaWdodHNfb25seT1UcnVlKQogICAgICAgIG1vZGVsLmxvYWRfc3RhdGVfZGljdChzdGF0ZSkKICAgICAgICBtb2RlbC5ldmFsKCkKICAgIGVsaWYgbW9kZWxfdHlwZSA9PSAiZHFuIjoKICAgICAgICBpbXBvcnQgdG9yY2gKCiAgICAgICAgc3RhdGVfc2l6ZSA9IGhwLmdldCgic3RhdGVfc2l6ZSIsIG1ldGFkYXRhLmdldCgiYXJjaGl0ZWN0dXJlIiwge30pLmdldCgic3RhdGVfc2l6ZSIsIDI0MikpCiAgICAgICAgaGlkZGVuX3NpemUgPSBocC5nZXQoImhpZGRlbl9zaXplIiwgMjU2KQogICAgICAgIGZyb20gc2NyaXB0cy50cmFpbl9kcW5fcmwgaW1wb3J0IGJ1aWxkX2RxbgoKICAgICAgICBtb2RlbCA9IGJ1aWxkX2RxbihzdGF0ZV9zaXplLCBoaWRkZW5fc2l6ZSwgbl9hY3Rpb25zPTMpCiAgICAgICAgc3RhdGUgPSB0b3JjaC5sb2FkKG1vZGVsX3BhdGgsIG1hcF9sb2NhdGlvbj0iY3B1Iiwgd2VpZ2h0c19vbmx5PVRydWUpCiAgICAgICAgbW9kZWwubG9hZF9zdGF0ZV9kaWN0KHN0YXRlKQogICAgICAgIG1vZGVsLmV2YWwoKQogICAgZWxzZToKICAgICAgICByYWlzZSBWYWx1ZUVycm9yKGYiVW5rbm93biBtb2RlbCB0eXBlOiB7bW9kZWxfdHlwZX0iKQoKICAgIHJldHVybiBtb2RlbCwgbWV0YWRhdGEsIG1vZGVsX3R5cGUKCgpkZWYgX2J1aWxkX21vZGVsX2Zyb21fbWV0YWRhdGEobW9kZWxfdHlwZTogc3RyLCBocDogZGljdCk6CiAgICAiIiJSZWNvbnN0cnVjdCBtb2RlbCBhcmNoaXRlY3R1cmUgZnJvbSBoeXBlcnBhcmFtZXRlcnMuIiIiCiAgICBpbXBvcnQgdG9yY2gKCiAgICBpZiBtb2RlbF90eXBlID09ICJ0cmFuc2Zvcm1lciI6CiAgICAgICAgZnJvbSBzY3JpcHRzLnRyYWluX3RyYW5zZm9ybWVyIGltcG9ydCBidWlsZF90cmFuc2Zvcm1lcl9tb2RlbAoKICAgICAgICByZXR1cm4gYnVpbGRfdHJhbnNmb3JtZXJfbW9kZWwoCiAgICAgICAgICAgIGlucHV0X3NpemU9aHAuZ2V0KCJpbnB1dF9zaXplIiwgMzgpLAogICAgICAgICAgICBkX21vZGVsPWhwLmdldCgiZF9tb2RlbCIsIDEyOCksCiAgICAgICAgICAgIG5oZWFkPWhwLmdldCgibmhlYWQiLCA0KSwKICAgICAgICAgICAgbnVtX2xheWVycz1ocC5nZXQoIm51bV9sYXllcnMiLCA0KSwKICAgICAgICAgICAgZGltX2ZlZWRmb3J3YXJkPWhwLmdldCgiZGltX2ZlZWRmb3J3YXJkIiwgNTEyKSwKICAgICAgICAgICAgZHJvcG91dD1ocC5nZXQoImRyb3BvdXQiLCAwLjEpLAogICAgICAgICAgICBzZXFfbGVuPWhwLmdldCgic2VxX2xlbiIsIDIwKSwKICAgICAgICApCiAgICBlbGlmIG1vZGVsX3R5cGUgPT0gImxzdG0iOgogICAgICAgIGZyb20gc2NyaXB0cy50cmFpbl9sc3RtIGltcG9ydCBidWlsZF9tb2RlbAoKICAgICAgICByZXR1cm4gYnVpbGRfbW9kZWwoCiAgICAgICAgICAgIGlucHV0X3NpemU9aHAuZ2V0KCJpbnB1dF9zaXplIiwgMzgpLAogICAgICAgICAgICBoaWRkZW5fc2l6ZT1ocC5nZXQoImhpZGRlbl9zaXplIiwgMTI4KSwKICAgICAgICAgICAgbnVtX2xheWVycz1ocC5nZXQoIm51bV9sYXllcnMiLCAyKSwKICAgICAgICAgICAgZHJvcG91dD1ocC5nZXQoImRyb3BvdXQiLCAwLjIpLAogICAgICAgICAgICBtb2RlbF90eXBlPSJsc3RtIiwKICAgICAgICApCiAgICByYWlzZSBWYWx1ZUVycm9yKGYiQ2Fubm90IGJ1aWxkIG1vZGVsIGZvciB0eXBlOiB7bW9kZWxfdHlwZX0iKQoKCmRlZiBwcmVkaWN0X3NlcXVlbmNlcyhtb2RlbCwgWDogbnAubmRhcnJheSwgbW9kZWxfdHlwZTogc3RyKSAtPiBucC5uZGFycmF5OgogICAgIiIiUnVuIG1vZGVsIGluZmVyZW5jZSBvbiBzZXF1ZW5jZSBkYXRhLgoKICAgIFBhcmFtZXRlcnMKICAgIC0tLS0tLS0tLS0KICAgIG1vZGVsIDogdHJhaW5lZCBtb2RlbAogICAgWCA6IG5wLm5kYXJyYXksIHNoYXBlIChuX3NhbXBsZXMsIHNlcV9sZW4sIG5fZmVhdHVyZXMpIGZvciBzZXEgbW9kZWxzCiAgICBtb2RlbF90eXBlIDogc3RyCgogICAgUmV0dXJucwogICAgLS0tLS0tLQogICAgbnAubmRhcnJheSBvZiBwcmVkaWN0ZWQgcmV0dXJucyAob3IgZGlyZWN0aW9uIHByb2JhYmlsaXRpZXMpLgogICAgIiIiCiAgICBpZiBtb2RlbF90eXBlID09ICJyZiI6CiAgICAgICAgbl9zYW1wbGVzLCBzZXFfbGVuLCBuX2ZlYXR1cmVzID0gWC5zaGFwZQogICAgICAgIFhfZmxhdCA9IFhbOiwgLTEsIDpdCiAgICAgICAgcmV0dXJuIG1vZGVsLnByZWRpY3QoWF9mbGF0KQogICAgZWxzZToKICAgICAgICBpbXBvcnQgdG9yY2gKCiAgICAgICAgd2l0aCB0b3JjaC5ub19ncmFkKCk6CiAgICAgICAgICAgIFhfdCA9IHRvcmNoLnRlbnNvcihYLCBkdHlwZT10b3JjaC5mbG9hdDMyKQogICAgICAgICAgICBwcmVkcyA9IG1vZGVsKFhfdCkuc3F1ZWV6ZSgtMSkubnVtcHkoKQogICAgICAgIHJldHVybiBwcmVkcwoKCmRlZiBwcmVkaWN0X2RpcmVjdGlvbihtb2RlbCwgWDogbnAubmRhcnJheSwgbW9kZWxfdHlwZTogc3RyKSAtPiBucC5uZGFycmF5OgogICAgIiIiUHJlZGljdCBiaW5hcnkgZGlyZWN0aW9uICgwPWRvd24sIDE9dXApLiIiIgogICAgcmF3ID0gcHJlZGljdF9zZXF1ZW5jZXMobW9kZWwsIFgsIG1vZGVsX3R5cGUpCiAgICBpZiBtb2RlbF90eXBlID09ICJyZiI6CiAgICAgICAgcmV0dXJuIHJhdy5hc3R5cGUoaW50KQogICAgcmV0dXJuIChyYXcgPiAwKS5hc3R5cGUoaW50KQoKCmRlZiBidWlsZF9zZXF1ZW5jZXMoCiAgICBmZWF0dXJlczogcGQuRGF0YUZyYW1lLCBzZXFfbGVuOiBpbnQgPSAyMCwgdGFyZ2V0X2NvbDogc3RyID0gInRhcmdldCIKKSAtPiB0dXBsZToKICAgICIiIkJ1aWxkIHNlcXVlbmNlIGFycmF5cyBmcm9tIGZlYXR1cmUgRGF0YUZyYW1lLiIiIgogICAgZmVhdHVyZV9jb2xzID0gW2MgZm9yIGMgaW4gZmVhdHVyZXMuY29sdW1ucyBpZiBjICE9IHRhcmdldF9jb2xdCiAgICBkYXRhID0gZmVhdHVyZXNbZmVhdHVyZV9jb2xzXS52YWx1ZXMKICAgIHRhcmdldHMgPSBmZWF0dXJlc1t0YXJnZXRfY29sXS52YWx1ZXMKCiAgICBYLCB5ID0gW10sIFtdCiAgICBmb3IgaSBpbiByYW5nZShzZXFfbGVuLCBsZW4oZGF0YSkpOgogICAgICAgIFguYXBwZW5kKGRhdGFbaSAtIHNlcV9sZW4gOiBpXSkKICAgICAgICB5LmFwcGVuZCh0YXJnZXRzW2ldKQoKICAgIHJldHVybiBucC5hcnJheShYLCBkdHlwZT1ucC5mbG9hdDMyKSwgbnAuYXJyYXkoeSwgZHR5cGU9bnAuZmxvYXQzMiksIGZlYXR1cmVfY29scwoKCmRlZiBldmFsdWF0ZV9jaGVja3BvaW50KAogICAgY2hlY2twb2ludF9kaXI6IFBhdGgsCiAgICBkYXRhX2RpcjogUGF0aCB8IE5vbmUgPSBOb25lLAogICAgbl9zcGxpdHM6IGludCA9IDUsCiAgICBkZXZpY2U6IHN0ciA9ICJjcHUiLAopIC0+IGRpY3Q6CiAgICAiIiJSdW4gZnVsbCBldmFsdWF0aW9uIHBpcGVsaW5lIG9uIGEgc2luZ2xlIGNoZWNrcG9pbnQuCgogICAgUGlwZWxpbmU6CiAgICAgICAgMS4gTG9hZCBtb2RlbCArIG1ldGFkYXRhCiAgICAgICAgMi4gTG9hZCBkYXRhIGFuZCBidWlsZCBmZWF0dXJlcwogICAgICAgIDMuIFdhbGstZm9yd2FyZCBzcGxpdCBldmFsdWF0aW9uCiAgICAgICAgNC4gQmFzZWxpbmUgY29tcGFyaXNvbgogICAgICAgIDUuIFBlci1yZWdpbWUgZXZhbHVhdGlvbiAoT09TIG9ubHkpCiAgICAgICAgNi4gVHJhbnNhY3Rpb24gY29zdCBhbmFseXNpcyAoT09TIG9ubHkpCgogICAgUmV0dXJucwogICAgLS0tLS0tLQogICAgZGljdCB3aXRoIGtleXM6IG1ldGFkYXRhLCB3Zl9tZXRyaWNzLCBiYXNlbGluZXMsIHJlZ2ltZV9ldmFsLCBjb3N0X2FuYWx5c2lzCiAgICAiIiIKICAgIG1vZGVsLCBtZXRhZGF0YSwgbW9kZWxfdHlwZSA9IGxvYWRfY2hlY2twb2ludF9tb2RlbChjaGVja3BvaW50X2RpcikKICAgIGhwID0gbWV0YWRhdGEuZ2V0KCJoeXBlcnBhcmFtcyIsIHt9KQoKICAgIHN5bWJvbCA9IGhwLmdldCgic3ltYm9sIiwgIlNQWSIpCiAgICBzZXFfbGVuID0gaHAuZ2V0KCJzZXFfbGVuIiwgaHAuZ2V0KCJsb29rYmFjayIsIDIwKSkKICAgIGFkdmFuY2VkID0gaHAuZ2V0KCJhZHZhbmNlZCIsIEZhbHNlKQoKICAgICMgTG9hZCBkYXRhCiAgICBpZiBkYXRhX2RpciBpcyBOb25lOgogICAgICAgIGRhdGFfZGlyID0gUGF0aChfX2ZpbGVfXykucmVzb2x2ZSgpLnBhcmVudC5wYXJlbnQgLyAiZGF0YXNldHMiIC8gInlmaW5hbmNlIgoKICAgIGlmIChjaGVja3BvaW50X2RpciAvICJtZXRhZGF0YS5qc29uIikuZXhpc3RzKCk6CiAgICAgICAgZGF0YV9oYXNoID0gbWV0YWRhdGEuZ2V0KCJkYXRhX2hhc2giLCAiIikKICAgICAgICBpZiBkYXRhX2hhc2ggPT0gInN5bnRoZXRpYy1kcnlydW4iOgogICAgICAgICAgICBkZiA9IGdlbmVyYXRlX3N5bnRoZXRpY19kYXRhKDIwMDApCiAgICAgICAgZWxzZToKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgZGYgPSBsb2FkX2RhdGEoZGF0YV9kaXIsIHN5bWJvbCkKICAgICAgICAgICAgZXhjZXB0IEZpbGVOb3RGb3VuZEVycm9yOgogICAgICAgICAgICAgICAgZGYgPSBnZW5lcmF0ZV9zeW50aGV0aWNfZGF0YSgyMDAwKQogICAgZWxzZToKICAgICAgICBkZiA9IGdlbmVyYXRlX3N5bnRoZXRpY19kYXRhKDIwMDApCgogICAgIyBCdWlsZCBmZWF0dXJlcwogICAgZW5naW5lZXIgPSBGZWF0dXJlRW5naW5lZXIobG9va2JhY2s9c2VxX2xlbikKICAgIGZlYXR1cmVzID0gZW5naW5lZXIudHJhbnNmb3JtKGRmLCBhZHZhbmNlZD1hZHZhbmNlZCkKICAgIGZlYXR1cmVzID0gZmVhdHVyZXMuZHJvcG5hKCkKCiAgICAjIEJ1aWxkIHNlcXVlbmNlcwogICAgWCwgeSwgZmVhdHVyZV9jb2xzID0gYnVpbGRfc2VxdWVuY2VzKGZlYXR1cmVzLCBzZXFfbGVuPXNlcV9sZW4pCiAgICBwcmljZXMgPSBmZWF0dXJlcy5pbmRleC5nZXRfbGV2ZWxfdmFsdWVzKDApIGlmIGlzaW5zdGFuY2UoZmVhdHVyZXMuaW5kZXgsIHBkLk11bHRpSW5kZXgpIGVsc2UgZmVhdHVyZXMuaW5kZXgKICAgIGNsb3NlX3ByaWNlcyA9IHBkLlNlcmllcygKICAgICAgICBkZlsiQ2xvc2UiXS5yZWluZGV4KHByaWNlcykudmFsdWVzLmZsYXR0ZW4oKSwKICAgICAgICBpbmRleD1yYW5nZShsZW4ocHJpY2VzKSksCiAgICApCgogICAgIyBBbGlnbiBwcmljZXMgdG8gc2VxdWVuY2UgbGVuZ3RoCiAgICBjbG9zZV9wcmljZXMgPSBjbG9zZV9wcmljZXMuaWxvY1tzZXFfbGVuOl0ucmVzZXRfaW5kZXgoZHJvcD1UcnVlKQogICAgbiA9IG1pbihsZW4oWCksIGxlbih5KSwgbGVuKGNsb3NlX3ByaWNlcykpCiAgICBYLCB5ID0gWFs6bl0sIHlbOm5dCiAgICBjbG9zZV9wcmljZXMgPSBjbG9zZV9wcmljZXNbOm5dCgogICAgIyAtLS0gMS4gV2Fsay1mb3J3YXJkIGV2YWx1YXRpb24gLS0tCiAgICBzcGxpdHRlciA9IFdhbGtGb3J3YXJkU3BsaXR0ZXIobl9zcGxpdHM9bl9zcGxpdHMsIHRyYWluX3NpemU9MjUyICogMywgdGVzdF9zaXplPTI1MiwgZ2FwPTUpCgogICAgd2ZfZGlyYWNjcyA9IFtdCiAgICB3Zl9wcmVkaWN0aW9ucyA9IG5wLnplcm9zKG4pCiAgICB3Zl9hY3R1YWwgPSB5LmNvcHkoKQogICAgb29zX2luZGljZXMgPSBucC56ZXJvcyhuLCBkdHlwZT1ib29sKQoKICAgIGZvciBmb2xkX2lkeCwgKHRyYWluX2lkeCwgdGVzdF9pZHgpIGluIGVudW1lcmF0ZShzcGxpdHRlci5zcGxpdChYKSk6CiAgICAgICAgaWYgbGVuKHRlc3RfaWR4KSA9PSAwOgogICAgICAgICAgICBjb250aW51ZQoKICAgICAgICBYX3Rlc3QgPSBYW3Rlc3RfaWR4XQoKICAgICAgICAjIE5vcm1hbGl6ZSB1c2luZyB0cmFpbmluZyBkYXRhIHN0YXRzCiAgICAgICAgWF90cmFpbl9mb2xkID0gWFt0cmFpbl9pZHhdCiAgICAgICAgbWVhbiA9IFhfdHJhaW5fZm9sZC5tZWFuKGF4aXM9KDAsIDEpLCBrZWVwZGltcz1UcnVlKQogICAgICAgIHN0ZCA9IFhfdHJhaW5fZm9sZC5zdGQoYXhpcz0oMCwgMSksIGtlZXBkaW1zPVRydWUpCiAgICAgICAgc3RkID0gbnAud2hlcmUoc3RkIDwgMWUtOCwgMS4wLCBzdGQpCiAgICAgICAgWF90ZXN0X25vcm0gPSAoWF90ZXN0IC0gbWVhbikgLyBzdGQKCiAgICAgICAgZm9sZF9wcmVkcyA9IHByZWRpY3RfZGlyZWN0aW9uKG1vZGVsLCBYX3Rlc3Rfbm9ybSwgbW9kZWxfdHlwZSkKICAgICAgICBmb2xkX2FjdHVhbCA9IHlbdGVzdF9pZHhdCgogICAgICAgIGRpcmFjYyA9IG5wLm1lYW4oZm9sZF9wcmVkcyA9PSAoZm9sZF9hY3R1YWwgPiAwKS5hc3R5cGUoaW50KSkKICAgICAgICB3Zl9kaXJhY2NzLmFwcGVuZChkaXJhY2MpCiAgICAgICAgd2ZfcHJlZGljdGlvbnNbdGVzdF9pZHhdID0gZm9sZF9wcmVkcwogICAgICAgIG9vc19pbmRpY2VzW3Rlc3RfaWR4XSA9IFRydWUKCiAgICBvb3NfZGlyYWNjID0gbnAubWVhbih3Zl9kaXJhY2NzKSBpZiB3Zl9kaXJhY2NzIGVsc2UgZmxvYXQoIm5hbiIpCgogICAgIyAtLS0gMi4gQmFzZWxpbmVzIC0tLQogICAgeV9iaW5hcnkgPSAoeSA+IDApLmFzdHlwZShpbnQpCgogICAgbWFqb3JpdHlfYmwgPSBtYWpvcml0eV9jbGFzc19iYXNlbGluZSh5X2JpbmFyeVs6IG4gLy8gMl0sIHlfYmluYXJ5W24gLy8gMiA6XSkKCiAgICBwcmljZXNfc2VyaWVzID0gcGQuU2VyaWVzKGNsb3NlX3ByaWNlcy52YWx1ZXMpCiAgICBob2xkX2JsID0gYnV5X2FuZF9ob2xkX2Jhc2VsaW5lKHByaWNlc19zZXJpZXMpCiAgICBtb21lbnR1bV9ibCA9IG5haXZlX21vbWVudHVtX2Jhc2VsaW5lKHByaWNlc19zZXJpZXMsIGxvb2tiYWNrPW1pbihzZXFfbGVuLCAyMCkpCgogICAgIyAtLS0gMy4gUGVyLXJlZ2ltZSBldmFsdWF0aW9uIChPT1Mgb25seSkgLS0tCiAgICBYX29vcyA9IFhbb29zX2luZGljZXNdCiAgICB5X29vcyA9IHlfYmluYXJ5W29vc19pbmRpY2VzXQogICAgcHJpY2VzX29vcyA9IGNsb3NlX3ByaWNlc1tvb3NfaW5kaWNlc10KCiAgICBpZiBsZW4oWF9vb3MpID4gMDoKICAgICAgICAjIE5vcm1hbGl6ZSBPT1MgZGF0YSB1c2luZyBnbG9iYWwgc3RhdHMgZm9yIHJlZ2ltZSBldmFsdWF0aW9uCiAgICAgICAgZ2xvYmFsX21lYW4gPSBYLm1lYW4oYXhpcz0oMCwgMSksIGtlZXBkaW1zPVRydWUpCiAgICAgICAgZ2xvYmFsX3N0ZCA9IFguc3RkKGF4aXM9KDAsIDEpLCBrZWVwZGltcz1UcnVlKQogICAgICAgIGdsb2JhbF9zdGQgPSBucC53aGVyZShnbG9iYWxfc3RkIDwgMWUtOCwgMS4wLCBnbG9iYWxfc3RkKQogICAgICAgIFhfb29zX25vcm0gPSAoWF9vb3MgLSBnbG9iYWxfbWVhbikgLyBnbG9iYWxfc3RkCgogICAgICAgIHJlZ2ltZV9yZXN1bHRzID0gZXZhbF9wZXJfcmVnaW1lKAogICAgICAgICAgICBtb2RlbD1fd3JhcF9tb2RlbChtb2RlbCwgbW9kZWxfdHlwZSksCiAgICAgICAgICAgIFg9WF9vb3Nfbm9ybSwKICAgICAgICAgICAgeT15X29vcywKICAgICAgICAgICAgcHJpY2VzPXByaWNlc19vb3MsCiAgICAgICAgKQogICAgZWxzZToKICAgICAgICByZWdpbWVfcmVzdWx0cyA9IHsid2VpZ2h0ZWRfYXZnIjogeyJzaGFycGUiOiBmbG9hdCgibmFuIiksICJkaXJhY2MiOiBmbG9hdCgibmFuIil9fQoKICAgICMgLS0tIDQuIFRyYW5zYWN0aW9uIGNvc3QgYW5hbHlzaXMgKE9PUyBwcmVkaWN0aW9ucyBvbmx5KSAtLS0KICAgIGdyb3NzX3JldHVybnMgPSB5W29vc19pbmRpY2VzXQogICAgcG9zaXRpb25zID0gbnAuemVyb3MoaW50KG5wLnN1bShvb3NfaW5kaWNlcykpKQogICAgcG9zaXRpb25zW3dmX3ByZWRpY3Rpb25zW29vc19pbmRpY2VzXSA9PSAxXSA9IDEuMAogICAgcG9zaXRpb25zW3dmX3ByZWRpY3Rpb25zW29vc19pbmRpY2VzXSA9PSAwXSA9IC0xLjAKCiAgICBjb3N0X21vZGVsID0gVHJhbnNhY3Rpb25Db3N0TW9kZWwoKQogICAgY29zdF9hbmFseXNpcyA9IGNvbXBhcmVfZ3Jvc3NfdnNfbmV0KGdyb3NzX3JldHVybnMsIHBvc2l0aW9ucywgY29zdF9tb2RlbCkKCiAgICAjIC0tLSA1LiBDb21waWxlIHJlc3VsdHMgLS0tCiAgICBvcmlnaW5hbF9kaXJhY2MgPSBtZXRhZGF0YS5nZXQoIm1ldHJpY3MiLCB7fSkuZ2V0KCJkaXJlY3Rpb25fYWNjdXJhY3kiLCBmbG9hdCgibmFuIikpCiAgICB2c19tYWpvcml0eSA9IG9vc19kaXJhY2MgLSBtYWpvcml0eV9ibFsiYWNjdXJhY3kiXSBpZiBub3QgbnAuaXNuYW4ob29zX2RpcmFjYykgZWxzZSBmbG9hdCgibmFuIikKCiAgICByZXN1bHRzID0gewogICAgICAgICJjaGVja3BvaW50Ijogc3RyKGNoZWNrcG9pbnRfZGlyKSwKICAgICAgICAibW9kZWxfdHlwZSI6IG1vZGVsX3R5cGUsCiAgICAgICAgInN5bWJvbCI6IHN5bWJvbCwKICAgICAgICAib3JpZ2luYWxfZGlyYWNjIjogb3JpZ2luYWxfZGlyYWNjLAogICAgICAgICJvb3NfZGlyYWNjIjogb29zX2RpcmFjYywKICAgICAgICAib29zX2RpcmFjY19kZWx0YSI6IG9vc19kaXJhY2MgLSBvcmlnaW5hbF9kaXJhY2MgaWYgbm90IG5wLmlzbmFuKG9yaWdpbmFsX2RpcmFjYykgZWxzZSBmbG9hdCgibmFuIiksCiAgICAgICAgInZzX21ham9yaXR5X2NsYXNzIjogdnNfbWFqb3JpdHksCiAgICAgICAgIm1ham9yaXR5X2NsYXNzX2FjYyI6IG1ham9yaXR5X2JsWyJhY2N1cmFjeSJdLAogICAgICAgICJidXlfaG9sZF9zaGFycGUiOiBob2xkX2JsWyJzaGFycGUiXSwKICAgICAgICAibW9tZW50dW1fYWNjIjogbW9tZW50dW1fYmxbImFjY3VyYWN5Il0sCiAgICAgICAgIm5fd2ZfZm9sZHMiOiBsZW4od2ZfZGlyYWNjcyksCiAgICAgICAgInJlZ2ltZV9hdmdfc2hhcnBlIjogcmVnaW1lX3Jlc3VsdHMuZ2V0KCJ3ZWlnaHRlZF9hdmciLCB7fSkuZ2V0KCJzaGFycGUiLCBmbG9hdCgibmFuIikpLAogICAgICAgICJyZWdpbWVfYXZnX2RpcmFjYyI6IHJlZ2ltZV9yZXN1bHRzLmdldCgid2VpZ2h0ZWRfYXZnIiwge30pLmdldCgiZGlyYWNjIiwgZmxvYXQoIm5hbiIpKSwKICAgICAgICAiZ3Jvc3Nfc2hhcnBlIjogY29zdF9hbmFseXNpc1siZ3Jvc3Nfc2hhcnBlIl0sCiAgICAgICAgIm5ldF9zaGFycGUiOiBjb3N0X2FuYWx5c2lzWyJuZXRfc2hhcnBlIl0sCiAgICAgICAgImNvc3RfZHJhZ19icHMiOiBjb3N0X2FuYWx5c2lzWyJjb3N0X2RyYWdfYnBzIl0sCiAgICAgICAgIm5fdHJhZGVzIjogY29zdF9hbmFseXNpc1sibl90cmFkZXMiXSwKICAgICAgICAicmVnaW1lX2RldGFpbHMiOiB7CiAgICAgICAgICAgIHI6IHJlZ2ltZV9yZXN1bHRzW3JdCiAgICAgICAgICAgIGZvciByIGluIFsidXB0cmVuZCIsICJkb3dudHJlbmQiLCAidm9sYXRpbGl0eSIsICJibGFja19zd2FuIl0KICAgICAgICAgICAgaWYgciBpbiByZWdpbWVfcmVzdWx0cwogICAgICAgIH0sCiAgICB9CgogICAgcmV0dXJuIHJlc3VsdHMKCgpkZWYgX3dyYXBfbW9kZWwobW9kZWwsIG1vZGVsX3R5cGU6IHN0cik6CiAgICAiIiJXcmFwIGEgUHlUb3JjaC9qb2JsaWIgbW9kZWwgdG8gZXhwb3NlIGEgcHJlZGljdCgpIG1ldGhvZCBmb3IgZXZhbF9maW5zdHNiLiIiIgoKICAgIGNsYXNzIE1vZGVsV3JhcHBlcjoKICAgICAgICBkZWYgX19pbml0X18oc2VsZiwgaW5uZXIsIG10eXBlKToKICAgICAgICAgICAgc2VsZi5pbm5lciA9IGlubmVyCiAgICAgICAgICAgIHNlbGYubXR5cGUgPSBtdHlwZQoKICAgICAgICBkZWYgcHJlZGljdChzZWxmLCBYKToKICAgICAgICAgICAgaWYgc2VsZi5tdHlwZSA9PSAicmYiOgogICAgICAgICAgICAgICAgbl9zYW1wbGVzLCBzZXFfbGVuLCBuX2ZlYXR1cmVzID0gWC5zaGFwZQogICAgICAgICAgICAgICAgcmV0dXJuIHNlbGYuaW5uZXIucHJlZGljdChYWzosIC0xLCA6XSkKICAgICAgICAgICAgZWxzZToKICAgICAgICAgICAgICAgIGltcG9ydCB0b3JjaAoKICAgICAgICAgICAgICAgIHdpdGggdG9yY2gubm9fZ3JhZCgpOgogICAgICAgICAgICAgICAgICAgIFhfdCA9IHRvcmNoLnRlbnNvcihYLCBkdHlwZT10b3JjaC5mbG9hdDMyKQogICAgICAgICAgICAgICAgICAgIHJhdyA9IHNlbGYuaW5uZXIoWF90KS5zcXVlZXplKC0xKS5udW1weSgpCiAgICAgICAgICAgICAgICByZXR1cm4gKHJhdyA+IDApLmFzdHlwZShpbnQpCgogICAgcmV0dXJuIE1vZGVsV3JhcHBlcihtb2RlbCwgbW9kZWxfdHlwZSkKCgpkZWYgZXZhbHVhdGVfYWxsX2NoZWNrcG9pbnRzKAogICAgY2hlY2twb2ludF9kaXI6IFBhdGggfCBOb25lID0gTm9uZSwKICAgIGRhdGFfZGlyOiBQYXRoIHwgTm9uZSA9IE5vbmUsCiAgICBvdXRwdXRfcGF0aDogUGF0aCB8IE5vbmUgPSBOb25lLAopIC0+IGxpc3RbZGljdF06CiAgICAiIiJFdmFsdWF0ZSBhbGwgY2hlY2twb2ludHMgaW4gdGhlIGNoZWNrcG9pbnQgZGlyZWN0b3J5LgoKICAgIFJldHVybnMKICAgIC0tLS0tLS0KICAgIGxpc3Qgb2YgZXZhbHVhdGlvbiByZXN1bHQgZGljdHMuCiAgICAiIiIKICAgIGlmIGNoZWNrcG9pbnRfZGlyIGlzIE5vbmU6CiAgICAgICAgY2hlY2twb2ludF9kaXIgPSBQYXRoKF9fZmlsZV9fKS5yZXNvbHZlKCkucGFyZW50LnBhcmVudCAvICJjaGVja3BvaW50cyIKCiAgICByZXN1bHRzID0gW10KICAgIGZvciBtb2RlbF9kaXIgaW4gc29ydGVkKGNoZWNrcG9pbnRfZGlyLml0ZXJkaXIoKSk6CiAgICAgICAgaWYgbm90IG1vZGVsX2Rpci5pc19kaXIoKToKICAgICAgICAgICAgY29udGludWUKICAgICAgICBmb3IgY2twdF9kaXIgaW4gc29ydGVkKG1vZGVsX2Rpci5pdGVyZGlyKCkpOgogICAgICAgICAgICBpZiBub3QgY2twdF9kaXIuaXNfZGlyKCk6CiAgICAgICAgICAgICAgICBjb250aW51ZQogICAgICAgICAgICBpZiBub3QgKGNrcHRfZGlyIC8gIm1ldGFkYXRhLmpzb24iKS5leGlzdHMoKToKICAgICAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgICAgIHRyeToKICAgICAgICAgICAgICAgIHJlc3VsdCA9IGV2YWx1YXRlX2NoZWNrcG9pbnQoY2twdF9kaXIsIGRhdGFfZGlyKQogICAgICAgICAgICAgICAgcmVzdWx0cy5hcHBlbmQocmVzdWx0KQogICAgICAgICAgICAgICAgcHJpbnQoZiIgIHtja3B0X2Rpci5uYW1lfTogT09TIERpckFjYz17cmVzdWx0Wydvb3NfZGlyYWNjJ106LjRmfSB2cyBtYWpvcml0eT17cmVzdWx0Wyd2c19tYWpvcml0eV9jbGFzcyddOisuNGZ9IikKICAgICAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgICAgICAgICAgcHJpbnQoZiIgIHtja3B0X2Rpci5uYW1lfTogRVJST1IgLSB7ZX0iKQogICAgICAgICAgICAgICAgcmVzdWx0cy5hcHBlbmQoeyJjaGVja3BvaW50Ijogc3RyKGNrcHRfZGlyKSwgImVycm9yIjogc3RyKGUpfSkKCiAgICBpZiBvdXRwdXRfcGF0aDoKICAgICAgICB3aXRoIG9wZW4ob3V0cHV0X3BhdGgsICJ3IikgYXMgZjoKICAgICAgICAgICAganNvbi5kdW1wKHJlc3VsdHMsIGYsIGluZGVudD0yLCBkZWZhdWx0PXN0cikKCiAgICByZXR1cm4gcmVzdWx0cwoKCmRlZiBydW5fZHJ5X3J1bigpIC0+IGRpY3Q6CiAgICAiIiJRdWljayBkcnktcnVuIGV2YWx1YXRpb24gd2l0aCBzeW50aGV0aWMgZGF0YSAobm8gcmVhbCBjaGVja3BvaW50cyBuZWVkZWQpLiIiIgogICAgcm5nID0gbnAucmFuZG9tLmRlZmF1bHRfcm5nKDQyKQogICAgbiA9IDUwMAoKICAgIGRmID0gZ2VuZXJhdGVfc3ludGhldGljX2RhdGEobikKICAgIGVuZ2luZWVyID0gRmVhdHVyZUVuZ2luZWVyKGxvb2tiYWNrPTEwKQogICAgZmVhdHVyZXMgPSBlbmdpbmVlci50cmFuc2Zvcm0oZGYpCiAgICBmZWF0dXJlcyA9IGZlYXR1cmVzLmRyb3BuYSgpCgogICAgWCwgeSwgXyA9IGJ1aWxkX3NlcXVlbmNlcyhmZWF0dXJlcywgc2VxX2xlbj0xMCkKICAgIHlfYmluYXJ5ID0gKHkgPiAwKS5hc3R5cGUoaW50KQoKICAgIGNsb3NlX3ByaWNlcyA9IHBkLlNlcmllcyhkZlsiQ2xvc2UiXS52YWx1ZXNbLWxlbihYKTpdKQoKICAgICMgRHVtbXkgbW9kZWwgKHByZWRpY3RzIHVwIHdpdGggNTQlIGFjY3VyYWN5KQogICAgY2xhc3MgRHVtbXlNb2RlbDoKICAgICAgICBkZWYgX19pbml0X18oc2VsZik6CiAgICAgICAgICAgIHNlbGYucm5nID0gbnAucmFuZG9tLmRlZmF1bHRfcm5nKDQyKQoKICAgICAgICBkZWYgcHJlZGljdChzZWxmLCBYKToKICAgICAgICAgICAgcmV0dXJuIHNlbGYucm5nLmNob2ljZShbMCwgMV0sIHNpemU9bGVuKFgpLCBwPVswLjQ2LCAwLjU0XSkKCiAgICBkdW1teSA9IER1bW15TW9kZWwoKQoKICAgIHNwbGl0dGVyID0gV2Fsa0ZvcndhcmRTcGxpdHRlcihuX3NwbGl0cz0zLCB0cmFpbl9zaXplPTEwMCwgdGVzdF9zaXplPTUwLCBnYXA9NSkKCiAgICB3Zl9kaXJhY2NzID0gW10KICAgIGZvciB0cmFpbl9pZHgsIHRlc3RfaWR4IGluIHNwbGl0dGVyLnNwbGl0KFgpOgogICAgICAgIGlmIGxlbih0ZXN0X2lkeCkgPT0gMDoKICAgICAgICAgICAgY29udGludWUKICAgICAgICBmb2xkX3ByZWRzID0gZHVtbXkucHJlZGljdChYW3Rlc3RfaWR4XSkKICAgICAgICBkaXJhY2MgPSBucC5tZWFuKGZvbGRfcHJlZHMgPT0geV9iaW5hcnlbdGVzdF9pZHhdKQogICAgICAgIHdmX2RpcmFjY3MuYXBwZW5kKGRpcmFjYykKCiAgICByZWdpbWVfcmVzdWx0cyA9IGV2YWxfcGVyX3JlZ2ltZShkdW1teSwgWCwgeV9iaW5hcnksIGNsb3NlX3ByaWNlcykKCiAgICBwb3NpdGlvbnMgPSBucC5vbmVzKGxlbihYKSkKICAgIGNvc3RfYW5hbHlzaXMgPSBjb21wYXJlX2dyb3NzX3ZzX25ldCh5LCBwb3NpdGlvbnMpCgogICAgbWFqb3JpdHlfYmwgPSBtYWpvcml0eV9jbGFzc19iYXNlbGluZSh5X2JpbmFyeVs6IGxlbihYKSAvLyAyXSwgeV9iaW5hcnlbbGVuKFgpIC8vIDIgOl0pCgogICAgcmV0dXJuIHsKICAgICAgICAiZHJ5X3J1biI6IFRydWUsCiAgICAgICAgIm5fc2FtcGxlcyI6IGxlbihYKSwKICAgICAgICAid2Zfb29zX2RpcmFjYyI6IG5wLm1lYW4od2ZfZGlyYWNjcyksCiAgICAgICAgIndmX2ZvbGRzIjogbGVuKHdmX2RpcmFjY3MpLAogICAgICAgICJtYWpvcml0eV9jbGFzc19hY2MiOiBtYWpvcml0eV9ibFsiYWNjdXJhY3kiXSwKICAgICAgICAidnNfbWFqb3JpdHlfY2xhc3MiOiBucC5tZWFuKHdmX2RpcmFjY3MpIC0gbWFqb3JpdHlfYmxbImFjY3VyYWN5Il0sCiAgICAgICAgInJlZ2ltZV9hdmdfc2hhcnBlIjogcmVnaW1lX3Jlc3VsdHNbIndlaWdodGVkX2F2ZyJdWyJzaGFycGUiXSwKICAgICAgICAiZ3Jvc3Nfc2hhcnBlIjogY29zdF9hbmFseXNpc1siZ3Jvc3Nfc2hhcnBlIl0sCiAgICAgICAgIm5ldF9zaGFycGUiOiBjb3N0X2FuYWx5c2lzWyJuZXRfc2hhcnBlIl0sCiAgICAgICAgImNvc3RfZHJhZ19icHMiOiBjb3N0X2FuYWx5c2lzWyJjb3N0X2RyYWdfYnBzIl0sCiAgICB9CgoKZGVmIG1haW4oKToKICAgIHBhcnNlciA9IGFyZ3BhcnNlLkFyZ3VtZW50UGFyc2VyKGRlc2NyaXB0aW9uPSJFdmFsdWF0ZSBNTC9UcmFkaW5nIGNoZWNrcG9pbnRzIikKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tY2hlY2twb2ludCIsIHR5cGU9c3RyLCBoZWxwPSJTaW5nbGUgY2hlY2twb2ludCBkaXJlY3RvcnkiKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1hbGwiLCBhY3Rpb249InN0b3JlX3RydWUiLCBoZWxwPSJFdmFsdWF0ZSBhbGwgY2hlY2twb2ludHMiKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1kcnktcnVuIiwgYWN0aW9uPSJzdG9yZV90cnVlIiwgaGVscD0iUXVpY2sgc3ludGhldGljIHRlc3QiKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1jaGVja3BvaW50LWRpciIsIHR5cGU9c3RyLCBoZWxwPSJDaGVja3BvaW50IHJvb3QgZGlyZWN0b3J5IikKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tZGF0YS1kaXIiLCB0eXBlPXN0ciwgaGVscD0iRGF0YSBkaXJlY3RvcnkiKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1vdXRwdXQiLCB0eXBlPXN0ciwgaGVscD0iT3V0cHV0IEpTT04gcGF0aCIpCiAgICBhcmdzID0gcGFyc2VyLnBhcnNlX2FyZ3MoKQoKICAgIGlmIGFyZ3MuZHJ5X3J1bjoKICAgICAgICBwcmludCgiPT09IERSWSBSVU4gPT09IikKICAgICAgICByZXN1bHQgPSBydW5fZHJ5X3J1bigpCiAgICAgICAgZm9yIGssIHYgaW4gcmVzdWx0Lml0ZW1zKCk6CiAgICAgICAgICAgIHByaW50KGYiICB7a306IHt2fSIpCiAgICAgICAgcmV0dXJuCgogICAgZGF0YV9kaXIgPSBQYXRoKGFyZ3MuZGF0YV9kaXIpIGlmIGFyZ3MuZGF0YV9kaXIgZWxzZSBOb25lCgogICAgaWYgYXJncy5jaGVja3BvaW50OgogICAgICAgIGNrcHRfZGlyID0gUGF0aChhcmdzLmNoZWNrcG9pbnQpCiAgICAgICAgcmVzdWx0ID0gZXZhbHVhdGVfY2hlY2twb2ludChja3B0X2RpciwgZGF0YV9kaXIpCiAgICAgICAgcHJpbnQoanNvbi5kdW1wcyhyZXN1bHQsIGluZGVudD0yLCBkZWZhdWx0PXN0cikpCiAgICAgICAgaWYgYXJncy5vdXRwdXQ6CiAgICAgICAgICAgIHdpdGggb3BlbihhcmdzLm91dHB1dCwgInciKSBhcyBmOgogICAgICAgICAgICAgICAganNvbi5kdW1wKHJlc3VsdCwgZiwgaW5kZW50PTIsIGRlZmF1bHQ9c3RyKQogICAgZWxpZiBhcmdzLmFsbDoKICAgICAgICBja3B0X2RpciA9IFBhdGgoYXJncy5jaGVja3BvaW50X2RpcikgaWYgYXJncy5jaGVja3BvaW50X2RpciBlbHNlIE5vbmUKICAgICAgICBvdXRwdXRfcGF0aCA9IFBhdGgoYXJncy5vdXRwdXQpIGlmIGFyZ3Mub3V0cHV0IGVsc2UgTm9uZQogICAgICAgIHJlc3VsdHMgPSBldmFsdWF0ZV9hbGxfY2hlY2twb2ludHMoY2twdF9kaXIsIGRhdGFfZGlyLCBvdXRwdXRfcGF0aCkKICAgICAgICBwcmludChmIlxuRXZhbHVhdGVkIHtsZW4ocmVzdWx0cyl9IGNoZWNrcG9pbnRzIikKICAgIGVsc2U6CiAgICAgICAgcGFyc2VyLnByaW50X2hlbHAoKQoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICBtYWluKCkK
+"""
+Evaluation harness for existing ML/Trading checkpoints.
+
+Ties together the 4 discipline scripts (walk_forward, baselines, eval_finstsb,
+transaction_costs) to produce comprehensive evaluation reports for each checkpoint.
+
+Each checkpoint gets:
+    - Walk-forward out-of-sample metrics (no in-sample leakage)
+    - Comparison vs majority-class and buy-and-hold baselines
+    - Per-regime evaluation (uptrend/downtrend/volatility/black_swan)
+    - Transaction cost analysis (gross vs net Sharpe)
+
+Usage:
+    # Evaluate a single checkpoint
+    python eval_existing_checkpoints.py --checkpoint checkpoints/transformer/20260501_134056
+
+    # Evaluate all checkpoints
+    python eval_existing_checkpoints.py --all --checkpoint-dir checkpoints
+
+    # Dry-run (synthetic data, no real checkpoints needed)
+    python eval_existing_checkpoints.py --dry-run
+
+References:
+    - AFML Ch.7-12 (Lopez de Prado): walk-forward, purged CV, CPCV
+    - FinTSB: per-regime evaluation
+    - Almgren-Chriss: transaction cost modeling
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from scripts.baselines import (
+    buy_and_hold_baseline,
+    majority_class_baseline,
+    naive_momentum_baseline,
+)
+from scripts.data_utils import generate_synthetic_data, load_data
+from scripts.eval_finstsb import eval_per_regime
+from scripts.features import FeatureEngineer
+from scripts.transaction_costs import TransactionCostModel, compare_gross_vs_net
+from scripts.walk_forward import WalkForwardSplitter
+
+
+def load_checkpoint_model(checkpoint_dir: Path) -> tuple:
+    """Load model and metadata from a checkpoint directory.
+
+    Returns
+    -------
+    (model, metadata, model_type) : tuple of model object, metadata dict, and type string.
+    """
+    metadata_path = checkpoint_dir / "metadata.json"
+    if not metadata_path.exists():
+        raise FileNotFoundError(f"No metadata.json in {checkpoint_dir}")
+
+    with open(metadata_path) as f:
+        metadata = json.load(f)
+
+    model_type = metadata.get("model_type", "unknown")
+    hp = metadata.get("hyperparams", {})
+
+    model_path = checkpoint_dir / "model.pt"
+    model_joblib = checkpoint_dir / "model.joblib"
+
+    if model_type == "rf":
+        import joblib
+
+        model = joblib.load(model_joblib)
+    elif model_type in ("transformer", "lstm"):
+        import torch
+
+        model = _build_model_from_metadata(model_type, hp)
+        state = torch.load(model_path, map_location="cpu", weights_only=True)
+        model.load_state_dict(state)
+        model.eval()
+    elif model_type == "dqn":
+        import torch
+
+        state_size = hp.get("state_size", metadata.get("architecture", {}).get("state_size", 242))
+        hidden_size = hp.get("hidden_size", 256)
+        from scripts.train_dqn_rl import build_dqn
+
+        model = build_dqn(state_size, hidden_size, n_actions=3)
+        state = torch.load(model_path, map_location="cpu", weights_only=True)
+        model.load_state_dict(state)
+        model.eval()
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+
+    return model, metadata, model_type
+
+
+def _build_model_from_metadata(model_type: str, hp: dict):
+    """Reconstruct model architecture from hyperparameters."""
+    import torch
+
+    if model_type == "transformer":
+        from scripts.train_transformer import build_transformer_model
+
+        return build_transformer_model(
+            input_size=hp.get("input_size", 38),
+            d_model=hp.get("d_model", 128),
+            nhead=hp.get("nhead", 4),
+            num_layers=hp.get("num_layers", 4),
+            dim_feedforward=hp.get("dim_feedforward", 512),
+            dropout=hp.get("dropout", 0.1),
+            seq_len=hp.get("seq_len", 20),
+        )
+    elif model_type == "lstm":
+        from scripts.train_lstm import build_model
+
+        return build_model(
+            input_size=hp.get("input_size", 38),
+            hidden_size=hp.get("hidden_size", 128),
+            num_layers=hp.get("num_layers", 2),
+            dropout=hp.get("dropout", 0.2),
+            model_type="lstm",
+        )
+    raise ValueError(f"Cannot build model for type: {model_type}")
+
+
+def predict_sequences(model, X: np.ndarray, model_type: str) -> np.ndarray:
+    """Run model inference on sequence data.
+
+    Parameters
+    ----------
+    model : trained model
+    X : np.ndarray, shape (n_samples, seq_len, n_features) for seq models
+    model_type : str
+
+    Returns
+    -------
+    np.ndarray of predicted returns (or direction probabilities).
+    """
+    if model_type == "rf":
+        n_samples, seq_len, n_features = X.shape
+        X_flat = X[:, -1, :]
+        return model.predict(X_flat)
+    else:
+        import torch
+
+        with torch.no_grad():
+            X_t = torch.tensor(X, dtype=torch.float32)
+            preds = model(X_t).squeeze(-1).numpy()
+        return preds
+
+
+def predict_direction(model, X: np.ndarray, model_type: str) -> np.ndarray:
+    """Predict binary direction (0=down, 1=up)."""
+    raw = predict_sequences(model, X, model_type)
+    if model_type == "rf":
+        return raw.astype(int)
+    return (raw > 0).astype(int)
+
+
+def build_sequences(
+    features: pd.DataFrame, seq_len: int = 20, target_col: str = "target"
+) -> tuple:
+    """Build sequence arrays from feature DataFrame."""
+    feature_cols = [c for c in features.columns if c != target_col]
+    data = features[feature_cols].values
+    targets = features[target_col].values
+
+    X, y = [], []
+    for i in range(seq_len, len(data)):
+        X.append(data[i - seq_len : i])
+        y.append(targets[i])
+
+    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32), feature_cols
+
+
+def evaluate_checkpoint(
+    checkpoint_dir: Path,
+    data_dir: Path | None = None,
+    n_splits: int = 5,
+    device: str = "cpu",
+) -> dict:
+    """Run full evaluation pipeline on a single checkpoint.
+
+    Pipeline:
+        1. Load model + metadata
+        2. Load data and build features
+        3. Walk-forward split evaluation
+        4. Baseline comparison
+        5. Per-regime evaluation (OOS only)
+        6. Transaction cost analysis (OOS only)
+
+    Returns
+    -------
+    dict with keys: metadata, wf_metrics, baselines, regime_eval, cost_analysis
+    """
+    model, metadata, model_type = load_checkpoint_model(checkpoint_dir)
+    hp = metadata.get("hyperparams", {})
+
+    symbol = hp.get("symbol", "SPY")
+    seq_len = hp.get("seq_len", hp.get("lookback", 20))
+    advanced = hp.get("advanced", False)
+
+    # Load data
+    if data_dir is None:
+        data_dir = Path(__file__).resolve().parent.parent / "datasets" / "yfinance"
+
+    if (checkpoint_dir / "metadata.json").exists():
+        data_hash = metadata.get("data_hash", "")
+        if data_hash == "synthetic-dryrun":
+            df = generate_synthetic_data(2000)
+        else:
+            try:
+                df = load_data(data_dir, symbol)
+            except FileNotFoundError:
+                df = generate_synthetic_data(2000)
+    else:
+        df = generate_synthetic_data(2000)
+
+    # Build features
+    engineer = FeatureEngineer(lookback=seq_len)
+    features = engineer.transform(df, advanced=advanced)
+    features = features.dropna()
+
+    # Build sequences
+    X, y, feature_cols = build_sequences(features, seq_len=seq_len)
+    prices = features.index.get_level_values(0) if isinstance(features.index, pd.MultiIndex) else features.index
+    close_prices = pd.Series(
+        df["Close"].reindex(prices).values.flatten(),
+        index=range(len(prices)),
+    )
+
+    # Align prices to sequence length
+    close_prices = close_prices.iloc[seq_len:].reset_index(drop=True)
+    n = min(len(X), len(y), len(close_prices))
+    X, y = X[:n], y[:n]
+    close_prices = close_prices[:n]
+
+    # --- 1. Walk-forward evaluation ---
+    splitter = WalkForwardSplitter(n_splits=n_splits, train_size=252 * 3, test_size=252, gap=5)
+
+    wf_diraccs = []
+    wf_predictions = np.zeros(n)
+    wf_actual = y.copy()
+    oos_indices = np.zeros(n, dtype=bool)
+
+    for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(X)):
+        if len(test_idx) == 0:
+            continue
+
+        X_test = X[test_idx]
+
+        # Normalize using training data stats
+        X_train_fold = X[train_idx]
+        mean = X_train_fold.mean(axis=(0, 1), keepdims=True)
+        std = X_train_fold.std(axis=(0, 1), keepdims=True)
+        std = np.where(std < 1e-8, 1.0, std)
+        X_test_norm = (X_test - mean) / std
+
+        fold_preds = predict_direction(model, X_test_norm, model_type)
+        fold_actual = y[test_idx]
+
+        diracc = np.mean(fold_preds == (fold_actual > 0).astype(int))
+        wf_diraccs.append(diracc)
+        wf_predictions[test_idx] = fold_preds
+        oos_indices[test_idx] = True
+
+    oos_diracc = np.mean(wf_diraccs) if wf_diraccs else float("nan")
+
+    # --- 2. Baselines ---
+    y_binary = (y > 0).astype(int)
+
+    majority_bl = majority_class_baseline(y_binary[: n // 2], y_binary[n // 2 :])
+
+    prices_series = pd.Series(close_prices.values)
+    hold_bl = buy_and_hold_baseline(prices_series)
+    momentum_bl = naive_momentum_baseline(prices_series, lookback=min(seq_len, 20))
+
+    # --- 3. Per-regime evaluation (OOS only) ---
+    X_oos = X[oos_indices]
+    y_oos = y_binary[oos_indices]
+    prices_oos = close_prices[oos_indices]
+
+    if len(X_oos) > 0:
+        # Normalize OOS data using global stats for regime evaluation
+        global_mean = X.mean(axis=(0, 1), keepdims=True)
+        global_std = X.std(axis=(0, 1), keepdims=True)
+        global_std = np.where(global_std < 1e-8, 1.0, global_std)
+        X_oos_norm = (X_oos - global_mean) / global_std
+
+        regime_results = eval_per_regime(
+            model=_wrap_model(model, model_type),
+            X=X_oos_norm,
+            y=y_oos,
+            prices=prices_oos,
+        )
+    else:
+        regime_results = {"weighted_avg": {"sharpe": float("nan"), "diracc": float("nan")}}
+
+    # --- 4. Transaction cost analysis (OOS predictions only) ---
+    gross_returns = y[oos_indices]
+    positions = np.zeros(int(np.sum(oos_indices)))
+    positions[wf_predictions[oos_indices] == 1] = 1.0
+    positions[wf_predictions[oos_indices] == 0] = -1.0
+
+    cost_model = TransactionCostModel()
+    cost_analysis = compare_gross_vs_net(gross_returns, positions, cost_model)
+
+    # --- 5. Compile results ---
+    original_diracc = metadata.get("metrics", {}).get("direction_accuracy", float("nan"))
+    vs_majority = oos_diracc - majority_bl["accuracy"] if not np.isnan(oos_diracc) else float("nan")
+
+    results = {
+        "checkpoint": str(checkpoint_dir),
+        "model_type": model_type,
+        "symbol": symbol,
+        "original_diracc": original_diracc,
+        "oos_diracc": oos_diracc,
+        "oos_diracc_delta": oos_diracc - original_diracc if not np.isnan(original_diracc) else float("nan"),
+        "vs_majority_class": vs_majority,
+        "majority_class_acc": majority_bl["accuracy"],
+        "buy_hold_sharpe": hold_bl["sharpe"],
+        "momentum_acc": momentum_bl["accuracy"],
+        "n_wf_folds": len(wf_diraccs),
+        "regime_avg_sharpe": regime_results.get("weighted_avg", {}).get("sharpe", float("nan")),
+        "regime_avg_diracc": regime_results.get("weighted_avg", {}).get("diracc", float("nan")),
+        "gross_sharpe": cost_analysis["gross_sharpe"],
+        "net_sharpe": cost_analysis["net_sharpe"],
+        "cost_drag_bps": cost_analysis["cost_drag_bps"],
+        "n_trades": cost_analysis["n_trades"],
+        "regime_details": {
+            r: regime_results[r]
+            for r in ["uptrend", "downtrend", "volatility", "black_swan"]
+            if r in regime_results
+        },
+    }
+
+    return results
+
+
+def _wrap_model(model, model_type: str):
+    """Wrap a PyTorch/joblib model to expose a predict() method for eval_finstsb."""
+
+    class ModelWrapper:
+        def __init__(self, inner, mtype):
+            self.inner = inner
+            self.mtype = mtype
+
+        def predict(self, X):
+            if self.mtype == "rf":
+                n_samples, seq_len, n_features = X.shape
+                return self.inner.predict(X[:, -1, :])
+            else:
+                import torch
+
+                with torch.no_grad():
+                    X_t = torch.tensor(X, dtype=torch.float32)
+                    raw = self.inner(X_t).squeeze(-1).numpy()
+                return (raw > 0).astype(int)
+
+    return ModelWrapper(model, model_type)
+
+
+def evaluate_all_checkpoints(
+    checkpoint_dir: Path | None = None,
+    data_dir: Path | None = None,
+    output_path: Path | None = None,
+) -> list[dict]:
+    """Evaluate all checkpoints in the checkpoint directory.
+
+    Returns
+    -------
+    list of evaluation result dicts.
+    """
+    if checkpoint_dir is None:
+        checkpoint_dir = Path(__file__).resolve().parent.parent / "checkpoints"
+
+    results = []
+    for model_dir in sorted(checkpoint_dir.iterdir()):
+        if not model_dir.is_dir():
+            continue
+        for ckpt_dir in sorted(model_dir.iterdir()):
+            if not ckpt_dir.is_dir():
+                continue
+            if not (ckpt_dir / "metadata.json").exists():
+                continue
+            try:
+                result = evaluate_checkpoint(ckpt_dir, data_dir)
+                results.append(result)
+                print(f"  {ckpt_dir.name}: OOS DirAcc={result['oos_diracc']:.4f} vs majority={result['vs_majority_class']:+.4f}")
+            except Exception as e:
+                print(f"  {ckpt_dir.name}: ERROR - {e}")
+                results.append({"checkpoint": str(ckpt_dir), "error": str(e)})
+
+    if output_path:
+        with open(output_path, "w") as f:
+            json.dump(results, f, indent=2, default=str)
+
+    return results
+
+
+def run_dry_run() -> dict:
+    """Quick dry-run evaluation with synthetic data (no real checkpoints needed)."""
+    rng = np.random.default_rng(42)
+    n = 500
+
+    df = generate_synthetic_data(n)
+    engineer = FeatureEngineer(lookback=10)
+    features = engineer.transform(df)
+    features = features.dropna()
+
+    X, y, _ = build_sequences(features, seq_len=10)
+    y_binary = (y > 0).astype(int)
+
+    close_prices = pd.Series(df["Close"].values[-len(X):])
+
+    # Dummy model (predicts up with 54% accuracy)
+    class DummyModel:
+        def __init__(self):
+            self.rng = np.random.default_rng(42)
+
+        def predict(self, X):
+            return self.rng.choice([0, 1], size=len(X), p=[0.46, 0.54])
+
+    dummy = DummyModel()
+
+    splitter = WalkForwardSplitter(n_splits=3, train_size=100, test_size=50, gap=5)
+
+    wf_diraccs = []
+    for train_idx, test_idx in splitter.split(X):
+        if len(test_idx) == 0:
+            continue
+        fold_preds = dummy.predict(X[test_idx])
+        diracc = np.mean(fold_preds == y_binary[test_idx])
+        wf_diraccs.append(diracc)
+
+    regime_results = eval_per_regime(dummy, X, y_binary, close_prices)
+
+    positions = np.ones(len(X))
+    cost_analysis = compare_gross_vs_net(y, positions)
+
+    majority_bl = majority_class_baseline(y_binary[: len(X) // 2], y_binary[len(X) // 2 :])
+
+    return {
+        "dry_run": True,
+        "n_samples": len(X),
+        "wf_oos_diracc": np.mean(wf_diraccs),
+        "wf_folds": len(wf_diraccs),
+        "majority_class_acc": majority_bl["accuracy"],
+        "vs_majority_class": np.mean(wf_diraccs) - majority_bl["accuracy"],
+        "regime_avg_sharpe": regime_results["weighted_avg"]["sharpe"],
+        "gross_sharpe": cost_analysis["gross_sharpe"],
+        "net_sharpe": cost_analysis["net_sharpe"],
+        "cost_drag_bps": cost_analysis["cost_drag_bps"],
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Evaluate ML/Trading checkpoints")
+    parser.add_argument("--checkpoint", type=str, help="Single checkpoint directory")
+    parser.add_argument("--all", action="store_true", help="Evaluate all checkpoints")
+    parser.add_argument("--dry-run", action="store_true", help="Quick synthetic test")
+    parser.add_argument("--checkpoint-dir", type=str, help="Checkpoint root directory")
+    parser.add_argument("--data-dir", type=str, help="Data directory")
+    parser.add_argument("--output", type=str, help="Output JSON path")
+    args = parser.parse_args()
+
+    if args.dry_run:
+        print("=== DRY RUN ===")
+        result = run_dry_run()
+        for k, v in result.items():
+            print(f"  {k}: {v}")
+        return
+
+    data_dir = Path(args.data_dir) if args.data_dir else None
+
+    if args.checkpoint:
+        ckpt_dir = Path(args.checkpoint)
+        result = evaluate_checkpoint(ckpt_dir, data_dir)
+        print(json.dumps(result, indent=2, default=str))
+        if args.output:
+            with open(args.output, "w") as f:
+                json.dump(result, f, indent=2, default=str)
+    elif args.all:
+        ckpt_dir = Path(args.checkpoint_dir) if args.checkpoint_dir else None
+        output_path = Path(args.output) if args.output else None
+        results = evaluate_all_checkpoints(ckpt_dir, data_dir, output_path)
+        print(f"\nEvaluated {len(results)} checkpoints")
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()

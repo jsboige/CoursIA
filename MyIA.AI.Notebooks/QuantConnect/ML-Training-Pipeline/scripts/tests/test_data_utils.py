@@ -80,7 +80,7 @@ class TestLoadData:
             index=dates,
         )
         csv_path = tmp_path / "SPY_2020-01-01_2020-03-01.csv"
-        df.to_csv(csv_path)
+        df.to_csv(csv_path, index_label="Date")
 
         loaded = load_data(tmp_path, "SPY")
         assert len(loaded) == 50
@@ -93,7 +93,7 @@ class TestLoadData:
             index=dates,
         )
         csv_path = tmp_path / "SPY_2020.csv"
-        df.to_csv(csv_path)
+        df.to_csv(csv_path, index_label="Date")
 
         loaded = load_data(tmp_path, "SPY", start="2020-02-01", end="2020-03-01")
         assert len(loaded) < 100
