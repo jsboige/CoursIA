@@ -72,8 +72,9 @@ def compute_rsi(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     """Relative Strength Index."""
     feat = pd.DataFrame(index=df.index)
     delta = df["Close"].diff()
-    gain = delta.where(delta > 0, 0.0).rolling(period).mean()
-    loss = (-delta.where(delta < 0, 0.0)).rolling(period).mean()
+    alpha = 1.0 / period
+    gain = delta.where(delta > 0, 0.0).ewm(alpha=alpha, min_periods=period).mean()
+    loss = (-delta.where(delta < 0, 0.0)).ewm(alpha=alpha, min_periods=period).mean()
     rs = gain / loss.replace(0, 1e-10)
     feat[f"rsi_{period}"] = 100 - (100 / (1 + rs))
     return feat
