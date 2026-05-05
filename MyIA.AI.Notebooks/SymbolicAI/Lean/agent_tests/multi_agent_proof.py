@@ -45,6 +45,9 @@ load_dotenv(_parent / ".env")
 
 LEAN_PROJECT_DIR = os.getenv("LEAN_PROJECT_DIR")
 
+# Module-level flag: set by CLI --skip-goal-extract
+_SKIP_GOAL_EXTRACT = False
+
 PROVIDERS = {
     "zai": {
         "base_url": os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4"),
@@ -319,7 +322,14 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
     Tries multiple probes in sequence: exact (), exact rfl.
     Only considers errors at the EXACT sorry line to avoid cascade errors.
     For deeply nested sorries (indent >= 8), skips probing and uses heuristics.
+    When _SKIP_GOAL_EXTRACT is True, falls through to heuristic extraction.
     """
+    if _SKIP_GOAL_EXTRACT:
+        print(f"  [GoalExtract] Skipping lake build (--skip-goal-extract), using heuristic")
+        content = Path(filepath).read_text(encoding="utf-8")
+        lines = content.split("\n")
+        return _heuristic_goal_extract(lines, sorry_line)
+
     content = Path(filepath).read_text(encoding="utf-8")
     lines = content.split("\n")
 
@@ -3397,7 +3407,13 @@ def main():
                         help="Strategic hints for the autonomous prover")
     parser.add_argument("--all-sorry", action="store_true",
                         help="Try to eliminate ALL sorry in the file (not just one)")
+    parser.add_argument("--skip-goal-extract", action="store_true",
+                        help="Skip slow goal extraction via lake build (use heuristic fallback)")
     args = parser.parse_args()
+
+    # Set module-level flag for goal extraction
+    global _SKIP_GOAL_EXTRACT
+    _SKIP_GOAL_EXTRACT = args.skip_goal_extract
 
     # ── Autonomous mode: direct .lean file ──
     if args.lean:
