@@ -25,9 +25,11 @@ Chaque strategie est accompagne d'un notebook de recherche (QuantBook) documenta
 | Training | 4 ans rolling, monthly retrain |
 | Bear filter | SPY < SMA200 -> max 2 positions |
 | Max positions | 4 (2 en bear) |
-| Allocation | 90% |
+| Allocation | 95% |
 
-**Resultat backtest** : Sharpe 0.544, CAGR 10.85%, MaxDD 16.3%
+**Resultat backtest v1** : Sharpe 0.544, CAGR 10.85%, MaxDD 16.3%
+**Resultat backtest v2** : Sharpe 0.286, CAGR 6.73%, MaxDD 26.2% (threshold 0.65 trop eleve)
+**Resultat backtest v3** : Sharpe 0.556, CAGR 11.43%, MaxDD 17.2% (alloc 95%) -- BEST
 
 ### 02 - ML XGBoost Sector Rotation
 
@@ -40,9 +42,10 @@ Chaque strategie est accompagne d'un notebook de recherche (QuantBook) documenta
 | Training | 3 ans rolling, bi-weekly train |
 | Bear filter | SPY < SMA200 -> max 2 positions |
 | Max positions | 5 (2 en bear) |
-| Allocation | 90% |
+| Allocation | 95% |
 
-**Resultat backtest** : En cours sur QC Cloud
+**Resultat backtest v1** : Sharpe 0.521, CAGR 12.81%, MaxDD 39.1% -- BEST
+**Resultat backtest v2** : Sharpe 0.442, CAGR 11.70%, MaxDD 37.9% (max_pos 4, alloc 95%, threshold 0.01 - pire)
 
 ### 03 - Framework Composite
 
@@ -54,7 +57,7 @@ Chaque strategie est accompagne d'un notebook de recherche (QuantBook) documenta
 | Risk | MaxDrawdownCircuitBreaker (15%) |
 | Execution | ImmediateExecutionModel |
 
-**Resultat backtest** : En cours sur QC Cloud
+**Resultat backtest v1** : Sharpe 0.376, CAGR 7.60%, MaxDD 20.6%, 2157 orders, Win Rate 80%
 
 ## Structure
 
@@ -97,8 +100,11 @@ Les notebooks `research.ipynb` utilisent `QuantBook` et necessitent l'environnem
 | Features | 14 | 20 | Indicateurs simples |
 | Complexite | Moyenne | Moyenne | Elevee (architecture) |
 | Retrain | Monthly | Bi-weekly | N/A (sans ML) |
-| Positions max | 4 | 5 | Dynamique |
+| Positions max | 4 (2 en bear) | 4 (2 en bear) | Dynamique |
 | Apprentissage | Entrainement modele | Entrainement modele | Regles expertes |
+| Sharpe | 0.556 (v3) | 0.521 (v1) | 0.376 (v1) |
+| CAGR | 11.43% (v3) | 12.81% (v1) | 7.60% (v1) |
+| MaxDD | 17.2% (v3) | 39.1% (v1) | 20.6% (v1) |
 
 ## Calibration pour la soutenance
 

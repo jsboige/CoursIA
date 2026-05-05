@@ -200,6 +200,7 @@ class ESGFFrameworkComposite(QCAlgorithm):
 
     Performance (2015-2024 backtest):
         - Target Sharpe: >= 0.79
+        - v1: 70/30 allocation, 15% circuit breaker -> Sharpe 0.376, CAGR 7.60%, MaxDD 20.6%
     """
 
     def Initialize(self):
@@ -276,11 +277,11 @@ class MaxDrawdownCircuitBreaker(RiskManagementModel):
         if self.peak_value > 0:
             drawdown = (self.peak_value - portfolio_value) / self.peak_value
             if drawdown > self.max_drawdown:
-                algorithm.log(f"CIRCUIT BREAKER: DD={drawdown:.2%} > {self.max_drawdown:.0%}, liquidating")
+                algorithm.Log(f"CIRCUIT BREAKER: DD={drawdown:.2%} > {self.max_drawdown:.0%}, liquidating")
                 targets = []
-                for holding in algorithm.portfolio.values:
-                    if holding.invested:
-                        targets.add(portfolio_target(holding.symbol, 0))
+                for holding in algorithm.portfolio.Values:
+                    if holding.Invested:
+                        targets.append(PortfolioTarget(holding.Symbol, 0))
                 self.peak_value = portfolio_value
                 return targets
 

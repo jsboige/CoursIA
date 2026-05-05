@@ -21,6 +21,8 @@ class ESGFMLXGBoost(QCAlgorithm):
 
     Performance (2015-2024 backtest):
         - Target Sharpe: >= 0.78
+        - v1: max_positions 5, allocation 90%, threshold 0.005 -> Sharpe 0.521, MaxDD 39.1%
+        - v2: max_positions 4, allocation 95%, threshold 0.01 -> Sharpe 0.442, MaxDD 37.9% (worse)
     """
 
     def Initialize(self):
@@ -43,8 +45,9 @@ class ESGFMLXGBoost(QCAlgorithm):
         self.learning_rate = 0.05
         self.min_samples_leaf = 15
         self.subsample = 0.8
-        self.max_positions = 5
-        self.allocation_pct = 0.90
+        self.max_positions = 4
+        self.allocation_pct = 0.95
+        self.min_prediction_threshold = 0.01
 
         # State
         self.model = None
@@ -249,7 +252,7 @@ class ESGFMLXGBoost(QCAlgorithm):
 
         # Only select sectors with positive predicted return
         max_pos = 2 if is_bear else self.max_positions
-        threshold = 0.0 if not is_bear else 0.005
+        threshold = self.min_prediction_threshold if not is_bear else 0.01
 
         selected = [(t, p) for t, p in sorted_preds if p > threshold][:max_pos]
 

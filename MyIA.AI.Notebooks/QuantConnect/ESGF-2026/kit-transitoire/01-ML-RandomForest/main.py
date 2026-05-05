@@ -17,11 +17,13 @@ class ESGFMLRandomForest(QCAlgorithm):
         - Model: RandomForestClassifier (200 trees, depth 6)
         - Training: 4-year rolling window, monthly retrain
         - Rebalancing: Monthly
-        - Risk: SMA200 bear filter, max 4 sectors, 10% cash buffer
+        - Risk: SMA200 bear filter, max 4 sectors, 5% cash buffer
 
     Performance (2015-2024 backtest):
         - Target Sharpe: >= 0.75
         - Benchmark: SPY Buy & Hold
+        - v2: threshold 0.65, max_positions 3, allocation 95% -> Sharpe 0.286 (worse)
+        - v3: threshold 0.55 (original), max_positions 4, allocation 95% -> Sharpe 0.556
     """
 
     def Initialize(self):
@@ -56,7 +58,7 @@ class ESGFMLRandomForest(QCAlgorithm):
         self.min_samples_leaf = 15
         self.max_positions = 4
         self.probability_threshold = 0.55
-        self.allocation_pct = 0.90
+        self.allocation_pct = 0.95
 
         # State
         self.model = None
