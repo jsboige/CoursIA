@@ -44,7 +44,6 @@ def train_and_evaluate(
     """Train a classification model and return metrics."""
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-    from sklearn.model_selection import TimeSeriesSplit
     from sklearn.preprocessing import StandardScaler
 
     X = features.drop(columns=["target"]).values
