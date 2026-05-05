@@ -340,14 +340,15 @@ class FeatureEngineer:
     @property
     def feature_columns(self) -> list[str]:
         """Return expected feature column names (excluding target)."""
+        rng = np.random.default_rng(42)
         dummy_index = pd.date_range("2000-01-01", periods=100, freq="B")
         dummy_df = pd.DataFrame(
             {
-                "Close": 100.0 + np.random.randn(100).cumsum(),
-                "Open": 100.0 + np.random.randn(100).cumsum(),
-                "High": 101.0 + np.random.randn(100).cumsum(),
-                "Low": 99.0 + np.random.randn(100).cumsum(),
-                "Volume": np.abs(np.random.randn(100)) * 1e6,
+                "Close": 100.0 + rng.standard_normal(100).cumsum(),
+                "Open": 100.0 + rng.standard_normal(100).cumsum(),
+                "High": 101.0 + rng.standard_normal(100).cumsum(),
+                "Low": 99.0 + rng.standard_normal(100).cumsum(),
+                "Volume": np.abs(rng.standard_normal(100)) * 1e6,
             },
             index=dummy_index,
         )
