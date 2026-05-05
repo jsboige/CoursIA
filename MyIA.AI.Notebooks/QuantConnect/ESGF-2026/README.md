@@ -156,6 +156,13 @@ Le dossier `examples/` contient 8 projets validés avec backtests positifs.
 | **Options-VGT** | 21113806 | Vente de PUTs OTM sur 5 valeurs tech (NVDA, ORCL, CSCO, AMD, QCOM) |
 | **Option-Wheel-Strategy** | 20216898 | Wheel strategy SPY : PUT selling → assignment → covered CALL |
 
+### Python - ML
+
+| Projet | Cloud ID | Description |
+|--------|----------|-------------|
+| **ESGF-ML-RandomForest** | 29686996 | RandomForest sur AAPL/MSFT/GOOGL/AMZN/NVDA, 6 features, re-entrainement mensuel |
+| **ESGF-Framework-Composite** | 29687005 | Alpha Framework : EMAMomentum + SectorMomentum alphas, MaxDD 15% |
+
 ### C#
 
 | Projet | Cloud ID | Description |
@@ -163,6 +170,22 @@ Le dossier `examples/` contient 8 projets validés avec backtests positifs.
 | **CSharp-BTC-MACD-ADX** | 19898232 | BTC MACD+ADX journalier sur Binance Cash |
 | **CSharp-BTC-EMA-Cross** | 19050970 | EMA crossover classique BTC (18/23) |
 | **CSharp-CTG-Momentum** | 19225388 | "Stocks on the Move" (Clenow) - Momentum ranking |
+
+---
+
+## Notebooks de Recherche (QuantBook)
+
+Cinq projets Researcher avec notebooks QuantBook opérationnels pour explorer les données QC Cloud :
+
+| Projet | Cloud ID | QuantBook | Contenu de recherche |
+|--------|----------|-----------|----------------------|
+| **Multi-Layer-EMA-Researcher** | 28433748 | research.ipynb | Grid search EMA/RSI/stop-loss sur BTC/ETH/LTC |
+| **BTC-ML-Researcher** | 28433750 | research.ipynb | Feature importance, walk-forward, confidence grid |
+| **MomentumStrategy-Researcher** | 28657837 | quantbook.ipynb | H1-H4 : top-N, lookback, vol window, regime filter |
+| **AllWeather-Researcher** | 28657833 | quantbook.ipynb | Grid search allocations All-Weather (SPY/IEF/GLD/XLP) |
+| **Sector-Momentum-Researcher** | 28433643 | quantbook.ipynb + research.ipynb | Dual Momentum SPY/TLT/GLD, redesign complet |
+
+Ces notebooks illustrent le workflow QuantBook → QCAlgorithm : idée → recherche → backtest.
 
 ---
 
@@ -174,7 +197,7 @@ Les exemples et templates couvrent **4 classes d'actifs** et **8+ concepts de tr
 |--------|----------|------------|
 | **1 - Fondations** | EMA Crossover, MACD+ADX, Options basiques | Multi-Layer-EMA, CSharp-BTC-EMA-Cross, Options-VGT |
 | **2 - Intermédiaire** | Alpha Framework, Multi-indicateurs, Wheel Strategy | Sector-Momentum, Option-Wheel-Strategy, Trend-Following |
-| **3 - Avancé** | Momentum ranking, Risk Parity | CSharp-CTG-Momentum, Sector-Momentum |
+| **3 - Avancé** | Momentum ranking, Risk Parity, ML | CSharp-CTG-Momentum, Sector-Momentum, ESGF-ML-RandomForest |
 
 ---
 
