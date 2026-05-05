@@ -235,7 +235,7 @@ def train_walk_forward_classification(
               f"train={val_cutoff}  val={len(X_train_fold) - val_cutoff}  test={len(test_idx)}")
 
     # Aggregate OOS metrics
-    valid_mask = ~np.array([p is np.nan for p in oos_preds]) if hasattr(np, 'nan') else np.array([not (isinstance(p, float) and np.isnan(p)) for p in oos_preds])
+    valid_mask = ~pd.isna(oos_preds)
     oos_predictions = oos_preds[valid_mask].astype(int)
     oos_targets = y[valid_mask]
 
