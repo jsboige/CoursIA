@@ -605,7 +605,6 @@ def main():
     parser.add_argument("--commission", type=float, default=0.001, help="Trading commission")
     parser.add_argument("--lookback", type=int, default=20)
     parser.add_argument("--test-ratio", type=float, default=0.2, help="Fraction of data for OOS test set")
-    parser.add_argument("--val-ratio", type=float, default=0.0, help="Fraction of training data for validation (0=disabled)")
     parser.add_argument(
         "--checkpoint-dir",
         default=str(Path(__file__).resolve().parent.parent / "checkpoints" / "dqn"),
@@ -814,7 +813,6 @@ def main():
     result["oos_metrics"] = oos_metrics
 
     # Update saved metadata with OOS results
-    import glob
     ckpt_subdirs = sorted(ckpt_dir.glob("*"))
     if ckpt_subdirs:
         latest_meta = ckpt_subdirs[-1] / "metadata.json"

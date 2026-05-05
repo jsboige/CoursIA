@@ -119,8 +119,13 @@ class WalkForwardSplitter(BaseCrossValidator):
             train_indices = np.arange(train_start, train_end)
             test_indices = np.arange(test_start, test_end)
 
-            # Verify non-overlap and gap
-            assert train_indices[-1] + self.gap < test_indices[0] or self.gap == 0
+            # Verify non-overlap and gap (guard against data leakage)
+            if self.gap > 0 and train_indices[-1] + self.gap >= test_indices[0]:
+                raise ValueError(
+                    f"Walk-forward gap violation: train ends at {train_indices[-1]}, "
+                    f"gap={self.gap}, test starts at {test_indices[0]}. "
+                    f"Increase gap or reduce train/test size."
+                )
 
             splits_yielded += 1
             yield train_indices, test_indices
