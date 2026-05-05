@@ -11,15 +11,12 @@ class CausalEventAlphaAlgorithm(QCAlgorithm):
     """
     Causal Event Alpha by Sector.
 
-    Source: ECE student project (ErwanSi, Gr03 G.1), adapted for ESGF pool.
-    Issue #238 - Integrate ECE student concepts into QC strategies.
-
     Estimates sector-specific earnings sensitivity (CATE proxy) using
     rolling regression of sector returns on earnings surprise factor.
     Sectors with high CATE get overweighted, low CATE underweighted.
 
-    Simplified from student's Double ML (EconML) pipeline to work within
-    QC LEAN constraints (no econml dependency).
+    Simplified Double ML (EconML) pipeline adapted to QC LEAN constraints
+    (no econml dependency).
 
     Key concepts:
     - CATE (Conditional Average Treatment Effect) by sector
