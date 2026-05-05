@@ -161,12 +161,13 @@ private theorem shapleyCoef_shift (n s : ℕ) (hs : s + 2 ≤ n) :
 private theorem shapleyCoef_top (n : ℕ) (hn : 0 < n) :
     (n : ℝ) * shapleyCoef n (n - 1) = 1 := by
   unfold shapleyCoef
-  have h0 : n - (n - 1) - 1 = 0 := by omega
-  rw [h0, Nat.factorial_zero, mul_one, mul_div_assoc]
-  have hn : Nat.factorial n = n * Nat.factorial (n - 1) := by
-  rw [show n = (n - 1) + 1 by omega, Nat.factorial_succ]
-  rw [hn, Nat.cast_mul]
-  exact div_self (by positivity)
+  have h1 : n - (n - 1) - 1 = 0 := by omega
+  simp only [h1, Nat.factorial_zero, Nat.cast_one, mul_one]
+  have h2 : (n : ℝ) * ↑(Nat.factorial (n - 1)) = ↑(Nat.factorial n) := by
+  have : n = (n - 1) + 1 := by omega
+  rw [this, Nat.factorial_succ, Nat.cast_mul, Nat.cast_one, mul_comm]
+  rw [h2, div_self]
+  exact Nat.cast_ne_zero.mpr (Nat.factorial_ne_zero n)
 
 private theorem pos_term_eq (G : TUGame N) :
     (∑ S, shapleyCoef (Fintype.card N) S.card * ∑ i ∈ Finset.univ \ S, G.v (S ∪ {i})) =
@@ -465,7 +466,71 @@ private theorem phi_unanimity (φ : Solution N)
   classical
   split_ifs with hiT
   · -- Case i ∈ T: by symmetry all j∈T get same value, by efficiency sum=1
-    sorry
+    -- Step 1: By symmetry, all j ∈ T have the same value as i
+    have h_eq : ∀ j ∈ T, φ (unanimityGame T hT) j = φ (unanimityGame T hT) i := by
+    intro j hjT
+    by_cases hij : j = i; · subst hij; rfl
+    · apply h_sym
+    intro S hiS hjS
+    simp only [unanimityGame]
+    have hni : ¬(T ⊆ S ∪ {i}) := by
+    intro h
+    have := h hjT
+    simp only [Finset.mem_union, Finset.mem_singleton] at this
+    tauto
+    have hnj : ¬(T ⊆ S ∪ {j}) := by
+    intro h
+    have := h hiT
+    simp only [Finset.mem_union, Finset.mem_singleton] at this
+    tauto
+    rw [if_neg hni, if_neg hnj]
+    -- Step 2: Players outside T are null
+    have h_null_out : ∀ j, j ∉ T → φ (unanimityGame T hT) j = 0 := by
+    intro j hjT'
+    apply h_null
+    intro S hjS
+    simp only [unanimityGame]
+    have hto : T ⊆ S ∪ {j} → T ⊆ S := fun h k hk => by
+    have hk' := h hk
+    simp only [Finset.mem_union, Finset.mem_singleton] at hk'
+    exact hk'.elim id (fun he => absurd (he ▸ hk) (fun h2 => hjT' (h2 ▸ hk)))
+    split_ifs with h1 h2
+    · rfl
+    · exfalso; exact h2 (hto h1)
+    · exfalso; exact h1 (fun k hk => Finset.mem_union_left {j} (h2 hk))
+    · rfl
+    -- Step 3: Efficiency: sum = v(univ) = 1
+    have h_sum_one : ∑ j, φ (unanimityGame T hT) j = 1 := by
+    have := h_eff (unanimityGame T hT)
+    simp only [unanimityGame, if_pos (Finset.subset_univ T)] at this
+    exact this
+    -- Step 4: ∑_{∈T} = 1 (since ∑_{∉T} = 0)
+    have h_sum_T : ∑ j ∈ T, φ (unanimityGame T hT) j = 1 := by
+    have h_out_sum : ∑ j ∈ Finset.filter (fun j => j ∉ T) Finset.univ,
+    φ (unanimityGame T hT) j = 0 :=
+    Finset.sum_eq_zero (fun j hj => by
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj
+    exact h_null_out j hj.2)
+    have h_split : ∑ j ∈ T, φ (unanimityGame T hT) j +
+    ∑ j ∈ Finset.filter (fun j => j ∉ T) Finset.univ,
+    φ (unanimityGame T hT) j = ∑ j, φ (unanimityGame T hT) j := by
+    have : Finset.filter (fun j => j ∉ T) Finset.univ = Tᶜ := by
+    ext j; simp
+    rw [this]
+    exact (Finset.sum_add_sum_compl T _).symm
+    linarith
+    -- Step 5: All equal in T, so T.card * φ G i = 1
+    have h_card : (T.card : ℝ) * φ (unanimityGame T hT) i = 1 := by
+    have h1 : ∑ j ∈ T, φ (unanimityGame T hT) i = T.card • φ (unanimityGame T hT) i :=
+    Finset.sum_const _
+    have h2 : ∑ j ∈ T, φ (unanimityGame T hT) i = 1 :=
+    (Finset.sum_congr rfl (fun j hj => (h_eq j hj).symm)).trans h_sum_T
+    rw [show T.card • φ (unanimityGame T hT) i = (T.card : ℝ) * φ (unanimityGame T hT) i from
+    Nat.smul_def _ _]
+    linarith
+    -- Step 6: Therefore φ G i = 1 / T.card
+    field_simp
+    linarith
   · -- Case i ∉ T: i is a null player in unanimityGame T
     apply h_null
     intro S hiS
