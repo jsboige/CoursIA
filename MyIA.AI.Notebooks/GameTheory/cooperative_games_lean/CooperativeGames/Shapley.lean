@@ -160,7 +160,13 @@ private theorem shapleyCoef_shift (n s : ℕ) (hs : s + 2 ≤ n) :
 
 private theorem shapleyCoef_top (n : ℕ) (hn : 0 < n) :
     (n : ℝ) * shapleyCoef n (n - 1) = 1 := by
-  sorry
+  unfold shapleyCoef
+  have h0 : n - (n - 1) - 1 = 0 := by omega
+  rw [h0, Nat.factorial_zero, mul_one, mul_div_assoc]
+  have hn : Nat.factorial n = n * Nat.factorial (n - 1) := by
+  rw [show n = (n - 1) + 1 by omega, Nat.factorial_succ]
+  rw [hn, Nat.cast_mul]
+  exact div_self (by positivity)
 
 private theorem pos_term_eq (G : TUGame N) :
     (∑ S, shapleyCoef (Fintype.card N) S.card * ∑ i ∈ Finset.univ \ S, G.v (S ∪ {i})) =
