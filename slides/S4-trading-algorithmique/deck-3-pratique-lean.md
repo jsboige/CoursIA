@@ -811,55 +811,31 @@ layout: section
 
 # Partie 5 : Preparation Projet et Soutenance
 
----
-layout: dense
----
+# Soutenance Groupe — 19 Mai 2026
 
-# Mapping Exercices ESGF
-
-| Exercice | Sujet | Notebooks | Projet |
-|----------|-------|-----------|--------|
-| **Ex01** | Setup + EMA Crossover | QC-Py-01, 02 | EMA-Cross-Stocks |
-| **Ex02** | All-Weather Portfolio | QC-Py-08 | AllWeather |
-| **Ex03** | Sector Momentum | QC-Py-05, 13 | SectorMomentum |
-| **Ex04** | Trend-Following Multi-Sector | QC-Py-11 | TrendStocksLite |
-| **Ex05** | Custom Alpha Model | QC-Py-13, 14 | EMA-Cross-Alpha |
-| **Ex06** | Multi-Alpha Composite | QC-Py-15 | Framework_Composite_TrendWeather |
+- **Format** : 10 min presentation + 5 min questions par groupe
+- **Support** : Slidev obligatoire (template fourni dans le depot)
+- **Livrables** : projet uploaded dans l'org ESGF avant J-2 (17 mai)
 
 <div v-click="1">
 
-- **Ex01-Ex02** : niveau debutant, ~2h chacun
-- **Ex03-Ex04** : niveau intermediaire, necessite la maitrise des univers et indicateurs
-- **Ex05-Ex06** : niveau avance, utilisation du framework Alpha complet
-- **Objectif** : presenter votre strategie avec ses metriques de backtest
-
-</div>
-
----
-
-# Criteres de Qualite et Soutenance
-
-- **Objectif** : deployer une strategie fonctionnelle sur QuantConnect Cloud
-<div v-click="1">
-
-- **Criteres de qualite** :
-
-| Critere | Poids | Description |
-|---------|-------|-------------|
-| Fonctionnalite | 30% | L'algorithme compile et produit des resultats coherents |
-| Performance | 25% | Sharpe > 0.3, MaxDD < 30%, rendement positif |
-| Originalite | 20% | Choix d'actifs, parametres, architecture personnalisee |
-| Comprehension | 15% | Justification des choix, analyse des resultats |
-| Presentation | 10% | Clarte, structure, visualisations |
+| Critere | Poids | Minimum requis |
+|---------|:-----:|----------------|
+| **Backtest** | 30% | Sharpe > 0, periode > 2 ans, comparaison benchmark |
+| **Strategie** | 30% | Logique claire, 2+ indicateurs, stop-loss present |
+| **Presentation** | 20% | Graphiques de resultats, timing 10 min +/- 1 min |
+| **Code** | 20% | Compile sans erreur, README, parametres visibles |
 
 </div>
 <div v-click="2">
 
-- **Workflow recommande** :
+- **Workflow recommande pour le projet** :
   1. Choisir une strategie de base parmi les projets du depot
   2. Utiliser l'agent pour personnaliser (actifs, periodes, seuils)
   3. Valider manuellement : relire le code, verifier les metriques
   4. Documenter vos choix et limites identifiees
+
+- **Bonus +5 pts** : demo paper trading en direct pendant la soutenance
 
 </div>
 
