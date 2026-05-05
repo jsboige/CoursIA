@@ -94,10 +94,17 @@ Audit of 4 non-canonical sources vs `projects/` (108 dirs, 99 with main.py):
 - Delete `ESGF-2026/examples/` (4 SKIP dirs)
 - Delete `ESGF-2026/lean-workspace/` after merging variant
 
-### Phase C — Handle MERGE cases
-- Port unique content from remaining imported dirs
-- Evaluate ESGF-2026/examples MERGE cases for preservation
-- Delete source dirs after merge
+### Phase C — Handle MERGE cases (DONE)
+
+- `projects-imported/long-short-harvest` → DELETED (bug fix already in projects/)
+- `projects-imported/macro-factor-rotation` → DELETED (guards already in projects/)
+- `ESGF-2026/examples/Option-Wheel-Strategy` → DELETED (VIX filter already merged in projects/)
+- `ESGF-2026/lean-workspace/Multi-Layer-EMA-Researcher` → DELETED (identical to projects/)
+- `ESGF-2026/examples/Crypto-MultiCanal` → KEEP (different architecture: mixin + GA params + short trading)
+- `ESGF-2026/examples/Sector-Momentum` → KEEP (different algo: alpha model framework + sector rotation)
+- `ESGF-2026/examples/Trend-Following` → KEEP (different algo: competition 600 equities framework)
+- `ESGF-2026/examples/generate_research_notebooks.py` → DELETED (build artifact)
+- `projects-imported/` directory → now empty (removed)
 
 ### Phase D — Optional extractions
 - MultiFuturesTrendFollowing → `projects/Multi-Futures-Trend/`
