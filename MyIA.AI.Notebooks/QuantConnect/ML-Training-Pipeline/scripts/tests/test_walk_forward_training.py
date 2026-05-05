@@ -97,7 +97,7 @@ class TestWalkForwardClassification:
         assert "fold" in fold
         assert "train_size" in fold
         assert "test_size" in fold
-        assert "accuracy" in fold
+        assert "oos_accuracy" in fold
 
     def test_walk_forward_model_is_fitted(self):
         from train_classification import train_walk_forward_classification
@@ -343,6 +343,7 @@ class TestWalkForwardDQN:
 
         metrics = result["metrics"]
         assert "oos_direction_accuracy" in metrics
+        assert "oos_sharpe" in metrics
         assert "majority_class_acc" in metrics
         assert "majority_class_freq" in metrics
         assert "vs_majority_class" in metrics
@@ -371,6 +372,8 @@ class TestWalkForwardDQN:
         assert "train_size" in fold
         assert "test_size" in fold
         assert "oos_reward" in fold
+        assert "oos_sharpe" in fold
+        assert "oos_direction_accuracy" in fold
 
     def test_walk_forward_model_returned(self):
         from train_dqn_rl import train_walk_forward_dqn
@@ -391,3 +394,137 @@ class TestWalkForwardDQN:
 
         assert result["model"] is not None
         assert "history" in result
+
+    def test_walk_forward_returns_architecture_info(self):
+        from train_dqn_rl import train_walk_forward_dqn
+
+        prices, features = _make_prices_and_features(500, lookback=10)
+        result = train_walk_forward_dqn(
+            prices, features,
+            window=5,
+            hidden_size=32,
+            num_episodes=2,
+            batch_size=16,
+            n_splits=2,
+            train_size=150,
+            test_size=50,
+            gap=3,
+            device="cpu",
+        )
+
+        assert "state_size" in result
+        assert "hidden_size" in result
+        assert "n_actions" in result
+        assert result["n_actions"] == 3
+
+    def test_walk_forward_oos_metrics_not_nan(self):
+        from train_dqn_rl import train_walk_forward_dqn
+
+        prices, features = _make_prices_and_features(500, lookback=10)
+        result = train_walk_forward_dqn(
+            prices, features,
+            window=5,
+            hidden_size=32,
+            num_episodes=2,
+            batch_size=16,
+            n_splits=2,
+            train_size=150,
+            test_size=50,
+            gap=3,
+            device="cpu",
+        )
+
+        m = result["metrics"]
+        assert not np.isnan(m["oos_direction_accuracy"])
+        assert not np.isnan(m["oos_sharpe"])
+        assert not np.isnan(m["vs_majority_class"])
+
+
+# ---------------------------------------------------------------------------
+# DQN OOS evaluation: greedy policy with per-step direction accuracy
+# ---------------------------------------------------------------------------
+
+
+class TestDQNEvaluateOOS:
+    def test_evaluate_dqn_returns_direction_accuracy(self):
+        from train_dqn_rl import evaluate_dqn, build_dqn, TradingEnv
+
+        np.random.seed(42)
+        prices = 100.0 + np.cumsum(np.random.normal(0, 1, 200)).astype(np.float32)
+        features = np.random.randn(200, 5).astype(np.float32)
+
+        env = TradingEnv(prices, features, window=5, commission=0.001)
+        model = build_dqn(env.state_size, hidden_size=32, n_actions=3)
+        result = evaluate_dqn(model, env, device="cpu", num_episodes=1)
+
+        assert "oos_direction_accuracy" in result
+        assert "oos_direction_total" in result
+        assert "oos_sharpe" in result
+        assert 0.0 <= result["oos_direction_accuracy"] <= 1.0
+
+    def test_evaluate_dqn_greedy_no_exploration(self):
+        """Verify evaluate_dqn produces deterministic output (greedy only)."""
+        from train_dqn_rl import evaluate_dqn, build_dqn, TradingEnv
+
+        np.random.seed(42)
+        prices = 100.0 + np.cumsum(np.random.normal(0, 1, 200)).astype(np.float32)
+        features = np.random.randn(200, 5).astype(np.float32)
+
+        env = TradingEnv(prices, features, window=5, commission=0.001)
+        model = build_dqn(env.state_size, hidden_size=32, n_actions=3)
+
+        # Run twice — should be identical (greedy = deterministic for same model)
+        result1 = evaluate_dqn(model, env, device="cpu", num_episodes=1)
+        result2 = evaluate_dqn(model, env, device="cpu", num_episodes=1)
+
+        assert result1["oos_mean_reward"] == result2["oos_mean_reward"]
+        assert result1["oos_direction_accuracy"] == result2["oos_direction_accuracy"]
+
+
+# ---------------------------------------------------------------------------
+# DQN simple split: OOS evaluation after train/test split
+# ---------------------------------------------------------------------------
+
+
+class TestDQNSimpleSplit:
+    def test_simple_split_reports_oos_metrics(self):
+        """Verify the simple-split mode produces OOS evaluation on test set."""
+        from train_dqn_rl import TradingEnv, train_dqn, evaluate_dqn
+
+        np.random.seed(42)
+        prices = 100.0 + np.cumsum(np.random.normal(0, 1, 500)).astype(np.float32)
+        features = np.random.randn(500, 5).astype(np.float32)
+
+        # Simulate simple split
+        n = len(prices)
+        train_end = int(n * 0.8)
+
+        # Train-only normalization
+        mean = features[:train_end].mean(axis=0)
+        std = features[:train_end].std(axis=0)
+        std = np.where(std < 1e-8, 1.0, std)
+        features_norm = (features - mean) / std
+
+        train_prices = prices[:train_end]
+        train_features = features_norm[:train_end]
+        test_prices = prices[train_end:]
+        test_features = features_norm[train_end:]
+
+        env = TradingEnv(train_prices, train_features, window=5, commission=0.001)
+        result = train_dqn(
+            env, hidden_size=32, num_episodes=2, batch_size=16, device="cpu",
+        )
+
+        test_env = TradingEnv(test_prices, test_features, window=5, commission=0.001)
+        oos = evaluate_dqn(result["model"], test_env, device="cpu", num_episodes=1)
+
+        assert "oos_sharpe" in oos
+        assert "oos_direction_accuracy" in oos
+        assert "oos_mean_reward" in oos
+
+        # In-sample Sharpe and OOS Sharpe should be different
+        is_sharpe = result["metrics"]["sharpe_estimate"]
+        oos_sharpe = oos["oos_sharpe"]
+        # They CAN be equal by coincidence but usually aren't
+        assert isinstance(is_sharpe, float)
+        assert isinstance(oos_sharpe, float)
