@@ -65,6 +65,64 @@ during 2015-2024 bull market) makes it pathological. No model architecture beats
 
 **Source**: PR #724 Stage 1 cross-asset walk-forward baselines, ai-01 comparative runs.
 
+## Stage 1: BTC-USD Walk-Forward Baselines (2026-05-05)
+
+Anti-bias training on BTC-USD 2015-2025 (3653 daily rows, 3594 after feature engineering).
+Walk-forward: 5 folds, train=500, test=100, gap=10. BTC majority class (up days) = **55.10%**.
+
+| Model | OOS DirAcc | vs Majority | n_folds | Architecture | Checkpoint |
+| ----- | ---------- | ----------- | ------- | ------------ | ---------- |
+| LSTM | **54.60%** | **+3.51pp** | 5 | h=64, L=2, ep=30 | 20260505_012529 |
+| Transformer | 51.00% | -0.09pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_012554 |
+| RF (200 trees) | 49.40% | +0.15pp | 5 | max_depth=8, 19 features | 20260505_012321 |
+| DQN | PENDING | PENDING | 3 | h=128, ep=50, w=20 | training |
+
+Key findings:
+
+- LSTM is the only model with meaningful edge (+3.51pp over majority class).
+- Transformer at d=64/h=4/L=2 is too small for BTC-USD patterns (previous SPY BEST used d=256/h=8/L=6).
+- RF barely matches random — no feature-based signal in BTC daily returns.
+- BTC-USD majority class (55.1%) is higher than SPY (54.6%) — crypto has more up days in this period.
+
+## Stage 1: Cross-Asset Walk-Forward Baselines (2026-05-05)
+
+Anti-bias training on 6 non-FAANG assets (GLD, TLT, EEM, EFA, DBC + BTC-USD).
+Walk-forward: 5 folds, train=500, test=100, gap=10. All models use advanced features (38 dims).
+
+| Asset | Model | OOS DirAcc | vs Majority | n_folds | Architecture | Checkpoint |
+| ----- | ----- | ---------- | ----------- | ------- | ------------ | ---------- |
+| BTC-USD | LSTM | **54.60%** | **+3.51pp** | 5 | h=64, L=2, ep=30 | 20260505_012529 |
+| BTC-USD | Transformer | 51.00% | -0.09pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_012554 |
+| BTC-USD | RF (200 trees) | 49.40% | +0.15pp | 5 | max_depth=8, 19 features | 20260505_012321 |
+| BTC-USD | DQN | 0.00% | -51.14pp | 3 | h=256, ep=100, w=20 | 20260505_021359 |
+| GLD | LSTM | **53.80%** | +0.84pp | 5 | h=64, L=2, ep=30 | 20260505_013925 |
+| GLD | RF (200 trees) | 53.00% | +1.09pp | 5 | max_depth=8, 38 features | 20260505_010142 |
+| GLD | Transformer | 53.80% | +1.19pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_015628 |
+| TLT | LSTM | **52.20%** | **+3.68pp** | 5 | h=64, L=2, ep=30 | 20260505_015143 |
+| TLT | RF (200 trees) | 48.20% | -5.91pp | 5 | max_depth=8, 38 features | 20260505_010023 |
+| TLT | Transformer | 51.20% | +2.68pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_015903 |
+| EEM | LSTM | 50.60% | -0.96pp | 5 | h=64, L=2, ep=30 | 20260505_010203 |
+| EEM | RF (200 trees) | 51.80% | -0.68pp | 5 | max_depth=8, 38 features | 20260505_010023 |
+| EEM | Transformer | 47.20% | -4.11pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_020058 |
+| EFA | LSTM | 52.20% | -0.50pp | 5 | h=64, L=2, ep=30 | 20260505_020022 |
+| EFA | RF (200 trees) | 50.00% | -2.46pp | 5 | max_depth=8, 38 features | 20260505_015821 |
+| EFA | Transformer | 50.40% | -2.55pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_021553 |
+| DBC | LSTM | **55.80%** | +0.49pp | 5 | h=64, L=2, ep=30 | 20260505_020144 |
+| DBC | RF (200 trees) | 49.60% | +2.40pp | 5 | max_depth=8, 38 features | 20260505_015829 |
+| DBC | Transformer | 51.80% | -2.48pp | 5 | d=64, h=4, L=2, ep=30 | 20260505_021816 |
+
+Majority class baselines: BTC-USD=55.10%, GLD=53.04%, TLT=48.09%, EEM=52.44%, EFA=52.46%, DBC=47.20%.
+
+Key findings:
+
+- **LSTM is the best model across 4/6 assets** — consistent edge on BTC (+3.51pp), TLT (+3.68pp), GLD (+0.84pp), DBC (+0.49pp).
+- **TLT (bonds) is the most predictable asset** — LSTM +3.68pp, Transformer +2.68pp. Bonds have clearer momentum regimes.
+- **Transformer (d=64) underperforms** on equities (EEM -4.11pp) and BTC (-0.09pp), but works on bonds/commodities.
+- **RF has no reliable edge** — mixed results across all assets, never the best model.
+- **EEM is the hardest asset** — all models struggle, LSTM -0.96pp, Transformer -4.11pp.
+- **DBC (commodities) LSTM = best absolute DirAcc** at 55.80%, but majority class is already low (47.20%).
+- **DQN completely fails OOS** — 0.00% DirAcc on BTC-USD. All 3 folds have negative OOS reward. The agent overfits training episodes (avg reward 4.7-6.4 in-sample) but produces zero actionable signals out-of-sample. RL approach needs fundamental redesign for this problem.
+
 ## Walk-Forward OOS Evaluation (Track B)
 
 Evaluation harness: `scripts/eval_existing_checkpoints.py`
