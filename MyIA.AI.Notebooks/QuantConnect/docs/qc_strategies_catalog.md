@@ -2,7 +2,7 @@
 
 **Updated**: 2026-05-04 | **Source**: QC Cloud API + catalog_enrichment.json
 **Total ALIVE projects**: 96 (22 DEAD/SUPERSEDED deleted 03/05)
-**Reference**: [AUDIT_QC_CLOUD.md](AUDIT_QC_CLOUD.md) for full classification
+**Reference**: [AUDIT_QC_CLOUD.md](audits/AUDIT_QC_CLOUD.md) for full classification
 
 ## Top Performers (Sharpe > 0.8)
 
