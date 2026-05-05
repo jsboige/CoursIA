@@ -94,7 +94,7 @@ def naive_momentum_baseline(
 
     # Calculate Sharpe from strategy returns
     strategy_returns = forward_return[valid] * (2 * predicted.values - 1)
-    sharpe = _sharpe_from_returns(strategy_returns.dropna())
+    sharpe = sharpe_from_returns(strategy_returns.dropna())
 
     return {
         "accuracy": accuracy,
@@ -147,7 +147,7 @@ def random_walk_baseline(
         # Random long/short with 50/50 probability
         signals = rng.choice([-1, 1], size=len(test_returns))
         strategy_returns = test_returns.values * signals
-        sharpe = _sharpe_from_returns(pd.Series(strategy_returns))
+        sharpe = sharpe_from_returns(pd.Series(strategy_returns))
         sharpes.append(sharpe)
 
         # Direction accuracy
@@ -208,7 +208,7 @@ def buy_and_hold_baseline(
     n_years = len(test_returns) / 252
     cagr = float((1 + total_return) ** (1 / max(n_years, 1e-6)) - 1) if total_return > -1 else -1.0
 
-    sharpe = _sharpe_from_returns(test_returns)
+    sharpe = sharpe_from_returns(test_returns)
 
     # Max drawdown
     cummax = test_prices.cummax()
@@ -258,7 +258,7 @@ def oos_direction_distribution(y: np.ndarray) -> dict:
     }
 
 
-def _sharpe_from_returns(returns: pd.Series, annualize: bool = True, risk_free: float = 0.0) -> float:
+def sharpe_from_returns(returns: pd.Series | np.ndarray, annualize: bool = True, risk_free: float = 0.0) -> float:
     """Compute Sharpe ratio from a returns series.
 
     Parameters

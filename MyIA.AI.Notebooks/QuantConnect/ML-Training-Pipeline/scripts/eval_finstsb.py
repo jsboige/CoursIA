@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 from typing import Protocol
 
+from baselines import sharpe_from_returns
+
 
 class DirectionModel(Protocol):
     """Protocol for models that predict price direction."""
@@ -165,7 +167,7 @@ def eval_per_regime(
 
         # Strategy returns: long if predict up, short if predict down
         strategy_returns = regime_returns * (2 * regime_pred - 1)
-        sharpe = _sharpe(strategy_returns)
+        sharpe = sharpe_from_returns(strategy_returns)
 
         results[regime] = {
             "diracc": diracc,
@@ -231,13 +233,3 @@ def validate_no_regime_failure(eval_results: dict, min_sharpe: float = 0.0) -> t
             failures.append(f"{regime}: Sharpe={sharpe:.3f} < {min_sharpe}")
 
     return len(failures) == 0, failures
-
-
-def _sharpe(returns: np.ndarray, annualize: bool = True) -> float:
-    """Compute Sharpe ratio from returns array."""
-    if len(returns) == 0 or np.std(returns) < 1e-12:
-        return 0.0
-    sharpe = np.mean(returns) / np.std(returns)
-    if annualize:
-        sharpe *= np.sqrt(252)
-    return float(sharpe)

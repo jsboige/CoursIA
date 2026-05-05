@@ -11,7 +11,7 @@ from baselines import (
     majority_class_baseline,
     naive_momentum_baseline,
     random_walk_baseline,
-    _sharpe_from_returns,
+    sharpe_from_returns,
 )
 
 
@@ -175,26 +175,26 @@ class TestBuyAndHoldBaseline:
 
 class TestSharpeFromReturns:
     def test_zero_returns(self):
-        assert _sharpe_from_returns(pd.Series([])) == 0.0
+        assert sharpe_from_returns(pd.Series([])) == 0.0
 
     def test_constant_returns(self):
-        assert _sharpe_from_returns(pd.Series([0.01] * 100)) == 0.0
+        assert sharpe_from_returns(pd.Series([0.01] * 100)) == 0.0
 
     def test_positive_mean(self):
         rng = np.random.default_rng(42)
         returns = pd.Series(rng.normal(0.001, 0.01, 252))
-        sharpe = _sharpe_from_returns(returns)
+        sharpe = sharpe_from_returns(returns)
         assert sharpe > 0
 
     def test_negative_mean(self):
         rng = np.random.default_rng(99)
         returns = pd.Series(rng.normal(-0.005, 0.01, 252))
-        sharpe = _sharpe_from_returns(returns)
+        sharpe = sharpe_from_returns(returns)
         assert sharpe < 0
 
     def test_no_annualize(self):
         rng = np.random.default_rng(42)
         r = pd.Series(rng.normal(0.001, 0.01, 252))
-        s_ann = _sharpe_from_returns(r, annualize=True)
-        s_raw = _sharpe_from_returns(r, annualize=False)
+        s_ann = sharpe_from_returns(r, annualize=True)
+        s_raw = sharpe_from_returns(r, annualize=False)
         assert abs(s_ann) > abs(s_raw)

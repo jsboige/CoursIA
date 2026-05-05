@@ -14,11 +14,11 @@ from eval_kronos_zeroshot import (
     build_evaluation_windows,
     compute_direction_accuracy,
     compute_majority_baseline,
-    compute_sharpe,
     compute_transaction_cost,
     evaluate_window,
     load_kronos_model,
 )
+from baselines import sharpe_from_returns
 from eval_chronos_bolt import (
     NaiveChronosWrapper,
     load_chronos_model,
@@ -62,15 +62,15 @@ class TestSharpe:
     def test_positive_sharpe(self):
         np.random.seed(42)
         returns = np.random.randn(252) * 0.01 + 0.0005
-        sharpe = compute_sharpe(returns)
+        sharpe = sharpe_from_returns(returns)
         assert sharpe > 0
 
     def test_zero_returns(self):
-        sharpe = compute_sharpe(np.array([0.0, 0.0, 0.0]))
+        sharpe = sharpe_from_returns(np.array([0.0, 0.0, 0.0]))
         assert sharpe == 0.0
 
     def test_constant_returns(self):
-        sharpe = compute_sharpe(np.array([0.01, 0.01, 0.01]))
+        sharpe = sharpe_from_returns(np.array([0.01, 0.01, 0.01]))
         assert sharpe == 0.0
 
 

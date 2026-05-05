@@ -21,6 +21,8 @@ import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 
+from baselines import sharpe_from_returns
+
 
 @dataclass
 class TransactionCostModel:
@@ -143,8 +145,8 @@ def compare_gross_vs_net(
 
     net_returns = cost_model.apply_to_returns(gross_returns, trades, order_size)
 
-    gross_sharpe = _sharpe_from_array(gross_returns)
-    net_sharpe = _sharpe_from_array(net_returns)
+    gross_sharpe = sharpe_from_returns(gross_returns)
+    net_sharpe = sharpe_from_returns(net_returns)
 
     total_costs = np.sum(trades) * 2 * cost_model.cost_per_trade(order_size)
     n_trades = int(np.sum(trades))
@@ -164,16 +166,3 @@ def compare_gross_vs_net(
         "cost_drag_bps": cost_drag * 10_000,
         "trade_frequency": n_trades / max(n, 1),
     }
-
-
-def _sharpe_from_array(returns: np.ndarray, annualize: bool = True) -> float:
-    """Compute Sharpe ratio from numpy array of returns."""
-    if len(returns) == 0:
-        return 0.0
-    std = np.std(returns)
-    if std < 1e-12:
-        return 0.0
-    sharpe = np.mean(returns) / std
-    if annualize:
-        sharpe *= np.sqrt(252)
-    return float(sharpe)

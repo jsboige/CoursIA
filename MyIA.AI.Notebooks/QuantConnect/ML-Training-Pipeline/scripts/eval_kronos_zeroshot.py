@@ -44,6 +44,7 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
 
+from baselines import sharpe_from_returns
 from data_utils import load_data
 
 
@@ -74,12 +75,6 @@ def compute_majority_baseline(returns: np.ndarray) -> dict:
         "majority_class": "up" if up_frac >= down_frac else "down",
     }
 
-
-def compute_sharpe(returns: np.ndarray, rf: float = 0.0, annualize: int = 252) -> float:
-    """Annualized Sharpe ratio."""
-    if len(returns) < 2 or np.std(returns) < 1e-10:
-        return 0.0
-    return float((np.mean(returns) - rf) / np.std(returns) * np.sqrt(annualize))
 
 
 def compute_transaction_cost(
@@ -247,13 +242,13 @@ def evaluate_window(
     strategy_returns = np.sign(forecast_returns) * actual_pred_returns
     tcost = compute_transaction_cost(forecast_returns, cost_bps=cost_bps)
     net_returns = strategy_returns - tcost / len(strategy_returns)
-    sharpe = compute_sharpe(net_returns)
+    sharpe = sharpe_from_returns(net_returns)
 
     return {
         "direction_accuracy": dir_acc,
         "mse": mse,
         "sharpe": sharpe,
-        "net_sharpe": compute_sharpe(net_returns),
+        "net_sharpe": sharpe_from_returns(net_returns),
         "n_trades": int(np.sum(np.diff(np.sign(forecast_returns)) != 0)),
         "transaction_cost_bps": tcost * 10000,
         "forecast_mean": float(np.mean(forecast)),
