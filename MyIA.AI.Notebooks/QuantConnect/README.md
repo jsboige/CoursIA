@@ -240,7 +240,13 @@ Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et 
 ### Guides de démarrage
 
 - **[GETTING-STARTED.md](GETTING-STARTED.md)** : Guide de démarrage détaillé
-- **[HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
+- **[docs/HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
+- **[docs/BOOK_MAPPING.md](docs/BOOK_MAPPING.md)** : Mapping notebooks ↔ chapitres
+- **[docs/qc_strategies_catalog.md](docs/qc_strategies_catalog.md)** : Catalogue strategies QC Cloud
+- **[docs/HANDSON_DATA_REQUIREMENTS.md](docs/HANDSON_DATA_REQUIREMENTS.md)** : Datasets requis
+- **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading
+- **[docs/PROCEDURE_DEPLOIEMENT.md](docs/PROCEDURE_DEPLOIEMENT.md)** : Procédure de déploiement
+- **[docs/audits/](docs/audits/)** : Rapports d'audit historiques (AUDIT_QC_CLOUD, AUDIT_QC_ORG, VALIDATION-REPORT, AUDIT_RAPPORT)
 
 ### Bibliothèques partagées
 
@@ -251,6 +257,8 @@ Le dossier [`shared/`](shared/) contient des modules Python réutilisables :
 - **ml_utils.py** : ML training, persistence (ObjectStore)
 - **plotting.py** : Visualisations standardisées
 - **backtest_helpers.py** : Helpers configuration backtests
+
+Documentation détaillée : [`shared/SHARED_LIBRARY.md`](shared/SHARED_LIBRARY.md).
 
 ### Scripts de validation
 

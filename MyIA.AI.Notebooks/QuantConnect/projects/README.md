@@ -17,7 +17,7 @@ Les strategies sont classees en 3 categories pedagogiques :
 | **Historique** | Prime connue mais regime-dependante ou affaiblie | Conserver comme contre-exemple, documenter les regimes favorables |
 | **Exploratoire** | Implementation naive ou signal insuffisant | Conserver si pedagogique, sinon retravailler |
 
-Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds structurels et hypotheses testees.
+Voir [OPTIMIZATION_BACKLOG.md](_docs/OPTIMIZATION_BACKLOG.md) pour les plafonds structurels et hypotheses testees.
 
 ## Performance Summary
 
