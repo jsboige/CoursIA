@@ -32,7 +32,6 @@ import pandas as pd
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
 from walk_forward import WalkForwardSplitter
-from baselines import majority_class_baseline
 
 
 def train_and_evaluate(
@@ -242,9 +241,16 @@ def train_walk_forward_classification(
 
     oos_diracc = float(np.mean(oos_predictions == oos_targets))
 
-    # Majority-class baseline on first half (train proxy) vs second half (test proxy)
-    y_binary = y.copy()
-    majority_bl = majority_class_baseline(y_binary[: len(y) // 2], y_binary[len(y) // 2 :])
+    # Majority-class baseline on actual OOS targets
+    y_binary_oos = oos_targets.copy()
+    majority_freq = float(np.mean(y_binary_oos == 1))
+    majority_bl = {
+        "accuracy": max(majority_freq, 1.0 - majority_freq),
+        "majority_class": 1 if majority_freq >= 0.5 else 0,
+        "majority_freq": majority_freq,
+        "n_train": 0,
+        "n_test": len(y_binary_oos),
+    }
 
     return {
         "model": best_model,

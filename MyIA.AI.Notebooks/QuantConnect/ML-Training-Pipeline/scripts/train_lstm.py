@@ -31,7 +31,6 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from walk_forward import WalkForwardSplitter
-from baselines import majority_class_baseline
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
 from gpu_training import (
