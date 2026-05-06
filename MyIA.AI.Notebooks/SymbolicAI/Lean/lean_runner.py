@@ -53,6 +53,8 @@ import os
 import shutil
 import json
 import platform
+import uuid
+import base64
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List, Literal
@@ -339,7 +341,7 @@ class LeanRunner:
             # Write to _AgentScratch/ in the Lake project for cache reuse
             scratch_dir = Path(project_dir) / "_AgentScratch"
             scratch_dir.mkdir(exist_ok=True)
-            import uuid, time
+            import time
             session_id = f"session_{int(time.time())}_{uuid.uuid4().hex[:6]}"
             file_path = scratch_dir / f"{session_id}_{filename}"
             file_path.write_text(code, encoding="utf-8")
@@ -425,19 +427,18 @@ class LeanRunner:
             return p
 
         if project_dir:
-            # Write code to /tmp/ (WSL) to avoid Lake scanning it as project modules
-            import uuid, time
+            import time
             session_id = f"lean_{int(time.time())}_{uuid.uuid4().hex[:6]}"
             wsl_project = _to_wsl_path(str(Path(project_dir).resolve()))
             wsl_file = f"/tmp/{session_id}.lean"
 
-            # Escape code for safe bash heredoc (single quotes don't interpolate)
-            escaped_code = code.replace("'", "'\\''")
+            # Use base64 encoding to avoid shell injection via paths or code
+            encoded_code = base64.b64encode(code.encode()).decode()
             try:
                 result = subprocess.run(
                     ["wsl", "-d", "Ubuntu", "--", "bash", "-c",
-                     f"cat > {wsl_file} << 'LEANEOF'\n{code}\nLEANEOF\n"
-                     f"source ~/.elan/env && cd \"{wsl_project}\" && lake env lean \"{wsl_file}\""],
+                     f'echo {encoded_code} | base64 -d > "{wsl_file}" && '
+                     f'source ~/.elan/env && cd "{wsl_project}" && lake env lean "{wsl_file}"'],
                     capture_output=True, text=True, timeout=self.timeout
                 )
                 stdout = result.stdout.strip()
