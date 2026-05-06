@@ -107,17 +107,18 @@ def _load_symbol_data(
     # Fall back to data_sources
     try:
         from data_sources import fetch_data
-        result = fetch_data(
+        df = fetch_data(
             symbol=symbol,
             start=start,
             end=end,
             source="auto",
             data_dir=data_dir,
         )
-        if result.df is not None and len(result.df) > 0:
-            return result.df
-    except Exception:
-        pass
+        if df is not None and len(df) > 0:
+            return df
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("fetch_data failed for %s: %s", symbol, e)
 
     raise FileNotFoundError(
         f"No data found for {symbol}. "
