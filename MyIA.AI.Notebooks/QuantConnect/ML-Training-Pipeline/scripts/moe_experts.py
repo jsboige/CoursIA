@@ -57,6 +57,7 @@ class ExpertConfig:
     hidden_sizes: tuple[int, ...] = (64, 32)
     max_iter: int = 200
     random_state: int = 42
+    extra: dict | None = None
 
 
 @dataclass
@@ -73,23 +74,279 @@ class MoEConfig:
     fallback_regime: str = "neutral"
     random_state: int = 42
     regime_method: str = "price"
+    seq_len: int = 20
+    d_model: int = 64
+    nhead: int = 4
+    num_layers: int = 2
+    dropout: float = 0.1
+    batch_size: int = 32
+    learning_rate: float = 1e-3
+    device: str = "cpu"
 
 
 # ---------------------------------------------------------------------------
-# Expert factory — create sklearn-compatible models
+# PyTorch expert wrapper — sklearn-compatible LSTM/Transformer experts
+# ---------------------------------------------------------------------------
+
+
+class _PytorchExpertWrapper:
+    """Wraps a PyTorch LSTM or Transformer as an sklearn-compatible expert.
+
+    Internally reshapes flat (N, D) input into sequences (N, seq_len, D//seq_len)
+    if needed, or uses a simple sliding window over flat features.
+    """
+
+    def __init__(
+        self,
+        model_type: str = "lstm",
+        hidden_size: int = 64,
+        max_iter: int = 200,
+        seq_len: int = 20,
+        d_model: int = 64,
+        nhead: int = 4,
+        num_layers: int = 2,
+        dropout: float = 0.1,
+        batch_size: int = 32,
+        learning_rate: float = 1e-3,
+        device: str = "cpu",
+        random_state: int = 42,
+    ):
+        self.model_type = model_type
+        self.hidden_size = hidden_size
+        self.max_iter = max_iter
+        self.seq_len = seq_len
+        self.d_model = d_model
+        self.nhead = nhead
+        self.num_layers = num_layers
+        self.dropout = dropout
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.device = device
+        self.random_state = random_state
+        self._model = None
+        self._scaler_mean = None
+        self._scaler_std = None
+
+    def _build_model(self, input_size: int):
+        import torch
+        import torch.nn as nn
+
+        rng = torch.Generator()
+        rng.manual_seed(self.random_state)
+
+        if self.model_type == "lstm":
+            class _LSTMExpert(nn.Module):
+                def __init__(self_, inp_sz, hid_sz, n_lyr, drop):
+                    super().__init__()
+                    self_.rnn = nn.LSTM(
+                        input_size=inp_sz,
+                        hidden_size=hid_sz,
+                        num_layers=n_lyr,
+                        batch_first=True,
+                        dropout=drop if n_lyr > 1 else 0.0,
+                    )
+                    self_.head = nn.Sequential(
+                        nn.Linear(hid_sz, 32),
+                        nn.ReLU(),
+                        nn.Dropout(drop),
+                        nn.Linear(32, 2),
+                    )
+
+                def forward(self_, x):
+                    out, _ = self_.rnn(x)
+                    return self_.head(out[:, -1, :])
+
+            return _LSTMExpert(input_size, self.hidden_size, self.num_layers, self.dropout)
+
+        else:  # transformer
+            class _TransformerExpert(nn.Module):
+                def __init__(self_, inp_sz, d_mod, n_heads, n_lyr, drop, seq_l):
+                    super().__init__()
+                    self_.input_proj = nn.Linear(inp_sz, d_mod)
+
+                    # Sinusoidal positional encoding
+                    pe = np.zeros((seq_l, d_mod))
+                    pos = np.arange(0, seq_l).reshape(-1, 1)
+                    div = np.exp(np.arange(0, d_mod, 2) * -(np.log(10000.0) / d_mod))
+                    pe[:, 0::2] = np.sin(pos * div)
+                    pe[:, 1::2] = np.cos(pos * div[:d_mod // 2])
+                    self_.register_buffer("pos_enc", torch.tensor(pe.astype(np.float32)))
+
+                    enc_layer = nn.TransformerEncoderLayer(
+                        d_model=d_mod,
+                        nhead=n_heads,
+                        dim_feedforward=d_mod * 4,
+                        dropout=drop,
+                        batch_first=True,
+                        activation="gelu",
+                    )
+                    self_.encoder = nn.TransformerEncoder(enc_layer, num_layers=n_lyr)
+                    self_.head = nn.Sequential(
+                        nn.LayerNorm(d_mod),
+                        nn.Linear(d_mod, 32),
+                        nn.GELU(),
+                        nn.Dropout(drop),
+                        nn.Linear(32, 2),
+                    )
+
+                def forward(self_, x):
+                    h = self_.input_proj(x) + self_.pos_enc[:x.size(1)]
+                    h = self_.encoder(h)
+                    return self_.head(h[:, -1, :])
+
+            return _TransformerExpert(
+                input_size, self.d_model, self.nhead, self.num_layers,
+                self.dropout, self.seq_len,
+            )
+
+    def _make_sequences(self, X: np.ndarray) -> np.ndarray:
+        """Reshape flat features into sequences using sliding window."""
+        n_samples, n_features = X.shape
+        seq_len = min(self.seq_len, n_samples)
+
+        if n_samples <= seq_len:
+            # Not enough samples for sliding window — tile and use as 1-step
+            return X.reshape(n_samples, 1, n_features)
+
+        seqs = np.zeros((n_samples - seq_len + 1, seq_len, n_features), dtype=np.float32)
+        for i in range(n_samples - seq_len + 1):
+            seqs[i] = X[i:i + seq_len]
+        return seqs
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "_PytorchExpertWrapper":
+        import torch
+        import torch.nn as nn
+
+        torch.manual_seed(self.random_state)
+
+        # Normalize
+        self._scaler_mean = X.mean(axis=0, keepdims=True)
+        self._scaler_std = np.where(X.std(axis=0) < 1e-8, 1.0, X.std(axis=0, keepdims=True))
+        X_norm = (X - self._scaler_mean) / self._scaler_std
+
+        # Build sequences
+        X_seq = self._make_sequences(X_norm)
+
+        # Align targets — trim the first (seq_len-1) to match sequence count
+        trim = len(X) - len(X_seq)
+        y_aligned = y[trim:]
+
+        X_t = torch.tensor(X_seq, dtype=torch.float32, device=self.device)
+        y_t = torch.tensor(y_aligned, dtype=torch.long, device=self.device)
+
+        # Split into train/val for early stopping
+        n_val = max(1, int(len(X_t) * 0.15))
+        n_train = len(X_t) - n_val
+        X_train, X_val = X_t[:n_train], X_t[n_train:]
+        y_train, y_val = y_t[:n_train], y_t[n_train:]
+
+        n_features = X_seq.shape[2]
+        self._model = self._build_model(n_features).to(self.device)
+
+        optimizer = torch.optim.Adam(
+            self._model.parameters(), lr=self.learning_rate, weight_decay=1e-4,
+        )
+        loss_fn = nn.CrossEntropyLoss()
+
+        train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=self.batch_size, shuffle=True,
+        )
+
+        # Early stopping with patience
+        best_val_loss = float("inf")
+        patience = 10
+        patience_counter = 0
+        best_state = None
+
+        self._model.train()
+        for epoch in range(self.max_iter):
+            for xb, yb in train_loader:
+                optimizer.zero_grad()
+                logits = self._model(xb)
+                loss = loss_fn(logits, yb)
+                loss.backward()
+                optimizer.step()
+
+            # Validation check for early stopping
+            if n_val > 0 and (epoch + 1) % 5 == 0:
+                self._model.eval()
+                with torch.no_grad():
+                    val_logits = self._model(X_val)
+                    val_loss = loss_fn(val_logits, y_val).item()
+                self._model.train()
+
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    patience_counter = 0
+                    best_state = {k: v.clone() for k, v in self._model.state_dict().items()}
+                else:
+                    patience_counter += 1
+                    if patience_counter >= patience:
+                        log.debug(
+                            f"Early stopping at epoch {epoch+1}/{self.max_iter} "
+                            f"(val_loss={val_loss:.4f})"
+                        )
+                        break
+
+        # Restore best weights
+        if best_state is not None:
+            self._model.load_state_dict(best_state)
+
+        return self
+
+    def _prepare_input(self, X: np.ndarray) -> "torch.Tensor":
+        import torch
+
+        X_norm = (X - self._scaler_mean) / self._scaler_std
+        X_seq = self._make_sequences(X_norm)
+        return torch.tensor(X_seq, dtype=torch.float32, device=self.device)
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        import torch
+
+        trim = len(X) - len(self._make_sequences((X - self._scaler_mean) / self._scaler_std))
+        self._model.eval()
+        with torch.no_grad():
+            logits = self._model(self._prepare_input(X))
+            preds = logits.argmax(dim=1).cpu().numpy()
+
+        # Pad front with zeros for trimmed samples
+        if trim > 0:
+            preds = np.concatenate([np.zeros(trim, dtype=int), preds])
+        return preds[:len(X)]
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        import torch
+        import torch.nn.functional as F
+
+        trim = len(X) - len(self._make_sequences((X - self._scaler_mean) / self._scaler_std))
+        self._model.eval()
+        with torch.no_grad():
+            logits = self._model(self._prepare_input(X))
+            proba = F.softmax(logits, dim=1).cpu().numpy()
+
+        if trim > 0:
+            pad = np.ones((trim, 2), dtype=np.float32) * 0.5
+            proba = np.concatenate([pad, proba], axis=0)
+        return proba[:len(X)]
+
+
+# ---------------------------------------------------------------------------
+# Expert factory — create models per architecture
 # ---------------------------------------------------------------------------
 
 def create_expert(config: ExpertConfig) -> ExpertModel:
     """Create an expert model from config.
 
-    Supports: mlp (sklearn MLPClassifier), logistic, rf.
+    Supports: mlp, lstm, transformer.
     """
     from sklearn.neural_network import MLPClassifier
     from sklearn.preprocessing import StandardScaler
     from sklearn.pipeline import Pipeline
 
-    model_map = {
-        "mlp": lambda: Pipeline([
+    if config.model_type == "mlp":
+        return Pipeline([
             ("scaler", StandardScaler()),
             ("clf", MLPClassifier(
                 hidden_layer_sizes=config.hidden_sizes,
@@ -98,16 +355,38 @@ def create_expert(config: ExpertConfig) -> ExpertModel:
                 early_stopping=True,
                 validation_fraction=0.15,
             )),
-        ]),
-    }
+        ])
 
-    if config.model_type not in model_map:
-        raise ValueError(
-            f"Unknown model type: {config.model_type}. "
-            f"Available: {list(model_map.keys())}"
-        )
+    if config.model_type in ("lstm", "transformer"):
+        return _create_pytorch_expert(config)
 
-    return model_map[config.model_type]()
+    raise ValueError(
+        f"Unknown model type: {config.model_type}. "
+        f"Available: mlp, lstm, transformer"
+    )
+
+
+def _create_pytorch_expert(config: ExpertConfig) -> "_PytorchExpertWrapper":
+    """Create a PyTorch-based expert (LSTM or Transformer)."""
+    import torch
+
+    torch.manual_seed(config.random_state)
+
+    extra = config.extra or {}
+    return _PytorchExpertWrapper(
+        model_type=config.model_type,
+        hidden_size=extra.get("hidden_size", config.hidden_sizes[0]),
+        max_iter=config.max_iter,
+        seq_len=extra.get("seq_len", 20),
+        d_model=extra.get("d_model", 64),
+        nhead=extra.get("nhead", 4),
+        num_layers=extra.get("num_layers", 2),
+        dropout=extra.get("dropout", 0.1),
+        batch_size=extra.get("batch_size", 32),
+        learning_rate=extra.get("learning_rate", 1e-3),
+        device=extra.get("device", "cpu"),
+        random_state=config.random_state,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -159,12 +438,26 @@ class MoERouter:
         return dict(self._stats)
 
     def _make_expert(self, regime: str) -> ExpertModel:
+        extra = None
+        if self.config.expert_type in ("lstm", "transformer"):
+            extra = {
+                "hidden_size": self.config.hidden_sizes[0] if self.config.hidden_sizes else 64,
+                "seq_len": self.config.seq_len,
+                "d_model": self.config.d_model,
+                "nhead": self.config.nhead,
+                "num_layers": self.config.num_layers,
+                "dropout": self.config.dropout,
+                "batch_size": self.config.batch_size,
+                "learning_rate": self.config.learning_rate,
+                "device": self.config.device,
+            }
         cfg = ExpertConfig(
             regime=regime,
             model_type=self.config.expert_type,
             hidden_sizes=self.config.hidden_sizes,
             max_iter=self.config.max_iter,
             random_state=self.config.random_state,
+            extra=extra,
         )
         return create_expert(cfg)
 

@@ -163,6 +163,15 @@ def train_moe_pipeline(
     data_dir: str | None = None,
     dataset_v2_dir: str | None = None,
     output_dir: str | None = None,
+    expert_type: str = "mlp",
+    seq_len: int = 20,
+    d_model: int = 64,
+    nhead: int = 4,
+    num_layers: int = 2,
+    dropout: float = 0.1,
+    batch_size: int = 32,
+    learning_rate: float = 1e-3,
+    device: str = "cpu",
 ) -> dict:
     """Run full MoE training pipeline.
 
@@ -239,12 +248,20 @@ def train_moe_pipeline(
     # --- Walk-forward MoE training ---
     log.info(f"Starting walk-forward MoE training ({n_folds} folds)...")
     config = MoEConfig(
-        expert_type="mlp",
+        expert_type=expert_type,
         hidden_sizes=hidden_sizes,
         max_iter=max_iter,
         min_samples_per_expert=min_samples_per_expert,
         random_state=seed,
         regime_method=regime_method,
+        seq_len=seq_len,
+        d_model=d_model,
+        nhead=nhead,
+        num_layers=num_layers,
+        dropout=dropout,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        device=device,
     )
 
     wf_results = train_moe_walk_forward(
@@ -281,12 +298,16 @@ def train_moe_pipeline(
         "beats_majority": bool(beats_majority),
         "regime_counts": {str(k): int(v) for k, v in regime_counts.items()},
         "config": {
+            "expert_type": expert_type,
             "hidden_sizes": list(hidden_sizes),
             "max_iter": max_iter,
             "min_samples_per_expert": min_samples_per_expert,
             "seed": seed,
             "lookback": lookback,
             "horizon": horizon,
+            "seq_len": seq_len,
+            "d_model": d_model,
+            "device": device,
         },
         "elapsed_seconds": round(elapsed, 1),
     }
@@ -351,6 +372,18 @@ def main():
         help="Directory with Dataset V2 Parquet files (46 features pre-computed)",
     )
     parser.add_argument("--output-dir", default=None)
+    parser.add_argument(
+        "--expert-type", default="mlp",
+        choices=["mlp", "lstm", "transformer"],
+        help="Expert model type (default: mlp)",
+    )
+    parser.add_argument("--seq-len", type=int, default=20, help="Sequence length for LSTM/Transformer experts")
+    parser.add_argument("--d-model", type=int, default=64, help="d_model for Transformer experts")
+    parser.add_argument("--nhead", type=int, default=4, help="Number of attention heads for Transformer experts")
+    parser.add_argument("--num-layers", type=int, default=2, help="Number of layers for LSTM/Transformer experts")
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 32], help="Hidden layer sizes")
+    parser.add_argument("--epochs", type=int, default=50, help="Training epochs for PyTorch experts")
+    parser.add_argument("--device", default="cpu", help="Device for PyTorch experts (cpu/cuda)")
     parser.add_argument("-v", "--verbose", action="store_true")
 
     args = parser.parse_args()
@@ -363,7 +396,7 @@ def main():
         n_folds=args.n_folds,
         lookback=args.lookback,
         horizon=args.horizon,
-        max_iter=args.max_iter,
+        max_iter=args.epochs if args.expert_type != "mlp" else args.max_iter,
         min_samples_per_expert=args.min_samples,
         seed=args.seed,
         start=args.start,
@@ -371,6 +404,13 @@ def main():
         data_dir=args.data_dir,
         dataset_v2_dir=args.dataset_v2_dir,
         output_dir=args.output_dir,
+        expert_type=args.expert_type,
+        seq_len=args.seq_len,
+        d_model=args.d_model,
+        nhead=args.nhead,
+        num_layers=args.num_layers,
+        hidden_sizes=tuple(args.hidden_sizes),
+        device=args.device,
     )
 
 

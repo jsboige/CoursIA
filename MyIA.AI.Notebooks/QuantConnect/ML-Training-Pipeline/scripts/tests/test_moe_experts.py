@@ -12,6 +12,7 @@ from moe_experts import (
     MoERouter,
     create_expert,
     train_moe_walk_forward,
+    _PytorchExpertWrapper,
 )
 
 
@@ -84,6 +85,63 @@ class TestExpertConfig:
         preds = model.predict(X)
         assert preds.shape == (100,)
         assert set(preds).issubset({0, 1})
+
+    def test_create_expert_lstm(self):
+        cfg = ExpertConfig(
+            regime="test", model_type="lstm", max_iter=5,
+            extra={"seq_len": 10, "hidden_size": 32, "num_layers": 1},
+        )
+        model = create_expert(cfg)
+        assert hasattr(model, "fit")
+        assert hasattr(model, "predict")
+        assert hasattr(model, "predict_proba")
+
+    def test_create_expert_transformer(self):
+        cfg = ExpertConfig(
+            regime="test", model_type="transformer", max_iter=5,
+            extra={
+                "seq_len": 10, "d_model": 32, "nhead": 4,
+                "num_layers": 1, "hidden_size": 32,
+            },
+        )
+        model = create_expert(cfg)
+        assert hasattr(model, "fit")
+
+    def test_lstm_expert_fit_predict(self):
+        np.random.seed(42)
+        n = 200
+        X = np.random.randn(n, 10).astype(np.float32)
+        y = (X[:, 0] > 0).astype(int)
+        cfg = ExpertConfig(
+            regime="test", model_type="lstm", max_iter=10,
+            extra={"seq_len": 10, "hidden_size": 32, "num_layers": 1, "batch_size": 32},
+        )
+        model = create_expert(cfg)
+        model.fit(X, y)
+        preds = model.predict(X)
+        assert preds.shape == (n,)
+        assert set(preds).issubset({0, 1})
+        proba = model.predict_proba(X)
+        assert proba.shape == (n, 2)
+
+    def test_transformer_expert_fit_predict(self):
+        np.random.seed(42)
+        n = 200
+        X = np.random.randn(n, 10).astype(np.float32)
+        y = (X[:, 0] > 0).astype(int)
+        cfg = ExpertConfig(
+            regime="test", model_type="transformer", max_iter=10,
+            extra={
+                "seq_len": 10, "d_model": 32, "nhead": 4,
+                "num_layers": 1, "hidden_size": 32, "batch_size": 32,
+            },
+        )
+        model = create_expert(cfg)
+        model.fit(X, y)
+        preds = model.predict(X)
+        assert preds.shape == (n,)
+        proba = model.predict_proba(X)
+        assert proba.shape == (n, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -322,3 +380,88 @@ class TestWalkForward:
 
         for i in range(1, len(results)):
             assert results[i]["n_train"] > results[i - 1]["n_train"]
+
+
+# ---------------------------------------------------------------------------
+# LSTM/Transformer MoE integration
+# ---------------------------------------------------------------------------
+
+class TestMoEWithLSTMExperts:
+    def test_moe_lstm_fit_and_predict(self, simple_data):
+        X, y, regimes = simple_data
+        config = MoEConfig(
+            expert_type="lstm",
+            min_samples_per_expert=30,
+            max_iter=10,
+            seq_len=10,
+            hidden_sizes=(32,),
+            num_layers=1,
+            batch_size=32,
+        )
+        router = MoERouter(config)
+        router.fit(X, y, regimes)
+        assert router._fitted
+        preds = router.predict(X, regimes)
+        assert preds.shape == (len(X),)
+        assert set(preds).issubset({0, 1})
+
+    def test_moe_lstm_evaluate(self, simple_data):
+        X, y, regimes = simple_data
+        config = MoEConfig(
+            expert_type="lstm",
+            min_samples_per_expert=30,
+            max_iter=10,
+            seq_len=10,
+            hidden_sizes=(32,),
+            num_layers=1,
+            batch_size=32,
+        )
+        router = MoERouter(config)
+        router.fit(X, y, regimes)
+        result = router.evaluate(X, y, regimes)
+        assert 0 <= result["overall_accuracy"] <= 1
+        assert result["n_regimes"] >= 1
+
+
+class TestMoEWithTransformerExperts:
+    def test_moe_transformer_fit_and_predict(self, simple_data):
+        X, y, regimes = simple_data
+        config = MoEConfig(
+            expert_type="transformer",
+            min_samples_per_expert=30,
+            max_iter=10,
+            seq_len=10,
+            d_model=32,
+            nhead=4,
+            num_layers=1,
+            hidden_sizes=(32,),
+            batch_size=32,
+        )
+        router = MoERouter(config)
+        router.fit(X, y, regimes)
+        assert router._fitted
+        preds = router.predict(X, regimes)
+        assert preds.shape == (len(X),)
+
+    def test_moe_transformer_walk_forward(self):
+        np.random.seed(42)
+        n = 400
+        X = np.random.randn(n, 8).astype(np.float32)
+        y = (X[:, 0] > 0).astype(int)
+        regimes = np.random.choice(["bull", "bear"], n)
+
+        config = MoEConfig(
+            expert_type="transformer",
+            min_samples_per_expert=30,
+            max_iter=5,
+            seq_len=10,
+            d_model=32,
+            nhead=4,
+            num_layers=1,
+            hidden_sizes=(32,),
+            batch_size=32,
+        )
+        results = train_moe_walk_forward(X, y, regimes, n_folds=2, config=config)
+        assert len(results) == 2
+        for r in results:
+            assert 0 <= r["overall_accuracy"] <= 1
