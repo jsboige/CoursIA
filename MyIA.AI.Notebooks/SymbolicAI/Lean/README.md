@@ -209,6 +209,31 @@ Lean/
     └── test_wsl_lean4_jupyter.py   # Tests backend WSL
 ```
 
+## Connections cross-series
+
+Les concepts de verification formelle et de preuve assistee par LLM presentes dans cette serie se retrouvent dans d'autres series du curriculum :
+
+### Lean et Theorie des Jeux (GameTheory)
+
+Les notebooks GameTheory side tracks (16b-16f) formalisent en Lean 4 des resultats fondamentaux de theorie des jeux et de choix social :
+
+| resultat | Fichier Lean | Notebook GameTheory | Statut |
+|----------|-------------|---------------------|--------|
+| Theoreme d'Arrow (impossibilite) | `social_choice_lean/SocialChoice/Arrow.lean` | 16d | 0 sorry (Geanakoplos 2005) |
+| Theoreme de Sen (liberalisme) | `social_choice_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
+| Valeur de Shapley | `cooperative_games_lean/CooperativeGames/Shapley.lean` | 16b | 2 sorry (en cours) |
+| Modeles de vote (Banks, STV) | `social_choice_lean/SocialChoice/Voting.lean` | 16f | 4 sorry (open problems) |
+
+Le notebook Lean-5 (tactiques) et Lean-6 (Mathlib) sont des prerequis directs pour les side tracks Lean de GameTheory.
+
+### Lean et SmartContracts
+
+La verification formelle en Lean (type theory, Curry-Howard) est conceptuellement liee a la verification formelle des smart contracts :
+
+- **SC-14 Formal Verification** : Certora/SMTChecker vs. Lean -- la meme idee de preuve mathematique de correction, mais sur des cibles differentes (Solidity vs. mathematiques). Les methodes different : SMT solving (automatique, borne) vs. tactiques interactives (expressif, guidable).
+- **SC-11 LLM-Assisted Contracts** : Le meme paradigme d'assistance LLM que les notebooks Lean-7/8/9, applique a la generation de smart contracts au lieu de preuves.
+- **SC-17 E2E Verifiable Voting** : Les resultats de `Voting.lean` (theoreme du median voter, proprietes Banks/STV) eclairent les proprietes theoriques des systemes de vote verifiable.
+
 ## Licence
 
 Voir la licence du repository principal.
