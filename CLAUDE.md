@@ -101,6 +101,36 @@ Incident 2026-04-24 : commit "Mathlib compilation fixes" (#524) a remplace 9 pre
 
 Detail complet : [.claude/rules/code-style.md](.claude/rules/code-style.md) (auto-loaded a chaque session).
 
+### F. Environnement Python — REPARER, ne JAMAIS contourner
+
+**Regle user 2026-05-06 (incident scipy DLL/sklearn force-reinstall) :** un environnement Python degrade ne se contourne **jamais** par delegation, fallback ou skip. On repare **coute que coute**, en demandant un UAC user au besoin pour les operations privilegiees.
+
+**Symptomes red-flag** : `ModuleNotFoundError` apres install qui se dit "Successfully installed", `ImportError: DLL load failed`, `Access is denied` sur force-reinstall, distributions corrompues prefixees `~` (ex: `~cipy/`, `~umpy/`), conflits Python 3.12 vs 3.14 vs 3.13 dans `which pip` vs `python --version`.
+
+**Workflow de reparation obligatoire** :
+1. Identifier l'env vise (Python systeme vs **env Conda dedie** — voir ci-dessous, **utiliser le bon env d'abord** plutot que reparer le mauvais)
+2. Lister les processes Python actifs (`Get-Process python*`) qui pourraient locker des DLLs, killer si necessaire
+3. Cleanup distributions corrompues (`~xxx/` dirs dans site-packages) via `Remove-Item -Recurse -Force`
+4. Force-reinstall avec `python -m pip install --force-reinstall <pkg>` (assure le bon Python)
+5. Si Access denied persiste → demander UAC user (executer `Start-Process powershell -Verb RunAs ...`) ou desactivation antivirus temporaire
+6. Tester import end-to-end avant de relancer le job
+
+**Anti-patterns interdits** :
+- Skip de l'env local et delegation a un agent quand le user a explicitement demande l'execution locale
+- Workarounds genre "je passe a un autre env" ou "j'ignore le warning"
+- Reinstall en boucle sans cleanup des residus `~xxx/`
+- Continuer a importer un module en silencant les exceptions (`except Exception: pass`)
+
+**Envs Conda dedies sur ai-01** (a utiliser AVANT de toucher Python systeme) :
+
+| Env | Usage | Path |
+|-----|-------|------|
+| `coursia-ml-training` | **ML training (PyTorch CUDA, sklearn, scipy, hmmlearn)** | `C:\Users\MYIA\miniconda3\envs\coursia-ml-training` |
+| `mcp-jupyter` | MCP Jupyter server | `C:\Users\MYIA\miniconda3\envs\mcp-jupyter` |
+| `epita_symbolic_ai` | EPITA SymbolicAI series | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai` |
+
+Pour `train_moe.py`, `train_lstm.py`, `train_mamba.py` etc. : **toujours** activer `coursia-ml-training` (`& "C:\Users\MYIA\miniconda3\envs\coursia-ml-training\python.exe"` ou `conda activate coursia-ml-training`). Liste complete via `conda env list`.
+
 ---
 
 ## CARTOGRAPHIE & OUTILS
