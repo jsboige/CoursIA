@@ -94,8 +94,8 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [ML-SVM](ML-SVM/) | SVM linear kernel equity-only ETFs | **0.147** | 5.2% | 27.1% | 2015-2026 | — | v3, plafond structurel |
 | [ML-FX-SVM-Wavelet](ML-FX-SVM-Wavelet/) | SVR + wavelet decomposition 4 Forex pairs (EURJPY/GBPUSD/AUDCAD/NZDCHF) leverage 20x | **0.167** | 5.07% | 20.5% | 2019-2024 | Ch06-Ex05 | 4211 trades (overtrading), Win Rate 12%, echec pedagogique |
 | [Dividend-Harvesting-ML](Dividend-Harvesting-ML/) | DecisionTree dividend yield prediction (QQQ top 100) | **0.469** | 12.7% | 30.5% | 2015-2026 | Ch06-Ex06 | v1, fundamental factors |
-| [PCA-StatArbitrage](PCA-StatArbitrage/) | PCA + LinearRegression stat-arb mean reversion (top 100) | **0.399** | 12.65% | 31.8% | 2019-2024 | Ch06-Ex13 | v1, sklearn, book period |
-| [PCA-StatArb](PCA-StatArb/) | PCA + OLS stat-arb mean reversion (top 100 liquid) | **0.165** | 5.3% | 35.9% | 2015-2026 | Ch06-Ex13 | v1, statsmodels, extended period |
+| [PCA-StatArbitrage](PCA-StatArbitrage/) | PCA + LinearRegression stat-arb mean reversion (top 100) | **0.399** | 12.65% | 31.8% | 2019-2024 | Ch06-Ex13 | v1, sklearn, consolidated from PCA-StatArb + ML-PCA-StatArb |
+| ~~PCA-StatArb~~ | Consolidated into PCA-StatArbitrage (statsmodels version, not QC Cloud compatible) | --- | --- | --- | --- | --- | REMOVED |
 | [Clustering-Fundamentals-ML](Clustering-Fundamentals-ML/) | PCA + GBR fundamental ranking (top 10 of 100) | -0.052 | -1.2% | 15.3% | 2015-2026 | Ch06-Ex10 | v1.1, Runtime Error, a ameliorer |
 | [ML-HeadShoulders-CNN](ML-HeadShoulders-CNN/) | Keras CNN Head & Shoulders detection USDCAD (synthetic training fallback) | **-46.8** | 0.03% | 0.1% | 2019-2024 | Ch06-Ex17 | Seulement 4 trades, echec de generalisation synthetique -> reel documente |
 | [Stoploss-Volatility-ML](Stoploss-Volatility-ML/) | Lasso regression stop-loss optimization (KO equity) | --- | --- | --- | --- | Ch06-Ex08 | BROKEN: CBOE data unavailable (#233) |
@@ -117,7 +117,7 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [ML-HMM-Regime](ML-HMM-Regime/) | Markov-switching dynamic regression 2-regime detection (SPY/TLT) | **0.571** | --- | --- | 2015-2024 | Ch06-Ex04 | statsmodels MarkovRegression |
 | [ML-Gaussian-Classifier](ML-Gaussian-Classifier/) | GaussianNB direction prediction tech stocks, prob-weighted sizing | **0.361** | 12.49% | 47.4% | 2015-2026 | Ch06-Ex15 | Cross-sectional features |
 | [ML-LLM-Summarization](ML-LLM-Summarization/) | Tiingo news sentiment + optional OpenAI LLM summarization (SPY) | **0.686** | 15.45% | 22.7% | 2015-2026 | Ch06-Ex16 | Keyword fallback, Tiingo data |
-| [ML-PCA-StatArb](ML-PCA-StatArb/) | PCA + OLS stat-arb mean-reversion, Z-score residuals (top 100) | **0.399** | 12.65% | 31.8% | 2019-2024 | Ch06-Ex13 | Book period, sklearn |
+| ~~ML-PCA-StatArb~~ | Consolidated into PCA-StatArbitrage (identical code) | --- | --- | --- | --- | --- | REMOVED |
 | [ML-Pairs-PCA-Selection](ML-Pairs-PCA-Selection/) | PCA-based pair selection research | --- | --- | --- | --- | Ch06-Ex09 | Research only (no main.py) |
 | [ML-Chronos-Foundation](ML-Chronos-Foundation/) | Amazon Chronos-t5-tiny foundation model portfolio allocation (8 ETFs) | **0.277** | 7.23% | 13.5% | 2015-2026 | Ch06-Ex18 | Foundation model, SMA200 regime |
 | [ML-FinBERT-Sentiment](ML-FinBERT-Sentiment/) | ProsusAI/finbert sentiment from Tiingo news, most volatile tech stock | N/A | N/A | N/A | --- | Ch06-Ex19 | TF unavailable on QC Cloud, 0 trades |
@@ -240,7 +240,7 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **Reinforcement-Learning-Trading** (Book Ch07) : Variante pedagogique DQN avec experience replay.
 - **Markov-Regime-Detection** (Book Ex04) : HMM 3 regimes (bull/neutral/bear) avec allocation dynamique (SPY/TLT). Monthly rebalance. v1.0.
 - **Dividend-Harvesting-ML** (Book Ex06) : DecisionTreeRegressor pour prediction du rendement dividende. Facteurs fondamentaux (PE ratio, revenue growth, free cash flow %, dividend payout ratio, current ratio). Universe QQQ top 100, monthly rebalance. v1.
-- **PCA-StatArb** (Book Ex13) : PCA + OLS pour arbitrage statistique mean-reversion. 3 composantes principales, z-score des residus (seuil 1.5). Universe top 100 par dollar volume. Monthly. v1.
+- **PCA-StatArbitrage** (Book Ex13) : PCA + sklearn LinearRegression stat-arb mean-reversion. 3 composantes principales, z-score des residus (seuil 1.5). Universe top 100. Monthly. Consolidated from PCA-StatArb (statsmodels) + ML-PCA-StatArb.
 - **Clustering-Fundamentals-ML** (Book Ex10) : PCA (5 composantes) + GradientBoostingRegressor sur 26 facteurs fondamentaux. Selectionne top-10 par rendement predit. Equal-weight, monthly. v1.
 - **Stoploss-Volatility-ML** (Book Ex08) : Lasso regression pour stop-loss optimal base sur VIX, ATR et std des rendements. Cycles hebdomadaires (lundi-vendredi) sur KO equity. v1.
 - **InverseVolatility-Rank** (Book Ex11) : Ridge regression pour prevision volatilite future. Allocation inversement proportionnelle a la volatilite predite sur 12 contrats futures (indices, energie, grains). v1.
@@ -249,7 +249,7 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **ML-FX-SVM-Wavelet** (Book Ex05, QC Cloud) : Portage QC Cloud de Ex05 avec SVR + wavelet sur 4 paires Forex (EURJPY/GBPUSD/AUDCAD/NZDCHF), leverage 20x. Sharpe 0.167, Win Rate 12%, 4211 trades (overtrading). Echec pedagogique documente : le pattern SVM+wavelet est tres sensible aux parametres, et leverage 20x amplifie l'overtrading.
 - **ML-HeadShoulders-CNN** (Book Ex17, Keras) : Detection CNN de pattern Head & Shoulders sur USDCAD. Le main.py d'origine chargeait un modele Keras depuis l'Object Store ; fallback synthetique ajoute (commit d34d8b49) qui entraine un petit CNN Conv1D sur des patterns gaussiens generes aleatoirement si le modele n'est pas present. Sharpe -46.8 (artefact de variance minuscule), seulement 4 trades : echec de generalisation synthetique -> reel documente.
 - **BTC-ML** : Prediction BTC par machine learning (features techniques + filtre volatilite 60%). Periode courte 2023-2026.
-- **PCA-StatArbitrage** (Book Ex13) : PCA + sklearn LinearRegression pour stat-arb. Meme concept que PCA-StatArb mais avec sklearn sur la periode du livre (2019-2024). Sharpe 0.399. v1.
+- **~~PCA-StatArb~~** (CONSOLIDATED into PCA-StatArbitrage) : Version statsmodels (numpy/scipy), non compatible QC Cloud. Code supprime.
 - **ML-Classification** : RandomForest classification direction J+1 sur SPY. Modele charge depuis ObjectStore. Non backtestee.
 - **ML-Regression** : Ridge Regression prediction returns J+1 sur 20 stocks. Features: RSI, EMA, volume. Non backtestee.
 - **ML-Ensemble** : Ensemble Ridge/RF/LightGBM sur 30 large-caps. Weighted averaging, confidence-based sizing. Non backtestee.
@@ -264,7 +264,7 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **ML-HMM-Regime** (Book Ex04) : Modele Markov-switching 2 regimes (haute/basse volatilite) via statsmodels MarkovRegression. Allocation SPY (low-vol) / TLT (high-vol).
 - **ML-Gaussian-Classifier** (Book Ex15) : GaussianNB prediction de direction sur tech stocks. Features: rendements open-close cross-sectionnels. Sizing par probabilite.
 - **ML-LLM-Summarization** (Book Ex16) : Sentiment news Tiingo + optional OpenAI LLM summarization. Fallback keyword-based. SPY, 2015-2026. Sharpe 0.686.
-- **ML-PCA-StatArb** (Book Ex13, book period) : PCA + sklearn LinearRegression stat-arb mean-reversion. Meme concept que PCA-StatArb mais periode du livre (2019-2024). Sharpe 0.399.
+- **~~ML-PCA-StatArb~~** (CONSOLIDATED into PCA-StatArbitrage) : Code identique a PCA-StatArbitrage. Supprime.
 - **ML-Pairs-PCA-Selection** (Book Ex09) : PCA-based pair selection. Research uniquement (notebook, pas de main.py).
 - **ML-Chronos-Foundation** (Book Ex18) : Modele fondation Chronos-t5-tiny (Amazon) pour prevision de series temporelles. Allocation par Sharpe ratio predit. 8 ETFs.
 - **ML-FinBERT-Sentiment** (Book Ex19) : ProsusAI/finbert pour sentiment de news financieres. TF non disponible sur QC Cloud, 0 trades. Reference pedagogique.
