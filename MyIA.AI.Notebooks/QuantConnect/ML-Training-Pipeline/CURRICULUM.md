@@ -94,14 +94,17 @@ Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM
 
 **Dataset**: `datasets/yfinance/crypto_panier/` (PR #776, 2.5 MB)
 
-### Stage 2: Feature Engineering
+### Stage 2: Feature Engineering (IN PROGRESS)
 
 Advanced features beyond basic OHLCV.
 
-- 13 technical indicators (RSI, MACD, Bollinger, ATR, OBV, etc.)
-- Cross-asset features (bond-equity ratio, commodity momentum, FX carry)
-- Volatility regime features (VIX level, term structure)
-- Macro features (rate changes, inflation surprises)
+- 13 technical indicators (RSI, MACD, Bollinger, ATR, OBV, etc.) — Done
+- Cross-asset features (bond-equity ratio, commodity momentum, equity strength) — Done
+- Volatility regime features (VIX level, term structure, z-score, rank) — Done
+- Macro features (rate changes, yield curve slope, inversion flag) — Done
+
+**Implementation**: `features.py` — 17 composable indicator functions + `FeatureEngineer` class.
+**Tests**: 19 new tests (44/45 pass), covering all Stage 2 features.
 
 ### Stage 3: Ensemble Methods
 
