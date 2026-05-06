@@ -2,23 +2,13 @@
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)
 
-Bienvenue dans l'univers fascinant de l'audio IA ! Souvent négligé au profit des images et du texte, le traitement audio représente pourtant la modalité la plus accessible et naturelle de l'interaction humaine. Que ce soit à travers la voix, la musique ou le son, l'IA révolutionne notre manière de communiquer, créer et comprendre le monde sonore.
+Le traitement audio est souvent le parent pauvre de l'IA generative, eclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalites les plus naturelles de l'interaction humaine. Cette serie couvre l'ensemble de la chaine audio IA : reconnaissance vocale, synthese, clonage, generation musicale, et orchestration de pipelines.
 
-Cette série vous emmène au cœur des technologies audio IA, des bases de reconnaissance vocale aux applications de production professionnelle. Parcourez 21 notebooks complets qui vous guideront des fondements aux cas d'usage avancés.
+21 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production.
 
-## Fil rouge : Création d'un podcast automatisé
+## Fil rouge : construire un podcast automatise
 
-Le projet phare de cette série est la création d'un podcast automatisé entièrement généré par IA :
-- Synthèse vocale personnalisée avec Kokoro TTS et XTTS v2
-- Génération de musique de fond adaptée au mood avec MusicGen
-- Orchestration complète des services pour une production audio cohérente
-- Integration avec des systèmes de transcription pour la post-production
-
-C'est le projet ultime pour démontrer comment ces technologies s'articulent pour créer une solution concrète et professionnelle.
-
-## Vue d'ensemble
-
-21 notebooks répartis sur 4 niveaux de progression, constituant un parcours complet d'environ 14 à 16 d'apprentissage pratique, 100% validés pour garantir une expérience sans erreur.
+L'objectif fil rouge de cette serie est de construire un podcast entierement genere par IA. Chaque niveau apporte une brique supplementaire : TTS pour donner une voix au contenu (niveau 1), clonage vocal et musique pour l'identite sonore (niveau 2), pipelines STT vers LLM vers TTS pour l'assemblage (niveau 3), et workflows de production pour le deploiement (niveau 4).
 
 ## Structure
 
@@ -34,6 +24,8 @@ Audio/
 
 ### 01-Foundation - Bases Speech & Audio
 
+Avant de produire un podcast, il faut maitriser les deux briques de base : la synthese vocale (TTS) pour generer de la parole, et la reconnaissance vocale (STT) pour transcrire des fichiers audio existants. Ce niveau commence par les API cloud (simples et immediates), puis passe en local GPU pour l'autonomie et le controle fin. A la fin de ce niveau, vous savez faire parler une machine et comprendre de la parole.
+
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [01-1-OpenAI-TTS-Intro](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) | API TTS (6 voix, formats, vitesse) | OpenAI API | 0 |
@@ -43,6 +35,8 @@ Audio/
 | [01-5-Kokoro-TTS-Local](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) | Kokoro 82M, TTS legere | Local GPU | ~2 GB |
 
 ### 02-Advanced - Voix, Musique & Separation
+
+Un podcast de qualite demande une voix naturelle et une identite sonore distincte. Ce niveau couvre le clonage vocal (creer un narrateur unique a partir d'un echantillon), la generation musicale (jingle et fond sonore), la separation de sources (isoler la voix d'un mix existant), et les modeles TTS expressifs (varier le ton et l'emotion). Deux parcours possibles : voix ou musique, selon l'objectif.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -57,6 +51,8 @@ Audio/
 
 ### 03-Orchestration - Multi-modeles & Temps reel
 
+Les composants existent, il faut les assembler. Ce niveau construit les pipelines qui transforment un audio en texte (STT), l'enrichissent via un LLM, puis le reconvertissent en parole (TTS). Le notebook 03-2 realise explicitement un pipeline de podcast. L'API Realtime d'OpenAI (03-3) montre la version temps reel pour les interactions live.
+
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [03-1-Multi-Model-Audio-Comparison](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) | Benchmark STT et TTS | Mixed | ~12 GB |
@@ -64,6 +60,8 @@ Audio/
 | [03-3-Realtime-Voice-API](03-Orchestration/03-3-Realtime-Voice-API.ipynb) | OpenAI Realtime API, WebSocket | OpenAI API | 0 |
 
 ### 04-Applications - Cas d'usage production
+
+Application directe : les notebooks de ce niveau mettent en oeuvre des workflows complets. 04-1 automatise la narration de cours (TTS + LLM), 04-2 traite la transcription batch avec sous-titres SRT, 04-3 compose de la musique en plusieurs etapes, 04-4 synchronise audio et video, et 04-5 explore le live coding musical avec un LLM.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -132,6 +130,18 @@ Video/ (serie complementaire)
 | Speech complet | 01-1 a 02-2 |
 | Musique | 02-3, 02-6, 02-7, 02-4, 04-3 |
 | Production | Tous + 03 + 04 |
+
+## Recette : construire un podcast automatise
+
+Le fil rouge de cette serie est la creation d'un podcast genere par IA. Voici comment les niveaux s'articulent pour y parvenir :
+
+1. **01-Foundation** (TTS + STT) : [01-1](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) et [01-5](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) vous donnent les bases de la synthese vocale. [01-2](01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) et [01-4](01-Foundation/01-4-Whisper-Local.ipynb) couvrent la reconnaissance vocale. A la fin de ce niveau, vous savez transformer du texte en audio et inversement.
+
+2. **02-Advanced** (voix + musique) : [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) clone une voix pour creer un narrateur coherent. [02-3](02-Advanced/02-3-MusicGen-Generation.ipynb) genere le jingle et le fond sonore. [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) isole les pistes si besoin, et [02-8](02-Advanced/02-8-Expressive-TTS.ipynb) ajoute de l'expressivite.
+
+3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare les modeaux pour choisir le meilleur STT/TTS selon le budget. [03-2](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) assemble le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatise.
+
+4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Audio-Content.ipynb) applique le pipeline a la narration de cours. [04-2](04-Applications/04-2-Transcription-Pipeline.ipynb) gere la transcription batch pour les episodes longs. [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise avec la piste video si le podcast a une composante visuelle.
 
 ## Licence
 

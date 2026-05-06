@@ -2,7 +2,9 @@
 
 [← Audio Foundation](../01-Foundation/) | [↑ Audio](../README.md) | [→ Audio Orchestration](../03-Orchestration/)
 
-Ce module explore les techniques avancées : clonage vocal, génération musicale, séparation de sources, et modèles TTS expressifs.
+Ce module explore les techniques avancees : clonage vocal, generation musicale, separation de sources, et modeles TTS expressifs.
+
+**Dans le cadre du fil rouge podcast** : un podcast de qualite a besoin d'une voix coherente et d'une identite sonore. [02-2](02-2-XTTS-Voice-Cloning.ipynb) clone une voix a partir d'un echantillon pour creer un narrateur recurrent. [02-3](02-3-MusicGen-Generation.ipynb) genere le jingle et le fond musical. [02-4](02-4-Demucs-Source-Separation.ipynb) isole les pistes audio d'un mix existant (utile pour remasteriser un interview). [02-8](02-8-Expressive-TTS.ipynb) ajoute des emotions et de la prosodie pour varier le ton selon les passages.
 
 ## Vue d'ensemble
 

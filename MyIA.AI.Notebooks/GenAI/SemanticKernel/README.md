@@ -136,6 +136,18 @@ dotnet --version
 - [SK Blog](https://devblogs.microsoft.com/semantic-kernel/)
 - [MCP Specification](https://modelcontextprotocol.io/)
 
+## Recette : construire le NotebookMaker (systeme 3 agents)
+
+Le fil rouge de cette serie est le NotebookMaker, un systeme multi-agents qui genere automatiquement des notebooks pedagogiques. Voici comment les notebooks s'articulent :
+
+1. **Fondations (01-03)** : [01](01-SemanticKernel-Intro.ipynb) cree un Kernel et connecte un LLM. [02](02-SemanticKernel-Advanced.ipynb) ajoute le function calling et la memoire. [03](03-SemanticKernel-Agents.ipynb) introduit les agents autonomes et la collaboration via AgentGroupChat.
+
+2. **Observabilite et donnees (04-06)** : [04](04-SemanticKernel-Filters-Observability.ipynb) intercepte et log les appels. [05](05-SemanticKernel-VectorStores.ipynb) connecte une base vectorielle (RAG). [06](06-SemanticKernel-ProcessFramework.ipynb) orchestre des workflows avec etat.
+
+3. **Extensions (07-08)** : [07](07-SemanticKernel-MultiModal.ipynb) ajoute les capacites multimodales (images, audio). [08](08-SemanticKernel-MCP.ipynb) connecte le Kernel au protocole MCP pour l'interopabilite.
+
+4. **NotebookMaker (09-10)** : [09](09-SemanticKernel-Building-CLR.ipynb) prepare l'interop Python/C#. [10](10-SemanticKernel-NotebookMaker.ipynb) assemble le systeme 3 agents (Admin, Coder, Reviewer). Les versions [10a](10a-SemanticKernel-NotebookMaker-batch.ipynb) et [10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) ajoutent le mode batch et la parametrisation Papermill.
+
 ## Changelog
 
 ### Fevrier 2026

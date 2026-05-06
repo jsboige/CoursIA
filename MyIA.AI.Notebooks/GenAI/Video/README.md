@@ -2,15 +2,17 @@
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
 
-**La video est le Graal de l'IA generative.** Elle combine l'analyse d'images, la comprehension du temps, la synchronisation audio, et la creation de mouvement coherent. Cette serie vous emmene de la simple comprehension d'une sequence video existante jusqu'a la production d'une video pedagogique complete, generee de bout en bout par des modeles d'IA.
+La video est la modalite generative la plus exigeante : elle combine l'analyse d'images, la comprehension du temps, la synchronisation audio, et la creation de mouvement coherent. Cette serie couvre l'ensemble de la chaine video IA : comprehension de sequences existantes, generation a partir de texte ou d'images, orchestration de pipelines multi-modeles, et workflows de production. 16 notebooks repartis sur 4 niveaux progressifs.
 
-**Fil rouge** : construire un pipeline capable de transformer un script texte en video pedagogique animee, avec voix de synthese et fond musical genere — un defi qui mobilise tous les niveaux de cette serie.
+## Fil rouge : construire un pipeline texte vers video pedagogique
+
+L'objectif fil rouge de cette serie est de construire un pipeline capable de transformer un script texte en video pedagogique animee. Chaque niveau apporte une brique : comprehension video pour analyser les sequences (niveau 1), modeles generatifs pour creer du mouvement (niveau 2), orchestration pour assembler le pipeline (niveau 3), et workflows de production pour le deploiement (niveau 4).
 
 ## Progression par niveau
 
 ### 01-Foundation - Comprendre la video avant de la generer
 
-On ne peut pas creer ce qu'on ne comprend pas. Ce niveau pose les bases techniques (codecs, ffmpeg, moviepy) et introduit la comprehension video par IA : decomposer une sequence en scenes, repondre a des questions sur le contenu, analyser le mouvement. Vous decouvrirez aussi le surcadrage d'images (ESRGAN) et l'interpolation de frames (RIFE) pour ameliorer la qualite visuelle.
+On ne peut pas creer ce qu'on ne comprend pas. Ce niveau pose les bases techniques (codecs, ffmpeg, moviepy) et introduit la comprehension video par IA : decomposer une sequence en scenes, repondre a des questions sur le contenu, analyser le mouvement. Vous decouvrirez aussi le surcadrage d'images (ESRGAN) et l'interpolation de frames (RIFE) pour ameliorer la qualite visuelle. A la fin de ce niveau, vous savez analyser une video existante et en extraire des informations structurelles.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -51,6 +53,18 @@ Les trois derniers notebooks et le notebook de synchronisation audio-video concl
 | [04-2-Creative-Video-Workflows](04-Applications/04-2-Creative-Video-Workflows.ipynb) | Style transfer, music video | Mixed | ~16 GB |
 | [04-3-Sora-API-Cloud-Video](04-Applications/04-3-Sora-API-Cloud-Video.ipynb) | Sora 2 API, cloud vs local | OpenAI API | 0 |
 | [04-4-Production-Video-Pipeline](04-Applications/04-4-Production-Video-Pipeline.ipynb) | Pipeline complet bout-en-bout | Mixed | ~18 GB |
+
+## Recette : construire un pipeline texte vers video pedagogique
+
+Le fil rouge de cette serie est la creation d'un pipeline de video pedagogique generee par IA. Voici comment les niveaux s'articulent :
+
+1. **01-Foundation** (comprehension video) : [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) et [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) couvrent la comprehension video (decomposition en scenes, Q&A). [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) ameliore la qualite. A la fin, vous savez analyser et manipuler une video existante.
+
+2. **02-Advanced** (generation video) : [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) genere des videos haute qualite. [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb) offre une alternative rapide avec support multilingue. [02-4](02-Advanced/02-4-SVD-Image-to-Video.ipynb) anime une image existante (utile pour transformer un diagramme en animation).
+
+3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) compare les modeles pour choisir le bon. [03-2](03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) construit le pipeline text-to-image-to-video. [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb) utilise ComfyUI pour des workflows natifs.
+
+4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Video-Generation.ipynb) applique le pipeline au contenu educatif. [04-4](04-Applications/04-4-Production-Video-Pipeline.ipynb) assemble le systeme bout-en-bout. Le notebook [04-4-Audio-Video-Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) de la serie Audio synchronise la video avec l'audio genere.
 
 ## Ce que vous saurez faire
 

@@ -122,6 +122,18 @@ python scripts/notebook_tools/notebook_tools.py validate GenAI/Texte --quick
 python scripts/notebook_tools/notebook_tools.py execute GenAI/Texte --timeout 300
 ```
 
+## Recette : maitriser les LLMs pour piloter tout le generatif
+
+Le fil rouge de cette serie est la progression de l'interaction basique avec un LLM vers la maitrise complete en production. Voici comment les tiers s'articulent :
+
+1. **Tier 1** (fondations) : [1_OpenAI_Intro](1_OpenAI_Intro.ipynb) couvre l'API OpenAI et les tokens. [2_PromptEngineering](2_PromptEngineering.ipynb) explore les techniques de prompting (zero-shot, few-shot, chain-of-thought). A la fin, vous savez interagir efficacement avec un LLM.
+
+2. **Tier 2** (sorties structurees) : [3_Structured_Outputs](3_Structured_Outputs.ipynb) maitrise les formats JSON et Pydantic. [4_Function_Calling](4_Function_Calling.ipynb) connecte le LLM a des outils externes. Ces deux notebooks sont essentiels pour tout systeme qui pilote d'autres modeles generatifs (image, audio, video).
+
+3. **Tier 3** (augmentation) : [5_RAG_Modern](5_RAG_Modern.ipynb) et [6_PDF_Web_Search](6_PDF_Web_Search.ipynb) enrichissent le LLM avec des sources externes. [7_Code_Interpreter](7_Code_Interpreter.ipynb) lui donne la capacite d'executer du code.
+
+4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modeles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise. [10_LocalLlama](10_LocalLlama.ipynb) et [11_Quantization](11_Quantization.ipynb) deployent en local avec vLLM.
+
 ## Relation avec les autres series
 
 - **GenAI/Images** : Generation d'images (DALL-E, Stable Diffusion)
