@@ -24,6 +24,9 @@ from features import (
     compute_volume_ratio,
     compute_momentum,
     compute_price_acceleration,
+    compute_cross_asset_ratios,
+    compute_vix_features,
+    compute_macro_features,
 )
 
 
@@ -219,3 +222,174 @@ class TestFeatureEngineer:
         h = FeatureEngineer._data_hash(ohlcv)
         assert isinstance(h, str)
         assert len(h) == 16
+
+
+class TestComputeCrossAssetRatios:
+    def test_no_external_data(self, ohlcv):
+        feat = compute_cross_asset_ratios(ohlcv)
+        assert len(feat.columns) == 0
+
+    def test_bond_equity_ratio(self, ohlcv):
+        np.random.seed(42)
+        bond_prices = pd.Series(
+            100.0 + np.cumsum(np.random.randn(len(ohlcv)) * 0.2),
+            index=ohlcv.index,
+        )
+        feat = compute_cross_asset_ratios(ohlcv, bond=bond_prices)
+        assert "bond_equity_ratio" in feat.columns
+        assert "bond_equity_zscore" in feat.columns
+
+    def test_commodity_momentum(self, ohlcv):
+        np.random.seed(42)
+        comm_prices = pd.Series(
+            50.0 + np.cumsum(np.random.randn(len(ohlcv)) * 0.3),
+            index=ohlcv.index,
+        )
+        feat = compute_cross_asset_ratios(ohlcv, commodity=comm_prices)
+        assert "commodity_momentum" in feat.columns
+
+    def test_equity_strength(self, ohlcv):
+        np.random.seed(42)
+        eq_prices = pd.Series(
+            200.0 + np.cumsum(np.random.randn(len(ohlcv)) * 0.5),
+            index=ohlcv.index,
+        )
+        feat = compute_cross_asset_ratios(ohlcv, equity_index=eq_prices)
+        assert "equity_strength" in feat.columns
+        assert "equity_breadth_momentum" in feat.columns
+
+    def test_all_combined(self, ohlcv):
+        np.random.seed(42)
+        n = len(ohlcv)
+        bond = pd.Series(100 + np.cumsum(np.random.randn(n) * 0.2), index=ohlcv.index)
+        comm = pd.Series(50 + np.cumsum(np.random.randn(n) * 0.3), index=ohlcv.index)
+        eq = pd.Series(200 + np.cumsum(np.random.randn(n) * 0.5), index=ohlcv.index)
+        feat = compute_cross_asset_ratios(ohlcv, bond=bond, commodity=comm, equity_index=eq)
+        assert len(feat.columns) == 5
+
+    def test_misaligned_indices(self, ohlcv):
+        bond = pd.Series(100.0, index=ohlcv.index[:50])
+        feat = compute_cross_asset_ratios(ohlcv, bond=bond)
+        assert len(feat) == len(ohlcv)
+
+
+class TestComputeVixFeatures:
+    def test_no_vix(self, ohlcv):
+        feat = compute_vix_features(ohlcv)
+        assert len(feat.columns) == 0
+
+    def test_vix_basic(self, ohlcv):
+        np.random.seed(42)
+        vix_series = pd.Series(
+            15.0 + np.abs(np.random.randn(len(ohlcv)) * 3),
+            index=ohlcv.index,
+        )
+        feat = compute_vix_features(ohlcv, vix=vix_series)
+        assert "vix_level" in feat.columns
+        assert "vix_change_1d" in feat.columns
+        assert "vix_change_5d" in feat.columns
+        assert "vix_zscore" in feat.columns
+        assert "vix_rank_252d" in feat.columns
+
+    def test_vix_term_structure(self, ohlcv):
+        np.random.seed(42)
+        n = len(ohlcv)
+        vix_series = pd.Series(15.0 + np.abs(np.random.randn(n) * 3), index=ohlcv.index)
+        vix9d = pd.Series(14.0 + np.abs(np.random.randn(n) * 2), index=ohlcv.index)
+        feat = compute_vix_features(ohlcv, vix=vix_series, vix9d=vix9d)
+        assert "vix_term_spread" in feat.columns
+        assert "vix_term_zscore" in feat.columns
+        assert len(feat.columns) == 7
+
+    def test_vix_non_negative(self, ohlcv):
+        np.random.seed(42)
+        vix_series = pd.Series(
+            15.0 + np.abs(np.random.randn(len(ohlcv)) * 3),
+            index=ohlcv.index,
+        )
+        feat = compute_vix_features(ohlcv, vix=vix_series)
+        assert (feat["vix_level"].dropna() >= 0).all()
+
+
+class TestComputeMacroFeatures:
+    def test_no_rates(self, ohlcv):
+        feat = compute_macro_features(ohlcv)
+        assert len(feat.columns) == 0
+
+    def test_rates_10y(self, ohlcv):
+        np.random.seed(42)
+        rates = pd.Series(
+            3.0 + np.cumsum(np.random.randn(len(ohlcv)) * 0.02),
+            index=ohlcv.index,
+        )
+        feat = compute_macro_features(ohlcv, rates_10y=rates)
+        assert "rate_10y" in feat.columns
+        assert "rate_10y_change_5d" in feat.columns
+        assert "rate_10y_change_20d" in feat.columns
+
+    def test_yield_spread(self, ohlcv):
+        np.random.seed(42)
+        n = len(ohlcv)
+        r10 = pd.Series(3.5 + np.cumsum(np.random.randn(n) * 0.02), index=ohlcv.index)
+        r2 = pd.Series(3.0 + np.cumsum(np.random.randn(n) * 0.02), index=ohlcv.index)
+        feat = compute_macro_features(ohlcv, rates_10y=r10, rates_2y=r2)
+        assert "yield_spread_10y_2y" in feat.columns
+        assert "yield_curve_slope" in feat.columns
+        assert "yield_inverted" in feat.columns
+        assert "rate_2y" in feat.columns
+
+    def test_fed_funds(self, ohlcv):
+        np.random.seed(42)
+        ff = pd.Series(
+            2.0 + np.cumsum(np.random.randn(len(ohlcv)) * 0.01),
+            index=ohlcv.index,
+        )
+        feat = compute_macro_features(ohlcv, fed_funds=ff)
+        assert "fed_funds_rate" in feat.columns
+        assert "fed_funds_change_20d" in feat.columns
+
+    def test_all_macro(self, ohlcv):
+        np.random.seed(42)
+        n = len(ohlcv)
+        r10 = pd.Series(3.5 + np.cumsum(np.random.randn(n) * 0.02), index=ohlcv.index)
+        r2 = pd.Series(3.0 + np.cumsum(np.random.randn(n) * 0.02), index=ohlcv.index)
+        ff = pd.Series(2.0 + np.cumsum(np.random.randn(n) * 0.01), index=ohlcv.index)
+        feat = compute_macro_features(ohlcv, rates_10y=r10, rates_2y=r2, fed_funds=ff)
+        assert len(feat.columns) == 9
+
+
+class TestFeatureEngineerStage2:
+    def test_cross_asset_in_engineer(self, ohlcv):
+        np.random.seed(42)
+        n = len(ohlcv)
+        bond = pd.Series(100 + np.cumsum(np.random.randn(n) * 0.2), index=ohlcv.index)
+        eng = FeatureEngineer(
+            lookback=20,
+            indicators=["returns", "cross_asset_ratios"],
+            bond=bond,
+        )
+        features = eng.transform(ohlcv)
+        assert "bond_equity_ratio" in features.columns
+
+    def test_vix_in_engineer(self, ohlcv):
+        np.random.seed(42)
+        vix = pd.Series(15 + np.abs(np.random.randn(len(ohlcv)) * 3), index=ohlcv.index)
+        eng = FeatureEngineer(
+            lookback=20,
+            indicators=["returns", "vix_features"],
+            vix=vix,
+        )
+        features = eng.transform(ohlcv)
+        assert "vix_level" in features.columns
+
+    def test_macro_in_engineer(self, ohlcv):
+        np.random.seed(42)
+        n = len(ohlcv)
+        r10 = pd.Series(3.5 + np.cumsum(np.random.randn(n) * 0.02), index=ohlcv.index)
+        eng = FeatureEngineer(
+            lookback=20,
+            indicators=["returns", "macro_features"],
+            rates_10y=r10,
+        )
+        features = eng.transform(ohlcv)
+        assert "rate_10y" in features.columns

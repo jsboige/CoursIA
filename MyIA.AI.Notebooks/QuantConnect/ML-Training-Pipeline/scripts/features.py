@@ -208,6 +208,134 @@ def compute_cross_sectional(
     return feat
 
 
+def compute_cross_asset_ratios(
+    df: pd.DataFrame,
+    bond: pd.Series | None = None,
+    commodity: pd.Series | None = None,
+    equity_index: pd.Series | None = None,
+    window: int = 20,
+) -> pd.DataFrame:
+    """Cross-asset ratio features: bond-equity, commodity momentum, equity strength.
+
+    Args:
+        df: Primary asset OHLCV data.
+        bond: Bond price/index series (e.g. TLT closes).
+        commodity: Commodity price/index series (e.g. DBC closes).
+        equity_index: Broad equity index series (e.g. SPY closes).
+        window: Rolling window for ratio normalization.
+    """
+    feat = pd.DataFrame(index=df.index)
+    primary = df["Close"]
+
+    if bond is not None:
+        bond_aligned = bond.reindex(df.index).ffill()
+        ratio = primary / bond_aligned
+        feat["bond_equity_ratio"] = ratio
+        feat["bond_equity_zscore"] = (
+            (ratio - ratio.rolling(window).mean())
+            / ratio.rolling(window).std().replace(0, 1e-10)
+        )
+
+    if commodity is not None:
+        comm_aligned = commodity.reindex(df.index).ffill()
+        comm_ret = comm_aligned.pct_change(window)
+        feat["commodity_momentum"] = comm_ret
+
+    if equity_index is not None:
+        eq_aligned = equity_index.reindex(df.index).ffill()
+        feat["equity_strength"] = primary / eq_aligned
+        eq_ret = eq_aligned.pct_change(window)
+        feat["equity_breadth_momentum"] = eq_ret
+
+    return feat
+
+
+def compute_vix_features(
+    df: pd.DataFrame,
+    vix: pd.Series | None = None,
+    vix9d: pd.Series | None = None,
+    window: int = 20,
+) -> pd.DataFrame:
+    """Volatility regime features from VIX data.
+
+    Args:
+        df: Primary asset OHLCV data.
+        vix: VIX close series (^VIX). If None, returns empty DataFrame.
+        vix9d: VIX9D close series (9-day VIX). Optional.
+        window: Rolling window for VIX normalization.
+    """
+    feat = pd.DataFrame(index=df.index)
+    if vix is None:
+        return feat
+
+    vix_aligned = vix.reindex(df.index).ffill()
+    feat["vix_level"] = vix_aligned
+    feat["vix_change_1d"] = vix_aligned.pct_change()
+    feat["vix_change_5d"] = vix_aligned.pct_change(5)
+    feat["vix_zscore"] = (
+        (vix_aligned - vix_aligned.rolling(window).mean())
+        / vix_aligned.rolling(window).std().replace(0, 1e-10)
+    )
+    feat["vix_rank_252d"] = vix_aligned.rolling(252, min_periods=63).rank(pct=True)
+
+    if vix9d is not None:
+        vix9d_aligned = vix9d.reindex(df.index).ffill()
+        feat["vix_term_spread"] = vix_aligned - vix9d_aligned
+        feat["vix_term_zscore"] = (
+            (feat["vix_term_spread"] - feat["vix_term_spread"].rolling(window).mean())
+            / feat["vix_term_spread"].rolling(window).std().replace(0, 1e-10)
+        )
+
+    return feat
+
+
+def compute_macro_features(
+    df: pd.DataFrame,
+    rates_10y: pd.Series | None = None,
+    rates_2y: pd.Series | None = None,
+    fed_funds: pd.Series | None = None,
+    window: int = 20,
+) -> pd.DataFrame:
+    """Macro features from interest rates and Fed data.
+
+    Args:
+        df: Primary asset OHLCV data.
+        rates_10y: 10-year Treasury yield series (e.g. DGS10 from FRED).
+        rates_2y: 2-year Treasury yield series (e.g. DGS2 from FRED).
+        fed_funds: Federal funds rate series (e.g. DFF from FRED).
+        window: Rolling window for normalization.
+    """
+    feat = pd.DataFrame(index=df.index)
+
+    if rates_10y is not None:
+        r10 = rates_10y.reindex(df.index).ffill()
+        feat["rate_10y"] = r10
+        feat["rate_10y_change_5d"] = r10.diff(5)
+        feat["rate_10y_change_20d"] = r10.diff(window)
+
+    if rates_2y is not None:
+        r2 = rates_2y.reindex(df.index).ffill()
+        feat["rate_2y"] = r2
+
+    if rates_10y is not None and rates_2y is not None:
+        r10 = rates_10y.reindex(df.index).ffill()
+        r2 = rates_2y.reindex(df.index).ffill()
+        spread = r10 - r2
+        feat["yield_spread_10y_2y"] = spread
+        feat["yield_curve_slope"] = (
+            (spread - spread.rolling(window).mean())
+            / spread.rolling(window).std().replace(0, 1e-10)
+        )
+        feat["yield_inverted"] = (spread < 0).astype(float)
+
+    if fed_funds is not None:
+        ff = fed_funds.reindex(df.index).ffill()
+        feat["fed_funds_rate"] = ff
+        feat["fed_funds_change_20d"] = ff.diff(window)
+
+    return feat
+
+
 class FeatureEngineer:
     """Composable feature engineering for OHLCV data.
 
@@ -236,6 +364,10 @@ class FeatureEngineer:
         "momentum",
         "statistical",
         "price_acceleration",
+        "cross_sectional",
+        "cross_asset_ratios",
+        "vix_features",
+        "macro_features",
     ]
 
     def __init__(
@@ -243,10 +375,26 @@ class FeatureEngineer:
         lookback: int = 20,
         indicators: list[str] | None = None,
         panel: dict[str, pd.DataFrame] | None = None,
+        bond: pd.Series | None = None,
+        commodity: pd.Series | None = None,
+        equity_index: pd.Series | None = None,
+        vix: pd.Series | None = None,
+        vix9d: pd.Series | None = None,
+        rates_10y: pd.Series | None = None,
+        rates_2y: pd.Series | None = None,
+        fed_funds: pd.Series | None = None,
     ):
         self.lookback = lookback
         self.indicators = indicators or self.ALL_INDICATORS
         self.panel = panel
+        self.bond = bond
+        self.commodity = commodity
+        self.equity_index = equity_index
+        self.vix = vix
+        self.vix9d = vix9d
+        self.rates_10y = rates_10y
+        self.rates_2y = rates_2y
+        self.fed_funds = fed_funds
 
     def transform(
         self,
@@ -303,6 +451,20 @@ class FeatureEngineer:
                 parts.append(compute_price_acceleration(df))
             elif ind == "cross_sectional":
                 parts.append(compute_cross_sectional(df, panel=self.panel))
+            elif ind == "cross_asset_ratios":
+                parts.append(compute_cross_asset_ratios(
+                    df, bond=self.bond, commodity=self.commodity,
+                    equity_index=self.equity_index, window=self.lookback,
+                ))
+            elif ind == "vix_features":
+                parts.append(compute_vix_features(
+                    df, vix=self.vix, vix9d=self.vix9d, window=self.lookback,
+                ))
+            elif ind == "macro_features":
+                parts.append(compute_macro_features(
+                    df, rates_10y=self.rates_10y, rates_2y=self.rates_2y,
+                    fed_funds=self.fed_funds, window=self.lookback,
+                ))
 
         features = pd.concat(parts, axis=1)
 
