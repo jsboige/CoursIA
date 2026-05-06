@@ -14,15 +14,15 @@ import pytest
 # Ensure scripts/ is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from scripts.eval_existing_checkpoints import (
+from eval_existing_checkpoints import (
     build_sequences,
     predict_direction,
     predict_sequences,
     run_dry_run,
     _wrap_model,
 )
-from scripts.data_utils import generate_synthetic_data
-from scripts.features import FeatureEngineer
+from data_utils import generate_synthetic_data
+from features import FeatureEngineer
 
 
 class TestBuildSequences:
@@ -231,7 +231,7 @@ class TestEvaluateCheckpointErrors:
     """Error handling for evaluate_checkpoint."""
 
     def test_missing_metadata_raises(self, tmp_path):
-        from scripts.eval_existing_checkpoints import evaluate_checkpoint
+        from eval_existing_checkpoints import evaluate_checkpoint
 
         ckpt_dir = tmp_path / "fake_ckpt"
         ckpt_dir.mkdir()
@@ -239,7 +239,7 @@ class TestEvaluateCheckpointErrors:
             evaluate_checkpoint(ckpt_dir)
 
     def test_unknown_model_type_raises(self, tmp_path):
-        from scripts.eval_existing_checkpoints import evaluate_checkpoint
+        from eval_existing_checkpoints import evaluate_checkpoint
 
         ckpt_dir = tmp_path / "unknown_ckpt"
         ckpt_dir.mkdir()
@@ -257,13 +257,13 @@ class TestEvaluateAllCheckpoints:
     """Batch evaluation scanning tests."""
 
     def test_empty_dir(self, tmp_path):
-        from scripts.eval_existing_checkpoints import evaluate_all_checkpoints
+        from eval_existing_checkpoints import evaluate_all_checkpoints
 
         results = evaluate_all_checkpoints(tmp_path)
         assert results == []
 
     def test_skips_non_checkpoint_dirs(self, tmp_path):
-        from scripts.eval_existing_checkpoints import evaluate_all_checkpoints
+        from eval_existing_checkpoints import evaluate_all_checkpoints
 
         model_dir = tmp_path / "transformer"
         model_dir.mkdir()
@@ -274,7 +274,7 @@ class TestEvaluateAllCheckpoints:
         assert results == []
 
     def test_output_json(self, tmp_path):
-        from scripts.eval_existing_checkpoints import evaluate_all_checkpoints
+        from eval_existing_checkpoints import evaluate_all_checkpoints
 
         output_path = tmp_path / "results.json"
         results = evaluate_all_checkpoints(tmp_path, output_path=output_path)

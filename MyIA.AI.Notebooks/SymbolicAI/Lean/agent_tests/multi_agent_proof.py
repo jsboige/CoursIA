@@ -875,6 +875,10 @@ def get_verifier(project_dir: str = None) -> "LeanVerifier":
     """Get or create the persistent LeanVerifier instance."""
     global _verifier
     if _verifier is None:
+        import sys, os
+        _agent_dir = os.path.dirname(os.path.abspath(__file__))
+        if _agent_dir not in sys.path:
+            sys.path.insert(0, _agent_dir)
         from lean_server import LeanVerifier
         pd = project_dir or LEAN_PROJECT_DIR
         _verifier = LeanVerifier(project_dir=pd, verbose=False)

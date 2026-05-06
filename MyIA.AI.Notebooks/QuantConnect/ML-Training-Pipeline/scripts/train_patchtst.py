@@ -48,6 +48,7 @@ from gpu_training import (
 )
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
+from baselines import oos_direction_distribution
 from sequence_utils import build_sequences, normalize_sequences
 
 # Optional: walk_forward from Stage 0 (graceful fallback)
@@ -162,23 +163,6 @@ class PatchTSTModel(nn.Module):
 
         return preds
 
-
-def compute_majority_class_baseline(y_test: np.ndarray) -> dict:
-    """Compute majority-class baseline for direction prediction.
-
-    Financial time series baseline: always predict the sign of the mean training return.
-    If training mean > 0, always predict up; else always predict down.
-    """
-    # y_test shape: [n_samples, pred_len] or [n_samples]
-    flat = y_test.flatten()
-    majority_up = float(np.mean(flat > 0))
-    majority_down = 1.0 - majority_up
-    baseline_acc = max(majority_up, majority_down)
-    return {
-        "majority_class_accuracy": round(baseline_acc, 4),
-        "pct_up": round(majority_up, 4),
-        "pct_down": round(majority_down, 4),
-    }
 
 
 def train_and_evaluate(
@@ -335,7 +319,7 @@ def train_and_evaluate(
     direction_acc = float(np.mean((pred_step1 > 0) == (target_step1 > 0)))
 
     # Majority-class baseline
-    majority_baseline = compute_majority_class_baseline(target_step1)
+    majority_baseline = oos_direction_distribution(target_step1)
 
     metrics = {
         "mse": round(mse, 6),
