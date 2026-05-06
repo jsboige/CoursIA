@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.baselines import (
+from baselines import (
     buy_and_hold_baseline,
     majority_class_baseline,
     naive_momentum_baseline,

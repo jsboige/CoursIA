@@ -72,17 +72,17 @@ except ImportError:
         return False, None
 
 try:
-    from scripts.walk_forward import WalkForwardSplitter
+    from walk_forward import WalkForwardSplitter
 except ImportError:
     WalkForwardSplitter = None
 
 try:
-    from scripts.baselines import majority_class_baseline
+    from baselines import majority_class_baseline
 except ImportError:
     majority_class_baseline = None
 
 try:
-    from scripts.transaction_costs import TransactionCostModel, compare_gross_vs_net
+    from transaction_costs import TransactionCostModel, compare_gross_vs_net
 except ImportError:
     TransactionCostModel = None
     compare_gross_vs_net = None
