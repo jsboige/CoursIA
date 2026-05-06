@@ -203,7 +203,8 @@ class CryptoGraphBuilder:
     def _sym_normalize(adj: np.ndarray) -> np.ndarray:
         """Symmetric normalization: D^{-1/2} A D^{-1/2}."""
         degree = adj.sum(axis=1)
-        d_inv_sqrt = np.where(degree > 0, 1.0 / np.sqrt(degree), 0.0)
+        safe_degree = np.where(degree > 0, degree, 1.0)
+        d_inv_sqrt = np.where(degree > 0, 1.0 / np.sqrt(safe_degree), 0.0)
         d_mat = np.diag(d_inv_sqrt)
         return d_mat @ adj @ d_mat
 
