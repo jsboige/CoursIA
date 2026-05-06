@@ -10,8 +10,8 @@ from eval_finstsb import (
     detect_regimes,
     eval_per_regime,
     validate_no_regime_failure,
-    _sharpe,
 )
+from baselines import sharpe_from_returns
 
 
 class TestDetectRegimes:
@@ -271,24 +271,24 @@ class TestSharpe:
     """Internal Sharpe ratio helper tests."""
 
     def test_empty_returns(self):
-        assert _sharpe(np.array([])) == 0.0
+        assert sharpe_from_returns(np.array([])) == 0.0
 
     def test_zero_std(self):
-        assert _sharpe(np.array([0.01] * 100)) == 0.0
+        assert sharpe_from_returns(np.array([0.01] * 100)) == 0.0
 
     def test_positive_sharpe(self):
         rng = np.random.default_rng(42)
         returns = rng.normal(0.001, 0.01, 252)
-        assert _sharpe(returns) > 0
+        assert sharpe_from_returns(returns) > 0
 
     def test_negative_sharpe(self):
         rng = np.random.default_rng(99)
         returns = rng.normal(-0.005, 0.01, 252)
-        assert _sharpe(returns) < 0
+        assert sharpe_from_returns(returns) < 0
 
     def test_no_annualize(self):
         rng = np.random.default_rng(42)
         r = rng.normal(0.001, 0.01, 252)
-        s_ann = _sharpe(r, annualize=True)
-        s_raw = _sharpe(r, annualize=False)
+        s_ann = sharpe_from_returns(r, annualize=True)
+        s_raw = sharpe_from_returns(r, annualize=False)
         assert abs(s_ann) > abs(s_raw)

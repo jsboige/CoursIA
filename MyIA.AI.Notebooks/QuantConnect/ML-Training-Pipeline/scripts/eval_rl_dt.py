@@ -30,6 +30,7 @@ import numpy as np
 import torch
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
+from baselines import sharpe_from_returns
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
 
@@ -82,19 +83,6 @@ def load_checkpoint(checkpoint_dir: Path) -> tuple:
 
     return model, metadata
 
-
-def compute_sharpe(returns: np.ndarray, annualize: bool = True) -> float:
-    """Compute Sharpe ratio from returns series."""
-    if len(returns) < 2:
-        return 0.0
-    mean_ret = returns.mean()
-    std_ret = returns.std()
-    if std_ret < 1e-8:
-        return 0.0
-    sharpe = mean_ret / std_ret
-    if annualize:
-        sharpe *= np.sqrt(252)
-    return float(sharpe)
 
 
 def compute_max_drawdown(cumulative_returns: np.ndarray) -> float:
@@ -192,7 +180,7 @@ def evaluate_checkpoint(
     # Compute cumulative returns for Sharpe/MaxDD
     rewards = test_trajs["rewards"]
     cum_returns = np.cumsum(rewards)
-    sharpe = compute_sharpe(rewards)
+    sharpe = sharpe_from_returns(rewards)
     max_dd = compute_max_drawdown(cum_returns)
 
     # Transaction cost analysis
@@ -210,7 +198,7 @@ def evaluate_checkpoint(
     trade_mask = np.zeros(len(rewards), dtype=bool)
     trade_mask[1:] = position_changes[1:] > 0
     cost_adjusted_returns[trade_mask] -= commission
-    net_sharpe = compute_sharpe(cost_adjusted_returns)
+    net_sharpe = sharpe_from_returns(cost_adjusted_returns)
 
     results = {
         "checkpoint": str(checkpoint_dir),
@@ -273,7 +261,7 @@ def run_dry_run() -> dict:
 
     rewards = trajs["rewards"]
     cum_returns = np.cumsum(rewards)
-    sharpe = compute_sharpe(rewards)
+    sharpe = sharpe_from_returns(rewards)
     max_dd = compute_max_drawdown(cum_returns)
 
     return {

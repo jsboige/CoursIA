@@ -9,8 +9,8 @@ import pytest
 from transaction_costs import (
     TransactionCostModel,
     compare_gross_vs_net,
-    _sharpe_from_array,
 )
+from baselines import sharpe_from_returns
 
 
 class TestTransactionCostModel:
@@ -156,24 +156,24 @@ class TestSharpeFromArray:
     """Internal Sharpe helper tests."""
 
     def test_empty(self):
-        assert _sharpe_from_array(np.array([])) == 0.0
+        assert sharpe_from_returns(np.array([])) == 0.0
 
     def test_constant(self):
-        assert _sharpe_from_array(np.full(100, 0.01)) == 0.0
+        assert sharpe_from_returns(np.full(100, 0.01)) == 0.0
 
     def test_positive(self):
         rng = np.random.default_rng(42)
         r = rng.normal(0.001, 0.01, 252)
-        assert _sharpe_from_array(r) > 0
+        assert sharpe_from_returns(r) > 0
 
     def test_negative(self):
         rng = np.random.default_rng(99)
         r = rng.normal(-0.005, 0.01, 252)
-        assert _sharpe_from_array(r) < 0
+        assert sharpe_from_returns(r) < 0
 
     def test_no_annualize(self):
         rng = np.random.default_rng(42)
         r = rng.normal(0.001, 0.01, 252)
-        s_ann = _sharpe_from_array(r, annualize=True)
-        s_raw = _sharpe_from_array(r, annualize=False)
+        s_ann = sharpe_from_returns(r, annualize=True)
+        s_raw = sharpe_from_returns(r, annualize=False)
         assert abs(s_ann) > abs(s_raw)
