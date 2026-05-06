@@ -422,3 +422,166 @@ def detect_regimes(
         )
     else:
         raise ValueError(f"Unknown method: {method}. Use 'price' or 'hmm'.")
+
+
+# ---------------------------------------------------------------------------
+# Multivariate regime detection for MoE routing (EPIC-D #754)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MultivariateRegimeResult:
+    """Result from multivariate regime detection across multiple assets."""
+    regime_labels: pd.DataFrame   # (T, n_assets) with regime labels per asset
+    dominant_regime: pd.Series     # (T,) most frequent regime across assets
+    regime_distribution: pd.DataFrame  # (T, n_regimes) fraction of assets in each regime
+    n_assets: int
+    regime_names: list[str]
+    method: str
+
+
+def detect_regimes_multivariate(
+    prices_dict: dict[str, pd.Series | np.ndarray],
+    method: str = "hmm",
+    n_states: int = 3,
+    lookback: int = 400,
+    **kwargs,
+) -> MultivariateRegimeResult:
+    """Detect regimes across multiple assets and compute cross-asset distribution.
+
+    For each asset, detects regimes independently, then aggregates to produce:
+    - Per-asset regime labels (for MoE expert routing)
+    - Dominant regime (most common across assets)
+    - Regime distribution (fraction of assets in each regime)
+
+    Parameters
+    ----------
+    prices_dict : dict[str, array-like]
+        Mapping from symbol to daily price series.
+    method : str
+        "price" or "hmm" for underlying detector.
+    n_states : int
+        Number of HMM states (only used if method="hmm").
+    lookback : int
+        Maximum history for feature computation.
+
+    Returns
+    -------
+    MultivariateRegimeResult with per-asset labels, dominant regime, and distribution.
+    """
+    all_labels = {}
+    common_len = None
+
+    for symbol, prices in prices_dict.items():
+        prices_s = pd.Series(prices)
+        if common_len is None:
+            common_len = len(prices_s)
+        # Align to shortest series
+        prices_s = prices_s.iloc[-min(len(prices_s), common_len):]
+        common_len = min(common_len, len(prices_s))
+
+        if method == "hmm":
+            result = detect_regimes_hmm(prices_s, n_states=n_states, lookback=lookback, **kwargs)
+            labels = pd.Series(
+                [result.regime_names[l] for l in result.labels],
+                index=prices_s.index,
+                dtype="object",
+            )
+        else:
+            labels = detect_regimes_price(prices_s, **kwargs)
+        all_labels[symbol] = labels
+
+    # Build aligned DataFrame
+    regime_df = pd.DataFrame(all_labels)
+
+    # Determine regime names present
+    all_names = sorted(set(regime_df.values.flatten().tolist()))
+
+    # Dominant regime = mode across assets at each date
+    dominant = regime_df.mode(axis=1).iloc[:, 0]
+
+    # Regime distribution: fraction of assets in each regime per date
+    dist_data = {}
+    for regime_name in all_names:
+        dist_data[regime_name] = (regime_df == regime_name).sum(axis=1) / len(regime_df.columns)
+    distribution = pd.DataFrame(dist_data, index=regime_df.index)
+
+    return MultivariateRegimeResult(
+        regime_labels=regime_df,
+        dominant_regime=dominant,
+        regime_distribution=distribution,
+        n_assets=len(prices_dict),
+        regime_names=all_names,
+        method=method,
+    )
+
+
+def compute_regime_transition_features(
+    regime_result: MultivariateRegimeResult,
+    lookback: int = 20,
+) -> pd.DataFrame:
+    """Compute regime-based features for MoE routing decisions.
+
+    Features:
+    - regime_stability: fraction of last `lookback` days in dominant regime
+    - bull_fraction: fraction of assets in bull regime
+    - bear_fraction: fraction of assets in bear regime
+    - regime_entropy: Shannon entropy of regime distribution
+    - transition_count: number of regime switches in last `lookback` days
+
+    Parameters
+    ----------
+    regime_result : MultivariateRegimeResult
+        Output from detect_regimes_multivariate.
+    lookback : int
+        Window for stability and transition features.
+
+    Returns
+    -------
+    pd.DataFrame with regime features indexed by date.
+    """
+    dist = regime_result.regime_distribution
+    dominant = regime_result.dominant_regime
+    features = pd.DataFrame(index=dist.index)
+
+    # Bull/bear fractions
+    if "bull" in dist.columns:
+        features["bull_fraction"] = dist["bull"]
+    if "bear" in dist.columns:
+        features["bear_fraction"] = dist["bear"]
+    if "neutral" in dist.columns:
+        features["neutral_fraction"] = dist["neutral"]
+
+    # Regime stability
+    stability = []
+    for i in range(len(dominant)):
+        start = max(0, i - lookback)
+        window = dominant.iloc[start:i + 1]
+        if len(window) == 0:
+            stability.append(0.5)
+        else:
+            mode = window.mode().iloc[0] if len(window.mode()) > 0 else window.iloc[0]
+            stability.append((window == mode).mean())
+    features["regime_stability"] = stability
+
+    # Regime entropy
+    entropy = []
+    for i in range(len(dist)):
+        p = dist.iloc[i].values
+        p = p[p > 0]
+        h = -np.sum(p * np.log(p + 1e-12))
+        entropy.append(h)
+    features["regime_entropy"] = entropy
+
+    # Transition count
+    transitions = []
+    for i in range(len(dominant)):
+        start = max(0, i - lookback)
+        window = dominant.iloc[start:i + 1]
+        if len(window) < 2:
+            transitions.append(0)
+        else:
+            switches = (window.diff().abs() > 0).sum()
+            transitions.append(switches)
+    features["transition_count"] = transitions
+
+    return features

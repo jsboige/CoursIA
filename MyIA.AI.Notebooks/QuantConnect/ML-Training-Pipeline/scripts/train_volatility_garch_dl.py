@@ -3,8 +3,13 @@ Volatility forecasting via GARCH+DL hybrid (Epic NN #754 pivot).
 
 Pipeline:
     1. GARCH(1,1) baseline on log-returns → conditional variance σ²_t
-    2. DL (LSTM) correction on GARCH residuals → δ_t
+    2. DL correction on GARCH residuals → δ_t
     3. Hybrid prediction: vol_t = σ²_t + δ_t
+
+DL models: LSTM (baseline), Transformer (attention), TFT (temporal fusion).
+  - LSTM: best for h=1d short-range patterns
+  - Transformer: multi-head attention for h=5d/h=20d longer-range dependencies
+  - TFT: variable selection + gated residual for multi-horizon
 
 Target: MSE -15% vs GARCH-only on OOS walk-forward 5-folds.
 Assets: SPY, BTC-USD, GLD (bonus: EFA, EEM).
@@ -14,8 +19,10 @@ Multi-seed mandatory (>=4 seeds, edge >= 2*std for BEATS claims).
 
 Usage:
     python train_volatility_garch_dl.py --asset SPY --horizon 5
+    python train_volatility_garch_dl.py --asset SPY --horizon 5 --model transformer
     python train_volatility_garch_dl.py --asset SPY --horizon 5 --seeds 0 1 7 42 123
-    python train_volatility_garch_dl.py --all-assets --all-horizons
+    python train_volatility_garch_dl.py --all-assets --all-horizons --model lstm
+    python train_volatility_garch_dl.py --all-assets --all-horizons --model transformer
 
 References:
     - Hansen & Lunde (2005): "A forecast comparison of volatility models"
@@ -48,6 +55,7 @@ ASSETS = ["SPY", "BTC-USD", "GLD", "EFA", "EEM"]
 HORIZONS = [1, 5, 20]
 DEFAULT_SEEDS = [0, 1, 7, 42, 123]
 DATA_START = "2010-01-01"
+MODEL_TYPES = ["lstm", "transformer", "tft"]
 
 
 # ---------------------------------------------------------------------------
@@ -215,12 +223,159 @@ def create_lstm_model(
     return model
 
 
-def train_lstm(
+# ---------------------------------------------------------------------------
+# Transformer correction model (multi-head self-attention)
+# ---------------------------------------------------------------------------
+
+def create_transformer_model(
+    input_dim: int,
+    hidden_dim: int = 64,
+    n_heads: int = 4,
+    n_layers: int = 2,
+    dropout: float = 0.2,
+    lr: float = 1e-3,
+) -> "torch.nn.Module":
+    """Create Transformer model for volatility correction."""
+    import torch
+    import torch.nn as nn
+    import math
+
+    class PositionalEncoding(nn.Module):
+        def __init__(self, d_model: int, max_len: int = 500):
+            super().__init__()
+            pe = torch.zeros(max_len, d_model)
+            position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+            div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+            pe[:, 0::2] = torch.sin(position * div_term)
+            pe[:, 1::2] = torch.cos(position * div_term)
+            self.register_buffer("pe", pe.unsqueeze(0))
+
+        def forward(self, x):
+            return x + self.pe[:, :x.size(1)]
+
+    class VolatilityTransformer(nn.Module):
+        def __init__(self, input_dim, hidden_dim, n_heads, n_layers, dropout):
+            super().__init__()
+            self.input_proj = nn.Linear(input_dim, hidden_dim)
+            self.pos_enc = PositionalEncoding(hidden_dim)
+            encoder_layer = nn.TransformerEncoderLayer(
+                d_model=hidden_dim, nhead=n_heads,
+                dim_feedforward=hidden_dim * 4, dropout=dropout,
+                batch_first=True,
+            )
+            self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
+            self.fc = nn.Sequential(
+                nn.Linear(hidden_dim, 32),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+                nn.Linear(32, 1),
+            )
+
+        def forward(self, x):
+            x = self.input_proj(x)
+            x = self.pos_enc(x)
+            x = self.encoder(x)
+            return self.fc(x[:, -1, :]).squeeze(-1)
+
+    model = VolatilityTransformer(input_dim, hidden_dim, n_heads, n_layers, dropout)
+    return model
+
+
+# ---------------------------------------------------------------------------
+# TFT (Temporal Fusion Transformer) lite correction model
+# ---------------------------------------------------------------------------
+
+def create_tft_model(
+    input_dim: int,
+    hidden_dim: int = 64,
+    n_heads: int = 4,
+    dropout: float = 0.2,
+    lr: float = 1e-3,
+) -> "torch.nn.Module":
+    """Create lite TFT model with variable selection and gated residual network."""
+    import torch
+    import torch.nn as nn
+
+    class GatedResidualNetwork(nn.Module):
+        def __init__(self, input_size: int, hidden_size: int, output_size: int, dropout: float):
+            super().__init__()
+            self.fc1 = nn.Linear(input_size, hidden_size)
+            self.fc2 = nn.Linear(hidden_size, output_size)
+            self.gate = nn.Linear(output_size, output_size)
+            self.layer_norm = nn.LayerNorm(output_size)
+            self.dropout = nn.Dropout(dropout)
+            self.skip = nn.Linear(input_size, output_size) if input_size != output_size else nn.Identity()
+
+        def forward(self, x):
+            residual = self.skip(x)
+            h = self.dropout(torch.relu(self.fc1(x)))
+            h = self.fc2(h)
+            g = torch.sigmoid(self.gate(h))
+            return self.layer_norm(residual + g * h)
+
+    class VariableSelectionNetwork(nn.Module):
+        def __init__(self, input_size: int, hidden_size: int, dropout: float):
+            super().__init__()
+            self.grn = GatedResidualNetwork(input_size, hidden_size, input_size, dropout)
+            self.softmax = nn.Softmax(dim=-1)
+
+        def forward(self, x):
+            weights = self.softmax(self.grn(x))
+            return x * weights
+
+    class TFTLite(nn.Module):
+        def __init__(self, input_dim, hidden_dim, n_heads, dropout):
+            super().__init__()
+            self.vsn = VariableSelectionNetwork(input_dim, hidden_dim, dropout)
+            self.input_proj = nn.Linear(input_dim, hidden_dim)
+            encoder_layer = nn.TransformerEncoderLayer(
+                d_model=hidden_dim, nhead=n_heads,
+                dim_feedforward=hidden_dim * 2, dropout=dropout,
+                batch_first=True,
+            )
+            self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=1)
+            self.grn_out = GatedResidualNetwork(hidden_dim, hidden_dim, 32, dropout)
+            self.fc_out = nn.Linear(32, 1)
+
+        def forward(self, x):
+            # Variable selection per timestep
+            b, t, f = x.shape
+            x_selected = self.vsn(x.reshape(-1, f)).reshape(b, t, f)
+            x_proj = self.input_proj(x_selected)
+            x_enc = self.encoder(x_proj)
+            context = x_enc[:, -1, :]
+            h = self.grn_out(context)
+            return self.fc_out(h).squeeze(-1)
+
+    model = TFTLite(input_dim, hidden_dim, n_heads, dropout)
+    return model
+
+
+def create_model(model_type: str, input_dim: int, **kwargs):
+    """Factory to create DL model by type."""
+    # Extract common params, map to model-specific names
+    hidden_dim = kwargs.get("hidden_dim", 64)
+    dropout = kwargs.get("dropout", 0.2)
+    lr = kwargs.get("lr", 1e-3)
+    num_layers = kwargs.get("num_layers", 2)
+
+    if model_type == "lstm":
+        return create_lstm_model(input_dim, hidden_dim=hidden_dim, num_layers=num_layers, dropout=dropout, lr=lr)
+    elif model_type == "transformer":
+        return create_transformer_model(input_dim, hidden_dim=hidden_dim, n_layers=num_layers, dropout=dropout, lr=lr)
+    elif model_type == "tft":
+        return create_tft_model(input_dim, hidden_dim=hidden_dim, dropout=dropout, lr=lr)
+    else:
+        raise ValueError(f"Unknown model type: {model_type}. Use {MODEL_TYPES}")
+
+
+def train_model(
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_val: np.ndarray,
     y_val: np.ndarray,
     seed: int,
+    model_type: str = "lstm",
     hidden_dim: int = 64,
     num_layers: int = 2,
     dropout: float = 0.2,
@@ -230,7 +385,7 @@ def train_lstm(
     patience: int = 15,
     device: str = "cpu",
 ) -> tuple:
-    """Train LSTM with early stopping. Returns (model, train_losses, val_losses)."""
+    """Train DL model with early stopping. Returns (model, train_losses, val_losses)."""
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
@@ -238,7 +393,12 @@ def train_lstm(
     torch.manual_seed(seed)
     np.random.seed(seed)
 
-    model = create_lstm_model(X_train.shape[2], hidden_dim, num_layers, dropout, lr)
+    input_dim = X_train.shape[2]
+    model = create_model(
+        model_type, input_dim,
+        hidden_dim=hidden_dim, num_layers=num_layers,
+        dropout=dropout, lr=lr,
+    )
     model = model.to(device)
 
     criterion = nn.MSELoss()
@@ -333,6 +493,7 @@ def run_single_experiment(
     symbol: str,
     horizon: int,
     seed: int,
+    model_type: str = "lstm",
     n_splits: int = 5,
     lookback: int = 60,
     hidden_dim: int = 64,
@@ -414,14 +575,15 @@ def run_single_experiment(
         X_val_n = (X_val - mean) / std
         X_test_n = (X_test - mean) / std
 
-        # Train LSTM to predict log(rv) directly (includes GARCH features)
+        # Train DL model to predict log(rv) directly (includes GARCH features)
         print(
             f"  [{symbol} h={horizon}d seed={seed}] "
             f"Fold {fold_idx+1}/{n_splits} "
             f"(train={len(X_train)}, val={len(X_val)}, test={len(X_test)})..."
         )
-        model, _, _ = train_lstm(
+        model, _, _ = train_model(
             X_train_n, y_train, X_val_n, y_val, seed,
+            model_type=model_type,
             hidden_dim=hidden_dim, num_layers=num_layers, dropout=dropout,
             lr=lr, epochs=epochs, batch_size=batch_size, patience=patience, device=device,
         )
@@ -486,6 +648,7 @@ def run_single_experiment(
         "symbol": symbol,
         "horizon": horizon,
         "seed": seed,
+        "model_type": model_type,
         "n_folds": len(fold_results),
         "garch_baseline": agg_garch,
         "hybrid": agg_hybrid,
@@ -516,6 +679,7 @@ def run_multi_seed(
     symbol: str,
     horizon: int,
     seeds: list[int] | None = None,
+    model_type: str = "lstm",
     device: str = "cpu",
     **kwargs,
 ) -> dict:
@@ -528,7 +692,7 @@ def run_multi_seed(
         print(f"\n{'='*60}")
         print(f"Running {symbol} h={horizon}d seed={seed}")
         print(f"{'='*60}")
-        r = run_single_experiment(symbol, horizon, seed, device=device, **kwargs)
+        r = run_single_experiment(symbol, horizon, seed, model_type=model_type, device=device, **kwargs)
         if r is not None:
             results.append(r)
 
@@ -560,7 +724,7 @@ def run_multi_seed(
     }
 
     # Save
-    fname = f"vol_{symbol}_h{horizon}d_multiseed.json"
+    fname = f"vol_{symbol}_h{horizon}d_{model_type}_multiseed.json"
     out_path = RESULTS_DIR / fname
     with open(out_path, "w") as f:
         json.dump(summary, f, indent=2, default=str)
@@ -578,11 +742,12 @@ def parse_args():
     parser.add_argument("--asset", type=str, default="SPY", help="Asset symbol")
     parser.add_argument("--horizon", type=int, default=5, help="Prediction horizon (days)")
     parser.add_argument("--seeds", type=int, nargs="+", default=DEFAULT_SEEDS, help="Random seeds")
+    parser.add_argument("--model", type=str, default="lstm", choices=MODEL_TYPES, help="DL model type")
     parser.add_argument("--all-assets", action="store_true", help="Run all assets")
     parser.add_argument("--all-horizons", action="store_true", help="Run all horizons")
     parser.add_argument("--n-splits", type=int, default=5, help="Walk-forward folds")
     parser.add_argument("--lookback", type=int, default=60, help="Sequence lookback")
-    parser.add_argument("--hidden-dim", type=int, default=64, help="LSTM hidden dimension")
+    parser.add_argument("--hidden-dim", type=int, default=64, help="Hidden dimension")
     parser.add_argument("--epochs", type=int, default=100, help="Max training epochs")
     parser.add_argument("--device", type=str, default="auto", help="Device (auto/cpu/cuda)")
     return parser.parse_args()
@@ -598,6 +763,7 @@ def main():
         device = args.device
 
     print(f"Device: {device}")
+    print(f"Model: {args.model}")
     print(f"Results dir: {RESULTS_DIR}")
 
     assets = ASSETS if args.all_assets else [args.asset]
@@ -607,11 +773,11 @@ def main():
     for symbol in assets:
         for horizon in horizons:
             print(f"\n{'#'*70}")
-            print(f"# {symbol} h={horizon}d — {len(args.seeds)} seeds")
+            print(f"# {symbol} h={horizon}d {args.model} — {len(args.seeds)} seeds")
             print(f"{'#'*70}")
 
             summary = run_multi_seed(
-                symbol, horizon, seeds=args.seeds, device=device,
+                symbol, horizon, seeds=args.seeds, model_type=args.model, device=device,
                 n_splits=args.n_splits, lookback=args.lookback,
                 hidden_dim=args.hidden_dim, epochs=args.epochs,
             )
@@ -640,7 +806,7 @@ def main():
             )
 
     # Save combined results
-    combined_path = RESULTS_DIR / "vol_all_results.json"
+    combined_path = RESULTS_DIR / f"vol_all_results_{args.model}.json"
     with open(combined_path, "w") as f:
         json.dump(all_summaries, f, indent=2, default=str)
     print(f"\nCombined results saved to {combined_path}")
