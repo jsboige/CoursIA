@@ -116,16 +116,16 @@ theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     if i ∈ T then (1 : ℝ) / T.card else 0 := by
   classical
   split_ifs with hiT
-  · -- Case i ∈ T: direct computation
-    -- marginal contribution = 1 iff T\{i} ⊆ S (and i ∉ S, given by filter)
-    -- = ∑_{S : i∉S, T\{i} ⊆ S} c(|S|, n) = 1/|T|
-    unfold shapleyValue TUGame.marginalContribution shapleyCoef
-    simp only [TUGame.unanimityGame]
-    -- marginal = if T ⊆ S∪{i} then 1 else 0 - if T ⊆ S then 1 else 0
-    -- Since i ∈ T: T ⊆ S∪{i} iff T\{i} ⊆ S (i is in T and in S∪{i})
-    -- And ¬(T ⊆ S) since i ∉ S and i ∈ T
-    -- So marginal = 1 iff T\{i} ⊆ S
-    sorry
+  · -- Case i ∈ T: by symmetry all j∈T get same value, by efficiency sum=1
+    -- Use the axiomatic characterization: symmetry + efficiency + null player
+    have h_sym := ShapleyValue.shapley_symmetric
+    have h_null_ax : Solution.NullPlayerAxiom shapleySolution :=
+      fun G i => ShapleyValue.shapley_null_player G i
+    -- shapleySolution satisfies all three axioms, so phi_unanimity applies
+    have h := phi_unanimity shapleySolution shapley_efficient shapley_symmetric
+      (fun G i => ShapleyValue.shapley_null_player G i) T hT i
+    simp only [shapleySolution] at h
+    exact h
   · -- Case i ∉ T: i is a null player in unanimityGame T
     apply ShapleyValue.shapley_null_player
     intro S hiS
