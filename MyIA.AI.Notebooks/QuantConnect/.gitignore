@@ -86,6 +86,7 @@ mlruns/
 
 # Datasets
 datasets/
+!datasets/yfinance/crypto_panier/  # Stage 3a anti-bias crypto panier (2.5 MB, pedagogical)
 *.csv
 *.parquet
 *.feather
