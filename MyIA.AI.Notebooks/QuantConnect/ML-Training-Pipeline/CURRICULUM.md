@@ -136,18 +136,28 @@ Combine multiple model types.
 
 **MoE v2 results (3-fold walk-forward, early stopping, val_split=0.15, patience=10)**:
 
-| Symbol | Majority | MoE MLP | MoE LSTM | MoE Transformer | Best         | Beats? |
-|--------|----------|---------|----------|-----------------|--------------|--------|
-| XLE    | 0.478    | 0.503   | 0.472    | **0.490**       | Transformer  | YES    |
-| BTC-USD| 0.532    | 0.497   | 0.518    | 0.508           | LSTM         | NO     |
-| GLD    | 0.536    | 0.497   | 0.525    | 0.534           | Transformer  | NO     |
+| Symbol  | Majority | MoE MLP | MoE LSTM | MoE Transformer | Best Expert    | Beats? |
+|---------|----------|---------|----------|-----------------|----------------|--------|
+| XLE     | 0.478    | 0.503   | 0.472    | 0.490           | MLP (+2.5pp)   | YES    |
+| EEM     | 0.529    | 0.530   | --       | 0.526           | MLP (+0.1pp)   | YES    |
+| BND     | 0.516    | 0.476   | --       | 0.519           | Trans (+0.3pp) | YES    |
+| IEF     | 0.502    | 0.493   | --       | 0.501           | Trans (-0.1pp) | NO     |
+| TLT     | 0.511    | 0.509   | --       | 0.507           | MLP (-0.2pp)   | NO     |
+| GLD     | 0.536    | 0.517   | 0.525    | 0.534           | Trans (-0.2pp) | NO     |
+| BTC-USD | 0.532    | 0.503   | 0.518    | 0.508           | LSTM (-1.4pp)  | NO     |
+| SPY     | 0.550    | 0.503   | --       | 0.507           | Trans (-4.3pp) | NO     |
+| QQQ     | 0.564    | 0.529   | --       | 0.539           | Trans (-2.5pp) | NO     |
+| DBC     | 0.532    | 0.490   | --       | 0.506           | Trans (-2.6pp) | NO     |
+
+**3/10 symbols beat majority** (30% hit rate). Winners: energy (XLE), EM equities (EEM), bonds (BND).
 
 **Key findings**:
 
-- MLP experts too simple for regime specialization (v1 finding)
-- LSTM/Transformer per-regime experts overfit due to sample fragmentation (57-400 samples/regime in early folds)
-- MoE Transformer beats majority on XLE (+1.2pp) — energy sector has exploitable regime structure
-- **Next**: Try global (non-regime) LSTM/Transformer as single experts, or increase min_samples to consolidate regimes
+- MLP experts best for XLE (+2.5pp) and EEM — simple regime splits work for cyclical assets
+- Transformer best for BND — attention mechanism captures bond yield dynamics
+- SPY/QQQ pathological (majority >55%) — bull market bias makes ML nearly impossible
+- Global (non-regime) LSTM/Transformer also fails to beat majority — the issue is feature/signal limitation, not regime fragmentation
+- **Next**: Increase feature set (more lags, interactions), try larger training windows, or move to Stage 4 (proper walk-forward with longer horizons)
 
 ### Stage 4: Walk-Forward Optimization
 
