@@ -5,7 +5,7 @@ series: Probas
 pedagogical_count: 22
 breakdown: Infer=20, =2
 maturity: ALPHA=18, PRODUCTION=4
-updated: 2026-05-04
+updated: 2026-05-06
 -->
 
 Serie complete de notebooks sur la programmation probabiliste, couvrant l'inference bayesienne avec **Infer.NET** (C#) et **Pyro** (Python).

@@ -426,7 +426,7 @@ class TestWalkForward:
     def test_walk_forward_splits(self):
         """Walk-forward splitter generates non-overlapping test folds."""
         try:
-            from scripts.walk_forward import WalkForwardSplitter
+            from walk_forward import WalkForwardSplitter
         except ImportError:
             pytest.skip("WalkForwardSplitter not available")
 

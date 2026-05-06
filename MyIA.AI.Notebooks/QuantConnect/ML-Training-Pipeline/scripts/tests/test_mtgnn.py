@@ -19,8 +19,8 @@ from train_mtgnn import (
     build_sector_adjacency,
     build_pearson_adjacency,
     normalize_sequences,
-    compute_majority_class_baseline,
 )
+from baselines import oos_direction_distribution
 
 
 class TestGraphConstructor:
@@ -215,11 +215,11 @@ class TestNormalizeSequences:
 class TestMajorityBaseline:
     def test_balanced(self):
         y = np.array([[1, -1, 1, -1]] * 10, dtype=np.float32)
-        baseline = compute_majority_class_baseline(y)
+        baseline = oos_direction_distribution(y)
         assert baseline["majority_class_accuracy"] == 0.5
 
     def test_biased_up(self):
         y = np.ones((10, 4), dtype=np.float32)
-        baseline = compute_majority_class_baseline(y)
+        baseline = oos_direction_distribution(y)
         assert baseline["majority_class_accuracy"] == 1.0
         assert baseline["pct_up"] == 1.0
