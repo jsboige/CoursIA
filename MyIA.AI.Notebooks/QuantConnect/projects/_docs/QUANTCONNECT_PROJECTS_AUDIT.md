@@ -155,7 +155,7 @@ Projects with main.py + research.ipynb + README.md but no cloud-id in config.
 | 48 | ML-FeatureEngineering | Y | N (has quantbook) | N | N | — | INCOMPLET |
 | 49 | ML-FinBERT-Sentiment | Y | N | N | N | — | INCOMPLET |
 | 50 | ML-Gaussian-Classifier | Y | N | N | N | — | INCOMPLET |
-| 51 | ML-HMM-Regime | Y | N | N | N | — | INCOMPLET |
+| 51 | ~~ML-HMM-Regime~~ | — | — | — | — | — | CONSOLIDATED into Markov-Regime-Detection |
 | 52 | ML-HeadShoulders-CNN | Y | Y | N | N | — | INCOMPLET |
 | 53 | ML-LLM-Summarization | Y | N | N | N | — | INCOMPLET |
 | 54 | ML-PCA-StatArb | Y | N | N | N | — | INCOMPLET |

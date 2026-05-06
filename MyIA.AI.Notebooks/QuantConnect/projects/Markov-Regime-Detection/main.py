@@ -129,8 +129,8 @@ class MarkovRegimeDetection(QCAlgorithm):
             regime = smoothed_probs.values.argmax(axis=1)[-1]
 
             # Plot regime probability for visualization
-            self.plot('Regime', 'Low Vol Probability', prob_low_vol)
-            self.plot('Regime', 'Volatility Class', regime)
+            self.plot('Regime', 'Low Vol Probability', float(prob_low_vol))
+            self.plot('Regime', 'Volatility Class', int(regime))
 
             # Confirmation filter: only rebalance when probability is confident
             max_prob = max(prob_low_vol, 1 - prob_low_vol)

@@ -89,7 +89,7 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [RL-DQN-Trading](RL-DQN-Trading/) | DQN portfolio-level actions (MLPRegressor) | **0.533** | 10.9% | 25.8% | 2015-2026 | Ch07-Ex01 | v2.0.1, 3 action templates |
 | [LSTM-Forecasting](LSTM-Forecasting/) | MLP temporal features multi-ETF (7 assets) | **0.525** | 11.3% | 32.5% | 2015-2026 | Ch06-Ex07 | v2.1, real MLP(64,32) |
 | [Sector-ML-Classification](Sector-ML-Classification/) | RF rank classifier rotation sectorielle (11 ETFs) | **0.473** | 11.9% | 34.4% | 2015-2026 | — | v5, RF as rank not filter |
-| [Markov-Regime-Detection](Markov-Regime-Detection/) | Hidden Markov Model regime detection + allocation | **0.408** | --- | --- | 2015-2024 | Ch06-Ex04 | v1.0, TLT risk-off |
+| [Markov-Regime-Detection](Markov-Regime-Detection/) | Markov-switching dynamic regression 2-regime detection (SPY/TLT) | **0.571** | --- | --- | 2015-2024 | Ch06-Ex04 | v1.1, consolidated from ML-HMM-Regime |
 | [Chronos-Foundation-Forecasting](Chronos-Foundation-Forecasting/) | GBM+Ridge ensemble forecasting (8 ETFs) | **0.253** | --- | 22.4% | 2015-2026 | Ch06-Ex18 | v2, SMA200 regime filter |
 | [ML-SVM](ML-SVM/) | SVM linear kernel equity-only ETFs | **0.147** | 5.2% | 27.1% | 2015-2026 | — | v3, plafond structurel |
 | [ML-FX-SVM-Wavelet](ML-FX-SVM-Wavelet/) | SVR + wavelet decomposition 4 Forex pairs (EURJPY/GBPUSD/AUDCAD/NZDCHF) leverage 20x | **0.167** | 5.07% | 20.5% | 2019-2024 | Ch06-Ex05 | 4211 trades (overtrading), Win Rate 12%, echec pedagogique |
@@ -114,7 +114,7 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [Crypto-LSTM-Prediction](Crypto-LSTM-Prediction/) | DLinear (AAAI 2023) SeriesDecomposition BTCUSDT (PyTorch) | --- | --- | --- | --- | — | Research phase |
 | [ML-Trend-Scanning](ML-Trend-Scanning/) | t-statistic linear regression slope across multiple windows (SPY/TLT/GLD) | **0.656** | 19.1% | 34.8% | 2015-2026 | Ch06-Ex01 | Trend regime classification, Net Profit 614.5% |
 | [ML-Reversion-Trending](ML-Reversion-Trending/) | GradientBoosting regime classifier (mean-revert vs trend-follow) 5 ETFs | **0.292** | 6.6% | 29.4% | 2015-2026 | Ch06-Ex03 | Dual-strategy switching, Net Profit 105.4% |
-| [ML-HMM-Regime](ML-HMM-Regime/) | Markov-switching dynamic regression 2-regime detection (SPY/TLT) | **0.571** | --- | --- | 2015-2024 | Ch06-Ex04 | statsmodels MarkovRegression |
+| ~~ML-HMM-Regime~~ | Consolidated into Markov-Regime-Detection (identical code) | --- | --- | --- | --- | --- | REMOVED |
 | [ML-Gaussian-Classifier](ML-Gaussian-Classifier/) | GaussianNB direction prediction tech stocks, prob-weighted sizing | **0.361** | 12.49% | 47.4% | 2015-2026 | Ch06-Ex15 | Cross-sectional features |
 | [ML-LLM-Summarization](ML-LLM-Summarization/) | Tiingo news sentiment + optional OpenAI LLM summarization (SPY) | **0.686** | 15.45% | 22.7% | 2015-2026 | Ch06-Ex16 | Keyword fallback, Tiingo data |
 | [ML-PCA-StatArb](ML-PCA-StatArb/) | PCA + OLS stat-arb mean-reversion, Z-score residuals (top 100) | **0.399** | 12.65% | 31.8% | 2019-2024 | Ch06-Ex13 | Book period, sklearn |
@@ -238,7 +238,7 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **Chronos-Foundation-Forecasting** (Book Ex18) : Ensemble GBM(50 estimators)+Ridge(alpha=10) avec StandardScaler. 21 features par asset. SMA200 regime filter (bear = defensifs). 8 ETFs. v2.
 - **RL-DQN-Trading** (Book Ch07) : MLPRegressor(64,32) avec actions portfolio-level (AGGRESSIVE/MODERATE/DEFENSIVE). Reward risk-adjusted. Replay buffer 5000. 5 ETFs. v2.0.1.
 - **Reinforcement-Learning-Trading** (Book Ch07) : Variante pedagogique DQN avec experience replay.
-- **Markov-Regime-Detection** (Book Ex04) : HMM 3 regimes (bull/neutral/bear) avec allocation dynamique (SPY/TLT). Monthly rebalance. v1.0.
+- **Markov-Regime-Detection** (Book Ex04) : Markov-switching 2 regimes (haute/basse volatilite) via statsmodels MarkovRegression. Allocation SPY (low-vol) / TLT (high-vol) + GLD hedge 10%. Monthly rebalance, confirmation filter 55%, anti-micro-rebalancing 5%. v1.1. Consolidated from ML-HMM-Regime (identical code).
 - **Dividend-Harvesting-ML** (Book Ex06) : DecisionTreeRegressor pour prediction du rendement dividende. Facteurs fondamentaux (PE ratio, revenue growth, free cash flow %, dividend payout ratio, current ratio). Universe QQQ top 100, monthly rebalance. v1.
 - **PCA-StatArb** (Book Ex13) : PCA + OLS pour arbitrage statistique mean-reversion. 3 composantes principales, z-score des residus (seuil 1.5). Universe top 100 par dollar volume. Monthly. v1.
 - **Clustering-Fundamentals-ML** (Book Ex10) : PCA (5 composantes) + GradientBoostingRegressor sur 26 facteurs fondamentaux. Selectionne top-10 par rendement predit. Equal-weight, monthly. v1.
@@ -261,7 +261,7 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **Crypto-LSTM-Prediction** : DLinear (AAAI 2023) avec SeriesDecomposition (trend/seasonal) pour BTCUSDT. PyTorch. Research phase.
 - **ML-Trend-Scanning** (Book Ex01) : t-statistique de la pente de regression lineaire sur fenetres multiples (5/10/21/42/63j) pour classifier le regime de tendance. SPY/TLT/GLD, regime bull/bear/neutral. Sharpe 0.656, CAGR 19.1%, Net Profit 614.5%. Promu Robuste.
 - **ML-Reversion-Trending** (Book Ex03) : GradientBoosting classifieur de regime (mean-reversion vs trending). Applique RSI+Bollinger en regime mean-reversion, MA crossover en trending. 5 ETFs. Sharpe 0.292, CAGR 6.6%, Net Profit 105.4%.
-- **ML-HMM-Regime** (Book Ex04) : Modele Markov-switching 2 regimes (haute/basse volatilite) via statsmodels MarkovRegression. Allocation SPY (low-vol) / TLT (high-vol).
+- **~~ML-HMM-Regime~~** (CONSOLIDATED into Markov-Regime-Detection) : Modele identique, code duplique supprime.
 - **ML-Gaussian-Classifier** (Book Ex15) : GaussianNB prediction de direction sur tech stocks. Features: rendements open-close cross-sectionnels. Sizing par probabilite.
 - **ML-LLM-Summarization** (Book Ex16) : Sentiment news Tiingo + optional OpenAI LLM summarization. Fallback keyword-based. SPY, 2015-2026. Sharpe 0.686.
 - **ML-PCA-StatArb** (Book Ex13, book period) : PCA + sklearn LinearRegression stat-arb mean-reversion. Meme concept que PCA-StatArb mais periode du livre (2019-2024). Sharpe 0.399.
