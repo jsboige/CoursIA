@@ -65,7 +65,7 @@ from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
 
 try:
-    from scripts.walk_forward import WalkForwardSplitter
+    from walk_forward import WalkForwardSplitter
 except ImportError:
     WalkForwardSplitter = None
 
