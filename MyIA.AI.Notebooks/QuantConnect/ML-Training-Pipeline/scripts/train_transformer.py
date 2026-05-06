@@ -537,6 +537,14 @@ def main():
         save_pytorch_checkpoint(
             result["model"], result, hyperparams, data_hash, ckpt_dir,
             model_type="transformer",
+            extra_metadata={
+                "architecture": {
+                    "input_size": result["input_size"],
+                    "d_model": result["d_model"],
+                    "nhead": result["nhead"],
+                    "num_layers": result["num_layers"],
+                }
+            },
         )
 
         m = result["metrics"]
@@ -593,6 +601,14 @@ def main():
     save_pytorch_checkpoint(
         result["model"], result, hyperparams, data_hash, ckpt_dir,
         model_type="transformer",
+        extra_metadata={
+            "architecture": {
+                "input_size": result["input_size"],
+                "d_model": result["d_model"],
+                "nhead": result["nhead"],
+                "num_layers": result["num_layers"],
+            }
+        },
     )
 
     if args.dry_run:
