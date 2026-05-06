@@ -1,26 +1,31 @@
-# Image - Generation d'Images par IA
+# Image - Génération d'Images par IA
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Docker Management](../00-GenAI-Environment/00-2-Docker-Services-Management.ipynb)
 
-Serie complete de notebooks pour la generation et l'edition d'images par IA generative, couvrant les modeles de base jusqu'aux workflows de production.
+La génération d'images par IA représente l'une des entrées les plus intuitives et captivantes dans le monde de l'intelligence artificielle. À l'intersection entre créativité artistique et contrôle technique, elle offre un moyen unique de transformer des concepts abstraits en contenus visuels concrets, parfaits pour enrichir les ressources éducatives.
+
+## Fil rouge : Construction d'un générateur de contenu visuel éducatif
+
+Ce parcours vous guide dans la création d'un système capable de générer divers types de contenu visuel pour l'éducation :
+- **Diagrammes pédagogiques** complexes expliquant des mécanismes abstraits
+- **Illustrations conceptuelles** pour rendre les idées scientifiques accessibles
+- **Modèles décoratifs** personnalisés pour l'identité visuelle des supports de cours
+- **Visualisations interactives** combinant texte et images pour une meilleure rétention
+
+Chaque étape de ce fil rouge est conçue pour vous apprendre à maîtriser à la fois les techniques de génération et leur application pratique dans un contexte éducatif.
 
 ## Vue d'ensemble
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 19 |
-| Sous-dossiers | 5 (4 niveaux + examples) |
-| Kernel | Python 3 |
-| Duree totale | ~6-8h |
-| Validation | 100% (19/19 notebooks) |
+19 notebooks organisés en 5 sous-dossiers, représentant environ 6 à 8 heures d'apprentissage intensif dans le domaine de la génération d'images par IA, avec un taux de validation de 100%.
+
 
 ## Structure
 
 ```
 Image/
-├── 01-Foundation/     # Modeles de base (5 notebooks)
-├── 02-Advanced/       # Modeles avances (4 notebooks)
-├── 03-Orchestration/  # Multi-modeles (3 notebooks)
+├── 01-Foundation/     # Modèles de base (5 notebooks)
+├── 02-Advanced/       # Modèles avancés (4 notebooks)
+├── 03-Orchestration/  # Multi-modèles (3 notebooks)
 ├── 04-Applications/   # Production (4 notebooks)
 └── examples/          # Cas d'usage (3 notebooks)
 ```

@@ -1,18 +1,18 @@
-# GenAI Texte - Generation de Texte par IA
+# GenAI Texte - Maîtrise des LLMs : Fondement de tout Génératif
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
 
-Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et les APIs OpenAI modernes (2025-2026).
+La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Génératif. Chaque image générée, chaque instruction d'agent et chaque requête RAG trouve son origine dans le texte. Cette série vous guide à travers une progression pédagogique complète pour transformer votre interaction avec l'IA.
 
-## Vue d'ensemble
+## Ce que vous apprendrez
 
-| Tier | Notebooks | Niveau |
-|------|-----------|--------|
-| **Fondations** | 1-2 | Debutant |
-| **Sorties Structurees** | 3-4 | Intermediaire |
-| **Augmentation** | 5-7 | Intermediaire |
-| **Avance** | 8-11 | Avance |
-| **Validation** | 100% (11/11 notebooks) |
+À travers ces 11 notebooks pratiques, vous acquerrez une expertise complète :
+- **Art du prompt engineering** : du zéro-shot au chain-of-thought
+- **Structuration des réponses** : JSON Schema, Pydantic, extraction de données
+- **Intelligence augmentée** : function calling, RAG moderne, code interpreter
+- **Raisonnement avancé** : modèles o4-mini, gpt-5-thinking
+- **Production enterprise** : gestion de sessions, retry, batch processing
+- **Déploiement local** : vLLM, quantification, optimisation des coûts
 
 ## Contenu detaille
 
@@ -59,7 +59,7 @@ Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et l
 
 ## Parcours suggere
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
 │  1_OpenAI_Intro ─────► 2_PromptEngineering                     │
@@ -94,7 +94,7 @@ Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et l
 | **File Upload** | 6, 7 | Support PDF et fichiers |
 | **Reasoning** | 2, 8 | Modeles o4-mini, gpt-5-thinking |
 
-## Technologies
+## Technologies et ecosysteme
 
 - **OpenAI API** : GPT-4o, GPT-4o-mini, o4-mini, gpt-5-thinking
 - **Python** : openai, pydantic, tiktoken, semantic-kernel
