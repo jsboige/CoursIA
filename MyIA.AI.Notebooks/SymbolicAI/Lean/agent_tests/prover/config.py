@@ -3,9 +3,11 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from agent_framework_openai import OpenAIChatClient
+from agent_framework_openai import OpenAIChatCompletionClient
 
 _parent = Path(__file__).resolve().parent.parent
+_lean_dir = _parent.parent
+load_dotenv(_lean_dir / ".env")
 load_dotenv(_parent / ".env")
 
 LEAN_PROJECT_DIR = os.getenv("LEAN_PROJECT_DIR")
@@ -50,10 +52,10 @@ import SocialChoice.Definitions
 """
 
 
-def create_client(provider: str = "zai", model_key: str = "reasoning") -> OpenAIChatClient:
-    """Create an OpenAIChatClient for the given provider."""
+def create_client(provider: str = "zai", model_key: str = "reasoning") -> OpenAIChatCompletionClient:
+    """Create a ChatCompletionClient for the given provider."""
     cfg = PROVIDERS[provider]
-    return OpenAIChatClient(
+    return OpenAIChatCompletionClient(
         model=cfg["models"][model_key],
         api_key=cfg["api_key"],
         base_url=cfg["base_url"],
