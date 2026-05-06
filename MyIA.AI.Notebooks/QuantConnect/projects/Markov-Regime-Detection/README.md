@@ -7,6 +7,8 @@
 
 Markov regime detection using statsmodels MarkovRegression. Identifies 2-regime (bull/bear) states on SPY returns.
 
+**Consolidated from ML-HMM-Regime** (near-identical copy with same class name, same k_regimes=2, same allocation logic).
+
 ## How to Run
 
 **Lean CLI:**
@@ -24,4 +26,4 @@ Markov regime detection using statsmodels MarkovRegression. Identifies 2-regime 
 
 ## Files
 
-- main.py - Strategy (v1.1, Markov regime)
+- main.py - Strategy (v1.1, Markov regime, consolidated from ML-HMM-Regime)

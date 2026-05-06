@@ -11,7 +11,7 @@ Reference mapping between the 22 examples from [Hands-On AI Trading with Python,
 | 01 | ML Trend Scanning with MLFinlab | `projects/ML-Trend-Scanning` | QC-Py-11, QC-Py-13 | 0.292 | -- | -- | -- | Done |
 | 02 | Factor Preprocessing for Regime Detection | `projects/Markov-Regime-Detection`, `projects/HMM-KMeans-Voting` | QC-Py-28 | -- | -- | -- | -- | Done |
 | 03 | Reversion vs Trending - Classification | `projects/ML-Reversion-Trending` | QC-Py-19 | 0.375 | 8.44% | 24.4% | 29398512 | Done |
-| 04 | Alpha by Hidden Markov Models | `projects/ML-HMM-Regime` | QC-Py-28 | 0.571 | -- | -- | -- | Done |
+| 04 | Alpha by Hidden Markov Models | `projects/Markov-Regime-Detection` | QC-Py-28 | 0.571 | -- | -- | -- | Done |
 | 05 | FX SVM Wavelet Forecasting | `projects/ML-FX-SVM-Wavelet`, `projects/SVM-Wavelet-Forecasting` | QC-Py-19 | 0.375 | 8.44% | 24.4% | -- | Done |
 | 06 | Dividend Harvesting Selection | `projects/Dividend-Harvesting-ML` | QC-Py-05, QC-Py-13 | 0.468 | 12.66% | 30.6% | 29443034 | Done |
 | 07 | Effect of Positive-Negative Splits | `projects/Positive-Negative-Splits-ML` | QC-Py-19 | 1.736 | 90.83% | 42.4% | 30317350 | Done |
