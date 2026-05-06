@@ -117,12 +117,13 @@ Advanced features beyond basic OHLCV.
 Combine multiple model types.
 
 - MoE with regime-aware routing (MLP experts per regime) — Done, baseline established
+- MoE with LSTM/Transformer experts — Done, early stopping + regularization
 - LSTM + Transformer stacking
 - RL policy gradient with supervised pre-training
 - Regime-conditional ensemble (different models per regime)
 - Uncertainty-weighted prediction averaging
 
-**MoE baseline results (Dataset V2, 5-fold walk-forward, MLP h=64,32)**:
+**MoE v1 results (Dataset V2, 5-fold walk-forward, MLP h=64,32)**:
 
 | Symbol | Majority | MoE (price) | MoE (hmm) | Beats?     |
 |--------|----------|-------------|-----------|------------|
@@ -133,7 +134,20 @@ Combine multiple model types.
 | TLT    | 0.511    | 0.498       | 0.505     | NO         |
 | GLD    | 0.536    | 0.497       | 0.496     | NO         |
 
-**Key finding**: MLP experts too simple for regime specialization. LSTM/Transformer experts (Stage 1 winners) needed for Stage 3.
+**MoE v2 results (3-fold walk-forward, early stopping, val_split=0.15, patience=10)**:
+
+| Symbol | Majority | MoE MLP | MoE LSTM | MoE Transformer | Best         | Beats? |
+|--------|----------|---------|----------|-----------------|--------------|--------|
+| XLE    | 0.478    | 0.503   | 0.472    | **0.490**       | Transformer  | YES    |
+| BTC-USD| 0.532    | 0.497   | 0.518    | 0.508           | LSTM         | NO     |
+| GLD    | 0.536    | 0.497   | 0.525    | 0.534           | Transformer  | NO     |
+
+**Key findings**:
+
+- MLP experts too simple for regime specialization (v1 finding)
+- LSTM/Transformer per-regime experts overfit due to sample fragmentation (57-400 samples/regime in early folds)
+- MoE Transformer beats majority on XLE (+1.2pp) — energy sector has exploitable regime structure
+- **Next**: Try global (non-regime) LSTM/Transformer as single experts, or increase min_samples to consolidate regimes
 
 ### Stage 4: Walk-Forward Optimization
 
