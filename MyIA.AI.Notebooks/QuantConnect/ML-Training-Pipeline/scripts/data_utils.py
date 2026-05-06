@@ -25,6 +25,8 @@ def load_data(
     """
     candidates = sorted(data_dir.glob(f"{symbol}_*.csv"))
     if not candidates:
+        candidates = sorted(data_dir.glob(f"{symbol.replace('-', '_')}_*.csv"))
+    if not candidates:
         raise FileNotFoundError(f"No CSV files found for {symbol} in {data_dir}")
 
     dfs = []

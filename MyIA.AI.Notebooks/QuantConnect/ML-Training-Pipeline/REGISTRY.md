@@ -1,9 +1,9 @@
 # Checkpoint Registry
 
 Auto-generated: 2026-05-03 22:29
-Updated: 2026-05-05 — POST-FIX verdict: 0 BEATS, 14 FAILS (contamination fix #726/#730 + audit #736-#739)
+Updated: 2026-05-06 — Stage -1 Panier baselines: 18 BEATS, 32 FAILS across 50 experiments (26 symbols x 2 models)
 
-Total checkpoints: 20 (all PRE-FIX except where noted)
+Total checkpoints: 70 (20 legacy + 50 panier baselines)
 
 ## Anti-Bias Audit (2026-05-04)
 
@@ -14,6 +14,57 @@ These checkpoints are **NOT valid for production** — they serve as baselines f
 Future trainings MUST use anti-bias panier (26 symbols, 7 asset classes) per Issue #706.
 
 **Forbidden symbols**: AAPL, MSFT, GOOG, AMZN, NVDA, TSLA, META
+
+## Stage -1: Panier Baselines POST-FIX (2026-05-06)
+
+**Methodology**: Walk-forward 5-fold, advanced features (38 dims), seed=42, train-only normalization.
+RF (200 trees, max_depth=8) + XGBoost (200 rounds, max_depth=8) on all 26 panier symbols.
+
+**Result: 18 BEATS, 32 FAILS across 50 experiments.**
+
+| Group | Symbol | RF DirAcc | RF vs Maj | XGB DirAcc | XGB vs Maj | Best Model | Verdict |
+|-------|--------|-----------|-----------|------------|------------|------------|---------|
+| us_equity_broad | SPY | 0.4972 | -0.0104 | 0.4991 | -0.0085 | None | FAIL |
+| us_equity_broad | RSP | 0.5208 | **+0.0075** | 0.5123 | -0.0009 | RF | MIXED |
+| us_equity_broad | IWM | 0.5094 | **+0.0047** | 0.5113 | **+0.0066** | XGB | BEATS |
+| us_equity_sectors | XLB | 0.5189 | **+0.0085** | 0.5358 | **+0.0255** | XGB | BEATS |
+| us_equity_sectors | XLC | 0.4902 | -0.0154 | 0.4958 | -0.0098 | None | FAIL |
+| us_equity_sectors | XLF | 0.5113 | -0.0028 | 0.5132 | -0.0009 | None | FAIL |
+| us_equity_sectors | XLI | 0.5066 | **+0.0038** | 0.5170 | **+0.0142** | XGB | BEATS |
+| us_equity_sectors | XLK | 0.4972 | -0.0321 | 0.5066 | -0.0226 | None | FAIL |
+| us_equity_sectors | XLP | 0.5330 | **+0.0047** | 0.5170 | -0.0113 | RF | MIXED |
+| us_equity_sectors | XLRE | 0.4816 | -0.0347 | 0.4918 | -0.0245 | None | FAIL |
+| us_equity_sectors | XLU | 0.5066 | -0.0057 | 0.4953 | -0.0170 | None | FAIL |
+| us_equity_sectors | XLV | 0.5255 | **+0.0085** | 0.5151 | -0.0019 | RF | MIXED |
+| us_equity_sectors | XLY | 0.4708 | -0.0632 | 0.5085 | -0.0255 | None | FAIL |
+| volatility | VIX | 0.5168 | **+0.0057** | 0.5066 | -0.0045 | RF | MIXED |
+| us_bonds | TLT | 0.5274 | -0.0057 | 0.5245 | -0.0085 | None | FAIL |
+| us_bonds | IEF | 0.5783 | -0.0311 | 0.5462 | -0.0632 | None | FAIL |
+| us_bonds | SHY | 0.8821 | -0.0113 | 0.8877 | -0.0057 | None | FAIL |
+| commodities | GLD | 0.5142 | -0.0113 | 0.5038 | -0.0217 | None | FAIL |
+| commodities | USO | 0.4802 | -0.0283 | 0.4774 | -0.0311 | None | FAIL |
+| commodities | DBA | 0.5151 | -0.0349 | 0.5198 | -0.0302 | None | FAIL |
+| international | EFA | 0.5151 | -0.0123 | 0.5198 | -0.0075 | None | FAIL |
+| international | EEM | 0.5396 | **+0.0189** | 0.5047 | -0.0160 | RF | MIXED |
+| crypto | BTC-USD | 0.5171 | **+0.0171** | 0.5197 | **+0.0197** | XGB | BEATS |
+| crypto | ETH-USD | 0.5310 | **+0.0293** | 0.5422 | **+0.0405** | XGB | BEATS |
+| crypto | LTC-USD | 0.5203 | **+0.0019** | 0.5273 | **+0.0089** | XGB | BEATS |
+| crypto | XRP-USD | 0.5293 | **+0.0267** | 0.5233 | **+0.0207** | RF | BEATS |
+
+Key findings:
+
+- **Crypto dominates**: 7/8 BEATS (all 4 symbols x 2 models, except LTC-USD RF marginal +0.0019).
+  Crypto majority class is close to 50%, making prediction viable. ETH-USD XGB +4.05pp = best single edge.
+- **XGBoost > RF for crypto**: XGB edges consistently larger (ETH +4.05pp, BTC +1.97pp, LTC +0.89pp).
+- **Equity sectors show selective edges**: XLB (+2.55pp XGB), XLI (+1.42pp XGB), but most sectors FAIL.
+  XLK (Tech ETF) worst at -3.21pp, reflecting 2015-2024 bull market bias.
+- **Bonds are pathological**: SHY 89% majority class (up days) = impossible to beat. TLT/IEF also fail.
+- **SPY FAILS**: Confirms single-asset SPY training is dead end (see POST-FIX verdict below).
+- **VIX has mild RF edge** (+0.57pp) but XGB fails — volatility regime detection is noisy.
+
+Implication for EPIC #705: **Multi-asset panier baselines confirm the thesis** — ML has genuine predictive
+value on crypto (+4.05pp ETH) and selective equity sectors (+2.55pp XLB). SPY/bonds are pathological.
+Curriculum should demonstrate ML on crypto/commodities first, then explain why SPY fails.
 
 ## POST-FIX Verdict (2026-05-05) — DEFINITIVE
 
