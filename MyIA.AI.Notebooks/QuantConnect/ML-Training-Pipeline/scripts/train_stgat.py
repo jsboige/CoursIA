@@ -47,6 +47,7 @@ from gpu_training import (
 )
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
+from baselines import oos_direction_distribution
 from sequence_utils import build_sequences, normalize_sequences
 
 try:
@@ -356,24 +357,6 @@ class STGATModel(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# Baselines
-# ---------------------------------------------------------------------------
-
-
-def compute_majority_class_baseline(y_test: np.ndarray) -> dict:
-    """Compute majority-class baseline for direction prediction."""
-    flat = y_test.flatten()
-    pct_up = float(np.mean(flat > 0))
-    pct_down = 1.0 - pct_up
-    majority_acc = max(pct_up, pct_down)
-    return {
-        "majority_class_accuracy": round(majority_acc, 4),
-        "pct_up": round(pct_up, 4),
-        "pct_down": round(pct_down, 4),
-    }
-
-
-# ---------------------------------------------------------------------------
 # Training and evaluation
 # ---------------------------------------------------------------------------
 
@@ -527,7 +510,7 @@ def train_and_evaluate(
     mse = float(np.mean((preds - targets) ** 2))
     mae = float(np.mean(np.abs(preds - targets)))
     direction_acc = float(np.mean((preds[:, 0] > 0) == (targets[:, 0] > 0)))
-    majority_baseline = compute_majority_class_baseline(targets)
+    majority_baseline = oos_direction_distribution(targets)
 
     baseline_comparison = None
     if majority_class_baseline is not None:

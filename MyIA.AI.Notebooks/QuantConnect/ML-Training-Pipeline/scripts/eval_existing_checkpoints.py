@@ -30,23 +30,22 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from scripts.baselines import (
+from baselines import (
     buy_and_hold_baseline,
     majority_class_baseline,
     naive_momentum_baseline,
 )
-from scripts.data_utils import generate_synthetic_data, load_data
-from scripts.eval_finstsb import eval_per_regime
-from scripts.features import FeatureEngineer
-from scripts.sequence_utils import build_sequences
-from scripts.transaction_costs import TransactionCostModel, compare_gross_vs_net
-from scripts.walk_forward import WalkForwardSplitter
+from data_utils import generate_synthetic_data, load_data
+from eval_finstsb import eval_per_regime
+from features import FeatureEngineer
+from sequence_utils import build_sequences
+from transaction_costs import TransactionCostModel, compare_gross_vs_net
+from walk_forward import WalkForwardSplitter
 
 
 def load_checkpoint_model(checkpoint_dir: Path) -> tuple:
@@ -85,7 +84,7 @@ def load_checkpoint_model(checkpoint_dir: Path) -> tuple:
 
         state_size = hp.get("state_size", metadata.get("architecture", {}).get("state_size", 242))
         hidden_size = hp.get("hidden_size", 256)
-        from scripts.train_dqn_rl import build_dqn
+        from train_dqn_rl import build_dqn
 
         model = build_dqn(state_size, hidden_size, n_actions=3)
         state = torch.load(model_path, map_location="cpu", weights_only=True)
@@ -102,7 +101,7 @@ def _build_model_from_metadata(model_type: str, hp: dict):
     import torch
 
     if model_type == "transformer":
-        from scripts.train_transformer import build_transformer_model
+        from train_transformer import build_transformer_model
 
         return build_transformer_model(
             input_size=hp.get("input_size", 38),
@@ -114,7 +113,7 @@ def _build_model_from_metadata(model_type: str, hp: dict):
             seq_len=hp.get("seq_len", 20),
         )
     elif model_type == "lstm":
-        from scripts.train_lstm import build_model
+        from train_lstm import build_model
 
         return build_model(
             input_size=hp.get("input_size", 38),

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.walk_forward import (
+from walk_forward import (
     PurgedKFold,
     WalkForwardSplitter,
     combinatorial_purged_split,

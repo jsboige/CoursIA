@@ -43,7 +43,7 @@ from train_rl_dt import (
 )
 
 try:
-    from scripts.walk_forward import WalkForwardSplitter
+    from walk_forward import WalkForwardSplitter
 except ImportError:
     WalkForwardSplitter = None
 
