@@ -25,9 +25,7 @@ Output:
 """
 
 import argparse
-import hashlib
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -36,93 +34,18 @@ import numpy as np
 import pandas as pd
 
 # Import thermal-safe training utilities
+sys.path.append(str(Path(__file__).resolve().parent))
+from walk_forward import WalkForwardSplitter
+
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
 from gpu_training import (
-    TrainingCheckpoint,
     batch_thermal_check,
     get_gpu_temp,
     setup_amp,
 )
+from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
-
-
-def build_sequences(
-    features: pd.DataFrame, seq_len: int = 20, target_col: str = "target"
-) -> tuple:
-    """Build sequence-to-one arrays for Transformer training."""
-    feature_cols = [c for c in features.columns if c != target_col]
-    data = features[feature_cols].values
-    targets = features[target_col].values
-
-    X, y = [], []
-    for i in range(seq_len, len(data)):
-        X.append(data[i - seq_len : i])
-        y.append(targets[i])
-
-    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32), feature_cols
-
-
-def normalize_sequences(
-    X_train: np.ndarray, X_test: np.ndarray
-) -> tuple:
-    """Z-normalize features using training statistics."""
-    mean = X_train.mean(axis=(0, 1), keepdims=True)
-    std = X_train.std(axis=(0, 1), keepdims=True)
-    std = np.where(std < 1e-8, 1.0, std)
-
-    return (
-        (X_train - mean) / std,
-        (X_test - mean) / std,
-        mean.squeeze(),
-        std.squeeze(),
-    )
-
-
-def load_data(
-    data_dir: Path, symbol: str, start: str | None = None, end: str | None = None
-) -> pd.DataFrame:
-    """Load OHLCV data from downloaded CSV files."""
-    candidates = sorted(data_dir.glob(f"{symbol}_*.csv"))
-    if not candidates:
-        raise FileNotFoundError(f"No CSV files found for {symbol} in {data_dir}")
-
-    dfs = []
-    for f in candidates:
-        chunk = pd.read_csv(f, parse_dates=["Date"], index_col="Date")
-        dfs.append(chunk)
-
-    df = pd.concat(dfs).sort_index()
-    df = df[~df.index.duplicated(keep="first")]
-
-    if start:
-        df = df[df.index >= start]
-    if end:
-        df = df[df.index <= end]
-
-    return df
-
-
-def generate_synthetic_data(n_rows: int = 5000) -> pd.DataFrame:
-    """Generate synthetic OHLCV data for dry-run validation."""
-    np.random.seed(42)
-    dates = pd.date_range("2010-01-01", periods=n_rows, freq="B")
-    close = 100.0 * np.exp(np.cumsum(np.random.normal(0.0003, 0.015, n_rows)))
-
-    df = pd.DataFrame(
-        {
-            "Close": close,
-            "Open": close * (1 + np.random.normal(0, 0.003, n_rows)),
-            "High": close * (1 + np.abs(np.random.normal(0, 0.008, n_rows))),
-            "Low": close * (1 - np.abs(np.random.normal(0, 0.008, n_rows))),
-            "Volume": np.random.lognormal(15, 1, n_rows),
-        },
-        index=dates,
-    )
-    return df
-
-
-def compute_data_hash(df: pd.DataFrame) -> str:
-    return hashlib.sha256(pd.util.hash_pandas_object(df).values.tobytes()).hexdigest()[:16]
+from sequence_utils import build_sequences, normalize_sequences
 
 
 class PositionalEncoding:
@@ -204,21 +127,35 @@ def train_and_evaluate(
     learning_rate: float = 5e-4,
     warmup_steps: int = 200,
     device: str = "cpu",
+    val_ratio: float = 0.15,
 ) -> dict:
-    """Train Transformer with AMP and thermal watchdog via shared.gpu_training."""
+    """Train Transformer with AMP and thermal watchdog via shared.gpu_training.
+
+    Splits X_train into train+val internally so test data is never used
+    for model selection (fixes test-set contamination, issue #722).
+    """
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
 
     input_size = X_train.shape[2]
 
+    # Internal train/val split from training data only
+    val_cutoff = int(len(X_train) * (1 - val_ratio))
+    X_tr, X_val = X_train[:val_cutoff], X_train[val_cutoff:]
+    y_tr, y_val = y_train[:val_cutoff], y_train[val_cutoff:]
+
     train_ds = TensorDataset(
-        torch.tensor(X_train), torch.tensor(y_train).unsqueeze(1)
+        torch.tensor(X_tr), torch.tensor(y_tr).unsqueeze(1)
+    )
+    val_ds = TensorDataset(
+        torch.tensor(X_val), torch.tensor(y_val).unsqueeze(1)
     )
     test_ds = TensorDataset(
         torch.tensor(X_test), torch.tensor(y_test).unsqueeze(1)
     )
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(val_ds, batch_size=batch_size)
     test_loader = DataLoader(test_ds, batch_size=batch_size)
 
     model = build_transformer_model(
@@ -279,7 +216,7 @@ def train_and_evaluate(
         val_loss = 0.0
         val_batches = 0
         with torch.no_grad():
-            for X_batch, y_batch in test_loader:
+            for X_batch, y_batch in val_loader:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 with torch.amp.autocast("cuda", enabled=use_amp):
                     val_loss += criterion(model(X_batch), y_batch).item()
@@ -335,7 +272,8 @@ def train_and_evaluate(
         "best_val_loss": round(best_val_loss, 6),
         "total_params": total_params,
         "trainable_params": trainable_params,
-        "train_samples": len(X_train),
+        "train_samples": len(X_tr),
+        "val_samples": len(X_val),
         "test_samples": len(X_test),
         "epochs_trained": epochs,
     }
@@ -387,6 +325,120 @@ def save_checkpoint(
     return ckpt_path
 
 
+def train_walk_forward(
+    X: np.ndarray,
+    y: np.ndarray,
+    n_splits: int = 5,
+    train_size: int | None = None,
+    test_size: int | None = None,
+    gap: int = 5,
+    d_model: int = 128,
+    nhead: int = 4,
+    num_layers: int = 4,
+    dim_feedforward: int = 512,
+    dropout: float = 0.1,
+    seq_len: int = 20,
+    epochs: int = 50,
+    batch_size: int = 32,
+    learning_rate: float = 5e-4,
+    device: str = "cpu",
+) -> dict:
+    """Walk-forward cross-validation for Transformer with per-fold normalization."""
+    splitter = WalkForwardSplitter(
+        n_splits=n_splits, train_size=train_size, test_size=test_size, gap=gap,
+    )
+
+    fold_results = []
+    oos_preds = np.full(len(y), np.nan)
+    best_model_state = None
+
+    for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(X)):
+        if len(test_idx) == 0:
+            continue
+
+        X_train_fold, X_test_fold = X[train_idx], X[test_idx]
+        y_train_fold, y_test_fold = y[train_idx], y[test_idx]
+
+        mean = X_train_fold.mean(axis=(0, 1), keepdims=True)
+        std = X_train_fold.std(axis=(0, 1), keepdims=True)
+        std = np.where(std < 1e-8, 1.0, std)
+        X_train_norm = (X_train_fold - mean) / std
+        X_test_norm = (X_test_fold - mean) / std
+
+        fold_result = train_and_evaluate(
+            X_train_norm, y_train_fold, X_test_norm, y_test_fold,
+            d_model=d_model, nhead=nhead, num_layers=num_layers,
+            dim_feedforward=dim_feedforward, dropout=dropout, seq_len=seq_len,
+            epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
+            device=device,
+        )
+
+        fold_diracc = fold_result["metrics"]["direction_accuracy"]
+        fold_results.append({
+            "fold": fold_idx,
+            "train_size": len(train_idx),
+            "test_size": len(test_idx),
+            "diracc": fold_diracc,
+            "mse": fold_result["metrics"]["mse"],
+        })
+
+        import torch
+        with torch.no_grad():
+            X_test_t = torch.tensor(X_test_norm, dtype=torch.float32).to(device)
+            preds = fold_result["model"](X_test_t).squeeze(-1).cpu().numpy()
+        oos_preds[test_idx] = preds
+
+        # Save last fold model (avoids test-set selection bias from cherry-picking best fold)
+        best_model_state = {k: v.cpu().clone() for k, v in fold_result["model"].state_dict().items()}
+
+        print(f"  Fold {fold_idx+1}/{n_splits}  diracc={fold_diracc:.4f}  "
+              f"train={len(train_idx)}  test={len(test_idx)}")
+
+    valid_mask = ~np.isnan(oos_preds)
+    oos_predictions = oos_preds[valid_mask]
+    oos_targets = y[valid_mask]
+    oos_diracc = float(np.mean((oos_predictions > 0) == (oos_targets > 0)))
+
+    # Majority-class baseline on actual OOS targets
+    y_binary_oos = (oos_targets > 0).astype(int)
+    majority_freq = float(np.mean(y_binary_oos == 1))
+    majority_bl = {
+        "accuracy": max(majority_freq, 1.0 - majority_freq),
+        "majority_class": 1 if majority_freq >= 0.5 else 0,
+        "majority_freq": majority_freq,
+        "n_train": 0,
+        "n_test": len(y_binary_oos),
+    }
+
+    input_size = X.shape[2]
+    best_model = build_transformer_model(
+        input_size, d_model, nhead, num_layers, dim_feedforward, dropout, seq_len,
+    )
+    if best_model_state:
+        best_model.load_state_dict(best_model_state)
+
+    return {
+        "model": best_model,
+        "metrics": {
+            "oos_direction_accuracy": round(oos_diracc, 4),
+            "majority_class_acc": majority_bl["accuracy"],
+            "majority_class_freq": majority_bl["majority_freq"],
+            "vs_majority_class": round(oos_diracc - majority_bl["accuracy"], 4),
+            "n_wf_folds": len(fold_results),
+            "input_size": input_size,
+            "d_model": d_model,
+            "nhead": nhead,
+            "num_layers": num_layers,
+        },
+        "fold_details": fold_results,
+        "history": {"fold_details": fold_results},
+        "input_size": input_size,
+        "d_model": d_model,
+        "nhead": nhead,
+        "num_layers": num_layers,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Train Transformer models for financial prediction"
@@ -416,6 +468,14 @@ def main():
     parser.add_argument(
         "--dry-run", action="store_true", help="Synthetic data, 2 epochs"
     )
+    parser.add_argument(
+        "--walk-forward", action="store_true",
+        help="Use walk-forward cross-validation instead of simple split",
+    )
+    parser.add_argument("--n-splits", type=int, default=5, help="Walk-forward splits")
+    parser.add_argument("--wf-train-size", type=int, default=None, help="Walk-forward train window")
+    parser.add_argument("--wf-test-size", type=int, default=None, help="Walk-forward test window per fold")
+    parser.add_argument("--gap", type=int, default=5, help="Gap between train and test in walk-forward")
     parser.add_argument(
         "--advanced", action="store_true",
         help="Use advanced features (regime, momentum, statistical, price_acceleration)",
@@ -466,6 +526,64 @@ def main():
     X, y, feature_cols = build_sequences(features, seq_len=args.seq_len)
     print(f"Sequences: {len(X)}, seq_len={args.seq_len}, features={X.shape[2]}")
 
+    if args.walk_forward:
+        print(f"Mode: WALK-FORWARD (n_splits={args.n_splits}, gap={args.gap})")
+        print(f"Device: {device}")
+
+        hyperparams = {
+            "model_type": "transformer",
+            "d_model": args.d_model,
+            "nhead": args.nhead,
+            "num_layers": args.num_layers,
+            "dim_feedforward": args.dim_ff,
+            "dropout": args.dropout,
+            "seq_len": args.seq_len,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "learning_rate": args.lr,
+            "lookback": args.lookback,
+            "symbol": args.symbol,
+            "device": device,
+            "walk_forward": True,
+            "n_splits": args.n_splits,
+            "wf_train_size": args.wf_train_size,
+            "wf_test_size": args.wf_test_size,
+            "gap": args.gap,
+        }
+
+        result = train_walk_forward(
+            X, y,
+            n_splits=args.n_splits,
+            train_size=args.wf_train_size,
+            test_size=args.wf_test_size,
+            gap=args.gap,
+            d_model=args.d_model,
+            nhead=args.nhead,
+            num_layers=args.num_layers,
+            dim_feedforward=args.dim_ff,
+            dropout=args.dropout,
+            seq_len=args.seq_len,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            learning_rate=args.lr,
+            device=device,
+        )
+
+        ckpt_dir = Path(args.checkpoint_dir)
+        save_checkpoint(result["model"], result, hyperparams, data_hash, ckpt_dir)
+
+        m = result["metrics"]
+        print(f"\nWalk-Forward OOS Results:")
+        print(f"  OOS DirAcc:    {m['oos_direction_accuracy']:.4f}")
+        print(f"  Majority Class: {m['majority_class_acc']:.4f} (freq={m['majority_class_freq']:.4f})")
+        print(f"  vs Majority:   {m['vs_majority_class']:+.4f}")
+        print(f"  Folds:         {m['n_wf_folds']}")
+
+        if args.dry_run:
+            print("DRY-RUN complete. Walk-forward pipeline validated.")
+        return
+
+    # Simple time-series split (default)
     split_idx = int(len(X) * (1 - args.test_ratio))
     X_train, X_test = X[:split_idx], X[split_idx:]
     y_train, y_test = y[:split_idx], y[split_idx:]

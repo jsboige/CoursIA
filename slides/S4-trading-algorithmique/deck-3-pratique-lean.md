@@ -30,17 +30,22 @@ Intelligence Artificielle -- S4
 2. **Plateforme Lean/QuantConnect** (15 slides)
    - Setup, algorithmes, framework Alpha, notebooks, projets
 
-3. **Workflow agentique** (10 slides)
+3. **QuantBook : explorer avant de coder** (4 slides)
+   - API de recherche, pandas, bridge recherche → backtest
+
+4. **Workflow agentique** (10 slides)
    - Agent IA codeur, architecture VSCode/CC/MCP, demo live
 
-4. **Composites avances** (4 slides)
+5. **ML accessible : features et RandomForest** (4 slides)
+   - Feature engineering, pipeline RF, ML vs regles simples
+
+6. **Composites avances** (4 slides)
    - C4.1/C4.2/C4.3, architecture multi-Alpha
 
-5. **Preparation projet et soutenance** (5 slides)
+7. **Preparation projet et soutenance** (3 slides)
    - Criteres, anti-biais, troubleshooting, ressources
 
 ---
-
 layout: section
 ---
 
@@ -113,7 +118,6 @@ layout: section
 > Notebook: QC-Py-01-Setup.ipynb
 
 ---
-
 layout: section
 ---
 
@@ -471,7 +475,6 @@ layout: section
 > Notebook: QC-Py-10-Risk-Portfolio-Management
 
 ---
-
 layout: dense
 ---
 
@@ -526,11 +529,123 @@ class EMACrossStocksAlgorithm(QCAlgorithm):
 **15 lignes de code, 5 actions, 11 ans de backtest.** Sharpe ~0.87, soit +74% de mieux que le buy-and-hold.
 
 ---
-
 layout: section
 ---
 
-# Partie 3 : Workflow Agentique
+# Partie 3 : QuantBook — Explorer avant de Coder
+
+---
+
+# QuantBook : le mode Recherche de QC
+
+- **Deux modes dans QuantConnect** :
+  - `QCAlgorithm` : backtest evenementiel, pas de lookahead possible
+  - `QuantBook` : exploration libre, pandas direct, pas de contrainte temps reel
+
+<div v-click="1">
+
+- **Pourquoi explorer avant de coder ?**
+  - Valider votre intuition sur les donnees avant d'ecrire un algorithme
+  - Visualiser les correlations, la distribution des returns, les regimes
+  - Eviter de coder une strategie sur une idee fausse
+
+</div>
+<div v-click="2">
+
+- **Acces** : onglet "Research" dans le QC Cloud IDE
+  - `QC-Py-04-Research-Workflow.ipynb` dans le depot (executable en local aussi)
+
+</div>
+
+> Ref: *Hands-On AI Trading* Ch2 "Research Notebooks" p.26-27
+
+---
+
+# QuantBook : l'API de Donnees
+
+```python
+from QuantConnect.Research import *
+
+qb = QuantBook()
+
+# Ajouter les actifs a analyser
+spy = qb.AddEquity("SPY", Resolution.Daily)
+aapl = qb.AddEquity("AAPL", Resolution.Daily)
+
+# Recuperer 1 an de donnees → DataFrame pandas direct
+history = qb.History(qb.Securities.Keys, 252, Resolution.Daily)
+
+# Extraire SPY (MultiIndex : symbol + time)
+df_spy = history.loc["SPY"]
+# → colonnes : open, high, low, close, volume
+```
+
+<div v-click="1">
+
+- **Difference cle avec `QCAlgorithm.History()`** :
+  - QuantBook retourne un **DataFrame pandas** directement
+  - Pas de lookahead protection → vous etes responsable de ne pas biaiser
+
+</div>
+
+---
+
+# QuantBook : Analyser un Signal
+
+```python
+# Returns journaliers et volatilite rolling
+df_spy['returns'] = df_spy['close'].pct_change()
+df_spy['vol_30d'] = df_spy['returns'].rolling(30).std() * (252 ** 0.5)
+
+# Tester un signal SMA 50/200 AVANT de l'implementer dans Lean
+df_spy['sma50']  = df_spy['close'].rolling(50).mean()
+df_spy['sma200'] = df_spy['close'].rolling(200).mean()
+df_spy['signal'] = (df_spy['sma50'] > df_spy['sma200']).astype(int)
+
+# Backtest simplifie
+df_spy['strategy'] = df_spy['signal'].shift(1) * df_spy['returns']
+sharpe = df_spy['strategy'].mean() / df_spy['strategy'].std() * (252 ** 0.5)
+print(f"Sharpe (recherche) : {sharpe:.2f}")
+```
+
+<div v-click="1">
+
+- Validation rapide : si le signal ne tient pas en recherche libre, il ne tiendra pas en backtest Lean
+- Ce notebook prend 5 minutes — il peut vous economiser 2 heures de backtest inutile
+
+</div>
+
+---
+
+# QuantBook → QCAlgorithm : le Bridge
+
+```
+NOTEBOOK (QuantBook)          ALGORITHME (QCAlgorithm)
+─────────────────────         ──────────────────────────
+qb.History(...)           →   self.history(...)
+df['sma50'] = ...         →   self.sma(symbol, 50, ...)
+signal = sma50 > sma200   →   if fast.current.value > slow.current.value:
+strategy_returns = ...    →   self.set_holdings(symbol, 0.5)
+sharpe calculé manuell.   →   résultats backtest complets
+```
+
+<div v-click="1">
+
+- **Pattern recommande pour votre projet** :
+  1. Explorer dans QuantBook (local ou Cloud Research)
+  2. Valider le signal sur 2-3 ans de données
+  3. Traduire en `QCAlgorithm` uniquement si le signal est prometteur
+  4. Laisser l'agent faire la traduction si besoin
+
+</div>
+
+> Notebook: `QC-Py-04-Research-Workflow.ipynb` (21/22 cellules executées)
+
+---
+layout: section
+---
+
+# Partie 4 : Workflow Agentique
 
 ---
 
@@ -730,11 +845,130 @@ et backteste-le sur 2015-2025 avec 100k USD"
 </div>
 
 ---
-
 layout: section
 ---
 
-# Partie 4 : Composites Avances
+# Partie 5 : ML Accessible — Features et RandomForest
+
+---
+
+# Feature Engineering : transformer les prix en signaux
+
+- **3 familles de features** sur donnees OHLCV :
+
+<div v-click="1">
+
+| Famille | Exemples | Ce qu'elles capturent |
+|---------|----------|-----------------------|
+| **Price-based** | return 1j/5j/20j, log-return, vol 30j | Momentum, regime |
+| **Indicator-based** | RSI(14), SMA ratio, EMA ratio, MACD | Overbought, tendance |
+| **Labeling** | rendement futur 10j > seuil → 1/0 | Target du modele |
+
+</div>
+<div v-click="2">
+
+- **39 features** dans `QC-Py-18-ML-Features-Engineering.ipynb` (21/22 cellules executees)
+- **Triple Barrier** (Lopez de Prado) : label 1/0/-1 selon stop-loss, take-profit ou expiration
+- La qualite des features > le choix du modele
+
+</div>
+
+> Notebook: `QC-Py-18` | Ref: *Hands-On AI Trading* Ch4 "Feature Engineering" p.68-85
+
+---
+
+# Pipeline RandomForest sur Secteurs
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+class SectorMLClassificationAlgorithm(QCAlgorithm):
+    def initialize(self):
+        # 8 ETFs sectoriels : XLK, XLF, XLV, XLE, XLY, XLP, XLI, XLU
+        # Re-entrainement mensuel, fenetre glissante 4 ans
+        self.schedule.on(self.date_rules.month_start("SPY"), ...)
+
+    def train_model(self):
+        # 11 features par secteur : RSI, SMA_ratio, returns 1/5/10/20j, vol
+        # Label : rendement 10j > 1.2% → Buy, < -0.8% → Avoid
+        self.model = RandomForestClassifier(
+            n_estimators=100, max_depth=5, min_samples_leaf=10
+        )
+        self.model.fit(X_train, y_train)
+
+    def rebalance(self):
+        proba = self.model.predict_proba(X_current)
+        # Bull : top 4 secteurs par proba d'achat
+        # Bear (SPY < SMA200) : top 2 defensifs ou cash
+```
+
+<div v-click="1">
+
+- Re-entrainement automatique chaque mois sur fenetre glissante de 4 ans
+- Regime bull/bear detecte par SPY vs SMA200
+
+</div>
+
+---
+
+# ML en Pratique : ML ne bat pas forcément les règles simples
+
+**Evolution du Sector-ML-Classification sur 5 versions (2015-2026) :**
+
+| Version | Changement principal | Sharpe | Alpha |
+|---------|---------------------|--------|-------|
+| v2b | Baseline momentum | 0.352 | -0.007 |
+| v3 | + ML features | 0.288 | -0.012 |
+| v4 | + Alpha positif (beta reduit) | 0.308 | +0.003 |
+| **v5** | Toujours top-N, pas de cash drag | **0.473** | **+0.009** |
+| Trend-Following simple | SMA200 + momentum | **1.072** | 0.068 |
+
+<div v-click="1">
+
+- **Lecon cle** : le ML seul ne suffit pas — v3 (ML naif) est pire que v2b (momentum pur)
+- L'iteration sur le feature engineering et le regime fait passer de 0.29 a 0.47
+- Une regle simple bien calibree (Trend-Following) bat le ML sur ce probleme
+
+</div>
+<div v-click="2">
+
+> ML vaut le cout quand : univers large, features fondamentales disponibles, regime complexe
+> Pour votre projet : RandomForest ou XGBoost sur secteurs sont accessibles en 50 lignes
+
+</div>
+
+---
+
+# Ce que ML apporte (et ce qu'il n'apporte pas)
+
+- **ML apporte** :
+  - Signaux adaptatifs : le modele se reentrainement sur le marche recent
+  - Patterns non-lineaires : interactions entre features inaccessibles aux regles
+  - Probabilites : `predict_proba()` donne un score de confiance, pas juste 0/1
+
+<div v-click="1">
+
+- **ML n'apporte pas** :
+  - Sharpe garanti — un RF mal feature-engineere est pire qu'une EMA
+  - Interpretabilite facile — savoir *pourquoi* le modele achete est dur
+  - Robustesse automatique — overfitting sur le train set = desastre hors-sample
+
+</div>
+<div v-click="2">
+
+- **Pour votre projet** : si vous choisissez ML, partez du template Advanced
+  - `templates/advanced/main.py` : RF sur BTCUSDT, 100 arbres, re-entrainement mensuel
+  - Commencez simple (5 features), ajoutez par iteration
+
+</div>
+
+> Projets disponibles : `ML-Classification`, `ML-RandomForest`, `Sector-ML-Classification`
+
+---
+layout: section
+---
+
+# Partie 6 : Composites Avances
 
 ---
 
@@ -811,62 +1045,36 @@ layout: section
 </div>
 
 ---
-
 layout: section
 ---
 
-# Partie 5 : Preparation Projet et Soutenance
+# Partie 7 : Preparation Projet et Soutenance
 
----
+# Soutenance Groupe — 19 Mai 2026
 
-layout: dense
----
-
-# Mapping Exercices ESGF
-
-| Exercice | Sujet | Notebooks | Projet |
-|----------|-------|-----------|--------|
-| **Ex01** | Setup + EMA Crossover | QC-Py-01, 02 | EMA-Cross-Stocks |
-| **Ex02** | All-Weather Portfolio | QC-Py-08 | AllWeather |
-| **Ex03** | Sector Momentum | QC-Py-05, 13 | SectorMomentum |
-| **Ex04** | Trend-Following Multi-Sector | QC-Py-11 | TrendStocksLite |
-| **Ex05** | Custom Alpha Model | QC-Py-13, 14 | EMA-Cross-Alpha |
-| **Ex06** | Multi-Alpha Composite | QC-Py-15 | Framework_Composite_TrendWeather |
+- **Format** : 10 min presentation + 5 min questions par groupe
+- **Support** : Slidev obligatoire (template fourni dans le depot)
+- **Livrables** : projet uploaded dans l'org ESGF avant J-2 (17 mai)
 
 <div v-click="1">
 
-- **Ex01-Ex02** : niveau debutant, ~2h chacun
-- **Ex03-Ex04** : niveau intermediaire, necessite la maitrise des univers et indicateurs
-- **Ex05-Ex06** : niveau avance, utilisation du framework Alpha complet
-- **Objectif** : presenter votre strategie avec ses metriques de backtest
-
-</div>
-
----
-
-# Criteres de Qualite et Soutenance
-
-- **Objectif** : deployer une strategie fonctionnelle sur QuantConnect Cloud
-<div v-click="1">
-
-- **Criteres de qualite** :
-
-| Critere | Poids | Description |
-|---------|-------|-------------|
-| Fonctionnalite | 30% | L'algorithme compile et produit des resultats coherents |
-| Performance | 25% | Sharpe > 0.3, MaxDD < 30%, rendement positif |
-| Originalite | 20% | Choix d'actifs, parametres, architecture personnalisee |
-| Comprehension | 15% | Justification des choix, analyse des resultats |
-| Presentation | 10% | Clarte, structure, visualisations |
+| Critere | Poids | Minimum requis |
+|---------|:-----:|----------------|
+| **Backtest** | 30% | Sharpe > 0, periode > 2 ans, comparaison benchmark |
+| **Strategie** | 30% | Logique claire, 2+ indicateurs, stop-loss present |
+| **Presentation** | 20% | Graphiques de resultats, timing 10 min +/- 1 min |
+| **Code** | 20% | Compile sans erreur, README, parametres visibles |
 
 </div>
 <div v-click="2">
 
-- **Workflow recommande** :
+- **Workflow recommande pour le projet** :
   1. Choisir une strategie de base parmi les projets du depot
   2. Utiliser l'agent pour personnaliser (actifs, periodes, seuils)
   3. Valider manuellement : relire le code, verifier les metriques
   4. Documenter vos choix et limites identifiees
+
+- **Bonus +5 pts** : demo paper trading en direct pendant la soutenance
 
 </div>
 
@@ -910,7 +1118,6 @@ layout: dense
 </div>
 
 ---
-
 layout: cover
 ---
 

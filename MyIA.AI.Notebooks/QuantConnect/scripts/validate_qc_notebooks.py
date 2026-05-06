@@ -53,6 +53,22 @@ class NotebookValidator:
         'using QuantConnect.Algorithm;'
     ]
 
+    # Patterns théâtraux interdits — code qui simule l'exécution sans rien faire.
+    # Origine : audit 2026-05-05 ai-01, PR #588 + #597 ont introduit ces patterns.
+    # Voir CLAUDE.md règle C.2 (notebooks committés AVEC outputs réels).
+    THEATRICAL_PATTERNS = [
+        # Le print du nombre de caractères de l'algo encodé en string n'est PAS une exécution.
+        ('print.*Algorithme charge', "Métadonnée du qc_code stringifié — n'est pas une exécution réelle"),
+        ('print.*Lignes de code', "Métadonnée du qc_code stringifié — n'est pas une exécution réelle"),
+        # Le print du workflow MCP comme texte n'est pas une exécution.
+        ('print.*Workflow de deploiement', "Workflow MCP imprimé comme texte — pas d'exécution réelle"),
+        # Les "résultats hardcodés à déployer" ne sont pas des résultats réels.
+        ('print.*Placeholder pour les resultats', "Résultats hardcodés en placeholder — pas un backtest réel"),
+        ('a deployer via MCP', "Placeholder hardcodé prétendant être un résultat de backtest"),
+        # Le print "Resultats sync depuis QC Cloud" sans fetch réel est mensonger.
+        ('Resultats sync depuis QC Cloud', "Prétend synchroniser depuis QC Cloud sans fetch réel"),
+    ]
+
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
         self.errors = []
@@ -107,6 +123,7 @@ class NotebookValidator:
         # Validations
         self._validate_metadata(nb, language, fix)
         self._validate_cells(nb, language, fix)
+        self._validate_no_theatrical_outputs(nb)
         self._validate_structure(nb, language)
         self._validate_naming(notebook_path, language)
 
@@ -197,7 +214,13 @@ class NotebookValidator:
         code_cells = [c for c in cells if c.get('cell_type') == 'code']
 
         if len(code_cells) == 0:
-            self.errors.append("Aucune cellule de code trouvée")
+            # Notebooks markdown-only légitimes : référence vers QC Cloud projet exécuté
+            # ailleurs (cas Cloud-XX). On veut un warning pas un error : le validator
+            # vérifie que le notebook ne ment pas, pas qu'il a forcément du code.
+            self.warnings.append(
+                "Notebook markdown-only (aucune cellule de code) — vérifier que c'est intentionnel "
+                "(ex: notebook qui documente un backtest exécuté sur QC Cloud)"
+            )
             return
 
         # Vérifier imports/using
@@ -225,6 +248,30 @@ class NotebookValidator:
                 f"{len(executed_cells)} cellules avec outputs (notebook exécuté). "
                 "Recommandé : nettoyer avant commit"
             )
+
+    def _validate_no_theatrical_outputs(self, nb: dict):
+        """Détecte les patterns d'outputs théâtraux (print de métadonnées prétendant être une exécution).
+
+        Patterns interdits depuis l'audit 2026-05-05 :
+        - print du len(qc_code) prétendant que charger une string = exécuter l'algo
+        - print du workflow MCP comme texte sans appel réel
+        - print de "résultats" hardcodés sans backtest réel
+        - print "Resultats sync depuis QC Cloud projet XXXX" sans fetch effectif
+
+        Ces patterns ont été introduits par PR #588 + #597 et trompent les agents de validation
+        car la cellule a un output non-vide. Ils transforment le notebook en théâtre.
+        """
+        for idx, cell in enumerate(nb.get('cells', [])):
+            if cell.get('cell_type') != 'code':
+                continue
+            source = ''.join(cell.get('source', []))
+            for pattern, reason in self.THEATRICAL_PATTERNS:
+                if re.search(pattern, source):
+                    self.errors.append(
+                        f"Cell {idx}: pattern théâtral détecté ('{pattern}') — {reason}. "
+                        f"Soit exécuter le notebook réellement, soit retirer la cellule menteuse."
+                    )
+                    break
 
     def _validate_structure(self, nb: dict, language: str):
         """Valider structure générale"""

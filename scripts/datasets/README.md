@@ -11,6 +11,9 @@ Collection of scripts for downloading and managing historical market data for Qu
 | `download_kaggle.py` | Kaggle datasets | Extracted files |
 | `download_qc_data.py` | QuantConnect (lean-cli / Object Store) | QC data files |
 | `manage_crypto_archive.py` | yfinance + CoinGecko fallback | Consolidated CSV per asset |
+| `stitch_crypto.py` | Bitstamp + Binance + yfinance | BTC/USD 1h continuous CSV |
+| `build_panier_anti_bias.py` | yfinance (26 symbols, 7 asset classes) | Multi-asset panier CSVs |
+| `dezip_forex.py` | FXCM/Oanda zip archives | Forex bid/ask OHLCV CSVs |
 
 ## Quick Start
 
@@ -100,6 +103,66 @@ Supported symbols: BTC, ETH, BNB, SOL, XRP, ADA, DOGE, DOT
 
 Primary source: yfinance. Fallback: CoinGecko (via `pycoingecko`).
 
+### Crypto stitching (BTC/USD continuous)
+
+```bash
+# Stitch Bitstamp + Binance + yfinance into continuous hourly series
+python scripts/datasets/stitch_crypto.py
+
+# Custom data root for personal archives
+python scripts/datasets/stitch_crypto.py --data-root /path/to/data --output-dir datasets/crypto/
+
+# Skip yfinance download (offline mode)
+python scripts/datasets/stitch_crypto.py --skip-download
+```
+
+Output: `datasets/crypto/BTC_USD_1h_stitched.csv` (~101K rows, 2013-2024)
+
+Sources (priority order): Bitstamp 1h (primary 2018-2024), Binance BTC/USDT (pre-2018 extension), yfinance (gap fill to present).
+
+Note: 2011-2012 data excluded by default (`--start-date 2013-01-01`). 2011 had only 307/8760 hours with massive gaps. 2012 had only 62.6% coverage (5501/8784h) with recurrent 10-22h gaps.
+
+### Anti-bias panier (multi-asset)
+
+```bash
+# Download and validate all 26 symbols
+python scripts/datasets/build_panier_anti_bias.py
+
+# Custom date range
+python scripts/datasets/build_panier_anti_bias.py --start 2018-01-01 --end 2026-01-01
+
+# Validate existing files only (no download)
+python scripts/datasets/build_panier_anti_bias.py --validate-only
+
+# Use cached files (no new downloads)
+python scripts/datasets/build_panier_anti_bias.py --skip-download
+```
+
+Output: `datasets/panier/` with individual symbol CSVs + `panier_close_all.csv` + `panier_report.json`
+
+**Anti-bias policy**: FORBIDDEN symbols (AAPL, MSFT, GOOG, AMZN, NVDA, TSLA, META) are excluded.
+Panier covers 7 asset classes: US equity broad/sectors, volatility, bonds, commodities, international, crypto.
+
+### Forex data extraction
+
+```bash
+# List archive contents
+python scripts/datasets/dezip_forex.py --list
+
+# Extract daily data
+python scripts/datasets/dezip_forex.py --extract daily
+
+# Extract hourly data
+python scripts/datasets/dezip_forex.py --extract hourly
+
+# Extract everything
+python scripts/datasets/dezip_forex.py --extract all
+```
+
+Output: `datasets/forex/` with per-pair per-resolution CSVs (mid-price OHLCV + spread).
+
+Source: FXCM/Oanda nested zip archives with bid/ask OHLCV data.
+
 ## Common Options
 
 All scripts accept `--output-dir` to override the default output path.
@@ -111,6 +174,9 @@ All scripts accept `--output-dir` to override the default output path.
 | `datasets/kaggle/` | download_kaggle.py |
 | `datasets/qc/` | download_qc_data.py |
 | `datasets/crypto_archive/` | manage_crypto_archive.py |
+| `datasets/crypto/` | stitch_crypto.py |
+| `datasets/panier/` | build_panier_anti_bias.py |
+| `datasets/forex/` | dezip_forex.py |
 
 ## Prerequisites
 

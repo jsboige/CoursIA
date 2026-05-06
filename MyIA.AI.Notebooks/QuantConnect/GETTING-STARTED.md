@@ -83,8 +83,6 @@ Les notebooks `QC-Py-XX` sont des **supports de cours** a lire sur GitHub ou en 
 4. Lisez `QC-Py-13-Alpha-Models.ipynb` pour comprendre l'architecture
 5. Modifiez le code pour implementer votre approche
 
-**Pour les etudiants ECE Projet 2** : Consultez le guide detaille [ECE-QC-QUICKSTART.md](ECE-QC-QUICKSTART.md)
-
 ---
 
 ## Option B : Développement Local (Optionnel)

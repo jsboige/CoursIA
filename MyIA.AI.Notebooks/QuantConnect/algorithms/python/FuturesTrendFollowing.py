@@ -43,8 +43,8 @@ class FuturesTrendFollowing(QCAlgorithm):
         Configuration initiale.
         """
         # Configuration de base
-        self.SetStartDate(2019, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetStartDate(2015, 1, 1)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         # Ajouter le future ES (S&P 500 E-mini)
@@ -278,8 +278,8 @@ class MultiFuturesTrendFollowing(QCAlgorithm):
     """
 
     def Initialize(self):
-        self.SetStartDate(2019, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetStartDate(2015, 1, 1)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         # Définir les futures à trader

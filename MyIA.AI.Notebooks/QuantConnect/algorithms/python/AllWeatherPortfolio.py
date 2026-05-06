@@ -49,7 +49,7 @@ class AllWeatherPortfolio(QCAlgorithm):
         """
         # Configuration de base
         self.SetStartDate(2015, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         # Définir les actifs et leurs allocations cibles
@@ -199,7 +199,7 @@ class RiskParityAllWeather(QCAlgorithm):
 
     def Initialize(self):
         self.SetStartDate(2015, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         # Assets
@@ -285,7 +285,7 @@ class TacticalAllWeather(QCAlgorithm):
 
     def Initialize(self):
         self.SetStartDate(2015, 1, 1)
-        self.SetEndDate(2023, 12, 31)
+        self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
 
         # Base allocations

@@ -76,7 +76,7 @@ services:
       - DEFAULT_TTS_MODEL=kokoro
       - DEFAULT_TTS_VOICE=af_sky
       - SAMPLE_RATE=24000
-      - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
       - TZ=${TZ:-Europe/Paris}
 
@@ -127,7 +127,7 @@ services:
       - TTS_DEVICE=cuda
       - DEFAULT_TTS_MODEL=tada
       - SAMPLE_RATE=24000
-      - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
       - TZ=${TZ:-Europe/Paris}
       - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_TOKEN}
@@ -183,7 +183,7 @@ services:
       - PYTHONUNBUFFERED=1
       - VLLM_USE_MODELSCOPE=false
       - MODEL_TYPE=${QWEN_MODEL_TYPE:-CustomVoice}
-      - GPU_MEMORY_UTILIZATION=${QWEN_GPU_MEMORY_UTILIZATION:-0.6}
+      - GPU_MEMORY_UTILIZATION=${QWEN_GPU_MEMORY_UTILIZATION:-0.3}
       - TZ=${TZ:-Europe/Paris}
 
     healthcheck:
