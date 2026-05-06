@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.eval_finstsb import (
+from eval_finstsb import (
     detect_regimes,
     eval_per_regime,
     validate_no_regime_failure,
