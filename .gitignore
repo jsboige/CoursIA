@@ -553,8 +553,10 @@ tmp/
 # Generated ML artifacts
 *.joblib
 
-# PyTorch training checkpoints (resumable, too large to commit)
+# PyTorch training checkpoints and model weights (too large to commit)
 *_checkpoint.pt
+*_best.pt
+*_model.pt
 **/checkpoints/**/*.pt
 **/checkpoints/**/*.pth
 
@@ -651,6 +653,27 @@ dqn_training_curves.png
 MyIA.AI.Notebooks/QuantConnect/Python/dqn_backtest.png
 MyIA.AI.Notebooks/QuantConnect/Python/dqn_trading_model.json
 MyIA.AI.Notebooks/QuantConnect/Python/dqn_training_curves.png
+
+# QC Cloud screenshots and temp research files
+qc*.png
+research_wrapper.ipynb
+
+# QC API/build scripts (prefixed _ are work-in-progress)
+scripts/notebook_tools/_check_local.py
+scripts/notebook_tools/_qc_api_test.py
+scripts/notebook_tools/_qc_api_v2.py
+scripts/notebook_tools/_qc_exec_template.py
+scripts/notebook_tools/_qc_main_py04.py
+scripts/notebook_tools/_qc_main_split.py
+scripts/notebook_tools/_qc_notebook_data.py
+scripts/notebook_tools/_qc_notebook_data_z.py
+scripts/notebook_tools/_qc_py04_nb_json.txt
+scripts/notebook_tools/_qc_py04_payload.txt
+scripts/notebook_tools/_qc_research_clean.ipynb
+scripts/notebook_tools/_qc_upload.py
+scripts/notebook_tools/_qc_upload_content.txt
+scripts/notebook_tools/_qc_wrapper_builder.py
+scripts/notebook_tools/_scan_outputs.py
 
 # Generated catalog (regenerate with scripts/notebook_tools/generate_catalog.py)
 COURSE_CATALOG.generated.*
