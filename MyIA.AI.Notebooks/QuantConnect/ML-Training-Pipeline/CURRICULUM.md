@@ -70,7 +70,29 @@ Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM
 - SPY confirmed pathological (-6.08pp vs majority)
 - MTGNN only model beating SPY baseline (+0.05pp)
 
-**Next**: Panier 19-asset expansion (Stage 3a), cross-asset features, regime-conditional models.
+**Next**: Crypto panier 10-coin dataset ready (PR #776). Cross-asset features, regime-conditional models.
+
+### Stage 3a: Crypto Panier Anti-Bias (DONE)
+
+10-coin daily OHLCV dataset (2018-2026) for multi-asset training.
+
+| Symbol | Range | Rows | Note |
+|--------|-------|------|------|
+| BTC-USD | 2018-2026 | 3042 | Full range |
+| ETH-USD | 2018-2026 | 3042 | Full range |
+| LTC-USD | 2018-2026 | 3042 | Full range |
+| XRP-USD | 2018-2026 | 3042 | Full range |
+| ADA-USD | 2018-2026 | 3042 | Full range |
+| LINK-USD | 2018-2026 | 3042 | Full range |
+| SOL-USD | 2020-2026 | 2212 | Listings 2020 |
+| DOT-USD | 2020-2026 | 2080 | Listings 2020 |
+| AVAX-USD | 2020-2026 | 2049 | Listings 2020 |
+| MATIC-USD | 2019-2025 | 2158 | Delisted/rebranded to POL |
+
+**Design rationale**: 6 coins with full 2018+ coverage prevent single-asset overfitting.
+4 shorter-history coins test generalization. MATIC tests robustness to delisting events.
+
+**Dataset**: `datasets/yfinance/crypto_panier/` (PR #776, 2.5 MB)
 
 ### Stage 2: Feature Engineering
 
