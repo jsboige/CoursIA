@@ -17,11 +17,30 @@ class ProofStrategy(Enum):
 class ProofPhase(Enum):
     INIT = "init"
     SEARCH = "search"
-    GENERATE = "generate"
-    VERIFY = "verify"
-    ANALYZE = "analyze"
+    TACTIC_GEN = "tactic_gen"
+    VERIFICATION = "verification"
+    REFINEMENT = "refinement"
     COMPLETE = "complete"
     FAILED = "failed"
+
+
+PHASE_AGENT_MAP = {
+    ProofPhase.INIT: "CoordinatorAgent",
+    ProofPhase.SEARCH: "SearchAgent",
+    ProofPhase.TACTIC_GEN: "TacticAgent",
+    ProofPhase.VERIFICATION: "VerifierAgent",
+    ProofPhase.REFINEMENT: "CriticAgent",
+    ProofPhase.COMPLETE: None,
+    ProofPhase.FAILED: None,
+}
+
+PHASE_TRANSITIONS = {
+    ProofPhase.INIT: ProofPhase.SEARCH,
+    ProofPhase.SEARCH: ProofPhase.TACTIC_GEN,
+    ProofPhase.TACTIC_GEN: ProofPhase.VERIFICATION,
+    ProofPhase.VERIFICATION: ProofPhase.REFINEMENT,
+    ProofPhase.REFINEMENT: ProofPhase.TACTIC_GEN,
+}
 
 
 @dataclass
@@ -66,6 +85,14 @@ class ProofState:
     sorry_context: Optional["SorryContext"] = field(default=None, repr=False)
     strategy_mode: str = "direct"  # "direct" | "decompose" | "search_first"
     decomposition_depth: int = 0
+
+    # Rich state from Lean-9 notebook patterns
+    available_hypotheses: List[str] = field(default_factory=list)
+    local_lemmas: List[str] = field(default_factory=list)
+    sorry_goals: Dict[int, str] = field(default_factory=dict)
+    consecutive_failures: int = 0
+    last_compile_errors: List[Dict[str, Any]] = field(default_factory=list)
+    best_sorry_count: int = 999
 
     def add_tactic_attempt(self, tactic: str, state_before: Optional[str] = None,
                            confidence: Optional[float] = None, explanation: Optional[str] = None,
@@ -133,6 +160,60 @@ class ProofState:
                 "previous_tactics": [a.tactic for a in self.tactic_history[-3:]],
             }
         return self.to_dict()
+
+    def get_context_summary(self) -> str:
+        """Rich context summary for agents — from Lean-9 notebook pattern."""
+        parts = []
+        parts.append(f"Enonce: {self.theorem_statement}")
+        if self.current_goal:
+            parts.append(f"But courant: {self.current_goal}")
+        parts.append(f"Phase: {self.phase.value} | Strategie: {self.strategy.value}")
+        parts.append(f"Iteration: {self.iteration}/{self.max_iterations}")
+
+        if self.discovered_lemmas:
+            lemmas_str = "\n  ".join(self.discovered_lemmas[-10:])
+            parts.append(f"Lemmes decouverts:\n  {lemmas_str}")
+
+        if self.available_hypotheses:
+            hyp_str = "\n  ".join(self.available_hypotheses[-15:])
+            parts.append(f"Hypotheses disponibles:\n  {hyp_str}")
+
+        if self.local_lemmas:
+            parts.append(f"Lemmes locaux: {', '.join(self.local_lemmas[-20:])}")
+
+        if self.tactic_history:
+            recent = self.tactic_history[-5:]
+            hist = "\n  ".join(
+                f"{'OK' if a.success else 'FAIL'}: {a.tactic[:80]}"
+                for a in recent
+            )
+            parts.append(f"Historique tactiques (derniers {len(recent)}):\n  {hist}")
+
+        if self.last_error:
+            parts.append(f"Derniere erreur: {self.last_error[:200]}")
+
+        if self.sorry_goals:
+            goals_str = "\n  ".join(
+                f"L{l}: {g[:100]}" for l, g in self.sorry_goals.items()
+            )
+            parts.append(f"Buts sorry:\n  {goals_str}")
+
+        parts.append(f"Echecs consecutifs: {self.consecutive_failures}")
+        return "\n".join(parts)
+
+    def select_next_agent(self) -> str:
+        """Select next agent based on current phase — from Lean-9 ProofPhase routing."""
+        if self._next_agent:
+            return self.consume_next_agent_designation()
+
+        if self.consecutive_failures >= 3:
+            return "CoordinatorAgent"
+
+        agent = PHASE_AGENT_MAP.get(self.phase)
+        if agent:
+            return agent
+
+        return "TacticAgent"
 
     @property
     def proof_complete(self) -> bool:
