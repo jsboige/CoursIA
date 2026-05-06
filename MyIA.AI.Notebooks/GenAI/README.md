@@ -5,7 +5,7 @@ series: GenAI
 pedagogical_count: 99
 breakdown: Audio=21, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, Vibe-Coding=5, EPF=4
 maturity: ALPHA=60, DRAFT=24, PRODUCTION=10, BETA=5
-updated: 2026-05-04
+updated: 2026-05-06
 -->
 
 Ecosysteme modulaire de generation de contenu par Intelligence Artificielle : images, texte, agents et vibe-coding.
