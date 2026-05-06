@@ -157,7 +157,11 @@ Combine multiple model types.
 - Transformer best for BND — attention mechanism captures bond yield dynamics
 - SPY/QQQ pathological (majority >55%) — bull market bias makes ML nearly impossible
 - Global (non-regime) LSTM/Transformer also fails to beat majority — the issue is feature/signal limitation, not regime fragmentation
-- **Next**: Increase feature set (more lags, interactions), try larger training windows, or move to Stage 4 (proper walk-forward with longer horizons)
+- 79-feature enhanced dataset (lags + interactions) performs WORSE than 38-feature baseline (overfitting with small test sets)
+- Mutual information of top features = 0.015 (near random) — daily direction from OHLCV features is noise-predominant
+- 5-day forward horizon does not improve signal
+- **Conclusion**: Daily direction prediction from OHLCV-derived features is insufficient for consistent ML edge. 3/10 wins likely statistical noise.
+- **Next**: Shift to return magnitude prediction (regression) or multi-day holding period returns, or move to Stage 4 with transaction cost modeling
 
 ### Stage 4: Walk-Forward Optimization
 
