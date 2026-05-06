@@ -126,6 +126,27 @@ def _load_symbol_data(
     )
 
 
+def _load_dataset_v2(
+    symbol: str,
+    dataset_dir: str | Path,
+) -> pd.DataFrame | None:
+    """Load pre-computed Dataset V2 features for a symbol.
+
+    Dataset V2 includes 46 features (technical + cross-asset + regime labels).
+    """
+    dataset_dir = Path(dataset_dir)
+    safe_symbol = symbol.replace("-", "_").replace(".", "_")
+    parquet_path = dataset_dir / f"{safe_symbol}_v2.parquet"
+    csv_path = dataset_dir / f"{safe_symbol}_v2.csv"
+
+    if parquet_path.exists():
+        return pd.read_parquet(parquet_path)
+    if csv_path.exists():
+        return pd.read_csv(csv_path, index_col=0, parse_dates=True)
+
+    return None
+
+
 def train_moe_pipeline(
     symbol: str = "SPY",
     panier_mode: bool = False,
@@ -140,6 +161,7 @@ def train_moe_pipeline(
     start: str = "2015-01-01",
     end: str = "2025-01-01",
     data_dir: str | None = None,
+    dataset_v2_dir: str | None = None,
     output_dir: str | None = None,
 ) -> dict:
     """Run full MoE training pipeline.
@@ -149,36 +171,67 @@ def train_moe_pipeline(
     np.random.seed(seed)
     t0 = time.time()
 
-    # --- Load data ---
-    log.info(f"Loading data for {symbol}...")
-    df = _load_symbol_data(symbol, data_dir=data_dir, start=start, end=end)
-    log.info(f"Loaded {len(df)} rows for {symbol}")
+    regime_col = f"regime_{regime_method}" if regime_method != "both" else "regime_price"
 
-    if len(df) < 500:
-        raise ValueError(f"Insufficient data: {len(df)} rows (need >= 500)")
+    # --- Load features ---
+    if dataset_v2_dir:
+        # Use pre-computed Dataset V2 (46 features + regime labels)
+        log.info(f"Loading Dataset V2 for {symbol} from {dataset_v2_dir}...")
+        features_df = _load_dataset_v2(symbol, dataset_v2_dir)
+        if features_df is None:
+            raise FileNotFoundError(
+                f"No Dataset V2 file found for {symbol} in {dataset_v2_dir}"
+            )
 
-    # --- Features ---
-    features = _prepare_features(df, lookback=lookback)
-    target = _compute_direction_target(df, horizon=horizon)
+        # Extract target and regime columns
+        if "target" not in features_df.columns:
+            raise ValueError("Dataset V2 missing 'target' column")
 
-    # Align features and target
-    common_idx = features.index.intersection(target.dropna().index)
-    features = features.loc[common_idx]
-    target = target.loc[common_idx]
+        regime_labels = None
+        if regime_col in features_df.columns:
+            regime_labels = features_df[regime_col].values
+        else:
+            log.warning(f"No '{regime_col}' in Dataset V2, falling back to price regime")
 
-    X = features.values.astype(np.float32)
-    y = target.values.astype(int)
+        target_raw = features_df["target"]
+        y = (target_raw > 0).astype(int).values
+
+        feature_cols = [
+            c for c in features_df.columns
+            if c not in ("target",) and not c.startswith("regime_")
+        ]
+        X = features_df[feature_cols].values.astype(np.float32)
+        log.info(f"Dataset V2 loaded: {X.shape[1]} features, {X.shape[0]} samples")
+    else:
+        # Legacy path: compute features from OHLCV
+        log.info(f"Loading OHLCV data for {symbol}...")
+        df = _load_symbol_data(symbol, data_dir=data_dir, start=start, end=end)
+        log.info(f"Loaded {len(df)} rows for {symbol}")
+
+        if len(df) < 500:
+            raise ValueError(f"Insufficient data: {len(df)} rows (need >= 500)")
+
+        features = _prepare_features(df, lookback=lookback)
+        target = _compute_direction_target(df, horizon=horizon)
+
+        common_idx = features.index.intersection(target.dropna().index)
+        features = features.loc[common_idx]
+        target = target.loc[common_idx]
+
+        X = features.values.astype(np.float32)
+        y = target.values.astype(int)
 
     log.info(f"Features: {X.shape[1]} cols, {X.shape[0]} samples")
     log.info(f"Target balance: {y.mean():.3f} positive")
 
-    # --- Regime detection ---
-    log.info(f"Detecting regimes (method={regime_method})...")
-    from regime_detector import detect_regimes
+    # --- Regime detection (if not from Dataset V2) ---
+    if regime_labels is None:
+        log.info(f"Detecting regimes (method={regime_method})...")
+        from regime_detector import detect_regimes
 
-    prices = df["Close"].loc[common_idx]
-    regime_series = detect_regimes(prices, method=regime_method)
-    regime_labels = regime_series.values
+        prices = df["Close"].loc[common_idx]
+        regime_series = detect_regimes(prices, method=regime_method)
+        regime_labels = regime_series.values
 
     regime_counts = pd.Series(regime_labels).value_counts()
     log.info(f"Regime distribution:\n{regime_counts.to_string()}")
@@ -293,6 +346,10 @@ def main():
     parser.add_argument("--start", default="2015-01-01")
     parser.add_argument("--end", default="2025-01-01")
     parser.add_argument("--data-dir", default=None)
+    parser.add_argument(
+        "--dataset-v2-dir", default=None,
+        help="Directory with Dataset V2 Parquet files (46 features pre-computed)",
+    )
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
 
@@ -312,6 +369,7 @@ def main():
         start=args.start,
         end=args.end,
         data_dir=args.data_dir,
+        dataset_v2_dir=args.dataset_v2_dir,
         output_dir=args.output_dir,
     )
 

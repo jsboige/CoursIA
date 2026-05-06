@@ -94,7 +94,7 @@ Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM
 
 **Dataset**: `datasets/yfinance/crypto_panier/` (PR #776, 2.5 MB)
 
-### Stage 2: Feature Engineering (IN PROGRESS)
+### Stage 2: Feature Engineering (DONE)
 
 Advanced features beyond basic OHLCV.
 
@@ -102,18 +102,38 @@ Advanced features beyond basic OHLCV.
 - Cross-asset features (bond-equity ratio, commodity momentum, equity strength) — Done
 - Volatility regime features (VIX level, term structure, z-score, rank) — Done
 - Macro features (rate changes, yield curve slope, inversion flag) — Done
+- Dataset V2 builder: panier + Stage 2 features + regime labels → per-symbol Parquet — Done
+- QC ObjectStore integration for cloud persistence — Done
 
 **Implementation**: `features.py` — 17 composable indicator functions + `FeatureEngineer` class.
-**Tests**: 19 new tests (44/45 pass), covering all Stage 2 features.
+**Dataset V2**: `build_dataset_v2.py` — 46 features/symbol, 19/19 panier validated (0 NaN).
+**ObjectStore**: `qc_objectstore.py` — upload/validate/loader-code CLI.
+**Tests**: 43 tests (features 45 + dataset_v2 15 + objectstore 9 = 69/69 pass).
 
-### Stage 3: Ensemble Methods
+**Validated**: Full panier (19 symbols, 7 asset classes) built end-to-end in ~13s.
+
+### Stage 3: Ensemble Methods (IN PROGRESS)
 
 Combine multiple model types.
 
+- MoE with regime-aware routing (MLP experts per regime) — Done, baseline established
 - LSTM + Transformer stacking
 - RL policy gradient with supervised pre-training
 - Regime-conditional ensemble (different models per regime)
 - Uncertainty-weighted prediction averaging
+
+**MoE baseline results (Dataset V2, 5-fold walk-forward, MLP h=64,32)**:
+
+| Symbol | Majority | MoE (price) | MoE (hmm) | Beats?     |
+|--------|----------|-------------|-----------|------------|
+| XLE    | 0.478    | 0.478       | **0.503** | YES (+2.5) |
+| IEF    | 0.502    | --          | 0.502     | TIE        |
+| QQQ    | 0.565    | 0.535       | 0.559     | NO         |
+| BTC-USD| 0.509    | 0.497       | 0.507     | NO         |
+| TLT    | 0.511    | 0.498       | 0.505     | NO         |
+| GLD    | 0.536    | 0.497       | 0.496     | NO         |
+
+**Key finding**: MLP experts too simple for regime specialization. LSTM/Transformer experts (Stage 1 winners) needed for Stage 3.
 
 ### Stage 4: Walk-Forward Optimization
 
