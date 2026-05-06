@@ -35,7 +35,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 7 | [Lean-7-LLM-Integration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
 | 7b | [Lean-7b-Examples](Lean-7b-Examples.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
 | 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problemes Erdos | 55 min |
-| 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Semantic Kernel, orchestration multi-agents | 45 min |
+| 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: reseaux de neurones verifies, IBP, CROWN | 1h30-2h |
 | 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
@@ -190,13 +190,28 @@ Lean/
 ├── Lean-7-LLM-Integration.ipynb    # Python kernel - APIs LLM
 ├── Lean-7b-Examples.ipynb          # Python kernel - benchmarks
 ├── Lean-8-Agentic-Proving.ipynb    # Python kernel - orchestration
-├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Semantic Kernel
+├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Agent Framework
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11-TorchLean-Python.ipynb  # Python kernel - Implementation algorithmes
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
+├── agent_tests/                    # Prover daemon (autonomous Lean proof)
+│   ├── multi_agent_proof.py        # CLI principal
+│   ├── lean_server.py              # Serveur Lean LSP
+│   └── prover/                     # Package prover (Microsoft Agent Framework)
+│       ├── __init__.py             # Exports: MultiAgentSorryProver, AutonomousProver
+│       ├── provers.py              # Multi-agent + Autonomous prover classes
+│       ├── workflow.py             # WorkflowBuilder graph (4 agents)
+│       ├── agents.py               # Agent factory (Search/Tactic/Critic/Coordinator)
+│       ├── tools.py                # Per-agent tools (file ops, compile, tactics)
+│       ├── state.py                # ProofState, SorryContext
+│       ├── config.py               # Providers (z.ai GLM-5.1, local Qwen), demos
+│       ├── instructions.py         # Agent system prompts
+│       ├── lean_utils.py           # Sorry extraction, goal state, verification
+│       ├── trace.py                # Conversation trace logger
+│       └── verifier.py             # Lean verification backend
 ├── examples/
 │   ├── basic_logic.lean
 │   ├── quantifiers.lean
@@ -208,6 +223,43 @@ Lean/
     ├── test_leandojo_repos.py      # Tests complets sur repos
     └── test_wsl_lean4_jupyter.py   # Tests backend WSL
 ```
+
+## Prover daemon
+
+Le package `agent_tests/prover/` implemente un prouveur autonome Lean 4 utilisant le Microsoft Agent Framework.
+
+### Architecture
+
+4 agents specialises dans un workflow conditionnel :
+
+1. **SearchAgent** : analyse le contexte, detecte les sorry, identifie les helpers
+1. **SearchAgent** : analyse le contexte, detecte les sorry, identifie les helpers
+1. **TacticAgent** : genere des tactiques de preuve (avec outils de compilation)
+1. **VerifyExecutor** : verifie les tactiques via `lake build` (non-LLM)
+1. **CriticAgent** : analyse les erreurs et route vers le bon agent
+
+### Usage
+
+```bash
+# Prouver un sorry dans un fichier .lean
+python agent_tests/multi_agent_proof.py --lean path/to/File.lean --sorry-line 128
+
+# Mode autonome (1 agent avec tous les outils)
+python agent_tests/multi_agent_proof.py --lean path/to/File.lean --mode autonomous
+
+# Mode multi-agent (4 agents specialises)
+python agent_tests/multi_agent_proof.py --lean path/to/File.lean --mode multi
+
+# Batch sur des demos
+python agent_tests/multi_agent_proof.py --batch --demos 1,2,3
+```
+
+### Configuration
+
+Le fichier `.env` dans `agent_tests/` ou le repertoire parent configure :
+- `ZAI_API_KEY` : cle API z.ai pour GLM-5.1 (raisonnement)
+- `ZAI_BASE_URL` : endpoint API z.ai
+- `LEAN_PROJECT_DIR` : repertoire du projet Lean (pour `lake build`)
 
 ## Licence
 

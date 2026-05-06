@@ -218,10 +218,11 @@ class AutonomousProver:
         self.config_label = f"auto-{provider}"
 
     def prove_sorry(self, demo: dict, max_iterations: int = 10,
-                    strategic_hints: str = "") -> dict:
+                    strategic_hints: str = "", agent_timeout_s: int = 300) -> dict:
         filepath = demo["file"]
         sorry_line = demo["line"]
 
+        import asyncio
         from agent_framework import Agent
 
         original_content = Path(filepath).read_text(encoding="utf-8")
@@ -241,6 +242,7 @@ class AutonomousProver:
         print(f"File: {filepath}:{sorry_line}")
         print(f"Config: {self.config_label}")
         print(f"Original sorry count: {original_sorry_count}")
+        print(f"Agent timeout: {agent_timeout_s}s")
         print(f"{'='*70}")
 
         # Create shared state and tactic tools (has all file ops)
@@ -301,65 +303,83 @@ class AutonomousProver:
             f"Commence par find_sorry_lines() puis propose une tactique."
         )
 
-        # Main loop
+        # Main loop — single event loop for the entire session
         session_start = time.time()
         compile_data = {}
 
-        for iteration in range(1, max_iterations + 1):
-            state.iteration = iteration
-            iter_start = time.time()
-            print(f"\n--- Iteration {iteration}/{max_iterations} ---")
+        async def _run_session():
+            nonlocal compile_data, context_msg
+            loop = asyncio.get_event_loop()
 
-            # Run agent with context
-            import asyncio
-            try:
-                response = asyncio.run(agent.run(context_msg))
-                response_text = ""
-                if hasattr(response, 'messages') and response.messages:
-                    last = response.messages[-1]
-                    response_text = last.text if hasattr(last, 'text') else str(last)
-            except Exception as e:
-                print(f"  Agent error: {e}")
-                response_text = str(e)
+            for iteration in range(1, max_iterations + 1):
+                state.iteration = iteration
+                iter_start = time.time()
+                print(f"\n--- Iteration {iteration}/{max_iterations} ---", flush=True)
 
-            # Auto-compile after each iteration
-            current_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
-            compile_str = tactic_tools.compile()
-            try:
-                compile_data = json.loads(compile_str)
-            except json.JSONDecodeError:
-                compile_data = {}
-            current_sorry = compile_data.get("sorry_count", current_sorry)
-
-            self.trace.log(
-                agent="AutonomousProver", role="iteration",
-                content=f"iter={iteration}, sorry={current_sorry}",
-                duration_s=time.time() - iter_start,
-            )
-
-            # Check termination
-            if current_sorry == 0 and compile_data.get("success"):
-                print(f"  ALL SORRY ELIMINATED!")
-                state.set_proof_complete("full_file_proof")
-                break
-
-            if current_sorry < original_sorry_count:
-                print(f"  PROGRESS: sorry {original_sorry_count} -> {current_sorry}")
-
-            # Build feedback
-            feedback_parts = []
-            if compile_data.get("success"):
-                feedback_parts.append("COMPILATION: SUCCES")
-            else:
-                errors = compile_data.get("errors", [])
-                if errors:
-                    err_summary = "\n".join(
-                        f"  L{e['line']}: {e['message'][:120]}" for e in errors[:5]
+                try:
+                    response = await asyncio.wait_for(
+                        agent.run(context_msg),
+                        timeout=agent_timeout_s,
                     )
-                    feedback_parts.append(f"COMPILATION: {len(errors)} ERREURS:\n{err_summary}")
+                    response_text = ""
+                    if hasattr(response, 'messages') and response.messages:
+                        last = response.messages[-1]
+                        response_text = last.text if hasattr(last, 'text') else str(last)
+                except asyncio.TimeoutError:
+                    print(f"  Agent timeout ({agent_timeout_s}s)", flush=True)
+                    response_text = f"TIMEOUT after {agent_timeout_s}s"
+                except Exception as e:
+                    print(f"  Agent error: {e}", flush=True)
+                    response_text = str(e)
 
-            feedback_parts.append(f"Sorry count: {current_sorry}/{original_sorry_count}")
-            context_msg = "\n".join(feedback_parts)
+                # Auto-compile after each iteration
+                current_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
+                compile_str = tactic_tools.compile()
+                try:
+                    compile_data = json.loads(compile_str)
+                except json.JSONDecodeError:
+                    compile_data = {}
+                current_sorry = compile_data.get("sorry_count", current_sorry)
+
+                self.trace.log(
+                    agent="AutonomousProver", role="iteration",
+                    content=f"iter={iteration}, sorry={current_sorry}",
+                    duration_s=time.time() - iter_start,
+                )
+
+                print(f"  Sorry: {current_sorry}/{original_sorry_count} "
+                      f"({time.time() - iter_start:.1f}s)", flush=True)
+
+                # Check termination
+                if current_sorry == 0 and compile_data.get("success"):
+                    print(f"  ALL SORRY ELIMINATED!", flush=True)
+                    state.set_proof_complete("full_file_proof")
+                    break
+
+                if current_sorry < original_sorry_count:
+                    print(f"  PROGRESS: sorry {original_sorry_count} -> {current_sorry}")
+
+                # Build feedback
+                feedback_parts = []
+                if compile_data.get("success"):
+                    feedback_parts.append("COMPILATION: SUCCES")
+                else:
+                    errors = compile_data.get("errors", [])
+                    if errors:
+                        err_summary = "\n".join(
+                            f"  L{e['line']}: {e['message'][:120]}" for e in errors[:5]
+                        )
+                        feedback_parts.append(f"COMPILATION: {len(errors)} ERREURS:\n{err_summary}")
+
+                feedback_parts.append(f"Sorry count: {current_sorry}/{original_sorry_count}")
+                context_msg = "\n".join(feedback_parts)
+
+        try:
+            asyncio.run(_run_session())
+        except RuntimeError:
+            # Fallback: reuse existing event loop if nested call
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(_run_session())
 
         total_s = (datetime.now() - state.start_time).total_seconds()
         final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
