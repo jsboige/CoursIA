@@ -9,10 +9,10 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
+from baselines import oos_direction_distribution
 from train_itransformer import (
     iTransformerModel,
     build_sequences,
-    compute_majority_class_baseline,
     normalize_sequences,
 )
 

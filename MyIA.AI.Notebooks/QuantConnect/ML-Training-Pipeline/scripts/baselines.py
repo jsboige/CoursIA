@@ -229,6 +229,35 @@ def buy_and_hold_baseline(
     }
 
 
+def oos_direction_distribution(y: np.ndarray) -> dict:
+    """Compute the class distribution in OOS predictions (seq2seq baseline).
+
+    For multi-step forecasting models (iTransformer, PatchTST, Mamba, MTGNN, STGAT),
+    targets are continuous returns flattened across prediction horizons. This reports
+    the up/down split as a reference point -- any model must add value beyond this.
+
+    Distinct from majority_class_baseline which uses train data to predict test.
+    This is a descriptive statistic of the test distribution.
+
+    Parameters
+    ----------
+    y : np.ndarray
+        Target array, shape (n_samples,) or (n_samples, pred_len).
+
+    Returns
+    -------
+    dict with keys: majority_class_accuracy, pct_up, pct_down.
+    """
+    flat = np.asarray(y).flatten()
+    pct_up = float(np.mean(flat > 0))
+    pct_down = 1.0 - pct_up
+    return {
+        "majority_class_accuracy": round(max(pct_up, pct_down), 4),
+        "pct_up": round(pct_up, 4),
+        "pct_down": round(pct_down, 4),
+    }
+
+
 def _sharpe_from_returns(returns: pd.Series, annualize: bool = True, risk_free: float = 0.0) -> float:
     """Compute Sharpe ratio from a returns series.
 
