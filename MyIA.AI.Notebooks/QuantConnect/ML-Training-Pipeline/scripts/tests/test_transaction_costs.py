@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.transaction_costs import (
+from transaction_costs import (
     TransactionCostModel,
     compare_gross_vs_net,
     _sharpe_from_array,
