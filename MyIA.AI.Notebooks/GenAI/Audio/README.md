@@ -2,17 +2,23 @@
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)
 
-Serie complete de notebooks pour le traitement audio par IA generative : reconnaissance vocale, synthese vocale, clonage de voix, generation musicale et separation de sources.
+Bienvenue dans l'univers fascinant de l'audio IA ! Souvent négligé au profit des images et du texte, le traitement audio représente pourtant la modalité la plus accessible et naturelle de l'interaction humaine. Que ce soit à travers la voix, la musique ou le son, l'IA révolutionne notre manière de communiquer, créer et comprendre le monde sonore.
+
+Cette série vous emmène au cœur des technologies audio IA, des bases de reconnaissance vocale aux applications de production professionnelle. Parcourez 21 notebooks complets qui vous guideront des fondements aux cas d'usage avancés.
+
+## Fil rouge : Création d'un podcast automatisé
+
+Le projet phare de cette série est la création d'un podcast automatisé entièrement généré par IA :
+- Synthèse vocale personnalisée avec Kokoro TTS et XTTS v2
+- Génération de musique de fond adaptée au mood avec MusicGen
+- Orchestration complète des services pour une production audio cohérente
+- Integration avec des systèmes de transcription pour la post-production
+
+C'est le projet ultime pour démontrer comment ces technologies s'articulent pour créer une solution concrète et professionnelle.
 
 ## Vue d'ensemble
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 21 |
-| Sous-dossiers | 4 niveaux |
-| Kernel | Python 3 |
-| Duree totale | ~14-16h |
-| Validation | 100% (21/21 notebooks) |
+21 notebooks répartis sur 4 niveaux de progression, constituant un parcours complet d'environ 14 à 16 d'apprentissage pratique, 100% validés pour garantir une expérience sans erreur.
 
 ## Structure
 

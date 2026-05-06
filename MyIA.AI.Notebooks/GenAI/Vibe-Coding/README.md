@@ -2,11 +2,11 @@
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Claude Discovery](Claude-Code/01-decouverte/README.md)
 
-Ce repertoire contient les ressources pedagogiques pour apprendre le "vibe-coding" avec des assistants IA generatifs. Le contenu couvre deux outils majeurs : **Claude Code** (Anthropic) et **Roo Code**, ainsi qu'une documentation introductive sur l'IA generative.
+Bienvenue dans l'ère du **vibe-coding** - la compétence la plus demandée de 2026 ! Imaginez : vous décrivez ce que vous voulez construire en langage naturel, et l'IA écrit le code pour vous. Plus besoin de semaines de développement, mais des minutes pour transformer une idée en fonctionnalité réelle. Le vibe-coding révolutionne la programmation en rendant la barrière technique quasi invisible : votre seule limite est votre imagination.
 
 ## Structure du repertoire
 
-```
+```text
 Vibe-Coding/
 ├── Claude-Code/          # Ateliers Claude Code (5 modules)
 ├── Roo-Code/             # Ateliers Roo Code (5 modules + avances)
@@ -105,11 +105,11 @@ Le repertoire `docs/` contient :
 | Aspect | Claude Code | Roo Code |
 |--------|-------------|----------|
 | **Interface** | CLI + VS Code | VS Code uniquement |
-| **Agents paralleles** | Jusqu'a 10 | Sequentiel |
+| **Agents parallèles** | Jusqu'à 10 | Séquentiel |
 | **MCP** | Support complet | Partiel |
-| **Skills/Commands** | Ecosystem standardise | Configuration manuelle |
+| **Skills/Commands** | Écosystème standardisé | Configuration manuelle |
 | **Courbe d'apprentissage** | Moyenne | Facile |
-| **Ideal pour** | Projets complexes | Debutants |
+| **Idéal pour** | Projets complexes | Débutants |
 
 **Recommandation :**
 - **Debutants complets** : Commencer avec Roo Code
@@ -125,7 +125,15 @@ Le repertoire `docs/` contient :
 
 ## Origine
 
-Ce contenu pedagogique provient de la formation ECE 2026 sur l'IA generative.
+## Ce que vous saurez faire
+
+À travers ces ateliers pratiques, vous acquerrez la capacité de :
+
+- **Décrire vos projets** en langage naturel et voir l'IA les transformer en code fonctionnel
+- **Écrire, tester, debugger et déployer** des applications complètes grâce à l'assistance IA
+- **Orchestrer des workflows complexes** en multipliant les agents intelligents
+- **Générer automatiquement** la documentation, les tests et les configurations
+- **Automatiser des tâches complexes** allant du simple script au déploiement en production
 
 ---
 

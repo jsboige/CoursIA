@@ -1,32 +1,16 @@
-# Video - Generation & Comprehension Video par IA
+# Video - Generation et Comprehension Video par IA
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
 
-Serie complete de notebooks pour la generation, la comprehension et l'edition video par IA generative : text-to-video, image-to-video, video understanding, amelioration et workflows de production.
+**La video est le Graal de l'IA generative.** Elle combine l'analyse d'images, la comprehension du temps, la synchronisation audio, et la creation de mouvement coherent. Cette serie vous emmene de la simple comprehension d'une sequence video existante jusqu'a la production d'une video pedagogique complete, generee de bout en bout par des modeles d'IA.
 
-## Vue d'ensemble
-
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 16 |
-| Sous-dossiers | 4 niveaux |
-| Kernel | Python 3 |
-| Duree totale | ~12-15h |
-| Validation | 100% (16/16 notebooks) |
-
-## Structure
-
-```
-Video/
-├── 01-Foundation/     # Bases video, comprehension, animation (5 notebooks)
-├── 02-Advanced/       # Text-to-video, image-to-video (4 notebooks)
-├── 03-Orchestration/  # Multi-modeles, ComfyUI, pipelines (3 notebooks)
-└── 04-Applications/   # Education, creatif, production (4 notebooks)
-```
+**Fil rouge** : construire un pipeline capable de transformer un script texte en video pedagogique animee, avec voix de synthese et fond musical genere — un defi qui mobilise tous les niveaux de cette serie.
 
 ## Progression par niveau
 
-### 01-Foundation - Bases Video & Comprehension
+### 01-Foundation - Comprendre la video avant de la generer
+
+On ne peut pas creer ce qu'on ne comprend pas. Ce niveau pose les bases techniques (codecs, ffmpeg, moviepy) et introduit la comprehension video par IA : decomposer une sequence en scenes, repondre a des questions sur le contenu, analyser le mouvement. Vous decouvrirez aussi le surcadrage d'images (ESRGAN) et l'interpolation de frames (RIFE) pour ameliorer la qualite visuelle.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -36,7 +20,9 @@ Video/
 | [01-4-Video-Enhancement-ESRGAN](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) | Real-ESRGAN, RIFE interpolation | Local GPU | ~4 GB |
 | [01-5-AnimateDiff-Introduction](01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | AnimateDiff, text-to-video basique | Local GPU | ~12 GB |
 
-### 02-Advanced - Modeles generatifs video
+### 02-Advanced - Generer du mouvement a partir de texte ou d'images
+
+Ce niveau explore les modeles generatifs video : HunyuanVideo pour la qualite cinematographique (malgre ses 24 GB de VRAM), LTX-Video pour la generation rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modele a ses forces et ses limites — le but est de les connaitre pour choisir le bon outil au bon moment.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -45,15 +31,19 @@ Video/
 | [02-3-Wan-Video-Generation](02-Advanced/02-3-Wan-Video-Generation.ipynb) | Wan 2.1/2.2, prompts FR/EN | Local GPU | ~10 GB |
 | [02-4-SVD-Image-to-Video](02-Advanced/02-4-SVD-Image-to-Video.ipynb) | Stable Video Diffusion, animation | Local GPU | ~10 GB |
 
-### 03-Orchestration - Multi-modeles & Pipelines
+### 03-Orchestration - Combiner les modeles dans des pipelines
+
+Un seul modele ne suffit pas pour une production video complete. Ce niveau compare les modeles entre eux, orchestre des pipelines text-to-image-to-video, et exploite ComfyUI pour des workflows natifs plus flexibles. C'est ici que le fil rouge prend forme : un script texte devient scenario, puis images, puis sequence video animee.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [03-1-Multi-Model-Video-Comparison](03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) | Benchmark modeles video | Local GPU | ~18 GB |
-| [03-2-Video-Workflow-Orchestration](03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) | Pipelines text->image->video | Mixed | ~18 GB |
+| [03-2-Video-Workflow-Orchestration](03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) | Pipelines text-to-image-to-video | Mixed | ~18 GB |
 | [03-3-ComfyUI-Video-Workflows](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb) | Workflows ComfyUI natifs | ComfyUI | ~20 GB |
 
-### 04-Applications - Cas d'usage production
+### 04-Applications - Du pipeline a la production
+
+Les trois derniers notebooks et le notebook de synchronisation audio-video concluent le parcours en abordant des cas d'usage reels : generation automatique de contenus educatifs, workflows creatifs (transfert de style, clips musicaux), et l'API Sora 2 d'OpenAI pour la generation cloud. Le pipeline final integre tout ce qui a ete appris dans un systeme bout-en-bout.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -62,7 +52,15 @@ Video/
 | [04-3-Sora-API-Cloud-Video](04-Applications/04-3-Sora-API-Cloud-Video.ipynb) | Sora 2 API, cloud vs local | OpenAI API | 0 |
 | [04-4-Production-Video-Pipeline](04-Applications/04-4-Production-Video-Pipeline.ipynb) | Pipeline complet bout-en-bout | Mixed | ~18 GB |
 
-## Technologies
+## Ce que vous saurez faire
+
+- **Comprendre** une sequence video : decomposition en scenes, Q&A sur le contenu, analyse temporelle
+- **Generer** des videos a partir de texte ou d'images : choix du modele adapte a votre materiel
+- **Orchestrer** des pipelines multi-modeles : scenario texte vers video complete
+- **Produire** des contenus video educatifs ou creatifs de bout en bout
+- **Comparer** les approches cloud (Sora) et locales (HunyuanVideo, Wan) en termes de qualite, cout et latence
+
+## Technologies couvertes
 
 | Technologie | Notebooks | Prerequis |
 |-------------|-----------|-----------|
@@ -85,51 +83,32 @@ Video/
 ```bash
 # Dans GenAI/.env
 OPENAI_API_KEY=sk-...
-COMFYUI_AUTH_TOKEN=...   # Pour ComfyUI Video (03-3)
-```
-
-### Dependances Python
-
-```bash
-pip install -r requirements.txt
-pip install -r requirements-video.txt
-```
-
-### FFmpeg
-
-FFmpeg doit etre installe sur le systeme :
-```bash
-# Windows (via winget)
-winget install FFmpeg
-
-# Linux
-sudo apt install ffmpeg
+COMFYUI_AUTH_TOKEN=...
 ```
 
 ### GPU (pour notebooks locaux)
 
-- Minimum : 4 GB VRAM (Real-ESRGAN, RIFE)
-- Recommande : 12+ GB VRAM (AnimateDiff, LTX-Video)
-- Optimal : 24 GB VRAM (HunyuanVideo, Wan, tous les notebooks)
+- **Minimum** : 4 GB VRAM (Real-ESRGAN, RIFE)
+- **Recommande** : 12+ GB VRAM (AnimateDiff, LTX-Video)
+- **Optimal** : 24 GB VRAM (HunyuanVideo, Wan, tous les notebooks)
+
+### FFmpeg
+
+FFmpeg doit etre installe sur le systeme :
+
+```bash
+# Windows (via winget)
+winget install FFmpeg
+```
 
 ## Parcours recommande
-
-```
-01-Foundation (bases video, comprehension)
-    |
-02-Advanced (modeles generatifs specifiques)
-    |
-03-Orchestration (comparaison, ComfyUI, pipelines)
-    |
-04-Applications (production, bout-en-bout)
-```
 
 | Objectif | Notebooks |
 |----------|-----------|
 | Decouverte rapide | 01-1, 01-2, 01-5 |
 | Generation video | 01-5, 02-1 a 02-4 |
 | Comprehension video | 01-2, 01-3 |
-| Production | Tous + Audio/04-4 (sync A/V) |
+| Production complete | Tous + Audio/04-4 (sync A/V) |
 
 ## Licence
 

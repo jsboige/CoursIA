@@ -2,18 +2,11 @@
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Text Generation](../Texte/README.md)
 
-Serie de notebooks couvrant Microsoft Semantic Kernel, un SDK pour l'integration de LLMs dans les applications .NET et Python.
+Microsoft Semantic Kernel represente un tournant dans la maniere de construire des applications intelligentes. Ce SDK d'orchestration agentique connecte les LLMs aux outils, donnees et workflows de votre systeme. La reponse de Microsoft a l'ecosysteme LangChain, Semantic Kernel transforme des applications statiques en systemes autonomes capables de raisonnement, d'apprentissage et d'action.
 
-## Vue d'ensemble
+Cette serie pedagogique vous guidera a travers la transition entre le prompt engineering simple et la construction de systemes multi-agents sophistiques, ou chaque composant travaille de concert pour resoudre des problemes d'une complexite croissante.
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks Python | 8 (serie principale 01-08) |
-| Notebooks Avances | 4 (interop Python/C# 09-10) |
-| Templates | 3 |
-| Duree estimee | ~9h (serie complete) |
-| Version SK cible | 1.39+ |
-| Validation | 80% (11/14 notebooks) |
+**Fil rouge** : le NotebookMaker, un systeme a 3 agents (Admin, Coder, Reviewer) qui genere automatiquement des notebooks pedagogiques. Ce demonstrateur incarne l'essence meme de Semantic Kernel : orchestrer des agents specialises pour resoudre des problemes complexes.
 
 ## Serie principale (Python)
 
@@ -68,7 +61,7 @@ Parcours pedagogique complet sur Semantic Kernel en Python :
 
 ## Parcours recommande
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     SERIE PRINCIPALE (Python)                       │
 ├─────────────────────────────────────────────────────────────────────┤
