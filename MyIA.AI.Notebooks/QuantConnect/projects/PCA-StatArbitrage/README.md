@@ -7,6 +7,8 @@
 
 QC Cloud-compatible PCA statistical arbitrage using sklearn PCA instead of numpy/scipy.
 
+**Consolidated from PCA-StatArb** (statsmodels version, not QC Cloud compatible) and **ML-PCA-StatArb** (identical code with extra comments).
+
 ## How to Run
 
 **Lean CLI:**
@@ -20,10 +22,11 @@ QC Cloud-compatible PCA statistical arbitrage using sklearn PCA instead of numpy
 |--------|-------|
 | Method | sklearn PCA + mean-reversion |
 | Universe | Top 100 US equities |
+| Sharpe | 0.399 |
 
 ## Files
 
-- main.py - Strategy (v1.0, sklearn PCA version)
+- main.py - Strategy (v1.0, sklearn PCA, consolidated from PCA-StatArb + ML-PCA-StatArb)
 
 ## References
 

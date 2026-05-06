@@ -158,7 +158,7 @@ Projects with main.py + research.ipynb + README.md but no cloud-id in config.
 | 51 | ~~ML-HMM-Regime~~ | — | — | — | — | — | CONSOLIDATED into Markov-Regime-Detection |
 | 52 | ML-HeadShoulders-CNN | Y | Y | N | N | — | INCOMPLET |
 | 53 | ML-LLM-Summarization | Y | N | N | N | — | INCOMPLET |
-| 54 | ML-PCA-StatArb | Y | N | N | N | — | INCOMPLET |
+| 54 | ~~ML-PCA-StatArb~~ | — | — | — | — | — | CONSOLIDATED into PCA-StatArbitrage |
 | 55 | ML-Pairs-PCA-Selection | N | Y | N | N | — | NO-CODE |
 | 56 | ML-RandomForest | Y | Y | N | Y | 29434751 | INCOMPLET |
 | 57 | ML-Regression | Y | N (has quantbook) | N | N | — | INCOMPLET |
@@ -176,7 +176,7 @@ Projects with main.py + research.ipynb + README.md but no cloud-id in config.
 | 69 | Option-Wheel | Y | Y | N | N | — | INCOMPLET |
 | 70 | Options-VGT | Y | N (has quantbook) | Y | N | — | INCOMPLET |
 | 71 | OptionsIncome | Y | Y | Y | N | — | OK |
-| 72 | PCA-StatArb | Y | N | N | N | — | INCOMPLET |
+| 72 | ~~PCA-StatArb~~ | — | — | — | — | — | CONSOLIDATED into PCA-StatArbitrage |
 | 73 | PCA-StatArbitrage | Y | N | N | N | — | INCOMPLET |
 | 74 | PairsTrading | Y | Y | Y | N | — | OK |
 | 75 | Portfolio-Optimization-ML | Y | Y | Y | Y | null | OK |

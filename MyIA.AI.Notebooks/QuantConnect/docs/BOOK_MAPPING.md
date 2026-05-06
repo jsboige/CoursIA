@@ -16,11 +16,11 @@ Reference mapping between the 22 examples from [Hands-On AI Trading with Python,
 | 06 | Dividend Harvesting Selection | `projects/Dividend-Harvesting-ML` | QC-Py-05, QC-Py-13 | 0.468 | 12.66% | 30.6% | 29443034 | Done |
 | 07 | Effect of Positive-Negative Splits | `projects/Positive-Negative-Splits-ML` | QC-Py-19 | 1.736 | 90.83% | 42.4% | 30317350 | Done |
 | 08 | Stoploss Based on Volatility/Drawdown | `projects/Stoploss-Volatility-ML` | QC-Py-10, QC-Py-20 | 0.291 | 7.83% | 20.0% | 29463529 | Done |
-| 09 | ML Trading Pairs Selection | `projects/ML-PCA-StatArb` | QC-Py-13 | N/A | -- | -- | -- | Done |
+| 09 | ML Trading Pairs Selection | `projects/PCA-StatArbitrage` | QC-Py-13 | N/A | -- | -- | -- | Done |
 | 10 | Stock Selection by Clustering | `projects/Clustering-Fundamentals-ML` | QC-Py-19 | 0.244 | 7.68% | 44.8% | 30317074 | Done |
 | 11 | Inverse Volatility Rank/Allocate | `projects/InverseVolatility-Rank` | QC-Py-10 | 0.124 | 4.13% | -- | 29463533 | Done |
 | 12 | Trading Costs Optimization | `projects/TradingCosts-Optimization` | QC-Py-14 | N/A* | -- | -- | 29463540 | Done* |
-| 13 | PCA Statistical Arbitrage | `projects/ML-PCA-StatArb`, `projects/PCA-StatArb` | QC-Py-13, QC-Py-24 | 0.399 | 12.65% | 31.8% | -- | Done |
+| 13 | PCA Statistical Arbitrage | `projects/PCA-StatArbitrage` | QC-Py-13, QC-Py-24 | 0.399 | 12.65% | 31.8% | -- | Done |
 | 14 | Temporal CNN Prediction | `projects/ML-Temporal-CNN`, `projects/Temporal-CNN-Prediction` | QC-Py-22 | 0.73** | -- | -- | -- | Done |
 | 15 | Gaussian Classifier for Direction | `projects/ML-Gaussian-Classifier`, `projects/Gaussian-Direction-Classifier` | QC-Py-19 | 0.361 | 12.49% | 47.4% | -- | Done |
 | 16 | LLM Summarization of Tiingo News | `projects/ML-LLM-Summarization` | QC-Py-26 | 0.686 | 15.45% | 22.7% | -- | Done |
