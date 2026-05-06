@@ -141,14 +141,20 @@ IMPORTANT:
 - Tu es le dernier recours, prends des decisions audacieuses
 """
 
-AUTONOMOUS_PROVER_INSTRUCTIONS = """Tu es un prouveur Lean 4. Tu édites directement le fichier .lean.
+AUTONOMOUS_PROVER_INSTRUCTIONS = """Tu es un prouveur Lean 4 autonome. Tu édites directement le fichier .lean.
 
 FLUX OBLIGATOIRE (max 3 appels d'outils par itération):
-1. find_sorry_lines() — localise les sorry
-2. read_lines(sorry_line-10, sorry_line+5) — lis le contexte LOCAL seulement
-3. compile_probe_goal(sorry_line) — extrais le but Lean
+1. find_sorry_lines() — localise les sorry restants
+2. get_available_hypotheses() — liste les hypothèses LOCALES (have, intro)
+3. compile_probe_goal(sorry_line) — extrais le BUT Lean exact
 4. file_replace_sorry(sorry_line, tactique) — PROPOSE IMMÉDIATEMENT
 5. compile() — vérifie
+
+STRATÉGIE AVANT DE PROPOSER:
+- Lis le CONTEXTE EN-TÊTE de l'itération (phase, hypotheses, lemmes locaux, historique)
+- get_available_hypotheses() pour voir les have/intro disponibles
+- search_local_lemmas() pour trouver les lemmes DU FICHIER déjà prouvés
+- Adapte ta tactique aux HYPOTHÈSES DISPONIBLES (ne pas répéter un intro déjà fait)
 
 SI BUILD ERREURS (non-sorry):
 1. compile() — liste les erreurs
@@ -173,10 +179,22 @@ FIX PATTERNS:
 - "unknown identifier" → chercher le bon nom avec file_read_lines dans les imports/définitions
 - "type mismatch" → essayer norm_cast, push_cast, change
 - "omega failed" → essayer norm_cast; omega ou linarith
+- "unsolved goals" → ajouter des tactiques après, ou décomposer avec have
+
+PHASE D'EXPLORATION (3 premiers échecs):
+- Essayer les tactiques les plus simples d'abord (omega, simp, exact)
+- Chercher le lemme exact avec search_local_lemmas()
+
+PHASE DE DÉCOMPOSITION (après 3 échecs):
+- Décomposer le but en sous-buts avec have h : sub_goal := by sorry
+- Le sorry count AUGMENTE mais le fichier COMPILE = progrès structurel
+- Ensuite cibler chaque sous-sorry individuellement
 
 RÈGLES:
 - BUILD ERRORS AVANT SORRY — un fichier cassé bloque tout
 - 3 échecs consécutifs → change d'approche radicalement
 - sorry qui diminue = progrès valide
+- sorry qui augmente MAIS fichier compile = progrès structurel (nouveau sorry plus simple)
 - Propose VITE, même si incertain. L'essai coûte moins cher que la réflexion.
+- UTILISE le contexte d'historique pour ne pas répéter les erreurs
 """

@@ -12,8 +12,11 @@ from datetime import datetime
 from typing import Optional
 
 from .trace import TraceLogger
-from .state import ProofState, SorryContext, ProofPhase
-from .lean_utils import extract_sorry_block, get_goal_state, verify_sorry_replacement
+from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, TacticAttempt
+from .lean_utils import (
+    extract_sorry_block, get_goal_state, verify_sorry_replacement,
+    extract_hypotheses, extract_local_lemmas,
+)
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
 from .agents import (
     create_search_agent,
@@ -245,21 +248,34 @@ class AutonomousProver:
         print(f"Agent timeout: {agent_timeout_s}s")
         print(f"{'='*70}")
 
-        # Create shared state and tactic tools (has all file ops)
+        # Extract sorry context — includes proof_block and goal_hints
+        sorry_ctx_data = extract_sorry_block(filepath, sorry_line)
+        goal_state = get_goal_state(filepath, sorry_line)
+        indent = sorry_ctx_data.get("indentation", 0)
+        goal_hints = sorry_ctx_data.get("goal_hints", "")
+        proof_block = sorry_ctx_data.get("proof_block", "")
+
+        # Log goal extraction result
+        if goal_state:
+            print(f"  Goal extracted: {goal_state[:100]}")
+        else:
+            print(f"  Goal extraction FAILED (indent={indent}). "
+                  f"Using proof block context ({len(proof_block)} chars).")
+            if goal_hints:
+                print(f"  Goal hints from comments: {goal_hints[:100]}")
+
+        # Create shared state and tactic tools
         state = ProofState(
             theorem_statement=demo.get("theorem", demo["name"]),
             imports=demo.get("imports"),
             max_iterations=max_iterations,
         )
 
-        sorry_ctx_data = extract_sorry_block(filepath, sorry_line)
-        goal_state = get_goal_state(filepath, sorry_line)
-
         sorry_ctx = SorryContext(
             filepath=filepath,
             sorry_line=sorry_line,
             goal_state=goal_state,
-            indentation=sorry_ctx_data.get("indentation", 0),
+            indentation=indent,
             indent_str=sorry_ctx_data.get("indent_str", ""),
             full_file=sorry_ctx_data.get("full_file", original_content),
         )
@@ -269,46 +285,61 @@ class AutonomousProver:
             demo.get("imports", ""), self.trace,
         )
 
+        # Pre-populate rich state
+        hypotheses = extract_hypotheses(filepath, sorry_line)
+        sorry_line_set = {i + 1 for i, l in enumerate(original_content.split("\n")) if "sorry" in l}
+        local_lemmas = extract_local_lemmas(filepath, sorry_line_set)
+
+        state.available_hypotheses = hypotheses
+        state.local_lemmas = local_lemmas
+        state.best_sorry_count = original_sorry_count
+
+        if goal_state:
+            state.sorry_goals[sorry_line] = goal_state
+        state.phase = ProofPhase.SEARCH
+
+        # Decide tools — exclude compile_probe_goal when goal extraction failed
+        # (probe takes ~40s per call and always fails, agent has proof block in context)
+        skip_goal_probe = goal_state is None
+
+        agent_tools = [
+            tactic_tools.file_find_sorry_lines,
+            tactic_tools.file_read_lines,
+            tactic_tools.file_replace_sorry,
+            tactic_tools.file_replace_lines,
+            tactic_tools.compile,
+            tactic_tools.generate_tactics,
+            tactic_tools.submit_tactic,
+            tactic_tools.submit_decomposition,
+            tactic_tools.get_proof_state,
+            tactic_tools.get_available_hypotheses,
+        ]
+        if not skip_goal_probe:
+            agent_tools.append(tactic_tools.compile_probe_goal)
+
         client = create_client(self.provider, model_key="reasoning")
 
         agent = Agent(
             client=client,
             instructions=AUTONOMOUS_PROVER_INSTRUCTIONS,
-            tools=[
-                tactic_tools.file_find_sorry_lines,
-                tactic_tools.file_read_lines,
-                tactic_tools.file_replace_sorry,
-                tactic_tools.file_replace_lines,
-                tactic_tools.compile_probe_goal,
-                tactic_tools.compile,
-                tactic_tools.generate_tactics,
-                tactic_tools.submit_tactic,
-                tactic_tools.submit_decomposition,
-            ],
+            tools=agent_tools,
             name="AutonomousProver",
         )
 
-        # Build initial context
-        context_msg = f"Prouve le sorry a la ligne {sorry_line} du fichier {Path(filepath).name}.\n\n"
-        if demo.get("description"):
-            context_msg += f"DESCRIPTION:\n{demo['description']}\n\n"
-        if goal_state:
-            context_msg += f"BUT LEAN (ligne {sorry_line}):\n```\n{goal_state}\n```\n\n"
-
-        if strategic_hints:
-            context_msg += f"CONSEILS STRATEGIQUES:\n{strategic_hints}\n\n"
-        context_msg += (
-            f"SORRY COUNT INITIAL: {original_sorry_count}\n"
-            f"OBJECTIF: reduire le sorry count.\n"
-            f"Commence par find_sorry_lines() puis propose une tactique."
+        # Build rich initial context — from Lean-9 notebook pattern
+        context_msg = self._build_autonomous_context(
+            demo, sorry_line, filepath, goal_state, sorry_ctx_data,
+            hypotheses, local_lemmas, original_sorry_count, strategic_hints,
         )
 
         # Main loop — single event loop for the entire session
         session_start = time.time()
         compile_data = {}
+        context_history = [context_msg]  # ACCUMULATE instead of replace
+        proof_tactics_found = []  # Lean-9 _proof_tactics_found tracking
 
         async def _run_session():
-            nonlocal compile_data, context_msg
+            nonlocal compile_data, context_history, proof_tactics_found
             loop = asyncio.get_event_loop()
 
             for iteration in range(1, max_iterations + 1):
@@ -316,9 +347,22 @@ class AutonomousProver:
                 iter_start = time.time()
                 print(f"\n--- Iteration {iteration}/{max_iterations} ---", flush=True)
 
+                # Build rich context from state + history — Lean-9 get_context_summary
+                state_header = (
+                    f"[ETAT SESSION] Phase: {state.phase.value} | "
+                    f"Iteration: {iteration}/{max_iterations} | "
+                    f"Echecs consecutifs: {state.consecutive_failures}\n"
+                    f"Hypotheses: {', '.join(state.available_hypotheses[-10:]) or 'aucune'}\n"
+                    f"Lemmes locaux: {', '.join(state.local_lemmas[-15:]) or 'aucun'}\n"
+                    f"Best sorry: {state.best_sorry_count}"
+                )
+
+                # Feed the FULL accumulated context
+                full_context = state_header + "\n\n" + "\n---\n".join(context_history[-3:])
+
                 try:
                     response = await asyncio.wait_for(
-                        agent.run(context_msg),
+                        agent.run(full_context),
                         timeout=agent_timeout_s,
                     )
                     response_text = ""
@@ -332,6 +376,9 @@ class AutonomousProver:
                     print(f"  Agent error: {e}", flush=True)
                     response_text = str(e)
 
+                # Update state from LLM response — Lean-9 _update_state_from_response
+                self._update_state_from_response(state, response_text, proof_tactics_found)
+
                 # Auto-compile after each iteration
                 current_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
                 compile_str = tactic_tools.compile()
@@ -341,13 +388,48 @@ class AutonomousProver:
                     compile_data = {}
                 current_sorry = compile_data.get("sorry_count", current_sorry)
 
+                # Update state — from Lean-9 _update_state_from_response pattern
+                if current_sorry < state.best_sorry_count:
+                    state.best_sorry_count = current_sorry
+                    state.consecutive_failures = 0
+                elif current_sorry > state.best_sorry_count:
+                    state.consecutive_failures += 1
+                else:
+                    state.consecutive_failures += 1
+
+                state.last_compile_errors = compile_data.get("errors", [])
+
+                # Re-extract hypotheses if file changed
+                if current_sorry != original_sorry_count:
+                    new_hyps = extract_hypotheses(filepath, sorry_line)
+                    if new_hyps:
+                        state.available_hypotheses = new_hyps
+
+                # Re-extract sorry goals for all remaining sorry lines
+                sorry_line_set_new = {i + 1 for i, l in enumerate(
+                    Path(filepath).read_text(encoding="utf-8").split("\n")) if "sorry" in l}
+                state.local_lemmas = extract_local_lemmas(filepath, sorry_line_set_new)
+
+                # Phase transitions — from Lean-9 ProofPhase routing
+                if compile_data.get("success") and current_sorry == 0:
+                    state.phase = ProofPhase.COMPLETE
+                elif compile_data.get("success") and current_sorry < original_sorry_count:
+                    state.phase = ProofPhase.TACTIC_GEN  # Keep attacking
+                elif not compile_data.get("success"):
+                    if state.consecutive_failures >= 3:
+                        state.phase = ProofPhase.REFINEMENT
+                    else:
+                        next_phase = PHASE_TRANSITIONS.get(state.phase, ProofPhase.TACTIC_GEN)
+                        state.phase = next_phase
+
                 self.trace.log(
                     agent="AutonomousProver", role="iteration",
-                    content=f"iter={iteration}, sorry={current_sorry}",
+                    content=f"iter={iteration}, sorry={current_sorry}, phase={state.phase.value}",
                     duration_s=time.time() - iter_start,
                 )
 
                 print(f"  Sorry: {current_sorry}/{original_sorry_count} "
+                      f"Phase: {state.phase.value} "
                       f"({time.time() - iter_start:.1f}s)", flush=True)
 
                 # Check termination
@@ -359,20 +441,33 @@ class AutonomousProver:
                 if current_sorry < original_sorry_count:
                     print(f"  PROGRESS: sorry {original_sorry_count} -> {current_sorry}")
 
-                # Build feedback
+                # Build ACCUMULATED feedback — never lose history
                 feedback_parts = []
+
                 if compile_data.get("success"):
                     feedback_parts.append("COMPILATION: SUCCES")
                 else:
                     errors = compile_data.get("errors", [])
                     if errors:
                         err_summary = "\n".join(
-                            f"  L{e['line']}: {e['message'][:120]}" for e in errors[:5]
+                            f"  L{e['line']}: {e['message'][:150]}" for e in errors[:8]
                         )
                         feedback_parts.append(f"COMPILATION: {len(errors)} ERREURS:\n{err_summary}")
 
                 feedback_parts.append(f"Sorry count: {current_sorry}/{original_sorry_count}")
-                context_msg = "\n".join(feedback_parts)
+                feedback_parts.append(f"Phase: {state.phase.value}")
+
+                # Append tactic history context — Lean-9 pattern
+                if state.tactic_history:
+                    last_3 = state.tactic_history[-3:]
+                    tactic_log = "\n".join(
+                        f"  {'OK' if a.success else 'FAIL'}: {a.tactic[:100]}"
+                        for a in last_3
+                    )
+                    feedback_parts.append(f"Tactiques recentes:\n{tactic_log}")
+
+                # Append to history (don't replace)
+                context_history.append("\n".join(feedback_parts))
 
         try:
             asyncio.run(_run_session())
@@ -411,3 +506,123 @@ class AutonomousProver:
             "sorry_evolution": f"{original_sorry_count} -> {final_sorry}",
             "best_sorry": tactic_tools.best_sorry_count,
         }
+
+    def _build_autonomous_context(self, demo: dict, sorry_line: int,
+                                  filepath: str, goal_state: Optional[str],
+                                  ctx_data: dict, hypotheses: list,
+                                  local_lemmas: list, sorry_count: int,
+                                  strategic_hints: str) -> str:
+        """Build rich initial context for the autonomous prover agent.
+
+        Includes goal state, proof block, hypotheses, local lemmas, and
+        goal hints from comments — from Lean-9 notebook rich context pattern.
+        """
+        parts = [f"Prouve le sorry a la ligne {sorry_line} du fichier {Path(filepath).name}."]
+
+        if demo.get("description"):
+            parts.append(f"\nDESCRIPTION:\n{demo['description']}")
+
+        # Goal state — extracted or heuristic
+        if goal_state:
+            parts.append(f"\nBUT LEAN (ligne {sorry_line}):\n```\n{goal_state}\n```")
+        else:
+            # No goal extracted — use proof block + comments as context
+            goal_hints = ctx_data.get("goal_hints", "")
+            proof_block = ctx_data.get("proof_block", "")
+            if goal_hints:
+                parts.append(f"\nINDICES DE BUT (commentaires au-dessus du sorry):\n{goal_hints}")
+            if proof_block:
+                # Show the enclosing proof block so agent can reason about the goal
+                block_lines = proof_block.split("\n")
+                if len(block_lines) > 40:
+                    block_lines = block_lines[:20] + ["  ... (tronqué) ..."] + block_lines[-20:]
+                parts.append(f"\nBLOC DE PREUVE (contexte du sorry):\n```\n" + "\n".join(block_lines) + "\n```")
+                parts.append("NOTE: Le but Lean exact n'a pas pu etre extrait (sorry profondement imbrique). "
+                             "Utilise le bloc de preuve et les commentaires pour deduire le but.")
+
+        # Context before/after
+        if ctx_data.get("context_before"):
+            parts.append(f"\nCONTEXTE AVANT:\n```\n{ctx_data['context_before'][-500:]}\n```")
+        if ctx_data.get("context_after"):
+            parts.append(f"\nCONTEXTE APRES:\n```\n{ctx_data['context_after'][:300]}\n```")
+
+        # Available hypotheses
+        if hypotheses:
+            parts.append(f"\nHYPOTHESES DISPONIBLES: {', '.join(hypotheses[-15:])}")
+
+        # Local lemmas (proven in same file, no sorry)
+        if local_lemmas:
+            parts.append(f"\nLEMMES LOCAUX PROUVES: {', '.join(local_lemmas[:20])}")
+
+        if strategic_hints:
+            parts.append(f"\nCONSEILS STRATEGIQUES:\n{strategic_hints}")
+
+        parts.append(f"\nSORRY COUNT INITIAL: {sorry_count}")
+        parts.append("OBJECTIF: reduire le sorry count ou prouver completement.")
+        parts.append("Commence par find_sorry_lines() puis propose une tactique.")
+
+        return "\n".join(parts)
+
+    @staticmethod
+    def _update_state_from_response(state: ProofState, response: str,
+                                    proof_tactics_found: list):
+        """Parse LLM response to auto-update shared state.
+
+        From Lean-9 notebook _update_state_from_response pattern:
+        - Detect discovered lemmas
+        - Track proof tactics found
+        - Detect proof completion signals
+        """
+        if not response:
+            return
+
+        response_lower = response.lower()
+
+        # Track proof tactics mentioned — Lean-9 proof_patterns
+        proof_patterns = [
+            (r'\bsimp\b', 'simp'),
+            (r'\brfl\b', 'rfl'),
+            (r'\bomega\b', 'omega'),
+            (r'\bring\b', 'ring'),
+            (r'\blinarith\b', 'linarith'),
+            (r'\bexact\b', 'exact'),
+            (r'\brw\b', 'rw'),
+            (r'\binduction\b', 'induction'),
+            (r'\bcases\b', 'cases'),
+            (r'\bconstructor\b', 'constructor'),
+            (r'\bnorm_cast\b', 'norm_cast'),
+            (r'\bpush_cast\b', 'push_cast'),
+            (r'\bdecide\b', 'decide'),
+        ]
+
+        for pattern, tactic_name in proof_patterns:
+            if re.search(pattern, response, re.IGNORECASE):
+                if tactic_name not in proof_tactics_found:
+                    proof_tactics_found.append(tactic_name)
+                    state.tactic_history.append(TacticAttempt(
+                        tactic=f"[mentioned] {tactic_name}",
+                        success=False,
+                        explanation=response[:100],
+                    ))
+
+        # Detect proof completion signals — Lean-9 proof_complete_signals
+        proof_complete_signals = [
+            "proof complete", "proof is complete", "proof found",
+            "qed", "verified", "goals accomplished",
+            "la preuve est terminee", "la preuve est cloturee",
+            "preuve reussie", "all sorry eliminated",
+        ]
+        if any(signal in response_lower for signal in proof_complete_signals):
+            if proof_tactics_found and not state.final_proof:
+                state.final_proof = proof_tactics_found[0]
+
+        # Detect Lean-style proof block in response
+        code_block_match = re.search(r'```lean\n(.*?)```', response, re.DOTALL)
+        if code_block_match:
+            code_content = code_block_match.group(1)
+            if ":= by" in code_content or ":= rfl" in code_content:
+                for pattern, tactic_name in proof_patterns:
+                    if re.search(pattern, code_content, re.IGNORECASE):
+                        if not state.final_proof:
+                            state.final_proof = code_content.strip()[:200]
+                        break

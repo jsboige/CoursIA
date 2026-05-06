@@ -41,6 +41,10 @@ class SearchTools:
             "Eq.refl": ("a = a", "Logic"),
             "Eq.symm": ("a = b -> b = a", "Logic"),
             "Finset.sum_erase_add": ("sum s f = sum (s.erase a) f + f a", "Finset"),
+            "Finset.sum_eq_single": ("sum s f = f b if b in s and others zero", "Finset"),
+            "Finset.card_union_of_disjoint": ("card (s ∪ t) = card s + card t", "Finset"),
+            "Finset.sum_add_distrib": ("sum s (f + g) = sum s f + sum s g", "Finset"),
+            "Finset.sum_const": ("sum s (fun _ => c) = card s * c", "Finset"),
         }
 
     def search_mathlib_lemmas(self, goal: str, max_results: int = 10) -> str:
@@ -83,11 +87,35 @@ class SearchTools:
 
         return json.dumps(found, indent=2, ensure_ascii=False)
 
+    def search_local_lemmas(self) -> str:
+        """Search for lemmas defined in the current .lean file (no sorry)."""
+        from .lean_utils import extract_local_lemmas
+        if not self._filepath:
+            return json.dumps({"error": "No file configured"})
+
+        content = Path(self._filepath).read_text(encoding="utf-8")
+        sorry_lines = {i + 1 for i, l in enumerate(content.split("\n")) if "sorry" in l}
+        lemmas = extract_local_lemmas(self._filepath, sorry_lines)
+
+        # Update shared state
+        self._state.local_lemmas = lemmas
+
+        if self._trace:
+            self._trace.log(
+                agent="SearchAgent", role="tool",
+                content=f"Found {len(lemmas)} local lemmas",
+                duration_s=0.01, tool_name="search_local_lemmas",
+                tool_result=", ".join(lemmas[:20]),
+            )
+
+        return json.dumps({
+            "count": len(lemmas),
+            "lemmas": lemmas,
+        }, indent=2, ensure_ascii=False)
+
     def get_proof_state(self) -> str:
-        """Get a summary of the current proof state (theorem, phase, errors, previous tactics)."""
-        return json.dumps(
-            self._state.get_state_snapshot(summarize=True), indent=2, ensure_ascii=False
-        )
+        """Get a rich summary of the current proof state."""
+        return self._state.get_context_summary()
 
     def add_discovered_lemma(self, name: str, statement: str = "",
                              namespace: str = "", relevance: float = 0.5) -> str:
@@ -239,6 +267,24 @@ class TacticTools:
         return json.dumps({
             "sorry_count": len(sorry_lines), "sorry_lines": sorry_lines,
         }, ensure_ascii=False)
+
+    def get_proof_state(self) -> str:
+        """Get a rich summary of the current proof state with hypotheses and lemma history."""
+        return self._state.get_context_summary()
+
+    def get_available_hypotheses(self) -> str:
+        """Get hypotheses available in the current proof context (have, intro, case)."""
+        if not self._filepath or not self._sorry_ctx:
+            return json.dumps({"error": "No file/context configured"})
+        from .lean_utils import extract_hypotheses
+        sorry_line = self._sorry_ctx.sorry_line
+        hyps = extract_hypotheses(self._filepath, sorry_line)
+        self._state.available_hypotheses = hyps
+        return json.dumps({
+            "sorry_line": sorry_line,
+            "hypotheses": hyps,
+            "count": len(hyps),
+        }, indent=2, ensure_ascii=False)
 
     def file_replace_lines(self, start: int, end: int, new_content: str) -> str:
         """Replace a range of lines in the .lean file. Lines are 1-based, inclusive."""

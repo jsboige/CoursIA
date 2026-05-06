@@ -207,6 +207,132 @@ def _parse_goal_from_error(error_text: str) -> Optional[str]:
     return None
 
 
+def extract_hypotheses(filepath: str, sorry_line: int) -> list:
+    """Extract available hypotheses from the proof context before a sorry.
+
+    Parses have-statements, intro'd variables, case-pattern variables,
+    split_ifs hypotheses, let-bindings, and theorem parameters.
+    """
+    content = Path(filepath).read_text(encoding="utf-8")
+    lines = content.split("\n")
+
+    hypotheses = []
+    indent_at_sorry = 0
+
+    if 1 <= sorry_line <= len(lines):
+        sorry_text = lines[sorry_line - 1]
+        indent_at_sorry = len(sorry_text) - len(sorry_text.lstrip())
+
+    for i in range(max(0, sorry_line - 2), -1, -1):
+        stripped = lines[i].strip()
+        line_indent = len(lines[i]) - len(lines[i].lstrip())
+
+        # Stop at top-level declarations or equal/lower indent at proof start
+        if line_indent == 0 and (stripped.startswith("theorem ")
+                                  or stripped.startswith("lemma ")
+                                  or stripped.startswith("def ")
+                                  or stripped.startswith("noncomputable def ")):
+            # Extract theorem parameters before stopping
+            m = re.match(
+                r'(?:private\s+)?(?:theorem|lemma|def|noncomputable\s+def)\s+\w+\s+(.+?)(?::=|\Z)',
+                stripped, re.DOTALL,
+            )
+            if m:
+                params_str = m.group(1)
+                # Parse (name : Type) blocks
+                for pm in re.finditer(r'\((\w+)\s*:\s*([^)]+)\)', params_str):
+                    hypotheses.append(f"{pm.group(1)} : {pm.group(2).strip()}")
+                # Parse {name : Type} blocks
+                for pm in re.finditer(r'\{(\w+)\s*:\s*([^}]+)\}', params_str):
+                    hypotheses.append(f"{pm.group(1)} : {pm.group(2).strip()}")
+                # Parse [name : Type] blocks (instance implicit)
+                for pm in re.finditer(r'\[(\w+)\s*:\s*([^\]]+)\]', params_str):
+                    hypotheses.append(f"[{pm.group(1)} : {pm.group(2).strip()}]")
+            break
+        if stripped.startswith("end ") and line_indent == 0:
+            break
+
+        # Only consider lines at or outside the sorry's indentation level
+        if line_indent > indent_at_sorry:
+            continue
+
+        # have h : statement := by ...
+        m = re.match(r'\s*have\s+(\w+)\s*(?::\s*(.+?))?\s*:=', stripped)
+        if m:
+            name = m.group(1)
+            typ = m.group(2) or ""
+            hypotheses.append(f"{name} : {typ.strip()}" if typ else name)
+
+        # intro x / intro h
+        m = re.match(r'\s*intro\s+(\w+)', stripped)
+        if m:
+            hypotheses.append(m.group(1))
+
+        # intros x y z
+        m = re.match(r'\s*intros\s+(.+)', stripped)
+        if m:
+            for var in m.group(1).split():
+                hypotheses.append(var.strip())
+
+        # split_ifs with h1 h2
+        m = re.match(r'\s*split_ifs\s+with\s+(.+)', stripped)
+        if m:
+            for var in m.group(1).split():
+                v = var.strip()
+                if v:
+                    hypotheses.append(f"split_ifs: {v}")
+
+        # obtain ⟨h1, h2⟩ := ...
+        m = re.match(r'\s*obtain\s*[⟨<](.+?)[⟩>]', stripped)
+        if m:
+            for var in m.group(1).split(","):
+                v = var.strip()
+                if v:
+                    hypotheses.append(v)
+
+        # case name => ...
+        m = re.match(r'\s*case\s+(\w+)', stripped)
+        if m:
+            hypotheses.append(f"case: {m.group(1)}")
+
+    return hypotheses
+
+
+def extract_local_lemmas(filepath: str, sorry_lines: set = None) -> list:
+    """Extract lemma/theorem/def names from a .lean file that have NO sorry.
+
+    Returns list of names that the agent can reference as already-proven helpers.
+    """
+    content = Path(filepath).read_text(encoding="utf-8")
+    lines = content.split("\n")
+    sorry_lines = sorry_lines or set()
+
+    names = []
+    for i, line in enumerate(lines, 1):
+        if i in sorry_lines:
+            continue
+        m = re.match(r'\s*(?:private\s+)?(?:theorem|lemma|def|noncomputable\s+def)\s+(\w+)', line)
+        if m:
+            names.append(m.group(1))
+
+    # Filter: keep only those whose proof block doesn't contain sorry
+    clean = []
+    for name in names:
+        pattern = re.compile(
+            rf'(?:theorem|lemma|def)\s+{re.escape(name)}\b', re.MULTILINE
+        )
+        match = pattern.search(content)
+        if not match:
+            continue
+        start_line = content[:match.start()].count("\n") + 1
+        # Check next 50 lines for sorry
+        block = "\n".join(lines[start_line - 1:min(start_line + 50, len(lines))])
+        if "sorry" not in block:
+            clean.append(name)
+
+    return clean
+
+
 def _heuristic_goal_extract(lines: list, sorry_line: int) -> Optional[str]:
     """Extract goal heuristically from proof context when Lean probing fails."""
     # Look backwards for the proof statement (theorem/lemma/have)
