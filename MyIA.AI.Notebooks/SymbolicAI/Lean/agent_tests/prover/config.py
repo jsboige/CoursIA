@@ -204,4 +204,57 @@ DEMOS = {
         ),
         "difficulty": "very_hard",
     },
+    10: {
+        "name": "VOTING_BANKS_SET_NONEMPTY",
+        "file": str(VOTING_FILE),
+        "line": 462,
+        "sorry_type": "full_proof",
+        "theorem_name": "banks_set_nonempty_of_tournament",
+        "theorem": "banks_set_nonempty_of_tournament",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove banks_set_nonempty_of_tournament: when a tournament exists on S,\n"
+            "the Banks set is nonempty.\n"
+            "Goal: (banks_set prof S).Nonempty\n"
+            "The Banks set collects endpoints of maximal chains in the tournament.\n"
+            "Key: any maximal chain ending at the tournament winner gives a Banks winner.\n"
+            "Available: is_tournament, banks_set, maximal_chain."
+        ),
+        "difficulty": "hard",
+    },
+    11: {
+        "name": "VOTING_STV_NOT_MONOTONE",
+        "file": str(VOTING_FILE),
+        "line": 538,
+        "sorry_type": "full_proof",
+        "theorem_name": "stv_monotonicity_violation",
+        "theorem": "stv_monotonicity_violation",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove STV fails monotonicity (Doron 1979): improving a candidate's\n"
+            "position can paradoxically cause their elimination.\n"
+            "Goal: ¬ @monotonicity ι σ _ _ (stv_scc n_seats)\n"
+            "Requires constructing a specific profile where raising a candidate\n"
+            "causes them to be eliminated via surplus transfer mechanics.\n"
+            "NOTE: counterexample proof, requires careful profile construction."
+        ),
+        "difficulty": "very_hard",
+    },
+    12: {
+        "name": "VOTING_STV_NOT_CLONE_INDEP",
+        "file": str(VOTING_FILE),
+        "line": 545,
+        "sorry_type": "full_proof",
+        "theorem_name": "stv_not_clone_independent",
+        "theorem": "stv_not_clone_independent",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove STV does not satisfy clone independence:\n"
+            "adding a clone of a candidate can change the outcome.\n"
+            "Goal: ¬ @clone_independence ι σ _ _ _ (stv_scc n_seats)\n"
+            "Requires constructing a profile where cloning changes elimination order.\n"
+            "NOTE: counterexample proof."
+        ),
+        "difficulty": "very_hard",
+    },
 }
