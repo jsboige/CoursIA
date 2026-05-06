@@ -72,7 +72,7 @@ Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM
 
 **Next**: Crypto panier 10-coin dataset ready (PR #776). Cross-asset features, regime-conditional models.
 
-### Stage 3a: Crypto Panier Anti-Bias (DONE)
+### Stage 3a: Crypto Panier Anti-Bias (IN PROGRESS)
 
 10-coin daily OHLCV dataset (2018-2026) for multi-asset training.
 
@@ -93,6 +93,26 @@ Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM
 4 shorter-history coins test generalization. MATIC tests robustness to delisting events.
 
 **Dataset**: `datasets/yfinance/crypto_panier/` (PR #776, 2.5 MB)
+
+**GNN Benchmarks (multi-seed x4, CPU, 100 epochs)**:
+
+Majority class baseline: 51.68% (down days).
+
+| Model | Params | DirAcc          | Edge   | BEATS | Mean MSE |
+|-------|--------|-----------------|--------|-------|----------|
+| GCN   | 9,345  | 47.6% +/-1.3%  | -4.1pp | NO    | 0.001641 |
+| GAT   | 17,793 | 47.7% +/-1.3%  | -4.0pp | NO    | 0.001644 |
+| RGCN  | 33,921 | 50.0% +/-3.0%  | -1.7pp | NO    | 0.001639 |
+
+**Key findings**:
+- All 3 GNN architectures fail to beat majority class (BEATS criterion: mean_edge >= 2*std_edge)
+- RGCN best performer (edge -1.7pp) — relation-aware convolutions capture inter-coin dynamics
+- GCN and GAT nearly identical performance, GAT attention provides no benefit
+- RGCN seed 123 shows positive edge (+3.4pp) but inconsistent across seeds
+- Graph structure does not overcome the fundamental signal limitation (cf Stage 3 conclusion)
+- Training: CPU-only, thermal-safe (GPU forbidden on ai-01, idle 77C)
+
+**Next**: Walk-forward 5-fold evaluation pending. Walk-forward may reveal regime-dependent edges.
 
 ### Stage 2: Feature Engineering (DONE)
 

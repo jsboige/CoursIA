@@ -4,7 +4,7 @@
 
 Composite strategy combining two complementary approaches via QuantConnect Algorithm Framework:
 
-1. **SectorMomentum (60% slice)**: Dual momentum among SPY/TLT/GLD
+1. **SectorMomentum (60% slice)**: Dual momentum among SPY/IEF/GLD
    - Multi-lookback composite score (1/3/6/12 months)
    - SMA200 filter for SPY
    - Monthly rebalancing
@@ -20,26 +20,32 @@ Composite strategy combining two complementary approaches via QuantConnect Algor
 - `alpha_models.py`: SectorMomentumAlpha and RegimeSwitchingAlpha classes
 - `portfolio_construction.py`: MultiStrategyPCM for capital allocation per strategy
 
-## Target Allocation
+## Backtest Results (T60/RS40)
 
-- Initial: **T60/RS40** (SectorMomentum 60%, RegimeSwitching 40%)
-- Sweep range: T55/RS45 to T65/RS35 (5% steps)
+| Metric | Value |
+|--------|-------|
+| Sharpe Ratio | 0.185 |
+| CAGR | 4.728% |
+| Net Profit | 66.272% |
+| Max Drawdown | 11.500% |
+| Total Orders | 520 |
+| Win Rate | 73% |
+| Alpha | -0.008 |
+| Beta | 0.218 |
+| Sortino | 0.196 |
 
-## Expected Results
+**Verdict**: Underperforming. Sharpe 0.185 is well below SectorMomentum standalone (0.555).
+The RegimeSwitching component dilutes returns in the 60/40 blend. Very low beta (0.218)
+indicates the composite is too conservative.
 
-Based on component strategies:
-- SectorMomentum standalone: Sharpe 0.62, CAGR 13.2%, MaxDD 22.8%
-- RegimeSwitching standalone: Sharpe 0.55, CAGR 11.7%, MaxDD 33.0%
+**Next steps**: Try T80/RS20 or T90/RS10 to reduce RegimeSwitching drag, or replace
+RegimeSwitching with a more aggressive bull-only variant.
 
-Hypothesis: Composite should achieve Sharpe > 0.65 with MaxDD < 25%.
+## Cloud IDs
+
+- Project ID: 31243821
+- Organization: d600793ee4caecb03441a09fc2d00f7f
 
 ## Backtest Period
 
-2015-01-01 to 2026-03-10 (covers bull, bear, and sideways regimes)
-
-## Deployment
-
-1. Create project on QuantConnect Cloud (org: Jean-Sylvain Boige - Researcher)
-2. Upload the 3 Python files
-3. Compile and backtest
-4. If Sharpe < 0.5, iterate allocation (T55/RS45, T65/RS35)
+2015-01-01 to 2025-12-31

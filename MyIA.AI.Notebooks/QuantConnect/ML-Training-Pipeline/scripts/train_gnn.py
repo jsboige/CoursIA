@@ -771,13 +771,18 @@ def main():
     # Output
     parser.add_argument("--output-dir",
                         default=str(Path(__file__).resolve().parent.parent / "outputs" / "gnn_run1"))
+    parser.add_argument("--device", default="auto",
+                        help="Device: auto, cpu, cuda (default: auto)")
     parser.add_argument("--dry-run", action="store_true")
 
     args = parser.parse_args()
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if args.device == "auto":
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    else:
+        device = args.device
 
     if args.dry_run:
         print("DRY-RUN: Using synthetic crypto panier data (10 assets, 2 epochs)")
