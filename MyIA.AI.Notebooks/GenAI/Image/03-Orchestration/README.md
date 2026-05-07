@@ -4,6 +4,8 @@
 
 Ce module couvre l'orchestration de plusieurs modèles, les workflows complexes, et l'optimisation de performance.
 
+**Dans le cadre du fil rouge contenu visuel educatif** : en production, un seul modele ne suffit pas. [03-1](03-1-Multi-Model-Comparison.ipynb) compare les modeles pour choisir le meilleur selon le contexte. [03-2](03-2-Workflow-Orchestration.ipynb) assemble des pipelines (generation, edition, upscaling). [03-3](03-3-Performance-Optimization.ipynb) optimise les performances pour le deploiement.
+
 ## Vue d'overview
 
 | Statistique | Valeur |

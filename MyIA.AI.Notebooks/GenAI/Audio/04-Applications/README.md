@@ -2,7 +2,9 @@
 
 [← Audio Orchestration](../03-Orchestration/) | [↑ Audio](../README.md) | [→ Video](../../Video/README.md)
 
-Ce module présente des cas d'usage concrets et des workflows de production pour l'audio génératif.
+Ce module presente des cas d'usage concrets et des workflows de production pour l'audio generatif.
+
+**Dans le cadre du fil rouge podcast** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Audio-Content.ipynb) automatise la narration de cours (texte vers TTS avec structuration LLM). [04-2](04-2-Transcription-Pipeline.ipynb) gere la transcription batch avec sous-titres SRT pour les episodes longs. [04-3](04-3-Music-Composition-Workflow.ipynb) compose des bandes sonores en plusieurs etapes. [04-4](04-4-Audio-Video-Sync.ipynb) synchronise l'audio genere avec la piste video.
 
 ## Vue d'overview
 
