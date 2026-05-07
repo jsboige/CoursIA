@@ -12,6 +12,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 
 **Regles modulaires `.claude/rules/` (auto-loaded a chaque session)** — chaque section critique ci-dessous renvoie a la regle complete :
 - [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md) - Branches, commits, force push (section A)
+- [.claude/rules/pr-review-discipline.md](.claude/rules/pr-review-discipline.md) - Critères CHANGES_REQUESTED obligatoires reviewers humains+bots (section B+G)
 - [.claude/rules/anti-regression.md](.claude/rules/anti-regression.md) - Patterns red-flag, audit historique (section D)
 - [.claude/rules/notebook-conventions.md](.claude/rules/notebook-conventions.md) - Manipulation, structure pedagogique, execution kernel (section C)
 - [.claude/rules/code-style.md](.claude/rules/code-style.md) - PEP 8, .NET 9.0, no emojis, langue (section E)
@@ -20,7 +21,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 
 ---
 
-## REGLES CRITIQUES (4 sections)
+## REGLES CRITIQUES (7 sections)
 
 ### A. Coordination & Git
 
@@ -50,7 +51,16 @@ Avant tout merge (y compris ses propres PRs) :
 
 **Si un seul point n'est pas verifie : ne pas merger.**
 
-**Honnetete des rapports** : pas de "DONE"/"fixed"/"validated" sans validation post-fix relancee. Si fix corrige 5/7 cellules : rapporter "5/7, 2 restantes identifiees", pas "DONE". Pas de markdown "RAPPORT"/"AUDIT" comme preuve sans code valide. Incidents 2026-04-08 (slides EPITA) et 2026-04-20 (Sudoku-8 + 27 cellules cassees rapportees DONE).
+**Preuves verifiables, pas mots-cles** :
+- "Papermill SUCCESS" en mot-cle = insuffisant. Coller les premieres lignes des outputs ou un lien CI.
+- "tests passed" sans lien CI = insuffisant. Lien obligatoire.
+- "sorry count -1" sans `lake build SUCCESS` post-modification = invalide. Build log obligatoire.
+- "BEATS" / "improvement" sans 5-fold walk-forward × ≥4 seeds + edge ≥ 2σ documente = invalide.
+- "Migration NOT recommended" / "FALSE POSITIVE" sans 3 cellules-types verifiees avec preuve = invalide.
+
+**Honnetete des rapports** : pas de "DONE"/"fixed"/"validated" sans validation post-fix relancee. Si fix corrige 5/7 cellules : rapporter "5/7, 2 restantes identifiees", pas "DONE". Si N sorrys passent a M < N : rapporter "N→M (X% restant)", pas "DONE Voting". Pas de markdown "RAPPORT"/"AUDIT" comme preuve sans code valide.
+
+**Reviewers (humains et bots)** : critères CHANGES_REQUESTED obligatoires si composite >3000 lignes hors notebooks ou >15 fichiers ou >4 features melangees, si Lean PR sans `grep -c sorry` avant/apres + Lake build SUCCESS, si ML PR sans multi-seed ≥4 + verdict explicite (BEATS/NO BEATS/INCONCLUSIVE), si notebook PR sans output Papermill colle, si docs-only PR <50 lignes (group obligatoire). APPROVED malgre violation = complicite. Cf [.claude/rules/pr-review-discipline.md](.claude/rules/pr-review-discipline.md).
 
 ### C. Notebooks (3 regles user 2026-04-26)
 
@@ -130,6 +140,82 @@ Detail complet : [.claude/rules/code-style.md](.claude/rules/code-style.md) (aut
 | `epita_symbolic_ai` | EPITA SymbolicAI series | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai` |
 
 Pour `train_moe.py`, `train_lstm.py`, `train_mamba.py` etc. : **toujours** activer `coursia-ml-training` (`& "C:\Users\MYIA\miniconda3\envs\coursia-ml-training\python.exe"` ou `conda activate coursia-ml-training`). Liste complete via `conda env list`.
+
+### G. Vigilance permanente — anti-complaisance
+
+S'applique a **tous les agents** (executants, coordinateur, reviewers humains et bots). Ces regles sont permanentes : elles ne se relachent ni avec la pression deadline, ni avec la confiance accumulee, ni avec un APPROVED bot.
+
+**G.1 — Verifier les claims contre le code, pas contre les rapports**
+
+Avant de croire qu'un feature manque, qu'une API n'existe pas, qu'un fichier est introuvable, qu'un agent X "n'est pas connecte" : `grep` / `Glob` / `Read` le codebase. Affirmer une absence sans verification = source #1 de faux diagnostics qui se propagent en cascade.
+
+Avant de relayer un diagnostic technique d'un autre agent dans un dispatch ou un bilan : exiger la preuve (ligne de code citee, log d'erreur copie, output compilateur). Pas de propagation par confiance. Si le diagnostic se revele faux apres relais, le coordinateur partage la responsabilite.
+
+**G.2 — Metriques honnetes, pas binaires**
+
+`sorry count = 0` n'a aucune valeur sans `lake build SUCCESS` post-modification. Un theoreme supprime, un identifiant inexistant injecte, une preuve qui ne compile pas = sorry count peut etre 0 ET le port casse. Pour Lean / Coq / Agda, **trois preuves obligatoires** dans le body PR : `grep -c sorry` avant/apres + `lake build` SUCCESS log + Proof integrity check SUCCESS.
+
+Pour ML/trading : `BEATS majority` n'a aucune valeur sur 1 seed × 1 fold. Multi-seed ≥4 + walk-forward 5-fold + edge ≥ 2σ cross-seed + transaction costs documentes ou le verdict est **invalide** (pas "promising", pas "encouraging" — invalide).
+
+Pour notebooks : `Papermill SUCCESS` en mot-cle ne prouve rien. Coller les premieres lignes des outputs reels.
+
+Pour services ops : `200 OK` sur /health ne prouve pas que le service fait son travail. Test E2E reproductible obligatoire (curl + verification du payload retourne).
+
+**G.3 — Pas de "DONE" sur progres marginal**
+
+Si N tracks dispatchees → M < N livrees : rapporter `M/N livrees, (N-M) restantes : <liste>`. Pas de `Cycle X complete` quand Track 1 (le HIGH) n'est pas fait et 7 LOW le sont.
+
+Si sorry count passe de N a N-1 : rapporter `1/N elimine, (N-1) restants`. Pas de "DONE Voting".
+
+Si fix corrige 5/7 cellules : rapporter `5/7, 2 restantes : <liste>`. Pas de "DONE notebook".
+
+Pourcentage explicite ou liste residuelle obligatoires.
+
+**G.4 — Composites trop larges = split obligatoire**
+
+Une PR qui depasse l'un de ces seuils doit etre fractionnee en PRs coherentes par feature avant merge :
+- `additions + deletions` > 3000 lignes hors notebooks
+- `changedFiles` > 15 (hors `_output.ipynb` et donnees)
+- > 4 features distinctes mentionnees dans le `## Summary`
+- > 1 domaine (ML + Lean + GenAI melanges)
+
+Le coordinateur **conteste** (commentaire CHANGES_REQUESTED) au lieu de merger. Le reviewer bot DOIT poster CHANGES_REQUESTED.
+
+**G.5 — Shopping cart interdit**
+
+Un dispatch >5 tracks par agent encourage le shopping (LOW d'abord, HIGH reportes). Cibler **2 deep tracks max par agent** par cycle, avec **criteres de sortie verifiables** (compile log, multi-seed verdict, build SUCCESS, healthcheck E2E). Pas de Track LOW pour combler.
+
+Si un agent finit ses 2 tracks avant la coord finale : il attend, il n'invente pas une 3e mission. Laisser les LOW au cycle suivant.
+
+**G.6 — Coordinateur : audit avant merge cascade**
+
+Avant un batch de merges : lire les bodies, verifier au moins **un claim** de chaque PR contre le diff reel. Pas de "5 PRs APPROVED par bot, je merge en 5 minutes".
+
+Si une PR a 0 review humain ET le bot APPROVE : c'est le **minimum** acceptable, mais le coordinateur reste responsable du contenu. Si le claim est faux, c'est le merge qui est en cause, pas le bot.
+
+Lire le diff > lire le titre. Lire le body > lire le mergeStateStatus. Verifier le claim > faire confiance au rapport.
+
+**G.7 — Stagnation cross-cycle = escalade**
+
+Si un blocage technique persiste sur N cycles consecutifs (ex: rebase qui ne se fait pas, sorry qui ne baisse pas, service qui reste DOWN) : le coordinateur **n'attend pas un cycle de plus**. Il prend l'action lui-meme (rebase, fix, escalade user) ou ferme la PR/issue.
+
+Si un agent rapporte "BLOCKED" sans preuve concrete (compile log, error message, screenshot) : ne pas accepter. Demander la preuve avant de re-dispatcher.
+
+**G.8 — Bots reviewers : pas de rubber-stamp**
+
+Pattern interdit : APPROVE >3 PRs en <10 minutes. Probable rubber-stamp. Le coordinateur conteste systematiquement et bloque les PRs jusqu'a re-review serieuse.
+
+Pattern interdit : APPROVED sur composite >3000 lignes / 15 fichiers. Le bot DOIT detecter et poster CHANGES_REQUESTED.
+
+Pattern interdit : APPROVED sur micro PR docs <20 lignes isolee. Le bot DOIT detecter et exiger groupement.
+
+Cf [.claude/rules/pr-review-discipline.md](.claude/rules/pr-review-discipline.md) pour la grille complete.
+
+**G.9 — Culture du doute**
+
+Avant d'envoyer un rapport ou de merger : se demander explicitement "est-ce que je pourrais avoir tort ?". Si oui, verifier. Une affirmation surprenante (ex: "le multi-agent prover existe deja") merite verification avant relais.
+
+Avant d'accepter une "breakthrough" rapportee par un agent (sorry 5→0, BEATS magique, service restaure en 5min) : reproduire au moins 1 element du resultat. Les vrais succes resistent a la verification ; les faux positifs s'effondrent.
 
 ---
 
