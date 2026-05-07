@@ -88,7 +88,7 @@ features = engineer.transform(df, cache_path="cache/spy.parquet")
 | macd, macd_signal | MACD indicator |
 | bb_width | Bollinger Band width |
 | true_range, atr_14 | True Range and ATR (requires OHLC) |
-| obv, obv_norm | On-Balance Volume (raw and normalized) |
+| obv | On-Balance Volume (rolling-std normalized) |
 
 ## Checkpoints
 

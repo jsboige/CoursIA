@@ -139,7 +139,7 @@ class TestComputeOBV:
     def test_columns(self, ohlcv):
         feat = compute_obv(ohlcv)
         assert "obv" in feat.columns
-        assert "obv_norm" in feat.columns
+        assert "obv_norm" not in feat.columns
 
 
 class TestComputeRegime:
