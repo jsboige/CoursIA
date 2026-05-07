@@ -206,6 +206,22 @@ Quand le but contient des types définis dans le fichier (pas Mathlib):
 - Les constructeurs anonymes `⟨⟩` nécessitent un type inductif connu.
   Pour un `def`, préférer: `exact ⟨a, b, c⟩` → `constructor; exact a; exact b; exact c`
 
+RÉSULTATS NÉGATIFS (¬theorem, contre-exemples):
+Pour prouver ¬P, il faut construire un EXEMPLE CONCRET qui viole P.
+- Le but `¬ monotonicity ι σ _ _ scc` signifie: ∃ profil où remonter un candidat le fait éliminer
+- Le but `¬ clone_independence ι σ _ _ _ scc` signifie: ∃ profil où cloner change le résultat
+- STRATÉGIE:
+  1. Choisir un univers FINI concret (ex: σ = Fin 3, ι = Fin 5)
+  2. Construire un profil EXPLICITE (table de préférences complètes)
+  3. Calculer le résultat STV pas-à-pas (quota, éliminations, élections)
+  4. Montrer que modifier le profil (monter/ajouter clone) change le résultat
+- POUR STV: le contre-exemple classique (Doron 1979) utilise 3 candidats {A, B, C}:
+  - Profil original: A gagne
+  - Profil modifié (A monté): A perd (transfert de surplus élimine A différemment)
+- TACTIQUE: `intro h; exfalso; apply h; use <profil_concret>; <calcul_stv_explicite>`
+- Si le type σ est variable (pas Fin N): `obtain ⟨n, hn⟩ := Fintype.exists_card...` ou `classical; exact ...`
+- La preuve peut utiliser `decide` si l'univers est assez petit (Fin 3, Fin 4)
+
 RÈGLES:
 - BUILD ERRORS AVANT SORRY — un fichier cassé bloque tout
 - 3 échecs consécutifs → change d'approche radicalement
