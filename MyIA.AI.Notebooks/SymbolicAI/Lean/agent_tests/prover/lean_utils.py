@@ -117,6 +117,9 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
     probes = [
         "exact ()",    # Works for Unit goals; also produces type mismatch for others
         "exact rfl",   # Works for equality goals (a = b)
+        "exact (0 : Nat)",  # Produces type mismatch for most non-Nat goals
+        "exact True.intro",  # Produces type mismatch for non-Prop goals
+        "exact 42",    # Last resort: almost always type-mismatches
     ]
 
     for probe in probes:
@@ -150,6 +153,29 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
 
         if not target_errors:
             print(f"  [GoalExtract] Probe '{probe}': no error at exact line {sorry_line}")
+            # Check for unsolved goals errors anywhere in the file
+            unsolved_match = re.search(r"(\d+):\d+: error: unsolved goals", raw_output)
+            if unsolved_match:
+                # Probe was accepted but left open goals — the goal type IS compatible
+                # Try to extract the goal from the unsolved goals error context
+                unsolved_line = int(unsolved_match.group(1))
+                # Collect lines after "unsolved goals" for goal display
+                after_idx = raw_output.find(unsolved_match.group(0))
+                after_text = raw_output[after_idx:after_idx+1000]
+                goal_match = re.search(r"⊢ (.*?)(?:\n\n|\n\d+:)", after_text, re.DOTALL)
+                if goal_match:
+                    goal = goal_match.group(1).strip()
+                    print(f"  [GoalExtract] Extracted from unsolved goals: {goal[:200]}")
+                    try:
+                        tmp_path.unlink()
+                    except OSError:
+                        pass
+                    return goal
+            # Check for ANY error in the output (not just near sorry line)
+            any_error = re.search(r"error:", raw_output)
+            if any_error:
+                print(f"  [GoalExtract] Errors found but not at line {sorry_line}. "
+                      f"First error: {raw_output[any_error.start():any_error.start()+300]}")
             continue
 
         target_error_text = "\n".join(target_errors)
