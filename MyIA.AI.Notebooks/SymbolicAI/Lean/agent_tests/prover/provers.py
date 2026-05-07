@@ -336,6 +336,7 @@ class AutonomousProver:
 
         # Main loop — single event loop for the entire session
         session_start = time.time()
+        original_file_content = Path(filepath).read_text(encoding="utf-8")
         compile_data = {}
         context_history = [context_msg]  # ACCUMULATE instead of replace
         proof_tactics_found = []  # Lean-9 _proof_tactics_found tracking
@@ -364,8 +365,24 @@ class AutonomousProver:
 
                 try:
                     response = await agent.run(full_context)
+                    # Debug: inspect response structure
+                    resp_type = type(response).__name__
+                    has_msgs = hasattr(response, 'messages')
+                    n_msgs = len(response.messages) if has_msgs and response.messages else 0
+                    print(f"  [DEBUG] Response type={resp_type}, has_messages={has_msgs}, n_messages={n_msgs}", flush=True)
+                    if n_msgs > 0:
+                        first_msg = response.messages[0]
+                        print(f"  [DEBUG] First msg type={type(first_msg).__name__}, has_contents={hasattr(first_msg, 'contents')}", flush=True)
+                        if hasattr(first_msg, 'contents') and first_msg.contents:
+                            print(f"  [DEBUG] First msg {len(first_msg.contents)} contents, types={[getattr(c, 'type', '?') for c in first_msg.contents[:5]]}", flush=True)
+                        elif hasattr(first_msg, 'text'):
+                            print(f"  [DEBUG] First msg has .text ({len(getattr(first_msg, 'text', '') or '')} chars)", flush=True)
+                        else:
+                            print(f"  [DEBUG] First msg attrs={[a for a in dir(first_msg) if not a.startswith('_')][:10]}", flush=True)
+                    else:
+                        print(f"  [DEBUG] Response attrs={[a for a in dir(response) if not a.startswith('_')][:10]}", flush=True)
                     response_text = ""
-                    if hasattr(response, 'messages') and response.messages:
+                    if has_msgs and n_msgs > 0:
                         last = response.messages[-1]
                         response_text = last.text if hasattr(last, 'text') else str(last)
                     # Log FULL agent response: thinking, tool calls, text
@@ -423,6 +440,19 @@ class AutonomousProver:
                 sorry_line_set_new = {i + 1 for i, l in enumerate(
                     Path(filepath).read_text(encoding="utf-8").split("\n")) if "sorry" in l}
                 state.local_lemmas = extract_local_lemmas(filepath, sorry_line_set_new)
+
+                # Cumulative file size guard — detect multi-edit rewrites that bypass per-edit guard
+                current_content = Path(filepath).read_text(encoding="utf-8")
+                original_len = len(original_file_content)
+                current_len = len(current_content)
+                if original_len > 0:
+                    cumulative_ratio = abs(current_len - original_len) / original_len
+                    if cumulative_ratio > 0.5:
+                        print(f"  CUMULATIVE SIZE GUARD: file changed {cumulative_ratio:.0%} "
+                              f"({current_len} vs {original_len} chars). RESTORING original.", flush=True)
+                        Path(filepath).write_text(original_file_content, encoding="utf-8")
+                        current_sorry = original_sorry_count
+                        state.best_sorry_count = min(state.best_sorry_count, original_sorry_count)
 
                 # Phase transitions — from Lean-9 ProofPhase routing
                 if compile_data.get("success") and current_sorry == 0:
