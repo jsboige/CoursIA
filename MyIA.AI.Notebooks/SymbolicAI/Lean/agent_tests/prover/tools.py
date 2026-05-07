@@ -153,8 +153,11 @@ class TacticTools:
         self._best_content: Optional[str] = None
         self._best_sorry_count: int = 999
         self._original_sorry_count: int = 999
+        self._original_file_size: int = 0
         self._lock_file = Path(filepath).with_suffix(".prover.lock") if filepath else None
         self._session_id = str(uuid.uuid4())[:8]
+        if filepath and Path(filepath).exists():
+            self._original_file_size = len(Path(filepath).read_text(encoding="utf-8"))
 
         self._heuristics = {
             "equality": ["rfl", "exact", "simp", "ring", "omega"],
@@ -287,6 +290,26 @@ class TacticTools:
             "count": len(hyps),
         }, indent=2, ensure_ascii=False)
 
+    def _check_file_size_guard(self, new_content: str, operation: str) -> Optional[str]:
+        """Block writes that change file size by >50% (full-file rewrite detection)."""
+        if self._original_file_size == 0:
+            return None
+        new_size = len(new_content)
+        ratio = abs(new_size - self._original_file_size) / self._original_file_size
+        if ratio > 0.5:
+            if self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="size_guard",
+                    content=f"BLOCKED {operation}: new={new_size} vs original={self._original_file_size} "
+                            f"(ratio={ratio:.0%}). Full-file rewrite suspected.",
+                    duration_s=0.01,
+                )
+            return (f"BLOCKED by file size guard: your replacement would change the file by {ratio:.0%} "
+                    f"(new={new_size} chars vs original={self._original_file_size} chars). "
+                    f"Use TARGETED replacements: replace only the specific sorry line or a small range, "
+                    f"NOT the entire file.")
+        return None
+
     def file_replace_lines(self, start: int, end: int, new_content: str) -> str:
         """Replace a range of lines in the .lean file. Lines are 1-based, inclusive."""
         if not self._filepath:
@@ -300,6 +323,12 @@ class TacticTools:
             new_lines = new_content.split("\n")
             lines[start - 1:end if end <= len(lines) else len(lines)] = new_lines
             new_file_content = "\n".join(lines)
+
+            # File size guard: block full-file rewrites
+            size_error = self._check_file_size_guard(new_file_content, "file_replace_lines")
+            if size_error:
+                return json.dumps({"error": size_error}, ensure_ascii=False)
+
             sorry_count = new_file_content.count("sorry")
 
             # Sorry guard: block if net sorry increase beyond original
@@ -358,6 +387,12 @@ class TacticTools:
             old_line = lines[sorry_line - 1]
             lines[sorry_line - 1:sorry_line] = replacement_lines
             new_content = "\n".join(lines)
+
+            # File size guard: block full-file rewrites
+            size_error = self._check_file_size_guard(new_content, "file_replace_sorry")
+            if size_error:
+                return json.dumps({"error": size_error}, ensure_ascii=False)
+
             sorry_count = new_content.count("sorry")
 
             # Sorry guard: block if net sorry increase beyond original (regression)
