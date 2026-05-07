@@ -91,10 +91,15 @@ def detect_regimes_price(
     regimes[normal_mask & (rolling_return > 0)] = "uptrend"
     regimes[normal_mask & (rolling_return <= 0)] = "downtrend"
 
-    # Fill NaN from rolling calculations
+    # Fill NaN from rolling calculations — first lookback_days stay "normal"
     regimes = regimes.fillna("normal")
-    # Replace remaining "normal" after fill
-    regimes[regimes == "normal"] = "uptrend"
+    # Any "normal" after the lookback period -> mild trend
+    post_lookback_normal = (regimes == "normal") & (regimes.index >= lookback_days)
+    rolling_return_post = rolling_return.iloc[lookback_days:]
+    regimes.iloc[lookback_days:] = regimes.iloc[lookback_days:].where(
+        regimes.iloc[lookback_days:] != "normal",
+        rolling_return_post.apply(lambda x: "uptrend" if x > 0 else "downtrend"),
+    )
 
     return regimes
 

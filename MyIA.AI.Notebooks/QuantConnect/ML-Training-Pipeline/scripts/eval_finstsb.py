@@ -16,6 +16,7 @@ import pandas as pd
 from typing import Protocol
 
 from baselines import sharpe_from_returns
+from regime_detector import detect_regimes_price
 
 
 class DirectionModel(Protocol):
@@ -35,73 +36,18 @@ def detect_regimes(
 ) -> pd.Series:
     """Classify each date into a market regime.
 
-    Parameters
-    ----------
-    prices : array-like
-        Daily price series.
-    lookback_days : int
-        Rolling window for regime detection.
-    uptrend_threshold : float
-        Minimum rolling return to classify as uptrend (annualized ~10%).
-    downtrend_threshold : float
-        Maximum rolling return to classify as downtrend.
-    volatility_percentile : float
-        Percentile threshold for high-volatility regime (0-100).
-    black_swan_drawdown : float
-        Drawdown threshold for black swan (e.g. -0.20 = -20%).
-    black_swan_window : int
-        Window for drawdown calculation.
-
-    Returns
-    -------
-    pd.Series of regime labels: "uptrend", "downtrend", "volatility", "black_swan".
+    Delegates to :func:`regime_detector.detect_regimes_price`.
+    Kept here for backward compatibility with existing callers.
     """
-    prices = pd.Series(prices).reset_index(drop=True)
-    returns = prices.pct_change()
-
-    # Rolling return over lookback
-    rolling_return = prices.pct_change(lookback_days)
-
-    # Rolling volatility (annualized)
-    rolling_std = returns.rolling(lookback_days).std() * np.sqrt(252)
-    vol_threshold = rolling_std.quantile(volatility_percentile / 100)
-
-    # Rolling drawdown
-    rolling_max = prices.rolling(black_swan_window, min_periods=1).max()
-    drawdown = (prices - rolling_max) / rolling_max
-
-    regimes = pd.Series("normal", index=prices.index, dtype="object")
-
-    # Black swan first (highest priority)
-    black_swan_mask = drawdown <= black_swan_drawdown
-    regimes[black_swan_mask] = "black_swan"
-
-    # Uptrend: strong positive returns
-    uptrend_mask = (rolling_return >= uptrend_threshold) & (regimes == "normal")
-    regimes[uptrend_mask] = "uptrend"
-
-    # Downtrend: strong negative returns
-    downtrend_mask = (rolling_return <= downtrend_threshold) & (regimes == "normal")
-    regimes[downtrend_mask] = "downtrend"
-
-    # Volatility: high std (remaining non-classified)
-    vol_mask = (rolling_std >= vol_threshold) & (regimes == "normal")
-    regimes[vol_mask] = "volatility"
-
-    # Remaining = normal (subset of uptrend or quiet market)
-    # For evaluation purposes, fold "normal" into closest regime
-    normal_mask = regimes == "normal"
-    # If positive return and not classified, treat as mild uptrend
-    mild_up = normal_mask & (rolling_return > 0)
-    regimes[mild_up] = "uptrend"
-    # If negative return and not classified, treat as mild downtrend
-    mild_down = normal_mask & (rolling_return <= 0)
-    regimes[mild_down] = "downtrend"
-
-    # Fill NaN from rolling calculations
-    regimes[:lookback_days] = "normal"
-
-    return regimes
+    return detect_regimes_price(
+        prices,
+        lookback_days=lookback_days,
+        uptrend_threshold=uptrend_threshold,
+        downtrend_threshold=downtrend_threshold,
+        volatility_percentile=volatility_percentile,
+        black_swan_drawdown=black_swan_drawdown,
+        black_swan_window=black_swan_window,
+    )
 
 
 def eval_per_regime(
