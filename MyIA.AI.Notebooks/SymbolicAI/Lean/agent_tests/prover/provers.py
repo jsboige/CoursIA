@@ -222,7 +222,7 @@ class AutonomousProver:
         self.config_label = f"auto-{provider}"
 
     def prove_sorry(self, demo: dict, max_iterations: int = 10,
-                    strategic_hints: str = "", agent_timeout_s: int = 180) -> dict:
+                    strategic_hints: str = "", agent_timeout_s: int = 0) -> dict:
         filepath = demo["file"]
         sorry_line = demo["line"]
 
@@ -246,7 +246,7 @@ class AutonomousProver:
         print(f"File: {filepath}:{sorry_line}")
         print(f"Config: {self.config_label}")
         print(f"Original sorry count: {original_sorry_count}")
-        print(f"Agent timeout: {agent_timeout_s}s")
+        print(f"Agent timeout: {'none' if agent_timeout_s == 0 else f'{agent_timeout_s}s'}")
         print(f"{'='*70}")
 
         # Extract sorry context — includes proof_block and goal_hints
@@ -363,19 +363,16 @@ class AutonomousProver:
                 full_context = state_header + "\n\n" + "\n---\n".join(context_history[-3:])
 
                 try:
-                    response = await asyncio.wait_for(
-                        agent.run(full_context),
-                        timeout=agent_timeout_s,
-                    )
+                    response = await agent.run(full_context)
                     response_text = ""
                     if hasattr(response, 'messages') and response.messages:
                         last = response.messages[-1]
                         response_text = last.text if hasattr(last, 'text') else str(last)
-                    # Log LLM response for debugging
-                    self.trace.log(
-                        agent="AutonomousProver", role="llm_response",
-                        content=response_text[:500] if response_text else "(empty response)",
+                    # Log FULL agent response: thinking, tool calls, text
+                    self.trace.log_agent_response(
+                        agent="AutonomousProver", response=response,
                         duration_s=time.time() - iter_start,
+                        iteration=iteration,
                     )
                 except asyncio.TimeoutError:
                     print(f"  Agent timeout ({agent_timeout_s}s)", flush=True)
