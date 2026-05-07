@@ -141,6 +141,14 @@ anvil  # dans un terminal separe
 - [ElectionGuard](https://www.electionguard.vote/)
 - [XRP Ledger Docs](https://xrpl.org/docs.html)
 
+## Ponts cross-series
+
+| Serie | Lien | Concepts partages |
+|-------|------|-------------------|
+| Planners | Planification SAT/CSP | Planification comme probleme de satisfiabilite, contraintes temporelles dans les smart contracts |
+| Lean | Preuves formelles | Verification formelle (SC-14 Certora/SMTChecker ↔ tactiques Lean) |
+| GameTheory | Encheres, Shapley, DAO | Encheres Vickrey (SC-23), voting (SC-17), mecanismes d'incitation DeFi |
+
 ---
 
 *Serie creee pour CoursIA (EPITA IA Symbolique) - Issue #129*

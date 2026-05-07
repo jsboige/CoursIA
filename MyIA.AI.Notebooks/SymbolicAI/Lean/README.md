@@ -195,6 +195,18 @@ La verification formelle de [SC-14](../SmartContracts/03-Foundry-Testing/SC-14-F
 
 **Parcours recommande** : Lean-2 → Lean-3 → Lean-5 → SC-14.
 
+### Lean → Planners (pont faible)
+
+Les algorithmes de planification (SAT/CSP) partagent des bases formelles avec les tactiques Lean :
+
+| Concept Lean | Application Planners |
+|-------------|----------------------|
+| Tactiques `decide`, `omega` | Solveurs SAT integres |
+| Types inductifs (Lean-2) | Modeles de planification comme structures algebriques |
+| Preuves par reflection | Verification de plans par reflection computationnelle |
+
+**Parcours recommande** : Lean-5 (tactiques) → Planners-5 (SAT solving).
+
 ## Percees recentes (2024-2026)
 
 | Systeme | Accomplissement |

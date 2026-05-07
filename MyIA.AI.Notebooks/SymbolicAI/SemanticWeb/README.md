@@ -374,6 +374,14 @@ SemanticWeb/
 - [DBpedia](https://dbpedia.org/) - Donnees structurees de Wikipedia
 - [Wikidata](https://www.wikidata.org/) - Base de connaissances libre
 
+## Ponts cross-series
+
+| Serie | Lien | Concepts partages |
+|-------|------|-------------------|
+| Planners | Planification et ontologies | Ontologies de domaine pour la planification, OWL comme langage de contraintes |
+| Lean | Raisonnement formel | Raisonnement sur graphes de connaissances (SW-13 reasoners ↔ tactiques Lean) |
+| SmartContracts | Verification formelle | SHACL shapes ↔ invariants de smart contracts, verification automate |
+
 ## Licence
 
 Voir la licence du repository principal.
