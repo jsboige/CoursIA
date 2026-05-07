@@ -126,6 +126,27 @@ def _load_symbol_data(
     )
 
 
+def _load_dataset_v2(
+    symbol: str,
+    dataset_dir: str | Path,
+) -> pd.DataFrame | None:
+    """Load pre-computed Dataset V2 features for a symbol.
+
+    Dataset V2 includes 46 features (technical + cross-asset + regime labels).
+    """
+    dataset_dir = Path(dataset_dir)
+    safe_symbol = symbol.replace("-", "_").replace(".", "_")
+    parquet_path = dataset_dir / f"{safe_symbol}_v2.parquet"
+    csv_path = dataset_dir / f"{safe_symbol}_v2.csv"
+
+    if parquet_path.exists():
+        return pd.read_parquet(parquet_path)
+    if csv_path.exists():
+        return pd.read_csv(csv_path, index_col=0, parse_dates=True)
+
+    return None
+
+
 def train_moe_pipeline(
     symbol: str = "SPY",
     panier_mode: bool = False,
@@ -140,7 +161,17 @@ def train_moe_pipeline(
     start: str = "2015-01-01",
     end: str = "2025-01-01",
     data_dir: str | None = None,
+    dataset_v2_dir: str | None = None,
     output_dir: str | None = None,
+    expert_type: str = "mlp",
+    seq_len: int = 20,
+    d_model: int = 64,
+    nhead: int = 4,
+    num_layers: int = 2,
+    dropout: float = 0.1,
+    batch_size: int = 32,
+    learning_rate: float = 1e-3,
+    device: str = "cpu",
 ) -> dict:
     """Run full MoE training pipeline.
 
@@ -149,36 +180,67 @@ def train_moe_pipeline(
     np.random.seed(seed)
     t0 = time.time()
 
-    # --- Load data ---
-    log.info(f"Loading data for {symbol}...")
-    df = _load_symbol_data(symbol, data_dir=data_dir, start=start, end=end)
-    log.info(f"Loaded {len(df)} rows for {symbol}")
+    regime_col = f"regime_{regime_method}" if regime_method != "both" else "regime_price"
 
-    if len(df) < 500:
-        raise ValueError(f"Insufficient data: {len(df)} rows (need >= 500)")
+    # --- Load features ---
+    if dataset_v2_dir:
+        # Use pre-computed Dataset V2 (46 features + regime labels)
+        log.info(f"Loading Dataset V2 for {symbol} from {dataset_v2_dir}...")
+        features_df = _load_dataset_v2(symbol, dataset_v2_dir)
+        if features_df is None:
+            raise FileNotFoundError(
+                f"No Dataset V2 file found for {symbol} in {dataset_v2_dir}"
+            )
 
-    # --- Features ---
-    features = _prepare_features(df, lookback=lookback)
-    target = _compute_direction_target(df, horizon=horizon)
+        # Extract target and regime columns
+        if "target" not in features_df.columns:
+            raise ValueError("Dataset V2 missing 'target' column")
 
-    # Align features and target
-    common_idx = features.index.intersection(target.dropna().index)
-    features = features.loc[common_idx]
-    target = target.loc[common_idx]
+        regime_labels = None
+        if regime_col in features_df.columns:
+            regime_labels = features_df[regime_col].values
+        else:
+            log.warning(f"No '{regime_col}' in Dataset V2, falling back to price regime")
 
-    X = features.values.astype(np.float32)
-    y = target.values.astype(int)
+        target_raw = features_df["target"]
+        y = (target_raw > 0).astype(int).values
+
+        feature_cols = [
+            c for c in features_df.columns
+            if c not in ("target",) and not c.startswith("regime_")
+        ]
+        X = features_df[feature_cols].values.astype(np.float32)
+        log.info(f"Dataset V2 loaded: {X.shape[1]} features, {X.shape[0]} samples")
+    else:
+        # Legacy path: compute features from OHLCV
+        log.info(f"Loading OHLCV data for {symbol}...")
+        df = _load_symbol_data(symbol, data_dir=data_dir, start=start, end=end)
+        log.info(f"Loaded {len(df)} rows for {symbol}")
+
+        if len(df) < 500:
+            raise ValueError(f"Insufficient data: {len(df)} rows (need >= 500)")
+
+        features = _prepare_features(df, lookback=lookback)
+        target = _compute_direction_target(df, horizon=horizon)
+
+        common_idx = features.index.intersection(target.dropna().index)
+        features = features.loc[common_idx]
+        target = target.loc[common_idx]
+
+        X = features.values.astype(np.float32)
+        y = target.values.astype(int)
 
     log.info(f"Features: {X.shape[1]} cols, {X.shape[0]} samples")
     log.info(f"Target balance: {y.mean():.3f} positive")
 
-    # --- Regime detection ---
-    log.info(f"Detecting regimes (method={regime_method})...")
-    from regime_detector import detect_regimes
+    # --- Regime detection (if not from Dataset V2) ---
+    if regime_labels is None:
+        log.info(f"Detecting regimes (method={regime_method})...")
+        from regime_detector import detect_regimes
 
-    prices = df["Close"].loc[common_idx]
-    regime_series = detect_regimes(prices, method=regime_method)
-    regime_labels = regime_series.values
+        prices = df["Close"].loc[common_idx]
+        regime_series = detect_regimes(prices, method=regime_method)
+        regime_labels = regime_series.values
 
     regime_counts = pd.Series(regime_labels).value_counts()
     log.info(f"Regime distribution:\n{regime_counts.to_string()}")
@@ -186,12 +248,20 @@ def train_moe_pipeline(
     # --- Walk-forward MoE training ---
     log.info(f"Starting walk-forward MoE training ({n_folds} folds)...")
     config = MoEConfig(
-        expert_type="mlp",
+        expert_type=expert_type,
         hidden_sizes=hidden_sizes,
         max_iter=max_iter,
         min_samples_per_expert=min_samples_per_expert,
         random_state=seed,
         regime_method=regime_method,
+        seq_len=seq_len,
+        d_model=d_model,
+        nhead=nhead,
+        num_layers=num_layers,
+        dropout=dropout,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        device=device,
     )
 
     wf_results = train_moe_walk_forward(
@@ -228,12 +298,16 @@ def train_moe_pipeline(
         "beats_majority": bool(beats_majority),
         "regime_counts": {str(k): int(v) for k, v in regime_counts.items()},
         "config": {
+            "expert_type": expert_type,
             "hidden_sizes": list(hidden_sizes),
             "max_iter": max_iter,
             "min_samples_per_expert": min_samples_per_expert,
             "seed": seed,
             "lookback": lookback,
             "horizon": horizon,
+            "seq_len": seq_len,
+            "d_model": d_model,
+            "device": device,
         },
         "elapsed_seconds": round(elapsed, 1),
     }
@@ -293,7 +367,23 @@ def main():
     parser.add_argument("--start", default="2015-01-01")
     parser.add_argument("--end", default="2025-01-01")
     parser.add_argument("--data-dir", default=None)
+    parser.add_argument(
+        "--dataset-v2-dir", default=None,
+        help="Directory with Dataset V2 Parquet files (46 features pre-computed)",
+    )
     parser.add_argument("--output-dir", default=None)
+    parser.add_argument(
+        "--expert-type", default="mlp",
+        choices=["mlp", "lstm", "transformer"],
+        help="Expert model type (default: mlp)",
+    )
+    parser.add_argument("--seq-len", type=int, default=20, help="Sequence length for LSTM/Transformer experts")
+    parser.add_argument("--d-model", type=int, default=64, help="d_model for Transformer experts")
+    parser.add_argument("--nhead", type=int, default=4, help="Number of attention heads for Transformer experts")
+    parser.add_argument("--num-layers", type=int, default=2, help="Number of layers for LSTM/Transformer experts")
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 32], help="Hidden layer sizes")
+    parser.add_argument("--epochs", type=int, default=50, help="Training epochs for PyTorch experts")
+    parser.add_argument("--device", default="cpu", help="Device for PyTorch experts (cpu/cuda)")
     parser.add_argument("-v", "--verbose", action="store_true")
 
     args = parser.parse_args()
@@ -306,13 +396,21 @@ def main():
         n_folds=args.n_folds,
         lookback=args.lookback,
         horizon=args.horizon,
-        max_iter=args.max_iter,
+        max_iter=args.epochs if args.expert_type != "mlp" else args.max_iter,
         min_samples_per_expert=args.min_samples,
         seed=args.seed,
         start=args.start,
         end=args.end,
         data_dir=args.data_dir,
+        dataset_v2_dir=args.dataset_v2_dir,
         output_dir=args.output_dir,
+        expert_type=args.expert_type,
+        seq_len=args.seq_len,
+        d_model=args.d_model,
+        nhead=args.nhead,
+        num_layers=args.num_layers,
+        hidden_sizes=tuple(args.hidden_sizes),
+        device=args.device,
     )
 
 

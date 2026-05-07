@@ -72,7 +72,7 @@ Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM
 
 **Next**: Crypto panier 10-coin dataset ready (PR #776). Cross-asset features, regime-conditional models.
 
-### Stage 3a: Crypto Panier Anti-Bias (DONE)
+### Stage 3a: Crypto Panier Anti-Bias (IN PROGRESS)
 
 10-coin daily OHLCV dataset (2018-2026) for multi-asset training.
 
@@ -94,23 +94,94 @@ Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM
 
 **Dataset**: `datasets/yfinance/crypto_panier/` (PR #776, 2.5 MB)
 
-### Stage 2: Feature Engineering
+**GNN Benchmarks (multi-seed x4, CPU, 100 epochs)**:
+
+Majority class baseline: 51.68% (down days).
+
+| Model | Params | DirAcc          | Edge   | BEATS | Mean MSE |
+|-------|--------|-----------------|--------|-------|----------|
+| GCN   | 9,345  | 47.6% +/-1.3%  | -4.1pp | NO    | 0.001641 |
+| GAT   | 17,793 | 47.7% +/-1.3%  | -4.0pp | NO    | 0.001644 |
+| RGCN  | 33,921 | 50.0% +/-3.0%  | -1.7pp | NO    | 0.001639 |
+
+**Key findings**:
+- All 3 GNN architectures fail to beat majority class (BEATS criterion: mean_edge >= 2*std_edge)
+- RGCN best performer (edge -1.7pp) — relation-aware convolutions capture inter-coin dynamics
+- GCN and GAT nearly identical performance, GAT attention provides no benefit
+- RGCN seed 123 shows positive edge (+3.4pp) but inconsistent across seeds
+- Graph structure does not overcome the fundamental signal limitation (cf Stage 3 conclusion)
+- Training: CPU-only, thermal-safe (GPU forbidden on ai-01, idle 77C)
+
+**Next**: Walk-forward 5-fold evaluation pending. Walk-forward may reveal regime-dependent edges.
+
+### Stage 2: Feature Engineering (DONE)
 
 Advanced features beyond basic OHLCV.
 
-- 13 technical indicators (RSI, MACD, Bollinger, ATR, OBV, etc.)
-- Cross-asset features (bond-equity ratio, commodity momentum, FX carry)
-- Volatility regime features (VIX level, term structure)
-- Macro features (rate changes, inflation surprises)
+- 13 technical indicators (RSI, MACD, Bollinger, ATR, OBV, etc.) — Done
+- Cross-asset features (bond-equity ratio, commodity momentum, equity strength) — Done
+- Volatility regime features (VIX level, term structure, z-score, rank) — Done
+- Macro features (rate changes, yield curve slope, inversion flag) — Done
+- Dataset V2 builder: panier + Stage 2 features + regime labels → per-symbol Parquet — Done
+- QC ObjectStore integration for cloud persistence — Done
 
-### Stage 3: Ensemble Methods
+**Implementation**: `features.py` — 17 composable indicator functions + `FeatureEngineer` class.
+**Dataset V2**: `build_dataset_v2.py` — 46 features/symbol, 19/19 panier validated (0 NaN).
+**ObjectStore**: `qc_objectstore.py` — upload/validate/loader-code CLI.
+**Tests**: 43 tests (features 45 + dataset_v2 15 + objectstore 9 = 69/69 pass).
+
+**Validated**: Full panier (19 symbols, 7 asset classes) built end-to-end in ~13s.
+
+### Stage 3: Ensemble Methods (IN PROGRESS)
 
 Combine multiple model types.
 
+- MoE with regime-aware routing (MLP experts per regime) — Done, baseline established
+- MoE with LSTM/Transformer experts — Done, early stopping + regularization
 - LSTM + Transformer stacking
 - RL policy gradient with supervised pre-training
 - Regime-conditional ensemble (different models per regime)
 - Uncertainty-weighted prediction averaging
+
+**MoE v1 results (Dataset V2, 5-fold walk-forward, MLP h=64,32)**:
+
+| Symbol | Majority | MoE (price) | MoE (hmm) | Beats?     |
+|--------|----------|-------------|-----------|------------|
+| XLE    | 0.478    | 0.478       | **0.503** | YES (+2.5) |
+| IEF    | 0.502    | --          | 0.502     | TIE        |
+| QQQ    | 0.565    | 0.535       | 0.559     | NO         |
+| BTC-USD| 0.509    | 0.497       | 0.507     | NO         |
+| TLT    | 0.511    | 0.498       | 0.505     | NO         |
+| GLD    | 0.536    | 0.497       | 0.496     | NO         |
+
+**MoE v2 results (3-fold walk-forward, early stopping, val_split=0.15, patience=10)**:
+
+| Symbol  | Majority | MoE MLP | MoE LSTM | MoE Transformer | Best Expert    | Beats? |
+|---------|----------|---------|----------|-----------------|----------------|--------|
+| XLE     | 0.478    | 0.503   | 0.472    | 0.490           | MLP (+2.5pp)   | YES    |
+| EEM     | 0.529    | 0.530   | --       | 0.526           | MLP (+0.1pp)   | YES    |
+| BND     | 0.516    | 0.476   | --       | 0.519           | Trans (+0.3pp) | YES    |
+| IEF     | 0.502    | 0.493   | --       | 0.501           | Trans (-0.1pp) | NO     |
+| TLT     | 0.511    | 0.509   | --       | 0.507           | MLP (-0.2pp)   | NO     |
+| GLD     | 0.536    | 0.517   | 0.525    | 0.534           | Trans (-0.2pp) | NO     |
+| BTC-USD | 0.532    | 0.503   | 0.518    | 0.508           | LSTM (-1.4pp)  | NO     |
+| SPY     | 0.550    | 0.503   | --       | 0.507           | Trans (-4.3pp) | NO     |
+| QQQ     | 0.564    | 0.529   | --       | 0.539           | Trans (-2.5pp) | NO     |
+| DBC     | 0.532    | 0.490   | --       | 0.506           | Trans (-2.6pp) | NO     |
+
+**3/10 symbols beat majority** (30% hit rate). Winners: energy (XLE), EM equities (EEM), bonds (BND).
+
+**Key findings**:
+
+- MLP experts best for XLE (+2.5pp) and EEM — simple regime splits work for cyclical assets
+- Transformer best for BND — attention mechanism captures bond yield dynamics
+- SPY/QQQ pathological (majority >55%) — bull market bias makes ML nearly impossible
+- Global (non-regime) LSTM/Transformer also fails to beat majority — the issue is feature/signal limitation, not regime fragmentation
+- 79-feature enhanced dataset (lags + interactions) performs WORSE than 38-feature baseline (overfitting with small test sets)
+- Mutual information of top features = 0.015 (near random) — daily direction from OHLCV features is noise-predominant
+- 5-day forward horizon does not improve signal
+- **Conclusion**: Daily direction prediction from OHLCV-derived features is insufficient for consistent ML edge. 3/10 wins likely statistical noise.
+- **Next**: Shift to return magnitude prediction (regression) or multi-day holding period returns, or move to Stage 4 with transaction cost modeling
 
 ### Stage 4: Walk-Forward Optimization
 

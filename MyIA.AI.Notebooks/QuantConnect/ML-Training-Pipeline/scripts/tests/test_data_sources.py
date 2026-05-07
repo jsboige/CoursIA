@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.data_sources import (
+from data_sources import (
     DataRequest,
     DataResult,
     fetch_data,
