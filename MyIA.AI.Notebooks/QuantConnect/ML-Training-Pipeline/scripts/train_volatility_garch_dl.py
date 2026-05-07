@@ -51,7 +51,8 @@ from walk_forward import WalkForwardSplitter
 RESULTS_DIR = SCRIPT_DIR.parent / "results" / "volatility_garch_dl"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-ASSETS = ["SPY", "BTC-USD", "GLD", "EFA", "EEM"]
+EQUITY_ASSETS = ["SPY", "BTC-USD", "GLD", "EFA", "EEM"]
+CRYPTO_PANIER = ["BTC-USD", "ETH-USD", "SOL-USD", "ADA-USD", "AVAX-USD"]
 HORIZONS = [1, 5, 20]
 DEFAULT_SEEDS = [0, 1, 7, 42, 123]
 DATA_START = "2010-01-01"
@@ -743,7 +744,9 @@ def parse_args():
     parser.add_argument("--horizon", type=int, default=5, help="Prediction horizon (days)")
     parser.add_argument("--seeds", type=int, nargs="+", default=DEFAULT_SEEDS, help="Random seeds")
     parser.add_argument("--model", type=str, default="lstm", choices=MODEL_TYPES, help="DL model type")
-    parser.add_argument("--all-assets", action="store_true", help="Run all assets")
+    parser.add_argument("--all-assets", action="store_true", help="Run all equity assets")
+    parser.add_argument("--crypto-panier", action="store_true",
+                        help="Run crypto panier (BTC, ETH, SOL, ADA, AVAX)")
     parser.add_argument("--all-horizons", action="store_true", help="Run all horizons")
     parser.add_argument("--n-splits", type=int, default=5, help="Walk-forward folds")
     parser.add_argument("--lookback", type=int, default=60, help="Sequence lookback")
@@ -766,7 +769,13 @@ def main():
     print(f"Model: {args.model}")
     print(f"Results dir: {RESULTS_DIR}")
 
-    assets = ASSETS if args.all_assets else [args.asset]
+    if args.crypto_panier:
+        assets = CRYPTO_PANIER
+        print(f"Mode: CRYPTO PANIER ({len(assets)} assets)")
+    elif args.all_assets:
+        assets = EQUITY_ASSETS
+    else:
+        assets = [args.asset]
     horizons = HORIZONS if args.all_horizons else [args.horizon]
 
     all_summaries = []
