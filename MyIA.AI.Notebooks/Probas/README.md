@@ -180,3 +180,11 @@ pip install pyro-ppl torch matplotlib numpy
 ## Licence
 
 Voir la licence du repository principal.
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [IIT](../IIT/README.md) | PyPhi | L'integration informationnelle (phi) repose sur les memes fondements probabilistes |
+| [SymbolicAI/SemanticWeb](../SymbolicAI/SemanticWeb/README.md) | OWL reasoning | Les ontologies OWL utilisent la logique probabiliste pour le raisonnement incertain |
+| [GameTheory](../GameTheory/README.md) | Bayesian games | Les jeux bayesiens combinent probabilites et theorie des jeux |
