@@ -181,6 +181,9 @@ FIX PATTERNS:
 - "type mismatch" → essayer norm_cast, push_cast, change
 - "omega failed" → essayer norm_cast; omega ou linarith
 - "unsolved goals" → ajouter des tactiques après, ou décomposer avec have
+- "unfold failed" sur noncomputable def → utiliser `show <type_explicite>` au lieu de `unfold`
+- "type mismatch" avec `⟨...⟩` sur un `def` → le type n'est pas inductif, utiliser `constructor` + `by` blocks
+- anonymous constructor sur def → `refine ⟨a, b, ?_, ?_⟩` peut echouer. Essayer `show` pour fixer le type, ou construire champ par champ avec `constructor`
 
 PHASE D'EXPLORATION (3 premiers échecs):
 - Essayer les tactiques les plus simples d'abord (omega, simp, exact)
@@ -190,6 +193,18 @@ PHASE DE DÉCOMPOSITION (après 3 échecs):
 - Décomposer le but en sous-buts avec have h : sub_goal := by sorry
 - Le sorry count AUGMENTE mais le fichier COMPILE = progrès structurel
 - Ensuite cibler chaque sous-sorry individuellement
+
+TYPES PERSONNALISÉS (def vs inductive):
+Quand le but contient des types définis dans le fichier (pas Mathlib):
+- Si le type est un `def` (pas inductif): `unfold` peut échouer
+  → Utiliser `show <type_explicitement_développé>` pour fixer le type
+  → Utiliser `constructor` au lieu de `⟨a, b, c⟩` anonyme
+  → Chaque champ peut être prouvé dans un bloc `by ...` séparé
+- Si le type est `noncomputable def ... by classical; exact ...`:
+  → `unfold` ne fonctionne PAS
+  → Utiliser `show <forme_développée>` pour révéler la structure
+- Les constructeurs anonymes `⟨⟩` nécessitent un type inductif connu.
+  Pour un `def`, préférer: `exact ⟨a, b, c⟩` → `constructor; exact a; exact b; exact c`
 
 RÈGLES:
 - BUILD ERRORS AVANT SORRY — un fichier cassé bloque tout

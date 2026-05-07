@@ -15,7 +15,7 @@ from .trace import TraceLogger
 from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, TacticAttempt
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
-    extract_hypotheses, extract_local_lemmas,
+    extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
 from .agents import (
@@ -591,6 +591,14 @@ class AutonomousProver:
                     if len(defn) > 500:
                         defn = defn[:500] + "\n  ..."
                     parts.append(f"\nDEFINITION de {name}:\n```\n{defn}\n```")
+        except Exception:
+            pass
+
+        # Def type warnings — guide prover to avoid unfold/anonymous constructor issues
+        try:
+            def_warnings = build_def_type_warnings(filepath, goal_state or "")
+            if def_warnings:
+                parts.append(f"\n{def_warnings}")
         except Exception:
             pass
 

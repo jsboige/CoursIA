@@ -417,6 +417,133 @@ def _heuristic_goal_extract(lines: list, sorry_line: int) -> Optional[str]:
     return None
 
 
+def classify_definitions(filepath: str, goal_identifiers: list = None) -> list:
+    """Classify definitions in the file as def/inductive/noncomputable for prover guidance.
+
+    Returns list of dicts with:
+      - name: definition name
+      - kind: "inductive" | "def" | "noncomputable_def"
+      - is_unfoldable: True if `unfold` will work, False if not
+      - signature: first line of the definition (truncated)
+      - reason: why unfold may fail (if applicable)
+    """
+    content = Path(filepath).read_text(encoding="utf-8")
+    lines = content.split("\n")
+    results = []
+
+    # If specific identifiers given, only classify those; otherwise classify all
+    target_names = set(goal_identifiers) if goal_identifiers else None
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+
+        # Inductive types
+        m = re.match(r'^(inductive|structure)\s+(\w+)', stripped)
+        if m:
+            name = m.group(2)
+            if target_names and name not in target_names:
+                continue
+            results.append({
+                "name": name,
+                "kind": "inductive",
+                "is_unfoldable": True,
+                "signature": stripped[:200],
+                "reason": None,
+            })
+            continue
+
+        # Noncomputable def
+        m = re.match(r'^noncomputable\s+def\s+(\w+)', stripped)
+        if m:
+            name = m.group(1)
+            if target_names and name not in target_names:
+                continue
+            # Check if body starts with `by` (tactic mode) — can't unfold
+            rest_of_line = stripped[len(m.group(0)):]
+            is_tactic_body = ":= by" in rest_of_line
+            # Check next few lines for := by
+            if not is_tactic_body:
+                for j in range(i + 1, min(i + 5, len(lines))):
+                    if ":= by" in lines[j]:
+                        is_tactic_body = True
+                        break
+                    if ":=" in lines[j]:
+                        break
+            results.append({
+                "name": name,
+                "kind": "noncomputable_def",
+                "is_unfoldable": not is_tactic_body,
+                "signature": stripped[:200],
+                "reason": "unfold fails on `noncomputable def ... by classical; exact ...`"
+                          if is_tactic_body else None,
+            })
+            continue
+
+        # Regular def
+        m = re.match(r'^def\s+(\w+)', stripped)
+        if m:
+            name = m.group(1)
+            if target_names and name not in target_names:
+                continue
+            # def can usually be unfolded, but anonymous constructors need care
+            results.append({
+                "name": name,
+                "kind": "def",
+                "is_unfoldable": True,
+                "signature": stripped[:200],
+                "reason": "Use `show` or explicit type ascription for anonymous constructors",
+            })
+            continue
+
+    return results
+
+
+def build_def_type_warnings(filepath: str, goal_state: str) -> str:
+    """Build a warning string for the prover about def type handling.
+
+    Scans the goal for custom identifiers, classifies their definitions,
+    and returns actionable guidance.
+    """
+    if not goal_state:
+        return ""
+
+    # Extract identifiers from goal
+    skip = {"by", "exact", "sorry", "have", "obtain", "intro", "fun", "lambda",
+            "forall", "exists", "and", "or", "not", "true", "false", "unit",
+            "prop", "type", "Finset", "Nat", "Int", "Real", "Bool", "List",
+            "Set", "Option", "Sum", "Prod", "Sigma", "PSigma", "Subtype",
+            "PSubtype", "Nonempty", "Classical", "Decidable", "Fintype"}
+    identifiers = set(re.findall(r'\b([a-z_]\w*)\b', goal_state))
+    identifiers -= skip
+
+    # Also check for Capitalized identifiers that might be custom types
+    cap_identifiers = set(re.findall(r'\b([A-Z]\w*)\b', goal_state))
+    all_ids = identifiers | cap_identifiers
+
+    defs = classify_definitions(filepath, list(all_ids))
+    if not defs:
+        return ""
+
+    warnings = []
+    for d in defs:
+        if not d["is_unfoldable"]:
+            warnings.append(
+                f"  - {d['name']} ({d['kind']}): {d['reason']}. "
+                f"Use `show <expanded_type>` instead of `unfold {d['name']}`"
+            )
+        elif d["kind"] == "def":
+            warnings.append(
+                f"  - {d['name']} ({d['kind']}): not an inductive type. "
+                f"Avoid anonymous `⟨⟩` with inline lambdas. Use `constructor` + `by` blocks or `show`."
+            )
+
+    if not warnings:
+        return ""
+
+    header = "AVERTISSEMENT TYPES PERSONNALISES (def vs inductive):"
+    return header + "\n" + "\n".join(warnings)
+
+
 def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
                              imports: Optional[str] = None) -> dict:
     """Verify a sorry replacement by writing modified file to disk and checking Lean.
