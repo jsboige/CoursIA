@@ -140,8 +140,15 @@ class CryptoGraphBuilder:
         self,
         method: str = "correlation",
         threshold: float = 0.3,
+        continuous: bool = False,
     ) -> np.ndarray:
         """Build dynamic adjacency matrices via rolling correlations.
+
+        Parameters
+        ----------
+        continuous : bool
+            If True, keep continuous correlation values instead of
+            binary thresholding. Preserves edge weight magnitude.
 
         Returns
         -------
@@ -160,19 +167,22 @@ class CryptoGraphBuilder:
                 corr = np.corrcoef(window_data, rowvar=False)
                 adj = np.abs(corr)
                 np.fill_diagonal(adj, 0.0)
-                adj[adj < threshold] = 0.0
+                if not continuous:
+                    adj[adj < threshold] = 0.0
             elif method == "distance":
                 corr = np.corrcoef(window_data, rowvar=False)
                 dist = np.sqrt(np.maximum(2.0 * (1.0 - corr), 0.0))
                 np.fill_diagonal(dist, 0.0)
                 max_dist = dist.max()
                 adj = 1.0 - dist / max_dist if max_dist > 0 else dist
-                adj[adj < threshold] = 0.0
+                if not continuous:
+                    adj[adj < threshold] = 0.0
             else:
                 corr = np.corrcoef(window_data, rowvar=False)
                 adj = np.abs(corr)
                 np.fill_diagonal(adj, 0.0)
-                adj[adj < threshold] = 0.0
+                if not continuous:
+                    adj[adj < threshold] = 0.0
 
             adj = self._sym_normalize(adj)
             adjs[t] = adj.astype(np.float32)
