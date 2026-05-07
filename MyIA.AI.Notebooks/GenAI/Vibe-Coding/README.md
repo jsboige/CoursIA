@@ -10,6 +10,7 @@ Bienvenue dans l'ère du **vibe-coding** - la compétence la plus demandée de 2
 Vibe-Coding/
 ├── Claude-Code/          # Ateliers Claude Code (5 modules)
 ├── Roo-Code/             # Ateliers Roo Code (5 modules + avances)
+├── Claw-Systems/         # Agents IA autonomes (NanoClaw, OpenClaw)
 └── docs/                 # Documentation commune et introductions
 ```
 
@@ -74,6 +75,19 @@ Framework de codage IA avec interface VS Code uniquement. Ideal pour les debutan
 # Nettoyer apres la formation
 ./Scripts/clean-workspaces.ps1 -UserName "VotreNom"
 ```
+
+## Claw Systems - Agents Autonomes
+
+Plateformes d'agents IA conteneurises, self-hosted, operant de maniere autonome via Telegram et API.
+
+| Document | Description |
+|----------|-------------|
+| [README](Claw-Systems/README.md) | Vue d'ensemble, comparaison avec Claude/Roo |
+| [Architecture](Claw-Systems/docs/NanoClaw-Architecture.md) | Architecture technique NanoClaw |
+| [Deploiement](Claw-Systems/docs/NanoClaw-Deploy.md) | Guide de deploiement Docker |
+| [ASR Integration](Claw-Systems/docs/ASR-Integration.md) | Transcription vocale Whisper |
+
+**Cas d'usage** : Agent Telegram avec transcription vocale, orchestration multi-agents, deploiement production.
 
 ## Documentation commune
 
