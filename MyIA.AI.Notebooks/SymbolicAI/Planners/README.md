@@ -295,10 +295,15 @@ La planification automatique est une branche de l'IA symbolique :
 - Recherche dans espace d'etats
 - Heuristiques admissibles pour optimalite
 
-Voir aussi :
-- [Tweety](../Tweety/) - Logique et argumentation
-- [Lean](../Lean/) - Verification formelle
-- [Z3](../Z3/) - Solveur SMT
+### Ponts avec les autres series
+
+| Serie | Connection | Details |
+| ----- | ---------- | ------- |
+| **[Tweety](../Tweety/)** | Logique et argumentation | Les solveurs SAT/CSP de Tweety complementent les planificateurs PDDL. Les dialogues argumentatifs (Tweety-8) sont des instances de planification multi-agents. |
+| **[Lean](../Lean/)** | Verification formelle | Les plans generes peuvent etre verifies formellement. Les heuristiques d'admissibilite (h-max, LM-cut) reposent sur des preuves de correction similaires aux tactiques Lean. |
+| **[SmartContracts](../SmartContracts/)** | Execution planifiee | Les smart contracts DeFi (liquidations, arbitrage) sont des problemes de planification sous contraintes temporelles et de gaz. Le notebook SC-14 (verification formelle) croise OR-Tools (Planners-7). |
+| **[GameTheory](../../GameTheory/)** | Jeux sequentiels | La recherche adversariale (A*, minimax) est commune a la planification classique et a la theorie des jeux. Les jeux cooperatifs (Shapley) sont des problemes d'allocation de taches planifiables. |
+| **[Search](../../Search/)** | Fondements communs | La serie Search couvre les algorithmes de base (BFS, DFS, A*) utilises dans les planificateurs. CSP (Search Part2) correspond a OR-Tools CP-SAT (Planners-7). |
 
 ## Contribution
 

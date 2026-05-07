@@ -136,11 +136,15 @@ Le pipeline genere un rapport JSON dans `output/analysis_report.json` :
 | **Belief Set** | Ensemble de croyances formalisees |
 | **SAT** | Satisfaisabilite logique |
 
-## Relation avec SymbolicAI
+## Ponts avec les autres series
 
-Ce pipeline utilise :
-- [Tweety](../Tweety/) - Bibliotheque Java d'argumentation
-- Logique propositionnelle et SAT solvers
+| Serie | Connection | Details |
+| ----- | ---------- | ------- |
+| **[Tweety](../Tweety/)** | Backend argumentatif | Utilise directement TweetyProject (JPype) pour le raisonnement formel. Les semantiques de Dung (Tweety-5) et la revision de croyances (Tweety-4) sont au coeur du pipeline. |
+| **[Lean](../Lean/)** | Preuves formelles | La formalisation logique des arguments (Agentic-2) suit le meme paradigme que les tactiques Lean. La verification de coherence via SAT est analogue aux proof checkers. |
+| **[Tweety-9](../Tweety/Tweety-9-Preferences.ipynb)** | Preferences et vote | L'analyse d'arguments de valeur croise les modeles de preference et la theorie du choix social (GameTheory/social_choice_lean/). |
+
+> **Note** : Cette serie est en statut DRAFT — les notebooks definissent l'architecture mais n'ont pas encore d'execution complete. Voir [RECONSTRUCTION_PLAN.md](RECONSTRUCTION_PLAN.md) pour le statut.
 
 ## Ressources
 

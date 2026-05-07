@@ -263,6 +263,16 @@ La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSIO
 - **GitHub** : https://github.com/TweetyProjectTeam/TweetyProject
 - **JPype** : https://jpype.readthedocs.io/
 
+## Ponts avec les autres series
+
+| Serie | Connection | Details |
+|-------|------------|---------|
+| **[Argument_Analysis](../Argument_Analysis/)** | Argumentation agentique | Utilise Tweety comme backend Java pour le raisonnement argumentatif. Les semantiques de Dung (notebook 5) sont directement appliquees dans l'analyse de textes. |
+| **[Lean](../Lean/)** | Verification formelle | Les logiques propositionnelles et FOL (notebooks 2-3) correspondent aux tactiques de preuve Lean. Les SAT solvers de Tweety completent la verification Lean. |
+| **[SmartContracts](../SmartContracts/)** | Methods formelles | La verification formelle SC-14 (Certora/SMTChecker) utilise les memes solveurs SAT/SMT. La logique propositionnelle de Tweety est la base des invariants Solidity. |
+| **[GameTheory](../../GameTheory/)** | Theorie du vote | Le notebook 9 (Preferences/Vote) couvre les concepts de choix social formalises dans `social_choice_lean/` (Arrow, Sen, Voting). |
+| **[Planners](../Planners/)** | Planification argumentative | Les dialogues argumentatifs (notebook 8) peuvent etre modelises comme des problemes de planification PDDL. |
+
 ## Licence
 
 Les notebooks sont distribues sous licence MIT.
