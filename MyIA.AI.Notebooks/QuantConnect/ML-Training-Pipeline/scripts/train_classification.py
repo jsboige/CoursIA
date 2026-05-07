@@ -1,5 +1,5 @@
 """
-Train ML classification models (RandomForest + XGBoost) for financial prediction.
+Train ML classification models (RF + XGBoost + LightGBM + CatBoost) for financial prediction.
 
 Uses features from OHLCV data to predict next-period return direction (up/down/flat).
 Designed to work with datasets from the scripts/datasets/ pipeline.
@@ -8,12 +8,16 @@ Usage:
     # Full training on yfinance SPY data
     python train_classification.py --data-dir ../datasets/yfinance --symbol SPY --start 2010-01-01
 
-    # Dry-run (1 epoch, 100 rows, validates pipeline without GPU)
+    # Dry-run (validates pipeline without GPU)
     python train_classification.py --dry-run
 
-    # Custom hyperparameters
+    # LightGBM with walk-forward
     python train_classification.py --data-dir ../datasets/yfinance --symbol SPY \\
-        --n-estimators 500 --max-depth 10 --lookback 60
+        --model lgbm --walk-forward --n-splits 5
+
+    # CatBoost comparison
+    python train_classification.py --data-dir ../datasets/yfinance --symbol SPY \\
+        --model catboost --n-estimators 500 --max-depth 8
 
 Output:
     Checkpoints in --checkpoint-dir (default: ../checkpoints/classification/<date>/)
@@ -34,6 +38,43 @@ from features import FeatureEngineer
 from walk_forward import WalkForwardSplitter
 
 
+def create_classifier(
+    model_type: str,
+    n_estimators: int = 200,
+    max_depth: int = 8,
+) -> object:
+    """Create a sklearn-compatible classifier by type name.
+
+    Supports: rf, xgb, lgbm, catboost. Falls back to RandomForest on ImportError.
+    """
+    if model_type == "xgb":
+        from xgboost import XGBClassifier
+        return XGBClassifier(
+            n_estimators=n_estimators, max_depth=max_depth,
+            learning_rate=0.05, subsample=0.8, colsample_bytree=0.8,
+            eval_metric="logloss", verbosity=0,
+        )
+    elif model_type == "lgbm":
+        from lightgbm import LGBMClassifier
+        return LGBMClassifier(
+            n_estimators=n_estimators, max_depth=max_depth,
+            learning_rate=0.05, subsample=0.8, colsample_bytree=0.8,
+            verbose=-1,
+        )
+    elif model_type == "catboost":
+        from catboost import CatBoostClassifier
+        return CatBoostClassifier(
+            iterations=n_estimators, depth=max_depth,
+            learning_rate=0.05, verbose=0,
+        )
+    else:
+        from sklearn.ensemble import RandomForestClassifier
+        return RandomForestClassifier(
+            n_estimators=n_estimators, max_depth=max_depth,
+            random_state=42, n_jobs=-1,
+        )
+
+
 def train_and_evaluate(
     features: pd.DataFrame,
     model_type: str = "rf",
@@ -42,7 +83,6 @@ def train_and_evaluate(
     test_ratio: float = 0.2,
 ) -> dict:
     """Train a classification model and return metrics."""
-    from sklearn.ensemble import RandomForestClassifier
     from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
     from sklearn.preprocessing import StandardScaler
 
@@ -59,28 +99,7 @@ def train_and_evaluate(
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    if model_type == "xgb":
-        try:
-            from xgboost import XGBClassifier
-
-            model = XGBClassifier(
-                n_estimators=n_estimators,
-                max_depth=max_depth,
-                learning_rate=0.05,
-                subsample=0.8,
-                colsample_bytree=0.8,
-                eval_metric="logloss",
-                verbosity=0,
-            )
-        except ImportError:
-            print("WARNING: xgboost not installed, falling back to RandomForest")
-            model = RandomForestClassifier(
-                n_estimators=n_estimators, max_depth=max_depth, random_state=42, n_jobs=-1
-            )
-    else:
-        model = RandomForestClassifier(
-            n_estimators=n_estimators, max_depth=max_depth, random_state=42, n_jobs=-1
-        )
+    model = create_classifier(model_type, n_estimators, max_depth)
 
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
@@ -143,7 +162,6 @@ def train_walk_forward_classification(
     Uses StandardScaler fitted on training fold only to prevent lookahead bias.
     Reports OOS direction accuracy, majority-class baseline, and per-fold details.
     """
-    from sklearn.ensemble import RandomForestClassifier
     from sklearn.metrics import accuracy_score
     from sklearn.preprocessing import StandardScaler
 
@@ -181,28 +199,7 @@ def train_walk_forward_classification(
         X_val_norm = scaler.transform(X_val_fold)
         X_test_norm = scaler.transform(X_test_fold)
 
-        if model_type == "xgb":
-            try:
-                from xgboost import XGBClassifier
-
-                model = XGBClassifier(
-                    n_estimators=n_estimators,
-                    max_depth=max_depth,
-                    learning_rate=0.05,
-                    subsample=0.8,
-                    colsample_bytree=0.8,
-                    eval_metric="logloss",
-                    verbosity=0,
-                )
-            except ImportError:
-                print("WARNING: xgboost not installed, falling back to RandomForest")
-                model = RandomForestClassifier(
-                    n_estimators=n_estimators, max_depth=max_depth, random_state=42, n_jobs=-1,
-                )
-        else:
-            model = RandomForestClassifier(
-                n_estimators=n_estimators, max_depth=max_depth, random_state=42, n_jobs=-1,
-            )
+        model = create_classifier(model_type, n_estimators, max_depth)
 
         model.fit(X_tr_norm, y_tr_fold)
 
@@ -277,7 +274,7 @@ def main():
     parser.add_argument("--symbol", default="SPY", help="Ticker symbol to train on")
     parser.add_argument("--start", help="Start date (YYYY-MM-DD)")
     parser.add_argument("--end", help="End date (YYYY-MM-DD)")
-    parser.add_argument("--model", default="rf", choices=["rf", "xgb"], help="Model type")
+    parser.add_argument("--model", default="rf", choices=["rf", "xgb", "lgbm", "catboost"], help="Model type")
     parser.add_argument("--n-estimators", type=int, default=200, help="Number of trees/boosting rounds")
     parser.add_argument("--max-depth", type=int, default=8, help="Max tree depth")
     parser.add_argument("--lookback", type=int, default=20, help="Feature lookback window")
