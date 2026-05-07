@@ -146,22 +146,79 @@ theorem superadditive_grand_coalition_nonneg_of_nonneg_singletons
     Finset.sum_nonneg (fun i _ => hnn i)
   linarith
 
-/-- Bondareva-Shapley: The Core is nonempty iff the game is balanced.
-    PROOF SKETCH (Bondareva 1963, Shapley 1967):
-    Direction (→): Core ⊢ Balanced.
-      Let x ∈ Core. For balanced weights w with ∑_{S∋i} w(S) = 1:
-      ∑_S w(S)·v(S) ≤ ∑_S w(S)·(∑_{i∈S} x(i)) = ∑_i x(i)·(∑_{S∋i} w(S))
-                     = ∑_i x(i)·1 = ∑_i x(i) = v(N).
-    Direction (←): Balanced ⊢ Core nonempty.
-      Consider the LP: minimize ∑ᵢ xᵢ subject to ∑_{i∈S} xᵢ ≥ v(S) for all S.
-      The dual is: maximize ∑_S w(S)·v(S) subject to ∑_{S∋i} w(S) = 1, w ≥ 0.
-      By the balanced condition, the dual optimum ≤ v(N).
-      By strong duality, the primal has a feasible solution with ∑ᵢ xᵢ = v(N).
-      This x is in the Core.
-    NOTE: Requires LP duality theory not available in Mathlib. -/
-theorem bondareva_shapley :
-    G.Core.Nonempty ↔ G.Balanced := by
+/-- Forward direction of Bondareva-Shapley: Core nonempty implies balanced.
+    Proof: Let x ∈ Core. For balanced weights w with ∑_{S∋i} w(S) = 1:
+    ∑_S w(S)·v(S) ≤ ∑_S w(S)·(∑_{i∈S} x(i))   [group rationality]
+                   = ∑_S ∑_{i∈S} w(S)·x(i)       [distributivity]
+                   = ∑_i ∑_{S∋i} w(S)·x(i)       [Fubini double sum]
+                   = ∑_i x(i)·∑_{S∋i} w(S)       [factor x(i)]
+                   = ∑_i x(i)·1 = v(N)            [balanced + efficiency] -/
+theorem bondareva_shapley_forward :
+    G.Core.Nonempty → G.Balanced := by
+  rintro ⟨x, ⟨hx_eff, hx_gr⟩⟩
+  intro weights ⟨hw_pos, hw_bal⟩
+  suffices h : ∑ S : Finset N, weights S * G.v S ≤ ∑ i : N, x i by rwa [hx_eff] at h
+  -- Step 1: group rationality bound
+  have h_gr : ∑ S : Finset N, weights S * G.v S ≤
+      ∑ S : Finset N, weights S * (∑ i ∈ S, x i) :=
+    Finset.sum_le_sum (fun S _ => mul_le_mul_of_nonneg_left (hx_gr S) (hw_pos S))
+  -- Step 2: distribute weights into inner sum
+  have h_dist : ∑ S : Finset N, weights S * (∑ i ∈ S, x i) =
+      ∑ S : Finset N, ∑ i ∈ S, weights S * x i :=
+    Finset.sum_congr rfl (fun S _ => by rw [Finset.mul_sum])
+  -- Step 3: Fubini — swap order of double sum
+  have h_fubini : ∑ S : Finset N, ∑ i ∈ S, weights S * x i =
+      ∑ i : N, ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S * x i := by
+    classical
+    -- Extend inner sums to full type using indicator functions
+    have h1 (S : Finset N) : ∑ i ∈ S, weights S * x i =
+        ∑ i : N, (if i ∈ S then weights S * x i else 0) := by
+      trans ∑ i ∈ S, (if i ∈ S then weights S * x i else 0)
+      · exact Finset.sum_congr rfl (fun i hi => (if_pos hi).symm)
+      · exact Finset.sum_subset (Finset.subset_univ S) (fun i _ hi => if_neg hi)
+    -- Swap summation order (Fubini for finite types)
+    have h2 : ∑ S : Finset N, ∑ i : N, (if i ∈ S then weights S * x i else 0) =
+        ∑ i : N, ∑ S : Finset N, (if i ∈ S then weights S * x i else 0) := by
+      exact Finset.sum_comm
+    -- Convert indicator sums back to filtered sums
+    have h3 (i : N) : ∑ S : Finset N, (if i ∈ S then weights S * x i else 0) =
+        ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S * x i := by
+      exact (Finset.sum_filter (fun S => i ∈ S) (fun S => weights S * x i)).symm
+    -- Chain the three steps
+    rw [Finset.sum_congr rfl (fun S _ => h1 S), h2,
+        Finset.sum_congr rfl (fun i _ => h3 i)]
+  -- Step 4: factor x(i) out of each inner sum
+  have h_factor : ∑ i : N, ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S * x i =
+      ∑ i : N, x i * ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S :=
+    Finset.sum_congr rfl (fun i _ => by
+      rw [Finset.sum_congr rfl (fun S _ => mul_comm (weights S) (x i)),
+          ← Finset.mul_sum])
+  -- Step 5: apply balanced condition
+  have h_bal : ∑ i : N, x i * ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S =
+      ∑ i : N, x i :=
+    Finset.sum_congr rfl (fun i _ => by rw [hw_bal i, mul_one])
+  -- Combine
+  calc ∑ S : Finset N, weights S * G.v S
+      ≤ ∑ S : Finset N, weights S * (∑ i ∈ S, x i) := h_gr
+    _ = ∑ S : Finset N, ∑ i ∈ S, weights S * x i := h_dist
+    _ = ∑ i : N, ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S * x i := h_fubini
+    _ = ∑ i : N, x i * ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S := h_factor
+    _ = ∑ i : N, x i := h_bal
+
+/-- Backward direction of Bondareva-Shapley: balanced implies Core nonempty.
+    Requires LP duality: minimize ∑ᵢ xᵢ subject to ∑_{i∈S} xᵢ ≥ v(S) for all S.
+    The dual maximizes ∑_S w(S)·v(S) under balanced weight constraints.
+    Balanced condition ensures dual optimum ≤ v(N), so primal is feasible with
+    ∑ᵢ xᵢ = v(N), placing x in the Core.
+    NOTE: LP duality is not available in Mathlib. -/
+theorem bondareva_shapley_backward :
+    G.Balanced → G.Core.Nonempty := by
   sorry
+
+/-- Bondareva-Shapley: The Core is nonempty iff the game is balanced. -/
+theorem bondareva_shapley :
+    G.Core.Nonempty ↔ G.Balanced :=
+  ⟨bondareva_shapley_forward G, bondareva_shapley_backward G⟩
 
 /-- For convex games, Shapley value is in the Core.
     PROOF SKETCH (Shapley 1971):
