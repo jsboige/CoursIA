@@ -157,6 +157,22 @@ families:
     acceptance:
       outputs_present: true
 
+  EPF:
+    kernel: python3
+    path: MyIA.AI.Notebooks/EPF
+    strategy: papermill
+    timeout: 300
+    subfamilies:
+      CC1-Exploratoire-Symbolique:
+        kernel: python3
+        strategy: papermill
+      CC2-Symbolique-Probabiliste:
+        kernel: python3
+        strategy: papermill
+    acceptance:
+      outputs_present: true
+      zero_errors: true
+
   RL:
     kernel: python3
     path: MyIA.AI.Notebooks/RL

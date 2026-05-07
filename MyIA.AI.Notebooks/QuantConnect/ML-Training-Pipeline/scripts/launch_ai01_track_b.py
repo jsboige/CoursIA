@@ -1,11 +1,13 @@
 """
 ai-01 Track B — Hyperparameter sweep on RTX 4090 24GB (GPU 2)
 
-Sequential training of 4 models with larger architectures than po-2023 baselines:
+Sequential training of 6 jobs with larger architectures than po-2023 baselines:
 - Transformer SPY 2015-2025 (d=256, heads=8, layers=6, 100 epochs)
 - LSTM SPY (hidden=512, layers=4, 100 epochs)
 - DQN GPU (hidden=512, 500 episodes)
 - XGBoost classification (1000 trees, depth 12)
+- MoE-LSTM (regime-aware, LSTM experts, 5 seeds)
+- MoE-Transformer (regime-aware, Transformer experts, 5 seeds)
 
 Logs to outputs/ai01_track_b_<timestamp>/. Saves all checkpoints in checkpoints/<model>/<timestamp>/.
 """
@@ -85,9 +87,69 @@ JOBS = [
             "--symbol", "SPY",
             "--start", "2015-01-01",
             "--end", "2024-12-31",
-            "--model", "xgboost",
+            "--model", "xgb",
             "--n-estimators", "1000",
             "--max-depth", "12",
+        ],
+    ),
+    (
+        "lgbm-spy",
+        [
+            PYTHON, str(SCRIPTS / "train_classification.py"),
+            "--data-dir", str(DATA_DIR),
+            "--symbol", "SPY",
+            "--start", "2015-01-01",
+            "--end", "2024-12-31",
+            "--model", "lgbm",
+            "--n-estimators", "1000",
+            "--max-depth", "8",
+        ],
+    ),
+    (
+        "catboost-spy",
+        [
+            PYTHON, str(SCRIPTS / "train_classification.py"),
+            "--data-dir", str(DATA_DIR),
+            "--symbol", "SPY",
+            "--start", "2015-01-01",
+            "--end", "2024-12-31",
+            "--model", "catboost",
+            "--n-estimators", "1000",
+            "--max-depth", "8",
+        ],
+    ),
+    (
+        "moe-lstm-spy",
+        [
+            PYTHON, str(SCRIPTS / "train_moe_regimes.py"),
+            "--data-dir", str(DATA_DIR),
+            "--symbol", "SPY",
+            "--start", "2015-01-01",
+            "--end", "2024-12-31",
+            "--expert", "lstm",
+            "--regime-method", "price",
+            "--n-folds", "5",
+            "--epochs", "50",
+            "--hidden-size", "128",
+            "--num-layers", "2",
+            "--seeds", "0", "1", "7", "42", "123",
+        ],
+    ),
+    (
+        "moe-transformer-spy",
+        [
+            PYTHON, str(SCRIPTS / "train_moe_regimes.py"),
+            "--data-dir", str(DATA_DIR),
+            "--symbol", "SPY",
+            "--start", "2015-01-01",
+            "--end", "2024-12-31",
+            "--expert", "transformer",
+            "--regime-method", "hmm",
+            "--n-folds", "5",
+            "--epochs", "50",
+            "--hidden-size", "128",
+            "--num-layers", "2",
+            "--seeds", "0", "1", "7", "42", "123",
         ],
     ),
 ]

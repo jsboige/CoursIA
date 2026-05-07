@@ -147,9 +147,132 @@ def _load_dataset_v2(
     return None
 
 
+def _train_moe_panier(
+    panier_group: str | None = None,
+    regime_method: str = "price",
+    n_folds: int = 5,
+    lookback: int = 20,
+    horizon: int = 1,
+    hidden_sizes: tuple[int, ...] = (64, 32),
+    min_samples_per_expert: int = 50,
+    max_iter: int = 200,
+    seed: int = 42,
+    start: str = "2015-01-01",
+    end: str = "2025-01-01",
+    output_dir: str | None = None,
+) -> dict:
+    """Train MoE across all symbols in a panier group.
+
+    Loads each symbol from panier data, trains an MoE pipeline per symbol,
+    and returns combined results with per-symbol breakdown.
+    """
+    from panier_loader import get_panier_symbols, load_panier
+    from regime_detector import detect_regimes
+
+    symbols = get_panier_symbols(group=panier_group)
+    log.info(f"PANIER mode: loading {len(symbols)} symbols from group '{panier_group or 'all'}'")
+
+    panier = load_panier(group=panier_group, start=start, end=end)
+    loaded = {s: df for s, df in panier.items() if len(df) >= 500}
+    log.info(f"Loaded {len(loaded)}/{len(symbols)} symbols with >= 500 rows")
+
+    all_results = {}
+    for sym, df in loaded.items():
+        log.info(f"\n--- Panier: {sym} ({len(df)} rows) ---")
+        np.random.seed(seed)
+        t0 = time.time()
+
+        try:
+            features = _prepare_features(df, lookback=lookback)
+            target = _compute_direction_target(df, horizon=horizon)
+            common_idx = features.index.intersection(target.dropna().index)
+            features = features.loc[common_idx]
+            target = target.loc[common_idx]
+            X = features.values.astype(np.float32)
+            y = target.values.astype(int)
+
+            if len(X) < 200:
+                log.warning(f"{sym}: only {len(X)} samples after features, skipping")
+                continue
+
+            prices = df["Close"].loc[common_idx]
+            regime_series = detect_regimes(prices, method=regime_method)
+            regime_labels = regime_series.values
+
+            config = MoEConfig(
+                expert_type="mlp",
+                hidden_sizes=hidden_sizes,
+                max_iter=max_iter,
+                min_samples_per_expert=min_samples_per_expert,
+                random_state=seed,
+                regime_method=regime_method,
+            )
+
+            wf_results = train_moe_walk_forward(
+                features=X, targets=y,
+                regime_labels=regime_labels,
+                n_folds=n_folds, config=config,
+            )
+
+            fold_accs = [r["overall_accuracy"] for r in wf_results]
+            mean_acc = np.mean(fold_accs) if fold_accs else 0.0
+            majority_train = int(np.mean(y[: len(y) // 2]) > 0.5)
+            majority_acc = float(np.mean(np.full(len(y), majority_train) == y))
+
+            all_results[sym] = {
+                "n_samples": len(X),
+                "moe_mean_accuracy": float(mean_acc),
+                "majority_baseline": majority_acc,
+                "beats_majority": bool(mean_acc > majority_acc),
+                "n_folds": len(wf_results),
+                "elapsed": round(time.time() - t0, 1),
+            }
+            log.info(
+                f"{sym}: MoE={mean_acc:.3f} vs majority={majority_acc:.3f} "
+                f"({'BEATS' if mean_acc > majority_acc else 'NO BEAT'})"
+            )
+        except Exception as e:
+            log.warning(f"{sym}: FAILED - {e}")
+            all_results[sym] = {"error": str(e)}
+
+    # Summary
+    valid = {k: v for k, v in all_results.items() if "error" not in v}
+    beats = sum(1 for v in valid.values() if v.get("beats_majority"))
+    mean_diracc = np.mean([v["moe_mean_accuracy"] for v in valid.values()]) if valid else 0.0
+
+    summary = {
+        "panier_mode": True,
+        "panier_group": panier_group,
+        "n_symbols_loaded": len(loaded),
+        "n_symbols_trained": len(valid),
+        "n_beats_majority": beats,
+        "mean_diracc": round(mean_diracc, 4),
+        "per_symbol": all_results,
+    }
+
+    if output_dir:
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        grp = panier_group or "all"
+        rf = out / f"moe_panier_{grp}_{regime_method}_results.json"
+        rf.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+        log.info(f"Panier results saved to {rf}")
+
+    log.info(
+        f"\n{'='*60}\n"
+        f"PANIER MoE Summary ({panier_group or 'all'}, {regime_method})\n"
+        f"{'='*60}\n"
+        f"Trained: {len(valid)}/{len(loaded)} | Beats majority: {beats}\n"
+        f"Mean DirAcc: {mean_diracc:.4f}\n"
+        f"{'='*60}"
+    )
+    return summary
+
+
 def train_moe_pipeline(
     symbol: str = "SPY",
     panier_mode: bool = False,
+    panier_group: str | None = None,
     regime_method: str = "price",
     n_folds: int = 5,
     lookback: int = 20,
@@ -175,8 +298,27 @@ def train_moe_pipeline(
 ) -> dict:
     """Run full MoE training pipeline.
 
+    In panier_mode, iterates over all symbols in the panier group and trains
+    one MoE per symbol, returning combined results.
+
     Returns dict with results: walk-forward folds, overall stats, baseline comparison.
     """
+    if panier_mode:
+        return _train_moe_panier(
+            panier_group=panier_group,
+            regime_method=regime_method,
+            n_folds=n_folds,
+            lookback=lookback,
+            horizon=horizon,
+            hidden_sizes=hidden_sizes,
+            min_samples_per_expert=min_samples_per_expert,
+            max_iter=max_iter,
+            seed=seed,
+            start=start,
+            end=end,
+            output_dir=output_dir,
+        )
+
     np.random.seed(seed)
     t0 = time.time()
 
@@ -351,7 +493,13 @@ def main():
     )
     parser.add_argument(
         "--panier", action="store_true",
-        help="Use panier anti-bias data",
+        help="Use panier anti-bias data (train MoE across all panier symbols)",
+    )
+    parser.add_argument(
+        "--panier-group", default=None,
+        choices=["us_equity_broad", "us_equity_sectors", "volatility", "us_bonds",
+                 "commodities", "international", "crypto"],
+        help="Panier asset group to train on (default: all)",
     )
     parser.add_argument(
         "--regime-method", default="price",
@@ -392,6 +540,7 @@ def main():
     train_moe_pipeline(
         symbol=args.symbol,
         panier_mode=args.panier,
+        panier_group=args.panier_group,
         regime_method=args.regime_method,
         n_folds=args.n_folds,
         lookback=args.lookback,
