@@ -19,6 +19,10 @@ Usage:
     python train_transformer.py --data-dir ../datasets/yfinance \
         --symbol SPY --multi-asset AAPL,MSFT,GOOG
 
+Multi-asset + multi-seed validation:
+    python train_transformer.py --panier --panier-group crypto \
+        --walk-forward --seeds 0,1,7,42,99 --epochs 30
+
 Output:
     Checkpoints in --checkpoint-dir (default: ../checkpoints/transformer/<date>/)
     metadata.json with hyperparams, metrics, training curve, attention weights sample
@@ -403,6 +407,222 @@ def train_walk_forward(
     }
 
 
+def _load_symbol_data(
+    symbol: str,
+    data_dir: Path,
+    start: str | None = None,
+    end: str | None = None,
+) -> pd.DataFrame | None:
+    """Load data for one symbol from panier or local CSV."""
+    try:
+        from panier_loader import load_panier
+        panier = load_panier(start=start or "2015-01-01", end=end or "2025-01-01")
+        if symbol in panier and len(panier[symbol]) >= 500:
+            return panier[symbol]
+    except Exception:
+        pass
+
+    try:
+        raw = load_data(data_dir, symbol, start, end)
+        if len(raw) >= 500:
+            return raw
+    except Exception:
+        pass
+
+    return None
+
+
+def train_multi_asset(
+    symbols: list[str],
+    data_dir: Path,
+    seeds: list[int],
+    n_splits: int = 5,
+    gap: int = 5,
+    d_model: int = 128,
+    nhead: int = 4,
+    num_layers: int = 4,
+    dim_feedforward: int = 512,
+    dropout: float = 0.1,
+    seq_len: int = 20,
+    epochs: int = 50,
+    batch_size: int = 32,
+    learning_rate: float = 5e-4,
+    lookback: int = 20,
+    device: str = "cpu",
+    start: str | None = None,
+    end: str | None = None,
+    output_dir: str | None = None,
+) -> dict:
+    """Train Transformer across multiple assets and seeds.
+
+    For each (symbol, seed), runs walk-forward validation. Returns per-asset
+    results with multi-seed statistical evaluation.
+
+    Parameters
+    ----------
+    symbols : list of str
+        Symbols to train on (e.g., ["BTC-USD", "ETH-USD"]).
+    seeds : list of int
+        Random seeds for statistical validation (project convention: >= 4).
+    output_dir : str or None
+        Directory to save per-asset results JSON.
+
+    Returns
+    -------
+    dict with per-asset results, multi-seed stats, and aggregate summary.
+    """
+    all_asset_results = {}
+
+    for symbol in symbols:
+        print(f"\n{'='*50}")
+        print(f"Asset: {symbol}")
+        print(f"{'='*50}")
+
+        raw = _load_symbol_data(symbol, data_dir, start, end)
+        if raw is None:
+            print(f"  SKIP: no data found for {symbol}")
+            continue
+
+        engineer = FeatureEngineer(lookback=lookback)
+        features = engineer.transform(raw)
+        X, y, feature_cols = build_sequences(features, seq_len=seq_len)
+
+        if len(X) < 200:
+            print(f"  SKIP: only {len(X)} sequences (need >= 200)")
+            continue
+
+        print(f"  Data: {len(X)} sequences, {X.shape[2]} features")
+
+        seed_metrics = []
+        for seed in seeds:
+            np.random.seed(seed)
+
+            # Shuffle training order for variety (but keep temporal within folds)
+            splitter = WalkForwardSplitter(n_splits=n_splits, gap=gap)
+
+            fold_diraccs = []
+            fold_mses = []
+            for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(X)):
+                if len(test_idx) == 0:
+                    continue
+
+                X_train_fold, X_test_fold = X[train_idx], X[test_idx]
+                y_train_fold, y_test_fold = y[train_idx], y[test_idx]
+
+                mean = X_train_fold.mean(axis=(0, 1), keepdims=True)
+                std = X_train_fold.std(axis=(0, 1), keepdims=True)
+                std = np.where(std < 1e-8, 1.0, std)
+                X_train_norm = (X_train_fold - mean) / std
+                X_test_norm = (X_test_fold - mean) / std
+
+                fold_result = train_and_evaluate(
+                    X_train_norm, y_train_fold, X_test_norm, y_test_fold,
+                    d_model=d_model, nhead=nhead, num_layers=num_layers,
+                    dim_feedforward=dim_feedforward, dropout=dropout, seq_len=seq_len,
+                    epochs=epochs, batch_size=batch_size,
+                    learning_rate=learning_rate, device=device,
+                )
+                fold_diraccs.append(fold_result["metrics"]["direction_accuracy"])
+                fold_mses.append(fold_result["metrics"]["mse"])
+
+            mean_diracc = float(np.mean(fold_diraccs))
+            mean_mse = float(np.mean(fold_mses))
+            seed_metrics.append({
+                "seed": seed,
+                "dir_acc": mean_diracc,
+                "mse": mean_mse,
+                "n_folds": len(fold_diraccs),
+            })
+            print(f"  Seed {seed}: dir_acc={mean_diracc:.4f}, mse={mean_mse:.6f}")
+
+        if not seed_metrics:
+            continue
+
+        # Compute majority-class baseline
+        y_binary = (y > 0).astype(int)
+        majority_freq = float(np.mean(y_binary == 1))
+        majority_acc = max(majority_freq, 1.0 - majority_freq)
+
+        all_asset_results[symbol] = {
+            "seed_metrics": seed_metrics,
+            "majority_acc": majority_acc,
+            "mean_diracc": float(np.mean([s["dir_acc"] for s in seed_metrics])),
+            "std_diracc": float(np.std([s["dir_acc"] for s in seed_metrics], ddof=1))
+                if len(seed_metrics) > 1 else 0.0,
+            "edge": float(np.mean([s["dir_acc"] for s in seed_metrics])) - majority_acc,
+        }
+        ar = all_asset_results[symbol]
+        print(f"  Summary: dir_acc={ar['mean_diracc']:.4f} +/- {ar['std_diracc']:.4f}, "
+              f"majority={majority_acc:.4f}, edge={ar['edge']:+.4f}")
+
+    # Statistical evaluation using wf_framework
+    stats_summary = {}
+    try:
+        from wf_framework.stats import multi_seed_eval, multi_asset_eval
+        per_asset_for_stats = {}
+        for sym, res in all_asset_results.items():
+            per_asset_for_stats[sym] = res["seed_metrics"]
+
+        if per_asset_for_stats:
+            asset_eval = multi_asset_eval(per_asset_for_stats)
+            stats_summary = {
+                "n_assets": asset_eval.n_assets,
+                "n_significant_raw": asset_eval.n_significant_raw,
+                "n_significant_bonferroni": asset_eval.n_significant_bonferroni,
+                "alpha_raw": asset_eval.alpha_raw,
+                "alpha_bonferroni": asset_eval.alpha_bonferroni,
+                "per_asset": {
+                    sym: r.to_dict() for sym, r in asset_eval.per_asset.items()
+                },
+            }
+    except ImportError:
+        print("  Note: wf_framework not available for statistical evaluation")
+
+    # Aggregate summary
+    if all_asset_results:
+        beats = sum(
+            1 for r in all_asset_results.values()
+            if r["edge"] > 0
+        )
+        passes_rule = sum(
+            1 for r in all_asset_results.values()
+            if r["edge"] >= 2 * r["std_diracc"] and len(seeds) >= 4
+        )
+    else:
+        beats = 0
+        passes_rule = 0
+
+    summary = {
+        "model_type": "transformer",
+        "mode": "multi_asset",
+        "symbols": symbols,
+        "seeds": seeds,
+        "n_assets_trained": len(all_asset_results),
+        "n_assets_beats_majority": beats,
+        "n_assets_passes_rule": passes_rule,
+        "hyperparams": {
+            "d_model": d_model, "nhead": nhead, "num_layers": num_layers,
+            "dim_feedforward": dim_feedforward, "dropout": dropout,
+            "seq_len": seq_len, "epochs": epochs, "n_splits": n_splits, "gap": gap,
+        },
+        "per_asset": all_asset_results,
+        "statistical_eval": stats_summary,
+    }
+
+    if output_dir:
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        ts = __import__("datetime").datetime.now().strftime("%Y%m%dT%H%M%S")
+        rf = out / f"transformer_multiasset_{ts}.json"
+        import json
+        rf.write_text(
+            json.dumps(summary, indent=2, default=str), encoding="utf-8"
+        )
+        print(f"\nResults saved to {rf}")
+
+    return summary
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Train Transformer models for financial prediction"
@@ -448,6 +668,24 @@ def main():
         "--indicators", nargs="+", default=None,
         help="Specific indicators to use (overrides --advanced)",
     )
+    parser.add_argument(
+        "--panier", action="store_true",
+        help="Multi-asset mode: train Transformer across panier symbols",
+    )
+    parser.add_argument(
+        "--panier-group", default=None,
+        choices=["us_equity_broad", "us_equity_sectors", "volatility", "us_bonds",
+                 "commodities", "international", "crypto"],
+        help="Panier asset group to train on (default: all)",
+    )
+    parser.add_argument(
+        "--panier-symbols", nargs="+", default=None,
+        help="Explicit symbols for multi-asset (e.g., BTC-USD ETH-USD LTC-USD)",
+    )
+    parser.add_argument(
+        "--seeds", type=str, default="42",
+        help="Comma-separated seeds for multi-seed validation (e.g., 0,1,7,42,99)",
+    )
     args = parser.parse_args()
 
     try:
@@ -457,6 +695,59 @@ def main():
     except ImportError:
         print("ERROR: PyTorch not installed. Run: pip install torch", file=sys.stderr)
         sys.exit(1)
+
+    seeds = [int(s.strip()) for s in args.seeds.split(",")]
+
+    if args.panier or args.panier_symbols:
+        symbols = args.panier_symbols
+        if not symbols:
+            try:
+                from panier_loader import get_panier_symbols
+                symbols = get_panier_symbols(group=args.panier_group)
+            except ImportError:
+                print("ERROR: panier_loader not available. Specify --panier-symbols explicitly.",
+                      file=sys.stderr)
+                sys.exit(1)
+
+        print(f"MULTI-ASSET mode: {len(symbols)} symbols, seeds={seeds}")
+        print(f"Device: {device}")
+
+        if args.dry_run:
+            print("DRY-RUN: Using synthetic data per asset, 2 epochs")
+            args.epochs = 2
+            symbols = symbols[:2]  # Limit in dry-run
+
+        result = train_multi_asset(
+            symbols=symbols,
+            data_dir=Path(args.data_dir),
+            seeds=seeds,
+            n_splits=args.n_splits,
+            gap=args.gap,
+            d_model=args.d_model,
+            nhead=args.nhead,
+            num_layers=args.num_layers,
+            dim_feedforward=args.dim_ff,
+            dropout=args.dropout,
+            seq_len=args.seq_len,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            learning_rate=args.lr,
+            lookback=args.lookback,
+            device=device,
+            start=args.start,
+            end=args.end,
+            output_dir=str(Path(args.checkpoint_dir).parent / "results"),
+        )
+
+        print(f"\n{'='*60}")
+        print(f"Multi-Asset Transformer Summary")
+        print(f"{'='*60}")
+        print(f"Trained: {result['n_assets_trained']}/{len(symbols)}")
+        print(f"Beats majority: {result['n_assets_beats_majority']}")
+        print(f"Passes rule (edge>=2*std): {result['n_assets_passes_rule']}")
+        if args.dry_run:
+            print("DRY-RUN complete. Multi-asset pipeline validated.")
+        return
 
     if args.dry_run:
         print("DRY-RUN: Using synthetic data (500 rows, 2 epochs)")
