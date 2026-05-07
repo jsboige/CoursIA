@@ -42,6 +42,8 @@ Reference mapping between the 22 examples from [Hands-On AI Trading with Python,
 
 **Gap**: No dedicated RL-based options hedging project. Existing RL projects focus on equity trading (DQN), not options delta hedging. The book example trains an RL agent to minimize hedging cost vs Black-Scholes delta hedge.
 
+**Progress (Cycle 6)**: Added `train_ppo_rl.py` (Actor-Critic with GAE) and `train_dqn_rl.py` equity RL baseline. The options hedging gap requires a dedicated options environment (delta hedging with Greeks, P&L tracking vs Black-Scholes). Estimated 4-6h additional work for the options-specific environment + reward function.
+
 ## Chapter 08: Risk Management & Optimization (2 Examples)
 
 | # | Book Example | Our Project | Notebook | Status |
@@ -100,4 +102,4 @@ Our 28-notebook series (QC-Py-01 to QC-Py-28) covers the full book spectrum:
 
 ---
 
-Version: 1.0 | Issue: #107 | Date: 2026-04-27
+Version: 1.1 | Issue: #107 | Date: 2026-05-07 | Cycle 6 Track E update
