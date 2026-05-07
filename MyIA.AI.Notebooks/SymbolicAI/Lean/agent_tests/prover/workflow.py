@@ -182,6 +182,10 @@ class ProofWorkflowBuilder:
     def build(self):
         builder = WorkflowBuilder(start_executor=self._search)
 
+        # B.7: Parallel search agents — run SearchAgent + CoordinatorAgent
+        # concurrently at the start to discover lemmas AND analyze strategy
+        builder.add_concurrent(self._search, self._coordinator)
+
         # Forward chain: search -> tactic -> verify
         builder.add_edge(self._search, self._tactic)
         builder.add_edge(self._tactic, self._verify)
