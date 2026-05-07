@@ -225,7 +225,36 @@ API keys dans `MyIA.AI.Notebooks/GenAI/.env` (template `.env.example`). Validati
 
 Detail config (services hostes po-2023 GPUs, .env keys, scripts) : [.claude/rules/genai-config.md](.claude/rules/genai-config.md) + [docs/genai-services.md](docs/genai-services.md).
 
-### Kernels WSL (notebooks Lean / GameTheory / OpenSpiel)
+### Kernels & Runtime (toutes machines du cluster)
+
+**Regole user 2026-05-07** : toute machine du cluster doit pouvoir executer n'importe quel notebook du depot. Les kernels et runtimes ci-dessous sont OBLIGATOIRES sur chaque machine.
+
+#### .NET Interactive (C# notebooks)
+
+Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`, `Sudoku/`, `ML/`, `Probas/` utilisent des kernels .NET :
+
+| Prerequis | Version | Verification |
+|-----------|---------|-------------|
+| .NET SDK | 8.0 + 9.0 (10.0 optionnel) | `dotnet --list-sdks` |
+| dotnet-interactive | >= 1.0.700 | `dotnet interactive --version` |
+| Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes avec dotnet-interactive | `jupyter kernelspec list` |
+
+Installation : `dotnet tool install --global Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install`.
+
+Execution .NET : **toujours cell-by-cell** via MCP Jupyter (Papermill ne supporte pas .NET Interactive). Le kernel `.net-csharp` preserve l'etat entre cellules (variables, fonctions, types definis).
+
+#### Python 3.10+ (notebooks Python)
+
+Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/SemanticWeb/` (Python) :
+
+| Prerequis | Usage |
+|-----------|-------|
+| Python 3.10+ | Kernel `python3` Jupyter |
+| Conda env `epita_symbolic_ai` | `rdflib`, `owlready2`, `reasonable`, `pyshacl` (SemanticWeb Python) |
+| Conda env `coursia-ml-training` | `torch`, `sklearn`, `scipy`, `hmmlearn` (ML training) |
+| GenAI `.env` | API keys services locaux (cf [.claude/rules/genai-config.md](.claude/rules/genai-config.md)) |
+
+#### WSL kernels (Lean / GameTheory / OpenSpiel)
 
 Notebooks dans `GameTheory/` et `SymbolicAI/Lean/` requierent un kernel WSL specifique :
 - `Python (GameTheory WSL + OpenSpiel)` pour GameTheory
@@ -234,6 +263,22 @@ Notebooks dans `GameTheory/` et `SymbolicAI/Lean/` requierent un kernel WSL spec
 Pieges connus : backslashes consommes par WSL shell, paths sans separateurs, kernel timeout 60s au cold start, heredoc variables interpolees. Wrapper bash obligatoire (Python wrapper ne marche PAS).
 
 Detail diagnostic + workarounds : [.claude/rules/wsl-kernels.md](.claude/rules/wsl-kernels.md).
+
+#### Verification rapide (toute machine)
+
+```bash
+# .NET
+dotnet --list-sdks
+dotnet interactive --version
+jupyter kernelspec list | findstr ".net"
+
+# Python
+python --version
+conda env list
+
+# WSL
+wsl -l -v
+```
 
 ---
 
