@@ -94,6 +94,10 @@ class ProofState:
     last_compile_errors: List[Dict[str, Any]] = field(default_factory=list)
     best_sorry_count: int = 999
 
+    # B.3: Explicit attack plan set by CoordinatorAgent
+    plan: List[str] = field(default_factory=list)
+    plan_phase: int = 0  # Current step in the plan
+
     def add_tactic_attempt(self, tactic: str, state_before: Optional[str] = None,
                            confidence: Optional[float] = None, explanation: Optional[str] = None,
                            success: bool = False, error: Optional[str] = None) -> str:
@@ -199,6 +203,14 @@ class ProofState:
             parts.append(f"Buts sorry:\n  {goals_str}")
 
         parts.append(f"Echecs consecutifs: {self.consecutive_failures}")
+
+        if self.plan:
+            plan_str = "\n  ".join(
+                f"{'>> ' if i == self.plan_phase else '   '}{i+1}. {step}"
+                for i, step in enumerate(self.plan)
+            )
+            parts.append(f"Plan d'attaque (etape {self.plan_phase + 1}/{len(self.plan)}):\n{plan_str}")
+
         return "\n".join(parts)
 
     def select_next_agent(self) -> str:

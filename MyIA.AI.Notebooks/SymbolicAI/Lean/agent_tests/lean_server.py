@@ -237,6 +237,98 @@ class LeanVerifier:
                 "raw_output": "",
             }
 
+    def search_lean(self, module_name: str, goal: str, tactic: str = "exact?") -> dict:
+        """Search Mathlib using Lean's suggestion tactics (exact?, apply?, library_search).
+
+        Writes a temporary snippet importing the module and applying the search tactic,
+        then parses the output for suggested proof.
+
+        Args:
+            module_name: Dotted module name (e.g. 'SocialChoice.Voting')
+            goal: The Lean goal expression to search for
+            tactic: Search tactic to use ('exact?', 'apply?', or 'library_search')
+
+        Returns:
+            dict with 'success', 'suggestions' (list of found proofs), 'raw_output'
+        """
+        project = Path(self.project_dir)
+        env = os.environ.copy()
+        elan_bin = Path.home() / ".elan" / "bin"
+        if elan_bin.exists():
+            env["PATH"] = f"{elan_bin}:{env.get('PATH', '')}"
+
+        short_name = module_name.split(".")[-1]
+        snippet = (
+            f"import {module_name}\n"
+            f"example : {goal} := by\n"
+            f"  {tactic}\n"
+        )
+
+        tmp_file = project / "SocialChoice" / "_LeanSearch.lean"
+        if not (project / "SocialChoice").exists():
+            for subdir in project.iterdir():
+                if subdir.is_dir() and (subdir / "lakefile.lean").exists():
+                    continue
+                if subdir.is_dir():
+                    tmp_file = subdir / "_LeanSearch.lean"
+                    break
+
+        try:
+            tmp_file.write_text(snippet, encoding="utf-8")
+
+            relative = tmp_file.relative_to(project)
+            module = str(relative).replace("/", ".").replace("\\", ".")
+            if module.endswith(".lean"):
+                module = module[:-5]
+
+            cmd = ["lake", "build", module]
+            result = subprocess.run(
+                cmd,
+                cwd=str(project),
+                capture_output=True,
+                text=True,
+                timeout=120,
+                env=env,
+            )
+
+            output = result.stdout + "\n" + result.stderr
+            suggestions = self._extract_suggestions(output, tactic)
+
+            return {
+                "success": len(suggestions) > 0,
+                "suggestions": suggestions,
+                "tactic_used": tactic,
+                "goal": goal[:200],
+                "raw_output": output[:1000],
+            }
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            return {
+                "success": False,
+                "suggestions": [],
+                "error": str(e),
+                "raw_output": "",
+            }
+        finally:
+            try:
+                tmp_file.unlink()
+            except OSError:
+                pass
+
+    @staticmethod
+    def _extract_suggestions(output: str, tactic: str) -> list:
+        """Extract proof suggestions from exact?/apply? output."""
+        suggestions = []
+        for line in output.split("\n"):
+            line = line.strip()
+            if "Try this:" in line:
+                proof = line.split("Try this:")[-1].strip()
+                suggestions.append({"tactic": proof, "source": tactic})
+            elif tactic == "exact?" and "exact " in line and "error" not in line.lower():
+                proof = line.strip().rstrip(",")
+                if proof.startswith("exact "):
+                    suggestions.append({"tactic": proof, "source": "exact?"})
+        return list({s["tactic"]: s for s in suggestions}.values())
+
     @staticmethod
     def _extract_axioms(output: str) -> list:
         """Extract axiom names from #print axioms output."""
