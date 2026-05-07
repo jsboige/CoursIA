@@ -424,6 +424,55 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 
 ---
 
+## Ponts cross-series
+
+Les series SymbolicAI ne sont pas isolees -- elles partagent des concepts et se completent mutuellement. Cette section cartographie les connexions principales pour guider la navigation transversale du curriculum.
+
+### Cartographie des ponts
+
+```
+                    Lean ──────────────────┐
+                   /  \                     \
+                  /    \                     \
+          GameTheory  SmartContracts ←──── Planners
+                       /  \                   /
+                      /    \                 /
+              SemanticWeb  Argument_Analysis
+                   \         /
+                    \       /
+                     Tweety
+```
+
+### Ponts principaux
+
+| Pont | Series source | Series cible | Description |
+|------|---------------|--------------|-------------|
+| **Dung → Agents** | [Tweety-5](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | [Argument_Analysis](Argument_Analysis/) | Frameworks de Dung (attaque, semantiques) → pipeline multi-agents d'analyse argumentative |
+| **Planning → Coordination** | [Planners-8](Planners/03-Advanced/Planners-8-Temporal.ipynb), [Planners-9](Planners/03-Advanced/Planners-9-HTN.ipynb) | [SmartContracts](SmartContracts/) | Planification multi-agent, temporelle, HTN ↔ MEV, arbitrage cross-chain, transaction ordering |
+| **Types → Preuves** | [Lean-2](Lean/Lean-2-Dependent-Types.ipynb), [Lean-3](Lean/Lean-3-Propositions-Proofs.ipynb) | [GameTheory](../GameTheory/) | Arrow theorem Lean → Theorie du Vote ; Shapley Lean → Coalition theory |
+| **Verification** | [Lean-5](Lean/Lean-5-Tactics.ipynb) | [SC-14](SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb) | Lean type theory ↔ verification formelle Solidity (SMT, invariants) |
+| **LLM assistance** | [Lean-7](Lean/Lean-7-LLM-Integration.ipynb) | [SC-11](SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb) | LLM-assisted proofs ↔ LLM-assisted smart contract auditing |
+| **Ontologies → Domaines** | [SW-7](SemanticWeb/SW-7-CSharp-OWL.ipynb), [SW-8](SemanticWeb/SW-8-Python-SHACL.ipynb) | [Planners-2](Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb) | OWL classes/properties ≈ PDDL predicates/types ; SHACL rules ≈ action preconditions |
+| **RDF → DAO** | [SW-5](SemanticWeb/SW-5-CSharp-LinkedData.ipynb) | [SC-9](SmartContracts/02-Solidity-Advanced/SC-9-DAO.ipynb) | Donnees lieees et graphes de connaissances ↔ gouvernance DAO et etat canonique on-chain |
+
+### Parcours transversaux recommandes
+
+**Parcours "Argumentation"** (Tweety → AA) :
+1. Tweety-5 (Dung frameworks) → Tweety-6 (ASPIC+) → AA-0 (setup) → AA-1 (detection) → AA-2 (formalisation)
+
+**Parcours "Verification formelle"** (Lean → SC) :
+1. Lean-2 (types) → Lean-3 (propositions) → Lean-5 (tactiques) → SC-14 (formal verification Solidity)
+
+**Parcours "IA symbolique appliquee"** (Planners → SC) :
+1. Planners-7 (OR-Tools) → Planners-8 (temporel) → SC-8 (DeFi) → SC-23 (cross-chain)
+
+**Parcours "Representation des connaissances"** (SemanticWeb → Planners) :
+1. SW-2 (RDF) → SW-7 (OWL) → SW-8 (SHACL) → Planners-2 (PDDL) → Planners-9 (HTN)
+
+Details des ponts par serie : [Tweety/README.md](Tweety/README.md#ponts-cross-series) | [Planners/README.md](Planners/README.md#ponts-cross-series)
+
+---
+
 ## Audit Qualite (mars 2026)
 
 ### Couverture exercices (audit 20 mars 2026)

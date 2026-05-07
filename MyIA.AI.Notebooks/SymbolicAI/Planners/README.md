@@ -288,6 +288,44 @@ BATCH_MODE=true python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.
 - Hoffmann & Nebel (2001) - "The FF Planning System"
 - Richter & Westphal (2010) - "LAMA: Planner"
 
+## Ponts cross-series
+
+La planification automatique connecte avec d'autres series du curriculum SymbolicAI :
+
+### Planners → SmartContracts (pont fort)
+
+La planification multi-agent et l'ordonnancement temporel (Planners-8, Planners-9 HTN) ont des parallels directs avec la coordination on-chain dans [SmartContracts](../SmartContracts/) :
+
+| Concept Planners | Application SmartContracts |
+|------------------|----------------------------|
+| Planification temporelle (Planners-8) | Ordonnancement de transactions DeFi, MEV |
+| HTN decomposition (Planners-9) | Execution multi-etapes des smart contracts |
+| CP-SAT optimisation (Planners-7) | Arbitrage cross-chain, routing optimal (SC-23) |
+| Recherche dans espaces d'etats (Planners-3) | Exploration des etats d'une blockchain |
+
+**Exemple concret** : un probleme de VRP (Vehicle Routing Problem, Planners-7) est structurellement identique au probleme de cross-chain arbitrage (SC-23) -- trouver le chemin optimal entre n sources et m destinations sous contraintes.
+
+### Planners → SemanticWeb (pont moyen)
+
+La modelisation de domaines PDDL (predicats, types, actions) partage une structure conceptuelle avec les **ontologies OWL** de [SemanticWeb](../SemanticWeb/). Un domaine PDDL peut etre vu comme une ontologie d'actions :
+
+| Concept Planners | Equivalent SemanticWeb |
+|------------------|------------------------|
+| Predicats PDDL (Planners-2) | Proprietes RDF (SW-2) |
+| Types PDDL | Hierarchies de classes OWL (SW-7) |
+| Preconditions/actions | Regles SHACL (SW-8) |
+| Etats du monde | Graphes de connaissances (SW-11) |
+
+Le notebook [SW-11-Python-KnowledgeGraphs](../SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) montre comment structurer des connaissances, ce qui peut servir de base pour definir des domaines PDDL complexes.
+
+### Planners → Lean (pont faible)
+
+Les **preuves de correction** des algorithmes de planification (completeness de A*, admissibilite des heuristiques, optimalite de LM-cut) sont des candidats naturels pour la verification formelle en [Lean](../Lean/). Les notebooks Planners-5 (Heuristics) et Planners-4 (Fast Downward) presentent des proprietes dont la preuve formelle renforce la comprehension :
+
+- Admissibilite de h-add, h-max (Lean-3: propositions et preuves)
+- Completude de la recherche A* (Lean-4: quantificateurs)
+- Correction de la decomposition HTN (Lean-5: tactiques)
+
 ## Relation avec SymbolicAI
 
 La planification automatique est une branche de l'IA symbolique :
@@ -298,7 +336,8 @@ La planification automatique est une branche de l'IA symbolique :
 Voir aussi :
 - [Tweety](../Tweety/) - Logique et argumentation
 - [Lean](../Lean/) - Verification formelle
-- [Z3](../Z3/) - Solveur SMT
+- [SmartContracts](../SmartContracts/) - Blockchain et coordination multi-agents
+- [SemanticWeb](../SemanticWeb/) - Ontologies et graphes de connaissances
 
 ## Contribution
 

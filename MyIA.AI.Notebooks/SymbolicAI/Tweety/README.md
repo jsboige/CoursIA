@@ -256,6 +256,36 @@ python verify_all_tweety.py --notebook Tweety-2 --analyze-outputs
 
 La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSION`).
 
+## Ponts cross-series
+
+Les concepts de TweetyProject connectent avec d'autres series du curriculum SymbolicAI :
+
+### Tweety → Argument_Analysis (pont fort)
+
+[Tweety-5-Abstract-Argumentation](Tweety-5-Abstract-Argumentation.ipynb) introduit les **frameworks de Dung** (attaque, defense, semantiques grounded/preferred/stable) qui constituent le fondement theorique du pipeline [Argument_Analysis](../Argument_Analysis/). Le notebook [Agentic-2-pl_agent](../Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb) formalise les arguments en logique propositionnelle puis les valide via Tweety/JPype.
+
+| Concept Tweety | Application Argument_Analysis |
+|----------------|-------------------------------|
+| Dung AF (Tweety-5) | Formalisation automatique des arguments detectes par LLM |
+| Semantiques (grounded, preferred) | Evaluation de la force argumentative |
+| ASPIC+ (Tweety-6) | Generation de contre-arguments structures |
+
+**Parcours recommande** : Tweety-5 → Tweety-6 → Argument_Analysis_Agentic-0 → Agentic-1 → Agentic-2.
+
+### Tweety → Lean (pont moyen)
+
+Les **logiques formelles** de Tweety-2 (propositionnelle, FOL) et Tweety-3 (modale, description) correspondent aux fondements Curry-Howard de [Lean-2-Dependent-Types](../Lean/Lean-2-Dependent-Types.ipynb) et [Lean-3-Propositions-Proofs](../Lean/Lean-3-Propositions-Proofs.ipynb). La meme logique propositionnelle se retrouve sous deux formes : encodage SAT/Tweety (resolution automatique) vs preuves Lean (demonstration constructive).
+
+| Concept Tweety | Equivalent Lean |
+|----------------|-----------------|
+| PL satisfiability (Tweety-2) | `Prop` et tactiques `exact`, `tauto` (Lean-3) |
+| FOL quantificateurs (Tweety-2) | `∀` / `∃` et `intro`/`use` (Lean-4) |
+| Consistency checking (Tweety-4) | Type safety, no `sorry` (Lean-5) |
+
+### Tweety → SmartContracts (pont faible)
+
+La **verification de coherence** (MUS, MaxSAT) de Tweety-4 partage des outils avec la [verification formelle de smart contracts](../SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb). Les SMT solvers (Z3) utilises dans Tweety-3 sont aussi l'outil central de SC-14 pour prouver des invariants sur les contrats Solidity.
+
 ## Ressources
 
 - **TweetyProject** : https://tweetyproject.org/
