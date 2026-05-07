@@ -288,6 +288,34 @@ BATCH_MODE=true python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory
 | **Core** | Ensemble des allocations stables en jeu cooperatif |
 | **Theoreme d'Arrow** | Impossibilite d'agregation parfaite des preferences |
 
+## Connections cross-series
+
+### GameTheory et Lean (Verification Formelle)
+
+Les side tracks Lean (16b-16f) formalisent en Lean 4 les resultats theoriques etudies en Python dans les notebooks principaux. Cette dualite Python (simulation) / Lean (preuve formelle) est un fil rouge du curriculum.
+
+| Concept GameTheory | Notebook Python | Formalisation Lean | Statut |
+|--------------------|----------------|--------------------|--------|
+| Jeux 2x2, strategies | GameTheory-2 | `Game2x2.lean` (notebook 2b) | Prouve |
+| Existence Nash | GameTheory-4 | `NashExistence.lean` (notebook 4b) | Prouve |
+| Jeux combinatoires | GameTheory-8 | `PGame.lean` (notebook 8b) | Prouve |
+| Theoreme d'Arrow | GameTheory-16 | `Arrow.lean` (notebook 16d) | 0 sorry |
+| Theoreme de Sen | GameTheory-16 | `Sen.lean` (notebook 16e) | 0 sorry |
+| Valeur de Shapley | GameTheory-16b | `Shapley.lean` (cooperative games) | 2 sorry |
+| Modeles de vote | GameTheory-16f | `Voting.lean` (Banks, STV) | 4 sorry |
+
+Voir [SymbolicAI/Lean/README.md](../SymbolicAI/Lean/README.md) pour les prerequis Lean (notebooks 1-6 recommandes).
+
+### GameTheory et SmartContracts
+
+Les concepts de theorie des jeux et de choix social apparaissent directement dans les smart contracts :
+
+- **SC-9 DAO Governance** : mecanismes de vote on-chain = application directe du theoreme d'Arrow et des modeles de vote etudies en 16f.
+- **SC-17 E2E Verifiable Voting** : le vote electronique verifiable combine les resultats de choix social (Arrow, Banks, STV) avec la cryptographie (ZKP, chiffrement homomorphique).
+- **SC-14 Formal Verification** : la verification formelle de smart contracts rejoint les methodes de preuve formelle utilisees pour les formalisations Lean de cette serie.
+
+Voir [SymbolicAI/SmartContracts/README.md](../SymbolicAI/SmartContracts/README.md) pour la serie complete.
+
 ## Licence
 
 Voir la licence du repository principal.

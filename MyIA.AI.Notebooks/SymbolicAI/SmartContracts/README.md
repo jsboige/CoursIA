@@ -141,6 +141,22 @@ anvil  # dans un terminal separe
 - [ElectionGuard](https://www.electionguard.vote/)
 - [XRP Ledger Docs](https://xrpl.org/docs.html)
 
+## Connections cross-series
+
+### SmartContracts et Lean (Verification Formelle)
+
+Les techniques de verification formelle presentees dans cette serie (SC-14, fuzzing SC-13) complementent les methodes de preuve formelle de la serie Lean :
+
+- **SC-14 Formal Verification** (Certora, SMTChecker) vs. **Lean 4** : deux approches de la meme idee -- prouver mathematiquement la correction d'un programme. Les SMT solvers (Z3, CVC5) sont automatiques mais bornes ; Lean est interactif mais expressif ( Curry-Howard, types dependants).
+- **SC-11 LLM-Assisted Contracts** : le meme paradigme d'assistance LLM que les notebooks [Lean-7/8/9](../Lean/), applique a la generation de smart contracts.
+
+### SmartContracts et Theorie des Jeux (GameTheory)
+
+Les mecanismes de vote et de gouvernance on-chain (SC-9, SC-17) sont des instances concretes des resultats formels de la serie GameTheory :
+
+- **SC-9 DAO Governance** : les systemes de vote on-chain sont soumis aux memes limitations que le **theoreme d'Arrow** (formalise dans `social_choice_lean/Arrow.lean`, 0 sorry).
+- **SC-17 E2E Verifiable Voting** : les proprietes des systemes de vote (Banks sets, monotonicite STV) sont etudiees formellement dans `social_choice_lean/Voting.lean`. Le chiffrement homomorphique (SC-16) et les ZKP (SC-15) sont les briques cryptographiques qui rendent le vote E2E possible.
+
 ---
 
 *Serie creee pour CoursIA (EPITA IA Symbolique) - Issue #129*
