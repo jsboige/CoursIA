@@ -222,7 +222,7 @@ class AutonomousProver:
         self.config_label = f"auto-{provider}"
 
     def prove_sorry(self, demo: dict, max_iterations: int = 10,
-                    strategic_hints: str = "", agent_timeout_s: int = 300) -> dict:
+                    strategic_hints: str = "", agent_timeout_s: int = 180) -> dict:
         filepath = demo["file"]
         sorry_line = demo["line"]
 
@@ -570,6 +570,29 @@ class AutonomousProver:
         # Local lemmas (proven in same file, no sorry)
         if local_lemmas:
             parts.append(f"\nLEMMES LOCAUX PROUVES: {', '.join(local_lemmas[:20])}")
+
+        # Definition lookup — extract definitions of types/functions in the goal
+        try:
+            file_text = Path(filepath).read_text(encoding="utf-8")
+            goal_text = goal_state or ""
+            # Find identifiers in goal that look like custom definitions
+            for name in re.findall(r'\b([a-z_]\w*)\b', goal_text):
+                if name in ("by", "exact", "sorry", "have", "obtain", "intro",
+                            "fun", "lambda", "forall", "exists", "and", "or",
+                            "not", "true", "false", "unit", "prop", "type"):
+                    continue
+                # Check if it's defined in the file
+                def_match = re.search(
+                    rf'^(def {re.escape(name)}\b.+?(?=^def |^theorem |^lemma |^end |\Z))',
+                    file_text, re.MULTILINE | re.DOTALL,
+                )
+                if def_match:
+                    defn = def_match.group(1).strip()
+                    if len(defn) > 500:
+                        defn = defn[:500] + "\n  ..."
+                    parts.append(f"\nDEFINITION de {name}:\n```\n{defn}\n```")
+        except Exception:
+            pass
 
         if strategic_hints:
             parts.append(f"\nCONSEILS STRATEGIQUES:\n{strategic_hints}")

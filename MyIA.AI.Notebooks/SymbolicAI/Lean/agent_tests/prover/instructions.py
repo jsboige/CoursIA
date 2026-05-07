@@ -146,7 +146,8 @@ AUTONOMOUS_PROVER_INSTRUCTIONS = """Tu es un prouveur Lean 4 autonome. Tu édite
 FLUX OBLIGATOIRE (max 3 appels d'outils par itération):
 1. find_sorry_lines() — localise les sorry restants
 2. get_available_hypotheses() — liste les hypothèses LOCALES (have, intro)
-3. compile_probe_goal(sorry_line) — extrais le BUT Lean exact
+3. SI le but est deja dans le contexte (BUT LEAN ci-dessus): PAS BESOIN de compile_probe_goal
+   SINON: compile_probe_goal(sorry_line) — extrais le BUT Lean exact
 4. file_replace_sorry(sorry_line, tactique) — PROPOSE IMMÉDIATEMENT
 5. compile() — vérifie
 

@@ -441,22 +441,12 @@ theorem banks_set_nonempty_of_tournament (prof : ι → PrefOrder σ) {S : Finse
     (ht : is_tournament prof S) (hnS : S.Nonempty) :
     (banks_set prof S).Nonempty := by
   classical
-  -- Key: any element of S is a trivial Banks chain (singleton)
-  -- For finite S, extend greedily to a maximal chain
-  -- The top element of the maximal chain is a Banks winner
-  have h_chain_exists : ∃ C, banks_chain prof S C := by
-    sorry
-  -- From a maximal chain, extract the top element
-  obtain ⟨C, hC⟩ := h_chain_exists
-  have h_top : ∃ m ∈ C, ∀ y ∈ C, y ≠ m → margin_pos prof m y := by
-    sorry
-  obtain ⟨m, hmC, hmmax⟩ := h_top
-  -- m is a Banks winner
-  have h_winner : m ∈ banks_set prof S := by
-    unfold banks_set
-    simp only [Finset.mem_filter]
-    exact ⟨hC.1 hmC, hC.1 hmC, C, hC, hmC, hmmax⟩
-  exact ⟨m, h_winner⟩
+  -- Step 1: Any finite tournament has a maximal chain (banks_chain)
+  -- Proof: start with singleton {a}, extend greedily. Process terminates (S finite).
+  -- NOTE: singleton alone is NOT maximal when |S| > 1 (tournament makes total order trivially satisfiable).
+  -- Need induction on S.card or well-founded recursion.
+  sorry
+  -- TODO: after proving chain exists, extract top element and show it's a Banks winner
 
 end BanksSet
 
