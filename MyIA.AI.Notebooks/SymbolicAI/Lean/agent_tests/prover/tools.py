@@ -434,8 +434,16 @@ class TacticTools:
             return json.dumps({"goal": goal, "line": sorry_line})
         return json.dumps({"goal": None, "line": sorry_line, "hint": "Could not extract goal"})
 
-    def compile(self) -> str:
-        """Compile the current .lean file and return errors, sorry count, and compilation time."""
+    def compile(self, check_axioms: bool = False) -> str:
+        """3-level verification: build SUCCESS + sorry count delta + axiom whitelist.
+
+        Level 1: lake build succeeds (no errors)
+        Level 2: sorry count decreased or stable (no regression)
+        Level 3 (optional): #print axioms reveals no unexpected axioms
+
+        Args:
+            check_axioms: If True, run Level 3 axiom check after successful build
+        """
         from .verifier import get_verifier
         if not self._filepath:
             return json.dumps({"error": "No file configured"})
@@ -452,6 +460,7 @@ class TacticTools:
         duration = time.time() - start
         raw_output = result.get("raw_output", "")
         success = result.get("success", False)
+        cached = result.get("cached", False)
 
         errors = []
         for line in raw_output.split("\n"):
@@ -464,18 +473,46 @@ class TacticTools:
         content = Path(self._filepath).read_text(encoding="utf-8")
         sorry_count = content.count("sorry")
 
+        sorry_delta = self._original_sorry_count - sorry_count
+        level_1 = success
+        level_2 = sorry_delta >= 0
+        level_3 = None
+
+        if check_axioms and success:
+            module_name = relative_path.replace("/", ".").replace("\\", ".")
+            if module_name.endswith(".lean"):
+                module_name = module_name[:-5]
+            axiom_result = verifier.check_axioms(module_name)
+            level_3 = axiom_result.get("success", False)
+            if self._trace and axiom_result.get("forbidden"):
+                self._trace.log(
+                    agent="TacticAgent", role="axiom_check",
+                    content=f"FORBIDDEN axioms: {axiom_result['forbidden']}",
+                    duration_s=0, tool_name="compile",
+                )
+
+        overall = level_1 and level_2 and (level_3 if level_3 is not None else True)
+
         if self._trace:
             self._trace.log(
                 agent="TacticAgent", role="compile",
-                content=f"compile: success={success}, {len(errors)} errors, {sorry_count} sorry",
+                content=f"compile: L1={level_1} L2={level_2}(Δ{sorry_delta}) L3={level_3} "
+                        f"| {sorry_count} sorry | {'CACHED' if cached else 'fresh'}",
                 duration_s=duration, tool_name="compile",
                 tool_result=raw_output[:500],
             )
 
         return json.dumps({
-            "success": success, "sorry_count": sorry_count,
+            "success": overall,
+            "level_1_build": level_1,
+            "level_2_sorry": level_2,
+            "level_3_axioms": level_3,
+            "sorry_count": sorry_count,
+            "sorry_delta": sorry_delta,
+            "original_sorry_count": self._original_sorry_count,
             "error_count": len(errors), "errors": errors[:10],
             "compile_time_s": round(duration, 1),
+            "cached": cached,
             "raw_output_preview": raw_output[:500],
         }, ensure_ascii=False)
 

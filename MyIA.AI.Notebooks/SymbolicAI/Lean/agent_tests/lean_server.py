@@ -175,6 +175,81 @@ class LeanVerifier:
             except OSError:
                 pass
 
+    def check_axioms(self, module_name: str, whitelist: list = None) -> dict:
+        """Check axioms used by a module via #print axioms.
+
+        Level 3 verification: after build succeeds, check that no
+        unexpected axioms (beyond sorry/classical.choice) are used.
+
+        Args:
+            module_name: Dotted module name (e.g. 'SocialChoice.Voting')
+            whitelist: List of allowed axiom names (default: classical + propext + funext)
+
+        Returns:
+            dict with 'success', 'axioms' (list), 'forbidden' (list), 'raw_output'
+        """
+        if whitelist is None:
+            whitelist = [
+                "Classical.choice",
+                "propext",
+                "funext",
+                "Quot.lift",
+                "Quot.mk",
+            ]
+
+        project = Path(self.project_dir)
+        env = os.environ.copy()
+        elan_bin = Path.home() / ".elan" / "bin"
+        if elan_bin.exists():
+            env["PATH"] = f"{elan_bin}:{env.get('PATH', '')}"
+
+        try:
+            cmd = ["lake", "env", "lean", "--stdin"]
+            stdin_input = f"import {module_name}\n#print axioms {module_name.split('.')[-1]}\n"
+            result = subprocess.run(
+                cmd,
+                cwd=str(project),
+                capture_output=True,
+                text=True,
+                timeout=60,
+                env=env,
+                input=stdin_input,
+            )
+
+            output = result.stdout + "\n" + result.stderr
+            axioms = self._extract_axioms(output)
+            forbidden = [a for a in axioms if a not in whitelist and a != "sorryAx"]
+
+            return {
+                "success": len(forbidden) == 0,
+                "axioms": axioms,
+                "forbidden": forbidden,
+                "whitelist": whitelist,
+                "has_sorry": "sorryAx" in axioms,
+                "raw_output": output,
+            }
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            return {
+                "success": False,
+                "axioms": [],
+                "forbidden": [],
+                "error": str(e),
+                "raw_output": "",
+            }
+
+    @staticmethod
+    def _extract_axioms(output: str) -> list:
+        """Extract axiom names from #print axioms output."""
+        axioms = []
+        for line in output.split("\n"):
+            line = line.strip()
+            if line and not line.startswith("[") and not line.startswith("error"):
+                for name in line.split(","):
+                    name = name.strip().rstrip(".")
+                    if name and name not in ("", "axioms"):
+                        axioms.append(name)
+        return list(set(axioms))
+
     @staticmethod
     def _extract_errors(output: str) -> list:
         """Extract error lines from lake build output."""

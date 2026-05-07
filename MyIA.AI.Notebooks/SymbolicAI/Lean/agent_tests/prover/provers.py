@@ -501,14 +501,34 @@ class AutonomousProver:
                 feedback_parts.append(f"Sorry count: {current_sorry}/{original_sorry_count}")
                 feedback_parts.append(f"Phase: {state.phase.value}")
 
-                # Append tactic history context — Lean-9 pattern
+                # Append tactic history context — full history with backtracking
                 if state.tactic_history:
-                    last_3 = state.tactic_history[-3:]
-                    tactic_log = "\n".join(
-                        f"  {'OK' if a.success else 'FAIL'}: {a.tactic[:100]}"
-                        for a in last_3
+                    failed = [a for a in state.tactic_history if not a.success]
+                    succeeded = [a for a in state.tactic_history if a.success]
+
+                    # Failed tactics: what to AVOID (full list)
+                    if failed:
+                        fail_log = "\n".join(
+                            f"  FAIL: {a.tactic[:100]}"
+                            + (f" → {a.error[:80]}" if a.error else "")
+                            for a in failed[-10:]
+                        )
+                        feedback_parts.append(
+                            f"TENTATIVES ECHOUEES (ne PAS reessayer ces tactiques):\n{fail_log}"
+                        )
+
+                    # Succeeded tactics: what WORKED
+                    if succeeded:
+                        ok_log = "\n".join(
+                            f"  OK: {a.tactic[:100]}" for a in succeeded[-5:]
+                        )
+                        feedback_parts.append(f"Tactiques reussies:\n{ok_log}")
+
+                    # Summary
+                    feedback_parts.append(
+                        f"Bilan: {len(succeeded)} reussites, {len(failed)} echecs "
+                        f"sur {len(state.tactic_history)} tentatives"
                     )
-                    feedback_parts.append(f"Tactiques recentes:\n{tactic_log}")
 
                 # Append to history (don't replace)
                 context_history.append("\n".join(feedback_parts))
@@ -631,6 +651,22 @@ class AutonomousProver:
 
         if strategic_hints:
             parts.append(f"\nCONSEILS STRATEGIQUES:\n{strategic_hints}")
+
+        # B.4: Top-down decomposition hints for complex goals
+        try:
+            from .lean_utils import suggest_decomposition
+            decomps = suggest_decomposition(goal_state or "")
+            if decomps:
+                decomp_hints = "\n".join(
+                    f"  - {d['name']}: {d['hint']}" for d in decomps
+                )
+                parts.append(
+                    f"\nDECOMPOSITION RECOMMANDÉE (objectif complexe détecté):\n"
+                    f"{decomp_hints}\n"
+                    f"Utilise submit_decomposition() ou have-Steps pour décomposer AVANT d'essayer une preuve directe."
+                )
+        except Exception:
+            pass
 
         parts.append(f"\nSORRY COUNT INITIAL: {sorry_count}")
         parts.append("OBJECTIF: reduire le sorry count ou prouver completement.")
