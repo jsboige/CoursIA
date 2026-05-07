@@ -89,7 +89,8 @@ class AdaptiveAssetAllocationAlpha(AlphaModel):
         except np.linalg.LinAlgError:
             weights = np.ones(n) / n
 
-        period = timedelta(days=30)
+        # 45-day period overlaps with next monthly emission, preventing expiry gaps
+        period = timedelta(days=45)
         insights = []
 
         for i, ticker in enumerate(top_assets):
