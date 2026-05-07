@@ -723,6 +723,140 @@ def save_checkpoint(
 
 
 # ---------------------------------------------------------------------------
+# Walk-forward 5-fold multi-seed evaluation
+# ---------------------------------------------------------------------------
+
+def run_walk_forward_multiseed(
+    X: np.ndarray,
+    y: np.ndarray,
+    adjs: np.ndarray,
+    seeds: list[int],
+    n_splits: int = 5,
+    gap: int = 10,
+    model_type: str = "rgcn",
+    d_model: int = 64,
+    n_layers: int = 2,
+    n_heads: int = 4,
+    n_relations: int = 3,
+    dropout: float = 0.1,
+    epochs: int = 100,
+    batch_size: int = 32,
+    learning_rate: float = 1e-3,
+    device: str = "cpu",
+) -> dict:
+    """Walk-forward 5-fold x multi-seed evaluation for honest GNN verdict.
+
+    Uses expanding window WalkForwardSplitter with gap to prevent leakage.
+    Each seed runs all 5 folds. Aggregates per-fold and per-seed metrics.
+    """
+    assert len(seeds) >= 4, f"Multi-seed requires >=4 seeds, got {len(seeds)}"
+
+    splitter = WalkForwardSplitter(
+        n_splits=n_splits, train_size=None, gap=gap, test_size=None,
+    )
+
+    all_fold_results = []
+
+    for seed in seeds:
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+
+        fold_results = []
+        for fold_idx, (train_idx, test_idx) in enumerate(splitter.split(X)):
+            X_train, y_train = X[train_idx], y[train_idx]
+            X_test, y_test = X[test_idx], y[test_idx]
+            adj_train_fold = adjs[train_idx] if len(adjs) == len(X) else adjs
+            adj_test_fold = adjs[test_idx] if len(adjs) == len(X) else adjs
+
+            result = train_and_evaluate(
+                X_train, y_train, X_test, y_test,
+                adj_train_fold, adj_test_fold,
+                model_type=model_type,
+                d_model=d_model, n_layers=n_layers, n_heads=n_heads,
+                n_relations=n_relations, dropout=dropout,
+                epochs=epochs, batch_size=batch_size,
+                learning_rate=learning_rate, device=device,
+            )
+
+            m = result["metrics"]
+            fold_results.append({
+                "fold": fold_idx,
+                "train_size": len(train_idx),
+                "test_size": len(test_idx),
+                "metrics": m,
+            })
+            print(f"  Seed {seed} Fold {fold_idx}: DirAcc={m['direction_accuracy']:.4f} "
+                  f"Edge={m['edge_over_majority']:+.4f}")
+
+        seed_dir_accs = [f["metrics"]["direction_accuracy"] for f in fold_results]
+        seed_edges = [f["metrics"]["edge_over_majority"] for f in fold_results]
+        seed_mses = [f["metrics"]["mse"] for f in fold_results]
+
+        all_fold_results.append({
+            "seed": seed,
+            "folds": fold_results,
+            "mean_dir_acc": round(float(np.mean(seed_dir_accs)), 4),
+            "mean_edge": round(float(np.mean(seed_edges)), 4),
+            "mean_mse": round(float(np.mean(seed_mses)), 6),
+        })
+
+    # Cross-seed aggregation
+    cross_seed_dir = [r["mean_dir_acc"] for r in all_fold_results]
+    cross_seed_edge = [r["mean_edge"] for r in all_fold_results]
+    cross_seed_mse = [r["mean_mse"] for r in all_fold_results]
+
+    mean_edge = float(np.mean(cross_seed_edge))
+    std_edge = float(np.std(cross_seed_edge))
+    beats = mean_edge >= 2 * std_edge if std_edge > 0 else mean_edge > 0
+
+    # Per-fold aggregation across seeds
+    n_folds_actual = min(len(r["folds"]) for r in all_fold_results)
+    per_fold_summary = []
+    for f in range(n_folds_actual):
+        fold_edges = [r["folds"][f]["metrics"]["edge_over_majority"]
+                      for r in all_fold_results if f < len(r["folds"])]
+        fold_dir_accs = [r["folds"][f]["metrics"]["direction_accuracy"]
+                         for r in all_fold_results if f < len(r["folds"])]
+        per_fold_summary.append({
+            "fold": f,
+            "mean_edge": round(float(np.mean(fold_edges)), 4),
+            "std_edge": round(float(np.std(fold_edges)), 4),
+            "mean_dir_acc": round(float(np.mean(fold_dir_accs)), 4),
+        })
+
+    summary = {
+        "model_type": model_type,
+        "n_seeds": len(seeds),
+        "seeds": seeds,
+        "n_splits": n_splits,
+        "gap": gap,
+        "epochs": epochs,
+        "walk_forward": True,
+        "cross_seed_mean_dir_acc": round(float(np.mean(cross_seed_dir)), 4),
+        "cross_seed_std_dir_acc": round(float(np.std(cross_seed_dir)), 4),
+        "cross_seed_mean_edge": round(mean_edge, 4),
+        "cross_seed_std_edge": round(std_edge, 4),
+        "cross_seed_mean_mse": round(float(np.mean(cross_seed_mse)), 6),
+        "beats_claim": bool(beats),
+        "beats_criterion": (f"mean_edge({mean_edge:.4f}) >= 2*std_edge({2*std_edge:.4f})"
+                            if std_edge > 0 else f"mean_edge({mean_edge:.4f}) > 0"),
+        "per_fold_across_seeds": per_fold_summary,
+        "per_seed": all_fold_results,
+    }
+
+    print(f"\n=== Walk-Forward {n_splits}-fold x {len(seeds)} seeds ({model_type}) ===")
+    print(f"  Cross-seed Mean DirAcc: {np.mean(cross_seed_dir):.4f} +/- {np.std(cross_seed_dir):.4f}")
+    print(f"  Cross-seed Mean Edge:   {mean_edge:+.4f} +/- {std_edge:.4f}")
+    print(f"  Cross-seed Mean MSE:    {np.mean(cross_seed_mse):.6f}")
+    print(f"  BEATS: {'YES' if beats else 'NO'} ({summary['beats_criterion']})")
+    for f, fs in enumerate(per_fold_summary):
+        print(f"  Fold {f}: edge={fs['mean_edge']:+.4f} +/- {fs['std_edge']:.4f} "
+              f"DirAcc={fs['mean_dir_acc']:.4f}")
+
+    return summary
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -844,7 +978,35 @@ def main():
 
     output_dir = Path(args.output_dir)
 
-    if args.seeds:
+    if args.walk_forward:
+        seeds = [int(s.strip()) for s in args.seeds.split(",")] if args.seeds else [0, 1, 7, 42, 99]
+        assert len(seeds) >= 4, f"Walk-forward multi-seed requires >=4 seeds, got {len(seeds)}"
+        print(f"Walk-forward {args.n_splits}-fold x {len(seeds)} seeds evaluation")
+
+        summary = run_walk_forward_multiseed(
+            X, y, adjs, seeds,
+            n_splits=args.n_splits,
+            gap=args.gap,
+            model_type=args.model,
+            d_model=args.d_model,
+            n_layers=args.n_layers,
+            n_heads=args.n_heads,
+            n_relations=args.n_relations,
+            dropout=args.dropout,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            learning_rate=args.lr,
+            device=device,
+        )
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        wf_path = output_dir / f"walkforward_{args.model}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        wf_path.write_text(
+            json.dumps(summary, indent=2, default=str), encoding="utf-8"
+        )
+        print(f"Walk-forward summary: {wf_path}")
+
+    elif args.seeds:
         seeds = [int(s.strip()) for s in args.seeds.split(",")]
         print(f"Multi-seed evaluation: {len(seeds)} seeds")
         summary = run_multi_seed(
