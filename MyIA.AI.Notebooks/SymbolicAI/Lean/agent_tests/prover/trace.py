@@ -119,14 +119,21 @@ class TraceLogger:
         # Log usage if available
         if hasattr(response, 'usage_details') and response.usage_details:
             usage = response.usage_details
-            self.log(
-                agent=agent, role="usage",
-                content=f"tokens: in={usage.input_token_count}, out={usage.output_token_count}",
-                duration_s=duration_s,
-                tokens={"input": usage.input_token_count,
-                        "output": usage.output_token_count,
-                        "total": (usage.input_token_count or 0) + (usage.output_token_count or 0)},
-            )
+            try:
+                if isinstance(usage, dict):
+                    in_tok = usage.get('input_token_count') or usage.get('input_tokens', 0)
+                    out_tok = usage.get('output_token_count') or usage.get('output_tokens', 0)
+                else:
+                    in_tok = getattr(usage, 'input_token_count', None) or 0
+                    out_tok = getattr(usage, 'output_token_count', None) or 0
+                self.log(
+                    agent=agent, role="usage",
+                    content=f"tokens: in={in_tok}, out={out_tok}",
+                    duration_s=duration_s,
+                    tokens={"input": in_tok, "output": out_tok, "total": in_tok + out_tok},
+                )
+            except Exception:
+                pass
 
     def _extract_reasoning_text(self, content) -> str:
         """Extract reasoning text from a text_reasoning Content item."""
