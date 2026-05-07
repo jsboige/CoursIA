@@ -123,6 +123,7 @@ class MultiAgentSorryProver:
 
         # Run workflow
         session_start = time.time()
+        self.trace.start_session_span(demo["name"], "multi")
         try:
             result = await workflow.run(initial_msg)
 
@@ -148,6 +149,7 @@ class MultiAgentSorryProver:
             final_sorry = tactic_tools.best_sorry_count
 
         success = proof_found or final_sorry == 0 or final_sorry < original_sorry_count
+        self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
         print(f"\n{'='*60}")
         print(f"RESULT: {'SUCCESS' if success else 'FAILED'}")
@@ -216,9 +218,12 @@ class AutonomousProver:
     The orchestrator loop: agent acts -> auto-compile -> feedback -> repeat.
     """
 
-    def __init__(self, trace: TraceLogger, provider: str = "zai"):
+    def __init__(self, trace: TraceLogger, provider: str = "zai",
+                 hitl_enabled: bool = True, hitl_threshold: int = 5):
         self.trace = trace
         self.provider = provider
+        self.hitl_enabled = hitl_enabled
+        self.hitl_threshold = hitl_threshold
         self.config_label = f"auto-{provider}"
 
     def prove_sorry(self, demo: dict, max_iterations: int = 10,
@@ -340,6 +345,7 @@ class AutonomousProver:
         compile_data = {}
         context_history = [context_msg]  # ACCUMULATE instead of replace
         proof_tactics_found = []  # Lean-9 _proof_tactics_found tracking
+        self.trace.start_session_span(demo["name"], self.config_label)
 
         async def _run_session():
             nonlocal compile_data, context_history, proof_tactics_found
@@ -466,6 +472,32 @@ class AutonomousProver:
                         next_phase = PHASE_TRANSITIONS.get(state.phase, ProofPhase.TACTIC_GEN)
                         state.phase = next_phase
 
+                # B.9: HITL — ask for human hint when stuck
+                if self.hitl_enabled and state.consecutive_failures >= self.hitl_threshold:
+                    print(f"\n  [HITL] {state.consecutive_failures} echecs consecutifs. "
+                          f"Demande d'aide humaine...", flush=True)
+                    self.trace.log(
+                        agent="AutonomousProver", role="hitl",
+                        content=f"consecutive_failures={state.consecutive_failures}, asking human",
+                    )
+                    try:
+                        hint = input(
+                            f"  [HITL] Indice ou direction ? "
+                            f"(Entrée=continuer, 'stop'=arrêter) : "
+                        ).strip()
+                    except (EOFError, KeyboardInterrupt):
+                        hint = ""
+
+                    if hint.lower() == "stop":
+                        print("  [HITL] Arrêt demandé par l'utilisateur.", flush=True)
+                        break
+                    if hint:
+                        context_history.append(
+                            f"INDICE HUMAIN (priorité maximale):\n{hint}"
+                        )
+                        state.consecutive_failures = 0
+                        print(f"  [HITL] Indice injecté. Reset consecutive_failures.", flush=True)
+
                 self.trace.log(
                     agent="AutonomousProver", role="iteration",
                     content=f"iter={iteration}, sorry={current_sorry}, phase={state.phase.value}",
@@ -550,6 +582,7 @@ class AutonomousProver:
             final_sorry = tactic_tools.best_sorry_count
 
         success = final_sorry == 0 or final_sorry < original_sorry_count
+        self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
         print(f"\n{'='*60}")
         print(f"RESULT: {'SUCCESS' if success else 'FAILED'}")

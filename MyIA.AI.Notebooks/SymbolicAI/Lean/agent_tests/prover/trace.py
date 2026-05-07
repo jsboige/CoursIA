@@ -1,21 +1,58 @@
-"""Trace logger for multi-agent proof sessions."""
+"""Trace logger for multi-agent proof sessions.
+
+B.12: Integrates OpenTelemetry spans alongside JSON trace entries.
+Uses agent_framework.observability when available, graceful fallback otherwise.
+"""
 
 import json
 import time
 from pathlib import Path
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional
+
+# B.12: OTel integration — optional, graceful degradation
+_otel_tracer = None
+_otel_meter = None
+try:
+    from agent_framework.observability import get_tracer, get_meter
+    _otel_tracer = get_tracer("lean-prover")
+    _otel_meter = get_meter("lean-prover")
+except Exception:
+    pass
 
 
 class TraceLogger:
-    """Captures full multi-agent conversation traces with timing."""
+    """Captures full multi-agent conversation traces with timing.
 
-    def __init__(self, output_dir: str = "traces"):
+    B.12: Also emits OTel spans for each agent interaction and proof iteration.
+    """
+
+    def __init__(self, output_dir: str = "traces", enable_otel: bool = True):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         self.entries = []
         self.session_start = time.time()
         self.phase_timings: Dict[str, float] = {}
+        self._otel_enabled = enable_otel and _otel_tracer is not None
+        self._otel_tracer = _otel_tracer
+        self._otel_meter = _otel_meter
+        self._active_spans: Dict[str, object] = {}
+
+        # B.12: OTel counters
+        if _otel_meter and self._otel_enabled:
+            self._counter_iterations = _otel_meter.create_counter(
+                "prover.iterations", description="Proof iterations"
+            )
+            self._counter_tactic_attempts = _otel_meter.create_counter(
+                "prover.tactic_attempts", description="Tactic attempts"
+            )
+            self._histogram_duration = _otel_meter.create_histogram(
+                "prover.agent_duration", description="Agent call duration"
+            )
+        else:
+            self._counter_iterations = None
+            self._counter_tactic_attempts = None
+            self._histogram_duration = None
 
     def log(self, agent: str, role: str, content: str, duration_s: float = 0,
             tool_name: str = None, tool_args: dict = None, tool_result: str = None,
@@ -46,6 +83,10 @@ class TraceLogger:
 
         if phase:
             self.phase_timings[phase] = self.phase_timings.get(phase, 0) + duration_s
+
+        # B.12: Emit OTel span and metrics
+        if self._otel_enabled:
+            self._emit_otel(agent, role, content, duration_s, tool_name)
 
         ts = f"[+{entry['timestamp']:.1f}s]"
         if role == "thinking":
@@ -198,3 +239,67 @@ class TraceLogger:
             if e.get("tokens"):
                 agents[a]["tokens"] += e["tokens"].get("total", 0)
         return agents
+
+    # ── B.12: OTel integration ──
+
+    def _emit_otel(self, agent: str, role: str, content: str,
+                   duration_s: float, tool_name: Optional[str] = None):
+        """Emit OTel span and metrics for a trace entry."""
+        if not self._otel_tracer:
+            return
+
+        span_name = f"{agent}.{role}"
+        if tool_name:
+            span_name += f".{tool_name}"
+
+        try:
+            with self._otel_tracer.start_as_current_span(span_name) as span:
+                span.set_attribute("agent", agent)
+                span.set_attribute("role", role)
+                span.set_attribute("duration_s", duration_s)
+                if tool_name:
+                    span.set_attribute("tool", tool_name)
+                span.set_attribute("content.preview", content[:200])
+        except Exception:
+            pass
+
+        if self._histogram_duration:
+            try:
+                self._histogram_duration.record(
+                    duration_s, {"agent": agent, "role": role}
+                )
+            except Exception:
+                pass
+
+        if self._counter_tactic_attempts and role == "tool_call":
+            try:
+                self._counter_tactic_attempts.add(1, {"agent": agent, "tool": tool_name or ""})
+            except Exception:
+                pass
+
+    def start_session_span(self, theorem: str, prover: str) -> Optional[object]:
+        """Start a top-level OTel span for a proof session. Returns span or None."""
+        if not self._otel_enabled or not self._otel_tracer:
+            return None
+
+        try:
+            span = self._otel_tracer.start_span(
+                f"proof_session.{prover}",
+                attributes={"theorem": theorem, "prover": prover},
+            )
+            self._active_spans["session"] = span
+            return span
+        except Exception:
+            return None
+
+    def end_session_span(self, success: bool, sorry_evolution: str = ""):
+        """End the top-level proof session span."""
+        span = self._active_spans.pop("session", None)
+        if not span:
+            return
+        try:
+            span.set_attribute("success", success)
+            span.set_attribute("sorry_evolution", sorry_evolution)
+            span.end()
+        except Exception:
+            pass
