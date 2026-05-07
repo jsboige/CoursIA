@@ -1,0 +1,9 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {},
+    "description": "Framework version: DualMomentumAlpha + InsightWeightingPortfolioConstructionModel",
+    "id": 1,
+    "name": "Framework-DualMomentumNoTLT",
+    "cloud-id": 31244186,
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}
