@@ -434,32 +434,19 @@ theorem banks_set_subset (prof : ι → PrefOrder σ) (S : Finset σ) :
 theorem banks_set_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ}
     (hw : condorcet_winner prof S x) :
     x ∈ banks_set prof S := by
-  classical
-  unfold banks_set
-  simp only [Finset.mem_filter]
-  exact ⟨hw.1, hw.1, {x}, by
-  -- banks_chain prof S {x}
-  exact ⟨Finset.singleton_subset_iff.mpr hw.1, Finset.singleton_nonempty,
-  -- total order on chain
-  fun a ha b hb hab => (Finset.mem_singleton.mp ha).trans (Finset.mem_singleton.mp hb).symm ▸ False.elim hab,
-  -- transitivity
-  fun a ha b hb c hc hab hbc => (Finset.mem_singleton.mp ha).trans (Finset.mem_singleton.mp hb).symm ▸ False.elim hab,
-  -- maximality: no z ∈ S\{x} can extend the chain
-  fun z hzS hzx => ⟨fun y hy => Or.inl (hw.2 z hzS ((Finset.mem_singleton.mp hzx).symm)),
-  fun y hy z' hz' => by
-  have hyx : y = x := Finset.mem_singleton.mp hy
-  subst hyx
-  simp [hw.2 z hzS]⟩,
-  -- x ∈ {x}
-  Finset.mem_singleton.mpr rfl,
-  -- maximal in chain
-  fun y hy hyx => (Finset.mem_singleton.mp hy).symm ▸ False.elim hyx⟩⟩
+  sorry
 
 /-- The Banks set is nonempty when a tournament exists on S -/
 theorem banks_set_nonempty_of_tournament (prof : ι → PrefOrder σ) {S : Finset σ}
     (ht : is_tournament prof S) (hnS : S.Nonempty) :
     (banks_set prof S).Nonempty := by
+  classical
+  -- Step 1: Any finite tournament has a maximal chain (banks_chain)
+  -- Proof: start with singleton {a}, extend greedily. Process terminates (S finite).
+  -- NOTE: singleton alone is NOT maximal when |S| > 1 (tournament makes total order trivially satisfiable).
+  -- Need induction on S.card or well-founded recursion.
   sorry
+  -- TODO: after proving chain exists, extract top element and show it's a Banks winner
 
 end BanksSet
 
