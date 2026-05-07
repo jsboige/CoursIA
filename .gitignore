@@ -654,6 +654,14 @@ MyIA.AI.Notebooks/QuantConnect/Python/dqn_backtest.png
 MyIA.AI.Notebooks/QuantConnect/Python/dqn_trading_model.json
 MyIA.AI.Notebooks/QuantConnect/Python/dqn_training_curves.png
 
+# RL training artifacts (PPO, SAC, A2C)
+*_backtest.png
+*_training_curves.png
+*_training.png
+*_trading_model.json
+ppo_cartpole.zip
+sac_a2c_*.png
+
 # QC Cloud screenshots and temp research files
 qc*.png
 research_wrapper.ipynb
