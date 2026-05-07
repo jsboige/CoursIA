@@ -161,6 +161,40 @@ lean --version
 elan show
 ```
 
+## Ponts cross-series
+
+Les formalisations Lean connectent avec d'autres series du curriculum SymbolicAI :
+
+### Lean → GameTheory (pont fort)
+
+La serie [GameTheory](../../GameTheory/) integre directement Lean 4 avec **6 notebooks side-track** (suffixe b/e) qui formalisent des resultats fondamentaux en theorie des jeux et choix social :
+
+| Notebook GameTheory | Concept formalise | Prerequis Lean |
+|---------------------|-------------------|----------------|
+| [GT-2b-Lean-Definitions](../../GameTheory/GameTheory-2b-Lean-Definitions.ipynb) | Jeux 2x2, strategies, equilibre de Nash | Lean-2 (types), Lean-3 (Prop) |
+| [GT-4b-Lean-NashExistence](../../GameTheory/GameTheory-4b-Lean-NashExistence.ipynb) | Brouwer, Kakutani, preuve existence Nash | Lean-4 (quantificateurs), Lean-5 (tactiques) |
+| [GT-8b-Lean-CombinatorialGames](../../GameTheory/GameTheory-8b-Lean-CombinatorialGames.ipynb) | PGame Mathlib, Nim formel | Lean-5 (tactiques), Lean-6 (Mathlib) |
+| [GT-15b-Lean-CooperativeGames](../../GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb) | Axiomes Shapley, Core, Bondareva-Shapley | Lean-5 (tactiques) |
+| [GT-16b-Lean-SocialChoice](../../GameTheory/GameTheory-16b-Lean-SocialChoice.ipynb) | Theoreme d'Arrow, Sen, Electeur Median | Lean-3 (propositions), Lean-5 (tactiques) |
+| [GT-16e-SocialChoiceLean-Tour](../../GameTheory/GameTheory-16e-SocialChoiceLean-Tour.ipynb) | Tour DominikPeters, resultats SocialChoiceLean | Lean-5 (tactiques) |
+
+**Projet port :** le repertoire [`social_choice_lean/`](../../GameTheory/social_choice_lean/) contient le port en Lean 4 des theoremes d'Arrow et Sen (cf CLAUDE.md section anti-regression, incident 2026-04-24).
+
+**Parcours recommande** : Lean-2 → Lean-3 → Lean-5 → GT-2b → GT-16b.
+
+### Lean → SmartContracts (pont moyen)
+
+La verification formelle de [SC-14](../SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb) utilise des SMT solvers (Z3) pour prouver des invariants sur les smart contracts Solidity. Lean offre une alternative constructive :
+
+| Concept Lean | Application SmartContracts |
+|-------------|----------------------------|
+| Types dependants (Lean-2) | Typage precis des etats de contrat |
+| Propositions comme types (Lean-3) | Invariants de contrat comme theoremes |
+| Tactiques `omega`, `linarith` (Lean-6) | Verification automatisee de proprietes arithmetiques |
+| LLM-assisted proofs (Lean-7) | LLM-assisted contract auditing (SC-11) |
+
+**Parcours recommande** : Lean-2 → Lean-3 → Lean-5 → SC-14.
+
 ## Percees recentes (2024-2026)
 
 | Systeme | Accomplissement |

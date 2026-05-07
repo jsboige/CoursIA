@@ -288,6 +288,37 @@ BATCH_MODE=true python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory
 | **Core** | Ensemble des allocations stables en jeu cooperatif |
 | **Theoreme d'Arrow** | Impossibilite d'agregation parfaite des preferences |
 
+## Ponts cross-series
+
+La Theorie des Jeux connecte avec d'autres series du curriculum :
+
+### GameTheory ↔ Lean (pont fort, integre)
+
+La serie [Lean](../SymbolicAI/Lean/) est structurellement integree via les **side tracks b/e** (6 notebooks Lean 4). Les preuves formelles en Lean completent les simulations Python :
+
+| Concept Python | Formalisation Lean | Notebook |
+|----------------|--------------------|----------|
+| Jeux 2x2, matrices de gain | Types `Game2x2`, `Strategy`, theoreme Nash | GT-2b |
+| Existence Nash (Brouwer/Kakutani) | Preuve constructive existence | GT-4b |
+| Jeux combinatoires, Nim | `PGame` Mathlib, Sprague-Grundy | GT-8b |
+| Valeur de Shapley, Core | Axiomes Shapley formels, Bondareva-Shapley | GT-15b |
+| Theoreme d'Arrow, Sen | Preuves d'impossibilite, Electeur Median | GT-16b |
+| SocialChoiceLean (DominikPeters) | Tour de 15+ regles de vote | GT-16e |
+
+Le repertoire `social_choice_lean/` contient le port Lean 4 des theoremes d'Arrow et Sen.
+
+### GameTheory ↔ SmartContracts (pont moyen)
+
+Les mecanismes d'encheres (GT-13 Auctions) et les jeux cooperatifs (GT-15) connectent avec la [DeFi](../SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-8-DeFi.ipynb) et les [mecanismes d'encheres on-chain](../SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-9-DAO.ipynb) :
+
+- Encheres de Vickrey (GT-13) ↔ smart contract d'enchere
+- Valeur de Shapley (GT-15) ↔ repartition des frais dans un pool DeFi
+- Theoreme d'Arrow (GT-16) ↔ mecanismes de vote dans les DAOs (SC-9)
+
+### GameTheory ↔ SemanticWeb (pont faible)
+
+Les mecanismes de vote (GT-16) et l'agregation de preferences peuvent etre representes en [RDF/OWL](../SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb) : les bulletins de vote comme graphes de preferences, les regles d'agregation comme regles d'inference OWL.
+
 ## Licence
 
 Voir la licence du repository principal.
