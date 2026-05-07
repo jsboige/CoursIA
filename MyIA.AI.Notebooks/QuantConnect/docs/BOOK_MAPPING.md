@@ -38,9 +38,9 @@ Reference mapping between the 22 examples from [Hands-On AI Trading with Python,
 
 | # | Book Example | Our Project | Notebook | Status |
 |---|-------------|-------------|----------|--------|
-| 01 | RL Hedging Options | `projects/RL-DQN-Trading`, `projects/Reinforcement-Learning-Trading` | QC-Py-25, QC-Py-06 | **Partial** |
+| 01 | RL Hedging Options | `projects/RL-DQN-Trading`, `projects/Reinforcement-Learning-Trading` | QC-Py-25, QC-Py-32, QC-Py-33, QC-Py-34 | **In Progress** |
 
-**Gap**: No dedicated RL-based options hedging project. Existing RL projects focus on equity trading (DQN), not options delta hedging. The book example trains an RL agent to minimize hedging cost vs Black-Scholes delta hedge.
+**Status**: RL series expanding. QC-Py-32 (DQN), QC-Py-33 (PPO, in progress), QC-Py-34 (SAC/A2C, planned). Options hedging requires separate data pipeline.
 
 ## Chapter 08: Risk Management & Optimization (2 Examples)
 
@@ -64,6 +64,12 @@ Reference mapping between the 22 examples from [Hands-On AI Trading with Python,
 ---
 
 ## Gap Analysis
+
+### Cycle 7 Progress (2026-05-07)
+
+- **ML Training Pipeline**: GNN walk-forward 5-fold x 5 seeds completed (EPIC #754 closed — all models NO BEATS on direction prediction)
+- **Volatility Pivot**: Per research study (#779), DL strength in finance is volatility modeling, not direction. Regime classifier LSTM h=64 in progress (Track A).
+- **RL Series**: QC-Py-32 DQN done, QC-Py-33 PPO + QC-Py-34 SAC/A2C planned
 
 ### Critical Gaps (no dedicated project)
 
@@ -100,4 +106,4 @@ Our 28-notebook series (QC-Py-01 to QC-Py-28) covers the full book spectrum:
 
 ---
 
-Version: 1.0 | Issue: #107 | Date: 2026-04-27
+Version: 1.1 | Issue: #107 | Date: 2026-05-07

@@ -116,3 +116,11 @@ IIT/
 ## Licence
 
 Voir la licence du repository principal.
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [Probas](../Probas/README.md) | Infer.NET / Pyro | Modeles probabilistes partagent les memes fondements que la mesure d'integration (phi) |
+| [GameTheory](../GameTheory/README.md) | OpenSpiel | Jeux cooperatifs et choix social eclairent la complexite de l'interaction multi-agent |
+| [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | Preuves formelles | Preuves Arrow/Sen montrent comment formaliser des proprietes structurelles |
