@@ -95,6 +95,7 @@ class MultiAgentSorryProver:
         search_tools = SearchTools(state, filepath, self.trace)
         tactic_tools = TacticTools(state, filepath, sorry_ctx,
                                    demo.get("imports", ""), self.trace)
+        tactic_tools._original_sorry_count = original_sorry_count
         critic_tools = CriticTools(state, self.trace)
         coordinator_tools = CoordinatorTools(state, filepath, self.trace)
 
@@ -284,6 +285,7 @@ class AutonomousProver:
             state, filepath, sorry_ctx,
             demo.get("imports", ""), self.trace,
         )
+        tactic_tools._original_sorry_count = original_sorry_count
 
         # Pre-populate rich state
         hypotheses = extract_hypotheses(filepath, sorry_line)
@@ -369,6 +371,12 @@ class AutonomousProver:
                     if hasattr(response, 'messages') and response.messages:
                         last = response.messages[-1]
                         response_text = last.text if hasattr(last, 'text') else str(last)
+                    # Log LLM response for debugging
+                    self.trace.log(
+                        agent="AutonomousProver", role="llm_response",
+                        content=response_text[:500] if response_text else "(empty response)",
+                        duration_s=time.time() - iter_start,
+                    )
                 except asyncio.TimeoutError:
                     print(f"  Agent timeout ({agent_timeout_s}s)", flush=True)
                     response_text = f"TIMEOUT after {agent_timeout_s}s"
@@ -387,6 +395,15 @@ class AutonomousProver:
                 except json.JSONDecodeError:
                     compile_data = {}
                 current_sorry = compile_data.get("sorry_count", current_sorry)
+
+                # Auto-restore: if sorry regressed from best, restore best content
+                if (tactic_tools.best_content
+                        and current_sorry > tactic_tools.best_sorry_count
+                        and tactic_tools.best_sorry_count <= original_sorry_count):
+                    print(f"  AUTO-RESTORE: {current_sorry} sorry > best {tactic_tools.best_sorry_count}. "
+                          f"Restoring.", flush=True)
+                    Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
+                    current_sorry = tactic_tools.best_sorry_count
 
                 # Update state — from Lean-9 _update_state_from_response pattern
                 if current_sorry < state.best_sorry_count:

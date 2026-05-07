@@ -152,6 +152,7 @@ class TacticTools:
         self._trace = trace
         self._best_content: Optional[str] = None
         self._best_sorry_count: int = 999
+        self._original_sorry_count: int = 999
         self._lock_file = Path(filepath).with_suffix(".prover.lock") if filepath else None
         self._session_id = str(uuid.uuid4())[:8]
 
@@ -299,9 +300,24 @@ class TacticTools:
             new_lines = new_content.split("\n")
             lines[start - 1:end if end <= len(lines) else len(lines)] = new_lines
             new_file_content = "\n".join(lines)
+            sorry_count = new_file_content.count("sorry")
+
+            # Sorry guard: block if net sorry increase beyond original
+            if sorry_count > self._original_sorry_count:
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="sorry_guard",
+                        content=f"BLOCKED file_replace_lines: {sorry_count} > original {self._original_sorry_count}. REVERTING.",
+                        duration_s=0.01,
+                    )
+                return json.dumps({
+                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > original {self._original_sorry_count}. "
+                             f"Do NOT introduce new sorry in replacements.",
+                    "replaced_lines": f"{start}-{end}",
+                    "sorry_count": sorry_count,
+                }, ensure_ascii=False)
 
             Path(self._filepath).write_text(new_file_content, encoding="utf-8")
-            sorry_count = new_file_content.count("sorry")
 
             if sorry_count < self._best_sorry_count:
                 self._best_sorry_count = sorry_count
@@ -342,9 +358,25 @@ class TacticTools:
             old_line = lines[sorry_line - 1]
             lines[sorry_line - 1:sorry_line] = replacement_lines
             new_content = "\n".join(lines)
+            sorry_count = new_content.count("sorry")
+
+            # Sorry guard: block if net sorry increase beyond original (regression)
+            if sorry_count > self._original_sorry_count:
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="sorry_guard",
+                        content=f"BLOCKED: {sorry_count} sorry > original {self._original_sorry_count}. "
+                                f"Replacement introduces new sorry. REVERTING.",
+                        duration_s=0.01,
+                    )
+                return json.dumps({
+                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > original {self._original_sorry_count}. "
+                             f"Your replacement introduces NEW sorry. Write the tactic WITHOUT sorry.",
+                    "replaced": old_line.strip(),
+                    "sorry_count": sorry_count,
+                }, ensure_ascii=False)
 
             Path(self._filepath).write_text(new_content, encoding="utf-8")
-            sorry_count = new_content.count("sorry")
 
             if sorry_count < self._best_sorry_count:
                 self._best_sorry_count = sorry_count
