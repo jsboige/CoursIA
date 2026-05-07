@@ -207,7 +207,7 @@ DEMOS = {
     10: {
         "name": "VOTING_BANKS_SET_NONEMPTY",
         "file": str(VOTING_FILE),
-        "line": 462,
+        "line": 448,
         "sorry_type": "full_proof",
         "theorem_name": "banks_set_nonempty_of_tournament",
         "theorem": "banks_set_nonempty_of_tournament",
@@ -222,10 +222,30 @@ DEMOS = {
         ),
         "difficulty": "hard",
     },
+    13: {
+        "name": "VOTING_BANKS_SET_CONDORCET",
+        "file": str(VOTING_FILE),
+        "line": 437,
+        "sorry_type": "full_proof",
+        "theorem_name": "banks_set_condorcet",
+        "theorem": "banks_set_condorcet",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove banks_set_condorcet: if x is a Condorcet winner in S,\n"
+            "then x belongs to the Banks set.\n"
+            "Goal: x ∈ banks_set prof S\n"
+            "Strategy: unfold banks_set, show ∃ C, banks_chain prof S C ∧ C.Max x.\n"
+            "The singleton chain {x} is a banks_chain when x is Condorcet winner\n"
+            "(tournament means x beats everyone, so total order trivially satisfied).\n"
+            "Then x is maximal in {x} trivially.\n"
+            "Available: condorcet_winner, banks_set, banks_chain, is_tournament."
+        ),
+        "difficulty": "hard",
+    },
     11: {
         "name": "VOTING_STV_NOT_MONOTONE",
         "file": str(VOTING_FILE),
-        "line": 538,
+        "line": 525,
         "sorry_type": "full_proof",
         "theorem_name": "stv_monotonicity_violation",
         "theorem": "stv_monotonicity_violation",
@@ -243,7 +263,7 @@ DEMOS = {
     12: {
         "name": "VOTING_STV_NOT_CLONE_INDEP",
         "file": str(VOTING_FILE),
-        "line": 545,
+        "line": 532,
         "sorry_type": "full_proof",
         "theorem_name": "stv_not_clone_independent",
         "theorem": "stv_not_clone_independent",

@@ -88,13 +88,25 @@ def main():
                     sorry_line = i
                     break
 
-        demo = {
-            "name": lean_path.stem,
-            "file": str(lean_path),
-            "line": sorry_line,
-            "theorem": lean_path.stem,
-            "description": f"Proof on {lean_path.name}, {sorry_count} sorry, targeting line {sorry_line}",
-        }
+        # Check if a DEMOS entry matches this file + line
+        matched_demo = None
+        for d in DEMOS.values():
+            dfile = d.get("file", "")
+            if dfile and Path(dfile).resolve() == lean_path.resolve() and d.get("line") == sorry_line:
+                matched_demo = d
+                break
+
+        if matched_demo:
+            demo = {**matched_demo}
+            print(f"  [Config] Matched DEMO '{matched_demo['name']}' for line {sorry_line}")
+        else:
+            demo = {
+                "name": lean_path.stem,
+                "file": str(lean_path),
+                "line": sorry_line,
+                "theorem": lean_path.stem,
+                "description": f"Proof on {lean_path.name}, {sorry_count} sorry, targeting line {sorry_line}",
+            }
 
         trace = TraceLogger()
 
