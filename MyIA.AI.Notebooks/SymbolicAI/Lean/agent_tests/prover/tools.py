@@ -421,6 +421,8 @@ class TacticTools:
         errors = []
         for line in raw_output.split("\n"):
             m = re.match(r".*?(\d+):\d+: error: (.*)", line)
+            if not m:
+                m = re.match(r"error: .*?(\d+):\d+: (.*)", line)
             if m:
                 errors.append({"line": int(m.group(1)), "message": m.group(2)})
 

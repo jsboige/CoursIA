@@ -137,7 +137,10 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
         target_errors = []
         collecting = False
         for line in raw_output.split("\n"):
+            # Match both "file:line:col: error: msg" and "error: file:line:col: msg"
             m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
+            if not m_err:
+                m_err = re.match(r"error: .*?(\d+):\d+: (.*)", line)
             if m_err:
                 err_line = int(m_err.group(1))
                 if abs(err_line - sorry_line) <= LINE_TOLERANCE:
@@ -155,6 +158,8 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
             print(f"  [GoalExtract] Probe '{probe}': no error at exact line {sorry_line}")
             # Check for unsolved goals errors anywhere in the file
             unsolved_match = re.search(r"(\d+):\d+: error: unsolved goals", raw_output)
+            if not unsolved_match:
+                unsolved_match = re.search(r"error: .*?(\d+):\d+: unsolved goals", raw_output)
             if unsolved_match:
                 # Probe was accepted but left open goals — the goal type IS compatible
                 # Try to extract the goal from the unsolved goals error context
@@ -472,6 +477,8 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     current_error = []
     for line in raw_output.split("\n"):
         m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
+        if not m_err:
+            m_err = re.match(r"error: .*?(\d+):\d+: (.*)", line)
         if m_err:
             if current_error:
                 all_error_lines.append(current_error)
