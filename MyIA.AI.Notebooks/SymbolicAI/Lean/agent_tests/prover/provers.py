@@ -369,40 +369,43 @@ class AutonomousProver:
                 # Feed the FULL accumulated context
                 full_context = state_header + "\n\n" + "\n---\n".join(context_history[-3:])
 
-                try:
-                    response = await agent.run(full_context)
-                    # Debug: inspect response structure
-                    resp_type = type(response).__name__
+                # Retry with exponential backoff for rate limits (429)
+                max_retries = 3
+                response = None
+                response_text = ""
+                for retry in range(max_retries + 1):
+                    try:
+                        response = await agent.run(full_context)
+                        break  # Success — exit retry loop
+                    except asyncio.TimeoutError:
+                        print(f"  Agent timeout ({agent_timeout_s}s)", flush=True)
+                        response_text = f"TIMEOUT after {agent_timeout_s}s"
+                        break
+                    except Exception as e:
+                        err_str = str(e)
+                        is_rate_limit = "429" in err_str or "Rate limit" in err_str
+                        if is_rate_limit and retry < max_retries:
+                            wait_s = 30 * (2 ** retry)  # 30s, 60s, 120s
+                            print(f"  [RATE LIMIT] 429 — waiting {wait_s}s "
+                                  f"(retry {retry+1}/{max_retries})...", flush=True)
+                            await asyncio.sleep(wait_s)
+                            continue
+                        print(f"  Agent error: {e}", flush=True)
+                        response_text = err_str
+                        break
+
+                if response is not None:
                     has_msgs = hasattr(response, 'messages')
                     n_msgs = len(response.messages) if has_msgs and response.messages else 0
-                    print(f"  [DEBUG] Response type={resp_type}, has_messages={has_msgs}, n_messages={n_msgs}", flush=True)
-                    if n_msgs > 0:
-                        first_msg = response.messages[0]
-                        print(f"  [DEBUG] First msg type={type(first_msg).__name__}, has_contents={hasattr(first_msg, 'contents')}", flush=True)
-                        if hasattr(first_msg, 'contents') and first_msg.contents:
-                            print(f"  [DEBUG] First msg {len(first_msg.contents)} contents, types={[getattr(c, 'type', '?') for c in first_msg.contents[:5]]}", flush=True)
-                        elif hasattr(first_msg, 'text'):
-                            print(f"  [DEBUG] First msg has .text ({len(getattr(first_msg, 'text', '') or '')} chars)", flush=True)
-                        else:
-                            print(f"  [DEBUG] First msg attrs={[a for a in dir(first_msg) if not a.startswith('_')][:10]}", flush=True)
-                    else:
-                        print(f"  [DEBUG] Response attrs={[a for a in dir(response) if not a.startswith('_')][:10]}", flush=True)
                     response_text = ""
                     if has_msgs and n_msgs > 0:
                         last = response.messages[-1]
                         response_text = last.text if hasattr(last, 'text') else str(last)
-                    # Log FULL agent response: thinking, tool calls, text
                     self.trace.log_agent_response(
                         agent="AutonomousProver", response=response,
                         duration_s=time.time() - iter_start,
                         iteration=iteration,
                     )
-                except asyncio.TimeoutError:
-                    print(f"  Agent timeout ({agent_timeout_s}s)", flush=True)
-                    response_text = f"TIMEOUT after {agent_timeout_s}s"
-                except Exception as e:
-                    print(f"  Agent error: {e}", flush=True)
-                    response_text = str(e)
 
                 # Update state from LLM response — Lean-9 _update_state_from_response
                 self._update_state_from_response(state, response_text, proof_tactics_found)
