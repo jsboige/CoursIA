@@ -22,7 +22,7 @@ services:
               capabilities: [gpu]
 
     ports:
-      - "${MUSICGEN_API_PORT:-8192}:8192"
+      - "127.0.0.1:${MUSICGEN_API_PORT:-8192}:8192"
 
     volumes:
       - type: bind

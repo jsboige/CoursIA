@@ -22,7 +22,7 @@ services:
               capabilities: [gpu]
 
     ports:
-      - "${TTS_API_PORT:-8191}:8191"
+      - "127.0.0.1:${TTS_API_PORT:-8191}:8191"
 
     volumes:
       - type: bind

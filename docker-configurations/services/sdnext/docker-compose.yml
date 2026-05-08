@@ -7,7 +7,7 @@ services:
     container_name: sdnext
     hostname: sdnext
     ports:
-      - "7861:7860"
+      - "127.0.0.1:7861:7860"
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - WEB_USER=${FORGE_USER:-admin}
