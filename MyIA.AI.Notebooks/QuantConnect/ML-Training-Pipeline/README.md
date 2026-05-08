@@ -6,22 +6,36 @@ Complete training pipeline for ML models on financial OHLCV data. Designed for G
 
 ```
 scripts/
-  features.py                # Reusable feature engineering (indicators + caching)
-  train_classification.py    # RandomForest + XGBoost (CPU/GPU)
-  train_lstm.py              # PyTorch LSTM/GRU (GPU recommended)
-  train_transformer.py       # Financial Transformer (GPU required for full scale)
-  train_dqn_rl.py            # DQN Reinforcement Learning (GPU recommended)
-  launch_po2025_track_a1.py  # Sequential launcher: Transformer -> DQN -> LSTM
-  launch_ai01_track_b.py     # Track B launcher (ai-01 RTX 4090 baselines)
-  validate_training_package.py  # Validate all scripts with --dry-run
-  registry_update.py         # Build REGISTRY.md from checkpoints
-checkpoints/                 # Saved models + metadata (auto-created)
+  features.py                      # Reusable feature engineering (indicators + caching)
+  train_classification.py          # RandomForest + XGBoost (CPU/GPU)
+  train_lstm.py                    # PyTorch LSTM/GRU (GPU recommended)
+  train_transformer.py             # Financial Transformer (GPU required for full scale)
+  train_dqn_rl.py                  # DQN Reinforcement Learning (GPU recommended)
+  train_moe_regimes.py             # MoE with regime-aware routing (Issue #754 Phase B)
+  train_moe.py                     # MoE with gating network
+  train_volatility_garch_dl.py     # GARCH+DL hybrid volatility forecasting
+  train_volatility_regime.py       # Volatility regime classifier
+  train_regime_classifier.py       # HMM regime detection
+  train_baselines_crypto_panier.py # Stage 0 baselines (10 coins, WF 5-fold x 4 seeds)
+  train_gnn.py                     # GNN (GCN/GAT/RGCN) on crypto panier
+  train_mtgnn.py                   # Multivariate Time-series GNN
+  train_stgat.py                   # Spatial-Temporal GAT
+  train_patchtst.py                # PatchTST (Nie et al., ICLR 2023)
+  train_itransformer.py            # iTransformer (Li et al., ICLR 2024)
+  train_mamba.py                   # Mamba SSM baseline
+  train_rl_dt.py                   # Decision Transformer for RL
+  launch_po2025_track_a1.py        # Sequential launcher: Transformer -> DQN -> LSTM
+  launch_ai01_track_b.py           # Track B launcher (ai-01 RTX 4090 baselines)
+  validate_training_package.py     # Validate all scripts with --dry-run
+  registry_update.py               # Build REGISTRY.md from checkpoints
+checkpoints/                       # Saved models + metadata (auto-created)
   classification/<timestamp>/
   lstm/<timestamp>/
   transformer/<timestamp>/
   dqn/<timestamp>/
-outputs/                     # Training logs and run artifacts
-REGISTRY.md                  # Auto-generated checkpoint catalog
+  moe_regimes/<timestamp>/
+outputs/                           # Training logs and run artifacts
+REGISTRY.md                        # Auto-generated checkpoint catalog
 ```
 
 ## Quick Start
@@ -60,12 +74,47 @@ Uses synthetic data, minimal epochs. Validates the full pipeline without GPU or 
 
 ## Models
 
+### Core (direction prediction)
+
 | Script | Model | Task | GPU | Target 24GB |
 |--------|-------|------|-----|-------------|
 | train_classification.py | RandomForest / XGBoost | Direction classification (up/down) | Optional | 200+ trees, depth 12 |
 | train_lstm.py | LSTM / GRU | Return regression | Recommended | hidden=512, layers=4 |
 | train_transformer.py | Transformer encoder | Return regression | Required | d_model=256, heads=8, layers=6 |
 | train_dqn_rl.py | DQN | Trading actions (buy/sell/hold) | Recommended | hidden=512, 500 episodes |
+
+### Advanced architectures (Issue #754)
+
+| Script | Model | Task | GPU | Notes |
+|--------|-------|------|-----|-------|
+| train_moe_regimes.py | MoE + regime router | Direction via regime-aware experts | Recommended | LSTM/GRU/Transformer experts per regime (bull/bear/neutral/vol) |
+| train_moe.py | MoE + gating network | Direction via mixture of experts | Recommended | Soft routing via gating |
+| train_patchtst.py | PatchTST | Multi-variate forecasting | Required | Patch tokenization (ICLR 2023) |
+| train_itransformer.py | iTransformer | Multi-variate forecasting | Required | Inverted attention on variates (ICLR 2024) |
+| train_mamba.py | Mamba SSM | Sequence modeling | Recommended | State-space model baseline |
+| train_rl_dt.py | Decision Transformer | RL via sequence modeling | Recommended | Offline RL, return-conditioned |
+
+### Volatility & regime
+
+| Script | Model | Task | GPU | Notes |
+|--------|-------|------|-----|-------|
+| train_volatility_garch_dl.py | GARCH(1,1) + DL hybrid | Volatility forecasting | Recommended | LSTM/Transformer/TFT correction on GARCH residuals |
+| train_volatility_regime.py | Regime LSTM | Volatility regime detection | Optional | HMM + LSTM classifier |
+| train_regime_classifier.py | HMM | Regime detection (bull/bear/neutral/vol) | CPU | Hidden Markov Model |
+
+### Graph Neural Networks (crypto panier)
+
+| Script | Model | Task | GPU | Notes |
+|--------|-------|------|-----|-------|
+| train_gnn.py | GCN / GAT / RGCN | Cross-asset spillover | Required | 10-coin crypto panier, rolling corr adjacency |
+| train_mtgnn.py | MTGNN | Multivariate graph learning | Required | Learns graph structure |
+| train_stgat.py | ST-GAT | Spatial-temporal attention | Required | Attention over spatial + temporal dims |
+
+### Baselines & evaluation
+
+| Script | Purpose | Notes |
+|--------|---------|-------|
+| train_baselines_crypto_panier.py | Stage 0 baselines (10 coins) | Majority, buy-hold, momentum, RF. WF 5-fold x 4 seeds, 10bps costs |
 
 ## Features Engineered
 
@@ -218,6 +267,35 @@ python scripts/train_dqn_rl.py --data-dir ../datasets/yfinance --symbol SPY \
     --hidden-size 512 --num-episodes 1000 --replay-size 200000 \
     --batch-size 128 --lr 5e-4 --eps-decay 0.997
 ```
+
+## Validation (dry-run)
+
+All scripts support `--dry-run` (synthetic data, 2 epochs) except `train_moe.py`, `train_volatility_garch_dl.py`, and `train_regime_classifier.py` (no dry-run flag).
+
+```bash
+# Validate all scripts
+python scripts/validate_training_package.py --verbose
+```
+
+Dry-run results (CPU, Python 3.13, torch 2.11.0+cpu):
+
+| Script | Status | DirAcc / Metric | Time |
+|--------|--------|-----------------|------|
+| train_classification.py | PASS | Acc=0.427 | ~2s |
+| train_lstm.py | PASS | DirAcc=0.476, MSE=0.001 | ~7s |
+| train_transformer.py | PASS | DirAcc=0.512, MSE=0.002 | ~7s |
+| train_dqn_rl.py | PASS | OOS Sharpe OK | ~120s |
+| train_moe_regimes.py | PASS | DirAcc=0.462, 2 folds | ~15s |
+| train_gnn.py | PASS | Edge=-0.035 (FAILS baseline) | ~5s |
+| train_patchtst.py | PASS | Edge=-0.169 (FAILS baseline) | ~5s |
+| train_itransformer.py | PASS | Edge=-0.120 (FAILS baseline) | ~5s |
+| train_mamba.py | PASS | Edge=-0.177 (FAILS baseline) | ~5s |
+| train_mtgnn.py | PASS | Edge=-0.004 (FAILS baseline) | ~5s |
+| train_stgat.py | PASS | Edge=-0.034 (FAILS baseline) | ~5s |
+| train_rl_dt.py | PASS | Edge=+0.223 (BEATS baseline) | ~5s |
+| train_volatility_regime.py | PASS | Acc=0.663, Edge=-0.266 | ~5s |
+
+Note: dry-run uses synthetic random data. FAILS baseline is expected with random walks. Real-data results are in `results/` and on the cluster dashboard.
 
 ## Reproducibility
 
