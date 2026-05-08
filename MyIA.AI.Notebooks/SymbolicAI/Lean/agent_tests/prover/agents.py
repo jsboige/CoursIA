@@ -4,9 +4,8 @@ Each agent gets its own tools subset and model configuration.
 """
 
 from agent_framework import Agent
-from agent_framework_openai import OpenAIChatClient
 
-from .config import PROVIDERS, create_client
+from .config import create_client
 from .instructions import (
     SEARCH_AGENT_INSTRUCTIONS,
     TACTIC_AGENT_INSTRUCTIONS,

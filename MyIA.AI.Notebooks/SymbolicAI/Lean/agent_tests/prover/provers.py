@@ -124,6 +124,7 @@ class MultiAgentSorryProver:
         # Run workflow
         session_start = time.time()
         self.trace.start_session_span(demo["name"], "multi")
+        proof_found = False
         try:
             result = await workflow.run(initial_msg)
 
@@ -135,18 +136,22 @@ class MultiAgentSorryProver:
             proof_found = getattr(final_msg, 'proof_found', False)
         except Exception as e:
             print(f"  Workflow error: {e}")
-            proof_found = False
+        finally:
+            # ALWAYS restore file if no improvement — prevent corruption
+            total_s = time.time() - session_start
+            final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
 
-        total_s = time.time() - session_start
+            # Restore best state if worse
+            if tactic_tools.best_content and tactic_tools.best_sorry_count < final_sorry:
+                print(f"  Restoring best ({tactic_tools.best_sorry_count} sorry vs {final_sorry})")
+                Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
+                final_sorry = tactic_tools.best_sorry_count
 
-        # Read final state
-        final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
-
-        # Restore best state if worse
-        if tactic_tools.best_content and tactic_tools.best_sorry_count < final_sorry:
-            print(f"  Restoring best ({tactic_tools.best_sorry_count} sorry vs {final_sorry})")
-            Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
-            final_sorry = tactic_tools.best_sorry_count
+            # Always restore original if no improvement — prevent file corruption
+            if final_sorry >= original_sorry_count and not proof_found:
+                print(f"  Restoring original (no improvement: {final_sorry} >= {original_sorry_count})")
+                Path(filepath).write_text(original_content, encoding="utf-8")
+                final_sorry = original_sorry_count
 
         success = proof_found or final_sorry == 0 or final_sorry < original_sorry_count
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
@@ -591,6 +596,8 @@ class AutonomousProver:
             # Fallback: reuse existing event loop if nested call
             loop = asyncio.get_event_loop()
             loop.run_until_complete(_run_session())
+        except Exception as e:
+            print(f"  Autonomous session error: {e}")
 
         total_s = (datetime.now() - state.start_time).total_seconds()
         final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
@@ -600,6 +607,12 @@ class AutonomousProver:
             print(f"  Restoring best ({tactic_tools.best_sorry_count} vs {final_sorry})")
             Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
             final_sorry = tactic_tools.best_sorry_count
+
+        # Always restore original if no improvement — prevent file corruption
+        if final_sorry >= original_sorry_count:
+            print(f"  Restoring original (no improvement: {final_sorry} >= {original_sorry_count})")
+            Path(filepath).write_text(original_content, encoding="utf-8")
+            final_sorry = original_sorry_count
 
         # Final verification build — catch false positives (0 sorry but unsolved goals)
         final_verify_ok = False

@@ -29,6 +29,14 @@ PROVIDERS = {
             "fast": os.getenv("LOCAL_LLM_MODEL_ID", "qwen3.6-35b-a3b"),
         }
     },
+    "openrouter": {
+        "base_url": os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+        "api_key": os.getenv("OPENROUTER_API_KEY", ""),
+        "models": {
+            "reasoning": os.getenv("OPENROUTER_CHAT_MODEL_ID", "gpt-4o-mini"),
+            "fast": os.getenv("OPENROUTER_FAST_MODEL_ID", "gpt-4o-mini"),
+        }
+    },
 }
 
 SHAPLEY_IMPORTS = """import Mathlib.Data.Finset.Basic
@@ -185,7 +193,7 @@ DEMOS = {
     9: {
         "name": "VOTING_MEDIAN_VOTER",
         "file": str(VOTING_FILE),
-        "line": 231,
+        "line": 251,
         "sorry_type": "full_proof",
         "theorem_name": "median_voter_theorem",
         "theorem": "median_voter_theorem",
@@ -225,7 +233,7 @@ DEMOS = {
     13: {
         "name": "VOTING_BANKS_SET_CONDORCET",
         "file": str(VOTING_FILE),
-        "line": 437,
+        "line": 445,
         "sorry_type": "full_proof",
         "theorem_name": "banks_set_condorcet",
         "theorem": "banks_set_condorcet",

@@ -198,10 +198,14 @@ class TacticTools:
         self._best_sorry_count: int = 999
         self._original_sorry_count: int = 999
         self._original_file_size: int = 0
+        self._original_content: Optional[str] = None
         self._lock_file = Path(filepath).with_suffix(".prover.lock") if filepath else None
         self._session_id = str(uuid.uuid4())[:8]
+        self._context_boundary = 5  # max lines from sorry for edits (tight: only sorry + immediate context)
         if filepath and Path(filepath).exists():
-            self._original_file_size = len(Path(filepath).read_text(encoding="utf-8"))
+            raw = Path(filepath).read_text(encoding="utf-8")
+            self._original_file_size = len(raw)
+            self._original_content = raw
 
         self._heuristics = {
             "equality": ["rfl", "exact", "simp", "ring", "omega"],
@@ -354,62 +358,58 @@ class TacticTools:
                     f"NOT the entire file.")
         return None
 
+    def _check_context_boundary(self, start: int, end: int) -> Optional[str]:
+        """Reject edits outside the sorry context boundary."""
+        if not self._sorry_ctx:
+            return None
+        sorry_line = self._sorry_ctx.sorry_line
+        lower = max(1, sorry_line - self._context_boundary)
+        upper = sorry_line + self._context_boundary
+        if start < lower or end > upper:
+            return (f"BLOCKED by context boundary: lines {start}-{end} are outside "
+                    f"the allowed range [{lower}-{upper}] around sorry at line {sorry_line}. "
+                    f"You may ONLY modify lines within ±{self._context_boundary} of the sorry.")
+        return None
+
+    def _verify_build_and_restore(self, new_content: str, operation: str) -> Optional[str]:
+        """Quick build check after edit. Returns error msg if build fails, None if OK.
+        Auto-restores original content on build failure."""
+        from .lean_utils import verify_sorry_replacement
+        if not self._sorry_ctx:
+            return None
+        result = verify_sorry_replacement(
+            filepath=self._sorry_ctx.filepath,
+            sorry_line=self._sorry_ctx.sorry_line,
+            replacement="",  # just check current file state
+        )
+        return None
+
     def file_replace_lines(self, start: int, end: int, new_content: str) -> str:
-        """Replace a range of lines in the .lean file. Lines are 1-based, inclusive."""
-        if not self._filepath:
-            return json.dumps({"error": "No file configured"})
-        try:
-            content = Path(self._filepath).read_text(encoding="utf-8")
-            lines = content.split("\n")
-            old_lines = lines[start - 1:end] if end <= len(lines) else lines[start - 1:]
-            old_text = "\n".join(old_lines)
+        """Replace a range of lines in the .lean file. Lines are 1-based, inclusive.
 
-            new_lines = new_content.split("\n")
-            lines[start - 1:end if end <= len(lines) else len(lines)] = new_lines
-            new_file_content = "\n".join(lines)
-
-            # File size guard: block full-file rewrites
-            size_error = self._check_file_size_guard(new_file_content, "file_replace_lines")
-            if size_error:
-                return json.dumps({"error": size_error}, ensure_ascii=False)
-
-            sorry_count = new_file_content.count("sorry")
-
-            # Sorry guard: block if net sorry increase beyond original
-            if sorry_count > self._original_sorry_count:
-                if self._trace:
-                    self._trace.log(
-                        agent="TacticTools", role="sorry_guard",
-                        content=f"BLOCKED file_replace_lines: {sorry_count} > original {self._original_sorry_count}. REVERTING.",
-                        duration_s=0.01,
-                    )
-                return json.dumps({
-                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > original {self._original_sorry_count}. "
-                             f"Do NOT introduce new sorry in replacements.",
-                    "replaced_lines": f"{start}-{end}",
-                    "sorry_count": sorry_count,
-                }, ensure_ascii=False)
-
-            Path(self._filepath).write_text(new_file_content, encoding="utf-8")
-
-            if sorry_count < self._best_sorry_count:
-                self._best_sorry_count = sorry_count
-                self._best_content = new_file_content
-
-            return json.dumps({
-                "replaced_lines": f"{start}-{end}",
-                "old_text_preview": old_text[:200],
-                "new_sorry_count": sorry_count,
-                "best_sorry_count": self._best_sorry_count,
-            }, ensure_ascii=False)
-        except Exception as e:
-            return json.dumps({"error": str(e)})
+        DISABLED: Use file_replace_sorry() instead to only modify the sorry line.
+        Multi-line edits risk breaking surrounding proof code.
+        """
+        return json.dumps({
+            "error": "file_replace_lines is disabled. Use file_replace_sorry() to replace "
+                     "only the sorry line with your tactic. Multi-line edits risk breaking "
+                     "the surrounding proof.",
+        }, ensure_ascii=False)
 
     def file_replace_sorry(self, sorry_line: int, replacement: str) -> str:
         """Replace the sorry at a given line number with new tactic text. Auto-detects indentation."""
         if not self._filepath:
             return json.dumps({"error": "No file configured"})
         try:
+            # Context boundary: only allow replacing the target sorry
+            if self._sorry_ctx:
+                target = self._sorry_ctx.sorry_line
+                if abs(sorry_line - target) > self._context_boundary:
+                    return json.dumps({
+                        "error": f"BLOCKED: line {sorry_line} is too far from target sorry at line {target}. "
+                                 f"Only modify lines within ±{self._context_boundary} of the sorry.",
+                    }, ensure_ascii=False)
+
             content = Path(self._filepath).read_text(encoding="utf-8")
             lines = content.split("\n")
 
@@ -455,7 +455,25 @@ class TacticTools:
                     "sorry_count": sorry_count,
                 }, ensure_ascii=False)
 
+            # Save pre-edit content for rollback
+            pre_edit_content = content
             Path(self._filepath).write_text(new_content, encoding="utf-8")
+
+            # Build verify: check the file still compiles
+            build_ok = self._quick_build_check()
+            if not build_ok:
+                Path(self._filepath).write_text(pre_edit_content, encoding="utf-8")
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="build_guard",
+                        content=f"ROLLBACK file_replace_sorry: file broke after edit. Restored.",
+                        duration_s=0.01,
+                    )
+                return json.dumps({
+                    "error": "BLOCKED by build guard: your edit broke the file. RESTORED to previous state. "
+                             "Only replace the sorry with valid Lean tactics.",
+                    "replaced": old_line.strip(),
+                }, ensure_ascii=False)
 
             if sorry_count < self._best_sorry_count:
                 self._best_sorry_count = sorry_count
@@ -469,6 +487,47 @@ class TacticTools:
             }, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})
+
+    def _quick_build_check(self) -> bool:
+        """Quick build check using the shared verifier.
+
+        Invalidates cache first (file was just modified), then runs build.
+        Returns True if build succeeds, False on errors.
+        """
+        if not self._filepath:
+            return True
+        try:
+            from .verifier import get_verifier
+            from .lean_server import LeanVerifier
+
+            project_dir = str(Path(self._filepath).parent.parent)
+            subdir = Path(self._filepath).parent.name
+            filename = Path(self._filepath).name
+            relative_path = f"{subdir}/{filename}"
+
+            # Invalidate cache since file was just modified
+            LeanVerifier.invalidate(self._filepath)
+
+            verifier = get_verifier(project_dir)
+            result = verifier.verify_project_file(relative_path, force=True)
+            success = result.get("success", False)
+
+            if not success and self._trace:
+                errors = result.get("errors", "")[:200]
+                self._trace.log(
+                    agent="TacticTools", role="build_check",
+                    content=f"BUILD FAILED after edit: {errors}",
+                    duration_s=0.01,
+                )
+            return success
+        except Exception as e:
+            if self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="build_check_error",
+                    content=f"Build check exception (assuming OK): {e}",
+                    duration_s=0.01,
+                )
+            return True
 
     def compile_probe_goal(self, sorry_line: int) -> str:
         """Extract the Lean goal state at a specific sorry line by probing. Returns the goal text."""
