@@ -47,8 +47,27 @@ class SearchTools:
             "Finset.sum_const": ("sum s (fun _ => c) = card s * c", "Finset"),
         }
 
-    def search_mathlib_lemmas(self, goal: str, max_results: int = 10) -> str:
-        """Search for Mathlib lemmas relevant to a proof goal."""
+    def search_mathlib_lemmas(self, goal: str, max_results: int = 10,
+                              use_lsp: bool = True) -> str:
+        """Search for Mathlib lemmas relevant to a proof goal.
+
+        Primary: Lean LSP search via exact?/apply? (B.2)
+        Fallback: hardcoded lemma dictionary for common patterns
+        """
+        # B.2: Try real Lean LSP search first
+        if use_lsp and self._filepath:
+            lsp_results = self._search_via_lsp(goal)
+            if lsp_results:
+                if self._trace:
+                    self._trace.log(
+                        agent="SearchAgent", role="tool",
+                        content=f"LSP search found {len(lsp_results)} suggestions",
+                        duration_s=0.01, tool_name="search_mathlib_lemmas",
+                        tool_args={"goal": goal[:80]}, tool_result=f"{len(lsp_results)} LSP results",
+                    )
+                return json.dumps(lsp_results[:max_results], indent=2, ensure_ascii=False)
+
+        # Fallback: keyword-based search on known lemmas
         goal_lower = goal.lower()
         results = []
         keywords = goal_lower.replace("+", "add").replace("*", "mul").replace("=", "eq").split()
@@ -73,6 +92,7 @@ class SearchTools:
                 results.append({
                     "name": name, "statement": statement,
                     "namespace": namespace, "relevance": min(score, 1.0),
+                    "source": "hardcoded",
                 })
 
         results.sort(key=lambda x: x["relevance"], reverse=True)
@@ -80,12 +100,36 @@ class SearchTools:
 
         if self._trace:
             self._trace.log(
-                agent="SearchAgent", role="tool", content=f"Found {len(found)} lemmas",
+                agent="SearchAgent", role="tool", content=f"Found {len(found)} lemmas (fallback)",
                 duration_s=0.01, tool_name="search_mathlib_lemmas",
                 tool_args={"goal": goal[:80]}, tool_result=f"{len(found)} results",
             )
 
         return json.dumps(found, indent=2, ensure_ascii=False)
+
+    def _search_via_lsp(self, goal: str) -> list:
+        """Search Mathlib using Lean LSP via exact?/apply? tactics."""
+        try:
+            from .verifier import get_verifier
+            project_dir = str(Path(self._filepath).parent.parent)
+            verifier = get_verifier(project_dir)
+            subdir = Path(self._filepath).parent.name
+            module_name = f"{subdir}"
+
+            results = []
+            for tactic in ["exact?", "apply?"]:
+                search_result = verifier.search_lean(module_name, goal, tactic)
+                for suggestion in search_result.get("suggestions", []):
+                    results.append({
+                        "name": suggestion["tactic"][:50],
+                        "statement": suggestion["tactic"],
+                        "namespace": "Mathlib",
+                        "relevance": 0.9,
+                        "source": f"lsp_{tactic}",
+                    })
+            return results
+        except Exception:
+            return []
 
     def search_local_lemmas(self) -> str:
         """Search for lemmas defined in the current .lean file (no sorry)."""
@@ -434,8 +478,16 @@ class TacticTools:
             return json.dumps({"goal": goal, "line": sorry_line})
         return json.dumps({"goal": None, "line": sorry_line, "hint": "Could not extract goal"})
 
-    def compile(self) -> str:
-        """Compile the current .lean file and return errors, sorry count, and compilation time."""
+    def compile(self, check_axioms: bool = False) -> str:
+        """3-level verification: build SUCCESS + sorry count delta + axiom whitelist.
+
+        Level 1: lake build succeeds (no errors)
+        Level 2: sorry count decreased or stable (no regression)
+        Level 3 (optional): #print axioms reveals no unexpected axioms
+
+        Args:
+            check_axioms: If True, run Level 3 axiom check after successful build
+        """
         from .verifier import get_verifier
         if not self._filepath:
             return json.dumps({"error": "No file configured"})
@@ -452,6 +504,7 @@ class TacticTools:
         duration = time.time() - start
         raw_output = result.get("raw_output", "")
         success = result.get("success", False)
+        cached = result.get("cached", False)
 
         errors = []
         for line in raw_output.split("\n"):
@@ -464,18 +517,46 @@ class TacticTools:
         content = Path(self._filepath).read_text(encoding="utf-8")
         sorry_count = content.count("sorry")
 
+        sorry_delta = self._original_sorry_count - sorry_count
+        level_1 = success
+        level_2 = sorry_delta >= 0
+        level_3 = None
+
+        if check_axioms and success:
+            module_name = relative_path.replace("/", ".").replace("\\", ".")
+            if module_name.endswith(".lean"):
+                module_name = module_name[:-5]
+            axiom_result = verifier.check_axioms(module_name)
+            level_3 = axiom_result.get("success", False)
+            if self._trace and axiom_result.get("forbidden"):
+                self._trace.log(
+                    agent="TacticAgent", role="axiom_check",
+                    content=f"FORBIDDEN axioms: {axiom_result['forbidden']}",
+                    duration_s=0, tool_name="compile",
+                )
+
+        overall = level_1 and level_2 and (level_3 if level_3 is not None else True)
+
         if self._trace:
             self._trace.log(
                 agent="TacticAgent", role="compile",
-                content=f"compile: success={success}, {len(errors)} errors, {sorry_count} sorry",
+                content=f"compile: L1={level_1} L2={level_2}(Δ{sorry_delta}) L3={level_3} "
+                        f"| {sorry_count} sorry | {'CACHED' if cached else 'fresh'}",
                 duration_s=duration, tool_name="compile",
                 tool_result=raw_output[:500],
             )
 
         return json.dumps({
-            "success": success, "sorry_count": sorry_count,
+            "success": overall,
+            "level_1_build": level_1,
+            "level_2_sorry": level_2,
+            "level_3_axioms": level_3,
+            "sorry_count": sorry_count,
+            "sorry_delta": sorry_delta,
+            "original_sorry_count": self._original_sorry_count,
             "error_count": len(errors), "errors": errors[:10],
             "compile_time_s": round(duration, 1),
+            "cached": cached,
             "raw_output_preview": raw_output[:500],
         }, ensure_ascii=False)
 
@@ -544,30 +625,95 @@ class CriticTools:
         self._trace = trace
 
     def analyze_failure(self, tactic: str, error: str, goal: str = "") -> str:
-        """Analyze a tactic failure and classify the error type."""
+        """Analyze a tactic failure with structured error classification (B.6).
+
+        Classifies errors into typed categories and returns actionable hints
+        with retry strategy guidance.
+        """
+        category = "unknown"
+        severity = "medium"
         hints = []
+        retry_strategy = "try_different"
+
         if "No goals to be solved" in error:
+            category = "over_proof"
+            severity = "low"
             hints.append("First tactic already closed the goal. Remove trailing tactics like `rfl`.")
+            retry_strategy = "trim_tactic"
+
         elif "made no progress" in error:
+            category = "no_progress"
+            severity = "low"
             hints.append("Tactic didn't change the goal. Try a different approach.")
+            retry_strategy = "different_tactic"
+
         elif "unknown tactic" in error:
+            category = "syntax"
+            severity = "high"
             hints.append("Tactic requires Mathlib import. Try omega, simp, or rw instead.")
+            retry_strategy = "use_standard_tactic"
+
         elif "could not prove the goal" in error:
+            category = "incomplete"
+            severity = "medium"
             hints.append("Tactic applicable but couldn't close the goal. Try a more powerful tactic.")
+            retry_strategy = "strengthen_tactic"
+
         elif "unknown identifier" in error:
+            category = "identifier"
+            severity = "high"
             hints.append("Lemma name not found. Check exact spelling or search for alternatives.")
-        elif "type mismatch" in error:
+            retry_strategy = "search_lemma"
+
+        elif "type mismatch" in error or "type error" in error.lower():
+            category = "type_mismatch"
+            severity = "medium"
             hints.append("Type mismatch. Try norm_cast, push_cast, or cast lemmas.")
+            retry_strategy = "fix_types"
+
         elif "unsolved goals" in error:
+            category = "incomplete"
+            severity = "medium"
             hints.append("Tactic left open goals. Add more tactics or decompose.")
+            retry_strategy = "decompose_or_continue"
+
         elif "sorry" in error.lower():
+            category = "partial"
+            severity = "low"
             hints.append("Decomposition with sorry detected — partial progress.")
+            retry_strategy = "prove_subgoal"
+
+        elif "invalid" in error.lower() and "notation" in error.lower():
+            category = "notation"
+            severity = "high"
+            hints.append("Invalid notation (e.g. ⟨⟩ on non-inductive type). Use `show` or `constructor` instead.")
+            retry_strategy = "use_show_or_constructor"
+
+        elif "application type mismatch" in error:
+            category = "type_mismatch"
+            severity = "high"
+            hints.append("Function applied to wrong argument type. Check argument order and types.")
+            retry_strategy = "fix_arguments"
+
+        elif "recursive" in error.lower() or "timeout" in error.lower():
+            category = "resource"
+            severity = "high"
+            hints.append("Proof search timed out or recursed. Simplify or decompose the goal.")
+            retry_strategy = "decompose"
+
+        # Track in state
+        self._state.last_error = error[:500]
+        self._state.consecutive_failures += 1
 
         return json.dumps({
             "tactic": tactic,
-            "error_type": "progress" if "progress" in error else "type_error",
+            "category": category,
+            "severity": severity,
+            "error_type": category,
             "hints": hints,
             "suggestion": hints[0] if hints else "Try a different tactic.",
+            "retry_strategy": retry_strategy,
+            "consecutive_failures": self._state.consecutive_failures,
         }, indent=2, ensure_ascii=False)
 
     def get_proof_state(self) -> str:
@@ -580,6 +726,11 @@ class CriticTools:
         """Designate which agent should act next. Use 'search', 'tactic', or 'coordinator'."""
         self._state.designate_next_agent(agent_name)
         return f"Next agent: {agent_name}. Reason: {reason}"
+
+    def reset_consecutive_failures(self) -> str:
+        """Reset the consecutive failure counter after a successful step."""
+        self._state.consecutive_failures = 0
+        return "Consecutive failures reset to 0"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -608,6 +759,41 @@ class CoordinatorTools:
         return json.dumps(
             self._state.get_state_snapshot(summarize=True), indent=2, ensure_ascii=False
         )
+
+    def set_attack_plan(self, steps: list, reason: str = "") -> str:
+        """Set an explicit attack plan for the proof session (B.3).
+
+        The CoordinatorAgent analyzes the goal and creates a step-by-step plan
+        that guides other agents through the proof strategy.
+
+        Args:
+            steps: Ordered list of proof strategy steps (e.g. ['decompose conjunction',
+                   'prove left with omega', 'prove right with exact h'])
+            reason: Why this plan was chosen
+        """
+        self._state.plan = steps
+        self._state.plan_phase = 0
+        plan_str = "\n".join(f"  {i+1}. {step}" for i, step in enumerate(steps))
+
+        if self._trace:
+            self._trace.log(
+                agent="CoordinatorAgent", role="plan",
+                content=f"Set attack plan ({len(steps)} steps): {reason}",
+                duration_s=0.01, tool_name="set_attack_plan",
+                tool_result=plan_str[:200],
+            )
+
+        return f"Attack plan set ({len(steps)} steps):\n{plan_str}\nReason: {reason}"
+
+    def advance_plan(self) -> str:
+        """Advance to the next step in the attack plan."""
+        if not self._state.plan:
+            return "No plan set. Use set_attack_plan first."
+        self._state.plan_phase = min(
+            self._state.plan_phase + 1, len(self._state.plan) - 1
+        )
+        current = self._state.plan[self._state.plan_phase]
+        return f"Advanced to step {self._state.plan_phase + 1}/{len(self._state.plan)}: {current}"
 
     def file_read_lines(self, start: int, end: int) -> str:
         """Read a specific range of lines from the .lean file (1-based inclusive)."""

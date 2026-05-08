@@ -668,3 +668,69 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         "time_s": result.get("time_s", 0),
         "backend": result.get("backend", ""),
     }
+
+
+def suggest_decomposition(goal: str) -> list:
+    """Suggest top-down decomposition steps for complex goals.
+
+    Returns a list of 'have' sub-goals to break the proof into manageable steps.
+    Used by B.4 to force decomposition for ∀/∃/∧/↔ goals.
+
+    Returns:
+        list of dicts with 'name', 'type', 'hint' for each suggested have-step
+    """
+    suggestions = []
+
+    if not goal:
+        return suggestions
+
+    # Universal quantifier: ∀ x, P x → decompose into intro + separate claim
+    if "∀" in goal or "forall" in goal.lower():
+        suggestions.append({
+            "name": "h_forall",
+            "type": "intro the universally quantified variable(s), then prove the body",
+            "hint": "Use `intro` or `intros` first, then focus on the body goal",
+        })
+
+    # Existential: ∃ x, P x → decompose into `use` + proof of property
+    if "∃" in goal or "Exists" in goal:
+        suggestions.append({
+            "name": "h_exists",
+            "type": "provide a witness with `use`, then prove the property holds",
+            "hint": "Use `use <witness>` to provide the existential witness, then prove P witness",
+        })
+
+    # Conjunction: P ∧ Q → decompose into two separate sub-proofs
+    if "∧" in goal or ("And" in goal and "(" in goal):
+        suggestions.append({
+            "name": "h_and_left",
+            "type": "prove the left conjunct first",
+            "hint": "Use `constructor` or `exact And.intro` to split into two goals",
+        })
+
+    # Biconditional: P ↔ Q → decompose into two implications
+    if "↔" in goal or "Iff" in goal:
+        suggestions.append({
+            "name": "h_iff_fwd",
+            "type": "prove the forward direction P → Q",
+            "hint": "Use `constructor` or `Iff.intro` to split into fwd and bwd",
+        })
+
+    # Implication chain: nested → → →
+    arrow_count = goal.count("→") + goal.count("->")
+    if arrow_count >= 2:
+        suggestions.append({
+            "name": "h_impl_chain",
+            "type": "decompose implication chain with `intro` step by step",
+            "hint": "Use `intro` repeatedly to name each hypothesis, then prove conclusion",
+        })
+
+    # Negation: ¬ P → usually needs intro + absurdum or specific lemma
+    if "¬" in goal or "Not " in goal:
+        suggestions.append({
+            "name": "h_neg",
+            "type": "prove by contradiction: assume P and derive False",
+            "hint": "Use `intro h` to get h : P, then derive False from h and existing hypotheses",
+        })
+
+    return suggestions

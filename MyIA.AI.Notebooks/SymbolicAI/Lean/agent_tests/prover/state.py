@@ -94,6 +94,64 @@ class ProofState:
     last_compile_errors: List[Dict[str, Any]] = field(default_factory=list)
     best_sorry_count: int = 999
 
+    # B.3: Explicit attack plan set by CoordinatorAgent
+    plan: List[str] = field(default_factory=list)
+    plan_phase: int = 0  # Current step in the plan
+
+    # B.8: Checkpoint support — save/restore state between phases
+    _checkpoints: Dict[str, dict] = field(default_factory=dict, repr=False)
+
+    def save_checkpoint(self, label: str = "") -> str:
+        """Serialize current proof state as a checkpoint for later restore (B.8).
+
+        Returns the checkpoint ID for restore.
+        """
+        import json as _json
+        if not label:
+            label = f"cp_{self.phase.value}_{self.iteration}"
+
+        checkpoint = {
+            "label": label,
+            "phase": self.phase.value,
+            "iteration": self.iteration,
+            "current_goal": self.current_goal,
+            "current_proof": list(self.current_proof),
+            "tactic_history_count": len(self.tactic_history),
+            "consecutive_failures": self.consecutive_failures,
+            "error_count": self.error_count,
+            "best_sorry_count": self.best_sorry_count,
+            "discovered_lemmas": list(self.discovered_lemmas),
+            "plan": list(self.plan),
+            "plan_phase": self.plan_phase,
+            "sorry_goals": dict(self.sorry_goals),
+            "timestamp": datetime.now().isoformat(),
+        }
+        self._checkpoints[label] = checkpoint
+        return label
+
+    def restore_checkpoint(self, label: str) -> bool:
+        """Restore state from a named checkpoint (B.8). Returns True if found."""
+        cp = self._checkpoints.get(label)
+        if not cp:
+            return False
+
+        self.phase = ProofPhase(cp["phase"])
+        self.iteration = cp["iteration"]
+        self.current_goal = cp["current_goal"]
+        self.current_proof = cp["current_proof"]
+        self.consecutive_failures = cp["consecutive_failures"]
+        self.error_count = cp["error_count"]
+        self.best_sorry_count = cp["best_sorry_count"]
+        self.discovered_lemmas = cp["discovered_lemmas"]
+        self.plan = cp["plan"]
+        self.plan_phase = cp["plan_phase"]
+        self.sorry_goals = cp["sorry_goals"]
+        return True
+
+    def list_checkpoints(self) -> List[str]:
+        """List available checkpoint labels."""
+        return list(self._checkpoints.keys())
+
     def add_tactic_attempt(self, tactic: str, state_before: Optional[str] = None,
                            confidence: Optional[float] = None, explanation: Optional[str] = None,
                            success: bool = False, error: Optional[str] = None) -> str:
@@ -199,6 +257,14 @@ class ProofState:
             parts.append(f"Buts sorry:\n  {goals_str}")
 
         parts.append(f"Echecs consecutifs: {self.consecutive_failures}")
+
+        if self.plan:
+            plan_str = "\n  ".join(
+                f"{'>> ' if i == self.plan_phase else '   '}{i+1}. {step}"
+                for i, step in enumerate(self.plan)
+            )
+            parts.append(f"Plan d'attaque (etape {self.plan_phase + 1}/{len(self.plan)}):\n{plan_str}")
+
         return "\n".join(parts)
 
     def select_next_agent(self) -> str:

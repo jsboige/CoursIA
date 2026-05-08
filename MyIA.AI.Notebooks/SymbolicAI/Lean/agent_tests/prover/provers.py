@@ -123,6 +123,7 @@ class MultiAgentSorryProver:
 
         # Run workflow
         session_start = time.time()
+        self.trace.start_session_span(demo["name"], "multi")
         try:
             result = await workflow.run(initial_msg)
 
@@ -148,6 +149,7 @@ class MultiAgentSorryProver:
             final_sorry = tactic_tools.best_sorry_count
 
         success = proof_found or final_sorry == 0 or final_sorry < original_sorry_count
+        self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
         print(f"\n{'='*60}")
         print(f"RESULT: {'SUCCESS' if success else 'FAILED'}")
@@ -216,9 +218,12 @@ class AutonomousProver:
     The orchestrator loop: agent acts -> auto-compile -> feedback -> repeat.
     """
 
-    def __init__(self, trace: TraceLogger, provider: str = "zai"):
+    def __init__(self, trace: TraceLogger, provider: str = "zai",
+                 hitl_enabled: bool = True, hitl_threshold: int = 5):
         self.trace = trace
         self.provider = provider
+        self.hitl_enabled = hitl_enabled
+        self.hitl_threshold = hitl_threshold
         self.config_label = f"auto-{provider}"
 
     def prove_sorry(self, demo: dict, max_iterations: int = 10,
@@ -338,11 +343,13 @@ class AutonomousProver:
         session_start = time.time()
         original_file_content = Path(filepath).read_text(encoding="utf-8")
         compile_data = {}
+        final_build_ok = False  # Track build success across iterations
         context_history = [context_msg]  # ACCUMULATE instead of replace
         proof_tactics_found = []  # Lean-9 _proof_tactics_found tracking
+        self.trace.start_session_span(demo["name"], self.config_label)
 
         async def _run_session():
-            nonlocal compile_data, context_history, proof_tactics_found
+            nonlocal compile_data, context_history, proof_tactics_found, final_build_ok
             loop = asyncio.get_event_loop()
 
             for iteration in range(1, max_iterations + 1):
@@ -363,40 +370,47 @@ class AutonomousProver:
                 # Feed the FULL accumulated context
                 full_context = state_header + "\n\n" + "\n---\n".join(context_history[-3:])
 
-                try:
-                    response = await agent.run(full_context)
-                    # Debug: inspect response structure
-                    resp_type = type(response).__name__
+                # Retry with exponential backoff for rate limits (429)
+                max_retries = 3
+                response = None
+                response_text = ""
+                for retry in range(max_retries + 1):
+                    try:
+                        if agent_timeout_s > 0:
+                            response = await asyncio.wait_for(
+                                agent.run(full_context), timeout=agent_timeout_s)
+                        else:
+                            response = await agent.run(full_context)
+                        break  # Success — exit retry loop
+                    except asyncio.TimeoutError:
+                        print(f"  Agent timeout ({agent_timeout_s}s)", flush=True)
+                        response_text = f"TIMEOUT after {agent_timeout_s}s"
+                        break
+                    except Exception as e:
+                        err_str = str(e)
+                        is_rate_limit = "429" in err_str or "Rate limit" in err_str
+                        if is_rate_limit and retry < max_retries:
+                            wait_s = 30 * (2 ** retry)  # 30s, 60s, 120s
+                            print(f"  [RATE LIMIT] 429 — waiting {wait_s}s "
+                                  f"(retry {retry+1}/{max_retries})...", flush=True)
+                            await asyncio.sleep(wait_s)
+                            continue
+                        print(f"  Agent error: {e}", flush=True)
+                        response_text = err_str
+                        break
+
+                if response is not None:
                     has_msgs = hasattr(response, 'messages')
                     n_msgs = len(response.messages) if has_msgs and response.messages else 0
-                    print(f"  [DEBUG] Response type={resp_type}, has_messages={has_msgs}, n_messages={n_msgs}", flush=True)
-                    if n_msgs > 0:
-                        first_msg = response.messages[0]
-                        print(f"  [DEBUG] First msg type={type(first_msg).__name__}, has_contents={hasattr(first_msg, 'contents')}", flush=True)
-                        if hasattr(first_msg, 'contents') and first_msg.contents:
-                            print(f"  [DEBUG] First msg {len(first_msg.contents)} contents, types={[getattr(c, 'type', '?') for c in first_msg.contents[:5]]}", flush=True)
-                        elif hasattr(first_msg, 'text'):
-                            print(f"  [DEBUG] First msg has .text ({len(getattr(first_msg, 'text', '') or '')} chars)", flush=True)
-                        else:
-                            print(f"  [DEBUG] First msg attrs={[a for a in dir(first_msg) if not a.startswith('_')][:10]}", flush=True)
-                    else:
-                        print(f"  [DEBUG] Response attrs={[a for a in dir(response) if not a.startswith('_')][:10]}", flush=True)
                     response_text = ""
                     if has_msgs and n_msgs > 0:
                         last = response.messages[-1]
                         response_text = last.text if hasattr(last, 'text') else str(last)
-                    # Log FULL agent response: thinking, tool calls, text
                     self.trace.log_agent_response(
                         agent="AutonomousProver", response=response,
                         duration_s=time.time() - iter_start,
                         iteration=iteration,
                     )
-                except asyncio.TimeoutError:
-                    print(f"  Agent timeout ({agent_timeout_s}s)", flush=True)
-                    response_text = f"TIMEOUT after {agent_timeout_s}s"
-                except Exception as e:
-                    print(f"  Agent error: {e}", flush=True)
-                    response_text = str(e)
 
                 # Update state from LLM response — Lean-9 _update_state_from_response
                 self._update_state_from_response(state, response_text, proof_tactics_found)
@@ -410,6 +424,10 @@ class AutonomousProver:
                     compile_data = {}
                 current_sorry = compile_data.get("sorry_count", current_sorry)
 
+                # Build-success gate: sorry reduction only counts if build passes
+                build_ok = compile_data.get("success", False)
+                final_build_ok = build_ok
+
                 # Auto-restore: if sorry regressed from best, restore best content
                 if (tactic_tools.best_content
                         and current_sorry > tactic_tools.best_sorry_count
@@ -419,8 +437,16 @@ class AutonomousProver:
                     Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
                     current_sorry = tactic_tools.best_sorry_count
 
-                # Update state — from Lean-9 _update_state_from_response pattern
-                if current_sorry < state.best_sorry_count:
+                # Auto-restore: if sorry decreased but build FAILS, revert the edit
+                if not build_ok and current_sorry < original_sorry_count:
+                    print(f"  BUILD-FAIL RESTORE: sorry {original_sorry_count}->{current_sorry} "
+                          f"but build failed. Reverting.", flush=True)
+                    Path(filepath).write_text(original_file_content, encoding="utf-8")
+                    current_sorry = original_sorry_count
+                    state.consecutive_failures += 1
+
+                # Update state — only count progress if build passes
+                elif build_ok and current_sorry < state.best_sorry_count:
                     state.best_sorry_count = current_sorry
                     state.consecutive_failures = 0
                 elif current_sorry > state.best_sorry_count:
@@ -466,6 +492,32 @@ class AutonomousProver:
                         next_phase = PHASE_TRANSITIONS.get(state.phase, ProofPhase.TACTIC_GEN)
                         state.phase = next_phase
 
+                # B.9: HITL — ask for human hint when stuck
+                if self.hitl_enabled and state.consecutive_failures >= self.hitl_threshold:
+                    print(f"\n  [HITL] {state.consecutive_failures} echecs consecutifs. "
+                          f"Demande d'aide humaine...", flush=True)
+                    self.trace.log(
+                        agent="AutonomousProver", role="hitl",
+                        content=f"consecutive_failures={state.consecutive_failures}, asking human",
+                    )
+                    try:
+                        hint = input(
+                            f"  [HITL] Indice ou direction ? "
+                            f"(Entrée=continuer, 'stop'=arrêter) : "
+                        ).strip()
+                    except (EOFError, KeyboardInterrupt):
+                        hint = ""
+
+                    if hint.lower() == "stop":
+                        print("  [HITL] Arrêt demandé par l'utilisateur.", flush=True)
+                        break
+                    if hint:
+                        context_history.append(
+                            f"INDICE HUMAIN (priorité maximale):\n{hint}"
+                        )
+                        state.consecutive_failures = 0
+                        print(f"  [HITL] Indice injecté. Reset consecutive_failures.", flush=True)
+
                 self.trace.log(
                     agent="AutonomousProver", role="iteration",
                     content=f"iter={iteration}, sorry={current_sorry}, phase={state.phase.value}",
@@ -501,14 +553,34 @@ class AutonomousProver:
                 feedback_parts.append(f"Sorry count: {current_sorry}/{original_sorry_count}")
                 feedback_parts.append(f"Phase: {state.phase.value}")
 
-                # Append tactic history context — Lean-9 pattern
+                # Append tactic history context — full history with backtracking
                 if state.tactic_history:
-                    last_3 = state.tactic_history[-3:]
-                    tactic_log = "\n".join(
-                        f"  {'OK' if a.success else 'FAIL'}: {a.tactic[:100]}"
-                        for a in last_3
+                    failed = [a for a in state.tactic_history if not a.success]
+                    succeeded = [a for a in state.tactic_history if a.success]
+
+                    # Failed tactics: what to AVOID (full list)
+                    if failed:
+                        fail_log = "\n".join(
+                            f"  FAIL: {a.tactic[:100]}"
+                            + (f" → {a.error[:80]}" if a.error else "")
+                            for a in failed[-10:]
+                        )
+                        feedback_parts.append(
+                            f"TENTATIVES ECHOUEES (ne PAS reessayer ces tactiques):\n{fail_log}"
+                        )
+
+                    # Succeeded tactics: what WORKED
+                    if succeeded:
+                        ok_log = "\n".join(
+                            f"  OK: {a.tactic[:100]}" for a in succeeded[-5:]
+                        )
+                        feedback_parts.append(f"Tactiques reussies:\n{ok_log}")
+
+                    # Summary
+                    feedback_parts.append(
+                        f"Bilan: {len(succeeded)} reussites, {len(failed)} echecs "
+                        f"sur {len(state.tactic_history)} tentatives"
                     )
-                    feedback_parts.append(f"Tactiques recentes:\n{tactic_log}")
 
                 # Append to history (don't replace)
                 context_history.append("\n".join(feedback_parts))
@@ -529,7 +601,28 @@ class AutonomousProver:
             Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
             final_sorry = tactic_tools.best_sorry_count
 
-        success = final_sorry == 0 or final_sorry < original_sorry_count
+        # Final verification build — catch false positives (0 sorry but unsolved goals)
+        final_verify_ok = False
+        if final_sorry < original_sorry_count:
+            print("  Final verification build...", flush=True)
+            verify_result = json.loads(tactic_tools.compile())
+            final_verify_ok = verify_result.get("success", False)
+            if not final_verify_ok:
+                errors = verify_result.get("errors", [])
+                unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
+                if unsolved:
+                    print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
+                          f"{final_sorry} sorry. Reverting.", flush=True)
+                    Path(filepath).write_text(
+                        Path(filepath).read_text(encoding="utf-8"), encoding="utf-8")
+                    # Restore original if best state also has unsolved goals
+                    final_sorry = original_sorry_count
+                else:
+                    print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
+                          f"reverting.", flush=True)
+
+        success = final_sorry < original_sorry_count and final_build_ok and final_verify_ok
+        self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
         print(f"\n{'='*60}")
         print(f"RESULT: {'SUCCESS' if success else 'FAILED'}")
@@ -631,6 +724,22 @@ class AutonomousProver:
 
         if strategic_hints:
             parts.append(f"\nCONSEILS STRATEGIQUES:\n{strategic_hints}")
+
+        # B.4: Top-down decomposition hints for complex goals
+        try:
+            from .lean_utils import suggest_decomposition
+            decomps = suggest_decomposition(goal_state or "")
+            if decomps:
+                decomp_hints = "\n".join(
+                    f"  - {d['name']}: {d['hint']}" for d in decomps
+                )
+                parts.append(
+                    f"\nDECOMPOSITION RECOMMANDÉE (objectif complexe détecté):\n"
+                    f"{decomp_hints}\n"
+                    f"Utilise submit_decomposition() ou have-Steps pour décomposer AVANT d'essayer une preuve directe."
+                )
+        except Exception:
+            pass
 
         parts.append(f"\nSORRY COUNT INITIAL: {sorry_count}")
         parts.append("OBJECTIF: reduire le sorry count ou prouver completement.")
