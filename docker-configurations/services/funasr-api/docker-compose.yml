@@ -22,7 +22,7 @@ services:
               capabilities: [gpu]
 
     ports:
-      - "${FUNASR_API_PORT:-8194}:8194"
+      - "127.0.0.1:${FUNASR_API_PORT:-8194}:8194"
 
     volumes:
       - type: bind

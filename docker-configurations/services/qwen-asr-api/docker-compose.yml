@@ -22,7 +22,7 @@ services:
               capabilities: [gpu]
 
     ports:
-      - "${QWEN_ASR_PORT:-8195}:8195"
+      - "127.0.0.1:${QWEN_ASR_PORT:-8195}:8195"
 
     volumes:
       - type: bind

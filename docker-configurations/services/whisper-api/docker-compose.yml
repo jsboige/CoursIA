@@ -22,7 +22,7 @@ services:
               capabilities: [gpu]
 
     ports:
-      - "${WHISPER_API_PORT:-8190}:8190"
+      - "127.0.0.1:${WHISPER_API_PORT:-8190}:8190"
 
     volumes:
       - type: bind

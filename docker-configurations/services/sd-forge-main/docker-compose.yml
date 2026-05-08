@@ -7,7 +7,7 @@ services:
     container_name: sd-forge-main
     hostname: sd-forge-main
     ports:
-      - "7860:7860"
+      - "127.0.0.1:7860:7860"
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - WEB_USER=${FORGE_USER:-admin}
