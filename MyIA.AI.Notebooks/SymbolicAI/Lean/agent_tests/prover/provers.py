@@ -376,7 +376,11 @@ class AutonomousProver:
                 response_text = ""
                 for retry in range(max_retries + 1):
                     try:
-                        response = await agent.run(full_context)
+                        if agent_timeout_s > 0:
+                            response = await asyncio.wait_for(
+                                agent.run(full_context), timeout=agent_timeout_s)
+                        else:
+                            response = await agent.run(full_context)
                         break  # Success — exit retry loop
                     except asyncio.TimeoutError:
                         print(f"  Agent timeout ({agent_timeout_s}s)", flush=True)
