@@ -267,11 +267,16 @@ def evaluate_checkpoint(
     prices_oos = close_prices[oos_indices]
 
     if len(X_oos) > 0:
-        # Normalize OOS data using global stats for regime evaluation
-        global_mean = X.mean(axis=(0, 1), keepdims=True)
-        global_std = X.std(axis=(0, 1), keepdims=True)
-        global_std = np.where(global_std < 1e-8, 1.0, global_std)
-        X_oos_norm = (X_oos - global_mean) / global_std
+        # Normalize OOS data using train-only stats (prevent data leakage)
+        train_mask = ~oos_indices
+        if train_mask.any():
+            train_mean = X[train_mask].mean(axis=(0, 1), keepdims=True)
+            train_std = X[train_mask].std(axis=(0, 1), keepdims=True)
+        else:
+            train_mean = X.mean(axis=(0, 1), keepdims=True)
+            train_std = X.std(axis=(0, 1), keepdims=True)
+        train_std = np.where(train_std < 1e-8, 1.0, train_std)
+        X_oos_norm = (X_oos - train_mean) / train_std
 
         regime_results = eval_per_regime(
             model=_wrap_model(model, model_type),

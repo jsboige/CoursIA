@@ -114,14 +114,17 @@ def compute_true_range_atr(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     return feat
 
 
-def compute_obv(df: pd.DataFrame) -> pd.DataFrame:
-    """On-Balance Volume."""
+def compute_obv(df: pd.DataFrame, window: int = 20) -> pd.DataFrame:
+    """On-Balance Volume (rolling-std normalized).
+
+    Raw OBV cumsum is non-stationary and leaks temporal position.
+    We keep only the rolling-std normalized variant.
+    """
     feat = pd.DataFrame(index=df.index)
     direction = np.sign(df["Close"].diff())
     direction.iloc[0] = 0
-    feat["obv"] = (direction * df["Volume"]).cumsum()
-    # Normalized OBV
-    feat["obv_norm"] = feat["obv"] / feat["obv"].rolling(20).std().replace(0, 1e-10)
+    raw_obv = (direction * df["Volume"]).cumsum()
+    feat["obv"] = raw_obv / raw_obv.rolling(window).std().replace(0, 1e-10)
     return feat
 
 
