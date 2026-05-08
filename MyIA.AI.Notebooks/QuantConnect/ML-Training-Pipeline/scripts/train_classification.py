@@ -48,31 +48,40 @@ def create_classifier(
     Supports: rf, xgb, lgbm, catboost. Falls back to RandomForest on ImportError.
     """
     if model_type == "xgb":
-        from xgboost import XGBClassifier
-        return XGBClassifier(
-            n_estimators=n_estimators, max_depth=max_depth,
-            learning_rate=0.05, subsample=0.8, colsample_bytree=0.8,
-            eval_metric="logloss", verbosity=0,
-        )
+        try:
+            from xgboost import XGBClassifier
+            return XGBClassifier(
+                n_estimators=n_estimators, max_depth=max_depth,
+                learning_rate=0.05, subsample=0.8, colsample_bytree=0.8,
+                eval_metric="logloss", verbosity=0,
+            )
+        except ImportError:
+            pass
     elif model_type == "lgbm":
-        from lightgbm import LGBMClassifier
-        return LGBMClassifier(
-            n_estimators=n_estimators, max_depth=max_depth,
-            learning_rate=0.05, subsample=0.8, colsample_bytree=0.8,
-            verbose=-1,
-        )
+        try:
+            from lightgbm import LGBMClassifier
+            return LGBMClassifier(
+                n_estimators=n_estimators, max_depth=max_depth,
+                learning_rate=0.05, subsample=0.8, colsample_bytree=0.8,
+                verbose=-1,
+            )
+        except ImportError:
+            pass
     elif model_type == "catboost":
-        from catboost import CatBoostClassifier
-        return CatBoostClassifier(
-            iterations=n_estimators, depth=max_depth,
-            learning_rate=0.05, verbose=0,
-        )
-    else:
-        from sklearn.ensemble import RandomForestClassifier
-        return RandomForestClassifier(
-            n_estimators=n_estimators, max_depth=max_depth,
-            random_state=42, n_jobs=-1,
-        )
+        try:
+            from catboost import CatBoostClassifier
+            return CatBoostClassifier(
+                iterations=n_estimators, depth=max_depth,
+                learning_rate=0.05, verbose=0,
+            )
+        except ImportError:
+            pass
+
+    from sklearn.ensemble import RandomForestClassifier
+    return RandomForestClassifier(
+        n_estimators=n_estimators, max_depth=max_depth,
+        random_state=42, n_jobs=-1,
+    )
 
 
 def train_and_evaluate(

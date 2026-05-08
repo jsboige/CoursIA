@@ -122,7 +122,7 @@ class TestBuildFeaturesForSymbol:
         features = build_features_for_symbol(
             "SPY", synthetic_panier["SPY"], aux, regime_method="price",
         )
-        valid_regimes = {"uptrend", "downtrend", "volatility", "black_swan"}
+        valid_regimes = {"uptrend", "downtrend", "volatility", "black_swan", "normal"}
         regime_values = set(features["regime_price"].unique())
         assert regime_values.issubset(valid_regimes)
 
