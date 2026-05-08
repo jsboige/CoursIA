@@ -23,6 +23,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           STALE_DAYS: "14"
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
         run: |
           git fetch origin main
           BASE_SHA="$BASE_REF"
@@ -47,5 +48,3 @@ jobs:
           gh pr comment "$PR_NUMBER" --body "## Base Branch Stale Warning - ${AGE_DAYS}d behind main (${BEHIND} commits). Consider rebasing." 2>/dev/null || true
           gh label create "base-stale-14d" --description "PR base >14d behind main" --color "FFA500" --force 2>/dev/null || true
           gh pr edit "$PR_NUMBER" --add-label "base-stale-14d" 2>/dev/null || true
-        env:
-          BASE_REF: ${{ github.event.pull_request.base.sha }}
