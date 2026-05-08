@@ -10,7 +10,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from scripts.checkpoint_utils import save_pytorch_checkpoint
+from checkpoint_utils import save_pytorch_checkpoint
 
 
 @pytest.fixture

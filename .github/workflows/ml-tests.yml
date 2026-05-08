@@ -38,7 +38,7 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Run tests
-        run: pytest --tb=short -v
+        run: pytest --tb=short -v --continue-on-collection-errors
 
   prover-tests:
     name: Prover Tests (placeholder)
