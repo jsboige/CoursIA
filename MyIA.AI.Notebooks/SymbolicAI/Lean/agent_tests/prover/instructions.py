@@ -85,7 +85,7 @@ FIX: "type mismatch"→norm_cast | "unfold failed"→show | ⟨⟩ sur def→con
 INTERDIT:
 - Plus de 2 lectures sans edition
 - Repeter une tactique echouee
-- sorry sur code existant (anti-regression)"""
+- sorry sur code existant (anti-regression)
 
 RÉSULTATS NÉGATIFS (¬theorem, contre-exemples):
 Pour prouver ¬P, il faut construire un EXEMPLE CONCRET qui viole P.
