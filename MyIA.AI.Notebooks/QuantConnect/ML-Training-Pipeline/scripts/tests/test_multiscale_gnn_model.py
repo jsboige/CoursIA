@@ -6,6 +6,8 @@ import numpy as np
 import pytest
 import torch
 
+pytest.importorskip("torch_geometric")  # PyG not installed in CPU CI; tests run on GPU host
+
 from multiscale_gnn_model import MultiScaleGNN, MultiScaleGNNConfig
 
 
