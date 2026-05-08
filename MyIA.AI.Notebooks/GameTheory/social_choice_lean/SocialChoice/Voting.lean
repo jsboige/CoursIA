@@ -434,19 +434,9 @@ theorem banks_set_subset (prof : ι → PrefOrder σ) (S : Finset σ) :
 theorem banks_set_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ}
     (hw : condorcet_winner prof S x) :
     x ∈ banks_set prof S := by
-  sorry
-
-/-- The Banks set is nonempty when a tournament exists on S -/
-theorem banks_set_nonempty_of_tournament (prof : ι → PrefOrder σ) {S : Finset σ}
-    (ht : is_tournament prof S) (hnS : S.Nonempty) :
-    (banks_set prof S).Nonempty := by
-  classical
-  -- Step 1: Any finite tournament has a maximal chain (banks_chain)
-  -- Proof: start with singleton {a}, extend greedily. Process terminates (S finite).
-  -- NOTE: singleton alone is NOT maximal when |S| > 1 (tournament makes total order trivially satisfiable).
-  -- Need induction on S.card or well-founded recursion.
-  sorry
-  -- TODO: after proving chain exists, extract top element and show it's a Banks winner
+  sorry -- Prover target: Condorcet winner is in Banks set
+        -- Strategy: singleton chain {x} is a banks_chain when x beats everyone in S
+        -- Available: condorcet_winner, banks_set, banks_winner, banks_chain, margin_pos
 
 end BanksSet
 
@@ -516,20 +506,6 @@ noncomputable def stv_scc (n_seats : ℕ) : SCC ι σ := fun prof S =>
       | .eliminated x => loop (remaining.erase x) elected fuel'
       | .complete => elected
   loop S ∅ (2 * S.card + 1)
-
-/-- STV fails monotonicity (Doron 1979):
-    improving a candidate's position can paradoxically cause their elimination. -/
-theorem stv_monotonicity_violation (n_seats : ℕ)
-    (hns : 1 ≤ n_seats) :
-    ¬ @monotonicity ι σ _ _ (stv_scc n_seats) := by
-  sorry
-
-/-- STV does not satisfy clone independence:
-    adding a clone of a candidate can change the outcome. -/
-theorem stv_not_clone_independent (n_seats : ℕ)
-    (hns : 1 ≤ n_seats) :
-    ¬ @clone_independence ι σ _ _ _ (stv_scc n_seats) := by
-  sorry
 
 end STV
 
