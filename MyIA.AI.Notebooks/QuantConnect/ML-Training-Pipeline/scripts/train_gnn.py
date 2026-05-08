@@ -87,7 +87,10 @@ class GraphConvLayer(nn.Module):
         """
         support = torch.matmul(x, self.W)
         if x.dim() == 3:
-            output = torch.matmul(adj.unsqueeze(0), support)
+            if adj.dim() == 2:
+                output = torch.matmul(adj.unsqueeze(0), support)
+            else:
+                output = torch.matmul(adj, support)
         else:
             output = torch.matmul(adj, support)
         return output + self.bias
@@ -128,7 +131,10 @@ class GATLayer(nn.Module):
         e = self.leaky_relu(torch.matmul(a_input, self.a).squeeze(-1))
 
         if adj is not None:
-            mask = adj.unsqueeze(0).expand(B, -1, -1)
+            if adj.dim() == 2:
+                mask = adj.unsqueeze(0).expand(B, -1, -1)
+            else:
+                mask = adj
             e = e.masked_fill(mask == 0, float("-inf"))
 
         attention = F.softmax(e, dim=-1)
@@ -351,6 +357,7 @@ def prepare_gnn_data(
     window: int = 60,
     adj_method: str = "correlation",
     adj_threshold: float = 0.3,
+    continuous_adj: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Prepare GNN input data with dynamic adjacency.
 
@@ -391,7 +398,9 @@ def prepare_gnn_data(
 
     # Build dynamic adjacency
     builder = CryptoGraphBuilder(returns, window=window)
-    adjs = builder.build_dynamic_adjacency(method=adj_method, threshold=adj_threshold)
+    adjs = builder.build_dynamic_adjacency(
+        method=adj_method, threshold=adj_threshold, continuous=continuous_adj,
+    )
 
     # Align features/targets with adjacency
     adj_offset = window - 1
@@ -426,8 +435,17 @@ def train_and_evaluate(
     static_adj: torch.Tensor | None = None,
     adj_list_train: list[torch.Tensor] | None = None,
     adj_list_test: list[torch.Tensor] | None = None,
+    dynamic_adj: bool = True,
 ) -> dict:
-    """Train GNN model and return metrics with baseline comparison."""
+    """Train GNN model and return metrics with baseline comparison.
+
+    Parameters
+    ----------
+    dynamic_adj : bool
+        If True, use per-sample dynamic adjacency instead of mean static adj.
+        Each training sample uses the adjacency matrix from its corresponding
+        timestep, preserving temporal graph structure.
+    """
     from torch.utils.data import DataLoader, TensorDataset
 
     n_assets = X_train.shape[1]
@@ -442,34 +460,50 @@ def train_and_evaluate(
     model = model.to(device)
 
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"GNN ({model_type}) params: {total_params:,}")
+    print(f"GNN ({model_type}) params: {total_params:,}, dynamic_adj={dynamic_adj}")
 
     X_train_t = torch.tensor(X_train, dtype=torch.float32)
     y_train_t = torch.tensor(y_train, dtype=torch.float32).unsqueeze(-1)
     X_test_t = torch.tensor(X_test, dtype=torch.float32)
     y_test_t = torch.tensor(y_test, dtype=torch.float32).unsqueeze(-1)
 
-    # Use static adjacency for training (mean of dynamic adj)
-    if static_adj is None:
-        adj_mean = adj_train.mean(axis=0)
-        adj_tensor = torch.tensor(adj_mean, dtype=torch.float32)
+    if dynamic_adj and len(adj_train.shape) == 3:
+        # Use per-sample dynamic adjacency
+        adj_train_t = torch.tensor(adj_train, dtype=torch.float32)
+        adj_test_t = torch.tensor(adj_test, dtype=torch.float32)
+        adj_mode = "dynamic"
     else:
-        adj_tensor = static_adj
-
-    adj_tensor = adj_tensor.to(device)
-
-    train_ds = TensorDataset(X_train_t, y_train_t)
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(
-        TensorDataset(X_test_t, y_test_t), batch_size=batch_size
-    )
+        # Fallback: static adjacency (mean of dynamic)
+        if static_adj is None:
+            adj_mean = adj_train.mean(axis=0) if len(adj_train.shape) == 3 else adj_train
+            adj_tensor = torch.tensor(adj_mean, dtype=torch.float32)
+        else:
+            adj_tensor = static_adj
+        adj_tensor = adj_tensor.to(device)
+        adj_train_t = None
+        adj_test_t = None
+        adj_mode = "static"
 
     # Auto-split validation
     val_cutoff = int(len(X_train_t) * 0.85)
-    val_ds = TensorDataset(X_train_t[val_cutoff:], y_train_t[val_cutoff:])
-    train_ds = TensorDataset(X_train_t[:val_cutoff], y_train_t[:val_cutoff])
+    X_val_t, y_val_t = X_train_t[val_cutoff:], y_train_t[val_cutoff:]
+    X_tr_t, y_tr_t = X_train_t[:val_cutoff], y_train_t[:val_cutoff]
+
+    if adj_mode == "dynamic" and adj_train_t is not None:
+        adj_val_t = adj_train_t[val_cutoff:]
+        adj_tr_t = adj_train_t[:val_cutoff]
+
+        train_ds = TensorDataset(X_tr_t, y_tr_t, adj_tr_t)
+        val_ds = TensorDataset(X_val_t, y_val_t, adj_val_t)
+        test_ds = TensorDataset(X_test_t, y_test_t, adj_test_t)
+    else:
+        train_ds = TensorDataset(X_tr_t, y_tr_t)
+        val_ds = TensorDataset(X_val_t, y_val_t)
+        test_ds = TensorDataset(X_test_t, y_test_t)
+
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=batch_size)
+    test_loader = DataLoader(test_ds, batch_size=batch_size)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
@@ -478,6 +512,20 @@ def train_and_evaluate(
     criterion = nn.MSELoss()
 
     use_amp, grad_scaler = setup_amp()
+
+    def _forward(model, X_b, adj_b, model_type, device, use_amp_flag, adj_list=None):
+        with torch.amp.autocast("cuda", enabled=use_amp_flag):
+            if model_type == "rgcn":
+                if adj_list is not None:
+                    adj_tensors = [a.to(device) for a in adj_list]
+                elif adj_b is not None:
+                    adj_tensors = [adj_b]
+                else:
+                    adj_tensors = [torch.eye(X_b.shape[1], device=device)]
+                return model(X_b, adj_tensors)
+            else:
+                adj_input = adj_b.to(device) if adj_b is not None else torch.eye(X_b.shape[1], device=device)
+                return model(X_b, adj_input)
 
     history = {"train_loss": [], "val_loss": []}
     best_val_loss = float("inf")
@@ -488,19 +536,15 @@ def train_and_evaluate(
         epoch_loss = 0.0
         n_batches = 0
 
-        for X_batch, y_batch in train_loader:
+        for batch in train_loader:
             batch_thermal_check(n_batches, check_every=5, max_temp=80, cool_sleep=30)
 
-            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+            X_b, y_b = batch[0].to(device), batch[1].to(device)
+            adj_b = batch[2].to(device) if len(batch) > 2 else None
             optimizer.zero_grad()
 
-            with torch.amp.autocast("cuda", enabled=use_amp):
-                if model_type == "rgcn":
-                    adj_tensors = [a.to(device) for a in (adj_list_train or [adj_tensor])]
-                    pred = model(X_batch, adj_tensors)
-                else:
-                    pred = model(X_batch, adj_tensor)
-                loss = criterion(pred, y_batch)
+            pred = _forward(model, X_b, adj_b, model_type, device, use_amp, adj_list_train)
+            loss = criterion(pred, y_b)
 
             if use_amp:
                 grad_scaler.scale(loss).backward()
@@ -523,14 +567,11 @@ def train_and_evaluate(
         val_loss = 0.0
         val_batches = 0
         with torch.no_grad():
-            for X_batch, y_batch in val_loader:
-                X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-                with torch.amp.autocast("cuda", enabled=use_amp):
-                    if model_type == "rgcn":
-                        pred = model(X_batch, [a.to(device) for a in (adj_list_train or [adj_tensor])])
-                    else:
-                        pred = model(X_batch, adj_tensor)
-                    val_loss += criterion(pred, y_batch).item()
+            for batch in val_loader:
+                X_b, y_b = batch[0].to(device), batch[1].to(device)
+                adj_b = batch[2].to(device) if len(batch) > 2 else None
+                pred = _forward(model, X_b, adj_b, model_type, device, use_amp, adj_list_train)
+                val_loss += criterion(pred, y_b).item()
                 val_batches += 1
 
         avg_val = val_loss / max(val_batches, 1)
@@ -552,15 +593,12 @@ def train_and_evaluate(
 
     all_preds, all_targets = [], []
     with torch.no_grad():
-        for X_batch, y_batch in test_loader:
-            X_batch = X_batch.to(device)
-            with torch.amp.autocast("cuda", enabled=use_amp):
-                if model_type == "rgcn":
-                    pred = model(X_batch, [a.to(device) for a in (adj_list_test or [adj_tensor])])
-                else:
-                    pred = model(X_batch, adj_tensor)
+        for batch in test_loader:
+            X_b = batch[0].to(device)
+            adj_b = batch[2].to(device) if len(batch) > 2 else None
+            pred = _forward(model, X_b, adj_b, model_type, device, use_amp, adj_list_test)
             all_preds.append(pred.cpu().numpy())
-            all_targets.append(y_batch.numpy())
+            all_targets.append(batch[1].numpy())
 
     preds = np.concatenate(all_preds).flatten()
     targets = np.concatenate(all_targets).flatten()
@@ -589,6 +627,7 @@ def train_and_evaluate(
         "train_samples": len(X_train),
         "test_samples": len(X_test),
         "epochs_trained": epochs,
+        "adj_mode": adj_mode,
     }
     if baseline_comparison is not None:
         metrics["baseline_comparison"] = baseline_comparison
@@ -618,6 +657,7 @@ def run_multi_seed(
     epochs: int = 100,
     batch_size: int = 32,
     device: str = "cpu",
+    dynamic_adj: bool = True,
 ) -> dict:
     """Run multi-seed evaluation following feedback_multi_seed_required rule.
 
@@ -650,6 +690,7 @@ def run_multi_seed(
             d_model=d_model, n_layers=n_layers, n_heads=n_heads,
             epochs=epochs, batch_size=batch_size,
             device=device,
+            dynamic_adj=dynamic_adj,
         )
         results.append({
             "seed": seed,
@@ -881,6 +922,12 @@ def main():
     parser.add_argument("--threshold", type=float, default=0.3, help="Adjacency threshold")
     parser.add_argument("--adj-method", default="correlation",
                         choices=["correlation", "distance", "partial_correlation"])
+    parser.add_argument("--continuous-adj", action="store_true",
+                        help="Keep continuous correlation values instead of binary thresholding")
+    parser.add_argument("--dynamic-adj", action="store_true", default=True,
+                        help="Use per-sample dynamic adjacency (default: True)")
+    parser.add_argument("--no-dynamic-adj", dest="dynamic_adj", action="store_false",
+                        help="Use static mean adjacency instead of dynamic")
 
     # Training
     parser.add_argument("--epochs", type=int, default=100)
@@ -946,6 +993,7 @@ def main():
         window=args.window,
         adj_method=args.adj_method,
         adj_threshold=args.threshold,
+        continuous_adj=args.continuous_adj,
     )
     print(f"Data: {X.shape[0]} samples, {X.shape[1]} assets, {X.shape[2]} features")
     print(f"Adjacency: {adjs.shape}")
@@ -965,6 +1013,8 @@ def main():
         "window": args.window,
         "adj_method": args.adj_method,
         "adj_threshold": args.threshold,
+        "continuous_adj": args.continuous_adj,
+        "dynamic_adj": args.dynamic_adj,
         "epochs": args.epochs,
         "batch_size": args.batch_size,
         "learning_rate": args.lr,
@@ -1020,6 +1070,7 @@ def main():
             epochs=args.epochs,
             batch_size=args.batch_size,
             device=device,
+            dynamic_adj=args.dynamic_adj,
         )
         # Save summary
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -1050,6 +1101,7 @@ def main():
             batch_size=args.batch_size,
             learning_rate=args.lr,
             device=device,
+            dynamic_adj=args.dynamic_adj,
         )
 
         save_checkpoint(result["model"], result, hyperparams, output_dir)
