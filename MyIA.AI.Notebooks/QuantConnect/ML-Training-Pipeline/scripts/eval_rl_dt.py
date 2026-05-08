@@ -85,6 +85,11 @@ def load_checkpoint(checkpoint_dir: Path) -> tuple:
 
 
 
+def compute_sharpe(returns: np.ndarray, annualize: bool = True) -> float:
+    """Compute Sharpe ratio from returns array."""
+    return sharpe_from_returns(returns, annualize=annualize)
+
+
 def compute_max_drawdown(cumulative_returns: np.ndarray) -> float:
     """Compute maximum drawdown from cumulative returns."""
     if len(cumulative_returns) < 2:
