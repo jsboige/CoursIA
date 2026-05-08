@@ -6,28 +6,57 @@ Complete training pipeline for ML models on financial OHLCV data. Designed for G
 
 ```
 scripts/
+  # --- Data & Features ---
   features.py                      # Reusable feature engineering (indicators + caching)
+  build_dataset_v2.py              # V2 dataset builder: panier + cross-asset features + regime labels
+  data_utils.py                    # Data loading, synthetic generation, hashing
+  garch_baseline.py                # GARCH(1,1) rolling refit (no data leak) + leaky comparison
+  regime_detector.py               # Price-based regime detection (uptrend/downtrend/vol/black_swan)
+  baselines.py                     # Majority-class, buy-hold, momentum baselines + Sharpe computation
+
+  # --- Training: Core models ---
   train_classification.py          # RandomForest + XGBoost (CPU/GPU)
   train_lstm.py                    # PyTorch LSTM/GRU (GPU recommended)
   train_transformer.py             # Financial Transformer (GPU required for full scale)
   train_dqn_rl.py                  # DQN Reinforcement Learning (GPU recommended)
+
+  # --- Training: Advanced architectures ---
   train_moe_regimes.py             # MoE with regime-aware routing (Issue #754 Phase B)
   train_moe.py                     # MoE with gating network
-  train_volatility_garch_dl.py     # GARCH+DL hybrid volatility forecasting
-  train_volatility_regime.py       # Volatility regime classifier
-  train_regime_classifier.py       # HMM regime detection
-  train_baselines_crypto_panier.py # Stage 0 baselines (10 coins, WF 5-fold x 4 seeds)
-  train_gnn.py                     # GNN (GCN/GAT/RGCN) on crypto panier
-  train_mtgnn.py                   # Multivariate Time-series GNN
-  train_stgat.py                   # Spatial-Temporal GAT
   train_patchtst.py                # PatchTST (Nie et al., ICLR 2023)
   train_itransformer.py            # iTransformer (Li et al., ICLR 2024)
   train_mamba.py                   # Mamba SSM baseline
   train_rl_dt.py                   # Decision Transformer for RL
+
+  # --- Training: Volatility & regime ---
+  train_volatility_garch_dl.py     # GARCH+DL hybrid volatility forecasting
+  train_volatility_regime.py       # Volatility regime classifier
+  train_regime_classifier.py       # HMM regime detection
+  train_har_baseline.py            # HAR(1,5,22d) vs GARCH-rolling vs naive on crypto RV (#834 M2)
+
+  # --- Training: Graph Neural Networks ---
+  train_gnn.py                     # GNN (GCN/GAT/RGCN) on crypto panier
+  train_mtgnn.py                   # Multivariate Time-series GNN
+  train_stgat.py                   # Spatial-Temporal GAT
+
+  # --- Training: Baselines ---
+  train_baselines_crypto_panier.py # Stage 0 baselines (10 coins, WF 5-fold x 4 seeds)
+
+  # --- Evaluation ---
+  eval_rl_dt.py                    # Decision Transformer checkpoint evaluation harness
+  eval_chronos_bolt.py             # Chronos-Bolt zero-shot evaluation (Amazon, ~200M params)
+  eval_kronos_zeroshot.py          # Kronos zero-shot evaluation (AAAI 2026, 4 sizes)
+  eval_finstsb.py                  # FinTSB-style per-regime evaluation (4 regimes)
+  eval_existing_checkpoints.py     # Full pipeline: WF + baselines + regimes + transaction costs
+
+  # --- Infrastructure ---
+  checkpoint_utils.py              # Shared PyTorch checkpoint saving (model.pt + metadata.json)
   launch_po2025_track_a1.py        # Sequential launcher: Transformer -> DQN -> LSTM
   launch_ai01_track_b.py           # Track B launcher (ai-01 RTX 4090 baselines)
   validate_training_package.py     # Validate all scripts with --dry-run
   registry_update.py               # Build REGISTRY.md from checkpoints
+  walk_forward.py                  # Walk-forward splitter (expanding window, 5-fold)
+
 checkpoints/                       # Saved models + metadata (auto-created)
   classification/<timestamp>/
   lstm/<timestamp>/
@@ -110,7 +139,41 @@ Uses synthetic data, minimal epochs. Validates the full pipeline without GPU or 
 | train_mtgnn.py | MTGNN | Multivariate graph learning | Required | Learns graph structure |
 | train_stgat.py | ST-GAT | Spatial-temporal attention | Required | Attention over spatial + temporal dims |
 
-### Baselines & evaluation
+### Volatility baselines
+
+| Script | Model | Task | GPU | Notes |
+|--------|-------|------|-----|-------|
+| train_har_baseline.py | HAR(1,5,22d) | Realized Variance forecast | CPU | Walk-forward 5-fold vs GARCH-rolling, crypto hourly OHLCV (#834 M2) |
+
+### Evaluation harnesses
+
+| Script | Purpose | Notes |
+|--------|---------|-------|
+| eval_rl_dt.py | DT checkpoint evaluation | Walk-forward OOS, majority-class comparison, transaction cost analysis |
+| eval_chronos_bolt.py | Chronos-Bolt zero-shot | Amazon T5-based, ~200M params, 250x faster than original Chronos |
+| eval_kronos_zeroshot.py | Kronos zero-shot | AAAI 2026, pre-trained on 12B K-lines, 4 model sizes (4M-499M) |
+| eval_finstsb.py | Per-regime evaluation | 4 regimes (uptrend/downtrend/volatility/black_swan) |
+| eval_existing_checkpoints.py | Full pipeline evaluation | WF + baselines + per-regime + transaction costs for any checkpoint |
+
+### Dataset building
+
+| Script | Purpose | Notes |
+|--------|---------|-------|
+| build_dataset_v2.py | V2 panier dataset builder | 26 symbols, 7 asset classes, cross-asset features, HMM+price regime labels (#754 Phase C) |
+
+### Shared utilities
+
+| Script | Purpose | Notes |
+|--------|---------|-------|
+| features.py | Feature engineering engine | Composable indicators with Parquet caching |
+| data_utils.py | Data I/O utilities | Load yfinance/Binance, synthetic generation, SHA256 hashing |
+| baselines.py | Baseline models | Majority-class, buy-hold, momentum. Sharpe computation |
+| garch_baseline.py | GARCH utilities | Rolling refit (no data leak) vs leaky comparison. Realized vol computation |
+| regime_detector.py | Regime detection | Price-based: uptrend/downtrend/volatility/black_swan |
+| checkpoint_utils.py | Checkpoint I/O | `save_pytorch_checkpoint()`: model.pt + metadata.json with architecture/metrics/history |
+| walk_forward.py | Walk-forward splitter | Expanding window, configurable n_splits |
+
+### Baselines
 
 | Script | Purpose | Notes |
 |--------|---------|-------|
@@ -246,7 +309,11 @@ torch>=2.0
 ### Optional
 
 ```
-xgboost  # Enhanced classification (falls back to RF)
+xgboost      # Enhanced classification (falls back to RF)
+arch         # GARCH volatility models (garch_baseline.py, train_har_baseline.py)
+hmmlearn     # HMM regime detection (train_regime_classifier.py)
+fastparquet  # Parquet I/O for dataset V2 (build_dataset_v2.py)
+pyarrow      # Parquet backend (build_dataset_v2.py)
 ```
 
 ## Recommended GPU Training Commands (RTX 4090 24GB)
