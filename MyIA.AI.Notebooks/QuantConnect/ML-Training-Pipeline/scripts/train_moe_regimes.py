@@ -218,7 +218,7 @@ def train_expert(
         torch.tensor(X_val, dtype=torch.float32),
         torch.tensor(y_val, dtype=torch.float32).unsqueeze(1),
     )
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=batch_size)
 
     model = model.to(device)
@@ -401,7 +401,6 @@ def train_moe_regimes_walk_forward(
             }
 
         # Predict on test set using regime routing
-        model.eval() if hasattr(model, 'eval') else None
         oos_preds = np.zeros(len(X_test_norm))
         regime_pred_counts = {}
 
@@ -476,6 +475,7 @@ def train_moe_regimes_pipeline(
     start: str = "2015-01-01",
     end: str = "2025-01-01",
     output_dir: str | None = None,
+    raw_data: pd.DataFrame | None = None,
 ) -> dict:
     """Run full MoE-DL training pipeline.
 
@@ -488,11 +488,15 @@ def train_moe_regimes_pipeline(
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load data
-    log.info(f"Loading data for {symbol}...")
-    data_path = Path(data_dir) if data_dir else SCRIPTS_DIR.parent / "datasets" / "yfinance"
-    raw = load_data(data_path, symbol, start, end)
+    if raw_data is not None:
+        raw = raw_data
+        log.info(f"Using preloaded data: {len(raw)} rows")
+    else:
+        log.info(f"Loading data for {symbol}...")
+        data_path = Path(data_dir) if data_dir else SCRIPTS_DIR.parent / "datasets" / "yfinance"
+        raw = load_data(data_path, symbol, start, end)
     data_hash = compute_data_hash(raw)
-    log.info(f"Loaded {len(raw)} rows for {symbol} ({data_hash[:8]})")
+    log.info(f"Data: {len(raw)} rows for {symbol} ({data_hash[:8]})")
 
     if len(raw) < 500:
         raise ValueError(f"Insufficient data: {len(raw)} rows (need >= 500)")
@@ -731,6 +735,8 @@ def main():
         raw = generate_synthetic_data(500)
         args.epochs = 2
         args.n_folds = 2
+    else:
+        raw = None
 
     kwargs = dict(
         symbol=args.symbol,
@@ -752,6 +758,7 @@ def main():
         output_dir=output_dir,
         start=args.start,
         end=args.end,
+        raw_data=raw,
     )
 
     if args.seeds:
