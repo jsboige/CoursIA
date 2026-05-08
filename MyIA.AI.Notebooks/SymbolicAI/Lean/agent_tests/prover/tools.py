@@ -354,8 +354,109 @@ class TacticTools:
                     f"NOT the entire file.")
         return None
 
-    def file_replace_lines(self, start: int, end: int, new_content: str) -> str:
-        """Replace a range of lines in the .lean file. Lines are 1-based, inclusive."""
+    # Lean placeholder patterns that "look like a proof" but never compile.
+    # The plain `sorry` token is handled separately by the sorry-count guard;
+    # these are the *non-sorry* sentinels the LLM tends to inject.
+    _STUB_PATTERNS: List[str] = [
+        r"\bexact\s+_\s*$",          # `exact _`
+        r"\bexact\s+\?_\s*$",        # `exact ?_`
+        r"\bexact\s+\?\w+\s*$",      # `exact ?h`
+        r"\brefine\s+\?_\s*$",       # `refine ?_`
+        r"\badmit\s*$",              # `admit`
+        r"^\s*_\s*$",                # bare `_` line
+    ]
+
+    def _check_stub_guard(self, replacement: str, operation: str) -> Optional[str]:
+        """Reject non-compiling placeholders ('exact _', 'admit', bare '_', ...).
+
+        The file-level sorry counter does not see these, so without an explicit
+        check the prover can "improve" sorry_count while leaving the file
+        unbuildable. Returns an error message to surface to the agent, or None.
+        """
+        for raw_line in replacement.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("--"):
+                continue
+            for pat in self._STUB_PATTERNS:
+                if re.search(pat, line):
+                    if self._trace:
+                        self._trace.log(
+                            agent="TacticTools", role="stub_guard",
+                            content=f"BLOCKED {operation}: stub '{line[:60]}' matches {pat}",
+                            duration_s=0.01,
+                        )
+                    return (
+                        f"BLOCKED by stub guard: replacement contains non-compiling "
+                        f"placeholder '{line[:60]}'. These are NOT proofs — write a "
+                        f"real tactic, decompose with `have`, or keep sorry while you "
+                        f"work on a sub-goal."
+                    )
+        return None
+
+    def _build_check_or_revert(self, original_content: str, operation: str
+                               ) -> Optional[Dict]:
+        """After writing, run lake build. If it fails, revert and return diagnostics.
+
+        Returns None when the build succeeds (caller continues normally).
+        Returns a dict with `error` + `errors` + `reverted=True` on failure;
+        the original file content is restored before returning.
+        """
+        try:
+            from .verifier import get_verifier
+            project_dir = str(Path(self._filepath).parent.parent)
+            verifier = get_verifier(project_dir)
+            subdir = Path(self._filepath).parent.name
+            relative_path = f"{subdir}/{Path(self._filepath).name}"
+            result = verifier.verify_project_file(relative_path)
+        except Exception as e:
+            # Verifier itself blew up — revert defensively and surface the error.
+            Path(self._filepath).write_text(original_content, encoding="utf-8")
+            return {
+                "error": f"Verifier crashed during {operation} build-check: {e}. Reverted.",
+                "reverted": True,
+                "errors": [],
+            }
+
+        if result.get("success"):
+            return None
+
+        # Build failed — revert to original.
+        Path(self._filepath).write_text(original_content, encoding="utf-8")
+        raw_output = result.get("raw_output", "") or result.get("errors", "")
+        errors = []
+        for line in raw_output.split("\n"):
+            m = re.match(r".*?(\d+):\d+: error: (.*)", line)
+            if not m:
+                m = re.match(r"error: .*?(\d+):\d+: (.*)", line)
+            if m:
+                errors.append({"line": int(m.group(1)), "message": m.group(2)})
+
+        if self._trace:
+            self._trace.log(
+                agent="TacticTools", role="build_check",
+                content=f"BUILD-FAIL after {operation}: {len(errors)} errors. Reverted.",
+                duration_s=0.01,
+                tool_result=raw_output[:300],
+            )
+
+        return {
+            "error": (
+                f"BUILD FAILED after {operation}: {len(errors)} compile errors. "
+                f"File reverted to previous state. Fix the tactic and try again."
+            ),
+            "reverted": True,
+            "errors": errors[:8],
+            "raw_output_preview": raw_output[:400],
+        }
+
+    def file_replace_lines(self, start: int, end: int, new_content: str,
+                           build_check: bool = True) -> str:
+        """Replace a range of lines in the .lean file. Lines are 1-based, inclusive.
+
+        When `build_check=True` (default), runs lake build after writing and
+        reverts the file if compilation fails — the prover never operates on
+        a broken file.
+        """
         if not self._filepath:
             return json.dumps({"error": "No file configured"})
         try:
@@ -372,6 +473,13 @@ class TacticTools:
             size_error = self._check_file_size_guard(new_file_content, "file_replace_lines")
             if size_error:
                 return json.dumps({"error": size_error}, ensure_ascii=False)
+
+            # Stub guard: reject non-compiling placeholders inside the replacement
+            stub_error = self._check_stub_guard(new_content, "file_replace_lines")
+            if stub_error:
+                return json.dumps({"error": stub_error,
+                                   "replaced_lines": f"{start}-{end}"},
+                                  ensure_ascii=False)
 
             sorry_count = new_file_content.count("sorry")
 
@@ -392,6 +500,13 @@ class TacticTools:
 
             Path(self._filepath).write_text(new_file_content, encoding="utf-8")
 
+            # Build check: if compilation fails, revert and surface diagnostics.
+            if build_check:
+                build_err = self._build_check_or_revert(content, "file_replace_lines")
+                if build_err is not None:
+                    build_err["replaced_lines"] = f"{start}-{end}"
+                    return json.dumps(build_err, ensure_ascii=False)
+
             if sorry_count < self._best_sorry_count:
                 self._best_sorry_count = sorry_count
                 self._best_content = new_file_content
@@ -401,12 +516,20 @@ class TacticTools:
                 "old_text_preview": old_text[:200],
                 "new_sorry_count": sorry_count,
                 "best_sorry_count": self._best_sorry_count,
+                "build_check": "passed" if build_check else "skipped",
             }, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})
 
-    def file_replace_sorry(self, sorry_line: int, replacement: str) -> str:
-        """Replace the sorry at a given line number with new tactic text. Auto-detects indentation."""
+    def file_replace_sorry(self, sorry_line: int, replacement: str,
+                           build_check: bool = True) -> str:
+        """Replace the sorry at a given line with a tactic. Auto-detects indentation.
+
+        When `build_check=True` (default), runs lake build after writing and
+        reverts the file if compilation fails. The autonomous prover loop also
+        does periodic build checks, but inline validation here catches stubs
+        like `exact _` immediately and gives the agent a fresh diagnostic.
+        """
         if not self._filepath:
             return json.dumps({"error": "No file configured"})
         try:
@@ -437,6 +560,13 @@ class TacticTools:
             if size_error:
                 return json.dumps({"error": size_error}, ensure_ascii=False)
 
+            # Stub guard: reject `exact _`, `admit`, bare `_`, ... before writing.
+            stub_error = self._check_stub_guard(replacement, "file_replace_sorry")
+            if stub_error:
+                return json.dumps({"error": stub_error,
+                                   "replaced": old_line.strip()},
+                                  ensure_ascii=False)
+
             sorry_count = new_content.count("sorry")
 
             # Sorry guard: block if net sorry increase beyond original (regression)
@@ -457,6 +587,13 @@ class TacticTools:
 
             Path(self._filepath).write_text(new_content, encoding="utf-8")
 
+            # Build check: if compilation fails, revert and surface diagnostics.
+            if build_check:
+                build_err = self._build_check_or_revert(content, "file_replace_sorry")
+                if build_err is not None:
+                    build_err["replaced"] = old_line.strip()
+                    return json.dumps(build_err, ensure_ascii=False)
+
             if sorry_count < self._best_sorry_count:
                 self._best_sorry_count = sorry_count
                 self._best_content = new_content
@@ -466,6 +603,7 @@ class TacticTools:
                 "new_lines": len(replacement_lines),
                 "new_sorry_count": sorry_count,
                 "best_sorry_count": self._best_sorry_count,
+                "build_check": "passed" if build_check else "skipped",
             }, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})

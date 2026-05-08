@@ -10,8 +10,15 @@ Architecture:
                                                    +------------------+------------------+
                                                    v                  v                  v
                                              SearchAgent         TacticAgent        yield_output
+
+Hardening (2026-05-08):
+- Each `AgentExecutor` enforces a wall-clock timeout on its single LLM call so
+  a stalled provider can't freeze the graph indefinitely.
+- `ProofMessage.iteration` is incremented on every traversal. When it exceeds
+  `max_iterations` the message is yielded immediately, ending the run cleanly.
 """
 
+import asyncio
 from dataclasses import dataclass
 from typing import Optional
 
@@ -29,6 +36,11 @@ from .state import SorryContext
 from .trace import TraceLogger
 
 
+# Default per-agent LLM timeout. External providers (zai/openrouter) can
+# stall — without this the entire workflow blocks forever.
+DEFAULT_AGENT_TIMEOUT_S = 90
+
+
 @dataclass
 class ProofMessage:
     """Message flowing between agents in the workflow."""
@@ -41,23 +53,36 @@ class ProofMessage:
     is_decomposition: bool = False
     proof_found: bool = False
     next_agent: str = "search"
+    max_iterations: int = 10
 
 
 class AgentExecutor(Executor):
     """Wraps an Agent to accept/output ProofMessage in the workflow.
 
-    Converts ProofMessage -> agent.run(content) -> ProofMessage.
+    Converts ProofMessage -> agent.run(content) -> ProofMessage. Enforces a
+    per-call timeout (default 90s) so stalled providers don't hang the graph.
     """
 
-    def __init__(self, agent: Agent, trace: TraceLogger = None, **kwargs):
+    def __init__(self, agent: Agent, trace: TraceLogger = None,
+                 timeout_s: int = DEFAULT_AGENT_TIMEOUT_S, **kwargs):
         super().__init__(id=agent.name or agent.id or "agent", **kwargs)
         self._agent = agent
         self._trace = trace
+        self._timeout_s = timeout_s
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
         """Run the agent with the message content, produce updated ProofMessage."""
-        import asyncio
+        # Iteration cap — if we've already hit max, end the run cleanly.
+        msg.iteration += 1
+        if msg.max_iterations and msg.iteration > msg.max_iterations:
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="iteration_cap",
+                    content=f"iter {msg.iteration} > max {msg.max_iterations}, yielding",
+                )
+            await ctx.yield_output(msg)
+            return
 
         if self._trace:
             self._trace.log(
@@ -66,11 +91,22 @@ class AgentExecutor(Executor):
             )
 
         try:
-            response = await self._agent.run(msg.content)
+            response = await asyncio.wait_for(
+                self._agent.run(msg.content), timeout=self._timeout_s,
+            )
             response_text = ""
             if hasattr(response, 'messages') and response.messages:
                 last = response.messages[-1]
                 response_text = last.text if hasattr(last, 'text') else str(last)
+        except asyncio.TimeoutError:
+            response_text = (
+                f"[Agent timeout after {self._timeout_s}s — provider stalled]"
+            )
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="timeout",
+                    content=f"timeout after {self._timeout_s}s",
+                )
         except Exception as e:
             response_text = f"Agent error: {e}"
             if self._trace:
