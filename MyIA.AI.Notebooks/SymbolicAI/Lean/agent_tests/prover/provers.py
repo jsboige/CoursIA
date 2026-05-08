@@ -343,12 +343,13 @@ class AutonomousProver:
         session_start = time.time()
         original_file_content = Path(filepath).read_text(encoding="utf-8")
         compile_data = {}
+        final_build_ok = False  # Track build success across iterations
         context_history = [context_msg]  # ACCUMULATE instead of replace
         proof_tactics_found = []  # Lean-9 _proof_tactics_found tracking
         self.trace.start_session_span(demo["name"], self.config_label)
 
         async def _run_session():
-            nonlocal compile_data, context_history, proof_tactics_found
+            nonlocal compile_data, context_history, proof_tactics_found, final_build_ok
             loop = asyncio.get_event_loop()
 
             for iteration in range(1, max_iterations + 1):
@@ -419,6 +420,10 @@ class AutonomousProver:
                     compile_data = {}
                 current_sorry = compile_data.get("sorry_count", current_sorry)
 
+                # Build-success gate: sorry reduction only counts if build passes
+                build_ok = compile_data.get("success", False)
+                final_build_ok = build_ok
+
                 # Auto-restore: if sorry regressed from best, restore best content
                 if (tactic_tools.best_content
                         and current_sorry > tactic_tools.best_sorry_count
@@ -428,8 +433,16 @@ class AutonomousProver:
                     Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
                     current_sorry = tactic_tools.best_sorry_count
 
-                # Update state — from Lean-9 _update_state_from_response pattern
-                if current_sorry < state.best_sorry_count:
+                # Auto-restore: if sorry decreased but build FAILS, revert the edit
+                if not build_ok and current_sorry < original_sorry_count:
+                    print(f"  BUILD-FAIL RESTORE: sorry {original_sorry_count}->{current_sorry} "
+                          f"but build failed. Reverting.", flush=True)
+                    Path(filepath).write_text(original_file_content, encoding="utf-8")
+                    current_sorry = original_sorry_count
+                    state.consecutive_failures += 1
+
+                # Update state — only count progress if build passes
+                elif build_ok and current_sorry < state.best_sorry_count:
                     state.best_sorry_count = current_sorry
                     state.consecutive_failures = 0
                 elif current_sorry > state.best_sorry_count:
@@ -584,7 +597,7 @@ class AutonomousProver:
             Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
             final_sorry = tactic_tools.best_sorry_count
 
-        success = final_sorry == 0 or final_sorry < original_sorry_count
+        success = final_sorry < original_sorry_count and final_build_ok
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
         print(f"\n{'='*60}")
