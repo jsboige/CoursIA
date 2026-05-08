@@ -19,6 +19,7 @@ Output:
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -183,10 +184,46 @@ def _classify_maturity(struct, issues) -> str:
     return "BETA"
 
 
+def build_aggregate(all_results: list[dict]) -> dict:
+    """Build cross-family aggregate summary."""
+    totals = {
+        "total": sum(r["total"] for r in all_results),
+        "pass": sum(r["pass"] for r in all_results),
+        "warn": sum(r["warn"] for r in all_results),
+        "fail": sum(r["fail"] for r in all_results),
+    }
+    totals["pass_rate"] = (
+        round(totals["pass"] / totals["total"] * 100, 1)
+        if totals["total"] > 0 else 0.0
+    )
+
+    maturity_agg = {"PRODUCTION": 0, "BETA": 0, "ALPHA": 0, "DRAFT": 0}
+    for r in all_results:
+        for k in maturity_agg:
+            maturity_agg[k] += r["maturity"].get(k, 0)
+
+    all_broken = []
+    for r in all_results:
+        all_broken.extend(r["broken"])
+
+    return {
+        "n_families": len(all_results),
+        "totals": totals,
+        "maturity": maturity_agg,
+        "n_broken": len(all_broken),
+        "broken": all_broken,
+        "total_duration_s": round(sum(r["duration_s"] for r in all_results), 1),
+    }
+
+
 def print_report(all_results: list[dict], json_output: bool = False):
     """Print validation report."""
     if json_output:
-        print(json.dumps(all_results, indent=2, ensure_ascii=False))
+        payload = {
+            "families": all_results,
+            "aggregate": build_aggregate(all_results),
+        }
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
         return
 
     total_nb = sum(r["total"] for r in all_results)
@@ -212,6 +249,9 @@ def print_report(all_results: list[dict], json_output: bool = False):
         f"{total_warn:>5} {total_fail:>5}"
     )
 
+    agg = build_aggregate(all_results)
+    print(f"\nPass rate: {agg['totals']['pass_rate']}%")
+
     print(f"\n--- Maturity Distribution ---")
     print(f"{'Family':<16} {'PROD':>5} {'BETA':>5} {'ALPHA':>5} {'DRAFT':>5}")
     print("-" * 44)
@@ -219,19 +259,13 @@ def print_report(all_results: list[dict], json_output: bool = False):
         m = r["maturity"]
         print(f"{r['name']:<16} {m['PRODUCTION']:>5} {m['BETA']:>5} {m['ALPHA']:>5} {m['DRAFT']:>5}")
 
-    total_m = {"PRODUCTION": 0, "BETA": 0, "ALPHA": 0, "DRAFT": 0}
-    for r in all_results:
-        for k in total_m:
-            total_m[k] += r["maturity"][k]
+    m = agg["maturity"]
     print("-" * 44)
-    print(f"{'TOTAL':<16} {total_m['PRODUCTION']:>5} {total_m['BETA']:>5} {total_m['ALPHA']:>5} {total_m['DRAFT']:>5}")
+    print(f"{'TOTAL':<16} {m['PRODUCTION']:>5} {m['BETA']:>5} {m['ALPHA']:>5} {m['DRAFT']:>5}")
 
-    broken = []
-    for r in all_results:
-        broken.extend(r["broken"])
-    if broken:
-        print(f"\n--- BROKEN ({len(broken)}) ---")
-        for b in broken:
+    if agg["broken"]:
+        print(f"\n--- BROKEN ({agg['n_broken']}) ---")
+        for b in agg["broken"]:
             print(f"  {b['path']}: {b['reason']}")
 
 
@@ -242,6 +276,10 @@ def main():
     parser.add_argument("--quick", action="store_true", help="Structure check only")
     parser.add_argument("--json", action="store_true", help="JSON output")
     parser.add_argument("--summary", action="store_true", help="Summary table only")
+    parser.add_argument(
+        "--save", action="store_true",
+        help="Save timestamped JSON to results/validation_run_<ts>.json",
+    )
     args = parser.parse_args()
 
     matrix = load_matrix()
@@ -268,6 +306,24 @@ def main():
         all_results.append(result)
 
     print_report(all_results, json_output=args.json)
+
+    if args.save:
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        results_dir = REPO_ROOT / "results"
+        results_dir.mkdir(parents=True, exist_ok=True)
+        out_path = results_dir / f"validation_run_{ts}.json"
+
+        payload = {
+            "timestamp": ts,
+            "quick": args.quick,
+            "families": all_results,
+            "aggregate": build_aggregate(all_results),
+        }
+        out_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
+        print(f"\nResults saved to {out_path}")
 
 
 if __name__ == "__main__":
