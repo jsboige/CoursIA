@@ -178,3 +178,189 @@ def test_multi_agent_prover_accepts_workflow_timeout():
 
     sig = inspect.signature(MultiAgentSorryProver.prove_sorry)
     assert "workflow_timeout_s" in sig.parameters
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# P4 — set_attack_plan integration (B.3)
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_coordinator_agent_has_set_attack_plan_tool():
+    """CoordinatorAgent must expose set_attack_plan and advance_plan tools.
+
+    We verify by checking the CoordinatorTools instance is wired correctly,
+    since the Agent framework stores tools internally (not as _tools).
+    """
+    from prover.tools import CoordinatorTools
+    from prover.agents import create_coordinator_agent
+    from prover.trace import TraceLogger
+
+    state = ProofState(theorem_statement="test")
+    trace = TraceLogger()
+    tools = CoordinatorTools(state, filepath="", trace=trace)
+
+    # Verify the tool methods exist and are callable
+    assert callable(tools.set_attack_plan)
+    assert callable(tools.advance_plan)
+
+    # Verify they work
+    result = tools.set_attack_plan(["step1", "step2"], reason="test")
+    assert state.plan == ["step1", "step2"]
+
+    # Verify the agent was created without error (tools list accepted)
+    agent = create_coordinator_agent(tools, provider="zai")
+    assert agent is not None
+    assert agent.name == "CoordinatorAgent"
+
+
+def test_set_attack_plan_stores_in_proof_state():
+    """set_attack_plan stores steps in ProofState.plan."""
+    from prover.tools import CoordinatorTools
+    from prover.trace import TraceLogger
+
+    state = ProofState(theorem_statement="test")
+    trace = TraceLogger()
+    tools = CoordinatorTools(state, filepath="", trace=trace)
+
+    result = tools.set_attack_plan(
+        steps=["intro x", "exact x"],
+        reason="direct proof"
+    )
+    assert state.plan == ["intro x", "exact x"]
+    assert state.plan_phase == 0
+    assert "2 steps" in result
+
+
+def test_advance_plan_increments_phase():
+    """advance_plan moves to the next step in the plan."""
+    from prover.tools import CoordinatorTools
+    from prover.trace import TraceLogger
+
+    state = ProofState(theorem_statement="test")
+    trace = TraceLogger()
+    tools = CoordinatorTools(state, filepath="", trace=trace)
+
+    tools.set_attack_plan(["step1", "step2", "step3"], reason="test")
+    assert state.plan_phase == 0
+
+    tools.advance_plan()
+    assert state.plan_phase == 1
+
+    tools.advance_plan()
+    assert state.plan_phase == 2
+
+    # Does not go beyond the last step
+    tools.advance_plan()
+    assert state.plan_phase == 2
+
+
+def test_proof_message_has_plan_field():
+    """ProofMessage carries a plan field for B.3 propagation."""
+    from prover.workflow import ProofMessage
+
+    m = ProofMessage(content="x", plan=["step1", "step2"])
+    assert m.plan == ["step1", "step2"]
+    assert m.next_agent == "coordinator"  # default is now coordinator
+
+
+def test_proof_message_default_routes_to_coordinator():
+    """B.3: initial routing is to coordinator (sets attack plan first)."""
+    from prover.workflow import ProofMessage
+
+    m = ProofMessage(content="x")
+    assert m.next_agent == "coordinator"
+
+
+def test_workflow_builder_passes_state_to_executors():
+    """ProofWorkflowBuilder passes state to AgentExecutors for plan propagation."""
+    from unittest.mock import MagicMock
+    from prover.workflow import ProofWorkflowBuilder, ProofMessage
+    from prover.state import SorryContext
+
+    state = ProofState(theorem_statement="test")
+    sorry_ctx = SorryContext(filepath="fake.lean", sorry_line=1, indentation=0)
+
+    mock_agents = [MagicMock(name=f"agent_{i}") for i in range(4)]
+    for a in mock_agents:
+        a.name = f"Agent_{a._mock_name}"
+
+    builder = ProofWorkflowBuilder(
+        *mock_agents, sorry_ctx, "", state=state,
+    )
+    # All executors should have the state reference
+    assert builder._coordinator._state is state
+    assert builder._search._state is state
+    assert builder._tactic._state is state
+    assert builder._critic._state is state
+
+
+def test_plan_injected_into_downstream_context():
+    """B.3: When plan is set, AgentExecutor prepends it for non-coordinator agents."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from prover.workflow import AgentExecutor, ProofMessage
+    from prover.state import ProofState
+
+    state = ProofState(theorem_statement="test")
+    agent = MagicMock()
+    agent.name = "SearchAgent"
+    agent.run = AsyncMock(return_value=MagicMock(
+        messages=[MagicMock(text="found lemma")]
+    ))
+
+    executor = AgentExecutor(agent, state=state)
+    msg = ProofMessage(
+        content="search for lemmas",
+        plan=["step1: intro x", "step2: exact x"],
+    )
+
+    import asyncio
+    # We need a WorkflowContext mock — but we can test the content enrichment
+    # by checking the agent.run call argument
+    async def _test():
+        # Create a minimal mock context
+        ctx = AsyncMock()
+        ctx.yield_output = AsyncMock()
+        ctx.send_message = AsyncMock()
+
+        # Increment is part of handle, so iteration will be 1 after
+        await executor.handle(msg, ctx)
+
+        # Check agent.run was called with plan header prepended
+        call_args = agent.run.call_args[0][0]
+        assert "PLAN D'ATTAQUE" in call_args
+        assert "step1: intro x" in call_args
+        assert "search for lemmas" in call_args
+
+    asyncio.run(_test())
+
+
+def test_plan_not_injected_for_coordinator():
+    """B.3: Plan is NOT prepended when the agent IS CoordinatorAgent."""
+    from unittest.mock import AsyncMock, MagicMock
+    from prover.workflow import AgentExecutor, ProofMessage
+
+    agent = MagicMock()
+    agent.name = "CoordinatorAgent"
+    agent.run = AsyncMock(return_value=MagicMock(
+        messages=[MagicMock(text="coordinated")]
+    ))
+
+    executor = AgentExecutor(agent)
+    msg = ProofMessage(
+        content="analyze goal",
+        plan=["step1"],
+    )
+
+    import asyncio
+
+    async def _test():
+        ctx = AsyncMock()
+        ctx.yield_output = AsyncMock()
+        ctx.send_message = AsyncMock()
+        await executor.handle(msg, ctx)
+
+        call_args = agent.run.call_args[0][0]
+        assert "PLAN D'ATTAQUE" not in call_args
+        assert "analyze goal" in call_args
+
+    asyncio.run(_test())

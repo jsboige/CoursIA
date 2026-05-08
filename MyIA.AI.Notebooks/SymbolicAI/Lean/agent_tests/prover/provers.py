@@ -109,7 +109,7 @@ class MultiAgentSorryProver:
         # Build workflow graph
         workflow_builder = ProofWorkflowBuilder(
             search_agent, tactic_agent, critic_agent, coordinator_agent,
-            sorry_ctx, demo.get("imports", ""), self.trace,
+            sorry_ctx, demo.get("imports", ""), self.trace, state=state,
         )
         workflow = workflow_builder.build()
 
@@ -121,6 +121,7 @@ class MultiAgentSorryProver:
             content=context_msg,
             sorry_count=original_sorry_count,
             max_iterations=max_iterations,
+            next_agent="coordinator",  # B.3: coordinator sets attack plan first
         )
 
         # Run workflow with a wall-clock timeout — caps the total session at

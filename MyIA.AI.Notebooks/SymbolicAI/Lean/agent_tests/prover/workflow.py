@@ -52,8 +52,9 @@ class ProofMessage:
     error_type: Optional[str] = None
     is_decomposition: bool = False
     proof_found: bool = False
-    next_agent: str = "search"
+    next_agent: str = "coordinator"  # B.3: coordinator runs first to set attack plan
     max_iterations: int = 10
+    plan: Optional[list] = None  # attack plan from CoordinatorAgent
 
 
 class AgentExecutor(Executor):
@@ -64,11 +65,13 @@ class AgentExecutor(Executor):
     """
 
     def __init__(self, agent: Agent, trace: TraceLogger = None,
-                 timeout_s: int = DEFAULT_AGENT_TIMEOUT_S, **kwargs):
+                 timeout_s: int = DEFAULT_AGENT_TIMEOUT_S,
+                 state: "ProofState" = None, **kwargs):
         super().__init__(id=agent.name or agent.id or "agent", **kwargs)
         self._agent = agent
         self._trace = trace
         self._timeout_s = timeout_s
+        self._state = state  # B.3: shared state for plan propagation
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -90,9 +93,17 @@ class AgentExecutor(Executor):
                 content=msg.content[:100],
             )
 
+        # B.3: Inject attack plan context for downstream agents
+        content = msg.content
+        if msg.plan and self._agent.name != "CoordinatorAgent":
+            plan_header = "PLAN D'ATTAQUE (suivre ces etapes):\n"
+            plan_header += "\n".join(f"  {i+1}. {step}" for i, step in enumerate(msg.plan))
+            plan_header += "\n\n---\n"
+            content = plan_header + content
+
         try:
             response = await asyncio.wait_for(
-                self._agent.run(msg.content), timeout=self._timeout_s,
+                self._agent.run(content), timeout=self._timeout_s,
             )
             response_text = ""
             if hasattr(response, 'messages') and response.messages:
@@ -114,6 +125,11 @@ class AgentExecutor(Executor):
                     agent=self._agent.name, role="error",
                     content=str(e)[:200],
                 )
+
+        # B.3: Propagate plan from ProofState into message after Coordinator runs
+        if self._agent.name == "CoordinatorAgent" and self._state and not msg.plan:
+            if self._state.plan:
+                msg.plan = list(self._state.plan)
 
         # Agent output becomes the new content
         msg.content = response_text
@@ -208,15 +224,27 @@ class ProofWorkflowBuilder:
     def __init__(self, search_agent: Agent, tactic_agent: Agent,
                  critic_agent: Agent, coordinator_agent: Agent,
                  sorry_context: SorryContext, imports: str,
-                 trace: TraceLogger = None):
-        self._search = AgentExecutor(search_agent, trace=trace)
-        self._tactic = AgentExecutor(tactic_agent, trace=trace)
-        self._critic = AgentExecutor(critic_agent, trace=trace)
-        self._coordinator = AgentExecutor(coordinator_agent, trace=trace)
+                 trace: TraceLogger = None, state: "ProofState" = None):
+        self._search = AgentExecutor(search_agent, trace=trace, state=state)
+        self._tactic = AgentExecutor(tactic_agent, trace=trace, state=state)
+        self._critic = AgentExecutor(critic_agent, trace=trace, state=state)
+        self._coordinator = AgentExecutor(coordinator_agent, trace=trace, state=state)
         self._verify = VerifyExecutor(sorry_context, imports, trace)
 
     def build(self):
-        builder = WorkflowBuilder(start_executor=self._search)
+        # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to search
+        builder = WorkflowBuilder(start_executor=self._coordinator)
+
+        # Coordinator -> Search (initial plan or re-plan)
+        builder.add_edge(
+            self._coordinator, self._search,
+            condition=lambda msg: msg.next_agent in ("search", "coordinator"),
+        )
+        # Coordinator -> Tactic (direct tactical guidance)
+        builder.add_edge(
+            self._coordinator, self._tactic,
+            condition=lambda msg: msg.next_agent == "tactic",
+        )
 
         # Forward chain: search -> tactic -> verify
         builder.add_edge(self._search, self._tactic)
