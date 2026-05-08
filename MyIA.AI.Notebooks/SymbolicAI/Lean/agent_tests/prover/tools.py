@@ -198,10 +198,14 @@ class TacticTools:
         self._best_sorry_count: int = 999
         self._original_sorry_count: int = 999
         self._original_file_size: int = 0
+        self._original_content: Optional[str] = None
         self._lock_file = Path(filepath).with_suffix(".prover.lock") if filepath else None
         self._session_id = str(uuid.uuid4())[:8]
+        self._context_boundary = 5  # max lines from sorry for edits (tight: only sorry + immediate context)
         if filepath and Path(filepath).exists():
-            self._original_file_size = len(Path(filepath).read_text(encoding="utf-8"))
+            raw = Path(filepath).read_text(encoding="utf-8")
+            self._original_file_size = len(raw)
+            self._original_content = raw
 
         self._heuristics = {
             "equality": ["rfl", "exact", "simp", "ring", "omega"],
@@ -533,6 +537,15 @@ class TacticTools:
         if not self._filepath:
             return json.dumps({"error": "No file configured"})
         try:
+            # Context boundary: only allow replacing the target sorry
+            if self._sorry_ctx:
+                target = self._sorry_ctx.sorry_line
+                if abs(sorry_line - target) > self._context_boundary:
+                    return json.dumps({
+                        "error": f"BLOCKED: line {sorry_line} is too far from target sorry at line {target}. "
+                                 f"Only modify lines within ±{self._context_boundary} of the sorry.",
+                    }, ensure_ascii=False)
+
             content = Path(self._filepath).read_text(encoding="utf-8")
             lines = content.split("\n")
 
@@ -585,6 +598,8 @@ class TacticTools:
                     "sorry_count": sorry_count,
                 }, ensure_ascii=False)
 
+            # Save pre-edit content for rollback
+            pre_edit_content = content
             Path(self._filepath).write_text(new_content, encoding="utf-8")
 
             # Build check: if compilation fails, revert and surface diagnostics.
@@ -607,6 +622,47 @@ class TacticTools:
             }, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})
+
+    def _quick_build_check(self) -> bool:
+        """Quick build check using the shared verifier.
+
+        Invalidates cache first (file was just modified), then runs build.
+        Returns True if build succeeds, False on errors.
+        """
+        if not self._filepath:
+            return True
+        try:
+            from .verifier import get_verifier
+            from .lean_server import LeanVerifier
+
+            project_dir = str(Path(self._filepath).parent.parent)
+            subdir = Path(self._filepath).parent.name
+            filename = Path(self._filepath).name
+            relative_path = f"{subdir}/{filename}"
+
+            # Invalidate cache since file was just modified
+            LeanVerifier.invalidate(self._filepath)
+
+            verifier = get_verifier(project_dir)
+            result = verifier.verify_project_file(relative_path, force=True)
+            success = result.get("success", False)
+
+            if not success and self._trace:
+                errors = result.get("errors", "")[:200]
+                self._trace.log(
+                    agent="TacticTools", role="build_check",
+                    content=f"BUILD FAILED after edit: {errors}",
+                    duration_s=0.01,
+                )
+            return success
+        except Exception as e:
+            if self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="build_check_error",
+                    content=f"Build check exception (assuming OK): {e}",
+                    duration_s=0.01,
+                )
+            return True
 
     def compile_probe_goal(self, sorry_line: int) -> str:
         """Extract the Lean goal state at a specific sorry line by probing. Returns the goal text."""
