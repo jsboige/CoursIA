@@ -16,8 +16,8 @@ from pathlib import Path
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
-# Add parent to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add agent_tests/ to path so `from prover import ...` works
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from prover import DEMOS, TraceLogger
 from prover.provers import MultiAgentSorryProver, AutonomousProver

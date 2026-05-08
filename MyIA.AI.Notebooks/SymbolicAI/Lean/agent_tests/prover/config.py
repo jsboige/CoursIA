@@ -193,7 +193,7 @@ DEMOS = {
     9: {
         "name": "VOTING_MEDIAN_VOTER",
         "file": str(VOTING_FILE),
-        "line": 251,
+        "line": 261,
         "sorry_type": "full_proof",
         "theorem_name": "median_voter_theorem",
         "theorem": "median_voter_theorem",
@@ -215,7 +215,7 @@ DEMOS = {
     10: {
         "name": "VOTING_BANKS_SET_NONEMPTY",
         "file": str(VOTING_FILE),
-        "line": 448,
+        "line": 455,
         "sorry_type": "full_proof",
         "theorem_name": "banks_set_nonempty_of_tournament",
         "theorem": "banks_set_nonempty_of_tournament",
@@ -233,7 +233,7 @@ DEMOS = {
     13: {
         "name": "VOTING_BANKS_SET_CONDORCET",
         "file": str(VOTING_FILE),
-        "line": 445,
+        "line": 455,
         "sorry_type": "full_proof",
         "theorem_name": "banks_set_condorcet",
         "theorem": "banks_set_condorcet",
