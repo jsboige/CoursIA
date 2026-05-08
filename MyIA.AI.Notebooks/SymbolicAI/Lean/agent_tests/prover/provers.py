@@ -43,7 +43,8 @@ class MultiAgentSorryProver:
         self.provider = provider
         self.local_provider = local_provider
 
-    async def prove_sorry(self, demo: dict, max_iterations: int = 10) -> dict:
+    async def prove_sorry(self, demo: dict, max_iterations: int = 10,
+                          workflow_timeout_s: Optional[int] = None) -> dict:
         filepath = demo["file"]
         sorry_line = demo["line"]
 
@@ -119,14 +120,22 @@ class MultiAgentSorryProver:
         initial_msg = ProofMessage(
             content=context_msg,
             sorry_count=original_sorry_count,
+            max_iterations=max_iterations,
         )
 
-        # Run workflow
+        # Run workflow with a wall-clock timeout — caps the total session at
+        # `max_iterations * 90s` (per-agent timeout) by default, but caller
+        # can override.
+        import asyncio as _asyncio
+        if workflow_timeout_s is None:
+            workflow_timeout_s = max_iterations * 120  # generous wall clock
         session_start = time.time()
         self.trace.start_session_span(demo["name"], "multi")
         proof_found = False
         try:
-            result = await workflow.run(initial_msg)
+            result = await _asyncio.wait_for(
+                workflow.run(initial_msg), timeout=workflow_timeout_s,
+            )
 
             if hasattr(result, 'output') and result.output:
                 final_msg = result.output
@@ -134,6 +143,9 @@ class MultiAgentSorryProver:
                 final_msg = initial_msg
 
             proof_found = getattr(final_msg, 'proof_found', False)
+        except _asyncio.TimeoutError:
+            print(f"  Workflow wall-clock timeout ({workflow_timeout_s}s) — aborting")
+            proof_found = False
         except Exception as e:
             print(f"  Workflow error: {e}")
         finally:
