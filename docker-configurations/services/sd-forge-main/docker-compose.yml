@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   sd-forge-main:
     build: .
@@ -8,6 +6,7 @@ services:
     hostname: sd-forge-main
     ports:
       - "127.0.0.1:7860:7860"
+    user: "1000:1000"
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - WEB_USER=${FORGE_USER:-admin}
@@ -18,11 +17,20 @@ services:
       - ../../shared/outputs:/opt/storage/stable_diffusion/outputs
     deploy:
       resources:
+        limits:
+          cpus: '2'
+          memory: 6G
         reservations:
           devices:
             - driver: nvidia
               device_ids: ['1']
               capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:7860/ | grep -qE '200|401|403'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
     restart: unless-stopped
     stdin_open: true
     tty: true

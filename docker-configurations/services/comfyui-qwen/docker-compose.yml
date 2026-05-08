@@ -3,9 +3,13 @@ services:
     image: python:3.11
     container_name: comfyui-qwen
     hostname: comfyui-qwen
+    user: "1000:1000"
     
     deploy:
       resources:
+        limits:
+          cpus: '4'
+          memory: 12G
         reservations:
           devices:
             - driver: nvidia
