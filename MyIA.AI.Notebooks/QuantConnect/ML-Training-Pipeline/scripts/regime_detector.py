@@ -580,7 +580,7 @@ def compute_regime_transition_features(
         if len(window) < 2:
             transitions.append(0)
         else:
-            switches = (window.diff().abs() > 0).sum()
+            switches = (window != window.shift()).sum()
             transitions.append(switches)
     features["transition_count"] = transitions
 
