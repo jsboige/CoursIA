@@ -249,6 +249,11 @@ def main() -> None:
     ap.add_argument("--n-splits", type=int, default=5)
     ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 7, 42])
     ap.add_argument("--epochs", type=int, default=400)
+    ap.add_argument("--coins", nargs="+",
+                    default=["BTC-USD", "ETH-USD", "SOL-USD"],
+                    help="Coin tickers; intersection-aligned. "
+                         "Use only BTC-USD ETH-USD for deeper history "
+                         "(Bitstamp 2018-2024 + Binance 2019-2023, ~1500d).")
     ap.add_argument("--skip-remote", action="store_true")
     ap.add_argument("--dry-run", action="store_true",
                     help="Use synthetic panel (no real data, no GPU required)")
@@ -264,9 +269,9 @@ def main() -> None:
         seeds = args.seeds[:2]  # short
         epochs = max(args.epochs // 8, 5)
     else:
-        print(f"[load] BTC + ETH + SOL hourly → cross-asset panel "
+        print(f"[load] coins={args.coins} hourly → cross-asset panel "
               f"(skip_remote={args.skip_remote})")
-        panel = build_panel(skip_remote=args.skip_remote)
+        panel = build_panel(coins=tuple(args.coins), skip_remote=args.skip_remote)
         seeds = args.seeds
         epochs = args.epochs
 
