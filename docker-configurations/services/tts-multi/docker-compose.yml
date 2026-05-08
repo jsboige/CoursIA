@@ -23,6 +23,13 @@ services:
       - TADA_SERVICE_URL=http://tts-tada:8000
       - QWEN_SERVICE_URL=http://tts-qwen:8000
       - TZ=${TZ:-Europe/Paris}
+      - API_KEY=${TTS_GATEWAY_API_KEY:-}
+
+    volumes:
+      - type: bind
+        source: ../shared
+        target: /app/shared
+        read_only: true
 
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; print(urllib.request.urlopen('http://localhost:8000/health').read().decode())\" | grep -q healthy"]
