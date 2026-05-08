@@ -92,30 +92,14 @@ def compute_realized_vol(returns: pd.Series, horizon: int) -> pd.Series:
 # ---------------------------------------------------------------------------
 
 def fit_garch(returns: pd.Series, horizon: int = 1) -> pd.Series:
-    """Fit GARCH(1,1) and return h-step ahead conditional variance forecast.
+    """Fit GARCH(1,1) with rolling refit — NO data leak.
 
-    Uses the `arch` library. Returns a Series aligned with returns index,
-    containing the variance forecast for horizon steps ahead.
+    Uses the corrected rolling implementation from garch_baseline.py.
+    The legacy in-sample version is available as garch_baseline.fit_garch_leaky
+    for comparison only.
     """
-    from arch import arch_model
-
-    # Scale returns to percentage for numerical stability
-    scaled = returns * 100
-    am = arch_model(scaled.dropna(), vol="Garch", p=1, q=1, dist="normal", rescale=False)
-    res = am.fit(disp="off", show_warning=False)
-
-    # Get 1-step ahead conditional variance forecasts (rolling)
-    cond_var = res.conditional_volatility ** 2
-
-    # For h-step ahead, scale by h (assumes variance persistence)
-    # σ²_{t+h} ≈ σ²_t * h for short horizons under GARCH(1,1)
-    if horizon > 1:
-        cond_var = cond_var * horizon
-
-    # Rescale back
-    cond_var = cond_var / 10000
-    cond_var.index = returns.index[:len(cond_var)]
-    return cond_var
+    from garch_baseline import fit_garch_rolling
+    return fit_garch_rolling(returns, horizon=horizon)
 
 
 def compute_garch_residuals(returns: pd.Series, cond_var: pd.Series, horizon: int) -> pd.Series:
