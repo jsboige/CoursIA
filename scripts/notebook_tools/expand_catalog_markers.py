@@ -88,9 +88,6 @@ def compute_status_distribution(entries: list[dict], serie: str | None = None) -
 
 def format_catalog_status_block(entries: list[dict], serie: str) -> str:
     """Generate a full CATALOG-STATUS block for a series README."""
-    from datetime import date
-    today = date.today().isoformat()
-
     if serie == "ALL":
         count = len(entries)
         series_counts = Counter(e.get("serie", "?") for e in entries)
@@ -103,7 +100,6 @@ def format_catalog_status_block(entries: list[dict], serie: str) -> str:
             f"total: {count}\n"
             f"breakdown: {bd_str}\n"
             f"maturity: {mat_str}\n"
-            f"updated: {today}\n"
             f"-->"
         )
 
@@ -119,7 +115,6 @@ def format_catalog_status_block(entries: list[dict], serie: str) -> str:
         f"pedagogical_count: {count}\n"
         f"breakdown: {bd_str}\n"
         f"maturity: {mat_str}\n"
-        f"updated: {today}\n"
         f"-->"
     )
 

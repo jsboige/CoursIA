@@ -34,7 +34,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
-EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "ESGF", "examples"}
+EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "output", "ESGF", "examples"}
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",

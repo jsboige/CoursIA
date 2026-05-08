@@ -5,7 +5,6 @@ series: QuantConnect
 pedagogical_count: 97
 breakdown: projects=48, Python=48, ML-Training-Pipeline=1
 maturity: DRAFT=67, PRODUCTION=14, ALPHA=13, BETA=3
-updated: 2026-05-09
 -->
 
 > **Trading algorithmique + Intelligence Artificielle**
