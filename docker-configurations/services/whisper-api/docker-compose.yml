@@ -15,6 +15,9 @@ services:
 
     deploy:
       resources:
+        limits:
+          cpus: '2'
+          memory: 4G
         reservations:
           devices:
             - driver: nvidia
@@ -34,7 +37,7 @@ services:
         read_only: true
       - type: volume
         source: whisper-cache
-        target: /root/.cache
+        target: /home/appuser/.cache
 
     environment:
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
@@ -55,6 +58,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
+
+    read_only: true
+    tmpfs:
+      - /tmp:size=100M
 
     restart: unless-stopped
 

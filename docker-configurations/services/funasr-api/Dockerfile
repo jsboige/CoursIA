@@ -51,8 +51,15 @@ RUN chmod +x /app/start.sh /app/patch-funasr.sh
 # Apply runtime patches for FunASR Nano compatibility
 RUN /app/patch-funasr.sh
 
-# Create directories
-RUN mkdir -p /app/models /app/uploads
+# Create non-root user for security
+RUN groupadd -g 1000 appuser && \
+    useradd -u 1000 -g appuser -m -s /bin/bash appuser
+
+# Create directories with proper ownership
+RUN mkdir -p /app/models /app/uploads && \
+    chown -R appuser:appuser /app
+
+USER appuser
 
 # Expose port
 EXPOSE 8194

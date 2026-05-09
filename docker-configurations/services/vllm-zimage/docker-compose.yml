@@ -2,11 +2,12 @@ services:
   vllm-zimage:
     image: vllm/vllm-omni:v0.12.0rc1
     container_name: vllm-zimage
+    user: "1000:1000"
     ipc: host
     ports:
       - "127.0.0.1:${VLLM_ZIMAGE_PORT:-8001}:8000"
     volumes:
-      - ../../shared/cache/huggingface:/root/.cache/huggingface
+      - ../../shared/cache/huggingface:/home/vllm/.cache/huggingface
       - ../../shared/models:/models:ro
     environment:
       - HF_TOKEN=${HF_TOKEN}
@@ -39,6 +40,9 @@ services:
       - "${VLLM_API_KEY:-}"
     deploy:
       resources:
+        limits:
+          cpus: '4'
+          memory: 8G
         reservations:
           devices:
             - driver: nvidia
