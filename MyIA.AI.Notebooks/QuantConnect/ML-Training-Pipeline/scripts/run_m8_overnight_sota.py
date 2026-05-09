@@ -100,7 +100,20 @@ def main() -> int:
     log(f"Configuration: epochs={EPOCHS} seeds={SEEDS} n_splits={N_SPLITS} seq_len={SEQ_LEN}")
     log(f"Output dir: {RESULTS}")
 
-    summary = []
+    summary_file = RESULTS / "_summary.json"
+    summary: list = []
+    completed: set = set()
+    if summary_file.exists():
+        try:
+            summary = json.loads(summary_file.read_text(encoding="utf-8"))
+            completed = {(r["model"], r["coin"], r["horizon"]) for r in summary if r.get("exit") == 0}
+            if completed:
+                log(f"Resume: {len(completed)} combos already OK in _summary.json, will skip")
+        except Exception as e:
+            log(f"Resume: failed to load _summary.json ({e}), starting fresh")
+            summary = []
+            completed = set()
+
     total = len(MODELS) * len(COINS) * len(HORIZONS)
     idx = 0
     for model_name, script in MODELS:
@@ -108,6 +121,9 @@ def main() -> int:
             for h in HORIZONS:
                 idx += 1
                 tag = f"{model_name}/{coin}/h{h}"
+                if (model_name, coin, h) in completed:
+                    log(f"[{idx}/{total}] SKIP  {tag} (already OK)")
+                    continue
                 log(f"[{idx}/{total}] START {tag}")
                 result = run_one(model_name, script, coin, h)
                 result.update({"model": model_name, "coin": coin, "horizon": h})
@@ -115,7 +131,7 @@ def main() -> int:
                 status = "OK" if result["exit"] == 0 else f"FAIL exit={result['exit']}"
                 log(f"[{idx}/{total}] END   {tag} {status} ({result['elapsed_s']:.0f}s)")
                 # incremental flush
-                with (RESULTS / "_summary.json").open("w", encoding="utf-8") as f:
+                with summary_file.open("w", encoding="utf-8") as f:
                     json.dump(summary, f, indent=2)
 
     log(f"=== M8 SOTA sweep DONE: {sum(1 for r in summary if r['exit']==0)}/{total} OK ===")
