@@ -191,6 +191,10 @@ def run_stage2_dl(
         from train_patchtst import PatchTSTModel
     elif model_type == "itransformer":
         from train_itransformer import iTransformerModel
+    elif model_type == "tft":
+        from train_tft import TemporalFusionTransformer
+    elif model_type == "heteroscedastic":
+        from train_heteroscedastic import HeteroscedasticNN, gaussian_nll_loss
 
     features = compute_features(close)
     target = compute_log_rv_target(close, horizon)
@@ -252,6 +256,7 @@ def run_stage2_dl(
             X_test_n = (X_test_seq - mu) / sigma
 
             # Build model
+            is_heteroscedastic = model_type == "heteroscedastic"
             if model_type == "patchtst":
                 patch_len = min(8, seq_len // 2)
                 stride = max(1, patch_len // 2)
@@ -260,6 +265,18 @@ def run_stage2_dl(
                     patch_len=patch_len, stride=stride,
                     d_model=32, n_heads=4, n_layers=2,
                     dropout=0.2, fc_dropout=0.2, channel_independence=True,
+                ).to(device)
+            elif model_type == "tft":
+                model = TemporalFusionTransformer(
+                    n_vars=n_vars, seq_len=seq_len, pred_len=pred_len,
+                    d_model=32, n_heads=4, lstm_layers=1,
+                    dropout=0.2, fc_dropout=0.2,
+                ).to(device)
+            elif model_type == "heteroscedastic":
+                model = HeteroscedasticNN(
+                    n_vars=n_vars, seq_len=seq_len, pred_len=pred_len,
+                    hidden_dim=32, n_layers=2, rnn_type="lstm",
+                    dropout=0.2,
                 ).to(device)
             else:
                 model = iTransformerModel(
@@ -274,15 +291,18 @@ def run_stage2_dl(
             )
             train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
             optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
-            criterion = torch.nn.MSELoss()
 
             for epoch in range(epochs):
                 model.train()
                 for X_batch, y_batch in train_loader:
                     X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                     optimizer.zero_grad()
-                    pred = model(X_batch)
-                    loss = criterion(pred, y_batch)
+                    if is_heteroscedastic:
+                        mean, var = model(X_batch)
+                        loss = gaussian_nll_loss(mean, var, y_batch)
+                    else:
+                        pred = model(X_batch)
+                        loss = torch.nn.MSELoss()(pred, y_batch)
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     optimizer.step()
@@ -290,7 +310,11 @@ def run_stage2_dl(
             model.eval()
             with torch.no_grad():
                 X_t = torch.tensor(X_test_n, dtype=torch.float32).to(device)
-                dl_preds = model(X_t).cpu().numpy().flatten()
+                if is_heteroscedastic:
+                    mean, _ = model(X_t)
+                    dl_preds = mean.cpu().numpy().flatten()
+                else:
+                    dl_preds = model(X_t).cpu().numpy().flatten()
 
             # Map predictions back to oos arrays
             for i, pos in enumerate(range(seq_len, min(len(test_positions), len(dl_preds) + seq_len))):
@@ -525,7 +549,7 @@ def main():
 
         # Stage 2: PatchTST / iTransformer
         if 2 in args.stages:
-            for model_type in ["patchtst", "itransformer"]:
+            for model_type in ["patchtst", "itransformer", "tft", "heteroscedastic"]:
                 print(f"  Running Stage 2 ({model_type})...")
                 t0 = time.time()
                 s2_result = run_stage2_dl(
