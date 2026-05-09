@@ -76,6 +76,8 @@ def create_coordinator_agent(tools: CoordinatorTools, provider: str = "zai") -> 
         instructions=COORDINATOR_AGENT_INSTRUCTIONS,
         tools=[
             tools.get_proof_state,
+            tools.set_attack_plan,
+            tools.advance_plan,
             tools.file_read_lines,
             tools.search_mathlib_lemmas,
         ],
