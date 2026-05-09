@@ -32,6 +32,10 @@ EXCLUDE_DIRS = {
     "node_modules",
 }
 
+# Files matching these patterns are local Papermill artifacts (gitignored), not committed source.
+# Their state is irrelevant for the canonical repo health audit.
+ARTIFACT_SUFFIXES = ("_output.ipynb",)
+
 
 def categorize_notebook(path: Path) -> dict:
     try:
@@ -89,7 +93,14 @@ def get_last_commit_date(path: Path, repo_root: Path) -> str | None:
 
 
 def is_excluded(path: Path) -> bool:
-    return any(part in EXCLUDE_DIRS for part in path.parts)
+    if any(part in EXCLUDE_DIRS for part in path.parts):
+        return True
+    name = path.name
+    if name.endswith("_output.ipynb"):
+        return True
+    if "_pending_execution" in path.parts:
+        return True
+    return False
 
 
 def get_series(path: Path, root: Path) -> str:
