@@ -683,8 +683,9 @@ scripts/notebook_tools/_qc_upload_content.txt
 scripts/notebook_tools/_qc_wrapper_builder.py
 scripts/notebook_tools/_scan_outputs.py
 
-# Generated catalog (regenerate with scripts/notebook_tools/generate_catalog.py)
-COURSE_CATALOG.generated.*
+# Generated catalog — committed for team access, regenerate with:
+#   python scripts/notebook_tools/generate_catalog.py --output COURSE_CATALOG.generated.json
+# (no longer gitignored since T8 Cycle 13 — 453 entries cover all series)
 
 # QC projects snapshot (regenerate with scripts/quantconnect/audit_projects.py)
 scripts/quantconnect/projects_snapshot.json
