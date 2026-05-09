@@ -1,11 +1,11 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-08 23:51
-Total notebooks: 453
+Generated: 2026-05-09 01:29
+Total notebooks: 452
 
 ## Status Summary
 
-- **READY**: 233
+- **READY**: 232
 - **DEMO**: 203
 - **RESEARCH**: 0
 - **BROKEN**: 17
@@ -14,7 +14,7 @@ Total notebooks: 453
 
 - **PRODUCTION**: 33
 - **BETA**: 58
-- **ALPHA**: 253
+- **ALPHA**: 252
 - **DRAFT**: 109
 
 ## By Series
@@ -208,7 +208,7 @@ Total notebooks: 453
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | BROKEN | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
 
-### SymbolicAI (90 notebooks) — BROKEN:2, DEMO:15, READY:73 | ALPHA:56, BETA:29, DRAFT:4, PRODUCTION:1
+### SymbolicAI (89 notebooks) — BROKEN:2, DEMO:15, READY:72 | ALPHA:55, BETA:29, DRAFT:4, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -218,90 +218,89 @@ Total notebooks: 453
 | 4 | 7. Orchestration de la Conversation (Définitions d | base | DEMO | BETA | 15min | po-2024 |
 | 5 | 🚀 Analyse Rhétorique Collaborative par Agents IA - | base | READY | BETA | 15min | po-2024 |
 | 6 | Interface de Configuration et Préparation du Texte | Python 3 | READY | BETA | 15min | po-2024 |
-| 7 | 🚀 Analyse Rhétorique Collaborative par Agents IA - | base | READY | ALPHA | 15min | po-2024 |
-| 8 | Lean 4 - Installation et Configuration | Python 3 (WSL) | DEMO | BETA | 15min | po-2024 |
-| 9 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | Python 3 (WSL) | READY | ALPHA | 45min | po-2024 |
-| 10 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | DEMO | DRAFT | 45min | po-2024 |
-| 11 | Lean 11 - TorchLean : Réseaux de Neurones Formelle | Lean 4 | BROKEN | DRAFT | 30min | po-2024 |
-| 12 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 | READY | BETA | 45min | po-2024 |
-| 13 | Lean 3 - Propositions et Preuves | Lean 4 | READY | BETA | 45min | po-2024 |
-| 14 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 | READY | ALPHA | 45min | po-2024 |
-| 15 | Lean 5 - Mode Tactique | Lean 4 | READY | BETA | 1h | po-2024 |
-| 16 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | BETA | 45min | po-2024 |
-| 17 | Lean 7 - Integration des LLMs pour l'Assistance au | Python 3 (WSL) | DEMO | ALPHA | 45min | po-2024 |
-| 18 | Lean 7b - Exemples Progressifs et Benchmarks | Python 3 (WSL) | DEMO | ALPHA | 30min | po-2024 |
-| 19 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 (WSL) | DEMO | ALPHA | 30min | po-2024 |
-| 20 | Description du notebook | Python 3 (WSL) | DEMO | ALPHA | 45min | po-2024 |
-| 21 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | ALPHA | 30min | po-2024 |
-| 22 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | ALPHA | 30min | po-2024 |
-| 23 | Planners-0-Setup | Python 3 | READY | BETA | 30min | po-2024 |
-| 24 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | ALPHA | 15min | po-2024 |
-| 25 | Planners-2-PDDL-Basics | Python 3 | READY | BETA | 30min | po-2024 |
-| 26 | Planners-3-State-Space - Recherche dans l'Espace d | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 27 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 28 | Planners-5-Heuristiques en Planification | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 29 | Planners-6-Domains - Domaines Classiques de Planif | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 30 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | ALPHA | 30min | po-2024 |
-| 31 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 32 | Planners-9-HTN - Planification Hierarchique | Python 3 | READY | ALPHA | 30min | po-2024 |
-| 33 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | ALPHA | 45min | po-2024 |
-| 34 | Planners-11: Unified Planning | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 35 | Planners-12: Learning to Plan avec LOOP | Python 3 | DEMO | ALPHA | 45min | po-2024 |
-| 36 | Introduction au web sémantique avec RDF.Net | .NET (C#) | BROKEN | ALPHA | 2h+ | po-2024 |
-| 37 | SW-1-Setup | .NET (C#) | READY | BETA | 15min | po-2024 |
-| 38 | SW-11-RDFStar | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 39 | SW-12-KnowledgeGraphs | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 40 | SW-13-GraphRAG | Python 3 | DEMO | ALPHA | 30min | po-2024 |
-| 41 | SW-14-Reasoners | Python 3 | READY | DRAFT | 45min | po-2024 |
-| 42 | SW-2-RDFBasics | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 43 | SW-2b-Python-RDFBasics | Python 3 | READY | BETA | 30min | po-2024 |
-| 44 | SW-3-GraphOperations | .NET (C#) | READY | ALPHA | 45min | po-2024 |
-| 45 | SW-4-SPARQL | .NET (C#) | READY | ALPHA | 45min | po-2024 |
-| 46 | SW-4b-Python-SPARQL | Python 3 | READY | ALPHA | 30min | po-2024 |
-| 47 | SW-5-LinkedData | .NET (C#) | DEMO | ALPHA | 45min | po-2024 |
-| 48 | SW-5b-Python-LinkedData | Python 3 | DEMO | BETA | 30min | po-2024 |
-| 49 | SW-6-RDFS | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 50 | SW-7-OWL | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 51 | SW-7b-Python-OWL | Python 3 | READY | BETA | 30min | po-2024 |
-| 52 | SW-9-SHACL | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 53 | SW-10-JSONLD | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 54 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 55 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
-| 56 | SC-2-Setup-Web3py - Python et la Blockchain | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 57 | SC-3-Solidity-Basics - Fondements de Solidity | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
-| 58 | SC-4-Functions-State - Fonctions et Etat | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
-| 59 | SC-5-Inheritance - Heritage et Interfaces | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
-| 60 | SC-6-Errors-Events - Erreurs et Evenements | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 61 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
-| 62 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python (SmartContracts + Found | DEMO | ALPHA | 45min | po-2024 |
-| 63 | SC-7-Token-Standards - Standards de Tokens | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 64 | SC-8-DeFi-Primitives - Primitives DeFi | Python (SmartContracts + Found | READY | ALPHA | 15min | po-2024 |
-| 65 | SC-9-DAO-Governance - Gouvernance DAO | Python (SmartContracts + Found | READY | DRAFT | 15min | po-2024 |
-| 66 | SC-12-Foundry-Testing - Tests avec Foundry | Python (SmartContracts + Found | READY | BETA | 45min | po-2024 |
-| 67 | SC-13-Fuzz-Invariants - Fuzz Testing | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
-| 68 | SC-14-Formal-Verification - Verification Formelle | Python (SmartContracts + Found | DEMO | ALPHA | 30min | po-2024 |
-| 69 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 70 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 71 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 72 | SC-18-Vyper - Smart Contracts en Python-like | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 73 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 74 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
-| 75 | SC-21-Move-Sui - Move sur Sui | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
-| 76 | SC-22-Solana-Anchor - Solana avec Anchor | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
-| 77 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
-| 78 | SC-24 : Deploiement sur Testnets | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
-| 79 | SC-25 : Deploiement Mainnet (L2) | Python (SmartContracts + Found | READY | ALPHA | 15min | po-2024 |
-| 80 | SC-26 : Projet Final - DApp Complete | Python (SmartContracts + Found | READY | ALPHA | 15min | po-2024 |
-| 81 | Configuration et Installation TweetyProject | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
-| 82 | Logiques de Base - Propositionnelle et Premier Ord | mcp-jupyter-py310 | READY | ALPHA | 45min | po-2024 |
-| 83 | Logiques Avancées - DL, Modale, QBF, Conditional | mcp-jupyter-py310 | READY | ALPHA | 30min | po-2024 |
-| 84 | Révision de Croyances et Incohérence | mcp-jupyter-py310 | READY | ALPHA | 30min | po-2024 |
-| 85 | Argumentation Abstraite (Dung) | mcp-jupyter-py310 | READY | PRODUCTION | 30min | po-2024 |
-| 86 | Argumentation Structuree | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
-| 87 | Frameworks d'Argumentation Étendus | mcp-jupyter-py310 | READY | ALPHA | 30min | po-2024 |
-| 88 | Sémantiques de Classement et Argumentation Probabi | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
-| 89 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
-| 90 | Préférences et Théorie du Vote | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
+| 7 | Lean 4 - Installation et Configuration | Python 3 (WSL) | DEMO | BETA | 15min | po-2024 |
+| 8 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | Python 3 (WSL) | READY | ALPHA | 45min | po-2024 |
+| 9 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | DEMO | DRAFT | 45min | po-2024 |
+| 10 | Lean 11 - TorchLean : Réseaux de Neurones Formelle | Lean 4 | BROKEN | DRAFT | 30min | po-2024 |
+| 11 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 | READY | BETA | 45min | po-2024 |
+| 12 | Lean 3 - Propositions et Preuves | Lean 4 | READY | BETA | 45min | po-2024 |
+| 13 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 | READY | ALPHA | 45min | po-2024 |
+| 14 | Lean 5 - Mode Tactique | Lean 4 | READY | BETA | 1h | po-2024 |
+| 15 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | BETA | 45min | po-2024 |
+| 16 | Lean 7 - Integration des LLMs pour l'Assistance au | Python 3 (WSL) | DEMO | ALPHA | 45min | po-2024 |
+| 17 | Lean 7b - Exemples Progressifs et Benchmarks | Python 3 (WSL) | DEMO | ALPHA | 30min | po-2024 |
+| 18 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 (WSL) | DEMO | ALPHA | 30min | po-2024 |
+| 19 | Description du notebook | Python 3 (WSL) | DEMO | ALPHA | 45min | po-2024 |
+| 20 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | ALPHA | 30min | po-2024 |
+| 21 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | ALPHA | 30min | po-2024 |
+| 22 | Planners-0-Setup | Python 3 | READY | BETA | 30min | po-2024 |
+| 23 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | ALPHA | 15min | po-2024 |
+| 24 | Planners-2-PDDL-Basics | Python 3 | READY | BETA | 30min | po-2024 |
+| 25 | Planners-3-State-Space - Recherche dans l'Espace d | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 26 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 27 | Planners-5-Heuristiques en Planification | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 28 | Planners-6-Domains - Domaines Classiques de Planif | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 29 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | ALPHA | 30min | po-2024 |
+| 30 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 31 | Planners-9-HTN - Planification Hierarchique | Python 3 | READY | ALPHA | 30min | po-2024 |
+| 32 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | ALPHA | 45min | po-2024 |
+| 33 | Planners-11: Unified Planning | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 34 | Planners-12: Learning to Plan avec LOOP | Python 3 | DEMO | ALPHA | 45min | po-2024 |
+| 35 | Introduction au web sémantique avec RDF.Net | .NET (C#) | BROKEN | ALPHA | 2h+ | po-2024 |
+| 36 | SW-1-Setup | .NET (C#) | READY | BETA | 15min | po-2024 |
+| 37 | SW-11-RDFStar | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 38 | SW-12-KnowledgeGraphs | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 39 | SW-13-GraphRAG | Python 3 | DEMO | ALPHA | 30min | po-2024 |
+| 40 | SW-14-Reasoners | Python 3 | READY | DRAFT | 45min | po-2024 |
+| 41 | SW-2-RDFBasics | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 42 | SW-2b-Python-RDFBasics | Python 3 | READY | BETA | 30min | po-2024 |
+| 43 | SW-3-GraphOperations | .NET (C#) | READY | ALPHA | 45min | po-2024 |
+| 44 | SW-4-SPARQL | .NET (C#) | READY | ALPHA | 45min | po-2024 |
+| 45 | SW-4b-Python-SPARQL | Python 3 | READY | ALPHA | 30min | po-2024 |
+| 46 | SW-5-LinkedData | .NET (C#) | DEMO | ALPHA | 45min | po-2024 |
+| 47 | SW-5b-Python-LinkedData | Python 3 | DEMO | BETA | 30min | po-2024 |
+| 48 | SW-6-RDFS | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 49 | SW-7-OWL | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 50 | SW-7b-Python-OWL | Python 3 | READY | BETA | 30min | po-2024 |
+| 51 | SW-9-SHACL | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 52 | SW-10-JSONLD | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 53 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 54 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
+| 55 | SC-2-Setup-Web3py - Python et la Blockchain | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 56 | SC-3-Solidity-Basics - Fondements de Solidity | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
+| 57 | SC-4-Functions-State - Fonctions et Etat | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
+| 58 | SC-5-Inheritance - Heritage et Interfaces | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
+| 59 | SC-6-Errors-Events - Erreurs et Evenements | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 60 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
+| 61 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python (SmartContracts + Found | DEMO | ALPHA | 45min | po-2024 |
+| 62 | SC-7-Token-Standards - Standards de Tokens | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 63 | SC-8-DeFi-Primitives - Primitives DeFi | Python (SmartContracts + Found | READY | ALPHA | 15min | po-2024 |
+| 64 | SC-9-DAO-Governance - Gouvernance DAO | Python (SmartContracts + Found | READY | DRAFT | 15min | po-2024 |
+| 65 | SC-12-Foundry-Testing - Tests avec Foundry | Python (SmartContracts + Found | READY | BETA | 45min | po-2024 |
+| 66 | SC-13-Fuzz-Invariants - Fuzz Testing | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
+| 67 | SC-14-Formal-Verification - Verification Formelle | Python (SmartContracts + Found | DEMO | ALPHA | 30min | po-2024 |
+| 68 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 69 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 70 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 71 | SC-18-Vyper - Smart Contracts en Python-like | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 72 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 73 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
+| 74 | SC-21-Move-Sui - Move sur Sui | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
+| 75 | SC-22-Solana-Anchor - Solana avec Anchor | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
+| 76 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
+| 77 | SC-24 : Deploiement sur Testnets | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 78 | SC-25 : Deploiement Mainnet (L2) | Python (SmartContracts + Found | READY | ALPHA | 15min | po-2024 |
+| 79 | SC-26 : Projet Final - DApp Complete | Python (SmartContracts + Found | READY | ALPHA | 15min | po-2024 |
+| 80 | Configuration et Installation TweetyProject | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
+| 81 | Logiques de Base - Propositionnelle et Premier Ord | mcp-jupyter-py310 | READY | ALPHA | 45min | po-2024 |
+| 82 | Logiques Avancées - DL, Modale, QBF, Conditional | mcp-jupyter-py310 | READY | ALPHA | 30min | po-2024 |
+| 83 | Révision de Croyances et Incohérence | mcp-jupyter-py310 | READY | ALPHA | 30min | po-2024 |
+| 84 | Argumentation Abstraite (Dung) | mcp-jupyter-py310 | READY | PRODUCTION | 30min | po-2024 |
+| 85 | Argumentation Structuree | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
+| 86 | Frameworks d'Argumentation Étendus | mcp-jupyter-py310 | READY | ALPHA | 30min | po-2024 |
+| 87 | Sémantiques de Classement et Argumentation Probabi | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
+| 88 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
+| 89 | Préférences et Théorie du Vote | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
 
 ### QuantConnect (97 notebooks) — DEMO:97 | ALPHA:13, BETA:3, DRAFT:67, PRODUCTION:14
 
@@ -534,4 +533,4 @@ Total notebooks: 453
 - **GPU**: 53 notebooks
 - **Cloud**: 97 notebooks
 - **WSL**: 23 notebooks
-- **Local**: 231 notebooks
+- **Local**: 230 notebooks
