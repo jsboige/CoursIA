@@ -1,34 +1,34 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-09 01:29
+Generated: 2026-05-10 01:54
 Total notebooks: 452
 
 ## Status Summary
 
-- **READY**: 232
-- **DEMO**: 203
+- **READY**: 238
+- **DEMO**: 204
 - **RESEARCH**: 0
-- **BROKEN**: 17
+- **BROKEN**: 10
 
 ## Maturity Summary
 
-- **PRODUCTION**: 33
-- **BETA**: 58
-- **ALPHA**: 252
-- **DRAFT**: 109
+- **PRODUCTION**: 34
+- **BETA**: 57
+- **ALPHA**: 261
+- **DRAFT**: 100
 
 ## By Series
 
-### GenAI (99 notebooks) — BROKEN:5, DEMO:82, READY:12 | ALPHA:60, BETA:5, DRAFT:24, PRODUCTION:10
+### GenAI (99 notebooks) — BROKEN:3, DEMO:83, READY:13 | ALPHA:66, BETA:6, DRAFT:15, PRODUCTION:12
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | 🚀 GenAI Environment Setup - CoursIA | Python 3 (ipykernel) | DEMO | DRAFT | 15min | po-2025 |
-| 2 | 🐳 Docker Services Management - GenAI | Python3 | DEMO | DRAFT | 30min | po-2025 |
-| 3 | 🔗 Configuration des API Endpoints | Python 3 (ipykernel) | DEMO | DRAFT | 30min | po-2025 |
-| 4 | ✅ Environment Validation - GenAI | Python 3 (ipykernel) | DEMO | DRAFT | 30min | po-2025 |
-| 5 | 00-5: ComfyUI Local - Test Rapide | mcp-jupyter-py310 | DEMO | DRAFT | 30min | po-2025 |
-| 6 | Deploiement Docker Local des Services GenAI | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 1 | 🚀 GenAI Environment Setup - CoursIA | Python 3 (ipykernel) | DEMO | ALPHA | 15min | po-2025 |
+| 2 | 🐳 Docker Services Management - GenAI | Python3 | DEMO | ALPHA | 30min | po-2025 |
+| 3 | 🔗 Configuration des API Endpoints | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
+| 4 | ✅ Environment Validation - GenAI | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
+| 5 | 00-5: ComfyUI Local - Test Rapide | mcp-jupyter-py310 | DEMO | PRODUCTION | 30min | po-2025 |
+| 6 | Deploiement Docker Local des Services GenAI | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 7 | OpenAI TTS - Synthese Vocale par API | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 8 | OpenAI Whisper STT - Reconnaissance Vocale par API | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 9 | Operations de Base sur l'Audio | Python 3 | DEMO | ALPHA | 30min | po-2025 |
@@ -51,7 +51,7 @@ Total notebooks: 452
 | 26 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 27 | Live Coding Musical pilote par LLM | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 28 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 29 | Générateur de Recettes PDF | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 29 | Générateur de Recettes PDF | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 30 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | ALPHA | 15min | po-2025 |
 | 31 | Docteur vs ChatGPT: Chatbot médical | base | DEMO | ALPHA | 45min | po-2025 |
 | 32 | OpenAI DALL-E 3 - Generation d'Images | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
@@ -76,20 +76,20 @@ Total notebooks: 452
 | 51 | SK-4-Filters : Filtres et Observabilite | Python 3 | DEMO | PRODUCTION | 15min | po-2025 |
 | 52 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 53 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 54 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 54 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 55 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | DEMO | PRODUCTION | 15min | po-2025 |
-| 56 | SK-9-Building-CLR : Interoperabilite Python/.NET v | base | BROKEN | DRAFT | 15min | po-2025 |
+| 56 | SK-9-Building-CLR : Interoperabilite Python/.NET v | base | READY | PRODUCTION | 15min | po-2025 |
 | 57 | SK-10-NotebookMaker : Systeme Multi-Agents pour Ge | base | DEMO | ALPHA | 30min | po-2025 |
 | 58 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | ALPHA | 30min | po-2025 |
 | 59 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | ALPHA | 30min | po-2025 |
 | 60 | Projet Createur de Mail personnalise | Python 3 | DEMO | DRAFT | 30min | po-2025 |
 | 61 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
-| 62 | Jeu de devinette : Père Fouras vs Laurent Jalabert | coursIA | DEMO | DRAFT | 15min | po-2025 |
+| 62 | Jeu de devinette : Père Fouras vs Laurent Jalabert | coursIA | DEMO | ALPHA | 15min | po-2025 |
 | 63 | Notebook de travail | Python 3 | READY | ALPHA | 15min | po-2025 |
 | 64 | Notebook de travail | Python 3 | BROKEN | DRAFT | 15min | po-2025 |
 | 65 | Notebook de conception de Notebook | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
 | 66 | Notebook de travail | .NET (C#) | READY | ALPHA | 30min | po-2025 |
-| 67 | Notebook de travail | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
+| 67 | Notebook de travail | .NET (C#) | READY | ALPHA | 30min | po-2025 |
 | 68 | 10. Hébergement Local de Modèles Génératifs | base | DEMO | ALPHA | 45min | po-2025 |
 | 69 | 11. Quantization des LLMs | base | DEMO | ALPHA | 45min | po-2025 |
 | 70 | 1. Introduction a l'IA generative avec l'API OpenA | base | DEMO | PRODUCTION | 15min | po-2025 |
@@ -173,7 +173,7 @@ Total notebooks: 452
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | ALPHA | 30min | po-2025 |
 | 45 | TP : Algorithmes Génétiques pour la Détection de B | base | READY | DRAFT | 30min | po-2025 |
 
-### ML (30 notebooks) — BROKEN:4, DEMO:5, READY:21 | ALPHA:25, BETA:3, DRAFT:2
+### ML (30 notebooks) — BROKEN:2, DEMO:5, READY:23 | ALPHA:25, BETA:3, DRAFT:2
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -182,7 +182,7 @@ Total notebooks: 452
 | 3 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | DEMO | ALPHA | 30min | po-2023 |
 | 4 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | BROKEN | ALPHA | 30min | po-2023 |
 | 5 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | ALPHA | 30min | po-2023 |
-| 6 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | BROKEN | ALPHA | 30min | po-2023 |
+| 6 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | ALPHA | 30min | po-2023 |
 | 7 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | ALPHA | 30min | po-2023 |
 | 8 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | ALPHA | 30min | po-2023 |
 | 9 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | ALPHA | 30min | po-2023 |
@@ -205,7 +205,7 @@ Total notebooks: 452
 | 26 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 1h30 | po-2023 |
 | 27 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | BROKEN | DRAFT | 45min | po-2023 |
 | 28 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 30min | po-2023 |
-| 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | BROKEN | BETA | 45min | po-2023 |
+| 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
 
 ### SymbolicAI (89 notebooks) — BROKEN:2, DEMO:15, READY:72 | ALPHA:55, BETA:29, DRAFT:4, PRODUCTION:1
@@ -436,7 +436,7 @@ Total notebooks: 452
 | 26 | GameTheory-7-ExtensiveForm | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 27 | GameTheory-9-BackwardInduction | Python 3 | READY | ALPHA | 30min | po-2024 |
 
-### Sudoku (32 notebooks) — BROKEN:4, DEMO:2, READY:26 | ALPHA:19, BETA:11, PRODUCTION:2
+### Sudoku (32 notebooks) — BROKEN:2, DEMO:2, READY:28 | ALPHA:22, BETA:9, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -447,11 +447,11 @@ Total notebooks: 452
 | 5 | Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python | Python 3 (ipykernel) | READY | ALPHA | 30min | po-2023 |
 | 6 | Sudoku-11-Choco-Csharp : Solveur Choco via IKVM | .NET (C#) | BROKEN | BETA | 30min | po-2023 |
 | 7 | Notebook 11: Resolution de Sudoku avec Choco Const | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | BROKEN | BETA | 45min | po-2023 |
+| 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 9 | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | base | READY | BETA | 30min | po-2023 |
 | 10 | Sudoku-12 : Theorie des Automates Symboliques et C | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 11 | Sudoku-13 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | BROKEN | BETA | 45min | po-2023 |
+| 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | BROKEN | ALPHA | 45min | po-2023 |
 | 13 | Sudoku-15-Infer-Python : Resolution Probabiliste a | Python 3 | READY | BETA | 30min | po-2023 |
 | 14 | Sudoku-10 : Résolution par Réseaux de Neurones | Python 3 | DEMO | ALPHA | 1h | po-2023 |
 | 15 | Notebook 17: Resolution de Sudoku avec Large Langu | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2023 |
@@ -468,7 +468,7 @@ Total notebooks: 452
 | 26 | Sudoku-6 : Resolution par CSP Academique (Python) | Python 3 | READY | BETA | 45min | po-2023 |
 | 27 | Sudoku-7 : Resolution par Propagation de Contraint | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 28 | Le Sudoku comme CSP | Python 3 | READY | ALPHA | 30min | po-2023 |
-| 29 | Résolution de Sudoku par Stratégies Humaines | .NET (C#) | BROKEN | PRODUCTION | 45min | po-2023 |
+| 29 | Résolution de Sudoku par Stratégies Humaines | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 30 | Sudoku-8 : Resolution par Strategies Humaines (Pyt | .venv (3.12.3) | READY | ALPHA | 45min | po-2023 |
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | BETA | 30min | po-2023 |
@@ -500,11 +500,11 @@ Total notebooks: 452
 | 21 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | ALPHA | 1h | po-2023 |
 | 22 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | ALPHA | 30min | po-2023 |
 
-### IIT (1 notebooks) — BROKEN:1 | ALPHA:1
+### IIT (1 notebooks) — READY:1 | ALPHA:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | IIT - Introduction à PyPhi et Integrated Informati | pyphi | BROKEN | ALPHA | 30min | po-2025 |
+| 1 | IIT - Introduction à PyPhi et Integrated Informati | pyphi | READY | ALPHA | 30min | po-2025 |
 
 ### RL (6 notebooks) — READY:6 | ALPHA:6
 
@@ -529,8 +529,8 @@ Total notebooks: 452
 
 ## Requirements
 
-- **API**: 86 notebooks
+- **API**: 87 notebooks
 - **GPU**: 53 notebooks
 - **Cloud**: 97 notebooks
 - **WSL**: 23 notebooks
-- **Local**: 230 notebooks
+- **Local**: 229 notebooks
