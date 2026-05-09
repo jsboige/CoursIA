@@ -58,9 +58,9 @@ class MultiAgentSorryProver:
             if "sorry" in line
         ]
         if actual_sorry_lines and sorry_line not in actual_sorry_lines:
-            sorry_line = actual_sorry_lines[0]
+            sorry_line = min(actual_sorry_lines, key=lambda l: abs(l - sorry_line))
             print(f"  [AutoFix] Configured line {demo['line']} has no sorry. "
-                  f"Using actual sorry at line {sorry_line}")
+                  f"Using closest sorry at line {sorry_line}")
 
         print(f"\n{'='*70}")
         print(f"MULTI-AGENT PROVER: {demo['name']}")
@@ -261,8 +261,10 @@ class AutonomousProver:
             if "sorry" in line
         ]
         if actual_sorry_lines and sorry_line not in actual_sorry_lines:
-            sorry_line = actual_sorry_lines[0]
-            print(f"  [AutoFix] Using actual sorry at line {sorry_line}")
+            # Pick the sorry CLOSEST to the configured line, not the first one
+            sorry_line = min(actual_sorry_lines, key=lambda l: abs(l - sorry_line))
+            print(f"  [AutoFix] Configured line has no sorry. "
+                  f"Using closest sorry at line {sorry_line}")
 
         print(f"\n{'='*70}")
         print(f"AUTONOMOUS PROVER: {demo['name']}")
@@ -274,7 +276,12 @@ class AutonomousProver:
 
         # Extract sorry context — includes proof_block and goal_hints
         sorry_ctx_data = extract_sorry_block(filepath, sorry_line)
-        goal_state = get_goal_state(filepath, sorry_line)
+        # Allow DEMO config to override goal (bypass unreliable GoalExtract)
+        if demo.get("goal"):
+            goal_state = demo["goal"]
+            print(f"  Goal OVERRIDE from config: {goal_state[:100]}")
+        else:
+            goal_state = get_goal_state(filepath, sorry_line)
         indent = sorry_ctx_data.get("indentation", 0)
         goal_hints = sorry_ctx_data.get("goal_hints", "")
         proof_block = sorry_ctx_data.get("proof_block", "")
@@ -465,8 +472,15 @@ class AutonomousProver:
 
                 # Update state — only count progress if build passes
                 elif build_ok and current_sorry < state.best_sorry_count:
+                    # Force-save best_content from file (in case tool-level save
+                    # was skipped due to build_check=False or other code path)
+                    tactic_tools._best_content = Path(filepath).read_text(encoding="utf-8")
+                    tactic_tools._best_sorry_count = current_sorry
                     state.best_sorry_count = current_sorry
                     state.consecutive_failures = 0
+                    print(f"  PROGRESS SAVED: sorry {original_sorry_count}->{current_sorry} "
+                          f"(best_content captured, {len(tactic_tools._best_content)} chars)",
+                          flush=True)
                 elif current_sorry > state.best_sorry_count:
                     state.consecutive_failures += 1
                 else:
@@ -554,6 +568,12 @@ class AutonomousProver:
 
                 if current_sorry < original_sorry_count:
                     print(f"  PROGRESS: sorry {original_sorry_count} -> {current_sorry}")
+                    # Early stop: if sorry decreased and build passes, stop to
+                    # preserve progress. The caller can re-invoke for next sorry.
+                    if build_ok and current_sorry < original_sorry_count:
+                        print(f"  EARLY STOP: progress made (sorry {original_sorry_count}->{current_sorry}). "
+                              f"Stopping to preserve.", flush=True)
+                        break
 
                 # Build ACCUMULATED feedback — never lose history
                 feedback_parts = []
@@ -750,6 +770,17 @@ class AutonomousProver:
 
         if strategic_hints:
             parts.append(f"\nCONSEILS STRATEGIQUES:\n{strategic_hints}")
+
+        # Proof scaffolding: pre-written proof attempt from DEMO config
+        if demo.get("proof_scaffolding"):
+            scaffold = demo["proof_scaffolding"]
+            parts.append(
+                f"\nPREUVE ECHAFAUDAGE A ESSAYER EN PRIORITE:\n"
+                f"Le code suivant est une tentative de preuve pre-ecrite. "
+                f"Essaie de l'utiliser en premier avec file_replace_sorry(). "
+                f"Si elle ne compile pas, utilise les erreurs pour adapter.\n"
+                f"```\n{scaffold}\n```"
+            )
 
         # B.4: Top-down decomposition hints for complex goals
         try:
