@@ -449,7 +449,7 @@ Total notebooks: 452
 | 7 | Notebook 11: Resolution de Sudoku avec Choco Const | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 9 | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | base | READY | BETA | 30min | po-2023 |
-| 10 | Sudoku-12 : Theorie des Automates Symboliques et C | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 10 | Sudoku-12 : Theorie des Automates Symboliques et C | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 11 | Sudoku-13 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | BROKEN | ALPHA | 45min | po-2023 |
 | 13 | Sudoku-15-Infer-Python : Resolution Probabiliste a | Python 3 | READY | BETA | 30min | po-2023 |
