@@ -239,11 +239,11 @@ theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
   unfold median_peak sorted_peaks_list
   set l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)
   have hl : l.length = Fintype.card ι := by
-  simp [l, List.length_mergeSort, List.length_map, Finset.length_toList]
+    simp [l, List.length_mergeSort, List.length_map, Finset.length_toList]
   have hn : l.length / 2 < l.length := by omega
   have hperm : l ≈ Finset.univ.toList.map peaks := List.mergeSort_perm _ _
   have hin : l.getD (l.length / 2) default ∈ l := by
-  simp [List.getD, List.getElem?_eq_getElem, hn]
+    simp [List.getD, List.getElem?_eq_getElem, hn]
   rw [List.Perm.mem_iff hperm] at hin
   simp only [List.mem_map, Finset.mem_toList] at hin
   obtain ⟨i, _, heq⟩ := hin
