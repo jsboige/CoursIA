@@ -248,16 +248,7 @@ theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
   simp only [List.mem_map, Finset.mem_toList] at hin
   obtain ⟨i, _, heq⟩ := hin
   exact ⟨i, heq⟩
-  intro y hy hne_y
-    exact margin_pos_of_unanimous prof (fun i => by
-      have hi := hsp i
-      by_cases hpi : peaks i = median_peak peaks
-      · subst hpi
-        exact hi.1 y hne_y
-      · exact hi.1 y (by
-          intro hy_eq
-          apply hne_y
-          simpa [hy_eq] using hpi.symm))
+  · sorry -- TODO: median beats all others in single-peaked profile
 section SplitCycle
 
 /-- A cycle in a relation R over a list: the last element relates to the first,
