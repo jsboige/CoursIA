@@ -474,64 +474,77 @@ DEMOS = {
         "difficulty": "very_hard",
     },
     20: {
-        "name": "VOTING_COUNTING_LT_MEDIAN",
+        "name": "VOTING_MEDIAN_BEATS_ALL",
         "file": str(VOTING_FILE),
-        "line": 313,
+        "line": 251,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "median_voter_theorem_strict",
-        "theorem": "median_voter_theorem_strict",
+        "theorem_name": "median_voter_theorem",
+        "theorem": "median_voter_theorem",
+        "goal": "∀ y ∈ Finset.univ.image peaks, y ≠ median_peak peaks → margin_pos prof (median_peak peaks) y",
         "imports": VOTING_IMPORTS,
         "description": (
-            "Prove the FIRST counting lemma in median_voter_theorem_strict.\n"
-            "The sorry is inside the `by_cases hlt : peaks j < median_peak peaks` branch,\n"
-            "in the `have hcount` subgoal.\n"
+            "Prove that the median peak beats every other alternative in median_voter_theorem.\n"
+            "The sorry is in the second branch of a constructor (after proving median ∈ image peaks).\n"
             "\n"
-            "GOAL at sorry (EXACT):\n"
-            "  (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card <\n"
-            "  (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card\n"
+            "GOAL at sorry:\n"
+            "  ∀ y ∈ Finset.univ.image peaks, y ≠ median_peak peaks →\n"
+            "    margin_pos prof (median_peak peaks) y\n"
             "\n"
-            "VARIABLES IN SCOPE:\n"
+            "CONTEXT:\n"
             "  prof : ι → PrefOrder σ, peaks : ι → σ\n"
             "  hsp : single_peaked_profile prof peaks\n"
-            "  hstrict_left : ∀ i a b, a < b → b ≤ peaks i → P (prof i).rel b a\n"
-            "  hstrict_right : ∀ i a b, peaks i ≤ a → a < b → P (prof i).rel a b\n"
             "  hodd : Odd (Fintype.card ι)\n"
-            "  j : ι, hny : ¬peaks j = median_peak peaks\n"
-            "  hlt : peaks j < median_peak peaks\n"
+            "  hcard_pos : 0 < Fintype.card ι\n"
+            "  hne : Nonempty ι\n"
+            "  [Inhabited σ]\n"
+            "  median_peak defined as sorted_peaks_list.getD (length/2) default\n"
+            "  sorted_peaks_list = (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)\n"
             "\n"
             "PROOF STRATEGY:\n"
-            "  1. Show filter (median ≤ peaks ·) = univ \\ filter (peaks · < median) by:\n"
-            "     ext i; simp [Finset.mem_filter, Finset.mem_sdiff, not_lt]\n"
-            "  2. Use Finset.card_add_card_compl to get:\n"
-            "     card(filter <) + card(univ \\ filter <) = Fintype.card ι\n"
-            "  3. Obtain k : Fintype.card ι = 2*k + 1 (from hodd)\n"
-            "  4. Bound card(filter <) ≤ k:\n"
-            "     - sorted list l of peaks has length 2k+1\n"
-            "     - median at position k = l.getD (l.length / 2) default\n"
-            "     - at most k elements < median (by sorted order)\n"
-            "  5. omega closes: card_lt ≤ k < k+1 ≤ n - card_lt = card_ge\n"
+            "  For each y ≠ median_peak peaks, use by_cases on y < median or y > median.\n"
+            "  Case y < median (peaks i < median_peak):\n"
+            "    Strict single-peaked: voters with peak ≤ median prefer median over y.\n"
+            "    Count voters with peak ≤ median: ≥ (n+1)/2 (since median is a peak).\n"
+            "    So strict majority prefers median over y → margin_pos.\n"
+            "  Case y > median: symmetric argument.\n"
             "\n"
-            "KEY LEMMAS:\n"
-            "  Finset.filter_not : filter (¬p) s = s \\ filter p s\n"
-            "  Finset.card_add_card_compl : s.card + (univ \\ s).card = Fintype.card α\n"
-            "  not_lt : ¬(a < b) ↔ b ≤ a\n"
-            "  Finset.card_le_card : s ⊆ t → s.card ≤ t.card\n"
-            "  Finset.card_univ : univ.card = Fintype.card α\n"
+            "KEY DEFINITIONS:\n"
+            "  margin_pos prof x y := 0 < margin prof x y\n"
+            "  margin prof x y := card(filter (P prof i x y)) - card(filter (P prof i y x))\n"
+            "  P R x y := R x y ∧ ¬ R y x  (strict preference from Basic.lean)\n"
+            "  single_peaked_profile prof peaks :=\n"
+            "    ∀ i, is_peak (prof i).rel (peaks i) ∧\n"
+            "    ∀ i a b, a ≤ b → b ≤ peaks i → (prof i).rel b a ∧\n"
+            "    ∀ i a b, peaks i ≤ a → a ≤ b → (prof i).rel a b\n"
+            "\n"
+            "AVAILABLE LEMMAS:\n"
+            "  List.mergeSort_perm : mergeSort lt l ≈ l\n"
+            "  List.length_mergeSort, List.length_map, Finset.length_toList\n"
+            "  Finset.mem_image, Finset.mem_univ, Finset.mem_filter\n"
+            "  Finset.card_filter, Finset.card_univ, Fintype.card\n"
             "  Nat.odd_iff : Odd n ↔ ∃ k, n = 2*k + 1\n"
+            "  Finset.card_pos, Finset.card_le_card\n"
+            "  lt_or_ge : a < b ∨ a ≥ b\n"
             "\n"
-            "DO NOT USE (do NOT exist in Lean 4 v4.29.1):\n"
-            "  List.Sorted, List.mergeSort_sorted, List.Sorted.rel_get_of_le_get\n"
-            "  Finset.card_filter_add_card_filter_neg, Finset.card_filter_add_card_filter_compl\n"
+            "DO NOT USE (do NOT exist in Lean 4 v4.29.1 Mathlib):\n"
+            "  List.Sorted, List.mergeSort_sorted, List.Sorted.*\n"
+            "  Finset.card_filter_add_card_filter_neg\n"
             "  Finset.card_union_eq, Finset.disjoint_filter_neg\n"
-            "  aesop, nlinarith for counting\n"
-            "\n"
-            "CRITICAL WARNING:\n"
-            "  Do NOT use `obtain`/`rcases`/`⟨⟩` on `Finset.image` membership proofs.\n"
-            "  `Finset.univ.image peaks` uses Quot.lift internally, so membership proofs\n"
-            "  have type Quot.lift ... which is NOT inductive and cannot be destructed.\n"
-            "  Instead, use the membership proof directly with `simpa [hm]` or `exact`.\n"
         ),
-        "proof_scaffolding": "",
+        "proof_scaffolding": (
+            "-- Step 1: partition univ into {i | peaks i < median} and {i | median ≤ peaks i}\n"
+            "have hpart : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ) ∪\n"
+            "    (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ) = Finset.univ := by\n"
+            "  ext i; simp [Finset.mem_filter, Finset.mem_union, lt_or_ge]\n"
+            "-- Step 2: the two sets are disjoint\n"
+            "have hdisj : Disjoint _ _ := by\n"
+            "  rw [Finset.disjoint_left]; intro i hi1 hi2;\n"
+            "  simp [Finset.mem_filter] at *; omega\n"
+            "-- Step 3: card(filter<) + card(filter≥) = Fintype.card ι\n"
+            "have hsum : _.card + _.card = Fintype.card ι := by\n"
+            "  rw [← Finset.card_union_of_disjoint hdisj, hpart, Finset.card_univ]\n"
+            "-- Step 4: obtain odd = 2k+1, show card(filter<) ≤ k, conclude by omega\n"
+        ),
         "difficulty": "very_hard",
     },
     21: {
@@ -541,6 +554,7 @@ DEMOS = {
         "sorry_type": "sorry_replacement",
         "theorem_name": "median_voter_theorem_strict",
         "theorem": "median_voter_theorem_strict",
+        "goal": "(Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card < (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card",
         "imports": VOTING_IMPORTS,
         "description": (
             "Prove the SECOND (symmetric) counting lemma in median_voter_theorem_strict.\n"
