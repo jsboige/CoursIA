@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-10 01:54
+Generated: 2026-05-10 01:52
 Total notebooks: 452
 
 ## Status Summary
 
-- **READY**: 232
+- **READY**: 235
 - **DEMO**: 203
 - **RESEARCH**: 0
-- **BROKEN**: 17
+- **BROKEN**: 14
 
 ## Maturity Summary
 
-- **PRODUCTION**: 34
-- **BETA**: 58
-- **ALPHA**: 252
-- **DRAFT**: 108
+- **PRODUCTION**: 32
+- **BETA**: 56
+- **ALPHA**: 255
+- **DRAFT**: 109
 
 ## By Series
 
@@ -173,7 +173,7 @@ Total notebooks: 452
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | ALPHA | 30min | po-2025 |
 | 45 | TP : Algorithmes Génétiques pour la Détection de B | base | READY | DRAFT | 30min | po-2025 |
 
-### ML (30 notebooks) — BROKEN:6, DEMO:5, READY:19 | ALPHA:23, BETA:5, DRAFT:1, PRODUCTION:1
+### ML (30 notebooks) — BROKEN:3, DEMO:5, READY:22 | ALPHA:25, BETA:3, DRAFT:2
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -206,7 +206,7 @@ Total notebooks: 452
 | 27 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | BROKEN | BETA | 45min | po-2023 |
 | 28 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 30min | po-2023 |
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
 
 ### SymbolicAI (89 notebooks) — BROKEN:2, DEMO:15, READY:72 | ALPHA:55, BETA:29, DRAFT:4, PRODUCTION:1
 
