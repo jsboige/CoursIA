@@ -37,15 +37,20 @@ OVERALL = RESULTS / "_overall.log"
 PYTHON = r"C:\Users\MYIA\miniconda3\envs\coursia-ml-training\python.exe"
 DATA_DIR = (PIPELINE.parent / "datasets" / "yfinance" / "crypto_panier").as_posix()
 
+# Per-script capability profile:
+#  - tft: native --symbols (multi), --seeds (multi), --walk-forward
+#  - mamba/itransformer/patchtst: --symbol (singular per call), --seed (singular),
+#    no --walk-forward → driver loops on seeds, single train/val/test split
 MODELS = [
-    ("tft", "train_tft.py"),
-    ("mamba", "train_mamba.py"),
-    ("itransformer", "train_itransformer.py"),
-    ("patchtst", "train_patchtst.py"),
+    {"name": "tft",          "script": "train_tft.py",          "symbol_arg": "--symbols", "multi_seed": True,  "wf": True},
+    {"name": "mamba",        "script": "train_mamba.py",        "symbol_arg": "--symbol",  "multi_seed": False, "wf": False},
+    {"name": "itransformer", "script": "train_itransformer.py", "symbol_arg": "--symbols", "multi_seed": False, "wf": False},
+    {"name": "patchtst",     "script": "train_patchtst.py",     "symbol_arg": "--symbol",  "multi_seed": False, "wf": False},
 ]
 COINS = ["BTC-USD", "ETH-USD"]
 HORIZONS = [1, 5, 10]
-SEEDS = "0,1,7,42"
+SEEDS_LIST = [0, 1, 7, 42]
+SEEDS = ",".join(str(s) for s in SEEDS_LIST)
 N_SPLITS = 5
 SEQ_LEN = 60
 EPOCHS = 250
@@ -58,35 +63,62 @@ def log(msg: str) -> None:
         f.write(line + "\n")
 
 
-def run_one(model_name: str, script: str, coin: str, horizon: int) -> dict:
-    """Run a single (model, coin, horizon) combo with all seeds + WF."""
-    out_dir = RESULTS / f"{model_name}_{coin.replace('-','_')}_h{horizon}"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    log_file = out_dir / "training.log"
+def _build_cmd(model: dict, coin: str, horizon: int, out_dir: Path, seed: int | None) -> list[str]:
     cmd = [
-        PYTHON, str(SCRIPTS / script),
+        PYTHON, str(SCRIPTS / model["script"]),
         "--data-dir", DATA_DIR,
-        "--symbols", coin,
+        model["symbol_arg"], coin,
         "--start", "2020-01-01",
         "--end", "2026-05-01",
         "--seq-len", str(SEQ_LEN),
         "--pred-len", str(horizon),
         "--epochs", str(EPOCHS),
         "--batch-size", "64",
-        "--walk-forward",
-        "--n-splits", str(N_SPLITS),
-        "--seeds", SEEDS,
         "--output-dir", str(out_dir),
     ]
+    if model["wf"]:
+        cmd += ["--walk-forward", "--n-splits", str(N_SPLITS)]
+    if model["multi_seed"]:
+        cmd += ["--seeds", SEEDS]
+    elif seed is not None:
+        cmd += ["--seed", str(seed)]
+    return cmd
+
+
+def run_one(model: dict, coin: str, horizon: int) -> dict:
+    """Run a (model, coin, horizon) combo. Multi-seed scripts: 1 call.
+    Single-seed scripts: loop over SEEDS_LIST, each into its own subdir."""
+    model_name = model["name"]
+    out_dir = RESULTS / f"{model_name}_{coin.replace('-','_')}_h{horizon}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    log_file = out_dir / "training.log"
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = "2"
     env["PYTHONUNBUFFERED"] = "1"
     t0 = time.time()
     try:
-        with log_file.open("w", encoding="utf-8") as fh:
-            proc = subprocess.run(cmd, stdout=fh, stderr=subprocess.STDOUT, env=env, timeout=3600)
+        if model["multi_seed"]:
+            cmd = _build_cmd(model, coin, horizon, out_dir, None)
+            with log_file.open("w", encoding="utf-8") as fh:
+                proc = subprocess.run(cmd, stdout=fh, stderr=subprocess.STDOUT, env=env, timeout=3600)
+            exit_code = proc.returncode
+        else:
+            # Driver loop: 1 subprocess per seed, each into seed_<N> subdir
+            exit_code = 0
+            with log_file.open("w", encoding="utf-8") as fh:
+                for seed in SEEDS_LIST:
+                    seed_dir = out_dir / f"seed_{seed}"
+                    seed_dir.mkdir(parents=True, exist_ok=True)
+                    cmd = _build_cmd(model, coin, horizon, seed_dir, seed)
+                    fh.write(f"\n=== seed={seed} ===\n")
+                    fh.flush()
+                    proc = subprocess.run(cmd, stdout=fh, stderr=subprocess.STDOUT, env=env, timeout=3600)
+                    if proc.returncode != 0:
+                        exit_code = proc.returncode
+                        fh.write(f"\n!!! seed={seed} FAILED exit={proc.returncode}\n")
+                        break  # short-circuit on first failure
         elapsed = time.time() - t0
-        return {"exit": proc.returncode, "elapsed_s": elapsed, "log": str(log_file)}
+        return {"exit": exit_code, "elapsed_s": elapsed, "log": str(log_file)}
     except subprocess.TimeoutExpired:
         elapsed = time.time() - t0
         return {"exit": -1, "elapsed_s": elapsed, "log": str(log_file), "error": "TIMEOUT"}
@@ -116,7 +148,8 @@ def main() -> int:
 
     total = len(MODELS) * len(COINS) * len(HORIZONS)
     idx = 0
-    for model_name, script in MODELS:
+    for model in MODELS:
+        model_name = model["name"]
         for coin in COINS:
             for h in HORIZONS:
                 idx += 1
@@ -125,7 +158,7 @@ def main() -> int:
                     log(f"[{idx}/{total}] SKIP  {tag} (already OK)")
                     continue
                 log(f"[{idx}/{total}] START {tag}")
-                result = run_one(model_name, script, coin, h)
+                result = run_one(model, coin, h)
                 result.update({"model": model_name, "coin": coin, "horizon": h})
                 summary.append(result)
                 status = "OK" if result["exit"] == 0 else f"FAIL exit={result['exit']}"
