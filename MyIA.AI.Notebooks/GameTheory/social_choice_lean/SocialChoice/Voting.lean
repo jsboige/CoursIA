@@ -442,7 +442,105 @@ theorem banks_set_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ
   classical
   unfold banks_set banks_winner
   simp only [Finset.mem_filter, hw.1, true_and]
-  sorry -- TODO: maximal chain existence (finiteness + Zorn-like argument)
+  -- Strategy: choose a maximum-cardinality transitive pre-chain containing the
+  -- Condorcet winner, then show that its cardinal maximality implies Banks
+  -- maximality.
+  haveI : DecidableEq σ := Classical.decEq _
+  let isPC (C : Finset σ) : Prop :=
+    C ⊆ S ∧ x ∈ C ∧
+    (∀ a ∈ C, ∀ b ∈ C, a ≠ b → margin_pos prof a b ∨ margin_pos prof b a) ∧
+    (∀ a ∈ C, ∀ b ∈ C, ∀ c ∈ C,
+      margin_pos prof a b → margin_pos prof b c → margin_pos prof a c) ∧
+    ∀ y ∈ C, y ≠ x → margin_pos prof x y
+  have noTwoway : ∀ {a b : σ}, margin_pos prof a b → margin_pos prof b a → False := by
+    intro a b hab hba
+    unfold margin_pos at hab hba
+    have hanti := margin_antisymm prof a b
+    linarith
+  have hPCx : isPC {x} := by
+    unfold isPC
+    refine ⟨Finset.singleton_subset_iff.mpr hw.1, Finset.mem_singleton.mpr rfl, ?_, ?_, ?_⟩
+    · intro a ha b hb hab
+      rw [Finset.mem_singleton] at ha hb
+      subst a
+      subst b
+      exact (hab rfl).elim
+    · intro a ha b hb c hc hab hbc
+      rw [Finset.mem_singleton] at ha hb hc
+      subst a
+      subst b
+      subst c
+      exact hab
+    · intro y hy hne
+      rw [Finset.mem_singleton] at hy
+      subst y
+      exact (hne rfl).elim
+  have hNE : (S.powerset.filter isPC).Nonempty :=
+    ⟨{x}, Finset.mem_filter.mpr ⟨Finset.mem_powerset.mpr
+      (Finset.singleton_subset_iff.mpr hw.1), hPCx⟩⟩
+  obtain ⟨C, hCmem, hCcard⟩ := Finset.exists_mem_eq_sup
+    (S.powerset.filter isPC) hNE Finset.card
+  simp only [Finset.mem_filter, Finset.mem_powerset] at hCmem
+  obtain ⟨hCsub, hCpc⟩ := hCmem
+  unfold isPC at hCpc
+  obtain ⟨_, hCx, hCtot, hCtrans, hCdom⟩ := hCpc
+  use C
+  refine ⟨⟨hCsub, ⟨x, hCx⟩, hCtot, hCtrans, ?_⟩, hCx, ?_⟩
+  · intro y hyS hyC h
+    obtain ⟨hTot, hTrans⟩ := h
+    have hDsub : insert y C ⊆ S := by
+      intro z hz
+      rw [Finset.mem_insert] at hz
+      obtain rfl | hzC := hz
+      · exact hyS
+      · exact hCsub hzC
+    have hDpc : isPC (insert y C) := by
+      unfold isPC
+      refine ⟨hDsub, Finset.mem_insert.mpr (Or.inr hCx), ?_, ?_, ?_⟩
+      · intro a ha b hb hab
+        rw [Finset.mem_insert] at ha hb
+        obtain rfl | haC := ha
+        · obtain rfl | hbC := hb
+          · exact (hab rfl).elim
+          · exact hTot b hbC
+        · obtain rfl | hbC := hb
+          · have hcomp := hTot a haC
+            cases hcomp with
+            | inl hya => exact Or.inr hya
+            | inr hay => exact Or.inl hay
+          · exact hCtot a haC b hbC hab
+      · intro a ha b hb c hc hab hbc
+        rw [Finset.mem_insert] at ha hb hc
+        obtain rfl | haC := ha
+        · obtain rfl | hbC := hb
+          · exact hbc
+          · obtain rfl | hcC := hc
+            · exact (noTwoway hab hbc).elim
+            · exact (hTrans b hbC c hcC hbc).1 hab
+        · obtain rfl | hbC := hb
+          · obtain rfl | hcC := hc
+            · exact hab
+            · have hne : a ≠ c := fun h => by subst h; exact noTwoway hab hbc
+              obtain hac | hca := hCtot a haC c hcC hne
+              · exact hac
+              · exact (noTwoway hbc ((hTrans c hcC a haC hca).2 hab)).elim
+          · obtain rfl | hcC := hc
+            · exact (hTrans a haC b hbC hab).2 hbc
+            · exact hCtrans a haC b hbC c hcC hab hbc
+      · intro z hz hzx
+        rw [Finset.mem_insert] at hz
+        obtain rfl | hzC := hz
+        · exact hw.2 z hyS hzx
+        · exact hCdom z hzC hzx
+    have hDmem : insert y C ∈ S.powerset.filter isPC :=
+      Finset.mem_filter.mpr ⟨Finset.mem_powerset.mpr hDsub, hDpc⟩
+    have hDle : (insert y C).card ≤ C.card := by
+      rw [← hCcard]
+      exact Finset.le_sup (s := S.powerset.filter isPC) (f := Finset.card) hDmem
+    have hlt : C.card < (insert y C).card :=
+      Finset.card_lt_card (Finset.ssubset_insert hyC)
+    omega
+  · exact hCdom
 
 
 end BanksSet
