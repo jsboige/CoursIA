@@ -201,7 +201,7 @@ class TacticTools:
         self._original_content: Optional[str] = None
         self._lock_file = Path(filepath).with_suffix(".prover.lock") if filepath else None
         self._session_id = str(uuid.uuid4())[:8]
-        self._context_boundary = 5  # max lines from sorry for edits (tight: only sorry + immediate context)
+        self._context_boundary = 20  # max lines from sorry for edits (generous: line shifts after edits)
         if filepath and Path(filepath).exists():
             raw = Path(filepath).read_text(encoding="utf-8")
             self._original_file_size = len(raw)

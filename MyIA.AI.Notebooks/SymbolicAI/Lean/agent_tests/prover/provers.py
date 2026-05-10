@@ -255,7 +255,7 @@ class AutonomousProver:
         original_content = Path(filepath).read_text(encoding="utf-8")
         original_sorry_count = original_content.count("sorry")
 
-        # Auto-detect actual sorry line
+        # Auto-detect actual sorry line — pick NEAREST to configured line
         actual_sorry_lines = [
             i + 1 for i, line in enumerate(original_content.split("\n"))
             if "sorry" in line
