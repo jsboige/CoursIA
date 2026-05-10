@@ -20,6 +20,7 @@ import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Sort
+import Mathlib.Data.Finset.Powerset
 import Mathlib.Order.Defs.LinearOrder
 import Mathlib.Tactic
 
@@ -248,7 +249,107 @@ theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
   simp only [List.mem_map, Finset.mem_toList] at hin
   obtain ⟨i, _, heq⟩ := hin
   exact ⟨i, heq⟩
-  · sorry -- TODO: median beats all others in single-peaked profile
+  · -- FIXME: This sorry needs a stronger hypothesis to prove.
+    -- single_peaked gives WEAK preference (R b a for a ≤ b ≤ p) but margin_pos
+    -- requires STRICT preference (P R x y = R x y ∧ ¬R y x).
+    -- For a voter with peak p > median and y < median: R_i median y (left-of-peak)
+    -- but ¬R_i y median is NOT derivable — the voter can be indifferent.
+    -- Counter-example: σ = {1,2,3}, 3 voters, peaks [1,2,3], median=2.
+    -- If voter 3 (peak=3) is indifferent between 1 and 2, margin(2,1) = 0, not > 0.
+    -- Fix: either add strictly_single_peaked (no indifference between distinct alts)
+    -- or change conclusion to weak Condorcet winner (margin ≥ 0).
+    sorry
+
+/-- **Median Voter Theorem — Strict version (Black 1948)**:
+    For an odd number of voters with strictly single-peaked preferences
+    (strict monotonicity on each side of the peak), the median peak is
+    a Condorcet winner.
+
+    This version requires explicit strict monotonicity hypotheses rather
+    than changing the `single_peaked` definition. -/
+theorem median_voter_theorem_strict [Inhabited σ] (prof : ι → PrefOrder σ) (peaks : ι → σ)
+    (hsp : single_peaked_profile prof peaks)
+    (hstrict_left : ∀ i a b, a < b → b ≤ peaks i → P (prof i).rel b a)
+    (hstrict_right : ∀ i a b, peaks i ≤ a → a < b → P (prof i).rel a b)
+    (hodd : Odd (Fintype.card ι)) :
+    ∃ m, condorcet_winner prof (Finset.univ.image peaks) m := by
+  classical
+  have hcard_pos : 0 < Fintype.card ι := by
+    have := hodd; rw [Nat.odd_iff] at this; omega
+  have hne : Nonempty ι := Fintype.card_pos_iff.mp hcard_pos
+  use median_peak peaks
+  constructor
+  · -- median ∈ image of peaks
+    simp only [Finset.mem_image, Finset.mem_univ, true_and]
+    unfold median_peak sorted_peaks_list
+    let l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)
+    have hl : l.length = Fintype.card ι := by unfold l; simp [List.length_mergeSort, List.length_map, Finset.length_toList]
+    have hn : l.length / 2 < l.length := by omega
+    have hin : l.getD (l.length / 2) default ∈ l := by simp [List.getD, List.getElem?_eq_getElem, hn]
+    have hperm : l ≈ Finset.univ.toList.map peaks := List.mergeSort_perm _ _
+    rw [List.Perm.mem_iff hperm] at hin
+    simp at hin
+    exact hin
+  · -- margin_pos for any y ≠ median
+    intro y hy hny
+    simp only [Finset.mem_image, Finset.mem_univ, true_and] at hy
+    obtain ⟨j, hyj⟩ := hy; subst hyj
+    unfold margin_pos margin
+    by_cases hlt : peaks j < median_peak peaks
+    · -- Case: peaks_j < median. Voters with peak >= median prefer median over j.
+      -- Count: |{i | median ≤ peaks i}| > |{i | peaks i < median}| for odd n.
+      have hgt_peaks : ∀ i, median_peak peaks ≤ peaks i → P (prof i).rel (median_peak peaks) (peaks j) := by
+        intro i hi
+        exact hstrict_left i (peaks j) (median_peak peaks) hlt hi
+      -- Voters preferring median: at least the set {i | median ≤ peaks i}
+      have hfor_card : (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card ≤
+          (Finset.filter (fun i => P (prof i).rel (median_peak peaks) (peaks j)) Finset.univ).card := by
+        apply Finset.card_le_card
+        intro i hi
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+        exact hgt_peaks i hi
+      -- Voters preferring j: at most the set {i | peaks i < median}
+      have hag_card : (Finset.filter (fun i => P (prof i).rel (peaks j) (median_peak peaks)) Finset.univ).card ≤
+          (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card := by
+        apply Finset.card_le_card
+        intro i hi
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+        by_contra hnot
+        have hle : median_peak peaks ≤ peaks i := le_of_not_gt hnot
+        exact (hgt_peaks i hle).2 hi.1
+      -- Key counting: |{peaks < median}| < |{median ≤ peaks}|
+      -- Follows from median being at position n/2 in sorted peaks list.
+      -- For odd n = 2k+1: at most k peaks are strictly less, at least k+1 are ≥ median.
+      have hcount : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card <
+          (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card := by
+        sorry -- sorted-list counting: median at position n/2
+      omega
+    · -- Case: peaks_j > median. Voters with peak <= median prefer median over j.
+      have hgt : median_peak peaks < peaks j := lt_of_le_of_ne (le_of_not_gt hlt) (Ne.symm hny)
+      have hlt_peaks : ∀ i, peaks i ≤ median_peak peaks → P (prof i).rel (median_peak peaks) (peaks j) := by
+        intro i hi
+        exact hstrict_right i (median_peak peaks) (peaks j) hi hgt
+      have hfor_card : (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card ≤
+          (Finset.filter (fun i => P (prof i).rel (median_peak peaks) (peaks j)) Finset.univ).card := by
+        apply Finset.card_le_card
+        intro i hi
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+        exact hlt_peaks i hi
+      have hag_card : (Finset.filter (fun i => P (prof i).rel (peaks j) (median_peak peaks)) Finset.univ).card ≤
+          (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card := by
+        apply Finset.card_le_card
+        intro i hi
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+        by_contra hnot
+        have hle : peaks i ≤ median_peak peaks := le_of_not_gt hnot
+        exact (hlt_peaks i hle).2 hi.1
+      have hcount : (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card <
+          (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card := by
+        sorry -- same counting argument (symmetric)
+      omega
+
+end SinglePeaked
+
 section SplitCycle
 
 /-- A cycle in a relation R over a list: the last element relates to the first,
@@ -442,7 +543,111 @@ theorem banks_set_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ
   classical
   unfold banks_set banks_winner
   simp only [Finset.mem_filter, hw.1, true_and]
-  sorry -- TODO: maximal chain existence (finiteness + Zorn-like argument)
+  let isTC (C : Finset σ) : Prop :=
+    C ⊆ S ∧ C.Nonempty ∧
+    (∀ a ∈ C, ∀ b ∈ C, a ≠ b → margin_pos prof a b ∨ margin_pos prof b a) ∧
+    (∀ a ∈ C, ∀ b ∈ C, ∀ c ∈ C,
+      margin_pos prof a b → margin_pos prof b c → margin_pos prof a c) ∧
+    x ∈ C
+  have h_single : isTC {x} := by
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    · exact Finset.singleton_subset_iff.mpr hw.1
+    · exact ⟨x, Finset.mem_singleton_self x⟩
+    · intro a ha b hb hab
+      simp only [Finset.mem_singleton] at ha hb
+      subst ha; subst hb; contradiction
+    · intro a ha b hb c hc hab hbc
+      simp only [Finset.mem_singleton] at ha hb hc
+      subst ha; subst hb; subst hc; exact hab
+    · exact Finset.mem_singleton_self x
+  have hTC_nonempty : (Finset.filter isTC (Finset.powerset S)).Nonempty :=
+    ⟨{x}, Finset.mem_filter.mpr ⟨Finset.mem_powerset.mpr
+      (Finset.singleton_subset_iff.mpr hw.1), h_single⟩⟩
+  obtain ⟨C, hC_filter, hC_max⟩ := Finset.exists_mem_eq_sup' hTC_nonempty (fun C => C.card)
+  have hC_mem : C ∈ Finset.filter isTC (Finset.powerset S) := hC_filter
+  obtain ⟨hC_sub, hC_ne, hC_tourn, hC_trans, hC_x⟩ := Finset.mem_filter.mp hC_mem |>.2
+  have hC_x_beats : ∀ y ∈ C, y ≠ x → margin_pos prof x y := by
+    intro y hy hne
+    have ht := hC_tourn x hC_x y hy hne.symm
+    by_cases h : margin_pos prof x y
+    · exact h
+    · exfalso
+      have hxy := hw.2 y (hC_sub hy) hne
+      have := margin_antisymm prof x y
+      unfold margin_pos at *; omega
+  have hC_chain : banks_chain prof S C := by
+    refine ⟨hC_sub, hC_ne, hC_tourn, hC_trans, ?_⟩
+    intro y hyS hyC
+    by_contra h_ext
+    obtain ⟨h_ext_tourn, h_ext_trans⟩ := h_ext
+    have hxy : margin_pos prof x y :=
+      hw.2 y hyS (by intro h; subst h; exact hyC hC_x)
+    have h_no_self : ¬margin_pos prof y y := by
+      intro h; unfold margin_pos at h; have := margin_self prof y; omega
+    have h_insert_sub : ({y} ∪ C) ⊆ S :=
+      Finset.union_subset (Finset.singleton_subset_iff.mpr hyS) hC_sub
+    have h_insert_ne : ({y} ∪ C).Nonempty :=
+      ⟨y, Finset.mem_union.mpr (.inl (Finset.mem_singleton_self y))⟩
+    have h_insert_x : x ∈ {y} ∪ C := Finset.mem_union.mpr (.inr hC_x)
+    have h_insert_tourn :
+        ∀ a ∈ {y} ∪ C, ∀ b ∈ {y} ∪ C, a ≠ b →
+          margin_pos prof a b ∨ margin_pos prof b a := by
+      intro a ha b hb hab
+      simp only [Finset.mem_union, Finset.mem_singleton] at ha hb
+      rcases ha with rfl | ha_mem <;> rcases hb with rfl | hb_mem
+      · contradiction
+      · exact h_ext_tourn b hb_mem
+      · exact (h_ext_tourn a ha_mem).symm
+      · exact hC_tourn a ha_mem b hb_mem hab
+    have h_insert_trans :
+        ∀ a ∈ {y} ∪ C, ∀ b ∈ {y} ∪ C, ∀ c ∈ {y} ∪ C,
+          margin_pos prof a b → margin_pos prof b c → margin_pos prof a c := by
+      intro a ha b hb c hc hab hbc
+      simp only [Finset.mem_union, Finset.mem_singleton] at ha hb hc
+      rcases ha with (ha_eq | ha_mem) <;> rcases hb with (hb_eq | hb_mem) <;>
+        rcases hc with (hc_eq | hc_mem)
+      · -- (y,y,y)
+        exfalso; rw [ha_eq, hb_eq] at hab; exact h_no_self hab
+      · -- (y,y,C)
+        exfalso; rw [ha_eq, hb_eq] at hab; exact h_no_self hab
+      · -- (y,C,y): mp y b ∧ mp b y → antisymm contradiction
+        exfalso; rw [ha_eq] at hab; rw [hc_eq] at hbc
+        unfold margin_pos at *; have := margin_antisymm prof y b; omega
+      · -- (y,C,C): forward via h_ext_trans .1
+        rw [ha_eq]; rw [ha_eq] at hab
+        exact (h_ext_trans b hb_mem c hc_mem hbc).1 hab
+      · -- (C,y,y)
+        exfalso; rw [hb_eq, hc_eq] at hbc; exact h_no_self hbc
+      · -- (C,y,C): mp a y ∧ mp y c → by_cases
+        rw [hb_eq] at hab; rw [hb_eq] at hbc
+        by_cases hac : margin_pos prof a c
+        · exact hac
+        · exfalso
+          have hne : c ≠ a := by
+            intro h; rw [h] at hbc
+            unfold margin_pos at *; have := margin_antisymm prof a y; omega
+          have hca : margin_pos prof c a :=
+            (hC_tourn c hc_mem a ha_mem hne).resolve_right hac
+          have h_ya : margin_pos prof y a :=
+            (h_ext_trans c hc_mem a ha_mem hca).1 hbc
+          unfold margin_pos at *; have := margin_antisymm prof a y; omega
+      · -- (C,C,y): backward via h_ext_trans .2
+        rw [hc_eq]; rw [hc_eq] at hbc
+        exact (h_ext_trans a ha_mem b hb_mem hab).2 hbc
+      · -- (C,C,C)
+        exact hC_trans a ha_mem b hb_mem c hc_mem hab hbc
+    have h_insert_isTC : isTC ({y} ∪ C) :=
+      ⟨h_insert_sub, h_insert_ne, h_insert_tourn, h_insert_trans, h_insert_x⟩
+    have h_insert_filter : ({y} ∪ C) ∈ Finset.filter isTC (Finset.powerset S) :=
+      Finset.mem_filter.mpr ⟨Finset.mem_powerset.mpr h_insert_sub, h_insert_isTC⟩
+    have h_disj : Disjoint {y} C := Finset.disjoint_singleton_left.mpr hyC
+    have h_card : ({y} ∪ C).card = Finset.card {y} + C.card :=
+      Finset.card_union_eq_card_add_card.mpr h_disj
+    have h_le := Finset.le_sup' (fun C' => C'.card) h_insert_filter
+    rw [hC_max] at h_le
+    rw [h_card, Finset.card_singleton] at h_le
+    omega
+  exact ⟨C, hC_chain, hC_x, hC_x_beats⟩
 
 
 end BanksSet
@@ -458,8 +663,6 @@ Key properties:
 - Fails monotonicity (Doron 1979)
 - Fails clone independence in general
 -/
-
-end SinglePeaked
 
 section STV
 

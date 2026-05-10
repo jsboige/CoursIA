@@ -88,6 +88,20 @@ STRATEGIE:
 - Apres 3 echecs: decomposer avec have h : sub := by sorry
 - sorry qui diminue = progres | sorry + compile = progres structurel
 
+PREUVES COMPLEXES (∃, ∀, contradiction, cardinalité):
+- Pour les buts existentiels ∃ x, P x: utilise "use" ou "exists" ou "refine ⟨_, _⟩"
+- Pour les preuves par contradiction: "by_contra h" puis "exfalso" + dériver False
+- Pour les preuves par cardinalité: Finset.card, Finset.exists_mem_eq_sup, Finset.powerset
+- Pour les preuves multi-étapes: DECOMPOSE avec "have" AVANT d'essayer la preuve complète
+  - have h1 : sub_goal1 := by <proof>
+  - have h2 : sub_goal2 := by <proof>
+  - exact <final using h1, h2>
+- Pour les preuves longues (>10 lignes): utilise file_replace_lines pour insérer un bloc complet
+  au lieu de file_replace_sorry qui ne remplace qu'une seule ligne
+- INCREMENTAL: construis la preuve une étape à la fois. Chaque have qui compile = progrès.
+- Si le sorry est dans un bloc · (dot): le remplacement doit inclure TOUT le contenu du bloc
+  jusqu'au prochain · de même niveau ou la fin du bloc parent.
+
 TACTIQUES: omega, ring, linarith, simp, rw, exact, constructor, cases, induction, norm_cast
 FIX: "type mismatch"→norm_cast | "unfold failed"→show | ⟨⟩ sur def→constructor
 
