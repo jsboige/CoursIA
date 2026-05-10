@@ -1,0 +1,336 @@
+{
+  "timestamp": "20260510T194627Z",
+  "quick": true,
+  "families": [
+    {
+      "name": "Search",
+      "total": 87,
+      "pass": 84,
+      "warn": 3,
+      "fail": 0,
+      "skip": 0,
+      "broken": [],
+      "maturity": {
+        "PRODUCTION": 24,
+        "BETA": 0,
+        "ALPHA": 60,
+        "DRAFT": 3
+      },
+      "status": {
+        "READY": 84,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 3
+      },
+      "duration_s": 0.1
+    },
+    {
+      "name": "Sudoku",
+      "total": 48,
+      "pass": 47,
+      "warn": 0,
+      "fail": 1,
+      "skip": 0,
+      "broken": [
+        {
+          "path": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-11-Choco-Csharp.ipynb",
+          "reason": "errors: Error"
+        }
+      ],
+      "maturity": {
+        "PRODUCTION": 21,
+        "BETA": 0,
+        "ALPHA": 27,
+        "DRAFT": 0
+      },
+      "status": {
+        "READY": 47,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 1
+      },
+      "duration_s": 0.0
+    },
+    {
+      "name": "SymbolicAI",
+      "total": 157,
+      "pass": 154,
+      "warn": 2,
+      "fail": 1,
+      "skip": 0,
+      "broken": [
+        {
+          "path": "MyIA.AI.Notebooks\\SymbolicAI\\archive\\Tweety.ipynb",
+          "reason": "errors: SyntaxError"
+        }
+      ],
+      "maturity": {
+        "PRODUCTION": 57,
+        "BETA": 0,
+        "ALPHA": 98,
+        "DRAFT": 2
+      },
+      "status": {
+        "READY": 154,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 3
+      },
+      "duration_s": 0.3
+    },
+    {
+      "name": "GenAI",
+      "total": 105,
+      "pass": 102,
+      "warn": 3,
+      "fail": 0,
+      "skip": 0,
+      "broken": [],
+      "maturity": {
+        "PRODUCTION": 18,
+        "BETA": 0,
+        "ALPHA": 84,
+        "DRAFT": 3
+      },
+      "status": {
+        "READY": 102,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 3
+      },
+      "duration_s": 0.1
+    },
+    {
+      "name": "ML",
+      "total": 30,
+      "pass": 25,
+      "warn": 0,
+      "fail": 5,
+      "skip": 0,
+      "broken": [
+        {
+          "path": "MyIA.AI.Notebooks\\ML\\DataScienceWithAgents\\AgenticDataScience\\Day4-Foundations\\Lab8-ADK-Introduction_executed.ipynb",
+          "reason": "errors: ModuleNotFoundError"
+        },
+        {
+          "path": "MyIA.AI.Notebooks\\ML\\ML.Net\\ML-2-Data&Features.ipynb",
+          "reason": "errors: Error"
+        },
+        {
+          "path": "MyIA.AI.Notebooks\\ML\\ML.Net\\ML-3-Entrainement&AutoML.ipynb",
+          "reason": "errors: Error"
+        },
+        {
+          "path": "MyIA.AI.Notebooks\\ML\\ML.Net\\ML-4-Evaluation.ipynb",
+          "reason": "errors: Error"
+        },
+        {
+          "path": "MyIA.AI.Notebooks\\ML\\ML.Net\\ML-5-TimeSeries.ipynb",
+          "reason": "errors: Error, Error, Error"
+        }
+      ],
+      "maturity": {
+        "PRODUCTION": 6,
+        "BETA": 0,
+        "ALPHA": 24,
+        "DRAFT": 0
+      },
+      "status": {
+        "READY": 25,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 5
+      },
+      "duration_s": 0.0
+    },
+    {
+      "name": "QuantConnect",
+      "total": 626,
+      "pass": 63,
+      "warn": 562,
+      "fail": 1,
+      "skip": 0,
+      "broken": [
+        {
+          "path": "MyIA.AI.Notebooks\\QuantConnect\\projects\\Portfolio-Optimization-ML\\research.ipynb",
+          "reason": "errors: KeyError"
+        }
+      ],
+      "maturity": {
+        "PRODUCTION": 48,
+        "BETA": 0,
+        "ALPHA": 10,
+        "DRAFT": 568
+      },
+      "status": {
+        "READY": 63,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 563
+      },
+      "duration_s": 0.2
+    },
+    {
+      "name": "Probas",
+      "total": 22,
+      "pass": 22,
+      "warn": 0,
+      "fail": 0,
+      "skip": 0,
+      "broken": [],
+      "maturity": {
+        "PRODUCTION": 5,
+        "BETA": 0,
+        "ALPHA": 17,
+        "DRAFT": 0
+      },
+      "status": {
+        "READY": 22,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 0
+      },
+      "duration_s": 0.0
+    },
+    {
+      "name": "GameTheory",
+      "total": 30,
+      "pass": 30,
+      "warn": 0,
+      "fail": 0,
+      "skip": 0,
+      "broken": [],
+      "maturity": {
+        "PRODUCTION": 6,
+        "BETA": 0,
+        "ALPHA": 24,
+        "DRAFT": 0
+      },
+      "status": {
+        "READY": 30,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 0
+      },
+      "duration_s": 0.4
+    },
+    {
+      "name": "IIT",
+      "total": 1,
+      "pass": 1,
+      "warn": 0,
+      "fail": 0,
+      "skip": 0,
+      "broken": [],
+      "maturity": {
+        "PRODUCTION": 0,
+        "BETA": 0,
+        "ALPHA": 1,
+        "DRAFT": 0
+      },
+      "status": {
+        "READY": 1,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 0
+      },
+      "duration_s": 0.0
+    },
+    {
+      "name": "CaseStudies",
+      "total": 4,
+      "pass": 3,
+      "warn": 1,
+      "fail": 0,
+      "skip": 0,
+      "broken": [],
+      "maturity": {
+        "PRODUCTION": 2,
+        "BETA": 0,
+        "ALPHA": 1,
+        "DRAFT": 1
+      },
+      "status": {
+        "READY": 3,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 1
+      },
+      "duration_s": 0.0
+    },
+    {
+      "name": "RL",
+      "total": 7,
+      "pass": 6,
+      "warn": 1,
+      "fail": 0,
+      "skip": 0,
+      "broken": [],
+      "maturity": {
+        "PRODUCTION": 0,
+        "BETA": 0,
+        "ALPHA": 6,
+        "DRAFT": 1
+      },
+      "status": {
+        "READY": 6,
+        "DEMO": 0,
+        "RESEARCH": 0,
+        "BROKEN": 1
+      },
+      "duration_s": 0.0
+    }
+  ],
+  "aggregate": {
+    "n_families": 11,
+    "totals": {
+      "total": 1117,
+      "pass": 537,
+      "warn": 572,
+      "fail": 8,
+      "pass_rate": 48.1
+    },
+    "maturity": {
+      "PRODUCTION": 187,
+      "BETA": 0,
+      "ALPHA": 352,
+      "DRAFT": 578
+    },
+    "n_broken": 8,
+    "broken": [
+      {
+        "path": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-11-Choco-Csharp.ipynb",
+        "reason": "errors: Error"
+      },
+      {
+        "path": "MyIA.AI.Notebooks\\SymbolicAI\\archive\\Tweety.ipynb",
+        "reason": "errors: SyntaxError"
+      },
+      {
+        "path": "MyIA.AI.Notebooks\\ML\\DataScienceWithAgents\\AgenticDataScience\\Day4-Foundations\\Lab8-ADK-Introduction_executed.ipynb",
+        "reason": "errors: ModuleNotFoundError"
+      },
+      {
+        "path": "MyIA.AI.Notebooks\\ML\\ML.Net\\ML-2-Data&Features.ipynb",
+        "reason": "errors: Error"
+      },
+      {
+        "path": "MyIA.AI.Notebooks\\ML\\ML.Net\\ML-3-Entrainement&AutoML.ipynb",
+        "reason": "errors: Error"
+      },
+      {
+        "path": "MyIA.AI.Notebooks\\ML\\ML.Net\\ML-4-Evaluation.ipynb",
+        "reason": "errors: Error"
+      },
+      {
+        "path": "MyIA.AI.Notebooks\\ML\\ML.Net\\ML-5-TimeSeries.ipynb",
+        "reason": "errors: Error, Error, Error"
+      },
+      {
+        "path": "MyIA.AI.Notebooks\\QuantConnect\\projects\\Portfolio-Optimization-ML\\research.ipynb",
+        "reason": "errors: KeyError"
+      }
+    ],
+    "total_duration_s": 1.1
+  }
+}
