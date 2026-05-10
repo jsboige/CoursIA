@@ -1,20 +1,20 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-10 01:54
+Generated: 2026-05-10 01:52
 Total notebooks: 452
 
 ## Status Summary
 
-- **READY**: 234
+- **READY**: 235
 - **DEMO**: 203
 - **RESEARCH**: 0
-- **BROKEN**: 15
+- **BROKEN**: 14
 
 ## Maturity Summary
 
-- **PRODUCTION**: 33
-- **BETA**: 57
-- **ALPHA**: 253
+- **PRODUCTION**: 32
+- **BETA**: 56
+- **ALPHA**: 255
 - **DRAFT**: 109
 
 ## By Series
@@ -436,7 +436,7 @@ Total notebooks: 452
 | 26 | GameTheory-7-ExtensiveForm | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 27 | GameTheory-9-BackwardInduction | Python 3 | READY | ALPHA | 30min | po-2024 |
 
-### Sudoku (32 notebooks) — BROKEN:3, DEMO:2, READY:27 | ALPHA:20, BETA:10, PRODUCTION:2
+### Sudoku (32 notebooks) — BROKEN:2, DEMO:2, READY:28 | ALPHA:22, BETA:9, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -447,11 +447,11 @@ Total notebooks: 452
 | 5 | Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python | Python 3 (ipykernel) | READY | ALPHA | 30min | po-2023 |
 | 6 | Sudoku-11-Choco-Csharp : Solveur Choco via IKVM | .NET (C#) | BROKEN | BETA | 30min | po-2023 |
 | 7 | Notebook 11: Resolution de Sudoku avec Choco Const | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | BROKEN | BETA | 45min | po-2023 |
+| 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 9 | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | base | READY | BETA | 30min | po-2023 |
 | 10 | Sudoku-12 : Theorie des Automates Symboliques et C | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 11 | Sudoku-13 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | BROKEN | ALPHA | 45min | po-2023 |
 | 13 | Sudoku-15-Infer-Python : Resolution Probabiliste a | Python 3 | READY | BETA | 30min | po-2023 |
 | 14 | Sudoku-10 : Résolution par Réseaux de Neurones | Python 3 | DEMO | ALPHA | 1h | po-2023 |
 | 15 | Notebook 17: Resolution de Sudoku avec Large Langu | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2023 |
@@ -468,7 +468,7 @@ Total notebooks: 452
 | 26 | Sudoku-6 : Resolution par CSP Academique (Python) | Python 3 | READY | BETA | 45min | po-2023 |
 | 27 | Sudoku-7 : Resolution par Propagation de Contraint | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 28 | Le Sudoku comme CSP | Python 3 | READY | ALPHA | 30min | po-2023 |
-| 29 | Résolution de Sudoku par Stratégies Humaines | .NET (C#) | BROKEN | PRODUCTION | 45min | po-2023 |
+| 29 | Résolution de Sudoku par Stratégies Humaines | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 30 | Sudoku-8 : Resolution par Strategies Humaines (Pyt | .venv (3.12.3) | READY | ALPHA | 45min | po-2023 |
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | BETA | 30min | po-2023 |
