@@ -424,7 +424,37 @@ class TacticTools:
         if result.get("success"):
             return None
 
-        # Build failed — revert to original.
+        # Check if the ONLY errors are sorry-related (not syntax errors)
+        # When sorry exists in a file, lake build always fails — but the
+        # replacement might still be valid if no new syntax errors were introduced.
+        raw_output = result.get("raw_output", "") or result.get("errors", "")
+        non_sorry_errors = []
+        for line in raw_output.split("\n"):
+            if "error:" not in line:
+                continue
+            skip_patterns = [
+                "declaration uses `sorry`",
+                "uses `sorry`",
+                "Some required targets logged failures",
+                "Lean exited with code 1",
+                "error: build failed",
+            ]
+            if any(skip in line for skip in skip_patterns):
+                continue
+            m = re.match(r".*?(\d+):\d+: error: (.*)", line)
+            if not m:
+                m = re.match(r"error: .*?(\d+):\d+: (.*)", line)
+            if m:
+                msg = m.group(2)
+                if "unsolved goals" in msg:
+                    continue
+                non_sorry_errors.append({"line": int(m.group(1)), "message": msg})
+
+        # If only sorry-related errors, accept the replacement (don't revert)
+        if not non_sorry_errors:
+            return None
+
+        # Build failed with real errors — revert to original.
         Path(self._filepath).write_text(original_content, encoding="utf-8")
         raw_output = result.get("raw_output", "") or result.get("errors", "")
         errors = []
@@ -463,6 +493,61 @@ class TacticTools:
         """
         if not self._filepath:
             return json.dumps({"error": "No file configured"})
+
+        # Context boundary: only allow replacing near the target sorry
+        if self._sorry_ctx:
+            target = self._sorry_ctx.sorry_line
+            # The range must overlap with [target - boundary, target + boundary]
+            boundary = self._context_boundary * 4  # Wider for range edits
+            if end < target - boundary or start > target + boundary:
+                return json.dumps({
+                    "error": f"BLOCKED: range {start}-{end} is too far from target sorry at line {target}. "
+                             f"Only modify lines within ±{boundary} of the sorry.",
+                }, ensure_ascii=False)
+
+        # Structural boundary guard: prevent replacing across section/end/theorem boundaries
+        try:
+            content_precheck = Path(self._filepath).read_text(encoding="utf-8")
+            lines_precheck = content_precheck.split("\n")
+            _STRUCTURE_KEYWORDS = re.compile(
+                r'^\s*(theorem|lemma|def|instance|section|end|namespace|open|'
+                r'variable|abbreviation|structure|class|inductive)\b'
+            )
+            # Count structural keywords BEFORE the replacement range
+            before_structs = sum(
+                1 for i in range(min(start - 1, len(lines_precheck)))
+                if _STRUCTURE_KEYWORDS.match(lines_precheck[i])
+            )
+            # Count structural keywords AFTER the replacement range
+            after_start = min(end, len(lines_precheck))
+            after_structs = sum(
+                1 for i in range(after_start, len(lines_precheck))
+                if _STRUCTURE_KEYWORDS.match(lines_precheck[i])
+            )
+            # Count structural keywords IN the range being replaced
+            range_structs = sum(
+                1 for i in range(start - 1, min(end, len(lines_precheck)))
+                if _STRUCTURE_KEYWORDS.match(lines_precheck[i])
+            )
+            # If the range contains structural keywords AND surrounding code also has them,
+            # the replacement might break file structure. Block large ranges crossing boundaries.
+            # Exception: replacing a single `sorry` line that happens to be near a keyword is fine.
+            range_size = end - start + 1
+            if range_structs > 0 and range_size > 3:
+                struct_lines = [
+                    f"L{i+1}: {lines_precheck[i].strip()[:60]}"
+                    for i in range(start - 1, min(end, len(lines_precheck)))
+                    if _STRUCTURE_KEYWORDS.match(lines_precheck[i])
+                ]
+                return json.dumps({
+                    "error": f"BLOCKED: range {start}-{end} contains structural keywords "
+                             f"(theorem/end/section/def). Use file_replace_sorry() instead "
+                             f"to replace ONLY the sorry line. Structural lines found:\n"
+                             + "\n".join(struct_lines),
+                }, ensure_ascii=False)
+        except Exception:
+            pass  # Don't block on pre-check errors
+
         try:
             content = Path(self._filepath).read_text(encoding="utf-8")
             lines = content.split("\n")
@@ -557,12 +642,22 @@ class TacticTools:
                 return json.dumps({"error": f"Line {sorry_line} doesn't contain 'sorry': {sorry_text[:80]}"})
 
             indent = len(sorry_text) - len(sorry_text.lstrip())
-            indent_str = " " * indent
+
+            # Preserve relative indentation: find min indent in replacement,
+            # strip it, then re-base to the sorry line's indent level.
+            raw_lines = replacement.rstrip().split("\n")
+            # Find minimum indentation among non-empty lines
+            non_empty = [l for l in raw_lines if l.strip()]
+            min_indent = min((len(l) - len(l.lstrip()) for l in non_empty), default=0)
 
             replacement_lines = []
-            for line in replacement.strip().split("\n"):
+            for line in raw_lines:
                 if line.strip():
-                    replacement_lines.append(indent_str + line.strip())
+                    # Remove the original base indent, add the sorry's indent
+                    relative_indent = len(line) - len(line.lstrip()) - min_indent
+                    new_indent = " " * (indent + max(0, relative_indent))
+                    replacement_lines.append(new_indent + line.strip())
+                # Skip blank lines within replacement
 
             old_line = lines[sorry_line - 1]
             lines[sorry_line - 1:sorry_line] = replacement_lines
