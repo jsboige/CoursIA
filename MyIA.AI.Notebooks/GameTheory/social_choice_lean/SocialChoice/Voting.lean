@@ -259,6 +259,97 @@ theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
     -- Fix: either add strictly_single_peaked (no indifference between distinct alts)
     -- or change conclusion to weak Condorcet winner (margin ≥ 0).
     sorry
+
+/-- **Median Voter Theorem — Strict version (Black 1948)**:
+    For an odd number of voters with strictly single-peaked preferences
+    (strict monotonicity on each side of the peak), the median peak is
+    a Condorcet winner.
+
+    This version requires explicit strict monotonicity hypotheses rather
+    than changing the `single_peaked` definition. -/
+theorem median_voter_theorem_strict [Inhabited σ] (prof : ι → PrefOrder σ) (peaks : ι → σ)
+    (hsp : single_peaked_profile prof peaks)
+    (hstrict_left : ∀ i a b, a < b → b ≤ peaks i → P (prof i).rel b a)
+    (hstrict_right : ∀ i a b, peaks i ≤ a → a < b → P (prof i).rel a b)
+    (hodd : Odd (Fintype.card ι)) :
+    ∃ m, condorcet_winner prof (Finset.univ.image peaks) m := by
+  classical
+  have hcard_pos : 0 < Fintype.card ι := by
+    have := hodd; rw [Nat.odd_iff] at this; omega
+  have hne : Nonempty ι := Fintype.card_pos_iff.mp hcard_pos
+  use median_peak peaks
+  constructor
+  · -- median ∈ image of peaks
+    simp only [Finset.mem_image, Finset.mem_univ, true_and]
+    unfold median_peak sorted_peaks_list
+    let l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)
+    have hl : l.length = Fintype.card ι := by unfold l; simp [List.length_mergeSort, List.length_map, Finset.length_toList]
+    have hn : l.length / 2 < l.length := by omega
+    have hin : l.getD (l.length / 2) default ∈ l := by simp [List.getD, List.getElem?_eq_getElem, hn]
+    have hperm : l ≈ Finset.univ.toList.map peaks := List.mergeSort_perm _ _
+    rw [List.Perm.mem_iff hperm] at hin
+    simp at hin
+    exact hin
+  · -- margin_pos for any y ≠ median
+    intro y hy hny
+    simp only [Finset.mem_image, Finset.mem_univ, true_and] at hy
+    obtain ⟨j, hyj⟩ := hy; subst hyj
+    unfold margin_pos margin
+    by_cases hlt : peaks j < median_peak peaks
+    · -- Case: peaks_j < median. Voters with peak >= median prefer median over j.
+      -- Count: |{i | median ≤ peaks i}| > |{i | peaks i < median}| for odd n.
+      have hgt_peaks : ∀ i, median_peak peaks ≤ peaks i → P (prof i).rel (median_peak peaks) (peaks j) := by
+        intro i hi
+        exact hstrict_left i (peaks j) (median_peak peaks) hlt hi
+      -- Voters preferring median: at least the set {i | median ≤ peaks i}
+      have hfor_card : (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card ≤
+          (Finset.filter (fun i => P (prof i).rel (median_peak peaks) (peaks j)) Finset.univ).card := by
+        apply Finset.card_le_card
+        intro i hi
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+        exact hgt_peaks i hi
+      -- Voters preferring j: at most the set {i | peaks i < median}
+      have hag_card : (Finset.filter (fun i => P (prof i).rel (peaks j) (median_peak peaks)) Finset.univ).card ≤
+          (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card := by
+        apply Finset.card_le_card
+        intro i hi
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+        by_contra hnot
+        have hle : median_peak peaks ≤ peaks i := le_of_not_gt hnot
+        exact (hgt_peaks i hle).2 hi.1
+      -- Key counting: |{peaks < median}| < |{median ≤ peaks}|
+      -- Follows from median being at position n/2 in sorted peaks list.
+      -- For odd n = 2k+1: at most k peaks are strictly less, at least k+1 are ≥ median.
+      have hcount : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card <
+          (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card := by
+        sorry -- sorted-list counting: median at position n/2
+      omega
+    · -- Case: peaks_j > median. Voters with peak <= median prefer median over j.
+      have hgt : median_peak peaks < peaks j := lt_of_le_of_ne (le_of_not_gt hlt) (Ne.symm hny)
+      have hlt_peaks : ∀ i, peaks i ≤ median_peak peaks → P (prof i).rel (median_peak peaks) (peaks j) := by
+        intro i hi
+        exact hstrict_right i (median_peak peaks) (peaks j) hi hgt
+      have hfor_card : (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card ≤
+          (Finset.filter (fun i => P (prof i).rel (median_peak peaks) (peaks j)) Finset.univ).card := by
+        apply Finset.card_le_card
+        intro i hi
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+        exact hlt_peaks i hi
+      have hag_card : (Finset.filter (fun i => P (prof i).rel (peaks j) (median_peak peaks)) Finset.univ).card ≤
+          (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card := by
+        apply Finset.card_le_card
+        intro i hi
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+        by_contra hnot
+        have hle : peaks i ≤ median_peak peaks := le_of_not_gt hnot
+        exact (hlt_peaks i hle).2 hi.1
+      have hcount : (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card <
+          (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card := by
+        sorry -- same counting argument (symmetric)
+      omega
+
+end SinglePeaked
+
 section SplitCycle
 
 /-- A cycle in a relation R over a list: the last element relates to the first,
@@ -572,8 +663,6 @@ Key properties:
 - Fails monotonicity (Doron 1979)
 - Fails clone independence in general
 -/
-
-end SinglePeaked
 
 section STV
 
