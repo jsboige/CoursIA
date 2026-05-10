@@ -9,9 +9,9 @@
 | Metric | Value |
 |--------|-------|
 | Total notebooks (with code cells) | 660 |
-| Fully executed (ALL_EXEC) | 535 (81%) |
-| Partially executed (PARTIAL) | 59 (9%) |
-| Never executed (ALL_NULL) | 64 (10%) |
+| Fully executed (ALL_EXEC) | 538 (82%) |
+| Partially executed (PARTIAL) | 58 (9%) |
+| Never executed (ALL_NULL) | 61 (9%) |
 | With error outputs | 6 |
 
 ## Matrix by Series
@@ -55,7 +55,7 @@
 
 | Series | Total | ALL_EXEC | PARTIAL | ALL_NULL | ERR | % OK |
 |--------|-------|----------|---------|----------|-----|------|
-| Lean | 15 | 11 | 1 | 3 | 0 | 73% |
+| Lean | 15 | 14 | 0 | 1 | 0 | 93% |
 
 ### Other Kernel Notebooks
 
@@ -94,7 +94,7 @@
 
 ## Key Findings
 
-1. **81% fully executed** (535/660) — strong baseline health
+1. **82% fully executed** (538/660) — strong baseline health
 2. **QuantConnect is the largest gap** (106 ALL_NULL) — expected, requires QC Cloud
 3. **GenAI Audio/Image/Tweety/SmartContracts: 100% execution** — most reliable series
 4. **Probas/Infer: 100% execution** (21 .NET notebooks) — fully re-executed T17.14
@@ -108,3 +108,4 @@ Per CLAUDE.md H.7 P4: monthly regeneration.
 | Date | SHA | Auditor | Notes |
 |------|-----|---------|-------|
 | 2026-05-10 | 032e9b6a | po-2025 | Initial forensic audit |
+| 2026-05-11 | 8334458b | po-2025 | Lean: 3 ALL_NULL→ALL_EXEC via lean4-wsl kernel (93% OK) |
