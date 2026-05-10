@@ -1,4 +1,4 @@
-# CC2 : OncoPlan - Le Protocole Oncologique Adaptatif
+# OncoPlan - Le Protocole Oncologique Adaptatif
 
 ## Vue d'ensemble
 
@@ -7,15 +7,15 @@ Ce devoir de contrôle continu combine **IA symbolique** et **programmation prob
 ### Structure du dossier
 
 ```
-CC2-Symbolique-Probabiliste/
+Oncology-Planning/
 ├── README.md                           # Ce fichier
-├── enonce/
-│   ├── sujet.md                        # Énoncé complet du devoir
-│   ├── CC2_OncoPlan_Squelette.ipynb    # Notebook à compléter
-│   └── ressources/
-│       └── patients_oncology.csv       # Données patients
-└── corrige/
-    └── CC2_OncoPlan_Corrige.ipynb      # Solution de référence
+├── subject.md                          # Sujet complet
+├── student/
+│   └── Oncology-Planning.ipynb         # Notebook a completer
+├── solution/
+│   └── Oncology-Planning.ipynb         # Solution de reference
+└── data/
+    └── patients_oncology.csv           # Donnees patients
 ```
 
 ---

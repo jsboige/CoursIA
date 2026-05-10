@@ -5,7 +5,7 @@ Ecosysteme complet de **448 notebooks** Jupyter pour l'apprentissage des technol
 <!-- CATALOG-STATUS
 series: ALL
 total: 452
-breakdown: GenAI=99, QuantConnect=97, SymbolicAI=89, Search=45, Sudoku=32, ML=30, GameTheory=27, Probas=22, RL=6, EPF=4, IIT=1
+breakdown: GenAI=99, QuantConnect=97, SymbolicAI=89, Search=45, Sudoku=32, ML=30, GameTheory=27, Probas=22, RL=6, CaseStudies=4, IIT=1
 maturity: ALPHA=256, DRAFT=99, BETA=61, PRODUCTION=36
 -->
 
@@ -24,7 +24,7 @@ Dernière mise à jour : 2026-05-02
 | **GameTheory** | 26 | Theorie des Jeux (OpenSpiel, choix social Lean) |
 | **Probas** | 22 | Programmation probabiliste (Infer.NET) |
 | **RL** | 6 | Reinforcement Learning (Stable-Baselines3) |
-| **EPF** | 4 | Projets étudiants EPF (devoirs IA101) |
+| **CaseStudies** | 4 | Etudes de cas interdisciplinaires (diagnostic medical, planification oncologique) |
 | **IIT** | 1 | Integrated Information Theory (PyPhi) |
 
 ### Progression pedagogique
@@ -37,7 +37,7 @@ GenAI (99 notebooks)
 ├── Video/ (16) - Traitement video
 ├── Texte/ (10) - LLMs et texte
 ├── SemanticKernel/ (14) - SDK Microsoft
-├── EPF/ (4) - Projets etudiants
+├── CaseStudies/ (4) - Etudes de cas etudiants
 └── Vibe-Coding/ (19) - Claude-Code + Roo-Code
 
 QuantConnect (93 notebooks)
@@ -96,7 +96,7 @@ SymbolicAI (90 notebooks)
 | **GameTheory** | 26 | [GameTheory/](GameTheory/README.md) |
 | **Probas** | 22 | [Probas/](Probas/README.md) |
 | **RL** | 6 | [RL/](RL/README.md) |
-| **EPF** | 4 | [EPF/](EPF/README.md) |
+| **CaseStudies** | 4 | [CaseStudies/](CaseStudies/README.md) |
 | **IIT** | 1 | [IIT/](IIT/README.md) |
 
 ## Configuration requise
