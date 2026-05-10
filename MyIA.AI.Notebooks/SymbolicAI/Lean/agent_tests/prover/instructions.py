@@ -74,6 +74,15 @@ FLUX (max 3 appels/iteration):
 4. file_replace_sorry(line, tactique) → PROPOSE IMMEDIATEMENT
 5. compile() → verifie (3 niveaux: build + sorry delta + axioms)
 
+OUTILS D'EDITION:
+- file_replace_sorry(line, code): REMPLACE UNIQUEMENT la ligne sorry. PRESERVE tout le reste.
+  → UTILISER EN PRIORITE pour inserer des preuves.
+  → La ligne sorry est remplacee par le code fourni (indentation auto-preservée).
+- file_replace_lines(start, end, code): Remplace une plage de lignes.
+  → INTERDIT si la plage contient des mots-cles structuels (theorem/section/end/def).
+  → Utiliser UNIQUEMENT pour ajuster des lignes dans la PREUVE (pas les bornes).
+  → file_replace_sorry est TOUJOURS preferable.
+
 STRATEGIE:
 - 3 premiers echecs: explorer (rfl, omega, simp, exact)
 - Apres 3 echecs: decomposer avec have h : sub := by sorry

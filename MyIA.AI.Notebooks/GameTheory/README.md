@@ -4,7 +4,7 @@
 series: GameTheory
 pedagogical_count: 27
 breakdown: =27
-maturity: ALPHA=21, DRAFT=3, BETA=3
+maturity: ALPHA=21, BETA=3, DRAFT=3
 -->
 
 Cette serie de notebooks introduit la **Theorie des Jeux**, combinant **Python** (simulations, algorithmes) et **Lean 4** (formalisations, preuves).
