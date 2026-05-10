@@ -225,7 +225,7 @@ DEMOS = {
     13: {
         "name": "VOTING_BANKS_SET_CONDORCET",
         "file": str(VOTING_FILE),
-        "line": 446,
+        "line": 445,
         "sorry_type": "full_proof",
         "theorem_name": "banks_set_condorcet",
         "theorem": "banks_set_condorcet",
@@ -234,7 +234,7 @@ DEMOS = {
         "description": (
             "Prove banks_set_condorcet: if x is a Condorcet winner in S,\n"
             "then x belongs to the Banks set.\n"
-            "The sorry is at L446 (single line). Replace it with a proof.\n"
+            "The sorry is at L445 (single line). Replace it with a proof.\n"
             "\n"
             "STRATEGY: Pick a maximal pre-chain using Finset.exists_mem_eq_sup.\n"
             "1. Define isPC (pre-chain): subset of S with x, total+transitive, x beats all.\n"
@@ -249,8 +249,8 @@ DEMOS = {
             "Finset.exists_mem_eq_sup : s.Nonempty → ∃ i ∈ s, s.sup f = f i\n"
             "Use `import Mathlib.Data.Finset.Powerset` for Finset.mem_powerset.\n"
             "\n"
-            "IMPORTANT: Use file_replace_sorry(446, code) to replace ONLY the sorry line.\n"
-            "The sorry is a SINGLE LINE at L446. Replace it with the full proof.\n"
+            "IMPORTANT: Use file_replace_sorry(445, code) to replace ONLY the sorry line.\n"
+            "The sorry is a SINGLE LINE at L445. Replace it with the full proof.\n"
             "DO NOT use file_replace_lines for the proof — it can corrupt surrounding code.\n"
             "Import Mathlib.Data.Finset.Powerset is already added."
         ),
@@ -483,7 +483,7 @@ DEMOS = {
     21: {
         "name": "VOTING_BANKS_SET_CONDORCET",
         "file": str(VOTING_FILE),
-        "line": 454,
+        "line": 445,
         "sorry_type": "sorry_replacement",
         "theorem_name": "banks_set_condorcet",
         "theorem": "banks_set_condorcet",
