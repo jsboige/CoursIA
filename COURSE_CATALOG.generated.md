@@ -19,16 +19,16 @@ Total notebooks: 452
 
 ## By Series
 
-### GenAI (99 notebooks) — BROKEN:5, DEMO:82, READY:12 | ALPHA:60, BETA:5, DRAFT:24, PRODUCTION:10
+### GenAI (99 notebooks) — BROKEN:3, DEMO:83, READY:13 | ALPHA:66, BETA:6, DRAFT:15, PRODUCTION:12
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | 🚀 GenAI Environment Setup - CoursIA | Python 3 (ipykernel) | DEMO | DRAFT | 15min | po-2025 |
-| 2 | 🐳 Docker Services Management - GenAI | Python3 | DEMO | DRAFT | 30min | po-2025 |
-| 3 | 🔗 Configuration des API Endpoints | Python 3 (ipykernel) | DEMO | DRAFT | 30min | po-2025 |
-| 4 | ✅ Environment Validation - GenAI | Python 3 (ipykernel) | DEMO | DRAFT | 30min | po-2025 |
-| 5 | 00-5: ComfyUI Local - Test Rapide | mcp-jupyter-py310 | DEMO | DRAFT | 30min | po-2025 |
-| 6 | Deploiement Docker Local des Services GenAI | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 1 | 🚀 GenAI Environment Setup - CoursIA | Python 3 (ipykernel) | DEMO | ALPHA | 15min | po-2025 |
+| 2 | 🐳 Docker Services Management - GenAI | Python3 | DEMO | ALPHA | 30min | po-2025 |
+| 3 | 🔗 Configuration des API Endpoints | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
+| 4 | ✅ Environment Validation - GenAI | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
+| 5 | 00-5: ComfyUI Local - Test Rapide | mcp-jupyter-py310 | DEMO | PRODUCTION | 30min | po-2025 |
+| 6 | Deploiement Docker Local des Services GenAI | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 7 | OpenAI TTS - Synthese Vocale par API | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 8 | OpenAI Whisper STT - Reconnaissance Vocale par API | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 9 | Operations de Base sur l'Audio | Python 3 | DEMO | ALPHA | 30min | po-2025 |
@@ -51,7 +51,7 @@ Total notebooks: 452
 | 26 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 27 | Live Coding Musical pilote par LLM | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 28 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 29 | Générateur de Recettes PDF | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 29 | Générateur de Recettes PDF | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 30 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | ALPHA | 15min | po-2025 |
 | 31 | Docteur vs ChatGPT: Chatbot médical | base | DEMO | ALPHA | 45min | po-2025 |
 | 32 | OpenAI DALL-E 3 - Generation d'Images | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
@@ -76,20 +76,20 @@ Total notebooks: 452
 | 51 | SK-4-Filters : Filtres et Observabilite | Python 3 | DEMO | PRODUCTION | 15min | po-2025 |
 | 52 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 53 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 54 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 54 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 55 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | DEMO | PRODUCTION | 15min | po-2025 |
-| 56 | SK-9-Building-CLR : Interoperabilite Python/.NET v | base | BROKEN | DRAFT | 15min | po-2025 |
+| 56 | SK-9-Building-CLR : Interoperabilite Python/.NET v | base | READY | PRODUCTION | 15min | po-2025 |
 | 57 | SK-10-NotebookMaker : Systeme Multi-Agents pour Ge | base | DEMO | ALPHA | 30min | po-2025 |
 | 58 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | ALPHA | 30min | po-2025 |
 | 59 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | ALPHA | 30min | po-2025 |
 | 60 | Projet Createur de Mail personnalise | Python 3 | DEMO | DRAFT | 30min | po-2025 |
 | 61 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
-| 62 | Jeu de devinette : Père Fouras vs Laurent Jalabert | coursIA | DEMO | DRAFT | 15min | po-2025 |
+| 62 | Jeu de devinette : Père Fouras vs Laurent Jalabert | coursIA | DEMO | ALPHA | 15min | po-2025 |
 | 63 | Notebook de travail | Python 3 | READY | ALPHA | 15min | po-2025 |
 | 64 | Notebook de travail | Python 3 | BROKEN | DRAFT | 15min | po-2025 |
 | 65 | Notebook de conception de Notebook | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
 | 66 | Notebook de travail | .NET (C#) | READY | ALPHA | 30min | po-2025 |
-| 67 | Notebook de travail | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
+| 67 | Notebook de travail | .NET (C#) | READY | ALPHA | 30min | po-2025 |
 | 68 | 10. Hébergement Local de Modèles Génératifs | base | DEMO | ALPHA | 45min | po-2025 |
 | 69 | 11. Quantization des LLMs | base | DEMO | ALPHA | 45min | po-2025 |
 | 70 | 1. Introduction a l'IA generative avec l'API OpenA | base | DEMO | PRODUCTION | 15min | po-2025 |
@@ -182,7 +182,7 @@ Total notebooks: 452
 | 3 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | DEMO | ALPHA | 30min | po-2023 |
 | 4 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | BROKEN | ALPHA | 30min | po-2023 |
 | 5 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | ALPHA | 30min | po-2023 |
-| 6 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | BROKEN | ALPHA | 30min | po-2023 |
+| 6 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | ALPHA | 30min | po-2023 |
 | 7 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | ALPHA | 30min | po-2023 |
 | 8 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | ALPHA | 30min | po-2023 |
 | 9 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | ALPHA | 30min | po-2023 |
@@ -500,11 +500,11 @@ Total notebooks: 452
 | 21 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | ALPHA | 1h | po-2023 |
 | 22 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | ALPHA | 30min | po-2023 |
 
-### IIT (1 notebooks) — BROKEN:1 | ALPHA:1
+### IIT (1 notebooks) — READY:1 | ALPHA:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | IIT - Introduction à PyPhi et Integrated Informati | pyphi | BROKEN | ALPHA | 30min | po-2025 |
+| 1 | IIT - Introduction à PyPhi et Integrated Informati | pyphi | READY | ALPHA | 30min | po-2025 |
 
 ### RL (6 notebooks) — READY:6 | ALPHA:6
 
@@ -529,8 +529,8 @@ Total notebooks: 452
 
 ## Requirements
 
-- **API**: 86 notebooks
+- **API**: 87 notebooks
 - **GPU**: 53 notebooks
 - **Cloud**: 97 notebooks
 - **WSL**: 23 notebooks
-- **Local**: 230 notebooks
+- **Local**: 229 notebooks
