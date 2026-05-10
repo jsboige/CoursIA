@@ -9,6 +9,12 @@ RUN pip install --no-cache-dir requests
 # Copy the monitor script
 COPY comfyui_idle_monitor.py /app/comfyui_idle_monitor.py
 
+RUN groupadd -g 1000 appuser && \
+    useradd -u 1000 -g appuser -m -s /bin/bash appuser && \
+    chown -R 1000:1000 /app
+
+USER appuser
+
 WORKDIR /app
 
 # Default environment (can be overridden)
