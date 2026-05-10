@@ -5,42 +5,29 @@ import traceback
 
 sys.stdout.reconfigure(line_buffering=True)
 
-from prover.config import VOTING_FILE, VOTING_IMPORTS
+from prover.config import DEMOS
 from prover.trace import TraceLogger
 from prover.provers import AutonomousProver
 
-DEMOS = [
-    {
-        "name": "VOTING_BANKS_SET_CONDORCET",
-        "line": 437,
-        "theorem_name": "banks_set_condorcet",
-        "description": (
-            "Prove banks_set_condorcet: if x is a Condorcet winner in S, "
-            "then x belongs to the Banks set. "
-            "Strategy: singleton chain {x} is a banks_chain when x beats everyone in S. "
-            "Available: condorcet_winner, banks_set, banks_winner, banks_chain, margin_pos"
-        ),
-    },
-]
-
 if __name__ == "__main__":
-    demo_idx = int(sys.argv[1]) if len(sys.argv) > 1 else 0
-    max_iters = int(sys.argv[2]) if len(sys.argv) > 2 else 6
+    demo_id = int(sys.argv[1]) if len(sys.argv) > 1 else 13
+    max_iters = int(sys.argv[2]) if len(sys.argv) > 2 else 8
+    timeout = int(sys.argv[3]) if len(sys.argv) > 3 else 180
+    provider = sys.argv[4] if len(sys.argv) > 4 else "zai"
 
-    demo = DEMOS[demo_idx].copy()
-    demo["file"] = str(VOTING_FILE)
-    demo["imports"] = VOTING_IMPORTS
-    demo["sorry_type"] = "full_proof"
-    demo["theorem"] = demo["theorem_name"]
+    demo = DEMOS[demo_id].copy()
 
-    print(f"Running: {demo['name']} (line {demo['line']}, max {max_iters} iters)", flush=True)
+    print(f"Running: {demo['name']} (line {demo['line']}, max {max_iters} iters, timeout {timeout}s)", flush=True)
+    print(f"Provider: {provider}", flush=True)
+    if demo.get("proof_scaffolding"):
+        print(f"  [Scaffold] {len(demo['proof_scaffolding'].splitlines())} lines of scaffolding provided", flush=True)
 
     trace = TraceLogger(output_dir=f"traces/{demo['name']}")
-    prover = AutonomousProver(trace, provider="zai", hitl_enabled=False)
+    prover = AutonomousProver(trace, provider=provider, hitl_enabled=False)
 
     try:
         result = prover.prove_sorry(demo, max_iterations=max_iters,
-                                    agent_timeout_s=120)
+                                    agent_timeout_s=timeout)
         print(f"\nRESULT: {json.dumps(result, indent=2)}", flush=True)
     except Exception as e:
         print(f"\nCRASH: {e}", flush=True)
