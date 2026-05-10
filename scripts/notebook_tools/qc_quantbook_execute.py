@@ -110,7 +110,8 @@ def run(project_dir: Path, notebook_name: str, port: int, timeout: int) -> int:
             "docker", "exec", container, "bash", "-c",
             f"cd /Lean/Launcher/bin/Debug/Notebooks/ && "
             f"jupyter nbconvert --to notebook --execute --inplace "
-            f"--ExecutePreprocessor.timeout={timeout} {notebook_name}",
+            f"--ExecutePreprocessor.timeout={timeout} "
+            f"--ExecutePreprocessor.allow_errors=True {notebook_name}",
         ]
         print(f"[recipe] exec nbconvert (timeout={timeout}s per cell)...", file=sys.stderr)
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout * 4)
