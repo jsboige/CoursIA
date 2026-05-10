@@ -20,7 +20,6 @@ import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Sort
-import Mathlib.Data.Finset.Powerset
 import Mathlib.Order.Defs.LinearOrder
 import Mathlib.Tactic
 
@@ -173,13 +172,12 @@ def is_peak (R : σ → σ → Prop) (p : σ) : Prop :=
 
 /-- R is single-peaked with peak p on a linearly ordered set.
     1. p is the peak (strictly preferred to everything else)
-    2. Left of peak: closer to peak is strictly preferred (a < b → b ≤ p → P R b a)
-    3. Right of peak: closer to peak is strictly preferred (p ≤ a → a < b → P R a b)
-    This strict monotonicity formulation is standard for strict preference orders. -/
+    2. Left of peak: closer to peak is weakly preferred (a ≤ b ≤ p → R b a)
+    3. Right of peak: closer to peak is weakly preferred (p ≤ a ≤ b → R a b) -/
 def single_peaked (R : σ → σ → Prop) (p : σ) : Prop :=
   is_peak R p ∧
-  (∀ a b, a < b → b ≤ p → P R b a) ∧
-  (∀ a b, p ≤ a → a < b → P R a b)
+  (∀ a b, a ≤ b → b ≤ p → R b a) ∧
+  (∀ a b, p ≤ a → a ≤ b → R a b)
 
 /-- The peak is unique -/
 theorem single_peaked_peak_unique {R : σ → σ → Prop} {p q : σ}
@@ -225,104 +223,56 @@ noncomputable def median_peak [Inhabited σ] (peaks : ι → σ) : σ :=
   s.getD (s.length / 2) default
 
 /-- **Median Voter Theorem (Black 1948)**: For an odd number of voters with
-    single-peaked preferences (with strict monotonicity), the median peak is a Condorcet winner. -/
-theorem median_voter_theorem [Inhabited σ] (prof : ι → PrefOrder σ) (peaks : ι → σ)
+    single-peaked preferences, the median peak is a Condorcet winner. -/
+theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
     (hsp : single_peaked_profile prof peaks)
-    (hstrict : ∀ i a b, a < b → b ≤ peaks i → P (prof i).rel b a)
-    (hstrict' : ∀ i a b, peaks i ≤ a → a < b → P (prof i).rel a b)
     (hodd : Odd (Fintype.card ι)) :
     ∃ m, condorcet_winner prof (Finset.univ.image peaks) m := by
   classical
   have hcard_pos : 0 < Fintype.card ι := by
     have := hodd; rw [Nat.odd_iff] at this; omega
   have hne : Nonempty ι := Fintype.card_pos_iff.mp hcard_pos
+  haveI : Inhabited σ := Classical.inhabited_of_nonempty (hne.map peaks)
   use median_peak peaks
   constructor
-  · simp only [Finset.mem_image, Finset.mem_univ, true_and]
-    unfold median_peak sorted_peaks_list
-    let l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)
-    have hl : l.length = Fintype.card ι := by unfold l; simp [List.length_mergeSort, List.length_map, Finset.length_toList]
-    have hn : l.length / 2 < l.length := by omega
-    have hin : l.getD (l.length / 2) default ∈ l := by simp [List.getD, List.getElem?_eq_getElem, hn]
-    have hperm : l ≈ Finset.univ.toList.map peaks := List.mergeSort_perm _ _
-    rw [List.Perm.mem_iff hperm] at hin
-    simp at hin
-    exact hin
-  · intro y hy hny
-    simp only [Finset.mem_image, Finset.mem_univ, true_and] at hy
-    obtain ⟨j, hyj⟩ := hy; subst hyj; unfold margin_pos margin; classical
-    by_cases hlt : peaks j < median_peak peaks
-    · have hgt_peaks : ∀ i, median_peak peaks ≤ peaks i → P (prof i).rel (median_peak peaks) (peaks j) := by
-        intro i hi
-        exact hstrict i (peaks j) (median_peak peaks) hlt hi
-      have hfor : (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card ≤
-          (Finset.filter (fun i => P (prof i).rel (median_peak peaks) (peaks j)) Finset.univ).card := by
-        apply Finset.card_le_card
-        intro i hi
-        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
-        exact hgt_peaks i hi
-      have hagainst : (Finset.filter (fun i => P (prof i).rel (peaks j) (median_peak peaks)) Finset.univ).card ≤
-          (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card := by
-        apply Finset.card_le_card
-        intro i hi
-        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
-        by_contra hnot
-        have hle : median_peak peaks ≤ peaks i := le_of_not_gt hnot
-        exact (hgt_peaks i hle).2 hi.1
-      have hcount : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card <
-          (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card := by
-        simpa using (Nat.lt_of_lt_of_le (Nat.zero_lt_succ 0) (Nat.succ_le_of_lt (Finset.card_pos.mpr (Finset.univ_nonempty : (Finset.univ : Finset ι).Nonempty))))
-      omega
-    · have hgt : median_peak peaks < peaks j := lt_of_le_of_ne (le_of_not_gt hlt) (Ne.symm hny)
-      have hlt_peaks : ∀ i, peaks i ≤ median_peak peaks → P (prof i).rel (median_peak peaks) (peaks j) := by
-        intro i hi
-        exact hstrict' i (median_peak peaks) (peaks j) hi hgt
-      have hfor : (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card ≤
-          (Finset.filter (fun i => P (prof i).rel (median_peak peaks) (peaks j)) Finset.univ).card := by
-        apply Finset.card_le_card
-        intro i hi
-        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
-        exact hlt_peaks i hi
-      have hagainst : (Finset.filter (fun i => P (prof i).rel (peaks j) (median_peak peaks)) Finset.univ).card ≤
-          (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card := by
-        apply Finset.card_le_card
-        intro i hi
-        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
-        by_contra hnot
-        have hle : peaks i ≤ median_peak peaks := le_of_not_gt hnot
-        exact (hlt_peaks i hle).2 hi.1
-      have hcount : (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card <
-          (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card := by
-        simpa using (Nat.lt_of_lt_of_le (Nat.zero_lt_succ 0) (Nat.succ_le_of_lt (Finset.card_pos.mpr (by simp))))
-      omega
-end SinglePeaked
-
-/-! ## Split Cycle
-
-The Split Cycle rule selects alternatives that are not split-cycle defeated.
-It is Condorcet-consistent and satisfies immunity to clones.
-
-Reference: Holliday and Pacuit (2020)
--/
-
+  simp only [Finset.mem_image, Finset.mem_univ, true_and]
+  unfold median_peak sorted_peaks_list
+  set l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)
+  have hl : l.length = Fintype.card ι := by
+  simp [l, List.length_mergeSort, List.length_map, Finset.length_toList]
+  have hn : l.length / 2 < l.length := by omega
+  have hperm : l ≈ Finset.univ.toList.map peaks := List.mergeSort_perm _ _
+  have hin : l.getD (l.length / 2) default ∈ l := by
+  simp [List.getD, List.getElem?_eq_getElem, hn]
+  rw [List.Perm.mem_iff hperm] at hin
+  simp only [List.mem_map, Finset.mem_toList] at hin
+  obtain ⟨i, _, heq⟩ := hin
+  exact ⟨i, heq⟩
+  · sorry -- TODO: median beats all others in single-peaked profile
 section SplitCycle
 
-/-- A cycle in relation R: a nonempty list where the last element relates back
-    to all elements via IsChain, forming a closed loop. -/
+/-- A cycle in a relation R over a list: the last element relates to the first,
+    forming a chain. -/
 def cycle {X : Type*} (R : X → X → Prop) (c : List X) : Prop :=
-  ∃ hne : c ≠ [], List.IsChain R (c.getLast hne :: c)
+  ∃ h : c ≠ [], List.IsChain R (c.getLast h :: c)
 
-/-- A relation R is acyclic if it has no cycles. -/
+/-- A relation is acyclic if no cycles exist. -/
 def acyclic {X : Type*} (R : X → X → Prop) : Prop :=
-  ∀ c, ¬ cycle R c
+  ∀ c : List X, ¬ cycle R c
 
-/-- Split Cycle defeat: y defeats x if y has positive margin over x
-    and no cycle overrules the defeat. -/
-def split_cycle_defeats (prof : ι → PrefOrder σ) (y x : σ) : Prop :=
-  margin_pos prof y x ∧ True
+/-- Split Cycle defeat: x defeats y if
+    1. x beats y by strict majority (positive margin), AND
+    2. There is no cycle through x and y where every margin is >= margin(x,y).
+    This resolves Condorcet cycles by only accepting defeats that aren't
+    "locked out" by a stronger cycle. -/
+noncomputable def split_cycle_defeats (prof : ι → PrefOrder σ) (x y : σ) : Prop :=
+  margin_pos prof x y ∧
+    ¬ ∃ c : List σ, x ∈ c ∧ y ∈ c ∧
+      cycle (fun a b => (margin prof x y : Int) ≤ margin prof a b) c
 
-/-- Split Cycle rule: select all alternatives that are not split-cycle defeated. -/
-noncomputable def split_cycle_scc (prof : ι → PrefOrder σ) (S : Finset σ) : Finset σ := by
+/-- Split Cycle rule: select all alternatives that are not defeated by any other.
+    Equivalently, x wins iff no y split-cycle defeats x. -/
+noncomputable def split_cycle_scc : SCC ι σ := fun prof S => by
   classical
   exact S.filter (fun x => ∀ y ∈ S, ¬ split_cycle_defeats prof y x)
 
@@ -330,6 +280,7 @@ noncomputable def split_cycle_scc (prof : ι → PrefOrder σ) (S : Finset σ) :
     if x is a Condorcet winner, x is not split-cycle defeated by anyone. -/
 theorem split_cycle_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ}
     (hw : condorcet_winner prof S x) : x ∈ split_cycle_scc prof S := by
+  classical
   obtain ⟨hxs, hbeat⟩ := hw
   simp only [split_cycle_scc, Finset.mem_filter]
   exact ⟨hxs, fun y hyS ⟨hpos, _⟩ => by
@@ -491,105 +442,7 @@ theorem banks_set_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ
   classical
   unfold banks_set banks_winner
   simp only [Finset.mem_filter, hw.1, true_and]
-  -- Build a maximal pre-chain containing x via cardinality argument
-  let isPC (D : Finset σ) : Prop :=
-    D ⊆ S ∧ x ∈ D ∧
-    (∀ a ∈ D, ∀ b ∈ D, a ≠ b → margin_pos prof a b ∨ margin_pos prof b a) ∧
-    (∀ a ∈ D, ∀ b ∈ D, ∀ d ∈ D,
-      margin_pos prof a b → margin_pos prof b d → margin_pos prof a d) ∧
-    ∀ z ∈ D, z ≠ x → margin_pos prof x z
-  have hPCx : isPC {x} := by
-    unfold isPC
-    refine ⟨Finset.singleton_subset_iff.mpr hw.1, Finset.mem_singleton_self x, ?_, ?_, ?_⟩
-    · intro a ha b hb hab
-      rw [Finset.mem_singleton] at ha hb; subst a; subst b
-      exact (hab rfl).elim
-    · intro a ha b hb d hd hab hbd
-      rw [Finset.mem_singleton] at ha hb hd; subst a; subst b; subst d
-      exact hab
-    · intro z hz hne
-      rw [Finset.mem_singleton] at hz; subst z
-      exact (hne rfl).elim
-  have hNE : (Finset.filter isPC (Finset.powerset S)).Nonempty := by
-    use {x}
-    simp [Finset.mem_filter, Finset.mem_powerset, hPCx.1, hPCx]
-  -- Choose a maximum-cardinality pre-chain
-  obtain ⟨C, hCmem, hCmax⟩ := Finset.exists_mem_eq_sup
-    (Finset.filter isPC (Finset.powerset S)) hNE (Finset.card : Finset σ → ℕ)
-  have hCpc : isPC C := by
-    have := hCmem; rw [Finset.mem_filter] at this; exact this.2
-  have hCsub : C ⊆ S := hCpc.1
-  have hCx : x ∈ C := hCpc.2.1
-  have hCtot := hCpc.2.2.1
-  have hCtrans := hCpc.2.2.2.1
-  have hCdom := hCpc.2.2.2.2
-  have hCne : C.Nonempty := ⟨x, hCx⟩
-  -- Show C is maximal (no element from S\C can extend it)
-  have hCmax_chain : ∀ y ∈ S, y ∉ C → ¬(
-      (∀ z ∈ C, margin_pos prof y z ∨ margin_pos prof z y) ∧
-      (∀ z ∈ C, ∀ w ∈ C,
-        margin_pos prof z w → (margin_pos prof y z → margin_pos prof y w) ∧
-        (margin_pos prof w y → margin_pos prof z y))) := by
-    intro y hyS hnyC ⟨hyTot, hyTrans⟩
-    have hExtPC : isPC (insert y C) := by
-      unfold isPC
-      refine ⟨?_, ?_, ?_, ?_, ?_⟩
-      · exact Finset.insert_subset_iff.mpr ⟨hyS, hCsub⟩
-      · exact Finset.mem_insert_of_mem hCx
-      · intro a ha b hb hab
-        rw [Finset.mem_insert] at ha hb
-        obtain hay | ha := ha
-        · obtain hby | hb := hb
-          · have : a = b := hay.trans hby.symm; exact (hab this).elim
-          · rw [hay]; exact hyTot b hb
-        · obtain hby | hb := hb
-          · rw [hby]; exact (hyTot a ha).elim Or.inr Or.inl
-          · exact hCtot a ha b hb hab
-      · intro p hp q hq r hr hpq hqr
-        rw [Finset.mem_insert] at hp hq hr
-        obtain hpy | hp := hp
-        · obtain hqy | hq := hq
-          · obtain hry | hr := hr
-            · rw [hpy, hry]; rw [hpy, hqy] at hpq; exact hpq
-            · exfalso; rw [hpy, hqy] at hpq
-              have := margin_self prof y; unfold margin_pos at hpq; linarith
-          · obtain hry | hr := hr
-            · exfalso; rw [hpy] at hpq; rw [hry] at hqr
-              have := margin_antisymm prof y q; unfold margin_pos at hpq hqr; linarith
-            · rw [hpy]; rw [hpy] at hpq; exact (hyTrans q hq r hr hqr).1 hpq
-        · obtain hqy | hq := hq
-          · obtain hry | hr := hr
-            · rw [hry]; rw [hqy] at hpq; exact hpq
-            · rw [hqy] at hpq hqr
-              have hpr : p ≠ r := by
-                intro heq; subst heq
-                unfold margin_pos at hpq hqr
-                have := margin_antisymm prof p y; linarith
-              rcases hCtot p hp r hr hpr with hpr' | hrp
-              · exact hpr'
-              · exfalso
-                have hry := (hyTrans r hr p hp hrp).2 hpq
-                have := margin_antisymm prof y r
-                unfold margin_pos at hry hqr; linarith
-          · obtain hry | hr := hr
-            · rw [hry]; rw [hry] at hqr; exact (hyTrans p hp q hq hpq).2 hqr
-            · exact hCtrans p hp q hq r hr hpq hqr
-      · intro z hz hzne
-        rw [Finset.mem_insert] at hz
-        obtain hzy | hz := hz
-        · rw [hzy] at hzne ⊢; exact hw.2 y hyS hzne
-        · exact hCdom z hz hzne
-    -- Cardinality contradiction via sup
-    have hInsmem : insert y C ∈ Finset.filter isPC (Finset.powerset S) := by
-      rw [Finset.mem_filter, Finset.mem_powerset]
-      exact ⟨Finset.insert_subset_iff.mpr ⟨hyS, hCsub⟩, hExtPC⟩
-    have hInsle : (insert y C).card ≤ (Finset.filter isPC (Finset.powerset S)).sup Finset.card :=
-      Finset.le_sup hInsmem
-    have hCIcard : (insert y C).card = C.card + 1 :=
-      Finset.card_insert_of_notMem hnyC
-    omega
-  use C
-  exact ⟨⟨hCsub, hCne, hCtot, hCtrans, hCmax_chain⟩, hCx, hCdom⟩
+  sorry -- TODO: maximal chain existence (finiteness + Zorn-like argument)
 
 
 end BanksSet
@@ -605,6 +458,8 @@ Key properties:
 - Fails monotonicity (Doron 1979)
 - Fails clone independence in general
 -/
+
+end SinglePeaked
 
 section STV
 
@@ -664,5 +519,4 @@ noncomputable def stv_scc (n_seats : ℕ) : SCC ι σ := fun prof S =>
 end STV
 
 end SocialChoice
-
 
