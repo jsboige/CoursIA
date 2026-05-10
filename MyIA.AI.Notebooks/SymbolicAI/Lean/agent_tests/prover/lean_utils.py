@@ -140,10 +140,16 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
         target_errors = []
         collecting = False
         for line in raw_output.split("\n"):
-            # Match both "file:line:col: error: msg" and "error: file:line:col: msg"
+            # Match multiple Lake error formats:
+            # 1. "file:line:col: error: msg" (standard)
+            # 2. "error: file:line:col: msg" (alternative)
+            # 3. "file:line:col: msg" (Lake 5.0.0 type mismatch, no "error:" prefix)
             m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
             if not m_err:
                 m_err = re.match(r"error: .*?(\d+):\d+: (.*)", line)
+            if not m_err:
+                # Lake 5.0.0: errors without "error:" prefix (type mismatch, etc.)
+                m_err = re.match(r".*?(\d+):\d+: (Type mismatch|type mismatch|unsolved goals|failed)", line, re.IGNORECASE)
             if m_err:
                 err_line = int(m_err.group(1))
                 if abs(err_line - sorry_line) <= LINE_TOLERANCE:
@@ -566,6 +572,57 @@ def build_def_type_warnings(filepath: str, goal_state: str) -> str:
 
     header = "AVERTISSEMENT TYPES PERSONNALISES (def vs inductive):"
     return header + "\n" + "\n".join(warnings)
+
+
+def extract_file_signatures(filepath: str, max_names: int = 40) -> str:
+    """Extract all def/theorem/lemma/noncomputable def signatures from a .lean file.
+
+    Returns a formatted string listing available names and their signatures,
+    suitable for injection into prover prompts so the LLM knows what exists.
+    """
+    content = Path(filepath).read_text(encoding="utf-8")
+    lines = content.split("\n")
+    entries = []
+
+    patterns = [
+        (r'^(theorem|lemma)\s+(\w+)', "thm"),
+        (r'^(noncomputable\s+)?def\s+(\w+)', "def"),
+        (r'^(inductive|structure)\s+(\w+)', "type"),
+        (r'^abbreviation\s+(\w+)', "alias"),
+    ]
+
+    for line in lines:
+        stripped = line.strip()
+        # Skip comments and empty lines
+        if not stripped or stripped.startswith("--") or stripped.startswith("/-"):
+            continue
+        for pat, kind in patterns:
+            m = re.match(pat, stripped)
+            if m:
+                name = m.group(m.lastindex)  # last group is always the name
+                # Get the signature (first line, truncated)
+                sig = stripped[:150]
+                entries.append((name, kind, sig))
+                break
+
+    if not entries:
+        return ""
+
+    # Deduplicate by name (keep first occurrence)
+    seen = set()
+    unique = []
+    for name, kind, sig in entries:
+        if name not in seen:
+            seen.add(name)
+            unique.append(f"  [{kind}] {name}: {sig}")
+        if len(seen) >= max_names:
+            break
+
+    return (
+        f"AVAILABLE DEFINITIONS IN FILE ({len(seen)} found, use ONLY these names):\n"
+        + "\n".join(unique)
+        + "\nDO NOT use any lemma/theorem/definition name not listed above."
+    )
 
 
 def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,

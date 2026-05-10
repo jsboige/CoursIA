@@ -548,36 +548,55 @@ DEMOS = {
         "difficulty": "very_hard",
     },
     21: {
-        "name": "VOTING_COUNTING_GT_MEDIAN",
+        "name": "VOTING_BANKS_SET_CONDORCET",
         "file": str(VOTING_FILE),
-        "line": 337,
+        "line": 445,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "median_voter_theorem_strict",
-        "theorem": "median_voter_theorem_strict",
-        "goal": "(Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card < (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card",
+        "theorem_name": "banks_set_condorcet",
+        "theorem": "banks_set_condorcet",
+        "goal": "∃ C, banks_chain prof S C ∧ x ∈ C ∧ ∀ y ∈ C, y ≠ x → margin_pos prof x y",
         "imports": VOTING_IMPORTS,
         "description": (
-            "Prove the SECOND (symmetric) counting lemma in median_voter_theorem_strict.\n"
-            "The sorry is in the `by_cases` negative branch (peaks j > median).\n"
+            "Prove banks_set_condorcet: a Condorcet winner x is always in the Banks set.\n"
+            "After `unfold banks_set banks_winner` and `simp only [Finset.mem_filter, hw.1, true_and]`,\n"
+            "the sorry must show there exists a maximal chain where x beats everyone.\n"
             "\n"
-            "GOAL at sorry (EXACT):\n"
-            "  (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card <\n"
-            "  (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card\n"
+            "CONTEXT at sorry:\n"
+            "  prof : ι → PrefOrder σ\n"
+            "  S : Finset σ\n"
+            "  x : σ\n"
+            "  hw : condorcet_winner prof S x\n"
+            "  hw.1 : x ∈ S\n"
+            "  hw.2 : ∀ y ∈ S, y ≠ x → margin_pos prof x y\n"
             "\n"
-            "This is SYMMETRIC to DEMO 20. The same partition + counting strategy applies.\n"
-            "Swap < for > and ≤ for ≥.\n"
+            "GOAL: ∃ chain, IsChain (fun y z => margin_pos prof y z) chain\n"
+            "       ∧ x ∈ chain ∧ chain.card = ... (maximal chain)\n"
             "\n"
-            "PROOF STRATEGY:\n"
-            "  1. Show filter (peaks · ≤ median) = univ \\ filter (median < peaks ·)\n"
-            "  2. card(filter_gt) + card(univ \\ filter_gt) = n\n"
-            "  3. card(filter_gt) ≤ k for n = 2k+1 (by symmetric sorted list argument)\n"
-            "  4. omega closes\n"
+            "CRITICAL WARNING:\n"
+            "  This proof was previously solved by GPT-5.5 (DEMO 13) using:\n"
+            "  - isPC helper for IsChain from pairwise comparisons\n"
+            "  - Finset.exists_mem_eq_sup for maximal chain existence\n"
+            "  - Cardinality contradiction argument\n"
+            "  The singleton chain {x} approach may work as a starting point.\n"
             "\n"
-            "KEY LEMMAS (same as DEMO 20):\n"
-            "  Finset.filter_not, Finset.card_add_card_compl, not_lt\n"
-            "  Finset.card_le_card, Finset.card_univ, Nat.odd_iff\n"
+            "AVAILABLE DEFINITIONS (in Voting.lean / Basic.lean):\n"
+            "  margin_pos, condorcet_winner, banks_winner, banks_set\n"
+            "  PrefOrder, PrefEquiv, isPC (pairwise chain helper)\n"
+            "  Finset.IsChain, Finset.exists_mem_eq_sup\n"
+            "\n"
+            "DO NOT USE:\n"
+            "  List.Sorted, List.mergeSort, List.mergeSort_sorted\n"
+            "  These do NOT exist in Lean 4 v4.29.1.\n"
         ),
-        "proof_scaffolding": "",
-        "difficulty": "very_hard",
+        "proof_scaffolding": (
+            "-- Strategy: use singleton chain {x}, show it's a valid chain\n"
+            "-- and use Finset.exists_mem_eq_sup for maximality\n"
+            "--\n"
+            "-- Step 1: Construct chain = {x} (singleton)\n"
+            "-- Step 2: Show IsChain for singleton (trivially ordered)\n"
+            "-- Step 3: Show x ∈ chain\n"
+            "-- Step 4: Show maximality via condorcet_winner property\n"
+        ),
+        "difficulty": "hard",
     },
 }

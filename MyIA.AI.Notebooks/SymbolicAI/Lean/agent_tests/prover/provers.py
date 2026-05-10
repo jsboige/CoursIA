@@ -330,9 +330,9 @@ class AutonomousProver:
             state.sorry_goals[sorry_line] = goal_state
         state.phase = ProofPhase.SEARCH
 
-        # Decide tools — exclude compile_probe_goal when goal extraction failed
-        # (probe takes ~40s per call and always fails, agent has proof block in context)
-        skip_goal_probe = goal_state is None
+        # Decide tools — exclude compile_probe_goal when goal is already known
+        # (probe takes ~15min for 5 lake builds and is redundant when goal is extracted)
+        skip_goal_probe = goal_state is not None
 
         agent_tools = [
             tactic_tools.file_find_sorry_lines,
@@ -771,6 +771,15 @@ class AutonomousProver:
             def_warnings = build_def_type_warnings(filepath, goal_state or "")
             if def_warnings:
                 parts.append(f"\n{def_warnings}")
+        except Exception:
+            pass
+
+        # File signature extraction — list ALL available definitions so LLM doesn't hallucinate
+        try:
+            from .lean_utils import extract_file_signatures
+            file_sigs = extract_file_signatures(filepath)
+            if file_sigs:
+                parts.append(f"\n{file_sigs}")
         except Exception:
             pass
 
