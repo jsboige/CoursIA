@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-10 01:52
+Generated: 2026-05-10 11:05
 Total notebooks: 452
 
 ## Status Summary
 
-- **READY**: 235
-- **DEMO**: 203
+- **READY**: 236
+- **DEMO**: 205
 - **RESEARCH**: 0
-- **BROKEN**: 14
+- **BROKEN**: 11
 
 ## Maturity Summary
 
-- **PRODUCTION**: 32
-- **BETA**: 56
-- **ALPHA**: 255
-- **DRAFT**: 109
+- **PRODUCTION**: 36
+- **BETA**: 61
+- **ALPHA**: 256
+- **DRAFT**: 99
 
 ## By Series
 
@@ -173,7 +173,7 @@ Total notebooks: 452
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | ALPHA | 30min | po-2025 |
 | 45 | TP : Algorithmes Génétiques pour la Détection de B | base | READY | DRAFT | 30min | po-2025 |
 
-### ML (30 notebooks) — BROKEN:3, DEMO:5, READY:22 | ALPHA:25, BETA:3, DRAFT:2
+### ML (30 notebooks) — BROKEN:5, DEMO:5, READY:20 | ALPHA:23, BETA:5, DRAFT:1, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -206,7 +206,7 @@ Total notebooks: 452
 | 27 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | BROKEN | BETA | 45min | po-2023 |
 | 28 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 30min | po-2023 |
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
+| 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
 ### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:16, READY:72 | ALPHA:55, BETA:29, DRAFT:4, PRODUCTION:1
 
@@ -436,7 +436,7 @@ Total notebooks: 452
 | 26 | GameTheory-7-ExtensiveForm | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 27 | GameTheory-9-BackwardInduction | Python 3 | READY | ALPHA | 30min | po-2024 |
 
-### Sudoku (32 notebooks) — BROKEN:2, DEMO:2, READY:28 | ALPHA:22, BETA:9, PRODUCTION:1
+### Sudoku (32 notebooks) — BROKEN:1, DEMO:2, READY:29 | ALPHA:20, BETA:11, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -451,7 +451,7 @@ Total notebooks: 452
 | 9 | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | base | READY | BETA | 30min | po-2023 |
 | 10 | Sudoku-12 : Theorie des Automates Symboliques et C | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 11 | Sudoku-13 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | BROKEN | ALPHA | 45min | po-2023 |
+| 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 13 | Sudoku-15-Infer-Python : Resolution Probabiliste a | Python 3 | READY | BETA | 30min | po-2023 |
 | 14 | Sudoku-10 : Résolution par Réseaux de Neurones | Python 3 | DEMO | ALPHA | 1h | po-2023 |
 | 15 | Notebook 17: Resolution de Sudoku avec Large Langu | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2023 |
@@ -464,7 +464,7 @@ Total notebooks: 452
 | 22 | Sudoku-4 : Recuit Simule (Python) | Python 3 | READY | ALPHA | 45min | po-2023 |
 | 23 | Sudoku-5 : Particle Swarm Optimization (PSO) | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 24 | Sudoku-5 : Particle Swarm Optimization (Python) | Python 3 | READY | BETA | 30min | po-2023 |
-| 25 | Sudoku-6 : Resolution par CSP Academique (AIMA) | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 25 | Sudoku-6 : Resolution par CSP Academique (AIMA) | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 26 | Sudoku-6 : Resolution par CSP Academique (Python) | Python 3 | READY | BETA | 45min | po-2023 |
 | 27 | Sudoku-7 : Resolution par Propagation de Contraint | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 28 | Le Sudoku comme CSP | Python 3 | READY | ALPHA | 30min | po-2023 |
