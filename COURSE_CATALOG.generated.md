@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-10 01:54
+Generated: 2026-05-10 01:52
 Total notebooks: 452
 
 ## Status Summary
 
-- **READY**: 238
-- **DEMO**: 204
+- **READY**: 235
+- **DEMO**: 203
 - **RESEARCH**: 0
-- **BROKEN**: 10
+- **BROKEN**: 14
 
 ## Maturity Summary
 
-- **PRODUCTION**: 34
-- **BETA**: 57
-- **ALPHA**: 261
-- **DRAFT**: 100
+- **PRODUCTION**: 32
+- **BETA**: 56
+- **ALPHA**: 255
+- **DRAFT**: 109
 
 ## By Series
 
@@ -173,7 +173,7 @@ Total notebooks: 452
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | ALPHA | 30min | po-2025 |
 | 45 | TP : Algorithmes Génétiques pour la Détection de B | base | READY | DRAFT | 30min | po-2025 |
 
-### ML (30 notebooks) — BROKEN:2, DEMO:5, READY:23 | ALPHA:25, BETA:3, DRAFT:2
+### ML (30 notebooks) — BROKEN:3, DEMO:5, READY:22 | ALPHA:25, BETA:3, DRAFT:2
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
