@@ -61,8 +61,15 @@ class SearchTools:
             "Finset.length_toList": ("s.toList.length = s.card", "Finset"),
             "Finset.toList_filter": (
                 "(s.filter p).toList = s.toList.filter p (up to perm)", "Finset"),
-            "Finset.card_filter_add_card_filter_eq_card": (
-                "|{x ∈ s | p x}| + |{x ∈ s | ¬p x}| = |s|", "Finset"),
+            "Finset.card_filter_add_card_filter_not": (
+                "|{x ∈ s | p x}| + |{x ∈ s | ¬p x}| = s.card  "
+                "-- CALL with named args: (s := ...) (p := ...). "
+                "Deprecated alias: Finset.filter_card_add_filter_neg_card_eq_card "
+                "(do NOT use, removed in Mathlib current)", "Finset"),
+            "Finset.filter_congr": (
+                "(∀ x ∈ s, p x ↔ q x) → s.filter p = s.filter q  "
+                "-- USAGE: apply Finset.filter_congr; intro i _; exact iff_proof", "Finset"),
+            "not_le": ("¬a ≤ b ↔ b < a  -- USE (not_le).symm to flip order", "Order"),
             # Lists / sorting / counting (used in median voter counting lemma)
             "List.length_mergeSort": (
                 "(l.mergeSort r).length = l.length", "List"),

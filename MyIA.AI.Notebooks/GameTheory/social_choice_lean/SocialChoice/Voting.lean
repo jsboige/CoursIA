@@ -322,7 +322,20 @@ theorem median_voter_theorem_strict [Inhabited σ] (prof : ι → PrefOrder σ) 
       -- For odd n = 2k+1: at most k peaks are strictly less, at least k+1 are ≥ median.
       have hcount : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card <
           (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card := by
-        sorry -- sorted-list counting: median at position n/2
+        -- Step 1: complementarity gives A.card + B.card = n
+        have hcomp : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card +
+            (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card =
+            Fintype.card ι := by
+          have hflip : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ) =
+              (Finset.filter (fun i => ¬ median_peak peaks ≤ peaks i) Finset.univ) := by
+            apply Finset.filter_congr
+            intro i _
+            exact (not_le).symm
+          rw [hflip, add_comm,
+              Finset.card_filter_add_card_filter_not
+                (s := Finset.univ) (p := fun i => median_peak peaks ≤ peaks i),
+              Finset.card_univ]
+        sorry -- TODO: A.card ≤ n/2 via sortedness
       omega
     · -- Case: peaks_j > median. Voters with peak <= median prefer median over j.
       have hgt : median_peak peaks < peaks j := lt_of_le_of_ne (le_of_not_gt hlt) (Ne.symm hny)
