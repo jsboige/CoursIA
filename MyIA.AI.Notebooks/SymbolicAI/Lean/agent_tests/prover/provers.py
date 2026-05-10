@@ -16,6 +16,7 @@ from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, Tact
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
+    is_honest_sorry,
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
 from .agents import (
@@ -26,7 +27,57 @@ from .agents import (
 )
 from .workflow import ProofWorkflowBuilder, ProofMessage
 from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS
-from .config import create_client
+from .config import create_client, HONEST_SORRIES
+from . import attempt_history
+
+_PROVER_DIR = Path(__file__).resolve().parent
+
+
+def _refuse_honest_sorry(filepath: str, sorry_line: int,
+                         demo_name: str) -> Optional[dict]:
+    """Return an early-fail result dict if the target sorry is HONEST.
+
+    Checks both the static HONEST_SORRIES registry and the dynamic
+    `is_honest_sorry()` comment scan. If matched, returns a result dict
+    that the caller should return immediately. Otherwise returns None.
+    """
+    static = HONEST_SORRIES.get(filepath, {})
+    if sorry_line in static:
+        reason = static[sorry_line]
+        msg = (
+            f"REFUSED: sorry at {filepath}:{sorry_line} is registered as HONEST "
+            f"(intentionally unprovable). Reason: {reason}"
+        )
+        print(f"\n{'!'*70}\n{msg}\n{'!'*70}\n")
+        return {
+            "success": False,
+            "skipped": True,
+            "reason": "honest_sorry_static",
+            "detail": reason,
+            "demo": demo_name,
+            "sorry_line": sorry_line,
+            "filepath": filepath,
+        }
+
+    is_honest, comment_block = is_honest_sorry(filepath, sorry_line)
+    if is_honest:
+        msg = (
+            f"REFUSED: sorry at {filepath}:{sorry_line} is documented as HONEST. "
+            f"Comment block immediately above:\n{comment_block}\n"
+            "If this is wrong, edit the comment to remove the impossibility "
+            "marker (FIXME / cannot be proved / counter-example / etc.)."
+        )
+        print(f"\n{'!'*70}\n{msg}\n{'!'*70}\n")
+        return {
+            "success": False,
+            "skipped": True,
+            "reason": "honest_sorry_dynamic",
+            "detail": comment_block,
+            "demo": demo_name,
+            "sorry_line": sorry_line,
+            "filepath": filepath,
+        }
+    return None
 
 
 class MultiAgentSorryProver:
@@ -52,15 +103,32 @@ class MultiAgentSorryProver:
         original_content = Path(filepath).read_text(encoding="utf-8")
         original_sorry_count = original_content.count("sorry")
 
-        # Auto-detect actual sorry line
+        # Auto-detect actual sorry line — exclude lines where "sorry" appears
+        # only inside comments. A line is "sorry inside comment" when:
+        #   - it starts with `--` (line comment), OR
+        #   - the `--` token appears BEFORE the first occurrence of `sorry`.
+        # Real sorry tactics are bare tokens, possibly followed by a trailing
+        # `-- comment`.
+        def _is_real_sorry(line: str) -> bool:
+            idx = line.find("sorry")
+            if idx < 0:
+                return False
+            comment_idx = line.find("--")
+            return comment_idx < 0 or comment_idx > idx
+
         actual_sorry_lines = [
             i + 1 for i, line in enumerate(original_content.split("\n"))
-            if "sorry" in line
+            if _is_real_sorry(line)
         ]
         if actual_sorry_lines and sorry_line not in actual_sorry_lines:
             sorry_line = min(actual_sorry_lines, key=lambda l: abs(l - sorry_line))
             print(f"  [AutoFix] Configured line {demo['line']} has no sorry. "
                   f"Using closest sorry at line {sorry_line}")
+
+        # Refuse honest/unprovable sorrys BEFORE spinning up agents.
+        refusal = _refuse_honest_sorry(filepath, sorry_line, demo["name"])
+        if refusal is not None:
+            return refusal
 
         print(f"\n{'='*70}")
         print(f"MULTI-AGENT PROVER: {demo['name']}")
@@ -169,6 +237,22 @@ class MultiAgentSorryProver:
         success = proof_found or final_sorry == 0 or final_sorry < original_sorry_count
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
+        # Persist outcome to cross-session history (best-effort)
+        try:
+            outcome = "success" if success else "build_fail"
+            recent_attempts = [a for a in state.tactic_history[-5:] if a.tactic]
+            for att in recent_attempts:
+                attempt_history.record_attempt(
+                    _PROVER_DIR, filepath, sorry_line,
+                    tactic=att.tactic,
+                    outcome="success" if att.success else outcome,
+                    error_category=getattr(att, "error", None),
+                    error_excerpt=(att.error or "")[:200] if att.error else None,
+                    session_id=state.session_id,
+                )
+        except Exception:
+            pass
+
         print(f"\n{'='*60}")
         print(f"RESULT: {'SUCCESS' if success else 'FAILED'}")
         print(f"  Sorry: {original_sorry_count} -> {final_sorry}")
@@ -226,6 +310,16 @@ class MultiAgentSorryProver:
         parts.append(f"\nSORRY COUNT INITIAL: {sorry_count}")
         parts.append("OBJECTIF: reduire le sorry count ou prouver completement.")
 
+        # Cross-session memory: surface previously failed tactics
+        try:
+            history = attempt_history.load_history(
+                _PROVER_DIR, demo["file"], sorry_line)
+            history_block = attempt_history.format_for_agent(history)
+            if history_block:
+                parts.append("\n" + history_block)
+        except Exception:
+            pass
+
         return "\n".join(parts)
 
 
@@ -265,6 +359,11 @@ class AutonomousProver:
             sorry_line = min(actual_sorry_lines, key=lambda l: abs(l - sorry_line))
             print(f"  [AutoFix] Configured line has no sorry. "
                   f"Using closest sorry at line {sorry_line}")
+
+        # Refuse honest/unprovable sorrys BEFORE spinning up the agent.
+        refusal = _refuse_honest_sorry(filepath, sorry_line, demo["name"])
+        if refusal is not None:
+            return refusal
 
         print(f"\n{'='*70}")
         print(f"AUTONOMOUS PROVER: {demo['name']}")
@@ -670,6 +769,24 @@ class AutonomousProver:
         success = final_sorry < original_sorry_count and final_build_ok and final_verify_ok
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
+        # Persist outcome to cross-session history (best-effort, never raises)
+        try:
+            outcome = "success" if success else (
+                "build_fail" if not final_build_ok else "no_progress"
+            )
+            recent_attempts = [a for a in state.tactic_history[-5:] if a.tactic]
+            for att in recent_attempts:
+                attempt_history.record_attempt(
+                    _PROVER_DIR, filepath, sorry_line,
+                    tactic=att.tactic,
+                    outcome="success" if att.success else outcome,
+                    error_category=getattr(att, "error", None),
+                    error_excerpt=(att.error or "")[:200] if att.error else None,
+                    session_id=state.session_id,
+                )
+        except Exception:
+            pass
+
         print(f"\n{'='*60}")
         print(f"RESULT: {'SUCCESS' if success else 'FAILED'}")
         print(f"  Sorry: {original_sorry_count} -> {final_sorry}")
@@ -801,6 +918,16 @@ class AutonomousProver:
         parts.append(f"\nSORRY COUNT INITIAL: {sorry_count}")
         parts.append("OBJECTIF: reduire le sorry count ou prouver completement.")
         parts.append("Commence par find_sorry_lines() puis propose une tactique.")
+
+        # Cross-session memory: surface previously failed tactics
+        try:
+            history = attempt_history.load_history(
+                _PROVER_DIR, filepath, sorry_line)
+            history_block = attempt_history.format_for_agent(history)
+            if history_block:
+                parts.append("\n" + history_block)
+        except Exception:
+            pass
 
         return "\n".join(parts)
 

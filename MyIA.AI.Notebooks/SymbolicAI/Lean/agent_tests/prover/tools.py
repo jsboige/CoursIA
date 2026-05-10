@@ -27,6 +27,7 @@ class SearchTools:
         self._filepath = filepath
         self._trace = trace
         self._known_lemmas = {
+            # Arithmetic on Nat
             "Nat.add_zero": ("n + 0 = n", "Nat"),
             "Nat.zero_add": ("0 + n = n", "Nat"),
             "Nat.add_comm": ("n + m = m + n", "Nat"),
@@ -38,13 +39,61 @@ class SearchTools:
             "Nat.mul_add": ("a * (b + c) = a * b + a * c", "Nat"),
             "Nat.left_distrib": ("n * (m + k) = n * m + n * k", "Nat"),
             "Nat.right_distrib": ("(n + m) * k = n * k + m * k", "Nat"),
+            "Nat.odd_iff": ("Odd n ↔ n % 2 = 1", "Nat"),
+            "Nat.div_two_lt_of_lt_mul_two_succ": (
+                "n < (k + 1) * 2 → n / 2 < k + 1", "Nat"),
+            # Logic
             "Eq.refl": ("a = a", "Logic"),
             "Eq.symm": ("a = b -> b = a", "Logic"),
+            "lt_of_le_of_ne": ("a ≤ b → a ≠ b → a < b", "Order"),
+            "le_of_not_gt": ("¬ a > b → a ≤ b", "Order"),
+            "not_lt": ("¬ a < b ↔ b ≤ a", "Order"),
+            # Finset basics
             "Finset.sum_erase_add": ("sum s f = sum (s.erase a) f + f a", "Finset"),
             "Finset.sum_eq_single": ("sum s f = f b if b in s and others zero", "Finset"),
             "Finset.card_union_of_disjoint": ("card (s ∪ t) = card s + card t", "Finset"),
             "Finset.sum_add_distrib": ("sum s (f + g) = sum s f + sum s g", "Finset"),
             "Finset.sum_const": ("sum s (fun _ => c) = card s * c", "Finset"),
+            "Finset.card_le_card": ("s ⊆ t → s.card ≤ t.card", "Finset"),
+            "Finset.mem_filter": (
+                "x ∈ s.filter p ↔ x ∈ s ∧ p x", "Finset"),
+            "Finset.card_univ": ("(Finset.univ : Finset α).card = Fintype.card α", "Finset"),
+            "Finset.length_toList": ("s.toList.length = s.card", "Finset"),
+            "Finset.toList_filter": (
+                "(s.filter p).toList = s.toList.filter p (up to perm)", "Finset"),
+            "Finset.card_filter_add_card_filter_eq_card": (
+                "|{x ∈ s | p x}| + |{x ∈ s | ¬p x}| = |s|", "Finset"),
+            # Lists / sorting / counting (used in median voter counting lemma)
+            "List.length_mergeSort": (
+                "(l.mergeSort r).length = l.length", "List"),
+            "List.mergeSort_perm": (
+                "(l.mergeSort r) ~ l", "List"),
+            "List.pairwise_mergeSort": (
+                "Trans r → IsAntisymm α r → IsTotal α r → "
+                "(l.mergeSort r).Pairwise r", "List"),
+            "List.length_map": ("(l.map f).length = l.length", "List"),
+            "List.length_take": ("(l.take n).length = min n l.length", "List"),
+            "List.length_drop": ("(l.drop n).length = l.length - n", "List"),
+            "List.take_append_drop": (
+                "l.take n ++ l.drop n = l", "List"),
+            "List.Perm.countP_eq": (
+                "(p : α → Bool) → l₁ ~ l₂ → l₁.countP p = l₂.countP p", "List.Perm"),
+            "List.countP_append": (
+                "(l₁ ++ l₂).countP p = l₁.countP p + l₂.countP p", "List"),
+            "List.countP_map": (
+                "(l.map f).countP p = l.countP (p ∘ f)", "List"),
+            "List.countP_eq_zero": (
+                "l.countP p = 0 ↔ ∀ a ∈ l, ¬ p a", "List"),
+            "List.countP_eq_length": (
+                "l.countP p = l.length ↔ ∀ a ∈ l, p a", "List"),
+            "List.countP_le_length": ("l.countP p ≤ l.length", "List"),
+            "List.Pairwise.rel_get_of_le": (
+                "l.Pairwise r → ∀ i j (h : i ≤ j) (hj : j < l.length), "
+                "r l[i] l[j]  -- (Mathlib/Data/List/Pairwise.lean L142)", "List.Pairwise"),
+            "List.getD": (
+                "l.getD i default = if i < l.length then l[i] else default", "List"),
+            "List.Perm.mem_iff": (
+                "l₁ ~ l₂ → (a ∈ l₁ ↔ a ∈ l₂)", "List.Perm"),
         }
 
     def search_mathlib_lemmas(self, goal: str, max_results: int = 10,
@@ -87,6 +136,19 @@ class SearchTools:
             if "erase" in goal_lower and "erase" in name_lower:
                 score += 0.5
             if "sum" in goal_lower and "sum" in name_lower:
+                score += 0.4
+            # Counting / sorting / median patterns (DEMO 9, 14)
+            if any(k in goal_lower for k in ("countp", "count_", "filter")) \
+                    and any(k in name_lower for k in ("countp", "filter", "card")):
+                score += 0.5
+            if any(k in goal_lower for k in ("mergesort", "sort", "pairwise", "sorted")) \
+                    and any(k in name_lower for k in ("mergesort", "pairwise", "sort")):
+                score += 0.5
+            if any(k in goal_lower for k in ("perm", "permut")) and "perm" in name_lower:
+                score += 0.4
+            if "card" in goal_lower and "card" in name_lower:
+                score += 0.3
+            if "filter" in goal_lower and "mem_filter" in name_lower:
                 score += 0.4
             if score > 0:
                 results.append({
