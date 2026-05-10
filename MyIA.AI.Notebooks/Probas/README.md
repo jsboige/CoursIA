@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: Probas
 pedagogical_count: 22
-breakdown: =2, Infer=20
+breakdown: Infer=20, =2
 maturity: ALPHA=18, PRODUCTION=4
 -->
 
