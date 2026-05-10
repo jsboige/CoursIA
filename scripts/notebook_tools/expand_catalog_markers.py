@@ -65,7 +65,7 @@ def compute_breakdown(entries: list[dict], serie: str) -> dict[str, int]:
     """Compute breakdown by sous_serie for a given serie."""
     serie_entries = [e for e in entries if e.get("serie") == serie]
     breakdown = Counter(e.get("sous_serie", "_root") for e in serie_entries)
-    return dict(breakdown.most_common())
+    return dict(sorted(breakdown.items()))
 
 
 def compute_maturity_distribution(entries: list[dict], serie: str | None = None) -> dict[str, int]:
@@ -74,7 +74,7 @@ def compute_maturity_distribution(entries: list[dict], serie: str | None = None)
     if serie:
         filtered = [e for e in filtered if e.get("serie") == serie]
     dist = Counter(e.get("maturity", "UNKNOWN") for e in filtered)
-    return dict(dist.most_common())
+    return dict(sorted(dist.items()))
 
 
 def compute_status_distribution(entries: list[dict], serie: str | None = None) -> dict[str, int]:
@@ -83,7 +83,7 @@ def compute_status_distribution(entries: list[dict], serie: str | None = None) -
     if serie:
         filtered = [e for e in filtered if e.get("serie") == serie]
     dist = Counter(e.get("status", "UNKNOWN") for e in filtered)
-    return dict(dist.most_common())
+    return dict(sorted(dist.items()))
 
 
 def format_catalog_status_block(entries: list[dict], serie: str) -> str:
@@ -91,7 +91,7 @@ def format_catalog_status_block(entries: list[dict], serie: str) -> str:
     if serie == "ALL":
         count = len(entries)
         series_counts = Counter(e.get("serie", "?") for e in entries)
-        bd_str = ", ".join(f"{k}={v}" for k, v in series_counts.most_common())
+        bd_str = ", ".join(f"{k}={v}" for k, v in sorted(series_counts.items()))
         maturity = compute_maturity_distribution(entries, None)
         mat_str = ", ".join(f"{k}={v}" for k, v in maturity.items())
         return (

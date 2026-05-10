@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: Search
 pedagogical_count: 45
-breakdown: Applications=20, Part1-Foundations=11, Part2-CSP=9, =5
-maturity: ALPHA=33, DRAFT=7, BETA=4, PRODUCTION=1
+breakdown: =5, Applications=20, Part1-Foundations=11, Part2-CSP=9
+maturity: ALPHA=33, BETA=4, DRAFT=7, PRODUCTION=1
 -->
 
 Cette serie explore les algorithmes de recherche et d'optimisation, de la formalisation des espaces d'etats a la programmation par contraintes, en passant par les metaheuristiques. Elle combine **fondements theoriques** et **applications du monde reel** adaptees de projets etudiants EPITA, EPF et ECE.

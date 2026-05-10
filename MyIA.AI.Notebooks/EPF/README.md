@@ -4,7 +4,7 @@
 series: EPF
 pedagogical_count: 4
 breakdown: IA101-Devoirs=4
-maturity: DRAFT=2, PRODUCTION=1, ALPHA=1
+maturity: ALPHA=1, DRAFT=2, PRODUCTION=1
 -->
 
 Controles continus du cours **IA101 - Intelligence Artificielle** (EPF 2026). Ces devoirs integrent les concepts des autres sections du repository (Probas, SymbolicAI, Search).
