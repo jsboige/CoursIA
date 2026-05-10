@@ -61,11 +61,15 @@ def compute_counter(entries: list[dict], params: dict) -> str:
     return str(len(filtered))
 
 
+def _sorted_counter(c: Counter) -> dict[str, int]:
+    """Counter -> dict sorted by (-count, key) so ties are broken alphabetically (deterministic across platforms)."""
+    return dict(sorted(c.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
 def compute_breakdown(entries: list[dict], serie: str) -> dict[str, int]:
     """Compute breakdown by sous_serie for a given serie."""
     serie_entries = [e for e in entries if e.get("serie") == serie]
-    breakdown = Counter(e.get("sous_serie", "_root") for e in serie_entries)
-    return dict(breakdown.most_common())
+    return _sorted_counter(Counter(e.get("sous_serie", "_root") for e in serie_entries))
 
 
 def compute_maturity_distribution(entries: list[dict], serie: str | None = None) -> dict[str, int]:
@@ -73,8 +77,7 @@ def compute_maturity_distribution(entries: list[dict], serie: str | None = None)
     filtered = entries
     if serie:
         filtered = [e for e in filtered if e.get("serie") == serie]
-    dist = Counter(e.get("maturity", "UNKNOWN") for e in filtered)
-    return dict(dist.most_common())
+    return _sorted_counter(Counter(e.get("maturity", "UNKNOWN") for e in filtered))
 
 
 def compute_status_distribution(entries: list[dict], serie: str | None = None) -> dict[str, int]:
@@ -82,16 +85,15 @@ def compute_status_distribution(entries: list[dict], serie: str | None = None) -
     filtered = entries
     if serie:
         filtered = [e for e in filtered if e.get("serie") == serie]
-    dist = Counter(e.get("status", "UNKNOWN") for e in filtered)
-    return dict(dist.most_common())
+    return _sorted_counter(Counter(e.get("status", "UNKNOWN") for e in filtered))
 
 
 def format_catalog_status_block(entries: list[dict], serie: str) -> str:
     """Generate a full CATALOG-STATUS block for a series README."""
     if serie == "ALL":
         count = len(entries)
-        series_counts = Counter(e.get("serie", "?") for e in entries)
-        bd_str = ", ".join(f"{k}={v}" for k, v in series_counts.most_common())
+        series_counts = _sorted_counter(Counter(e.get("serie", "?") for e in entries))
+        bd_str = ", ".join(f"{k}={v}" for k, v in series_counts.items())
         maturity = compute_maturity_distribution(entries, None)
         mat_str = ", ".join(f"{k}={v}" for k, v in maturity.items())
         return (
