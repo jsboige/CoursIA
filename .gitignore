@@ -698,3 +698,4 @@ stackelberg_*.png
 # GenAI notebook output artifacts
 MyIA.AI.Notebooks/GenAI/SemanticKernel/df_scaled.csv
 MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/test_results.txt
+scripts/notebook_tools/forensic_scan.last.json
