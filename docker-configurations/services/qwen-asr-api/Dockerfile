@@ -45,6 +45,13 @@ RUN chmod +x /app/start.sh
 # Create directories
 RUN mkdir -p /app/models /app/uploads
 
+# Create non-root user for security
+RUN groupadd -g 1000 appuser && \
+    useradd -u 1000 -g appuser -m -s /bin/bash appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
 # Expose port
 EXPOSE 8195
 
