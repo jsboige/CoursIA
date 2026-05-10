@@ -1,7 +1,6 @@
-# CC1 - IA Exploratoire et Symbolique
-## Système de Diagnostic Médical Multi-Contraintes pour le Diabète de Type 2
+# Diagnostic Medical - Systeme de Diagnostic Multi-Contraintes
 
-### Vue d'ensemble
+## Vue d'ensemble
 
 Ce projet implémente un système de diagnostic médical intelligent combinant quatre approches algorithmiques complémentaires :
 
@@ -21,12 +20,14 @@ Ce projet implémente un système de diagnostic médical intelligent combinant q
 ### Structure du projet
 
 ```
-CC1-Exploratoire-Symbolique/
-├── CC1-Diagnostic-Medical.ipynb          # Template étudiant (à compléter)
-├── enonce/
-│   └── sujet.md                         # Sujet du devoir
+Diagnostic-Medical/
+├── student/
+│   └── Diagnostic-Medical.ipynb          # Template etudiant (a completer)
+├── solution/
+│   └── Diagnostic-Medical.ipynb          # Solution de reference
 ├── data/
-│   └── patients.csv                      # Données de test (10 patients)
+│   └── patients.csv                      # Donnees de test (10 patients)
+├── subject.md                            # Sujet complet
 └── README.md                             # Ce fichier
 ```
 
@@ -87,7 +88,7 @@ pip install jupyter notebook numpy pandas matplotlib seaborn z3-solver
 jupyter notebook
 
 # Ouvrir le fichier
-CC1-Diagnostic-Medical.ipynb
+student/Diagnostic-Medical.ipynb
 ```
 
 **Instructions** :
@@ -99,8 +100,8 @@ CC1-Diagnostic-Medical.ipynb
 #### 2. Pour les Évaluateurs
 
 ```bash
-# Ouvrir le notebook corrigé
-jupyter notebook CC1-Diagnostic-Medical-corrigé.ipynb
+# Ouvrir le notebook corrige
+jupyter notebook solution/Diagnostic-Medical.ipynb
 ```
 
 **Actions** :
@@ -174,7 +175,7 @@ pip install z3-solver
 
 ```bash
 # Vérifier le chemin relatif
-# Le notebook doit être exécuté depuis le répertoire CC1-Exploratoire-Symbolique/
+# Le notebook doit etre execute depuis le repertoire Diagnostic-Medical/
 ```
 
 #### 3. Erreur de convergence A*

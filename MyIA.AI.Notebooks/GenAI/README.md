@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: GenAI
 pedagogical_count: 99
-breakdown: Audio=21, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, Vibe-Coding=5, EPF=4
+breakdown: Audio=21, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, Vibe-Coding=5, CaseStudies=4
 maturity: ALPHA=66, DRAFT=15, PRODUCTION=12, BETA=6
 -->
 
@@ -25,7 +25,7 @@ GenAI/
 ├── Video/                   # Generation et comprehension video (16 notebooks)
 ├── Texte/                   # LLMs et generation de texte (10 notebooks)
 ├── SemanticKernel/          # Microsoft Semantic Kernel (20 notebooks)
-├── EPF/                     # Projets etudiants (4 notebooks)
+├── CaseStudies/              # Etudes de cas etudiants (4 notebooks)
 ├── Playwright-OWUI/         # Tests E2E Playwright (5 modules, 30+ tests)
 └── Vibe-Coding/             # Tutorials Claude Code et Roo Code
 ```
