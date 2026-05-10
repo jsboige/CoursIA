@@ -36,9 +36,13 @@ from .state import SorryContext
 from .trace import TraceLogger
 
 
-# Default per-agent LLM timeout. External providers (zai/openrouter) can
-# stall — without this the entire workflow blocks forever.
-DEFAULT_AGENT_TIMEOUT_S = 90
+# Default per-agent LLM timeout. Reasoning models (z.ai GLM-5.1, Qwen3.6) burn
+# the bulk of their token budget in `reasoning_content` before producing a
+# visible response — measured 39s wall-clock on z.ai for a trivial smoke test
+# with max_tokens=2048 (entirely consumed by reasoning). 600s lets the model
+# actually think on Mathlib goals; the workflow wall-clock cap in provers.py
+# still bounds the total session.
+DEFAULT_AGENT_TIMEOUT_S = 600
 
 
 @dataclass
@@ -101,23 +105,20 @@ class AgentExecutor(Executor):
             plan_header += "\n\n---\n"
             content = plan_header + content
 
+        # NOTE: do NOT wrap `agent.run` in `asyncio.wait_for`. The framework's
+        # AgentTelemetryLayer sets/resets a ContextVar Token internally; running
+        # inside a wait_for-spawned Task creates the Token in a child context
+        # and the reset from the outer context raises
+        # `ValueError: <Token> was created in a different Context`,
+        # which silently corrupts every LLM call (verified via OTel trace
+        # multi_SMOKE_ZERO_ADD_local_*.spans.jsonl, 2026-05-11). The wall-clock
+        # cap in provers.py bounds the total session.
         try:
-            response = await asyncio.wait_for(
-                self._agent.run(content), timeout=self._timeout_s,
-            )
+            response = await self._agent.run(content)
             response_text = ""
             if hasattr(response, 'messages') and response.messages:
                 last = response.messages[-1]
                 response_text = last.text if hasattr(last, 'text') else str(last)
-        except asyncio.TimeoutError:
-            response_text = (
-                f"[Agent timeout after {self._timeout_s}s — provider stalled]"
-            )
-            if self._trace:
-                self._trace.log(
-                    agent=self._agent.name, role="timeout",
-                    content=f"timeout after {self._timeout_s}s",
-                )
         except Exception as e:
             response_text = f"Agent error: {e}"
             if self._trace:
@@ -232,29 +233,32 @@ class ProofWorkflowBuilder:
         self._verify = VerifyExecutor(sorry_context, imports, trace)
 
     def build(self):
-        # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to search
+        # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to
+        # search or tactic via the switch-case edge group below. Earlier
+        # versions also added explicit ``add_edge`` calls from the coordinator
+        # to search and tactic — that duplicated edges declared by
+        # ``add_switch_case_edge_group`` and tripped EdgeDuplicationError on
+        # ``builder.build()``. The switch-case group is the single source of
+        # truth for coordinator routing now.
         builder = WorkflowBuilder(start_executor=self._coordinator)
-
-        # Coordinator -> Search (initial plan or re-plan)
-        builder.add_edge(
-            self._coordinator, self._search,
-            condition=lambda msg: msg.next_agent in ("search", "coordinator"),
-        )
-        # Coordinator -> Tactic (direct tactical guidance)
-        builder.add_edge(
-            self._coordinator, self._tactic,
-            condition=lambda msg: msg.next_agent == "tactic",
-        )
 
         # Forward chain: search -> tactic -> verify
         builder.add_edge(self._search, self._tactic)
         builder.add_edge(self._tactic, self._verify)
 
-        # Verify routes: error -> critic, decomposition -> tactic
-        builder.add_edge(self._verify, self._critic)
-        builder.add_edge(
-            self._verify, self._tactic,
-            condition=lambda msg: msg.next_agent == "tactic" and not msg.proof_found,
+        # Verify routes via switch-case so the "tactic" backedge and the
+        # default critic path don't collide as duplicate edges either.
+        builder.add_switch_case_edge_group(
+            source=self._verify,
+            cases=[
+                Case(
+                    condition=lambda msg: (
+                        msg.next_agent == "tactic" and not msg.proof_found
+                    ),
+                    target=self._tactic,
+                ),
+                Default(target=self._critic),
+            ],
         )
 
         # Critic conditional routing (requires exactly one Default)

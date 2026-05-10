@@ -29,6 +29,7 @@ from .workflow import ProofWorkflowBuilder, ProofMessage
 from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS
 from .config import create_client, HONEST_SORRIES
 from . import attempt_history
+from .otel_setup import enable_prover_otel
 
 _PROVER_DIR = Path(__file__).resolve().parent
 
@@ -96,6 +97,13 @@ class MultiAgentSorryProver:
 
     async def prove_sorry(self, demo: dict, max_iterations: int = 10,
                           workflow_timeout_s: Optional[int] = None) -> dict:
+        # Enable MS Agent Framework OTel + JSONL exporter so every agent run,
+        # tool call, and LLM completion lands in baselines/traces/<name>.spans.jsonl
+        # alongside the higher-level TraceLogger entries.
+        otel_session = f"multi_{demo['name']}_{self.provider}_{int(time.time())}"
+        otel_path = enable_prover_otel(otel_session)
+        print(f"  [OTEL] spans -> {otel_path}")
+
         filepath = demo["file"]
         sorry_line = demo["line"]
 
@@ -197,7 +205,10 @@ class MultiAgentSorryProver:
         # can override.
         import asyncio as _asyncio
         if workflow_timeout_s is None:
-            workflow_timeout_s = max_iterations * 120  # generous wall clock
+            # Reasoning models can spend ~5-10 min/iteration on hard goals.
+            # 600s/iter * max_iterations gives the agents room without
+            # capping a productive run mid-thinking.
+            workflow_timeout_s = max_iterations * 600
         session_start = time.time()
         self.trace.start_session_span(demo["name"], "multi")
         proof_found = False
@@ -340,6 +351,12 @@ class AutonomousProver:
 
     def prove_sorry(self, demo: dict, max_iterations: int = 10,
                     strategic_hints: str = "", agent_timeout_s: int = 0) -> dict:
+        # Same OTel wiring as MultiAgentSorryProver — single-agent runs benefit
+        # just as much from a durable span log of LLM-tool interactions.
+        otel_session = f"auto_{demo['name']}_{self.provider}_{int(time.time())}"
+        otel_path = enable_prover_otel(otel_session)
+        print(f"  [OTEL] spans -> {otel_path}")
+
         filepath = demo["file"]
         sorry_line = demo["line"]
 
