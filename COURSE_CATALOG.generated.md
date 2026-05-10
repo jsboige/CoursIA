@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-10 01:54
+Generated: 2026-05-10 01:52
 Total notebooks: 452
 
 ## Status Summary
@@ -13,8 +13,8 @@ Total notebooks: 452
 ## Maturity Summary
 
 - **PRODUCTION**: 32
-- **BETA**: 57
-- **ALPHA**: 254
+- **BETA**: 56
+- **ALPHA**: 255
 - **DRAFT**: 109
 
 ## By Series
@@ -436,7 +436,7 @@ Total notebooks: 452
 | 26 | GameTheory-7-ExtensiveForm | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 27 | GameTheory-9-BackwardInduction | Python 3 | READY | ALPHA | 30min | po-2024 |
 
-### Sudoku (32 notebooks) — BROKEN:2, DEMO:2, READY:28 | ALPHA:21, BETA:10, PRODUCTION:1
+### Sudoku (32 notebooks) — BROKEN:2, DEMO:2, READY:28 | ALPHA:22, BETA:9, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
