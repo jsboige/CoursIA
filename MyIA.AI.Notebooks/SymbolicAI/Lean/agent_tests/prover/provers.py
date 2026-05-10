@@ -648,24 +648,30 @@ class AutonomousProver:
             final_sorry = original_sorry_count
 
         # Final verification build — catch false positives (0 sorry but unsolved goals)
+        # Wrap in try/except to ensure file restoration on any crash
         final_verify_ok = False
-        if final_sorry < original_sorry_count:
-            print("  Final verification build...", flush=True)
-            verify_result = json.loads(tactic_tools.compile())
-            final_verify_ok = verify_result.get("success", False)
-            if not final_verify_ok:
-                errors = verify_result.get("errors", [])
-                unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
-                if unsolved:
-                    print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
-                          f"{final_sorry} sorry. Reverting.", flush=True)
-                    Path(filepath).write_text(
-                        Path(filepath).read_text(encoding="utf-8"), encoding="utf-8")
-                    # Restore original if best state also has unsolved goals
-                    final_sorry = original_sorry_count
-                else:
-                    print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
-                          f"reverting.", flush=True)
+        try:
+            if final_sorry < original_sorry_count:
+                print("  Final verification build...", flush=True)
+                verify_result = json.loads(tactic_tools.compile())
+                final_verify_ok = verify_result.get("success", False)
+                if not final_verify_ok:
+                    errors = verify_result.get("errors", [])
+                    unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
+                    if unsolved:
+                        print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
+                              f"{final_sorry} sorry. Reverting.", flush=True)
+                        Path(filepath).write_text(original_content, encoding="utf-8")
+                        final_sorry = original_sorry_count
+                    else:
+                        print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
+                              f"reverting.", flush=True)
+                        Path(filepath).write_text(original_content, encoding="utf-8")
+                        final_sorry = original_sorry_count
+        except Exception as e:
+            print(f"  Final verification crashed: {e}. Restoring original.", flush=True)
+            Path(filepath).write_text(original_content, encoding="utf-8")
+            final_sorry = original_sorry_count
 
         success = final_sorry < original_sorry_count and final_build_ok and final_verify_ok
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")

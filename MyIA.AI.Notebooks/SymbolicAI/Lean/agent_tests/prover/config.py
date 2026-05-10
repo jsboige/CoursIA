@@ -473,4 +473,97 @@ DEMOS = {
         ),
         "difficulty": "very_hard",
     },
+    20: {
+        "name": "VOTING_COUNTING_LT_MEDIAN",
+        "file": str(VOTING_FILE),
+        "line": 313,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "median_voter_theorem_strict",
+        "theorem": "median_voter_theorem_strict",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove the FIRST counting lemma in median_voter_theorem_strict.\n"
+            "The sorry is inside the `by_cases hlt : peaks j < median_peak peaks` branch,\n"
+            "in the `have hcount` subgoal.\n"
+            "\n"
+            "GOAL at sorry (EXACT):\n"
+            "  (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card <\n"
+            "  (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card\n"
+            "\n"
+            "VARIABLES IN SCOPE:\n"
+            "  prof : ι → PrefOrder σ, peaks : ι → σ\n"
+            "  hsp : single_peaked_profile prof peaks\n"
+            "  hstrict_left : ∀ i a b, a < b → b ≤ peaks i → P (prof i).rel b a\n"
+            "  hstrict_right : ∀ i a b, peaks i ≤ a → a < b → P (prof i).rel a b\n"
+            "  hodd : Odd (Fintype.card ι)\n"
+            "  j : ι, hny : ¬peaks j = median_peak peaks\n"
+            "  hlt : peaks j < median_peak peaks\n"
+            "\n"
+            "PROOF STRATEGY:\n"
+            "  1. Show filter (median ≤ peaks ·) = univ \\ filter (peaks · < median) by:\n"
+            "     ext i; simp [Finset.mem_filter, Finset.mem_sdiff, not_lt]\n"
+            "  2. Use Finset.card_add_card_compl to get:\n"
+            "     card(filter <) + card(univ \\ filter <) = Fintype.card ι\n"
+            "  3. Obtain k : Fintype.card ι = 2*k + 1 (from hodd)\n"
+            "  4. Bound card(filter <) ≤ k:\n"
+            "     - sorted list l of peaks has length 2k+1\n"
+            "     - median at position k = l.getD (l.length / 2) default\n"
+            "     - at most k elements < median (by sorted order)\n"
+            "  5. omega closes: card_lt ≤ k < k+1 ≤ n - card_lt = card_ge\n"
+            "\n"
+            "KEY LEMMAS:\n"
+            "  Finset.filter_not : filter (¬p) s = s \\ filter p s\n"
+            "  Finset.card_add_card_compl : s.card + (univ \\ s).card = Fintype.card α\n"
+            "  not_lt : ¬(a < b) ↔ b ≤ a\n"
+            "  Finset.card_le_card : s ⊆ t → s.card ≤ t.card\n"
+            "  Finset.card_univ : univ.card = Fintype.card α\n"
+            "  Nat.odd_iff : Odd n ↔ ∃ k, n = 2*k + 1\n"
+            "\n"
+            "DO NOT USE (do NOT exist in Lean 4 v4.29.1):\n"
+            "  List.Sorted, List.mergeSort_sorted, List.Sorted.rel_get_of_le_get\n"
+            "  Finset.card_filter_add_card_filter_neg, Finset.card_filter_add_card_filter_compl\n"
+            "  Finset.card_union_eq, Finset.disjoint_filter_neg\n"
+            "  aesop, nlinarith for counting\n"
+            "\n"
+            "CRITICAL WARNING:\n"
+            "  Do NOT use `obtain`/`rcases`/`⟨⟩` on `Finset.image` membership proofs.\n"
+            "  `Finset.univ.image peaks` uses Quot.lift internally, so membership proofs\n"
+            "  have type Quot.lift ... which is NOT inductive and cannot be destructed.\n"
+            "  Instead, use the membership proof directly with `simpa [hm]` or `exact`.\n"
+        ),
+        "proof_scaffolding": "",
+        "difficulty": "very_hard",
+    },
+    21: {
+        "name": "VOTING_COUNTING_GT_MEDIAN",
+        "file": str(VOTING_FILE),
+        "line": 337,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "median_voter_theorem_strict",
+        "theorem": "median_voter_theorem_strict",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove the SECOND (symmetric) counting lemma in median_voter_theorem_strict.\n"
+            "The sorry is in the `by_cases` negative branch (peaks j > median).\n"
+            "\n"
+            "GOAL at sorry (EXACT):\n"
+            "  (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card <\n"
+            "  (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card\n"
+            "\n"
+            "This is SYMMETRIC to DEMO 20. The same partition + counting strategy applies.\n"
+            "Swap < for > and ≤ for ≥.\n"
+            "\n"
+            "PROOF STRATEGY:\n"
+            "  1. Show filter (peaks · ≤ median) = univ \\ filter (median < peaks ·)\n"
+            "  2. card(filter_gt) + card(univ \\ filter_gt) = n\n"
+            "  3. card(filter_gt) ≤ k for n = 2k+1 (by symmetric sorted list argument)\n"
+            "  4. omega closes\n"
+            "\n"
+            "KEY LEMMAS (same as DEMO 20):\n"
+            "  Finset.filter_not, Finset.card_add_card_compl, not_lt\n"
+            "  Finset.card_le_card, Finset.card_univ, Nat.odd_iff\n"
+        ),
+        "proof_scaffolding": "",
+        "difficulty": "very_hard",
+    },
 }

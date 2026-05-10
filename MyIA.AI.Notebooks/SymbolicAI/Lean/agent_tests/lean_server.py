@@ -101,8 +101,20 @@ class LeanVerifier:
 
         try:
             start = time.time()
-            # Use WSL to run lake build (elan/lean toolchain is in WSL)
-            lake_cmd = f"source ~/.elan/env > /dev/null 2>&1 && lake build {module_name} 2>&1"
+            # Force Lake 5.0.0 to recompile by removing ALL build artifacts.
+            # Lake 5.0.0 uses .olean.hash/.ilean.hash/.trace for caching,
+            # NOT just .olean. Deleting these ensures Lake can't match the
+            # content hash and must recompile from source.
+            wsl_file = f"{wsl_project}/{relative_path}"
+            base_rel = relative_path.replace(".lean", "")
+            build_dir = f"{wsl_project}/.lake/build/lib/lean"
+            artifacts = " ".join(
+                f"{build_dir}/{base_rel}.{ext}"
+                for ext in ("olean", "olean.hash", "ilean", "ilean.hash", "trace")
+            )
+            lake_cmd = (f"source ~/.elan/env > /dev/null 2>&1 && "
+                        f"rm -f {artifacts} && "
+                        f"lake build {module_name} 2>&1")
             cmd = ["wsl", "bash", "-c", lake_cmd]
             result = subprocess.run(
                 cmd,

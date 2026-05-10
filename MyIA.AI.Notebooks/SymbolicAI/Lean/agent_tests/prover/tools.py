@@ -788,7 +788,11 @@ class TacticTools:
         subdir = Path(self._filepath).parent.name
         filename = Path(self._filepath).name
         relative_path = f"{subdir}/{filename}"
-        result = verifier.verify_project_file(relative_path)
+        # Force fresh build (prover may have modified the file since last cache entry)
+        from .verifier import _load_lean_verifier_class
+        LeanVerifier = _load_lean_verifier_class()
+        LeanVerifier.invalidate(self._filepath)
+        result = verifier.verify_project_file(relative_path, force=True)
 
         duration = time.time() - start
         raw_output = result.get("raw_output", "")
