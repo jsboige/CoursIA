@@ -208,7 +208,7 @@ Total notebooks: 452
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
 
-### SymbolicAI (89 notebooks) — BROKEN:2, DEMO:15, READY:72 | ALPHA:55, BETA:29, DRAFT:4, PRODUCTION:1
+### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:16, READY:72 | ALPHA:55, BETA:29, DRAFT:4, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -246,7 +246,7 @@ Total notebooks: 452
 | 32 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | ALPHA | 45min | po-2024 |
 | 33 | Planners-11: Unified Planning | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 34 | Planners-12: Learning to Plan avec LOOP | Python 3 | DEMO | ALPHA | 45min | po-2024 |
-| 35 | Introduction au web sémantique avec RDF.Net | .NET (C#) | BROKEN | ALPHA | 2h+ | po-2024 |
+| 35 | Introduction au web sémantique avec RDF.Net | .NET (C#) | DEMO | ALPHA | 2h+ | po-2024 |
 | 36 | SW-1-Setup | .NET (C#) | READY | BETA | 15min | po-2024 |
 | 37 | SW-11-RDFStar | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 38 | SW-12-KnowledgeGraphs | Python 3 | READY | ALPHA | 45min | po-2024 |
