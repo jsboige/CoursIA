@@ -200,10 +200,10 @@ Total notebooks: 452
 | 21 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 15min | po-2023 |
 | 22 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | DEMO | ALPHA | 30min | po-2023 |
 | 23 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 24 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 25 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | ALPHA | 30min | po-2023 |
-| 26 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 1h30 | po-2023 |
-| 27 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | BROKEN | DRAFT | 45min | po-2023 |
+| 24 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | BROKEN | ALPHA | 45min | po-2023 |
+| 25 | ML-3 : Entraînement et AutoML | .NET (C#) | BROKEN | PRODUCTION | 30min | po-2023 |
+| 26 | ML-4 : Evaluation des modèles | .NET (C#) | BROKEN | ALPHA | 1h30 | po-2023 |
+| 27 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | BROKEN | BETA | 45min | po-2023 |
 | 28 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 30min | po-2023 |
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
@@ -473,7 +473,7 @@ Total notebooks: 452
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | BETA | 30min | po-2023 |
 
-### Probas (22 notebooks) — READY:22 | ALPHA:18, PRODUCTION:4
+### Probas (22 notebooks) — READY:22 | ALPHA:17, PRODUCTION:5
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -483,7 +483,7 @@ Total notebooks: 452
 | 4 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | ALPHA | 1h | po-2023 |
 | 5 | Infer-13-Debugging : Troubleshooting et Bonnes Pra | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 6 | Infer-14-Decision-Utility-Foundations : Axiomes et | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 7 | Infer-15-Decision-Utility-Money : Utilite de l'Arg | .NET (C#) | READY | ALPHA | 1h | po-2023 |
+| 7 | Infer-15-Decision-Utility-Money : Utilite de l'Arg | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 8 | Infer-16-Decision-Multi-Attribute : Utilite Multi- | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 9 | Infer-17-Decision-Networks : Reseaux de Decision | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 10 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
