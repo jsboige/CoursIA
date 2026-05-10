@@ -4,7 +4,7 @@
 series: Sudoku
 pedagogical_count: 32
 breakdown: =32
-maturity: ALPHA=19, BETA=11, PRODUCTION=2
+maturity: ALPHA=22, BETA=9, PRODUCTION=1
 -->
 
 Cette serie de **32 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
