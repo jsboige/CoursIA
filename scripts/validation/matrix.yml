@@ -92,6 +92,19 @@ families:
         strategy: papermill
         prerequisites: [openai_key]
         timeout: 300
+      CaseStudies:
+        kernel: python3
+        strategy: papermill
+        timeout: 300
+      SemanticKernel:
+        kernel: python3
+        strategy: papermill
+        prerequisites: [semantic_kernel]
+        timeout: 300
+      "00-Env":
+        kernel: python3
+        strategy: papermill
+        timeout: 300
 
   ML:
     kernel: mixed
@@ -157,16 +170,16 @@ families:
     acceptance:
       outputs_present: true
 
-  EPF:
+  CaseStudies:
     kernel: python3
-    path: MyIA.AI.Notebooks/EPF
+    path: MyIA.AI.Notebooks/CaseStudies
     strategy: papermill
     timeout: 300
     subfamilies:
-      CC1-Exploratoire-Symbolique:
+      Diagnostic-Medical:
         kernel: python3
         strategy: papermill
-      CC2-Symbolique-Probabiliste:
+      Oncology-Planning:
         kernel: python3
         strategy: papermill
     acceptance:
