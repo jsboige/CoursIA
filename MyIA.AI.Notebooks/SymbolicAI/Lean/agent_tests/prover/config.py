@@ -90,13 +90,29 @@ HONEST_SORRIES = {
 }
 
 
-def create_client(provider: str = "zai", model_key: str = "reasoning") -> OpenAIChatCompletionClient:
-    """Create a ChatCompletionClient for the given provider."""
+def create_client(provider: str = "zai", model_key: str = "reasoning",
+                  request_timeout_s: float = 240.0,
+                  max_retries: int = 1) -> OpenAIChatCompletionClient:
+    """Create a ChatCompletionClient for the given provider.
+
+    request_timeout_s caps a single chat completion call. Reasoning models
+    can legitimately take 30-90s to think; cap at 4min to detect hangs while
+    leaving room for genuinely deep reasoning. BG iter 2 had a TacticAgent
+    chat hang for 16+ min with no completion — that's a hang, not slow
+    reasoning, and we should fail-fast so the workflow can recover instead
+    of burning the wall-clock cap.
+    """
+    from openai import AsyncOpenAI
     cfg = PROVIDERS[provider]
-    return OpenAIChatCompletionClient(
-        model=cfg["models"][model_key],
+    async_client = AsyncOpenAI(
         api_key=cfg["api_key"],
         base_url=cfg["base_url"],
+        timeout=request_timeout_s,
+        max_retries=max_retries,
+    )
+    return OpenAIChatCompletionClient(
+        model=cfg["models"][model_key],
+        async_client=async_client,
     )
 
 
