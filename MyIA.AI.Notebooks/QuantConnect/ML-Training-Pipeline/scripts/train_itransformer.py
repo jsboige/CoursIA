@@ -275,6 +275,10 @@ def train_and_evaluate(
 
     preds = np.concatenate(all_preds)
     targets = np.concatenate(all_targets)
+    if preds.ndim == 1:
+        preds = preds[:, None]
+    if targets.ndim == 1:
+        targets = targets[:, None]
 
     mse = float(np.mean((preds - targets) ** 2))
     mae = float(np.mean(np.abs(preds - targets)))
