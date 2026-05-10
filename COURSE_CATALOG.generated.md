@@ -1,14 +1,14 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-10 01:53
+Generated: 2026-05-10 01:52
 Total notebooks: 452
 
 ## Status Summary
 
 - **READY**: 235
-- **DEMO**: 204
+- **DEMO**: 203
 - **RESEARCH**: 0
-- **BROKEN**: 13
+- **BROKEN**: 14
 
 ## Maturity Summary
 

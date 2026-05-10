@@ -133,7 +133,10 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
 
         # Accept errors within ±3 lines of the sorry — nested tactic blocks
         # can shift error reporting to adjacent lines.
+        # For unsolved goals (bullet-point sorrys), allow much wider tolerance
+        # since the unsolved case can be far from the sorry line.
         LINE_TOLERANCE = 3
+        UNSOLVED_GOAL_TOLERANCE = 25
         target_errors = []
         collecting = False
         for line in raw_output.split("\n"):
@@ -156,30 +159,47 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
 
         if not target_errors:
             print(f"  [GoalExtract] Probe '{probe}': no error at exact line {sorry_line}")
-            # Check for unsolved goals errors NEAR the sorry line only
-            unsolved_match = re.search(r"(\d+):\d+: error: unsolved goals", raw_output)
-            if not unsolved_match:
-                unsolved_match = re.search(r"error: .*?(\d+):\d+: unsolved goals", raw_output)
-            if unsolved_match:
-                unsolved_line = int(unsolved_match.group(1))
-                # Only extract if the unsolved goal is within tolerance of our sorry
-                if abs(unsolved_line - sorry_line) <= LINE_TOLERANCE:
-                    # Probe was accepted but left open goals — the goal type IS compatible
-                    # Try to extract the goal from the unsolved goals error context
-                    after_idx = raw_output.find(unsolved_match.group(0))
-                    after_text = raw_output[after_idx:after_idx+1000]
-                    goal_match = re.search(r"⊢ (.*?)(?:\n\n|\n\d+:)", after_text, re.DOTALL)
-                    if goal_match:
-                        goal = goal_match.group(1).strip()
-                        print(f"  [GoalExtract] Extracted from unsolved goals: {goal[:200]}")
-                        try:
-                            tmp_path.unlink()
-                        except OSError:
-                            pass
-                        return goal
-                else:
-                    print(f"  [GoalExtract] Unsolved goals at line {unsolved_line}, "
-                          f"too far from sorry at {sorry_line} (tolerance={LINE_TOLERANCE})")
+            # Check for unsolved goals errors — use wider tolerance for bullet-point sorrys
+            # where the unsolved case may be far from the actual sorry line.
+            unsolved_matches = list(re.finditer(
+                r"(\d+):\d+: error: unsolved goals", raw_output))
+            if not unsolved_matches:
+                unsolved_matches = list(re.finditer(
+                    r"error: .*?(\d+):\d+: unsolved goals", raw_output))
+            # Pick the best unsolved goals match: prefer one at or after sorry_line,
+            # within UNSOLVED_GOAL_TOLERANCE
+            best_unsolved = None
+            best_dist = UNSOLVED_GOAL_TOLERANCE + 1
+            for um in unsolved_matches:
+                uline = int(um.group(1))
+                dist = abs(uline - sorry_line)
+                if dist <= UNSOLVED_GOAL_TOLERANCE:
+                    # Prefer matches at or after sorry_line (bullet-point cases)
+                    if uline >= sorry_line or dist < best_dist:
+                        if best_unsolved is None or dist < best_dist:
+                            best_unsolved = um
+                            best_dist = dist
+            if best_unsolved:
+                unsolved_line = int(best_unsolved.group(1))
+                # Probe was accepted but left open goals — the goal type IS compatible
+                # Try to extract the goal from the unsolved goals error context
+                after_idx = raw_output.find(best_unsolved.group(0))
+                after_text = raw_output[after_idx:after_idx+1000]
+                goal_match = re.search(r"⊢ (.*?)(?:\n\n|\n\d+:)", after_text, re.DOTALL)
+                if goal_match:
+                    goal = goal_match.group(1).strip()
+                    print(f"  [GoalExtract] Extracted from unsolved goals: {goal[:200]}")
+                    try:
+                        tmp_path.unlink()
+                    except OSError:
+                        pass
+                    return goal
+            else:
+                if unsolved_matches:
+                    closest = int(unsolved_matches[0].group(1))
+                    print(f"  [GoalExtract] Unsolved goals at line {closest}, "
+                          f"too far from sorry at {sorry_line} "
+                          f"(tolerance={UNSOLVED_GOAL_TOLERANCE})")
             # Check for ANY error in the output (not just near sorry line)
             any_error = re.search(r"error:", raw_output)
             if any_error:

@@ -44,6 +44,9 @@ def categorize_notebook(path: Path) -> dict:
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as e:
         return {"path": str(path), "category": "PARSE_ERROR", "error": str(e)}
 
+    if nb.get("metadata", {}).get("qc_reference") is True:
+        return {"path": str(path), "category": "REFERENCE", "n_code": 0}
+
     cells = nb.get("cells", [])
     code_cells = [c for c in cells if c.get("cell_type") == "code"]
     n_code = len(code_cells)
