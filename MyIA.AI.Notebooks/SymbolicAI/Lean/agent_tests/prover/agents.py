@@ -19,8 +19,13 @@ from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
 # visible response. With max_tokens=2048 z.ai routinely returns
 # `finish_reason: "length"` on trivial smoke tests. 16384 leaves room for the
 # model to actually finish reasoning AND emit a tactic.
+#
+# 2026-05-11 BG iter 2 trace showed SearchAgent (local Qwen3.6) at
+# 8192 budget hit `finish_reason: length` with `parts: []` (empty response).
+# Burned 100% of output in reasoning_content. Bumped fast = same as reasoning
+# so local thinking models have headroom on Search work too.
 REASONING_MAX_TOKENS = 16384
-FAST_MAX_TOKENS = 8192
+FAST_MAX_TOKENS = 16384
 
 
 def _reasoning_options() -> ChatOptions:

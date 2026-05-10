@@ -134,6 +134,25 @@ class AgentExecutor(Executor):
                     content=str(e)[:200],
                 )
 
+        # Detect "burned response" — thinking models sometimes spend their entire
+        # output budget in `reasoning_content` and emit no visible parts.
+        # The framework's last message has finish_reason="length" with empty
+        # parts. If we pass that empty text to the next agent, the workflow
+        # silently degrades. Annotate the response so the downstream agent
+        # sees a recoverable signal instead of silence.
+        if not response_text.strip() and not msg.tactic:
+            response_text = (
+                "[harness] previous agent produced an empty response (likely "
+                "burned its output budget in reasoning_content). Proceed using "
+                "the proof state and tools directly; do not wait for input from "
+                "the previous step."
+            )
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="empty_response_guard",
+                    content="injected fallback message (response was empty)",
+                )
+
         # Bridge TacticAgent's tool-side submissions to the workflow message:
         # `submit_tactic` and `submit_decomposition` write to
         # `state.tactic_history` but never touch the ProofMessage. Without this
