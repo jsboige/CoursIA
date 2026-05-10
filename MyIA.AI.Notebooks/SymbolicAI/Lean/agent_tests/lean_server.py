@@ -88,26 +88,28 @@ class LeanVerifier:
         return hashlib.sha256(content.encode()).hexdigest()
 
     def _run_lake_build(self, project: Path, relative_path: str) -> dict:
-        """Execute lake build for a module."""
+        """Execute lake build for a module via WSL (Lean toolchain is in WSL)."""
         module_name = relative_path.replace("/", ".").replace("\\", ".")
         if module_name.endswith(".lean"):
             module_name = module_name[:-5]
 
-        env = os.environ.copy()
-        elan_bin = Path.home() / ".elan" / "bin"
-        if elan_bin.exists():
-            env["PATH"] = f"{elan_bin}:{env.get('PATH', '')}"
+        # Convert Windows project path to WSL path
+        wsl_project = str(project).replace("\\", "/")
+        if len(wsl_project) >= 2 and wsl_project[1] == ":":
+            drive = wsl_project[0].lower()
+            wsl_project = f"/mnt/{drive}{wsl_project[2:]}"
 
         try:
             start = time.time()
-            cmd = ["lake", "build", module_name]
+            # Use WSL to run lake build (elan/lean toolchain is in WSL)
+            lake_cmd = f"source ~/.elan/env > /dev/null 2>&1 && lake build {module_name} 2>&1"
+            cmd = ["wsl", "bash", "-c", lake_cmd]
             result = subprocess.run(
                 cmd,
                 cwd=str(project),
                 capture_output=True,
                 text=True,
                 timeout=300,
-                env=env,
             )
             duration = time.time() - start
 
