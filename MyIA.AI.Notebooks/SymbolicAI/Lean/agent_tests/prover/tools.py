@@ -13,6 +13,7 @@ from typing import Optional, Dict, List
 
 from .state import ProofState, TacticAttempt, SorryContext
 from .trace import TraceLogger
+from .knowledge import ProofKnowledgeBase
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -22,10 +23,15 @@ from .trace import TraceLogger
 class SearchTools:
     """Tools for SearchAgent: lemma discovery and proof state reading."""
 
-    def __init__(self, state: ProofState, filepath: str = "", trace: TraceLogger = None):
+    def __init__(self, state: ProofState, filepath: str = "", trace: TraceLogger = None,
+                 kb: Optional["ProofKnowledgeBase"] = None):
         self._state = state
         self._filepath = filepath
         self._trace = trace
+        # B.1 ProofKnowledgeBase: shared singleton across sessions. Each SearchTools
+        # instance reads from the same proof_knowledge.json so successful tactics
+        # from past runs warm-start this one.
+        self._kb = kb or ProofKnowledgeBase()
         self._known_lemmas = {
             # Arithmetic on Nat
             "Nat.add_zero": ("n + 0 = n", "Nat"),
@@ -107,21 +113,51 @@ class SearchTools:
                               use_lsp: bool = True) -> str:
         """Search for Mathlib lemmas relevant to a proof goal.
 
-        Primary: Lean LSP search via exact?/apply? (B.2)
-        Fallback: hardcoded lemma dictionary for common patterns
+        Sources, in priority order:
+          0. ProofKnowledgeBase (past successful tactics on similar goals)
+          1. Lean LSP search via exact?/apply? (B.2)
+          2. Hardcoded lemma dictionary for common patterns
         """
-        # B.2: Try real Lean LSP search first
+        kb_results = []
+        try:
+            kb_hit = self._kb.lookup(goal)
+            if kb_hit:
+                kb_results.append({
+                    "name": f"KB_HIT:{kb_hit.get('theorem', '?')}",
+                    "statement": f"PROVEN tactic: {kb_hit['tactic']}",
+                    "namespace": "ProofKnowledgeBase",
+                    "relevance": 1.0,
+                    "source": "kb_exact",
+                    "uses": kb_hit.get("uses", 1),
+                })
+            for sim in self._kb.search_similar(goal, max_results=3):
+                kb_results.append({
+                    "name": f"KB_SIM:{sim.get('theorem', '?')}",
+                    "statement": (f"Similar past tactic ({sim.get('relevance', 0):.2f}): "
+                                  f"{sim['tactic']}"),
+                    "namespace": "ProofKnowledgeBase",
+                    "relevance": min(0.95, 0.5 + sim.get("relevance", 0) * 0.5),
+                    "source": "kb_similar",
+                    "uses": sim.get("uses", 1),
+                })
+        except Exception:
+            pass
+
+        # B.2: Try real Lean LSP search next
         if use_lsp and self._filepath:
             lsp_results = self._search_via_lsp(goal)
             if lsp_results:
+                merged = kb_results + lsp_results
                 if self._trace:
                     self._trace.log(
                         agent="SearchAgent", role="tool",
-                        content=f"LSP search found {len(lsp_results)} suggestions",
+                        content=(f"LSP found {len(lsp_results)} + KB {len(kb_results)} "
+                                 f"= {len(merged)} suggestions"),
                         duration_s=0.01, tool_name="search_mathlib_lemmas",
-                        tool_args={"goal": goal[:80]}, tool_result=f"{len(lsp_results)} LSP results",
+                        tool_args={"goal": goal[:80]},
+                        tool_result=f"{len(merged)} (kb={len(kb_results)} lsp={len(lsp_results)})",
                     )
-                return json.dumps(lsp_results[:max_results], indent=2, ensure_ascii=False)
+                return json.dumps(merged[:max_results], indent=2, ensure_ascii=False)
 
         # Fallback: keyword-based search on known lemmas
         goal_lower = goal.lower()
@@ -165,11 +201,12 @@ class SearchTools:
                 })
 
         results.sort(key=lambda x: x["relevance"], reverse=True)
-        found = results[:max_results]
+        found = kb_results + results[:max_results - len(kb_results)]
 
         if self._trace:
             self._trace.log(
-                agent="SearchAgent", role="tool", content=f"Found {len(found)} lemmas (fallback)",
+                agent="SearchAgent", role="tool",
+                content=f"Found {len(found)} lemmas (fallback + kb={len(kb_results)})",
                 duration_s=0.01, tool_name="search_mathlib_lemmas",
                 tool_args={"goal": goal[:80]}, tool_result=f"{len(found)} results",
             )
@@ -246,6 +283,35 @@ class SearchTools:
         end = min(len(lines), end)
         selected = lines[start - 1:end]
         return "\n".join(f"{start + i}: {line}" for i, line in enumerate(selected))
+
+    def lookup_proven_pattern(self, goal: str, max_results: int = 5) -> str:
+        """Query the persistent ProofKnowledgeBase directly for past successes.
+
+        Returns exact match (if any) plus similar past tactics. Use this BEFORE
+        searching Mathlib when the current goal looks like one you've solved
+        before (same lemma names, same shape). Cheaper and more targeted than
+        rebuilding via LSP.
+        """
+        try:
+            exact = self._kb.lookup(goal)
+            similar = self._kb.search_similar(goal, max_results=max_results)
+            payload = {
+                "kb_size": self._kb.size,
+                "exact_match": exact,
+                "similar": similar,
+            }
+            if self._trace:
+                hit_count = (1 if exact else 0) + len(similar)
+                self._trace.log(
+                    agent="SearchAgent", role="tool",
+                    content=f"KB lookup: {hit_count} hits (kb_size={self._kb.size})",
+                    duration_s=0.01, tool_name="lookup_proven_pattern",
+                    tool_args={"goal": goal[:80]},
+                    tool_result=f"exact={bool(exact)} similar={len(similar)}",
+                )
+            return json.dumps(payload, indent=2, ensure_ascii=False)
+        except Exception as exc:
+            return json.dumps({"error": str(exc), "kb_size": -1})
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -327,19 +393,34 @@ class TacticTools:
     def submit_decomposition(self, have_name: str, have_type: str,
                              have_proof: str = "sorry",
                              main_tactic: str = "sorry") -> str:
-        """Submit a decomposition: split the current goal into sub-goals using 'have'."""
+        """Submit a decomposition: split the current goal into sub-goals using `have`.
+
+        Builds `have <name> : <type> := by <have_proof>; <main_tactic>` and
+        records it in tactic_history so the AgentExecutor bridge can lift it
+        into ProofMessage.tactic for VerifyExecutor. Without this recording,
+        the decomposition would be returned as JSON only and never reach the
+        verifier — same dead end as the pre-bridge submit_tactic.
+        """
         indent = "  "
         lines = [
             f"have {have_name} : {have_type} := by {have_proof}",
             main_tactic,
         ]
         decomposition = f"\n{indent}".join(lines)
+        attempt_id = self._state.add_tactic_attempt(
+            tactic=decomposition,
+            confidence=0.4,
+            explanation=f"decomposition via have {have_name}",
+            is_decomposition=True,
+        )
         return json.dumps({
+            "attempt_id": attempt_id,
             "decomposition": decomposition,
             "have_name": have_name,
             "have_type": have_type,
             "have_proof": have_proof,
             "main_tactic": main_tactic,
+            "status": "submitted",
         }, indent=2, ensure_ascii=False)
 
     def submit_tactic(self, tactic: str, confidence: float = 0.5,

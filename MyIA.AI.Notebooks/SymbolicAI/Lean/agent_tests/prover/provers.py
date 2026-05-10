@@ -29,6 +29,7 @@ from .workflow import ProofWorkflowBuilder, ProofMessage
 from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS
 from .config import create_client, HONEST_SORRIES
 from . import attempt_history
+from .knowledge import ProofKnowledgeBase
 from .otel_setup import enable_prover_otel
 
 _PROVER_DIR = Path(__file__).resolve().parent
@@ -168,8 +169,13 @@ class MultiAgentSorryProver:
             max_iterations=max_iterations,
         )
 
+        # Shared KB instance so SearchAgent reads what VerifyExecutor wrote
+        # in the same session (otherwise each side instantiates its own and
+        # only sees prior-session entries via the JSON file).
+        kb = ProofKnowledgeBase()
+
         # Create per-agent tools
-        search_tools = SearchTools(state, filepath, self.trace)
+        search_tools = SearchTools(state, filepath, self.trace, kb=kb)
         tactic_tools = TacticTools(state, filepath, sorry_ctx,
                                    demo.get("imports", ""), self.trace)
         tactic_tools._original_sorry_count = original_sorry_count
@@ -182,10 +188,10 @@ class MultiAgentSorryProver:
         critic_agent = create_critic_agent(critic_tools, provider=self.provider)
         coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.provider)
 
-        # Build workflow graph
+        # Build workflow graph (kb shared with SearchTools)
         workflow_builder = ProofWorkflowBuilder(
             search_agent, tactic_agent, critic_agent, coordinator_agent,
-            sorry_ctx, demo.get("imports", ""), self.trace, state=state,
+            sorry_ctx, demo.get("imports", ""), self.trace, state=state, kb=kb,
         )
         workflow = workflow_builder.build()
 

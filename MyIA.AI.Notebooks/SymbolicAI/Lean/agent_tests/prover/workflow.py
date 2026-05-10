@@ -34,6 +34,7 @@ from agent_framework import (
 
 from .state import SorryContext
 from .trace import TraceLogger
+from .knowledge import ProofKnowledgeBase
 
 
 # Default per-agent LLM timeout. Reasoning models (z.ai GLM-5.1, Qwen3.6) burn
@@ -113,6 +114,12 @@ class AgentExecutor(Executor):
         # which silently corrupts every LLM call (verified via OTel trace
         # multi_SMOKE_ZERO_ADD_local_*.spans.jsonl, 2026-05-11). The wall-clock
         # cap in provers.py bounds the total session.
+        # Snapshot tactic_history len so we can detect new submit_tactic /
+        # submit_decomposition calls below and propagate them to msg.tactic.
+        history_len_before = (
+            len(self._state.tactic_history)
+            if self._state and hasattr(self._state, "tactic_history") else 0
+        )
         try:
             response = await self._agent.run(content)
             response_text = ""
@@ -126,6 +133,28 @@ class AgentExecutor(Executor):
                     agent=self._agent.name, role="error",
                     content=str(e)[:200],
                 )
+
+        # Bridge TacticAgent's tool-side submissions to the workflow message:
+        # `submit_tactic` and `submit_decomposition` write to
+        # `state.tactic_history` but never touch the ProofMessage. Without this
+        # bridge, `msg.tactic` stays None forever, VerifyExecutor fails with
+        # "No tactic submitted" and routes back to TacticAgent until the
+        # iteration cap. Pick up the latest attempt added during this run.
+        if (self._state and hasattr(self._state, "tactic_history")
+                and len(self._state.tactic_history) > history_len_before):
+            latest = self._state.tactic_history[-1]
+            tactic_text = getattr(latest, "tactic", None)
+            if tactic_text:
+                msg.tactic = tactic_text
+                msg.is_decomposition = bool(getattr(latest, "is_decomposition", False))
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="tactic_bridge",
+                        content=(f"propagated tactic to msg "
+                                 f"(decomp={msg.is_decomposition}, "
+                                 f"len={len(tactic_text)}): "
+                                 f"{tactic_text[:80]}"),
+                    )
 
         # B.3: Propagate plan from ProofState into message after Coordinator runs
         if self._agent.name == "CoordinatorAgent" and self._state and not msg.plan:
@@ -152,11 +181,15 @@ class VerifyExecutor(Executor):
     """
 
     def __init__(self, sorry_context: SorryContext, imports: str,
-                 trace: TraceLogger = None, **kwargs):
+                 trace: TraceLogger = None, kb: Optional[ProofKnowledgeBase] = None,
+                 **kwargs):
         super().__init__(id="verify_executor", **kwargs)
         self._sorry_ctx = sorry_context
         self._imports = imports
         self._trace = trace
+        # B.1 ProofKnowledgeBase: record successful tactics so future sessions
+        # can warm-start. Same JSON file that SearchTools reads.
+        self._kb = kb or ProofKnowledgeBase()
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -184,6 +217,26 @@ class VerifyExecutor(Executor):
                     tool_name="verify_sorry_replacement",
                     tool_result="success=True",
                 )
+            try:
+                self._kb.record_success(
+                    goal=self._sorry_ctx.goal_state or "",
+                    tactic=msg.tactic,
+                    theorem="",  # SorryContext has no theorem name; line+file is enough
+                    file=f"{self._sorry_ctx.filepath}:{self._sorry_ctx.sorry_line}",
+                )
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="kb_record",
+                        content=(f"recorded {self._sorry_ctx.filepath}:"
+                                 f"{self._sorry_ctx.sorry_line} -> "
+                                 f"{msg.tactic[:60]} (kb_size={self._kb.size})"),
+                    )
+            except Exception as e:
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="kb_record_error",
+                        content=f"kb record failed: {e}",
+                    )
             await ctx.yield_output(msg)
             return
 
@@ -225,12 +278,13 @@ class ProofWorkflowBuilder:
     def __init__(self, search_agent: Agent, tactic_agent: Agent,
                  critic_agent: Agent, coordinator_agent: Agent,
                  sorry_context: SorryContext, imports: str,
-                 trace: TraceLogger = None, state: "ProofState" = None):
+                 trace: TraceLogger = None, state: "ProofState" = None,
+                 kb: Optional[ProofKnowledgeBase] = None):
         self._search = AgentExecutor(search_agent, trace=trace, state=state)
         self._tactic = AgentExecutor(tactic_agent, trace=trace, state=state)
         self._critic = AgentExecutor(critic_agent, trace=trace, state=state)
         self._coordinator = AgentExecutor(coordinator_agent, trace=trace, state=state)
-        self._verify = VerifyExecutor(sorry_context, imports, trace)
+        self._verify = VerifyExecutor(sorry_context, imports, trace, kb=kb)
 
     def build(self):
         # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to
