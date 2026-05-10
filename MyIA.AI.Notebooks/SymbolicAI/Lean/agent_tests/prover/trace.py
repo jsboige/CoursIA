@@ -91,12 +91,12 @@ class TraceLogger:
         ts = f"[+{entry['timestamp']:.1f}s]"
         if role == "thinking":
             preview = (thinking or "")[:150].replace("\n", " ")
-            print(f"  {ts} {agent} [THINKING]: {preview}...")
+            print(f"  {ts} {agent} [THINKING]: {preview}...", flush=True)
         elif tool_name:
-            print(f"  {ts} {agent} -> {tool_name}({json.dumps(tool_args or {})[:80]}) -> {duration_s:.2f}s")
+            print(f"  {ts} {agent} -> {tool_name}({json.dumps(tool_args or {})[:80]}) -> {duration_s:.2f}s", flush=True)
         else:
             preview = (content or "")[:120].replace("\n", " ")
-            print(f"  {ts} {agent} [{role}]: {preview}...")
+            print(f"  {ts} {agent} [{role}]: {preview}...", flush=True)
 
     def log_agent_response(self, agent: str, response, duration_s: float = 0,
                            iteration: int = 0):
