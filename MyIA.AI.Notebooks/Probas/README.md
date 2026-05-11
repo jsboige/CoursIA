@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 31
-breakdown: Infer=20, _python_port=9, =2
-maturity: ALPHA=17, BETA=9, PRODUCTION=5
+pedagogical_count: 32
+breakdown: Infer=20, _python_port=9, =3
+maturity: ALPHA=17, BETA=9, PRODUCTION=6
 -->
 
 Serie complete de notebooks sur la programmation probabiliste, couvrant l'inference bayesienne avec **Infer.NET** (C#) et **Pyro** (Python).
