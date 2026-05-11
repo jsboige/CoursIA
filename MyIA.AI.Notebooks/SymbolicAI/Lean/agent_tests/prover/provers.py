@@ -235,23 +235,57 @@ class MultiAgentSorryProver:
         except Exception as e:
             print(f"  Workflow error: {e}")
         finally:
-            # ALWAYS restore file if no improvement — prevent corruption
+            # Pick the best snapshot to commit, in this priority order:
+            #   1. tactic_tools.best_content       (lowest sorry count seen)
+            #   2. tactic_tools._last_build_ok_content (latest build-passing edit)
+            #   3. original_content                (untouched fallback)
+            # The middle option lets us KEEP partial structural progress: even
+            # if final sorry count >= original (e.g., decomposition broke 1
+            # sorry into 3 sub-sorries that all compile), we want to commit
+            # that work instead of throwing it away. The agent is then free
+            # to resume from that partial state in a future run.
             total_s = time.time() - session_start
             final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
+            structural_progress = False
 
-            # Restore best state if worse
-            if tactic_tools.best_content and tactic_tools.best_sorry_count < final_sorry:
-                print(f"  Restoring best ({tactic_tools.best_sorry_count} sorry vs {final_sorry})")
-                Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
-                final_sorry = tactic_tools.best_sorry_count
+            best_content = getattr(tactic_tools, "best_content", None)
+            best_sorry = getattr(tactic_tools, "best_sorry_count",
+                                 original_sorry_count)
+            last_ok_content = getattr(tactic_tools, "_last_build_ok_content", None)
+            last_ok_sorry = getattr(tactic_tools, "_last_build_ok_sorry_count", None)
 
-            # Always restore original if no improvement — prevent file corruption
-            if final_sorry >= original_sorry_count and not proof_found:
-                print(f"  Restoring original (no improvement: {final_sorry} >= {original_sorry_count})")
-                Path(filepath).write_text(original_content, encoding="utf-8")
-                final_sorry = original_sorry_count
+            if best_content and best_sorry < final_sorry:
+                print(f"  Restoring best ({best_sorry} sorry vs {final_sorry})")
+                Path(filepath).write_text(best_content, encoding="utf-8")
+                final_sorry = best_sorry
 
-        success = proof_found or final_sorry == 0 or final_sorry < original_sorry_count
+            if (final_sorry >= original_sorry_count and not proof_found):
+                if last_ok_content and last_ok_content != original_content:
+                    print(
+                        f"  Keeping last build-passing snapshot "
+                        f"({last_ok_sorry} sorry, decomposition progress preserved)"
+                    )
+                    Path(filepath).write_text(last_ok_content, encoding="utf-8")
+                    final_sorry = last_ok_sorry if last_ok_sorry is not None else final_sorry
+                    structural_progress = True
+                else:
+                    print(
+                        f"  Restoring original (no build-ok edits: "
+                        f"{final_sorry} >= {original_sorry_count})"
+                    )
+                    Path(filepath).write_text(original_content, encoding="utf-8")
+                    final_sorry = original_sorry_count
+
+        # Success now also covers structural progress: file changed but
+        # compiles, even if sorry count didn't decrease. Provers.py used to
+        # treat that as a failure and restore original, which threw away the
+        # decomposition the agent had just done.
+        success = (
+            proof_found
+            or final_sorry == 0
+            or final_sorry < original_sorry_count
+            or structural_progress
+        )
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
         # Persist outcome to cross-session history (best-effort)

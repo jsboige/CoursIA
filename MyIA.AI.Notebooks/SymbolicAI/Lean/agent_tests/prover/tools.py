@@ -334,6 +334,22 @@ class TacticTools:
         self._original_sorry_count: int = 999
         self._original_file_size: int = 0
         self._original_content: Optional[str] = None
+        # Decomposition budget: how many new sorries the agents may introduce
+        # via `have h : sub := by sorry; ...` scaffolding. Replacing one big
+        # sorry by two smaller sub-sorries that both compile is structural
+        # progress, not a regression — the agent can then attack the smaller
+        # sorries in subsequent iterations or future sessions. 5 is a generous
+        # ceiling (deeper trees rarely help; explosive growth signals a runaway
+        # agent rather than a real strategy). Lifted from a hard cap of 0
+        # which made decomposition impossible (2026-05-11 user feedback).
+        self._decomposition_budget: int = 5
+        # Last file content that survived a `lake build`. May have MORE sorries
+        # than the original (decomposition) but compiles. Used at end-of-session
+        # to commit partial structural progress instead of restoring original
+        # ("all-or-nothing" was the prior bug: sorry==original triggered restore
+        # even when the file structurally improved).
+        self._last_build_ok_content: Optional[str] = None
+        self._last_build_ok_sorry_count: Optional[int] = None
         self._lock_file = Path(filepath).with_suffix(".prover.lock") if filepath else None
         self._session_id = str(uuid.uuid4())[:8]
         self._context_boundary = 20  # max lines from sorry for edits (generous: line shifts after edits)
@@ -722,20 +738,34 @@ class TacticTools:
 
             sorry_count = new_file_content.count("sorry")
 
-            # Sorry guard: block if net sorry increase beyond original
-            if sorry_count > self._original_sorry_count:
+            # Sorry guard: block only if growth EXCEEDS the decomposition
+            # budget. Replacing 1 sorry by N sub-sorries that all compile is
+            # structural progress (the agent breaks down a hard goal). Block
+            # only the runaway case (>budget) which signals the agent is
+            # spraying sorries instead of decomposing intentionally.
+            ceiling = self._original_sorry_count + self._decomposition_budget
+            if sorry_count > ceiling:
                 if self._trace:
                     self._trace.log(
                         agent="TacticTools", role="sorry_guard",
-                        content=f"BLOCKED file_replace_lines: {sorry_count} > original {self._original_sorry_count}. REVERTING.",
+                        content=f"BLOCKED file_replace_lines: {sorry_count} > ceiling {ceiling} (orig={self._original_sorry_count}+budget={self._decomposition_budget}). REVERTING.",
                         duration_s=0.01,
                     )
                 return json.dumps({
-                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > original {self._original_sorry_count}. "
-                             f"Do NOT introduce new sorry in replacements.",
+                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > ceiling {ceiling}. "
+                             f"You have a {self._decomposition_budget}-sorry decomposition budget on top of the {self._original_sorry_count} originals; you've exhausted it. "
+                             f"Discharge some of the sub-sorries before adding more, or rewrite the replacement to be flatter.",
                     "replaced_lines": f"{start}-{end}",
                     "sorry_count": sorry_count,
+                    "ceiling": ceiling,
                 }, ensure_ascii=False)
+            if sorry_count > self._original_sorry_count and self._trace:
+                # Visible signal in the trace that decomposition is happening.
+                self._trace.log(
+                    agent="TacticTools", role="decomposition_progress",
+                    content=f"sorries grew {self._original_sorry_count}->{sorry_count} (within budget {self._decomposition_budget}); accepting if build passes",
+                    duration_s=0.0,
+                )
 
             Path(self._filepath).write_text(new_file_content, encoding="utf-8")
 
@@ -745,6 +775,12 @@ class TacticTools:
                 if build_err is not None:
                     build_err["replaced_lines"] = f"{start}-{end}"
                     return json.dumps(build_err, ensure_ascii=False)
+
+            # Track last build-passing snapshot regardless of sorry-count delta.
+            # Decomposition (sorry grows but compiles) is structural progress
+            # that provers.py should commit even if best_sorry_count didn't drop.
+            self._last_build_ok_content = new_file_content
+            self._last_build_ok_sorry_count = sorry_count
 
             if sorry_count < self._best_sorry_count:
                 self._best_sorry_count = sorry_count
@@ -827,21 +863,31 @@ class TacticTools:
 
             sorry_count = new_content.count("sorry")
 
-            # Sorry guard: block if net sorry increase beyond original (regression)
-            if sorry_count > self._original_sorry_count:
+            # Sorry guard: same semantics as file_replace_lines. Allow up to
+            # `_decomposition_budget` extra sorries on top of the original
+            # count (decomposition into sub-goals is structural progress).
+            ceiling = self._original_sorry_count + self._decomposition_budget
+            if sorry_count > ceiling:
                 if self._trace:
                     self._trace.log(
                         agent="TacticTools", role="sorry_guard",
-                        content=f"BLOCKED: {sorry_count} sorry > original {self._original_sorry_count}. "
-                                f"Replacement introduces new sorry. REVERTING.",
+                        content=f"BLOCKED file_replace_sorry: {sorry_count} > ceiling {ceiling} (orig={self._original_sorry_count}+budget={self._decomposition_budget}). REVERTING.",
                         duration_s=0.01,
                     )
                 return json.dumps({
-                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > original {self._original_sorry_count}. "
-                             f"Your replacement introduces NEW sorry. Write the tactic WITHOUT sorry.",
+                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > ceiling {ceiling}. "
+                             f"You have a {self._decomposition_budget}-sorry decomposition budget on top of the {self._original_sorry_count} originals; you've exhausted it. "
+                             f"Discharge some sub-sorries before adding more.",
                     "replaced": old_line.strip(),
                     "sorry_count": sorry_count,
+                    "ceiling": ceiling,
                 }, ensure_ascii=False)
+            if sorry_count > self._original_sorry_count and self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="decomposition_progress",
+                    content=f"sorries grew {self._original_sorry_count}->{sorry_count} (within budget {self._decomposition_budget}); accepting if build passes",
+                    duration_s=0.0,
+                )
 
             # Save pre-edit content for rollback
             pre_edit_content = content
@@ -853,6 +899,10 @@ class TacticTools:
                 if build_err is not None:
                     build_err["replaced"] = old_line.strip()
                     return json.dumps(build_err, ensure_ascii=False)
+
+            # See file_replace_lines for rationale on _last_build_ok_*.
+            self._last_build_ok_content = new_content
+            self._last_build_ok_sorry_count = sorry_count
 
             if sorry_count < self._best_sorry_count:
                 self._best_sorry_count = sorry_count
