@@ -27,7 +27,8 @@ Lasso regression stop-loss volatility prediction. Predicts next-day realized vol
 ## Files
 
 - main.py - Strategy (v1.0, ML vol-adjusted stops)
-- research.ipynb - Volatility feature engineering
+- research.ipynb - LASSO stop-loss research: rolling vol features (30/60/90d), weekly low return prediction, fixed vs ML stop-loss comparison, drawdown recovery analysis, sensitivity (2-14%)
+
 ## References
 
-- Hands-On AI Trading, Section 06, Example 08
+- Hands-On AI Trading, Section 06, Example 08

@@ -26,7 +26,8 @@ Ridge regression inverse volatility ranking on 12 futures contracts. Predicts ne
 ## Files
 
 - main.py - Strategy (v1.0, inverse vol futures)
-- research.ipynb - Volatility prediction features
+- research.ipynb - Ridge regression research: 12 futures (indices/energy/grains), vol features (60/90/180d), inverse-vol allocation vs equal-weight, lookback sensitivity analysis
+
 ## References
 
-- Hands-On AI Trading, Section 06, Example 11
+- Hands-On AI Trading, Section 06, Example 11
