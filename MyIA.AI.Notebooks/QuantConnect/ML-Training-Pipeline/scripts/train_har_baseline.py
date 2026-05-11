@@ -39,9 +39,14 @@ from realized_variance import (
     daily_squared_returns,
     realized_variance_to_log,
 )
+from dm_test import dm_verdict
 
 
-def _load_panel(skip_remote: bool, sol_ticker: str = "SOL-USD") -> dict[str, pd.Series]:
+def _load_panel(
+    skip_remote: bool,
+    sol_ticker: str = "SOL-USD",
+    extra_coins: list[str] | None = None,
+) -> dict[str, pd.Series]:
     out: dict[str, pd.Series] = {}
     print("[load] BTC Bitstamp 1h ...")
     btc = load_bitstamp_btc()
@@ -54,14 +59,15 @@ def _load_panel(skip_remote: bool, sol_ticker: str = "SOL-USD") -> dict[str, pd.
     print(f"  ETH hourly returns: {len(out['ETH-USD'])} obs, "
           f"{out['ETH-USD'].index.min()} → {out['ETH-USD'].index.max()}")
     if not skip_remote:
-        try:
-            print(f"[load] {sol_ticker} yfinance 1h (730d) ...")
-            sol = load_yf_intraday(sol_ticker)
-            out[sol_ticker] = hourly_log_returns(sol)
-            print(f"  {sol_ticker} hourly returns: {len(out[sol_ticker])} obs, "
-                  f"{out[sol_ticker].index.min()} → {out[sol_ticker].index.max()}")
-        except Exception as exc:
-            print(f"[WARN] {sol_ticker} fetch skipped ({exc.__class__.__name__}: {exc})")
+        for ticker in [sol_ticker] + (extra_coins or []):
+            try:
+                print(f"[load] {ticker} yfinance 1h (730d) ...")
+                ds = load_yf_intraday(ticker)
+                out[ticker] = hourly_log_returns(ds)
+                print(f"  {ticker} hourly returns: {len(out[ticker])} obs, "
+                      f"{out[ticker].index.min()} → {out[ticker].index.max()}")
+            except Exception as exc:
+                print(f"[WARN] {ticker} fetch skipped ({exc.__class__.__name__}: {exc})")
     return out
 
 
@@ -81,6 +87,9 @@ def _eval_one(
     har_out = walk_forward_har(rv, horizon=horizon, n_splits=n_splits, refit_every=refit_every)
     har_mse = har_out["aggregate_mse_logrv"]
     print(f"  HAR             MSE(log-RV) = {har_mse:.5f}  (n_preds={har_out['n_total_preds']})")
+    har_forecasts = har_out["forecasts"]
+    har_targets = har_out["targets"]
+    har_errors = (har_forecasts - har_targets).dropna().values
     daily_close_rets = (
         hourly_rets.groupby(hourly_rets.index.normalize()).sum().rename("r_daily")
     )
@@ -108,12 +117,14 @@ def _eval_one(
             rv, horizon=horizon, train_size=train_size, refit_every=refit_every,
         )
         naive_aligned = naive.reindex(har_out["targets"].index).dropna()
-        targets = har_out["targets"].reindex(naive_aligned.index)
+        targets_naive = har_out["targets"].reindex(naive_aligned.index)
         naive_log = np.log(naive_aligned.clip(lower=1e-12))
-        naive_mse = float(np.mean((naive_log.values - targets.values) ** 2))
+        naive_mse = float(np.mean((naive_log.values - targets_naive.values) ** 2))
         print(f"  Naive trail-30d MSE(log-RV) = {naive_mse:.5f}  (n_preds={len(naive_aligned)})")
+        naive_errors = (naive_log - targets_naive).dropna().values
     except Exception as exc:
         naive_mse = float("nan")
+        naive_errors = None
         print(f"  Naive trail-30d FAILED: {exc.__class__.__name__}: {exc}")
     r2_daily = daily_squared_returns(hourly_rets)
     r2_aligned = r2_daily.reindex(har_out["targets"].index).dropna()
@@ -124,6 +135,19 @@ def _eval_one(
         print(f"  r²-daily target MSE(log-RV) = {r2_mse:.5f}  (degenerate sanity check)")
     else:
         r2_mse = float("nan")
+    dm_har_vs_naive = {}
+    if naive_errors is not None and len(har_errors) >= 10 and len(naive_errors) >= 10:
+        min_len = min(len(har_errors), len(naive_errors))
+        try:
+            dm = dm_verdict(har_errors[:min_len], naive_errors[:min_len], horizon=horizon)
+            dm_har_vs_naive = {
+                "dm_stat": dm["dm_statistic"],
+                "dm_pvalue": dm["p_value"],
+                "dm_verdict": dm["verdict"],
+            }
+            print(f"  DM(HAR vs Naive) stat={dm['dm_statistic']:.3f} p={dm['p_value']:.4f} → {dm['verdict']}")
+        except Exception as exc:
+            print(f"  DM(HAR vs Naive) FAILED: {exc}")
     return {
         "coin": coin,
         "horizon": horizon,
@@ -133,6 +157,7 @@ def _eval_one(
         "garch_rolling_mse_logrv": float(garch_mse),
         "naive_30d_mse_logrv": float(naive_mse),
         "r2_daily_mse_logrv": float(r2_mse),
+        **dm_har_vs_naive,
     }
 
 
@@ -143,11 +168,13 @@ def main() -> None:
     parser.add_argument("--train-size", type=int, default=250)
     parser.add_argument("--refit-every", type=int, default=22)
     parser.add_argument("--skip-remote", action="store_true")
+    parser.add_argument("--extra-coins", type=str, nargs="*", default=None,
+                        help="Additional yfinance tickers (e.g. LTC-USD XRP-USD)")
     parser.add_argument("--out-json", type=str, default="results/m2_har_baseline.json")
     args = parser.parse_args()
 
     t0 = time.time()
-    panel = _load_panel(args.skip_remote)
+    panel = _load_panel(args.skip_remote, extra_coins=args.extra_coins)
     rows: list[dict] = []
     for coin, rets in panel.items():
         for h in args.horizons:
