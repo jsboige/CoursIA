@@ -513,9 +513,24 @@ git diff <base>..<pr-branch> -- '*.ipynb' | grep -E "^[-+].*Solution|^[-+].*pass
 
 Cf [.claude/rules/anti-regression.md](.claude/rules/anti-regression.md) pour les patterns red-flag complets.
 
-### Productivite pendant les operations longues
+### Productivite pendant les operations longues — REGLE HARD (2026-05-11)
 
-Quand un processus long tourne (training GPU, backtest QC, build Lean, docker pull) : **ne pas attendre passivement**. Utiliser le temps pour du travail parallele : preparation de PRs, mise a jour de documentation, review de code, commits de fichiers deja prets. Poser un monitor sur le processus et travailler sur autre chose en parallele. L'inaction pendant un training de 40 minutes est un gaspillage de temps agent.
+Quand un processus long tourne (training GPU, backtest QC, build Lean, docker pull, **prover BG iter**, papermill batch, multi-seed run) : **ne pas attendre passivement**.
+
+**Regle stricte (HARD)** :
+1. Lancer le BG, noter son ID + nature attendue
+2. **Immediatement continuer** avec autre travail : autres tracks dispatchees, audits paralleles, preparation PR suivante, review code, planification iter suivante, MAJ docs
+3. Check le BG uniquement a intervalles utiles (5-10 min) via `tail -50 output | grep -E "FINAL|RESULT|ERROR"` ou monitor cible. **Jamais event-par-event reactif**
+4. **Minimum 2 tracks en flight** a tout moment pour chaque agent (1 BG + 1 CPU/IO local). Si un agent n'a qu'un BG, il demande immediatement une 2e track au coordinateur via `[ASK] capacity` dashboard
+
+**Anti-patterns interdits** :
+- "Monitor event arrived, je reponds 'j'attends'" — non, je travaille sur autre chose en parallele
+- "Le BG va prendre 30 min, je fais une pause" — non, j'ai 30 min de travail parallele disponible
+- Dispatcher 1 seule track BG a un agent + dire "reviens quand fini" — non, **2 tracks minimum** (1 BG + 1 CPU)
+
+**Pourquoi** : un BG de 30-60 min consomme 30-60 events monitor si l'agent reste reactif, sans rien produire en parallele. Le BG tourne meme sans surveillance. Coordinateur = chef d'orchestre, pas spectateur.
+
+Incident 2026-05-11 ai-01 (Lean prover iter 6 BG) : ~35 events monitor consommes a regarder BUILD-FAIL repetes, zero autre track avancee pendant ce temps. User signal explicite "fais en sorte que les autres agents trainers ou prouveurs fassent pareil".
 
 ### Execution Quantbooks (regle user 29/04)
 
