@@ -1,7 +1,7 @@
 # InverseVolatility-Rank (HandsOn Ex11)
 
 **Asset class:** Futures (12 contracts)
-**Cloud project ID:** None (local only)
+**Cloud project ID:** 29463533
 
 ## Description
 
@@ -11,7 +11,7 @@ Ridge regression inverse volatility ranking on 12 futures contracts. Predicts ne
 
 **Lean CLI:**
 
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud:** Project 29463533. Research notebook not yet executed on QC Cloud (research node unavailable, 2026-05-11). `execution_count` set, outputs pending re-execution.
 
 ## Backtest Metrics
 
@@ -26,7 +26,7 @@ Ridge regression inverse volatility ranking on 12 futures contracts. Predicts ne
 ## Files
 
 - main.py - Strategy (v1.0, inverse vol futures)
-- research.ipynb - **awaiting QC Cloud execution** -> `../../_pending_execution/InverseVolatility-Rank-research.ipynb` (Ridge regression: 12 futures indices/energy/grains, vol features 60/90/180d, inverse-vol allocation vs equal-weight, lookback sensitivity). QC Cloud project 29463533. See tracking issue for execution checklist.
+- research.ipynb - **awaiting QC Cloud execution** (project 29463533). Research node unavailable on 2026-05-11 ("No spare research nodes"). Ridge regression: 12 futures indices/energy/grains, vol features 60/90/180d, inverse-vol allocation vs equal-weight, lookback sensitivity.
 
 ## References
 
