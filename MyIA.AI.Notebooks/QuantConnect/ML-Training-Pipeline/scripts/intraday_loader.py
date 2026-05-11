@@ -111,21 +111,47 @@ def load_yf_intraday(
     return IntradayDataset(ticker, df, source="yfinance")
 
 
+def load_yf_coins(
+    tickers: list[str],
+    interval: str = "1h",
+    period: str = "730d",
+) -> dict[str, IntradayDataset]:
+    """Load multiple coins from yfinance, skipping failures gracefully."""
+    out: dict[str, IntradayDataset] = {}
+    for ticker in tickers:
+        try:
+            out[ticker] = load_yf_intraday(ticker, interval=interval, period=period)
+        except Exception as exc:
+            print(f"[WARN] {ticker} yfinance fetch failed ({exc.__class__.__name__}: {exc})")
+    return out
+
+
 def load_default_universe(
     bitstamp_path: Path | str | None = None,
     binance_path: Path | str | None = None,
     sol_ticker: str = "SOL-USD",
+    extra_coins: list[str] | None = None,
     skip_remote: bool = False,
 ) -> dict[str, IntradayDataset]:
-    """Load BTC + ETH from local + SOL from yfinance (skipped if `skip_remote`)."""
+    """Load BTC + ETH from local + SOL from yfinance + optional extra coins.
+
+    Parameters
+    ----------
+    extra_coins : list[str] | None
+        Additional yfinance tickers to load (e.g. ["LTC-USD", "XRP-USD"]).
+    """
     out: dict[str, IntradayDataset] = {}
     out["BTC-USD"] = load_bitstamp_btc(bitstamp_path)
     out["ETH-USD"] = load_binance_eth(binance_path)
     if not skip_remote:
-        try:
-            out[sol_ticker] = load_yf_intraday(sol_ticker)
-        except Exception as exc:
-            print(f"[WARN] SOL fetch failed ({exc}); continuing with BTC + ETH only")
+        remote_tickers = [sol_ticker]
+        if extra_coins:
+            remote_tickers.extend(extra_coins)
+        for ticker in remote_tickers:
+            try:
+                out[ticker] = load_yf_intraday(ticker)
+            except Exception as exc:
+                print(f"[WARN] {ticker} fetch failed ({exc}); continuing without it")
     return out
 
 
