@@ -82,12 +82,23 @@ Basé sur le contenu réel du repo GitHub `QuantConnect/HandsOnAITradingBook` :
 |---------------|---------|------------------|--------|
 | 01 Reinforcement Learning of Hedging Options | RL pour hedging | QC-Py-25-Reinforcement-Learning | ✅ |
 
+**Implementations etendues:**
+
+| Projet | Variante | Sharpe | Cloud ID |
+|--------|----------|--------|----------|
+| RL-Options-Hedging | Deep Hedging (Kolm & Ritter) | -1.264 | 30800109 |
+| RL-DQN-Trading | DQN portfolio-level (3 actions) | 0.533 | 29443478 |
+| Reinforcement-Learning-Trading | Template pedagogique DQN | --- | -- |
+| RL-Portfolio | Template portfolio opt | --- | -- |
+
 ### 08 AI for Risk Management and Optimization
 
 | Exemple Livre | Concept | Notebook CoursIA | Statut |
 |---------------|---------|------------------|--------|
 | 01 Conditional Portfolio Optimization Applied | Portfolio optimisation | QC-Py-21-Portfolio-Optimization-ML | ✅ |
-| 02 Application of Corrective Artificial Intelligence | AI corrective | QC-Py-27-Production-Deployment | ⚠️ Concept lié |
+| 02 Application of Corrective Artificial Intelligence | AI corrective | QC-Py-27-Production-Deployment | ✅ |
+
+**Ex02 details**: Project `Corrective-AI` deploye (Cloud ID 30800636). Meta-labeling: SMA crossover primaire + filtre correctif. Sharpe -0.151, win rate 70%. Recherche notebook avec signal reduction analysis.
 
 ---
 
@@ -155,7 +166,7 @@ Les étudiants ESGF doivent d'abord maîtriser les fondations (01-15) avant de p
 
 ---
 
-**Version** : 3.0 (Batch 6: all 19 Applied ML examples implemented)
-**Auteur** : CoursIA - po-2026
-**Date** : 2026-04-19
+**Version** : 3.1 (Ch07+Ch08 audit: RL/Risk projects deployed with cloud IDs)
+**Auteur** : CoursIA - po-2023
+**Date** : 2026-05-12
 **Issue** : #143

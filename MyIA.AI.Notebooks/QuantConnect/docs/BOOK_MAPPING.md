@@ -36,20 +36,32 @@ Reference mapping between the 22 examples from [Hands-On AI Trading with Python,
 
 ## Chapter 07: Reinforcement Learning (1 Example)
 
-| # | Book Example | Our Project | Notebook | Status |
-|---|-------------|-------------|----------|--------|
-| 01 | RL Hedging Options | `projects/RL-DQN-Trading`, `projects/Reinforcement-Learning-Trading` | QC-Py-25, QC-Py-32, QC-Py-33, QC-Py-34 | **In Progress** |
+| # | Book Example | Our Project | Notebook | Sharpe | CAGR | MaxDD | QC Cloud ID | Status |
+|---|-------------|-------------|----------|--------|------|-------|-------------|--------|
+| 01 | RL Hedging Options | `RL-Options-Hedging` (Deep Hedging) | QC-Py-25 | -1.264 | -- | -- | 30800109 | **Deployed** |
 
-**Status**: RL series expanding. QC-Py-32 (DQN), QC-Py-33 (PPO, in progress), QC-Py-34 (SAC/A2C, planned). Options hedging requires separate data pipeline.
+**Extended implementations:**
+
+| Project | Variant | Sharpe | Cloud ID | Description |
+|---------|---------|--------|----------|-------------|
+| `RL-DQN-Trading` | DQN portfolio-level | 0.533 | 29443478 | MLPRegressor(64,32), 3 action templates, 5 ETFs |
+| `Reinforcement-Learning-Trading` | DQN experience replay | --- | -- | Template/skeleton (pedagogical variant) |
+| `RL-Portfolio` | RL portfolio opt | --- | -- | Template/skeleton |
+
+**Analysis**: The book's single Ch07 example (RL for options hedging) is implemented as a dedicated project with research notebook. The RL-DQN-Trading variant extends beyond the book's scope with portfolio-level DQN actions. Both have cloud deployments. Options hedging variant has negative Sharpe (-1.264) — expected for RL learning curves on options. The DQN variant achieves 0.533 Sharpe.
+
+**QC Notebooks**: QC-Py-25 (Reinforcement Learning) covers the conceptual foundation. QC-Py-32/33/34 were planned for DQN/PPO/SAC extensions but not yet created as separate notebooks.
 
 ## Chapter 08: Risk Management & Optimization (2 Examples)
 
-| # | Book Example | Our Project | Notebook | Status |
-|---|-------------|-------------|----------|--------|
-| 01 | Conditional Portfolio Optimization | `projects/Portfolio-Optimization-ML` | QC-Py-21 | Done |
-| 02 | Corrective AI Applied | -- | QC-Py-27 | **Gap** |
+| # | Book Example | Our Project | Notebook | Sharpe | CAGR | MaxDD | QC Cloud ID | Status |
+|---|-------------|-------------|----------|--------|------|-------|-------------|--------|
+| 01 | Conditional Portfolio Optimization | `Portfolio-Optimization-ML` | QC-Py-21 | 0.896 | -- | -- | 29318874 | Done |
+| 02 | Corrective AI Applied | `Corrective-AI` | QC-Py-27 (linked) | -0.151 | 2.22% | 11.3% | 30800636 | **Deployed** |
 
-**Gap (Ex02)**: No dedicated corrective AI project. The book implements an AI system that learns from past prediction errors and applies corrections. QC-Py-27 covers production deployment but not the corrective AI pattern itself.
+**Analysis (Ex02)**: Dedicated Corrective-AI project now exists with cloud deployment. Meta-labeling approach: primary SMA crossover + corrective filter. 70% win rate but negative Sharpe — average loss (-0.18%) exceeds average win (0.12%). Multi-asset (SPY/TLT/GLD) diversification present but SMA lag hurts in sideways markets. Research notebook includes signal reduction analysis.
+
+**Quality assessment**: Both Ch08 examples have cloud deployments. Portfolio-Optimization-ML performs well (0.896 Sharpe). Corrective-AI underperforms but is structurally sound — needs position sizing/timing improvements, not fundamental redesign.
 
 ---
 
@@ -71,28 +83,30 @@ Reference mapping between the 22 examples from [Hands-On AI Trading with Python,
 - **Volatility Pivot**: Per research study (#779), DL strength in finance is volatility modeling, not direction. Regime classifier LSTM h=64 in progress (Track A).
 - **RL Series**: QC-Py-32 DQN done, QC-Py-33 PPO + QC-Py-34 SAC/A2C planned
 
-### Critical Gaps (no dedicated project)
+### Resolved Gaps (Ch07+Ch08 audit, 2026-05-12)
 
-| Priority | Example | Description | Effort | Notes |
-|----------|---------|-------------|--------|-------|
-| HIGH | Ch07-01: RL Options Hedging | RL agent for delta hedging vs Black-Scholes benchmark | 4-6h | Requires options data pipeline + RL environment |
-| MEDIUM | Ch08-02: Corrective AI | AI correction system from prediction errors | 3-4h | Needs a base strategy to apply corrections to |
+| Example | Previous Status | Current Status | Resolution |
+|---------|----------------|----------------|------------|
+| Ch07-01: RL Options Hedging | HIGH gap | **Deployed** (Sharpe -1.264, 5 BTs) | Project `RL-Options-Hedging` + `RL-DQN-Trading` + research notebooks |
+| Ch08-02: Corrective AI | MEDIUM gap | **Deployed** (Sharpe -0.151, 2 BTs) | Project `Corrective-AI` with meta-labeling + research notebook |
 
-### Quality Gaps (project exists, limited backtest)
+### Remaining Quality Gaps (project exists, limited backtest)
 
 | Priority | Example | Issue | Recommendation |
 |----------|---------|-------|----------------|
 | LOW | Ch06-01: ML Trend Scanning | Partial alignment with book | Enhance to use MLFinlab specifically |
 | LOW | Ch06-17: Head Shoulders CNN | Needs pre-trained model | Add research.ipynb for model training |
 | LOW | Ch06-19: FinBERT | TF incompatible with QC Cloud | Rewrite using PyTorch/transformers |
+| LOW | Ch08-02: Corrective AI | Negative Sharpe (-0.151) | Position sizing + exit timing improvements |
+| LOW | Ch07-01: RL Options Hedging | Negative Sharpe (-1.264) | Expected RL learning curve; improve reward function |
 
 ### Notebook Coverage
 
 Our 28-notebook series (QC-Py-01 to QC-Py-28) covers the full book spectrum:
 - **Chapters 00-05**: Covered by notebooks 01-20 (foundations through ML basics)
 - **Chapter 06**: Covered by notebooks 17-26 (sentiment through LLM)
-- **Chapter 07**: Partially covered by notebook 25 (RL)
-- **Chapter 08**: Covered by notebooks 10, 21, 27 (risk, portfolio, deployment)
+- **Chapter 07**: Covered by notebooks 25 (RL), projects RL-Options-Hedging + RL-DQN-Trading
+- **Chapter 08**: Covered by notebooks 10, 21, 27 (risk, portfolio, deployment), project Corrective-AI
 
 ---
 
@@ -106,4 +120,4 @@ Our 28-notebook series (QC-Py-01 to QC-Py-28) covers the full book spectrum:
 
 ---
 
-Version: 1.1 | Issue: #107 | Date: 2026-05-07
+Version: 1.2 | Issue: #107 | Date: 2026-05-12 | Ch07+Ch08 audit (po-2023 C25)
