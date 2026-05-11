@@ -721,6 +721,38 @@ class TacticTools:
             old_text = "\n".join(old_lines)
 
             new_lines = new_content.split("\n")
+
+            # Comment preservation guard (Cycle 25 ai-01 trace fix):
+            # Detect protected comment markers in old_lines that the agent would
+            # silently strip. Markers indicate human-curated explanations that
+            # must survive proof-block rewrites. If found AND absent from new_content,
+            # prepend them to the replacement to preserve the documentation.
+            _PROTECTED_MARKERS = (
+                "PROOF STRATEGY", "TODO:", "FIXME:", "NOTE:",
+                "KEY LEMMAS", "KEY MATHLIB", "STRATEGY:",
+                "RECOMMENDED SUB-LEMMAS", "CRITICAL ERROR", "CRITICAL RULES",
+            )
+            protected = []
+            for line in old_lines:
+                stripped = line.strip()
+                if not stripped.startswith("--"):
+                    continue
+                for marker in _PROTECTED_MARKERS:
+                    if marker in stripped:
+                        protected.append(line)
+                        break
+            if protected:
+                preserved = [p for p in protected if p.strip() not in new_content]
+                if preserved:
+                    new_lines = preserved + new_lines
+                    if self._trace:
+                        self._trace.log(
+                            agent="TacticTools", role="comment_preservation",
+                            content=f"file_replace_lines: preserved {len(preserved)} protected comment lines "
+                                    f"(markers: PROOF STRATEGY/TODO/FIXME/KEY LEMMAS/...) that the replacement would have stripped",
+                            duration_s=0.0,
+                        )
+
             lines[start - 1:end if end <= len(lines) else len(lines)] = new_lines
             new_file_content = "\n".join(lines)
 
