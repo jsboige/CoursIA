@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 97
-breakdown: Python=48, projects=48, ML-Training-Pipeline=1
-maturity: DRAFT=67, PRODUCTION=14, ALPHA=13, BETA=3
+pedagogical_count: 98
+breakdown: projects=49, Python=48, ML-Training-Pipeline=1
+maturity: DRAFT=67, PRODUCTION=14, ALPHA=13, BETA=4
 -->
 
 > **Trading algorithmique + Intelligence Artificielle**
