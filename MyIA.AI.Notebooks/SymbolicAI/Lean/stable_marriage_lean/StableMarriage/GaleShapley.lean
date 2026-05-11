@@ -21,11 +21,12 @@
   Reference port: https://github.com/mmaaz-git/stable-marriage-lean
 -/
 
+import Mathlib.Data.Finset.Basic
 import StableMarriage.Definitions
 
 namespace StableMarriage
 
-open Finset Function
+open Function
 
 variable {n : Nat} [NeZero n]
 

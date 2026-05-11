@@ -10,6 +10,8 @@
   A matching is stable iff no blocking pair exists.
 -/
 
+import Mathlib.Data.Finset.Basic
+
 namespace StableMarriage
 
 open Finset Function
@@ -83,7 +85,7 @@ namespace Matching
 variable {n : Nat} [NeZero n] (μ : Matching n)
 
 /-- Get the inverse: which man is matched to woman w -/
-def inverse (w : Fin n) : Fin n :=
+noncomputable def inverse (w : Fin n) : Fin n :=
   (Equiv.ofBijective μ.spouse μ.bijective).symm w
 
 end Matching
