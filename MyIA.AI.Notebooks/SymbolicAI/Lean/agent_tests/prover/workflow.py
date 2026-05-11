@@ -60,6 +60,10 @@ class ProofMessage:
     next_agent: str = "coordinator"  # B.3: coordinator runs first to set attack plan
     max_iterations: int = 10
     plan: Optional[list] = None  # attack plan from CoordinatorAgent
+    # F5 (2026-05-11): set when Coordinator calls mark_sorry_intractable.
+    # AgentExecutor yields immediately when this is true.
+    intractable: bool = False
+    intractable_reason: Optional[str] = None
 
 
 class AgentExecutor(Executor):
@@ -177,6 +181,24 @@ class AgentExecutor(Executor):
             if self._state.plan:
                 msg.plan = list(self._state.plan)
 
+        # F5: Coordinator can mark the current sorry intractable. End the
+        # session cleanly so we don't waste iterations on a known-dead goal.
+        if (self._state and getattr(self._state, "intractable", False)
+                and not msg.intractable):
+            msg.intractable = True
+            msg.intractable_reason = getattr(
+                self._state, "intractable_reason", None
+            )
+            msg.content = response_text
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="intractable_propagate",
+                    content=(f"yielding session: "
+                             f"{msg.intractable_reason or '(no reason)'}"),
+                )
+            await ctx.yield_output(msg)
+            return
+
         # Agent output becomes the new content
         msg.content = response_text
 
@@ -244,7 +266,7 @@ class VerifyExecutor(Executor):
 
     def __init__(self, sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, kb: Optional[ProofKnowledgeBase] = None,
-                 **kwargs):
+                 escalation_threshold: int = 3, **kwargs):
         super().__init__(id="verify_executor", **kwargs)
         self._sorry_ctx = sorry_context
         self._imports = imports
@@ -252,6 +274,13 @@ class VerifyExecutor(Executor):
         # B.1 ProofKnowledgeBase: record successful tactics so future sessions
         # can warm-start. Same JSON file that SearchTools reads.
         self._kb = kb or ProofKnowledgeBase()
+        # F1 (2026-05-11): Deterministic Critic escalation. PR #923 attempted
+        # to encode the "after 3 BUILD-FAIL on same line, escalate" rule in the
+        # Critic prompt; iter 5-7 BG runs showed the model still routes back to
+        # TacticAgent on consecutive failures. Encode it here in workflow code
+        # so we don't depend on prompt adherence.
+        self._consecutive_build_fails = 0
+        self._escalation_threshold = escalation_threshold
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -272,6 +301,7 @@ class VerifyExecutor(Executor):
 
         if result["success"]:
             msg.proof_found = True
+            self._consecutive_build_fails = 0
             if self._trace:
                 self._trace.log(
                     agent="VerifyExecutor", role="verify",
@@ -308,10 +338,40 @@ class VerifyExecutor(Executor):
             msg.sorry_count = new_sorry_count
             msg.error = f"Decomposition: {msg.sorry_count} sorry remaining"
             msg.next_agent = "tactic"
+            # Decomposition is progress (new sub-goals to attack), reset.
+            self._consecutive_build_fails = 0
         else:
             msg.error = result.get("errors", "")[:500]
             msg.error_type = result.get("error_type", "unknown")
-            msg.next_agent = "critic"
+            self._consecutive_build_fails += 1
+            if self._consecutive_build_fails >= self._escalation_threshold:
+                # F1: deterministic escalation to Coordinator. Critic prompt
+                # heuristics aren't reliable enough — when the same sorry_line
+                # has failed N times in a row, the attack plan is wrong, not
+                # the local tactic. Reset by sending control back to the
+                # Coordinator with a clear escalation note.
+                msg.next_agent = "coordinator"
+                escalation_note = (
+                    f"[F1 escalation] {self._consecutive_build_fails} "
+                    f"consecutive BUILD-FAIL on sorry_line "
+                    f"{self._sorry_ctx.sorry_line}. Local tactics aren't "
+                    f"converging — revise the attack plan or mark the goal "
+                    f"intractable. Last error: {msg.error}"
+                )
+                msg.error = escalation_note
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="f1_escalation",
+                        content=(f"consecutive_fails="
+                                 f"{self._consecutive_build_fails} >= "
+                                 f"threshold={self._escalation_threshold}, "
+                                 f"forcing route to Coordinator"),
+                    )
+                # Reset so we don't immediately re-escalate on the next fail;
+                # give the Coordinator a fresh window of `threshold` attempts.
+                self._consecutive_build_fails = 0
+            else:
+                msg.next_agent = "critic"
 
         if self._trace:
             self._trace.log(
@@ -363,7 +423,9 @@ class ProofWorkflowBuilder:
         builder.add_edge(self._tactic, self._verify)
 
         # Verify routes via switch-case so the "tactic" backedge and the
-        # default critic path don't collide as duplicate edges either.
+        # default critic path don't collide as duplicate edges either. F1
+        # (2026-05-11) adds the "coordinator" branch so the deterministic
+        # escalation in VerifyExecutor can bypass the Critic entirely.
         builder.add_switch_case_edge_group(
             source=self._verify,
             cases=[
@@ -372,6 +434,10 @@ class ProofWorkflowBuilder:
                         msg.next_agent == "tactic" and not msg.proof_found
                     ),
                     target=self._tactic,
+                ),
+                Case(
+                    condition=lambda msg: msg.next_agent == "coordinator",
+                    target=self._coordinator,
                 ),
                 Default(target=self._critic),
             ],

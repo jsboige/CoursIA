@@ -115,6 +115,11 @@ OUTILS:
 4. set_attack_plan(steps=[...], reason="...") → CRUCIAL : tu DOIS appeler cet outil
    avec une LISTE NON VIDE d'etapes en LANGAGE NATUREL. Pas de tactique Lean ici.
 5. advance_plan() → marque etape suivante quand un sous-but est clos
+6. mark_sorry_intractable(reason="...") → ABANDON EXPLICITE quand le but est hors
+   de portee (Mathlib API introuvable, but mathematiquement faux, decompositions
+   epuisees apres 2-3 plans differents). La session termine proprement et le
+   prouveur passera a un autre sorry au prochain run. PREFERE ABANDON EXPLICITE
+   plutot que de bruler les iterations sur un mur connu.
 
 REGLE D'OR (set_attack_plan):
 - TOUJOURS au moins 2 etapes, formulees en NATUREL ("isoler la conjonction",

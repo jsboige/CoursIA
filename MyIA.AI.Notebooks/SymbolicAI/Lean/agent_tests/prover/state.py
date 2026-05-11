@@ -99,6 +99,12 @@ class ProofState:
     plan: List[str] = field(default_factory=list)
     plan_phase: int = 0  # Current step in the plan
 
+    # F5 (2026-05-11): Coordinator can explicitly abandon a goal so the
+    # session ends cleanly instead of burning max_iterations on an
+    # unprovable sorry. Set via CoordinatorTools.mark_sorry_intractable.
+    intractable: bool = False
+    intractable_reason: Optional[str] = None
+
     # B.8: Checkpoint support — save/restore state between phases
     _checkpoints: Dict[str, dict] = field(default_factory=dict, repr=False)
 

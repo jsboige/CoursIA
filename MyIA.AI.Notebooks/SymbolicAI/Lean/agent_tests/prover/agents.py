@@ -105,6 +105,7 @@ def create_coordinator_agent(tools: CoordinatorTools, provider: str = "zai") -> 
             tools.advance_plan,
             tools.file_read_lines,
             tools.search_mathlib_lemmas,
+            tools.mark_sorry_intractable,
         ],
         name="CoordinatorAgent",
         default_options=_reasoning_options(),

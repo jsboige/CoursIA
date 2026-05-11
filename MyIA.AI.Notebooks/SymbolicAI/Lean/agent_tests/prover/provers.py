@@ -199,6 +199,33 @@ class MultiAgentSorryProver:
         context_msg = self._build_context_message(demo, ctx_data, goal_state,
                                                    original_sorry_count, sorry_line)
 
+        # F4 (2026-05-11): KB warm-start. Surface up to 5 prior successful
+        # proofs whose goal signature overlaps the current goal so the
+        # CoordinatorAgent can incorporate them into the attack plan instead
+        # of re-deriving familiar shapes from scratch.
+        if goal_state:
+            try:
+                similar = kb.search_similar(goal_state, max_results=5)
+                if similar:
+                    lines = ["\nPREUVES SIMILAIRES (KB warm-start, "
+                             f"{len(similar)} resultats):"]
+                    for hit in similar:
+                        rel = hit.get("relevance", 0.0)
+                        tac = (hit.get("tactic") or "")[:160].replace("\n", " ")
+                        f = hit.get("file", "")
+                        lines.append(f"  - [{rel:.2f}] {f} -> {tac}")
+                    context_msg = context_msg + "\n" + "\n".join(lines)
+                    self.trace.log(
+                        agent="ProverSetup", role="kb_warm_start",
+                        content=f"injected {len(similar)} similar entries "
+                                f"(kb_size={kb.size})",
+                    )
+            except Exception as e:
+                self.trace.log(
+                    agent="ProverSetup", role="kb_warm_start_error",
+                    content=f"warm-start lookup failed: {e}",
+                )
+
         initial_msg = ProofMessage(
             content=context_msg,
             sorry_count=original_sorry_count,
