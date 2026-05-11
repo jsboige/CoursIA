@@ -34,6 +34,22 @@ Les notebooks utilisent **JPype** pour integrer Java dans Python, permettant un 
 
 **Duree totale estimee** : ~7 heures
 
+## Quick Start
+
+```bash
+# 1. Installer les packages Python
+pip install jpype1 requests tqdm clingo z3-solver python-sat
+
+# 2. Ouvrir le notebook de setup (auto-telecharge JDK + JARs)
+jupyter notebook Tweety-1-Setup.ipynb
+
+# 3. Executer toutes les cellules, puis passer a Tweety-2
+```
+
+JDK 17 et les 35 JARs TweetyProject sont telecharges automatiquement par le notebook de setup. Aucune installation systeme requise.
+
+---
+
 ## Prerequis
 
 ### Logiciels requis
@@ -46,12 +62,6 @@ Les notebooks utilisent **JPype** pour integrer Java dans Python, permettant un 
 ```bash
 pip install jpype1 requests tqdm clingo z3-solver python-sat
 ```
-
-### Installation rapide
-
-1. Cloner le repository
-2. Ouvrir `Tweety-1-Setup.ipynb`
-3. Executer toutes les cellules (telechargement automatique des JARs et JDK)
 
 ## Architecture
 
@@ -257,6 +267,20 @@ python verify_all_tweety.py --notebook Tweety-2 --analyze-outputs
 La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSION`).
 
 ## Ressources
+
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| Dung, "On the Acceptability of Arguments" (1995) | Notebook 5, semantiques de Dung |
+| Modgil & Prakken, "The ASPIC+ Framework" (2014) | Notebook 6, argumentation structuree |
+| Alchourron, Gardenfors & Makinson, "On the Logic of Theory Change" (1985) | Notebook 4, revision AGM |
+| Enderton, *A Mathematical Introduction to Logic* (2001) | Notebooks 2-3, logiques formelles |
+| Besnard & Hunter, *Elements of Argumentation* (2008) | Notebooks 5-7, theorie argumentation |
+| Brewka, Eiter & Truszczynski, "Answer Set Programming at a Glance" (2011) | Notebook 6, ASP/Clingo |
+| Russell & Norvig, *AIMA* 4e ed., ch. 7-8 | Cadre general logique et SAT |
+
+### Ressources en ligne
 
 - **TweetyProject** : https://tweetyproject.org/
 - **Documentation API** : https://tweetyproject.org/api/

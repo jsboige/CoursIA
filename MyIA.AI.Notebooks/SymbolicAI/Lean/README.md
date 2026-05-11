@@ -66,6 +66,25 @@ Tous les notebooks incluent :
 - Tableaux recapitulatifs en fin de section
 - Exercices avec solutions completes
 
+## Quick Start
+
+```bash
+# 1. Installer elan (gestionnaire Lean)
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+elan default leanprover/lean4:stable
+
+# 2. Verifier l'installation
+lean --version    # Lean 4.x.x
+elan show         # toolchain active
+
+# 3. Ouvrir le premier notebook (WSL requis)
+wsl -d Ubuntu -- bash -c "jupyter notebook Lean-1-Setup.ipynb"
+```
+
+Pour les notebooks 7-10 (LLM), configurer `.env` avec `OPENAI_API_KEY`. Pour le prover daemon, voir section "Prover daemon".
+
+---
+
 ## Prerequisites
 
 - Connaissances de base en logique mathematique
@@ -144,6 +163,19 @@ cp .env.example .env
 - [TorchLean Documentation](https://leandojo.org/torchlean.html)
 - [TorchLean GitHub](https://github.com/lean-dojo/TorchLean)
 - [Papers: IBP, CROWN, LiRPA](https://github.com/lean-dojo/TorchLean#references)
+
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| de Moura & Ullrich, "The Lean 4 Theorem Prover and Programming Language" (2021) | Systeme Lean 4 |
+| The Mathlib Community, "The Mathlib Library" (2020), arXiv:1910.09436 | Mathlib4 |
+| Avigad, "Mathematics and Programming" (2024) — *Mathematics in Lean* | Fondations notebooks 1-5 |
+| Jiang et al., "LeanDojo: Theorem Proving with Retrieval-Augmented Language Models" (NeurIPS 2023) | LeanDojo, notebooks 10 |
+| First et al., "AlphaProof: Formal Math Reasoning" (DeepMind, 2024) | Notebook 7 |
+| Song et al., "Towards Counting Forall: Neural Network Verification via IBP, CROWN, and LiRPA" | TorchLean, notebooks 11 |
+| Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | Cross-series GameTheory |
+| Sen, "Collective Choice and Social Welfare" (1970) | Cross-series GameTheory |
 
 ## Document source
 

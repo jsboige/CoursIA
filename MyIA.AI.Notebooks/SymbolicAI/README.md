@@ -25,6 +25,23 @@ Collection de **90 notebooks Jupyter** pour l'apprentissage de l'IA symbolique :
 
 ---
 
+## Quick Start
+
+**Premier notebook recommande par serie :**
+
+| Serie | Premier notebook | Commande rapide |
+|-------|-----------------|-----------------|
+| **Tweety** | `Tweety/Tweety-1-Setup.ipynb` | Ouvrir dans Jupyter, executer toutes les cellules |
+| **Lean** | `Lean/Lean-1-Setup.ipynb` | `wsl -d Ubuntu -- bash -c "jupyter notebook Lean-1-Setup.ipynb"` |
+| **SemanticWeb** | `SemanticWeb/SW-1-CSharp-Setup.ipynb` (.NET) ou `SW-2b-Python-RDFBasics.ipynb` (Python) | `pip install rdflib pySHACL` |
+| **Planners** | `Planners/00-Environment/Planners-0-Setup.ipynb` | `pip install ortools unified_planning` |
+| **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
+| **Argument Analysis** | `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
+
+**Pour commencer sans rien installer** : les notebooks Python (Tweety, Planners, SemanticWeb Python, SmartContracts) ne necessitent que `pip install jupyter ipykernel` + les packages listes ci-dessus.
+
+---
+
 ## Prerequis par serie
 
 | Serie | Kernel | Environnement special | Packages principaux | API Keys |
@@ -447,21 +464,41 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 
 ## Ressources
 
-### TweetyProject
-- Site officiel : https://tweetyproject.org/
-- GitHub : https://github.com/TweetyProjectTeam/TweetyProject
+### References academiques
 
-### Lean 4
-- Theorem Proving in Lean 4 : https://leanprover.github.io/theorem_proving_in_lean4/
-- Mathlib4 : https://leanprover-community.github.io/mathlib4_docs/
-- LeanDojo : https://leandojo.readthedocs.io/
+| Domaine | Reference | Couverture |
+|---------|-----------|------------|
+| IA Symbolique (general) | Russell & Norvig, *AIMA* 4e ed., ch. 7-12 | Recherche, logique, planification |
+| Theorie des jeux / choix social | Osborne & Rubinstein, *A Course in Game Theory* (1994) | GameTheory, Lean social choice |
+| Logiques formelles | Enderton, *A Mathematical Introduction to Logic* (2001) | Tweety, Lean |
+| Argumentation | Dung, "On the Acceptability of Arguments" (1995) | Tweety-5, Argument Analysis |
+| Argumentation structuree | Modgil & Prakken, "The ASPIC+ Framework" (2014) | Tweety-6 |
+| Revision de croyances | Alchourron, Gardenfors & Makinson, "On the Logic of Theory Change" (1985) | Tweety-4 |
+| Web semantique | Berners-Lee et al., "The Semantic Web", *Scientific American* (2001) | SemanticWeb |
+| RDF/SPARQL | W3C RDF 1.1 Primer, https://www.w3.org/TR/rdf11-primer/ | SemanticWeb |
+| Planification automatique | Ghallab, Nau & Traverso, *Automated Planning: Theory and Practice* (2004) | Planners |
+| Planification PDDL | Helmert, "The Fast Downward Planning System" (2006) | Planners-4 |
+| Lean 4 | de Moura & Ullrich, "The Lean 4 Theorem Prover" (2021) | Lean |
+| Mathlib4 | The Mathlib Community, "The Mathlib Library" (2020) | Lean-6 |
+| Smart contracts | Buterin, "Ethereum White Paper" (2014) | SmartContracts |
+| Verification formelle | Appel, "Verification of a Cryptographic Primitive: SHA-256" (2015) | SC-14 |
+| Zero-knowledge | Ben-Sasson et al., "Scalable Zero Knowledge" (2014) | SC-15 |
 
-### Autres
-- OR-Tools : https://developers.google.com/optimization
-- Z3 : https://github.com/Z3Prover/z3
-- dotNetRDF : https://dotnetrdf.org/
-- Fast Downward : https://www.fast-downward.org/
-- Solidity : https://docs.soliditylang.org/
+### Ressources en ligne
+
+| Ressource | URL |
+|-----------|-----|
+| TweetyProject | https://tweetyproject.org/ |
+| Lean 4 - Theorem Proving | https://leanprover.github.io/theorem_proving_in_lean4/ |
+| Mathlib4 docs | https://leanprover-community.github.io/mathlib4_docs/ |
+| LeanDojo | https://leandojo.readthedocs.io/ |
+| OR-Tools | https://developers.google.com/optimization |
+| Z3 Prover | https://github.com/Z3Prover/z3 |
+| dotNetRDF | https://dotnetrdf.org/ |
+| Fast Downward | https://www.fast-downward.org/ |
+| Solidity docs | https://docs.soliditylang.org/ |
+| W3C RDF 1.1 | https://www.w3.org/TR/rdf11-primer/ |
+| Foundry Book | https://book.getfoundry.sh/ |
 
 ---
 
