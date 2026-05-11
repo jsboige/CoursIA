@@ -122,10 +122,7 @@ class AgentExecutor(Executor):
         )
         try:
             response = await self._agent.run(content)
-            response_text = ""
-            if hasattr(response, 'messages') and response.messages:
-                last = response.messages[-1]
-                response_text = last.text if hasattr(last, 'text') else str(last)
+            response_text = self._extract_response_text(response)
         except Exception as e:
             response_text = f"Agent error: {e}"
             if self._trace:
@@ -190,6 +187,52 @@ class AgentExecutor(Executor):
             )
 
         await ctx.send_message(msg)
+
+    @staticmethod
+    def _extract_response_text(response) -> str:
+        """Extract a useful text payload from an AgentResponse.
+
+        Prior implementation grabbed only `response.messages[-1].text`. Two
+        problems with that:
+          (a) When the final message is a function_call (no text), `last.text`
+              is empty and the burned-budget guard fires even if the agent
+              produced perfectly fine assistant text earlier in the run.
+          (b) When the model emits text + tool_calls in the same turn, the
+              last message is the assistant text — but if the framework appends
+              a result-sentinel message, the actual reasoning is lost.
+
+        Strategy: walk all messages in reverse, collect any non-empty `.text`
+        from text-bearing contents, and concatenate the most recent ones until
+        we have something to send downstream. If nothing surfaces, return ""
+        and let the caller's burned-response guard fire.
+        """
+        if not hasattr(response, 'messages') or not response.messages:
+            return ""
+
+        # First pass: prefer the last assistant text message.
+        for msg in reversed(response.messages):
+            text = getattr(msg, 'text', None)
+            if text and text.strip():
+                return text
+
+        # Second pass: synthesize a summary from function_call payloads so
+        # the downstream agent at least sees what tools were invoked even if
+        # the final assistant text was empty.
+        tool_calls: list[str] = []
+        for msg in response.messages:
+            contents = getattr(msg, 'contents', None) or []
+            for content in contents:
+                ctype = getattr(content, 'type', '')
+                if ctype == 'function_call':
+                    fname = getattr(content, 'name', '?') or '?'
+                    fargs = getattr(content, 'arguments', '') or ''
+                    tool_calls.append(f"  - {fname}({str(fargs)[:120]})")
+
+        if tool_calls:
+            return ("[harness summary] previous agent emitted no final text "
+                    "but invoked these tools:\n" + "\n".join(tool_calls[-5:]))
+
+        return ""
 
 
 class VerifyExecutor(Executor):

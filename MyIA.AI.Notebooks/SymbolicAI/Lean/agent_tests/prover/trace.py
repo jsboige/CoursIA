@@ -93,10 +93,33 @@ class TraceLogger:
             preview = (thinking or "")[:150].replace("\n", " ")
             print(f"  {ts} {agent} [THINKING]: {preview}...", flush=True)
         elif tool_name:
-            print(f"  {ts} {agent} -> {tool_name}({json.dumps(tool_args or {})[:80]}) -> {duration_s:.2f}s", flush=True)
+            args_preview = self._format_tool_args(tool_args, tool_result)
+            print(f"  {ts} {agent} -> {tool_name}({args_preview}) -> {duration_s:.2f}s", flush=True)
         else:
             preview = (content or "")[:120].replace("\n", " ")
             print(f"  {ts} {agent} [{role}]: {preview}...", flush=True)
+
+    @staticmethod
+    def _format_tool_args(tool_args, tool_result) -> str:
+        """Render tool args for the live console line.
+
+        log_agent_response wraps the JSON string in {"call_id": x, "arguments": "..."}
+        so the framework's call_id is preserved alongside the args. Unwrap that
+        for display so we see the actual input the model passed. Fall back to a
+        result preview when the call had no args (e.g. get_proof_state()).
+        """
+        if isinstance(tool_args, dict) and "arguments" in tool_args:
+            args_str = tool_args.get("arguments") or ""
+            if args_str.strip() in ("", "{}"):
+                if tool_result:
+                    return f"[no args] -> {str(tool_result)[:60]}"
+                return ""
+            return args_str[:80]
+        if tool_args:
+            return json.dumps(tool_args)[:80]
+        if tool_result:
+            return f"[no args] -> {str(tool_result)[:60]}"
+        return ""
 
     def log_agent_response(self, agent: str, response, duration_s: float = 0,
                            iteration: int = 0):

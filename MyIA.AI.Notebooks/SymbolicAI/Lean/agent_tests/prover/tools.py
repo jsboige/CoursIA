@@ -1219,6 +1219,7 @@ class CoordinatorTools:
                 agent="CoordinatorAgent", role="plan",
                 content=f"Set attack plan ({len(steps)} steps): {reason}",
                 duration_s=0.01, tool_name="set_attack_plan",
+                tool_args={"steps_count": len(steps), "reason": reason[:60]},
                 tool_result=plan_str[:200],
             )
 
