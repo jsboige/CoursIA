@@ -4,7 +4,7 @@
 series: ML
 pedagogical_count: 30
 breakdown: DataScienceWithAgents=22, ML.Net=8
-maturity: ALPHA=23, BETA=5, DRAFT=1, PRODUCTION=1
+maturity: ALPHA=24, BETA=4, DRAFT=1, PRODUCTION=1
 -->
 
 Serie de notebooks couvrant le Machine Learning avec deux approches complementaires : **ML.NET** pour l'ecosysteme .NET/C# et **Python Data Science with Agents** pour les pipelines modernes avec LLMs.
