@@ -1,0 +1,90 @@
+/-
+  Stable Marriage - Gale-Shapley Algorithm and Theorems
+  ======================================================
+
+  The Gale-Shapley deferred acceptance algorithm produces a stable matching.
+  This file provides the theorem statements (scaffolds for future proofs).
+
+  Algorithm sketch (man-proposing version):
+  1. Each free man proposes to his most-preferred woman he hasn't proposed to yet
+  2. Each woman tentatively accepts her best proposal, rejecting others
+  3. Rejected men become free again
+  4. Repeat until no free men remain
+
+  Key properties:
+  - The algorithm terminates (at most n^2 proposals)
+  - The result is a stable matching
+  - The result is man-optimal (best possible for all men among stable matchings)
+  - Dually, it is woman-pessimal (worst possible for all women among stable matchings)
+
+  Reference: Gale & Shapley (1962), "College Admissions and the Stability of Marriage"
+  Reference port: https://github.com/mmaaz-git/stable-marriage-lean
+-/
+
+import Mathlib.Data.Finset.Basic
+import StableMarriage.Definitions
+
+namespace StableMarriage
+
+open Function
+
+variable {n : Nat} [NeZero n]
+
+/--
+The Gale-Shapley algorithm terminates.
+At most n^2 proposals can occur (each man proposes to each woman at most once).
+
+TODO: formalize the algorithm as a step relation and prove termination.
+-/
+theorem gale_shapley_terminates (prof : PrefProfile n) :
+    True := by
+  sorry
+
+/--
+The Gale-Shapley algorithm produces a valid matching (bijection).
+-/
+theorem gale_shapley_produces_matching (prof : PrefProfile n) :
+    ∃ μ : Matching n, True := by
+  sorry
+
+/--
+The Gale-Shapley algorithm produces a stable matching.
+No blocking pair exists in the output matching.
+
+This is the main correctness theorem.
+-/
+theorem gale_shapley_stable (prof : PrefProfile n) :
+    ∃ μ : Matching n, IsStable prof μ := by
+  sorry
+
+/--
+The Gale-Shapley matching is man-optimal: every man gets the best
+partner he could obtain in any stable matching.
+
+This is the optimality theorem for the proposing side.
+-/
+theorem gale_shapley_man_optimal (prof : PrefProfile n) :
+    ∃ μ : Matching n, IsManOptimal prof μ := by
+  sorry
+
+/--
+Existence of a stable matching (corollary of Gale-Shapley).
+-/
+theorem stable_matching_exists (prof : PrefProfile n) :
+    ∃ μ : Matching n, IsStable prof μ := by
+  exact gale_shapley_stable prof
+
+/--
+Woman-pessimality of man-proposing Gale-Shapley:
+each woman gets her worst achievable partner among all stable matchings.
+
+Dual of man-optimality.
+-/
+theorem gale_shapley_woman_pessimal (prof : PrefProfile n)
+    (μ : Matching n) (h_opt : IsManOptimal prof μ)
+    (μ' : Matching n) (h_stable : IsStable prof μ')
+    (w : Fin n) :
+    prof.womenPref w (μ'.inverse w) ≤ prof.womenPref w (μ.inverse w) := by
+  sorry
+
+end StableMarriage
