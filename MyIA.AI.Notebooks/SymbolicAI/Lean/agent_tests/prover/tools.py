@@ -1285,6 +1285,34 @@ class CoordinatorTools:
         current = self._state.plan[self._state.plan_phase]
         return f"Advanced to step {self._state.plan_phase + 1}/{len(self._state.plan)}: {current}"
 
+    def mark_sorry_intractable(self, reason: str) -> str:
+        """Explicitly abandon the current sorry (F5).
+
+        Call this when the Coordinator has exhausted realistic attack plans
+        on a goal — e.g., the lemma requires an obscure Mathlib API the
+        SearchAgent can't locate, or the goal is mathematically false as
+        stated. Setting intractable ends the session cleanly so the next
+        prover run can target a different sorry instead of burning the
+        remaining iteration budget on a dead end.
+
+        Args:
+            reason: Concise explanation (logged in trace + final report).
+        """
+        self._state.intractable = True
+        self._state.intractable_reason = reason
+        if self._trace:
+            self._trace.log(
+                agent="CoordinatorAgent", role="intractable",
+                content=f"Marked intractable: {reason[:200]}",
+                tool_name="mark_sorry_intractable",
+                tool_args={"reason": reason[:200]},
+            )
+        return (
+            f"Sorry marked intractable. Reason: {reason}. "
+            f"Session will yield_output after this turn — pick a different "
+            f"goal on the next run."
+        )
+
     def file_read_lines(self, start: int, end: int) -> str:
         """Read a specific range of lines from the .lean file (1-based inclusive)."""
         if not self._filepath:
