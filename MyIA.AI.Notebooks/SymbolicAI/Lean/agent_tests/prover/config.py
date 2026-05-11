@@ -49,8 +49,17 @@ import Mathlib.Tactic
 import CooperativeGames.Basic
 """
 
-SHAPLEY_FILE = Path(LEAN_PROJECT_DIR) / "CooperativeGames" / "Shapley.lean" if LEAN_PROJECT_DIR else None
-BASIC_FILE = Path(LEAN_PROJECT_DIR) / "CooperativeGames" / "Basic.lean" if LEAN_PROJECT_DIR else None
+_COOPERATIVE_GAMES_CANDIDATES = [
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+]
+COOPERATIVE_GAMES_DIR = next(
+    (p for p in _COOPERATIVE_GAMES_CANDIDATES if p.exists()),
+    Path(LEAN_PROJECT_DIR) if LEAN_PROJECT_DIR else _COOPERATIVE_GAMES_CANDIDATES[0],
+)
+SHAPLEY_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Shapley.lean" if COOPERATIVE_GAMES_DIR.exists() else None
+BASIC_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Basic.lean" if COOPERATIVE_GAMES_DIR.exists() else None
 
 _SOCIAL_CHOICE_CANDIDATES = [
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
@@ -162,13 +171,13 @@ DEMOS = {
     6: {
         "name": "SHAPLEY_UNIQUENESS",
         "file": str(SHAPLEY_FILE),
-        "line": 513,
+        "line": 566,
         "sorry_type": "full_proof",
         "theorem_name": "shapley_uniqueness",
         "theorem": "shapley_uniqueness",
         "imports": SHAPLEY_IMPORTS,
         "description": (
-            "Replace sorry at line 513 of Shapley.lean. Prove shapley_uniqueness:\n"
+            "Replace sorry at line 566 of Shapley.lean (theorem starts L556). Prove shapley_uniqueness:\n"
             "any solution satisfying all 4 axioms equals Shapley value.\n"
             "Uses Mobius decomposition of games into unanimity games.\n"
             "Depends on: shapley_unanimity, shapley_efficient, shapley_symmetric, shapley_null_player.\n"
@@ -190,46 +199,19 @@ DEMOS = {
         ),
         "context_after": "  · -- Case i ∉ T: i is a null player",
     },
-    7: {
-        "name": "SHAPLEY_EFFICIENT_COEFF",
-        "file": str(SHAPLEY_FILE),
-        "line": 292,
-        "sorry_type": "partial_proof",
-        "theorem_name": "shapley_efficient (T ≠ ∅ case)",
-        "theorem": "shapley_efficient",
-        "imports": SHAPLEY_IMPORTS,
-        "description": (
-            "Replace sorry at line 292 of Shapley.lean. Context: proving efficiency.\n"
-            "We're inside `Finset.sum_eq_single` proving that T ≠ univ has zero coefficient.\n"
-            "Case T ≠ ∅: need to show that coefficient |T|*c(|T|-1) equals c(|T|)*(n-|T|).\n"
-            "We have `hshift := shapleyCoef_shift n (T.card - 1) (by omega)`.\n"
-            "Pre-sorry code:\n"
-            "```\n"
-            "  have hTcard : 1 ≤ T.card := Nat.pos_of_ne_zero hT0\n"
-            "  have hshift := shapleyCoef_shift (Fintype.card N) (T.card - 1) (by omega)\n"
-            "```\n"
-            "Goal: `↑T.card * shapleyCoef (Fintype.card N) (T.card - 1) * G.v T -\n"
-            "  shapleyCoef (Fintype.card N) T.card * (↑(Fintype.card N - T.card) * G.v T) = 0`\n"
-            "Key: rewrite using hshift, then use Nat subtraction properties."
-        ),
-        "difficulty": "hard",
-        "context_before": (
-            "        · -- T ≠ ∅: coefficient shift applies\n"
-            "          have hTcard : 1 ≤ T.card := Nat.pos_of_ne_zero hT0\n"
-            "          have hshift := shapleyCoef_shift (Fintype.card N) (T.card - 1) (by omega)\n"
-        ),
-        "context_after": "      (fun h => (h (Finset.mem_univ _)).elim)",
-    },
+    # DEMO 7 (SHAPLEY_EFFICIENT_COEFF, was line=292) removed: theorem shapley_efficient
+    # is now fully proved on main (Shapley.lean L243-L329). Single remaining sorry in
+    # this file is L566 (shapley_uniqueness), already covered by DEMOS 6 + 8.
     8: {
         "name": "SHAPLEY_UNIQUENESS_ALT",
         "file": str(SHAPLEY_FILE),
-        "line": 513,
+        "line": 566,
         "sorry_type": "full_proof",
         "theorem_name": "shapley_uniqueness (alternative entry)",
         "theorem": "shapley_uniqueness",
         "imports": SHAPLEY_IMPORTS,
         "description": (
-            "Same target as Demo 6 (line 513). Alias for batch/testing.\n"
+            "Same target as Demo 6 (line 566). Alias for batch/testing.\n"
             "Prove shapley_uniqueness: any solution satisfying all 4 axioms equals Shapley value.\n"
             "Uses Mobius decomposition of games into unanimity games.\n"
             "All helper theorems proved."
