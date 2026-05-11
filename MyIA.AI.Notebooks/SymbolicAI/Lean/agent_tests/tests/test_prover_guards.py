@@ -364,3 +364,92 @@ def test_plan_not_injected_for_coordinator():
         assert "analyze goal" in call_args
 
     asyncio.run(_test())
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Cycle 25 trace fix — file_replace_lines preserves protected comments
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_file_replace_lines_preserves_proof_strategy_comments(tmp_path):
+    """Replacement that strips PROOF STRATEGY block must preserve those comments.
+
+    Cycle 25 ai-01 trace: prover BG iter 1 stripped 16 lines of human-curated
+    PROOF STRATEGY documentation while making no proof progress (sorry 4->4).
+    The fix prepends protected comments back to the replacement so the agent
+    cannot silently regress documentation.
+    """
+    import json
+    fake = tmp_path / "VotingFake.lean"
+    body = (
+        "import Mathlib.Tactic\n"
+        "namespace TestSpace\n"
+        + "\n".join(f"-- pad {i}" for i in range(80))
+        + "\ntheorem t : True := by\n"
+        + "  -- PROOF STRATEGY (ai-01 Cycle 25):\n"
+        + "  -- 1. Establish sorted list properties\n"
+        + "  -- 2. Apply List.Perm.countP_eq\n"
+        + "  -- KEY MATHLIB LEMMAS: List.mergeSort_perm, List.countP_append\n"
+        + "  -- TODO: discharge sub-goal via omega\n"
+        + "  sorry\n"
+        + "\n".join(f"-- tail {i}" for i in range(80))
+        + "\nend TestSpace\n"
+    )
+    fake.write_text(body, encoding="utf-8")
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=88, indentation=2,
+        indent_str="  ", full_file=body,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    # The agent rewrites the proof block (lines 84-89) and "forgets" the
+    # PROOF STRATEGY / TODO / KEY MATHLIB comments — this is the bug.
+    out = json.loads(tt.file_replace_lines(
+        start=84, end=89,
+        new_content="  trivial",
+        build_check=False,
+    ))
+    assert "error" not in out, out
+    after = fake.read_text(encoding="utf-8")
+    # All 4 protected markers must survive
+    assert "PROOF STRATEGY" in after, "PROOF STRATEGY comment was stripped"
+    assert "KEY MATHLIB LEMMAS" in after, "KEY MATHLIB comment was stripped"
+    assert "TODO: discharge" in after, "TODO comment was stripped"
+
+
+def test_file_replace_lines_no_duplicate_when_marker_in_replacement(tmp_path):
+    """If the agent's new_content already includes the marker, do not duplicate."""
+    import json
+    fake = tmp_path / "VotingFake.lean"
+    body = (
+        "import Mathlib.Tactic\n"
+        "namespace TestSpace\n"
+        + "\n".join(f"-- pad {i}" for i in range(80))
+        + "\ntheorem t : True := by\n"
+        + "  -- TODO: prove this\n"
+        + "  sorry\n"
+        + "\n".join(f"-- tail {i}" for i in range(80))
+        + "\nend TestSpace\n"
+    )
+    fake.write_text(body, encoding="utf-8")
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=85, indentation=2,
+        indent_str="  ", full_file=body,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    # Agent provides new_content that already preserves the TODO line itself
+    out = json.loads(tt.file_replace_lines(
+        start=84, end=85,
+        new_content="  -- TODO: prove this\n  trivial",
+        build_check=False,
+    ))
+    assert "error" not in out, out
+    after = fake.read_text(encoding="utf-8")
+    # TODO appears exactly once (no duplicate)
+    assert after.count("TODO: prove this") == 1
+

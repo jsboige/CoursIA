@@ -222,7 +222,7 @@ DEMOS = {
     9: {
         "name": "VOTING_MEDIAN_COUNTING_LT",
         "file": str(VOTING_FILE),
-        "line": 325,
+        "line": 355,
         "sorry_type": "sorry_replacement",
         "theorem_name": "median_voter_theorem_strict (case peaks_j < median)",
         "theorem": "median_voter_theorem_strict",
@@ -333,7 +333,7 @@ DEMOS = {
     14: {
         "name": "VOTING_MEDIAN_COUNTING_GT",
         "file": str(VOTING_FILE),
-        "line": 348,
+        "line": 385,
         "sorry_type": "sorry_replacement",
         "theorem_name": "median_voter_theorem_strict (case peaks_j > median)",
         "theorem": "median_voter_theorem_strict",
