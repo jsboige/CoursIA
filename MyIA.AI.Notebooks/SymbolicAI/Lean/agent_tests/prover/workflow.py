@@ -34,11 +34,16 @@ from agent_framework import (
 
 from .state import SorryContext
 from .trace import TraceLogger
+from .knowledge import ProofKnowledgeBase
 
 
-# Default per-agent LLM timeout. External providers (zai/openrouter) can
-# stall — without this the entire workflow blocks forever.
-DEFAULT_AGENT_TIMEOUT_S = 90
+# Default per-agent LLM timeout. Reasoning models (z.ai GLM-5.1, Qwen3.6) burn
+# the bulk of their token budget in `reasoning_content` before producing a
+# visible response — measured 39s wall-clock on z.ai for a trivial smoke test
+# with max_tokens=2048 (entirely consumed by reasoning). 600s lets the model
+# actually think on Mathlib goals; the workflow wall-clock cap in provers.py
+# still bounds the total session.
+DEFAULT_AGENT_TIMEOUT_S = 600
 
 
 @dataclass
@@ -101,23 +106,23 @@ class AgentExecutor(Executor):
             plan_header += "\n\n---\n"
             content = plan_header + content
 
+        # NOTE: do NOT wrap `agent.run` in `asyncio.wait_for`. The framework's
+        # AgentTelemetryLayer sets/resets a ContextVar Token internally; running
+        # inside a wait_for-spawned Task creates the Token in a child context
+        # and the reset from the outer context raises
+        # `ValueError: <Token> was created in a different Context`,
+        # which silently corrupts every LLM call (verified via OTel trace
+        # multi_SMOKE_ZERO_ADD_local_*.spans.jsonl, 2026-05-11). The wall-clock
+        # cap in provers.py bounds the total session.
+        # Snapshot tactic_history len so we can detect new submit_tactic /
+        # submit_decomposition calls below and propagate them to msg.tactic.
+        history_len_before = (
+            len(self._state.tactic_history)
+            if self._state and hasattr(self._state, "tactic_history") else 0
+        )
         try:
-            response = await asyncio.wait_for(
-                self._agent.run(content), timeout=self._timeout_s,
-            )
-            response_text = ""
-            if hasattr(response, 'messages') and response.messages:
-                last = response.messages[-1]
-                response_text = last.text if hasattr(last, 'text') else str(last)
-        except asyncio.TimeoutError:
-            response_text = (
-                f"[Agent timeout after {self._timeout_s}s — provider stalled]"
-            )
-            if self._trace:
-                self._trace.log(
-                    agent=self._agent.name, role="timeout",
-                    content=f"timeout after {self._timeout_s}s",
-                )
+            response = await self._agent.run(content)
+            response_text = self._extract_response_text(response)
         except Exception as e:
             response_text = f"Agent error: {e}"
             if self._trace:
@@ -125,6 +130,47 @@ class AgentExecutor(Executor):
                     agent=self._agent.name, role="error",
                     content=str(e)[:200],
                 )
+
+        # Detect "burned response" — thinking models sometimes spend their entire
+        # output budget in `reasoning_content` and emit no visible parts.
+        # The framework's last message has finish_reason="length" with empty
+        # parts. If we pass that empty text to the next agent, the workflow
+        # silently degrades. Annotate the response so the downstream agent
+        # sees a recoverable signal instead of silence.
+        if not response_text.strip() and not msg.tactic:
+            response_text = (
+                "[harness] previous agent produced an empty response (likely "
+                "burned its output budget in reasoning_content). Proceed using "
+                "the proof state and tools directly; do not wait for input from "
+                "the previous step."
+            )
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="empty_response_guard",
+                    content="injected fallback message (response was empty)",
+                )
+
+        # Bridge TacticAgent's tool-side submissions to the workflow message:
+        # `submit_tactic` and `submit_decomposition` write to
+        # `state.tactic_history` but never touch the ProofMessage. Without this
+        # bridge, `msg.tactic` stays None forever, VerifyExecutor fails with
+        # "No tactic submitted" and routes back to TacticAgent until the
+        # iteration cap. Pick up the latest attempt added during this run.
+        if (self._state and hasattr(self._state, "tactic_history")
+                and len(self._state.tactic_history) > history_len_before):
+            latest = self._state.tactic_history[-1]
+            tactic_text = getattr(latest, "tactic", None)
+            if tactic_text:
+                msg.tactic = tactic_text
+                msg.is_decomposition = bool(getattr(latest, "is_decomposition", False))
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="tactic_bridge",
+                        content=(f"propagated tactic to msg "
+                                 f"(decomp={msg.is_decomposition}, "
+                                 f"len={len(tactic_text)}): "
+                                 f"{tactic_text[:80]}"),
+                    )
 
         # B.3: Propagate plan from ProofState into message after Coordinator runs
         if self._agent.name == "CoordinatorAgent" and self._state and not msg.plan:
@@ -142,6 +188,52 @@ class AgentExecutor(Executor):
 
         await ctx.send_message(msg)
 
+    @staticmethod
+    def _extract_response_text(response) -> str:
+        """Extract a useful text payload from an AgentResponse.
+
+        Prior implementation grabbed only `response.messages[-1].text`. Two
+        problems with that:
+          (a) When the final message is a function_call (no text), `last.text`
+              is empty and the burned-budget guard fires even if the agent
+              produced perfectly fine assistant text earlier in the run.
+          (b) When the model emits text + tool_calls in the same turn, the
+              last message is the assistant text — but if the framework appends
+              a result-sentinel message, the actual reasoning is lost.
+
+        Strategy: walk all messages in reverse, collect any non-empty `.text`
+        from text-bearing contents, and concatenate the most recent ones until
+        we have something to send downstream. If nothing surfaces, return ""
+        and let the caller's burned-response guard fire.
+        """
+        if not hasattr(response, 'messages') or not response.messages:
+            return ""
+
+        # First pass: prefer the last assistant text message.
+        for msg in reversed(response.messages):
+            text = getattr(msg, 'text', None)
+            if text and text.strip():
+                return text
+
+        # Second pass: synthesize a summary from function_call payloads so
+        # the downstream agent at least sees what tools were invoked even if
+        # the final assistant text was empty.
+        tool_calls: list[str] = []
+        for msg in response.messages:
+            contents = getattr(msg, 'contents', None) or []
+            for content in contents:
+                ctype = getattr(content, 'type', '')
+                if ctype == 'function_call':
+                    fname = getattr(content, 'name', '?') or '?'
+                    fargs = getattr(content, 'arguments', '') or ''
+                    tool_calls.append(f"  - {fname}({str(fargs)[:120]})")
+
+        if tool_calls:
+            return ("[harness summary] previous agent emitted no final text "
+                    "but invoked these tools:\n" + "\n".join(tool_calls[-5:]))
+
+        return ""
+
 
 class VerifyExecutor(Executor):
     """Non-LLM executor: verifies tactics via Lean compiler.
@@ -151,11 +243,15 @@ class VerifyExecutor(Executor):
     """
 
     def __init__(self, sorry_context: SorryContext, imports: str,
-                 trace: TraceLogger = None, **kwargs):
+                 trace: TraceLogger = None, kb: Optional[ProofKnowledgeBase] = None,
+                 **kwargs):
         super().__init__(id="verify_executor", **kwargs)
         self._sorry_ctx = sorry_context
         self._imports = imports
         self._trace = trace
+        # B.1 ProofKnowledgeBase: record successful tactics so future sessions
+        # can warm-start. Same JSON file that SearchTools reads.
+        self._kb = kb or ProofKnowledgeBase()
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -183,6 +279,26 @@ class VerifyExecutor(Executor):
                     tool_name="verify_sorry_replacement",
                     tool_result="success=True",
                 )
+            try:
+                self._kb.record_success(
+                    goal=self._sorry_ctx.goal_state or "",
+                    tactic=msg.tactic,
+                    theorem="",  # SorryContext has no theorem name; line+file is enough
+                    file=f"{self._sorry_ctx.filepath}:{self._sorry_ctx.sorry_line}",
+                )
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="kb_record",
+                        content=(f"recorded {self._sorry_ctx.filepath}:"
+                                 f"{self._sorry_ctx.sorry_line} -> "
+                                 f"{msg.tactic[:60]} (kb_size={self._kb.size})"),
+                    )
+            except Exception as e:
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="kb_record_error",
+                        content=f"kb record failed: {e}",
+                    )
             await ctx.yield_output(msg)
             return
 
@@ -224,37 +340,41 @@ class ProofWorkflowBuilder:
     def __init__(self, search_agent: Agent, tactic_agent: Agent,
                  critic_agent: Agent, coordinator_agent: Agent,
                  sorry_context: SorryContext, imports: str,
-                 trace: TraceLogger = None, state: "ProofState" = None):
+                 trace: TraceLogger = None, state: "ProofState" = None,
+                 kb: Optional[ProofKnowledgeBase] = None):
         self._search = AgentExecutor(search_agent, trace=trace, state=state)
         self._tactic = AgentExecutor(tactic_agent, trace=trace, state=state)
         self._critic = AgentExecutor(critic_agent, trace=trace, state=state)
         self._coordinator = AgentExecutor(coordinator_agent, trace=trace, state=state)
-        self._verify = VerifyExecutor(sorry_context, imports, trace)
+        self._verify = VerifyExecutor(sorry_context, imports, trace, kb=kb)
 
     def build(self):
-        # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to search
+        # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to
+        # search or tactic via the switch-case edge group below. Earlier
+        # versions also added explicit ``add_edge`` calls from the coordinator
+        # to search and tactic — that duplicated edges declared by
+        # ``add_switch_case_edge_group`` and tripped EdgeDuplicationError on
+        # ``builder.build()``. The switch-case group is the single source of
+        # truth for coordinator routing now.
         builder = WorkflowBuilder(start_executor=self._coordinator)
-
-        # Coordinator -> Search (initial plan or re-plan)
-        builder.add_edge(
-            self._coordinator, self._search,
-            condition=lambda msg: msg.next_agent in ("search", "coordinator"),
-        )
-        # Coordinator -> Tactic (direct tactical guidance)
-        builder.add_edge(
-            self._coordinator, self._tactic,
-            condition=lambda msg: msg.next_agent == "tactic",
-        )
 
         # Forward chain: search -> tactic -> verify
         builder.add_edge(self._search, self._tactic)
         builder.add_edge(self._tactic, self._verify)
 
-        # Verify routes: error -> critic, decomposition -> tactic
-        builder.add_edge(self._verify, self._critic)
-        builder.add_edge(
-            self._verify, self._tactic,
-            condition=lambda msg: msg.next_agent == "tactic" and not msg.proof_found,
+        # Verify routes via switch-case so the "tactic" backedge and the
+        # default critic path don't collide as duplicate edges either.
+        builder.add_switch_case_edge_group(
+            source=self._verify,
+            cases=[
+                Case(
+                    condition=lambda msg: (
+                        msg.next_agent == "tactic" and not msg.proof_found
+                    ),
+                    target=self._tactic,
+                ),
+                Default(target=self._critic),
+            ],
         )
 
         # Critic conditional routing (requires exactly one Default)

@@ -3,7 +3,7 @@
 Each agent gets its own tools subset and model configuration.
 """
 
-from agent_framework import Agent
+from agent_framework import Agent, ChatOptions
 
 from .config import create_client
 from .instructions import (
@@ -14,6 +14,27 @@ from .instructions import (
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
 
+# Generous max_tokens budget: thinking models (z.ai GLM-5.1, Qwen3.6) burn
+# 90-99% of their output budget in `reasoning_content` before producing a
+# visible response. With max_tokens=2048 z.ai routinely returns
+# `finish_reason: "length"` on trivial smoke tests. 16384 leaves room for the
+# model to actually finish reasoning AND emit a tactic.
+#
+# 2026-05-11 BG iter 2 trace showed SearchAgent (local Qwen3.6) at
+# 8192 budget hit `finish_reason: length` with `parts: []` (empty response).
+# Burned 100% of output in reasoning_content. Bumped fast = same as reasoning
+# so local thinking models have headroom on Search work too.
+REASONING_MAX_TOKENS = 16384
+FAST_MAX_TOKENS = 16384
+
+
+def _reasoning_options() -> ChatOptions:
+    return ChatOptions(max_tokens=REASONING_MAX_TOKENS)
+
+
+def _fast_options() -> ChatOptions:
+    return ChatOptions(max_tokens=FAST_MAX_TOKENS)
+
 
 def create_search_agent(tools: SearchTools, provider: str = "local") -> Agent:
     """SearchAgent: finds Mathlib lemmas. Uses fast local model."""
@@ -23,11 +44,13 @@ def create_search_agent(tools: SearchTools, provider: str = "local") -> Agent:
         instructions=SEARCH_AGENT_INSTRUCTIONS,
         tools=[
             tools.search_mathlib_lemmas,
+            tools.lookup_proven_pattern,
             tools.get_proof_state,
             tools.add_discovered_lemma,
             tools.file_read_lines,
         ],
         name="SearchAgent",
+        default_options=_fast_options(),
     )
 
 
@@ -50,6 +73,7 @@ def create_tactic_agent(tools: TacticTools, provider: str = "zai") -> Agent:
             tools.verify_sorry_replacement,
         ],
         name="TacticAgent",
+        default_options=_reasoning_options(),
     )
 
 
@@ -65,6 +89,7 @@ def create_critic_agent(tools: CriticTools, provider: str = "zai") -> Agent:
             tools.designate_next_agent,
         ],
         name="CriticAgent",
+        default_options=_fast_options(),
     )
 
 
@@ -82,4 +107,5 @@ def create_coordinator_agent(tools: CoordinatorTools, provider: str = "zai") -> 
             tools.search_mathlib_lemmas,
         ],
         name="CoordinatorAgent",
+        default_options=_reasoning_options(),
     )

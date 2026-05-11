@@ -13,6 +13,7 @@ from typing import Optional, Dict, List
 
 from .state import ProofState, TacticAttempt, SorryContext
 from .trace import TraceLogger
+from .knowledge import ProofKnowledgeBase
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -22,11 +23,17 @@ from .trace import TraceLogger
 class SearchTools:
     """Tools for SearchAgent: lemma discovery and proof state reading."""
 
-    def __init__(self, state: ProofState, filepath: str = "", trace: TraceLogger = None):
+    def __init__(self, state: ProofState, filepath: str = "", trace: TraceLogger = None,
+                 kb: Optional["ProofKnowledgeBase"] = None):
         self._state = state
         self._filepath = filepath
         self._trace = trace
+        # B.1 ProofKnowledgeBase: shared singleton across sessions. Each SearchTools
+        # instance reads from the same proof_knowledge.json so successful tactics
+        # from past runs warm-start this one.
+        self._kb = kb or ProofKnowledgeBase()
         self._known_lemmas = {
+            # Arithmetic on Nat
             "Nat.add_zero": ("n + 0 = n", "Nat"),
             "Nat.zero_add": ("0 + n = n", "Nat"),
             "Nat.add_comm": ("n + m = m + n", "Nat"),
@@ -38,34 +45,119 @@ class SearchTools:
             "Nat.mul_add": ("a * (b + c) = a * b + a * c", "Nat"),
             "Nat.left_distrib": ("n * (m + k) = n * m + n * k", "Nat"),
             "Nat.right_distrib": ("(n + m) * k = n * k + m * k", "Nat"),
+            "Nat.odd_iff": ("Odd n ↔ n % 2 = 1", "Nat"),
+            "Nat.div_two_lt_of_lt_mul_two_succ": (
+                "n < (k + 1) * 2 → n / 2 < k + 1", "Nat"),
+            # Logic
             "Eq.refl": ("a = a", "Logic"),
             "Eq.symm": ("a = b -> b = a", "Logic"),
+            "lt_of_le_of_ne": ("a ≤ b → a ≠ b → a < b", "Order"),
+            "le_of_not_gt": ("¬ a > b → a ≤ b", "Order"),
+            "not_lt": ("¬ a < b ↔ b ≤ a", "Order"),
+            # Finset basics
             "Finset.sum_erase_add": ("sum s f = sum (s.erase a) f + f a", "Finset"),
             "Finset.sum_eq_single": ("sum s f = f b if b in s and others zero", "Finset"),
             "Finset.card_union_of_disjoint": ("card (s ∪ t) = card s + card t", "Finset"),
             "Finset.sum_add_distrib": ("sum s (f + g) = sum s f + sum s g", "Finset"),
             "Finset.sum_const": ("sum s (fun _ => c) = card s * c", "Finset"),
+            "Finset.card_le_card": ("s ⊆ t → s.card ≤ t.card", "Finset"),
+            "Finset.mem_filter": (
+                "x ∈ s.filter p ↔ x ∈ s ∧ p x", "Finset"),
+            "Finset.card_univ": ("(Finset.univ : Finset α).card = Fintype.card α", "Finset"),
+            "Finset.length_toList": ("s.toList.length = s.card", "Finset"),
+            "Finset.toList_filter": (
+                "(s.filter p).toList = s.toList.filter p (up to perm)", "Finset"),
+            "Finset.card_filter_add_card_filter_not": (
+                "|{x ∈ s | p x}| + |{x ∈ s | ¬p x}| = s.card  "
+                "-- CALL with named args: (s := ...) (p := ...). "
+                "Deprecated alias: Finset.filter_card_add_filter_neg_card_eq_card "
+                "(do NOT use, removed in Mathlib current)", "Finset"),
+            "Finset.filter_congr": (
+                "(∀ x ∈ s, p x ↔ q x) → s.filter p = s.filter q  "
+                "-- USAGE: apply Finset.filter_congr; intro i _; exact iff_proof", "Finset"),
+            "not_le": ("¬a ≤ b ↔ b < a  -- USE (not_le).symm to flip order", "Order"),
+            # Lists / sorting / counting (used in median voter counting lemma)
+            "List.length_mergeSort": (
+                "(l.mergeSort r).length = l.length", "List"),
+            "List.mergeSort_perm": (
+                "(l.mergeSort r) ~ l", "List"),
+            "List.pairwise_mergeSort": (
+                "Trans r → IsAntisymm α r → IsTotal α r → "
+                "(l.mergeSort r).Pairwise r", "List"),
+            "List.length_map": ("(l.map f).length = l.length", "List"),
+            "List.length_take": ("(l.take n).length = min n l.length", "List"),
+            "List.length_drop": ("(l.drop n).length = l.length - n", "List"),
+            "List.take_append_drop": (
+                "l.take n ++ l.drop n = l", "List"),
+            "List.Perm.countP_eq": (
+                "(p : α → Bool) → l₁ ~ l₂ → l₁.countP p = l₂.countP p", "List.Perm"),
+            "List.countP_append": (
+                "(l₁ ++ l₂).countP p = l₁.countP p + l₂.countP p", "List"),
+            "List.countP_map": (
+                "(l.map f).countP p = l.countP (p ∘ f)", "List"),
+            "List.countP_eq_zero": (
+                "l.countP p = 0 ↔ ∀ a ∈ l, ¬ p a", "List"),
+            "List.countP_eq_length": (
+                "l.countP p = l.length ↔ ∀ a ∈ l, p a", "List"),
+            "List.countP_le_length": ("l.countP p ≤ l.length", "List"),
+            "List.Pairwise.rel_get_of_le": (
+                "l.Pairwise r → ∀ i j (h : i ≤ j) (hj : j < l.length), "
+                "r l[i] l[j]  -- (Mathlib/Data/List/Pairwise.lean L142)", "List.Pairwise"),
+            "List.getD": (
+                "l.getD i default = if i < l.length then l[i] else default", "List"),
+            "List.Perm.mem_iff": (
+                "l₁ ~ l₂ → (a ∈ l₁ ↔ a ∈ l₂)", "List.Perm"),
         }
 
     def search_mathlib_lemmas(self, goal: str, max_results: int = 10,
                               use_lsp: bool = True) -> str:
         """Search for Mathlib lemmas relevant to a proof goal.
 
-        Primary: Lean LSP search via exact?/apply? (B.2)
-        Fallback: hardcoded lemma dictionary for common patterns
+        Sources, in priority order:
+          0. ProofKnowledgeBase (past successful tactics on similar goals)
+          1. Lean LSP search via exact?/apply? (B.2)
+          2. Hardcoded lemma dictionary for common patterns
         """
-        # B.2: Try real Lean LSP search first
+        kb_results = []
+        try:
+            kb_hit = self._kb.lookup(goal)
+            if kb_hit:
+                kb_results.append({
+                    "name": f"KB_HIT:{kb_hit.get('theorem', '?')}",
+                    "statement": f"PROVEN tactic: {kb_hit['tactic']}",
+                    "namespace": "ProofKnowledgeBase",
+                    "relevance": 1.0,
+                    "source": "kb_exact",
+                    "uses": kb_hit.get("uses", 1),
+                })
+            for sim in self._kb.search_similar(goal, max_results=3):
+                kb_results.append({
+                    "name": f"KB_SIM:{sim.get('theorem', '?')}",
+                    "statement": (f"Similar past tactic ({sim.get('relevance', 0):.2f}): "
+                                  f"{sim['tactic']}"),
+                    "namespace": "ProofKnowledgeBase",
+                    "relevance": min(0.95, 0.5 + sim.get("relevance", 0) * 0.5),
+                    "source": "kb_similar",
+                    "uses": sim.get("uses", 1),
+                })
+        except Exception:
+            pass
+
+        # B.2: Try real Lean LSP search next
         if use_lsp and self._filepath:
             lsp_results = self._search_via_lsp(goal)
             if lsp_results:
+                merged = kb_results + lsp_results
                 if self._trace:
                     self._trace.log(
                         agent="SearchAgent", role="tool",
-                        content=f"LSP search found {len(lsp_results)} suggestions",
+                        content=(f"LSP found {len(lsp_results)} + KB {len(kb_results)} "
+                                 f"= {len(merged)} suggestions"),
                         duration_s=0.01, tool_name="search_mathlib_lemmas",
-                        tool_args={"goal": goal[:80]}, tool_result=f"{len(lsp_results)} LSP results",
+                        tool_args={"goal": goal[:80]},
+                        tool_result=f"{len(merged)} (kb={len(kb_results)} lsp={len(lsp_results)})",
                     )
-                return json.dumps(lsp_results[:max_results], indent=2, ensure_ascii=False)
+                return json.dumps(merged[:max_results], indent=2, ensure_ascii=False)
 
         # Fallback: keyword-based search on known lemmas
         goal_lower = goal.lower()
@@ -88,6 +180,19 @@ class SearchTools:
                 score += 0.5
             if "sum" in goal_lower and "sum" in name_lower:
                 score += 0.4
+            # Counting / sorting / median patterns (DEMO 9, 14)
+            if any(k in goal_lower for k in ("countp", "count_", "filter")) \
+                    and any(k in name_lower for k in ("countp", "filter", "card")):
+                score += 0.5
+            if any(k in goal_lower for k in ("mergesort", "sort", "pairwise", "sorted")) \
+                    and any(k in name_lower for k in ("mergesort", "pairwise", "sort")):
+                score += 0.5
+            if any(k in goal_lower for k in ("perm", "permut")) and "perm" in name_lower:
+                score += 0.4
+            if "card" in goal_lower and "card" in name_lower:
+                score += 0.3
+            if "filter" in goal_lower and "mem_filter" in name_lower:
+                score += 0.4
             if score > 0:
                 results.append({
                     "name": name, "statement": statement,
@@ -96,11 +201,12 @@ class SearchTools:
                 })
 
         results.sort(key=lambda x: x["relevance"], reverse=True)
-        found = results[:max_results]
+        found = kb_results + results[:max_results - len(kb_results)]
 
         if self._trace:
             self._trace.log(
-                agent="SearchAgent", role="tool", content=f"Found {len(found)} lemmas (fallback)",
+                agent="SearchAgent", role="tool",
+                content=f"Found {len(found)} lemmas (fallback + kb={len(kb_results)})",
                 duration_s=0.01, tool_name="search_mathlib_lemmas",
                 tool_args={"goal": goal[:80]}, tool_result=f"{len(found)} results",
             )
@@ -178,6 +284,35 @@ class SearchTools:
         selected = lines[start - 1:end]
         return "\n".join(f"{start + i}: {line}" for i, line in enumerate(selected))
 
+    def lookup_proven_pattern(self, goal: str, max_results: int = 5) -> str:
+        """Query the persistent ProofKnowledgeBase directly for past successes.
+
+        Returns exact match (if any) plus similar past tactics. Use this BEFORE
+        searching Mathlib when the current goal looks like one you've solved
+        before (same lemma names, same shape). Cheaper and more targeted than
+        rebuilding via LSP.
+        """
+        try:
+            exact = self._kb.lookup(goal)
+            similar = self._kb.search_similar(goal, max_results=max_results)
+            payload = {
+                "kb_size": self._kb.size,
+                "exact_match": exact,
+                "similar": similar,
+            }
+            if self._trace:
+                hit_count = (1 if exact else 0) + len(similar)
+                self._trace.log(
+                    agent="SearchAgent", role="tool",
+                    content=f"KB lookup: {hit_count} hits (kb_size={self._kb.size})",
+                    duration_s=0.01, tool_name="lookup_proven_pattern",
+                    tool_args={"goal": goal[:80]},
+                    tool_result=f"exact={bool(exact)} similar={len(similar)}",
+                )
+            return json.dumps(payload, indent=2, ensure_ascii=False)
+        except Exception as exc:
+            return json.dumps({"error": str(exc), "kb_size": -1})
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TACTIC AGENT TOOLS — tactic generation and file editing
@@ -199,6 +334,22 @@ class TacticTools:
         self._original_sorry_count: int = 999
         self._original_file_size: int = 0
         self._original_content: Optional[str] = None
+        # Decomposition budget: how many new sorries the agents may introduce
+        # via `have h : sub := by sorry; ...` scaffolding. Replacing one big
+        # sorry by two smaller sub-sorries that both compile is structural
+        # progress, not a regression — the agent can then attack the smaller
+        # sorries in subsequent iterations or future sessions. 5 is a generous
+        # ceiling (deeper trees rarely help; explosive growth signals a runaway
+        # agent rather than a real strategy). Lifted from a hard cap of 0
+        # which made decomposition impossible (2026-05-11 user feedback).
+        self._decomposition_budget: int = 5
+        # Last file content that survived a `lake build`. May have MORE sorries
+        # than the original (decomposition) but compiles. Used at end-of-session
+        # to commit partial structural progress instead of restoring original
+        # ("all-or-nothing" was the prior bug: sorry==original triggered restore
+        # even when the file structurally improved).
+        self._last_build_ok_content: Optional[str] = None
+        self._last_build_ok_sorry_count: Optional[int] = None
         self._lock_file = Path(filepath).with_suffix(".prover.lock") if filepath else None
         self._session_id = str(uuid.uuid4())[:8]
         self._context_boundary = 20  # max lines from sorry for edits (generous: line shifts after edits)
@@ -258,19 +409,34 @@ class TacticTools:
     def submit_decomposition(self, have_name: str, have_type: str,
                              have_proof: str = "sorry",
                              main_tactic: str = "sorry") -> str:
-        """Submit a decomposition: split the current goal into sub-goals using 'have'."""
+        """Submit a decomposition: split the current goal into sub-goals using `have`.
+
+        Builds `have <name> : <type> := by <have_proof>; <main_tactic>` and
+        records it in tactic_history so the AgentExecutor bridge can lift it
+        into ProofMessage.tactic for VerifyExecutor. Without this recording,
+        the decomposition would be returned as JSON only and never reach the
+        verifier — same dead end as the pre-bridge submit_tactic.
+        """
         indent = "  "
         lines = [
             f"have {have_name} : {have_type} := by {have_proof}",
             main_tactic,
         ]
         decomposition = f"\n{indent}".join(lines)
+        attempt_id = self._state.add_tactic_attempt(
+            tactic=decomposition,
+            confidence=0.4,
+            explanation=f"decomposition via have {have_name}",
+            is_decomposition=True,
+        )
         return json.dumps({
+            "attempt_id": attempt_id,
             "decomposition": decomposition,
             "have_name": have_name,
             "have_type": have_type,
             "have_proof": have_proof,
             "main_tactic": main_tactic,
+            "status": "submitted",
         }, indent=2, ensure_ascii=False)
 
     def submit_tactic(self, tactic: str, confidence: float = 0.5,
@@ -572,20 +738,34 @@ class TacticTools:
 
             sorry_count = new_file_content.count("sorry")
 
-            # Sorry guard: block if net sorry increase beyond original
-            if sorry_count > self._original_sorry_count:
+            # Sorry guard: block only if growth EXCEEDS the decomposition
+            # budget. Replacing 1 sorry by N sub-sorries that all compile is
+            # structural progress (the agent breaks down a hard goal). Block
+            # only the runaway case (>budget) which signals the agent is
+            # spraying sorries instead of decomposing intentionally.
+            ceiling = self._original_sorry_count + self._decomposition_budget
+            if sorry_count > ceiling:
                 if self._trace:
                     self._trace.log(
                         agent="TacticTools", role="sorry_guard",
-                        content=f"BLOCKED file_replace_lines: {sorry_count} > original {self._original_sorry_count}. REVERTING.",
+                        content=f"BLOCKED file_replace_lines: {sorry_count} > ceiling {ceiling} (orig={self._original_sorry_count}+budget={self._decomposition_budget}). REVERTING.",
                         duration_s=0.01,
                     )
                 return json.dumps({
-                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > original {self._original_sorry_count}. "
-                             f"Do NOT introduce new sorry in replacements.",
+                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > ceiling {ceiling}. "
+                             f"You have a {self._decomposition_budget}-sorry decomposition budget on top of the {self._original_sorry_count} originals; you've exhausted it. "
+                             f"Discharge some of the sub-sorries before adding more, or rewrite the replacement to be flatter.",
                     "replaced_lines": f"{start}-{end}",
                     "sorry_count": sorry_count,
+                    "ceiling": ceiling,
                 }, ensure_ascii=False)
+            if sorry_count > self._original_sorry_count and self._trace:
+                # Visible signal in the trace that decomposition is happening.
+                self._trace.log(
+                    agent="TacticTools", role="decomposition_progress",
+                    content=f"sorries grew {self._original_sorry_count}->{sorry_count} (within budget {self._decomposition_budget}); accepting if build passes",
+                    duration_s=0.0,
+                )
 
             Path(self._filepath).write_text(new_file_content, encoding="utf-8")
 
@@ -595,6 +775,12 @@ class TacticTools:
                 if build_err is not None:
                     build_err["replaced_lines"] = f"{start}-{end}"
                     return json.dumps(build_err, ensure_ascii=False)
+
+            # Track last build-passing snapshot regardless of sorry-count delta.
+            # Decomposition (sorry grows but compiles) is structural progress
+            # that provers.py should commit even if best_sorry_count didn't drop.
+            self._last_build_ok_content = new_file_content
+            self._last_build_ok_sorry_count = sorry_count
 
             if sorry_count < self._best_sorry_count:
                 self._best_sorry_count = sorry_count
@@ -677,21 +863,31 @@ class TacticTools:
 
             sorry_count = new_content.count("sorry")
 
-            # Sorry guard: block if net sorry increase beyond original (regression)
-            if sorry_count > self._original_sorry_count:
+            # Sorry guard: same semantics as file_replace_lines. Allow up to
+            # `_decomposition_budget` extra sorries on top of the original
+            # count (decomposition into sub-goals is structural progress).
+            ceiling = self._original_sorry_count + self._decomposition_budget
+            if sorry_count > ceiling:
                 if self._trace:
                     self._trace.log(
                         agent="TacticTools", role="sorry_guard",
-                        content=f"BLOCKED: {sorry_count} sorry > original {self._original_sorry_count}. "
-                                f"Replacement introduces new sorry. REVERTING.",
+                        content=f"BLOCKED file_replace_sorry: {sorry_count} > ceiling {ceiling} (orig={self._original_sorry_count}+budget={self._decomposition_budget}). REVERTING.",
                         duration_s=0.01,
                     )
                 return json.dumps({
-                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > original {self._original_sorry_count}. "
-                             f"Your replacement introduces NEW sorry. Write the tactic WITHOUT sorry.",
+                    "error": f"BLOCKED by sorry guard: {sorry_count} sorry > ceiling {ceiling}. "
+                             f"You have a {self._decomposition_budget}-sorry decomposition budget on top of the {self._original_sorry_count} originals; you've exhausted it. "
+                             f"Discharge some sub-sorries before adding more.",
                     "replaced": old_line.strip(),
                     "sorry_count": sorry_count,
+                    "ceiling": ceiling,
                 }, ensure_ascii=False)
+            if sorry_count > self._original_sorry_count and self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="decomposition_progress",
+                    content=f"sorries grew {self._original_sorry_count}->{sorry_count} (within budget {self._decomposition_budget}); accepting if build passes",
+                    duration_s=0.0,
+                )
 
             # Save pre-edit content for rollback
             pre_edit_content = content
@@ -703,6 +899,10 @@ class TacticTools:
                 if build_err is not None:
                     build_err["replaced"] = old_line.strip()
                     return json.dumps(build_err, ensure_ascii=False)
+
+            # See file_replace_lines for rationale on _last_build_ok_*.
+            self._last_build_ok_content = new_content
+            self._last_build_ok_sorry_count = sorry_count
 
             if sorry_count < self._best_sorry_count:
                 self._best_sorry_count = sorry_count
@@ -1069,6 +1269,7 @@ class CoordinatorTools:
                 agent="CoordinatorAgent", role="plan",
                 content=f"Set attack plan ({len(steps)} steps): {reason}",
                 duration_s=0.01, tool_name="set_attack_plan",
+                tool_args={"steps_count": len(steps), "reason": reason[:60]},
                 tool_result=plan_str[:200],
             )
 

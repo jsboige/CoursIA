@@ -2,7 +2,70 @@
 
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
+
+
+# Patterns marking an intentionally-honest sorry (theoretical impossibility,
+# not a TODO). When any of these appear in the comments immediately above a
+# sorry, the prover MUST refuse to attack it.
+_HONEST_SORRY_PATTERNS = [
+    r"\bFIXME\b",
+    r"cannot\s+be\s+proved",
+    r"unprovable",
+    r"not\s+derivable",
+    r"counter-?example",
+    r"needs?\s+a?\s*stronger\s+hypothes",
+    r"requires?\s+a?\s*stronger\s+hypothes",
+    r"impossible\s+with",
+    r"DO\s+NOT\s+TOUCH",
+]
+_HONEST_SORRY_RE = re.compile(
+    "|".join(_HONEST_SORRY_PATTERNS), re.IGNORECASE,
+)
+
+
+def is_honest_sorry(filepath: str, sorry_line: int,
+                    lookback: int = 12) -> Tuple[bool, str]:
+    """Check whether the sorry at `sorry_line` is documented as intentionally
+    unprovable.
+
+    Scans up to `lookback` consecutive comment lines (`--` or `/-` … `-/`)
+    immediately above the sorry. If any contain HONEST patterns (FIXME,
+    "cannot be proved", "counter-example", "needs a stronger hypothesis",
+    etc.), the sorry is HONEST and must NOT be attacked.
+
+    Returns (is_honest, reason). The reason is the matched comment block.
+    """
+    try:
+        content = Path(filepath).read_text(encoding="utf-8")
+    except OSError as e:
+        return False, f"file read error: {e}"
+
+    lines = content.split("\n")
+    if sorry_line < 1 or sorry_line > len(lines):
+        return False, f"line {sorry_line} out of range"
+
+    # Collect contiguous comment block above the sorry
+    comments = []
+    for i in range(sorry_line - 2, max(sorry_line - 2 - lookback, -1), -1):
+        stripped = lines[i].strip()
+        if stripped.startswith("--") or stripped.startswith("/-") or stripped.endswith("-/"):
+            comments.insert(0, stripped)
+        elif not stripped:
+            # Allow one blank line within comment block
+            if comments:
+                continue
+            break
+        else:
+            break
+
+    if not comments:
+        return False, ""
+
+    block = "\n".join(comments)
+    if _HONEST_SORRY_RE.search(block):
+        return True, block
+    return False, ""
 
 
 def extract_sorry_block(filepath: str, sorry_line: int, context_lines: int = 15) -> dict:

@@ -16,6 +16,7 @@ from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, Tact
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
+    is_honest_sorry,
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
 from .agents import (
@@ -26,7 +27,59 @@ from .agents import (
 )
 from .workflow import ProofWorkflowBuilder, ProofMessage
 from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS
-from .config import create_client
+from .config import create_client, HONEST_SORRIES
+from . import attempt_history
+from .knowledge import ProofKnowledgeBase
+from .otel_setup import enable_prover_otel
+
+_PROVER_DIR = Path(__file__).resolve().parent
+
+
+def _refuse_honest_sorry(filepath: str, sorry_line: int,
+                         demo_name: str) -> Optional[dict]:
+    """Return an early-fail result dict if the target sorry is HONEST.
+
+    Checks both the static HONEST_SORRIES registry and the dynamic
+    `is_honest_sorry()` comment scan. If matched, returns a result dict
+    that the caller should return immediately. Otherwise returns None.
+    """
+    static = HONEST_SORRIES.get(filepath, {})
+    if sorry_line in static:
+        reason = static[sorry_line]
+        msg = (
+            f"REFUSED: sorry at {filepath}:{sorry_line} is registered as HONEST "
+            f"(intentionally unprovable). Reason: {reason}"
+        )
+        print(f"\n{'!'*70}\n{msg}\n{'!'*70}\n")
+        return {
+            "success": False,
+            "skipped": True,
+            "reason": "honest_sorry_static",
+            "detail": reason,
+            "demo": demo_name,
+            "sorry_line": sorry_line,
+            "filepath": filepath,
+        }
+
+    is_honest, comment_block = is_honest_sorry(filepath, sorry_line)
+    if is_honest:
+        msg = (
+            f"REFUSED: sorry at {filepath}:{sorry_line} is documented as HONEST. "
+            f"Comment block immediately above:\n{comment_block}\n"
+            "If this is wrong, edit the comment to remove the impossibility "
+            "marker (FIXME / cannot be proved / counter-example / etc.)."
+        )
+        print(f"\n{'!'*70}\n{msg}\n{'!'*70}\n")
+        return {
+            "success": False,
+            "skipped": True,
+            "reason": "honest_sorry_dynamic",
+            "detail": comment_block,
+            "demo": demo_name,
+            "sorry_line": sorry_line,
+            "filepath": filepath,
+        }
+    return None
 
 
 class MultiAgentSorryProver:
@@ -45,6 +98,13 @@ class MultiAgentSorryProver:
 
     async def prove_sorry(self, demo: dict, max_iterations: int = 10,
                           workflow_timeout_s: Optional[int] = None) -> dict:
+        # Enable MS Agent Framework OTel + JSONL exporter so every agent run,
+        # tool call, and LLM completion lands in baselines/traces/<name>.spans.jsonl
+        # alongside the higher-level TraceLogger entries.
+        otel_session = f"multi_{demo['name']}_{self.provider}_{int(time.time())}"
+        otel_path = enable_prover_otel(otel_session)
+        print(f"  [OTEL] spans -> {otel_path}")
+
         filepath = demo["file"]
         sorry_line = demo["line"]
 
@@ -52,15 +112,32 @@ class MultiAgentSorryProver:
         original_content = Path(filepath).read_text(encoding="utf-8")
         original_sorry_count = original_content.count("sorry")
 
-        # Auto-detect actual sorry line
+        # Auto-detect actual sorry line — exclude lines where "sorry" appears
+        # only inside comments. A line is "sorry inside comment" when:
+        #   - it starts with `--` (line comment), OR
+        #   - the `--` token appears BEFORE the first occurrence of `sorry`.
+        # Real sorry tactics are bare tokens, possibly followed by a trailing
+        # `-- comment`.
+        def _is_real_sorry(line: str) -> bool:
+            idx = line.find("sorry")
+            if idx < 0:
+                return False
+            comment_idx = line.find("--")
+            return comment_idx < 0 or comment_idx > idx
+
         actual_sorry_lines = [
             i + 1 for i, line in enumerate(original_content.split("\n"))
-            if "sorry" in line
+            if _is_real_sorry(line)
         ]
         if actual_sorry_lines and sorry_line not in actual_sorry_lines:
             sorry_line = min(actual_sorry_lines, key=lambda l: abs(l - sorry_line))
             print(f"  [AutoFix] Configured line {demo['line']} has no sorry. "
                   f"Using closest sorry at line {sorry_line}")
+
+        # Refuse honest/unprovable sorrys BEFORE spinning up agents.
+        refusal = _refuse_honest_sorry(filepath, sorry_line, demo["name"])
+        if refusal is not None:
+            return refusal
 
         print(f"\n{'='*70}")
         print(f"MULTI-AGENT PROVER: {demo['name']}")
@@ -92,8 +169,13 @@ class MultiAgentSorryProver:
             max_iterations=max_iterations,
         )
 
+        # Shared KB instance so SearchAgent reads what VerifyExecutor wrote
+        # in the same session (otherwise each side instantiates its own and
+        # only sees prior-session entries via the JSON file).
+        kb = ProofKnowledgeBase()
+
         # Create per-agent tools
-        search_tools = SearchTools(state, filepath, self.trace)
+        search_tools = SearchTools(state, filepath, self.trace, kb=kb)
         tactic_tools = TacticTools(state, filepath, sorry_ctx,
                                    demo.get("imports", ""), self.trace)
         tactic_tools._original_sorry_count = original_sorry_count
@@ -106,10 +188,10 @@ class MultiAgentSorryProver:
         critic_agent = create_critic_agent(critic_tools, provider=self.provider)
         coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.provider)
 
-        # Build workflow graph
+        # Build workflow graph (kb shared with SearchTools)
         workflow_builder = ProofWorkflowBuilder(
             search_agent, tactic_agent, critic_agent, coordinator_agent,
-            sorry_ctx, demo.get("imports", ""), self.trace, state=state,
+            sorry_ctx, demo.get("imports", ""), self.trace, state=state, kb=kb,
         )
         workflow = workflow_builder.build()
 
@@ -129,7 +211,10 @@ class MultiAgentSorryProver:
         # can override.
         import asyncio as _asyncio
         if workflow_timeout_s is None:
-            workflow_timeout_s = max_iterations * 120  # generous wall clock
+            # Reasoning models can spend ~5-10 min/iteration on hard goals.
+            # 600s/iter * max_iterations gives the agents room without
+            # capping a productive run mid-thinking.
+            workflow_timeout_s = max_iterations * 600
         session_start = time.time()
         self.trace.start_session_span(demo["name"], "multi")
         proof_found = False
@@ -150,24 +235,74 @@ class MultiAgentSorryProver:
         except Exception as e:
             print(f"  Workflow error: {e}")
         finally:
-            # ALWAYS restore file if no improvement — prevent corruption
+            # Pick the best snapshot to commit, in this priority order:
+            #   1. tactic_tools.best_content       (lowest sorry count seen)
+            #   2. tactic_tools._last_build_ok_content (latest build-passing edit)
+            #   3. original_content                (untouched fallback)
+            # The middle option lets us KEEP partial structural progress: even
+            # if final sorry count >= original (e.g., decomposition broke 1
+            # sorry into 3 sub-sorries that all compile), we want to commit
+            # that work instead of throwing it away. The agent is then free
+            # to resume from that partial state in a future run.
             total_s = time.time() - session_start
             final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
+            structural_progress = False
 
-            # Restore best state if worse
-            if tactic_tools.best_content and tactic_tools.best_sorry_count < final_sorry:
-                print(f"  Restoring best ({tactic_tools.best_sorry_count} sorry vs {final_sorry})")
-                Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
-                final_sorry = tactic_tools.best_sorry_count
+            best_content = getattr(tactic_tools, "best_content", None)
+            best_sorry = getattr(tactic_tools, "best_sorry_count",
+                                 original_sorry_count)
+            last_ok_content = getattr(tactic_tools, "_last_build_ok_content", None)
+            last_ok_sorry = getattr(tactic_tools, "_last_build_ok_sorry_count", None)
 
-            # Always restore original if no improvement — prevent file corruption
-            if final_sorry >= original_sorry_count and not proof_found:
-                print(f"  Restoring original (no improvement: {final_sorry} >= {original_sorry_count})")
-                Path(filepath).write_text(original_content, encoding="utf-8")
-                final_sorry = original_sorry_count
+            if best_content and best_sorry < final_sorry:
+                print(f"  Restoring best ({best_sorry} sorry vs {final_sorry})")
+                Path(filepath).write_text(best_content, encoding="utf-8")
+                final_sorry = best_sorry
 
-        success = proof_found or final_sorry == 0 or final_sorry < original_sorry_count
+            if (final_sorry >= original_sorry_count and not proof_found):
+                if last_ok_content and last_ok_content != original_content:
+                    print(
+                        f"  Keeping last build-passing snapshot "
+                        f"({last_ok_sorry} sorry, decomposition progress preserved)"
+                    )
+                    Path(filepath).write_text(last_ok_content, encoding="utf-8")
+                    final_sorry = last_ok_sorry if last_ok_sorry is not None else final_sorry
+                    structural_progress = True
+                else:
+                    print(
+                        f"  Restoring original (no build-ok edits: "
+                        f"{final_sorry} >= {original_sorry_count})"
+                    )
+                    Path(filepath).write_text(original_content, encoding="utf-8")
+                    final_sorry = original_sorry_count
+
+        # Success now also covers structural progress: file changed but
+        # compiles, even if sorry count didn't decrease. Provers.py used to
+        # treat that as a failure and restore original, which threw away the
+        # decomposition the agent had just done.
+        success = (
+            proof_found
+            or final_sorry == 0
+            or final_sorry < original_sorry_count
+            or structural_progress
+        )
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
+
+        # Persist outcome to cross-session history (best-effort)
+        try:
+            outcome = "success" if success else "build_fail"
+            recent_attempts = [a for a in state.tactic_history[-5:] if a.tactic]
+            for att in recent_attempts:
+                attempt_history.record_attempt(
+                    _PROVER_DIR, filepath, sorry_line,
+                    tactic=att.tactic,
+                    outcome="success" if att.success else outcome,
+                    error_category=getattr(att, "error", None),
+                    error_excerpt=(att.error or "")[:200] if att.error else None,
+                    session_id=state.session_id,
+                )
+        except Exception:
+            pass
 
         print(f"\n{'='*60}")
         print(f"RESULT: {'SUCCESS' if success else 'FAILED'}")
@@ -226,6 +361,16 @@ class MultiAgentSorryProver:
         parts.append(f"\nSORRY COUNT INITIAL: {sorry_count}")
         parts.append("OBJECTIF: reduire le sorry count ou prouver completement.")
 
+        # Cross-session memory: surface previously failed tactics
+        try:
+            history = attempt_history.load_history(
+                _PROVER_DIR, demo["file"], sorry_line)
+            history_block = attempt_history.format_for_agent(history)
+            if history_block:
+                parts.append("\n" + history_block)
+        except Exception:
+            pass
+
         return "\n".join(parts)
 
 
@@ -246,6 +391,12 @@ class AutonomousProver:
 
     def prove_sorry(self, demo: dict, max_iterations: int = 10,
                     strategic_hints: str = "", agent_timeout_s: int = 0) -> dict:
+        # Same OTel wiring as MultiAgentSorryProver — single-agent runs benefit
+        # just as much from a durable span log of LLM-tool interactions.
+        otel_session = f"auto_{demo['name']}_{self.provider}_{int(time.time())}"
+        otel_path = enable_prover_otel(otel_session)
+        print(f"  [OTEL] spans -> {otel_path}")
+
         filepath = demo["file"]
         sorry_line = demo["line"]
 
@@ -265,6 +416,11 @@ class AutonomousProver:
             sorry_line = min(actual_sorry_lines, key=lambda l: abs(l - sorry_line))
             print(f"  [AutoFix] Configured line has no sorry. "
                   f"Using closest sorry at line {sorry_line}")
+
+        # Refuse honest/unprovable sorrys BEFORE spinning up the agent.
+        refusal = _refuse_honest_sorry(filepath, sorry_line, demo["name"])
+        if refusal is not None:
+            return refusal
 
         print(f"\n{'='*70}")
         print(f"AUTONOMOUS PROVER: {demo['name']}")
@@ -670,6 +826,24 @@ class AutonomousProver:
         success = final_sorry < original_sorry_count and final_build_ok and final_verify_ok
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
+        # Persist outcome to cross-session history (best-effort, never raises)
+        try:
+            outcome = "success" if success else (
+                "build_fail" if not final_build_ok else "no_progress"
+            )
+            recent_attempts = [a for a in state.tactic_history[-5:] if a.tactic]
+            for att in recent_attempts:
+                attempt_history.record_attempt(
+                    _PROVER_DIR, filepath, sorry_line,
+                    tactic=att.tactic,
+                    outcome="success" if att.success else outcome,
+                    error_category=getattr(att, "error", None),
+                    error_excerpt=(att.error or "")[:200] if att.error else None,
+                    session_id=state.session_id,
+                )
+        except Exception:
+            pass
+
         print(f"\n{'='*60}")
         print(f"RESULT: {'SUCCESS' if success else 'FAILED'}")
         print(f"  Sorry: {original_sorry_count} -> {final_sorry}")
@@ -801,6 +975,16 @@ class AutonomousProver:
         parts.append(f"\nSORRY COUNT INITIAL: {sorry_count}")
         parts.append("OBJECTIF: reduire le sorry count ou prouver completement.")
         parts.append("Commence par find_sorry_lines() puis propose une tactique.")
+
+        # Cross-session memory: surface previously failed tactics
+        try:
+            history = attempt_history.load_history(
+                _PROVER_DIR, filepath, sorry_line)
+            history_block = attempt_history.format_for_agent(history)
+            if history_block:
+                parts.append("\n" + history_block)
+        except Exception:
+            pass
 
         return "\n".join(parts)
 

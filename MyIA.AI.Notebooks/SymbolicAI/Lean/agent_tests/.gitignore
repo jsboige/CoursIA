@@ -1,0 +1,13 @@
+# Trace output dirs (per-session JSON + OTel JSONL spans). Reproducible from re-runs.
+traces/
+prover/baselines/traces/
+
+# Local ProofKnowledgeBase JSON (cross-session pattern memory).
+# Tracking would create constant noise on every successful prove; the JSON is
+# meant to grow per-machine. Re-create empty by running the prover once.
+prover/proof_knowledge.json
+
+# Python bytecode + venv artefacts
+__pycache__/
+*.pyc
+.venv/

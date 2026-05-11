@@ -3,15 +3,63 @@
 Provides LeanVerifier class with verify_project_file() interface
 expected by multi_agent_proof.py. Build results are cached by file content
 hash and shared across all LeanVerifier instances.
+
+Lake invocation (2026-05-11): the original implementation called WSL with
+``source ~/.elan/env && lake build`` — but on this machine elan is installed
+Windows-side under ``%USERPROFILE%/.elan/bin``, not in any WSL distro. The
+WSL ``source`` failed silently (exit 1, output empty), short-circuited the
+``&&``, and the verifier saw 0 errors → reported SUCCESS without ever
+building. ``_resolve_lake_command`` now prefers Windows-side ``lake.exe`` so
+prover builds and operator builds both write to the same ``.lake/build/lib``
+cache (verified ~2s for a Voting.lean cache hit).
 """
 
 import hashlib
 import os
+import platform
 import subprocess
 import re
 import time
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
+
+
+def _resolve_lake_command(extra_args: List[str]) -> Tuple[List[str], dict]:
+    """Return (argv, env) for invoking ``lake <extra_args>``.
+
+    Strategy (in order):
+    1. ``$LEAN_LAKE_BIN`` if set and executable — operator override.
+    2. Native Windows ``lake.exe`` under ``%USERPROFILE%/.elan/bin`` — fastest
+       path, shares the on-disk ``.lake/build`` cache with manual builds.
+    3. WSL ``lake`` if the Linux toolchain is available (sourced from
+       ``~/.elan/env`` inside WSL).
+    4. Bare ``lake`` on PATH — assumes lake is otherwise reachable.
+
+    The returned env injects elan's bin directory into PATH for option 2 so
+    sub-tools (lean, leanc) resolve without a separate elan setup.
+    """
+    env = os.environ.copy()
+
+    override = os.getenv("LEAN_LAKE_BIN")
+    if override and Path(override).exists():
+        return [override, *extra_args], env
+
+    if platform.system() == "Windows":
+        elan_bin = Path.home() / ".elan" / "bin"
+        lake_exe = elan_bin / "lake.exe"
+        if lake_exe.exists():
+            env["PATH"] = f"{elan_bin}{os.pathsep}{env.get('PATH', '')}"
+            return [str(lake_exe), *extra_args], env
+
+    # WSL fallback: only attempt if the operator explicitly opted in via
+    # LEAN_USE_WSL=1 (avoid regressing into the silent-source-fails trap).
+    if os.getenv("LEAN_USE_WSL") == "1":
+        wsl_cmd = "source ~/.elan/env 2>/dev/null; lake " + " ".join(
+            f"'{a}'" for a in extra_args
+        )
+        return ["wsl", "bash", "-c", wsl_cmd], env
+
+    return ["lake", *extra_args], env
 
 
 class LeanVerifier:
@@ -88,44 +136,60 @@ class LeanVerifier:
         return hashlib.sha256(content.encode()).hexdigest()
 
     def _run_lake_build(self, project: Path, relative_path: str) -> dict:
-        """Execute lake build for a module via WSL (Lean toolchain is in WSL)."""
+        """Execute ``lake build`` for a module, sharing the on-disk cache.
+
+        Uses Windows-side lake.exe by default (see ``_resolve_lake_command``);
+        the cwd is the Lake project root so ``.lake/build/lib/<module>.olean``
+        is written/read at the same path as manual builds.
+        """
         module_name = relative_path.replace("/", ".").replace("\\", ".")
         if module_name.endswith(".lean"):
             module_name = module_name[:-5]
 
-        # Convert Windows project path to WSL path
-        wsl_project = str(project).replace("\\", "/")
-        if len(wsl_project) >= 2 and wsl_project[1] == ":":
-            drive = wsl_project[0].lower()
-            wsl_project = f"/mnt/{drive}{wsl_project[2:]}"
+        cmd, env = _resolve_lake_command(["build", module_name])
 
         try:
             start = time.time()
-            # Use WSL to run lake build (elan/lean toolchain is in WSL)
-            lake_cmd = f"source ~/.elan/env > /dev/null 2>&1 && lake build {module_name} 2>&1"
-            cmd = ["wsl", "bash", "-c", lake_cmd]
             result = subprocess.run(
                 cmd,
                 cwd=str(project),
                 capture_output=True,
                 text=True,
                 timeout=300,
+                env=env,
             )
             duration = time.time() - start
 
             output = result.stdout + "\n" + result.stderr
             errors = self._extract_errors(output)
 
+            # If lake itself failed (returncode != 0) but no parsed errors,
+            # surface a synthetic error so callers don't think this was a
+            # silent success — protects against the regression where missing
+            # toolchain returned 0 errors and was treated as success.
+            if not errors and result.returncode != 0:
+                errors = [
+                    f"lake exit={result.returncode}; output: {output[:500] or '(empty)'}"
+                ]
+
             return {
                 "success": len(errors) == 0,
                 "errors": "\n".join(errors),
                 "raw_output": output,
                 "build_time_s": round(duration, 1),
+                "lake_cmd": cmd[0],
             }
         except subprocess.TimeoutExpired:
             return {"success": False, "errors": "lake build timed out (300s)", "raw_output": ""}
         except FileNotFoundError:
-            return {"success": False, "errors": "lake not found in PATH", "raw_output": ""}
+            return {
+                "success": False,
+                "errors": (
+                    f"lake not found (tried {cmd[0]!r}). Set LEAN_LAKE_BIN or install "
+                    f"elan, then retry."
+                ),
+                "raw_output": "",
+            }
 
     @classmethod
     def invalidate(cls, filepath: str):
@@ -200,13 +264,9 @@ class LeanVerifier:
             ]
 
         project = Path(self.project_dir)
-        env = os.environ.copy()
-        elan_bin = Path.home() / ".elan" / "bin"
-        if elan_bin.exists():
-            env["PATH"] = f"{elan_bin}:{env.get('PATH', '')}"
+        cmd, env = _resolve_lake_command(["env", "lean", "--stdin"])
 
         try:
-            cmd = ["lake", "env", "lean", "--stdin"]
             stdin_input = f"import {module_name}\n#print axioms {module_name.split('.')[-1]}\n"
             result = subprocess.run(
                 cmd,
@@ -254,11 +314,6 @@ class LeanVerifier:
             dict with 'success', 'suggestions' (list of found proofs), 'raw_output'
         """
         project = Path(self.project_dir)
-        env = os.environ.copy()
-        elan_bin = Path.home() / ".elan" / "bin"
-        if elan_bin.exists():
-            env["PATH"] = f"{elan_bin}:{env.get('PATH', '')}"
-
         short_name = module_name.split(".")[-1]
         snippet = (
             f"import {module_name}\n"
@@ -283,7 +338,7 @@ class LeanVerifier:
             if module.endswith(".lean"):
                 module = module[:-5]
 
-            cmd = ["lake", "build", module]
+            cmd, env = _resolve_lake_command(["build", module])
             result = subprocess.run(
                 cmd,
                 cwd=str(project),

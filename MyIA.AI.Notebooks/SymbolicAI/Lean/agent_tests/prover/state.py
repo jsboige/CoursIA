@@ -52,6 +52,7 @@ class TacticAttempt:
     state_before: Optional[str] = None
     confidence: Optional[float] = None
     explanation: Optional[str] = None
+    is_decomposition: bool = False  # True for `have h : ... := by ...; <main>` blocks
 
 
 @dataclass
@@ -154,12 +155,13 @@ class ProofState:
 
     def add_tactic_attempt(self, tactic: str, state_before: Optional[str] = None,
                            confidence: Optional[float] = None, explanation: Optional[str] = None,
-                           success: bool = False, error: Optional[str] = None) -> str:
+                           success: bool = False, error: Optional[str] = None,
+                           is_decomposition: bool = False) -> str:
         attempt_id = f"attempt_{len(self.tactic_history) + 1}"
         self.tactic_history.append(TacticAttempt(
             tactic=tactic, success=success, error=error,
             state_before=state_before, confidence=confidence,
-            explanation=explanation,
+            explanation=explanation, is_decomposition=is_decomposition,
         ))
         if success:
             self.current_proof.append(tactic)

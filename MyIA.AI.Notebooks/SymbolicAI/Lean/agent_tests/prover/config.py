@@ -52,7 +52,15 @@ import CooperativeGames.Basic
 SHAPLEY_FILE = Path(LEAN_PROJECT_DIR) / "CooperativeGames" / "Shapley.lean" if LEAN_PROJECT_DIR else None
 BASIC_FILE = Path(LEAN_PROJECT_DIR) / "CooperativeGames" / "Basic.lean" if LEAN_PROJECT_DIR else None
 
-SOCIAL_CHOICE_DIR = Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean")
+_SOCIAL_CHOICE_CANDIDATES = [
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+]
+SOCIAL_CHOICE_DIR = next(
+    (p for p in _SOCIAL_CHOICE_CANDIDATES if p.exists()),
+    _SOCIAL_CHOICE_CANDIDATES[0],
+)
 VOTING_FILE = SOCIAL_CHOICE_DIR / "SocialChoice" / "Voting.lean" if SOCIAL_CHOICE_DIR.exists() else None
 VOTING_IMPORTS = """import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic
@@ -60,14 +68,51 @@ import Mathlib.Data.List.Sort
 import SocialChoice.Definitions
 """
 
+# ── HONEST sorrys registry (DO NOT TOUCH) ──
+# Some sorrys document genuine theoretical impossibility — they are NOT bugs to
+# fix. Attacking them wastes compute and produces fake "PROVED" reports. Each
+# entry is keyed by the absolute filepath (as string) and lists `sorry_line`
+# numbers that the prover MUST refuse to target.
+#
+# Pattern: an honest sorry has FIXME/cannot/unprovable/counter-example comments
+# immediately above it. The detector in `lean_utils.is_honest_sorry()` confirms
+# this dynamically; this registry is the static fallback.
+HONEST_SORRIES = {
+    str(VOTING_FILE) if VOTING_FILE else "": {
+        261: (
+            "median_voter_theorem WEAK version is UNPROVABLE with single_peaked "
+            "(weak preference). Counter-example: σ={1,2,3}, 3 voters, peaks "
+            "[1,2,3], median=2. If voter 3 is indifferent between 1 and 2, "
+            "margin(2,1) = 0, not > 0. Use median_voter_theorem_strict instead "
+            "(L270 with hstrict_left/hstrict_right hypotheses)."
+        ),
+    },
+}
 
-def create_client(provider: str = "zai", model_key: str = "reasoning") -> OpenAIChatCompletionClient:
-    """Create a ChatCompletionClient for the given provider."""
+
+def create_client(provider: str = "zai", model_key: str = "reasoning",
+                  request_timeout_s: float = 240.0,
+                  max_retries: int = 1) -> OpenAIChatCompletionClient:
+    """Create a ChatCompletionClient for the given provider.
+
+    request_timeout_s caps a single chat completion call. Reasoning models
+    can legitimately take 30-90s to think; cap at 4min to detect hangs while
+    leaving room for genuinely deep reasoning. BG iter 2 had a TacticAgent
+    chat hang for 16+ min with no completion — that's a hang, not slow
+    reasoning, and we should fail-fast so the workflow can recover instead
+    of burning the wall-clock cap.
+    """
+    from openai import AsyncOpenAI
     cfg = PROVIDERS[provider]
-    return OpenAIChatCompletionClient(
-        model=cfg["models"][model_key],
+    async_client = AsyncOpenAI(
         api_key=cfg["api_key"],
         base_url=cfg["base_url"],
+        timeout=request_timeout_s,
+        max_retries=max_retries,
+    )
+    return OpenAIChatCompletionClient(
+        model=cfg["models"][model_key],
+        async_client=async_client,
     )
 
 
@@ -192,90 +237,142 @@ DEMOS = {
         "difficulty": "very_hard",
     },
     9: {
-        "name": "VOTING_MEDIAN_VOTER",
+        "name": "VOTING_MEDIAN_COUNTING_LT",
         "file": str(VOTING_FILE),
-        "line": 254,
+        "line": 325,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "median_voter_theorem",
-        "theorem": "median_voter_theorem",
+        "theorem_name": "median_voter_theorem_strict (case peaks_j < median)",
+        "theorem": "median_voter_theorem_strict",
         "imports": VOTING_IMPORTS,
-        "goal": "0 < ({i | P (prof i).rel (median_peak peaks) (peaks j)}.card : Int) - ({i | P (prof i).rel (peaks j) (median_peak peaks)}.card : Int)",
+        "goal": (
+            "(Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card "
+            "< (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card"
+        ),
         "description": (
-            "Prove the margin is positive for median_peak vs peaks j.\n"
+            "REPLACES the sorry at L325 (case `peaks_j < median_peak peaks`)\n"
+            "in `median_voter_theorem_strict`.\n"
+            "\n"
+            "DO NOT touch L261 (that's the WEAK version sorry — registered as\n"
+            "honest/unprovable in HONEST_SORRIES). The prover will refuse it.\n"
             "\n"
             "GOAL at sorry (EXACT):\n"
-            "  0 < ({i | P (prof i).rel (median_peak peaks) (peaks j)}.card : Int)\n"
-            "       - ({i | P (prof i).rel (peaks j) (median_peak peaks)}.card : Int)\n"
+            "  (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card\n"
+            "  < (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card\n"
             "\n"
-            "VARIABLES IN SCOPE:\n"
+            "HYPOTHESES IN SCOPE:\n"
+            "  ι : Type, [Fintype ι], σ : Type, [LinearOrder σ], [Inhabited σ]\n"
             "  prof : ι → PrefOrder σ, peaks : ι → σ\n"
             "  hsp : single_peaked_profile prof peaks\n"
-            "  hstrict : ∀ i a b, a < b → b ≤ peaks i → P (prof i).rel b a\n"
-            "    (voters with peak ≥ b prefer b over a when a < b)\n"
-            "  hstrict' : ∀ i a b, peaks i ≤ a → a < b → P (prof i).rel a b\n"
-            "    (voters with peak ≤ a prefer a over b when a < b)\n"
             "  hodd : Odd (Fintype.card ι)\n"
             "  hcard_pos : 0 < Fintype.card ι\n"
-            "  j : ι\n"
-            "  hny : ¬peaks j = median_peak peaks\n"
+            "  j : ι, hlt : peaks j < median_peak peaks\n"
+            "  hgt_peaks, hfor_card, hag_card  (already established above — NOT needed for sorry)\n"
             "\n"
-            "DEFINITIONS:\n"
-            "  sorted_peaks_list peaks = (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)\n"
-            "  median_peak peaks = (sorted_peaks_list peaks).getD (s.length / 2) default\n"
-            "  P R x y := R x y ∧ ¬R y x (strict preference from PrefOrder.rel)\n"
+            "PROOF STRATEGY (combinatorial counting via sorted list):\n"
+            "  Let n = Fintype.card ι (odd, n = 2k+1).\n"
+            "  Let l = sorted_peaks_list peaks = (univ.toList.map peaks).mergeSort (· ≤ ·).\n"
+            "  Then l.length = n and median_peak = l.getD (n/2) default.\n"
+            "  Since l is sorted (Pairwise (· ≤ ·)):\n"
+            "    - At most n/2 entries are STRICTLY less than l[n/2] (positions 0..n/2-1)\n"
+            "    - At least n/2 + 1 = (n+1)/2 entries satisfy l[n/2] ≤ entry (positions n/2..n-1)\n"
+            "  Transfer counts via List.Perm.countP_eq from sorted list to univ via mergeSort_perm.\n"
             "\n"
-            "PROOF STRATEGY:\n"
-            "  by_cases hlt : peaks j < median_peak peaks\n"
+            "KEY LEMMAS (verified Lean 4.29.1 + Mathlib current):\n"
+            "  List.mergeSort_perm : (l.mergeSort r) ~ l\n"
+            "  List.pairwise_mergeSort : (l.mergeSort r).Pairwise r  -- if r is total/transitive\n"
+            "  List.Perm.countP_eq (p : α → Bool) : l₁ ~ l₂ → l₁.countP p = l₂.countP p\n"
+            "  List.countP_append, List.countP_eq_zero, List.countP_eq_length\n"
+            "  List.take_append_drop, List.length_take, List.length_drop\n"
+            "  List.Pairwise.rel_get_of_le (Mathlib/Data/List/Pairwise.lean L142) :\n"
+            "    l.Pairwise r → ∀ i j (h : i ≤ j) (hj : j < l.length), r l[i] l[j]\n"
+            "  Finset.toList_filter, Finset.length_toList\n"
             "\n"
-            "Case 1 (peaks j < median_peak peaks):\n"
-            "  1. Have hgt_peaks : ∀ i, median_peak peaks ≤ peaks i → P (prof i).rel (median_peak peaks) (peaks j)\n"
-            "     Proof: intro i hi; exact hstrict i (peaks j) (median_peak peaks) hlt hi\n"
-            "  2. Define S_ge := Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ\n"
-            "  3. Show S_ge ⊆ for_set: Finset.card_le_card (subset proof)\n"
-            "  4. Show against_set ⊆ S_geᶜ: by contradiction using .2 of P\n"
-            "  5. COUNTING: show Fintype.card ι / 2 < S_ge.card\n"
-            "  6. Final arithmetic with omega\n"
+            "CRITICAL ERROR PATTERNS TO AVOID:\n"
+            "  1. `List.Sorted` does NOT exist as a top-level abbrev in 4.29.1.\n"
+            "     Use `Pairwise (· ≤ ·)` directly. Sorted aliases were deprecated 2025-10-11.\n"
+            "  2. `omega` CANNOT prove counting bounds over Finset.card of an opaque filter.\n"
+            "     You MUST reduce to concrete arithmetic AFTER establishing list-level\n"
+            "     count bounds.\n"
+            "  3. When using `List.Perm.countP_eq`, the predicate must be `α → Bool`.\n"
+            "     Use `decide` or explicit `decidable` to coerce a `Prop` predicate.\n"
+            "  4. To transfer between `Finset.filter ... |>.card` and `List.countP`:\n"
+            "     `Finset.toList_filter` then `Finset.length_toList`.\n"
             "\n"
-            "Case 2 (peaks j > median_peak peaks): symmetric with hstrict'\n"
-            "\n"
-            "CRITICAL ERROR PATTERNS TO AVOID (from previous failed attempt):\n"
-            "  1. When i ∈ Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ,\n"
-            "     you CANNOT pass `hi` directly to hstrict. You MUST first:\n"
-            "     simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi\n"
-            "     to extract `hi : median_peak peaks ≤ peaks i` from the Finset membership.\n"
-            "  2. omega CANNOT prove counting bounds over Finset.card of a filter.\n"
-            "     After unfold, omega sees the filter as an opaque expression and CANNOT\n"
-            "     determine its cardinality. omega counterexample: 'c ≥ 0, b - c ≥ 0, a ≥ 1, 0 ≤ a - 2*b ≤ 1'.\n"
-            "     The counting bound `n/2 < |S_ge|` MUST be proved by:\n"
-            "     a) Using Finset.card_filter_add_card_filter_eq_card to split into ≥ and <\n"
-            "     b) Using the fact that Finset.card ι is odd: n = 2*(n/2) + 1\n"
-            "     c) Combining with omega for the final Nat arithmetic\n"
-            "  3. For the complement bound, use:\n"
-            "     have : against_set.card ≤ (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card\n"
-            "     Then use Finset.card_filter_add_card_filter_eq_card with le/lt split.\n"
-            "     Do NOT use `Finset.card_compl` directly on a let-bound Finset.\n"
+            "RECOMMENDED SUB-LEMMAS (extract via `have` to keep main proof small):\n"
+            "  have hperm : sorted_peaks_list peaks ~ Finset.univ.toList.map peaks := \n"
+            "    List.mergeSort_perm _ _\n"
+            "  have hsort : (sorted_peaks_list peaks).Pairwise (· ≤ ·) := by\n"
+            "    apply List.pairwise_mergeSort  -- may need transitivity hypothesis\n"
+            "  -- Then split sorted list at index n/2 = (sorted_peaks_list peaks).length / 2\n"
+            "  -- and use Pairwise to bound countP on each half\n"
             "\n"
             "CRITICAL RULES:\n"
-            "  - ZERO sorry. Any sorry = FAILURE.\n"
-            "  - DO NOT use aesop. It cannot do set cardinality.\n"
-            "  - DO NOT use omega/nlinarith for counting bounds after unfold. They CANNOT prove them.\n"
-            "  - The P type has .1 (rel) and .2 (not reverse). Use .1 and .2 projections.\n"
-            "  - ALWAYS simp Finset.mem_filter to extract predicates from Finset membership.\n"
+            "  - ZERO sorry remaining. Any sorry on this lemma = FAILURE.\n"
+            "  - DO NOT use aesop on counting bounds.\n"
+            "  - DO NOT use omega/nlinarith on opaque Finset.card terms.\n"
+            "  - DO NOT touch lines 252-261 (HONEST sorry, weak version, unprovable).\n"
+            "  - Build must SUCCEED (use compile() to verify).\n"
+            "  - sorry count must DECREASE by at least 1 (originally 3 sorrys in Voting.lean).\n"
             "\n"
-            "AVAILABLE APIs:\n"
-            "  Finset.filter, Finset.card, Finset.card_le_card, Finset.mem_filter\n"
-            "  Finset.filter_subset, Finset.card_univ\n"
-            "  Finset.card_filter_add_card_filter_eq_card : |{x ∈ s | p x}| + |{x ∈ s | ¬p x}| = |s|\n"
-            "  List.mergeSort, List.length_mergeSort, List.length_map\n"
-            "  List.mergeSort_perm, List.Perm, List.getD\n"
-            "  List.length_toList, Finset.length_toList\n"
-            "  mod_cast, omega, classical, Nat.odd_iff\n"
-            "  lt_of_le_of_ne, le_of_not_gt, Ne.symm\n"
+            "RELATED: DEMO 14 (VOTING_MEDIAN_COUNTING_GT) targets L348 with the\n"
+            "symmetric statement. Once L325 is solved, the same proof technique\n"
+            "applies (just swap < and ≤). Consider extracting a shared helper\n"
+            "lemma `countP_lt_kth_le_of_sorted` in a new file.\n"
+        ),
+        "proof_scaffolding": (
+            "  -- STEP 1 (VERIFIED COMPILES — keep as-is): A.card + B.card = n via complementarity\n"
+            "  have hcomp : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card +\n"
+            "      (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card =\n"
+            "      Fintype.card ι := by\n"
+            "    have hflip : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ) =\n"
+            "        (Finset.filter (fun i => ¬ median_peak peaks ≤ peaks i) Finset.univ) := by\n"
+            "      apply Finset.filter_congr\n"
+            "      intro i _\n"
+            "      exact (not_le).symm\n"
+            "    rw [hflip, add_comm,\n"
+            "        Finset.card_filter_add_card_filter_not\n"
+            "          (s := Finset.univ) (p := fun i => median_peak peaks ≤ peaks i),\n"
+            "        Finset.card_univ]\n"
+            "  -- STEP 2 (TODO — your job): A.card ≤ Fintype.card ι / 2\n"
+            "  --   Strategy: unfold median_peak to L.getD k default where L = sorted peaks list\n"
+            "  --   and k = L.length / 2. Sortedness (L.Pairwise (· ≤ ·)) implies values\n"
+            "  --   strictly less than L[k] occur only at positions < k, so countP < L[k] ≤ k.\n"
+            "  --   Transfer card → countP via Finset.toList + List.countP_map + Perm.countP_eq.\n"
+            "  --   Key lemmas: List.mergeSort_perm, List.pairwise_mergeSort,\n"
+            "  --               List.Pairwise.rel_get_of_le, List.countP_le_length,\n"
+            "  --               Finset.length_toList.\n"
+            "  -- STEP 3 (closes goal once Step 2 done): combine hcomp + Step 2 + hodd via omega\n"
+            "  --   2*A.card ≤ 2k = n-1 < n = A.card + B.card  →  A.card < B.card.\n"
+            "  sorry\n"
+        ),
+        "difficulty": "very_hard",
+    },
+    14: {
+        "name": "VOTING_MEDIAN_COUNTING_GT",
+        "file": str(VOTING_FILE),
+        "line": 348,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "median_voter_theorem_strict (case peaks_j > median)",
+        "theorem": "median_voter_theorem_strict",
+        "imports": VOTING_IMPORTS,
+        "goal": (
+            "(Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card "
+            "< (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card"
+        ),
+        "description": (
+            "REPLACES the sorry at L348 (case `peaks_j > median_peak peaks`).\n"
+            "Symmetric to DEMO 9 (L325). Same proof technique, swap `<` and `≤`.\n"
             "\n"
-            "DO NOT USE (do NOT exist in Lean 4 v4.29.1):\n"
-            "  List.Sorted, List.Sorted.rel_get_of_le_get, List.getD_eq_get,\n"
-            "  List.length_filter, List.Sublist, List.mem_filter (List version)\n"
-            "  aesop, nlinarith for counting\n"
+            "GOAL at sorry (EXACT):\n"
+            "  (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card\n"
+            "  < (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card\n"
+            "\n"
+            "STRATEGY: identical to DEMO 9 but reversed inequality.\n"
+            "Use `not_lt.mpr` / `lt_of_le_of_ne` / mirror sorting arguments.\n"
+            "If a `countP_lt_kth_le_of_sorted` helper was extracted for L325,\n"
+            "apply it here with the reversed predicate.\n"
+            "\n"
+            "Same DO-NOT-USE / HONEST_SORRIES restrictions as DEMO 9.\n"
         ),
         "proof_scaffolding": "",
         "difficulty": "very_hard",
