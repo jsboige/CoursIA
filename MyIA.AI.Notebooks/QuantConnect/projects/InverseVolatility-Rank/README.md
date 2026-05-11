@@ -26,7 +26,7 @@ Ridge regression inverse volatility ranking on 12 futures contracts. Predicts ne
 ## Files
 
 - main.py - Strategy (v1.0, inverse vol futures)
-- research.ipynb - Ridge regression research: 12 futures (indices/energy/grains), vol features (60/90/180d), inverse-vol allocation vs equal-weight, lookback sensitivity analysis
+- research.ipynb - **awaiting QC Cloud execution** -> `../../_pending_execution/InverseVolatility-Rank-research.ipynb` (Ridge regression: 12 futures indices/energy/grains, vol features 60/90/180d, inverse-vol allocation vs equal-weight, lookback sensitivity). QC Cloud project 29463533. See tracking issue for execution checklist.
 
 ## References
 

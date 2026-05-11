@@ -27,7 +27,7 @@ Lasso regression stop-loss volatility prediction. Predicts next-day realized vol
 ## Files
 
 - main.py - Strategy (v1.0, ML vol-adjusted stops)
-- research.ipynb - LASSO stop-loss research: rolling vol features (30/60/90d), weekly low return prediction, fixed vs ML stop-loss comparison, drawdown recovery analysis, sensitivity (2-14%)
+- research.ipynb - **awaiting QC Cloud execution** -> `../../_pending_execution/Stoploss-Volatility-ML-research.ipynb` (LASSO: rolling vol features 30/60/90d, weekly low return prediction, fixed vs ML stop-loss comparison, drawdown recovery, sensitivity 2-14%). QC Cloud project 29463529. See tracking issue for execution checklist.
 
 ## References
 
