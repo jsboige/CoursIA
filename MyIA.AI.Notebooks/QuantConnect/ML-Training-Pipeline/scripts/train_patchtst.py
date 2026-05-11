@@ -380,7 +380,11 @@ def main():
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=5e-4)
     parser.add_argument("--lookback", type=int, default=20, help="Feature lookback window")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser.add_argument("--seed", type=int, default=42, help="Default single seed")
+    parser.add_argument(
+        "--seeds", type=str, default=None,
+        help="Comma-separated seeds for multi-seed evaluation (e.g. 0,1,7,42)",
+    )
 
     # Splitting
     parser.add_argument("--train-ratio", type=float, default=0.7)
@@ -412,13 +416,14 @@ def main():
     )
     args = parser.parse_args()
 
-    # Seed
-    np.random.seed(args.seed)
+    # Seeds
+    seeds = [int(s) for s in args.seeds.split(",")] if args.seeds else [args.seed]
+    np.random.seed(seeds[0])
 
     # Device
     try:
         import torch
-        torch.manual_seed(args.seed)
+        torch.manual_seed(seeds[0])
         device = "cuda" if torch.cuda.is_available() else "cpu"
     except ImportError:
         print("ERROR: PyTorch not installed. Run: pip install torch", file=sys.stderr)
@@ -487,7 +492,7 @@ def main():
         # Walk-forward would replace simple split; implemented when Stage 0 delivers splitter
         # For now, proceed with simple split and log that W-F was requested but not applied
 
-    print(f"Device: {device}, n_vars={n_features}")
+    print(f"Device: {device}, n_vars={n_features}, seeds={seeds}")
 
     hyperparams = {
         "model_type": "patchtst",
@@ -511,40 +516,85 @@ def main():
         "test_ratio": args.test_ratio,
         "actual_test_ratio": actual_test_ratio,
         "device": device,
-        "seed": args.seed,
+        "seeds": seeds,
     }
 
-    result = train_and_evaluate(
-        X_train, y_train, X_test, y_test,
-        n_vars=n_features,
-        seq_len=args.seq_len,
-        pred_len=args.pred_len,
-        patch_len=args.patch_len,
-        stride=args.stride,
-        d_model=args.d_model,
-        n_heads=args.n_heads,
-        n_layers=args.n_layers,
-        dropout=args.dropout,
-        fc_dropout=args.fc_dropout,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        learning_rate=args.lr,
-        channel_independence=not args.no_channel_independence,
-        device=device,
+    # Multi-seed loop
+    all_seed_metrics = []
+    best_result = None
+    best_edge = -float("inf")
+
+    for seed in seeds:
+        print(f"\n--- Seed {seed} ---")
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+
+        result = train_and_evaluate(
+            X_train, y_train, X_test, y_test,
+            n_vars=n_features,
+            seq_len=args.seq_len,
+            pred_len=args.pred_len,
+            patch_len=args.patch_len,
+            stride=args.stride,
+            d_model=args.d_model,
+            n_heads=args.n_heads,
+            n_layers=args.n_layers,
+            dropout=args.dropout,
+            fc_dropout=args.fc_dropout,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            learning_rate=args.lr,
+            channel_independence=not args.no_channel_independence,
+            device=device,
+        )
+
+        m = result["metrics"]
+        edge = m["edge_over_majority"]
+        all_seed_metrics.append({"seed": seed, **m})
+
+        print(f"  MSE={m['mse']}, DirAcc(step1)={m['direction_accuracy_step1']}, Edge={edge:+.4f}")
+
+        if edge > best_edge:
+            best_edge = edge
+            best_result = result
+
+    # Aggregate across seeds
+    edges = [sm["edge_over_majority"] for sm in all_seed_metrics]
+    mean_edge = np.mean(edges)
+    std_edge = np.std(edges) if len(edges) > 1 else 0.0
+
+    if len(seeds) > 1:
+        print(f"\nMulti-seed summary ({len(seeds)} seeds):")
+        for sm in all_seed_metrics:
+            print(f"  seed={sm['seed']}: edge={sm['edge_over_majority']:+.4f}")
+        print(f"  Mean edge: {mean_edge:+.4f} +/- {std_edge:.4f}")
+
+    verdict = "BEATS" if mean_edge > 2 * std_edge else (
+        "NO_BEATS" if mean_edge < -2 * std_edge else "INCONCLUSIVE"
     )
+    print(f"  Verdict: {verdict} (edge={mean_edge:+.4f}, 2*std={2*std_edge:.4f})")
 
     # Save checkpoint
     output_dir = Path(args.output_dir)
     save_pytorch_checkpoint(
-        result["model"], result, hyperparams, data_hash, output_dir,
+        best_result["model"], best_result, hyperparams, data_hash, output_dir,
         model_type="patchtst",
     )
 
-    m = result["metrics"]
-    edge = m["edge_over_majority"]
-    print(f"\nResults: MSE={m['mse']}, DirAcc(step1)={m['direction_accuracy_step1']}")
-    print(f"  Majority baseline: {m['majority_class_baseline']['majority_class_accuracy']}")
-    print(f"  Edge over majority: {edge:+.4f} ({'BEATS' if edge > 0 else 'FAILS'} baseline)")
+    # Save multi-seed results alongside checkpoint
+    if len(seeds) > 1:
+        import json
+        output_dir.mkdir(parents=True, exist_ok=True)
+        seed_file = output_dir / "multi_seed_results.json"
+        with open(seed_file, "w") as f:
+            json.dump({
+                "seeds": seeds,
+                "seed_metrics": all_seed_metrics,
+                "mean_edge": round(float(mean_edge), 4),
+                "std_edge": round(float(std_edge), 4),
+                "verdict": verdict,
+            }, f, indent=2)
+        print(f"  Multi-seed results saved to {seed_file}")
 
     if args.dry_run:
         print("DRY-RUN complete. Pipeline validated successfully.")
