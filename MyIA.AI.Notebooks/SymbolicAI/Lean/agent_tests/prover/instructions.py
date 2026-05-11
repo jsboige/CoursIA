@@ -51,11 +51,16 @@ QUAND UTILISER submit_decomposition:
 - Counting / cardinalite necessitant transfer (Finset → List → countP)
 - Quand 2 essais one-shot ont echoue : DECOMPOSE plutot que d'iterer
 
-CYCLE D'ITERATION (si echec):
+CYCLE D'ITERATION (si echec) — escalade STRICTE:
 - Lire l'erreur compilateur (elle est explicite)
 - Adapter (ajouter named arg, changer un lemme, ajouter un cast)
 - Si 2 adaptations identiques echouent : DECOMPOSER ou demander plus de lemmes
-- Si 3 echecs cumules sur le meme sorry : laisser le Critic / Coordinator reformuler
+- ESCALADE OBLIGATOIRE: apres 3 essais consecutifs en echec sur le MEME sorry
+  (meme ligne), tu DOIS arreter de soumettre des tactiques et appeler
+  designate_next_agent("critic") (ou "coordinator" si plan deja ajuste 2x).
+  Pas d'exception: continuer a marteler = boucle locale = budget brule pour rien.
+- Si decomposition: max 2 decomposition_progress consecutifs sans baisse nette
+  du sorry global. Au-dela, escalade Critic pour re-planifier.
 
 INTERDIT (verifie toujours dans FAILED ATTEMPTS):
 - Repeter une tactique deja en echec (meme texte exact)
