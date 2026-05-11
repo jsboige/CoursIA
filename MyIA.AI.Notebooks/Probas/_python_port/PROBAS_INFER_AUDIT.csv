@@ -1,0 +1,21 @@
+notebook,total_cells,exec_cells,output_cells,error_cells,kernel,status
+Infer-1-Setup.ipynb,12,12,11,0,.NET (C#),ALL_EXEC
+Infer-10-Crowdsourcing.ipynb,12,12,11,0,.NET (C#),ALL_EXEC
+Infer-11-Sequences.ipynb,20,20,19,0,.NET (C#),ALL_EXEC
+Infer-12-Recommenders.ipynb,23,23,22,0,.NET (C#),ALL_EXEC
+Infer-13-Debugging.ipynb,14,14,13,0,.NET (C#),ALL_EXEC
+Infer-14-Decision-Utility-Foundations.ipynb,14,14,14,0,.NET (C#),ALL_EXEC
+Infer-15-Decision-Utility-Money.ipynb,21,21,21,0,.NET (C#),ALL_EXEC
+Infer-16-Decision-Multi-Attribute.ipynb,20,20,20,0,.NET (C#),ALL_EXEC
+Infer-17-Decision-Networks.ipynb,14,14,13,0,.NET (C#),ALL_EXEC
+Infer-18-Decision-Value-Information.ipynb,16,16,16,0,.NET (C#),ALL_EXEC
+Infer-19-Decision-Expert-Systems.ipynb,12,12,12,0,.NET (C#),ALL_EXEC
+Infer-2-Gaussian-Mixtures.ipynb,24,24,21,0,.NET (C#),ALL_EXEC
+Infer-20-Decision-Sequential.ipynb,12,12,11,0,.NET (C#),ALL_EXEC
+Infer-3-Factor-Graphs.ipynb,12,12,11,0,.NET (C#),ALL_EXEC
+Infer-4-Bayesian-Networks.ipynb,18,18,17,0,.NET (C#),ALL_EXEC
+Infer-5-Skills-IRT.ipynb,20,20,19,0,.NET (C#),ALL_EXEC
+Infer-6-TrueSkill.ipynb,16,16,15,0,.NET (C#),ALL_EXEC
+Infer-7-Classification.ipynb,16,16,15,0,.NET (C#),ALL_EXEC
+Infer-8-Model-Selection.ipynb,15,15,14,0,.NET (C#),ALL_EXEC
+Infer-9-Topic-Models.ipynb,14,14,13,0,.NET (C#),ALL_EXEC
