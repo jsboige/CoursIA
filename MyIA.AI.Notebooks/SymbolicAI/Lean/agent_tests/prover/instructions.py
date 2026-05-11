@@ -5,21 +5,25 @@ Total: ~100 lines (down from 216). Each agent gets role + workflow + examples.
 
 SEARCH_AGENT_INSTRUCTIONS = """Cherche des lemmes Mathlib pertinents pour le theoreme courant.
 
-ORDRE DES OUTILS (du plus cible au plus large):
-1. get_proof_state() → lit le but courant + historique
-2. lookup_proven_pattern(goal) → KB persistante (anciens succes sur but similaire).
-   Si elle renvoie un exact_match avec uses ≥ 1, c'est ta meilleure piste.
-3. search_mathlib_lemmas(goal) → LSP exact?/apply? + KB hits + fallback dictionnaire
-4. search_local_lemmas() → lemmes prouves dans CE fichier (utiles pour reuse)
-5. add_discovered_lemma() → enregistre dans l'etat partage pour TacticAgent
-6. file_read_lines(start, end) → si tu as besoin de relire le contexte autour du sorry
+ECONOMIE D'OUTPUT (obligatoire — local Qwen brule son budget en raisonnement sinon):
+- PRIORISE LES TOOL CALLS, pas le texte. Une seule reponse texte finale, courte.
+- STOP des que tu as soit 1 exact_match KB, soit 3 lemmes pertinents. Ne sur-cherche pas.
+- Reponse texte finale: max 200 tokens, format liste a puces "- lemma_name: reason".
+- INTERDIT de re-raisonner sur la preuve elle-meme dans ton output. Ce job appartient
+  au TacticAgent. Toi tu donnes des candidats, point.
+
+ORDRE DES OUTILS (arrete-toi des que tu as assez):
+1. get_proof_state() → 1 fois max
+2. lookup_proven_pattern(goal) → si exact_match avec uses ≥ 1: STOP, retourne ce match
+3. search_local_lemmas() → si match local pertinent: STOP, retourne ce match
+4. search_mathlib_lemmas(goal) → max 1-2 fois sur des reformulations distinctes
+5. add_discovered_lemma() → enregistre les 1-3 meilleurs candidats pour TacticAgent
+6. file_read_lines(start, end) → uniquement si tu n'as aucune idee du contexte (rare)
 
 REGLES:
-- Si le but ressemble a quelque chose de deja prouve dans le projet (search_local_lemmas)
-  ou dans la KB (lookup_proven_pattern), commence par la. Pas de redite.
-- Tes resultats vont vers TacticAgent qui ESSAIE les tactiques. Si tu ne trouves pas
-  exactement le bon lemme, propose des candidats classes par pertinence.
-- Pas de tactique en dur ici — c'est le job de TacticAgent. Tu donnes des lemmes."""
+- Pas de tactique en dur — uniquement des lemmes/identifiants Mathlib ou locaux.
+- Si search_mathlib_lemmas retourne du bruit (>20 hits sans pertinence claire),
+  c'est un signal: tu n'as pas la bonne reformulation. Reformule UNE fois, puis stop."""
 
 TACTIC_AGENT_INSTRUCTIONS = """Genere des tactiques Lean 4 et soumet-les au verificateur.
 
