@@ -333,7 +333,7 @@ DEMOS = {
     14: {
         "name": "VOTING_MEDIAN_COUNTING_GT",
         "file": str(VOTING_FILE),
-        "line": 348,
+        "line": 385,
         "sorry_type": "sorry_replacement",
         "theorem_name": "median_voter_theorem_strict (case peaks_j > median)",
         "theorem": "median_voter_theorem_strict",
@@ -343,8 +343,8 @@ DEMOS = {
             "< (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card"
         ),
         "description": (
-            "REPLACES the sorry at L348 (case `peaks_j > median_peak peaks`).\n"
-            "Symmetric to DEMO 9 (L325). Same proof technique, swap `<` and `≤`.\n"
+            "REPLACES the sorry at L385 (case `peaks_j > median_peak peaks`).\n"
+            "Symmetric to DEMO 9 (L355). Same proof technique, swap `<` and `≤`.\n"
             "\n"
             "GOAL at sorry (EXACT):\n"
             "  (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card\n"
@@ -352,7 +352,7 @@ DEMOS = {
             "\n"
             "STRATEGY: identical to DEMO 9 but reversed inequality.\n"
             "Use `not_lt.mpr` / `lt_of_le_of_ne` / mirror sorting arguments.\n"
-            "If a `countP_lt_kth_le_of_sorted` helper was extracted for L325,\n"
+            "If a `countP_lt_kth_le_of_sorted` helper was extracted for L355,\n"
             "apply it here with the reversed predicate.\n"
             "\n"
             "Same DO-NOT-USE / HONEST_SORRIES restrictions as DEMO 9.\n"
