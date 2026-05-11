@@ -116,6 +116,23 @@ Tous les notebooks incluent :
 - Tableaux recapitulatifs
 - Exercices avec solutions completes
 
+## Quick Start
+
+```bash
+# 1. Installer les dependances Python (notebooks 1-12, 14-16)
+pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
+
+# 2. Premier notebook
+jupyter notebook GameTheory-1-Setup.ipynb
+
+# 3. Puis GameTheory-2 (formes normales, matrices de gains)
+```
+
+Pour les notebooks Lean (2b, 4b, 8b, 15b, 16b) : installer le kernel `Lean 4 (WSL)` via `scripts/setup_wsl_lean4.sh`.
+Pour GT-13/17 (OpenSpiel) : installer le kernel `GameTheory WSL` via `scripts/setup_wsl_openspiel.sh`.
+
+---
+
 ## Prerequisites
 
 - Connaissances de base en logique et mathematiques
@@ -181,6 +198,22 @@ cp .env.example .env
 ```
 
 ## Ressources externes
+
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| Osborne & Rubinstein, *A Course in Game Theory* (1994) | Textbook de reference, notebooks 1-12 |
+| Russell & Norvig, *AIMA* 4e ed., ch. 17-18 | Cadre general jeux et mecanismes |
+| Nash, "Non-Cooperative Games" (1951) | Notebook 4, equilibre de Nash |
+| Von Neumann, "Zur Theorie der Gesellschaftsspiele" (1928) | Notebook 5, minimax |
+| Axelrod, "The Evolution of Cooperation" (1984) | Notebook 6, tournoi iterated PD |
+| Conway, Berlekamp & Guy, *Winning Ways* (1982) | Notebooks 8, 8b, 8c |
+| Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | Notebook 16d, Arrow.lean |
+| Sen, "Collective Choice and Social Welfare" (1970) | Notebook 16e, Sen.lean |
+| Shapley, "A Value for n-Person Games" (1953) | Notebook 15, Shapley.lean |
+| Roth, "The Shapley Value: Essays in Honor of Lloyd S. Shapley" (1988) | Cooperative games |
+| Osborne, *An Introduction to Game Theory* (2004) | Alternative textbook |
 
 ### Theorie des jeux
 - [Game Theory (Stanford Encyclopedia)](https://plato.stanford.edu/entries/game-theory/)

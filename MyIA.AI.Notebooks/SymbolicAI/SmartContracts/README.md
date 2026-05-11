@@ -134,6 +134,21 @@ anvil  # dans un terminal separe
 
 ## Ressources Externes
 
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| Nakamoto, "Bitcoin: A Peer-to-Peer Electronic Cash System" (2008) | SC-0, SC-20 |
+| Buterin, "Ethereum White Paper" (2014) | Fondements Ethereum, SC-1 a SC-10 |
+| Wood, "Ethereum: A Secure Decentralised Generalised Transaction Ledger" (2014) | EVM, gas, SC-5 |
+| Ben-Sasson et al., "Scalable Zero Knowledge with No Trusted Setup" (2019) | SC-15 ZK proofs |
+| Gentry, "Fully Homomorphic Encryption Using Ideal Lattices" (2009) | SC-16 HE |
+| Appel, "Verification of a Cryptographic Primitive: SHA-256" (2015) | SC-14 Formal verification |
+| Daian et al., "Flash Boys 2.0: Frontrunning in Decentralized Exchanges" (2020) | SC-8 DeFi |
+| Atzei, Bartoletti & Cimoli, "A Survey of Attacks on Ethereum Smart Contracts" (2017) | SC-12, SC-14 |
+
+### Ressources en ligne
+
 - [Foundry Book](https://book.getfoundry.sh/)
 - [Solidity Docs](https://docs.soliditylang.org/)
 - [web3.py Docs](https://web3py.readthedocs.io/)

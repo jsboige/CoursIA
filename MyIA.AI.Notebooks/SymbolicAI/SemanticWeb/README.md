@@ -24,6 +24,26 @@ La vision originale de Tim Berners-Lee etait de creer un "Web de donnees" ou les
 
 ---
 
+## Quick Start
+
+```bash
+# Python (notebooks SW-2b, SW-4b, SW-8 a SW-12)
+pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
+
+# .NET (notebooks SW-1 a SW-7)
+dotnet restore
+
+# Premier notebook recommande (Python) :
+jupyter notebook SW-2b-Python-RDFBasics.ipynb
+
+# Ou en .NET :
+jupyter notebook SW-1-CSharp-Setup.ipynb
+```
+
+Aucune API key requise pour les notebooks fondamentaux (SW-1 a SW-11). SW-12 (GraphRAG) necessite une cle LLM.
+
+---
+
 ## Progression recommandee
 
 ### Parcours principal
@@ -363,6 +383,21 @@ SemanticWeb/
 ```
 
 ## Ressources
+
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| Berners-Lee, Hendler & Lassila, "The Semantic Web", *Scientific American* (2001) | Vision originale, introduction |
+| Russell & Norvig, *AIMA* 4e ed., ch. 12 "Knowledge Representation" | Cadre general IA symbolique |
+| Hitzler et al., *Foundations of Semantic Web Technologies* (2010) | OWL, RDF, raisonnement |
+| Allemang & Hendler, *Semantic Web for the Working Ontologist* (2011) | Modelisation OWL/RDFS |
+| Harris & Seaborne, "SPARQL 1.1 Query Language", W3C Rec. (2013) | Standard SPARQL |
+| Cyganiak, Wood & Lanthaler, "RDF 1.1 Concepts", W3C Rec. (2014) | Standard RDF |
+| Knublauch et al., "SHACL Shapes Constraint Language", W3C Rec. (2017) | Standard SHACL |
+| Edge & Tramer, "GraphRAG" (Microsoft, 2024) | SW-12 GraphRAG |
+
+### Ressources en ligne
 
 - [dotNetRDF](https://dotnetrdf.org/) - Bibliotheque .NET pour RDF
 - [rdflib](https://rdflib.readthedocs.io/) - Bibliotheque Python pour RDF

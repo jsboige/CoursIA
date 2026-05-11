@@ -62,6 +62,23 @@ A l'issue de cette serie, vous saurez :
 | Intermediate | Algorithmes, outils pratiques | 4, 5, 6, 7, 8, 9 |
 | Advanced | Extensions, recherche | 10, 11, 12 |
 
+## Quick Start
+
+```bash
+# 1. Installer les dependances Python
+pip install unified-planning ortools numpy matplotlib networkx
+
+# 2. Verifier l'installation
+python -c "import unified_planning; from ortools.sat.python import cp_model; print('OK')"
+
+# 3. Premier notebook (introduction aux concepts)
+jupyter notebook 01-Foundation/Planners-1-Introduction.ipynb
+```
+
+Pour les notebooks 4-6 (Fast Downward), Docker est recommande : `docker pull aiplanning/fast-downward`. Les notebooks theoriques (1-3, 7-12) ne necessitent que Python.
+
+---
+
 ## Prerequis
 
 ### Connaissances requises
@@ -284,9 +301,17 @@ BATCH_MODE=true python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.
 - [IPC Benchmarks](https://github.com/aibasel/downward-benchmarks) - Problemes standards
 
 ### Publications
-- Helmert (2006) - "The Fast Downward Planning System"
-- Hoffmann & Nebel (2001) - "The FF Planning System"
-- Richter & Westphal (2010) - "LAMA: Planner"
+
+| Reference | Couverture |
+|-----------|------------|
+| Ghallab, Nau & Traverso, *Automated Planning: Theory and Practice* (2004) | Textbook de reference, toute la serie |
+| Russell & Norvig, *AIMA* 4e ed., ch. 10-11 | Cadre general planification |
+| Helmert, "The Fast Downward Planning System" (2006) | Notebooks 4-6 |
+| Hoffmann & Nebel, "The FF Planning System" (2001) | Heuristique h-FF, notebook 5 |
+| Richter & Westphal, "LAMA: Planner" (2010) | Landmarks, notebook 5 |
+| Fox & Long, "PDDL2.1: An Extension to PDDL for Expressing Temporal Planning Domains" (2003) | Notebook 8 |
+| Erol, Hendler & Nau, "HTN Planning: Complexity and Expressivity" (1994) | Notebook 9 |
+| Valmeekam et al., "On the Planning Abilities of Large Language Models" (2024) | Notebook 10 |
 
 ## Relation avec SymbolicAI
 
