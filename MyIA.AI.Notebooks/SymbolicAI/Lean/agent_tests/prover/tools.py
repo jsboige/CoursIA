@@ -802,21 +802,27 @@ class TacticTools:
             Path(self._filepath).write_text(new_file_content, encoding="utf-8")
 
             # Build check: if compilation fails, revert and surface diagnostics.
+            # When build_check=False, we MUST NOT update _last_build_ok_* or
+            # _best_* — those snapshots are the prover's source of truth for
+            # the "best build-passing state" and the autonomous loop commits
+            # them as RESULT_SUCCESS. Updating them on unverified raw sorry
+            # count alone caused a false positive in iter 2 of demo 9 where a
+            # `show ?a ≦ ?b -- PROBE` snapshot (invalid Lean U+2266 token)
+            # was promoted to best_sorry_count=3 because the agent passed
+            # build_check=False.
             if build_check:
                 build_err = self._build_check_or_revert(content, "file_replace_lines")
                 if build_err is not None:
                     build_err["replaced_lines"] = f"{start}-{end}"
                     return json.dumps(build_err, ensure_ascii=False)
 
-            # Track last build-passing snapshot regardless of sorry-count delta.
-            # Decomposition (sorry grows but compiles) is structural progress
-            # that provers.py should commit even if best_sorry_count didn't drop.
-            self._last_build_ok_content = new_file_content
-            self._last_build_ok_sorry_count = sorry_count
+                # Build verified — safe to update snapshots.
+                self._last_build_ok_content = new_file_content
+                self._last_build_ok_sorry_count = sorry_count
 
-            if sorry_count < self._best_sorry_count:
-                self._best_sorry_count = sorry_count
-                self._best_content = new_file_content
+                if sorry_count < self._best_sorry_count:
+                    self._best_sorry_count = sorry_count
+                    self._best_content = new_file_content
 
             return json.dumps({
                 "replaced_lines": f"{start}-{end}",
@@ -824,6 +830,7 @@ class TacticTools:
                 "new_sorry_count": sorry_count,
                 "best_sorry_count": self._best_sorry_count,
                 "build_check": "passed" if build_check else "skipped",
+                "snapshot_updated": build_check,
             }, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})
@@ -926,19 +933,21 @@ class TacticTools:
             Path(self._filepath).write_text(new_content, encoding="utf-8")
 
             # Build check: if compilation fails, revert and surface diagnostics.
+            # Same invariant as file_replace_lines: snapshots only update when
+            # the build was actually verified. See that method for the full
+            # iter 2 false positive context.
             if build_check:
                 build_err = self._build_check_or_revert(content, "file_replace_sorry")
                 if build_err is not None:
                     build_err["replaced"] = old_line.strip()
                     return json.dumps(build_err, ensure_ascii=False)
 
-            # See file_replace_lines for rationale on _last_build_ok_*.
-            self._last_build_ok_content = new_content
-            self._last_build_ok_sorry_count = sorry_count
+                self._last_build_ok_content = new_content
+                self._last_build_ok_sorry_count = sorry_count
 
-            if sorry_count < self._best_sorry_count:
-                self._best_sorry_count = sorry_count
-                self._best_content = new_content
+                if sorry_count < self._best_sorry_count:
+                    self._best_sorry_count = sorry_count
+                    self._best_content = new_content
 
             return json.dumps({
                 "replaced": old_line.strip(),
@@ -946,6 +955,7 @@ class TacticTools:
                 "new_sorry_count": sorry_count,
                 "best_sorry_count": self._best_sorry_count,
                 "build_check": "passed" if build_check else "skipped",
+                "snapshot_updated": build_check,
             }, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})

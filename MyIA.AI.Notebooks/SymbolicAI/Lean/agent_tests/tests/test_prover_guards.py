@@ -453,3 +453,102 @@ def test_file_replace_lines_no_duplicate_when_marker_in_replacement(tmp_path):
     # TODO appears exactly once (no duplicate)
     assert after.count("TODO: prove this") == 1
 
+
+# ──────────────────────────────────────────────────────────────────────────
+# Iter 2 false positive — snapshot must NOT update when build_check=False
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _make_fake_voting(tmp_path, content_lines):
+    fake = tmp_path / "VotingFake.lean"
+    body = (
+        "import Mathlib.Tactic\n"
+        "namespace TestSpace\n"
+        + "\n".join(f"-- pad {i}" for i in range(80))
+        + "\ntheorem t : True := by\n"
+        + "\n".join(content_lines)
+        + "\n"
+        + "\n".join(f"-- tail {i}" for i in range(80))
+        + "\nend TestSpace\n"
+    )
+    fake.write_text(body, encoding="utf-8")
+    return fake, body
+
+
+def test_file_replace_sorry_no_snapshot_when_build_check_false(tmp_path):
+    """build_check=False MUST NOT update best_sorry_count or best_content.
+
+    Iter 2 of demo 9 (Voting.lean L355) trace: the agent called
+    file_replace_sorry(replacement="show ?a ≦ ?b -- PROBE", build_check=False).
+    The replacement contained an invalid Lean Unicode token (U+2266 instead of
+    U+2264) which fails lake build, but best_sorry_count was promoted to 3
+    (from 4) on raw count alone because build_check was False. The autonomous
+    loop then committed that snapshot as RESULT_SUCCESS sorry 4→3.
+
+    Regression guard: with build_check=False, snapshots stay frozen.
+    """
+    import json
+    fake, body = _make_fake_voting(tmp_path, ["  sorry"])
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=84, indentation=2,
+        indent_str="  ", full_file=body,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    initial_best = tt.best_sorry_count
+    initial_best_content = tt.best_content
+
+    # Probe with build_check=False — exactly the iter 2 sequence
+    out = json.loads(tt.file_replace_sorry(
+        sorry_line=84,
+        replacement="show ?a ≦ ?b -- PROBE",  # invalid Lean U+2266 token
+        build_check=False,
+    ))
+    assert "error" not in out, out
+    assert out["build_check"] == "skipped"
+    assert out.get("snapshot_updated") is False, (
+        "build_check=False MUST set snapshot_updated=False"
+    )
+    assert tt.best_sorry_count == initial_best, (
+        f"best_sorry_count changed without build verification: "
+        f"{initial_best} -> {tt.best_sorry_count}"
+    )
+    assert tt.best_content == initial_best_content, (
+        "best_content snapshot updated without build verification"
+    )
+
+
+def test_file_replace_lines_no_snapshot_when_build_check_false(tmp_path):
+    """Same invariant for file_replace_lines."""
+    import json
+    fake, body = _make_fake_voting(tmp_path, ["  sorry"])
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=84, indentation=2,
+        indent_str="  ", full_file=body,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    initial_best = tt.best_sorry_count
+    initial_best_content = tt.best_content
+    initial_last_ok = getattr(tt, "_last_build_ok_content", None)
+
+    out = json.loads(tt.file_replace_lines(
+        start=84, end=84,
+        new_content="  show ?a ≦ ?b -- PROBE",
+        build_check=False,
+    ))
+    assert "error" not in out, out
+    assert out["build_check"] == "skipped"
+    assert out.get("snapshot_updated") is False
+    assert tt.best_sorry_count == initial_best
+    assert tt.best_content == initial_best_content
+    # _last_build_ok_content must also stay frozen — provers.py uses it as
+    # the structural-progress fallback; updating it without a build check
+    # would let an unverified snapshot leak through that path too.
+    assert getattr(tt, "_last_build_ok_content", None) == initial_last_ok, (
+        "_last_build_ok_content updated without build verification"
+    )

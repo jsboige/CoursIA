@@ -274,6 +274,9 @@ class MultiAgentSorryProver:
             total_s = time.time() - session_start
             final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
             structural_progress = False
+            # Default value so the success check after finally always has it,
+            # even if an exception is raised mid-block before the verify runs.
+            final_build_ok = False
 
             best_content = getattr(tactic_tools, "best_content", None)
             best_sorry = getattr(tactic_tools, "best_sorry_count",
@@ -303,15 +306,50 @@ class MultiAgentSorryProver:
                     Path(filepath).write_text(original_content, encoding="utf-8")
                     final_sorry = original_sorry_count
 
+            # MANDATORY final build verification on the committed file. This
+            # catches false positives where the snapshot's build_check was
+            # bypassed (build_check=False) or stale-cached. Iter 2 of demo 9
+            # promoted a `show ?a ≦ ?b -- PROBE` snapshot to best because the
+            # agent passed build_check=False; the snapshot guard in tools.py
+            # now prevents that, but this verify is the workflow-level safety
+            # net the user requested ("les verifs via build devraient faire
+            # partie integrante du workflow du prouveur").
+            from .lean_server import LeanVerifier as _LeanVerifierFinal
+            _LeanVerifierFinal.invalidate(filepath)
+            try:
+                final_verify_raw = tactic_tools.compile()
+                final_verify = json.loads(final_verify_raw)
+            except Exception as _e:
+                final_verify = {"overall": False, "level_1": False,
+                                "errors": [{"message": f"final-verify crashed: {_e}"}]}
+
+            final_build_ok = bool(final_verify.get("level_1", False))
+            if not final_build_ok:
+                _errs = final_verify.get("errors", [])[:5]
+                print(
+                    f"  FINAL VERIFY FAILED ({len(_errs)} compile errors). "
+                    f"Reverting to original to avoid leaving the file broken."
+                )
+                Path(filepath).write_text(original_content, encoding="utf-8")
+                final_sorry = original_sorry_count
+                structural_progress = False
+                # Force-clear best snapshot so callers don't claim spurious progress
+                tactic_tools._best_content = None
+                tactic_tools._best_sorry_count = original_sorry_count
+
         # Success now also covers structural progress: file changed but
         # compiles, even if sorry count didn't decrease. Provers.py used to
         # treat that as a failure and restore original, which threw away the
         # decomposition the agent had just done.
+        # IMPORTANT: success ALSO requires final_build_ok — a sorry-count drop
+        # without a real build is the iter 2 false positive we are guarding
+        # against. final_build_ok is set above in the mandatory verify.
         success = (
-            proof_found
-            or final_sorry == 0
-            or final_sorry < original_sorry_count
-            or structural_progress
+            (proof_found
+             or final_sorry == 0
+             or final_sorry < original_sorry_count
+             or structural_progress)
+            and final_build_ok
         )
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
