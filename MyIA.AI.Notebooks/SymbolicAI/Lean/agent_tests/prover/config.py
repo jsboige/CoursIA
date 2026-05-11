@@ -71,6 +71,7 @@ SOCIAL_CHOICE_DIR = next(
     _SOCIAL_CHOICE_CANDIDATES[0],
 )
 VOTING_FILE = SOCIAL_CHOICE_DIR / "SocialChoice" / "Voting.lean" if SOCIAL_CHOICE_DIR.exists() else None
+SMOKE_TEST_FILE = SOCIAL_CHOICE_DIR / "SocialChoice" / "_SmokeTest.lean" if SOCIAL_CHOICE_DIR.exists() else None
 VOTING_IMPORTS = """import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.List.Sort
@@ -551,5 +552,24 @@ DEMOS = {
             "NOTE: may need to unfold clone_independence to see exact goal structure."
         ),
         "difficulty": "very_hard",
+    },
+    15: {
+        "name": "SMOKE_TEST_ZERO_ADD",
+        "file": str(SMOKE_TEST_FILE) if SMOKE_TEST_FILE else "",
+        "line": 6,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "zero_add_smoke",
+        "theorem": "zero_add_smoke",
+        "imports": "import Mathlib.Data.Nat.Basic\n",
+        "goal": "0 + n = n",
+        "description": (
+            "Smoke test trivial: prove 0 + n = n for Nat.\n"
+            "Single one-line proof. Use one of:\n"
+            "  exact Nat.zero_add n\n"
+            "  omega\n"
+            "  simp\n"
+            "Replace the sorry at L6 of _SmokeTest.lean."
+        ),
+        "difficulty": "trivial",
     },
 }
