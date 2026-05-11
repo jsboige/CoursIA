@@ -458,6 +458,8 @@ sudoku_models/*.pth
 sudoku_models/*.h5
 sudoku_models/*.log
 sudoku_models/*.json
+# EXCEPTION: validated checkpoints for reproducibility
+!sudoku_models/checkpoints/*.pt
 
 # ============================================================================
 # EXCEPTIONS POSITIVES - Binaires Tweety PRECIEUX à versionner
@@ -559,6 +561,8 @@ tmp/
 *_model.pt
 **/checkpoints/**/*.pt
 **/checkpoints/**/*.pth
+# EXCEPTION: Sudoku validated checkpoints
+!sudoku_models/checkpoints/
 
 # ECE grading reports (student PII - never commit)
 reports/
@@ -645,6 +649,8 @@ slides/*/analysis/titles-slidev.txt
 
 # Sudoku NN training artifacts (large binary files)
 sudoku_models/
+# EXCEPTION: validated checkpoints required for notebook reproducibility
+!sudoku_models/checkpoints/
 *_dqn_model.pt
 best_dqn_model.pt
 dqn_backtest.png
