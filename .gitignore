@@ -710,3 +710,9 @@ reference.png
 MyIA.AI.Notebooks/GenAI/SemanticKernel/df_scaled.csv
 MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/test_results.txt
 scripts/notebook_tools/forensic_scan.last.json
+
+# Agent-generated audit/validation reports (belong on RooSync dashboard)
+# These patterns target agent report files in GenAI/scripts, not student labs
+MyIA.AI.Notebooks/GenAI/**/*_REPORT*.md
+MyIA.AI.Notebooks/GenAI/**/VALIDATION_*.md
+scripts/_archives/
