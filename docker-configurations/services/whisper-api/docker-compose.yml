@@ -45,7 +45,7 @@ services:
       - PYTHONUNBUFFERED=1
       - WHISPER_MODEL=${WHISPER_MODEL:-large-v3-turbo}
       - WHISPER_DEVICE=cuda
-      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-float16}
+      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-int8_float16}
       - MAX_FILE_SIZE=26214400
       - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
@@ -72,6 +72,7 @@ services:
       - "com.myia.service=whisper-api"
       - "com.myia.gpu=rtx-3080ti"
       - "com.myia.model=faster-whisper-large-v3-turbo"
+      - "com.myia.compute-type=int8_float16"
 
 networks:
   whisper-network:
