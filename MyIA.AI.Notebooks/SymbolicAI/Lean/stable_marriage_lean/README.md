@@ -9,7 +9,7 @@ The Stable Marriage Problem: given n men and n women, each with a strict prefere
 | File | Content | Status |
 |------|---------|--------|
 | `StableMarriage/Definitions.lean` | Types, preference profiles, matchings, stability | Scaffold (compiles) |
-| `StableMarriage/GaleShapley.lean` | Algorithm, stability/optimality theorems | 4 sorry |
+| `StableMarriage/GaleShapley.lean` | Algorithm, stability/optimality theorems | 5 sorry |
 
 ## Theorems (planned)
 
