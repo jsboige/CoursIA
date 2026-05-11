@@ -39,7 +39,7 @@ Chaque serie est concue pour etre **self-contained** : un etudiant peut ouvrir n
 
 Les approches **multi-paradigmes** sont privilegiees : le Sudoku est resolu par backtracking, CSP, metaheuristiques et reseaux de neurones pour comparer les compromis. Les jeux sont formalises en Python et en Lean 4. Cette diversite d'approches sur un meme probleme est au coeur de la demarche.
 
-Les notebooks combinent **theorie et implementation** : les concepts sont introduits progressivement, puis immediately mis en pratique dans des cellules executables. Les exercices proposes permettent de consolider les acquis.
+Les notebooks combinent **theorie et implementation** : les concepts sont introduits progressivement, puis mis en pratique dans des cellules executables. Les exercices proposes permettent de consolider les acquis.
 
 ---
 
