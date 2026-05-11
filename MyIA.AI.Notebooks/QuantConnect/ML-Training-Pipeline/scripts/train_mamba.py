@@ -484,7 +484,7 @@ def train_and_evaluate(
 
             with torch.amp.autocast("cuda", enabled=use_amp):
                 pred = model(X_batch)
-                loss = criterion(pred, y_batch)
+                loss = criterion(pred, y_batch.view_as(pred))
 
             if use_amp:
                 grad_scaler.scale(loss).backward()
@@ -511,7 +511,8 @@ def train_and_evaluate(
             for X_batch, y_batch in val_loader:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 with torch.amp.autocast("cuda", enabled=use_amp):
-                    val_loss += criterion(model(X_batch), y_batch).item()
+                    pred = model(X_batch)
+                    val_loss += criterion(pred, y_batch.view_as(pred)).item()
                 val_batches += 1
 
         avg_val = val_loss / max(val_batches, 1)
