@@ -213,7 +213,13 @@ def determine_status(
             return "DEMO"
         return "BROKEN"
 
-    # Has outputs, check external requirements
+    # Has outputs — if ALL code cells have outputs, READY regardless of requires_*
+    # Rationale: outputs present = proof of successful execution in compatible env
+    all_have_outputs = all(cell.get("outputs") for cell in code_cells)
+    if all_have_outputs:
+        return "READY"
+
+    # Some cells missing outputs + requires external services → DEMO
     if (requirements["requires_api"] or requirements["requires_gpu"]
             or requirements["requires_cloud"]):
         return "DEMO"
