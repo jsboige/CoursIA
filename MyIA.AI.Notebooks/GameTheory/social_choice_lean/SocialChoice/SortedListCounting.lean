@@ -57,9 +57,32 @@ variable {α : Type*}
     - Combining via `List.countP_append` and `List.countP_le_length`:
         `l.countP (· < l[k]) = (l.take k).countP (· < l[k]) + 0 ≤ k`. -/
 theorem countP_lt_kth_le_half [LinearOrder α]
-    {l : List α} (_hsort : l.Pairwise (· ≤ ·)) {k : ℕ} (_hk : k < l.length) :
+    {l : List α} (hsort : l.Pairwise (· ≤ ·)) {k : ℕ} (hk : k < l.length) :
     l.countP (fun x => decide (x < l[k])) ≤ k := by
-  sorry
+  set p : α := l[k] with hp
+  have hsplit : l = l.take k ++ l.drop k := (List.take_append_drop k l).symm
+  conv_lhs => rw [hsplit]
+  rw [List.countP_append]
+  have h1 : (l.take k).countP (fun x => decide (x < p)) ≤ k := by
+    calc (l.take k).countP (fun x => decide (x < p))
+        ≤ (l.take k).length := List.countP_le_length
+      _ = min k l.length := List.length_take
+      _ ≤ k := min_le_left _ _
+  have h2 : (l.drop k).countP (fun x => decide (x < p)) = 0 := by
+    apply List.countP_eq_zero.mpr
+    intro x hx
+    simp only [decide_eq_true_eq, not_lt, hp]
+    rcases List.mem_iff_getElem.mp hx with ⟨i, hi, rfl⟩
+    rw [List.getElem_drop]
+    have hki_lt : k + i < l.length := by
+      have hi' := hi
+      rw [List.length_drop] at hi'
+      omega
+    by_cases hi0 : i = 0
+    · subst hi0; simp
+    · have hlt : k < k + i := by omega
+      exact List.pairwise_iff_getElem.mp hsort k (k + i) hk hki_lt hlt
+  omega
 
 /-- For a list `l` sorted with `(· ≤ ·)` and pivot `l[k]`, the number of
     elements `≥ l[k]` is at least `l.length - k`.
@@ -74,9 +97,29 @@ theorem countP_lt_kth_le_half [LinearOrder α]
     - So `(l.drop k).countP (l[k] ≤ ·) = (l.drop k).length`.
     - Adding `(l.take k).countP (l[k] ≤ ·) ≥ 0` gives the bound. -/
 theorem countP_ge_kth_ge_half_succ [LinearOrder α]
-    {l : List α} (_hsort : l.Pairwise (· ≤ ·)) {k : ℕ} (_hk : k < l.length) :
+    {l : List α} (hsort : l.Pairwise (· ≤ ·)) {k : ℕ} (hk : k < l.length) :
     l.length - k ≤ l.countP (fun x => decide (l[k] ≤ x)) := by
-  sorry
+  set p : α := l[k] with hp
+  have hsplit : l = l.take k ++ l.drop k := (List.take_append_drop k l).symm
+  conv_rhs => rw [hsplit]
+  rw [List.countP_append]
+  have hdrop_all : (l.drop k).countP (fun x => decide (p ≤ x)) = (l.drop k).length := by
+    rw [List.countP_eq_length]
+    intro x hx
+    simp only [decide_eq_true_eq, hp]
+    rcases List.mem_iff_getElem.mp hx with ⟨i, hi, rfl⟩
+    rw [List.getElem_drop]
+    have hki_lt : k + i < l.length := by
+      have hi' := hi
+      rw [List.length_drop] at hi'
+      omega
+    by_cases hi0 : i = 0
+    · subst hi0; simp
+    · have hlt : k < k + i := by omega
+      exact List.pairwise_iff_getElem.mp hsort k (k + i) hk hki_lt hlt
+  have hdrop_len : (l.drop k).length = l.length - k := List.length_drop
+  rw [hdrop_all, hdrop_len]
+  omega
 
 /-! ## Application to median voter (planned)
 
