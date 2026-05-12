@@ -893,10 +893,14 @@ class AutonomousProver:
                 unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
                 if unsolved:
                     print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
-                          f"{final_sorry} sorry. Reverting.", flush=True)
-                    Path(filepath).write_text(
-                        Path(filepath).read_text(encoding="utf-8"), encoding="utf-8")
-                    # Restore original if best state also has unsolved goals
+                          f"{final_sorry} sorry. Reverting to original.", flush=True)
+                    # BUGFIX (2026-05-12 ai-01): previous version did
+                    # `Path(filepath).write_text(Path(filepath).read_text(...), ...)`
+                    # which is a no-op (reads then writes the SAME file content),
+                    # so the broken/unsolved-goal file was committed to disk
+                    # despite the "Reverting" message. Restore from
+                    # `original_file_content` captured at session start.
+                    Path(filepath).write_text(original_file_content, encoding="utf-8")
                     final_sorry = original_sorry_count
                 else:
                     print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
