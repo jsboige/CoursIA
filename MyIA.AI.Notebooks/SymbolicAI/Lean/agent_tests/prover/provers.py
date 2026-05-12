@@ -637,8 +637,38 @@ class AutonomousProver:
                 for retry in range(max_retries + 1):
                     try:
                         if agent_timeout_s > 0:
-                            response = await asyncio.wait_for(
-                                agent.run(full_context), timeout=agent_timeout_s)
+                            # ContextVar-safe timeout: do NOT use `asyncio.wait_for`
+                            # because the framework's AgentTelemetryLayer sets a
+                            # ContextVar Token inside `agent.run`. `wait_for`
+                            # spawns a child task with a child Context, and on
+                            # timeout the Token.reset propagates through the
+                            # outer Context, raising
+                            # `ValueError: <Token> was created in a different
+                            # Context` (verified via OTel trace
+                            # multi_SMOKE_ZERO_ADD_local_*.spans.jsonl,
+                            # 2026-05-11, cf. workflow.py L116 NOTE).
+                            #
+                            # Fix: spawn the task explicitly and use
+                            # `asyncio.wait` (which never auto-cancels) + manual
+                            # cancel + `await task` so the Token reset runs
+                            # inside the task's own Context.
+                            agent_task = asyncio.create_task(
+                                agent.run(full_context))
+                            done, _pending = await asyncio.wait(
+                                {agent_task}, timeout=agent_timeout_s)
+                            if agent_task in done:
+                                response = agent_task.result()
+                            else:
+                                agent_task.cancel()
+                                try:
+                                    await agent_task
+                                except (asyncio.CancelledError, Exception):
+                                    # Cancellation/teardown errors are
+                                    # expected — Token reset happens inside
+                                    # the task's own Context.
+                                    pass
+                                raise asyncio.TimeoutError(
+                                    f"agent.run exceeded {agent_timeout_s}s")
                         else:
                             response = await agent.run(full_context)
                         break  # Success — exit retry loop
