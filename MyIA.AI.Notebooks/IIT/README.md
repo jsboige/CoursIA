@@ -7,7 +7,9 @@ breakdown: =1
 maturity: ALPHA=1
 -->
 
-Introduction a la Theorie de l'Information Integree (IIT) avec PyPhi, une bibliotheque Python pour le calcul de Phi et l'analyse de la conscience computationnelle.
+Cette serie vous introduit a la Theorie de l'Information Integree (IIT), un cadre mathematique proposant une mesure quantitative de la conscience. A l'aide de PyPhi, la bibliotheque de reference developpee par le laboratoire de Giulio Tononi, vous apprendrez a construire des reseaux causaux, calculer la mesure Phi et explorer la geometrie informationnelle des systemes complexes. L'unique notebook couvre le spectre complet de la theorie, des graphes binaires aux macro-subsystemes.
+
+**Progression recommandee** : Ce notebook unique (~90 min) est accessible des que vous maitrisez Python de base et la logique booleenne. Il constitue un excellent complement theorique aux series [Probas](../Probas/README.md) (modeles probabilistes) et [GameTheory](../GameTheory/README.md) (systemes multi-agents), avec lesquelles il partage les concepts de causalite et d'interaction.
 
 ## Vue d'ensemble
 

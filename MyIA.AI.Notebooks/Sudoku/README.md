@@ -380,15 +380,15 @@ Sudoku-0-Csharp (Environment - comprendre les structures)
     +---> Niveau 7 : Sudoku-18-Comparison-Python
 ```
 
-## Liens avec les autres series
+## Cross-series Bridges
 
-| Serie | Lien |
-|-------|------|
-| [Search - Part1-Foundations](../Search/Part1-Foundations/README.md) | Theorie : backtracking, metaheuristiques, DLX |
-| [Search - Part2-CSP](../Search/Part2-CSP/README.md) | Programmation par contraintes : AC-3, CP-SAT, scheduling |
-| [SymbolicAI](../SymbolicAI/README.md) | Z3 SMT (approfondi), OR-Tools |
-| [Probas/Infer](../Probas/README.md) | Infer.NET (approfondi) |
-| [GameTheory](../GameTheory/README.md) | Minimax, MCTS (jeux combinatoires) |
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Search](../Search/README.md) | Recherche et optimisation | Backtracking, metaheuristiques et DLX (Niveaux 1-3) sont les fondements memes de la serie Search ; CSP (Niveau 4) approfondit AC-3 et CP-SAT |
+| [SymbolicAI](../SymbolicAI/README.md) | IA symbolique | Z3 SMT solver (Niveau 5) est l'approfondissement naturel des solveurs constraint-based ; OR-Tools partage les memes techniques |
+| [Probas](../Probas/README.md) | Programmation probabiliste | Infer.NET (Niveau 5) illustre comment les modeles probabilistes completent les approches deterministes |
+| [GameTheory](../GameTheory/README.md) | Theorie des jeux | Minimax et MCTS (Niveau 3) sont partages avec les jeux combinatoires ; les arbres de recherche sont structures semblablement |
+| [ML](../ML/README.md) | Machine Learning | Les solveurs neuronaux (Niveau 6) et l'evaluation LLM (Niveau 7) prolongent les techniques ML/DL pour la resolution de puzzles |
 
 ## Prerequis
 
