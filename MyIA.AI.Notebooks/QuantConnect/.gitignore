@@ -123,6 +123,11 @@ $RECYCLE.BIN/
 .directory
 
 # ===============================
+# Docker Research Stubs
+# ===============================
+projects/*/config.json
+
+# ===============================
 # Temporary Files
 # ===============================
 *.tmp
