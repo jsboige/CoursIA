@@ -80,16 +80,16 @@ def get_container_for_project(project_name: str) -> str | None:
 def run(project_dir: Path, notebook_name: str, port: int, timeout: int) -> int:
     lean = find_lean()
     ws = workspace_root(project_dir)
-    project_name = project_dir.name
+    project_rel = project_dir.resolve().relative_to(ws)
     print(f"[recipe] workspace={ws}", file=sys.stderr)
-    print(f"[recipe] project={project_name}  notebook={notebook_name}", file=sys.stderr)
+    print(f"[recipe] project={project_rel}  notebook={notebook_name}", file=sys.stderr)
 
     env = os.environ.copy()
     env["PYTHONUTF8"] = "1"
 
     print(f"[recipe] launching lean research --detach on port {port}...", file=sys.stderr)
     res = subprocess.run(
-        [lean, "research", project_name, "--detach", "--no-open", "--no-update",
+        [lean, "research", str(project_rel), "--detach", "--no-open",
          "--port", str(port)],
         cwd=str(ws), env=env, capture_output=True, text=True,
     )
@@ -99,7 +99,7 @@ def run(project_dir: Path, notebook_name: str, port: int, timeout: int) -> int:
         return res.returncode
 
     time.sleep(2)
-    container = get_container_for_project(project_name)
+    container = get_container_for_project(str(project_rel))
     if not container:
         print("[recipe] FATAL: no lean_cli container running after launch", file=sys.stderr)
         return 2
