@@ -69,7 +69,10 @@ theorem gale_shapley_stable (prof : PrefProfile n) :
   -- but we cannot prove nonemptiness here without porting GS.
   -- Attempt 3: special case n=1 — but theorem is parametric in n.
   classical
-  -- This is the actual content of GS — cannot be proven without the algorithm.
+  -- INTRACTABLE_UNTIL_GS_IMPL: existential proof requiring constructive witness
+  -- via Gale-Shapley algorithm. Cannot be solved by LLM tactic search.
+  -- See: mmaaz-git/stable-marriage-lean (Algorithm.lean ~1000 LOC)
+  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L73
   sorry
 
 /--
@@ -82,8 +85,9 @@ theorem gale_shapley_man_optimal (prof : PrefProfile n) :
     ∃ μ : Matching n, IsManOptimal prof μ := by
   -- Attempt 1: aesop -> made no progress
   -- Attempt 2: classical (cannot synthesize witness without GS)
-  -- Attempt 3: cannot derive from gale_shapley_stable since IsManOptimal
-  -- requires comparison across ALL stable matchings
+  -- INTRACTABLE_UNTIL_GS_IMPL: requires man-optimal witness from GS algorithm.
+  -- IsManOptimal quantifies over ALL stable matchings — no single witness suffices.
+  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L87
   sorry
 
 /--
@@ -109,8 +113,9 @@ theorem gale_shapley_woman_pessimal (prof : PrefProfile n)
   -- Attempt 2 (omega): "could not prove the goal" — non-arithmetic relation
   --   between μ.inverse and μ'.inverse
   -- Attempt 3 (Fin.le_refl): values not provably equal in general
-  -- Requires the rural-hospitals theorem and the lattice machinery from
-  -- mmaaz-git/stable-marriage-lean Lemmas.lean (~1000 LOC).
+  -- INTRACTABLE_UNTIL_GS_IMPL: Knuth 1976 lattice duality theorem.
+  -- Requires rural-hospitals theorem + lattice of stable matchings machinery.
+  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L114
   sorry
 
 end StableMarriage
