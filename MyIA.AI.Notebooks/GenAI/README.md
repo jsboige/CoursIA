@@ -214,3 +214,13 @@ python scripts/notebook_tools/notebook_tools.py analyze <path>
 ---
 
 Architecture SDDD | Compatible MCP | Derniere mise a jour : mai 2026
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [ML](../ML/README.md) | Pipelines ML, evaluation | Les modeles generatifs s'evaluent avec les memes metriques (precision, FID, WER) et s'integrent dans des pipelines ML |
+| [SemanticKernel](SemanticKernel/README.md) | Orchestration agentique | Semantic Kernel orchestre les LLMs et outils GenAI dans des workflows de production |
+| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | L'analyse de sentiment par LLM (Texte/8_Reasoning_Models) alimente les strategies de trading |
+| [RL](../RL/README.md) | Apprentissage par renforcement | Les agents RL peuvent utiliser des modeles generatifs comme recompenses (images, texte) |
+| [Probas](../Probas/README.md) | Modeles probabilistes | Les VAE, diffusion models et Bayesian neural networks partagent les memes fondements probabilistes |

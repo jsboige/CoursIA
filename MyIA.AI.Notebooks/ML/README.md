@@ -189,9 +189,15 @@ Voir la licence du repository principal.
 
 ---
 
-## Voir aussi
+## Cross-series Bridges
 
-**[Reinforcement Learning](../RL/)** - Series dediee a l'apprentissage par renforcement avec Stable Baselines3 (PPO, DQN, experience replay). 3 notebooks complementaires pour approfondir les techniques de RL.
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [RL](../RL/README.md) | Apprentissage par renforcement | Le RL s'appuie sur les memes fondamentaux ML (gradients, reseaux de neurones, evaluation) |
+| [GenAI](../GenAI/README.md) | IA generative | Les agents IA du track DataScienceWithAgents utilisent les LLMs couverts dans GenAI/Texte |
+| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | Les modeles de prediction ML (regression, classification) s'appliquent directement aux strategies de trading |
+| [Probas](../Probas/README.md) | Programmation probabiliste | L'evaluation bayesienne des modeles (TP-prevision-ventes) est une application directe de la serie Probas |
+| [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres ML rejoint les techniques de recherche (grille, bayesienne) |
 
 ---
 
