@@ -121,21 +121,65 @@ theorem countP_ge_kth_ge_half_succ [LinearOrder α]
   rw [hdrop_all, hdrop_len]
   omega
 
-/-! ## Application to median voter (planned)
+/-- Dual to `countP_ge_kth_ge_half_succ` from the left side: for a sorted list `l`
+    and pivot `l[k]`, the number of elements `≤ l[k]` is at least `k + 1`.
 
-    Once `countP_lt_kth_le_half` and `countP_ge_kth_ge_half_succ` are proven,
-    the following corollary closes Voting.lean L355 (and L385 by symmetry):
+    PROOF: decompose `l = take (k+1) ++ drop (k+1)`. The first `k+1` elements
+    (positions `0..k`) are all `≤ l[k]` by sortedness, contributing `k+1`. -/
+theorem countP_le_kth_ge_half_succ [LinearOrder α]
+    {l : List α} (hsort : l.Pairwise (· ≤ ·)) {k : ℕ} (hk : k < l.length) :
+    k + 1 ≤ l.countP (fun x => decide (x ≤ l[k])) := by
+  set p : α := l[k] with hp
+  have hsplit : l = l.take (k + 1) ++ l.drop (k + 1) := (List.take_append_drop (k + 1) l).symm
+  conv_rhs => rw [hsplit]
+  rw [List.countP_append]
+  have htake_all : (l.take (k + 1)).countP (fun x => decide (x ≤ p)) = (l.take (k + 1)).length := by
+    rw [List.countP_eq_length]
+    intro x hx
+    simp only [decide_eq_true_eq, hp]
+    rcases List.mem_iff_getElem.mp hx with ⟨i, hi, rfl⟩
+    rw [List.getElem_take]
+    have hi_lt_k1 : i < k + 1 := by
+      have hi' := hi
+      rw [List.length_take] at hi'
+      omega
+    have hi_lt_l : i < l.length := by
+      have hi' := hi
+      rw [List.length_take] at hi'
+      omega
+    by_cases hi_eq : i = k
+    · subst hi_eq; simp
+    · have hlt : i < k := by omega
+      exact List.pairwise_iff_getElem.mp hsort i k hi_lt_l hk hlt
+  have htake_len : (l.take (k + 1)).length = k + 1 := by
+    rw [List.length_take]
+    omega
+  rw [htake_all, htake_len]
+  omega
 
-    For an odd `n`, sorted list `l` of length `n`, pivot `m := l[n/2]`,
-    and predicates `P_lt := (· < m)`, `P_ge := (m ≤ ·)` :
-        l.countP P_lt < l.countP P_ge
+/-! ## Bridge: Finset.filter cardinality ↔ List.countP
 
-    Proof: by `countP_lt_kth_le_half`, `l.countP P_lt ≤ n/2`.
-    By `countP_ge_kth_ge_half_succ`, `l.countP P_ge ≥ n - n/2 = (n+1)/2`.
-    For odd `n = 2k+1`, `n/2 = k` and `(n+1)/2 = k+1`, hence `<`.
+    To apply `countP_lt_kth_le_half` / `countP_ge_kth_ge_half_succ` to
+    `Voting.lean median_voter_theorem_strict`, we need to translate
+    `(Finset.filter p Finset.univ).card` to `l.countP (decide ∘ p)` where
+    `l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)`. -/
 
-    The bridge from `Finset.filter ... Finset.univ` to `List.countP` uses
-    `Finset.length_toList`, `List.countP_map`, `List.length_filter_eq_countP`,
-    and `List.Perm.countP_eq` (for mergeSort). -/
+/-- Cardinality of a Finset filter equals countP on the underlying toList. -/
+theorem finset_filter_card_eq_toList_countP
+    {α : Type*} [DecidableEq α] (s : Finset α) (p : α → Bool) :
+    (s.filter (fun a => p a = true)).card = s.toList.countP p := by
+  rw [Finset.card, Finset.filter_val, ← Multiset.countP_eq_card_filter,
+      ← Multiset.coe_toList s.val, Multiset.coe_countP]
+  simp [Finset.toList]
+
+/-- Bridge specialised for `Fintype` and the median voter setup:
+    `A.card = (univ.toList.map f).countP p` (without going through filter).
+    The `mergeSort` step is left to the caller (via `List.Perm.countP_eq`). -/
+theorem finset_filter_lt_card_eq_toList_map_countP
+    {ι α : Type*} [Fintype ι] [DecidableEq ι] (f : ι → α) (p : α → Bool) :
+    (Finset.filter (fun i => p (f i) = true) Finset.univ).card =
+      (Finset.univ.toList.map f).countP p := by
+  rw [finset_filter_card_eq_toList_countP, List.countP_map]
+  rfl
 
 end SocialChoice.SortedListCounting
