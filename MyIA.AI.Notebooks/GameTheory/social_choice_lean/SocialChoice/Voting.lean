@@ -464,6 +464,40 @@ theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
     (fun i a b hpa hab => (hsp i).2.2 a b hpa hab)
     hodd
 
+/-! ## Strategy-Proofness under Single-Peaked Preferences -/
+
+/-- A voting rule f is strategy-proof on a set S if no voter can change the
+    outcome to one they strictly prefer by misreporting their preferences.
+    Here stated without Function.update to avoid DecidableEq ι:
+    for any truthful profile prof and deviating profile prof' that agrees
+    with prof everywhere except possibly at i, the deviant outcome is not
+    strictly preferred (under the true preferences) to the truthful outcome. -/
+def strategy_proof_scc (f : SCC ι σ) (S : Finset σ) : Prop :=
+  ∀ prof prof' i,
+    (∀ j, j ≠ i → prof' j = prof j) →
+    ¬ ∃ x y, x ∈ f prof' S ∧ y ∈ f prof S ∧ P (prof i).rel x y
+
+/-- Under strictly single-peaked preferences, no voter can strictly prefer
+    the median peak to their own peak. This is the core insight behind
+    strategy-proofness of the median rule: the peak is the unique top
+    element of the preference ordering, so nothing (including the median)
+    can be strictly preferred to it.
+
+    This lemma does NOT require an odd number of voters — it is purely
+    about the preference structure. -/
+theorem peak_not_strictly_preferred_to_median [Inhabited σ]
+    (prof : ι → PrefOrder σ)
+    (peaks : ι → σ)
+    (hsp : strictly_single_peaked_profile prof peaks)
+    (i : ι)
+    (hne : peaks i ≠ median_peak peaks) :
+    ¬ P (prof i).rel (median_peak peaks) (peaks i) := by
+  intro h
+  -- is_peak gives: ∀ x ≠ p, P R p x (peak strictly preferred to everything else)
+  -- So P (prof i).rel (peaks i) (median_peak peaks) with component .2 = ¬ R (median_peak) (peaks_i)
+  -- But h.1 gives R (median_peak) (peaks_i), contradiction.
+  exact (hsp i).1.1 (median_peak peaks) hne.symm |>.2 h.1
+
 end SinglePeaked
 
 section SplitCycle
