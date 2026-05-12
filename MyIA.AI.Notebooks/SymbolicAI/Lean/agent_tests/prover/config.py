@@ -134,6 +134,29 @@ HONEST_SORRIES = {
             "DO NOT TOUCH until Mathlib gains LP duality."
         ),
     },
+    str(GALESHAPLEY_FILE) if GALESHAPLEY_FILE else "": {
+        # GaleShapley.lean L73: existential stable matching (needs GS algorithm)
+        73: (
+            "gale_shapley_stable: existential proof ∃ μ, IsStable prof μ. "
+            "Requires constructive witness via Gale-Shapley deferred acceptance "
+            "algorithm. Cannot be solved by LLM tactic search. "
+            "See: mmaaz-git/stable-marriage-lean Algorithm.lean (~1000 LOC). "
+            "INTRACTABLE_UNTIL_GS_IMPL."
+        ),
+        # GaleShapley.lean L87: existential man-optimal matching
+        87: (
+            "gale_shapley_man_optimal: ∃ μ, IsManOptimal prof μ. Quantifies "
+            "over ALL stable matchings — no single witness suffices. "
+            "Requires GS algorithm output + lattice of stable matchings. "
+            "INTRACTABLE_UNTIL_GS_IMPL."
+        ),
+        # GaleShapley.lean L114: Knuth 1976 lattice duality (woman-pessimal)
+        114: (
+            "gale_shapley_woman_pessimal: Knuth 1976 duality theorem. Requires "
+            "rural-hospitals theorem + lattice of stable matchings machinery. "
+            "INTRACTABLE_UNTIL_GS_IMPL."
+        ),
+    },
 }
 
 
