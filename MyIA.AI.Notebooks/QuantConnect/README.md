@@ -370,6 +370,19 @@ Après completion de cette série, vous maîtriserez :
 
 ---
 
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [ML](../ML/README.md) | Machine Learning | Les modeles de prediction ML (regression, classification, XGBoost) s'appliquent directement aux strategies de trading (QC-13 a QC-16) |
+| [GenAI](../GenAI/README.md) | IA generative | L'analyse de sentiment par LLM (QC-17) et les agents semantiques (QC-18) utilisent les LLMs couverts dans GenAI/Texte |
+| [RL](../RL/README.md) | Apprentissage par renforcement | Les strategies RL (QC-22 PPO, QC-23 DRL, QC-24 Crypto RL) prolongent les fondamentaux RL de cette serie |
+| [Probas](../Probas/README.md) | Programmation probabiliste | La modelisation bayesienne des rendements et la gestion du risque s'appuient sur les modeles probabilistes de la serie Probas |
+| [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres de strategies (grid search, bayesienne) rejoint les techniques de recherche |
+| [TimeSeries](../TimeSeries/README.md) | Series temporelles | L'analyse technique (QC-4 a QC-7) partage les memes fondements que l'analyse de series temporelles |
+
+---
+
 **Bon trading algorithmique avec QuantConnect + CoursIA !**
 
 *Créé par CoursIA | Inspiré par "Hands-On AI Trading" (Jared Broad, 2025) | Cloud-first Architecture*

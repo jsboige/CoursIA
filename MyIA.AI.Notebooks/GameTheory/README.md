@@ -7,7 +7,9 @@ breakdown: =27
 maturity: ALPHA=20, BETA=4, DRAFT=3
 -->
 
-Cette serie de notebooks introduit la **Theorie des Jeux**, combinant **Python** (simulations, algorithmes) et **Lean 4** (formalisations, preuves).
+La theorie des jeux est le langage mathematique de la strategie. Elle modelise les situations ou des agents rationnels prennent des decisions dont le resultat depend des choix des autres : encheres, negociations commerciales, elections, poker, guerre commerciale, allocation de ressources. Cette dualite entre cooperation et competition est omnipresente en economie, en sciences politiques et en informatique (mecanismes de vote, smart contracts, reseaux). Le prix Nobel d'economie a ete decerne a des theoriciens des jeux a sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
+
+Cette serie vous forme sur deux axes complementaires. Le premier est **pratique** : simuler des jeux avec Nashpy et OpenSpiel, calculer des equilibres de Nash, organiser des tournois iteratifs (dilemme du prisonnier, Axelrod), et explorer les algorithmes modernes (CFR, Deep CFR). Le second est **formel** : prouver des resultats en Lean 4 — existence de Nash (Brouwer/Kakutani), theoreme d'Arrow, valeur de Shapley. A la fin, vous maitriserez aussi bien la theorie des jeux cooperatifs (Shapley, Core) que non-cooperatifs (Nash, SPE), et vous saurez formaliser ces resultats dans un assistant de preuve.
 
 ## Structure
 
@@ -115,6 +117,20 @@ Tous les notebooks incluent :
 - Plan avec liens ancres
 - Tableaux recapitulatifs
 - Exercices avec solutions completes
+
+## Progression recommandee
+
+### Decouvreur (fondements statiques, ~5h)
+
+Commencez par les notebooks 1 (Setup) et 2 (NormalForm) pour comprendre les matrices de gains et la dominance strategique. Le notebook 4 (NashEquilibrium) introduit le concept central de la serie : l'equilibre de Nash, pur et mixte. Le notebook 5 (ZeroSum-Minimax) complete avec le theoreme minimax de Von Neumann et la programmation lineaire. Ces quatre notebooks suffisent pour comprendre les bases de la theorie des jeux non-cooperatifs.
+
+### Praticien (jeux dynamiques et Lean, ~10h)
+
+Poursuivez avec les jeux dynamiques : notebook 7 (formes extensives), 9 (induction arriere), 10 (induction avant et SPE). Le notebook 6 (EvolutionTrust) offre une pause rafraichissante avec le tournoi d'Axelrod. Les side tracks Lean (2b, 4b) vous initient a la formalisation des resultats en assistant de preuve. A ce stade, vous etes capable de modeliser des interactions strategiques complexes et de les verifier formellement.
+
+### Expert (applications avancees et choix social, ~19h)
+
+Les notebooks 13 (CFR), 15 (jeux cooperatifs, Shapley), et 16 (mechanisme design, Arrow) ouvrent les frontieres de la discipline. Les side tracks Social Choice (16b-16f) approfondissent le theoreme d'Arrow via Lean, SAT et Z3. Le notebook 17 (Multi-Agent RL) fait le pont avec l'apprentissage par renforcement.
 
 ## Quick Start
 

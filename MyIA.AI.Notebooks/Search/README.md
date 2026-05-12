@@ -315,6 +315,34 @@ Search/
 └── PyGad-EdgeDetection.ipynb              # Ancien notebook (conserve)
 ```
 
+## Progression recommandee
+
+### Decouvreur (initiation rapide, ~6h)
+
+Commencez par Search-1 (StateSpace) et Search-2 (Uninformed) pour comprendre comment formaliser un probleme et explorer son espace d'etats avec BFS et DFS. Enchainz avec Search-3 (Informed) pour decouvrir A* et la puissance des heuristiques. Ces trois notebooks posent les bases dont vous aurez besoin dans toute la serie.
+
+### Praticien (maitrise algorithmique, ~18h)
+
+Couvrez les fondements Search-4 a Search-7 : recherche locale (Hill Climbing, Simulated Annealing), algorithmes genetiques, recherche adversariale (Minimax, Alpha-Beta) et MCTS. Puis attaquez les CSP : CSP-1 a CSP-4 vous apprendront a modeliser des problemes sous forme de contraintes, a propager les reductions (AC-3) et a resoudre des problemes d'ordonnancement reels avec OR-Tools. Le saut qualitatif se fait entre Search (exploration d'un espace) et CSP (reduction d'un espace par propagation).
+
+### Expert (applications et frontieres, ~35h)
+
+Compltez avec les notebooks avances : programmation lineaire (Search-9), automates symboliques (Search-10), metaheuristiques (Search-11), puis les CSP avances (hybridation LCG, contraintes souples, temporelles, distribuees). Les applications montrent comment tout cela s'applique a des problemes concrets : planification d'infirmiers, ordonnancement d'atelier, optimisation de portefeuille, resolution de Sudoku par DLX.
+
+---
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [Sudoku](../Sudoku/README.md) | Resolution de puzzles | Les solveurs Sudoku (DLX, automates symboliques, CSP) sont des applications directes des techniques de cette serie |
+| [SymbolicAI](../SymbolicAI/README.md) | IA symbolique | Z3 (SMT solving), planification PDDL et logique formelle prolongent les CSP vers la verification formelle |
+| [GameTheory](../GameTheory/README.md) | Theorie des jeux | Minimax et MCTS (Search-6/7) sont aussi les algorithmes fondamentaux de la serie GameTheory |
+| [Probas](../Probas/README.md) | Programmation probabiliste | Les approches probabilistes (MCTS, simulated annealing) partagent les memes fondements que les modeles probabilistes de la serie Probas |
+| [RL](../RL/README.md) | Apprentissage par renforcement | MCTS (Search-7) et l'optimisation d'hyperparametres (App-18) relient la recherche au RL |
+| [ML](../ML/README.md) | Machine Learning | L'optimisation bayesienne d'hyperparametres (App-18) applique les metaheuristiques de cette serie au ML |
+| [GenAI](../GenAI/README.md) | IA generative | Les LLMs peuvent etre utilises comme heuristiques pour la resolution CSP (CSP-6 Hybridization) |
+
 ---
 
 ## Licence
