@@ -28,3 +28,4 @@ import SocialChoice.Framework
 import SocialChoice.Arrow
 import SocialChoice.Sen
 import SocialChoice.Voting
+import SocialChoice.SortedListCounting

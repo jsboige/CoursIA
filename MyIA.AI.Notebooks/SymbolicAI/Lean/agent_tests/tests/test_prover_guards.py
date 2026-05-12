@@ -364,3 +364,191 @@ def test_plan_not_injected_for_coordinator():
         assert "analyze goal" in call_args
 
     asyncio.run(_test())
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Cycle 25 trace fix — file_replace_lines preserves protected comments
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_file_replace_lines_preserves_proof_strategy_comments(tmp_path):
+    """Replacement that strips PROOF STRATEGY block must preserve those comments.
+
+    Cycle 25 ai-01 trace: prover BG iter 1 stripped 16 lines of human-curated
+    PROOF STRATEGY documentation while making no proof progress (sorry 4->4).
+    The fix prepends protected comments back to the replacement so the agent
+    cannot silently regress documentation.
+    """
+    import json
+    fake = tmp_path / "VotingFake.lean"
+    body = (
+        "import Mathlib.Tactic\n"
+        "namespace TestSpace\n"
+        + "\n".join(f"-- pad {i}" for i in range(80))
+        + "\ntheorem t : True := by\n"
+        + "  -- PROOF STRATEGY (ai-01 Cycle 25):\n"
+        + "  -- 1. Establish sorted list properties\n"
+        + "  -- 2. Apply List.Perm.countP_eq\n"
+        + "  -- KEY MATHLIB LEMMAS: List.mergeSort_perm, List.countP_append\n"
+        + "  -- TODO: discharge sub-goal via omega\n"
+        + "  sorry\n"
+        + "\n".join(f"-- tail {i}" for i in range(80))
+        + "\nend TestSpace\n"
+    )
+    fake.write_text(body, encoding="utf-8")
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=88, indentation=2,
+        indent_str="  ", full_file=body,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    # The agent rewrites the proof block (lines 84-89) and "forgets" the
+    # PROOF STRATEGY / TODO / KEY MATHLIB comments — this is the bug.
+    out = json.loads(tt.file_replace_lines(
+        start=84, end=89,
+        new_content="  trivial",
+        build_check=False,
+    ))
+    assert "error" not in out, out
+    after = fake.read_text(encoding="utf-8")
+    # All 4 protected markers must survive
+    assert "PROOF STRATEGY" in after, "PROOF STRATEGY comment was stripped"
+    assert "KEY MATHLIB LEMMAS" in after, "KEY MATHLIB comment was stripped"
+    assert "TODO: discharge" in after, "TODO comment was stripped"
+
+
+def test_file_replace_lines_no_duplicate_when_marker_in_replacement(tmp_path):
+    """If the agent's new_content already includes the marker, do not duplicate."""
+    import json
+    fake = tmp_path / "VotingFake.lean"
+    body = (
+        "import Mathlib.Tactic\n"
+        "namespace TestSpace\n"
+        + "\n".join(f"-- pad {i}" for i in range(80))
+        + "\ntheorem t : True := by\n"
+        + "  -- TODO: prove this\n"
+        + "  sorry\n"
+        + "\n".join(f"-- tail {i}" for i in range(80))
+        + "\nend TestSpace\n"
+    )
+    fake.write_text(body, encoding="utf-8")
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=85, indentation=2,
+        indent_str="  ", full_file=body,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    # Agent provides new_content that already preserves the TODO line itself
+    out = json.loads(tt.file_replace_lines(
+        start=84, end=85,
+        new_content="  -- TODO: prove this\n  trivial",
+        build_check=False,
+    ))
+    assert "error" not in out, out
+    after = fake.read_text(encoding="utf-8")
+    # TODO appears exactly once (no duplicate)
+    assert after.count("TODO: prove this") == 1
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Iter 2 false positive — snapshot must NOT update when build_check=False
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _make_fake_voting(tmp_path, content_lines):
+    fake = tmp_path / "VotingFake.lean"
+    body = (
+        "import Mathlib.Tactic\n"
+        "namespace TestSpace\n"
+        + "\n".join(f"-- pad {i}" for i in range(80))
+        + "\ntheorem t : True := by\n"
+        + "\n".join(content_lines)
+        + "\n"
+        + "\n".join(f"-- tail {i}" for i in range(80))
+        + "\nend TestSpace\n"
+    )
+    fake.write_text(body, encoding="utf-8")
+    return fake, body
+
+
+def test_file_replace_sorry_no_snapshot_when_build_check_false(tmp_path):
+    """build_check=False MUST NOT update best_sorry_count or best_content.
+
+    Iter 2 of demo 9 (Voting.lean L355) trace: the agent called
+    file_replace_sorry(replacement="show ?a ≦ ?b -- PROBE", build_check=False).
+    The replacement contained an invalid Lean Unicode token (U+2266 instead of
+    U+2264) which fails lake build, but best_sorry_count was promoted to 3
+    (from 4) on raw count alone because build_check was False. The autonomous
+    loop then committed that snapshot as RESULT_SUCCESS sorry 4→3.
+
+    Regression guard: with build_check=False, snapshots stay frozen.
+    """
+    import json
+    fake, body = _make_fake_voting(tmp_path, ["  sorry"])
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=84, indentation=2,
+        indent_str="  ", full_file=body,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    initial_best = tt.best_sorry_count
+    initial_best_content = tt.best_content
+
+    # Probe with build_check=False — exactly the iter 2 sequence
+    out = json.loads(tt.file_replace_sorry(
+        sorry_line=84,
+        replacement="show ?a ≦ ?b -- PROBE",  # invalid Lean U+2266 token
+        build_check=False,
+    ))
+    assert "error" not in out, out
+    assert out["build_check"] == "skipped"
+    assert out.get("snapshot_updated") is False, (
+        "build_check=False MUST set snapshot_updated=False"
+    )
+    assert tt.best_sorry_count == initial_best, (
+        f"best_sorry_count changed without build verification: "
+        f"{initial_best} -> {tt.best_sorry_count}"
+    )
+    assert tt.best_content == initial_best_content, (
+        "best_content snapshot updated without build verification"
+    )
+
+
+def test_file_replace_lines_no_snapshot_when_build_check_false(tmp_path):
+    """Same invariant for file_replace_lines."""
+    import json
+    fake, body = _make_fake_voting(tmp_path, ["  sorry"])
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=84, indentation=2,
+        indent_str="  ", full_file=body,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    initial_best = tt.best_sorry_count
+    initial_best_content = tt.best_content
+    initial_last_ok = getattr(tt, "_last_build_ok_content", None)
+
+    out = json.loads(tt.file_replace_lines(
+        start=84, end=84,
+        new_content="  show ?a ≦ ?b -- PROBE",
+        build_check=False,
+    ))
+    assert "error" not in out, out
+    assert out["build_check"] == "skipped"
+    assert out.get("snapshot_updated") is False
+    assert tt.best_sorry_count == initial_best
+    assert tt.best_content == initial_best_content
+    # _last_build_ok_content must also stay frozen — provers.py uses it as
+    # the structural-progress fallback; updating it without a build check
+    # would let an unverified snapshot leak through that path too.
+    assert getattr(tt, "_last_build_ok_content", None) == initial_last_ok, (
+        "_last_build_ok_content updated without build verification"
+    )
