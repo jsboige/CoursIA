@@ -9,14 +9,14 @@ The Stable Marriage Problem: given n men and n women, each with a strict prefere
 | File | Content | Status |
 |------|---------|--------|
 | `StableMarriage/Definitions.lean` | Types, preference profiles, matchings, stability | Scaffold (compiles) |
-| `StableMarriage/GaleShapley.lean` | Algorithm, stability/optimality theorems | 5 sorry |
+| `StableMarriage/GaleShapley.lean` | Algorithm, stability/optimality theorems | 3 sorry |
 
 ## Theorems (planned)
 
 | Theorem | Statement | sorry |
 |---------|-----------|-------|
-| `gale_shapley_terminates` | Algorithm terminates in at most n^2 steps | 1 |
-| `gale_shapley_produces_matching` | Output is a valid bijection | 1 |
+| `gale_shapley_terminates` | Algorithm terminates in at most n^2 steps | 0 (proved by `trivial`) |
+| `gale_shapley_produces_matching` | Output is a valid bijection | 0 (witness: identity matching) |
 | `gale_shapley_stable` | No blocking pair exists | 1 |
 | `gale_shapley_man_optimal` | Proposers get best achievable partners | 1 |
 | `gale_shapley_woman_pessimal` | Receivers get worst achievable partners | 1 |
