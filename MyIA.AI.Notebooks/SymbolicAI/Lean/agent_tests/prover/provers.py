@@ -637,8 +637,38 @@ class AutonomousProver:
                 for retry in range(max_retries + 1):
                     try:
                         if agent_timeout_s > 0:
-                            response = await asyncio.wait_for(
-                                agent.run(full_context), timeout=agent_timeout_s)
+                            # ContextVar-safe timeout: do NOT use `asyncio.wait_for`
+                            # because the framework's AgentTelemetryLayer sets a
+                            # ContextVar Token inside `agent.run`. `wait_for`
+                            # spawns a child task with a child Context, and on
+                            # timeout the Token.reset propagates through the
+                            # outer Context, raising
+                            # `ValueError: <Token> was created in a different
+                            # Context` (verified via OTel trace
+                            # multi_SMOKE_ZERO_ADD_local_*.spans.jsonl,
+                            # 2026-05-11, cf. workflow.py L116 NOTE).
+                            #
+                            # Fix: spawn the task explicitly and use
+                            # `asyncio.wait` (which never auto-cancels) + manual
+                            # cancel + `await task` so the Token reset runs
+                            # inside the task's own Context.
+                            agent_task = asyncio.create_task(
+                                agent.run(full_context))
+                            done, _pending = await asyncio.wait(
+                                {agent_task}, timeout=agent_timeout_s)
+                            if agent_task in done:
+                                response = agent_task.result()
+                            else:
+                                agent_task.cancel()
+                                try:
+                                    await agent_task
+                                except (asyncio.CancelledError, Exception):
+                                    # Cancellation/teardown errors are
+                                    # expected — Token reset happens inside
+                                    # the task's own Context.
+                                    pass
+                                raise asyncio.TimeoutError(
+                                    f"agent.run exceeded {agent_timeout_s}s")
                         else:
                             response = await agent.run(full_context)
                         break  # Success — exit retry loop
@@ -893,10 +923,14 @@ class AutonomousProver:
                 unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
                 if unsolved:
                     print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
-                          f"{final_sorry} sorry. Reverting.", flush=True)
-                    Path(filepath).write_text(
-                        Path(filepath).read_text(encoding="utf-8"), encoding="utf-8")
-                    # Restore original if best state also has unsolved goals
+                          f"{final_sorry} sorry. Reverting to original.", flush=True)
+                    # BUGFIX (2026-05-12 ai-01): previous version did
+                    # `Path(filepath).write_text(Path(filepath).read_text(...), ...)`
+                    # which is a no-op (reads then writes the SAME file content),
+                    # so the broken/unsolved-goal file was committed to disk
+                    # despite the "Reverting" message. Restore from
+                    # `original_file_content` captured at session start.
+                    Path(filepath).write_text(original_file_content, encoding="utf-8")
                     final_sorry = original_sorry_count
                 else:
                     print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "

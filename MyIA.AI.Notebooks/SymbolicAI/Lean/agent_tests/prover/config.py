@@ -89,12 +89,31 @@ import SocialChoice.Definitions
 # this dynamically; this registry is the static fallback.
 HONEST_SORRIES = {
     str(VOTING_FILE) if VOTING_FILE else "": {
-        261: (
+        # Line of the actual `sorry` keyword; FIXME marker is in comment block
+        # immediately above (L253-261). Realigned 2026-05-12 (ai-01 iter 2)
+        # after PR #952 shifted line numbers when L338+L361 were proven.
+        262: (
             "median_voter_theorem WEAK version is UNPROVABLE with single_peaked "
             "(weak preference). Counter-example: σ={1,2,3}, 3 voters, peaks "
             "[1,2,3], median=2. If voter 3 is indifferent between 1 and 2, "
             "margin(2,1) = 0, not > 0. Use median_voter_theorem_strict instead "
-            "(L270 with hstrict_left/hstrict_right hypotheses)."
+            "(L271 with hstrict_left/hstrict_right hypotheses)."
+        ),
+    },
+    str(BASIC_FILE) if BASIC_FILE else "": {
+        # bondareva_shapley_backward at Basic.lean L234. Registered 2026-05-12
+        # (ai-01 iter 3 cooperative-games). FIXME marker is in comment block
+        # immediately above (L217-233). Mathlib lacks LP duality / Farkas'
+        # lemma, both of which are required for the classical proof. Marking
+        # as HONEST_UNPROVABLE-in-current-Mathlib until LP machinery lands.
+        234: (
+            "bondareva_shapley_backward (Bondareva 1963, Shapley 1967) requires "
+            "LP duality on Finset N → ℝ (or Farkas' lemma in convex form), "
+            "neither of which is available in Mathlib v4.29.1. The proof needs "
+            "either (a) porting Mathlib.Analysis.Convex.Cone.Dual + finite-dim "
+            "Hahn-Banach, or (b) reformulating via Shapley value which only "
+            "covers the convex special case. Multi-week effort; out of scope. "
+            "DO NOT TOUCH until Mathlib gains LP duality."
         ),
     },
 }

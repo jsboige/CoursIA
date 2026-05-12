@@ -28,6 +28,7 @@ Output:
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -53,6 +54,14 @@ try:
     from walk_forward import WalkForwardSplitter
 except ImportError:
     WalkForwardSplitter = None
+
+
+def set_seed(seed: int):
+    """Set random seed for reproducibility across numpy, torch, cuda."""
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 # ---------------------------------------------------------------------------
@@ -385,6 +394,53 @@ def train_and_evaluate(
 
 
 # ---------------------------------------------------------------------------
+# Aggregation helpers
+# ---------------------------------------------------------------------------
+
+
+def compute_aggregate(per_run: list[dict]) -> dict:
+    """Compute aggregate statistics across seeds and folds.
+
+    Returns mean +/- std for key metrics and a verdict according to
+    feedback_multi_seed_required.md (>=4 seeds, edge >= 2*std cross-seed).
+    """
+    if not per_run:
+        return {"verdict": "NO_DATA", "n_runs": 0}
+
+    edges = [r["edge_over_majority"] for r in per_run]
+    mses = [r["mse"] for r in per_run]
+    dir_accs = [r["direction_accuracy_step1"] for r in per_run]
+
+    mean_edge = float(np.mean(edges))
+    std_edge = float(np.std(edges)) if len(edges) > 1 else 0.0
+    seeds_used = sorted(set(r["seed"] for r in per_run))
+
+    # Verdict logic (CLAUDE.md G.2 + feedback_multi_seed_required.md)
+    if len(seeds_used) < 4:
+        verdict = "INCONCLUSIVE"
+    elif mean_edge > 0 and std_edge > 0 and mean_edge >= 2 * std_edge:
+        verdict = "BEATS"
+    elif mean_edge < -2 * max(std_edge, 1e-6):
+        verdict = "NO_BEATS"
+    else:
+        verdict = "INCONCLUSIVE"
+
+    return {
+        "n_runs": len(per_run),
+        "n_seeds": len(seeds_used),
+        "seeds": seeds_used,
+        "n_folds": max(r["fold_idx"] for r in per_run) + 1,
+        "mse": {"mean": round(float(np.mean(mses)), 6),
+                "std": round(float(np.std(mses)), 6)},
+        "direction_accuracy_step1": {"mean": round(float(np.mean(dir_accs)), 4),
+                                     "std": round(float(np.std(dir_accs)), 4)},
+        "edge_over_majority": {"mean": round(mean_edge, 4),
+                               "std": round(std_edge, 4)},
+        "verdict": verdict,
+    }
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -437,20 +493,18 @@ def main():
         default=str(Path(__file__).resolve().parent.parent / "outputs" / "tft_run1"),
     )
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--smoke", action="store_true",
+                        help="Smoke test: synthetic data, 2 epochs (alias for dry-run)")
     parser.add_argument("--advanced", action="store_true")
     parser.add_argument("--indicators", nargs="+", default=None)
     args = parser.parse_args()
 
-    seeds = [int(s) for s in args.seeds.split(",")] if args.seeds else [args.seed]
-    np.random.seed(seeds[0])
+    if args.smoke:
+        args.dry_run = True
+        args.epochs = 2
 
-    try:
-        import torch
-        torch.manual_seed(seeds[0])
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-    except ImportError:
-        print("ERROR: PyTorch not installed.", file=sys.stderr)
-        sys.exit(1)
+    seeds = [int(s) for s in args.seeds.split(",")] if args.seeds else [args.seed]
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     symbols = [s.strip() for s in args.symbols.split(",")]
 
@@ -458,7 +512,7 @@ def main():
         print("DRY-RUN: Using synthetic data (1000 rows, 2 epochs)")
         raw = generate_synthetic_data(1000)
         data_hash = "synthetic-dryrun"
-        args.epochs = 2
+        args.epochs = min(args.epochs, 2)
         symbols = [symbols[0]] if symbols else ["SPY"]
     else:
         data_dir = Path(args.data_dir)
@@ -489,77 +543,153 @@ def main():
     )
     print(f"Sequences: {len(X)} samples, seq_len={args.seq_len}, pred_len={args.pred_len}")
 
-    n = len(X)
-    train_end = int(n * args.train_ratio)
-    val_end = int(n * (args.train_ratio + args.val_ratio))
-
-    X_train, y_train = X[:train_end], y[:train_end]
-    X_val, y_val = X[train_end:val_end], y[train_end:val_end]
-    X_test, y_test = X[val_end:], y[val_end:]
-
-    X_train, X_val, X_test, norm_mean, norm_std = normalize_sequences(X_train, X_val, X_test)
-
-    actual_test_ratio = round(len(X_test) / n, 3)
-    print(f"Split: train={len(X_train)}, val={len(X_val)}, test={len(X_test)} "
-          f"(requested test_ratio={args.test_ratio}, actual={actual_test_ratio})")
-
+    # Build fold iterator (walk-forward or single split)
     if args.walk_forward and WalkForwardSplitter is not None:
-        print(f"Walk-forward validation: {args.n_splits} splits, gap={args.gap}")
+        splitter = WalkForwardSplitter(n_splits=args.n_splits, gap=args.gap)
+        folds = list(splitter.split(X))
+        print(f"Walk-forward: {len(folds)} folds, gap={args.gap}")
+    elif args.walk_forward and WalkForwardSplitter is None:
+        print("WARNING: --walk-forward set but WalkForwardSplitter not available. "
+              "Falling back to single split.", file=sys.stderr)
+        n = len(X)
+        train_end = int(n * args.train_ratio)
+        folds = [(np.arange(0, train_end), np.arange(train_end, n))]
+    else:
+        n = len(X)
+        train_end = int(n * args.train_ratio)
+        folds = [(np.arange(0, train_end), np.arange(train_end, n))]
 
-    print(f"Device: {device}, n_vars={n_features}, seeds={seeds}")
+    print(f"Device: {device}, n_vars={n_features}, seeds={seeds}, folds={len(folds)}")
 
-    hyperparams = {
-        "model_type": "tft",
-        "seq_len": args.seq_len,
-        "pred_len": args.pred_len,
-        "d_model": args.d_model,
-        "n_heads": args.n_heads,
-        "lstm_layers": args.lstm_layers,
-        "dropout": args.dropout,
-        "fc_dropout": args.fc_dropout,
-        "epochs": args.epochs,
-        "batch_size": args.batch_size,
-        "learning_rate": args.lr,
-        "lookback": args.lookback,
-        "symbols": symbols,
-        "train_ratio": args.train_ratio,
-        "val_ratio": args.val_ratio,
-        "test_ratio": args.test_ratio,
-        "actual_test_ratio": actual_test_ratio,
-        "device": device,
-        "seeds": seeds,
+    # ------------------------------------------------------------------
+    # Multi-seed x multi-fold training loop
+    # ------------------------------------------------------------------
+    per_run: list[dict] = []
+    best_model = None
+    best_edge = -float("inf")
+
+    for seed in seeds:
+        set_seed(seed)
+        print(f"\n=== Seed {seed} ({seeds.index(seed)+1}/{len(seeds)}) ===")
+
+        for fold_idx, (train_idx, test_idx) in enumerate(folds):
+            print(f"  Fold {fold_idx+1}/{len(folds)}: "
+                  f"train={len(train_idx)}, test={len(test_idx)}")
+
+            X_train, y_train = X[train_idx], y[train_idx]
+            X_test, y_test = X[test_idx], y[test_idx]
+
+            # Normalize using train stats only (anti-leakage)
+            X_train_norm, X_test_norm, norm_mean, norm_std = normalize_sequences(
+                X_train, X_test,
+            )
+
+            # Reset seed before model init for reproducibility
+            set_seed(seed)
+
+            result = train_and_evaluate(
+                X_train_norm, y_train, X_test_norm, y_test,
+                n_vars=n_features,
+                seq_len=args.seq_len,
+                pred_len=args.pred_len,
+                d_model=args.d_model,
+                n_heads=args.n_heads,
+                lstm_layers=args.lstm_layers,
+                dropout=args.dropout,
+                fc_dropout=args.fc_dropout,
+                epochs=args.epochs,
+                batch_size=args.batch_size,
+                learning_rate=args.lr,
+                device=device,
+            )
+
+            m = result["metrics"]
+            run_info = {
+                "seed": seed,
+                "fold_idx": fold_idx,
+                "n_train": len(train_idx),
+                "n_test": len(test_idx),
+                "mse": m["mse"],
+                "mae": m["mae"],
+                "direction_accuracy_step1": m["direction_accuracy_step1"],
+                "majority_class_baseline": m["majority_class_baseline"],
+                "edge_over_majority": m["edge_over_majority"],
+                "best_val_loss": m["best_val_loss"],
+                "total_params": m["total_params"],
+            }
+            per_run.append(run_info)
+
+            edge = m["edge_over_majority"]
+            print(f"    MSE={m['mse']:.6f}  DirAcc={m['direction_accuracy_step1']:.4f}"
+                  f"  Edge={edge:+.4f} ({'OK' if edge > 0 else 'FAIL'})")
+
+            if edge > best_edge:
+                best_edge = edge
+                best_model = result
+
+    # ------------------------------------------------------------------
+    # Aggregate and save
+    # ------------------------------------------------------------------
+    aggregate = compute_aggregate(per_run)
+
+    print(f"\n{'='*60}")
+    print(f"AGGREGATE ({aggregate['n_runs']} runs, "
+          f"{aggregate['n_seeds']} seeds, {aggregate['n_folds']} folds)")
+    print(f"  MSE: {aggregate['mse']['mean']:.6f} +/- {aggregate['mse']['std']:.6f}")
+    print(f"  DirAcc: {aggregate['direction_accuracy_step1']['mean']:.4f}"
+          f" +/- {aggregate['direction_accuracy_step1']['std']:.4f}")
+    print(f"  Edge: {aggregate['edge_over_majority']['mean']:+.4f}"
+          f" +/- {aggregate['edge_over_majority']['std']:.4f}")
+    print(f"  Verdict: {aggregate['verdict']}")
+    print(f"{'='*60}")
+
+    # Save results JSON
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    results_json = {
+        "per_run": per_run,
+        "aggregate": aggregate,
+        "hyperparams": {
+            "model_type": "tft",
+            "seq_len": args.seq_len,
+            "pred_len": args.pred_len,
+            "d_model": args.d_model,
+            "n_heads": args.n_heads,
+            "lstm_layers": args.lstm_layers,
+            "dropout": args.dropout,
+            "fc_dropout": args.fc_dropout,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "learning_rate": args.lr,
+            "lookback": args.lookback,
+            "symbols": symbols,
+            "walk_forward": args.walk_forward,
+            "n_splits": args.n_splits if args.walk_forward else 1,
+            "gap": args.gap if args.walk_forward else 0,
+            "device": device,
+            "seeds": seeds,
+            "data_hash": data_hash,
+        },
     }
 
-    result = train_and_evaluate(
-        X_train, y_train, X_test, y_test,
-        n_vars=n_features,
-        seq_len=args.seq_len,
-        pred_len=args.pred_len,
-        d_model=args.d_model,
-        n_heads=args.n_heads,
-        lstm_layers=args.lstm_layers,
-        dropout=args.dropout,
-        fc_dropout=args.fc_dropout,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        learning_rate=args.lr,
-        device=device,
-    )
+    results_path = output_dir / "results.json"
+    with open(results_path, "w") as f:
+        json.dump(results_json, f, indent=2)
+    print(f"Results saved to {results_path}")
 
-    output_dir = Path(args.output_dir)
-    save_pytorch_checkpoint(
-        result["model"], result, hyperparams, data_hash, output_dir,
-        model_type="tft",
-    )
-
-    m = result["metrics"]
-    edge = m["edge_over_majority"]
-    print(f"\nResults: MSE={m['mse']}, DirAcc(step1)={m['direction_accuracy_step1']}")
-    print(f"  Majority baseline: {m['majority_class_baseline']['majority_class_accuracy']}")
-    print(f"  Edge over majority: {edge:+.4f} ({'BEATS' if edge > 0 else 'FAILS'} baseline)")
+    # Save best model checkpoint
+    if best_model is not None:
+        hyperparams = results_json["hyperparams"]
+        save_pytorch_checkpoint(
+            best_model["model"], best_model, hyperparams, data_hash,
+            output_dir, model_type="tft",
+        )
 
     if args.dry_run:
-        print("DRY-RUN complete. TFT pipeline validated successfully.")
+        print("DRY-RUN complete. TFT pipeline validated with multi-seed + walk-forward.")
+
+    return results_json
 
 
 if __name__ == "__main__":
