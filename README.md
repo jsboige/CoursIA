@@ -24,7 +24,7 @@ Les notebooks sont disponibles en Python, C# (.NET Interactive) et Lean 4. Chaqu
 
 ## Ce qu'on y trouve
 
-Le depot couvre un spectre inhabituellement large de l'IA, des algorithmes classiques aux modeles generatifs les plus recents. Quelques points remarquables :
+Le depot couvre un spectre large de l'IA, des algorithmes classiques aux modeles generatifs les plus recents. Quelques points notables :
 
 - **Multi-langages** : Python pour le ML et l'IA generative, C# pour l'ecosysteme Microsoft (ML.NET, Infer.NET, Semantic Kernel), Lean 4 pour la verification formelle
 - **Donnees reelles** : les notebooks QuantConnect utilisent des donnees de marche reelles via yfinance ; le ML Training Pipeline travaille sur un panier de 10 cryptomonnaies avec validation walk-forward stricte
@@ -65,7 +65,7 @@ C# et Python | [README detaille](MyIA.AI.Notebooks/Sudoku/README.md)
 
 L'IA symbolique s'interesse aux systemes de raisonnement automatique. Cette serie explore plusieurs sous-domaines complementaires :
 
-**Tweety** (10 notebooks) -- Logiques formelles et argumentation computationnelle avec TweetyProject. Des extensions de Dung aux systemes ASPIC+ et DeLP, en passant par la revision de croyances AGM.
+**Tweety** (10 notebooks) -- Logiques formelles et argumentation computationnelle avec TweetyProject. Logiques propositionnelle, du premier ordre, modale et argumentatives, des extensions de Dung aux systemes ASPIC+ et DeLP, en passant par la revision de croyances AGM.
 
 **Semantic Web** (18 notebooks) -- Du RDF/OWL aux graphes de connaissances integres aux LLMs. Fondations en .NET (dotNetRDF), standards modernes en Python (SHACL, JSON-LD, RDF-Star), puis GraphRAG et comparaison de raisonneurs.
 
