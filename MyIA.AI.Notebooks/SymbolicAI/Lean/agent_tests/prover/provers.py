@@ -24,6 +24,7 @@ from .agents import (
     create_tactic_agent,
     create_critic_agent,
     create_coordinator_agent,
+    create_director_agent,
 )
 from .workflow import ProofWorkflowBuilder, ProofMessage
 from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS
@@ -91,10 +92,12 @@ class MultiAgentSorryProver:
     """
 
     def __init__(self, trace: TraceLogger, provider: str = "zai",
-                 local_provider: str = "local"):
+                 local_provider: str = "local",
+                 director_provider: Optional[str] = None):
         self.trace = trace
         self.provider = provider
         self.local_provider = local_provider
+        self.director_provider = director_provider
 
     async def prove_sorry(self, demo: dict, max_iterations: int = 10,
                           workflow_timeout_s: Optional[int] = None) -> dict:
@@ -188,10 +191,21 @@ class MultiAgentSorryProver:
         critic_agent = create_critic_agent(critic_tools, provider=self.provider)
         coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.provider)
 
+        # Create optional DirectorAgent (external LLM for strategic guidance)
+        director_agent = None
+        if self.director_provider:
+            try:
+                director_agent = create_director_agent(provider=self.director_provider)
+                print(f"  [DIRECTOR] enabled provider={self.director_provider}")
+            except Exception as e:
+                print(f"  [DIRECTOR] FAILED to create: {e}")
+                director_agent = None
+
         # Build workflow graph (kb shared with SearchTools)
         workflow_builder = ProofWorkflowBuilder(
             search_agent, tactic_agent, critic_agent, coordinator_agent,
             sorry_ctx, demo.get("imports", ""), self.trace, state=state, kb=kb,
+            director_agent=director_agent,
         )
         workflow = workflow_builder.build()
 
