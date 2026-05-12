@@ -1,0 +1,11 @@
+{
+  "algorithm-language": "Python",
+  "parameters": {
+    "cash": 100000
+  },
+  "description": "ML-Training-Pipeline - research notebook",
+  "name": "ML-Training-Pipeline",
+  "cloud-id": null,
+  "organization-id": "d600793ee4caecb03441a09fc2d00f7f",
+  "local-id": 437729910
+}
