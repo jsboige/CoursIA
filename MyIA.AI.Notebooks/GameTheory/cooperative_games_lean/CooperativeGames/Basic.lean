@@ -238,27 +238,160 @@ theorem bondareva_shapley :
     G.Core.Nonempty ↔ G.Balanced :=
   ⟨bondareva_shapley_forward G, bondareva_shapley_backward G⟩
 
-/-- For convex games, the Shapley value is in the Core (Shapley 1971).
-    PROOF SKETCH:
-    A game is convex iff the Shapley value lies in the Core.
-    Key step: for convex G and any ordering π, the marginal contribution
-    vector m^π = (v(P^π_i ∪ {i}) - v(P^π_i))_i is in the Core.
-    The Shapley value is the average of all marginal vectors,
-    and the Core is convex, so the average is also in the Core.
-    Alternative: prove convex ⇒ balanced, then use Bondareva-Shapley. -/
+/-! ## Marginal Vectors and Convex Core (Shapley 1971) -/
+
+section MarginalVector
+
+/-- A fixed enumeration of `N` via `Fintype.equivFin`. -/
+noncomputable def enumIndex (i : N) : ℕ := (Fintype.equivFin N i).val
+
+/-- The "prefix" coalition: all players whose enumeration index is `< k`. -/
+noncomputable def prefixCoalition (k : ℕ) : Finset N :=
+  Finset.univ.filter (fun i => enumIndex i < k)
+
+private lemma prefixCoalition_zero : (prefixCoalition 0 : Finset N) = ∅ := by
+  ext i; simp [prefixCoalition]
+
+private lemma enumIndex_lt_card (i : N) : enumIndex i < Fintype.card N :=
+  (Fintype.equivFin N i).isLt
+
+private lemma prefixCoalition_full :
+    (prefixCoalition (Fintype.card N) : Finset N) = Finset.univ := by
+  ext i
+  simp only [prefixCoalition, Finset.mem_filter, Finset.mem_univ, true_and,
+             iff_true]
+  exact enumIndex_lt_card i
+
+private lemma enumIndex_injective : Function.Injective (enumIndex : N → ℕ) := by
+  intro a b hab
+  exact (Fintype.equivFin N).injective (Fin.ext hab)
+
+variable (G : TUGame N)
+
+/-- Marginal vector along the fixed enumeration. -/
+noncomputable def marginalVector : Allocation N := fun i =>
+  G.v (prefixCoalition (enumIndex i + 1)) - G.v (prefixCoalition (enumIndex i))
+
+private lemma prefixCoalition_succ_eq (k : ℕ) (hk : k < Fintype.card N) :
+    (prefixCoalition (k + 1) : Finset N) =
+      prefixCoalition k ∪ {(Fintype.equivFin N).symm ⟨k, hk⟩} := by
+  ext j
+  simp only [prefixCoalition, Finset.mem_union, Finset.mem_filter,
+             Finset.mem_univ, Finset.mem_singleton, true_and]
+  constructor
+  · intro hj
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hj with h | h
+    · left; exact h
+    · right
+      have : (Fintype.equivFin N j) = ⟨k, hk⟩ := Fin.ext h
+      have := congrArg (Fintype.equivFin N).symm this
+      simpa using this
+  · rintro (h | h)
+    · exact Nat.lt_succ_of_lt h
+    · subst h
+      show enumIndex _ < k + 1
+      unfold enumIndex; simp
+
+/-- Telescoping: the marginal vector sums to v(N). -/
+lemma marginalVector_efficient :
+    ∑ i : N, G.marginalVector i = G.v Finset.univ := by
+  have hreidx : ∑ i : N, G.marginalVector i =
+      ∑ k : Fin (Fintype.card N), G.marginalVector ((Fintype.equivFin N).symm k) :=
+    (Equiv.sum_comp (Fintype.equivFin N).symm G.marginalVector).symm
+  rw [hreidx]
+  have hterm : ∀ k : Fin (Fintype.card N),
+      G.marginalVector ((Fintype.equivFin N).symm k) =
+        G.v (prefixCoalition (k.val + 1)) - G.v (prefixCoalition k.val) := by
+    intro k
+    unfold marginalVector enumIndex
+    simp
+  rw [Finset.sum_congr rfl (fun k _ => hterm k)]
+  have hrange : ∑ k : Fin (Fintype.card N),
+        (G.v (prefixCoalition (k.val + 1)) - G.v (prefixCoalition k.val)) =
+      ∑ k ∈ Finset.range (Fintype.card N),
+        (G.v (prefixCoalition (k + 1)) - G.v (prefixCoalition k)) := by
+    rw [← Finset.sum_range fun k => G.v (prefixCoalition (k + 1)) - G.v (prefixCoalition k)]
+  rw [hrange, Finset.sum_range_sub fun k => G.v (prefixCoalition k),
+      prefixCoalition_zero, prefixCoalition_full, G.empty_zero]
+  ring
+
+private lemma sdiff_subset_prefix_of_max
+    (S : Finset N) (i : N)
+    (hmax : ∀ j ∈ S, enumIndex j ≤ enumIndex i) :
+    S.erase i ⊆ prefixCoalition (enumIndex i) := by
+  intro j hj
+  rw [Finset.mem_erase] at hj
+  obtain ⟨hji, hjS⟩ := hj
+  simp only [prefixCoalition, Finset.mem_filter, Finset.mem_univ, true_and]
+  rcases lt_or_eq_of_le (hmax j hjS) with h | h
+  · exact h
+  · exact absurd (enumIndex_injective h) hji
+
+/-- For convex games, the marginal vector dominates v(S) on every coalition. -/
+lemma marginalVector_dominates (h : G.Convex) :
+    ∀ S : Finset N, ∑ i ∈ S, G.marginalVector i ≥ G.v S := by
+  intro S
+  induction hcard : S.card using Nat.strong_induction_on generalizing S with
+  | _ n ih =>
+    rcases Nat.eq_zero_or_pos n with hn | hn
+    · have hSempty : S = ∅ := Finset.card_eq_zero.mp (hcard.trans hn)
+      subst hSempty
+      simp [G.empty_zero]
+    · have hSne : S.Nonempty := Finset.card_pos.mp (hcard ▸ hn)
+      obtain ⟨i, hiS, hmax⟩ := S.exists_max_image enumIndex hSne
+      set S' := S.erase i with hS'def
+      have hS'card : S'.card = n - 1 := by
+        rw [hS'def, Finset.card_erase_of_mem hiS, hcard]
+      have hS'lt : S'.card < n := by rw [hS'card]; omega
+      have hSinsert : S = insert i S' := by
+        rw [hS'def, Finset.insert_erase hiS]
+      have hi_notin : i ∉ S' := Finset.notMem_erase i S
+      have ih' : ∑ j ∈ S', G.marginalVector j ≥ G.v S' :=
+        ih S'.card hS'lt S' rfl
+      have hSerase_sub : S' ⊆ prefixCoalition (enumIndex i) := by
+        rw [hS'def]; exact sdiff_subset_prefix_of_max S i hmax
+      have hi_notin_pref : i ∉ (prefixCoalition (enumIndex i) : Finset N) := by
+        simp only [prefixCoalition, Finset.mem_filter, Finset.mem_univ, true_and]
+        exact lt_irrefl _
+      have hconv := h S' (prefixCoalition (enumIndex i)) i hSerase_sub hi_notin_pref
+      have hi_idx_lt : enumIndex i < Fintype.card N := enumIndex_lt_card i
+      have hpref_succ :
+          (prefixCoalition (enumIndex i) ∪ {i} : Finset N) =
+            prefixCoalition (enumIndex i + 1) := by
+        have heq : (Fintype.equivFin N).symm ⟨enumIndex i, hi_idx_lt⟩ = i := by
+          unfold enumIndex; simp
+        rw [prefixCoalition_succ_eq (enumIndex i) hi_idx_lt, heq]
+      have hmv_i : G.marginalVector i =
+          G.v (prefixCoalition (enumIndex i) ∪ {i}) -
+          G.v (prefixCoalition (enumIndex i)) := by
+        unfold marginalVector; rw [hpref_succ]
+      have hSeq : S' ∪ {i} = S := by
+        rw [hSinsert, Finset.insert_eq, Finset.union_comm]
+      have hkey : G.marginalVector i ≥ G.v S - G.v S' := by
+        rw [hmv_i]
+        have hcv : G.v (S' ∪ {i}) - G.v S' ≤
+            G.v (prefixCoalition (enumIndex i) ∪ {i}) -
+            G.v (prefixCoalition (enumIndex i)) := hconv
+        rw [hSeq] at hcv
+        linarith
+      have hsumeq : ∑ j ∈ S, G.marginalVector j =
+          G.marginalVector i + ∑ j ∈ S', G.marginalVector j := by
+        rw [hSinsert, Finset.sum_insert hi_notin]
+      rw [hsumeq]
+      linarith
+
+/-- For convex games, the marginal vector lies in the Core. -/
+theorem marginalVector_mem_core (h : G.Convex) :
+    G.marginalVector ∈ G.Core :=
+  ⟨G.marginalVector_efficient, G.marginalVector_dominates h⟩
+
+end MarginalVector
+
+/-- For convex games, the Core is non-empty (Shapley 1971, "Cores of convex games").
+    Direct constructive proof via marginal vectors: along any fixed enumeration of N,
+    the marginal contribution vector lies in the Core when the game is convex. -/
 theorem convex_core_nonempty (h : G.Convex) :
-    G.Core.Nonempty := by
-  -- STATUS: WIP (provable in Mathlib but expensive). Two known routes:
-  -- 1. Direct (Shapley 1971): construct the marginal contribution vector
-  --    m^pi for some ordering pi and show it lies in Core via convexity.
-  --    Needs: ordering enumeration on N, marginal vector definition,
-  --    pointwise inequalities chained over orderings (~150 lines).
-  -- 2. Via Bondareva-Shapley: prove `G.Convex -> G.Balanced` then apply
-  --    `bondareva_shapley_backward`. Blocked because the backward direction
-  --    is itself blocked on missing Mathlib LP duality machinery (see L234).
-  -- Recommended next step: implement Route 1 as a separate `marginalVector`
-  -- definition + `convex_marginal_in_core` lemma, then average via additivity.
-  -- Estimated effort: 1-2 weeks for a competent Mathlib contributor.
-  sorry
+    G.Core.Nonempty :=
+  ⟨G.marginalVector, G.marginalVector_mem_core h⟩
 
 end TUGame
