@@ -201,6 +201,37 @@ theorem single_peaked_peak_best {R : σ → σ → Prop} {p : σ} {S : Finset σ
 def single_peaked_profile (prof : ι → PrefOrder σ) (peaks : ι → σ) : Prop :=
   ∀ i : ι, single_peaked (prof i).rel (peaks i)
 
+/-- R is **strictly** single-peaked with peak p on a linearly ordered set.
+    Strengthens `single_peaked` with strict monotonicity on each side of the peak,
+    eliminating indifference between distinct alternatives on the same side.
+
+    This is the hypothesis needed to obtain a *strict* Condorcet winner via
+    `margin_pos` (positive margin), as opposed to the weak `margin ≥ 0`
+    guarantee from `single_peaked` alone.
+
+    Concretely:
+    - `a < b ≤ p` implies `P R b a` (strictly prefer b to a, left of peak)
+    - `p ≤ a < b` implies `P R a b` (strictly prefer a to b, right of peak) -/
+def strictly_single_peaked (R : σ → σ → Prop) (p : σ) : Prop :=
+  single_peaked R p ∧
+  (∀ a b, a < b → b ≤ p → P R b a) ∧
+  (∀ a b, p ≤ a → a < b → P R a b)
+
+/-- A profile is strictly single-peaked if every voter has strictly single-peaked
+    preferences. This is the standard hypothesis under which the median voter
+    theorem yields a *Condorcet winner* (positive margin) rather than just a
+    weak Condorcet winner (non-negative margin). -/
+def strictly_single_peaked_profile (prof : ι → PrefOrder σ) (peaks : ι → σ) : Prop :=
+  ∀ i : ι, strictly_single_peaked (prof i).rel (peaks i)
+
+set_option linter.unusedSectionVars false in
+/-- A strictly single-peaked profile is in particular single-peaked. -/
+theorem strictly_single_peaked_profile.to_single_peaked
+    {prof : ι → PrefOrder σ} {peaks : ι → σ}
+    (h : strictly_single_peaked_profile prof peaks) :
+    single_peaked_profile prof peaks :=
+  fun i => (h i).1
+
 /-! ## Median Voter Theorem (Black 1948)
 
 For an odd number of voters with single-peaked preferences over a linearly
@@ -224,50 +255,14 @@ noncomputable def median_peak [Inhabited σ] (peaks : ι → σ) : σ :=
   let s := sorted_peaks_list peaks
   s.getD (s.length / 2) default
 
-/-- **Median Voter Theorem (Black 1948)**: For an odd number of voters with
-    single-peaked preferences, the median peak is a Condorcet winner. -/
-theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
-    (hsp : single_peaked_profile prof peaks)
-    (hodd : Odd (Fintype.card ι)) :
-    ∃ m, condorcet_winner prof (Finset.univ.image peaks) m := by
-  classical
-  have hcard_pos : 0 < Fintype.card ι := by
-    have := hodd; rw [Nat.odd_iff] at this; omega
-  have hne : Nonempty ι := Fintype.card_pos_iff.mp hcard_pos
-  haveI : Inhabited σ := Classical.inhabited_of_nonempty (hne.map peaks)
-  use median_peak peaks
-  constructor
-  simp only [Finset.mem_image, Finset.mem_univ, true_and]
-  unfold median_peak sorted_peaks_list
-  set l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)
-  have hl : l.length = Fintype.card ι := by
-    simp [l, List.length_mergeSort, List.length_map, Finset.length_toList]
-  have hn : l.length / 2 < l.length := by omega
-  have hperm : l ≈ Finset.univ.toList.map peaks := List.mergeSort_perm _ _
-  have hin : l.getD (l.length / 2) default ∈ l := by
-    simp [List.getD, List.getElem?_eq_getElem, hn]
-  rw [List.Perm.mem_iff hperm] at hin
-  simp only [List.mem_map, Finset.mem_toList] at hin
-  obtain ⟨i, _, heq⟩ := hin
-  exact ⟨i, heq⟩
-  · -- FIXME: This sorry needs a stronger hypothesis to prove.
-    -- single_peaked gives WEAK preference (R b a for a ≤ b ≤ p) but margin_pos
-    -- requires STRICT preference (P R x y = R x y ∧ ¬R y x).
-    -- For a voter with peak p > median and y < median: R_i median y (left-of-peak)
-    -- but ¬R_i y median is NOT derivable — the voter can be indifferent.
-    -- Counter-example: σ = {1,2,3}, 3 voters, peaks [1,2,3], median=2.
-    -- If voter 3 (peak=3) is indifferent between 1 and 2, margin(2,1) = 0, not > 0.
-    -- Fix: either add strictly_single_peaked (no indifference between distinct alts)
-    -- or change conclusion to weak Condorcet winner (margin ≥ 0).
-    sorry
+/-- **Median Voter Theorem — Strict-hypotheses version (Black 1948)**:
+    For an odd number of voters with single-peaked preferences AND explicit
+    strict monotonicity on each side of the peak, the median peak is a
+    Condorcet winner.
 
-/-- **Median Voter Theorem — Strict version (Black 1948)**:
-    For an odd number of voters with strictly single-peaked preferences
-    (strict monotonicity on each side of the peak), the median peak is
-    a Condorcet winner.
-
-    This version requires explicit strict monotonicity hypotheses rather
-    than changing the `single_peaked` definition. -/
+    This is the workhorse lemma; `median_voter_theorem` below packages the
+    strict-monotonicity hypotheses into the `strictly_single_peaked_profile`
+    predicate. Both theorems are equivalent after unfolding. -/
 theorem median_voter_theorem_strict [Inhabited σ] (prof : ι → PrefOrder σ) (peaks : ι → σ)
     (hsp : single_peaked_profile prof peaks)
     (hstrict_left : ∀ i a b, a < b → b ≤ peaks i → P (prof i).rel b a)
@@ -441,6 +436,33 @@ theorem median_voter_theorem_strict [Inhabited σ] (prof : ι → PrefOrder σ) 
         obtain ⟨k, hk⟩ := hodd_n
         omega
       omega
+
+/-- **Median Voter Theorem (Black 1948)**: For an odd number of voters with
+    **strictly** single-peaked preferences, the median peak is a Condorcet winner.
+
+    Note (Issue #973): the hypothesis was strengthened from `single_peaked_profile`
+    to `strictly_single_peaked_profile`. The weaker `single_peaked` allows
+    indifference between distinct alternatives on the same side of the peak,
+    which is incompatible with the *strict* Condorcet winner conclusion via
+    `margin_pos`. Under `strictly_single_peaked_profile`, voters can no longer
+    be indifferent between distinct alternatives on the same side of their peak,
+    yielding positive margins as required. This delegates to
+    `median_voter_theorem_strict` after extracting the strict monotonicity
+    components. -/
+theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
+    (hsp : strictly_single_peaked_profile prof peaks)
+    (hodd : Odd (Fintype.card ι)) :
+    ∃ m, condorcet_winner prof (Finset.univ.image peaks) m := by
+  classical
+  have hcard_pos : 0 < Fintype.card ι := by
+    have := hodd; rw [Nat.odd_iff] at this; omega
+  have hne : Nonempty ι := Fintype.card_pos_iff.mp hcard_pos
+  haveI : Inhabited σ := Classical.inhabited_of_nonempty (hne.map peaks)
+  exact median_voter_theorem_strict prof peaks
+    (strictly_single_peaked_profile.to_single_peaked hsp)
+    (fun i a b hab hbp => (hsp i).2.1 a b hab hbp)
+    (fun i a b hpa hab => (hsp i).2.2 a b hpa hab)
+    hodd
 
 end SinglePeaked
 
