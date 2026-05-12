@@ -23,6 +23,7 @@ Status heuristics (B-2 from #623):
 """
 
 import argparse
+import ast
 import json
 import re
 import subprocess
@@ -253,6 +254,42 @@ def has_markdown_intro_conclusion(cells: list) -> tuple[bool, bool]:
     return has_intro, has_conclusion
 
 
+def _is_comment_only_cell(cell: dict) -> bool:
+    """Check if a code cell contains only comments (no executable statements)."""
+    source = "".join(cell.get("source", []))
+    if not source.strip():
+        return True
+    lines = [l.strip() for l in source.split("\n") if l.strip()]
+    return all(l.startswith("#") for l in lines)
+
+
+def _is_assignment_only_cell(cell: dict) -> bool:
+    """Check if a code cell contains only assignments and comments (no print/call/expression).
+
+    Uses ast.parse for robust detection of multi-line assignments, lists, dicts.
+    Falls back to regex if AST parsing fails (e.g. syntax error in cell).
+    """
+    source = "".join(cell.get("source", []))
+    if not source.strip():
+        return True
+    lines = [l.strip() for l in source.split("\n") if l.strip()]
+    if all(l.startswith("#") for l in lines):
+        return True
+    try:
+        tree = ast.parse(source)
+        return all(isinstance(node, (ast.Assign, ast.AnnAssign)) for node in ast.iter_child_nodes(tree))
+    except SyntaxError:
+        return False
+
+
+def _effective_code_cells(code_cells: list) -> list:
+    """Filter out comment-only, empty, and assignment-only cells for maturity classification.
+
+    These cells produce no visible output and should not block promotion from ALPHA.
+    """
+    return [c for c in code_cells if not _is_assignment_only_cell(c)]
+
+
 def classify_maturity(
     notebook: dict,
     code_cells: list,
@@ -271,8 +308,9 @@ def classify_maturity(
     todo_count = count_todos(notebook)
     has_intro, has_conclusion = has_markdown_intro_conclusion(cells)
 
-    total_code = len(code_cells)
-    code_with_outputs = sum(1 for c in code_cells if c.get("outputs"))
+    effective = _effective_code_cells(code_cells)
+    total_code = len(effective)
+    code_with_outputs = sum(1 for c in effective if c.get("outputs"))
     all_have_outputs = total_code > 0 and code_with_outputs == total_code
     has_outputs = code_with_outputs > 0
 
@@ -336,8 +374,9 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
     status = determine_status(nb_path, notebook, code_cells, requirements, pedagogical)
     maturity = classify_maturity(notebook, code_cells, kernel)
 
-    code_with_outputs = sum(1 for c in code_cells if c.get("outputs"))
-    code_without_outputs = len(code_cells) - code_with_outputs
+    effective = _effective_code_cells(code_cells)
+    code_with_outputs = sum(1 for c in effective if c.get("outputs"))
+    code_without_outputs = len(effective) - code_with_outputs
     md_cells = sum(1 for c in cells if c["cell_type"] == "markdown")
 
     rel_str = str(rel).replace("\\", "/")
