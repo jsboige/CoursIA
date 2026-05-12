@@ -78,6 +78,22 @@ import Mathlib.Data.List.Sort
 import SocialChoice.Definitions
 """
 
+# ── Stable Marriage ──
+_STABLE_MARRIAGE_CANDIDATES = [
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\stable_marriage_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\stable_marriage_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\stable_marriage_lean"),
+]
+STABLE_MARRIAGE_DIR = next(
+    (p for p in _STABLE_MARRIAGE_CANDIDATES if p.exists()),
+    _STABLE_MARRIAGE_CANDIDATES[0],
+)
+GALESHAPLEY_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "GaleShapley.lean" if STABLE_MARRIAGE_DIR.exists() else None
+GALESHAPLEY_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Finset.Basic
+import StableMarriage.Definitions
+"""
+
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
 # fix. Attacking them wastes compute and produces fake "PROVED" reports. Each
@@ -590,5 +606,64 @@ DEMOS = {
             "Replace the sorry at L6 of _SmokeTest.lean."
         ),
         "difficulty": "trivial",
+    },
+    15: {
+        "name": "GALESHAPLEY_STABLE",
+        "file": str(GALESHAPLEY_FILE),
+        "line": 73,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gale_shapley_stable",
+        "theorem": "gale_shapley_stable",
+        "imports": GALESHAPLEY_IMPORTS,
+        "description": (
+            "Replace sorry at L73 of GaleShapley.lean.\n"
+            "Prove gale_shapley_stable: for any preference profile,\n"
+            "there exists a stable matching.\n"
+            "This is the existence theorem for stable matchings.\n"
+            "Classical result: use classical + exact/Finte.filter + existence\n"
+            "via GS algorithm. Since the algorithm is not ported, try:\n"
+            "  classical\n"
+            "  -- Use Finset.filter on the finite set of matchings\n"
+            "  -- Prove the filtered set is nonempty by GS theorem\n"
+            "NOTE: This is classified as VERY HARD. Existential proof without\n"
+            "the GS algorithm ported requires classical choice + nonemptiness\n"
+            "of the set of stable matchings, which is the content of GS itself.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
+    },
+    16: {
+        "name": "GALESHAPLEY_MAN_OPTIMAL",
+        "file": str(GALESHAPLEY_FILE),
+        "line": 87,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gale_shapley_man_optimal",
+        "theorem": "gale_shapley_man_optimal",
+        "imports": GALESHAPLEY_IMPORTS,
+        "description": (
+            "Replace sorry at L87 of GaleShapley.lean.\n"
+            "Prove gale_shapley_man_optimal: there exists a man-optimal\n"
+            "stable matching (every man gets best achievable partner).\n"
+            "Requires comparison across ALL stable matchings.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
+    },
+    17: {
+        "name": "GALESHAPLEY_WOMAN_PESSIMAL",
+        "file": str(GALESHAPLEY_FILE),
+        "line": 114,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gale_shapley_woman_pessimal",
+        "theorem": "gale_shapley_woman_pessimal",
+        "imports": GALESHAPLEY_IMPORTS,
+        "description": (
+            "Replace sorry at L114 of GaleShapley.lean.\n"
+            "Prove gale_shapley_woman_pessimal: if mu is man-optimal\n"
+            "and mu' is stable, then each woman gets worst achievable\n"
+            "partner under mu (Knuth 1976 lattice duality).\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
     },
 }
