@@ -51,6 +51,8 @@ import CooperativeGames.Basic
 
 _COOPERATIVE_GAMES_CANDIDATES = [
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
     Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
     Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
 ]
@@ -63,8 +65,8 @@ BASIC_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Basic.lean" if COOPER
 
 _SOCIAL_CHOICE_CANDIDATES = [
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
-    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
 ]
 SOCIAL_CHOICE_DIR = next(
     (p for p in _SOCIAL_CHOICE_CANDIDATES if p.exists()),

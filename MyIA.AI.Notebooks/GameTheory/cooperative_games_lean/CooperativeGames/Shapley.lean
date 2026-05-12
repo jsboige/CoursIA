@@ -529,6 +529,8 @@ private theorem phi_unanimity (φ : Solution N)
     Nat.smul_def _ _]
     linarith
     -- Step 6: Therefore φ G i = 1 / T.card
+    have hT0 : (T.card : ℝ) ≠ 0 := by
+      simp [Finset.Nonempty.ne_zero hT]
     field_simp
     linarith
   · -- Case i ∉ T: i is a null player in unanimityGame T
