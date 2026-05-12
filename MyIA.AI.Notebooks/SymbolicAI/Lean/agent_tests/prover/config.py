@@ -131,6 +131,7 @@ HONEST_SORRIES = {
             "covers the convex special case. Multi-week effort; out of scope. "
             "DO NOT TOUCH until Mathlib gains LP duality."
         ),
+    },
     str(GALESHAPLEY_FILE) if GALESHAPLEY_FILE else "": {
         # GaleShapley.lean L73: existential stable matching (needs GS algorithm)
         73: (
