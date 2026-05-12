@@ -67,6 +67,8 @@ _SOCIAL_CHOICE_CANDIDATES = [
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
     Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
     Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
 ]
 SOCIAL_CHOICE_DIR = next(
     (p for p in _SOCIAL_CHOICE_CANDIDATES if p.exists()),
@@ -162,7 +164,7 @@ HONEST_SORRIES = {
 
 def create_client(provider: str = "zai", model_key: str = "reasoning",
                   request_timeout_s: float = 240.0,
-                  max_retries: int = 1) -> OpenAIChatCompletionClient:
+                  max_retries: int = 4) -> OpenAIChatCompletionClient:
     """Create a ChatCompletionClient for the given provider.
 
     request_timeout_s caps a single chat completion call. Reasoning models
@@ -171,6 +173,12 @@ def create_client(provider: str = "zai", model_key: str = "reasoning",
     chat hang for 16+ min with no completion — that's a hang, not slow
     reasoning, and we should fail-fast so the workflow can recover instead
     of burning the wall-clock cap.
+
+    max_retries=4 (was 1, bumped 2026-05-12): z.ai service has intermittent
+    5xx + connection-reset failures during long sessions (>20min). With
+    max_retries=1 a single transient blip terminated the BG run; OpenAI
+    SDK uses exponential backoff internally so 4 retries adds at most
+    ~30s wall-clock for legitimately recoverable failures.
     """
     from openai import AsyncOpenAI
     cfg = PROVIDERS[provider]
@@ -613,7 +621,7 @@ DEMOS = {
         ),
         "difficulty": "very_hard",
     },
-    15: {
+    0: {
         "name": "SMOKE_TEST_ZERO_ADD",
         "file": str(SMOKE_TEST_FILE) if SMOKE_TEST_FILE else "",
         "line": 6,
