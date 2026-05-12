@@ -89,12 +89,15 @@ import SocialChoice.Definitions
 # this dynamically; this registry is the static fallback.
 HONEST_SORRIES = {
     str(VOTING_FILE) if VOTING_FILE else "": {
-        261: (
+        # Line of the actual `sorry` keyword; FIXME marker is in comment block
+        # immediately above (L253-261). Realigned 2026-05-12 (ai-01 iter 2)
+        # after PR #952 shifted line numbers when L338+L361 were proven.
+        262: (
             "median_voter_theorem WEAK version is UNPROVABLE with single_peaked "
             "(weak preference). Counter-example: σ={1,2,3}, 3 voters, peaks "
             "[1,2,3], median=2. If voter 3 is indifferent between 1 and 2, "
             "margin(2,1) = 0, not > 0. Use median_voter_theorem_strict instead "
-            "(L270 with hstrict_left/hstrict_right hypotheses)."
+            "(L271 with hstrict_left/hstrict_right hypotheses)."
         ),
     },
 }
