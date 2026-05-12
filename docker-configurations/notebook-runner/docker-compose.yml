@@ -1,0 +1,61 @@
+# H.7 P3 Notebook Runner — GitHub Actions compatible
+# Executes notebooks across Python, .NET Interactive, and Lean 4 kernels
+#
+# Usage:
+#   docker-compose build
+#   docker-compose run notebook-runner /notebooks/path/to/notebook.ipynb
+#   docker-compose run notebook-runner --batch /notebooks/MyIA.AI.Notebooks/ML/
+
+services:
+  notebook-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coursia-notebook-runner
+    volumes:
+      # Mount entire notebook tree (read-write for output persistence)
+      - type: bind
+        source: ../../MyIA.AI.Notebooks
+        target: /notebooks
+        read_only: false
+
+      # Mount scripts (read-only)
+      - type: bind
+        source: ../../scripts
+        target: /scripts-repo
+        read_only: true
+
+      # QuantConnect data (if available locally)
+      - type: bind
+        source: ../../MyIA.AI.Notebooks/QuantConnect/data
+        target: /Lean/Data
+        read_only: true
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - LANG=C.UTF-8
+      # QuantConnect credentials (passed from GitHub Actions secrets)
+      - QC_API_USER_ID=${QC_API_USER_ID:-}
+      - QC_API_ACCESS_TOKEN=${QC_API_ACCESS_TOKEN:-}
+      # GenAI service URLs (empty = skip API-dependent cells)
+      - QWEN_IMAGE_EDIT_URL=${QWEN_IMAGE_EDIT_URL:-}
+      - WHISPER_API_URL=${WHISPER_API_URL:-}
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+    # Timeout for the entire run (prevents hangs)
+    # Override with: docker-compose run -e EXECUTION_TIMEOUT=600 notebook-runner ...
+    command: ["--help"]
+
+networks:
+  default:
+    name: coursia-notebook-network
