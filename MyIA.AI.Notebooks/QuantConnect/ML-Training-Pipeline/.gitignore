@@ -1,5 +1,6 @@
 # Training outputs
 checkpoints/
+outputs/
 
 # Python
 __pycache__/
