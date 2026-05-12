@@ -10,8 +10,10 @@
   Voting.lean adds margin-based definitions, Condorcet criteria,
   single-peaked preferences, Split Cycle, and clone-proofness.
 
-  Arrow.lean and Sen.lean: FORMAL-CERTIFIED (0 sorry).
-  Voting.lean: FORMAL-SKETCH (3 sorry in median_voter_theorem).
+  Arrow.lean, Sen.lean, and Voting.lean: FORMAL-CERTIFIED (0 sorry).
+  Voting.lean: median_voter_theorem requires `strictly_single_peaked_profile`
+  (Issue #973 Option 1); the workhorse `median_voter_theorem_strict` takes
+  explicit strict-monotonicity hypotheses.
 
   Reference: Amartya Sen, "Collective Choice and Social Welfare" (1970)
   Reference: John Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005)
