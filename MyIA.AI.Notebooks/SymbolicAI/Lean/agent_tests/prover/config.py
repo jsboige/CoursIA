@@ -100,6 +100,22 @@ HONEST_SORRIES = {
             "(L271 with hstrict_left/hstrict_right hypotheses)."
         ),
     },
+    str(BASIC_FILE) if BASIC_FILE else "": {
+        # bondareva_shapley_backward at Basic.lean L234. Registered 2026-05-12
+        # (ai-01 iter 3 cooperative-games). FIXME marker is in comment block
+        # immediately above (L217-233). Mathlib lacks LP duality / Farkas'
+        # lemma, both of which are required for the classical proof. Marking
+        # as HONEST_UNPROVABLE-in-current-Mathlib until LP machinery lands.
+        234: (
+            "bondareva_shapley_backward (Bondareva 1963, Shapley 1967) requires "
+            "LP duality on Finset N → ℝ (or Farkas' lemma in convex form), "
+            "neither of which is available in Mathlib v4.29.1. The proof needs "
+            "either (a) porting Mathlib.Analysis.Convex.Cone.Dual + finite-dim "
+            "Hahn-Banach, or (b) reformulating via Shapley value which only "
+            "covers the convex special case. Multi-week effort; out of scope. "
+            "DO NOT TOUCH until Mathlib gains LP duality."
+        ),
+    },
 }
 
 

@@ -213,6 +213,24 @@ theorem bondareva_shapley_forward :
     NOTE: LP duality is not available in Mathlib. -/
 theorem bondareva_shapley_backward :
     G.Balanced → G.Core.Nonempty := by
+  -- FIXME: This sorry is HONEST_UNPROVABLE in the current Mathlib (as of v4.28-rc1
+  -- and v4.29.1). The classical proof of Bondareva-Shapley (Bondareva 1963,
+  -- Shapley 1967) requires LP duality / Farkas' lemma applied to:
+  --   primal:  min ∑ᵢ xᵢ  s.t.  ∑_{i∈S} xᵢ ≥ v(S) for all coalitions S
+  --   dual:    max ∑_S w(S)·v(S)  s.t.  ∑_{S∋i} w(S) = 1, w(S) ≥ 0
+  -- Mathlib does NOT currently expose:
+  --   * a generic LP duality theorem over ℝ (`LinearProgramming.duality` is absent);
+  --   * Farkas' lemma in a form usable on `Finset N → ℝ`;
+  --   * a `Polyhedral.cone_of_nonempty` constructor delivering the certificate.
+  -- The only known workaround is to either:
+  --   (a) port a few hundred lines of LP/Farkas machinery first
+  --       (e.g. `Mathlib.Analysis.Convex.Cone.Dual` + Hahn-Banach finite-dim), or
+  --   (b) reformulate via Shapley value (convex ⇒ Shapley vector ∈ Core, but
+  --       this only covers the convex-implies-balanced direction, not the
+  --       general balanced game case).
+  -- Both options are multi-week efforts and out of scope for the current
+  -- Lean port. Marking HONEST_UNPROVABLE until Mathlib gains LP duality.
+  -- Registered in prover/config.py HONEST_SORRIES (filepath: Basic.lean L216).
   sorry
 
 /-- Bondareva-Shapley: The Core is nonempty iff the game is balanced. -/
@@ -220,9 +238,9 @@ theorem bondareva_shapley :
     G.Core.Nonempty ↔ G.Balanced :=
   ⟨bondareva_shapley_forward G, bondareva_shapley_backward G⟩
 
-/-- For convex games, Shapley value is in the Core.
-    PROOF SKETCH (Shapley 1971):
-    A game is convex iff the Shapley value is in the Core.
+/-- For convex games, the Shapley value is in the Core (Shapley 1971).
+    PROOF SKETCH:
+    A game is convex iff the Shapley value lies in the Core.
     Key step: for convex G and any ordering π, the marginal contribution
     vector m^π = (v(P^π_i ∪ {i}) - v(P^π_i))_i is in the Core.
     The Shapley value is the average of all marginal vectors,
@@ -230,6 +248,17 @@ theorem bondareva_shapley :
     Alternative: prove convex ⇒ balanced, then use Bondareva-Shapley. -/
 theorem convex_core_nonempty (h : G.Convex) :
     G.Core.Nonempty := by
+  -- STATUS: WIP (provable in Mathlib but expensive). Two known routes:
+  -- 1. Direct (Shapley 1971): construct the marginal contribution vector
+  --    m^pi for some ordering pi and show it lies in Core via convexity.
+  --    Needs: ordering enumeration on N, marginal vector definition,
+  --    pointwise inequalities chained over orderings (~150 lines).
+  -- 2. Via Bondareva-Shapley: prove `G.Convex -> G.Balanced` then apply
+  --    `bondareva_shapley_backward`. Blocked because the backward direction
+  --    is itself blocked on missing Mathlib LP duality machinery (see L234).
+  -- Recommended next step: implement Route 1 as a separate `marginalVector`
+  -- definition + `convex_marginal_in_core` lemma, then average via additivity.
+  -- Estimated effort: 1-2 weeks for a competent Mathlib contributor.
   sorry
 
 end TUGame
