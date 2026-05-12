@@ -1,25 +1,25 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-12 12:27
-Total notebooks: 469
+Generated: 2026-05-12 12:59
+Total notebooks: 467
 
 ## Status Summary
 
-- **READY**: 301
-- **DEMO**: 163
+- **READY**: 303
+- **DEMO**: 160
 - **RESEARCH**: 0
-- **BROKEN**: 5
+- **BROKEN**: 4
 
 ## Maturity Summary
 
 - **PRODUCTION**: 38
-- **BETA**: 70
+- **BETA**: 71
 - **ALPHA**: 260
-- **DRAFT**: 101
+- **DRAFT**: 98
 
 ## By Series
 
-### GenAI (99 notebooks) — BROKEN:3, DEMO:68, READY:28 | ALPHA:67, BETA:6, DRAFT:14, PRODUCTION:12
+### GenAI (100 notebooks) — BROKEN:3, DEMO:68, READY:29 | ALPHA:67, BETA:7, DRAFT:14, PRODUCTION:12
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -29,99 +29,100 @@ Total notebooks: 469
 | 4 | ✅ Environment Validation - GenAI | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
 | 5 | 00-5: ComfyUI Local - Test Rapide | mcp-jupyter-py310 | READY | PRODUCTION | 30min | po-2025 |
 | 6 | Deploiement Docker Local des Services GenAI | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 7 | OpenAI TTS - Synthese Vocale par API | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 8 | OpenAI Whisper STT - Reconnaissance Vocale par API | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 9 | Operations de Base sur l'Audio | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 10 | Whisper Local - Transcription GPU avec faster-whis | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 11 | Kokoro TTS Local - Synthese Vocale Legere | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 12 | Chatterbox TTS - Synthese Vocale Expressive | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 13 | XTTS v2 - Clonage Vocal Zero-Shot | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 14 | MusicGen - Generation Musicale par IA | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 15 | Demucs v4 - Separation de Sources Audio | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 16 | Multi-Model TTS Gateway - Synthese Vocale Multi-Mo | Python 3 | READY | ALPHA | 30min | po-2025 |
-| 17 | Generation MIDI avec midi-model (SkyTNT) | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 18 | Generation de Chansons Completes : YuE vs SongGene | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 19 | TTS Expressif : Fish S2 Pro et Modeles SOTA | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 20 | Comparaison Multi-Modeles Audio | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 21 | Orchestration de Pipelines Audio | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 22 | OpenAI Realtime Voice API | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 23 | Creation de Contenu Audio Educatif | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 24 | Pipeline de Transcription et Sous-titrage | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 25 | Workflow de Composition Musicale | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 26 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 27 | Live Coding Musical pilote par LLM | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 28 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 29 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | ALPHA | 15min | po-2025 |
-| 30 | Docteur vs ChatGPT: Chatbot médical | base | DEMO | ALPHA | 45min | po-2025 |
-| 31 | Générateur de Recettes PDF | Python 3 | READY | ALPHA | 30min | po-2025 |
-| 32 | OpenAI DALL-E 3 - Generation d'Images | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
-| 33 | 🤖 GPT-5 Multimodal - Analyse et Génération d'Image | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
-| 34 | 🖼️ Opérations de Base sur les Images | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
-| 35 | Notebook: Stable Diffusion Forge - SD XL Turbo | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
-| 36 | Notebook: Qwen Image-Edit 2.5 - API ComfyUI | mcp-jupyter-py310 | DEMO | ALPHA | 45min | po-2025 |
-| 37 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 38 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 39 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 40 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | ALPHA | 15min | po-2025 |
-| 41 | Comparaison Multi-Modèles : SDXL Turbo, Qwen2-VL,  | Python 3 | READY | ALPHA | 15min | po-2025 |
-| 42 | Workflow Orchestration - Chaînage Multi-Modèles | Python 3 | READY | ALPHA | 30min | po-2025 |
-| 43 | 🚀 Performance Optimization pour la Génération d'Im | Python 3 | DEMO | ALPHA | 1h | po-2025 |
-| 44 | 🎓 Educational Content Generation - GenAI | Python 3 | DEMO | ALPHA | 15min | po-2025 |
-| 45 | Creative Workflows - GenAI | Python 3 | DEMO | ALPHA | 15min | po-2025 |
-| 46 | 🏭 Production Integration - GenAI | Python3 | DEMO | ALPHA | 30min | po-2025 |
-| 47 | Génération d’un patron de point de croix à partir  | Python 3 | DEMO | ALPHA | 15min | po-2025 |
-| 48 | SK-1-Fundamentals : Introduction a Semantic Kernel | base | DEMO | ALPHA | 30min | po-2025 |
-| 49 | SK-2-Functions : Function Calling, Memory et Fonct | base | READY | PRODUCTION | 15min | po-2025 |
-| 50 | SK-3-Agents : Agent Framework Semantic Kernel | base | READY | BETA | 15min | po-2025 |
-| 51 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 52 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 53 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 54 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
-| 55 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 56 | SK-9-Building-CLR : Interoperabilite Python/.NET v | base | READY | PRODUCTION | 15min | po-2025 |
-| 57 | SK-10-NotebookMaker : Systeme Multi-Agents pour Ge | base | DEMO | ALPHA | 30min | po-2025 |
-| 58 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | ALPHA | 30min | po-2025 |
+| 7 | GenAI E2E Quant Validation | Python3 | READY | BETA | 30min | po-2025 |
+| 8 | OpenAI TTS - Synthese Vocale par API | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 9 | OpenAI Whisper STT - Reconnaissance Vocale par API | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 10 | Operations de Base sur l'Audio | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 11 | Whisper Local - Transcription GPU avec faster-whis | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 12 | Kokoro TTS Local - Synthese Vocale Legere | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 13 | Chatterbox TTS - Synthese Vocale Expressive | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 14 | XTTS v2 - Clonage Vocal Zero-Shot | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 15 | MusicGen - Generation Musicale par IA | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 16 | Demucs v4 - Separation de Sources Audio | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 17 | Multi-Model TTS Gateway - Synthese Vocale Multi-Mo | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 18 | Generation MIDI avec midi-model (SkyTNT) | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 19 | Generation de Chansons Completes : YuE vs SongGene | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 20 | TTS Expressif : Fish S2 Pro et Modeles SOTA | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 21 | Comparaison Multi-Modeles Audio | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 22 | Orchestration de Pipelines Audio | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 23 | OpenAI Realtime Voice API | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 24 | Creation de Contenu Audio Educatif | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 25 | Pipeline de Transcription et Sous-titrage | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 26 | Workflow de Composition Musicale | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 27 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 28 | Live Coding Musical pilote par LLM | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 29 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 30 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | ALPHA | 15min | po-2025 |
+| 31 | Docteur vs ChatGPT: Chatbot médical | base | DEMO | ALPHA | 45min | po-2025 |
+| 32 | Générateur de Recettes PDF | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 33 | OpenAI DALL-E 3 - Generation d'Images | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
+| 34 | 🤖 GPT-5 Multimodal - Analyse et Génération d'Image | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
+| 35 | 🖼️ Opérations de Base sur les Images | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
+| 36 | Notebook: Stable Diffusion Forge - SD XL Turbo | Python 3 (ipykernel) | DEMO | ALPHA | 30min | po-2025 |
+| 37 | Notebook: Qwen Image-Edit 2.5 - API ComfyUI | mcp-jupyter-py310 | DEMO | ALPHA | 45min | po-2025 |
+| 38 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 39 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 40 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 41 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | ALPHA | 15min | po-2025 |
+| 42 | Comparaison Multi-Modèles : SDXL Turbo, Qwen2-VL,  | Python 3 | READY | ALPHA | 15min | po-2025 |
+| 43 | Workflow Orchestration - Chaînage Multi-Modèles | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 44 | 🚀 Performance Optimization pour la Génération d'Im | Python 3 | DEMO | ALPHA | 1h | po-2025 |
+| 45 | 🎓 Educational Content Generation - GenAI | Python 3 | DEMO | ALPHA | 15min | po-2025 |
+| 46 | Creative Workflows - GenAI | Python 3 | DEMO | ALPHA | 15min | po-2025 |
+| 47 | 🏭 Production Integration - GenAI | Python3 | DEMO | ALPHA | 30min | po-2025 |
+| 48 | Génération d’un patron de point de croix à partir  | Python 3 | DEMO | ALPHA | 15min | po-2025 |
+| 49 | SK-1-Fundamentals : Introduction a Semantic Kernel | base | DEMO | ALPHA | 30min | po-2025 |
+| 50 | SK-2-Functions : Function Calling, Memory et Fonct | base | READY | PRODUCTION | 15min | po-2025 |
+| 51 | SK-3-Agents : Agent Framework Semantic Kernel | base | READY | BETA | 15min | po-2025 |
+| 52 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 53 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 54 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 55 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
+| 56 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 57 | SK-9-Building-CLR : Interoperabilite Python/.NET v | base | READY | PRODUCTION | 15min | po-2025 |
+| 58 | SK-10-NotebookMaker : Systeme Multi-Agents pour Ge | base | DEMO | ALPHA | 30min | po-2025 |
 | 59 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | ALPHA | 30min | po-2025 |
-| 60 | Projet Createur de Mail personnalise | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 61 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
-| 62 | Jeu de devinette : Père Fouras vs Laurent Jalabert | coursIA | DEMO | ALPHA | 15min | po-2025 |
-| 63 | Notebook de travail | Python 3 | READY | ALPHA | 15min | po-2025 |
-| 64 | Notebook de travail | Python 3 | BROKEN | DRAFT | 15min | po-2025 |
-| 65 | Notebook de conception de Notebook | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
-| 66 | Notebook de travail | .NET (C#) | READY | ALPHA | 30min | po-2025 |
+| 60 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | ALPHA | 30min | po-2025 |
+| 61 | Projet Createur de Mail personnalise | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 62 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
+| 63 | Jeu de devinette : Père Fouras vs Laurent Jalabert | coursIA | DEMO | ALPHA | 15min | po-2025 |
+| 64 | Notebook de travail | Python 3 | READY | ALPHA | 15min | po-2025 |
+| 65 | Notebook de travail | Python 3 | BROKEN | DRAFT | 15min | po-2025 |
+| 66 | Notebook de conception de Notebook | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
 | 67 | Notebook de travail | .NET (C#) | READY | ALPHA | 30min | po-2025 |
-| 68 | 10. Hébergement Local de Modèles Génératifs | base | DEMO | ALPHA | 45min | po-2025 |
-| 69 | 11. Quantization des LLMs | base | DEMO | ALPHA | 45min | po-2025 |
-| 70 | 1. Introduction a l'IA generative avec l'API OpenA | base | READY | PRODUCTION | 15min | po-2025 |
-| 71 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 72 | Structured Outputs : Sorties JSON Garanties avec O | base | READY | PRODUCTION | 30min | po-2025 |
-| 73 | Function Calling : Connecter les LLMs au Monde Rée | base | DEMO | ALPHA | 45min | po-2025 |
-| 74 | 5. RAG Modern - Retrieval Augmented Generation | base | READY | BETA | 45min | po-2025 |
-| 75 | PDF et Web Search : Sources Documentaires avec Ope | base | READY | PRODUCTION | 30min | po-2025 |
-| 76 | Code Interpreter : Exécution de Code avec OpenAI | base | READY | PRODUCTION | 30min | po-2025 |
-| 77 | Modèles de Raisonnement : gpt-5-mini | base | DEMO | ALPHA | 30min | po-2025 |
-| 78 | Patterns de Production : APIs Avancées OpenAI | base | READY | PRODUCTION | 30min | po-2025 |
-| 79 | Claude CLI - Les Bases | Python 3 | READY | ALPHA | 45min | po-2025 |
-| 80 | Claude CLI - Gestion des Sessions | Python 3 | READY | ALPHA | 30min | po-2025 |
-| 81 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 30min | po-2025 |
-| 82 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
-| 83 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 30min | po-2025 |
-| 84 | Operations de Base sur les Videos | Python 3 | READY | ALPHA | 30min | po-2025 |
-| 85 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 86 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 87 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 88 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 89 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 90 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 91 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 92 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 93 | Comparaison Multi-Modeles de Generation Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 94 | Orchestration de Pipelines Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 95 | ComfyUI - Workflows Video via API | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 96 | Generation de Videos Educatives | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 97 | Workflows Video Creatifs | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 98 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 99 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 68 | Notebook de travail | .NET (C#) | READY | ALPHA | 30min | po-2025 |
+| 69 | 10. Hébergement Local de Modèles Génératifs | base | DEMO | ALPHA | 45min | po-2025 |
+| 70 | 11. Quantization des LLMs | base | DEMO | ALPHA | 45min | po-2025 |
+| 71 | 1. Introduction a l'IA generative avec l'API OpenA | base | READY | PRODUCTION | 15min | po-2025 |
+| 72 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 73 | Structured Outputs : Sorties JSON Garanties avec O | base | READY | PRODUCTION | 30min | po-2025 |
+| 74 | Function Calling : Connecter les LLMs au Monde Rée | base | DEMO | ALPHA | 45min | po-2025 |
+| 75 | 5. RAG Modern - Retrieval Augmented Generation | base | READY | BETA | 45min | po-2025 |
+| 76 | PDF et Web Search : Sources Documentaires avec Ope | base | READY | PRODUCTION | 30min | po-2025 |
+| 77 | Code Interpreter : Exécution de Code avec OpenAI | base | READY | PRODUCTION | 30min | po-2025 |
+| 78 | Modèles de Raisonnement : gpt-5-mini | base | DEMO | ALPHA | 30min | po-2025 |
+| 79 | Patterns de Production : APIs Avancées OpenAI | base | READY | PRODUCTION | 30min | po-2025 |
+| 80 | Claude CLI - Les Bases | Python 3 | READY | ALPHA | 45min | po-2025 |
+| 81 | Claude CLI - Gestion des Sessions | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 82 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 30min | po-2025 |
+| 83 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
+| 84 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 30min | po-2025 |
+| 85 | Operations de Base sur les Videos | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 86 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 87 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 88 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 89 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 90 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 91 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 92 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 93 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 94 | Comparaison Multi-Modeles de Generation Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 95 | Orchestration de Pipelines Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 96 | ComfyUI - Workflows Video via API | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 97 | Generation de Videos Educatives | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 98 | Workflows Video Creatifs | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 99 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 100 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 
 ### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:33, BETA:4, DRAFT:7, PRODUCTION:1
 
@@ -302,114 +303,111 @@ Total notebooks: 469
 | 88 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
 | 89 | Préférences et Théorie du Vote | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
 
-### QuantConnect (104 notebooks) — DEMO:75, READY:29 | ALPHA:15, BETA:4, DRAFT:70, PRODUCTION:15
+### QuantConnect (101 notebooks) — DEMO:72, READY:29 | ALPHA:15, BETA:4, DRAFT:67, PRODUCTION:15
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 2 | M3b - HAR Asymetrique : Decomposition Semivariance | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 3 | ML Training Pipeline - Notebook de Recherche | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 4 | QuantBook: PairsTrading - Pedagogical Analysis | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 5 | Top-4 Sharpe > 0.5 Strategies: OOS Deep-Dive (Issu | Python 3 | READY | BETA | 15min | po-2026 |
-| 6 | Research QuantBook: Adaptive Asset Allocation | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 7 | Research QuantBook: All-Weather Portfolio | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 8 | Alpha Correlation Analysis | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 9 | Research to Production | .NET (C#) | DEMO | DRAFT | 30min | po-2026 |
-| 10 | Research QuantBook: BTC ML Enhanced | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 11 | Research QuantBook: Multi-Channel ZigZag Crypto | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 12 | Initializing environment | .NET (C#) | DEMO | DRAFT | 1h30 | po-2026 |
-| 13 | Research QuantBook: Deep Learning LSTM pour SPY | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 14 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 15 | Research QuantBook: Dual Momentum No TLT | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 16 | Research QuantBook: EMA-Cross Alpha Model | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 17 | Research QuantBook: EMA Cross Crypto | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 18 | Research QuantBook: EMA Crossover SPY Index | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 19 | Research QuantBook: Multi-Stock EMA Crossover | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 20 | Research QuantBook: ETF Pairs Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 21 | Research QuantBook: Fama-French Factor ETF Rotatio | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 22 | Research QuantBook: ForexCarry (G10 FX Momentum) | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 23 | Research QuantBook: Framework Composite EMA-Trend | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 24 | Research QuantBook: Framework Composite FamaFrench | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 25 | Research QuantBook: Framework Composite Momentum + | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 26 | Framework Composite TrendWeather - Research | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 27 | Research QuantBook: FuturesTrend (Donchian Breakou | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 28 | Research QuantBook: Mean Reversion (Sector ETFs) | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 29 | Research QuantBook: ML Classification (RandomFores | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 30 | ML Deep Learning - LSTM/GRU pour Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 31 | Research QuantBook: ML-Enhanced Pairs Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 32 | Research QuantBook: ML Ensemble | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 33 | Research QuantBook: ML Feature Engineering | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 34 | ML Random Forest - Classification pour Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 35 | Research QuantBook: ML Regression | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 36 | ML SVM - Support Vector Machine pour Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 37 | ML Text Classification for Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 38 | ML XGBoost - Gradient Boosting pour Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 39 | Research QuantBook: MomentumStrategy (Sector ETF R | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 40 | Research QuantBook: BTC Multi-Layer EMA + ML Filte | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 41 | Research QuantBook: Option Wheel Strategy | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 42 | Research QuantBook: Options Wheel Tech Stocks | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 43 | Research QuantBook: Covered Call Strategy | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 44 | Research QuantBook: PairsTrading (Statistical Arbi | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 45 | Research QuantBook: RegimeSwitching Alpha Model | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 46 | runner | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 47 | Research QuantBook: RiskParity (Inverse-Volatility | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 48 | Research QuantBook: RL Portfolio Allocation | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 49 | Research QuantBook: Sector-Momentum (Dual Momentum | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 50 | Research QuantBook: Trend Following Competition | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 51 | Research QuantBook: TrendStocks Alpha Model | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 52 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 53 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 54 | QC-Py-01 : Configuration et Premier Backtest Quant | Python (QuantConnect) | DEMO | DRAFT | 30min | po-2026 |
-| 55 | QC-Py-02 : QuantConnect Platform Fundamentals - QC | Python 3 (ipykernel) | DEMO | DRAFT | 30min | po-2026 |
-| 56 | QC-Py-03 - Data Management in QuantConnect | Python 3 (ipykernel) | DEMO | DRAFT | 45min | po-2026 |
-| 57 | QC-Py-04 - Research Workflow with QuantBook | Python 3 (ipykernel) | DEMO | DRAFT | 1h | po-2026 |
-| 58 | QC-Py-05 - Universe Selection dans QuantConnect | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 59 | QC-Py-06 : Options Trading dans QuantConnect | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 60 | QC-Py-07 : Futures et Forex Trading dans QuantConn | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 61 | QC-Py-08 - Multi-Asset Portfolio Strategies | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 62 | QC-Py-09 : Types d'Ordres et Order Management dans | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 63 | QC-Py-10 - Risk Management et Portfolio Management | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 64 | QC-Py-11 - Indicateurs Techniques dans QuantConnec | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 65 | QC-Py-12 - Backtesting et Analyse de Performance | Python 3 | DEMO | DRAFT | 1h30 | po-2026 |
-| 66 | QC-Py-13 - Alpha Models et Algorithm Framework | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 67 | QC-Py-14 - Portfolio Construction et Execution Mod | Python 3 | DEMO | DRAFT | 1h | po-2026 |
-| 68 | QC-Py-15 - Parameter Optimization et Walk-Forward  | Python 3 | DEMO | DRAFT | 1h | po-2026 |
-| 69 | QC-Py-16 - Alternative Data dans QuantConnect | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 70 | QC-Py-17 - Sentiment Analysis pour le Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 71 | QC-Py-18 - Feature Engineering pour Machine Learni | Python 3 | DEMO | ALPHA | 1h | po-2026 |
-| 72 | QC-Py-19 - Machine Learning Classification pour Di | Python 3 | DEMO | DRAFT | 1h | po-2026 |
-| 73 | QC-Py-20 - Machine Learning Regression pour Price  | Python 3 | DEMO | DRAFT | 1h | po-2026 |
-| 74 | QC-Py-21 - Portfolio Optimization avec Machine Lea | Python 3 | DEMO | DRAFT | 1h | po-2026 |
-| 75 | QC-Py-22 - Modern Time Series Deep Learning (SOTA  | Python 3 | DEMO | DRAFT | 1h | po-2026 |
-| 76 | QC-Py-23 - State Space Models (Mamba) pour Trading | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 77 | QC-Py-23b - PatchTST et iTransformer pour Previsio | Python 3 | READY | BETA | 45min | po-2026 |
-| 78 | QC-Py-24 - Modèles Génératifs pour Anomaly Detecti | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 79 | QC-Py-25 - Reinforcement Learning pour le Trading | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 80 | QC-Py-26 - LLM Trading Signals | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 81 | QC-Py-27 - Production Deployment | Python 3 | DEMO | DRAFT | 30min | po-2026 |
-| 82 | QC-Py-28 - Market Regime Detection | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 83 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 84 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 85 | QC-Py-32 - Reinforcement Learning DQN pour le Trad | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 86 | QC-Py-33 - Reinforcement Learning PPO pour le Trad | Python 3 (conda-torch) | READY | BETA | 45min | po-2026 |
-| 87 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL po | Python 3 (conda-torch) | READY | BETA | 45min | po-2026 |
-| 88 | QC-Py-40 : Paper Trading Binance - Mean Reversion  | Python 3 | READY | DRAFT | 45min | po-2026 |
-| 89 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | Python 3 | READY | ALPHA | 30min | po-2026 |
-| 90 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur  | Python 3 | DEMO | ALPHA | 30min | po-2026 |
-| 91 | QC-Py-Cloud-01 — Risk Parity Composite Multi-Asset | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 92 | QC-Py-Cloud-02 : Classification de Texte et Sentim | Python 3 | DEMO | ALPHA | 15min | po-2026 |
-| 93 | QC-Py-Cloud-02 — Sector Rotation & Multi-Asset Mom | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 94 | QC-Py-Cloud-03 — Dual Momentum : Asset Selection M | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 95 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | DEMO | ALPHA | 15min | po-2026 |
-| 96 | QC-Py-Cloud-04 — Mean Reversion on Sector ETFs | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 97 | QC-Py-Cloud-04 : Reinforcement Learning - DQN Trad | Python 3 | DEMO | ALPHA | 15min | po-2026 |
-| 98 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones  | Python 3 | DEMO | ALPHA | 15min | po-2026 |
-| 99 | QC-Py-Cloud-05 — Regime Switching : Momentum in Bu | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 100 | QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean Re | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 101 | QC-Py-Cloud-06 -- Volatility Targeting : Risk Mana | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 102 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 103 | Workflow : Téléchargement et gestion des datasets | Python 3 | DEMO | DRAFT | 45min | po-2026 |
-| 104 | Research QuantBook: RiskParity (Inverse-Vol Weight | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 1 | M3b - HAR Asymetrique : Decomposition Semivariance | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 2 | ML Training Pipeline - Notebook de Recherche | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 3 | Top-4 Sharpe > 0.5 Strategies: OOS Deep-Dive (Issu | Python 3 | READY | BETA | 15min | po-2026 |
+| 4 | Research QuantBook: Adaptive Asset Allocation | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 5 | Research QuantBook: All-Weather Portfolio | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 6 | Alpha Correlation Analysis | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 7 | Research to Production | .NET (C#) | DEMO | DRAFT | 30min | po-2026 |
+| 8 | Research QuantBook: BTC ML Enhanced | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 9 | Research QuantBook: Multi-Channel ZigZag Crypto | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 10 | Initializing environment | .NET (C#) | DEMO | DRAFT | 1h30 | po-2026 |
+| 11 | Research QuantBook: Deep Learning LSTM pour SPY | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 12 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 13 | Research QuantBook: Dual Momentum No TLT | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 14 | Research QuantBook: EMA-Cross Alpha Model | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 15 | Research QuantBook: EMA Cross Crypto | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 16 | Research QuantBook: EMA Crossover SPY Index | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 17 | Research QuantBook: Multi-Stock EMA Crossover | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 18 | Research QuantBook: ETF Pairs Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 19 | Research QuantBook: Fama-French Factor ETF Rotatio | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 20 | Research QuantBook: ForexCarry (G10 FX Momentum) | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 21 | Research QuantBook: Framework Composite EMA-Trend | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 22 | Research QuantBook: Framework Composite FamaFrench | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 23 | Research QuantBook: Framework Composite Momentum + | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 24 | Framework Composite TrendWeather - Research | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 25 | Research QuantBook: FuturesTrend (Donchian Breakou | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 26 | Research QuantBook: Mean Reversion (Sector ETFs) | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 27 | Research QuantBook: ML Classification (RandomFores | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 28 | ML Deep Learning - LSTM/GRU pour Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 29 | Research QuantBook: ML-Enhanced Pairs Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 30 | Research QuantBook: ML Ensemble | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 31 | Research QuantBook: ML Feature Engineering | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 32 | ML Random Forest - Classification pour Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 33 | Research QuantBook: ML Regression | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 34 | ML SVM - Support Vector Machine pour Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 35 | ML Text Classification for Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 36 | ML XGBoost - Gradient Boosting pour Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 37 | Research QuantBook: MomentumStrategy (Sector ETF R | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 38 | Research QuantBook: BTC Multi-Layer EMA + ML Filte | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 39 | Research QuantBook: Option Wheel Strategy | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 40 | Research QuantBook: Options Wheel Tech Stocks | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 41 | Research QuantBook: Covered Call Strategy | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 42 | Research QuantBook: PairsTrading (Statistical Arbi | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 43 | Research QuantBook: RegimeSwitching Alpha Model | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 44 | runner | Python 3 | DEMO | DRAFT | 15min | po-2026 |
+| 45 | Research QuantBook: RiskParity (Inverse-Volatility | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 46 | Research QuantBook: RL Portfolio Allocation | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 47 | Research QuantBook: Sector-Momentum (Dual Momentum | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 48 | Research QuantBook: Trend Following Competition | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 49 | Research QuantBook: TrendStocks Alpha Model | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 50 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 51 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 52 | QC-Py-01 : Configuration et Premier Backtest Quant | Python (QuantConnect) | DEMO | DRAFT | 30min | po-2026 |
+| 53 | QC-Py-02 : QuantConnect Platform Fundamentals - QC | Python 3 (ipykernel) | DEMO | DRAFT | 30min | po-2026 |
+| 54 | QC-Py-03 - Data Management in QuantConnect | Python 3 (ipykernel) | DEMO | DRAFT | 45min | po-2026 |
+| 55 | QC-Py-04 - Research Workflow with QuantBook | Python 3 (ipykernel) | DEMO | DRAFT | 1h | po-2026 |
+| 56 | QC-Py-05 - Universe Selection dans QuantConnect | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 57 | QC-Py-06 : Options Trading dans QuantConnect | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 58 | QC-Py-07 : Futures et Forex Trading dans QuantConn | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 59 | QC-Py-08 - Multi-Asset Portfolio Strategies | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 60 | QC-Py-09 : Types d'Ordres et Order Management dans | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 61 | QC-Py-10 - Risk Management et Portfolio Management | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 62 | QC-Py-11 - Indicateurs Techniques dans QuantConnec | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 63 | QC-Py-12 - Backtesting et Analyse de Performance | Python 3 | DEMO | DRAFT | 1h30 | po-2026 |
+| 64 | QC-Py-13 - Alpha Models et Algorithm Framework | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 65 | QC-Py-14 - Portfolio Construction et Execution Mod | Python 3 | DEMO | DRAFT | 1h | po-2026 |
+| 66 | QC-Py-15 - Parameter Optimization et Walk-Forward  | Python 3 | DEMO | DRAFT | 1h | po-2026 |
+| 67 | QC-Py-16 - Alternative Data dans QuantConnect | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 68 | QC-Py-17 - Sentiment Analysis pour le Trading | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 69 | QC-Py-18 - Feature Engineering pour Machine Learni | Python 3 | DEMO | ALPHA | 1h | po-2026 |
+| 70 | QC-Py-19 - Machine Learning Classification pour Di | Python 3 | DEMO | DRAFT | 1h | po-2026 |
+| 71 | QC-Py-20 - Machine Learning Regression pour Price  | Python 3 | DEMO | DRAFT | 1h | po-2026 |
+| 72 | QC-Py-21 - Portfolio Optimization avec Machine Lea | Python 3 | DEMO | DRAFT | 1h | po-2026 |
+| 73 | QC-Py-22 - Modern Time Series Deep Learning (SOTA  | Python 3 | DEMO | DRAFT | 1h | po-2026 |
+| 74 | QC-Py-23 - State Space Models (Mamba) pour Trading | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 75 | QC-Py-23b - PatchTST et iTransformer pour Previsio | Python 3 | READY | BETA | 45min | po-2026 |
+| 76 | QC-Py-24 - Modèles Génératifs pour Anomaly Detecti | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 77 | QC-Py-25 - Reinforcement Learning pour le Trading | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 78 | QC-Py-26 - LLM Trading Signals | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 79 | QC-Py-27 - Production Deployment | Python 3 | DEMO | DRAFT | 30min | po-2026 |
+| 80 | QC-Py-28 - Market Regime Detection | Python 3 | DEMO | DRAFT | 45min | po-2026 |
+| 81 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 82 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 83 | QC-Py-32 - Reinforcement Learning DQN pour le Trad | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 84 | QC-Py-33 - Reinforcement Learning PPO pour le Trad | Python 3 (conda-torch) | READY | BETA | 45min | po-2026 |
+| 85 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL po | Python 3 (conda-torch) | READY | BETA | 45min | po-2026 |
+| 86 | QC-Py-40 : Paper Trading Binance - Mean Reversion  | Python 3 | READY | DRAFT | 45min | po-2026 |
+| 87 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | Python 3 | READY | ALPHA | 30min | po-2026 |
+| 88 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur  | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 89 | QC-Py-Cloud-01 — Risk Parity Composite Multi-Asset | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 90 | QC-Py-Cloud-02 : Classification de Texte et Sentim | Python 3 | DEMO | ALPHA | 15min | po-2026 |
+| 91 | QC-Py-Cloud-02 — Sector Rotation & Multi-Asset Mom | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 92 | QC-Py-Cloud-03 — Dual Momentum : Asset Selection M | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 93 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | DEMO | ALPHA | 15min | po-2026 |
+| 94 | QC-Py-Cloud-04 — Mean Reversion on Sector ETFs | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 95 | QC-Py-Cloud-04 : Reinforcement Learning - DQN Trad | Python 3 | DEMO | ALPHA | 15min | po-2026 |
+| 96 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones  | Python 3 | DEMO | ALPHA | 15min | po-2026 |
+| 97 | QC-Py-Cloud-05 — Regime Switching : Momentum in Bu | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 98 | QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean Re | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 99 | QC-Py-Cloud-06 -- Volatility Targeting : Risk Mana | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 100 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 101 | Workflow : Téléchargement et gestion des datasets | Python 3 | DEMO | DRAFT | 45min | po-2026 |
 
 ### GameTheory (27 notebooks) — READY:27 | ALPHA:20, BETA:4, DRAFT:3
 
@@ -537,8 +535,8 @@ Total notebooks: 469
 
 ## Requirements
 
-- **API**: 86 notebooks
-- **GPU**: 53 notebooks
-- **Cloud**: 104 notebooks
+- **API**: 87 notebooks
+- **GPU**: 54 notebooks
+- **Cloud**: 101 notebooks
 - **WSL**: 23 notebooks
 - **Local**: 240 notebooks

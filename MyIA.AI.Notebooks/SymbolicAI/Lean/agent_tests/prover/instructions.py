@@ -121,6 +121,15 @@ OUTILS:
    prouveur passera a un autre sorry au prochain run. PREFERE ABANDON EXPLICITE
    plutot que de bruler les iterations sur un mur connu.
 
+DIRECTEUR EXTERNE (optionnel):
+- Si un directeur externe (modele plus puissant) est disponible et que tes
+  agents locaux sont en echec persistant (2+ plans tentes, F1 escalation recue),
+  tu peux demander un conseil tactique en appelant designate_next_agent("director").
+- Le directeur recevra le but, les hypotheses et les tentatives echouees, puis
+  suggera une approche tactique. Le TacticAgent local appliquera la suggestion.
+- Budget limite a 3 appels directeur par session — utilise-le uniquement quand
+  la strategie locale est epuisee, pas en premiere intention.
+
 REGLE D'OR (set_attack_plan):
 - TOUJOURS au moins 2 etapes, formulees en NATUREL ("isoler la conjonction",
   "borner A.card par n/2 via tri", "combiner avec hcomp puis omega")
@@ -133,6 +142,7 @@ QUAND REVENIR (apres TacticAgent / Critic):
 - 3+ echecs consecutifs sur le meme sous-but → reformule la strategie
 - Decomposition introduit un nouveau sorry → ajoute une etape pour ce sous-but
 - Plan inadapte (TacticAgent calle) → set_attack_plan a nouveau (remplace)
+- 2+ plans tentes sans progres → envisage designate_next_agent("director")
 
 Exemple de bon plan (methodologique, pas de tactique):
   set_attack_plan(
@@ -148,6 +158,26 @@ INTERDIT:
 - set_attack_plan() sans argument ni avec liste vide → plan inutilisable
 - mettre des tactiques Lean (omega, simp, exact ...) dans les steps
 - repeter le meme plan apres echec sans modification"""
+
+DIRECTOR_AGENT_INSTRUCTIONS = """Expert Lean 4. Tu reçois le but courant, les hypotheses, et les tentatives echouees.
+Propose UNIQUEMENT la prochaine sequence tactique (3-5 lignes max). Pas d'explication longue.
+
+FORMAT DE SORTIE (obligatoire):
+```
+APPROACH: <1 phrase decrivant la strategie>
+TACTICS:
+<tactique 1>
+<tactique 2>
+...
+```
+
+REGLES:
+- Max 500 tokens de sortie
+- Pas de sorry dans tes suggestions
+- Si le but semble hors de portee, dis LEAVERN (abandon)
+- Adapte tes suggestions aux ERREURS PASSEES (ne repete pas ce qui a echoue)
+- Tu peux suggérer des `have` intermediaires pour decomposer
+- Priorise les tactiques Mathlib disponibles sur les raisonnements from-scratch"""
 
 AUTONOMOUS_PROVER_INSTRUCTIONS = """Prouveur autonome. Edite directement le fichier .lean.
 

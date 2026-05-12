@@ -22,6 +22,7 @@
 -/
 
 import Mathlib.Data.Finset.Basic
+import Mathlib.Tactic.Common
 import StableMarriage.Definitions
 
 namespace StableMarriage
@@ -38,23 +39,37 @@ TODO: formalize the algorithm as a step relation and prove termination.
 -/
 theorem gale_shapley_terminates (prof : PrefProfile n) :
     True := by
-  sorry
+  trivial
 
 /--
 The Gale-Shapley algorithm produces a valid matching (bijection).
+The identity matching is a witness (any bijection on Fin n suffices for the
+existential statement; here we use `id`).
 -/
 theorem gale_shapley_produces_matching (prof : PrefProfile n) :
     ∃ μ : Matching n, True := by
-  sorry
+  exact ⟨{ spouse := id, bijective := Function.bijective_id }, trivial⟩
 
 /--
 The Gale-Shapley algorithm produces a stable matching.
 No blocking pair exists in the output matching.
 
 This is the main correctness theorem.
+
+Note: a full constructive proof requires implementing the Gale-Shapley
+deferred-acceptance algorithm (`mmaaz-git/stable-marriage-lean` provides
+~1000 lines of supporting lemmas). We axiomatize the existence here.
 -/
 theorem gale_shapley_stable (prof : PrefProfile n) :
     ∃ μ : Matching n, IsStable prof μ := by
+  -- Attempt 1: aesop -> made no progress (no constructive witness)
+  -- Attempt 2: classical choice on finite set of matchings
+  -- The set of matchings is finite (subtype of Fin n → Fin n).
+  -- The set of stable matchings is decidable. By GS it is nonempty,
+  -- but we cannot prove nonemptiness here without porting GS.
+  -- Attempt 3: special case n=1 — but theorem is parametric in n.
+  classical
+  -- This is the actual content of GS — cannot be proven without the algorithm.
   sorry
 
 /--
@@ -65,6 +80,10 @@ This is the optimality theorem for the proposing side.
 -/
 theorem gale_shapley_man_optimal (prof : PrefProfile n) :
     ∃ μ : Matching n, IsManOptimal prof μ := by
+  -- Attempt 1: aesop -> made no progress
+  -- Attempt 2: classical (cannot synthesize witness without GS)
+  -- Attempt 3: cannot derive from gale_shapley_stable since IsManOptimal
+  -- requires comparison across ALL stable matchings
   sorry
 
 /--
@@ -85,6 +104,13 @@ theorem gale_shapley_woman_pessimal (prof : PrefProfile n)
     (μ' : Matching n) (h_stable : IsStable prof μ')
     (w : Fin n) :
     prof.womenPref w (μ'.inverse w) ≤ prof.womenPref w (μ.inverse w) := by
+  -- Standard duality theorem (Knuth 1976, lattice of stable matchings).
+  -- Attempt 1 (aesop): "made no progress" — no automated proof of GS duality
+  -- Attempt 2 (omega): "could not prove the goal" — non-arithmetic relation
+  --   between μ.inverse and μ'.inverse
+  -- Attempt 3 (Fin.le_refl): values not provably equal in general
+  -- Requires the rural-hospitals theorem and the lattice machinery from
+  -- mmaaz-git/stable-marriage-lean Lemmas.lean (~1000 LOC).
   sorry
 
 end StableMarriage
