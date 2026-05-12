@@ -409,6 +409,40 @@ SemanticWeb/
 - [DBpedia](https://dbpedia.org/) - Donnees structurees de Wikipedia
 - [Wikidata](https://www.wikidata.org/) - Base de connaissances libre
 
+## Connections cross-series
+
+### SemanticWeb et Planners (Planification Automatique)
+
+Les graphes de connaissances RDF/OWL (SW-1 a SW-6) fournissent des representations riches du monde que les planificateurs PDDL (Planners-2 a Planners-9) peuvent exploiter :
+
+- **Ontologies OWL (SW-4/5) et domaines PDDL (Planners-6)** : les ontologies definissent les types et relations du domaine ; les fichiers PDDL definissent les actions et contraintes. Les deux formalisent la semantique d'un domaine pour le raisonnement automatique.
+- **SPARQL (SW-3) + planification** : les requetes SPARQL sur un graphe de connaissances peuvent generer les etats initiaux et buts d'un probleme de planification.
+- **GraphRAG (SW-12) + LLM Planning (Planners-10)** : le RAG base sur les graphes de connaissances ameliore la generation de plans par les LLMs en fournissant un contexte structure.
+
+### SemanticWeb et Tweety (Logique et Argumentation)
+
+Les logiques de description (OWL) et les logiques classiques (Tweety) partagent des fondements communs :
+
+- **OWL-DL (SW-4/5) et logique propositionnelle/FOL (Tweety-2/3)** : OWL-DL est une logique de description decidable, fragment de la logique du premier ordre. Les SAT solvers de Tweety completent les raisonneurs OWL (HermiT, Pellet).
+- **SHACL (SW-7) et validation** : les contraintes SHACL sur les graphes RDF sont analogues aux contraintes logiques de Tweety. Les deux approches valident la coherence de bases de connaissances.
+- **Raisonnement monotone (OWL) vs non-monotone (Tweety-6/7)** : les ontologies OWL font du raisonnement monotone (ajout de faits ne retracte rien) ; Tweety explore le raisonnement non-monotone (defeasible, priorite).
+
+### SemanticWeb et Lean (Verification Formelle)
+
+La verification de coherence des ontologies OWL est une forme de verification formelle :
+
+- **OWL consistency checking** : les raisonneurs OWL prouvent la coherence d'une ontologie, similaire aux preuves Lean de correction de programmes.
+- **SHACL shapes** : les shapes SHACL sont des invariants sur les donnees RDF, analogues aux types dependants Lean comme specifications.
+
+### SemanticWeb et SmartContracts
+
+Les smart contracts et le web semantique convergent dans les donnees decentralisees :
+
+- **Graphes de connaissances on-chain** : les NFTs ERC-721 (SC-7) avec metadonnees JSON-LD (SW-8) creent des graphes de connaissances decentraux. Les DID (Decentralized Identifiers) utilisent RDF pour l'identite auto-souveraine.
+- **Oracle data integration** : les oracles blockchain (SC-8 DeFi) peuvent servir de sources RDF pour enrichir les graphes de connaissances en temps reel.
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.
