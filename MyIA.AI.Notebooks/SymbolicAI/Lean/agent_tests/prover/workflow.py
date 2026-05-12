@@ -64,6 +64,9 @@ class ProofMessage:
     # AgentExecutor yields immediately when this is true.
     intractable: bool = False
     intractable_reason: Optional[str] = None
+    # Director (Track C): counts how many times the DirectorAgent has been
+    # consulted this session. Capped at 3 to avoid budget burn.
+    director_calls: int = 0
 
 
 class AgentExecutor(Executor):
@@ -180,6 +183,15 @@ class AgentExecutor(Executor):
         if self._agent.name == "CoordinatorAgent" and self._state and not msg.plan:
             if self._state.plan:
                 msg.plan = list(self._state.plan)
+
+        # Director call tracking
+        if self._agent.name == "DirectorAgent":
+            msg.director_calls += 1
+            if self._trace:
+                self._trace.log(
+                    agent="DirectorAgent", role="director_call",
+                    content=f"director call {msg.director_calls}/3",
+                )
 
         # F5: Coordinator can mark the current sorry intractable. End the
         # session cleanly so we don't waste iterations on a known-dead goal.
@@ -395,18 +407,33 @@ class VerifyExecutor(Executor):
 
 
 class ProofWorkflowBuilder:
-    """Builds the multi-agent proof workflow graph."""
+    """Builds the multi-agent proof workflow graph.
+
+    Optional DirectorAgent: external LLM (e.g. GPT-5.5 via OpenRouter) that
+    provides strategic tactic suggestions when local agents stall. Inserted
+    into the graph after F1 Coordinator escalation, so the flow becomes:
+        Coordinator (stalled) -> Director -> Tactic (retry with guidance)
+    The director has no tools — pure text output with APPROACH + TACTICS.
+    Budget: max 3 calls per session, tracked via ``msg.director_calls``.
+    """
 
     def __init__(self, search_agent: Agent, tactic_agent: Agent,
                  critic_agent: Agent, coordinator_agent: Agent,
                  sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, state: "ProofState" = None,
-                 kb: Optional[ProofKnowledgeBase] = None):
+                 kb: Optional[ProofKnowledgeBase] = None,
+                 director_agent: Optional[Agent] = None):
         self._search = AgentExecutor(search_agent, trace=trace, state=state)
         self._tactic = AgentExecutor(tactic_agent, trace=trace, state=state)
         self._critic = AgentExecutor(critic_agent, trace=trace, state=state)
         self._coordinator = AgentExecutor(coordinator_agent, trace=trace, state=state)
         self._verify = VerifyExecutor(sorry_context, imports, trace, kb=kb)
+        self._director: Optional[AgentExecutor] = (
+            AgentExecutor(director_agent, trace=trace, state=state,
+                          timeout_s=120)
+            if director_agent else None
+        )
+        self._director_max_calls = 3
 
     def build(self):
         # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to
@@ -421,6 +448,10 @@ class ProofWorkflowBuilder:
         # Forward chain: search -> tactic -> verify
         builder.add_edge(self._search, self._tactic)
         builder.add_edge(self._tactic, self._verify)
+
+        # Director -> tactic (director suggests tactics, TacticAgent applies)
+        if self._director:
+            builder.add_edge(self._director, self._tactic)
 
         # Verify routes via switch-case so the "tactic" backedge and the
         # default critic path don't collide as duplicate edges either. F1
@@ -459,16 +490,39 @@ class ProofWorkflowBuilder:
             ],
         )
 
-        # Coordinator routing (requires exactly one Default)
-        builder.add_switch_case_edge_group(
-            source=self._coordinator,
-            cases=[
-                Case(
-                    condition=lambda msg: msg.next_agent == "tactic",
-                    target=self._tactic,
-                ),
-                Default(target=self._search),
-            ],
-        )
+        # Coordinator routing — with optional Director escalation.
+        # When the Coordinator determines local agents are stalled it can
+        # request director guidance by setting next_agent="director".
+        # The guard caps director calls to avoid budget burn; if the cap
+        # is hit the coordinator falls through to search (normal path).
+        if self._director:
+            builder.add_switch_case_edge_group(
+                source=self._coordinator,
+                cases=[
+                    Case(
+                        condition=lambda msg: (
+                            msg.next_agent == "director"
+                            and msg.director_calls < self._director_max_calls
+                        ),
+                        target=self._director,
+                    ),
+                    Case(
+                        condition=lambda msg: msg.next_agent == "tactic",
+                        target=self._tactic,
+                    ),
+                    Default(target=self._search),
+                ],
+            )
+        else:
+            builder.add_switch_case_edge_group(
+                source=self._coordinator,
+                cases=[
+                    Case(
+                        condition=lambda msg: msg.next_agent == "tactic",
+                        target=self._tactic,
+                    ),
+                    Default(target=self._search),
+                ],
+            )
 
         return builder.build()

@@ -11,6 +11,7 @@ from .instructions import (
     TACTIC_AGENT_INSTRUCTIONS,
     CRITIC_AGENT_INSTRUCTIONS,
     COORDINATOR_AGENT_INSTRUCTIONS,
+    DIRECTOR_AGENT_INSTRUCTIONS,
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
 
@@ -109,4 +110,26 @@ def create_coordinator_agent(tools: CoordinatorTools, provider: str = "zai") -> 
         ],
         name="CoordinatorAgent",
         default_options=_reasoning_options(),
+    )
+
+
+DIRECTOR_MAX_TOKENS = 512
+
+
+def create_director_agent(provider: str = "openrouter") -> Agent:
+    """DirectorAgent: external LLM providing strategic tactic guidance.
+
+    Uses a more powerful model (GPT-5.5 via OpenRouter) to suggest
+    proof approaches when local agents fail. No tools — pure text output
+    with structured tactic suggestions.
+
+    Budget: max 500 tokens, max 3 calls per iteration.
+    """
+    client = create_client(provider, model_key="reasoning")
+    return Agent(
+        client=client,
+        instructions=DIRECTOR_AGENT_INSTRUCTIONS,
+        tools=[],
+        name="DirectorAgent",
+        default_options=ChatOptions(max_tokens=DIRECTOR_MAX_TOKENS),
     )

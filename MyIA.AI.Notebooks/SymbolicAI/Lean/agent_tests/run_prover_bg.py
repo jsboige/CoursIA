@@ -63,6 +63,7 @@ async def main(args: argparse.Namespace) -> int:
     _bg(f"DIFF  {demo.get('difficulty')}")
     _bg(
         f"PROVIDER reasoning={args.provider} fast={args.local_provider} "
+        f"director={args.director_provider or 'none'} "
         f"max_iter={args.max_iter} workflow_timeout={args.workflow_timeout}s"
     )
 
@@ -78,6 +79,7 @@ async def main(args: argparse.Namespace) -> int:
         trace=tr,
         provider=args.provider,
         local_provider=args.local_provider,
+        director_provider=args.director_provider,
     )
 
     t0 = time.time()
@@ -129,6 +131,9 @@ def parse_args() -> argparse.Namespace:
                    help="max workflow iterations")
     p.add_argument("--workflow-timeout", type=int, default=1800,
                    help="wall-clock cap (seconds)")
+    p.add_argument("--director-provider", default=None,
+                   help="external LLM provider for strategic tactic guidance "
+                        "(e.g. openrouter for GPT-5.5)")
     return p.parse_args()
 
 
