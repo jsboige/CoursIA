@@ -1,7 +1,7 @@
 # Stoploss-Volatility-ML (HandsOn Ex08)
 
 **Asset class:** US Equities (KO)
-**Cloud project ID:** None (local only)
+**Cloud project ID:** 29463529
 
 ## Description
 
@@ -11,7 +11,7 @@ Lasso regression stop-loss volatility prediction. Predicts next-day realized vol
 
 **Lean CLI:**
 
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud:** Project 29463529. Research notebook executed on QC Cloud (2026-05-11).
 
 ## Backtest Metrics
 
@@ -27,7 +27,7 @@ Lasso regression stop-loss volatility prediction. Predicts next-day realized vol
 ## Files
 
 - main.py - Strategy (v1.0, ML vol-adjusted stops)
-- research.ipynb - **awaiting QC Cloud execution** -> `../../_pending_execution/Stoploss-Volatility-ML-research.ipynb` (LASSO: rolling vol features 30/60/90d, weekly low return prediction, fixed vs ML stop-loss comparison, drawdown recovery, sensitivity 2-14%). QC Cloud project 29463529. See tracking issue for execution checklist.
+- research.ipynb - QC Cloud executed (2026-05-11, project 29463529). LASSO: rolling vol features 30/60/90d, weekly low return prediction, fixed vs ML stop-loss comparison, drawdown recovery, sensitivity 2-14%. Outputs captured via QC Cloud Research IDE.
 
 ## References
 

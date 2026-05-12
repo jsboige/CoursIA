@@ -25,6 +25,7 @@ import Mathlib.Order.Defs.LinearOrder
 import Mathlib.Tactic
 
 import SocialChoice.Basic
+import SocialChoice.SortedListCounting
 
 namespace SocialChoice
 
@@ -335,24 +336,40 @@ theorem median_voter_theorem_strict [Inhabited σ] (prof : ι → PrefOrder σ) 
               Finset.card_filter_add_card_filter_not
                 (s := Finset.univ) (p := fun i => median_peak peaks ≤ peaks i),
               Finset.card_univ]
-        -- TODO: A.card ≤ n/2 via sortedness (median voter counting argument).
-        -- PROOF STRATEGY (ai-01 2026-05-11 Cycle 25 prover-lead):
-        -- 1. Let l := sorted_peaks_list peaks = (univ.toList.map peaks).mergeSort (· ≤ ·)
-        -- 2. median_peak peaks = l.getD (l.length / 2) default
-        -- 3. l.Sorted (· ≤ ·) by List.sorted_mergeSort
-        -- 4. l ≈ univ.toList.map peaks by List.mergeSort_perm
-        -- 5. A.card = ((univ.toList.map peaks).countP (· < median)) by Finset.filter.card via toList
-        -- 6. (univ.toList.map peaks).countP = l.countP by List.Perm.countP_eq
-        -- 7. For sorted l with median at position n/2 :
-        --    l.countP (· < median) ≤ n/2
-        --    (split l = take(n/2) ++ drop(n/2); take has length ≤ n/2 + countP ≤ length;
-        --     drop has head = median + sortedness → all elements ≥ median → countP = 0)
-        -- 8. With hcomp + step 7 + hodd : A.card ≤ n/2 ∧ A.card + B.card = n ∧ n = 2k+1
-        --    ⟹ A.card ≤ k ∧ B.card ≥ k+1 ⟹ A.card < B.card
-        -- KEY MATHLIB LEMMAS: List.sorted_mergeSort, List.mergeSort_perm, List.Perm.countP_eq,
-        -- List.countP_append, List.countP_eq_zero, List.countP_le_length, List.length_take,
-        -- List.Sorted.rel_get_of_le (or List.Sorted.le_get_of_le_get) for the drop bound
-        sorry
+        -- Step 1: Setup sorted list of peaks
+        set l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·) with hl_def
+        have hl_len : l.length = Fintype.card ι := by
+          simp [l, List.length_mergeSort, List.length_map, Finset.length_toList]
+        have hl_pos : 0 < l.length := by rw [hl_len]; exact hcard_pos
+        have hn : l.length / 2 < l.length := Nat.div_lt_self hl_pos (by omega)
+        have hperm : l ≈ Finset.univ.toList.map peaks := List.mergeSort_perm _ _
+        have hsorted : l.Pairwise (· ≤ ·) :=
+          List.pairwise_mergeSort' (r := (· ≤ ·)) (Finset.univ.toList.map peaks)
+        -- Step 2: median_peak peaks = l[l.length / 2]
+        have hmedian_eq : median_peak peaks = l[l.length / 2] := by
+          unfold median_peak sorted_peaks_list
+          show l.getD (l.length / 2) default = l[l.length / 2]
+          simp [List.getD, hn]
+        -- Step 3: Bridge A.card to l.countP via SortedListCounting helper
+        have hA_bridge :
+            (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card =
+              l.countP (fun x => decide (x < median_peak peaks)) := by
+          rw [show (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ) =
+              (Finset.filter (fun i => decide (peaks i < median_peak peaks) = true) Finset.univ)
+              from by simp,
+              SortedListCounting.finset_filter_lt_card_eq_toList_map_countP peaks
+                (fun x => decide (x < median_peak peaks))]
+          exact (hperm.countP_eq _).symm
+        -- Step 4: Apply countP_lt_kth_le_half to bound A.card by l.length / 2
+        have hA_bound :
+            (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card ≤
+              l.length / 2 := by
+          rw [hA_bridge, hmedian_eq]
+          exact SortedListCounting.countP_lt_kth_le_half hsorted hn
+        -- Step 5: Combine with hcomp + hodd: for odd n = 2k+1, A.card ≤ k < k+1 ≤ B.card
+        have hodd_n : Odd l.length := by rw [hl_len]; exact hodd
+        obtain ⟨k, hk⟩ := hodd_n
+        omega
       omega
     · -- Case: peaks_j > median. Voters with peak <= median prefer median over j.
       have hgt : median_peak peaks < peaks j := lt_of_le_of_ne (le_of_not_gt hlt) (Ne.symm hny)
@@ -375,14 +392,54 @@ theorem median_voter_theorem_strict [Inhabited σ] (prof : ι → PrefOrder σ) 
         exact (hlt_peaks i hle).2 hi.1
       have hcount : (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card <
           (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card := by
-        -- Symmetric counting argument to L338 (median voter, > case).
-        -- Same strategy: sortedness implies countP (· > median) ≤ (n-1)/2.
-        -- See L338 PROOF STRATEGY comment for the full plan.
-        -- Once a `sorted_peaks_count_lt_median_le_half` helper lemma is proven,
-        -- the dual `sorted_peaks_count_gt_median_le_half` follows by symmetry
-        -- (apply the same lemma to `peaks` with the opposite order, or
-        -- via `mergeSort` of `(· ≥ ·)` and `getD (n/2)`).
-        sorry
+        -- Step 1: Setup sorted list of peaks (mirror of LT case)
+        set l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·) with hl_def
+        have hl_len : l.length = Fintype.card ι := by
+          simp [l, List.length_mergeSort, List.length_map, Finset.length_toList]
+        have hl_pos : 0 < l.length := by rw [hl_len]; exact hcard_pos
+        have hn : l.length / 2 < l.length := Nat.div_lt_self hl_pos (by omega)
+        have hperm : l ≈ Finset.univ.toList.map peaks := List.mergeSort_perm _ _
+        have hsorted : l.Pairwise (· ≤ ·) :=
+          List.pairwise_mergeSort' (r := (· ≤ ·)) (Finset.univ.toList.map peaks)
+        -- Step 2: median_peak peaks = l[l.length / 2]
+        have hmedian_eq : median_peak peaks = l[l.length / 2] := by
+          unfold median_peak sorted_peaks_list
+          show l.getD (l.length / 2) default = l[l.length / 2]
+          simp [List.getD, hn]
+        -- Step 3: Complementarity A.card + B.card = n
+        have hcomp_dual :
+            (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card +
+              (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card =
+                Fintype.card ι := by
+          have hflip :
+              (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ) =
+                (Finset.filter (fun i => ¬ peaks i ≤ median_peak peaks) Finset.univ) := by
+            apply Finset.filter_congr
+            intro i _
+            exact (not_le).symm
+          rw [hflip, add_comm,
+              Finset.card_filter_add_card_filter_not
+                (s := Finset.univ) (p := fun i => peaks i ≤ median_peak peaks),
+              Finset.card_univ]
+        -- Step 4: Bridge B.card to l.countP (· ≤ median) via SortedListCounting helper
+        have hB_bridge :
+            (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card =
+              l.countP (fun x => decide (x ≤ median_peak peaks)) := by
+          rw [show (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ) =
+              (Finset.filter (fun i => decide (peaks i ≤ median_peak peaks) = true) Finset.univ)
+              from by simp,
+              SortedListCounting.finset_filter_lt_card_eq_toList_map_countP peaks
+                (fun x => decide (x ≤ median_peak peaks))]
+          exact (hperm.countP_eq _).symm
+        -- Step 5: Apply countP_le_kth_ge_half_succ to lower-bound B.card by l.length / 2 + 1
+        have hB_bound : l.length / 2 + 1 ≤
+            (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card := by
+          rw [hB_bridge, hmedian_eq]
+          exact SortedListCounting.countP_le_kth_ge_half_succ hsorted hn
+        -- Step 6: Combine with hcomp_dual + hodd: for odd n = 2k+1, B.card ≥ k+1, A.card ≤ k
+        have hodd_n : Odd l.length := by rw [hl_len]; exact hodd
+        obtain ⟨k, hk⟩ := hodd_n
+        omega
       omega
 
 end SinglePeaked
