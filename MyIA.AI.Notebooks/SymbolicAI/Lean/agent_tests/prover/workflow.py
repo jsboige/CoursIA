@@ -305,6 +305,35 @@ class VerifyExecutor(Executor):
             await ctx.send_message(msg)
             return
 
+        # Guard: reject tactics that contain a bare `sorry` token at the
+        # statement level (LLM giveup pattern). Comments and strings are
+        # excluded so a proof legitimately mentioning the word in
+        # documentation isn't misclassified. Without this guard the LLM
+        # can submit `-- explanation\n  sorry` as a "proof" and burn a
+        # compile cycle before VerifyExecutor rejects it via sorry-count.
+        # 2026-05-12 Shapley_2daf67cb86_L570 trace: TacticAgent did exactly
+        # this — long comment block followed by literal `sorry`, build_fail
+        # outcome already correct but wasted ~30s on the compile.
+        import re as _re
+        _stripped = _re.sub(r"--.*", "", msg.tactic)  # strip line comments
+        _stripped = _re.sub(r"/-(.|\n)*?-/", "", _stripped)  # block comments
+        if _re.search(r"(^|\s)sorry(\s|$)", _stripped):
+            msg.error = (
+                "Tactic contains a literal `sorry` token (LLM giveup pattern). "
+                "A proof must close the goal with real tactics. Routing back "
+                "to Coordinator to revise attack plan."
+            )
+            msg.error_type = "tactic_contains_sorry"
+            msg.next_agent = "coordinator"
+            self._consecutive_build_fails += 1
+            if self._trace:
+                self._trace.log(
+                    agent="VerifyExecutor", role="sorry_guard",
+                    content=f"rejected tactic containing sorry: {msg.tactic[:120]}",
+                )
+            await ctx.send_message(msg)
+            return
+
         result = verify_sorry_replacement(
             filepath=self._sorry_ctx.filepath,
             sorry_line=self._sorry_ctx.sorry_line,
