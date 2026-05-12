@@ -969,8 +969,9 @@ class TacticTools:
         if not self._filepath:
             return True
         try:
-            from .verifier import get_verifier
-            from .lean_server import LeanVerifier
+            from .verifier import get_verifier, _load_lean_verifier_class
+
+            _LeanVerifier = _load_lean_verifier_class()
 
             project_dir = str(Path(self._filepath).parent.parent)
             subdir = Path(self._filepath).parent.name
@@ -978,7 +979,7 @@ class TacticTools:
             relative_path = f"{subdir}/{filename}"
 
             # Invalidate cache since file was just modified
-            LeanVerifier.invalidate(self._filepath)
+            _LeanVerifier.invalidate(self._filepath)
 
             verifier = get_verifier(project_dir)
             result = verifier.verify_project_file(relative_path, force=True)
