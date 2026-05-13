@@ -4,9 +4,9 @@ Ecosysteme complet de **448 notebooks** Jupyter pour l'apprentissage des technol
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 467
-breakdown: QuantConnect=101, GenAI=100, SymbolicAI=89, Search=45, Probas=32, Sudoku=32, ML=30, GameTheory=27, RL=6, CaseStudies=4, IIT=1
-maturity: BETA=181, ALPHA=143, PRODUCTION=87, DRAFT=56
+total: 470
+breakdown: QuantConnect=104, GenAI=100, SymbolicAI=89, Search=45, Probas=32, Sudoku=32, ML=30, GameTheory=27, RL=6, CaseStudies=4, IIT=1
+maturity: BETA=181, ALPHA=142, PRODUCTION=88, DRAFT=59
 -->
 
 Dernière mise à jour : 2026-05-02
