@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-14 08:18
+Generated: 2026-05-14 08:32
 Total notebooks: 467
 
 ## Status Summary
@@ -12,8 +12,8 @@ Total notebooks: 467
 
 ## Maturity Summary
 
-- **PRODUCTION**: 141
-- **BETA**: 227
+- **PRODUCTION**: 142
+- **BETA**: 226
 - **TEMPLATE**: 4
 - **ALPHA**: 64
 - **DRAFT**: 31
@@ -52,10 +52,10 @@ Total notebooks: 467
 | 26 | Workflow de Composition Musicale | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 27 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 28 | Live Coding Musical pilote par LLM | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 29 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 29 | Introduction - barbie schreck | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 30 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 31 | Docteur vs ChatGPT: Chatbot médical | base | DEMO | ALPHA | 45min | po-2025 |
-| 32 | Générateur de Recettes PDF | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 32 | Introduction - receipe maker | Python 3 | READY | ALPHA | 30min | po-2025 |
 | 33 | OpenAI DALL-E 3 - Generation d'Images | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
 | 34 | 🤖 GPT-5 Multimodal - Analyse et Génération d'Image | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
 | 35 | 🖼️ Opérations de Base sur les Images | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
@@ -84,7 +84,7 @@ Total notebooks: 467
 | 58 | SK-10-NotebookMaker : Systeme Multi-Agents pour Ge | base | DEMO | BETA | 30min | po-2025 |
 | 59 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | BETA | 30min | po-2025 |
 | 60 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | BETA | 30min | po-2025 |
-| 61 | Projet Createur de Mail personnalise | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 61 | Introduction - Créateur de mail personnalisé | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 62 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
 | 63 | Jeu de devinette : Père Fouras vs Laurent Jalabert | coursIA | DEMO | BETA | 15min | po-2025 |
 | 64 | Notebook de travail | Python 3 | READY | PRODUCTION | 15min | po-2025 |
@@ -125,14 +125,14 @@ Total notebooks: 467
 | 99 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 100 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 
-### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:5, BETA:19, DRAFT:7, PRODUCTION:14
+### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:5, BETA:18, DRAFT:7, PRODUCTION:15
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | App-1 : Le Probleme des N-Reines | .venv | READY | BETA | 45min | po-2025 |
 | 2 | App-11 - Picross (Nonogrammes) | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
 | 3 | App-15 : Planification de Calendrier Sportif (CSP) | .venv (3.14.3) | READY | PRODUCTION | 30min | po-2025 |
-| 4 | App-16 : Generateur de Mots Croises (CSP) | Python 3 | READY | BETA | 30min | po-2025 |
+| 4 | App-16 : Generateur de Mots Croises (CSP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 5 | App-2 : Coloration de Graphes | Python 3 | READY | BETA | 45min | po-2025 |
 | 6 | App-3 : Nurse Scheduling (Planification des horair | Python 3 (ipykernel) | READY | ALPHA | 45min | po-2025 |
 | 7 | App-4 : Job-Shop Scheduling | Python 3 | READY | BETA | 45min | po-2025 |
