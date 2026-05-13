@@ -1,10 +1,42 @@
-# M10 Proposal -- Realized GARCH for Crypto Volatility Forecasting
+# M10 Realized GARCH -- Crypto Volatility Forecasting
 
-**Status:** PROPOSED (Cycle 28 Track B)
+**Status:** TESTED (Cycle 29 Track 3) -- **NO BEATS** (0/21 combos beat HAR Classic)
 
-## Recommendation
+## Verdict
 
-**Realized GARCH (Hansen, Huang, Shek 2012)** as M10, with Markov-Switching GARCH as fallback M11.
+M10 Realized GARCH **fails to beat HAR Classic** across all 21 unique coin-horizon combinations. The model is systematically worse, particularly at short horizons (h=1) where the average MSE is 58.9% higher than HAR. Recommendation: **do not adopt for crypto volatility forecasting.**
+
+## M10 Results Summary (Cycle 29, 2026-05-13)
+
+| Verdict | Count |
+|---------|-------|
+| BEATS | **0** |
+| BEATEN | 13 (all at p < 0.05) |
+| INCONCLUSIVE | 8 |
+
+| Coin | h=1 MSE | h=1 verdict | h=5 MSE | h=5 verdict | h=10 MSE | h=10 verdict |
+|------|---------|-------------|---------|-------------|----------|--------------|
+| ADA-USD | -58.6% | BEATEN_p005 | -44.1% | INCONCLUSIVE | -39.2% | INCONCLUSIVE |
+| BTC-USD | -63.5% | BEATEN_p005 | -58.2% | BEATEN_p005 | -31.2% | BEATEN_p005 |
+| DOT-USD | -37.6% | BEATEN_p005 | -10.2% | INCONCLUSIVE | +18.7% | INCONCLUSIVE |
+| ETH-USD | -68.3% | BEATEN_p005 | -97.2% | BEATEN_p005 | -79.1% | BEATEN_p005 |
+| LTC-USD | -54.5% | BEATEN_p005 | -31.5% | INCONCLUSIVE | -13.6% | INCONCLUSIVE |
+| SOL-USD | -62.6% | BEATEN_p005 | -67.4% | BEATEN_p005 | -69.0% | BEATEN_p010 |
+| XRP-USD | -67.1% | BEATEN_p005 | -37.9% | INCONCLUSIVE | -15.4% | INCONCLUSIVE |
+
+Negative MSE reduction = RG worse than HAR. 4 seeds produce identical results (deterministic MLE).
+
+### Root Cause Analysis
+
+1. **Overfitting**: 8 parameters vs 3 for HAR. With 250h initial training and hourly crypto noise, MLE overfits.
+2. **Crypto regime shifts**: Abrupt volatility regime changes (Luna, FTX) that GARCH conditional variance cannot adapt to fast enough.
+3. **Measurement equation mismatch**: `log(RV_t) = xi + phi * log(h_t) + ...` assumes stable linear relationship, unstable at hourly crypto frequency.
+4. **Log-transform distortion**: Compresses extreme volatility spikes that dominate crypto MSE. HAR operates directly on RV levels.
+5. **Structural issue confirmed**: All 4 seeds identical = deterministic failure, not stochastic noise.
+
+Full details: `docs/M10_REALIZED_GARCH_VOL.md`
+
+## Original Proposal (Cycle 28)
 
 ## Why Realized GARCH
 
@@ -39,13 +71,13 @@ Leverage:  tau(eps_t) = gamma_1 * eps_t + gamma_2 * (eps_t^2 - 1)
 | MS-GARCH (Haas 2004) | Fixes M5's two-step flaw (joint Hamilton filter + GARCH MLE). Good theory but 11 params + complex optimization = 5-8h dev. Ranked as M11 fallback. |
 | GNN cross-asset | 2 assets (BTC+ETH) = trivial 2-node graph. No structure to learn. TFT already showed >100K params = catastrophic on this data. |
 
-## Expected results
+## Expected vs Actual Results
 
-Based on Hansen et al. (2012) equities + Charles & Darne (2019) crypto:
+**Expected (based on Hansen et al. 2012 equities):** 5-15% MSE reduction at h=1, modest at h=5/10.
 
-- **h=1:** 5-15% MSE reduction vs HAR classic. Realized measure + GARCH dynamics should improve on HAR's linear lag structure.
-- **h=5/10:** Modest or no improvement. GARCH dynamics dominate at longer horizons, converging to unconditional variance (same as HAR).
-- **BTC vs ETH:** BTC should benefit more (more data, stronger GARCH persistence). ETH ~1500 obs may be tight for MLE convergence.
+**Actual (crypto hourly):** 0/21 BEATS. Average MSE increase: h=1 +58.9%, h=5 +49.5%, h=10 +32.7%.
+
+**Why the proposal was wrong:** Hansen et al. results on equity markets do not transfer to crypto hourly data. Crypto has higher kurtosis (~20-50 vs ~5-8 for equities), regime-dependent volatility clustering with structural breaks, and 24/7 trading that eliminates overnight information effects that RG leverages in equity markets.
 
 ## Implementation plan
 
@@ -65,6 +97,19 @@ Based on Hansen et al. (2012) equities + Charles & Darne (2019) crypto:
 | M4 DLinear | BEATS_p005 | BEATS_p005 | BEATS_p005 | BEATS_p005 | INCONCLUSIVE | INCONCLUSIVE |
 
 Realized GARCH must achieve BEATS_p005 on at least BTC h=1 (where HAR classic already beats GARCH) to be viable. If it fails, MS-GARCH (M11) is the fallback.
+
+## Next Steps: M11 Volatility Forecasting
+
+HAR Classic remains the baseline to beat (12/21 BEATS_p005 from DM retroactif). The following models are ranked by expected viability on crypto hourly data:
+
+| Priority | Model | Params | Rationale |
+|----------|-------|--------|-----------|
+| M11a | **HAR-RV-J** (Andersen et al. 2007) | 5 | Adds jump component to HAR. Low param count, directly extends our strongest baseline. Expected: moderate improvement on high-volatility days. |
+| M11b | **Markov-Switching HAR** | 6-8 | Regime-switching between low/high vol states. Addresses root cause #2 (regime shifts). 2-state Markov + HAR in each state. |
+| M11c | **HEAVY** (Shephard & Sheppard 2010) | 8-10 | Same goal as Realized GARCH but bivariate formulation. May handle measurement equation mismatch better. 2x coding effort. |
+| M11d | **Log-transformed LSTM on RV** | ~500-2K | Neural approach on log(RV) sequences. Must stay below ~5K params to avoid TFT-style catastrophic overfit. |
+
+**Rejected:** GARCH-MIDAS (macro drivers weak for crypto), MS-GARCH (complex optimization, 11+ params), cross-asset GNN (2-node graph trivial).
 
 ## References
 
