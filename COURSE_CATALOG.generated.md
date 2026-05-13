@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-14 08:15
+Generated: 2026-05-14 08:18
 Total notebooks: 467
 
 ## Status Summary
@@ -12,10 +12,10 @@ Total notebooks: 467
 
 ## Maturity Summary
 
-- **PRODUCTION**: 129
-- **BETA**: 225
+- **PRODUCTION**: 141
+- **BETA**: 227
 - **TEMPLATE**: 4
-- **ALPHA**: 78
+- **ALPHA**: 64
 - **DRAFT**: 31
 
 ## By Series
@@ -125,13 +125,13 @@ Total notebooks: 467
 | 99 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 100 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 
-### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:13, BETA:18, DRAFT:7, PRODUCTION:7
+### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:5, BETA:19, DRAFT:7, PRODUCTION:14
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | App-1 : Le Probleme des N-Reines | .venv | READY | BETA | 45min | po-2025 |
 | 2 | App-11 - Picross (Nonogrammes) | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
-| 3 | App-15 : Planification de Calendrier Sportif (CSP) | .venv (3.14.3) | READY | ALPHA | 30min | po-2025 |
+| 3 | App-15 : Planification de Calendrier Sportif (CSP) | .venv (3.14.3) | READY | PRODUCTION | 30min | po-2025 |
 | 4 | App-16 : Generateur de Mots Croises (CSP) | Python 3 | READY | BETA | 30min | po-2025 |
 | 5 | App-2 : Coloration de Graphes | Python 3 | READY | BETA | 45min | po-2025 |
 | 6 | App-3 : Nurse Scheduling (Planification des horair | Python 3 (ipykernel) | READY | ALPHA | 45min | po-2025 |
@@ -149,12 +149,12 @@ Total notebooks: 467
 | 18 | TP : Conception d'Algorithmes Génétiques avec Gene | .NET (C#) | READY | ALPHA | 45min | po-2025 |
 | 19 | App-12 : Puissance 4 -- Comparaison d'algorithmes  | Python 3 | READY | DRAFT | 45min | po-2025 |
 | 20 | App-14 - Connect Four : Benchmark Adversarial Sear | Python 3 | READY | DRAFT | 45min | po-2025 |
-| 21 | Introduction à la programmation par contrainte | base | READY | ALPHA | 45min | po-2025 |
+| 21 | Introduction à la programmation par contrainte | base | READY | BETA | 45min | po-2025 |
 | 22 | Recherche non informée et informée | Python 3 | READY | ALPHA | 45min | po-2025 |
 | 23 | TP : Conception d'Algorithmes Génétiques avec Gene | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 24 | Search-1 : Espaces d'etats et formulation de probl | Python 3 (ipykernel) | READY | DRAFT | 45min | po-2025 |
 | 25 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 26 | Search-11-Metaheuristiques : Optimisation avec MEA | .venv | READY | ALPHA | 45min | po-2025 |
+| 26 | Search-11-Metaheuristiques : Optimisation avec MEA | .venv | READY | PRODUCTION | 45min | po-2025 |
 | 27 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | BETA | 45min | po-2025 |
 | 28 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 29 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
@@ -162,16 +162,16 @@ Total notebooks: 467
 | 31 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | BETA | 30min | po-2025 |
 | 32 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | .venv | READY | DRAFT | 45min | po-2025 |
 | 33 | Search-8-DancingLinks : L'algorithme X et Dancing  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 34 | Search-9-LinearProgramming : Programmation Lineair | 3.13.1 | READY | ALPHA | 45min | po-2025 |
+| 34 | Search-9-LinearProgramming : Programmation Lineair | 3.13.1 | READY | PRODUCTION | 45min | po-2025 |
 | 35 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | PRODUCTION | 1h | po-2025 |
 | 36 | CSP-2 : Propagation de Contraintes et Consistance | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
 | 37 | CSP-3 : CSP Avance - Contraintes globales, OR-Tool | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
 | 38 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | BETA | 45min | po-2025 |
-| 39 | CSP-5-Optimization : Problèmes d'Optimisation Comb | myvenv | READY | ALPHA | 45min | po-2025 |
-| 40 | CSP-6-Hybridation : Approches Hybrides Modernes | myvenv | READY | ALPHA | 45min | po-2025 |
+| 39 | CSP-5-Optimization : Problèmes d'Optimisation Comb | myvenv | READY | PRODUCTION | 45min | po-2025 |
+| 40 | CSP-6-Hybridation : Approches Hybrides Modernes | myvenv | READY | PRODUCTION | 45min | po-2025 |
 | 41 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | DEMO | BETA | 1h | po-2025 |
-| 42 | CSP-8 : Temporels - Raisonnement sur le Temps | myvenv | DEMO | ALPHA | 45min | po-2025 |
-| 43 | CSP-9-Distributed : CSP Distribués (DisCSP) | base | READY | ALPHA | 45min | po-2025 |
+| 42 | CSP-8 : Temporels - Raisonnement sur le Temps | myvenv | DEMO | PRODUCTION | 45min | po-2025 |
+| 43 | CSP-9-Distributed : CSP Distribués (DisCSP) | base | READY | PRODUCTION | 45min | po-2025 |
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | ALPHA | 30min | po-2025 |
 | 45 | TP : Algorithmes Génétiques pour la Détection de B | base | READY | DRAFT | 30min | po-2025 |
 
@@ -210,7 +210,7 @@ Total notebooks: 467
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:10, READY:78 | ALPHA:15, BETA:66, DRAFT:3, PRODUCTION:5
+### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:10, READY:78 | ALPHA:12, BETA:67, DRAFT:3, PRODUCTION:7
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -298,11 +298,11 @@ Total notebooks: 467
 | 82 | Logiques Avancées - DL, Modale, QBF, Conditional | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
 | 83 | Révision de Croyances et Incohérence | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
 | 84 | Argumentation Abstraite (Dung) | mcp-jupyter-py310 | READY | PRODUCTION | 30min | po-2024 |
-| 85 | Argumentation Structuree | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
+| 85 | Argumentation Structuree | mcp-jupyter-py310 | READY | BETA | 15min | po-2024 |
 | 86 | Frameworks d'Argumentation Étendus | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
 | 87 | Sémantiques de Classement et Argumentation Probabi | mcp-jupyter-py310 | READY | BETA | 15min | po-2024 |
-| 88 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
-| 89 | Préférences et Théorie du Vote | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
+| 88 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | PRODUCTION | 15min | po-2024 |
+| 89 | Préférences et Théorie du Vote | mcp-jupyter-py310 | READY | PRODUCTION | 15min | po-2024 |
 
 ### QuantConnect (101 notebooks) — BROKEN:13, DEMO:30, READY:58 | ALPHA:10, BETA:16, DRAFT:2, PRODUCTION:72, TEMPLATE:1
 
@@ -442,7 +442,7 @@ Total notebooks: 467
 | 26 | GameTheory-7-ExtensiveForm | Python 3 | READY | BETA | 30min | po-2024 |
 | 27 | GameTheory-9-BackwardInduction | Python 3 | READY | BETA | 30min | po-2024 |
 
-### Sudoku (32 notebooks) — DEMO:1, READY:31 | ALPHA:14, BETA:16, PRODUCTION:2
+### Sudoku (32 notebooks) — DEMO:1, READY:31 | ALPHA:11, BETA:16, PRODUCTION:5
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -450,7 +450,7 @@ Total notebooks: 467
 | 2 | Sudoku-1 : Resolution par Backtracking | .NET (C#) | READY | BETA | 30min | po-2023 |
 | 3 | Sudoku-1 : Resolution par Backtracking (Python) | Python 3 | READY | BETA | 30min | po-2023 |
 | 4 | Sudoku-10 : Resolution avec OR-Tools (C#) | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 5 | Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python | Python 3 (ipykernel) | READY | ALPHA | 30min | po-2023 |
+| 5 | Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2023 |
 | 6 | Sudoku-11-Choco-Csharp : Solveur Choco via IKVM | .NET (C#) | READY | BETA | 30min | po-2023 |
 | 7 | Notebook 11: Resolution de Sudoku avec Choco Const | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | ALPHA | 45min | po-2023 |
@@ -460,10 +460,10 @@ Total notebooks: 467
 | 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 13 | Sudoku-15-Infer-Python : Resolution Probabiliste a | Python 3 | READY | BETA | 30min | po-2023 |
 | 14 | Sudoku-10 : Résolution par Réseaux de Neurones | Python 3 | DEMO | ALPHA | 1h | po-2023 |
-| 15 | Notebook 17: Resolution de Sudoku avec Large Langu | Python 3 (ipykernel) | READY | ALPHA | 30min | po-2023 |
+| 15 | Notebook 17: Resolution de Sudoku avec Large Langu | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2023 |
 | 16 | Comparaison des Solveurs de Sudoku | Python 3 | READY | BETA | 45min | po-2023 |
 | 17 | Resolution de Sudoku avec Algorithm X et Dancing L | .NET (C#) | READY | ALPHA | 30min | po-2023 |
-| 18 | Sudoku-Python-DancingLinks : Dancing Links / Algor | Python 3 (ipykernel) | READY | ALPHA | 30min | po-2023 |
+| 18 | Sudoku-Python-DancingLinks : Dancing Links / Algor | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2023 |
 | 19 | Sudoku-3 : Resolution par Algorithme Genetique (C# | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 20 | Sudoku-Python-Genetic : Algorithme Genetique (Pyth | Python 3 | READY | BETA | 30min | po-2023 |
 | 21 | Résolution de Sudoku par Recuit Simulé | .NET (C#) | READY | BETA | 45min | po-2023 |
