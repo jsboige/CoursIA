@@ -9,6 +9,16 @@ maturity: ALPHA=14, BETA=14, DRAFT=1, PRODUCTION=1
 
 Vous etes developpeur ou analyste et vous voulez construire des modeles predictifs sans devenir data scientist theoricien ? Cette serie vous forme au Machine Learning pratique avec deux stack complementaires : **ML.NET** pour l'ecosysteme .NET/C# (8 notebooks, ~6h) et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs (22 notebooks, ~20h). A la fin, vous saurez charger des donnees, entrainer un modele, l'evaluer rigoureusement, et le deployer en production.
 
+## Parcours d'apprentissage
+
+### Track A : ML.NET (.NET/C#, 8 notebooks, ~6h)
+
+Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la preparation de donnees (IDataView, encodage). Le notebook 3 couvre l'entrainement (SDCA, LightGBM, AutoML). Le notebook 4 est crucial : evaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les series temporelles, l'export ONNX pour la production, et les systemes de recommandation. Le TP final (prevision de ventes) combine ML.NET et Infer.NET pour une regression bayesienne. Ce track presuppose .NET 9.0 + dotnet-interactive.
+
+### Track B : Data Science with Agents (Python, 22 notebooks, ~20h)
+
+Le parcours Python commence par les fondations (NumPy/Pandas) puis se divise en deux sous-tracks. Le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique (regression, classification, clustering), les modeles d'ensemble et le NLP de base. Le sous-track **Google ADK** (Labs 8-17) monte en complexite avec le deep learning (PyTorch), l'analyse de survivors, le dashboarding, et les pipelines agentic (agents LLM pour automatiser le workflow data science). Ce track presuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
+
 ## Positionnement pedagogique
 
 Cette serie sert les cours **ECE / EPITA / EPF** en introduction au Machine Learning applique. Elle se situe apres les fondamentaux de programmation (Python ou C#) et avant les series specialisees ([QuantConnect](../QuantConnect/) pour le trading, [RL](../RL/) pour l'apprentissage par renforcement). Aucune prerequisite en statistiques avancees : les concepts sont introduits au fil des notebooks.

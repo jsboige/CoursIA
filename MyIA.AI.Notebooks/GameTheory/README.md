@@ -11,6 +11,22 @@ La theorie des jeux est le langage mathematique de la strategie. Elle modelise l
 
 Cette serie vous forme sur deux axes complementaires. Le premier est **pratique** : simuler des jeux avec Nashpy et OpenSpiel, calculer des equilibres de Nash, organiser des tournois iteratifs (dilemme du prisonnier, Axelrod), et explorer les algorithmes modernes (CFR, Deep CFR). Le second est **formel** : prouver des resultats en Lean 4 — existence de Nash (Brouwer/Kakutani), theoreme d'Arrow, valeur de Shapley. A la fin, vous maitriserez aussi bien la theorie des jeux cooperatifs (Shapley, Core) que non-cooperatifs (Nash, SPE), et vous saurez formaliser ces resultats dans un assistant de preuve.
 
+**A qui s'adresse cette serie** : etudiants en economie, informatique et mathematiques appliquees. Les notebooks Python (principaux + side tracks c/d/f) utilisent Nashpy, OpenSpiel et Z3. Les side tracks Lean (b/e) requierent WSL + elan. Aucun prerequis en theorie des jeux : les concepts sont introduits progressivement depuis les matrices de gains. Une familiarite avec l'algebre lineaire et les probabilites de base est utile.
+
+## Parcours d'apprentissage
+
+### Phase 1 : Jeux statiques et equilibres (Notebooks 1-6, ~5h)
+
+Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure reponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table periodique de Robinson-Goforth, une perspective geometrique unique. Les notebooks 4-4b-4c plongent dans l'equilibre de Nash : calcul en strategies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) demontre le theoreme minimax et la dualite LP. Le notebook 6 (EvolutionTrust) montre comment la cooperation emerge dans les tournois iteres (Axelrod, replicator dynamics). A l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et evolution.
+
+### Phase 2 : Jeux dynamiques et information incomplete (Notebooks 7-12, ~5h30)
+
+La Phase 2 enrichit le modele avec le temps et l'incertitude. Les notebooks 7-9 couvrent les jeux extensifs (arbres de jeu, ensembles d'information), les jeux combinatoires (Nim, Sprague-Grundy, avec formalisation Lean), et l'induction arriere (mille-pattes, escalation). Les notebooks 10-12 abordent les concepts subtils : induction avant et sous-jeux parfaits, jeux bayesiens (information incomplete, types, croyances), et jeux de reputation (signaling, engagement). Cette phase presuppose la Phase 1 (Nash, matrices de gains).
+
+### Phase 3 : Frontieres — algorithmes, cooperation, mecanismes (Notebooks 13-17, ~7h)
+
+La Phase 3 couvre les sujets avances et les applications. Le notebook 13 (CFR) introduit Counterfactual Regret Minimization et ses variantes (MCCFR, Deep CFR), au coeur du poker AI moderne. Le notebook 14 (Differential Games) explore les jeux continus (Stackelberg, boucle ouverte/fermee). Les notebooks 15-15b-15c couvrent la theorie cooperative : valeur de Shapley (avec axiomes formels en Lean), Core, Bondareva-Shapley. Les notebooks 16-16b-16c-16d-16e-16f constituent le bloc le plus riche : design de mecanismes (revelation, VCG), choix social (Arrow, Sen en Lean), et encodage SAT/Z3 des impossibilites. Le notebook 17 (Multi-Agent RL) relie la theorie des jeux a l'apprentissage par renforcement (NFSP, PSRO, AlphaZero).
+
 ## Structure
 
 **17 notebooks principaux** + **12 side tracks** (b = Lean, c = Python approfondissement, d/e/f = Social Choice) = **29 notebooks**

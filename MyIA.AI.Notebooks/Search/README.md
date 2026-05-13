@@ -7,7 +7,25 @@ breakdown: Applications=20, Part1-Foundations=11, Part2-CSP=9, =5
 maturity: ALPHA=21, BETA=14, DRAFT=7, PRODUCTION=3
 -->
 
-Cette serie explore les algorithmes de recherche et d'optimisation, de la formalisation des espaces d'etats a la programmation par contraintes, en passant par les metaheuristiques. Elle combine **fondements theoriques** et **applications du monde reel** adaptees de projets etudiants EPITA, EPF et ECE.
+Tout probleme d'IA, du plus simple jeu de plateau a la planification logistique industrielle, se reduit a un meme defi : explorer un espace de solutions possibles pour trouver la meilleure. Cette serie vous apprend a maitriser cette exploration, depuis les algorithmes classiques (BFS, A*, Minimax) jusqu'aux techniques avancees (CSP, metaheuristiques, hybridation LLM). Le fil rouge est la **reduction de l'espace de recherche** : comment passer d'une exploration aveugle exponentielle a une resolution intelligentement guidee.
+
+Le parcours couvre quatre grands piliers. Les **fondements** formalisent les espaces d'etats et couvrent les algorithmes de recherche non informee, informee, locale, genetique, adversariale et MCTS. La **programmation par contraintes** (CSP) introduit un changement de paradigme : au lieu d'explorer, on reduit les domaines par propagation. Les **applications** (20 notebooks) illustrent chaque concept sur des problemes reels adaptes de projets etudiants EPITA, EPF et ECE. Enfin, les **metaheuristiques et l'hybridation** relient la recherche a l'optimisation continue et aux LLMs.
+
+**A qui s'adresse cette serie** : etudiants en informatique (L3-M2), ingenieurs logiciel confrontes a des problemes d'optimisation, et candidats a des entretiens techniques. Les notebooks Python ne necessitent que Python 3.10+ avec `ortools` et `deap`. Les side tracks C# (edge detection, portefeuille) requierent .NET 9.0 + dotnet-interactive. Aucun prerequis en algorithmique avancee : les concepts sont introduits depuis les espaces d'etats.
+
+## Parcours d'apprentissage
+
+### Phase 1 : Fondements de la recherche (Part 1, notebooks 1-7, ~7h)
+
+Le parcours commence par Search-1 (StateSpace) qui formalise les problemes sous forme (S, s0, A, T, G) et Search-2 (Uninformed) qui couvre BFS, DFS, UCS et IDDFS. Search-3 (Informed) introduit les heuristiques et A*, le coeur de la recherche guidee. Search-4 (LocalSearch) pivote vers l'optimisation locale (Hill Climbing, Simulated Annealing, Tabu Search), et Search-5 (GeneticAlgorithms) generalise avec les algorithmes evolutionnaires. Search-6 (AdversarialSearch) explore la recherche dans les jeux (Minimax, Alpha-Beta), et Search-7 (MCTS) va jusqu'a Monte Carlo Tree Search et les approches AlphaGo. A l'issue de cette phase, vous maitrisez les trois grands paradigmes : exploration systematique, optimisation locale, et recherche dans les jeux.
+
+### Phase 2 : Programmation par contraintes (Part 2, CSP 1-6, ~6h)
+
+La Phase 2 change de paradigme : au lieu d'explorer un espace, on le reduit. CSP-1 (Fundamentals) introduit le modele (X, D, C) et le backtracking. CSP-2 (Consistency) couvre la propagation de contraintes (AC-3, Forward Checking, MAC). CSP-3 a CSP-6 montent en complexite : contraintes globales (AllDifferent, Cumulative), ordonnancement (Job-Shop, RCPSP), optimisation (Bin Packing, Knapsack), et hybridation (LCG, CP+SAT, CP+ML, LLM+CSP). Cette phase presuppose les bases de la Phase 1 (formalisation, backtracking = DFS) et constitue le coeur pratique de la serie.
+
+### Phase 3 : Applications et frontieres (Applications + notebooks avances, ~18h)
+
+Les 20 notebooks d'applications illustrent chaque concept sur des cas reels : planification d'infirmiers (CSP-4), ordonnancement d'atelier (CSP-4), optimisation de portefeuille (metaheuristiques), TSP et VRP (routing), demineur et Wordle (CSP + theorie de l'information), Picross (couverture exacte). Les notebooks avances de la Part 1 (programmation lineaire Search-9, automates symboliques Search-10, metaheuristiques Search-11) et de la Part 2 (contraintes souples CSP-7, temporelles CSP-8, distribuees CSP-9) completent le panorama. L'ensemble est enrichi par des ponts vers les autres series : Sudoku (DLX, automates), SymbolicAI (Z3, planification), GameTheory (Minimax, MCTS), et RL (MCTS + DQN).
 
 ## Vue d'ensemble
 
@@ -317,17 +335,7 @@ Search/
 
 ## Progression recommandee
 
-### Decouvreur (initiation rapide, ~6h)
-
-Commencez par Search-1 (StateSpace) et Search-2 (Uninformed) pour comprendre comment formaliser un probleme et explorer son espace d'etats avec BFS et DFS. Enchainz avec Search-3 (Informed) pour decouvrir A* et la puissance des heuristiques. Ces trois notebooks posent les bases dont vous aurez besoin dans toute la serie.
-
-### Praticien (maitrise algorithmique, ~18h)
-
-Couvrez les fondements Search-4 a Search-7 : recherche locale (Hill Climbing, Simulated Annealing), algorithmes genetiques, recherche adversariale (Minimax, Alpha-Beta) et MCTS. Puis attaquez les CSP : CSP-1 a CSP-4 vous apprendront a modeliser des problemes sous forme de contraintes, a propager les reductions (AC-3) et a resoudre des problemes d'ordonnancement reels avec OR-Tools. Le saut qualitatif se fait entre Search (exploration d'un espace) et CSP (reduction d'un espace par propagation).
-
-### Expert (applications et frontieres, ~35h)
-
-Compltez avec les notebooks avances : programmation lineaire (Search-9), automates symboliques (Search-10), metaheuristiques (Search-11), puis les CSP avances (hybridation LCG, contraintes souples, temporelles, distribuees). Les applications montrent comment tout cela s'applique a des problemes concrets : planification d'infirmiers, ordonnancement d'atelier, optimisation de portefeuille, resolution de Sudoku par DLX.
+> Le parcours detaille avec prerequis et enchainements logiques est decrit dans la section [Parcours d'apprentissage](#parcours-dapprentissage) ci-dessus.
 
 ---
 

@@ -7,8 +7,11 @@ breakdown: Python=50, projects=49, ML-Training-Pipeline=2
 maturity: PRODUCTION=71, BETA=16, ALPHA=11, DRAFT=2, TEMPLATE=1
 -->
 
-> **Trading algorithmique + Intelligence Artificielle**
-> 140 notebooks Python | Cloud-first | Free Tier compatible
+Le trading algorithmique transforme les marches financiers : aujourd'hui, plus de 60% des volumes aux Etats-Unis sont generes par des algorithmes. Cette serie vous apprend a construire, tester et deployer vos propres strategies de trading automatisees sur la plateforme **QuantConnect LEAN** — un framework open-source utilise par des milliers de quants professionnels. Le parcours va des fondements (lifecycle d'un algorithme, gestion des donnees) aux frontieres de l'IA (Transformers, RL, LLMs pour signaux de trading).
+
+La serie couvre huit phases progressives. Les **fondements** (phases 1-4) maitrisent l'ecosysteme QuantConnect : architecture LEAN, universe selection, options/futures, risk management, et l'Algorithm Framework modulaire. La **preparation ML** (phase 5) integre les donnees alternatives et le feature engineering. Le **machine learning** (phases 6-7) applique les modeles classiques (Random Forest, XGBoost) puis le deep learning (LSTM, Transformers, autoencoders) aux series temporelles financieres. La **production** (phase 8) couvre le RL, les LLMs pour le trading, et le deploiement live. Chaque notebook est executable sur le cloud QuantConnect (free tier) sans installation locale.
+
+**A qui s'adresse cette serie** : etudiants en finance quantitative, ingenieurs ML souhaitant appliquer leurs competences aux marches, et developpeurs curieux de trading algorithmique. Les notebooks Python s'executent sur QuantConnect Cloud (gratuit) ou localement avec le LEAN engine. Le livre de reference est *"Hands-On AI Trading"* (Jared Broad, 2025). Aucun capital de depart necessaire : tout se passe en backtest et paper trading.
 
 ---
 
