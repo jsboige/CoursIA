@@ -4,7 +4,7 @@ open Lake DSL
 package «stable_marriage» where
   leanOptions := #[
     ⟨`pp.unicode.fun, true⟩,
-    ⟨`autoImplicit, false⟩
+    ⟨`autoImplicit, true⟩
   ]
 
 require mathlib from git
