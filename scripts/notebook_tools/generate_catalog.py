@@ -268,11 +268,11 @@ def _is_comment_only_cell(cell: dict) -> bool:
     return all(l.startswith("#") for l in lines)
 
 
-def _is_assignment_only_cell(cell: dict) -> bool:
-    """Check if a code cell contains only assignments and comments (no print/call/expression).
+def _is_outputless_by_design(cell: dict) -> bool:
+    """Check if a code cell produces no output by design (not a quality issue).
 
-    Uses ast.parse for robust detection of multi-line assignments, lists, dicts.
-    Falls back to regex if AST parsing fails (e.g. syntax error in cell).
+    Covers: assignments, function/class definitions, imports, comments.
+    These cells never produce visible Jupyter output and should not block promotion.
     """
     source = "".join(cell.get("source", []))
     if not source.strip():
@@ -282,7 +282,11 @@ def _is_assignment_only_cell(cell: dict) -> bool:
         return True
     try:
         tree = ast.parse(source)
-        return all(isinstance(node, (ast.Assign, ast.AnnAssign)) for node in ast.iter_child_nodes(tree))
+        outputless = (
+            ast.Assign, ast.AnnAssign,
+            ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
+        )
+        return all(isinstance(node, outputless) for node in ast.iter_child_nodes(tree))
     except SyntaxError:
         return False
 
@@ -290,14 +294,14 @@ def _is_assignment_only_cell(cell: dict) -> bool:
 def _effective_code_cells(code_cells: list) -> list:
     """Filter cells excluded from maturity classification.
 
-    Excludes: Papermill injected-parameters, comment-only, assignment-only cells.
+    Excludes: Papermill injected-parameters, outputless-by-design cells
+    (assignments, function/class definitions, imports, comments).
     These produce no visible output and should not block promotion.
     """
     return [
         c for c in code_cells
         if not _is_papermill_injected(c)
-        and not _is_comment_only_cell(c)
-        and not _is_assignment_only_cell(c)
+        and not _is_outputless_by_design(c)
     ]
 
 
