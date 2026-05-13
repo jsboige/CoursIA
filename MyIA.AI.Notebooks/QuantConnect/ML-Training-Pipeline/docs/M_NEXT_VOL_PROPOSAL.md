@@ -166,18 +166,54 @@ Andersen, T.G., Bollerslev, T. & Diebold, F.X. (2007) "Roughing It Up: Including
 - Calmar drops +0.44 → +0.19 at 100bps.
 - Per-coin: MODERATE concentration (4/7 winners: BTC, XRP, ADA, DOT). ETH/SOL structurally hostile.
 
-## Next Steps: Post-M12 Volatility Forecasting
+## M11j Multi-Asset Kelly -- Cycle 32
 
-M12 HAR-RV-J BEATS HAR Classic (p=7.9e-7) but with MSE degradation. M10 RG NO BEATS, M11i kills cap=3.0 leverage. Next: regime-switching (M13) or bivariate (M14).
+**Status:** NO BEATS (0/36 combos beat single-asset BTC Kelly)
+
+Portfolio Kelly on BTC/XRP/ADA/DOT using correlation matrix (Sigma^-1 * mu). Capped per-asset=0.5, global=1.0, 60d rolling window.
+
+| Fee (bps) | Beats Single | p-value | Median delta-Sharpe |
+|-----------|-------------|---------|---------------------|
+| 10 | 0/12 | 1.0000 | -0.9869 |
+| 50 | 0/12 | 1.0000 | -1.0518 |
+| 100 | 0/12 | 1.0000 | -1.1303 |
+
+**Why it fails:** High asset correlation (0.6-0.85), estimation error in 4x4 Sigma from 60 obs, negative Kelly weights clipped to 0, BTC dominance. Diversifying into lower-Sharpe assets hurts.
+
+Full details: `docs/M11j_MULTI_ASSET_KELLY.md`
+
+## M13 Markov-Switching HAR -- Cycle 32
+
+**Status:** NO BEATS -- 39/84 (46.4%, p=0.7774)
+
+Hamilton (1989) 2-regime MS-HAR on log(RV). `switching_variance=False` (shared sigma2, 11 params) for stability.
+
+| Coin | Win% | Med delta-Sharpe | Med MSE change |
+|------|------|-------------------|----------------|
+| BTC-USD | 0/12 (0%) | -0.1468 | +722.9% |
+| ETH-USD | 0/12 (0%) | -0.4245 | +57133.0% |
+| SOL-USD | 8/12 (66.7%) | +0.0974 | +300.0% |
+| LTC-USD | 0/12 (0%) | -0.0783 | +559.0% |
+| XRP-USD | 12/12 (100%) | +0.4920 | +1026.7% |
+| ADA-USD | 11/12 (91.7%) | +0.4926 | +3580.7% |
+| DOT-USD | 8/12 (66.7%) | +0.7658 | +3703.6% |
+
+**Why it fails:** EM estimation cost (11 params on ~200-400 obs) outweighs regime benefit. Major coins (BTC/ETH/LTC) show zero wins. Altcoin wins come with MSE +1000-3700% (noise amplified by Kelly, not genuine edge). Median delta-Sharpe -0.0157, MSE +994.6%.
+
+Full details: `docs/M13_MS_HAR.md`
+
+## Next Steps: Post-M13 Volatility Forecasting
+
+M12 HAR-RV-J remains the best model extension (BEATS p=7.9e-7). M10 RG NO BEATS. M11j Multi-Asset Kelly NO BEATS. M13 MS-HAR NO BEATS (39/84, p=0.7774). All regime-switching and multi-asset approaches have failed. The single-asset HAR Classic Kelly framework remains the dominant strategy.
 
 | Priority | Model | Params | Status | Rationale |
 |----------|-------|--------|--------|-----------|
 | M12 | **HAR-RV-J** (Andersen et al. 2007) | 7 | BEATS (p=7.9e-7) | MSE worse but Sharpe better. h=5 dead zone. |
-| M13 | **Markov-Switching HAR** | 6-8 | PROPOSED | Regime-switching between low/high vol states. Addresses crypto regime shifts. |
+| M13 | **Markov-Switching HAR** | 11 | NO BEATS (39/84, p=0.7774) | Regime-switching degrades forecasts. MSE +995%. |
 | M14 | **HEAVY** (Shephard & Sheppard 2010) | 8-10 | PROPOSED | Bivariate formulation. May handle measurement equation mismatch better. |
 | M15 | **Log-transformed LSTM on RV** | ~500-2K | PROPOSED | Neural approach on log(RV) sequences. Must stay below ~5K params. |
 
-**Rejected:** GARCH-MIDAS (macro drivers weak for crypto), MS-GARCH (complex optimization, 11+ params), cross-asset GNN (2-node graph trivial).
+**Rejected:** GARCH-MIDAS (macro drivers weak for crypto), MS-GARCH (complex optimization, 11+ params), cross-asset GNN (2-node graph trivial), Multi-Asset Kelly (0/36 NO BEATS), Realized GARCH (0/21 NO BEATS).
 
 ## Comparative Table (all models)
 
@@ -191,7 +227,9 @@ M12 HAR-RV-J BEATS HAR Classic (p=7.9e-7) but with MSE degradation. M10 RG NO BE
 | M10 Realized GARCH | 7-9 | 0/21 BEATS | - | - | NO BEATS (MSE +59%) |
 | M11 HAR Kelly (cap=1.0) | 4 | BEATS BH @50bps | +0.44 | 62.5% | Edge at fee≤50bps |
 | M11 HAR Kelly (cap=3.0) | 4 | BEATS BH @100bps | +0.19 | 90.5% | NULL CONDITIONAL (Calmar kills) |
+| M11j Multi-Asset Kelly | ~10 | 0/36 vs BTC | - | - | NO BEATS (delta=-1.05) |
 | M12 HAR-RV-J | 7 | 64/84 BEATS (p=7.9e-7) | - | - | BEATS but MSE worse, h=5 dead |
+| M13 MS-HAR | 11 | 39/84 (46.4%, p=0.7774) | - | - | NO BEATS, MSE +995% |
 
 ## References
 
