@@ -4,7 +4,7 @@
 series: GenAI
 pedagogical_count: 100
 breakdown: Audio=21, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, Vibe-Coding=5, CaseStudies=4, =1
-maturity: BETA=34, ALPHA=28, PRODUCTION=25, DRAFT=13
+maturity: BETA=40, PRODUCTION=25, ALPHA=22, DRAFT=13
 -->
 
 Ce parcours vous forme a la maitrise de l'IA generative dans toute sa diversite : generer des images, synthetiser la voix, composer de la musique, produire des videos, orchestrer des agents autonomes, et deployer des applications en production. Chaque modalite suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modeles de production.
