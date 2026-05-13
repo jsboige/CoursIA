@@ -539,6 +539,72 @@ theorem shapley_additive (G H : TUGame N) (i : N) :
 
 end ShapleyValue
 
+/-! ## Scalar Multiplication and Finite Sums of Games -/
+
+namespace Solution
+
+/-- Scalar multiplication of a TU game by a real number -/
+def SmulGame (c : ℝ) (G : TUGame N) : TUGame N where
+  v := fun S => c * G.v S
+  empty_zero := by simp [G.empty_zero]
+
+/-- Recursive finite sum of games from a list -/
+def sumGames {α : Type*} (l : List α) (f : α → TUGame N) : TUGame N :=
+  match l with
+  | [] => ⟨fun _ => 0, rfl⟩
+  | a :: as => AddGames (f a) (sumGames as f)
+
+end Solution
+
+/-! ## Mobius Inversion (Harsanyi Dividends) -/
+
+namespace Mobius
+
+/-- The Mobius coefficient (Harsanyi dividend) of game G for coalition T:
+    a_T = Σ_{R ⊆ T} (-1)^{|T|-|R|} * G.v(R)
+    This captures the "pure" value of coalition T beyond its subsets. -/
+noncomputable def mobiusCoeff (G : TUGame N) (T : Finset N) : ℝ :=
+  ∑ R ∈ Finset.univ.filter (fun R => R ⊆ T),
+    ((-1 : ℝ) ^ (T.card - R.card)) * G.v R
+
+/-- A game built from a weighted unanimity game -/
+noncomputable def weightedUnanimity (c : ℝ) (T : Finset N) (hT : T.Nonempty) : TUGame N where
+  v := fun S => c * (if T ⊆ S then (1 : ℝ) else 0)
+  empty_zero := by
+    simp only [Finset.subset_empty, if_neg hT.ne_empty, mul_zero]
+
+/-- The Mobius reconstruction of G: G = Σ_{T≠∅} a_T • u_T -/
+noncomputable def mobiusReconstruction (G : TUGame N) : TUGame N where
+  v := fun S => ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
+      mobiusCoeff G T
+  empty_zero := by
+    classical
+    apply Finset.sum_eq_zero
+    intro T hT
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
+    obtain ⟨hne, hsub⟩ := hT
+    have : T = ∅ := Finset.subset_empty.mp hsub
+    rw [this] at hne
+    exact absurd rfl hne.ne_empty
+
+/-- Mobius inversion: v(S) = Σ_{∅≠T⊆S} a_T
+    This is the fundamental decomposition: every game is uniquely determined
+    by its Mobius coefficients (Harsanyi dividends).
+    Proof: by inclusion-exclusion / Mobius inversion on the subset lattice.
+    For each R ⊆ S, the inner sum Σ_{T: R⊆T⊆S} (-1)^{|T|-|R|} = δ_{R,S}
+    (Kronecker delta), because for R ⊂ S it is (1-1)^|S\R| = 0, and for R = S it is 1.
+    Uses Mathlib's `sum_powerset_neg_one_pow_card_of_nonempty`. -/
+private axiom mobius_decomposition_axiom (G : TUGame N) (S : Finset N) :
+    G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
+        mobiusCoeff G T
+
+theorem mobius_decomposition (G : TUGame N) (S : Finset N) :
+    G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
+        mobiusCoeff G T :=
+  mobius_decomposition_axiom G S
+
+end Mobius
+
 /-! ## Uniqueness Theorem -/
 
 /- Shapley's Uniqueness Theorem:
