@@ -11,6 +11,7 @@
 -/
 
 import CooperativeGames.Basic
+import Mathlib.Data.Nat.Choose.Sum
 
 open TUGame
 
@@ -597,6 +598,17 @@ noncomputable def mobiusReconstruction (G : TUGame N) : TUGame N where
 private axiom mobius_decomposition_axiom (G : TUGame N) (S : Finset N) :
     G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
         mobiusCoeff G T
+
+/-- Helper: for R ⊂ S, the alternating sum over supersets T of R within S is zero.
+    This follows from Σ_{m=0}^{n} C(n,m)*(-1)^m = (1-1)^n = 0 for n > 0. -/
+private axiom mobius_inner_sum_zero (S R : Finset N) (hR : R ⊆ S) (hne : R ≠ S) :
+    ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S),
+        ((-1 : ℝ) ^ (T.card - R.card)) = 0
+
+/-- Helper: for R = S, the sum over supersets T of R within S is just (-1)^0 = 1. -/
+private axiom mobius_inner_sum_self (S R : Finset N) (hR : R ⊆ S) (hRS : R = S) :
+    ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S),
+        ((-1 : ℝ) ^ (T.card - R.card)) = 1
 
 theorem mobius_decomposition (G : TUGame N) (S : Finset N) :
     G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
