@@ -260,7 +260,7 @@ def _is_papermill_injected(cell: dict) -> bool:
 
 
 def _is_comment_only_cell(cell: dict) -> bool:
-    """Check if a code cell contains only comments."""
+    """Check if a code cell contains only comments (no executable statements)."""
     source = "".join(cell.get("source", []))
     if not source.strip():
         return True
@@ -269,7 +269,11 @@ def _is_comment_only_cell(cell: dict) -> bool:
 
 
 def _is_assignment_only_cell(cell: dict) -> bool:
-    """Check if a code cell contains only assignments and comments (no print/call/expression)."""
+    """Check if a code cell contains only assignments and comments (no print/call/expression).
+
+    Uses ast.parse for robust detection of multi-line assignments, lists, dicts.
+    Falls back to regex if AST parsing fails (e.g. syntax error in cell).
+    """
     source = "".join(cell.get("source", []))
     if not source.strip():
         return True
@@ -315,8 +319,9 @@ def classify_maturity(
     todo_count = count_todos(notebook)
     has_intro, has_conclusion = has_markdown_intro_conclusion(cells)
 
-    total_code = len(code_cells)
-    code_with_outputs = sum(1 for c in code_cells if c.get("outputs"))
+    effective = _effective_code_cells(code_cells)
+    total_code = len(effective)
+    code_with_outputs = sum(1 for c in effective if c.get("outputs"))
     code_without_outputs = total_code - code_with_outputs
     all_have_outputs = total_code > 0 and code_with_outputs == total_code
     # Allow 1 cell without output (typical student exercise cell)
