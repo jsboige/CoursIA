@@ -595,15 +595,19 @@ noncomputable def mobiusReconstruction (G : TUGame N) : TUGame N where
     For each R ⊆ S, the inner sum Σ_{T: R⊆T⊆S} (-1)^{|T|-|R|} = δ_{R,S}
     (Kronecker delta), because for R ⊂ S it is (1-1)^|S\R| = 0, and for R = S it is 1.
     Uses Mathlib's `sum_powerset_neg_one_pow_card_of_nonempty`. -/
-private axiom mobius_decomposition_axiom (G : TUGame N) (S : Finset N) :
+private theorem mobius_decomposition_axiom (G : TUGame N) (S : Finset N) :
     G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
-        mobiusCoeff G T
+        mobiusCoeff G T := by
+  sorry
 
 /-- Helper: for R ⊂ S, the alternating sum over supersets T of R within S is zero.
-    This follows from Σ_{m=0}^{n} C(n,m)*(-1)^m = (1-1)^n = 0 for n > 0. -/
-private axiom mobius_inner_sum_zero (S R : Finset N) (hR : R ⊆ S) (hne : R ≠ S) :
+    This follows from Σ_{m=0}^{n} C(n,m)*(-1)^m = (1-1)^n = 0 for n > 0.
+    Proof strategy: bijection T ↦ T \ R between {T : R ⊆ T ⊆ S} and (S \ R).powerset,
+    then apply sum_powerset_neg_one_pow_card_of_nonempty. -/
+private theorem mobius_inner_sum_zero (S R : Finset N) (hR : R ⊆ S) (hne : R ≠ S) :
     ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S),
-        ((-1 : ℝ) ^ (T.card - R.card)) = 0
+        ((-1 : ℝ) ^ (T.card - R.card)) = 0 := by
+  sorry
 
 /-- Helper: for R = S, the inner sum reduces to 1 when S.Nonempty, 0 otherwise. -/
 private theorem mobius_inner_sum_self (S R : Finset N) (_hR : R ⊆ S) (hRS : R = S) :
