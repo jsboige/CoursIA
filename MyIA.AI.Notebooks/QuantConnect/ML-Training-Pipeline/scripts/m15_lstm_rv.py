@@ -121,7 +121,7 @@ def prepare_features(hourly_rets: pd.Series) -> tuple[pd.DataFrame, pd.Series]:
 
     sign_rets = np.sign(daily_rets).rename("sign_returns")
 
-    features = pd.concat([log_rv.rename("log_rv"), daily_rets, sign_rets], axis=1)
+    features = pd.concat([log_rv.rename("log_rv"), daily_rets, sign_rets], axis=1, sort=False)
     features = features.dropna()
 
     rv = rv.reindex(features.index)
@@ -370,6 +370,7 @@ def evaluate_one_combo(
     coin: str,
     horizon: int,
     seed: int,
+    hidden_size: int = HIDDEN_SIZE,
 ) -> dict | None:
     """Run LSTM vs HAR Classic for one (coin, horizon, seed) combo."""
     import torch
@@ -400,7 +401,7 @@ def evaluate_one_combo(
         lstm_out = walk_forward_lstm(
             features, rv_aligned, horizon=horizon,
             n_splits=N_SPLITS, refit_every=REFIT_EVERY,
-            seed=seed, hidden_size=HIDDEN_SIZE,
+            seed=seed, hidden_size=hidden_size,
         )
     except Exception as e:
         print(f"    LSTM failed: {e}", flush=True)
@@ -478,18 +479,23 @@ def evaluate_one_combo(
 def main() -> None:
     parser = argparse.ArgumentParser(description="M15 Log-LSTM RV sweep")
     parser.add_argument("--dry-run", action="store_true", help="Run BTC h=1 seed=0 only")
+    parser.add_argument("--hidden-size", type=int, default=HIDDEN_SIZE,
+                        help=f"LSTM hidden size (default: {HIDDEN_SIZE})")
     args = parser.parse_args()
+
+    hidden_size = args.hidden_size
 
     import torch
     print(f"PyTorch {torch.__version__}, CUDA: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
         print(f"  GPU: {torch.cuda.get_device_name(0)}")
 
-    model_demo = build_lstm(3, HIDDEN_SIZE, NUM_LAYERS)
+    model_demo = build_lstm(3, hidden_size, NUM_LAYERS)
     n_params = count_params(model_demo)
-    print(f"LSTM params: {n_params} (hidden={HIDDEN_SIZE}, layers={NUM_LAYERS}, window={WINDOW})")
+    print(f"LSTM params: {n_params} (hidden={hidden_size}, layers={NUM_LAYERS}, window={WINDOW})")
 
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    results_dir = SCRIPT_DIR / "results" / f"m15_lstm_rv_h{hidden_size}"
+    results_dir.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
 
     combos: list[dict] = []
@@ -498,7 +504,7 @@ def main() -> None:
 
     if args.dry_run:
         print("[DRY RUN] BTC-USD h=1 seed=0 only")
-        row = evaluate_one_combo("BTC-USD", 1, 0)
+        row = evaluate_one_combo("BTC-USD", 1, 0, hidden_size=hidden_size)
         if row:
             combos.append(row)
             print(json.dumps(row, indent=2))
@@ -509,7 +515,7 @@ def main() -> None:
             for seed in SEEDS:
                 done += 1
                 print(f"\n[{done}/{total}] {coin} h={h} seed={seed}", flush=True)
-                row = evaluate_one_combo(coin, h, seed)
+                row = evaluate_one_combo(coin, h, seed, hidden_size=hidden_size)
                 if row is not None:
                     combos.append(row)
                 else:
@@ -583,7 +589,7 @@ def main() -> None:
         "n_splits": N_SPLITS,
         "refit_every": REFIT_EVERY,
         "window": WINDOW,
-        "hidden_size": HIDDEN_SIZE,
+        "hidden_size": hidden_size,
         "num_layers": NUM_LAYERS,
         "n_params": n_params,
         "n_combos": n_combos,
@@ -597,14 +603,14 @@ def main() -> None:
         "combos": combos,
     }
 
-    with open(RESULTS_DIR / "results.json", "w") as f:
+    with open(results_dir / "results.json", "w") as f:
         json.dump(results, f, indent=2, default=str)
 
     # CSV
     df = pd.DataFrame(combos)
-    df.to_csv(RESULTS_DIR / "m15_lstm_rv_results.csv", index=False)
+    df.to_csv(results_dir / "m15_lstm_rv_results.csv", index=False)
 
-    print(f"\nResults saved to {RESULTS_DIR}")
+    print(f"\nResults saved to {results_dir}")
 
 
 if __name__ == "__main__":
