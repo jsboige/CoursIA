@@ -949,10 +949,7 @@ private theorem shapley_finsetSumGames {ι : Type*} [DecidableEq ι]
       Finset.sum_insert hjs]; ring
 
 /-- The game G equals the finsetSumGames of its Mobius decomposition terms.
-    G = ∑_{T≠∅} SmulGame (mobiusCoeff G T) (unanimityGame T)
-    Proof: G.v S = ∑_{T≠∅,T⊆S} a_T  (mobius_decomposition_axiom)
-         = ∑_{T≠∅} a_T*(if T⊆S then 1 else 0)  (reindex via filter_filter + sum_filter)
-         = ∑_{T≠∅} SmulGame a_T u_T .v S  (def SmulGame + unanimityGame) -/
+    G = ∑_{T≠∅} SmulGame (mobiusCoeff G T) (unanimityGame T) -/
 private theorem game_eq_mobius_sum (G : TUGame N) :
     G = Solution.finsetSumGames
       (Finset.univ.filter Finset.Nonempty)
@@ -962,8 +959,31 @@ private theorem game_eq_mobius_sum (G : TUGame N) :
   ext S
   simp only [Solution.finsetSumGames]
   classical
-  rw [Mobius.mobius_decomposition_axiom G S]
-  sorry
+  -- Step 1: For T ∈ filter Nonempty, f(T).v S = mobiusCoeff G T * (if T⊆S then 1 else 0)
+  have h_term (T : Finset N) (hT : T ∈ Finset.univ.filter Finset.Nonempty) :
+      (if hT' : T.Nonempty then
+        Solution.SmulGame (Mobius.mobiusCoeff G T) (TUGame.unanimityGame T hT')
+      else (Solution.zeroGame : TUGame N)).v S =
+        Mobius.mobiusCoeff G T * (if T ⊆ S then (1 : ℝ) else 0) := by
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
+    rw [dif_pos hT]
+    simp only [Solution.SmulGame, TUGame.unanimityGame]
+  -- Step 2: a * (if p then 1 else 0) = if p then a else 0
+  have h_mul (T : Finset N) :
+      Mobius.mobiusCoeff G T * (if T ⊆ S then (1 : ℝ) else 0) =
+      (if T ⊆ S then Mobius.mobiusCoeff G T else (0 : ℝ)) := by
+    split_ifs <;> ring
+  -- Step 3: chain the equalities to get the filtered sum
+  have h_rhs :
+      ∑ T ∈ Finset.univ.filter Finset.Nonempty,
+        (if hT : T.Nonempty then
+          Solution.SmulGame (Mobius.mobiusCoeff G T) (TUGame.unanimityGame T hT)
+        else (Solution.zeroGame : TUGame N)).v S =
+      ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
+        Mobius.mobiusCoeff G T := by
+    rw [Finset.sum_congr rfl h_term, Finset.sum_congr rfl (fun T _ => h_mul T)]
+    rw [← Finset.sum_filter, Finset.filter_filter]
+  exact (Mobius.mobius_decomposition_axiom G S).trans h_rhs.symm
 
 /-- Shapley value uniqueness: any axiom-satisfying solution equals the Shapley value.
     Strategy: decompose G = ∑_{T≠∅} a_T · u_T via Mobius, then both φ and shapleyValue
