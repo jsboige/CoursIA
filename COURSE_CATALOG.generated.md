@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-14 03:45
+Generated: 2026-05-14 08:00
 Total notebooks: 467
 
 ## Status Summary
@@ -13,14 +13,14 @@ Total notebooks: 467
 ## Maturity Summary
 
 - **PRODUCTION**: 120
-- **BETA**: 217
+- **BETA**: 220
 - **TEMPLATE**: 4
-- **ALPHA**: 94
+- **ALPHA**: 91
 - **DRAFT**: 32
 
 ## By Series
 
-### GenAI (100 notebooks) — BROKEN:3, DEMO:68, READY:29 | ALPHA:13, BETA:43, DRAFT:13, PRODUCTION:28, TEMPLATE:3
+### GenAI (100 notebooks) — BROKEN:3, DEMO:68, READY:29 | ALPHA:12, BETA:44, DRAFT:13, PRODUCTION:28, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -109,7 +109,7 @@ Total notebooks: 467
 | 83 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
 | 84 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 30min | po-2025 |
 | 85 | Operations de Base sur les Videos | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 86 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 86 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 87 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 88 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 89 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | ALPHA | 45min | po-2025 |
@@ -210,7 +210,7 @@ Total notebooks: 467
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:10, READY:78 | ALPHA:19, BETA:65, DRAFT:3, PRODUCTION:2
+### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:10, READY:78 | ALPHA:18, BETA:66, DRAFT:3, PRODUCTION:2
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -250,7 +250,7 @@ Total notebooks: 467
 | 34 | Planners-12: Learning to Plan avec LOOP | Python 3 | DEMO | ALPHA | 45min | po-2024 |
 | 35 | Introduction au web sémantique avec RDF.Net | .NET (C#) | DEMO | ALPHA | 2h+ | po-2024 |
 | 36 | SW-1-Setup | .NET (C#) | READY | BETA | 15min | po-2024 |
-| 37 | SW-11-RDFStar | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 37 | SW-11-RDFStar | Python 3 | READY | BETA | 45min | po-2024 |
 | 38 | SW-12-KnowledgeGraphs | Python 3 | READY | BETA | 45min | po-2024 |
 | 39 | SW-13-GraphRAG | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 40 | SW-14-Reasoners | Python 3 | READY | DRAFT | 45min | po-2024 |
@@ -410,7 +410,7 @@ Total notebooks: 467
 | 100 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
 | 101 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
 
-### GameTheory (27 notebooks) — READY:27 | ALPHA:8, BETA:14, DRAFT:4, PRODUCTION:1
+### GameTheory (27 notebooks) — READY:27 | ALPHA:7, BETA:15, DRAFT:4, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -419,7 +419,7 @@ Total notebooks: 467
 | 3 | GameTheory-11-BayesianGames | Python 3 | READY | DRAFT | 30min | po-2024 |
 | 4 | GameTheory-12-ReputationGames | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 5 | GameTheory-13 : Jeux a Information Imparfaite et C | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
-| 6 | GameTheory-14 : Jeux Differentiels et Equilibres d | Python 3 | READY | ALPHA | 30min | po-2024 |
+| 6 | GameTheory-14 : Jeux Differentiels et Equilibres d | Python 3 | READY | BETA | 30min | po-2024 |
 | 7 | GameTheory-15-CooperativeGames | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
 | 8 | GameTheory 15b - Jeux Cooperatifs en Lean : Formal | Lean 4 (WSL) | READY | ALPHA | 30min | po-2024 |
 | 9 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
