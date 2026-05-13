@@ -158,7 +158,7 @@ Uses synthetic data, minimal epochs. Validates the full pipeline without GPU or 
 |--------|-------|------|-----|-------|
 | train_har_baseline.py | HAR(1,5,22d) | Realized Variance forecast | CPU | Walk-forward 5-fold vs GARCH-rolling, crypto hourly OHLCV (#834 M2) |
 
-### Volatility sweep series (M10--M15)
+### Volatility sweep series (M10--M17)
 
 Systematic comparison of volatility models against HAR Classic Kelly on 7 crypto coins (BTC-USD, ETH-USD, SOL-USD, LTC-USD, XRP-USD, ADA-USD, DOT-USD), 3 horizons (h=1,5,10), 4 seeds (0,1,7,42), walk-forward 5-fold expanding. Kelly cap=1.0, fee=50bps. Verdict: sign-test paired Sharpe-diff vs HAR Classic, BEATS requires p<0.05 AND win>=60%.
 
@@ -170,6 +170,7 @@ Systematic comparison of volatility models against HAR Classic Kelly on 7 crypto
 | m13_ms_har.py | M13_MS_HAR.md | Markov-Switching HAR (Hamilton 1989) | 11 | NO BEATS (39/84, p=0.7774) |
 | m14_heavy.py | M14_HEAVY.md | HEAVY (Shephard & Sheppard 2010) | 6 | NO BEATS (48/84, p=0.1149) |
 | m15_lstm_rv.py | M15_LSTM_RV.md | Log-LSTM RV (Hochreiter 1997) | ~17.5K / ~4.7K | NO BEATS (45/84, p=0.2928) |
+| har_lj_asym.py | M17_HAR_LJ_ASYM.md | HAR-LJ-Asym (jump+semivariance composite) | 7 | **BEATS** (60/60 DM p<5e-5, caveated: horizon bug, 5 coins) |
 
 Supporting modules: `har_model.py`, `realized_variance.py`, `intraday_loader.py`, `m11g_fee_aware_kelly.py`, `m11c_sharpe_test.py`. Full roadmap: `docs/M_NEXT_VOL_PROPOSAL.md`.
 
