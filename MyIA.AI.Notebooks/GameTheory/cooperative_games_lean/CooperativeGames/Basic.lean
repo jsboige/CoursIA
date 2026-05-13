@@ -29,6 +29,7 @@ abbrev Coalition (N : Type*) := Finset N
 
 /-- A TU (Transferable Utility) Game consists of a characteristic function v
     mapping coalitions to real values, with v(∅) = 0 -/
+@[ext]
 structure TUGame (N : Type*) [Fintype N] where
   /-- The characteristic function: value of each coalition -/
   v : Finset N → ℝ

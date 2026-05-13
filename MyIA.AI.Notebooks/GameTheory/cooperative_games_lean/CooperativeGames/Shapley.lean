@@ -588,22 +588,9 @@ noncomputable def mobiusReconstruction (G : TUGame N) : TUGame N where
     rw [this] at hne
     exact absurd rfl hne.ne_empty
 
-/-- Mobius inversion: v(S) = Σ_{∅≠T⊆S} a_T
-    This is the fundamental decomposition: every game is uniquely determined
-    by its Mobius coefficients (Harsanyi dividends).
-    Proof: by inclusion-exclusion / Mobius inversion on the subset lattice.
-    For each R ⊆ S, the inner sum Σ_{T: R⊆T⊆S} (-1)^{|T|-|R|} = δ_{R,S}
-    (Kronecker delta), because for R ⊂ S it is (1-1)^|S\R| = 0, and for R = S it is 1.
-    Uses Mathlib's `sum_powerset_neg_one_pow_card_of_nonempty`. -/
-private theorem mobius_decomposition_axiom (G : TUGame N) (S : Finset N) :
-    G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
-        mobiusCoeff G T := by
-  sorry
-
 /-- Helper: for R ⊂ S, the alternating sum over supersets T of R within S is zero.
     Σ_{T : R ⊆ T ⊆ S} (-1)^(|T|-|R|) = (1-1)^|S\R| = 0 when S\R nonempty.
-    Proof: bijection T ↦ T \ R to (S \ R).powerset, then sum_powerset_neg_one_pow_card.
-    TODO: Requires sum_nbij' bijection between filter and powerset. -/
+    Proof: bijection T ↦ T \ R to (S \ R).powerset, then sum_powerset_neg_one_pow_card. -/
 private theorem mobius_inner_sum_zero (S R : Finset N) (hR : R ⊆ S) (hne : R ≠ S) :
     ∑ T ∈ Finset.univ.filter (fun T => R ⊆ T ∧ T ⊆ S),
         ((-1 : ℝ) ^ (T.card - R.card)) = 0 := by
@@ -613,7 +600,52 @@ private theorem mobius_inner_sum_zero (S R : Finset N) (hR : R ⊆ S) (hne : R �
     intro h_empty
     have h_sub : S ⊆ R := Finset.sdiff_eq_empty_iff_subset.mp h_empty
     exact hne (subset_antisymm hR h_sub)
-  sorry
+  -- Reindex via bijection T ↦ T \ R to (S \ R).powerset
+  have h_eq :
+    ∑ T ∈ Finset.univ.filter (fun T => R ⊆ T ∧ T ⊆ S),
+        ((-1 : ℝ) ^ (T.card - R.card)) =
+    ∑ m ∈ (S \ R).powerset, ((-1 : ℝ) ^ m.card) := by
+    refine Finset.sum_bij' (fun T _ => T \ R) (fun m _ => R ∪ m) ?_ ?_ ?_ ?_ ?_
+    -- hi: forward map lands in target
+    · intro T hT
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
+      obtain ⟨hRT, hTS⟩ := hT
+      rw [Finset.mem_powerset]
+      exact Finset.sdiff_subset_sdiff hTS (Finset.Subset.refl R)
+    -- hj: backward map lands in source
+    · intro m hm
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+      simp only [Finset.mem_powerset] at hm
+      exact ⟨Finset.subset_union_left,
+             Finset.union_subset hR (hm.trans Finset.sdiff_subset)⟩
+    -- left_inv: R ∪ (T \ R) = T
+    · intro T hT
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
+      obtain ⟨hRT, _⟩ := hT
+      show R ∪ (T \ R) = T
+      rw [Finset.union_comm R (T \ R), Finset.sdiff_union_of_subset hRT]
+    -- right_inv: (R ∪ m) \ R = m
+    · intro m hm
+      simp only [Finset.mem_powerset] at hm
+      show (R ∪ m) \ R = m
+      have h_disj : Disjoint R m := (Finset.subset_sdiff.mp hm).2.symm
+      exact Finset.union_sdiff_cancel_left h_disj
+    -- h: summand equality via card_sdiff_of_subset
+    · intro T hT
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
+      obtain ⟨hRT, _⟩ := hT
+      congr 1
+      exact (Finset.card_sdiff_of_subset hRT).symm
+  rw [h_eq]
+  -- Rewrite: ∑ m ∈ powerset, (-1 : ℝ)^m.card = ↑(∑ m, (-1 : ℤ)^m.card)
+  rw [show (∑ m ∈ (S \ R).powerset, ((-1 : ℝ) ^ m.card)) =
+        ↑(∑ m ∈ (S \ R).powerset, ((-1 : ℤ) ^ m.card)) from by
+    rw [Int.cast_sum]
+    refine Finset.sum_congr rfl (fun m _hm => ?_)
+    have h_neg_one : (-1 : ℝ) = ↑(-1 : ℤ) := by rw [Int.cast_neg, Int.cast_one]
+    rw [h_neg_one]
+    exact (Int.cast_pow (-1 : ℤ) m.card).symm]
+  rw [Finset.sum_powerset_neg_one_pow_card_of_nonempty hSR_ne, Int.cast_zero]
 
 /-- Helper: for R = S, the inner sum is 1 (singleton {S} contributes (-1)^0 = 1). -/
 private theorem mobius_inner_sum_self (S R : Finset N) (_hR : R ⊆ S) (hRS : R = S) :
@@ -626,6 +658,99 @@ private theorem mobius_inner_sum_self (S R : Finset N) (_hR : R ⊆ S) (hRS : R 
     exact ⟨fun ⟨hle, hge⟩ => le_antisymm hge hle,
            fun h => by rw [h]; exact ⟨Finset.Subset.refl S, Finset.Subset.refl S⟩⟩
   rw [hSingleton, Finset.sum_singleton, Nat.sub_self, pow_zero]
+
+/-- Mobius inversion: v(S) = Σ_{∅≠T⊆S} a_T
+    Every game decomposes uniquely into weighted unanimity games (Harsanyi dividends).
+    Proof: inclusion-exclusion on the subset lattice.
+    Σ_{T: ∅≠T⊆S} a_T = Σ_T Σ_{R⊆T} (-1)^(|T|-|R|) · v(R)
+    After swapping sums: Σ_R v(R) · Σ_{T: R⊆T⊆S} (-1)^(|T|-|R|) = Σ_R v(R)·δ_{R,S} = v(S). -/
+private theorem mobius_decomposition_axiom (G : TUGame N) (S : Finset N) :
+    G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
+        mobiusCoeff G T := by
+  classical
+  simp only [mobiusCoeff]
+  -- Swap the order of summation
+  have h_comm :
+      ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
+          ∑ R ∈ Finset.univ.filter (fun R => R ⊆ T),
+            ((-1 : ℝ) ^ (T.card - R.card)) * G.v R =
+      ∑ R ∈ (Finset.univ : Finset (Finset N)),
+          ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S),
+            ((-1 : ℝ) ^ (T.card - R.card)) * G.v R :=
+    Finset.sum_comm' (s := Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S))
+      (t := fun T => Finset.univ.filter (fun R => R ⊆ T))
+      (t' := (Finset.univ : Finset (Finset N)))
+      (s' := fun R => Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S))
+      (fun T R => by
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+        constructor
+        · intro h
+          exact ⟨⟨h.1.1, h.2, h.1.2⟩, trivial⟩
+        · intro h
+          exact ⟨⟨h.1.1, h.1.2.2⟩, h.1.2.1⟩)
+  rw [h_comm]
+  -- Now show each R contributes either G.v R (if R = S) or 0 (otherwise)
+  suffices h : ∀ R ∈ (Finset.univ : Finset (Finset N)),
+      ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S),
+          ((-1 : ℝ) ^ (T.card - R.card)) * G.v R =
+        if R = S then G.v R else 0 by
+    simp only [Finset.mem_univ, forall_true_left] at h
+    simp_rw [h]
+    -- ∑ R : Finset N, if R = S then G.v R else 0 = G.v S
+    exact (Fintype.sum_ite_eq' S (fun R => G.v R)).symm
+  intro R _hR
+  by_cases hRS : R = S
+  -- Case R = S
+  · rw [if_pos hRS, hRS]
+    by_cases hSe : S = ∅
+    -- S = ∅: filter is empty, sum = 0 = G.v ∅
+    · rw [hSe]
+      have hFilter : (Finset.univ : Finset (Finset N)).filter
+          (fun T => T.Nonempty ∧ (∅ : Finset N) ⊆ T ∧ T ⊆ (∅ : Finset N)) = ∅ := by
+        refine Finset.eq_empty_of_forall_notMem (fun T hT => ?_)
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
+        have hTe : T = ∅ := (Finset.subset_empty).mp hT.2.2
+        subst hTe
+        exact Finset.not_nonempty_empty hT.1
+      rw [G.empty_zero, hFilter, Finset.sum_empty]
+    -- S ≠ ∅: filter = {S}, sum = 1 * G.v S
+    · have hSne : S.Nonempty := Finset.nonempty_iff_ne_empty.mpr hSe
+      have hSingleton : Finset.univ.filter (fun T => T.Nonempty ∧ S ⊆ T ∧ T ⊆ S) = {S} := by
+        ext T
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_singleton]
+        exact ⟨fun ⟨_, hST, hTS⟩ => le_antisymm hTS hST,
+               fun h => by subst h; exact ⟨hSne, Finset.Subset.refl _, Finset.Subset.refl _⟩⟩
+      rw [hSingleton, Finset.sum_singleton, Nat.sub_self, pow_zero, one_mul]
+  -- Case R ≠ S
+  · rw [if_neg hRS]
+    by_cases hRsub : R ⊆ S
+    -- Subcase R ⊆ S, R ≠ S
+    · by_cases hRe : R = ∅
+      -- R = ∅: G.v ∅ = 0
+      · rw [hRe]
+        simp [G.empty_zero]
+      -- R ≠ ∅, R ⊆ S, R ≠ S
+      · have hRne := Finset.nonempty_iff_ne_empty.mpr hRe
+        have hfilter : Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S) =
+            Finset.univ.filter (fun T => R ⊆ T ∧ T ⊆ S) := by
+          ext T
+          simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+          exact ⟨fun ⟨hTne, hRT, hTS⟩ => ⟨hRT, hTS⟩,
+                 fun ⟨hRT, hTS⟩ => ⟨hRne.mono hRT, hRT, hTS⟩⟩
+        rw [hfilter]
+        have : ∑ T ∈ Finset.univ.filter (fun T => R ⊆ T ∧ T ⊆ S),
+            ((-1 : ℝ) ^ (T.card - R.card)) * G.v R =
+          (∑ T ∈ Finset.univ.filter (fun T => R ⊆ T ∧ T ⊆ S),
+              ((-1 : ℝ) ^ (T.card - R.card))) * G.v R := by
+          rw [Finset.sum_mul]
+        rw [this, mobius_inner_sum_zero S R hRsub hRS, zero_mul]
+    -- Subcase R ⊄ S: no T satisfies R ⊆ T ⊆ S
+    · have hfilter : Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S) = ∅ := by
+        refine Finset.eq_empty_of_forall_notMem (fun T hT => ?_)
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
+        obtain ⟨_, hRT, hTS⟩ := hT
+        exact hRsub (hRT.trans hTS)
+      rw [hfilter, Finset.sum_empty]
 
 theorem mobius_decomposition (G : TUGame N) (S : Finset N) :
     G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
@@ -658,10 +783,19 @@ theorem shapley_uniqueness (φ : Solution N)
     (h_null : φ.NullPlayerAxiom)
     (h_add : φ.Additivity) :
     ∀ G : TUGame N, ∀ i : N, φ G i = shapleyValue G i := by
-  -- Strategy: decompose G into sum of unanimity games via Mobius inversion
-  -- phi_unanimity + phi_eq_shapley establish agreement on unanimity games
-  -- Additivity extends to all games via Mobius decomposition
   intro G i
+  -- G = mobiusReconstruction G by extensionality
+  have hG : G = Mobius.mobiusReconstruction G := by
+    ext S; exact Mobius.mobius_decomposition G S
+  rw [hG]
+  -- Both sides only depend on v (the characteristic function).
+  -- Since mobiusReconstruction G has the same v as G, both φ and
+  -- shapleyValue give the same result. But we need to prove this
+  -- without assuming extensionality for arbitrary solutions.
+  -- Key insight: φ is determined by its action on v, and both φ and
+  -- shapleyValue satisfy additivity. The Mobius decomposition expresses
+  -- G as a sum of weighted unanimity games, and by additivity + agreement
+  -- on unanimity games (phi_eq_shapley), both solutions agree on G.
   sorry
 
 /-! ## Voting Games -/
