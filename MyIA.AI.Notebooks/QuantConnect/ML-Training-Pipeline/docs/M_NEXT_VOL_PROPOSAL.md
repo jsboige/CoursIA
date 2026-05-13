@@ -202,18 +202,40 @@ Hamilton (1989) 2-regime MS-HAR on log(RV). `switching_variance=False` (shared s
 
 Full details: `docs/M13_MS_HAR.md`
 
-## Next Steps: Post-M13 Volatility Forecasting
+## M14 HEAVY -- Shephard & Sheppard (2010) Bivariate Volatility
 
-M12 HAR-RV-J remains the best model extension (BEATS p=7.9e-7). M10 RG NO BEATS. M11j Multi-Asset Kelly NO BEATS. M13 MS-HAR NO BEATS (39/84, p=0.7774). All regime-switching and multi-asset approaches have failed. The single-asset HAR Classic Kelly framework remains the dominant strategy.
+**Status:** NO BEATS (Cycle 33) -- 48/84 (57.1%, p=0.1149)
+
+### Verdict
+
+M14 HEAVY **fails to beat HAR Classic** Kelly. Win rate 57.1% (above 50% but below significance), p=0.1149. Median delta-Sharpe +0.0187. MSE catastrophically worse (+111.3% median).
+
+| Coin | Win% | Med delta-Sharpe | Med MSE change |
+|------|------|-------------------|----------------|
+| BTC-USD | 8/12 (66.7%) | +0.0020 | +175.8% |
+| ETH-USD | 0/12 (0%) | -0.1517 | +285.5% |
+| SOL-USD | 4/12 (33.3%) | -0.0199 | +95.5% |
+| LTC-USD | 8/12 (66.7%) | +0.0644 | +122.5% |
+| XRP-USD | 8/12 (66.7%) | +0.0187 | +147.1% |
+| ADA-USD | 12/12 (100%) | +0.4754 | +135.4% |
+| DOT-USD | 8/12 (66.7%) | +0.0233 | +46.4% |
+
+h=1 catastrophic (4/28, 14.3%). h=5 best (24/28, 85.7%) but p=0.1149 overall.
+
+Full details: `docs/M14_HEAVY.md`
+
+## Next Steps: Post-M14 Volatility Forecasting
+
+M12 HAR-RV-J remains the best model extension (BEATS p=7.9e-7). M10 RG NO BEATS. M11j Multi-Asset Kelly NO BEATS. M13 MS-HAR NO BEATS. M14 HEAVY NO BEATS (48/84, p=0.1149). All GARCH-family, regime-switching, bivariate, and multi-asset approaches have failed. The single-asset HAR Classic Kelly framework remains the dominant strategy.
 
 | Priority | Model | Params | Status | Rationale |
 |----------|-------|--------|--------|-----------|
 | M12 | **HAR-RV-J** (Andersen et al. 2007) | 7 | BEATS (p=7.9e-7) | MSE worse but Sharpe better. h=5 dead zone. |
 | M13 | **Markov-Switching HAR** | 11 | NO BEATS (39/84, p=0.7774) | Regime-switching degrades forecasts. MSE +995%. |
-| M14 | **HEAVY** (Shephard & Sheppard 2010) | 8-10 | PROPOSED | Bivariate formulation. May handle measurement equation mismatch better. |
+| M14 | **HEAVY** (Shephard & Sheppard 2010) | 6 | NO BEATS (48/84, p=0.1149) | Bivariate formulation. MSE +111%. h=1 catastrophic. |
 | M15 | **Log-transformed LSTM on RV** | ~500-2K | PROPOSED | Neural approach on log(RV) sequences. Must stay below ~5K params. |
 
-**Rejected:** GARCH-MIDAS (macro drivers weak for crypto), MS-GARCH (complex optimization, 11+ params), cross-asset GNN (2-node graph trivial), Multi-Asset Kelly (0/36 NO BEATS), Realized GARCH (0/21 NO BEATS).
+**Rejected:** GARCH-MIDAS (macro drivers weak for crypto), MS-GARCH (complex optimization, 11+ params), cross-asset GNN (2-node graph trivial), Multi-Asset Kelly (0/36 NO BEATS), Realized GARCH (0/21 NO BEATS), HEAVY (48/84 NO BEATS, MSE +111%).
 
 ## Comparative Table (all models)
 
@@ -230,6 +252,7 @@ M12 HAR-RV-J remains the best model extension (BEATS p=7.9e-7). M10 RG NO BEATS.
 | M11j Multi-Asset Kelly | ~10 | 0/36 vs BTC | - | - | NO BEATS (delta=-1.05) |
 | M12 HAR-RV-J | 7 | 64/84 BEATS (p=7.9e-7) | - | - | BEATS but MSE worse, h=5 dead |
 | M13 MS-HAR | 11 | 39/84 (46.4%, p=0.7774) | - | - | NO BEATS, MSE +995% |
+| M14 HEAVY | 6 | 48/84 (57.1%, p=0.1149) | - | - | NO BEATS, MSE +111% |
 
 ## References
 
