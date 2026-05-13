@@ -605,10 +605,32 @@ private axiom mobius_inner_sum_zero (S R : Finset N) (hR : R ⊆ S) (hne : R ≠
     ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S),
         ((-1 : ℝ) ^ (T.card - R.card)) = 0
 
-/-- Helper: for R = S, the sum over supersets T of R within S is just (-1)^0 = 1. -/
-private axiom mobius_inner_sum_self (S R : Finset N) (hR : R ⊆ S) (hRS : R = S) :
+/-- Helper: for R = S, the inner sum reduces to 1 when S.Nonempty, 0 otherwise. -/
+private theorem mobius_inner_sum_self (S R : Finset N) (_hR : R ⊆ S) (hRS : R = S) :
     ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S),
-        ((-1 : ℝ) ^ (T.card - R.card)) = 1
+        ((-1 : ℝ) ^ (T.card - R.card)) = if S.Nonempty then 1 else 0 := by
+  rw [hRS]
+  classical
+  split_ifs with hS
+  · -- Case: S.Nonempty. Show filter = {S}, then sum_singleton gives (-1)^0 = 1
+    have hSingleton : Finset.univ.filter (fun T => T.Nonempty ∧ S ⊆ T ∧ T ⊆ S) = {S} := by
+      ext T
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_singleton]
+      exact ⟨fun ⟨_, hle, hge⟩ => le_antisymm hge hle,
+             fun h => by rw [h]; exact ⟨hS, Finset.Subset.refl S, Finset.Subset.refl S⟩⟩
+    rw [hSingleton, Finset.sum_singleton, Nat.sub_self, pow_zero]
+  · -- Case: S = ∅. Filter is empty since no T.Nonempty when T ⊆ ∅
+    have hSe : S = ∅ := by
+      by_contra h
+      have : S.Nonempty := Finset.nonempty_iff_ne_empty.mpr (Ne.intro (fun h2 => absurd h2 h))
+      exact hS this
+    rw [hSe]
+    apply Finset.sum_eq_zero
+    intro T hT
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
+    have : T = ∅ := Finset.subset_empty.mp hT.2.2
+    rw [this] at hT
+    exact absurd rfl hT.1.ne_empty
 
 theorem mobius_decomposition (G : TUGame N) (S : Finset N) :
     G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
