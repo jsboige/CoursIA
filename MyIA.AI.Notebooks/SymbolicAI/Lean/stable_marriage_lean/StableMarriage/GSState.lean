@@ -116,8 +116,31 @@ def gsProposalBound (n : Nat) [NeZero n] : Nat := n * n
 noncomputable def gsGaleShapley (prof : PrefProfile n) : GSMatching n :=
   (gsRunSteps prof (gsProposalBound n)).matching
 
--- TODO: prove gsChooseMax_mem.
--- Lemma: gsChooseMax prof σ m h ∈ gsCandidates prof σ m
--- Proof uses Classical.choose_spec on exists_maximal and simpa.
+/-! ## gsChooseMax helper lemmas -/
+
+/-- The chosen maximal candidate is in the candidate set. -/
+lemma gsChooseMax_mem (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
+    (h : (gsCandidates prof σ m).Nonempty) :
+    gsChooseMax prof σ m h ∈ gsCandidates prof σ m := by
+  unfold gsChooseMax
+  letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
+  haveI : IsTrans (Fin n) (· ≤ ·) :=
+    ⟨fun a b c hab hbc => by
+      cases hab with
+      | inl hab => subst hab; exact hbc
+      | inr hab =>
+        cases hbc with
+        | inl hbc => subst hbc; exact Or.inr hab
+        | inr hbc => exact Or.inr (lt_trans hbc hab)⟩
+  obtain ⟨hmem, -⟩ := Classical.choose_spec (Finset.exists_maximal h)
+  exact hmem
+
+/-- No unproposed candidate is preferred over the chosen maximal one.
+    Uses totality of bijective preference ordering + maximality of choose. -/
+lemma gsChooseMax_maximal (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
+    (h : (gsCandidates prof σ m).Nonempty) (w : Fin n)
+    (hw : w ∈ gsCandidates prof σ m) :
+    gsMenPrefLE prof m w (gsChooseMax prof σ m h) := by
+  sorry
 
 end StableMarriage

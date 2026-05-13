@@ -136,29 +136,6 @@ HONEST_SORRIES = {
             "DO NOT TOUCH until Mathlib gains LP duality."
         ),
     },
-    str(GALESHAPLEY_FILE) if GALESHAPLEY_FILE else "": {
-        # GaleShapley.lean L73: existential stable matching (needs GS algorithm)
-        73: (
-            "gale_shapley_stable: existential proof ∃ μ, IsStable prof μ. "
-            "Requires constructive witness via Gale-Shapley deferred acceptance "
-            "algorithm. Cannot be solved by LLM tactic search. "
-            "See: mmaaz-git/stable-marriage-lean Algorithm.lean (~1000 LOC). "
-            "INTRACTABLE_UNTIL_GS_IMPL."
-        ),
-        # GaleShapley.lean L87: existential man-optimal matching
-        87: (
-            "gale_shapley_man_optimal: ∃ μ, IsManOptimal prof μ. Quantifies "
-            "over ALL stable matchings — no single witness suffices. "
-            "Requires GS algorithm output + lattice of stable matchings. "
-            "INTRACTABLE_UNTIL_GS_IMPL."
-        ),
-        # GaleShapley.lean L114: Knuth 1976 lattice duality (woman-pessimal)
-        114: (
-            "gale_shapley_woman_pessimal: Knuth 1976 duality theorem. Requires "
-            "rural-hospitals theorem + lattice of stable matchings machinery. "
-            "INTRACTABLE_UNTIL_GS_IMPL."
-        ),
-    },
 }
 
 
@@ -652,15 +629,18 @@ DEMOS = {
             "Replace sorry at L73 of GaleShapley.lean.\n"
             "Prove gale_shapley_stable: for any preference profile,\n"
             "there exists a stable matching.\n"
-            "This is the existence theorem for stable matchings.\n"
-            "Classical result: use classical + exact/Finte.filter + existence\n"
-            "via GS algorithm. Since the algorithm is not ported, try:\n"
-            "  classical\n"
-            "  -- Use Finset.filter on the finite set of matchings\n"
-            "  -- Prove the filtered set is nonempty by GS theorem\n"
-            "NOTE: This is classified as VERY HARD. Existential proof without\n"
-            "the GS algorithm ported requires classical choice + nonemptiness\n"
-            "of the set of stable matchings, which is the content of GS itself.\n"
+            "Strategy: provide gsGaleShapley as constructive witness,\n"
+            "then prove IsStable via no-blocking-pair argument.\n"
+            "Key invariants (already stubbed in Lemmas.lean):\n"
+            "  - GSConsistent.runSteps: final matching is consistent\n"
+            "  - menProposedDownward.runSteps: men proposed in pref order\n"
+            "  - womenBestState.runSteps: women keep best proposal\n"
+            "  - menMatchedProposed.runSteps: matched men proposed\n"
+            "Reference: mmaaz-git/stable-marriage-lean Properties.lean\n"
+            "  galeShapley_noBlockingPairs uses menProposedDownwardState +\n"
+            "  womenBestState + menMatchedProposedState to derive\n"
+            "  contradiction from any blocking pair.\n"
+            "Our type system: total bijections (no `acceptable` filter).\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "very_hard",
@@ -677,7 +657,13 @@ DEMOS = {
             "Replace sorry at L87 of GaleShapley.lean.\n"
             "Prove gale_shapley_man_optimal: there exists a man-optimal\n"
             "stable matching (every man gets best achievable partner).\n"
-            "Requires comparison across ALL stable matchings.\n"
+            "Strategy: use gsGaleShapley as witness, prove man-optimality\n"
+            "by showing any man m's GS spouse has lowest pref rank among\n"
+            "all stable matchings. Uses menProposedDownward invariant:\n"
+            "if m could do better in another stable matching, he would\n"
+            "have proposed to that woman and she would have accepted.\n"
+            "Reference: mmaaz-git/stable-marriage-lean GaleShapley.lean\n"
+            "Our type system: total bijections (no `acceptable`).\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "very_hard",
@@ -695,6 +681,13 @@ DEMOS = {
             "Prove gale_shapley_woman_pessimal: if mu is man-optimal\n"
             "and mu' is stable, then each woman gets worst achievable\n"
             "partner under mu (Knuth 1976 lattice duality).\n"
+            "Strategy: by contradiction. If woman w does BETTER under mu',\n"
+            "then mu'.inverse w is more preferred than mu.inverse w.\n"
+            "This means man mu'.inverse w got a WORSE partner under mu\n"
+            "than under mu', contradicting man-optimality of mu.\n"
+            "Key insight: inverse swaps man/woman perspectives.\n"
+            "Reference: mmaaz-git/stable-marriage-lean GaleShapley.lean\n"
+            "Our type system: Matching has bijective spouse + inverse.\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "very_hard",

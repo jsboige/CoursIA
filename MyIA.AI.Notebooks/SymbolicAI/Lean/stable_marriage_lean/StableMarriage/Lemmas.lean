@@ -170,4 +170,140 @@ lemma initial : menMatchedProposed prof (gsInitial prof) := by
 
 end menMatchedProposed
 
+/-! ## Consistency Preservation by GS Steps -/
+
+namespace GSConsistent
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- swapMatch preserves consistency when woman w prefers m over mOld. -/
+lemma swapMatch (h : GSConsistent σ.matching) (m mOld w : Fin n)
+    (hm : σ.matching.menMatch m = none)
+    (hw : σ.matching.womenMatch w = some mOld)
+    (hmOld : σ.matching.menMatch mOld = some w) :
+    GSConsistent (σ.matching.swapMatch m mOld w) := by
+  sorry
+
+/-- gsStepWith preserves matching consistency. -/
+lemma stepWith (h : GSConsistent σ.matching) (m w : Fin n)
+    (hproposed : ¬ σ.proposed m w) :
+    GSConsistent (gsStepWith prof σ m w).matching := by
+  sorry
+
+/-- gsStep preserves matching consistency. -/
+lemma step (h : GSConsistent σ.matching) (hfree : ∃ m, gsIsFree prof σ m) :
+    GSConsistent (gsStep prof σ).matching := by
+  sorry
+
+/-- gsRunSteps preserves matching consistency. -/
+lemma runSteps (k : Nat) :
+    GSConsistent (gsRunSteps prof k).matching := by
+  sorry
+
+end GSConsistent
+
+/-! ## Termination: Proposal Count Bound -/
+
+namespace proposedCount
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- A step for a free man increases the proposal count. -/
+lemma step_of_free (σ : GSState prof) (m : Fin n)
+    (hf : gsIsFree prof σ m) :
+    proposedCount prof (gsStep prof σ) = proposedCount prof σ + 1 := by
+  sorry
+
+/-- If a free man exists, proposal count is below the bound. -/
+lemma lt_bound_of_free (σ : GSState prof) (k : Nat)
+    (hk : proposedCount prof σ < gsProposalBound n)
+    (hf : ∃ m, gsIsFree prof σ m) :
+    proposedCount prof (gsRunSteps prof k) <
+      gsProposalBound n := by
+  sorry
+
+/-- If the algorithm hasn't terminated after k steps, count equals k. -/
+lemma runSteps_eq_of_not_terminated (k : Nat)
+    (hterm : ¬ gsTerminated prof (gsRunSteps prof k)) :
+    proposedCount prof (gsRunSteps prof k) = k := by
+  sorry
+
+end proposedCount
+
+/-! ## Step Identity When Terminated -/
+
+/-- If the state is terminated, gsStep is identity. -/
+lemma gsStep_eq_of_terminated (prof : PrefProfile n) (σ : GSState prof)
+    (h : gsTerminated prof σ) :
+    gsStep prof σ = σ := by
+  sorry
+
+/-- If the state is terminated at step k, all subsequent steps are identity. -/
+lemma gsRunSteps_eq_of_terminated (prof : PrefProfile n) (k j : Nat) (hkj : k ≤ j)
+    (h : gsTerminated prof (gsRunSteps prof k)) :
+    gsRunSteps prof j = gsRunSteps prof k := by
+  sorry
+
+/-! ## Invariant: Men Proposed Downward (step preservation) -/
+
+namespace menProposedDownward
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- gsStep preserves the menProposedDownward invariant. -/
+lemma step (h : menProposedDownward prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    menProposedDownward prof (gsStep prof σ) := by
+  sorry
+
+/-- gsRunSteps preserves the menProposedDownward invariant. -/
+lemma runSteps (k : Nat) :
+    menProposedDownward prof (gsRunSteps prof k) := by
+  sorry
+
+end menProposedDownward
+
+/-! ## Invariant: Men Matched Implies Proposed (step preservation) -/
+
+namespace menMatchedProposed
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- gsStepWith preserves menMatchedProposed. -/
+lemma stepWith (h : menMatchedProposed prof σ) (m w : Fin n) :
+    menMatchedProposed prof (gsStepWith prof σ m w) := by
+  sorry
+
+/-- gsStep preserves menMatchedProposed. -/
+lemma step (h : menMatchedProposed prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    menMatchedProposed prof (gsStep prof σ) := by
+  sorry
+
+/-- gsRunSteps preserves menMatchedProposed. -/
+lemma runSteps (k : Nat) :
+    menMatchedProposed prof (gsRunSteps prof k) := by
+  sorry
+
+end menMatchedProposed
+
+/-! ## Invariant: Women Best State (step preservation) -/
+
+namespace womenBestState
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- gsStep preserves womenBestState. -/
+lemma step (h : womenBestState prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    womenBestState prof (gsStep prof σ) := by
+  sorry
+
+/-- gsRunSteps preserves womenBestState. -/
+lemma runSteps (k : Nat) :
+    womenBestState prof (gsRunSteps prof k) := by
+  sorry
+
+end womenBestState
+
 end StableMarriage
