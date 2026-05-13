@@ -268,11 +268,11 @@ def _is_comment_only_cell(cell: dict) -> bool:
     return all(l.startswith("#") for l in lines)
 
 
-def _is_assignment_only_cell(cell: dict) -> bool:
-    """Check if a code cell contains only assignments and comments (no print/call/expression).
+def _is_outputless_by_design(cell: dict) -> bool:
+    """Check if a code cell produces no output by design (not a quality issue).
 
-    Uses ast.parse for robust detection of multi-line assignments, lists, dicts.
-    Falls back to regex if AST parsing fails (e.g. syntax error in cell).
+    Covers: assignments, function/class definitions, imports, comments.
+    These cells never produce visible Jupyter output and should not block promotion.
     """
     source = "".join(cell.get("source", []))
     if not source.strip():
@@ -282,7 +282,11 @@ def _is_assignment_only_cell(cell: dict) -> bool:
         return True
     try:
         tree = ast.parse(source)
-        return all(isinstance(node, (ast.Assign, ast.AnnAssign)) for node in ast.iter_child_nodes(tree))
+        outputless = (
+            ast.Assign, ast.AnnAssign,
+            ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
+        )
+        return all(isinstance(node, outputless) for node in ast.iter_child_nodes(tree))
     except SyntaxError:
         return False
 
@@ -290,14 +294,14 @@ def _is_assignment_only_cell(cell: dict) -> bool:
 def _effective_code_cells(code_cells: list) -> list:
     """Filter cells excluded from maturity classification.
 
-    Excludes: Papermill injected-parameters, comment-only, assignment-only cells.
+    Excludes: Papermill injected-parameters, outputless-by-design cells
+    (assignments, function/class definitions, imports, comments).
     These produce no visible output and should not block promotion.
     """
     return [
         c for c in code_cells
         if not _is_papermill_injected(c)
-        and not _is_comment_only_cell(c)
-        and not _is_assignment_only_cell(c)
+        and not _is_outputless_by_design(c)
     ]
 
 
@@ -305,15 +309,22 @@ def classify_maturity(
     notebook: dict,
     code_cells: list,
     kernel: str,
+    *,
+    is_template: bool = False,
+    requires_cloud: bool = False,
 ) -> str:
     """Classify notebook maturity level.
 
     Heuristics (B-2 from #656):
+        TEMPLATE   — filename contains "template" (case-insensitive)
         PRODUCTION — kernel defined, all outputs, <3 TODO, intro+conclusion, structured
         BETA       — outputs present, <5 TODO, markdown structure
         ALPHA      — partial outputs OR 5-10 TODO
         DRAFT      — no outputs OR >10 TODO OR no markdown cells
     """
+    # Templates are always TEMPLATE regardless of content
+    if is_template:
+        return "TEMPLATE"
     cells = notebook.get("cells", [])
     md_cells = [c for c in cells if c["cell_type"] == "markdown"]
     todo_count = count_todos(notebook)
@@ -327,6 +338,12 @@ def classify_maturity(
     # Allow 1 cell without output (typical student exercise cell)
     nearly_all_outputs = total_code > 0 and code_without_outputs <= 1
     has_outputs = code_with_outputs > 0
+
+    # QC Cloud notebooks: no output penalty (require cloud execution)
+    if requires_cloud and total_code > 0 and not has_outputs:
+        has_outputs = True
+        nearly_all_outputs = True
+        all_have_outputs = True
 
     # No markdown at all → DRAFT
     if not md_cells:
@@ -387,7 +404,11 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         requirements["requires_wsl"] = True
 
     status = determine_status(nb_path, notebook, code_cells, requirements, pedagogical)
-    maturity = classify_maturity(notebook, effective, kernel)
+    maturity = classify_maturity(
+        notebook, effective, kernel,
+        is_template="template" in nb_path.stem.lower(),
+        requires_cloud=requirements.get("requires_cloud", False),
+    )
 
     code_with_outputs = sum(1 for c in effective if c.get("outputs"))
     code_without_outputs = len(effective) - code_with_outputs
@@ -490,7 +511,7 @@ def generate_markdown_report(entries: list[dict]) -> str:
             maturity_counts.get(e.get("maturity", "UNKNOWN"), 0) + 1
         )
     lines.extend(["", "## Maturity Summary", ""])
-    for maturity in ["PRODUCTION", "BETA", "ALPHA", "DRAFT"]:
+    for maturity in ["PRODUCTION", "BETA", "TEMPLATE", "ALPHA", "DRAFT"]:
         count = maturity_counts.get(maturity, 0)
         lines.append(f"- **{maturity}**: {count}")
 
@@ -568,7 +589,7 @@ def main():
     )
     parser.add_argument(
         "--maturity", type=str, default=None,
-        choices=["PRODUCTION", "BETA", "ALPHA", "DRAFT"],
+        choices=["PRODUCTION", "BETA", "TEMPLATE", "ALPHA", "DRAFT"],
         help="Filter entries by maturity level",
     )
     parser.add_argument(
@@ -604,7 +625,7 @@ def main():
             count = status_counts.get(status, 0)
             print(f"  {status:<12} {count:>4}")
         print("-" * 40)
-        for maturity in ["PRODUCTION", "BETA", "ALPHA", "DRAFT"]:
+        for maturity in ["PRODUCTION", "BETA", "TEMPLATE", "ALPHA", "DRAFT"]:
             count = maturity_counts.get(maturity, 0)
             print(f"  {maturity:<12} {count:>4}")
         print("=" * 40)
