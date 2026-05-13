@@ -8,7 +8,7 @@ crypto volatility forecasting? HEAVY jointly models returns and realized measure
     HEAVY-r:   r_t^2 = omega_r + alpha_r * r_{t-1}^2 + beta_r * RM_{t-1}
     HEAVY-RV:  RV_t = omega_RV + alpha_RV * RM_{t-1} + beta_RV * RV_{t-1}
 
-where RM = Realized Measure (here RV). 8 parameters total.
+where RM = Realized Measure (here RV). 6 parameters total.
 
 The HEAVY-RV equation provides volatility forecasts directly (no transform needed).
 Forecast at horizon h: iterate the HEAVY-RV equation h steps.
@@ -76,51 +76,6 @@ RESULTS_DIR = SCRIPT_DIR / "results" / "m14_heavy"
 
 
 # -- HEAVY model estimation via QML -----------------------------------------
-
-def _heavy_neg_loglik(
-    theta: np.ndarray,
-    r2: np.ndarray,
-    rv: np.ndarray,
-) -> float:
-    """Negative quasi-log-likelihood for HEAVY model.
-
-    HEAVY-r:  h_r_t = omega_r + alpha_r * r2_{t-1} + beta_r * rv_{t-1}
-    HEAVY-RV: h_RV_t = omega_RV + alpha_RV * rv_{t-1} + beta_RV * rv_{t-1}
-              = omega_RV + (alpha_RV + beta_RV) * rv_{t-1}
-
-    We use the HEAVY-RV equation for volatility forecasting.
-    QML assumes Gaussian errors on the HEAVY-RV equation.
-    """
-    omega_r, alpha_r, beta_r, omega_RV, alpha_RV, beta_RV = theta
-
-    n = len(r2) - 1  # t=1..T-1 (lag 1)
-    if n < 20:
-        return 1e12
-
-    # HEAVY-RV conditional variance
-    h_rv = np.empty(n)
-    prev_rv = rv[:-1]  # rv_{t-1}
-
-    # h_RV_t = omega_RV + alpha_RV * rv_{t-1} + beta_RV * rv_{t-1}
-    # Simplify: h_RV_t = omega_RV + (alpha_RV + beta_RV) * rv_{t-1}
-    # But keep separate for clarity and parameter interpretation
-    h_rv = omega_RV + alpha_RV * prev_rv + beta_RV * prev_rv
-
-    target_rv = rv[1:]  # rv_t
-
-    # Avoid numerical issues
-    h_rv = np.maximum(h_rv, 1e-12)
-    target_rv = np.maximum(target_rv, 1e-12)
-
-    # QML log-likelihood for HEAVY-RV equation
-    # log L = -0.5 * sum( log(h_RV_t) + rv_t / h_RV_t )
-    loglik = -0.5 * np.sum(np.log(h_rv) + target_rv / h_rv)
-
-    if np.isnan(loglik) or np.isinf(loglik):
-        return 1e12
-
-    return -loglik  # negative for minimization
-
 
 def _heavy_neg_loglik_full(
     theta: np.ndarray,
@@ -332,7 +287,7 @@ def walk_forward_heavy(
 
         try:
             model = HEAVYModel().fit(r2_train.values, rv_train.values)
-        except (ValueError, Exception) as e:
+        except Exception as e:
             print(f"    fold {fold_idx} HEAVY fit failed: {e}", flush=True)
             continue
 
@@ -357,7 +312,7 @@ def walk_forward_heavy(
                     model = HEAVYModel().fit(
                         r2_daily.iloc[:i].values, rv.iloc[:i].values
                     )
-                except (ValueError, Exception):
+                except Exception:
                     pass  # keep previous model
 
         fp = np.asarray(fold_preds)
@@ -407,7 +362,7 @@ def evaluate_one_combo(
     seed: int,
 ) -> dict | None:
     """Run HEAVY vs HAR Classic for one (coin, horizon, seed) combo."""
-    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
     hourly_rets = _load_one_coin(coin)
     if len(hourly_rets) < 1000:
         return None
@@ -429,7 +384,7 @@ def evaluate_one_combo(
     # HAR Classic baseline
     try:
         har_out = walk_forward_har(rv, horizon=horizon, n_splits=N_SPLITS, refit_every=REFIT_EVERY)
-    except (ValueError, Exception):
+    except Exception:
         return None
 
     # HEAVY
@@ -437,7 +392,7 @@ def evaluate_one_combo(
         heavy_out = walk_forward_heavy(
             rv, r2_daily, horizon=horizon, n_splits=N_SPLITS, refit_every=REFIT_EVERY
         )
-    except (ValueError, Exception):
+    except Exception:
         return None
 
     har_fc = har_out["forecasts"]
