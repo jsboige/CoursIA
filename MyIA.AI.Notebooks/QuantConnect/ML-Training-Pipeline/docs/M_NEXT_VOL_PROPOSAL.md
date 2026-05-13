@@ -98,18 +98,100 @@ Leverage:  tau(eps_t) = gamma_1 * eps_t + gamma_2 * (eps_t^2 - 1)
 
 Realized GARCH must achieve BEATS_p005 on at least BTC h=1 (where HAR classic already beats GARCH) to be viable. If it fails, MS-GARCH (M11) is the fallback.
 
-## Next Steps: M11 Volatility Forecasting
+## M12 HAR-RV-J — Andersen-Bollerslev-Diebold (2007) Jump Decomposition
 
-HAR Classic remains the baseline to beat (12/21 BEATS_p005 from DM retroactif). The following models are ranked by expected viability on crypto hourly data:
+**Status:** BEATS (Cycle 31) -- p=7.9e-7, 64/84 (76.2%), med delta-Sharpe +0.0032
 
-| Priority | Model | Params | Rationale |
-|----------|-------|--------|-----------|
-| M11a | **HAR-RV-J** (Andersen et al. 2007) | 5 | Adds jump component to HAR. Low param count, directly extends our strongest baseline. Expected: moderate improvement on high-volatility days. |
-| M11b | **Markov-Switching HAR** | 6-8 | Regime-switching between low/high vol states. Addresses root cause #2 (regime shifts). 2-state Markov + HAR in each state. |
-| M11c | **HEAVY** (Shephard & Sheppard 2010) | 8-10 | Same goal as Realized GARCH but bivariate formulation. May handle measurement equation mismatch better. 2x coding effort. |
-| M11d | **Log-transformed LSTM on RV** | ~500-2K | Neural approach on log(RV) sequences. Must stay below ~5K params to avoid TFT-style catastrophic overfit. |
+### Verdict
+
+M12 HAR-RV-J BEATS HAR Classic on Sharpe (p=7.9e-7, 76.2% win rate). However:
+1. **MSE is consistently WORSE**: +8.1% (h=1), +38.0% (h=5), +58.7% (h=10)
+2. **h=5 is dead**: 12/28 (42.9%) win rate, actually below 50%
+3. **Edge at h=1 and h=10 only**: 24/28 (85.7%) and 28/28 (100%)
+4. **Magnitude small**: delta-Sharpe +0.0032 (vs M11 delta-Sharpe +0.313 vs buy-hold)
+
+The MSE-Sharpe disconnect is the key finding: jump decomposition helps Kelly position sizing but hurts raw forecast accuracy.
+
+### Model
+HAR-RV-J extends HAR Classic (3 regressors) to 6 regressors by decomposing RV into continuous (BPV) and jump components:
+
+- RV_t = BPV_t + J_t, where J_t = max(RV_t - mu * BPV_t, 0), mu = 0.6 (Huang-Tauchen)
+- Regression: log(RV_{t+h}) = b0 + b_d*log(RV_d) + b_w*log(RV_w) + b_m*log(RV_m) + b_dj*J_d + b_wj*J_w + b_mj*J_m
+
+### Setup
+- Walk-forward 5-fold expanding OLS, 7 coins x 3 horizons (h=1,5,10) x 4 seeds = 84 combos
+- Kelly cap=1.0 (M11i confirmed cap=3.0 killed by Calmar)
+- Fee=50bps, mu_window=60d
+- Comparison: HAR-RV-J Sharpe vs HAR Classic Sharpe (same Kelly framework)
+
+### Per-Coin Summary
+
+| Coin | Win% | Med delta-Sharpe | Med MSE change |
+|------|------|-------------------|----------------|
+| BTC-USD | 100% (12/12) | +0.0032 | +5.2% |
+| ETH-USD | 66.7% (8/12) | +0.0076 | +7.0% |
+| SOL-USD | 66.7% (8/12) | +0.0295 | +38.0% |
+| LTC-USD | 100% (12/12) | +0.0060 | +174.7% |
+| XRP-USD | 66.7% (8/12) | +0.0019 | +0.2% |
+| ADA-USD | 66.7% (8/12) | +0.0964 | +69.7% |
+| DOT-USD | 66.7% (8/12) | +0.0017 | +110.7% |
+
+Full details: `docs/M12_HAR_RV_J.md`
+
+### Reference
+Andersen, T.G., Bollerslev, T. & Diebold, F.X. (2007) "Roughing It Up: Including Jump Components in the Measurement, Modeling, and Forecasting of Return Volatility", Review of Economics and Statistics 89(4):701-720.
+
+## M11 Results Summary
+
+### M11a-c: Sharpe testing (M11c), DM significance (M11c)
+- HAR Kelly mu=60d BEATS buy_hold at fee≤50bps (sign-test p=0.001-0.045)
+- Edge dies at 100bps (p=0.155)
+- Per-combo LW2008 p<0.05: 5/35 at 10bps, 0/35 at 100bps
+
+### M11f: Transaction cost sweep
+- Break-even frontier at ~50bps (p=0.045)
+- Median delta-Sharpe: +0.313 at 5bps → +0.226 at 50bps → +0.044 at 100bps
+
+### M11g: Fee-aware Kelly (no-trade band)
+- NULL result. Threshold band does NOT shift break-even.
+- Median delta-Sharpe unchanged ±0.005 across all threshold × fee cells.
+
+### M11h: Kelly cap relaxed (cap=3.0)
+- Cap=3.0 pushes break-even frontier from ~50bps to ~100bps (p=0.088)
+- Median delta-Sharpe triples at 100bps: +0.044 → +0.087
+
+### M11i: Max-DD analysis
+- **NULL CONDITIONAL**: cap=3.0 Sharpe edge does NOT survive Calmar risk-adjustment.
+- DD penalty 35/35 (p=0.000). DD increases 1.5× from cap=1.0 to cap=3.0.
+- Calmar drops +0.44 → +0.19 at 100bps.
+- Per-coin: MODERATE concentration (4/7 winners: BTC, XRP, ADA, DOT). ETH/SOL structurally hostile.
+
+## Next Steps: Post-M12 Volatility Forecasting
+
+M12 HAR-RV-J BEATS HAR Classic (p=7.9e-7) but with MSE degradation. M10 RG NO BEATS, M11i kills cap=3.0 leverage. Next: regime-switching (M13) or bivariate (M14).
+
+| Priority | Model | Params | Status | Rationale |
+|----------|-------|--------|--------|-----------|
+| M12 | **HAR-RV-J** (Andersen et al. 2007) | 7 | BEATS (p=7.9e-7) | MSE worse but Sharpe better. h=5 dead zone. |
+| M13 | **Markov-Switching HAR** | 6-8 | PROPOSED | Regime-switching between low/high vol states. Addresses crypto regime shifts. |
+| M14 | **HEAVY** (Shephard & Sheppard 2010) | 8-10 | PROPOSED | Bivariate formulation. May handle measurement equation mismatch better. |
+| M15 | **Log-transformed LSTM on RV** | ~500-2K | PROPOSED | Neural approach on log(RV) sequences. Must stay below ~5K params. |
 
 **Rejected:** GARCH-MIDAS (macro drivers weak for crypto), MS-GARCH (complex optimization, 11+ params), cross-asset GNN (2-node graph trivial).
+
+## Comparative Table (all models)
+
+| Model | Params | Sharpe vs HAR | Calmar | Max-DD | Verdict |
+|-------|--------|---------------|--------|--------|---------|
+| M3 HAR classic | 4 | baseline | baseline | baseline | Strong baseline |
+| M3b HAR asymmetric | 5 | mixed | - | - | BTC-specific leverage only |
+| M4 DLinear | ~22 | 6/21 BEATS | - | - | Data-hungry, inconsistent |
+| M5 HMM regime | 8+HMM | 1/6 BEATS | - | - | Two-step estimation flaw |
+| M9 TFT | ~110K | 0/6 BEATS | - | - | Catastrophic overfit |
+| M10 Realized GARCH | 7-9 | 0/21 BEATS | - | - | NO BEATS (MSE +59%) |
+| M11 HAR Kelly (cap=1.0) | 4 | BEATS BH @50bps | +0.44 | 62.5% | Edge at fee≤50bps |
+| M11 HAR Kelly (cap=3.0) | 4 | BEATS BH @100bps | +0.19 | 90.5% | NULL CONDITIONAL (Calmar kills) |
+| M12 HAR-RV-J | 7 | 64/84 BEATS (p=7.9e-7) | - | - | BEATS but MSE worse, h=5 dead |
 
 ## References
 
