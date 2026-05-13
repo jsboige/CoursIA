@@ -602,10 +602,17 @@ private theorem mobius_decomposition_axiom (G : TUGame N) (S : Finset N) :
 
 /-- Helper: for R ⊂ S, the alternating sum over supersets T of R within S is zero.
     Σ_{T : R ⊆ T ⊆ S} (-1)^(|T|-|R|) = (1-1)^|S\R| = 0 when S\R nonempty.
-    Proof: bijection T ↦ T \ R to (S \ R).powerset, then sum_powerset_neg_one_pow_card. -/
+    Proof: bijection T ↦ T \ R to (S \ R).powerset, then sum_powerset_neg_one_pow_card.
+    TODO: Requires sum_nbij' bijection between filter and powerset. -/
 private theorem mobius_inner_sum_zero (S R : Finset N) (hR : R ⊆ S) (hne : R ≠ S) :
     ∑ T ∈ Finset.univ.filter (fun T => R ⊆ T ∧ T ⊆ S),
         ((-1 : ℝ) ^ (T.card - R.card)) = 0 := by
+  classical
+  have hSR_ne : (S \ R).Nonempty := by
+    rw [Finset.nonempty_iff_ne_empty]
+    intro h_empty
+    have h_sub : S ⊆ R := Finset.sdiff_eq_empty_iff_subset.mp h_empty
+    exact hne (subset_antisymm hR h_sub)
   sorry
 
 /-- Helper: for R = S, the inner sum is 1 (singleton {S} contributes (-1)^0 = 1). -/
