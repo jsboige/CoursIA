@@ -4,15 +4,15 @@
 
 | Item | Value |
 |------|-------|
-| Lean toolchain | `leanprover/lean4:v4.28.0-rc1` |
+| Lean toolchain | `leanprover/lean4:v4.30.0-rc2` |
 | Mathlib | pinned via lake-manifest.json |
-| Total sorry | **3** (2 Basic + 1 Shapley) |
-| Honest unprovable (in Mathlib) | **0** (Basic.lean:234 reclassified to WIP_HARD, see BONDAREVA_SHAPLEY_HARDNESS.md) |
-| Total lines | ~440 |
-| Total theorems | 11 |
-| Total definitions | 29 |
+| Total sorry | **0** (0 Basic + 0 Shapley) |
+| Honest unprovable (in Mathlib) | **0** |
+| Total lines | ~1430 (Basic 388 + Shapley 1042) |
+| Total theorems | 19 |
+| Total definitions | 35 |
 
-**Note**: Toolchain still on v4.28.0-rc1. Upgrade to v4.29.1 recommended (see social_choice_lean for precedent).
+**Note**: Toolchain bumped to v4.30.0-rc2 (PR #1015). Bondareva backward + convex_core + shapley_uniqueness all proved.
 
 ## Per-File Status
 
@@ -21,29 +21,25 @@
 | Metric | Value |
 |--------|-------|
 | Definitions | 12 |
-| Theorems | 4 |
-| sorry | **2** |
-| Status | FORMAL-PARTIAL |
+| Theorems | 7 |
+| sorry | **0** |
+| Status | FORMAL-COMPLETE |
 
 Key definitions: `Coalition`, `TUGame`, `Superadditive`, `Convex`, `marginalContribution`,
 `unanimityGame`, `majorityGame`, `Allocation`, `Core`, `CoreEmpty`, `Balanced`.
 
-sorry locations (post-2026-05-12 BG iter 3 annotations):
-- Line 234: `bondareva_shapley_backward` — **WIP_HARD** (reclassified from HONEST_UNPROVABLE).
-  Farkas' lemma IS available (ProperCone.hyperplane_separation, Dillies/Yang 2025).
-  LP strong duality NOT needed — proof uses theorem of alternatives from Farkas.
-  See `BONDAREVA_SHAPLEY_HARDNESS.md` for strategy (~150-200 lines infrastructure).
-
-- Line 262: `convex_core_nonempty` — WIP_HARD (~1-2 weeks Mathlib infrastructure).
+Previously-proved theorems (sorry resolved):
+- `bondareva_shapley_backward` (PR #1020, po-2026, 2026-05-13)
+- `convex_core_nonempty` (PR #981, Route A marginal vectors)
 
 ### CooperativeGames/Shapley.lean — SHAPLEY VALUE
 
 | Metric | Value |
 |--------|-------|
-| Definitions | 17 |
-| Theorems | 7 |
-| sorry | **1** |
-| Status | FORMAL-PARTIAL |
+| Definitions | 23 |
+| Theorems | 12 |
+| sorry | **0** |
+| Status | FORMAL-COMPLETE |
 
 Key definitions: `Solution`, `Efficiency`, `Symmetry`, `NullPlayerAxiom`, `Additivity`,
 `shapleyCoef`, `shapleyValue`, `shapleySolution`, `WeightedVotingGame`, `Critical`,
@@ -55,10 +51,7 @@ Previously-proved theorems (sorry resolved):
 - `shapley_symmetric` (PR earlier in 2026-04)
 - `shapleyCoef_top` (PR #757)
 - `bondareva_shapley_forward` (PR #802)
-
-sorry locations:
-- Line 566: `shapley_uniqueness` — WIP_HARD (Mobius decomposition into unanimity games;
-  DEMO 6/8 in `prover/config.py` target this).
+- `shapley_uniqueness` (PR #1024, commit `1eb5a4a0`, 2026-05-13 — Mobius decomposition)
 
 ## Theorem Inventory
 
@@ -69,39 +62,35 @@ sorry locations:
 | `superadditive_empty_nonneg` | Basic.lean | v(empty) >= 0 (trivial) |
 | `superadditive_grand_coalition_nonneg_of_nonneg_singletons` | Basic.lean | Grand coalition value nonneg |
 | `bondareva_shapley_forward` | Basic.lean | Core nonempty implies balanced |
+| `bondareva_shapley_backward` | Basic.lean | Balanced implies Core nonempty (PR #1020) |
+| `convex_core_nonempty` | Basic.lean | Convex games have nonempty Core (PR #981) |
 | `shapley_efficient` | Shapley.lean | Shapley value is efficient |
 | `shapley_additive` | Shapley.lean | Shapley value is additive |
 | `shapley_null_player` | Shapley.lean | Shapley value = 0 for null players |
 | `shapley_unanimity` | Shapley.lean | Shapley value on unanimity games |
 | `shapley_symmetric` | Shapley.lean | Shapley value treats symmetric players equally |
 | `shapleyCoef_top` | Shapley.lean | Shapley coefficient for full coalition |
+| `shapley_uniqueness` | Shapley.lean | Shapley value is unique solution satisfying axioms (PR #1024) |
 | `dummy_shapley_zero` | Shapley.lean | Dummy players get zero Shapley value |
 
 ### Partially Proved (contains sorry)
 
-| Theorem | File | Line | Category | sorry | Statement |
-|---------|------|------|----------|-------|-----------|
-| `bondareva_shapley_backward` | Basic.lean | 234 | WIP_HARD | 1 | Balanced implies Core nonempty (Farkas-based strategy in BONDAREVA_SHAPLEY_HARDNESS.md) |
-| `convex_core_nonempty` | Basic.lean | 262 | WIP_HARD | 1 | Convex games have nonempty Core |
-| `shapley_uniqueness` | Shapley.lean | 566 | WIP_HARD | 1 | Shapley value is unique solution satisfying axioms |
+None — all theorems fully certified.
 
 ## Certification Level
 
 | File | Level |
 |------|-------|
-| Basic.lean | PARTIAL (2 sorry — 1 HONEST + 1 WIP) |
-| Shapley.lean | PARTIAL (1 sorry — WIP, Shapley uniqueness via Mobius) |
+| Basic.lean | COMPLETE (0 sorry) |
+| Shapley.lean | COMPLETE (0 sorry) |
 
-**Project certification: PARTIAL** — 3 sorry remaining, all WIP_HARD (0 HONEST_UNPROVABLE after reclassification).
+**Project certification: COMPLETE** — 0 sorry remaining in cooperative_games_lean module.
 
 ## Remaining Work
 
-| Priority | Task | sorry | Category |
-|----------|------|-------|----------|
-| HIGH | Complete `shapley_uniqueness` proof | 1 | WIP_HARD (DEMO 6/8) |
-| MEDIUM | Complete `convex_core_nonempty` proof | 1 | WIP_HARD (Route A: marginal vectors) |
-| MEDIUM | `bondareva_shapley_backward` | 1 | WIP_HARD (Farkas available, ~150-200 lines prep) |
-| LOW | Upgrade toolchain to v4.29.1 | 0 | (follow social_choice_lean) |
+No sorry work remaining in this module. Possible extensions:
+- Banzhaf power index theorems (definitions `BanzhafRaw`/`Critical` exist, no theorems yet)
+- Shapley value computational properties
 
 ## References
 
@@ -119,5 +108,8 @@ sorry locations:
 | 2026-04-30 | `shapleyCoef_top` proved | PR #757 |
 | 2026-04-30 | `shapley_unanimity` 2->1 sorry | PR #791 |
 | 2026-05-01 | `bondareva_shapley_forward` proved | PR #802 |
-| 2026-05-12 | BG iter 3: HONEST_UNPROVABLE annotation Basic.lean L234 (LP duality missing); FORMAL_STATUS realigned (7->3 sorry: stale doc) | (this PR) |
-| 2026-05-12 | Reclassified bondareva_shapley_backward: HONEST_UNPROVABLE -> WIP_HARD (Farkas available in Mathlib 2025); added BONDAREVA_SHAPLEY_HARDNESS.md | Cycle 28 Track A |
+| 2026-05-12 | BG iter 3: HONEST_UNPROVABLE annotation Basic.lean L234; FORMAL_STATUS realigned (7->3 sorry) | (this PR) |
+| 2026-05-12 | Reclassified bondareva_shapley_backward: HONEST_UNPROVABLE -> WIP_HARD | Cycle 28 Track A |
+| 2026-05-13 | Toolchain bump to v4.30.0-rc2; `bondareva_shapley_backward` proved; `convex_core_nonempty` proved | PR #1015, #1020, #981 |
+| 2026-05-13 | `shapley_uniqueness` proved (Mobius decomposition) — 0 sorry Shapley.lean | PR #1024, commit `1eb5a4a0` |
+| 2026-05-14 | FORMAL_STATUS realigned: 3->0 sorry, module COMPLETE | po-2026 T-A |
