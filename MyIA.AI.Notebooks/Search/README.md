@@ -4,7 +4,7 @@
 series: Search
 pedagogical_count: 45
 breakdown: Applications=20, Part1-Foundations=11, Part2-CSP=9, =5
-maturity: ALPHA=26, BETA=10, DRAFT=7, PRODUCTION=2
+maturity: ALPHA=23, BETA=13, DRAFT=7, PRODUCTION=2
 -->
 
 Cette serie explore les algorithmes de recherche et d'optimisation, de la formalisation des espaces d'etats a la programmation par contraintes, en passant par les metaheuristiques. Elle combine **fondements theoriques** et **applications du monde reel** adaptees de projets etudiants EPITA, EPF et ECE.

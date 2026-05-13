@@ -4,7 +4,7 @@
 series: CaseStudies
 pedagogical_count: 4
 breakdown: Diagnostic-Medical=2, Oncology-Planning=2
-maturity: DRAFT=2, ALPHA=1, PRODUCTION=1
+maturity: DRAFT=2, BETA=1, PRODUCTION=1
 -->
 
 Etudes de cas interdisciplinaires combinant plusieurs domaines de l'IA dans des projets appliques.
