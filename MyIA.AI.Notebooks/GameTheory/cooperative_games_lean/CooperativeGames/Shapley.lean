@@ -549,13 +549,61 @@ def SmulGame (c : ℝ) (G : TUGame N) : TUGame N where
   v := fun S => c * G.v S
   empty_zero := by simp [G.empty_zero]
 
-/-- Recursive finite sum of games from a list -/
-def sumGames {α : Type*} (l : List α) (f : α → TUGame N) : TUGame N :=
-  match l with
-  | [] => ⟨fun _ => 0, rfl⟩
-  | a :: as => AddGames (f a) (sumGames as f)
+/-- The zero TU game -/
+def zeroGame : TUGame N where
+  v := fun _ => 0
+  empty_zero := rfl
+
+/-- phi of the zero game is 0 (every player is null) -/
+theorem phi_zero_game (φ : Solution N) (h_null : φ.NullPlayerAxiom) (i : N) :
+    φ zeroGame i = 0 :=
+  h_null zeroGame i (fun S _ => rfl)
+
+/-- Sum of games indexed by a finset -/
+noncomputable def finsetSumGames {ι : Type*} (s : Finset ι) (f : ι → TUGame N) : TUGame N where
+  v := fun S => ∑ j ∈ s, (f j).v S
+  empty_zero := Finset.sum_eq_zero (fun j _ => (f j).empty_zero)
+
+/-- Inserting into finsetSumGames gives AddGames -/
+theorem finsetSumGames_insert {ι : Type*} [DecidableEq ι] {j : ι} {s : Finset ι}
+    (f : ι → TUGame N) (hjs : j ∉ s) :
+    finsetSumGames (insert j s) f = AddGames (finsetSumGames s f) (f j) := by
+  ext S
+  simp only [finsetSumGames, AddGames, Finset.sum_insert hjs]
+  ring
 
 end Solution
+
+/-! ## Finite Additivity for Shapley Value -/
+
+namespace ShapleyValue
+
+/-- shapleyValue is homogeneous: shapleyValue (SmulGame c G) i = c * shapleyValue G i -/
+theorem shapley_smulGame (c : ℝ) (G : TUGame N) (i : N) :
+    shapleyValue (Solution.SmulGame c G) i = c * shapleyValue G i := by
+  have hSmul : (Solution.SmulGame c G).v = fun S => c * G.v S := rfl
+  unfold shapleyValue TUGame.marginalContribution
+  rw [hSmul]
+  have hLHS : (fun S => shapleyCoef (Fintype.card N) S.card *
+        (c * G.v (S ∪ {i}) - c * G.v S)) =
+      (fun S => c * (shapleyCoef (Fintype.card N) S.card *
+        (G.v (S ∪ {i}) - G.v S))) := by
+    funext S; ring
+  simp only [hLHS]
+  rw [Finset.mul_sum]
+
+/-- Shapley value is additive -/
+theorem shapley_addGames (G H : TUGame N) (i : N) :
+    shapleyValue (Solution.AddGames G H) i = shapleyValue G i + shapleyValue H i := by
+  unfold shapleyValue TUGame.marginalContribution
+  simp only [Solution.AddGames]
+  have h_key (S : Finset N) :
+      shapleyCoef (Fintype.card N) S.card * (G.v (S ∪ {i}) + H.v (S ∪ {i}) - (G.v S + H.v S))
+      = shapleyCoef (Fintype.card N) S.card * (G.v (S ∪ {i}) - G.v S)
+        + shapleyCoef (Fintype.card N) S.card * (H.v (S ∪ {i}) - H.v S) := by ring
+  rw [Finset.sum_congr rfl (fun S _ => h_key S), Finset.sum_add_distrib]
+
+end ShapleyValue
 
 /-! ## Mobius Inversion (Harsanyi Dividends) -/
 
@@ -777,6 +825,149 @@ private theorem phi_eq_shapley (φ : Solution N)
   rw [phi_unanimity φ h_eff h_sym h_null T hT i,
       ShapleyValue.shapley_unanimity T hT i]
 
+/-- Symmetry of players in T within SmulGame c u_T -/
+private theorem sym_in_smulUnanimity (φ : Solution N)
+    (h_sym : φ.Symmetry)
+    (c : ℝ) (T : Finset N) (hT : T.Nonempty) (i j : N) (hiT : i ∈ T) (hjT : j ∈ T) (hij : i ≠ j) :
+    φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) i =
+    φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) j := by
+  apply h_sym
+  intro S hiS hjS
+  simp only [Solution.SmulGame, TUGame.unanimityGame]
+  have hni : ¬(T ⊆ S ∪ {i}) := by
+    intro h; have := h hjT
+    simp only [Finset.mem_union, Finset.mem_singleton] at this; tauto
+  have hnj : ¬(T ⊆ S ∪ {j}) := by
+    intro h; have := h hiT
+    simp only [Finset.mem_union, Finset.mem_singleton] at this; tauto
+  rw [if_neg hni, if_neg hnj]
+
+/-- Null players outside T in SmulGame c u_T -/
+private theorem null_outside_smulUnanimity (φ : Solution N)
+    (h_null : φ.NullPlayerAxiom)
+    (c : ℝ) (T : Finset N) (hT : T.Nonempty) (k : N) (hkT : k ∉ T) :
+    φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) k = 0 :=
+  h_null (Solution.SmulGame c (TUGame.unanimityGame T hT)) k
+    (fun S _ => by
+      simp only [Solution.SmulGame, TUGame.unanimityGame]
+      have hto : T ⊆ S ∪ {k} → T ⊆ S := fun h m hm => by
+        obtain hms | hmk := Finset.mem_union.mp (h hm)
+        · exact hms
+        · exact absurd (Finset.mem_singleton.mp hmk) (fun heq => hkT (heq ▸ hm))
+      split_ifs <;> try rfl
+      · exfalso; exact ‹¬T ⊆ S› (hto ‹T ⊆ S ∪ {k}›)
+      · exfalso; exact ‹¬T ⊆ S ∪ {k}› (fun m hm => Finset.mem_union_left {k} (‹T ⊆ S› hm)))
+
+/-- φ on a weighted unanimity game: φ(SmulGame c u_T, i) = c * φ(u_T, i).
+    Proved directly from the axioms without general scalar multiplication. -/
+private theorem phi_weightedUnanimity (φ : Solution N)
+    (h_eff : φ.Efficiency)
+    (h_sym : φ.Symmetry)
+    (h_null : φ.NullPlayerAxiom)
+    (c : ℝ) (T : Finset N) (hT : T.Nonempty) (i : N) :
+    φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) i = c * φ (TUGame.unanimityGame T hT) i := by
+  classical
+  rw [phi_unanimity φ h_eff h_sym h_null T hT i]
+  split_ifs with hiT
+  -- Case i ∈ T
+  · -- Efficiency: Σ_j φ(H, j) = H.v(univ) = c
+    have h_eff_T : ∑ j : N, φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) j = c := by
+      have h_val : (Solution.SmulGame c (TUGame.unanimityGame T hT)).v Finset.univ = c := by
+        simp [Solution.SmulGame, TUGame.unanimityGame]
+      exact (h_eff (Solution.SmulGame c (TUGame.unanimityGame T hT))).trans h_val
+    -- Players outside T contribute 0
+    have h_null_out : ∀ j, j ∉ T →
+        φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) j = 0 :=
+      fun j hj => null_outside_smulUnanimity φ h_null c T hT j hj
+    -- Sum over T complement = 0
+    have h_out_sum : ∑ j ∈ Tᶜ, φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) j = 0 :=
+      Finset.sum_eq_zero (fun j hj => by
+        simp only [Finset.mem_compl] at hj
+        exact h_null_out j hj)
+    -- ∑_{j∈T} φ(j) = c
+    have h_sum_T : ∑ j ∈ T, φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) j = c := by
+      have h_split := Finset.sum_add_sum_compl T
+          (fun j => φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) j)
+      linarith
+    -- All players in T get the same value
+    have h_eq : ∀ j ∈ T,
+        φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) j =
+        φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) i := by
+      intro j hjT
+      by_cases hij : j = i; · subst hij; rfl
+      exact (sym_in_smulUnanimity φ h_sym c T hT i j hiT hjT (Ne.symm hij)).symm
+    -- T.card * φ(H, i) = c
+    have h_card : (T.card : ℝ) * φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) i = c := by
+      have : ∑ _ ∈ T, φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) i =
+          (T.card : ℝ) * φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) i := by
+        rw [Finset.sum_const, nsmul_eq_mul]
+      rw [← this]
+      exact (Finset.sum_congr rfl (fun j hj => (h_eq j hj).symm)).trans h_sum_T
+    have hT0 : (T.card : ℝ) ≠ 0 := by
+      have hcp : 0 < T.card := Finset.Nonempty.card_pos hT
+      norm_cast; omega
+    field_simp; linarith
+  -- Case i ∉ T
+  · rw [null_outside_smulUnanimity φ h_null c T hT i hiT]; ring
+
+/-- Any axiom-satisfying φ agrees with shapleyValue on SmulGame c u_T -/
+private theorem phi_eq_shapley_weighted (φ : Solution N)
+    (h_eff : φ.Efficiency) (h_sym : φ.Symmetry)
+    (h_null : φ.NullPlayerAxiom)
+    (c : ℝ) (T : Finset N) (hT : T.Nonempty) (i : N) :
+    φ (Solution.SmulGame c (TUGame.unanimityGame T hT)) i =
+    shapleyValue (Solution.SmulGame c (TUGame.unanimityGame T hT)) i := by
+  rw [phi_weightedUnanimity φ h_eff h_sym h_null c T hT i,
+      ShapleyValue.shapley_smulGame c (TUGame.unanimityGame T hT) i,
+      phi_eq_shapley φ h_eff h_sym h_null T hT i]
+
+/-- φ distributes over finite sums (from binary Additivity by induction) -/
+private theorem phi_finsetSumGames (φ : Solution N)
+    (h_null : φ.NullPlayerAxiom) (h_add : φ.Additivity)
+    {ι : Type*} [DecidableEq ι] (s : Finset ι) (f : ι → TUGame N) (i : N) :
+    φ (Solution.finsetSumGames s f) i = ∑ j ∈ s, φ (f j) i := by
+  induction s using Finset.induction with
+  | empty =>
+    have h : Solution.finsetSumGames (∅ : Finset ι) f = Solution.zeroGame := by
+      ext S; simp [Solution.finsetSumGames, Solution.zeroGame]
+    simp [h, Solution.phi_zero_game φ h_null i]
+  | insert j s hjs ih =>
+    rw [Solution.finsetSumGames_insert f hjs, h_add, ih, Finset.sum_insert hjs]; ring
+
+/-- Shapley value distributes over finite sums -/
+private theorem shapley_finsetSumGames {ι : Type*} [DecidableEq ι]
+    (s : Finset ι) (f : ι → TUGame N) (i : N) :
+    shapleyValue (Solution.finsetSumGames s f) i = ∑ j ∈ s, shapleyValue (f j) i := by
+  induction s using Finset.induction with
+  | empty =>
+    have h : Solution.finsetSumGames (∅ : Finset ι) f = Solution.zeroGame := by
+      ext S; simp [Solution.finsetSumGames, Solution.zeroGame]
+    rw [h]
+    exact ShapleyValue.shapley_null_player Solution.zeroGame i (fun S _ => rfl)
+  | insert j s hjs ih =>
+    rw [Solution.finsetSumGames_insert f hjs, ShapleyValue.shapley_addGames, ih,
+      Finset.sum_insert hjs]; ring
+
+/-- The game G equals the finsetSumGames of its Mobius decomposition terms.
+    G = ∑_{T≠∅} SmulGame (mobiusCoeff G T) (unanimityGame T)
+    Proof: G.v S = ∑_{T≠∅,T⊆S} a_T  (mobius_decomposition_axiom)
+         = ∑_{T≠∅} a_T*(if T⊆S then 1 else 0)  (reindex via filter_filter + sum_filter)
+         = ∑_{T≠∅} SmulGame a_T u_T .v S  (def SmulGame + unanimityGame) -/
+private theorem game_eq_mobius_sum (G : TUGame N) :
+    G = Solution.finsetSumGames
+      (Finset.univ.filter Finset.Nonempty)
+      (fun T => if hT : T.Nonempty then
+        Solution.SmulGame (Mobius.mobiusCoeff G T) (TUGame.unanimityGame T hT)
+      else Solution.zeroGame) := by
+  ext S
+  simp only [Solution.finsetSumGames]
+  classical
+  rw [Mobius.mobius_decomposition_axiom G S]
+  sorry
+
+/-- Shapley value uniqueness: any axiom-satisfying solution equals the Shapley value.
+    Strategy: decompose G = ∑_{T≠∅} a_T · u_T via Mobius, then both φ and shapleyValue
+    distribute over the sum and agree on each term by phi_eq_shapley_weighted. -/
 theorem shapley_uniqueness (φ : Solution N)
     (h_eff : φ.Efficiency)
     (h_sym : φ.Symmetry)
@@ -784,19 +975,18 @@ theorem shapley_uniqueness (φ : Solution N)
     (h_add : φ.Additivity) :
     ∀ G : TUGame N, ∀ i : N, φ G i = shapleyValue G i := by
   intro G i
-  -- G = mobiusReconstruction G by extensionality
-  have hG : G = Mobius.mobiusReconstruction G := by
-    ext S; exact Mobius.mobius_decomposition G S
-  rw [hG]
-  -- Both sides only depend on v (the characteristic function).
-  -- Since mobiusReconstruction G has the same v as G, both φ and
-  -- shapleyValue give the same result. But we need to prove this
-  -- without assuming extensionality for arbitrary solutions.
-  -- Key insight: φ is determined by its action on v, and both φ and
-  -- shapleyValue satisfy additivity. The Mobius decomposition expresses
-  -- G as a sum of weighted unanimity games, and by additivity + agreement
-  -- on unanimity games (phi_eq_shapley), both solutions agree on G.
-  sorry
+  classical
+  let idx : Finset (Finset N) := Finset.univ.filter Finset.Nonempty
+  let g : Finset N → TUGame N := fun T =>
+    if hT : T.Nonempty then
+      Solution.SmulGame (Mobius.mobiusCoeff G T) (TUGame.unanimityGame T hT)
+    else Solution.zeroGame
+  have hG : G = Solution.finsetSumGames idx g := game_eq_mobius_sum G
+  rw [hG, phi_finsetSumGames φ h_null h_add, shapley_finsetSumGames]
+  refine Finset.sum_congr rfl (fun T hT => ?_)
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and, idx] at hT
+  simp only [g, dif_pos hT]
+  exact phi_eq_shapley_weighted φ h_eff h_sym h_null (Mobius.mobiusCoeff G T) T hT i
 
 /-! ## Voting Games -/
 
