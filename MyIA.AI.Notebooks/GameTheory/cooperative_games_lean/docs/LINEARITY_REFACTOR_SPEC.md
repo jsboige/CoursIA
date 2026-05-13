@@ -1,5 +1,9 @@
 # Linearity Axiom Refactor — Spec for prover BG multi-agent
 
+> **STATUS 2026-05-13 23:18 Paris (post PR #1024 merge `cf31ea49`)** : **OBSOLETE / SUPERSEDED**. `shapley_uniqueness` was proved on `feat/lean-mobius-shapley` (po-2026, commit `1eb5a4a0`) WITHOUT the Linearity refactor — `game_eq_mobius_sum` via `dif_pos + simp` on dependent if-then-else + `finsetSumGames` distribution proved sufficient with the existing binary `Additivity` axiom. Shapley.lean sorry count: 1 → 0. Lake build SUCCESS verified locally ai-01 (v5 full cache nuke + rebuild, 3319 jobs, EXIT=0, `Built CooperativeGames.Shapley (140s)`).
+>
+> The Linearity refactor remains **a valid optional cleanup** (matches Shapley 1953 / Roth 1988 axiomatic form more closely), but is no longer required for `shapley_uniqueness` provability. Keep as future-work spec if axiomatic foundations cleanup becomes a priority.
+
 **Date** : 2026-05-13
 **Author** : ai-01 (research side-track A, post user A.1 decision)
 **Target** : `cooperative_games_lean/CooperativeGames/Shapley.lean`
