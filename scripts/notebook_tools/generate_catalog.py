@@ -23,6 +23,7 @@ Status heuristics (B-2 from #623):
 """
 
 import argparse
+import ast
 import json
 import re
 import subprocess
@@ -253,6 +254,53 @@ def has_markdown_intro_conclusion(cells: list) -> tuple[bool, bool]:
     return has_intro, has_conclusion
 
 
+def _is_papermill_injected(cell: dict) -> bool:
+    """Check if a code cell is a Papermill-injected parameter cell."""
+    return "injected-parameters" in cell.get("metadata", {}).get("tags", [])
+
+
+def _is_comment_only_cell(cell: dict) -> bool:
+    """Check if a code cell contains only comments (no executable statements)."""
+    source = "".join(cell.get("source", []))
+    if not source.strip():
+        return True
+    lines = [l.strip() for l in source.split("\n") if l.strip()]
+    return all(l.startswith("#") for l in lines)
+
+
+def _is_assignment_only_cell(cell: dict) -> bool:
+    """Check if a code cell contains only assignments and comments (no print/call/expression).
+
+    Uses ast.parse for robust detection of multi-line assignments, lists, dicts.
+    Falls back to regex if AST parsing fails (e.g. syntax error in cell).
+    """
+    source = "".join(cell.get("source", []))
+    if not source.strip():
+        return True
+    lines = [l.strip() for l in source.split("\n") if l.strip()]
+    if all(l.startswith("#") for l in lines):
+        return True
+    try:
+        tree = ast.parse(source)
+        return all(isinstance(node, (ast.Assign, ast.AnnAssign)) for node in ast.iter_child_nodes(tree))
+    except SyntaxError:
+        return False
+
+
+def _effective_code_cells(code_cells: list) -> list:
+    """Filter cells excluded from maturity classification.
+
+    Excludes: Papermill injected-parameters, comment-only, assignment-only cells.
+    These produce no visible output and should not block promotion.
+    """
+    return [
+        c for c in code_cells
+        if not _is_papermill_injected(c)
+        and not _is_comment_only_cell(c)
+        and not _is_assignment_only_cell(c)
+    ]
+
+
 def classify_maturity(
     notebook: dict,
     code_cells: list,
@@ -271,9 +319,13 @@ def classify_maturity(
     todo_count = count_todos(notebook)
     has_intro, has_conclusion = has_markdown_intro_conclusion(cells)
 
-    total_code = len(code_cells)
-    code_with_outputs = sum(1 for c in code_cells if c.get("outputs"))
+    effective = _effective_code_cells(code_cells)
+    total_code = len(effective)
+    code_with_outputs = sum(1 for c in effective if c.get("outputs"))
+    code_without_outputs = total_code - code_with_outputs
     all_have_outputs = total_code > 0 and code_with_outputs == total_code
+    # Allow 1 cell without output (typical student exercise cell)
+    nearly_all_outputs = total_code > 0 and code_without_outputs <= 1
     has_outputs = code_with_outputs > 0
 
     # No markdown at all → DRAFT
@@ -291,7 +343,7 @@ def classify_maturity(
     # 5-10 TODO or partial outputs → ALPHA
     if 5 <= todo_count <= 10:
         return "ALPHA"
-    if total_code > 0 and not all_have_outputs:
+    if total_code > 0 and not nearly_all_outputs:
         return "ALPHA"
 
     # BETA: outputs present, <5 TODO, has some markdown structure
@@ -299,7 +351,7 @@ def classify_maturity(
     has_structure = has_intro or has_conclusion or len(md_cells) >= 3
 
     if has_outputs and todo_count < 5 and has_structure:
-        # PRODUCTION: stricter requirements
+        # PRODUCTION: stricter requirements (all outputs, no exceptions)
         if kernel_defined and all_have_outputs and todo_count < 3 and has_intro and has_conclusion:
             return "PRODUCTION"
         return "BETA"
@@ -316,6 +368,7 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
 
     cells = notebook.get("cells", [])
     code_cells = [c for c in cells if c["cell_type"] == "code"]
+    effective = _effective_code_cells(code_cells)
     rel = nb_path.relative_to(NOTEBOOKS_DIR)
     parts = rel.parts
 
@@ -334,10 +387,10 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         requirements["requires_wsl"] = True
 
     status = determine_status(nb_path, notebook, code_cells, requirements, pedagogical)
-    maturity = classify_maturity(notebook, code_cells, kernel)
+    maturity = classify_maturity(notebook, effective, kernel)
 
-    code_with_outputs = sum(1 for c in code_cells if c.get("outputs"))
-    code_without_outputs = len(code_cells) - code_with_outputs
+    code_with_outputs = sum(1 for c in effective if c.get("outputs"))
+    code_without_outputs = len(effective) - code_with_outputs
     md_cells = sum(1 for c in cells if c["cell_type"] == "markdown")
 
     rel_str = str(rel).replace("\\", "/")

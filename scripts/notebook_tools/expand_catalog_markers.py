@@ -237,7 +237,7 @@ def main():
     drift_found = False
 
     for readme_path in targets:
-        content = readme_path.read_text(encoding="utf-8")
+        content = readme_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
         new_content, changes = expand_file(content, entries)
 
         if changes:

@@ -4,7 +4,7 @@
 series: IIT
 pedagogical_count: 1
 breakdown: =1
-maturity: ALPHA=1
+maturity: BETA=1
 -->
 
 Cette serie vous introduit a la Theorie de l'Information Integree (IIT), un cadre mathematique proposant une mesure quantitative de la conscience. A l'aide de PyPhi, la bibliotheque de reference developpee par le laboratoire de Giulio Tononi, vous apprendrez a construire des reseaux causaux, calculer la mesure Phi et explorer la geometrie informationnelle des systemes complexes. L'unique notebook couvre le spectre complet de la theorie, des graphes binaires aux macro-subsystemes.
