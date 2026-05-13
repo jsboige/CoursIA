@@ -206,6 +206,17 @@ class HEAVYModel:
 
         self.theta_ = best_result.x
         self.n_train_ = len(r2)
+
+        # Stationarity warning
+        _, _, _, omega_RV, alpha_RV, beta_RV = self.theta_
+        if alpha_RV + beta_RV >= 0.999:
+            import warnings
+            warnings.warn(
+                f"HEAVY-RV non-stationarity: alpha_RV ({alpha_RV:.4f})"
+                f" + beta_RV ({beta_RV:.4f})"
+                f" = {alpha_RV + beta_RV:.4f} >= 0.999"
+            )
+
         return self
 
     def forecast_rv(self, rv_last: float, horizon: int = 1) -> float:
@@ -220,10 +231,13 @@ class HEAVYModel:
         _, _, _, omega_RV, alpha_RV, beta_RV = self.theta_
         phi = alpha_RV + beta_RV
 
-        if phi >= 0.999:
-            phi = 0.999
-        if phi < 0.001:
-            phi = 0.001
+        if not 0.001 <= phi <= 0.999:
+            import warnings
+            warnings.warn(
+                f"phi={phi:.6f} clipped to [0.001, 0.999] in forecast_rv"
+                " (possible estimation instability)"
+            )
+            phi = max(0.001, min(0.999, phi))
 
         # Unconditional mean
         mu = omega_RV / (1 - phi)
