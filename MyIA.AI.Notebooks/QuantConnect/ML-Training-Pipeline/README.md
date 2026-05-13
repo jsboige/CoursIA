@@ -169,7 +169,7 @@ Systematic comparison of volatility models against HAR Classic Kelly on 7 crypto
 | m12_har_rv_j.py | M12_HAR_RV_J.md | HAR-RV-J (jump-augmented) | 7 | **BEATS** (p=7.9e-7) |
 | m13_ms_har.py | M13_MS_HAR.md | Markov-Switching HAR (Hamilton 1989) | 11 | NO BEATS (39/84, p=0.7774) |
 | m14_heavy.py | M14_HEAVY.md | HEAVY (Shephard & Sheppard 2010) | 6 | NO BEATS (48/84, p=0.1149) |
-| m15_lstm_rv.py | -- | Log-LSTM RV (Hochreiter 1997) | ~17.5K | **In progress** |
+| m15_lstm_rv.py | M15_LSTM_RV.md | Log-LSTM RV (Hochreiter 1997) | ~17.5K / ~4.7K | NO BEATS (45/84, p=0.2928) |
 
 Supporting modules: `har_model.py`, `realized_variance.py`, `intraday_loader.py`, `m11g_fee_aware_kelly.py`, `m11c_sharpe_test.py`. Full roadmap: `docs/M_NEXT_VOL_PROPOSAL.md`.
 
