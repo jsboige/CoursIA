@@ -7,7 +7,33 @@ breakdown: SmartContracts=27, SemanticWeb=18, Lean=13, Planners=13, Tweety=10, A
 maturity: BETA=61, ALPHA=22, DRAFT=4, PRODUCTION=2
 -->
 
-Collection de **90 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
+L'intelligence artificielle n'est pas qu'apprentissage automatique et reseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : representer la connaissance sous forme de propositions, de regles et de structures logiques, puis deriver mechaniquement de nouvelles conclusions. C'est cette tradition — des systemes experts des annees 80 aux assistants de preuve modernes comme Lean 4 — que cette serie explore en profondeur.
+
+Vous y decouvrirez six domaines complementaires. Le **Web Semantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **verification formelle** avec Lean 4 vous apprend a ecrire des preuves mathematiques verifiees par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modelise le debat et la deliberation. La **planification automatique** resout des problemes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. Et l'**analyse argumentative** avec les LLMs ponte l'IA symbolique et l'IA neuronale. Chaque sous-serie est autonome, mais ensemble elles dessinent une vision coherente de l'IA symbolique moderne.
+
+**A qui s'adresse cette serie** : etudiants en IA, ingenieurs logiciel curieux de logique formelle, et chercheurs souhaitant aller au-dela du machine learning. Les notebooks Python (Tweety, Planners, SmartContracts, SemanticWeb Python) ne necessitent que Python 3.10+. Les notebooks .NET C# (SemanticWeb, optimisation) requierent .NET 9.0 + dotnet-interactive. Les notebooks Lean necessitent WSL + elan. Aucun prerequis en logique avancee : chaque serie introduit ses concepts progressivement depuis les fondements.
+
+## Parcours d'apprentissage
+
+### Phase 1 : Logique et argumentation (Tweety, ~7h)
+
+Le parcours commence par Tweety-1-Setup qui configure l'environnement Java/JPype et charge les 35 modules TweetyProject. Les notebooks 2-3 introduisent les logiques formelles (propositionnelle, premier ordre, modale, description) avec des solveurs SAT et des prouveurs de theoremes. Les notebooks 4-7 couvrent la revision de croyances (postulats AGM), l'argumentation abstraite (semantiques de Dung), l'argumentation structuree (ASPIC+, ABA, ASP avec Clingo), et les extensions (bipolaire, probabiliste). Les notebooks 8-9 appliquent ces theories aux dialogues d'agents et aux preferences collectives. A l'issue de cette phase, vous maitrisez les formalismes de base du raisonnement symbolique et pouvez implementer des systemes argumentatifs.
+
+### Phase 2 : Representation de connaissances (SemanticWeb, ~13h)
+
+Le Web Semantique generalise les concepts logiques de la Phase 1 au web. Les notebooks 1-4 (C# et Python) couvrent RDF (triplets, graphes, serialisation) et SPARQL (requetes, filtres, unions). Les notebooks 5-7 abordent les donnees liees (DBpedia, Wikidata), RDFS (inference), et OWL (ontologies, profils EL/QL/RL). Les notebooks 8-10 introduisent les standards modernes : SHACL (validation), JSON-LD (SEO), RDF-Star (metadonnees sur metadonnees). Les notebooks 11-12 ferment la boucle avec les graphes de connaissances et GraphRAG (extraction d'entites par LLM). Cette phase presuppose les bases logiques de la Phase 1 mais peut etre suivie independamment.
+
+### Phase 3 : Verification formelle (Lean, ~10h)
+
+La serie Lean 4 passe de la theorie a la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dependants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'etat de l'art 2024-2026 : Mathlib4, integration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la verification formelle au machine learning (certificats de robustesse pour reseaux de neurones). Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathematiques avances) mais aussi la plus innovante.
+
+### Phase 4 : Applications (Planners + SmartContracts, ~30h)
+
+Deux series applicatives independantes exploitent les formalismes des phases precedentes. La **planification automatique** (13 notebooks) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'integration LLM pour la generation de plans. Les **smart contracts** (27 notebooks) constituent la plus longue sous-serie : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidites), DAO, verification formelle (Foundry fuzz/invariants), cryptographie avancee (ZK proofs, chiffrement homomorphe, vote verifiable), ecosystemes alternatifs (Move, Solana, Bitcoin, Vyper), et deploiement mainnet. Chaque serie est autonome mais enrichie par les phases 1-3.
+
+### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
+
+Si vous vous interessez au croisement IA symbolique / IA neuronale, la serie Argument Analysis (5 notebooks) implemente un pipeline multi-agents avec Semantic Kernel : detection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une demo concrete du pont entre les deux paradigmes, presupposant les bases de Tweety (Phase 1) et un acces API OpenAI.
 
 ## Vue d'ensemble
 
