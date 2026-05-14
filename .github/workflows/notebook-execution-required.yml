@@ -56,7 +56,9 @@ jobs:
             || true)
 
           COUNT=$(echo "$NOTEBOOKS" | grep -c '\.ipynb$' || echo "0")
-          echo "notebooks=$NOTEBOOKS" >> "$GITHUB_OUTPUT"
+          echo "notebooks<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTEBOOKS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
           echo "has_notebooks=$COUNT" >> "$GITHUB_OUTPUT"
           echo "Detected $COUNT notebook(s) changed"
 
