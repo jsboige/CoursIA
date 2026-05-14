@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-14 10:28
+Generated: 2026-05-14 18:24
 Total notebooks: 467
 
 ## Status Summary
@@ -12,15 +12,15 @@ Total notebooks: 467
 
 ## Maturity Summary
 
-- **PRODUCTION**: 142
+- **PRODUCTION**: 143
 - **BETA**: 225
 - **TEMPLATE**: 4
-- **ALPHA**: 64
+- **ALPHA**: 63
 - **DRAFT**: 32
 
 ## By Series
 
-### GenAI (100 notebooks) — BROKEN:3, DEMO:69, READY:28 | ALPHA:6, BETA:48, DRAFT:13, PRODUCTION:30, TEMPLATE:3
+### GenAI (100 notebooks) — BROKEN:3, DEMO:69, READY:28 | ALPHA:5, BETA:49, DRAFT:13, PRODUCTION:30, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -92,7 +92,7 @@ Total notebooks: 467
 | 66 | Notebook de conception de Notebook | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
 | 67 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
 | 68 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
-| 69 | 10. Hébergement Local de Modèles Génératifs | base | DEMO | ALPHA | 45min | po-2025 |
+| 69 | 10. Hébergement Local de Modèles Génératifs | base | DEMO | BETA | 45min | po-2025 |
 | 70 | 11. Quantization des LLMs | base | DEMO | BETA | 45min | po-2025 |
 | 71 | 1. Introduction a l'IA generative avec l'API OpenA | base | READY | PRODUCTION | 15min | po-2025 |
 | 72 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | BETA | 45min | po-2025 |
@@ -210,7 +210,7 @@ Total notebooks: 467
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:10, READY:78 | ALPHA:12, BETA:67, DRAFT:3, PRODUCTION:7
+### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:10, READY:78 | ALPHA:12, BETA:66, DRAFT:3, PRODUCTION:8
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -235,7 +235,7 @@ Total notebooks: 467
 | 19 | Description du notebook | Python 3 (WSL) | DEMO | ALPHA | 45min | po-2024 |
 | 20 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 30min | po-2024 |
 | 21 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | ALPHA | 30min | po-2024 |
-| 22 | Planners-0-Setup | Python 3 | READY | BETA | 30min | po-2024 |
+| 22 | Planners-0-Setup | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 23 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | BETA | 15min | po-2024 |
 | 24 | Planners-2-PDDL-Basics | Python 3 | READY | BETA | 30min | po-2024 |
 | 25 | Planners-3-State-Space - Recherche dans l'Espace d | Python 3 | READY | BETA | 45min | po-2024 |
