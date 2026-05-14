@@ -170,4 +170,481 @@ lemma initial : menMatchedProposed prof (gsInitial prof) := by
 
 end menMatchedProposed
 
+/-! ## Consistency Preservation by GS Steps -/
+
+namespace GSConsistent
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- swapMatch preserves consistency when woman w prefers m over mOld.
+    Pattern follows matchFree proof: split_ifs + have for consistency chains. -/
+lemma swapMatch (h : GSConsistent σ.matching) (m mOld w : Fin n)
+    (hm : σ.matching.menMatch m = none)
+    (hw : σ.matching.womenMatch w = some mOld)
+    (hmOld : σ.matching.menMatch mOld = some w) :
+    GSConsistent (σ.matching.swapMatch m mOld w) := by
+  have hne : m ≠ mOld := by intro heq; subst heq; simp_all
+  intro m' w'
+  simp only [GSMatching.swapMatch, Function.update_apply]
+  -- outermost if: m' = mOld (from outer update)
+  -- then inner if: m' = m (from inner update)
+  -- RHS if: w' = w
+  split_ifs with h_mOld h_ww h_m h_nw h_nm
+  · -- m' = mOld, w' = w: both sides False by hne
+    simp_all
+  · -- m' = mOld, w' ≠ w: need μ.womenMatch w' ≠ some mOld
+    have : σ.matching.womenMatch w' ≠ some mOld := by
+      intro heq; have := (h mOld w').mpr heq; simp_all
+    simp_all
+  · -- m' ≠ mOld, m' = m, w' = w: both sides True
+    simp_all
+  · -- m' ≠ mOld, m' = m, w' ≠ w: need μ.womenMatch w' ≠ some m
+    have hnw' : w ≠ w' := ne_comm.mp ‹¬w' = w›
+    have : σ.matching.womenMatch w' ≠ some m := by
+      intro heq; have := (h m w').mpr heq; simp_all
+    simp_all
+  · -- m' ≠ mOld, m' ≠ m, w' = w: need μ.menMatch m' ≠ some w
+    have hnm' : m ≠ m' := ne_comm.mp ‹¬m' = m›
+    have : σ.matching.menMatch m' ≠ some w := by
+      intro heq; have := (h m' w).mp heq; simp_all
+    simp_all
+  · -- m' ≠ mOld, m' ≠ m, w' ≠ w: direct consistency
+    exact h m' w'
+
+/-- gsStepWith preserves matching consistency. -/
+lemma stepWith (h : GSConsistent σ.matching) (m w : Fin n)
+    (hm : σ.matching.menMatch m = none)
+    (_hproposed : ¬ σ.proposed m w) :
+    GSConsistent (gsStepWith prof σ m w).matching := by
+  unfold gsStepWith
+  split
+  · -- womenMatch w = none: matchFree case
+    exact matchFree h m w hm ‹_›
+  · -- womenMatch w = some mOld
+    split
+    · -- woman prefers m over mOld: swapMatch case
+      next mOld hwm hwlt =>
+        have hmOld : σ.matching.menMatch mOld = some w := (h mOld w).mpr hwm
+        exact swapMatch prof h m mOld w hm hwm hmOld
+    · -- woman does NOT prefer m: matching unchanged
+      exact h
+
+/-- gsStep preserves matching consistency. -/
+lemma step (h : GSConsistent σ.matching) (hfree : ∃ m, gsIsFree prof σ m) :
+    GSConsistent (gsStep prof σ).matching := by
+  unfold gsStep
+  rw [dif_pos hfree]
+  let m := Classical.choose hfree
+  have hm : gsIsFree prof σ m := Classical.choose_spec hfree
+  let w := gsChooseMax prof σ m hm.2
+  have hw : ¬ σ.proposed m w := by
+    have := gsChooseMax_mem prof σ m hm.2
+    simp [gsCandidates] at this
+    exact this
+  exact stepWith prof h m w hm.1 hw
+
+/-- gsRunSteps preserves matching consistency. -/
+lemma runSteps (k : Nat) :
+    GSConsistent (gsRunSteps prof k).matching := by
+  induction k with
+  | zero => exact initial
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
+    · exact step prof ih h
+    · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
+        unfold gsStep; simp [h]
+      rw [hid]; exact ih
+
+end GSConsistent
+
+/-! ## Termination: Proposal Count Bound -/
+
+namespace proposedCount
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- A step for a free man increases the proposal count. -/
+lemma step_of_free (σ : GSState prof) (m : Fin n)
+    (hf : gsIsFree prof σ m) :
+    proposedCount prof (gsStep prof σ) = proposedCount prof σ + 1 := by
+  unfold gsStep
+  rw [dif_pos ⟨m, hf⟩]
+  let m' := Classical.choose ⟨m, hf⟩
+  have hm' : gsIsFree prof σ m' := Classical.choose_spec ⟨m, hf⟩
+  let w := gsChooseMax prof σ m' hm'.2
+  have hw : ¬ σ.proposed m' w := by
+    have := gsChooseMax_mem prof σ m' hm'.2
+    simp [gsCandidates] at this
+    exact this
+  exact stepWith prof σ m' w hw
+
+/-- Proposal count never exceeds n² for any state. -/
+lemma le_bound (σ : GSState prof) :
+    proposedCount prof σ ≤ gsProposalBound n := by
+  classical
+  unfold proposedCount proposedSet gsProposalBound
+  calc (Finset.univ.filter fun mw => σ.proposed mw.1 mw.2).card
+      ≤ (Finset.univ : Finset (Fin n × Fin n)).card :=
+        Finset.card_le_card (Finset.filter_subset _ _)
+    _ = n * n := by
+        simp only [Finset.card_univ, Fintype.card_prod, Fintype.card_fin]
+
+/-- Proposal count at step k never exceeds the bound. -/
+lemma runSteps_le_bound (k : Nat) :
+    proposedCount prof (gsRunSteps prof k) ≤ gsProposalBound n :=
+  le_bound prof _
+
+/-- If a free man exists, one more step keeps count at or below bound. -/
+lemma step_preserves_le_bound {_σ : GSState prof}
+    (_h : proposedCount prof _σ ≤ gsProposalBound n) :
+    proposedCount prof (gsStep prof _σ) ≤ gsProposalBound n :=
+    le_bound prof _
+
+/-- If the algorithm hasn't terminated after k steps, count equals k. -/
+lemma runSteps_eq_of_not_terminated (k : Nat)
+    (hterm : ¬ gsTerminated prof (gsRunSteps prof k)) :
+    proposedCount prof (gsRunSteps prof k) = k := by
+  induction k with
+  | zero =>
+    simp only [gsRunSteps]
+    exact initial prof
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    have hnk : ¬ gsTerminated prof (gsRunSteps prof k') := by
+      intro hk_term
+      unfold gsTerminated at hk_term hterm
+      simp only [gsRunSteps] at hterm
+      unfold gsStep at hterm
+      rw [dif_neg hk_term] at hterm
+      exact hterm hk_term
+    have ihk := ih hnk
+    have hf : ∃ m, gsIsFree prof (gsRunSteps prof k') m := not_not.mp hnk
+    rw [step_of_free prof (gsRunSteps prof k') (Classical.choose hf)
+        (Classical.choose_spec hf), ihk]
+
+end proposedCount
+
+/-! ## Step Identity When Terminated -/
+
+/-- If the state is terminated, gsStep is identity. -/
+lemma gsStep_eq_of_terminated (prof : PrefProfile n) (σ : GSState prof)
+    (h : gsTerminated prof σ) :
+    gsStep prof σ = σ := by
+  unfold gsStep gsTerminated at *
+  split
+  · contradiction
+  · rfl
+
+/-- If the state is terminated at step k, all subsequent steps are identity. -/
+lemma gsRunSteps_eq_of_terminated (prof : PrefProfile n) (k j : Nat) (hkj : k ≤ j)
+    (h : gsTerminated prof (gsRunSteps prof k)) :
+    gsRunSteps prof j = gsRunSteps prof k := by
+  induction j generalizing k with
+  | zero =>
+    have : k = 0 := Nat.eq_zero_of_le_zero hkj
+    subst this; rfl
+  | succ j' ih =>
+    simp only [gsRunSteps]
+    cases eq_or_lt_of_le hkj with
+    | inl heq => subst heq; rfl
+    | inr hlt =>
+      rw [ih k (Nat.le_of_lt_succ hlt) h]
+      exact gsStep_eq_of_terminated prof _ h
+
+/-! ## Invariant: Men Proposed Downward (step preservation) -/
+
+namespace menProposedDownward
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- gsStep preserves the menProposedDownward invariant. -/
+lemma step (h : menProposedDownward prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    menProposedDownward prof (gsStep prof σ) := by
+  unfold gsStep
+  rw [dif_pos hfree]
+  let m₀ := Classical.choose hfree
+  have hm₀ : gsIsFree prof σ m₀ := Classical.choose_spec hfree
+  let w₀ := gsChooseMax prof σ m₀ hm₀.2
+  have hw₀ : ¬ σ.proposed m₀ w₀ := by
+    intro h
+    have := gsChooseMax_mem prof σ m₀ hm₀.2
+    simp [gsCandidates] at this
+    exact this h
+  -- Maximality: gsChooseMax is most preferred candidate; no candidate is more preferred
+  have hmax : ∀ w', w' ∈ gsCandidates prof σ m₀ →
+      gsMenPrefLE prof m₀ w₀ w' → w₀ = w' := by
+    intro w' hw'in hle
+    have hmax' := gsChooseMax_maximal prof σ m₀ hm₀.2 w' hw'in
+    cases hle with
+    | inl h => exact h
+    | inr hlt =>
+      cases hmax' with
+      | inl h => exact h.symm
+      | inr hgt => exact absurd hgt (lt_asymm hlt)
+  intro m w w' hprop hlt
+  have goal_from (hab : σ.proposed m w') :
+      (gsStepWith prof σ m₀ w₀).proposed m w' :=
+    (@proposedSet.mem_iff n _ prof (gsStepWith prof σ m₀ w₀) (m, w')).mp
+      (by rw [proposedSet.stepWith_insert prof σ m₀ w₀]
+          simp only [Finset.mem_insert, Prod.mk.injEq, proposedSet.mem_iff]
+          right; exact hab)
+  have hsrc : σ.proposed m w ∨ (m = m₀ ∧ w = w₀) := by
+    have hmem := (@proposedSet.mem_iff n _ prof (gsStepWith prof σ m₀ w₀) (m, w)).mpr hprop
+    rw [proposedSet.stepWith_insert prof σ m₀ w₀] at hmem
+    simp only [Finset.mem_insert, Prod.mk.injEq, proposedSet.mem_iff] at hmem
+    cases hmem with | inl h => right; exact h | inr h => left; exact h
+  rcases hsrc with (hw | ⟨rfl, rfl⟩)
+  · exact goal_from (h m w w' hw hlt)
+  · have hw' : σ.proposed m₀ w' := by
+      by_contra hn
+      have hw'in : w' ∈ gsCandidates prof σ m₀ := by simp [gsCandidates]; exact hn
+      have : w₀ = w' := hmax w' hw'in (Or.inr hlt)
+      subst this; exact lt_irrefl _ hlt
+    exact goal_from hw'
+
+/-- gsRunSteps preserves the menProposedDownward invariant. -/
+lemma runSteps (k : Nat) :
+    menProposedDownward prof (gsRunSteps prof k) := by
+  induction k with
+  | zero =>
+    simp only [gsRunSteps]
+    intro m w w' hw hlt
+    unfold gsInitial GSMatching.initial at hw
+    simp at hw
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
+    · exact step prof ih h
+    · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
+        unfold gsStep; simp [h]
+      rw [hid]; exact ih
+
+end menProposedDownward
+
+/-! ## Invariant: Men Matched Implies Proposed (step preservation) -/
+
+namespace menMatchedProposed
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- gsStepWith preserves menMatchedProposed. -/
+lemma stepWith (h : menMatchedProposed prof σ) (m w : Fin n) :
+    menMatchedProposed prof (gsStepWith prof σ m w) := by
+  intro m' w' hmatch
+  simp only [gsStepWith] at hmatch ⊢
+  split at *
+  · -- none case: matchFree m w
+    dsimp [GSMatching.matchFree] at hmatch ⊢
+    rw [Function.update_apply] at hmatch
+    split_ifs at hmatch
+    · injection hmatch with hw; right; exact ⟨‹m' = m›, hw.symm⟩
+    · left; exact h m' w' hmatch
+  · -- some mOld case
+    rename_i mOld
+    split_ifs at *
+    · -- prefers m: swapMatch m mOld w
+      dsimp [GSMatching.swapMatch] at hmatch ⊢
+      rw [Function.update_apply, Function.update_apply] at hmatch
+      split_ifs at hmatch
+      · injection hmatch with hw; right; exact ⟨‹m' = m›, hw.symm⟩
+      · left; exact h m' w' hmatch
+    · -- doesn't prefer: unchanged
+      dsimp at hmatch ⊢
+      left; exact h m' w' hmatch
+
+/-- gsStep preserves menMatchedProposed. -/
+lemma step (h : menMatchedProposed prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    menMatchedProposed prof (gsStep prof σ) := by
+  unfold gsStep
+  rw [dif_pos hfree]
+  let m := Classical.choose hfree
+  have hm : gsIsFree prof σ m := Classical.choose_spec hfree
+  let w := gsChooseMax prof σ m hm.2
+  exact stepWith prof h m w
+
+/-- gsRunSteps preserves menMatchedProposed. -/
+lemma runSteps (k : Nat) :
+    menMatchedProposed prof (gsRunSteps prof k) := by
+  induction k with
+  | zero =>
+    simp only [gsRunSteps]
+    exact initial prof
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
+    · exact step prof ih h
+    · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
+        unfold gsStep; simp [h]
+      rw [hid]; exact ih
+
+end menMatchedProposed
+
+/-! ## Invariant: Women Proposed Implies Matched -/
+
+/-- If a man has proposed to a woman, she must be matched. -/
+def womenProposedImpliesMatched (prof : PrefProfile n) (σ : GSState prof) : Prop :=
+  ∀ w m, σ.proposed m w → σ.matching.womenMatch w ≠ none
+
+namespace womenProposedImpliesMatched
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+lemma initial : womenProposedImpliesMatched prof (gsInitial prof) := by
+  intro w m hprop; unfold gsInitial at hprop; simp at hprop
+
+lemma stepWith (h : womenProposedImpliesMatched prof σ) (m₀ w₀ : Fin n)
+    (hnew : ¬ σ.proposed m₀ w₀) :
+    womenProposedImpliesMatched prof (gsStepWith prof σ m₀ w₀) := by
+  intro w m' hprop
+  have hmem := (@proposedSet.mem_iff n _ prof (gsStepWith prof σ m₀ w₀) (m', w)).mpr hprop
+  rw [proposedSet.stepWith_insert prof σ m₀ w₀] at hmem
+  simp only [Finset.mem_insert, Prod.mk.injEq] at hmem
+  simp only [gsStepWith]
+  split
+  · dsimp [GSMatching.matchFree]
+    rw [Function.update_apply]
+    by_cases hw : w = w₀
+    · rw [if_pos hw]; simp
+    · rw [if_neg hw]
+      rcases hmem with ⟨⟨rfl, rfl⟩⟩ | hold
+      · exact absurd rfl hw
+      · exact h w m' ((@proposedSet.mem_iff n _ prof σ (m', w)).mp hold)
+  · split
+    · next mOld hmold hpref =>
+      dsimp [GSMatching.swapMatch]
+      rw [Function.update_apply]
+      by_cases hw : w = w₀
+      · rw [if_pos hw]; simp
+      · rw [if_neg hw]
+        rcases hmem with ⟨⟨rfl, rfl⟩⟩ | hold
+        · exact absurd rfl hw
+        · exact h w m' ((@proposedSet.mem_iff n _ prof σ (m', w)).mp hold)
+    · next mOld hmold hpref =>
+      rcases hmem with ⟨⟨rfl, rfl⟩⟩ | hold
+      · simp [hmold]
+      · exact h w m' ((@proposedSet.mem_iff n _ prof σ (m', w)).mp hold)
+
+lemma step (h : womenProposedImpliesMatched prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    womenProposedImpliesMatched prof (gsStep prof σ) := by
+  unfold gsStep; rw [dif_pos hfree]
+  let m := Classical.choose hfree
+  have hm : gsIsFree prof σ m := Classical.choose_spec hfree
+  let w := gsChooseMax prof σ m hm.2
+  have hw : ¬ σ.proposed m w := by
+    have := gsChooseMax_mem prof σ m hm.2; simp [gsCandidates] at this; exact this
+  exact stepWith prof h m w hw
+
+lemma runSteps (k : Nat) :
+    womenProposedImpliesMatched prof (gsRunSteps prof k) := by
+  induction k with
+  | zero => simp only [gsRunSteps]; exact initial prof
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
+    · exact step prof ih h
+    · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
+        unfold gsStep; simp [h]
+      rw [hid]; exact ih
+
+end womenProposedImpliesMatched
+
+/-! ## Invariant: Women Best State (step preservation) -/
+
+/-- If a woman is unmatched and womenProposedImpliesMatched holds,
+    no man has proposed to her yet (contrapositive). -/
+lemma womenUnproposed (prof : PrefProfile n) (σ : GSState prof)
+    (h : womenBestState prof σ)
+    (hwp : womenProposedImpliesMatched prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    ∀ w, σ.matching.womenMatch w = none → ∀ m', ¬σ.proposed m' w := by
+  intro w hw m' hprop
+  exact (hwp w m' hprop) hw
+
+namespace womenBestState
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+/-- gsStep preserves womenBestState. -/
+lemma step (h : womenBestState prof σ)
+    (hwp : womenProposedImpliesMatched prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    womenBestState prof (gsStep prof σ) := by
+  unfold gsStep; rw [dif_pos hfree]
+  set m₀ := Classical.choose hfree
+  have hm₀ : gsIsFree prof σ m₀ := Classical.choose_spec hfree
+  set w₀ := gsChooseMax prof σ m₀ hm₀.2
+  unfold womenBestState
+  intro w m m' hmatch hprop
+  have hsrc : σ.proposed m' w ∨ (m' = m₀ ∧ w = w₀) := by
+    have hmem := (@proposedSet.mem_iff n _ prof (gsStepWith prof σ m₀ w₀) (m', w)).mpr hprop
+    rw [proposedSet.stepWith_insert prof σ m₀ w₀] at hmem
+    simp only [Finset.mem_insert, Prod.mk.injEq, proposedSet.mem_iff] at hmem
+    cases hmem with | inl h => right; exact h | inr h => left; exact h
+  -- Reduce gsStepWith match and split on discriminant
+  change (gsStepWith prof σ m₀ w₀).matching.womenMatch w = some m at hmatch
+  simp only [gsStepWith] at hmatch
+  split at hmatch
+  · -- none case: matchFree
+    dsimp [GSMatching.matchFree] at hmatch
+    rw [Function.update_apply] at hmatch
+    by_cases hw : w = w₀
+    · rw [if_pos hw] at hmatch
+      injection hmatch with hmi; subst hmi
+      rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+      · exfalso
+        have hn := ‹σ.matching.womenMatch w₀ = none›
+        exact womenUnproposed prof σ h hwp hfree w₀ hn m' (hw ▸ hw')
+      · exact le_rfl
+    · rw [if_neg hw] at hmatch
+      rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+      · exact h w m m' hmatch hw'
+      · exfalso; exact hw rfl
+  · -- some mOld case
+    next mOld hmold =>
+    by_cases hpref : prof.womenPref w₀ m₀ < prof.womenPref w₀ mOld
+    · rw [if_pos hpref] at hmatch
+      dsimp [GSMatching.swapMatch] at hmatch
+      rw [Function.update_apply] at hmatch
+      by_cases hw : w = w₀
+      · rw [if_pos hw] at hmatch
+        injection hmatch with hmi; subst hmi
+        rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+        · subst hw
+          have hold := h w₀ mOld m' hmold hw'
+          exact le_trans (le_of_lt hpref) hold
+        · exact le_rfl
+      · rw [if_neg hw] at hmatch
+        rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+        · exact h w m m' hmatch hw'
+        · exfalso; exact hw rfl
+    · rw [if_neg hpref] at hmatch
+      rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+      · by_cases hw : w = w₀
+        · subst hw; exact h w₀ m m' hmatch hw'
+        · exact h w m m' hmatch hw'
+      · rw [hmatch] at hmold
+        injection hmold with heq; subst heq
+        exact by omega
+
+/-- gsRunSteps preserves womenBestState. -/
+lemma runSteps (k : Nat) :
+    womenBestState prof (gsRunSteps prof k) := by
+  induction k with
+  | zero =>
+    simp only [gsRunSteps]
+    exact initial prof
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
+    · exact step prof ih (womenProposedImpliesMatched.runSteps prof k') h
+    · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
+        unfold gsStep; simp [h]
+      rw [hid]; exact ih
+
+end womenBestState
+
 end StableMarriage

@@ -6,13 +6,13 @@
 |------|-------|
 | Lean toolchain | `leanprover/lean4:v4.30.0-rc2` |
 | Mathlib | pinned via lake-manifest.json |
-| Total sorry | **1** (0 Basic + 1 Shapley) |
+| Total sorry | **0** (0 Basic + 0 Shapley) |
 | Honest unprovable (in Mathlib) | **0** |
-| Total lines | ~990 (Basic 387 + Shapley 603) |
-| Total theorems | 10 |
-| Total definitions | 29 |
+| Total lines | ~1430 (Basic 388 + Shapley 1042) |
+| Total theorems | 19 |
+| Total definitions | 35 |
 
-**Note**: Toolchain bumped to v4.30.0-rc2 (PR #1015). Bondareva backward proved (PR #1020).
+**Note**: Toolchain bumped to v4.30.0-rc2 (PR #1015). Bondareva backward + convex_core + shapley_uniqueness all proved.
 
 ## Per-File Status
 
@@ -21,7 +21,7 @@
 | Metric | Value |
 |--------|-------|
 | Definitions | 12 |
-| Theorems | 4 |
+| Theorems | 7 |
 | sorry | **0** |
 | Status | FORMAL-COMPLETE |
 
@@ -36,10 +36,10 @@ Previously-proved theorems (sorry resolved):
 
 | Metric | Value |
 |--------|-------|
-| Definitions | 17 |
-| Theorems | 7 |
-| sorry | **1** |
-| Status | FORMAL-PARTIAL |
+| Definitions | 23 |
+| Theorems | 12 |
+| sorry | **0** |
+| Status | FORMAL-COMPLETE |
 
 Key definitions: `Solution`, `Efficiency`, `Symmetry`, `NullPlayerAxiom`, `Additivity`,
 `shapleyCoef`, `shapleyValue`, `shapleySolution`, `WeightedVotingGame`, `Critical`,
@@ -51,10 +51,7 @@ Previously-proved theorems (sorry resolved):
 - `shapley_symmetric` (PR earlier in 2026-04)
 - `shapleyCoef_top` (PR #757)
 - `bondareva_shapley_forward` (PR #802)
-
-sorry locations:
-- Line 570: `shapley_uniqueness` — WIP_HARD (Mobius decomposition into unanimity games;
-  DEMO 6/8 in `prover/config.py` target this).
+- `shapley_uniqueness` (PR #1024, commit `1eb5a4a0`, 2026-05-13 — Mobius decomposition)
 
 ## Theorem Inventory
 
@@ -73,28 +70,27 @@ sorry locations:
 | `shapley_unanimity` | Shapley.lean | Shapley value on unanimity games |
 | `shapley_symmetric` | Shapley.lean | Shapley value treats symmetric players equally |
 | `shapleyCoef_top` | Shapley.lean | Shapley coefficient for full coalition |
+| `shapley_uniqueness` | Shapley.lean | Shapley value is unique solution satisfying axioms (PR #1024) |
 | `dummy_shapley_zero` | Shapley.lean | Dummy players get zero Shapley value |
 
 ### Partially Proved (contains sorry)
 
-| Theorem | File | Line | Category | sorry | Statement |
-|---------|------|------|----------|-------|-----------|
-| `shapley_uniqueness` | Shapley.lean | 570 | WIP_HARD | 1 | Shapley value is unique solution satisfying axioms |
+None — all theorems fully certified.
 
 ## Certification Level
 
 | File | Level |
 |------|-------|
 | Basic.lean | COMPLETE (0 sorry) |
-| Shapley.lean | PARTIAL (1 sorry — WIP, Shapley uniqueness via Mobius) |
+| Shapley.lean | COMPLETE (0 sorry) |
 
-**Project certification: PARTIAL** — 1 sorry remaining, WIP_HARD (0 HONEST_UNPROVABLE).
+**Project certification: COMPLETE** — 0 sorry remaining in cooperative_games_lean module.
 
 ## Remaining Work
 
-| Priority | Task | sorry | Category |
-|----------|------|-------|----------|
-| HIGH | Complete `shapley_uniqueness` proof | 1 | WIP_HARD (DEMO 6/8) |
+No sorry work remaining in this module. Possible extensions:
+- Banzhaf power index theorems (definitions `BanzhafRaw`/`Critical` exist, no theorems yet)
+- Shapley value computational properties
 
 ## References
 
@@ -112,6 +108,8 @@ sorry locations:
 | 2026-04-30 | `shapleyCoef_top` proved | PR #757 |
 | 2026-04-30 | `shapley_unanimity` 2->1 sorry | PR #791 |
 | 2026-05-01 | `bondareva_shapley_forward` proved | PR #802 |
-| 2026-05-12 | Reclassified bondareva_shapley_backward: HONEST_UNPROVABLE -> WIP_HARD (Farkas available in Mathlib 2025); added BONDAREVA_SHAPLEY_HARDNESS.md | Cycle 28 Track A |
-| 2026-05-13 | Toolchain bump to v4.30.0-rc2; `bondareva_shapley_backward` proved (0 sorry Basic.lean); `convex_core_nonempty` proved | PR #1015, #1020, #981 |
-| 2026-05-13 | FORMAL_STATUS realigned: 3->1 sorry, Basic COMPLETE | po-2025 |
+| 2026-05-12 | BG iter 3: HONEST_UNPROVABLE annotation Basic.lean L234; FORMAL_STATUS realigned (7->3 sorry) | (this PR) |
+| 2026-05-12 | Reclassified bondareva_shapley_backward: HONEST_UNPROVABLE -> WIP_HARD | Cycle 28 Track A |
+| 2026-05-13 | Toolchain bump to v4.30.0-rc2; `bondareva_shapley_backward` proved; `convex_core_nonempty` proved | PR #1015, #1020, #981 |
+| 2026-05-13 | `shapley_uniqueness` proved (Mobius decomposition) — 0 sorry Shapley.lean | PR #1024, commit `1eb5a4a0` |
+| 2026-05-14 | FORMAL_STATUS realigned: 3->0 sorry, module COMPLETE | po-2026 T-A |
