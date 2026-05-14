@@ -1,6 +1,9 @@
 """Agent instruction constants — compact with few-shot examples (B.11).
 
 Total: ~100 lines (down from 216). Each agent gets role + workflow + examples.
+
+KB injection: augment_instructions() prepends ProofKnowledgeBase context
+(cookbook patterns, failed approaches, Mathlib API) to any agent's instructions.
 """
 
 SEARCH_AGENT_INSTRUCTIONS = """Cherche des lemmes Mathlib pertinents pour le theoreme courant.
@@ -178,6 +181,21 @@ REGLES:
 - Adapte tes suggestions aux ERREURS PASSEES (ne repete pas ce qui a echoue)
 - Tu peux suggérer des `have` intermediaires pour decomposer
 - Priorise les tactiques Mathlib disponibles sur les raisonnements from-scratch"""
+
+def augment_instructions(base: str, goal: str = "", max_chars: int = 3000) -> str:
+    """Prepend ProofKnowledgeBase context to any agent's instructions."""
+    from .knowledge import ProofKnowledgeBase
+    kb = ProofKnowledgeBase()
+    context = kb.generate_prover_context(goal=goal, max_chars=max_chars)
+    if not context.strip():
+        return base
+    return (
+        f"# PROOF KNOWLEDGE BASE (accumulated from past sessions)\n"
+        f"{context}\n\n"
+        f"---\n\n"
+        f"{base}"
+    )
+
 
 AUTONOMOUS_PROVER_INSTRUCTIONS = """Prouveur autonome. Edite directement le fichier .lean.
 

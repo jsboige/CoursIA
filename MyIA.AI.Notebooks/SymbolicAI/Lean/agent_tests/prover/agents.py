@@ -12,6 +12,7 @@ from .instructions import (
     CRITIC_AGENT_INSTRUCTIONS,
     COORDINATOR_AGENT_INSTRUCTIONS,
     DIRECTOR_AGENT_INSTRUCTIONS,
+    augment_instructions,
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
 
@@ -37,12 +38,13 @@ def _fast_options() -> ChatOptions:
     return ChatOptions(max_tokens=FAST_MAX_TOKENS)
 
 
-def create_search_agent(tools: SearchTools, provider: str = "local") -> Agent:
+def create_search_agent(tools: SearchTools, provider: str = "local",
+                        goal: str = "") -> Agent:
     """SearchAgent: finds Mathlib lemmas. Uses fast local model."""
     client = create_client(provider, model_key="fast")
     return Agent(
         client=client,
-        instructions=SEARCH_AGENT_INSTRUCTIONS,
+        instructions=augment_instructions(SEARCH_AGENT_INSTRUCTIONS, goal=goal),
         tools=[
             tools.search_mathlib_lemmas,
             tools.lookup_proven_pattern,
@@ -55,12 +57,13 @@ def create_search_agent(tools: SearchTools, provider: str = "local") -> Agent:
     )
 
 
-def create_tactic_agent(tools: TacticTools, provider: str = "zai") -> Agent:
+def create_tactic_agent(tools: TacticTools, provider: str = "zai",
+                        goal: str = "") -> Agent:
     """TacticAgent: generates tactics + decomposition. Uses reasoning model."""
     client = create_client(provider, model_key="reasoning")
     return Agent(
         client=client,
-        instructions=TACTIC_AGENT_INSTRUCTIONS,
+        instructions=augment_instructions(TACTIC_AGENT_INSTRUCTIONS, goal=goal),
         tools=[
             tools.generate_tactics,
             tools.submit_tactic,

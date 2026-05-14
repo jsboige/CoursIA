@@ -27,7 +27,7 @@ from .agents import (
     create_director_agent,
 )
 from .workflow import ProofWorkflowBuilder, ProofMessage
-from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS
+from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS, augment_instructions
 from .config import create_client, HONEST_SORRIES
 from . import attempt_history
 from .knowledge import ProofKnowledgeBase
@@ -185,9 +185,11 @@ class MultiAgentSorryProver:
         critic_tools = CriticTools(state, self.trace)
         coordinator_tools = CoordinatorTools(state, filepath, self.trace)
 
-        # Create 4 specialized agents
-        search_agent = create_search_agent(search_tools, provider=self.local_provider)
-        tactic_agent = create_tactic_agent(tactic_tools, provider=self.provider)
+        # Create 4 specialized agents (with KB context from goal)
+        search_agent = create_search_agent(
+            search_tools, provider=self.local_provider, goal=goal_state or "")
+        tactic_agent = create_tactic_agent(
+            tactic_tools, provider=self.provider, goal=goal_state or "")
         critic_agent = create_critic_agent(critic_tools, provider=self.provider)
         coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.provider)
 
@@ -590,7 +592,9 @@ class AutonomousProver:
 
         agent = Agent(
             client=client,
-            instructions=AUTONOMOUS_PROVER_INSTRUCTIONS,
+            instructions=augment_instructions(
+                AUTONOMOUS_PROVER_INSTRUCTIONS, goal=goal_state or ""
+            ),
             tools=agent_tools,
             name="AutonomousProver",
         )
