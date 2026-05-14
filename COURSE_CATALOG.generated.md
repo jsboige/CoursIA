@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-14 08:44
+Generated: 2026-05-14 08:48
 Total notebooks: 467
 
 ## Status Summary
@@ -12,8 +12,8 @@ Total notebooks: 467
 
 ## Maturity Summary
 
-- **PRODUCTION**: 142
-- **BETA**: 226
+- **PRODUCTION**: 143
+- **BETA**: 225
 - **TEMPLATE**: 4
 - **ALPHA**: 64
 - **DRAFT**: 31
@@ -125,7 +125,7 @@ Total notebooks: 467
 | 99 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 100 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 
-### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:5, BETA:18, DRAFT:7, PRODUCTION:15
+### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:5, BETA:17, DRAFT:7, PRODUCTION:16
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -169,7 +169,7 @@ Total notebooks: 467
 | 38 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | BETA | 45min | po-2025 |
 | 39 | CSP-5-Optimization : Problèmes d'Optimisation Comb | myvenv | READY | PRODUCTION | 45min | po-2025 |
 | 40 | CSP-6-Hybridation : Approches Hybrides Modernes | myvenv | READY | PRODUCTION | 45min | po-2025 |
-| 41 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | DEMO | BETA | 1h | po-2025 |
+| 41 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | DEMO | PRODUCTION | 1h | po-2025 |
 | 42 | CSP-8 : Temporels - Raisonnement sur le Temps | myvenv | DEMO | PRODUCTION | 45min | po-2025 |
 | 43 | CSP-9-Distributed : CSP Distribués (DisCSP) | base | READY | PRODUCTION | 45min | po-2025 |
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | ALPHA | 30min | po-2025 |
