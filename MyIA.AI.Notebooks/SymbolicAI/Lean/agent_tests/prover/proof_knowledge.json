@@ -237,6 +237,34 @@
         ]
       },
       {
+        "name": "bijective_injectivity_for_eq",
+        "category": "equality_reasoning",
+        "when": "need to prove w = Classical.choose ⋯ from Bijective (prof.menPref m) and heq : prof.menPref m w = prof.menPref m (Classical.choose ⋯)",
+        "tactic": "have hbij : Bijective (prof.menPref m) := prof.menPref_bijective m\nhave hinj : (prof.menPref m).Injective := hbij.injective\nexact hinj heq",
+        "examples": [
+          {
+            "lemma": "gsChooseMax_maximal (eq case)",
+            "file": "GSState.lean:158",
+            "tactic_used": "have := prof.menPref_bijective m; exact this.injective heq",
+            "key_insight": "menPref_bijective gives Bijective, .injective gives Injective, then apply to equality hypothesis. For PrefProfile, menPref m is a bijection Fin n → Fin n"
+          }
+        ]
+      },
+      {
+        "name": "finset_maximal_choose_spec_negation",
+        "category": "maximality",
+        "when": "need to show prof.menPref m (Classical.choose ⋯) < prof.menPref m w from maximality of Classical.choose in Finset",
+        "tactic": "obtain ⟨hmem, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)\nhave : ¬ gsMenPrefLE prof m w (Classical.choose ⋯) := hmax w hw\nunfold gsMenPrefLE at this\npush_neg at this\nexact this.resolve_left (fun heq => ...)",
+        "examples": [
+          {
+            "lemma": "gsChooseMax_maximal (gt case)",
+            "file": "GSState.lean:161",
+            "tactic_used": "obtain ⟨hmem, hmax⟩ := Classical.choose_spec ...; have := hmax w hw",
+            "key_insight": "exists_maximal gives ⟨membership, maximality⟩. Maximality says ¬(w ≤ choose), i.e. ¬(w = choose ∨ menPref choose < menPref w). Negation gives w ≠ choose ∧ ¬(menPref choose < menPref w). Combined with hgt (menPref w < menPref choose), contradiction on ¬(menPref choose < menPref w)"
+          }
+        ]
+      },
+      {
         "name": "custom_LE_instance_for_finite",
         "category": "custom_instance",
         "when": "need LE instance on Fin n for gsMenPrefLE or similar custom preorder",
