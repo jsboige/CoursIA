@@ -245,7 +245,7 @@ Kernel: `python3` (WSL) — requires OpenSpiel
 | Variable / Dependency | Type | Source | Notes |
 |-----------------------|------|--------|-------|
 | WSL with Python | KERNEL | System | Required |
-| `open_spiel` | ENV | WSL pip | Built from source |
+| `open_spiel` | ENV | WSL pip | pip install open-spiel (prebuilt wheel 1.6.14, in ~/coursia-venv) |
 | `nashpy` | ENV | pip | Nash equilibria |
 | WSL kernel `Python (GameTheory WSL + OpenSpiel)` | KERNEL | Jupyter | Custom kernelspec |
 
@@ -315,13 +315,16 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | Status | Families | Count |
 |--------|----------|-------|
 | **FULL** | GenAI (Image, Audio, Video, Texte), QuantConnect, Planning, Tweety, Sudoku, ML, Probas, Search, IIT, SemanticWeb | 12 |
-| **PARTIAL** | Lean (WSL kernel), SmartContract (anvil), GameTheory (OpenSpiel) | 3 |
+| **PARTIAL** | Lean (WSL kernel registration), SmartContract (anvil), GameTheory (WSL kernel registration) | 3 |
 | **NO** | — | 0 |
 
 **Verified installed on po-2023**:
 - .NET SDKs: 8.0.319, 8.0.421, **9.0.205, 9.0.314**, 10.0.108
 - dotnet-interactive: 1.0.707101 (Jupyter kernels: `.net-csharp`, `.net-fsharp`, `.net-powershell`)
 - Python packages: ortools, z3-solver, pyphi 1.2.0
+- Conda env `epita_symbolic_ai`: rdflib 7.6.0, owlready2 0.50, reasonable 0.4.1, pyshacl 0.31.0
+- elan 4.2.1 + Lean 4.29.1 (WSL)
+- OpenSpiel 1.6.14 in WSL venv `~/coursia-venv` (132 games, minimax/mcts algorithms verified)
 - WSL: Ubuntu (running)
 
 **Remaining gaps**: WSL kernel registration (GameTheory + Lean), anvil (SmartContract local blockchain).
