@@ -295,28 +295,34 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | GenAI/Audio | python3 | WHISPER, TTS, MUSICGEN, DEMUCS | 6 Docker services UP | `.env` | YES | None |
 | GenAI/Video | python3 | COMFYUI_VIDEO, OPENAI | 1 Docker service UP | `.env` | YES | None |
 | GenAI/Texte | python3 | OPENAI, ANTHROPIC, OPENROUTER, QDRANT | Cloud only | `.env` | YES | None |
-| SymbolicAI/Lean | lean4/WSL | GITHUB_TOKEN | System | — | PARTIAL | elan + WSL kernel install needed |
-| SymbolicAI/SemanticWeb | python3 + .net-csharp | None | pip packages | — | PARTIAL | Conda env + .NET SDK needed |
-| SymbolicAI/SmartContract | python3 + .net-csharp | OPENAI, ANTHROPIC, OPENROUTER | Foundry/Anvil | `GenAI/.env` | PARTIAL | .NET SDK + anvil needed |
-| SymbolicAI/Planning | .net-csharp | None | NuGet | — | NO | .NET SDK + dotnet-interactive |
-| SymbolicAI/Tweety | .net-csharp | None | NuGet | — | NO | .NET SDK + dotnet-interactive |
-| Search | python3 + .net-csharp | None | ortools, z3 | — | PARTIAL | .NET SDK for C# notebooks |
-| Sudoku | .net-csharp | None | NuGet | — | NO | .NET SDK + dotnet-interactive |
-| ML | .net-csharp | OPENAI, ANTHROPIC | NuGet | `GenAI/.env` | NO | .NET SDK + dotnet-interactive |
-| Probas | .net-csharp | None | NuGet | — | NO | .NET SDK + dotnet-interactive |
-| GameTheory | python3 (WSL) | None | open_spiel | — | NO | WSL + OpenSpiel build |
-| IIT | python3 | None | pyphi | — | PARTIAL | pyphi install needed |
+| SymbolicAI/Lean | lean4/WSL | GITHUB_TOKEN | System | — | PARTIAL | elan + WSL Lean kernel needed |
+| SymbolicAI/SemanticWeb | python3 + .net-csharp | None | pip packages | — | PARTIAL | Conda env `epita_symbolic_ai` for rdflib/owlready2 |
+| SymbolicAI/SmartContract | python3 + .net-csharp | OPENAI, ANTHROPIC, OPENROUTER | Foundry/Anvil | `GenAI/.env` | PARTIAL | Anvil needed for local blockchain |
+| SymbolicAI/Planning | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
+| SymbolicAI/Tweety | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
+| Search | python3 + .net-csharp | None | ortools OK, z3 OK | — | YES | None |
+| Sudoku | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
+| ML | .net-csharp | OPENAI, ANTHROPIC | NuGet | `GenAI/.env` | YES | None (.NET 9.0 + kernels installed) |
+| Probas | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
+| GameTheory | python3 (WSL) | None | open_spiel | — | PARTIAL | WSL Ubuntu running, OpenSpiel build needed |
+| IIT | python3 | None | pyphi 1.2.0 | — | YES | None (pyphi installed) |
 | QuantConnect | python3 | QC_API, OPENAI, ANTHROPIC, HF | Cloud | `Config/settings.json` + `.env` | YES | None |
 
-### Summary: po-203 Coverage
+### Summary: po-2023 Coverage (updated 2026-05-14, verified)
 
 | Status | Families | Count |
 |--------|----------|-------|
-| **FULL** | GenAI (Image, Audio, Video, Texte), QuantConnect | 5 |
-| **PARTIAL** | Lean, SemanticWeb, SmartContract, Search, IIT | 5 |
-| **NO** | Planning, Tweety, Sudoku, ML, Probas, GameTheory | 6 |
+| **FULL** | GenAI (Image, Audio, Video, Texte), QuantConnect, Planning, Tweety, Sudoku, ML, Probas, Search, IIT | 11 |
+| **PARTIAL** | Lean (WSL kernel), SemanticWeb (conda env), SmartContract (anvil), GameTheory (OpenSpiel) | 4 |
+| **NO** | — | 0 |
 
-**Primary gap**: .NET SDK 9.0 + `dotnet-interactive` not installed on po-2023. Installing these would unlock 6 families (Planning, Tweety, Sudoku, ML, Probas + partial upgrades for SemanticWeb, SmartContract, Search).
+**Verified installed on po-2023**:
+- .NET SDKs: 8.0.319, 8.0.421, **9.0.205, 9.0.314**, 10.0.108
+- dotnet-interactive: 1.0.707101 (Jupyter kernels: `.net-csharp`, `.net-fsharp`, `.net-powershell`)
+- Python packages: ortools, z3-solver, pyphi 1.2.0
+- WSL: Ubuntu (running)
+
+**Remaining gaps**: Conda env `epita_symbolic_ai` (SemanticWeb Python), OpenSpiel build (GameTheory), elan toolchain (Lean), anvil (SmartContract local blockchain).
 
 ---
 
@@ -324,14 +330,14 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 
 ### Critical Installs for po-2023
 
-| Priority | Install | Families Unlocked | Effort |
-|----------|---------|-------------------|--------|
-| P0 | .NET 9.0 SDK | Sudoku, ML, Probas, Planning, Tweety, Search(C#), SemanticWeb(C#), SmartContract(C#) | ~30 min |
-| P0 | `dotnet-interactive` + Jupyter kernels | Same as above (kernel registration) | ~10 min |
-| P1 | Conda env `epita_symbolic_ai` | SemanticWeb(Python) | ~20 min |
-| P1 | `pyphi` | IIT | ~5 min |
-| P2 | WSL + OpenSpiel | GameTheory | ~60 min (build) |
-| P2 | `elan` (Lean toolchain) | Lean | ~15 min |
+| Priority | Install | Families Unlocked | Effort | Status |
+|----------|---------|-------------------|--------|--------|
+| ~~P0~~ | ~~.NET 9.0 SDK~~ | ~~Sudoku, ML, Probas, Planning, Tweety, Search(C#), SemanticWeb(C#), SmartContract(C#)~~ | ~30 min | DONE (9.0.205 + 9.0.314) |
+| ~~P0~~ | ~~`dotnet-interactive` + Jupyter kernels~~ | ~~Same as above~~ | ~10 min | DONE (1.0.707101) |
+| ~~P1~~ | ~~`pyphi`~~ | ~~IIT~~ | ~5 min | DONE (1.2.0) |
+| P1 | Conda env `epita_symbolic_ai` | SemanticWeb(Python) | ~20 min | TODO |
+| P2 | OpenSpiel in WSL Ubuntu | GameTheory | ~60 min (build) | TODO |
+| P2 | `elan` (Lean toolchain) | Lean | ~15 min | TODO |
 
 ### API Key Distribution
 
@@ -362,10 +368,12 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 
 ## Action Items
 
-- [ ] Install .NET 9.0 SDK on po-2023 (unlocks 6+ families)
-- [ ] Install `dotnet-interactive` + register Jupyter kernels
-- [ ] Create conda env `epita_symbolic_ai` on po-2023
-- [ ] Install `pyphi` for IIT notebooks
+- [x] Install .NET 9.0 SDK on po-2023 (9.0.205 + 9.0.314 already present)
+- [x] Install `dotnet-interactive` + register Jupyter kernels (1.0.707101)
+- [x] Install `pyphi` for IIT notebooks (1.2.0)
+- [ ] Create conda env `epita_symbolic_ai` on po-2023 (SemanticWeb Python)
+- [ ] Build OpenSpiel in WSL Ubuntu (GameTheory)
+- [ ] Install `elan` Lean toolchain (Lean notebooks)
 - [ ] Consolidate API key documentation (which .env for which key)
 - [ ] Add FunASR/Qwen ASR keys to GenAI/.env (or document the split clearly)
 - [ ] Regenerate this document after each infrastructure change
