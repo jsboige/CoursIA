@@ -1,26 +1,26 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-13 20:50
+Generated: 2026-05-14 00:04
 Total notebooks: 467
 
 ## Status Summary
 
-- **READY**: 332
+- **READY**: 333
 - **DEMO**: 117
 - **RESEARCH**: 0
-- **BROKEN**: 18
+- **BROKEN**: 17
 
 ## Maturity Summary
 
 - **PRODUCTION**: 114
-- **BETA**: 200
+- **BETA**: 204
 - **TEMPLATE**: 4
-- **ALPHA**: 117
-- **DRAFT**: 32
+- **ALPHA**: 114
+- **DRAFT**: 31
 
 ## By Series
 
-### GenAI (100 notebooks) — BROKEN:4, DEMO:67, READY:29 | ALPHA:20, BETA:39, DRAFT:13, PRODUCTION:25, TEMPLATE:3
+### GenAI (100 notebooks) — BROKEN:3, DEMO:68, READY:29 | ALPHA:20, BETA:39, DRAFT:13, PRODUCTION:25, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -52,7 +52,7 @@ Total notebooks: 467
 | 26 | Workflow de Composition Musicale | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 27 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 28 | Live Coding Musical pilote par LLM | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 29 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | BROKEN | ALPHA | 30min | po-2025 |
+| 29 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 30 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 31 | Docteur vs ChatGPT: Chatbot médical | base | DEMO | ALPHA | 45min | po-2025 |
 | 32 | Générateur de Recettes PDF | Python 3 | READY | ALPHA | 30min | po-2025 |
@@ -210,7 +210,7 @@ Total notebooks: 467
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:11, READY:77 | ALPHA:22, BETA:61, DRAFT:4, PRODUCTION:2
+### SymbolicAI (89 notebooks) — BROKEN:1, DEMO:10, READY:78 | ALPHA:19, BETA:65, DRAFT:3, PRODUCTION:2
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -268,16 +268,16 @@ Total notebooks: 467
 | 52 | SW-10-JSONLD | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 53 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 54 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
-| 55 | SC-2-Setup-Web3py - Python et la Blockchain | Python (SmartContracts + Found | READY | ALPHA | 30min | po-2024 |
+| 55 | SC-2-Setup-Web3py - Python et la Blockchain | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 56 | SC-3-Solidity-Basics - Fondements de Solidity | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 57 | SC-4-Functions-State - Fonctions et Etat | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 58 | SC-5-Inheritance - Heritage et Interfaces | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 59 | SC-6-Errors-Events - Erreurs et Evenements | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 60 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
-| 61 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python (SmartContracts + Found | DEMO | BETA | 45min | po-2024 |
+| 61 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python (SmartContracts + Found | READY | BETA | 45min | po-2024 |
 | 62 | SC-7-Token-Standards - Standards de Tokens | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
-| 63 | SC-8-DeFi-Primitives - Primitives DeFi | Python (SmartContracts + Found | READY | ALPHA | 15min | po-2024 |
-| 64 | SC-9-DAO-Governance - Gouvernance DAO | Python (SmartContracts + Found | READY | DRAFT | 15min | po-2024 |
+| 63 | SC-8-DeFi-Primitives - Primitives DeFi | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
+| 64 | SC-9-DAO-Governance - Gouvernance DAO | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
 | 65 | SC-12-Foundry-Testing - Tests avec Foundry | Python (SmartContracts + Found | READY | BETA | 45min | po-2024 |
 | 66 | SC-13-Fuzz-Invariants - Fuzz Testing | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
 | 67 | SC-14-Formal-Verification - Verification Formelle | Python (SmartContracts + Found | DEMO | BETA | 30min | po-2024 |
@@ -292,7 +292,7 @@ Total notebooks: 467
 | 76 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
 | 77 | SC-24 : Deploiement sur Testnets | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 78 | SC-25 : Deploiement Mainnet (L2) | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
-| 79 | SC-26 : Projet Final - DApp Complete | Python (SmartContracts + Found | READY | ALPHA | 15min | po-2024 |
+| 79 | SC-26 : Projet Final - DApp Complete | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
 | 80 | Configuration et Installation TweetyProject | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
 | 81 | Logiques de Base - Propositionnelle et Premier Ord | mcp-jupyter-py310 | READY | BETA | 45min | po-2024 |
 | 82 | Logiques Avancées - DL, Modale, QBF, Conditional | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
