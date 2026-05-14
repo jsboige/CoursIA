@@ -253,7 +253,7 @@
 |---------|-----------|-----------|--------|
 | ComfyUI Qwen | Bearer Token | `$2b$12$aR9XPUlx7SVbigaNrXoOAOahPXAmqmiPxImJ8DkD2K3Kfme7KKLA.` | login/PASSWORD file in container |
 | ComfyUI Video | Bearer Token | `$2b$12$I2IOvM7xVaAfaaRgQ7MfreDXU9sImLT7Fr8VpaaAFwk3TKlphQF9u` | login/PASSWORD file in container |
-| Whisper/TTS/Audio APIs | API Key | `BwCaesdZuitLAfs6Nr1KX_CVNhX12XavyZThvpT2RD4c1smVrQ00xfZY2PP2pYgK` | Shared across audio stack |
+| Whisper/TTS/Audio APIs | API Key | `[ROTATED 2026-05-14 - see .env]` | Shared across audio stack |
 | SD Forge Main | HTTP Basic | `admin:changeme` | Gradio auth |
 | SD Forge Turbo | HTTP Basic | `forge:QWvghoUTemZa9M9` | Gradio auth |
 | SDNext | Session Cookie | (not tested) | Gradio session |
