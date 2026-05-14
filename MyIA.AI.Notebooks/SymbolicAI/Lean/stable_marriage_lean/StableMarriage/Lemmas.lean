@@ -482,7 +482,85 @@ lemma runSteps (k : Nat) :
 
 end menMatchedProposed
 
+/-! ## Invariant: Women Proposed Implies Matched -/
+
+/-- If a man has proposed to a woman, she must be matched. -/
+def womenProposedImpliesMatched (prof : PrefProfile n) (σ : GSState prof) : Prop :=
+  ∀ w m, σ.proposed m w → σ.matching.womenMatch w ≠ none
+
+namespace womenProposedImpliesMatched
+
+variable (prof : PrefProfile n) {σ : GSState prof}
+
+lemma initial : womenProposedImpliesMatched prof (gsInitial prof) := by
+  intro w m hprop; unfold gsInitial at hprop; simp at hprop
+
+lemma stepWith (h : womenProposedImpliesMatched prof σ) (m₀ w₀ : Fin n)
+    (hnew : ¬ σ.proposed m₀ w₀) :
+    womenProposedImpliesMatched prof (gsStepWith prof σ m₀ w₀) := by
+  intro w m' hprop
+  have hmem := (@proposedSet.mem_iff n _ prof (gsStepWith prof σ m₀ w₀) (m', w)).mpr hprop
+  rw [proposedSet.stepWith_insert prof σ m₀ w₀] at hmem
+  simp only [Finset.mem_insert, Prod.mk.injEq] at hmem
+  simp only [gsStepWith]
+  split
+  · dsimp [GSMatching.matchFree]
+    rw [Function.update_apply]
+    by_cases hw : w = w₀
+    · rw [if_pos hw]; simp
+    · rw [if_neg hw]
+      rcases hmem with ⟨⟨rfl, rfl⟩⟩ | hold
+      · exact absurd rfl hw
+      · exact h w m' ((@proposedSet.mem_iff n _ prof σ (m', w)).mp hold)
+  · split
+    · next mOld hmold hpref =>
+      dsimp [GSMatching.swapMatch]
+      rw [Function.update_apply]
+      by_cases hw : w = w₀
+      · rw [if_pos hw]; simp
+      · rw [if_neg hw]
+        rcases hmem with ⟨⟨rfl, rfl⟩⟩ | hold
+        · exact absurd rfl hw
+        · exact h w m' ((@proposedSet.mem_iff n _ prof σ (m', w)).mp hold)
+    · next mOld hmold hpref =>
+      rcases hmem with ⟨⟨rfl, rfl⟩⟩ | hold
+      · simp [hmold]
+      · exact h w m' ((@proposedSet.mem_iff n _ prof σ (m', w)).mp hold)
+
+lemma step (h : womenProposedImpliesMatched prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    womenProposedImpliesMatched prof (gsStep prof σ) := by
+  unfold gsStep; rw [dif_pos hfree]
+  let m := Classical.choose hfree
+  have hm : gsIsFree prof σ m := Classical.choose_spec hfree
+  let w := gsChooseMax prof σ m hm.2
+  have hw : ¬ σ.proposed m w := by
+    have := gsChooseMax_mem prof σ m hm.2; simp [gsCandidates] at this; exact this
+  exact stepWith prof h m w hw
+
+lemma runSteps (k : Nat) :
+    womenProposedImpliesMatched prof (gsRunSteps prof k) := by
+  induction k with
+  | zero => simp only [gsRunSteps]; exact initial prof
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
+    · exact step prof ih h
+    · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
+        unfold gsStep; simp [h]
+      rw [hid]; exact ih
+
+end womenProposedImpliesMatched
+
 /-! ## Invariant: Women Best State (step preservation) -/
+
+/-- If a woman is unmatched, no man has proposed to her yet.
+    This holds because gsStepWith always matches w₀ when proposing. -/
+lemma womenUnproposed (prof : PrefProfile n) (σ : GSState prof)
+    (h : womenBestState prof σ)
+    (hfree : ∃ m, gsIsFree prof σ m) :
+    ∀ w, σ.matching.womenMatch w = none → ∀ m', ¬σ.proposed m' w := by
+  sorry
 
 namespace womenBestState
 
@@ -492,7 +570,62 @@ variable (prof : PrefProfile n) {σ : GSState prof}
 lemma step (h : womenBestState prof σ)
     (hfree : ∃ m, gsIsFree prof σ m) :
     womenBestState prof (gsStep prof σ) := by
-  sorry
+  unfold gsStep; rw [dif_pos hfree]
+  set m₀ := Classical.choose hfree
+  have hm₀ : gsIsFree prof σ m₀ := Classical.choose_spec hfree
+  set w₀ := gsChooseMax prof σ m₀ hm₀.2
+  unfold womenBestState
+  intro w m m' hmatch hprop
+  have hsrc : σ.proposed m' w ∨ (m' = m₀ ∧ w = w₀) := by
+    have hmem := (@proposedSet.mem_iff n _ prof (gsStepWith prof σ m₀ w₀) (m', w)).mpr hprop
+    rw [proposedSet.stepWith_insert prof σ m₀ w₀] at hmem
+    simp only [Finset.mem_insert, Prod.mk.injEq, proposedSet.mem_iff] at hmem
+    cases hmem with | inl h => right; exact h | inr h => left; exact h
+  -- Reduce gsStepWith match and split on discriminant
+  change (gsStepWith prof σ m₀ w₀).matching.womenMatch w = some m at hmatch
+  simp only [gsStepWith] at hmatch
+  split at hmatch
+  · -- none case: matchFree
+    dsimp [GSMatching.matchFree] at hmatch
+    rw [Function.update_apply] at hmatch
+    by_cases hw : w = w₀
+    · rw [if_pos hw] at hmatch
+      injection hmatch with hmi; subst hmi
+      rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+      · exfalso
+        have hn := ‹σ.matching.womenMatch w₀ = none›
+        exact womenUnproposed prof σ h hfree w₀ hn m' (hw ▸ hw')
+      · exact le_rfl
+    · rw [if_neg hw] at hmatch
+      rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+      · exact h w m m' hmatch hw'
+      · exfalso; exact hw rfl
+  · -- some mOld case
+    next mOld hmold =>
+    by_cases hpref : prof.womenPref w₀ m₀ < prof.womenPref w₀ mOld
+    · rw [if_pos hpref] at hmatch
+      dsimp [GSMatching.swapMatch] at hmatch
+      rw [Function.update_apply] at hmatch
+      by_cases hw : w = w₀
+      · rw [if_pos hw] at hmatch
+        injection hmatch with hmi; subst hmi
+        rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+        · subst hw
+          have hold := h w₀ mOld m' hmold hw'
+          exact le_trans (le_of_lt hpref) hold
+        · exact le_rfl
+      · rw [if_neg hw] at hmatch
+        rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+        · exact h w m m' hmatch hw'
+        · exfalso; exact hw rfl
+    · rw [if_neg hpref] at hmatch
+      rcases hsrc with (hw' | ⟨rfl, rfl⟩)
+      · by_cases hw : w = w₀
+        · subst hw; exact h w₀ m m' hmatch hw'
+        · exact h w m m' hmatch hw'
+      · rw [hmatch] at hmold
+        injection hmold with heq; subst heq
+        exact by omega
 
 /-- gsRunSteps preserves womenBestState. -/
 lemma runSteps (k : Nat) :
