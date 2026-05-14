@@ -57,7 +57,7 @@ from m11g_fee_aware_kelly import (
 )
 from m12_har_rv_j import daily_jump_component
 
-COINS = ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "ADA-USD", "DOGE-USD"]
+COINS = ["BTC-USD", "ETH-USD", "SOL-USD", "LTC-USD", "XRP-USD", "ADA-USD", "DOT-USD"]
 LOCAL_COINS = ["BTC-USD", "ETH-USD"]
 HORIZONS_DEFAULT = [1, 5, 10]
 SEEDS_DEFAULT = [0, 7, 42, 99]
@@ -187,8 +187,14 @@ def walk_forward_lj_asym(
         "log_rv_neg_d", "log_rv_pos_d", "log_rv_c_d", "log_rv_j_d",
         "log_rv_w", "log_rv_m",
     ]
-    X_all = merged[feature_cols].values
-    y_all = merged["log_rv"].values
+    # Forward h-step target: average log-RV over the next `horizon` days,
+    # consistent with walk_forward_har's target_window. Previously y_all used
+    # the contemporaneous log_rv, making `horizon` a no-op (MSE identical across
+    # h=1/5/10) — the model nowcast instead of forecasting.
+    target_fwd = merged["log_rv"].rolling(horizon).mean().shift(-horizon)
+    valid = target_fwd.notna().values
+    X_all = merged[feature_cols].values[valid]
+    y_all = target_fwd.values[valid]
 
     n = len(X_all)
     fold_size = n // (n_splits + 1)

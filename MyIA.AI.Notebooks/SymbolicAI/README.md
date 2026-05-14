@@ -4,7 +4,7 @@
 series: SymbolicAI
 pedagogical_count: 89
 breakdown: SmartContracts=27, SemanticWeb=18, Lean=13, Planners=13, Tweety=10, Argument_Analysis=6, =2
-maturity: BETA=65, ALPHA=19, DRAFT=3, PRODUCTION=2
+maturity: BETA=67, ALPHA=12, PRODUCTION=7, DRAFT=3
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
