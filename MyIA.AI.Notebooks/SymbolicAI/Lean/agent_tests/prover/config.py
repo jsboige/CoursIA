@@ -98,6 +98,17 @@ import Mathlib.Data.Finset.Basic
 import StableMarriage.Definitions
 """
 
+LEMMAS_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "Lemmas.lean" if STABLE_MARRIAGE_DIR.exists() else None
+LEMMAS_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Fintype.Prod
+import Mathlib.Tactic.Common
+import StableMarriage.Definitions
+import StableMarriage.GSState
+"""
+
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
 # fix. Attacking them wastes compute and produces fake "PROVED" reports. Each
@@ -691,5 +702,195 @@ DEMOS = {
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "very_hard",
+    },
+    18: {
+        "name": "GS_CONSISTENT_SWAP_MATCH",
+        "file": str(LEMMAS_FILE),
+        "line": 180,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "GSConsistent.swapMatch",
+        "theorem": "GSConsistent.swapMatch",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L180 of Lemmas.lean.\n"
+            "Prove GSConsistent.swapMatch: swapping a woman's match preserves\n"
+            "consistency. Woman w was matched to mOld; now matched to m.\n"
+            "Man m was free (menMatch m = none), man mOld now becomes free.\n"
+            "Key: GSMatching.swapMatch updates menMatch m/mOld and womenMatch w.\n"
+            "Case analysis on m'/w' vs m/mOld/w, use consistency hypothesis.\n"
+            "Reference: mmaaz-git stable-marriage-lean Lemmas.lean consistent_swapMatch.\n"
+            "Our system: no `acceptable` filter (total bijections).\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    19: {
+        "name": "GS_CONSISTENT_STEP_WITH",
+        "file": str(LEMMAS_FILE),
+        "line": 188,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "GSConsistent.stepWith",
+        "theorem": "GSConsistent.stepWith",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L188 of Lemmas.lean.\n"
+            "Prove GSConsistent.stepWith: gsStepWith preserves consistency.\n"
+            "Two cases: womanMatch w = none (use matchFree) or\n"
+            "womanMatch w = some mOld (use swapMatch).\n"
+            "Unfold gsStepWith, split on womenMatch w.\n"
+            "For matchFree case: need menMatch m = none and womenMatch w = none.\n"
+            "For swapMatch case: need menMatch m = none, womenMatch w = some mOld,\n"
+            "  and menMatch mOld = some w (from consistency).\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    20: {
+        "name": "GS_STEP_EQ_OF_TERMINATED",
+        "file": str(LEMMAS_FILE),
+        "line": 236,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gsStep_eq_of_terminated",
+        "theorem": "gsStep_eq_of_terminated",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L236 of Lemmas.lean.\n"
+            "Prove gsStep_eq_of_terminated: if no free man exists, gsStep = id.\n"
+            "Unfold gsStep: the if hfree branch is not taken.\n"
+            "Use If.neg (or split + simp) to show the else branch is taken.\n"
+            "gsTerminated means ¬∃ m, gsIsFree, which is exactly the negation.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    21: {
+        "name": "MEN_PROPOSED_DOWNWARD_STEP",
+        "file": str(LEMMAS_FILE),
+        "line": 365,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menProposedDownward.step",
+        "theorem": "menProposedDownward.step",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L365 of Lemmas.lean.\n"
+            "Prove menProposedDownward.step: gsStep preserves the invariant\n"
+            "that men propose in decreasing preference order.\n"
+            "Key: gsChooseMax picks the highest-ranked unproposed woman.\n"
+            "If man m proposed to w, any w' ranked higher was already proposed.\n"
+            "The new proposal adds exactly one pair; others are unchanged.\n"
+            "Reference: mmaaz-git Lemmas.lean menProposedDownwardState.step.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    22: {
+        "name": "MEN_PROPOSED_DOWNWARD_RUNSTEPS",
+        "file": str(LEMMAS_FILE),
+        "line": 370,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menProposedDownward.runSteps",
+        "theorem": "menProposedDownward.runSteps",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L370 of Lemmas.lean.\n"
+            "Prove menProposedDownward.runSteps by induction on k.\n"
+            "Base case: gsInitial has no proposals (trivially true).\n"
+            "Step case: use menProposedDownward.step + induction hypothesis.\n"
+            "If not terminated, gsStep preserves invariant.\n"
+            "If terminated, gsStep is identity.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    23: {
+        "name": "MEN_MATCHED_PROPOSED_STEPWITH",
+        "file": str(LEMMAS_FILE),
+        "line": 383,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menMatchedProposed.stepWith",
+        "theorem": "menMatchedProposed.stepWith",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L383 of Lemmas.lean.\n"
+            "Prove menMatchedProposed.stepWith: gsStepWith preserves the\n"
+            "invariant that matched men have proposed to their partners.\n"
+            "Cases: matchFree (m matched to w, m proposed to w),\n"
+            "swapMatch (m matched to w, m proposed to w, mOld was proposed).\n"
+            "The stepWith always marks m→w as proposed.\n"
+            "Reference: mmaaz-git Lemmas.lean menMatchedProposedState.stepWith.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    24: {
+        "name": "MEN_MATCHED_PROPOSED_STEP",
+        "file": str(LEMMAS_FILE),
+        "line": 389,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menMatchedProposed.step",
+        "theorem": "menMatchedProposed.step",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L389 of Lemmas.lean.\n"
+            "Prove menMatchedProposed.step: gsStep preserves menMatchedProposed.\n"
+            "Unfold gsStep, use stepWith lemma.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    25: {
+        "name": "MEN_MATCHED_PROPOSED_RUNSTEPS",
+        "file": str(LEMMAS_FILE),
+        "line": 394,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menMatchedProposed.runSteps",
+        "theorem": "menMatchedProposed.runSteps",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L394 of Lemmas.lean.\n"
+            "Prove menMatchedProposed.runSteps by induction on k.\n"
+            "Base: gsInitial trivially satisfies (no matches).\n"
+            "Step: use step lemma + by_cases for terminated.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    26: {
+        "name": "WOMEN_BEST_STATE_STEP",
+        "file": str(LEMMAS_FILE),
+        "line": 408,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "womenBestState.step",
+        "theorem": "womenBestState.step",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L408 of Lemmas.lean.\n"
+            "Prove womenBestState.step: gsStep preserves womenBestState.\n"
+            "Each woman's current match is her best proposal so far.\n"
+            "If m proposes to w and w prefers m: w's match becomes m (improved).\n"
+            "If w doesn't prefer m: w's match unchanged (still best).\n"
+            "Key: after proposing, the new proposal is in the proposed set,\n"
+            "so womenBest must be ≤ the new proposal's pref rank.\n"
+            "Reference: mmaaz-git Lemmas.lean womenBestState.step.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    27: {
+        "name": "WOMEN_BEST_STATE_RUNSTEPS",
+        "file": str(LEMMAS_FILE),
+        "line": 413,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "womenBestState.runSteps",
+        "theorem": "womenBestState.runSteps",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L413 of Lemmas.lean.\n"
+            "Prove womenBestState.runSteps by induction on k.\n"
+            "Base: gsInitial trivially satisfies (no matches).\n"
+            "Step: use step lemma + by_cases for terminated.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
     },
 }
