@@ -41,7 +41,6 @@ HORIZONS = [1, 5, 10]
 COINS = ["ADA-USD", "BTC-USD", "DOT-USD", "ETH-USD", "LTC-USD", "SOL-USD", "XRP-USD"]
 TRAIN_SIZE = 250
 REFIT_EVERY = 22
-GAP = 10
 RESULTS_DIR = SCRIPT_DIR.parent / "results"
 
 
@@ -82,31 +81,43 @@ def classify_combo(dm_stat: float, p_value: float) -> str:
 def walk_forward_realized_garch(
     returns: np.ndarray,
     rv: np.ndarray,
+    dates: pd.DatetimeIndex,
     horizon: int = 1,
     train_size: int = 250,
     refit_every: int = 22,
-    gap: int = 10,
     seed: int = 0,
 ) -> dict:
     """Walk-forward expanding window Realized GARCH evaluation.
 
-    Returns forecasts and targets on the log-RV scale for DM testing.
+    The forecast at origin ``i`` uses information through day ``i-1`` and
+    predicts the mean log-RV over ``[i, i+horizon)`` — the *same* target
+    definition as :func:`walk_forward_har`. Errors are returned as a
+    date-indexed Series so the caller can align them with the HAR errors
+    on the common forecast dates before running the Diebold-Mariano test.
+
+    The previous version shifted the target by a spurious ``gap`` of 10
+    days (``log_rv[i+gap:i+gap+horizon]``) while the GARCH forecast itself
+    was an ``horizon``-step forecast — the forecast and the target were
+    mismatched, and the bare numpy errors were later truncated by
+    *position* against the HAR 5-fold errors, so the DM test compared
+    different dates entirely. Both issues are fixed here.
     """
     np.random.seed(seed)
     n = len(returns)
-    if n < train_size + horizon + gap + 30:
-        return {"error": f"insufficient data: {n} < {train_size + horizon + gap + 30}"}
+    if n < train_size + horizon + 30:
+        return {"error": f"insufficient data: {n} < {train_size + horizon + 30}"}
 
     log_rv = np.log(np.clip(rv, 1e-12, None))
 
     preds: list[float] = []
     truths: list[float] = []
+    pred_dates: list[pd.Timestamp] = []
 
     params = None
     h_cache = None
     last_refit_idx = -1
 
-    for i in range(train_size, n - horizon - gap):
+    for i in range(train_size, n - horizon):
         if (i - last_refit_idx) >= refit_every or params is None:
             r_train = returns[:i]
             rv_train = rv[:i]
@@ -127,13 +138,14 @@ def walk_forward_realized_garch(
             h_cache = max(h_cache, 1e-12)
 
         log_pred = realized_garch_log_forecast_at(params, h_cache, horizon=horizon)
-        target_window = log_rv[i + gap: i + gap + horizon]
+        target_window = log_rv[i: i + horizon]
         if len(target_window) < horizon:
             continue
         target = float(target_window.mean())
 
         preds.append(log_pred)
         truths.append(target)
+        pred_dates.append(dates[i])
 
     if len(preds) < 20:
         return {"error": f"too few predictions: {len(preds)}"}
@@ -141,14 +153,14 @@ def walk_forward_realized_garch(
     preds_arr = np.array(preds)
     truths_arr = np.array(truths)
     mse = float(np.mean((preds_arr - truths_arr) ** 2))
-    errors = truths_arr - preds_arr
+    idx = pd.DatetimeIndex(pred_dates)
 
     return {
         "n_preds": len(preds),
         "mse_logrv": mse,
-        "errors": errors,
-        "forecasts": preds_arr,
-        "targets": truths_arr,
+        "errors": pd.Series(truths_arr - preds_arr, index=idx, name="rg_error"),
+        "forecasts": pd.Series(preds_arr, index=idx, name="rg_logrv_pred"),
+        "targets": pd.Series(truths_arr, index=idx, name="logrv_target"),
     }
 
 
@@ -166,36 +178,45 @@ def run_one_combo(
     daily_rets = hourly_rets.groupby(hourly_rets.index.normalize()).sum()
     daily_rets.index = pd.DatetimeIndex(daily_rets.index).normalize()
     common = daily_rets.index.intersection(rv.index)
-    daily_rets = daily_rets.loc[common].values.astype(float)
+    common_dates = pd.DatetimeIndex(common)
+    daily_rets_v = daily_rets.loc[common].values.astype(float)
     rv_vals = rv.loc[common].values.astype(float)
+    rv_common = rv.loc[common]
 
     rg_result = walk_forward_realized_garch(
-        daily_rets, rv_vals,
+        daily_rets_v, rv_vals, common_dates,
         horizon=horizon,
         train_size=TRAIN_SIZE,
         refit_every=REFIT_EVERY,
-        gap=GAP,
         seed=seed,
     )
 
     if "error" in rg_result:
         return {"coin": coin, "horizon": horizon, "seed": seed, "error": rg_result["error"]}
 
-    har_out = walk_forward_har(rv, horizon=horizon, n_splits=5, refit_every=REFIT_EVERY)
-    har_errors = (har_out["forecasts"] - har_out["targets"]).dropna().values
+    # HAR baseline on the *same* daily-RV series (restricted to the common
+    # dates) so both models consume identical data — only the walk-forward
+    # windowing differs (RG expanding-from-train_size vs HAR 5-fold).
+    har_out = walk_forward_har(rv_common, horizon=horizon, n_splits=5, refit_every=REFIT_EVERY)
+    har_err = (har_out["forecasts"] - har_out["targets"]).dropna()
+    har_err.name = "har_error"
+    rg_err = rg_result["errors"]
 
-    rg_aligned = rg_result["errors"]
-    min_len = min(len(rg_aligned), len(har_errors))
-    if min_len < 20:
+    # Align both error series on their common forecast dates — the DM test
+    # is only valid when the two models are scored on identical (date,
+    # target) pairs. Position-based truncation (the previous [:min_len])
+    # silently compared errors from different calendar dates.
+    aligned = pd.concat([rg_err, har_err], axis=1, sort=True).dropna()
+    if len(aligned) < 20:
         return {
             "coin": coin, "horizon": horizon, "seed": seed,
             "rg_mse": rg_result["mse_logrv"],
             "har_mse": har_out["aggregate_mse_logrv"],
-            "error": f"overlap too short: {min_len}",
+            "error": f"date-aligned overlap too short: {len(aligned)}",
         }
 
-    rg_err_aligned = rg_result["errors"][:min_len]
-    har_err_aligned = har_errors[:min_len]
+    rg_err_aligned = aligned["rg_error"].to_numpy()
+    har_err_aligned = aligned["har_error"].to_numpy()
 
     rg_mse = float(np.mean(rg_err_aligned ** 2))
     har_mse = float(np.mean(har_err_aligned ** 2))
@@ -209,6 +230,7 @@ def run_one_combo(
         "horizon": horizon,
         "seed": seed,
         "n_preds": rg_result["n_preds"],
+        "n_aligned": int(len(aligned)),
         "rg_mse": rg_mse,
         "har_mse": har_mse,
         "mse_red_pct": round(mse_red_pct, 2),
