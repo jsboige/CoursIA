@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "last_updated": "2026-05-14T17:43:02.404278",
+  "last_updated": "2026-05-14T19:30:00",
   "source_files": {
     "GSState.lean": "stable_marriage_lean/StableMarriage/GSState.lean",
     "Lemmas.lean": "stable_marriage_lean/StableMarriage/Lemmas.lean",
@@ -276,6 +276,30 @@
             "tactic_used": "letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩; haveI : IsTrans ...",
             "key_insight": "Mathlib's Finset.exists_maximal needs LE + IsTrans. Build locally via letI/haveI"
           }
+        ]
+      },
+      {
+        "name": "maximal_trichotomy_proof_strategy",
+        "category": "maximality",
+        "when": "need to prove ∀ y ∈ s, y ≤ choose where choose comes from Classical.choose (Finset.exists_maximal h) and LE is a custom preorder on Fin n backed by Nat comparison (e.g. gsMenPrefLE)",
+        "tactic": "obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)\nhave htri := Nat.lt_trichotomy (prof.menPref m w) (prof.menPref m (Classical.choose ⋯))\nrcases htri with (hlt | heq | hgt)\n· -- choose ≤ w: apply hmax to get w ≤ choose\n  right; exact hgt\n· -- equal prefs: injectivity gives w = choose\n  left; exact (prof.menPref_bijective m).injective heq\n· -- w preferred over choose: direct\n  right; exact hgt",
+        "examples": [
+          {
+            "lemma": "gsChooseMax_maximal",
+            "file": "GSState.lean:140",
+            "tactic_used": "trichotomy on menPref values + Maximal conditional + Bijective.injective for eq case",
+            "key_insight": "Three-part strategy: (1) Nat.lt_trichotomy to case-split on the underlying Nat comparison. (2) Case choose<w: need choose≤w first, then hmax hw gives w≤choose. (3) Case equal: Bijective.injective turns pref equality into Fin equality → Or.inl. (4) Case choose>w: Or.inr directly. CRITICAL: hmax from Maximal is CONDITIONAL — hmax hw has type (choose ≤ w → w ≤ choose), NOT w ≤ choose directly."
+          }
+        ],
+        "prerequisites": [
+          "bijective_injectivity_for_eq",
+          "finset_maximal_choose_spec_negation",
+          "custom_LE_instance_for_finite"
+        ],
+        "common_mistakes": [
+          "Applying hmax w hw directly without establishing choose ≤ w first — type mismatch",
+          "Using unfold on gsChooseMax (noncomputable def with by body) — use show instead",
+          "Forgetting that Maximal 2nd field is ∀ y ∈ s, choose ≤ y → y ≤ choose (conditional), NOT ∀ y ∈ s, y ≤ choose"
         ]
       },
       {
