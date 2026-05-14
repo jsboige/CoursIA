@@ -298,7 +298,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | GenAI/Video | python3 | COMFYUI_VIDEO, OPENAI | 1 Docker service UP | `.env` | YES | None |
 | GenAI/Texte | python3 | OPENAI, ANTHROPIC, OPENROUTER, QDRANT | Cloud only | `.env` | YES | None |
 | SymbolicAI/Lean | lean4/WSL | GITHUB_TOKEN | System | — | PARTIAL | elan + WSL Lean kernel needed |
-| SymbolicAI/SemanticWeb | python3 + .net-csharp | None | pip packages | — | PARTIAL | Conda env `epita_symbolic_ai` for rdflib/owlready2 |
+| SymbolicAI/SemanticWeb | python3 + .net-csharp | None | pip packages | — | YES | None (conda env `epita_symbolic_ai` installed) |
 | SymbolicAI/SmartContract | python3 + .net-csharp | OPENAI, ANTHROPIC, OPENROUTER | Foundry/Anvil | `GenAI/.env` | PARTIAL | Anvil needed for local blockchain |
 | SymbolicAI/Planning | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
 | SymbolicAI/Tweety | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
@@ -314,8 +314,8 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 
 | Status | Families | Count |
 |--------|----------|-------|
-| **FULL** | GenAI (Image, Audio, Video, Texte), QuantConnect, Planning, Tweety, Sudoku, ML, Probas, Search, IIT | 11 |
-| **PARTIAL** | Lean (WSL kernel), SemanticWeb (conda env), SmartContract (anvil), GameTheory (OpenSpiel) | 4 |
+| **FULL** | GenAI (Image, Audio, Video, Texte), QuantConnect, Planning, Tweety, Sudoku, ML, Probas, Search, IIT, SemanticWeb | 12 |
+| **PARTIAL** | Lean (WSL kernel), SmartContract (anvil), GameTheory (OpenSpiel) | 3 |
 | **NO** | — | 0 |
 
 **Verified installed on po-2023**:
@@ -324,7 +324,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 - Python packages: ortools, z3-solver, pyphi 1.2.0
 - WSL: Ubuntu (running)
 
-**Remaining gaps**: Conda env `epita_symbolic_ai` (SemanticWeb Python), OpenSpiel build (GameTheory), elan toolchain (Lean), anvil (SmartContract local blockchain).
+**Remaining gaps**: OpenSpiel build (GameTheory), elan toolchain (Lean), anvil (SmartContract local blockchain).
 
 ---
 
@@ -337,7 +337,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | ~~P0~~ | ~~.NET 9.0 SDK~~ | ~~Sudoku, ML, Probas, Planning, Tweety, Search(C#), SemanticWeb(C#), SmartContract(C#)~~ | ~30 min | DONE (9.0.205 + 9.0.314) |
 | ~~P0~~ | ~~`dotnet-interactive` + Jupyter kernels~~ | ~~Same as above~~ | ~10 min | DONE (1.0.707101) |
 | ~~P1~~ | ~~`pyphi`~~ | ~~IIT~~ | ~5 min | DONE (1.2.0) |
-| P1 | Conda env `epita_symbolic_ai` | SemanticWeb(Python) | ~20 min | TODO |
+| ~~P1~~ | ~~Conda env `epita_symbolic_ai`~~ | ~~SemanticWeb(Python)~~ | ~20 min | DONE (rdflib 7.6.0, owlready2 0.50, reasonable 0.4.1, pyshacl 0.31.0) |
 | P2 | OpenSpiel in WSL Ubuntu | GameTheory | ~60 min (build) | TODO |
 | P2 | `elan` (Lean toolchain) | Lean | ~15 min | TODO |
 
@@ -374,7 +374,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 - [x] Install .NET 9.0 SDK on po-2023 (9.0.205 + 9.0.314 already present)
 - [x] Install `dotnet-interactive` + register Jupyter kernels (1.0.707101)
 - [x] Install `pyphi` for IIT notebooks (1.2.0)
-- [ ] Create conda env `epita_symbolic_ai` on po-2023 (SemanticWeb Python)
+- [x] Create conda env `epita_symbolic_ai` on po-2023 (SemanticWeb Python — rdflib 7.6.0, owlready2 0.50)
 - [ ] Build OpenSpiel in WSL Ubuntu (GameTheory)
 - [ ] Install `elan` Lean toolchain (Lean notebooks)
 - [ ] Consolidate API key documentation (which .env for which key)
