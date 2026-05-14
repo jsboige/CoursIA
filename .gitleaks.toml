@@ -1,0 +1,26 @@
+# Gitleaks configuration for CoursIA
+# Prevents secrets from being committed (pre-commit hook + CI gate)
+
+title = "CoursIA Secret Scanner"
+
+[allowlist]
+description = "Global allowlist for known false positives"
+paths = [
+    '''\.env\.example$''',
+    '''\.env\.template$''',
+    '''docs/suivis/.*\.md$''',  # Historical docs with rotated/stale credentials
+    '''\.gitleaks\.toml$''',
+]
+
+[[allowlist]]
+description = "Notebook outputs may contain base64-encoded images or data"
+paths = [
+    '''\.ipynb$''',
+]
+
+# Allowlist for specific known patterns that are NOT secrets
+regexes = [
+    '''ROTATED \d{4}-\d{2}-\d{2}''',  # Rotation placeholders
+    '''see docker-configurations/''',  # References to .env locations
+    '''os\.getenv\(['\"][A-Z_]+['\"]\)''',  # env var reads without defaults
+]
