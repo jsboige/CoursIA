@@ -306,7 +306,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | Sudoku | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
 | ML | .net-csharp | OPENAI, ANTHROPIC | NuGet | `GenAI/.env` | YES | None (.NET 9.0 + kernels installed) |
 | Probas | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
-| GameTheory | python3 (WSL) | None | open_spiel | — | PARTIAL | WSL Ubuntu running, OpenSpiel build needed |
+| GameTheory | python3 (WSL) | None | open_spiel | — | PARTIAL | OpenSpiel 1.6.14 installed in ~/coursia-venv, WSL kernel registration needed |
 | IIT | python3 | None | pyphi 1.2.0 | — | YES | None (pyphi installed) |
 | QuantConnect | python3 | QC_API, OPENAI, ANTHROPIC, HF | Cloud | `Config/settings.json` + `.env` | YES | None |
 
@@ -324,7 +324,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 - Python packages: ortools, z3-solver, pyphi 1.2.0
 - WSL: Ubuntu (running)
 
-**Remaining gaps**: OpenSpiel build (GameTheory), WSL Lean kernel registration (Lean), anvil (SmartContract local blockchain).
+**Remaining gaps**: WSL kernel registration (GameTheory + Lean), anvil (SmartContract local blockchain).
 
 ---
 
@@ -338,7 +338,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | ~~P0~~ | ~~`dotnet-interactive` + Jupyter kernels~~ | ~~Same as above~~ | ~10 min | DONE (1.0.707101) |
 | ~~P1~~ | ~~`pyphi`~~ | ~~IIT~~ | ~5 min | DONE (1.2.0) |
 | ~~P1~~ | ~~Conda env `epita_symbolic_ai`~~ | ~~SemanticWeb(Python)~~ | ~20 min | DONE (rdflib 7.6.0, owlready2 0.50, reasonable 0.4.1, pyshacl 0.31.0) |
-| P2 | OpenSpiel in WSL Ubuntu | GameTheory | ~60 min (build) | TODO |
+| ~~P2~~ | ~~OpenSpiel in WSL Ubuntu~~ | ~~GameTheory~~ | ~10 min (pip) | DONE (open-spiel 1.6.14 in ~/coursia-venv) |
 | ~~P2~~ | ~~`elan` (Lean toolchain)~~ | ~~Lean~~ | ~15 min | DONE (elan 4.2.1, Lean 4.29.1) |
 
 ### API Key Distribution
@@ -375,7 +375,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 - [x] Install `dotnet-interactive` + register Jupyter kernels (1.0.707101)
 - [x] Install `pyphi` for IIT notebooks (1.2.0)
 - [x] Create conda env `epita_symbolic_ai` on po-2023 (SemanticWeb Python — rdflib 7.6.0, owlready2 0.50)
-- [ ] Build OpenSpiel in WSL Ubuntu (GameTheory)
+- [x] Build OpenSpiel in WSL Ubuntu (open-spiel 1.6.14 in ~/coursia-venv)
 - [x] Install `elan` Lean toolchain (elan 4.2.1, Lean 4.29.1)
 - [ ] Consolidate API key documentation (which .env for which key)
 - [ ] Add FunASR/Qwen ASR keys to GenAI/.env (or document the split clearly)
