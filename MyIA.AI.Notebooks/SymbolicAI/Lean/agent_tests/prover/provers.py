@@ -27,7 +27,7 @@ from .agents import (
     create_director_agent,
 )
 from .workflow import ProofWorkflowBuilder, ProofMessage
-from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS
+from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS, augment_instructions
 from .config import create_client, HONEST_SORRIES
 from . import attempt_history
 from .knowledge import ProofKnowledgeBase
@@ -150,7 +150,12 @@ class MultiAgentSorryProver:
 
         # Extract sorry context
         ctx_data = extract_sorry_block(filepath, sorry_line)
-        goal_state = get_goal_state(filepath, sorry_line)
+        # Allow DEMO config to override goal (bypass unreliable GoalExtract)
+        if demo.get("goal"):
+            goal_state = demo["goal"]
+            print(f"  Goal OVERRIDE from config: {goal_state[:100]}")
+        else:
+            goal_state = get_goal_state(filepath, sorry_line)
 
         sorry_ctx = SorryContext(
             filepath=filepath,
@@ -185,9 +190,11 @@ class MultiAgentSorryProver:
         critic_tools = CriticTools(state, self.trace)
         coordinator_tools = CoordinatorTools(state, filepath, self.trace)
 
-        # Create 4 specialized agents
-        search_agent = create_search_agent(search_tools, provider=self.local_provider)
-        tactic_agent = create_tactic_agent(tactic_tools, provider=self.provider)
+        # Create 4 specialized agents (with KB context from goal)
+        search_agent = create_search_agent(
+            search_tools, provider=self.local_provider, goal=goal_state or "")
+        tactic_agent = create_tactic_agent(
+            tactic_tools, provider=self.provider, goal=goal_state or "")
         critic_agent = create_critic_agent(critic_tools, provider=self.provider)
         coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.provider)
 
@@ -328,9 +335,10 @@ class MultiAgentSorryProver:
             # now prevents that, but this verify is the workflow-level safety
             # net the user requested ("les verifs via build devraient faire
             # partie integrante du workflow du prouveur").
-            from .verifier import _load_lean_verifier_class
-            _LeanVerifierFinal = _load_lean_verifier_class()
-            _LeanVerifierFinal.invalidate(filepath)
+            from .verifier import get_verifier
+            _gv = get_verifier()
+            if _gv is not None:
+                type(_gv).invalidate(filepath)
             try:
                 final_verify_raw = tactic_tools.compile()
                 final_verify = json.loads(final_verify_raw)
@@ -440,6 +448,17 @@ class MultiAgentSorryProver:
 
         parts.append(f"\nSORRY COUNT INITIAL: {sorry_count}")
         parts.append("OBJECTIF: reduire le sorry count ou prouver completement.")
+
+        # Proof scaffolding: pre-written proof attempt from DEMO config
+        if demo.get("proof_scaffolding"):
+            scaffold = demo["proof_scaffolding"]
+            parts.append(
+                f"\nPREUVE ECHAFAUDAGE A ESSAYER EN PRIORITE:\n"
+                f"Le code suivant est une tentative de preuve pre-ecrite. "
+                f"Essaie de l'utiliser en premier avec submit_tactic(). "
+                f"Si elle ne compile pas, utilise les erreurs pour adapter.\n"
+                f"```\n{scaffold}\n```"
+            )
 
         # Cross-session memory: surface previously failed tactics
         try:
@@ -589,7 +608,9 @@ class AutonomousProver:
 
         agent = Agent(
             client=client,
-            instructions=AUTONOMOUS_PROVER_INSTRUCTIONS,
+            instructions=augment_instructions(
+                AUTONOMOUS_PROVER_INSTRUCTIONS, goal=goal_state or ""
+            ),
             tools=agent_tools,
             name="AutonomousProver",
         )
