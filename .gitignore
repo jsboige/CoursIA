@@ -740,3 +740,12 @@ analyze_ratio.py
 
 # Whisper comparison results (regenerable)
 scripts/whisper_comparison_results.json
+
+# Final model files referenced by executed notebooks (tracked via git LFS)
+# These must be at the END of .gitignore (last matching pattern wins)
+!MyIA.AI.Notebooks/QuantConnect/Python/transformer_checkpoint.pt
+!MyIA.AI.Notebooks/QuantConnect/Python/transformer_multiasset_model.pt
+!MyIA.AI.Notebooks/QuantConnect/Python/best_ppo_model.pt
+!MyIA.AI.Notebooks/QuantConnect/Python/best_dqn_model.pt
+!MyIA.AI.Notebooks/QuantConnect/Python/lstm_attention_sp50.pt
+!RL/stable_baseline_3_experience_replay_dqn/her_sac_parking_replay_buffer.pkl
