@@ -21,8 +21,15 @@ TEST_PHRASES = [
 
 TTS_URL = "http://127.0.0.1:8191/v1/audio/speech"
 STT_URL = "http://127.0.0.1:8190/v1/audio/transcriptions"
-TTS_API_KEY = os.getenv("TTS_API_KEY", "BwCaesdZuitLAfs6Nr1KX_CVNhX12XavyZThvpT2RD4c1smVrQ00xfZY2PP2pYgK")
-STT_API_KEY = os.getenv("WHISPER_API_KEY", "BwCaesdZuitLAfs6Nr1KX_CVNhX12XavyZThvpT2RD4c1smVrQ00xfZY2PP2pYgK")
+# Load from GenAI .env if available
+from pathlib import Path
+_env_path = Path(__file__).resolve().parents[1] / "MyIA.AI.Notebooks" / "GenAI" / ".env"
+if _env_path.exists():
+    from dotenv import load_dotenv
+    load_dotenv(_env_path)
+
+TTS_API_KEY = os.getenv("TTS_API_KEY", "")
+STT_API_KEY = os.getenv("WHISPER_API_KEY", "")
 
 
 def generate_audio(text: str, output_path: str) -> bool:
