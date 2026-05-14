@@ -367,7 +367,19 @@ lemma step (h : menProposedDownward prof σ)
 /-- gsRunSteps preserves the menProposedDownward invariant. -/
 lemma runSteps (k : Nat) :
     menProposedDownward prof (gsRunSteps prof k) := by
-  sorry
+  induction k with
+  | zero =>
+    simp only [gsRunSteps]
+    intro m w w' hw hlt
+    unfold gsInitial GSMatching.initial at hw
+    simp at hw
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
+    · exact step prof ih h
+    · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
+        unfold gsStep; simp [h]
+      rw [hid]; exact ih
 
 end menProposedDownward
 
@@ -386,12 +398,27 @@ lemma stepWith (h : menMatchedProposed prof σ) (m w : Fin n) :
 lemma step (h : menMatchedProposed prof σ)
     (hfree : ∃ m, gsIsFree prof σ m) :
     menMatchedProposed prof (gsStep prof σ) := by
-  sorry
+  unfold gsStep
+  rw [dif_pos hfree]
+  let m := Classical.choose hfree
+  have hm : gsIsFree prof σ m := Classical.choose_spec hfree
+  let w := gsChooseMax prof σ m hm.2
+  exact stepWith prof h m w
 
 /-- gsRunSteps preserves menMatchedProposed. -/
 lemma runSteps (k : Nat) :
     menMatchedProposed prof (gsRunSteps prof k) := by
-  sorry
+  induction k with
+  | zero =>
+    simp only [gsRunSteps]
+    exact initial prof
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
+    · exact step prof ih h
+    · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
+        unfold gsStep; simp [h]
+      rw [hid]; exact ih
 
 end menMatchedProposed
 
@@ -410,7 +437,17 @@ lemma step (h : womenBestState prof σ)
 /-- gsRunSteps preserves womenBestState. -/
 lemma runSteps (k : Nat) :
     womenBestState prof (gsRunSteps prof k) := by
-  sorry
+  induction k with
+  | zero =>
+    simp only [gsRunSteps]
+    exact initial prof
+  | succ k' ih =>
+    simp only [gsRunSteps]
+    by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
+    · exact step prof ih h
+    · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
+        unfold gsStep; simp [h]
+      rw [hid]; exact ih
 
 end womenBestState
 
