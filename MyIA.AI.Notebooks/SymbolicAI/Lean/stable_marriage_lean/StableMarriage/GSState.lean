@@ -136,11 +136,22 @@ lemma gsChooseMax_mem (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
   exact hmem
 
 /-- No unproposed candidate is preferred over the chosen maximal one.
-    Uses totality of bijective preference ordering + maximality of choose. -/
+    Direct from maximality: ∀ y ∈ candidates, y ≤ choose. -/
 lemma gsChooseMax_maximal (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
     (h : (gsCandidates prof σ m).Nonempty) (w : Fin n)
     (hw : w ∈ gsCandidates prof σ m) :
     gsMenPrefLE prof m w (gsChooseMax prof σ m h) := by
-  sorry
+  unfold gsChooseMax
+  letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
+  haveI : IsTrans (Fin n) (· ≤ ·) :=
+    ⟨fun a b c hab hbc => by
+      cases hab with
+      | inl hab => subst hab; exact hbc
+      | inr hab =>
+        cases hbc with
+        | inl hbc => subst hbc; exact Or.inr hab
+        | inr hbc => exact Or.inr (lt_trans hbc hab)⟩
+  obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)
+  exact hmax hw
 
 end StableMarriage
