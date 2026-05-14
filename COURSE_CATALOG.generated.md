@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-14 08:48
+Generated: 2026-05-14 08:52
 Total notebooks: 467
 
 ## Status Summary
@@ -13,14 +13,14 @@ Total notebooks: 467
 ## Maturity Summary
 
 - **PRODUCTION**: 143
-- **BETA**: 225
+- **BETA**: 226
 - **TEMPLATE**: 4
-- **ALPHA**: 64
+- **ALPHA**: 63
 - **DRAFT**: 31
 
 ## By Series
 
-### GenAI (100 notebooks) — BROKEN:3, DEMO:68, READY:29 | ALPHA:7, BETA:47, DRAFT:13, PRODUCTION:30, TEMPLATE:3
+### GenAI (100 notebooks) — BROKEN:3, DEMO:68, READY:29 | ALPHA:6, BETA:48, DRAFT:13, PRODUCTION:30, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -40,7 +40,7 @@ Total notebooks: 467
 | 14 | XTTS v2 - Clonage Vocal Zero-Shot | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 15 | MusicGen - Generation Musicale par IA | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 16 | Demucs v4 - Separation de Sources Audio | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 17 | Multi-Model TTS Gateway - Synthese Vocale Multi-Mo | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 17 | Multi-Model TTS Gateway - Synthese Vocale Multi-Mo | Python 3 | READY | BETA | 30min | po-2025 |
 | 18 | Generation MIDI avec midi-model (SkyTNT) | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 19 | Generation de Chansons Completes : YuE vs SongGene | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 20 | TTS Expressif : Fish S2 Pro et Modeles SOTA | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
