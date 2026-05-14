@@ -554,13 +554,15 @@ end womenProposedImpliesMatched
 
 /-! ## Invariant: Women Best State (step preservation) -/
 
-/-- If a woman is unmatched, no man has proposed to her yet.
-    This holds because gsStepWith always matches w₀ when proposing. -/
+/-- If a woman is unmatched and womenProposedImpliesMatched holds,
+    no man has proposed to her yet (contrapositive). -/
 lemma womenUnproposed (prof : PrefProfile n) (σ : GSState prof)
     (h : womenBestState prof σ)
+    (hwp : womenProposedImpliesMatched prof σ)
     (hfree : ∃ m, gsIsFree prof σ m) :
     ∀ w, σ.matching.womenMatch w = none → ∀ m', ¬σ.proposed m' w := by
-  sorry
+  intro w hw m' hprop
+  exact (hwp w m' hprop) hw
 
 namespace womenBestState
 
@@ -568,6 +570,7 @@ variable (prof : PrefProfile n) {σ : GSState prof}
 
 /-- gsStep preserves womenBestState. -/
 lemma step (h : womenBestState prof σ)
+    (hwp : womenProposedImpliesMatched prof σ)
     (hfree : ∃ m, gsIsFree prof σ m) :
     womenBestState prof (gsStep prof σ) := by
   unfold gsStep; rw [dif_pos hfree]
@@ -594,7 +597,7 @@ lemma step (h : womenBestState prof σ)
       rcases hsrc with (hw' | ⟨rfl, rfl⟩)
       · exfalso
         have hn := ‹σ.matching.womenMatch w₀ = none›
-        exact womenUnproposed prof σ h hfree w₀ hn m' (hw ▸ hw')
+        exact womenUnproposed prof σ h hwp hfree w₀ hn m' (hw ▸ hw')
       · exact le_rfl
     · rw [if_neg hw] at hmatch
       rcases hsrc with (hw' | ⟨rfl, rfl⟩)
@@ -637,7 +640,7 @@ lemma runSteps (k : Nat) :
   | succ k' ih =>
     simp only [gsRunSteps]
     by_cases h : ∃ m, gsIsFree prof (gsRunSteps prof k') m
-    · exact step prof ih h
+    · exact step prof ih (womenProposedImpliesMatched.runSteps prof k') h
     · have hid : gsStep prof (gsRunSteps prof k') = gsRunSteps prof k' := by
         unfold gsStep; simp [h]
       rw [hid]; exact ih
