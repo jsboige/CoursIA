@@ -1,26 +1,26 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-14 10:21
+Generated: 2026-05-14 10:28
 Total notebooks: 467
 
 ## Status Summary
 
-- **READY**: 333
-- **DEMO**: 117
+- **READY**: 332
+- **DEMO**: 118
 - **RESEARCH**: 0
 - **BROKEN**: 17
 
 ## Maturity Summary
 
-- **PRODUCTION**: 143
-- **BETA**: 224
+- **PRODUCTION**: 142
+- **BETA**: 225
 - **TEMPLATE**: 4
 - **ALPHA**: 64
 - **DRAFT**: 32
 
 ## By Series
 
-### GenAI (100 notebooks) — BROKEN:3, DEMO:68, READY:29 | ALPHA:6, BETA:48, DRAFT:13, PRODUCTION:30, TEMPLATE:3
+### GenAI (100 notebooks) — BROKEN:3, DEMO:69, READY:28 | ALPHA:6, BETA:48, DRAFT:13, PRODUCTION:30, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -54,8 +54,8 @@ Total notebooks: 467
 | 28 | Live Coding Musical pilote par LLM | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 29 | Introduction - barbie schreck | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 30 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 31 | Docteur vs ChatGPT: Chatbot médical | base | DEMO | ALPHA | 45min | po-2025 |
-| 32 | Introduction - receipe maker | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 31 | Docteur vs ChatGPT : Chatbot medical multi-agent | base | DEMO | ALPHA | 45min | po-2025 |
+| 32 | Introduction - receipe maker | Python 3 | DEMO | ALPHA | 30min | po-2025 |
 | 33 | OpenAI DALL-E 3 - Generation d'Images | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
 | 34 | 🤖 GPT-5 Multimodal - Analyse et Génération d'Image | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
 | 35 | 🖼️ Opérations de Base sur les Images | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
@@ -125,7 +125,7 @@ Total notebooks: 467
 | 99 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 100 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 
-### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:6, BETA:15, DRAFT:8, PRODUCTION:16
+### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:6, BETA:16, DRAFT:8, PRODUCTION:15
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -169,7 +169,7 @@ Total notebooks: 467
 | 38 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | BETA | 45min | po-2025 |
 | 39 | CSP-5-Optimization : Problèmes d'Optimisation Comb | myvenv | READY | PRODUCTION | 45min | po-2025 |
 | 40 | CSP-6-Hybridation : Approches Hybrides Modernes | myvenv | READY | PRODUCTION | 45min | po-2025 |
-| 41 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | DEMO | PRODUCTION | 1h | po-2025 |
+| 41 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | DEMO | BETA | 1h | po-2025 |
 | 42 | CSP-8 : Temporels - Raisonnement sur le Temps | myvenv | DEMO | PRODUCTION | 45min | po-2025 |
 | 43 | CSP-9-Distributed : CSP Distribués (DisCSP) | base | READY | PRODUCTION | 45min | po-2025 |
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | ALPHA | 30min | po-2025 |
@@ -536,8 +536,8 @@ Total notebooks: 467
 
 ## Requirements
 
-- **API**: 87 notebooks
+- **API**: 88 notebooks
 - **GPU**: 54 notebooks
 - **Cloud**: 101 notebooks
 - **WSL**: 23 notebooks
-- **Local**: 240 notebooks
+- **Local**: 239 notebooks
