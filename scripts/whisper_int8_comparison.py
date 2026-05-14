@@ -28,8 +28,18 @@ if _env_path.exists():
     from dotenv import load_dotenv
     load_dotenv(_env_path)
 
-TTS_API_KEY = os.getenv("TTS_API_KEY", "")
-STT_API_KEY = os.getenv("WHISPER_API_KEY", "")
+_missing = []
+TTS_API_KEY = os.getenv("TTS_API_KEY")
+STT_API_KEY = os.getenv("WHISPER_API_KEY")
+if not TTS_API_KEY:
+    _missing.append("TTS_API_KEY")
+if not STT_API_KEY:
+    _missing.append("WHISPER_API_KEY")
+if _missing:
+    raise EnvironmentError(
+        f"Missing required env var(s): {', '.join(_missing)}. "
+        f"Source .env: {_env_path} (exists={_env_path.exists()})"
+    )
 
 
 def generate_audio(text: str, output_path: str) -> bool:
