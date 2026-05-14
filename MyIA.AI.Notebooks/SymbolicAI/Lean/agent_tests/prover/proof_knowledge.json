@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "last_updated": "2026-05-14T19:30:00",
+  "last_updated": "2026-05-14T22:05:30.051575",
   "source_files": {
     "GSState.lean": "stable_marriage_lean/StableMarriage/GSState.lean",
     "Lemmas.lean": "stable_marriage_lean/StableMarriage/Lemmas.lean",
@@ -883,6 +883,14 @@
         "tactic": "",
         "after": "  1. Déplier gsStep, choisir le libre m₀ et sa candidate w₀, se ramener à gsStepWith prof σ m₀ w₀\n  2. Déplier womenBestState, introduire w m m' et les hypothèses hmatch (womenMatch dans le nouvel éta",
         "source": "multi_WOMEN_BEST_STATE_STEP_zai"
+      },
+      {
+        "name": "plan_multi_GS_CHOOSEMAX_MAXIMAL_zai",
+        "category": "strategy",
+        "when": "Finset.exists_maximal gives conditional maximality (∀ y ∈ s,",
+        "tactic": "",
+        "after": "  1. Unfold gsChooseMax and set up LE + IsTrans instances (same as gsChooseMax_mem pattern)\n  2. Obtain the spec from Classical.choose_spec (Finset.exists_maximal h) — note maximality is CONDITIONAL: ",
+        "source": "multi_GS_CHOOSEMAX_MAXIMAL_zai"
       }
     ]
   },
@@ -1000,6 +1008,13 @@
       "examples_affected": [
         "womenUnproposed (L563)"
       ]
+    },
+    {
+      "what_failed": "unfold gsChooseMax gsMenPrefLE\n  letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩\n  haveI : IsTrans (Fin n) (· ≤ ·) :=\n    ⟨fun a b c hab hbc => by\n      cas",
+      "why": "",
+      "lesson": "Failed 2x — try alternative approach",
+      "file": "GSState_fa04e5fc63_L144",
+      "attempts": 2
     }
   ],
   "mathlib_api": {
