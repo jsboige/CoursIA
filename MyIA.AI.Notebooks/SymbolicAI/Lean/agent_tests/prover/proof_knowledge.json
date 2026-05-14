@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "last_updated": "2026-05-14T22:00:00",
+  "last_updated": "2026-05-14T17:43:02.404278",
   "source_files": {
     "GSState.lean": "stable_marriage_lean/StableMarriage/GSState.lean",
     "Lemmas.lean": "stable_marriage_lean/StableMarriage/Lemmas.lean",
@@ -88,7 +88,10 @@
         "category": "unfolding",
         "when": "hypothesis contains raw Classical.choose/gsChooseMax that don't match local definitions",
         "tactic": "change (normalized_expr) at hmatch",
-        "after": ["simp only [Def] at hmatch", "split at hmatch"],
+        "after": [
+          "simp only [Def] at hmatch",
+          "split at hmatch"
+        ],
         "examples": [
           {
             "lemma": "womenBestState.step",
@@ -103,7 +106,9 @@
         "category": "case_split",
         "when": "simp only [Def] leaves irreducible match expression in hypothesis",
         "tactic": "split at hmatch",
-        "not": ["simp [discriminant_eq] — cannot reduce match"],
+        "not": [
+          "simp [discriminant_eq] — cannot reduce match"
+        ],
         "examples": [
           {
             "lemma": "womenBestState.step",
@@ -124,7 +129,9 @@
         "category": "case_split",
         "when": "need both rcases and subst on potentially reflexive equality",
         "tactic": "rcases h with (... | ⟨rfl, rfl⟩); · subst hw; ...; · exact le_rfl",
-        "not": ["subst hw; rcases h — reflexive equality blocks subst"],
+        "not": [
+          "subst hw; rcases h — reflexive equality blocks subst"
+        ],
         "examples": [
           {
             "lemma": "womenBestState.step",
@@ -139,7 +146,9 @@
         "category": "type_inference",
         "when": "lemma has implicit args that Lean cannot infer in context",
         "tactic": "@LemmaName n _ prof σ (m', w)",
-        "not": ["LemmaName (m', w) — type mismatch"],
+        "not": [
+          "LemmaName (m', w) — type mismatch"
+        ],
         "examples": [
           {
             "lemma": "womenProposedImpliesMatched.stepWith",
@@ -174,7 +183,10 @@
         "category": "function_update",
         "when": "goal or hypothesis contains Function.update (from matchFree/swapMatch)",
         "tactic": "simp only [GSMatching.matchFree, Function.update_apply]\nsplit_ifs",
-        "after": ["simp_all for each branch", "exact h m' w' for default case"],
+        "after": [
+          "simp_all for each branch",
+          "exact h m' w' for default case"
+        ],
         "examples": [
           {
             "lemma": "GSConsistent.matchFree",
@@ -563,7 +575,9 @@
         "category": "unfolding",
         "when": "need to use definitional equality in hypotheses without introducing new names",
         "tactic": "set m₀ := Classical.choose hfree\nset w₀ := gsChooseMax prof σ m₀ hm₀.2",
-        "not": ["let m₀ := ... — let doesn't create reducible equality for change/simp"],
+        "not": [
+          "let m₀ := ... — let doesn't create reducible equality for change/simp"
+        ],
         "examples": [
           {
             "lemma": "womenBestState.step",
@@ -703,6 +717,120 @@
             "key_insight": "Finset.card : ℕ needs lift to ℤ for comparison with 0. mod_cast handles the coercion"
           }
         ]
+      },
+      {
+        "name": "mined_application_Voting_df5bf269ba_L385_0",
+        "category": "application",
+        "when": "Goal from Voting df5bf269ba",
+        "tactic": "exact List.sorted_mergeSort",
+        "after": "",
+        "not": [],
+        "source": "mined_from_history"
+      },
+      {
+        "name": "mined_application_Voting_df5bf269ba_L385_1",
+        "category": "application",
+        "when": "Goal from Voting df5bf269ba",
+        "tactic": "exact List.Sorted (· ≤ ·) []",
+        "after": "",
+        "not": [],
+        "source": "mined_from_history"
+      },
+      {
+        "name": "plan_multi_BONDAREVA_SHAPLEY_BACKWARD_openrouter",
+        "category": "strategy",
+        "when": "La direction arrière est un énoncé de dualité linéaire fini;",
+        "tactic": "",
+        "after": "  1. Introduire l’hypothèse de balancedness et reformuler la non-vacuité du Core comme faisabilité d’un système fini d’inégalités de coalitions plus l’égalité d’efficacité\n  2. Raisonner par contradic",
+        "source": "multi_BONDAREVA_SHAPLEY_BACKWARD_openrouter"
+      },
+      {
+        "name": "plan_multi_BONDAREVA_SHAPLEY_BACKWARD_zai",
+        "category": "strategy",
+        "when": "La preuve backward de Bondareva-Shapley est un résultat prof",
+        "tactic": "",
+        "after": "  1. Ajouter les imports nécessaires: Mathlib.Analysis.Convex.Cone.Dual (pour ProperCone.hyperplane_separation), Mathlib.Analysis.Convex.Basic, Mathlib.Analysis.InnerProductSpace.PiL2 (pour la structu",
+        "source": "multi_BONDAREVA_SHAPLEY_BACKWARD_zai"
+      },
+      {
+        "name": "plan_multi_demo26",
+        "category": "strategy",
+        "when": "Proof follows the same structure as GSConsistent.step, menMa",
+        "tactic": "",
+        "after": "  1. Déplier gsStep, choisir le libre m₀ et sa candidate w₀, se ramener à gsStepWith prof σ m₀ w₀\n  2. Déplier womenBestState, introduire w m m' et les hypothèses hmatch (womenMatch dans le nouvel éta",
+        "source": "multi_demo26"
+      },
+      {
+        "name": "plan_multi_GS_STEP_EQ_OF_TERMINATED_zai",
+        "category": "strategy",
+        "when": "gsStep est defini par un if-then-else sur l'existence d'un h",
+        "tactic": "",
+        "after": "  1. Unfold gsStep pour reveler le if-then-else sur ∃ m, gsIsFree prof σ m\n  2. Utiliser l'hypothese h : gsTerminated prof σ pour montrer que la condition ∃ m, gsIsFree prof σ m est fausse (gsTerminat",
+        "source": "multi_GS_STEP_EQ_OF_TERMINATED_zai"
+      },
+      {
+        "name": "plan_multi_MEN_MATCHED_PROPOSED_RUNSTEPS_zai",
+        "category": "strategy",
+        "when": "Le pattern est identique à GSConsistent.runSteps (lignes 247",
+        "tactic": "",
+        "after": "  1. Induction sur k : base k=0 avec gsRunSteps prof 0 = gsInitial prof et menMatchedProposed.initial\n  2. Pas inductif k'+1 : simplifier gsRunSteps (succ k') = gsStep prof (gsRunSteps prof k'), puis ",
+        "source": "multi_MEN_MATCHED_PROPOSED_RUNSTEPS_zai"
+      },
+      {
+        "name": "plan_multi_MEN_MATCHED_PROPOSED_STEP_zai",
+        "category": "strategy",
+        "when": "The proof follows the exact same pattern as GSConsistent.ste",
+        "tactic": "",
+        "after": "  1. Unfold gsStep and split on dif_pos hfree to extract the free man via Classical.choose\n  2. Extract chosen woman w = gsChooseMax and prove ¬σ.proposed m w via gsChooseMax_mem\n  3. Apply menMatched",
+        "source": "multi_MEN_MATCHED_PROPOSED_STEP_zai"
+      },
+      {
+        "name": "plan_multi_MEN_PROPOSED_DOWNWARD_RUNSTEPS_zai",
+        "category": "strategy",
+        "when": "Proof follows the exact same induction+cases pattern as GSCo",
+        "tactic": "",
+        "after": "  1. Base case k=0: show menProposedDownward prof (gsRunSteps prof 0) = menProposedDownward prof (gsInitial prof). Since gsInitial has no proposals at all, the implication 'proposed m w → ...' is vacu",
+        "source": "multi_MEN_PROPOSED_DOWNWARD_RUNSTEPS_zai"
+      },
+      {
+        "name": "plan_multi_SMOKE2_ZERO_ADD_local",
+        "category": "strategy",
+        "when": "multi-step proof plan",
+        "tactic": "",
+        "after": "  1. use simp to prove 0 + n = n\n  2. verify proof is complete",
+        "source": "multi_SMOKE2_ZERO_ADD_local"
+      },
+      {
+        "name": "plan_multi_VOTING_MEDIAN_COUNTING_GT_zai",
+        "category": "strategy",
+        "when": "Symmetric to DEMO 9 (L355). The counting argument is identic",
+        "tactic": "",
+        "after": "  1. Complementarity: prove filter(median_peak < peaks ·).card + filter(peaks · ≤ median_peak).card = Fintype.card ι by rewriting median_peak < peaks i as ¬(peaks i ≤ median_peak) via lt_iff_not_le, t",
+        "source": "multi_VOTING_MEDIAN_COUNTING_GT_zai"
+      },
+      {
+        "name": "plan_multi_VOTING_MEDIAN_COUNTING_LT_zai",
+        "category": "strategy",
+        "when": "multi-step proof plan",
+        "tactic": "",
+        "after": "  1. Définir l = sorted_peaks_list peaks, établir: l.length = n (via mergeSort/map/toList), l.Pairwise (· ≤ ·) (via pairwise_mergeSort), l ≈ univ.toList.map peaks (via mergeSort_perm), et median = l[n",
+        "source": "multi_VOTING_MEDIAN_COUNTING_LT_zai"
+      },
+      {
+        "name": "plan_multi_WOMEN_BEST_STATE_RUNSTEPS_zai",
+        "category": "strategy",
+        "when": "Exact mirror of GSConsistent.runSteps proof (L247-258): indu",
+        "tactic": "",
+        "after": "  1. Base case k=0: use womenBestState.initial (already proved at L145) to show gsRunSteps prof 0 = gsInitial prof satisfies the invariant\n  2. Step case k'+1: unfold gsRunSteps succ equation, then by",
+        "source": "multi_WOMEN_BEST_STATE_RUNSTEPS_zai"
+      },
+      {
+        "name": "plan_multi_WOMEN_BEST_STATE_STEP_zai",
+        "category": "strategy",
+        "when": "Proof follows the same structure as GSConsistent.step, menMa",
+        "tactic": "",
+        "after": "  1. Déplier gsStep, choisir le libre m₀ et sa candidate w₀, se ramener à gsStepWith prof σ m₀ w₀\n  2. Déplier womenBestState, introduire w m m' et les hypothèses hmatch (womenMatch dans le nouvel éta",
+        "source": "multi_WOMEN_BEST_STATE_STEP_zai"
       }
     ]
   },
@@ -712,70 +840,95 @@
       "why": "unfold produces the full tactic proof body as the definition, creating unreadable goals",
       "lesson": "Use show to explicitly state the goal type, or simp only [def_name] instead",
       "file": "GSState.lean, Shapley.lean",
-      "examples_affected": ["gsChooseMax", "shapleyValue"]
+      "examples_affected": [
+        "gsChooseMax",
+        "shapleyValue"
+      ]
     },
     {
       "what": "simp [discriminant_eq] on match expressions",
       "why": "simp cannot reduce match expressions even with discriminant equality hypothesis",
       "lesson": "After simp only [Def], use split at h to create branches from the match",
       "file": "Lemmas.lean:570",
-      "examples_affected": ["womenBestState.step"]
+      "examples_affected": [
+        "womenBestState.step"
+      ]
     },
     {
       "what": "subst on reflexive equality after rcases ⟨rfl, rfl⟩",
       "why": "rcases with ⟨rfl, rfl⟩ may unify variables making a subsequent equality hw : w = w₀ become hw : w₀ = w₀",
       "lesson": "Use rcases to split first, handle rfl branch with exact le_rfl, then subst in non-rfl branch",
       "file": "Lemmas.lean:570",
-      "examples_affected": ["womenBestState.step", "menProposedDownward.step"]
+      "examples_affected": [
+        "womenBestState.step",
+        "menProposedDownward.step"
+      ]
     },
     {
       "what": "Implicit lemma application without @ on parameterized types",
       "why": "Lean cannot infer implicit args (n, NeZero n, prof, σ) from a single pair argument",
       "lesson": "Always use @LemmaName n _ prof σ (m', w) when lemma has type-level parameters",
       "file": "Lemmas.lean:502",
-      "examples_affected": ["womenProposedImpliesMatched.stepWith", "womenBestState.step"]
+      "examples_affected": [
+        "womenProposedImpliesMatched.stepWith",
+        "womenBestState.step"
+      ]
     },
     {
       "what": "rw [Function.update_apply] before dsimp on structural definitions",
       "why": "rw fails when hypothesis still contains unreduced swapMatch/matchFree wrapper",
       "lesson": "dsimp [GSMatching.swapMatch] first to unfold the structure, then rw [Function.update_apply]",
       "file": "Lemmas.lean:570",
-      "examples_affected": ["womenBestState.step", "menMatchedProposed.stepWith"]
+      "examples_affected": [
+        "womenBestState.step",
+        "menMatchedProposed.stepWith"
+      ]
     },
     {
       "what": "aesop on existential Shapley/Arrow theorems",
       "why": "aesop cannot synthesize constructive witnesses for existentials",
       "lesson": "Construct witness explicitly with ⟨value, proof⟩",
       "file": "GaleShapley.lean:63",
-      "examples_affected": ["gale_shapley_stable", "gale_shapley_man_optimal"]
+      "examples_affected": [
+        "gale_shapley_stable",
+        "gale_shapley_man_optimal"
+      ]
     },
     {
       "what": "omega on non-arithmetic ordering relations",
       "why": "omega only handles linear arithmetic over Nat/Int, not preference orderings",
       "lesson": "For preference relations, use transitivity lemmas (P_trans, le_trans) and contradiction explicitly",
       "file": "GaleShapley.lean:110",
-      "examples_affected": ["gale_shapley_woman_pessimal"]
+      "examples_affected": [
+        "gale_shapley_woman_pessimal"
+      ]
     },
     {
       "what": "simp without only on structural definitions",
       "why": "simp [] may unfold too aggressively, breaking the structure needed for split_ifs",
       "lesson": "Always use simp only [specific_lemma] to control unfolding. Then split_ifs for the branches",
       "file": "Lemmas.lean",
-      "examples_affected": ["All GSMatching lemmas"]
+      "examples_affected": [
+        "All GSMatching lemmas"
+      ]
     },
     {
       "what": "Finset.image membership via obtain/rcases",
       "why": "Finset.image uses Quot.lift internally, which is not inductive — obtain/rcases fail",
       "lesson": "Use simpa [hm] or exact for membership goals involving Finset.image",
       "file": "MEMORY.md",
-      "examples_affected": ["Any proof involving image of Finset"]
+      "examples_affected": [
+        "Any proof involving image of Finset"
+      ]
     },
     {
       "what": "Finset.sum_bij' requires 5 obligations",
       "why": "Missing any of fwd_mem, inv_mem, left_inv, right_inv, hfg causes type error",
       "lesson": "Prepare all 5 proofs before calling Finset.sum_bij'. Each obligation is a separate have",
       "file": "Shapley.lean",
-      "examples_affected": ["shapley_uniqueness"]
+      "examples_affected": [
+        "shapley_uniqueness"
+      ]
     }
   ],
   "mathlib_api": {
@@ -809,11 +962,15 @@
     },
     "Finset.card_le_card": {
       "signature": "Finset.card_le_card {α : Type*} (h : s₁ ⊆ s₂) : s₁.card ≤ s₂.card",
-      "notes": ["Useful for proving upper bounds on filtered sets"]
+      "notes": [
+        "Useful for proving upper bounds on filtered sets"
+      ]
     },
     "Finset.card_insert_of_notMem": {
       "signature": "Finset.card_insert_of_notMem {a : α} (h : a ∉ s) : (insert a s).card = s.card + 1",
-      "notes": ["Key for proving proposal count increment by 1"]
+      "notes": [
+        "Key for proving proposal count increment by 1"
+      ]
     },
     "Finset.sum_bij'": {
       "signature": "Finset.sum_bij' {α β M : Type*} [AddCommMonoid M] (f : α → β) (g : β → α) (hfg : ∀ b ∈ t, f (g b) = b) ... : ∑ a ∈ s, h a = ∑ b ∈ t, h (f (g b))",
@@ -825,11 +982,15 @@
     },
     "Finset.sum_eq_single": {
       "signature": "Finset.sum_eq_single {α : Type*} [AddCommMonoid M] (s : Finset α) (a : α) (h_mem : a ∈ s) (h_zero : ∀ b ∈ s, b ≠ a → f b = 0) : ∑ b ∈ s, f b = f a",
-      "notes": ["Useful when only one element in a sum contributes a nonzero value"]
+      "notes": [
+        "Useful when only one element in a sum contributes a nonzero value"
+      ]
     },
     "Finset.sum_eq_zero": {
       "signature": "Finset.sum_eq_zero {α : Type*} [AddCommMonoid M] (h : ∀ a ∈ s, f a = 0) : ∑ a ∈ s, f a = 0",
-      "notes": ["Used for null player axiom: all marginal contributions are zero"]
+      "notes": [
+        "Used for null player axiom: all marginal contributions are zero"
+      ]
     },
     "same_order_iff_same_order'": {
       "signature": "same_order_iff_same_order' {R R' : σ → σ → Prop} (hR : Total R) (hR' : Total R') : same_order R R' a b c d ↔ same_order' R R' a b c d",
@@ -840,11 +1001,15 @@
     },
     "nP_of_reverseP": {
       "signature": "nP_of_reverseP {R : σ → σ → Prop} {a b : σ} (h : P R a b) : ¬P R b a",
-      "notes": ["Asymmetry of strict preference P. Use to derive ¬P from P in opposite direction"]
+      "notes": [
+        "Asymmetry of strict preference P. Use to derive ¬P from P in opposite direction"
+      ]
     },
     "lt_asymm": {
       "signature": "lt_asymm {a b : α} (h : a < b) : ¬b < a",
-      "notes": ["Used in gsChooseMax_maximal proof to derive contradiction from maximality violation"]
+      "notes": [
+        "Used in gsChooseMax_maximal proof to derive contradiction from maximality violation"
+      ]
     },
     "Nat.strongRecOn": {
       "signature": "Nat.strongRecOn {motive : Nat → Sort*} (n : Nat) (h : ∀ n, (∀ m < n, motive m) → motive n) : motive n",
@@ -855,7 +1020,9 @@
     },
     "Finset.induction": {
       "signature": "Finset.induction {p : Finset α → Prop} (s : Finset α) (h_empty : p ∅) (h_insert : ∀ a s, ¬a ∈ s → p s → p (insert a s)) : p s",
-      "notes": ["Induction on Finset structure. Used in Shapley for coalition-based proofs"]
+      "notes": [
+        "Induction on Finset structure. Used in Shapley for coalition-based proofs"
+      ]
     },
     "Classical.dec": {
       "signature": "Classical.dec (p : Prop) : Decidable p",
@@ -875,7 +1042,9 @@
     },
     "Finset.sum_add_sum_compl": {
       "signature": "Finset.sum_add_sum_compl {α M : Type*} [AddCommMonoid M] [Fintype α] [DecidableEq α] (s : Finset α) (f : α → M) : ∑ a ∈ s, f a + ∑ a ∈ sᶜ, f a = ∑ a, f a",
-      "notes": ["Partition sum into set and complement. Used in Shapley unanimity proof"]
+      "notes": [
+        "Partition sum into set and complement. Used in Shapley unanimity proof"
+      ]
     }
   },
   "proved_theorems_inventory": {
@@ -918,7 +1087,9 @@
         "womenBestState.step": "step preserves women-best-state",
         "womenBestState.runSteps": "runSteps preserves women-best-state"
       },
-      "sorry_theorems": ["womenUnproposed (L563)"]
+      "sorry_theorems": [
+        "womenUnproposed (L563)"
+      ]
     },
     "SocialChoice": {
       "Arrow.lean": {

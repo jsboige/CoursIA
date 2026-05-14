@@ -893,4 +893,27 @@ DEMOS = {
         ),
         "difficulty": "easy",
     },
+    28: {
+        "name": "WOMEN_UNPROPOSED",
+        "file": str(LEMMAS_FILE),
+        "line": 563,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "womenUnproposed",
+        "theorem": "womenUnproposed",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L563 of Lemmas.lean.\n"
+            "Prove womenUnproposed: if a woman is unmatched (womenMatch w = none)\n"
+            "and womenBestState holds, then no man has proposed to her.\n"
+            "Intuition: if some m proposed to w, then womenMatch w would be some m\n"
+            "(since proposing always results in a match for the proposed-to woman).\n"
+            "Contrapositive: unmatched → unproposed.\n"
+            "Key definitions:\n"
+            "  womenBestState prof σ: ∀ w m, σ.matching.womenMatch w = some m →\n"
+            "    ∀ m', σ.proposed m' w → prof.womenPref w m ≤ prof.womenPref w m'\n"
+            "  gsStepWith: matchFree or swapMatch always sets womenMatch w = some _\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
 }
