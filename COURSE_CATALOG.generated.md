@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-14 08:52
+Generated: 2026-05-14 10:21
 Total notebooks: 467
 
 ## Status Summary
@@ -13,10 +13,10 @@ Total notebooks: 467
 ## Maturity Summary
 
 - **PRODUCTION**: 143
-- **BETA**: 226
+- **BETA**: 224
 - **TEMPLATE**: 4
-- **ALPHA**: 63
-- **DRAFT**: 31
+- **ALPHA**: 64
+- **DRAFT**: 32
 
 ## By Series
 
@@ -125,7 +125,7 @@ Total notebooks: 467
 | 99 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 100 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 
-### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:5, BETA:17, DRAFT:7, PRODUCTION:16
+### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:6, BETA:15, DRAFT:8, PRODUCTION:16
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -157,9 +157,9 @@ Total notebooks: 467
 | 26 | Search-11-Metaheuristiques : Optimisation avec MEA | .venv | READY | PRODUCTION | 45min | po-2025 |
 | 27 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | BETA | 45min | po-2025 |
 | 28 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 29 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
+| 29 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 (ipykernel) | READY | ALPHA | 45min | po-2025 |
 | 30 | Search-5 : Algorithmes Genetiques | Python 3 | READY | DRAFT | 45min | po-2025 |
-| 31 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | BETA | 30min | po-2025 |
+| 31 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | DRAFT | 30min | po-2025 |
 | 32 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | .venv | READY | DRAFT | 45min | po-2025 |
 | 33 | Search-8-DancingLinks : L'algorithme X et Dancing  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 34 | Search-9-LinearProgramming : Programmation Lineair | 3.13.1 | READY | PRODUCTION | 45min | po-2025 |
