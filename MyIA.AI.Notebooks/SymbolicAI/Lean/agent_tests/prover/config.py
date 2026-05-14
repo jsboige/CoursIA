@@ -92,10 +92,22 @@ STABLE_MARRIAGE_DIR = next(
     (p for p in _STABLE_MARRIAGE_CANDIDATES if p.exists()),
     _STABLE_MARRIAGE_CANDIDATES[0],
 )
+GSSTATE_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "GSState.lean" if STABLE_MARRIAGE_DIR.exists() else None
 GALESHAPLEY_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "GaleShapley.lean" if STABLE_MARRIAGE_DIR.exists() else None
 GALESHAPLEY_IMPORTS = """import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic
 import StableMarriage.Definitions
+"""
+
+LEMMAS_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "Lemmas.lean" if STABLE_MARRIAGE_DIR.exists() else None
+LEMMAS_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Fintype.Prod
+import Mathlib.Tactic.Common
+import StableMarriage.Definitions
+import StableMarriage.GSState
 """
 
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
@@ -134,29 +146,6 @@ HONEST_SORRIES = {
             "Hahn-Banach, or (b) reformulating via Shapley value which only "
             "covers the convex special case. Multi-week effort; out of scope. "
             "DO NOT TOUCH until Mathlib gains LP duality."
-        ),
-    },
-    str(GALESHAPLEY_FILE) if GALESHAPLEY_FILE else "": {
-        # GaleShapley.lean L73: existential stable matching (needs GS algorithm)
-        73: (
-            "gale_shapley_stable: existential proof ∃ μ, IsStable prof μ. "
-            "Requires constructive witness via Gale-Shapley deferred acceptance "
-            "algorithm. Cannot be solved by LLM tactic search. "
-            "See: mmaaz-git/stable-marriage-lean Algorithm.lean (~1000 LOC). "
-            "INTRACTABLE_UNTIL_GS_IMPL."
-        ),
-        # GaleShapley.lean L87: existential man-optimal matching
-        87: (
-            "gale_shapley_man_optimal: ∃ μ, IsManOptimal prof μ. Quantifies "
-            "over ALL stable matchings — no single witness suffices. "
-            "Requires GS algorithm output + lattice of stable matchings. "
-            "INTRACTABLE_UNTIL_GS_IMPL."
-        ),
-        # GaleShapley.lean L114: Knuth 1976 lattice duality (woman-pessimal)
-        114: (
-            "gale_shapley_woman_pessimal: Knuth 1976 duality theorem. Requires "
-            "rural-hospitals theorem + lattice of stable matchings machinery. "
-            "INTRACTABLE_UNTIL_GS_IMPL."
         ),
     },
 }
@@ -652,15 +641,18 @@ DEMOS = {
             "Replace sorry at L73 of GaleShapley.lean.\n"
             "Prove gale_shapley_stable: for any preference profile,\n"
             "there exists a stable matching.\n"
-            "This is the existence theorem for stable matchings.\n"
-            "Classical result: use classical + exact/Finte.filter + existence\n"
-            "via GS algorithm. Since the algorithm is not ported, try:\n"
-            "  classical\n"
-            "  -- Use Finset.filter on the finite set of matchings\n"
-            "  -- Prove the filtered set is nonempty by GS theorem\n"
-            "NOTE: This is classified as VERY HARD. Existential proof without\n"
-            "the GS algorithm ported requires classical choice + nonemptiness\n"
-            "of the set of stable matchings, which is the content of GS itself.\n"
+            "Strategy: provide gsGaleShapley as constructive witness,\n"
+            "then prove IsStable via no-blocking-pair argument.\n"
+            "Key invariants (already stubbed in Lemmas.lean):\n"
+            "  - GSConsistent.runSteps: final matching is consistent\n"
+            "  - menProposedDownward.runSteps: men proposed in pref order\n"
+            "  - womenBestState.runSteps: women keep best proposal\n"
+            "  - menMatchedProposed.runSteps: matched men proposed\n"
+            "Reference: mmaaz-git/stable-marriage-lean Properties.lean\n"
+            "  galeShapley_noBlockingPairs uses menProposedDownwardState +\n"
+            "  womenBestState + menMatchedProposedState to derive\n"
+            "  contradiction from any blocking pair.\n"
+            "Our type system: total bijections (no `acceptable` filter).\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "very_hard",
@@ -677,7 +669,13 @@ DEMOS = {
             "Replace sorry at L87 of GaleShapley.lean.\n"
             "Prove gale_shapley_man_optimal: there exists a man-optimal\n"
             "stable matching (every man gets best achievable partner).\n"
-            "Requires comparison across ALL stable matchings.\n"
+            "Strategy: use gsGaleShapley as witness, prove man-optimality\n"
+            "by showing any man m's GS spouse has lowest pref rank among\n"
+            "all stable matchings. Uses menProposedDownward invariant:\n"
+            "if m could do better in another stable matching, he would\n"
+            "have proposed to that woman and she would have accepted.\n"
+            "Reference: mmaaz-git/stable-marriage-lean GaleShapley.lean\n"
+            "Our type system: total bijections (no `acceptable`).\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "very_hard",
@@ -695,8 +693,295 @@ DEMOS = {
             "Prove gale_shapley_woman_pessimal: if mu is man-optimal\n"
             "and mu' is stable, then each woman gets worst achievable\n"
             "partner under mu (Knuth 1976 lattice duality).\n"
+            "Strategy: by contradiction. If woman w does BETTER under mu',\n"
+            "then mu'.inverse w is more preferred than mu.inverse w.\n"
+            "This means man mu'.inverse w got a WORSE partner under mu\n"
+            "than under mu', contradicting man-optimality of mu.\n"
+            "Key insight: inverse swaps man/woman perspectives.\n"
+            "Reference: mmaaz-git/stable-marriage-lean GaleShapley.lean\n"
+            "Our type system: Matching has bijective spouse + inverse.\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "very_hard",
+    },
+    18: {
+        "name": "GS_CONSISTENT_SWAP_MATCH",
+        "file": str(LEMMAS_FILE),
+        "line": 180,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "GSConsistent.swapMatch",
+        "theorem": "GSConsistent.swapMatch",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L180 of Lemmas.lean.\n"
+            "Prove GSConsistent.swapMatch: swapping a woman's match preserves\n"
+            "consistency. Woman w was matched to mOld; now matched to m.\n"
+            "Man m was free (menMatch m = none), man mOld now becomes free.\n"
+            "Key: GSMatching.swapMatch updates menMatch m/mOld and womenMatch w.\n"
+            "Case analysis on m'/w' vs m/mOld/w, use consistency hypothesis.\n"
+            "Reference: mmaaz-git stable-marriage-lean Lemmas.lean consistent_swapMatch.\n"
+            "Our system: no `acceptable` filter (total bijections).\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    19: {
+        "name": "GS_CONSISTENT_STEP_WITH",
+        "file": str(LEMMAS_FILE),
+        "line": 188,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "GSConsistent.stepWith",
+        "theorem": "GSConsistent.stepWith",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L188 of Lemmas.lean.\n"
+            "Prove GSConsistent.stepWith: gsStepWith preserves consistency.\n"
+            "Two cases: womanMatch w = none (use matchFree) or\n"
+            "womanMatch w = some mOld (use swapMatch).\n"
+            "Unfold gsStepWith, split on womenMatch w.\n"
+            "For matchFree case: need menMatch m = none and womenMatch w = none.\n"
+            "For swapMatch case: need menMatch m = none, womenMatch w = some mOld,\n"
+            "  and menMatch mOld = some w (from consistency).\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    20: {
+        "name": "GS_STEP_EQ_OF_TERMINATED",
+        "file": str(LEMMAS_FILE),
+        "line": 236,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gsStep_eq_of_terminated",
+        "theorem": "gsStep_eq_of_terminated",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L236 of Lemmas.lean.\n"
+            "Prove gsStep_eq_of_terminated: if no free man exists, gsStep = id.\n"
+            "Unfold gsStep: the if hfree branch is not taken.\n"
+            "Use If.neg (or split + simp) to show the else branch is taken.\n"
+            "gsTerminated means ¬∃ m, gsIsFree, which is exactly the negation.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    21: {
+        "name": "MEN_PROPOSED_DOWNWARD_STEP",
+        "file": str(LEMMAS_FILE),
+        "line": 365,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menProposedDownward.step",
+        "theorem": "menProposedDownward.step",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L365 of Lemmas.lean.\n"
+            "Prove menProposedDownward.step: gsStep preserves the invariant\n"
+            "that men propose in decreasing preference order.\n"
+            "Key: gsChooseMax picks the highest-ranked unproposed woman.\n"
+            "If man m proposed to w, any w' ranked higher was already proposed.\n"
+            "The new proposal adds exactly one pair; others are unchanged.\n"
+            "Reference: mmaaz-git Lemmas.lean menProposedDownwardState.step.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    22: {
+        "name": "MEN_PROPOSED_DOWNWARD_RUNSTEPS",
+        "file": str(LEMMAS_FILE),
+        "line": 370,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menProposedDownward.runSteps",
+        "theorem": "menProposedDownward.runSteps",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L370 of Lemmas.lean.\n"
+            "Prove menProposedDownward.runSteps by induction on k.\n"
+            "Base case: gsInitial has no proposals (trivially true).\n"
+            "Step case: use menProposedDownward.step + induction hypothesis.\n"
+            "If not terminated, gsStep preserves invariant.\n"
+            "If terminated, gsStep is identity.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    23: {
+        "name": "MEN_MATCHED_PROPOSED_STEPWITH",
+        "file": str(LEMMAS_FILE),
+        "line": 395,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menMatchedProposed.stepWith",
+        "theorem": "menMatchedProposed.stepWith",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L395 of Lemmas.lean.\n"
+            "Prove menMatchedProposed.stepWith: gsStepWith preserves the\n"
+            "invariant that matched men have proposed to their partners.\n"
+            "Cases: matchFree (m matched to w, m proposed to w),\n"
+            "swapMatch (m matched to w, m proposed to w, mOld was proposed).\n"
+            "The stepWith always marks m→w as proposed.\n"
+            "Reference: mmaaz-git Lemmas.lean menMatchedProposedState.stepWith.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    24: {
+        "name": "MEN_MATCHED_PROPOSED_STEP",
+        "file": str(LEMMAS_FILE),
+        "line": 389,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menMatchedProposed.step",
+        "theorem": "menMatchedProposed.step",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L389 of Lemmas.lean.\n"
+            "Prove menMatchedProposed.step: gsStep preserves menMatchedProposed.\n"
+            "Unfold gsStep, use stepWith lemma.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    25: {
+        "name": "MEN_MATCHED_PROPOSED_RUNSTEPS",
+        "file": str(LEMMAS_FILE),
+        "line": 394,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menMatchedProposed.runSteps",
+        "theorem": "menMatchedProposed.runSteps",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L394 of Lemmas.lean.\n"
+            "Prove menMatchedProposed.runSteps by induction on k.\n"
+            "Base: gsInitial trivially satisfies (no matches).\n"
+            "Step: use step lemma + by_cases for terminated.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    26: {
+        "name": "WOMEN_BEST_STATE_STEP",
+        "file": str(LEMMAS_FILE),
+        "line": 435,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "womenBestState.step",
+        "theorem": "womenBestState.step",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L435 of Lemmas.lean.\n"
+            "Prove womenBestState.step: gsStep preserves womenBestState.\n"
+            "Each woman's current match is her best proposal so far.\n"
+            "If m proposes to w and w prefers m: w's match becomes m (improved).\n"
+            "If w doesn't prefer m: w's match unchanged (still best).\n"
+            "Key: after proposing, the new proposal is in the proposed set,\n"
+            "so womenBest must be ≤ the new proposal's pref rank.\n"
+            "Reference: mmaaz-git Lemmas.lean womenBestState.step.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    27: {
+        "name": "WOMEN_BEST_STATE_RUNSTEPS",
+        "file": str(LEMMAS_FILE),
+        "line": 413,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "womenBestState.runSteps",
+        "theorem": "womenBestState.runSteps",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L413 of Lemmas.lean.\n"
+            "Prove womenBestState.runSteps by induction on k.\n"
+            "Base: gsInitial trivially satisfies (no matches).\n"
+            "Step: use step lemma + by_cases for terminated.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    28: {
+        "name": "WOMEN_UNPROPOSED",
+        "file": str(LEMMAS_FILE),
+        "line": 563,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "womenUnproposed",
+        "theorem": "womenUnproposed",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L563 of Lemmas.lean.\n"
+            "Prove womenUnproposed: if a woman is unmatched (womenMatch w = none)\n"
+            "and womenBestState holds, then no man has proposed to her.\n"
+            "Intuition: if some m proposed to w, then womenMatch w would be some m\n"
+            "(since proposing always results in a match for the proposed-to woman).\n"
+            "Contrapositive: unmatched → unproposed.\n"
+            "Key definitions:\n"
+            "  womenBestState prof σ: ∀ w m, σ.matching.womenMatch w = some m →\n"
+            "    ∀ m', σ.proposed m' w → prof.womenPref w m ≤ prof.womenPref w m'\n"
+            "  gsStepWith: matchFree or swapMatch always sets womenMatch w = some _\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    29: {
+        "name": "GS_CHOOSEMAX_MAXIMAL",
+        "file": str(GSSTATE_FILE),
+        "line": 144,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gsChooseMax_maximal",
+        "theorem": "gsChooseMax_maximal",
+        "imports": (
+            "import Mathlib.Data.Fintype.Basic\n"
+            "import Mathlib.Data.Fintype.Card\n"
+            "import Mathlib.Order.Preorder.Finite\n"
+            "import StableMarriage.Definitions\n"
+        ),
+        "description": (
+            "Replace sorry at L144 of GSState.lean.\n"
+            "Prove gsChooseMax_maximal: no unproposed candidate is preferred over\n"
+            "the chosen maximal one.\n"
+            "gsMenPrefLE prof m w (gsChooseMax prof σ m h) := by sorry\n"
+            "The goal expands to:\n"
+            "  w = gsChooseMax prof σ m h ∨\n"
+            "  prof.menPref m (gsChooseMax prof σ m h) < prof.menPref m w\n"
+            "\n"
+            "KEY INSIGHT: gsChooseMax is defined via Classical.choose on\n"
+            "Finset.exists_maximal. The second component of Classical.choose_spec\n"
+            "(Finset.exists_maximal h) gives the maximality property directly:\n"
+            "  ∀ y ∈ gsCandidates prof σ m, gsMenPrefLE prof m y (gsChooseMax ...)\n"
+            "So the proof should unfold gsChooseMax, letI the LE instance,\n"
+            "haveI the IsTrans instance, then obtain the maximality from\n"
+            "Classical.choose_spec and apply it to w with hw.\n"
+            "\n"
+            "APPROACH (trichotomy on w vs gsChooseMax):\n"
+            "1. Unfold gsChooseMax to expose Classical.choose\n"
+            "2. letI the LE/IsTrans instances (same as in gsChooseMax_mem)\n"
+            "3. Obtain both components of Classical.choose_spec:\n"
+            "   - hmem: gsChooseMax ∈ gsCandidates (already proven in gsChooseMax_mem)\n"
+            "   - hmax: ∀ y ∈ gsCandidates, y ≤ gsChooseMax (the maximality)\n"
+            "4. Specialize hmax to w with hw to get gsMenPrefLE prof m w (gsChooseMax...)\n"
+            "5. This IS the goal — exact it.\n"
+            "\n"
+            "The IsTrans instance is needed by Finset.exists_maximal but the\n"
+            "actual maximality statement ∀ y ∈ s, y ≤ x is IsAntisymm-free.\n"
+            "gsMenPrefLE prof m y x expands to y = x ∨ prof.menPref m x < prof.menPref m y,\n"
+            "which is exactly what the goal needs.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+        "proof_scaffolding": (
+            "  -- KEY: Finset.exists_maximal gives CONDITIONAL maximality:\n"
+            "  --   hmax : ∀ y ∈ s, choose ≤ y → y ≤ choose\n"
+            "  -- NOT unconditional: ∀ y ∈ s, y ≤ choose\n"
+            "  -- Strategy: show choose ≤ w first, then apply hmax\n"
+            "  --\n"
+            "  -- Step 1: unfold gsChooseMax to expose Classical.choose\n"
+            "  unfold gsChooseMax\n"
+            "  -- Step 2: obtain BOTH components of the spec\n"
+            "  --   hmem : Classical.choose ... ∈ gsCandidates ...\n"
+            "  --   hmax : ∀ ⦃y⦄, y ∈ gsCandidates ... → choose ≤ y → y ≤ choose\n"
+            "  obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)\n"
+            "  -- Step 3: we need w ≤ choose. By hmax, it suffices to show choose ≤ w.\n"
+            "  -- choose ≤ w means: choose = w ∨ menPref w < menPref choose\n"
+            "  -- Use trichotomy of Nat on menPref values:\n"
+            "  --   lt: menPref choose < menPref w → goal (second disjunct of gsMenPrefLE)\n"
+            "  --   eq: menPref choose = menPref w → choose = w needed (strict prefs?)\n"
+            "  --   gt: menPref choose > menPref w → choose ≤ w holds → hmax gives w ≤ choose\n"
+            "  sorry  -- TODO: complete trichotomy argument"
+        ),
     },
 }

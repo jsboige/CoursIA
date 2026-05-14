@@ -1030,7 +1030,7 @@ class TacticTools:
         subdir = Path(self._filepath).parent.name
         filename = Path(self._filepath).name
         relative_path = f"{subdir}/{filename}"
-        result = verifier.verify_project_file(relative_path)
+        result = verifier.verify_project_file(relative_path, force=True)
 
         duration = time.time() - start
         raw_output = result.get("raw_output", "")
