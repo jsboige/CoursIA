@@ -2,7 +2,7 @@
 
 **Issue**: #1055
 **Generated**: 2026-05-14
-**SHA**: `04d2d6b3` (branch `fix/sc-alpha-promotion-batch5`)
+**Branch**: `chore/env-coverage-audit-1055`
 **Scope**: All notebook families in `MyIA.AI.Notebooks/`
 
 ---
@@ -67,6 +67,8 @@ Kernel: `python3`
 | `MUSICGEN_API_KEY` | KEY | `.env` | MusicGen auth |
 | `DEMUCS_API_URL` | URL | `.env` | `https://demucs-api.myia.io` |
 | `DEMUCS_API_KEY` | KEY | `.env` | Demucs auth |
+| `QWEN_ASR_API_KEY` | KEY | `docker-configurations/services/qwen-asr-api/.env` | Qwen ASR auth (NOT in GenAI/.env) |
+| `FUNASR_API_KEY` | KEY | `docker-configurations/services/funasr-api/.env` | FunASR auth (NOT in GenAI/.env) |
 | `AUDIO_OUTPUT_DIR` | ENV | `.env` | `outputs/audio` |
 | `BATCH_MODE` | ENV | `.env` | `true` for Papermill |
 
@@ -352,6 +354,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | `NEWSAPI_KEY` | Per-notebook | QuantConnect | NO — separate |
 | `TIINGO_API_KEY` | Per-notebook | QuantConnect | NO — separate |
 | `ALPHAVANTAGE_API_KEY` | Per-notebook | QuantConnect | NO — separate |
+| `HUGGINGFACE_TOKEN` | GenAI/.env | QuantConnect, GenAI/Image | YES |
 | `ZAI_API_KEY` | SymbolicAI/.env | SmartContract | NO — separate |
 | `QWEN_LOCAL_API_KEY` | SymbolicAI/.env | SmartContract | NO — separate |
 | `QWEN_ASR_API_KEY` | docker .env | Audio (ASR notebooks) | NO — `docker-configurations/services/qwen-asr-api/.env` |
