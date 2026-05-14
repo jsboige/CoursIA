@@ -498,7 +498,20 @@ def main() -> None:
     results_dir.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
 
+    checkpoint_path = results_dir / "checkpoint.jsonl"
     combos: list[dict] = []
+    completed_keys: set[tuple] = set()
+    if checkpoint_path.exists():
+        with open(checkpoint_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                row = json.loads(line)
+                combos.append(row)
+                completed_keys.add((row["coin"], row["horizon"], row["seed"]))
+        print(f"[CHECKPOINT] resumed {len(combos)} combos from {checkpoint_path.name}", flush=True)
+
     total = len(COINS) * len(HORIZONS) * len(SEEDS)
     done = 0
 
@@ -514,10 +527,16 @@ def main() -> None:
         for h in HORIZONS:
             for seed in SEEDS:
                 done += 1
+                key = (coin, h, seed)
+                if key in completed_keys:
+                    print(f"\n[{done}/{total}] {coin} h={h} seed={seed} -- SKIP (checkpoint)", flush=True)
+                    continue
                 print(f"\n[{done}/{total}] {coin} h={h} seed={seed}", flush=True)
                 row = evaluate_one_combo(coin, h, seed, hidden_size=hidden_size)
                 if row is not None:
                     combos.append(row)
+                    with open(checkpoint_path, "a") as f:
+                        f.write(json.dumps(row, default=str) + "\n")
                 else:
                     print(f"  SKIPPED (insufficient data)", flush=True)
 
