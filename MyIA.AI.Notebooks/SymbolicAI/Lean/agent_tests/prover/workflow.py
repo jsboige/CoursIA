@@ -278,7 +278,7 @@ class VerifyExecutor(Executor):
 
     def __init__(self, sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, kb: Optional[ProofKnowledgeBase] = None,
-                 escalation_threshold: int = 3, **kwargs):
+                 escalation_threshold: int = 5, **kwargs):
         super().__init__(id="verify_executor", **kwargs)
         self._sorry_ctx = sorry_context
         self._imports = imports
@@ -292,7 +292,12 @@ class VerifyExecutor(Executor):
         # TacticAgent on consecutive failures. Encode it here in workflow code
         # so we don't depend on prompt adherence.
         self._consecutive_build_fails = 0
+        self._total_fails = 0
         self._escalation_threshold = escalation_threshold
+        # Re-search trigger: after this many total fails, force a hint to
+        # the Critic that fresh lemmas may be needed. The Critic still makes
+        # the routing decision, but the hint makes re-search more likely.
+        self._research_hint_threshold = 4
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -385,6 +390,7 @@ class VerifyExecutor(Executor):
             msg.error = result.get("errors", "")[:500]
             msg.error_type = result.get("error_type", "unknown")
             self._consecutive_build_fails += 1
+            self._total_fails += 1
             if self._consecutive_build_fails >= self._escalation_threshold:
                 # F1: deterministic escalation to Coordinator. Critic prompt
                 # heuristics aren't reliable enough — when the same sorry_line
@@ -411,8 +417,17 @@ class VerifyExecutor(Executor):
                 # Reset so we don't immediately re-escalate on the next fail;
                 # give the Coordinator a fresh window of `threshold` attempts.
                 self._consecutive_build_fails = 0
+                self._total_fails = 0  # reset after coordinator escalation
             else:
                 msg.next_agent = "critic"
+                # Re-search hint: if total fails exceed threshold, nudge the
+                # Critic toward SearchAgent for fresh lemma analysis.
+                if self._total_fails >= self._research_hint_threshold:
+                    msg.error += (
+                        f"\n[HINT] {self._total_fails} total BUILD-FAIL so far. "
+                        f"Consider routing to SearchAgent for fresh lemma candidates "
+                        f"— the current set may be insufficient."
+                    )
 
         if self._trace:
             self._trace.log(

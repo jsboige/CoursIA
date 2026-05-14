@@ -846,7 +846,6 @@
       "correct_approach": "unfold gsChooseMax; obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h); then trichotomy on menPref w vs menPref choose: if choose < w → done (goal second disjunct); if choose > w → choose ≤ w via gsMenPrefLE → hmax gives w ≤ choose (done); if equal → need strict prefs or w = choose"
     },
     {
-    {
       "what": "unfold on noncomputable def with by body",
       "why": "unfold produces the full tactic proof body as the definition, creating unreadable goals",
       "lesson": "Use show to explicitly state the goal type, or simp only [def_name] instead",
