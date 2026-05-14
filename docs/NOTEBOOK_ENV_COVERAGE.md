@@ -297,16 +297,16 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | GenAI/Audio | python3 | WHISPER, TTS, MUSICGEN, DEMUCS | 6 Docker services UP | `.env` | YES | None |
 | GenAI/Video | python3 | COMFYUI_VIDEO, OPENAI | 1 Docker service UP | `.env` | YES | None |
 | GenAI/Texte | python3 | OPENAI, ANTHROPIC, OPENROUTER, QDRANT | Cloud only | `.env` | YES | None |
-| SymbolicAI/Lean | lean4/WSL | GITHUB_TOKEN | System | — | PARTIAL | elan 4.2.1 installed, WSL Lean kernel needed |
+| SymbolicAI/Lean | lean4/WSL | GITHUB_TOKEN | System | — | YES | elan 4.2.1 + lean4-jupyter kernel `lean4-wsl` |
 | SymbolicAI/SemanticWeb | python3 + .net-csharp | None | pip packages | — | YES | None (conda env `epita_symbolic_ai` installed) |
-| SymbolicAI/SmartContract | python3 + .net-csharp | OPENAI, ANTHROPIC, OPENROUTER | Foundry/Anvil | `GenAI/.env` | PARTIAL | Anvil needed for local blockchain |
+| SymbolicAI/SmartContract | python3 + .net-csharp | OPENAI, ANTHROPIC, OPENROUTER | Foundry/Anvil | `GenAI/.env` | YES | Anvil 1.7.1 + forge 1.7.1 (Foundry, WSL) |
 | SymbolicAI/Planning | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
 | SymbolicAI/Tweety | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
 | Search | python3 + .net-csharp | None | ortools OK, z3 OK | — | YES | None |
 | Sudoku | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
 | ML | .net-csharp | OPENAI, ANTHROPIC | NuGet | `GenAI/.env` | YES | None (.NET 9.0 + kernels installed) |
 | Probas | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
-| GameTheory | python3 (WSL) | None | open_spiel | — | PARTIAL | OpenSpiel 1.6.14 installed in ~/coursia-venv, WSL kernel registration needed |
+| GameTheory | python3 (WSL) | None | open_spiel | — | YES | OpenSpiel 1.6.14 + kernel `gametheory-wsl` |
 | IIT | python3 | None | pyphi 1.2.0 | — | YES | None (pyphi installed) |
 | QuantConnect | python3 | QC_API, OPENAI, ANTHROPIC, HF | Cloud | `Config/settings.json` + `.env` | YES | None |
 
@@ -314,8 +314,8 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 
 | Status | Families | Count |
 |--------|----------|-------|
-| **FULL** | GenAI (Image, Audio, Video, Texte), QuantConnect, Planning, Tweety, Sudoku, ML, Probas, Search, IIT, SemanticWeb | 12 |
-| **PARTIAL** | Lean (WSL kernel registration), SmartContract (anvil), GameTheory (WSL kernel registration) | 3 |
+| **FULL** | GenAI (Image, Audio, Video, Texte), QuantConnect, Planning, Tweety, Sudoku, ML, Probas, Search, IIT, SemanticWeb, Lean, SmartContract, GameTheory | 15 |
+| **PARTIAL** | — | 0 |
 | **NO** | — | 0 |
 
 **Verified installed on po-2023**:
@@ -324,10 +324,13 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 - Python packages: ortools, z3-solver, pyphi 1.2.0
 - Conda env `epita_symbolic_ai`: rdflib 7.6.0, owlready2 0.50, reasonable 0.4.1, pyshacl 0.31.0
 - elan 4.2.1 + Lean 4.29.1 (WSL)
-- OpenSpiel 1.6.14 in WSL venv `~/coursia-venv` (132 games, minimax/mcts algorithms verified)
+- OpenSpiel 1.6.14 in WSL venv `~/coursia-venv` (122 games, minimax/mcts algorithms verified)
+- Jupyter kernel `gametheory-wsl`: WSL wrapper pointing to ~/coursia-venv with OpenSpiel
+- Jupyter kernel `lean4-wsl`: WSL wrapper pointing to ~/coursia-venv with lean4-jupyter
+- Foundry/Anvil 1.7.1 in WSL (`~/.foundry/bin/anvil`, `~/.foundry/bin/forge`)
 - WSL: Ubuntu (running)
 
-**Remaining gaps**: WSL kernel registration (GameTheory + Lean), anvil (SmartContract local blockchain).
+**All 15 families covered. No remaining gaps.**
 
 ---
 
@@ -343,6 +346,9 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | ~~P1~~ | ~~Conda env `epita_symbolic_ai`~~ | ~~SemanticWeb(Python)~~ | ~20 min | DONE (rdflib 7.6.0, owlready2 0.50, reasonable 0.4.1, pyshacl 0.31.0) |
 | ~~P2~~ | ~~OpenSpiel in WSL Ubuntu~~ | ~~GameTheory~~ | ~10 min (pip) | DONE (open-spiel 1.6.14 in ~/coursia-venv) |
 | ~~P2~~ | ~~`elan` (Lean toolchain)~~ | ~~Lean~~ | ~15 min | DONE (elan 4.2.1, Lean 4.29.1) |
+| ~~P2~~ | ~~WSL kernel `gametheory-wsl`~~ | ~~GameTheory~~ | ~5 min | DONE (gametheory-wsl registered) |
+| ~~P2~~ | ~~WSL kernel `lean4-wsl` + lean4-jupyter~~ | ~~Lean~~ | ~10 min | DONE (lean4-wsl registered) |
+| ~~P2~~ | ~~Foundry/Anvil in WSL~~ | ~~SmartContract~~ | ~5 min | DONE (anvil 1.7.1, forge 1.7.1) |
 
 ### API Key Distribution
 
@@ -380,6 +386,9 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 - [x] Create conda env `epita_symbolic_ai` on po-2023 (SemanticWeb Python — rdflib 7.6.0, owlready2 0.50)
 - [x] Build OpenSpiel in WSL Ubuntu (open-spiel 1.6.14 in ~/coursia-venv)
 - [x] Install `elan` Lean toolchain (elan 4.2.1, Lean 4.29.1)
+- [x] Register WSL kernel `gametheory-wsl` for GameTheory notebooks
+- [x] Install lean4-jupyter + register WSL kernel `lean4-wsl` for Lean notebooks
+- [x] Install Foundry/Anvil 1.7.1 in WSL for SmartContract notebooks
 - [ ] Consolidate API key documentation (which .env for which key)
 - [ ] Add FunASR/Qwen ASR keys to GenAI/.env (or document the split clearly)
 - [ ] Regenerate this document after each infrastructure change
