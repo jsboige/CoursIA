@@ -150,7 +150,12 @@ class MultiAgentSorryProver:
 
         # Extract sorry context
         ctx_data = extract_sorry_block(filepath, sorry_line)
-        goal_state = get_goal_state(filepath, sorry_line)
+        # Allow DEMO config to override goal (bypass unreliable GoalExtract)
+        if demo.get("goal"):
+            goal_state = demo["goal"]
+            print(f"  Goal OVERRIDE from config: {goal_state[:100]}")
+        else:
+            goal_state = get_goal_state(filepath, sorry_line)
 
         sorry_ctx = SorryContext(
             filepath=filepath,
@@ -443,6 +448,17 @@ class MultiAgentSorryProver:
 
         parts.append(f"\nSORRY COUNT INITIAL: {sorry_count}")
         parts.append("OBJECTIF: reduire le sorry count ou prouver completement.")
+
+        # Proof scaffolding: pre-written proof attempt from DEMO config
+        if demo.get("proof_scaffolding"):
+            scaffold = demo["proof_scaffolding"]
+            parts.append(
+                f"\nPREUVE ECHAFAUDAGE A ESSAYER EN PRIORITE:\n"
+                f"Le code suivant est une tentative de preuve pre-ecrite. "
+                f"Essaie de l'utiliser en premier avec submit_tactic(). "
+                f"Si elle ne compile pas, utilise les erreurs pour adapter.\n"
+                f"```\n{scaffold}\n```"
+            )
 
         # Cross-session memory: surface previously failed tactics
         try:

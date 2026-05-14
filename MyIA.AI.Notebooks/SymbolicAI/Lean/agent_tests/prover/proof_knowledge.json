@@ -836,6 +836,17 @@
   },
   "failed_approaches": [
     {
+      "what": "Classical.choose_spec on Finset.exists_maximal gives CONDITIONAL maximality",
+      "why": "Finset.exists_maximal returns: ∃ x ∈ s, ∀ y ∈ s, x ≤ y → y ≤ x (NOT ∀ y ∈ s, y ≤ x). The second component of choose_spec has type: ∀ ⦃y⦄, y ∈ s → choose ≤ y → y ≤ choose. Direct application hmax w hw fails because hmax expects choose ≤ w as its second argument, not membership.",
+      "lesson": "To prove ∀ y ∈ s, y ≤ choose: first establish choose ≤ y (by trichotomy of the underlying comparison), then apply hmax to get y ≤ choose. For gsMenPrefLE specifically: use Nat.lt_trichotomy on menPref values to case-split, then combine with maximality.",
+      "file": "GSState.lean:gsChooseMax_maximal",
+      "examples_affected": [
+        "gsChooseMax_maximal"
+      ],
+      "correct_approach": "unfold gsChooseMax; obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h); then trichotomy on menPref w vs menPref choose: if choose < w → done (goal second disjunct); if choose > w → choose ≤ w via gsMenPrefLE → hmax gives w ≤ choose (done); if equal → need strict prefs or w = choose"
+    },
+    {
+    {
       "what": "unfold on noncomputable def with by body",
       "why": "unfold produces the full tactic proof body as the definition, creating unreadable goals",
       "lesson": "Use show to explicitly state the goal type, or simp only [def_name] instead",

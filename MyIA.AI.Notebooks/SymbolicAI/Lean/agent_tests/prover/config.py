@@ -92,6 +92,7 @@ STABLE_MARRIAGE_DIR = next(
     (p for p in _STABLE_MARRIAGE_CANDIDATES if p.exists()),
     _STABLE_MARRIAGE_CANDIDATES[0],
 )
+GSSTATE_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "GSState.lean" if STABLE_MARRIAGE_DIR.exists() else None
 GALESHAPLEY_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "GaleShapley.lean" if STABLE_MARRIAGE_DIR.exists() else None
 GALESHAPLEY_IMPORTS = """import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic
@@ -915,5 +916,72 @@ DEMOS = {
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "medium",
+    },
+    29: {
+        "name": "GS_CHOOSEMAX_MAXIMAL",
+        "file": str(GSSTATE_FILE),
+        "line": 144,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gsChooseMax_maximal",
+        "theorem": "gsChooseMax_maximal",
+        "imports": (
+            "import Mathlib.Data.Fintype.Basic\n"
+            "import Mathlib.Data.Fintype.Card\n"
+            "import Mathlib.Order.Preorder.Finite\n"
+            "import StableMarriage.Definitions\n"
+        ),
+        "description": (
+            "Replace sorry at L144 of GSState.lean.\n"
+            "Prove gsChooseMax_maximal: no unproposed candidate is preferred over\n"
+            "the chosen maximal one.\n"
+            "gsMenPrefLE prof m w (gsChooseMax prof σ m h) := by sorry\n"
+            "The goal expands to:\n"
+            "  w = gsChooseMax prof σ m h ∨\n"
+            "  prof.menPref m (gsChooseMax prof σ m h) < prof.menPref m w\n"
+            "\n"
+            "KEY INSIGHT: gsChooseMax is defined via Classical.choose on\n"
+            "Finset.exists_maximal. The second component of Classical.choose_spec\n"
+            "(Finset.exists_maximal h) gives the maximality property directly:\n"
+            "  ∀ y ∈ gsCandidates prof σ m, gsMenPrefLE prof m y (gsChooseMax ...)\n"
+            "So the proof should unfold gsChooseMax, letI the LE instance,\n"
+            "haveI the IsTrans instance, then obtain the maximality from\n"
+            "Classical.choose_spec and apply it to w with hw.\n"
+            "\n"
+            "APPROACH (trichotomy on w vs gsChooseMax):\n"
+            "1. Unfold gsChooseMax to expose Classical.choose\n"
+            "2. letI the LE/IsTrans instances (same as in gsChooseMax_mem)\n"
+            "3. Obtain both components of Classical.choose_spec:\n"
+            "   - hmem: gsChooseMax ∈ gsCandidates (already proven in gsChooseMax_mem)\n"
+            "   - hmax: ∀ y ∈ gsCandidates, y ≤ gsChooseMax (the maximality)\n"
+            "4. Specialize hmax to w with hw to get gsMenPrefLE prof m w (gsChooseMax...)\n"
+            "5. This IS the goal — exact it.\n"
+            "\n"
+            "The IsTrans instance is needed by Finset.exists_maximal but the\n"
+            "actual maximality statement ∀ y ∈ s, y ≤ x is IsAntisymm-free.\n"
+            "gsMenPrefLE prof m y x expands to y = x ∨ prof.menPref m x < prof.menPref m y,\n"
+            "which is exactly what the goal needs.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+        "proof_scaffolding": (
+            "  -- KEY: Finset.exists_maximal gives CONDITIONAL maximality:\n"
+            "  --   hmax : ∀ y ∈ s, choose ≤ y → y ≤ choose\n"
+            "  -- NOT unconditional: ∀ y ∈ s, y ≤ choose\n"
+            "  -- Strategy: show choose ≤ w first, then apply hmax\n"
+            "  --\n"
+            "  -- Step 1: unfold gsChooseMax to expose Classical.choose\n"
+            "  unfold gsChooseMax\n"
+            "  -- Step 2: obtain BOTH components of the spec\n"
+            "  --   hmem : Classical.choose ... ∈ gsCandidates ...\n"
+            "  --   hmax : ∀ ⦃y⦄, y ∈ gsCandidates ... → choose ≤ y → y ≤ choose\n"
+            "  obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)\n"
+            "  -- Step 3: we need w ≤ choose. By hmax, it suffices to show choose ≤ w.\n"
+            "  -- choose ≤ w means: choose = w ∨ menPref w < menPref choose\n"
+            "  -- Use trichotomy of Nat on menPref values:\n"
+            "  --   lt: menPref choose < menPref w → goal (second disjunct of gsMenPrefLE)\n"
+            "  --   eq: menPref choose = menPref w → choose = w needed (strict prefs?)\n"
+            "  --   gt: menPref choose > menPref w → choose ≤ w holds → hmax gives w ≤ choose\n"
+            "  sorry  -- TODO: complete trichotomy argument"
+        ),
     },
 }

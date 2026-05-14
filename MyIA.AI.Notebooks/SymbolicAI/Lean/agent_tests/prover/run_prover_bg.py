@@ -29,7 +29,8 @@ TRACES_DIR.mkdir(exist_ok=True)
 
 def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                mode: str = "multi", iterations: int = 8,
-               provider: str = "zai", local_provider: str = "local"):
+               provider: str = "zai", local_provider: str = "local",
+               goal: str = ""):
     """Run the prover on a target."""
     if demo_num is not None:
         if demo_num not in DEMOS:
@@ -41,7 +42,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         name = demo["name"]
     elif filepath:
         demo = {"file": filepath, "name": f"custom_{Path(filepath).stem}_L{line}",
-                "line": line, "goal": ""}
+                "line": line, "goal": goal}
         name = demo["name"]
     else:
         print("Must specify --demo or --file/--line")
@@ -116,6 +117,7 @@ if __name__ == "__main__":
     parser.add_argument("--demo", type=int, help="Demo number from DEMOS dict")
     parser.add_argument("--file", help="Target .lean file path")
     parser.add_argument("--line", type=int, help="Sorry line number")
+    parser.add_argument("--goal", default="", help="Goal state override for KB matching")
     parser.add_argument("--mode", default="multi", choices=["multi", "autonomous"])
     parser.add_argument("--iterations", type=int, default=8)
     parser.add_argument("--provider", default="zai")
@@ -130,4 +132,5 @@ if __name__ == "__main__":
         iterations=args.iterations,
         provider=args.provider,
         local_provider=args.local_provider,
+        goal=args.goal,
     )
