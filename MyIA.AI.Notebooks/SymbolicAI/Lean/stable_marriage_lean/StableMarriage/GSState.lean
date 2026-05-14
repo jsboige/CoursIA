@@ -141,6 +141,28 @@ lemma gsChooseMax_maximal (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
     (h : (gsCandidates prof σ m).Nonempty) (w : Fin n)
     (hw : w ∈ gsCandidates prof σ m) :
     gsMenPrefLE prof m w (gsChooseMax prof σ m h) := by
-  sorry
+  unfold gsChooseMax
+  letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
+  haveI : IsTrans (Fin n) (· ≤ ·) :=
+    ⟨fun a b c hab hbc => by
+      cases hab with
+      | inl hab => subst hab; exact hbc
+      | inr hab =>
+        cases hbc with
+        | inl hbc => subst hbc; exact Or.inr hab
+        | inr hbc => exact Or.inr (lt_trans hbc hab)⟩
+  set c := Classical.choose (Finset.exists_maximal h) with hc
+  obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)
+  have htri := Nat.lt_trichotomy (prof.menPref m w) (prof.menPref m c)
+  rcases htri with (hlt | heq | hgt)
+  · -- choose preferred over w: choose ≤ w, so hmax gives w ≤ choose
+    have hle : c ≤ w := Or.inr hlt
+    exact hmax hw hle
+  · -- equal preference: injectivity gives w = c
+    left
+    exact (prof.menPref_bijective m).injective (Fin.ext heq)
+  · -- w preferred over choose: direct
+    right
+    exact hgt
 
 end StableMarriage
