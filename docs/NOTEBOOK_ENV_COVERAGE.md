@@ -297,7 +297,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | GenAI/Audio | python3 | WHISPER, TTS, MUSICGEN, DEMUCS | 6 Docker services UP | `.env` | YES | None |
 | GenAI/Video | python3 | COMFYUI_VIDEO, OPENAI | 1 Docker service UP | `.env` | YES | None |
 | GenAI/Texte | python3 | OPENAI, ANTHROPIC, OPENROUTER, QDRANT | Cloud only | `.env` | YES | None |
-| SymbolicAI/Lean | lean4/WSL | GITHUB_TOKEN | System | — | PARTIAL | elan + WSL Lean kernel needed |
+| SymbolicAI/Lean | lean4/WSL | GITHUB_TOKEN | System | — | PARTIAL | elan 4.2.1 installed, WSL Lean kernel needed |
 | SymbolicAI/SemanticWeb | python3 + .net-csharp | None | pip packages | — | YES | None (conda env `epita_symbolic_ai` installed) |
 | SymbolicAI/SmartContract | python3 + .net-csharp | OPENAI, ANTHROPIC, OPENROUTER | Foundry/Anvil | `GenAI/.env` | PARTIAL | Anvil needed for local blockchain |
 | SymbolicAI/Planning | .net-csharp | None | NuGet | — | YES | None (.NET 9.0 + kernels installed) |
@@ -324,7 +324,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 - Python packages: ortools, z3-solver, pyphi 1.2.0
 - WSL: Ubuntu (running)
 
-**Remaining gaps**: OpenSpiel build (GameTheory), elan toolchain (Lean), anvil (SmartContract local blockchain).
+**Remaining gaps**: OpenSpiel build (GameTheory), WSL Lean kernel registration (Lean), anvil (SmartContract local blockchain).
 
 ---
 
@@ -339,7 +339,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 | ~~P1~~ | ~~`pyphi`~~ | ~~IIT~~ | ~5 min | DONE (1.2.0) |
 | ~~P1~~ | ~~Conda env `epita_symbolic_ai`~~ | ~~SemanticWeb(Python)~~ | ~20 min | DONE (rdflib 7.6.0, owlready2 0.50, reasonable 0.4.1, pyshacl 0.31.0) |
 | P2 | OpenSpiel in WSL Ubuntu | GameTheory | ~60 min (build) | TODO |
-| P2 | `elan` (Lean toolchain) | Lean | ~15 min | TODO |
+| ~~P2~~ | ~~`elan` (Lean toolchain)~~ | ~~Lean~~ | ~15 min | DONE (elan 4.2.1, Lean 4.29.1) |
 
 ### API Key Distribution
 
@@ -376,7 +376,7 @@ po-2023 = GenAI host machine (2 GPUs: 3080Ti 16GB + 3090 24GB).
 - [x] Install `pyphi` for IIT notebooks (1.2.0)
 - [x] Create conda env `epita_symbolic_ai` on po-2023 (SemanticWeb Python — rdflib 7.6.0, owlready2 0.50)
 - [ ] Build OpenSpiel in WSL Ubuntu (GameTheory)
-- [ ] Install `elan` Lean toolchain (Lean notebooks)
+- [x] Install `elan` Lean toolchain (elan 4.2.1, Lean 4.29.1)
 - [ ] Consolidate API key documentation (which .env for which key)
 - [ ] Add FunASR/Qwen ASR keys to GenAI/.env (or document the split clearly)
 - [ ] Regenerate this document after each infrastructure change
