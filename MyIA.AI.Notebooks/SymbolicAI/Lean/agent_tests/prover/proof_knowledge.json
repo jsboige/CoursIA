@@ -929,6 +929,15 @@
       "examples_affected": [
         "shapley_uniqueness"
       ]
+    },
+    {
+      "what": "womenUnproposed with womenBestState hypothesis alone",
+      "why": "womenBestState says: womenMatch w = some m → proposed m' w → m is best. The contrapositive needs proposed m' w → womenMatch w ≠ none, but womenBestState alone doesn't give this — it only talks about women who ARE matched. Need womenProposedImpliesMatched or GSConsistent as additional hypothesis.",
+      "lesson": "womenUnproposed needs either (1) reformulate with womenProposedImpliesMatched hypothesis, or (2) prove womenBestState → womenProposedImpliesMatched as auxiliary, or (3) add both hypotheses. The lemma's current formulation is underconstrained.",
+      "file": "Lemmas.lean:563",
+      "examples_affected": [
+        "womenUnproposed (L563)"
+      ]
     }
   ],
   "mathlib_api": {
