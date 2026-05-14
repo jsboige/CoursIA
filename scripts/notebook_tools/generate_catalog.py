@@ -36,6 +36,7 @@ NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
 EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "output", "ESGF", "examples"}
+RESEARCH_DIR_KEYWORDS = {"research", "archive", "examples", "ESGF"}
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
@@ -176,6 +177,12 @@ def check_errors(outputs: list) -> list[str]:
     return errors
 
 
+def _is_research_path(nb_path: Path) -> bool:
+    """Check if notebook is in a research/archive/examples/ESGF directory."""
+    parts = nb_path.relative_to(NOTEBOOKS_DIR).parts
+    return any(part in RESEARCH_DIR_KEYWORDS for part in parts)
+
+
 def determine_status(
     nb_path: Path,
     notebook: dict,
@@ -190,10 +197,8 @@ def determine_status(
     RESEARCH  — in research/archive/examples path
     BROKEN    — errors in outputs
     """
-    rel_path = str(nb_path.relative_to(NOTEBOOKS_DIR))
-
-    # Research/archive path → RESEARCH
-    if not pedagogical:
+    # Research/archive path → RESEARCH (regardless of pedagogical flag)
+    if _is_research_path(nb_path):
         return "RESEARCH"
 
     # Check for errors in outputs
@@ -474,7 +479,6 @@ def scan_all_notebooks(
                 for exc in EXCLUDE_PEDAGOGICAL
             ):
                 continue
-
             entry = analyze_notebook(nb_path, pedagogical, git_meta=git_meta)
             if entry:
                 entries.append(entry)
