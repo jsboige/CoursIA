@@ -7,9 +7,11 @@ breakdown: =1
 maturity: BETA=1
 -->
 
-Cette serie vous introduit a la Theorie de l'Information Integree (IIT), un cadre mathematique proposant une mesure quantitative de la conscience. A l'aide de PyPhi, la bibliotheque de reference developpee par le laboratoire de Giulio Tononi, vous apprendrez a construire des reseaux causaux, calculer la mesure Phi et explorer la geometrie informationnelle des systemes complexes. L'unique notebook couvre le spectre complet de la theorie, des graphes binaires aux macro-subsystemes.
+La conscience est-elle mesurable ? La Théorie de l'Information Intégrée (IIT), proposée par Giulio Tononi, répond oui : un système est conscient dans la mesure où il intègre de l'information de manière non réductible. Plus formellement, la quantité de conscience d'un système correspond à la valeur **Phi** (big Phi), qui mesure le degré d'intégration causale irréductible. Cette série vous apprend à calculer cette mesure avec **PyPhi**, la bibliothèque de référence du laboratoire Tononi, et à explorer la géométrie informationnelle des systèmes complexes.
 
-**Progression recommandee** : Ce notebook unique (~90 min) est accessible des que vous maitrisez Python de base et la logique booleenne. Il constitue un excellent complement theorique aux series [Probas](../Probas/README.md) (modeles probabilistes) et [GameTheory](../GameTheory/README.md) (systemes multi-agents), avec lesquelles il partage les concepts de causalite et d'interaction.
+L'unique notebook couvre le spectre complet : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), définition des sous-systèmes, extraction des Cause-Effect Structures (CES), et exploration des macro-subsystemes (coarse-graining, blackboxing). Le cheminement va de l'intuition physique (un réseau de neurones simplifié) aux formalismes mathématiques (partition minimale d'information, structure cause-effet).
+
+**À qui s'adresse cette série** : étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Le notebook (~90 min) nécessite Python 3.10+ avec `pyphi` (installé via conda). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
 
 ## Vue d'ensemble
 
