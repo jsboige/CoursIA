@@ -55,7 +55,10 @@ jobs:
             | grep -v '/archive/' | grep -v '/_output/' | grep -v '/research/' \
             || true)
 
-          COUNT=$(echo "$NOTEBOOKS" | grep -c '\.ipynb$' || echo "0")
+          # grep -c prints "0" AND exits 1 on no-match; "|| echo 0" would
+          # then append a second "0", producing an invalid $GITHUB_OUTPUT
+          # line. "|| true" keeps grep's own "0" and just swallows the exit.
+          COUNT=$(echo "$NOTEBOOKS" | grep -c '\.ipynb$' || true)
           echo "notebooks<<EOF" >> "$GITHUB_OUTPUT"
           echo "$NOTEBOOKS" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
