@@ -29,7 +29,7 @@ Le depot couvre un spectre large de l'IA, des algorithmes classiques aux modeles
 - **Multi-langages** : Python pour le ML et l'IA generative, C# pour l'ecosysteme Microsoft (ML.NET, Infer.NET, Semantic Kernel), Lean 4 pour la verification formelle
 - **Donnees reelles** : les notebooks QuantConnect utilisent des donnees de marche reelles via yfinance ; le ML Training Pipeline travaille sur un panier de 10 cryptomonnaies avec validation walk-forward stricte
 - **Infrastructure complete** : les notebooks GenAI peuvent utiliser des modeles locaux via Docker (Qwen, FLUX, ComfyUI) ou des APIs cloud (OpenAI, Anthropic)
-- **Preuves formelles** : les series Lean et GameTheory proposent des preuves mecanisees en Lean 4, un aspect rare dans les cours d'IA
+- **Preuves formelles** : les series Lean et GameTheory proposent des preuves mecanisees en Lean 4
 
 ---
 
