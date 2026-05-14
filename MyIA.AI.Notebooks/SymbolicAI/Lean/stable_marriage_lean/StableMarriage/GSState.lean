@@ -141,6 +141,21 @@ lemma gsChooseMax_maximal (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
     (h : (gsCandidates prof σ m).Nonempty) (w : Fin n)
     (hw : w ∈ gsCandidates prof σ m) :
     gsMenPrefLE prof m w (gsChooseMax prof σ m h) := by
+  unfold gsChooseMax
+  letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
+  haveI : IsTrans (Fin n) (· ≤ ·) :=
+    ⟨fun a b c hab hbc => by
+      cases hab with
+      | inl hab => subst hab; exact hbc
+      | inr hab =>
+        cases hbc with
+        | inl hbc => subst hbc; exact Or.inr hab
+        | inr hbc => exact Or.inr (lt_trans hbc hab)⟩
+  -- PROOF HINT: Maximal structure 2nd field = ¬(choose < w) = (choose ≤ w → w ≤ choose)
+  -- Strategy: Nat.lt_trichotomy on menPref values → 3 cases all yield w ≤ choose
+  -- Case < : choose ≤ w → hmax hw gives w ≤ choose
+  -- Case = : Fin.ext heq → prof.menPref_bijective.injective → w = choose → Or.inl
+  -- Case > : Or.inr directly
   sorry
 
 end StableMarriage
