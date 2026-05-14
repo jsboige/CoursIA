@@ -1,0 +1,102 @@
+{
+  "version": 2,
+  "last_updated": "2026-05-14T12:00:00",
+  "entries": {
+    "g.balanced → g.core.nonempty": {
+      "tactic": "intro hb\n  apply?",
+      "theorem": "",
+      "file": "C:\\dev\\CoursIA\\MyIA.AI.Notebooks\\GameTheory\\cooperative_games_lean\\CooperativeGames\\Basic.lean:227",
+      "timestamp": "2026-05-13T08:24:06.274562",
+      "uses": 1
+    },
+    "change_to_normalize_hypothesis_before_split": {
+      "tactic": "change (gsStepWith prof σ m₀ w₀).matching.womenMatch w = some m at hmatch",
+      "theorem": "womenBestState.step",
+      "file": "StableMarriage/Lemmas.lean:570",
+      "timestamp": "2026-05-14T11:30:00",
+      "uses": 1,
+      "pattern": "hypothesis_has_raw_Classical.choose_or_gsChooseMax",
+      "trigger": "hmatch contains unreduced match/gsStepWith expressions that don't match local set/let definitions",
+      "prerequisite": "must have set m₀ := Classical.choose hfree and set w₀ := gsChooseMax prof σ m₀ hm₀.2 before",
+      "next_step": "simp only [gsStepWith] at hmatch; split at hmatch"
+    },
+    "split_at_hmatch_after_simp_only": {
+      "tactic": "simp only [gsStepWith] at hmatch\nsplit at hmatch",
+      "theorem": "womenBestState.step",
+      "file": "StableMarriage/Lemmas.lean:570",
+      "timestamp": "2026-05-14T11:30:00",
+      "uses": 1,
+      "pattern": "match_expression_not_reducible_by_simp",
+      "trigger": "after simp only [DefName], a match expression remains that simp [discriminant_eq] cannot reduce",
+      "failure_avoided": "simp [hwm] reports 'made no progress' — fundamental limitation of simp on match"
+    },
+    "rcases_before_subst_anti_reflexivity": {
+      "tactic": "rcases hsrc with (hw' | ⟨rfl, rfl⟩)\n· subst hw; ...\n· exact le_rfl",
+      "theorem": "womenBestState.step",
+      "file": "StableMarriage/Lemmas.lean:570",
+      "timestamp": "2026-05-14T11:30:00",
+      "uses": 1,
+      "pattern": "subst_after_rcases_rfl_causes_reflexive",
+      "trigger": "rcases with ⟨rfl, rfl⟩ may unify variables, making hw : w₀ = w₀ reflexive, and subst fails",
+      "failure_avoided": "subst hw fails with 'reflexive equality' when hw : w₀ = w₀ after prior unification"
+    },
+    "explicit_mem_iff_arguments": {
+      "tactic": "(@proposedSet.mem_iff n _ prof σ (m', w)).mp hold",
+      "theorem": "womenProposedImpliesMatched.stepWith",
+      "file": "StableMarriage/Lemmas.lean:514",
+      "timestamp": "2026-05-14T11:30:00",
+      "uses": 3,
+      "pattern": "implicit_lemma_arguments_not_inferred",
+      "trigger": "proposedSet.mem_iff (m', w) gives type mismatch — needs full @ with n, inst, prof, σ",
+      "failure_avoided": "Application type mismatch: (m', w) expected to be PrefProfile"
+    },
+    "dsimp_before_rw_on_match_constructs": {
+      "tactic": "dsimp [GSMatching.swapMatch] at hmatch\nrw [Function.update_apply] at hmatch",
+      "theorem": "womenBestState.step",
+      "file": "StableMarriage/Lemmas.lean:570",
+      "timestamp": "2026-05-14T11:30:00",
+      "uses": 2,
+      "pattern": "rw_fails_on_unreduced_match_definition",
+      "trigger": "rw [Function.update_apply] fails when hmatch still contains unreduced swapMatch/matchFree definition"
+    },
+    "show_instead_of_unfold_for_noncomputable_def": {
+      "tactic": "show <explicit_type> instead of unfold banks_set",
+      "theorem": "Arrow.lean proofs",
+      "file": "StableMarriage/Lemmas.lean",
+      "timestamp": "2026-05-14T11:30:00",
+      "uses": 1,
+      "pattern": "unfold_fails_on_noncomputable_def_by",
+      "trigger": "unfold fails or produces unreadable goals on noncomputable def := by ... definitions",
+      "alternative": "use show to explicitly state the type, or simp only [def_name]"
+    }
+  },
+  "tactic_cookbook": {
+    "version": 1,
+    "patterns": [
+      {
+        "name": "change_normalize",
+        "when": "hypothesis contains raw Classical.choose/gsChooseMax that don't match local definitions",
+        "tactic": "change (normalized_expr) at hmatch",
+        "after": ["simp only [Def] at hmatch", "split at hmatch"]
+      },
+      {
+        "name": "split_at_for_match",
+        "when": "simp only [Def] leaves irreducible match expression",
+        "tactic": "split at hmatch",
+        "not": ["simp [discriminant_eq] — cannot reduce match"]
+      },
+      {
+        "name": "rcases_before_subst",
+        "when": "need both rcases and subst on potentially reflexive equality",
+        "tactic": "rcases h with (... | ⟨rfl, rfl⟩); · subst hw; ...; · exact le_rfl",
+        "not": ["subst hw; rcases h — reflexive equality blocks subst"]
+      },
+      {
+        "name": "explicit_@_args",
+        "when": "lemma has implicit args that Lean cannot infer in context",
+        "tactic": "@LemmaName n _ prof σ (m', w)",
+        "not": ["LemmaName (m', w) — type mismatch"]
+      }
+    ]
+  }
+}
