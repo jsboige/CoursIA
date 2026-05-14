@@ -673,7 +673,7 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     verifier = get_verifier(str(Path(filepath).parent.parent))
     subdir = Path(filepath).parent.name
     relative_path = f"{subdir}/_SorryVerify.lean"
-    result = verifier.verify_project_file(relative_path)
+    result = verifier.verify_project_file(relative_path, force=True)
 
     # Clean up temp file
     try:

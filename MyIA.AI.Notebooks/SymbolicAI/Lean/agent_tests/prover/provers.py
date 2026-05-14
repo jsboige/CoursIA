@@ -328,9 +328,10 @@ class MultiAgentSorryProver:
             # now prevents that, but this verify is the workflow-level safety
             # net the user requested ("les verifs via build devraient faire
             # partie integrante du workflow du prouveur").
-            from .verifier import _load_lean_verifier_class
-            _LeanVerifierFinal = _load_lean_verifier_class()
-            _LeanVerifierFinal.invalidate(filepath)
+            from .verifier import get_verifier
+            _gv = get_verifier()
+            if _gv is not None:
+                type(_gv).invalidate(filepath)
             try:
                 final_verify_raw = tactic_tools.compile()
                 final_verify = json.loads(final_verify_raw)

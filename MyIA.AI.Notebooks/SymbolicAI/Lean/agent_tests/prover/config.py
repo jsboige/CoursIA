@@ -805,13 +805,13 @@ DEMOS = {
     23: {
         "name": "MEN_MATCHED_PROPOSED_STEPWITH",
         "file": str(LEMMAS_FILE),
-        "line": 383,
+        "line": 395,
         "sorry_type": "sorry_replacement",
         "theorem_name": "menMatchedProposed.stepWith",
         "theorem": "menMatchedProposed.stepWith",
         "imports": LEMMAS_IMPORTS,
         "description": (
-            "Replace sorry at L383 of Lemmas.lean.\n"
+            "Replace sorry at L395 of Lemmas.lean.\n"
             "Prove menMatchedProposed.stepWith: gsStepWith preserves the\n"
             "invariant that matched men have proposed to their partners.\n"
             "Cases: matchFree (m matched to w, m proposed to w),\n"
@@ -858,13 +858,13 @@ DEMOS = {
     26: {
         "name": "WOMEN_BEST_STATE_STEP",
         "file": str(LEMMAS_FILE),
-        "line": 408,
+        "line": 435,
         "sorry_type": "sorry_replacement",
         "theorem_name": "womenBestState.step",
         "theorem": "womenBestState.step",
         "imports": LEMMAS_IMPORTS,
         "description": (
-            "Replace sorry at L408 of Lemmas.lean.\n"
+            "Replace sorry at L435 of Lemmas.lean.\n"
             "Prove womenBestState.step: gsStep preserves womenBestState.\n"
             "Each woman's current match is her best proposal so far.\n"
             "If m proposes to w and w prefers m: w's match becomes m (improved).\n"
