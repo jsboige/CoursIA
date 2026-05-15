@@ -278,7 +278,8 @@ class VerifyExecutor(Executor):
 
     def __init__(self, sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, kb: Optional[ProofKnowledgeBase] = None,
-                 escalation_threshold: int = 5, **kwargs):
+                 escalation_threshold: int = 5, has_director: bool = False,
+                 director_max_calls: int = 3, **kwargs):
         super().__init__(id="verify_executor", **kwargs)
         self._sorry_ctx = sorry_context
         self._imports = imports
@@ -294,6 +295,15 @@ class VerifyExecutor(Executor):
         self._consecutive_build_fails = 0
         self._total_fails = 0
         self._escalation_threshold = escalation_threshold
+        # F7 (2026-05-15): when the Director lane is wired, F1 escalates
+        # DIRECTLY to Director instead of looping through the Coordinator.
+        # C34-03 forensic showed: even with Director wired, the Coordinator
+        # ran once at session start and never set next_agent="director", so
+        # the frontier model was never invoked despite 10+ BUILD-FAILs. The
+        # docstring intent "Coordinator (stalled) -> Director -> Tactic" is
+        # now hard-coded into F1 routing.
+        self._has_director = has_director
+        self._director_max_calls = director_max_calls
         # Re-search trigger: after this many total fails, force a hint to
         # the Critic that fresh lemmas may be needed. The Critic still makes
         # the routing decision, but the hint makes re-search more likely.
@@ -392,30 +402,46 @@ class VerifyExecutor(Executor):
             self._consecutive_build_fails += 1
             self._total_fails += 1
             if self._consecutive_build_fails >= self._escalation_threshold:
-                # F1: deterministic escalation to Coordinator. Critic prompt
-                # heuristics aren't reliable enough — when the same sorry_line
-                # has failed N times in a row, the attack plan is wrong, not
-                # the local tactic. Reset by sending control back to the
-                # Coordinator with a clear escalation note.
-                msg.next_agent = "coordinator"
+                # F1: deterministic escalation. Critic prompt heuristics
+                # aren't reliable enough — when the same sorry_line has
+                # failed N times in a row, the attack plan is wrong, not
+                # the local tactic.
+                # F7 (2026-05-15): if the Director lane is wired and budget
+                # not spent, route DIRECTLY to Director (Opus 4.7). The
+                # Coordinator already ran once at session start and won't
+                # produce a new attack plan from another invocation — only
+                # the frontier model has a chance on stuck targets. C34-03
+                # forensic: Director was wired but never invoked because
+                # Coordinator never set next_agent="director" itself.
+                if (self._has_director
+                        and msg.director_calls < self._director_max_calls):
+                    msg.next_agent = "director"
+                    escalation_target = "Director"
+                    escalation_role = "f1_escalation_director"
+                else:
+                    msg.next_agent = "coordinator"
+                    escalation_target = "Coordinator"
+                    escalation_role = "f1_escalation_coordinator"
                 escalation_note = (
-                    f"[F1 escalation] {self._consecutive_build_fails} "
-                    f"consecutive BUILD-FAIL on sorry_line "
-                    f"{self._sorry_ctx.sorry_line}. Local tactics aren't "
-                    f"converging — revise the attack plan or mark the goal "
-                    f"intractable. Last error: {msg.error}"
+                    f"[F1 escalation -> {escalation_target}] "
+                    f"{self._consecutive_build_fails} consecutive BUILD-FAIL "
+                    f"on sorry_line {self._sorry_ctx.sorry_line}. Local "
+                    f"tactics aren't converging. Last error: {msg.error}"
                 )
                 msg.error = escalation_note
                 if self._trace:
                     self._trace.log(
-                        agent="VerifyExecutor", role="f1_escalation",
+                        agent="VerifyExecutor", role=escalation_role,
                         content=(f"consecutive_fails="
                                  f"{self._consecutive_build_fails} >= "
                                  f"threshold={self._escalation_threshold}, "
-                                 f"forcing route to Coordinator"),
+                                 f"forcing route to {escalation_target} "
+                                 f"(director_calls={msg.director_calls}/"
+                                 f"{self._director_max_calls}, "
+                                 f"has_director={self._has_director})"),
                     )
                 # Reset so we don't immediately re-escalate on the next fail;
-                # give the Coordinator a fresh window of `threshold` attempts.
+                # give the new agent a fresh window of `threshold` attempts.
                 self._consecutive_build_fails = 0
                 self._total_fails = 0  # reset after coordinator escalation
             else:
@@ -471,13 +497,23 @@ class ProofWorkflowBuilder:
         self._tactic = AgentExecutor(tactic_agent, trace=trace, state=state)
         self._critic = AgentExecutor(critic_agent, trace=trace, state=state)
         self._coordinator = AgentExecutor(coordinator_agent, trace=trace, state=state)
-        self._verify = VerifyExecutor(sorry_context, imports, trace, kb=kb)
+        # F7 (2026-05-15): Director must be constructed BEFORE the verify
+        # executor so we can hand the verify executor a `has_director` flag.
+        # The flag drives the F1 escalation branch — if the Director lane is
+        # wired, F1 sends the message straight to Director instead of looping
+        # through Coordinator (which the C34-03 forensic showed never
+        # produces a `next_agent="director"` route on its own).
         self._director: Optional[AgentExecutor] = (
             AgentExecutor(director_agent, trace=trace, state=state,
                           timeout_s=120)
             if director_agent else None
         )
         self._director_max_calls = 3
+        self._verify = VerifyExecutor(
+            sorry_context, imports, trace, kb=kb,
+            has_director=bool(self._director),
+            director_max_calls=self._director_max_calls,
+        )
 
     def build(self):
         # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to
@@ -501,21 +537,37 @@ class ProofWorkflowBuilder:
         # default critic path don't collide as duplicate edges either. F1
         # (2026-05-11) adds the "coordinator" branch so the deterministic
         # escalation in VerifyExecutor can bypass the Critic entirely.
-        builder.add_switch_case_edge_group(
-            source=self._verify,
-            cases=[
+        # F7 (2026-05-15) adds the "director" branch — when F1 fires and
+        # the Director lane is wired with budget remaining, the message is
+        # sent straight to the frontier model instead of looping through
+        # Coordinator. The Director Case is only added when Director exists,
+        # otherwise the conditional target would be unreachable.
+        verify_cases = [
+            Case(
+                condition=lambda msg: (
+                    msg.next_agent == "tactic" and not msg.proof_found
+                ),
+                target=self._tactic,
+            ),
+            Case(
+                condition=lambda msg: msg.next_agent == "coordinator",
+                target=self._coordinator,
+            ),
+        ]
+        if self._director:
+            verify_cases.append(
                 Case(
                     condition=lambda msg: (
-                        msg.next_agent == "tactic" and not msg.proof_found
+                        msg.next_agent == "director"
+                        and msg.director_calls < self._director_max_calls
                     ),
-                    target=self._tactic,
-                ),
-                Case(
-                    condition=lambda msg: msg.next_agent == "coordinator",
-                    target=self._coordinator,
-                ),
-                Default(target=self._critic),
-            ],
+                    target=self._director,
+                )
+            )
+        verify_cases.append(Default(target=self._critic))
+        builder.add_switch_case_edge_group(
+            source=self._verify,
+            cases=verify_cases,
         )
 
         # Critic conditional routing (requires exactly one Default)
