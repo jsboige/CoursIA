@@ -222,7 +222,11 @@ theorem bondareva_shapley_forward :
 theorem bondareva_shapley_backward :
     G.Balanced → G.Core.Nonempty := by
   intro hb
-  apply?
+  -- Strategy: define the feasible region F = { x : N → ℝ | ∀ S, v(S) ≤ ∑_{i∈S} xᵢ }
+  -- and the hyperplane H = { x | ∑ᵢ xᵢ = v(N) }.
+  -- If F ∩ H = ∅, apply hyperplane_separation to get a separating functional
+  -- that witnesses an unbalanced weight system, contradicting hb.
+  sorry
 
 /-- Bondareva-Shapley: The Core is nonempty iff the game is balanced. -/
 theorem bondareva_shapley :
