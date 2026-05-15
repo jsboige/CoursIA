@@ -270,7 +270,10 @@ def augment_instructions(
 
     references = load_reference_docs(project) if include_references else ""
 
-    if not context.strip() and not references.strip():
+    # Reco 3: inject proven_successful_tactics from KB for goal-pattern matching.
+    proven_tactics = kb.proven_successful_tactics() if hasattr(kb, "proven_successful_tactics") else ""
+
+    if not context.strip() and not references.strip() and not proven_tactics.strip():
         return base
 
     blocks: list[str] = []
@@ -281,6 +284,10 @@ def augment_instructions(
     if context.strip():
         blocks.append(
             f"# PROOF KNOWLEDGE BASE (accumulated from past sessions)\n{context}"
+        )
+    if proven_tactics.strip():
+        blocks.append(
+            f"# PROVEN TACTIC PATTERNS (reuse these for similar goals)\n{proven_tactics}"
         )
     blocks.append(base)
     return "\n\n---\n\n".join(blocks)

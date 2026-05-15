@@ -19,6 +19,7 @@ Hardening (2026-05-08):
 """
 
 import asyncio
+import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -308,6 +309,13 @@ class VerifyExecutor(Executor):
         # the Critic that fresh lemmas may be needed. The Critic still makes
         # the routing decision, but the hint makes re-search more likely.
         self._research_hint_threshold = 4
+        # Reco 1 (C34-05 postmortem): wall-clock force trigger for Director.
+        # Observed: 28-30 BUILD-FAILs with 0 Director invocations because
+        # decomposition resets _consecutive_build_fails. If elapsed > 1500s
+        # AND total_fails > 10, force Director escalation regardless.
+        self._session_start = time.monotonic()
+        self._wallclock_director_threshold_s = 1500
+        self._wallclock_director_min_fails = 10
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -399,9 +407,46 @@ class VerifyExecutor(Executor):
         else:
             msg.error = result.get("errors", "")[:500]
             msg.error_type = result.get("error_type", "unknown")
-            self._consecutive_build_fails += 1
-            self._total_fails += 1
-            if self._consecutive_build_fails >= self._escalation_threshold:
+            # Reco 1: filter probe errors from build-fail counter.
+            # "GoalExtract exact ()" is a Lean server transient, not a tactic failure.
+            is_probe_error = "GoalExtract" in (msg.error or "")
+            if not is_probe_error:
+                self._consecutive_build_fails += 1
+                self._total_fails += 1
+            elif self._trace:
+                self._trace.log(
+                    agent="VerifyExecutor", role="probe_filter",
+                    content=f"filtered GoalExtract probe error, counters unchanged",
+                )
+            # Reco 1: wall-clock force trigger — if elapsed > 1500s AND
+            # total_fails > 10, force Director regardless of per-line counter.
+            elapsed = time.monotonic() - self._session_start
+            wallclock_trigger = (
+                elapsed > self._wallclock_director_threshold_s
+                and self._total_fails >= self._wallclock_director_min_fails
+                and self._has_director
+                and msg.director_calls < self._director_max_calls
+            )
+            if wallclock_trigger:
+                msg.next_agent = "director"
+                msg.error = (
+                    f"[F8 wall-clock escalation -> Director] "
+                    f"{elapsed:.0f}s elapsed, {self._total_fails} total BUILD-FAIL. "
+                    f"Consecutive counter was reset by decompositions. "
+                    f"Forcing Director invocation. Last error: {msg.error}"
+                )
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="f8_wallclock_escalation",
+                        content=(f"elapsed={elapsed:.0f}s > "
+                                 f"{self._wallclock_director_threshold_s}s, "
+                                 f"total_fails={self._total_fails} >= "
+                                 f"{self._wallclock_director_min_fails}, "
+                                 f"forcing Director (calls={msg.director_calls}/"
+                                 f"{self._director_max_calls})"),
+                    )
+                self._consecutive_build_fails = 0
+            elif self._consecutive_build_fails >= self._escalation_threshold:
                 # F1: deterministic escalation. Critic prompt heuristics
                 # aren't reliable enough — when the same sorry_line has
                 # failed N times in a row, the attack plan is wrong, not

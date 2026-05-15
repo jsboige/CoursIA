@@ -158,6 +158,33 @@ class ProofKnowledgeBase:
             result = result[:max_chars] + "\n... (truncated)"
         return result
 
+    def proven_successful_tactics(self, max_chars: int = 1500) -> str:
+        """Return formatted proven_successful_tactics section from KB v4.
+
+        Reco 3 (C34-05 postmortem): inject these into Director context so the
+        frontier model knows about winning tactic chains (e.g. gsChooseMax_maximal)
+        instead of brute-forcing already-solved proof patterns.
+        """
+        entries = self._data.get("proven_successful_tactics", {})
+        if not entries:
+            return ""
+        lines = []
+        for name, entry in entries.items():
+            chain = entry.get("tactic_chain", "")
+            goal_pat = entry.get("goal_pattern", "")
+            lines.append(f"### {name}")
+            if goal_pat:
+                lines.append(f"Goal pattern: `{goal_pat}`")
+            if chain:
+                lines.append(f"Winning tactic chain:\n```lean\n{chain}\n```")
+            key_insight = entry.get("key_insight", "")
+            if key_insight:
+                lines.append(f"Key insight: {key_insight}")
+        result = "\n".join(lines)
+        if len(result) > max_chars:
+            result = result[:max_chars] + "\n... (truncated)"
+        return result
+
     # --- Legacy methods (v1 compatible) ---
 
     @staticmethod
