@@ -137,6 +137,33 @@ class MultiAgentSorryProver:
             print(f"  [AutoFix] Configured line {demo['line']} has no sorry. "
                   f"Using closest sorry at line {sorry_line}")
 
+        # F6 (2026-05-15): already-solved fast-path. If the file has no real
+        # sorry token at all, the target is already proven — yield immediately
+        # instead of looping agents and running a ~300s compile. Mirrors the
+        # F5 intractable fast-path. Forensic finding from the DEMO 9 run
+        # (Voting.lean L355, sorry already 0): the prover burned a full agent
+        # loop + compile on a no-op target.
+        if not actual_sorry_lines:
+            print(f"\n{'='*70}")
+            print(f"ALREADY SOLVED: {demo['name']} — no real sorry in {filepath}")
+            print(f"{'='*70}")
+            self.trace.log(
+                agent="ProverSetup", role="already_solved",
+                content=f"{filepath} has 0 real sorry tokens — target already "
+                        f"proven, yielding without agent loop or compile",
+            )
+            return {
+                "success": True,
+                "proof": None,
+                "iterations": 0,
+                "attempts": 0,
+                "total_s": 0.0,
+                "config": f"multi-{self.provider}",
+                "sorry_evolution": f"{original_sorry_count} -> {original_sorry_count}",
+                "best_sorry": original_sorry_count,
+                "already_solved": True,
+            }
+
         # Refuse honest/unprovable sorrys BEFORE spinning up agents.
         refusal = _refuse_honest_sorry(filepath, sorry_line, demo["name"])
         if refusal is not None:
@@ -515,6 +542,29 @@ class AutonomousProver:
             sorry_line = min(actual_sorry_lines, key=lambda l: abs(l - sorry_line))
             print(f"  [AutoFix] Configured line has no sorry. "
                   f"Using closest sorry at line {sorry_line}")
+
+        # F6 (2026-05-15): already-solved fast-path — see MultiAgentSorryProver.
+        # No sorry anywhere in the file => target already proven, yield now.
+        if not actual_sorry_lines:
+            print(f"\n{'='*70}")
+            print(f"ALREADY SOLVED: {demo['name']} — no sorry in {filepath}")
+            print(f"{'='*70}")
+            self.trace.log(
+                agent="ProverSetup", role="already_solved",
+                content=f"{filepath} has 0 sorry tokens — target already "
+                        f"proven, yielding without agent loop or compile",
+            )
+            return {
+                "success": True,
+                "proof": None,
+                "iterations": 0,
+                "attempts": 0,
+                "total_s": 0.0,
+                "config": self.config_label,
+                "sorry_evolution": f"{original_sorry_count} -> {original_sorry_count}",
+                "best_sorry": original_sorry_count,
+                "already_solved": True,
+            }
 
         # Refuse honest/unprovable sorrys BEFORE spinning up the agent.
         refusal = _refuse_honest_sorry(filepath, sorry_line, demo["name"])
