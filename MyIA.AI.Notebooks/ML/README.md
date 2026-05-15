@@ -4,7 +4,7 @@
 series: ML
 pedagogical_count: 30
 breakdown: DataScienceWithAgents=22, ML.Net=8
-maturity: BETA=18, ALPHA=9, PRODUCTION=2, DRAFT=1
+maturity: BETA=19, ALPHA=7, PRODUCTION=3, DRAFT=1
 -->
 
 Vous êtes développeur ou analyste et vous voulez construire des modèles prédictifs sans devenir data scientist théoricien ? Cette série vous forme au Machine Learning pratique avec deux stack complémentaires : **ML.NET** pour l'écosystème .NET/C# (8 notebooks, ~6h) et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs (22 notebooks, ~20h). À la fin, vous saurez charger des données, entraîner un modèle, l'évaluer rigoureusement, et le déployer en production.

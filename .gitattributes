@@ -1,5 +1,11 @@
 # Normalize Jupyter notebooks to LF line endings
 *.ipynb text eol=lf
+# Normalize files consumed by the catalog-drift CI check to LF so byte-level
+# comparison is platform-independent (issue #1056). Limited to the exact files
+# the check reads, to avoid a wide renormalization of unrelated .md files.
+COURSE_CATALOG.generated.json text eol=lf
+MyIA.AI.Notebooks/README.md text eol=lf
+MyIA.AI.Notebooks/*/README.md text eol=lf
 # Git LFS tracking for model files referenced by notebooks
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text

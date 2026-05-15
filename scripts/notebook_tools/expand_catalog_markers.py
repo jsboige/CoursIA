@@ -39,6 +39,12 @@ NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 MARKER_RE = re.compile(r"<!--\s*CATALOG:(\w+):([^>]+?)\s*-->")
 
 
+def _to_lf(text: str) -> str:
+    """Normalize CRLF/CR line endings to LF so byte-level comparison is
+    platform-independent (Windows authors with CRLF working tree vs Linux CI)."""
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def load_catalog(path: Path) -> list[dict]:
     if not path.exists():
         print(f"ERROR: Catalog not found: {path}", file=sys.stderr)
@@ -152,8 +158,9 @@ def expand_file(
                 serie_match = re.search(r"series:\s*(\S+)", block_text)
                 if serie_match:
                     serie = serie_match.group(1)
-                    new_block = format_catalog_status_block(entries, serie)
-                    if new_block != "\n".join(catalog_status_buf):
+                    new_block = _to_lf(format_catalog_status_block(entries, serie))
+                    existing_block = _to_lf("\n".join(catalog_status_buf))
+                    if new_block != existing_block:
                         changes.append(f"Updated CATALOG-STATUS block for {serie}")
                     new_lines.append(new_block)
                 else:
@@ -237,7 +244,7 @@ def main():
     drift_found = False
 
     for readme_path in targets:
-        content = readme_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
+        content = _to_lf(readme_path.read_text(encoding="utf-8"))
         new_content, changes = expand_file(content, entries)
 
         if changes:
@@ -247,7 +254,9 @@ def main():
                 print(f"  [{rel}] {change}")
 
             if not args.dry_run and not args.check:
-                readme_path.write_text(new_content, encoding="utf-8")
+                # Write with explicit LF newline so Windows authors (Path.write_text
+                # converts \n->\r\n in text mode) produce bytes identical to CI.
+                readme_path.write_text(new_content, encoding="utf-8", newline="\n")
                 print(f"  Updated: {rel}")
             elif args.check:
                 drift_found = True
