@@ -234,7 +234,17 @@ theorem bondareva_shapley_backward :
     -- PROVER TARGET: Show intersection of half-spaces is convex
     -- Each constraint S is a half-space { x | ∑_{i∈S} xᵢ ≥ v(S) } which is convex.
     -- Intersection of convex sets is convex.
-    unfold P; rw [← Set.iInter_setOf]; exact _root_.convex_iInter fun S => _root_.convex_halfspace_le (G.v S) (fun x => ∑ i ∈ S, x i)
+    intro x hx y hy a b ha hb hab S
+    show ∑ i ∈ S, (a • x + b • y) i ≥ G.v S
+    have h : ∀ i ∈ S, (a • x + b • y) i = a * x i + b * y i := by
+      intro i hi; simp [Pi.smul_apply, Pi.add_apply, smul_eq_mul]
+    calc ∑ i ∈ S, (a • x + b • y) i
+        = ∑ i ∈ S, (a * x i + b * y i) := Finset.sum_congr rfl (fun i hi => h i hi)
+      _ = a * ∑ i ∈ S, x i + b * ∑ i ∈ S, y i := by
+            simp [Finset.sum_add_distrib, Finset.mul_sum, Finset.sum_mul]
+      _ ≥ a * G.v S + b * G.v S := add_le_add (mul_le_mul_of_nonneg_left (hx S) ha) (mul_le_mul_of_nonneg_left (hy S) hb)
+      _ = (a + b) * G.v S := by ring
+      _ = G.v S := by rw [hab]; ring
   -- Step 3: Show P is closed (intersection of closed half-spaces)
   have hP_closed : IsClosed P := by
     -- PROVER TARGET: Intersection of closed sets is closed
@@ -242,10 +252,20 @@ theorem bondareva_shapley_backward :
     unfold P; rw [← Set.iInter_setOf]; exact isClosed_iInter (fun S => IsClosed.preimage (continuous_finsetSum S fun i _ ↦ continuous_apply i) isClosed_Ici)
   -- Step 4: Show P is nonempty (take x = λ i. M where M = max_S v(S), then ∑_{i∈S} M ≥ v(S))
   have hP_nonempty : P.Nonempty := by
-    -- PROVER TARGET: Construct a large enough constant allocation
-    -- Let M = max_S v(S) (exists since Finset N is finite).
-    -- Then x = fun _ => M satisfies ∑_{i∈S} M = S.card * M ≥ M ≥ v(S).
-    sorry
+    let M := Finset.sup' Finset.univ Finset.univ_nonempty G.v
+    use fun _ => |M|
+    intro S
+    by_cases hS : S = ∅
+    · rw [hS]; simp [G.empty_zero]
+    · have hM : G.v S ≤ M := Finset.le_sup' G.v (Finset.mem_univ S)
+      have hScard : (0 : ℕ) < S.card := Finset.card_pos.mpr (Finset.nonempty_of_ne_empty hS)
+      simp only [Finset.sum_const, nsmul_eq_mul]
+      have habsM : M ≤ |M| := le_abs_self M
+      have h1 : (1 : ℝ) ≤ S.card := Nat.one_le_cast.mpr hScard
+      calc G.v S ≤ M := hM
+        _ ≤ |M| := habsM
+        _ = 1 * |M| := (one_mul _).symm
+        _ ≤ (S.card : ℝ) * |M| := by gcongr
   -- Step 5: Show P is bounded below (trivially, 0 as lower bound isn't enough,
   -- but P is bounded since ∑ᵢ xᵢ ≤ v(N) + C for some C, by balanced condition).
   -- In finite dimensions, closed + bounded below + bounded above = compact.
