@@ -17,6 +17,8 @@ import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic
+import Mathlib.Analysis.Convex.Cone.Dual
+import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-! ## Basic Types -/
 
@@ -222,11 +224,63 @@ theorem bondareva_shapley_forward :
 theorem bondareva_shapley_backward :
     G.Balanced → G.Core.Nonempty := by
   intro hb
-  -- Strategy: define the feasible region F = { x : N → ℝ | ∀ S, v(S) ≤ ∑_{i∈S} xᵢ }
-  -- and the hyperplane H = { x | ∑ᵢ xᵢ = v(N) }.
-  -- If F ∩ H = ∅, apply hyperplane_separation to get a separating functional
-  -- that witnesses an unbalanced weight system, contradicting hb.
-  sorry
+  -- Work in the finite-dimensional real vector space N → ℝ.
+  -- The feasible region: P = { x | ∀ S, ∑_{i∈S} xᵢ ≥ v(S) } (coalition constraints).
+  -- We show P ∩ { x | ∑ᵢ xᵢ = v(N) } is nonempty via hyperplane separation.
+  -- Step 1: Define the polyhedral constraint set P
+  let P : Set (N → ℝ) := { x | ∀ S : Finset N, ∑ i ∈ S, x i ≥ G.v S }
+  -- Step 2: Show P is convex (intersection of half-spaces, each convex)
+  have hP_conv : _root_.Convex ℝ P := by
+    -- PROVER TARGET: Show intersection of half-spaces is convex
+    -- Each constraint S is a half-space { x | ∑_{i∈S} xᵢ ≥ v(S) } which is convex.
+    -- Intersection of convex sets is convex.
+    sorry
+  -- Step 3: Show P is closed (intersection of closed half-spaces)
+  have hP_closed : IsClosed P := by
+    -- PROVER TARGET: Intersection of closed sets is closed
+    -- Each half-space { x | ∑_{i∈S} xᵢ ≥ v(S) } is closed (continuous preimage of Ici).
+    sorry
+  -- Step 4: Show P is nonempty (take x = λ i. M where M = max_S v(S), then ∑_{i∈S} M ≥ v(S))
+  have hP_nonempty : P.Nonempty := by
+    -- PROVER TARGET: Construct a large enough constant allocation
+    -- Let M = max_S v(S) (exists since Finset N is finite).
+    -- Then x = fun _ => M satisfies ∑_{i∈S} M = S.card * M ≥ M ≥ v(S).
+    sorry
+  -- Step 5: Show P is bounded below (trivially, 0 as lower bound isn't enough,
+  -- but P is bounded since ∑ᵢ xᵢ ≤ v(N) + C for some C, by balanced condition).
+  -- In finite dimensions, closed + bounded below + bounded above = compact.
+  -- Actually we need: the set { x ∈ P | ∑ᵢ xᵢ ≤ v(N) } is compact,
+  -- or equivalently P ∩ { x | ∑ᵢ xᵢ < v(N) + 1 } is compact.
+  -- Key: show that for x ∈ P, ∑ᵢ xᵢ ≥ v(N) (by summing over all singletons + grand coalition).
+  -- Wait: we need ∑ᵢ xᵢ = v(N) for Core membership.
+  -- Strategy: minimize ∑ᵢ xᵢ over P. Since P is closed and bounded below, minimum exists.
+  -- If min ∑ᵢ xᵢ > v(N), apply hyperplane_separation.
+  -- If min ∑ᵢ xᵢ = v(N), we have our Core allocation.
+  -- The balanced condition ensures min ∑ᵢ xᵢ ≤ v(N).
+  -- Step 6: Define the "below grand coalition" set
+  let K : Set (N → ℝ) := { x ∈ P | (∑ i : N, x i) < G.v Finset.univ }
+  -- Step 7: Show K is empty (balanced ⟹ min over P ≤ v(N))
+  -- Equivalently: ∀ x ∈ P, v(N) ≤ ∑ᵢ xᵢ
+  -- This follows from: if ∑ᵢ xᵢ < v(N) for some x ∈ P, the balanced condition
+  -- gives a contradiction via Farkas/hyperplane_separation.
+  have hK_empty : K = ∅ := by
+    -- PROVER TARGET: Show no x ∈ P has ∑ᵢ xᵢ < v(N)
+    -- By contradiction: assume x ∈ P with ∑ᵢ xᵢ < v(N).
+    -- The balanced weights w(S) = ∑ᵢ xᵢ - ∑_{i∉S} xᵢ... actually this is the hard part.
+    -- Use hyperplane_separation on the cone of balanced weight violations.
+    sorry
+  -- Step 8: Since K = ∅, there exists x ∈ P with ∑ᵢ xᵢ = v(N)
+  -- (P is nonempty + closed + no element has sum < v(N) ⟹ some element has sum = v(N))
+  have hCore : G.Core.Nonempty := by
+    -- PROVER TARGET: Extract Core allocation from P \ K
+    -- Since P ≠ ∅ and no x ∈ P has ∑ᵢ xᵢ < v(N), take any x ∈ P.
+    -- By hK_empty, ∑ᵢ xᵢ ≥ v(N). If = v(N), done. If > v(N), need to adjust.
+    -- Actually: by hP_nonempty get x ∈ P. By hK_empty, ∑ᵢ xᵢ ≥ v(N).
+    -- If ∑ᵢ xᵢ = v(N), use ⟨x, rfl, hx.1⟩.
+    -- If ∑ᵢ xᵢ > v(N), scale down: y = x - (∑ᵢ xᵢ - v(N))/n · 1 preserves coalition constraints?
+    -- Actually scaling down might violate constraints. Better: use existence of minimum.
+    sorry
+  exact hCore
 
 /-- Bondareva-Shapley: The Core is nonempty iff the game is balanced. -/
 theorem bondareva_shapley :
