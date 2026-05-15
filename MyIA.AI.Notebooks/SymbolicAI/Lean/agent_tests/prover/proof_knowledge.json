@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "last_updated": "2026-05-14T22:21:06.064204",
+  "last_updated": "2026-05-15",
   "source_files": {
     "GSState.lean": "stable_marriage_lean/StableMarriage/GSState.lean",
     "Lemmas.lean": "stable_marriage_lean/StableMarriage/Lemmas.lean",
@@ -2074,6 +2074,91 @@
           "build_fail: build fail"
         ],
         "source": "claude_jsonl:ec2d7c6e-a591-46fd-ae8e-81619a6c7da2"
+      },
+      {
+        "name": "mined_arithmetic__SmokeTest_54f39f6f75_L6_0",
+        "category": "arithmetic",
+        "when": "Goal from  SmokeTest 54f39f6f75",
+        "tactic": "exact Nat.zero_add n",
+        "after": "",
+        "not": [],
+        "source": "mined_from_history"
+      },
+      {
+        "name": "mined_arithmetic_Voting_c94c6e6ddb_L355_1",
+        "category": "arithmetic",
+        "when": "Goal from Voting c94c6e6ddb",
+        "tactic": "-- Define sorted list\n        let l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)\n        have hl : l.length = Fintype.card ι := by\n          simp [l, List.length_mergeSort, List.length_map, Finset.length_toList]\n        have hn : l.length / 2 < l.length := by omega\n        have hperm : l ≈ Finset.univ.toList.map peaks := List.mergeSort_perm _ _\n        have hsorted : l.Sorted (· ≤ ·) := List.sorted_mergeSort (· ≤ ·) (Finset.univ.toList.map peaks)\n        -- Bridge A.card to countP on l\n        have hA_card : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card =\n            l.countP (fun x => decide (x < median_peak peaks)) := by\n          classical\n          have h1 : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card =\n              (Finset.univ.toList.filter (fun i => peaks i < median_peak peaks)).length := by\n            simp [Finset.length_toList]\n          have h2 : (Finset.univ.toList.filter (fun i => peaks i < median_peak peaks)).length =\n              (Finset.univ.toList.map peaks).countP (fun x => decide (x < median_peak peaks)) := by\n            simp [List.countP_map, List.length_filter_eq_countP]\n          have h3 : (Finset.univ.toList.map peaks).countP (fun x => decide (x < median_peak peaks)) =\n              l.countP (fun x => decide (x < median_peak peaks)) := hperm.countP_eq _\n          omega",
+        "after": "",
+        "not": [],
+        "source": "mined_from_history"
+      },
+      {
+        "name": "mined_simplification_Voting_c94c6e6ddb_L355_2",
+        "category": "simplification",
+        "when": "Goal from Voting c94c6e6ddb",
+        "tactic": "exact List.pairwise_mergeSort",
+        "after": "",
+        "not": [],
+        "source": "mined_from_history"
+      },
+      {
+        "name": "mined_application_Voting_df5bf269ba_L385_3",
+        "category": "application",
+        "when": "Goal from Voting df5bf269ba",
+        "tactic": "exact List.sorted_mergeSort",
+        "after": "",
+        "not": [],
+        "source": "mined_from_history"
+      },
+      {
+        "name": "mined_application_Voting_df5bf269ba_L385_4",
+        "category": "application",
+        "when": "Goal from Voting df5bf269ba",
+        "tactic": "exact List.Sorted (· ≤ ·) []",
+        "after": "",
+        "not": [],
+        "source": "mined_from_history"
+      },
+      {
+        "name": "plan_multi_SMOKE_TEST_ZERO_ADD_local",
+        "category": "strategy",
+        "when": "Preuve triviale de l'identité de l'élément neutre de l'addit",
+        "tactic": "",
+        "after": "  1. Appliquer exact Nat.zero_add n pour conclure",
+        "source": "multi_SMOKE_TEST_ZERO_ADD_local"
+      },
+      {
+        "name": "plan_multi_SMOKE_TEST_ZERO_ADD_zai",
+        "category": "strategy",
+        "when": "Smoke test trivial : le but est exactement Nat.zero_add n. U",
+        "tactic": "",
+        "after": "  1. Prouver directement 0 + n = n en utilisant le lemme Nat.zero_add (ou omega/simp)",
+        "source": "multi_SMOKE_TEST_ZERO_ADD_zai"
+      },
+      {
+        "name": "nat_trichotomy_for_custom_LE_strict",
+        "category": "order_reasoning",
+        "when": "Goal is a < b under custom LE wrapping eq-or-lt on Nat, with a maximality hypothesis available",
+        "tactic": "have htri := Nat.lt_trichotomy (f a) (f b); rcases htri with (hlt | heq | hgt)",
+        "after": "Three branches: hlt+maximality via Or.inr, heq+injectivity, hgt direct",
+        "source": "postmortem_2026-05-15_gsChooseMax_maximal"
+      },
+      {
+        "name": "finset_card_to_sorted_list_countP_bridge",
+        "category": "finset_reasoning",
+        "when": "Goal needs Finset.card bound where elements can be sorted (e.g. median count)",
+        "tactic": "simp [Finset.length_toList]; simp [List.countP_map, List.length_filter_eq_countP]; exact hperm.countP_eq _; omega",
+        "after": "Goal reduced to countP bound on the sorted list",
+        "source": "mined_Voting_L355"
+      },
+      {
+        "name": "fin_ext_after_injectivity_on_nat_value",
+        "category": "type_inference",
+        "when": "You have f a = f b on Nat-valued function but the goal needs a = b on Fin",
+        "tactic": "exact (f_bijective).injective (Fin.ext heq)",
+        "after": "Fin.ext bridges the Nat equality to Fin equality before injectivity is applied",
+        "source": "postmortem_2026-05-15_gsChooseMax_maximal"
       }
     ]
   },
@@ -3801,6 +3886,35 @@
       "lesson": "Tactic failed 3 times — try alternative",
       "session": "aggregated",
       "line": 0
+    },
+    {
+      "what_failed": "unfold gsChooseMax\n  letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩\n  haveI : IsTrans (Fin n) (· ≤ ·) :=\n    ⟨fun a b c hab hbc => by\n      cases hab with\n",
+      "why": "",
+      "lesson": "Failed 2x — try alternative approach",
+      "file": "GSState_0129b0a0a4_L144",
+      "attempts": 2
+    },
+    {
+      "what": "Goal extraction probe exact-unit returns Type mismatch when goal is gsMenPrefLE (disjunction)",
+      "why": "The GoalExtract probe wraps exact-unit but a Unit term does not match a Prop disjunction — false positive in error report.",
+      "lesson": "GoalExtract noise: filter out the exact-unit probe errors from the BUILD-FAIL counter; they are diagnostic only and bias the F1/F7/F8 escalation triggers.",
+      "file": "GSState.lean:144",
+      "examples_affected": [
+        "c34-04",
+        "c34-05"
+      ],
+      "source": "postmortem_2026-05-15"
+    },
+    {
+      "what": "Maximality-by-strict-inequality goal cannot be discharged by linarith/omega/exact?",
+      "why": "The custom LE instance gsMenPrefLE wraps a disjunction (eq or lt), so linarith does not see a linear-arithmetic structure on the underlying Nat. exact? cannot infer the Or.inr branch.",
+      "lesson": "For goals a < b under custom LE wrapping eq-or-lt, use rcases Nat.lt_trichotomy (f a) (f b) with hlt|heq|hgt on the underlying Nat preference. Route each branch via injectivity (heq), maximality (hlt via Or.inr feeding hmax), or directly (hgt).",
+      "file": "GSState.lean:144",
+      "examples_affected": [
+        "gsChooseMax_maximal"
+      ],
+      "correct_approach": "See proven_successful_tactics.gsChooseMax_maximal. Director-level strategic guidance required (proof is 25+ lines; tactic-search will not find it).",
+      "source": "postmortem_2026-05-15"
     }
   ],
   "mathlib_api": {
@@ -4012,6 +4126,118 @@
         "shapley_uniqueness": "Uniqueness: Shapley value is the unique solution satisfying all four axioms",
         "phi_unanimity": "Any axiom-satisfying solution on unanimity game gives 1/|T| or 0"
       }
+    }
+  },
+  "proven_successful_tactics": {
+    "_schema": {
+      "description": "Tactics that closed a real sorry in production, with git commit proof. Added 2026-05-15 postmortem.",
+      "expected_shape": {
+        "<lemma_name>": {
+          "file": "string - path:line",
+          "goal": "string - statement of the goal",
+          "tactic_chain": [
+            "string",
+            "..."
+          ],
+          "commit": "string - SHA proving the close",
+          "session": "string - prover session id if mined, else manual",
+          "notes": "string - context that made the tactic work"
+        }
+      }
+    },
+    "gsChooseMax_maximal": {
+      "file": "stable_marriage_lean/StableMarriage/GSState.lean:140",
+      "goal": "gsMenPrefLE prof m w (gsChooseMax prof sigma m h)",
+      "tactic_chain": [
+        "unfold gsChooseMax",
+        "letI : LE (Fin n) := <gsMenPrefLE prof m>",
+        "haveI : IsTrans (Fin n) (le-relation) := <Or-transitivity case-split>",
+        "set c := Classical.choose (Finset.exists_maximal h) with hc",
+        "obtain <-, hmax> := Classical.choose_spec (Finset.exists_maximal h)",
+        "have htri := Nat.lt_trichotomy (prof.menPref m w) (prof.menPref m c)",
+        "rcases htri with (hlt | heq | hgt)",
+        "hlt branch: have hle : c <= w := Or.inr hlt; exact hmax hw hle",
+        "heq branch: left; exact (prof.menPref_bijective m).injective (Fin.ext heq)",
+        "hgt branch: right; exact hgt"
+      ],
+      "commit": "58815af9",
+      "session": "manual (PR #1120). Prover failed to reproduce: C34-03/04/05 (3 BG runs, all 6000s timeout, 0 director invocations).",
+      "notes": "Three keys the prover missed across 3 runs: (1) Fin.ext on heq for Nat-to-Fin coercion before injectivity, (2) set c := ... gives a single binder reused 6x (without set, the term Classical.choose ... appears literally in every line and blows context), (3) hlt branch must build hle : c <= w via Or.inr hlt then feed hmax hw hle — agents repeatedly produced flat applications without the conditional maximality structure."
+    },
+    "zero_add_smoke": {
+      "file": "baselines (smoke)",
+      "goal": "0 + n = n",
+      "tactic_chain": [
+        "exact Nat.zero_add n"
+      ],
+      "commit": "n/a",
+      "session": "_SmokeTest_54f39f6f75_L6 (2026-05-11)",
+      "notes": "Sanity-check entry: pure direct-lemma application, single-shot success."
+    },
+    "voting_sorted_mergeSort": {
+      "file": "social_choice_lean/SocialChoice/Voting.lean:385",
+      "goal": "List.Sorted (le-rel) (Finset.univ.toList.map peaks).mergeSort",
+      "tactic_chain": [
+        "exact List.sorted_mergeSort"
+      ],
+      "commit": "mined (history Voting_df5bf269ba_L385)",
+      "session": "09adc8d2 (2026-05-12)",
+      "notes": "When goal exactly matches a Mathlib lemma post-unfold, single exact closes. The prover should index sorted_mergeSort and pairwise_mergeSort together for mergeSort-based goals."
+    },
+    "voting_finset_countP_bridge": {
+      "file": "social_choice_lean/SocialChoice/Voting.lean:355",
+      "goal": "(Finset.filter p Finset.univ).card = l.countP p (via permutation)",
+      "tactic_chain": [
+        "simp [Finset.length_toList]                              -- h1: Finset.card -> toList.length",
+        "simp [List.countP_map, List.length_filter_eq_countP]     -- h2: filter.length -> map.countP",
+        "exact hperm.countP_eq _                                  -- h3: perm.countP_eq across mergeSort",
+        "omega                                                    -- bridge"
+      ],
+      "commit": "mined (history Voting_c94c6e6ddb_L355)",
+      "session": "4fa66bc7 (2026-05-12)",
+      "notes": "Three-step bridge: Finset.card -> filter.length -> map.countP -> sorted-list countP. Used by Voting median lemma. Reusable for any Finset.card vs sorted-list bound."
+    },
+    "voting_pairwise_mergeSort": {
+      "file": "social_choice_lean/SocialChoice/Voting.lean:385",
+      "goal": "List.Pairwise (le-rel) (... .mergeSort)",
+      "tactic_chain": [
+        "exact List.pairwise_mergeSort"
+      ],
+      "commit": "mined (history Voting_c94c6e6ddb_L355)",
+      "session": "4fa66bc7",
+      "notes": "Sister lemma to sorted_mergeSort; index both together."
+    }
+  },
+  "wall_clock_burn_patterns": {
+    "_schema": {
+      "description": "Anti-patterns where the prover burns wall-clock without closing a sorry. Added 2026-05-15 postmortem."
+    },
+    "decomposition_loop_revert": {
+      "observed_in": [
+        "c34-04_f7_gsChooseMax.log",
+        "c34-05_f8_gsChooseMax.log"
+      ],
+      "symptom": "TacticTools repeatedly logs 'sorries grew 1->2 (within budget 5); accepting if build passes' then BUILD-FAIL revert. Each cycle 5-15s, ~25 cycles consume ~5min.",
+      "root_cause": "Decomposition mode keeps producing partial sorries that depend on the next residual goal but never close it. The 'within budget 5' gate accepts the decomposition optimistically, but BUILD-FAIL on the residual reverts everything.",
+      "remediation": "Reduce decomposition budget to 2 (was 5). Require decomposed sorries to be in DIFFERENT contexts (line distance > 0 or different goal type), otherwise it is just a re-write loop. F7 wired the Director-on-build-fail but the counter resets between decomp attempts."
+    },
+    "director_never_invoked": {
+      "observed_in": [
+        "c34-04_f7_gsChooseMax.log (0 director_invokes despite F7 wired)",
+        "c34-05_f8_gsChooseMax.log (0 director_invokes despite F8 total_fails trigger)"
+      ],
+      "symptom": "28-30 BUILD-FAIL accumulate per run, never escalating to Director. Total wall-clock 6000s timeout reached.",
+      "root_cause": "F7 counter is per-line; decomposition resets it (sorry moves to a new line). F8 added total_fails counter but apparently does not trip in these runs — needs investigation.",
+      "remediation": "Add a wall-clock-relative trigger: if elapsed_s > 1500 AND build_fails_total > 10 AND Director is wired, force-escalate via budget-spend regardless of per-line counter. Also instrument director_invokes counter in trace JSON for forensic visibility."
+    },
+    "searchagent_reasoning_burn": {
+      "observed_in": [
+        "c34-04 (~217s no output)",
+        "c34-05 (~1721s no output)"
+      ],
+      "symptom": "SearchAgent (local Qwen3.6) consumes 200s+ on reasoning_content with no final text or tool call. Then API error from z.ai upstream.",
+      "root_cause": "Reasoning-content budget on a non-reasoning task. Documented in agents.py:26-30 but the 16384 max_tokens bump was insufficient.",
+      "remediation": "Either (a) downgrade SearchAgent to a non-reasoning Qwen variant for tool-call work, or (b) hard-cap reasoning_content tokens and forward partial tool calls."
     }
   }
 }
