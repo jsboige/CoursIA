@@ -1,0 +1,18 @@
+{
+  "tiles": [
+    {"id": 0, "name": "rock",   "color": "#4a4a4a", "char": "█"},
+    {"id": 1, "name": "cave",   "color": "#b89870", "char": " "},
+    {"id": 2, "name": "lake",   "color": "#2255aa", "char": "≈"},
+    {"id": 3, "name": "stairs", "color": "#d4af37", "char": "▲"}
+  ],
+  "adjacency": {
+    "comment": "cave tileset — cave passages surrounded by rock, lakes touch cave, stairs only in cave",
+    "rules": {
+      "0": [1, 1, 0, 0],
+      "1": [1, 1, 1, 1],
+      "2": [0, 1, 1, 0],
+      "3": [0, 1, 0, 0]
+    }
+  },
+  "weights": [3, 5, 1, 0.3]
+}
