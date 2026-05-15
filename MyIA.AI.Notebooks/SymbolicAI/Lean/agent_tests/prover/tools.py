@@ -342,7 +342,7 @@ class TacticTools:
         # ceiling (deeper trees rarely help; explosive growth signals a runaway
         # agent rather than a real strategy). Lifted from a hard cap of 0
         # which made decomposition impossible (2026-05-11 user feedback).
-        self._decomposition_budget: int = 5
+        self._decomposition_budget: int = 2
         # Last file content that survived a `lake build`. May have MORE sorries
         # than the original (decomposition) but compiles. Used at end-of-session
         # to commit partial structural progress instead of restoring original
