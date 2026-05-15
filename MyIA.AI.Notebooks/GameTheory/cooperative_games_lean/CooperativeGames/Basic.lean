@@ -288,7 +288,13 @@ theorem bondareva_shapley_backward :
     -- By contradiction: assume x ∈ P with ∑ᵢ xᵢ < v(N).
     -- The balanced weights w(S) = ∑ᵢ xᵢ - ∑_{i∉S} xᵢ... actually this is the hard part.
     -- Use hyperplane_separation on the cone of balanced weight violations.
-    sorry
+    unfold K
+    rw [Set.eq_empty_iff_forall_notMem]
+    intro x
+    simp only [Set.mem_sep, Set.mem_setOf, not_and]
+    intro hx hlt
+    have := hx Finset.univ
+    linarith
   -- Step 8: Since K = ∅, there exists x ∈ P with ∑ᵢ xᵢ = v(N)
   -- (P is nonempty + closed + no element has sum < v(N) ⟹ some element has sum = v(N))
   have hCore : G.Core.Nonempty := by
