@@ -234,12 +234,12 @@ theorem bondareva_shapley_backward :
     -- PROVER TARGET: Show intersection of half-spaces is convex
     -- Each constraint S is a half-space { x | ∑_{i∈S} xᵢ ≥ v(S) } which is convex.
     -- Intersection of convex sets is convex.
-    sorry
+    unfold P; rw [← Set.iInter_setOf]; exact _root_.convex_iInter fun S => _root_.convex_halfspace_le (G.v S) (fun x => ∑ i ∈ S, x i)
   -- Step 3: Show P is closed (intersection of closed half-spaces)
   have hP_closed : IsClosed P := by
     -- PROVER TARGET: Intersection of closed sets is closed
     -- Each half-space { x | ∑_{i∈S} xᵢ ≥ v(S) } is closed (continuous preimage of Ici).
-    sorry
+    unfold P; rw [← Set.iInter_setOf]; exact isClosed_iInter (fun S => IsClosed.preimage (continuous_finsetSum S fun i _ ↦ continuous_apply i) isClosed_Ici)
   -- Step 4: Show P is nonempty (take x = λ i. M where M = max_S v(S), then ∑_{i∈S} M ≥ v(S))
   have hP_nonempty : P.Nonempty := by
     -- PROVER TARGET: Construct a large enough constant allocation
