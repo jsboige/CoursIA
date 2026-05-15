@@ -279,7 +279,8 @@ class VerifyExecutor(Executor):
     def __init__(self, sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, kb: Optional[ProofKnowledgeBase] = None,
                  escalation_threshold: int = 5, has_director: bool = False,
-                 director_max_calls: int = 3, **kwargs):
+                 director_max_calls: int = 3,
+                 total_fails_director_threshold: int = 10, **kwargs):
         super().__init__(id="verify_executor", **kwargs)
         self._sorry_ctx = sorry_context
         self._imports = imports
@@ -304,6 +305,16 @@ class VerifyExecutor(Executor):
         # now hard-coded into F1 routing.
         self._has_director = has_director
         self._director_max_calls = director_max_calls
+        # F8 (2026-05-15): C34-04 forensic showed F7's consecutive_fails
+        # trigger never fires on hard goals because decomposition_progress
+        # events reset _consecutive_build_fails to 0. Hard targets exhibit
+        # the pattern: try-fail-decompose-try-fail-decompose, where each
+        # decomposition resets the counter even though no closure happened.
+        # F8 adds a SECOND escalation trigger on _total_fails (which is NOT
+        # reset by decomposition), with a one-shot guard so we don't burn
+        # the Director budget on every subsequent fail past the threshold.
+        self._total_fails_director_threshold = total_fails_director_threshold
+        self._f8_director_escalated = False
         # Re-search trigger: after this many total fails, force a hint to
         # the Critic that fresh lemmas may be needed. The Critic still makes
         # the routing decision, but the hint makes re-search more likely.
@@ -401,7 +412,33 @@ class VerifyExecutor(Executor):
             msg.error_type = result.get("error_type", "unknown")
             self._consecutive_build_fails += 1
             self._total_fails += 1
-            if self._consecutive_build_fails >= self._escalation_threshold:
+            # F8 (2026-05-15): one-shot total_fails trigger for the Director.
+            # Bypasses the consecutive_fails reset cycle caused by decomposition.
+            f8_total_trigger = (
+                self._has_director
+                and not self._f8_director_escalated
+                and self._total_fails >= self._total_fails_director_threshold
+                and msg.director_calls < self._director_max_calls
+            )
+            if f8_total_trigger:
+                msg.next_agent = "director"
+                msg.error = (
+                    f"[F8 escalation -> Director] total_fails="
+                    f"{self._total_fails} >= "
+                    f"{self._total_fails_director_threshold} "
+                    f"(consecutive={self._consecutive_build_fails} kept "
+                    f"resetting via decomposition). Last error: {msg.error}"
+                )
+                self._f8_director_escalated = True
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="f8_escalation_director",
+                        content=(f"total_fails={self._total_fails} >= "
+                                 f"threshold={self._total_fails_director_threshold}, "
+                                 f"one-shot Director escalation"),
+                    )
+                # Don't return — fall through to the post-F1 logging.
+            elif self._consecutive_build_fails >= self._escalation_threshold:
                 # F1: deterministic escalation. Critic prompt heuristics
                 # aren't reliable enough — when the same sorry_line has
                 # failed N times in a row, the attack plan is wrong, not

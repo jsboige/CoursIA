@@ -145,3 +145,57 @@ trace).
   `heq : w ≠ gsChooseMax ...`, `hne : prof.menPref m (...) ≠ prof.menPref m w`.
   The original proof closes it via `Nat.lt_trichotomy` + `rcases`. Provide
   this hint to the Director's reference docs.
+
+## 2026-05-15 — forensic run C34-04 (F7 verification, FAILED)
+
+**Setup:** PR #1135 F7 fix wires F1 escalation directly to Director when
+the lane is wired and budget remains. Same revert-a-proven-sorry benchmark
+as C34-03 (`gsChooseMax_maximal` at GSState.lean:144), same configuration
+(zai GLM-5.1 local agents + OpenRouter Opus 4.7 Director).
+
+**Outcome:** sorry 1 -> 1, FAILED at the 6000s wall-clock cap (the cap
+itself addresses C34-03 open weakness #4 — already-present in this PR's
+workflow). 68 trace entries: 30 build_check, 6 decomposition_progress,
+13 TacticAgent, 10 SearchAgent, 4 CriticAgent, 3 CoordinatorAgent, **0
+DirectorAgent**.
+
+### Why F7 didn't fire — root cause
+
+The F1 escalation in `VerifyExecutor` resets `_consecutive_build_fails`
+to 0 whenever a decomposition succeeds (workflow.py:397, branch
+`if msg.is_decomposition and new_sorry_count > msg.sorry_count`). The
+6 decomposition_progress events in this run all triggered that reset.
+Net effect: even with 30 BUILD-FAILs over 6000s, the consecutive counter
+never reached the escalation threshold (5). F7 routes via the same
+threshold, so it inherits the same blind spot.
+
+The forensic ALSO showed real strategic progress that NEVER got promoted
+to Director consultation:
+- +1963s: TacticAgent attempted dual unfold (gsChooseMax + gsMenPrefLE)
+- +2818s: SearchAgent queried mathlib for `gsMenPrefLE prof m w (gsChooseMax ...)`
+- +5045s: TacticAgent attempted **`rcases Nat.lt_trichotomy (prof.menPref m w) (prof.menPref m (Classical.choose ...))`** — THE EXACT correct closure from the lessons_learned.json cookbook, but failed to integrate (`dsimp` artifact left lines 155-156 residual)
+- +5988s: SearchAgent correctly identified meta-recursion (`gsChooseMax_maximal` lemma is itself the current goal — the agent recognized that the goal already exists as a named lemma in scope)
+- +5156s: CriticAgent routed to CoordinatorAgent after 4 attempts following the same failed pattern — but CoordinatorAgent (3 total invocations) never escalated to Director
+
+### F8 — next fix iteration
+
+F7 hard-coded the right intent (skip Coordinator re-invocation) but used
+the wrong trigger. **F8 should escalate to Director on `total_fails >= K`
+in addition to (or instead of) consecutive_fails.** `_total_fails` is
+already tracked on the executor (workflow.py:296) and is NOT reset by
+decomposition. K=10 would have fired at ~+3500s in this run, giving the
+Director a chance with the proof skeleton + the residual `Nat.lt_trichotomy`
+attempt visible in the message history.
+
+Alternative complementary fix: when decomposition introduces a new sorry
+that ALSO fails on subsequent build, count THAT as a fail toward the F7
+escalation. Currently decomposition is treated as "progress" even when
+the sub-goals immediately fail.
+
+### Honest verdict for PR #1135
+
+- F7 wiring is correct (ast.parse OK, grep confirms 4 hook points).
+- F7 did NOT trigger Director invocation on this benchmark.
+- PR #1135 should NOT be merged as a "fix" without the F8 follow-up.
+  Recommendation: keep #1135 open as wiring scaffold, ship F8 as the
+  actual behavioral fix that exercises the Director on stuck targets.
