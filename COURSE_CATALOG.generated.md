@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-15 14:01
+Generated: 2026-05-15 17:38
 Total notebooks: 468
 
 ## Status Summary
@@ -12,10 +12,10 @@ Total notebooks: 468
 
 ## Maturity Summary
 
-- **PRODUCTION**: 156
+- **PRODUCTION**: 157
 - **BETA**: 249
 - **TEMPLATE**: 4
-- **ALPHA**: 27
+- **ALPHA**: 26
 - **DRAFT**: 32
 
 ## By Series
@@ -443,7 +443,7 @@ Total notebooks: 468
 | 26 | GameTheory-7-ExtensiveForm | Python 3 | READY | BETA | 30min | po-2024 |
 | 27 | GameTheory-9-BackwardInduction | Python 3 | READY | BETA | 30min | po-2024 |
 
-### Sudoku (32 notebooks) — DEMO:1, READY:31 | ALPHA:2, BETA:23, PRODUCTION:7
+### Sudoku (32 notebooks) — DEMO:1, READY:31 | ALPHA:1, BETA:23, PRODUCTION:8
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -477,7 +477,7 @@ Total notebooks: 468
 | 28 | Le Sudoku comme CSP | Python 3 | READY | BETA | 30min | po-2023 |
 | 29 | Résolution de Sudoku par Stratégies Humaines | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 30 | Sudoku-8 : Resolution par Strategies Humaines (Pyt | .venv (3.12.3) | READY | BETA | 45min | po-2023 |
-| 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | BETA | 30min | po-2023 |
 
 ### Probas (32 notebooks) — READY:32 | ALPHA:1, BETA:25, PRODUCTION:6
