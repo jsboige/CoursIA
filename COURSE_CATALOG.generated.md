@@ -1,26 +1,26 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-15 04:21
-Total notebooks: 467
+Generated: 2026-05-15 14:01
+Total notebooks: 468
 
 ## Status Summary
 
 - **READY**: 333
-- **DEMO**: 117
+- **DEMO**: 118
 - **RESEARCH**: 0
 - **BROKEN**: 17
 
 ## Maturity Summary
 
-- **PRODUCTION**: 148
-- **BETA**: 243
+- **PRODUCTION**: 156
+- **BETA**: 249
 - **TEMPLATE**: 4
-- **ALPHA**: 40
+- **ALPHA**: 27
 - **DRAFT**: 32
 
 ## By Series
 
-### GenAI (100 notebooks) — BROKEN:3, DEMO:69, READY:28 | ALPHA:5, BETA:49, DRAFT:13, PRODUCTION:30, TEMPLATE:3
+### GenAI (101 notebooks) — BROKEN:3, DEMO:70, READY:28 | ALPHA:1, BETA:50, DRAFT:13, PRODUCTION:34, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -52,78 +52,79 @@ Total notebooks: 467
 | 26 | Workflow de Composition Musicale | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 27 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 28 | Live Coding Musical pilote par LLM | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 29 | Introduction - barbie schreck | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 30 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 31 | Docteur vs ChatGPT : Chatbot medical multi-agent | base | DEMO | ALPHA | 45min | po-2025 |
-| 32 | Introduction - receipe maker | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 33 | OpenAI DALL-E 3 - Generation d'Images | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
-| 34 | 🤖 GPT-5 Multimodal - Analyse et Génération d'Image | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
-| 35 | 🖼️ Opérations de Base sur les Images | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
-| 36 | Notebook: Stable Diffusion Forge - SD XL Turbo | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
-| 37 | Notebook: Qwen Image-Edit 2.5 - API ComfyUI | mcp-jupyter-py310 | DEMO | BETA | 45min | po-2025 |
-| 38 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 39 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 40 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 41 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 42 | Comparaison Multi-Modèles : SDXL Turbo, Qwen2-VL,  | Python 3 | READY | BETA | 15min | po-2025 |
-| 43 | Workflow Orchestration - Chaînage Multi-Modèles | Python 3 | READY | BETA | 30min | po-2025 |
-| 44 | 🚀 Performance Optimization pour la Génération d'Im | Python 3 | DEMO | BETA | 1h | po-2025 |
-| 45 | 🎓 Educational Content Generation - GenAI | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 46 | Creative Workflows - GenAI | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 47 | 🏭 Production Integration - GenAI | Python3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 48 | Génération d’un patron de point de croix à partir  | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 49 | SK-1-Fundamentals : Introduction a Semantic Kernel | base | DEMO | BETA | 30min | po-2025 |
-| 50 | SK-2-Functions : Function Calling, Memory et Fonct | base | READY | PRODUCTION | 15min | po-2025 |
-| 51 | SK-3-Agents : Agent Framework Semantic Kernel | base | READY | BETA | 15min | po-2025 |
-| 52 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 53 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 54 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 55 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
-| 56 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 57 | SK-9-Building-CLR : Interoperabilite Python/.NET v | base | READY | PRODUCTION | 15min | po-2025 |
-| 58 | SK-10-NotebookMaker : Systeme Multi-Agents pour Ge | base | DEMO | BETA | 30min | po-2025 |
-| 59 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | BETA | 30min | po-2025 |
+| 29 | Pipeline Audiobook Agentique | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 30 | Introduction - barbie schreck | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 31 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 32 | Docteur vs ChatGPT : Chatbot medical multi-agent | base | DEMO | PRODUCTION | 45min | po-2025 |
+| 33 | Introduction - receipe maker | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 34 | OpenAI DALL-E 3 - Generation d'Images | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
+| 35 | 🤖 GPT-5 Multimodal - Analyse et Génération d'Image | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
+| 36 | 🖼️ Opérations de Base sur les Images | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
+| 37 | Notebook: Stable Diffusion Forge - SD XL Turbo | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
+| 38 | Notebook: Qwen Image-Edit 2.5 - API ComfyUI | mcp-jupyter-py310 | DEMO | BETA | 45min | po-2025 |
+| 39 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
+| 40 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 41 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 42 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 43 | Comparaison Multi-Modèles : SDXL Turbo, Qwen2-VL,  | Python 3 | READY | BETA | 15min | po-2025 |
+| 44 | Workflow Orchestration - Chaînage Multi-Modèles | Python 3 | READY | BETA | 30min | po-2025 |
+| 45 | 🚀 Performance Optimization pour la Génération d'Im | Python 3 | DEMO | BETA | 1h | po-2025 |
+| 46 | 🎓 Educational Content Generation - GenAI | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 47 | Creative Workflows - GenAI | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 48 | 🏭 Production Integration - GenAI | Python3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 49 | Génération d’un patron de point de croix à partir  | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 50 | SK-1-Fundamentals : Introduction a Semantic Kernel | base | DEMO | BETA | 30min | po-2025 |
+| 51 | SK-2-Functions : Function Calling, Memory et Fonct | base | READY | PRODUCTION | 15min | po-2025 |
+| 52 | SK-3-Agents : Agent Framework Semantic Kernel | base | READY | BETA | 15min | po-2025 |
+| 53 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 54 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 55 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 56 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
+| 57 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 58 | SK-9-Building-CLR : Interoperabilite Python/.NET v | base | READY | PRODUCTION | 15min | po-2025 |
+| 59 | SK-10-NotebookMaker : Systeme Multi-Agents pour Ge | base | DEMO | BETA | 30min | po-2025 |
 | 60 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | BETA | 30min | po-2025 |
-| 61 | Introduction - Créateur de mail personnalisé | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 62 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
-| 63 | Jeu de devinette : Père Fouras vs Laurent Jalabert | coursIA | DEMO | BETA | 15min | po-2025 |
-| 64 | Notebook de travail | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 65 | Notebook de travail | Python 3 | BROKEN | TEMPLATE | 15min | po-2025 |
-| 66 | Notebook de conception de Notebook | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
-| 67 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
+| 61 | 🚀 Conception Automatique de Notebook par Agents IA | base | DEMO | BETA | 30min | po-2025 |
+| 62 | Introduction - Créateur de mail personnalisé | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 63 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
+| 64 | Jeu de devinette : Père Fouras vs Laurent Jalabert | coursIA | DEMO | BETA | 15min | po-2025 |
+| 65 | Notebook de travail | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 66 | Notebook de travail | Python 3 | BROKEN | TEMPLATE | 15min | po-2025 |
+| 67 | Notebook de conception de Notebook | .NET (C#) | BROKEN | DRAFT | 30min | po-2025 |
 | 68 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
-| 69 | 10. Hébergement Local de Modèles Génératifs | base | DEMO | BETA | 45min | po-2025 |
-| 70 | 11. Quantization des LLMs | base | DEMO | BETA | 45min | po-2025 |
-| 71 | 1. Introduction a l'IA generative avec l'API OpenA | base | READY | PRODUCTION | 15min | po-2025 |
-| 72 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 73 | Structured Outputs : Sorties JSON Garanties avec O | base | READY | PRODUCTION | 30min | po-2025 |
-| 74 | Function Calling : Connecter les LLMs au Monde Rée | base | DEMO | BETA | 45min | po-2025 |
-| 75 | 5. RAG Modern - Retrieval Augmented Generation | base | READY | BETA | 45min | po-2025 |
-| 76 | PDF et Web Search : Sources Documentaires avec Ope | base | READY | PRODUCTION | 30min | po-2025 |
-| 77 | Code Interpreter : Exécution de Code avec OpenAI | base | READY | PRODUCTION | 30min | po-2025 |
-| 78 | Modèles de Raisonnement : gpt-5-mini | base | DEMO | PRODUCTION | 30min | po-2025 |
-| 79 | Patterns de Production : APIs Avancées OpenAI | base | READY | PRODUCTION | 30min | po-2025 |
-| 80 | Claude CLI - Les Bases | Python 3 | READY | BETA | 45min | po-2025 |
-| 81 | Claude CLI - Gestion des Sessions | Python 3 | READY | BETA | 30min | po-2025 |
-| 82 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 30min | po-2025 |
-| 83 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
-| 84 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 30min | po-2025 |
-| 85 | Operations de Base sur les Videos | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 86 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 87 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 88 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 89 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 90 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 91 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 92 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 93 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 94 | Comparaison Multi-Modeles de Generation Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 95 | Orchestration de Pipelines Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 96 | ComfyUI - Workflows Video via API | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 97 | Generation de Videos Educatives | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 98 | Workflows Video Creatifs | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 99 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 100 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 69 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
+| 70 | 10. Hébergement Local de Modèles Génératifs | base | DEMO | BETA | 45min | po-2025 |
+| 71 | 11. Quantization des LLMs | base | DEMO | BETA | 45min | po-2025 |
+| 72 | 1. Introduction a l'IA generative avec l'API OpenA | base | READY | PRODUCTION | 15min | po-2025 |
+| 73 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 74 | Structured Outputs : Sorties JSON Garanties avec O | base | READY | PRODUCTION | 30min | po-2025 |
+| 75 | Function Calling : Connecter les LLMs au Monde Rée | base | DEMO | BETA | 45min | po-2025 |
+| 76 | 5. RAG Modern - Retrieval Augmented Generation | base | READY | BETA | 45min | po-2025 |
+| 77 | PDF et Web Search : Sources Documentaires avec Ope | base | READY | PRODUCTION | 30min | po-2025 |
+| 78 | Code Interpreter : Exécution de Code avec OpenAI | base | READY | PRODUCTION | 30min | po-2025 |
+| 79 | Modèles de Raisonnement : gpt-5-mini | base | DEMO | PRODUCTION | 30min | po-2025 |
+| 80 | Patterns de Production : APIs Avancées OpenAI | base | READY | PRODUCTION | 30min | po-2025 |
+| 81 | Claude CLI - Les Bases | Python 3 | READY | BETA | 45min | po-2025 |
+| 82 | Claude CLI - Gestion des Sessions | Python 3 | READY | BETA | 30min | po-2025 |
+| 83 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 30min | po-2025 |
+| 84 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
+| 85 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 30min | po-2025 |
+| 86 | Operations de Base sur les Videos | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 87 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 88 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 89 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 90 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 91 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 92 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 93 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 94 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 95 | Comparaison Multi-Modeles de Generation Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 96 | Orchestration de Pipelines Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 97 | ComfyUI - Workflows Video via API | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 98 | Generation de Videos Educatives | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 99 | Workflows Video Creatifs | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 100 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 101 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 
 ### Search (45 notebooks) — DEMO:2, READY:43 | ALPHA:1, BETA:20, DRAFT:8, PRODUCTION:16
 
@@ -175,7 +176,7 @@ Total notebooks: 467
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | BETA | 30min | po-2025 |
 | 45 | TP : Algorithmes Génétiques pour la Détection de B | base | READY | DRAFT | 30min | po-2025 |
 
-### ML (30 notebooks) — DEMO:6, READY:24 | ALPHA:8, BETA:18, DRAFT:1, PRODUCTION:3
+### ML (30 notebooks) — DEMO:6, READY:24 | ALPHA:4, BETA:21, DRAFT:1, PRODUCTION:4
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -186,22 +187,22 @@ Total notebooks: 467
 | 5 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | BETA | 30min | po-2023 |
 | 6 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | BETA | 30min | po-2023 |
 | 7 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | BETA | 30min | po-2023 |
-| 8 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | ALPHA | 30min | po-2023 |
+| 8 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | BETA | 30min | po-2023 |
 | 9 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | BETA | 30min | po-2023 |
 | 10 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Co | Python 3 | READY | BETA | 30min | po-2023 |
 | 11 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | BETA | 30min | po-2023 |
 | 12 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | 30min | po-2023 |
-| 13 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | ALPHA | 45min | po-2023 |
+| 13 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | 45min | po-2023 |
 | 14 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | DRAFT | 30min | po-2023 |
 | 15 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 (ipykernel) | DEMO | BETA | 15min | po-2023 |
 | 16 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
 | 17 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
 | 18 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
-| 19 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | ALPHA | 15min | po-2023 |
+| 19 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 15min | po-2023 |
 | 20 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | ALPHA | 15min | po-2023 |
 | 21 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 15min | po-2023 |
 | 22 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 23 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 23 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 24 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 25 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 26 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 1h30 | po-2023 |
@@ -442,7 +443,7 @@ Total notebooks: 467
 | 26 | GameTheory-7-ExtensiveForm | Python 3 | READY | BETA | 30min | po-2024 |
 | 27 | GameTheory-9-BackwardInduction | Python 3 | READY | BETA | 30min | po-2024 |
 
-### Sudoku (32 notebooks) — DEMO:1, READY:31 | ALPHA:6, BETA:21, PRODUCTION:5
+### Sudoku (32 notebooks) — DEMO:1, READY:31 | ALPHA:2, BETA:23, PRODUCTION:7
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -453,7 +454,7 @@ Total notebooks: 467
 | 5 | Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2023 |
 | 6 | Sudoku-11-Choco-Csharp : Solveur Choco via IKVM | .NET (C#) | READY | BETA | 30min | po-2023 |
 | 7 | Notebook 11: Resolution de Sudoku avec Choco Const | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 9 | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | base | READY | BETA | 30min | po-2023 |
 | 10 | Sudoku-12 : Theorie des Automates Symboliques et C | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 11 | Sudoku-13 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | BETA | 45min | po-2023 |
@@ -464,7 +465,7 @@ Total notebooks: 467
 | 16 | Comparaison des Solveurs de Sudoku | Python 3 | READY | BETA | 45min | po-2023 |
 | 17 | Resolution de Sudoku avec Algorithm X et Dancing L | .NET (C#) | READY | BETA | 30min | po-2023 |
 | 18 | Sudoku-Python-DancingLinks : Dancing Links / Algor | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2023 |
-| 19 | Sudoku-3 : Resolution par Algorithme Genetique (C# | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 19 | Sudoku-3 : Resolution par Algorithme Genetique (C# | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 20 | Sudoku-Python-Genetic : Algorithme Genetique (Pyth | Python 3 | READY | BETA | 30min | po-2023 |
 | 21 | Résolution de Sudoku par Recuit Simulé | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 22 | Sudoku-4 : Recuit Simule (Python) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
@@ -472,9 +473,9 @@ Total notebooks: 467
 | 24 | Sudoku-5 : Particle Swarm Optimization (Python) | Python 3 | READY | BETA | 30min | po-2023 |
 | 25 | Sudoku-6 : Resolution par CSP Academique (AIMA) | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 26 | Sudoku-6 : Resolution par CSP Academique (Python) | Python 3 | READY | BETA | 45min | po-2023 |
-| 27 | Sudoku-7 : Resolution par Propagation de Contraint | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 27 | Sudoku-7 : Resolution par Propagation de Contraint | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 28 | Le Sudoku comme CSP | Python 3 | READY | BETA | 30min | po-2023 |
-| 29 | Résolution de Sudoku par Stratégies Humaines | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 29 | Résolution de Sudoku par Stratégies Humaines | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 30 | Sudoku-8 : Resolution par Strategies Humaines (Pyt | .venv (3.12.3) | READY | BETA | 45min | po-2023 |
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | BETA | 30min | po-2023 |
@@ -522,21 +523,21 @@ Total notebooks: 467
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | IIT - Introduction à PyPhi et Integrated Informati | pyphi | READY | BETA | 30min | po-2025 |
 
-### RL (6 notebooks) — READY:6 | ALPHA:1, BETA:1, PRODUCTION:4
+### RL (6 notebooks) — READY:6 | BETA:1, PRODUCTION:5
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | RL-4 : MDP, Programmation Dynamique et Q-Learning  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 2 | RL-5 : Deep Q-Network (DQN) et Policy Gradient | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 3 | RL-6 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 4 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | ALPHA | 45min | po-2025 |
+| 4 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 5 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 15min | po-2025 |
 | 6 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
 
 ## Requirements
 
-- **API**: 88 notebooks
+- **API**: 89 notebooks
 - **GPU**: 54 notebooks
 - **Cloud**: 101 notebooks
 - **WSL**: 23 notebooks
