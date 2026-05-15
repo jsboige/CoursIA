@@ -5,8 +5,7 @@ services:
     container_name: sd-forge-main
     hostname: sd-forge-main
     ports:
-      - "127.0.0.1:7860:7860"
-    user: "1000:1000"
+      - "127.0.0.1:7862:7860"
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - WEB_USER=${FORGE_USER:-admin}
@@ -26,7 +25,7 @@ services:
               device_ids: ['1']
               capabilities: [gpu]
     healthcheck:
-      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:7860/ | grep -qE '200|401|403'"]
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:7860/ | grep -qE '200|302|401|403'"]
       interval: 30s
       timeout: 10s
       retries: 5
