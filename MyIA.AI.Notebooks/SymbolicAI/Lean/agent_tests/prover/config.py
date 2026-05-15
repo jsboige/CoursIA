@@ -30,12 +30,19 @@ PROVIDERS = {
         }
     },
     "openrouter": {
+        # OpenRouter is the "powerful provider" lane: the DirectorAgent runs
+        # here on a frontier model to steer the local z.ai/Qwen agents when
+        # they stall. The reasoning default MUST stay a frontier model
+        # (Opus 4.7 / GPT-5.5 / DeepSeek v4 Pro class) — a weak default like
+        # gpt-4o-mini defeats the entire point of the Director escalation.
         "base_url": os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
         "api_key": os.getenv("OPENROUTER_API_KEY", ""),
         "models": {
             "reasoning": os.getenv("OPENROUTER_CHAT_MODEL_ID",
-                                   os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4o-mini")),
-            "fast": os.getenv("OPENROUTER_FAST_MODEL_ID", "gpt-4o-mini"),
+                                   os.getenv("OPENAI_CHAT_MODEL_ID",
+                                             "anthropic/claude-opus-4.7")),
+            "fast": os.getenv("OPENROUTER_FAST_MODEL_ID",
+                              "anthropic/claude-haiku-4.5"),
         }
     },
 }

@@ -180,21 +180,110 @@ REGLES:
 - Si le but semble hors de portee, dis LEAVERN (abandon)
 - Adapte tes suggestions aux ERREURS PASSEES (ne repete pas ce qui a echoue)
 - Tu peux suggérer des `have` intermediaires pour decomposer
-- Priorise les tactiques Mathlib disponibles sur les raisonnements from-scratch"""
+- Priorise les tactiques Mathlib disponibles sur les raisonnements from-scratch
+- ANCRE ton APPROACH dans le materiel de reference fourni (REFERENCE DOCS: definitions
+  portees, lemmes deja prouves, strategies mmaaz-git, patterns tactiques du projet) quand
+  il est present — ne raisonne pas a l'aveugle si une strategie de reference existe deja."""
 
-def augment_instructions(base: str, goal: str = "", max_chars: int = 3000) -> str:
-    """Prepend ProofKnowledgeBase context to any agent's instructions."""
+def load_reference_docs(project: str = "stable_marriage", max_chars: int = 6000) -> str:
+    """Load a compact summary of the committed reference docs for `project`.
+
+    Reads `session_state/reference_docs/<project>/` (issue #1081 Part 2) and returns a
+    concatenated, length-capped summary so the prover's agents — especially the
+    DirectorAgent — can ground their guidance in the original mmaaz-git proofs and our
+    ported definitions instead of starting blind each iteration.
+
+    Markdown files (`.md`) are included in full (truncated to a per-file budget); `.lean`
+    snapshot files are summarized to their declaration headers only (NOT dumped whole) to
+    keep the total under `max_chars`. Returns "" if the directory is absent.
+    """
+    import os
+
+    ref_dir = os.path.join(
+        os.path.dirname(__file__), "session_state", "reference_docs", project
+    )
+    if not os.path.isdir(ref_dir):
+        return ""
+
+    # md files carry the distilled strategy/hints; lean files are bulky snapshots.
+    md_files = sorted(f for f in os.listdir(ref_dir) if f.endswith(".md"))
+    lean_files = sorted(f for f in os.listdir(ref_dir) if f.endswith(".lean"))
+    if not md_files and not lean_files:
+        return ""
+
+    parts: list[str] = []
+    # Budget: most of the cap goes to the markdown strategy docs.
+    per_md = max(800, (max_chars - 1200) // max(1, len(md_files)))
+    for name in md_files:
+        try:
+            with open(os.path.join(ref_dir, name), encoding="utf-8") as fh:
+                text = fh.read().strip()
+        except OSError:
+            continue
+        if len(text) > per_md:
+            text = text[:per_md].rstrip() + "\n... [truncated]"
+        parts.append(f"## REFERENCE: {name}\n{text}")
+
+    # For .lean snapshots, list declaration headers only (def/lemma/theorem/structure).
+    for name in lean_files:
+        try:
+            with open(os.path.join(ref_dir, name), encoding="utf-8") as fh:
+                lines = fh.readlines()
+        except OSError:
+            continue
+        decls = [
+            ln.strip()
+            for ln in lines
+            if ln.lstrip().startswith(
+                ("def ", "lemma ", "theorem ", "structure ", "noncomputable def ", "abbrev ")
+            )
+        ]
+        if decls:
+            header = "\n".join(f"  {d}" for d in decls)
+            parts.append(
+                f"## REFERENCE (declarations only): {name}\n"
+                f"  (full snapshot on disk; only signatures listed here)\n{header}"
+            )
+
+    summary = "\n\n".join(parts).strip()
+    if len(summary) > max_chars:
+        summary = summary[:max_chars].rstrip() + "\n... [truncated]"
+    return summary
+
+
+def augment_instructions(
+    base: str,
+    goal: str = "",
+    max_chars: int = 3000,
+    include_references: bool = False,
+    project: str = "stable_marriage",
+) -> str:
+    """Prepend ProofKnowledgeBase context to any agent's instructions.
+
+    If `include_references` is True, also prepend the committed reference docs for
+    `project` (issue #1081 Part 2). Default is False so existing call sites are
+    unaffected.
+    """
     from .knowledge import ProofKnowledgeBase
     kb = ProofKnowledgeBase()
     context = kb.generate_prover_context(goal=goal, max_chars=max_chars)
-    if not context.strip():
+
+    references = load_reference_docs(project) if include_references else ""
+
+    if not context.strip() and not references.strip():
         return base
-    return (
-        f"# PROOF KNOWLEDGE BASE (accumulated from past sessions)\n"
-        f"{context}\n\n"
-        f"---\n\n"
-        f"{base}"
-    )
+
+    blocks: list[str] = []
+    if references.strip():
+        blocks.append(
+            f"# REFERENCE DOCS (committed shared state — issue #1081)\n{references}"
+        )
+    if context.strip():
+        blocks.append(
+            f"# PROOF KNOWLEDGE BASE (accumulated from past sessions)\n{context}"
+        )
+    blocks.append(base)
+    return "\n\n---\n\n".join(blocks)
 
 
 AUTONOMOUS_PROVER_INSTRUCTIONS = """Prouveur autonome. Edite directement le fichier .lean.

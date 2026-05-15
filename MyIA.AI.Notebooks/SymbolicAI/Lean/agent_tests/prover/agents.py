@@ -102,7 +102,10 @@ def create_coordinator_agent(tools: CoordinatorTools, provider: str = "zai") -> 
     client = create_client(provider, model_key="reasoning")
     return Agent(
         client=client,
-        instructions=COORDINATOR_AGENT_INSTRUCTIONS,
+        # #1081: the Coordinator sets the attack plan — ground it in the
+        # committed reference docs (mmaaz-git strategies, ported defs).
+        instructions=augment_instructions(
+            COORDINATOR_AGENT_INSTRUCTIONS, include_references=True),
         tools=[
             tools.get_proof_state,
             tools.set_attack_plan,
@@ -116,22 +119,34 @@ def create_coordinator_agent(tools: CoordinatorTools, provider: str = "zai") -> 
     )
 
 
-DIRECTOR_MAX_TOKENS = 512
+# 512 was too tight: a frontier reasoning model (Opus 4.7 / GPT-5.5) needs
+# room to emit an APPROACH + a concrete TACTICS block, and on extended-thinking
+# routes part of the budget is spent before the visible answer. 2048 lets the
+# Director actually deliver actionable guidance; it is still called at most 3x
+# per session so the cost stays bounded.
+DIRECTOR_MAX_TOKENS = 2048
 
 
 def create_director_agent(provider: str = "openrouter") -> Agent:
-    """DirectorAgent: external LLM providing strategic tactic guidance.
+    """DirectorAgent: external frontier LLM providing strategic guidance.
 
-    Uses a more powerful model (GPT-5.5 via OpenRouter) to suggest
-    proof approaches when local agents fail. No tools — pure text output
-    with structured tactic suggestions.
+    Runs on the strongest model available via OpenRouter (Opus 4.7 /
+    GPT-5.5 high / DeepSeek v4 Pro — see prover/config.py + .env
+    OPENROUTER_CHAT_MODEL_ID). Steers the local z.ai/Qwen agents when they
+    stall: no tools, pure text output with a structured APPROACH + TACTICS
+    block grounded in the reference material embedded in the shared state
+    (mmaaz-git stable-marriage proofs, project definitions, lessons learned).
 
-    Budget: max 500 tokens, max 3 calls per iteration.
+    Budget: max 2048 tokens, max 3 calls per session.
     """
     client = create_client(provider, model_key="reasoning")
     return Agent(
         client=client,
-        instructions=DIRECTOR_AGENT_INSTRUCTIONS,
+        # #1081: the whole point of the frontier Director is grounded guidance
+        # — inject the committed reference docs (mmaaz-git proofs, ported defs,
+        # project tactic patterns) into its instructions.
+        instructions=augment_instructions(
+            DIRECTOR_AGENT_INSTRUCTIONS, include_references=True),
         tools=[],
         name="DirectorAgent",
         default_options=ChatOptions(max_tokens=DIRECTOR_MAX_TOKENS),

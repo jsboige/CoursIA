@@ -1,0 +1,26 @@
+{
+  "_schema": {
+    "description": "Cross-session tactical lessons for the multi-agent Lean prover (issue #1081 Part 2/3). Conservation state: this file persists across iterations, unlike ephemeral attempt history. Populated by the prover at end of session; this committed version is the {} placeholder.",
+    "expected_shape": {
+      "<project>": {
+        "successful_tactic_chains": [
+          {
+            "goal_signature": "string - normalized goal pattern",
+            "tactic_chain": ["string", "..."],
+            "context_requirements": ["string - preconditions e.g. 'gsStepWith in hypotheses'"],
+            "uses": "int - times this chain succeeded"
+          }
+        ],
+        "failure_patterns": [
+          {
+            "goal_signature": "string",
+            "failed_tactic": "string",
+            "error": "string - e.g. 'simp made no progress'",
+            "lesson": "string - what to do instead"
+          }
+        ]
+      }
+    },
+    "note": "project keys: 'stable_marriage', 'voting', 'social_choice', etc. Keep entries deduplicated by goal_signature."
+  }
+}
