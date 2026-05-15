@@ -8,6 +8,7 @@ services:
       - "127.0.0.1:${VLLM_ZIMAGE_PORT:-8001}:8000"
     volumes:
       - ../../shared/cache/huggingface:/home/vllm/.cache/huggingface
+      - ../../shared/cache/flashinfer:/home/vllm/.cache/flashinfer
       - ../../shared/models:/models:ro
     environment:
       - HF_TOKEN=${HF_TOKEN}
@@ -15,6 +16,9 @@ services:
       - NCCL_P2P_DISABLE=1
       # Quantization: fp8 (recommande), int8 (experimental), bfloat16 (defaut)
       - VLLM_QUANTIZATION=${VLLM_QUANTIZATION:-bfloat16}
+      - HOME=/home/vllm
+      - USER=vllm
+      - LOGNAME=vllm
     # vLLM Omni serve command for Z-Image-Turbo text-to-image
     # API endpoint: /v1/chat/completions (OpenAI-compatible)
     # Supported resolutions: 1328x1328, 1664x928, 928x1664, 1472x1140, etc.
