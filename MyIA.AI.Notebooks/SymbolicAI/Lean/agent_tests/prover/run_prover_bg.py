@@ -30,7 +30,7 @@ TRACES_DIR.mkdir(exist_ok=True)
 def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                mode: str = "multi", iterations: int = 8,
                provider: str = "zai", local_provider: str = "local",
-               goal: str = ""):
+               goal: str = "", director_provider: str = None):
     """Run the prover on a target."""
     if demo_num is not None:
         if demo_num not in DEMOS:
@@ -61,7 +61,10 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
 
     if mode == "multi":
         prover = MultiAgentSorryProver(
-            trace=trace, provider=provider, local_provider=local_provider)
+            trace=trace, provider=provider, local_provider=local_provider,
+            director_provider=director_provider)
+        if director_provider:
+            print(f"  Director: ENABLED (provider={director_provider})")
     else:
         prover = AutonomousProver(trace=trace, provider=provider)
 
@@ -122,6 +125,10 @@ if __name__ == "__main__":
     parser.add_argument("--iterations", type=int, default=8)
     parser.add_argument("--provider", default="zai")
     parser.add_argument("--local-provider", default="local")
+    parser.add_argument("--director-provider", default=None,
+                        help="Provider for the frontier DirectorAgent "
+                             "(e.g. 'openrouter'). Omit to disable the "
+                             "Director lane. Only used in --mode multi.")
     args = parser.parse_args()
 
     run_prover(
@@ -133,4 +140,5 @@ if __name__ == "__main__":
         provider=args.provider,
         local_provider=args.local_provider,
         goal=args.goal,
+        director_provider=args.director_provider,
     )
