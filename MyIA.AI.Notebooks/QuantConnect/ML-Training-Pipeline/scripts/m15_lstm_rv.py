@@ -371,14 +371,22 @@ def evaluate_one_combo(
     horizon: int,
     seed: int,
     hidden_size: int = HIDDEN_SIZE,
+    oos_strict_year: int | None = None,
 ) -> dict | None:
-    """Run LSTM vs HAR Classic for one (coin, horizon, seed) combo."""
+    """Run LSTM vs HAR Classic for one (coin, horizon, seed) combo.
+
+    If oos_strict_year is set, data on/after Jan 1st of that year is held out
+    from training/walk-forward (reserved for separate OOS verdict).
+    """
     import torch
 
     torch.manual_seed(seed)
     np.random.seed(seed)
 
     hourly_rets = _load_one_coin(coin)
+    if oos_strict_year is not None:
+        cutoff = pd.Timestamp(f"{oos_strict_year}-01-01", tz=hourly_rets.index.tz)
+        hourly_rets = hourly_rets[hourly_rets.index < cutoff]
     if len(hourly_rets) < 1000:
         return None
 
@@ -476,14 +484,60 @@ def evaluate_one_combo(
     }
 
 
+def _csv_list(value: str) -> list[str]:
+    return [s.strip() for s in value.split(",") if s.strip()]
+
+
+def _csv_int_list(value: str) -> list[int]:
+    return [int(s.strip()) for s in value.split(",") if s.strip()]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="M15 Log-LSTM RV sweep")
     parser.add_argument("--dry-run", action="store_true", help="Run BTC h=1 seed=0 only")
     parser.add_argument("--hidden-size", type=int, default=HIDDEN_SIZE,
                         help=f"LSTM hidden size (default: {HIDDEN_SIZE})")
+    parser.add_argument(
+        "--seeds",
+        type=_csv_int_list,
+        default=None,
+        help="Comma-separated seeds override (default: 0,1,7,42)",
+    )
+    parser.add_argument(
+        "--coins",
+        type=_csv_list,
+        default=None,
+        help="Comma-separated coins override (default: BTC/ETH/SOL/LTC/XRP/ADA/DOT)",
+    )
+    parser.add_argument(
+        "--horizons",
+        type=_csv_int_list,
+        default=None,
+        help="Comma-separated horizons override (default: 1,5,10)",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Override results directory (default: results/m15_lstm_rv_h{hidden_size}/)",
+    )
+    parser.add_argument(
+        "--oos-strict",
+        type=int,
+        default=None,
+        metavar="YEAR",
+        help=(
+            "Hold out all data >= Jan 1st of YEAR from training/walk-forward "
+            "(for separate OOS verdict). Example: --oos-strict 2027"
+        ),
+    )
     args = parser.parse_args()
 
     hidden_size = args.hidden_size
+    coins = args.coins if args.coins is not None else COINS
+    horizons = args.horizons if args.horizons is not None else HORIZONS
+    seeds = args.seeds if args.seeds is not None else SEEDS
+    oos_strict_year = args.oos_strict
 
     import torch
     print(f"PyTorch {torch.__version__}, CUDA: {torch.cuda.is_available()}")
@@ -494,7 +548,11 @@ def main() -> None:
     n_params = count_params(model_demo)
     print(f"LSTM params: {n_params} (hidden={hidden_size}, layers={NUM_LAYERS}, window={WINDOW})")
 
-    results_dir = SCRIPT_DIR / "results" / f"m15_lstm_rv_h{hidden_size}"
+    results_dir = (
+        args.output
+        if args.output is not None
+        else SCRIPT_DIR / "results" / f"m15_lstm_rv_h{hidden_size}"
+    )
     results_dir.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
 
@@ -512,27 +570,32 @@ def main() -> None:
                 completed_keys.add((row["coin"], row["horizon"], row["seed"]))
         print(f"[CHECKPOINT] resumed {len(combos)} combos from {checkpoint_path.name}", flush=True)
 
-    total = len(COINS) * len(HORIZONS) * len(SEEDS)
+    total = len(coins) * len(horizons) * len(seeds)
     done = 0
 
     if args.dry_run:
         print("[DRY RUN] BTC-USD h=1 seed=0 only")
-        row = evaluate_one_combo("BTC-USD", 1, 0, hidden_size=hidden_size)
+        row = evaluate_one_combo("BTC-USD", 1, 0, hidden_size=hidden_size,
+                                 oos_strict_year=oos_strict_year)
         if row:
             combos.append(row)
             print(json.dumps(row, indent=2))
         return
 
-    for coin in COINS:
-        for h in HORIZONS:
-            for seed in SEEDS:
+    if oos_strict_year is not None:
+        print(f"[OOS-STRICT] Holding out data >= {oos_strict_year}-01-01")
+
+    for coin in coins:
+        for h in horizons:
+            for seed in seeds:
                 done += 1
                 key = (coin, h, seed)
                 if key in completed_keys:
                     print(f"\n[{done}/{total}] {coin} h={h} seed={seed} -- SKIP (checkpoint)", flush=True)
                     continue
                 print(f"\n[{done}/{total}] {coin} h={h} seed={seed}", flush=True)
-                row = evaluate_one_combo(coin, h, seed, hidden_size=hidden_size)
+                row = evaluate_one_combo(coin, h, seed, hidden_size=hidden_size,
+                                         oos_strict_year=oos_strict_year)
                 if row is not None:
                     combos.append(row)
                     with open(checkpoint_path, "a") as f:
@@ -572,7 +635,7 @@ def main() -> None:
     print(f"  median delta-Sharpe = {median_delta:+.4f}")
     print(f"  median MSE change = {median_mse:+.1f}%")
     print(f"\nPer-coin:")
-    for c in COINS:
+    for c in coins:
         if c in per_coin:
             med = float(np.median(per_coin[c]["deltas"]))
             med_mse = float(np.median(per_coin[c]["mses"]))

@@ -276,10 +276,19 @@ def evaluate_one_combo(
     coin: str,
     horizon: int,
     seed: int,
+    oos_strict_year: int | None = None,
 ) -> dict | None:
-    """Run HAR-RV-J vs HAR Classic for one (coin, horizon, seed) combo."""
+    """Run HAR-RV-J vs HAR Classic for one (coin, horizon, seed) combo.
+
+    If oos_strict_year is provided, all data on/after Jan 1st of that year is
+    excluded from training and walk-forward evaluation (held out for separate
+    OOS verdict computed externally).
+    """
     np.random.seed(seed)
     hourly_rets = _load_one_coin(coin)
+    if oos_strict_year is not None:
+        cutoff = pd.Timestamp(f"{oos_strict_year}-01-01", tz=hourly_rets.index.tz)
+        hourly_rets = hourly_rets[hourly_rets.index < cutoff]
     if len(hourly_rets) < 1000:
         return None
 
@@ -376,32 +385,83 @@ def evaluate_one_combo(
     }
 
 
+def _csv_list(value: str) -> list[str]:
+    return [s.strip() for s in value.split(",") if s.strip()]
+
+
+def _csv_int_list(value: str) -> list[int]:
+    return [int(s.strip()) for s in value.split(",") if s.strip()]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="M12 HAR-RV-J sweep")
     parser.add_argument("--dry-run", action="store_true", help="Run BTC h=1 seed=0 only")
+    parser.add_argument(
+        "--seeds",
+        type=_csv_int_list,
+        default=None,
+        help="Comma-separated seeds override (default: 0,1,7,42)",
+    )
+    parser.add_argument(
+        "--coins",
+        type=_csv_list,
+        default=None,
+        help="Comma-separated coins override (default: BTC/ETH/SOL/LTC/XRP/ADA/DOT)",
+    )
+    parser.add_argument(
+        "--horizons",
+        type=_csv_int_list,
+        default=None,
+        help="Comma-separated horizons override (default: 1,5,10)",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Override results directory (default: results/m12_har_rv_j/)",
+    )
+    parser.add_argument(
+        "--oos-strict",
+        type=int,
+        default=None,
+        metavar="YEAR",
+        help=(
+            "Hold out all data >= Jan 1st of YEAR from training/walk-forward "
+            "(for separate OOS verdict). Example: --oos-strict 2027"
+        ),
+    )
     args = parser.parse_args()
 
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    coins = args.coins if args.coins is not None else COINS
+    horizons = args.horizons if args.horizons is not None else HORIZONS
+    seeds = args.seeds if args.seeds is not None else SEEDS
+    results_dir = args.output if args.output is not None else RESULTS_DIR
+    oos_strict_year = args.oos_strict
+
+    results_dir.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
 
     combos: list[dict] = []
-    total = len(COINS) * len(HORIZONS) * len(SEEDS)
+    total = len(coins) * len(horizons) * len(seeds)
     done = 0
 
     if args.dry_run:
         print("[DRY RUN] BTC-USD h=1 seed=0 only")
-        row = evaluate_one_combo("BTC-USD", 1, 0)
+        row = evaluate_one_combo("BTC-USD", 1, 0, oos_strict_year=oos_strict_year)
         if row:
             combos.append(row)
             print(json.dumps(row, indent=2))
         return
 
-    for coin in COINS:
-        for h in HORIZONS:
-            for seed in SEEDS:
+    if oos_strict_year is not None:
+        print(f"[OOS-STRICT] Holding out data >= {oos_strict_year}-01-01")
+
+    for coin in coins:
+        for h in horizons:
+            for seed in seeds:
                 done += 1
                 print(f"\n[{done}/{total}] {coin} h={h} seed={seed}", flush=True)
-                row = evaluate_one_combo(coin, h, seed)
+                row = evaluate_one_combo(coin, h, seed, oos_strict_year=oos_strict_year)
                 if row is not None:
                     combos.append(row)
                 else:
@@ -429,7 +489,7 @@ def main() -> None:
     print(f"  p-value = {p_sign:.4f}")
     print(f"  median delta-Sharpe = {median_delta:+.4f}")
     print(f"\nPer-coin median delta-Sharpe:")
-    for c in COINS:
+    for c in coins:
         if c in per_coin:
             med = float(np.median(per_coin[c]["deltas"]))
             med_mse = float(np.median(per_coin[c]["mses"]))
@@ -476,13 +536,13 @@ def main() -> None:
         },
     }
 
-    with open(RESULTS_DIR / "results.json", "w") as f:
+    with open(results_dir / "results.json", "w") as f:
         json.dump(results, f, indent=2, default=str)
 
     # CSV
     if combos:
         df = pd.DataFrame(combos)
-        df.to_csv(RESULTS_DIR / "m12_har_rv_j_results.csv", index=False)
+        df.to_csv(results_dir / "m12_har_rv_j_results.csv", index=False)
         print(f"\nSaved: {RESULTS_DIR / 'results.json'}")
         print(f"Saved: {RESULTS_DIR / 'm12_har_rv_j_results.csv'}")
 

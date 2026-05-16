@@ -5,6 +5,7 @@
     "GSState.lean": "stable_marriage_lean/StableMarriage/GSState.lean",
     "Lemmas.lean": "stable_marriage_lean/StableMarriage/Lemmas.lean",
     "GaleShapley.lean": "stable_marriage_lean/StableMarriage/GaleShapley.lean",
+    "Definitions.lean": "stable_marriage_lean/StableMarriage/Definitions.lean",
     "Arrow.lean": "social_choice_lean/SocialChoice/Arrow.lean",
     "Sen.lean": "social_choice_lean/SocialChoice/Sen.lean",
     "Voting.lean": "social_choice_lean/SocialChoice/Voting.lean",
