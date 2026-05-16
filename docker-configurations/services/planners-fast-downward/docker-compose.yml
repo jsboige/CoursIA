@@ -14,7 +14,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: coursia-fast-downward:latest
+    image: jsboige/coursia-fast-downward:latest
     container_name: fast-downward
     hostname: fast-downward
 
