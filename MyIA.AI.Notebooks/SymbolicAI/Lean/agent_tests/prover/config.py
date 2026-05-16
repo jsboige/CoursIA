@@ -91,9 +91,9 @@ import SocialChoice.Definitions
 
 # ── Stable Marriage ──
 _STABLE_MARRIAGE_CANDIDATES = [
-    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\stable_marriage_lean"),
-    Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\stable_marriage_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\stable_marriage_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
 ]
 STABLE_MARRIAGE_DIR = next(
     (p for p in _STABLE_MARRIAGE_CANDIDATES if p.exists()),
