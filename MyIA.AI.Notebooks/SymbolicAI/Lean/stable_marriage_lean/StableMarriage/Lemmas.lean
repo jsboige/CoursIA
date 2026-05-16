@@ -697,6 +697,39 @@ lemma gsTerminated_allMenMatched (prof : PrefProfile n) {σ : GSState prof}
     obtain ⟨m', hm'⟩ := Option.ne_none_iff_exists.mp (hwMatched w)
     have hwf : σ.matching.womenMatch w = some m' := hm'.symm
     exact ⟨m', hwf, (hcon m' w).mpr hwf⟩
-  sorry -- TODO: cardinality contradiction: injection Fin n ↪ Fin n \ {m} impossible
+  -- Construct injection f : Fin n → {m' : Fin n // m' ≠ m}, derive contradiction
+  have hSpec (w : Fin n) :
+      σ.matching.womenMatch w = some (Classical.choose (hex w)) ∧
+      σ.matching.menMatch (Classical.choose (hex w)) = some w :=
+    Classical.choose_spec (hex w)
+  have fne (w : Fin n) : Classical.choose (hex w) ≠ m := by
+    intro heq
+    have h := (hSpec w).2
+    rw [heq, hnone] at h
+    cases h
+  let f (w : Fin n) : { m' : Fin n // m' ≠ m } :=
+    ⟨Classical.choose (hex w), fne w⟩
+  have hf : Function.Injective f := by
+    intro w₁ w₂ heq
+    have h1 := (hSpec w₁).2
+    have h2 := (hSpec w₂).2
+    have hval : Classical.choose (hex w₁) = Classical.choose (hex w₂) :=
+      congrArg Subtype.val heq
+    congr 1
+    have := congrArg (σ.matching.menMatch ·) hval
+    simp only [h1, h2, Option.some.injEq] at this
+    exact this
+  -- |{m' ≠ m}| < |Fin n| contradicts injection Fin n → {m' ≠ m}
+  have hle := Fintype.card_le_of_injective f hf
+  have hcard_fin : Fintype.card (Fin n) = n := Fintype.card_fin n
+  -- Contradiction: Fin n injects into {m' ≠ m} but {m' ≠ m} ⊂ Fin n
+  have hcontra : Fintype.card (Fin n) ≤ Fintype.card { m' : Fin n // m' ≠ m } :=
+    Fintype.card_le_of_injective f hf
+  have hlt : Fintype.card { m' : Fin n // m' ≠ m } < Fintype.card (Fin n) :=
+    @Fintype.card_lt_of_injective_of_notMem _ _ _ _
+      (Subtype.val : {m' : Fin n // m' ≠ m} → Fin n)
+      Subtype.coe_injective m
+      (by simp)
+  omega
 
 end StableMarriage
