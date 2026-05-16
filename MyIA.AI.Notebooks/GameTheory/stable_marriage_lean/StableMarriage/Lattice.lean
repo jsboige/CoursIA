@@ -26,6 +26,7 @@
 -/
 
 import Mathlib.Order.Lattice
+import Mathlib.Data.Fintype.Card
 import Mathlib.Tactic.Common
 import StableMarriage.Definitions
 
@@ -70,12 +71,37 @@ lemma antisymm (h1 : ManLE prof μ ν) (h2 : ManLE prof ν μ) :
 
 end ManLE
 
+/-! ## Inverse Helpers (needed for join/meet bijectivity) -/
+
+/--
+Key fact: μ.inverse w is the unique m such that μ.spouse m = w.
+-/
+lemma inverse_eq_of_spouse_eq (μ : Matching n) (m w : Fin n)
+    (h : μ.spouse m = w) : μ.inverse w = m := by
+  unfold Matching.inverse
+  have := Equiv.ofBijective_symm_apply_apply μ.spouse μ.bijective m
+  rw [h] at this
+  exact this
+
+/--
+Key fact: μ.spouse (μ.inverse w) = w.
+-/
+lemma spouse_inverse (μ : Matching n) (w : Fin n) :
+    μ.spouse (μ.inverse w) = w := by
+  unfold Matching.inverse
+  exact Equiv.ofBijective_apply_symm_apply μ.spouse μ.bijective w
+
 /-! ## Join and Meet Operations -/
 
 /--
 The join of two matchings (man-preferred): each man gets his preferred
 partner between μ and ν. Uses Fin.minOn to pick the lower-ranked
 (more preferred) partner.
+
+Bijectivity: the join sends each woman w to exactly one of {μ⁻¹(w), ν⁻¹(w)}.
+This follows from anti-complementarity: on the woman side, the join acts as
+the meet (each woman gets her less-preferred man), ensuring no two men map
+to the same woman.
 -/
 noncomputable def Matching.join (μ ν : Matching n) : Matching n where
   spouse := fun m =>
@@ -143,24 +169,6 @@ lemma meet_pref_one (μ ν : Matching n) (m w : Fin n)
     right; exact h
   · -- meet picked μ.spouse m: h : menPref m w < menPref m (μ.spouse m)
     left; exact h
-
-/--
-Key fact: μ.inverse w is the unique m such that μ.spouse m = w.
--/
-lemma inverse_eq_of_spouse_eq (μ : Matching n) (m w : Fin n)
-    (h : μ.spouse m = w) : μ.inverse w = m := by
-  unfold Matching.inverse
-  have := Equiv.ofBijective_symm_apply_apply μ.spouse μ.bijective m
-  rw [h] at this
-  exact this
-
-/--
-Key fact: μ.spouse (μ.inverse w) = w.
--/
-lemma spouse_inverse (μ : Matching n) (w : Fin n) :
-    μ.spouse (μ.inverse w) = w := by
-  unfold Matching.inverse
-  exact Equiv.ofBijective_apply_symm_apply μ.spouse μ.bijective w
 
 /--
 Anti-complementarity of the join:
