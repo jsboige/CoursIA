@@ -6,7 +6,9 @@ John Conway was taken by COVID-19 on April 11, 2020.
 This workspace formalizes some of his elegant lesser-known results.
 
 Noix 1: Doomsday algorithm (day-of-week calculation)
-Noix 2: Penney's game (leading number algorithm) — future
-Noix 3: Conway's Soldiers (impossibility via golden ratio) — future
+Noix 2: Look-and-Say sequence (audioactive decay)
+Noix 3: FRACTRAN universal machine
 -/
 import Conway.Doomsday
+import Conway.LookAndSay
+import Conway.Fractran
