@@ -647,4 +647,56 @@ lemma runSteps (k : Nat) :
 
 end womenBestState
 
+/-! ## Termination: Algorithm terminates at n^2 steps -/
+
+lemma gsTerminated_runSteps_bound (prof : PrefProfile n) :
+    gsTerminated prof (gsRunSteps prof (gsProposalBound n)) := by
+  classical
+  by_contra hnot
+  have ⟨m, hm⟩ : ∃ m, gsIsFree prof (gsRunSteps prof (gsProposalBound n)) m := by
+    simpa [gsTerminated] using hnot
+  set σ := gsRunSteps prof (gsProposalBound n)
+  have hmcand : (gsCandidates prof σ m).Nonempty := hm.2
+  set w := gsChooseMax prof σ m hmcand
+  have hw : ¬ σ.proposed m w := by
+    have := gsChooseMax_mem prof σ m hmcand
+    simp [gsCandidates] at this; exact this
+  have hcount : proposedCount prof σ = gsProposalBound n :=
+    proposedCount.runSteps_eq_of_not_terminated prof (gsProposalBound n) hnot
+  have hss : proposedSet prof σ ⊆ (Finset.univ : Finset (Fin n × Fin n)) :=
+    Finset.filter_subset _ _
+  have huniv : (Finset.univ : Finset (Fin n × Fin n)).card = n * n := by
+    simp [Fintype.card_prod, Fintype.card_fin]
+  have hcount_card : (proposedSet prof σ).card = n * n := by
+    unfold proposedCount at hcount; simp [gsProposalBound] at hcount; exact hcount
+  have heq : proposedSet prof σ = Finset.univ :=
+    Finset.eq_of_subset_of_card_le hss (by rw [huniv]; exact hcount_card.ge)
+  exact hw ((proposedSet.mem_iff prof (m, w)).1 (heq ▸ Finset.mem_univ _))
+
+/-- When GS has terminated, every man is matched (menMatch m ≠ none).
+    If a man were unmatched, gsCandidates must be empty (otherwise he'd be free),
+    so he proposed to all women. By womenProposedImpliesMatched, all women are then
+    matched via some other man. But consistency + n women matched by n-1 other men
+    is impossible on Fin n. -/
+lemma gsTerminated_allMenMatched (prof : PrefProfile n) {σ : GSState prof}
+    (hterm : gsTerminated prof σ)
+    (hwp : womenProposedImpliesMatched prof σ)
+    (hcon : GSConsistent σ.matching)
+    (m : Fin n) :
+    σ.matching.menMatch m ≠ none := by
+  intro hnone
+  have hcand_empty : (gsCandidates prof σ m).Nonempty → False := by
+    intro hne; exact hterm ⟨m, ⟨hnone, hne⟩⟩
+  have hpropAll : ∀ w, σ.proposed m w := by
+    intro w
+    by_contra hnot
+    exact hcand_empty ⟨w, by simp [gsCandidates, hnot]⟩
+  have hwMatched : ∀ w, σ.matching.womenMatch w ≠ none :=
+    fun w => hwp w m (hpropAll w)
+  have hex (w : Fin n) : ∃ m', σ.matching.womenMatch w = some m' ∧ σ.matching.menMatch m' = some w := by
+    obtain ⟨m', hm'⟩ := Option.ne_none_iff_exists.mp (hwMatched w)
+    have hwf : σ.matching.womenMatch w = some m' := hm'.symm
+    exact ⟨m', hwf, (hcon m' w).mpr hwf⟩
+  sorry -- TODO: cardinality contradiction: injection Fin n ↪ Fin n \ {m} impossible
+
 end StableMarriage
