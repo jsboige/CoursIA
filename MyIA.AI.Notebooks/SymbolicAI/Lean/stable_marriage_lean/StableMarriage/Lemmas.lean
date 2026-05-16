@@ -647,4 +647,89 @@ lemma runSteps (k : Nat) :
 
 end womenBestState
 
+/-! ## Termination: Algorithm terminates at n^2 steps -/
+
+lemma gsTerminated_runSteps_bound (prof : PrefProfile n) :
+    gsTerminated prof (gsRunSteps prof (gsProposalBound n)) := by
+  classical
+  by_contra hnot
+  have ⟨m, hm⟩ : ∃ m, gsIsFree prof (gsRunSteps prof (gsProposalBound n)) m := by
+    simpa [gsTerminated] using hnot
+  set σ := gsRunSteps prof (gsProposalBound n)
+  have hmcand : (gsCandidates prof σ m).Nonempty := hm.2
+  set w := gsChooseMax prof σ m hmcand
+  have hw : ¬ σ.proposed m w := by
+    have := gsChooseMax_mem prof σ m hmcand
+    simp [gsCandidates] at this; exact this
+  have hcount : proposedCount prof σ = gsProposalBound n :=
+    proposedCount.runSteps_eq_of_not_terminated prof (gsProposalBound n) hnot
+  have hss : proposedSet prof σ ⊆ (Finset.univ : Finset (Fin n × Fin n)) :=
+    Finset.filter_subset _ _
+  have huniv : (Finset.univ : Finset (Fin n × Fin n)).card = n * n := by
+    simp [Fintype.card_prod, Fintype.card_fin]
+  have hcount_card : (proposedSet prof σ).card = n * n := by
+    unfold proposedCount at hcount; simp [gsProposalBound] at hcount; exact hcount
+  have heq : proposedSet prof σ = Finset.univ :=
+    Finset.eq_of_subset_of_card_le hss (by rw [huniv]; exact hcount_card.ge)
+  exact hw ((proposedSet.mem_iff prof (m, w)).1 (heq ▸ Finset.mem_univ _))
+
+/-- When GS has terminated, every man is matched (menMatch m ≠ none).
+    If a man were unmatched, gsCandidates must be empty (otherwise he'd be free),
+    so he proposed to all women. By womenProposedImpliesMatched, all women are then
+    matched via some other man. But consistency + n women matched by n-1 other men
+    is impossible on Fin n. -/
+lemma gsTerminated_allMenMatched (prof : PrefProfile n) {σ : GSState prof}
+    (hterm : gsTerminated prof σ)
+    (hwp : womenProposedImpliesMatched prof σ)
+    (hcon : GSConsistent σ.matching)
+    (m : Fin n) :
+    σ.matching.menMatch m ≠ none := by
+  intro hnone
+  have hcand_empty : (gsCandidates prof σ m).Nonempty → False := by
+    intro hne; exact hterm ⟨m, ⟨hnone, hne⟩⟩
+  have hpropAll : ∀ w, σ.proposed m w := by
+    intro w
+    by_contra hnot
+    exact hcand_empty ⟨w, by simp [gsCandidates, hnot]⟩
+  have hwMatched : ∀ w, σ.matching.womenMatch w ≠ none :=
+    fun w => hwp w m (hpropAll w)
+  have hex (w : Fin n) : ∃ m', σ.matching.womenMatch w = some m' ∧ σ.matching.menMatch m' = some w := by
+    obtain ⟨m', hm'⟩ := Option.ne_none_iff_exists.mp (hwMatched w)
+    have hwf : σ.matching.womenMatch w = some m' := hm'.symm
+    exact ⟨m', hwf, (hcon m' w).mpr hwf⟩
+  -- Construct injection f : Fin n → {m' : Fin n // m' ≠ m}, derive contradiction
+  have hSpec (w : Fin n) :
+      σ.matching.womenMatch w = some (Classical.choose (hex w)) ∧
+      σ.matching.menMatch (Classical.choose (hex w)) = some w :=
+    Classical.choose_spec (hex w)
+  have fne (w : Fin n) : Classical.choose (hex w) ≠ m := by
+    intro heq
+    have h := (hSpec w).2
+    rw [heq, hnone] at h
+    cases h
+  let f (w : Fin n) : { m' : Fin n // m' ≠ m } :=
+    ⟨Classical.choose (hex w), fne w⟩
+  have hf : Function.Injective f := by
+    intro w₁ w₂ heq
+    have h1 := (hSpec w₁).2
+    have h2 := (hSpec w₂).2
+    have hval : Classical.choose (hex w₁) = Classical.choose (hex w₂) :=
+      congrArg Subtype.val heq
+    congr 1
+    have := congrArg (σ.matching.menMatch ·) hval
+    simp only [h1, h2, Option.some.injEq] at this
+    exact this
+  -- |{m' ≠ m}| < |Fin n| contradicts injection Fin n → {m' ≠ m}
+  have hle := Fintype.card_le_of_injective f hf
+  have hcard_fin : Fintype.card (Fin n) = n := Fintype.card_fin n
+  -- Contradiction: Fin n injects into {m' ≠ m} but {m' ≠ m} ⊂ Fin n
+  have hcontra : Fintype.card (Fin n) ≤ Fintype.card { m' : Fin n // m' ≠ m } :=
+    Fintype.card_le_of_injective f hf
+  have hlt : Fintype.card { m' : Fin n // m' ≠ m } < Fintype.card (Fin n) :=
+    @Fintype.card_lt_of_injective_of_notMem _ _ _ _
+      (Subtype.val : {m' : Fin n // m' ≠ m} → Fin n)
+      Subtype.coe_injective m
+      (by simp)
+  omega
+
 end StableMarriage
