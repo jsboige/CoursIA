@@ -101,23 +101,161 @@ noncomputable def Matching.meet (μ ν : Matching n) : Matching n where
 
 /-! ## Stability of Join and Meet (Wu-Roth Lemma 3.2, one-to-one case) -/
 
+open PrefProfile
+
+/--
+Helper: if m prefers w to his join-partner, then m prefers w to both
+his partner in μ and his partner in ν.
+The join picks the lower-ranked (more preferred) of the two partners.
+-/
+lemma join_pref_both (μ ν : Matching n) (m w : Fin n)
+    (h : prof.ManPrefers m w ((μ.join prof ν).spouse m)) :
+    prof.ManPrefers m w (μ.spouse m) ∧ prof.ManPrefers m w (ν.spouse m) := by
+  unfold ManPrefers at h ⊢
+  simp only [Matching.join] at h
+  split_ifs at h
+  · -- menPref m (μ.spouse m) ≤ menPref m (ν.spouse m), h : menPref m w < menPref m (μ.spouse m)
+    refine ⟨h, ?_⟩
+    have : (prof.menPref m w : Nat) < prof.menPref m (μ.spouse m) := mod_cast h
+    have : (prof.menPref m (μ.spouse m) : Nat) ≤ prof.menPref m (ν.spouse m) := mod_cast ‹_›
+    exact mod_cast Nat.lt_of_lt_of_le ‹_› ‹_›
+  · -- ¬(menPref m (μ.spouse m) ≤ menPref m (ν.spouse m)), h : menPref m w < menPref m (ν.spouse m)
+    refine ⟨?_, h⟩
+    have hνμ : (prof.menPref m (ν.spouse m) : Nat) < prof.menPref m (μ.spouse m) := by
+      have : ¬ (prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m)) := ‹_›
+      have : (prof.menPref m (μ.spouse m) : Nat) ≤ prof.menPref m (ν.spouse m) → False := by
+        intro hle; exact this (mod_cast hle : prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m))
+      omega
+    have : (prof.menPref m w : Nat) < prof.menPref m (ν.spouse m) := mod_cast h
+    exact mod_cast Nat.lt_trans ‹_› hνμ
+
+/--
+Helper: if m prefers w to his meet-partner, then m prefers w to at least one
+of his partners in μ or ν (the less-preferred one).
+-/
+lemma meet_pref_one (μ ν : Matching n) (m w : Fin n)
+    (h : prof.ManPrefers m w ((μ.meet prof ν).spouse m)) :
+    prof.ManPrefers m w (μ.spouse m) ∨ prof.ManPrefers m w (ν.spouse m) := by
+  unfold ManPrefers at h ⊢
+  simp only [Matching.meet] at h
+  split_ifs at h
+  · -- meet picked ν.spouse m: h : menPref m w < menPref m (ν.spouse m)
+    right; exact h
+  · -- meet picked μ.spouse m: h : menPref m w < menPref m (μ.spouse m)
+    left; exact h
+
+/--
+Key fact: μ.inverse w is the unique m such that μ.spouse m = w.
+-/
+lemma inverse_eq_of_spouse_eq (μ : Matching n) (m w : Fin n)
+    (h : μ.spouse m = w) : μ.inverse w = m := by
+  unfold Matching.inverse
+  have := Equiv.ofBijective_symm_apply_apply μ.spouse μ.bijective m
+  rw [h] at this
+  exact this
+
+/--
+Key fact: μ.spouse (μ.inverse w) = w.
+-/
+lemma spouse_inverse (μ : Matching n) (w : Fin n) :
+    μ.spouse (μ.inverse w) = w := by
+  unfold Matching.inverse
+  exact Equiv.ofBijective_apply_symm_apply μ.spouse μ.bijective w
+
+/--
+Anti-complementarity of the join:
+(μ ⊔ ν).inverse w equals either μ⁻¹(w) or ν⁻¹(w).
+
+Proof: let m = (μ ⊔ ν).inverse w. The join gives m his preferred partner,
+which equals w. So either μ.spouse m = w (making m = μ⁻¹(w))
+or ν.spouse m = w (making m = ν⁻¹(w)).
+-/
+lemma join_inverse_anti (μ ν : Matching n) (w : Fin n) :
+    (μ.join prof ν).inverse w = μ.inverse w ∨
+    (μ.join prof ν).inverse w = ν.inverse w := by
+  set j := μ.join prof ν
+  set m := j.inverse w
+  have hspw : j.spouse m = w := spouse_inverse j w
+  change (if prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m) then
+            μ.spouse m else ν.spouse m) = w at hspw
+  split_ifs at hspw
+  · -- j.spouse m = μ.spouse m = w, so m = μ.inverse w
+    left; exact (inverse_eq_of_spouse_eq μ m w hspw).symm
+  · -- j.spouse m = ν.spouse m = w, so m = ν.inverse w
+    right; exact (inverse_eq_of_spouse_eq ν m w hspw).symm
+
+/--
+Anti-complementarity of the meet: (μ ⊓ ν).inverse w equals either μ⁻¹(w) or ν⁻¹(w).
+Same argument as join_inverse_anti: the meet spouse of (meet.inverse w) equals w,
+and the meet picks one of the two partners.
+-/
+lemma meet_inverse_anti (μ ν : Matching n) (w : Fin n) :
+    (μ.meet prof ν).inverse w = μ.inverse w ∨
+    (μ.meet prof ν).inverse w = ν.inverse w := by
+  set j := μ.meet prof ν
+  set m := j.inverse w
+  have hspw : j.spouse m = w := spouse_inverse j w
+  change (if prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m) then
+            ν.spouse m else μ.spouse m) = w at hspw
+  split_ifs at hspw
+  · -- j.spouse m = ν.spouse m = w, so m = ν.inverse w
+    right; exact (inverse_eq_of_spouse_eq ν m w hspw).symm
+  · -- j.spouse m = μ.spouse m = w, so m = μ.inverse w
+    left; exact (inverse_eq_of_spouse_eq μ m w hspw).symm
+
 /--
 Wu-Roth Lemma 3.2 (one-to-one specialization):
 The join of two stable matchings is stable.
+
+Proof: suppose (m, w) blocks μ ⊔ ν.
+Man side: m prefers w to join-partner ⟹ m prefers w to both μ(m) and ν(m).
+Woman side: (μ ⊔ ν).inverse w is either μ⁻¹(w) or ν⁻¹(w).
+  Case μ⁻¹(w): w prefers m to μ⁻¹(w), so (m,w) blocks μ. Contradiction.
+  Case ν⁻¹(w): w prefers m to ν⁻¹(w), so (m,w) blocks ν. Contradiction.
 -/
 theorem join_isStable (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) :
     IsStable prof (μ.join prof ν) := by
-  sorry
+  intro m w hblock
+  obtain ⟨hmpref, hwpref⟩ := hblock
+  have hboth := join_pref_both prof μ ν m w hmpref
+  rcases join_inverse_anti prof μ ν w with hinvμ | hinvν
+  · rw [hinvμ] at hwpref
+    exact hμ m w ⟨hboth.1, hwpref⟩
+  · rw [hinvν] at hwpref
+    exact hν m w ⟨hboth.2, hwpref⟩
 
 /--
 The meet of two stable matchings is stable.
-Dual of join_isStable.
+
+Proof: suppose (m, w) blocks μ ⊓ ν.
+Man side: m prefers w to meet-partner ⟹ m prefers w to at least one of μ(m) or ν(m).
+Woman side: (μ ⊓ ν).inverse w is either μ⁻¹(w) or ν⁻¹(w).
+  Combined, at least one of the cases gives a blocking pair for μ or ν.
 -/
 theorem meet_isStable (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) :
     IsStable prof (μ.meet prof ν) := by
-  sorry
+  intro m w hblock
+  obtain ⟨hmpref, hwpref⟩ := hblock
+  have hone := meet_pref_one prof μ ν m w hmpref
+  rcases meet_inverse_anti prof μ ν w with hinvμ | hinvν
+  · -- (μ ⊓ ν).inverse w = μ.inverse w, so w prefers m to μ⁻¹(w)
+    rw [hinvμ] at hwpref
+    rcases hone with hmμ | hmν
+    · -- m prefers w to μ(m) AND w prefers m to μ⁻¹(w) → blocks μ
+      exact hμ m w ⟨hmμ, hwpref⟩
+    · -- m prefers w to ν(m), w prefers m to μ⁻¹(w)
+      -- TODO: anti-complementarity argument needed
+      sorry
+  · -- (μ ⊓ ν).inverse w = ν.inverse w, so w prefers m to ν⁻¹(w)
+    rw [hinvν] at hwpref
+    rcases hone with hmμ | hmν
+    · -- m prefers w to μ(m), w prefers m to ν⁻¹(w)
+      -- TODO: anti-complementarity argument needed
+      sorry
+    · -- m prefers w to ν(m) AND w prefers m to ν⁻¹(w) → blocks ν
+      exact hν m w ⟨hmν, hwpref⟩
 
 /-! ## Lattice Instance -/
 
