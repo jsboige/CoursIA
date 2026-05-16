@@ -85,6 +85,7 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
 
 ## Liens
 
+- [QC-IBKR Integration Guide](./QC-IBKR-INTEGRATION.md) — configuration IBKR, deployment QC Cloud, troubleshooting
 - [Catalog complet QC](../../README.md)
 - [BOOK_MAPPING](../../BOOK_MAPPING.md) — correspondance Hands-On AI Trading
 - [M12 HAR-RV-J docs](../../ML-Training-Pipeline/docs/M_NEXT_VOL_PROPOSAL.md)
