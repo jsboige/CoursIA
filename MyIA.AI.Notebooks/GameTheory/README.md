@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 25
-breakdown: =25
-maturity: BETA=18, DRAFT=3, ALPHA=2, PRODUCTION=2
+pedagogical_count: 28
+breakdown: =28
+maturity: PRODUCTION=27, BETA=1
 subseries: SocialChoice=4
 -->
 
