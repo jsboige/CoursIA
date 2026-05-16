@@ -24,6 +24,7 @@
 import Mathlib.Data.Finset.Basic
 import Mathlib.Tactic.Common
 import StableMarriage.Definitions
+import StableMarriage.Lemmas
 
 namespace StableMarriage
 
@@ -62,18 +63,23 @@ deferred-acceptance algorithm (`mmaaz-git/stable-marriage-lean` provides
 -/
 theorem gale_shapley_stable (prof : PrefProfile n) :
     ∃ μ : Matching n, IsStable prof μ := by
-  -- Attempt 1: aesop -> made no progress (no constructive witness)
-  -- Attempt 2: classical choice on finite set of matchings
-  -- The set of matchings is finite (subtype of Fin n → Fin n).
-  -- The set of stable matchings is decidable. By GS it is nonempty,
-  -- but we cannot prove nonemptiness here without porting GS.
-  -- Attempt 3: special case n=1 — but theorem is parametric in n.
-  classical
-  -- INTRACTABLE_UNTIL_GS_IMPL: existential proof requiring constructive witness
-  -- via Gale-Shapley algorithm. Cannot be solved by LLM tactic search.
-  -- See: mmaaz-git/stable-marriage-lean (Algorithm.lean ~1000 LOC)
-  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L73
-  sorry
+  let σ := gsRunSteps prof (gsProposalBound n)
+  have hterm : gsTerminated prof σ :=
+    gsTerminated_runSteps_bound prof
+  have hcon : GSConsistent σ.matching :=
+    GSConsistent.runSteps prof (gsProposalBound n)
+  have hwp : womenProposedImpliesMatched prof σ :=
+    womenProposedImpliesMatched.runSteps prof (gsProposalBound n)
+  have hdown : menProposedDownward prof σ :=
+    menProposedDownward.runSteps prof (gsProposalBound n)
+  have hmp : menMatchedProposed prof σ :=
+    menMatchedProposed.runSteps prof (gsProposalBound n)
+  have hbest : womenBestState prof σ :=
+    womenBestState.runSteps prof (gsProposalBound n)
+  have hall : ∀ m, σ.matching.menMatch m ≠ none :=
+    fun m => gsTerminated_allMenMatched prof hterm hwp hcon m
+  exact ⟨gsFinalMatching prof σ hall hcon,
+    fun m w => gsNoBlockingPairs prof hterm hcon hwp hdown hmp hbest m w⟩
 
 /--
 The Gale-Shapley matching is man-optimal: every man gets the best
