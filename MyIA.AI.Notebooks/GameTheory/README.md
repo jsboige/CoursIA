@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 27
-breakdown: =27
-maturity: BETA=20, DRAFT=3, ALPHA=2, PRODUCTION=2
+pedagogical_count: 25
+breakdown: =21, SocialChoice=4
+maturity: BETA=18, DRAFT=3, ALPHA=2, PRODUCTION=2
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
@@ -29,7 +29,7 @@ La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) 
 
 ## Structure
 
-**17 notebooks principaux** + **12 side tracks** (b = Lean, c = Python approfondissement, d/e/f = Social Choice) = **29 notebooks**
+**17 notebooks principaux** + **8 side tracks** (b = Lean, c = Python approfondissement) + **4 SocialChoice** (sous-serie dediee) = **29 notebooks**
 
 ### Partie 1 : Fondations et Jeux statiques (Notebooks 1-6)
 
@@ -68,11 +68,10 @@ La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) 
 | 15b | [GameTheory-15b-Lean-CooperativeGames](GameTheory-15b-Lean-CooperativeGames.ipynb) | Lean 4 | Axiomes Shapley formels, Core | 55 min |
 | 15c | [GameTheory-15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb) | Python | Exemples avances (Glove Game, politique) | 40 min |
 | 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de revelation, VCG, matching | 65 min |
-| 16b | [GameTheory-16b-Lean-SocialChoice](GameTheory-16b-Lean-SocialChoice.ipynb) | Lean 4 | Arrow, Sen, Electeur Median | 70 min |
-| 16c | [GameTheory-16c-SocialChoice-Python](GameTheory-16c-SocialChoice-Python.ipynb) | Python | Condorcet, simulations, modele Downs | 45 min |
-| 16d | [GameTheory-16d-SocialChoice-SAT](GameTheory-16d-SocialChoice-SAT.ipynb) | Python | Arrow encode en SAT, z3, UNSAT | 50 min |
-| 16e | [GameTheory-16e-SocialChoiceLean-Tour](GameTheory-16e-SocialChoiceLean-Tour.ipynb) | Lean 4 | Tour DominikPeters, definitions simplifiees | 40 min |
-| 16f | [GameTheory-16f-SocialChoice-Z3](GameTheory-16f-SocialChoice-Z3.ipynb) | Python | Arrow/Gibbard-Satterthwaite via Z3 solver | 45 min |
+| SC-01 | [SocialChoice/01-Arrow-Impossibility-Theorem](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | Python | Arrow : preuve formelle vs simulation (cross-series 16b+16c) | 45 min |
+| SC-02 | [SocialChoice/02-Lean-SocialChoice-Formal](SocialChoice/02-Lean-SocialChoice-Formal.ipynb) | Lean 4 + Python | Arrow, Sen, Electeur Median, tour Peters (16b+16e) | 70 min |
+| SC-03 | [SocialChoice/03-Voting-Methods](SocialChoice/03-Voting-Methods.ipynb) | Python | Condorcet, Borda, Copeland, modele Downs | 45 min |
+| SC-04 | [SocialChoice/04-Computational-Aggregation-SAT-Z3](SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) | Python | Arrow encode en SAT + Z3, UNSAT, relaxation (16d+16f) | 60 min |
 | 17 | [GameTheory-17-MultiAgent-RL](GameTheory-17-MultiAgent-RL.ipynb) | Python | NFSP, PSRO, AlphaZero intro | 55 min |
 
 **Duree totale** : ~19h15
@@ -85,9 +84,7 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 |-------|------|-------------|
 | **b** | Lean 4 | Formalisation mathematique, preuves formelles |
 | **c** | Python | Approfondissement, exemples avances, visualisations |
-| **d** | Python | Social Choice as SAT/CSP (z3, Arrow encoding) |
-| **e** | Lean 4 | Tour des resultats DominikPeters/SocialChoiceLean |
-| **f** | Python | Social Choice via Z3 solver (Arrow, Gibbard-Satterthwaite) |
+| **SC** | Mixte | Sous-serie [SocialChoice/](SocialChoice/) : Arrow, Sen, SAT, Z3 (4 notebooks) |
 
 **Organisation** :
 - Chaque notebook principal inclut des liens vers ses side tracks
@@ -121,11 +118,10 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 | 15b | Lean-CooperativeGames | ~30 | 3 | **COMPLET** |
 | 15c | CooperativeGames-Python | ~25 | 3 | **COMPLET** |
 | 16 | MechanismDesign | ~40 | 3 | **COMPLET** |
-| 16b | Lean-SocialChoice | ~30 | 3 | **COMPLET** |
-| 16c | SocialChoice-Python | ~25 | 3 | **COMPLET** |
-| 16d | SocialChoice-SAT | ~20 | 2 | **COMPLET** |
-| 16e | SocialChoiceLean-Tour | ~24 | 0 | **COMPLET** |
-| 16f | SocialChoice-Z3 | ~20 | 2 | **COMPLET** |
+| SC-01 | Arrow-Impossibility-Theorem | ~38 | 3 | **COMPLET** |
+| SC-02 | Lean-SocialChoice-Formal | ~55 | 3 | **COMPLET** |
+| SC-03 | Voting-Methods | ~43 | 3 | **COMPLET** |
+| SC-04 | Computational-Aggregation-SAT-Z3 | ~66 | 2 | **COMPLET** |
 | 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
 
 Tous les notebooks incluent :
@@ -146,7 +142,7 @@ Poursuivez avec les jeux dynamiques : notebook 7 (formes extensives), 9 (inducti
 
 ### Expert (applications avancees et choix social, ~19h)
 
-Les notebooks 13 (CFR), 15 (jeux cooperatifs, Shapley), et 16 (mechanisme design, Arrow) ouvrent les frontieres de la discipline. Les side tracks Social Choice (16b-16f) approfondissent le theoreme d'Arrow via Lean, SAT et Z3. Le notebook 17 (Multi-Agent RL) fait le pont avec l'apprentissage par renforcement.
+Les notebooks 13 (CFR), 15 (jeux cooperatifs, Shapley), et 16 (mechanisme design, Arrow) ouvrent les frontieres de la discipline. La sous-serie [SocialChoice/](SocialChoice/) (4 notebooks) approfondit le theoreme d'Arrow via Lean, SAT et Z3. Le notebook 17 (Multi-Agent RL) fait le pont avec l'apprentissage par renforcement.
 
 ## Quick Start
 
@@ -278,14 +274,14 @@ GameTheory/
 ├── GameTheory-4b-Lean-NashExistence.ipynb
 ├── GameTheory-8b-Lean-CombinatorialGames.ipynb
 ├── GameTheory-15b-Lean-CooperativeGames.ipynb
-├── GameTheory-16b-Lean-SocialChoice.ipynb
 ├── GameTheory-4c-NashExistence-Python.ipynb                        # Side tracks c (Python)
 ├── GameTheory-8c-CombinatorialGames-Python.ipynb
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
-├── GameTheory-16c-SocialChoice-Python.ipynb
-├── GameTheory-16d-SocialChoice-SAT.ipynb
-├── GameTheory-16e-SocialChoiceLean-Tour.ipynb
-├── GameTheory-16f-SocialChoice-Z3.ipynb
+├── SocialChoice/                                                   # Sous-serie Choix Social
+│   ├── 01-Arrow-Impossibility-Theorem.ipynb
+│   ├── 02-Lean-SocialChoice-Formal.ipynb
+│   ├── 03-Voting-Methods.ipynb
+│   └── 04-Computational-Aggregation-SAT-Z3.ipynb
 ├── README.md
 ├── requirements.txt
 ├── .env.example
@@ -356,17 +352,17 @@ BATCH_MODE=true python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory
 
 ### GameTheory et Lean (Verification Formelle)
 
-Les side tracks Lean (16b-16f) formalisent en Lean 4 les resultats theoriques etudies en Python dans les notebooks principaux. Cette dualite Python (simulation) / Lean (preuve formelle) est un fil rouge du curriculum.
+Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-serie [SocialChoice/](SocialChoice/) formalisent en Lean 4 les resultats theoriques etudies en Python dans les notebooks principaux. Cette dualite Python (simulation) / Lean (preuve formelle) est un fil rouge du curriculum.
 
 | Concept GameTheory | Notebook Python | Formalisation Lean | Statut |
 |--------------------|----------------|--------------------|--------|
 | Jeux 2x2, strategies | GameTheory-2 | `Game2x2.lean` (notebook 2b) | Prouve |
 | Existence Nash | GameTheory-4 | `NashExistence.lean` (notebook 4b) | Prouve |
 | Jeux combinatoires | GameTheory-8 | `PGame.lean` (notebook 8b) | Prouve |
-| Theoreme d'Arrow | GameTheory-16 | `Arrow.lean` (notebook 16d) | 0 sorry |
-| Theoreme de Sen | GameTheory-16 | `Sen.lean` (notebook 16e) | 0 sorry |
-| Valeur de Shapley | GameTheory-16b | `Shapley.lean` (cooperative games) | 2 sorry |
-| Modeles de vote | GameTheory-16f | `Voting.lean` (Banks, STV) | 4 sorry |
+| Theoreme d'Arrow | SocialChoice SC-01/SC-04 | `Arrow.lean` (social_choice_lean) | 0 sorry |
+| Theoreme de Sen | SocialChoice SC-02 | `Sen.lean` (social_choice_lean) | 0 sorry |
+| Valeur de Shapley | GameTheory-15b | `Shapley.lean` (cooperative games) | 1 sorry |
+| Modeles de vote | SocialChoice SC-02 | `Voting.lean` (Banks, STV) | 0 sorry |
 
 Voir [SymbolicAI/Lean/README.md](../SymbolicAI/Lean/README.md) pour les prerequis Lean (notebooks 1-6 recommandes).
 
@@ -374,7 +370,7 @@ Voir [SymbolicAI/Lean/README.md](../SymbolicAI/Lean/README.md) pour les prerequi
 
 Les concepts de theorie des jeux et de choix social apparaissent directement dans les smart contracts :
 
-- **SC-9 DAO Governance** : mecanismes de vote on-chain = application directe du theoreme d'Arrow et des modeles de vote etudies en 16f.
+- **SC-9 DAO Governance** : mecanismes de vote on-chain = application directe du theoreme d'Arrow et des modeles de vote etudies dans SocialChoice/.
 - **SC-17 E2E Verifiable Voting** : le vote electronique verifiable combine les resultats de choix social (Arrow, Banks, STV) avec la cryptographie (ZKP, chiffrement homomorphique).
 - **SC-14 Formal Verification** : la verification formelle de smart contracts rejoint les methodes de preuve formelle utilisees pour les formalisations Lean de cette serie.
 

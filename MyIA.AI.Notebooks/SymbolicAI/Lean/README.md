@@ -39,8 +39,9 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: reseaux de neurones verifies, IBP, CROWN | 1h30-2h |
 | 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
+| 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | Theoreme de sensibilite (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 
-**Duree totale** : ~10h
+**Duree totale** : ~11h
 
 ## Statut de maturite
 
@@ -59,6 +60,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
 | 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
 | 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
+| 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
