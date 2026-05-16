@@ -961,65 +961,74 @@ DEMOS = {
         "difficulty": "hard",
     },
     32: {
-        "name": "LATTICE_MEET_STABLE_CASE1",
+        "name": "LATTICE_MEET_ANTI_COMPL",
         "file": str(LATTICE_FILE),
-        "line": 258,
+        "line": 206,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "meet_isStable (cross-case 1)",
-        "theorem": "meet_isStable",
+        "theorem_name": "meet_inverse_anti_pref",
+        "theorem": "meet_inverse_anti_pref",
         "imports": LATTICE_IMPORTS,
         "description": (
-            "Replace sorry at L258 of Lattice.lean.\n"
-            "Cross-case in meet_isStable: (μ⊓ν).inverse w = μ⁻¹(w), but m prefers w to ν(m).\n"
-            "Hypotheses: ManPrefers m w (meet m), (μ⊓ν).inverse w = μ⁻¹(w), w prefers m to μ⁻¹(w).\n"
-            "Man prefers w to both μ(m) (from meet_pref_one) and ν(m) (OR case).\n"
-            "We have: m prefers w to ν(m) AND w prefers m to μ⁻¹(w).\n"
-            "Need to derive contradiction from stability of μ or ν.\n"
-            "Key: anti-complementarity. The meet on man side = join on woman side.\n"
-            "If (μ⊓ν).inverse w = μ⁻¹(w), then w got her preferred man between μ and ν.\n"
-            "This means w prefers μ⁻¹(w) to ν⁻¹(w) (or equal). So m >_w μ⁻¹(w) >_w ν⁻¹(w).\n"
-            "Combined with m preferring w to ν(m): (m,w) blocks ν. Contradiction.\n"
+            "Replace sorry at L206 of Lattice.lean.\n"
+            "meet_inverse_anti_pref: If (μ⊓ν).inverse w = μ⁻¹(w) and μ,ν stable,\n"
+            "then w prefers μ⁻¹(w) to ν⁻¹(w) (strict: womenPref w μ⁻¹(w) < womenPref w ν⁻¹(w)).\n"
+            "This is the anti-complementarity lemma: meet on man side = join on woman side.\n"
+            "The meet gives each man his less-preferred partner, so each woman gets her\n"
+            "more-preferred man between μ and ν.\n"
+            "Key proof: Let m_j = meet.inverse w = μ⁻¹(w). Then meet.spouse m_j = w.\n"
+            "The meet picked ν.spouse m_j (since menPref m_j (ν.spouse m_j) ≤ menPref m_j (μ.spouse m_j)).\n"
+            "But μ.spouse m_j = w, so meet.spouse m_j = ν.spouse m_j.\n"
+            "Since meet.inverse w = μ⁻¹(w), spouse(μ⁻¹(w)) = w = ν.spouse(μ⁻¹(w)).\n"
+            "Now ν.spouse(μ⁻¹(w)) = w means μ⁻¹(w) = ν⁻¹(w) OR μ⁻¹(w) ≠ ν⁻¹(w).\n"
+            "If equal: womenPref are equal, contradiction with strict < goal.\n"
+            "If different: use stability to derive ordering.\n"
+            "Actually: (μ⊓ν).inverse w = μ⁻¹(w) means the meet assigned w to μ⁻¹(w).\n"
+            "The meet picks ν.spouse m when menPref m (μ m) ≤ menPref m (ν m), else μ.spouse m.\n"
+            "If it picked ν.spouse m: ν.spouse(μ⁻¹(w)) = w, so μ⁻¹(w) = ν⁻¹(w). Contradicts ≠.\n"
+            "If it picked μ.spouse m: μ.spouse(μ⁻¹(w)) = w. That's a tautology. Need different approach.\n"
+            "Alternative: by contrapositive. If womenPref w ν⁻¹(w) ≤ womenPref w μ⁻¹(w),\n"
+            "show meet.inverse w ≠ μ⁻¹(w). Use the decomposition property of stable matchings.\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
-        "difficulty": "hard",
+        "difficulty": "very_hard",
     },
     33: {
-        "name": "LATTICE_MEET_STABLE_CASE2",
+        "name": "LATTICE_MEET_ANTI_COMPL_PRIME",
         "file": str(LATTICE_FILE),
-        "line": 264,
+        "line": 217,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "meet_isStable (cross-case 2)",
-        "theorem": "meet_isStable",
+        "theorem_name": "meet_inverse_anti_pref'",
+        "theorem": "meet_inverse_anti_pref'",
         "imports": LATTICE_IMPORTS,
         "description": (
-            "Replace sorry at L264 of Lattice.lean.\n"
-            "Cross-case in meet_isStable: (μ⊓ν).inverse w = ν⁻¹(w), but m prefers w to μ(m).\n"
-            "Symmetric to DEMO 32. Same anti-complementarity argument, swapped roles.\n"
-            "If (μ⊓ν).inverse w = ν⁻¹(w), then w prefers ν⁻¹(w) to μ⁻¹(w) (or equal).\n"
-            "Combined with m preferring w to μ(m): (m,w) blocks μ. Contradiction.\n"
+            "Replace sorry at L217 of Lattice.lean.\n"
+            "meet_inverse_anti_pref': Symmetric to DEMO 32. If (μ⊓ν).inverse w = ν⁻¹(w),\n"
+            "then w prefers ν⁻¹(w) to μ⁻¹(w).\n"
+            "Same proof structure as DEMO 32, with μ and ν swapped.\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
-        "difficulty": "hard",
+        "difficulty": "very_hard",
     },
     34: {
         "name": "LATTICE_DOCTOR_OPTIMAL_TOP",
         "file": str(LATTICE_FILE),
-        "line": 285,
+        "line": 321,
         "sorry_type": "sorry_replacement",
         "theorem_name": "doctor_optimal_eq_top",
         "theorem": "doctor_optimal_eq_top",
         "imports": LATTICE_IMPORTS,
         "description": (
-            "Replace sorry at L285 of Lattice.lean.\n"
-            "Prove doctor_optimal_eq_top: the GS man-proposing output is the top\n"
+            "Replace sorry at L321 of Lattice.lean.\n"
+            "Prove doctor_optimal_eq_top: the GS man-proposing output is the bottom\n"
             "element of the lattice (ManLE). Every man gets his best achievable partner.\n"
-            "Goal: ∀ m, menPref m (μ'.spouse m) ≤ menPref m (μ_gs.spouse m)\n"
+            "Goal: ∀ m, menPref m (μ_gs.spouse m) ≤ menPref m (μ'.spouse m)\n"
             "i.e., μ_gs rank ≤ μ' rank for every man (lower = more preferred).\n"
             "Strategy: by contradiction. If some man m has μ' preferred over μ_gs,\n"
             "then m prefers μ'(m) over μ_gs(m). But μ_gs is man-optimal (Gale-Shapley\n"
             "property), so this is impossible.\n"
             "Key: use gale_shapley_man_optimal from GaleShapley.lean if available,\n"
             "or the GS invariant that each man proposes in order of preference.\n"
+            "NOTE: direction is ManLE prof μ_gs μ' (GS ≤ any other), NOT the reverse.\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "very_hard",
