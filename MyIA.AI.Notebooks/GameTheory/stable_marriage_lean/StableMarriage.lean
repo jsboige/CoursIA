@@ -24,3 +24,4 @@
 import StableMarriage.Definitions
 import StableMarriage.GaleShapley
 import StableMarriage.Lemmas
+import StableMarriage.Lattice
