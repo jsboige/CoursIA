@@ -117,6 +117,13 @@ import StableMarriage.Definitions
 import StableMarriage.GSState
 """
 
+LATTICE_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "Lattice.lean" if STABLE_MARRIAGE_DIR.exists() else None
+LATTICE_IMPORTS = """import Mathlib.Order.Lattice
+import Mathlib.Data.Fintype.Card
+import Mathlib.Tactic.Common
+import StableMarriage.Definitions
+"""
+
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
 # fix. Attacking them wastes compute and produces fake "PROVED" reports. Each
@@ -911,6 +918,111 @@ DEMOS = {
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "medium",
+    },
+    30: {
+        "name": "LATTICE_JOIN_BIJECTIVE",
+        "file": str(LATTICE_FILE),
+        "line": 113,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "Matching.join bijective",
+        "theorem": "Matching.join",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L113 of Lattice.lean.\n"
+            "Prove bijectivity of Matching.join: each man gets his preferred partner.\n"
+            "The join spouse = if menPref m (μ m) ≤ menPref m (ν m) then μ m else ν m.\n"
+            "Key insight: anti-complementarity. On the woman side, the join acts as meet.\n"
+            "join.inverse w equals either μ⁻¹(w) or ν⁻¹(w) (proved as join_inverse_anti).\n"
+            "Each man maps to exactly one woman (no two men map to same woman).\n"
+            "Strategy: prove Injective, then use Finite.injective_iff_bijective for Fin n.\n"
+            "Available lemmas: inverse_eq_of_spouse_eq, spouse_inverse, join_inverse_anti.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "hard",
+    },
+    31: {
+        "name": "LATTICE_MEET_BIJECTIVE",
+        "file": str(LATTICE_FILE),
+        "line": 126,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "Matching.meet bijective",
+        "theorem": "Matching.meet",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L126 of Lattice.lean.\n"
+            "Prove bijectivity of Matching.meet: each man gets his less-preferred partner.\n"
+            "The meet spouse = if menPref m (μ m) ≤ menPref m (ν m) then ν m else μ m.\n"
+            "Same anti-complementarity argument as join but dual.\n"
+            "meet.inverse w equals either μ⁻¹(w) or ν⁻¹(w) (proved as meet_inverse_anti).\n"
+            "Strategy: prove Injective then use Finite.injective_iff_bijective for Fin n.\n"
+            "Available lemmas: inverse_eq_of_spouse_eq, spouse_inverse, meet_inverse_anti.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "hard",
+    },
+    32: {
+        "name": "LATTICE_MEET_STABLE_CASE1",
+        "file": str(LATTICE_FILE),
+        "line": 258,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "meet_isStable (cross-case 1)",
+        "theorem": "meet_isStable",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L258 of Lattice.lean.\n"
+            "Cross-case in meet_isStable: (μ⊓ν).inverse w = μ⁻¹(w), but m prefers w to ν(m).\n"
+            "Hypotheses: ManPrefers m w (meet m), (μ⊓ν).inverse w = μ⁻¹(w), w prefers m to μ⁻¹(w).\n"
+            "Man prefers w to both μ(m) (from meet_pref_one) and ν(m) (OR case).\n"
+            "We have: m prefers w to ν(m) AND w prefers m to μ⁻¹(w).\n"
+            "Need to derive contradiction from stability of μ or ν.\n"
+            "Key: anti-complementarity. The meet on man side = join on woman side.\n"
+            "If (μ⊓ν).inverse w = μ⁻¹(w), then w got her preferred man between μ and ν.\n"
+            "This means w prefers μ⁻¹(w) to ν⁻¹(w) (or equal). So m >_w μ⁻¹(w) >_w ν⁻¹(w).\n"
+            "Combined with m preferring w to ν(m): (m,w) blocks ν. Contradiction.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "hard",
+    },
+    33: {
+        "name": "LATTICE_MEET_STABLE_CASE2",
+        "file": str(LATTICE_FILE),
+        "line": 264,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "meet_isStable (cross-case 2)",
+        "theorem": "meet_isStable",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L264 of Lattice.lean.\n"
+            "Cross-case in meet_isStable: (μ⊓ν).inverse w = ν⁻¹(w), but m prefers w to μ(m).\n"
+            "Symmetric to DEMO 32. Same anti-complementarity argument, swapped roles.\n"
+            "If (μ⊓ν).inverse w = ν⁻¹(w), then w prefers ν⁻¹(w) to μ⁻¹(w) (or equal).\n"
+            "Combined with m preferring w to μ(m): (m,w) blocks μ. Contradiction.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "hard",
+    },
+    34: {
+        "name": "LATTICE_DOCTOR_OPTIMAL_TOP",
+        "file": str(LATTICE_FILE),
+        "line": 285,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "doctor_optimal_eq_top",
+        "theorem": "doctor_optimal_eq_top",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L285 of Lattice.lean.\n"
+            "Prove doctor_optimal_eq_top: the GS man-proposing output is the top\n"
+            "element of the lattice (ManLE). Every man gets his best achievable partner.\n"
+            "Goal: ∀ m, menPref m (μ'.spouse m) ≤ menPref m (μ_gs.spouse m)\n"
+            "i.e., μ_gs rank ≤ μ' rank for every man (lower = more preferred).\n"
+            "Strategy: by contradiction. If some man m has μ' preferred over μ_gs,\n"
+            "then m prefers μ'(m) over μ_gs(m). But μ_gs is man-optimal (Gale-Shapley\n"
+            "property), so this is impossible.\n"
+            "Key: use gale_shapley_man_optimal from GaleShapley.lean if available,\n"
+            "or the GS invariant that each man proposes in order of preference.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
     },
     29: {
         "name": "GS_CHOOSEMAX_MAXIMAL",
