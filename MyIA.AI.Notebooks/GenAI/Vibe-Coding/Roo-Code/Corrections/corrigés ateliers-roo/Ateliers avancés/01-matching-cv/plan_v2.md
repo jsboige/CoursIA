@@ -63,6 +63,6 @@ Les résultats du matching seront formatés et sauvegardés.
 Cette étape est prévue pour une itération future et ne sera pas implémentée dans la V2 initiale du script.
 
 *   **Principe :** Pour les meilleurs matchs (par exemple, ceux dépassant un certain score), le script pourrait faire un appel supplémentaire à un modèle de langage.
-*   **Modèle :** `gpt-4o-mini` serait utilisé pour sa rapidité et son faible coût.
+*   **Modèle :** `qwen3.6-35b-a3b` serait utilisé pour sa rapidité et son faible coût.
 *   **Prompt :** Un prompt serait construit, incluant la description de l'offre et le profil du consultant, demandant au modèle de générer un court paragraphe (2-3 phrases) expliquant pourquoi le profil est pertinent pour l'offre.
 *   **Résultat :** Ce texte de justification pourrait être ajouté comme une colonne supplémentaire dans le fichier `results_v2.csv`.

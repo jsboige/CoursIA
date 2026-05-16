@@ -67,7 +67,7 @@ Les profils vous permettent de basculer rapidement entre différents modèles d'
 | `Google-Gemini-2.5-Pro`     | `google/gemini-1.5-pro`                  |
 | `Google-Gemini-2.5-Flash`     | `google/gemini-1.5-flash`                  |
 | `Google-gemma-3-27b-it`     | `google/gemma-3-27b-it`                  |
-| `OpenAI-gpt-4o-mini`        | `openai/gpt-4o-mini`                     |
+| `OpenAI-qwen3.6-35b-a3b`        | `openai/qwen3.6-35b-a3b`                     |
 | `OpenAI-gpt-4o`             | `openai/gpt-4o`                          |
 | `OpenAI-o3-mini`                 | `openai/o3-mini`                   |
 | `OpenAI-o3`                 | `openai/o3`                   |

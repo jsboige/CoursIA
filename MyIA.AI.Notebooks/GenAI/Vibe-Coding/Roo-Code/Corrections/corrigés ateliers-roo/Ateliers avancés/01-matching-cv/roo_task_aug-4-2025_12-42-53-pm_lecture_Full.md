@@ -2080,7 +2080,7 @@ Je vais maintenant commencer l'Étape 7. Conformément à vos instructions, je d
     *   **Semantic Search:** The goal for V2. This involves understanding the meaning of text, not just matching keywords.
     *   **OpenAI API:** The conversation introduced the use of the OpenAI platform, with a specific API key provided.
     *   **Embeddings:** The plan is to use OpenAI's embedding models (specifically a "small" model, implying `text-embedding-3-small`) to convert text into numerical vectors for comparison.
-    *   **LLM (Large Language Model):** The plan is to use `gpt-4o-mini` for generative tasks, like writing summaries.
+    *   **LLM (Large Language Model):** The plan is to use `qwen3.6-35b-a3b` for generative tasks, like writing summaries.
     *   **In-Memory Vector Search:** To perform semantic search without a persistent database, using libraries like `Kernel-memory` or `semantic-kernel`.
 
 4.  Relevant Files and Code:
@@ -2151,7 +2151,7 @@ Je vais maintenant commencer l'Étape 7. Conformément à vos instructions, je d
       > YOUR_OPENAI_API_KEY
       >
       > Instruis une tâche pour faire une recherche web l'utilisation de l'API OpenAI pour générer des embeddings et utiliser des LLMs.
-      > On se satisfaira des embeddings small documentés et de gpt-4o-mini pour le LLM. 
+      > On se satisfaira des embeddings small documentés et de qwen3.6-35b-a3b pour le LLM. 
       > Pour la recherche de proximité sémantique, fais également documenter les moteurs disponibles, tu peux par exemple passer par Kernel-memory, ou bien semantic-kernel. Pas la peine d'installer une base vectorielle persistante, ces deux solutions fournissent une implémentation légère en mémoire.
       >
       > Continue à bien rester grounder en demandant à tes agents des rapports détaillés te permettant de tenir le cap de ta todo que je t'invite donc à mettre à jour.
@@ -2220,7 +2220,7 @@ Ta mission est d'effectuer une recherche technique pour préparer le développem
     *   Fournis un exemple de code Python clair et fonctionnel qui prend une liste de textes et retourne leurs embeddings.
 
 2.  **Recherche sur les LLM OpenAI :**
-    *   Effectue une recherche web pour trouver comment utiliser l'API OpenAI en Python pour obtenir une complétion de chat avec le modèle `gpt-4o-mini`.
+    *   Effectue une recherche web pour trouver comment utiliser l'API OpenAI en Python pour obtenir une complétion de chat avec le modèle `qwen3.6-35b-a3b`.
     *   Fournis un exemple de code Python clair et fonctionnel pour une requête simple.
 
 3.  **Recherche sur les Moteurs de Recherche Sémantique :**
@@ -2259,7 +2259,7 @@ La recherche technique pour la V2 est terminée. Le rapport consolidé a été l
 L'étude a abouti aux recommandations suivantes pour l'architecture de la V2 de la solution de matching sémantique :
 
 1.  **Génération d'Embeddings**: Utilisation du modèle `text-embedding-3-small` d'OpenAI via leur bibliothèque Python officielle pour une conversion efficace des textes en vecteurs.
-2.  **Interaction avec les LLM**: Emploi du modèle `gpt-4o-mini` pour les futures fonctionnalités de génération de texte (par exemple, des résumés), en utilisant la même bibliothèque `openai`.
+2.  **Interaction avec les LLM**: Emploi du modèle `qwen3.6-35b-a3b` pour les futures fonctionnalités de génération de texte (par exemple, des résumés), en utilisant la même bibliothèque `openai`.
 3.  **Moteur de Recherche Sémantique**: Après comparaison, la bibliothèque **`semantic-kernel`** de Microsoft est recommandée. Sa composante `VolatileMemoryStore` offre une solution de base de données vectorielle simple et purement **in-memory**, ce qui est parfaitement aligné avec les exigences du projet. La solution alternative, `kernel-memory`, a été écartée car jugée surdimensionnée.
 
 En conclusion, l'approche combinant la bibliothèque `openai` pour l'accès aux modèles et `semantic-kernel` pour la recherche sémantique en mémoire constitue une fondation technique robuste, simple et moderne pour le développement de la V2.
@@ -2304,7 +2304,7 @@ Ta mission est de concevoir le plan technique détaillé pour la V2 de notre sol
 
 **Contexte :**
 *   Le répertoire de travail est `exercice-1-v2`.
-*   Un rapport de recherche (`recherche_v2.md`) a été généré et conclut à l'utilisation de l'API `openai` (`text-embedding-3-small`, `gpt-4o-mini`) et de la bibliothèque `semantic-kernel` avec son `VolatileMemoryStore`.
+*   Un rapport de recherche (`recherche_v2.md`) a été généré et conclut à l'utilisation de l'API `openai` (`text-embedding-3-small`, `qwen3.6-35b-a3b`) et de la bibliothèque `semantic-kernel` avec son `VolatileMemoryStore`.
 *   Les données sources (`consultants.csv`, `jobs.csv`) se trouvent dans le répertoire `data`.
 
 **Instructions :**
@@ -2330,7 +2330,7 @@ Ta mission est de concevoir le plan technique détaillé pour la V2 de notre sol
     *   **Génération des résultats :**
         *   Structuration des résultats (par exemple : `job_id`, `consultant_id`, `score_de_similarite`).
         *   Sauvegarde de ces résultats dans un nouveau fichier `exercice-1-v2/results_v2.csv`.
-        *   **Prévoir** (sans l'implémenter à ce stade) une étape optionnelle où `gpt-4o-mini` pourrait être utilisé pour générer un court texte justifiant la pertinence d'un match.
+        *   **Prévoir** (sans l'implémenter à ce stade) une étape optionnelle où `qwen3.6-35b-a3b` pourrait être utilisé pour générer un court texte justifiant la pertinence d'un match.
 
 **Livrable :**
 1.  Crée le fichier `exercice-1-v2/plan_v2.md`.
@@ -2369,7 +2369,7 @@ Ces instructions spécifiques ont priorité sur toute autre instruction généra
 
 **Contexte :**
 *   Le répertoire de travail est `exercice-1-v2`.
-*   Un rapport de recherche (`recherche_v2.md`) a été généré et conclut à l'utilisation de l'API `openai` (`text-embedding-3-small`, `gpt-4o-mini`) et de la bibliothèque `semantic-kernel` avec son `VolatileMemoryStore`.
+*   Un rapport de recherche (`recherche_v2.md`) a été généré et conclut à l'utilisation de l'API `openai` (`text-embedding-3-small`, `qwen3.6-35b-a3b`) et de la bibliothèque `semantic-kernel` avec son `VolatileMemoryStore`.
 *   Les données sources (`consultants.csv`, `jobs.csv`) se trouvent dans le répertoire `data`.
 
 **Instructions :**
@@ -2395,7 +2395,7 @@ Ces instructions spécifiques ont priorité sur toute autre instruction généra
     *   **Génération des résultats :**
         *   Structuration des résultats (par exemple : `job_id`, `consultant_id`, `score_de_similarite`).
         *   Sauvegarde de ces résultats dans un nouveau fichier `exercice-1-v2/results_v2.csv`.
-        *   **Prévoir** (sans l'implémenter à ce stade) une étape optionnelle où `gpt-4o-mini` pourrait être utilisé pour générer un court texte justifiant la pertinence d'un match.
+        *   **Prévoir** (sans l'implémenter à ce stade) une étape optionnelle où `qwen3.6-35b-a3b` pourrait être utilisé pour générer un court texte justifiant la pertinence d'un match.
 
 **Livrable :**
 1.  Crée le fichier `exercice-1-v2/plan_v2.md`.
@@ -2406,7 +2406,7 @@ Successfully created new task in 🏗️ Architect mode with message: Ta mission
 
 **Contexte :**
 *   Le répertoire de travail est `exercice-1-v2`.
-*   Un rapport de recherche (`recherche_v2.md`) a été généré et conclut à l'utilisation de l'API `openai` (`text-embedding-3-small`, `gpt-4o-mini`) et de la bibliothèque `semantic-kernel` avec son `VolatileMemoryStore`.
+*   Un rapport de recherche (`recherche_v2.md`) a été généré et conclut à l'utilisation de l'API `openai` (`text-embedding-3-small`, `qwen3.6-35b-a3b`) et de la bibliothèque `semantic-kernel` avec son `VolatileMemoryStore`.
 *   Les données sources (`consultants.csv`, `jobs.csv`) se trouvent dans le répertoire `data`.
 
 **Instructions :**
@@ -2432,7 +2432,7 @@ Successfully created new task in 🏗️ Architect mode with message: Ta mission
     *   **Génération des résultats :**
         *   Structuration des résultats (par exemple : `job_id`, `consultant_id`, `score_de_similarite`).
         *   Sauvegarde de ces résultats dans un nouveau fichier `exercice-1-v2/results_v2.csv`.
-        *   **Prévoir** (sans l'implémenter à ce stade) une étape optionnelle où `gpt-4o-mini` pourrait être utilisé pour générer un court texte justifiant la pertinence d'un match.
+        *   **Prévoir** (sans l'implémenter à ce stade) une étape optionnelle où `qwen3.6-35b-a3b` pourrait être utilisé pour générer un court texte justifiant la pertinence d'un match.
 
 **Livrable :**
 1.  Crée le fichier `exercice-1-v2/plan_v2.md`.
@@ -3266,7 +3266,7 @@ Ta mission est de rédiger le rapport final pour le projet de matching sémantiq
     *   **Conclusion et Prochaines Étapes :**
         *   Conclus que le projet V2 est un succès qui a permis de mettre en place une solution fonctionnelle et pertinente.
         *   Identifie clairement la principale lacune restante : la génération de résumés argumentés.
-        *   Propose une **V3** comme prochaine étape logique, qui consisterait à ajouter une couche de génération de langage avec `gpt-4o-mini` pour expliquer les résultats du matching.
+        *   Propose une **V3** comme prochaine étape logique, qui consisterait à ajouter une couche de génération de langage avec `qwen3.6-35b-a3b` pour expliquer les résultats du matching.
 
 **Livrable :**
 1.  Crée le fichier `exercice-1-v2/rapport_final_v2.md`.
@@ -3330,7 +3330,7 @@ La mission est terminée. J'ai rédigé le rapport final pour le projet de match
     *   **Conclusion et Prochaines Étapes :**
         *   Conclus que le projet V2 est un succès qui a permis de mettre en place une solution fonctionnelle et pertinente.
         *   Identifie clairement la principale lacune restante : la génération de résumés argumentés.
-        *   Propose une **V3** comme prochaine étape logique, qui consisterait à ajouter une couche de génération de langage avec `gpt-4o-mini` pour expliquer les résultats du matching.
+        *   Propose une **V3** comme prochaine étape logique, qui consisterait à ajouter une couche de génération de langage avec `qwen3.6-35b-a3b` pour expliquer les résultats du matching.
 
 **Livrable :**
 1.  Crée le fichier `exercice-1-v2/rapport_final_v2.md`.
@@ -3366,7 +3366,7 @@ Successfully created new task in 🏗️ Architect mode with message: Ta mission
     *   **Conclusion et Prochaines Étapes :**
         *   Conclus que le projet V2 est un succès qui a permis de mettre en place une solution fonctionnelle et pertinente.
         *   Identifie clairement la principale lacune restante : la génération de résumés argumentés.
-        *   Propose une **V3** comme prochaine étape logique, qui consisterait à ajouter une couche de génération de langage avec `gpt-4o-mini` pour expliquer les résultats du matching.
+        *   Propose une **V3** comme prochaine étape logique, qui consisterait à ajouter une couche de génération de langage avec `qwen3.6-35b-a3b` pour expliquer les résultats du matching.
 
 **Livrable :**
 1.  Crée le fichier `exercice-1-v2/rapport_final_v2.md`.

@@ -99,7 +99,7 @@ async def main():
         print("Erreur : La variable d'environnement OPENAI_API_KEY n'est pas définie.")
         return
         
-    service_id = "gpt-4o-mini"
+    service_id = "qwen3.6-35b-a3b"
     service = OpenAIChatCompletion(
         service_id=service_id,
         ai_model_id=service_id,

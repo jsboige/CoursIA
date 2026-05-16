@@ -1,6 +1,6 @@
 {
   "type": "openai",
-  "endpoint": "http://localhost:5002/v1",
+  "endpoint": "https://api.medium.text-generation-webui.myia.io/v1",
   "model": "qwen3.6-35b-a3b",
   "apikey": "YOUR_API_KEY_HERE",
   "org": ""

@@ -38,7 +38,7 @@ print(f"Génération de {len(embeddings)} embeddings.")
 
 ## 2. Génération de texte avec un LLM (Chat Completion)
 
-Pour des fonctionnalités futures (résumés, génération de texte, etc.), nous aurons besoin d'interagir avec un modèle de langage comme `gpt-4o-mini`.
+Pour des fonctionnalités futures (résumés, génération de texte, etc.), nous aurons besoin d'interagir avec un modèle de langage comme `qwen3.6-35b-a3b`.
 
 ### Recommandation et exemple de code
 
@@ -50,7 +50,7 @@ from openai import OpenAI
 
 client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
 
-def get_chat_completion(prompt: str, model="gpt-4o-mini"):
+def get_chat_completion(prompt: str, model="qwen3.6-35b-a3b"):
     """
     Obtient une complétion de chat à partir du modèle OpenAI spécifié.
     """

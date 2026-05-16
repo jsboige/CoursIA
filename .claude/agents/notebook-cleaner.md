@@ -333,13 +333,13 @@ Les notebooks GenAI necessitent des corrections specifiques en plus du nettoyage
 
 ### 1. Migration des modeles (PRIORITE HAUTE)
 
-**Les modeles gpt-4o et gpt-4o-mini sont OBSOLETES. Migrer vers gpt-5-mini.**
+**Les modeles gpt-4o et qwen3.6-35b-a3b sont OBSOLETES. Migrer vers gpt-5-mini.**
 
 | Pattern a trouver | Remplacement |
 |-------------------|--------------|
-| `model="gpt-4o-mini"` | `model="gpt-5-mini"` |
+| `model="qwen3.6-35b-a3b"` | `model="gpt-5-mini"` |
 | `model="gpt-4o"` | `model="gpt-5-mini"` |
-| `"gpt-4o-mini"` dans les exemples .env | `"gpt-5-mini"` |
+| `"qwen3.6-35b-a3b"` dans les exemples .env | `"gpt-5-mini"` |
 | `OPENAI_CHAT_MODEL_ID="gpt-4o"` | `OPENAI_CHAT_MODEL_ID="gpt-5-mini"` |
 
 **EXCEPTION** : Conserver les anciens modeles dans :
@@ -381,7 +381,7 @@ Les exemples de `.env` dans les cellules markdown doivent etre coherents :
 **Corriger** :
 ```markdown
 # Ancien (incorrect)
-OPENAI_CHAT_MODEL_ID="gpt-4o-mini"
+OPENAI_CHAT_MODEL_ID="qwen3.6-35b-a3b"
 
 # Nouveau (correct)
 OPENAI_CHAT_MODEL_ID="gpt-5-mini"
@@ -411,7 +411,7 @@ OPENAI_CHAT_MODEL_ID="gpt-5-mini"
 
 Avant de terminer, verifier :
 
-- [ ] Tous les `gpt-4o-mini` remplaces par `gpt-5-mini`
+- [ ] Tous les `qwen3.6-35b-a3b` remplaces par `gpt-5-mini`
 - [ ] Pas de parametres commentes inutiles (max_tokens, temperature)
 - [ ] Pas de conclusions dupliquees
 - [ ] Exemples .env coherents avec gpt-5-mini
@@ -444,7 +444,7 @@ Task(
     7. JAMAIS git checkout sauf corruption MAJEURE (5+ cellules code ecrasees)
 
     REGLES GENAI (si applicable):
-    8. Migrer gpt-4o/gpt-4o-mini vers gpt-5-mini
+    8. Migrer gpt-4o/qwen3.6-35b-a3b vers gpt-5-mini
     9. Supprimer les parametres commentes inutiles (# max_tokens, # temperature)
     10. Fusionner les conclusions dupliquees
     11. Mettre a jour les exemples .env

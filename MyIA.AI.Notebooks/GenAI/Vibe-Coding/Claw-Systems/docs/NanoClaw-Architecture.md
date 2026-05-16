@@ -75,7 +75,7 @@ TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
 
 # LLM
 OPENROUTER_API_KEY=sk-or-v1-...
-MODEL_NAME=openai/gpt-4o-mini
+MODEL_NAME=openai/qwen3.6-35b-a3b
 
 # ASR
 ASR_ENDPOINT=https://whisper-api.myia.io/v1/audio/transcriptions

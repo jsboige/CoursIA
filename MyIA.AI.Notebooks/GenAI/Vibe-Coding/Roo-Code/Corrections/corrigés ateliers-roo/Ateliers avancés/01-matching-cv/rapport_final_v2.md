@@ -39,7 +39,7 @@ Le projet V2 est un succès. Il a permis de développer une solution de matching
 
 Cependant, une lacune majeure identifiée dans les exigences initiales demeure : la **génération de résumés argumentés** pour justifier les correspondances. Le système produit un score, mais n'explique pas *pourquoi* un profil est adapté.
 
-La prochaine étape logique est donc une **V3** du projet. Cette nouvelle version ajouterait une couche de génération de langage en utilisant un modèle comme `gpt-4o-mini` pour :
+La prochaine étape logique est donc une **V3** du projet. Cette nouvelle version ajouterait une couche de génération de langage en utilisant un modèle comme `qwen3.6-35b-a3b` pour :
 1.  Prendre en entrée les meilleures correspondances (CV + offre).
 2.  Générer un court paragraphe expliquant de manière argumentée les raisons de la pertinence du matching.
 

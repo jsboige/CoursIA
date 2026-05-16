@@ -95,7 +95,7 @@ La recherche sémantique finale a retourné des résultats avec des scores élev
 #### Prochaines étapes recommandées
 1. **Recherche approfondie** sur l'API OpenAI :
    - Utilisation des embeddings (modèle `text-embedding-3-small`)
-   - Intégration LLM avec `gpt-4o-mini`
+   - Intégration LLM avec `qwen3.6-35b-a3b`
    - Patterns d'implémentation optimaux
 
 2. **Architecture V2** :

@@ -146,7 +146,7 @@ prompt = f"Montre-moi {no_recipes} recettes avec {ingredients}. Éviter {filter_
 messages = [{"role": "user", "content": prompt}]
 
 completion = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="qwen3.6-35b-a3b",
     messages=messages,
     max_tokens=600,
     temperature=0.7
@@ -652,7 +652,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 encoding = tiktoken.get_encoding("cl100k_base")
 
 # Paramètres par défaut
-MODEL_NAME = "gpt-4o-mini"
+MODEL_NAME = "qwen3.6-35b-a3b"
 ```
 
 ---
@@ -967,7 +967,7 @@ chatbot_config:
         "Content-Type": "application/json"
       },
       "body": {
-        "model": "gpt-4o-mini",
+        "model": "qwen3.6-35b-a3b",
         "messages": [
           {
             "role": "system",
@@ -1057,7 +1057,7 @@ def search_courses(role, product=None, level=None):
 def execute_function_call(user_input):
     # 1. Appel initial pour obtenir la fonction
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="qwen3.6-35b-a3b",
         messages=[{"role": "user", "content": user_input}],
         functions=functions,
         function_call="auto"
@@ -1094,7 +1094,7 @@ def execute_function_call(user_input):
         
         # 4. Génération de la réponse finale
         second_response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="qwen3.6-35b-a3b",
             messages=messages,
             temperature=0
         )
@@ -1185,7 +1185,7 @@ def rag_query(user_question, vector_index, chunks_df, top_k=3):
     ]
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="qwen3.6-35b-a3b",
         messages=messages,
         temperature=0.7,
         max_tokens=800
@@ -1243,7 +1243,7 @@ def evaluate_groundedness(question, response, source_documents):
     """
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="qwen3.6-35b-a3b",
         messages=[{"role": "user", "content": groundedness_prompt}],
         max_tokens=10,
         temperature=0.1
@@ -1323,7 +1323,7 @@ def recommend_with_rag(user_preferences, item_database):
     context = f"Préférences utilisateur: {user_preferences}\nItems similaires: {similar_items}"
     
     recommendations = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="qwen3.6-35b-a3b",
         messages=[
             {"role": "system", "content": "Tu es un système de recommandation intelligent."},
             {"role": "user", "content": f"{context}\n\nGénère 5 recommandations personnalisées avec justifications."}
@@ -1350,7 +1350,7 @@ class ConversationalRAG:
         context = f"Historique pertinent: {relevant_history}\nQuestion actuelle: {user_input}"
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="qwen3.6-35b-a3b",
             messages=[
                 {"role": "system", "content": "Tu maintiens la cohérence conversationnelle."},
                 {"role": "user", "content": context}
@@ -1515,7 +1515,7 @@ class EducationalRAG:
         """
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="qwen3.6-35b-a3b",
             messages=[{"role": "user", "content": educational_prompt}],
             temperature=0.3,  # Plus déterministe pour l'éducation
             max_tokens=800

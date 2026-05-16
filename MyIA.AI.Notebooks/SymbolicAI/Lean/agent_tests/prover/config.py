@@ -34,7 +34,7 @@ PROVIDERS = {
         # here on a frontier model to steer the local z.ai/Qwen agents when
         # they stall. The reasoning default MUST stay a frontier model
         # (Opus 4.7 / GPT-5.5 / DeepSeek v4 Pro class) — a weak default like
-        # gpt-4o-mini defeats the entire point of the Director escalation.
+        # qwen3.6-35b-a3b defeats the entire point of the Director escalation.
         "base_url": os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
         "api_key": os.getenv("OPENROUTER_API_KEY", ""),
         "models": {

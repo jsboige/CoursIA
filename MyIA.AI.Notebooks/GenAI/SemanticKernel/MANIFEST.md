@@ -151,7 +151,7 @@ Read all reports in order:
 4. Change: `OPENAI_API_KEY=sk-or-v1-...` (OpenRouter)
 5. To: `OPENAI_API_KEY=sk-proj-...` (OpenAI production)
 6. Change: `OPENAI_CHAT_MODEL_ID="meta-llama/llama-3.2-3b-instruct:free"`
-7. To: `OPENAI_CHAT_MODEL_ID="gpt-4o-mini"`
+7. To: `OPENAI_CHAT_MODEL_ID="qwen3.6-35b-a3b"`
 
 **Time:** 5 minutes
 **Difficulty:** Trivial

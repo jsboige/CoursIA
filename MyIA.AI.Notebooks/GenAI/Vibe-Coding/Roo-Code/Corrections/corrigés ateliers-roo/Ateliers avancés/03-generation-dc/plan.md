@@ -2,7 +2,7 @@
 
 ## 1. Objectif du Script
 
-Ce script a pour but d'automatiser la génération de Dossiers de Compétences (DC) personnalisés pour chaque consultant d'une base de données, en réponse à chaque fiche de poste disponible. Il lira les données depuis des fichiers CSV, traitera chaque combinaison consultant/poste de manière **parallèle et asynchrone**, et sauvegardera chaque DC généré dans un fichier distinct. Le script utilisera la bibliothèque `python-dotenv` pour gérer les clés d'API et `asyncio` pour orchestrer les appels concurrents à l'API `gpt-4o-mini` via `semantic-kernel`.
+Ce script a pour but d'automatiser la génération de Dossiers de Compétences (DC) personnalisés pour chaque consultant d'une base de données, en réponse à chaque fiche de poste disponible. Il lira les données depuis des fichiers CSV, traitera chaque combinaison consultant/poste de manière **parallèle et asynchrone**, et sauvegardera chaque DC généré dans un fichier distinct. Le script utilisera la bibliothèque `python-dotenv` pour gérer les clés d'API et `asyncio` pour orchestrer les appels concurrents à l'API `qwen3.6-35b-a3b` via `semantic-kernel`.
 
 ## 2. Structure Générale du Script
 
@@ -49,7 +49,7 @@ graph TD
 -   **Actions :**
     1.  Importer les classes nécessaires (`Kernel`, `OpenAIChatCompletion`).
     2.  Instancier le Kernel.
-    3.  Configurer et ajouter le service `gpt-4o-mini` en utilisant la clé API chargée à l'étape 1.
+    3.  Configurer et ajouter le service `qwen3.6-35b-a3b` en utilisant la clé API chargée à l'étape 1.
     4.  Définir un `prompt_template` flexible avec des placeholders (`{{$consultant_details}}`, `{{$job_requirements}}`).
     5.  Créer la fonction sémantique `generer_dc_function` à partir de ce template.
 
