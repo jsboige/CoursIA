@@ -1,0 +1,44 @@
+# Fast Downward - Classical AI Planning System
+# https://github.com/aibasel/fast-downward
+#
+# Build: docker compose build
+# Run:   docker compose up -d
+# Test:  curl http://localhost:8200/health
+# Plan:  curl -X POST http://localhost:8200/plan -H 'Content-Type: application/json' -d '{"domain":"...","problem":"..."}'
+#
+# CPU-only service (no GPU required for classical planning)
+# Port: 8200
+
+services:
+  fast-downward:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: coursia-fast-downward:latest
+    container_name: fast-downward
+    hostname: fast-downward
+
+    ports:
+      - "127.0.0.1:${PLANNER_PORT:-8200}:8200"
+
+    volumes:
+      - ../../shared/pddl:/data/pddl
+
+    environment:
+      - PLANNER_PORT=8200
+      - TZ=${TZ:-Europe/Paris}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8200/health | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G

@@ -387,6 +387,10 @@ docker-configurations/services/comfyui-qwen/.secrets/
 
 # .NET notebook config (contains API keys)
 MyIA.AI.Notebooks/Config/settings.json
+MyIA.AI.Notebooks/GenAI/config/settings.json
+
+# .NET build cache
+*.csproj.lscache
 
 # VSCode specific
 .vscode/

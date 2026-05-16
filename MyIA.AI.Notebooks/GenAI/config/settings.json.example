@@ -1,0 +1,7 @@
+{
+  "type": "openai",
+  "endpoint": "http://localhost:5002/v1",
+  "model": "qwen3.6-35b-a3b",
+  "apikey": "YOUR_API_KEY_HERE",
+  "org": ""
+}
