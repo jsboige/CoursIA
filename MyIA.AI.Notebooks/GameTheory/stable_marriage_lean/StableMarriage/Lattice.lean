@@ -193,6 +193,30 @@ lemma join_inverse_anti (μ ν : Matching n) (w : Fin n) :
     right; exact (inverse_eq_of_spouse_eq ν m w hspw).symm
 
 /--
+Anti-complementarity of the meet (woman side):
+If meet.inverse w = μ⁻¹(w), then w prefers μ⁻¹(w) to ν⁻¹(w).
+The meet on the man side acts as the join on the woman side: w gets her
+more-preferred man. If meet picked μ⁻¹(w), then ν⁻¹(w) must be less preferred.
+Requires stability of μ and ν.
+-/
+lemma meet_inverse_anti_pref (μ ν : Matching n)
+    (hμ : IsStable prof μ) (hν : IsStable prof ν) (w : Fin n)
+    (h : (μ.meet prof ν).inverse w = μ.inverse w) :
+    prof.womenPref w (μ.inverse w) < prof.womenPref w (ν.inverse w) := by
+  sorry
+
+/--
+Anti-complementarity of the meet (woman side, ν branch):
+If meet.inverse w = ν⁻¹(w), then w prefers ν⁻¹(w) to μ⁻¹(w).
+Requires stability of μ and ν.
+-/
+lemma meet_inverse_anti_pref' (μ ν : Matching n)
+    (hμ : IsStable prof μ) (hν : IsStable prof ν) (w : Fin n)
+    (h : (μ.meet prof ν).inverse w = ν.inverse w) :
+    prof.womenPref w (ν.inverse w) < prof.womenPref w (μ.inverse w) := by
+  sorry
+
+/--
 Anti-complementarity of the meet: (μ ⊓ ν).inverse w equals either μ⁻¹(w) or ν⁻¹(w).
 Same argument as join_inverse_anti: the meet spouse of (meet.inverse w) equals w,
 and the meet picks one of the two partners.
@@ -254,14 +278,24 @@ theorem meet_isStable (μ ν : Matching n)
     · -- m prefers w to μ(m) AND w prefers m to μ⁻¹(w) → blocks μ
       exact hμ m w ⟨hmμ, hwpref⟩
     · -- m prefers w to ν(m), w prefers m to μ⁻¹(w)
-      -- TODO: anti-complementarity argument needed
-      sorry
+      -- Anti-complementarity: meet.inverse w = μ⁻¹(w) ⟹ w prefers μ⁻¹(w) to ν⁻¹(w)
+      -- Transitively: w prefers m to ν⁻¹(w). Combined with hmν, (m,w) blocks ν.
+      have hwν := meet_inverse_anti_pref prof μ ν hμ hν w hinvμ
+      have h1 : (prof.womenPref w m : Nat) < prof.womenPref w (μ.inverse w) := mod_cast hwpref
+      have h2 : (prof.womenPref w (μ.inverse w) : Nat) < prof.womenPref w (ν.inverse w) := mod_cast hwν
+      have hwν' : prof.WomanPrefers w m (ν.inverse w) := mod_cast Nat.lt_trans h1 h2
+      exact hν m w ⟨hmν, hwν'⟩
   · -- (μ ⊓ ν).inverse w = ν.inverse w, so w prefers m to ν⁻¹(w)
     rw [hinvν] at hwpref
     rcases hone with hmμ | hmν
     · -- m prefers w to μ(m), w prefers m to ν⁻¹(w)
-      -- TODO: anti-complementarity argument needed
-      sorry
+      -- Anti-complementarity: meet.inverse w = ν⁻¹(w) ⟹ w prefers ν⁻¹(w) to μ⁻¹(w)
+      -- Transitively: w prefers m to μ⁻¹(w). Combined with hmμ, (m,w) blocks μ.
+      have hwμ := meet_inverse_anti_pref' prof μ ν hμ hν w hinvν
+      have h1 : (prof.womenPref w m : Nat) < prof.womenPref w (ν.inverse w) := mod_cast hwpref
+      have h2 : (prof.womenPref w (ν.inverse w) : Nat) < prof.womenPref w (μ.inverse w) := mod_cast hwμ
+      have hwμ' : prof.WomanPrefers w m (μ.inverse w) := mod_cast Nat.lt_trans h1 h2
+      exact hμ m w ⟨hmμ, hwμ'⟩
     · -- m prefers w to ν(m) AND w prefers m to ν⁻¹(w) → blocks ν
       exact hν m w ⟨hmν, hwpref⟩
 
@@ -274,13 +308,15 @@ theorem meet_isStable (μ ν : Matching n)
 /-! ## Man-Optimal = Top of the Lattice -/
 
 /--
-The man-proposing Gale-Shapley output is the top element of the lattice
-of stable matchings: every man gets his best achievable partner.
+The man-proposing Gale-Shapley output is the bottom element of the lattice
+of stable matchings under ManLE: every man gets his best achievable partner.
+ManLE prof μ_gs μ' means each man's GS partner is at least as preferred
+as his partner in any other stable matching μ'.
 -/
 theorem doctor_optimal_eq_top (μ_gs : Matching n)
     (hgs : IsStable prof μ_gs)
     (μ' : Matching n) (hstable : IsStable prof μ') :
-    ManLE prof μ' μ_gs :=
+    ManLE prof μ_gs μ' :=
   fun m => by
   sorry
 
