@@ -186,7 +186,15 @@ def walk_forward_trend(
             except Exception:
                 continue
 
-        probs = model.predict_proba(X_test)[:, 1] if hasattr(model, "predict_proba") else np.full(len(X_test), 0.5)
+        if hasattr(model, "predict_proba"):
+            probs_raw = model.predict_proba(X_test)
+            if probs_raw.shape[1] == 1:
+                only_class = int(model.classes_[0])
+                probs = np.full(len(X_test), 1.0 if only_class == 1 else 0.0)
+            else:
+                probs = probs_raw[:, 1]
+        else:
+            probs = np.full(len(X_test), 0.5)
 
         all_probs.extend(probs.tolist())
         all_truths.extend(test["target"].values.tolist())
