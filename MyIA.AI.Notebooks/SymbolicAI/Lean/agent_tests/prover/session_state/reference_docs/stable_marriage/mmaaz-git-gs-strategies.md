@@ -144,11 +144,13 @@ prover and should be attempted first.
 
 ## Summary for the Director agent
 
-- `gale_shapley_woman_pessimal` (L119): tractable — pure `Def`-unfolding + blocking-pair
-  contradiction + `Fin` rank trichotomy. **Attack this first.** No reference proof exists;
-  use the duality argument above.
-- `gale_shapley_stable` (L73): the original repo proves it; main missing piece on our side
-  is a `GSMatching -> Matching` totality/bijectivity conversion lemma. All the runSteps
-  invariants it needs are ALREADY PROVEN in our `existing_proofs.lean`.
-- `gale_shapley_man_optimal` (L91): hardest — needs an "achievable woman" notion and an
-  induction on the proposal sequence that does not exist in either codebase. Multi-day port.
+**⚠ AMENDMENT 2026-05-16 — empirical prover verdict** (cf [project_prover_c35_01_woman_pessimal](.../memory/project_prover_c35_01_woman_pessimal.md)) :
+
+- C34-01 (L73 stable), C34-02 (L91 man_optimal), C35-01 (L119 woman_pessimal) all yielded **INTRACTABLE** within 100-250s with reference docs grounding active. The Coordinator cites the same Knuth 1976 lattice duality both as suggested strategy AND as intractability reason. The "Attack first" ordering below was **theoretical-feasibility ordering**, not empirically validated. Three sorrys are reproducibly intractable on our current prover without the upstream proofs.
+- **NEW unlock (2026-05-16)** : `upstream/` directory now contains the **complete mmaaz-git Lean source** (commit `111e42c5`, v4.25.0). `Properties.lean L125` has the **full proof of `galeShapley_stable`** — translate-and-adapt path opens for DEMO 15 / L73.
+
+**Revised priority order** (translate-and-adapt approach) :
+
+- `gale_shapley_stable` (L73): **REFERENCE PROOF AVAILABLE** in `upstream/StableMarriageLean/Properties.lean` L125 (`galeShapley_stable`). Strategy : (1) read upstream proof structure, (2) identify lemma name mapping mmaaz → our port, (3) handle `acceptable` filter elimination (we have total bijective preferences). Most tractable now.
+- `gale_shapley_man_optimal` (L91): not in upstream Properties.lean. Derive from `galeShapley_stable` + induction on `runSteps` + observation that GS gives each man his most preferred achievable woman. Hardest of the three because no reference proof exists in either codebase.
+- `gale_shapley_woman_pessimal` (L119): not in upstream Properties.lean. Derive from `man_optimal` via Knuth 1976 lattice duality (stable matchings form a distributive lattice, m-optimal = w-pessimal). Empirically intractable via direct "blocking-pair contradiction" — see C35-01 verdict.
