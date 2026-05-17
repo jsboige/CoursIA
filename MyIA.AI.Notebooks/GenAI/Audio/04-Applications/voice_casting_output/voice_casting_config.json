@@ -1,0 +1,216 @@
+{
+  "epic": "1028",
+  "pass": "P2",
+  "description": "Voice casting configuration for audiobook pipeline",
+  "source_text": "Boule de Suif - Guy de Maupassant",
+  "characters": {
+    "elisabeth_rousset": {
+      "name": "Elisabeth Rousset",
+      "gender": "F",
+      "role": "protagoniste",
+      "voices": {
+        "kokoro": {
+          "model": "kokoro",
+          "voice_id": "af_sky",
+          "service_url": "http://localhost:8191"
+        },
+        "openai": {
+          "model": "tts-1",
+          "voice_id": "nova",
+          "service": "cloud"
+        },
+        "fishaudio_production": {
+          "model": "fishaudio/s2-pro",
+          "preset": "expressive_female_warm",
+          "voice_cloning": false,
+          "expressive_tags": true,
+          "note": "Modele production — non deploye en Docker. Utiliser Kokoro/OpenAI pour demo."
+        }
+      },
+      "sample_text": "Et ils ne font rien de mal aux gens ?",
+      "sample_file": "voice_casting_output/elisabeth_rousset_kokoro.mp3"
+    },
+    "cornudet": {
+      "name": "Cornudet",
+      "gender": "M",
+      "role": "secondaire",
+      "voices": {
+        "kokoro": {
+          "model": "kokoro",
+          "voice_id": "bm_george",
+          "service_url": "http://localhost:8191"
+        },
+        "openai": {
+          "model": "tts-1",
+          "voice_id": "fable",
+          "service": "cloud"
+        },
+        "fishaudio_production": {
+          "model": "fishaudio/s2-pro",
+          "preset": "expressive_male_neutral",
+          "voice_cloning": false,
+          "expressive_tags": true,
+          "note": "Modele production — non deploye en Docker. Utiliser Kokoro/OpenAI pour demo."
+        }
+      },
+      "sample_text": "On dit qu'ils seraient a Evreux demain.",
+      "sample_file": "voice_casting_output/cornudet_kokoro.mp3"
+    },
+    "comtesse": {
+      "name": "Comtesse de Breville",
+      "gender": "F",
+      "role": "antagoniste",
+      "voices": {
+        "kokoro": {
+          "model": "kokoro",
+          "voice_id": "af_sarah",
+          "service_url": "http://localhost:8191"
+        },
+        "openai": {
+          "model": "tts-1",
+          "voice_id": "shimmer",
+          "service": "cloud"
+        },
+        "fishaudio_production": {
+          "model": "fishaudio/s2-pro",
+          "preset": "expressive_female_cold",
+          "voice_cloning": false,
+          "expressive_tags": true,
+          "note": "Modele production — non deploye en Docker. Utiliser Kokoro/OpenAI pour demo."
+        }
+      },
+      "sample_text": "Et ils ne font rien de mal aux gens ?",
+      "sample_file": "voice_casting_output/comtesse_kokoro.mp3"
+    },
+    "comte": {
+      "name": "Comte de Breville",
+      "gender": "M",
+      "role": "antagoniste",
+      "voices": {
+        "kokoro": {
+          "model": "kokoro",
+          "voice_id": "am_michael",
+          "service_url": "http://localhost:8191"
+        },
+        "openai": {
+          "model": "tts-1",
+          "voice_id": "onyx",
+          "service": "cloud"
+        },
+        "fishaudio_production": {
+          "model": "fishaudio/s2-pro",
+          "preset": "expressive_male_cold",
+          "voice_cloning": false,
+          "expressive_tags": true,
+          "note": "Modele production — non deploye en Docker. Utiliser Kokoro/OpenAI pour demo."
+        }
+      },
+      "sample_text": "Rassurez-vous, madame, ils sont corrects.",
+      "sample_file": "voice_casting_output/comte_kokoro.mp3"
+    },
+    "narrateur": {
+      "name": "Narrateur",
+      "gender": "M",
+      "role": "narrateur",
+      "voices": {
+        "kokoro": {
+          "model": "kokoro",
+          "voice_id": "bf_isabella",
+          "service_url": "http://localhost:8191"
+        },
+        "openai": {
+          "model": "tts-1",
+          "voice_id": "echo",
+          "service": "cloud"
+        },
+        "fishaudio_production": {
+          "model": "fishaudio/s2-pro",
+          "preset": "narrator_male",
+          "voice_cloning": false,
+          "expressive_tags": true,
+          "note": "Modele production — non deploye en Docker. Utiliser Kokoro/OpenAI pour demo."
+        }
+      },
+      "sample_text": "Pendant plusieurs jours, des lambeaux d'armees en deroute avaient traverse la ville.",
+      "sample_file": "voice_casting_output/narrateur_kokoro.mp3"
+    },
+    "carre_lamadon": {
+      "name": "Monsieur Carre-Lamadon",
+      "gender": "M",
+      "role": "secondaire",
+      "voices": {
+        "kokoro": {
+          "model": "kokoro",
+          "voice_id": "bm_george",
+          "service_url": "http://localhost:8191"
+        },
+        "openai": {
+          "model": "tts-1",
+          "voice_id": "fable",
+          "service": "cloud"
+        },
+        "fishaudio_production": {
+          "model": "fishaudio/s2-pro",
+          "preset": "expressive_male_neutral",
+          "voice_cloning": false,
+          "expressive_tags": true,
+          "note": "Modele production — non deploye en Docker. Utiliser Kokoro/OpenAI pour demo."
+        }
+      },
+      "sample_text": "On dit qu'ils seraient a Evreux demain.",
+      "sample_file": "voice_casting_output/carre_lamadon_kokoro.mp3"
+    },
+    "loiseau": {
+      "name": "Monsieur Loiseau",
+      "gender": "M",
+      "role": "figurant",
+      "voices": {
+        "kokoro": {
+          "model": "kokoro",
+          "voice_id": "bm_lewis",
+          "service_url": "http://localhost:8191"
+        },
+        "openai": {
+          "model": "tts-1",
+          "voice_id": "fable",
+          "service": "cloud"
+        },
+        "fishaudio_production": {
+          "model": "fishaudio/s2-pro",
+          "preset": "neutral_male",
+          "voice_cloning": false,
+          "expressive_tags": true,
+          "note": "Modele production — non deploye en Docker. Utiliser Kokoro/OpenAI pour demo."
+        }
+      },
+      "sample_text": "Ce n'etait point de la troupe, mais des hordes debraillees.",
+      "sample_file": "voice_casting_output/loiseau_kokoro.mp3"
+    },
+    "soeurs": {
+      "name": "Les deux soeurs",
+      "gender": "F",
+      "role": "figurant",
+      "voices": {
+        "kokoro": {
+          "model": "kokoro",
+          "voice_id": "bf_emma",
+          "service_url": "http://localhost:8191"
+        },
+        "openai": {
+          "model": "tts-1",
+          "voice_id": "alloy",
+          "service": "cloud"
+        },
+        "fishaudio_production": {
+          "model": "fishaudio/s2-pro",
+          "preset": "neutral_female",
+          "voice_cloning": false,
+          "expressive_tags": true,
+          "note": "Modele production — non deploye en Docker. Utiliser Kokoro/OpenAI pour demo."
+        }
+      },
+      "sample_text": "Quelques-uns demeuraient chez eux.",
+      "sample_file": "voice_casting_output/soeurs_kokoro.mp3"
+    }
+  }
+}
