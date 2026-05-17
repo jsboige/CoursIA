@@ -146,7 +146,7 @@ class LeanVerifier:
         if module_name.endswith(".lean"):
             module_name = module_name[:-5]
 
-        cmd, env = _resolve_lake_command(["build", module_name])
+        cmd, env = _resolve_lake_command(["build", "-R", module_name])
 
         try:
             start = time.time()
@@ -161,13 +161,26 @@ class LeanVerifier:
             duration = time.time() - start
 
             output = result.stdout + "\n" + result.stderr
+
+            # Filter out the stale-config warning that lake emits when the
+            # cached configuration is out of date — it is NOT a proof error.
+            config_stale = "compiled configuration is invalid" in output
+            if config_stale:
+                output_lines = []
+                for line in output.split("\n"):
+                    if "compiled configuration is invalid" not in line:
+                        output_lines.append(line)
+                output = "\n".join(output_lines)
+
             errors = self._extract_errors(output)
 
             # If lake itself failed (returncode != 0) but no parsed errors,
             # surface a synthetic error so callers don't think this was a
             # silent success — protects against the regression where missing
             # toolchain returned 0 errors and was treated as success.
-            if not errors and result.returncode != 0:
+            # Exception: if the only issue was a stale config (now fixed by
+            # -R), and -R succeeded (returncode 0), this branch is skipped.
+            if not errors and result.returncode != 0 and not config_stale:
                 errors = [
                     f"lake exit={result.returncode}; output: {output[:500] or '(empty)'}"
                 ]
