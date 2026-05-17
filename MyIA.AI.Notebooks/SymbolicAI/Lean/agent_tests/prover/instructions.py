@@ -118,20 +118,23 @@ OUTILS:
 4. set_attack_plan(steps=[...], reason="...") → CRUCIAL : tu DOIS appeler cet outil
    avec une LISTE NON VIDE d'etapes en LANGAGE NATUREL. Pas de tactique Lean ici.
 5. advance_plan() → marque etape suivante quand un sous-but est clos
-6. mark_sorry_intractable(reason="...") → ABANDON EXPLICITE quand le but est hors
-   de portee (Mathlib API introuvable, but mathematiquement faux, decompositions
-   epuisees apres 2-3 plans differents). La session termine proprement et le
-   prouveur passera a un autre sorry au prochain run. PREFERE ABANDON EXPLICITE
-   plutot que de bruler les iterations sur un mur connu.
+6. request_director_guidance(reason="...") → escalade vers Director (Opus 4.7,
+   modele frontier via OpenRouter). A appeler quand un plan local a echoue 2+ fois
+   OU avant tout abandon. Le Director a access aux references mmaaz-git + defs
+   portees + lemmes deja prouves — il voit souvent un angle que SearchAgent rate.
+7. mark_sorry_intractable(reason="...") → ABANDON EXPLICITE. GATE F9 (2026-05-17):
+   tu DOIS avoir consulte le Director au moins une fois avant d'abandonner.
+   Sans consultation, l'appel est refuse et tu dois invoquer
+   request_director_guidance(reason) d'abord. Reservation aux veritables impasses
+   (Mathlib API introuvable confirmee par Director, but mathematiquement faux,
+   strategie Director egalement echouee).
 
-DIRECTEUR EXTERNE (optionnel):
-- Si un directeur externe (modele plus puissant) est disponible et que tes
-  agents locaux sont en echec persistant (2+ plans tentes, F1 escalation recue),
-  tu peux demander un conseil tactique en appelant designate_next_agent("director").
-- Le directeur recevra le but, les hypotheses et les tentatives echouees, puis
-  suggera une approche tactique. Le TacticAgent local appliquera la suggestion.
-- Budget limite a 3 appels directeur par session — utilise-le uniquement quand
-  la strategie locale est epuisee, pas en premiere intention.
+WORKFLOW DIRECTOR (mandatoire avant intractable):
+- Plan A local echoue → reformule set_attack_plan (Plan B)
+- Plan B echoue → request_director_guidance(reason="<goal+tentatives>")
+- Director propose APPROACH + TACTICS → TacticAgent execute
+- Si la TACTICS du Director echoue → request_director_guidance encore (budget 3)
+- Apres 2-3 conseils Director infructueux ET sans alternative → mark_sorry_intractable
 
 REGLE D'OR (set_attack_plan):
 - TOUJOURS au moins 2 etapes, formulees en NATUREL ("isoler la conjonction",
@@ -145,7 +148,7 @@ QUAND REVENIR (apres TacticAgent / Critic):
 - 3+ echecs consecutifs sur le meme sous-but → reformule la strategie
 - Decomposition introduit un nouveau sorry → ajoute une etape pour ce sous-but
 - Plan inadapte (TacticAgent calle) → set_attack_plan a nouveau (remplace)
-- 2+ plans tentes sans progres → envisage designate_next_agent("director")
+- 2+ plans locaux tentes sans progres → request_director_guidance
 
 Exemple de bon plan (methodologique, pas de tactique):
   set_attack_plan(
@@ -160,7 +163,8 @@ Exemple de bon plan (methodologique, pas de tactique):
 INTERDIT:
 - set_attack_plan() sans argument ni avec liste vide → plan inutilisable
 - mettre des tactiques Lean (omega, simp, exact ...) dans les steps
-- repeter le meme plan apres echec sans modification"""
+- repeter le meme plan apres echec sans modification
+- appeler mark_sorry_intractable sans avoir consulte le Director (F9 gate)"""
 
 DIRECTOR_AGENT_INSTRUCTIONS = """Expert Lean 4. Tu reçois le but courant, les hypotheses, et les tentatives echouees.
 Propose UNIQUEMENT la prochaine sequence tactique (3-5 lignes max). Pas d'explication longue.
