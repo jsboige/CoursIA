@@ -259,9 +259,40 @@ private lemma meetSpouse_injective (μ ν : Matching n)
       -- If strictly <, use stability (sorry for now).
       by_cases hm₁str : (prof.menPref m₁ (μ.spouse m₁) : Nat) < prof.menPref m₁ (ν.spouse m₁)
       · -- Strict: m₁ strictly prefers μ.sp₁ to ν.sp₁ = μ.sp m₂
-        -- Meet cross-case: men prefer DIFFERENT women, not the same one.
-        -- Unlike join, double stability on same woman doesn't directly apply.
-        sorry
+        -- Meet cross-case: men prefer DIFFERENT women.
+        -- Use anti-complementarity: meet on man side = join on woman side.
+        -- The key insight: consider woman μ.sp₁.
+        -- m₁ prefers μ.sp₁ over w. Use ν-stability on (m₁, μ.sp₁).
+        by_contra hne
+        have hw : ν.spouse m₁ = μ.spouse m₂ := heq
+        have hm₁μinv : μ.inverse (μ.spouse m₁) = m₁ := inverse_eq_of_spouse_eq μ m₁ _ rfl
+        -- ν-stability on (m₁, μ.sp₁): m₁ prefers μ.sp₁ to w = ν.sp₁
+        have hm₁pref : prof.ManPrefers m₁ (μ.spouse m₁) (ν.spouse m₁) := by
+          unfold PrefProfile.ManPrefers; exact mod_cast hm₁str
+        -- If μ.sp₁ also prefers m₁ to ν⁻¹(μ.sp₁), blocks ν
+        by_cases hw₁ : prof.WomanPrefers (μ.spouse m₁) m₁ (ν.inverse (μ.spouse m₁))
+        · -- (m₁, μ.sp₁) blocks ν
+          have hblock₁ : IsBlockingPair prof ν m₁ (μ.spouse m₁) := ⟨hm₁pref, hw₁⟩
+          exact hν m₁ (μ.spouse m₁) hblock₁
+        · -- μ.sp₁ doesn't prefer m₁ to ν⁻¹(μ.sp₁)
+          -- So ν⁻¹(μ.sp₁) ≤ m₁ in womenPref. Who is ν⁻¹(μ.sp₁)?
+          -- Now consider woman ν.sp₂. m₂ prefers ν.sp₂ over w.
+          have hm₂νinv : ν.inverse (ν.spouse m₂) = m₂ := inverse_eq_of_spouse_eq ν m₂ _ rfl
+          have hm₂pref : prof.ManPrefers m₂ (ν.spouse m₂) (μ.spouse m₂) := by
+            unfold PrefProfile.ManPrefers
+            exact mod_cast (Nat.lt_of_not_le (mod_cast c₂))
+          -- μ-stability on (m₂, ν.sp₂): m₂ prefers ν.sp₂ to w = μ.sp₂
+          by_cases hw₂ : prof.WomanPrefers (ν.spouse m₂) m₂ (μ.inverse (ν.spouse m₂))
+          · -- (m₂, ν.sp₂) blocks μ
+            have hblock₂ : IsBlockingPair prof μ m₂ (ν.spouse m₂) := ⟨hm₂pref, hw₂⟩
+            exact hμ m₂ (ν.spouse m₂) hblock₂
+          · -- Both women don't prefer the respective man.
+            -- hw₁: ¬WomanPrefers (μ.sp₁) m₁ (ν⁻¹(μ.sp₁))
+            -- hw₂: ¬WomanPrefers (ν.sp₂) m₂ (μ⁻¹(ν.sp₂))
+            -- If μ.sp₁ = ν.sp₂, we get womenPref equality on the same woman
+            -- → injectivity contradiction.
+            -- If μ.sp₁ ≠ ν.sp₂, we're stuck with separate women.
+            sorry
       · -- Equality: m₁ equally prefers both → μ.sp m₁ = ν.sp m₁ → injectivity contradiction
         push_neg at hm₁str
         have hm₁ge : (prof.menPref m₁ (ν.spouse m₁) : Nat) ≤ prof.menPref m₁ (μ.spouse m₁) :=
@@ -279,7 +310,25 @@ private lemma meetSpouse_injective (μ ν : Matching n)
       -- ¬c₁: m₁ prefers ν.sp to μ.sp; c₂: m₂ weakly prefers μ.sp to ν.sp
       by_cases hm₂strict : (prof.menPref m₂ (μ.spouse m₂) : Nat) < prof.menPref m₂ (ν.spouse m₂)
       · -- Strict: m₂ strictly prefers μ.sp₂ to ν.sp₂
-        sorry
+        -- Symmetric to first cross-case. heq: μ.sp m₁ = ν.sp m₂ = w
+        -- m₁ prefers ν.sp₁ to μ.sp₁=w. m₂ prefers μ.sp₂ to ν.sp₂.
+        by_contra hne
+        have hm₁pref : prof.ManPrefers m₁ (ν.spouse m₁) (μ.spouse m₁) := by
+          unfold PrefProfile.ManPrefers
+          exact mod_cast (Nat.lt_of_not_le (mod_cast c₁))
+        have hm₂pref : prof.ManPrefers m₂ (μ.spouse m₂) (ν.spouse m₂) := by
+          unfold PrefProfile.ManPrefers; exact mod_cast hm₂strict
+        -- ν-stability on (m₁, ν.sp₁): m₁ prefers ν.sp₁ to μ.sp₁=w
+        -- But m₁ IS matched to ν.sp₁ in ν. So can't block with himself.
+        -- Instead: μ-stability on (m₁, ν.sp₁): m₁ prefers ν.sp₁ to μ.sp₁.
+        by_cases hw₁ : prof.WomanPrefers (ν.spouse m₁) m₁ (μ.inverse (ν.spouse m₁))
+        · have hblock₁ : IsBlockingPair prof μ m₁ (ν.spouse m₁) := ⟨hm₁pref, hw₁⟩
+          exact hμ m₁ (ν.spouse m₁) hblock₁
+        · -- ν-stability on (m₂, μ.sp₂): m₂ prefers μ.sp₂ to ν.sp₂
+          by_cases hw₂ : prof.WomanPrefers (μ.spouse m₂) m₂ (ν.inverse (μ.spouse m₂))
+          · have hblock₂ : IsBlockingPair prof ν m₂ (μ.spouse m₂) := ⟨hm₂pref, hw₂⟩
+            exact hν m₂ (μ.spouse m₂) hblock₂
+          · sorry
       · -- Equality: μ.spouse m₂ = ν.spouse m₂, then with heq: μ.spouse₁ = ν.spouse₂ = μ.spouse₂
         -- contradicts μ injectivity (m₁ ≠ m₂)
         push_neg at hm₂strict
