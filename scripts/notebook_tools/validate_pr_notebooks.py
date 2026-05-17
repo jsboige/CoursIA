@@ -33,6 +33,10 @@ SKIP_EXEC_KERNELS = {
     "lean4", "lean4-wsl", "lean",
 }
 
+# Paths that require QC Cloud (python3 kernel but need QuantBook runtime).
+# H.3 is advisory-only for these — they can only be executed via QC Cloud.
+QC_CLOUD_PATHS = ("QuantConnect/Python", "QuantConnect/projects")
+
 
 def get_changed_notebooks(base: str, paths: list[str] | None = None) -> list[Path]:
     """Get list of .ipynb files changed relative to base branch."""
@@ -95,6 +99,8 @@ def validate_notebook(nb_path: Path) -> dict:
 
     kernel = result["kernel"]
     skip_exec = any(k in kernel for k in SKIP_EXEC_KERNELS)
+    normalized = rel_path.replace("\\", "/")
+    skip_exec = skip_exec or any(p in normalized for p in QC_CLOUD_PATHS)
 
     for i, cell in enumerate(data.get("cells", [])):
         if cell.get("cell_type") != "code":

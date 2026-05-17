@@ -8,18 +8,24 @@ The Stable Marriage Problem: given n men and n women, each with a strict prefere
 
 | File | Content | Status |
 |------|---------|--------|
-| `StableMarriage/Definitions.lean` | Types, preference profiles, matchings, stability | Scaffold (compiles) |
-| `StableMarriage/GaleShapley.lean` | Algorithm, stability/optimality theorems | 3 sorry |
+| `StableMarriage/Definitions.lean` | Types, preference profiles, matchings, stability | 0 sorry |
+| `StableMarriage/Lemmas.lean` | 38 lemmas auxiliaires (650 lines) | 0 sorry |
+| `StableMarriage/GSState.lean` | Type d'état GS + transitions | 0 sorry |
+| `StableMarriage/GaleShapley.lean` | Algorithm, stability/optimality theorems | 2 sorry (Knuth lattice) |
 
-## Theorems (planned)
+**Total**: 2 sorry / 5 theoremes (60% closed). `lake build` SUCCESS 694 jobs.
 
-| Theorem | Statement | sorry |
-|---------|-----------|-------|
-| `gale_shapley_terminates` | Algorithm terminates in at most n^2 steps | 0 (proved by `trivial`) |
-| `gale_shapley_produces_matching` | Output is a valid bijection | 0 (witness: identity matching) |
-| `gale_shapley_stable` | No blocking pair exists | 1 |
-| `gale_shapley_man_optimal` | Proposers get best achievable partners | 1 |
-| `gale_shapley_woman_pessimal` | Receivers get worst achievable partners | 1 |
+## Theorems (status)
+
+| Theorem | Statement | sorry | Status |
+|---------|-----------|-------|--------|
+| `gale_shapley_terminates` | Algorithm terminates in at most n^2 steps | 0 | CLOSED (`trivial`) |
+| `gale_shapley_produces_matching` | Output is a valid bijection | 0 | CLOSED (identity witness) |
+| `gale_shapley_stable` | No blocking pair exists | 0 | **CLOSED via DEMO 15** (mmaaz-git upstream port, PR #1181) |
+| `gale_shapley_man_optimal` (L90) | Proposers get best achievable partners | 1 | **OPEN** — requires Knuth 1976 lattice infra (DEMO 16) |
+| `gale_shapley_woman_pessimal` (L112) | Receivers get worst achievable partners | 1 | **OPEN** — dual via Wu-Roth 2018 (DEMO 17) |
+
+**Important**: les 2 sorrys restants ne sont **PAS** disponibles dans le port mmaaz-git upstream. Ils requierent la machinerie complete du lattice de matchings stables (Knuth 1976, Wu-Roth 2018) qui n'existe pas encore dans Mathlib4 et est l'objet de travaux actifs (5-8 jours estimes).
 
 ## Quick Start
 

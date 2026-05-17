@@ -235,6 +235,16 @@ class MultiAgentSorryProver:
                 print(f"  [DIRECTOR] FAILED to create: {e}")
                 director_agent = None
 
+        # F9 (2026-05-17): if no Director is wired, pre-mark the state as
+        # "consulted" so the intractable gate degrades gracefully. Without
+        # this, sessions launched without --director-provider would loop
+        # forever because mark_sorry_intractable would always be refused.
+        # The gate only enforces consultation when a Director actually
+        # exists to consult.
+        if director_agent is None:
+            state.director_consulted = True
+            print("  [DIRECTOR] not wired - F9 gate auto-bypassed")
+
         # Build workflow graph (kb shared with SearchTools)
         workflow_builder = ProofWorkflowBuilder(
             search_agent, tactic_agent, critic_agent, coordinator_agent,

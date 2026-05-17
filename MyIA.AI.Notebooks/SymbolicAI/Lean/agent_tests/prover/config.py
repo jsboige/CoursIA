@@ -662,13 +662,13 @@ DEMOS = {
     16: {
         "name": "GALESHAPLEY_MAN_OPTIMAL",
         "file": str(GALESHAPLEY_FILE),
-        "line": 87,
+        "line": 97,
         "sorry_type": "sorry_replacement",
         "theorem_name": "gale_shapley_man_optimal",
         "theorem": "gale_shapley_man_optimal",
         "imports": GALESHAPLEY_IMPORTS,
         "description": (
-            "Replace sorry at L87 of GaleShapley.lean.\n"
+            "Replace sorry at L97 of GaleShapley.lean (theorem at L90).\n"
             "Prove gale_shapley_man_optimal: there exists a man-optimal\n"
             "stable matching (every man gets best achievable partner).\n"
             "Strategy: use gsGaleShapley as witness, prove man-optimality\n"
@@ -685,13 +685,13 @@ DEMOS = {
     17: {
         "name": "GALESHAPLEY_WOMAN_PESSIMAL",
         "file": str(GALESHAPLEY_FILE),
-        "line": 114,
+        "line": 125,
         "sorry_type": "sorry_replacement",
         "theorem_name": "gale_shapley_woman_pessimal",
         "theorem": "gale_shapley_woman_pessimal",
         "imports": GALESHAPLEY_IMPORTS,
         "description": (
-            "Replace sorry at L114 of GaleShapley.lean.\n"
+            "Replace sorry at L125 of GaleShapley.lean (theorem at L112).\n"
             "Prove gale_shapley_woman_pessimal: if mu is man-optimal\n"
             "and mu' is stable, then each woman gets worst achievable\n"
             "partner under mu (Knuth 1976 lattice duality).\n"

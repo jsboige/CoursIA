@@ -1328,8 +1328,46 @@ class CoordinatorTools:
         current = self._state.plan[self._state.plan_phase]
         return f"Advanced to step {self._state.plan_phase + 1}/{len(self._state.plan)}: {current}"
 
+    def request_director_guidance(self, reason: str) -> str:
+        """Request guidance from the external Director (F9, 2026-05-17).
+
+        Call this BEFORE mark_sorry_intractable on any hard target. The
+        Director (Opus 4.7 via OpenRouter) has access to shared reference
+        docs (mmaaz-git proofs, ported defs, Mathlib gaps) and may provide
+        an APPROACH + TACTICS combination you haven't tried.
+
+        Workflow after this call:
+          - The graph routes the next message to DirectorAgent
+          - DirectorAgent emits APPROACH + TACTICS
+          - The result flows back to TacticAgent (or Search) to execute
+
+        C37 forensic (DEMO 15/16/17) showed the Coordinator NEVER reached
+        Director because mark_sorry_intractable had no precondition. F9
+        gates intractable behind at least one Director consultation.
+
+        Args:
+            reason: Concise context for the Director (max ~300 chars).
+                    Include: current goal, what's been tried, suspected gap.
+        """
+        self._state.designate_next_agent("DirectorAgent")
+        if self._trace:
+            self._trace.log(
+                agent="CoordinatorAgent", role="request_director",
+                content=f"Requesting Director: {reason[:300]}",
+                tool_name="request_director_guidance",
+                tool_args={"reason": reason[:300]},
+            )
+        return (
+            "Director will be consulted on the next turn. Provide the "
+            "current proof state context — the Director responds with "
+            "APPROACH + TACTICS in text form, which the workflow then "
+            "routes to TacticAgent for execution. After at least one "
+            "Director consultation, mark_sorry_intractable becomes "
+            "available if you still need to abandon."
+        )
+
     def mark_sorry_intractable(self, reason: str) -> str:
-        """Explicitly abandon the current sorry (F5).
+        """Explicitly abandon the current sorry (F5, gated by F9).
 
         Call this when the Coordinator has exhausted realistic attack plans
         on a goal — e.g., the lemma requires an obscure Mathlib API the
@@ -1338,9 +1376,34 @@ class CoordinatorTools:
         prover run can target a different sorry instead of burning the
         remaining iteration budget on a dead end.
 
+        F9 (2026-05-17): now gated. Must call request_director_guidance()
+        at least once first AND wait for the Director to actually run
+        (state.director_consulted set to True by AgentExecutor when
+        DirectorAgent yields). Premature calls return an error message and
+        leave the session running.
+
         Args:
             reason: Concise explanation (logged in trace + final report).
         """
+        if not getattr(self._state, "director_consulted", False):
+            if self._trace:
+                self._trace.log(
+                    agent="CoordinatorAgent", role="intractable_blocked",
+                    content=(f"F9 gate: intractable refused — Director not "
+                             f"yet consulted. reason={reason[:120]}"),
+                    tool_name="mark_sorry_intractable",
+                )
+            return (
+                "REFUSED (F9 gate). You must call request_director_guidance() "
+                "at least once before marking a sorry intractable, AND wait for "
+                "the Director to actually respond. The Director is a frontier "
+                "model (Opus 4.7) with access to reference proofs — it may "
+                "see an attack vector that the local agents missed. Call "
+                "request_director_guidance(reason=...) now, then try the "
+                "Director's APPROACH+TACTICS. Only if that ALSO fails should "
+                "you call mark_sorry_intractable again."
+            )
+
         self._state.intractable = True
         self._state.intractable_reason = reason
         if self._trace:

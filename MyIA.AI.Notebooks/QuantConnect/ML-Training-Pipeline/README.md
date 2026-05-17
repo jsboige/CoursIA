@@ -2,6 +2,23 @@
 
 Complete training pipeline for ML models on financial OHLCV data. Designed for GPU training with CPU dry-run validation. All GPU scripts use thermal-safe training via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
 
+## Curriculum V2 — Validated Keepers (2026-05-16, gate FERMEE)
+
+After 8 stages tested (S1–S8) on anti-FAANG/Mag7 universe (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), **4 KEEPERS** confirmed under strict OOS 2027 holdout, walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), tx costs 10bps rebalance + 50bps stress :
+
+| Stage | Strategy | Δ-Sharpe | Stat. Significance | MaxDD | Script |
+|-------|----------|----------|--------------------|-------|--------|
+| S1 vol | **M12 HAR-RV-J** (jump-augmented HAR) | n/a | p=0.0015 (56/84 sign-test) | n/a | `m12_har_rv_j.py` |
+| S1 vol | **M15 LSTM h=32** (log-RV LSTM) | n/a | p=0.0107 (53/84 sign-test) | n/a | `m15_lstm_rv.py` |
+| S3 regime | **HMM Regime** (2-state, daily) | **+0.669** | 4/4 seeds positive | -39.1% | `s3_hmm_regime.py` |
+| S4 v2 | **Inverse-vol Ridge + HMM** | **+0.325** | 4/4 seeds positive | -17.7% | `s4_inverse_vol_ridge_v2.py` |
+
+S1 long-horizon sweep also produced **8 BEATS multi-coin sur 16** (XRP h=66 13.5σ, ETH h=132 5.0σ, BTC h=22/66 BEATS). Reco portfolio : **S3 + S4 v2 monthly rebalance, Sharpe ~1.12**.
+
+**Rejected stages** (NO BEATS) : S2 vol-ensembles (DM, MLP, GSP), S5 stop-loss overlays, S6 LO-only sectors, S7 composites, S8 long-horizon classifiers (dir_acc ≠ edge).
+
+> Detail complet : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) — méthodologie, ablations, leçons. Pivot V2 documenté dans [`CURRICULUM.md`](CURRICULUM.md). 3 projets QC Cloud ESGF déployés à partir de ces KEEPERS — cf [`../ESGF-2026/README.md`](../ESGF-2026/README.md).
+
 ## Architecture
 
 ```

@@ -105,6 +105,14 @@ class ProofState:
     intractable: bool = False
     intractable_reason: Optional[str] = None
 
+    # F9 (2026-05-17, C37 forensic): Director consultation gate. The
+    # Coordinator MUST call request_director_guidance() at least once
+    # before mark_sorry_intractable is allowed to terminate the session.
+    # C37 DEMO 15/16/17 confirmed Coordinator abandoned in <140s with 0
+    # Director invocations because intractable had no preconditions.
+    director_consulted: bool = False
+    director_consulted_count: int = 0
+
     # B.8: Checkpoint support — save/restore state between phases
     _checkpoints: Dict[str, dict] = field(default_factory=dict, repr=False)
 

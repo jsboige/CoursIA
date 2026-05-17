@@ -185,9 +185,34 @@ class AgentExecutor(Executor):
             if self._state.plan:
                 msg.plan = list(self._state.plan)
 
+        # F9 (2026-05-17): bridge state._next_agent -> msg.next_agent. Without
+        # this, tools like request_director_guidance that call
+        # state.designate_next_agent("director") have no effect on routing —
+        # the workflow only inspects msg.next_agent. C37 DEMO 15/16/17 showed
+        # the Coordinator had no functional path to invoke the Director.
+        if self._state:
+            designated = self._state.consume_next_agent_designation()
+            if designated:
+                # Map agent-class names to the lowercase routing tokens used
+                # by the switch-case edges (director / tactic / coordinator /
+                # critic / search).
+                routing_token = designated.lower().replace("agent", "")
+                msg.next_agent = routing_token
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="route_designate",
+                        content=(f"designating next_agent={routing_token} "
+                                 f"(from state)"),
+                    )
+
         # Director call tracking
         if self._agent.name == "DirectorAgent":
             msg.director_calls += 1
+            # F9: record that Director actually ran, so the intractable
+            # gate sees a genuine consultation (not just a request).
+            if self._state:
+                self._state.director_consulted = True
+                self._state.director_consulted_count += 1
             if self._trace:
                 self._trace.log(
                     agent="DirectorAgent", role="director_call",
