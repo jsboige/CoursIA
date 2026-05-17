@@ -9,6 +9,8 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [docs/quantconnect.md](docs/quantconnect.md) - Backtests, MCP Docker, structure, livre reference
 - [docs/ece-grading.md](docs/ece-grading.md) - ECE student repos, autres ecoles
 - [docs/architecture_mcp_roo.md](docs/architecture_mcp_roo.md) - Architecture MCP roo-state-manager (34 outils, RooSync)
+- [docs/kernels-runtime.md](docs/kernels-runtime.md) - .NET / Python / WSL kernels, conda envs, dotnet-interactive PIN
+- [docs/procedures-recurrentes.md](docs/procedures-recurrentes.md) - Workflow PR, dispatch agents, validation notebook, audit anti-regression
 
 **Regles modulaires `.claude/rules/` (auto-loaded a chaque session)** — chaque section critique ci-dessous renvoie a la regle complete :
 - [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md) - Branches, commits, force push (section A)
@@ -233,7 +235,7 @@ Sans ces 4 preuves : la PR n'est PAS validee. Peu importe qui la signe. La verif
 
 **H.2 — Tous les agents installent l'env complet (HARD)**
 
-Chaque machine cluster (po-2023, po-2024, po-2025, po-2026, ai-01) doit pouvoir executer N'IMPORTE QUEL notebook du repo. Inventaire minimum (cf section "Kernels & Runtime" plus bas) :
+Chaque machine cluster (po-2023, po-2024, po-2025, po-2026, ai-01) doit pouvoir executer N'IMPORTE QUEL notebook du repo. Inventaire minimum (cf [docs/kernels-runtime.md](docs/kernels-runtime.md)) :
 - Python 3.10+ + envs Conda dedies (`coursia-ml-training`, `epita_symbolic_ai`, `mcp-jupyter`)
 - .NET 9.0 SDK + `dotnet-interactive` Jupyter kernels (.NET notebooks Sudoku/SymbolicAI/ML/Probas/Search/SmartContract)
 - WSL kernels (GameTheory + OpenSpiel + Lean 4)
@@ -293,225 +295,39 @@ L'audit du 2026-05-09 a revele un pattern systemique : 988 notebooks repo, dont 
 
 ## CARTOGRAPHIE & OUTILS
 
-### Structure du depot
-
 ```
 MyIA.AI.Notebooks/                      # Series pedagogiques par theme
 - GenAI/{Image,Audio,Video,Texte}/      # 60+ notebooks Python (cf docs/genai-services.md)
-- ML/                                    # ML.NET tutorials (.NET C# notebooks)
-- Search/{Part1-Foundations, Part2-CSP, Part3-Advanced}/   # Search/CSP (Mixed)
+- ML/                                    # ML.NET tutorials (.NET C#)
+- Search/{Part1-Foundations, Part2-CSP, Part3-Advanced}/  # Search/CSP (Mixed)
 - Sudoku/                                # Constraint solving (.NET C#)
-- SymbolicAI/{Lean, Tweety, SemanticWeb, Planning, SmartContract}/  # Symbolic AI
+- SymbolicAI/{Lean, Tweety, SemanticWeb, Planning, SmartContract}/
 - Probas/                                # Infer.NET probabilistic (.NET C#)
-- GameTheory/                            # OpenSpiel + Lean (Mixed, voir 16b/16c/16d Social Choice)
+- GameTheory/                            # OpenSpiel + Lean (cf 16b/16c/16d Social Choice)
   - social_choice_lean/                  # Lean 4 port Arrow/Sen/Voting
 - IIT/                                   # PyPhi (Python)
-- QuantConnect/                          # 27 notebooks Python + 50 strategies (cf docs/quantconnect.md)
+- QuantConnect/                          # 27 notebooks + 50 strategies (cf docs/quantconnect.md)
 - Config/settings.json                   # API settings
 
-scripts/
-- notebook_tools/notebook_tools.py       # CLI : validate/execute/skeleton/analyze (multi-famille)
-- smartcontracts/validate_sc_notebooks.py # SC-specifique
-- genai-stack/genai.py                   # GenAI Docker + validation (cf docs/genai-services.md)
-- notebook_helpers.py                    # NotebookHelper, CellIterator (lib reutilisable)
-- extract_notebook_skeleton.py           # Generation README
+scripts/notebook_tools/notebook_tools.py # CLI multi-famille (validate/execute/skeleton/analyze)
+scripts/smartcontracts/                  # SC-specifique
+scripts/genai-stack/genai.py             # GenAI Docker + validation (cf docs/genai-services.md)
 
-.claude/
-- agents/    # 18 sub-agents specialises (cf docs/claude-code-config.md)
-- skills/    # 14 skills user-invocables + reference
-- rules/     # 6 regles auto-loaded
-
+.claude/{agents, skills, rules}/         # 18 agents, 14 skills, 9 regles auto-loaded
 GradeBookApp/                            # Notation etudiants (cf docs/ece-grading.md)
 docker-configurations/                   # ComfyUI + Qwen Docker
-notebook-infrastructure/                 # Papermill + MCP maintenance
 docs/                                    # Documentation deportee de ce CLAUDE.md
 ```
 
-### Scripts reutilisables (toujours preferer aux scripts ad-hoc)
+**Tables detaillees** (scripts reutilisables, skills slash commands, MCP servers, GenAI services, kernels & runtime) : [docs/common-commands.md](docs/common-commands.md), [docs/claude-code-config.md](docs/claude-code-config.md), [docs/kernels-runtime.md](docs/kernels-runtime.md), [docs/genai-services.md](docs/genai-services.md).
 
-| Script | Usage | Notes |
-|--------|-------|-------|
-| `scripts/notebook_tools/notebook_tools.py validate [target]` | Validation structure notebook | Auto-detection kernel via metadata |
-| `scripts/notebook_tools/notebook_tools.py execute [target]` | Execution Papermill | Ajouter `--cell-by-cell` pour .NET/Lean |
-| `scripts/notebook_tools/notebook_tools.py analyze [path]` | Analyse structure | Stats cellules, outputs, NIE |
-| `scripts/notebook_tools/notebook_tools.py skeleton [path]` | Generation skeleton | Pour bootstrap nouveau notebook |
-| `scripts/smartcontracts/validate_sc_notebooks.py` | SmartContracts validation | `--quick` (struct only) ou `--execute --anvil` |
-| `scripts/genai-stack/genai.py docker status` | Etat services GenAI | Voir docs/genai-services.md pour la liste complete |
-| `scripts/genai-stack/genai.py validate --full` | Validation stack ComfyUI | |
-| `scripts/notebook_helpers.py` | Lib NotebookHelper, CellIterator | Importer dans scripts custom |
-
-**Ne jamais** ecrire un script ad-hoc d'execution / validation : il existe presque toujours un outil dedie. Si manquant, l'ajouter dans `scripts/notebook_tools/` (pas dans la racine `scripts/`).
-
-### Skills (slash commands)
-
-Les skills user-invocables sont disponibles via slash commands en session Claude Code :
-
-| Skill | Usage |
-|-------|-------|
-| `/verify-notebooks [target] [--quick] [--fix]` | Verify and test notebooks |
-| `/enrich-notebooks [target] [--execute] [--strict]` | Add pedagogical content |
-| `/cleanup-notebooks [target] [--dry-run]` | Clean markdown structure |
-| `/build-notebook <action> <path> [--quality=90]` | Create/improve/fix notebooks |
-| `/execute-notebook <path> [--batch] [--save]` | Execute via MCP |
-| `/validate-genai [target] [--local]` | Validate GenAI stack |
-| `/coordinate` | Multi-agent coordination hub (lecture dashboards + dispatches) |
-| `/review-student-prs` | Workflow review PRs etudiantes |
-| `/qc-iterative-improve` | Workflow QC research notebooks |
-| `/analyze-slides` | Analyse Slidev/PPTX |
-
-Cf [docs/claude-code-config.md](docs/claude-code-config.md) pour la liste complete des agents et leur model selection (haiku/sonnet/inherit).
-
-### MCP servers
-
-Trois MCP majeurs configures dans `.mcp.json` (root) ou `~/.claude.json` (global) :
-
-- **roo-state-manager** (34 outils) : dashboards RooSync, conversation_browser, codebase_search, Qdrant indexing
-- **qc-mcp** (Docker `quantconnect/mcp-server`) : creation projets/backtests QC Cloud, lecture resultats. Rate limit MAX 10 appels/min entre TOUS les agents
-- **playwright** (22 outils) : automatisation web (utile pour Quantbooks online quand qc-mcp insuffisant)
-
-### GenAI services (notebooks `MyIA.AI.Notebooks/GenAI/`)
-
-| Service | Modele | VRAM | URL prod |
-|---------|--------|------|----------|
-| Qwen Image Edit | qwen_image_edit_2509 | ~29GB | qwen-image-edit.myia.io |
-| Z-Image / Lumina | Lumina-Next-SFT | ~10GB | z-image.myia.io |
-| Whisper STT | large-v3 (FunASR upgrade en cours) | ~5GB | whisper-api.myia.io |
-| Kokoro TTS, MusicGen, Demucs | (audio stack) | varie | port-forwarded |
-| ComfyUI Video | ComfyUI core | varie | comfyui-video |
-
-API keys dans `MyIA.AI.Notebooks/GenAI/.env` (template `.env.example`). Validation : `/validate-genai [target] [--local]` ou `python scripts/genai-stack/genai.py validate --full`.
-
-Detail config (services hostes po-2023 GPUs, .env keys, scripts) : [.claude/rules/genai-config.md](.claude/rules/genai-config.md) + [docs/genai-services.md](docs/genai-services.md).
-
-### Kernels & Runtime (toutes machines du cluster)
-
-**Regole user 2026-05-07** : toute machine du cluster doit pouvoir executer n'importe quel notebook du depot. Les kernels et runtimes ci-dessous sont OBLIGATOIRES sur chaque machine.
-
-#### .NET Interactive (C# notebooks)
-
-Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`, `Sudoku/`, `ML/`, `Probas/` utilisent des kernels .NET :
-
-| Prerequis | Version | Verification |
-|-----------|---------|-------------|
-| .NET SDK | 8.0 + 9.0 (10.0 optionnel) | `dotnet --list-sdks` |
-| dotnet-interactive | >= 1.0.700 | `dotnet interactive --version` |
-| Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes avec dotnet-interactive | `jupyter kernelspec list` |
-
-Installation : `dotnet tool install --global Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install`.
-
-Execution .NET : **toujours cell-by-cell** via MCP Jupyter (Papermill ne supporte pas .NET Interactive). Le kernel `.net-csharp` preserve l'etat entre cellules (variables, fonctions, types definis).
-
-#### Python 3.10+ (notebooks Python)
-
-Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/SemanticWeb/` (Python) :
-
-| Prerequis | Usage |
-|-----------|-------|
-| Python 3.10+ | Kernel `python3` Jupyter |
-| Conda env `epita_symbolic_ai` | `rdflib`, `owlready2`, `reasonable`, `pyshacl` (SemanticWeb Python) |
-| Conda env `coursia-ml-training` | `torch`, `sklearn`, `scipy`, `hmmlearn` (ML training) |
-| GenAI `.env` | API keys services locaux (cf [.claude/rules/genai-config.md](.claude/rules/genai-config.md)) |
-
-#### WSL kernels (Lean / GameTheory / OpenSpiel)
-
-Notebooks dans `GameTheory/` et `SymbolicAI/Lean/` requierent un kernel WSL specifique :
-- `Python (GameTheory WSL + OpenSpiel)` pour GameTheory
-- `Python 3 (WSL)` ou `Lean 4 (WSL)` pour SymbolicAI/Lean
-
-Pieges connus : backslashes consommes par WSL shell, paths sans separateurs, kernel timeout 60s au cold start, heredoc variables interpolees. Wrapper bash obligatoire (Python wrapper ne marche PAS).
-
-Detail diagnostic + workarounds : [.claude/rules/wsl-kernels.md](.claude/rules/wsl-kernels.md).
-
-#### Verification rapide (toute machine)
-
-```bash
-# .NET
-dotnet --list-sdks
-dotnet interactive --version
-jupyter kernelspec list | findstr ".net"
-
-# Python
-python --version
-conda env list
-
-# WSL
-wsl -l -v
-```
+**Regle generale outils** : ne jamais ecrire un script ad-hoc d'execution / validation : il existe presque toujours un outil dedie dans `scripts/notebook_tools/`. Si manquant, l'ajouter la (pas dans la racine `scripts/`).
 
 ---
 
 ## PROCEDURES RECURRENTES
 
-### Workflow PR
-
-1. Identifier la mission (issue GitHub ou directive RooSync)
-2. Brancher : `git checkout -b feature/<sujet>` (ou `fix/<sujet>`) depuis `main` a jour
-3. Implementer
-4. **Pour notebooks modifies** : re-executer le notebook complet, verifier outputs, verifier scope strict (pas de re-exec gratuite des autres notebooks de la famille)
-5. **Pour code production** : ajouter/modifier tests, lancer le build (PEP8 / `dotnet build`), zero warning
-6. Commit message : `type(scope): description courte` (Conventional commits)
-7. Push, ouvrir la PR avec description claire (Summary + Test plan)
-8. Auto-review selon les 5 points (sec. B). Si self-review echoue : revenir au point 4
-9. Annoncer sur dashboard `[INFO]` ou poster en commentaire de l'issue
-10. Attendre review/merge par ai-01. **Ne pas se merger soi-meme** (les agents)
-
-### Dispatch agents (coordinateur ai-01)
-
-Pour assigner une tache a une machine distante (po-2023/2024/2025/2026) :
-
-1. Verifier la disponibilite : `roosync_dashboard(action: "read", type: "workspace")` + heartbeat machine
-2. Composer un message structure :
-   ```
-   roosync_send(
-     to: "myia-po-XXXX:CoursIA",
-     subject: "[DIRECTIVE] <short>",
-     priority: "MEDIUM" | "HIGH" | "URGENT",
-     tags: ["po-XXXX", "<topic>"],
-     body: "## Mission\n...\n## Deliverables\n...\n## Quality Criteria\n..."
-   )
-   ```
-3. Logger le dispatch sur le dashboard workspace `[INFO]`
-4. Suivre les rapports de l'agent et acquitter via `roosync_send(action: "reply", ...)`
-
-### Validation notebook (avant commit)
-
-```bash
-# 1. Validation structure
-python scripts/notebook_tools/notebook_tools.py validate <path>
-
-# 2. Verifier les outputs sont presents (regle C.2)
-python -c "import json; nb=json.load(open('<path>')); print(sum(1 for c in nb['cells'] if c['cell_type']=='code' and not c.get('outputs')))"
-# 0 = OK, sinon re-executer le notebook
-
-# 3. Verifier l'absence d'erreur volontaire (regle C.1)
-grep -nE "raise NotImplementedError|assert False" <path>
-# Aucune occurrence acceptable
-
-# 4. Verifier le scope (regle C.3)
-git diff <path> | grep -cE '^\+\s*"source"'
-# > 0 = source change, OK pour commit. = 0 = uniquement outputs, NE PAS COMMIT
-```
-
-### Audit anti-regression (avant merge PR suspecte)
-
-Pour une PR avec deletions > insertions sur code metier (Lean/Coq/Python core / tests) :
-
-```bash
-# 1. Comparer historique
-git log --all -- <fichier>
-git show <commit> -- <fichier>
-
-# 2. Detecter sorry/stub introduits dans Lean
-git diff <base>..<pr-branch> -- '*.lean' | grep -E "^\+.*sorry"
-# Si presence : exiger justification explicite
-
-# 3. Detecter cellule # Solution -> stub
-git diff <base>..<pr-branch> -- '*.ipynb' | grep -E "^[-+].*Solution|^[-+].*pass"
-
-# 4. Cross-check historique : si fichier mentionne en memoire/dashboard recemment, contenu probablement intentionnel
-```
-
-Cf [.claude/rules/anti-regression.md](.claude/rules/anti-regression.md) pour les patterns red-flag complets.
+**Workflows detailles** (Workflow PR 10 etapes, Dispatch agents template, Validation notebook bash, Audit anti-regression bash, Execution Quantbooks) : [docs/procedures-recurrentes.md](docs/procedures-recurrentes.md).
 
 ### Productivite pendant les operations longues — REGLE HARD (2026-05-11)
 
@@ -531,14 +347,6 @@ Quand un processus long tourne (training GPU, backtest QC, build Lean, docker pu
 **Pourquoi** : un BG de 30-60 min consomme 30-60 events monitor si l'agent reste reactif, sans rien produire en parallele. Le BG tourne meme sans surveillance. Coordinateur = chef d'orchestre, pas spectateur.
 
 Incident 2026-05-11 ai-01 (Lean prover iter 6 BG) : ~35 events monitor consommes a regarder BUILD-FAIL repetes, zero autre track avancee pendant ce temps. User signal explicite "fais en sorte que les autres agents trainers ou prouveurs fassent pareil".
-
-### Execution Quantbooks (regle user 29/04)
-
-Pour un notebook research utilisant `QuantBook()` (kernel QC Cloud uniquement) :
-
-1. **MCP qc-mcp d'abord** : verifier si un outil execute le research notebook
-2. **Fallback Playwright** : automatiser la session QC Cloud Web (login, navigation projet, Run All, telechargement notebook execute)
-3. **Pas de fallback markdown explicatif** : un Quantbook commit doit avoir des outputs reels QC Cloud
 
 ---
 
@@ -576,20 +384,6 @@ Cf [docs/quantconnect.md](docs/quantconnect.md) pour structure complete.
 
 ## PROJECT OVERVIEW
 
-CoursIA = plateforme educative AI :
-- **Jupyter notebooks** (C# .NET Interactive + Python) pour apprentissage AI
-- **Docker** infrastructure pour services GenAI (ComfyUI + Qwen)
-- **GradeBookApp** evaluation etudiants
+CoursIA = plateforme educative AI : Jupyter notebooks (C# .NET Interactive + Python), Docker infrastructure GenAI (ComfyUI + Qwen), GradeBookApp evaluation etudiants. Repository : https://github.com/jsboige/CoursIA. Documentation primaire en francais ; commentaires code en francais ou anglais.
 
-Repository : https://github.com/jsboige/CoursIA
-
-### Key technologies
-
-- **AI/ML** : OpenAI API, Anthropic Claude, Qwen 2.5-VL, Hugging Face, Semantic Kernel
-- **Notebooks** : Python 3.10+, .NET 9.0 Interactive, Papermill, MCP Jupyter
-- **Docker** : ComfyUI GPU services (RTX 3090, 24GB VRAM)
-- **GenAI Models** : DALL-E 3, GPT-5, Qwen Image Edit, Lumina/Z-Image
-
-### Language
-
-Documentation primaire : francais. Commentaires code : francais ou anglais.
+Stack : OpenAI/Anthropic APIs, Qwen 2.5-VL, Semantic Kernel, Python 3.10+ + .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3090).

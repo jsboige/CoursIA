@@ -1,15 +1,15 @@
 # Audit Reassessment Protocol
 
 **Source:** Issue #499 — Mandatory verification before fixing any NanoClaw (#488) finding.
-**Rationale:** NanoClaw audit has ~60% false positive rate (verified independently on 17-item sample). Blind fixes propagate fake work.
+**Rationale:** NanoClaw audit has ~60% false positive rate (verified on 17-item sample). Blind fixes propagate fake work.
 
-## When This Applies
+S'applique à **tout fix basé sur audit automatisé** (NanoClaw ou similaire). Pas de PR sur un audit finding sans avoir complété le protocole.
 
-This rule applies to **any fix based on automated audit findings** (NanoClaw #488 or similar tools). Do NOT open a PR for an audit finding without completing the reassessment protocol first.
+**Items déjà reclassés + patterns NanoClaw false positive connus** : [docs/audit-reassessment-findings.md](../../docs/audit-reassessment-findings.md).
 
-## Protocol (4 steps, mandatory before any fix PR)
+## Protocole 4 étapes (HARD)
 
-### Step 1: Mechanical Verification
+### Step 1 : Vérification mécanique
 
 ```python
 import json
@@ -22,73 +22,35 @@ errors = sum(1 for c in code if any(o.get('output_type')=='error' for o in c.get
 print(f'{len(code)} cells, {exec_count} executed, {outputs} outputs, {errors} errors')
 ```
 
-If `exec_count == len(code)` and `errors == 0` while audit reports "code never executed" -> **FALSE POSITIVE**. Stop here.
+Si `exec_count == len(code)` et `errors == 0` alors que l'audit reporte "code never executed" → **FALSE POSITIVE**. Stop ici.
 
-### Step 2: Pedagogical Verification (only if Step 1 shows issues)
+### Step 2 : Vérification pédagogique (seulement si Step 1 montre des problèmes)
 
-Read the notebook directly. Classify the finding:
+Lire le notebook directement. Classifier :
 
-| Classification | Meaning | Action |
-|---------------|---------|--------|
-| **CONFIRMED bug** | Code errors that persist on re-execution | Fix code + re-execute |
-| **CONFIRMED outputs stripped** | Code exec OK but outputs cleared before commit | Re-execute only, no code fix PR needed |
-| **CONFIRMED pedagogy** | Interpretation describes different results than actual outputs | Reformulate markdown or re-execute |
-| **FALSE POSITIVE** | Everything is fine, audit finding is wrong | Report on dashboard, no PR |
+| Classification | Signification | Action |
+|---------------|---------------|--------|
+| **CONFIRMED bug** | Erreurs code persistantes à la re-exécution | Fix code + re-execute |
+| **CONFIRMED outputs stripped** | Code exec OK mais outputs cleared avant commit | Re-execute seulement, pas de PR code |
+| **CONFIRMED pedagogy** | Interprétation décrit des résultats différents des outputs réels | Reformuler markdown ou re-execute |
+| **FALSE POSITIVE** | Tout va bien, audit faux | Reporter sur dashboard, pas de PR |
 
-### Step 3: Report
+### Step 3 : Reporter sur dashboard
 
-Before opening a PR, report on RooSync dashboard:
 ```
 Item M-XX : [CONFIRMED bug | CONFIRMED outputs stripped | CONFIRMED pedagogy | FALSE POSITIVE]
 Details : [direct read vs audit claim]
 ```
 
-### Step 4: Fix (only if CONFIRMED)
+### Step 4 : Fix (seulement si CONFIRMED)
 
-- **CONFIRMED bug**: fix code + Papermill re-execution
-- **CONFIRMED outputs stripped**: re-execute only (no PR fix code)
-- **CONFIRMED pedagogy**: reformulate interpretations or re-execute
-- **FALSE POSITIVE**: report on dashboard, close the finding, no PR
+- **CONFIRMED bug** : fix code + Papermill re-exécution
+- **CONFIRMED outputs stripped** : re-execute seulement (pas de PR fix code)
+- **CONFIRMED pedagogy** : reformuler interpretations ou re-execute
+- **FALSE POSITIVE** : reporter sur dashboard, fermer le finding, pas de PR
 
-## Known False Positive Patterns
+## Critères d'acceptation
 
-NanoClaw systematically misidentifies:
-- .NET Interactive notebooks with rich HTML outputs (not detected)
-- Notebooks with outputs cleaned before commit (valid but `outputs=0` confused with "never executed")
-- Exercise cells with valid `execution_count: N` and empty `outputs: []` (stubs, not missing exec)
-- Shortened/old file paths in findings
-- Incomplete exercise/TODO detection
-
-## Items Already Verified
-
-### Confirmed Bugs
-- M-64 RiskParity: simulation off-by-one, 5/9 cells with errors
-- M-66 Temporal-CNN: 2/5 cells with errors
-
-### Confirmed Outputs Stripped
-- M-49 Crypto-MultiCanal: 15/24 exec, 0 outputs
-- M-56 QC/BTC-MACD-ADX: 5/5 exec, 0 outputs
-
-### Confirmed Pedagogy Gaps
-- M-13 Audio/02-5: 0 exercises (no-exercise notebook)
-- M-23 Cross-Stitch-Legacy: 2/6 cells exec
-- M-70 App-13-TSP: 3 exercises all pre-resolved (no stubs)
-
-### Confirmed False Positives (do NOT re-dispatch)
-- M-2 GT-10-ForwardInduction-SPE (14/14 exec 0 err)
-- M-3 GT-12-ReputationGames (12/12 exec 0 err)
-- M-4 GT-14-DifferentialGames (11/11 exec 0 err)
-- M-5 GT-1-Setup (20/20 exec 0 err)
-- M-7 GT-7-ExtensiveForm (14/14 exec 10 outputs)
-- M-20 SK-01-Intro (9/9 exec 0 err)
-- M-34 Video/01-3-Qwen-VL (9/10 exec 7 outputs)
-- M-40 IIT-Intro_to_PyPhi (11/11 exec 10 outputs 0 err)
-- M-68 App-9b-EdgeDetection-CSharp (11/11 exec 11 outputs 0 err)
-- SC-22 Solana-Anchor (6/6 exec 0 err — print-based demos are only viable approach for Solana/Rust in Python kernel)
-- SC-11 LLM-Assisted (15/15 exec 0 err — exercise stubs correctly have empty outputs)
-
-## Acceptance Criteria
-
-- Every PR based on audit findings must include: "Reassessed by [agent]: CONFIRMED [type]"
-- Dashboard documents identified FP to prevent re-dispatch
-- This rule is the reference for any future audit-based mission
+- Chaque PR basée sur audit findings doit inclure : `Reassessed by [agent]: CONFIRMED [type]`
+- Dashboard documente les FP identifiés pour prévenir re-dispatch
+- Cette règle est la référence pour toute mission audit-based future
