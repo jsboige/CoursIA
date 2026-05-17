@@ -2,10 +2,22 @@
 
 Anti-bias multi-asset training pipeline for quantitative trading research.
 
+> **>> Curriculum V2 (2026-05-16) FINAL SUMMARY:** voir [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md)
+>
+> **4 KEEPERS confirmes apres 8 stages testes (S1-S8)**:
+> - **S3 HMM Regime** (+0.669 delta-Sharpe, 4/4 seeds, MaxDD -39.1%)
+> - **S4 v2 Regime+Ridge** (+0.325 delta-Sharpe, 4/4 seeds, MaxDD -17.7%)
+> - **M12 HAR-RV-J** (vol-forecasting, p=0.0015 sign-test)
+> - **M15 LSTM h=32** (vol-forecasting, p=0.0107 sign-test)
+>
+> Univers anti-FAANG/Mag7 : SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP.
+> Recommended portfolio: S3+S4 v2 monthly rebalance, Sharpe ~1.12.
+> Gate FERMEE 2026-05-16.
+
 **Principle**: No single-asset, single-regime training. All stages use diversified data
 from 7 asset classes (see anti-bias policy below).
 
-**Current state**: Stage 1 cross-asset baselines complete (PR #724). Stage 0 SPY-only
+**Etat anterieur (V1, conserve historique)**: Stage 1 cross-asset baselines complete (PR #724). Stage 0 SPY-only
 checkpoints confirmed pathological — **asset selection > model selection** (SPY edge -6.08pp,
 BTC +1.71pp, TLT +1.16pp, GLD +2.67pp).
 
