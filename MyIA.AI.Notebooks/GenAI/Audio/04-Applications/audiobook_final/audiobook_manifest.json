@@ -1,0 +1,123 @@
+{
+  "epic": "1028",
+  "pass": "P5",
+  "description": "Final audiobook compilation",
+  "source_text": "Boule de Suif - Guy de Maupassant",
+  "pipeline": {
+    "P1": "Lecture analytique",
+    "P2": "Voice casting",
+    "P3": "Annotation prosodique",
+    "P4": "Generation TTS (Kokoro)",
+    "P5": "Compilation audio (FFmpeg)"
+  },
+  "compilation": {
+    "total_segments": 14,
+    "silence_ms": 500,
+    "fade_ms": 200,
+    "target_lufs": -16.0,
+    "output_format": "mp3",
+    "output_bitrate": "128k",
+    "output_file": "boule_de_suif_finalized.mp3",
+    "output_size_mb": 2.0
+  },
+  "segments": [
+    {
+      "seg_index": 0,
+      "seg_type": "narration",
+      "speaker": "Narrateur",
+      "voice": "bf_isabella",
+      "duration_s": 8.95475
+    },
+    {
+      "seg_index": 1,
+      "seg_type": "narration",
+      "speaker": "Narrateur",
+      "voice": "bf_isabella",
+      "duration_s": 6.55475
+    },
+    {
+      "seg_index": 2,
+      "seg_type": "dialogue",
+      "speaker": "Narrateur",
+      "voice": "bf_isabella",
+      "duration_s": 6.84275
+    },
+    {
+      "seg_index": 3,
+      "seg_type": "dialogue",
+      "speaker": "Cornudet",
+      "voice": "bm_george",
+      "duration_s": 5.54675
+    },
+    {
+      "seg_index": 4,
+      "seg_type": "narration",
+      "speaker": "Narrateur",
+      "voice": "bf_isabella",
+      "duration_s": 19.10675
+    },
+    {
+      "seg_index": 5,
+      "seg_type": "dialogue",
+      "speaker": "Elisabeth Rousset",
+      "voice": "af_sky",
+      "duration_s": 6.38675
+    },
+    {
+      "seg_index": 6,
+      "seg_type": "dialogue",
+      "speaker": "Comtesse de Breville",
+      "voice": "af_sarah",
+      "duration_s": 5.78675
+    },
+    {
+      "seg_index": 7,
+      "seg_type": "dialogue",
+      "speaker": "Narrateur",
+      "voice": "bf_isabella",
+      "duration_s": 5.45075
+    },
+    {
+      "seg_index": 8,
+      "seg_type": "description",
+      "speaker": "Narrateur",
+      "voice": "bf_isabella",
+      "duration_s": 15.79475
+    },
+    {
+      "seg_index": 9,
+      "seg_type": "dialogue",
+      "speaker": "Narrateur",
+      "voice": "bf_isabella",
+      "duration_s": 4.58675
+    },
+    {
+      "seg_index": 10,
+      "seg_type": "dialogue",
+      "speaker": "Narrateur",
+      "voice": "bf_isabella",
+      "duration_s": 6.19475
+    },
+    {
+      "seg_index": 11,
+      "seg_type": "narration",
+      "speaker": "Narrateur",
+      "voice": "bf_isabella",
+      "duration_s": 14.66675
+    },
+    {
+      "seg_index": 12,
+      "seg_type": "dialogue",
+      "speaker": "Comte Hubert de Breville",
+      "voice": "am_michael",
+      "duration_s": 8.76275
+    },
+    {
+      "seg_index": 13,
+      "seg_type": "dialogue",
+      "speaker": "Elisabeth Rousset",
+      "voice": "af_sky",
+      "duration_s": 7.82675
+    }
+  ]
+}
