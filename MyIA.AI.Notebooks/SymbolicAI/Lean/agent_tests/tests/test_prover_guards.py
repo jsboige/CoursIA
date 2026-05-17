@@ -614,3 +614,29 @@ def test_f9_intractable_accepted_after_director_consultation():
     assert "intractable" in out.lower()
     assert state.intractable is True
     assert state.intractable_reason == "director also failed"
+
+
+def test_f9_graceful_degradation_when_no_director_wired():
+    """When MultiAgentSorryProver is run without --director-provider, the
+    intractable gate must NOT trap the session — provers.py sets
+    state.director_consulted = True at init when director_agent is None.
+
+    Without this auto-bypass, sessions running on po-2026/other machines
+    without OpenRouter credentials would loop until workflow_timeout because
+    they can never escape via intractable. This test pins the contract.
+    """
+    state = ProofState()
+    # Simulate what MultiAgentSorryProver.prove_sorry does when
+    # director_provider is None (no Director created).
+    director_agent = None
+    if director_agent is None:
+        state.director_consulted = True
+
+    from prover.tools import CoordinatorTools
+    ct = CoordinatorTools(state=state, filepath="", trace=None)
+
+    out = ct.mark_sorry_intractable("no director available, gave up after N iters")
+    assert "REFUSED" not in out, (
+        f"F9 gate trapped a no-Director session: {out[:200]}"
+    )
+    assert state.intractable is True
