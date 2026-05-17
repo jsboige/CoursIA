@@ -646,8 +646,14 @@ videos/
 # regenerable via the audit tooling under slides/_tools
 /deck[0-9][0-9]-*.png
 /review-d[0-9][0-9]-*.png
+/[0-9][0-9]-*-slide-*.png
+/argumentum_*.png
+/argumentum_*.svg
 /.playwright-mcp/
 /calib/
+
+# Slidev pre-fix vs post-fix screenshot pairs (regenerable via Playwright)
+slides/*/analysis/_*.png
 
 # Slidev one-shot PDF exports (regenerable via `npx slidev export`)
 slides/*/export-current.pdf
