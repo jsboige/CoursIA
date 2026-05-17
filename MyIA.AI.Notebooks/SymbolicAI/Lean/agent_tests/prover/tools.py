@@ -604,6 +604,7 @@ class TacticTools:
                 "Some required targets logged failures",
                 "Lean exited with code 1",
                 "error: build failed",
+                "compiled configuration is invalid",
             ]
             if any(skip in line for skip in skip_patterns):
                 continue
