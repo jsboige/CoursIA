@@ -289,10 +289,35 @@ private lemma meetSpouse_injective (μ ν : Matching n)
           · -- Both women don't prefer the respective man.
             -- hw₁: ¬WomanPrefers (μ.sp₁) m₁ (ν⁻¹(μ.sp₁))
             -- hw₂: ¬WomanPrefers (ν.sp₂) m₂ (μ⁻¹(ν.sp₂))
-            -- If μ.sp₁ = ν.sp₂, we get womenPref equality on the same woman
-            -- → injectivity contradiction.
-            -- If μ.sp₁ ≠ ν.sp₂, we're stuck with separate women.
-            sorry
+            by_cases hwsame : μ.spouse m₁ = ν.spouse m₂
+            · -- Same woman w = μ.sp₁ = ν.sp₂. From stability:
+              --   hw₁: womenPref w (ν⁻¹w) ≤ womenPref w m₁
+              --   hw₂: womenPref w (μ⁻¹w) ≤ womenPref w m₂
+              -- But ν⁻¹w = m₂ and μ⁻¹w = m₁, so antisymm gives womenPref w m₁ = womenPref w m₂.
+              have hμinv₁ : μ.inverse (μ.spouse m₁) = m₁ := inverse_eq_of_spouse_eq μ m₁ _ rfl
+              have hνinv₂ : ν.inverse (ν.spouse m₂) = m₂ := inverse_eq_of_spouse_eq ν m₂ _ rfl
+              -- ν⁻¹(μ.sp₁) = ν⁻¹(ν.sp₂) = m₂  (using hwsame: μ.sp₁ = ν.sp₂)
+              have hνinv₁ : ν.inverse (μ.spouse m₁) = m₂ := hwsame ▸ hνinv₂
+              -- hw₁: ¬WomanPrefers (μ.sp₁) m₁ (ν⁻¹(μ.sp₁))  →  womenPref(μ.sp₁)(m₂) ≤ womenPref(μ.sp₁)(m₁)
+              -- hw₂: ¬WomanPrefers (ν.sp₂) m₂ (μ⁻¹(ν.sp₂))  →  womenPref(ν.sp₂)(μ⁻¹(ν.sp₂)) ≤ womenPref(ν.sp₂)(m₂)
+              -- With hwsame and inverses: womenPref(μ.sp₁)(m₁) ≤ womenPref(μ.sp₁)(m₂)
+              unfold PrefProfile.WomanPrefers at hw₁ hw₂
+              simp only [not_lt] at hw₁ hw₂
+              rw [hνinv₁] at hw₁
+              -- hw₂: womenPref (ν.sp₂) (μ⁻¹(ν.sp₂)) ≤ womenPref (ν.sp₂) m₂
+              -- After rw [← hwsame]: womenPref (μ.sp₁) (μ⁻¹(μ.sp₁)) ≤ womenPref (μ.sp₁) m₂
+              -- Then rw [hμinv₁]: womenPref (μ.sp₁) m₁ ≤ womenPref (μ.sp₁) m₂
+              have hw₂' : prof.womenPref (μ.spouse m₁) m₁ ≤ prof.womenPref (μ.spouse m₁) m₂ := by
+                have h1 := hw₂
+                rw [← hwsame] at h1
+                rw [hμinv₁] at h1
+                exact mod_cast h1
+              -- hw₁: womenPref (μ.sp₁) m₂ ≤ womenPref (μ.sp₁) m₁
+              -- hw₂: womenPref (μ.sp₁) m₁ ≤ womenPref (μ.sp₁) m₂
+              exact hne ((prof.womenPref_bijective (μ.spouse m₁)).injective
+                (Fin.ext (Nat.le_antisymm (mod_cast hw₂') (mod_cast hw₁))))
+            · -- Different women: needs deeper lattice argument
+              sorry
       · -- Equality: m₁ equally prefers both → μ.sp m₁ = ν.sp m₁ → injectivity contradiction
         push_neg at hm₁str
         have hm₁ge : (prof.menPref m₁ (ν.spouse m₁) : Nat) ≤ prof.menPref m₁ (μ.spouse m₁) :=
@@ -328,7 +353,32 @@ private lemma meetSpouse_injective (μ ν : Matching n)
           by_cases hw₂ : prof.WomanPrefers (μ.spouse m₂) m₂ (ν.inverse (μ.spouse m₂))
           · have hblock₂ : IsBlockingPair prof ν m₂ (μ.spouse m₂) := ⟨hm₂pref, hw₂⟩
             exact hν m₂ (μ.spouse m₂) hblock₂
-          · sorry
+          · -- Both women don't prefer the respective man.
+            -- hw₁: ¬WomanPrefers (ν.sp₁) m₁ (μ⁻¹(ν.sp₁))
+            -- hw₂: ¬WomanPrefers (μ.sp₂) m₂ (ν⁻¹(μ.sp₂))
+            by_cases hwsame : ν.spouse m₁ = μ.spouse m₂
+            · -- Same woman w = ν.sp₁ = μ.sp₂
+              have hμinv₁ : μ.inverse (μ.spouse m₁) = m₁ := inverse_eq_of_spouse_eq μ m₁ _ rfl
+              have hνinv₁ : ν.inverse (ν.spouse m₁) = m₁ := inverse_eq_of_spouse_eq ν m₁ _ rfl
+              have hμinv₂ : μ.inverse (μ.spouse m₂) = m₂ := inverse_eq_of_spouse_eq μ m₂ _ rfl
+              have hνinv₂ : ν.inverse (ν.spouse m₂) = m₂ := inverse_eq_of_spouse_eq ν m₂ _ rfl
+              -- μ⁻¹(ν.sp₁) = μ⁻¹(μ.sp₂) = m₂
+              have hμinvν₁ : μ.inverse (ν.spouse m₁) = m₂ := by rw [hwsame]; exact hμinv₂
+              -- ν⁻¹(μ.sp₂) = ν⁻¹(ν.sp₁) = m₁
+              have hνinvμ₂ : ν.inverse (μ.spouse m₂) = m₁ := by rw [← hwsame]; exact hνinv₁
+              unfold PrefProfile.WomanPrefers at hw₁ hw₂
+              simp only [not_lt] at hw₁ hw₂
+              rw [hμinvν₁] at hw₁
+              rw [hνinvμ₂] at hw₂
+              -- hw₁: womenPref (ν.sp₁) m₂ ≤ womenPref (ν.sp₁) m₁
+              -- hw₂: womenPref (μ.sp₂) m₁ ≤ womenPref (μ.sp₂) m₂
+              -- But ν.sp₁ = μ.sp₂ = w, so rewrite hw₂ to use ν.sp₁
+              rw [← hwsame] at hw₂
+              -- hw₁: womenPref w m₂ ≤ womenPref w m₁
+              -- hw₂: womenPref w m₁ ≤ womenPref w m₂
+              exact hne ((prof.womenPref_bijective (ν.spouse m₁)).injective
+                (Fin.ext (Nat.le_antisymm (mod_cast hw₂) (mod_cast hw₁))))
+            · sorry
       · -- Equality: μ.spouse m₂ = ν.spouse m₂, then with heq: μ.spouse₁ = ν.spouse₂ = μ.spouse₂
         -- contradicts μ injectivity (m₁ ≠ m₂)
         push_neg at hm₂strict
