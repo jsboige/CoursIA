@@ -118,7 +118,8 @@ jobs:
               body += `- **Code cells validated**: ${cells}\n`;
               body += `- **Result**: ${failed > 0 ? failed + ' notebook(s) with violations' : 'All passed'}\n\n`;
               body += `Checks: H.1 (no errors), H.3 (execution_count), C.1 (no banned patterns)\n`;
-              body += `Non-Python kernels (.NET/Lean): C.1 + errors only (execution_count advisory)\n\n`;
+              body += `Non-Python kernels (.NET/Lean): C.1 + errors only (execution_count advisory)\n`;
+              body += `QuantConnect notebooks: C.1 + errors only (require QC Cloud for execution)\n\n`;
 
               if (!results.passed) {
                 body += `### Violations\n\n`;
