@@ -32,6 +32,9 @@ class SearchTools:
         # instance reads from the same proof_knowledge.json so successful tactics
         # from past runs warm-start this one.
         self._kb = kb or ProofKnowledgeBase()
+        # F11 (ai-01 C41 directive): track (query, result_count) to detect
+        # same-query-0-result loops. DEMO 16 BG showed 12 identical calls.
+        self._search_history: list[tuple[str, int]] = []
         self._known_lemmas = {
             # Arithmetic on Nat
             "Nat.add_zero": ("n + 0 = n", "Nat"),
@@ -118,6 +121,25 @@ class SearchTools:
           1. Lean LSP search via exact?/apply? (B.2)
           2. Hardcoded lemma dictionary for common patterns
         """
+        # F11 loop detection — escalate after 3 same-query-0-results
+        same_query_zeros = sum(1 for q, n in self._search_history if q == goal and n == 0)
+        if same_query_zeros >= 2:
+            if self._trace:
+                self._trace.log(
+                    agent="SearchAgent", role="loop_detected",
+                    content=f"LOOP_DETECTED: query '{goal[:60]}' returned 0 results "
+                            f"{same_query_zeros + 1}x. Breaking loop.",
+                    duration_s=0.01, tool_name="search_mathlib_lemmas",
+                    tool_args={"goal": goal[:80]},
+                    tool_result="LOOP_DETECTED",
+                )
+            return (
+                f"LOOP_DETECTED: query '{goal}' returned 0 results {same_query_zeros + 1}x. "
+                f"STOP searching this term. Either:\n"
+                f"1. Reformulate with different keywords (synonyms, broader/narrower terms)\n"
+                f"2. Call `request_director_guidance` via CoordinatorAgent — the lemma likely does not exist\n"
+                f"3. Add the missing lemma as a sub-goal via `submit_decomposition`"
+            )
         kb_results = []
         try:
             kb_hit = self._kb.lookup(goal)
@@ -157,6 +179,7 @@ class SearchTools:
                         tool_args={"goal": goal[:80]},
                         tool_result=f"{len(merged)} (kb={len(kb_results)} lsp={len(lsp_results)})",
                     )
+                self._search_history.append((goal, len(merged)))
                 return json.dumps(merged[:max_results], indent=2, ensure_ascii=False)
 
         # Fallback: keyword-based search on known lemmas
@@ -211,6 +234,7 @@ class SearchTools:
                 tool_args={"goal": goal[:80]}, tool_result=f"{len(found)} results",
             )
 
+        self._search_history.append((goal, len(found)))
         return json.dumps(found, indent=2, ensure_ascii=False)
 
     def _search_via_lsp(self, goal: str) -> list:
