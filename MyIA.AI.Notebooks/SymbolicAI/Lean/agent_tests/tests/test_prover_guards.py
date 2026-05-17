@@ -552,3 +552,65 @@ def test_file_replace_lines_no_snapshot_when_build_check_false(tmp_path):
     assert getattr(tt, "_last_build_ok_content", None) == initial_last_ok, (
         "_last_build_ok_content updated without build verification"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# F9 (2026-05-17) — Director consultation gate on mark_sorry_intractable
+#
+# Context: C37 forensic (DEMO 15/16/17) confirmed the Coordinator abandoned
+# every hard target in <140s with 0 Director invocations, because
+# mark_sorry_intractable had no preconditions. F9 makes intractable refuse
+# unless the Director has actually run at least once.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_f9_intractable_refused_before_director_consultation():
+    """mark_sorry_intractable must refuse when director_consulted is False."""
+    from prover.tools import CoordinatorTools
+
+    state = ProofState()
+    ct = CoordinatorTools(state=state, filepath="", trace=None)
+
+    out = ct.mark_sorry_intractable("test premature abandon")
+    assert "REFUSED" in out, f"F9 gate failed to refuse: {out[:200]}"
+    assert "request_director_guidance" in out, (
+        f"F9 refusal must point to the recovery tool: {out[:200]}"
+    )
+    assert state.intractable is False, (
+        "state.intractable must NOT be set when refused"
+    )
+
+
+def test_f9_request_director_guidance_designates_director():
+    """request_director_guidance must route the next turn to DirectorAgent."""
+    from prover.tools import CoordinatorTools
+
+    state = ProofState()
+    ct = CoordinatorTools(state=state, filepath="", trace=None)
+
+    out = ct.request_director_guidance("hard target, 2 plans tried")
+    assert "Director" in out, f"unexpected return: {out[:200]}"
+
+    designated = state.consume_next_agent_designation()
+    assert designated == "DirectorAgent", (
+        f"request_director_guidance failed to designate Director: {designated!r}"
+    )
+
+
+def test_f9_intractable_accepted_after_director_consultation():
+    """After director_consulted=True (set by AgentExecutor when Director runs),
+    mark_sorry_intractable proceeds normally."""
+    from prover.tools import CoordinatorTools
+
+    state = ProofState()
+    ct = CoordinatorTools(state=state, filepath="", trace=None)
+
+    # Simulate AgentExecutor recording a real Director run.
+    state.director_consulted = True
+    state.director_consulted_count = 1
+
+    out = ct.mark_sorry_intractable("director also failed")
+    assert "REFUSED" not in out, f"F9 gate over-restrictive: {out[:200]}"
+    assert "intractable" in out.lower()
+    assert state.intractable is True
+    assert state.intractable_reason == "director also failed"
