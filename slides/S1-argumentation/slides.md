@@ -244,8 +244,37 @@ layout: cover
   - Prémisses insuffisantes à établir la conclusion
   - Pas de réfutation effective des critiques anticipées
 - **Nommées ou non**
-  - Cf. Taxonomie
+  - Cf. Taxonomie (slide suivante)
   - Nom pas nécessaire, mais utile
+
+
+---
+layout: two-cols
+---
+
+
+# Taxonomie : la mindmap Argumentum
+
+- **~1500 sophismes** classifiés en arbre interactif
+- **7 familles** : Insuffisance, Influence, Erreur mathématique, Erreur de raisonnement, Abus de langage, Tricherie, Obstruction
+- **Sur smartphone** : scanner le QR →
+- **Interactions** :
+  - **Tap** sur un nœud → carte (définition + exemple)
+  - **Pinch** pour zoomer / dézoomer
+  - Boutons **+ / − / Reset** disponibles
+- **Source** : argumentum.games
+
+
+::right::
+
+
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+
+<img src="./images/argumentum_qrcode.png" width="320" alt="QR code mindmap Argumentum">
+
+<p style="font-family: monospace; font-size: 0.75em; margin-top: 0.5em;">argumentum.games/fallacies_fr.html</p>
+
+</div>
 
 
 ---
@@ -337,10 +366,10 @@ layout: section
 
 # Raisonnement logique : Intelligences
 
-<div class="image-row">
-<img src="images/img_001.jpg" width="280" alt="Procedural intelligence - digital network">
-<img src="images/img_002.png" width="260" alt="Probabilistic intelligence - state graph">
-<img src="images/img_003.jpg" width="320" alt="Explorative intelligence - pathfinding">
+<div style="display: flex; flex-direction: row; gap: 1rem; justify-content: center; align-items: center; flex-wrap: nowrap;">
+<img src="./images/img_001.jpg" style="max-width: 28%; height: auto;" alt="Procedural intelligence - digital network">
+<img src="./images/img_002.png" style="max-width: 26%; height: auto;" alt="Probabilistic intelligence - state graph">
+<img src="./images/img_003.jpg" style="max-width: 32%; height: auto;" alt="Explorative intelligence - pathfinding">
 </div>
 
 
@@ -367,9 +396,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_006.png" width="340" alt="PROW system - input sentences and conclusions">
-<img src="images/img_004.png" width="340" alt="Logical consequence formula">
-<img src="images/img_005.png" width="340" alt="Semantics - statements and real world">
+<img src="./images/img_006.png" width="340" alt="PROW system - input sentences and conclusions">
+<img src="./images/img_004.png" width="340" alt="Logical consequence formula">
+<img src="./images/img_005.png" width="340" alt="Semantics - statements and real world">
 
 
 
@@ -415,14 +444,14 @@ layout: two-cols
 - **Sémantique**
   - Tables de vérité
 
-<img src="images/img_009.png" width="260" alt="Venn diagrams - logical operators">
+<img src="./images/img_009.png" width="260" alt="Venn diagrams - logical operators">
 
 
 ::right::
 
 
-<img src="images/img_007.png" width="380" alt="Propositional logic syntax rules">
-<img src="images/img_008.png" width="380" alt="Truth table">
+<img src="./images/img_007.png" width="380" alt="Propositional logic syntax rules">
+<img src="./images/img_008.png" width="380" alt="Truth table">
 
 
 
