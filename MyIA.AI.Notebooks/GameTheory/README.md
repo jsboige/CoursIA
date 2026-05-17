@@ -295,8 +295,9 @@ GameTheory/
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
 │   ├── tournament.py              # Tournoi Axelrod
 │   └── visualization.py           # Animations populations
-├── cooperative_games_lean/        # Projet Lake pour Lean cooperatif
-├── social_choice_lean/            # Projet Lake pour Lean choix social
+├── cooperative_games_lean/        # Projet Lake pour Lean cooperatif (Shapley)
+├── social_choice_lean/            # Projet Lake pour Lean choix social (Arrow, Sen, Voting)
+├── stable_marriage_lean/          # Projet Lake pour Gale-Shapley (2 sorry / 5 theoremes)
 ├── examples/
 │   ├── prisoners_dilemma.py
 │   ├── topology_2x2_periodic_table.py
@@ -363,6 +364,7 @@ Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-serie [SocialChoice/](SocialCh
 | Theoreme de Sen | SocialChoice SC-02 | `Sen.lean` (social_choice_lean) | 0 sorry |
 | Valeur de Shapley | GameTheory-15b | `Shapley.lean` (cooperative games) | 1 sorry |
 | Modeles de vote | SocialChoice SC-02 | `Voting.lean` (Banks, STV) | 0 sorry |
+| Gale-Shapley (stable marriage) | (pas de notebook dedie) | `GaleShapley.lean` ([stable_marriage_lean](stable_marriage_lean/)) | 2 sorry (Knuth lattice — man_optimal + woman_pessimal, requiert Wu-Roth 2018, 5-8j Mathlib) |
 
 Voir [SymbolicAI/Lean/README.md](../SymbolicAI/Lean/README.md) pour les prerequis Lean (notebooks 1-6 recommandes).
 
