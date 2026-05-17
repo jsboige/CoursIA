@@ -579,10 +579,36 @@ lemma meet_inverse_anti_pref' (μ ν : Matching n)
         unfold WomanPrefers at this
         simp only [not_lt] at this
         exact this
-      · -- μ⁻¹w prefers ν.sp(μ⁻¹w) to w (or equal).
-        -- meet for μ⁻¹w: if μ⁻¹w prefers μ.sp(μ⁻¹w)=w to ν.sp(μ⁻¹w), meet picks w.
-        -- But we can't conclude womenPref directly from this either.
-        sorry
+      · -- ¬hνpref: menPref(μ⁻¹w)(ν.sp(μ⁻¹w)) ≤ menPref(μ⁻¹w)(w) = menPref(μ⁻¹w)(μ.sp(μ⁻¹w))
+        -- Either meet picks μ.sp(μ⁻¹w)=w, or equality forces ν.sp(μ⁻¹w)=w by injectivity.
+        -- In both cases meet⁻¹w = μ⁻¹w, and combined with h, μ⁻¹w = ν⁻¹w.
+        have hnle : ¬prof.menPref (μ.inverse w) (μ.spouse (μ.inverse w)) ≤
+            prof.menPref (μ.inverse w) (ν.spouse (μ.inverse w)) := by
+          intro hle'
+          simp only [not_lt] at hνpref
+          rw [hmμ] at hle'
+          have hnat₁ : (prof.menPref (μ.inverse w) w : Nat) ≤
+              prof.menPref (μ.inverse w) (ν.spouse (μ.inverse w)) := mod_cast hle'
+          have hnat₂ : (prof.menPref (μ.inverse w) (ν.spouse (μ.inverse w)) : Nat) ≤
+              prof.menPref (μ.inverse w) w := mod_cast hνpref
+          have hnat_eq : prof.menPref (μ.inverse w) w =
+              prof.menPref (μ.inverse w) (ν.spouse (μ.inverse w)) :=
+            Fin.ext (Nat.le_antisymm hnat₁ hnat₂)
+          have hνspμ : ν.spouse (μ.inverse w) = w :=
+            (prof.menPref_bijective (μ.inverse w)).injective hnat_eq.symm
+          have hνeq : ν.inverse w = μ.inverse w :=
+            (inverse_eq_of_spouse_eq ν _ _ hνspμ).trans
+              (inverse_eq_of_spouse_eq μ _ _ hmμ).symm
+          rw [hνeq] at hw
+          exact hw hmμ
+        have hmMeet' : (μ.meet prof hμ hν).spouse (μ.inverse w) =
+            μ.spouse (μ.inverse w) := by
+          simp only [Matching.meet, Matching.meetSpouse, hnle, if_false]
+        have hmMeetw : (μ.meet prof hμ hν).spouse (μ.inverse w) = w := by
+          rw [hmMeet', hmμ]
+        have hinvEq : (μ.meet prof hμ hν).inverse w = μ.inverse w :=
+          inverse_eq_of_spouse_eq (μ.meet prof hμ hν) _ _ hmMeetw
+        rw [← h, hinvEq]
   · -- meet picks μ.spouse(ν⁻¹w), so μ.spouse(ν⁻¹w) = w, hence μ⁻¹w = ν⁻¹w
     push Not at hle
     split_ifs at hmMeet with hle'
