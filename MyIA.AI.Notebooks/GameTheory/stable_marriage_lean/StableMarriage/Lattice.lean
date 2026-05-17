@@ -316,7 +316,11 @@ private lemma meetSpouse_injective (μ ν : Matching n)
               -- hw₂: womenPref (μ.sp₁) m₁ ≤ womenPref (μ.sp₁) m₂
               exact hne ((prof.womenPref_bijective (μ.spouse m₁)).injective
                 (Fin.ext (Nat.le_antisymm (mod_cast hw₂') (mod_cast hw₁))))
-            · -- Different women: needs deeper lattice argument
+            · -- Different women w₁ ≠ w₂ where w₁ = μ.sp₁, w₂ = ν.sp₂, w = ν.sp₁ = μ.sp₂.
+              -- Unlike the join cross-case (same woman → direct womenPref antisymm),
+              -- the meet gives stability constraints on DIFFERENT women (w₁, w₂).
+              -- Needs rural hospitals theorem or Knuth lattice structure for n ≥ 3.
+              -- For n ≤ 2: impossible since 3 distinct women can't exist in Fin 2.
               sorry
       · -- Equality: m₁ equally prefers both → μ.sp m₁ = ν.sp m₁ → injectivity contradiction
         push_neg at hm₁str
@@ -378,7 +382,9 @@ private lemma meetSpouse_injective (μ ν : Matching n)
               -- hw₂: womenPref w m₁ ≤ womenPref w m₂
               exact hne ((prof.womenPref_bijective (ν.spouse m₁)).injective
                 (Fin.ext (Nat.le_antisymm (mod_cast hw₂) (mod_cast hw₁))))
-            · sorry
+            · -- Symmetric "different women" case (ν.sp₁ ≠ μ.sp₂).
+              -- Same as first cross-case: needs rural hospitals / lattice argument.
+              sorry
       · -- Equality: μ.spouse m₂ = ν.spouse m₂, then with heq: μ.spouse₁ = ν.spouse₂ = μ.spouse₂
         -- contradicts μ injectivity (m₁ ≠ m₂)
         push_neg at hm₂strict
