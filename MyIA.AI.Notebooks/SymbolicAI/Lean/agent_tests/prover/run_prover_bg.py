@@ -19,7 +19,7 @@ sys.stderr.reconfigure(line_buffering=True)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from prover import DEMOS, TraceLogger
+from prover import DEMOS, PROVED_DEMOS, TraceLogger
 from prover.provers import MultiAgentSorryProver, AutonomousProver
 from prover.config import create_client
 
@@ -36,6 +36,9 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         if demo_num not in DEMOS:
             print(f"Demo {demo_num} not found. Available: {sorted(DEMOS.keys())}")
             sys.exit(1)
+        if demo_num in PROVED_DEMOS:
+            print(f"Demo {demo_num} ({DEMOS[demo_num]['name']}) is PROVED — skipping.")
+            sys.exit(0)
         demo = DEMOS[demo_num]
         filepath = demo["file"]
         line = demo.get("line")
