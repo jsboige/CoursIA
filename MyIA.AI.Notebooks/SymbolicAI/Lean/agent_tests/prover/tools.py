@@ -1352,6 +1352,162 @@ class CoordinatorTools:
         current = self._state.plan[self._state.plan_phase]
         return f"Advanced to step {self._state.plan_phase + 1}/{len(self._state.plan)}: {current}"
 
+    def try_constructive_existential(self) -> str:
+        """B3 (issue #1225): attempt constructive witnesses for existential goals.
+
+        When the current goal matches ∃ <var> : <type>, <property>, this tool
+        searches the .lean file for constructors of <type> and validation lemmas
+        for <property>, then generates concrete exact ⟨constructor, validator⟩
+        tactic candidates.
+
+        Called by the Coordinator BEFORE request_director_guidance or
+        mark_sorry_intractable — constructive witnesses are cheap to attempt
+        and occasionally succeed on existential goals that stumped the
+        TacticAgent (which tends to try rfl/omega/simp first).
+
+        Returns a summary of attempts made (or reason why no attempts were
+        possible). Does NOT modify the file — only generates candidates for
+        the Coordinator to relay to TacticAgent.
+        """
+        goal = self._state.current_goal
+        if not goal:
+            return "No current goal set. Use get_proof_state first."
+
+        # Pattern 1: ∃ <var> : <type>, <property> (unicode exists)
+        # Pattern 2: Exists <type> <property> (Lean ASCII)
+        # Pattern 3: ∃ <var>, <property> (type inferred)
+        existential_patterns = [
+            r"∃\s*(\w+)\s*:\s*(.+?)\s*,\s*(.+)",
+            r"Exists\s+(\S+)\s+(.+)",
+            r"∃\s*(\w+)\s*,\s*(.+)",
+        ]
+        match = None
+        var_name = ""
+        type_name = ""
+        property_expr = ""
+        for pat in existential_patterns:
+            m = re.search(pat, goal)
+            if m:
+                match = m
+                if pat == r"Exists\s+(\S+)\s+(.+)":
+                    var_name = "_"
+                    type_name = m.group(1)
+                    property_expr = m.group(2)
+                else:
+                    var_name = m.group(1)
+                    type_name = m.group(2)
+                    property_expr = m.group(3)
+                break
+
+        if not match:
+            if self._trace:
+                self._trace.log(
+                    agent="CoordinatorAgent", role="b3_skip",
+                    content=f"Goal does not match existential pattern: {goal[:120]}",
+                    tool_name="try_constructive_existential",
+                )
+            return f"Goal does not match existential pattern: {goal[:200]}"
+
+        if self._trace:
+            self._trace.log(
+                agent="CoordinatorAgent", role="b3_match",
+                content=f"Existential matched: var={var_name}, type={type_name}, "
+                        f"property={property_expr[:100]}",
+                tool_name="try_constructive_existential",
+                tool_args={"var": var_name, "type": type_name,
+                           "property": property_expr[:200]},
+            )
+
+        # Search the .lean file for constructors of the type.
+        constructors = []
+        validators = []
+        if self._filepath and Path(self._filepath).exists():
+            content = Path(self._filepath).read_text(encoding="utf-8")
+            # Look for defs returning the type (constructor candidates)
+            # Match: def <name> ... : <type> or noncomputable def <name> ... : <type>
+            for cm in re.finditer(
+                r"(?:noncomputable\s+)?def\s+(\w+).*?:\s*([^\n]+)",
+                content, re.DOTALL,
+            ):
+                name, ret = cm.group(1), cm.group(2).strip()
+                # Check if the return type mentions our target type
+                type_token = type_name.strip().split()[0]  # first word (e.g. "Matching")
+                if type_token in ret:
+                    constructors.append(name)
+
+            # Look for lemmas/theorems mentioning the property or type
+            for lm in re.finditer(
+                r"(?:lemma|theorem)\s+(\w+)", content,
+            ):
+                lemma_name = lm.group(1)
+                prop_tokens = re.findall(r"\w+", property_expr)
+                type_tokens = re.findall(r"\w+", type_name)
+                # Score: lemma mentions property tokens or type tokens
+                name_tokens = set(re.findall(r"\w+", lemma_name.lower()))
+                overlap = len(name_tokens & {t.lower() for t in prop_tokens + type_tokens})
+                if overlap > 0:
+                    validators.append((lemma_name, overlap))
+
+            validators.sort(key=lambda x: x[1], reverse=True)
+
+        if not constructors:
+            # Fallback: look for constructors in known types
+            # Common patterns: ⟨...⟩ works if the type is a structure
+            constructors.append("⟨_, _⟩")
+
+        candidates = []
+        for ctor in constructors[:3]:
+            # Basic candidate: exact ⟨ctor, ...⟩
+            # For structure types, ⟨⟩ works directly
+            if ctor.startswith("⟨"):
+                candidates.append(f"exact ⟨_, rfl⟩")
+                candidates.append(f"exact ⟨_, trivial⟩")
+            else:
+                for val_name, _ in validators[:2]:
+                    candidates.append(f"exact ⟨{ctor} _, {val_name} _⟩")
+                # Also try bare constructor without validator
+                candidates.append(f"exact ⟨{ctor} _, rfl⟩")
+                candidates.append(f"exact ⟨{ctor} _, trivial⟩")
+
+        # Deduplicate while preserving order
+        seen = set()
+        unique_candidates = []
+        for c in candidates:
+            if c not in seen:
+                seen.add(c)
+                unique_candidates.append(c)
+
+        # Limit to 6 candidates max
+        unique_candidates = unique_candidates[:6]
+
+        if self._trace:
+            self._trace.log(
+                agent="CoordinatorAgent", role="b3_candidates",
+                content=f"Generated {len(unique_candidates)} tactic candidates",
+                tool_name="try_constructive_existential",
+                tool_args={"candidates": unique_candidates},
+            )
+
+        # Store candidates in state so TacticAgent can pick them up
+        if not hasattr(self._state, "b3_candidates"):
+            self._state.b3_candidates = []
+        self._state.b3_candidates = unique_candidates
+
+        result_lines = [
+            f"B3 constructive existential heuristic for: {goal[:150]}",
+            f"Type: {type_name}, Variable: {var_name}",
+            f"Constructors found: {constructors[:5]}",
+            f"Validators found: {[v[0] for v in validators[:5]]}",
+            f"Tactic candidates ({len(unique_candidates)}):",
+        ]
+        for i, c in enumerate(unique_candidates, 1):
+            result_lines.append(f"  {i}. {c}")
+        result_lines.append(
+            "\nRelay these to TacticAgent (submit_tactic). Each candidate "
+            "is cheap — try them in order before escalating to Director."
+        )
+        return "\n".join(result_lines)
+
     def request_director_guidance(self, reason: str) -> str:
         """Request guidance from the external Director (F9, 2026-05-17).
 

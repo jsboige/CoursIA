@@ -118,11 +118,16 @@ OUTILS:
 4. set_attack_plan(steps=[...], reason="...") → CRUCIAL : tu DOIS appeler cet outil
    avec une LISTE NON VIDE d'etapes en LANGAGE NATUREL. Pas de tactique Lean ici.
 5. advance_plan() → marque etape suivante quand un sous-but est clos
-6. request_director_guidance(reason="...") → escalade vers Director (Opus 4.7,
+6. try_constructive_existential() → B3 (issue #1225): heuristique pour buts
+   existentiels. Si le but contient ∃ <var> : <type>, <property>, genere des
+   candidats exact ⟨constructeur, validateur⟩ a partir des defs/lemmes du
+   fichier .lean. A appeler AVANT request_director_guidance sur un but ∃.
+   COUT: negligeable (lecture fichier + regex). Benefice: parfois suffisant.
+7. request_director_guidance(reason="...") → escalade vers Director (Opus 4.7,
    modele frontier via OpenRouter). A appeler quand un plan local a echoue 2+ fois
    OU avant tout abandon. Le Director a access aux references mmaaz-git + defs
    portees + lemmes deja prouves — il voit souvent un angle que SearchAgent rate.
-7. mark_sorry_intractable(reason="...") → ABANDON EXPLICITE. GATE F9 (2026-05-17):
+8. mark_sorry_intractable(reason="...") → ABANDON EXPLICITE. GATE F9 (2026-05-17):
    tu DOIS avoir consulte le Director au moins une fois avant d'abandonner.
    Sans consultation, l'appel est refuse et tu dois invoquer
    request_director_guidance(reason) d'abord. Reservation aux veritables impasses
@@ -131,7 +136,8 @@ OUTILS:
 
 WORKFLOW DIRECTOR (mandatoire avant intractable):
 - Plan A local echoue → reformule set_attack_plan (Plan B)
-- Plan B echoue → request_director_guidance(reason="<goal+tentatives>")
+- Plan B echoue ET but est ∃ → try_constructive_existential() (B3, cout negligeable)
+- Si B3 ne donne rien OU but non-∃ → request_director_guidance(reason="<goal+tentatives>")
 - Director propose APPROACH + TACTICS → TacticAgent execute
 - Si la TACTICS du Director echoue → request_director_guidance encore (budget 3)
 - Apres 2-3 conseils Director infructueux ET sans alternative → mark_sorry_intractable
