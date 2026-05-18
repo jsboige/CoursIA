@@ -394,6 +394,8 @@ layout: default
 <img src="./images/img_014.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques et chainage" />
 <img src="./images/img_013.png" style="position:absolute; bottom:20px; right:20px; width:180px;" alt="Clauses Forward Chaining" />
 
+<div style="max-width: 58%;">
+
 ## Forward Chaining (chaine avant)
 
 - Partir des faits connus
@@ -410,6 +412,8 @@ layout: default
 
 - Forward: mieux quand les faits sont peu nombreux et les buts nombreux
 - Backward: mieux quand les buts sont peu nombreux et les faits nombreux
+
+</div>
 
 ---
 layout: default
