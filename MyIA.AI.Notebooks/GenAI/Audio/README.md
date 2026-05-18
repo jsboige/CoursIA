@@ -4,7 +4,7 @@
 
 Le traitement audio est souvent le parent pauvre de l'IA generative, eclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalites les plus naturelles de l'interaction humaine. Cette serie couvre l'ensemble de la chaine audio IA : reconnaissance vocale, synthese, clonage, generation musicale, et orchestration de pipelines.
 
-21 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production.
+28 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livre 18/05/2026, 8 PRs, post-mortem [ici](../../docs/epic-1028-audiobook-postmortem.md)).
 
 ## Fil rouge : construire un podcast automatise
 
@@ -17,7 +17,7 @@ Audio/
 ├── 01-Foundation/     # STT, TTS, bases audio (5 notebooks)
 ├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif (8 notebooks)
 ├── 03-Orchestration/  # Multi-modeles, temps reel (3 notebooks)
-└── 04-Applications/   # Education, production, sync A/V, live coding (5 notebooks)
+└── 04-Applications/   # Education, production, sync A/V, live coding, audiobook (12 notebooks)
 ```
 
 ## Progression par niveau
@@ -61,7 +61,7 @@ Les composants existent, il faut les assembler. Ce niveau construit les pipeline
 
 ### 04-Applications - Cas d'usage production
 
-Application directe : les notebooks de ce niveau mettent en oeuvre des workflows complets. 04-1 automatise la narration de cours (TTS + LLM), 04-2 traite la transcription batch avec sous-titres SRT, 04-3 compose de la musique en plusieurs etapes, 04-4 synchronise audio et video, et 04-5 explore le live coding musical avec un LLM.
+Application directe : les notebooks de ce niveau mettent en oeuvre des workflows complets. 04-1 a 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-video et le live coding. 04-6 a 04-12 forment un pipeline audiobook agentique complet (Epic #1028) : benchmark des voix, analyse litteraire, casting vocal, annotation prosodique, generation TTS et compilation finale.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -70,6 +70,13 @@ Application directe : les notebooks de ce niveau mettent en oeuvre des workflows
 | [04-3-Music-Composition-Workflow](04-Applications/04-3-Music-Composition-Workflow.ipynb) | Creation musicale multi-etapes | Local GPU | ~14 GB |
 | [04-4-Audio-Video-Sync](04-Applications/04-4-Audio-Video-Sync.ipynb) | Synchronisation audio-video | Mixed | ~10 GB |
 | [04-5-LiveCoding-LLM-Music](04-Applications/04-5-LiveCoding-LLM-Music.ipynb) | Strudel.cc + LLM, live coding musical | OpenAI API | 0 |
+| [04-6-Audiobook-Pipeline](04-Applications/04-6-Audiobook-Pipeline.ipynb) | Pipeline audiobook orchestrateur | Mixed | ~10 GB |
+| [04-7-TTS-Voice-Benchmark](04-Applications/04-7-TTS-Voice-Benchmark.ipynb) | Benchmark comparatif TTS | Kokoro + OpenAI | ~2 GB |
+| [04-8-Lecture-Analytique](04-Applications/04-8-Lecture-Analytique.ipynb) | Analyse litteraire, segmentation | OpenAI API | 0 |
+| [04-9-Voice-Casting](04-Applications/04-9-Voice-Casting.ipynb) | Attribution voix par personnage | OpenAI API | 0 |
+| [04-10-Annotation-Prosodique](04-Applications/04-10-Annotation-Prosodique.ipynb) | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
+| [04-11-Generation-TTS](04-Applications/04-11-Generation-TTS_output.ipynb) | Generation TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
+| [04-12-Compilation-Audio](04-Applications/04-12-Compilation-Audio_output.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
 
 ## Technologies
 
@@ -77,7 +84,7 @@ Application directe : les notebooks de ce niveau mettent en oeuvre des workflows
 |-------------|-----------|-----------|
 | **OpenAI TTS/STT** | 01-1, 01-2 | `OPENAI_API_KEY` |
 | **Whisper V3 Turbo** | 01-4 | GPU ~10 GB VRAM |
-| **Kokoro TTS** | 01-5 | GPU ~2 GB VRAM |
+| **Kokoro TTS** | 01-5, 04-11 | GPU ~2 GB VRAM |
 | **Chatterbox Turbo** | 02-1 | GPU ~8 GB VRAM |
 | **XTTS v2** | 02-2 | GPU ~6 GB VRAM |
 | **MusicGen (Meta)** | 02-3 | GPU ~10 GB VRAM |
@@ -87,6 +94,7 @@ Application directe : les notebooks de ce niveau mettent en oeuvre des workflows
 | **YuE / SongGeneration 2** | 02-7 | GPU 10-24 GB VRAM |
 | **Fish S2 Pro / Dia TTS** | 02-8 | GPU 6-18 GB VRAM |
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
+| **FFmpeg** | 04-12 | Installe systeme |
 
 ## Prerequisites
 

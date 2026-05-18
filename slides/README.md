@@ -141,3 +141,46 @@ Regles de base pour les images et le layout :
 - **Slides "Questions?"** conservees comme pauses respiratoires entre sections
 - **PPTX-reference en `.gitignore` ou committe** selon le deck : les renders PNG servent a l'audit visuel
 - **Cross-references notebooks** : chaque deck termine ses sections par un lien vers le notebook Jupyter correspondant
+
+## Invariants Slidev (regression-prone)
+
+Bugs silencieux observes sur le parser Slidev — a respecter strictement pour eviter les regressions.
+
+### Frontmatter par slide : **pas de ligne vide** entre `---` et la cle `layout:`
+
+**Probleme** : une ligne vide entre le separateur `---` et `layout: <name>` casse le parser YAML. Slidev rend alors `layout: section` comme texte litteral dans le body et la slide apparait vide / cassee.
+
+**Forme correcte** :
+
+```markdown
+---
+layout: section
+---
+
+# Plan du cours
+
+...
+```
+
+**Forme cassee** (a ne JAMAIS faire) :
+
+```markdown
+---
+
+layout: section
+---
+```
+
+**Detection** : `grep -nP "^---$\s*\n\s*\nlayout:" slides/<deck>/slides.md` (multiline mode).
+
+**Incident** : 2026-05-17 deck `03-logique` slide 2 (TOC) avait cette regression — corrigee dans PR #1239 (cours EPITA TODAY).
+
+### Layout `image-overlay` (HARD, issue #221)
+
+Images pleine-largeur : layout `image-overlay` avec texte par-dessus, **JAMAIS** en colonne droite (`two-cols` avec image a droite). Convention confirmee 5+ fois.
+
+### Verification visuelle obligatoire avant merge
+
+- Lancer `npx slidev slides.md --port 30XX` localement
+- Capture Playwright `?clicks=99` sur les slides modifiees (post-animations)
+- Audit `<deck>/analysis/visual-audit-deck<NN>.md` mis a jour si regression detectee

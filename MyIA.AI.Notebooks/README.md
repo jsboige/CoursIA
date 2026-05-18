@@ -1,12 +1,12 @@
 # MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
 
-Ecosysteme complet de **448 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques.
+Ecosysteme complet de **473 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques.
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 471
-breakdown: GenAI=105, QuantConnect=101, SymbolicAI=90, Search=45, Probas=32, Sudoku=32, ML=30, GameTheory=25, RL=6, CaseStudies=4, IIT=1
-maturity: BETA=249, PRODUCTION=160, DRAFT=31, ALPHA=27, TEMPLATE=4
+total: 473
+breakdown: GenAI=107, QuantConnect=101, SymbolicAI=90, Search=45, Probas=32, Sudoku=32, ML=30, GameTheory=25, RL=6, CaseStudies=4, IIT=1
+maturity: BETA=249, PRODUCTION=162, DRAFT=31, ALPHA=27, TEMPLATE=4
 -->
 
 Dernière mise à jour : 2026-05-02
@@ -15,7 +15,7 @@ Dernière mise à jour : 2026-05-02
 
 | Domaine | Notebooks | Description |
 |---------|-----------|-------------|
-| **GenAI** | 99 | IA Generative (Images, Audio, Video, Texte, Vibe-Coding) |
+| **GenAI** | 110 | IA Generative (Images, Audio, Video, Texte, Vibe-Coding) |
 | **QuantConnect** | 93 | Trading algorithmique et ML financier (Python + C#) |
 | **SymbolicAI** | 90 | IA Symbolique (Lean, Tweety, SmartContracts, SemanticWeb, Planners) |
 | **Search** | 45 | Recherche, CSP, optimisation, metaheuristiques |
@@ -30,15 +30,15 @@ Dernière mise à jour : 2026-05-02
 ### Progression pedagogique
 
 ```text
-GenAI (99 notebooks)
-├── 00-Environment/ (4) - Setup
+GenAI (110 notebooks)
+├── 00-Environment/ (6) - Setup
 ├── Image/ (19) - Generation d'images
-├── Audio/ (16) - Traitement audio
+├── Audio/ (28) - Traitement audio
 ├── Video/ (16) - Traitement video
-├── Texte/ (10) - LLMs et texte
-├── SemanticKernel/ (14) - SDK Microsoft
+├── Texte/ (11) - LLMs et texte
+├── SemanticKernel/ (20) - SDK Microsoft
 ├── CaseStudies/ (4) - Etudes de cas etudiants
-└── Vibe-Coding/ (19) - Claude-Code + Roo-Code
+└── Vibe-Coding/ (5) - Claude-Code + Roo-Code
 
 QuantConnect (93 notebooks)
 ├── Python/ (27) - Cours progressifs QC-Py-01 a 27
@@ -87,7 +87,7 @@ SymbolicAI (90 notebooks)
 
 | Domaine | Notebooks | Lien |
 |---------|-----------|------|
-| **GenAI** | 99 | [GenAI/](GenAI/README.md) |
+| **GenAI** | 110 | [GenAI/](GenAI/README.md) |
 | **QuantConnect** | 93 | [QuantConnect/](QuantConnect/README.md) |
 | **SymbolicAI** | 90 | [SymbolicAI/](SymbolicAI/README.md) |
 | **Search** | 45 | [Search/](Search/README.md) |
