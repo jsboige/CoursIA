@@ -2,14 +2,14 @@
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 107
-breakdown: Audio=28, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, Vibe-Coding=5, CaseStudies=4, =1
+pedagogical_count: 110
+breakdown: Audio=28, SemanticKernel=20, Image=19, Video=16, Texte=11, 00-GenAI-Environment=6, Vibe-Coding=5, CaseStudies=4, =1
 maturity: BETA=52, PRODUCTION=38, DRAFT=12, TEMPLATE=3, ALPHA=2
 -->
 
 Ce parcours vous forme a la maitrise de l'IA generative dans toute sa diversite : generer des images, synthetiser la voix, composer de la musique, produire des videos, orchestrer des agents autonomes, et deployer des applications en production. Chaque modalite suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modeles de production.
 
-**105 notebooks** | **9 sous-domaines** | **~90-100h** | **95%+ valides**
+**110 notebooks** | **9 sous-domaines** | **~90-100h** | **95%+ valides**
 
 ## Pourquoi ce parcours ?
 
@@ -21,9 +21,9 @@ L'IA generative a transforme la creation de contenu en 2024-2026. Un developpeur
 GenAI/
 ├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
 ├── Image/                   # Generation d'images (19 notebooks)
-├── Audio/                   # Speech, TTS, musique, separation (21 notebooks)
+├── Audio/                   # Speech, TTS, musique, separation (28 notebooks)
 ├── Video/                   # Generation et comprehension video (16 notebooks)
-├── Texte/                   # LLMs et generation de texte (10 notebooks)
+├── Texte/                   # LLMs et generation de texte (11 notebooks)
 ├── SemanticKernel/          # Microsoft Semantic Kernel (20 notebooks)
 ├── CaseStudies/              # Etudes de cas etudiants (4 notebooks)
 ├── Playwright-OWUI/         # Tests E2E Playwright (5 modules, 30+ tests)
@@ -58,7 +58,7 @@ L'audio est souvent le parent pauvre des parcours IA, pourtant c'est l'une des m
 
 **Fil rouge** : produire un podcast automatique avec voix synthetique personnalisee et fond musical genere.
 
-[README complet](Audio/README.md) | 21 notebooks | ~14-16h
+[README complet](Audio/README.md) | 28 notebooks | ~14-16h
 
 ---
 
@@ -76,7 +76,7 @@ La video est la modalite la plus exigeante en ressources mais aussi la plus spec
 
 Le texte est le socle de toute interaction avec l'IA generative. Cette serie va au-dela du simple "prompt engineering" : structured outputs pour des reponses fiables, function calling pour connecter les LLMs a vos outils, RAG pour injecter de la connaissance externe, code interpreter pour l'execution dynamique, et les modeles de raisonnement (o-series) pour les taches complexes. Les derniers notebooks couvrent les patterns de production et les LLMs locaux.
 
-[README complet](Texte/README.md) | 10 notebooks | ~10h
+[README complet](Texte/README.md) | 11 notebooks | ~10h
 
 ---
 
@@ -203,9 +203,9 @@ python scripts/notebook_tools/notebook_tools.py analyze <path>
 | ------------ | ----------- | ------------ |
 | 00-GenAI-Environment | 6 | 100% |
 | Image | 19 | 100% |
-| Audio | 21 | 100% |
+| Audio | 28 | 100% |
 | Video | 16 | 100% |
-| Texte | 10 | 100% |
+| Texte | 11 | 100% |
 | SemanticKernel | 20 | 85% |
 | EPF | 4 | 100% |
 | Playwright-OWUI | 5 modules | 100% |
