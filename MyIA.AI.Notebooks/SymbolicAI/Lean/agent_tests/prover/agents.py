@@ -112,6 +112,10 @@ def create_coordinator_agent(tools: CoordinatorTools, provider: str = "zai") -> 
             tools.advance_plan,
             tools.file_read_lines,
             tools.search_mathlib_lemmas,
+            # B3 (issue #1225): constructive existential heuristic. Tries
+            # exact ⟨constructor, validator⟩ on existential goals before
+            # escalating to Director or marking intractable.
+            tools.try_constructive_existential,
             # F9 (2026-05-17): Director consultation gate. The Coordinator
             # MUST call request_director_guidance before mark_sorry_intractable
             # (gated server-side in tools.py). C37 forensic confirmed without
