@@ -260,12 +260,24 @@ layout: default
 
 ## Tables de verite
 
-| P | Q | P ET Q | P OU Q | P => Q | P <=> Q |
-|---|---|--------|--------|--------|---------|
-| V | V | V      | V      | V      | V       |
-| V | F | F      | V      | F      | F       |
-| F | V | F      | V      | V      | F       |
-| F | F | F      | F      | V      | V       |
+<table style="border-collapse:collapse; margin: 0.4em 0 1em 0; font-size: 0.92em;">
+<thead>
+<tr style="background:#8B1A1A; color:#fff;">
+<th style="padding:4px 14px; border:1px solid #8B1A1A;">P</th>
+<th style="padding:4px 14px; border:1px solid #8B1A1A;">Q</th>
+<th style="padding:4px 14px; border:1px solid #8B1A1A;">P ET Q</th>
+<th style="padding:4px 14px; border:1px solid #8B1A1A;">P OU Q</th>
+<th style="padding:4px 14px; border:1px solid #8B1A1A;">P =&gt; Q</th>
+<th style="padding:4px 14px; border:1px solid #8B1A1A;">P &lt;=&gt; Q</th>
+</tr>
+</thead>
+<tbody>
+<tr><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td></tr>
+<tr><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td></tr>
+<tr><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td></tr>
+<tr><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td></tr>
+</tbody>
+</table>
 
 ## Satisfaction
 
@@ -334,10 +346,7 @@ layout: default
 layout: default
 ---
 
-# Resolution
-
-<img src="./images/img_012.png" style="position:absolute; top:50px; right:20px; width:160px;" alt="Arbre de resolution" />
-<img src="./images/img_015.png" style="position:absolute; bottom:20px; right:20px; width:180px;" alt="Preuve par resolution CNF" />
+# Resolution - Clauses
 
 ## Clause
 
@@ -357,11 +366,24 @@ layout: default
 
 - Si une clause a un seul litteral: P, (NON P OU Q) |- Q
 
+---
+layout: image-overlay
+image: ./images/img_015.png
+---
+
+# Resolution - Algorithme
+
+<div style="background: rgba(245,245,245,0.92); padding: 1.2em 1.6em; border-radius: 6px; max-width: 60%;">
+
 ## Algorithme de resolution
 
 1. Convertir KB en CNF (forme normale conjonctive)
 2. Ajouter NON alpha a l'ensemble de clauses
 3. Appliquer la resolution jusqu'a obtenir la clause vide (contradiction) ou ne plus pouvoir progresser
+
+**Resultat** : si la clause vide est derivee, alors KB |= alpha (preuve par refutation).
+
+</div>
 
 ---
 layout: default
