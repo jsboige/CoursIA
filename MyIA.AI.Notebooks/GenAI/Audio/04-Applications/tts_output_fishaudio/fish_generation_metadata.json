@@ -1,0 +1,244 @@
+{
+  "epic": "1273",
+  "pass": "P4b",
+  "description": "TTS generation via FishAudio S2-Pro for audiobook production",
+  "source_text": "Boule de Suif - Guy de Maupassant",
+  "tts_model": "fishaudio-s2-pro",
+  "tts_service_url": "http://localhost:8197",
+  "stats": {
+    "total_segments": 14,
+    "fish_generated": 14,
+    "fish_successful": 5,
+    "fish_total_duration_s": 28.83918367346939
+  },
+  "segments": [
+    {
+      "seg_index": 0,
+      "seg_type": "narration",
+      "speaker": "Narrateur",
+      "text": "Pendant plusieurs jours, des lambeaux d'armees en deroute avaient traverse la ville. Ce n'etait point de la troupe, mais des hordes debraillees.",
+      "annotated_text": "Pendant plusieurs jours, des lambeaux d'armees en deroute avaient traverse la ville. Ce n'etait point de la troupe, mais des hordes debraillees.",
+      "kokoro_voice": "bf_isabella",
+      "fish_preset": "narrator_male",
+      "tags": [
+        "pause"
+      ],
+      "output_file": "tts_output_fishaudio\\fish_seg_00_narrator_male.wav",
+      "duration_s": 7.894784580498866,
+      "file_size_kb": 680.04296875,
+      "status": "success"
+    },
+    {
+      "seg_index": 1,
+      "seg_type": "narration",
+      "speaker": "Narrateur",
+      "text": "Quelques-uns demeuraient chez eux. La peur entrait dans les ames. Les Prussiens allaient arriver.",
+      "annotated_text": "Quelques-uns demeuraient chez eux. La peur entrait dans les ames. Les Prussiens allaient arriver.",
+      "kokoro_voice": "bf_isabella",
+      "fish_preset": "narrator_male",
+      "tags": [
+        "pause",
+        "slow"
+      ],
+      "output_file": "tts_output_fishaudio\\fish_seg_01_narrator_male.wav",
+      "duration_s": 7.058866213151927,
+      "file_size_kb": 608.04296875,
+      "status": "success"
+    },
+    {
+      "seg_index": 2,
+      "seg_type": "dialogue",
+      "speaker": "Narrateur",
+      "text": "Et ils ne font rien de mal aux gens ? demanda timidement une grosse dame, la comtesse de Breville.",
+      "annotated_text": "(timid tone) Et ils ne font rien de mal aux gens ? demanda timidement une grosse dame, la comtesse de Breville.",
+      "kokoro_voice": "bf_isabella",
+      "fish_preset": "narrator_male",
+      "tags": [
+        "timid"
+      ],
+      "output_file": "tts_output_fishaudio\\fish_seg_02_narrator_male.wav",
+      "duration_s": 5.6656689342403626,
+      "file_size_kb": 488.04296875,
+      "status": "success"
+    },
+    {
+      "seg_index": 3,
+      "seg_type": "dialogue",
+      "speaker": "Cornudet",
+      "text": "Rassurez-vous, madame, dit Cornudet avec un sourire, ils sont corrects.",
+      "annotated_text": "[onctuous] Rassurez-vous, madame, dit Cornudet avec un sourire, ils sont corrects.",
+      "kokoro_voice": "bm_george",
+      "fish_preset": "expressive_male_neutral",
+      "tags": [
+        "onctuous",
+        "laugh"
+      ],
+      "output_file": "tts_output_fishaudio\\fish_seg_03_expressive_male_neutral.wav",
+      "duration_s": 4.133151927437642,
+      "file_size_kb": 356.04296875,
+      "status": "success"
+    },
+    {
+      "seg_index": 4,
+      "seg_type": "narration",
+      "speaker": "Narrateur",
+      "text": "La diligence partit dans la neige. Dans la voiture, neuf passagers se tenaient serres : le marchand de vins Loiseau et sa femme, le republican Cornudet, la comtesse de Breville, le manufacturier Carre-Lamadon et son epouse, le comte Hubert de Breville, les bonnes soeurs, et Elisabeth Rousset, dite Boule de Suif, une prostituee de grand renom.",
+      "annotated_text": "(cold tone) La diligence partit dans la neige. Dans la voiture, neuf passagers se tenaient serres : le marchand de vins Loiseau et sa femme, le republican Cornudet, la comtesse de Breville, le manufacturier Carre-Lamadon et son epouse, le comte Hubert de Breville, les bonnes soeurs, et Elisabeth Rousset, dite Boule de Suif, une prostituee de grand renom.",
+      "kokoro_voice": "bf_isabella",
+      "fish_preset": "narrator_male",
+      "tags": [
+        "cold"
+      ],
+      "output_file": "",
+      "duration_s": 0.0,
+      "file_size_kb": 0.0,
+      "status": "failed"
+    },
+    {
+      "seg_index": 5,
+      "seg_type": "dialogue",
+      "speaker": "Elisabeth Rousset",
+      "text": "Mon Dieu ! murmura Boule de Suif, je n'ai rien a manger. Je suis partie sans prevision.",
+      "annotated_text": "(whispering) Mon Dieu ! murmura Boule de Suif, je n'ai rien a manger. Je suis partie sans prevision.",
+      "kokoro_voice": "af_sky",
+      "fish_preset": "expressive_female_warm",
+      "tags": [
+        "whisper"
+      ],
+      "output_file": "",
+      "duration_s": 0.0,
+      "file_size_kb": 0.0,
+      "status": "failed"
+    },
+    {
+      "seg_index": 6,
+      "seg_type": "dialogue",
+      "speaker": "Comtesse de Breville",
+      "text": "Prenez ceci, ma chere demoiselle, dit la comtesse en tendant un morceau de pain.",
+      "annotated_text": "Prenez ceci, ma chere demoiselle, dit la comtesse en tendant un morceau de pain.",
+      "kokoro_voice": "af_sarah",
+      "fish_preset": "expressive_female_cold",
+      "tags": [],
+      "output_file": "",
+      "duration_s": 0.0,
+      "file_size_kb": 0.0,
+      "status": "failed"
+    },
+    {
+      "seg_index": 7,
+      "seg_type": "dialogue",
+      "speaker": "Narrateur",
+      "text": "Merci, madame, vous etes bien bonne, repondit Elisabeth en rougissant.",
+      "annotated_text": "Merci, madame, vous etes bien bonne, repondit Elisabeth en rougissant.",
+      "kokoro_voice": "bf_isabella",
+      "fish_preset": "narrator_male",
+      "tags": [],
+      "output_file": "tts_output_fishaudio\\fish_seg_07_narrator_male.wav",
+      "duration_s": 4.08671201814059,
+      "file_size_kb": 352.04296875,
+      "status": "success"
+    },
+    {
+      "seg_index": 8,
+      "seg_type": "description",
+      "speaker": "Narrateur",
+      "text": "Le voyage se poursuivit dans un silence glacial. La neige tombait sans interruption. A Totes, la diligence s'arreta devant l'hotel du Commerce. L'officier prussien, un jeune homme blond, exigea que Boule de Suif se rende a ses desires.",
+      "annotated_text": "[slow] Le voyage se poursuivit dans un silence glacial. La neige tombait sans interruption. A Totes, la diligence s'arreta devant l'hotel du Commerce. L'officier prussien, un jeune homme blond, exigea que Boule de Suif se rende a ses desires.",
+      "kokoro_voice": "bf_isabella",
+      "fish_preset": "narrator_male",
+      "tags": [
+        "slow",
+        "pause",
+        "cold"
+      ],
+      "output_file": "",
+      "duration_s": 0.0,
+      "file_size_kb": 0.0,
+      "status": "failed"
+    },
+    {
+      "seg_index": 9,
+      "seg_type": "dialogue",
+      "speaker": "Narrateur",
+      "text": "Jamais ! cria-t-elle avec indignation. Vous ne m'aurez pas !",
+      "annotated_text": "(shouting) Jamais ! cria-t-elle avec indignation. [indignant] Vous ne m'aurez pas !",
+      "kokoro_voice": "bf_isabella",
+      "fish_preset": "narrator_male",
+      "tags": [
+        "shout",
+        "indignant"
+      ],
+      "output_file": "",
+      "duration_s": 0.0,
+      "file_size_kb": 0.0,
+      "status": "failed"
+    },
+    {
+      "seg_index": 10,
+      "seg_type": "dialogue",
+      "speaker": "Narrateur",
+      "text": "C'est regrettable, dit froidement l'officier. Dans ce cas, la diligence ne partira pas.",
+      "annotated_text": "(cold tone) C'est regrettable, dit froidement l'officier. Dans ce cas, la diligence ne partira pas.",
+      "kokoro_voice": "bf_isabella",
+      "fish_preset": "narrator_male",
+      "tags": [
+        "cold"
+      ],
+      "output_file": "",
+      "duration_s": 0.0,
+      "file_size_kb": 0.0,
+      "status": "failed"
+    },
+    {
+      "seg_index": 11,
+      "seg_type": "narration",
+      "speaker": "Narrateur",
+      "text": "Les jours passerent. Les voyageurs, affames et impatients, commencerent a faire pression sur Boule de Suif. Loiseau suggera qu'elle devait ceder. Le comte de Breville intervenait avec diplomatie. Les soeurs priaient en silence.",
+      "annotated_text": "[slow] Les jours passerent. Les voyageurs, affames et impatients, commencerent a faire pression sur Boule de Suif. Loiseau suggera qu'elle devait ceder. Le comte de Breville intervenait avec diplomatie. Les soeurs priaient en silence.",
+      "kokoro_voice": "bf_isabella",
+      "fish_preset": "narrator_male",
+      "tags": [
+        "slow",
+        "pause"
+      ],
+      "output_file": "",
+      "duration_s": 0.0,
+      "file_size_kb": 0.0,
+      "status": "failed"
+    },
+    {
+      "seg_index": 12,
+      "seg_type": "dialogue",
+      "speaker": "Comte Hubert de Breville",
+      "text": "Vous comprenez, ma chere demoiselle, dit le comte avec onction, il s'agit du bien commun. Votre sacrifice...",
+      "annotated_text": "Vous comprenez, ma chere demoiselle, dit le comte avec onction, il s'agit du bien commun. [onctuous] Votre sacrifice...",
+      "kokoro_voice": "am_michael",
+      "fish_preset": "expressive_male_cold",
+      "tags": [
+        "pause",
+        "onctuous"
+      ],
+      "output_file": "",
+      "duration_s": 0.0,
+      "file_size_kb": 0.0,
+      "status": "failed"
+    },
+    {
+      "seg_index": 13,
+      "seg_type": "dialogue",
+      "speaker": "Elisabeth Rousset",
+      "text": "Ce n'est pas un sacrifice que vous me demandez, murmura Boule de Suif, les yeux brillants de colere. C'est une infamie.",
+      "annotated_text": "[indignant] Ce n'est pas un sacrifice que vous me demandez, murmura Boule de Suif, les yeux brillants de colere. (whispering) C'est une infamie.",
+      "kokoro_voice": "af_sky",
+      "fish_preset": "expressive_female_warm",
+      "tags": [
+        "indignant",
+        "whisper"
+      ],
+      "output_file": "",
+      "duration_s": 0.0,
+      "file_size_kb": 0.0,
+      "status": "failed"
+    }
+  ]
+}
