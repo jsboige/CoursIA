@@ -968,6 +968,141 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 layout: section
 ---
 
+# Resultats ML — Curriculum V2
+
+<br>
+
+> 8 stages, 84 backtests, 4 seeds, walk-forward 5-fold — methode rigoureuse, verdicts honnetes
+
+---
+
+# Curriculum V2 : 4 KEEPERS sur 8 stages
+
+| Stage | Description | Delta Sharpe | Seeds OK | Verdict |
+|-------|-------------|-------------|----------|---------|
+| **S3** | HMM Regime Detection | **+0.669** | 4/4 | KEEPER |
+| **S4 v2** | Regime + Inv-Vol Ridge | **+0.325** | 4/4 | KEEPER |
+| **M12** | HAR-RV-J Volatility | p=0.0015 | — | KEEPER |
+| **M15** | LSTM h=32 RV | p=0.0107 | — | KEEPER |
+| S5 | LASSO Stop-Loss | -0.311 | 0/4 | NO BEATS |
+| S7 | Composite KEEPERS | -0.006 | — | NO BEATS |
+| S8 | Trend Long-Horizon | AUC 0.61 | — | NO BEATS |
+
+<div v-click="1">
+
+- **Pas de "BEATS magique"** : sur 8 stages, seulement 4 passent le seuil 2-sigma cross-seed
+- **Les composites decaivent** : S7 combine S3+S4 mais perfore PAS mieux que S4 seul
+
+</div>
+
+---
+
+# Portfolio recommande — Sharpe 1.12
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**Construction :**
+- Signal : S3 HMM Regime (5 switches/an)
+- Poids : S4 v2 inverse-vol Ridge, regime-conditionnel
+- Univers : SPY, TLT, 9 secteurs ETF
+- Rebalance : mensuel
+- OOS strict : post-2027
+
+</div>
+<div>
+
+**Performance :**
+
+| Metrique | Valeur |
+|----------|--------|
+| Sharpe | **1.12** |
+| MaxDD | -17.7% |
+| Bear delta | +0.89 |
+
+**vs Buy-and-Hold SPY :**
+| | Sharpe | MaxDD |
+|---|--------|-------|
+| SPY B&H | 0.67 | -24.2% |
+| Portfolio | **1.12** | **-17.7%** |
+
+</div>
+</div>
+
+<div v-click="1">
+
+> Inverse-vol reduce le MaxDD de -82.4% (non-pondere) a -17.7% — la gestion du risque fait plus que le signal
+
+</div>
+
+---
+
+# Lecons du Curriculum V2
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**Ce qui marche :**
+1. **Detection de regime** (S3 HMM) : signal le plus fort (+0.669)
+2. **Inverse-vol weighting** (S4 v2) : reduit MaxDD de 79%
+3. **Modeles simples** : HMM 3-etats + Ridge bat LSTM+GBDT composite
+4. **Rigueur methodologique** : walk-forward 5-fold, 4 seeds, OOS strict
+
+</div>
+<div>
+
+**Ce qui ne marche PAS :**
+1. **Predire la direction** : dir_acc = 93% mais delta Sharpe < 0
+2. **Combiner tout** : S7 composite = pire que S4 seul
+3. **Modeles complexes** : GBDT, LSTM heavy, multi-alpha → overfit
+4. **Stop-loss LASSO** : degrade la performance (-0.311)
+
+</div>
+</div>
+
+<div v-click="1">
+
+- **Conclusion** : la detection de regime + la gestion du risque battent la prediction de direction
+- *"Decision tasks > prediction tasks"* — Lopez de Prado, Ch 8
+
+</div>
+
+---
+
+# Methodologie Curriculum V2
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**Validation :**
+- Walk-forward 5-fold expanding
+- 4 seeds : `[0, 1, 7, 42]`
+- Block bootstrap (22 jours)
+- Seuil : edge >= 2-sigma cross-seed
+- OOS strict : post-2027
+
+</div>
+<div>
+
+**Contre-mesures anti-biais :**
+- Pas de FAANG/Mag7 dans le training
+- Transaction costs documentes (5bps equities)
+- Pas de lookahead dans les features
+- Verdict binaire : BEATS / NO BEATS / INCONCLUSIVE
+
+</div>
+</div>
+
+<div v-click="1">
+
+> Un resultat "promising" sur 1 seed x 1 fold = invalide. Seule la replication cross-seed compte.
+
+</div>
+
+---
+layout: section
+---
+
 # Partie 6 : Composites Avances
 
 ---
