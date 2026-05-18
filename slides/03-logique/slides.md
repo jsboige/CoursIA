@@ -1117,6 +1117,8 @@ layout: default
 
 <img src="./images/img_022.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Arbre backward chaining Criminal(West)" />
 
+<div style="max-width: 56%;">
+
 ## Principe
 
 1. Partir du but
@@ -1131,6 +1133,8 @@ layout: default
 - Substitution: &#123;x/Socrate&#125;
 - Nouveau but: Humain(Socrate)
 - Fait connu: Humain(Socrate) -> Succes!
+
+</div>
 
 ---
 layout: default
