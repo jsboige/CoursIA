@@ -1,0 +1,69 @@
+# FishAudio S2-Pro TTS Service - Expressive TTS with emotion tags
+# API server with CUDA support on GPU1 (RTX 3090 24GB)
+#
+# GPU: RTX 3090 (24GB) - ~22GB VRAM (full bfloat16), ~11GB with --half
+# Port: 8197
+# API: POST /v1/tts, GET /v1/health
+# Docs: http://localhost:8197/docs
+#
+# Notes:
+#   - Model S2-Pro (~9GB safetensors) must be in checkpoints/s2-pro/
+#   - tokenizer.json must be present (generated from Qwen2.5 base + FishAudio special tokens)
+#   - config.json required (fish_qwen3_omni format) — NOT included in HF download
+#   - Reference voices stored in ./references/ (sample.wav + sample.lab)
+#   - S2 Pro supports 15000+ emotion tags: (whisper), (shout), (laugh)...
+#   - Use parenthesis syntax for emotions: (angry), (sad), (excited)
+#   - Loading requires ~18GB RAM peak (model weights), ~22GB VRAM at runtime (full bfloat16)
+
+services:
+  tts-fishaudio:
+    image: fishaudio/fish-speech:server-cuda
+    container_name: tts-fishaudio
+    hostname: tts-fishaudio
+
+    ports:
+      - "127.0.0.1:${FISHAUDIO_PORT:-8197}:8080"
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${FISHAUDIO_GPU_ID:-1}']
+              capabilities: [gpu]
+
+    volumes:
+      - type: bind
+        source: ${CHECKPOINTS_PATH:-./checkpoints}
+        target: /app/checkpoints
+      - type: bind
+        source: ${REFERENCES_PATH:-./references}
+        target: /app/references
+      - type: volume
+        source: fishaudio-cache
+        target: /root/.cache
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${FISHAUDIO_GPU_ID:-1}
+      - LLAMA_CHECKPOINT_PATH=${LLAMA_CHECKPOINT_PATH:-checkpoints/s2-pro}
+      - DECODER_CHECKPOINT_PATH=${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
+      - DECODER_CONFIG_NAME=${DECODER_CONFIG_NAME:-modded_dac_vq}
+      - API_SERVER_NAME=0.0.0.0
+      - API_SERVER_PORT=8080
+      - PYTHONUNBUFFERED=1
+      - TZ=${TZ:-Europe/Paris}
+      - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_TOKEN:-}
+      - HF_TOKEN=${HUGGINGFACE_TOKEN:-}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+
+    restart: unless-stopped
+
+volumes:
+  fishaudio-cache:
+    name: tts-fishaudio-cache
