@@ -4,7 +4,7 @@
 
 Le traitement audio est souvent le parent pauvre de l'IA generative, eclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalites les plus naturelles de l'interaction humaine. Cette serie couvre l'ensemble de la chaine audio IA : reconnaissance vocale, synthese, clonage, generation musicale, et orchestration de pipelines.
 
-28 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028).
+28 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livre 18/05/2026, 8 PRs, post-mortem [ici](../../docs/epic-1028-audiobook-postmortem.md)).
 
 ## Fil rouge : construire un podcast automatise
 
