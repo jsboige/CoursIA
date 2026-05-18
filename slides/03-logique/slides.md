@@ -12,21 +12,30 @@ layout: cover
 
 # Bases de connaissances et Logique
 
-INTELLIGENCE ARTIFICIELLE -- III
+<div class="text-center text-2xl mt-8 mb-4 opacity-70">INTELLIGENCE ARTIFICIELLE — III</div>
 
-**Logique propositionnelle**
+<div class="grid grid-cols-1 gap-2 text-xl mt-8">
 
+- **Logique propositionnelle**
 - Logique du premier ordre
-  - Planification
-
+- Planification
 - Representation des connaissances
 
----
+</div>
 
+---
 layout: section
 ---
 
 # Plan du cours
+
+I. Introduction
+II. Resolution de problemes
+**III. Bases de connaissances et logique**
+IV. Raisonnement probabiliste
+V. Apprentissage
+VI. Traitement du langage naturel
+VII. TP final projets trimestriels
 
 ---
 layout: default
@@ -1958,6 +1967,31 @@ layout: default
 
 - Resolution de Captchas par deep learning
   - TensorFlow, CNTK, Encog
+
+---
+layout: two-cols
+---
+
+# Pour aller plus loin : Argumentum
+
+- **~1500 sophismes** classifies en arbre interactif
+- **7 familles** : Insuffisance, Influence, Erreur mathematique, Erreur de raisonnement, Abus de langage, Tricherie, Obstruction
+- **Sur smartphone** : scanner le QR ->
+- **Interactions** :
+  - **Tap** sur un noeud -> carte (definition + exemple)
+  - **Pinch** pour zoomer / dezoomer
+  - Boutons **+ / - / Reset** disponibles
+- **Source** : argumentum.games
+
+::right::
+
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+
+<img src="./images/argumentum_qrcode.png" width="320" alt="QR code mindmap Argumentum">
+
+<p style="font-family: monospace; font-size: 0.75em; margin-top: 0.5em;">argumentum.games/fallacies_fr.html</p>
+
+</div>
 
 ---
 layout: end
