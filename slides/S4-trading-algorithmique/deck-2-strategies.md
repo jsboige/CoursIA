@@ -413,27 +413,17 @@ layout: compact
 
 # Lecon M15 : l'horizon de prediction est un hyperparametre critique
 
-<div v-click="1">
-
 - **L'hypothese de base** : "LSTM ne marche pas en finance" est **fausse** -- c'est l'horizon h=1 qui ne marche pas
 - Sur SPY/TLT (actions/obligations) : le signal reste faible meme a h>1 (ratio signal/bruit trop bas)
 - Sur crypto : la vol structurelle cree des tendances exploitables aux horizons 1-6 mois
-
-</div>
-<div v-click="2">
 
 - **Implication pratique pour le quant** :
   1. Ne pas rejeter un modele sur un seul horizon -- tester h=1, 5, 22, 66, 132
   2. L'actif et l'horizon sont des choix conjoints (BTC h=22 works, XRP h=66 works)
   3. Le verdict BEATS exige : multi-seed >=4 + walk-forward 5-fold + edge >= 2 sigma
 
-</div>
-<div v-click="3">
-
 - **Notre Curriculum V2** (deck 3) integre ces lecons : S3 HMM Regime, S4 Ridge, M12 HAR-RV-J, M15 LSTM
 - Portfolio recommande : Sharpe 1.12, MaxDD -17.7% (signal S3 + weights S4)
-
-</div>
 
 ---
 layout: compact
