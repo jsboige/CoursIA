@@ -267,13 +267,20 @@ def _binomial_pvalue_one_sided(k: int, n: int) -> float:
 def main() -> None:
     parser = argparse.ArgumentParser(description="S6 Cost Forecasting sweep")
     parser.add_argument("--dry-run", action="store_true", help="Run BTC h=1 seed=0 only")
+    parser.add_argument("--seeds", type=str, default=None,
+                        help="Comma-separated seed list (e.g. '99,123,456,789')")
     args = parser.parse_args()
+
+    seeds_override = None
+    if args.seeds:
+        seeds_override = [int(s.strip()) for s in args.seeds.split(",")]
+    active_seeds = seeds_override if seeds_override else SEEDS
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
 
     combos: list[dict] = []
-    total = len(COINS) * len(HORIZONS) * len(SEEDS)
+    total = len(COINS) * len(HORIZONS) * len(active_seeds)
     done = 0
 
     if args.dry_run:
@@ -286,7 +293,7 @@ def main() -> None:
 
     for coin in COINS:
         for h in HORIZONS:
-            for seed in SEEDS:
+            for seed in active_seeds:
                 done += 1
                 print(f"\n[{done}/{total}] {coin} h={h} seed={seed}", flush=True)
                 row = evaluate_one_combo(coin, h, seed)
