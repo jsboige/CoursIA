@@ -4,7 +4,7 @@
 series: SymbolicAI
 pedagogical_count: 90
 breakdown: SmartContracts=27, SemanticWeb=18, Lean=14, Planners=13, Tweety=10, Argument_Analysis=6, =2
-maturity: BETA=71, PRODUCTION=10, ALPHA=6, DRAFT=3
+maturity: BETA=71, PRODUCTION=9, ALPHA=7, DRAFT=3
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
@@ -25,7 +25,7 @@ Le Web Sémantique généralise les concepts logiques de la Phase 1 au web. Les 
 
 ### Phase 3 : Vérification formelle (Lean, ~10h)
 
-La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones). Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
+La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
 
 ### Phase 4 : Applications (Planners + SmartContracts, ~30h)
 
@@ -33,18 +33,18 @@ Deux séries applicatives indépendantes exploitent les formalismes des phases p
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
-Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (5 notebooks) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
+Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (6 notebooks) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
 ## Vue d'ensemble
 
 | Serie | Notebooks | Exercices | Environnement | Theme | Duree |
 |-------|-----------|-----------|---------------|-------|-------|
-| [SemanticWeb](#semanticweb---web-semantique) | 26 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
-| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 54 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
-| [Planners](#planners---planification-automatique) | 28 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
-| [Lean](#lean---verification-formelle) | 14 | 12 (92%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
-| [Tweety](#tweety---tweetyproject) | 20 | 11 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
-| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 9 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
+| [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
+| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
+| [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
+| [Lean](#lean---verification-formelle) | 14 | 13 (93%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
+| [Tweety](#tweety---tweetyproject) | 10 | 10 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
+| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
 **Total** : 90 notebooks actifs, ~56h de contenu
@@ -84,7 +84,7 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 
 ## Tweety - TweetyProject
 
-Serie de **20 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliotheque Java pour l'IA symbolique. Couvre les logiques formelles, la revision de croyances, et l'argumentation computationnelle.
+Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliotheque Java pour l'IA symbolique. Couvre les logiques formelles, la revision de croyances, et l'argumentation computationnelle.
 
 ### Structure detaillee
 
@@ -105,7 +105,7 @@ Serie de **20 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibli
 | 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
 | 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 1 | Java/JPype |
 
-> 10/10 notebooks ont des exercices. Tweety-1-Setup (configuration) est le seul sans exercice.
+> 10/10 notebooks ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la serie.
 
 ### Technologies
 
@@ -123,7 +123,7 @@ Documentation complete : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Verification Formelle
 
-Serie de **13 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves.
+Serie de **14 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves.
 
 ### Structure detaillee
 
@@ -144,10 +144,11 @@ Serie de **13 notebooks** sur **Lean 4**, proof assistant base sur la theorie de
 | 10 | [Lean-10-LeanDojo](Lean/Lean-10-LeanDojo.ipynb) | Python WSL | LeanDojo, tracing, extraction theoremes, ML pour theorem proving | 2 |
 | 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Verification formelle de reseaux de neurones | 2 |
 | 11py | [Lean-11-TorchLean-Python](Lean/Lean-11-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, verification | 7 |
+| 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Lean 4 | Port Lean du theoreme de sensibilite de Huang (2019), hypercube, signing matrix | 4 |
 
 ### Kernels requis
 
-- **Lean 4 (WSL)** : Notebooks 2-6, 11 (preuves Lean natives)
+- **Lean 4 (WSL)** : Notebooks 2-6, 11, 12 (preuves Lean natives)
 - **Python 3 (WSL)** : Notebooks 1, 7-10, 11py (setup, LLM, LeanDojo)
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problemes chemins)
@@ -158,7 +159,7 @@ Documentation complete : [Lean/README.md](Lean/README.md)
 
 ## SemanticWeb - Web Semantique
 
-Serie de **17 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
+Serie de **18 notebooks** sur le Web Semantique (dont 1 legacy deprecie), combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
 
 ### Structure detaillee
 
@@ -278,15 +279,15 @@ Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.
 
 ```
 SymbolicAI/
-├── Tweety/                    # Serie TweetyProject (9 notebooks)
+├── Tweety/                    # Serie TweetyProject (10 notebooks)
 │   ├── Tweety-1-Setup.ipynb ... Tweety-9-Preferences.ipynb
 │   ├── tweety_init.py         # Module d'initialisation partage
 │   ├── libs/                  # JARs TweetyProject (35 modules)
 │   ├── ext_tools/             # Clingo, SPASS, EProver
 │   └── README.md
 │
-├── Lean/                      # Serie Lean 4 (13 notebooks)
-│   ├── Lean-1-Setup.ipynb ... Lean-11-TorchLean-Python.ipynb
+├── Lean/                      # Serie Lean 4 (14 notebooks)
+│   ├── Lean-1-Setup.ipynb ... Lean-12-Sensitivity-Theorem.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
 │   └── README.md
@@ -473,13 +474,13 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 | Serie | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
 | SmartContracts | 27 | 27 (100%) | 0 | Complet |
-| SemanticWeb | 18 | 16 (89%) | 2 (Setup + Bonus) | Complet |
-| Lean | 13 | 12 (92%) | 1 (Setup) | Complet |
+| SemanticWeb | 18 | 16 (89%) | 2 (Setup + Legacy) | Complet |
+| Lean | 14 | 13 (93%) | 1 (Setup) | Complet |
 | Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
 | Tweety | 10 | 10 (100%) | 0 | Complet |
 | Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-**Total** : 67/82 notebooks de contenu avec exercices (82%). Les notebooks sans exercices sont les notebooks de setup/configuration et le bonus SemanticWeb, ainsi que la série demo Argument Analysis.
+**Total** : 78/88 notebooks de contenu avec exercices (89%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy deprecie (RDF.Net) et la serie demo Argument Analysis (6 notebooks).
 
 ### Problemes restants
 
@@ -580,4 +581,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-05-12
+**Derniere mise a jour** : 2026-05-19

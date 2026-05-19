@@ -16,7 +16,7 @@ layout: cover
 
 <div class="grid grid-cols-1 gap-2 text-xl mt-8">
 
-- **Logique propositionnelle**
+- Logique propositionnelle
 - Logique du premier ordre
 - Planification
 - Representation des connaissances
@@ -29,13 +29,13 @@ layout: section
 
 # Plan du cours
 
-I. Introduction
-II. Resolution de problemes
-**III. Bases de connaissances et logique**
-IV. Raisonnement probabiliste
-V. Apprentissage
-VI. Traitement du langage naturel
-VII. TP final projets trimestriels
+- I. Introduction
+- II. Resolution de problemes
+- **III. Bases de connaissances et logique**
+- IV. Raisonnement probabiliste
+- V. Apprentissage
+- VI. Traitement du langage naturel
+- VII. TP final projets trimestriels
 
 ---
 layout: default
@@ -58,6 +58,8 @@ layout: section
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_04_kb_agent.png)
 
 # Agents fondes sur les connaissances
 
@@ -357,10 +359,13 @@ layout: default
 </div>
 
 <img src="./images/img_011.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques" />
+<img src="./images/pptx_12_inference_rules.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_14_resolution.png)
 
 # Resolution - Clauses
 
@@ -409,6 +414,7 @@ layout: default
 
 <img src="./images/img_014.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques et chainage" />
 <img src="./images/img_013.png" style="position:absolute; bottom:20px; right:20px; width:180px;" alt="Clauses Forward Chaining" />
+<img src="./images/pptx_15_chaining.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 <div style="max-width: 58%;">
 
@@ -1111,6 +1117,8 @@ layout: default
 layout: default
 ---
 
+![bg right:40%](images/pptx_35_fol_unification.png)
+
 # Unification
 
 ## Definition
@@ -1136,6 +1144,8 @@ layout: default
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_35_fol_unification.png)
 
 # Forward chaining en FOL
 
@@ -1183,6 +1193,8 @@ layout: default
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_35_fol_unification.png)
 
 # Resolution en FOL
 
@@ -1487,6 +1499,8 @@ layout: section
 layout: default
 ---
 
+![bg right:40%](images/pptx_45_planning.png)
+
 # Planification
 
 ## Probleme de planification
@@ -1539,6 +1553,8 @@ layout: default
 layout: default
 ---
 
+![bg right:40%](images/pptx_46_pddl.png)
+
 # Exemple PDDL: Transport logistique
 
 ```
@@ -1563,6 +1579,8 @@ Action(Fly(p, from, to),
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_47_planning_approaches.png)
 
 # Approches de planification
 
@@ -1615,6 +1633,7 @@ layout: default
 </div>
 
 <img src="./images/img_027.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Graphe espace etats planification" />
+<img src="./images/pptx_48_state_space.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
@@ -1669,6 +1688,7 @@ layout: default
 </div>
 
 <img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:350px;" alt="Graphe de planification Have/Eat/Bake Cake" />
+<img src="./images/pptx_49_graphplan.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
@@ -1698,6 +1718,8 @@ fonction GRAPHPLAN(probleme) retourne solution ou echec
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_50_constraint.png)
 
 # Planification par contraintes
 
@@ -1756,6 +1778,8 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 layout: default
 ---
 
+![bg right:40%](images/pptx_51_sitcalc.png)
+
 # Axiomes du calcul situationnel
 
 ## Preconditions -> Axiomes de Possibilite
@@ -1783,6 +1807,7 @@ layout: default
 # Planification a ordre partiel
 
 <img src="./images/img_034.png" style="position:absolute; top:50px; right:10px; width:320px;" alt="Planification ordre partiel - ordonnancement etapes" />
+<img src="./images/pptx_52_pop.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1828,6 +1853,7 @@ layout: default
 
 <img src="./images/img_035.png" style="position:absolute; top:50px; right:10px; width:280px;" alt="SIPE-2 decomposition hierarchique" />
 <img src="./images/img_036.png" style="position:absolute; bottom:20px; right:20px; width:200px;" alt="Build House HTN" />
+<img src="./images/pptx_53_hierarchical.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1890,6 +1916,7 @@ layout: default
 # Ontologies
 
 <img src="./images/img_020.png" style="position:absolute; top:50px; right:10px; width:280px; max-height:400px;" alt="Ontologie - graphe de connaissances" />
+<img src="./images/pptx_57_ontologies.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1951,6 +1978,7 @@ layout: default
 </div>
 
 <img src="./images/img_042.jpg" style="position:absolute; top:60px; right:20px; width:200px;" alt="dotNetRDF" />
+<img src="./images/pptx_58_semweb.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
@@ -1981,10 +2009,13 @@ layout: default
 </div>
 
 <img src="./images/img_044.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Systemes de raisonnement diagrammes" />
+<img src="./images/pptx_59_reasoning.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_60_tms.png)
 
 # Systemes a maintenance de verite
 
