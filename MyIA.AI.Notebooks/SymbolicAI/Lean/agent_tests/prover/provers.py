@@ -229,7 +229,8 @@ class MultiAgentSorryProver:
         director_agent = None
         if self.director_provider:
             try:
-                director_agent = create_director_agent(provider=self.director_provider)
+                director_agent = create_director_agent(provider=self.director_provider,
+                                                        target_file=filepath)
                 print(f"  [DIRECTOR] enabled provider={self.director_provider}")
             except Exception as e:
                 print(f"  [DIRECTOR] FAILED to create: {e}")
