@@ -136,7 +136,8 @@ def create_coordinator_agent(tools: CoordinatorTools, provider: str = "zai") -> 
 DIRECTOR_MAX_TOKENS = 2048
 
 
-def create_director_agent(provider: str = "openrouter") -> Agent:
+def create_director_agent(provider: str = "openrouter",
+                          target_file: str = "") -> Agent:
     """DirectorAgent: external frontier LLM providing strategic guidance.
 
     Runs on the strongest model available via OpenRouter (Opus 4.7 /
@@ -155,7 +156,8 @@ def create_director_agent(provider: str = "openrouter") -> Agent:
         # — inject the committed reference docs (mmaaz-git proofs, ported defs,
         # project tactic patterns) into its instructions.
         instructions=augment_instructions(
-            DIRECTOR_AGENT_INSTRUCTIONS, include_references=True),
+            DIRECTOR_AGENT_INSTRUCTIONS, include_references=True,
+            target_file=target_file),
         tools=[],
         name="DirectorAgent",
         default_options=ChatOptions(max_tokens=DIRECTOR_MAX_TOKENS),
