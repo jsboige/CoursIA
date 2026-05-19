@@ -7,7 +7,10 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [docs/genai-services.md](docs/genai-services.md) - Architectures Qwen/Lumina, scripts genai-stack, mappings notebooks
 - [docs/claude-code-config.md](docs/claude-code-config.md) - Agents, skills, rules, model selection
 - [docs/quantconnect.md](docs/quantconnect.md) - Backtests, MCP Docker, structure, livre reference
-- [docs/ece-grading.md](docs/ece-grading.md) - ECE student repos, autres ecoles
+- [docs/ece-grading.md](docs/ece-grading.md) - Pipeline GradeBookApp (notation collegiale, bonus CC, compilation), repos etudiants
+- [docs/teaching-context.md](docs/teaching-context.md) - Calendrier toutes ecoles, scope EPITA-IS, agents par ecole
+- [docs/cluster-agents.md](docs/cluster-agents.md) - Machines cluster, GPU topology, agents par specialisation, dispatch Epic
+- [docs/lean/](docs/lean/) - Prover iteration history, intractable diagnosis, LLM endpoints
 - [docs/architecture_mcp_roo.md](docs/architecture_mcp_roo.md) - Architecture MCP roo-state-manager (34 outils, RooSync)
 - [docs/kernels-runtime.md](docs/kernels-runtime.md) - .NET / Python / WSL kernels, conda envs, dotnet-interactive PIN
 - [docs/procedures-recurrentes.md](docs/procedures-recurrentes.md) - Workflow PR, dispatch agents, validation notebook, audit anti-regression
@@ -20,6 +23,11 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [.claude/rules/code-style.md](.claude/rules/code-style.md) - PEP 8, .NET 9.0, no emojis, langue (section E)
 - [.claude/rules/genai-config.md](.claude/rules/genai-config.md) - GenAI Docker config, GPU, .env
 - [.claude/rules/wsl-kernels.md](.claude/rules/wsl-kernels.md) - WSL pour kernels notebook (NoteBookApp Linux)
+- [.claude/rules/student-pr-reviews.md](.claude/rules/student-pr-reviews.md) - Anti-fuite questions de soutenance sur PR etudiantes (incident 2026-05-17)
+- [.claude/rules/lean-lake-build-required.md](.claude/rules/lean-lake-build-required.md) - Lake build SUCCESS local obligatoire avant merge Lean PR (incident 2026-05-10)
+- [.claude/rules/lean-prover-bg-systematic.md](.claude/rules/lean-prover-bg-systematic.md) - BG iter systematique post-PR/msg po-2026 sur sorry Lean
+- [.claude/rules/secrets-hygiene.md](.claude/rules/secrets-hygiene.md) - Pas de secrets inline (incident recurrent 2026-05-14)
+- [.claude/rules/coordinator-discipline.md](.claude/rules/coordinator-discipline.md) - ai-01 merge actif + no-languishing demandes user
 
 ---
 
