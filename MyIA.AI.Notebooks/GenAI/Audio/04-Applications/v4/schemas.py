@@ -80,9 +80,11 @@ class SourceSelection(BaseModel):
 # ── P1: Voice Cloning ──
 
 class VoiceReference(BaseModel):
+    model_config = {"populate_by_name": True}
+
     reference_id: str
     speakers: list[str]
-    register: str
+    voice_register: str = Field(alias="register")
     sample_text: str
     sample_mp3_path: str = ""
     status: str = "pending"

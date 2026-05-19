@@ -19,7 +19,7 @@ from pydantic import BaseModel, ValidationError
 # Environment
 # ---------------------------------------------------------------------------
 
-_GENAI_DIR = Path(__file__).resolve().parents[2]  # GenAI/
+_GENAI_DIR = Path(__file__).resolve().parents[3]  # GenAI/
 load_dotenv(_GENAI_DIR / ".env")
 
 import os  # noqa: E402 — must follow load_dotenv
@@ -36,33 +36,64 @@ _MAX_RETRIES = 3
 _BACKOFF_BASE = 2  # seconds — yields 2s, 4s, 8s
 
 
+def _flatten_schema(schema: dict, defs: dict | None = None) -> dict:
+    """Flatten $ref and $defs for OpenAI strict JSON Schema mode.
+
+    OpenAI strict mode requires all schemas to be inline (no ``$ref``) and
+    every object to have ``additionalProperties: false``.
+    """
+    if defs is None:
+        defs = schema.pop("$defs", {})
+        defs.update(schema.pop("definitions", {}))
+
+    if "$ref" in schema:
+        ref_name = schema["$ref"].split("/")[-1]
+        return _flatten_schema({**defs.get(ref_name, {})}, defs)
+
+    result = {}
+    for key, value in schema.items():
+        if key in ("$ref", "$defs", "definitions"):
+            continue
+        if isinstance(value, dict):
+            result[key] = _flatten_schema(value, defs)
+        elif isinstance(value, list):
+            result[key] = [
+                _flatten_schema(item, defs) if isinstance(item, dict) else item
+                for item in value
+            ]
+        else:
+            result[key] = value
+
+    if result.get("type") == "object" and "additionalProperties" not in result:
+        if "properties" in result:
+            result["additionalProperties"] = False
+
+    return result
+
+
 def build_json_schema_response_format(name: str, schema_cls: Type[BaseModel]) -> dict:
     """Wrap a Pydantic schema into the OpenAI ``response_format`` envelope.
 
-    Parameters
-    ----------
-    name:
-        A short identifier for the schema (used in the ``name`` field).
-    schema_cls:
-        A Pydantic v2 ``BaseModel`` subclass (not an instance).
-
-    Returns
-    -------
-    dict
-        The ``response_format`` value expected by the chat completions
-        endpoint when using JSON Schema structured outputs.
+    The schema is flattened (no ``$ref`` / ``$defs``) and enriched with
+    ``additionalProperties: false`` on every object to satisfy OpenAI strict
+    JSON Schema mode.
     """
     raw_schema = schema_cls.model_json_schema()
-    # OpenAI requires ``additionalProperties: false`` at the top level for
-    # strict mode.  Pydantic v2 omits it when no ``extra = "forbid"`` is
-    # set, so we force it here.
-    raw_schema["additionalProperties"] = False
+    flat = _flatten_schema(raw_schema)
+    flat["additionalProperties"] = False
+
+    # Strict mode is incompatible with additionalProperties in nested objects
+    # (OpenAI requires required=[] to match all property keys when strict=True).
+    # Fall back to non-strict for schemas that use dict-like fields.
+    has_nested_additional = '"additionalProperties": {' in json.dumps(flat)
+    use_strict = not has_nested_additional
+
     return {
         "type": "json_schema",
         "json_schema": {
             "name": name,
-            "strict": True,
-            "schema": raw_schema,
+            "strict": use_strict,
+            "schema": flat,
         },
     }
 
@@ -148,7 +179,10 @@ def call_structured(
             return parsed
 
         except (requests.RequestException, KeyError, json.JSONDecodeError) as exc:
-            last_error = f"API/parse error (attempt {attempt}): {exc}"
+            detail = ""
+            if hasattr(resp, "text"):
+                detail = resp.text[:500]
+            last_error = f"API/parse error (attempt {attempt}): {exc}\n{detail}"
 
         except ValidationError as exc:
             last_error = f"Schema validation failed (attempt {attempt}): {exc}"
