@@ -1,18 +1,18 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-18 06:49
-Total notebooks: 473
+Generated: 2026-05-19 05:54
+Total notebooks: 474
 
 ## Status Summary
 
 - **READY**: 339
-- **DEMO**: 119
+- **DEMO**: 120
 - **RESEARCH**: 0
 - **BROKEN**: 15
 
 ## Maturity Summary
 
-- **PRODUCTION**: 162
+- **PRODUCTION**: 163
 - **BETA**: 249
 - **TEMPLATE**: 4
 - **ALPHA**: 27
@@ -312,7 +312,7 @@ Total notebooks: 473
 | 89 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | PRODUCTION | 15min | po-2024 |
 | 90 | Préférences et Théorie du Vote | mcp-jupyter-py310 | READY | PRODUCTION | 15min | po-2024 |
 
-### QuantConnect (101 notebooks) — BROKEN:12, DEMO:30, READY:59 | ALPHA:10, BETA:16, DRAFT:2, PRODUCTION:72, TEMPLATE:1
+### QuantConnect (102 notebooks) — BROKEN:12, DEMO:31, READY:59 | ALPHA:10, BETA:16, DRAFT:2, PRODUCTION:73, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -401,22 +401,23 @@ Total notebooks: 473
 | 83 | QC-Py-32 - Reinforcement Learning DQN pour le Trad | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 84 | QC-Py-33 - Reinforcement Learning PPO pour le Trad | Python 3 (conda-torch) | READY | BETA | 45min | po-2026 |
 | 85 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL po | Python 3 (conda-torch) | READY | BETA | 45min | po-2026 |
-| 86 | QC-Py-40 : Paper Trading Binance - Mean Reversion  | Python 3 | READY | DRAFT | 45min | po-2026 |
-| 87 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 88 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur  | Python 3 | READY | BETA | 30min | po-2026 |
-| 89 | QC-Py-Cloud-01 — Risk Parity Composite Multi-Asset | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 90 | QC-Py-Cloud-02 : Classification de Texte et Sentim | Python 3 | DEMO | PRODUCTION | 15min | po-2026 |
-| 91 | QC-Py-Cloud-02 — Sector Rotation & Multi-Asset Mom | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 92 | QC-Py-Cloud-03 — Dual Momentum : Asset Selection M | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 93 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | DEMO | PRODUCTION | 15min | po-2026 |
-| 94 | QC-Py-Cloud-04 — Mean Reversion on Sector ETFs | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 95 | QC-Py-Cloud-04 : Reinforcement Learning - DQN Trad | Python 3 | DEMO | BETA | 15min | po-2026 |
-| 96 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones  | Python 3 | DEMO | BETA | 15min | po-2026 |
-| 97 | QC-Py-Cloud-05 — Regime Switching : Momentum in Bu | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 98 | QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean Re | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 99 | QC-Py-Cloud-06 -- Volatility Targeting : Risk Mana | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 100 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
-| 101 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
+| 86 | QC-Py-35 - Reinforcement Learning pour la Construc | Python 3 | DEMO | PRODUCTION | 30min | po-2026 |
+| 87 | QC-Py-40 : Paper Trading Binance - Mean Reversion  | Python 3 | READY | DRAFT | 45min | po-2026 |
+| 88 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 89 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur  | Python 3 | READY | BETA | 30min | po-2026 |
+| 90 | QC-Py-Cloud-01 — Risk Parity Composite Multi-Asset | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 91 | QC-Py-Cloud-02 : Classification de Texte et Sentim | Python 3 | DEMO | PRODUCTION | 15min | po-2026 |
+| 92 | QC-Py-Cloud-02 — Sector Rotation & Multi-Asset Mom | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 93 | QC-Py-Cloud-03 — Dual Momentum : Asset Selection M | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 94 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | DEMO | PRODUCTION | 15min | po-2026 |
+| 95 | QC-Py-Cloud-04 — Mean Reversion on Sector ETFs | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 96 | QC-Py-Cloud-04 : Reinforcement Learning - DQN Trad | Python 3 | DEMO | BETA | 15min | po-2026 |
+| 97 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones  | Python 3 | DEMO | BETA | 15min | po-2026 |
+| 98 | QC-Py-Cloud-05 — Regime Switching : Momentum in Bu | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 99 | QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean Re | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 100 | QC-Py-Cloud-06 -- Volatility Targeting : Risk Mana | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 101 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
+| 102 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
 
 ### GameTheory (25 notebooks) — READY:25 | ALPHA:2, BETA:18, DRAFT:3, PRODUCTION:2
 
@@ -544,6 +545,6 @@ Total notebooks: 473
 
 - **API**: 94 notebooks
 - **GPU**: 55 notebooks
-- **Cloud**: 101 notebooks
+- **Cloud**: 102 notebooks
 - **WSL**: 23 notebooks
 - **Local**: 239 notebooks
