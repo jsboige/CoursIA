@@ -1553,6 +1553,8 @@ layout: default
 layout: default
 ---
 
+![bg right:40%](images/pptx_46_pddl.png)
+
 # Exemple PDDL: Transport logistique
 
 ```
@@ -1631,6 +1633,7 @@ layout: default
 </div>
 
 <img src="./images/img_027.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Graphe espace etats planification" />
+<img src="./images/pptx_48_state_space.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
@@ -1685,6 +1688,7 @@ layout: default
 </div>
 
 <img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:350px;" alt="Graphe de planification Have/Eat/Bake Cake" />
+<img src="./images/pptx_49_graphplan.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
@@ -1803,6 +1807,7 @@ layout: default
 # Planification a ordre partiel
 
 <img src="./images/img_034.png" style="position:absolute; top:50px; right:10px; width:320px;" alt="Planification ordre partiel - ordonnancement etapes" />
+<img src="./images/pptx_52_pop.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1848,6 +1853,7 @@ layout: default
 
 <img src="./images/img_035.png" style="position:absolute; top:50px; right:10px; width:280px;" alt="SIPE-2 decomposition hierarchique" />
 <img src="./images/img_036.png" style="position:absolute; bottom:20px; right:20px; width:200px;" alt="Build House HTN" />
+<img src="./images/pptx_53_hierarchical.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1910,6 +1916,7 @@ layout: default
 # Ontologies
 
 <img src="./images/img_020.png" style="position:absolute; top:50px; right:10px; width:280px; max-height:400px;" alt="Ontologie - graphe de connaissances" />
+<img src="./images/pptx_57_ontologies.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1971,6 +1978,7 @@ layout: default
 </div>
 
 <img src="./images/img_042.jpg" style="position:absolute; top:60px; right:20px; width:200px;" alt="dotNetRDF" />
+<img src="./images/pptx_58_semweb.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
@@ -2001,6 +2009,7 @@ layout: default
 </div>
 
 <img src="./images/img_044.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Systemes de raisonnement diagrammes" />
+<img src="./images/pptx_59_reasoning.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
