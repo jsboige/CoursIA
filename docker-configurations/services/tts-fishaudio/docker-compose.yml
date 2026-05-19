@@ -1,23 +1,24 @@
-# FishAudio S2-Pro TTS Service - Expressive TTS with emotion tags
+# FishAudio S2-Pro TTS Service - BnB 4-bit NF4 quantized
 # API server with CUDA support on GPU1 (RTX 3090 24GB)
 #
-# GPU: RTX 3090 (24GB) - ~22GB VRAM (full bfloat16), ~11GB with --half
+# GPU: RTX 3090 (24GB) - ~5GB VRAM with BnB 4-bit quantization
 # Port: 8197
 # API: POST /v1/tts, GET /v1/health
 # Docs: http://localhost:8197/docs
 #
 # Notes:
-#   - Model S2-Pro (~9GB safetensors) must be in checkpoints/s2-pro/
+#   - Model S2-Pro BnB 4-bit (~3GB model.pth) must be in checkpoints/s2-pro-bnb4/
 #   - tokenizer.json must be present (generated from Qwen2.5 base + FishAudio special tokens)
-#   - config.json required (fish_qwen3_omni format) — NOT included in HF download
+#   - config.json required (fish_qwen3_omni format)
 #   - Reference voices stored in ./references/ (sample.wav + sample.lab)
 #   - S2 Pro supports 15000+ emotion tags: (whisper), (shout), (laugh)...
 #   - Use parenthesis syntax for emotions: (angry), (sad), (excited)
-#   - Loading requires ~18GB RAM peak (model weights), ~22GB VRAM at runtime (full bfloat16)
+#   - BnB 4-bit reduces VRAM from ~18GB to ~5GB (NF4 quantization)
+#   - Image: fishaudio/fish-speech:server-cuda-bnb4 (patched upstream + bnb4 support)
 
 services:
   tts-fishaudio:
-    image: fishaudio/fish-speech:server-cuda
+    image: fishaudio/fish-speech:server-cuda-bnb4
     container_name: tts-fishaudio
     hostname: tts-fishaudio
 
