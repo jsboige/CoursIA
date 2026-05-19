@@ -113,6 +113,11 @@ class ProofState:
     director_consulted: bool = False
     director_consulted_count: int = 0
 
+    # F12 (2026-05-19, Sprint C): Set by provers.py when a DirectorAgent
+    # is successfully created. Read by workflow.py AgentExecutor to decide
+    # whether to force Director invocation at iteration 4.
+    _has_director: bool = False
+
     # B.8: Checkpoint support — save/restore state between phases
     _checkpoints: Dict[str, dict] = field(default_factory=dict, repr=False)
 

@@ -231,6 +231,7 @@ class MultiAgentSorryProver:
             try:
                 director_agent = create_director_agent(provider=self.director_provider,
                                                         target_file=filepath)
+                state._has_director = True  # F12: signal to workflow force-invocation
                 print(f"  [DIRECTOR] enabled provider={self.director_provider}")
             except Exception as e:
                 print(f"  [DIRECTOR] FAILED to create: {e}")

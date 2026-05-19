@@ -105,6 +105,24 @@ class AgentExecutor(Executor):
             await ctx.yield_output(msg)
             return
 
+        # F12: Force Director invocation at iteration 4 (after first
+        # Coordinator→Search→Tactic cycle completes). This ensures Director
+        # is consulted even when the Coordinator times out or fails to call
+        # request_director_guidance on its own (root cause of T1 forensic
+        # finding: Coordinator GLM-5.1 timeout → workflow degraded to
+        # Search→Tactic loop, Director never reached).
+        if (msg.iteration == 4
+                and msg.director_calls == 0
+                and self._state
+                and hasattr(self._state, '_has_director')
+                and self._state._has_director):
+            msg.next_agent = "director"
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="force_director",
+                    content="iter 4 reached, forcing Director consultation",
+                )
+
         if self._trace:
             self._trace.log(
                 agent=self._agent.name, role="receive",
