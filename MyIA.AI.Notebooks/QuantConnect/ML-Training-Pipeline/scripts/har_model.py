@@ -82,8 +82,8 @@ class HARModel:
         history = list(rv_history.astype(float).values)
         forecasts: list[float] = []
         for _ in range(horizon):
-            tail = pd.Series(history[-22:])
-            log_rv = np.log(tail.clip(lower=1e-12))
+            tail_arr = np.array(history[-22:])
+            log_rv = pd.Series(np.log(np.clip(tail_arr, 1e-12, None)))
             rv_d = float(log_rv.iloc[-1])
             rv_w = float(log_rv.iloc[-5:].mean())
             rv_m = float(log_rv.iloc[-22:].mean())
