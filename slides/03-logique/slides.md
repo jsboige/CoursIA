@@ -16,7 +16,7 @@ layout: cover
 
 <div class="grid grid-cols-1 gap-2 text-xl mt-8">
 
-- **Logique propositionnelle**
+- Logique propositionnelle
 - Logique du premier ordre
 - Planification
 - Representation des connaissances
@@ -29,13 +29,13 @@ layout: section
 
 # Plan du cours
 
-I. Introduction
-II. Resolution de problemes
-**III. Bases de connaissances et logique**
-IV. Raisonnement probabiliste
-V. Apprentissage
-VI. Traitement du langage naturel
-VII. TP final projets trimestriels
+- I. Introduction
+- II. Resolution de problemes
+- **III. Bases de connaissances et logique**
+- IV. Raisonnement probabiliste
+- V. Apprentissage
+- VI. Traitement du langage naturel
+- VII. TP final projets trimestriels
 
 ---
 layout: default
