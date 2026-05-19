@@ -59,6 +59,8 @@ layout: section
 layout: default
 ---
 
+![bg right:40%](images/pptx_04_kb_agent.png)
+
 # Agents fondes sur les connaissances
 
 ## Fonction KB-AGENT
@@ -357,10 +359,13 @@ layout: default
 </div>
 
 <img src="./images/img_011.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques" />
+<img src="./images/pptx_12_inference_rules.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_14_resolution.png)
 
 # Resolution - Clauses
 
@@ -409,6 +414,7 @@ layout: default
 
 <img src="./images/img_014.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques et chainage" />
 <img src="./images/img_013.png" style="position:absolute; bottom:20px; right:20px; width:180px;" alt="Clauses Forward Chaining" />
+<img src="./images/pptx_15_chaining.png" style="position:absolute; bottom:10px; left:10px; width:160px; opacity:.6;" alt="PPTX reference" />
 
 <div style="max-width: 58%;">
 
@@ -1111,6 +1117,8 @@ layout: default
 layout: default
 ---
 
+![bg right:40%](images/pptx_35_fol_unification.png)
+
 # Unification
 
 ## Definition
@@ -1136,6 +1144,8 @@ layout: default
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_35_fol_unification.png)
 
 # Forward chaining en FOL
 
@@ -1183,6 +1193,8 @@ layout: default
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_35_fol_unification.png)
 
 # Resolution en FOL
 
@@ -1487,6 +1499,8 @@ layout: section
 layout: default
 ---
 
+![bg right:40%](images/pptx_45_planning.png)
+
 # Planification
 
 ## Probleme de planification
@@ -1563,6 +1577,8 @@ Action(Fly(p, from, to),
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_47_planning_approaches.png)
 
 # Approches de planification
 
@@ -1699,6 +1715,8 @@ fonction GRAPHPLAN(probleme) retourne solution ou echec
 layout: default
 ---
 
+![bg right:40%](images/pptx_50_constraint.png)
+
 # Planification par contraintes
 
 ## SatPlan
@@ -1755,6 +1773,8 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_51_sitcalc.png)
 
 # Axiomes du calcul situationnel
 
@@ -1985,6 +2005,8 @@ layout: default
 ---
 layout: default
 ---
+
+![bg right:40%](images/pptx_60_tms.png)
 
 # Systemes a maintenance de verite
 
