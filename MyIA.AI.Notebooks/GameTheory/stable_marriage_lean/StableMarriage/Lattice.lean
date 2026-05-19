@@ -371,7 +371,6 @@ private lemma meetSpouse_injective (μ ν : Matching n)
               have hncm : ν.spouse m₂ = μ.spouse m₁ :=
                 @no_cross_match n _ prof ν μ hν hμ m₁ m₂ (μ.spouse m₂) hw rfl
               exact hwsame hncm.symm
-
       · -- Equality: m₁ equally prefers both → μ.sp m₁ = ν.sp m₁ → injectivity contradiction
         push_neg at hm₁str
         have hm₁ge : (prof.menPref m₁ (ν.spouse m₁) : Nat) ≤ prof.menPref m₁ (μ.spouse m₁) :=
@@ -434,6 +433,7 @@ private lemma meetSpouse_injective (μ ν : Matching n)
                 (Fin.ext (Nat.le_antisymm (mod_cast hw₂) (mod_cast hw₁))))
             · -- Symmetric "different women" case (ν.sp₁ ≠ μ.sp₂).
               -- Same as first cross-case: needs rural hospitals / lattice argument.
+              -- INTRACTABLE_UNTIL_RURAL_HOSPITALS
               sorry
       · -- Equality: μ.spouse m₂ = ν.spouse m₂, then with heq: μ.spouse₁ = ν.spouse₂ = μ.spouse₂
         -- contradicts μ injectivity (m₁ ≠ m₂)
@@ -774,6 +774,7 @@ theorem doctor_optimal_eq_top (μ_gs : Matching n)
     (μ' : Matching n) (hstable : IsStable prof μ') :
     ManLE prof μ_gs μ' :=
   fun m => by
+  -- INTRACTABLE_UNTIL_RURAL_HOSPITALS: doctor_optimal requires GS algorithm witness
   sorry
 
 end StableMarriage
