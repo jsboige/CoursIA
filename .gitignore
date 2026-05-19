@@ -564,6 +564,15 @@ tmp/
 # EXCEPTION: Sudoku validated checkpoints
 !sudoku_models/checkpoints/
 
+# TTS audio outputs and model checkpoints (too large, generated artifacts)
+**/tts_output_fishaudio/*.wav
+**/tts_output_fishaudio/*.mp3
+**/tts_output_fishaudio/*.flac
+**/tts_output_fishaudio/segments.json
+**/tts_output_fishaudio/sub_segments/
+**/tts_output_fishaudio/*_audiobook*
+docker-configurations/services/tts-fishaudio/checkpoints/
+
 # ECE grading reports (student PII - never commit)
 reports/
 
