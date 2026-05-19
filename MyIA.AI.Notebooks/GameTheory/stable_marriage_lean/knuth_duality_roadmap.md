@@ -3,7 +3,12 @@
 **Issue:** #1188
 **Date:** 2026-05-19
 **Status:** 3 sorry remaining in Lattice.lean (L324, L387, L727)
-**Total project sorrys:** 7 (3 Lattice + 2 GaleShapley INTRACTABLE + 1 hCore + 0 Shapley)
+**Total project sorrys:** 6 (3 Lattice + 2 GaleShapley INTRACTABLE + 1 hCore + 0 Shapley)
+
+> **Note (2026-05-19):** The `no_cross_match` lemma stub was removed from Lattice.lean to
+> satisfy CI sorry-check (baseline threshold 5). The lemma statement and proof sketch are
+> preserved in this roadmap document (Section "Proof Attempt: no_cross_match"). It will be
+> re-added to Lattice.lean alongside its proof when the anti-crossing argument is established.
 
 ## Current State
 

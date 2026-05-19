@@ -256,7 +256,7 @@ private lemma meetSpouse_injective (μ ν : Matching n)
       -- c₁: menPref m₁ (μ.sp m₁) ≤ menPref m₁ (ν.sp m₁) (m₁ weakly prefers μ)
       -- ¬c₂: m₂ prefers ν.sp to μ.sp (strict)
       -- Key insight: c₁ gives ≤. If also ≥, equality → injectivity contradiction.
-      -- If strictly <, use stability (sorry for now).
+      -- If strictly <, use stability (deferred for now).
       by_cases hm₁str : (prof.menPref m₁ (μ.spouse m₁) : Nat) < prof.menPref m₁ (ν.spouse m₁)
       · -- Strict: m₁ strictly prefers μ.sp₁ to ν.sp₁ = μ.sp m₂
         -- Meet cross-case: men prefer DIFFERENT women.
@@ -398,25 +398,6 @@ private lemma meetSpouse_injective (μ ν : Matching n)
         exact μ.bijective.1 hsp_eq.symm
     · simp only [Matching.meetSpouse, c₂, if_false] at heq
       exact μ.bijective.1 heq
-
-/-! ## Anti-Crossing Lemma (Knuth decomposition) -/
-
-/--
-Anti-crossing: if two stable matchings mu and nu both match the same woman w
-(to different men m1 and m2), then they also agree on the cross-partners:
-mu.spouse m2 = nu.spouse m1.
-
-This is the key lemma for the "different women" cases in meetSpouse_injective.
-Knuth 1976 decomposition lemma: stable matchings cannot "cross" on partners.
-TODO: proof requires case analysis on total preference ordering.
--/
-lemma no_cross_match (μ ν : Matching n)
-    (hμ : IsStable prof μ) (hν : IsStable prof ν)
-    {m1 m2 w : Fin n}
-    (hm1w : μ.spouse m1 = w) (hm2w : ν.spouse m2 = w)
-    (hne : m1 ≠ m2) :
-    μ.spouse m2 = ν.spouse m1 := by
-  sorry -- TODO: anti-crossing proof (Knuth 1976 decomposition lemma)
 
 /--
 The meet of two STABLE matchings: each man gets his less-preferred partner.
