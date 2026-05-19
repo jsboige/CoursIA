@@ -399,6 +399,25 @@ private lemma meetSpouse_injective (μ ν : Matching n)
     · simp only [Matching.meetSpouse, c₂, if_false] at heq
       exact μ.bijective.1 heq
 
+/-! ## Anti-Crossing Lemma (Knuth decomposition) -/
+
+/--
+Anti-crossing: if two stable matchings mu and nu both match the same woman w
+(to different men m1 and m2), then they also agree on the cross-partners:
+mu.spouse m2 = nu.spouse m1.
+
+This is the key lemma for the "different women" cases in meetSpouse_injective.
+Knuth 1976 decomposition lemma: stable matchings cannot "cross" on partners.
+TODO: proof requires case analysis on total preference ordering.
+-/
+lemma no_cross_match (μ ν : Matching n)
+    (hμ : IsStable prof μ) (hν : IsStable prof ν)
+    {m1 m2 w : Fin n}
+    (hm1w : μ.spouse m1 = w) (hm2w : ν.spouse m2 = w)
+    (hne : m1 ≠ m2) :
+    μ.spouse m2 = ν.spouse m1 := by
+  sorry -- TODO: anti-crossing proof (Knuth 1976 decomposition lemma)
+
 /--
 The meet of two STABLE matchings: each man gets his less-preferred partner.
 -/
