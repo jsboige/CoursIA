@@ -2,8 +2,8 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 89
-breakdown: SmartContracts=27, SemanticWeb=17, Lean=14, Planners=13, Tweety=10, Argument_Analysis=6, =2
+pedagogical_count: 90
+breakdown: SmartContracts=27, SemanticWeb=18, Lean=14, Planners=13, Tweety=10, Argument_Analysis=6, =2
 maturity: BETA=72, PRODUCTION=10, ALPHA=5, DRAFT=3
 -->
 
@@ -39,7 +39,7 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 
 | Serie | Notebooks | Exercices | Environnement | Theme | Duree |
 |-------|-----------|-----------|---------------|-------|-------|
-| [SemanticWeb](#semanticweb---web-semantique) | 17 | 16 (94%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
+| [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
 | [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
 | [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
 | [Lean](#lean---verification-formelle) | 14 | 13 (93%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
@@ -47,7 +47,7 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 89 notebooks actifs, ~56h de contenu
+**Total** : 90 notebooks actifs, ~56h de contenu
 
 ---
 
@@ -159,7 +159,7 @@ Documentation complete : [Lean/README.md](Lean/README.md)
 
 ## SemanticWeb - Web Semantique
 
-Serie de **17 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
+Serie de **18 notebooks** sur le Web Semantique (dont 1 legacy deprecie), combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
 
 ### Structure detaillee
 
@@ -474,13 +474,13 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 | Serie | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
 | SmartContracts | 27 | 27 (100%) | 0 | Complet |
-| SemanticWeb | 17 | 16 (94%) | 1 (Setup) | Complet |
+| SemanticWeb | 18 | 16 (89%) | 2 (Setup + Legacy) | Complet |
 | Lean | 14 | 13 (93%) | 1 (Setup) | Complet |
 | Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
 | Tweety | 10 | 10 (100%) | 0 | Complet |
 | Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-**Total** : 78/87 notebooks de contenu avec exercices (90%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1) et la serie demo Argument Analysis (6 notebooks).
+**Total** : 78/88 notebooks de contenu avec exercices (89%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy deprecie (RDF.Net) et la serie demo Argument Analysis (6 notebooks).
 
 ### Problemes restants
 
