@@ -1789,14 +1789,12 @@ layout: default
 
 # Planification a ordre partiel
 
-<img src="./images/img_034.png" style="position:absolute; top:50px; right:10px; width:320px;" alt="Planification ordre partiel - ordonnancement etapes" />
+<img src="./images/img_034.png" style="position:absolute; top:96px; right:28px; width:330px;" alt="Planification ordre partiel - ordonnancement etapes" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 </style>
-
-<div style="max-width:60%;">
 
 ## Planificateur non lineaire
 
@@ -1825,23 +1823,19 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Chaine de causalite
 - Validite temporelle
 
-</div>
-
 ---
 layout: default
 ---
 
 # Decomposition hierarchique
 
-<img src="./images/img_035.png" style="position:absolute; top:50px; right:10px; width:280px;" alt="SIPE-2 decomposition hierarchique" />
-<img src="./images/img_036.png" style="position:absolute; bottom:20px; right:20px; width:200px;" alt="Build House HTN" />
+<img src="./images/img_035.png" style="position:absolute; top:92px; right:30px; width:255px;" alt="SIPE-2 decomposition hierarchique" />
+<img src="./images/img_036.png" style="position:absolute; top:288px; right:58px; width:200px;" alt="Build House HTN" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 </style>
-
-<div style="max-width:60%;">
 
 ## Conditions reelles plus difficiles
 
@@ -1860,8 +1854,6 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Operateurs abstraits -> vers les Buts intermediaires
 - Primitives de bas niveau: Executable
 - Operateurs non primitifs: Buts, actions abstraites
-
-</div>
 
 ---
 layout: default
