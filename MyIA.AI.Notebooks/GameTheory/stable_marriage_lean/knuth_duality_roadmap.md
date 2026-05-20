@@ -2,13 +2,16 @@
 
 **Issue:** #1188
 **Date:** 2026-05-19
-**Status:** 3 sorry remaining in Lattice.lean (L324, L387, L727)
+**Status:** 3 sorry remaining in Lattice.lean (L130 no_cross_match, L437 meetSpouse, L777 doctor_optimal)
 **Total project sorrys:** 6 (3 Lattice + 2 GaleShapley INTRACTABLE + 1 hCore + 0 Shapley)
 
-> **Note (2026-05-19):** The `no_cross_match` lemma stub was removed from Lattice.lean to
-> satisfy CI sorry-check (baseline threshold 5). The lemma statement and proof sketch are
-> preserved in this roadmap document (Section "Proof Attempt: no_cross_match"). It will be
-> re-added to Lattice.lean alongside its proof when the anti-crossing argument is established.
+> **Update (2026-05-19 Sprint D):** The `no_cross_match` lemma has been re-added to Lattice.lean
+> at L102-130 with the m₁=m₂ sub-case proved and 3-distinct-women derivation established.
+> The general case (m₁≠m₂, 3 distinct women) is confirmed INTRACTABLE by both manual analysis
+> and Sonnet multi-agent prover (1400s, 0 progress). Root cause: cross-pair stability constraints
+> involve unknown men (μ⁻¹(w₂), ν⁻¹(w₁)) producing unconstrained preference variables.
+> **Requires rural hospitals theorem (Knuth 1.6.3) or lattice-theoretic global argument.**
+> The L437 sorry now calls `no_cross_match` (also unproved). L777 needs GS execution.
 
 ## Current State
 
@@ -24,24 +27,30 @@
 
 ### Remaining Sorrys (3)
 
-#### S1: L324 — meetSpouse "different women" cross-case
-**Context:** In `meetSpouse_injective`, when two men m1, m2 map to the same woman via meetSpouse, and the cross-case gives DIFFERENT women (mu.spouse m1 != nu.spouse m1 but they share a woman via the other matching), injectivity requires ruling out this configuration.
+#### S1: L130 — no_cross_match (anti-crossing lemma)
+**Context:** `no_cross_match` lemma at L102-130. If μ.sp m₁ = w and ν.sp m₂ = w, then μ.sp m₂ = ν.sp m₁. This is Knuth's decomposition lemma (anti-crossing property).
 
-**Blocker:** For n >= 3, the "different women" case requires the rural hospitals theorem or a direct lattice argument. For n = 1, trivially impossible. For n = 2, impossible because 3 distinct women can't exist in Fin 2.
+**Proved sub-cases:**
+- m₁ = m₂: trivial (subst + rw)
+- 3-distinct-women derivation: w ≠ ν.sp m₁ and w ≠ μ.sp m₂ proved via injectivity
 
-**Strategy:**
-1. **Fin n case split**: Add `cases n with | zero => ... | succ n => ...` and for n+1, do `cases n with | zero => ... | succ n => ...` to handle n=0,1,2 separately
-2. **Rural hospitals approach**: Prove that if mu and nu are stable, then any woman matched to different men in mu vs nu has the same number of proposals. This is the "rural hospitals" theorem (Knuth 1976, Theorem 1.6.3).
-3. **Key lemma needed**: `rural_hospitals`: For stable mu, nu, the set of unmatched agents is the same in both matchings. In our setting (perfect matchings, Fin n bijections), this translates to: if a man m has mu.spouse m = nu.spouse m, then for any other man m' != m, if mu.spouse m' = nu.spouse m, then nu.spouse m' = mu.spouse m.
+**INTRACTABLE (confirmed Sprint D, 2026-05-19):**
+Applied stability of μ, ν to all 4 relevant pairs: (m₁,w), (m₂,w), (m₁,w₂), (m₂,w₁). The pairs (m₁,w) and (m₂,w) give useful constraints with known inverses (μ⁻¹(w)=m₁, ν⁻¹(w)=m₂). But cross-pairs (m₁,w₂) and (m₂,w₁) involve μ⁻¹(w₂) and ν⁻¹(w₁) which are unknown men — preference variables remain unconstrained. Both manual analysis and Sonnet multi-agent prover (1400s, 8 iterations, Director enabled) confirm: local stability conditions are insufficient.
 
-**Estimated difficulty:** HARD (requires new auxiliary lemma)
+**Classification:** INTRACTABLE_UNTIL_RURAL_HOSPITALS
 
-#### S2: L387 — meetSpouse symmetric "different women" cross-case
-**Context:** Symmetric to S1 but with the roles of mu and nu swapped in the case analysis.
+**Strategy (future):**
+1. **Rural hospitals theorem**: Prove unmatched agents are the same across all stable matchings. In our perfect matching setting, this gives structural constraints that resolve the cross-pair unknowns.
+2. **Decomposition lemma**: Show stable matchings decompose into cycles where partners permute — directly implies anti-crossing.
+3. **Lattice argument**: Use join/meet properties (already proved) to derive no-cross structurally.
 
-**Strategy:** Identical to S1. Once the rural hospitals lemma or the Fin n case split is established, both S1 and S2 resolve simultaneously.
+#### S2: L437 — meetSpouse symmetric "different women" cross-case
 
-**Estimated difficulty:** HARD (shares blocker with S1)
+**Context:** Symmetric to S1 but with the roles of mu and nu swapped in the case analysis. The sorry now calls `no_cross_match` (which is itself unproved).
+
+**Classification:** INTRACTABLE_UNTIL_RURAL_HOSPITALS (shares blocker with S1)
+
+**Strategy:** Once `no_cross_match` is proved via rural hospitals, this sorry resolves immediately.
 
 #### S3: L727 — doctor_optimal_eq_top
 **Context:** The GS man-proposing output is the bottom of the ManLE lattice: every man gets his best achievable stable partner.
