@@ -100,7 +100,6 @@ layout: default
 
 <img src="./images/img_003.png" style="position:absolute; top:50px; right:10px; height:280px;" alt="Grille du monde du Wumpus" />
 
-<div style="max-width: 60%;">
 
 ## Jeu de role simpliste
 
@@ -132,13 +131,11 @@ layout: default
 - V = Visite
 - W = Wumpus
 
-</div>
 
 ---
 layout: default
 ---
 
-<div style="max-width: 60%;">
 
 # Representation et logique
 
@@ -163,7 +160,6 @@ layout: default
 - IMPLIQUE (implication)
 - EQUIVAUT (equivalence)
 
-</div>
 
 <img src="./images/img_007.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Relation semantique enonces et monde reel" />
 
@@ -240,7 +236,6 @@ layout: default
 layout: default
 ---
 
-<div style="max-width: 58%;">
 
 # Syntaxe de la logique propositionnelle
 
@@ -257,7 +252,6 @@ layout: default
 3. Si P et Q sont des FBF, (P ET Q), (P OU Q), (P => Q), (P <=> Q) sont des FBF
 4. Rien d'autre n'est une FBF
 
-</div>
 
 <img src="./images/img_008.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Grammaire BNF logique propositionnelle" />
 
@@ -326,7 +320,6 @@ layout: default
 layout: default
 ---
 
-<div style="max-width: 58%;">
 
 # Regles d'infrence
 
@@ -355,7 +348,6 @@ layout: default
 
 - NON(NON P) equivaut a P
 
-</div>
 
 <img src="./images/img_011.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques" />
 
@@ -409,16 +401,15 @@ layout: default
 
 # Forward et Backward Chaining
 
-<img src="./images/img_014.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques et chainage" />
-<img src="./images/img_013.png" style="position:absolute; bottom:20px; right:20px; width:180px;" alt="Clauses Forward Chaining" />
+<img src="./images/img_014.png" style="position:absolute; top:84px; right:26px; width:350px;" alt="Equivalences logiques et chainage" />
+<img src="./images/img_013.png" style="position:absolute; bottom:26px; right:44px; width:165px;" alt="Clauses Forward Chaining" />
 
-<div style="max-width: 58%;">
 
 ## Forward Chaining (chaine avant)
 
 - Partir des faits connus
 - Appliquer les regles pour deduire de nouveaux faits
-- Continuer jusqu'a ce que le but soit atteint ou plus aucun fait nouveau
+- Continuer jusqu'a ce que le but soit atteint<br>ou plus aucun fait nouveau
 
 ## Backward Chaining (chaine arriere)
 
@@ -431,7 +422,6 @@ layout: default
 - Forward: mieux quand les faits sont peu nombreux et les buts nombreux
 - Backward: mieux quand les buts sont peu nombreux et les faits nombreux
 
-</div>
 
 ---
 layout: default
@@ -462,7 +452,6 @@ layout: default
 layout: default
 ---
 
-<div style="max-width: 58%;">
 
 # Procedure d'inference simple
 
@@ -476,7 +465,6 @@ layout: default
 - Procedure **coherente** et **complete** (par definition)
 - Mais **couteuse** : exponentielle en fonction du nombre de symboles
 
-</div>
 
 <img src="./images/img_010.png" style="position:absolute; top:50px; right:20px; width:350px;" alt="Procedure d'inference par verification de modele" />
 
@@ -484,7 +472,6 @@ layout: default
 layout: default
 ---
 
-<div style="max-width: 58%;">
 
 # Backtracking complet (DPLL)
 
@@ -500,7 +487,6 @@ layout: default
 - **Heuristique des symboles purs** : toujours le meme signe -> litteral doit etre vrai
 - **Heuristique des clauses unitaires** : assignation de ces clauses en premier
 
-</div>
 
 <img src="./images/img_016.png" style="position:absolute; top:50px; right:20px; width:320px;" alt="Algorithme DPLL" />
 
@@ -528,7 +514,6 @@ layout: default
 layout: default
 ---
 
-<div style="max-width: 58%;">
 
 # Exploration locale
 
@@ -543,7 +528,6 @@ layout: default
 - Ratio nb clauses / nb symboles -> seuil de satisfiabilite
 - NP-complet souvent au seuil
 
-</div>
 
 <img src="./images/img_017.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Exploration locale pour SAT" />
 
@@ -576,7 +560,6 @@ layout: default
 layout: default
 ---
 
-<div style="max-width: 58%;">
 
 # Agents fondes sur la logique propositionnelle (2/2)
 
@@ -594,7 +577,6 @@ layout: default
 
 - = estimation des etats
 
-</div>
 
 <img src="./images/img_018.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Agent hybride logique propositionnelle" />
 
@@ -671,7 +653,6 @@ layout: default
 layout: default
 ---
 
-<div style="max-width: 58%;">
 
 # Syntaxe de la logique du premier ordre
 
@@ -693,7 +674,6 @@ layout: default
   - Quel que soit (pour tout): ∀x P(x)
   - Il existe: ∃x P(x)
 
-</div>
 
 <img src="./images/img_019.png" style="position:absolute; top:50px; right:10px; width:320px;" alt="Grammaire BNF FOL" />
 
@@ -823,7 +803,6 @@ layout: default
 layout: default
 ---
 
-<div style="max-width: 58%;">
 
 # Aparte : Analyse rhetorique
 
@@ -841,7 +820,6 @@ layout: default
 - Qualites argumentatives
 - Jeu de cartes
 
-</div>
 
 <img src="./images/img_020.png" style="position:absolute; top:50px; right:20px; width:250px;" alt="Ontologie et argumentation" />
 <img src="./images/img_021.jpg" style="position:absolute; bottom:10px; right:20px; width:200px;" alt="Cartes argumentation" />
@@ -1069,23 +1047,20 @@ layout: default
 
 # Procedures d'inference en FOL (2/2)
 
-<div style="max-width: 55%;">
+
+<img src="./images/img_022.png" style="position:absolute; top:84px; right:28px; width:365px;" alt="Arbre backward chaining Criminal(West)" />
 
 ## Resolution
 
 - Systeme de preuve complet
-- Strategies pour reduire l'espace de resolution (demodulation, paramodulation)
-- Demonstrateurs de theoremes sophistiques : OTTER, E-prover
+- Strategies pour reduire l'espace de resolution<br>(demodulation, paramodulation)
+- Demonstrateurs de theoremes sophistiques :<br>OTTER, E-prover
 
 ## Notations
 
 - p ∨ (q ∧ r) <-> p + (q * r)
 - Prolog: `cat(X) :- furry(X), meows(X), has(X, claws)`
 - Lispy: `(forall ?x (implies (and (furry ?x) (meows ?x) (has ?x claws)) (cat ?x)))`
-
-</div>
-
-<img src="./images/img_022.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Arbre backward chaining Criminal(West)" />
 
 ---
 layout: default
@@ -1165,7 +1140,6 @@ layout: default
 
 <img src="./images/img_022.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Arbre backward chaining Criminal(West)" />
 
-<div style="max-width: 56%;">
 
 ## Principe
 
@@ -1182,7 +1156,6 @@ layout: default
 - Nouveau but: Humain(Socrate)
 - Fait connu: Humain(Socrate) -> Succes!
 
-</div>
 
 ---
 layout: default
@@ -1312,7 +1285,6 @@ layout: default
 
 # Argument mining
 
-<div style="max-width: 58%;">
 
 ## Objectif
 
@@ -1330,7 +1302,6 @@ layout: default
 - Importance du travail collaboratif
 - Debat, jeux de dialogue : "statement, challenge, defense"
 
-</div>
 
 <img src="./images/img_023.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Argument mining structure" />
 
@@ -1391,7 +1362,6 @@ layout: default
 
 # Agents a base de connaissance (2/2)
 
-<div style="max-width: 58%;">
 
 ## Fondes sur un modele
 
@@ -1403,7 +1373,6 @@ layout: default
 - Axiomes de persistance, d'effets, problemes de qualifications
 - Ingenierie de donnees -> modeliser le bon niveau
 
-</div>
 
 <img src="./images/img_024.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Sequence etats Wumpus S0-S3" />
 
@@ -1513,7 +1482,6 @@ layout: default
 
 # Definition d'un domaine de planification
 
-<div style="max-width: 58%;">
 
 ## Planning Domain Definition Language (PDDL)
 
@@ -1537,7 +1505,6 @@ layout: default
 - Add(a): Litteraux positifs dans les effets
 - Del(a): Litteraux negatifs dans les effets
 
-</div>
 
 <img src="./images/img_025.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Domaine PDDL Air Cargo" />
 
@@ -1603,7 +1570,6 @@ layout: default
 
 # Exploration de l'espace des etats
 
-<div style="max-width: 58%;">
 
 ## Complexite de la planification classique
 
@@ -1620,7 +1586,6 @@ layout: default
   - Recherche des etats pertinents
 - Explorations bidirectionnelles
 
-</div>
 
 <img src="./images/img_027.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Graphe espace etats planification" />
 
@@ -1653,7 +1618,6 @@ layout: default
 
 # Graphes de planification
 
-<div style="max-width: 58%;">
 
 ## Structure de donnees
 
@@ -1674,7 +1638,6 @@ layout: default
 - Effets -> Fluents
 - Mutexes: actions incompatibles, fluents incompatibles
 
-</div>
 
 <img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:350px;" alt="Graphe de planification Have/Eat/Bake Cake" />
 
@@ -1684,7 +1647,6 @@ layout: default
 
 # Algorithme GraphPlan
 
-<div style="max-width: 55%;">
 
 ```
 fonction GRAPHPLAN(probleme) retourne solution ou echec
@@ -1699,7 +1661,6 @@ fonction GRAPHPLAN(probleme) retourne solution ou echec
     graph <- EXPAND-GRAPH(graph, probleme)
 ```
 
-</div>
 
 <img src="./images/img_030.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Algorithme GraphPlan" />
 
@@ -1921,7 +1882,6 @@ layout: default
 
 # Web semantique
 
-<div style="max-width: 58%;">
 
 ## Resource Description Framework (RDF)
 
@@ -1943,7 +1903,6 @@ layout: default
 - SOA (Service Oriented Architecture)
 - Donnees connectees sur le web
 
-</div>
 
 <img src="./images/img_042.jpg" style="position:absolute; top:60px; right:20px; width:200px;" alt="dotNetRDF" />
 
@@ -1953,7 +1912,6 @@ layout: default
 
 # Systemes de raisonnement
 
-<div style="max-width: 58%;">
 
 ## Reseaux semantiques
 
@@ -1973,7 +1931,6 @@ layout: default
 - Nouveaux faits peuvent invalider etat de croyance
 - Circonscription, logique par defaut
 
-</div>
 
 <img src="./images/img_044.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Systemes de raisonnement diagrammes" />
 
@@ -2016,7 +1973,6 @@ layout: default
 
 # Smart Contracts
 
-<div style="max-width: 58%;">
 
 ## Cryptographie
 
@@ -2038,7 +1994,6 @@ layout: default
 - Signatures composites (courtier, depots/agents fiduciaires)
 - Clauses scriptees (ex: EtherCoin Hack)
 
-</div>
 
 <img src="./images/img_045.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Smart Contracts diagramme" />
 
