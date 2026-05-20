@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 
 from .schemas import AnnotatedSegment, AnnotatedBatch, TTSResult
-from .p1_voice_cloning import SPEAKER_TO_VOICE
+from .p1_voice_cloning import SPEAKER_TO_VOICE, FIGURANT_RAW_VOICE_OVERRIDE
 from .fishaudio_client import (
     fishaudio_tts,
     thermal_wait,
@@ -30,8 +30,21 @@ TTS_DIR = OUTPUT_DIR
 TTS_DIR.mkdir(exist_ok=True, parents=True)
 
 _MAX_WORDS_PER_CALL = 55
-_BATCH_SIZE = 4
-_MAX_WORKERS = 1
+_BATCH_SIZE = 8
+_MAX_WORKERS = 3
+
+
+def _resolve_voice(seg: AnnotatedSegment) -> str:
+    """Resolve the FishAudio reference_id for a segment.
+
+    For figurants, checks FIGURANT_RAW_VOICE_OVERRIDE using speaker_raw
+    to pick a more appropriate voice than the default gruff male.
+    """
+    if seg.speaker == "figurant" and seg.speaker_raw:
+        override = FIGURANT_RAW_VOICE_OVERRIDE.get(seg.speaker_raw.lower().strip())
+        if override:
+            return override
+    return SPEAKER_TO_VOICE.get(seg.speaker, "v4_narrator_male_neutral")
 
 
 def _split_long_text(text: str, max_words: int = _MAX_WORDS_PER_CALL) -> list[str]:
@@ -79,7 +92,7 @@ def _concat_audio_parts(audio_parts: list[bytes]) -> bytes:
 
 def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult:
     """Synthesize a single segment, handling long text by splitting."""
-    reference_id = SPEAKER_TO_VOICE.get(seg.speaker, "v4_narrator_male_neutral")
+    reference_id = _resolve_voice(seg)
     seed = 42 + seg.seg_index
     mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
 
@@ -180,7 +193,7 @@ def _synthesize_batch(
     # Separate cached vs uncached
     to_generate: list[tuple[int, AnnotatedSegment, str]] = []
     for seg, text in segments:
-        reference_id = SPEAKER_TO_VOICE.get(seg.speaker, "v4_narrator_male_neutral")
+        reference_id = _resolve_voice(seg)
         seed = 42 + seg.seg_index
         mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
 

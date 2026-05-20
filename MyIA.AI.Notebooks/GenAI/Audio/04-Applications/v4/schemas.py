@@ -130,6 +130,7 @@ class AnnotatedSegment(BaseModel):
     seg_index: int
     type: SegmentType
     speaker: CanonicalSpeaker
+    speaker_raw: str = ""
     text: str
     annotated_text: str
     tags_used: list[str] = Field(default_factory=list)

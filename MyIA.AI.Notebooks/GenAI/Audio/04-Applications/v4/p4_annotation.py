@@ -39,7 +39,7 @@ OUTPUTS.mkdir(exist_ok=True)
 # ── Constants ──
 
 BATCH_SIZE = 10
-MAX_TAGS_PER_SEGMENT = 3
+MAX_TAGS_PER_SEGMENT = 5
 
 INPUT_SEGMENTS = OUTPUTS / "segments_v4.json"
 INPUT_DRAMATIC = OUTPUTS / "dramatic_context.json"
@@ -79,9 +79,14 @@ TAG_TO_FISHAUDIO: dict[str, str] = {
 
 # ── LLM prompt templates ──
 
-SYSTEM_PROMPT = """Tu es un expert en annotation prosodique pour la synthese vocale.
-Tu recevras un batch de segments texte avec leur contexte dramatique.
-Ta tache est d'inserer des balises de prosodie inline dans le texte.
+NARRATOR_SYSTEM_PROMPT = """Tu es un expert en narration audio pour la synthese vocale.
+Tu produis des annotations prosodiques pour un narrateur qui lit un texte litteral francais.
+Le narrateur est COMPETENT et EXPRESSIF — pas un robot monotone.
+
+## OBJECTIF PRINCIPAL
+Chaque segment de narration DOIT avoir une musicalite propre. Le narrateur modifie son
+debit, ses pauses, son souffle, et son intonation pour suivre le texte. DEUX segments
+consecutifs ne doivent JAMAIS avoir la meme prosodie.
 
 ## Balises disponibles (22 tags)
 
@@ -90,14 +95,40 @@ Affect : [cold] [warm] [onctuous] [indignant] [mocking] [angry] [sad] [nervous] 
 Non-verbal : [laugh] [sigh] [sob] [gasp] [breath]
 Tempo : [slow] [fast] [pause]
 
-## Regles de placement
+## REGLES OBLIGATOIRES pour la NARRATION
 
-1. Tags mode vocale ([whisper], [shout]) AVANT la clause affectee
-2. Tags affect ([cold], [onctuous], etc.) AU DEBUT du segment
-3. [pause] inline n'importe ou pour marquer un silence dramatique
-4. Non-verbal ([sob], [sigh], [gasp]) au point exact du battement emotionnel
-5. Maximum {max_tags} tags par segment
-6. Certains segments ne necessitent AUCUN tag (narration neutre)
+### Regle 1 — AUCUN segment de narration sans tag
+CHAQUE segment narrateur DOIT contenir au minimum 1 tag. Il n'y a PAS de "narration neutre".
+Le narrateur a toujours un ton, un rythme, une intention.
+
+### Regle 2 — Varier la prosodie entre segments consecutifs
+Si le segment precedent utilise [cold], le suivant ne DOIT PAS commencer par [cold].
+Alterner entre differents registres : affect, tempo, non-verbal.
+
+### Regle 3 — Tags intra-segment pour les segments longs (>30 mots)
+Pour les segments de plus de 30 mots, inserer AU MOINS un tag de variation en milieu
+de segment : [pause], [breath], [slow], ou [fast] pour casser la monotonie.
+Placer ces tags a des points naturels : avant une virgule, apres un point-virgule,
+ou avant un changement de sujet.
+
+### Regle 4 — Types de narration et leurs prosodies
+- **Description visuelle** (paysage, decor, vetements) : [slow] ... [pause] — voix qui contemple
+- **Action rapide** (mouvement, combat, precipitation) : [fast] ... [breath] — voix qui s'anime
+- **Commentaire ironique** (distance naratrice, critique sociale) : [mocking] ... [pause] — voix qui souligne
+- **Description emotionnelle** (souffrance, joie, peur) : [warm] ou [sad] ... [breath] — voix qui ressent
+- **Transition** (changement de scene, de temps) : [pause] ... [breath] — voix qui marque le passage
+- **Suspense / attente** (tension dramatique) : [slow] ... [pause] — voix qui cree l'attente
+- **Bilan / reflexion** (conclusions, observations generales) : [firm] ... [pause] — voix qui pose
+- **Enumeration** (listes, series descriptives) : [pause] entre les elements, [breath] au milieu
+
+### Regle 5 — Placement des tags
+1. Tags de registre vocal ([whisper], [shout]) AVANT la clause concernee
+2. Tags d'affect ([cold], [warm], etc.) AU DEBUT du segment
+3. [pause] inline aux points de respiration naturelle (virgules, points-virgules)
+4. [breath] aux changements de phrase ou de sujet
+5. [slow]/[fast] pour accelerer ou ralentir des portions specifiques
+6. Tags non-verbaux ([sigh], [gasp]) au point precis du battement emotionnel
+7. Maximum {max_tags} tags par segment
 
 ## Format de reponse
 
@@ -108,14 +139,40 @@ Pour chaque segment, retourne un objet JSON avec :
 - text : texte original SANS modification
 - annotated_text : texte avec balises [tag] inserees
 
-Exemple :
-  text: "Je ne peux pas accepter cela."
-  annotated_text: "[firm] Je ne peux pas accepter cela. [pause] Jamais."
-
 IMPORTANT : annotated_text doit contenir le MEME texte que text, avec seulement
 des balises [tag] inserees. Ne pas modifier, traduire ou resumer le texte.
 """.format(max_tags=MAX_TAGS_PER_SEGMENT)
 
+DIALOGUE_SYSTEM_PROMPT = """Tu es un expert en annotation prosodique pour la synthese vocale.
+Tu annotes des dialogues et pensees de personnages avec des balises de prosodie inline.
+
+## Balises disponibles (22 tags)
+
+Modes vocaux : [whisper] [shout] [scream]
+Affect : [cold] [warm] [onctuous] [indignant] [mocking] [angry] [sad] [nervous] [excited] [gentle] [firm] [timid]
+Non-verbal : [laugh] [sigh] [sob] [gasp] [breath]
+Tempo : [slow] [fast] [pause]
+
+## Regles pour les dialogues
+
+1. Chaque dialogue DOIT avoir au moins 1 tag d'affect correspondant a l'emotion du personnage
+2. Inserer [pause] aux hesitations, ruptures de pensee, silences dramatiques
+3. [breath] avant les phrases longues ou apres une emotion forte
+4. Maximum {max_tags} tags par segment
+5. Les tags doivent refleter le contexte dramatique (acte, tension, etat emotionnel)
+
+## Format de reponse
+
+Pour chaque segment, retourne un objet JSON avec :
+- seg_index : int (doit correspondre)
+- type : "narration" | "dialogue" | "thought"
+- speaker : nom canonique du locuteur
+- text : texte original SANS modification
+- annotated_text : texte avec balises [tag] inserees
+
+IMPORTANT : annotated_text doit contenir le MEME texte que text, avec seulement
+des balises [tag] inserees. Ne pas modifier, traduire ou resumer le texte.
+""".format(max_tags=MAX_TAGS_PER_SEGMENT)
 
 USER_PROMPT_TEMPLATE = """## Segments a annoter (batch {batch_idx})
 
@@ -150,13 +207,14 @@ def load_inputs() -> tuple[list[Segment], dict[int, DramaticContext]]:
         )
 
     seg_data = json.loads(INPUT_SEGMENTS.read_text(encoding="utf-8"))
-    segments = [Segment(**s) for s in seg_data.get("segments", seg_data) if isinstance(seg_data, dict)]
 
     # Handle both list and dict root
     if isinstance(seg_data, list):
         segments = [Segment(**s) for s in seg_data]
     elif "segments" in seg_data:
         segments = [Segment(**s) for s in seg_data["segments"]]
+    else:
+        segments = []
 
     ctx_data = json.loads(INPUT_DRAMATIC.read_text(encoding="utf-8"))
     if isinstance(ctx_data, dict) and "contexts" in ctx_data:
@@ -195,15 +253,31 @@ def build_segment_block(segments: list[Segment], contexts: dict[int, DramaticCon
             if ctx.character_state:
                 states = ", ".join(f"{k}: {v}" for k, v in ctx.character_state.items())
                 lines.append(f"Etats emotionnels: {states}")
+        word_count = len(seg.text.split())
+        lines.append(f"Longueur: {word_count} mots")
         lines.append(f"Texte: {seg.text}")
         lines.append("")
     return "\n".join(lines)
+
+
+def _get_system_prompt(segments: list[Segment]) -> str:
+    """Pick the right system prompt based on batch composition."""
+    has_narration = any(s.speaker == "narrateur" for s in segments)
+    has_dialogue = any(s.speaker != "narrateur" for s in segments)
+
+    if has_narration and not has_dialogue:
+        return NARRATOR_SYSTEM_PROMPT
+    if has_dialogue and not has_narration:
+        return DIALOGUE_SYSTEM_PROMPT
+    # Mixed batch — use the narrator prompt which is more comprehensive
+    return NARRATOR_SYSTEM_PROMPT
 
 
 def annotate_batch(
     segments: list[Segment],
     contexts: dict[int, DramaticContext],
     batch_idx: int,
+    previous_tags: list[str] | None = None,
 ) -> list[AnnotatedSegment]:
     """Send a batch of segments to the LLM for prosodic annotation.
 
@@ -211,6 +285,8 @@ def annotate_batch(
         segments: Segments to annotate (typically 10).
         contexts: Dramatic context dict keyed by seg_index.
         batch_idx: Batch number (for logging).
+        previous_tags: Tags used in the last segment of the previous batch
+                       (to avoid repetition).
 
     Returns:
         List of AnnotatedSegment instances.
@@ -221,22 +297,34 @@ def annotate_batch(
 
     context_block = build_context_block("annotation", segment_range=(start, end))
     segments_block = build_segment_block(segments, contexts)
+
+    # Add anti-repetition hint if we know the previous batch's last tags
+    repetition_hint = ""
+    if previous_tags:
+        repetition_hint = (
+            f"\nATTENTION : le segment precedent se termine avec les tags {previous_tags}. "
+            f"Utilise des tags DIFFERENTS pour ce batch afin de garantir la variante."
+        )
+
     user_prompt = USER_PROMPT_TEMPLATE.format(
         batch_idx=batch_idx,
         segments_block=segments_block,
         max_tags=MAX_TAGS_PER_SEGMENT,
-    )
+    ) + repetition_hint
+
+    system_prompt = _get_system_prompt(segments)
 
     result = call_structured(
         AnnotatedBatch,
-        SYSTEM_PROMPT,
+        system_prompt,
         user_prompt,
         context_block=context_block,
     )
 
     batch = AnnotatedBatch(**result)
 
-    # Attach dramatic context references
+    # Attach dramatic context references + propagate speaker_raw from source segments
+    seg_raw_map = {s.seg_index: s.speaker_raw for s in segments}
     annotated: list[AnnotatedSegment] = []
     for seg in batch.segments:
         ctx = contexts.get(seg.seg_index)
@@ -244,6 +332,7 @@ def annotate_batch(
             seg_index=seg.seg_index,
             type=seg.type,
             speaker=seg.speaker,
+            speaker_raw=seg_raw_map.get(seg.seg_index, ""),
             text=seg.text,
             annotated_text=seg.annotated_text,
             tags_used=seg.tags_used,
@@ -281,6 +370,42 @@ def convert_tags_for_fishaudio(annotated_text: str) -> str:
     return re.sub(r"\[(\w+)\]", _replace_tag, annotated_text)
 
 
+# ── Quality check: tag diversity ──
+
+
+def _check_tag_diversity(all_annotated: list[AnnotatedSegment]) -> dict:
+    """Check tag diversity across narration segments.
+
+    Returns stats for logging.
+    """
+    narr_segments = [s for s in all_annotated if s.speaker == "narrateur"]
+    if not narr_segments:
+        return {"narrator_segments": 0}
+
+    untagged = [s for s in narr_segments if not s.tags_used]
+    tag_counts = {}
+    for seg in narr_segments:
+        for tag in seg.tags_used:
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+
+    # Check consecutive same-tag starts
+    same_start = 0
+    prev_start_tags: set[str] = set()
+    for seg in narr_segments:
+        start_tags = set(seg.tags_used[:2]) if seg.tags_used else set()
+        if start_tags and start_tags == prev_start_tags:
+            same_start += 1
+        prev_start_tags = start_tags
+
+    return {
+        "narrator_segments": len(narr_segments),
+        "untagged": len(untagged),
+        "tag_diversity": len(tag_counts),
+        "consecutive_same_start": same_start,
+        "most_used": sorted(tag_counts.items(), key=lambda x: -x[1])[:5],
+    }
+
+
 # ── Main entry point ──
 
 
@@ -307,25 +432,36 @@ def run(force: bool = False) -> Path:
     print(f"[P4] Step 2: Annotating {len(segments)} segments (batch size: {BATCH_SIZE})...")
     all_annotated: list[AnnotatedSegment] = []
     batch_count = 0
+    previous_tags: list[str] | None = None
 
     for i in range(0, len(segments), BATCH_SIZE):
         batch = segments[i : i + BATCH_SIZE]
         batch_count += 1
         try:
-            annotated = annotate_batch(batch, contexts, batch_count)
+            annotated = annotate_batch(batch, contexts, batch_count, previous_tags)
             all_annotated.extend(annotated)
+            # Track last segment's tags for anti-repetition
+            if annotated:
+                last = annotated[-1]
+                previous_tags = last.tags_used[:2] if last.tags_used else None
         except Exception as e:
             print(f"  [P4] Batch {batch_count} FAILED: {e}")
-            # Fallback: create untagged segments
+            # Fallback: create minimally tagged segments
             for seg in batch:
+                # Even fallback gets a basic tag for narrateur
+                if seg.speaker == "narrateur":
+                    fallback_text = f"[slow] {seg.text}"
+                else:
+                    fallback_text = seg.text
                 all_annotated.append(AnnotatedSegment(
                     seg_index=seg.seg_index,
                     type=seg.type,
                     speaker=seg.speaker,
+                    speaker_raw=seg.speaker_raw,
                     text=seg.text,
-                    annotated_text=seg.text,
-                    tags_used=[],
-                    fishaudio_text=seg.text,
+                    annotated_text=fallback_text,
+                    tags_used=["slow"] if seg.speaker == "narrateur" else [],
+                    fishaudio_text=convert_tags_for_fishaudio(fallback_text),
                     dramatic_ref=contexts.get(seg.seg_index),
                 ))
 
@@ -340,11 +476,25 @@ def run(force: bool = False) -> Path:
 
     total_tags = sum(len(s.tags_used) for s in all_annotated)
     tagged_segments = sum(1 for s in all_annotated if s.tags_used)
+
+    # Quality check
+    diversity = _check_tag_diversity(all_annotated)
+
     print(f"[P4] Saved: {OUTPUT_ANNOTATED}")
     print(f"  Segments: {len(all_annotated)}")
     print(f"  Tagged: {tagged_segments}/{len(all_annotated)}")
     print(f"  Total tags: {total_tags}")
     print(f"  Batches: {batch_count}")
+    print(f"  Narrator quality:")
+    print(f"    Untagged narrateur: {diversity.get('untagged', '?')}")
+    print(f"    Tag diversity: {diversity.get('tag_diversity', '?')} unique tags")
+    print(f"    Consecutive same-start: {diversity.get('consecutive_same_start', '?')}")
+
+    if diversity.get("most_used"):
+        print(f"    Top tags: {diversity['most_used']}")
+
+    if diversity.get("untagged", 0) > 0:
+        print(f"  WARNING: {diversity['untagged']} narrateur segments still untagged!")
 
     return OUTPUT_ANNOTATED
 

@@ -28,11 +28,11 @@ BASE_DIR = Path(__file__).parent
 REF_DIR = BASE_DIR / "outputs" / "fishaudio_references"
 REF_DIR.mkdir(exist_ok=True, parents=True)
 
-# ── Speaker-to-voice mapping: 14 canonical speakers -> 9 cloned voices ──
+# ── Speaker-to-voice mapping: 14 canonical speakers -> 13 cloned voices ──
 
 SPEAKER_TO_VOICE: dict[CanonicalSpeaker, str] = {
     "narrateur": "v4_narrator_male_neutral",
-    "figurant": "v4_narrator_male_neutral",
+    "figurant": "v4_figurant_male_gruff",  # default figurant — overridden per raw speaker below
     "elisabeth_rousset": "v4_boule_warm_distressed",
     "comte": "v4_comte_onctuous",
     "comtesse": "v4_comtesse_cold",
@@ -45,6 +45,43 @@ SPEAKER_TO_VOICE: dict[CanonicalSpeaker, str] = {
     "carre_lamadon": "v4_cornudet_mocking",
     "soeurs": "v4_soeurs_pious",
     "officier": "v4_officier_german",
+}
+
+# ── Raw speaker name -> voice override for figurants ──
+# When p5_tts processes a figurant segment, it checks speaker_raw against this
+# map to assign a more appropriate voice than the default gruff male.
+
+FIGURANT_RAW_VOICE_OVERRIDE: dict[str, str] = {
+    # Female figurants -> warm or shrew female voice
+    "madame_follenvie": "v4_mme_loiseau_shrew",
+    "la vieille femme": "v4_figurant_female_warm",
+    "miss": "v4_figurant_female_warm",
+    "la femme": "v4_figurant_female_warm",
+    "une femme": "v4_figurant_female_warm",
+    "la bonne": "v4_figurant_female_warm",
+    "la servante": "v4_figurant_female_warm",
+    "la paysanne": "v4_figurant_female_warm",
+    # Authority male figurants -> officier-adjacent
+    "le cocher": "v4_figurant_male_gruff",
+    "le bedeau": "v4_figurant_male_gruff",
+    "le domestique": "v4_figurant_male_gruff",
+    "un domestique": "v4_figurant_male_gruff",
+    "le soldat": "v4_officier_german",
+    "un soldat": "v4_officier_german",
+    "un officier": "v4_officier_german",
+    "le capitaine": "v4_officier_german",
+    "le general": "v4_officier_german",
+    # Neutral male figurants -> light male voice
+    "l'homme": "v4_figurant_male_light",
+    "un homme": "v4_figurant_male_light",
+    "le père": "v4_figurant_male_light",
+    "Georges": "v4_figurant_male_light",
+    "un voyageur": "v4_figurant_male_light",
+    "le voyageur": "v4_figurant_male_light",
+    "le conducteur": "v4_figurant_male_gruff",
+    # Narrator-adjacent (moi = first-person narrator)
+    "moi": "v4_narrator_male_neutral",
+    "L'Anglais": "v4_figurant_male_light",
 }
 
 # ── Voice profile definitions ──
@@ -146,6 +183,51 @@ VOICE_PROFILES: dict[str, dict] = {
             "ne m'intéressent pas. Obéissez, c'est tout."
         ),
         "preset": "expressive_male_cold",
+    },
+    # ── Figurant voices (4 profiles) ──
+    "v4_figurant_male_gruff": {
+        "speakers": ["figurant_gruff"],
+        "register": "rough, working-class, direct, slightly hoarse",
+        "sample_text": (
+            "Eh ben, on n'est pas rendus avec ce temps de chien. "
+            "La route est mauvaise, les chevaux sont fatigues, "
+            "et moi j'ai faim comme un loup. "
+            "Faut espérer qu'on trouve un gîte avant la nuit."
+        ),
+        "preset": "expressive_male_neutral",
+    },
+    "v4_figurant_male_light": {
+        "speakers": ["figurant_light"],
+        "register": "neutral, younger, lighter voice, everyday speech",
+        "sample_text": (
+            "Pardon, monsieur, je ne voulais pas vous deranger. "
+            "C'est juste que j'ai entendu dire qu'on pourrait partir demain. "
+            "Vous savez si c'est vrai ? "
+            "Parce que moi, j'aimerais bien rentrer chez moi."
+        ),
+        "preset": "expressive_male_neutral",
+    },
+    "v4_figurant_female_warm": {
+        "speakers": ["figurant_female"],
+        "register": "warm, mature, everyday kindness, slightly worn",
+        "sample_text": (
+            "Venez donc vous asseoir pres du feu, vous devez avoir froid. "
+            "Je vais vous preparer un peu de soupe, ca vous rechauffera. "
+            "Avec tout ce qui se passe dehors, on a bien besoin "
+            "d'un peu de reconfort."
+        ),
+        "preset": "neutral_female",
+    },
+    "v4_figurant_female_sharp": {
+        "speakers": ["figurant_sharp"],
+        "register": "sharp, provincial, gossip-prone, judgmental",
+        "sample_text": (
+            "Vous avez vu ca, vous ? Moi je trouve que c'est un scandal. "
+            "Et dire qu'elle se permet de regarder les honnetes gens "
+            "de haut. Si j'etais a sa place, je rentrerais sous terre. "
+            "Quelle absurdite."
+        ),
+        "preset": "neutral_female",
     },
 }
 
