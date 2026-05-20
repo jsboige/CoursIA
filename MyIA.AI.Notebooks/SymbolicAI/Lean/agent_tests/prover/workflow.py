@@ -95,8 +95,29 @@ class AgentExecutor(Executor):
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
         """Run the agent with the message content, produce updated ProofMessage."""
         # Iteration cap — if we've already hit max, end the run cleanly.
+        # P1 (V5): tolerate +1 iteration if message is en-route to Director
+        # and Director budget remains. The Director is a high-value frontier
+        # LLM call (Opus 4.7 / GPT-5.5) that can break deadlocks — yielding
+        # at exactly max_iterations when a Director response is in-flight
+        # wastes the escalation budget already invested in reaching it.
+        # Forensic evidence: Demo16 CYCLE78, iter_cap fired at [+3213.3s]
+        # while Director was the designated next_agent, 2→2 no progress.
         msg.iteration += 1
-        if msg.max_iterations and msg.iteration > msg.max_iterations:
+        _director_budget_remaining = (
+            self._state
+            and hasattr(self._state, '_has_director')
+            and self._state._has_director
+            and msg.director_calls < (
+                self._state._director_max_calls
+                if hasattr(self._state, '_director_max_calls')
+                else 3
+            )
+        )
+        _over_cap = msg.max_iterations and msg.iteration > msg.max_iterations
+        _director_in_flight = (
+            msg.next_agent == "director" and _director_budget_remaining
+        )
+        if _over_cap and not _director_in_flight:
             if self._trace:
                 self._trace.log(
                     agent=self._agent.name, role="iteration_cap",
@@ -104,6 +125,14 @@ class AgentExecutor(Executor):
                 )
             await ctx.yield_output(msg)
             return
+        elif _over_cap and _director_in_flight:
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="iteration_cap_tolerated",
+                    content=(f"iter {msg.iteration} > max {msg.max_iterations} "
+                             f"but Director in-flight (calls={msg.director_calls}), "
+                             f"allowing +1"),
+                )
 
         # F12: Force Director invocation at iteration 4 (after first
         # Coordinator→Search→Tactic cycle completes). This ensures Director
@@ -176,12 +205,57 @@ class AgentExecutor(Executor):
             response = await self._agent.run(content)
             response_text = self._extract_response_text(response)
         except Exception as e:
-            response_text = f"Agent error: {e}"
-            if self._trace:
-                self._trace.log(
-                    agent=self._agent.name, role="error",
-                    content=str(e)[:200],
+            # P3 (V5): context-window overflow handler. Fast models (Critic,
+            # Search) have smaller context windows than reasoning models.
+            # When the accumulated context exceeds the window, the API
+            # returns a 400 / context_length_exceeded error. Instead of
+            # propagating the error (which stalls the workflow), truncate
+            # to the last N chars and retry once.
+            # Forensic: Demo16 CYCLE78, CriticAgent error at [+3128.2s]
+            # — full proof-state context exceeded z.ai fast-model window.
+            _err_str = str(e).lower()
+            _is_context_err = any(s in _err_str for s in (
+                "context_length", "context window", "too many tokens",
+                "maximum context", "token limit", "status 400",
+                "request_too_large",
+            ))
+            if _is_context_err:
+                # Truncate to last 4000 chars (roughly 1-2K tokens, safe
+                # for any model with ≥4K context). Preserve the tail which
+                # contains the most recent agent output and state summary.
+                _truncated = content[-4000:] if len(content) > 4000 else content
+                _trunc_header = (
+                    f"[harness] Context truncated from {len(content)} to "
+                    f"{len(_truncated)} chars due to context-window overflow. "
+                    f"Focus on the most recent state.\n\n---\n"
                 )
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="context_truncate",
+                        content=(f"context overflow, retrying with "
+                                 f"{len(_truncated)}/{len(content)} chars"),
+                    )
+                try:
+                    response = await self._agent.run(_trunc_header + _truncated)
+                    response_text = self._extract_response_text(response)
+                except Exception as e2:
+                    # Second failure — produce minimal recovery signal
+                    response_text = (
+                        "[harness] Agent failed after context truncation "
+                        f"retry: {str(e2)[:100]}. Route to next agent."
+                    )
+                    if self._trace:
+                        self._trace.log(
+                            agent=self._agent.name, role="error_retry_failed",
+                            content=str(e2)[:200],
+                        )
+            else:
+                response_text = f"Agent error: {e}"
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="error",
+                        content=str(e)[:200],
+                    )
 
         # Detect "burned response" — thinking models sometimes spend their entire
         # output budget in `reasoning_content` and emit no visible parts.
