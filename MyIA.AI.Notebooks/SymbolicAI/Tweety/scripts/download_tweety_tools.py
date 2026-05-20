@@ -85,6 +85,10 @@ EXTERNAL_DEPENDENCIES = {
         "https://repo1.maven.org/maven2/org/ow2/sat4j/org.ow2.sat4j.core/2.3.5/org.ow2.sat4j.core-2.3.5.jar",
     "args4j-2.33.jar":
         "https://repo1.maven.org/maven2/args4j/args4j/2.33/args4j-2.33.jar",
+    # Required by tweety-math ApacheCommonsSimplex (org.apache.commons.math.optimization)
+    # Note: commons-math 2.x uses group org.apache.commons, artifact commons-math (NOT commons-math3)
+    "commons-math-2.2.jar":
+        "https://repo1.maven.org/maven2/org/apache/commons/commons-math/2.2/commons-math-2.2.jar",
 }
 
 # Modules conditionnels par version
@@ -449,6 +453,22 @@ def download_spass(ext_tools_dir: Optional[pathlib.Path] = None) -> bool:
         print()
         print("    Alternatively, use the binary already included in the repository")
         print("    if you have cloned it from version control.")
+
+        # If SPASS.exe is already present, set RunAsInvoker to avoid UAC elevation (error 740)
+        spass_exe = spass_dir / "SPASS.exe"
+        if spass_exe.exists():
+            try:
+                import winreg
+                reg_path = r"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, reg_path, 0,
+                                    winreg.KEY_SET_VALUE) as key:
+                    winreg.SetValueEx(key, str(spass_exe.resolve()), 0,
+                                      winreg.REG_SZ, "~ RunAsInvoker")
+                print(f"  ✓ RunAsInvoker flag set for {spass_exe}")
+            except Exception as e:
+                print(f"  ! Could not set RunAsInvoker flag: {e}")
+                print("    Run manually in PowerShell (no elevation needed):")
+                print(f'    Set-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers" -Name "{spass_exe.resolve()}" -Value "~ RunAsInvoker"')
         return False
 
     elif system == "Linux":
