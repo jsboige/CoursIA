@@ -14,12 +14,10 @@ layout: cover
 
 <div class="text-center text-2xl mt-8 mb-4 opacity-70">INTELLIGENCE ARTIFICIELLE — III</div>
 
-<div class="grid grid-cols-1 gap-2 text-xl mt-8">
+<div class="text-xl mt-12 text-center opacity-80 leading-loose">
 
-- Logique propositionnelle
-- Logique du premier ordre
-- Planification
-- Representation des connaissances
+Logique propositionnelle — Logique du premier ordre<br>
+Planification — Representation des connaissances
 
 </div>
 
