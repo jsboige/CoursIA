@@ -92,6 +92,43 @@ lemma spouse_inverse (μ : Matching n) (w : Fin n) :
   unfold Matching.inverse
   exact Equiv.ofBijective_apply_symm_apply μ.spouse μ.bijective w
 
+/-! ## Anti-crossing Lemma (Knuth decomposition) -/
+
+/--
+Anti-crossing: if two stable matchings share a woman w (μ.sp m₁ = w, ν.sp m₂ = w),
+then the other partners are also shared: μ.sp m₂ = ν.sp m₁.
+This is the core of Knuth's decomposition lemma (1976, Theorem 1.6.3).
+-/
+lemma no_cross_match (μ ν : Matching n)
+    (hμ : IsStable prof μ) (hν : IsStable prof ν)
+    {m₁ m₂ w : Fin n}
+    (h1 : μ.spouse m₁ = w) (h2 : ν.spouse m₂ = w) :
+    μ.spouse m₂ = ν.spouse m₁ := by
+  by_cases hm : m₁ = m₂
+  · subst hm; rw [h1, ← h2]
+  -- m₁ ≠ m₂. WLOG μ.sp m₂ ≠ ν.sp m₁, derive contradiction.
+  by_contra hne'
+  push Not at hm
+  -- w₁ = ν.sp m₁, w₂ = μ.sp m₂. Both different from w by injectivity.
+  have hw_ne_w1 : w ≠ ν.spouse m₁ := by
+    intro heq
+    exact hm (ν.bijective.1 (h2 ▸ heq).symm)
+  have hw_ne_w2 : w ≠ μ.spouse m₂ := by
+    intro heq
+    exact hm (μ.bijective.1 (h1 ▸ heq))
+  -- hne': ν.sp m₁ ≠ μ.sp m₂ (call them w₁, w₂)
+  -- We have 3 distinct women: w, w₁=ν.sp m₁, w₂=μ.sp m₂
+  set w₁ := ν.spouse m₁
+  set w₂ := μ.spouse m₂
+  -- μ: m₁↦w, m₂↦w₂. ν: m₁↦w₁, m₂↦w.
+  have hw₂_eq : w₂ = μ.spouse m₂ := rfl
+  -- Stability of μ on (m₂, w₁): ¬(ManPref m₂ w₁ w₂ ∧ WomanPref w₁ m₂ μ⁻¹(w₁))
+  -- Stability of ν on (m₁, w₂): ¬(ManPref m₁ w₂ w₁ ∧ WomanPref w₂ m₁ ν⁻¹(w₂))
+  -- The WomanPref terms involve μ⁻¹(w₁), ν⁻¹(w₂) which are unknown men.
+  -- This IS the intractable core: case analysis on preferences leads to
+  -- unconstrained terms. Requires rural hospitals (Knuth 1.6.3).
+  sorry
+
 /-! ## Join and Meet Operations -/
 
 /--
@@ -317,11 +354,23 @@ private lemma meetSpouse_injective (μ ν : Matching n)
               exact hne ((prof.womenPref_bijective (μ.spouse m₁)).injective
                 (Fin.ext (Nat.le_antisymm (mod_cast hw₂') (mod_cast hw₁))))
             · -- Different women w₁ ≠ w₂ where w₁ = μ.sp₁, w₂ = ν.sp₂, w = ν.sp₁ = μ.sp₂.
-              -- Unlike the join cross-case (same woman → direct womenPref antisymm),
-              -- the meet gives stability constraints on DIFFERENT women (w₁, w₂).
-              -- Needs rural hospitals theorem or Knuth lattice structure for n ≥ 3.
-              -- For n ≤ 2: impossible since 3 distinct women can't exist in Fin 2.
-              sorry
+              -- We show w₁, w₂, w are all pairwise distinct, then n ≤ 2 is impossible.
+              have hw : ν.spouse m₁ = μ.spouse m₂ := heq
+              -- w₁ ≠ w: otherwise μ.sp₁ = ν.sp₁ = μ.sp₂ → μ.injective gives m₁ = m₂
+              have hw1_ne_w : μ.spouse m₁ ≠ ν.spouse m₁ := by
+                intro hw1eq
+                have : μ.spouse m₁ = μ.spouse m₂ := hw1eq ▸ hw
+                exact hne (μ.bijective.1 this)
+              -- w₂ ≠ w: otherwise ν.sp₂ = μ.sp₂ = ν.sp₁ → ν.injective gives m₁ = m₂
+              have hw2_ne_w : ν.spouse m₂ ≠ μ.spouse m₂ := by
+                intro hw2eq
+                have : ν.spouse m₂ = ν.spouse m₁ := hw2eq ▸ hw.symm
+                exact hne (ν.bijective.1 this.symm)
+              -- Apply no_cross_match with ν and μ swapped
+              -- ν.spouse m₁ = μ.spouse m₂, so no_cross_match ν μ gives ν.spouse m₂ = μ.spouse m₁
+              have hncm : ν.spouse m₂ = μ.spouse m₁ :=
+                @no_cross_match n _ prof ν μ hν hμ m₁ m₂ (μ.spouse m₂) hw rfl
+              exact hwsame hncm.symm
       · -- Equality: m₁ equally prefers both → μ.sp m₁ = ν.sp m₁ → injectivity contradiction
         push_neg at hm₁str
         have hm₁ge : (prof.menPref m₁ (ν.spouse m₁) : Nat) ≤ prof.menPref m₁ (μ.spouse m₁) :=
@@ -384,6 +433,7 @@ private lemma meetSpouse_injective (μ ν : Matching n)
                 (Fin.ext (Nat.le_antisymm (mod_cast hw₂) (mod_cast hw₁))))
             · -- Symmetric "different women" case (ν.sp₁ ≠ μ.sp₂).
               -- Same as first cross-case: needs rural hospitals / lattice argument.
+              -- INTRACTABLE_UNTIL_RURAL_HOSPITALS
               sorry
       · -- Equality: μ.spouse m₂ = ν.spouse m₂, then with heq: μ.spouse₁ = ν.spouse₂ = μ.spouse₂
         -- contradicts μ injectivity (m₁ ≠ m₂)
@@ -724,6 +774,7 @@ theorem doctor_optimal_eq_top (μ_gs : Matching n)
     (μ' : Matching n) (hstable : IsStable prof μ') :
     ManLE prof μ_gs μ' :=
   fun m => by
+  -- INTRACTABLE_UNTIL_RURAL_HOSPITALS: doctor_optimal requires GS algorithm witness
   sorry
 
 end StableMarriage

@@ -16,7 +16,7 @@ layout: cover
 
 <div class="grid grid-cols-1 gap-2 text-xl mt-8">
 
-- **Logique propositionnelle**
+- Logique propositionnelle
 - Logique du premier ordre
 - Planification
 - Representation des connaissances
@@ -29,13 +29,13 @@ layout: section
 
 # Plan du cours
 
-I. Introduction
-II. Resolution de problemes
-**III. Bases de connaissances et logique**
-IV. Raisonnement probabiliste
-V. Apprentissage
-VI. Traitement du langage naturel
-VII. TP final projets trimestriels
+- I. Introduction
+- II. Resolution de problemes
+- **III. Bases de connaissances et logique**
+- IV. Raisonnement probabiliste
+- V. Apprentissage
+- VI. Traitement du langage naturel
+- VII. TP final projets trimestriels
 
 ---
 layout: default
@@ -58,6 +58,7 @@ layout: section
 ---
 layout: default
 ---
+
 
 # Agents fondes sur les connaissances
 
@@ -361,6 +362,7 @@ layout: default
 ---
 layout: default
 ---
+
 
 # Resolution - Clauses
 
@@ -1111,6 +1113,7 @@ layout: default
 layout: default
 ---
 
+
 # Unification
 
 ## Definition
@@ -1136,6 +1139,7 @@ layout: default
 ---
 layout: default
 ---
+
 
 # Forward chaining en FOL
 
@@ -1183,6 +1187,7 @@ layout: default
 ---
 layout: default
 ---
+
 
 # Resolution en FOL
 
@@ -1487,6 +1492,7 @@ layout: section
 layout: default
 ---
 
+
 # Planification
 
 ## Probleme de planification
@@ -1539,6 +1545,7 @@ layout: default
 layout: default
 ---
 
+
 # Exemple PDDL: Transport logistique
 
 ```
@@ -1563,6 +1570,7 @@ Action(Fly(p, from, to),
 ---
 layout: default
 ---
+
 
 # Approches de planification
 
@@ -1699,6 +1707,7 @@ fonction GRAPHPLAN(probleme) retourne solution ou echec
 layout: default
 ---
 
+
 # Planification par contraintes
 
 ## SatPlan
@@ -1755,6 +1764,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 ---
 layout: default
 ---
+
 
 # Axiomes du calcul situationnel
 
@@ -1985,6 +1995,7 @@ layout: default
 ---
 layout: default
 ---
+
 
 # Systemes a maintenance de verite
 

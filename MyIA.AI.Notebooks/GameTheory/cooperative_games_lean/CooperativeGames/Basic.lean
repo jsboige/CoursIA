@@ -305,6 +305,7 @@ theorem bondareva_shapley_backward :
     -- If ∑ᵢ xᵢ = v(N), use ⟨x, rfl, hx.1⟩.
     -- If ∑ᵢ xᵢ > v(N), scale down: y = x - (∑ᵢ xᵢ - v(N))/n · 1 preserves coalition constraints?
     -- Actually scaling down might violate constraints. Better: use existence of minimum.
+    -- INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION
     sorry
   exact hCore
 
