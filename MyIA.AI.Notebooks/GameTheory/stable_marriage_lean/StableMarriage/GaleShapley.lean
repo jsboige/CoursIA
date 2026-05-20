@@ -91,9 +91,9 @@ theorem gale_shapley_man_optimal (prof : PrefProfile n) :
     ∃ μ : Matching n, IsManOptimal prof μ := by
   -- Attempt 1: aesop -> made no progress
   -- Attempt 2: classical (cannot synthesize witness without GS)
-  -- INTRACTABLE_UNTIL_GS_IMPL: requires man-optimal witness from GS algorithm.
+  -- INTRACTABLE_UNTIL_RURAL_HOSPITALS: requires man-optimal witness from GS algorithm.
   -- IsManOptimal quantifies over ALL stable matchings — no single witness suffices.
-  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L87
+  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L97
   sorry
 
 /--
@@ -119,9 +119,9 @@ theorem gale_shapley_woman_pessimal (prof : PrefProfile n)
   -- Attempt 2 (omega): "could not prove the goal" — non-arithmetic relation
   --   between μ.inverse and μ'.inverse
   -- Attempt 3 (Fin.le_refl): values not provably equal in general
-  -- INTRACTABLE_UNTIL_GS_IMPL: Knuth 1976 lattice duality theorem.
+  -- INTRACTABLE_UNTIL_RURAL_HOSPITALS: Knuth 1976 lattice duality theorem.
   -- Requires rural-hospitals theorem + lattice of stable matchings machinery.
-  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L114
+  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L125
   sorry
 
 end StableMarriage
