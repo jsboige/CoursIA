@@ -193,3 +193,43 @@ def audio_duration_mp3(mp3_bytes: bytes) -> float:
     if not mp3_bytes:
         return 0.0
     return len(mp3_bytes) * 8 / 192_000
+
+
+# ---------------------------------------------------------------------------
+# Batch TTS with ThreadPoolExecutor
+# ---------------------------------------------------------------------------
+
+
+def fishaudio_tts_batch(
+    requests: list[dict],
+    max_workers: int = 4,
+) -> list[bytes | None]:
+    """Synthesize multiple texts concurrently via ``POST /v1/tts``.
+
+    Parameters
+    ----------
+    requests:
+        List of payload dicts (same kwargs as :func:`fishaudio_tts`).
+    max_workers:
+        Number of concurrent threads. The FishAudio server queues
+        requests internally, so 3-4 workers saturate a single GPU well.
+
+    Returns list of audio bytes (or ``None`` for failures), same order as input.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    results: list[bytes | None] = [None] * len(requests)
+
+    def _call(idx: int, payload: dict) -> tuple[int, bytes | None]:
+        audio = fishaudio_tts(**payload)
+        return idx, audio
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {
+            pool.submit(_call, i, req): i for i, req in enumerate(requests)
+        }
+        for future in as_completed(futures):
+            idx, audio = future.result()
+            results[idx] = audio
+
+    return results
