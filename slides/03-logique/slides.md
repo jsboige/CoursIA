@@ -1730,15 +1730,12 @@ layout: default
 
 # Calcul situationnel
 
-<img src="./images/img_024.png" style="position:absolute; top:50px; right:10px; width:240px;" alt="Sequence etats Wumpus S0-S3" />
-<img src="./images/img_033.png" style="position:absolute; bottom:20px; right:20px; width:180px;" alt="Calcul situationnel branches" />
+<img src="./images/img_024.png" style="position:absolute; top:85px; right:108px; width:345px;" alt="Sequence d'etats du Wumpus S0 a S3 (Forward, Turn Right)" />
 
 <style scoped>
 .slidev-layout { font-size: 0.85em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 </style>
-
-<div style="max-width:58%;">
 
 ## Limitations de PDDL
 
@@ -1753,13 +1750,11 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 ## Etat initial
 
 - Phrase logique a propos de la situation S0
-- At(Home, S0) ET NON Have(Milk, S0) ET NON Have(Bananas, S0) ET NON Have(Drill, S0)
+- At(Home, S0) ET NON Have(Milk, S0)<br>ET NON Have(Bananas, S0) ET NON Have(Drill, S0)
 
 ## Etat but
 
-- (∃s) At(Home, s) ET Have(Milk, s) ET Have(Bananas, s) ET Have(Drill, s)
-
-</div>
+- (∃s) At(Home, s) ET Have(Milk, s)<br>ET Have(Bananas, s) ET Have(Drill, s)
 
 ---
 layout: default
@@ -1768,11 +1763,13 @@ layout: default
 
 # Axiomes du calcul situationnel
 
+<img src="./images/img_033.png" style="position:absolute; top:225px; right:40px; width:240px;" alt="Result(Result(S0,Forward),Turn(Right)) - composition de situations" />
+
 ## Preconditions -> Axiomes de Possibilite
 
 ## Operateurs: descriptions de comment le monde change
 
-- ∀(a,s) Have(Milk, Result(a,s)) <=> ((a=Buy(Milk) ET At(Grocery,s)) OU (Have(Milk, s) ET a≠Drop(Milk)))
+- ∀(a,s) Have(Milk, Result(a,s)) <=><br>((a=Buy(Milk) ET At(Grocery,s))<br>OU (Have(Milk, s) ET a≠Drop(Milk)))
 
 ## Axiomes d'action unique
 
@@ -1784,7 +1781,7 @@ layout: default
 
 ## Solution
 
-- At(Home, Result'(p, S0)) ET Have(Milk, Result'(p, S0)) ET Have(Bananas, Result'(p, S0)) ET Have(Drill, Result'(p, S0))
+- At(Home, Result'(p, S0)) ET Have(Milk, Result'(p, S0))<br>ET Have(Bananas, Result'(p, S0)) ET Have(Drill, Result'(p, S0))
 
 ---
 layout: default

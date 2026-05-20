@@ -755,3 +755,4 @@ scripts/whisper_comparison_results.json
 !MyIA.AI.Notebooks/QuantConnect/Python/best_dqn_model.pt
 !MyIA.AI.Notebooks/QuantConnect/Python/lstm_attention_sp50.pt
 !RL/stable_baseline_3_experience_replay_dqn/her_sac_parking_replay_buffer.pkl
+.playwright-mcp/
