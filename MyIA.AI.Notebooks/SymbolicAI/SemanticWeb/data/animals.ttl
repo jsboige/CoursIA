@@ -70,3 +70,7 @@ ex:buddy a ex:Dog ;
     ex:name "Buddy" ;
     ex:age 7 ;
     ex:sound "Woof woof" .
+
+ex:johnStrong a ex:Dog ;
+    ex:name "John Strong" ;
+    ex:sound "You killed my owner" .
