@@ -362,11 +362,12 @@ class TacticTools:
         # via `have h : sub := by sorry; ...` scaffolding. Replacing one big
         # sorry by two smaller sub-sorries that both compile is structural
         # progress, not a regression — the agent can then attack the smaller
-        # sorries in subsequent iterations or future sessions. 5 is a generous
-        # ceiling (deeper trees rarely help; explosive growth signals a runaway
-        # agent rather than a real strategy). Lifted from a hard cap of 0
-        # which made decomposition impossible (2026-05-11 user feedback).
-        self._decomposition_budget: int = 2
+        # Budget for decomposing 1 sorry into N sub-sorries. Each sub-sorry
+        # represents a structural step the agent must discharge later. 5 allows
+        # multi-case splits (e.g. injectivity via same/different woman parity).
+        # Lifted from 2 (2026-05-21): Lattice.lean joinSpouse_injective needs
+        # deeper decomposition; budget=2 was blocking legitimate case splits.
+        self._decomposition_budget: int = 5
         # Last file content that survived a `lake build`. May have MORE sorries
         # than the original (decomposition) but compiles. Used at end-of-session
         # to commit partial structural progress instead of restoring original
