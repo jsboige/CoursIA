@@ -25,6 +25,7 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Tactic.Common
 import StableMarriage.Definitions
 import StableMarriage.Lemmas
+import StableMarriage.Lattice
 
 namespace StableMarriage
 
@@ -91,9 +92,9 @@ theorem gale_shapley_man_optimal (prof : PrefProfile n) :
     ∃ μ : Matching n, IsManOptimal prof μ := by
   -- Attempt 1: aesop -> made no progress
   -- Attempt 2: classical (cannot synthesize witness without GS)
-  -- INTRACTABLE_UNTIL_GS_IMPL: requires man-optimal witness from GS algorithm.
+  -- INTRACTABLE_UNTIL_RURAL_HOSPITALS: requires man-optimal witness from GS algorithm.
   -- IsManOptimal quantifies over ALL stable matchings — no single witness suffices.
-  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L87
+  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L97
   sorry
 
 /--
@@ -114,14 +115,43 @@ theorem gale_shapley_woman_pessimal (prof : PrefProfile n)
     (μ' : Matching n) (h_stable : IsStable prof μ')
     (w : Fin n) :
     prof.womenPref w (μ'.inverse w) ≤ prof.womenPref w (μ.inverse w) := by
-  -- Standard duality theorem (Knuth 1976, lattice of stable matchings).
-  -- Attempt 1 (aesop): "made no progress" — no automated proof of GS duality
-  -- Attempt 2 (omega): "could not prove the goal" — non-arithmetic relation
-  --   between μ.inverse and μ'.inverse
-  -- Attempt 3 (Fin.le_refl): values not provably equal in general
-  -- INTRACTABLE_UNTIL_GS_IMPL: Knuth 1976 lattice duality theorem.
-  -- Requires rural-hospitals theorem + lattice of stable matchings machinery.
-  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L114
-  sorry
+  by_contra hgt
+  push Not at hgt
+  set m := μ.inverse w with hmdef
+  set m' := μ'.inverse w with hm'def
+  have hmw : μ.spouse m = w := spouse_inverse μ w
+  have hm'w : μ'.spouse m' = w := spouse_inverse μ' w
+  -- From man-optimality: m weakly prefers w = μ.sp m over μ'.sp m
+  have hmopt : prof.menPref m (μ.spouse m) ≤ prof.menPref m (μ'.spouse m) :=
+    h_opt.2 μ' h_stable m
+  rw [hmw] at hmopt
+  by_cases hstrict : (prof.menPref m w : Nat) < prof.menPref m (μ'.spouse m)
+  · -- m strictly prefers w over μ'.sp m
+    -- w prefers m over m' (from hgt)
+    have hwpref : prof.WomanPrefers w m m' := by
+      unfold PrefProfile.WomanPrefers
+      have : (prof.womenPref w m : Nat) < prof.womenPref w m' := by
+        change (prof.womenPref w (μ.inverse w) : Nat) < prof.womenPref w (μ'.inverse w)
+        exact mod_cast hgt
+      exact mod_cast this
+    -- (m, w) blocks μ': m prefers w to μ'.sp(m), w prefers m to m' = μ'.inv(w)
+    have hblock : IsBlockingPair prof μ' m w := by
+      refine ⟨mod_cast hstrict, ?_⟩
+      change prof.WomanPrefers w m (μ'.inverse w)
+      rw [← hm'def]
+      exact hwpref
+    exact h_stable m w hblock
+  · -- Equality: menPref m w = menPref m (μ'.sp m)
+    push Not at hstrict
+    have heq : (prof.menPref m w : Nat) = prof.menPref m (μ'.spouse m) :=
+      Nat.le_antisymm (mod_cast hmopt) hstrict
+    have hsp_eq : w = μ'.spouse m :=
+      (prof.menPref_bijective m).injective (Fin.ext heq)
+    -- μ'.sp m = w, so μ'.inv w = m
+    have hinv_eq : μ'.inverse w = m :=
+      inverse_eq_of_spouse_eq μ' m w hsp_eq.symm
+    -- But m' = μ'.inv w = m, so hgt says womenPref w m < womenPref w m — contradiction
+    rw [hm'def, hinv_eq] at hgt
+    exact Nat.lt_irrefl _ (mod_cast hgt)
 
 end StableMarriage
