@@ -1213,6 +1213,14 @@ class NotebookExecutor:
             result = self._base_executor.execute_notebook_cell_by_cell(
                 str(self.path), timeout_per_cell=timeout
             )
+            msg = (
+                f"Executed {result.executed_cells} cells: "
+                f"{result.executed_cells - result.failed_cells} OK, "
+                f"{result.failed_cells} errors"
+            )
+            if result.errors:
+                msg += f" | Details: {'; '.join(result.errors[:3])}"
+
             return NotebookExecutionResult(
                 path=str(self.path),
                 success=result.success,
@@ -1222,7 +1230,7 @@ class NotebookExecutor:
                 success_cells=result.executed_cells - result.failed_cells,
                 error_cells=result.failed_cells,
                 execution_time=result.duration,
-                message=f"Executed {result.executed_cells} cells: {result.executed_cells - result.failed_cells} OK, {result.failed_cells} errors"
+                message=msg,
             )
 
         # Fallback: minimal implementation
