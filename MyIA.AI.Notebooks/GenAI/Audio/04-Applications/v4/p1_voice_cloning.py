@@ -202,7 +202,7 @@ def generate_voice_samples(force: bool = False) -> list[VoiceReference]:
             seed=42,
             temperature=0.7,
             format="mp3",
-            timeout=120,
+            timeout=300,
         )
 
         if audio_bytes:

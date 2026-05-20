@@ -71,6 +71,29 @@ def _flatten_schema(schema: dict, defs: dict | None = None) -> dict:
     return result
 
 
+def _enforce_strict_required(schema: dict) -> dict:
+    """Ensure every object has ``required`` listing all property keys.
+
+    OpenAI strict mode requires ``required`` to be an array including every
+    key in ``properties``.  Pydantic fields with defaults are omitted from
+    ``required`` by default, so we must patch this for strict mode.
+    """
+    if schema.get("type") == "object" and "properties" in schema:
+        all_keys = list(schema["properties"].keys())
+        schema["required"] = all_keys
+
+    # Recurse into nested objects
+    for key, value in schema.items():
+        if isinstance(value, dict):
+            _enforce_strict_required(value)
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    _enforce_strict_required(item)
+
+    return schema
+
+
 def build_json_schema_response_format(name: str, schema_cls: Type[BaseModel]) -> dict:
     """Wrap a Pydantic schema into the OpenAI ``response_format`` envelope.
 
@@ -87,6 +110,9 @@ def build_json_schema_response_format(name: str, schema_cls: Type[BaseModel]) ->
     # Fall back to non-strict for schemas that use dict-like fields.
     has_nested_additional = '"additionalProperties": {' in json.dumps(flat)
     use_strict = not has_nested_additional
+
+    if use_strict:
+        _enforce_strict_required(flat)
 
     return {
         "type": "json_schema",
