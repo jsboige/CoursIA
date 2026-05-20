@@ -2,11 +2,16 @@
 
 Generates MP3 audio for each annotated segment using FishAudio S2-Pro
 with cloned voice references from P1.
+
+Uses concurrent batch processing (ThreadPoolExecutor) to saturate the
+FishAudio server and reduce generation time from ~19h (sequential) to
+~3-4h.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from dotenv import load_dotenv
 
@@ -16,6 +21,7 @@ from .fishaudio_client import (
     fishaudio_tts,
     thermal_wait,
     audio_duration_mp3,
+    fishaudio_tts_batch,
     OUTPUT_DIR,
 )
 
@@ -24,6 +30,8 @@ TTS_DIR = OUTPUT_DIR
 TTS_DIR.mkdir(exist_ok=True, parents=True)
 
 _MAX_WORDS_PER_CALL = 55
+_BATCH_SIZE = 8
+_MAX_WORKERS = 4
 
 
 def _split_long_text(text: str, max_words: int = _MAX_WORDS_PER_CALL) -> list[str]:
@@ -47,6 +55,28 @@ def _split_long_text(text: str, max_words: int = _MAX_WORDS_PER_CALL) -> list[st
     return chunks
 
 
+def _concat_audio_parts(audio_parts: list[bytes]) -> bytes:
+    """Concatenate multiple MP3 chunks into a single MP3."""
+    if len(audio_parts) == 1:
+        return audio_parts[0]
+
+    try:
+        import io
+
+        from pydub import AudioSegment
+
+        combined = AudioSegment.from_file(
+            io.BytesIO(audio_parts[0]), format="mp3"
+        )
+        for part in audio_parts[1:]:
+            combined += AudioSegment.from_file(io.BytesIO(part), format="mp3")
+        buf = io.BytesIO()
+        combined.export(buf, format="mp3", bitrate="192k")
+        return buf.getvalue()
+    except ImportError:
+        return b"".join(audio_parts)
+
+
 def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult:
     """Synthesize a single segment, handling long text by splitting."""
     reference_id = SPEAKER_TO_VOICE.get(seg.speaker, "v4_narrator_male_neutral")
@@ -67,39 +97,47 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             attempts=0,
         )
 
-    thermal_wait()
     chunks = _split_long_text(fishaudio_text)
-    audio_parts: list[bytes] = []
-    attempts = 0
 
+    # Build TTS requests for each chunk
+    tts_requests = []
     for chunk in chunks:
-        audio = fishaudio_tts(
-            text=chunk,
-            reference_id=reference_id,
-            seed=seed,
-            temperature=0.7,
-            top_p=0.9,
-            format="mp3",
-            timeout=300,
-        )
-        attempts += 1
-        if audio:
-            audio_parts.append(audio)
-        else:
-            # Retry once
+        tts_requests.append({
+            "text": chunk,
+            "reference_id": reference_id,
+            "seed": seed,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "format": "mp3",
+            "timeout": 300,
+        })
+
+    # If single chunk, use direct call
+    if len(tts_requests) == 1:
+        audio = fishaudio_tts(**tts_requests[0])
+        attempts = 1
+        if audio is None:
             thermal_wait()
-            audio = fishaudio_tts(
-                text=chunk,
-                reference_id=reference_id,
-                seed=seed,
-                temperature=0.7,
-                top_p=0.9,
-                format="mp3",
-                timeout=300,
+            audio = fishaudio_tts(**tts_requests[0])
+            attempts = 2
+        audio_parts = [audio] if audio else []
+    else:
+        # Multi-chunk: use batch for chunks
+        audio_results = fishaudio_tts_batch(tts_requests, max_workers=2)
+        attempts = len(tts_requests)
+
+        # Retry failed chunks
+        failed_indices = [i for i, a in enumerate(audio_results) if a is None]
+        if failed_indices:
+            thermal_wait()
+            retry_results = fishaudio_tts_batch(
+                [tts_requests[i] for i in failed_indices], max_workers=2
             )
-            attempts += 1
-            if audio:
-                audio_parts.append(audio)
+            attempts += len(failed_indices)
+            for j, orig_idx in enumerate(failed_indices):
+                audio_results[orig_idx] = retry_results[j]
+
+        audio_parts = [a for a in audio_results if a is not None]
 
     if not audio_parts:
         return TTSResult(
@@ -113,24 +151,7 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             attempts=attempts,
         )
 
-    # Concatenate chunks if split
-    final_audio = audio_parts[0]
-    if len(audio_parts) > 1:
-        try:
-            from pydub import AudioSegment
-            combined = AudioSegment.from_mp3(AudioSegment.from_file(
-                __import__("io").BytesIO(audio_parts[0]), format="mp3"
-            ))
-            for part in audio_parts[1:]:
-                combined += AudioSegment.from_file(
-                    __import__("io").BytesIO(part), format="mp3"
-                )
-            buf = __import__("io").BytesIO()
-            combined.export(buf, format="mp3", bitrate="192k")
-            final_audio = buf.getvalue()
-        except ImportError:
-            final_audio = b"".join(audio_parts)
-
+    final_audio = _concat_audio_parts(audio_parts)
     mp3_path.write_bytes(final_audio)
     duration = audio_duration_mp3(final_audio)
 
@@ -146,8 +167,76 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
     )
 
 
+def _synthesize_batch(
+    segments: list[tuple[AnnotatedSegment, str]],
+) -> list[TTSResult]:
+    """Process a batch of segments concurrently.
+
+    Filters out cached segments first, then dispatches uncached
+    segments to the TTS server via ThreadPoolExecutor.
+    """
+    results: dict[int, TTSResult] = {}
+
+    # Separate cached vs uncached
+    to_generate: list[tuple[int, AnnotatedSegment, str]] = []
+    for seg, text in segments:
+        reference_id = SPEAKER_TO_VOICE.get(seg.speaker, "v4_narrator_male_neutral")
+        seed = 42 + seg.seg_index
+        mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
+
+        if mp3_path.exists():
+            size = mp3_path.stat().st_size
+            duration = audio_duration_mp3(mp3_path.read_bytes()) if size > 0 else 0.0
+            results[seg.seg_index] = TTSResult(
+                seg_index=seg.seg_index,
+                speaker=seg.speaker,
+                reference_id=reference_id,
+                mp3_path=str(mp3_path),
+                duration_s=duration,
+                seed=seed,
+                status="cached",
+                attempts=0,
+            )
+        else:
+            to_generate.append((seg.seg_index, seg, text))
+
+    if not to_generate:
+        return [results[seg.seg_index] for seg, _ in segments]
+
+    # Check thermal before batch
+    thermal_wait()
+
+    # Generate uncached segments concurrently
+    def _gen(item: tuple[int, AnnotatedSegment, str]) -> TTSResult:
+        _, seg, text = item
+        return _synthesize_segment(seg, text)
+
+    with ThreadPoolExecutor(max_workers=_MAX_WORKERS) as pool:
+        futures = {pool.submit(_gen, item): item[0] for item in to_generate}
+        for future in as_completed(futures):
+            seg_idx = futures[future]
+            try:
+                results[seg_idx] = future.result()
+            except Exception as exc:
+                results[seg_idx] = TTSResult(
+                    seg_index=seg_idx,
+                    speaker="",
+                    reference_id="",
+                    mp3_path="",
+                    duration_s=0.0,
+                    seed=0,
+                    status="failed",
+                    attempts=0,
+                )
+
+    return [results[seg.seg_index] for seg, _ in segments]
+
+
 def run(force: bool = False) -> Path:
-    """Run P5 — TTS generation. Returns path to tts_results.json."""
+    """Run P5 — TTS generation with concurrent batching.
+
+    Returns path to tts_results.json.
+    """
     results_path = BASE_DIR / "outputs" / "tts_results.json"
     annotated_path = BASE_DIR / "outputs" / "annotated_v4.json"
 
@@ -161,7 +250,7 @@ def run(force: bool = False) -> Path:
         print(f"[P5] Cached: {results_path}")
         return results_path
 
-    print("[P5] Running TTS generation...")
+    print(f"[P5] Running TTS generation (batch_size={_BATCH_SIZE}, workers={_MAX_WORKERS})...")
 
     batch = AnnotatedBatch.model_validate_json(
         annotated_path.read_text(encoding="utf-8")
@@ -173,21 +262,31 @@ def run(force: bool = False) -> Path:
     cached = 0
     failed = 0
 
-    for i, seg in enumerate(batch.segments):
-        fishaudio_text = seg.fishaudio_text or seg.annotated_text or seg.text
+    # Process in batches for progress reporting
+    total = len(batch.segments)
+    for batch_start in range(0, total, _BATCH_SIZE):
+        batch_end = min(batch_start + _BATCH_SIZE, total)
+        batch_segs = [
+            (batch.segments[i], batch.segments[i].fishaudio_text
+             or batch.segments[i].annotated_text
+             or batch.segments[i].text)
+            for i in range(batch_start, batch_end)
+        ]
 
-        result = _synthesize_segment(seg, fishaudio_text)
-        results.append(result)
+        batch_results = _synthesize_batch(batch_segs)
+        results.extend(batch_results)
 
-        if result.status == "cached":
-            cached += 1
-        elif result.status == "generated":
-            generated += 1
-            if generated % 50 == 0:
-                print(f"  [P5] Progress: {generated}/{len(batch.segments)}")
-        else:
-            failed += 1
-            print(f"  [P5] FAILED seg {seg.seg_index}: {seg.speaker}")
+        for r in batch_results:
+            if r.status == "cached":
+                cached += 1
+            elif r.status == "generated":
+                generated += 1
+            else:
+                failed += 1
+
+        if generated > 0 and generated % 50 < _BATCH_SIZE:
+            print(f"  [P5] Progress: {batch_end}/{total} "
+                  f"(gen={generated}, cached={cached}, fail={failed})")
 
     results_path.write_text(
         json.dumps([r.model_dump() for r in results], indent=2, ensure_ascii=False),
