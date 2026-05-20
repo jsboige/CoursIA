@@ -20,6 +20,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [.claude/rules/pr-review-discipline.md](.claude/rules/pr-review-discipline.md) - Critères CHANGES_REQUESTED obligatoires reviewers humains+bots (section B+G)
 - [.claude/rules/anti-regression.md](.claude/rules/anti-regression.md) - Patterns red-flag, audit historique (section D)
 - [.claude/rules/notebook-conventions.md](.claude/rules/notebook-conventions.md) - Manipulation, structure pedagogique, execution kernel (section C)
+- [.claude/rules/exercise-example-labeling.md](.claude/rules/exercise-example-labeling.md) - Labeling Exemple/Exercice content-based, stop flip-flop (mandat user 2026-05-20, incidents #1214/#1336)
 - [.claude/rules/code-style.md](.claude/rules/code-style.md) - PEP 8, .NET 9.0, no emojis, langue (section E)
 - [.claude/rules/genai-config.md](.claude/rules/genai-config.md) - GenAI Docker config, GPU, .env
 - [.claude/rules/wsl-kernels.md](.claude/rules/wsl-kernels.md) - WSL pour kernels notebook (NoteBookApp Linux)
