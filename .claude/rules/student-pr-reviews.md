@@ -61,6 +61,39 @@ Si plusieurs agents commentent un meme PR etudiant (ex: `jsboigeEpita` bot breve
 - Mentionner un critere chiffre ("ce point vaut 3 points") -> fuite de la grille
 - Repondre publiquement a une question etudiant en livrant la grille ("pour la soutenance, regardez bien tel critere")
 
+## PRs de TP etudiantes — review bienveillante + bypass CI/template (mandat user 2026-05-20)
+
+Quand les etudiants soumettent leurs PRs de TP (forks de `jsboige/CoursIA` ou comptes etudiants), le standard de review **change** par rapport aux PRs internes du cluster. Source : mandat user 2026-05-20 (afflux PRs TP EPITA-IS).
+
+**Identifier une PR de TP etudiante** : auteur != agent cluster (`myia-*`) ET != staff (jsboige). Branche ne suit pas la convention `feature/`/`fix/`. Touche des notebooks de TP / exercices.
+
+### 1. Reviews bienveillantes (HARD)
+
+- **Corriger soi-meme les petits defauts** (typo, cellule oubliee, output manquant, petit bug) plutot que renvoyer l'etudiant.
+- **CHANGES_REQUESTED reserve aux VRAIS problemes** : code qui ne tourne pas du tout, TP hors-sujet, fichier essentiel manquant. **Pas de relance** pour : template incomplet, CI rouge, style, `execution_count` manquant, formatage, scaffolding.
+- Format = points forts + signalement **factuel** des manques (cf "Reviews publiques autorisees"). Toujours : **pas de fuite questions soutenance** (regle HARD ci-dessus reste valable).
+
+### 2. Bypass modele de PR + CI (mandat user)
+
+Les etudiants sont freines par le template PR (checklist 5 points) et les checks CI (`notebook-execution-required`, `catalog-drift`). Pour une PR de TP etudiante :
+
+- Le **template peut rester vide / non coche** — ne pas exiger qu'il soit rempli.
+- Les **checks CI peuvent etre rouges** — `notebook-execution-required` (exec_count/outputs/C.1) et `catalog-drift` ciblent la discipline des contributeurs internes, **pas les etudiants**.
+- **Merge** : ai-01 (coordinateur) merge via `gh auth switch -u jsboige` + `gh pr merge <N> --admin --squash` (l'admin override bypasse les required checks rouges), apres une review bienveillante. Ne pas bloquer un TP correct sur un CI rouge de scaffolding.
+
+### 3. Workflow exercices -> exemples (inchange)
+
+Le workflow pedagogique reste : un exercice resolu/soumis **devient un exemple**, et de **nouveaux exercices sont ajoutes a la suite**. Classification par contenu (cf [exercise-example-labeling.md](exercise-example-labeling.md)). Ne jamais stubber une solution etudiante soumise ni purger les exemples existants.
+
+### 4. Cooperation des 2 bots reviewers (HARD)
+
+Sur une PR etudiante, **@clusterManager-Myia** (reviewer principal) et **@jsboige self-bot** doivent coordonner :
+
+- **Une seule review publique breve** par PR (points forts). Pas de double review redondante ni contradictoire (incident 2026-05-17).
+- **clusterManager-Myia** : NE PAS appliquer les criteres CHANGES_REQUESTED A-G de [pr-review-discipline.md](pr-review-discipline.md) aux PRs etudiantes (ils visent les PRs internes/contributeurs). Sur PR etudiante : review bienveillante uniquement.
+- **jsboige self-bot** : reste en COMMENTED, ne duplique pas la review de clusterManager-Myia.
+- En cas de doute sur qui poste : coordination dashboard workspace CoursIA **avant** de commenter.
+
 ## Precedents associes
 
 - **2026-04-20** (`feedback_commits_solutions_discrets`) : les titres de commits/PRs ne doivent PAS mentionner "solutions" / "answer" / "leak". Cette regle etend la prudence aux comments PR.
