@@ -31,7 +31,7 @@ TTS_DIR.mkdir(exist_ok=True, parents=True)
 
 _MAX_WORDS_PER_CALL = 55
 _BATCH_SIZE = 8
-_MAX_WORKERS = 3
+_MAX_WORKERS = 1  # FishAudio S2-Pro is single-threaded; concurrent requests cause timeouts
 
 
 def _resolve_voice(seg: AnnotatedSegment) -> str:
