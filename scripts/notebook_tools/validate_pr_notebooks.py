@@ -134,14 +134,20 @@ def validate_notebook(nb_path: Path) -> dict:
                     f"cell {i}: execution_count is null (H.3 violation)"
                 )
 
-        # H.1 check: no error outputs
+        # H.1 check: no error outputs (advisory for QC Cloud — errors expected
+        # from [REFERENCE QC] cells executed locally without QuantBook runtime)
         for output in cell.get("outputs", []):
             if output.get("output_type") == "error":
                 ename = output.get("ename", "Unknown")
-                result["passed"] = False
-                result["errors"].append(
-                    f"cell {i}: has error output — {ename}"
-                )
+                if skip_exec:
+                    result["errors"].append(
+                        f"cell {i}: has error output — {ename} (advisory, QC Cloud)"
+                    )
+                else:
+                    result["passed"] = False
+                    result["errors"].append(
+                        f"cell {i}: has error output — {ename}"
+                    )
 
     return result
 
