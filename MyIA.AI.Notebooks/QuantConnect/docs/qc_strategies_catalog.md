@@ -1,8 +1,9 @@
 # QuantConnect Strategies Catalog
 
-**Updated**: 2026-05-04 | **Source**: QC Cloud API + catalog_enrichment.json
+**Updated**: 2026-05-19 | **Source**: QC Cloud API + catalog_enrichment.json + Curriculum V2 Meta-Analysis
 **Total ALIVE projects**: 96 (22 DEAD/SUPERSEDED deleted 03/05)
 **Reference**: [AUDIT_QC_CLOUD.md](audits/AUDIT_QC_CLOUD.md) for full classification
+**Curriculum V2**: [Curriculum_V2_Meta_Analysis.md](../ML-Training-Pipeline/docs/Curriculum_V2_Meta_Analysis.md) for full methodology + stage results
 
 ## Top Performers (Sharpe > 0.8)
 
@@ -297,6 +298,39 @@ To verify each strategy via QC MCP:
 4. create_backtest(projectId, compileId, "name") -> backtestId
 5. read_backtest(projectId, backtestId) -> statistics
 ```
+
+## Curriculum V2 ML Training Results (2026-05-16)
+
+Walk-forward 5-fold expanding, OOS 2027 strict, multi-seed block bootstrap (22-day blocks), seeds [0,1,7,42] + extended [99,123,456,789], tx costs 10bps rebalance + 50bps stress. Anti-FAANG/Mag7 universe (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP).
+
+### KEEPERS V2 (validated, portfolio-ready)
+
+| Strategy | Delta Sharpe | Seeds | Extended Seeds | MaxDD | Edge |
+|----------|-------------|-------|----------------|-------|------|
+| S3 HMM Regime Daily | +0.669 | 4/4 (p=0.0039) | 4/4 BEATS (Sharpe 1.34/1.26/1.46/1.38) | -39.1% | 8+ sigma |
+| S4 v2 Regime+Ridge | +0.325 | 4/4 (p=0.0625) | — | -17.7% | robust |
+| M12 HAR-RV-J | p=0.0015 | 56/84 positive | — | — | vol forecasting signal |
+| M15 LSTM h=32 | p=0.0107 | 53/84 positive | — | — | 22-66 day horizons |
+
+**Recommended portfolio**: S3 HMM regime detection + S4 v2 inverse-vol Ridge, monthly rebalance, Sharpe ~1.12 (vs 0.80 equal-weight), MaxDD -17.7%.
+
+### NO BEATS (closed)
+
+| Stage | Delta | Seeds | Why |
+|-------|-------|-------|-----|
+| S2 Ensemble DM | -0.068 | 0/4 | Ensemble adds noise, not signal |
+| S2 GSP Cross-Asset | — | — | MSE improves but no Sharpe translation |
+| S5 LASSO Stop-Loss | -0.311 | 0/4 | Trailing stops destroy value in bull market |
+| S7 Composite | -0.006 | 1/4 | Redundant signal layers, gate never triggers |
+| S8 Trend Long-Horizon | +0.12 | — | AUC 0.61 too weak after tx costs |
+| M15 Annual Long-Horizon | p=0.125 | 3/84 | Insufficient data (hourly bars) |
+
+### Key Lessons
+
+- **dir_acc != edge**: 93% directional accuracy but -0.4 Sharpe on crypto
+- **MSE != Sharpe**: Better vol forecasts don't guarantee better returns
+- **Simple > complex**: 2-state HMM + Ridge beats multi-layer composite
+- **Curriculum V2 gate: FERMEE** — all stages tested, no further stages planned
 
 ## Source Attribution
 

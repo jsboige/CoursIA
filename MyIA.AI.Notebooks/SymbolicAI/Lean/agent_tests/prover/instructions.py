@@ -261,35 +261,84 @@ def load_reference_docs(project: str = "stable_marriage", max_chars: int = 6000)
     return summary
 
 
+def load_proved_lemmas(target_file: str, max_lemmas: int = 30) -> str:
+    """Scan a .lean file for theorem/lemma declarations that are NOT sorry.
+
+    Returns a compact list of proved lemma signatures so the Director can
+    reference them when proposing strategies. Skips sorry stubs and comments.
+    """
+    import os
+    if not target_file or not os.path.isfile(target_file):
+        return ""
+    with open(target_file, encoding="utf-8") as fh:
+        lines = fh.readlines()
+    proved = []
+    i = 0
+    while i < len(lines) and len(proved) < max_lemmas:
+        stripped = lines[i].lstrip()
+        if stripped.startswith(("theorem ", "lemma ")):
+            # Collect the declaration header (may span multiple lines)
+            sig = lines[i].rstrip()
+            j = i + 1
+            while j < len(lines) and ":=" not in sig and j - i < 10:
+                sig += " " + lines[j].strip()
+                j += 1
+            # Look ahead for "sorry" as the proof body, skipping comments
+            is_sorry = False
+            for k in range(j, min(j + 15, len(lines))):
+                bline = lines[k].strip()
+                if not bline or bline.startswith("--"):
+                    continue  # skip blank lines and comments
+                if bline == "sorry" or bline.startswith("sorry ") or "by sorry" in bline:
+                    is_sorry = True
+                    break
+                # Non-comment, non-sorry line = proof body exists
+                break
+            if not is_sorry:
+                name = stripped.split()[1].rstrip("(").strip() if len(stripped.split()) > 1 else ""
+                if name and name not in [p for p in proved]:
+                    proved.append(name)
+        i += 1
+    if not proved:
+        return ""
+    return "Proved lemmas available in target file: " + ", ".join(proved)
+
+
 def augment_instructions(
     base: str,
     goal: str = "",
     max_chars: int = 3000,
     include_references: bool = False,
     project: str = "stable_marriage",
+    target_file: str = "",
 ) -> str:
     """Prepend ProofKnowledgeBase context to any agent's instructions.
 
     If `include_references` is True, also prepend the committed reference docs for
-    `project` (issue #1081 Part 2). Default is False so existing call sites are
-    unaffected.
+    `project` (issue #1081 Part 2). If `target_file` is given, inject proved lemmas
+    from the target file so the Director can reference them.
     """
     from .knowledge import ProofKnowledgeBase
     kb = ProofKnowledgeBase()
     context = kb.generate_prover_context(goal=goal, max_chars=max_chars)
 
     references = load_reference_docs(project) if include_references else ""
+    proved_lemmas = load_proved_lemmas(target_file) if target_file else ""
 
     # Reco 3: inject proven_successful_tactics from KB for goal-pattern matching.
     proven_tactics = kb.proven_successful_tactics() if hasattr(kb, "proven_successful_tactics") else ""
 
-    if not context.strip() and not references.strip() and not proven_tactics.strip():
+    if not context.strip() and not references.strip() and not proven_tactics.strip() and not proved_lemmas.strip():
         return base
 
     blocks: list[str] = []
     if references.strip():
         blocks.append(
             f"# REFERENCE DOCS (committed shared state — issue #1081)\n{references}"
+        )
+    if proved_lemmas.strip():
+        blocks.append(
+            f"# PROVED LEMMAS IN TARGET FILE (use these in your approach)\n{proved_lemmas}"
         )
     if context.strip():
         blocks.append(

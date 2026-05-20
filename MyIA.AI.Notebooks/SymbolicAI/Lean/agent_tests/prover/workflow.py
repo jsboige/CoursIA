@@ -68,6 +68,11 @@ class ProofMessage:
     # Director (Track C): counts how many times the DirectorAgent has been
     # consulted this session. Capped at 3 to avoid budget burn.
     director_calls: int = 0
+    # B2a (issue #1224): identifiers the Director flagged as absent from
+    # Mathlib / the current project. TacticAgent receives a warning to NOT
+    # try these identifiers. Populated by AgentExecutor after DirectorAgent
+    # runs; consumed when TacticAgent receives the message.
+    absent_identifiers: list = None
 
 
 class AgentExecutor(Executor):
@@ -90,8 +95,29 @@ class AgentExecutor(Executor):
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
         """Run the agent with the message content, produce updated ProofMessage."""
         # Iteration cap — if we've already hit max, end the run cleanly.
+        # P1 (V5): tolerate +1 iteration if message is en-route to Director
+        # and Director budget remains. The Director is a high-value frontier
+        # LLM call (Opus 4.7 / GPT-5.5) that can break deadlocks — yielding
+        # at exactly max_iterations when a Director response is in-flight
+        # wastes the escalation budget already invested in reaching it.
+        # Forensic evidence: Demo16 CYCLE78, iter_cap fired at [+3213.3s]
+        # while Director was the designated next_agent, 2→2 no progress.
         msg.iteration += 1
-        if msg.max_iterations and msg.iteration > msg.max_iterations:
+        _director_budget_remaining = (
+            self._state
+            and hasattr(self._state, '_has_director')
+            and self._state._has_director
+            and msg.director_calls < (
+                self._state._director_max_calls
+                if hasattr(self._state, '_director_max_calls')
+                else 3
+            )
+        )
+        _over_cap = msg.max_iterations and msg.iteration > msg.max_iterations
+        _director_in_flight = (
+            msg.next_agent == "director" and _director_budget_remaining
+        )
+        if _over_cap and not _director_in_flight:
             if self._trace:
                 self._trace.log(
                     agent=self._agent.name, role="iteration_cap",
@@ -99,6 +125,32 @@ class AgentExecutor(Executor):
                 )
             await ctx.yield_output(msg)
             return
+        elif _over_cap and _director_in_flight:
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="iteration_cap_tolerated",
+                    content=(f"iter {msg.iteration} > max {msg.max_iterations} "
+                             f"but Director in-flight (calls={msg.director_calls}), "
+                             f"allowing +1"),
+                )
+
+        # F12: Force Director invocation at iteration 4 (after first
+        # Coordinator→Search→Tactic cycle completes). This ensures Director
+        # is consulted even when the Coordinator times out or fails to call
+        # request_director_guidance on its own (root cause of T1 forensic
+        # finding: Coordinator GLM-5.1 timeout → workflow degraded to
+        # Search→Tactic loop, Director never reached).
+        if (msg.iteration == 4
+                and msg.director_calls == 0
+                and self._state
+                and hasattr(self._state, '_has_director')
+                and self._state._has_director):
+            msg.next_agent = "director"
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="force_director",
+                    content="iter 4 reached, forcing Director consultation",
+                )
 
         if self._trace:
             self._trace.log(
@@ -113,6 +165,27 @@ class AgentExecutor(Executor):
             plan_header += "\n".join(f"  {i+1}. {step}" for i, step in enumerate(msg.plan))
             plan_header += "\n\n---\n"
             content = plan_header + content
+
+        # B2a (issue #1224): Inject absent-identifier warning for TacticAgent.
+        # When the Director flagged identifiers as absent, TacticAgent must
+        # NOT try `exact <absent_id>` — it will always produce "unknown
+        # identifier". This prevents the Director→Tactic gap where the
+        # Director says "X doesn't exist" but TacticAgent still tries X.
+        if (msg.absent_identifiers
+                and self._agent.name == "TacticAgent"):
+            warning = (
+                "WARNING — ABSENT IDENTIFIERS (Director-confirmed). "
+                "Do NOT use these in any tactic; they do not exist in "
+                "Mathlib or the current project:\n"
+            )
+            for ident in msg.absent_identifiers:
+                warning += f"  - {ident}\n"
+            warning += (
+                "If the Director suggested a tactic using any of these, "
+                "you must find an alternative identifier or decompose the "
+                "goal differently.\n\n---\n"
+            )
+            content = warning + content
 
         # NOTE: do NOT wrap `agent.run` in `asyncio.wait_for`. The framework's
         # AgentTelemetryLayer sets/resets a ContextVar Token internally; running
@@ -132,12 +205,57 @@ class AgentExecutor(Executor):
             response = await self._agent.run(content)
             response_text = self._extract_response_text(response)
         except Exception as e:
-            response_text = f"Agent error: {e}"
-            if self._trace:
-                self._trace.log(
-                    agent=self._agent.name, role="error",
-                    content=str(e)[:200],
+            # P3 (V5): context-window overflow handler. Fast models (Critic,
+            # Search) have smaller context windows than reasoning models.
+            # When the accumulated context exceeds the window, the API
+            # returns a 400 / context_length_exceeded error. Instead of
+            # propagating the error (which stalls the workflow), truncate
+            # to the last N chars and retry once.
+            # Forensic: Demo16 CYCLE78, CriticAgent error at [+3128.2s]
+            # — full proof-state context exceeded z.ai fast-model window.
+            _err_str = str(e).lower()
+            _is_context_err = any(s in _err_str for s in (
+                "context_length", "context window", "too many tokens",
+                "maximum context", "token limit", "status 400",
+                "request_too_large",
+            ))
+            if _is_context_err:
+                # Truncate to last 4000 chars (roughly 1-2K tokens, safe
+                # for any model with ≥4K context). Preserve the tail which
+                # contains the most recent agent output and state summary.
+                _truncated = content[-4000:] if len(content) > 4000 else content
+                _trunc_header = (
+                    f"[harness] Context truncated from {len(content)} to "
+                    f"{len(_truncated)} chars due to context-window overflow. "
+                    f"Focus on the most recent state.\n\n---\n"
                 )
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="context_truncate",
+                        content=(f"context overflow, retrying with "
+                                 f"{len(_truncated)}/{len(content)} chars"),
+                    )
+                try:
+                    response = await self._agent.run(_trunc_header + _truncated)
+                    response_text = self._extract_response_text(response)
+                except Exception as e2:
+                    # Second failure — produce minimal recovery signal
+                    response_text = (
+                        "[harness] Agent failed after context truncation "
+                        f"retry: {str(e2)[:100]}. Route to next agent."
+                    )
+                    if self._trace:
+                        self._trace.log(
+                            agent=self._agent.name, role="error_retry_failed",
+                            content=str(e2)[:200],
+                        )
+            else:
+                response_text = f"Agent error: {e}"
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="error",
+                        content=str(e)[:200],
+                    )
 
         # Detect "burned response" — thinking models sometimes spend their entire
         # output budget in `reasoning_content` and emit no visible parts.
@@ -218,6 +336,36 @@ class AgentExecutor(Executor):
                     agent="DirectorAgent", role="director_call",
                     content=f"director call {msg.director_calls}/3",
                 )
+
+            # B2a (issue #1224): Parse Director output for identifiers the
+            # Director explicitly flags as absent. Pattern examples:
+            #   "identifier X doesn't exist"
+            #   "X is absent from Mathlib"
+            #   "X not found"
+            #   "Mathlib doesn't have X"
+            # Store them so TacticAgent gets a warning to NOT try them.
+            import re as _re
+            _absent_patterns = [
+                r"identifier\s+(\S+)\s+(?:doesn'?t|does not)\s+exist",
+                r"(\S+)\s+is\s+absent\s+from\s+Mathlib",
+                r"(\S+)\s+not\s+found(?:\s+in\s+Mathlib)?",
+                r"Mathlib\s+(?:doesn'?t|does not)\s+have\s+(\S+)",
+                r"no\s+lemma\s+(?:called\s+)?['\"]?(\S+?)['\"]?",
+                r"(\S+)\s+is\s+not\s+in\s+Mathlib",
+            ]
+            absent = []
+            for pat in _absent_patterns:
+                for m in _re.finditer(pat, response_text, _re.IGNORECASE):
+                    ident = m.group(1).strip("`'\".,;:)")
+                    if ident and ident not in absent and len(ident) < 60:
+                        absent.append(ident)
+            if absent:
+                msg.absent_identifiers = absent
+                if self._trace:
+                    self._trace.log(
+                        agent="DirectorAgent", role="absent_identifiers",
+                        content=f"flagged absent: {absent}",
+                    )
 
         # F5: Coordinator can mark the current sorry intractable. End the
         # session cleanly so we don't waste iterations on a known-dead goal.
@@ -330,6 +478,14 @@ class VerifyExecutor(Executor):
         # now hard-coded into F1 routing.
         self._has_director = has_director
         self._director_max_calls = director_max_calls
+        # B2c (issue #1224): cumulative fail counter that NEVER resets on
+        # decomposition. The existing _consecutive_build_fails resets to 0
+        # when TacticAgent submits a decomposition, which means the Director
+        # escalation threshold is never reached in sessions with many
+        # decompositions. This counter keeps climbing and triggers Director
+        # re-escalade after _cumulative_fails_threshold fails regardless.
+        self._cumulative_fails = 0
+        self._cumulative_fails_threshold = 5
         # Re-search trigger: after this many total fails, force a hint to
         # the Critic that fresh lemmas may be needed. The Critic still makes
         # the routing decision, but the hint makes re-search more likely.
@@ -438,6 +594,7 @@ class VerifyExecutor(Executor):
             if not is_probe_error:
                 self._consecutive_build_fails += 1
                 self._total_fails += 1
+                self._cumulative_fails += 1  # B2c: never resets
             elif self._trace:
                 self._trace.log(
                     agent="VerifyExecutor", role="probe_filter",
@@ -471,6 +628,37 @@ class VerifyExecutor(Executor):
                                  f"{self._director_max_calls})"),
                     )
                 self._consecutive_build_fails = 0
+            # B2c (issue #1224): cumulative fail re-escalade. Decompositions
+            # reset _consecutive_build_fails to 0, which means the F1
+            # escalation threshold (default 5) is never reached when the
+            # prover alternates between decompositions and build-fails. This
+            # counter never resets and forces Director re-escalade at a fixed
+            # threshold. This fires ONLY if the other escalation paths haven't
+            # already triggered (wallclock or consecutive).
+            elif (self._cumulative_fails >= self._cumulative_fails_threshold
+                    and self._has_director
+                    and msg.director_calls < self._director_max_calls):
+                msg.next_agent = "director"
+                msg.error = (
+                    f"[B2c cumulative re-escalade -> Director] "
+                    f"{self._cumulative_fails} cumulative BUILD-FAIL "
+                    f"(consecutive was reset to {self._consecutive_build_fails} "
+                    f"by decompositions). Forcing Director invocation. "
+                    f"Last error: {msg.error}"
+                )
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="b2c_cumulative_escalation",
+                        content=(f"cumulative_fails={self._cumulative_fails} >= "
+                                 f"threshold={self._cumulative_fails_threshold}, "
+                                 f"consecutive={self._consecutive_build_fails} "
+                                 f"(reset by decomp), forcing Director "
+                                 f"(calls={msg.director_calls}/"
+                                 f"{self._director_max_calls})"),
+                    )
+                self._consecutive_build_fails = 0
+                # Reset cumulative so we don't re-trigger immediately
+                self._cumulative_fails = 0
             elif self._consecutive_build_fails >= self._escalation_threshold:
                 # F1: deterministic escalation. Critic prompt heuristics
                 # aren't reliable enough — when the same sorry_line has

@@ -229,7 +229,9 @@ class MultiAgentSorryProver:
         director_agent = None
         if self.director_provider:
             try:
-                director_agent = create_director_agent(provider=self.director_provider)
+                director_agent = create_director_agent(provider=self.director_provider,
+                                                        target_file=filepath)
+                state._has_director = True  # F12: signal to workflow force-invocation
                 print(f"  [DIRECTOR] enabled provider={self.director_provider}")
             except Exception as e:
                 print(f"  [DIRECTOR] FAILED to create: {e}")
@@ -982,11 +984,27 @@ class AutonomousProver:
         total_s = (datetime.now() - state.start_time).total_seconds()
         final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
 
-        # Restore best state if worse
+        # Restore best state if worse — but validate first (P2, V5).
+        # best_content was captured when sorry decreased AND build passed,
+        # but intermediate edits or merge artifacts can corrupt it. Without
+        # validation, we restore a non-compiling file and the final verify
+        # may not catch it (only runs when final_sorry < original).
+        # Forensic: Demo16 CYCLE78, best_state restore produced 2→2 but
+        # build FAILED — the 2-sorry state was an earlier broken snapshot.
         if tactic_tools.best_content and tactic_tools.best_sorry_count < final_sorry:
-            print(f"  Restoring best ({tactic_tools.best_sorry_count} vs {final_sorry})")
+            print(f"  Validating best state ({tactic_tools.best_sorry_count} vs {final_sorry})...",
+                  flush=True)
             Path(filepath).write_text(tactic_tools.best_content, encoding="utf-8")
-            final_sorry = tactic_tools.best_sorry_count
+            _validate_result = json.loads(tactic_tools.compile())
+            if _validate_result.get("success", False):
+                final_sorry = tactic_tools.best_sorry_count
+                print(f"  Best state validated (build OK, sorry={final_sorry})", flush=True)
+            else:
+                _v_errs = _validate_result.get("error_count", "?")
+                print(f"  Best state FAILED build ({_v_errs} errors). "
+                      f"Falling back to original.", flush=True)
+                Path(filepath).write_text(original_file_content, encoding="utf-8")
+                final_sorry = original_sorry_count
 
         # Always restore original if no improvement — prevent file corruption
         if final_sorry >= original_sorry_count:

@@ -634,30 +634,20 @@ DEMOS = {
     15: {
         "name": "GALESHAPLEY_STABLE",
         "file": str(GALESHAPLEY_FILE),
-        "line": 73,
+        "line": 64,  # was L73, shifted after gsFinalMatching insertion
         "sorry_type": "sorry_replacement",
         "theorem_name": "gale_shapley_stable",
         "theorem": "gale_shapley_stable",
         "imports": GALESHAPLEY_IMPORTS,
         "description": (
-            "Replace sorry at L73 of GaleShapley.lean.\n"
-            "Prove gale_shapley_stable: for any preference profile,\n"
-            "there exists a stable matching.\n"
-            "Strategy: provide gsGaleShapley as constructive witness,\n"
-            "then prove IsStable via no-blocking-pair argument.\n"
-            "Key invariants (already stubbed in Lemmas.lean):\n"
-            "  - GSConsistent.runSteps: final matching is consistent\n"
-            "  - menProposedDownward.runSteps: men proposed in pref order\n"
-            "  - womenBestState.runSteps: women keep best proposal\n"
-            "  - menMatchedProposed.runSteps: matched men proposed\n"
-            "Reference: mmaaz-git/stable-marriage-lean Properties.lean\n"
-            "  galeShapley_noBlockingPairs uses menProposedDownwardState +\n"
-            "  womenBestState + menMatchedProposedState to derive\n"
-            "  contradiction from any blocking pair.\n"
-            "Our type system: total bijections (no `acceptable` filter).\n"
+            "PROVED (PR #1194, 2026-05-16). Do NOT target.\n"
+            "Originally: gale_shapley_stable proved via gsFinalMatching\n"
+            "+ gsAllWomenMatched + gsNoBlockingPairs (6-step contradiction).\n"
             "LEAN_PROJECT must be overridden to stable_marriage_lean."
         ),
         "difficulty": "very_hard",
+        "proved": True,
+        "proved_pr": 1194,
     },
     16: {
         "name": "GALESHAPLEY_MAN_OPTIMAL",
@@ -1100,4 +1090,14 @@ DEMOS = {
             "  sorry  -- TODO: complete trichotomy argument"
         ),
     },
+}
+
+# DEMOS already proved — the prover MUST NOT target these. Lemmas.lean has
+# 0 sorry (all proved 2026-05-15/16), so DEMOS 18-28 are stale. DEMO 15
+# (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
+# whose key appears in this set.
+PROVED_DEMOS = {
+    15,  # gale_shapley_stable (PR #1194)
+    # 18-28: all Lemmas.lean entries (GSConsistent, menProposed, womenBest, etc.)
+    18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
 }

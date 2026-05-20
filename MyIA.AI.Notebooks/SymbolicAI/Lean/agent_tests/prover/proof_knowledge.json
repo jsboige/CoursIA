@@ -4207,6 +4207,53 @@
       "commit": "mined (history Voting_c94c6e6ddb_L355)",
       "session": "4fa66bc7",
       "notes": "Sister lemma to sorted_mergeSort; index both together."
+    },
+    "gsFinalMatching": {
+      "file": "stable_marriage_lean/StableMarriage/Lemmas.lean:782",
+      "goal": "Matching.bijective (gsFinalMatching prof σ hall hcon) — injective + surjective from partial GSMatching",
+      "tactic_chain": [
+        "constructor",
+        "injective: intro m₁ m₂ heq; gsSpouse_spec both; rw [heq]; hcon.mp for womenMatch; Option.some.inj symm.trans",
+        "surjective: intro w; gsAllWomenMatched for existence; obtain ⟨m, hm⟩; hcon.mpr for menMatch m = some w; gsSpouse_spec + Option.some.inj"
+      ],
+      "commit": "23e41056",
+      "session": "PR #1194 (2026-05-16)",
+      "notes": "Partial→total matching conversion. Injectivity via GSConsistency (menMatch/womenMatch agree). Surjectivity via gsAllWomenMatched (pigeonhole). Key: gsSpouse_spec links Classical.choose to actual menMatch values."
+    },
+    "gsAllWomenMatched": {
+      "file": "stable_marriage_lean/StableMarriage/Lemmas.lean:748",
+      "goal": "∀ w, μ.womenMatch w ≠ none — all women matched when all men matched + consistent",
+      "tactic_chain": [
+        "by_contra hnone",
+        "hNoMan: ∀ m, μ.menMatch m ≠ some w (consistency + hnone)",
+        "hMap: ∀ m, ∃ w' ≠ w, μ.menMatch m = some w' (hall + hNoMan)",
+        "let f : Fin n → {w' // w' ≠ w} := Classical.choose extraction",
+        "hf : Injective f (consistency → Option.some.inj)",
+        "Fintype.card_le_of_injective f hf",
+        "Fintype.card_lt_of_injective_of_notMem (strict subset)",
+        "omega (cardinality contradiction)"
+      ],
+      "commit": "23e41056",
+      "session": "PR #1194 (2026-05-16)",
+      "notes": "Pigeonhole principle: injection Fin n → {w' ≠ w} impossible since |{w' ≠ w}| < n. Classical.choose + consistency proves injectivity. Reusable pattern for any 'all matched' result on finite types."
+    },
+    "gsNoBlockingPairs": {
+      "file": "stable_marriage_lean/StableMarriage/Lemmas.lean:834",
+      "goal": "¬ IsBlockingPair prof μ m w — GS output has no blocking pairs",
+      "tactic_chain": [
+        "intro hblock; obtain ⟨hmpref, hwpref⟩",
+        "Step 1: gsSpouse_spec → menMatch m = some (μ.spouse m)",
+        "Step 2: hmatch_prop → m proposed to μ.spouse m",
+        "Step 3: hdown → m proposed to w (downward closure + blocking pref)",
+        "Step 4: hwp → womenMatch w ≠ none; obtain mW",
+        "Step 5: hbest → womenPref w mW ≤ womenPref w m",
+        "Step 6: hcon → μ.inverse w = mW (consistency + Equiv.ofBijective_symm)",
+        "rw [hwinv] at hwpref → womenPref w m < womenPref w mW",
+        "mod_cast both to Nat; omega (≤ and < contradiction)"
+      ],
+      "commit": "23e41056",
+      "session": "PR #1194 (2026-05-16)",
+      "notes": "6-step contradiction chain: blocking pair → m proposed to w → w matched to mW → womenBest gives mW ≤ m → but blocking says m < mW → impossible. Key mod_cast pattern for Fin n preference comparison → Nat → omega."
     }
   },
   "wall_clock_burn_patterns": {
