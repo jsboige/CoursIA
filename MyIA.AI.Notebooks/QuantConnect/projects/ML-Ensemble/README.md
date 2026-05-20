@@ -1,0 +1,25 @@
+# ML-Ensemble
+
+**Asset class:** Template (no active strategy)
+**Cloud project ID:** None (local only)
+
+## Description
+
+Template/skeleton project for ensemble ML strategies. Contains basic framework for combining multiple ML models.
+
+## How to Run
+
+**Lean CLI:**
+
+
+**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+
+## Backtest Metrics
+
+| Metric | Value |
+|--------|-------|
+| Status | Template/skeleton (no active strategy) |
+
+## Files
+
+- main.py - Template structure

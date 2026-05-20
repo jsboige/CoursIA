@@ -31,7 +31,8 @@ class RegimeSwitching(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2008, 1, 1)
+        self.set_start_date(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
         # Universe (IEF replaces TLT - better risk-off 2015-2026)

@@ -1,0 +1,158 @@
+name: Lean Game Theory CI
+
+# CI for stable_marriage_lean and cooperative_games_lean.
+# Tracks sorry count in certified modules and runs lake build.
+# Rule B (PR review): sorry count must not increase on certified modules.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/lean-toolchain'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-sorry-stable-marriage:
+    name: "Sorry check (stable_marriage_lean)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/stable_marriage_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Count sorry in stable_marriage_lean
+      run: |
+        echo "=== Sorry inventory for stable_marriage_lean ==="
+        SORRY_TOTAL=0
+        KNOWN_INTRACTABLE=5
+        for f in StableMarriage/GaleShapley.lean StableMarriage/Lemmas.lean StableMarriage/GSState.lean StableMarriage/Lattice.lean; do
+          if [ -f "$f" ]; then
+            COUNT=$(grep -c "sorry" "$f" || true)
+            echo "  $f: $COUNT sorry"
+            SORRY_TOTAL=$((SORRY_TOTAL + COUNT))
+          fi
+        done
+        echo ""
+        echo "Total sorry: $SORRY_TOTAL"
+        echo "Known intractable baseline: $KNOWN_INTRACTABLE"
+        if [ "$SORRY_TOTAL" -gt "$KNOWN_INTRACTABLE" ]; then
+          echo ""
+          echo "FAIL: sorry count ($SORRY_TOTAL) exceeds known intractable baseline ($KNOWN_INTRACTABLE)"
+          echo "New sorrys introduced — anti-regression violation."
+          exit 1
+        fi
+        echo "OK: no new sorrys introduced."
+
+  build-stable-marriage:
+    name: "Lake build (stable_marriage_lean)"
+    runs-on: ubuntu-latest
+    needs: check-sorry-stable-marriage
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/stable_marriage_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Lake build artifacts
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/.lake
+        key: lake-sm-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/lean-toolchain') }}
+        restore-keys: lake-sm-${{ runner.os }}-
+
+    - name: Lake build
+      run: |
+        lake exe cache get || true
+        lake -R build 2>&1 | tail -20
+
+  check-sorry-cooperative:
+    name: "Sorry check (cooperative_games_lean)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/cooperative_games_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Count sorry in cooperative_games_lean
+      run: |
+        echo "=== Sorry inventory for cooperative_games_lean ==="
+        SORRY_TOTAL=0
+        KNOWN_INTRACTABLE=1
+        for f in CooperativeGames/Basic.lean CooperativeGames/Shapley.lean; do
+          if [ -f "$f" ]; then
+            COUNT=$(grep -c "sorry" "$f" || true)
+            echo "  $f: $COUNT sorry"
+            SORRY_TOTAL=$((SORRY_TOTAL + COUNT))
+          fi
+        done
+        echo ""
+        echo "Total sorry: $SORRY_TOTAL"
+        echo "Known intractable baseline: $KNOWN_INTRACTABLE"
+        if [ "$SORRY_TOTAL" -gt "$KNOWN_INTRACTABLE" ]; then
+          echo ""
+          echo "FAIL: sorry count ($SORRY_TOTAL) exceeds known intractable baseline ($KNOWN_INTRACTABLE)"
+          exit 1
+        fi
+        echo "OK: no new sorrys introduced."
+
+  build-cooperative:
+    name: "Lake build (cooperative_games_lean)"
+    runs-on: ubuntu-latest
+    needs: check-sorry-cooperative
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/cooperative_games_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Lake build artifacts
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/.lake
+        key: lake-cg-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/lean-toolchain') }}
+        restore-keys: lake-cg-${{ runner.os }}-
+
+    - name: Lake build
+      run: |
+        lake exe cache get || true
+        lake -R build 2>&1 | tail -20

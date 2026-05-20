@@ -4,6 +4,8 @@
 
 Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5, et Z-Image/Lumina.
 
+**Dans le cadre du fil rouge contenu visuel educatif** : un visuel de qualite demande des outils precis. [02-1](02-1-Qwen-Image-Edit-2509.ipynb) edite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) genere des images haute qualite. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une generation rapide pour le prototypage iteratif.
+
 ## Vue d'overview
 
 | Statistique | Valeur |

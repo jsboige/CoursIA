@@ -2,18 +2,11 @@
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Text Generation](../Texte/README.md)
 
-Serie de notebooks couvrant Microsoft Semantic Kernel, un SDK pour l'integration de LLMs dans les applications .NET et Python.
+Microsoft Semantic Kernel represente un tournant dans la maniere de construire des applications intelligentes. Ce SDK d'orchestration agentique connecte les LLMs aux outils, donnees et workflows de votre systeme. La reponse de Microsoft a l'ecosysteme LangChain, Semantic Kernel transforme des applications statiques en systemes autonomes capables de raisonnement, d'apprentissage et d'action.
 
-## Vue d'ensemble
+Cette serie pedagogique vous guidera a travers la transition entre le prompt engineering simple et la construction de systemes multi-agents sophistiques, ou chaque composant travaille de concert pour resoudre des problemes d'une complexite croissante.
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks Python | 8 (serie principale 01-08) |
-| Notebooks Avances | 4 (interop Python/C# 09-10) |
-| Templates | 3 |
-| Duree estimee | ~9h (serie complete) |
-| Version SK cible | 1.39+ |
-| Validation | 80% (11/14 notebooks) |
+**Fil rouge** : le NotebookMaker, un systeme a 3 agents (Admin, Coder, Reviewer) qui genere automatiquement des notebooks pedagogiques. Ce demonstrateur incarne l'essence meme de Semantic Kernel : orchestrer des agents specialises pour resoudre des problemes complexes.
 
 ## Serie principale (Python)
 
@@ -68,7 +61,7 @@ Parcours pedagogique complet sur Semantic Kernel en Python :
 
 ## Parcours recommande
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     SERIE PRINCIPALE (Python)                       │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -142,6 +135,29 @@ dotnet --version
 - [Semantic Kernel GitHub](https://github.com/microsoft/semantic-kernel)
 - [SK Blog](https://devblogs.microsoft.com/semantic-kernel/)
 - [MCP Specification](https://modelcontextprotocol.io/)
+
+## Recette : construire le NotebookMaker (systeme 3 agents)
+
+Le fil rouge de cette serie est le NotebookMaker, un systeme multi-agents qui genere automatiquement des notebooks pedagogiques. Voici comment les notebooks s'articulent :
+
+1. **Fondations (01-03)** : [01](01-SemanticKernel-Intro.ipynb) cree un Kernel et connecte un LLM. [02](02-SemanticKernel-Advanced.ipynb) ajoute le function calling et la memoire. [03](03-SemanticKernel-Agents.ipynb) introduit les agents autonomes et la collaboration via AgentGroupChat.
+
+2. **Observabilite et donnees (04-06)** : [04](04-SemanticKernel-Filters-Observability.ipynb) intercepte et log les appels. [05](05-SemanticKernel-VectorStores.ipynb) connecte une base vectorielle (RAG). [06](06-SemanticKernel-ProcessFramework.ipynb) orchestre des workflows avec etat.
+
+3. **Extensions (07-08)** : [07](07-SemanticKernel-MultiModal.ipynb) ajoute les capacites multimodales (images, audio). [08](08-SemanticKernel-MCP.ipynb) connecte le Kernel au protocole MCP pour l'interopabilite.
+
+4. **NotebookMaker (09-10)** : [09](09-SemanticKernel-Building-CLR.ipynb) prepare l'interop Python/C#. [10](10-SemanticKernel-NotebookMaker.ipynb) assemble le systeme 3 agents (Admin, Coder, Reviewer). Les versions [10a](10a-SemanticKernel-NotebookMaker-batch.ipynb) et [10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) ajoutent le mode batch et la parametrisation Papermill.
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [GenAI/Texte](../Texte/README.md) | LLMs et APIs | Les notebooks Texte couvrent les memes modeles (OpenAI, Anthropic) que SemanticKernel les orchestre en agents |
+| [GenAI/Image](../Image/README.md) | Generation d'images | Le notebook 07-MultiModal utilise la generation d'images DALL-E via le Kernel SK |
+| [GenAI/Audio](../Audio/README.md) | Speech et TTS | Le notebook 07-MultiModal integre aussi le TTS (text-to-speech) via le Kernel |
+| [ML](../../ML/README.md) | Pipelines ML | Le NotebookMaker (10) genere des notebooks ML automatiquement, la validation croisee ML-4 evalue les modeles produits |
+| [QuantConnect](../../QuantConnect/README.md) | Trading algorithmique | Les agents SK peuvent etre connectes a des sources de donnees financieres via MCP (08) pour des signaux de trading LLM-augmentes |
+| [Vibe-Coding](../Vibe-Coding/README.md) | Developpement avec agents | Les patterns d'orchestration multi-agents du NotebookMaker (10) s'appliquent aux workflows Vibe-Coding |
 
 ## Changelog
 

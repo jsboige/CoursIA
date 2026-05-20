@@ -18,9 +18,9 @@
 }
 
 .cover :deep(h1) {
-  font-size: 2.4em;
-  border-bottom: 3px solid var(--color-accent);
-  margin-bottom: 20px;
+  font-size: 1.8em;
+  border-bottom: none;
+  margin-bottom: 16px;
   color: var(--color-accent);
   padding-bottom: 16px;
 }

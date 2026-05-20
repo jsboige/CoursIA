@@ -66,6 +66,12 @@ object-store/
 *.joblib
 *.h5
 *.pt
+# EXCEPTION: Final model files referenced by executed notebooks (tracked via git LFS)
+!Python/transformer_checkpoint.pt
+!Python/transformer_multiasset_model.pt
+!Python/best_ppo_model.pt
+!Python/best_dqn_model.pt
+!Python/lstm_attention_sp50.pt
 *.pth
 *.onnx
 *.pb
@@ -86,6 +92,7 @@ mlruns/
 
 # Datasets
 datasets/
+!datasets/yfinance/crypto_panier/  # Stage 3a anti-bias crypto panier (2.5 MB, pedagogical)
 *.csv
 *.parquet
 *.feather
@@ -120,6 +127,11 @@ $RECYCLE.BIN/
 # Linux
 *~
 .directory
+
+# ===============================
+# Docker Research Stubs
+# ===============================
+projects/*/config.json
 
 # ===============================
 # Temporary Files

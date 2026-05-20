@@ -24,6 +24,26 @@ La vision originale de Tim Berners-Lee etait de creer un "Web de donnees" ou les
 
 ---
 
+## Quick Start
+
+```bash
+# Python (notebooks SW-2b, SW-4b, SW-8 a SW-12)
+pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
+
+# .NET (notebooks SW-1 a SW-7)
+dotnet restore
+
+# Premier notebook recommande (Python) :
+jupyter notebook SW-2b-Python-RDFBasics.ipynb
+
+# Ou en .NET :
+jupyter notebook SW-1-CSharp-Setup.ipynb
+```
+
+Aucune API key requise pour les notebooks fondamentaux (SW-1 a SW-11). SW-12 (GraphRAG) necessite une cle LLM.
+
+---
+
 ## Progression recommandee
 
 ### Parcours principal
@@ -364,6 +384,21 @@ SemanticWeb/
 
 ## Ressources
 
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| Berners-Lee, Hendler & Lassila, "The Semantic Web", *Scientific American* (2001) | Vision originale, introduction |
+| Russell & Norvig, *AIMA* 4e ed., ch. 12 "Knowledge Representation" | Cadre general IA symbolique |
+| Hitzler et al., *Foundations of Semantic Web Technologies* (2010) | OWL, RDF, raisonnement |
+| Allemang & Hendler, *Semantic Web for the Working Ontologist* (2011) | Modelisation OWL/RDFS |
+| Harris & Seaborne, "SPARQL 1.1 Query Language", W3C Rec. (2013) | Standard SPARQL |
+| Cyganiak, Wood & Lanthaler, "RDF 1.1 Concepts", W3C Rec. (2014) | Standard RDF |
+| Knublauch et al., "SHACL Shapes Constraint Language", W3C Rec. (2017) | Standard SHACL |
+| Edge & Tramer, "GraphRAG" (Microsoft, 2024) | SW-12 GraphRAG |
+
+### Ressources en ligne
+
 - [dotNetRDF](https://dotnetrdf.org/) - Bibliotheque .NET pour RDF
 - [rdflib](https://rdflib.readthedocs.io/) - Bibliotheque Python pour RDF
 - [W3C RDF](https://www.w3.org/RDF/) - Standard RDF
@@ -373,6 +408,40 @@ SemanticWeb/
 - [JSON-LD](https://json-ld.org/) - JSON pour les donnees liees
 - [DBpedia](https://dbpedia.org/) - Donnees structurees de Wikipedia
 - [Wikidata](https://www.wikidata.org/) - Base de connaissances libre
+
+## Connections cross-series
+
+### SemanticWeb et Planners (Planification Automatique)
+
+Les graphes de connaissances RDF/OWL (SW-1 a SW-6) fournissent des representations riches du monde que les planificateurs PDDL (Planners-2 a Planners-9) peuvent exploiter :
+
+- **Ontologies OWL (SW-4/5) et domaines PDDL (Planners-6)** : les ontologies definissent les types et relations du domaine ; les fichiers PDDL definissent les actions et contraintes. Les deux formalisent la semantique d'un domaine pour le raisonnement automatique.
+- **SPARQL (SW-3) + planification** : les requetes SPARQL sur un graphe de connaissances peuvent generer les etats initiaux et buts d'un probleme de planification.
+- **GraphRAG (SW-12) + LLM Planning (Planners-10)** : le RAG base sur les graphes de connaissances ameliore la generation de plans par les LLMs en fournissant un contexte structure.
+
+### SemanticWeb et Tweety (Logique et Argumentation)
+
+Les logiques de description (OWL) et les logiques classiques (Tweety) partagent des fondements communs :
+
+- **OWL-DL (SW-4/5) et logique propositionnelle/FOL (Tweety-2/3)** : OWL-DL est une logique de description decidable, fragment de la logique du premier ordre. Les SAT solvers de Tweety completent les raisonneurs OWL (HermiT, Pellet).
+- **SHACL (SW-7) et validation** : les contraintes SHACL sur les graphes RDF sont analogues aux contraintes logiques de Tweety. Les deux approches valident la coherence de bases de connaissances.
+- **Raisonnement monotone (OWL) vs non-monotone (Tweety-6/7)** : les ontologies OWL font du raisonnement monotone (ajout de faits ne retracte rien) ; Tweety explore le raisonnement non-monotone (defeasible, priorite).
+
+### SemanticWeb et Lean (Verification Formelle)
+
+La verification de coherence des ontologies OWL est une forme de verification formelle :
+
+- **OWL consistency checking** : les raisonneurs OWL prouvent la coherence d'une ontologie, similaire aux preuves Lean de correction de programmes.
+- **SHACL shapes** : les shapes SHACL sont des invariants sur les donnees RDF, analogues aux types dependants Lean comme specifications.
+
+### SemanticWeb et SmartContracts
+
+Les smart contracts et le web semantique convergent dans les donnees decentralisees :
+
+- **Graphes de connaissances on-chain** : les NFTs ERC-721 (SC-7) avec metadonnees JSON-LD (SW-8) creent des graphes de connaissances decentraux. Les DID (Decentralized Identifiers) utilisent RDF pour l'identite auto-souveraine.
+- **Oracle data integration** : les oracles blockchain (SC-8 DeFi) peuvent servir de sources RDF pour enrichir les graphes de connaissances en temps reel.
+
+---
 
 ## Licence
 

@@ -72,6 +72,24 @@ BATCH_MODE="true"
 | **TweetyProject** | Logique formelle (Java) |
 | **JPype** | Pont Python-Java |
 
+## Quick Start
+
+```bash
+# 1. Installer les dependances Python
+pip install semantic-kernel openai python-dotenv jpype1
+
+# 2. Configurer les API keys
+cp .env.example .env
+# Editer .env : OPENAI_API_KEY, BATCH_MODE=true
+
+# 3. Lancer le premier notebook
+jupyter notebook Argument_Analysis_Agentic-0-init.ipynb
+```
+
+> **Note** : JDK 17+ est requis mais auto-telecharge via `install_jdk_portable.py` (pas d'installation systeme).
+
+---
+
 ## Prerequisites
 
 ### Python
@@ -136,13 +154,29 @@ Le pipeline genere un rapport JSON dans `output/analysis_report.json` :
 | **Belief Set** | Ensemble de croyances formalisees |
 | **SAT** | Satisfaisabilite logique |
 
-## Relation avec SymbolicAI
+## Ponts avec les autres series
 
-Ce pipeline utilise :
-- [Tweety](../Tweety/) - Bibliotheque Java d'argumentation
-- Logique propositionnelle et SAT solvers
+| Serie | Connection | Details |
+| ----- | ---------- | ------- |
+| **[Tweety](../Tweety/)** | Backend argumentatif | Utilise directement TweetyProject (JPype) pour le raisonnement formel. Les semantiques de Dung (Tweety-5) et la revision de croyances (Tweety-4) sont au coeur du pipeline. |
+| **[Lean](../Lean/)** | Preuves formelles | La formalisation logique des arguments (Agentic-2) suit le meme paradigme que les tactiques Lean. La verification de coherence via SAT est analogue aux proof checkers. |
+| **[Tweety-9](../Tweety/Tweety-9-Preferences.ipynb)** | Preferences et vote | L'analyse d'arguments de valeur croise les modeles de preference et la theorie du choix social (GameTheory/social_choice_lean/). |
+
+> **Note** : Cette serie est en statut DRAFT — les notebooks definissent l'architecture mais n'ont pas encore d'execution complete. Voir [RECONSTRUCTION_PLAN.md](RECONSTRUCTION_PLAN.md) pour le statut.
 
 ## Ressources
+
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| Dung, "On the Acceptability of Arguments and its Fundamental Role in Nonmonotonic Reasoning" (1995) | Argumentation abstraite, semantiques |
+| Modgil & Prakken, "The ASPIC+ Framework for Structured Argumentation" (2014) | Argumentation structuree |
+| Alchourron, Gardenfors & Makinson, "On the Logic of Theory Change" (1985) | Revision de croyances AGM |
+| Besnard & Hunter, *Elements of Argumentation* (2008) | Cadre general argumentation |
+| Walton, *Argumentation Schemes for Presumptive Reasoning* (1996) | Taxonomie des sophismes |
+
+### Ressources en ligne
 
 - [Semantic Kernel Docs](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [TweetyProject](https://tweetyproject.org/)

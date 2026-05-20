@@ -1,0 +1,94 @@
+[
+  {
+    "timestamp": 3.185,
+    "agent": "CoordinatorAgent",
+    "role": "receive",
+    "content": "Prouve le sorry a la ligne 6 du fichier _SmokeTest.lean.\n\nDESCRIPTION:\nSmoke test: prove 0 + n = n f",
+    "duration_s": 0
+  },
+  {
+    "timestamp": 11.576,
+    "agent": "CoordinatorAgent",
+    "role": "plan",
+    "content": "Set attack plan (1 steps): But simple: 0 + n = n pour Nat. Le théorème Nat.zero_add n résout directement ce but. On peut aussi utiliser omega.",
+    "duration_s": 0.01,
+    "tool_call": "set_attack_plan",
+    "tool_args": null,
+    "tool_result": "  1. exact Nat.zero_add n"
+  },
+  {
+    "timestamp": 31.433,
+    "agent": "CoordinatorAgent",
+    "role": "error",
+    "content": "<Token var=<ContextVar name='inner_response_telemetry_captured_fields' default=None at 0x0000028DC2BA9A30> at 0x0000028DC5950A00> was created in a different Context",
+    "duration_s": 0
+  },
+  {
+    "timestamp": 31.433,
+    "agent": "CoordinatorAgent",
+    "role": "respond",
+    "content": "Agent error: <Token var=<ContextVar name='inner_response_telemetry_captured_fields' default=None at ",
+    "duration_s": 0
+  },
+  {
+    "timestamp": 31.434,
+    "agent": "SearchAgent",
+    "role": "receive",
+    "content": "Agent error: <Token var=<ContextVar name='inner_response_telemetry_captured_fields' default=None at ",
+    "duration_s": 0
+  },
+  {
+    "timestamp": 88.404,
+    "agent": "SearchAgent",
+    "role": "tool",
+    "content": "Found 5 lemmas (fallback)",
+    "duration_s": 0.01,
+    "tool_call": "search_mathlib_lemmas",
+    "tool_args": {
+      "goal": "0 + n = n"
+    },
+    "tool_result": "5 results"
+  },
+  {
+    "timestamp": 283.247,
+    "agent": "SearchAgent",
+    "role": "error",
+    "content": "<Token var=<ContextVar name='inner_response_telemetry_captured_fields' default=None at 0x0000028DC2BA9A30> at 0x0000028DC622E140> was created in a different Context",
+    "duration_s": 0
+  },
+  {
+    "timestamp": 283.247,
+    "agent": "SearchAgent",
+    "role": "respond",
+    "content": "Agent error: <Token var=<ContextVar name='inner_response_telemetry_captured_fields' default=None at ",
+    "duration_s": 0
+  },
+  {
+    "timestamp": 283.305,
+    "agent": "TacticAgent",
+    "role": "receive",
+    "content": "Agent error: <Token var=<ContextVar name='inner_response_telemetry_captured_fields' default=None at ",
+    "duration_s": 0
+  },
+  {
+    "timestamp": 300.555,
+    "agent": "TacticAgent",
+    "role": "error",
+    "content": "<Token var=<ContextVar name='inner_response_telemetry_captured_fields' default=None at 0x0000028DC2BA9A30> at 0x0000028DC6245780> was created in a different Context",
+    "duration_s": 0
+  },
+  {
+    "timestamp": 300.555,
+    "agent": "TacticAgent",
+    "role": "respond",
+    "content": "Agent error: <Token var=<ContextVar name='inner_response_telemetry_captured_fields' default=None at ",
+    "duration_s": 0
+  },
+  {
+    "timestamp": 300.616,
+    "agent": "TacticAgent",
+    "role": "iteration_cap",
+    "content": "iter 4 > max 3, yielding",
+    "duration_s": 0
+  }
+]

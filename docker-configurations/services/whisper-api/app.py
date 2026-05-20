@@ -241,10 +241,16 @@ async def transcribe_audio(
         segments_generator, info = whisper_model.transcribe(
             tmp_path,
             language=language,
-            initial_prompt=prompt,
+            initial_prompt=prompt if prompt else "Voici une transcription en francais.",
             temperature=temperature,
             word_timestamps=word_timestamps,
-            beam_size=5
+            beam_size=5,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500),
+            condition_on_previous_text=False,
+            no_speech_threshold=0.6,
+            compression_ratio_threshold=2.4,
+            log_prob_threshold=-1.0,
         )
 
         # Collect segments

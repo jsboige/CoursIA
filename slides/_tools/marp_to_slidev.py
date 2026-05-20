@@ -56,11 +56,7 @@ def parse_frontmatter(slide: str) -> tuple:
 
 
 def apply_click_animations(content: str, slide_animations: dict) -> str:
-    """Apply v-click directives based on PPTX click_groups.
-
-    Slidev requires v-click to wrap HTML elements, not raw markdown.
-    We wrap bullets in <div v-click="N"> to make them animate properly.
-    """
+    """Apply v-click directives based on PPTX click_groups."""
     if not slide_animations.get('has_animations', False):
         return content
 
@@ -85,33 +81,29 @@ def apply_click_animations(content: str, slide_animations: dict) -> str:
 
     for line in lines:
         # Detect indentation level
-        indent_match = re.match(r'^(\s*)-\s+', line)
+        indent_match = re.match(r'^(\s*)-', line)
         if indent_match:
             indent = len(indent_match.group(1))
             level = indent // 2 if indent else 0
+            stripped = line.strip()
 
             if level == 0:
                 # Level 0 bullet - find its click
-                bullet_text = line[line.find('-')+1:].strip()
+                bullet_text = stripped[2:].strip()
                 parent_click = 0
                 for key, click_idx in level0_to_click.items():
-                    if key in bullet_text.lower() or bullet_text.lower()[:50] in key:
+                    if key in bullet_text.lower() or bullet_text.lower() in key:
                         parent_click = click_idx
                         break
 
                 if parent_click > 0:
-                    # Wrap in div with v-click - this preserves markdown rendering
-                    result.append(f'<div v-click="{parent_click}">')
-                    result.append(line)
-                    result.append('</div>')
+                    result.append(f'<v-click="{parent_click}">{stripped}</v-click>')
                 else:
                     result.append(line)
             else:
                 # Level 1+ bullet - inherit parent's click
                 if parent_click > 0:
-                    result.append(f'<div v-click="{parent_click}">')
-                    result.append(line)
-                    result.append('</div>')
+                    result.append(f'<v-click="{parent_click}">{stripped}</v-click>')
                 else:
                     result.append(line)
         else:

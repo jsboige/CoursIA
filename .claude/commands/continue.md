@@ -23,10 +23,15 @@ Resume work from GitHub issues OR local memory — reads context, checks state, 
 **TOUJOURS executer avant de commencer le travail**, pour detecter les nouvelles missions du coordinateur.
 
 1. **Lire l'inbox RooSync** : `roosync_read` mode=inbox, status=unread
-2. **Lire le dashboard workspace** : `roosync_dashboard` action=read, type=workspace, workspace=CoursIA
-3. **Verifier le heartbeat** cluster : `roosync_heartbeat` action=status
+2. **Lire le dashboard workspace** : `roosync_dashboard` action=read, type=workspace
+3. **Verifier le heartbeat** cluster : `roosync_inventory` type=heartbeat
 
-**Si des missions ou messages HIGH/URGENT existent** :
+**Filtrage workspace OBLIGATOIRE** :
+- Traiter UNIQUEMENT les messages adressés à ce workspace (CoursIA) ou à cette machine
+- IGNORER les messages adressés à d'autres workspaces (roo-extensions, etc.) — ce n'est pas votre travail
+- Si un message est marqué pour un autre workspace, le marquer lu sans action
+
+**Si des missions ou messages HIGH/URGENT existent** (pour CE workspace uniquement) :
 - Lire le message complet avec `roosync_read` mode=message
 - Les missions du coordinateur (ai-01) ont priorite sur les taches locales
 - Repondre accusant reception sur le dashboard

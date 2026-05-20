@@ -156,6 +156,13 @@ Le dossier `examples/` contient 8 projets validés avec backtests positifs.
 | **Options-VGT** | 21113806 | Vente de PUTs OTM sur 5 valeurs tech (NVDA, ORCL, CSCO, AMD, QCOM) |
 | **Option-Wheel-Strategy** | 20216898 | Wheel strategy SPY : PUT selling → assignment → covered CALL |
 
+### Python - ML
+
+| Projet | Cloud ID | Description |
+|--------|----------|-------------|
+| **ESGF-ML-RandomForest** | 29686996 | RandomForest sur AAPL/MSFT/GOOGL/AMZN/NVDA, 6 features, re-entrainement mensuel |
+| **ESGF-Framework-Composite** | 29687005 | Alpha Framework : EMAMomentum + SectorMomentum alphas, MaxDD 15% |
+
 ### C#
 
 | Projet | Cloud ID | Description |
@@ -163,6 +170,72 @@ Le dossier `examples/` contient 8 projets validés avec backtests positifs.
 | **CSharp-BTC-MACD-ADX** | 19898232 | BTC MACD+ADX journalier sur Binance Cash |
 | **CSharp-BTC-EMA-Cross** | 19050970 | EMA crossover classique BTC (18/23) |
 | **CSharp-CTG-Momentum** | 19225388 | "Stocks on the Move" (Clenow) - Momentum ranking |
+
+---
+
+## Notebooks de Recherche (QuantBook)
+
+Cinq projets Researcher avec notebooks QuantBook opérationnels pour explorer les données QC Cloud :
+
+| Projet | Cloud ID | QuantBook | Contenu de recherche |
+|--------|----------|-----------|----------------------|
+| **Multi-Layer-EMA-Researcher** | 28433748 | research.ipynb | Grid search EMA/RSI/stop-loss sur BTC/ETH/LTC |
+| **BTC-ML-Researcher** | 28433750 | research.ipynb | Feature importance, walk-forward, confidence grid |
+| **MomentumStrategy-Researcher** | 28657837 | quantbook.ipynb | H1-H4 : top-N, lookback, vol window, regime filter |
+| **AllWeather-Researcher** | 28657833 | quantbook.ipynb | Grid search allocations All-Weather (SPY/IEF/GLD/XLP) |
+| **Sector-Momentum-Researcher** | 28433643 | quantbook.ipynb + research.ipynb | Dual Momentum SPY/TLT/GLD, redesign complet |
+
+Ces notebooks illustrent le workflow QuantBook → QCAlgorithm : idée → recherche → backtest.
+
+---
+
+## Recherche ML 2026 — Modèles validés (Pipeline V2)
+
+Notre pipeline de recherche ML 2026 (`ML-Training-Pipeline/`) suit un curriculum 7 stages
+ancré sur *Hands-On AI Trading* (Broad/QuantConnect, 2025). Les modèles ci-dessous ont
+passé le gate **S1 (vol-forecasting)** avec test de Diebold-Mariano significatif
+(p < 0.05, ≥ 4 seeds, walk-forward 5-fold) — ils sont **KEEPERS** intégrés aux stratégies
+de production ESGF.
+
+### S1 KEEPERS — Prévision de volatilité crypto multi-coins (BEATS)
+
+| Modèle | Tâche | Verdict | p-value DM | Architecture |
+|--------|-------|---------|-----------|--------------|
+| **M12 HAR-RV-J** | Forecast vol 5-jours | BEATS RW + GARCH | **0.0015** | Heterogeneous Autoregressive + Jump component (Corsi 2009) |
+| **M15 LSTM h=32** | Forecast vol courte échelle | BEATS RW | **0.0107** | LSTM hidden=32, 53/84 combos BEAT cross-coin (BTC/XRP/DOT/ADA) |
+
+Complémentarité observée : M12 capte mieux ETH/SOL, M15 capte mieux DOT — d'où le
+choix d'un ensemble pondéré (cf. ESGF-VolEnsemble-Conservative).
+
+### S1 long-horizon — Vol multi-horizons (8 BEATS sur 16 combos)
+
+XRP h=66 13.5σ, ETH h=132 5σ, BTC h=22 et h=66 BEATS. Confirme que le signal de
+volatilité existe aussi sur horizons longs (1 à 6 mois), avec poids per-coin × per-horizon
+dans S2 (vol ensemble pondéré).
+
+### S3 — HMM Regime daily (livré, alimente S5 sizing)
+
+Hidden Markov Model 2-régimes (calm vs stress) sur returns daily SPY+VIX+BTC.
+Sortie discrète utilisée comme switch dans les stratégies vol-target (réduire
+exposition en régime stress).
+
+### S4 v2 — Inverse-Vol Ridge + HMM Regime (BEATS EqW)
+
+Allocation pondérée inverse-vol avec régression Ridge sur features
+(momentum + vol forecast M12) et switch HMM. Delta Sharpe **+0.325 vs EqW**
+(Equal Weight baseline) sur backtest QC Cloud.
+
+### Stratégies QC live alimentées par ces modèles
+
+| Projet QC Cloud | Cloud ID | Modèle source | Description |
+|----------------|----------|---------------|-------------|
+| **ESGF-HAR-RV-Kelly** | 31456164 | M12 HAR-RV-J | Vol forecast → Kelly 1/4 sizing sur SPY/EFA/EEM/TLT/GLD/DBC |
+| **ESGF-GARCH-VolTarget** | 31456084 | GARCH(1,1) baseline | Vol-targeting 15% annualisé (référence pour M12) |
+| **ESGF-VolEnsemble-Conservative** | 31456204 | Ensemble M12+M15 | Pondération inverse-vol + cap de levier |
+
+Ces 3 projets seront utilisés en **TP S5 (sizing & exécution)** du curriculum
+ESGF 2026. Leur code et research notebooks sont disponibles dans
+`../projects/ESGF-*`.
 
 ---
 
@@ -174,7 +247,7 @@ Les exemples et templates couvrent **4 classes d'actifs** et **8+ concepts de tr
 |--------|----------|------------|
 | **1 - Fondations** | EMA Crossover, MACD+ADX, Options basiques | Multi-Layer-EMA, CSharp-BTC-EMA-Cross, Options-VGT |
 | **2 - Intermédiaire** | Alpha Framework, Multi-indicateurs, Wheel Strategy | Sector-Momentum, Option-Wheel-Strategy, Trend-Following |
-| **3 - Avancé** | Momentum ranking, Risk Parity | CSharp-CTG-Momentum, Sector-Momentum |
+| **3 - Avancé** | Momentum ranking, Risk Parity, ML | CSharp-CTG-Momentum, Sector-Momentum, ESGF-ML-RandomForest |
 
 ---
 
@@ -237,8 +310,7 @@ Les exemples et templates couvrent **4 classes d'actifs** et **8+ concepts de tr
 ## Documentation
 
 - **[GETTING-STARTED.md](../GETTING-STARTED.md)** : Guide de démarrage détaillé
-- **[ECE-QC-QUICKSTART.md](../ECE-QC-QUICKSTART.md)** : Guide pour étudiants ECE
-- **[projects/README.md](../projects/README.md)** : Catalogue de 67 stratégies
+- **[projects/README.md](../projects/README.md)** : Catalogue de stratégies
 
 ---
 

@@ -1,0 +1,193 @@
+name: Notebook Execution Required
+
+# H.7 P3 — Block merge if notebooks lack execution evidence.
+# Validates that every modified .ipynb in a PR has:
+#   1. execution_count != null on all code cells (H.3)
+#   2. Zero cells with output_type: error (H.1)
+#   3. No banned patterns: raise NotImplementedError, assert False, 1/0 (C.1)
+#
+# Non-Python kernels (.NET, Lean, WSL) are checked for C.1 and error outputs
+# but execution_count is advisory only (cannot Papermill-execute in CI yet).
+# Full Papermill execution for Python notebooks is a separate job (Phase 2).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.ipynb'
+  workflow_dispatch:
+    inputs:
+      notebook_paths:
+        description: 'Space-separated notebook paths to validate'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  detect-changes:
+    name: Detect notebook changes
+    runs-on: ubuntu-latest
+    outputs:
+      notebooks: ${{ steps.detect.outputs.notebooks }}
+      has_notebooks: ${{ steps.detect.outputs.has_notebooks }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed notebooks
+        id: detect
+        run: |
+          if [ -n "${{ github.event.inputs.notebook_paths }}" ]; then
+            # Manual dispatch with specific paths
+            NOTEBOOKS="${{ github.event.inputs.notebook_paths }}"
+          else
+            # PR: diff against base
+            NOTEBOOKS=$(git diff --name-only --diff-filter=ACM \
+              origin/${{ github.base_ref }} HEAD -- '*.ipynb' || true)
+          fi
+
+          # Filter out checkpoints, archives, _output
+          NOTEBOOKS=$(echo "$NOTEBOOKS" | grep -v '/.ipynb_checkpoints/' \
+            | grep -v '/archive/' | grep -v '/_output/' | grep -v '/research/' \
+            || true)
+
+          # grep -c prints "0" AND exits 1 on no-match; "|| echo 0" would
+          # then append a second "0", producing an invalid $GITHUB_OUTPUT
+          # line. "|| true" keeps grep's own "0" and just swallows the exit.
+          COUNT=$(echo "$NOTEBOOKS" | grep -c '\.ipynb$' || true)
+          echo "notebooks<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTEBOOKS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "has_notebooks=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Detected $COUNT notebook(s) changed"
+
+  validate-static:
+    name: Static validation (H.1/H.3/C.1)
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_notebooks > 0
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install nbformat
+
+      - name: Validate notebooks
+        run: |
+          python scripts/notebook_tools/validate_pr_notebooks.py \
+            origin/${{ github.base_ref }} --json > /tmp/validation_results.json
+          cat /tmp/validation_results.json
+
+          PASSED=$(python -c "import json; print(json.load(open('/tmp/validation_results.json'))['passed'])")
+          if [ "$PASSED" != "True" ]; then
+            echo ""
+            echo "::error::Notebook validation failed. See results above."
+            echo "Fix: re-execute notebooks locally and commit with outputs."
+            echo "  python scripts/notebook_tools/notebook_tools.py execute <path>"
+            exit 1
+          fi
+          echo "All notebooks passed static validation."
+
+      - name: Post validation summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const results = JSON.parse(fs.readFileSync('/tmp/validation_results.json', 'utf8'));
+              const total = results.total_notebooks;
+              const cells = results.total_code_cells;
+              const failed = results.failed_count;
+              const status = results.passed ? 'PASS' : 'FAIL';
+
+              let body = `## Notebook PR Validation: ${status}\n\n`;
+              body += `- **Notebooks checked**: ${total}\n`;
+              body += `- **Code cells validated**: ${cells}\n`;
+              body += `- **Result**: ${failed > 0 ? failed + ' notebook(s) with violations' : 'All passed'}\n\n`;
+              body += `Checks: H.1 (no errors), H.3 (execution_count), C.1 (no banned patterns)\n`;
+              body += `Non-Python kernels (.NET/Lean): C.1 + errors only (execution_count advisory)\n`;
+              body += `QuantConnect notebooks: C.1 + errors only (require QC Cloud for execution)\n\n`;
+
+              if (!results.passed) {
+                body += `### Violations\n\n`;
+                for (const nb of results.notebooks) {
+                  if (!nb.passed) {
+                    body += `**${nb.path}** (${nb.total_code} cells, ${nb.kernel})\n`;
+                    for (const err of nb.errors) {
+                      body += `- ${err}\n`;
+                    }
+                    body += `\n`;
+                  }
+                }
+                body += `\n### How to fix\n\n`;
+                body += `\`\`\`bash\n`;
+                body += `# Re-execute the notebook\n`;
+                body += `python scripts/notebook_tools/notebook_tools.py execute <path>\n`;
+                body += `\`\`\`\n`;
+              }
+
+              // Find existing comment or create new
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              const botComment = comments.find(c =>
+                c.user.type === 'Bot' && c.body.includes('Notebook PR Validation:')
+              );
+
+              if (botComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: body,
+                });
+              }
+            } catch (e) {
+              console.log('Could not post validation summary:', e.message);
+            }
+
+  # Phase 2 (future): Papermill execution for Python notebooks
+  # Requires Docker compose with Python + .NET + Lean + WSL
+  # This is a placeholder — full implementation deferred to P4 (H.7)
+  execute-python:
+    name: Papermill execution (Python only)
+    runs-on: ubuntu-latest
+    needs: validate-static
+    if: false  # Disabled until Docker runner is ready
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Papermill
+        run: pip install papermill ipykernel
+
+      - name: Execute Python notebooks
+        run: |
+          echo "Phase 2: Papermill execution not yet implemented"
+          echo "Will use: python scripts/notebook_tools/notebook_tools.py execute"

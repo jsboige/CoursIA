@@ -74,7 +74,7 @@ class DLLSTMAlgorithm(QCAlgorithm):
 
     def Initialize(self):
         """Initialisation de l'algorithme."""
-        self.SetStartDate(2023, 1, 1)
+        self.SetStartDate(2015, 1, 1)
         self.SetEndDate(2025, 1, 1)
         self.SetCash(100000)
 

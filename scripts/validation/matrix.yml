@@ -1,0 +1,239 @@
+# Validation Matrix — Issue #665
+# Declares per-family validation config for CoursIA notebooks
+# Activation: post-20 mai 2026 (Phase 2 #623)
+# Usage: python scripts/validation/dispatch.py --family <name> [--quick] [--execute]
+
+families:
+  Search:
+    kernel: python3
+    path: MyIA.AI.Notebooks/Search
+    strategy: papermill
+    timeout: 300
+    prerequisites: []
+    acceptance:
+      outputs_present: true
+      zero_errors: true
+    subfamilies:
+      Part1-Foundations: { strategy: papermill }
+      Part2-CSP: { strategy: papermill }
+      Applications:
+        CSP: { strategy: papermill }
+        Hybrid: { strategy: papermill }
+        Search: { strategy: papermill }
+
+  Sudoku:
+    kernel: mixed
+    path: MyIA.AI.Notebooks/Sudoku
+    strategy: mixed
+    timeout: 300
+    prerequisites: []
+    subfamilies:
+      Python:
+        kernel: python3
+        strategy: papermill
+      "C#":
+        kernel: .net-interactive
+        strategy: cell-by-cell
+    acceptance:
+      outputs_present: true
+      zero_errors: true
+
+  SymbolicAI:
+    kernel: mixed
+    path: MyIA.AI.Notebooks/SymbolicAI
+    strategy: mixed
+    timeout: 600
+    subfamilies:
+      Lean:
+        kernel: lean4-wsl
+        strategy: cell-by-cell
+        prerequisites: [wsl, lean4]
+      Tweety:
+        kernel: python3
+        strategy: papermill
+      SemanticWeb:
+        kernel: .net-interactive
+        strategy: cell-by-cell
+      Planners:
+        kernel: python3
+        strategy: papermill
+        prerequisites: [up_fast_downward]
+      SmartContracts:
+        kernel: python3
+        strategy: papermill
+        prerequisites: [foundry, web3]
+        acceptance:
+          zero_errors: true
+          outputs_present: true
+      Argument_Analysis:
+        kernel: python3
+        strategy: papermill
+
+  GenAI:
+    kernel: python3
+    path: MyIA.AI.Notebooks/GenAI
+    strategy: papermill
+    timeout: 600
+    prerequisites: [docker_services, api_keys]
+    subfamilies:
+      Image:
+        strategy: papermill
+        prerequisites: [comfyui, openai_key]
+        timeout: 300
+      Audio:
+        strategy: papermill
+        prerequisites: [whisper_api, kokoro]
+        timeout: 300
+      Video:
+        strategy: papermill
+        prerequisites: [comfyui_video]
+        timeout: 600
+      Texte:
+        strategy: papermill
+        prerequisites: [openai_key]
+        timeout: 300
+      CaseStudies:
+        kernel: python3
+        strategy: papermill
+        timeout: 300
+      SemanticKernel:
+        kernel: python3
+        strategy: papermill
+        prerequisites: [semantic_kernel]
+        timeout: 300
+      "00-Env":
+        kernel: python3
+        strategy: papermill
+        timeout: 300
+
+  ML:
+    kernel: mixed
+    path: MyIA.AI.Notebooks/ML
+    strategy: mixed
+    timeout: 300
+    subfamilies:
+      "ML.Net":
+        kernel: .net-interactive
+        strategy: cell-by-cell
+      DataScienceWithAgents:
+        kernel: python3
+        strategy: papermill
+        prerequisites: [langchain]
+
+  QuantConnect:
+    kernel: python3
+    path: MyIA.AI.Notebooks/QuantConnect
+    strategy: mixed
+    timeout: 300
+    subfamilies:
+      Python:
+        kernel: python3
+        strategy: papermill
+        acceptance:
+          outputs_present: true
+      projects:
+        kernel: qc-cloud
+        strategy: cloud-only
+        prerequisites: [qc_api_token]
+    acceptance:
+      outputs_present: true
+      zero_errors: true
+
+  Probas:
+    kernel: .net-interactive
+    path: MyIA.AI.Notebooks/Probas
+    strategy: cell-by-cell
+    timeout: 300
+    acceptance:
+      outputs_present: true
+
+  GameTheory:
+    kernel: python-wsl-openspiel
+    path: MyIA.AI.Notebooks/GameTheory
+    strategy: papermill
+    timeout: 600
+    prerequisites: [wsl, openspiel]
+    subfamilies:
+      Lean:
+        kernel: lean4-wsl
+        strategy: cell-by-cell
+    acceptance:
+      outputs_present: true
+      zero_errors: true
+
+  IIT:
+    kernel: python3
+    path: MyIA.AI.Notebooks/IIT
+    strategy: papermill
+    timeout: 600
+    prerequisites: [pyphi]
+    acceptance:
+      outputs_present: true
+
+  CaseStudies:
+    kernel: python3
+    path: MyIA.AI.Notebooks/CaseStudies
+    strategy: papermill
+    timeout: 300
+    subfamilies:
+      Diagnostic-Medical:
+        kernel: python3
+        strategy: papermill
+      Oncology-Planning:
+        kernel: python3
+        strategy: papermill
+    acceptance:
+      outputs_present: true
+      zero_errors: true
+
+  RL:
+    kernel: python3
+    path: MyIA.AI.Notebooks/RL
+    strategy: papermill
+    timeout: 300
+    acceptance:
+      outputs_present: true
+      zero_errors: true
+
+# Global settings
+defaults:
+  timeout: 300
+  strategy: papermill
+  acceptance:
+    outputs_present: true
+    zero_errors: true
+
+# Severity levels for CI
+severity:
+  PRODUCTION: fail
+  BETA: fail
+  ALPHA: warn
+  DRAFT: skip
+  RESEARCH: skip
+
+# Kernel specifications
+kernels:
+  python3:
+    display_name: "Python 3"
+    spec: python3
+    check: "python --version"
+  .net-interactive:
+    display_name: ".NET Interactive"
+    spec: .net
+    check: "dotnet --version"
+    limitation: "System.Collections.Immutable 9.0 binding failure affects 16 notebooks"
+  lean4-wsl:
+    display_name: "Lean 4 (WSL)"
+    spec: lean4
+    check: "wsl -e lean --version"
+    requires_wsl: true
+  python-wsl-openspiel:
+    display_name: "Python WSL + OpenSpiel"
+    spec: python3
+    check: "wsl -e python -c 'import open_spiel'"
+    requires_wsl: true
+  qc-cloud:
+    display_name: "QuantConnect Cloud"
+    spec: qc-cloud
+    check: "echo 'Requires QC API token'"
+    cloud_only: true

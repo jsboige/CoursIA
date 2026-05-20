@@ -16,3 +16,8 @@ RUN chown -R 1000:1000 /opt/environments/python/forge /opt/stable-diffusion-webu
 
 RUN source /opt/environments/python/forge/bin/activate && \
     python -c "import numpy; import cv2; import skimage; print('Imports successful')"
+
+RUN groupadd -g 1000 appuser && \
+    useradd -u 1000 -g appuser -m -s /bin/bash appuser
+
+USER appuser

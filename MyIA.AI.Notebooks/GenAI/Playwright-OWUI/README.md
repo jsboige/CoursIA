@@ -261,7 +261,7 @@ test('...', async ({ request }) => {
 
 ## Resultats de validation
 
-Derniere execution : Mars 2026
+Derniere execution : Mars 2026 (suite complete, OWUI v0.8.8)
 
 | Module | Pass | Skip | Fail | Temps |
 |--------|------|------|------|-------|
@@ -273,6 +273,8 @@ Derniere execution : Mars 2026
 | **Total** | **30** | **9** | **0** | **~2 min** |
 
 Les 9 skips sont attendus : modele local indisponible (1), KBs/MCP non configures (5), APIs HTML (3).
+
+> **Compatibilite OWUI v0.9.1** (avril 2026) : la suite fonctionne sans modification sur OWUI v0.9.1. Les selecteurs CSS, l'editeur TipTap, l'auth et le rate-limit n'ont pas change. Les nouvelles surfaces v0.9.1 (Calendar, Automations, Desktop app) ne sont pas encore couvertes par les modules 01-05 mais peuvent etre utilisees comme exercices bonus. Voir `WHATS-NEW-v0.9.1.md`.
 
 ## Liens utiles
 
@@ -289,4 +291,4 @@ Elle utilise les tests E2E reels du projet Open WebUI comme base pedagogique.
 
 ---
 
-*Version 1.0.0 — Mars 2026*
+*Version 1.1.0 — Avril 2026 (revalidee sur OWUI v0.9.1)*

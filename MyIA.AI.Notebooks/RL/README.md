@@ -1,10 +1,17 @@
 # RL - Reinforcement Learning
 
-Introduction au Reinforcement Learning (apprentissage par renforcement) couvrant les **fondements theoriques**, les **algorithmes avec reseaux de neurones** et les **frameworks de production**.
+<!-- CATALOG-STATUS
+series: RL
+pedagogical_count: 6
+breakdown: =6
+maturity: PRODUCTION=5, BETA=1
+-->
 
-La serie se decompose en deux parties :
-- **Notebooks 1-3** : Utilisation de Stable Baselines3 (framework de production)
-- **Notebooks 4-6** : Implementation depuis zero des algorithmes fondamentaux
+Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'IA qui apprend a un agent a prendre des decisions optimales par l'essai et l'erreur, en recevant des recompenses ou des penalites de son environnement. C'est la technologie derriere AlphaGo, les robots de Boston Dynamics, les systemes de recommendation de Netflix, et les voitures autonomes. La ou l'apprentissage supervise predit a partir d'exemples etiquetes et l'apprentissage non supervise decouvre des structures, le RL **agit** : il choisit des actions, observe leurs consequences, et s'ameliore iterativement.
+
+Cette serie couvre les **fondements theoriques** (MDP, equation de Bellman, Q-Learning), les **algorithmes avec reseaux de neurones** (DQN, Policy Gradient, PPO) et les **frameworks de production** (Stable Baselines3). Vous commencerez par entrainer un agent en quelques lignes avec un framework industriel, puis vous implementerez les memes algorithmes depuis zero pour comprendre ce qui se cache sous le capot.
+
+**A qui s'adresse cette serie** : etudiants en IA, developpeurs souhaitant ajouter des capacites decisionnelles a leurs applications, et chercheurs en automatique ou robotique. Prerequis : Python intermediaire et bases en calculus (gradients). Aucune experience RL prealable necessaire pour le notebook 1.
 
 ## Vue d'ensemble
 
@@ -178,6 +185,20 @@ Notebook 3 (Goal-conditioned RL)
 | Fondements theoriques | 4 + 5 + 6 |
 | Maitrise complete | 1 a 6 |
 
+### Parcours d'apprentissage
+
+**Phase 1 : Prise en main production (~1h, notebooks 1-2)**
+
+Le notebook 1 pose les bases : vous installez Stable Baselines3, creez votre premier agent PPO sur CartPole, et visualisez ses performances. En 30 minutes, vous avez un agent entraine qui equilibre un baton. Le notebook 2 enrichit cette base avec les outils de production : wrappers pour modifier les environnements, callbacks pour monitorer l'entrainement, et multiprocessing pour accelerer les experiences.
+
+**Phase 2 : Problemes avances (~1.5h, notebook 3)**
+
+Le notebook 3 introduit les taches a objectifs (goal-conditioned RL) avec l'algorithme HER (Hindsight Experience Replay). Vous resoudrez un probleme de parking autonome ou l'agent doit atteindre une position cible. C'est le passage de "equilibrer un baton" a "garer une voiture" — un saut qualitatif qui montre la puissance du RL.
+
+**Phase 3 : Les maths sous le capot (~2.5h, notebooks 4-6)**
+
+Les notebooks 4 a 6 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 4 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 5 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6 clot avec le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play).
+
 ## Concepts cles
 
 | Concept | Description | Notebook |
@@ -230,6 +251,16 @@ RL/
 ├── rl_6_multi_agent_rl.ipynb
 └── README.md
 ```
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [GameTheory](../GameTheory/README.md) | Jeux bayesiens, equilibre de Nash | Le RL multi-agent (notebook 6) formalise les memes interactions que la theorie des jeux, mais avec apprentissage |
+| [ML](../ML/README.md) | Pipelines ML | Le RL s'appuie sur les memes outils (PyTorch, numpy) et suppose la familiarite avec l'entrainement de modeles |
+| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | Les strategies de trading se modelisent comme des problemes RL (actions = acheter/vendre, reward = PnL) |
+| [Probas](../Probas/README.md) | Decision bayesienne (notebooks 17-20) | Les MDP du RL generalisent les processus decisionnels de Markov de la serie Probas |
+| [Search](../Search/README.md) | Optimisation combinatoire | La planification RL (value/policy iteration) ressemble a la recherche dans un espace d'etats |
 
 ## Licence
 

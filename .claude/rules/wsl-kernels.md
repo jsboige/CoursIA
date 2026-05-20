@@ -4,20 +4,19 @@ paths: "{MyIA.AI.Notebooks/GameTheory/**/*,MyIA.AI.Notebooks/SymbolicAI/Lean/**/
 
 # WSL Kernel Rules
 
-## Known Issues
+**Diagnostic detaille (issues, paths, heredoc, setup, verifications)** : [docs/wsl-kernels-detail.md](../../docs/wsl-kernels-detail.md).
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Backslashes stripped | WSL shell consumes ALL `\` | Use a bash wrapper (NOT Python) with regex reconstruction |
-| Path without separators | `~\AppData\...\kernel.json` becomes `c:UsersjsboiAppData...` | Regex: `^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$` |
-| SyntaxWarning: invalid escape | Docstrings with `\A`, `\U` | Use `#` comments, not docstrings |
-| Heredoc variables interpolated | `cat << 'EOF'` in `bash -c '...'` | Write script via temp file, then copy to WSL |
-| Kernel timeout 60s | Wrapper script errors | Check `/tmp/kernel-wrapper.log` in WSL |
+## Regles HARD
 
-## Key Rules
+- **GameTheory/Lean Python notebooks** : utiliser `scripts/notebook_tools/wsl_papermill.py` (papermill execute INSIDE WSL, evite la frontiere cross-OS).
+- **.NET Interactive notebooks** : cell-by-cell via MCP Jupyter (Windows-side). Pas de Papermill (non supporte).
+- **Cold start .NET Interactive** : premier demarrage peut timeout (30-60s) — retry une fois avant d'escalader.
+- **Wrapper bash obligatoire** pour kernels WSL — wrapper Python ne marche PAS (backslashes consommes).
 
-- A Python wrapper does NOT work for WSL kernels - MUST use a bash wrapper
-- Always use absolute paths in `kernel.json` for `dotnet-interactive.exe`
-- Cold start for .NET Interactive: first start may timeout (30-60s), retry once
-- GameTheory notebooks require `Python (GameTheory WSL + OpenSpiel)` kernel
-- Lean notebooks require `Python 3 (WSL)` or `Lean 4 (WSL)` kernels
+## Commandes courantes
+
+```powershell
+python scripts/notebook_tools/wsl_papermill.py execute <notebook.ipynb> [--timeout 300]
+python scripts/notebook_tools/wsl_papermill.py batch MyIA.AI.Notebooks/GameTheory/
+python scripts/notebook_tools/wsl_papermill.py check-env
+```

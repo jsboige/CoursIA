@@ -22,7 +22,7 @@
 
 <style scoped>
 .colored-table-container {
-  margin: 20px 0;
+  margin: 10px 0;
 }
 
 .colored-table {
@@ -34,19 +34,20 @@
 .header-cell {
   background-color: #8B1A1A !important;
   color: #ffffff !important;
-  padding: 14px 20px;
+  padding: 8px 16px;
   text-align: center;
   font-weight: bold;
   border-radius: 4px;
+  font-size: 0.85em;
 }
 
 .content-cell {
   background-color: #9B4F2A !important;
   color: #ffffff !important;
-  padding: 14px 20px;
+  padding: 8px 16px;
   text-align: center;
   border-radius: 4px;
-  font-weight: 600;
+  font-size: 0.85em;
 }
 
 .content-cell.highlight {

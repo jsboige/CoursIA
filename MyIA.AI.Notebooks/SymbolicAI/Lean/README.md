@@ -1,6 +1,6 @@
 # Lean - Solveur Mathematique et Verification Formelle
 
-Cette serie de **13 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves et la verification formelle de reseaux de neurones.
+Cette serie de **14 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves et la verification formelle de reseaux de neurones.
 
 ## Navigation
 
@@ -13,7 +13,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Fondations** | 1-5 | ~3h | Base theorique complete (types, logique, tactiques) |
 | **Avec Mathlib** | 1-6 | ~3h45 | Ajoute les tactiques Mathlib |
 | **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
-| **Complet** | 1-10 | ~8h | Toutes les fonctionnalites incluant LeanDojo |
+| **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et theoreme de sensibilite |
 
 ## Structure
 
@@ -35,12 +35,13 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 7 | [Lean-7-LLM-Integration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
 | 7b | [Lean-7b-Examples](Lean-7b-Examples.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
 | 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problemes Erdos | 55 min |
-| 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Semantic Kernel, orchestration multi-agents | 45 min |
+| 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: reseaux de neurones verifies, IBP, CROWN | 1h30-2h |
 | 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
+| 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | Theoreme de sensibilite (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 
-**Duree totale** : ~10h
+**Duree totale** : ~11h
 
 ## Statut de maturite
 
@@ -59,12 +60,32 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
 | 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
 | 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
+| 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
 - Plan de ce Notebook avec liens ancres (notebooks 2-4)
 - Tableaux recapitulatifs en fin de section
 - Exercices avec solutions completes
+
+## Quick Start
+
+```bash
+# 1. Installer elan (gestionnaire Lean)
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+elan default leanprover/lean4:stable
+
+# 2. Verifier l'installation
+lean --version    # Lean 4.x.x
+elan show         # toolchain active
+
+# 3. Ouvrir le premier notebook (WSL requis)
+wsl -d Ubuntu -- bash -c "jupyter notebook Lean-1-Setup.ipynb"
+```
+
+Pour les notebooks 7-10 (LLM), configurer `.env` avec `OPENAI_API_KEY`. Pour le prover daemon, voir section "Prover daemon".
+
+---
 
 ## Prerequisites
 
@@ -145,6 +166,19 @@ cp .env.example .env
 - [TorchLean GitHub](https://github.com/lean-dojo/TorchLean)
 - [Papers: IBP, CROWN, LiRPA](https://github.com/lean-dojo/TorchLean#references)
 
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| de Moura & Ullrich, "The Lean 4 Theorem Prover and Programming Language" (2021) | Systeme Lean 4 |
+| The Mathlib Community, "The Mathlib Library" (2020), arXiv:1910.09436 | Mathlib4 |
+| Avigad, "Mathematics and Programming" (2024) — *Mathematics in Lean* | Fondations notebooks 1-5 |
+| Jiang et al., "LeanDojo: Theorem Proving with Retrieval-Augmented Language Models" (NeurIPS 2023) | LeanDojo, notebooks 10 |
+| First et al., "AlphaProof: Formal Math Reasoning" (DeepMind, 2024) | Notebook 7 |
+| Song et al., "Towards Counting Forall: Neural Network Verification via IBP, CROWN, and LiRPA" | TorchLean, notebooks 11 |
+| Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | Cross-series GameTheory |
+| Sen, "Collective Choice and Social Welfare" (1970) | Cross-series GameTheory |
+
 ## Document source
 
 - Notebooks 1-5 bases sur : `D:\Dropbox\IA101\TPs\TP - Z3 - Tweety - Lean.pdf` (Section VI)
@@ -190,13 +224,28 @@ Lean/
 ├── Lean-7-LLM-Integration.ipynb    # Python kernel - APIs LLM
 ├── Lean-7b-Examples.ipynb          # Python kernel - benchmarks
 ├── Lean-8-Agentic-Proving.ipynb    # Python kernel - orchestration
-├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Semantic Kernel
+├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Agent Framework
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11-TorchLean-Python.ipynb  # Python kernel - Implementation algorithmes
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
+├── agent_tests/                    # Prover daemon (autonomous Lean proof)
+│   ├── multi_agent_proof.py        # CLI principal
+│   ├── lean_server.py              # Serveur Lean LSP
+│   └── prover/                     # Package prover (Microsoft Agent Framework)
+│       ├── __init__.py             # Exports: MultiAgentSorryProver, AutonomousProver
+│       ├── provers.py              # Multi-agent + Autonomous prover classes
+│       ├── workflow.py             # WorkflowBuilder graph (4 agents)
+│       ├── agents.py               # Agent factory (Search/Tactic/Critic/Coordinator)
+│       ├── tools.py                # Per-agent tools (file ops, compile, tactics)
+│       ├── state.py                # ProofState, SorryContext
+│       ├── config.py               # Providers (z.ai GLM-5.1, local Qwen), demos
+│       ├── instructions.py         # Agent system prompts
+│       ├── lean_utils.py           # Sorry extraction, goal state, verification
+│       ├── trace.py                # Conversation trace logger
+│       └── verifier.py             # Lean verification backend
 ├── examples/
 │   ├── basic_logic.lean
 │   ├── quantifiers.lean
@@ -208,6 +257,68 @@ Lean/
     ├── test_leandojo_repos.py      # Tests complets sur repos
     └── test_wsl_lean4_jupyter.py   # Tests backend WSL
 ```
+
+## Prover daemon
+
+Le package `agent_tests/prover/` implemente un prouveur autonome Lean 4 utilisant le Microsoft Agent Framework.
+
+### Architecture
+
+4 agents specialises dans un workflow conditionnel :
+
+1. **SearchAgent** : analyse le contexte, detecte les sorry, identifie les helpers
+2. **TacticAgent** : genere des tactiques de preuve (avec outils de compilation)
+3. **VerifyExecutor** : verifie les tactiques via `lake build` (non-LLM)
+4. **CriticAgent** : analyse les erreurs et route vers le bon agent
+
+### Usage
+
+```bash
+# Prouver un sorry dans un fichier .lean
+python agent_tests/multi_agent_proof.py --lean path/to/File.lean --sorry-line 128
+
+# Mode autonome (1 agent avec tous les outils)
+python agent_tests/multi_agent_proof.py --lean path/to/File.lean --mode autonomous
+
+# Mode multi-agent (4 agents specialises)
+python agent_tests/multi_agent_proof.py --lean path/to/File.lean --mode multi
+
+# Batch sur des demos
+python agent_tests/multi_agent_proof.py --batch --demos 1,2,3
+```
+
+### Configuration
+
+Le fichier `.env` dans `agent_tests/` ou le repertoire parent configure :
+- `ZAI_API_KEY` : cle API z.ai pour GLM-5.1 (raisonnement)
+- `ZAI_BASE_URL` : endpoint API z.ai
+- `LEAN_PROJECT_DIR` : repertoire du projet Lean (pour `lake build`)
+
+## Connections cross-series
+
+Les concepts de verification formelle et de preuve assistee par LLM presentes dans cette serie se retrouvent dans d'autres series du curriculum :
+
+### Lean et Theorie des Jeux (GameTheory)
+
+Les notebooks GameTheory side tracks (16b-16f) formalisent en Lean 4 des resultats fondamentaux de theorie des jeux et de choix social :
+
+| resultat | Fichier Lean | Notebook GameTheory | Statut |
+|----------|-------------|---------------------|--------|
+| Theoreme d'Arrow (impossibilite) | `social_choice_lean/SocialChoice/Arrow.lean` | 16d | 0 sorry (Geanakoplos 2005) |
+| Theoreme de Sen (liberalisme) | `social_choice_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
+| Valeur de Shapley | `cooperative_games_lean/CooperativeGames/Shapley.lean` | 16b | 1 sorry (en cours) |
+| Modeles de vote (Banks, STV) | `social_choice_lean/SocialChoice/Voting.lean` | 16f | 4 sorry (open problems) |
+| Gale-Shapley (stable marriage) | `stable_marriage_lean/StableMarriage/GaleShapley.lean` | (pas de notebook dedie) | 2 sorry / 5 theoremes. `gale_shapley_stable` CLOSED via mmaaz upstream (PR #1181). `man_optimal` + `woman_pessimal` OPEN (Knuth 1976 lattice, Wu-Roth 2018 — ~5-8j Mathlib). |
+
+Le notebook Lean-5 (tactiques) et Lean-6 (Mathlib) sont des prerequis directs pour les side tracks Lean de GameTheory.
+
+### Lean et SmartContracts
+
+La verification formelle en Lean (type theory, Curry-Howard) est conceptuellement liee a la verification formelle des smart contracts :
+
+- **SC-14 Formal Verification** : Certora/SMTChecker vs. Lean -- la meme idee de preuve mathematique de correction, mais sur des cibles differentes (Solidity vs. mathematiques). Les methodes different : SMT solving (automatique, borne) vs. tactiques interactives (expressif, guidable).
+- **SC-11 LLM-Assisted Contracts** : Le meme paradigme d'assistance LLM que les notebooks Lean-7/8/9, applique a la generation de smart contracts au lieu de preuves.
+- **SC-17 E2E Verifiable Voting** : Les resultats de `Voting.lean` (theoreme du median voter, proprietes Banks/STV) eclairent les proprietes theoriques des systemes de vote verifiable.
 
 ## Licence
 

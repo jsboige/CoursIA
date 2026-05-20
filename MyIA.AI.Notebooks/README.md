@@ -1,45 +1,52 @@
 # MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
 
-Ecosysteme complet de **508 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques.
+Ecosysteme complet de **473 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques.
 
-Dernière mise à jour : 2026-04-19
+<!-- CATALOG-STATUS
+series: ALL
+total: 474
+breakdown: GenAI=107, QuantConnect=102, SymbolicAI=90, Search=45, Probas=32, Sudoku=32, ML=30, GameTheory=25, RL=6, CaseStudies=4, IIT=1
+maturity: BETA=253, PRODUCTION=160, DRAFT=30, ALPHA=27, TEMPLATE=4
+-->
+
+Dernière mise à jour : 2026-05-02
 
 ## Vue d'ensemble
 
 | Domaine | Notebooks | Description |
 |---------|-----------|-------------|
-| **QuantConnect** | 143 | Trading algorithmique et ML financier (Python + C#) |
-| **SymbolicAI** | 91 | IA Symbolique (Lean, Tweety, SmartContracts, SemanticWeb, Planners) |
-| **Search** | 57 | Recherche, CSP, optimisation, metaheuristiques |
-| **GenAI** | 102 | IA Generative (Images, Audio, Video, Texte, Vibe-Coding) |
+| **GenAI** | 110 | IA Generative (Images, Audio, Video, Texte, Vibe-Coding) |
+| **QuantConnect** | 93 | Trading algorithmique et ML financier (Python + C#) |
+| **SymbolicAI** | 90 | IA Symbolique (Lean, Tweety, SmartContracts, SemanticWeb, Planners) |
+| **Search** | 45 | Recherche, CSP, optimisation, metaheuristiques |
 | **Sudoku** | 32 | Resolution de contraintes (.NET C#) |
+| **ML** | 30 | Machine Learning .NET + Python Agents for Data Science |
 | **GameTheory** | 26 | Theorie des Jeux (OpenSpiel, choix social Lean) |
-| **ML** | 27 | Machine Learning .NET + Python Agents for Data Science |
 | **Probas** | 22 | Programmation probabiliste (Infer.NET) |
-| **EPF** | 4 | Projets étudiants EPF (devoirs IA101) |
-| **RL** | 3 | Reinforcement Learning (Stable-Baselines3) |
+| **RL** | 6 | Reinforcement Learning (Stable-Baselines3) |
+| **CaseStudies** | 4 | Etudes de cas interdisciplinaires (diagnostic medical, planification oncologique) |
 | **IIT** | 1 | Integrated Information Theory (PyPhi) |
 
 ### Progression pedagogique
 
-```
-QuantConnect (143 notebooks)
-├── Python/ (27) - Cours progressifs QC-Py-01 a 27
-├── projects/ (95) - 78 strategies + 8 clones QC + 3 research + 6 framework
-├── ESGF-2026/ (19) - Cours ESGF exercices et templates
-└── shared/ (2) - Librairie utilitaire
-
-GenAI (102 notebooks)
-├── 00-Environment/ (4) - Setup
+```text
+GenAI (110 notebooks)
+├── 00-Environment/ (6) - Setup
 ├── Image/ (19) - Generation d'images
-├── Audio/ (16) - Traitement audio
+├── Audio/ (28) - Traitement audio
 ├── Video/ (16) - Traitement video
-├── Texte/ (10) - LLMs et texte
-├── SemanticKernel/ (14) - SDK Microsoft
-├── EPF/ (4) - Projets etudiants
-└── Vibe-Coding/ (19) - Claude-Code + Roo-Code
+├── Texte/ (11) - LLMs et texte
+├── SemanticKernel/ (20) - SDK Microsoft
+├── CaseStudies/ (4) - Etudes de cas etudiants
+└── Vibe-Coding/ (5) - Claude-Code + Roo-Code
 
-SymbolicAI (91 notebooks)
+QuantConnect (93 notebooks)
+├── Python/ (27) - Cours progressifs QC-Py-01 a 27
+├── projects/ (46) - Strategies backtests et ML
+├── ESGF-2026/ (19) - Cours ESGF exercices et templates
+└── shared/ (1) - Librairie utilitaire
+
+SymbolicAI (90 notebooks)
 ├── SmartContracts/ (26) - Solidity, Web3, blockchain
 ├── SemanticWeb/ (13) - RDF, SPARQL, OWL, C# + Python
 ├── Planners/ (12) - PDDL, Fast-Downward, OR-Tools, LLM planning
@@ -80,16 +87,16 @@ SymbolicAI (91 notebooks)
 
 | Domaine | Notebooks | Lien |
 |---------|-----------|------|
-| **QuantConnect** | 143 | [QuantConnect/](QuantConnect/README.md) |
-| **GenAI** | 102 | [GenAI/](GenAI/README.md) |
-| **ML** | 27 | [ML/](ML/README.md) |
-| **SymbolicAI** | 91 | [SymbolicAI/](SymbolicAI/README.md) |
-| **Search** | 57 | [Search/](Search/README.md) |
-| **GameTheory** | 26 | [GameTheory/](GameTheory/README.md) |
+| **GenAI** | 110 | [GenAI/](GenAI/README.md) |
+| **QuantConnect** | 93 | [QuantConnect/](QuantConnect/README.md) |
+| **SymbolicAI** | 90 | [SymbolicAI/](SymbolicAI/README.md) |
+| **Search** | 45 | [Search/](Search/README.md) |
 | **Sudoku** | 32 | [Sudoku/](Sudoku/README.md) |
+| **ML** | 30 | [ML/](ML/README.md) |
+| **GameTheory** | 26 | [GameTheory/](GameTheory/README.md) |
 | **Probas** | 22 | [Probas/](Probas/README.md) |
-| **RL** | 3 | [RL/](RL/README.md) |
-| **EPF** | 4 | [EPF/](EPF/README.md) |
+| **RL** | 6 | [RL/](RL/README.md) |
+| **CaseStudies** | 4 | [CaseStudies/](CaseStudies/README.md) |
 | **IIT** | 1 | [IIT/](IIT/README.md) |
 
 ## Configuration requise

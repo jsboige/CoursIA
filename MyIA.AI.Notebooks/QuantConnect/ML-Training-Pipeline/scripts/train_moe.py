@@ -1,0 +1,567 @@
+"""
+End-to-end MoE training pipeline for financial direction prediction.
+
+Combines:
+    1. data_sources.py — fetch price data (local CSV / yfinance / FRED)
+    2. panier_loader.py — load anti-bias panier data
+    3. regime_detector.py — label each timestep with market regime
+    4. features.py — compute OHLCV features
+    5. moe_experts.py — train per-regime expert models
+    6. baselines.py — majority-class baseline comparison
+    7. transaction_costs.py — apply costs to simulated trades
+
+Output:
+    - Per-regime and overall accuracy vs majority baseline
+    - Walk-forward fold results
+    - Trained MoERouter saved as pickle
+
+Usage:
+    python train_moe.py --symbol SPY --regime-method price --n-folds 5
+    python train_moe.py --panier --regime-method hmm --n-folds 3
+
+Issue #754 Phase B: MoE+régimes approach to beat majority baseline.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+# Add scripts dir to path for imports
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from baselines import majority_class_baseline
+from moe_experts import MoEConfig, MoERouter, train_moe_walk_forward
+
+log = logging.getLogger(__name__)
+
+
+def _setup_logging(verbose: bool = False) -> None:
+    level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)-8s %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
+
+def _compute_direction_target(
+    df: pd.DataFrame, horizon: int = 1, threshold: float = 0.0
+) -> pd.Series:
+    """Compute binary direction target: 1 if forward return > threshold."""
+    fwd = df["Close"].pct_change(horizon).shift(-horizon)
+    return (fwd > threshold).astype(int)
+
+
+def _prepare_features(
+    df: pd.DataFrame,
+    lookback: int = 20,
+) -> pd.DataFrame:
+    """Prepare feature matrix from OHLCV data.
+
+    Features: returns (1/5/10/20d), volatility, volume ratio, MA ratios.
+    """
+    feat = pd.DataFrame(index=df.index)
+
+    close = df["Close"]
+    for w in [1, 5, 10, 20]:
+        feat[f"ret_{w}d"] = close.pct_change(w)
+
+    feat["vol_5d"] = close.pct_change().rolling(5).std()
+    feat["vol_20d"] = close.pct_change().rolling(20).std()
+
+    if "Volume" in df.columns:
+        feat["vol_ratio"] = df["Volume"] / df["Volume"].rolling(20).mean()
+
+    for w in [5, 10, 20, 60]:
+        feat[f"ma_ratio_{w}"] = close / close.rolling(w).mean()
+
+    return feat.dropna()
+
+
+def _load_symbol_data(
+    symbol: str,
+    data_dir: str | None = None,
+    start: str = "2015-01-01",
+    end: str = "2025-01-01",
+) -> pd.DataFrame:
+    """Load data for a single symbol using data_sources or panier_loader."""
+    # Try panier first (for anti-bias data)
+    try:
+        from panier_loader import load_panier
+        panier = load_panier(start=start, end=end)
+        if symbol in panier:
+            return panier[symbol]
+    except Exception:
+        pass
+
+    # Fall back to data_sources
+    try:
+        from data_sources import fetch_data
+        df = fetch_data(
+            symbol=symbol,
+            start=start,
+            end=end,
+            source="auto",
+            data_dir=data_dir,
+        )
+        if df is not None and len(df) > 0:
+            return df
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("fetch_data failed for %s: %s", symbol, e)
+
+    raise FileNotFoundError(
+        f"No data found for {symbol}. "
+        "Ensure panier data or local CSVs are available."
+    )
+
+
+def _load_dataset_v2(
+    symbol: str,
+    dataset_dir: str | Path,
+) -> pd.DataFrame | None:
+    """Load pre-computed Dataset V2 features for a symbol.
+
+    Dataset V2 includes 46 features (technical + cross-asset + regime labels).
+    """
+    dataset_dir = Path(dataset_dir)
+    safe_symbol = symbol.replace("-", "_").replace(".", "_")
+    parquet_path = dataset_dir / f"{safe_symbol}_v2.parquet"
+    csv_path = dataset_dir / f"{safe_symbol}_v2.csv"
+
+    if parquet_path.exists():
+        return pd.read_parquet(parquet_path)
+    if csv_path.exists():
+        return pd.read_csv(csv_path, index_col=0, parse_dates=True)
+
+    return None
+
+
+def _train_moe_panier(
+    panier_group: str | None = None,
+    regime_method: str = "price",
+    n_folds: int = 5,
+    lookback: int = 20,
+    horizon: int = 1,
+    hidden_sizes: tuple[int, ...] = (64, 32),
+    min_samples_per_expert: int = 50,
+    max_iter: int = 200,
+    seed: int = 42,
+    start: str = "2015-01-01",
+    end: str = "2025-01-01",
+    output_dir: str | None = None,
+) -> dict:
+    """Train MoE across all symbols in a panier group.
+
+    Loads each symbol from panier data, trains an MoE pipeline per symbol,
+    and returns combined results with per-symbol breakdown.
+    """
+    from panier_loader import get_panier_symbols, load_panier
+    from regime_detector import detect_regimes
+
+    symbols = get_panier_symbols(group=panier_group)
+    log.info(f"PANIER mode: loading {len(symbols)} symbols from group '{panier_group or 'all'}'")
+
+    panier = load_panier(group=panier_group, start=start, end=end)
+    loaded = {s: df for s, df in panier.items() if len(df) >= 500}
+    log.info(f"Loaded {len(loaded)}/{len(symbols)} symbols with >= 500 rows")
+
+    all_results = {}
+    for sym, df in loaded.items():
+        log.info(f"\n--- Panier: {sym} ({len(df)} rows) ---")
+        np.random.seed(seed)
+        t0 = time.time()
+
+        try:
+            features = _prepare_features(df, lookback=lookback)
+            target = _compute_direction_target(df, horizon=horizon)
+            common_idx = features.index.intersection(target.dropna().index)
+            features = features.loc[common_idx]
+            target = target.loc[common_idx]
+            X = features.values.astype(np.float32)
+            y = target.values.astype(int)
+
+            if len(X) < 200:
+                log.warning(f"{sym}: only {len(X)} samples after features, skipping")
+                continue
+
+            prices = df["Close"].loc[common_idx]
+            regime_series = detect_regimes(prices, method=regime_method)
+            regime_labels = regime_series.values
+
+            config = MoEConfig(
+                expert_type="mlp",
+                hidden_sizes=hidden_sizes,
+                max_iter=max_iter,
+                min_samples_per_expert=min_samples_per_expert,
+                random_state=seed,
+                regime_method=regime_method,
+            )
+
+            wf_results = train_moe_walk_forward(
+                features=X, targets=y,
+                regime_labels=regime_labels,
+                n_folds=n_folds, config=config,
+            )
+
+            fold_accs = [r["overall_accuracy"] for r in wf_results]
+            mean_acc = np.mean(fold_accs) if fold_accs else 0.0
+            majority_train = int(np.mean(y[: len(y) // 2]) > 0.5)
+            majority_acc = float(np.mean(np.full(len(y), majority_train) == y))
+
+            all_results[sym] = {
+                "n_samples": len(X),
+                "moe_mean_accuracy": float(mean_acc),
+                "majority_baseline": majority_acc,
+                "beats_majority": bool(mean_acc > majority_acc),
+                "n_folds": len(wf_results),
+                "elapsed": round(time.time() - t0, 1),
+            }
+            log.info(
+                f"{sym}: MoE={mean_acc:.3f} vs majority={majority_acc:.3f} "
+                f"({'BEATS' if mean_acc > majority_acc else 'NO BEAT'})"
+            )
+        except Exception as e:
+            log.warning(f"{sym}: FAILED - {e}")
+            all_results[sym] = {"error": str(e)}
+
+    # Summary
+    valid = {k: v for k, v in all_results.items() if "error" not in v}
+    beats = sum(1 for v in valid.values() if v.get("beats_majority"))
+    mean_diracc = np.mean([v["moe_mean_accuracy"] for v in valid.values()]) if valid else 0.0
+
+    summary = {
+        "panier_mode": True,
+        "panier_group": panier_group,
+        "n_symbols_loaded": len(loaded),
+        "n_symbols_trained": len(valid),
+        "n_beats_majority": beats,
+        "mean_diracc": round(mean_diracc, 4),
+        "per_symbol": all_results,
+    }
+
+    if output_dir:
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        grp = panier_group or "all"
+        rf = out / f"moe_panier_{grp}_{regime_method}_results.json"
+        rf.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+        log.info(f"Panier results saved to {rf}")
+
+    log.info(
+        f"\n{'='*60}\n"
+        f"PANIER MoE Summary ({panier_group or 'all'}, {regime_method})\n"
+        f"{'='*60}\n"
+        f"Trained: {len(valid)}/{len(loaded)} | Beats majority: {beats}\n"
+        f"Mean DirAcc: {mean_diracc:.4f}\n"
+        f"{'='*60}"
+    )
+    return summary
+
+
+def train_moe_pipeline(
+    symbol: str = "SPY",
+    panier_mode: bool = False,
+    panier_group: str | None = None,
+    regime_method: str = "price",
+    n_folds: int = 5,
+    lookback: int = 20,
+    horizon: int = 1,
+    hidden_sizes: tuple[int, ...] = (64, 32),
+    min_samples_per_expert: int = 50,
+    max_iter: int = 200,
+    seed: int = 42,
+    start: str = "2015-01-01",
+    end: str = "2025-01-01",
+    data_dir: str | None = None,
+    dataset_v2_dir: str | None = None,
+    output_dir: str | None = None,
+    expert_type: str = "mlp",
+    seq_len: int = 20,
+    d_model: int = 64,
+    nhead: int = 4,
+    num_layers: int = 2,
+    dropout: float = 0.1,
+    batch_size: int = 32,
+    learning_rate: float = 1e-3,
+    device: str = "cpu",
+) -> dict:
+    """Run full MoE training pipeline.
+
+    In panier_mode, iterates over all symbols in the panier group and trains
+    one MoE per symbol, returning combined results.
+
+    Returns dict with results: walk-forward folds, overall stats, baseline comparison.
+    """
+    if panier_mode:
+        return _train_moe_panier(
+            panier_group=panier_group,
+            regime_method=regime_method,
+            n_folds=n_folds,
+            lookback=lookback,
+            horizon=horizon,
+            hidden_sizes=hidden_sizes,
+            min_samples_per_expert=min_samples_per_expert,
+            max_iter=max_iter,
+            seed=seed,
+            start=start,
+            end=end,
+            output_dir=output_dir,
+        )
+
+    np.random.seed(seed)
+    t0 = time.time()
+
+    regime_col = f"regime_{regime_method}" if regime_method != "both" else "regime_price"
+
+    # --- Load features ---
+    if dataset_v2_dir:
+        # Use pre-computed Dataset V2 (46 features + regime labels)
+        log.info(f"Loading Dataset V2 for {symbol} from {dataset_v2_dir}...")
+        features_df = _load_dataset_v2(symbol, dataset_v2_dir)
+        if features_df is None:
+            raise FileNotFoundError(
+                f"No Dataset V2 file found for {symbol} in {dataset_v2_dir}"
+            )
+
+        # Extract target and regime columns
+        if "target" not in features_df.columns:
+            raise ValueError("Dataset V2 missing 'target' column")
+
+        regime_labels = None
+        if regime_col in features_df.columns:
+            regime_labels = features_df[regime_col].values
+        else:
+            log.warning(f"No '{regime_col}' in Dataset V2, falling back to price regime")
+
+        target_raw = features_df["target"]
+        y = (target_raw > 0).astype(int).values
+
+        feature_cols = [
+            c for c in features_df.columns
+            if c not in ("target",) and not c.startswith("regime_")
+        ]
+        X = features_df[feature_cols].values.astype(np.float32)
+        log.info(f"Dataset V2 loaded: {X.shape[1]} features, {X.shape[0]} samples")
+    else:
+        # Legacy path: compute features from OHLCV
+        log.info(f"Loading OHLCV data for {symbol}...")
+        df = _load_symbol_data(symbol, data_dir=data_dir, start=start, end=end)
+        log.info(f"Loaded {len(df)} rows for {symbol}")
+
+        if len(df) < 500:
+            raise ValueError(f"Insufficient data: {len(df)} rows (need >= 500)")
+
+        features = _prepare_features(df, lookback=lookback)
+        target = _compute_direction_target(df, horizon=horizon)
+
+        common_idx = features.index.intersection(target.dropna().index)
+        features = features.loc[common_idx]
+        target = target.loc[common_idx]
+
+        X = features.values.astype(np.float32)
+        y = target.values.astype(int)
+
+    log.info(f"Features: {X.shape[1]} cols, {X.shape[0]} samples")
+    log.info(f"Target balance: {y.mean():.3f} positive")
+
+    # --- Regime detection (if not from Dataset V2) ---
+    if regime_labels is None:
+        log.info(f"Detecting regimes (method={regime_method})...")
+        from regime_detector import detect_regimes
+
+        prices = df["Close"].loc[common_idx]
+        regime_series = detect_regimes(prices, method=regime_method)
+        regime_labels = regime_series.values
+
+    regime_counts = pd.Series(regime_labels).value_counts()
+    log.info(f"Regime distribution:\n{regime_counts.to_string()}")
+
+    # --- Walk-forward MoE training ---
+    log.info(f"Starting walk-forward MoE training ({n_folds} folds)...")
+    config = MoEConfig(
+        expert_type=expert_type,
+        hidden_sizes=hidden_sizes,
+        max_iter=max_iter,
+        min_samples_per_expert=min_samples_per_expert,
+        random_state=seed,
+        regime_method=regime_method,
+        seq_len=seq_len,
+        d_model=d_model,
+        nhead=nhead,
+        num_layers=num_layers,
+        dropout=dropout,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        device=device,
+    )
+
+    wf_results = train_moe_walk_forward(
+        features=X,
+        targets=y,
+        regime_labels=regime_labels,
+        n_folds=n_folds,
+        config=config,
+    )
+
+    # --- Baseline comparison ---
+    log.info("Computing majority baseline...")
+    majority_train = int(np.mean(y[: len(y) // 2]) > 0.5)
+    majority_preds = np.full(len(y), majority_train)
+    majority_acc = float(np.mean(majority_preds == y))
+
+    # --- Aggregate results ---
+    fold_accuracies = [r["overall_accuracy"] for r in wf_results]
+    mean_acc = np.mean(fold_accuracies) if fold_accuracies else 0.0
+
+    beats_majority = mean_acc > majority_acc
+    elapsed = time.time() - t0
+
+    result = {
+        "symbol": symbol,
+        "regime_method": regime_method,
+        "n_folds": len(wf_results),
+        "n_features": X.shape[1],
+        "n_samples": X.shape[0],
+        "target_balance": float(y.mean()),
+        "majority_baseline": majority_acc,
+        "moe_mean_accuracy": float(mean_acc),
+        "moe_fold_accuracies": [float(a) for a in fold_accuracies],
+        "beats_majority": bool(beats_majority),
+        "regime_counts": {str(k): int(v) for k, v in regime_counts.items()},
+        "config": {
+            "expert_type": expert_type,
+            "hidden_sizes": list(hidden_sizes),
+            "max_iter": max_iter,
+            "min_samples_per_expert": min_samples_per_expert,
+            "seed": seed,
+            "lookback": lookback,
+            "horizon": horizon,
+            "seq_len": seq_len,
+            "d_model": d_model,
+            "device": device,
+        },
+        "elapsed_seconds": round(elapsed, 1),
+    }
+
+    # --- Save results ---
+    if output_dir:
+        out_path = Path(output_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+        result_file = out_path / f"moe_{symbol}_{regime_method}_results.json"
+        with open(result_file, "w") as f:
+            json.dump(result, f, indent=2, default=str)
+        log.info(f"Results saved to {result_file}")
+
+    log.info(
+        f"\n{'='*60}\n"
+        f"MoE Results for {symbol} ({regime_method} regimes)\n"
+        f"{'='*60}\n"
+        f"Folds: {len(wf_results)} | Samples: {X.shape[0]}\n"
+        f"Majority baseline: {majority_acc:.3f}\n"
+        f"MoE mean accuracy: {mean_acc:.3f}\n"
+        f"BEATS MAJORITY: {'YES' if beats_majority else 'NO'}\n"
+        f"Per fold: {[f'{a:.3f}' for a in fold_accuracies]}\n"
+        f"Elapsed: {elapsed:.1f}s\n"
+        f"{'='*60}"
+    )
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="MoE training pipeline for financial direction prediction"
+    )
+    parser.add_argument(
+        "--symbol", default="SPY",
+        help="Ticker symbol (default: SPY)",
+    )
+    parser.add_argument(
+        "--panier", action="store_true",
+        help="Use panier anti-bias data (train MoE across all panier symbols)",
+    )
+    parser.add_argument(
+        "--panier-group", default=None,
+        choices=["us_equity_broad", "us_equity_sectors", "volatility", "us_bonds",
+                 "commodities", "international", "crypto"],
+        help="Panier asset group to train on (default: all)",
+    )
+    parser.add_argument(
+        "--regime-method", default="price",
+        choices=["price", "hmm"],
+        help="Regime detection method (default: price)",
+    )
+    parser.add_argument("--n-folds", type=int, default=5)
+    parser.add_argument("--lookback", type=int, default=20)
+    parser.add_argument("--horizon", type=int, default=1)
+    parser.add_argument("--max-iter", type=int, default=200)
+    parser.add_argument("--min-samples", type=int, default=50)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--start", default="2015-01-01")
+    parser.add_argument("--end", default="2025-01-01")
+    parser.add_argument("--data-dir", default=None)
+    parser.add_argument(
+        "--dataset-v2-dir", default=None,
+        help="Directory with Dataset V2 Parquet files (46 features pre-computed)",
+    )
+    parser.add_argument("--output-dir", default=None)
+    parser.add_argument(
+        "--expert-type", default="mlp",
+        choices=["mlp", "lstm", "transformer"],
+        help="Expert model type (default: mlp)",
+    )
+    parser.add_argument("--seq-len", type=int, default=20, help="Sequence length for LSTM/Transformer experts")
+    parser.add_argument("--d-model", type=int, default=64, help="d_model for Transformer experts")
+    parser.add_argument("--nhead", type=int, default=4, help="Number of attention heads for Transformer experts")
+    parser.add_argument("--num-layers", type=int, default=2, help="Number of layers for LSTM/Transformer experts")
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 32], help="Hidden layer sizes")
+    parser.add_argument("--epochs", type=int, default=50, help="Training epochs for PyTorch experts")
+    parser.add_argument("--device", default="cpu", help="Device for PyTorch experts (cpu/cuda)")
+    parser.add_argument("-v", "--verbose", action="store_true")
+
+    args = parser.parse_args()
+    _setup_logging(args.verbose)
+
+    train_moe_pipeline(
+        symbol=args.symbol,
+        panier_mode=args.panier,
+        panier_group=args.panier_group,
+        regime_method=args.regime_method,
+        n_folds=args.n_folds,
+        lookback=args.lookback,
+        horizon=args.horizon,
+        max_iter=args.epochs if args.expert_type != "mlp" else args.max_iter,
+        min_samples_per_expert=args.min_samples,
+        seed=args.seed,
+        start=args.start,
+        end=args.end,
+        data_dir=args.data_dir,
+        dataset_v2_dir=args.dataset_v2_dir,
+        output_dir=args.output_dir,
+        expert_type=args.expert_type,
+        seq_len=args.seq_len,
+        d_model=args.d_model,
+        nhead=args.nhead,
+        num_layers=args.num_layers,
+        hidden_sizes=tuple(args.hidden_sizes),
+        device=args.device,
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -1,7 +1,17 @@
 # QuantConnect AI Trading - Série Éducative CoursIA
 
-> **Trading algorithmique + Intelligence Artificielle**
-> 28 notebooks Python | Cloud-first | Free Tier compatible
+<!-- CATALOG-STATUS
+series: QuantConnect
+pedagogical_count: 102
+breakdown: Python=51, projects=49, ML-Training-Pipeline=2
+maturity: PRODUCTION=73, BETA=16, ALPHA=10, DRAFT=2, TEMPLATE=1
+-->
+
+Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus de 60% des volumes aux États-Unis sont générés par des algorithmes. Cette série vous apprend à construire, tester et déployer vos propres stratégies de trading automatisées sur la plateforme **QuantConnect LEAN** — un framework open-source utilisé par des milliers de quants professionnels. Le parcours va des fondements (lifecycle d'un algorithme, gestion des données) aux frontières de l'IA (Transformers, RL, LLMs pour signaux de trading).
+
+La série couvre huit phases progressives. Les **fondements** (phases 1-4) maîtrisent l'écosystème QuantConnect : architecture LEAN, universe selection, options/futures, risk management, et l'Algorithm Framework modulaire. La **préparation ML** (phase 5) intègre les données alternatives et le feature engineering. Le **machine learning** (phases 6-7) applique les modèles classiques (Random Forest, XGBoost) puis le deep learning (LSTM, Transformers, autoencoders) aux séries temporelles financières. La **production** (phase 8) couvre le RL, les LLMs pour le trading, et le déploiement live. Chaque notebook est exécutable sur le cloud QuantConnect (free tier) sans installation locale.
+
+**À qui s'adresse cette série** : étudiants en finance quantitative, ingénieurs ML souhaitant appliquer leurs compétences aux marchés, et développeurs curieux de trading algorithmique. Les notebooks Python s'exécutent sur QuantConnect Cloud (gratuit) ou localement avec le LEAN engine. Le livre de référence est *"Hands-On AI Trading"* (Jared Broad, 2025). Aucun capital de départ nécessaire : tout se passe en backtest et paper trading.
 
 ---
 
@@ -31,9 +41,9 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
-- **28 notebooks Python** organisés en 8 phases
+- **46 notebooks Python** (28 cours + 4 training local + 2 paper-trading + 12 Cloud-ready)
 - **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
-- **9 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM)
+- **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
 - **Free tier compatible** avec workarounds pour fonctionnalités payantes
 
 ---
@@ -232,8 +242,13 @@ Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et 
 ### Guides de démarrage
 
 - **[GETTING-STARTED.md](GETTING-STARTED.md)** : Guide de démarrage détaillé
-- **[ECE-QC-QUICKSTART.md](ECE-QC-QUICKSTART.md)** : Guide pour étudiants ECE
-- **[HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
+- **[docs/HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
+- **[docs/BOOK_MAPPING.md](docs/BOOK_MAPPING.md)** : Mapping notebooks ↔ chapitres
+- **[docs/qc_strategies_catalog.md](docs/qc_strategies_catalog.md)** : Catalogue strategies QC Cloud
+- **[docs/HANDSON_DATA_REQUIREMENTS.md](docs/HANDSON_DATA_REQUIREMENTS.md)** : Datasets requis
+- **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading
+- **[docs/PROCEDURE_DEPLOIEMENT.md](docs/PROCEDURE_DEPLOIEMENT.md)** : Procédure de déploiement
+- **[docs/audits/](docs/audits/)** : Rapports d'audit historiques (AUDIT_QC_CLOUD, AUDIT_QC_ORG, VALIDATION-REPORT, AUDIT_RAPPORT)
 
 ### Bibliothèques partagées
 
@@ -244,6 +259,8 @@ Le dossier [`shared/`](shared/) contient des modules Python réutilisables :
 - **ml_utils.py** : ML training, persistence (ObjectStore)
 - **plotting.py** : Visualisations standardisées
 - **backtest_helpers.py** : Helpers configuration backtests
+
+Documentation détaillée : [`shared/SHARED_LIBRARY.md`](shared/SHARED_LIBRARY.md).
 
 ### Scripts de validation
 
@@ -353,6 +370,19 @@ Après completion de cette série, vous maîtriserez :
 - 🧠 Stratégie LSTM pour prédiction prix court-terme
 - 💡 LLM-augmented strategy combinant GPT-4 + indicateurs
 - 🏭 Déploiement production en paper trading
+
+---
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [ML](../ML/README.md) | Machine Learning | Les modeles de prediction ML (regression, classification, XGBoost) s'appliquent directement aux strategies de trading (QC-13 a QC-16) |
+| [GenAI](../GenAI/README.md) | IA generative | L'analyse de sentiment par LLM (QC-17) et les agents semantiques (QC-18) utilisent les LLMs couverts dans GenAI/Texte |
+| [RL](../RL/README.md) | Apprentissage par renforcement | Les strategies RL (QC-22 PPO, QC-23 DRL, QC-24 Crypto RL) prolongent les fondamentaux RL de cette serie |
+| [Probas](../Probas/README.md) | Programmation probabiliste | La modelisation bayesienne des rendements et la gestion du risque s'appuient sur les modeles probabilistes de la serie Probas |
+| [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres de strategies (grid search, bayesienne) rejoint les techniques de recherche |
+| [TimeSeries](../TimeSeries/README.md) | Series temporelles | L'analyse technique (QC-4 a QC-7) partage les memes fondements que l'analyse de series temporelles |
 
 ---
 

@@ -124,6 +124,16 @@ SERVICES: Dict[str, Dict[str, Any]] = {
         "vram_required": "4GB+",
         "remote_url": "https://demucs-api.myia.io",
     },
+    "funasr-api": {
+        "compose_dir": SERVICES_DIR / "funasr-api",
+        "container_name": "funasr-api",
+        "port": 8194,
+        "health_endpoint": "/health",
+        "auth_type": None,
+        "gpu_id": 1,
+        "vram_required": "4GB+",
+        "remote_url": "https://stt.myia.io/funasr",
+    },
     # --- Services Video (nouveau) ---
     "comfyui-video": {
         "compose_dir": SERVICES_DIR / "comfyui-video",

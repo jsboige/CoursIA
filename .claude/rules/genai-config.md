@@ -4,40 +4,30 @@ paths: MyIA.AI.Notebooks/GenAI/**/*
 
 # GenAI Configuration Rules
 
-## Environment
+**Documentation complète** (services, modèles, VRAM, quantizations par service, GPU allocation, ComfyUI Qwen Phase 29) : [docs/genai-services.md](../../docs/genai-services.md).
 
-- API keys in `MyIA.AI.Notebooks/GenAI/.env` (template: `.env.example`)
-- Required variables: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_BEARER_TOKEN`, `HUGGINGFACE_TOKEN`
-- Use `/validate-genai` before executing GenAI notebooks
+## Règles HARD
 
-## Services
+- API keys dans `MyIA.AI.Notebooks/GenAI/.env` (template `.env.example`)
+- Variables requises : `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_BEARER_TOKEN`, `HUGGINGFACE_TOKEN`
+- Lancer `/validate-genai` ou `python scripts/genai-stack/genai.py validate --full` AVANT exécution de notebooks GenAI
+- Hook `block-secrets.py` bloque les `.env` — demander au user d'éditer manuellement
 
-| Service | Model | VRAM | URL |
-|---------|-------|------|-----|
-| Qwen Image Edit | qwen_image_edit_2509 | ~29GB | qwen-image-edit.myia.io |
-| Z-Image/Lumina | Lumina-Next-SFT | ~10GB | z-image.myia.io |
+## ComfyUI Qwen — Architecture critique (Phase 29)
 
-## Validation Scripts
+Diffère du SDXL standard. À ne PAS modifier sans test :
+- VAE : 16 channels (NOT SDXL standard) — `EmptySD3LatentImage`
+- Scheduler : `beta` (mandatory)
+- CFG : 1.0 (uses `CFGNorm`, not classic CFG)
+- `ModelSamplingAuraFlow` : `shift=3.0`
+- Loaders séparés : `VAELoader` + `CLIPLoader(type=sd3)` + `UNETLoader` (NOT `CheckpointLoaderSimple`)
+- Text encoding : `TextEncodeQwenImageEdit` (NOT `CLIPTextEncode`), negative : `ConditioningZeroOut`
 
-All in `scripts/genai-stack/`:
-- `validate_stack.py` - Full stack validation
-- `validate_notebooks.py` - Notebook execution
-- `check_vram.py` - GPU check
-- `list_models.py` - Model inventory
-- `docker_manager.py` - Docker management
+Pipeline complet et workflow JSON : [docs/genai-services.md](../../docs/genai-services.md).
 
-## ComfyUI Qwen Architecture
+## Scripts validation
 
-- VAE: 16 channels (NOT SDXL standard)
-- Scheduler: `beta` (mandatory)
-- CFG: 1.0 (uses CFGNorm, not classic CFG)
-- ModelSamplingAuraFlow: shift=3.0
-
-## Docker Services
-
-```bash
-cd docker-configurations/services/comfyui-qwen
-cp .env.example .env
-docker-compose up -d
-```
-Access: http://localhost:8188 (requires Bearer token authentication)
+Tous dans `scripts/genai-stack/` (preferer le script wrapper `genai.py`) :
+- `genai.py docker status` — état services
+- `genai.py validate --full` — validation complète
+- `genai.py validate --notebooks` — exec notebooks

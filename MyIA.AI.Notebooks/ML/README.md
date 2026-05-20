@@ -1,14 +1,31 @@
 # ML - Machine Learning
 
-Serie de notebooks couvrant le Machine Learning avec deux approches complementaires : **ML.NET** pour l'ecosysteme .NET/C# et **Python Data Science with Agents** pour les pipelines modernes avec LLMs.
+<!-- CATALOG-STATUS
+series: ML
+pedagogical_count: 30
+breakdown: DataScienceWithAgents=22, ML.Net=8
+maturity: BETA=21, ALPHA=4, PRODUCTION=4, DRAFT=1
+-->
 
-## Vue d'ensemble
+Vous êtes développeur ou analyste et vous voulez construire des modèles prédictifs sans devenir data scientist théoricien ? Cette série vous forme au Machine Learning pratique avec deux stack complémentaires : **ML.NET** pour l'écosystème .NET/C# (8 notebooks, ~6h) et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs (22 notebooks, ~20h). À la fin, vous saurez charger des données, entraîner un modèle, l'évaluer rigoureusement, et le déployer en production.
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 30 (8 C#, 22 Python) |
-| Sous-dossiers | 2 (ML.Net, DataScienceWithAgents) |
-| Duree totale estimee | ~25h |
+## Parcours d'apprentissage
+
+### Track A : ML.NET (.NET/C#, 8 notebooks, ~6h)
+
+Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML). Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
+
+### Track B : Data Science with Agents (Python, 22 notebooks, ~20h)
+
+Le parcours Python commence par les fondations (NumPy/Pandas) puis se divise en deux sous-tracks. Le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique (régression, classification, clustering), les modèles d'ensemble et le NLP de base. Le sous-track **Google ADK** (Labs 8-17) monte en complexité avec le deep learning (PyTorch), l'analyse de survivors, le dashboarding, et les pipelines agentic (agents LLM pour automatiser le workflow data science). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
+
+## Positionnement pedagogique
+
+Cette série sert les cours **ECE / EPITA / EPF** en introduction au Machine Learning appliqué. Elle se situe après les fondamentaux de programmation (Python ou C#) et avant les séries spécialisées ([QuantConnect](../QuantConnect/) pour le trading, [RL](../RL/) pour l'apprentissage par renforcement). Aucune prérequis en statistiques avancées : les concepts sont introduits au fil des notebooks.
+
+**Slides de cours associes** : [06-apprentissage/](../../slides/06-apprentissage/) | **Livre de reference** : [Hands-On AI Trading](https://www.hands-on-ai-trading.com/) (chapitres ML)
+
+**30 notebooks** | **2 sous-domaines** | **~25h** | **.NET Interactive + Python**
 
 ## Structure
 
@@ -33,7 +50,7 @@ ML/
 
 ## ML.NET (C# / .NET Interactive)
 
-Serie de 5 notebooks couvrant ML.NET de l'introduction a l'evaluation avancee.
+Serie de 8 notebooks couvrant ML.NET de l'introduction a l'evaluation avancee. Vous apprendrez a construire un pipeline ML complet en C#, du chargement de donnees au deploiement ONNX, en passant par l'entrainement, l'AutoML, et l'evaluation rigoureuse.
 
 | # | Notebook | Contenu | Focus |
 |---|----------|---------|-------|
@@ -61,7 +78,7 @@ Documentation complete : [ML.Net/README.md](ML.Net/README.md)
 
 ## Python Data Science with Agents
 
-Formation complete en Data Science Python avec integration d'agents IA.
+Formation complete en Data Science Python enrichie d'agents IA. Vous commencerez par les fondamentaux (NumPy, Pandas), puis construirez des agents LLM capables d'analyser des donnees, de nettoyer des datasets, et de participer a des competitions Kaggle. La seconde moitie plonge dans les frameworks Google ADK pour construire des systemes multi-agents avances.
 
 ### Fondations (01-PythonForDataScience)
 
@@ -123,11 +140,33 @@ Documentation complete : [DataScienceWithAgents/README.md](DataScienceWithAgents
 
 ## Public cible
 
-| Section | Audience |
-|---------|----------|
-| **ML.NET** | Developpeurs C#/.NET, environnements enterprise |
-| **Python Data Science** | Analystes, data scientists, debutants-intermediaires |
-| **AI Agents** | Praticiens IA souhaitant integrer LLMs |
+| Section | Audience | Prerequis |
+|---------|----------|-----------|
+| **ML.NET** | Developpeurs C#/.NET, environnements enterprise | C# base, .NET SDK 9.0+ |
+| **Python Data Science (Days 1-3)** | Analystes, data scientists, debutants-intermediaires | Python base, Jupyter |
+| **AI Agents (Days 4-7)** | Praticiens IA souhaitant integrer LLMs | Days 1-3 ou experience equivalente |
+
+## Progression recommandee
+
+### Parcours Data Scientist classique (~12h)
+
+1. [ML-1](ML.Net/ML-1-Introduction.ipynb) → comprendre le pipeline ML
+1. [NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) + [Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) → maitriser les donnees
+1. [ML-2](ML.Net/ML-2-Data&Features.ipynb) + [ML-3](ML.Net/ML-3-Entrainement&AutoML.ipynb) → entrainer des modeles
+1. [ML-4](ML.Net/ML-4-Evaluation.ipynb) → evaluer rigoureusement
+
+### Parcours AI Agent Builder (~15h)
+
+1. Days 1-3 (Labs 1-7) : Data Science + LangChain
+1. Days 4-7 (Labs 8-17) : Google ADK + multi-agents
+1. Projets finaux : Kaggle + BigQuery
+
+### Parcours Enterprise .NET (~6h)
+
+1. [ML-1](ML.Net/ML-1-Introduction.ipynb) a [ML-4](ML.Net/ML-4-Evaluation.ipynb) : fondamentaux ML.NET
+1. [ML-5](ML.Net/ML-5-TimeSeries.ipynb) : series temporelles
+1. [ML-6](ML.Net/ML-6-ONNX.ipynb) : interop Python → .NET
+1. [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) : projet integre
 
 ## Concepts cles
 
@@ -145,12 +184,14 @@ Documentation complete : [DataScienceWithAgents/README.md](DataScienceWithAgents
 
 - [Documentation ML.NET](https://docs.microsoft.com/en-us/dotnet/machine-learning/)
 - [ML.NET Samples](https://github.com/dotnet/machinelearning-samples)
+- [Hands-On AI Trading](https://www.hands-on-ai-trading.com/) — chapitres ML.NET et pipeline de trading
 
 ### Python Data Science
 
 - [Pandas Documentation](https://pandas.pydata.org/docs/)
 - [Scikit-Learn User Guide](https://scikit-learn.org/stable/user_guide.html)
 - [LangChain Documentation](https://python.langchain.com/)
+- [Google ADK Documentation](https://google.github.io/adk-docs/)
 
 ## Licence
 
@@ -158,6 +199,19 @@ Voir la licence du repository principal.
 
 ---
 
-## Voir aussi
+## Cross-series Bridges
 
-**[Reinforcement Learning](../RL/)** - Series dediee a l'apprentissage par renforcement avec Stable Baselines3 (PPO, DQN, experience replay). 3 notebooks complementaires pour approfondir les techniques de RL.
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [RL](../RL/README.md) | Apprentissage par renforcement | Le RL s'appuie sur les memes fondamentaux ML (gradients, reseaux de neurones, evaluation) |
+| [GenAI](../GenAI/README.md) | IA generative | Les agents IA du track DataScienceWithAgents utilisent les LLMs couverts dans GenAI/Texte |
+| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | Les modeles de prediction ML (regression, classification) s'appliquent directement aux strategies de trading |
+| [Probas](../Probas/README.md) | Programmation probabiliste | L'evaluation bayesienne des modeles (TP-prevision-ventes) est une application directe de la serie Probas |
+| [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres ML rejoint les techniques de recherche (grille, bayesienne) |
+
+---
+
+## Navigation
+
+- [<- Notebooks racine](../) | [GenAI ->](../GenAI/)
+- [ML.NET ->](ML.Net/README.md) | [DataScienceWithAgents ->](DataScienceWithAgents/README.md) | [RL ->](../RL/)

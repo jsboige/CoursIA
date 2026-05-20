@@ -4,6 +4,8 @@
 
 Ce module présente des cas d'usage concrets et des workflows de production pour la génération vidéo.
 
+**Dans le cadre du fil rouge pipeline video pedagogique** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Video-Generation.ipynb) genere automatiquement du contenu video educatif a partir d'un script. [04-3](04-3-Sora-API-Cloud-Video.ipynb) explore la generation cloud via l'API Sora. [04-4](04-4-Production-Video-Pipeline.ipynb) assemble le pipeline bout-en-bout.
+
 ## Vue d'overview
 
 | Statistique | Valeur |

@@ -1,6 +1,17 @@
 # Probas - Programmation Probabiliste
 
-Serie complete de notebooks sur la programmation probabiliste, couvrant l'inference bayesienne avec **Infer.NET** (C#) et **Pyro** (Python).
+<!-- CATALOG-STATUS
+series: Probas
+pedagogical_count: 32
+breakdown: Infer=20, _python_port=9, =3
+maturity: BETA=25, PRODUCTION=6, ALPHA=1
+-->
+
+Le monde reel est incertain. Un diagnostic medical n'est jamais sur a 100%, un classement sportif depend de performances intrinsequement variables, et les donnees que nous collectons sont toujours bruitees ou incompletes. La programmation probabiliste offre un cadre rigoureux pour modeliser cette incertitude : plutot que de calculer une seule reponse, on obtient une **distribution de probabilites** qui quantifie notre confiance dans chaque resultat possible.
+
+Cette serie vous apprend a construire des modeles probabilistes decomplexes en quelques lignes de code. Vous decouvrirez comment Infer.NET (Microsoft) permet de definir des variables aleatoires, d'exprimer des observations, et d'obtenir automatiquement les distributions posterieures — sans ecrire d'integrales ni deriver d'equations. Le parcours couvre les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne pour prendre des decisions optimales sous incertitude.
+
+**A qui s'adresse cette serie** : etudiants en IA, data scientists, et developpeurs souhaitant aller au-dela des modeles deterministes. Les 20 notebooks Infer.NET utilisent le kernel .NET Interactive (C#), tandis que les 2 notebooks racine (Infer-101, Pyro RSA) sont en Python. Aucun prerequis en probabilites avancees : les concepts sont introduits progressivement.
 
 ## Vue d'ensemble
 
@@ -9,6 +20,24 @@ Serie complete de notebooks sur la programmation probabiliste, couvrant l'infere
 | Notebooks | 22 (20 Infer.NET + 2 Python) |
 | Duree totale | ~20h |
 | Langages | C# (.NET), Python |
+
+## Parcours d'apprentissage
+
+### Phase 1 : Fondations (Notebooks 1-3, ~2h)
+
+Le parcours commence par le notebook 1 (Setup) qui installe Infer.NET et construit le premier modele bayesien — le classique "Two Coins" — en quelques lignes de C#. Le notebook 2 (Gaussian Mixtures) plonge dans les distributions continues avec les melanges gaussiens, outil fondamental du clustering. Le notebook 3 (Factor Graphs) introduit la representation graphique qui unifie tous les modeles : les graphs de facteurs, illustres par le probleme de Monty Hall. A l'issue de cette phase, vous comprenez comment exprimer un probleme incertain en termes de variables, de facteurs et de messages.
+
+### Phase 2 : Modeles classiques (Notebooks 4-13, ~8h)
+
+Les notebooks 4 a 13 construisent des modeles de complexite croissante, chacun illustre par une application concrete : reseaux bayesiens (diagnostic medical), Item Response Theory (evaluation de competences), TrueSkill (classement Xbox Live), classification bayesienne, selection de modeles (Bayes Factors), LDA (topic modeling), crowdsourcing (agregation de labels), HMM (sequences temporelles), systemes de recommandation, et debugging. Chaque notebook est autonome mais presuppose la maitrise des concepts des notebooks 1-3. Le notebook 13 (Debugging) est une reference pratique a consulter tout au long du parcours.
+
+### Phase 3 : Decision bayesienne (Notebooks 14-20, ~7h)
+
+La seconde moitie de la serie passe de l'inference a la decision : comment choisir une action quand on ne connait que des probabilites ? Les notebooks 14-16 posent les fondations (axiomes de l'utilite, fonctions d'utilite mono- et multi-attributs). Les notebooks 17-20 appliquent ces concepts aux reseaux de decision, a la valeur de l'information, aux systemes experts robustes, et aux processus decisionnels de Markov (MDPs) — qui relient cette serie a la serie [RL](../RL/).
+
+### Parcours alternatif : Python (Infer-101 + Pyro RSA, ~2h)
+
+Si vous preferez Python au C#, commencez par Infer-101.ipynb (introduction standalone avec modeles Two Coins et Cyclist) puis Pyro_RSA_Hyperbole.ipynb (application a la linguistique pragmatique avec le framework RSA). Ces deux notebooks ne dependent pas d'Infer.NET.
 
 ## Structure
 
@@ -172,3 +201,11 @@ pip install pyro-ppl torch matplotlib numpy
 ## Licence
 
 Voir la licence du repository principal.
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [IIT](../IIT/README.md) | PyPhi | L'integration informationnelle (phi) repose sur les memes fondements probabilistes |
+| [SymbolicAI/SemanticWeb](../SymbolicAI/SemanticWeb/README.md) | OWL reasoning | Les ontologies OWL utilisent la logique probabiliste pour le raisonnement incertain |
+| [GameTheory](../GameTheory/README.md) | Bayesian games | Les jeux bayesiens combinent probabilites et theorie des jeux |

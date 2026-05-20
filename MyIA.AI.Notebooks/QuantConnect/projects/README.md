@@ -1,6 +1,6 @@
 # QuantConnect Algorithmic Trading Projects
 
-Dernière mise à jour : 2026-04-19
+Dernière mise à jour : 2026-05-05
 
 Bibliothèque pédagogique de **78 stratégies** de trading algorithmique sur QuantConnect Cloud
 + **8 clones QC Strategy Library** + **6 composants Framework** + **3 research/tools** = **95 projets**.
@@ -17,7 +17,7 @@ Les strategies sont classees en 3 categories pedagogiques :
 | **Historique** | Prime connue mais regime-dependante ou affaiblie | Conserver comme contre-exemple, documenter les regimes favorables |
 | **Exploratoire** | Implementation naive ou signal insuffisant | Conserver si pedagogique, sinon retravailler |
 
-Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds structurels et hypotheses testees.
+Voir [OPTIMIZATION_BACKLOG.md](_docs/OPTIMIZATION_BACKLOG.md) pour les plafonds structurels et hypotheses testees.
 
 ## Performance Summary
 
@@ -28,7 +28,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [BTC-MACD-ADX](BTC-MACD-ADX/) | MACD + ADX filter BTC daily | **1.647** | 38.1% | 48.8% | 2020-2026 | C# | Intermediaire | — | |
 | [Framework_Composite_TrendWeather](Framework_Composite_TrendWeather/) | TrendStocksLite + AllWeather via Algorithm Framework (T75/AW25, Mom3m) | **1.155** | 27.4% | 27.7% | 2015-2026 | Py | Avance | QuantBook | |
 | [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | EMA crossover BTC (C#) | **1.094** | 36.2% | 40.7% | 2017-2026 | C# | Debutant | — | |
-| [BlackLitterman-Momentum](BlackLitterman-Momentum/) | Black-Litterman + multi-window momentum views (ECE Item 5, 15 large-caps) | **0.604** | 13.7% | 33.1% | 2015-2026 | Py | Avance | — | He & Litterman Omega calibration, Ledoit-Wolf shrinkage, Net Profit 310.8% |
+| [BlackLitterman-Momentum](BlackLitterman-Momentum/) | Black-Litterman + multi-window momentum views (15 large-caps) | **0.604** | 13.7% | 33.1% | 2015-2026 | Py | Avance | — | He & Litterman Omega calibration, Ledoit-Wolf shrinkage, Net Profit 310.8% |
 | [Option-Wheel](Option-Wheel/) | Wheel strategy SPY (sell puts/calls) | **0.524** | 12.69% | 26.40% | 2015-2026 | Py | Avance | QuantBook | ✅ Validé 2015-2026 (Sharpe 0.524) |
 | [EMA-Cross-Stocks](EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | **0.872** | 25.7% | 35.7% | 2015-2026 | Py | Debutant | — | |
 | [TrendStocksLite](TrendStocksLite/) | EMA20/50 + SMA200 trend 15 large-caps diversifies | **0.719** | 18.2% | 33.7% | 2015-2026 | Py | Intermediaire | — | |
@@ -40,7 +40,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [AdaptiveAssetAllocation](AdaptiveAssetAllocation/) | Momentum + min-variance multi-asset | **0.518** | 8.0% | 18.8% | 2008-2026 | Py | Avance | — | |
 | [Options-VGT](Options-VGT/) | Options income VGT (wheel NVDA/ORCL/CSCO/AMD/QCOM) | **0.507** | 14.2% | 16.2% | 2020-2026 | Py | Avance | — | |
 | [CSharp-CTG-Momentum](CSharp-CTG-Momentum/) | CTG momentum strategy (C#) | **0.507** | 17.7% | 36.1% | 2015-2026 | C# | Intermediaire | — | |
-| [CausalEventAlpha](CausalEventAlpha/) | CATE sector rotation via DML proxy (rolling OLS) + GradientBoosting (ECE Item 3) | **0.779** | 16.75% | 22.1% | 2015-2026 | Py | Avance | — | Win Rate 58%, 8 sector ETFs, regime bear/bull SMA200, Net Profit 449.7% |
+| [CausalEventAlpha](CausalEventAlpha/) | CATE sector rotation via DML proxy (rolling OLS) + GradientBoosting | **0.779** | 16.75% | 22.1% | 2015-2026 | Py | Avance | — | Win Rate 58%, 8 sector ETFs, regime bear/bull SMA200, Net Profit 449.7% |
 | [ML-Trend-Scanning](ML-Trend-Scanning/) | t-statistic linear regression slope across multiple windows (SPY/TLT/GLD) | **0.656** | 19.1% | 34.8% | 2015-2026 | Py | Intermediaire | — | Book Ex01, trend regime classification, Net Profit 614.5% |
 | [ML-FeatureEngineering](ML-FeatureEngineering/) | RF+GB ensemble feature engineering pipeline (15 large-caps) | **0.571** | 10.5% | 19.6% | 2015-2026 | Py | Avance | — | Best Drawdown in category, Net Profit 208.4% |
 
@@ -52,7 +52,7 @@ Voir [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md) pour les plafonds struct
 | [Crypto-MultiCanal](Crypto-MultiCanal/) | ZigZag multi-channel (macro/meso/micro) BTCUSDT | **0.486** | 7.6% | 16.8% | 2017-2026 | Py | Avance | QuantBook | ❌ Runtime Error: cannot import 'find_envelope_line' |
 | [EMA-Cross-Index](EMA-Cross-Index/) | EMA 20/60 + cooldown 3d SPY | **0.470** | 9.4% | 17.5% | 2015-2026 | Py | Debutant | yfinance | 25 combos testees |
 | [DualMomentumNoTLT](DualMomentumNoTLT/) | Momentum rotation SPY/QQQ/IEF/GLD/XLP (no TLT) | **0.469** | 11.0% | 23.6% | 2015-2026 | Py | Intermediaire | — | Variante sans TLT |
-| [Adaptive-Conformal-Risk](Adaptive-Conformal-Risk/) | Adaptive Conformal Inference risk overlay on multi-factor momentum (15 large-caps) | **0.423** | 11.15% | 38.7% | 2015-2026 | Py | Avance | — | ACI algorithm (Gibbs & Candès 2021), Win Rate 85%, Net Profit 229.2% |
+| [Adaptive-Conformal-Risk](Adaptive-Conformal-Risk/) | Adaptive Conformal Inference risk overlay on multi-factor momentum (15 large-caps) | **0.423** | 11.15% | 38.7% | 2015-2026 | Py | Avance | — | ACI algorithm (Gibbs & Candes 2021), Win Rate 85%, Net Profit 229.2% |
 | [RiskParity](RiskParity/) | Risk parity multi-asset portfolio | **0.399** | 7.8% | 20.9% | 2015-2026 | Py | Intermediaire | — | Plafond (3 hyp. rejetees) |
 | [DualMomentum](DualMomentum/) | Absolute + relative momentum ETFs | **0.350** | 9.2% | 33.6% | 2015-2026 | Py | Intermediaire | yfinance | MaxDD COVID structurel |
 | [FuturesTrend](FuturesTrend/) | Donchian breakout ETFs (trend following) | **0.136** | 4.896% | 18.70% | 2015-2026 | Py | Intermediaire | yfinance | ✅ Validé 2015-2026 (Sharpe 0.136) |
@@ -89,13 +89,13 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [RL-DQN-Trading](RL-DQN-Trading/) | DQN portfolio-level actions (MLPRegressor) | **0.533** | 10.9% | 25.8% | 2015-2026 | Ch07-Ex01 | v2.0.1, 3 action templates |
 | [LSTM-Forecasting](LSTM-Forecasting/) | MLP temporal features multi-ETF (7 assets) | **0.525** | 11.3% | 32.5% | 2015-2026 | Ch06-Ex07 | v2.1, real MLP(64,32) |
 | [Sector-ML-Classification](Sector-ML-Classification/) | RF rank classifier rotation sectorielle (11 ETFs) | **0.473** | 11.9% | 34.4% | 2015-2026 | — | v5, RF as rank not filter |
-| [Markov-Regime-Detection](Markov-Regime-Detection/) | Hidden Markov Model regime detection + allocation | **0.408** | --- | --- | 2015-2024 | Ch06-Ex04 | v1.0, TLT risk-off |
+| [Markov-Regime-Detection](Markov-Regime-Detection/) | Markov-switching dynamic regression 2-regime detection (SPY/TLT) | **0.571** | --- | --- | 2015-2024 | Ch06-Ex04 | v1.1, consolidated from ML-HMM-Regime |
 | [Chronos-Foundation-Forecasting](Chronos-Foundation-Forecasting/) | GBM+Ridge ensemble forecasting (8 ETFs) | **0.253** | --- | 22.4% | 2015-2026 | Ch06-Ex18 | v2, SMA200 regime filter |
 | [ML-SVM](ML-SVM/) | SVM linear kernel equity-only ETFs | **0.147** | 5.2% | 27.1% | 2015-2026 | — | v3, plafond structurel |
 | [ML-FX-SVM-Wavelet](ML-FX-SVM-Wavelet/) | SVR + wavelet decomposition 4 Forex pairs (EURJPY/GBPUSD/AUDCAD/NZDCHF) leverage 20x | **0.167** | 5.07% | 20.5% | 2019-2024 | Ch06-Ex05 | 4211 trades (overtrading), Win Rate 12%, echec pedagogique |
 | [Dividend-Harvesting-ML](Dividend-Harvesting-ML/) | DecisionTree dividend yield prediction (QQQ top 100) | **0.469** | 12.7% | 30.5% | 2015-2026 | Ch06-Ex06 | v1, fundamental factors |
-| [PCA-StatArbitrage](PCA-StatArbitrage/) | PCA + LinearRegression stat-arb mean reversion (top 100) | **0.399** | 12.65% | 31.8% | 2019-2024 | Ch06-Ex13 | v1, sklearn, book period |
-| [PCA-StatArb](PCA-StatArb/) | PCA + OLS stat-arb mean reversion (top 100 liquid) | **0.165** | 5.3% | 35.9% | 2015-2026 | Ch06-Ex13 | v1, statsmodels, extended period |
+| [PCA-StatArbitrage](PCA-StatArbitrage/) | PCA + LinearRegression stat-arb mean reversion (top 100) | **0.399** | 12.65% | 31.8% | 2019-2024 | Ch06-Ex13 | v1, sklearn, consolidated from PCA-StatArb + ML-PCA-StatArb |
+| ~~PCA-StatArb~~ | Consolidated into PCA-StatArbitrage (statsmodels version, not QC Cloud compatible) | --- | --- | --- | --- | --- | REMOVED |
 | [Clustering-Fundamentals-ML](Clustering-Fundamentals-ML/) | PCA + GBR fundamental ranking (top 10 of 100) | -0.052 | -1.2% | 15.3% | 2015-2026 | Ch06-Ex10 | v1.1, Runtime Error, a ameliorer |
 | [ML-HeadShoulders-CNN](ML-HeadShoulders-CNN/) | Keras CNN Head & Shoulders detection USDCAD (synthetic training fallback) | **-46.8** | 0.03% | 0.1% | 2019-2024 | Ch06-Ex17 | Seulement 4 trades, echec de generalisation synthetique -> reel documente |
 | [Stoploss-Volatility-ML](Stoploss-Volatility-ML/) | Lasso regression stop-loss optimization (KO equity) | --- | --- | --- | --- | Ch06-Ex08 | BROKEN: CBOE data unavailable (#233) |
@@ -114,16 +114,16 @@ Strategies ML/AI basees sur le livre *Hands-On AI Trading* et implementations in
 | [Crypto-LSTM-Prediction](Crypto-LSTM-Prediction/) | DLinear (AAAI 2023) SeriesDecomposition BTCUSDT (PyTorch) | --- | --- | --- | --- | — | Research phase |
 | [ML-Trend-Scanning](ML-Trend-Scanning/) | t-statistic linear regression slope across multiple windows (SPY/TLT/GLD) | **0.656** | 19.1% | 34.8% | 2015-2026 | Ch06-Ex01 | Trend regime classification, Net Profit 614.5% |
 | [ML-Reversion-Trending](ML-Reversion-Trending/) | GradientBoosting regime classifier (mean-revert vs trend-follow) 5 ETFs | **0.292** | 6.6% | 29.4% | 2015-2026 | Ch06-Ex03 | Dual-strategy switching, Net Profit 105.4% |
-| [ML-HMM-Regime](ML-HMM-Regime/) | Markov-switching dynamic regression 2-regime detection (SPY/TLT) | **0.571** | --- | --- | 2015-2024 | Ch06-Ex04 | statsmodels MarkovRegression |
+| ~~ML-HMM-Regime~~ | Consolidated into Markov-Regime-Detection (identical code) | --- | --- | --- | --- | --- | REMOVED |
 | [ML-Gaussian-Classifier](ML-Gaussian-Classifier/) | GaussianNB direction prediction tech stocks, prob-weighted sizing | **0.361** | 12.49% | 47.4% | 2015-2026 | Ch06-Ex15 | Cross-sectional features |
 | [ML-LLM-Summarization](ML-LLM-Summarization/) | Tiingo news sentiment + optional OpenAI LLM summarization (SPY) | **0.686** | 15.45% | 22.7% | 2015-2026 | Ch06-Ex16 | Keyword fallback, Tiingo data |
-| [ML-PCA-StatArb](ML-PCA-StatArb/) | PCA + OLS stat-arb mean-reversion, Z-score residuals (top 100) | **0.399** | 12.65% | 31.8% | 2019-2024 | Ch06-Ex13 | Book period, sklearn |
+| ~~ML-PCA-StatArb~~ | Consolidated into PCA-StatArbitrage (identical code) | --- | --- | --- | --- | --- | REMOVED |
 | [ML-Pairs-PCA-Selection](ML-Pairs-PCA-Selection/) | PCA-based pair selection research | --- | --- | --- | --- | Ch06-Ex09 | Research only (no main.py) |
 | [ML-Chronos-Foundation](ML-Chronos-Foundation/) | Amazon Chronos-t5-tiny foundation model portfolio allocation (8 ETFs) | **0.277** | 7.23% | 13.5% | 2015-2026 | Ch06-Ex18 | Foundation model, SMA200 regime |
 | [ML-FinBERT-Sentiment](ML-FinBERT-Sentiment/) | ProsusAI/finbert sentiment from Tiingo news, most volatile tech stock | N/A | N/A | N/A | --- | Ch06-Ex19 | TF unavailable on QC Cloud, 0 trades |
 | [Positive-Negative-Splits-ML](Positive-Negative-Splits-ML/) | LinearRegression split-event return prediction, sector momentum | **1.736** | 90.83% | 42.4% | 2015-2026 | Ch06-Ex07 | Split factor + XLK ROC features |
-| [Adaptive-Conformal-Risk](Adaptive-Conformal-Risk/) | Adaptive Conformal Inference risk overlay on multi-factor momentum (15 large-caps) | **0.423** | 11.15% | 38.7% | 2015-2026 | ECE-Item6 | ACI algorithm (Gibbs & Candes 2021), Win Rate 85%, Net Profit 229.2% |
-| [Dynamic-Options-Wheel](Dynamic-Options-Wheel/) | Dynamic delta/skew options wheel, IV percentile OTM targeting (SPY) | **0.119** | 5.59% | 31.4% | 2020-2026 | ECE-Item7 | Extends Option-Wheel with IV regime, Win Rate 74% |
+| [Adaptive-Conformal-Risk](Adaptive-Conformal-Risk/) | Adaptive Conformal Inference risk overlay on multi-factor momentum (15 large-caps) | **0.423** | 11.15% | 38.7% | 2015-2026 | — | ACI algorithm (Gibbs & Candes 2021), Win Rate 85%, Net Profit 229.2% |
+| [Dynamic-Options-Wheel](Dynamic-Options-Wheel/) | Dynamic delta/skew options wheel, IV percentile OTM targeting (SPY) | **0.119** | 5.59% | 31.4% | 2020-2026 | — | Extends Option-Wheel with IV regime, Win Rate 74% |
 | [CSharp-BTC-MACD-ADX](CSharp-BTC-MACD-ADX/) | MACD + ADX filter BTC daily (C# variant with robustness research) | **1.647** | 38.1% | 48.8% | 2020-2026 | — | C# variant, same as BTC-MACD-ADX |
 
 *78 strategies documentees dans les tables ci-dessus (71 Python, 4 C#) + 8 clones QC Strategy Library + 3 projets research/tools + 6 composants Framework. 95 projets au total dont 89 avec code. Metriques issues des backtests QC Cloud.*
@@ -182,7 +182,7 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 
 ### Portfolio Construction (Intermediaire/Avance)
 
-- **BlackLitterman-Momentum** (ECE Item 5) : Framework Black-Litterman avec vues momentum multi-fenetres sur 15 large-caps. Calibration Omega He & Litterman 1999, covariance Ledoit-Wolf shrinkage (pure numpy), contraintes de concentration sectorielle, vol targeting. Sharpe 0.779, Net Profit 449.7%, concept etudiant ECE fusionne de 4 groupes.
+- **BlackLitterman-Momentum** : Framework Black-Litterman avec vues momentum multi-fenetres sur 15 large-caps. Calibration Omega He & Litterman 1999, covariance Ledoit-Wolf shrinkage (pure numpy), contraintes de concentration sectorielle, vol targeting. Sharpe 0.604, Net Profit 310.8%.
 - **Framework_Composite_TrendWeather** : Composite strategy combinant TrendStocksLite (15 large-caps momentum-weighted) + AllWeather (SPY/IEF/GLD/XLP) via QC Algorithm Framework. T75/AW25 allocation, 3m momentum weighting, monthly rebalance. Itere de v1.0 (Sharpe 0.622) a v1.5 (Sharpe 1.155).
 - **Framework_Composite_FamaFrenchAllWeather** : Composite strategy combinant FamaFrench (5 facteurs ETF avec momentum risk-adjusted) + AllWeather (SPY/IEF/GLD/XLP) via QC Algorithm Framework. Baseline FF50/AW50, allocation sweep prevu (FF40/AW60, FF50/AW50, FF60/AW40). **PENDING QC deployment et backtest.**
 - **AllWeather** : Portfolio "All Weather" simplifie (SPY 30%/IEF 30%/GLD 30%/XLP 10%, TLT elimine). Drift rebalancing 3%.
@@ -212,8 +212,8 @@ Strategies basees sur le croisement de moyennes mobiles exponentielles :
 - **Option-Wheel** : Wheel strategy sur SPY (sell puts, si assigne sell calls). DTE 30, OTM 5%.
 - **Options-VGT** : Covered calls sur VGT ETF (NVDA/ORCL/CSCO/AMD/QCOM). Resolution MINUTE.
 - **VIX-TermStructure** : Trading de la structure a terme du VIX (contango/backwardation).
-- **Dynamic-Options-Wheel** (ECE Item 7) : Extension du Option-Wheel avec selection dynamique de strike basee sur IV percentile (2.5-7.5% OTM) et ajustement skew 25-delta. SPY, resolution MINUTE. Sharpe 0.119, CAGR 5.59%, MaxDD 31.4%. Concept etudiant ECE (Asseli, Gr01 H.5).
-- **Adaptive-Conformal-Risk** (ECE Item 6) : Overlay de risque par inference conforme adaptive (ACI, Gibbs & Candes 2021) sur strategie momentum multi-facteurs. 15 large-caps US (5 secteurs). Sharpe 0.423, CAGR 11.15%, Win Rate 85%. Concept etudiant ECE (El Bakkali, Gr02).
+- **Dynamic-Options-Wheel** : Extension du Option-Wheel avec selection dynamique de strike basee sur IV percentile (2.5-7.5% OTM) et ajustement skew 25-delta. SPY, resolution MINUTE. Sharpe 0.119, CAGR 5.59%, MaxDD 31.4%.
+- **Adaptive-Conformal-Risk** : Overlay de risque par inference conforme adaptive (ACI, Gibbs & Candes 2021) sur strategie momentum multi-facteurs. 15 large-caps US (5 secteurs). Sharpe 0.423, CAGR 11.15%, Win Rate 85%.
 
 ### Crypto avancee (Avance)
 
@@ -229,7 +229,7 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **ML-XGBoost** : XGBoost gradient boosting sur 9 positions. Train/trade separation (odd/even Mondays), 10-day forward target, biweekly. v2.
 - **ML-SVM** : SVM kernel lineaire sur ETFs equity-only. Plafond structurel confirme (0.147). v3.
 - **Sector-ML-Classification** : Random Forest comme classifieur de rang (pas filtre binaire) pour rotation sectorielle (11 sector ETFs). Bull: top-4 par proba RF. Bear: defensifs si proba > 0.35. v5.
-- **CausalEventAlpha** (ECE Item 3) : Rotation sectorielle causale via proxy DML (rolling OLS) + GradientBoosting classifier par secteur. 8 sector ETFs avec regime bear/bull (SMA 200). Sharpe 0.779, Win Rate 58%, Net Profit 449.7%. Promu Robuste. Concept etudiant ECE (ErwanSi, Gr03 G.1).
+- **CausalEventAlpha** : Rotation sectorielle causale via proxy DML (rolling OLS) + GradientBoosting classifier par secteur. 8 sector ETFs avec regime bear/bull (SMA 200). Sharpe 0.779, Win Rate 58%, Net Profit 449.7%. Promu Robuste.
 - **Portfolio-Optimization-ML** : MPT (Markowitz) avec covariance Ledoit-Wolf + returns predits par ML. Universe: 15 large-caps US (5 secteurs). Risk Parity weighting.
 - **Gaussian-Direction-Classifier** (Book Ex15) : Classifieur gaussien pour prediction de direction. 8 stocks, seuil confiance 0.60, sizing par probabilite, SMA200 regime filter. v2 risk-adjusted.
 - **ML-Temporal-CNN** (Book Ex14, Keras) : Vrai CNN Conv1D Keras pour prediction de direction sur QQQ top-3. Reentrainement hebdomadaire, confidence gate >55%. Sharpe 0.734, alpha 0.11, beta 0.264. Strategie la plus performante du batch HandsOn batch3.
@@ -238,9 +238,9 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **Chronos-Foundation-Forecasting** (Book Ex18) : Ensemble GBM(50 estimators)+Ridge(alpha=10) avec StandardScaler. 21 features par asset. SMA200 regime filter (bear = defensifs). 8 ETFs. v2.
 - **RL-DQN-Trading** (Book Ch07) : MLPRegressor(64,32) avec actions portfolio-level (AGGRESSIVE/MODERATE/DEFENSIVE). Reward risk-adjusted. Replay buffer 5000. 5 ETFs. v2.0.1.
 - **Reinforcement-Learning-Trading** (Book Ch07) : Variante pedagogique DQN avec experience replay.
-- **Markov-Regime-Detection** (Book Ex04) : HMM 3 regimes (bull/neutral/bear) avec allocation dynamique (SPY/TLT). Monthly rebalance. v1.0.
+- **Markov-Regime-Detection** (Book Ex04) : Markov-switching 2 regimes (haute/basse volatilite) via statsmodels MarkovRegression. Allocation SPY (low-vol) / TLT (high-vol) + GLD hedge 10%. Monthly rebalance, confirmation filter 55%, anti-micro-rebalancing 5%. v1.1. Consolidated from ML-HMM-Regime (identical code).
 - **Dividend-Harvesting-ML** (Book Ex06) : DecisionTreeRegressor pour prediction du rendement dividende. Facteurs fondamentaux (PE ratio, revenue growth, free cash flow %, dividend payout ratio, current ratio). Universe QQQ top 100, monthly rebalance. v1.
-- **PCA-StatArb** (Book Ex13) : PCA + OLS pour arbitrage statistique mean-reversion. 3 composantes principales, z-score des residus (seuil 1.5). Universe top 100 par dollar volume. Monthly. v1.
+- **PCA-StatArbitrage** (Book Ex13) : PCA + sklearn LinearRegression stat-arb mean-reversion. 3 composantes principales, z-score des residus (seuil 1.5). Universe top 100. Monthly. Consolidated from PCA-StatArb (statsmodels) + ML-PCA-StatArb.
 - **Clustering-Fundamentals-ML** (Book Ex10) : PCA (5 composantes) + GradientBoostingRegressor sur 26 facteurs fondamentaux. Selectionne top-10 par rendement predit. Equal-weight, monthly. v1.
 - **Stoploss-Volatility-ML** (Book Ex08) : Lasso regression pour stop-loss optimal base sur VIX, ATR et std des rendements. Cycles hebdomadaires (lundi-vendredi) sur KO equity. v1.
 - **InverseVolatility-Rank** (Book Ex11) : Ridge regression pour prevision volatilite future. Allocation inversement proportionnelle a la volatilite predite sur 12 contrats futures (indices, energie, grains). v1.
@@ -249,7 +249,7 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **ML-FX-SVM-Wavelet** (Book Ex05, QC Cloud) : Portage QC Cloud de Ex05 avec SVR + wavelet sur 4 paires Forex (EURJPY/GBPUSD/AUDCAD/NZDCHF), leverage 20x. Sharpe 0.167, Win Rate 12%, 4211 trades (overtrading). Echec pedagogique documente : le pattern SVM+wavelet est tres sensible aux parametres, et leverage 20x amplifie l'overtrading.
 - **ML-HeadShoulders-CNN** (Book Ex17, Keras) : Detection CNN de pattern Head & Shoulders sur USDCAD. Le main.py d'origine chargeait un modele Keras depuis l'Object Store ; fallback synthetique ajoute (commit d34d8b49) qui entraine un petit CNN Conv1D sur des patterns gaussiens generes aleatoirement si le modele n'est pas present. Sharpe -46.8 (artefact de variance minuscule), seulement 4 trades : echec de generalisation synthetique -> reel documente.
 - **BTC-ML** : Prediction BTC par machine learning (features techniques + filtre volatilite 60%). Periode courte 2023-2026.
-- **PCA-StatArbitrage** (Book Ex13) : PCA + sklearn LinearRegression pour stat-arb. Meme concept que PCA-StatArb mais avec sklearn sur la periode du livre (2019-2024). Sharpe 0.399. v1.
+- **~~PCA-StatArb~~** (CONSOLIDATED into PCA-StatArbitrage) : Version statsmodels (numpy/scipy), non compatible QC Cloud. Code supprime.
 - **ML-Classification** : RandomForest classification direction J+1 sur SPY. Modele charge depuis ObjectStore. Non backtestee.
 - **ML-Regression** : Ridge Regression prediction returns J+1 sur 20 stocks. Features: RSI, EMA, volume. Non backtestee.
 - **ML-Ensemble** : Ensemble Ridge/RF/LightGBM sur 30 large-caps. Weighted averaging, confidence-based sizing. Non backtestee.
@@ -261,10 +261,10 @@ Strategies ML/AI implementees avec `sklearn` (compatible QC Cloud). Basees sur l
 - **Crypto-LSTM-Prediction** : DLinear (AAAI 2023) avec SeriesDecomposition (trend/seasonal) pour BTCUSDT. PyTorch. Research phase.
 - **ML-Trend-Scanning** (Book Ex01) : t-statistique de la pente de regression lineaire sur fenetres multiples (5/10/21/42/63j) pour classifier le regime de tendance. SPY/TLT/GLD, regime bull/bear/neutral. Sharpe 0.656, CAGR 19.1%, Net Profit 614.5%. Promu Robuste.
 - **ML-Reversion-Trending** (Book Ex03) : GradientBoosting classifieur de regime (mean-reversion vs trending). Applique RSI+Bollinger en regime mean-reversion, MA crossover en trending. 5 ETFs. Sharpe 0.292, CAGR 6.6%, Net Profit 105.4%.
-- **ML-HMM-Regime** (Book Ex04) : Modele Markov-switching 2 regimes (haute/basse volatilite) via statsmodels MarkovRegression. Allocation SPY (low-vol) / TLT (high-vol).
+- **~~ML-HMM-Regime~~** (CONSOLIDATED into Markov-Regime-Detection) : Modele identique, code duplique supprime.
 - **ML-Gaussian-Classifier** (Book Ex15) : GaussianNB prediction de direction sur tech stocks. Features: rendements open-close cross-sectionnels. Sizing par probabilite.
 - **ML-LLM-Summarization** (Book Ex16) : Sentiment news Tiingo + optional OpenAI LLM summarization. Fallback keyword-based. SPY, 2015-2026. Sharpe 0.686.
-- **ML-PCA-StatArb** (Book Ex13, book period) : PCA + sklearn LinearRegression stat-arb mean-reversion. Meme concept que PCA-StatArb mais periode du livre (2019-2024). Sharpe 0.399.
+- **~~ML-PCA-StatArb~~** (CONSOLIDATED into PCA-StatArbitrage) : Code identique a PCA-StatArbitrage. Supprime.
 - **ML-Pairs-PCA-Selection** (Book Ex09) : PCA-based pair selection. Research uniquement (notebook, pas de main.py).
 - **ML-Chronos-Foundation** (Book Ex18) : Modele fondation Chronos-t5-tiny (Amazon) pour prevision de series temporelles. Allocation par Sharpe ratio predit. 8 ETFs.
 - **ML-FinBERT-Sentiment** (Book Ex19) : ProsusAI/finbert pour sentiment de news financieres. TF non disponible sur QC Cloud, 0 trades. Reference pedagogique.

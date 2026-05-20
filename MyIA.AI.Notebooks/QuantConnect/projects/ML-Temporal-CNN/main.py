@@ -34,7 +34,7 @@ class TemporalCNNPredictionAlgorithm(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2018, 12, 31)
+        self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash(100_000)
 

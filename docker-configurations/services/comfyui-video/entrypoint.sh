@@ -3,6 +3,9 @@ set -e
 
 echo "Demarrage de l'entrypoint ComfyUI-Video..."
 
+# System packages for OpenCV (cv2) and video processing
+apt-get update -qq && apt-get install -y -qq libgl1 libglib2.0-0 2>/dev/null || echo "System packages: already installed or not needed"
+
 # Clonage si necessaire
 if [ ! -f "main.py" ]; then
     echo "Clonage de ComfyUI..."
@@ -123,16 +126,17 @@ fi
 # =============================================================================
 # QUANTIZATION SUPPORT (INT8/FP8)
 # =============================================================================
-echo "Installation des outils de quantization INT8/FP8..."
+# NOTE: torchao is NOT installed here because torchao>=0.10 breaks diffusers
+# lazy imports (logger undefined in torchao_quantizer.py). If torchao is needed
+# later, pin torchao<0.10 or wait for a diffusers fix.
 
-# TorchAO pour INT8 quantization (PyTorch native)
-venv/bin/pip install torchao>=0.4.0 || echo "TorchAO: installation optionnelle echouee"
+echo "Installation des outils de quantization (sans torchao)..."
 
 # Optimum Quanto pour quantization Hugging Face
 venv/bin/pip install optimum-quanto>=0.2.0 || echo "Optimum-Quanto: installation optionnelle echouee"
 
 # bitsandbytes pour INT8 linear layers
-venv/bin/pip install bitsandbytes>=0.43.0 || echo "Bitsandbytes: installation optionnelle echouee (Windows peut echouer)"
+venv/bin/pip install bitsandbytes>=0.43.0 || echo "Bitsandbytes: installation optionnelle echouee"
 
 # =============================================================================
 # DEMARRAGE

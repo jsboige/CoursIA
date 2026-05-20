@@ -1,26 +1,25 @@
-# Image - Generation d'Images par IA
+# Image - Génération d'Images par IA
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Docker Management](../00-GenAI-Environment/00-2-Docker-Services-Management.ipynb)
 
-Serie complete de notebooks pour la generation et l'edition d'images par IA generative, couvrant les modeles de base jusqu'aux workflows de production.
+La generation d'images par IA est la deuxieme modalite generative la plus accessible apres le texte. Elle couvre un spectre large : generation from scratch (DALL-E, FLUX), edition d'images existantes (Qwen Image Edit), upscaling (Real-ESRGAN), et orchestration de workflows multi-modeles via ComfyUI. 19 notebooks repartis sur 5 niveaux progressifs.
+
+## Fil rouge : construire un generateur de contenu visuel educatif
+
+L'objectif fil rouge de cette serie est de construire un systeme capable de produire des visuels pedagogiques de qualite : diagrammes, illustrations conceptuelles, et images d'identite pour des supports de cours. Chaque niveau apporte une brique supplementaire : generation simple via API cloud (niveau 1), modeles avances et edition fine (niveau 2), comparaison et orchestration multi-modeles (niveau 3), workflows de production (niveau 4), et cas d'usage concrets par domaine (examples).
 
 ## Vue d'ensemble
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 19 |
-| Sous-dossiers | 5 (4 niveaux + examples) |
-| Kernel | Python 3 |
-| Duree totale | ~6-8h |
-| Validation | 100% (19/19 notebooks) |
+19 notebooks organisés en 5 sous-dossiers, représentant environ 6 à 8 heures d'apprentissage intensif dans le domaine de la génération d'images par IA, avec un taux de validation de 100%.
+
 
 ## Structure
 
 ```
 Image/
-├── 01-Foundation/     # Modeles de base (5 notebooks)
-├── 02-Advanced/       # Modeles avances (4 notebooks)
-├── 03-Orchestration/  # Multi-modeles (3 notebooks)
+├── 01-Foundation/     # Modèles de base (5 notebooks)
+├── 02-Advanced/       # Modèles avancés (4 notebooks)
+├── 03-Orchestration/  # Multi-modèles (3 notebooks)
 ├── 04-Applications/   # Production (4 notebooks)
 └── examples/          # Cas d'usage (3 notebooks)
 ```
@@ -28,6 +27,8 @@ Image/
 ## Progression par niveau
 
 ### 01-Foundation - Modeles de base
+
+Avant de produire des visuels pedagogiques, il faut maitriser les outils de generation. Ce niveau couvre les deux approches : API cloud (DALL-E 3, GPT-5) pour la simplicite, et modeles locaux via ComfyUI (SD XL Turbo, Qwen) pour le controle fin. [01-3](01-Foundation/01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation d'image (PIL, OpenCV) necessaires pour comprendre ce que font les modeles.
 
 | Notebook | Contenu | Service |
 |----------|---------|---------|
@@ -41,6 +42,8 @@ Image/
 
 ### 02-Advanced - Modeles avances
 
+Un visuel educatif de qualite demande des outils plus precis : edition d'images existantes (Qwen), generation haute qualite (FLUX), ou modeles legers et rapides (Z-Image/Lumina). Ce niveau explore les modeles de pointe et leurs compromis entre qualite, vitesse et ressources GPU.
+
 | Notebook | Contenu | Service |
 |----------|---------|---------|
 | [02-1-Qwen-Image-Edit-2509](02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb) | Edition avancee Qwen | ComfyUI |
@@ -52,6 +55,8 @@ Image/
 
 ### 03-Orchestration - Multi-modeles
 
+En production, un seul modele ne suffit pas toujours. Ce niveau compare les modeaux entre eux pour choisir le bon selon le contexte, orchestre des pipelines de traitement (generation puis edition puis upscaling), et optimise les performances pour le deploiement.
+
 | Notebook | Contenu |
 |----------|---------|
 | [03-1-Multi-Model-Comparison](03-Orchestration/03-1-Multi-Model-Comparison.ipynb) | Comparaison multi-modeles |
@@ -61,6 +66,8 @@ Image/
 [README 03-Orchestration](03-Orchestration/README.md)
 
 ### 04-Applications - Production
+
+Ce niveau met en oeuvre les workflows complets : generation automatisee de contenu educatif, pipelines creatifs, integration en production, et un exemple concret de conversion d'images en patrons de point de croix.
 
 | Notebook | Contenu |
 |----------|---------|
@@ -72,6 +79,8 @@ Image/
 [README 04-Applications](04-Applications/README.md)
 
 ### examples/ - Cas d'usage
+
+Applications directes par domaine : histoire-geographie (cartes, reconstitutions), litterature (illustrations de textes), et sciences (diagrammes, schemas techniques). Ces notebooks montrent comment adapter les techniques des niveaux precedents a des besoins concrets.
 
 | Notebook | Domaine |
 |----------|---------|
@@ -125,6 +134,18 @@ Acces : http://localhost:8188
 | Decouverte rapide | 01-1, 01-3 |
 | Generation avancee | 01-1 a 02-4 |
 | Production | Tous + 03 + 04 |
+
+## Recette : construire un generateur de contenu visuel educatif
+
+Le fil rouge de cette serie est la creation d'un systeme de visuels pedagogiques. Voici comment les niveaux s'articulent :
+
+1. **01-Foundation** (generation de base) : [01-1](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-Foundation/01-2-GPT-5-Image-Generation.ipynb) couvrent la generation via API cloud. [01-4](01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) et [01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb) introduisent les modeles locaux. A la fin, vous savez generer une image a partir d'un texte.
+
+2. **02-Advanced** (edition et qualite) : [02-1](02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb) permet d'editer une image existante pour corriger ou enrichir un visuel. [02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb) offre une generation rapide pour le prototypage. [02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) pousse la qualite plus loin.
+
+3. **03-Orchestration** (comparaison et pipelines) : [03-1](03-Orchestration/03-1-Multi-Model-Comparison.ipynb) compare les modeles pour choisir le meilleur rapport qualite/cout. [03-2](03-Orchestration/03-2-Workflow-Orchestration.ipynb) assemble un pipeline de generation complet.
+
+4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Content-Generation.ipynb) applique le pipeline au contenu educatif. Les notebooks [examples/](examples/) montrent des cas d'usage par domaine (histoire, sciences, litterature).
 
 ## Licence
 

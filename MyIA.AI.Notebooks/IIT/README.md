@@ -1,6 +1,17 @@
 # IIT - Integrated Information Theory
 
-Introduction a la Theorie de l'Information Integree (IIT) avec PyPhi, une bibliotheque Python pour le calcul de Phi et l'analyse de la conscience computationnelle.
+<!-- CATALOG-STATUS
+series: IIT
+pedagogical_count: 1
+breakdown: =1
+maturity: BETA=1
+-->
+
+La conscience est-elle mesurable ? La Théorie de l'Information Intégrée (IIT), proposée par Giulio Tononi, répond oui : un système est conscient dans la mesure où il intègre de l'information de manière non réductible. Plus formellement, la quantité de conscience d'un système correspond à la valeur **Phi** (big Phi), qui mesure le degré d'intégration causale irréductible. Cette série vous apprend à calculer cette mesure avec **PyPhi**, la bibliothèque de référence du laboratoire Tononi, et à explorer la géométrie informationnelle des systèmes complexes.
+
+L'unique notebook couvre le spectre complet : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), définition des sous-systèmes, extraction des Cause-Effect Structures (CES), et exploration des macro-subsystemes (coarse-graining, blackboxing). Le cheminement va de l'intuition physique (un réseau de neurones simplifié) aux formalismes mathématiques (partition minimale d'information, structure cause-effet).
+
+**À qui s'adresse cette série** : étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Le notebook (~90 min) nécessite Python 3.10+ avec `pyphi` (installé via conda). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
 
 ## Vue d'ensemble
 
@@ -108,3 +119,11 @@ IIT/
 ## Licence
 
 Voir la licence du repository principal.
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|-------------|
+| [Probas](../Probas/README.md) | Infer.NET / Pyro | Modeles probabilistes partagent les memes fondements que la mesure d'integration (phi) |
+| [GameTheory](../GameTheory/README.md) | OpenSpiel | Jeux cooperatifs et choix social eclairent la complexite de l'interaction multi-agent |
+| [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | Preuves formelles | Preuves Arrow/Sen montrent comment formaliser des proprietes structurelles |

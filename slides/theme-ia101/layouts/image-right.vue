@@ -24,14 +24,14 @@ const props = defineProps<{
 }
 
 .left {
-  flex: 2;
+  flex: 1.2;
   flex-shrink: 0;
   min-width: 0;
 }
 
 .right {
   flex: 1;
-  max-width: 35%;
+  max-width: 45%;
   display: flex;
   flex-direction: column;
   align-items: center;

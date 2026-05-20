@@ -1,0 +1,9 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {},
+    "description": "Framework version: SectorMomentumAlpha + InsightWeightingPortfolioConstructionModel",
+    "id": 1,
+    "name": "Framework-MomentumStrategy",
+    "cloud-id": 31244262,
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

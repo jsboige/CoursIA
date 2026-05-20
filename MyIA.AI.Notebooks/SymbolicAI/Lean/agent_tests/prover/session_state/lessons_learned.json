@@ -1,0 +1,80 @@
+{
+  "_schema": {
+    "description": "Cross-session tactical lessons for the multi-agent Lean prover (issue #1081 Part 2/3). Conservation state: this file persists across iterations, unlike ephemeral attempt history. Populated by the prover at end of session.",
+    "expected_shape": {
+      "<project>": {
+        "successful_tactic_chains": [
+          {
+            "goal_signature": "string - normalized goal pattern",
+            "tactic_chain": ["string", "..."],
+            "context_requirements": ["string - preconditions e.g. 'gsStepWith in hypotheses'"],
+            "uses": "int - times this chain succeeded"
+          }
+        ],
+        "partial_progress": [
+          {
+            "goal_signature": "string",
+            "best_state_file": "string - path to a checked-in cookbook .lean",
+            "residual_goal": "string",
+            "residual_context": ["string - hypotheses available at the sorry"],
+            "closure_hint": "string - how the human-written proof closed it"
+          }
+        ],
+        "failure_patterns": [
+          {
+            "goal_signature": "string",
+            "failed_tactic": "string",
+            "error": "string - e.g. 'simp made no progress'",
+            "lesson": "string - what to do instead"
+          }
+        ]
+      }
+    },
+    "note": "project keys: 'stable_marriage', 'voting', 'social_choice', etc. Keep entries deduplicated by goal_signature."
+  },
+  "stable_marriage": {
+    "successful_tactic_chains": [],
+    "partial_progress": [
+      {
+        "goal_signature": "gsMenPrefLE prof m w (gsChooseMax prof σ m h)",
+        "best_state_file": "session_state/reference_docs/stable_marriage/c34-03-gsChooseMax_maximal-partial.lean",
+        "tactic_chain_so_far": [
+          "unfold gsChooseMax",
+          "letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩",
+          "haveI : IsTrans (Fin n) (· ≤ ·) := ⟨...⟩",
+          "have spec := Classical.choose_spec (Finset.exists_maximal h)",
+          "obtain ⟨hmem, hmax⟩ := spec",
+          "change w = gsChooseMax prof σ m h ∨ prof.menPref m (gsChooseMax prof σ m h) < prof.menPref m w",
+          "by_cases heq : w = gsChooseMax prof σ m h",
+          "· left; exact heq",
+          "· right; have hne : ... ≠ ... := fun h => heq ((prof.menPref_bijective m).injective h).symm",
+          "  -- SORRY HERE: prof.menPref m (gsChooseMax prof σ m h) < prof.menPref m w"
+        ],
+        "residual_goal": "prof.menPref m (gsChooseMax prof σ m h) < prof.menPref m w",
+        "residual_context": [
+          "hmem : Classical.choose (Finset.exists_maximal h) ∈ gsCandidates prof σ m",
+          "hmax : ∀ x ∈ gsCandidates prof σ m, Classical.choose (...) ≤ x → Classical.choose (...) = x  (where ≤ is gsMenPrefLE)",
+          "hw : w ∈ gsCandidates prof σ m",
+          "heq : ¬ (w = gsChooseMax prof σ m h)",
+          "hne : prof.menPref m (gsChooseMax prof σ m h) ≠ prof.menPref m w"
+        ],
+        "closure_hint": "The original #1120 proof uses Nat.lt_trichotomy (prof.menPref m w) (prof.menPref m c) + rcases htri with (hlt | heq | hgt), where c := Classical.choose ... The hlt branch uses hmax hw (Or.inr hlt) to conclude c = w which contradicts heq; the heq branch closes by injectivity; the hgt branch is the goal directly. The agent's `change` approach is equivalent but didn't reach Nat.lt_trichotomy.",
+        "session": "C34-03 (2026-05-15)"
+      }
+    ],
+    "failure_patterns": [
+      {
+        "goal_signature": "exists mu, IsStable prof mu",
+        "failed_tactic": "(none attempted)",
+        "error": "intractable without GS algorithm implementation",
+        "lesson": "GaleShapley.lean:76 gale_shapley_stable, :91 gale_shapley_man_optimal, :119 gale_shapley_woman_pessimal are INTRACTABLE_UNTIL_GS_IMPL. The mmaaz-git reference needs ~1000 LOC of supporting lemmas (algorithm, n^2 step bound, termination, runSteps invariants). Coordinator should mark_sorry_intractable on sight — do NOT spend tactic attempts. Unblocked only by issue #997 (GS algorithm port). VERIFIED REPRODUCIBLE on L76 (C34-01, 138s) and L91 (C34-02, 83s)."
+      },
+      {
+        "goal_signature": "prof.menPref m (gsChooseMax prof σ m h) < prof.menPref m w (strict-inequality from maximality)",
+        "failed_tactic": "10+ file_replace_sorry attempts all BUILD-FAIL",
+        "error": "agent could not close the final maximality-contradiction step",
+        "lesson": "When the residual goal is `a < b` with hypotheses `hmax : ∀ x ∈ S, c ≤ x → c = x` (under a custom `LE` instance `gsMenPrefLE`) and `hne : a ≠ b`, the correct closure is NOT to direct-search the `<`. Instead, do trichotomy on the underlying Nat preference: `have htri := Nat.lt_trichotomy (prof.menPref m w) (prof.menPref m c); rcases htri with (hlt | heq | hgt)`. The hgt branch is the goal; the others contradict via hmax or injectivity. Generic `linarith`/`omega`/`exact?` searches will not find this — Director-level strategic guidance required."
+      }
+    ]
+  }
+}

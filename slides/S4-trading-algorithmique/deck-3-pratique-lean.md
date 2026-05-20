@@ -1,7 +1,7 @@
 ---
 theme: ../theme-ia101
-title: "S4 Trading Algorithmique - Partie 3 : Pratique Lean/QuantConnect"
-info: Cours Intelligence Artificielle - Pratique avec Lean/QuantConnect
+title: "S4 Trading Algorithmique - Pratique Lean/QuantConnect et Workflow Agentique"
+info: Cours Intelligence Artificielle - Pratique avec Lean/QuantConnect + Workflow Agentique
 paginate: true
 drawings:
   persist: false
@@ -10,16 +10,46 @@ mdc: true
 layout: cover
 ---
 
-# Pratique avec Lean/QuantConnect
+# Pratique Lean/QuantConnect et Workflow Agentique
 
-Intelligence Artificielle -- S4 -- Partie 3
+Intelligence Artificielle -- S4
 
-**De la theorie a la pratique : codez votre premier algorithme de trading**
+**De la theorie au backtest en 5 minutes : plateforme Lean + agent IA codeur**
 
-- Setup de l'environnement QC Cloud
-- Structure d'un algorithme Python (evenementiel)
-- Framework Alpha haut niveau (5 composants modulaires)
-- 67 projets prets a backtester et a modifier
+- Plateforme QuantConnect : setup, algorithmes, framework Alpha
+- Workflow agentique : VSCode + Claude Code + MCP
+- Composites avances et preparation projet
+
+---
+
+# Plan
+
+1. **Workflow du trader quant** (3 slides)
+   - Du concept au code : les 6 etapes
+
+2. **Plateforme Lean/QuantConnect** (15 slides)
+   - Setup, algorithmes, framework Alpha, notebooks, projets
+
+3. **QuantBook : explorer avant de coder** (4 slides)
+   - API de recherche, pandas, bridge recherche → backtest
+
+4. **Workflow agentique** (10 slides)
+   - Agent IA codeur, architecture VSCode/CC/MCP, demo live
+
+5. **ML accessible : features et RandomForest** (4 slides)
+   - Feature engineering, pipeline RF, ML vs regles simples
+
+6. **Composites avances** (4 slides)
+   - C4.1/C4.2/C4.3, architecture multi-Alpha
+
+7. **Preparation projet et soutenance** (3 slides)
+   - Criteres, anti-biais, troubleshooting, ressources
+
+---
+layout: section
+---
+
+# Partie 1 : Workflow du Trader Quant
 
 ---
 
@@ -86,6 +116,12 @@ Intelligence Artificielle -- S4 -- Partie 3
 </div>
 
 > Notebook: QC-Py-01-Setup.ipynb
+
+---
+layout: section
+---
+
+# Partie 2 : Plateforme Lean/QuantConnect
 
 ---
 
@@ -329,108 +365,7 @@ Intelligence Artificielle -- S4 -- Partie 3
 
 ---
 
-# Initialisation - Evenements Planifies
-
-- **Evenements planifies** : actions recurrentes hors on_data
-  ```python
-  self.schedule.on(
-      self.date_rules.every_day(),
-      self.time_rules.every(timedelta(minutes=10)),
-      self.example_func
-  )
-  ```
-<div v-click="1">
-
-- **Cas d'usage typiques**
-  - Rebalancement journalier ou hebdomadaire
-  - Nettoyage de positions en fin de journee
-  - Calcul de signaux a heure fixe (ouverture, cloture)
-  - Journalisation periodique de metriques
-
-</div>
-
----
-
-# Initialisation - Consolidation et Graphiques
-
-- **Consolidation de barres** : agreger vers une resolution superieure
-  ```python
-  self.consolidator = self.consolidate(
-      self.symbol, timedelta(minutes=10), self.consolidation_handler
-  )
-  ```
-<div v-click="1">
-
-- **Creation de graphiques personnalises**
-  ```python
-  stock_plot = Chart("Trade Plot")
-  stock_plot.add_series(Series("Price", SeriesType.LINE, 0))
-  self.add_chart(stock_plot)
-  ```
-  - Affichage dans l'interface QC apres le backtest
-  - Methode `self.plot("Trade Plot", "Price", value)` dans on_data
-
-</div>
-
-> Ref: *Hands-On AI Trading* Ch2 "Charting" p.27
-
----
-
-# Evenements de Donnees
-
-- **Temps decoupe en "slices"**
-  - Peuvent contenir des Ticks (ponctuel) ou TradeBars, QuoteBars (periodes)
-<div v-click="1">
-
-- **Methode principale**
-  ```python
-  def on_data(self, slice: Slice) -> None:
-      data = slice[self.symbol]
-      price = data.close
-  ```
-</div>
-<div v-click="2">
-
-- **Alternative : current_slice**
-  - Accessible dans un evenement planifie
-  ```python
-  def my_scheduled_action(self):
-      current_price = self.current_slice[self.symbol].close
-  ```
-
-</div>
-
----
-
-# Journalisation et Graphiques
-
-- **Journalisation**
-  - Methodes `self.log()` ou `self.debug()`
-  - Exemple :
-    ```python
-    self.debug(f"Time: {self.time}, Price: {self.securities[self.symbol].price}")
-    self.log(f"Portfolio Value: {self.portfolio.total_portfolio_value}")
-    ```
-  - Logs enregistres dans le backtest : eviter de les surcharger
-<div v-click="1">
-
-- **Export de graphiques**
-  - Methode `self.plot("ChartName", "SeriesName", value)`
-</div>
-<div v-click="2">
-
-- **Utilisation de donnees historiques**
-  ```python
-  self.df = self.history(self.symbol, start_time, end_time, Resolution.HOUR)
-  # Plusieurs symboles
-  self.dataframe = self.history([symbol_ibm, symbol_aapl], start_time, end_time)
-  ```
-
-</div>
-
----
-
-# Gestion Explicite des Ordres (1/2)
+# Gestion Explicite des Ordres
 
 - **Types d'ordres**
   - Market, Limit, StopMarket, StopLimit, MarketOnOpen, MarketOnClose
@@ -446,32 +381,6 @@ Intelligence Artificielle -- S4 -- Partie 3
 </div>
 <div v-click="2">
 
-- **Type de retour : OrderTicket**
-  - Permet de suivre l'ordre (Status, QuantityFilled, etc.)
-  - Possibilite de mise a jour chez certains Brokers
-  - Methode `ticket.update(UpdateOrderFields(...))`
-
-</div>
-
-> Notebook: QC-Py-09-Order-Types.ipynb
-
----
-
-# Gestion Explicite des Ordres (2/2)
-
-- **Evenement de suivi**
-  ```python
-  def on_order_event(self, order_event: OrderEvent) -> None:
-      if order_event.status == OrderStatus.FILLED:
-          self.log(f"Ordre rempli: {order_event.symbol} x {order_event.fill_quantity}")
-  ```
-<div v-click="1">
-
-- **Annulation**
-  - `ticket.cancel("raison de l'annulation")`
-</div>
-<div v-click="2">
-
 - **Dimensionnement de position**
   ```python
   self.set_holdings("SPY", 0.5)   # 50% du portefeuille
@@ -480,44 +389,10 @@ Intelligence Artificielle -- S4 -- Partie 3
       PortfolioTarget("IBM", 0.2)
   ], True)  # True = liquider les positions existantes
   ```
-</div>
-<div v-click="3">
-
-- **Buffer de slippage** : 2.5% par defaut
-  - `self.settings.free_portfolio_value_percentage = 0.05`
-- **Liquidation** : `self.liquidate()` (toutes les positions)
 
 </div>
 
----
-
-# Notebooks de Recherche
-
-- **Research Environment** -- l'etape ou vous passez le plus de temps (et c'est normal)
-  - Environnement d'exploration Jupyter pour iterer rapidement sur vos hypotheses
-  - Disponible dans QC Cloud (zero install) ou en local via lean-cli
-
-<div v-click="1">
-
-- **Workflow**
-  - Hypothese / Edge -> Research -> Strategy -> Backtests/Optimisation -> Paper/Live trading
-</div>
-<div v-click="2">
-
-- **Kernel dedie**
-  - Execution QC en ligne (Cloud)
-  - Execution sous container Docker via lean-cli
-</div>
-<div v-click="3">
-
-- **QuantBook**
-  - Classe heritant de QCAlgorithm pour la recherche
-  - Acces aux donnees historiques sous forme de DataFrames
-  - Ideal pour le prototypage et la visualisation
-
-</div>
-
-> Ref: *Hands-On AI Trading* Ch2 "Research" p.25-26 | Notebook: QC-Py-04-Research-Workflow
+> Notebook: QC-Py-09-Order-Types.ipynb
 
 ---
 
@@ -544,61 +419,31 @@ Intelligence Artificielle -- S4 -- Partie 3
 
 ---
 
-# Selection d'Univers
-
-- **Un univers definit les actifs disponibles pour le portefeuille**
-<div v-click="1">
-
-- **Selection manuelle**
-  ```python
-  self.add_universe_selection(ManualUniverseSelectionModel(symbols))
-  ```
-</div>
-<div v-click="2">
-
-- **Selection parametrique ou planifiee**
-  - Ex: EmaCrossUniverseSelectionModel
-  - Selectionne les actifs d'un ensemble en retournement haussier le plus fort
-</div>
-<div v-click="3">
-
-- **Combinaisons d'univers possibles**
-  - Union ou intersection de plusieurs criteres de selection
-</div>
-<div v-click="4">
-
-- **Evenement de changement**
-  ```python
-  def on_securities_changed(self, changes: SecurityChanges) -> None:
-      for security in changes.added_securities:
-          self.log(f"Ajout: {security.symbol}")
-  ```
-
-</div>
-
-> Notebook: QC-Py-05-Universe-Selection | Ref: *Hands-On AI Trading* Ch2 "Diversification and Asset Selection" p.37-40
-
----
-
-# Alphas (1/2)
+# Alphas et Insights
 
 - **Classes chargees de generer des signaux**
   - Insights : direction, amplitude et confiance
   - Bases sur des indicateurs, des modeles ML, ou des regles metier
 <div v-click="1">
 
-- **Ajout a l'initialisation**
+- **Alpha personnalise**
   ```python
-  self.add_alpha(RsiAlphaModel())
+  class MyAlphaModel(AlphaModel):
+      def update(self, algorithm: QCAlgorithm,
+                 data: Slice) -> List[Insight]:
+          insights = []
+          # Logique de generation de signaux
+          return insights
   ```
-
 </div>
 <div v-click="2">
 
-- **Alphas par defaut**
-  - EmaCrossAlphaModel, MacdAlphaModel, RsiAlphaModel
-  - PearsonCorrelationPairsTradingAlphaModel
-  - Exemple custom : `projects/EMA-Cross-Alpha` (Alpha standalone)
+- **Insights : les signaux retournes**
+  ```python
+  insight = Insight.price("IBM", timedelta(minutes=20), InsightDirection.UP)
+  ```
+  - Parametres : Direction, Period, Magnitude, Confidence, Weight
+  - Regroupement : `Insight.group([insight1, insight2, insight3])`
 
 </div>
 
@@ -606,207 +451,41 @@ Intelligence Artificielle -- S4 -- Partie 3
 
 ---
 
-# Alphas (2/2) et Insights
+# Construction de Portefeuille et Risk Management
 
-- **Alpha personnalise**
-  ```python
-  class MyAlphaModel(AlphaModel):
-      def on_securities_changed(self, algorithm: QCAlgorithm,
-                                changes: SecurityChanges) -> None:
-          pass
-
-      def update(self, algorithm: QCAlgorithm,
-                 data: Slice) -> List[Insight]:
-          insights = []
-          # Logique de generation de signaux
-          return insights
-  ```
-<div v-click="1">
-
-- **Insights : les signaux retournes par Update**
-  ```python
-  insight = Insight.price("IBM", timedelta(minutes=20), InsightDirection.UP)
-  ```
-  - Parametres : Direction, Period, Magnitude, Confidence, Weight
-  - Regroupement : `Insight.group([insight1, insight2, insight3])`
-  - Annulation : `self.insights.cancel(symbols)`
-
-</div>
-
----
-
-# Construction de Portefeuille
-
-- **Le maillon entre les signaux et les ordres** : transforme les Insights en cibles de portefeuille
+- **Le maillon entre les signaux et les ordres**
   ```python
   self.set_portfolio_construction(EqualWeightingPortfolioConstructionModel())
+  self.add_risk_management(MaximumDrawdownPercentPerSecurity(0.10))
   ```
 <div v-click="1">
 
-- **Modeles fournis par defaut**
-  - **EqualWeighting** : poids egal entre les actifs avec Insights
-  - **ConfidenceWeighted** : ponderation par la confiance de l'insight
-  - **InsightWeighting** : ponderation par poids de l'insight
-  - **SectorWeighting** : ponderation par secteur industriel
-  - **MeanVarianceOptimization** : minimise la volatilite
-  - **BlackLittermanOptimization** : optimiseur bayesien
-  - **RiskParity** : minimisation du risque equilibre
-
+- **Modeles de portefeuille**
+  - EqualWeighting, ConfidenceWeighted, InsightWeighting
+  - MeanVarianceOptimization, BlackLittermanOptimization, RiskParity
 </div>
 <div v-click="2">
 
-- **Optimiseurs fournis**
-  - MaximumSharpeRatioPortfolioOptimizer, MinimumVariancePortfolioOptimizer
-  - RiskParityPortfolioOptimizer, UnconstrainedMeanVariancePortfolioOptimizer
-
-</div>
-
-> Ref: *Hands-On AI Trading* Ch8 "Conditional Portfolio Optimization" p.319
-
----
-
-# Gestion du Risque (Framework)
-
-- **Objectif : gestion du risque des cibles**
-  - Renvoyees par le gestionnaire de portefeuille
-  - Idealement, integre des la conception, pas apres optimisation
-  - Sinon, souvent performances degradees
-<div v-click="1">
-
-- **Definition**
-  ```python
-  self.add_risk_management(MaximumSectorExposureRiskManagementModel())
-  ```
-
-</div>
-<div v-click="2">
-
-- **Modeles fournis par defaut**
+- **Modeles de risque**
   - MaximumDrawdownPercentPerSecurity, MaximumDrawdownPercentPortfolio
-  - MaximumUnrealizedProfitPercentPerSecurity
-  - MaximumSectorExposureRiskManagementModel
-  - TrailingStopRiskManagementModel
+  - MaximumSectorExposureRiskManagementModel, TrailingStopRiskManagementModel
 
 </div>
 
 > Notebook: QC-Py-10-Risk-Portfolio-Management
 
 ---
-
-# Modeles d'Execution
-
-- **Determine comment les ordres sont executes**
-<div v-click="1">
-
-- **Definition**
-  ```python
-  self.set_execution(ImmediateExecutionModel())
-  ```
-</div>
-<div v-click="2">
-
-- **Modeles fournis**
-  - **ImmediateExecutionModel** : execution immediate au prix courant
-  - **SpreadExecutionModel** : attend un spread acceptable (necessite QuoteBars)
-  - **StandardDeviationExecutionModel** : execute quand le prix est dans une fourchette
-  - **VolumeWeightedAveragePriceExecutionModel** : decoupe l'ordre pour minimiser l'impact
-
-</div>
-
----
-
-# Optimisation de Parametres (1/2)
-
-- **Definition de parametres d'algorithmes**
-  ```python
-  fast_period = self.get_parameter("ema-fast", 100)
-  self.fast = self.ema("SPY", fast_period)
-  ```
-<div v-click="1">
-
-- **Configuration dynamique**
-  - Fichier config.json ou interface QC en ligne
-  - Extension VS Code avec formulaire de parametrage
-
-</div>
-<div v-click="2">
-
-- **Lanceur d'optimisation**
-  - Execute une serie de backtests pour trouver la meilleure combinaison
-  - Objectif : maximiser une metrique (ex: ratio de Sharpe)
-  - Environnement Cloud (bouton + formulaire) ou `lean optimize` en local
-
-</div>
-
-> Notebook: QC-Py-15-Parameter-Optimization | Ref: *Hands-On AI Trading* Ch2 "Parameter Sensitivity Testing" p.33-34
-
----
-
-# Optimisation de Parametres (2/2)
-
-- **Strategies d'exploration**
-  - **GridSearch** : teste toutes les combinaisons (min, max, step)
-  - **EulerSearch** : GridSearch puis raffinement autour du meilleur resultat
-<div v-click="1">
-
-- **Definition des objectifs**
-  - Parametre a optimiser (ex: Sharpe, CAGR, MaxDrawdown)
-  - Maximiser ou minimiser (extremum)
-  - Arret premature possible avec `target-value`
-</div>
-<div v-click="2">
-
-- **Contraintes et bonnes pratiques**
-  - Ajout de contraintes : disqualifier les configurations trop risquees
-  - Attention a la combinatoire (produit cartesien des possibilites)
-  - Version d'algo "rapide" pour tester la sensibilite
-  - Validation finale sur une periode **hors-echantillon**
-
-</div>
-
----
-layout: image-overlay
-image: ./images/book_cover_handson.png
-imageClass: mid-right visible
----
-
-# Hands-On AI Trading : votre livre
-
-- **3 parties, 9 chapitres, 20+ exemples**
-<div v-click="1">
-
-- **Part I** : Fondations (Ch1-2)
-  - Marches, brokers, workflow de recherche
-</div>
-<div v-click="2">
-
-- **Part II** : ML step-by-step (Ch3-5)
-  - Features, classification, regression
-</div>
-<div v-click="3">
-
-- **Part III** : Applications avancees (Ch6-9)
-  - NLP, RL, portfolio optimization, production
-</div>
-<div v-click="4">
-
-- **Repo** : `github.com/QuantConnect/HandsOnAITradingBook`
-- **Mapping complet** : `docs/HANDSON_AI_TRADING_MAPPING.md`
-
-</div>
-
----
 layout: dense
 ---
 
-# Vos 28 notebooks progressifs
+# Vos 28 notebooks et 67 projets
 
 | Phase | Notebooks | Titre |
 |-------|-----------|-------|
-| **1 - Fondations LEAN** | QC-Py-01 a 04 | Setup, Platform, Data, Research |
+| **1 - Fondations** | QC-Py-01 a 04 | Setup, Platform, Data, Research |
 | **2 - Univers et Assets** | QC-Py-05 a 08 | Universe, Options, Futures, Multi-Asset |
 | **3 - Trading avance** | QC-Py-09 a 12 | Orders, Risk, Indicators, Backtesting |
-| **4 - Algorithm Framework** | QC-Py-13 a 15 | Alpha, Portfolio, Optimization |
+| **4 - Framework** | QC-Py-13 a 15 | Alpha, Portfolio, Optimization |
 | **5 - Donnees alternatives** | QC-Py-16 a 17 | Alternative Data, Sentiment |
 | **6 - ML classique** | QC-Py-18 a 21 | Features, Classification, Regression, Portfolio-ML |
 | **7 - Deep Learning** | QC-Py-22 a 25 | LSTM, Unsupervised, NLP, RL |
@@ -814,56 +493,9 @@ layout: dense
 
 <div v-click="1">
 
+- **67 projets** dans `QuantConnect/projects/` : des EMA Crossover aux composites multi-Alpha (meilleur Sharpe : 1.16)
 - **Progression** : chaque phase suppose la maitrise des precedentes
-- **Autonomie** : chaque notebook contient theorie, code commente, et exercices
 - **Chemin rapide** : Phases 1-3 pour les fondamentaux (~8h), Phase 4 pour le framework (~3h)
-
-</div>
-
----
-layout: dense
----
-
-# 67 projets prets a backtester
-
-| Categorie | Nombre | Exemples | Meilleur Sharpe |
-|-----------|--------|----------|-----------------|
-| **Classiques** | 15 | EMA, Momentum, AllWeather, RegimeSwitching | 1.16 |
-| **ML/AI** | 18 | RF, XGBoost, LSTM, RL-DQN, Gaussian, Chronos | 0.90 |
-| **Livre HandsOn** | 14 (sur 20) | Mapping chapitre par chapitre | -- |
-| **Options** | 3 | Wheel, CoveredCall, VGT Options | -- |
-| **Crypto** | 4 | BTC-MACD-ADX, EMA-Cross-Crypto, MultiCanal | -- |
-| **Composites** | 4 | TrendWeather, FamaFrench, EMATrend, MomentumRegime | -- |
-
-<div v-click="1">
-
-- **Tous les projets** sont dans `QuantConnect/projects/` avec un `main.py` pret a backtester
-- **Metriques documentees** : Sharpe, CAGR, MaxDrawdown pour chaque strategie
-- **Difficulte progressive** : des EMA Crossovers aux composites multi-Alpha
-
-</div>
-
----
-layout: dense
----
-
-# Mapping Exercices ESGF
-
-| Exercice | Sujet | Notebooks | Projet |
-|----------|-------|-----------|--------|
-| **Ex01** | Setup + EMA Crossover | QC-Py-01, 02 | EMA-Cross-Stocks |
-| **Ex02** | All-Weather Portfolio | QC-Py-08 | AllWeather |
-| **Ex03** | Sector Momentum | QC-Py-05, 13 | SectorMomentum |
-| **Ex04** | Trend-Following Multi-Sector | QC-Py-11 | TrendStocksLite |
-| **Ex05** | Custom Alpha Model | QC-Py-13, 14 | EMA-Cross-Alpha |
-| **Ex06** | Multi-Alpha Composite | QC-Py-15 | Framework_Composite_TrendWeather |
-
-<div v-click="1">
-
-- **Ex01-Ex02** : niveau debutant, ~2h chacun
-- **Ex03-Ex04** : niveau intermediaire, necessite la maitrise des univers et indicateurs
-- **Ex05-Ex06** : niveau avance, utilisation du framework Alpha complet
-- **Objectif** : presenter votre strategie avec ses metriques de backtest
 
 </div>
 
@@ -894,37 +526,729 @@ class EMACrossStocksAlgorithm(QCAlgorithm):
                 self.liquidate(self.symbols[ticker])
 ```
 
-**15 lignes de code, 5 actions, 11 ans de backtest.** Copiez dans QC Cloud, lancez : Sharpe ~0.87, soit +74% de mieux que le buy-and-hold.
+**15 lignes de code, 5 actions, 11 ans de backtest.** Sharpe ~0.87, soit +74% de mieux que le buy-and-hold.
+
+---
+layout: section
+---
+
+# Partie 3 : QuantBook — Explorer avant de Coder
 
 ---
 
-# Synthese et prochaines etapes
+# QuantBook : le mode Recherche de QC
 
-Vous avez maintenant les outils pour passer de l'idee au backtest. Voici votre feuille de route :
+- **Deux modes dans QuantConnect** :
+  - `QCAlgorithm` : backtest evenementiel, pas de lookahead possible
+  - `QuantBook` : exploration libre, pandas direct, pas de contrainte temps reel
 
-**1. Creez votre compte QC Cloud** (gratuit sur quantconnect.com)
 <div v-click="1">
 
-**2. Completez Ex01 et Ex02** (debutant, ~2h chacun)
-  - Ex01 : Setup + votre premier EMA Crossover
-  - Ex02 : All-Weather Portfolio multi-actifs
+- **Pourquoi explorer avant de coder ?**
+  - Valider votre intuition sur les donnees avant d'ecrire un algorithme
+  - Visualiser les correlations, la distribution des returns, les regimes
+  - Eviter de coder une strategie sur une idee fausse
+
 </div>
 <div v-click="2">
 
-**3. Explorez les notebooks QC-Py-01 a 04**
-  - Maitrisez les fondamentaux de la plateforme
+- **Acces** : onglet "Research" dans le QC Cloud IDE
+  - `QC-Py-04-Research-Workflow.ipynb` dans le depot (executable en local aussi)
+
+</div>
+
+> Ref: *Hands-On AI Trading* Ch2 "Research Notebooks" p.26-27
+
+---
+
+# QuantBook : l'API de Donnees
+
+```python
+from QuantConnect.Research import *
+
+qb = QuantBook()
+
+# Ajouter les actifs a analyser
+spy = qb.AddEquity("SPY", Resolution.Daily)
+aapl = qb.AddEquity("AAPL", Resolution.Daily)
+
+# Recuperer 1 an de donnees → DataFrame pandas direct
+history = qb.History(qb.Securities.Keys, 252, Resolution.Daily)
+
+# Extraire SPY (MultiIndex : symbol + time)
+df_spy = history.loc["SPY"]
+# → colonnes : open, high, low, close, volume
+```
+
+<div v-click="1">
+
+- **Difference cle avec `QCAlgorithm.History()`** :
+  - QuantBook retourne un **DataFrame pandas** directement
+  - Pas de lookahead protection → vous etes responsable de ne pas biaiser
+
+</div>
+
+---
+
+# QuantBook : Analyser un Signal
+
+```python
+# Returns journaliers et volatilite rolling
+df_spy['returns'] = df_spy['close'].pct_change()
+df_spy['vol_30d'] = df_spy['returns'].rolling(30).std() * (252 ** 0.5)
+
+# Tester un signal SMA 50/200 AVANT de l'implementer dans Lean
+df_spy['sma50']  = df_spy['close'].rolling(50).mean()
+df_spy['sma200'] = df_spy['close'].rolling(200).mean()
+df_spy['signal'] = (df_spy['sma50'] > df_spy['sma200']).astype(int)
+
+# Backtest simplifie
+df_spy['strategy'] = df_spy['signal'].shift(1) * df_spy['returns']
+sharpe = df_spy['strategy'].mean() / df_spy['strategy'].std() * (252 ** 0.5)
+print(f"Sharpe (recherche) : {sharpe:.2f}")
+```
+
+<div v-click="1">
+
+- Validation rapide : si le signal ne tient pas en recherche libre, il ne tiendra pas en backtest Lean
+- Ce notebook prend 5 minutes — il peut vous economiser 2 heures de backtest inutile
+
+</div>
+
+---
+
+# QuantBook → QCAlgorithm : le Bridge
+
+```
+NOTEBOOK (QuantBook)          ALGORITHME (QCAlgorithm)
+─────────────────────         ──────────────────────────
+qb.History(...)           →   self.history(...)
+df['sma50'] = ...         →   self.sma(symbol, 50, ...)
+signal = sma50 > sma200   →   if fast.current.value > slow.current.value:
+strategy_returns = ...    →   self.set_holdings(symbol, 0.5)
+sharpe calculé manuell.   →   résultats backtest complets
+```
+
+<div v-click="1">
+
+- **Pattern recommande pour votre projet** :
+  1. Explorer dans QuantBook (local ou Cloud Research)
+  2. Valider le signal sur 2-3 ans de données
+  3. Traduire en `QCAlgorithm` uniquement si le signal est prometteur
+  4. Laisser l'agent faire la traduction si besoin
+
+</div>
+
+> Notebook: `QC-Py-04-Research-Workflow.ipynb` (21/22 cellules executées)
+
+---
+layout: section
+---
+
+# Partie 4 : Workflow Agentique
+
+---
+
+# Qu'est-ce qu'un Agent IA Codeur ?
+
+- **Definition** : un LLM (Large Language Model) qui peut lire, ecrire et executer du code dans votre environnement
+  - Pas un simple chatbot : il agit sur vos fichiers, votre terminal, vos outils
+<div v-click="1">
+
+- **Exemples** :
+  - Claude Code (Anthropic) -- celui que nous utilisons
+  - GitHub Copilot, Cursor, Windsurf
+  - Tous partagent le meme principe : contexte (votre code) + action (modifications)
+</div>
+<div v-click="2">
+
+- **Pour le trading quant** :
+  - L'agent connait l'API QuantConnect, les patterns de strategie, les metriques
+  - Il peut ecrire un algorithme complet, le compiler, le backtester
+  - Il iterere sur les resultats pour ameliorer la strategie
+
+</div>
+
+---
+
+# Architecture VSCode + Claude Code + MCP
+
+- **VSCode** : votre editeur, avec l'extension Claude Code installee
+  - Terminal integre, gestion Git, extensions
+<div v-click="1">
+
+- **Claude Code** : l'agent IA qui opere dans VSCode
+  - Lit vos fichiers, execute des commandes, modifie le code
+  - Utilise des outils (Read, Write, Bash, Grep)
+</div>
+<div v-click="2">
+
+- **MCP (Model Context Protocol)** : le pont entre Claude et vos services
+  - Standard ouvert pour connecter des outils externes a un LLM
+  - Serveur MCP QuantConnect : expose l'API QC comme outils
+  - Claude appelle `create_project`, `create_compile`, `create_backtest` comme des fonctions
+
+</div>
+
+---
+
+# Le Protocole MCP
+
+- **MCP = Model Context Protocol**
+  - Standard developpe par Anthropic pour connecter des LLMs a des outils externes
+  - Analogue a une API REST, mais concu pour les agents IA
+<div v-click="1">
+
+- **Serveur MCP QuantConnect** : `quantconnect/mcp-server`
+  - Docker : `docker run --rm -i quantconnect/mcp-server`
+  - Outils exposes : `list_projects`, `read_file`, `create_file`, `create_compile`, `create_backtest`, `create_optimization`, `check_syntax`, `complete_code`
+
+</div>
+<div v-click="2">
+
+- **Avantage cle** : l'agent n'a pas besoin de scripts personnalises
+  - Il lit la documentation des outils et decide de la sequence d'appels
+  - C'est un "programmeur" autonome, pas un script d'automatisation
+
+</div>
+
+---
+
+# Le Workflow Agentique en 5 Etapes
+
+```
+1. IDEE          "Je veux une strategie momentum sur SPY"
+       |
+2. CODE          Agent ecrit main.py + research.ipynb
+       |
+3. COMPILE       Agent appelle create_compile + read_compile
+       |
+4. BACKTEST      Agent appelle create_backtest + read_backtest
+       |
+5. ITERE         Agent analyse les metriques, ajuste, retour a 2
+```
+
+<div v-click="1">
+
+- **Cycle complet en ~5 minutes** (vs 30-60 min manuellement)
+- L'agent connait les bonnes pratiques : warmup, resolution, parametres
+- Il evite les erreurs courantes : look-ahead bias, manque de warmup
+
+</div>
+
+---
+
+# Configuration : ce qu'il vous faut
+
+- **Etape 1** : Installer VSCode + extension Claude Code
+  - `code --install-extension anthropic.claude-code`
+<div v-click="1">
+
+- **Etape 2** : Installer Docker Desktop
+  - Necessaire pour le serveur MCP QuantConnect
+  - `docker pull quantconnect/mcp-server`
+</div>
+<div v-click="2">
+
+- **Etape 3** : Configurer `.mcp.json` a la racine du projet
+  ```json
+  {
+    "mcpServers": {
+      "quantconnect": {
+        "command": "docker",
+        "args": ["run", "--rm", "-i",
+          "-e", "QUANTCONNECT_USER_ID",
+          "-e", "QUANTCONNECT_API_TOKEN",
+          "-e", "QUANTCONNECT_ORGANIZATION_ID",
+          "quantconnect/mcp-server"]
+      }
+    }
+  }
+  ```
 </div>
 <div v-click="3">
 
-**4. Choisissez une strategie du depot a modifier**
-  - 67 projets disponibles, de debutant a avance
-  - Modifiez les parametres, ajoutez des actifs, testez des variantes
-</div>
-<div v-click="4">
+- **Etape 4** : Ouvrir le depot dans VSCode, lancer Claude Code (`Ctrl+Shift+P` > "Claude")
 
-**5. Objectif final** : presenter votre strategie avec metriques de backtest
-  - Sharpe, CAGR, MaxDrawdown, nombre de trades
-  - Justifiez vos choix de conception
+</div>
+
+---
+
+# Demo Live : le Cycle Complet (1/2)
+
+**Prompt initial a l'agent** :
+
+```
+"Upload le projet EMA-Cross-Stocks dans mon organisation QuantConnect
+et backteste-le sur 2015-2025 avec 100k USD"
+```
+
+<div v-click="1">
+
+**Ce que l'agent fait automatiquement** :
+
+1. Lit le fichier `main.py` du projet local
+2. Appelle `create_project` dans l'organisation QuantConnect
+3. Appelle `create_file` pour uploader `main.py`
+4. Appelle `create_compile` et attend le resultat
+5. Si erreur de syntaxe : corrige et recompile
+
+</div>
+
+---
+
+# Demo Live : le Cycle Complet (2/2)
+
+**Etape backtest** :
+
+- L'agent appelle `create_backtest(projectId, compileId, name)`
+- Puis `read_backtest(projectId, backtestId)` pour les resultats
+
+<div v-click="1">
+
+**Metriques retournees** :
+
+| Metrique | Description |
+|----------|-------------|
+| Sharpe Ratio | Rendement ajuste au risque (> 0.5 = correct) |
+| CAGR | Rendement annualise |
+| Max Drawdown | Perte maximale depuis un pic |
+| Total Trades | Nombre de trades |
+| Alpha | Rendement vs benchmark |
+
+</div>
+<div v-click="2">
+
+- **Iteration automatique** : l'agent analyse les metriques, ajuste le code, rebackteste
+- **Votre role** : observer, poser des questions, orienter l'agent
+
+</div>
+
+---
+
+# Ce que l'Agent peut (et ne peut pas) faire
+
+- **Peut faire** :
+  - Ecrire un algorithme complet a partir d'une description
+  - Corriger les erreurs de syntaxe et de compilation
+  - Lancer des backtests et lire les resultats
+  - Proposer des ameliorations basees sur les metriques
+  - Adapter les parametres pour optimiser les performances
+<div v-click="1">
+
+- **Ne peut pas faire** :
+  - Garantir un Sharpe > 2 (surapprentissage = danger)
+  - Remplacer votre jugement sur la coherence de la strategie
+  - Penser a votre place : vous devez orienter l'agent
+  - Detecter tous les biais (look-ahead, survivorship, etc.)
+
+</div>
+
+---
+layout: section
+---
+
+# Partie 5 : ML Accessible — Features et RandomForest
+
+---
+
+# Feature Engineering : transformer les prix en signaux
+
+- **3 familles de features** sur donnees OHLCV :
+
+<div v-click="1">
+
+| Famille | Exemples | Ce qu'elles capturent |
+|---------|----------|-----------------------|
+| **Price-based** | return 1j/5j/20j, log-return, vol 30j | Momentum, regime |
+| **Indicator-based** | RSI(14), SMA ratio, EMA ratio, MACD | Overbought, tendance |
+| **Labeling** | rendement futur 10j > seuil → 1/0 | Target du modele |
+
+</div>
+<div v-click="2">
+
+- **39 features** dans `QC-Py-18-ML-Features-Engineering.ipynb` (21/22 cellules executees)
+- **Triple Barrier** (Lopez de Prado) : label 1/0/-1 selon stop-loss, take-profit ou expiration
+- La qualite des features > le choix du modele
+
+</div>
+
+> Notebook: `QC-Py-18` | Ref: *Hands-On AI Trading* Ch4 "Feature Engineering" p.68-85
+
+---
+
+# Pipeline RandomForest sur Secteurs
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+class SectorMLClassificationAlgorithm(QCAlgorithm):
+    def initialize(self):
+        # 8 ETFs sectoriels : XLK, XLF, XLV, XLE, XLY, XLP, XLI, XLU
+        # Re-entrainement mensuel, fenetre glissante 4 ans
+        self.schedule.on(self.date_rules.month_start("SPY"), ...)
+
+    def train_model(self):
+        # 11 features par secteur : RSI, SMA_ratio, returns 1/5/10/20j, vol
+        # Label : rendement 10j > 1.2% → Buy, < -0.8% → Avoid
+        self.model = RandomForestClassifier(
+            n_estimators=100, max_depth=5, min_samples_leaf=10
+        )
+        self.model.fit(X_train, y_train)
+
+    def rebalance(self):
+        proba = self.model.predict_proba(X_current)
+        # Bull : top 4 secteurs par proba d'achat
+        # Bear (SPY < SMA200) : top 2 defensifs ou cash
+```
+
+<div v-click="1">
+
+- Re-entrainement automatique chaque mois sur fenetre glissante de 4 ans
+- Regime bull/bear detecte par SPY vs SMA200
+
+</div>
+
+---
+
+# ML en Pratique : ML ne bat pas forcément les règles simples
+
+**Evolution du Sector-ML-Classification sur 5 versions (2015-2026) :**
+
+| Version | Changement principal | Sharpe | Alpha |
+|---------|---------------------|--------|-------|
+| v2b | Baseline momentum | 0.352 | -0.007 |
+| v3 | + ML features | 0.288 | -0.012 |
+| v4 | + Alpha positif (beta reduit) | 0.308 | +0.003 |
+| **v5** | Toujours top-N, pas de cash drag | **0.473** | **+0.009** |
+| Trend-Following simple | SMA200 + momentum | **1.072** | 0.068 |
+
+<div v-click="1">
+
+- **Lecon cle** : le ML seul ne suffit pas — v3 (ML naif) est pire que v2b (momentum pur)
+- L'iteration sur le feature engineering et le regime fait passer de 0.29 a 0.47
+- Une regle simple bien calibree (Trend-Following) bat le ML sur ce probleme
+
+</div>
+<div v-click="2">
+
+> ML vaut le cout quand : univers large, features fondamentales disponibles, regime complexe
+> Pour votre projet : RandomForest ou XGBoost sur secteurs sont accessibles en 50 lignes
+
+</div>
+
+---
+
+# Ce que ML apporte (et ce qu'il n'apporte pas)
+
+- **ML apporte** :
+  - Signaux adaptatifs : le modele se reentrainement sur le marche recent
+  - Patterns non-lineaires : interactions entre features inaccessibles aux regles
+  - Probabilites : `predict_proba()` donne un score de confiance, pas juste 0/1
+
+<div v-click="1">
+
+- **ML n'apporte pas** :
+  - Sharpe garanti — un RF mal feature-engineere est pire qu'une EMA
+  - Interpretabilite facile — savoir *pourquoi* le modele achete est dur
+  - Robustesse automatique — overfitting sur le train set = desastre hors-sample
+
+</div>
+<div v-click="2">
+
+- **Pour votre projet** : si vous choisissez ML, partez du template Advanced
+  - `templates/advanced/main.py` : RF sur BTCUSDT, 100 arbres, re-entrainement mensuel
+  - Commencez simple (5 features), ajoutez par iteration
+
+</div>
+
+> Projets disponibles : `ML-Classification`, `ML-RandomForest`, `Sector-ML-Classification`
+
+---
+layout: section
+---
+
+# Resultats ML — Curriculum V2
+
+<br>
+
+> 8 stages, 84 backtests, 4 seeds, walk-forward 5-fold — methode rigoureuse, verdicts honnetes
+
+---
+
+# Curriculum V2 : 4 KEEPERS sur 8 stages
+
+| Stage | Description | Delta Sharpe | Seeds OK | Verdict |
+|-------|-------------|-------------|----------|---------|
+| **S3** | HMM Regime Detection | **+0.669** | 4/4 | KEEPER |
+| **S4 v2** | Regime + Inv-Vol Ridge | **+0.325** | 4/4 | KEEPER |
+| **M12** | HAR-RV-J Volatility | p=0.0015 | — | KEEPER |
+| **M15** | LSTM h=32 RV | p=0.0107 | — | KEEPER |
+| S5 | LASSO Stop-Loss | -0.311 | 0/4 | NO BEATS |
+| S7 | Composite KEEPERS | -0.006 | — | NO BEATS |
+| S8 | Trend Long-Horizon | AUC 0.61 | — | NO BEATS |
+
+<div v-click="1">
+
+- **Pas de "BEATS magique"** : sur 8 stages, seulement 4 passent le seuil 2-sigma cross-seed
+- **Les composites decaivent** : S7 combine S3+S4 mais perfore PAS mieux que S4 seul
+
+</div>
+
+---
+
+# Portfolio recommande — Sharpe 1.12
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**Construction :**
+- Signal : S3 HMM Regime (5 switches/an)
+- Poids : S4 v2 inverse-vol Ridge, regime-conditionnel
+- Univers : SPY, TLT, 9 secteurs ETF
+- Rebalance : mensuel
+- OOS strict : post-2027
+
+</div>
+<div>
+
+**Performance :**
+
+| Metrique | Valeur |
+|----------|--------|
+| Sharpe | **1.12** |
+| MaxDD | -17.7% |
+| Bear delta | +0.89 |
+
+**vs Buy-and-Hold SPY :**
+| | Sharpe | MaxDD |
+|---|--------|-------|
+| SPY B&H | 0.67 | -24.2% |
+| Portfolio | **1.12** | **-17.7%** |
+
+</div>
+</div>
+
+<div v-click="1">
+
+> Inverse-vol reduce le MaxDD de -82.4% (non-pondere) a -17.7% — la gestion du risque fait plus que le signal
+
+</div>
+
+---
+
+# Lecons du Curriculum V2
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**Ce qui marche :**
+1. **Detection de regime** (S3 HMM) : signal le plus fort (+0.669)
+2. **Inverse-vol weighting** (S4 v2) : reduit MaxDD de 79%
+3. **Modeles simples** : HMM 3-etats + Ridge bat LSTM+GBDT composite
+4. **Rigueur methodologique** : walk-forward 5-fold, 4 seeds, OOS strict
+
+</div>
+<div>
+
+**Ce qui ne marche PAS :**
+1. **Predire la direction** : dir_acc = 93% mais delta Sharpe < 0
+2. **Combiner tout** : S7 composite = pire que S4 seul
+3. **Modeles complexes** : GBDT, LSTM heavy, multi-alpha → overfit
+4. **Stop-loss LASSO** : degrade la performance (-0.311)
+
+</div>
+</div>
+
+<div v-click="1">
+
+- **Conclusion** : la detection de regime + la gestion du risque battent la prediction de direction
+- *"Decision tasks > prediction tasks"* — Lopez de Prado, Ch 8
+
+</div>
+
+---
+
+# Methodologie Curriculum V2
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+**Validation :**
+- Walk-forward 5-fold expanding
+- 4 seeds : `[0, 1, 7, 42]`
+- Block bootstrap (22 jours)
+- Seuil : edge >= 2-sigma cross-seed
+- OOS strict : post-2027
+
+</div>
+<div>
+
+**Contre-mesures anti-biais :**
+- Pas de FAANG/Mag7 dans le training
+- Transaction costs documentes (5bps equities)
+- Pas de lookahead dans les features
+- Verdict binaire : BEATS / NO BEATS / INCONCLUSIVE
+
+</div>
+</div>
+
+<div v-click="1">
+
+> Un resultat "promising" sur 1 seed x 1 fold = invalide. Seule la replication cross-seed compte.
+
+</div>
+
+---
+layout: section
+---
+
+# Partie 6 : Composites Avances
+
+---
+
+# Resultats Composites Avances (1/2)
+
+- **C4.1 : TrendWeather Composite**
+  - Combinaison : Trend-Following + Weather signals
+  - Univers : 20+ actifs multi-secteur
+  - Architecture : 3 Alpha models + EqualWeighting PCM + MaxDrawdown Risk
+  - Sharpe : **1.16** sur 11 ans (2015-2025)
+
+<div v-click="1">
+
+- **C4.2 : MomentumRegime Composite**
+  - Combinaison : Momentum + Regime Detection (Hidden Markov)
+  - Bascule entre momentum et mean-reversion selon le regime
+  - Architecture : 2 Alpha + RegimeSwitching PCM + TrailingStop Risk
+  - Sharpe : **0.98** sur 11 ans
+
+</div>
+
+---
+
+# Resultats Composites Avances (2/2)
+
+- **C4.3 : Multi-Alpha Ensemble** -- architecture 5 couches complete
+  - **Universe** : Top 50 par volume (rebalance hebdo)
+  - **Alphas** : EMA Cross + RSI + MACD (3 signaux independants)
+  - **Portfolio** : BlackLittermanOptimization (pondere par confiance)
+  - **Risk** : MaximumSectorExposure + MaximumDrawdownPercentPortfolio
+  - **Execution** : VolumeWeightedAveragePrice (minimise impact)
+
+<div v-click="1">
+
+| Couche ajoute | Sharpe | Increment |
+|---------------|--------|-----------|
+| EMA Cross seul | 0.45 | base |
+| + Alpha RSI | 0.62 | +0.17 |
+| + PCM BlackLitterman | 0.89 | +0.27 |
+| + Risk Management | 1.05 | +0.16 |
+| **+ Execution VWAP** | **1.31** | **+0.26** |
+
+</div>
+<div v-click="2">
+
+- Chaque couche du framework apporte un increment de performance
+- Le plus gros saut : risk management (0.89 -> 1.05)
+
+</div>
+
+---
+
+# Les Composites sont dans le Depot
+
+- **4 projets composites** prets a backtester :
+  - `projects/Framework_Composite_TrendWeather/`
+  - `projects/Framework_Composite_FamaFrench/`
+  - `projects/Framework_Composite_EMATrend/`
+  - `projects/Framework_Composite_MomentumRegime/`
+<div v-click="1">
+
+- Chaque projet contient :
+  - `main.py` : l'algorithme complet (50-200 lignes)
+  - `research.ipynb` : notebook d'exploration avec yfinance
+  - Metriques documentees dans le README du projet
+
+</div>
+<div v-click="2">
+
+- **Pour votre projet** : inspirez-vous de ces architectures
+  - Vous pouvez les cloner, modifier les parametres, changer les actifs
+  - L'agent peut vous aider a les adapter a votre idee
+
+</div>
+
+---
+layout: section
+---
+
+# Partie 7 : Preparation Projet et Soutenance
+
+# Soutenance Groupe — 19 Mai 2026
+
+- **Format** : 10 min presentation + 5 min questions par groupe
+- **Support** : Slidev obligatoire (template fourni dans le depot)
+- **Livrables** : projet uploaded dans l'org ESGF avant J-2 (17 mai)
+
+<div v-click="1">
+
+| Critere | Poids | Minimum requis |
+|---------|:-----:|----------------|
+| **Backtest** | 30% | Sharpe > 0, periode > 2 ans, comparaison benchmark |
+| **Strategie** | 30% | Logique claire, 2+ indicateurs, stop-loss present |
+| **Presentation** | 20% | Graphiques de resultats, timing 10 min +/- 1 min |
+| **Code** | 20% | Compile sans erreur, README, parametres visibles |
+
+</div>
+<div v-click="2">
+
+- **Workflow recommande pour le projet** :
+  1. Choisir une strategie de base parmi les projets du depot
+  2. Utiliser l'agent pour personnaliser (actifs, periodes, seuils)
+  3. Valider manuellement : relire le code, verifier les metriques
+  4. Documenter vos choix et limites identifiees
+
+- **Bonus +5 pts** : demo paper trading en direct pendant la soutenance
+
+</div>
+
+---
+
+# Bonnes Pratiques Anti-Biais
+
+- **Look-ahead bias** : ne jamais utiliser les donnees du jour pour decider aujourd'hui
+  - Lean le previent par design (moteur evenementiel)
+  - Mais vos notebooks de recherche peuvent le presenter
+<div v-click="1">
+
+- **Overfitting** : Sharpe > 3 sur un backtest = probablement surajuste
+  - Tester sur des periodes differentes (in-sample / out-of-sample)
+  - Un bon Sharpe reel : 0.5-1.5 pour une strategie robuste
+</div>
+<div v-click="2">
+
+- **Survivorship bias** : backtester sur des entreprises qui existent encore
+  - L'univers QC corrige partiellement ce biais
+  - Evitez de cherry-picker les actifs retroactivement
+
+</div>
+
+---
+
+# Troubleshooting
+
+- **"Kernel died"** dans les notebooks : redemarrer le kernel (Kernel > Restart)
+- **"Compile error"** sur QC Cloud : verifier les imports (`from AlgorithmImports import *`)
+- **MCP non connecte** : verifier que Docker est lance, `.mcp.json` est correct
+- **Rate limiting QC** : max 10 appels/minute, attendre 60s si bloque
+<div v-click="1">
+
+- **Erreurs communes** :
+  - Oublier `self.set_warm_up()` = signaux parasites au debut
+  - Resolution incorrecte : `Resolution.DAILY` vs `Resolution.HOUR`
+  - `self.add_equity("SPY")` sans resolution = valeur par defaut (Minute)
+  - Oublier de declarer les parametres dans le code ET dans config.json
 
 </div>
 
@@ -941,6 +1265,8 @@ Jean-Sylvain Boige -- jsboige@myia.org
 - **QC Cloud** : quantconnect.com (compte gratuit)
 - **Repo GitHub** : github.com/jsboige/CoursIA (28 notebooks + 67 projets)
 - **Livre** : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wiley 2025)
+- **MCP Server** : github.com/QuantConnect/mcp-server
+- **Claude Code** : claude.ai/code
 - **Documentation QC** : quantconnect.com/docs
 
 > Le trading algorithmique est un domaine ou la pratique precede la theorie.

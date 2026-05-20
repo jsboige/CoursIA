@@ -1042,9 +1042,9 @@ returns = prices.pct_change().dropna()
 
 ### Tutoriels Connexes
 
-- [SESSION5_PATTERNS.md](../projects/SESSION5_PATTERNS.md) - AlphaModel Framework
+- [SESSION5_PATTERNS.md](../projects/_docs/SESSION5_PATTERNS.md) - AlphaModel Framework
 - [README.md](../projects/README.md) - Stratégies QuantConnect
-- [HANDSON_AI_TRADING_MAPPING.md](../HANDSON_AI_TRADING_MAPPING.md) - Mapping notebooks projets
+- [HANDSON_AI_TRADING_MAPPING.md](../docs/HANDSON_AI_TRADING_MAPPING.md) - Mapping notebooks projets
 
 ### Contribution
 
