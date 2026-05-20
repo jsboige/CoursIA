@@ -1888,14 +1888,12 @@ layout: default
 
 # Ontologies
 
-<img src="./images/img_020.png" style="position:absolute; top:50px; right:10px; width:280px; max-height:400px;" alt="Ontologie - graphe de connaissances" />
+<img src="./images/img_020.png" style="position:absolute; top:118px; right:34px; width:300px; max-height:420px;" alt="Ontologie - graphe de connaissances" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 </style>
-
-<div style="max-width:65%;">
 
 ## Objectifs
 
@@ -1916,8 +1914,6 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 - Connaissances sur les croyances
 - Logique modale: mondes possibles
-
-</div>
 
 ---
 layout: default
