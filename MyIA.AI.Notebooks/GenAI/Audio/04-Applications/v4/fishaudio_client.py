@@ -41,7 +41,7 @@ def fishaudio_tts(
     temperature: float = 0.7,
     top_p: float = 0.9,
     format: str = "mp3",
-    timeout: int = 300,
+    timeout: int = 600,
 ) -> bytes | None:
     """Synthesize speech via ``POST /v1/tts``.
 

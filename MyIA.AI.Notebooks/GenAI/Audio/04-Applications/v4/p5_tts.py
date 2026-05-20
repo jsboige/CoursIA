@@ -30,8 +30,8 @@ TTS_DIR = OUTPUT_DIR
 TTS_DIR.mkdir(exist_ok=True, parents=True)
 
 _MAX_WORDS_PER_CALL = 55
-_BATCH_SIZE = 8
-_MAX_WORKERS = 4
+_BATCH_SIZE = 4
+_MAX_WORKERS = 1
 
 
 def _split_long_text(text: str, max_words: int = _MAX_WORDS_PER_CALL) -> list[str]:
@@ -109,7 +109,7 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             "temperature": 0.7,
             "top_p": 0.9,
             "format": "mp3",
-            "timeout": 300,
+            "timeout": 600,
         })
 
     # If single chunk, use direct call
