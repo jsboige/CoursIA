@@ -118,6 +118,12 @@ class ProofState:
     # whether to force Director invocation at iteration 4.
     _has_director: bool = False
 
+    # B2 (issue #1224): SearchAgent consultation gate. The Coordinator
+    # MUST have had SearchAgent explore reference_docs/ before
+    # mark_sorry_intractable can terminate the session. C37 forensic showed
+    # Coordinator decided intractable in 139.7s with 0 SearchAgent payload.
+    search_agent_consulted: bool = False
+
     # B.8: Checkpoint support — save/restore state between phases
     _checkpoints: Dict[str, dict] = field(default_factory=dict, repr=False)
 
