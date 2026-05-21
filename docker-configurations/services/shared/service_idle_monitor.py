@@ -65,6 +65,8 @@ class ServiceIdleMonitor:
         check_interval: int = 60,
         startup_grace: int = 300,
         activity_fn: Optional[callable] = None,
+        idle_action: str = "stop",
+        sleep_url: Optional[str] = None,
     ):
         self.health_url = health_url.rstrip("/")
         self.container_name = container_name
@@ -72,6 +74,10 @@ class ServiceIdleMonitor:
         self.check_interval = check_interval
         self.startup_grace = startup_grace
         self.activity_fn = activity_fn
+        self.idle_action = idle_action
+        self.sleep_url = sleep_url or self.health_url.rsplit("/", 1)[0] + "/sleep"
+        self.wake_url = self.health_url.rsplit("/", 1)[0] + "/wake_up"
+        self.is_sleeping_url = self.health_url.rsplit("/", 1)[0] + "/is_sleeping"
 
         self._last_activity: Optional[float] = None
         self._last_response_hash: Optional[str] = None
@@ -139,11 +145,40 @@ class ServiceIdleMonitor:
             logger.error(f"Error stopping container: {e}")
             return False
 
+    def _sleep_service(self) -> bool:
+        """Put service to sleep via native API (vLLM sleep mode)."""
+        try:
+            logger.info(f"Putting service to sleep: {self.sleep_url}")
+            resp = requests.post(self.sleep_url, params={"level": 1}, timeout=30)
+            resp.raise_for_status()
+            self._stop_count += 1
+            logger.info(f"Service asleep (GPU VRAM freed, total sleeps: {self._stop_count})")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to sleep service: {e}")
+            return False
+
+    def _is_service_sleeping(self) -> bool:
+        """Check if service is in native sleep mode."""
+        try:
+            resp = requests.get(self.is_sleeping_url, timeout=10)
+            if resp.status_code == 200:
+                return resp.json().get("is_sleeping", False)
+        except Exception:
+            pass
+        return False
+
     def check_service_activity(self) -> Optional[float]:
         """
         Check if the service is active by hitting its health endpoint.
         Returns timestamp of last activity, or None if unable to determine.
         """
+        # If service is in native sleep mode, don't count as idle
+        # (it's intentionally sleeping, GPU already freed)
+        if self.idle_action == "sleep" and self._is_service_sleeping():
+            logger.debug("Service is in sleep mode (GPU freed)")
+            return time.time()
+
         # First check if container is running
         if not self._is_container_running():
             logger.debug(f"Container {self.container_name} is not running")
@@ -201,6 +236,8 @@ class ServiceIdleMonitor:
 
         if idle_time >= self.idle_timeout:
             logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
+            if self.idle_action == "sleep":
+                return self._sleep_service()
             return self._stop_container()
 
         return False
@@ -275,6 +312,12 @@ def main():
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         help="Logging level"
     )
+    parser.add_argument(
+        "--idle-action",
+        default=os.environ.get("IDLE_ACTION", "stop"),
+        choices=["stop", "sleep"],
+        help="Idle action: stop (docker stop) or sleep (native API sleep mode)"
+    )
 
     args = parser.parse_args()
 
@@ -290,6 +333,7 @@ def main():
         idle_timeout=args.timeout,
         check_interval=args.interval,
         startup_grace=args.startup_grace,
+        idle_action=args.idle_action,
     )
 
     try:

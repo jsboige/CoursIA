@@ -16,6 +16,8 @@ services:
       - NCCL_P2P_DISABLE=1
       # Quantization: fp8 (recommande), int8 (experimental), bfloat16 (defaut)
       - VLLM_QUANTIZATION=${VLLM_QUANTIZATION:-bfloat16}
+      # Sleep mode: offload to CPU, free GPU RAM without full restart
+      - VLLM_SERVER_DEV_MODE=1
       - HOME=/home/vllm
       - USER=vllm
       - LOGNAME=vllm
@@ -42,6 +44,7 @@ services:
       - "--vae-use-tiling"
       - "--api-key"
       - "${VLLM_API_KEY:-}"
+      - "--enable-sleep-mode"
     deploy:
       resources:
         limits:
@@ -80,6 +83,7 @@ services:
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1800}
       - CHECK_INTERVAL=${CHECK_INTERVAL:-120}
       - STARTUP_GRACE=${STARTUP_GRACE:-600}
+      # IDLE_ACTION=sleep  # vLLM-omni diffusion doesn't support native sleep — use docker stop
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - TZ=${TZ:-Europe/Paris}
 

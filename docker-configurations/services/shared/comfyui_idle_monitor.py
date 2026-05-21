@@ -63,6 +63,7 @@ class ComfyUIIdleMonitor:
 
         self._last_activity: Optional[float] = None
         self._last_check: Optional[float] = None
+        self._monitor_start_time: Optional[float] = None
         self._running = False
         self._monitor_thread: Optional[threading.Thread] = None
         self._unload_count = 0
@@ -274,14 +275,22 @@ class ComfyUIIdleMonitor:
         last_activity = self.get_last_activity_time()
 
         if last_activity is None:
-            # No activity recorded yet
-            logger.debug("No activity recorded, skipping unload check")
+            # No activity recorded — use monitor start time as fallback
+            if self._monitor_start_time:
+                last_activity = self._monitor_start_time
+                idle_time = current_time - last_activity
+                logger.info(f"Idle: {idle_time:.0f}s / {self.idle_timeout}s (no history, {self.comfyui_url})")
+                if idle_time >= self.idle_timeout:
+                    logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
+                    return self.unload_models()
+            else:
+                logger.debug("No activity recorded and no start time, skipping check")
             return False
 
         self._last_activity = last_activity
         idle_time = current_time - last_activity
 
-        logger.debug(f"Idle time: {idle_time:.0f}s / {self.idle_timeout}s")
+        logger.info(f"Idle: {idle_time:.0f}s / {self.idle_timeout}s ({self.comfyui_url})")
 
         if idle_time >= self.idle_timeout:
             logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
@@ -314,6 +323,7 @@ class ComfyUIIdleMonitor:
             return
 
         self._running = True
+        self._monitor_start_time = time.time()
         self._monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
         self._monitor_thread.start()
         logger.info("ComfyUI Idle Monitor started")

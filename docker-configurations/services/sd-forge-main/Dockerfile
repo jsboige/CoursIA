@@ -18,5 +18,3 @@ RUN groupadd -g 1000 appuser && \
 
 RUN source /opt/environments/python/forge/bin/activate && \
     python -c "import numpy; import cv2; import skimage; print('Imports successful')"
-
-USER appuser
