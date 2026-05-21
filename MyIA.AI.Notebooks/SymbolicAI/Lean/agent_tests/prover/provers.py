@@ -93,11 +93,17 @@ class MultiAgentSorryProver:
 
     def __init__(self, trace: TraceLogger, provider: str = "zai",
                  local_provider: str = "local",
-                 director_provider: Optional[str] = None):
+                 director_provider: Optional[str] = None,
+                 coordinator_provider: Optional[str] = None):
         self.trace = trace
         self.provider = provider
         self.local_provider = local_provider
         self.director_provider = director_provider
+        # #1289: CoordinatorAgent needs a fast, capable model for tool-use
+        # orchestration. GLM-5.1 (zai) times out on complex Lean contexts.
+        # Default to "openrouter" (GPT-5.5 via OPENAI_CHAT_MODEL_ID) which
+        # handles Coordinator tasks in <2min vs 12+ min with GLM-5.1.
+        self.coordinator_provider = coordinator_provider or "openrouter"
 
     async def prove_sorry(self, demo: dict, max_iterations: int = 10,
                           workflow_timeout_s: Optional[int] = None) -> dict:
@@ -223,7 +229,7 @@ class MultiAgentSorryProver:
         tactic_agent = create_tactic_agent(
             tactic_tools, provider=self.provider, goal=goal_state or "")
         critic_agent = create_critic_agent(critic_tools, provider=self.provider)
-        coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.provider)
+        coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.coordinator_provider)
 
         # Create optional DirectorAgent (external LLM for strategic guidance)
         director_agent = None
