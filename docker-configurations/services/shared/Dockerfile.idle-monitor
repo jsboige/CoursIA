@@ -1,13 +1,17 @@
 FROM python:3.11-slim
 
-LABEL description="ComfyUI Idle Monitor Sidecar"
+LABEL description="Idle Monitor Sidecar (ComfyUI + Generic)"
 LABEL maintainer="myia.ai"
 
-# Install requests library
-RUN pip install --no-cache-dir requests
+# Install Docker CLI + requests library
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends docker.io && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir requests
 
-# Copy the monitor script
+# Copy monitor scripts
 COPY comfyui_idle_monitor.py /app/comfyui_idle_monitor.py
+COPY service_idle_monitor.py /app/service_idle_monitor.py
 
 RUN groupadd -g 1000 appuser && \
     useradd -u 1000 -g appuser -m -s /bin/bash appuser && \

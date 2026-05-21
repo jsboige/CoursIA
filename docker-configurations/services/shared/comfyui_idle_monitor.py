@@ -91,15 +91,29 @@ class ComfyUIIdleMonitor:
                 timeout=10
             )
 
-            # Check for successful login (redirect to / or session cookie set)
-            if resp.status_code == 302 or resp.status_code == 200:
-                # Check if session cookie was set
-                if "AIOHTTP_SESSION" in self.session.cookies:
+            # Successful login: 302 redirect to "/" with session cookie
+            # Failed login: 302 redirect to "/login?wrong_password=1"
+            if resp.status_code == 302:
+                location = resp.headers.get("Location", "")
+                if location == "/":
+                    # Successful login redirects to root
                     self._logged_in = True
                     logger.info(f"Successfully logged in as {self.username}")
                     return True
-                # Also accept if we get redirected to /
-                if resp.status_code == 302 and resp.headers.get("Location") == "/":
+                elif "wrong_password" in location:
+                    logger.warning(f"Login failed: wrong password (redirect to {location})")
+                    return False
+                elif "AIOHTTP_SESSION" in self.session.cookies:
+                    # Fallback: session cookie set even with unexpected redirect
+                    self._logged_in = True
+                    logger.info(f"Logged in via session cookie as {self.username}")
+                    return True
+                else:
+                    logger.warning(f"Login redirect to unexpected location: {location}")
+                    return False
+
+            if resp.status_code == 200:
+                if "AIOHTTP_SESSION" in self.session.cookies:
                     self._logged_in = True
                     logger.info(f"Successfully logged in as {self.username}")
                     return True
@@ -113,6 +127,10 @@ class ComfyUIIdleMonitor:
 
     def _ensure_authenticated(self) -> bool:
         """Ensure we have a valid session, re-login if needed."""
+        # Bearer token auth: no session needed
+        if self.auth_token and not self.username and not self.password:
+            return True
+
         if not self.username or not self.password:
             return True  # No auth required
 
@@ -122,8 +140,11 @@ class ComfyUIIdleMonitor:
         return self.login()
 
     def _get_headers(self) -> dict:
-        """Get request headers."""
-        return {"Content-Type": "application/json"}
+        """Get request headers, including Bearer token if configured."""
+        headers = {"Content-Type": "application/json"}
+        if self.auth_token:
+            headers["Authorization"] = f"Bearer {self.auth_token}"
+        return headers
 
     def get_running_prompts(self) -> list:
         """Get list of currently running prompt IDs."""

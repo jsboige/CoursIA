@@ -65,6 +65,56 @@ services:
 
     restart: unless-stopped
 
+    networks:
+      - fishaudio-network
+
+    labels:
+      - "com.myia.service=tts-fishaudio"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=fishaudio-s2-pro-bnb4"
+
+  # Sidecar: Idle Monitor - Stop container after inactivity
+  idle-monitor:
+    build:
+      context: ../shared
+      dockerfile: Dockerfile.idle-monitor
+    container_name: tts-fishaudio-idle-monitor
+    hostname: tts-fishaudio-idle-monitor
+
+    environment:
+      - HEALTH_URL=http://tts-fishaudio:8080/v1/health
+      - CONTAINER_NAME=tts-fishaudio
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-60}
+      - STARTUP_GRACE=${STARTUP_GRACE:-600}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TZ=${TZ:-Europe/Paris}
+
+    working_dir: /app
+
+    command: ["python", "service_idle_monitor.py"]
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    depends_on:
+      tts-fishaudio:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    networks:
+      - fishaudio-network
+
+    labels:
+      - "com.myia.service=tts-fishaudio-idle-monitor"
+      - "com.myia.type=sidecar"
+
 volumes:
   fishaudio-cache:
     name: tts-fishaudio-cache
+
+networks:
+  fishaudio-network:
+    driver: bridge
+    name: fishaudio-network

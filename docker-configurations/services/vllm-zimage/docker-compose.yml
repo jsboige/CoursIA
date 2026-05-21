@@ -61,6 +61,47 @@ services:
     restart: unless-stopped
     networks:
       - genai-network
+    labels:
+      - "com.myia.service=vllm-zimage"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=z-image-turbo"
+
+  # Sidecar: Idle Monitor - Stop container after inactivity
+  idle-monitor:
+    build:
+      context: ../shared
+      dockerfile: Dockerfile.idle-monitor
+    container_name: vllm-zimage-idle-monitor
+    hostname: vllm-zimage-idle-monitor
+
+    environment:
+      - HEALTH_URL=http://vllm-zimage:8000/health
+      - CONTAINER_NAME=vllm-zimage
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1800}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-120}
+      - STARTUP_GRACE=${STARTUP_GRACE:-600}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TZ=${TZ:-Europe/Paris}
+
+    working_dir: /app
+
+    command: ["python", "service_idle_monitor.py"]
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    depends_on:
+      vllm-zimage:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    networks:
+      - genai-network
+
+    labels:
+      - "com.myia.service=vllm-zimage-idle-monitor"
+      - "com.myia.type=sidecar"
 
 networks:
   genai-network:

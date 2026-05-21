@@ -125,7 +125,7 @@ python scripts/genai-stack/genai.py auth sync              # Synchroniser tokens
 | Audio/02-3 | MusicGen | GPU ~10 GB |
 | Audio/02-4 | Demucs v4 | GPU ~4 GB |
 | Audio/03-* | Multi-modeles | Mixed |
-| Audio/04-11 | Kokoro TTS + FishAudio S2-Pro | GPU ~22 GB (FishAudio, full bfloat16) |
+| Audio/04-11 | Kokoro TTS + FishAudio S2-Pro | GPU ~5 GB (FishAudio BnB 4-bit NF4) + ~2 GB (Kokoro) |
 | Audio/04-* | Applications | Mixed |
 
 ## Mapping notebooks Video -> services
