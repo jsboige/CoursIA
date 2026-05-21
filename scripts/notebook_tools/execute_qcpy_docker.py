@@ -34,37 +34,44 @@ BASE_URL_DEFAULT = "http://localhost:8888"
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 QCPY_DIR = REPO_ROOT / "MyIA.AI.Notebooks" / "QuantConnect" / "Python"
 
+# Shared session for XSRF token handling
+_http_session = None
+
+
+def _get_session(base_url: str) -> requests.Session:
+    """Get or create an HTTP session with XSRF token."""
+    global _http_session
+    if _http_session is None:
+        _http_session = requests.Session()
+        _http_session.get(f"{base_url}/login")
+    return _http_session
+
+
+def _xsrf_headers(base_url: str) -> dict:
+    """Get XSRF headers from session cookies."""
+    s = _get_session(base_url)
+    xsrf = s.cookies.get("_xsrf", "")
+    return {"X-XSRFToken": xsrf} if xsrf else {}
+
 
 def get_ws_kernel_id(base_url: str) -> str:
-    """Get or create a kernel via session API."""
-    # Try to find existing session
-    r = requests.get(f"{base_url}/api/sessions", timeout=10)
-    sessions = r.json()
-    if sessions:
-        return sessions[0]["kernel"]["id"]
+    """Get or create a kernel via API with XSRF handling."""
+    s = _get_session(base_url)
+    headers = _xsrf_headers(base_url)
 
-    # Upload a dummy notebook and create session
-    nb = {
-        "cells": [{"cell_type": "code", "execution_count": None,
-                    "metadata": {}, "outputs": [],
-                    "source": ["print('init')"]}],
-        "metadata": {
-            "kernelspec": {"display_name": "Foundation-Py-Default",
-                           "language": "python", "name": "python3"},
-            "language_info": {"name": "python", "version": "3.10.0"}
-        },
-        "nbformat": 4, "nbformat_minor": 5
-    }
-    requests.put(f"{base_url}/api/contents/_executor.ipynb",
-                 json={"type": "notebook", "content": nb, "format": "json"},
-                 timeout=10)
+    # Try to find existing kernel
+    r = s.get(f"{base_url}/api/kernels", timeout=10, headers=headers)
+    kernels = r.json()
+    active = [k for k in kernels if k.get("execution_state") != "dead"]
+    if active:
+        return active[0]["id"]
 
-    r = requests.post(f"{base_url}/api/sessions", json={
-        "kernel": {"name": "python3"},
-        "notebook": {"path": "_executor.ipynb"},
-        "type": "notebook", "name": "_executor.ipynb"
-    }, timeout=10)
-    return r.json()["kernel"]["id"]
+    # Create new kernel directly
+    r = s.post(f"{base_url}/api/kernels",
+               json={"name": "python3"}, timeout=10, headers=headers)
+    if r.status_code != 201:
+        raise RuntimeError(f"Cannot create kernel: {r.text}")
+    return r.json()["id"]
 
 
 def exec_code(ws: websocket.WebSocket, code: str, session_id: str,
@@ -318,7 +325,8 @@ def main():
 
     # Check Jupyter is reachable
     try:
-        r = requests.get(f"{args.base_url}/api/kernelspecs", timeout=5)
+        s = _get_session(args.base_url)
+        r = s.get(f"{args.base_url}/api/kernelspecs", timeout=5)
         r.raise_for_status()
     except Exception as e:
         print(f"ERROR: Cannot reach Jupyter at {args.base_url}: {e}")
@@ -344,8 +352,10 @@ def main():
         # Restart kernel between notebooks if requested
         if args.restart_kernel and targets.index(nb_path) > 0:
             try:
-                requests.delete(f"{args.base_url}/api/kernels/{kernel_id}",
-                                timeout=10)
+                s = _get_session(args.base_url)
+                headers = _xsrf_headers(args.base_url)
+                s.delete(f"{args.base_url}/api/kernels/{kernel_id}",
+                         timeout=10, headers=headers)
             except Exception:
                 pass
             try:
