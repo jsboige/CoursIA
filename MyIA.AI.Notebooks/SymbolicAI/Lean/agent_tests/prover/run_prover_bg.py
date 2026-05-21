@@ -31,7 +31,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                mode: str = "multi", iterations: int = 8,
                provider: str = "zai", local_provider: str = "local",
                goal: str = "", director_provider: str = None,
-               coordinator_provider: str = None):
+               coordinator_provider: str = None,
+               tactic_provider: str = None):
     """Run the prover on a target."""
     if demo_num is not None:
         if demo_num not in DEMOS:
@@ -57,7 +58,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     print(f"Target: {name}")
     print(f"  File: {filepath} (line {line})")
     print(f"  Mode: {mode}, Iterations: {iterations}")
-    print(f"  Provider: {provider}, Local: {local_provider}, Coordinator: {coordinator_provider or 'openrouter (default)'}")
+    print(f"  Provider: {provider}, Local: {local_provider}, Tactic: {tactic_provider or 'openrouter (default)'}, Coordinator: {coordinator_provider or 'openrouter (default)'}")
     print(f"  Initial sorry count: {original_sorry}")
     print()
 
@@ -67,7 +68,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         prover = MultiAgentSorryProver(
             trace=trace, provider=provider, local_provider=local_provider,
             director_provider=director_provider,
-            coordinator_provider=coordinator_provider)
+            coordinator_provider=coordinator_provider,
+            tactic_provider=tactic_provider)
         if director_provider:
             print(f"  Director: ENABLED (provider={director_provider})")
     else:
@@ -140,6 +142,11 @@ if __name__ == "__main__":
                              "#1289: GLM-5.1 (zai) times out on complex Lean contexts; "
                              "GPT-5.5 via openrouter is 6x faster. "
                              "Only used in --mode multi.")
+    parser.add_argument("--tactic-provider", default=None,
+                        help="Provider for TacticAgent (default: openrouter). "
+                             "#1289: GLM-5.1 (zai) times out at 1680s on complex "
+                             "Lean tactic generation; GPT-5.5 via openrouter "
+                             "expected ~60-120s. Only used in --mode multi.")
     args = parser.parse_args()
 
     run_prover(
@@ -153,4 +160,5 @@ if __name__ == "__main__":
         goal=args.goal,
         director_provider=args.director_provider,
         coordinator_provider=args.coordinator_provider,
+        tactic_provider=args.tactic_provider,
     )
