@@ -197,7 +197,7 @@ class ServiceIdleMonitor:
         self._last_activity = last_activity
         idle_time = current_time - last_activity
 
-        logger.debug(f"Idle time: {idle_time:.0f}s / {self.idle_timeout}s")
+        logger.info(f"Idle: {idle_time:.0f}s / {self.idle_timeout}s ({self.container_name})")
 
         if idle_time >= self.idle_timeout:
             logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
