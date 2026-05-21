@@ -1548,7 +1548,7 @@ class CoordinatorTools:
         )
 
     def mark_sorry_intractable(self, reason: str) -> str:
-        """Explicitly abandon the current sorry (F5, gated by F9).
+        """Explicitly abandon the current sorry (F5, gated by F9 + B2).
 
         Call this when the Coordinator has exhausted realistic attack plans
         on a goal — e.g., the lemma requires an obscure Mathlib API the
@@ -1557,11 +1557,13 @@ class CoordinatorTools:
         prover run can target a different sorry instead of burning the
         remaining iteration budget on a dead end.
 
-        F9 (2026-05-17): now gated. Must call request_director_guidance()
-        at least once first AND wait for the Director to actually run
-        (state.director_consulted set to True by AgentExecutor when
-        DirectorAgent yields). Premature calls return an error message and
-        leave the session running.
+        Gates (in order):
+          - F9: Must call request_director_guidance() at least once first
+            AND wait for Director to run (state.director_consulted).
+          - B2 (issue #1224): SearchAgent must have explored reference_docs/
+            before intractable is allowed. C37 forensic showed Coordinator
+            decided intractable in 139.7s with 0 SearchAgent payload — the
+            upstream proof was available but never found.
 
         Args:
             reason: Concise explanation (logged in trace + final report).
@@ -1583,6 +1585,26 @@ class CoordinatorTools:
                 "request_director_guidance(reason=...) now, then try the "
                 "Director's APPROACH+TACTICS. Only if that ALSO fails should "
                 "you call mark_sorry_intractable again."
+            )
+
+        # B2 gate (issue #1224): SearchAgent must have explored reference_docs.
+        if not getattr(self._state, "search_agent_consulted", False):
+            if self._trace:
+                self._trace.log(
+                    agent="CoordinatorAgent", role="intractable_blocked",
+                    content=(f"B2 gate: intractable refused — SearchAgent not "
+                             f"yet consulted. reason={reason[:120]}"),
+                    tool_name="mark_sorry_intractable",
+                )
+            return (
+                "REFUSED (B2 gate). SearchAgent has not yet explored "
+                "reference_docs/ for upstream proofs or Mathlib lemmas "
+                "relevant to this goal. Route to SearchAgent first so it can "
+                "scan for matching theorems — the C37 forensic showed "
+                "Coordinator abandoned in 139.7s while the upstream proof "
+                "was available in reference_docs. Call route_to_search_agent "
+                "or designate next_agent=SearchAgent, wait for it to run, "
+                "then try mark_sorry_intractable again."
             )
 
         self._state.intractable = True

@@ -367,6 +367,18 @@ class AgentExecutor(Executor):
                         content=f"flagged absent: {absent}",
                     )
 
+        # B2 (issue #1224): Track SearchAgent consultations so the
+        # intractable gate can require at least one SearchAgent pass
+        # before abandoning a sorry.
+        if self._agent.name == "SearchAgent":
+            if self._state:
+                self._state.search_agent_consulted = True
+            if self._trace:
+                self._trace.log(
+                    agent="SearchAgent", role="search_consulted",
+                    content="SearchAgent ran — intractable gate satisfied",
+                )
+
         # F5: Coordinator can mark the current sorry intractable. End the
         # session cleanly so we don't waste iterations on a known-dead goal.
         if (self._state and getattr(self._state, "intractable", False)
