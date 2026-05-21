@@ -439,6 +439,16 @@ MyIA.AI.Notebooks/GenAI/logs/*
 MyIA.AI.Notebooks/GenAI/temp/*
 !MyIA.AI.Notebooks/GenAI/temp/.gitkeep
 
+# GenAI Audio - generated TTS/audiobook outputs (regenerable, kept local, not committed)
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/audiobook_final/*.mp3
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/audiobook_final/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output/*.mp3
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output_fishaudio/*.mp3
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output_fishaudio/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.mp3
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.wav
+
 # Tweety runtime dependencies (downloaded by notebook)
 # Note: Les binaires PRECIEUX sont maintenant versionnés (voir exceptions positives ci-dessous)
 MyIA.AI.Notebooks/SymbolicAI/resources/
