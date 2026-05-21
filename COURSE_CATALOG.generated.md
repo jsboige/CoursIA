@@ -1,22 +1,22 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-19 05:54
+Generated: 2026-05-21 05:04
 Total notebooks: 474
 
 ## Status Summary
 
-- **READY**: 339
-- **DEMO**: 120
+- **READY**: 340
+- **DEMO**: 119
 - **RESEARCH**: 0
 - **BROKEN**: 15
 
 ## Maturity Summary
 
-- **PRODUCTION**: 163
-- **BETA**: 249
+- **PRODUCTION**: 161
+- **BETA**: 250
 - **TEMPLATE**: 4
-- **ALPHA**: 27
-- **DRAFT**: 31
+- **ALPHA**: 29
+- **DRAFT**: 30
 
 ## By Series
 
@@ -217,7 +217,7 @@ Total notebooks: 474
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (90 notebooks) — BROKEN:1, DEMO:9, READY:80 | ALPHA:6, BETA:71, DRAFT:3, PRODUCTION:10
+### SymbolicAI (90 notebooks) — BROKEN:1, DEMO:8, READY:81 | ALPHA:7, BETA:73, DRAFT:2, PRODUCTION:8
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -232,43 +232,43 @@ Total notebooks: 474
 | 9 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | READY | DRAFT | 45min | po-2024 |
 | 10 | Lean 11 - TorchLean : Réseaux de Neurones Formelle | Lean 4 (WSL) | BROKEN | DRAFT | 30min | po-2024 |
 | 11 | Lean-12 : Le Theoreme de Sensibilite (Huang 2019) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 12 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
+| 12 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
 | 13 | Lean 3 - Propositions et Preuves | Lean 4 | READY | BETA | 45min | po-2024 |
-| 14 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
+| 14 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
 | 15 | Lean 5 - Mode Tactique | Lean 4 | READY | BETA | 1h | po-2024 |
 | 16 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | BETA | 45min | po-2024 |
 | 17 | Lean 7 - Integration des LLMs pour l'Assistance au | Python 3 (WSL) | DEMO | ALPHA | 45min | po-2024 |
 | 18 | Lean 7b - Exemples Progressifs et Benchmarks | Python 3 (WSL) | DEMO | BETA | 30min | po-2024 |
-| 19 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 (WSL) | DEMO | ALPHA | 30min | po-2024 |
-| 20 | Description du notebook | Python 3 (WSL) | DEMO | ALPHA | 45min | po-2024 |
+| 19 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3.13 (global) | READY | BETA | 30min | po-2024 |
+| 20 | Description du notebook | Python 3 (ipykernel) | DEMO | BETA | 45min | po-2024 |
 | 21 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 22 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 23 | Planners-0-Setup | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 24 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | BETA | 15min | po-2024 |
-| 25 | Planners-2-PDDL-Basics | Python 3 | READY | BETA | 30min | po-2024 |
+| 22 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 23 | Planners-0-Setup | Python 3 | READY | BETA | 30min | po-2024 |
+| 24 | Planners-1-Introduction a la Planification Automat | base | READY | BETA | 15min | po-2024 |
+| 25 | Planners-2-PDDL-Basics | base | READY | BETA | 30min | po-2024 |
 | 26 | Planners-3-State-Space - Recherche dans l'Espace d | Python 3 | READY | BETA | 45min | po-2024 |
-| 27 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 27 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | BETA | 45min | po-2024 |
 | 28 | Planners-5-Heuristiques en Planification | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 29 | Planners-6-Domains - Domaines Classiques de Planif | Python 3 | READY | BETA | 45min | po-2024 |
 | 30 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | BETA | 30min | po-2024 |
 | 31 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | BETA | 45min | po-2024 |
 | 32 | Planners-9-HTN - Planification Hierarchique | Python 3 | READY | BETA | 30min | po-2024 |
-| 33 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | BETA | 45min | po-2024 |
+| 33 | Planners-10: LLMs pour la Planification | .venv | DEMO | BETA | 45min | po-2024 |
 | 34 | Planners-11: Unified Planning | Python 3 | READY | BETA | 45min | po-2024 |
 | 35 | Introduction - Planners 12 LOOP | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
 | 36 | Introduction au web sémantique avec RDF.Net | .NET (C#) | DEMO | ALPHA | 2h+ | po-2024 |
-| 37 | SW-1-Setup | .NET (C#) | READY | BETA | 15min | po-2024 |
+| 37 | SW-1-Setup | .NET (C#) | READY | BETA | 30min | po-2024 |
 | 38 | SW-11-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 39 | SW-12-KnowledgeGraphs | Python 3 | READY | BETA | 45min | po-2024 |
-| 40 | SW-13-GraphRAG | Python 3 | READY | BETA | 30min | po-2024 |
-| 41 | SW-14-Reasoners | Python 3 | READY | DRAFT | 45min | po-2024 |
+| 40 | SW-13-GraphRAG | Python 3 | READY | BETA | 45min | po-2024 |
+| 41 | SW-14-Reasoners | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 42 | SW-2-RDFBasics | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 43 | SW-2b-Python-RDFBasics | Python 3 | READY | BETA | 30min | po-2024 |
+| 43 | SW-2b-Python-RDFBasics | .venv | READY | BETA | 30min | po-2024 |
 | 44 | SW-3-GraphOperations | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 45 | SW-4-SPARQL | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 46 | SW-4b-Python-SPARQL | Python 3 | READY | BETA | 30min | po-2024 |
 | 47 | SW-5-LinkedData | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 48 | SW-5b-Python-LinkedData | Python 3 | READY | BETA | 30min | po-2024 |
+| 48 | SW-5b-Python-LinkedData | base | READY | BETA | 30min | po-2024 |
 | 49 | SW-6-RDFS | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 50 | SW-7-OWL | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 51 | SW-7b-Python-OWL | Python 3 | READY | BETA | 30min | po-2024 |
@@ -301,16 +301,16 @@ Total notebooks: 474
 | 78 | SC-24 : Deploiement sur Testnets | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 79 | SC-25 : Deploiement Mainnet (L2) | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
 | 80 | SC-26 : Projet Final - DApp Complete | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
-| 81 | Configuration et Installation TweetyProject | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
-| 82 | Logiques de Base - Propositionnelle et Premier Ord | mcp-jupyter-py310 | READY | BETA | 45min | po-2024 |
-| 83 | Logiques Avancées - DL, Modale, QBF, Conditional | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
-| 84 | Révision de Croyances et Incohérence | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
+| 81 | Configuration et Installation TweetyProject | mcp-jupyter-py310 | READY | BETA | 45min | po-2024 |
+| 82 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 (ipykernel) | READY | BETA | 45min | po-2024 |
+| 83 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 (ipykernel) | READY | BETA | 30min | po-2024 |
+| 84 | Révision de Croyances et Incohérence | .venv | READY | BETA | 30min | po-2024 |
 | 85 | Argumentation Abstraite (Dung) | mcp-jupyter-py310 | READY | PRODUCTION | 30min | po-2024 |
-| 86 | Argumentation Structuree | mcp-jupyter-py310 | READY | BETA | 15min | po-2024 |
+| 86 | Argumentation Structuree | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
 | 87 | Frameworks d'Argumentation Étendus | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
-| 88 | Sémantiques de Classement et Argumentation Probabi | mcp-jupyter-py310 | READY | BETA | 15min | po-2024 |
-| 89 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | PRODUCTION | 15min | po-2024 |
-| 90 | Préférences et Théorie du Vote | mcp-jupyter-py310 | READY | PRODUCTION | 15min | po-2024 |
+| 88 | Sémantiques de Classement et Argumentation Probabi | Python 3.12 (NLP-Course) | READY | PRODUCTION | 15min | po-2024 |
+| 89 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
+| 90 | Préférences et Théorie du Vote | base | READY | BETA | 15min | po-2024 |
 
 ### QuantConnect (102 notebooks) — BROKEN:12, DEMO:31, READY:59 | ALPHA:10, BETA:16, DRAFT:2, PRODUCTION:73, TEMPLATE:1
 
@@ -419,7 +419,7 @@ Total notebooks: 474
 | 101 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
 | 102 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
 
-### GameTheory (25 notebooks) — READY:25 | ALPHA:2, BETA:18, DRAFT:3, PRODUCTION:2
+### GameTheory (25 notebooks) — READY:25 | ALPHA:3, BETA:17, DRAFT:3, PRODUCTION:2
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -431,7 +431,7 @@ Total notebooks: 474
 | 6 | GameTheory-14 : Jeux Differentiels et Equilibres d | Python 3 | READY | BETA | 30min | po-2024 |
 | 7 | GameTheory-15-CooperativeGames | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
 | 8 | GameTheory 15b - Jeux Cooperatifs en Lean : Formal | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
-| 9 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
+| 9 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (GameTheory WSL + OpenS | READY | ALPHA | 30min | po-2024 |
 | 10 | GameTheory-16 : Theorie des Mecanismes et Principe | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
 | 11 | GameTheory-17 : Apprentissage par Renforcement Mul | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
 | 12 | GameTheory-2-NormalForm | Python 3 | READY | DRAFT | 45min | po-2024 |
