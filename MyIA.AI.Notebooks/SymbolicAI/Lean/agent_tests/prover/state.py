@@ -118,6 +118,24 @@ class ProofState:
     # whether to force Director invocation at iteration 4.
     _has_director: bool = False
 
+    # Feature 1: Multi-file loading. Orchestrator pre-loads sibling .lean files.
+    # Agents reference files by short name (e.g. "Lemmas.lean"), never by path.
+    loaded_files: Dict[str, str] = field(default_factory=dict)
+    target_filepath: str = ""   # absolute path of primary target
+    target_filename: str = ""   # short name (e.g. "Lattice.lean")
+
+    # Feature 2: Resource awareness for iterative deepening.
+    # Agents check these to decide wrap-up vs continue.
+    decomposition_budget: int = 5
+    decomposition_budget_used: int = 0
+    elapsed_seconds: float = 0.0
+    max_session_seconds: float = 1800.0
+    remaining_iterations: int = 0
+
+    # Feature 2+3: Qualitative opinions circulating between agents.
+    # Each agent writes its diagnostic here for subsequent agents to read.
+    agent_opinions: Dict[str, str] = field(default_factory=dict)
+
     # B2 (issue #1224): SearchAgent consultation gate. The Coordinator
     # MUST have had SearchAgent explore reference_docs/ before
     # mark_sorry_intractable can terminate the session. C37 forensic showed

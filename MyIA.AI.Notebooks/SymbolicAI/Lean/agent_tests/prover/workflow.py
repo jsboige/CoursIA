@@ -73,6 +73,11 @@ class ProofMessage:
     # try these identifiers. Populated by AgentExecutor after DirectorAgent
     # runs; consumed when TacticAgent receives the message.
     absent_identifiers: list = None
+    # Feature 3: DiagnosisAgent qualitative assessment fields
+    diagnosis_assessment: Optional[str] = None
+    is_structural_progress: bool = False
+    diagnosis_reason: Optional[str] = None
+    agent_opinion: str = ""
 
 
 class AgentExecutor(Executor):
@@ -746,6 +751,100 @@ class VerifyExecutor(Executor):
         return "\n".join(new_lines).count("sorry")
 
 
+class DiagnosisExecutor(Executor):
+    """Hybrid: LLM DiagnosisAgent with mechanical VerifyExecutor fallback.
+
+    When the DiagnosisAgent fails (timeout, crash), permanently switches to
+    the mechanical VerifyExecutor. Agent-driven routing: when the DiagnosisAgent
+    specifies next_agent in assess_structural_progress, that routing takes
+    precedence. Otherwise falls back to VerifyExecutor's routing logic.
+    """
+
+    def __init__(self, diagnosis_agent_executor: AgentExecutor,
+                 fallback_verify: VerifyExecutor,
+                 diagnosis_timeout_s: int = 60,
+                 state: "ProofState" = None, **kwargs):
+        super().__init__(id="diagnosis_executor", **kwargs)
+        self._diagnosis = diagnosis_agent_executor
+        self._fallback = fallback_verify
+        self._diagnosis_timeout_s = diagnosis_timeout_s
+        self._fallback_active = False
+        self._state = state
+        self._session_start = time.monotonic()
+
+    @handler
+    async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
+        # Update shared resource state so agents can make wrap-up decisions
+        if self._state:
+            self._state.elapsed_seconds = time.monotonic() - self._session_start
+            if msg.max_iterations > 0:
+                self._state.remaining_iterations = max(0, msg.max_iterations - msg.iteration)
+
+        if self._fallback_active:
+            await self._fallback.handle(msg, ctx)
+            return
+
+        # Run DiagnosisAgent with timeout
+        try:
+            # The DiagnosisAgent needs context about what just happened
+            diagnosis_prompt = (
+                f"Diagnose the latest proof attempt.\n\n"
+                f"Previous agent output:\n{msg.content[:2000]}\n\n"
+                f"Tactic attempted: {msg.tactic or '(none)'}\n"
+                f"Current sorry count: {msg.sorry_count}\n"
+                f"Iteration: {msg.iteration}/{msg.max_iterations}\n"
+            )
+            msg_copy = ProofMessage(
+                content=diagnosis_prompt,
+                iteration=msg.iteration,
+                sorry_count=msg.sorry_count,
+                tactic=msg.tactic,
+                error=msg.error,
+                max_iterations=msg.max_iterations,
+                plan=msg.plan,
+                intractable=msg.intractable,
+                intractable_reason=msg.intractable_reason,
+                director_calls=msg.director_calls,
+                absent_identifiers=msg.absent_identifiers,
+                next_agent=msg.next_agent,
+            )
+
+            try:
+                result = await asyncio.wait_for(
+                    self._diagnosis.handle(msg_copy, ctx),
+                    timeout=self._diagnosis_timeout_s,
+                )
+            except asyncio.TimeoutError:
+                raise TimeoutError(
+                    f"DiagnosisAgent timed out after {self._diagnosis_timeout_s}s"
+                )
+
+            # If DiagnosisAgent set routing via next_agent, propagate it.
+            # The assess_structural_progress tool stores the opinion in state.
+            # We propagate the routing token from the agent's response.
+            if msg_copy.next_agent and msg_copy.next_agent != msg.next_agent:
+                msg.next_agent = msg_copy.next_agent
+
+            # Propagate diagnosis fields
+            msg.diagnosis_assessment = msg_copy.diagnosis_assessment
+            msg.is_structural_progress = msg_copy.is_structural_progress
+            msg.diagnosis_reason = msg_copy.diagnosis_reason
+            msg.agent_opinion = msg_copy.agent_opinion
+            msg.content = msg_copy.content
+
+            await ctx.send_message(msg)
+
+        except Exception as e:
+            # First failure — permanently switch to mechanical fallback
+            self._fallback_active = True
+            if hasattr(self._diagnosis, '_trace') and self._diagnosis._trace:
+                self._diagnosis._trace.log(
+                    agent="DiagnosisExecutor", role="fallback",
+                    content=f"DiagnosisAgent failed ({e}), switching to mechanical fallback",
+                )
+            await self._fallback.handle(msg, ctx)
+
+
 class ProofWorkflowBuilder:
     """Builds the multi-agent proof workflow graph.
 
@@ -762,7 +861,8 @@ class ProofWorkflowBuilder:
                  sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, state: "ProofState" = None,
                  kb: Optional[ProofKnowledgeBase] = None,
-                 director_agent: Optional[Agent] = None):
+                 director_agent: Optional[Agent] = None,
+                 diagnosis_agent: Optional[Agent] = None):
         self._search = AgentExecutor(search_agent, trace=trace, state=state)
         self._tactic = AgentExecutor(tactic_agent, trace=trace, state=state)
         self._critic = AgentExecutor(critic_agent, trace=trace, state=state)
@@ -784,6 +884,19 @@ class ProofWorkflowBuilder:
             has_director=bool(self._director),
             director_max_calls=self._director_max_calls,
         )
+        # Feature 3: DiagnosisAgent replaces VerifyExecutor when provided.
+        # DiagnosisExecutor wraps the LLM agent with mechanical fallback.
+        self._diagnosis_executor: Optional[DiagnosisExecutor] = None
+        if diagnosis_agent:
+            diagnosis_agent_exec = AgentExecutor(
+                diagnosis_agent, trace=trace, state=state,
+                timeout_s=60,
+            )
+            self._diagnosis_executor = DiagnosisExecutor(
+                diagnosis_agent_exec, self._verify,
+                diagnosis_timeout_s=60,
+                state=state,
+            )
 
     def build(self):
         # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to
@@ -795,9 +908,10 @@ class ProofWorkflowBuilder:
         # truth for coordinator routing now.
         builder = WorkflowBuilder(start_executor=self._coordinator)
 
-        # Forward chain: search -> tactic -> verify
+        # Forward chain: search -> tactic -> verify (or diagnosis if enabled)
         builder.add_edge(self._search, self._tactic)
-        builder.add_edge(self._tactic, self._verify)
+        _verify_node = self._diagnosis_executor or self._verify
+        builder.add_edge(self._tactic, _verify_node)
 
         # Director -> tactic (director suggests tactics, TacticAgent applies)
         if self._director:
@@ -836,7 +950,7 @@ class ProofWorkflowBuilder:
             )
         verify_cases.append(Default(target=self._critic))
         builder.add_switch_case_edge_group(
-            source=self._verify,
+            source=_verify_node,
             cases=verify_cases,
         )
 
