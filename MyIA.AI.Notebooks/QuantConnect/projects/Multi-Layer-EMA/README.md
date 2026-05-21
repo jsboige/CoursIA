@@ -1,7 +1,7 @@
 # Multi-Layer-EMA
 
 **Asset class:** US Equities/ETF
-**Cloud project ID:** None (local only)
+**Cloud project ID:** 28433748
 
 ## Description
 
@@ -9,10 +9,9 @@ Multi-layer EMA strategy with stacked lookbacks. EMA(10), EMA(20), EMA(50) align
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Multi-Layer-EMA"`
 
-
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud:** Deployed as project 28433748.
 
 ## Backtest Metrics
 
@@ -20,6 +19,7 @@ Multi-layer EMA strategy with stacked lookbacks. EMA(10), EMA(20), EMA(50) align
 |--------|-------|
 | Method | Multi-layer EMA alignment |
 | Rebalance | Daily |
+| Sharpe Ratio | Baseline (see issue #143) |
 
 ## Files
 

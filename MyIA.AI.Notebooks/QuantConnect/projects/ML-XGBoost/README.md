@@ -12,7 +12,7 @@ Alternating Monday pattern: odd Mondays for training, even Mondays for rebalance
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-XGBoost"`
 ```bash
 lean backtest --project .
 ```

@@ -9,9 +9,7 @@ Ensemble regime detection combining Hidden Markov Models with KMeans clustering.
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/HMM-KMeans-Voting"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

@@ -9,9 +9,7 @@ Deep Q-Network RL agent using MLPRegressor as Q-function approximator on 5 ETFs 
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/RL-DQN-Trading"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

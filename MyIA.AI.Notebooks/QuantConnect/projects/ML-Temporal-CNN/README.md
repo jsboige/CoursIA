@@ -9,8 +9,7 @@ Temporal Conv1D CNN for return prediction. Uses sliding window of past 20 days r
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Temporal-CNN"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
@@ -27,4 +26,5 @@ Temporal Conv1D CNN for return prediction. Uses sliding window of past 20 days r
 - research.ipynb - CNN architecture and training
 ## References
 
-- Hands-On AI Trading, Section 06, Example 14
+- Hands-On AI Trading, Section 06, Example 14
+

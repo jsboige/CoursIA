@@ -11,7 +11,7 @@ architectures for time-series prediction.
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Temporal-CNN-Prediction"`
 ```bash
 lean backtest --project .
 ```

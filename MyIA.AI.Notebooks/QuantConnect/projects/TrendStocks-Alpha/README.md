@@ -13,7 +13,7 @@ The strategy enters long positions when short-term EMA is above long-term EMA AN
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/TrendStocks-Alpha"`
 ```bash
 lean backtest --project .
 ```

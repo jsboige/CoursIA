@@ -9,9 +9,7 @@ Deep learning LSTM strategy using Keras. Predicts next-day returns from sequence
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/DL-LSTM"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

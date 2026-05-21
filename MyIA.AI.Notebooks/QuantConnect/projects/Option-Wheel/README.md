@@ -13,7 +13,7 @@ Cash-secured puts with 80% max exposure and margin disabled for safety. Minute-r
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel"`
 ```bash
 lean backtest --project .
 ```
