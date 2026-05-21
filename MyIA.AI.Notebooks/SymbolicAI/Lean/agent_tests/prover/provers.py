@@ -18,13 +18,14 @@ from .lean_utils import (
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
     is_honest_sorry,
 )
-from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
+from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools, DiagnosisTools
 from .agents import (
     create_search_agent,
     create_tactic_agent,
     create_critic_agent,
     create_coordinator_agent,
     create_director_agent,
+    create_diagnosis_agent,
 )
 from .workflow import ProofWorkflowBuilder, ProofMessage
 from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS, augment_instructions
@@ -113,7 +114,8 @@ class MultiAgentSorryProver:
         self.tactic_provider = tactic_provider or "openrouter"
 
     async def prove_sorry(self, demo: dict, max_iterations: int = 10,
-                          workflow_timeout_s: Optional[int] = None) -> dict:
+                          workflow_timeout_s: Optional[int] = None,
+                          use_diagnosis_agent: bool = False) -> dict:
         # Enable MS Agent Framework OTel + JSONL exporter so every agent run,
         # tool call, and LLM completion lands in baselines/traces/<name>.spans.jsonl
         # alongside the higher-level TraceLogger entries.
@@ -217,6 +219,24 @@ class MultiAgentSorryProver:
             max_iterations=max_iterations,
         )
 
+        # Feature 1: Auto-load sibling .lean files at session start.
+        # Agents reference files by short name (e.g. "Lemmas.lean"), never by path.
+        target_path = Path(filepath).resolve()
+        state.target_filepath = str(target_path)
+        state.target_filename = target_path.name
+        state.remaining_iterations = max_iterations
+        parent_dir = target_path.parent
+        for sibling in sorted(parent_dir.glob("*.lean")):
+            short_name = sibling.name
+            try:
+                content = sibling.read_text(encoding="utf-8")
+                state.loaded_files[short_name] = content
+            except OSError:
+                pass
+        loaded_names = list(state.loaded_files.keys())
+        if loaded_names:
+            print(f"  [Feature1] Loaded {len(loaded_names)} sibling files: {', '.join(loaded_names)}")
+
         # Shared KB instance so SearchAgent reads what VerifyExecutor wrote
         # in the same session (otherwise each side instantiates its own and
         # only sees prior-session entries via the JSON file).
@@ -260,11 +280,25 @@ class MultiAgentSorryProver:
             state.director_consulted = True
             print("  [DIRECTOR] not wired - F9 gate auto-bypassed")
 
+        # Feature 3: optional DiagnosisAgent (LLM-powered qualitative
+        # verification replacing mechanical VerifyExecutor).
+        diagnosis_agent = None
+        if use_diagnosis_agent:
+            try:
+                diagnosis_tools = DiagnosisTools(state, filepath, self.trace)
+                diagnosis_agent = create_diagnosis_agent(
+                    diagnosis_tools, provider=self.local_provider)
+                print(f"  [DIAGNOSIS] enabled provider={self.local_provider}")
+            except Exception as e:
+                print(f"  [DIAGNOSIS] FAILED to create: {e}")
+                diagnosis_agent = None
+
         # Build workflow graph (kb shared with SearchTools)
         workflow_builder = ProofWorkflowBuilder(
             search_agent, tactic_agent, critic_agent, coordinator_agent,
             sorry_ctx, demo.get("imports", ""), self.trace, state=state, kb=kb,
             director_agent=director_agent,
+            diagnosis_agent=diagnosis_agent,
         )
         workflow = workflow_builder.build()
 

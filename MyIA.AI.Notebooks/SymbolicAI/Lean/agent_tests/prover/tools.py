@@ -8,12 +8,45 @@ import json
 import re
 import time
 import uuid
+import difflib
 from pathlib import Path
 from typing import Optional, Dict, List
 
 from .state import ProofState, TacticAttempt, SorryContext
 from .trace import TraceLogger
 from .knowledge import ProofKnowledgeBase
+
+
+def _read_lines_from_source(source: str, start: int, end: int) -> str:
+    """Read lines [start, end] (1-based inclusive) from a string source."""
+    lines = source.split("\n")
+    start = max(1, start)
+    end = min(len(lines), end)
+    selected = lines[start - 1:end]
+    return "\n".join(f"{start + i}: {line}" for i, line in enumerate(selected))
+
+
+def _resolve_file_content(state: ProofState, filepath: str,
+                          path: str = "") -> tuple[str, str]:
+    """Resolve which file to read: path="" → target file, path="Name.lean" → loaded file.
+
+    Returns (content, error_message). One of the two is empty.
+    """
+    if not path:
+        if not filepath:
+            return "", "No file configured"
+        try:
+            return Path(filepath).read_text(encoding="utf-8"), ""
+        except OSError as e:
+            return "", f"Cannot read file: {e}"
+    # Named file from loaded_files
+    content = state.loaded_files.get(path)
+    if content is not None:
+        return content, ""
+    available = list(state.loaded_files.keys())
+    return "", (
+        f"File '{path}' not loaded. Available: {', '.join(available) or '(none)'}"
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -297,16 +330,48 @@ class SearchTools:
         lemma_id = self._state.add_lemma(name, statement, namespace, relevance)
         return f"Added lemma: {lemma_id}"
 
-    def file_read_lines(self, start: int, end: int) -> str:
-        """Read a specific range of lines from the .lean file (1-based inclusive)."""
-        if not self._filepath:
-            return "No file configured"
-        content = Path(self._filepath).read_text(encoding="utf-8")
-        lines = content.split("\n")
-        start = max(1, start)
-        end = min(len(lines), end)
-        selected = lines[start - 1:end]
-        return "\n".join(f"{start + i}: {line}" for i, line in enumerate(selected))
+    def file_read_lines(self, start: int, end: int, path: str = "") -> str:
+        """Read a specific range of lines from the .lean file (1-based inclusive).
+        path="": read target file. path="Lemmas.lean": read a loaded sibling file."""
+        content, err = _resolve_file_content(self._state, self._filepath, path)
+        if err:
+            return err
+        return _read_lines_from_source(content, start, end)
+
+    def file_load(self, path: str) -> str:
+        """Load a .lean file into the working set by short name or relative path.
+        Only available to SearchAgent for discovery-based loading."""
+        if len(self._state.loaded_files) >= 10:
+            return json.dumps({
+                "error": "Already loaded 10 files. Cannot load more.",
+                "loaded": list(self._state.loaded_files.keys()),
+            })
+        target_dir = Path(self._state.target_filepath).parent if self._state.target_filepath else Path(self._filepath).parent
+        resolved = target_dir / path
+        if not resolved.suffix == ".lean":
+            return json.dumps({"error": f"Not a .lean file: {path}"})
+        try:
+            content = resolved.read_text(encoding="utf-8")
+        except OSError as e:
+            return json.dumps({"error": f"Cannot read {resolved}: {e}"})
+        if len(content.split("\n")) > 3000:
+            return json.dumps({"error": f"File too large ({len(content.split(chr(10)))} lines). Max 3000."})
+        short_name = resolved.name
+        self._state.loaded_files[short_name] = content
+        declarations = [l.strip() for l in content.split("\n")
+                        if l.strip().startswith(("lemma ", "theorem ", "def ", "instance "))]
+        if self._trace:
+            self._trace.log(
+                agent="SearchAgent", role="tool",
+                content=f"Loaded {short_name} ({len(content.split(chr(10)))} lines, {len(declarations)} declarations)",
+                duration_s=0.01, tool_name="file_load",
+                tool_args={"path": path},
+            )
+        return json.dumps({
+            "file": short_name, "lines": len(content.split("\n")),
+            "declarations": declarations[:30],
+            "loaded_files": list(self._state.loaded_files.keys()),
+        }, indent=2, ensure_ascii=False)
 
     def lookup_proven_pattern(self, goal: str, max_results: int = 5) -> str:
         """Query the persistent ProofKnowledgeBase directly for past successes.
@@ -377,7 +442,7 @@ class TacticTools:
         self._last_build_ok_sorry_count: Optional[int] = None
         self._lock_file = Path(filepath).with_suffix(".prover.lock") if filepath else None
         self._session_id = str(uuid.uuid4())[:8]
-        self._context_boundary = 20  # max lines from sorry for edits (generous: line shifts after edits)
+        self._context_boundary = 40  # max lines from sorry for edits (raised for Feature 2 liberal editing)
         if filepath and Path(filepath).exists():
             raw = Path(filepath).read_text(encoding="utf-8")
             self._original_file_size = len(raw)
@@ -478,16 +543,13 @@ class TacticTools:
             "status": "submitted",
         }, ensure_ascii=False)
 
-    def file_read_lines(self, start: int, end: int) -> str:
-        """Read a specific range of lines from the .lean file (1-based inclusive)."""
-        if not self._filepath:
-            return "No file configured"
-        content = Path(self._filepath).read_text(encoding="utf-8")
-        lines = content.split("\n")
-        start = max(1, start)
-        end = min(len(lines), end)
-        selected = lines[start - 1:end]
-        return "\n".join(f"{start + i}: {line}" for i, line in enumerate(selected))
+    def file_read_lines(self, start: int, end: int, path: str = "") -> str:
+        """Read a specific range of lines from the .lean file (1-based inclusive).
+        path="": read target file. path="Lemmas.lean": read a loaded sibling file."""
+        content, err = _resolve_file_content(self._state, self._filepath, path)
+        if err:
+            return err
+        return _read_lines_from_source(content, start, end)
 
     def file_find_sorry_lines(self) -> str:
         """Find all sorry lines in the file with their line numbers and surrounding context."""
@@ -530,12 +592,22 @@ class TacticTools:
         }, indent=2, ensure_ascii=False)
 
     def _check_file_size_guard(self, new_content: str, operation: str) -> Optional[str]:
-        """Block writes that change file size by >50% (full-file rewrite detection)."""
+        """Block writes that double the file size or exceed 5000 lines."""
+        new_lines = new_content.count("\n") + 1
+        if new_lines > 5000:
+            if self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="size_guard",
+                    content=f"BLOCKED {operation}: {new_lines} lines exceeds 5000-line cap",
+                    duration_s=0.01,
+                )
+            return (f"BLOCKED by file size guard: replacement would be {new_lines} lines "
+                    f"(max 5000). Split into smaller edits.")
         if self._original_file_size == 0:
             return None
         new_size = len(new_content)
-        ratio = abs(new_size - self._original_file_size) / self._original_file_size
-        if ratio > 0.5:
+        ratio = abs(new_size - self._original_file_size) / max(1, self._original_file_size)
+        if ratio > 1.0:
             if self._trace:
                 self._trace.log(
                     agent="TacticTools", role="size_guard",
@@ -676,7 +748,8 @@ class TacticTools:
         }
 
     def file_replace_lines(self, start: int, end: int, new_content: str,
-                           build_check: bool = True) -> str:
+                           build_check: bool = True,
+                           allow_structural: bool = False) -> str:
         """Replace a range of lines in the .lean file. Lines are 1-based, inclusive.
 
         When `build_check=True` (default), runs lake build after writing and
@@ -690,7 +763,7 @@ class TacticTools:
         if self._sorry_ctx:
             target = self._sorry_ctx.sorry_line
             # The range must overlap with [target - boundary, target + boundary]
-            boundary = self._context_boundary * 4  # Wider for range edits
+            boundary = self._context_boundary * 6  # Wider for range edits (Feature 2: raised from *4)
             if end < target - boundary or start > target + boundary:
                 return json.dumps({
                     "error": f"BLOCKED: range {start}-{end} is too far from target sorry at line {target}. "
@@ -698,47 +771,34 @@ class TacticTools:
                 }, ensure_ascii=False)
 
         # Structural boundary guard: prevent replacing across section/end/theorem boundaries
-        try:
-            content_precheck = Path(self._filepath).read_text(encoding="utf-8")
-            lines_precheck = content_precheck.split("\n")
-            _STRUCTURE_KEYWORDS = re.compile(
-                r'^\s*(theorem|lemma|def|instance|section|end|namespace|open|'
-                r'variable|abbreviation|structure|class|inductive)\b'
-            )
-            # Count structural keywords BEFORE the replacement range
-            before_structs = sum(
-                1 for i in range(min(start - 1, len(lines_precheck)))
-                if _STRUCTURE_KEYWORDS.match(lines_precheck[i])
-            )
-            # Count structural keywords AFTER the replacement range
-            after_start = min(end, len(lines_precheck))
-            after_structs = sum(
-                1 for i in range(after_start, len(lines_precheck))
-                if _STRUCTURE_KEYWORDS.match(lines_precheck[i])
-            )
-            # Count structural keywords IN the range being replaced
-            range_structs = sum(
-                1 for i in range(start - 1, min(end, len(lines_precheck)))
-                if _STRUCTURE_KEYWORDS.match(lines_precheck[i])
-            )
-            # If the range contains structural keywords AND surrounding code also has them,
-            # the replacement might break file structure. Block large ranges crossing boundaries.
-            # Exception: replacing a single `sorry` line that happens to be near a keyword is fine.
-            range_size = end - start + 1
-            if range_structs > 0 and range_size > 3:
-                struct_lines = [
-                    f"L{i+1}: {lines_precheck[i].strip()[:60]}"
-                    for i in range(start - 1, min(end, len(lines_precheck)))
+        if not allow_structural:
+            try:
+                content_precheck = Path(self._filepath).read_text(encoding="utf-8")
+                lines_precheck = content_precheck.split("\n")
+                _STRUCTURE_KEYWORDS = re.compile(
+                    r'^\s*(theorem|lemma|def|instance|section|end|namespace|open|'
+                    r'variable|abbreviation|structure|class|inductive)\b'
+                )
+                range_size = end - start + 1
+                range_structs = sum(
+                    1 for i in range(start - 1, min(end, len(lines_precheck)))
                     if _STRUCTURE_KEYWORDS.match(lines_precheck[i])
-                ]
-                return json.dumps({
-                    "error": f"BLOCKED: range {start}-{end} contains structural keywords "
-                             f"(theorem/end/section/def). Use file_replace_sorry() instead "
-                             f"to replace ONLY the sorry line. Structural lines found:\n"
-                             + "\n".join(struct_lines),
-                }, ensure_ascii=False)
-        except Exception:
-            pass  # Don't block on pre-check errors
+                )
+                # Block large ranges crossing structural boundaries
+                if range_structs > 0 and range_size > 3:
+                    struct_lines = [
+                        f"L{i+1}: {lines_precheck[i].strip()[:60]}"
+                        for i in range(start - 1, min(end, len(lines_precheck)))
+                        if _STRUCTURE_KEYWORDS.match(lines_precheck[i])
+                    ]
+                    return json.dumps({
+                        "error": f"BLOCKED: range {start}-{end} contains structural keywords "
+                                 f"(theorem/end/section/def). Use file_replace_sorry() instead "
+                                 f"or set allow_structural=True. Structural lines found:\n"
+                                 + "\n".join(struct_lines),
+                    }, ensure_ascii=False)
+            except Exception:
+                pass  # Don't block on pre-check errors
 
         try:
             content = Path(self._filepath).read_text(encoding="utf-8")
@@ -857,6 +917,115 @@ class TacticTools:
                 "best_sorry_count": self._best_sorry_count,
                 "build_check": "passed" if build_check else "skipped",
                 "snapshot_updated": build_check,
+            }, ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"error": str(e)})
+
+    def file_insert_lines(self, after_line: int, content: str,
+                          path: str = "", build_check: bool = True) -> str:
+        """Insert new lines AFTER a given line. For adding helper lemmas.
+
+        Args:
+            after_line: Insert AFTER this line (1-based). Use 0 to prepend.
+            content: Lines to insert (e.g. a lemma definition).
+            path: Short name of loaded file to edit. Empty = target file.
+            build_check: Run lake build after insertion (default True).
+        """
+        # Resolve which file to edit
+        if path:
+            if path not in self._state.loaded_files:
+                available = list(self._state.loaded_files.keys())
+                return json.dumps({
+                    "error": f"File '{path}' not loaded. Available: {', '.join(available) or '(none)'}",
+                })
+            # Insert into a loaded (non-target) file — write through loaded_files
+            file_content = self._state.loaded_files[path]
+            lines = file_content.split("\n")
+            if after_line < 0 or after_line > len(lines):
+                return json.dumps({"error": f"after_line {after_line} out of range [0, {len(lines)}]"})
+            new_lines = content.split("\n")
+            result_lines = lines[:after_line] + new_lines + lines[after_line:]
+            new_content = "\n".join(result_lines)
+            self._state.loaded_files[path] = new_content
+            if self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="tool",
+                    content=f"Inserted {len(new_lines)} lines after L{after_line} in {path}",
+                    duration_s=0.01, tool_name="file_insert_lines",
+                    tool_args={"after_line": after_line, "path": path,
+                               "lines_added": len(new_lines)},
+                )
+            return json.dumps({
+                "file": path, "after_line": after_line,
+                "lines_added": len(new_lines),
+                "total_lines": len(result_lines),
+                "note": "Inserted into loaded file (no build check for non-target files)",
+            }, ensure_ascii=False)
+
+        # Editing the target file
+        if not self._filepath:
+            return json.dumps({"error": "No file configured"})
+
+        # Validate content looks like Lean
+        stripped = content.strip()
+        if not any(stripped.startswith(kw) for kw in
+                   ("lemma ", "theorem ", "def ", "instance ", "have ", "private ", "protected ")):
+            if ":=" not in content and "by" not in content:
+                return json.dumps({
+                    "error": "Content doesn't look like Lean declarations. "
+                             "Expected lemma/theorem/def/have with := or by.",
+                })
+
+        # File size guard
+        try:
+            current = Path(self._filepath).read_text(encoding="utf-8")
+        except OSError as e:
+            return json.dumps({"error": f"Cannot read file: {e}"})
+        combined = current + "\n" + content
+        size_err = self._check_file_size_guard(combined, "file_insert_lines")
+        if size_err:
+            return json.dumps({"error": size_err})
+
+        try:
+            lines = current.split("\n")
+            if after_line < 0 or after_line > len(lines):
+                return json.dumps({"error": f"after_line {after_line} out of range [0, {len(lines)}]"})
+
+            new_lines = content.split("\n")
+            result_lines = lines[:after_line] + new_lines + lines[after_line:]
+            new_file_content = "\n".join(result_lines)
+
+            Path(self._filepath).write_text(new_file_content, encoding="utf-8")
+
+            sorry_count = new_file_content.count("sorry")
+            if self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="tool",
+                    content=f"Inserted {len(new_lines)} lines after L{after_line} "
+                            f"(sorry {self._original_sorry_count}->{sorry_count})",
+                    duration_s=0.01, tool_name="file_insert_lines",
+                    tool_args={"after_line": after_line, "lines_added": len(new_lines)},
+                )
+
+            if build_check:
+                build_err = self._build_check_or_revert(current, "file_insert_lines")
+                if build_err is not None:
+                    build_err["insert_after_line"] = after_line
+                    return json.dumps(build_err, ensure_ascii=False)
+
+                self._last_build_ok_content = new_file_content
+                self._last_build_ok_sorry_count = sorry_count
+                if sorry_count < self._best_sorry_count:
+                    self._best_sorry_count = sorry_count
+                    self._best_content = new_file_content
+
+            return json.dumps({
+                "file": Path(self._filepath).name,
+                "insert_after_line": after_line,
+                "lines_added": len(new_lines),
+                "total_lines": len(result_lines),
+                "new_sorry_count": sorry_count,
+                "build_check": "passed" if build_check else "skipped",
             }, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})
@@ -1622,16 +1791,13 @@ class CoordinatorTools:
             f"goal on the next run."
         )
 
-    def file_read_lines(self, start: int, end: int) -> str:
-        """Read a specific range of lines from the .lean file (1-based inclusive)."""
-        if not self._filepath:
-            return "No file configured"
-        content = Path(self._filepath).read_text(encoding="utf-8")
-        lines = content.split("\n")
-        start = max(1, start)
-        end = min(len(lines), end)
-        selected = lines[start - 1:end]
-        return "\n".join(f"{start + i}: {line}" for i, line in enumerate(selected))
+    def file_read_lines(self, start: int, end: int, path: str = "") -> str:
+        """Read a specific range of lines from the .lean file (1-based inclusive).
+        path="": read target file. path="Lemmas.lean": read a loaded sibling file."""
+        content, err = _resolve_file_content(self._state, self._filepath, path)
+        if err:
+            return err
+        return _read_lines_from_source(content, start, end)
 
     def search_mathlib_lemmas(self, goal: str, max_results: int = 10) -> str:
         """Search for Mathlib lemmas relevant to a proof goal."""
@@ -1653,3 +1819,197 @@ class CoordinatorTools:
                 })
         results.sort(key=lambda x: x["relevance"], reverse=True)
         return json.dumps(results[:max_results], indent=2, ensure_ascii=False)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DIAGNOSIS AGENT TOOLS — structured verification + qualitative assessment
+# ══════════════════════════════════════════════════════════════════════════════
+
+class DiagnosisTools:
+    """Tools for DiagnosisAgent: structured verification + qualitative assessment.
+
+    The DiagnosisAgent replaces the mechanical VerifyExecutor with LLM-powered
+    qualitative judgment. It checks build status, sorry counts, diffs, and
+    decides whether structural progress was made (e.g. splitting one hard sorry
+    into three easier ones).
+    """
+
+    def __init__(self, state: ProofState, filepath: str = "",
+                 original_content: str = "", trace: TraceLogger = None):
+        self._state = state
+        self._filepath = filepath
+        self._original_content = original_content
+        self._trace = trace
+
+    def get_resource_status(self) -> str:
+        """Return elapsed time, remaining iterations, and decomposition budget."""
+        import time as _time
+        elapsed = self._state.elapsed_seconds
+        remaining_s = max(0, self._state.max_session_seconds - elapsed)
+        return json.dumps({
+            "elapsed_seconds": round(elapsed, 1),
+            "remaining_seconds": round(remaining_s, 1),
+            "remaining_iterations": self._state.remaining_iterations,
+            "decomposition_budget_used": self._state.decomposition_budget_used,
+            "decomposition_budget_total": self._state.decomposition_budget,
+            "low_time_warning": remaining_s < 300,
+        }, indent=2)
+
+    def read_build_result(self) -> str:
+        """Run lake build and return success/failure + error count."""
+        if not self._filepath:
+            return json.dumps({"error": "No file configured"})
+        try:
+            from .verifier import get_verifier
+            project_dir = str(Path(self._filepath).parent.parent)
+            verifier = get_verifier(project_dir)
+            subdir = Path(self._filepath).parent.name
+            relative_path = f"{subdir}/{Path(self._filepath).name}"
+            result = verifier.verify_project_file(relative_path)
+        except Exception as e:
+            return json.dumps({"error": f"Verifier crashed: {e}", "success": False})
+
+        errors = result.get("errors", [])
+        return json.dumps({
+            "success": result.get("success", False),
+            "error_count": len(errors),
+            "errors_preview": [str(e)[:120] for e in errors[:5]],
+        }, indent=2, ensure_ascii=False)
+
+    def count_sorries(self) -> str:
+        """Count sorries in the current file vs original."""
+        if not self._filepath:
+            return json.dumps({"error": "No file configured"})
+        try:
+            current = Path(self._filepath).read_text(encoding="utf-8")
+        except OSError as e:
+            return json.dumps({"error": f"Cannot read file: {e}"})
+        current_count = current.count("sorry")
+        original_count = self._original_content.count("sorry") if self._original_content else current_count
+        delta = current_count - original_count
+        return json.dumps({
+            "current_sorry_count": current_count,
+            "original_sorry_count": original_count,
+            "delta": delta,
+            "decomposition_budget_used": self._state.decomposition_budget_used,
+            "decomposition_budget_total": self._state.decomposition_budget,
+            "within_budget": self._state.decomposition_budget_used <= self._state.decomposition_budget,
+        }, indent=2)
+
+    def diff_current_vs_original(self, start: int = 0,
+                                  max_lines: int = 500) -> str:
+        """Unified diff of current file vs original. Pagination via start offset.
+
+        Chain calls with increasing start to read large diffs.
+        """
+        if not self._filepath:
+            return json.dumps({"error": "No file configured"})
+        try:
+            current = Path(self._filepath).read_text(encoding="utf-8")
+        except OSError as e:
+            return json.dumps({"error": f"Cannot read file: {e}"})
+        if not self._original_content:
+            return json.dumps({"error": "No original content recorded"})
+
+        original_lines = self._original_content.splitlines(keepends=True)
+        current_lines = current.splitlines(keepends=True)
+        diff = list(difflib.unified_diff(
+            original_lines, current_lines,
+            fromfile="original", tofile="current", lineterm="",
+        ))
+        total = len(diff)
+        end = min(start + max_lines, total)
+        selected = diff[start:end]
+        return json.dumps({
+            "total_diff_lines": total,
+            "returned_lines": len(selected),
+            "has_more": end < total,
+            "next_start": end if end < total else None,
+            "diff_content": "\n".join(selected),
+        }, indent=2, ensure_ascii=False)
+
+    def read_build_errors(self, start: int = 0, max_lines: int = 200) -> str:
+        """Parse build errors from lake build output. Pagination via start offset."""
+        if not self._filepath:
+            return json.dumps({"error": "No file configured"})
+        try:
+            from .verifier import get_verifier
+            project_dir = str(Path(self._filepath).parent.parent)
+            verifier = get_verifier(project_dir)
+            subdir = Path(self._filepath).parent.name
+            relative_path = f"{subdir}/{Path(self._filepath).name}"
+            result = verifier.verify_project_file(relative_path)
+        except Exception as e:
+            return json.dumps({"error": f"Verifier crashed: {e}"})
+
+        raw_errors = result.get("errors", [])
+        parsed = []
+        for err in raw_errors:
+            err_str = str(err)
+            is_sorry = "sorry" in err_str.lower()
+            parsed.append({
+                "message": err_str[:200],
+                "is_sorry_related": is_sorry,
+            })
+        total = len(parsed)
+        end = min(start + max_lines, total)
+        selected = parsed[start:end]
+        return json.dumps({
+            "total_errors": total,
+            "returned": len(selected),
+            "has_more": end < total,
+            "next_start": end if end < total else None,
+            "errors": selected,
+        }, indent=2, ensure_ascii=False)
+
+    def assess_structural_progress(self, assessment: str, is_progress: bool,
+                                    reason: str, next_agent: str = "",
+                                    agent_opinion: str = "") -> str:
+        """Record qualitative judgment + routing + opinion.
+
+        This is the OUTPUT tool — MUST be the last call in the diagnosis chain.
+
+        Args:
+            assessment: One-word summary (PROGRESS, STABLE, REGRESSION, INCONCLUSIVE).
+            is_progress: True if structural progress was made (e.g. sorry split into
+                         simpler sub-goals, build passes with decomposition).
+            reason: 1-2 sentence explanation of the judgment.
+            next_agent: Route to this agent next ("tactic", "critic", "coordinator",
+                        "search", ""). Empty = let workflow decide.
+            agent_opinion: Stored in state.agent_opinions["diagnosis"] for
+                           subsequent agents to read.
+        """
+        # Store opinion in shared state
+        if agent_opinion:
+            self._state.agent_opinions["diagnosis"] = agent_opinion
+
+        if self._trace:
+            self._trace.log(
+                agent="DiagnosisAgent", role="assessment",
+                content=f"{assessment}: {reason} (next={next_agent or 'auto'})",
+                duration_s=0.01, tool_name="assess_structural_progress",
+                tool_args={"assessment": assessment, "is_progress": is_progress,
+                           "next_agent": next_agent},
+            )
+        return json.dumps({
+            "assessment": assessment,
+            "is_progress": is_progress,
+            "reason": reason,
+            "next_agent": next_agent,
+            "agent_opinion": agent_opinion,
+        }, indent=2, ensure_ascii=False)
+
+    def adjust_decomposition_budget(self, new_budget: int, reason: str) -> str:
+        """Adjust decomposition budget (1-15 range). DiagnosisAgent controls this."""
+        new_budget = max(1, min(15, new_budget))
+        old = self._state.decomposition_budget
+        self._state.decomposition_budget = new_budget
+        if self._trace:
+            self._trace.log(
+                agent="DiagnosisAgent", role="budget_adjust",
+                content=f"Budget {old}->{new_budget}: {reason}",
+                duration_s=0.01, tool_name="adjust_decomposition_budget",
+            )
+        return json.dumps({
+            "old_budget": old, "new_budget": new_budget, "reason": reason,
+        })
