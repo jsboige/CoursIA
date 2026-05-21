@@ -9,8 +9,7 @@ GradientBoostingClassifier mean-reversion-in-trending. Uses Bollinger Band width
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Reversion-Trending"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
@@ -29,4 +28,5 @@ GradientBoostingClassifier mean-reversion-in-trending. Uses Bollinger Band width
 - research.ipynb - Regime detection and model comparison
 ## References
 
-- Hands-On AI Trading, Section 06, Example 03
+- Hands-On AI Trading, Section 06, Example 03
+

@@ -9,9 +9,7 @@ Template/skeleton project for ensemble ML strategies. Contains basic framework f
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Ensemble"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

@@ -9,9 +9,7 @@ Feature engineering experiments for ML trading strategies. Tests various feature
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-FeatureEngineering"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

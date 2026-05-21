@@ -9,9 +9,7 @@ Dual momentum variant excluding TLT. Absolute + relative momentum on SPY vs GLD 
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/DualMomentumNoTLT"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

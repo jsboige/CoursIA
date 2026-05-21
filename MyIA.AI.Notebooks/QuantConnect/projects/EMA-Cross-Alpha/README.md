@@ -12,7 +12,7 @@ The alpha model generates insights when the fast EMA crosses the slow EMA for ea
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Alpha"`
 ```bash
 lean backtest --project .
 ```

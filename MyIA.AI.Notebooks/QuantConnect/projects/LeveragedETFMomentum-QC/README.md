@@ -9,9 +9,7 @@ QC Strategy Library clone. Momentum strategy on leveraged ETFs with aggressive m
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/LeveragedETFMomentum-QC"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

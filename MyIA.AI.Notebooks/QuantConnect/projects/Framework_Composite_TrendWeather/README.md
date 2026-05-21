@@ -9,9 +9,7 @@ Framework composite combining TrendStocks (75%) with AllWeather (25%). Trend use
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

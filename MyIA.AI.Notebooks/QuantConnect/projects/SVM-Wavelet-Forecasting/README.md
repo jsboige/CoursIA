@@ -9,9 +9,7 @@ SVM regression with wavelet-decomposed features for FX forecasting. Decomposes p
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/SVM-Wavelet-Forecasting"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

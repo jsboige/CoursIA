@@ -1,6 +1,17 @@
-# Trend Following Multi-Oracles (ID: 20216930)
+# Trend Following Multi-Oracles
+
+**Asset class:** US Equities (top 600)
+**Cloud project ID:** 28797562
+
+## Description
 
 Strategie trend following avec oracles multiples (MACD, RSI, Bollinger).
+
+## How to Run
+
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Trend-Following"`
+
+**QC Cloud:** Deployed as project 28797562.
 
 ## Architecture (multi-fichiers)
 - `main.py` - Algorithme principal, universe equity top 600

@@ -13,7 +13,7 @@ near and far contracts based on the shape of the term structure.
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/TermStructureCommodities-QC"`
 ```bash
 lean backtest --project .
 ```

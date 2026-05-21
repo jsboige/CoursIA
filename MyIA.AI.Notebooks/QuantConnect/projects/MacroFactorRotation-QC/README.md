@@ -9,9 +9,7 @@ QC Strategy Library clone. Macro factor rotation rotating between asset classes 
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/MacroFactorRotation-QC"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
