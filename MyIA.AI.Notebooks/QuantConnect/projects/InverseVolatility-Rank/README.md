@@ -9,8 +9,7 @@ Ridge regression inverse volatility ranking on 12 futures contracts. Predicts ne
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/InverseVolatility-Rank"`
 **QC Cloud:** Project 29463533. Research notebook not yet executed on QC Cloud (research node unavailable, 2026-05-11). `execution_count` set, outputs pending re-execution.
 
 ## Backtest Metrics

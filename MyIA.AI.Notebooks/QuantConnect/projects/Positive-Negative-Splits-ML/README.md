@@ -9,8 +9,7 @@ LinearRegression positive/negative split prediction. Uses earnings surprise magn
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Positive-Negative-Splits-ML"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
@@ -29,4 +28,5 @@ LinearRegression positive/negative split prediction. Uses earnings surprise magn
 - research.ipynb - Earnings split analysis
 ## References
 
-- Hands-On AI Trading, Section 06, Example 07
+- Hands-On AI Trading, Section 06, Example 07
+

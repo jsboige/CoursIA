@@ -1,7 +1,7 @@
 # Chronos-Foundation-Forecasting
 
 **Asset class:** US Equities/ETF (8 ETFs)
-**Cloud project ID:** None (local only)
+**Cloud project ID:** 29443479
 
 ## Description
 
@@ -9,10 +9,9 @@ Ensemble GradientBoosting + Ridge using Chronos foundation model embeddings. Pre
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Chronos-Foundation-Forecasting"`
 
-
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud:** Deployed as project 29443479.
 
 ## Backtest Metrics
 
@@ -21,6 +20,7 @@ Ensemble GradientBoosting + Ridge using Chronos foundation model embeddings. Pre
 | Model | Ensemble GB + Ridge |
 | Universe | 8 ETFs |
 | Rebalance | Biweekly |
+| Sharpe Ratio (v2) | 0.253 |
 
 ## Files
 

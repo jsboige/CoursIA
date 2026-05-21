@@ -9,8 +9,7 @@ RandomForestClassifier trend-scanning. Predicts next-day direction using lagged 
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Trend-Scanning"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
@@ -28,4 +27,5 @@ RandomForestClassifier trend-scanning. Predicts next-day direction using lagged 
 - research.ipynb - Feature engineering and model evaluation
 ## References
 
-- Hands-On AI Trading, Section 06, Example 01
+- Hands-On AI Trading, Section 06, Example 01
+

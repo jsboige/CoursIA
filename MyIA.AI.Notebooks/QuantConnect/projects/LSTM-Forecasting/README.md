@@ -9,9 +9,7 @@ MLPClassifier (not actual LSTM) return prediction. Uses sklearn MLPClassifier wi
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/LSTM-Forecasting"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

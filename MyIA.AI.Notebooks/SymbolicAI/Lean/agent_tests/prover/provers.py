@@ -94,7 +94,8 @@ class MultiAgentSorryProver:
     def __init__(self, trace: TraceLogger, provider: str = "zai",
                  local_provider: str = "local",
                  director_provider: Optional[str] = None,
-                 coordinator_provider: Optional[str] = None):
+                 coordinator_provider: Optional[str] = None,
+                 tactic_provider: Optional[str] = None):
         self.trace = trace
         self.provider = provider
         self.local_provider = local_provider
@@ -104,6 +105,12 @@ class MultiAgentSorryProver:
         # Default to "openrouter" (GPT-5.5 via OPENAI_CHAT_MODEL_ID) which
         # handles Coordinator tasks in <2min vs 12+ min with GLM-5.1.
         self.coordinator_provider = coordinator_provider or "openrouter"
+        # #1289 (TacticAgent): Same root cause — GLM-5.1 (zai) times out at
+        # 1680s on complex Lean tactic generation (Lattice contexts).
+        # BG DEMO 30 forensic showed Coordinator (60s) + Director (8s) fine,
+        # but TacticAgent z.ai hung for 1680s. Default to "openrouter" so
+        # GPT-5.5 handles tactic generation in ~60-120s instead.
+        self.tactic_provider = tactic_provider or "openrouter"
 
     async def prove_sorry(self, demo: dict, max_iterations: int = 10,
                           workflow_timeout_s: Optional[int] = None) -> dict:
@@ -227,7 +234,7 @@ class MultiAgentSorryProver:
         search_agent = create_search_agent(
             search_tools, provider=self.local_provider, goal=goal_state or "")
         tactic_agent = create_tactic_agent(
-            tactic_tools, provider=self.provider, goal=goal_state or "")
+            tactic_tools, provider=self.tactic_provider, goal=goal_state or "")
         critic_agent = create_critic_agent(critic_tools, provider=self.provider)
         coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.coordinator_provider)
 

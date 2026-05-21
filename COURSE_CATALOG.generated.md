@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-21 05:04
+Generated: 2026-05-21 11:17
 Total notebooks: 474
 
 ## Status Summary
@@ -12,10 +12,10 @@ Total notebooks: 474
 
 ## Maturity Summary
 
-- **PRODUCTION**: 161
-- **BETA**: 250
+- **PRODUCTION**: 160
+- **BETA**: 248
 - **TEMPLATE**: 4
-- **ALPHA**: 29
+- **ALPHA**: 32
 - **DRAFT**: 30
 
 ## By Series
@@ -419,7 +419,7 @@ Total notebooks: 474
 | 101 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
 | 102 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
 
-### GameTheory (25 notebooks) — READY:25 | ALPHA:3, BETA:17, DRAFT:3, PRODUCTION:2
+### GameTheory (25 notebooks) — READY:25 | ALPHA:6, BETA:15, DRAFT:3, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -429,7 +429,7 @@ Total notebooks: 474
 | 4 | GameTheory-12-ReputationGames | Python 3 | READY | BETA | 30min | po-2024 |
 | 5 | GameTheory-13 : Jeux a Information Imparfaite et C | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
 | 6 | GameTheory-14 : Jeux Differentiels et Equilibres d | Python 3 | READY | BETA | 30min | po-2024 |
-| 7 | GameTheory-15-CooperativeGames | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
+| 7 | GameTheory-15-CooperativeGames | Python (GameTheory WSL + OpenS | READY | ALPHA | 45min | po-2024 |
 | 8 | GameTheory 15b - Jeux Cooperatifs en Lean : Formal | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
 | 9 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (GameTheory WSL + OpenS | READY | ALPHA | 30min | po-2024 |
 | 10 | GameTheory-16 : Theorie des Mecanismes et Principe | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
@@ -437,10 +437,10 @@ Total notebooks: 474
 | 12 | GameTheory-2-NormalForm | Python 3 | READY | DRAFT | 45min | po-2024 |
 | 13 | GameTheory 2b - Formalisation Lean : Definitions d | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
 | 14 | GameTheory-3-Topology2x2 | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
-| 15 | GameTheory-4-NashEquilibrium | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
+| 15 | GameTheory-4-NashEquilibrium | Python (GameTheory WSL + OpenS | READY | ALPHA | 30min | po-2024 |
 | 16 | GameTheory 4b - Theoreme d'Existence de Nash (Lean | Lean 4 (WSL) | READY | BETA | 30min | po-2024 |
 | 17 | GameTheory 4c - Theoreme d'Existence de Nash (Pyth | Python 3 | READY | DRAFT | 30min | po-2024 |
-| 18 | GameTheory-5-ZeroSum-Minimax | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
+| 18 | GameTheory-5-ZeroSum-Minimax | Python (GameTheory WSL + OpenS | READY | ALPHA | 30min | po-2024 |
 | 19 | GameTheory-6-EvolutionTrust | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
 | 20 | GameTheory-7-ExtensiveForm | Python 3 | READY | BETA | 30min | po-2024 |
 | 21 | GameTheory-9-BackwardInduction | Python 3 | READY | BETA | 30min | po-2024 |

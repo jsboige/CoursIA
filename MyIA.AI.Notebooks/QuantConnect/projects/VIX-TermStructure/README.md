@@ -16,7 +16,7 @@ demonstrates the structural risk. See ARCHIVE.md for full ceiling analysis.
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/VIX-TermStructure"`
 ```bash
 lean backtest --project .
 ```
