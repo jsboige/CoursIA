@@ -30,7 +30,8 @@ TRACES_DIR.mkdir(exist_ok=True)
 def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                mode: str = "multi", iterations: int = 8,
                provider: str = "zai", local_provider: str = "local",
-               goal: str = "", director_provider: str = None):
+               goal: str = "", director_provider: str = None,
+               coordinator_provider: str = None):
     """Run the prover on a target."""
     if demo_num is not None:
         if demo_num not in DEMOS:
@@ -56,7 +57,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     print(f"Target: {name}")
     print(f"  File: {filepath} (line {line})")
     print(f"  Mode: {mode}, Iterations: {iterations}")
-    print(f"  Provider: {provider}, Local: {local_provider}")
+    print(f"  Provider: {provider}, Local: {local_provider}, Coordinator: {coordinator_provider or 'openrouter (default)'}")
     print(f"  Initial sorry count: {original_sorry}")
     print()
 
@@ -65,7 +66,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     if mode == "multi":
         prover = MultiAgentSorryProver(
             trace=trace, provider=provider, local_provider=local_provider,
-            director_provider=director_provider)
+            director_provider=director_provider,
+            coordinator_provider=coordinator_provider)
         if director_provider:
             print(f"  Director: ENABLED (provider={director_provider})")
     else:
@@ -99,6 +101,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         "name": name,
         "mode": mode,
         "provider": provider,
+        "coordinator_provider": coordinator_provider or "openrouter (default)",
         "iterations": iterations,
         "original_sorry": original_sorry,
         "final_sorry": final_sorry,
@@ -132,6 +135,11 @@ if __name__ == "__main__":
                         help="Provider for the frontier DirectorAgent "
                              "(e.g. 'openrouter'). Omit to disable the "
                              "Director lane. Only used in --mode multi.")
+    parser.add_argument("--coordinator-provider", default=None,
+                        help="Provider for CoordinatorAgent (default: openrouter). "
+                             "#1289: GLM-5.1 (zai) times out on complex Lean contexts; "
+                             "GPT-5.5 via openrouter is 6x faster. "
+                             "Only used in --mode multi.")
     args = parser.parse_args()
 
     run_prover(
@@ -144,4 +152,5 @@ if __name__ == "__main__":
         local_provider=args.local_provider,
         goal=args.goal,
         director_provider=args.director_provider,
+        coordinator_provider=args.coordinator_provider,
     )
