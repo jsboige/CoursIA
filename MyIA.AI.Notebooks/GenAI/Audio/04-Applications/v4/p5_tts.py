@@ -23,7 +23,6 @@ from .fishaudio_client import (
     fishaudio_tts,
     thermal_wait,
     audio_duration_mp3,
-    fishaudio_tts_batch,
     OUTPUT_DIR,
 )
 
@@ -31,8 +30,7 @@ BASE_DIR = Path(__file__).parent
 TTS_DIR = OUTPUT_DIR
 TTS_DIR.mkdir(exist_ok=True, parents=True)
 
-_MAX_WORDS_PER_CALL = 55
-_MAX_TTS_CHARS = 500  # FishAudio OOMs on long composed texts (>1000 chars)
+_MAX_TTS_CHARS = 500  # Truncation limit for the composed text
 _BATCH_SIZE = 8
 _MAX_WORKERS = 1  # FishAudio S2-Pro is single-threaded; concurrent requests cause timeouts
 
@@ -101,6 +99,12 @@ def _compose_tts_text(seg: AnnotatedSegment) -> str:
     base_text = seg.fishaudio_text or seg.annotated_text or seg.text
     base_text = _normalize_tags(base_text)
 
+    # Inject mid-segment prosody tags for long texts (>200 chars)
+    # S2-Pro tags affect what follows them, so inserting at punctuation
+    # boundaries creates natural variation within a single segment.
+    if len(base_text) > 200:
+        base_text = _inject_mid_segment_tags(base_text)
+
     parts.append(base_text)
     result = " ".join(parts)
 
@@ -111,6 +115,63 @@ def _compose_tts_text(seg: AnnotatedSegment) -> str:
         result = result[:_MAX_TTS_CHARS].rsplit(" ", 1)[0] + "..."
 
     return result
+
+
+def _inject_mid_segment_tags(text: str) -> str:
+    """Insert prosody variation tags at natural punctuation boundaries.
+
+    S2-Pro tags affect what FOLLOWS them. By inserting tags at sentence
+    boundaries, we create prosody variation within a single long segment.
+    Strategy:
+    - After semicolons: [short pause] (natural breath point)
+    - Before exclamations: [emphasis]
+    - After ellipsis (...): [pause] (dramatic beat)
+    - Every ~3rd sentence boundary: [short pause] (pacing variation)
+    Only injects if there isn't already a tag nearby (within 20 chars).
+    """
+    result = text
+    injections: list[tuple[int, str]] = []
+
+    # Count existing tags to avoid over-tagging
+    existing_tag_count = len(re.findall(r"\[[^\]]+\]", text))
+
+    # After semicolons followed by space: [short pause]
+    for m in re.finditer(r";\s+", result):
+        pos = m.end()
+        if not _has_nearby_tag(result, pos):
+            injections.append((pos, "[short pause] "))
+
+    # After ellipsis: [pause]
+    for m in re.finditer(r"\.\.\.\s*", result):
+        pos = m.end()
+        if not _has_nearby_tag(result, pos):
+            injections.append((pos, "[pause] "))
+
+    # Before exclamation marks (on sentences ending with !):
+    for m in re.finditer(r"!\s", result):
+        # Insert emphasis before the exclamation sentence
+        sentence_start = result.rfind(". ", 0, m.start())
+        if sentence_start == -1:
+            sentence_start = 0
+        else:
+            sentence_start += 2
+        if not _has_nearby_tag(result, sentence_start):
+            injections.append((sentence_start, "[emphasis] "))
+
+    # Apply injections in reverse order to preserve positions
+    for pos, tag in sorted(injections, key=lambda x: -x[0]):
+        total_tags = existing_tag_count + len(injections)
+        if total_tags <= 8:  # Cap total tags to avoid over-tagging
+            result = result[:pos] + tag + result[pos:]
+
+    return result
+
+
+def _has_nearby_tag(text: str, pos: int, window: int = 25) -> bool:
+    """Check if there's already a [tag] within `window` chars of position."""
+    start = max(0, pos - window)
+    end = min(len(text), pos + window)
+    return bool(re.search(r"\[[^\]]+\]", text[start:end]))
 
 
 def _extract_official_tags(text: str) -> list[str]:
@@ -223,25 +284,64 @@ def _resolve_voice(seg: AnnotatedSegment) -> str:
     return SPEAKER_TO_VOICE.get(seg.speaker, "v4_narrator_male_neutral")
 
 
-def _split_long_text(text: str, max_words: int = _MAX_WORDS_PER_CALL) -> list[str]:
-    """Split text at sentence boundaries if it exceeds max_words."""
-    words = text.split()
-    if len(words) <= max_words:
+_MAX_CHUNK_CHARS = 220  # ~40 words in French; safe for FishAudio with tags
+
+
+def _split_long_text(text: str, max_chars: int = _MAX_CHUNK_CHARS) -> list[str]:
+    """Split text into chunks safe for FishAudio S2-Pro (~220 chars each).
+
+    Multi-strategy splitting for French text that may lack sentence-ending
+    punctuation at convenient positions:
+      1. Prefer sentence boundaries (. ! ? ;)
+      2. Fall back to commas/colons
+      3. Last resort: split at space nearest to target length
+    """
+    if len(text) <= max_chars:
         return [text]
 
     chunks: list[str] = []
-    current: list[str] = []
-    for word in words:
-        current.append(word)
-        if len(current) >= max_words and word.endswith((".", "!", "?", ";")):
-            chunks.append(" ".join(current))
-            current = []
-    if current:
-        if chunks:
-            chunks[-1] += " " + " ".join(current)
-        else:
-            chunks.append(" ".join(current))
-    return chunks
+    remaining = text
+
+    while len(remaining) > max_chars:
+        # Find the best split point in the range [max_chars*0.5, max_chars*1.2]
+        search_start = max_chars // 2
+        search_end = min(len(remaining), int(max_chars * 1.2))
+        window = remaining[search_start:search_end]
+
+        split_pos = -1
+
+        # Strategy 1: sentence-ending punctuation (. ! ? ;)
+        for punct in (". ", "! ", "? ", "; "):
+            idx = window.rfind(punct)
+            if idx != -1:
+                candidate = search_start + idx + len(punct)
+                if split_pos == -1 or candidate > split_pos:
+                    split_pos = candidate
+
+        # Strategy 2: comma or colon (sub-sentence break)
+        if split_pos == -1:
+            for punct in (", ", ": ", " — ", " – "):
+                idx = window.rfind(punct)
+                if idx != -1:
+                    candidate = search_start + idx + len(punct)
+                    if split_pos == -1 or candidate > split_pos:
+                        split_pos = candidate
+
+        # Strategy 3: nearest space to max_chars
+        if split_pos == -1:
+            space_pos = remaining.rfind(" ", search_start, search_end)
+            if space_pos != -1:
+                split_pos = space_pos + 1
+            else:
+                split_pos = max_chars
+
+        chunks.append(remaining[:split_pos].strip())
+        remaining = remaining[split_pos:].strip()
+
+    if remaining:
+        chunks.append(remaining)
+
+    return chunks if chunks else [text]
 
 
 def _concat_audio_parts(audio_parts: list[bytes]) -> bytes:
@@ -307,17 +407,28 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
 
     chunks = _split_long_text(fishaudio_text)
 
-    # Build TTS requests for each chunk
+    # Extract the leading tag prefix (e.g. "[emphasis] ") to prepend to each chunk.
+    # This ensures every chunk carries the segment's prosody tag.
+    tag_prefix = ""
+    tag_match = re.match(r"(\[[^\]]+\]\s+)+", fishaudio_text)
+    if tag_match:
+        tag_prefix = tag_match.group(0)
+        # Remove tag prefix from chunks (it's only in the first one)
+        if chunks:
+            chunks[0] = chunks[0][len(tag_prefix):].strip()
+
+    # Build TTS requests for each chunk, prepending the tag prefix
     tts_requests = []
     for chunk in chunks:
+        chunk_text = f"{tag_prefix}{chunk}" if tag_prefix else chunk
         tts_requests.append({
-            "text": chunk,
+            "text": chunk_text,
             "reference_id": reference_id,
             "seed": seed,
             "temperature": 0.7,
             "top_p": 0.9,
             "format": "mp3",
-            "timeout": 600,
+            "timeout": 120,
         })
 
     # If single chunk, use direct call
@@ -330,20 +441,17 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             attempts = 2
         audio_parts = [audio] if audio else []
     else:
-        # Multi-chunk: use batch for chunks
-        audio_results = fishaudio_tts_batch(tts_requests, max_workers=2)
-        attempts = len(tts_requests)
-
-        # Retry failed chunks
-        failed_indices = [i for i, a in enumerate(audio_results) if a is None]
-        if failed_indices:
-            thermal_wait()
-            retry_results = fishaudio_tts_batch(
-                [tts_requests[i] for i in failed_indices], max_workers=2
-            )
-            attempts += len(failed_indices)
-            for j, orig_idx in enumerate(failed_indices):
-                audio_results[orig_idx] = retry_results[j]
+        # Multi-chunk: synthesize SEQUENTIALLY (FishAudio is single-threaded)
+        audio_results: list[bytes | None] = []
+        attempts = 0
+        for req in tts_requests:
+            audio = fishaudio_tts(**req)
+            attempts += 1
+            if audio is None:
+                thermal_wait()
+                audio = fishaudio_tts(**req)
+                attempts += 1
+            audio_results.append(audio)
 
         audio_parts = [a for a in audio_results if a is not None]
 
