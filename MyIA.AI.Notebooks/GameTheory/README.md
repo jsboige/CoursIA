@@ -29,7 +29,7 @@ La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) 
 
 ## Structure
 
-**17 notebooks principaux** + **8 side tracks** (b = Lean, c = Python approfondissement) + **4 SocialChoice** (sous-serie dediee) = **29 notebooks**
+**17 notebooks principaux** + **7 side tracks** (4 Lean, 3 Python approfondissement) + **4 SocialChoice** (sous-serie dediee) = **28 notebooks**
 
 ### Partie 1 : Fondations et Jeux statiques (Notebooks 1-6)
 

@@ -41,7 +41,7 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
-- **46 notebooks Python** (28 cours + 4 training local + 2 paper-trading + 12 Cloud-ready)
+- **51 notebooks Python** (28 cours + 3 training local + 2 paper-trading + 2 dataset + 12 Cloud-ready + 4 RL avance)
 - **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
 - **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
 - **Free tier compatible** avec workarounds pour fonctionnalités payantes
@@ -196,7 +196,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 
 ## Projets de Stratégies
 
-Le dossier [`projects/`](projects/) contient **67 stratégies de trading** prêtes à backtester.
+Le dossier [`projects/`](projects/) contient **115 stratégies de trading** prêtes à backtester.
 
 ### Comment utiliser les projets
 
