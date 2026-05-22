@@ -7,7 +7,7 @@ breakdown: =32
 maturity: BETA=23, PRODUCTION=8, ALPHA=1
 -->
 
-Cette serie de **32 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
+Cette serie de **32 notebooks** (16 C#, 16 Python) explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
 
 ## Pourquoi etudier le Sudoku en IA ?
 
@@ -48,7 +48,7 @@ Chaque approche reflete une philosophie differente de la resolution de problemes
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 33 (16 C#, 17 Python) |
+| Notebooks | 32 (16 C#, 16 Python) |
 | Duree estimee | ~8h |
 | Niveau | Debutant a avance |
 | Langages | C# (.NET Interactive), Python |
