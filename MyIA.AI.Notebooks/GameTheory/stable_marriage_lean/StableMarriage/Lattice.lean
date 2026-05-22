@@ -106,28 +106,45 @@ lemma no_cross_match (μ ν : Matching n)
     μ.spouse m₂ = ν.spouse m₁ := by
   by_cases hm : m₁ = m₂
   · subst hm; rw [h1, ← h2]
-  -- m₁ ≠ m₂. WLOG μ.sp m₂ ≠ ν.sp m₁, derive contradiction.
   by_contra hne'
-  push Not at hm
-  -- w₁ = ν.sp m₁, w₂ = μ.sp m₂. Both different from w by injectivity.
-  have hw_ne_w1 : w ≠ ν.spouse m₁ := by
-    intro heq
-    exact hm (ν.bijective.1 (h2 ▸ heq).symm)
-  have hw_ne_w2 : w ≠ μ.spouse m₂ := by
-    intro heq
-    exact hm (μ.bijective.1 (h1 ▸ heq))
-  -- hne': ν.sp m₁ ≠ μ.sp m₂ (call them w₁, w₂)
-  -- We have 3 distinct women: w, w₁=ν.sp m₁, w₂=μ.sp m₂
+  push_neg at hm
   set w₁ := ν.spouse m₁
   set w₂ := μ.spouse m₂
-  -- μ: m₁↦w, m₂↦w₂. ν: m₁↦w₁, m₂↦w.
-  have hw₂_eq : w₂ = μ.spouse m₂ := rfl
-  -- Stability of μ on (m₂, w₁): ¬(ManPref m₂ w₁ w₂ ∧ WomanPref w₁ m₂ μ⁻¹(w₁))
-  -- Stability of ν on (m₁, w₂): ¬(ManPref m₁ w₂ w₁ ∧ WomanPref w₂ m₁ ν⁻¹(w₂))
-  -- The WomanPref terms involve μ⁻¹(w₁), ν⁻¹(w₂) which are unknown men.
-  -- This IS the intractable core: case analysis on preferences leads to
-  -- unconstrained terms. Requires rural hospitals (Knuth 1.6.3).
-  sorry
+  have hw_ne_w1 : w ≠ w₁ := fun heq ↦ hm (ν.bijective.1 (h2 ▸ heq).symm)
+  have hw_ne_w2 : w ≠ w₂ := fun heq ↦ hm (μ.bijective.1 (h1 ▸ heq))
+  have hw1_ne_w2 : w₁ ≠ w₂ := fun heq ↦ hne' heq.symm
+  have hμinv_w : μ.inverse w = m₁ := inverse_eq_of_spouse_eq μ m₁ _ h1
+  have hμinv_w₂ : μ.inverse w₂ = m₂ := inverse_eq_of_spouse_eq μ m₂ _ rfl
+  have hνinv_w : ν.inverse w = m₂ := inverse_eq_of_spouse_eq ν m₂ _ h2
+  have hνinv_w₁ : ν.inverse w₁ = m₁ := inverse_eq_of_spouse_eq ν m₁ _ rfl
+  by_cases hm₁ : prof.ManPrefers m₁ w w₁
+  · -- Case A: m₁ prefers w(=μ(m₁)) over w₁(=ν(m₁))
+    -- From ν-stab(m₁,w): ¬(MP m₁ w w₁ ∧ WP w m₁ m₂), so ¬WP w m₁ m₂
+    have hwp₁ : ¬prof.WomanPrefers w m₁ m₂ := by
+      intro hwp
+      have hbp : IsBlockingPair prof ν m₁ w := ⟨hm₁, by rw [hνinv_w]; exact hwp⟩
+      exact hν m₁ w hbp
+    -- Strict ranking: w ≠ w₂, so womenPref w m₁ ≠ womenPref w m₂
+    have hw_m₂_pref : prof.WomanPrefers w m₂ m₁ := by
+      unfold PrefProfile.WomanPrefers at hwp₁
+      simp only [not_lt] at hwp₁
+      have hne_rank : (prof.womenPref w m₂ : Nat) ≠ (prof.womenPref w m₁ : Nat) := by
+        intro heq
+        have : m₂ = m₁ := (prof.womenPref_bijective w).injective (Fin.ext heq)
+        exact hm this.symm
+      exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hwp₁) hne_rank)
+    by_cases hm₂ : prof.ManPrefers m₂ w w₂
+    · -- Case A1: m₁ prefers w>w₁, m₂ prefers w>w₂
+      -- From μ-stab(m₂,w): ¬(MP m₂ w w₂ ∧ WP w m₂ m₁), contradiction!
+      have hbp : IsBlockingPair prof μ m₂ w := by
+        unfold IsBlockingPair
+        rw [hμinv_w]
+        exact ⟨hm₂, hw_m₂_pref⟩
+      exact hμ m₂ w hbp
+    · -- Case A2: m₁ prefers w>w₁, m₂ prefers w₂>w
+      sorry
+  · -- Case B: m₁ prefers w₁(=ν(m₁)) over w(=μ(m₁))
+    sorry
 
 /-! ## Join and Meet Operations -/
 
