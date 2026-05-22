@@ -73,7 +73,79 @@ Incident 2026-05-06 : training MoE tente directement sur Python 3.14 systeme : `
 
 **Reflexe coordinateur** : avant tout dispatch ML training local, verifier que le script utilise `coursia-ml-training`. Si un agent rapporte un `ImportError` ML (sklearn, scipy, torch), premier debug = "tu as utilise l'env Conda `coursia-ml-training` ?".
 
-### Autres machines (po-2023/24/25/26)
+### po-2025 (inventaire complet, 2026-05-23)
+
+**Machine**: MSI GE76 Raider, RTX 3080 Ti Laptop 16GB, **CPU-only strict** (11 crashes GPU). Windows 11 Pro Build 26200.
+
+#### Python PATH piege
+
+`python` sur PATH = MS Store Python 3.13 (`C:\Users\jsboi\AppData\Local\Microsoft\WindowsApps\...\python.exe`). Le kernel Jupyter `python3` = conda base (`C:\ProgramData\miniconda3\python.exe`). Pour papermill : utiliser **toujours** le chemin complet du binaire cible.
+
+#### Conda environments
+
+| Env | Python | Path | Usage |
+|-----|--------|------|-------|
+| base (ProgramData) | - | `C:\ProgramData\miniconda3` | Conda systeme |
+| base (user) | - | `C:\Users\jsboi\miniconda3` | Conda user |
+| coursia-ml-training | 3.12 | `C:\Users\jsboi\.conda\envs\...` | ML training (torch CPU-only) |
+| epita_symbolic_ai | 3.12 | `C:\Users\jsboi\.conda\envs\...` | SemanticWeb Python (rdflib, owlready2, pyshacl) |
+| mcp-jupyter | 3.10 | `C:\Users\jsboi\.conda\envs\...` | MCP Jupyter server |
+| mcp-jupyter-py310 | 3.10 | `C:\Users\jsboi\.conda\envs\...` | Papermill execution (Tweety, SW Python, Lean Python, GT) |
+| mcp-markitdown | - | `C:\Users\jsboi\.conda\envs\...` | Document conversion |
+| mcp-powerpoint | - | `C:\Users\jsboi\.conda\envs\...` | PPTX handling |
+| projet-is-roo-new | - | `C:\Users\jsboi\.conda\envs\...` | Roo dev |
+
+#### .NET
+
+- SDKs : 8.0.x, 9.0.x, 10.0.x
+- dotnet-interactive : **1.0.552801** (PINNED)
+- Kernels : `.net-csharp`, `.net-fsharp`, `.net-powershell`
+
+#### Jupyter kernels (10 registered)
+
+| Kernel | Type | Executable via |
+|--------|------|----------------|
+| python3 | Python (conda base) | Papermill |
+| .net-csharp | .NET 9.0 | MCP Jupyter cell-by-cell |
+| .net-fsharp | .NET | MCP Jupyter cell-by-cell |
+| .net-powershell | .NET | MCP Jupyter cell-by-cell |
+| conda-torch | Python (torch) | Papermill |
+| lean4 | Lean 4 (v4.29.1 Windows) | MCP Jupyter cell-by-cell |
+| lean4-wsl | Lean 4 (v4.11.0 WSL) | MCP Jupyter cell-by-cell |
+| python3-wsl | Python (WSL 3.12) | wsl_papermill.py |
+| smartcontracts | Python | Papermill |
+
+#### Papermill : env de reference
+
+```bash
+# Python notebooks : mcp-jupyter-py310
+/c/Users/jsboi/.conda/envs/mcp-jupyter-py310/python.exe -m papermill <nb> <out>
+
+# WSL notebooks : wsl_papermill.py
+python scripts/notebook_tools/wsl_papermill.py execute <nb>
+
+# .NET / Lean : cell-by-cell MCP Jupyter (Papermill ne marche PAS)
+```
+
+#### SmartContracts (8/14 groups, maj 2026-05-23)
+
+Packages installes dans mcp-jupyter-py310 : web3, py-solc-x, pycryptodome, py_ecc, phe, tenseal, mpyc, xrpl-py, python-bitcoinlib, vyper, tabulate.
+
+**Groupes EXECUTABLES** (8/14) : SC-0, SC-11, SC-15, SC-16-17, SC-19, SC-20, SC-21-23, SC-25.
+
+**Groupes BLOQUES** (6/14) : SC-1 (Foundry/forge), SC-2-10 (anvil), SC-12-14 (Foundry testing), SC-18 (Vyper+anvil), SC-24 (sepolia .env), SC-26 (anvil+phe).
+
+Installation : `python SymbolicAI/SmartContracts/setup_env.py`.
+
+#### Install scripts dans le repo
+
+| Script | Usage |
+|--------|-------|
+| `SymbolicAI/SmartContracts/setup_env.py` | Installe deps SmartContracts (phases 0-6), setup WSL Foundry |
+| `SymbolicAI/Lean/scripts/validate_lean_setup.py` | Valide env Lean (elan, lean4-jupyter, kernel, openai) |
+| `SymbolicAI/Lean/scripts/setup_wsl_python.sh` | Setup WSL Python pour lean4-wsl kernel |
+
+### Autres machines (po-2023/24/26)
 
 Verifier qu'elles ont aussi un env Conda dedie ou un venv local equivalent. La memoire est specifique ai-01 mais le pattern (env dedie ML) est cluster-wide. Inventorier via `conda env list` sur chaque machine.
 
