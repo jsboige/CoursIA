@@ -36,6 +36,28 @@ _MAX_TTS_CHARS = 500  # FishAudio OOMs on long composed texts (>1000 chars)
 _BATCH_SIZE = 8
 _MAX_WORKERS = 1  # FishAudio S2-Pro is single-threaded; concurrent requests cause timeouts
 
+# Mapping non-official tags → closest official S2-Pro tag
+# S2-Pro only reliably handles the 29 official tags. Free-form tags
+# (French, adverbs, multi-word descriptions) are silently ignored.
+_NON_OFFICIAL_TAG_MAP: dict[str, str] = {
+    "firmly": "emphasis",
+    "firm": "emphasis",
+    "mockingly": "emphasis",
+    "indignantly": "angry",
+    "angrily": "angry",
+    "sadly": "sad",
+    "excitedly": "excited",
+    "gently": "soft voice",
+    "timidly": "soft voice",
+    "coldly": "low voice",
+    "speaking slowly": "pause",
+    "speaking quickly": "excited",
+    "taking a breath": "inhale",
+    "in a cold tone": "low voice",
+    "in a warm tone": "soft voice",
+    "in a smooth, ingratiating tone": "soft voice",
+}
+
 
 def _text_hash(text: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()[:12]
@@ -45,46 +67,99 @@ def _compose_tts_text(seg: AnnotatedSegment) -> str:
     """Compose the final TTS text with context prefix and dramatic prompt.
 
     FishAudio S2-Pro interprets [bracketed] text as voice instructions.
-    Parentheses are spoken literally — NEVER use them for instructions.
-    The composition order:
-    1. tts_context_prefix from P4 (should already be in [brackets])
-    2. Short dramatic prompt for dialogue/thought only
-    3. The annotated text with inline tags
+    S2-Pro ONLY reliably handles its 29 official tags. French text and
+    free-form descriptions in brackets are silently ignored.
+    A space after ] is MANDATORY — ]X causes the tag to be ignored.
 
-    Backward compat: if tts_context_prefix uses (parentheses), converts to [brackets].
-    Output is truncated to _MAX_TTS_CHARS to prevent FishAudio OOM crashes.
+    Composition order:
+    1. Official S2-Pro tag(s) mapped from tts_context_prefix / dramatic context
+    2. The annotated text with sanitized inline tags
     """
     parts: list[str] = []
 
+    # Collect official S2-Pro tags from context prefix and dramatic prompt
+    tags: list[str] = []
+
     if seg.tts_context_prefix:
-        prefix = seg.tts_context_prefix.strip()
-        # Backward compat: convert legacy (parentheses) to [brackets]
-        if prefix.startswith("(") and prefix.endswith(")"):
-            prefix = "[" + prefix[1:-1] + "]"
-        elif not prefix.startswith("["):
-            prefix = "[" + prefix + "]"
-        parts.append(prefix)
+        tags.extend(_extract_official_tags(seg.tts_context_prefix))
+
+    if seg.dramatic_prompt and seg.type != "narration":
+        tags.extend(_extract_official_tags(seg.dramatic_prompt))
+
+    # Deduplicate tags while preserving order
+    seen: set[str] = set()
+    unique_tags: list[str] = []
+    for t in tags:
+        if t not in seen:
+            seen.add(t)
+            unique_tags.append(t)
+
+    # Max 2 tags to avoid confusing the model
+    if unique_tags:
+        parts.append(" ".join(f"[{t}]" for t in unique_tags[:2]))
 
     base_text = seg.fishaudio_text or seg.annotated_text or seg.text
-    # Sanitize: convert any remaining parenthetical voice instructions to brackets
-    base_text = _sanitize_voice_instructions(base_text)
-
-    prefix_len = sum(len(p) + 1 for p in parts) + (1 if parts else 0)
-
-    # Add dramatic prompt only if total stays under limit
-    if seg.dramatic_prompt and seg.type != "narration":
-        prompt_text = f"[contexte: {seg.dramatic_prompt[:100]}]"
-        context_add = len(prompt_text) + 1
-        if prefix_len + context_add + len(base_text) <= _MAX_TTS_CHARS:
-            parts.append(prompt_text)
+    base_text = _normalize_tags(base_text)
 
     parts.append(base_text)
     result = " ".join(parts)
+
+    # CRITICAL: ensure space after every ] — S2-Pro ignores tags without trailing space
+    result = re.sub(r"\](?=\S)", "] ", result)
 
     if len(result) > _MAX_TTS_CHARS:
         result = result[:_MAX_TTS_CHARS].rsplit(" ", 1)[0] + "..."
 
     return result
+
+
+def _extract_official_tags(text: str) -> list[str]:
+    """Extract and map tags to official S2-Pro tags from context text.
+
+    Checks both the official tag set and the non-official mapping.
+    Returns a list of official tag names (without brackets).
+    """
+    from .schemas import ALL_PROSODY_TAGS
+
+    found: list[str] = []
+    # Match [bracketed] content
+    for match in re.finditer(r"\[([^\]]+)\]", text):
+        content = match.group(1).strip().lower()
+        # Direct official tag?
+        if content in ALL_PROSODY_TAGS:
+            found.append(content)
+        # Mapped non-official tag?
+        elif content in _NON_OFFICIAL_TAG_MAP:
+            mapped = _NON_OFFICIAL_TAG_MAP[content]
+            if mapped in ALL_PROSODY_TAGS:
+                found.append(mapped)
+    return found
+
+
+def _normalize_tags(text: str) -> str:
+    """Normalize all inline tags in text to official S2-Pro tags with space after ].
+
+    1. Convert (parenthetical voice instructions) to [brackets]
+    2. Map non-official [tags] to closest official equivalent
+    3. Ensure space after every ]
+    """
+    text = _sanitize_voice_instructions(text)
+
+    def _normalize_one(match: re.Match) -> str:
+        content = match.group(1).strip()
+        lower = content.lower()
+        from .schemas import ALL_PROSODY_TAGS
+        if lower in ALL_PROSODY_TAGS:
+            return f"[{lower}] "
+        if lower in _NON_OFFICIAL_TAG_MAP:
+            mapped = _NON_OFFICIAL_TAG_MAP[lower]
+            if mapped in ALL_PROSODY_TAGS:
+                return f"[{mapped}] "
+        # Unknown/free-form tag — strip it entirely (S2-Pro ignores these)
+        return ""
+
+    text = re.sub(r"\[([^\]]+)\]", _normalize_one, text)
+    return text
 
 
 def _sanitize_voice_instructions(text: str) -> str:
