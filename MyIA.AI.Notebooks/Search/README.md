@@ -30,11 +30,12 @@ Les 20 notebooks d'applications illustrent chaque concept sur des cas réels : p
 ## Vue d'ensemble
 
 | Partie | Notebooks | Duree |
-|--------|-----------|-------|
+| -------- | --------- | ----- |
 | Partie 1: Search Fondamental | 11 | ~12h30 |
 | Partie 2: Programmation par Contraintes | 9 | ~9h |
 | Applications | 20 | ~13h20 |
-| **Total** | **40** | **~34h50** |
+| Heritage (racine) | 5 | ~3h |
+| **Total** | **45** | **~38h** |
 
 | Statistique | Valeur |
 |-------------|--------|
