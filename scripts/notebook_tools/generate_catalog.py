@@ -44,7 +44,7 @@ SERIES_ORDER = [
 ]
 
 # Keywords indicating special requirements
-API_KEYWORDS = {"openai", "anthropic", "api_key", "API_KEY", "bearer", "endpoint"}
+API_KEYWORDS = {"openai", "anthropic", "api_key", "API_KEY", "bearer", "endpoint", "SemanticKernel"}
 GPU_KEYWORDS = {"cuda", "gpu", "torch.device", "ComfyUI", "VRAM"}
 CLOUD_KEYWORDS = {"QuantBook", "quantconnect", "qc-api", "lean-cli", "AlgorithmImports", "QCAlgorithm"}
 WSL_KEYWORDS = {"wsl", "WSL"}
@@ -160,11 +160,16 @@ def detect_requirements(notebook: dict) -> dict:
         if cell["cell_type"] == "code":
             all_source += "".join(cell.get("source", [])) + "\n"
 
+    all_lower = all_source.lower()
+
+    def _matches(keywords: set[str]) -> bool:
+        return any(kw.lower() in all_lower for kw in keywords)
+
     return {
-        "requires_api": any(kw in all_source for kw in API_KEYWORDS),
-        "requires_gpu": any(kw in all_source for kw in GPU_KEYWORDS),
-        "requires_cloud": any(kw in all_source for kw in CLOUD_KEYWORDS),
-        "requires_wsl": any(kw in all_source for kw in WSL_KEYWORDS),
+        "requires_api": _matches(API_KEYWORDS),
+        "requires_gpu": _matches(GPU_KEYWORDS),
+        "requires_cloud": _matches(CLOUD_KEYWORDS),
+        "requires_wsl": _matches(WSL_KEYWORDS),
     }
 
 
