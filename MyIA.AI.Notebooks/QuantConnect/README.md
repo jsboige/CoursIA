@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 102
-breakdown: Python=51, projects=49, ML-Training-Pipeline=2
-maturity: PRODUCTION=63, ALPHA=22, BETA=14, DRAFT=2, TEMPLATE=1
+pedagogical_count: 104
+breakdown: Python=52, projects=50, ML-Training-Pipeline=2
+maturity: PRODUCTION=63, ALPHA=22, BETA=14, DRAFT=4, TEMPLATE=1
 -->
 
 Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus de 60% des volumes aux États-Unis sont générés par des algorithmes. Cette série vous apprend à construire, tester et déployer vos propres stratégies de trading automatisées sur la plateforme **QuantConnect LEAN** — un framework open-source utilisé par des milliers de quants professionnels. Le parcours va des fondements (lifecycle d'un algorithme, gestion des données) aux frontières de l'IA (Transformers, RL, LLMs pour signaux de trading).
