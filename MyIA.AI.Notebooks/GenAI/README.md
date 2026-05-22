@@ -9,7 +9,7 @@ maturity: BETA=52, PRODUCTION=38, DRAFT=12, TEMPLATE=3, ALPHA=2
 
 Ce parcours vous forme a la maitrise de l'IA generative dans toute sa diversite : generer des images, synthetiser la voix, composer de la musique, produire des videos, orchestrer des agents autonomes, et deployer des applications en production. Chaque modalite suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modeles de production.
 
-**110 notebooks** | **9 sous-domaines** | **~90-100h** | **95%+ valides**
+**107 notebooks** | **9 sous-domaines** | **~90-100h** | **95%+ valides**
 
 ## Pourquoi ce parcours ?
 
@@ -48,7 +48,7 @@ On commence par les fondamentaux : appeler DALL-E 3 et GPT-5 pour generer des im
 
 **Fil rouge** : construire un generateur de contenu visuel pour l'education (diagrammes scientifiques, illustrations pedagogiques, motifs decoratifs).
 
-[README complet](Image/README.md) | 19 notebooks | ~6-8h
+[README complet](Image/README.md) | 16 notebooks | ~6-8h
 
 ---
 
@@ -104,11 +104,11 @@ Les applications GenAI doivent etre testees rigoureusement. Cette serie utilise 
 
 ---
 
-### EPF - Projets etudiants
+### CaseStudies - Projets etudiants
 
-Projets realises par les etudiants de l'EPF : generation d'images style Barbie/Shrek, generateur de recettes, chatbot medical educatif, challenges style Fort Boyard. Ces notebooks illustrent la diversite des applications possibles apres le parcours.
+Projets realises par les etudiants : generation d'images style Barbie/Shrek, generateur de recettes, chatbot medical educatif, challenges style Fort Boyard. Ces notebooks illustrent la diversite des applications possibles apres le parcours.
 
-[README complet](EPF/README.md) | 4 notebooks
+[README complet](CaseStudies/README.md) | 4 notebooks
 
 ---
 
@@ -200,16 +200,16 @@ python scripts/notebook_tools/notebook_tools.py analyze <path>
 ## Statut par sous-domaine
 
 | Sous-domaine | Notebooks | Validation |
-| ------------ | ----------- | ------------ |
+| ------------ | --------- | ---------- |
 | 00-GenAI-Environment | 6 | 100% |
-| Image | 19 | 100% |
+| Image | 16 | 100% |
 | Audio | 28 | 100% |
 | Video | 16 | 100% |
 | Texte | 11 | 100% |
 | SemanticKernel | 20 | 85% |
-| EPF | 4 | 100% |
+| CaseStudies | 4 | 100% |
 | Playwright-OWUI | 5 modules | 100% |
-| Vibe-Coding | 10 modules | 100% |
+| Vibe-Coding | 5 notebooks | 100% |
 
 ---
 
