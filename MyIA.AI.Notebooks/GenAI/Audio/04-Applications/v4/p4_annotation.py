@@ -45,36 +45,35 @@ INPUT_SEGMENTS = OUTPUTS / "segments_v4.json"
 INPUT_DRAMATIC = OUTPUTS / "dramatic_context.json"
 OUTPUT_ANNOTATED = OUTPUTS / "annotated_v4.json"
 
-# ── FishAudio tag conversion map ──
+# ── FishAudio S2-Pro tag system ──
+# S2-Pro accepts [brackets] with 15,000+ free-form natural language tags.
+# The LLM outputs tags directly in S2-Pro format — no intermediate mapping needed.
+# Legacy 22-tag mapping kept for backward compatibility with existing JSON outputs.
 
 TAG_TO_FISHAUDIO: dict[str, str] = {
-    # Voice modes
-    "whisper": "(whispering)",
-    "shout": "(shouting)",
-    "scream": "(screaming)",
-    # Affect
-    "cold": "(in a cold tone)",
-    "warm": "(in a warm tone)",
-    "onctuous": "(in a smooth, ingratiating tone)",
-    "indignant": "(indignantly)",
-    "mocking": "(mockingly)",
-    "angry": "(angrily)",
-    "sad": "(sadly)",
-    "nervous": "(nervously)",
-    "excited": "(excitedly)",
-    "gentle": "(gently)",
-    "firm": "(firmly)",
-    "timid": "(timidly)",
-    # Non-verbal
-    "laugh": "(laughing)",
-    "sigh": "(sighing)",
-    "sob": "(sobbing)",
-    "gasp": "(gasping)",
-    "breath": "(taking a breath)",
-    # Tempo
-    "slow": "(speaking slowly)",
-    "fast": "(speaking quickly)",
-    "pause": "...",
+    # Legacy short tags → official S2-Pro [bracket] equivalents (backward compat)
+    "whisper": "[whispering]",
+    "shout": "[shouting]",
+    "cold": "[low voice]",
+    "warm": "[soft voice]",
+    "onctuous": "[soft voice]",
+    "indignant": "[angry]",
+    "mocking": "[emphasis]",
+    "angry": "[angry]",
+    "sad": "[sad]",
+    "nervous": "[whispering]",
+    "excited": "[excited]",
+    "gentle": "[soft voice]",
+    "firm": "[emphasis]",
+    "timid": "[whispering]",
+    "laugh": "[laughing]",
+    "sigh": "[sigh]",
+    "sob": "[sobbing]",
+    "gasp": "[gasp]",
+    "breath": "[inhale]",
+    "slow": "[pause]",
+    "fast": "[emphasis]",
+    "pause": "[pause]",
 }
 
 # ── LLM prompt templates ──
@@ -88,12 +87,47 @@ Chaque segment de narration DOIT avoir une musicalite propre. Le narrateur modif
 debit, ses pauses, son souffle, et son intonation pour suivre le texte. DEUX segments
 consecutifs ne doivent JAMAIS avoir la meme prosodie.
 
-## Balises disponibles (22 tags)
+## Systeme de balises — FishAudio S2-Pro
 
-Modes vocaux : [whisper] [shout] [scream]
-Affect : [cold] [warm] [onctuous] [indignant] [mocking] [angry] [sad] [nervous] [excited] [gentle] [firm] [timid]
-Non-verbal : [laugh] [sigh] [sob] [gasp] [breath]
-Tempo : [slow] [fast] [pause]
+Le modele utilise des balises entre CROCHETS [tag]. S2-Pro supporte des instructions
+en langage naturel libre dans les crochets, mais les balises ci-dessous sont les
+seules officiellement testees et produisant des resultats consistants.
+
+### Balises officielles (bien testees)
+
+**Respiration et reactions vocales :**
+[clears throat] [inhale] [inhalation] [exhale] [sigh] [panting] [breathing] [gasp]
+
+**Sons vocaux non-verbaux :**
+[groan] [moaning] [sobbing] [crying] [laughing] [chuckling] [giggle]
+
+**Rythme et pauses :**
+[pause] [short pause] [long pause]
+
+**Style vocal :**
+[whispering] [whispering voice] [soft voice] [low voice] [loud voice] [shouting]
+
+**Emotion (3 officiellement testees) :**
+[excited] [angry] [sad]
+
+**Autre :**
+[emphasis] [rustling sound]
+
+### Langage naturel libre
+S2-Pro accepte aussi des descriptions libres entre crochets, par exemple :
+[speaking slowly, almost hesitant] [with a cold, measured tone] [voice trembling slightly]
+[softly, as if telling a secret] [with barely contained fury]
+
+UTILISE les descriptions libres pour les emotions au-dela des 3 officielles
+(sarcasme, mepris, angoisse, determination, resignation, etc.).
+
+## REGLE CRITIQUE DE PLACEMENT
+
+**Les balises affectent ce qui les SUIT, pas ce qui les precede.**
+- `[whispering]` au debut d'un segment rend TOUT le segment murmure.
+- Pour un changement en milieu de segment, place la balise AU POINT DE TRANSITION :
+  `Il regarda la plaine. [pause][soft voice] Au loin, la riviere brillait.`
+- Ne JAMAIS empiler des balises au debut du segment pour "tout activer d'un coup".
 
 ## REGLES OBLIGATOIRES pour la NARRATION
 
@@ -102,33 +136,29 @@ CHAQUE segment narrateur DOIT contenir au minimum 1 tag. Il n'y a PAS de "narrat
 Le narrateur a toujours un ton, un rythme, une intention.
 
 ### Regle 2 — Varier la prosodie entre segments consecutifs
-Si le segment precedent utilise [cold], le suivant ne DOIT PAS commencer par [cold].
-Alterner entre differents registres : affect, tempo, non-verbal.
+Si le segment precedent utilise [sad], le suivant ne DOIT PAS commencer par [sad].
+Alterner entre differents registres : emotions, tempo, effets sonores.
 
 ### Regle 3 — Tags intra-segment pour les segments longs (>30 mots)
 Pour les segments de plus de 30 mots, inserer AU MOINS un tag de variation en milieu
-de segment : [pause], [breath], [slow], ou [fast] pour casser la monotonie.
-Placer ces tags a des points naturels : avant une virgule, apres un point-virgule,
-ou avant un changement de sujet.
+de segment : [pause], [short pause], [inhale], ou [long pause] pour casser la monotonie.
+Placer ces tags a des points naturels : avant une virgule, apres un point-virgule.
 
-### Regle 4 — Types de narration et leurs prosodies
-- **Description visuelle** (paysage, decor, vetements) : [slow] ... [pause] — voix qui contemple
-- **Action rapide** (mouvement, combat, precipitation) : [fast] ... [breath] — voix qui s'anime
-- **Commentaire ironique** (distance naratrice, critique sociale) : [mocking] ... [pause] — voix qui souligne
-- **Description emotionnelle** (souffrance, joie, peur) : [warm] ou [sad] ... [breath] — voix qui ressent
-- **Transition** (changement de scene, de temps) : [pause] ... [breath] — voix qui marque le passage
-- **Suspense / attente** (tension dramatique) : [slow] ... [pause] — voix qui cree l'attente
-- **Bilan / reflexion** (conclusions, observations generales) : [firm] ... [pause] — voix qui pose
-- **Enumeration** (listes, series descriptives) : [pause] entre les elements, [breath] au milieu
+### Regle 4 — Placement des tags
+1. Balises de style vocal ([soft voice], [low voice]) AU POINT OU le changement s'applique
+2. [pause] / [short pause] / [long pause] inline aux points de respiration naturelle
+3. [inhale] / [exhale] aux changements de phrase ou de sujet
+4. Sons non-verbaux ([sigh], [gasp]) au point precis du battement emotionnel
+5. Maximum {max_tags} tags par segment
 
-### Regle 5 — Placement des tags
-1. Tags de registre vocal ([whisper], [shout]) AVANT la clause concernee
-2. Tags d'affect ([cold], [warm], etc.) AU DEBUT du segment
-3. [pause] inline aux points de respiration naturelle (virgules, points-virgules)
-4. [breath] aux changements de phrase ou de sujet
-5. [slow]/[fast] pour accelerer ou ralentir des portions specifiques
-6. Tags non-verbaux ([sigh], [gasp]) au point precis du battement emotionnel
-7. Maximum {max_tags} tags par segment
+### Regle 5 — Adapter la prosodie au type de narration
+- **Description visuelle** : [soft voice] ... [pause] — voix qui contemple
+- **Action rapide** : [excited] ... [pause] — voix qui s'anime
+- **Commentaire ironique** : [emphasis] ... [short pause] — voix qui souligne
+- **Description emotionnelle** : [sad] ... [sigh] — voix qui ressent
+- **Transition** : [pause] ... [inhale] — voix qui marque le passage
+- **Suspense** : [low voice] ... [long pause] — voix qui cree l'attente
+- **Bilan / reflexion** : [emphasis] ... [pause] — voix qui pose
 
 ## Format de reponse
 
@@ -138,28 +168,63 @@ Pour chaque segment, retourne un objet JSON avec :
 - speaker : nom canonique du locuteur
 - text : texte original SANS modification
 - annotated_text : texte avec balises [tag] inserees
+- prosody_tags : liste des tags officiels S2-Pro choisis (max 3, parmi les 29 tags officiels ci-dessus)
 
 IMPORTANT : annotated_text doit contenir le MEME texte que text, avec seulement
 des balises [tag] inserees. Ne pas modifier, traduire ou resumer le texte.
+Les prosody_tags doivent correspondre aux balises officielles utilisees dans annotated_text.
+Les descriptions libres ne vont PAS dans prosody_tags, seulement dans annotated_text.
 """.format(max_tags=MAX_TAGS_PER_SEGMENT)
 
 DIALOGUE_SYSTEM_PROMPT = """Tu es un expert en annotation prosodique pour la synthese vocale.
 Tu annotes des dialogues et pensees de personnages avec des balises de prosodie inline.
 
-## Balises disponibles (22 tags)
+## Systeme de balises — FishAudio S2-Pro
 
-Modes vocaux : [whisper] [shout] [scream]
-Affect : [cold] [warm] [onctuous] [indignant] [mocking] [angry] [sad] [nervous] [excited] [gentle] [firm] [timid]
-Non-verbal : [laugh] [sigh] [sob] [gasp] [breath]
-Tempo : [slow] [fast] [pause]
+Le modele utilise des balises entre CROCHETS [tag]. S2-Pro supporte des instructions
+en langage naturel libre dans les crochets, mais les balises ci-dessous sont les
+seules officiellement testees et produisant des resultats consistants.
+
+### Balises officielles (bien testees)
+
+**Respiration et reactions vocales :**
+[clears throat] [inhale] [inhalation] [exhale] [sigh] [panting] [breathing] [gasp]
+
+**Sons vocaux non-verbaux :**
+[groan] [moaning] [sobbing] [crying] [laughing] [chuckling] [giggle]
+
+**Rythme et pauses :**
+[pause] [short pause] [long pause]
+
+**Style vocal :**
+[whispering] [whispering voice] [soft voice] [low voice] [loud voice] [shouting]
+
+**Emotion (3 officiellement testees) :**
+[excited] [angry] [sad]
+
+**Autre :**
+[emphasis] [rustling sound]
+
+### Langage naturel libre
+S2-Pro accepte des descriptions libres entre crochets pour les emotions au-dela des 3
+officielles : [speaking with disdain] [voice trembling with fear] [with bitter irony]
+[calm but cold] [barely containing her anger] [in a defeated whisper]
+
+## REGLE CRITIQUE DE PLACEMENT
+
+**Les balises affectent ce qui les SUIT, pas ce qui les precede.**
+- Place la balise d'emotion JUSTE AVANT le passage concerne, pas systematiquement au debut.
+- Exemple correct : `Je ne veux pas [pause][soft voice] mais si tu insistes...`
+- Exemple incorrect : `[angry][shouting] Tout le texte est crie sans nuance.`
 
 ## Regles pour les dialogues
 
-1. Chaque dialogue DOIT avoir au moins 1 tag d'affect correspondant a l'emotion du personnage
-2. Inserer [pause] aux hesitations, ruptures de pensee, silences dramatiques
-3. [breath] avant les phrases longues ou apres une emotion forte
+1. Chaque dialogue DOIT avoir au moins 1 tag correspondant a l'etat du personnage
+2. Inserer [pause] ou [short pause] aux hesitations, ruptures de pensee, silences dramatiques
+3. [inhale] avant les phrases longues ou apres une emotion forte
 4. Maximum {max_tags} tags par segment
 5. Les tags doivent refleter le contexte dramatique (acte, tension, etat emotionnel)
+6. Combiner emotion + effet physique pour plus d'expressivite : [sad][sigh], [angry][shouting]
 
 ## Format de reponse
 
@@ -169,9 +234,12 @@ Pour chaque segment, retourne un objet JSON avec :
 - speaker : nom canonique du locuteur
 - text : texte original SANS modification
 - annotated_text : texte avec balises [tag] inserees
+- prosody_tags : liste des tags officiels S2-Pro choisis (max 3, parmi les 29 tags officiels ci-dessus)
 
 IMPORTANT : annotated_text doit contenir le MEME texte que text, avec seulement
 des balises [tag] inserees. Ne pas modifier, traduire ou resumer le texte.
+Les prosody_tags doivent correspondre aux balises officielles utilisees dans annotated_text.
+Les descriptions libres ne vont PAS dans prosody_tags, seulement dans annotated_text.
 """.format(max_tags=MAX_TAGS_PER_SEGMENT)
 
 USER_PROMPT_TEMPLATE = """## Segments a annoter (batch {batch_idx})
@@ -180,7 +248,26 @@ USER_PROMPT_TEMPLATE = """## Segments a annoter (batch {batch_idx})
 
 Annote chaque segment avec les balises prosodiques appropriees.
 Respecte les regles de placement et le maximum de {max_tags} tags par segment.
-Retourne un objet JSON avec la cle "segments" contenant la liste des segments annotes."""
+
+## Contexte dramatique
+Chaque segment est accompagne d'un "prompt dramatique" et de mots-cles emotionnels.
+Utilise-les pour choisir les tags les plus adaptes. Pour les emotions complexes
+("rage contenue", "mepris dissimule"), un tts_context_prefix naturel est plus
+efficace qu'un tag fixe.
+
+Genere aussi un "tts_context_prefix" : une instruction en francais entre CROCHETS,
+comme tu la donnerais a un acteur. Exemples :
+- "[d'une voix blanche, presque inaudible]"
+- "[avec une douceur forcee, en souriant]"
+- "[lentement, pesant chaque mot]"
+- "[d'un ton sec, sans lever les yeux]"
+
+Le tts_context_prefix sera place AVANT le texte dans le TTS. Il guide la voix
+du modele FishAudio S2-Pro, qui comprend les instructions naturelles en francais.
+
+Retourne un objet JSON avec la cle "segments" contenant la liste des segments annotes.
+Chaque segment doit avoir : seg_index, type, speaker, text, annotated_text,
+prosody_tags (liste des tags officiels choisis), tts_context_prefix."""
 
 
 # ── Helper functions ──
@@ -250,6 +337,10 @@ def build_segment_block(segments: list[Segment], contexts: dict[int, DramaticCon
                 f"Contexte: {ctx.scene_label} | Acte: {ctx.act} | "
                 f"Tension: {ctx.tension_0_10}/10 | Position: {ctx.narrative_position}"
             )
+            if ctx.dramatic_prompt:
+                lines.append(f"Prompt dramatique: {ctx.dramatic_prompt}")
+            if ctx.emotional_keywords:
+                lines.append(f"Mots-cles emotionnels: {', '.join(ctx.emotional_keywords)}")
             if ctx.character_state:
                 states = ", ".join(f"{k}: {v}" for k, v in ctx.character_state.items())
                 lines.append(f"Etats emotionnels: {states}")
@@ -328,6 +419,9 @@ def annotate_batch(
     annotated: list[AnnotatedSegment] = []
     for seg in batch.segments:
         ctx = contexts.get(seg.seg_index)
+        # Extract tts_context_prefix from LLM output if provided
+        tts_prefix = getattr(seg, "tts_context_prefix", "") or ""
+        dramatic_prompt = ctx.dramatic_prompt if ctx else ""
         annotated.append(AnnotatedSegment(
             seg_index=seg.seg_index,
             type=seg.type,
@@ -335,33 +429,36 @@ def annotate_batch(
             speaker_raw=seg_raw_map.get(seg.seg_index, ""),
             text=seg.text,
             annotated_text=seg.annotated_text,
+            prosody_tags=seg.prosody_tags,
             tags_used=seg.tags_used,
             fishaudio_text=convert_tags_for_fishaudio(seg.annotated_text),
             dramatic_ref=ctx,
+            dramatic_prompt=dramatic_prompt,
+            tts_context_prefix=tts_prefix,
         ))
 
     tag_count = sum(len(s.tags_used) for s in annotated)
+    prosody_count = sum(len(s.prosody_tags) for s in annotated)
     tagged_segs = sum(1 for s in annotated if s.tags_used)
-    print(f"    Tags: {tag_count} total, {tagged_segs}/{len(annotated)} segments tagged")
+    print(f"    Tags: {tag_count} total ({prosody_count} official S2-Pro), "
+          f"{tagged_segs}/{len(annotated)} segments tagged")
 
     return annotated
 
 
 def convert_tags_for_fishaudio(annotated_text: str) -> str:
-    """Convert bracket prosody tags to FishAudio-compatible inline format.
+    """Convert legacy prosody tags to FishAudio S2-Pro [bracket] format.
 
-    Converts [tag] markers to parenthetical FishAudio directives:
-    - [sob] -> (sobbing)
-    - [gasp] -> (gasping)
-    - [warm] -> (in a warm tone)
-    - [pause] -> ...
-    Unknown tags are left as-is.
+    S2-Pro uses [brackets] for voice instructions. This converts legacy
+    22-tag format to S2-Pro format. Tags already in S2-Pro format are
+    left as-is. Unknown tags are also left as-is (S2-Pro supports
+    15,000+ free-form natural language tags).
 
     Args:
         annotated_text: Text with [tag] markers.
 
     Returns:
-        Text with FishAudio-compatible directives.
+        Text with FishAudio S2-Pro-compatible directives.
     """
     def _replace_tag(match: re.Match) -> str:
         tag = match.group(1)
@@ -450,7 +547,7 @@ def run(force: bool = False) -> Path:
             for seg in batch:
                 # Even fallback gets a basic tag for narrateur
                 if seg.speaker == "narrateur":
-                    fallback_text = f"[slow] {seg.text}"
+                    fallback_text = f"[pause] {seg.text}"
                 else:
                     fallback_text = seg.text
                 all_annotated.append(AnnotatedSegment(
@@ -460,9 +557,12 @@ def run(force: bool = False) -> Path:
                     speaker_raw=seg.speaker_raw,
                     text=seg.text,
                     annotated_text=fallback_text,
-                    tags_used=["slow"] if seg.speaker == "narrateur" else [],
+                    prosody_tags=["pause"] if seg.speaker == "narrateur" else [],
+                    tags_used=["pause"] if seg.speaker == "narrateur" else [],
                     fishaudio_text=convert_tags_for_fishaudio(fallback_text),
                     dramatic_ref=contexts.get(seg.seg_index),
+                    dramatic_prompt="",
+                    tts_context_prefix="",
                 ))
 
     # Step 3: Sort by seg_index and save
@@ -475,6 +575,7 @@ def run(force: bool = False) -> Path:
     )
 
     total_tags = sum(len(s.tags_used) for s in all_annotated)
+    total_prosody = sum(len(s.prosody_tags) for s in all_annotated)
     tagged_segments = sum(1 for s in all_annotated if s.tags_used)
 
     # Quality check
@@ -483,7 +584,7 @@ def run(force: bool = False) -> Path:
     print(f"[P4] Saved: {OUTPUT_ANNOTATED}")
     print(f"  Segments: {len(all_annotated)}")
     print(f"  Tagged: {tagged_segments}/{len(all_annotated)}")
-    print(f"  Total tags: {total_tags}")
+    print(f"  Total tags: {total_tags} ({total_prosody} official S2-Pro)")
     print(f"  Batches: {batch_count}")
     print(f"  Narrator quality:")
     print(f"    Untagged narrateur: {diversity.get('untagged', '?')}")

@@ -15,11 +15,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-PHASES = ["p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7"]
+PHASES = ["p0", "p1", "p1_5", "p2", "p3", "p4", "p5", "p6", "p7"]
 
 PHASE_NAMES = {
     "p0": "Narrative Research",
     "p1": "Voice Cloning + Casting",
+    "p1_5": "Speaker Catalog (Figurants)",
     "p2": "Segmentation",
     "p3": "Dramatic Context",
     "p4": "Prosody Annotation",
@@ -35,6 +36,8 @@ def run_phase(phase: str, force: bool = False) -> Path:
         from .p0_narrative_research import run
     elif phase == "p1":
         from .p1_voice_cloning import run
+    elif phase == "p1_5":
+        from .p1_5_speaker_catalog import run
     elif phase == "p2":
         from .p2_segmentation import run
     elif phase == "p3":

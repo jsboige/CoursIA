@@ -26,7 +26,7 @@ import os  # noqa: E402 — must follow load_dotenv
 
 _API_KEY: str | None = os.getenv("OPENAI_API_KEY")
 _API_BASE: str = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1").rstrip("/")
-_MODEL: str = "gpt-5.4-mini"
+_MODEL: str = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4o-mini")
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -71,6 +71,26 @@ def _flatten_schema(schema: dict, defs: dict | None = None) -> dict:
     return result
 
 
+def _enforce_strict_required(schema: dict) -> dict:
+    """Ensure every object with 'properties' has 'required' listing all keys.
+
+    OpenAI strict mode requires ``required`` to be an array including every
+    key in ``properties``. Pydantic omits fields with defaults from ``required``,
+    so we inject them here.
+    """
+    if "properties" in schema and isinstance(schema["properties"], dict):
+        all_keys = list(schema["properties"].keys())
+        schema["required"] = all_keys
+        # Recurse into nested properties
+        for prop in schema["properties"].values():
+            if isinstance(prop, dict):
+                _enforce_strict_required(prop)
+            if isinstance(prop, dict) and "items" in prop:
+                if isinstance(prop["items"], dict):
+                    _enforce_strict_required(prop["items"])
+    return schema
+
+
 def build_json_schema_response_format(name: str, schema_cls: Type[BaseModel]) -> dict:
     """Wrap a Pydantic schema into the OpenAI ``response_format`` envelope.
 
@@ -84,9 +104,13 @@ def build_json_schema_response_format(name: str, schema_cls: Type[BaseModel]) ->
 
     # Strict mode is incompatible with additionalProperties in nested objects
     # (OpenAI requires required=[] to match all property keys when strict=True).
-    # Fall back to non-strict for schemas that use dict-like fields.
     has_nested_additional = '"additionalProperties": {' in json.dumps(flat)
-    use_strict = not has_nested_additional
+
+    if has_nested_additional:
+        use_strict = False
+    else:
+        use_strict = True
+        _enforce_strict_required(flat)
 
     return {
         "type": "json_schema",
@@ -159,6 +183,7 @@ def call_structured(
                 "model": _MODEL,
                 "messages": messages,
                 "response_format": response_format,
+                "max_tokens": 32768,
             }
             resp = requests.post(
                 f"{_API_BASE}/chat/completions",

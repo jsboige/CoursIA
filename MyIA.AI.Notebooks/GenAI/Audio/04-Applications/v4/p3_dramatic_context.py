@@ -233,7 +233,11 @@ def _build_batch_prompt(
         "'attente_auberge_j2', 'plaidoyer_comte', 'sanglots_retour')\n"
         "3. Le niveau de tension (0-10, coherent avec l'acte mais nuance par le contenu)\n"
         "4. L'etat emotionnel de chaque personnage present dans le segment\n"
-        "5. La position narrative (exposition, rising, climax, falling, resolution)\n\n"
+        "5. La position narrative (exposition, rising, climax, falling, resolution)\n"
+        "6. Un 'prompt dramatique' : 1-2 phrases decrivant le contexte emotionnel, "
+        "comme si tu parlais a un acteur. Ex: 'Boule de Suif, tremblante, est invitee "
+        "a monter. Silence glacial.'\n"
+        "7. 3-5 mots-cles emotionnels (ex: ['humiliation', 'silence', 'isolement'])\n\n"
         "IMPORTANT: character_state doit contenir une entree pour chaque personnage "
         "qui parle ou est mentionne dans le segment, mappee a une emotion concise."
     )
@@ -248,7 +252,9 @@ def _build_batch_prompt(
         f"Segments a analyser:\n{segments_text}\n\n"
         f"Actes correspondants pour ces paragraphes:\n{act_hints}\n"
         f"{prior_section}"
-        "Pour chaque segment, fournis le contexte dramatique complet."
+        "Pour chaque segment, fournis le contexte dramatique complet, "
+        "INCLUANT le dramatic_prompt (1-2 phrases pour un acteur) et "
+        "les emotional_keywords (3-5 mots-cles)."
     )
 
     return system, user
@@ -257,14 +263,16 @@ def _build_batch_prompt(
 def _summarize_batch(contexts: list[DramaticContext], max_tokens: int = 500) -> str:
     """Build a compact summary of a batch for use as rolling context.
 
-    Approximate token count by characters / 4 (rough French estimate).
+    Includes dramatic_prompt and emotional_keywords for downstream context.
     """
     lines: list[str] = []
     for ctx in contexts:
         chars_str = ", ".join(f"{k}={v}" for k, v in ctx.character_state.items())
+        prompt_str = f" | Dramatic: {ctx.dramatic_prompt}" if ctx.dramatic_prompt else ""
+        kw_str = f" | Keywords: {', '.join(ctx.emotional_keywords)}" if ctx.emotional_keywords else ""
         lines.append(
             f"S{ctx.seg_index}: {ctx.act}/{ctx.scene_label} "
-            f"T={ctx.tension_0_10} {ctx.narrative_position} [{chars_str}]"
+            f"T={ctx.tension_0_10} {ctx.narrative_position} [{chars_str}]{prompt_str}{kw_str}"
         )
 
     summary = "\n".join(lines)
@@ -363,6 +371,8 @@ def _default_context(seg: Segment, scene_map: dict[int, ActLabel]) -> DramaticCo
         tension_0_10=tension,
         character_state={seg.speaker: "neutral"},
         narrative_position="rising",
+        dramatic_prompt="",
+        emotional_keywords=[],
     )
 
 

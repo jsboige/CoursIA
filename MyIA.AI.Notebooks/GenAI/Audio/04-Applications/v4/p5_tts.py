@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
 
 from dotenv import load_dotenv
 
@@ -30,8 +31,103 @@ TTS_DIR = OUTPUT_DIR
 TTS_DIR.mkdir(exist_ok=True, parents=True)
 
 _MAX_WORDS_PER_CALL = 55
+_MAX_TTS_CHARS = 500  # FishAudio OOMs on long composed texts (>1000 chars)
 _BATCH_SIZE = 8
 _MAX_WORKERS = 1  # FishAudio S2-Pro is single-threaded; concurrent requests cause timeouts
+
+
+def _compose_tts_text(seg: AnnotatedSegment) -> str:
+    """Compose the final TTS text with context prefix and dramatic prompt.
+
+    FishAudio S2-Pro interprets [bracketed] text as voice instructions.
+    Parentheses are spoken literally — NEVER use them for instructions.
+    The composition order:
+    1. tts_context_prefix from P4 (should already be in [brackets])
+    2. Short dramatic prompt for dialogue/thought only
+    3. The annotated text with inline tags
+
+    Backward compat: if tts_context_prefix uses (parentheses), converts to [brackets].
+    Output is truncated to _MAX_TTS_CHARS to prevent FishAudio OOM crashes.
+    """
+    parts: list[str] = []
+
+    if seg.tts_context_prefix:
+        prefix = seg.tts_context_prefix.strip()
+        # Backward compat: convert legacy (parentheses) to [brackets]
+        if prefix.startswith("(") and prefix.endswith(")"):
+            prefix = "[" + prefix[1:-1] + "]"
+        elif not prefix.startswith("["):
+            prefix = "[" + prefix + "]"
+        parts.append(prefix)
+
+    base_text = seg.fishaudio_text or seg.annotated_text or seg.text
+    # Sanitize: convert any remaining parenthetical voice instructions to brackets
+    base_text = _sanitize_voice_instructions(base_text)
+
+    prefix_len = sum(len(p) + 1 for p in parts) + (1 if parts else 0)
+
+    # Add dramatic prompt only if total stays under limit
+    if seg.dramatic_prompt and seg.type != "narration":
+        prompt_text = f"[contexte: {seg.dramatic_prompt[:100]}]"
+        context_add = len(prompt_text) + 1
+        if prefix_len + context_add + len(base_text) <= _MAX_TTS_CHARS:
+            parts.append(prompt_text)
+
+    parts.append(base_text)
+    result = " ".join(parts)
+
+    if len(result) > _MAX_TTS_CHARS:
+        result = result[:_MAX_TTS_CHARS].rsplit(" ", 1)[0] + "..."
+
+    return result
+
+
+def _sanitize_voice_instructions(text: str) -> str:
+    """Convert parenthetical voice instructions to FishAudio S2-Pro bracket syntax.
+
+    S2-Pro speaks parenthetical text literally. Voice instructions must be
+    in [brackets]. This converts known instruction patterns from legacy outputs:
+      (whispering) -> [whispering]
+      (sad) -> [sad]
+      (laughing) -> [laughing]
+    Preserves legitimate parenthetical content in the narrative text.
+    """
+    _KNOWN_INSTRUCTIONS = [
+        # Official S2-Pro tags (from fish.audio blog)
+        # Breathing & vocal reactions
+        "clears throat", "inhale", "inhalation", "exhale", "sigh",
+        "panting", "breathing", "gasp",
+        # Vocal sounds
+        "groan", "moaning", "sobbing", "crying", "laughing",
+        "chuckling", "giggle",
+        # Pacing
+        "pause", "short pause", "long pause",
+        # Voice style
+        "whispering", "whispering voice", "soft voice", "low voice",
+        "loud voice", "shouting",
+        # Emotion (3 official + free-form)
+        "excited", "angry", "sad",
+        # Other official
+        "emphasis", "rustling sound",
+        # Common free-form descriptions (S2-Pro accepts natural language)
+        "happy", "calm", "nervous", "confident", "surprised",
+        "scared", "worried", "sarcastic", "contemptuous", "anxious",
+        "indifferent", "uncertain", "confused", "disappointed",
+        "regretful", "guilty", "hopeful", "nostalgic", "lonely",
+        "bored", "determined", "resigned", "compassionate",
+        "disdainful", "empathetic",
+        # Legacy patterns from previous pipeline runs (backward compat)
+        "in a cold tone", "in a warm tone",
+        "in a smooth, ingratiating tone",
+        "indignantly", "mockingly", "angrily",
+        "sadly", "nervously", "excitedly",
+        "gently", "firmly", "timidly",
+        "taking a breath", "speaking slowly", "speaking quickly",
+    ]
+    result = text
+    for instr in _KNOWN_INSTRUCTIONS:
+        result = result.replace(f"({instr})", f"[{instr}]")
+    return result
 
 
 def _resolve_voice(seg: AnnotatedSegment) -> str:
@@ -280,9 +376,7 @@ def run(force: bool = False) -> Path:
     for batch_start in range(0, total, _BATCH_SIZE):
         batch_end = min(batch_start + _BATCH_SIZE, total)
         batch_segs = [
-            (batch.segments[i], batch.segments[i].fishaudio_text
-             or batch.segments[i].annotated_text
-             or batch.segments[i].text)
+            (batch.segments[i], _compose_tts_text(batch.segments[i]))
             for i in range(batch_start, batch_end)
         ]
 

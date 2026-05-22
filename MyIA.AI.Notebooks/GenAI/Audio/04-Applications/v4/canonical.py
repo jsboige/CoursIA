@@ -5,7 +5,9 @@ speaker identifiers used throughout the v4 pipeline (P0-P7).
 """
 from __future__ import annotations
 
-from .schemas import CanonicalSpeaker
+from pathlib import Path
+
+from .schemas import CanonicalSpeaker, SpeakerCatalog
 
 # ── Raw variant → canonical speaker ──
 
@@ -118,3 +120,52 @@ def normalize_speaker(raw: str) -> CanonicalSpeaker:
 
     # 5. Default fallback
     return "narrateur"
+
+
+# ── Speaker catalog integration ──
+
+_V4_DIR = Path(__file__).resolve().parent
+_CATALOG_PATH = _V4_DIR / "outputs" / "speaker_catalog.json"
+_cached_catalog: SpeakerCatalog | None = None
+
+
+def load_catalog(path: str | Path | None = None) -> SpeakerCatalog:
+    """Load and cache the speaker catalog from P1.5.
+
+    Returns None-wrapped: raises FileNotFoundError if catalog missing.
+    """
+    global _cached_catalog
+    if _cached_catalog is not None:
+        return _cached_catalog
+
+    resolved = Path(path) if path is not None else _CATALOG_PATH
+    if not resolved.exists():
+        raise FileNotFoundError(
+            f"speaker_catalog.json introuvable : {resolved}\n"
+            "Lancez d'abord la phase P1.5 (speaker catalog)."
+        )
+
+    _cached_catalog = SpeakerCatalog.model_validate_json(
+        resolved.read_text(encoding="utf-8")
+    )
+    return _cached_catalog
+
+
+def resolve_figurant(raw: str, catalog: SpeakerCatalog | None = None) -> str:
+    """Try to resolve a raw speaker name to a figurant archetype via catalog.
+
+    Returns the voice_archetype if found in catalog, else empty string.
+    """
+    if catalog is None:
+        try:
+            catalog = load_catalog()
+        except FileNotFoundError:
+            return ""
+
+    norm = raw.lower().strip()
+    for fig in catalog.figurants:
+        fig_norm = fig.raw_name.lower().strip()
+        if fig_norm == norm or fig_norm in norm or norm in fig_norm:
+            return fig.voice_archetype
+
+    return ""

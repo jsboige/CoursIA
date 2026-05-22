@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 from .schemas import Segment, SegmentBatch
 from .llm_client import call_structured
 from .context_injector import build_context_block
-from .canonical import normalize_speaker, RAW_TO_CANONICAL
+from .canonical import normalize_speaker, RAW_TO_CANONICAL, load_catalog
 
 BASE_DIR = Path(__file__).parent
 OUTPUTS = BASE_DIR / "outputs"
@@ -61,7 +61,9 @@ comte, comtesse, cornudet, carre_lamadon, madame_carre_lamadon, soeurs,
 follenvie, madame_follenvie, officier, figurant
 
 IMPORTANT : le speaker_raw est le nom tel qu'il apparait dans le texte ;
-speaker est la forme canonique normalisee."""
+speaker est la forme canonique normalisee.
+
+{figurant_section}"""
 
 USER_PROMPT_TEMPLATE = """Voici un extrait de "Boule de Suif" de Maupassant.
 
@@ -206,6 +208,23 @@ def segment_chunk(
     context_block = build_context_block("segmentation")
     rolling_summary = build_rolling_summary(previous_segments)
 
+    # Build figurant section if speaker catalog is available
+    figurant_section = ""
+    try:
+        catalog = load_catalog()
+        if catalog.figurants:
+            fig_lines = ["Figurants identifies dans le texte :"]
+            for fig in catalog.figurants:
+                fig_lines.append(
+                    f"- {fig.raw_name} ({fig.voice_archetype}, "
+                    f"{fig.total_appearances} apparitions)"
+                )
+            figurant_section = "\n".join(fig_lines)
+    except FileNotFoundError:
+        pass
+
+    system_prompt = SYSTEM_PROMPT.format(figurant_section=figurant_section)
+
     context_section = f"<context>\n{context_block}\n</context>"
     rolling_summary_section = (
         f"<resume_precedent>\n{rolling_summary}\n</resume_precedent>"
@@ -224,7 +243,7 @@ def segment_chunk(
 
     result = call_structured(
         SegmentBatch,
-        SYSTEM_PROMPT,
+        system_prompt,
         user_prompt,
         context_block=context_block,
     )
