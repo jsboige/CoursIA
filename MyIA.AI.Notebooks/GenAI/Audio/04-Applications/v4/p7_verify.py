@@ -2,6 +2,8 @@
 
 Runs WER (Word Error Rate) and speaker diarization checks on the
 compiled audiobook to verify voice consistency and transcription accuracy.
+
+Uses Whisper WebUI Gradio REST API for both transcription and diarization.
 """
 from __future__ import annotations
 
@@ -11,49 +13,37 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from .schemas import QualityReport
+from .diarization_client import (
+    login_session,
+    transcribe_with_diarization,
+    parse_srt_diarization,
+)
 
 BASE_DIR = Path(__file__).parent
-
-WHISPER_URL = "http://localhost:7860"
-
-
-def _transcribe_whisper(audio_path: str) -> dict:
-    """Transcribe via Whisper WebUI API for WER calculation."""
-    import requests
-
-    try:
-        with open(audio_path, "rb") as f:
-            resp = requests.post(
-                f"{WHISPER_URL}/api/transcribe",
-                files={"audio": f},
-                data={"language": "fr", "word_timestamps": "true"},
-                timeout=600,
-            )
-            resp.raise_for_status()
-            return resp.json()
-    except Exception as e:
-        print(f"  [P7] Whisper transcription error: {e}")
-        return {}
 
 
 def _word_error_rate(reference: str, hypothesis: str) -> float:
     """Compute Word Error Rate between reference and hypothesis."""
-    ref_words = reference.lower().split()
-    hyp_words = hypothesis.lower().split()
+    import re
+
+    def normalize(text: str) -> list[str]:
+        text = text.lower()
+        text = re.sub(r"[^\w\s'àâéèêëïîôùûüçœæ-]", "", text)
+        return text.split()
+
+    ref_words = normalize(reference)
+    hyp_words = normalize(hypothesis)
 
     if not ref_words:
-        return 0.0 if not hyp_words else 1.0
+        return 1.0
 
     n = len(ref_words)
     m = len(hyp_words)
-
-    # Levenshtein distance
     dp = [[0] * (m + 1) for _ in range(n + 1)]
     for i in range(n + 1):
         dp[i][0] = i
     for j in range(m + 1):
         dp[0][j] = j
-
     for i in range(1, n + 1):
         for j in range(1, m + 1):
             if ref_words[i - 1] == hyp_words[j - 1]:
@@ -62,25 +52,6 @@ def _word_error_rate(reference: str, hypothesis: str) -> float:
                 dp[i][j] = 1 + min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
 
     return dp[n][m] / n
-
-
-def _run_diarization(audio_path: str) -> dict:
-    """Run speaker diarization via Whisper WebUI."""
-    import requests
-
-    try:
-        with open(audio_path, "rb") as f:
-            resp = requests.post(
-                f"{WHISPER_URL}/api/diarize",
-                files={"audio": f},
-                data={"num_speakers": "10", "language": "fr"},
-                timeout=1800,
-            )
-            resp.raise_for_status()
-            return resp.json()
-    except Exception as e:
-        print(f"  [P7] Diarization error: {e}")
-        return {}
 
 
 def run(force: bool = False) -> Path:
@@ -108,9 +79,11 @@ def run(force: bool = False) -> Path:
     wer_results: dict[str, float] = {}
     diarization_results: dict[str, int | float] = {}
 
-    # Step 1: WER on sample segments
+    # Step 1: WER on sample segments (using Whisper API on port 8190)
     if annotated_path.exists():
         print("[P7] Step 1: WER calculation (sampling)...")
+        import os
+        import requests as req
         from .schemas import AnnotatedBatch
 
         batch = AnnotatedBatch.model_validate_json(
@@ -139,11 +112,22 @@ def run(force: bool = False) -> Path:
                 if not mp3_path or not Path(mp3_path).exists():
                     continue
 
-                result = _transcribe_whisper(mp3_path)
-                hypothesis = result.get("text", "")
-                if hypothesis:
-                    wer = _word_error_rate(seg.text, hypothesis)
-                    wers.append(wer)
+                try:
+                    mp3_bytes = Path(mp3_path).read_bytes()
+                    resp = req.post(
+                        "http://localhost:8190/v1/audio/transcriptions",
+                        files={"file": (Path(mp3_path).name, mp3_bytes, "audio/mpeg")},
+                        data={"language": "fr", "model": "large-v3-turbo"},
+                        headers={"Authorization": f"Bearer {os.getenv('WHISPER_API_KEY', '')}"},
+                        timeout=30,
+                    )
+                    if resp.status_code == 200:
+                        hypothesis = resp.json().get("text", "")
+                        if hypothesis:
+                            wer = _word_error_rate(seg.text, hypothesis)
+                            wers.append(wer)
+                except Exception as e:
+                    print(f"    seg {idx} STT error: {e}")
 
             if wers:
                 wers_sorted = sorted(wers)
@@ -157,26 +141,36 @@ def run(force: bool = False) -> Path:
                 print(f"  Mean WER: {wer_results['mean']}")
                 print(f"  P95 WER: {wer_results['p95']}")
 
-    # Step 2: Diarization on full audiobook
+    # Step 2: Diarization on full audiobook via Whisper WebUI Gradio API
     print("[P7] Step 2: Speaker diarization...")
     print("  This may take 10-30 minutes...")
 
-    diar_data = _run_diarization(str(audiobook_path))
-    if diar_data:
-        segments = diar_data.get("segments", [])
-        speaker_counts: dict[str, int] = {}
-        for s in segments:
-            spk = s.get("speaker", "UNKNOWN")
-            speaker_counts[spk] = speaker_counts.get(spk, 0) + 1
+    try:
+        session = login_session()
+        srt_text = transcribe_with_diarization(session, str(audiobook_path))
+        parsed = parse_srt_diarization(srt_text)
 
-        unique_speakers = len(speaker_counts)
-        diarization_results["detected_speakers"] = unique_speakers
-        diarization_results["expected"] = 9
-        diarization_results["top_speaker_pct"] = round(
-            max(speaker_counts.values()) / max(sum(speaker_counts.values()), 1) * 100, 1
-        )
-        print(f"  Detected speakers: {unique_speakers} (target: <=10)")
-    else:
+        if parsed:
+            speaker_counts: dict[str, int] = {}
+            for s in parsed:
+                spk = s["speaker"]
+                speaker_counts[spk] = speaker_counts.get(spk, 0) + 1
+
+            unique_speakers = len(speaker_counts)
+            diarization_results["detected_speakers"] = unique_speakers
+            diarization_results["expected"] = 9
+            diarization_results["top_speaker_pct"] = round(
+                max(speaker_counts.values()) / max(sum(speaker_counts.values()), 1) * 100, 1
+            )
+            diarization_results["total_segments"] = len(parsed)
+            print(f"  Detected speakers: {unique_speakers} (target: <=10)")
+            print(f"  Total diarized segments: {len(parsed)}")
+        else:
+            diarization_results["detected_speakers"] = 0
+            diarization_results["expected"] = 9
+            print("  No diarized segments found in audiobook.")
+    except Exception as e:
+        print(f"  [P7] Diarization error: {e}")
         diarization_results["detected_speakers"] = -1
         diarization_results["expected"] = 9
 
