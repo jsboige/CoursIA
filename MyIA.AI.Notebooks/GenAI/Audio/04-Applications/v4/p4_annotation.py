@@ -449,22 +449,43 @@ def annotate_batch(
 def convert_tags_for_fishaudio(annotated_text: str) -> str:
     """Convert legacy prosody tags to FishAudio S2-Pro [bracket] format.
 
-    S2-Pro uses [brackets] for voice instructions. This converts legacy
-    22-tag format to S2-Pro format. Tags already in S2-Pro format are
-    left as-is. Unknown tags are also left as-is (S2-Pro supports
-    15,000+ free-form natural language tags).
+    S2-Pro uses [brackets] for voice instructions. Parenthetical text
+    is spoken LITERALLY by S2-Pro and must be converted to brackets.
 
-    Args:
-        annotated_text: Text with [tag] markers.
-
-    Returns:
-        Text with FishAudio S2-Pro-compatible directives.
+    Three conversions applied in order:
+    1. Legacy single-word [tag] → official S2-Pro equivalent
+    2. (parenthetical voice instructions) → [bracket] equivalents
+    3. (English adverb tags) like (firmly), (mockingly) → [brackets]
     """
-    def _replace_tag(match: re.Match) -> str:
+    text = annotated_text
+
+    # Step 1: Legacy single-word tags
+    def _replace_legacy_tag(match: re.Match) -> str:
         tag = match.group(1)
         return TAG_TO_FISHAUDIO.get(tag, match.group(0))
 
-    return re.sub(r"\[(\w+)\]", _replace_tag, annotated_text)
+    text = re.sub(r"\[(\w+)\]", _replace_legacy_tag, text)
+
+    # Step 2: Convert (parenthetical voice instructions) to [brackets].
+    # Match (...) that look like voice instructions: start with a lowercase
+    # word, contain no nested parens, and are ≤120 chars.
+    # Exclude: legitimate French parenthetical content like numbers (1), (a).
+    def _paren_to_bracket(match: re.Match) -> str:
+        content = match.group(1)
+        # Skip very short content: single letters, digits, simple references
+        if len(content) <= 2:
+            return match.group(0)
+        # Skip if it looks like a reference: (1), (a), (cf. ...), (note ...)
+        if re.match(r"^\d+[a-z]?$", content):
+            return match.group(0)
+        if content.lower().startswith(("cf.", "note", "voir", "ref")):
+            return match.group(0)
+        # This looks like a voice instruction — convert to brackets
+        return f"[{content}]"
+
+    text = re.sub(r"\(([^()]{1,120})\)", _paren_to_bracket, text)
+
+    return text
 
 
 # ── Quality check: tag diversity ──

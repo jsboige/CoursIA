@@ -9,6 +9,7 @@ FishAudio server and reduce generation time from ~19h (sequential) to
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -34,6 +35,10 @@ _MAX_WORDS_PER_CALL = 55
 _MAX_TTS_CHARS = 500  # FishAudio OOMs on long composed texts (>1000 chars)
 _BATCH_SIZE = 8
 _MAX_WORKERS = 1  # FishAudio S2-Pro is single-threaded; concurrent requests cause timeouts
+
+
+def _text_hash(text: str) -> str:
+    return hashlib.md5(text.encode()).hexdigest()[:12]
 
 
 def _compose_tts_text(seg: AnnotatedSegment) -> str:
@@ -191,20 +196,39 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
     reference_id = _resolve_voice(seg)
     seed = 42 + seg.seg_index
     mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
+    current_hash = _text_hash(fishaudio_text)
 
     if mp3_path.exists():
-        size = mp3_path.stat().st_size
-        duration = audio_duration_mp3(mp3_path.read_bytes()) if size > 0 else 0.0
-        return TTSResult(
-            seg_index=seg.seg_index,
-            speaker=seg.speaker,
-            reference_id=reference_id,
-            mp3_path=str(mp3_path),
-            duration_s=duration,
-            seed=seed,
-            status="cached",
-            attempts=0,
-        )
+        # Check if TTS text changed since last generation
+        cached_hash = ""
+        results_path = BASE_DIR / "outputs" / "tts_results.json"
+        if results_path.exists():
+            try:
+                results_data = json.loads(results_path.read_text(encoding="utf-8"))
+                for r in results_data:
+                    if r.get("seg_index") == seg.seg_index:
+                        cached_hash = r.get("text_hash", "")
+                        break
+            except (json.JSONDecodeError, KeyError):
+                pass
+
+        if cached_hash == current_hash:
+            size = mp3_path.stat().st_size
+            duration = audio_duration_mp3(mp3_path.read_bytes()) if size > 0 else 0.0
+            return TTSResult(
+                seg_index=seg.seg_index,
+                speaker=seg.speaker,
+                reference_id=reference_id,
+                mp3_path=str(mp3_path),
+                duration_s=duration,
+                seed=seed,
+                status="cached",
+                attempts=0,
+                text_hash=current_hash,
+            )
+        # Text changed — delete stale MP3 and regenerate
+        print(f"    [P5] seg {seg.seg_index}: text changed, regenerating")
+        mp3_path.unlink(missing_ok=True)
 
     chunks = _split_long_text(fishaudio_text)
 
@@ -258,6 +282,7 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             seed=seed,
             status="failed",
             attempts=attempts,
+            text_hash=current_hash,
         )
 
     final_audio = _concat_audio_parts(audio_parts)
@@ -273,6 +298,7 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
         seed=seed,
         status="generated",
         attempts=attempts,
+        text_hash=current_hash,
     )
 
 
@@ -281,33 +307,49 @@ def _synthesize_batch(
 ) -> list[TTSResult]:
     """Process a batch of segments concurrently.
 
-    Filters out cached segments first, then dispatches uncached
-    segments to the TTS server via ThreadPoolExecutor.
+    Delegates cache checking to _synthesize_segment (which does text-hash
+    invalidation). Only truly cached segments skip the thread pool.
     """
     results: dict[int, TTSResult] = {}
 
-    # Separate cached vs uncached
+    # Quick first pass: check which are truly cached (hash matches)
     to_generate: list[tuple[int, AnnotatedSegment, str]] = []
     for seg, text in segments:
         reference_id = _resolve_voice(seg)
         seed = 42 + seg.seg_index
         mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
+        current_hash = _text_hash(text)
 
         if mp3_path.exists():
-            size = mp3_path.stat().st_size
-            duration = audio_duration_mp3(mp3_path.read_bytes()) if size > 0 else 0.0
-            results[seg.seg_index] = TTSResult(
-                seg_index=seg.seg_index,
-                speaker=seg.speaker,
-                reference_id=reference_id,
-                mp3_path=str(mp3_path),
-                duration_s=duration,
-                seed=seed,
-                status="cached",
-                attempts=0,
-            )
-        else:
-            to_generate.append((seg.seg_index, seg, text))
+            # Check hash from previous results
+            cached_hash = ""
+            results_path = BASE_DIR / "outputs" / "tts_results.json"
+            if results_path.exists():
+                try:
+                    results_data = json.loads(results_path.read_text(encoding="utf-8"))
+                    for r in results_data:
+                        if r.get("seg_index") == seg.seg_index:
+                            cached_hash = r.get("text_hash", "")
+                            break
+                except (json.JSONDecodeError, KeyError):
+                    pass
+
+            if cached_hash == current_hash:
+                size = mp3_path.stat().st_size
+                duration = audio_duration_mp3(mp3_path.read_bytes()) if size > 0 else 0.0
+                results[seg.seg_index] = TTSResult(
+                    seg_index=seg.seg_index,
+                    speaker=seg.speaker,
+                    reference_id=reference_id,
+                    mp3_path=str(mp3_path),
+                    duration_s=duration,
+                    seed=seed,
+                    status="cached",
+                    attempts=0,
+                    text_hash=current_hash,
+                )
+                continue
+        to_generate.append((seg.seg_index, seg, text))
 
     if not to_generate:
         return [results[seg.seg_index] for seg, _ in segments]
@@ -336,6 +378,7 @@ def _synthesize_batch(
                     seed=0,
                     status="failed",
                     attempts=0,
+                    text_hash="",
                 )
 
     return [results[seg.seg_index] for seg, _ in segments]

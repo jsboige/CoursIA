@@ -217,6 +217,7 @@ class TTSResult(BaseModel):
     status: str = "pending"
     whisper_wer: float = -1.0
     attempts: int = 0
+    text_hash: str = ""
 
 
 # ── P7: Quality Verification ──
