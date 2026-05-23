@@ -61,28 +61,47 @@ def _text_hash(text: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()[:12]
 
 
-def _compose_tts_text(seg: AnnotatedSegment) -> str:
-    """Compose the final TTS text with context prefix and dramatic prompt.
+def _extract_official_tags(prefix: str) -> list[str]:
+    """Extract only official FishAudio S2-Pro tags from a natural language prefix.
 
-    FishAudio S2-Pro interprets [bracketed] text as voice instructions.
-    S2-Pro accepts both official tags and free-form natural language in brackets.
-    A space after ] is MANDATORY — ]X causes the tag to be ignored.
+    S2-Pro vocalizes free-form French text (e.g. "d'un ton sec") instead of
+    interpreting it as voice instruction. Only the 29 official tags produce
+    consistent results without being spoken aloud.
+    """
+    from .schemas import ALL_PROSODY_TAGS
+
+    lower = prefix.lower().strip()
+    tags: list[str] = []
+    for tag in sorted(ALL_PROSODY_TAGS, key=len, reverse=True):
+        if tag in lower:
+            tags.append(tag)
+    return tags
+
+
+def _compose_tts_text(seg: AnnotatedSegment) -> str:
+    """Compose the final TTS text with official prosody tags only.
+
+    FishAudio S2-Pro interprets [bracketed] official tags as voice instructions.
+    Free-form natural language in brackets is VOCALIZED (spoken aloud) instead
+    of being interpreted — see WER validation #1277 for evidence (98 segments
+    with WER>100% due to prefix being transcribed as extra words).
 
     Composition order:
-    1. Voice instruction prefix from tts_context_prefix (natural language)
+    1. Official prosody tags extracted from tts_context_prefix
     2. The annotated text with all tags preserved (official + free-form)
     """
     parts: list[str] = []
 
-    # Use tts_context_prefix directly as voice instruction.
-    # S2-Pro accepts natural language in brackets — no need to extract
-    # official tags. The prefix is the PRIMARY source of prosody diversity.
+    # Extract ONLY official S2-Pro tags from the prefix — never inject
+    # free-form French text that would be spoken aloud.
     if seg.tts_context_prefix:
         prefix = seg.tts_context_prefix.strip()
-        # Strip surrounding brackets if present (we add our own)
         if prefix.startswith("[") and prefix.endswith("]"):
             prefix = prefix[1:-1].strip()
-        parts.append(f"[{prefix}] ")
+        official_tags = _extract_official_tags(prefix)
+        if official_tags:
+            tag_str = " ".join(f"[{t}]" for t in official_tags[:3])
+            parts.append(f"{tag_str} ")
 
     base_text = seg.fishaudio_text or seg.annotated_text or seg.text
     base_text = _normalize_tags(base_text)
