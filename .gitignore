@@ -494,6 +494,13 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS_installer.exe
 # Bibliothèques natives SAT (Minisat, Lingeling, Picosat)
 !MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/native/
 
+# Tweety JARs — auto-download via download_tweety_tools.py --lib-dir
+# Issue #1396: untrack 857M duplicate JARs, keep native/ tracked
+MyIA.AI.Notebooks/SymbolicAI/libs/*.jar
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/libs/*.jar
+!MyIA.AI.Notebooks/SymbolicAI/libs/native/
+!MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/libs/native/
+
 # Jupyter/MCP temp files
 kernel_info.json
 
