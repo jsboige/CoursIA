@@ -583,7 +583,7 @@ class AutonomousProver:
     The orchestrator loop: agent acts -> auto-compile -> feedback -> repeat.
     """
 
-    def __init__(self, trace: TraceLogger, provider: str = "zai",
+    def __init__(self, trace: TraceLogger, provider: str = "openrouter",
                  hitl_enabled: bool = True, hitl_threshold: int = 5):
         self.trace = trace
         self.provider = provider

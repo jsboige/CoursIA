@@ -135,7 +135,11 @@ if __name__ == "__main__":
     parser.add_argument("--goal", default="", help="Goal state override for KB matching")
     parser.add_argument("--mode", default="multi", choices=["multi", "autonomous"])
     parser.add_argument("--iterations", type=int, default=8)
-    parser.add_argument("--provider", default="zai")
+    parser.add_argument("--provider", default="openrouter",
+                        help="Provider for AutonomousProver auto-mode agent "
+                             "(default: openrouter). #1459: GLM-5.1 (zai) causes "
+                             "87.8%% rate-limit errors; GPT-5.5 via openrouter "
+                             "eliminates the cascade. Use 'zai' for fallback.")
     parser.add_argument("--local-provider", default="local")
     parser.add_argument("--director-provider", default=None,
                         help="Provider for the frontier DirectorAgent "
