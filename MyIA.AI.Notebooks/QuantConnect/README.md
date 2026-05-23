@@ -2,8 +2,8 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 175
-breakdown: Python=53, projects=109, ESGF-2026=7, ML-Training-Pipeline=3, research=3
+pedagogical_count: 102
+breakdown: Python=51, projects=49, ML-Training-Pipeline=2
 maturity: PRODUCTION=64, ALPHA=22, BETA=14, DRAFT=1, TEMPLATE=1
 -->
 
