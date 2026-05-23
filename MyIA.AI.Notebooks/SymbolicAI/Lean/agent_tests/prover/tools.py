@@ -203,7 +203,6 @@ class SearchTools:
                 "l₁ ~ l₂ → (a ∈ l₁ ↔ a ∈ l₂)", "List.Perm"),
         }
 
-
     def search_leanexplore(self, query: str, max_results: int = 10,
                            packages: Optional[list] = None) -> str:
         """Search Mathlib via LeanExplore semantic search (hybrid BM25 + embedding + PageRank).
