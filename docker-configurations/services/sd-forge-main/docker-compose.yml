@@ -33,3 +33,40 @@ services:
     restart: unless-stopped
     stdin_open: true
     tty: true
+    labels:
+      - "com.myia.service=sd-forge-main"
+      - "com.myia.gpu=rtx-3090"
+
+  # Sidecar: Idle Monitor - Stop container after inactivity
+  idle-monitor:
+    build:
+      context: ../shared
+      dockerfile: Dockerfile.idle-monitor
+    container_name: sd-forge-main-idle-monitor
+    hostname: sd-forge-main-idle-monitor
+
+    environment:
+      - HEALTH_URL=http://sd-forge-main:7860/sdapi/v1/progress
+      - CONTAINER_NAME=sd-forge-main
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1800}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-120}
+      - STARTUP_GRACE=${STARTUP_GRACE:-300}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TZ=${TZ:-Europe/Paris}
+
+    working_dir: /app
+
+    command: ["python", "service_idle_monitor.py"]
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    depends_on:
+      sd-forge-main:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    labels:
+      - "com.myia.service=sd-forge-main-idle-monitor"
+      - "com.myia.type=sidecar"

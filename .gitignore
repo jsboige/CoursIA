@@ -581,6 +581,15 @@ tmp/
 # EXCEPTION: Sudoku validated checkpoints
 !sudoku_models/checkpoints/
 
+# PyTorch extended model formats
+**/checkpoints/**/*.ckpt
+**/checkpoints/**/*.safetensors
+**/checkpoints/**/*.bin
+
+# Docker bind-mount data: model weights and TTS references (runtime only)
+docker-configurations/services/tts-fishaudio/checkpoints/
+docker-configurations/services/tts-fishaudio/references/
+
 # ECE grading reports (student PII - never commit)
 reports/
 
