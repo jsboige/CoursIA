@@ -124,6 +124,21 @@ import Mathlib.Tactic.Common
 import StableMarriage.Definitions
 """
 
+# ── Calibration (Epic #1452) ──
+_CALIBRATION_CANDIDATES = [
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\calibration_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\calibration_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\calibration_lean"),
+]
+CALIBRATION_DIR = next(
+    (p for p in _CALIBRATION_CANDIDATES if p.exists()),
+    _CALIBRATION_CANDIDATES[0],
+)
+NASH_CALIBRATION_FILE = CALIBRATION_DIR / "Calibration" / "Nash.lean" if CALIBRATION_DIR.exists() else None
+NASH_CALIBRATION_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Tactic
+"""
+
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
 # fix. Attacking them wastes compute and produces fake "PROVED" reports. Each
@@ -1089,6 +1104,69 @@ DEMOS = {
             "  --   gt: menPref choose > menPref w → choose ≤ w holds → hmax gives w ≤ choose\n"
             "  sorry  -- TODO: complete trichotomy argument"
         ),
+    },
+    # ── Calibration targets (Epic #1452) ──
+    # Goldilocks: solvable in 3-10 prover iterations, self-contained,
+    # exercises specific harness paths (P1/P2/P3).
+    35: {
+        "name": "CALIBRATION_NASH_STRICT_DOMINANCE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 65,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "strictly_domin_defect_pd",
+        "theorem": "strictly_domin_defect_pd",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target C (P3 harness path).\n"
+            "Prove strictly_domin_defect_pd: defection strictly dominates\n"
+            "cooperation in Prisoner's Dilemma for player 1.\n"
+            "P3: agent may search Mathlib for game-theory lemmas that don't\n"
+            "exist; must fall back to unfold + Fin 2 case split + omega.\n"
+            "Self-contained: Game2x2, strictlyDominates1, prisonersDilemma\n"
+            "defined in same file. LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 3-5 prover iterations."
+        ),
+        "difficulty": "easy",
+    },
+    36: {
+        "name": "CALIBRATION_NASH_PD_DEFECT_NE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 72,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "pd_defect_is_pure_ne",
+        "theorem": "pd_defect_is_pure_ne",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target D (P2 harness path).\n"
+            "Prove pd_defect_is_pure_ne: (Defect, Defect) is a pure Nash\n"
+            "equilibrium of Prisoner's Dilemma.\n"
+            "P2: multi-step proof requiring Fin 2 case splits on both players'\n"
+            "deviations + Int comparisons. Uses constructor for conjunction.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 4-7 prover iterations."
+        ),
+        "difficulty": "medium",
+    },
+    37: {
+        "name": "CALIBRATION_NASH_COOPERATE_NOT_NE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 80,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "pd_cooperate_not_ne",
+        "theorem": "pd_cooperate_not_ne",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target E (P1+P2 harness path).\n"
+            "Prove pd_cooperate_not_ne: (Cooperate, Cooperate) is NOT a pure\n"
+            "Nash equilibrium. Harder: requires negation + constructing\n"
+            "witness (defection beats cooperation).\n"
+            "Pattern: intro ⟨h1, _⟩, have := h1 Trahir, then simp/omega.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 5-10 prover iterations."
+        ),
+        "difficulty": "medium",
     },
 }
 
