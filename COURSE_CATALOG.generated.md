@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-23 22:44
+Generated: 2026-05-24 00:18
 Total notebooks: 476
 
 ## Status Summary
@@ -12,22 +12,22 @@ Total notebooks: 476
 
 ## Maturity Summary
 
-- **PRODUCTION**: 158
-- **BETA**: 260
+- **PRODUCTION**: 150
+- **BETA**: 268
 - **TEMPLATE**: 4
 - **ALPHA**: 43
 - **DRAFT**: 11
 
 ## By Series
 
-### GenAI (107 notebooks) — BROKEN:1, DEMO:76, READY:30 | ALPHA:5, BETA:56, DRAFT:6, PRODUCTION:37, TEMPLATE:3
+### GenAI (107 notebooks) — BROKEN:1, DEMO:76, READY:30 | ALPHA:5, BETA:61, DRAFT:6, PRODUCTION:32, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | 🚀 GenAI Environment Setup - CoursIA | Python 3 (ipykernel) | DEMO | PRODUCTION | 30min | po-2025 |
-| 2 | 🐳 Docker Services Management - GenAI | Python3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 3 | 🔗 Configuration des API Endpoints | Python 3 (ipykernel) | DEMO | PRODUCTION | 30min | po-2025 |
-| 4 | ✅ Environment Validation - GenAI | Python 3 (ipykernel) | DEMO | PRODUCTION | 30min | po-2025 |
+| 1 | 🚀 GenAI Environment Setup - CoursIA | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
+| 2 | 🐳 Docker Services Management - GenAI | Python3 | DEMO | BETA | 30min | po-2025 |
+| 3 | 🔗 Configuration des API Endpoints | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
+| 4 | ✅ Environment Validation - GenAI | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
 | 5 | 00-5: ComfyUI Local - Test Rapide | mcp-jupyter-py310 | READY | PRODUCTION | 30min | po-2025 |
 | 6 | Deploiement Docker Local des Services GenAI | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 7 | GenAI E2E Quant Validation | Python3 | READY | BETA | 30min | po-2025 |
@@ -68,7 +68,7 @@ Total notebooks: 476
 | 42 | 🖼️ Opérations de Base sur les Images | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
 | 43 | Notebook: Stable Diffusion Forge - SD XL Turbo | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
 | 44 | Notebook: Qwen Image-Edit 2.5 - API ComfyUI | mcp-jupyter-py310 | DEMO | BETA | 45min | po-2025 |
-| 45 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
+| 45 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 46 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 47 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 48 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | BETA | 15min | po-2025 |
@@ -217,7 +217,7 @@ Total notebooks: 476
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (92 notebooks) — BROKEN:1, DEMO:10, READY:81 | ALPHA:6, BETA:76, DRAFT:1, PRODUCTION:9
+### SymbolicAI (92 notebooks) — BROKEN:1, DEMO:10, READY:81 | ALPHA:6, BETA:77, DRAFT:1, PRODUCTION:8
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -255,7 +255,7 @@ Total notebooks: 476
 | 32 | Planners-9-HTN - Planification Hierarchique | Python 3 | READY | BETA | 30min | po-2024 |
 | 33 | Planners-10: LLMs pour la Planification | .venv | DEMO | BETA | 45min | po-2024 |
 | 34 | Planners-11: Unified Planning | Python 3 | READY | BETA | 45min | po-2024 |
-| 35 | Introduction - Planners 12 LOOP | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
+| 35 | Planners-12: Learning to Plan avec LOOP | Python 3 | DEMO | BETA | 45min | po-2024 |
 | 36 | Introduction au web sémantique avec RDF.Net | .NET (C#) | DEMO | ALPHA | 2h+ | po-2024 |
 | 37 | SW-1-Setup | .NET (C#) | READY | BETA | 30min | po-2024 |
 | 38 | SW-11-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
@@ -281,7 +281,7 @@ Total notebooks: 476
 | 58 | SC-4-Functions-State - Fonctions et Etat | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 59 | SC-5-Inheritance - Heritage et Interfaces | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 60 | SC-6-Errors-Events - Erreurs et Evenements | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
-| 61 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
+| 61 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
 | 62 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python (SmartContracts + Found | READY | BETA | 45min | po-2024 |
 | 63 | SC-7-Token-Standards - Standards de Tokens | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 64 | SC-8-DeFi-Primitives - Primitives DeFi | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
@@ -421,11 +421,11 @@ Total notebooks: 476
 | 101 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
 | 102 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
 
-### GameTheory (25 notebooks) — READY:25 | ALPHA:4, BETA:18, PRODUCTION:3
+### GameTheory (25 notebooks) — READY:25 | ALPHA:4, BETA:20, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | GameTheory-1-Setup | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 1 | GameTheory-1-Setup | Python 3 | READY | BETA | 45min | po-2024 |
 | 2 | GameTheory-10-ForwardInduction-SPE | Python 3 | READY | BETA | 30min | po-2024 |
 | 3 | GameTheory-11-BayesianGames | Python 3 | READY | BETA | 45min | po-2024 |
 | 4 | GameTheory-12-ReputationGames | Python 3 | READY | BETA | 30min | po-2024 |
@@ -446,7 +446,7 @@ Total notebooks: 476
 | 19 | GameTheory-6-EvolutionTrust | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
 | 20 | GameTheory-7-ExtensiveForm | Python 3 | READY | BETA | 30min | po-2024 |
 | 21 | GameTheory-9-BackwardInduction | Python 3 | READY | BETA | 30min | po-2024 |
-| 22 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formel | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 22 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formel | Python 3 | READY | BETA | 30min | po-2024 |
 | 23 | SocialChoice 02 - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
 | 24 | SocialChoice 03 - Methodes de Vote et Paradoxes | Python 3 | READY | BETA | 45min | po-2024 |
 | 25 | SocialChoice 04 - Agregation Computationnelle : SA | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
@@ -545,7 +545,7 @@ Total notebooks: 476
 
 ## Requirements
 
-- **API**: 108 notebooks
+- **API**: 112 notebooks
 - **GPU**: 65 notebooks
 - **Cloud**: 102 notebooks
 - **WSL**: 23 notebooks
