@@ -14,6 +14,8 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [docs/architecture_mcp_roo.md](docs/architecture_mcp_roo.md) - Architecture MCP roo-state-manager (34 outils, RooSync)
 - [docs/kernels-runtime.md](docs/kernels-runtime.md) - .NET / Python / WSL kernels, conda envs, dotnet-interactive PIN
 - [docs/procedures-recurrentes.md](docs/procedures-recurrentes.md) - Workflow PR, dispatch agents, validation notebook, audit anti-regression
+- [docs/subagents-reference.md](docs/subagents-reference.md) - Catalogue 18 sous-agents + 13 skills, mapping side-tracks, usage async
+- [docs/scripts-reference.md](docs/scripts-reference.md) - Catalogue scripts dépôt (notebook CLI, exécution, catalogue anti-drift, qualité, maintenance/env)
 
 **Regles modulaires `.claude/rules/` (auto-loaded a chaque session)** — chaque section critique ci-dessous renvoie a la regle complete :
 - [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md) - Branches, commits, force push (section A)
@@ -29,6 +31,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [.claude/rules/lean-prover-bg-systematic.md](.claude/rules/lean-prover-bg-systematic.md) - BG iter systematique post-PR/msg po-2026 sur sorry Lean
 - [.claude/rules/secrets-hygiene.md](.claude/rules/secrets-hygiene.md) - Pas de secrets inline (incident recurrent 2026-05-14)
 - [.claude/rules/coordinator-discipline.md](.claude/rules/coordinator-discipline.md) - ai-01 merge actif + no-languishing demandes user
+- [.claude/rules/proactive-coordination.md](.claude/rules/proactive-coordination.md) - 1 PR/wakeup + main track + side-track async via sous-agents spécialistes (mandat user 2026-05-23)
 
 ---
 
@@ -197,7 +200,7 @@ scripts/notebook_tools/notebook_tools.py # CLI multi-famille (validate/execute/s
 scripts/smartcontracts/                  # SC-specifique
 scripts/genai-stack/genai.py             # GenAI Docker + validation (cf docs/genai-services.md)
 
-.claude/{agents, skills, rules}/         # 18 agents, 14 skills, 9 regles auto-loaded
+.claude/{agents, skills, rules}/         # 21 sous-agents, 15 skills, rules auto-loaded (catalogue ci-dessous)
 GradeBookApp/                            # Notation etudiants (cf docs/ece-grading.md)
 docker-configurations/                   # ComfyUI + Qwen Docker
 docs/                                    # Documentation deportee de ce CLAUDE.md
@@ -206,6 +209,46 @@ docs/                                    # Documentation deportee de ce CLAUDE.m
 **Tables detaillees** (scripts reutilisables, skills slash commands, MCP servers, GenAI services, kernels & runtime) : [docs/common-commands.md](docs/common-commands.md), [docs/claude-code-config.md](docs/claude-code-config.md), [docs/kernels-runtime.md](docs/kernels-runtime.md), [docs/genai-services.md](docs/genai-services.md).
 
 **Regle generale outils** : ne jamais ecrire un script ad-hoc d'execution / validation : il existe presque toujours un outil dedie dans `scripts/notebook_tools/`. Si manquant, l'ajouter la (pas dans la racine `scripts/`).
+
+### Catalogue agents / skills / scripts — USAGE MANDATÉ (mandat user 2026-05-23)
+
+**Règle HARD.** Là où un **sous-agent** spécialiste, un **skill** slash-command, ou un **script** dédié couvre une tâche, **l'utiliser plutôt que de réimproviser le workflow à la main**. Les Epics side-tracks **DOIVENT** déléguer aux sous-agents async (`run_in_background: true`) quand un specialist existe. Roster + mapping complet : [docs/subagents-reference.md](docs/subagents-reference.md). Le présent catalogue est l'entrée canonique pour encourager l'usage.
+
+#### Sous-agents `.claude/agents/` (21) — invoquer via `Agent(subagent_type: "<nom>")`
+
+| Famille | Sous-agents | Usage |
+|---------|-------------|-------|
+| **Orchestrateurs side-track async** | `series-improver` (batch série + resume), `notebook-iterative-builder` (1 notebook, convergence) | Drivers long-cours qui survivent aux interruptions |
+| **Notebooks** | `notebook-designer`, `notebook-enricher`, `notebook-cleaner`, `notebook-cell-iterator`, `notebook-modernizer`, `notebook-executor`, `notebook-validator`, `infer-notebook-enricher` | Création, enrichissement, nettoyage, modernisation, exécution MCP Jupyter, validation, Probas/Infer.NET |
+| **Trading QC** | `qc-strategy-analyzer`, `qc-strategy-improver`, `qc-robustness-researcher`, `qc-research-notebook` | Diagnostic, amélioration, walk-forward multi-régime, idéation |
+| **Training ML (#1454)** | `training-specialist` | RL/PPO, Decision Transformer, LSTM/transformer/mamba/PatchTST/MoE/GNN ; thermal-safe GPU + walk-forward/multi-seed/DM |
+| **GenAI (#1385)** | `genai-iterator` | Itération notebooks GenAI vs stack auto-hébergée (auth, sous-domaines, quant, GPU/VRAM) via CLI genai-stack |
+| **Prover Lean (#1453)** | `prover-forensic` | Forensic **read-only** des traces harness → deltas ROI-rankés |
+| **README / slides** | `readme-hierarchy-auditor`, `readme-updater`, `slide-analyzer`, `slide-improver` | Hiérarchie README bottom-up, decks PPTX/Marp (vision sk-agent) |
+| **Génériques** | `code-explorer` (read-only), `general-purpose` (catch-all) | Exploration/analyse non couverte par un specialist |
+
+**Règle collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
+
+#### Skills `.claude/skills/` (15) — invoquer en slash-command `/<nom>`
+
+| Skill | Quand | Track |
+|-------|-------|-------|
+| `/coordinate` | Reprise session coordination (briefing + dispatch) | ai-01 chaque wakeup |
+| `/review-student-prs` | **Recyclage TP étudiants** (review bienveillante + exercice→exemple + nouvel exercice) | #1455 EPITA/ECE/PrCon |
+| `/build-notebook` | Créer/améliorer/corriger un notebook (scoring qualité itératif) | nouvelles séries |
+| `/enrich-notebooks`, `/cleanup-notebooks` | Markdown pédagogique ; réorganisation (dédup, hiérarchie) | #1455, GenAI |
+| `/execute-notebook`, `/verify-notebooks` | Exécution (local/MCP Jupyter) ; vérif + fix itératif (gate PR) | toutes séries |
+| `/validate-genai`, `/genai-iterate` | Valider la stack GenAI ; itérer un notebook GenAI (auth/quant/GPU) | #1385 GenAI |
+| `/train-model` | Entraîner un modèle ML (thermal-safe, walk-forward/multi-seed/DM) | #1454 Training |
+| `/qc-iterative-improve` | Amélioration stratégies QC (`--iterations`, `--backtest`) | #1409 trading |
+| `/analyze-slides` | Analyse qualitative deck PPTX (vision AI) | slides EPITA/ECE |
+| Référence (pas de slash actif) | `mcp-jupyter`, `notebook-helpers`, `notebook-patterns` | chargés à la demande |
+
+#### Scripts dédiés `scripts/` — pas de one-off ad-hoc
+
+Catalogue complet (notebooks, catalogue anti-drift, qualité/conformité C.1-C.3, exécution, environnement, genai-stack) : [docs/scripts-reference.md](docs/scripts-reference.md). **Ne jamais** réécrire un script d'exécution/validation/maintenance : il existe presque toujours. Si manquant → l'ajouter dans `scripts/notebook_tools/`.
+
+**Usage async (pattern side-track)** : `Agent(subagent_type: "<specialist>", run_in_background: true, description: "<3-5 mots>", prompt: "<contexte repo + Epic + livrable + contraintes>")`. Le message final revient en notification ; l'intégrer/PR au wakeup suivant. Cf [.claude/rules/proactive-coordination.md](.claude/rules/proactive-coordination.md).
 
 ---
 

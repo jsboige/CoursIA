@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-23 00:29
+Generated: 2026-05-23 10:46
 Total notebooks: 474
 
 ## Status Summary
@@ -12,15 +12,15 @@ Total notebooks: 474
 
 ## Maturity Summary
 
-- **PRODUCTION**: 150
-- **BETA**: 246
+- **PRODUCTION**: 148
+- **BETA**: 247
 - **TEMPLATE**: 4
-- **ALPHA**: 44
+- **ALPHA**: 45
 - **DRAFT**: 30
 
 ## By Series
 
-### GenAI (107 notebooks) — BROKEN:1, DEMO:76, READY:30 | ALPHA:2, BETA:52, DRAFT:12, PRODUCTION:38, TEMPLATE:3
+### GenAI (107 notebooks) — BROKEN:1, DEMO:76, READY:30 | ALPHA:2, BETA:53, DRAFT:12, PRODUCTION:37, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -49,7 +49,7 @@ Total notebooks: 474
 | 23 | OpenAI Realtime Voice API | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 24 | Creation de Contenu Audio Educatif | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 25 | P3 - Annotation Prosodique pour TTS Agentique | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 26 | P4 — Generation TTS pour Audiobook | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 26 | P4 — Generation TTS pour Audiobook | Python 3 | READY | BETA | 45min | po-2025 |
 | 27 | P5 — Compilation Audio pour Audiobook | Python 3 | READY | PRODUCTION | 15min | po-2025 |
 | 28 | Pipeline de Transcription et Sous-titrage | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 29 | Workflow de Composition Musicale | Python 3 | DEMO | BETA | 45min | po-2025 |
@@ -217,7 +217,7 @@ Total notebooks: 474
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (90 notebooks) — BROKEN:1, DEMO:10, READY:79 | ALPHA:7, BETA:73, DRAFT:2, PRODUCTION:8
+### SymbolicAI (90 notebooks) — BROKEN:1, DEMO:10, READY:79 | ALPHA:8, BETA:73, DRAFT:2, PRODUCTION:7
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -272,7 +272,7 @@ Total notebooks: 474
 | 49 | SW-6-RDFS | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 50 | SW-7-OWL | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 51 | SW-7b-Python-OWL | Python 3 | READY | BETA | 30min | po-2024 |
-| 52 | SW-9-SHACL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 52 | SW-8-Python-SHACL | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 53 | SW-10-JSONLD | Python 3 | READY | BETA | 45min | po-2024 |
 | 54 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 55 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
@@ -544,7 +544,7 @@ Total notebooks: 474
 ## Requirements
 
 - **API**: 108 notebooks
-- **GPU**: 64 notebooks
+- **GPU**: 65 notebooks
 - **Cloud**: 102 notebooks
 - **WSL**: 23 notebooks
 - **Local**: 229 notebooks

@@ -633,9 +633,21 @@ Examples:
     parser.add_argument("--spass", action="store_true", help="Download SPASS (Linux only)")
     parser.add_argument("--jdk", action="store_true", help="Download Zulu JDK 17")
     parser.add_argument("--native-sat", action="store_true", help="Download native SAT libraries")
+    parser.add_argument("--lib-dir", type=str, default=None,
+                        help="Target directory for JARs (default: Tweety/libs/)")
+    parser.add_argument("--version", type=str, default=None,
+                        help="Tweety version to download (default: 1.30)")
     parser.add_argument("--no-interactive", action="store_true", help="Disable progress bars")
 
     args = parser.parse_args()
+
+    # Override version if specified
+    global TWEETY_VERSION
+    if args.version:
+        TWEETY_VERSION = args.version
+
+    # Resolve lib directory
+    lib_dir = pathlib.Path(args.lib_dir) if args.lib_dir else None
 
     # Si aucun argument spécifié, afficher l'aide
     if not any(vars(args).values()):
@@ -651,7 +663,7 @@ Examples:
 
     # Exécuter les téléchargements demandés
     if args.all:
-        results.append(("JARs", download_tweety_jars()))
+        results.append(("JARs", download_tweety_jars(lib_dir)))
         results.append(("Resources", download_resource_files()))
         results.append(("Clingo", download_clingo()))
         results.append(("SPASS", download_spass()))
@@ -659,7 +671,7 @@ Examples:
         results.append(("Native SAT", download_native_sat_libs()))
     else:
         if args.jars:
-            results.append(("JARs", download_tweety_jars()))
+            results.append(("JARs", download_tweety_jars(lib_dir)))
         if args.resources:
             results.append(("Resources", download_resource_files()))
         if args.clingo:

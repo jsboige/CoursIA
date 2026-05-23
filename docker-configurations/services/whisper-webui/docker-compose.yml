@@ -38,6 +38,7 @@ services:
     environment:
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
       - TZ=${TZ:-Europe/Paris}
+      - HF_TOKEN=${HF_TOKEN:-}
 
     entrypoint:
       - python

@@ -494,6 +494,13 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS_installer.exe
 # Bibliothèques natives SAT (Minisat, Lingeling, Picosat)
 !MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/native/
 
+# Tweety JARs — auto-download via download_tweety_tools.py --lib-dir
+# Issue #1396: untrack 857M duplicate JARs, keep native/ tracked
+MyIA.AI.Notebooks/SymbolicAI/libs/*.jar
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/libs/*.jar
+!MyIA.AI.Notebooks/SymbolicAI/libs/native/
+!MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/libs/native/
+
 # Jupyter/MCP temp files
 kernel_info.json
 
@@ -573,6 +580,15 @@ tmp/
 **/checkpoints/**/*.pth
 # EXCEPTION: Sudoku validated checkpoints
 !sudoku_models/checkpoints/
+
+# PyTorch extended model formats
+**/checkpoints/**/*.ckpt
+**/checkpoints/**/*.safetensors
+**/checkpoints/**/*.bin
+
+# Docker bind-mount data: model weights and TTS references (runtime only)
+docker-configurations/services/tts-fishaudio/checkpoints/
+docker-configurations/services/tts-fishaudio/references/
 
 # ECE grading reports (student PII - never commit)
 reports/
