@@ -314,6 +314,18 @@ def palier_group_size_adjustment(group_size):
     return group_size_adjustments.get(group_size, -2.0)
 
 
+def _leading_group_code(normalized):
+    """Extrait le code de groupe en tete (a1, a2b, h1_v2, m2...) s'il existe.
+
+    Les deux sources (inscription et evaluations) prefixent le sujet par un
+    code unique. C'est la cle de jointure fiable : le separateur (tiret vs
+    cadratin) et les noms entre parentheses cote evaluation rendent le fuzzy
+    matching du libelle complet inoperant.
+    """
+    match = re.match(r'^([a-z]+\d+[a-z0-9_]*)\b', normalized)
+    return match.group(1) if match else None
+
+
 def fuzzy_match_group(eval_group_name, student_project_string):
     """
     Correspondance entre nom de groupe évalué et nom de projet inscrit.
@@ -331,6 +343,15 @@ def fuzzy_match_group(eval_group_name, student_project_string):
     student_norm = re.sub(r'\s+', ' ', student_norm)
     eval_norm = eval_norm.replace(' / ', ' - ').replace('/', '-')
     student_norm = student_norm.replace(' / ', ' - ').replace('/', '-')
+
+    # Cas 0 (prioritaire) : code de groupe en tete identique.
+    # Quand les deux libelles portent un code (a1, a2b, h1_v2...), c'est la
+    # cle canonique : codes egaux => meme groupe ; codes differents => groupes
+    # distincts (on n'autorise pas le fuzz a rapprocher deux codes distincts).
+    eval_code = _leading_group_code(eval_norm)
+    student_code = _leading_group_code(student_norm)
+    if eval_code and student_code:
+        return eval_code == student_code
 
     # Cas 1: Correspondance exacte
     if eval_norm == student_norm:
