@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-23 10:46
+Generated: 2026-05-23 16:34
 Total notebooks: 474
 
 ## Status Summary
@@ -13,10 +13,10 @@ Total notebooks: 474
 ## Maturity Summary
 
 - **PRODUCTION**: 148
-- **BETA**: 247
+- **BETA**: 242
 - **TEMPLATE**: 4
-- **ALPHA**: 45
-- **DRAFT**: 30
+- **ALPHA**: 49
+- **DRAFT**: 31
 
 ## By Series
 
@@ -217,7 +217,7 @@ Total notebooks: 474
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (90 notebooks) — BROKEN:1, DEMO:10, READY:79 | ALPHA:8, BETA:73, DRAFT:2, PRODUCTION:7
+### SymbolicAI (90 notebooks) — BROKEN:1, DEMO:10, READY:79 | ALPHA:10, BETA:70, DRAFT:3, PRODUCTION:7
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -259,12 +259,12 @@ Total notebooks: 474
 | 36 | Introduction au web sémantique avec RDF.Net | .NET (C#) | DEMO | ALPHA | 2h+ | po-2024 |
 | 37 | SW-1-Setup | .NET (C#) | READY | BETA | 30min | po-2024 |
 | 38 | SW-11-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 39 | SW-12-KnowledgeGraphs | Python 3 | READY | BETA | 45min | po-2024 |
+| 39 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | DRAFT | 45min | po-2024 |
 | 40 | SW-13-GraphRAG | Python 3 | READY | BETA | 45min | po-2024 |
 | 41 | SW-14-Reasoners | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 42 | SW-2-RDFBasics | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 43 | SW-2b-Python-RDFBasics | .venv | READY | BETA | 30min | po-2024 |
-| 44 | SW-3-GraphOperations | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 44 | SW-3-GraphOperations | .NET (C#) | READY | ALPHA | 1h | po-2024 |
 | 45 | SW-4-SPARQL | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 46 | SW-4b-Python-SPARQL | Python 3 | READY | BETA | 30min | po-2024 |
 | 47 | SW-5-LinkedData | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
@@ -273,7 +273,7 @@ Total notebooks: 474
 | 50 | SW-7-OWL | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 51 | SW-7b-Python-OWL | Python 3 | READY | BETA | 30min | po-2024 |
 | 52 | SW-8-Python-SHACL | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 53 | SW-10-JSONLD | Python 3 | READY | BETA | 45min | po-2024 |
+| 53 | SW-9-Python-JSONLD | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 54 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 55 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
 | 56 | SC-2-Setup-Web3py - Python et la Blockchain | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
@@ -419,13 +419,13 @@ Total notebooks: 474
 | 101 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
 | 102 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
 
-### GameTheory (25 notebooks) — READY:25 | ALPHA:6, BETA:15, DRAFT:3, PRODUCTION:1
+### GameTheory (25 notebooks) — READY:25 | ALPHA:8, BETA:13, DRAFT:3, PRODUCTION:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | GameTheory-1-Setup | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 2 | GameTheory-10-ForwardInduction-SPE | Python 3 | READY | BETA | 30min | po-2024 |
-| 3 | GameTheory-11-BayesianGames | Python 3 | READY | DRAFT | 30min | po-2024 |
+| 2 | GameTheory-10-ForwardInduction-SPE | Python 3 | READY | ALPHA | 30min | po-2024 |
+| 3 | GameTheory-11-BayesianGames | Python 3 | READY | DRAFT | 45min | po-2024 |
 | 4 | GameTheory-12-ReputationGames | Python 3 | READY | BETA | 30min | po-2024 |
 | 5 | GameTheory-13 : Jeux a Information Imparfaite et C | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
 | 6 | GameTheory-14 : Jeux Differentiels et Equilibres d | Python 3 | READY | BETA | 30min | po-2024 |
@@ -443,7 +443,7 @@ Total notebooks: 474
 | 18 | GameTheory-5-ZeroSum-Minimax | Python (GameTheory WSL + OpenS | READY | ALPHA | 30min | po-2024 |
 | 19 | GameTheory-6-EvolutionTrust | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
 | 20 | GameTheory-7-ExtensiveForm | Python 3 | READY | BETA | 30min | po-2024 |
-| 21 | GameTheory-9-BackwardInduction | Python 3 | READY | BETA | 30min | po-2024 |
+| 21 | GameTheory-9-BackwardInduction | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 22 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formel | Python 3 | READY | BETA | 30min | po-2024 |
 | 23 | SocialChoice 02 - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
 | 24 | SocialChoice 03 - Methodes de Vote et Paradoxes | Python 3 | READY | BETA | 45min | po-2024 |
