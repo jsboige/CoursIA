@@ -68,6 +68,9 @@ class SearchTools:
         # F11 (ai-01 C41 directive): track (query, result_count) to detect
         # same-query-0-result loops. DEMO 16 BG showed 12 identical calls.
         self._search_history: list[tuple[str, int]] = []
+        # #1401 LeanExplore: lazy-initialized API client for semantic Mathlib search.
+        self._leanexplore_client = None
+        self._leanexplore_available: Optional[bool] = None
         self._known_lemmas = {
             # Arithmetic on Nat
             "Nat.add_zero": ("n + 0 = n", "Nat"),
@@ -145,6 +148,109 @@ class SearchTools:
                 "l₁ ~ l₂ → (a ∈ l₁ ↔ a ∈ l₂)", "List.Perm"),
         }
 
+    def _init_leanexplore(self) -> bool:
+        """Lazy-initialize LeanExplore API client. Returns True if available."""
+        if self._leanexplore_available is not None:
+            return self._leanexplore_available
+        try:
+            import os
+            from lean_explore.api.client import ApiClient
+            api_key = os.environ.get("LEANEXPLORE_API_KEY", "")
+            if not api_key:
+                self._leanexplore_available = False
+                if self._trace:
+                    self._trace.log(
+                        agent="SearchAgent", role="leanexplore",
+                        content="LEANEXPLORE_API_KEY not set, skipping semantic search",
+                        duration_s=0.01, tool_name="_init_leanexplore",
+                        tool_args={}, tool_result="NO_KEY",
+                    )
+                return False
+            self._leanexplore_client = ApiClient(api_key=api_key, timeout=10.0)
+            self._leanexplore_available = True
+            if self._trace:
+                self._trace.log(
+                    agent="SearchAgent", role="leanexplore",
+                    content="LeanExplore API client initialized",
+                    duration_s=0.01, tool_name="_init_leanexplore",
+                    tool_args={}, tool_result="OK",
+                )
+            return True
+        except ImportError:
+            self._leanexplore_available = False
+            if self._trace:
+                self._trace.log(
+                    agent="SearchAgent", role="leanexplore",
+                    content="lean-explore package not installed, skipping",
+                    duration_s=0.01, tool_name="_init_leanexplore",
+                    tool_args={}, tool_result="NOT_INSTALLED",
+                )
+            return False
+        except Exception as e:
+            self._leanexplore_available = False
+            if self._trace:
+                self._trace.log(
+                    agent="SearchAgent", role="leanexplore",
+                    content=f"LeanExplore init failed: {e}",
+                    duration_s=0.01, tool_name="_init_leanexplore",
+                    tool_args={}, tool_result=f"ERROR: {e}",
+                )
+            return False
+
+    def search_leanexplore(self, query: str, max_results: int = 10,
+                           packages: Optional[list] = None) -> str:
+        """Search Mathlib via LeanExplore semantic search (hybrid BM25 + embedding + PageRank).
+
+        Requires LEANEXPLORE_API_KEY environment variable. Returns JSON list of
+        results with {name, statement, namespace, relevance, source, module, docstring}.
+        Falls back gracefully if unavailable.
+        """
+        if not self._init_leanexplore():
+            return "[]"
+        try:
+            t0 = time.time()
+            pkgs = packages or ["Mathlib"]
+            response = self._leanexplore_client.search(
+                query=query, limit=max_results, packages=pkgs,
+            )
+            elapsed = time.time() - t0
+            results = []
+            for r in response.results:
+                statement = r.source_text[:300] if r.source_text else ""
+                if r.docstring:
+                    statement += f"\n-- {r.docstring[:200]}"
+                results.append({
+                    "name": r.name,
+                    "statement": statement,
+                    "namespace": r.module,
+                    "module": r.module,
+                    "docstring": r.docstring,
+                    "relevance": 0.85,
+                    "source": "leanexplore_semantic",
+                    "source_link": r.source_link,
+                })
+            if self._trace:
+                self._trace.log(
+                    agent="SearchAgent", role="tool",
+                    content=(f"LeanExplore: {len(results)} results for '{query[:60]}' "
+                             f"({elapsed:.1f}s, {response.processing_time_ms}ms server)"),
+                    duration_s=elapsed, tool_name="search_leanexplore",
+                    tool_args={"query": query[:80], "packages": pkgs},
+                    tool_result=f"{len(results)} results",
+                )
+            return json.dumps(results, indent=2, ensure_ascii=False)
+        except Exception as e:
+            if self._trace:
+                self._trace.log(
+                    agent="SearchAgent", role="leanexplore",
+                    content=f"LeanExplore search error: {e}",
+                    duration_s=0.01, tool_name="search_leanexplore",
+                    tool_args={"query": query[:80]},
+                    tool_result=f"ERROR: {e}",
+                )
+            self._leanexplore_available = False
+            return "[]"
+
     def search_mathlib_lemmas(self, goal: str, max_results: int = 10,
                               use_lsp: bool = True) -> str:
         """Search for Mathlib lemmas relevant to a proof goal.
@@ -198,19 +304,29 @@ class SearchTools:
         except Exception:
             pass
 
+        # #1401: LeanExplore semantic search (between KB and LSP)
+        leanexplore_results = []
+        try:
+            le_json = self.search_leanexplore(goal, max_results=max_results)
+            if le_json and le_json != "[]":
+                leanexplore_results = json.loads(le_json)
+        except Exception:
+            pass
+
         # B.2: Try real Lean LSP search next
         if use_lsp and self._filepath:
             lsp_results = self._search_via_lsp(goal)
             if lsp_results:
-                merged = kb_results + lsp_results
+                merged = kb_results + leanexplore_results + lsp_results
                 if self._trace:
                     self._trace.log(
                         agent="SearchAgent", role="tool",
-                        content=(f"LSP found {len(lsp_results)} + KB {len(kb_results)} "
-                                 f"= {len(merged)} suggestions"),
+                        content=(f"LSP {len(lsp_results)} + LE {len(leanexplore_results)} "
+                                 f"+ KB {len(kb_results)} = {len(merged)} suggestions"),
                         duration_s=0.01, tool_name="search_mathlib_lemmas",
                         tool_args={"goal": goal[:80]},
-                        tool_result=f"{len(merged)} (kb={len(kb_results)} lsp={len(lsp_results)})",
+                        tool_result=(f"{len(merged)} (kb={len(kb_results)} "
+                                     f"le={len(leanexplore_results)} lsp={len(lsp_results)})"),
                     )
                 self._search_history.append((goal, len(merged)))
                 return json.dumps(merged[:max_results], indent=2, ensure_ascii=False)
@@ -257,12 +373,14 @@ class SearchTools:
                 })
 
         results.sort(key=lambda x: x["relevance"], reverse=True)
-        found = kb_results + results[:max_results - len(kb_results)]
+        found = kb_results + leanexplore_results + results[:max(0, max_results - len(kb_results) - len(leanexplore_results))]
 
         if self._trace:
             self._trace.log(
                 agent="SearchAgent", role="tool",
-                content=f"Found {len(found)} lemmas (fallback + kb={len(kb_results)})",
+                content=(f"Found {len(found)} lemmas "
+                         f"(kb={len(kb_results)} le={len(leanexplore_results)} "
+                         f"hardcoded={len(results)})"),
                 duration_s=0.01, tool_name="search_mathlib_lemmas",
                 tool_args={"goal": goal[:80]}, tool_result=f"{len(found)} results",
             )
@@ -1801,6 +1919,34 @@ class CoordinatorTools:
 
     def search_mathlib_lemmas(self, goal: str, max_results: int = 10) -> str:
         """Search for Mathlib lemmas relevant to a proof goal."""
+        # #1401: Try LeanExplore semantic search first
+        leanexplore_results = []
+        try:
+            if not hasattr(self, '_le_client'):
+                self._le_available = False
+                try:
+                    import os
+                    from lean_explore.api.client import ApiClient
+                    key = os.environ.get("LEANEXPLORE_API_KEY", "")
+                    if key:
+                        self._le_client = ApiClient(api_key=key, timeout=10.0)
+                        self._le_available = True
+                except (ImportError, Exception):
+                    pass
+            if self._le_available:
+                resp = self._le_client.search(query=goal, limit=max_results,
+                                              packages=["Mathlib"])
+                for r in resp.results:
+                    leanexplore_results.append({
+                        "name": r.name,
+                        "statement": (r.source_text or "")[:300],
+                        "namespace": r.module,
+                        "relevance": 0.85,
+                        "source": "leanexplore_semantic",
+                    })
+        except Exception:
+            pass
+
         goal_lower = goal.lower()
         results = []
         keywords = goal_lower.replace("+", "add").replace("*", "mul").replace("=", "eq").split()
@@ -1818,7 +1964,8 @@ class CoordinatorTools:
                     "namespace": namespace, "relevance": min(score, 1.0),
                 })
         results.sort(key=lambda x: x["relevance"], reverse=True)
-        return json.dumps(results[:max_results], indent=2, ensure_ascii=False)
+        combined = leanexplore_results + results[:max(0, max_results - len(leanexplore_results))]
+        return json.dumps(combined[:max_results], indent=2, ensure_ascii=False)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

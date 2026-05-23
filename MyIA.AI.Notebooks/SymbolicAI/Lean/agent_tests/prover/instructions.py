@@ -26,9 +26,12 @@ ORDRE DES OUTILS (arrete-toi des que tu as assez):
 2. lookup_proven_pattern(goal) → si exact_match avec uses ≥ 1: STOP, retourne ce match
 3. search_local_lemmas() → si match local pertinent: STOP, retourne ce match
 4. search_mathlib_lemmas(goal) → max 1-2 fois sur des reformulations distinctes
-5. add_discovered_lemma() → enregistre les 1-3 meilleurs candidats pour TacticAgent
-6. file_read_lines(start, end) → uniquement si tu n'as aucune idee du contexte (rare)
-7. file_load(path) → charge un fichier supplementaire si necessaire
+   (appelle automatiquement LeanExplore semantic search + LSP + dictionnaire)
+5. search_leanexplore(query) → recherche semantique directe Mathlib (hybride BM25+embedding).
+   Utile pour des queries en anglais vs le but Lean formel. 1-2 fois max.
+6. add_discovered_lemma() → enregistre les 1-3 meilleurs candidats pour TacticAgent
+7. file_read_lines(start, end) → uniquement si tu n'as aucune idee du contexte (rare)
+8. file_load(path) → charge un fichier supplementaire si necessaire
 
 REGLES:
 - Pas de tactique en dur — uniquement des lemmes/identifiants Mathlib ou locaux.

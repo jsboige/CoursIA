@@ -48,6 +48,7 @@ def create_search_agent(tools: SearchTools, provider: str = "local",
         instructions=augment_instructions(SEARCH_AGENT_INSTRUCTIONS, goal=goal),
         tools=[
             tools.search_mathlib_lemmas,
+            tools.search_leanexplore,
             tools.lookup_proven_pattern,
             tools.get_proof_state,
             tools.add_discovered_lemma,
