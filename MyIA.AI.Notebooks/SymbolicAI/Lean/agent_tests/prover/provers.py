@@ -439,10 +439,10 @@ class MultiAgentSorryProver:
                 final_verify_raw = tactic_tools.compile()
                 final_verify = json.loads(final_verify_raw)
             except Exception as _e:
-                final_verify = {"overall": False, "level_1": False,
+                final_verify = {"overall": False, "level_1_build": False,
                                 "errors": [{"message": f"final-verify crashed: {_e}"}]}
 
-            final_build_ok = bool(final_verify.get("level_1", False))
+            final_build_ok = bool(final_verify.get("level_1_build", False))
             if not final_build_ok:
                 _errs = final_verify.get("errors", [])[:5]
                 print(
@@ -1074,7 +1074,10 @@ class AutonomousProver:
         final_verify_ok = False
         print("  Final verification build...", flush=True)
         verify_result = json.loads(tactic_tools.compile())
-        final_verify_ok = verify_result.get("success", False)
+        # P4: Gate on build success only (level_1_build), NOT overall "success"
+        # which includes sorry_delta check (level_2). A sorry increase from
+        # strategic decomposition must NOT trigger revert if the build passes.
+        final_verify_ok = verify_result.get("level_1_build", False)
         final_build_ok = final_verify_ok
         if not final_verify_ok:
             errors = verify_result.get("errors", [])
@@ -1089,9 +1092,9 @@ class AutonomousProver:
                       f"reverting.", flush=True)
                 Path(filepath).write_text(original_file_content, encoding="utf-8")
                 final_sorry = original_sorry_count
-            print("  Final verification build...", flush=True)
+            print("  Final verification build (post-revert)...", flush=True)
             verify_result = json.loads(tactic_tools.compile())
-            final_verify_ok = verify_result.get("success", False)
+            final_verify_ok = verify_result.get("level_1_build", False)
             if not final_verify_ok:
                 errors = verify_result.get("errors", [])
                 unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
