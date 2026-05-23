@@ -65,36 +65,24 @@ def _compose_tts_text(seg: AnnotatedSegment) -> str:
     """Compose the final TTS text with context prefix and dramatic prompt.
 
     FishAudio S2-Pro interprets [bracketed] text as voice instructions.
-    S2-Pro ONLY reliably handles its 29 official tags. French text and
-    free-form descriptions in brackets are silently ignored.
+    S2-Pro accepts both official tags and free-form natural language in brackets.
     A space after ] is MANDATORY — ]X causes the tag to be ignored.
 
     Composition order:
-    1. Official S2-Pro tag(s) mapped from tts_context_prefix / dramatic context
-    2. The annotated text with sanitized inline tags
+    1. Voice instruction prefix from tts_context_prefix (natural language)
+    2. The annotated text with all tags preserved (official + free-form)
     """
     parts: list[str] = []
 
-    # Collect official S2-Pro tags from context prefix and dramatic prompt
-    tags: list[str] = []
-
+    # Use tts_context_prefix directly as voice instruction.
+    # S2-Pro accepts natural language in brackets — no need to extract
+    # official tags. The prefix is the PRIMARY source of prosody diversity.
     if seg.tts_context_prefix:
-        tags.extend(_extract_official_tags(seg.tts_context_prefix))
-
-    if seg.dramatic_prompt and seg.type != "narration":
-        tags.extend(_extract_official_tags(seg.dramatic_prompt))
-
-    # Deduplicate tags while preserving order
-    seen: set[str] = set()
-    unique_tags: list[str] = []
-    for t in tags:
-        if t not in seen:
-            seen.add(t)
-            unique_tags.append(t)
-
-    # Max 2 tags to avoid confusing the model
-    if unique_tags:
-        parts.append(" ".join(f"[{t}]" for t in unique_tags[:2]))
+        prefix = seg.tts_context_prefix.strip()
+        # Strip surrounding brackets if present (we add our own)
+        if prefix.startswith("[") and prefix.endswith("]"):
+            prefix = prefix[1:-1].strip()
+        parts.append(f"[{prefix}] ")
 
     base_text = seg.fishaudio_text or seg.annotated_text or seg.text
     base_text = _normalize_tags(base_text)
@@ -198,11 +186,12 @@ def _extract_official_tags(text: str) -> list[str]:
 
 
 def _normalize_tags(text: str) -> str:
-    """Normalize all inline tags in text to official S2-Pro tags with space after ].
+    """Normalize inline tags in text for FishAudio S2-Pro.
 
     1. Convert (parenthetical voice instructions) to [brackets]
-    2. Map non-official [tags] to closest official equivalent
-    3. Ensure space after every ]
+    2. Map known non-official tags to closest official equivalent
+    3. KEEP free-form / natural-language tags — S2-Pro accepts them
+    4. Ensure space after every ]
     """
     text = _sanitize_voice_instructions(text)
 
@@ -216,8 +205,9 @@ def _normalize_tags(text: str) -> str:
             mapped = _NON_OFFICIAL_TAG_MAP[lower]
             if mapped in ALL_PROSODY_TAGS:
                 return f"[{mapped}] "
-        # Unknown/free-form tag — strip it entirely (S2-Pro ignores these)
-        return ""
+        # Free-form / natural-language tag — S2-Pro accepts these.
+        # Preserve them as-is (they are the primary source of prosody diversity).
+        return f"[{content}] "
 
     text = re.sub(r"\[([^\]]+)\]", _normalize_one, text)
     return text
