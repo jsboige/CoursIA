@@ -238,11 +238,18 @@ def determine_status(
     return "READY"
 
 
-def count_todos(notebook: dict) -> int:
-    """Count # TODO markers across all code cells."""
+def count_todos(notebook: dict, *, exclude_executed: bool = True) -> int:
+    """Count # TODO markers across code cells.
+
+    When exclude_executed=True (default), TODOs in cells that have been
+    executed with outputs are excluded — they represent resolved exercises,
+    not incomplete work.
+    """
     count = 0
     for cell in notebook.get("cells", []):
         if cell["cell_type"] == "code":
+            if exclude_executed and cell.get("outputs"):
+                continue
             src = "".join(cell.get("source", []))
             count += src.upper().count("# TODO")
     return count
