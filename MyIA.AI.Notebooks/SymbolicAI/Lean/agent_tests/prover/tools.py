@@ -1183,7 +1183,18 @@ class TacticTools:
 
             sorry_text = lines[sorry_line - 1]
             if "sorry" not in sorry_text:
-                return json.dumps({"error": f"Line {sorry_line} doesn't contain 'sorry': {sorry_text[:80]}"})
+                # P5 fix: search nearby for the actual sorry (line numbers shift)
+                candidates = []
+                for i, line in enumerate(lines):
+                    if "sorry" in line:
+                        candidates.append((abs(i + 1 - sorry_line), i + 1))
+                if candidates:
+                    candidates.sort()
+                    actual_line = candidates[0][1]
+                    sorry_line = actual_line
+                    sorry_text = lines[sorry_line - 1]
+                else:
+                    return json.dumps({"error": f"Line {sorry_line} doesn't contain 'sorry' and no sorry found nearby: {sorry_text[:80]}"})
 
             indent = len(sorry_text) - len(sorry_text.lstrip())
 

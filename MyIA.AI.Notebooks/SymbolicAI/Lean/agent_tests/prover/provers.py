@@ -422,13 +422,6 @@ class MultiAgentSorryProver:
                     Path(filepath).write_text(last_ok_content, encoding="utf-8")
                     final_sorry = last_ok_sorry if last_ok_sorry is not None else final_sorry
                     structural_progress = True
-                else:
-                    print(
-                        f"  Restoring original (no build-ok edits: "
-                        f"{final_sorry} >= {original_sorry_count})"
-                    )
-                    Path(filepath).write_text(original_content, encoding="utf-8")
-                    final_sorry = original_sorry_count
 
             # MANDATORY final build verification on the committed file. This
             # catches false positives where the snapshot's build_check was
@@ -1070,15 +1063,32 @@ class AutonomousProver:
                 Path(filepath).write_text(original_file_content, encoding="utf-8")
                 final_sorry = original_sorry_count
 
-        # Always restore original if no improvement — prevent file corruption
-        if final_sorry >= original_sorry_count:
-            print(f"  Restoring original (no improvement: {final_sorry} >= {original_sorry_count})")
-            Path(filepath).write_text(original_content, encoding="utf-8")
-            final_sorry = original_sorry_count
+        # P4 fix (2026-05-23): NEVER revert a file solely because sorry_count
+        # increased. Strategic decomposition (1 sorry → 2 sub-sorries) is valid
+        # when the file compiles. Only revert on BUILD FAILURE (compile errors).
+        # Forensic: Director L147 run reverted a compiling file (0 errors, sorry
+        # 4→5) losing strategic decomposition progress.
 
         # Final verification build — catch false positives (0 sorry but unsolved goals)
+        # P4: Run on ALL files, not just sorry-reduced ones.
         final_verify_ok = False
-        if final_sorry < original_sorry_count:
+        print("  Final verification build...", flush=True)
+        verify_result = json.loads(tactic_tools.compile())
+        final_verify_ok = verify_result.get("success", False)
+        final_build_ok = final_verify_ok
+        if not final_verify_ok:
+            errors = verify_result.get("errors", [])
+            unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
+            if unsolved:
+                print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
+                      f"{final_sorry} sorry. Reverting to original.", flush=True)
+                Path(filepath).write_text(original_file_content, encoding="utf-8")
+                final_sorry = original_sorry_count
+            else:
+                print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
+                      f"reverting.", flush=True)
+                Path(filepath).write_text(original_file_content, encoding="utf-8")
+                final_sorry = original_sorry_count
             print("  Final verification build...", flush=True)
             verify_result = json.loads(tactic_tools.compile())
             final_verify_ok = verify_result.get("success", False)
@@ -1100,7 +1110,18 @@ class AutonomousProver:
                     print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
                           f"reverting.", flush=True)
 
-        success = final_sorry < original_sorry_count and final_build_ok and final_verify_ok
+        # P4: success also covers structural progress (sorry increase from
+        # strategic decomposition) as long as the file builds.
+        structural_progress_autonomous = (
+            final_sorry >= original_sorry_count
+            and final_build_ok
+            and final_sorry > 0
+        )
+        success = (
+            (final_sorry < original_sorry_count
+             or structural_progress_autonomous)
+            and final_verify_ok
+        )
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
         # Persist outcome to cross-session history (best-effort, never raises)
