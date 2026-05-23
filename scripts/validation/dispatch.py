@@ -73,7 +73,7 @@ def validate_family(
 
     results = {
         "name": family_name,
-        "total": len(notebooks),
+        "total": 0,
         "pass": 0,
         "warn": 0,
         "fail": 0,
@@ -84,9 +84,13 @@ def validate_family(
     }
 
     for nb_path in notebooks:
+        name = nb_path.name
         if ".ipynb_checkpoints" in str(nb_path):
             continue
+        if name.endswith("_output.ipynb"):
+            continue
 
+        results["total"] += 1
         validator = NotebookValidator(nb_path)
         struct = validator.validate_structure()
 
@@ -238,7 +242,7 @@ def execute_family(
 
     results = {
         "name": family_name,
-        "total": len(notebooks),
+        "total": 0,
         "executed": 0,
         "success": 0,
         "fail": 0,
@@ -248,9 +252,13 @@ def execute_family(
     }
 
     for nb_path in notebooks:
+        name = nb_path.name
         if ".ipynb_checkpoints" in str(nb_path):
             continue
+        if name.endswith("_output.ipynb"):
+            continue
 
+        results["total"] += 1
         try:
             executor = NotebookExecutor(nb_path)
             cell_by_cell = strategy in ("cell-by-cell", "mixed")
