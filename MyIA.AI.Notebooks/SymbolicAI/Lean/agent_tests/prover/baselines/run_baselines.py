@@ -125,7 +125,7 @@ def main():
     parser.add_argument("--demo", type=int, default=9)
     parser.add_argument("--mode", choices=["multi", "autonomous", "both"], default="both")
     parser.add_argument("--iterations", type=int, default=5)
-    parser.add_argument("--provider", default="zai")
+    parser.add_argument("--provider", default="openrouter")
     parser.add_argument("--all", action="store_true",
                         help="Run all sorry demos (9, 13)")
     args = parser.parse_args()
