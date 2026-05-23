@@ -115,7 +115,8 @@ class MultiAgentSorryProver:
 
     async def prove_sorry(self, demo: dict, max_iterations: int = 10,
                           workflow_timeout_s: Optional[int] = None,
-                          use_diagnosis_agent: bool = False) -> dict:
+                          use_diagnosis_agent: bool = False,
+                          concurrent_search_count: int = 0) -> dict:
         # Enable MS Agent Framework OTel + JSONL exporter so every agent run,
         # tool call, and LLM completion lands in baselines/traces/<name>.spans.jsonl
         # alongside the higher-level TraceLogger entries.
@@ -258,6 +259,20 @@ class MultiAgentSorryProver:
         critic_agent = create_critic_agent(critic_tools, provider=self.provider)
         coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.coordinator_provider)
 
+        # B.7: Create additional SearchAgents for concurrent lemma discovery.
+        # Each gets its own SearchTools (independent Mathlib search) but shares
+        # the same ProofState so discoveries are visible to all agents.
+        extra_search_agents = []
+        if concurrent_search_count > 0:
+            for i in range(concurrent_search_count):
+                extra_tools = SearchTools(state, filepath, self.trace, kb=kb)
+                extra_agent = create_search_agent(
+                    extra_tools, provider=self.local_provider,
+                    goal=goal_state or "",
+                    name=f"SearchAgent_{i+2}")
+                extra_search_agents.append(extra_agent)
+            print(f"  [B.7] {concurrent_search_count} concurrent SearchAgents created")
+
         # Create optional DirectorAgent (external LLM for strategic guidance)
         director_agent = None
         if self.director_provider:
@@ -299,6 +314,8 @@ class MultiAgentSorryProver:
             sorry_ctx, demo.get("imports", ""), self.trace, state=state, kb=kb,
             director_agent=director_agent,
             diagnosis_agent=diagnosis_agent,
+            concurrent_search_count=concurrent_search_count,
+            extra_search_agents=extra_search_agents if extra_search_agents else None,
         )
         workflow = workflow_builder.build()
 

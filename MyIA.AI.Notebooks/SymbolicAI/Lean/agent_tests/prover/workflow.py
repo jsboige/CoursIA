@@ -845,6 +845,57 @@ class DiagnosisExecutor(Executor):
             await self._fallback.handle(msg, ctx)
 
 
+class MergeSearchExecutor(Executor):
+    """Aggregates results from multiple concurrent SearchAgents.
+
+    Receives a ``list[ProofMessage]`` via fan-in, deduplicates discovered
+    lemmas, and forwards a single merged ProofMessage to the TacticAgent.
+    """
+
+    def __init__(self, trace: TraceLogger = None, **kwargs):
+        super().__init__(id="merge_search", **kwargs)
+        self._trace = trace
+
+    @handler
+    async def handle(self, messages: list[ProofMessage], ctx: WorkflowContext) -> ProofMessage:
+        if not messages:
+            return
+        # Use the first message as base, merge content from others
+        base = messages[0]
+        merged_parts = []
+        all_lemmas = set()
+        for msg in messages:
+            if msg.content:
+                merged_parts.append(msg.content)
+            if hasattr(msg, '_discovered_lemmas') and msg._discovered_lemmas:
+                all_lemmas.update(msg._discovered_lemmas)
+
+        merged = ProofMessage(
+            content="\n\n---\n\n".join(merged_parts) if merged_parts else base.content,
+            iteration=max(m.iteration for m in messages),
+            sorry_count=base.sorry_count,
+            tactic=base.tactic,
+            error=base.error,
+            error_type=base.error_type,
+            is_decomposition=base.is_decomposition,
+            proof_found=base.proof_found,
+            next_agent="tactic",
+            max_iterations=base.max_iterations,
+            plan=base.plan,
+            intractable=base.intractable,
+            intractable_reason=base.intractable_reason,
+            director_calls=base.director_calls,
+            absent_identifiers=base.absent_identifiers,
+        )
+        if self._trace:
+            n = len(messages)
+            self._trace.log(
+                agent="MergeSearch", role="merge",
+                content=f"merged {n} search results, forwarding to tactic",
+            )
+        await ctx.send_message(merged)
+
+
 class ProofWorkflowBuilder:
     """Builds the multi-agent proof workflow graph.
 
@@ -862,8 +913,23 @@ class ProofWorkflowBuilder:
                  trace: TraceLogger = None, state: "ProofState" = None,
                  kb: Optional[ProofKnowledgeBase] = None,
                  director_agent: Optional[Agent] = None,
-                 diagnosis_agent: Optional[Agent] = None):
+                 diagnosis_agent: Optional[Agent] = None,
+                 concurrent_search_count: int = 0,
+                 extra_search_agents: Optional[list] = None):
         self._search = AgentExecutor(search_agent, trace=trace, state=state)
+        # B.7: additional SearchAgents for parallel lemma discovery.
+        # When concurrent_search_count > 0, extra_search_agents provides
+        # the additional Agent instances (created in provers.py with
+        # independent SearchTools). The workflow uses fan-out/fan-in to
+        # run them concurrently and merge results before TacticAgent.
+        self._concurrent_search_count = concurrent_search_count
+        self._extra_search_execs: list = []
+        if extra_search_agents:
+            for i, agent in enumerate(extra_search_agents):
+                self._extra_search_execs.append(
+                    AgentExecutor(agent, trace=trace, state=state,
+                                  name=f"SearchAgent-{i+2}")
+                )
         self._tactic = AgentExecutor(tactic_agent, trace=trace, state=state)
         self._critic = AgentExecutor(critic_agent, trace=trace, state=state)
         self._coordinator = AgentExecutor(coordinator_agent, trace=trace, state=state)
@@ -897,6 +963,11 @@ class ProofWorkflowBuilder:
                 diagnosis_timeout_s=60,
                 state=state,
             )
+        # B.7: MergeSearchExecutor for concurrent search fan-in.
+        if self._concurrent_search_count > 0 and self._extra_search_execs:
+            self._merge_search = MergeSearchExecutor(trace=trace)
+        else:
+            self._merge_search = None
 
     def build(self):
         # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to
@@ -908,8 +979,29 @@ class ProofWorkflowBuilder:
         # truth for coordinator routing now.
         builder = WorkflowBuilder(start_executor=self._coordinator)
 
-        # Forward chain: search -> tactic -> verify (or diagnosis if enabled)
-        builder.add_edge(self._search, self._tactic)
+        # B.7: When concurrent search is enabled, set up fan-out/fan-in:
+        #   Default routes -> self._search (primary) -> fan-out to extras
+        #   all_search -> merge -> tactic
+        # Otherwise, single search -> tactic (original path).
+        use_concurrent = (
+            self._concurrent_search_count > 0
+            and self._extra_search_execs
+            and self._merge_search is not None
+        )
+
+        if use_concurrent:
+            all_search = [self._search] + self._extra_search_execs
+            # Primary search fans out to all extra search agents concurrently.
+            # When a message reaches self._search (via switch-case Default),
+            # it also broadcasts to all extra agents.
+            builder.add_fan_out_edges(self._search, self._extra_search_execs)
+            # Fan-in: all search agents -> merge -> tactic
+            builder.add_fan_in_edges(all_search, self._merge_search)
+            builder.add_edge(self._merge_search, self._tactic)
+        else:
+            # Original single-search path
+            builder.add_edge(self._search, self._tactic)
+
         _verify_node = self._diagnosis_executor or self._verify
         builder.add_edge(self._tactic, _verify_node)
 
@@ -954,7 +1046,9 @@ class ProofWorkflowBuilder:
             cases=verify_cases,
         )
 
-        # Critic conditional routing (requires exactly one Default)
+        # Critic conditional routing. Default -> primary search agent.
+        # B.7: fan_out_edges from _search to extras are already registered
+        # above; switch-case Default targets _search which triggers broadcast.
         builder.add_switch_case_edge_group(
             source=self._critic,
             cases=[
@@ -970,11 +1064,7 @@ class ProofWorkflowBuilder:
             ],
         )
 
-        # Coordinator routing — with optional Director escalation.
-        # When the Coordinator determines local agents are stalled it can
-        # request director guidance by setting next_agent="director".
-        # The guard caps director calls to avoid budget burn; if the cap
-        # is hit the coordinator falls through to search (normal path).
+        # Coordinator routing with optional Director escalation.
         if self._director:
             builder.add_switch_case_edge_group(
                 source=self._coordinator,

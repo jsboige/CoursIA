@@ -33,7 +33,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                goal: str = "", director_provider: str = None,
                coordinator_provider: str = None,
                tactic_provider: str = None,
-               use_diagnosis_agent: bool = False):
+               use_diagnosis_agent: bool = False,
+               concurrent_search_count: int = 0):
     """Run the prover on a target."""
     if demo_num is not None:
         if demo_num not in DEMOS:
@@ -80,7 +81,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     try:
         result = asyncio.run(
             prover.prove_sorry(demo=demo, max_iterations=iterations,
-                               use_diagnosis_agent=use_diagnosis_agent)
+                               use_diagnosis_agent=use_diagnosis_agent,
+                               concurrent_search_count=concurrent_search_count)
         )
     except Exception as e:
         print(f"\nProver crashed: {e}")
@@ -153,6 +155,11 @@ if __name__ == "__main__":
                         help="Enable DiagnosisAgent (LLM-powered qualitative "
                              "verification replacing mechanical VerifyExecutor). "
                              "Only used in --mode multi.")
+    parser.add_argument("--concurrent-search", type=int, default=0,
+                        help="Number of ADDITIONAL SearchAgents to run in "
+                             "parallel (B.7). 0 = single search (default). "
+                             "E.g. --concurrent-search 2 = 3 total search agents. "
+                             "Only used in --mode multi.")
     args = parser.parse_args()
 
     run_prover(
@@ -168,4 +175,5 @@ if __name__ == "__main__":
         coordinator_provider=args.coordinator_provider,
         tactic_provider=args.tactic_provider,
         use_diagnosis_agent=args.use_diagnosis_agent,
+        concurrent_search_count=args.concurrent_search,
     )

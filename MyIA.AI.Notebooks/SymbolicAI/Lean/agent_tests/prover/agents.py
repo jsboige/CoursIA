@@ -40,7 +40,7 @@ def _fast_options() -> ChatOptions:
 
 
 def create_search_agent(tools: SearchTools, provider: str = "local",
-                        goal: str = "") -> Agent:
+                        goal: str = "", name: str = "SearchAgent") -> Agent:
     """SearchAgent: finds Mathlib lemmas. Uses fast local model."""
     client = create_client(provider, model_key="fast")
     return Agent(
@@ -54,7 +54,7 @@ def create_search_agent(tools: SearchTools, provider: str = "local",
             tools.file_read_lines,
             tools.file_load,
         ],
-        name="SearchAgent",
+        name=name,
         default_options=_fast_options(),
     )
 
