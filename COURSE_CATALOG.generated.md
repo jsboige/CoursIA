@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-23 00:29
-Total notebooks: 474
+Generated: 2026-05-23 10:11
+Total notebooks: 476
 
 ## Status Summary
 
-- **READY**: 339
+- **READY**: 341
 - **DEMO**: 121
 - **RESEARCH**: 0
 - **BROKEN**: 14
 
 ## Maturity Summary
 
-- **PRODUCTION**: 150
-- **BETA**: 246
+- **PRODUCTION**: 149
+- **BETA**: 247
 - **TEMPLATE**: 4
-- **ALPHA**: 44
+- **ALPHA**: 46
 - **DRAFT**: 30
 
 ## By Series
@@ -217,7 +217,7 @@ Total notebooks: 474
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (90 notebooks) — BROKEN:1, DEMO:10, READY:79 | ALPHA:7, BETA:73, DRAFT:2, PRODUCTION:8
+### SymbolicAI (92 notebooks) — BROKEN:1, DEMO:10, READY:81 | ALPHA:9, BETA:74, DRAFT:2, PRODUCTION:7
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -272,7 +272,7 @@ Total notebooks: 474
 | 49 | SW-6-RDFS | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 50 | SW-7-OWL | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 51 | SW-7b-Python-OWL | Python 3 | READY | BETA | 30min | po-2024 |
-| 52 | SW-9-SHACL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 52 | SW-8-Python-SHACL | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 53 | SW-10-JSONLD | Python 3 | READY | BETA | 45min | po-2024 |
 | 54 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 55 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
@@ -301,16 +301,18 @@ Total notebooks: 474
 | 78 | SC-24 : Deploiement sur Testnets | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 79 | SC-25 : Deploiement Mainnet (L2) | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
 | 80 | SC-26 : Projet Final - DApp Complete | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
-| 81 | Configuration et Installation TweetyProject | mcp-jupyter-py310 | READY | BETA | 45min | po-2024 |
-| 82 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 (ipykernel) | READY | BETA | 45min | po-2024 |
-| 83 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 (ipykernel) | READY | BETA | 30min | po-2024 |
-| 84 | Révision de Croyances et Incohérence | .venv | READY | BETA | 30min | po-2024 |
-| 85 | Argumentation Abstraite (Dung) | mcp-jupyter-py310 | READY | PRODUCTION | 30min | po-2024 |
-| 86 | Argumentation Structuree | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
-| 87 | Frameworks d'Argumentation Étendus | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
-| 88 | Sémantiques de Classement et Argumentation Probabi | Python 3.12 (NLP-Course) | READY | PRODUCTION | 15min | po-2024 |
-| 89 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
-| 90 | Préférences et Théorie du Vote | base | READY | BETA | 15min | po-2024 |
+| 81 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | BETA | 30min | po-2024 |
+| 82 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 83 | Configuration et Installation TweetyProject | mcp-jupyter-py310 | READY | BETA | 45min | po-2024 |
+| 84 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 (ipykernel) | READY | BETA | 45min | po-2024 |
+| 85 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 (ipykernel) | READY | BETA | 30min | po-2024 |
+| 86 | Révision de Croyances et Incohérence | .venv | READY | BETA | 30min | po-2024 |
+| 87 | Argumentation Abstraite (Dung) | mcp-jupyter-py310 | READY | PRODUCTION | 30min | po-2024 |
+| 88 | Argumentation Structuree | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
+| 89 | Frameworks d'Argumentation Étendus | mcp-jupyter-py310 | READY | BETA | 30min | po-2024 |
+| 90 | Sémantiques de Classement et Argumentation Probabi | Python 3.12 (NLP-Course) | READY | PRODUCTION | 15min | po-2024 |
+| 91 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
+| 92 | Préférences et Théorie du Vote | base | READY | BETA | 15min | po-2024 |
 
 ### QuantConnect (102 notebooks) — BROKEN:12, DEMO:25, READY:65 | ALPHA:22, BETA:14, DRAFT:2, PRODUCTION:63, TEMPLATE:1
 
@@ -547,4 +549,4 @@ Total notebooks: 474
 - **GPU**: 64 notebooks
 - **Cloud**: 102 notebooks
 - **WSL**: 23 notebooks
-- **Local**: 229 notebooks
+- **Local**: 231 notebooks
