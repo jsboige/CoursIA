@@ -18,3 +18,4 @@ import Conway.Fractran
 import Conway.Nim
 import Conway.DoomsdayLemmas
 import Conway.LookAndSayLemmas
+import Conway.Angel
