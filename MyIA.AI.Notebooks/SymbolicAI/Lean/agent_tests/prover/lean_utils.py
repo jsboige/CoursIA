@@ -702,9 +702,13 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     if current_error:
         all_error_lines.append(current_error)
 
-    # Separate: direct errors vs cascade errors vs pre-existing
+    # Separate: direct errors vs cascade errors vs distant errors
+    # P2 (Epic #1453): distant errors (outside nearby_range) were silently
+    # ignored, causing false successes where errors existed in the file but
+    # outside the ±5 line window. Now collected and included in the result.
     direct_errors = []
     cascade_errors = []
+    distant_errors = []
     nearby_range = 5 + line_shift
 
     for err_block in all_error_lines:
@@ -714,11 +718,17 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             direct_errors.append(text)
         elif abs(first_line_num - sorry_line) <= nearby_range:
             cascade_errors.append(text)
+        else:
+            distant_errors.append(text)
 
     # Build result
     has_direct_error = len(direct_errors) > 0
     has_cascade_error = len(cascade_errors) > 0
-    is_success = not has_direct_error and not has_cascade_error
+    # P2: require absence of ALL errors in _SorryVerify.lean, not just nearby.
+    # Distant errors indicate the replacement broke something elsewhere.
+    has_distant_error = len(distant_errors) > 0
+    is_success = (not has_direct_error and not has_cascade_error
+                  and not has_distant_error)
 
     # Extract residual goals from cascade errors (lines starting with ⊢)
     residual_goals = []
@@ -741,6 +751,15 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             "Cascade error:\n" + "\n".join(cascade_errors[:2])
         )
         error_type = "unsolved_goals"
+    elif has_distant_error:
+        # P2: errors outside the nearby window mean the replacement broke
+        # something elsewhere in the file. Report first 2 distant errors.
+        error_msg = (
+            f"Tactic at line {sorry_line} compiles locally but introduced "
+            f"errors at distant lines. File may be broken elsewhere:\n"
+            + "\n".join(distant_errors[:2])
+        )
+        error_type = "distant_errors"
     else:
         error_msg = ""
         error_type = None
@@ -751,6 +770,7 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         "raw_error": error_msg[:500],
         "error_type": error_type,
         "residual_goals": residual_goals,
+        "distant_errors": distant_errors,  # P2: expose for caller inspection
         "all_errors": result.get("errors", ""),
         "time_s": result.get("time_s", 0),
         "backend": result.get("backend", ""),
