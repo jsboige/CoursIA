@@ -162,29 +162,6 @@ def _has_nearby_tag(text: str, pos: int, window: int = 25) -> bool:
     return bool(re.search(r"\[[^\]]+\]", text[start:end]))
 
 
-def _extract_official_tags(text: str) -> list[str]:
-    """Extract and map tags to official S2-Pro tags from context text.
-
-    Checks both the official tag set and the non-official mapping.
-    Returns a list of official tag names (without brackets).
-    """
-    from .schemas import ALL_PROSODY_TAGS
-
-    found: list[str] = []
-    # Match [bracketed] content
-    for match in re.finditer(r"\[([^\]]+)\]", text):
-        content = match.group(1).strip().lower()
-        # Direct official tag?
-        if content in ALL_PROSODY_TAGS:
-            found.append(content)
-        # Mapped non-official tag?
-        elif content in _NON_OFFICIAL_TAG_MAP:
-            mapped = _NON_OFFICIAL_TAG_MAP[content]
-            if mapped in ALL_PROSODY_TAGS:
-                found.append(mapped)
-    return found
-
-
 def _normalize_tags(text: str) -> str:
     """Normalize inline tags in text for FishAudio S2-Pro.
 
