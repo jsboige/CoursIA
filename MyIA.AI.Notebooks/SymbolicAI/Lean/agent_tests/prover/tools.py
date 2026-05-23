@@ -26,6 +26,63 @@ def _read_lines_from_source(source: str, start: int, end: int) -> str:
     return "\n".join(f"{start + i}: {line}" for i, line in enumerate(selected))
 
 
+# #1401: Shared LeanExplore client (used by both SearchTools and CoordinatorTools).
+_leanexplore_client = None
+_leanexplore_available: Optional[bool] = None
+
+
+def _get_leanexplore_client(trace: TraceLogger = None,
+                            agent_name: str = "") -> tuple[Optional[object], bool]:
+    """Lazy-init shared LeanExplore API client. Returns (client_or_None, available)."""
+    global _leanexplore_client, _leanexplore_available
+    if _leanexplore_available is not None:
+        return _leanexplore_client, _leanexplore_available
+    try:
+        import os
+        from lean_explore.api.client import ApiClient
+        api_key = os.environ.get("LEANEXPLORE_API_KEY", "")
+        if not api_key:
+            _leanexplore_available = False
+            if trace:
+                trace.log(
+                    agent=agent_name, role="leanexplore",
+                    content="LEANEXPLORE_API_KEY not set, skipping",
+                    duration_s=0.01, tool_name="_get_leanexplore_client",
+                    tool_args={}, tool_result="NO_KEY",
+                )
+            return None, False
+        _leanexplore_client = ApiClient(api_key=api_key, timeout=10.0)
+        _leanexplore_available = True
+        if trace:
+            trace.log(
+                agent=agent_name, role="leanexplore",
+                content="LeanExplore API client initialized",
+                duration_s=0.01, tool_name="_get_leanexplore_client",
+                tool_args={}, tool_result="OK",
+            )
+        return _leanexplore_client, True
+    except ImportError:
+        _leanexplore_available = False
+        if trace:
+            trace.log(
+                agent=agent_name, role="leanexplore",
+                content="lean-explore package not installed, skipping",
+                duration_s=0.01, tool_name="_get_leanexplore_client",
+                tool_args={}, tool_result="NOT_INSTALLED",
+            )
+        return None, False
+    except Exception as e:
+        _leanexplore_available = False
+        if trace:
+            trace.log(
+                agent=agent_name, role="leanexplore",
+                content=f"LeanExplore init failed: {e}",
+                duration_s=0.01, tool_name="_get_leanexplore_client",
+                tool_args={}, tool_result=f"ERROR: {e}",
+            )
+        return None, False
+
+
 def _resolve_file_content(state: ProofState, filepath: str,
                           path: str = "") -> tuple[str, str]:
     """Resolve which file to read: path="" → target file, path="Name.lean" → loaded file.
@@ -68,9 +125,7 @@ class SearchTools:
         # F11 (ai-01 C41 directive): track (query, result_count) to detect
         # same-query-0-result loops. DEMO 16 BG showed 12 identical calls.
         self._search_history: list[tuple[str, int]] = []
-        # #1401 LeanExplore: lazy-initialized API client for semantic Mathlib search.
-        self._leanexplore_client = None
-        self._leanexplore_available: Optional[bool] = None
+        # #1401 LeanExplore: uses shared module-level client (see _get_leanexplore_client).
         self._known_lemmas = {
             # Arithmetic on Nat
             "Nat.add_zero": ("n + 0 = n", "Nat"),
@@ -148,54 +203,6 @@ class SearchTools:
                 "l₁ ~ l₂ → (a ∈ l₁ ↔ a ∈ l₂)", "List.Perm"),
         }
 
-    def _init_leanexplore(self) -> bool:
-        """Lazy-initialize LeanExplore API client. Returns True if available."""
-        if self._leanexplore_available is not None:
-            return self._leanexplore_available
-        try:
-            import os
-            from lean_explore.api.client import ApiClient
-            api_key = os.environ.get("LEANEXPLORE_API_KEY", "")
-            if not api_key:
-                self._leanexplore_available = False
-                if self._trace:
-                    self._trace.log(
-                        agent="SearchAgent", role="leanexplore",
-                        content="LEANEXPLORE_API_KEY not set, skipping semantic search",
-                        duration_s=0.01, tool_name="_init_leanexplore",
-                        tool_args={}, tool_result="NO_KEY",
-                    )
-                return False
-            self._leanexplore_client = ApiClient(api_key=api_key, timeout=10.0)
-            self._leanexplore_available = True
-            if self._trace:
-                self._trace.log(
-                    agent="SearchAgent", role="leanexplore",
-                    content="LeanExplore API client initialized",
-                    duration_s=0.01, tool_name="_init_leanexplore",
-                    tool_args={}, tool_result="OK",
-                )
-            return True
-        except ImportError:
-            self._leanexplore_available = False
-            if self._trace:
-                self._trace.log(
-                    agent="SearchAgent", role="leanexplore",
-                    content="lean-explore package not installed, skipping",
-                    duration_s=0.01, tool_name="_init_leanexplore",
-                    tool_args={}, tool_result="NOT_INSTALLED",
-                )
-            return False
-        except Exception as e:
-            self._leanexplore_available = False
-            if self._trace:
-                self._trace.log(
-                    agent="SearchAgent", role="leanexplore",
-                    content=f"LeanExplore init failed: {e}",
-                    duration_s=0.01, tool_name="_init_leanexplore",
-                    tool_args={}, tool_result=f"ERROR: {e}",
-                )
-            return False
 
     def search_leanexplore(self, query: str, max_results: int = 10,
                            packages: Optional[list] = None) -> str:
@@ -205,12 +212,13 @@ class SearchTools:
         results with {name, statement, namespace, relevance, source, module, docstring}.
         Falls back gracefully if unavailable.
         """
-        if not self._init_leanexplore():
+        client, available = _get_leanexplore_client(self._trace, "SearchAgent")
+        if not available:
             return "[]"
         try:
             t0 = time.time()
             pkgs = packages or ["Mathlib"]
-            response = self._leanexplore_client.search(
+            response = client.search(
                 query=query, limit=max_results, packages=pkgs,
             )
             elapsed = time.time() - t0
@@ -248,7 +256,6 @@ class SearchTools:
                     tool_args={"query": query[:80]},
                     tool_result=f"ERROR: {e}",
                 )
-            self._leanexplore_available = False
             return "[]"
 
     def search_mathlib_lemmas(self, goal: str, max_results: int = 10,
@@ -1919,23 +1926,13 @@ class CoordinatorTools:
 
     def search_mathlib_lemmas(self, goal: str, max_results: int = 10) -> str:
         """Search for Mathlib lemmas relevant to a proof goal."""
-        # #1401: Try LeanExplore semantic search first
+        # #1401: Try LeanExplore semantic search first (shared client)
         leanexplore_results = []
         try:
-            if not hasattr(self, '_le_client'):
-                self._le_available = False
-                try:
-                    import os
-                    from lean_explore.api.client import ApiClient
-                    key = os.environ.get("LEANEXPLORE_API_KEY", "")
-                    if key:
-                        self._le_client = ApiClient(api_key=key, timeout=10.0)
-                        self._le_available = True
-                except (ImportError, Exception):
-                    pass
-            if self._le_available:
-                resp = self._le_client.search(query=goal, limit=max_results,
-                                              packages=["Mathlib"])
+            le_client, le_ok = _get_leanexplore_client(self._trace, "CoordinatorAgent")
+            if le_ok:
+                resp = le_client.search(query=goal, limit=max_results,
+                                        packages=["Mathlib"])
                 for r in resp.results:
                     leanexplore_results.append({
                         "name": r.name,
