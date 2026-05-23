@@ -365,7 +365,16 @@ class AgentExecutor(Executor):
                     if ident and ident not in absent and len(ident) < 60:
                         absent.append(ident)
             if absent:
-                msg.absent_identifiers = absent
+                # P3 (Epic #1453): accumulate rather than replace. Previous
+                # Director calls may have flagged identifiers that the current
+                # call doesn't mention. Merging ensures TacticAgent always
+                # sees the full blocklist.
+                if msg.absent_identifiers is None:
+                    msg.absent_identifiers = absent
+                else:
+                    for ident in absent:
+                        if ident not in msg.absent_identifiers:
+                            msg.absent_identifiers.append(ident)
                 if self._trace:
                     self._trace.log(
                         agent="DirectorAgent", role="absent_identifiers",
@@ -514,11 +523,23 @@ class VerifyExecutor(Executor):
         self._session_start = time.monotonic()
         self._wallclock_director_threshold_s = 1500
         self._wallclock_director_min_fails = 10
+        # P1 (Epic #1453): no-progress compile detector. Forensic showed 13+
+        # iterations where TacticAgent compiles successfully but sorry count
+        # doesn't decrease — the agent probes the goal state without making
+        # actual edits. Track consecutive iterations with neither proof found
+        # nor sorry reduction. >=3 -> force Director/yield.
+        self._consecutive_noprogress = 0
+        self._noprogress_threshold = 3
+        self._original_sorry_count: Optional[int] = None
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
         """Verify the tactic submitted by TacticAgent."""
         from .lean_utils import verify_sorry_replacement
+
+        # P1: initialize original sorry count on first call
+        if self._original_sorry_count is None:
+            self._original_sorry_count = msg.sorry_count or 0
 
         if not msg.tactic:
             msg.error = "No tactic submitted"
@@ -564,6 +585,7 @@ class VerifyExecutor(Executor):
         if result["success"]:
             msg.proof_found = True
             self._consecutive_build_fails = 0
+            self._consecutive_noprogress = 0  # P1: real progress
             if self._trace:
                 self._trace.log(
                     agent="VerifyExecutor", role="verify",
@@ -602,6 +624,9 @@ class VerifyExecutor(Executor):
             msg.next_agent = "tactic"
             # Decomposition is progress (new sub-goals to attack), reset.
             self._consecutive_build_fails = 0
+            # P1: decomposition with sorry reduction is structural progress
+            if new_sorry_count < self._original_sorry_count:
+                self._consecutive_noprogress = 0
         else:
             msg.error = result.get("errors", "")[:500]
             msg.error_type = result.get("error_type", "unknown")
@@ -720,15 +745,62 @@ class VerifyExecutor(Executor):
                 self._consecutive_build_fails = 0
                 self._total_fails = 0  # reset after coordinator escalation
             else:
-                msg.next_agent = "critic"
-                # Re-search hint: if total fails exceed threshold, nudge the
-                # Critic toward SearchAgent for fresh lemma analysis.
-                if self._total_fails >= self._research_hint_threshold:
-                    msg.error += (
-                        f"\n[HINT] {self._total_fails} total BUILD-FAIL so far. "
-                        f"Consider routing to SearchAgent for fresh lemma candidates "
-                        f"— the current set may be insufficient."
+                # P1 (Epic #1453): no-progress detection. Increment counter
+                # when iteration produces neither proof nor sorry reduction.
+                # >=3 consecutive no-progress -> force Director/yield instead
+                # of default critic route. Forensic: 13+ iterations wasted on
+                # targets where TacticAgent probed goals without editing.
+                self._consecutive_noprogress += 1
+                if (self._consecutive_noprogress >= self._noprogress_threshold
+                        and self._has_director
+                        and msg.director_calls < self._director_max_calls):
+                    msg.next_agent = "director"
+                    msg.error = (
+                        f"[P1 no-progress -> Director] "
+                        f"{self._consecutive_noprogress} consecutive iterations "
+                        f"with no sorry reduction. TacticAgent is probing goals "
+                        f"without making edits. Forcing Director for strategic "
+                        f"guidance. Last error: {msg.error}"
                     )
+                    if self._trace:
+                        self._trace.log(
+                            agent="VerifyExecutor", role="p1_noprogress_escalation",
+                            content=(f"consecutive_noprogress="
+                                     f"{self._consecutive_noprogress} >= "
+                                     f"threshold={self._noprogress_threshold}, "
+                                     f"forcing Director "
+                                     f"(calls={msg.director_calls}/"
+                                     f"{self._director_max_calls})"),
+                        )
+                    self._consecutive_noprogress = 0
+                    self._consecutive_build_fails = 0
+                elif self._consecutive_noprogress >= self._noprogress_threshold:
+                    # No Director available or budget spent -> yield
+                    msg.error += (
+                        f"\n[P1 no-progress] {self._consecutive_noprogress} "
+                        f"consecutive iterations without sorry reduction. "
+                        f"Yielding to avoid wasting compute."
+                    )
+                    self._consecutive_noprogress = 0
+                    if self._trace:
+                        self._trace.log(
+                            agent="VerifyExecutor", role="p1_noprogress_yield",
+                            content=(f"consecutive_noprogress="
+                                     f"{self._consecutive_noprogress}, no Director "
+                                     f"available, yielding"),
+                        )
+                    await ctx.yield_output(msg)
+                    return
+                else:
+                    msg.next_agent = "critic"
+                    # Re-search hint: if total fails exceed threshold, nudge the
+                    # Critic toward SearchAgent for fresh lemma analysis.
+                    if self._total_fails >= self._research_hint_threshold:
+                        msg.error += (
+                            f"\n[HINT] {self._total_fails} total BUILD-FAIL so far. "
+                            f"Consider routing to SearchAgent for fresh lemma candidates "
+                            f"— the current set may be insufficient."
+                        )
 
         if self._trace:
             self._trace.log(
