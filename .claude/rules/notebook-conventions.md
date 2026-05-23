@@ -25,7 +25,7 @@ paths: MyIA.AI.Notebooks/**/*.ipynb
 ## Execution
 
 - **Python notebooks** : Papermill pour batch (`notebook_tools.py execute <path>`)
-- **.NET notebooks** : cell-by-cell via MCP Jupyter UNIQUEMENT (Papermill ne marche pas, surtout avec `#!import`)
+- **.NET notebooks** : Papermill avec kernel `.net-csharp` fonctionne (verifie SW-3, 50/50 cells). Sauf `#!import` (MCP Jupyter cell-by-cell en fallback). Prefere Papermill quand possible.
 - **WSL notebooks** (GameTheory/Lean) : `wsl_papermill.py` (cf [.claude/rules/wsl-kernels.md](wsl-kernels.md))
 - Working directory explicite pour notebooks avec paths relatifs
 - `BATCH_MODE=true` pour notebooks avec widgets interactifs
