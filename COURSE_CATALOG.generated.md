@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-23 10:46
+Generated: 2026-05-23 16:52
 Total notebooks: 474
 
 ## Status Summary
@@ -12,15 +12,15 @@ Total notebooks: 474
 
 ## Maturity Summary
 
-- **PRODUCTION**: 148
-- **BETA**: 247
+- **PRODUCTION**: 158
+- **BETA**: 256
 - **TEMPLATE**: 4
 - **ALPHA**: 45
-- **DRAFT**: 30
+- **DRAFT**: 11
 
 ## By Series
 
-### GenAI (107 notebooks) — BROKEN:1, DEMO:76, READY:30 | ALPHA:2, BETA:53, DRAFT:12, PRODUCTION:37, TEMPLATE:3
+### GenAI (107 notebooks) — BROKEN:1, DEMO:76, READY:30 | ALPHA:5, BETA:56, DRAFT:6, PRODUCTION:37, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -35,7 +35,7 @@ Total notebooks: 474
 | 9 | OpenAI Whisper STT - Reconnaissance Vocale par API | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 10 | Operations de Base sur l'Audio | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 11 | Whisper Local - Transcription GPU avec faster-whis | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 12 | Kokoro TTS Local - Synthese Vocale Legere | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 12 | Kokoro TTS Local - Synthese Vocale Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 13 | Chatterbox TTS - Synthese Vocale Expressive | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 14 | XTTS v2 - Clonage Vocal Zero-Shot | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 15 | MusicGen - Generation Musicale par IA | Python 3 | DEMO | BETA | 45min | po-2025 |
@@ -55,7 +55,7 @@ Total notebooks: 474
 | 29 | Workflow de Composition Musicale | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 30 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 31 | Live Coding Musical pilote par LLM | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 32 | Pipeline Audiobook Agentique | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 32 | Pipeline Audiobook Agentique | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 33 | Benchmark TTS : Comparaison des Modeles Vocaux pou | Python 3 | READY | BETA | 45min | po-2025 |
 | 34 | Lecture Analytique pour Audiobook | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 35 | Voice Casting : Attribution de voix TTS par person | Python 3 | READY | BETA | 30min | po-2025 |
@@ -124,15 +124,15 @@ Total notebooks: 474
 | 98 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 99 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 100 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 101 | Comparaison Multi-Modeles de Generation Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 102 | Orchestration de Pipelines Video | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 103 | ComfyUI - Workflows Video via API | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 101 | Comparaison Multi-Modeles de Generation Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 102 | Orchestration de Pipelines Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 103 | ComfyUI - Workflows Video via API | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 104 | Generation de Videos Educatives | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 105 | Workflows Video Creatifs | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 106 | Sora API - Generation Video Cloud | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 107 | Pipeline Video de Production | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 106 | Sora API - Generation Video Cloud | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 107 | Pipeline Video de Production | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 
-### Search (45 notebooks) — DEMO:3, READY:42 | ALPHA:1, BETA:20, DRAFT:8, PRODUCTION:16
+### Search (45 notebooks) — DEMO:3, READY:42 | BETA:23, DRAFT:3, PRODUCTION:19
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -154,20 +154,20 @@ Total notebooks: 474
 | 16 | App-18: Optimisation d'Hyperparametres - Approches | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 17 | App-9 : Detection de bords par algorithmes genetiq | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
 | 18 | TP : Conception d'Algorithmes Génétiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 19 | App-12 : Puissance 4 -- Comparaison d'algorithmes  | Python 3 | READY | DRAFT | 45min | po-2025 |
-| 20 | App-14 - Connect Four : Benchmark Adversarial Sear | Python 3 | READY | DRAFT | 45min | po-2025 |
+| 19 | App-12 : Puissance 4 -- Comparaison d'algorithmes  | Python 3 | READY | BETA | 45min | po-2025 |
+| 20 | App-14 - Connect Four : Benchmark Adversarial Sear | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 21 | Introduction à la programmation par contrainte | base | READY | BETA | 45min | po-2025 |
 | 22 | Recherche non informée et informée | Python 3 | READY | BETA | 45min | po-2025 |
 | 23 | TP : Conception d'Algorithmes Génétiques avec Gene | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 24 | Search-1 : Espaces d'etats et formulation de probl | Python 3 (ipykernel) | READY | DRAFT | 45min | po-2025 |
+| 24 | Search-1 : Espaces d'etats et formulation de probl | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
 | 25 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 26 | Search-11-Metaheuristiques : Optimisation avec MEA | .venv | READY | PRODUCTION | 45min | po-2025 |
 | 27 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | BETA | 45min | po-2025 |
 | 28 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 29 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 (ipykernel) | READY | ALPHA | 45min | po-2025 |
+| 29 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
 | 30 | Search-5 : Algorithmes Genetiques | Python 3 | READY | DRAFT | 45min | po-2025 |
-| 31 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | DRAFT | 30min | po-2025 |
-| 32 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | .venv | READY | DRAFT | 45min | po-2025 |
+| 31 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | BETA | 30min | po-2025 |
+| 32 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | .venv | READY | PRODUCTION | 45min | po-2025 |
 | 33 | Search-8-DancingLinks : L'algorithme X et Dancing  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 34 | Search-9-LinearProgramming : Programmation Lineair | 3.13.1 | READY | PRODUCTION | 45min | po-2025 |
 | 35 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | PRODUCTION | 1h | po-2025 |
@@ -176,13 +176,13 @@ Total notebooks: 474
 | 38 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | BETA | 45min | po-2025 |
 | 39 | CSP-5-Optimization : Problèmes d'Optimisation Comb | myvenv | READY | PRODUCTION | 45min | po-2025 |
 | 40 | CSP-6-Hybridation : Approches Hybrides Modernes | myvenv | DEMO | PRODUCTION | 45min | po-2025 |
-| 41 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | DEMO | BETA | 1h | po-2025 |
+| 41 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | DEMO | PRODUCTION | 1h | po-2025 |
 | 42 | CSP-8 : Temporels - Raisonnement sur le Temps | myvenv | DEMO | PRODUCTION | 45min | po-2025 |
 | 43 | CSP-9-Distributed : CSP Distribués (DisCSP) | base | READY | PRODUCTION | 45min | po-2025 |
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | BETA | 30min | po-2025 |
 | 45 | TP : Algorithmes Génétiques pour la Détection de B | base | READY | DRAFT | 30min | po-2025 |
 
-### ML (30 notebooks) — DEMO:6, READY:24 | ALPHA:4, BETA:21, DRAFT:1, PRODUCTION:4
+### ML (30 notebooks) — DEMO:6, READY:24 | ALPHA:4, BETA:21, PRODUCTION:5
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -199,7 +199,7 @@ Total notebooks: 474
 | 11 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | BETA | 30min | po-2023 |
 | 12 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | 30min | po-2023 |
 | 13 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | 45min | po-2023 |
-| 14 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | DRAFT | 30min | po-2023 |
+| 14 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 15 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 (ipykernel) | DEMO | BETA | 15min | po-2023 |
 | 16 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
 | 17 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
@@ -217,7 +217,7 @@ Total notebooks: 474
 | 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (90 notebooks) — BROKEN:1, DEMO:10, READY:79 | ALPHA:8, BETA:73, DRAFT:2, PRODUCTION:7
+### SymbolicAI (90 notebooks) — BROKEN:1, DEMO:10, READY:79 | ALPHA:8, BETA:72, DRAFT:1, PRODUCTION:9
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -229,7 +229,7 @@ Total notebooks: 474
 | 6 | Interface de Configuration et Préparation du Texte | Python 3 | READY | BETA | 15min | po-2024 |
 | 7 | Lean 4 - Installation et Configuration | Python 3 (WSL) | READY | BETA | 15min | po-2024 |
 | 8 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | Python 3 (WSL) | DEMO | ALPHA | 45min | po-2024 |
-| 9 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | READY | DRAFT | 45min | po-2024 |
+| 9 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 10 | Lean 11 - TorchLean : Réseaux de Neurones Formelle | Lean 4 (WSL) | BROKEN | DRAFT | 30min | po-2024 |
 | 11 | Lean-12 : Le Theoreme de Sensibilite (Huang 2019) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 12 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
@@ -259,12 +259,12 @@ Total notebooks: 474
 | 36 | Introduction au web sémantique avec RDF.Net | .NET (C#) | DEMO | ALPHA | 2h+ | po-2024 |
 | 37 | SW-1-Setup | .NET (C#) | READY | BETA | 30min | po-2024 |
 | 38 | SW-11-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 39 | SW-12-KnowledgeGraphs | Python 3 | READY | BETA | 45min | po-2024 |
+| 39 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | BETA | 45min | po-2024 |
 | 40 | SW-13-GraphRAG | Python 3 | READY | BETA | 45min | po-2024 |
 | 41 | SW-14-Reasoners | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 42 | SW-2-RDFBasics | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 43 | SW-2b-Python-RDFBasics | .venv | READY | BETA | 30min | po-2024 |
-| 44 | SW-3-GraphOperations | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 44 | SW-3-GraphOperations | .NET (C#) | READY | ALPHA | 1h | po-2024 |
 | 45 | SW-4-SPARQL | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 46 | SW-4b-Python-SPARQL | Python 3 | READY | BETA | 30min | po-2024 |
 | 47 | SW-5-LinkedData | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
@@ -272,8 +272,8 @@ Total notebooks: 474
 | 49 | SW-6-RDFS | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 50 | SW-7-OWL | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 51 | SW-7b-Python-OWL | Python 3 | READY | BETA | 30min | po-2024 |
-| 52 | SW-8-Python-SHACL | Python 3 | READY | ALPHA | 45min | po-2024 |
-| 53 | SW-10-JSONLD | Python 3 | READY | BETA | 45min | po-2024 |
+| 52 | SW-8-Python-SHACL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 53 | SW-9-Python-JSONLD | Python 3 | READY | BETA | 45min | po-2024 |
 | 54 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
 | 55 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python (SmartContracts + Found | READY | BETA | 15min | po-2024 |
 | 56 | SC-2-Setup-Web3py - Python et la Blockchain | Python (SmartContracts + Found | READY | BETA | 30min | po-2024 |
@@ -312,7 +312,7 @@ Total notebooks: 474
 | 89 | Dialogues Multi-Agents Argumentatifs | mcp-jupyter-py310 | READY | ALPHA | 15min | po-2024 |
 | 90 | Préférences et Théorie du Vote | base | READY | BETA | 15min | po-2024 |
 
-### QuantConnect (102 notebooks) — BROKEN:12, DEMO:25, READY:65 | ALPHA:22, BETA:14, DRAFT:2, PRODUCTION:63, TEMPLATE:1
+### QuantConnect (102 notebooks) — BROKEN:12, DEMO:25, READY:65 | ALPHA:22, BETA:14, DRAFT:1, PRODUCTION:64, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -402,7 +402,7 @@ Total notebooks: 474
 | 84 | QC-Py-33 - Reinforcement Learning PPO pour le Trad | Python 3 (conda-torch) | READY | BETA | 45min | po-2026 |
 | 85 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL po | Python 3 (conda-torch) | READY | BETA | 45min | po-2026 |
 | 86 | QC-Py-35 - Reinforcement Learning pour la Construc | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 87 | QC-Py-40 : Paper Trading Binance - Mean Reversion  | Python 3 | READY | DRAFT | 45min | po-2026 |
+| 87 | QC-Py-40 : Paper Trading Binance - Mean Reversion  | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 88 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | Python 3 | READY | PRODUCTION | 30min | po-2026 |
 | 89 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur  | Python 3 | READY | BETA | 30min | po-2026 |
 | 90 | QC-Py-Cloud-01 — Risk Parity Composite Multi-Asset | Python 3 | READY | ALPHA | 5min | po-2026 |
@@ -419,37 +419,37 @@ Total notebooks: 474
 | 101 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
 | 102 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
 
-### GameTheory (25 notebooks) — READY:25 | ALPHA:6, BETA:15, DRAFT:3, PRODUCTION:1
+### GameTheory (25 notebooks) — READY:25 | ALPHA:4, BETA:18, PRODUCTION:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | GameTheory-1-Setup | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 2 | GameTheory-10-ForwardInduction-SPE | Python 3 | READY | BETA | 30min | po-2024 |
-| 3 | GameTheory-11-BayesianGames | Python 3 | READY | DRAFT | 30min | po-2024 |
+| 3 | GameTheory-11-BayesianGames | Python 3 | READY | BETA | 45min | po-2024 |
 | 4 | GameTheory-12-ReputationGames | Python 3 | READY | BETA | 30min | po-2024 |
 | 5 | GameTheory-13 : Jeux a Information Imparfaite et C | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
 | 6 | GameTheory-14 : Jeux Differentiels et Equilibres d | Python 3 | READY | BETA | 30min | po-2024 |
-| 7 | GameTheory-15-CooperativeGames | Python (GameTheory WSL + OpenS | READY | ALPHA | 45min | po-2024 |
+| 7 | GameTheory-15-CooperativeGames | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
 | 8 | GameTheory 15b - Jeux Cooperatifs en Lean : Formal | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
-| 9 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (GameTheory WSL + OpenS | READY | ALPHA | 30min | po-2024 |
+| 9 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
 | 10 | GameTheory-16 : Theorie des Mecanismes et Principe | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
 | 11 | GameTheory-17 : Apprentissage par Renforcement Mul | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
-| 12 | GameTheory-2-NormalForm | Python 3 | READY | DRAFT | 45min | po-2024 |
+| 12 | GameTheory-2-NormalForm | Python 3 | READY | ALPHA | 45min | po-2024 |
 | 13 | GameTheory 2b - Formalisation Lean : Definitions d | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
 | 14 | GameTheory-3-Topology2x2 | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
-| 15 | GameTheory-4-NashEquilibrium | Python (GameTheory WSL + OpenS | READY | ALPHA | 30min | po-2024 |
+| 15 | GameTheory-4-NashEquilibrium | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
 | 16 | GameTheory 4b - Theoreme d'Existence de Nash (Lean | Lean 4 (WSL) | READY | BETA | 30min | po-2024 |
-| 17 | GameTheory 4c - Theoreme d'Existence de Nash (Pyth | Python 3 | READY | DRAFT | 30min | po-2024 |
-| 18 | GameTheory-5-ZeroSum-Minimax | Python (GameTheory WSL + OpenS | READY | ALPHA | 30min | po-2024 |
+| 17 | GameTheory 4c - Theoreme d'Existence de Nash (Pyth | Python 3 | READY | ALPHA | 30min | po-2024 |
+| 18 | GameTheory-5-ZeroSum-Minimax | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
 | 19 | GameTheory-6-EvolutionTrust | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
 | 20 | GameTheory-7-ExtensiveForm | Python 3 | READY | BETA | 30min | po-2024 |
 | 21 | GameTheory-9-BackwardInduction | Python 3 | READY | BETA | 30min | po-2024 |
-| 22 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formel | Python 3 | READY | BETA | 30min | po-2024 |
+| 22 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formel | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 23 | SocialChoice 02 - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
 | 24 | SocialChoice 03 - Methodes de Vote et Paradoxes | Python 3 | READY | BETA | 45min | po-2024 |
 | 25 | SocialChoice 04 - Agregation Computationnelle : SA | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
 
-### Sudoku (32 notebooks) — DEMO:1, READY:31 | ALPHA:1, BETA:23, PRODUCTION:8
+### Sudoku (32 notebooks) — DEMO:1, READY:31 | BETA:24, PRODUCTION:8
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -466,7 +466,7 @@ Total notebooks: 474
 | 11 | Sudoku-13 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 13 | Sudoku-15-Infer-Python : Resolution Probabiliste a | Python 3 | READY | BETA | 30min | po-2023 |
-| 14 | Sudoku-10 : Résolution par Réseaux de Neurones | Python 3 | DEMO | ALPHA | 1h | po-2023 |
+| 14 | Sudoku-10 : Résolution par Réseaux de Neurones | Python 3 | DEMO | BETA | 1h | po-2023 |
 | 15 | Notebook 17: Resolution de Sudoku avec Large Langu | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2023 |
 | 16 | Comparaison des Solveurs de Sudoku | Python 3 | READY | BETA | 45min | po-2023 |
 | 17 | Resolution de Sudoku avec Algorithm X et Dancing L | .NET (C#) | READY | BETA | 30min | po-2023 |
