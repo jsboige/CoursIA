@@ -1,6 +1,6 @@
 # MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
 
-Ecosysteme complet de **473 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques.
+Ecosysteme complet de **555 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques.
 
 <!-- CATALOG-STATUS
 series: ALL
@@ -9,20 +9,20 @@ breakdown: GenAI=107, QuantConnect=102, SymbolicAI=92, Search=45, Probas=32, Sud
 maturity: BETA=260, PRODUCTION=158, ALPHA=43, DRAFT=11, TEMPLATE=4
 -->
 
-Dernière mise à jour : 2026-05-02
+Dernière mise à jour : 2026-05-23
 
 ## Vue d'ensemble
 
 | Domaine | Notebooks | Description |
 |---------|-----------|-------------|
 | **GenAI** | 110 | IA Generative (Images, Audio, Video, Texte, Vibe-Coding) |
-| **QuantConnect** | 93 | Trading algorithmique et ML financier (Python + C#) |
-| **SymbolicAI** | 90 | IA Symbolique (Lean, Tweety, SmartContracts, SemanticWeb, Planners) |
+| **QuantConnect** | 175 | Trading algorithmique et ML financier (Python + C#) |
+| **SymbolicAI** | 92 | IA Symbolique (Lean, Tweety, SmartContracts, SemanticWeb, Planners) |
 | **Search** | 45 | Recherche, CSP, optimisation, metaheuristiques |
 | **Sudoku** | 32 | Resolution de contraintes (.NET C#) |
+| **Probas** | 32 | Programmation probabiliste (Infer.NET + PyMC) |
 | **ML** | 30 | Machine Learning .NET + Python Agents for Data Science |
-| **GameTheory** | 26 | Theorie des Jeux (OpenSpiel, choix social Lean) |
-| **Probas** | 22 | Programmation probabiliste (Infer.NET) |
+| **GameTheory** | 28 | Theorie des Jeux (OpenSpiel, choix social Lean) |
 | **RL** | 6 | Reinforcement Learning (Stable-Baselines3) |
 | **CaseStudies** | 4 | Etudes de cas interdisciplinaires (diagnostic medical, planification oncologique) |
 | **IIT** | 1 | Integrated Information Theory (PyPhi) |
@@ -31,7 +31,6 @@ Dernière mise à jour : 2026-05-02
 
 ```text
 GenAI (110 notebooks)
-├── 00-Environment/ (6) - Setup
 ├── Image/ (19) - Generation d'images
 ├── Audio/ (28) - Traitement audio
 ├── Video/ (16) - Traitement video
@@ -40,19 +39,18 @@ GenAI (110 notebooks)
 ├── CaseStudies/ (4) - Etudes de cas etudiants
 └── Vibe-Coding/ (5) - Claude-Code + Roo-Code
 
-QuantConnect (93 notebooks)
-├── Python/ (27) - Cours progressifs QC-Py-01 a 27
-├── projects/ (46) - Strategies backtests et ML
-├── ESGF-2026/ (19) - Cours ESGF exercices et templates
-└── shared/ (1) - Librairie utilitaire
+QuantConnect (175 notebooks)
+├── Python/ (53) - Cours progressifs QC-Py
+├── projects/ (109) - Strategies backtests et ML
+└── ESGF-2026/ (7) - Cours ESGF exercices et templates
 
-SymbolicAI (90 notebooks)
-├── SmartContracts/ (26) - Solidity, Web3, blockchain
-├── SemanticWeb/ (13) - RDF, SPARQL, OWL, C# + Python
-├── Planners/ (12) - PDDL, Fast-Downward, OR-Tools, LLM planning
-├── Lean/ (13) - Theorem proving, LeanDojo
-├── Tweety/ (9) - Logiques classiques, argumentation
-└── Argument_Analysis/ (2) - Analyse d'arguments
+SymbolicAI (92 notebooks)
+├── SmartContracts/ (27) - Solidity, Web3, blockchain
+├── SemanticWeb/ (18) - RDF, SPARQL, OWL, C# + Python
+├── Planners/ (14) - PDDL, Fast-Downward, OR-Tools, LLM planning
+├── Lean/ (14) - Theorem proving, LeanDojo
+├── Tweety/ (10) - Logiques classiques, argumentation
+└── Argument_Analysis/ (6) - Analyse d'arguments
 ```
 
 ## Technologies principales
@@ -88,13 +86,13 @@ SymbolicAI (90 notebooks)
 | Domaine | Notebooks | Lien |
 |---------|-----------|------|
 | **GenAI** | 110 | [GenAI/](GenAI/README.md) |
-| **QuantConnect** | 93 | [QuantConnect/](QuantConnect/README.md) |
-| **SymbolicAI** | 90 | [SymbolicAI/](SymbolicAI/README.md) |
+| **QuantConnect** | 175 | [QuantConnect/](QuantConnect/README.md) |
+| **SymbolicAI** | 92 | [SymbolicAI/](SymbolicAI/README.md) |
 | **Search** | 45 | [Search/](Search/README.md) |
 | **Sudoku** | 32 | [Sudoku/](Sudoku/README.md) |
+| **Probas** | 32 | [Probas/](Probas/README.md) |
 | **ML** | 30 | [ML/](ML/README.md) |
-| **GameTheory** | 26 | [GameTheory/](GameTheory/README.md) |
-| **Probas** | 22 | [Probas/](Probas/README.md) |
+| **GameTheory** | 28 | [GameTheory/](GameTheory/README.md) |
 | **RL** | 6 | [RL/](RL/README.md) |
 | **CaseStudies** | 4 | [CaseStudies/](CaseStudies/README.md) |
 | **IIT** | 1 | [IIT/](IIT/README.md) |

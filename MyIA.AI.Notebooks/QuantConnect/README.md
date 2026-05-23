@@ -2,8 +2,8 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 102
-breakdown: Python=51, projects=49, ML-Training-Pipeline=2
+pedagogical_count: 175
+breakdown: Python=53, projects=109, ESGF-2026=7, ML-Training-Pipeline=3, research=3
 maturity: PRODUCTION=64, ALPHA=22, BETA=14, DRAFT=1, TEMPLATE=1
 -->
 
@@ -41,7 +41,7 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
-- **51 notebooks Python** (28 cours + 3 training local + 2 paper-trading + 2 dataset + 12 Cloud-ready + 4 RL avance)
+- **53 notebooks Python** (28 cours + 3 training local + 2 paper-trading + 2 dataset + 12 Cloud-ready + 4 RL avance + 2 research)
 - **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
 - **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
 - **Free tier compatible** avec workarounds pour fonctionnalités payantes
