@@ -79,11 +79,14 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
 
     start = time.time()
     try:
-        result = asyncio.run(
-            prover.prove_sorry(demo=demo, max_iterations=iterations,
-                               use_diagnosis_agent=use_diagnosis_agent,
-                               concurrent_search_count=concurrent_search_count)
-        )
+        if mode == "multi":
+            result = asyncio.run(
+                prover.prove_sorry(demo=demo, max_iterations=iterations,
+                                   use_diagnosis_agent=use_diagnosis_agent,
+                                   concurrent_search_count=concurrent_search_count)
+            )
+        else:
+            result = prover.prove_sorry(demo=demo, max_iterations=iterations)
     except Exception as e:
         print(f"\nProver crashed: {e}")
         result = {"error": str(e)}
