@@ -651,7 +651,22 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     if sorry_line < 1 or sorry_line > len(lines):
         return {"success": False, "errors": f"Line {sorry_line} out of range"}
 
+    # P5 fix (2026-05-23): if the target line doesn't contain sorry, search
+    # nearby for the actual sorry. Line numbers shift as the file is edited.
     sorry_text = lines[sorry_line - 1]
+    if "sorry" not in sorry_text:
+        # Search ±20 lines for the nearest sorry
+        candidates = []
+        for i, line in enumerate(lines):
+            if "sorry" in line:
+                candidates.append((abs(i + 1 - sorry_line), i + 1))
+        if candidates:
+            candidates.sort()
+            actual_line = candidates[0][1]
+            if actual_line != sorry_line:
+                print(f"  P5: sorry_line {sorry_line} has no sorry, "
+                      f"using nearest at {actual_line}")
+                sorry_line = actual_line
     indent = len(sorry_text) - len(sorry_text.lstrip())
     indent_str = " " * indent
 
