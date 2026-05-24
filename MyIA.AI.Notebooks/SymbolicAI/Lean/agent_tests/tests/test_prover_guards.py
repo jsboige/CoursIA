@@ -640,3 +640,150 @@ def test_f9_graceful_degradation_when_no_director_wired():
         f"F9 gate trapped a no-Director session: {out[:200]}"
     )
     assert state.intractable is True
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# P1 latch-success (Epic #1453, 2026-05-23 forensic) — in-place-proof detector
+#
+# Bug: tools.file_replace_lines edits the REAL target file in place and its
+# own build_check passes, but SorryContext.sorry_line is frozen at session
+# start (provers.py:203) and is NEVER updated. The downstream
+# verify_sorry_replacement then finds no sorry at the frozen line,
+# P5-relocates to a nearest UNRELATED sorry, injects the tactic there ->
+# goal mismatch -> spurious tactic_failed that MASKS the genuine proof.
+#
+# The latch in VerifyExecutor.handle catches this BEFORE the doomed re-verify
+# when all three hold (else it falls through, P5 path preserved):
+#   1. the frozen target line no longer contains "sorry"
+#   2. the current raw sorry count is STRICTLY below the session-start count
+#      (full_file snapshot) -> distinguishes a real proof from a line shift
+#   3. a confirming build of the actual file succeeds
+# These tests pin the decision offline (verifier + re-verify mocked, no lake).
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _make_verify_executor(filepath, sorry_line, full_file, goal_state=""):
+    from prover.workflow import VerifyExecutor
+
+    sctx = SorryContext(
+        filepath=str(filepath), sorry_line=sorry_line, indentation=2,
+        indent_str="  ", full_file=full_file, goal_state=goal_state,
+    )
+    return VerifyExecutor(sorry_context=sctx, imports="")
+
+
+def _run_handle(executor, msg):
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    ctx = AsyncMock()
+    ctx.yield_output = AsyncMock()
+    ctx.send_message = AsyncMock()
+    asyncio.run(executor.handle(msg, ctx))
+    return ctx
+
+
+def _patch_verifier_and_reverify(monkeypatch, build_success=True):
+    """Mock the verifier (condition 3) and record any re-verify fall-through."""
+    import prover.verifier as vmod
+    import prover.lean_utils as lu
+
+    class _FakeVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {"success": build_success, "errors": "", "raw_output": ""}
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FakeVerifier())
+
+    reverify_calls = []
+    monkeypatch.setattr(
+        lu, "verify_sorry_replacement",
+        lambda **k: (reverify_calls.append(k)
+                     or {"success": False, "errors": "REACHED_REVERIFY"}),
+    )
+    return reverify_calls
+
+
+def test_p1_latch_fires_on_in_place_proof(tmp_path, monkeypatch):
+    """All three conditions hold -> latch sets proof_found, no re-verify run."""
+    from prover.workflow import ProofMessage
+
+    proved = (
+        "import Mathlib.Tactic\n"
+        "theorem t : True := by\n"
+        "  trivial\n"
+    )
+    fake = tmp_path / "Proved.lean"
+    fake.write_text(proved, encoding="utf-8")
+    # Session-start snapshot had ONE sorry; it is now proved (count 1 -> 0).
+    session_full = proved.replace("  trivial\n", "  sorry\n")
+    assert session_full.count("sorry") == 1 and proved.count("sorry") == 0
+
+    reverify_calls = _patch_verifier_and_reverify(monkeypatch, build_success=True)
+
+    ex = _make_verify_executor(fake, sorry_line=3, full_file=session_full)
+    msg = ProofMessage(content="x", tactic="trivial", sorry_count=1)
+    ctx = _run_handle(ex, msg)
+
+    assert msg.proof_found is True, "latch must set proof_found on in-place proof"
+    assert reverify_calls == [], (
+        "verify_sorry_replacement must NOT run when the latch fires"
+    )
+    ctx.yield_output.assert_awaited_once()
+
+
+def test_p1_latch_skips_when_sorry_count_not_dropped(tmp_path, monkeypatch):
+    """Condition 2 fails (count unchanged = a shift) -> re-verify runs instead."""
+    from prover.workflow import ProofMessage
+
+    # Frozen line is clear, but the session snapshot has the SAME sorry count
+    # (the sorry merely moved). The latch must defer to the existing verify.
+    content = (
+        "import Mathlib.Tactic\n"
+        "theorem t : True := by\n"
+        "  trivial\n"
+        "-- a stray sorry mention in a comment\n"
+    )
+    fake = tmp_path / "Shift.lean"
+    fake.write_text(content, encoding="utf-8")
+    session_full = content  # identical -> same count -> no drop
+
+    reverify_calls = _patch_verifier_and_reverify(monkeypatch, build_success=True)
+
+    ex = _make_verify_executor(fake, sorry_line=3, full_file=session_full)
+    msg = ProofMessage(content="x", tactic="trivial", sorry_count=1)
+    _run_handle(ex, msg)
+
+    assert msg.proof_found is False, "latch must not fire without a sorry drop"
+    assert len(reverify_calls) == 1, "re-verify must run when the latch is skipped"
+
+
+def test_p1_latch_skips_when_target_line_still_has_sorry(tmp_path, monkeypatch):
+    """Condition 1 fails (frozen line still has sorry) -> re-verify runs.
+
+    Even though a sorry was removed elsewhere (count dropped), the frozen
+    target line still carries a sorry, so latching success would be a false
+    positive. Condition 1 vetoes it.
+    """
+    from prover.workflow import ProofMessage
+
+    content = (
+        "import Mathlib.Tactic\n"
+        "theorem t1 : True := by\n"
+        "  sorry\n"  # frozen line 3 — STILL a sorry
+    )
+    fake = tmp_path / "StillSorry.lean"
+    fake.write_text(content, encoding="utf-8")
+    # Session snapshot had TWO sorries (count dropped 2 -> 1) so cond 2 holds.
+    session_full = content + "theorem t2 : True := by\n  sorry\n"
+    assert session_full.count("sorry") == 2 and content.count("sorry") == 1
+
+    reverify_calls = _patch_verifier_and_reverify(monkeypatch, build_success=True)
+
+    ex = _make_verify_executor(fake, sorry_line=3, full_file=session_full)
+    msg = ProofMessage(content="x", tactic="omega", sorry_count=2)
+    _run_handle(ex, msg)
+
+    assert msg.proof_found is False, (
+        "latch must not fire while the frozen target line still has a sorry"
+    )
+    assert len(reverify_calls) == 1, "re-verify must run when condition 1 vetoes"
