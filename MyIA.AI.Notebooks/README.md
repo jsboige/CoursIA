@@ -6,7 +6,7 @@ Ecosysteme complet de **555 notebooks** Jupyter pour l'apprentissage des technol
 series: ALL
 total: 492
 breakdown: GenAI=112, QuantConnect=102, SymbolicAI=92, Search=45, Probas=43, Sudoku=32, ML=30, GameTheory=25, RL=6, CaseStudies=4, IIT=1
-maturity: BETA=279, PRODUCTION=155, ALPHA=43, DRAFT=11, TEMPLATE=4
+maturity: BETA=279, PRODUCTION=154, ALPHA=44, DRAFT=11, TEMPLATE=4
 -->
 
 Dernière mise à jour : 2026-05-23
