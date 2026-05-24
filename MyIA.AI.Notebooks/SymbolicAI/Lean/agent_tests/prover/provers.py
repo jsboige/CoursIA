@@ -455,6 +455,27 @@ class MultiAgentSorryProver:
                 # Force-clear best snapshot so callers don't claim spurious progress
                 tactic_tools._best_content = None
                 tactic_tools._best_sorry_count = original_sorry_count
+            else:
+                # Build passed — but a passing build can still hide an IMPLICIT
+                # sorry: when the agent replaces an explicit `sorry` with a search
+                # tactic (apply?/exact?/solve_by_elim) that finds nothing, Lean
+                # emits a "declaration uses sorry" WARNING (not an error), so the
+                # build succeeds while the text no longer contains "sorry" (#1500).
+                # compile() already folds that warning into
+                # final_verify["sorry_count"] (build-aware: max of text + warning
+                # counts); the text-only final_sorry read above misses it. Adopt
+                # the build-aware count whenever it is higher so the success gate
+                # below cannot fire on a vanished-text / implicit sorry.
+                _verify_sorry = final_verify.get("sorry_count")
+                if isinstance(_verify_sorry, int) and _verify_sorry > final_sorry:
+                    print(
+                        f"  Build-aware sorry count {_verify_sorry} > text count "
+                        f"{final_sorry}: {_verify_sorry - final_sorry} implicit "
+                        f"sorry (apply?/exact?/solve_by_elim). Using build-aware "
+                        f"count for the success gate (#1500)."
+                    )
+                    final_sorry = _verify_sorry
+                    structural_progress = False
 
         # Success now also covers structural progress: file changed but
         # compiles, even if sorry count didn't decrease. Provers.py used to

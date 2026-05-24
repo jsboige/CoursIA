@@ -722,7 +722,20 @@ class VerifyExecutor(Executor):
                 _latch_rel = (f"{_LatchPath(_latch_fp).parent.name}/"
                               f"{_LatchPath(_latch_fp).name}")
                 _latch_build = _latch_verifier.verify_project_file(_latch_rel)
-                if _latch_build.get("success"):
+                # Build-aware re-count: a passing build can still emit
+                # "declaration uses sorry" warnings when the agent swapped an
+                # explicit `sorry` for a search tactic (apply?/exact?/
+                # solve_by_elim) that found nothing — an IMPLICIT sorry that the
+                # text count above misses (#1500). Fold the warning count the
+                # same way tools.compile() does and require the EFFECTIVE count
+                # to have dropped below the session-start count, else the
+                # "in-place proof" is illusory and we must fall through to the
+                # normal verify path.
+                from .tools import _count_sorries_from_build_output
+                _latch_build_warn = _count_sorries_from_build_output(
+                    _latch_build.get("raw_output", ""))
+                _latch_effective = max(_latch_now, _latch_build_warn)
+                if _latch_build.get("success") and _latch_effective < _latch_orig:
                     msg.proof_found = True
                     self._consecutive_build_fails = 0
                     self._consecutive_noprogress = 0
