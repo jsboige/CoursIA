@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-05-24T19:49:38.152815",
   "source_files": {
     "GSState.lean": "stable_marriage_lean/StableMarriage/GSState.lean",
     "Lemmas.lean": "stable_marriage_lean/StableMarriage/Lemmas.lean",
@@ -79,6 +79,13 @@
       "pattern": "unfold_fails_on_noncomputable_def_by",
       "trigger": "unfold fails or produces unreadable goals on noncomputable def := by ... definitions",
       "alternative": "use show to explicitly state the type, or simp only [def_name]"
+    },
+    "": {
+      "tactic": "simp [nimSum, Nat.xor_self, Nat.zero_xor]",
+      "theorem": "",
+      "file": "C:\\dev\\CoursIA\\MyIA.AI.Notebooks\\GameTheory\\conway_lean\\Conway\\Nim.lean:50",
+      "timestamp": "2026-05-24T19:49:38.152815",
+      "uses": 1
     }
   },
   "tactic_cookbook": {

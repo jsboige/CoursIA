@@ -139,6 +139,21 @@ NASH_CALIBRATION_IMPORTS = """import Mathlib.Data.Fintype.Basic
 import Mathlib.Tactic
 """
 
+# ── Conway calibration (Epic #1453) ──
+_CONWAY_CANDIDATES = [
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\conway_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\conway_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\conway_lean"),
+]
+CONWAY_DIR = next(
+    (p for p in _CONWAY_CANDIDATES if p.exists()),
+    _CONWAY_CANDIDATES[0],
+)
+CONWAY_NIM_FILE = CONWAY_DIR / "Conway" / "Nim.lean" if CONWAY_DIR.exists() else None
+CONWAY_NIM_IMPORTS = """import Mathlib.Data.Nat.Bitwise
+import Mathlib.Data.List.Basic
+"""
+
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
 # fix. Attacking them wastes compute and produces fake "PROVED" reports. Each
@@ -1188,10 +1203,62 @@ DEMOS = {
         ),
         "difficulty": "easy",
     },
+    # ── Conway calibration targets (Epic #1453) ──
+    # Nim.lean — tractable gradient: decide / unfold+simp / xor_self
+    39: {
+        "name": "CALIBRATION_CONWAY_NIM_WINNING_345",
+        "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
+        "line": 42,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isWinningNim_345",
+        "theorem": "isWinningNim_345",
+        "imports": CONWAY_NIM_IMPORTS,
+        "description": (
+            "Calibration: position [3,4,5] is a first-player win.\n"
+            "Easy: closed evaluation via decide / native_decide.\n"
+            "Self-contained: nimSum, isWinningNim defined in same file.\n"
+            "LEAN_PROJECT must be conway_lean.\n"
+            "Expected: 1-3 prover iterations."
+        ),
+        "difficulty": "easy",
+    },
+    40: {
+        "name": "CALIBRATION_CONWAY_NIM_SUM_SINGLE",
+        "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
+        "line": 46,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "nimSum_single",
+        "theorem": "nimSum_single",
+        "imports": CONWAY_NIM_IMPORTS,
+        "description": (
+            "Calibration: single heap nim-sum equals its size.\n"
+            "Easy: unfold nimSum + foldl + Nat.zero_xor / simp.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be conway_lean.\n"
+            "Expected: 2-4 prover iterations."
+        ),
+        "difficulty": "easy",
+    },
+    41: {
+        "name": "CALIBRATION_CONWAY_NIM_SUM_SELF",
+        "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
+        "line": 50,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "nimSum_self",
+        "theorem": "nimSum_self",
+        "imports": CONWAY_NIM_IMPORTS,
+        "description": (
+            "Calibration: two equal heaps cancel (losing P-position).\n"
+            "Medium: unfold nimSum + foldl + Nat.xor_self.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be conway_lean.\n"
+            "Expected: 3-5 prover iterations."
+        ),
+        "difficulty": "medium",
+    },
 }
 
-# DEMOS already proved — the prover MUST NOT target these. Lemmas.lean has
-# 0 sorry (all proved 2026-05-15/16), so DEMOS 18-28 are stale. DEMO 15
+# Lemmas.lean has 0 sorry (all proved 2026-05-15/16), so DEMOS 18-28 are stale. DEMO 15
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.
 PROVED_DEMOS = {
