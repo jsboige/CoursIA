@@ -1017,7 +1017,7 @@ DEMOS = {
     34: {
         "name": "LATTICE_DOCTOR_OPTIMAL_TOP",
         "file": str(LATTICE_FILE),
-        "line": 321,
+        "line": 836,
         "sorry_type": "sorry_replacement",
         "theorem_name": "doctor_optimal_eq_top",
         "theorem": "doctor_optimal_eq_top",
