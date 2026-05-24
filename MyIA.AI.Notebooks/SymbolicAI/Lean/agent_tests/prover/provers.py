@@ -84,6 +84,33 @@ def _refuse_honest_sorry(filepath: str, sorry_line: int,
     return None
 
 
+def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
+                             final_build_ok: bool) -> tuple[bool, bool]:
+    """Decide AutonomousProver session success from the post-verify counts (P4).
+
+    Pure decision behind the increase-case gate (#1483). A file that BUILDS
+    (``final_build_ok``) is a success when the sorry count DECREASED, or when it
+    stayed/INCREASED through strategic decomposition (structural progress) while
+    still > 0. A build failure is never a success. The increase-case is the
+    point P4 targets: a decomposition that raises the sorry count but still
+    compiles 0 errors must report success and must NOT be reverted — the revert
+    branch upstream is keyed on ``final_build_ok`` (``level_1_build``) alone, so
+    a sorry increase never reaches it as long as the build passes.
+
+    Returns ``(success, structural_progress)``.
+    """
+    structural_progress = (
+        final_sorry >= original_sorry_count
+        and final_build_ok
+        and final_sorry > 0
+    )
+    success = (
+        (final_sorry < original_sorry_count or structural_progress)
+        and final_build_ok
+    )
+    return success, structural_progress
+
+
 class MultiAgentSorryProver:
     """Multi-agent sorry replacement using WorkflowBuilder graph.
 
@@ -1138,16 +1165,11 @@ class AutonomousProver:
                           f"reverting.", flush=True)
 
         # P4: success also covers structural progress (sorry increase from
-        # strategic decomposition) as long as the file builds.
-        structural_progress_autonomous = (
-            final_sorry >= original_sorry_count
-            and final_build_ok
-            and final_sorry > 0
-        )
-        success = (
-            (final_sorry < original_sorry_count
-             or structural_progress_autonomous)
-            and final_verify_ok
+        # strategic decomposition) as long as the file builds. Decision is
+        # extracted to a pure helper so the increase-case is unit-testable
+        # (#1483). final_build_ok == final_verify_ok here (set at line ~1102).
+        success, structural_progress_autonomous = _autonomous_success_gate(
+            final_sorry, original_sorry_count, final_build_ok
         )
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
