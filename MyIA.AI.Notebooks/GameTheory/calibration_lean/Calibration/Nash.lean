@@ -62,14 +62,15 @@ def Trahir : Fin 2 := ⟨1, by omega⟩
     Expected iterations: 3-5 (search → fail → fallback → case split → close). -/
 theorem strictly_domin_defect_pd :
     strictlyDominates1 prisonersDilemma Trahir Cooperer := by
-  sorry
+  unfold strictlyDominates1; intro a2; fin_cases a2 <;> decide
 
 /-- Target D (P2): (D, D) is a pure Nash equilibrium of Prisoner's Dilemma.
     Exercises P2: requires Fin 2 case analysis + Int comparison across both players.
     Expected iterations: 4-7 (unfold → case split → arithmetic → close). -/
 theorem pd_defect_is_pure_ne :
     isPureNashEquilibrium prisonersDilemma Trahir Trahir := by
-  sorry
+  unfold isPureNashEquilibrium
+  constructor <;> intro a <;> fin_cases a <;> norm_num [prisonersDilemma, Trahir]
 
 /-- Target E (P1+P2): (C, C) is NOT a pure Nash equilibrium.
     Harder: requires constructing a counterexample (defect beats cooperate).
@@ -77,7 +78,11 @@ theorem pd_defect_is_pure_ne :
     Expected iterations: 5-10 (unfold → negation → construct witness → decide). -/
 theorem pd_cooperate_not_ne :
     ¬ isPureNashEquilibrium prisonersDilemma Cooperer Cooperer := by
-  sorry
+  unfold Not
+  intro h
+  rcases h with ⟨h1, h2⟩
+  have hdev := h1 Trahir
+  norm_num [isPureNashEquilibrium, prisonersDilemma, Cooperer, Trahir] at hdev
 
 /-! ## Sorry-Increase Calibration Target (P4) -/
 
@@ -94,4 +99,4 @@ theorem pd_cooperate_not_ne :
     Expected iterations: 3-5 (unfold → constructor → 2 sorries → maybe prove one). -/
 theorem pd_defect_is_ne_decomposable :
     isPureNashEquilibrium prisonersDilemma Trahir Trahir := by
-  sorry
+  exact pd_defect_is_pure_ne
