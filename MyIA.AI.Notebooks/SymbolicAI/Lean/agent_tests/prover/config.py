@@ -153,6 +153,16 @@ CONWAY_NIM_FILE = CONWAY_DIR / "Conway" / "Nim.lean" if CONWAY_DIR.exists() else
 CONWAY_NIM_IMPORTS = """import Mathlib.Data.Nat.Bitwise
 import Mathlib.Data.List.Basic
 """
+CONWAY_ANGEL_FILE = CONWAY_DIR / "Conway" / "Angel.lean" if CONWAY_DIR.exists() else None
+CONWAY_ANGEL_IMPORTS = """import Mathlib.Data.Int.Interval
+import Mathlib.Data.Finset.Prod
+"""
+CONWAY_DOOMSDAY_FILE = CONWAY_DIR / "Conway" / "DoomsdayLemmas.lean" if CONWAY_DIR.exists() else None
+CONWAY_DOOMSDAY_IMPORTS = """import Conway.Doomsday
+"""
+CONWAY_LOOKANDSAY_FILE = CONWAY_DIR / "Conway" / "LookAndSayLemmas.lean" if CONWAY_DIR.exists() else None
+CONWAY_LOOKANDSAY_IMPORTS = """import Conway.LookAndSay
+"""
 
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
@@ -1256,9 +1266,180 @@ DEMOS = {
         ),
         "difficulty": "medium",
     },
+    # ── Conway calibration: Angel problem (power-1 king moves, Chebyshev) ──
+    42: {
+        "name": "CALIBRATION_CONWAY_ANGEL_KING_MOVES",
+        "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
+        "line": 47,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "kingMoves_card",
+        "theorem": "kingMoves_card",
+        "imports": CONWAY_ANGEL_IMPORTS,
+        "description": (
+            "Calibration: power-1 Angel (chess king) has 8 moves from origin.\n"
+            "Easy: closed evaluation -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    43: {
+        "name": "CALIBRATION_CONWAY_ANGEL_POWER2",
+        "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
+        "line": 51,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "angelMoves2_card",
+        "theorem": "angelMoves2_card",
+        "imports": CONWAY_ANGEL_IMPORTS,
+        "description": (
+            "Calibration: power-2 Angel has 24 moves from origin.\n"
+            "Easy: closed evaluation -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    44: {
+        "name": "CALIBRATION_CONWAY_ANGEL_CARD_FORMULA",
+        "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
+        "line": 58,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "angelMoves_card",
+        "theorem": "angelMoves_card",
+        "imports": CONWAY_ANGEL_IMPORTS,
+        "description": (
+            "Calibration: Angel of power k from any square has (2k+1)^2 - 1 moves.\n"
+            "Medium: parametric, requires Finset.card_product + card_erase_of_mem + Int.card_Icc.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "medium",
+    },
+    # ── Conway calibration: Doomsday algorithm lemmas ──
+    45: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_2000",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 25,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isLeapYear_2000",
+        "theorem": "isLeapYear_2000",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: 2000 is a leap year (div by 400).\n"
+            "Easy: closed boolean eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    46: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_1900",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 29,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isLeapYear_1900",
+        "theorem": "isLeapYear_1900",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: 1900 is NOT a leap year (div by 100, not 400).\n"
+            "Easy: closed boolean eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    47: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_2024",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 33,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isLeapYear_2024",
+        "theorem": "isLeapYear_2024",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: 2024 is a leap year.\n"
+            "Easy: closed boolean eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    48: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_CONWAY_DEATH",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 38,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "dayOfWeek_conway_death",
+        "theorem": "dayOfWeek_conway_death",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Homage + Calibration: Conway died Saturday April 11, 2020.\n"
+            "Closed eval over Doomsday algorithm -> native_decide.\n"
+            "Medium: naive rfl may stall on %-arithmetic.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    49: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_ADD_SEVEN",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 43,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "dayOfWeek_add_seven",
+        "theorem": "dayOfWeek_add_seven",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: adding a full week is identity.\n"
+            "Medium: free variable d, naive decide fails.\n"
+            "Requires: cases d <;> rfl.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "medium",
+    },
+    # ── Conway calibration: Look-and-Say lemmas ──
+    50: {
+        "name": "CALIBRATION_CONWAY_LAS_DIGITS_EXAMPLE",
+        "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
+        "line": 25,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "digitsToNat_example",
+        "theorem": "digitsToNat_example",
+        "imports": CONWAY_LOOKANDSAY_IMPORTS,
+        "description": (
+            "Calibration: [1,2,1,1] decodes to 1211.\n"
+            "Easy: closed eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    51: {
+        "name": "CALIBRATION_CONWAY_LAS_LOOKANDSAY_4",
+        "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
+        "line": 29,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "lookAndSay_4",
+        "theorem": "lookAndSay_4",
+        "imports": CONWAY_LOOKANDSAY_IMPORTS,
+        "description": (
+            "Calibration: 5th look-and-say term is 111221.\n"
+            "Medium: WF recursion, naive rfl/decide may not reduce.\n"
+            "Exercises phantom-id blocklist path (P3).\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "medium",
+    },
+    52: {
+        "name": "CALIBRATION_CONWAY_LAS_ROUND_TRIP",
+        "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
+        "line": 34,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "digitsToNat_natToDigits",
+        "theorem": "digitsToNat_natToDigits",
+        "imports": CONWAY_LOOKANDSAY_IMPORTS,
+        "description": (
+            "Calibration (HARD): decoding decimal digits of n recovers n.\n"
+            "Requires structural induction matching natToDigits recursion on n/10,\n"
+            "plus a digitsToNat_append helper lemma.\n"
+            "Director must NOT expect one-shot tactic.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "hard",
+    },
 }
-
-# Lemmas.lean has 0 sorry (all proved 2026-05-15/16), so DEMOS 18-28 are stale. DEMO 15
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.
 PROVED_DEMOS = {
