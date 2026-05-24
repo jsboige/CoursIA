@@ -788,10 +788,10 @@ as his partner in any other stable matching μ'.
 -/
 theorem doctor_optimal_eq_top (μ_gs : Matching n)
     (hgs : IsStable prof μ_gs)
+    (hopt : IsManOptimal prof μ_gs)
     (μ' : Matching n) (hstable : IsStable prof μ') :
-    ManLE prof μ_gs μ' :=
-  fun m => by
-  -- INTRACTABLE_UNTIL_RURAL_HOSPITALS: doctor_optimal requires GS algorithm witness
-  sorry
+    ManLE prof μ_gs μ' := by
+  intro m
+  exact hopt.2 μ' hstable m
 
 end StableMarriage
