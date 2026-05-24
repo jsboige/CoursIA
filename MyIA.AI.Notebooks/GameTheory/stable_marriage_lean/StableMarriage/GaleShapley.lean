@@ -3,7 +3,14 @@
   ======================================================
 
   The Gale-Shapley deferred acceptance algorithm produces a stable matching.
-  This file provides the theorem statements (scaffolds for future proofs).
+
+  Status of the main results:
+  - `gale_shapley_stable` is **constructively proved** via the deferred-acceptance
+    state machine (`gsRunSteps` / `gsFinalMatching` / `gsNoBlockingPairs`).
+  - `gale_shapley_man_optimal` / `gale_shapley_woman_pessimal` reduce to the
+    lattice-of-stable-matchings optimality lemmas in `Lattice.lean`, which remain
+    unproved placeholders (Knuth lattice theory / rural-hospitals theorem). These
+    are kept honestly intractable rather than axiomatized.
 
   Algorithm sketch (man-proposing version):
   1. Each free man proposes to his most-preferred woman he hasn't proposed to yet
@@ -56,11 +63,11 @@ theorem gale_shapley_produces_matching (prof : PrefProfile n) :
 The Gale-Shapley algorithm produces a stable matching.
 No blocking pair exists in the output matching.
 
-This is the main correctness theorem.
-
-Note: a full constructive proof requires implementing the Gale-Shapley
-deferred-acceptance algorithm (`mmaaz-git/stable-marriage-lean` provides
-~1000 lines of supporting lemmas). We axiomatize the existence here.
+This is the main correctness theorem. It is **constructively proved**: the
+deferred-acceptance step machine (`gsRunSteps prof (gsProposalBound n)`) is run
+to termination, and `gsFinalMatching` / `gsNoBlockingPairs` (ported and adapted
+from `mmaaz-git/stable-marriage-lean`, ~1000 lines of supporting lemmas) discharge
+stability. This declaration is complete: no placeholder tactic and no axiom are used.
 -/
 theorem gale_shapley_stable (prof : PrefProfile n) :
     ∃ μ : Matching n, IsStable prof μ := by
