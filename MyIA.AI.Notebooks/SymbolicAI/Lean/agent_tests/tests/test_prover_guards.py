@@ -891,3 +891,71 @@ def test_p1_latch_skips_on_implicit_sorry(tmp_path, monkeypatch):
     assert len(reverify_calls) == 1, (
         "re-verify must run when the effective (build-aware) count did not drop"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1483 — AutonomousProver increase-case gate: a strategic decomposition that
+# RAISES the sorry count but still compiles (lake build SUCCESS, 0 errors) must
+# be reported as success and must NOT be reverted. The revert branch upstream
+# (provers.py ~1105) is keyed on `level_1_build` alone, so a sorry increase
+# never reaches it while the build passes; `_autonomous_success_gate` is the
+# pure decision behind the final success/structural-progress flags. P4 intent:
+# "never revert a file solely because sorry increased".
+# ──────────────────────────────────────────────────────────────────────────
+def test_autonomous_gate_increase_case_is_success_no_revert():
+    """sorry 4 -> 5 (decomposition) + build OK => success, structural progress."""
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=5, original_sorry_count=4, final_build_ok=True,
+    )
+    assert success is True, (
+        "increase-case that still builds must report success (P4 #1483)"
+    )
+    assert structural is True, (
+        "a building sorry increase is structural progress, not a regression"
+    )
+
+
+def test_autonomous_gate_increase_case_reverts_when_build_fails():
+    """sorry 4 -> 5 but build FAILS => not success (revert territory)."""
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=5, original_sorry_count=4, final_build_ok=False,
+    )
+    assert success is False
+    assert structural is False
+
+
+@pytest.mark.parametrize(
+    "final_sorry,original,build_ok,exp_success,exp_struct",
+    [
+        # increase + build OK -> success via structural progress (#1483 core)
+        (5, 4, True, True, True),
+        # same count + build OK + >0 -> structural progress (no regression)
+        (4, 4, True, True, True),
+        # decrease + build OK -> plain success, not structural
+        (3, 4, True, True, False),
+        # fully solved + build OK -> success, not structural (count 0)
+        (0, 4, True, True, False),
+        # increase + build FAIL -> never success
+        (5, 4, False, False, False),
+        # decrease + build FAIL -> never success (false positive guard)
+        (3, 4, False, False, False),
+        # degenerate 0 -> 0 (no sorry to prove): no progress, not structural
+        # (struct needs final_sorry > 0). Preserves the pre-extraction formula.
+        (0, 0, True, False, False),
+    ],
+)
+def test_autonomous_gate_matrix(final_sorry, original, build_ok,
+                                exp_success, exp_struct):
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=final_sorry,
+        original_sorry_count=original,
+        final_build_ok=build_ok,
+    )
+    assert success is exp_success
+    assert structural is exp_struct
