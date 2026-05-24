@@ -1168,6 +1168,26 @@ DEMOS = {
         ),
         "difficulty": "medium",
     },
+    38: {
+        "name": "CALIBRATION_NASH_P4_SORRY_INCREASE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 97,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "pd_defect_is_ne_decomposable",
+        "theorem": "pd_defect_is_ne_decomposable",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target F (P4 sorry-increase harness path).\n"
+            "Prove pd_defect_is_ne_decomposable: same as Target D but designed\n"
+            "for decomposition. The prover should split into 2 sub-sorries\n"
+            "(constructor · sorry · sorry), increasing sorry 1→2.\n"
+            "Harness MUST NOT revert if build passes (P4 gate on level_1_build).\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 3-5 prover iterations, sorry may increase."
+        ),
+        "difficulty": "easy",
+    },
 }
 
 # DEMOS already proved — the prover MUST NOT target these. Lemmas.lean has

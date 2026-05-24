@@ -1079,6 +1079,8 @@ class AutonomousProver:
         # strategic decomposition must NOT trigger revert if the build passes.
         final_verify_ok = verify_result.get("level_1_build", False)
         final_build_ok = final_verify_ok
+        # Update final_sorry from compile result (includes implicit sorry detection)
+        final_sorry = verify_result.get("sorry_count", final_sorry)
         if not final_verify_ok:
             errors = verify_result.get("errors", [])
             unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
@@ -1095,6 +1097,7 @@ class AutonomousProver:
             print("  Final verification build (post-revert)...", flush=True)
             verify_result = json.loads(tactic_tools.compile())
             final_verify_ok = verify_result.get("level_1_build", False)
+            final_sorry = verify_result.get("sorry_count", final_sorry)
             if not final_verify_ok:
                 errors = verify_result.get("errors", [])
                 unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
