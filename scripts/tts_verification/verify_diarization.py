@@ -34,9 +34,9 @@ from pathlib import Path
 
 WHISPER_URL = os.getenv("WHISPER_API_URL", "http://localhost:8190")
 WHISPER_KEY = os.getenv("WHISPER_API_KEY", "")
-WHISPER_WEBUI_URL = os.getenv("WHISPER_WEBUI_URL", "http://localhost:36540")
-WHISPER_WEBUI_USER = os.getenv("WHISPER_WEBUI_USER", "admin")
-WHISPER_WEBUI_PASSWORD = os.getenv("WHISPER_WEBUI_PASSWORD", "changeme")
+WHISPER_WEBUI_URL = os.getenv("WHISPER_WEBUI_URL", "http://localhost:7860")
+WHISPER_WEBUI_USER = os.getenv("WHISPER_WEBUI_USER", "whisper")
+WHISPER_WEBUI_PASSWORD = os.getenv("WHISPER_WEBUI_PASSWORD", "")
 
 
 # ---------------------------------------------------------------------------
