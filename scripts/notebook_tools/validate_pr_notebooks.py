@@ -21,10 +21,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+# Shared C.1 detector (#1505): digit-bounded regex, comment/docstring-aware.
+# Both this CI gate and notebook_lint.py consume the same scanner so the two
+# C.1 checkers can never diverge again (the old substring match here flagged
+# dates like "21/02/2022" because "1/0" is a substring of "1/02").
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from notebook_lint import scan_c1_source
 
-# Patterns banned by rule C.1
-C1_BANNED = ["raise NotImplementedError", "assert False", "1/0"]
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Kernels that cannot be executed via Papermill in CI (skip execution check,
 # but still check C.1 and structural validity)
@@ -117,13 +121,13 @@ def validate_notebook(nb_path: Path) -> dict:
 
         result["total_code"] += 1
 
-        # C.1 check: banned patterns
-        for pattern in C1_BANNED:
-            if pattern in source:
-                result["passed"] = False
-                result["errors"].append(
-                    f"cell {i}: C.1 violation — '{pattern}' found"
-                )
+        # C.1 check: forbidden patterns via the shared digit-bounded,
+        # comment/docstring-aware scanner (#1505 — no more date false positives)
+        for _line, desc in scan_c1_source(source):
+            result["passed"] = False
+            result["errors"].append(
+                f"cell {i}: C.1 violation — '{desc}' found"
+            )
 
         # H.3 check: execution_count must not be null (skip for non-Papermill kernels)
         if not skip_exec:
