@@ -63,8 +63,8 @@ L'unique notebook couvre le spectre complet : construction de graphes causaux bi
 ### Environnement Python
 
 ```bash
-# Environnement conda recommande (Python 3.7-3.9)
-conda create --name pyphi python=3.9 -y
+# Environnement conda recommande (Python 3.10+)
+conda create --name pyphi python=3.13 -y
 conda activate pyphi
 pip install pyphi numpy scipy
 ```
@@ -81,7 +81,7 @@ pip install pyphi numpy scipy
 
 | Probleme | Cause | Solution |
 |----------|-------|----------|
-| Conflits numpy/scipy | Python 3.10+ incompatible | Utiliser Python 3.7-3.9 |
+| Conflits numpy/scipy | Rare (PyPhi 1.2.0 OK sur 3.13) | Utiliser Python 3.10+ |
 | StateUnreachableError | Etats inaccessibles | Configuration `VALIDATE_SUBSYSTEM_STATES` |
 | Performance | Phi calcul intensif pour grands reseaux | Limiter taille des reseaux |
 
