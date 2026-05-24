@@ -95,9 +95,49 @@ lemma spouse_inverse (μ : Matching n) (w : Fin n) :
 /-! ## Anti-crossing Lemma (Knuth decomposition) -/
 
 /--
+A sound anti-crossing fragment: if the shared woman `w` is chosen by both men
+against their partners in the other stable matching, then the two men coincide.
+This is the cross-case needed for injectivity of `joinSpouse`.
+-/
+lemma no_cross_if_both_choose_cross (μ ν : Matching n)
+    (hμ : IsStable prof μ) (hν : IsStable prof ν)
+    {m₁ m₂ w : Fin n}
+    (h1 : μ.spouse m₁ = w) (h2 : ν.spouse m₂ = w)
+    (hm₁ : prof.ManPrefers m₁ w (ν.spouse m₁))
+    (hm₂ : prof.ManPrefers m₂ w (μ.spouse m₂)) :
+    m₁ = m₂ := by
+  by_contra hne
+  have hμinv_w : μ.inverse w = m₁ := inverse_eq_of_spouse_eq μ m₁ _ h1
+  have hνinv_w : ν.inverse w = m₂ := inverse_eq_of_spouse_eq ν m₂ _ h2
+  have hnot₁ : ¬prof.WomanPrefers w m₁ m₂ := by
+    intro hw
+    have hbp : IsBlockingPair prof ν m₁ w := by
+      unfold IsBlockingPair
+      rw [hνinv_w]
+      exact ⟨hm₁, hw⟩
+    exact hν m₁ w hbp
+  have hnot₂ : ¬prof.WomanPrefers w m₂ m₁ := by
+    intro hw
+    have hbp : IsBlockingPair prof μ m₂ w := by
+      unfold IsBlockingPair
+      rw [hμinv_w]
+      exact ⟨hm₂, hw⟩
+    exact hμ m₂ w hbp
+  unfold PrefProfile.WomanPrefers at hnot₁ hnot₂
+  simp only [not_lt] at hnot₁ hnot₂
+  have heq : (prof.womenPref w m₁ : Nat) = prof.womenPref w m₂ :=
+    Nat.le_antisymm (mod_cast hnot₂) (mod_cast hnot₁)
+  exact hne ((prof.womenPref_bijective w).injective (Fin.ext heq))
+
+/--
 Anti-crossing: if two stable matchings share a woman w (μ.sp m₁ = w, ν.sp m₂ = w),
 then the other partners are also shared: μ.sp m₂ = ν.sp m₁.
 This is the core of Knuth's decomposition lemma (1976, Theorem 1.6.3).
+
+INTRACTABLE: proving the remaining cases (A2, B) requires the full Knuth
+decomposition / rotations argument. Case A1 is proved above (blocking pair
+contradiction). The proved fragment `no_cross_if_both_choose_cross` covers
+the cross-case used by `meetSpouse_injective`.
 -/
 lemma no_cross_match (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν)
@@ -449,9 +489,10 @@ private lemma meetSpouse_injective (μ ν : Matching n)
               exact hne ((prof.womenPref_bijective (ν.spouse m₁)).injective
                 (Fin.ext (Nat.le_antisymm (mod_cast hw₂) (mod_cast hw₁))))
             · -- Symmetric "different women" case (ν.sp₁ ≠ μ.sp₂).
-              -- Same as first cross-case: needs rural hospitals / lattice argument.
-              -- INTRACTABLE_UNTIL_RURAL_HOSPITALS
-              sorry
+              -- Uses no_cross_match (Knuth anti-crossing lemma).
+              have hncm : μ.spouse m₂ = ν.spouse m₁ :=
+                @no_cross_match n _ prof μ ν hμ hν m₁ m₂ (μ.spouse m₁) rfl heq.symm
+              exact hwsame hncm.symm
       · -- Equality: μ.spouse m₂ = ν.spouse m₂, then with heq: μ.spouse₁ = ν.spouse₂ = μ.spouse₂
         -- contradicts μ injectivity (m₁ ≠ m₂)
         push_neg at hm₂strict
