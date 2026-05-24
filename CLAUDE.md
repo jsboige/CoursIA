@@ -145,7 +145,7 @@ S'applique a **tous les agents** (executants, coordinateur, reviewers humains et
 
 | # | Regle | Resume |
 |---|-------|--------|
-| G.1 | Verifier claims contre code | `grep`/`Read` avant d'affirmer une absence. Pas de propagation par confiance |
+| G.1 | Verifier claims ET verdicts contre la source | `grep`/`Read` avant d'affirmer une absence. **Un verdict d'un autre agent (NO-GO / COMPLETE / DONE / FALSE POSITIVE) se relit contre le scope reel de l'issue AVANT d'agir : le label n'est pas la preuve, son raisonnement peut reposer sur une premisse fausse ou une issue mal attribuee.** Pas de propagation par confiance |
 | G.2 | Metriques honnetes pas binaires | sorry=0 sans lake build SUCCESS = invalide. BEATS sans multi-seed = invalide |
 | G.3 | Pas de "DONE" sur progres marginal | Pourcentage explicite + liste residuelle obligatoires |
 | G.4 | Composites trop larges = split | > 3000 lignes / 15 fichiers / 4 features / 1 domaine = CHANGES_REQUESTED |
@@ -153,7 +153,7 @@ S'applique a **tous les agents** (executants, coordinateur, reviewers humains et
 | G.6 | Audit avant merge cascade | Lire le diff + verifier 1 claim par PR avant merge |
 | G.7 | Stagnation cross-cycle = escalade | Pas d'acceptation "BLOCKED" sans preuve concrete |
 | G.8 | Bots reviewers pas de rubber-stamp | APPROVE > 3 PRs en < 10 min = contester. APPROVED sur composite = CHANGES_REQUESTED |
-| G.9 | Culture du doute | Se demander "puis-je avoir tort ?" avant rapport/merge. Reproduire les "breakthrough" |
+| G.9 | Culture du doute | Se demander "puis-je avoir tort ?" avant rapport/merge/**close d'issue**. Reproduire les "breakthrough". **Fermer une issue = lire son body complet + confronter le verdict invoque a ce body, jamais sur le label seul (incident #274 : close hallucinee sur un NO-GO base sur une issue mal attribuee).** |
 
 ### H. Validation REELLE — pas de complaisance, jamais
 
