@@ -608,6 +608,9 @@ def test_f9_intractable_accepted_after_director_consultation():
     # Simulate AgentExecutor recording a real Director run.
     state.director_consulted = True
     state.director_consulted_count = 1
+    # B2 gate (#1224): the always-wired SearchAgent (provers.py:255) has also
+    # explored reference_docs/ by the time the Coordinator gives up.
+    state.search_agent_consulted = True
 
     out = ct.mark_sorry_intractable("director also failed")
     assert "REFUSED" not in out, f"F9 gate over-restrictive: {out[:200]}"
@@ -631,6 +634,10 @@ def test_f9_graceful_degradation_when_no_director_wired():
     director_agent = None
     if director_agent is None:
         state.director_consulted = True
+    # The SearchAgent is always wired (provers.py:255, unconditional), so by
+    # the time intractable is reached it has run and cleared the B2 gate
+    # (#1224). Only the Director has a no-wire auto-bypass.
+    state.search_agent_consulted = True
 
     from prover.tools import CoordinatorTools
     ct = CoordinatorTools(state=state, filepath="", trace=None)
