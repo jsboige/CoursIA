@@ -46,6 +46,61 @@ from .knowledge import ProofKnowledgeBase
 # still bounds the total session.
 DEFAULT_AGENT_TIMEOUT_S = 600
 
+# Transient-error retry policy. Forensic analysis of prover traces
+# (traces/*.spans.jsonl) showed whole iterations lost to TRANSIENT provider
+# errors (HTTP 5xx, connection reset/aborted, read/connect timeouts) that
+# crashed an agent mid-run with no retry. Retries are bounded: 2 attempts with
+# short exponential backoff (2s, 4s). Note: a 404 is NOT transient — it means a
+# bad/missing model_id (config bug) — and must NOT be retried (see
+# `_is_transient_error`).
+TRANSIENT_RETRY_MAX = 2
+TRANSIENT_RETRY_BACKOFF_S = (2.0, 4.0)
+
+
+def _is_transient_error(exc: BaseException) -> bool:
+    """Return True if `exc` looks like a transient provider/network error.
+
+    Matches ONLY conditions worth retrying:
+      - HTTP 5xx server errors (500, 502, 503, 504),
+      - connection reset / aborted / refused,
+      - read / connect timeouts.
+
+    Explicitly EXCLUDES 404 (bad/missing model_id — a config bug, retrying just
+    wastes time) and other 4xx client errors (401/403/422). `agent_framework`
+    may wrap the underlying httpx / openai error, so we probe both the
+    `status_code` attribute and the stringified message defensively.
+    """
+    # 1. Structured HTTP status code, if the provider exposed one. Checked on
+    #    the exception and a common nested `.response` (httpx-style) attribute.
+    for candidate in (exc, getattr(exc, "response", None)):
+        if candidate is None:
+            continue
+        status = getattr(candidate, "status_code", None)
+        if isinstance(status, int):
+            # 5xx → transient. Any 4xx (incl. 404) → NOT transient.
+            return status in (500, 502, 503, 504)
+
+    # 2. Fall back to message inspection (wrapped errors lose the attribute).
+    msg = str(exc).lower()
+
+    # Guard: never treat an explicit 404 / other 4xx as transient even if the
+    # message also happens to contain a generic word like "timeout".
+    if any(code in msg for code in (" 404", "404 ", "not found",
+                                    " 401", " 403", " 422",
+                                    "unauthorized", "forbidden")):
+        return False
+
+    transient_markers = (
+        "500", "502", "503", "504",
+        "internal server error", "bad gateway",
+        "service unavailable", "gateway timeout",
+        "connection reset", "connection aborted", "connection refused",
+        "connectionreset", "connectionerror",
+        "read timeout", "connect timeout", "timed out", "timeout",
+        "temporarily unavailable", "remote end closed",
+    )
+    return any(marker in msg for marker in transient_markers)
+
 
 @dataclass
 class ProofMessage:
@@ -253,6 +308,51 @@ class AgentExecutor(Executor):
                         self._trace.log(
                             agent=self._agent.name, role="error_retry_failed",
                             content=str(e2)[:200],
+                        )
+            elif _is_transient_error(e):
+                # Transient provider/network error (HTTP 5xx, connection
+                # reset/aborted, read/connect timeout). Forensic: several
+                # iterations were lost when an agent crashed mid-run on a
+                # transient error with no retry. Retry the SAME invocation,
+                # bounded (TRANSIENT_RETRY_MAX) with short exponential backoff.
+                # A 404 / other 4xx never reaches here (_is_transient_error
+                # excludes them — those are config bugs, not worth retrying).
+                response_text = None
+                _last_exc = e
+                for _attempt in range(1, TRANSIENT_RETRY_MAX + 1):
+                    _backoff = TRANSIENT_RETRY_BACKOFF_S[
+                        min(_attempt - 1, len(TRANSIENT_RETRY_BACKOFF_S) - 1)
+                    ]
+                    _retry_msg = (
+                        f"[retry] transient provider error "
+                        f"(attempt {_attempt}/{TRANSIENT_RETRY_MAX}): "
+                        f"{repr(_last_exc)[:120]}"
+                    )
+                    if self._trace:
+                        self._trace.log(
+                            agent=self._agent.name, role="transient_retry",
+                            content=_retry_msg,
+                        )
+                    await asyncio.sleep(_backoff)
+                    try:
+                        response = await self._agent.run(content)
+                        response_text = self._extract_response_text(response)
+                        break
+                    except Exception as e_retry:
+                        _last_exc = e_retry
+                        # Only keep retrying while still transient; a fresh
+                        # non-transient error must fall through immediately.
+                        if not _is_transient_error(e_retry):
+                            break
+                if response_text is None:
+                    # Retries exhausted (or a non-transient error surfaced) —
+                    # fall through to the existing failure handling, do NOT
+                    # swallow the error silently.
+                    response_text = f"Agent error: {_last_exc}"
+                    if self._trace:
+                        self._trace.log(
+                            agent=self._agent.name, role="transient_retry_failed",
+                            content=str(_last_exc)[:200],
                         )
             else:
                 response_text = f"Agent error: {e}"
