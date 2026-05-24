@@ -414,7 +414,7 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             "temperature": 0.7,
             "top_p": 0.9,
             "format": "mp3",
-            "timeout": 120,
+            "timeout": 300,
         })
 
     # If single chunk, use direct call
@@ -471,14 +471,29 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
     )
 
 
+def _load_cached_hashes() -> dict[int, str]:
+    """Load text hashes from tts_results.json once (O(N) not O(N²))."""
+    results_path = BASE_DIR / "outputs" / "tts_results.json"
+    if not results_path.exists():
+        return {}
+    try:
+        data = json.loads(results_path.read_text(encoding="utf-8"))
+        return {r["seg_index"]: r.get("text_hash", "") for r in data}
+    except (json.JSONDecodeError, KeyError):
+        return {}
+
+
 def _synthesize_batch(
     segments: list[tuple[AnnotatedSegment, str]],
+    cached_hashes: dict[int, str] | None = None,
 ) -> list[TTSResult]:
     """Process a batch of segments concurrently.
 
     Delegates cache checking to _synthesize_segment (which does text-hash
     invalidation). Only truly cached segments skip the thread pool.
     """
+    if cached_hashes is None:
+        cached_hashes = {}
     results: dict[int, TTSResult] = {}
 
     # Quick first pass: check which are truly cached (hash matches)
@@ -489,35 +504,21 @@ def _synthesize_batch(
         mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
         current_hash = _text_hash(text)
 
-        if mp3_path.exists():
-            # Check hash from previous results
-            cached_hash = ""
-            results_path = BASE_DIR / "outputs" / "tts_results.json"
-            if results_path.exists():
-                try:
-                    results_data = json.loads(results_path.read_text(encoding="utf-8"))
-                    for r in results_data:
-                        if r.get("seg_index") == seg.seg_index:
-                            cached_hash = r.get("text_hash", "")
-                            break
-                except (json.JSONDecodeError, KeyError):
-                    pass
-
-            if cached_hash == current_hash:
-                size = mp3_path.stat().st_size
-                duration = audio_duration_mp3(mp3_path.read_bytes()) if size > 0 else 0.0
-                results[seg.seg_index] = TTSResult(
-                    seg_index=seg.seg_index,
-                    speaker=seg.speaker,
-                    reference_id=reference_id,
-                    mp3_path=str(mp3_path),
-                    duration_s=duration,
-                    seed=seed,
-                    status="cached",
-                    attempts=0,
-                    text_hash=current_hash,
-                )
-                continue
+        if mp3_path.exists() and cached_hashes.get(seg.seg_index) == current_hash:
+            size = mp3_path.stat().st_size
+            duration = audio_duration_mp3(mp3_path.read_bytes()) if size > 0 else 0.0
+            results[seg.seg_index] = TTSResult(
+                seg_index=seg.seg_index,
+                speaker=seg.speaker,
+                reference_id=reference_id,
+                mp3_path=str(mp3_path),
+                duration_s=duration,
+                seed=seed,
+                status="cached",
+                attempts=0,
+                text_hash=current_hash,
+            )
+            continue
         to_generate.append((seg.seg_index, seg, text))
 
     if not to_generate:
@@ -583,6 +584,10 @@ def run(force: bool = False) -> Path:
     cached = 0
     failed = 0
 
+    # Preload cached hashes once (O(N) instead of O(N²))
+    cached_hashes = _load_cached_hashes()
+    print(f"  Cache: {len(cached_hashes)} entries preloaded")
+
     # Process in batches for progress reporting
     total = len(batch.segments)
     for batch_start in range(0, total, _BATCH_SIZE):
@@ -592,7 +597,7 @@ def run(force: bool = False) -> Path:
             for i in range(batch_start, batch_end)
         ]
 
-        batch_results = _synthesize_batch(batch_segs)
+        batch_results = _synthesize_batch(batch_segs, cached_hashes)
         results.extend(batch_results)
 
         for r in batch_results:
