@@ -690,14 +690,20 @@ def _run_handle(executor, msg):
     return ctx
 
 
-def _patch_verifier_and_reverify(monkeypatch, build_success=True):
-    """Mock the verifier (condition 3) and record any re-verify fall-through."""
+def _patch_verifier_and_reverify(monkeypatch, build_success=True, raw_output=""):
+    """Mock the verifier (condition 3) and record any re-verify fall-through.
+
+    ``raw_output`` lets a test inject a build log carrying a "declaration uses
+    sorry" warning so the build-aware latch guard (#1500) can be exercised
+    without a real lake build.
+    """
     import prover.verifier as vmod
     import prover.lean_utils as lu
 
     class _FakeVerifier:
         def verify_project_file(self, rel, force=False):
-            return {"success": build_success, "errors": "", "raw_output": ""}
+            return {"success": build_success, "errors": "",
+                    "raw_output": raw_output}
 
     monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FakeVerifier())
 
@@ -794,3 +800,94 @@ def test_p1_latch_skips_when_target_line_still_has_sorry(tmp_path, monkeypatch):
         "latch must not fire while the frozen target line still has a sorry"
     )
     assert len(reverify_calls) == 1, "re-verify must run when condition 1 vetoes"
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1500 — implicit-sorry blind spot: a passing build can still hide a sorry
+#
+# When the agent swaps an explicit `sorry` for a search tactic
+# (apply?/exact?/solve_by_elim) that finds nothing, Lean emits a
+# "declaration uses sorry" WARNING (not an error). The build SUCCEEDS and the
+# text no longer contains the token "sorry", so a text-only count reports 0 —
+# a false positive. The fix folds the build-warning count into the decision
+# (the same max() that tools.compile() already uses) in BOTH success gates:
+#   - prover/provers.py  run_session success gate (final_sorry adoption)
+#   - prover/workflow.py P1 in-place latch (effective-count condition)
+# `_count_sorries_from_build_output` is the shared primitive; tests below pin
+# the primitive and the latch decision offline (no lake build needed).
+# ──────────────────────────────────────────────────────────────────────────
+
+
+# A realistic lake build log fragment with one implicit-sorry warning.
+_IMPLICIT_SORRY_LOG = (
+    "Building TestSpace\n"
+    "warning: ./TestSpace/Fake.lean:42:0: declaration uses 'sorry'\n"
+    "Build completed successfully.\n"
+)
+
+
+def test_count_sorries_from_build_output_counts_warning():
+    """The shared primitive counts a 'declaration uses sorry' warning."""
+    from prover.tools import _count_sorries_from_build_output
+
+    assert _count_sorries_from_build_output(_IMPLICIT_SORRY_LOG) == 1
+
+
+@pytest.mark.parametrize("log", [
+    "Build completed successfully.\n",          # clean build, no warning
+    "info: building\nwarning: unused variable x\n",  # unrelated warning
+    "",                                          # empty
+])
+def test_count_sorries_from_build_output_zero_when_no_sorry(log):
+    """No 'uses sorry' warning -> count 0 (no false positives on clean logs)."""
+    from prover.tools import _count_sorries_from_build_output
+
+    assert _count_sorries_from_build_output(log) == 0
+
+
+def test_count_sorries_from_build_output_counts_multiple_declarations():
+    """One warning per flagged declaration."""
+    from prover.tools import _count_sorries_from_build_output
+
+    log = (
+        "warning: ./A.lean:3:0: declaration uses 'sorry'\n"
+        "warning: ./A.lean:9:0: declaration uses `sorry`\n"
+    )
+    assert _count_sorries_from_build_output(log) == 2
+
+
+def test_p1_latch_skips_on_implicit_sorry(tmp_path, monkeypatch):
+    """#1500: frozen line text-clear + text count dropped + build SUCCEEDS,
+    but the build log warns 'declaration uses sorry' (the agent swapped the
+    explicit sorry for `apply?` which found nothing). The effective count did
+    NOT actually drop, so the latch must NOT fire — it must fall through to the
+    normal verify path instead of claiming a spurious in-place proof.
+    """
+    from prover.workflow import ProofMessage
+
+    # Text shows no "sorry" (replaced by apply?), but the build will warn.
+    swapped = (
+        "import Mathlib.Tactic\n"
+        "theorem t : True := by\n"
+        "  apply?\n"
+    )
+    fake = tmp_path / "Implicit.lean"
+    fake.write_text(swapped, encoding="utf-8")
+    session_full = swapped.replace("  apply?\n", "  sorry\n")
+    # Condition 1 (frozen line clear) and condition 2 (text 1 -> 0) both hold.
+    assert session_full.count("sorry") == 1 and swapped.count("sorry") == 0
+
+    reverify_calls = _patch_verifier_and_reverify(
+        monkeypatch, build_success=True, raw_output=_IMPLICIT_SORRY_LOG,
+    )
+
+    ex = _make_verify_executor(fake, sorry_line=3, full_file=session_full)
+    msg = ProofMessage(content="x", tactic="apply?", sorry_count=1)
+    _run_handle(ex, msg)
+
+    assert msg.proof_found is False, (
+        "latch must NOT fire when the build still warns 'uses sorry' (#1500)"
+    )
+    assert len(reverify_calls) == 1, (
+        "re-verify must run when the effective (build-aware) count did not drop"
+    )
