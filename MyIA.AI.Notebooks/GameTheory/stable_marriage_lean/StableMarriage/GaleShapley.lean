@@ -90,12 +90,10 @@ This is the optimality theorem for the proposing side.
 -/
 theorem gale_shapley_man_optimal (prof : PrefProfile n) :
     ∃ μ : Matching n, IsManOptimal prof μ := by
-  -- Attempt 1: aesop -> made no progress
-  -- Attempt 2: classical (cannot synthesize witness without GS)
-  -- INTRACTABLE_UNTIL_RURAL_HOSPITALS: requires man-optimal witness from GS algorithm.
-  -- IsManOptimal quantifies over ALL stable matchings — no single witness suffices.
-  -- Registered in prover HONEST_SORRIES: GaleShapley.lean L97
-  sorry
+  obtain ⟨μ_gs, hgs⟩ := gale_shapley_stable prof
+  refine ⟨μ_gs, hgs, ?_⟩
+  intro μ' hstable m
+  exact doctor_optimal_eq_top prof μ_gs hgs μ' hstable m
 
 /--
 Existence of a stable matching (corollary of Gale-Shapley).
