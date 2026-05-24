@@ -78,3 +78,20 @@ theorem pd_defect_is_pure_ne :
 theorem pd_cooperate_not_ne :
     ¬ isPureNashEquilibrium prisonersDilemma Cooperer Cooperer := by
   sorry
+
+/-! ## Sorry-Increase Calibration Target (P4) -/
+
+/-- Target F (P4): sorry-increase case — harness must NOT revert when sorry count
+    increases but build passes. This target is DESIGNED so the prover naturally
+    decomposes the proof into two sub-goals (each player's incentive constraint).
+
+    The prover should produce something like:
+      constructor
+      · sorry  -- player 1 has no incentive to deviate
+      · sorry  -- player 2 has no incentive to deviate
+    Which increases sorry 1→2 but compiles. Harness must preserve this.
+
+    Expected iterations: 3-5 (unfold → constructor → 2 sorries → maybe prove one). -/
+theorem pd_defect_is_ne_decomposable :
+    isPureNashEquilibrium prisonersDilemma Trahir Trahir := by
+  sorry
