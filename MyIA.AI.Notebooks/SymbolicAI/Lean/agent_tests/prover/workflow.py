@@ -680,6 +680,80 @@ class VerifyExecutor(Executor):
             await ctx.send_message(msg)
             return
 
+        # P1 latch-success (Epic #1453, 2026-05-23 forensic): detect the case
+        # where TacticAgent has ALREADY proved the target in-place before this
+        # verify runs. tools.file_replace_lines edits the REAL target file on
+        # disk (tools.py:1091) and its own build_check already passed, but
+        # SorryContext.sorry_line is frozen at session start (provers.py:203)
+        # and is NEVER updated. The downstream verify_sorry_replacement then
+        # finds no sorry at the frozen line, P5-relocates to a nearest
+        # UNRELATED sorry, injects msg.tactic there -> goal mismatch ->
+        # spurious tactic_failed that MASKS a genuine proof. Latch here, before
+        # that doomed re-verify, when all three hold (else fall through to the
+        # existing verify -> P5 path preserved, no regression):
+        #   1. the frozen target line no longer contains "sorry"
+        #   2. the current raw sorry count is STRICTLY below the session-start
+        #      count (full_file snapshot) -> distinguishes "a sorry was proved"
+        #      from "lines merely shifted" (a shift leaves the count unchanged)
+        #   3. a confirming build of the ACTUAL file succeeds
+        # Cost: one file read + count per verify; a build only in the rare
+        # in-place-proof case (conditions 1+2), and that build replaces the
+        # doomed relocated one (net-zero) and is cache-eligible by content hash.
+        try:
+            from pathlib import Path as _LatchPath
+            from .verifier import get_verifier as _latch_get_verifier
+            _latch_fp = self._sorry_ctx.filepath
+            _latch_cur = _LatchPath(_latch_fp).read_text(encoding="utf-8")
+            _latch_lines = _latch_cur.split("\n")
+            _latch_target = self._sorry_ctx.sorry_line
+            _latch_line_clear = (
+                1 <= _latch_target <= len(_latch_lines)
+                and "sorry" not in _latch_lines[_latch_target - 1]
+            )
+            _latch_orig = (
+                self._sorry_ctx.full_file.count("sorry")
+                if getattr(self._sorry_ctx, "full_file", "")
+                else (self._original_sorry_count or 0)
+            )
+            _latch_now = _latch_cur.count("sorry")
+            if _latch_line_clear and _latch_now < _latch_orig:
+                _latch_verifier = _latch_get_verifier(
+                    str(_LatchPath(_latch_fp).parent.parent))
+                _latch_rel = (f"{_LatchPath(_latch_fp).parent.name}/"
+                              f"{_LatchPath(_latch_fp).name}")
+                _latch_build = _latch_verifier.verify_project_file(_latch_rel)
+                if _latch_build.get("success"):
+                    msg.proof_found = True
+                    self._consecutive_build_fails = 0
+                    self._consecutive_noprogress = 0
+                    if self._trace:
+                        self._trace.log(
+                            agent="VerifyExecutor", role="verify",
+                            content=(f"PROOF FOUND (in-place latch): frozen line "
+                                     f"{_latch_target} clear, sorry {_latch_orig}"
+                                     f"->{_latch_now}, clean build OK"),
+                            tool_name="verify_project_file",
+                            tool_result="success=True",
+                        )
+                    try:
+                        self._kb.record_success(
+                            goal=self._sorry_ctx.goal_state or "",
+                            tactic=msg.tactic,
+                            theorem="",
+                            file=f"{_latch_fp}:{_latch_target}",
+                        )
+                    except Exception:
+                        pass
+                    await ctx.yield_output(msg)
+                    return
+        except Exception as _latch_err:
+            if self._trace:
+                self._trace.log(
+                    agent="VerifyExecutor", role="latch_error",
+                    content=(f"in-place latch check failed, falling through "
+                             f"to verify_sorry_replacement: {_latch_err}"),
+                )
+
         result = verify_sorry_replacement(
             filepath=self._sorry_ctx.filepath,
             sorry_line=self._sorry_ctx.sorry_line,
