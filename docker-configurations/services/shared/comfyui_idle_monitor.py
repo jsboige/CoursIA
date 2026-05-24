@@ -282,7 +282,10 @@ class ComfyUIIdleMonitor:
                 logger.info(f"Idle: {idle_time:.0f}s / {self.idle_timeout}s (no history, {self.comfyui_url})")
                 if idle_time >= self.idle_timeout:
                     logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
-                    return self.unload_models()
+                    unloaded = self.unload_models()
+                    if unloaded:
+                        self._monitor_start_time = time.time()
+                    return unloaded
             else:
                 logger.debug("No activity recorded and no start time, skipping check")
             return False
@@ -294,7 +297,10 @@ class ComfyUIIdleMonitor:
 
         if idle_time >= self.idle_timeout:
             logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
-            return self.unload_models()
+            unloaded = self.unload_models()
+            if unloaded:
+                self._monitor_start_time = time.time()
+            return unloaded
 
         return False
 
