@@ -291,6 +291,10 @@ class AgentExecutor(Executor):
                 and len(self._state.tactic_history) > history_len_before):
             latest = self._state.tactic_history[-1]
             tactic_text = getattr(latest, "tactic", None)
+            # Filter control signals that are NOT valid Lean tactics
+            _CONTROL_SIGNALS = {"LEAVERN", "ABORT", "SKIP", "GIVE_UP"}
+            if tactic_text and tactic_text.strip().upper() in _CONTROL_SIGNALS:
+                tactic_text = None
             if tactic_text:
                 msg.tactic = tactic_text
                 msg.is_decomposition = bool(getattr(latest, "is_decomposition", False))
