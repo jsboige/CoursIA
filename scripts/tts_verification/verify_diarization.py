@@ -39,6 +39,28 @@ WHISPER_WEBUI_USER = os.getenv("WHISPER_WEBUI_USER", "whisper")
 WHISPER_WEBUI_PASSWORD = os.getenv("WHISPER_WEBUI_PASSWORD", "")
 
 
+def _detect_webui_credentials() -> tuple[str, str]:
+    """Auto-detect Whisper WebUI credentials from Docker container."""
+    import subprocess, json
+    try:
+        r = subprocess.run(
+            ["docker", "inspect", "whisper-webui", "--format", "{{json .Config.Entrypoint}}"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode != 0:
+            return WHISPER_WEBUI_USER, WHISPER_WEBUI_PASSWORD
+        entrypoint = json.loads(r.stdout.strip())
+        user, password = WHISPER_WEBUI_USER, WHISPER_WEBUI_PASSWORD
+        for i, arg in enumerate(entrypoint):
+            if arg == "--username" and i + 1 < len(entrypoint):
+                user = entrypoint[i + 1]
+            elif arg == "--password" and i + 1 < len(entrypoint):
+                password = entrypoint[i + 1]
+        return user, password
+    except Exception:
+        return WHISPER_WEBUI_USER, WHISPER_WEBUI_PASSWORD
+
+
 # ---------------------------------------------------------------------------
 # Diarization backends
 # ---------------------------------------------------------------------------
@@ -46,10 +68,13 @@ WHISPER_WEBUI_PASSWORD = os.getenv("WHISPER_WEBUI_PASSWORD", "")
 def _gradio_login() -> "requests.Session":
     """Authenticate with Whisper WebUI Gradio app."""
     import requests
+    user, password = WHISPER_WEBUI_USER, WHISPER_WEBUI_PASSWORD
+    if not password:
+        user, password = _detect_webui_credentials()
     s = requests.Session()
     r = s.post(
         f"{WHISPER_WEBUI_URL}/login",
-        data={"username": WHISPER_WEBUI_USER, "password": WHISPER_WEBUI_PASSWORD},
+        data={"username": user, "password": password},
     )
     if r.status_code != 200:
         raise RuntimeError(f"Whisper WebUI login failed ({r.status_code}): {r.text[:200]}")
