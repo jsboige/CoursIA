@@ -13,7 +13,7 @@ WITHOUT the Gale-Shapley intractability wall:
   - `isWinningNim_345`  : closed evaluation  -> decide / native_decide  (easy)
   - `nimSum_single`     : one-step unfold      -> simp / Nat.zero_xor    (easy)
   - `nimSum_self`       : XOR cancellation     -> Nat.xor_self            (medium)
-The `sorry`s below are intentional scaffolding, not regressions (Epic #1453).
+The placeholders below are intentional scaffolding, not regressions (Epic #1453).
 -/
 
 import Mathlib.Data.Nat.Bitwise
@@ -39,14 +39,14 @@ theorem nimSum_nil : nimSum [] = 0 := rfl
 
 /-- CALIBRATION (decide): the position [3,4,5] is a first-player win. -/
 theorem isWinningNim_345 : isWinningNim [3, 4, 5] = true := by
-  sorry
+  native_decide
 
 /-- CALIBRATION (unfold + zero_xor): a single heap has nim-sum equal to its size. -/
 theorem nimSum_single (n : Nat) : nimSum [n] = n := by
-  sorry
+  simp [nimSum, Nat.zero_xor]
 
 /-- CALIBRATION (xor cancellation): two equal heaps cancel — the losing P-position. -/
 theorem nimSum_self (n : Nat) : nimSum [n, n] = 0 := by
-  sorry
+  simp [nimSum, Nat.xor_self]
 
 end Conway
