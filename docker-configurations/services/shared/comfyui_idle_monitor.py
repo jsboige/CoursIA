@@ -271,29 +271,27 @@ class ComfyUIIdleMonitor:
         current_time = time.time()
         self._last_check = current_time
 
-        # Get last activity
-        last_activity = self.get_last_activity_time()
+        # If we recently unloaded, use that timestamp as the activity baseline
+        # to prevent re-unloading on stale history timestamps.
+        if self._monitor_start_time:
+            last_real_activity = self.get_last_activity_time()
+            # Use the most recent of: last real activity, or last unload time
+            if last_real_activity is not None:
+                last_activity = max(last_real_activity, self._monitor_start_time)
+            else:
+                last_activity = self._monitor_start_time
+        else:
+            last_activity = self.get_last_activity_time()
 
         if last_activity is None:
-            # No activity recorded — use monitor start time as fallback
-            if self._monitor_start_time:
-                last_activity = self._monitor_start_time
-                idle_time = current_time - last_activity
-                logger.info(f"Idle: {idle_time:.0f}s / {self.idle_timeout}s (no history, {self.comfyui_url})")
-                if idle_time >= self.idle_timeout:
-                    logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
-                    unloaded = self.unload_models()
-                    if unloaded:
-                        self._monitor_start_time = time.time()
-                    return unloaded
-            else:
-                logger.debug("No activity recorded and no start time, skipping check")
+            logger.debug("No activity recorded and no start time, skipping check")
             return False
 
         self._last_activity = last_activity
         idle_time = current_time - last_activity
+        source = "since last unload" if last_activity == self._monitor_start_time else "since last prompt"
 
-        logger.info(f"Idle: {idle_time:.0f}s / {self.idle_timeout}s ({self.comfyui_url})")
+        logger.info(f"Idle: {idle_time:.0f}s / {self.idle_timeout}s ({source}, {self.comfyui_url})")
 
         if idle_time >= self.idle_timeout:
             logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
