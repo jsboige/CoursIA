@@ -566,6 +566,15 @@ class TacticTools:
         self._best_content: Optional[str] = None
         self._best_sorry_count: int = 999
         self._original_sorry_count: int = 999
+        # P2 (#1453): Delta0-compile stagnation tracking. Counts consecutive
+        # successful compiles that failed to reach a new sorry-count low. The
+        # verbatim loop detector (_check_tool_loop) only catches *identical*
+        # tool calls; it misses the dominant forensic pathology where the agent
+        # makes *different* edits that each build OK but never lower the sorry
+        # count. See compile() for the guard rationale.
+        self._min_compile_sorry_count: Optional[int] = None
+        self._consecutive_delta0: int = 0
+        self._stagnation_threshold: int = 3
         self._original_file_size: int = 0
         self._original_content: Optional[str] = None
         # Decomposition budget: how many new sorries the agents may introduce
@@ -1462,6 +1471,40 @@ class TacticTools:
         level_2 = sorry_delta >= 0
         level_3 = None
 
+        # P2 (#1453): Delta0-compile stagnation guard. A successful build that
+        # does not reach a new sorry-count low is "no proof progress". 3+ such
+        # in a row (21 were observed on Lattice_L147 with zero noprogress events)
+        # means the agent is churning equivalent edits. Surface a hard directive
+        # so it changes strategy instead of burning the iteration budget. A real
+        # new low (including after a within-budget decomposition that is then
+        # discharged) resets the streak. Build failures are a different pathology
+        # (handled by F1 consecutive_build_fails) and leave the streak unchanged.
+        stagnation = False
+        directive = None
+        if success:
+            if self._min_compile_sorry_count is None:
+                self._min_compile_sorry_count = sorry_count
+            elif sorry_count < self._min_compile_sorry_count:
+                self._min_compile_sorry_count = sorry_count
+                self._consecutive_delta0 = 0
+            else:
+                self._consecutive_delta0 += 1
+            stagnation = self._consecutive_delta0 >= self._stagnation_threshold
+            if stagnation:
+                directive = (
+                    f"STAGNATION: {self._consecutive_delta0} consecutive successful "
+                    f"compiles without lowering sorry_count (still {sorry_count}). "
+                    f"Repeating the same class of edit will not progress. CHANGE "
+                    f"STRATEGY NOW: probe the goal state at the sorry "
+                    f"(compile_probe_goal), decompose the goal differently, search "
+                    f"reference_docs for a lemma, or request Director guidance. Do "
+                    f"NOT submit another minor variant."
+                )
+        # Mirror into shared state so VerifyExecutor/Coordinator can force-route
+        # a stuck session without re-deriving the streak.
+        if self._state is not None:
+            self._state.consecutive_delta0_compiles = self._consecutive_delta0
+
         if check_axioms and success:
             module_name = relative_path.replace("/", ".").replace("\\", ".")
             if module_name.endswith(".lean"):
@@ -1482,6 +1525,7 @@ class TacticTools:
                 agent="TacticAgent", role="compile",
                 content=f"compile: L1={level_1} L2={level_2}(Δ{sorry_delta}) L3={level_3} "
                         f"| {sorry_count} sorry (text={text_sorry_count},implicit={implicit_sorry}) "
+                        f"| Δ0streak={self._consecutive_delta0}{' STAGNATION' if stagnation else ''} "
                         f"| {'CACHED' if cached else 'fresh'}",
                 duration_s=duration, tool_name="compile",
                 tool_result=raw_output[:500],
@@ -1497,6 +1541,9 @@ class TacticTools:
             "implicit_sorry_count": implicit_sorry,
             "sorry_delta": sorry_delta,
             "original_sorry_count": self._original_sorry_count,
+            "consecutive_delta0": self._consecutive_delta0,
+            "stagnation": stagnation,
+            "directive": directive,
             "error_count": len(errors), "errors": errors[:10],
             "compile_time_s": round(duration, 1),
             "cached": cached,
