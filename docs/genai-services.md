@@ -164,6 +164,45 @@ OPENAI_BASE_URL=https://openrouter.ai/api/v1
 BATCH_MODE=false
 ```
 
+## GPU Allocation & Idle Management
+
+### GPU Layout (po-2023)
+
+| GPU | Model | VRAM | Services |
+|-----|-------|------|----------|
+| GPU0 | RTX 3080Ti | 16 GB | comfyui-qwen, whisper-api, demucs-api |
+| GPU1 | RTX 3090 | 24 GB | vllm-zimage, sd-forge-main, forge-turbo, tts-fishaudio, tts-kokoro, musicgen-api, qwen-asr-api, comfyui-video, whisper-webui |
+
+### Quantization Settings per Service
+
+| Service | Model | Quantization | Idle VRAM |
+|---------|-------|-------------|-----------|
+| comfyui-qwen | Qwen Image Edit 2509 | fp16 (fp8 checkpoint) | ~6-8 GB |
+| whisper-api | faster-whisper-large-v3-turbo | int8_float16 | ~4-6 GB |
+| demucs-api | htdemucs_ft | fp16 | ~4 GB |
+| vllm-zimage | Z-Image-Turbo | bfloat16 (fp8 opt via `VLLM_QUANTIZATION=fp8`) | ~5-10 GB |
+| sd-forge-main | SD Forge SDXL | xformers fp16 | ~6-10 GB |
+| forge-turbo | SD Forge Turbo | xformers fp16 | ~6-10 GB |
+| tts-fishaudio | FishAudio S2-Pro | BnB 4-bit NF4 | ~5 GB |
+| tts-kokoro | Kokoro TTS | fp32/fp16 default | ~1-2 GB |
+| musicgen-api | MusicGen-medium | fp16 | ~10 GB |
+| qwen-asr-api | Qwen3-ASR-1.7B | bfloat16 | ~3-4 GB |
+| comfyui-video | HunyuanVideoWrapper | fp16 | varies |
+| whisper-webui | Whisper WebUI | unknown | varies |
+
+### Idle Management
+
+**Built-in lazy loading (auto-unload after 5 min idle):**
+- `whisper-api`, `musicgen-api`, `demucs-api`, `qwen-asr-api` — use `shared/lazy_model.py` with `IDLE_TIMEOUT=300`
+
+**External idle monitor sidecars:**
+- `comfyui-qwen`, `comfyui-video` — `comfyui_idle_monitor.py` (calls `/free` to unload models)
+- `vllm-zimage`, `tts-fishaudio` — `service_idle_monitor.py` (stops container)
+- `sd-forge-main` — `service_idle_monitor.py` with HTTP Basic Auth (Caddy reverse proxy)
+
+**No idle handling (low VRAM or always-on):**
+- `tts-kokoro` (~1-2 GB), `forge-turbo` (~6-10 GB), `whisper-webui` (varies)
+
 ## Configuration generale
 
 - **API keys** : `MyIA.AI.Notebooks/GenAI/.env` (template : `.env.example`)
