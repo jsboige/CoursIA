@@ -67,6 +67,8 @@ class ServiceIdleMonitor:
         activity_fn: Optional[callable] = None,
         idle_action: str = "stop",
         sleep_url: Optional[str] = None,
+        auth_user: Optional[str] = None,
+        auth_password: Optional[str] = None,
     ):
         self.health_url = health_url.rstrip("/")
         self.container_name = container_name
@@ -78,12 +80,15 @@ class ServiceIdleMonitor:
         self.sleep_url = sleep_url or self.health_url.rsplit("/", 1)[0] + "/sleep"
         self.wake_url = self.health_url.rsplit("/", 1)[0] + "/wake_up"
         self.is_sleeping_url = self.health_url.rsplit("/", 1)[0] + "/is_sleeping"
+        self.auth_user = auth_user
+        self.auth_password = auth_password
 
         self._last_activity: Optional[float] = None
         self._last_response_hash: Optional[str] = None
         self._running = False
         self._stop_count = 0
         self._container_start_time: Optional[float] = None
+        self._ever_responded: bool = False
 
     def _docker_api_get(self, path: str) -> Optional[dict]:
         """Query Docker Engine API via unix socket using curl."""
@@ -191,27 +196,41 @@ class ServiceIdleMonitor:
             return time.time()  # Consider as active during startup
 
         try:
-            resp = requests.get(self.health_url, timeout=10)
+            req_kwargs = {"timeout": 10, "allow_redirects": False}
+            if self.auth_user and self.auth_password:
+                req_kwargs["auth"] = (self.auth_user, self.auth_password)
+
+            resp = requests.get(self.health_url, **req_kwargs)
+
             if resp.status_code == 200:
-                # Service is responding = it's loaded and potentially active
-                # Use custom activity detection if available
+                self._ever_responded = True
                 if self.activity_fn:
                     return self.activity_fn(resp)
-                # Default: compare response content to detect changes
                 response_hash = str(hash(resp.text))
                 if response_hash != self._last_response_hash:
                     self._last_response_hash = response_hash
                     return time.time()
-                # Response unchanged - return previous activity time
-                return self._last_activity
-            else:
-                logger.debug(f"Health check returned {resp.status_code}")
                 return self._last_activity
 
+            if resp.status_code in (301, 302, 303, 307, 308):
+                # Redirect = service is up but needs auth
+                # Only treat as "loading" if we never got a 200 before
+                if not self._ever_responded:
+                    logger.debug(f"Service redirecting ({resp.status_code}), still loading or needs auth")
+                    return time.time()
+                logger.debug(f"Service redirecting ({resp.status_code}), auth issue?")
+                return self._last_activity
+
+            logger.debug(f"Health check returned {resp.status_code}")
+            return self._last_activity
+
         except requests.exceptions.ConnectionError:
-            # Service unreachable but container running = loading
-            logger.debug("Service unreachable (still loading?)")
-            return time.time()  # Don't count loading as idle
+            # Only treat as "loading" during startup or if never responded
+            if not self._ever_responded:
+                logger.debug("Service unreachable (still loading?)")
+                return time.time()
+            logger.debug("Service unreachable after previous success")
+            return self._last_activity
         except Exception as e:
             logger.warning(f"Health check error: {e}")
             return self._last_activity
@@ -318,6 +337,16 @@ def main():
         choices=["stop", "sleep"],
         help="Idle action: stop (docker stop) or sleep (native API sleep mode)"
     )
+    parser.add_argument(
+        "--auth-user",
+        default=os.environ.get("AUTH_USER"),
+        help="HTTP Basic Auth username (optional)"
+    )
+    parser.add_argument(
+        "--auth-password",
+        default=os.environ.get("AUTH_PASSWORD"),
+        help="HTTP Basic Auth password (optional)"
+    )
 
     args = parser.parse_args()
 
@@ -334,6 +363,8 @@ def main():
         check_interval=args.interval,
         startup_grace=args.startup_grace,
         idle_action=args.idle_action,
+        auth_user=args.auth_user,
+        auth_password=args.auth_password,
     )
 
     try:
