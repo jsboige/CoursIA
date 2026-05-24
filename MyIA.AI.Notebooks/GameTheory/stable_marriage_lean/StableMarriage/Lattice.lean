@@ -451,7 +451,9 @@ private lemma meetSpouse_injective (μ ν : Matching n)
             · -- Symmetric "different women" case (ν.sp₁ ≠ μ.sp₂).
               -- Same as first cross-case: needs rural hospitals / lattice argument.
               -- INTRACTABLE_UNTIL_RURAL_HOSPITALS
-              sorry
+              have hncm : μ.spouse m₂ = ν.spouse m₁ :=
+                @no_cross_match n _ prof μ ν hμ hν m₁ m₂ (μ.spouse m₁) rfl heq.symm
+              exact hwsame hncm.symm
       · -- Equality: μ.spouse m₂ = ν.spouse m₂, then with heq: μ.spouse₁ = ν.spouse₂ = μ.spouse₂
         -- contradicts μ injectivity (m₁ ≠ m₂)
         push_neg at hm₂strict
