@@ -25,6 +25,10 @@ Environment variables:
     CHECK_INTERVAL: Check interval in seconds (default: 60)
     STARTUP_GRACE: Seconds after container start before monitoring (default: 300)
     LOG_LEVEL: Logging level (default: INFO)
+    AUTH_USER: Username for HTTP Basic Auth or Gradio session auth
+    AUTH_PASSWORD: Password for HTTP Basic Auth or Gradio session auth
+    GRADIO_LOGIN_URL: Gradio login endpoint (e.g. http://host:1111/login)
+                      When set, uses Gradio session auth instead of HTTP Basic Auth
 """
 
 import os
@@ -69,6 +73,7 @@ class ServiceIdleMonitor:
         sleep_url: Optional[str] = None,
         auth_user: Optional[str] = None,
         auth_password: Optional[str] = None,
+        gradio_login_url: Optional[str] = None,
     ):
         self.health_url = health_url.rstrip("/")
         self.container_name = container_name
@@ -82,6 +87,7 @@ class ServiceIdleMonitor:
         self.is_sleeping_url = self.health_url.rsplit("/", 1)[0] + "/is_sleeping"
         self.auth_user = auth_user
         self.auth_password = auth_password
+        self.gradio_login_url = gradio_login_url
 
         self._last_activity: Optional[float] = None
         self._last_response_hash: Optional[str] = None
@@ -89,6 +95,9 @@ class ServiceIdleMonitor:
         self._stop_count = 0
         self._container_start_time: Optional[float] = None
         self._ever_responded: bool = False
+        self._gradio_logged_in: bool = False
+
+        self.session = requests.Session()
 
     def _docker_api_get(self, path: str) -> Optional[dict]:
         """Query Docker Engine API via unix socket using curl."""
@@ -173,6 +182,42 @@ class ServiceIdleMonitor:
             pass
         return False
 
+    def _gradio_login(self) -> bool:
+        """Authenticate with Gradio session auth (e.g. sd-forge-main).
+
+        Gradio uses form-based login at an internal port (e.g. :1111)
+        which returns a session cookie valid for the Caddy-proxied port.
+        """
+        if not self.gradio_login_url or not self.auth_user or not self.auth_password:
+            return False
+
+        try:
+            resp = self.session.post(
+                self.gradio_login_url,
+                data={"user": self.auth_user, "password": self.auth_password},
+                allow_redirects=False,
+                timeout=10,
+            )
+            # Gradio returns 303 on success with session cookie, redirects to /
+            if resp.status_code == 303 and self.session.cookies:
+                self._gradio_logged_in = True
+                logger.info(f"Gradio login successful as {self.auth_user}")
+                return True
+
+            logger.warning(f"Gradio login failed: status={resp.status_code}")
+            return False
+        except Exception as e:
+            logger.warning(f"Gradio login error: {e}")
+            return False
+
+    def _ensure_gradio_auth(self) -> bool:
+        """Ensure Gradio session is authenticated, re-login if needed."""
+        if not self.gradio_login_url:
+            return True  # Not using Gradio auth
+        if self._gradio_logged_in:
+            return True
+        return self._gradio_login()
+
     def check_service_activity(self) -> Optional[float]:
         """
         Check if the service is active by hitting its health endpoint.
@@ -197,10 +242,16 @@ class ServiceIdleMonitor:
 
         try:
             req_kwargs = {"timeout": 10, "allow_redirects": False}
-            if self.auth_user and self.auth_password:
+
+            if self.gradio_login_url:
+                # Gradio session auth: use cookies from login
+                if not self._ensure_gradio_auth():
+                    logger.debug("Gradio auth not available, skipping check")
+                    return self._last_activity
+            elif self.auth_user and self.auth_password:
                 req_kwargs["auth"] = (self.auth_user, self.auth_password)
 
-            resp = requests.get(self.health_url, **req_kwargs)
+            resp = self.session.get(self.health_url, **req_kwargs)
 
             if resp.status_code == 200:
                 self._ever_responded = True
@@ -218,6 +269,9 @@ class ServiceIdleMonitor:
                 if not self._ever_responded:
                     logger.debug(f"Service redirecting ({resp.status_code}), still loading or needs auth")
                     return time.time()
+                # If using Gradio auth, session may have expired
+                if self.gradio_login_url:
+                    self._gradio_logged_in = False
                 logger.debug(f"Service redirecting ({resp.status_code}), auth issue?")
                 return self._last_activity
 
@@ -347,6 +401,11 @@ def main():
         default=os.environ.get("AUTH_PASSWORD"),
         help="HTTP Basic Auth password (optional)"
     )
+    parser.add_argument(
+        "--gradio-login-url",
+        default=os.environ.get("GRADIO_LOGIN_URL"),
+        help="Gradio session auth login URL (e.g. http://host:1111/login)"
+    )
 
     args = parser.parse_args()
 
@@ -365,6 +424,7 @@ def main():
         idle_action=args.idle_action,
         auth_user=args.auth_user,
         auth_password=args.auth_password,
+        gradio_login_url=args.gradio_login_url,
     )
 
     try:

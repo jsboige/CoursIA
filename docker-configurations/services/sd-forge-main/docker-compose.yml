@@ -55,6 +55,7 @@ services:
       - TZ=${TZ:-Europe/Paris}
       - AUTH_USER=${FORGE_USER:-admin}
       - AUTH_PASSWORD=${FORGE_PASSWORD:-changeme}
+      - GRADIO_LOGIN_URL=http://sd-forge-main:1111/login
 
     working_dir: /app
 
