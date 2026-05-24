@@ -959,3 +959,56 @@ def test_autonomous_gate_matrix(final_sorry, original, build_ok,
     )
     assert success is exp_success
     assert structural is exp_struct
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1460 — compile_probe_goal caching. Probing the goal state runs the Lean
+# server; forensics found 54 exact-repeat probes of the same unchanged goal
+# (~2.2h wasted). The cache is keyed by (file content hash, sorry_line): a
+# repeat probe of an unchanged file is served from cache, and any edit that
+# changes the content hash invalidates it (a content key is a stronger
+# invalidation signal than a wall-clock TTL — the goal can only change when
+# the file does).
+# ──────────────────────────────────────────────────────────────────────────
+def test_probe_goal_caches_unchanged_file(tactic_tools, monkeypatch):
+    """Two probes of the same file hit the Lean server once; second is cached."""
+    import json
+    import prover.lean_utils as lean_utils
+
+    calls = {"n": 0}
+
+    def fake_get_goal_state(filepath, line):
+        calls["n"] += 1
+        return f"goal at {line}"
+
+    monkeypatch.setattr(lean_utils, "get_goal_state", fake_get_goal_state)
+    line = tactic_tools._test_sorry_line
+
+    first = tactic_tools.compile_probe_goal(line)
+    second = tactic_tools.compile_probe_goal(line)
+
+    assert calls["n"] == 1, "unchanged file must serve the second probe from cache"
+    assert first == second, "cached result must be identical to the first probe"
+    assert json.loads(first)["goal"] == f"goal at {line}"
+
+
+def test_probe_goal_cache_invalidates_on_file_change(tactic_tools, monkeypatch):
+    """Editing the file changes its content hash, so the next probe recomputes."""
+    import prover.lean_utils as lean_utils
+
+    calls = {"n": 0}
+
+    def fake_get_goal_state(filepath, line):
+        calls["n"] += 1
+        return f"goal v{calls['n']}"
+
+    monkeypatch.setattr(lean_utils, "get_goal_state", fake_get_goal_state)
+    line = tactic_tools._test_sorry_line
+
+    tactic_tools.compile_probe_goal(line)
+    # Mutate the underlying file: the content hash changes -> cache miss.
+    path = Path(tactic_tools._filepath)
+    path.write_text(path.read_text(encoding="utf-8") + "\n-- edit\n", encoding="utf-8")
+    tactic_tools.compile_probe_goal(line)
+
+    assert calls["n"] == 2, "a content change must invalidate the probe cache"

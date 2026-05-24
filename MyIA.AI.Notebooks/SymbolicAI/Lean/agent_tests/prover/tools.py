@@ -602,6 +602,16 @@ class TacticTools:
         # return a LOOP DETECTED error to force the agent to change approach.
         self._tool_call_history: deque = deque(maxlen=20)
         self._loop_threshold = 3  # consecutive identical calls before triggering
+        # #1460: cache compile_probe_goal results keyed by (file content hash,
+        # sorry_line). Probing the goal state runs the Lean server (~seconds);
+        # forensics found 54 exact-repeat probes of the *same unchanged goal*
+        # (~2.2h wasted). The content hash is a stronger invalidation signal
+        # than the issue's suggested 60s TTL: the goal at a line can only change
+        # when the file content changes, so a content-keyed cache never returns
+        # a stale goal and avoids wall-clock nondeterminism. Re-probing the same
+        # goal stays legitimate (probe -> edit elsewhere -> re-probe), so this is
+        # a cache, not a loop-error like file_read_lines.
+        self._probe_goal_cache: dict = {}
         if filepath and Path(filepath).exists():
             raw = Path(filepath).read_text(encoding="utf-8")
             self._original_file_size = len(raw)
@@ -1417,12 +1427,36 @@ class TacticTools:
             return True
 
     def compile_probe_goal(self, sorry_line: int) -> str:
-        """Extract the Lean goal state at a specific sorry line by probing. Returns the goal text."""
+        """Extract the Lean goal state at a specific sorry line by probing. Returns the goal text.
+
+        Result is cached by (file content hash, sorry_line) (#1460). The goal at a
+        line only changes when the file changes, so a repeat probe of an unchanged
+        file is served from cache instead of re-running the Lean server. The cache
+        auto-invalidates when any edit changes the content hash.
+        """
         from .lean_utils import get_goal_state
+        cache_key = None
+        if self._filepath and Path(self._filepath).exists():
+            content = Path(self._filepath).read_text(encoding="utf-8")
+            content_hash = hashlib.md5(content.encode()).hexdigest()
+            cache_key = (content_hash, sorry_line)
+            cached = self._probe_goal_cache.get(cache_key)
+            if cached is not None:
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="probe_goal_cache_hit",
+                        content=f"probe_goal line {sorry_line} served from cache",
+                        duration_s=0.0,
+                    )
+                return cached
         goal = get_goal_state(self._filepath, sorry_line)
         if goal:
-            return json.dumps({"goal": goal, "line": sorry_line})
-        return json.dumps({"goal": None, "line": sorry_line, "hint": "Could not extract goal"})
+            result = json.dumps({"goal": goal, "line": sorry_line})
+        else:
+            result = json.dumps({"goal": None, "line": sorry_line, "hint": "Could not extract goal"})
+        if cache_key is not None:
+            self._probe_goal_cache[cache_key] = result
+        return result
 
     def compile(self, check_axioms: bool = False) -> str:
         """3-level verification: build SUCCESS + sorry count delta + axiom whitelist.
