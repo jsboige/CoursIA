@@ -1012,3 +1012,80 @@ def test_probe_goal_cache_invalidates_on_file_change(tactic_tools, monkeypatch):
     tactic_tools.compile_probe_goal(line)
 
     assert calls["n"] == 2, "a content change must invalidate the probe cache"
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# P1 Δ0 stagnation hard-cap (Epic #1453) — AgentExecutor.handle must yield
+# once consecutive Δ0 compiles cross DELTA0_STAGNATION_HARDCAP.
+#
+# The compile tool (tools.py) already counts consecutive Δ0 compiles (a build
+# that succeeds but does NOT reach a new sorry low) and mirrors the count to
+# state.consecutive_delta0_compiles, but until #1453 nothing consumed it — it
+# relied on the LLM heeding a soft directive string. Forensic
+# multi_custom_Lattice_L147_zai.json: 26/30 compiles were Δ0 (22 consecutive at
+# 4 sorry from the start) yet the run never terminated and burned the full
+# budget. The hard cap is the orchestrator backstop.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _stagnation_agent(name="SearchAgent"):
+    from unittest.mock import AsyncMock, MagicMock
+
+    agent = MagicMock()
+    agent.name = name
+    agent.run = AsyncMock(return_value=MagicMock(
+        messages=[MagicMock(text="ran")]
+    ))
+    return agent
+
+
+def test_delta0_hardcap_yields_and_skips_agent():
+    """At/over the hard cap, handle yields the message and never runs the agent."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, DELTA0_STAGNATION_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_delta0_compiles = DELTA0_STAGNATION_HARDCAP
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    ctx = _run_handle(ex, ProofMessage(content="x"))
+
+    ctx.yield_output.assert_awaited_once()
+    agent.run.assert_not_awaited()  # no compute wasted past the cap
+
+
+def test_delta0_below_hardcap_runs_agent_normally():
+    """One short of the cap, the run continues — the agent executes as usual."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, DELTA0_STAGNATION_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_delta0_compiles = DELTA0_STAGNATION_HARDCAP - 1
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    ctx = _run_handle(ex, ProofMessage(content="x"))
+
+    agent.run.assert_awaited_once()  # below the cap → keep working
+    ctx.yield_output.assert_not_awaited()
+
+
+def test_delta0_hardcap_ignored_when_proof_found():
+    """A found proof must not be masked by the stagnation yield (guarded by
+    `not msg.proof_found`)."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, DELTA0_STAGNATION_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_delta0_compiles = DELTA0_STAGNATION_HARDCAP + 5
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x")
+    msg.proof_found = True
+    ctx = _run_handle(ex, msg)
+
+    # The delta0 path is skipped; the agent runs (proof_found is handled
+    # elsewhere, not pre-empted by the stagnation backstop).
+    agent.run.assert_awaited_once()
