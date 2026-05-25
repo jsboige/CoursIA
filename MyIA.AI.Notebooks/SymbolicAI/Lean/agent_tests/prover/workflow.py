@@ -56,6 +56,21 @@ DEFAULT_AGENT_TIMEOUT_S = 600
 TRANSIENT_RETRY_MAX = 2
 TRANSIENT_RETRY_BACKOFF_S = (2.0, 4.0)
 
+# P1 stagnation hard-cap (Epic #1453). The compile tool (tools.py) computes
+# the number of consecutive Δ0 compiles — a build that succeeds but does NOT
+# reach a new sorry-count low — and mirrors it to
+# `state.consecutive_delta0_compiles`. It also emits a soft `directive` string
+# in the compile result, on which the orchestrator used to rely entirely: the
+# count was written but never enforced. Forensic trace
+# multi_custom_Lattice_L147_zai.json: 26 of 30 compiles were Δ0 (22 consecutive
+# at 4 sorry right from the start) yet the run never terminated — it burned the
+# full iteration + LLM budget making zero proof progress. This ceiling is the
+# hard backstop: it fires at 2x the tools.py soft threshold (3), so the soft
+# directive and the existing Director escalations get a window first, but a run
+# that ignores the signal for this many consecutive Δ0 compiles is yielded
+# rather than left to waste compute.
+DELTA0_STAGNATION_HARDCAP = 6
+
 
 def _is_transient_error(exc: BaseException) -> bool:
     """Return True if `exc` looks like a transient provider/network error.
@@ -150,6 +165,9 @@ class AgentExecutor(Executor):
         self._trace = trace
         self._timeout_s = timeout_s
         self._state = state  # B.3: shared state for plan propagation
+        # P1 (Epic #1453): hard ceiling on consecutive Δ0 compiles; see
+        # DELTA0_STAGNATION_HARDCAP. Read live from state on every iteration.
+        self._delta0_stagnation_hardcap = DELTA0_STAGNATION_HARDCAP
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -193,6 +211,29 @@ class AgentExecutor(Executor):
                              f"but Director in-flight (calls={msg.director_calls}), "
                              f"allowing +1"),
                 )
+
+        # P1 (Epic #1453): Δ0 stagnation hard-cap. The compile tool mirrors the
+        # consecutive-Δ0 count to state.consecutive_delta0_compiles and emits a
+        # soft directive, but nothing enforced it — a run could compile cleanly
+        # dozens of times without ever lowering the sorry count (forensic L147:
+        # 22 consecutive Δ0 at 4 sorry). Once the count crosses the hard ceiling
+        # the soft signal and every Director escalation have already had their
+        # window, so we yield to stop wasting compute rather than escalate again.
+        _delta0 = (
+            getattr(self._state, "consecutive_delta0_compiles", 0)
+            if self._state else 0
+        )
+        if (not msg.proof_found
+                and _delta0 >= self._delta0_stagnation_hardcap):
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="delta0_stagnation_yield",
+                    content=(f"consecutive_delta0_compiles={_delta0} >= "
+                             f"hardcap={self._delta0_stagnation_hardcap}, "
+                             f"yielding to stop no-progress waste"),
+                )
+            await ctx.yield_output(msg)
+            return
 
         # F12: Force Director invocation at iteration 4 (after first
         # Coordinator→Search→Tactic cycle completes). This ensures Director
