@@ -186,7 +186,7 @@ def _normalize_tags(text: str) -> str:
 
     1. Convert (parenthetical voice instructions) to [brackets]
     2. Map known non-official tags to closest official equivalent
-    3. KEEP free-form / natural-language tags — S2-Pro accepts them
+    3. REMOVE free-form / natural-language tags — S2-Pro vocalizes them
     4. Ensure space after every ]
     """
     text = _sanitize_voice_instructions(text)
@@ -201,9 +201,9 @@ def _normalize_tags(text: str) -> str:
             mapped = _NON_OFFICIAL_TAG_MAP[lower]
             if mapped in ALL_PROSODY_TAGS:
                 return f"[{mapped}] "
-        # Free-form / natural-language tag — S2-Pro accepts these.
-        # Preserve them as-is (they are the primary source of prosody diversity).
-        return f"[{content}] "
+        # Free-form tag — S2-Pro VOCALIZES it (proven WER #1277/#1485).
+        # Remove it entirely to prevent extra spoken words.
+        return ""
 
     text = re.sub(r"\[([^\]]+)\]", _normalize_one, text)
     return text

@@ -113,13 +113,11 @@ seules officiellement testees et produisant des resultats consistants.
 **Autre :**
 [emphasis] [rustling sound]
 
-### Langage naturel libre
-S2-Pro accepte aussi des descriptions libres entre crochets, par exemple :
-[speaking slowly, almost hesitant] [with a cold, measured tone] [voice trembling slightly]
-[softly, as if telling a secret] [with barely contained fury]
-
-UTILISE les descriptions libres pour les emotions au-dela des 3 officielles
-(sarcasme, mepris, angoisse, determination, resignation, etc.).
+### INTERDIT — Pas de langage naturel libre
+N'utilise JAMAIS de descriptions libres entre crochets. S2-Pro VOCALISE le texte libre
+au lieu de l'interpreter (prouve par validation WER #1277/#1485, 98 segments WER>100%).
+Utilise UNIQUEMENT les 29 tags officiels ci-dessus. Pour les emotions non couvertes
+par [excited]/[angry]/[sad], combine les tags de style vocal (ex: sarcasme = [emphasis][soft voice]).
 
 ## REGLE CRITIQUE DE PLACEMENT
 
@@ -205,10 +203,10 @@ seules officiellement testees et produisant des resultats consistants.
 **Autre :**
 [emphasis] [rustling sound]
 
-### Langage naturel libre
-S2-Pro accepte des descriptions libres entre crochets pour les emotions au-dela des 3
-officielles : [speaking with disdain] [voice trembling with fear] [with bitter irony]
-[calm but cold] [barely containing her anger] [in a defeated whisper]
+### INTERDIT — Pas de langage naturel libre
+N'utilise JAMAIS de descriptions libres entre crochets. S2-Pro VOCALISE le texte libre
+au lieu de l'interpreter. Utilise UNIQUEMENT les 29 tags officiels ci-dessus.
+Pour les emotions non couvertes, combine les tags de style vocal.
 
 ## REGLE CRITIQUE DE PLACEMENT
 
@@ -251,23 +249,12 @@ Respecte les regles de placement et le maximum de {max_tags} tags par segment.
 
 ## Contexte dramatique
 Chaque segment est accompagne d'un "prompt dramatique" et de mots-cles emotionnels.
-Utilise-les pour choisir les tags les plus adaptes. Pour les emotions complexes
-("rage contenue", "mepris dissimule"), un tts_context_prefix naturel est plus
-efficace qu'un tag fixe.
-
-Genere aussi un "tts_context_prefix" : une instruction en francais entre CROCHETS,
-comme tu la donnerais a un acteur. Exemples :
-- "[d'une voix blanche, presque inaudible]"
-- "[avec une douceur forcee, en souriant]"
-- "[lentement, pesant chaque mot]"
-- "[d'un ton sec, sans lever les yeux]"
-
-Le tts_context_prefix sera place AVANT le texte dans le TTS. Il guide la voix
-du modele FishAudio S2-Pro, qui comprend les instructions naturelles en francais.
+Utilise-les pour choisir les tags les plus adaptes parmi les 29 tags officiels UNIQUEMENT.
+N'ecris JAMAIS de texte libre entre crochets — S2-Pro le prononce au lieu de l'interpreter.
 
 Retourne un objet JSON avec la cle "segments" contenant la liste des segments annotes.
 Chaque segment doit avoir : seg_index, type, speaker, text, annotated_text,
-prosody_tags (liste des tags officiels choisis), tts_context_prefix."""
+prosody_tags (liste des tags officiels choisis, max 3)."""
 
 
 # ── Helper functions ──
