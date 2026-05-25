@@ -218,7 +218,6 @@ TACTICS:
 REGLES:
 - Max 500 tokens de sortie
 - Pas de sorry dans tes suggestions
-- Si le but semble hors de portee, dis LEAVERN (abandon)
 - Adapte tes suggestions aux ERREURS PASSEES (ne repete pas ce qui a echoue)
 - Tu peux suggérer des `have` intermediaires pour decomposer
 - Priorise les tactiques Mathlib disponibles sur les raisonnements from-scratch
