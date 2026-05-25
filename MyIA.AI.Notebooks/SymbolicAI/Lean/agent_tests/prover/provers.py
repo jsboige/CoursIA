@@ -11,6 +11,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
+from agent_framework import ToolResultCompactionStrategy
+
 from .trace import TraceLogger
 from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, TacticAttempt
 from .lean_utils import (
@@ -732,6 +734,9 @@ class AutonomousProver:
             ),
             tools=agent_tools,
             name="AutonomousProver",
+            compaction_strategy=ToolResultCompactionStrategy(
+                keep_last_tool_call_groups=3,
+            ),
         )
 
         # Build rich initial context — from Lean-9 notebook pattern
