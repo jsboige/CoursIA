@@ -1,9 +1,0 @@
-character_id,name,gender,role,kokoro_voice,openai_voice,fish_preset,model_primary,model_production
-elisabeth_rousset,Elisabeth Rousset,F,protagoniste,af_sky,nova,expressive_female_warm,kokoro,fishaudio/s2-pro
-cornudet,Cornudet,M,secondaire,bm_george,fable,expressive_male_neutral,kokoro,fishaudio/s2-pro
-comtesse,Comtesse de Breville,F,antagoniste,af_sarah,shimmer,expressive_female_cold,kokoro,fishaudio/s2-pro
-comte,Comte de Breville,M,antagoniste,am_michael,onyx,expressive_male_cold,kokoro,fishaudio/s2-pro
-narrateur,Narrateur,M,narrateur,bf_isabella,echo,narrator_male,kokoro,fishaudio/s2-pro
-carre_lamadon,Monsieur Carre-Lamadon,M,secondaire,bm_george,fable,expressive_male_neutral,kokoro,fishaudio/s2-pro
-loiseau,Monsieur Loiseau,M,figurant,bm_lewis,fable,neutral_male,kokoro,fishaudio/s2-pro
-soeurs,Les deux soeurs,F,figurant,bf_emma,alloy,neutral_female,kokoro,fishaudio/s2-pro
