@@ -653,20 +653,35 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
 
     # P5 fix (2026-05-23): if the target line doesn't contain sorry, search
     # nearby for the actual sorry. Line numbers shift as the file is edited.
+    # P1 fix (2026-05-26): bounded search + same-proof-block validation to
+    # prevent target-mismatch (picking a sorry from a different theorem).
+    MAX_RELOCATION_RANGE = 30  # hard cap on relocation distance
     sorry_text = lines[sorry_line - 1]
     if "sorry" not in sorry_text:
-        # Search ±20 lines for the nearest sorry
+        # Search within bounded range for the nearest sorry
         candidates = []
         for i, line in enumerate(lines):
             if "sorry" in line:
-                candidates.append((abs(i + 1 - sorry_line), i + 1))
+                dist = abs(i + 1 - sorry_line)
+                if dist <= MAX_RELOCATION_RANGE:
+                    candidates.append((dist, i + 1))
         if candidates:
             candidates.sort()
+            # Validate: relocated sorry must be in the same proof block
+            # (same or closer indentation than the target, not inside a
+            # nested theorem/lemma/def)
             actual_line = candidates[0][1]
-            if actual_line != sorry_line:
+            actual_indent = len(lines[actual_line - 1]) - len(lines[actual_line - 1].lstrip())
+            target_indent = len(sorry_text) - len(sorry_text.lstrip())
+            if actual_line != sorry_line and actual_indent <= target_indent + 2:
                 print(f"  P5: sorry_line {sorry_line} has no sorry, "
-                      f"using nearest at {actual_line}")
+                      f"using nearest at {actual_line} (relocated, "
+                      f"indent {actual_indent}<={target_indent+2})")
                 sorry_line = actual_line
+                sorry_text = lines[sorry_line - 1]
+            elif actual_indent > target_indent + 2:
+                print(f"  P5: nearest sorry at {actual_line} rejected: "
+                      f"indent {actual_indent} too deep vs target {target_indent}")
     indent = len(sorry_text) - len(sorry_text.lstrip())
     indent_str = " " * indent
 

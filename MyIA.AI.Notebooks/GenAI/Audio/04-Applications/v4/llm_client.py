@@ -183,7 +183,7 @@ def call_structured(
                 "model": _MODEL,
                 "messages": messages,
                 "response_format": response_format,
-                "max_tokens": 32768,
+                "max_completion_tokens": 32768,
             }
             resp = requests.post(
                 f"{_API_BASE}/chat/completions",
