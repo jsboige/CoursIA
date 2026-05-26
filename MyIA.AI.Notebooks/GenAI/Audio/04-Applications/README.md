@@ -40,8 +40,8 @@ Pipeline complet de 7 notebooks pour generer un audiobook a partir d'un texte li
 | 8 | [04-8-Lecture-Analytique](04-8-Lecture-Analytique.ipynb) | P1 | Analyse litteraire, segmentation dialogues/narration | OpenAI API | 0 |
 | 9 | [04-9-Voice-Casting](04-9-Voice-Casting.ipynb) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
 | 10 | [04-10-Annotation-Prosodique](04-10-Annotation-Prosodique.ipynb) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
-| 11 | [04-11-Generation-TTS](04-11-Generation-TTS_output.ipynb) | P4 | Generation audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
-| 12 | [04-12-Compilation-Audio](04-12-Compilation-Audio_output.ipynb) | P5 | Concatenation FFmpeg + normalisation loudness | FFmpeg | 0 |
+| 11 | [04-11-Generation-TTS](04-11-Generation-TTS.ipynb) | P4 | Generation audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
+| 12 | [04-12-Compilation-Audio](04-12-Compilation-Audio.ipynb) | P5 | Concatenation FFmpeg + normalisation loudness | FFmpeg | 0 |
 | 13 | [04-13-Audiobook-FishAudio-S2Pro](04-13-Audiobook-FishAudio-S2Pro.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
 
 **Flux du pipeline audiobook** :
