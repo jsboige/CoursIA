@@ -790,3 +790,42 @@ scripts/whisper_comparison_results.json
 !MyIA.AI.Notebooks/QuantConnect/Python/lstm_attention_sp50.pt
 !RL/stable_baseline_3_experience_replay_dqn/her_sac_parking_replay_buffer.pkl
 .playwright-mcp/
+
+# Claude Code worktrees
+.claude/worktrees/
+
+# Temporary / generated files
+qc_cells_summary.json
+temp_qc_cells/
+ibkr_login_tasks.png
+ibkr_qr_login.png
+m11ef_qc_execution.png
+m12_notebook_top.png
+nb_full_execution.png
+ppo_learning_curves.png
+rl_learning_curves.png
+c	tempqc_validate.txt
+right_click_context.png
+
+# ML training generated scripts
+MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/c2_har_rv_j_lstm_h32.py
+
+# Jupyter temp notebooks
+MyIA.AI.Notebooks/QuantConnect/Python/_executor.ipynb
+MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Alpha/test_qb.ipynb
+
+# Research scratch notebooks (not yet committed)
+MyIA.AI.Notebooks/QuantConnect/research/research_multi_layer_ema.ipynb
+MyIA.AI.Notebooks/QuantConnect/research/research_option_wheel.ipynb
+MyIA.AI.Notebooks/QuantConnect/research/research_sector_momentum.ipynb
+
+# Research result images
+MyIA.AI.Notebooks/QuantConnect/research/composite_ff_aw_results.png
+MyIA.AI.Notebooks/QuantConnect/research/composite_mom_regime_results.png
+MyIA.AI.Notebooks/QuantConnect/research/rl_multi_asset_curves.png
+
+# csproj cache files
+*.csproj.lscache
+
+# PowerShell artifact
+$null
