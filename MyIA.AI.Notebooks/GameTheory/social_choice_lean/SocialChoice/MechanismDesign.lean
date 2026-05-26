@@ -55,6 +55,7 @@ end VickreyTwoBidder
 
 namespace VickreyThreeBidder
 
+set_option linter.unusedVariables false in
 /-- Utility for bidder 0 in a 3-bidder Vickrey auction.
     Valuations (v0, v1, v2), bids (b0, b1, b2).
     Winner pays the second-highest bid. -/
@@ -67,7 +68,7 @@ def utility0 (v0 v1 v2 b0 b1 b2 : ℕ) : ℤ :=
 
 /-- **Theorem 4**: Vickrey auction is truthful for bidder 0 with 3 bidders.
     Your bid determines whether you win, not what you pay. -/
-theorem vickrey3_truthful_bidder0 (v0 _v1 _v2 b0 : ℕ) :
+theorem vickrey3_truthful_bidder0 (v0 v1 v2 b0 : ℕ) :
     utility0 v0 v1 v2 v0 v1 v2 ≥ utility0 v0 v1 v2 b0 v1 v2 := by
   unfold utility0
   split_ifs <;> simp_all; omega
