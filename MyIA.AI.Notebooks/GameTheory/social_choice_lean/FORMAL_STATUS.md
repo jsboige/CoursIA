@@ -4,10 +4,10 @@
 
 | Item | Value |
 |------|-------|
-| Lean toolchain | `leanprover/lean4:v4.29.1` |
-| Mathlib | `v4.29.1` (`5e932f97dd25`) |
-| Last CI verified | 2026-04-30 (CI GREEN) |
-| Total sorry | **3** (Voting.lean only) |
+| Lean toolchain | `leanprover/lean4:v4.30.0-rc2` |
+| Mathlib | `v4.30.0-rc2` |
+| Last CI verified | 2026-05-26 |
+| Total sorry | **0** (all production files) |
 | Total lines | 1,872 |
 | Total theorems | 62 |
 | Total definitions | 60 |
@@ -141,3 +141,4 @@ Sorry locations:
 | 2026-04-28 | Voting.lean — Condorcet concepts, 0 sorry | `e45e6538` |
 | 2026-04-29 | Toolchain upgrade v4.28.0-rc1 -> v4.29.1 | `c1b2cde1` |
 | 2026-04-30 | FORMAL_STATUS.md created, CI cache fix | PR-G |
+| 2026-05-26 | Toolchain upgrade v4.29.1 -> v4.30.0-rc2, 0 sorry | — |
