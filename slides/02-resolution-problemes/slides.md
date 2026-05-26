@@ -1316,8 +1316,6 @@ layout: section
 
 <img src="./images/img_050.png" style="position:absolute; top:130px; right:20px; width:420px;" alt="Arbre backtracking CSP Australie" />
 
-<div style="max-width:52%;">
-
 ## Exploration vs Inférence
 
 - Exploration $\neq$ inférence
@@ -1338,8 +1336,6 @@ layout: section
   - Prochaines valeurs du domaine ?
   - Quelles inférences ?
   - Comment éviter les assignations illégales ?
-
-</div>
 
 ---
 
@@ -1368,14 +1364,10 @@ layout: section
 
 <img src="./images/img_054.png" style="position:absolute; top:140px; right:20px; width:360px;" alt="Reduction domaines AC" />
 
-<div style="max-width:55%;">
-
 ## Choix de variable (MRV, LCV)
 
-- **Most Constrained Variable**: Variable avec le plus petit domaine
-- **Least Constraining Value**: Valeur qui élimine le moins de choix pour les autres variables
-
-</div>
+- **Most Constrained Variable**: Variable avec le<br>plus petit domaine
+- **Least Constraining Value**: Valeur qui élimine le<br>moins de choix pour les autres variables
 
 ## Choix de valeur (LCV)
 
@@ -1388,8 +1380,6 @@ layout: section
 
 <img src="./images/img_055.png" style="position:absolute; top:120px; right:20px; width:240px;" alt="Décomposition arbre contraintes" />
 
-<div style="max-width:72%;">
-
 ## Décomposition en sous-problèmes
 
 - **Composantes connexes** du graphe: sous-problèmes indépendants
@@ -1400,7 +1390,7 @@ layout: section
 ## Structure d'arbre
 
 - Rare mais structure d'arbre $\rightarrow$ résolution linéaire
-  - **Cohérence d'arc dirigée (DAC):** tri topologique puis DAC en $O(nd^2)$
+  - **Cohérence d'arc dirigée (DAC):** tri topologique puis<br>DAC en $O(nd^2)$
   - Assignation sans retour arrière
 
 ## Approximations de l'arbre
@@ -1413,9 +1403,7 @@ layout: section
 ## Symétrie des valeurs
 
 - Ex: coloration $\rightarrow$ $n!$ permutations équivalentes
-- $\rightarrow$ Contrainte de rupture de symétrie (ex: ordre alphabétique NT<SA<WA)
-
-</div>
+- $\rightarrow$ Contrainte de rupture de symétrie<br>(ex: ordre alphabétique NT<SA<WA)
 
 ---
 
