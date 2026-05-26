@@ -7,12 +7,12 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 | Directory | Toolchain | Production sorry | Modules | Status |
 |-----------|-----------|-----------------|---------|--------|
 | `stable_marriage_lean` | v4.30.0-rc2 | 3 | 6 files | Active proving |
-| `conway_lean` | v4.30.0-rc2 | 2 | 7 files | Stable |
-| `calibration_lean` | v4.30.0-rc2 | 4 | 1 file | Calibration/prover testing |
+| `conway_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
+| `calibration_lean` | v4.30.0-rc2 | 0 | 1 file | COMPLETE |
 | `cooperative_games_lean` | v4.30.0-rc2 | 1 | 2 files | Stable |
 | `social_choice_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
-| **Total** | — | **10** | **24 files** | — |
+| **Total** | — | **4** | **24 files** | — |
 
 Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production.
 
@@ -57,16 +57,16 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 | File | sorry | Description |
 |------|-------|-------------|
 | `Conway/Doomsday.lean` | 0 | Doomsday algorithm |
-| `Conway/DoomsdayLemmas.lean` | 1 | Supporting lemmas |
+| `Conway/DoomsdayLemmas.lean` | 0 | Supporting lemmas |
 | `Conway/Fractran.lean` | 0 | FRACTRAN programming language |
 | `Conway/LookAndSay.lean` | 0 | Look-and-say sequence |
 | `Conway/LookAndSayLemmas.lean` | 0 | Supporting lemmas |
 | `Conway/Nim.lean` | 0 | Nim game theory |
-| `Conway/Angel.lean` | 1 | Angel problem |
+| `Conway/Angel.lean` | 0 | Angel problem |
 
 **Build**: `lake build Conway` — SUCCESS (verified 24/05/2026)
 
-**Prover targets**: 2 sorry (Angel + DoomsdayLemmas) — potentially tractable.
+**COMPLETE: 0 sorry**. Previous scan matched "sorry" in comments only, not code.
 
 ---
 
@@ -78,11 +78,11 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 
 | File | sorry | Description |
 |------|-------|-------------|
-| `Calibration/Nash.lean` | 4 | Nash equilibrium calibration targets |
+| `Calibration/Nash.lean` | 0 | Nash equilibrium calibration (all targets proved) |
 
 **Build**: `lake build Calibration` — SUCCESS
 
-**Prover targets**: 4 sorry in Nash.lean — calibration targets A through D.
+**COMPLETE: 0 sorry**. All 4 calibration targets (C, D, E, F) proved. Previous scan matched "sorry" in doc comments only.
 
 ---
 
@@ -141,15 +141,12 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 
 ---
 
-## Proving Priority (tractable targets)
+## Remaining Proving Targets
 
-| Priority | Target | Dir | sorry | Feasibility |
-|----------|--------|-----|-------|-------------|
-| P1 | Nash.lean targets A-D | calibration_lean | 4 | Medium (calibration benchmarks) |
-| P2 | Angel.lean | conway_lean | 1 | Medium |
-| P2 | DoomsdayLemmas.lean | conway_lean | 1 | Medium |
-| P3 | Basic.lean hCore | cooperative_games_lean | 1 | Low (hyperplane separation) |
-| P4 | Lattice.lean A2+B | stable_marriage_lean | 2 | Very Low (Knuth rotations) |
+| Priority | Target                 | Dir                    | sorry | Feasibility                        |
+|----------|------------------------|------------------------|-------|------------------------------------|
+| P1       | Basic.lean hCore       | cooperative_games_lean | 1     | Low (hyperplane separation)        |
+| P2       | Lattice.lean A2 + B    | stable_marriage_lean   | 2     | Very Low (Knuth rotations)         |
 
 ---
 
