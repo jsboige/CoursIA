@@ -6,13 +6,13 @@ Ce module presente des cas d'usage concrets et des workflows de production pour 
 
 **Fil rouge podcast** : [04-1](04-1-Educational-Audio-Content.ipynb) automatise la narration de cours. [04-2](04-2-Transcription-Pipeline.ipynb) gere la transcription batch avec sous-titres SRT. [04-3](04-3-Music-Composition-Workflow.ipynb) compose des bandes sonores. [04-4](04-4-Audio-Video-Sync.ipynb) synchronise l'audio avec la video.
 
-**Fil rouge audiobook (Epic #1028)** : [04-6](04-6-Audiobook-Pipeline.ipynb) a [04-12](04-12-Compilation-Audio_output.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse litteraire, casting vocal, annotation prosodique, generation TTS et compilation finale.
+**Fil rouge audiobook (Epic #1028)** : [04-6](04-6-Audiobook-Pipeline.ipynb) a [04-12](04-12-Compilation-Audio_output.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse litteraire, casting vocal, annotation prosodique, generation TTS et compilation finale. [04-13](04-13-Audiobook-FishAudio-S2Pro.ipynb) etend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 12 |
+| Notebooks | 13 |
 | Kernel | Python 3 |
 | Duree estimee | ~8-12h |
 | GPU requis | 0-14GB |
@@ -40,8 +40,9 @@ Pipeline complet de 7 notebooks pour generer un audiobook a partir d'un texte li
 | 8 | [04-8-Lecture-Analytique](04-8-Lecture-Analytique.ipynb) | P1 | Analyse litteraire, segmentation dialogues/narration | OpenAI API | 0 |
 | 9 | [04-9-Voice-Casting](04-9-Voice-Casting.ipynb) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
 | 10 | [04-10-Annotation-Prosodique](04-10-Annotation-Prosodique.ipynb) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
-| 11 | [04-11-Generation-TTS](04-11-Generation-TTS_output.ipynb) | P4 | Generation audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
-| 12 | [04-12-Compilation-Audio](04-12-Compilation-Audio_output.ipynb) | P5 | Concatenation FFmpeg + normalisation loudness | FFmpeg | 0 |
+| 11 | [04-11-Generation-TTS](04-11-Generation-TTS.ipynb) | P4 | Generation audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
+| 12 | [04-12-Compilation-Audio](04-12-Compilation-Audio.ipynb) | P5 | Concatenation FFmpeg + normalisation loudness | FFmpeg | 0 |
+| 13 | [04-13-Audiobook-FishAudio-S2Pro](04-13-Audiobook-FishAudio-S2Pro.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
 
 **Flux du pipeline audiobook** :
 
