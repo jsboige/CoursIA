@@ -928,6 +928,40 @@ class TacticTools:
         if not non_sorry_errors:
             return None
 
+        # LOST_PROGRESS prevention (2026-05-26, Epic #1453):
+        # Before reverting, check if sorry count actually decreased.
+        # If the edit reduced sorry count but introduced non-sorry errors,
+        # preserve the progress rather than throwing it away.
+        current_content = Path(self._filepath).read_text(encoding="utf-8")
+        current_sorry_count = current_content.count("sorry")
+        original_sorry_count = original_content.count("sorry")
+        if current_sorry_count < original_sorry_count and non_sorry_errors:
+            # Progress made but with non-sorry errors — log but don't revert.
+            # Update best snapshot if this is an improvement.
+            if current_sorry_count < self._best_sorry_count:
+                self._best_content = current_content
+                self._best_sorry_count = current_sorry_count
+            if self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="lost_progress_veto",
+                    content=(f"LOST_PROGRESS VETO: sorry {original_sorry_count}->"
+                             f"{current_sorry_count} but {len(non_sorry_errors)} "
+                             f"non-sorry errors. Preserving progress, not reverting."),
+                    duration_s=0.01,
+                    tool_result=str(non_sorry_errors[:3]),
+                )
+            # Return the errors so the agent knows what's broken, but don't revert
+            return {
+                "error": (
+                    f"BUILD has {len(non_sorry_errors)} non-sorry errors, but sorry "
+                    f"count decreased {original_sorry_count}->{current_sorry_count}. "
+                    f"Progress preserved (not reverted). Fix remaining errors."
+                ),
+                "reverted": False,
+                "sorry_progress": True,
+                "errors": non_sorry_errors[:8],
+            }
+
         # Build failed with real errors — revert to original.
         Path(self._filepath).write_text(original_content, encoding="utf-8")
         raw_output = result.get("raw_output", "") or result.get("errors", "")
