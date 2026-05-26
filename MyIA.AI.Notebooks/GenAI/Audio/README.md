@@ -4,7 +4,7 @@
 
 Le traitement audio est souvent le parent pauvre de l'IA generative, eclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalites les plus naturelles de l'interaction humaine. Cette serie couvre l'ensemble de la chaine audio IA : reconnaissance vocale, synthese, clonage, generation musicale, et orchestration de pipelines.
 
-28 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livre 18/05/2026, 8 PRs, post-mortem [ici](../../docs/epic-1028-audiobook-postmortem.md)).
+29 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livre 18/05/2026, 8 PRs, post-mortem [ici](../../docs/epic-1028-audiobook-postmortem.md)).
 
 ## Fil rouge : construire un podcast automatise
 
@@ -17,7 +17,7 @@ Audio/
 ├── 01-Foundation/     # STT, TTS, bases audio (5 notebooks)
 ├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif (8 notebooks)
 ├── 03-Orchestration/  # Multi-modeles, temps reel (3 notebooks)
-└── 04-Applications/   # Education, production, sync A/V, live coding, audiobook (12 notebooks)
+└── 04-Applications/   # Education, production, sync A/V, live coding, audiobook (13 notebooks)
 ```
 
 ## Progression par niveau
@@ -75,8 +75,9 @@ Application directe : les notebooks de ce niveau mettent en oeuvre des workflows
 | [04-8-Lecture-Analytique](04-Applications/04-8-Lecture-Analytique.ipynb) | Analyse litteraire, segmentation | OpenAI API | 0 |
 | [04-9-Voice-Casting](04-Applications/04-9-Voice-Casting.ipynb) | Attribution voix par personnage | OpenAI API | 0 |
 | [04-10-Annotation-Prosodique](04-Applications/04-10-Annotation-Prosodique.ipynb) | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
-| [04-11-Generation-TTS](04-Applications/04-11-Generation-TTS_output.ipynb) | Generation TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
-| [04-12-Compilation-Audio](04-Applications/04-12-Compilation-Audio_output.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
+| [04-11-Generation-TTS](04-Applications/04-11-Generation-TTS.ipynb) | Generation TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
+| [04-12-Compilation-Audio](04-Applications/04-12-Compilation-Audio.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
+| [04-13-Audiobook-FishAudio-S2Pro](04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
 
 ## Technologies
 
