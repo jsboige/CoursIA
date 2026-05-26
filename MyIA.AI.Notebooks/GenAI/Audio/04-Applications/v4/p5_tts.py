@@ -34,74 +34,92 @@ _MAX_TTS_CHARS = 500  # Truncation limit for the composed text
 _BATCH_SIZE = 8
 _MAX_WORKERS = 1  # FishAudio S2-Pro is single-threaded; concurrent requests cause timeouts
 
-# Mapping non-official tags → closest official S2-Pro tag
-# S2-Pro only reliably handles the 29 official tags. Free-form tags
-# (French, adverbs, multi-word descriptions) are silently ignored.
-_NON_OFFICIAL_TAG_MAP: dict[str, str] = {
-    "firmly": "emphasis",
-    "firm": "emphasis",
-    "mockingly": "emphasis",
-    "indignantly": "angry",
-    "angrily": "angry",
-    "sadly": "sad",
-    "excitedly": "excited",
-    "gently": "soft voice",
-    "timidly": "soft voice",
-    "coldly": "low voice",
-    "speaking slowly": "pause",
-    "speaking quickly": "excited",
-    "taking a breath": "inhale",
-    "in a cold tone": "low voice",
-    "in a warm tone": "soft voice",
-    "in a smooth, ingratiating tone": "soft voice",
-}
+# F1 (Issue #1600): S2-Pro accepts free-form natural language in [brackets]
+# (per fish.audio blog). Collapsing 16 descriptive tags to 4 official tags
+# destroyed prosody diversity. Keep empty — free-form tags pass through.
+_NON_OFFICIAL_TAG_MAP: dict[str, str] = {}
 
 
 def _text_hash(text: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()[:12]
 
 
-def _extract_official_tags(prefix: str) -> list[str]:
-    """Extract only official FishAudio S2-Pro tags from a natural language prefix.
+def _extract_prefix_tags(prefix: str) -> list[str]:
+    """Extract prosody tags from a natural-language prefix for S2-Pro.
 
-    S2-Pro vocalizes free-form French text (e.g. "d'un ton sec") instead of
-    interpreting it as voice instruction. Only the 29 official tags produce
-    consistent results without being spoken aloud.
+    F2 (Issue #1600): S2-Pro accepts free-form natural language in [brackets]
+    (per fish.audio blog — "speaking slowly, almost hesitant" etc.). The prior
+    behaviour dropped any French / multi-word prefix, eliminating ~70 percent
+    of the prosody signal that P4 wrote.
+
+    Strategy:
+      1. If any official English tag substring is present → use those (up to 3).
+      2. Otherwise → wrap the whole prefix as ONE free-form bracketed tag,
+         provided it is short enough to be interpreted (not vocalized).
     """
     from .schemas import ALL_PROSODY_TAGS
 
     lower = prefix.lower().strip()
-    tags: list[str] = []
+    if not lower:
+        return []
+    official: list[str] = []
     for tag in sorted(ALL_PROSODY_TAGS, key=len, reverse=True):
         if tag in lower:
-            tags.append(tag)
-    return tags
+            official.append(tag)
+    if official:
+        return official[:3]
+    # Free-form fallback: keep prefix as a single bracketed instruction.
+    # S2-Pro tolerates up to ~80 chars of natural language inside [].
+    cleaned = lower.rstrip(".,:; ").strip()
+    if 0 < len(cleaned) <= 80:
+        return [cleaned]
+    return []
+
+
+# Backwards-compatible alias (kept for callers; new logic above).
+_extract_official_tags = _extract_prefix_tags
 
 
 def _compose_tts_text(seg: AnnotatedSegment) -> str:
-    """Compose the final TTS text with official prosody tags only.
+    """Compose the final TTS text for S2-Pro.
 
-    FishAudio S2-Pro interprets [bracketed] official tags as voice instructions.
-    Free-form natural language in brackets is VOCALIZED (spoken aloud) instead
-    of being interpreted — see WER validation #1277 for evidence (98 segments
-    with WER>100% due to prefix being transcribed as extra words).
+    F3 (Issue #1600): the prior implementation read ONLY ``tts_context_prefix``
+    and never consulted ``seg.dramatic_prompt`` written by P4 from the P3
+    dramatic context. Result: tension / scene / narrative-position information
+    never reached S2-Pro. We now prepend dramatic_prompt first, then the prefix.
 
     Composition order:
-    1. Official prosody tags extracted from tts_context_prefix
-    2. The annotated text with all tags preserved (official + free-form)
+    1. dramatic_prompt (P4 + P3 context, e.g. "[tense whisper], [short pause]")
+    2. tts_context_prefix tags (legacy, may add official or free-form)
+    3. The annotated text with all tags preserved (official + free-form)
     """
     parts: list[str] = []
+    seen_tags: set[str] = set()
 
-    # Extract ONLY official S2-Pro tags from the prefix — never inject
-    # free-form French text that would be spoken aloud.
-    if seg.tts_context_prefix:
-        prefix = seg.tts_context_prefix.strip()
-        if prefix.startswith("[") and prefix.endswith("]"):
-            prefix = prefix[1:-1].strip()
-        official_tags = _extract_official_tags(prefix)
-        if official_tags:
-            tag_str = " ".join(f"[{t}]" for t in official_tags[:3])
-            parts.append(f"{tag_str} ")
+    def _emit(raw: str) -> None:
+        raw = raw.strip()
+        if not raw:
+            return
+        if raw.startswith("[") and raw.endswith("]"):
+            raw = raw[1:-1].strip()
+        for tag in _extract_prefix_tags(raw):
+            key = tag.lower()
+            if key in seen_tags:
+                continue
+            seen_tags.add(key)
+            parts.append(f"[{tag}]")
+            if len(seen_tags) >= 4:  # cap total prepended tags
+                return
+
+    if seg.dramatic_prompt:
+        _emit(seg.dramatic_prompt)
+    if seg.tts_context_prefix and len(seen_tags) < 4:
+        _emit(seg.tts_context_prefix)
+
+    prefix_block = " ".join(parts)
+    if prefix_block:
+        prefix_block = prefix_block + " "
+    parts = [prefix_block] if prefix_block else []
 
     base_text = seg.fishaudio_text or seg.annotated_text or seg.text
     base_text = _normalize_tags(base_text)
@@ -403,6 +421,15 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
         if chunks:
             chunks[0] = chunks[0][len(tag_prefix):].strip()
 
+    # F4 (Issue #1600): modulate temperature by P3 dramatic tension instead of
+    # hardcoded 0.7. Low tension → more controlled delivery (~0.5), high
+    # tension → more expressive variation (~0.9). Voice identity remains stable
+    # because reference_id + seed are unchanged; only sampling diversity moves.
+    tension = 5
+    if seg.dramatic_ref is not None:
+        tension = max(0, min(10, seg.dramatic_ref.tension_0_10))
+    temperature = max(0.4, min(0.95, 0.5 + 0.04 * tension))
+
     # Build TTS requests for each chunk, prepending the tag prefix
     tts_requests = []
     for chunk in chunks:
@@ -411,7 +438,7 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             "text": chunk_text,
             "reference_id": reference_id,
             "seed": seed,
-            "temperature": 0.7,
+            "temperature": temperature,
             "top_p": 0.9,
             "format": "mp3",
             "timeout": 300,
