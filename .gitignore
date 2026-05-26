@@ -562,6 +562,11 @@ docker-configurations/services/comfyui-video/workspace/
 lean-workspace/
 tmp/
 
+# Claude Code worktrees and temp artifacts
+.claude/worktrees/
+*.lscache
+$null
+
 # Notebook backup files
 **/*.ipynb.backup
 
