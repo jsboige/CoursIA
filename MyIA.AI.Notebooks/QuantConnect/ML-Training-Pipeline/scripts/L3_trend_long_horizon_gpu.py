@@ -63,8 +63,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = SCRIPT_DIR / "results" / "l3_trend_long_horizon"
 CHECKPOINT_PATH = RESULTS_DIR / "checkpoint.jsonl"
 
-# Expected L1/L2 deliverable: wide daily adjusted-close panel, index=date (daily),
-# columns=symbol tickers (26 anti-bias symbols). Parquet preferred, CSV accepted.
+# Anti-bias panier data from L1/L2 (#1412/#1413). CSV with DatetimeIndex, cols=tickers.
+PANIER_CSV = SCRIPT_DIR.parent.parent / "datasets" / "panier" / "panier_close_all.csv"
 PANIER_PATH = RESULTS_DIR.parent / "l1_panier" / "panier_daily_close.parquet"
 
 # Sweep config -- longest horizon first (anti-m15 lesson #4)
@@ -277,21 +277,27 @@ def walk_forward_lstm(close: pd.Series, horizon: int, seed: int, device: str) ->
 def load_panier(path: Path) -> pd.DataFrame:
     """Load the L1/L2 anti-bias panier: wide daily close, index=date, cols=symbols.
 
-    Raises a clear blocking message until L1 (#1412) / L2 (#1413) deliver it.
+    Tries --panier arg first, then PANIER_CSV (datasets/panier/), then PANIER_PATH.
+    Excludes VIX (volatility index, no price return).
     """
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Panier not found at {path}. L3 (#1417) is BLOCKED on L1 (#1412) / "
-            f"L2 (#1413) delivering the anti-bias panier (26 symbols, daily close).\n"
-            f"Expected: wide DataFrame, DatetimeIndex (daily), columns=tickers.\n"
-            f"Run with --smoke to validate the training chain on synthetic data."
-        )
-    if path.suffix == ".parquet":
-        df = pd.read_parquet(path)
-    else:
-        df = pd.read_csv(path, index_col=0, parse_dates=True)
-    df.index = pd.DatetimeIndex(df.index)
-    return df.sort_index()
+    candidates = [path, PANIER_CSV, PANIER_PATH]
+    for p in candidates:
+        if p.exists():
+            if p.suffix == ".parquet":
+                df = pd.read_parquet(p)
+            else:
+                df = pd.read_csv(p, index_col=0, parse_dates=True)
+            df.index = pd.DatetimeIndex(df.index)
+            df = df.sort_index()
+            # Exclude VIX (volatility index, no price return for momentum)
+            if "VIX" in df.columns:
+                df = df.drop(columns=["VIX"])
+            return df
+    raise FileNotFoundError(
+        f"Panier not found. Tried: {[str(p) for p in candidates]}\n"
+        f"L3 (#1417) needs the anti-bias panier (25 symbols, daily close).\n"
+        f"Run with --smoke to validate the training chain on synthetic data."
+    )
 
 
 def make_synthetic_panier(n_days: int = 2000, n_sym: int = 6, seed: int = 0) -> pd.DataFrame:
