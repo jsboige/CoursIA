@@ -591,6 +591,9 @@ $null
 **/checkpoints/**/*.safetensors
 **/checkpoints/**/*.bin
 
+# FineTuning series training outputs (checkpoints too large for git)
+MyIA.AI.Notebooks/GenAI/FineTuning/results_*/
+
 # Docker bind-mount data: model weights and TTS references (runtime only)
 docker-configurations/services/tts-fishaudio/checkpoints/
 docker-configurations/services/tts-fishaudio/references/
