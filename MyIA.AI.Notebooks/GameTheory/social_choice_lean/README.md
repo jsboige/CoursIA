@@ -6,12 +6,12 @@ Ce répertoire contient les formalisations mathématiques de la théorie du choi
 
 | Statistique | Valeur |
 |-------------|--------|
-| Théorèmes formels | 2 certifiés (0 sorry) + 1 en cours |
-| sorry restants | 3 (dans Voting.lean : median voter) |
+| Théorèmes formels | 3 certifiés (0 sorry) |
+| sorry restants | 0 |
 | Référence commit | `v4.30.0-rc2` (main, 26/05/2026) |
 | Dépendances | Mathlib4, Lake |
 
-**Statut formel** : Arrow.lean et Sen.lean sont **FORMAL-CERTIFIED** (0 sorry). Voting.lean contient 3 sorry dans les preuves du Median Voter Theorem (en cours de complétion). Voir `FORMAL_STATUS.md` (PR-G) pour le détail par fichier.
+**Statut formel** : Arrow.lean, Sen.lean et Voting.lean sont **FORMAL-CERTIFIED** (0 sorry). Voir `FORMAL_STATUS.md` pour le détail par fichier.
 
 ## Théorèmes formalisés
 
