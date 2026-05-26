@@ -870,6 +870,25 @@ class TacticTools:
                     )
         return None
 
+    def _update_delta0_streak(self):
+        """P1 fix: Track delta0 stagnation from _build_check_or_revert.
+
+        Previously, delta0 tracking only happened in the compile() method.
+        But file_replace_lines/sorry call _build_check_or_revert directly,
+        bypassing the stagnation guard. This method mirrors the delta0 logic
+        from compile() so every successful build-check updates the counter.
+        """
+        current_sorry = Path(self._filepath).read_text(encoding="utf-8").count("sorry")
+        if self._min_compile_sorry_count is None:
+            self._min_compile_sorry_count = current_sorry
+        elif current_sorry < self._min_compile_sorry_count:
+            self._min_compile_sorry_count = current_sorry
+            self._consecutive_delta0 = 0
+        else:
+            self._consecutive_delta0 += 1
+        if self._state is not None:
+            self._state.consecutive_delta0_compiles = self._consecutive_delta0
+
     def _build_check_or_revert(self, original_content: str, operation: str
                                ) -> Optional[Dict]:
         """After writing, run lake build. If it fails, revert and return diagnostics.
@@ -895,6 +914,8 @@ class TacticTools:
             }
 
         if result.get("success"):
+            # P1 fix: track delta0 even on clean build success from file_replace
+            self._update_delta0_streak()
             return None
 
         # Check if the ONLY errors are sorry-related (not syntax errors)
@@ -926,6 +947,8 @@ class TacticTools:
 
         # If only sorry-related errors, accept the replacement (don't revert)
         if not non_sorry_errors:
+            # P1 fix: track delta0 on sorry-only build success from file_replace
+            self._update_delta0_streak()
             return None
 
         # LOST_PROGRESS prevention (2026-05-26, Epic #1453):
@@ -1463,17 +1486,24 @@ class TacticTools:
     def compile_probe_goal(self, sorry_line: int) -> str:
         """Extract the Lean goal state at a specific sorry line by probing. Returns the goal text.
 
-        Result is cached by (file content hash, sorry_line) (#1460). The goal at a
-        line only changes when the file changes, so a repeat probe of an unchanged
-        file is served from cache instead of re-running the Lean server. The cache
-        auto-invalidates when any edit changes the content hash.
+        Result is cached by (surrounding context hash, sorry_line) (#1460, P2 fix).
+        The goal at a line only changes when the surrounding context changes, so a
+        repeat probe is served from cache. P2 fix: hash only lines [sorry_line-10,
+        sorry_line+10] instead of full file — edits far from the sorry no longer
+        invalidate the cache.
         """
         from .lean_utils import get_goal_state
         cache_key = None
         if self._filepath and Path(self._filepath).exists():
             content = Path(self._filepath).read_text(encoding="utf-8")
-            content_hash = hashlib.md5(content.encode()).hexdigest()
-            cache_key = (content_hash, sorry_line)
+            lines = content.split("\n")
+            # P2: hash surrounding context only (±10 lines around sorry)
+            ctx_start = max(0, sorry_line - 11)  # 0-indexed, sorry_line is 1-indexed
+            ctx_end = min(len(lines), sorry_line + 10)
+            ctx_hash = hashlib.md5(
+                "\n".join(lines[ctx_start:ctx_end]).encode()
+            ).hexdigest()
+            cache_key = (ctx_hash, sorry_line)
             cached = self._probe_goal_cache.get(cache_key)
             if cached is not None:
                 if self._trace:

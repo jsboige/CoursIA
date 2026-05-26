@@ -656,7 +656,7 @@ class VerifyExecutor(Executor):
         # decompositions. This counter keeps climbing and triggers Director
         # re-escalade after _cumulative_fails_threshold fails regardless.
         self._cumulative_fails = 0
-        self._cumulative_fails_threshold = 5
+        self._cumulative_fails_threshold = 3  # P3: lowered from 5 for earlier Director escalation
         # Re-search trigger: after this many total fails, force a hint to
         # the Critic that fresh lemmas may be needed. The Critic still makes
         # the routing decision, but the hint makes re-search more likely.
