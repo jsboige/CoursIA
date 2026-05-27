@@ -829,3 +829,9 @@ MyIA.AI.Notebooks/QuantConnect/research/rl_multi_asset_curves.png
 
 # PowerShell artifact
 $null
+
+# Root-level libs/ (Tweety JARs downloaded by setup scripts — use SymbolicAI/Tweety/libs/ instead)
+/libs/
+
+# Temp OWL files from notebook execution
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl

@@ -125,9 +125,25 @@ Incident 2026-04-24 : commit "Mathlib compilation fixes" (#524) a remplace 9 pre
 
 Detail complet : [.claude/rules/code-style.md](.claude/rules/code-style.md) (auto-loaded a chaque session).
 
-### F. Environnement Python — REPARER, ne JAMAIS contourner
+### F. Environnement — REPARER, ne JAMAIS contourner (HARD)
 
-**Regle user 2026-05-06** : un env Python degrade ne se contourne **jamais** par delegation, fallback ou skip. On repare, on demande UAC user au besoin. Detail : [docs/env-python-reparation.md](docs/env-python-reparation.md).
+**Regle user 2026-05-06 (Python) + 2026-05-26 (kernels)** : un env degrade ou un kernel manquant ne se contourne **jamais** par delegation, fallback ou skip. On **installe** le kernel/env manquant sur la machine locale, on demande UAC user au besoin. Detail Python : [docs/env-python-reparation.md](docs/env-python-reparation.md).
+
+**Kernels — installation obligatoire avant toute modification de notebook** :
+
+| Kernel | Installation | Verification |
+|--------|-------------|-------------|
+| .NET Interactive (C#) | `dotnet tool install --global Microsoft.dotnet-interactive@1.0.552801` puis `dotnet interactive jupyter install` | `jupyter kernelspec list` doit montrer `.NET (C#)` |
+| Python 3 | conda env dédié (voir ci-dessous) | `jupyter kernelspec list` doit montrer `python3` |
+| Lean 4 | `elan toolchain install stable` | `jupyter kernelspec list` doit montrer `lean4` |
+
+**Anti-patterns INTERDITS** (incident PR #1591 ML.Net, commit `4ca477e`) :
+- "kernel not available locally" dans un body PR = **manquement grave** à H.2
+- Déleguer la re-exécution à ai-01 au lieu d'installer le kernel = **contournement** de la règle F
+- Committer un notebook sans re-exécuter les cells modifiées = violation C.2
+- "je n'ai pas le temps d'installer" = pas une excuse
+
+**Exception** : GPU-only notebooks (CUDA requis sur machine CPU-only) — documenter explicitement et demander re-exécution sur machine GPU. Mais .NET Interactive, Python, Lean = installables **partout**.
 
 **Envs Conda dedies sur ai-01** (utiliser AVANT de toucher Python systeme) :
 

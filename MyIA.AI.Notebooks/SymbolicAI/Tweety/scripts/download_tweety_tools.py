@@ -145,8 +145,19 @@ def get_script_dir() -> pathlib.Path:
     try:
         return pathlib.Path(__file__).parent.resolve()
     except NameError:
-        # Exécuté depuis un notebook ou un REPL
-        return pathlib.Path.cwd()
+        # Exécuté depuis un notebook ou un REPL — chercher le bon répertoire Tweety
+        cwd = pathlib.Path.cwd()
+        # Si CWD est la racine du repo ou un parent, chercher le sous-répertoire Tweety
+        candidate = cwd / "MyIA.AI.Notebooks" / "SymbolicAI" / "Tweety" / "scripts"
+        if candidate.is_dir():
+            return candidate
+        # Si CWD est déjà dans l'arborescence Tweety, utiliser le scripts/ le plus proche
+        for parent in [cwd, *cwd.parents]:
+            scripts_dir = parent / "scripts" / "download_tweety_tools.py"
+            if scripts_dir.exists():
+                return scripts_dir.parent
+        # Dernier recours : CWD (comportement historique)
+        return cwd
 
 
 def download_with_progress(url: str, dest: pathlib.Path, desc: str = "Downloading") -> bool:
