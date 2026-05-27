@@ -11,7 +11,7 @@ Comment un agent peut-il apprendre a partir de connaissances existantes plutot q
 
 Le premier notebook pose les bases : representation d'hypotheses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accelere l'apprentissage : l'apprentissage base sur les explications (EBL) compile les theories en heuristiques operationnelles, et l'apprentissage base sur la pertinence (RBL) identifie les attributs determinant via les determinations. Le troisieme notebook approfondit le RBL avec le treillis des determinations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrieme notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), la resolution inverse (bottom-up) et la connexion avec les knowledge graphs.
 
-**A qui s'adresse cette serie** : etudiants en IA, infoirmaticiens interesses par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~2h total) ne necessitent que Python 3.10+ standard library. Une familiarite avec la logique propositionnelle suffit. Ils constituent un complement theorique aux series [Tweety](../Tweety/README.md) (argumentation computationnelle) et [SemanticWeb](../SemanticWeb/README.md) (representation de connaissances).
+**A qui s'adresse cette serie** : etudiants en IA, infoirmaticiens interesses par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~6h total) ne necessitent que Python 3.10+ standard library. Une familiarite avec la logique propositionnelle suffit. Ils constituent un complement theorique aux series [Tweety](../Tweety/README.md) (argumentation computationnelle) et [SemanticWeb](../SemanticWeb/README.md) (representation de connaissances).
 
 ## Vue d'ensemble
 
@@ -20,7 +20,7 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 | Notebooks | 7 |
 | Kernel | Python 3 |
 | Duree estimee | ~370 min |
-| prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4) |
+| prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-6) |
 
 ## Notebooks
 
@@ -144,7 +144,7 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 
 ### Environnement Python
 
-Aucune dependance externe pour SL-1 et SL-2 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-4 utilise uniquement la bibliothèque standard. SL-5 utilise uniquement la bibliotheque standard. SL-6 utilise `rdflib`. SL-7 utilise uniquement la bibliotheque standard.
+Aucune dependance externe pour SL-1 et SL-2 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-4 utilise uniquement la bibliotheque standard. SL-5 utilise uniquement la bibliotheque standard. SL-6 utilise `rdflib`. SL-7 utilise uniquement la bibliotheque standard.
 
 ## Ressources
 
