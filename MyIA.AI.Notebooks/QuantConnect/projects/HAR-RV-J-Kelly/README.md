@@ -1,4 +1,4 @@
-# ESGF-HAR-RV-J-Kelly
+# HAR-RV-J-Kelly
 
 **Asset class:** Crypto (BTC, ETH, LTC, BCH)
 

@@ -1,4 +1,4 @@
-# ESGF-GARCH-VolTarget
+# Vol-GARCH-Target
 
 **Asset class:** Multi-asset (Equities, Bonds, Commodities)
 
@@ -12,7 +12,7 @@ GARCH(1,1) volatility targeting strategy on six assets (SPY, EFA, EEM, TLT, GLD,
 
 ### Lean CLI
 ```bash
-lean backtest --algorithm ESGF-GARCH-VolTarget/main.py
+lean backtest --algorithm Vol-GARCH-Target/main.py
 ```
 
 ### QC Cloud
