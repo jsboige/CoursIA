@@ -237,6 +237,15 @@ Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et 
 
 ---
 
+## Transient Directories
+
+| Directory | Status | Description |
+|-----------|--------|-------------|
+| `_pending_execution/` | Active | QuantBook research notebooks awaiting QC Cloud execution (H.3/C.2) |
+| `ESGF-2026/archive-2025/` | Reference | ESGF 2024-2025 student project IDs and cloud references |
+| `_archive/` | Purged | Superseded reports moved to `docs/audits/` (commit `#1626`) |
+| `_esgf_cours_5mai/` | Purged | ESGF 5 May 2026 backtest results archived to G drive (commit `#1626`) |
+
 ## Documentation Complémentaire
 
 ### Guides de démarrage
