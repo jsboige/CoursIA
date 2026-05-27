@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicLearning
-pedagogical_count: 4
-breakdown: =4
-maturity: BETA=4
+pedagogical_count: 7
+breakdown: =7
+maturity: BETA=7
 -->
 
 Comment un agent peut-il apprendre a partir de connaissances existantes plutot que de donnees brutes ? Cette serie explore l'apprentissage symbolique tel que decrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux methodes guidees par la connaissance (EBL, RBL).
@@ -17,9 +17,9 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 4 |
+| Notebooks | 7 |
 | Kernel | Python 3 |
-| Duree estimee | ~210 min |
+| Duree estimee | ~370 min |
 | prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4) |
 
 ## Notebooks
@@ -30,6 +30,9 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 | 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, RBL, determinations | 55 min |
 | 3 | [SL-3 - Apprentissage Base sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
 | 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, clauses Horn, knowledge graphs | 55 min |
+| 5 | [SL-5 - Integration Neuro-Symbolique](SL-5-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 55 min |
+| 6 | [SL-6 - ILP Moderne et Knowledge Graphs](SL-6-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG | 55 min |
+| 7 | [SL-7 - LLMs et Apprentissage Symbolique](SL-7-LLM-SymbolicLearning.ipynb) | Prompting, extraction de regles, verification symbolique | 50 min |
 
 ## Contenu detaille
 
@@ -80,6 +83,33 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 | Knowledge Graphs | Regles AMIE, triples RDF, SPARQL CONSTRUCT |
 | Exercices | sibling, operateur W, regles sur KG |
 
+### SL-5-NeuroSymbolic.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| T-norms / T-conorms | Operateurs logiques differentiables |
+| Predicats neuronaux | Fonctions P(x) -> [0,1] apprises |
+| LTN | Logique Tensorielle simplifiee |
+| Raisonnement guide | Regles logiques guidant l'entrainement neuronal |
+| DeepProbLog | Programmation logique probabiliste + predicats neuronaux |
+
+### SL-6-KnowledgeGraphs-ILP.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Knowledge Graphs | Construction avec rdflib |
+| AMIE rule mining | Decouverte de regles de Horn sur KG |
+| Completion | Inference de nouveaux triples |
+
+### SL-7-LLM-SymbolicLearning.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| LLMs et raisonnement | Forces et limites pour le raisonnement symbolique |
+| Parseur de regles | Extraction de regles IF-THEN depuis du texte |
+| Verification symbolique | Coherence formelle des sorties LLM |
+| Boucle LLM-Symbolique | Generation + verification + feedback |
+
 ## Concepts cles
 
 | Concept | Explication | Notebook |
@@ -98,6 +128,11 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 | **Clause Horn** | Regle logique avec au plus un litteral positif | SL-4 |
 | **Unification** | Trouve une substitution rendant deux termes egaux | SL-4 |
 | **ILP** | Apprentissage de programmes logiques a partir d'exemples | SL-4 |
+| **T-norm** | Generalisation differentiable de AND | SL-5 |
+| **DeepProbLog** | Programmation logique probabiliste + predicats neuronaux | SL-5 |
+| **Knowledge Graph** | Graphe oriente de triples (sujet, predicat, objet) | SL-6 |
+| **AMIE** | Rule mining sur knowledge graphs incomplets | SL-6 |
+| **LLM-Symbolique** | Boucle de retroaction LLM + verification formelle | SL-7 |
 
 ## prerequis
 
@@ -109,7 +144,7 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 
 ### Environnement Python
 
-Aucune dependance externe pour SL-1 et SL-2 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-4 utilise uniquement la bibliothèque standard.
+Aucune dependance externe pour SL-1 et SL-2 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-4 utilise uniquement la bibliothèque standard. SL-5 utilise uniquement la bibliotheque standard. SL-6 utilise `rdflib`. SL-7 utilise uniquement la bibliotheque standard.
 
 ## Ressources
 
@@ -127,6 +162,9 @@ SymbolicLearning/
 ├── SL-2-KnowledgeBasedLearning.ipynb        # EBL, RBL
 ├── SL-3-RelevanceLearning.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
 ├── SL-4-InductiveLogicProgramming.ipynb     # FOIL, resolution inverse, knowledge graphs
+├── SL-5-NeuroSymbolic.ipynb                 # T-norms, LTN, DeepProbLog
+├── SL-6-KnowledgeGraphs-ILP.ipynb           # rdflib, AMIE rule mining
+├── SL-7-LLM-SymbolicLearning.ipynb          # LLMs + verification symbolique
 ├── reference/
 │   └── AIMA_Ch19_Knowledge_in_Learning.md   # Notes de reference
 └── README.md                                # Cette documentation
