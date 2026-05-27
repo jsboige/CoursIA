@@ -11,9 +11,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
+
+logger = logging.getLogger(__name__)
 
 from dotenv import load_dotenv
 
@@ -33,6 +36,11 @@ TTS_DIR.mkdir(exist_ok=True, parents=True)
 _MAX_TTS_CHARS = 500  # Truncation limit for the composed text
 _BATCH_SIZE = 8
 _MAX_WORKERS = 1  # FishAudio S2-Pro is single-threaded; concurrent requests cause timeouts
+_MAX_PREFIX_TAGS = 4  # Max prosody tags prepended before segment text.
+# S2-Pro processes bracketed tags sequentially; beyond ~4, later tags tend to
+# be ignored or to degrade prosody quality (observed during Act 2 multi-tag
+# testing, session 25/05/2026). The cap also keeps the prefix short enough
+# that S2-Pro interprets it as instruction rather than vocalizing it.
 
 # F1 (Issue #1600): S2-Pro accepts free-form natural language in [brackets]
 # (per fish.audio blog). Collapsing 16 descriptive tags to 4 official tags
@@ -69,15 +77,37 @@ def _extract_prefix_tags(prefix: str) -> list[str]:
     if official:
         return official[:3]
     # Free-form fallback: keep prefix as a single bracketed instruction.
-    # S2-Pro tolerates up to ~80 chars of natural language inside [].
+    # S2-Pro tolerates up to ~80 chars of natural language inside []
+    # (per fish.audio blog examples: "speaking slowly, almost hesitant" ~50 chars).
+    # Longer instructions risk being vocalized literally rather than interpreted.
     cleaned = lower.rstrip(".,:; ").strip()
+    if len(cleaned) > 80:
+        logger.warning(
+            "F2: dropping free-form prefix >80 chars (%d chars): %.60s...",
+            len(cleaned), cleaned,
+        )
     if 0 < len(cleaned) <= 80:
         return [cleaned]
     return []
 
 
 # Backwards-compatible alias (kept for callers; new logic above).
-_extract_official_tags = _extract_prefix_tags
+import warnings as _warnings
+
+
+def _extract_official_tags(prefix: str) -> list[str]:
+    """Deprecated alias for _extract_prefix_tags.
+
+    Behaviour changed: this now extracts free-form tags in addition to
+    official ones (F2 fix, Issue #1600).
+    """
+    _warnings.warn(
+        "_extract_official_tags is deprecated; use _extract_prefix_tags. "
+        "Behaviour changed: now extracts free-form tags too (F2, #1600).",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return _extract_prefix_tags(prefix)
 
 
 def _compose_tts_text(seg: AnnotatedSegment) -> str:
@@ -108,12 +138,12 @@ def _compose_tts_text(seg: AnnotatedSegment) -> str:
                 continue
             seen_tags.add(key)
             parts.append(f"[{tag}]")
-            if len(seen_tags) >= 4:  # cap total prepended tags
+            if len(seen_tags) >= _MAX_PREFIX_TAGS:
                 return
 
     if seg.dramatic_prompt:
         _emit(seg.dramatic_prompt)
-    if seg.tts_context_prefix and len(seen_tags) < 4:
+    if seg.tts_context_prefix and len(seen_tags) < _MAX_PREFIX_TAGS:
         _emit(seg.tts_context_prefix)
 
     prefix_block = " ".join(parts)
@@ -425,6 +455,17 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
     # hardcoded 0.7. Low tension → more controlled delivery (~0.5), high
     # tension → more expressive variation (~0.9). Voice identity remains stable
     # because reference_id + seed are unchanged; only sampling diversity moves.
+    #
+    # Rationale for the linear mapping and range:
+    #   - S2-Pro default temperature is 0.7 (neutral). Values < 0.5 produce
+    #     near-identical outputs across seeds (observed during WER testing,
+    #     session 23/05/2026, Act 1 narrator segments). Values > 0.95 produce
+    #     unstable prosody with occasional word drops.
+    #   - The range [0.4, 0.95] was chosen to avoid these extremes while giving
+    #     meaningful variation. The slope 0.04/point maps tension 0→0.5 and
+    #     tension 10→0.9, centered around the S2-Pro default.
+    #   - This is a FIRST-PASS heuristic. Empirical validation via WER on a
+    #     held-out set (e.g. Act 3 segments) would strengthen confidence.
     tension = 5
     if seg.dramatic_ref is not None:
         tension = max(0, min(10, seg.dramatic_ref.tension_0_10))

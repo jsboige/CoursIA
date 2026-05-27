@@ -138,6 +138,40 @@ def test_f4_temperature_modulated_by_tension():
     assert t_low < t_high
 
 
+def test_max_prefix_tags_cap():
+    """Concern 3: _MAX_PREFIX_TAGS prevents tag explosion in composed text."""
+    import warnings
+
+    from v4.p5_tts import _MAX_PREFIX_TAGS, _compose_tts_text
+
+    seg = _build_seg(
+        annotated_text="Texte court.",
+        tts_context_prefix="whispering laughing crying shouting gasping sighing",
+        tension=5,
+    )
+    composed = _compose_tts_text(seg)
+    # Count bracketed tags before the narrative text
+    tags = [t for t in composed.split() if t.startswith("[") or t.startswith("(")]
+    assert len(tags) <= _MAX_PREFIX_TAGS + 1, (
+        f"Expected ≤{_MAX_PREFIX_TAGS + 1} prefix elements, got {len(tags)}: {tags}"
+    )
+
+
+def test_extract_official_tags_deprecation_warning():
+    """Concern 4: calling _extract_official_tags emits DeprecationWarning."""
+    import warnings
+
+    from v4.p5_tts import _extract_official_tags
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        result = _extract_official_tags("whispering softly")
+    assert any(issubclass(w.category, DeprecationWarning) for w in caught), (
+        f"Expected DeprecationWarning, got: {[w.category for w in caught]}"
+    )
+    assert result, f"Expected non-empty result, got: {result}"
+
+
 if __name__ == "__main__":
     test_f1_free_form_french_preserved()
     print("F1 ok")
@@ -149,4 +183,8 @@ if __name__ == "__main__":
     print("F3 ok")
     test_f4_temperature_modulated_by_tension()
     print("F4 ok")
+    test_max_prefix_tags_cap()
+    print("Tag cap ok")
+    test_extract_official_tags_deprecation_warning()
+    print("Deprecation warning ok")
     print("All F1-F4 smoke tests passed.")
