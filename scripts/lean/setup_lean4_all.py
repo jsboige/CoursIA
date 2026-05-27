@@ -16,6 +16,7 @@ Usage:
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -23,6 +24,23 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 GT_SCRIPTS = REPO_ROOT / "MyIA.AI.Notebooks" / "GameTheory" / "scripts"
 LEAN_SCRIPTS = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "scripts"
+
+WSL_DISTRO = "Ubuntu"
+
+
+def _detect_wsl_distro():
+    """Detect default WSL distro, fallback to 'Ubuntu'."""
+    try:
+        result = subprocess.run(
+            ["wsl", "-l", "-q"], capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            lines = [l.strip() for l in result.stdout.splitlines() if l.strip()]
+            if lines:
+                return lines[0]
+    except Exception:
+        pass
+    return "Ubuntu"
 
 
 def step_wsl_install():
@@ -34,9 +52,9 @@ def step_wsl_install():
     if not script.exists():
         print(f"ERROR: {script} not found")
         return False
-    print(f"Running: wsl -d Ubuntu -- bash {script}")
+    print(f"Running: wsl -d {WSL_DISTRO} -- bash {script}")
     result = subprocess.run(
-        ["wsl", "-d", "Ubuntu", "--", "bash", str(script)],
+        ["wsl", "-d", WSL_DISTRO, "--", "bash", str(script)],
         cwd=str(REPO_ROOT),
     )
     if result.returncode != 0:
@@ -51,6 +69,9 @@ def step_register_kernel():
     print("=" * 60)
     print("STEP 2: Windows Kernel Registration")
     print("=" * 60)
+    if not shutil.which("powershell") and not shutil.which("powershell.exe"):
+        print("ERROR: PowerShell not found in PATH. This script must run on Windows.")
+        return False
     script = GT_SCRIPTS / "setup_lean4_kernel.ps1"
     if not script.exists():
         print(f"ERROR: {script} not found")
@@ -133,12 +154,17 @@ def main():
     parser = argparse.ArgumentParser(
         description="Lean 4 kernel setup orchestrator (single entry point)"
     )
+    parser.add_argument("--distro", type=str, default=None,
+                        help="WSL distro name (default: auto-detect, fallback Ubuntu)")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--wsl-only", action="store_true", help="WSL install only (step 1)")
     group.add_argument("--register", action="store_true", help="Kernel registration only (step 2)")
     group.add_argument("--validate", action="store_true", help="Validation only (step 3)")
     group.add_argument("--check-wrapper", action="store_true", help="Check kernel.json wrapper")
     args = parser.parse_args()
+
+    global WSL_DISTRO
+    WSL_DISTRO = args.distro or _detect_wsl_distro()
 
     results = []
 
