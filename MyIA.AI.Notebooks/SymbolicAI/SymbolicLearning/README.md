@@ -2,14 +2,14 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicLearning
-pedagogical_count: 2
-breakdown: =2
-maturity: BETA=2
+pedagogical_count: 4
+breakdown: =4
+maturity: BETA=4
 -->
 
 Comment un agent peut-il apprendre a partir de connaissances existantes plutot que de donnees brutes ? Cette serie explore l'apprentissage symbolique tel que decrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux methodes guidees par la connaissance (EBL, RBL).
 
-Le premier notebook pose les bases : representation d'hypotheses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accelere l'apprentissage : l'apprentissage base sur les explications (EBL) compile les theories en heuristiques operationnelles, et l'apprentissage base sur la pertinence (RBL) identifie les attributs determinant via les determinations.
+Le premier notebook pose les bases : representation d'hypotheses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accelere l'apprentissage : l'apprentissage base sur les explications (EBL) compile les theories en heuristiques operationnelles, et l'apprentissage base sur la pertinence (RBL) identifie les attributs determinant via les determinations. Le troisieme notebook approfondit le RBL avec le treillis des determinations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrieme notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), la resolution inverse (bottom-up) et la connexion avec les knowledge graphs.
 
 **A qui s'adresse cette serie** : etudiants en IA, infoirmaticiens interesses par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~2h total) ne necessitent que Python 3.10+ standard library. Une familiarite avec la logique propositionnelle suffit. Ils constituent un complement theorique aux series [Tweety](../Tweety/README.md) (argumentation computationnelle) et [SemanticWeb](../SemanticWeb/README.md) (representation de connaissances).
 
@@ -17,10 +17,10 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 2 |
+| Notebooks | 4 |
 | Kernel | Python 3 |
-| Duree estimee | ~105 min |
-| prerequis | Python 3.10+ (standard library uniquement) |
+| Duree estimee | ~210 min |
+| prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4) |
 
 ## Notebooks
 
@@ -28,6 +28,8 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 |---|----------|---------|-------|
 | 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min |
 | 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, RBL, determinations | 55 min |
+| 3 | [SL-3 - Apprentissage Base sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
+| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, clauses Horn, knowledge graphs | 55 min |
 
 ## Contenu detaille
 
@@ -56,6 +58,28 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 | RBL - MINIMAL-CONSISTENT-DET | Algorithme AIMA 19.4 |
 | RBL - Impact quantitatif | Reduction exponentielle de l'espace des hypotheses |
 
+### SL-3-RelevanceLearning.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Determinations | Formalisme, monotonie, minimalite, `check_determination()` |
+| Treillis des determinations | `build_determination_lattice()`, visualisation ASCII, up-set |
+| MINIMAL-CONSISTENT-DET | Implementation detaillee, donnees moleculaires |
+| Selection guidee | RBL vs sklearn (information mutuelle), comparaison |
+| Analyse PAC | Reduction exponentielle, bornes d'echantillonnage |
+| Web Semantique | Parallel RBL <-> OWL (FunctionalProperty, hasKey) |
+
+### SL-4-InductiveLogicProgramming.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Clauses Horn | Representation, `Literal`, `HornClause`, unification |
+| FOIL | Algorithme top-down, gain FOIL, litteraux candidats |
+| FOIL pas-a-pas | Trace detaillee sur le probleme ancestor |
+| Resolution inverse | Operateurs V (absorption) et W (identification) |
+| Knowledge Graphs | Regles AMIE, triples RDF, SPARQL CONSTRUCT |
+| Exercices | sibling, operateur W, regles sur KG |
+
 ## Concepts cles
 
 | Concept | Explication | Notebook |
@@ -65,8 +89,15 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 | **CBH** | Maintient une seule hypothese ajustee incrementalement | SL-1 |
 | **EBL** | Extrait une regle generale d'un seul exemple par deduction | SL-2 |
 | **RBL** | Identifie les attributs pertinents via les determinations | SL-2 |
-| **Determination** | Relation fonctionnelle entre attributs | SL-2 |
+| **Determination** | Relation fonctionnelle entre attributs | SL-2, SL-3 |
 | **KBIL** | Apprentissage inductif guide par la connaissance | SL-2 |
+| **Treillis des determinations** | Ensemble partiellement ordonne des sous-ensembles d'attributs | SL-3 |
+| **MINIMAL-CONSISTENT-DET** | Trouve la determination minimale par taille croissante | SL-3 |
+| **FOIL** | Apprentissage top-down de clauses Horn | SL-4 |
+| **Resolution inverse** | Apprentissage bottom-up par operateurs V et W | SL-4 |
+| **Clause Horn** | Regle logique avec au plus un litteral positif | SL-4 |
+| **Unification** | Trouve une substitution rendant deux termes egaux | SL-4 |
+| **ILP** | Apprentissage de programmes logiques a partir d'exemples | SL-4 |
 
 ## prerequis
 
@@ -78,7 +109,7 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 
 ### Environnement Python
 
-Aucune dependance externe. Les notebooks utilisent uniquement la bibliothèque standard Python 3.10+.
+Aucune dependance externe pour SL-1 et SL-2 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-4 utilise uniquement la bibliothèque standard.
 
 ## Ressources
 
@@ -92,11 +123,13 @@ Aucune dependance externe. Les notebooks utilisent uniquement la bibliothèque s
 
 ```
 SymbolicLearning/
-├── SL-1-LogicalLearning.ipynb         # CBH, Version Space
-├── SL-2-KnowledgeBasedLearning.ipynb   # EBL, RBL
+├── SL-1-LogicalLearning.ipynb              # CBH, Version Space
+├── SL-2-KnowledgeBasedLearning.ipynb        # EBL, RBL
+├── SL-3-RelevanceLearning.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
+├── SL-4-InductiveLogicProgramming.ipynb     # FOIL, resolution inverse, knowledge graphs
 ├── reference/
-│   └── AIMA_Ch19_Knowledge_in_Learning.md  # Notes de reference
-└── README.md                           # Cette documentation
+│   └── AIMA_Ch19_Knowledge_in_Learning.md   # Notes de reference
+└── README.md                                # Cette documentation
 ```
 
 ## Cross-series Bridges
