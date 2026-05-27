@@ -1,4 +1,4 @@
-# ESGF-VolEnsemble-Conservative
+# Vol-Ensemble-Conservative
 
 **Asset class:** Multi-asset (Equities, Bonds, Commodities)
 
@@ -6,13 +6,13 @@
 
 ## Description
 
-Conservative ensemble volatility forecasting combining GARCH(1,1) and HAR-RV models on six assets (SPY, EFA, EEM, TLT, GLD, DBC). Uses the maximum of the two volatility forecasts (conservative approach). Targets 8% annualized volatility (half the normal 16% target). Applies SMA200 regime filter with 50% position reduction in bear markets, and SMA50 for trade direction. Weekly rebalance. Most conservative of the three ESGF volatility strategies.
+Conservative ensemble volatility forecasting combining GARCH(1,1) and HAR-RV models on six assets (SPY, EFA, EEM, TLT, GLD, DBC). Uses the maximum of the two volatility forecasts (conservative approach). Targets 8% annualized volatility (half the normal 16% target). Applies SMA200 regime filter with 50% position reduction in bear markets, and SMA50 for trade direction. Weekly rebalance. Most conservative of the three volatility strategies.
 
 ## How to Run
 
 ### Lean CLI
 ```bash
-lean backtest --algorithm ESGF-VolEnsemble-Conservative/main.py
+lean backtest --algorithm Vol-Ensemble-Conservative/main.py
 ```
 
 ### QC Cloud

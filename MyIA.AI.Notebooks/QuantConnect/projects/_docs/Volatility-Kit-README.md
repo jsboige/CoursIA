@@ -1,8 +1,8 @@
-# ESGF Volatility Kit - 3 Cloud-Validated Strategies
+# Volatility Kit - 3 Cloud-Validated Strategies
 
 ## Overview
 
-Three volatility-based strategies for the ESGF pedagogical kit. These strategies use **volatility forecasting** (GARCH and HAR-RV) for position sizing, not directional ML prediction. This is an honest pedagogical outcome: ML financial directional prediction is extremely difficult, and volatility-based risk budgeting provides a more robust foundation.
+Three volatility-based strategies for the quant trading pedagogical kit. These strategies use **volatility forecasting** (GARCH and HAR-RV) for position sizing, not directional ML prediction. This is an honest pedagogical outcome: ML financial directional prediction is extremely difficult, and volatility-based risk budgeting provides a more robust foundation.
 
 ## Strategic Context
 
@@ -15,7 +15,7 @@ After extensive testing across M5/M6/M7/M8 and T21.26 MoE experiments:
 
 ## Strategies
 
-### 1. ESGF-GARCH-VolTarget (Project 31456084)
+### 1. Vol-GARCH-Target (Project 31456084)
 
 **Model**: GARCH(1,1) via variance-targeting MLE grid search (alpha: 0.05-0.25, beta: 0.75-0.95)
 
@@ -37,7 +37,7 @@ After extensive testing across M5/M6/M7/M8 and T21.26 MoE experiments:
 | Alpha | 0.008 |
 | Beta | 0.188 |
 
-### 2. ESGF-HAR-RV-Kelly (Project 31456164)
+### 2. HAR-RV-Kelly (Project 31456164)
 
 **Model**: HAR(1,5,22) OLS on log-RV (Corsi 2009) with 5-day iterated forecast
 
@@ -59,7 +59,7 @@ After extensive testing across M5/M6/M7/M8 and T21.26 MoE experiments:
 | Alpha | 0 |
 | Beta | 0.110 |
 
-### 3. ESGF-VolEnsemble-Conservative (Project 31456204)
+### 3. Vol-Ensemble-Conservative (Project 31456204)
 
 **Model**: Ensemble of GARCH(1,1) + HAR(1,5,22) — takes max vol forecast (conservative)
 
@@ -97,9 +97,9 @@ After extensive testing across M5/M6/M7/M8 and T21.26 MoE experiments:
 
 | Strategy | Project ID | Local Path |
 |----------|-----------|------------|
-| GARCH-VolTarget | 31456084 | `projects/ESGF-GARCH-VolTarget/` |
-| HAR-RV-Kelly | 31456164 | `projects/ESGF-HAR-RV-Kelly/` |
-| VolEnsemble-Conservative | 31456204 | `projects/ESGF-VolEnsemble-Conservative/` |
+| Vol-GARCH-Target | 31456084 | `projects/Vol-GARCH-Target/` |
+| HAR-RV-Kelly | 31456164 | `projects/HAR-RV-Kelly/` |
+| Vol-Ensemble-Conservative | 31456204 | `projects/Vol-Ensemble-Conservative/` |
 
 ## References
 

@@ -1,4 +1,4 @@
-# ESGF-HAR-RV-Kelly
+# HAR-RV-Kelly
 
 **Asset class:** Multi-asset (Equities, Bonds, Commodities)
 
@@ -12,7 +12,7 @@ HAR-RV (Heterogeneous Autoregressive Realized Variance, Corsi 2009) model for fo
 
 ### Lean CLI
 ```bash
-lean backtest --algorithm ESGF-HAR-RV-Kelly/main.py
+lean backtest --algorithm HAR-RV-Kelly/main.py
 ```
 
 ### QC Cloud
