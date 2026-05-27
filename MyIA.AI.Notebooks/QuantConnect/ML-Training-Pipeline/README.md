@@ -409,6 +409,22 @@ Dry-run results (CPU, Python 3.13, torch 2.11.0+cpu):
 
 Note: dry-run uses synthetic random data. FAILS baseline is expected with random walks. Real-data results are in `results/` and on the cluster dashboard.
 
+## Ladder #1409 — Action vs Forecast (2026-05-27)
+
+Systematic evaluation of trading signal generation approaches on 25-26 crypto+ETF symbols, walk-forward 5-fold, 4+ seeds. B&H SPY 2015-2025 Sharpe = 1.15 baseline.
+
+| Ladder | Model | Approach | Verdict | Signal/Total | Median AUC | Combos | Time |
+|--------|-------|----------|---------|-------------|------------|--------|------|
+| L1 | TSMOM | Time-series momentum | NO BEATS | 0/25 | — | — | 1s |
+| L2 | CS+DM | Carry+DualMomentum | NO BEATS | 0/25 | — | 252d best | 27s |
+| L3 | Trend | Regime+trend long-horizon | NO BEATS | 0/75 | 0.509 | 300 | 874s |
+| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** | **24/26** | **0.558** | **104** | **3714s** |
+| L5 | PatchTST | Forecast-based (return prediction) | NO BEATS | 0/26 | 0.501 | 104 | 2844s |
+
+**Key finding**: Action-based models (DT classifies buy/hold/sell) massively outperform forecast-based models (PatchTST predicts return magnitude). Forecasting returns is necessary but not sufficient — the portfolio translation layer (forecast -> position) destroys the signal via transaction costs and discretization errors.
+
+Results: `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_patchtst}/results.json`
+
 ## Reproducibility
 
 - **Data hash**: SHA256 of input dataset stored in metadata
