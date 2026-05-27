@@ -13,7 +13,7 @@ Le backtest couvre la periode du 1er janvier 2023 au 31 decembre 2024, avec un c
 ## Utilisation
 
 1. Connectez-vous a [QuantConnect](https://www.quantconnect.com/)
-2. Creez un nouveau projet Python dans l'organisation **Trading Firm ESGF**
+2. Create a new Python project in your course organization
 3. Copiez le contenu de `main.py` dans le fichier principal du projet
 4. Lancez un backtest pour observer les resultats
 5. Analysez les metriques : Sharpe Ratio, drawdown, nombre de trades

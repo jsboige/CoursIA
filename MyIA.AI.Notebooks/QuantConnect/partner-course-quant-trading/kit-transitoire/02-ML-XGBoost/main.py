@@ -3,9 +3,9 @@ from AlgorithmImports import *
 # endregion
 
 
-class ESGFMLXGBoost(QCAlgorithm):
+class MlXgboostAlgorithm(QCAlgorithm):
     """
-    ESGF Kit - ML XGBoost Sector Rotation.
+    ML XGBoost Sector Rotation.
 
     Sector ETF rotation using Gradient Boosting regression with walk-forward
     training. Predicts 20-day forward returns and allocates to sectors with
