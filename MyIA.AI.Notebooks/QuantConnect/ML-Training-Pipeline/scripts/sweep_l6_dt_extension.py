@@ -47,7 +47,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 import time
 from pathlib import Path
@@ -66,13 +65,7 @@ from panier_loader import (
     get_panier_symbols,
     load_panier,
 )
-
-# Import reusable components from train_rl_dt
-from train_rl_dt import (
-    SinusoidalPositionalEncoding,
-    compute_majority_class_baseline,
-    create_sequence_batches,
-)
+from train_rl_dt import SinusoidalPositionalEncoding
 
 sys.path.insert(0, str(SCRIPTS_DIR.parent / "shared"))
 from features import FeatureEngineer
