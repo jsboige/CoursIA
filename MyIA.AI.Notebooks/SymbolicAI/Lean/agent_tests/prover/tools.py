@@ -870,6 +870,23 @@ class TacticTools:
                     )
         return None
 
+    def _record_sorry_count(self, sorry_count: int):
+        """Shared delta0 tracking used by both compile() and _build_check_or_revert().
+
+        Records the sorry count after a successful build-check, updates the
+        consecutive delta0 streak, and mirrors into shared state. Callers
+        must pass the already-computed sorry count to avoid redundant file reads.
+        """
+        if self._min_compile_sorry_count is None:
+            self._min_compile_sorry_count = sorry_count
+        elif sorry_count < self._min_compile_sorry_count:
+            self._min_compile_sorry_count = sorry_count
+            self._consecutive_delta0 = 0
+        else:
+            self._consecutive_delta0 += 1
+        if self._state is not None:
+            self._state.consecutive_delta0_compiles = self._consecutive_delta0
+
     def _build_check_or_revert(self, original_content: str, operation: str
                                ) -> Optional[Dict]:
         """After writing, run lake build. If it fails, revert and return diagnostics.
@@ -895,6 +912,9 @@ class TacticTools:
             }
 
         if result.get("success"):
+            # P1 fix: track delta0 even on clean build success from file_replace
+            sorry_count = Path(self._filepath).read_text(encoding="utf-8").count("sorry")
+            self._record_sorry_count(sorry_count)
             return None
 
         # Check if the ONLY errors are sorry-related (not syntax errors)
@@ -926,6 +946,9 @@ class TacticTools:
 
         # If only sorry-related errors, accept the replacement (don't revert)
         if not non_sorry_errors:
+            # P1 fix: track delta0 on sorry-only build success from file_replace
+            current_sorry = Path(self._filepath).read_text(encoding="utf-8").count("sorry")
+            self._record_sorry_count(current_sorry)
             return None
 
         # LOST_PROGRESS prevention (2026-05-26, Epic #1453):
@@ -1460,20 +1483,27 @@ class TacticTools:
                 )
             return True
 
-    def compile_probe_goal(self, sorry_line: int) -> str:
+    def compile_probe_goal(self, sorry_line: int, probe_ctx_lines: int = 10) -> str:
         """Extract the Lean goal state at a specific sorry line by probing. Returns the goal text.
 
-        Result is cached by (file content hash, sorry_line) (#1460). The goal at a
-        line only changes when the file changes, so a repeat probe of an unchanged
-        file is served from cache instead of re-running the Lean server. The cache
-        auto-invalidates when any edit changes the content hash.
+        Result is cached by (surrounding context hash, sorry_line) (#1460, P2 fix).
+        The goal at a line only changes when the surrounding context changes, so a
+        repeat probe is served from cache. P2 fix: hash only lines around sorry
+        (probe_ctx_lines ± sorry_line) instead of full file — edits far from the
+        sorry no longer invalidate the cache.
         """
         from .lean_utils import get_goal_state
         cache_key = None
         if self._filepath and Path(self._filepath).exists():
             content = Path(self._filepath).read_text(encoding="utf-8")
-            content_hash = hashlib.md5(content.encode()).hexdigest()
-            cache_key = (content_hash, sorry_line)
+            lines = content.split("\n")
+            # P2: hash surrounding context only (±probe_ctx_lines around sorry)
+            ctx_start = max(0, sorry_line - 1 - probe_ctx_lines)
+            ctx_end = min(len(lines), sorry_line + probe_ctx_lines)
+            ctx_hash = hashlib.md5(
+                "\n".join(lines[ctx_start:ctx_end]).encode()
+            ).hexdigest()
+            cache_key = (ctx_hash, sorry_line)
             cached = self._probe_goal_cache.get(cache_key)
             if cached is not None:
                 if self._trace:
@@ -1550,13 +1580,7 @@ class TacticTools:
         stagnation = False
         directive = None
         if success:
-            if self._min_compile_sorry_count is None:
-                self._min_compile_sorry_count = sorry_count
-            elif sorry_count < self._min_compile_sorry_count:
-                self._min_compile_sorry_count = sorry_count
-                self._consecutive_delta0 = 0
-            else:
-                self._consecutive_delta0 += 1
+            self._record_sorry_count(sorry_count)
             stagnation = self._consecutive_delta0 >= self._stagnation_threshold
             if stagnation:
                 directive = (
@@ -1568,10 +1592,6 @@ class TacticTools:
                     f"reference_docs for a lemma, or request Director guidance. Do "
                     f"NOT submit another minor variant."
                 )
-        # Mirror into shared state so VerifyExecutor/Coordinator can force-route
-        # a stuck session without re-deriving the streak.
-        if self._state is not None:
-            self._state.consecutive_delta0_compiles = self._consecutive_delta0
 
         if check_axioms and success:
             module_name = relative_path.replace("/", ".").replace("\\", ".")

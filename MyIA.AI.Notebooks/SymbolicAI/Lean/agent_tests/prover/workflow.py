@@ -19,6 +19,7 @@ Hardening (2026-05-08):
 """
 
 import asyncio
+import os
 import time
 from dataclasses import dataclass
 from typing import Optional
@@ -656,7 +657,9 @@ class VerifyExecutor(Executor):
         # decompositions. This counter keeps climbing and triggers Director
         # re-escalade after _cumulative_fails_threshold fails regardless.
         self._cumulative_fails = 0
-        self._cumulative_fails_threshold = 5
+        self._cumulative_fails_threshold = int(
+            os.environ.get("PROVER_CUMULATIVE_FAILS_THRESHOLD", "3")
+        )  # P3: configurable, default 3 (was 5)
         # Re-search trigger: after this many total fails, force a hint to
         # the Critic that fresh lemmas may be needed. The Critic still makes
         # the routing decision, but the hint makes re-search more likely.

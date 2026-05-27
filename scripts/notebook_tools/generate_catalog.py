@@ -465,12 +465,28 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
     }
 
 
+def _git_tracked_files() -> set[str] | None:
+    """Return set of git-tracked relative paths, or None if not in a git repo."""
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "-z", "--", "MyIA.AI.Notebooks/"],
+            capture_output=True, text=False, cwd=str(REPO_ROOT),
+        )
+        if result.returncode != 0:
+            return None
+        return set(result.stdout.decode("utf-8").strip("\x00").split("\x00"))
+    except FileNotFoundError:
+        return None
+
+
 def scan_all_notebooks(
     pedagogical: bool = True,
     series_filter: str | None = None,
     git_meta: dict | None = None,
+    git_tracked_only: bool = False,
 ) -> list[dict]:
     """Scan all notebooks and return catalog entries."""
+    tracked = _git_tracked_files() if git_tracked_only else None
     entries = []
     dirs = sorted(NOTEBOOKS_DIR.iterdir()) if not series_filter else [
         NOTEBOOKS_DIR / series_filter
@@ -483,6 +499,9 @@ def scan_all_notebooks(
             continue
 
         for nb_path in sorted(series_dir.rglob("*.ipynb")):
+            rel = str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/")
+            if tracked and rel not in tracked:
+                continue
             parts = nb_path.relative_to(series_dir).parts
             if any(exc in part for part in parts for exc in EXCLUDE_ALWAYS):
                 continue
@@ -616,11 +635,18 @@ def main():
         "--output-dir", type=str, default=str(REPO_ROOT),
         help="Output directory for generated files",
     )
+    parser.add_argument(
+        "--git-tracked-only", action="store_true",
+        help="Only include notebooks tracked by git (for CI consistency)",
+    )
     args = parser.parse_args()
 
     pedagogical = not args.all
     git_meta = build_git_metadata()
-    entries = scan_all_notebooks(pedagogical=pedagogical, series_filter=args.series, git_meta=git_meta)
+    entries = scan_all_notebooks(
+        pedagogical=pedagogical, series_filter=args.series,
+        git_meta=git_meta, git_tracked_only=args.git_tracked_only,
+    )
 
     if args.status:
         entries = [e for e in entries if e["status"] == args.status]

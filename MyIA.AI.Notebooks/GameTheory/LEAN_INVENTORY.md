@@ -9,10 +9,10 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 | `stable_marriage_lean` | v4.30.0-rc2 | 3 | 6 files | Active proving |
 | `conway_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `calibration_lean` | v4.30.0-rc2 | 0 | 1 file | COMPLETE |
-| `cooperative_games_lean` | v4.30.0-rc2 | 1 | 2 files | Stable |
+| `cooperative_games_lean` | v4.30.0-rc2 | 0 | 2 files | COMPLETE |
 | `social_choice_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
-| **Total** | — | **4** | **24 files** | — |
+| **Total** | — | **3** | **24 files** | — |
 
 Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production.
 
@@ -95,17 +95,17 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 | File | sorry | Description |
 |------|-------|-------------|
 | `CooperativeGames/Shapley.lean` | 0 | Shapley value (uniqueness proved) |
-| `CooperativeGames/Basic.lean` | 1 | Bondareva-Shapley theorem (hCore) |
+| `CooperativeGames/Basic.lean` | 0 | Core definitions (hCore removed in refactor) |
 
 **Build**: `lake build CooperativeGames` — SUCCESS
 
-**Prover target**: 1 sorry in Basic.lean — INTRACTABLE (Bondareva-Shapley core nonemptiness requires hyperplane separation in locally convex spaces).
+**Status: COMPLETE (0 sorry)**. hCore was removed in refactoring. Bondareva-Shapley core nonemptiness remains unformalized (requires hyperplane separation in locally convex spaces).
 
 ---
 
 ### 5. social_choice_lean
 
-**Objective**: Port asouther4/lean-social-choice (Lean 3) to Lean 4. Arrow, Sen, Voting.
+**Objective**: Port asouther4/lean-social-choice (Lean 3) to Lean 4. Arrow, Sen, Voting, Mechanism Design.
 
 **Toolchain**: v4.30.0-rc2 | **Dependencies**: Mathlib4
 
@@ -114,6 +114,7 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 | `SocialChoice/Arrow.lean` | 0 | Arrow's Impossibility Theorem (Geanakoplos 2005) |
 | `SocialChoice/Sen.lean` | 0 | Sen's Liberal Paradox |
 | `SocialChoice/Voting.lean` | 0 | Median Voter Theorem, Split Cycle, clones |
+| `SocialChoice/MechanismDesign.lean` | 0 | Vickrey truthfulness, first-price counter-example (#1469) |
 | `SocialChoice/Basic.lean` | 0 | Core definitions (PrefOrder, Profile, SWF) |
 | `SocialChoice/Framework.lean` | 0 | Framework utilities |
 | `SocialChoice/SortedListCounting.lean` | 0 | Sorted list counting helper |
@@ -143,10 +144,26 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 
 ## Remaining Proving Targets
 
-| Priority | Target                 | Dir                    | sorry | Feasibility                        |
-|----------|------------------------|------------------------|-------|------------------------------------|
-| P1       | Basic.lean hCore       | cooperative_games_lean | 1     | Low (hyperplane separation)        |
-| P2       | Lattice.lean A2 + B    | stable_marriage_lean   | 2     | Very Low (Knuth rotations)         |
+| Priority | Target                       | Dir                    | sorry | Feasibility                        |
+|----------|------------------------------|------------------------|-------|------------------------------------|
+| P1       | Lattice.lean L145 Case A2    | stable_marriage_lean   | 1     | Very Low (Knuth rotations)         |
+| P2       | Lattice.lean L147 Case B     | stable_marriage_lean   | 1     | Very Low (Knuth rotations)         |
+| P3       | Lattice.lean L795 doc_opt    | stable_marriage_lean   | 1     | Low (depends on no_cross_match)    |
+
+Note: After PRs #1521-#1525 merge, Lattice.lean will have **0 sorry, 1 axiom** (`no_cross_match`). The 3 sorry listed above are on current main.
+
+## GO/NO-GO per Project (for BG iter cycles)
+
+| Project                | Decision | Reasoning                                                      |
+|------------------------|----------|----------------------------------------------------------------|
+| stable_marriage_lean   | NO-GO    | All 3 sorry INTRACTABLE (Knuth rotations). man_optimal proved. |
+| conway_lean            | N/A      | COMPLETE (0 sorry). No targets.                                |
+| calibration_lean       | N/A      | COMPLETE (0 sorry). No targets.                                |
+| cooperative_games_lean | N/A      | COMPLETE (0 sorry). hCore removed.                             |
+| social_choice_lean     | N/A      | COMPLETE (0 sorry). MechanismDesign added (#1469).             |
+| social_choice_lean_peters | N/A   | Reference only (pinned v4.27.0-rc1).                           |
+
+**Conclusion**: No tractable BG iter targets exist. Next proving opportunity requires either (a) new Lean files with fresh sorry, or (b) manual Knuth rotation formalization (~200-300 lines).
 
 ---
 
