@@ -217,10 +217,20 @@ Architecture SDDD | Compatible MCP | Derniere mise a jour : mai 2026
 
 ## Cross-series Bridges
 
+### Interne GenAI
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Image](Image/README.md) | Source visuelle pour Video | Le pipeline Video/03-2 enchaine generation d'images puis animation ; SVD (Video/02-4) anime une image existante |
+| [Audio](Audio/README.md) | Sync A/V + podcast | Audio/04-4 synchronise audio et video ; le pipeline podcast (Audio/03-2) enchaine STT, LLM (Texte) et TTS |
+| [Texte](Texte/README.md) | Prompts et APIs | Les prompts structures (Texte/2) guident toute generation (Image, Audio, Video) ; function calling (Texte/4) pilote les APIs multimodales |
+| [SemanticKernel](SemanticKernel/README.md) | Orchestration | Les pipelines multi-modeles de chaque serie suivent les patterns d'orchestration Semantic Kernel |
+
+### Externe
+
 | Serie | Lien | Connection |
 |-------|------|-------------|
 | [ML](../ML/README.md) | Pipelines ML, evaluation | Les modeles generatifs s'evaluent avec les memes metriques (precision, FID, WER) et s'integrent dans des pipelines ML |
-| [SemanticKernel](SemanticKernel/README.md) | Orchestration agentique | Semantic Kernel orchestre les LLMs et outils GenAI dans des workflows de production |
 | [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | L'analyse de sentiment par LLM (Texte/8_Reasoning_Models) alimente les strategies de trading |
 | [RL](../RL/README.md) | Apprentissage par renforcement | Les agents RL peuvent utiliser des modeles generatifs comme recompenses (images, texte) |
 | [Probas](../Probas/README.md) | Modeles probabilistes | Les VAE, diffusion models et Bayesian neural networks partagent les memes fondements probabilistes |
