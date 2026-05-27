@@ -147,6 +147,15 @@ Le fil rouge de cette serie est la creation d'un systeme de visuels pedagogiques
 
 4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Content-Generation.ipynb) applique le pipeline au contenu educatif. Les notebooks [examples/](examples/) montrent des cas d'usage par domaine (histoire, sciences, litterature).
 
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Video](../Video/README.md) | Image-to-video | SVD (Video/02-4) anime une image existante ; le pipeline Video/03-2 enchaine generation d'images puis animation |
+| [Audio](../Audio/README.md) | Sync audio-video | Audio/04-4 synchronise la piste audio avec les visuels generes |
+| [Texte](../Texte/README.md) | Prompts structures | Les prompts DALL-E et GPT-5 Image beneficient des techniques de prompt engineering (Texte/2) et function calling (Texte/4) |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines d'orchestration (03-2) partagent les memes patterns que les agents Semantic Kernel |
+
 ## Licence
 
 Voir la licence du repository principal.

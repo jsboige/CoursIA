@@ -134,11 +134,15 @@ Le fil rouge de cette serie est la progression de l'interaction basique avec un 
 
 4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modeles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise. [10_LocalLlama](10_LocalLlama.ipynb) et [11_Quantization](11_Quantization.ipynb) deployent en local avec vLLM.
 
-## Relation avec les autres series
+## Cross-series Bridges
 
-- **GenAI/Images** : Generation d'images (DALL-E, Stable Diffusion)
-- **GenAI/Audio** : Transcription, TTS (Whisper)
-- **SymbolicAI** : Reasoning formel (Z3, Tweety, Lean)
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Image](../Image/README.md) | Prompts structurés | Les textes prompts guident la generation d'images (DALL-E, GPT-5 Image) — notebooks [1](1_OpenAI_Intro.ipynb) et [4](4_Function_Calling.ipynb) |
+| [Audio](../Audio/README.md) | STT/TTS + RAG podcast | Whisper STT et TTS APIs sont les bases du pipeline podcast (Audio/03-2) ; le RAG (notebook [5](5_RAG_Modern.ipynb)) alimente le contenu |
+| [Video](../Video/README.md) | GPT-5 Video + Sora prompts | La comprehension video (Video/01-2) utilise les memes APIs texte ; Sora (Video/04-3) depend de prompts structures |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration agentique | Semantic Kernel orchestre les LLMs via plugins et agents — prolonge les patterns de function calling (notebook [4](4_Function_Calling.ipynb)) |
+| [SymbolicAI](../../SymbolicAI/README.md) | Reasoning formel | Les modeles raisonnants (notebook [8](8_Reasoning_Models.ipynb)) complementent le reasoning formel (Z3, Tweety, Lean) |
 
 ## Ressources
 
