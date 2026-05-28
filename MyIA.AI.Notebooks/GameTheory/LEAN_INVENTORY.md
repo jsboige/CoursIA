@@ -7,14 +7,15 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 | Directory | Toolchain | Production sorry | Modules | Status |
 |-----------|-----------|-----------------|---------|--------|
 | `stable_marriage_lean` | v4.30.0-rc2 | 3 | 6 files | Active proving |
-| `conway_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `calibration_lean` | v4.30.0-rc2 | 0 | 1 file | COMPLETE |
 | `cooperative_games_lean` | v4.30.0-rc2 | 0 | 2 files | COMPLETE |
 | `social_choice_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
-| **Total** | — | **3** | **24 files** | — |
+| **Total** | — | **3** | **17 files** | — |
 
 Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production.
+
+**Conway tribute series relocated**: `conway_lean/` (Conway hommage — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel) was moved to [`SymbolicAI/Lean/conway_lean/`](../SymbolicAI/Lean/conway_lean/) since it formalizes lesser-known Conway results (not game-theoretic content per se). The prover calibration targets defined in `agent_tests/prover/config.py` follow the new path.
 
 ---
 
@@ -48,29 +49,7 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 
 ---
 
-### 2. conway_lean
-
-**Objective**: Formalize Conway's mathematical games and algorithms.
-
-**Toolchain**: v4.30.0-rc2 | **Dependencies**: Mathlib4
-
-| File | sorry | Description |
-|------|-------|-------------|
-| `Conway/Doomsday.lean` | 0 | Doomsday algorithm |
-| `Conway/DoomsdayLemmas.lean` | 0 | Supporting lemmas |
-| `Conway/Fractran.lean` | 0 | FRACTRAN programming language |
-| `Conway/LookAndSay.lean` | 0 | Look-and-say sequence |
-| `Conway/LookAndSayLemmas.lean` | 0 | Supporting lemmas |
-| `Conway/Nim.lean` | 0 | Nim game theory |
-| `Conway/Angel.lean` | 0 | Angel problem |
-
-**Build**: `lake build Conway` — SUCCESS (verified 24/05/2026)
-
-**COMPLETE: 0 sorry**. Previous scan matched "sorry" in comments only, not code.
-
----
-
-### 3. calibration_lean
+### 2. calibration_lean
 
 **Objective**: Prover calibration targets for benchmarking the multi-agent prover.
 
@@ -86,7 +65,7 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 
 ---
 
-### 4. cooperative_games_lean
+### 3. cooperative_games_lean
 
 **Objective**: Formalize cooperative game theory (Shapley value, core).
 
@@ -103,7 +82,7 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 
 ---
 
-### 5. social_choice_lean
+### 4. social_choice_lean
 
 **Objective**: Port asouther4/lean-social-choice (Lean 3) to Lean 4. Arrow, Sen, Voting, Mechanism Design.
 
@@ -124,7 +103,7 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 
 ---
 
-### 6. social_choice_lean_peters
+### 5. social_choice_lean_peters
 
 **Objective**: Reference project importing DominikPeters/SocialChoiceLean as a Lake dependency.
 
@@ -157,11 +136,12 @@ Note: After PRs #1521-#1525 merge, Lattice.lean will have **0 sorry, 1 axiom** (
 | Project                | Decision | Reasoning                                                      |
 |------------------------|----------|----------------------------------------------------------------|
 | stable_marriage_lean   | NO-GO    | All 3 sorry INTRACTABLE (Knuth rotations). man_optimal proved. |
-| conway_lean            | N/A      | COMPLETE (0 sorry). No targets.                                |
 | calibration_lean       | N/A      | COMPLETE (0 sorry). No targets.                                |
 | cooperative_games_lean | N/A      | COMPLETE (0 sorry). hCore removed.                             |
 | social_choice_lean     | N/A      | COMPLETE (0 sorry). MechanismDesign added (#1469).             |
 | social_choice_lean_peters | N/A   | Reference only (pinned v4.27.0-rc1).                           |
+
+Conway calibration targets (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) live in `SymbolicAI/Lean/conway_lean/` and are still consumed by `agent_tests/prover/config.py` (#1453 prover harness co-evolution).
 
 **Conclusion**: No tractable BG iter targets exist. Next proving opportunity requires either (a) new Lean files with fresh sorry, or (b) manual Knuth rotation formalization (~200-300 lines).
 
