@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: Search
 pedagogical_count: 45
-breakdown: Applications=20, Part1-Foundations=11, Part2-CSP=9, =5
+breakdown: Applications=20, Part1-Foundations=11, Part2-CSP=9, root=5
 maturity: BETA=22, PRODUCTION=22, DRAFT=1
 -->
 

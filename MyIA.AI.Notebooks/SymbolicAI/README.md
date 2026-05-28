@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI
 pedagogical_count: 98
-breakdown: SmartContracts=27, SemanticWeb=18, Lean=15, Planners=13, Tweety=10, SymbolicLearning=7, Argument_Analysis=6, =2
+breakdown: SmartContracts=27, SemanticWeb=18, Lean=15, Planners=13, Tweety=10, SymbolicLearning=7, Argument_Analysis=6, root=2
 maturity: BETA=83, PRODUCTION=9, ALPHA=6
 -->
 

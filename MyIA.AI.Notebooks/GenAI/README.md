@@ -2,14 +2,14 @@
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 117
-breakdown: Audio=30, SemanticKernel=20, Image=19, Video=16, Texte=11, 00-GenAI-Environment=6, FineTuning=5, Vibe-Coding=5, CaseStudies=4, root=1
-maturity: BETA=74, PRODUCTION=33, ALPHA=4, DRAFT=3, TEMPLATE=3
+pedagogical_count: 114
+breakdown: Audio=30, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, FineTuning=5, Vibe-Coding=5, CaseStudies=4, root=1
+maturity: BETA=71, PRODUCTION=33, ALPHA=4, DRAFT=3, TEMPLATE=3
 -->
 
 Ce parcours vous forme a la maitrise de l'IA generative dans toute sa diversite : generer des images, synthetiser la voix, composer de la musique, produire des videos, orchestrer des agents autonomes, et deployer des applications en production. Chaque modalite suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modeles de production.
 
-**117 notebooks** | **10 sous-domaines** | **~90-100h** | **95%+ valides**
+**114 notebooks** | **10 sous-domaines** | **~90-100h** | **95%+ valides**
 
 ## Pourquoi ce parcours ?
 
@@ -20,7 +20,7 @@ L'IA generative a transforme la creation de contenu en 2024-2026. Un developpeur
 ```text
 GenAI/
 ├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
-├── Image/                   # Generation d'images (19 notebooks)
+├── Image/                   # Generation d'images (16 notebooks)
 ├── Audio/                   # Speech, TTS, musique, separation (30 notebooks)
 ├── Video/                   # Generation et comprehension video (16 notebooks)
 ├── Texte/                   # LLMs et generation de texte (11 notebooks)
@@ -49,7 +49,7 @@ On commence par les fondamentaux : appeler DALL-E 3 et GPT-5 pour generer des im
 
 **Fil rouge** : construire un generateur de contenu visuel pour l'education (diagrammes scientifiques, illustrations pedagogiques, motifs decoratifs).
 
-[README complet](Image/README.md) | 19 notebooks | ~6-8h
+[README complet](Image/README.md) | 16 notebooks | ~6-8h
 
 ---
 

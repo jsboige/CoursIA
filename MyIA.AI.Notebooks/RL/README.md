@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: RL
 pedagogical_count: 6
-breakdown: =6
+breakdown: root=6
 maturity: PRODUCTION=5, BETA=1
 -->
 
