@@ -295,9 +295,12 @@ GameTheory/
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
 │   ├── tournament.py              # Tournoi Axelrod
 │   └── visualization.py           # Animations populations
-├── cooperative_games_lean/        # Projet Lake pour Lean cooperatif (Shapley)
-├── social_choice_lean/            # Projet Lake pour Lean choix social (Arrow, Sen, Voting)
-├── stable_marriage_lean/          # Projet Lake pour Gale-Shapley (2 sorry / 5 theoremes)
+├── cooperative_games_lean/        # Projet Lake jeux cooperatifs (Shapley 0 sorry, Bondareva-Shapley 1 sorry INTRACTABLE)
+├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
+├── social_choice_lean_peters/     # Projet Lake reference DominikPeters (0 sorry, toolchain v4.27.0-rc1)
+├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 3 sorry residual dans Lattice.lean)
+├── calibration_lean/              # Projet Lake benchmark prover (0 sorry, regression suite)
+├── lean_game_defs/                # Types Lean partages (pas de Lake project)
 ├── examples/
 │   ├── prisoners_dilemma.py
 │   ├── topology_2x2_periodic_table.py
@@ -353,7 +356,7 @@ BATCH_MODE=true python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory
 
 ### GameTheory et Lean (Verification Formelle)
 
-Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-serie [SocialChoice/](SocialChoice/) formalisent en Lean 4 les resultats theoriques etudies en Python dans les notebooks principaux. Cette dualite Python (simulation) / Lean (preuve formelle) est un fil rouge du curriculum.
+Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-serie [SocialChoice/](SocialChoice/) formalisent en Lean 4 les resultats theoriques etudies en Python dans les notebooks principaux. Cette dualite Python (simulation) / Lean (preuve formelle) est un fil rouge du curriculum. **Inventaire detaille** : [LEAN_INVENTORY.md](LEAN_INVENTORY.md) (toolchains, GO/NO-GO prover, lake build status, sorry residuels).
 
 | Concept GameTheory | Notebook Python | Formalisation Lean | Statut |
 |--------------------|----------------|--------------------|--------|
@@ -362,9 +365,11 @@ Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-serie [SocialChoice/](SocialCh
 | Jeux combinatoires | GameTheory-8 | `PGame.lean` (notebook 8b) | Prouve |
 | Theoreme d'Arrow | SocialChoice SC-01/SC-04 | `Arrow.lean` (social_choice_lean) | 0 sorry |
 | Theoreme de Sen | SocialChoice SC-02 | `Sen.lean` (social_choice_lean) | 0 sorry |
-| Valeur de Shapley | GameTheory-15b | `Shapley.lean` (cooperative games) | 1 sorry |
-| Modeles de vote | SocialChoice SC-02 | `Voting.lean` (Banks, STV) | 0 sorry |
-| Gale-Shapley (stable marriage) | (pas de notebook dedie) | `GaleShapley.lean` ([stable_marriage_lean](stable_marriage_lean/)) | 2 sorry (Knuth lattice — man_optimal + woman_pessimal, requiert Wu-Roth 2018, 5-8j Mathlib) |
+| Valeur de Shapley | GameTheory-15b | `Shapley.lean` (cooperative games) | 0 sorry |
+| Coeur cooperatif | GameTheory-15b | `Basic.lean` ([cooperative_games_lean](cooperative_games_lean/)) | 1 sorry (Bondareva-Shapley, INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION) |
+| Modeles de vote | SocialChoice SC-02 | `Voting.lean` (Banks, STV, Median Voter) | 0 sorry |
+| Calibration prover | (benchmark) | `Calibration/Nash.lean` ([calibration_lean](calibration_lean/)) | 0 sorry |
+| Gale-Shapley (stable marriage) | (pas de notebook dedie) | `GaleShapley.lean` ([stable_marriage_lean](stable_marriage_lean/)) | 0 sorry (PR #1521 GPT-5.5 prover); `Lattice.lean` residual 3 sorry (Knuth rotations, INTRACTABLE) |
 
 Voir [SymbolicAI/Lean/README.md](../SymbolicAI/Lean/README.md) pour les prerequis Lean (notebooks 1-6 recommandes).
 

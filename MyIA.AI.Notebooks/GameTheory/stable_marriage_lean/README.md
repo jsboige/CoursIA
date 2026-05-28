@@ -6,14 +6,17 @@ Lean 4 formalization of the **Gale-Shapley Stable Marriage Theorem** (1962).
 
 The Stable Marriage Problem: given n men and n women, each with a strict preference ordering over the opposite set, find a perfect matching where no unmatched pair (m, w) would both prefer each other to their current partners.
 
-| File | Content | Status |
-|------|---------|--------|
-| `StableMarriage/Definitions.lean` | Types, preference profiles, matchings, stability | 0 sorry |
-| `StableMarriage/Lemmas.lean` | 38 lemmas auxiliaires (650 lines) | 0 sorry |
-| `StableMarriage/GSState.lean` | Type d'état GS + transitions | 0 sorry |
-| `StableMarriage/GaleShapley.lean` | Algorithm, stability/optimality theorems | 2 sorry (Knuth lattice) |
+| File | Content | sorry |
+|------|---------|-------|
+| `StableMarriage/Defs.lean` | Core type definitions (preferences, profiles, matchings, stability) | 0 |
+| `StableMarriage/Lemmas.lean` | Helper lemmas (`gsFinalMatching`, `gsAllWomenMatched`, `gsNoBlockingPairs`) | 0 |
+| `StableMarriage/GSState.lean` | GS state machine, `gsChooseMax` | 0 |
+| `StableMarriage/GaleShapley.lean` | Termination, stability, `man_optimal`, `woman_pessimal` | 0 |
+| `StableMarriage/Lattice.lean` | Knuth rotation lattice (Case A2, Case B, `doctor_optimal_eq_top` conditional) | 3 |
 
-**Total**: 2 sorry / 5 theoremes (60% closed). `lake build` SUCCESS 694 jobs.
+**Total**: 3 production sorry, all in `Lattice.lean` (Knuth rotation sub-cases). `lake build StableMarriage` SUCCESS. Toolchain `v4.30.0-rc2`.
+
+Le prover test harness `_GoalExtract.lean` contient 2 sorry de scaffolding (non-production).
 
 ## Theorems (status)
 
@@ -21,11 +24,15 @@ The Stable Marriage Problem: given n men and n women, each with a strict prefere
 |---------|-----------|-------|--------|
 | `gale_shapley_terminates` | Algorithm terminates in at most n^2 steps | 0 | CLOSED (`trivial`) |
 | `gale_shapley_produces_matching` | Output is a valid bijection | 0 | CLOSED (identity witness) |
-| `gale_shapley_stable` | No blocking pair exists | 0 | **CLOSED via DEMO 15** (mmaaz-git upstream port, PR #1181) |
-| `gale_shapley_man_optimal` (L90) | Proposers get best achievable partners | 1 | **OPEN** — requires Knuth 1976 lattice infra (DEMO 16) |
-| `gale_shapley_woman_pessimal` (L112) | Receivers get worst achievable partners | 1 | **OPEN** — dual via Wu-Roth 2018 (DEMO 17) |
+| `gale_shapley_stable` | No blocking pair exists | 0 | **CLOSED via PR #1194** (port mmaaz-git upstream) |
+| `gale_shapley_man_optimal` | Proposers get best achievable partners | 0 | **CLOSED via PR #1521** (multi-agent prover GPT-5.5) |
+| `gale_shapley_woman_pessimal` | Receivers get worst achievable partners | 0 | **CLOSED via PR #1521** |
+| `meetSpouse_injective` | Spouse map is injective | 0 | **CLOSED via PR #1522** (multi-agent prover GPT-5.5) |
+| `Lattice.Case A2` (L185) | Knuth rotation Case A2 | 1 | INTRACTABLE (Knuth 1976 sub-case) |
+| `Lattice.Case B` (L187) | Knuth rotation Case B | 1 | INTRACTABLE (Knuth 1976 sub-case) |
+| `doctor_optimal_eq_top` (L836) | Doctor-optimal = top of stable lattice | 1 | Conditional on `no_cross_match` (axiom) |
 
-**Important**: les 2 sorrys restants ne sont **PAS** disponibles dans le port mmaaz-git upstream. Ils requierent la machinerie complete du lattice de matchings stables (Knuth 1976, Wu-Roth 2018) qui n'existe pas encore dans Mathlib4 et est l'objet de travaux actifs (5-8 jours estimes).
+**Important**: les 3 sorrys restants vivent dans `Lattice.lean` et representent la machinerie complete du lattice de matchings stables (Knuth 1976, Wu-Roth 2018) qui n'existe pas encore dans Mathlib4. Tous **INTRACTABLE** par le prover LLM courant (cf [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) GO/NO-GO per project).
 
 ## Quick Start
 

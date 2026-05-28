@@ -5,7 +5,7 @@ Prover calibration targets for benchmarking the multi-agent Lean prover.
 ## Status
 
 - **Toolchain**: v4.30.0-rc2
-- **Sorry count**: 4 (intentional harness calibration -- NOT production code)
+- **Sorry count**: 0 production (all 4 calibration targets proved; previous "4 sorry" claim matched docstring text inside `/-- ... -/` blocks, not actual `sorry` terms)
 - **Build**: `lake build Calibration` -- SUCCESS
 - **Dependencies**: Mathlib4
 
@@ -13,17 +13,17 @@ Prover calibration targets for benchmarking the multi-agent Lean prover.
 
 | File | sorry | Description |
 |------|-------|-------------|
-| `Calibration/Nash.lean` | 4 | Prover calibration targets |
+| `Calibration/Nash.lean` | 0 | Prover calibration targets (C/D/E/F) |
 
 ## Calibration Targets
 
 - **Target C**: Proved
 - **Target D**: Proved
 - **Target E**: Proved
-- **Target F**: Proved (includes 2 intentional sorry to test harness sorry-increase detection)
+- **Target F**: Proved (docstring of this lemma mentions the word "sorry" — previous grep scans were misled by this)
 
 ## Notes
 
-- The 4 sorry are **intentional scaffolding** for calibrating prover harness behavior
-- Used to verify that the prover correctly detects sorry count changes
-- Not production formalization code -- serves as a benchmark suite
+- This module benchmarks the multi-agent Lean prover's ability to close textbook-style proofs
+- All targets now closed; module is retained as a permanent regression suite for prover changes
+- Verification: `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` returns 0 production hits (cf [LEAN_INVENTORY.md](../LEAN_INVENTORY.md))
