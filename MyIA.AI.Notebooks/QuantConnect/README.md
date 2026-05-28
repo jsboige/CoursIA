@@ -41,7 +41,7 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
-- **53 notebooks Python** (28 cours + 3 training local + 2 paper-trading + 2 dataset + 12 Cloud-ready + 4 RL avance + 2 research)
+- **51 notebooks Python** (28 cours QC-Py-01..28 + 3 training QC-Py-30..32 + 3 RL avance QC-Py-33..35 + 2 paper-trading QC-Py-40..41 + 13 Cloud-ready QC-Py-Cloud-01..07 + 1 dataset workflow + 1 research interne)
 - **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
 - **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
 - **Free tier compatible** avec workarounds pour fonctionnalités payantes
@@ -151,9 +151,9 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 
 ---
 
-### Phase 8 : IA Avancée et Production (3 notebooks, ~4.5h)
+### Phase 8 : IA Avancée et Production (4 notebooks, ~5.5h)
 
-État de l'art : Reinforcement Learning, LLM pour trading signals, déploiement production.
+État de l'art : Reinforcement Learning, LLM pour trading signals, déploiement production, détection de régime de marché.
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -162,17 +162,31 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 | 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | 75 min | Paper trading, live trading setup, monitoring, deployment |
 | 28 | [QC-Py-28-Market-Regime-Detection](Python/QC-Py-28-Market-Regime-Detection.ipynb) | 75 min | HMM, regime detection, allocation adaptative |
 
-**Objectifs** : IA state-of-the-art pour trading, déploiement production.
+**Objectifs** : IA state-of-the-art pour trading, déploiement production, détection régime.
+
+---
+
+### Compléments Reinforcement Learning Avancé (3 notebooks, ~4h)
+
+Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et application portfolio construction.
+
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 33 | [QC-Py-33-RL-PPO-Trading](Python/QC-Py-33-RL-PPO-Trading.ipynb) | 90 min | Proximal Policy Optimization, clipped surrogate, Stable-Baselines3 |
+| 34 | [QC-Py-34-RL-SAC-A2C-Trading](Python/QC-Py-34-RL-SAC-A2C-Trading.ipynb) | 75 min | Soft Actor-Critic + A2C, comparatif algorithmes RL |
+| 35 | [QC-Py-35-RL-Portfolio-Construction](Python/QC-Py-35-RL-Portfolio-Construction.ipynb) | 75 min | RL pour allocation multi-asset, contraintes de risque |
+
+**Objectifs** : Comparer les algorithmes RL modernes, appliquer au portfolio multi-asset.
 
 ---
 
 ## Résumé de la Progression
 
-**Total** : **28 notebooks Python** (~32 heures de contenu)
+**Total cours linéaire** : **28 notebooks Python** (QC-Py-01 à QC-Py-28, ~32 heures de contenu) + **23 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, Cloud strategies QC-Py-Cloud-*, training QC-Py-30..32, dataset workflow).
 
-**Répartition** :
+**Répartition cours linéaire (Phases 1-8)** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
-- **9 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM) : ~12h
+- **10 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM, Régime) : ~13h
 
 **Progression pédagogique** : Maîtriser les fondations QuantConnect **avant** d'aborder le Machine Learning.
 
