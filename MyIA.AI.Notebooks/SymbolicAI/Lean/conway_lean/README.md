@@ -21,6 +21,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/Nim.lean` | 0 | Nim game theory |
 | `Conway/Angel.lean` | 0 | Angel problem |
 | `Conway/KochenSpecker.lean` | 2 | Kochen-Specker theorem (18-vec Cabello, Pilier 1 FWT) |
+| `Conway/Life.lean` | 0 | Game of Life (B3/S23, still lifes/oscillators/spaceships, `native_decide` proofs, Phase 2 Epic #1647) |
 
 ## Key Results
 
@@ -30,6 +31,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 - Look-and-Say sequence properties
 - Nim game strategy
 - Angel problem formalization
+- Conway's Game of Life cellular automaton — `B3/S23` rules, still lifes (block, beehive), oscillators (blinker, toad, beacon period 2), spaceship (glider). All theorems via `native_decide`.
 - **WIP**: Kochen-Specker theorem (Pilier 1 of Epic #1651 Conway FWT)
 
 ## Kochen-Specker (Pilier 1 of Free Will Theorem)
