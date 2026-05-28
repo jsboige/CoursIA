@@ -244,13 +244,22 @@ def count_todos(notebook: dict, *, exclude_executed: bool = True) -> int:
     When exclude_executed=True (default), TODOs in cells that have been
     executed with outputs are excluded — they represent resolved exercises,
     not incomplete work.
+
+    Also excludes TODOs in exercise stub cells — code cells without outputs that
+    contain TODO markers are student exercises, not incomplete notebook content.
+    This covers both outputless-by-design cells and exercise stubs with control
+    flow (loops, conditionals calling stub functions).
     """
     count = 0
     for cell in notebook.get("cells", []):
         if cell["cell_type"] == "code":
             if exclude_executed and cell.get("outputs"):
                 continue
+            if _is_outputless_by_design(cell):
+                continue
             src = "".join(cell.get("source", []))
+            if not cell.get("outputs") and "# TODO" in src.upper():
+                continue
             count += src.upper().count("# TODO")
     return count
 

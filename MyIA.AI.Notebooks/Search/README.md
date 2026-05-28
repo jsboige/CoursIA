@@ -4,7 +4,7 @@
 series: Search
 pedagogical_count: 45
 breakdown: Applications=20, Part1-Foundations=11, Part2-CSP=9, =5
-maturity: BETA=23, PRODUCTION=19, DRAFT=3
+maturity: BETA=22, PRODUCTION=22, ALPHA=1
 -->
 
 Tout problème d'IA, du plus simple jeu de plateau à la planification logistique industrielle, se réduit à un même défi : explorer un espace de solutions possibles pour trouver la meilleure. Cette série vous apprend à maîtriser cette exploration, depuis les algorithmes classiques (BFS, A*, Minimax) jusqu'aux techniques avancées (CSP, métaheuristiques, hybridation LLM). Le fil rouge est la **réduction de l'espace de recherche** : comment passer d'une exploration aveugle exponentielle à une résolution intelligemment guidée.
