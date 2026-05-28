@@ -106,6 +106,45 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 
 Chaque notebook adopte la même trame pédagogique — introduction motivée, plan ancré, exemples exécutés et exercices corrigés — pensée pour un travail en autonomie. Les side tracks Lean (*b*) et la sous-série SocialChoice vont jusqu'au degré « preuve formelle vérifiée par la machine » : les résultats principaux sont prouvés sans `sorry` (l'inventaire complet des toolchains, du statut de build et des `sorry` résiduels intractables est tenu dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md)).
 
+## Statut de maturite
+
+| # | Notebook | Cellules | Exercices | Statut |
+|---|----------|----------|-----------|--------|
+| 1 | Setup | ~15 | - | **COMPLET** |
+| 2 | NormalForm | ~25 | 3 | **COMPLET** |
+| 2b | Lean-Definitions | ~25 | 3 | **COMPLET** |
+| 3 | Topology2x2 | ~30 | 3 | **COMPLET** |
+| 4 | NashEquilibrium | ~35 | 3 | **COMPLET** |
+| 4b | Lean-NashExistence | ~20 | 3 | **COMPLET** |
+| 4c | NashExistence-Python | ~20 | 2 | **COMPLET** |
+| 5 | ZeroSum-Minimax | ~25 | 3 | **COMPLET** |
+| 6 | EvolutionTrust | ~40 | 3 | **COMPLET** |
+| 7 | ExtensiveForm | ~30 | 3 | **COMPLET** |
+| 8 | CombinatorialGames | ~17 | 3 | **NOUVEAU** |
+| 8b | Lean-CombinatorialGames | ~25 | 3 | **COMPLET** |
+| 8c | CombinatorialGames-Python | ~25 | 3 | **COMPLET** |
+| 9 | BackwardInduction | ~35 | 3 | **COMPLET** |
+| 10 | ForwardInduction-SPE | ~35 | 3 | **COMPLET** |
+| 11 | BayesianGames | ~30 | 3 | **COMPLET** |
+| 12 | ReputationGames | ~30 | 3 | **COMPLET** |
+| 13 | ImperfectInfo-CFR | ~45 | 3 | **COMPLET** |
+| 14 | DifferentialGames | ~35 | 3 | **COMPLET** |
+| 15 | CooperativeGames | ~40 | 3 | **COMPLET** |
+| 15b | Lean-CooperativeGames | ~30 | 3 | **COMPLET** |
+| 15c | CooperativeGames-Python | ~25 | 3 | **COMPLET** |
+| 16 | MechanismDesign | ~40 | 3 | **COMPLET** |
+| SC-01 | Arrow-Impossibility-Theorem | ~38 | 3 | **COMPLET** |
+| SC-02 | Lean-SocialChoice-Formal | ~55 | 3 | **COMPLET** |
+| SC-03 | Voting-Methods | ~43 | 3 | **COMPLET** |
+| SC-04 | Computational-Aggregation-SAT-Z3 | ~66 | 2 | **COMPLET** |
+| 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
+
+Tous les notebooks incluent :
+- Navigation header/footer avec liens
+- Plan avec liens ancres
+- Tableaux recapitulatifs
+- Exercices avec solutions completes
+
 ## Progression recommandee
 
 ### Decouvreur (fondements statiques, ~5h)
@@ -327,6 +366,17 @@ BATCH_MODE=true python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory
 | **Valeur de Shapley** | Repartition equitable des gains en jeu cooperatif |
 | **Core** | Ensemble des allocations stables en jeu cooperatif |
 | **Theoreme d'Arrow** | Impossibilite d'agregation parfaite des preferences |
+
+## Applications du monde reel
+
+La theorie des jeux n'est pas qu'un objet academique : ses resultats structurent des pans entiers de l'economie numerique et des politiques publiques. Quelques exemples directement relies aux notebooks de la serie :
+
+- **Encheres et enchères de spectre** (notebooks 14, 16) — les mecanismes VCG et leurs derives fondent les encheres publicitaires de Google et Meta (des milliards de transactions/jour) ainsi que les ventes de frequences telecom orchestrees par les Etats, ou le design du mecanisme se chiffre en milliards.
+- **Marches d'appariement** (notebook 15, jeux cooperatifs) — l'algorithme de Gale-Shapley et la valeur de Shapley sont au coeur de l'affectation des etudiants aux ecoles (New York, Boston), des internes aux hopitaux (NRMP), et des dons d'organes par echanges croises ; prix Nobel d'economie 2012 (Roth & Shapley).
+- **IA de poker et bluff optimal** (notebook 13, CFR) — Counterfactual Regret Minimization a permis a Libratus et Pluribus de battre les meilleurs joueurs humains au Texas Hold'em, premiere resolution d'un jeu majeur a information imparfaite.
+- **Systemes de vote et gouvernance** (sous-serie SocialChoice) — le theoreme d'Arrow et les methodes de Condorcet/Borda eclairent le choix d'un mode de scrutin, du vote citoyen aux DAO blockchain (cf. cross-series SmartContracts).
+- **Cooperation et evolution** (notebook 6) — le tournoi d'Axelrod et les dynamiques de replication modelisent l'emergence de la cooperation en biologie, en relations internationales et dans les protocoles de reseaux pair-a-pair.
+- **Regulation et dissuasion** (notebooks 10-12) — l'induction arriere, les jeux de reputation et le signaling formalisent la credibilite des menaces, des banques centrales (politique monetaire) a la strategie concurrentielle.
 
 ## Connections cross-series
 
