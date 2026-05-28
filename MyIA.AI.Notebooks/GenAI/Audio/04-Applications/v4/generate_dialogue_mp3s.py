@@ -19,6 +19,28 @@ BASE_DIR = Path(__file__).parent
 OUTPUTS = BASE_DIR / "outputs"
 FISHAUDIO_URL = "http://localhost:8197"
 
+REFS_MANIFEST = OUTPUTS / "fishaudio_references" / "manifest.json"
+
+
+def load_speaker_mapping() -> dict[str, str]:
+    """Build speaker -> reference_id mapping from cloning manifest."""
+    if not REFS_MANIFEST.exists():
+        logger.warning("No manifest at %s; voices will be default", REFS_MANIFEST)
+        return {}
+    refs = json.load(open(REFS_MANIFEST, encoding="utf-8"))
+    mapping: dict[str, str] = {}
+    for entry in refs:
+        if entry.get("status") != "cloned":
+            continue
+        ref_id = entry["reference_id"]
+        for spk in entry.get("speakers", []):
+            mapping[spk] = ref_id
+    return mapping
+
+
+SPEAKER_TO_REF = load_speaker_mapping()
+print(f"Loaded {len(SPEAKER_TO_REF)} speaker -> reference_id mappings")
+
 # Official S2-Pro tags (29 total)
 OFFICIAL_TAGS = {
     "clears throat", "inhale", "inhalation", "exhale", "sigh",
@@ -98,7 +120,7 @@ out_dir.mkdir(exist_ok=True, parents=True)
 print("\nChecking FishAudio service...")
 for attempt in range(60):
     try:
-        resp = requests.get(f"{FISHAUDIO_URL}/v1/models", timeout=5)
+        resp = requests.get(f"{FISHAUDIO_URL}/", timeout=5)
         if resp.status_code == 200:
             print("FishAudio ready!")
             break
@@ -131,6 +153,7 @@ for idx in ALL_INDICES:
         generated += 1
         continue
 
+    ref_id = SPEAKER_TO_REF.get(speaker, "")
     try:
         payload = {
             "text": tts_text[:500],  # Truncate to 500 chars
@@ -139,6 +162,8 @@ for idx in ALL_INDICES:
             "top_p": 0.9,
             "format": "mp3",
         }
+        if ref_id:
+            payload["reference_id"] = ref_id
         resp = requests.post(
             f"{FISHAUDIO_URL}/v1/tts",
             json=payload,
@@ -150,7 +175,8 @@ for idx in ALL_INDICES:
             f.write(resp.content)
 
         size_kb = len(resp.content) // 1024
-        print(f"  seg_{idx}: OK ({size_kb}KB, {speaker}) [{tts_text[:50]}...]")
+        ref_tag = ref_id or "DEFAULT"
+        print(f"  seg_{idx}: OK ({size_kb}KB, {speaker}->{ref_tag}) [{tts_text[:50]}...]")
         generated += 1
 
     except Exception as e:
