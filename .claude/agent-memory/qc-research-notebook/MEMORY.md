@@ -43,7 +43,7 @@ For research tasks, provide:
 
 ## Project Context
 
-- **Workspace**: `MyIA.AI.Notebooks/QuantConnect/ESGF-2026/`
+- **Workspace**: `MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/`
 - **Examples folder**: Contains 11 strategy examples
 - **Research subfolder**: Within each example (e.g., `ETF-Pairs-Trading/research/`)
 

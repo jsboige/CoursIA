@@ -17,7 +17,7 @@ Analysis of two failing strategies in the Researcher organization:
 
 ### Current Implementation Analysis
 
-**Location**: `c:/dev/CoursIA/MyIA.AI.Notebooks/QuantConnect/ESGF-2026/lean-workspace/Sector-Momentum-Researcher/`
+**Location**: `c:/dev/CoursIA/MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/Sector-Momentum-Researcher/`
 
 **Files**:
 - `main.py` - Main algorithm
@@ -179,7 +179,7 @@ def __init__(self, leverage=1.5):  # Match MyPcm.py
 
 ### Current Implementation Analysis
 
-**Location**: `c:/dev/CoursIA/MyIA.AI.Notebooks/QuantConnect/ESGF-2026/lean-workspace/BTC-ML-Researcher/`
+**Location**: `c:/dev/CoursIA/MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/BTC-ML-Researcher/`
 
 **File**: `main.py`
 
