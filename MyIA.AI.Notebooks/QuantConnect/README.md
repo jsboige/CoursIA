@@ -41,10 +41,9 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
-- **51 notebooks Python** (28 cours QC-Py-01..28 + 3 training QC-Py-30..32 + 3 RL avance QC-Py-33..35 + 2 paper-trading QC-Py-40..41 + 13 Cloud-ready QC-Py-Cloud-01..07 + 1 dataset workflow + 1 research interne)
-- **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
-- **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
-- **Free tier compatible** avec workarounds pour fonctionnalités payantes
+La série déroule un arc unique : on part de la **mécanique d'un backtest** (lifecycle d'un algorithme, gestion des données, types d'ordres, risk management) pour arriver aux **modèles de pointe appliqués à la finance** — du Random Forest et XGBoost aux LSTM, Transformers et State-Space Models, jusqu'au reinforcement learning et aux LLMs employés comme générateurs de signaux. Entre les deux, le bloc **fondations** consolide l'écosystème LEAN (universe selection, classes d'actifs, Algorithm Framework modulaire) avant toute approche ML.
+
+Trois familles de notebooks se complètent : les **cours progressifs** (`QC-Py`) qui posent la théorie phase par phase ; les **stratégies prêtes à backtester** du dossier [`projects/`](projects/), catalogue d'exemples concrets directement exécutables ; et des notebooks **Cloud-ready** doublés d'un pipeline d'entraînement *thermal-safe*. L'ensemble reste **compatible free tier**, avec des contournements documentés pour les fonctionnalités payantes (alternative data, GPU cloud, live trading).
 
 ---
 
