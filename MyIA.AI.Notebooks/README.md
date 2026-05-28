@@ -1,6 +1,6 @@
 # MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
 
-Ecosysteme complet de **555 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques.
+Ecosysteme complet de **500 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques. Maturite : **158 PRODUCTION + 294 BETA = 452/500 (90%)** prets cours ; 39 ALPHA + 5 DRAFT + 4 TEMPLATE en developpement.
 
 <!-- CATALOG-STATUS
 series: ALL
@@ -9,20 +9,20 @@ breakdown: GenAI=114, QuantConnect=102, SymbolicAI=98, Search=45, Probas=43, Sud
 maturity: BETA=294, PRODUCTION=158, ALPHA=39, DRAFT=5, TEMPLATE=4
 -->
 
-Dernière mise à jour : 2026-05-23
+Dernière mise à jour : 2026-05-28
 
 ## Vue d'ensemble
 
 | Domaine | Notebooks | Description |
 |---------|-----------|-------------|
-| **GenAI** | 110 | IA Generative (Images, Audio, Video, Texte, Vibe-Coding) |
-| **QuantConnect** | 175 | Trading algorithmique et ML financier (Python + C#) |
-| **SymbolicAI** | 92 | IA Symbolique (Lean, Tweety, SmartContracts, SemanticWeb, Planners) |
+| **GenAI** | 114 | IA Generative (Images, Audio, Video, Texte, SemanticKernel, Vibe-Coding) |
+| **QuantConnect** | 102 | Trading algorithmique et ML financier (Python + C#) |
+| **SymbolicAI** | 98 | IA Symbolique (Lean, Tweety, SmartContracts, SemanticWeb, Planners) |
 | **Search** | 45 | Recherche, CSP, optimisation, metaheuristiques |
+| **Probas** | 43 | Programmation probabiliste (Infer.NET + PyMC) |
 | **Sudoku** | 32 | Resolution de contraintes (.NET C#) |
-| **Probas** | 32 | Programmation probabiliste (Infer.NET + PyMC) |
 | **ML** | 30 | Machine Learning .NET + Python Agents for Data Science |
-| **GameTheory** | 28 | Theorie des Jeux (OpenSpiel, choix social Lean) |
+| **GameTheory** | 25 | Theorie des Jeux (OpenSpiel, choix social Lean) |
 | **RL** | 6 | Reinforcement Learning (Stable-Baselines3) |
 | **CaseStudies** | 4 | Etudes de cas interdisciplinaires (diagnostic medical, planification oncologique) |
 | **IIT** | 1 | Integrated Information Theory (PyPhi) |
@@ -30,26 +30,29 @@ Dernière mise à jour : 2026-05-23
 ### Progression pedagogique
 
 ```text
-GenAI (110 notebooks)
-├── Image/ (19) - Generation d'images
-├── Audio/ (28) - Traitement audio
-├── Video/ (16) - Traitement video
-├── Texte/ (11) - LLMs et texte
+GenAI (114 notebooks)
+├── 00-GenAI-Environment/ (6) - Setup Docker, GPU, services
+├── Image/ (16) - Generation d'images (SDXL, Qwen, Flux)
+├── Audio/ (30) - STT, TTS, music, pipeline audiobook FishAudio S2-Pro
+├── Video/ (16) - Generation video, animation
+├── Texte/ (11) - LLMs, RAG, reasoning
 ├── SemanticKernel/ (20) - SDK Microsoft
+├── FineTuning/ (5) - Fine-tuning LoRA, adapters
 ├── CaseStudies/ (4) - Etudes de cas etudiants
 └── Vibe-Coding/ (5) - Claude-Code + Roo-Code
 
-QuantConnect (175 notebooks)
-├── Python/ (53) - Cours progressifs QC-Py
-├── projects/ (109) - Strategies backtests et ML
-└── partner-course-quant-trading/ (7) - Cours partenaire exercices et templates
+QuantConnect (102 notebooks)
+├── Python/ (51) - Cours progressifs QC-Py
+├── projects/ (49) - Strategies backtests et ML
+└── ML-Training-Pipeline/ (2) - Pipeline training thermal-safe
 
-SymbolicAI (92 notebooks)
+SymbolicAI (98 notebooks)
 ├── SmartContracts/ (27) - Solidity, Web3, blockchain
 ├── SemanticWeb/ (18) - RDF, SPARQL, OWL, C# + Python
-├── Planners/ (14) - PDDL, Fast-Downward, OR-Tools, LLM planning
-├── Lean/ (14) - Theorem proving, LeanDojo
+├── Lean/ (15) - Theorem proving, LeanDojo, social choice
+├── Planners/ (13) - PDDL, Fast-Downward, OR-Tools, LLM planning
 ├── Tweety/ (10) - Logiques classiques, argumentation
+├── SymbolicLearning/ (7) - ILP, NeuroSymbolic, KG-ILP, LLM-Symbolic
 └── Argument_Analysis/ (6) - Analyse d'arguments
 ```
 
@@ -85,14 +88,14 @@ SymbolicAI (92 notebooks)
 
 | Domaine | Notebooks | Lien |
 |---------|-----------|------|
-| **GenAI** | 110 | [GenAI/](GenAI/README.md) |
-| **QuantConnect** | 175 | [QuantConnect/](QuantConnect/README.md) |
-| **SymbolicAI** | 92 | [SymbolicAI/](SymbolicAI/README.md) |
+| **GenAI** | 114 | [GenAI/](GenAI/README.md) |
+| **QuantConnect** | 102 | [QuantConnect/](QuantConnect/README.md) |
+| **SymbolicAI** | 98 | [SymbolicAI/](SymbolicAI/README.md) |
 | **Search** | 45 | [Search/](Search/README.md) |
+| **Probas** | 43 | [Probas/](Probas/README.md) |
 | **Sudoku** | 32 | [Sudoku/](Sudoku/README.md) |
-| **Probas** | 32 | [Probas/](Probas/README.md) |
 | **ML** | 30 | [ML/](ML/README.md) |
-| **GameTheory** | 28 | [GameTheory/](GameTheory/README.md) |
+| **GameTheory** | 25 | [GameTheory/](GameTheory/README.md) |
 | **RL** | 6 | [RL/](RL/README.md) |
 | **CaseStudies** | 4 | [CaseStudies/](CaseStudies/README.md) |
 | **IIT** | 1 | [IIT/](IIT/README.md) |
