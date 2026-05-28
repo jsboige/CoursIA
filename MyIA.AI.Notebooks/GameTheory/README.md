@@ -29,7 +29,9 @@ La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) 
 
 ## Structure
 
-**17 notebooks principaux** + **7 side tracks** (4 Lean, 3 Python approfondissement) + **4 SocialChoice** (sous-serie dediee) = **28 notebooks**
+La série s'articule autour d'un **fil principal** qui suit la maturation historique de la discipline — des jeux statiques (matrices de gains, Nash, minimax) vers les jeux dynamiques (formes extensives, induction, information incomplète) puis les frontières contemporaines (CFR pour le poker, mécanismes, choix social, RL multi-agent). Ce fil est doublé de deux fils transversaux optionnels : un **fil de formalisation Lean 4** (side tracks *b*), qui prouve mécaniquement les grands théorèmes au lieu de seulement les illustrer, et un **fil Python d'approfondissement** (side tracks *c*) pour les variantes et visualisations avancées. La sous-série **[SocialChoice/](SocialChoice/)** prolonge le bloc « agrégation des préférences » avec une étude dédiée d'Arrow, Sen et des méthodes de vote, en confrontant preuve formelle, simulation et encodage SAT/Z3.
+
+Chaque notebook principal renvoie vers ses side tracks ; ceux-ci se lisent indépendamment et ne sont jamais des prérequis du fil principal.
 
 ### Partie 1 : Fondations et Jeux statiques (Notebooks 1-6)
 
@@ -91,44 +93,18 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 - Les side tracks sont optionnels et peuvent etre etudies independamment
 - Progression recommandee : notebook principal, puis side track b (formalisation), puis c (applications)
 
-## Statut de maturite
+## Acquis d'apprentissage
 
-| # | Notebook | Cellules | Exercices | Statut |
-|---|----------|----------|-----------|--------|
-| 1 | Setup | ~15 | - | **COMPLET** |
-| 2 | NormalForm | ~25 | 3 | **COMPLET** |
-| 2b | Lean-Definitions | ~25 | 3 | **COMPLET** |
-| 3 | Topology2x2 | ~30 | 3 | **COMPLET** |
-| 4 | NashEquilibrium | ~35 | 3 | **COMPLET** |
-| 4b | Lean-NashExistence | ~20 | 3 | **COMPLET** |
-| 4c | NashExistence-Python | ~20 | 2 | **COMPLET** |
-| 5 | ZeroSum-Minimax | ~25 | 3 | **COMPLET** |
-| 6 | EvolutionTrust | ~40 | 3 | **COMPLET** |
-| 7 | ExtensiveForm | ~30 | 3 | **COMPLET** |
-| 8 | CombinatorialGames | ~17 | 3 | **NOUVEAU** |
-| 8b | Lean-CombinatorialGames | ~25 | 3 | **COMPLET** |
-| 8c | CombinatorialGames-Python | ~25 | 3 | **COMPLET** |
-| 9 | BackwardInduction | ~35 | 3 | **COMPLET** |
-| 10 | ForwardInduction-SPE | ~35 | 3 | **COMPLET** |
-| 11 | BayesianGames | ~30 | 3 | **COMPLET** |
-| 12 | ReputationGames | ~30 | 3 | **COMPLET** |
-| 13 | ImperfectInfo-CFR | ~45 | 3 | **COMPLET** |
-| 14 | DifferentialGames | ~35 | 3 | **COMPLET** |
-| 15 | CooperativeGames | ~40 | 3 | **COMPLET** |
-| 15b | Lean-CooperativeGames | ~30 | 3 | **COMPLET** |
-| 15c | CooperativeGames-Python | ~25 | 3 | **COMPLET** |
-| 16 | MechanismDesign | ~40 | 3 | **COMPLET** |
-| SC-01 | Arrow-Impossibility-Theorem | ~38 | 3 | **COMPLET** |
-| SC-02 | Lean-SocialChoice-Formal | ~55 | 3 | **COMPLET** |
-| SC-03 | Voting-Methods | ~43 | 3 | **COMPLET** |
-| SC-04 | Computational-Aggregation-SAT-Z3 | ~66 | 2 | **COMPLET** |
-| 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
+À l'issue de la série, vous êtes capable de :
 
-Tous les notebooks incluent :
-- Navigation header/footer avec liens
-- Plan avec liens ancres
-- Tableaux recapitulatifs
-- Exercices avec solutions completes
+- **Modéliser** une interaction stratégique sous forme normale ou extensive, et y lire dominance, meilleure réponse, ensembles d'information et menaces crédibles.
+- **Calculer** des équilibres : Nash pur et mixte (Lemke-Howson), minimax et dualité LP en jeux à somme nulle, équilibre parfait en sous-jeux par induction arrière et avant.
+- **Simuler** des dynamiques d'apprentissage et d'évolution : tournois itérés à la Axelrod, *replicator dynamics*, et apprentissage multi-agent moderne (CFR/Deep CFR, NFSP, PSRO).
+- **Analyser** la coopération : valeur de Shapley, Core, et conditions de stabilité (Bondareva-Shapley) ; concevoir un mécanisme incitatif (principe de révélation, VCG).
+- **Raisonner** sur l'agrégation collective : impossibilité d'Arrow, théorème de Sen, méthodes de Condorcet/Borda/Copeland, et leur encodage en problème SAT résolu par Z3.
+- **Formaliser** ces résultats en Lean 4 et saisir ce que « prouver » veut dire dans un assistant de preuve — du point fixe de Brouwer/Kakutani pour Nash à l'axiomatique de Shapley et à la preuve d'Arrow.
+
+Chaque notebook adopte la même trame pédagogique — introduction motivée, plan ancré, exemples exécutés et exercices corrigés — pensée pour un travail en autonomie. Les side tracks Lean (*b*) et la sous-série SocialChoice vont jusqu'au degré « preuve formelle vérifiée par la machine » : les résultats principaux sont prouvés sans `sorry` (l'inventaire complet des toolchains, du statut de build et des `sorry` résiduels intractables est tenu dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md)).
 
 ## Progression recommandee
 
