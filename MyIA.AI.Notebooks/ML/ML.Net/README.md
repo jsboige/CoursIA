@@ -2,6 +2,10 @@
 
 Serie de notebooks couvrant ML.NET, la bibliotheque open-source de Microsoft pour le Machine Learning dans l'ecosysteme .NET.
 
+ML.NET apporte le machine learning **nativement dans l'ecosysteme .NET** : on entraine et on consomme des modeles directement en C#, sans quitter sa stack applicative ni dependre d'un runtime Python. C'est un choix pense pour les developpeurs autant que pour les data scientists — l'AutoML abaisse la barriere d'entree, et les modeles s'executent *in-process* dans des applications existantes (API web, services, desktop). L'interoperabilite **ONNX** permet d'importer des modeles entraines ailleurs (scikit-learn, PyTorch, Hugging Face) et de les servir cote .NET : ML.NET devient ainsi un pont concret entre la recherche en Python et la production en entreprise.
+
+Le parcours va du premier pipeline (ML-1) jusqu'a une application complete : preparation des donnees et feature engineering (ML-2), entrainement et AutoML (ML-3), evaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalites avancees — prevision de series temporelles par SSA (ML-5), interoperabilite ONNX (ML-6) et systemes de recommandation (ML-7) — avant un TP capstone qui marie ML.NET et la regression bayesienne d'Infer.NET.
+
 ## Vue d'ensemble
 
 | Statistique | Valeur |
