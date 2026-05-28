@@ -5,6 +5,17 @@ Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnec
 > **Note** : Ces notebooks sont des supports de cours a lire sur GitHub ou en local.
 > Pour executer les backtests, copiez le code dans un projet [QuantConnect Cloud](https://www.quantconnect.com/lab).
 
+## 4-Type Classification
+
+| Type | Count | Description |
+|------|-------|-------------|
+| **(a)** quantbook QC Cloud | 14 | QuantBook research or cloud-deploy descriptors |
+| **(b)** research companion | 2 | QuantBook research paired with a course notebook |
+| **(c)** standalone research | 6 | Local yfinance/sklearn training |
+| **(d)** pedagogical placeholder | 33 | Course material with embedded QCAlgorithm strings |
+
+Full classification: [docs/qc-strategies-status.md](../../../docs/qc-strategies-status.md)
+
 ---
 
 ## État réel d'exécution (audit 2026-05-05)
