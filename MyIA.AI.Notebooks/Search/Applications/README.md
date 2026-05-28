@@ -1,6 +1,10 @@
 # Search - Applications
 
-Sous-serie de **20 notebooks** appliquant les algorithmes de recherche et de programmation par contraintes a des problemes du monde reel. Les notebooks sont desormais organises par categorie technique.
+Les 20 notebooks d'application illustrent chaque concept de la serie Search sur des **problemes reels** adaptes de projets etudiants EPITA, EPF et ECE. Chaque application combine une ou plusieurs techniques abordees dans les Parties 1-2 et montre comment elles se comportent sur des instances concretes.
+
+Les applications sont organisees en trois categories : **Search pur** (jeux combinatoires), **CSP** (problemes de satisfaction de contraintes : N-Queens, ordonnancement, demineur, mots croises), et **Hybride** (metaheuristiques et GA : detection de contours, optimisation de portefeuille, TSP, VRP). La plupart des notebooks sont autonomes et pointent vers les pre-requis pertinents.
+
+Sous-serie de **20 notebooks** | **~13h20** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`)
 
 ## Structure
 

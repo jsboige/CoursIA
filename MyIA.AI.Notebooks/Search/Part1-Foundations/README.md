@@ -1,6 +1,10 @@
 # Partie 1 : Search Fondamental
 
-Algorithmes de recherche classiques et metaheuristiques.
+Cette partie couvre les **algorithmes de recherche classiques**, depuis l'exploration systematique d'espaces d'etats (BFS, DFS, A*) jusqu'aux metaheuristiques inspirees de la nature (algorithmes genetiques, PSO). Le fil rouge est la reduction progressive de l'espace de recherche : comment passer d'une enumeration aveugle a une exploration intelligemment guidee.
+
+Vous commencerez par formaliser des problemes sous forme d'espaces d'etats (Search-1), puis decouvrirez les trois grands paradigmes : recherche systematique (BFS/A*), optimisation locale (Hill Climbing, recuit simule), et recherche dans les jeux (Minimax, MCTS). Les notebooks avances couvrent des extensions industrielles (programmation lineaire, automates symboliques, metaheuristiques comparees).
+
+**11 notebooks** | **~12h30** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `z3-solver`)
 
 ## Notebooks
 
