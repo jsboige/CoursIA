@@ -244,6 +244,19 @@ pip install pyro-ppl torch matplotlib numpy
 | Finance | 11, 15, 20 |
 | E-commerce | 12 |
 
+### Exemples concrets
+
+Derriere chaque modele de la serie se cache un systeme reel deja en production :
+
+- **TrueSkill** (notebook 6) est l'algorithme que Microsoft utilise pour apparier des millions de joueurs sur Xbox Live : il maintient pour chaque joueur une competence *gaussienne* (moyenne + incertitude) mise a jour apres chaque partie, generalisant l'Elo des echecs aux jeux en equipe.
+- **Item Response Theory** (notebook 5) est le moteur des tests adaptatifs comme le GMAT ou le GRE : la difficulte de chaque question est calibree probabilistiquement, et le test s'ajuste en temps reel au niveau estime du candidat.
+- **Les reseaux bayesiens** (notebooks 4, 7) fondent les systemes d'aide au diagnostic medical (de QMR-DT aux outils modernes) et le filtrage anti-spam : ils propagent l'incertitude entre symptomes, causes et observations.
+- **LDA / topic models** (notebook 9) structurent automatiquement de grands corpus — decouverte de thematiques dans des archives de presse, cartographie de la litterature scientifique, analyse de tickets support.
+- **Les HMM** (notebook 11, et `PyMC-HMM-Trading-Alpha`) detectent les regimes caches : phases de marche en finance, reconnaissance de la parole, segmentation de sequences biologiques.
+- **Les systemes de recommandation bayesiens** (notebook 12) sont la version « avec barre d'incertitude » du collaborative filtering de Netflix ou Amazon — utile pour decider quand explorer un nouvel item plutot que d'exploiter une preference connue.
+- **Le crowdsourcing** (notebook 10) modelise la fiabilite de chaque annotateur (Mechanical Turk, labellisation de datasets) pour reconstruire la verite terrain malgre des votes bruites.
+- **La theorie de la decision et les MDPs** (notebooks 14-20) relient la serie au controle sequentiel : gestion de stocks, maintenance predictive, et passerelle directe vers le [reinforcement learning](../RL/).
+
 ## Ressources
 
 ### Infer.NET
