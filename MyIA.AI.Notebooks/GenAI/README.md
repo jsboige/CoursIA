@@ -2,14 +2,14 @@
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 114
-breakdown: Audio=30, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, FineTuning=5, Vibe-Coding=5, CaseStudies=4, =1
-maturity: BETA=71, PRODUCTION=33, ALPHA=4, DRAFT=3, TEMPLATE=3
+pedagogical_count: 117
+breakdown: Audio=30, SemanticKernel=20, Image=19, Video=16, Texte=11, 00-GenAI-Environment=6, FineTuning=5, Vibe-Coding=5, CaseStudies=4, root=1
+maturity: BETA=74, PRODUCTION=33, ALPHA=4, DRAFT=3, TEMPLATE=3
 -->
 
 Ce parcours vous forme a la maitrise de l'IA generative dans toute sa diversite : generer des images, synthetiser la voix, composer de la musique, produire des videos, orchestrer des agents autonomes, et deployer des applications en production. Chaque modalite suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modeles de production.
 
-**110 notebooks** | **9 sous-domaines** | **~90-100h** | **95%+ valides**
+**117 notebooks** | **10 sous-domaines** | **~90-100h** | **95%+ valides**
 
 ## Pourquoi ce parcours ?
 
@@ -21,13 +21,14 @@ L'IA generative a transforme la creation de contenu en 2024-2026. Un developpeur
 GenAI/
 ├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
 ├── Image/                   # Generation d'images (19 notebooks)
-├── Audio/                   # Speech, TTS, musique, separation (28 notebooks)
+├── Audio/                   # Speech, TTS, musique, separation (30 notebooks)
 ├── Video/                   # Generation et comprehension video (16 notebooks)
 ├── Texte/                   # LLMs et generation de texte (11 notebooks)
 ├── SemanticKernel/          # Microsoft Semantic Kernel (20 notebooks)
-├── CaseStudies/              # Etudes de cas etudiants (4 notebooks)
+├── FineTuning/              # Fine-tuning de modeles (5 notebooks)
+├── CaseStudies/             # Etudes de cas etudiants (4 notebooks)
 ├── Playwright-OWUI/         # Tests E2E Playwright (5 modules, 30+ tests)
-└── Vibe-Coding/             # Tutorials Claude Code et Roo Code
+└── Vibe-Coding/             # Tutorials Claude Code et Roo Code (5 notebooks)
 ```
 
 ---
@@ -48,7 +49,7 @@ On commence par les fondamentaux : appeler DALL-E 3 et GPT-5 pour generer des im
 
 **Fil rouge** : construire un generateur de contenu visuel pour l'education (diagrammes scientifiques, illustrations pedagogiques, motifs decoratifs).
 
-[README complet](Image/README.md) | 16 notebooks | ~6-8h
+[README complet](Image/README.md) | 19 notebooks | ~6-8h
 
 ---
 
@@ -58,7 +59,7 @@ L'audio est souvent le parent pauvre des parcours IA, pourtant c'est l'une des m
 
 **Fil rouge** : produire un podcast automatique avec voix synthetique personnalisee et fond musical genere.
 
-[README complet](Audio/README.md) | 28 notebooks | ~14-16h
+[README complet](Audio/README.md) | 30 notebooks | ~14-16h
 
 ---
 
@@ -202,18 +203,19 @@ python scripts/notebook_tools/notebook_tools.py analyze <path>
 | Sous-domaine | Notebooks | Validation |
 | ------------ | --------- | ---------- |
 | 00-GenAI-Environment | 6 | 100% |
-| Image | 16 | 100% |
-| Audio | 28 | 100% |
+| Image | 19 | 100% |
+| Audio | 30 | 100% |
 | Video | 16 | 100% |
 | Texte | 11 | 100% |
 | SemanticKernel | 20 | 85% |
+| FineTuning | 5 | BETA |
 | CaseStudies | 4 | 100% |
 | Playwright-OWUI | 5 modules | 100% |
 | Vibe-Coding | 5 notebooks | 100% |
 
 ---
 
-Architecture SDDD | Compatible MCP | Derniere mise a jour : mai 2026
+Architecture SDDD | Compatible MCP | Derniere mise a jour : 2026-05-28
 
 ## Cross-series Bridges
 
