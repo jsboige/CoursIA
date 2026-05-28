@@ -129,7 +129,7 @@ class TestClassifyProject:
         assert cat == "TEST"
 
     def test_partner_validation(self):
-        cat, reason = self._classify(name="ESGF-2026-Validation")
+        cat, reason = self._classify(name="partner-course-2026-Validation")
         assert cat == "TEST"
         # Matches generic "-Validation" pattern before partner-specific check
         assert "validation" in reason.lower()

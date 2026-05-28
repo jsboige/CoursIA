@@ -42,7 +42,7 @@ GenAI (110 notebooks)
 QuantConnect (175 notebooks)
 ├── Python/ (53) - Cours progressifs QC-Py
 ├── projects/ (109) - Strategies backtests et ML
-└── ESGF-2026/ (7) - Cours ESGF exercices et templates
+└── partner-course-quant-trading/ (7) - Cours partenaire exercices et templates
 
 SymbolicAI (92 notebooks)
 ├── SmartContracts/ (27) - Solidity, Web3, blockchain
@@ -135,7 +135,7 @@ docker-compose up -d
 1. **GenAI** - Toutes les series sauf Orchestration
 2. **ML** - Tutoriels .NET + Python Agents
 3. **SymbolicAI** - SmartContracts, SemanticWeb
-4. **QuantConnect/ESGF-2026/** - Exercices trading
+4. **QuantConnect/partner-course-quant-trading/** - Exercices trading
 
 ### Expert (120h+)
 1. **GenAI/03-Orchestration** + **04-Applications**

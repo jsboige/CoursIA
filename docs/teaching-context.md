@@ -8,7 +8,7 @@ Documentation transversale sur l'organisation de l'enseignement annuel : calendr
 |-------|-------|---------------------|
 | EPF | GenAI Bachelor 3A (MSBNS3IN03), classes MIN1/MIN2/MIS | Termine, notes transmises |
 | ECE | IA Finance Ing4 (Gr01/02/03) | Termine, notes rendues debut mai |
-| Partner (ESGF) | Algo Trading QuantConnect | En cours, soutenances finales fin mai, **grading debut juin** |
+| Partner | Algo Trading QuantConnect | En cours, soutenances finales fin mai, **grading debut juin** |
 | EPITA | Programmation par Contraintes | Soutenances 2 batchs **terminees**, suivi TP bonus rempli, notes projet faites |
 | EPITA | IA Symbolique | Cours en cours ; TPs notebooks rendus sur CoursIA = points bonus des projets EPITA-IS |
 
