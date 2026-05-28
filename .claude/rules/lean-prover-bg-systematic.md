@@ -1,3 +1,7 @@
+---
+paths: "{**/*.lean,**/Lean/**/*,**/lean/**/*,**/social_choice_lean/**/*}"
+---
+
 # Prover BG systematique post-PR/msg po-2026
 
 S'applique au **coordinateur ai-01** sur projet Lean stable_marriage/social_choice/voting/etc.

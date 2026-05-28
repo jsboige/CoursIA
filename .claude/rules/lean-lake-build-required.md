@@ -1,3 +1,7 @@
+---
+paths: "{**/*.lean,**/Lean/**/*,**/lean/**/*,**/social_choice_lean/**/*}"
+---
+
 # Lake build SUCCESS local OBLIGATOIRE avant merge Lean PR
 
 S'applique a **toute PR touchant `*.lean`**.

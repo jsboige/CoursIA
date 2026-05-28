@@ -81,6 +81,24 @@ Pour un notebook research utilisant `QuantBook()` (kernel QC Cloud uniquement) :
 2. **Fallback Playwright** : automatiser la session QC Cloud Web (login, navigation projet, Run All, téléchargement notebook exécuté)
 3. **Pas de fallback markdown explicatif** : un Quantbook commit doit avoir des outputs réels QC Cloud
 
+## Productivité pendant les opérations longues (règle HARD 2026-05-11)
+
+Quand un processus long tourne (training GPU, backtest QC, build Lean, docker pull, prover BG iter, papermill batch, multi-seed run) : **ne pas attendre passivement**.
+
+1. Lancer le BG, noter son ID + nature attendue
+2. **Immédiatement continuer** avec autre travail : autres tracks dispatchées, audits parallèles, préparation PR suivante, review code, planification iter suivante, MAJ docs
+3. Check le BG uniquement à intervalles utiles (5-10 min) via `tail -50 output | grep -E "FINAL|RESULT|ERROR"` ou monitor ciblé. **Jamais event-par-event réactif**
+4. **Minimum 2 tracks en flight** à tout moment pour chaque agent (1 BG + 1 CPU/IO local). Si un agent n'a qu'un BG, il demande immédiatement une 2e track au coordinateur via `[ASK] capacity` dashboard
+
+**Anti-patterns interdits** :
+- "Monitor event arrived, je réponds 'j'attends'" — non, je travaille sur autre chose en parallèle
+- "Le BG va prendre 30 min, je fais une pause" — non, j'ai 30 min de travail parallèle disponible
+- Dispatcher 1 seule track BG à un agent + dire "reviens quand fini" — non, **2 tracks minimum** (1 BG + 1 CPU)
+
+**Pourquoi** : un BG de 30-60 min consomme 30-60 events monitor si l'agent reste réactif, sans rien produire en parallèle. Le BG tourne même sans surveillance. Coordinateur = chef d'orchestre, pas spectateur.
+
+Incident 2026-05-11 ai-01 (Lean prover iter 6 BG) : ~35 events monitor consommés à regarder BUILD-FAIL répétés, zéro autre track avancée pendant ce temps. User signal explicite "fais en sorte que les autres agents trainers ou prouveurs fassent pareil".
+
 ## Validation pré-commit notebook H.3 (regle HARD)
 
 ```bash
