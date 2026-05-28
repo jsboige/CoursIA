@@ -215,4 +215,4 @@
 
 **Auteur**: Claude Code Agent (qc-research-notebook)
 **Date**: 2026-02-17
-**Projet**: ESGF-2026/examples/CSharp-CTG-Momentum
+**Projet**: partner-course-quant-trading/examples/CSharp-CTG-Momentum

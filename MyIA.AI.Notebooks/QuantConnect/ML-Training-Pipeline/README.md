@@ -17,7 +17,7 @@ S1 long-horizon sweep also produced **8 BEATS multi-coin sur 16** (XRP h=66 13.5
 
 **Rejected stages** (NO BEATS) : S2 vol-ensembles (DM, MLP, GSP), S5 stop-loss overlays, S6 LO-only sectors, S7 composites, S8 long-horizon classifiers (dir_acc ≠ edge).
 
-> Detail complet : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) — méthodologie, ablations, leçons. Pivot V2 documenté dans [`CURRICULUM.md`](CURRICULUM.md). 3 projets QC Cloud ESGF déployés à partir de ces KEEPERS — cf [`../ESGF-2026/README.md`](../ESGF-2026/README.md).
+> Detail complet : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) — méthodologie, ablations, leçons. Pivot V2 documenté dans [`CURRICULUM.md`](CURRICULUM.md). 3 projets QC Cloud déployés à partir de ces KEEPERS — cf [`../partner-course-quant-trading/README.md`](../partner-course-quant-trading/README.md).
 
 ## Architecture
 

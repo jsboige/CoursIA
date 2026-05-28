@@ -61,11 +61,11 @@ Les 3 stratégies prennent toutes des positions long-only via vol scaling. Leurs
 
 Le script imprime `VERDICT: HELPS vs kelly_har_mu60 (ensemble adds value)` parce que median Δ > 0. Mais median = +0.023 (négligeable) et sign-test p=0.250 (rien de significatif). Ce label sera retiré en patch.
 
-## Conclusion ESGF / pédagogique
+## Conclusion / pédagogique
 
 - **Direction "ensemble simple HAR-Kelly" fermée** comme M11d (HMM regime conditioning fermée).
 - **Cohérent avec littérature finance** : un ensemble naïf de stratégies corrélées dilue plutôt que diversifie. Pour gain réel : décorréler les composantes (ex : K60 sur vol crypto + momentum sur equity + carry sur FX) ou utiliser un meta-learner (stacking, OOS re-weighting).
-- **Recommandation kit ESGF** : enseigner K60 single comme référence honnête. Ne pas vendre l'ensemble simple comme amélioration.
+- **Recommandation pédagogique** : enseigner K60 single comme référence honnête. Ne pas vendre l'ensemble simple comme amélioration.
 
 ## Pourquoi M11e échoue là où M11a/b/c convainquent
 

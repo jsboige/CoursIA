@@ -12,7 +12,7 @@ This M3-extension probes the **long-horizon decay** hypothesis well-known for
 equity volatility models (McAleer & Medeiros 2008): does HAR's MSE advantage over
 naive baselines persist at h=15 / h=20, or does it collapse to noise?
 
-For ESGF kit M3, having a clean answer for h=15/20 closes the picture across
+For the trading course M3 module, having a clean answer for h=15/20 closes the picture across
 short (h=1-5), medium (h=10), and long (h=15-20) horizons.
 
 ## Method (identical to PR #938)
@@ -88,9 +88,9 @@ for archival (this PR archives to `results/m3_har_long_horizon_ai01/results.json
 
 Elapsed: 84.3s (2026-05-11, ai-01 RTX 4090 / Python 3.11 coursia-ml-training env).
 
-## ESGF kit M3 implications
+## Trading course M3 implications
 
-For the ESGF M3 SOTA crypto vol kit:
+For the M3 SOTA crypto vol module:
 
 - **Top of stack:** HAR-RV is the right baseline for ETH/SOL at any horizon up to h=20.
   No DL/SOTA model has been shown to beat this on these 2 coins yet.
