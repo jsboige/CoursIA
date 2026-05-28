@@ -79,45 +79,71 @@ def fishaudio_tts(
 def upload_reference(reference_id: str, audio_path: str, text: str) -> bool:
     """Upload a voice reference via ``POST /v1/references/add``.
 
-    Parameters
-    ----------
-    reference_id:
-        Unique identifier for the reference voice.
-    audio_path:
-        Path to the audio sample file.
-    text:
-        Transcript of the audio sample.
-
-    Returns ``True`` on success.
+    Returns ``True`` on success.  HTTP 409 ("already exists") is treated
+    as idempotent success so re-running P1 does not regress prior clones.
+    On any failure, response status + body are logged for diagnosis.
     """
     try:
         with open(audio_path, "rb") as audio_file:
             resp = requests.post(
                 f"{FISHAUDIO_URL}/v1/references/add",
                 data={"id": reference_id, "text": text},
-                files={"audio": (Path(audio_path).name, audio_file, "audio/wav")},
+                files={
+                    "audio": (
+                        Path(audio_path).name,
+                        audio_file,
+                        "audio/mpeg",
+                    )
+                },
                 timeout=60,
             )
-            resp.raise_for_status()
+        if resp.ok:
             logger.info("Uploaded reference '%s'", reference_id)
             return True
+        if resp.status_code == 409:
+            logger.info(
+                "Reference '%s' already exists on server (idempotent)",
+                reference_id,
+            )
+            return True
+        body = resp.text[:500] if resp.text else "<empty>"
+        logger.error(
+            "Upload reference '%s' failed: status=%d body=%s",
+            reference_id, resp.status_code, body,
+        )
+        return False
     except requests.RequestException as exc:
-        logger.error("Upload reference error: %s", exc)
+        body = "<no response>"
+        status: int | None = None
+        if hasattr(exc, "response") and exc.response is not None:
+            body = exc.response.text[:500]
+            status = exc.response.status_code
+        logger.error(
+            "Upload reference '%s' error: status=%s body=%s exc=%s",
+            reference_id, status, body, exc,
+        )
         return False
 
 
-def list_references() -> list[dict]:
-    """List all voice references via ``GET /v1/references/list``."""
+def list_references() -> dict:
+    """List all voice references via ``GET /v1/references/list``.
+
+    Requests JSON explicitly because the FishAudio server defaults to
+    msgpack which silently breaks ``resp.json()``.  Returns the parsed
+    dict ``{"success": bool, "reference_ids": [str], "message": str}``
+    or an empty dict on failure.
+    """
     try:
         resp = requests.get(
             f"{FISHAUDIO_URL}/v1/references/list",
+            headers={"Accept": "application/json"},
             timeout=30,
         )
         resp.raise_for_status()
         return resp.json()  # type: ignore[no-any-return]
     except requests.RequestException as exc:
         logger.error("List references error: %s", exc)
-        return []
+        return {}
 
 
 def delete_reference(reference_id: str) -> bool:
