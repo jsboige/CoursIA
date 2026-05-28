@@ -379,8 +379,18 @@ SemanticWeb/
 ├── SW-10-Python-RDFStar.ipynb
 ├── SW-11-Python-KnowledgeGraphs.ipynb
 ├── SW-12-Python-GraphRAG.ipynb
-└── SW-13-Python-Reasoners.ipynb     # Bonus
+├── SW-13-Python-Reasoners.ipynb     # Bonus
+├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
+└── RDF.Net-Legacy/                  # Archive C# RDF.NET (pre-migration Python)
+    ├── RDF.Net.ipynb                # Notebook .NET historique
+    ├── Example.ttl                  # Donnees Turtle
+    ├── example.srj                  # Resultats SPARQL JSON
+    └── example.srx                  # Resultats SPARQL XML
 ```
+
+> **Note** — `RDF.Net-Legacy/` conserve l'ancien notebook C# (kernel .NET Interactive)
+> avant la bascule pedagogique vers Python (`SW-2b-Python-RDFBasics.ipynb` et suivants).
+> Archive de reference, non maintenue. Pour le RDF actuel, voir SW-2 / SW-2b.
 
 ## Ressources
 
