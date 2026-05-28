@@ -23,7 +23,7 @@ class RegimeSwitching(QCAlgorithm):
     - Trailing stop-loss -10% on equity positions
     - Reduced equity in sideways (30% vs 40%)
 
-    Source: ECE student concepts (Maisonnave, Gr01 H.4b), adapted for ESGF pool.
+    Source: ECE student concepts (Maisonnave, Gr01 H.4b), adapted for partner course.
     Issue #238 - Integrate ECE student concepts into QC strategies.
 
     Universe: SPY, QQQ, IEF, GLD

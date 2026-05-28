@@ -5,7 +5,7 @@ import numpy as np
 from collections import deque
 
 
-class ESGFHARRVJKelly(QCAlgorithm):
+class HarrvjKellyAlgorithm(QCAlgorithm):
     """HAR-RV-J / HAR Classic Kelly strategy on crypto assets.
 
     Extends HAR (Corsi 2009) with optional jump component from

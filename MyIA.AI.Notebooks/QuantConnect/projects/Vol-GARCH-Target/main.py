@@ -5,7 +5,7 @@ import numpy as np
 from collections import deque
 
 
-class ESGFGARCHVolTarget(QCAlgorithm):
+class GarchVolTargetAlgorithm(QCAlgorithm):
     """GARCH(1,1) volatility targeting on a multi-asset portfolio.
 
     Forecasts next-day variance using a rolling GARCH(1,1) model fitted

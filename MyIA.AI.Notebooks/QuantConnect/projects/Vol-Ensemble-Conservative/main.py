@@ -5,7 +5,7 @@ import numpy as np
 from collections import deque
 
 
-class ESGFVolEnsembleConservative(QCAlgorithm):
+class VolEnsembleConservativeAlgorithm(QCAlgorithm):
     """Ensemble GARCH + HAR vol forecast with conservative position sizing.
 
     Combines GARCH(1,1) and HAR(1,5,22) volatility forecasts as an
@@ -16,7 +16,7 @@ class ESGFVolEnsembleConservative(QCAlgorithm):
       - Bull regime (SPY > SMA200): full allocation
       - Bear regime (SPY < SMA200): reduce to 50% allocation
 
-    This is the most conservative of the 3 ESGF strategies.
+    This is the most conservative of the 3 volatility strategies.
     Assets: SPY, EFA, EEM, TLT, GLD, DBC.
     """
 

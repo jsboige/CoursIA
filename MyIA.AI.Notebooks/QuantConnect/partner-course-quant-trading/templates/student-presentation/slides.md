@@ -1,9 +1,9 @@
 ---
 theme: default
-title: Template Soutenance ESGF 2026
+title: Strategy Presentation Template
 info: |
-  Template de presentation pour la soutenance ESGF QuantConnect.
-  Remplacer les sections entre [crochets] avec votre contenu.
+  Presentation template for QuantConnect strategy defense.
+  Replace [bracketed sections] with your content.
 class: text-center
 drawings:
   persist: false
@@ -13,7 +13,7 @@ mdc: true
 
 # [Nom de Votre Strategie]
 
-Soutenance ESGF QuantConnect - 19 mai 2026
+QuantConnect Strategy Presentation
 
 **Equipe** : [Prenom Nom, Prenom Nom]
 **Projet** : [Nom du projet QC]

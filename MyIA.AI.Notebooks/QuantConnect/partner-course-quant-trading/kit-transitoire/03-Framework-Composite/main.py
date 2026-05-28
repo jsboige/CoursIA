@@ -182,9 +182,9 @@ class MultiStrategyPCM(PortfolioConstructionModel):
         return result
 
 
-class ESGFFrameworkComposite(QCAlgorithm):
+class FrameworkCompositeAlgorithm(QCAlgorithm):
     """
-    ESGF Kit - Framework Composite Strategy.
+    Framework Composite Strategy.
 
     Combines three complementary alpha models via QC Algorithm Framework:
     1. SectorMomentum: Long sector ETFs with positive momentum above SMA200

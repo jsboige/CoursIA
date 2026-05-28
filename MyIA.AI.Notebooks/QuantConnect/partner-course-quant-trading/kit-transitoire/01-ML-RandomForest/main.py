@@ -3,9 +3,9 @@ from AlgorithmImports import *
 # endregion
 
 
-class ESGFMLRandomForest(QCAlgorithm):
+class MlRandomForestAlgorithm(QCAlgorithm):
     """
-    ESGF Kit - ML RandomForest Sector Rotation.
+    ML RandomForest Sector Rotation.
 
     Sector ETF rotation using Random Forest classification with walk-forward
     training. Each month the model predicts which sectors will outperform,

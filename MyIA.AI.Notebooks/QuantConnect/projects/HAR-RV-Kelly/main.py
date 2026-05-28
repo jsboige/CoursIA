@@ -5,7 +5,7 @@ import numpy as np
 from collections import deque
 
 
-class ESGFHARRVKelly(QCAlgorithm):
+class HarrvKellyAlgorithm(QCAlgorithm):
     """HAR-RV Kelly 1/4 strategy on a multi-asset portfolio.
 
     Uses the Heterogeneous Autoregressive (HAR) model of Corsi (2009)
