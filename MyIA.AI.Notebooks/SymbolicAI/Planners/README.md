@@ -2,6 +2,8 @@
 
 Cette serie de notebooks introduit la **Planification Automatique**, une branche fondamentale de l'IA qui genere des sequences d'actions pour atteindre des objectifs.
 
+La planification repond a une question differente de celle de l'apprentissage : non pas « que predire ? » mais « **que faire ?** ». A partir d'un modele du monde — un etat initial, des actions avec leurs preconditions et effets, un but — un planificateur cherche automatiquement une suite d'actions qui mene au but. C'est une technologie eprouvee : elle pilote des robots (manipulation, navigation), optimise la logistique et l'ordonnancement, et a dirige des engins spatiaux autonomes (Remote Agent sur Deep Space 1, planification d'activites des rovers martiens). Le langage **PDDL** a standardise la maniere de decrire ces problemes, donnant naissance a tout un ecosysteme de solveurs comparables. La planification connait aujourd'hui un regain d'interet avec les LLMs, comme moyen de doter les modeles de langage d'une capacite d'action verifiable et orientee vers un but.
+
 ## Objectifs d'apprentissage
 
 A l'issue de cette serie, vous saurez :
