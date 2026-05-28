@@ -32,6 +32,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [.claude/rules/secrets-hygiene.md](.claude/rules/secrets-hygiene.md) - Pas de secrets inline (incident recurrent 2026-05-14)
 - [.claude/rules/coordinator-discipline.md](.claude/rules/coordinator-discipline.md) - ai-01 merge actif + no-languishing demandes user
 - [.claude/rules/proactive-coordination.md](.claude/rules/proactive-coordination.md) - 1 PR/wakeup + main track + side-track async via sous-agents spécialistes (mandat user 2026-05-23)
+- [.claude/rules/user-blocker-signaling.md](.claude/rules/user-blocker-signaling.md) - Re-poke chaque fin de session quand le user bloque (mandat user 2026-05-28, anti-dilution wakeup)
 
 ---
 
