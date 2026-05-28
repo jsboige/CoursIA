@@ -1,12 +1,12 @@
 # MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
 
-Ecosysteme complet de **500 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques. Maturite : **158 PRODUCTION + 294 BETA = 452/500 (90%)** prets cours ; 39 ALPHA + 5 DRAFT + 4 TEMPLATE en developpement.
+Ecosysteme complet de **497 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques. Maturite : **158 PRODUCTION + 291 BETA = 449/497 (90%)** prets cours ; 39 ALPHA + 5 DRAFT + 4 TEMPLATE en developpement.
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 500
-breakdown: GenAI=114, QuantConnect=102, SymbolicAI=98, Search=45, Probas=43, Sudoku=32, ML=30, GameTheory=25, RL=6, CaseStudies=4, IIT=1
-maturity: BETA=294, PRODUCTION=158, ALPHA=39, DRAFT=5, TEMPLATE=4
+total: 497
+breakdown: GenAI=114, QuantConnect=102, SymbolicAI=98, Search=45, Probas=43, Sudoku=32, ML=27, GameTheory=25, RL=6, CaseStudies=4, IIT=1
+maturity: BETA=291, PRODUCTION=158, ALPHA=39, DRAFT=5, TEMPLATE=4
 -->
 
 Dernière mise à jour : 2026-05-28
@@ -21,7 +21,7 @@ Dernière mise à jour : 2026-05-28
 | **Search** | 45 | Recherche, CSP, optimisation, metaheuristiques |
 | **Probas** | 43 | Programmation probabiliste (Infer.NET + PyMC) |
 | **Sudoku** | 32 | Resolution de contraintes (.NET C#) |
-| **ML** | 30 | Machine Learning .NET + Python Agents for Data Science |
+| **ML** | 27 | Machine Learning .NET + Python Agents for Data Science |
 | **GameTheory** | 25 | Theorie des Jeux (OpenSpiel, choix social Lean) |
 | **RL** | 6 | Reinforcement Learning (Stable-Baselines3) |
 | **CaseStudies** | 4 | Etudes de cas interdisciplinaires (diagnostic medical, planification oncologique) |
@@ -94,7 +94,7 @@ SymbolicAI (98 notebooks)
 | **Search** | 45 | [Search/](Search/README.md) |
 | **Probas** | 43 | [Probas/](Probas/README.md) |
 | **Sudoku** | 32 | [Sudoku/](Sudoku/README.md) |
-| **ML** | 30 | [ML/](ML/README.md) |
+| **ML** | 27 | [ML/](ML/README.md) |
 | **GameTheory** | 25 | [GameTheory/](GameTheory/README.md) |
 | **RL** | 6 | [RL/](RL/README.md) |
 | **CaseStudies** | 4 | [CaseStudies/](CaseStudies/README.md) |
