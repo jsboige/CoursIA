@@ -2,12 +2,12 @@
 
 <!-- CATALOG-STATUS
 series: ML
-pedagogical_count: 30
-breakdown: DataScienceWithAgents=22, ML.Net=8
-maturity: BETA=23, ALPHA=4, PRODUCTION=3
+pedagogical_count: 27
+breakdown: DataScienceWithAgents=19, ML.Net=8
+maturity: BETA=20, ALPHA=4, PRODUCTION=3
 -->
 
-Vous êtes développeur ou analyste et vous voulez construire des modèles prédictifs sans devenir data scientist théoricien ? Cette série vous forme au Machine Learning pratique avec deux stack complémentaires : **ML.NET** pour l'écosystème .NET/C# (8 notebooks, ~6h) et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs (22 notebooks, ~20h). À la fin, vous saurez charger des données, entraîner un modèle, l'évaluer rigoureusement, et le déployer en production.
+Vous êtes développeur ou analyste et vous voulez construire des modèles prédictifs sans devenir data scientist théoricien ? Cette série vous forme au Machine Learning pratique avec deux stack complémentaires : **ML.NET** pour l'écosystème .NET/C# (8 notebooks, ~6h) et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs (19 notebooks, ~17h). À la fin, vous saurez charger des données, entraîner un modèle, l'évaluer rigoureusement, et le déployer en production.
 
 ## Parcours d'apprentissage
 
@@ -15,7 +15,7 @@ Vous êtes développeur ou analyste et vous voulez construire des modèles préd
 
 Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML). Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
 
-### Track B : Data Science with Agents (Python, 22 notebooks, ~20h)
+### Track B : Data Science with Agents (Python, 19 notebooks, ~17h)
 
 Le parcours Python commence par les fondations (NumPy/Pandas) puis se divise en deux sous-tracks. Le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique (régression, classification, clustering), les modèles d'ensemble et le NLP de base. Le sous-track **Google ADK** (Labs 8-17) monte en complexité avec le deep learning (PyTorch), l'analyse de survivors, le dashboarding, et les pipelines agentic (agents LLM pour automatiser le workflow data science). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
 
@@ -25,7 +25,7 @@ Cette série sert les cours **ECE / EPITA / EPF** en introduction au Machine Lea
 
 **Slides de cours associes** : [06-apprentissage/](../../slides/06-apprentissage/) | **Livre de reference** : [Hands-On AI Trading](https://www.hands-on-ai-trading.com/) (chapitres ML)
 
-**30 notebooks** | **2 sous-domaines** | **~25h** | **.NET Interactive + Python**
+**27 notebooks** | **2 sous-domaines** | **~23h** | **.NET Interactive + Python**
 
 ## Structure
 
