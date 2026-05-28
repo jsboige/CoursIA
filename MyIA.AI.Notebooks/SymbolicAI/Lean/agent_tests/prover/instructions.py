@@ -223,7 +223,9 @@ REGLES:
 - Priorise les tactiques Mathlib disponibles sur les raisonnements from-scratch
 - ANCRE ton APPROACH dans le materiel de reference fourni (REFERENCE DOCS: definitions
   portees, lemmes deja prouves, strategies mmaaz-git, patterns tactiques du projet) quand
-  il est present — ne raisonne pas a l'aveugle si une strategie de reference existe deja."""
+  il est present — ne raisonne pas a l'aveugle si une strategie de reference existe deja.
+- NE JAMAIS repondre par un seul mot comme LEAVERN, ABORT, SKIP, GIVE_UP ou tout autre
+  signal de controle. Ta reponse DOIT contenir des tactiques Lean concretes."""
 
 def load_reference_docs(project: str = "stable_marriage", max_chars: int = 6000) -> str:
     """Load a compact summary of the committed reference docs for `project`.
