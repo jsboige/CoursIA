@@ -24,7 +24,15 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
-def _resolve_lake_command(extra_args: List[str]) -> Tuple[List[str], dict]:
+def _to_wsl_path(win_path: str) -> str:
+    """Convert ``C:\\foo\\bar`` to ``/mnt/c/foo/bar`` for use inside WSL bash."""
+    p = str(win_path).replace("\\", "/")
+    if len(p) >= 2 and p[1] == ":":
+        return f"/mnt/{p[0].lower()}{p[2:]}"
+    return p
+
+
+def _resolve_lake_command(extra_args: List[str], cwd: str = None) -> Tuple[List[str], dict]:
     """Return (argv, env) for invoking ``lake <extra_args>``.
 
     Strategy (in order):
@@ -44,20 +52,22 @@ def _resolve_lake_command(extra_args: List[str]) -> Tuple[List[str], dict]:
     if override and Path(override).exists():
         return [override, *extra_args], env
 
+    # WSL preferred when LEAN_USE_WSL=1 (Conway KS Pilier 1 #1651: WSL .lake
+    # cache is already warm, Windows lake.exe would trigger 1-2h Mathlib
+    # rebuild because OS-specific .c IR files differ).
+    if os.getenv("LEAN_USE_WSL") == "1":
+        cd_prefix = f"cd '{_to_wsl_path(cwd)}' && " if cwd else ""
+        wsl_cmd = cd_prefix + "source ~/.elan/env 2>/dev/null; lake " + " ".join(
+            f"'{a}'" for a in extra_args
+        )
+        return ["wsl", "-d", "Ubuntu", "bash", "-lc", wsl_cmd], env
+
     if platform.system() == "Windows":
         elan_bin = Path.home() / ".elan" / "bin"
         lake_exe = elan_bin / "lake.exe"
         if lake_exe.exists():
             env["PATH"] = f"{elan_bin}{os.pathsep}{env.get('PATH', '')}"
             return [str(lake_exe), *extra_args], env
-
-    # WSL fallback: only attempt if the operator explicitly opted in via
-    # LEAN_USE_WSL=1 (avoid regressing into the silent-source-fails trap).
-    if os.getenv("LEAN_USE_WSL") == "1":
-        wsl_cmd = "source ~/.elan/env 2>/dev/null; lake " + " ".join(
-            f"'{a}'" for a in extra_args
-        )
-        return ["wsl", "bash", "-c", wsl_cmd], env
 
     return ["lake", *extra_args], env
 
@@ -146,7 +156,7 @@ class LeanVerifier:
         if module_name.endswith(".lean"):
             module_name = module_name[:-5]
 
-        cmd, env = _resolve_lake_command(["build", "-R", module_name])
+        cmd, env = _resolve_lake_command(["build", "-R", module_name], cwd=str(project))
 
         try:
             start = time.time()
@@ -277,7 +287,7 @@ class LeanVerifier:
             ]
 
         project = Path(self.project_dir)
-        cmd, env = _resolve_lake_command(["env", "lean", "--stdin"])
+        cmd, env = _resolve_lake_command(["env", "lean", "--stdin"], cwd=str(project))
 
         try:
             stdin_input = f"import {module_name}\n#print axioms {module_name.split('.')[-1]}\n"
@@ -351,7 +361,7 @@ class LeanVerifier:
             if module.endswith(".lean"):
                 module = module[:-5]
 
-            cmd, env = _resolve_lake_command(["build", module])
+            cmd, env = _resolve_lake_command(["build", module], cwd=str(project))
             result = subprocess.run(
                 cmd,
                 cwd=str(project),
