@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: Sudoku
 pedagogical_count: 32
-breakdown: =32
+breakdown: root=32
 maturity: BETA=24, PRODUCTION=8
 -->
 

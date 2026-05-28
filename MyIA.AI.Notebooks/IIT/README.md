@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: IIT
 pedagogical_count: 1
-breakdown: =1
+breakdown: root=1
 maturity: BETA=1
 -->
 
