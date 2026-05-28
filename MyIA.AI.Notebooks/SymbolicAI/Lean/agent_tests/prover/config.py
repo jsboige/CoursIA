@@ -164,6 +164,11 @@ CONWAY_DOOMSDAY_IMPORTS = """import Conway.Doomsday
 CONWAY_LOOKANDSAY_FILE = CONWAY_DIR / "Conway" / "LookAndSayLemmas.lean" if CONWAY_DIR.exists() else None
 CONWAY_LOOKANDSAY_IMPORTS = """import Conway.LookAndSay
 """
+CONWAY_KS_FILE = CONWAY_DIR / "Conway" / "KochenSpecker.lean" if CONWAY_DIR.exists() else None
+CONWAY_KS_IMPORTS = """import Mathlib.Data.Real.Basic
+import Mathlib.Data.Fin.Basic
+import Mathlib.Tactic
+"""
 
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
@@ -1437,6 +1442,58 @@ DEMOS = {
             "plus a digitsToNat_append helper lemma.\n"
             "Director must NOT expect one-shot tactic.\n"
             "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "hard",
+    },
+    53: {
+        "name": "KS_EACH_VECTOR_IN_TWO_CONTEXTS",
+        "file": str(CONWAY_KS_FILE) if CONWAY_KS_FILE else "",
+        "line": 156,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "each_vector_in_two_contexts",
+        "theorem": "each_vector_in_two_contexts",
+        "imports": CONWAY_KS_IMPORTS,
+        "description": (
+            "Pilier 1.B (Epic #1651). Prove that each of the 18 Cabello vectors\n"
+            "appears in exactly 2 of the 9 contexts. The goal is:\n"
+            "  (Sum k : ContextIdx, Sum i : Fin 4,\n"
+            "    if contextMembers k i = v then (1 : Nat) else 0) = 2\n"
+            "\n"
+            "Strategy candidates:\n"
+            "  1. `decide` (finite check, may need `native_decide` for speed).\n"
+            "  2. Explicit case-split on `v : VecIdx` (= Fin 18) via `fin_cases v` then\n"
+            "     `simp [contextMembers]` then `decide` on each branch.\n"
+            "  3. `Finset.sum_eq_count` reformulation if the iff-cond is a Decidable.\n"
+            "\n"
+            "`contextMembers` is the Cabello 9x4 table (lines ~60-130 of file).\n"
+            "Pure combinatorial: no Real, no Mathlib heavy."
+        ),
+        "difficulty": "medium",
+    },
+    54: {
+        "name": "KS_KOCHEN_SPECKER_PARITY",
+        "file": str(CONWAY_KS_FILE) if CONWAY_KS_FILE else "",
+        "line": 175,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "kochen_specker",
+        "theorem": "kochen_specker",
+        "imports": CONWAY_KS_IMPORTS,
+        "description": (
+            "Pilier 1.C (Epic #1651). The 18-vector Cabello KS theorem.\n"
+            "Goal: `not exists c : Coloring, IsValidColoring c`.\n"
+            "\n"
+            "Parity argument (per docstring in file):\n"
+            "  1. By `IsValidColoring c`, summing over the 9 contexts gives 9 ones.\n"
+            "  2. Swap the double sum (Finset.sum_comm): each vector v contributes\n"
+            "     `(number of contexts containing v) * c(v)`.\n"
+            "  3. By `each_vector_in_two_contexts` (line 156 lemma, DEMO 53),\n"
+            "     that multiplier is always 2.\n"
+            "  4. Hence total ones = 2 * (count of true-colored vectors), even.\n"
+            "  5. Contradiction with 9 being odd.\n"
+            "\n"
+            "DEPENDS ON DEMO 53 being proved first (the lemma at line 156).\n"
+            "Key Mathlib lemmas: `Finset.sum_comm`, `Nat.not_even_iff_odd`,\n"
+            "`Nat.even_iff`, `Finset.sum_eq_card_nsmul_one` or `mul_comm`."
         ),
         "difficulty": "hard",
     },
