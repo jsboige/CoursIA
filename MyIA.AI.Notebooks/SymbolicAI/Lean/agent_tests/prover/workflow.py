@@ -640,6 +640,11 @@ class VerifyExecutor(Executor):
         # so we don't depend on prompt adherence.
         self._consecutive_build_fails = 0
         self._total_fails = 0
+        # #1620 Pathology 2: consecutive bare-sorry rejections from sorry_guard.
+        # After 2 consecutive rejections, force handoff to Director (if available)
+        # or yield — avoids the TacticAgent→sorry_guard→Coordinator→TacticAgent loop
+        # that burns LLM cycles on the same giveup pattern (14 rejections on L147).
+        self._consecutive_sorry_rejections = 0
         self._escalation_threshold = escalation_threshold
         # F7 (2026-05-15): when the Director lane is wired, F1 escalates
         # DIRECTLY to Director instead of looping through the Coordinator.
@@ -704,22 +709,40 @@ class VerifyExecutor(Executor):
         # 2026-05-12 Shapley_2daf67cb86_L570 trace: TacticAgent did exactly
         # this — long comment block followed by literal `sorry`, build_fail
         # outcome already correct but wasted ~30s on the compile.
+        # #1620 Pathology 2: after 2 consecutive bare-sorry rejections, force
+        # Director handoff to break the TacticAgent→sorry_guard→Coordinator loop.
         import re as _re
         _stripped = _re.sub(r"--.*", "", msg.tactic)  # strip line comments
         _stripped = _re.sub(r"/-(.|\n)*?-/", "", _stripped)  # block comments
         if _re.search(r"(^|\s)sorry(\s|$)", _stripped):
-            msg.error = (
-                "Tactic contains a literal `sorry` token (LLM giveup pattern). "
-                "A proof must close the goal with real tactics. Routing back "
-                "to Coordinator to revise attack plan."
-            )
-            msg.error_type = "tactic_contains_sorry"
-            msg.next_agent = "coordinator"
+            self._consecutive_sorry_rejections += 1
+            _force_director = (self._consecutive_sorry_rejections >= 2
+                               and self._has_director
+                               and msg.director_calls < self._director_max_calls)
+            if _force_director:
+                msg.error = (
+                    "Tactic contains a literal `sorry` token (LLM giveup pattern). "
+                    f"Consecutive bare-sorry rejections: {self._consecutive_sorry_rejections}. "
+                    "Forcing Director handoff to break the giveup loop."
+                )
+                msg.error_type = "tactic_contains_sorry"
+                msg.next_agent = "director"
+            else:
+                msg.error = (
+                    "Tactic contains a literal `sorry` token (LLM giveup pattern). "
+                    "A proof must close the goal with real tactics. Routing back "
+                    "to Coordinator to revise attack plan."
+                )
+                msg.error_type = "tactic_contains_sorry"
+                msg.next_agent = "coordinator"
             self._consecutive_build_fails += 1
             if self._trace:
                 self._trace.log(
                     agent="VerifyExecutor", role="sorry_guard",
-                    content=f"rejected tactic containing sorry: {msg.tactic[:120]}",
+                    content=(f"rejected tactic containing sorry "
+                             f"(consecutive={self._consecutive_sorry_rejections}, "
+                             f"force_director={_force_director}): "
+                             f"{msg.tactic[:120]}"),
                 )
             await ctx.send_message(msg)
             return
@@ -782,6 +805,7 @@ class VerifyExecutor(Executor):
                 if _latch_build.get("success") and _latch_effective < _latch_orig:
                     msg.proof_found = True
                     self._consecutive_build_fails = 0
+                    self._consecutive_sorry_rejections = 0
                     self._consecutive_noprogress = 0
                     if self._trace:
                         self._trace.log(
@@ -820,6 +844,7 @@ class VerifyExecutor(Executor):
         if result["success"]:
             msg.proof_found = True
             self._consecutive_build_fails = 0
+            self._consecutive_sorry_rejections = 0
             self._consecutive_noprogress = 0  # P1: real progress
             if self._trace:
                 self._trace.log(
@@ -859,6 +884,7 @@ class VerifyExecutor(Executor):
             msg.next_agent = "tactic"
             # Decomposition is progress (new sub-goals to attack), reset.
             self._consecutive_build_fails = 0
+            self._consecutive_sorry_rejections = 0
             # P1: decomposition with sorry reduction is structural progress
             if new_sorry_count < self._original_sorry_count:
                 self._consecutive_noprogress = 0
@@ -905,6 +931,7 @@ class VerifyExecutor(Executor):
                                  f"{self._director_max_calls})"),
                     )
                 self._consecutive_build_fails = 0
+                self._consecutive_sorry_rejections = 0
             # B2c (issue #1224): cumulative fail re-escalade. Decompositions
             # reset _consecutive_build_fails to 0, which means the F1
             # escalation threshold (default 5) is never reached when the
@@ -934,6 +961,7 @@ class VerifyExecutor(Executor):
                                  f"{self._director_max_calls})"),
                     )
                 self._consecutive_build_fails = 0
+                self._consecutive_sorry_rejections = 0
                 # Reset cumulative so we don't re-trigger immediately
                 self._cumulative_fails = 0
             elif self._consecutive_build_fails >= self._escalation_threshold:
@@ -978,6 +1006,7 @@ class VerifyExecutor(Executor):
                 # Reset so we don't immediately re-escalate on the next fail;
                 # give the new agent a fresh window of `threshold` attempts.
                 self._consecutive_build_fails = 0
+                self._consecutive_sorry_rejections = 0
                 self._total_fails = 0  # reset after coordinator escalation
             else:
                 # P1 (Epic #1453): no-progress detection. Increment counter
@@ -1009,6 +1038,7 @@ class VerifyExecutor(Executor):
                         )
                     self._consecutive_noprogress = 0
                     self._consecutive_build_fails = 0
+                    self._consecutive_sorry_rejections = 0
                 elif self._consecutive_noprogress >= self._noprogress_threshold:
                     # No Director available or budget spent -> yield
                     msg.error += (

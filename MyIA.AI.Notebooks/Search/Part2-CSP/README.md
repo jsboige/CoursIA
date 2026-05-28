@@ -2,6 +2,12 @@
 
 > **Pivot vers SymbolicAI** : Z3, Planning, Logic. Cette partie fait le pont entre les algorithmes de recherche et l'IA symbolique.
 
+La programmation par contraintes (CSP) represente un **changement de paradigme** : au lieu de concevoir un algorithme d'exploration, on declare les contraintes du probleme et le solveur trouve les solutions. Ce modele declaratif est au coeur des outils industriels (ordonnancement, logistique, verification) et s'applique naturellement aux problemes NP-difficiles.
+
+Le parcours va des fondamentaux du modele (X, D, C) et du backtracking (CSP-1) a la propagation de contraintes (AC-3, MAC en CSP-2), puis aux extensions avancees : contraintes globales (CSP-3), ordonnancement industriel (CSP-4), optimisation combinatoire (CSP-5), hybridation avec SAT/ML/LLM (CSP-6). Les trois derniers notebooks explorent les frontiers : contraintes souples, temporelles et distribuees.
+
+**9 notebooks** | **~9h** | Python 3.10+ (`ortools`)
+
 ## Notebooks
 
 | # | Notebook | Duree | Contenu | Prerequis |

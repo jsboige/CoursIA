@@ -217,9 +217,22 @@ Le dossier [`projects/`](projects/) contient **115 stratégies de trading** prê
 
 ---
 
-## partner-course-quant-trading - Exemples de Recherche
+## 4-Type Notebook Classification
 
-Le dossier **partner-course-quant-trading/** contient des exemples de recherche avancée utilisés dans le cours de trading quantitatif.
+Each notebook in the QC tree falls into one of four types:
+
+| Type | Label | Execution | Count |
+|------|-------|-----------|-------|
+| **(a)** | quantbook QC Cloud | QC Cloud only | 59 |
+| **(b)** | research linked to quantbook | QC Cloud + local | ~76 |
+| **(c)** | standalone research | Local (yfinance/sklearn) | 24 |
+| **(d)** | pedagogical placeholder | Read-only / copy-paste | 33 |
+
+See [docs/qc-strategies-status.md](../../docs/qc-strategies-status.md) for the exhaustive classification.
+
+## Cours partenaire — Exemples de Recherche
+
+Le dossier **partner-course-quant-trading/** contient des exemples de recherche avancée utilisés dans le cours partenaire.
 
 ### Structure
 

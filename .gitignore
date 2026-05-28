@@ -644,6 +644,11 @@ MyIA.AI.Notebooks/QuantConnect/TurnOfMonth-Researcher/
 MyIA.AI.Notebooks/QuantConnect/VIX-TermStructure-Researcher/
 MyIA.AI.Notebooks/QuantConnect/lean.json
 MyIA.AI.Notebooks/QuantConnect/partner-course-Workspace/
+MyIA.AI.Notebooks/QuantConnect/ESGF-Workspace/
+
+# NuGet build artifacts
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/**/obj/
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/**/bin/
 
 # NuGet build artifacts
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/**/obj/

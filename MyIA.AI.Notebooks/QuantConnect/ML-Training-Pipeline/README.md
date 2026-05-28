@@ -2,6 +2,19 @@
 
 Complete training pipeline for ML models on financial OHLCV data. Designed for GPU training with CPU dry-run validation. All GPU scripts use thermal-safe training via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
 
+## 4-Type Classification
+
+All 4 notebooks in this directory are **(c) standalone research** — independent analysis using local data (yfinance, sklearn, PyTorch), no QuantConnect Cloud dependency.
+
+| Notebook | Topic | Type |
+|----------|-------|------|
+| `ML-Research-Template.ipynb` | Template for ML research | (c) |
+| `m3_har_asymmetric_semivariance.ipynb` | HAR asymmetric semivariance | (c) |
+| `research_what_dl_can_predict.ipynb` | What DL can predict in finance | (c) |
+| `research_l4_decision_transformer.ipynb` | Decision Transformer evaluation | (c) |
+
+Full classification: [docs/qc-strategies-status.md](../../../docs/qc-strategies-status.md)
+
 ## Curriculum V2 — Validated Keepers (2026-05-16, gate FERMEE)
 
 After 8 stages tested (S1–S8) on anti-FAANG/Mag7 universe (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), **4 KEEPERS** confirmed under strict OOS 2027 holdout, walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), tx costs 10bps rebalance + 50bps stress :
