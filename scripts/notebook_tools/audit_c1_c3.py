@@ -30,7 +30,7 @@ NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 EXCLUDE_DIRS = {
     ".ipynb_checkpoints", ".git", "__pycache__", "obj", "bin",
-    "_output", "research", "archive", "ESGF", "examples",
+    "_output", "research", "archive", "partner-course", "examples",
     ".venv", "node_modules",
 }
 

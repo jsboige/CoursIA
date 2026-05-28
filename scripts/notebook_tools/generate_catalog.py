@@ -35,8 +35,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
-EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "output", "ESGF", "examples"}
-RESEARCH_DIR_KEYWORDS = {"research", "archive", "examples", "ESGF"}
+EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "output", "partner-course", "examples"}
+RESEARCH_DIR_KEYWORDS = {"research", "archive", "examples", "partner-course"}
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
@@ -183,7 +183,7 @@ def check_errors(outputs: list) -> list[str]:
 
 
 def _is_research_path(nb_path: Path) -> bool:
-    """Check if notebook is in a research/archive/examples/ESGF directory."""
+    """Check if notebook is in a research/archive/examples/partner-course directory."""
     parts = nb_path.relative_to(NOTEBOOKS_DIR).parts
     return any(part in RESEARCH_DIR_KEYWORDS for part in parts)
 

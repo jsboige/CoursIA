@@ -8,7 +8,7 @@ Documentation transversale sur l'organisation de l'enseignement annuel : calendr
 |-------|-------|---------------------|
 | EPF | GenAI Bachelor 3A (MSBNS3IN03), classes MIN1/MIN2/MIS | Termine, notes transmises |
 | ECE | IA Finance Ing4 (Gr01/02/03) | Termine, notes rendues debut mai |
-| ESGF | Algo Trading QuantConnect | En cours, soutenances finales fin mai, **grading debut juin** |
+| Partner (ESGF) | Algo Trading QuantConnect | En cours, soutenances finales fin mai, **grading debut juin** |
 | EPITA | Programmation par Contraintes | Soutenances 2 batchs **terminees**, suivi TP bonus rempli, notes projet faites |
 | EPITA | IA Symbolique | Cours en cours ; TPs notebooks rendus sur CoursIA = points bonus des projets EPITA-IS |
 
@@ -22,8 +22,8 @@ Les jalons annuels recurrents :
 |---------|---------------|
 | Janvier-Fevrier | Cours EPF GenAI + cours EPITA-PrCon (slides + notebooks) |
 | Mars-Avril | Cours ECE IA Finance Ing4 (Gr01/02/03 successifs) + soutenances P1 |
-| Mai | Soutenances ECE P2, soutenances EPITA-PrCon (batch 1 presentiel + batch 2 visio, terminees), debut cours EPITA-IA-Symbolique, soutenances finales ESGF |
-| Juin | **Grading ESGF (debut juin)**, fin cours EPITA-IA-Symbolique + soutenances projet final |
+| Mai | Soutenances ECE P2, soutenances EPITA-PrCon (batch 1 presentiel + batch 2 visio, terminees), debut cours EPITA-IA-Symbolique, soutenances finales partenaire |
+| Juin | **Grading partenaire (debut juin)**, fin cours EPITA-IA-Symbolique + soutenances projet final |
 | Septembre | Rentree (QC League pour anciens ECE, nouvelle promo EPF) |
 
 ## EPITA - IA Symbolique : scope 2026
@@ -66,7 +66,7 @@ Le cluster CoursIA dispatche les missions par workspace dedie. **Les workspaces 
 | Ecole / role | Workspace RooSync | Limites |
 |--------------|-------------------|---------|
 | ECE - notation P1+P2, bonus CC, compilation | `myia-ai-01:CoursIA` + `myia-po-2024:CoursIA` | - |
-| ESGF - ML kit + soutenances + suivi | `myia-ai-01:CoursIA` + `myia-po-2024:CoursIA` | Sponsor QC, prudence sur la communication publique (tiers research org) |
+| Partner QC - ML kit + soutenances + suivi | `myia-ai-01:CoursIA` + `myia-po-2024:CoursIA` | Sponsor QC, prudence sur la communication publique (tiers research org) |
 | EPITA-PrCon - review/merge PRs etudiants | `myia-po-2025:2026-Epita-Programmation-par-Contraintes` | Ne **pas** envoyer de mission CoursIA via ce workspace |
 | EPITA-IS - veille + enrichissement sujets | `myia-po-2025:2026-Epita-Intelligence-Symbolique` | Ne **pas** envoyer de mission CoursIA via ce workspace |
 | EPF - notation, archive | (workspace dedie myia-po-2025) | Cycle annuel termine |
@@ -92,4 +92,4 @@ Voir [.claude/rules/student-pr-reviews.md](../.claude/rules/student-pr-reviews.m
 - Pipeline notation et bonus CC : [docs/ece-grading.md](ece-grading.md)
 - Mapping cluster machines (au-dela enseignement) : [docs/cluster-agents.md](cluster-agents.md)
 - Slides Slidev EPITA : `MyIA.AI.Notebooks/SymbolicAI/<serie>/slides/` (workflow Slidev verify, cf [.claude/rules/](../.claude/rules/))
-- QuantConnect (ESGF) : [docs/quantconnect.md](quantconnect.md)
+- QuantConnect (partenaire) : [docs/quantconnect.md](quantconnect.md)

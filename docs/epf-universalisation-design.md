@@ -3,7 +3,7 @@
 **Status**: DESIGN (doc-only, no code changes)
 **Author**: po-2023 (Cycle 17, T21.13)
 **Date**: 2026-05-10
-**Directive**: User 2026-05-10 — "Le repertoire Notebooks/EPF n'a pas pas vocation a rester. Hormis la session ESGF 2026 en cours, le reste doit devenir universel, sans particularites d'ecoles."
+**Directive**: User 2026-05-10 — "Le repertoire Notebooks/EPF n'a pas pas vocation a rester. Hormis la session partenaire 2026 en cours, le reste doit devenir universel, sans particularites d'ecoles."
 
 ## 1. Inventaire complet
 
@@ -111,7 +111,7 @@ GenAI student projects stay under GenAI but move to a neutral `CaseStudies/` sub
 |------|--------|
 | `GradeBookApp/` | EPF grading configs are grading-specific, not notebook paths |
 | `slides/` | EPF school mentions in slide attributions are contextual |
-| `QuantConnect/ESGF-2026/` | Active session, user directive: never touch |
+| `QuantConnect/partner-course-quant-trading/` | Active session, user directive: never touch |
 | `MyIA.AI.Notebooks/Search/` | EPF references in README are attributions ("adapted from EPF 2025"), not path references |
 
 ## 3. README updates
@@ -229,4 +229,4 @@ Phase 2 commit sequence (single PR):
 - Slides updates (pedagogical context, not notebook paths)
 - Search README attribution changes ("EPF 2025" is historical context, not path reference)
 - Any notebook content changes (source code, markdown cells inside notebooks)
-- ESGF-2026 content (user directive: preserve)
+- partner-course-quant-trading content (user directive: preserve)

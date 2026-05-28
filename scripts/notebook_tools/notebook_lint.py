@@ -32,7 +32,7 @@ CATALOG_PATH = REPO_ROOT / "COURSE_CATALOG.generated.json"
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
-EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "ESGF", "examples"}
+EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "partner-course", "examples"}
 
 # C.1 forbidden patterns (intentional errors in top-level / exercise stubs)
 # Only flag patterns that are clearly intentional errors, not error handling

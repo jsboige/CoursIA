@@ -12,7 +12,7 @@ Excluded by default (pedagogical mode):
     - .ipynb_checkpoints/
     - research notebooks (path contains "research")
     - archive/backup notebooks (path contains "archive" or "_output")
-    - ESGF student examples (ESGF-*/examples/)
+    - partner course student examples (partner-course-*/examples/)
     - obj/, bin/
 """
 
@@ -26,7 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
-EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "ESGF", "examples"}
+EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "partner-course", "examples"}
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",

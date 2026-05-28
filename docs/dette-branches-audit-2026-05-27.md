@@ -135,7 +135,7 @@ Branches avec contenu potentiellement unique mais >14 jours et >400 commits behi
 | `feat/cycle24-hmm-alpha-po2024` | 15d | 4 | 667 | 4 | HMM alpha, check if PR merged |
 | `feat/cycle25-broad-ch10-audit-po2023` | 15d | 1 | 685 | 1 | Ch10 audit, check if merged |
 | `feat/cycle25-voting-l385-prover-bg-po2026` | 15d | 1 | 661 | 1 | Prover BG, 1 commit likely in main |
-| `feat/esgf-kit-cycle19-3-strategies` | 16d | 16 | 871 | 16 | ESGF strategies kit, large |
+| `feat/esgf-kit-cycle19-3-strategies` | 16d | 16 | 871 | 16 | Partner course strategies kit, large |
 | `feat/lean-median-voter-strict-args` | 16d | 7 | 716 | 7 | Lean proof, check PR |
 | `feat/ml-dm-stage012-rerun-m4` | 16d | 14 | 871 | 14 | ML rerun, large |
 | `feat/probas-pymc-scaffolds-exec-cycle23` | 15d | 3 | 674 | 3 | Probas scaffolds |
@@ -194,8 +194,8 @@ fix/tweety-dependencies                     (6d, Tweety fix)
 fix/planners-1-descaffolding               (6d, planners fix)
 fix/qcpy-exec-lot1..5                      (6d, QC Py exec lots)
 fix/slides-03-logique-bug-slide-53          (8d, slides fix)
-fix/esgf-deck2-m15-beats                   (8d, ESGF)
-fix/esgf-deck3-curriculum-v2               (8d, ESGF)
+fix/esgf-deck2-m15-beats                   (8d, partner course)
+fix/esgf-deck3-curriculum-v2               (8d, partner course)
 ```
 
 ### Cold (>7 jours mais contenu unique)
@@ -215,7 +215,7 @@ feat/m15-lstm-rv                          (12d, LSTM research)
 feat/portfolio-hybrid-phase1              (13d, portfolio)
 feat/portfolio-hybride-skeleton           (13d, portfolio)
 feat/qc-py-18-alpha-to-beta              (14d, QC Py exec)
-feat/qc-playwright-batch1-esgf-po2026    (14d, Playwright ESGF)
+feat/qc-playwright-batch1-esgf-po2026    (14d, Playwright partner course)
 feat/cycle25-har-asymmetric-po2024       (14d, HAR research)
 feat/cycle25-prover-voting-l355-wave3-po2026 (14d, prover)
 feat/h7-p2-qc-never-executed-po2026     (14d, H7 audit)

@@ -1198,7 +1198,7 @@ Documentation officielle QuantConnect
 - **Desassemblage**
   - DotPeek / serveur de symboles
 - **Developpement et debuggage en Python**
-  - https://github.com/MyIntelligenceAgency/Lean/blob/master/ESGF/Python.md
+  - https://github.com/MyIntelligenceAgency/Lean/blob/master/docs/Python.md
 
 ---
 

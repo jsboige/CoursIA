@@ -100,7 +100,7 @@ class TestGetOrgName:
         assert get_org_name("d600793efghi") == "Personal"
 
     def test_esgf(self):
-        assert get_org_name("94aa4bcb1234") == "ESGF"
+        assert get_org_name("94aa4bcb1234") == "Partner"
 
     def test_unknown(self):
         result = get_org_name("abcdef01")
@@ -128,10 +128,10 @@ class TestClassifyProject:
         cat, _ = self._classify(name="Experiment-Sandbox")
         assert cat == "TEST"
 
-    def test_esgf_validation(self):
+    def test_partner_validation(self):
         cat, reason = self._classify(name="ESGF-2026-Validation")
         assert cat == "TEST"
-        # Matches generic "-Validation" pattern before ESGF-specific check
+        # Matches generic "-Validation" pattern before partner-specific check
         assert "validation" in reason.lower()
 
     def test_superseded_risk_parity(self):
