@@ -156,7 +156,7 @@ def IsValidColoring (c : Coloring) : Prop :=
 lemma each_vector_in_two_contexts (v : VecIdx) :
     (∑ k : ContextIdx, ∑ i : Fin 4,
       if contextMembers k i = v then (1 : ℕ) else 0) = 2 := by
-  sorry  -- TODO Pilier 1: verify by `decide` / explicit case-split on v
+  fin_cases v <;> decide
 
 /-- **Kochen-Specker Theorem (18-vector Cabello proof)**.
     There is no valid {0,1}-coloring of the 18 vectors compatible
@@ -173,7 +173,42 @@ lemma each_vector_in_two_contexts (v : VecIdx) :
        which is even.
     4. But 9 is odd. Contradiction. -/
 theorem kochen_specker : ¬ ∃ c : Coloring, IsValidColoring c := by
-  sorry  -- TODO Pilier 1: parity argument via Finset double-sum reorder
+  rintro ⟨c, hc⟩
+  have htotal : (∑ k : ContextIdx, ∑ i : Fin 4,
+      if c (contextMembers k i) then (1 : ℕ) else 0) = 9 := by
+    have : ∀ k : ContextIdx,
+        (∑ i : Fin 4, if c (contextMembers k i) then (1 : ℕ) else 0) = 1 := hc
+    simp [this]
+  have hreord : (∑ k : ContextIdx, ∑ i : Fin 4,
+      if c (contextMembers k i) then (1 : ℕ) else 0) =
+      ∑ v : VecIdx, 2 * (if c v then (1 : ℕ) else 0) := by
+    rw [show (∑ k : ContextIdx, ∑ i : Fin 4,
+        if c (contextMembers k i) then (1 : ℕ) else 0) =
+        ∑ v : VecIdx, (∑ k : ContextIdx, ∑ i : Fin 4,
+          if contextMembers k i = v then (if c v then (1 : ℕ) else 0) else 0) from ?_]
+    · apply Finset.sum_congr rfl
+      intro v _
+      have hv := each_vector_in_two_contexts v
+      have : (∑ k : ContextIdx, ∑ i : Fin 4,
+            if contextMembers k i = v then (if c v then (1 : ℕ) else 0) else 0) =
+          (if c v then (1 : ℕ) else 0) *
+            (∑ k : ContextIdx, ∑ i : Fin 4,
+              if contextMembers k i = v then (1 : ℕ) else 0) := by
+        rw [Finset.mul_sum]
+        apply Finset.sum_congr rfl; intro k _
+        rw [Finset.mul_sum]
+        apply Finset.sum_congr rfl; intro i _
+        split_ifs <;> simp
+      rw [this, hv]; ring
+    · apply Finset.sum_congr rfl; intro k _
+      apply Finset.sum_congr rfl; intro i _
+      rw [Finset.sum_ite_eq' Finset.univ (contextMembers k i)
+        (fun v => if c v then (1 : ℕ) else 0)]
+      simp
+  have : (9 : ℕ) = 2 * ∑ v : VecIdx, (if c v then (1 : ℕ) else 0) := by
+    have := htotal.symm.trans hreord
+    simpa [Finset.mul_sum] using this
+  omega
 
 end KochenSpecker
 
