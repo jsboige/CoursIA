@@ -1,9 +1,14 @@
 # QuantConnect Algorithmic Trading Projects
 
-Dernière mise à jour : 2026-05-05
+Dernière mise à jour : 2026-05-28 (audit comptage 2026-05-05 + drift refresh)
 
-Bibliothèque pédagogique de **78 stratégies** de trading algorithmique sur QuantConnect Cloud
-+ **8 clones QC Strategy Library** + **6 composants Framework** + **3 research/tools** = **95 projets**.
+Bibliothèque pédagogique d'environ **116 projets** de trading algorithmique sur QuantConnect Cloud
+(decompte filesystem 2026-05-28 hors `_docs`). Le décompte de référence du **2026-05-05** était
+**78 stratégies pédagogiques + 8 clones QC Strategy Library + 6 composants Framework + 3 research/tools = 95 projets**
+— **~21 stratégies/research dirs ajoutées depuis** (Adaptive-Conformal-Risk, ML Research keepers M12/M15,
+Decision Transformer L4, Inverse-Vol Ridge, etc.). Un recompte détaillé est en cours ; la classification
+par catégorie (Robuste/Historique/Exploratoire) ci-dessous reste valide pour les entrées listées.
+
 Chaque stratégie illustre un concept ou une famille de stratégies ; les performances varient
 volontairement pour montrer que toutes les idées académiques ne survivent pas au backtest réaliste.
 
