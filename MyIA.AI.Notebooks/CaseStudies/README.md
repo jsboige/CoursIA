@@ -9,6 +9,8 @@ maturity: PRODUCTION=2, ALPHA=1, BETA=1
 
 Etudes de cas interdisciplinaires combinant plusieurs domaines de l'IA dans des projets appliques.
 
+C'est ici que les techniques etudiees isolement ailleurs dans le cursus **convergent sur un meme probleme realiste**. La ou un notebook thematique enseigne une methode, une etude de cas en exige plusieurs a la fois : un diagnostic medical mobilise recherche informee (A*), validation par contraintes (Z3) et algorithmes genetiques ; une planification oncologique combine ontologie, planification CSP (OR-Tools) et inference probabiliste (Pyro) — exactement comme le ferait un vrai projet d'IA applique, ou aucune technique ne suffit seule. Chaque cas suit une structure **student / solution** : vous construisez vous-meme le systeme integre a partir d'un template, puis vous le confrontez a une solution de reference. La valeur pedagogique tient autant a l'**integration** des briques qu'au **realisme du domaine** (donnees patients, contraintes cliniques reelles).
+
 **4 notebooks** | **2 projets** | **~6-8h**
 
 ## Structure
