@@ -57,26 +57,18 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 **Duree totale** : ~12h45
 
-## Statut de maturite
+## Acquis d'apprentissage
 
-| # | Notebook | Cellules | Exercices | Solutions | Statut |
-|---|----------|----------|-----------|-----------|--------|
-| 1 | Setup | ~17 | - | - | **COMPLET** |
-| 2 | Dependent-Types | ~50 | 3 | 3 | **COMPLET** |
-| 3 | Propositions-Proofs | ~50 | 3 | 3 | **COMPLET** |
-| 4 | Quantifiers | ~46 | 3 | 3 | **COMPLET** |
-| 5 | Tactics | ~70 | 3 | 3 | **COMPLET** |
-| 6 | Mathlib-Essentials | ~45 | 3 | 3 | **COMPLET** |
-| 7 | LLM-Integration | ~50 | 2 | 2 | **COMPLET** |
-| 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
-| 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
-| 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
-| 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
-| 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
-| 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
-| 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
-| 13 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
-| 15 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
+A l'issue de la serie, vous saurez :
+
+- **Modeliser** un raisonnement mathematique dans le Calcul des Constructions : types dependants, univers, propositions comme types (Curry-Howard). Notebooks 2-3 ancrent ces objets sur des exemples concrets (Vector, propositions logiques) plutot que sur de l'abstraction nue.
+- **Prouver** un theoreme en mode tactique avec les briques Mathlib : `intro`/`apply`/`exact`/`rfl` pour la structure, `ring`/`linarith`/`omega`/`simp` pour l'arithmetique et la simplification, `induction`/`cases`/`rcases` pour l'analyse de cas. Notebooks 4-6.
+- **Integrer un LLM** au workflow de preuve : patterns LeanCopilot et AlphaProof (n-best, MCTS), prompts goal-aware, comparaison ND-search vs CoT, agents APOLLO/Erdos. Notebooks 7-9.
+- **Tracer et explorer** une base de preuves a grande echelle : LeanDojo (parsing AST, theorem extraction, interaction Dojo), reseaux de neurones verifies via IBP/CROWN (TorchLean). Notebooks 10-11.
+- **Porter** un theoreme de recherche en Lean 4 : theoreme de sensibilite (Huang 2019, hypercube et signing matrix), theoreme de Kochen-Specker (Cabello 18 vecteurs, argument de parite, contextuality quantique). Notebooks 12, 15.
+- **Lire le langage grothendieckien** dans Mathlib 4 : categories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas et sites, morphismes etales/lisses — comme entree vers la geometrie algebrique formalisee. Notebook 13.
+
+Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` residuels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) et le [README du projet conway_lean](conway_lean/README.md).
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
