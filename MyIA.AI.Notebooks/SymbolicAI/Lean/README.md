@@ -1,6 +1,6 @@
 # Lean - Solveur Mathematique et Verification Formelle
 
-Cette serie de **14 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves et la verification formelle de reseaux de neurones.
+Cette serie de **15 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, et le port de theoremes phares (theoreme de Kochen-Specker, 18 vecteurs Cabello).
 
 ## Navigation
 
@@ -14,6 +14,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Avec Mathlib** | 1-6 | ~3h45 | Ajoute les tactiques Mathlib |
 | **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et theoreme de sensibilite |
+| **Avec Pilier 1.B** | 1-12, 15 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
 
 ## Structure
 
@@ -41,7 +42,13 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | Theoreme de sensibilite (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 
-**Duree totale** : ~11h
+### Partie 3 : Theoremes phares (ports complets)
+
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 15 | [Lean-15-Kochen-Specker](Lean-15-Kochen-Specker.ipynb) | Theoreme de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parite, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
+
+**Duree totale** : ~12h
 
 ## Statut de maturite
 
@@ -61,6 +68,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
 | 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
+| 15 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
