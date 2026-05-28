@@ -20,19 +20,19 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/LookAndSayLemmas.lean` | 0 | Lemmas for the Look-and-Say sequence |
 | `Conway/Nim.lean` | 0 | Nim game theory |
 | `Conway/Angel.lean` | 0 | Angel problem |
-| `Conway/KochenSpecker.lean` | 2 | Kochen-Specker theorem (18-vec Cabello, Pilier 1 FWT) |
+| `Conway/KochenSpecker.lean` | 0 | Kochen-Specker theorem (18-vec Cabello, Pilier 1 FWT) |
 | `Conway/Life.lean` | 0 | Game of Life (B3/S23, still lifes/oscillators/spaceships, `native_decide` proofs, Phase 2 Epic #1647) |
 
 ## Key Results
 
-- **COMPLETE**: All proofs done, 0 sorry in production code (except KochenSpecker.lean WIP)
+- **COMPLETE**: All proofs done, 0 sorry in production code
 - Doomsday algorithm correctness
 - FRACTRAN computation formalization
 - Look-and-Say sequence properties
 - Nim game strategy
 - Angel problem formalization
 - Conway's Game of Life cellular automaton — `B3/S23` rules, still lifes (block, beehive), oscillators (blinker, toad, beacon period 2), spaceship (glider). All theorems via `native_decide`.
-- **WIP**: Kochen-Specker theorem (Pilier 1 of Epic #1651 Conway FWT)
+- Kochen-Specker theorem (Pilier 1 of Epic #1651 Conway FWT) — full proof via parity argument (sum = 9 odd vs 2k even, contradiction)
 
 ## Kochen-Specker (Pilier 1 of Free Will Theorem)
 
