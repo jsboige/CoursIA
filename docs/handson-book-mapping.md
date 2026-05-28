@@ -54,7 +54,7 @@
 | 6 | Dividend Harvesting Selection | 176-181 | ML for high-yield asset selection | No dividend notebook | GAP |
 | 7 | Positive-Negative Splits Effect | 181-185 | ML analysis of return asymmetry | No direct mapping | GAP — niche topic |
 | 8 | Stop Loss Based on Volatility & Drawdown | 185-197 | Volatility-adjusted stop loss | [QC-Py-10-Risk-Portfolio-Management.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | Partial — risk management overlap |
-| 9 | ML Trading Pairs Selection | 197-207 | ML-driven pairs trading | [QC-Py-Cloud-04-MeanReversion.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb), [ESGF ETF-Pairs-Trading](../MyIA.AI.Notebooks/QuantConnect/ESGF-2026/examples/ETF-Pairs-Trading/) | OVERLAP |
+| 9 | ML Trading Pairs Selection | 197-207 | ML-driven pairs trading | [QC-Py-Cloud-04-MeanReversion.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb), [ETF-Pairs-Trading](../MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/ETF-Pairs-Trading/) | OVERLAP |
 | 10 | Stock Selection through Clustering | 207-214 | Clustering fundamental data | No clustering notebook | GAP |
 | 11 | Inverse Volatility Rank & Allocate Futures | 214-221 | Vol-targeting futures portfolio | [QC-Py-Cloud-06-VolTargeting.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-VolTargeting.ipynb), [QC-Py-Cloud-03-Risk-Parity.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | OVERLAP |
 | 12 | Trading Costs Optimization | 221-228 | Transaction cost modeling | No dedicated cost notebook | GAP — important topic |

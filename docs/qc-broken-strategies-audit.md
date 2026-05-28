@@ -12,7 +12,7 @@
 | # | Strategy | Project ID | Best Sharpe | Root Cause | Fix Difficulty |
 |---|----------|-----------|-------------|------------|----------------|
 | 1 | PairsTrading | 28693651 | -1.152 | Cointegration breakdown in ETF pairs | Hard — need fundamentally different pair selection |
-| 2 | ESGF-RL-DQN-Trading | 29687000 | -0.341 | Linear Q-function too simple, undertrained | Hard — need deep Q-network or different RL algorithm |
+| 2 | RL-DQN-Trading | 29687000 | -0.341 | Linear Q-function too simple, undertrained | Hard — need deep Q-network or different RL algorithm |
 | 3 | TrendFilteredMeanReversion | 28817422 | -0.129 | ~85% cash drag in bull market | Medium — need always-invested overlay or regime switch |
 | 4 | ETF-Pairs-Researcher | 28433746 | -0.002 | Same cointegration flaw, 8 iterations confirm dead end | Hard — same as #1 |
 | 5 | HandsOn-Ex19-FinBERT-Sentiment | 29936073 | 0.000 (zero trades) | FinBERT/transformers unavailable in QC Cloud | Unfixable — platform limitation |
@@ -44,7 +44,7 @@ ETF pairs do not maintain stable cointegration over multi-year periods. The OLS 
 
 ---
 
-## Strategy 2: ESGF-RL-DQN-Trading (29687000)
+## Strategy 2: RL-DQN-Trading (29687000)
 
 ### Current State
 - **Sharpe**: -0.341 | **CAGR**: N/A | **Net Profit**: negative
@@ -177,7 +177,7 @@ TrendFilteredMeanReversion has positive expectancy per-trade but negative Sharpe
 |----------|--------|--------|
 | High | Merge PairsTrading + ETF-Pairs-Researcher into one project (same strategy, 2 repos) | Reduce clutter |
 | High | Fix Ex19 to use TiingoNews built-in sentiment instead of FinBERT | Restore pedagogical value |
-| Medium | Add DQN layer to ESGF-RL-DQN (replace linear with 2-layer MLP) | Test if deep RL helps |
+| Medium | Add DQN layer to RL-DQN (replace linear with 2-layer MLP) | Test if deep RL helps |
 | Medium | Refactor TrendFilteredMeanReversion to always-invested overlay | Eliminate cash drag |
 | Low | Archive ETF-Pairs-Researcher v1-v4 iterations (keep v4 as reference) | Cleanup |
 

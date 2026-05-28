@@ -119,7 +119,7 @@ def scan_directory(root_dir: str, source_label: str = "") -> list:
             # Try to extract school and year from path
             parts = filepath.relative_to(root).parts
             for part in parts:
-                if part in ("EPF", "ECE", "ORT", "Epita", "ESGF", "ESIEE",
+                if part in ("EPF", "ECE", "ORT", "Epita", "Partner", "ESIEE",
                             "Simplon", "Aston", "Monaco"):
                     entry.school = part
                 if part.isdigit() and len(part) == 4 and 2015 <= int(part) <= 2030:
@@ -304,7 +304,7 @@ DEFAULT_SOURCES = [
     (r"G:\Mon Drive\MyIA\Formation\EPF", "gdrive-EPF"),
     (r"G:\Mon Drive\MyIA\Formation\ECE", "gdrive-ECE"),
     (r"G:\Mon Drive\MyIA\Formation\Epita", "gdrive-Epita"),
-    (r"G:\Mon Drive\MyIA\Formation\ESGF", "gdrive-ESGF"),
+    (r"G:\Mon Drive\MyIA\Formation\Partner", "gdrive-Partner"),
 ]
 
 

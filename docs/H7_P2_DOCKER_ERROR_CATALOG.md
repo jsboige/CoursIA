@@ -26,10 +26,10 @@
 **Root cause**: `qb.History()` returns Lean Symbol IDs (e.g., `SPY R735QTJ8XC9X`) as column names, not simple tickers. Code expects `df['close']` but columns are multi-level.
 
 **Affected notebooks** (sample):
-- `ESGF-2026/examples/Crypto-MultiCanal/research_archive.ipynb` (multiple cells)
-- `ESGF-2026/kit-transitoire/01-ML-RandomForest/research.ipynb` (cells 5, 8, 9)
-- `ESGF-2026/kit-transitoire/02-ML-XGBoost/research.ipynb` (cells 6, 14, 15)
-- `ESGF-2026/kit-transitoire/03-Framework-Composite/research.ipynb` (cells 4, 8, 10)
+- `partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb` (multiple cells)
+- `partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb` (cells 5, 8, 9)
+- `partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb` (cells 6, 14, 15)
+- `partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb` (cells 4, 8, 10)
 - `projects/ML-HeadShoulders-CNN/research.ipynb` (cell 4)
 
 **Example error**:
@@ -58,7 +58,7 @@ KeyError: "No key found for either mapped or original key.
 
 **Affected notebooks**:
 - `projects/Multi-Layer-EMA/research.ipynb` (BTCUSD KeyError)
-- `ESGF-2026/kit-transitoire/*` (ValueError: zero-size array)
+- `partner-course-quant-trading/kit-transitoire/*` (ValueError: zero-size array)
 - `projects/Framework_Composite_*/quantbook_composite_research.ipynb` (GOOGL KeyError in one case)
 - `projects/Crypto-MultiCanal/research.ipynb` (IndexError: empty DataFrame)
 
@@ -147,7 +147,7 @@ ModuleNotFoundError: No module named 'train_classification'
 ### High Error Count (>10 errors)
 | Notebook | Errors | Root cause category |
 |----------|--------|-------------------|
-| `ESGF-2026/examples/Crypto-MultiCanal/research_archive.ipynb` | 33 | Column naming + empty data |
+| `partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb` | 33 | Column naming + empty data |
 | `Python/QC-Py-04-Research-Workflow.ipynb` | 25 | Column naming + cascade |
 | `Python/research/research_classification.ipynb` | 17 | Column naming + cascade |
 | `Python/research/research_lstm.ipynb` | 17 | Column naming + cascade |

@@ -48,7 +48,7 @@ Label: `bug`, `priority-medium`
 
 ### NO_BACKTEST — Never evaluated
 
-6 ML projects + 10 ESGF course projects. Require initial backtest before categorization.
+6 ML projects + 10 partner course projects. Require initial backtest before categorization.
 
 ## Actions taken (Cycle 6 Track B)
 

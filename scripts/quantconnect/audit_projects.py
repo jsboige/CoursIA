@@ -108,9 +108,9 @@ def classify_project(
     if any(p in name for p in test_patterns):
         return "TEST", "Name contains test/validation pattern"
 
-    # ESGF validation projects
+    # Partner course validation projects
     if "ESGF-" in name and "Validation" in name:
-        return "TEST", "ESGF validation project"
+        return "TEST", "Partner course validation project"
 
     # 2. SUPERSEDED detection
     superseded_pairs = [
@@ -165,7 +165,7 @@ def classify_project(
                 except (ValueError, TypeError):
                     pass
             # Check if it's a Framework/Cloud/ML naming (might be in development)
-            dev_patterns = ["Framework_", "Cloud-", "ESGF-Framework"]
+            dev_patterns = ["Framework_", "Cloud-", "ESGF-Framework", "partner-"]
             if any(name.startswith(p) for p in dev_patterns):
                 return "ALIVE", "Framework project, no backtests yet"
             return "DEAD", "No backtests"
@@ -211,7 +211,7 @@ def get_org_name(org_id: str) -> str:
     if org_id.startswith("d600793e"):
         return "Personal"
     elif org_id.startswith("94aa4bcb"):
-        return "ESGF"
+        return "Partner"
     return f"Unknown ({org_id[:8]})"
 
 

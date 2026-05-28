@@ -95,10 +95,10 @@ QC est multi-tenant via les "organizations". Le cluster CoursIA utilise plusieur
 | Org | Tier | Usage | Backtest API |
 |-----|------|-------|--------------|
 | Research tier dedicated (default user) | Research (payant) | Deploiements de reference, Binance crypto data subscription, projets de developpement | Inclus |
-| ESGF | Free/sponsored | Cours ESGF, masterclass Quant League | NON inclus |
+| Partner school | Free/sponsored | Cours partenaire, masterclass Quant League | NON inclus |
 | ECE | Free | Materiel pedagogique ECE | NON inclus |
 
-**Regle d'or** : pour `create_backtest` programmatique via API, il faut **une org avec backtest API incluse** (research tier). Les orgs gratuites/educatives (ESGF, ECE) n'ont PAS l'API backtest — erreur recurrente : tenter `create_backtest` sur ESGF echoue silencieusement ou avec rate-limit. Verifier l'org cible avant de dispatcher.
+**Regle d'or** : pour `create_backtest` programmatique via API, il faut **une org avec backtest API incluse** (research tier). Les orgs gratuites/educatives (partenaire, ECE) n'ont PAS l'API backtest — erreur recurrente : tenter `create_backtest` sur une org partenaire echoue silencieusement ou avec rate-limit. Verifier l'org cible avant de dispatcher.
 
 ### Switcher d'org
 
@@ -120,7 +120,7 @@ MyIA.AI.Notebooks/QuantConnect/
   Python/           # 27+ notebooks progressifs (QC-Py-01 a QC-Py-Cloud-XX)
   projects/          # ~50 strategies avec main.py + research.ipynb
   shared/            # Librairie utilitaire (backtestlib, indicators, plotting)
-  ESGF-2026/         # Cours ESGF : exercices, templates, lean-workspace
+  partner-course-quant-trading/  # Cours partenaire : exercices, templates, lean-workspace
   docs/              # Documentation technique (pas de coordination)
 ```
 
