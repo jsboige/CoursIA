@@ -140,10 +140,11 @@ import Mathlib.Tactic
 """
 
 # ── Conway calibration (Epic #1453) ──
+# Conway hommage series relocated 2026-05-28: was MyIA.AI.Notebooks/GameTheory/conway_lean.
 _CONWAY_CANDIDATES = [
-    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\conway_lean"),
-    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\conway_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\conway_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
 ]
 CONWAY_DIR = next(
     (p for p in _CONWAY_CANDIDATES if p.exists()),
