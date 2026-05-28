@@ -1,6 +1,6 @@
 # Lean - Solveur Mathematique et Verification Formelle
 
-Cette serie de **15 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, et le port de theoremes phares (theoreme de Kochen-Specker, 18 vecteurs Cabello).
+Cette serie de **16 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, le port de theoremes phares (theoreme de Kochen-Specker, 18 vecteurs Cabello), et des hommages aux mathematiciens (Grothendieck, langage grothendieckien dans Mathlib 4).
 
 ## Navigation
 
@@ -15,6 +15,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et theoreme de sensibilite |
 | **Avec Pilier 1.B** | 1-12, 15 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
+| **Avec hommages** | 1-12, 13, 15 | ~12h45 | Ajoute Lean-13 (langage grothendieckien dans Mathlib 4) |
 
 ## Structure
 
@@ -48,7 +49,13 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 15 | [Lean-15-Kochen-Specker](Lean-15-Kochen-Specker.ipynb) | Theoreme de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parite, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
 
-**Duree totale** : ~12h
+### Partie 4 : Hommages mathematiciens
+
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 13 | [Lean-13-Grothendieck-Tribute](Lean-13-Grothendieck-Tribute.ipynb) | Langage grothendieckien dans Mathlib 4 : categories/foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas, site de Zariski, morphismes etales/lisses - Epic #1646 | 45 min |
+
+**Duree totale** : ~12h45
 
 ## Statut de maturite
 
@@ -68,6 +75,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
 | 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
+| 13 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
 | 15 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
 
 Tous les notebooks incluent :
@@ -236,6 +244,9 @@ Lean/
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11-TorchLean-Python.ipynb  # Python kernel - Implementation algorithmes
+├── Lean-13-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
+├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
+├── Lean-15-Kochen-Specker.ipynb    # Lean4 kernel - theoreme de Kochen-Specker (Pilier 1.B)
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
