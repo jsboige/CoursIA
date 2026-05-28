@@ -132,46 +132,40 @@ def check_jupyter_kernel(kernel_name):
         return False
 
 
+def _load_inspect_kernel_wrapper():
+    """Import the canonical wrapper check from scripts/lean/lean_kernel_check.py.
+
+    Returns None if the shared helper cannot be located (graceful degradation).
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / "scripts" / "lean" / "lean_kernel_check.py"
+        if candidate.exists():
+            sys.path.insert(0, str(candidate.parent))
+            try:
+                from lean_kernel_check import inspect_kernel_wrapper
+                return inspect_kernel_wrapper
+            except Exception:
+                return None
+    return None
+
+
+_inspect_kernel_wrapper = _load_inspect_kernel_wrapper()
+
+
 def check_kernel_wrapper(kernel_name="lean4-wsl"):
     """Verifie que kernel.json pointe vers le bon wrapper Python (v5), pas l'ancien bash.
 
-    Detecte la regression du 2026-05-27 (issue #1618) ou kernel.json pointait vers
-    l'ancien wrapper ~/lean4-jupyter-wrapper.sh au lieu de ~/.lean4-kernel-wrapper.py.
+    Detecte la regression du 2026-05-27 (issue #1618). La logique canonique vit dans
+    scripts/lean/lean_kernel_check.py (source unique partagee avec setup_lean4_all.py
+    et le validateur GameTheory).
     """
-    import json
-
-    candidates = [
-        Path.home() / ".local" / "share" / "jupyter" / "kernels" / kernel_name / "kernel.json",
-    ]
-    appdata = os.environ.get("APPDATA")
-    if appdata:
-        candidates.append(Path(appdata) / "jupyter" / "kernels" / kernel_name / "kernel.json")
-
-    kernel_json = next((p for p in candidates if p.exists()), None)
-    if kernel_json is None:
-        print_warning(f"kernel.json: aucun ({kernel_name}) trouve dans {[str(p) for p in candidates]}")
-        return False
-
-    try:
-        with open(kernel_json, "r", encoding="utf-8") as f:
-            spec = json.load(f)
-        argv = " ".join(str(a) for a in spec.get("argv", []))
-    except Exception as e:
-        print_error(f"kernel.json: erreur lecture ({e})")
-        return False
-
-    if "lean4-jupyter-wrapper.sh" in argv:
-        print_error(
-            f"kernel.json: pointe vers ancien wrapper bash (lean4-jupyter-wrapper.sh) — "
-            "regression #1618. Re-executer setup_lean4_kernel.ps1 pour pointer "
-            "vers ~/.lean4-kernel-wrapper.py (v5)."
-        )
-        return False
-    if ".lean4-kernel-wrapper.py" in argv:
-        print_ok(f"kernel.json ({kernel_name}): wrapper Python v5 correct")
+    if _inspect_kernel_wrapper is None:
+        print_warning("kernel.json: helper lean_kernel_check introuvable (check ignore)")
         return True
-    print_warning(f"kernel.json ({kernel_name}): wrapper inconnu — argv={argv[:120]}")
-    return False
+    status, message = _inspect_kernel_wrapper(kernel_name)
+    {"ok": print_ok, "error": print_error, "warning": print_warning}[status](message)
+    return status == "ok"
 
 
 def check_env_file():

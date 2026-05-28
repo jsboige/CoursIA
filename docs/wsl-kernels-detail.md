@@ -44,6 +44,23 @@ python scripts/notebook_tools/wsl_papermill.py check-env
 - GT-1 Setup : 20/20 cells, 0 errors (3.3s)
 - GT-7 ExtensiveForm : 30/30 cells, 0 errors (2s)
 
+## Lean 4 — setup consolidé (issue #1618)
+
+Point d'entrée unique pour installer/valider le kernel `lean4-wsl` :
+
+```powershell
+python scripts/lean/setup_lean4_all.py              # WSL install + registration + validation
+python scripts/lean/setup_lean4_all.py --check-wrapper  # verifie kernel.json -> bon wrapper
+```
+
+La détection de la régression du 2026-05-27 (kernel.json pointant vers l'ancien wrapper bash `~/lean4-jupyter-wrapper.sh` au lieu du wrapper Python v5 `~/.lean4-kernel-wrapper.py`) est **centralisée** dans `scripts/lean/lean_kernel_check.py` (`inspect_kernel_wrapper`, print-agnostic). Les trois consommateurs y délèguent — plus de logique dupliquée/divergente :
+
+- `scripts/lean/setup_lean4_all.py` (`--check-wrapper`)
+- `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/validate_lean_setup.py`
+- `MyIA.AI.Notebooks/GameTheory/scripts/validate_lean_setup.py` (auparavant ne détectait PAS la régression)
+
+Test : `python scripts/lean/tests/test_lean_kernel_check.py` (4 cas : ancien bash → error, wrapper v5 → ok, inconnu / absent → warning).
+
 ## Notes complémentaires
 
 - Cold start .NET Interactive : premier démarrage peut timeout (30-60s), retry une fois
