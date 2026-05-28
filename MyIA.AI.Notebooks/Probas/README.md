@@ -9,9 +9,9 @@ maturity: BETA=33, PRODUCTION=10
 
 Le monde reel est incertain. Un diagnostic medical n'est jamais sur a 100%, un classement sportif depend de performances intrinsequement variables, et les donnees que nous collectons sont toujours bruitees ou incompletes. La programmation probabiliste offre un cadre rigoureux pour modeliser cette incertitude : plutot que de calculer une seule reponse, on obtient une **distribution de probabilites** qui quantifie notre confiance dans chaque resultat possible.
 
-Cette serie couvre trois stack complementaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA, HMM trading). Les 20 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne. Les 9 notebooks PyMC reprennent les memes modeles en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science.
+Cette serie couvre trois stack complementaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA, HMM trading). Les 20 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne. Les 20 notebooks PyMC reprennent l'integralite des modeles Infer.NET en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science : fondations 1-3, modeles classiques 4-13, et theorie de la decision 14-20.
 
-**32 notebooks** | **3 stack** | **~30h**
+**43 notebooks** | **3 stack** | **~40h**
 
 **A qui s'adresse cette serie** : etudiants en IA, data scientists, et developpeurs souhaitant aller au-dela des modeles deterministes. Aucun prerequis en probabilites avancees : les concepts sont introduits progressivement.
 
@@ -19,8 +19,8 @@ Cette serie couvre trois stack complementaires : **Infer.NET** (Microsoft, C#/.N
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 32 (20 Infer.NET + 9 PyMC + 3 standalone) |
-| Duree totale | ~30h |
+| Notebooks | 43 (20 Infer.NET + 20 PyMC + 3 standalone) |
+| Duree totale | ~40h |
 | Langages | C# (.NET), Python |
 | Kernels | .NET Interactive, Python 3 |
 
@@ -42,9 +42,9 @@ La seconde moitie de la serie passe de l'inference a la decision : comment chois
 
 Si vous preferez Python au C#, commencez par Infer-101.ipynb (introduction standalone avec modeles Two Coins et Cyclist) puis Pyro_RSA_Hyperbole.ipynb (application a la linguistique pragmatique avec le framework RSA). Le notebook PyMC-HMM-Trading-Alpha.ipynb applique les HMM gaussiens a la generation de signaux de trading.
 
-### Parcours PyMC (9 notebooks, ~6h)
+### Parcours PyMC complet (20 notebooks, ~14h)
 
-Les notebooks PyMC dans `_python_port/` reprennent les 9 premiers modeles Infer.NET en Python avec PyMC et l'echantillonnage NUTS. Ils constituent un excellent complement pour comparer les approches d'inference (message passing vs MCMC) et rejoindre l'ecosysteme Python data science.
+Les notebooks PyMC dans `_python_port/` reprennent l'integralite des 20 modeles Infer.NET en Python avec PyMC et l'echantillonnage NUTS : fondations (1-3), modeles classiques (4-13), et theorie de la decision (14-20). Ils constituent un excellent complement pour comparer les approches d'inference (message passing vs MCMC) et rejoindre l'ecosysteme Python data science. La progression suit la meme structure pedagogique en 3 phases que la serie Infer.NET.
 
 ## Structure
 
@@ -53,9 +53,9 @@ Probas/
 ├── Infer-101.ipynb              # Introduction Python/C# (standalone)
 ├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
 ├── PyMC-HMM-Trading-Alpha.ipynb # HMM gaussien pour trading (Python)
-├── _python_port/                # Port PyMC des modeles Infer.NET (9 notebooks)
-│   ├── PyMC-1-Setup.ipynb ... PyMC-9-Topic-Models.ipynb
-│   └── README.md
+├── _python_port/                # Port PyMC complet des modeles Infer.NET (20 notebooks)
+│   ├── PyMC-1-Setup.ipynb ... PyMC-20-Decision-Sequential.ipynb
+│   └── (port en cours d'enrichissement)
 └── Infer/                       # Serie complete Infer.NET (20 notebooks)
     ├── Infer-1-Setup.ipynb ... Infer-20-Decision-Sequential.ipynb
     ├── README.md                # Documentation detaillee de la serie
@@ -116,21 +116,44 @@ La serie complete est documentee dans [Infer/README.md](Infer/README.md).
 | 13 | Debugging | EP vs VMP, diagnostic erreurs |
 | 14-20 | Decision Theory | Utilite, MAUT, influence diagrams, MDPs |
 
-## Serie PyMC (9 notebooks, Python)
+## Serie PyMC (20 notebooks, Python)
 
-Port Python des memes modeles Infer.NET, utilisant l'echantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inference sur des modeles identiques.
+Port Python complet des modeles Infer.NET, utilisant l'echantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inference sur des modeles identiques. La progression suit les memes trois phases que la serie Infer.NET : fondations (1-3), modeles classiques (4-13), et theorie de la decision (14-20).
+
+### Phase 1 — Fondations (notebooks 1-3, ~2h)
 
 | # | Notebook | Sujet |
 |---|----------|-------|
 | 1 | [PyMC-1-Setup](_python_port/PyMC-1-Setup.ipynb) | Configuration PyMC, modele Beta-Bernoulli |
 | 2 | [PyMC-2-Gaussian-Mixtures](_python_port/PyMC-2-Gaussian-Mixtures.ipynb) | Distributions continues, melanges gaussiens |
 | 3 | [PyMC-3-Factor-Graphs](_python_port/PyMC-3-Factor-Graphs.ipynb) | Graphes de facteurs, inference discrete |
+
+### Phase 2 — Modeles classiques (notebooks 4-13, ~9h)
+
+| # | Notebook | Sujet |
+|---|----------|-------|
 | 4 | [PyMC-4-Bayesian-Networks](_python_port/PyMC-4-Bayesian-Networks.ipynb) | Reseaux bayesiens, CPTs |
 | 5 | [PyMC-5-Skills-IRT](_python_port/PyMC-5-Skills-IRT.ipynb) | Item Response Theory, modeles de competences |
 | 6 | [PyMC-6-TrueSkill](_python_port/PyMC-6-TrueSkill.ipynb) | Classement, TrueSkill |
 | 7 | [PyMC-7-Classification](_python_port/PyMC-7-Classification.ipynb) | Classification bayesienne |
 | 8 | [PyMC-8-Model-Selection](_python_port/PyMC-8-Model-Selection.ipynb) | Selection de modeles, Bayes Factors |
 | 9 | [PyMC-9-Topic-Models](_python_port/PyMC-9-Topic-Models.ipynb) | LDA, Dirichlet priors |
+| 10 | [PyMC-10-Crowdsourcing](_python_port/PyMC-10-Crowdsourcing.ipynb) | Agregation de labels, workers, communautes |
+| 11 | [PyMC-11-Sequences](_python_port/PyMC-11-Sequences.ipynb) | HMM, chaines de Markov cachees, sequences temporelles |
+| 12 | [PyMC-12-Recommenders](_python_port/PyMC-12-Recommenders.ipynb) | Systemes de recommandation bayesiens, factorisation |
+| 13 | [PyMC-13-Debugging](_python_port/PyMC-13-Debugging.ipynb) | Troubleshooting MCMC, diagnostics NUTS, bonnes pratiques |
+
+### Phase 3 — Theorie de la decision (notebooks 14-20, ~6h)
+
+| # | Notebook | Sujet |
+|---|----------|-------|
+| 14 | [PyMC-14-Decision-Utility-Foundations](_python_port/PyMC-14-Decision-Utility-Foundations.ipynb) | Loteries, axiomes Von Neumann-Morgenstern, utilite esperee |
+| 15 | [PyMC-15-Decision-Utility-Money](_python_port/PyMC-15-Decision-Utility-Money.ipynb) | Aversion au risque, CARA, CRRA, paradoxe Saint-Petersbourg |
+| 16 | [PyMC-16-Decision-Multi-Attribute](_python_port/PyMC-16-Decision-Multi-Attribute.ipynb) | MAUT, SMART, swing weights, decisions multi-criteres |
+| 17 | [PyMC-17-Decision-Networks](_python_port/PyMC-17-Decision-Networks.ipynb) | Reseaux de decision, diagrammes d'influence, politique optimale |
+| 18 | [PyMC-18-Decision-Value-Information](_python_port/PyMC-18-Decision-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information parfaite et d'echantillon |
+| 19 | [PyMC-19-Decision-Expert-Systems](_python_port/PyMC-19-Decision-Expert-Systems.ipynb) | Systemes experts, Minimax, Minimax Regret, decisions robustes |
+| 20 | [PyMC-20-Decision-Sequential](_python_port/PyMC-20-Decision-Sequential.ipynb) | MDPs, iteration de valeur/politique, bandits, POMDPs |
 
 ## Applications standalone (3 notebooks)
 
