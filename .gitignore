@@ -840,3 +840,6 @@ $null
 
 # Temp OWL files from notebook execution
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
+
+# Stray root-level analytique output dir (should live under v4/outputs/ if persisted)
+/output_analytique/
