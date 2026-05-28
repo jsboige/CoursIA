@@ -30,8 +30,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [.claude/rules/genai-config.md](.claude/rules/genai-config.md) - GenAI Docker config, GPU, .env
 - [.claude/rules/wsl-kernels.md](.claude/rules/wsl-kernels.md) - WSL pour kernels notebook (NoteBookApp Linux)
 - [.claude/rules/student-pr-reviews.md](.claude/rules/student-pr-reviews.md) - Anti-fuite questions de soutenance sur PR etudiantes (incident 2026-05-17)
-- [.claude/rules/lean-lake-build-required.md](.claude/rules/lean-lake-build-required.md) - Lake build SUCCESS local obligatoire avant merge Lean PR (incident 2026-05-10)
-- [.claude/rules/lean-prover-bg-systematic.md](.claude/rules/lean-prover-bg-systematic.md) - BG iter systematique post-PR/msg po-2026 sur sorry Lean
+- [.claude/rules/lean-merge-discipline.md](.claude/rules/lean-merge-discipline.md) - Lake build SUCCESS local avant merge + BG iter systematique post-PR/msg po-2026 (incidents 2026-05-10/16)
 - [.claude/rules/secrets-hygiene.md](.claude/rules/secrets-hygiene.md) - Pas de secrets inline (incident recurrent 2026-05-14)
 - [.claude/rules/coordinator-discipline.md](.claude/rules/coordinator-discipline.md) - ai-01 merge actif + no-languishing demandes user
 - [.claude/rules/proactive-coordination.md](.claude/rules/proactive-coordination.md) - 1 PR/wakeup + main track + side-track async via sous-agents spécialistes (mandat user 2026-05-23)
