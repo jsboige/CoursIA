@@ -36,7 +36,7 @@ jobs:
 
         base = 'MyIA.AI.Notebooks'
         EXCLUDE_ALWAYS = {'.ipynb_checkpoints', 'obj', 'bin', '__pycache__', '.git'}
-        EXCLUDE_PED = {'research', 'archive', '_output', 'ESGF', 'examples'}
+        EXCLUDE_PED = {'research', 'archive', '_output', 'partner-course', 'examples'}
         CATALOG_RE = re.compile(r'<!--\s*CATALOG-STATUS\s*\n(.*?)\n\s*-->', re.DOTALL)
 
         for series in sorted(os.listdir(base)):

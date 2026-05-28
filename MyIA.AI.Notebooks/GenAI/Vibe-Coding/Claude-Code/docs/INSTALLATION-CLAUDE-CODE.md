@@ -534,7 +534,7 @@ claude mcp add --transport stdio serena -- uvx --from git+https://github.com/ora
 
 **Note** : Utilisez `--context claude-code` pour eviter les conflits avec les outils natifs de Claude Code.
 
-#### 7. QuantConnect (Trading Algorithmique - Cours ESGF)
+#### 7. QuantConnect (Trading Algorithmique - Cours partenaire)
 
 Le serveur MCP QuantConnect permet a Claude Code d'interagir directement avec la plateforme QuantConnect : creer des projets, compiler du code, lancer des backtests, analyser les resultats. Indispensable pour le cours de trading algorithmique.
 
