@@ -2,7 +2,7 @@
 
 **Scope**: Read-only audit of 95 project directories in `MyIA.AI.Notebooks/QuantConnect/projects/`.
 **Method**: Automated scan of artifacts (main.py, research.ipynb, README.md, config.json with cloud-id).
-**No QC API calls** (rate-limit preserved during ESGF course).
+**No QC API calls** (rate-limit preserved during course period).
 
 ## Summary
 

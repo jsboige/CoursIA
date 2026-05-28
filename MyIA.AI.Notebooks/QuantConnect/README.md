@@ -217,15 +217,15 @@ Le dossier [`projects/`](projects/) contient **115 stratégies de trading** prê
 
 ---
 
-## ESGF-2026 - Exemples de Recherche
+## partner-course-quant-trading - Exemples de Recherche
 
-Le dossier **ESGF-2026/** contient des exemples de recherche avancée utilisés dans le cours ESGF 2026.
+Le dossier **partner-course-quant-trading/** contient des exemples de recherche avancée utilisés dans le cours de trading quantitatif.
 
-### Structure ESGF-2026
+### Structure
 
 ```
-ESGF-2026/
-├── examples/           # 11 projets d'exemples du professeur
+partner-course-quant-trading/
+├── examples/           # Projets d'exemples du professeur
 ├── templates/          # Templates pour projets étudiants
 │   ├── starter/        # Niveau débutant
 │   ├── intermediate/   # Niveau intermédiaire
@@ -233,7 +233,7 @@ ESGF-2026/
 └── archive-2025/       # Archives historiques
 ```
 
-Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et templates.
+Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/README.md) pour le détail des exemples et templates.
 
 ---
 
@@ -242,9 +242,9 @@ Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et 
 | Directory | Status | Description |
 |-----------|--------|-------------|
 | `_pending_execution/` | Active | QuantBook research notebooks awaiting QC Cloud execution (H.3/C.2) |
-| `ESGF-2026/archive-2025/` | Reference | ESGF 2024-2025 student project IDs and cloud references |
+| `partner-course-quant-trading/archive-2025/` | Reference | 2024-2025 student project IDs and cloud references |
 | `_archive/` | Purged | Superseded reports moved to `docs/audits/` (commit `#1626`) |
-| `_esgf_cours_5mai/` | Purged | ESGF 5 May 2026 backtest results archived to G drive (commit `#1626`) |
+| `_esgf_cours_5mai/` | Purged | Course 5 May 2026 backtest results archived to G drive (commit `#1626`) |
 
 ## Documentation Complémentaire
 

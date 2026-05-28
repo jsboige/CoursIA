@@ -258,7 +258,7 @@ if security.type == SecurityType.EQUITY:
 
 1. **Phase 2:** Run robustness backtests (2015-2025) on all 8 priority projects
 2. **Phase 3:** Deploy Composite FF+AW to QC cloud and run allocation sweep
-3. **Documentation:** Create pedagogical notebooks for ESGF course
+3. **Documentation:** Create pedagogical notebooks for the course
 
 ## Resources
 

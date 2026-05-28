@@ -8,7 +8,7 @@
 
 Citation user 13/05 ~20:30Z : *"Il faut continuer à itérer sur les bases de nos échecs, de leçons du livre et des publication SOTA et selon la qualité des données disponibles et nos possibilités de training. Il faut aussi voir pour passer nos bons modèles à l'épreuve de QC (QuantBook + algos backtestés, voir ce que ça implique pour une mise en oeuvre dans l'infra de cloud QC)."*
 
-Le verdict M-series cumulé indique seul **M12 HAR-RV-J cluster BEATS** (sign-test p=7.9e-7, 64/84 wins, delta-Sharpe +0.0032 vs HAR Classic baseline) et **M11ef** ensemble long-horizon fee-robust à 50bps (PR #987, sign-test p=0.045 K60 vs BH, survit jusqu'à ~100bps). Ces 2 modèles méritent l'épreuve cloud QC avant ESGF 19/05.
+Le verdict M-series cumulé indique seul **M12 HAR-RV-J cluster BEATS** (sign-test p=7.9e-7, 64/84 wins, delta-Sharpe +0.0032 vs HAR Classic baseline) et **M11ef** ensemble long-horizon fee-robust à 50bps (PR #987, sign-test p=0.045 K60 vs BH, survit jusqu'à ~100bps). Ces 2 modèles méritent l'épreuve cloud QC avant la prochaine session.
 
 ## État actuel
 

@@ -26,12 +26,12 @@ and SMA200 regime filter.
 
 ## Important Caveat
 
-**This strategy was marked "PENDING" in the ESGF-2026 Stream B dashboard and
+**This strategy was marked "PENDING" in the course iteration dashboard and
 was not actively iterated or backtested during the April 2026 optimization pass.**
 
-The iteration history above comes from prior work (pre-ESGF-2026). The v2.1 results
+The iteration history above comes from prior work. The v2.1 results
 (Sharpe 0.128, CAGR 4.8%) are from an earlier backtest period. No new backtests
-were run during the ESGF-2026 iteration cycle to confirm or improve these numbers.
+were run during the iteration cycle to confirm or improve these numbers.
 
 ## Why the Sharpe Is Low
 
