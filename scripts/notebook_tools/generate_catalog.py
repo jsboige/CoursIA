@@ -244,11 +244,16 @@ def count_todos(notebook: dict, *, exclude_executed: bool = True) -> int:
     When exclude_executed=True (default), TODOs in cells that have been
     executed with outputs are excluded — they represent resolved exercises,
     not incomplete work.
+
+    C.1-compliant exercise stubs (pass, return None, print("Exercice"))
+    are also excluded — they're pedagogically complete, not incomplete.
     """
     count = 0
     for cell in notebook.get("cells", []):
         if cell["cell_type"] == "code":
             if exclude_executed and cell.get("outputs"):
+                continue
+            if _is_exercise_stub(cell):
                 continue
             src = "".join(cell.get("source", []))
             count += src.upper().count("# TODO")
@@ -306,6 +311,41 @@ def _is_outputless_by_design(cell: dict) -> bool:
         return all(isinstance(node, outputless) for node in ast.iter_child_nodes(tree))
     except SyntaxError:
         return False
+
+
+def _is_exercise_stub(cell: dict) -> bool:
+    """Check if a code cell is a C.1-compliant exercise stub (pedagogically complete).
+
+    Exercise stubs contain # TODO but also have a valid stub pattern per rule C.1:
+    - pass
+    - return None
+    - print("Exercice a completer") / print("Exercice...")
+    - result = None  # TODO
+    - Comment-only cells with # TODO (no executable code)
+
+    These are NOT incomplete work — they're intentionally stubbed exercises.
+    """
+    source = "".join(cell.get("source", []))
+    if "# TODO" not in source.upper():
+        return False
+    lines = [l.strip() for l in source.split("\n") if l.strip() and not l.strip().startswith("#")]
+    # Comment-only cells with # TODO are exercise instructions
+    if not lines:
+        return True
+    last_line = lines[-1]
+    # C.1 patterns: pass, return None, print("Exercice..."), var = None
+    if last_line == "pass":
+        return True
+    if last_line.startswith("return None"):
+        return True
+    if 'print("Exercice' in last_line or "print('Exercice" in last_line:
+        return True
+    if last_line.startswith("print(") and "completer" in last_line.lower():
+        return True
+    # var = None  # TODO pattern
+    if "= None" in last_line and "# TODO" in last_line.upper():
+        return True
+    return False
 
 
 def _effective_code_cells(code_cells: list) -> list:
