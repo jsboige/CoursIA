@@ -542,6 +542,8 @@ def scan_all_notebooks(
             rel = str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/")
             if tracked and rel not in tracked:
                 continue
+            if pedagogical and nb_path.stem.endswith("_executed"):
+                continue
             parts = nb_path.relative_to(series_dir).parts
             if any(exc in part for part in parts for exc in EXCLUDE_ALWAYS):
                 continue

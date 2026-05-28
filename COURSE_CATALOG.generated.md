@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-28 22:04
-Total notebooks: 500
+Generated: 2026-05-28 23:58
+Total notebooks: 497
 
 ## Status Summary
 
-- **READY**: 362
-- **DEMO**: 125
+- **READY**: 360
+- **DEMO**: 124
 - **RESEARCH**: 0
 - **BROKEN**: 13
 
 ## Maturity Summary
 
 - **PRODUCTION**: 158
-- **BETA**: 294
+- **BETA**: 292
 - **TEMPLATE**: 4
-- **ALPHA**: 39
+- **ALPHA**: 38
 - **DRAFT**: 5
 
 ## By Series
@@ -189,40 +189,37 @@ Total notebooks: 500
 | 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | BETA | 30min | po-2025 |
 | 45 | TP : Algorithmes Genetiques pour la Detection de B | base | READY | DRAFT | 30min | po-2025 |
 
-### ML (30 notebooks) — DEMO:6, READY:24 | ALPHA:4, BETA:23, PRODUCTION:3
+### ML (27 notebooks) — DEMO:5, READY:22 | ALPHA:3, BETA:21, PRODUCTION:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | 1.2 - Manipulation de Données avec NumPy | base | READY | BETA | 15min | po-2023 |
 | 2 | 1.3 - Analyse de Données avec Pandas | Python 3 | READY | PRODUCTION | 15min | po-2023 |
 | 3 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 4 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 5 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | BETA | 30min | po-2023 |
-| 6 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | BETA | 30min | po-2023 |
-| 7 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | BETA | 30min | po-2023 |
-| 8 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | BETA | 30min | po-2023 |
-| 9 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | BETA | 30min | po-2023 |
-| 10 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Co | Python 3 | READY | BETA | 30min | po-2023 |
-| 11 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | BETA | 30min | po-2023 |
-| 12 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | 30min | po-2023 |
-| 13 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | 45min | po-2023 |
-| 14 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 15 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 (ipykernel) | DEMO | BETA | 15min | po-2023 |
-| 16 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
-| 17 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
-| 18 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
-| 19 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 15min | po-2023 |
-| 20 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | ALPHA | 15min | po-2023 |
-| 21 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 15min | po-2023 |
-| 22 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 23 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 24 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 25 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | BETA | 30min | po-2023 |
-| 26 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 1h30 | po-2023 |
-| 27 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 28 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 30min | po-2023 |
-| 29 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 30 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 4 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | BETA | 30min | po-2023 |
+| 5 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | BETA | 30min | po-2023 |
+| 6 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | BETA | 30min | po-2023 |
+| 7 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | BETA | 30min | po-2023 |
+| 8 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | BETA | 30min | po-2023 |
+| 9 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Co | Python 3 | READY | BETA | 30min | po-2023 |
+| 10 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | BETA | 30min | po-2023 |
+| 11 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | 30min | po-2023 |
+| 12 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | 45min | po-2023 |
+| 13 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 14 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 (ipykernel) | DEMO | BETA | 15min | po-2023 |
+| 15 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
+| 16 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
+| 17 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 15min | po-2023 |
+| 18 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 15min | po-2023 |
+| 19 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | DEMO | BETA | 30min | po-2023 |
+| 20 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 21 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 22 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 23 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 1h30 | po-2023 |
+| 24 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 25 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
 ### SymbolicAI (98 notebooks) — DEMO:11, READY:87 | ALPHA:6, BETA:83, PRODUCTION:9
 
@@ -569,8 +566,8 @@ Total notebooks: 500
 
 ## Requirements
 
-- **API**: 115 notebooks
+- **API**: 114 notebooks
 - **GPU**: 71 notebooks
 - **Cloud**: 102 notebooks
 - **WSL**: 24 notebooks
-- **Local**: 246 notebooks
+- **Local**: 244 notebooks
