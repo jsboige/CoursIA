@@ -41,13 +41,14 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 |-------|-----------|-----------|---------------|-------|-------|
 | [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
 | [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
+| [Lean](#lean---verification-formelle) | 15 | 14 (93%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs, Kochen-Specker | ~11h |
 | [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
-| [Lean](#lean---verification-formelle) | 14 | 13 (93%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
 | [Tweety](#tweety---tweetyproject) | 10 | 10 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
+| [SymbolicLearning](#symboliclearning---apprentissage-symbolique) | 7 | 7 (100%) | Python | ILP, neuro-symbolique, KG-LLM | ~6h |
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 90 notebooks actifs, ~56h de contenu
+**Total** : 98 notebooks actifs, ~63h de contenu
 
 ---
 
@@ -123,7 +124,7 @@ Documentation complete : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Verification Formelle
 
-Serie de **14 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves.
+Serie de **15 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves, plus un port complet du theoreme de Kochen-Specker 18-vecteurs (Lean-15).
 
 ### Structure detaillee
 
@@ -145,10 +146,11 @@ Serie de **14 notebooks** sur **Lean 4**, proof assistant base sur la theorie de
 | 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Verification formelle de reseaux de neurones | 2 |
 | 11py | [Lean-11-TorchLean-Python](Lean/Lean-11-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, verification | 7 |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Lean 4 | Port Lean du theoreme de sensibilite de Huang (2019), hypercube, signing matrix | 4 |
+| 15 | [Lean-15-Kochen-Specker](Lean/Lean-15-Kochen-Specker.ipynb) | Lean 4 | Theoreme de Kochen-Specker (1967), 18 vecteurs Cabello-Estebaranz-Garcia-Alcaine, contextuality quantique | 5 |
 
 ### Kernels requis
 
-- **Lean 4 (WSL)** : Notebooks 2-6, 11, 12 (preuves Lean natives)
+- **Lean 4 (WSL)** : Notebooks 2-6, 11, 12, 15 (preuves Lean natives)
 - **Python 3 (WSL)** : Notebooks 1, 7-10, 11py (setup, LLM, LeanDojo)
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problemes chemins)
@@ -264,6 +266,26 @@ Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.
 
 ---
 
+## SymbolicLearning - Apprentissage Symbolique
+
+Serie de **7 notebooks** Python qui explorent l'apprentissage automatique symbolique : ILP, programmation logique inductive, neuro-symbolique, et graphes de connaissances couples aux LLMs.
+
+### Structure detaillee
+
+| # | Notebook | Contenu | Exercices | Prerequis |
+|---|----------|---------|-----------|-----------|
+| 1 | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | Concepts de l'apprentissage logique, version spaces | 1 | Python |
+| 2 | [SL-2-KnowledgeBasedLearning](SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb) | Apprentissage base sur la connaissance, EBL | 1 | SL-1 |
+| 3 | [SL-3-RelevanceLearning](SymbolicLearning/SL-3-RelevanceLearning.ipynb) | Determinations, relevance based learning | 1 | SL-1 |
+| 4 | [SL-4-InductiveLogicProgramming](SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | ILP, FOIL, generalisation/specialisation | 1 | SL-1, Prolog |
+| 5 | [SL-5-NeuroSymbolic](SymbolicLearning/SL-5-NeuroSymbolic.ipynb) | Couplage reseaux de neurones et raisonnement symbolique | 1 | SL-1, PyTorch |
+| 6 | [SL-6-KnowledgeGraphs-ILP](SymbolicLearning/SL-6-KnowledgeGraphs-ILP.ipynb) | KG + ILP, link prediction, completion | 1 | SL-4 |
+| 7 | [SL-7-LLM-SymbolicLearning](SymbolicLearning/SL-7-LLM-SymbolicLearning.ipynb) | LLMs comme apprenants symboliques, prompt engineering | 1 | SL-1 |
+
+Documentation complete : [SymbolicLearning/README.md](SymbolicLearning/README.md)
+
+---
+
 ## Autres Notebooks
 
 ### Optimisation et Contraintes (2 notebooks)
@@ -318,6 +340,10 @@ SymbolicAI/
 │
 ├── Argument_Analysis/         # Analyse argumentative (6 notebooks, demo)
 │   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
+│   └── README.md
+│
+├── SymbolicLearning/          # Apprentissage symbolique (7 notebooks)
+│   ├── SL-1-LogicalLearning.ipynb ... SL-7-LLM-SymbolicLearning.ipynb
 │   └── README.md
 │
 ├── OR-tools-Stiegler.ipynb    # Optimisation LP
@@ -581,4 +607,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-05-19
+**Derniere mise a jour** : 2026-05-28

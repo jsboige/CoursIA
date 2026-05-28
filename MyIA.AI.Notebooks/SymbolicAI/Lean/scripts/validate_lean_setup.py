@@ -132,6 +132,48 @@ def check_jupyter_kernel(kernel_name):
         return False
 
 
+def check_kernel_wrapper(kernel_name="lean4-wsl"):
+    """Verifie que kernel.json pointe vers le bon wrapper Python (v5), pas l'ancien bash.
+
+    Detecte la regression du 2026-05-27 (issue #1618) ou kernel.json pointait vers
+    l'ancien wrapper ~/lean4-jupyter-wrapper.sh au lieu de ~/.lean4-kernel-wrapper.py.
+    """
+    import json
+
+    candidates = [
+        Path.home() / ".local" / "share" / "jupyter" / "kernels" / kernel_name / "kernel.json",
+    ]
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        candidates.append(Path(appdata) / "jupyter" / "kernels" / kernel_name / "kernel.json")
+
+    kernel_json = next((p for p in candidates if p.exists()), None)
+    if kernel_json is None:
+        print_warning(f"kernel.json: aucun ({kernel_name}) trouve dans {[str(p) for p in candidates]}")
+        return False
+
+    try:
+        with open(kernel_json, "r", encoding="utf-8") as f:
+            spec = json.load(f)
+        argv = " ".join(str(a) for a in spec.get("argv", []))
+    except Exception as e:
+        print_error(f"kernel.json: erreur lecture ({e})")
+        return False
+
+    if "lean4-jupyter-wrapper.sh" in argv:
+        print_error(
+            f"kernel.json: pointe vers ancien wrapper bash (lean4-jupyter-wrapper.sh) — "
+            "regression #1618. Re-executer setup_lean4_kernel.ps1 pour pointer "
+            "vers ~/.lean4-kernel-wrapper.py (v5)."
+        )
+        return False
+    if ".lean4-kernel-wrapper.py" in argv:
+        print_ok(f"kernel.json ({kernel_name}): wrapper Python v5 correct")
+        return True
+    print_warning(f"kernel.json ({kernel_name}): wrapper inconnu — argv={argv[:120]}")
+    return False
+
+
 def check_env_file():
     """Verifie le fichier .env"""
     env_path = Path(__file__).parent.parent / ".env"
@@ -195,6 +237,7 @@ def validate_windows():
     # Kernels
     checks.append(check_jupyter_kernel("lean4"))
     checks.append(check_jupyter_kernel("python3-wsl"))
+    checks.append(check_kernel_wrapper("lean4-wsl"))
 
     # Fichiers projet
     checks.append(check_env_file())
@@ -227,6 +270,9 @@ def validate_wsl():
     checks.append(check_python())
     checks.append(check_command("elan", "elan"))
     checks.append(check_command("lean", "Lean 4"))
+
+    # Kernel wrapper (regression check #1618)
+    checks.append(check_kernel_wrapper("lean4-wsl"))
 
     # Venv Python WSL
     venv_path = Path.home() / ".python3-wsl-venv"
