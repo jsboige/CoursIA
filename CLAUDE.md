@@ -8,6 +8,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [docs/claude-code-config.md](docs/claude-code-config.md) - Agents, skills, rules, model selection
 - [docs/quantconnect.md](docs/quantconnect.md) - Backtests, MCP Docker, structure, livre reference
 - [docs/ece-grading.md](docs/ece-grading.md) - Pipeline GradeBookApp (notation collegiale, bonus CC, compilation), repos etudiants
+- [docs/esgf-grading.md](docs/esgf-grading.md) - Pipeline ESGF (cohorte 5ESGF-5BD1, peer eval CSV, calibration Option C HL, floor=10, mirror ECE)
 - [docs/teaching-context.md](docs/teaching-context.md) - Calendrier toutes ecoles, scope EPITA-IS, agents par ecole
 - [docs/cluster-agents.md](docs/cluster-agents.md) - Machines cluster, GPU topology, agents par specialisation, dispatch Epic
 - [docs/lean/](docs/lean/) - Prover iteration history, intractable diagnosis, LLM endpoints
