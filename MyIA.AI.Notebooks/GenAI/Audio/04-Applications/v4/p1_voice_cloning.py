@@ -318,15 +318,26 @@ def generate_voice_samples(force: bool = False) -> list[VoiceReference]:
 
 
 def clone_references(refs: list[VoiceReference], force: bool = False) -> list[VoiceReference]:
-    """Upload generated samples as FishAudio voice references."""
-    existing = {r["id"] for r in list_references()} if not force else set()
+    """Upload generated samples as FishAudio voice references.
+
+    Retries entries with status ``clone_failed`` so a transient API error
+    (e.g. a stale HTTP 409 misread as failure) does not permanently mark
+    a reference as failed in the manifest.
+    """
+    listed = list_references()
+    if isinstance(listed, dict):
+        existing_ids = set(listed.get("reference_ids", []))
+    else:
+        existing_ids = {r["id"] for r in listed if isinstance(r, dict)}
+
+    retryable = {"generated", "clone_failed"}
 
     for ref in refs:
-        if ref.status != "generated" or not ref.sample_mp3_path:
+        if ref.status not in retryable or not ref.sample_mp3_path:
             continue
 
-        if ref.reference_id in existing and not force:
-            print(f"  [P1] Already cloned: {ref.reference_id}")
+        if ref.reference_id in existing_ids and not force:
+            print(f"  [P1] Already cloned on server: {ref.reference_id}")
             ref.status = "cloned"
             continue
 
