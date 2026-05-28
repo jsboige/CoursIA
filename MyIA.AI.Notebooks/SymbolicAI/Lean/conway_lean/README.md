@@ -20,17 +20,33 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/LookAndSayLemmas.lean` | 0 | Lemmas for the Look-and-Say sequence |
 | `Conway/Nim.lean` | 0 | Nim game theory |
 | `Conway/Angel.lean` | 0 | Angel problem |
+| `Conway/KochenSpecker.lean` | 2 | Kochen-Specker theorem (18-vec Cabello, Pilier 1 FWT) |
 
 ## Key Results
 
-- **COMPLETE**: All proofs done, 0 sorry in production code
+- **COMPLETE**: All proofs done, 0 sorry in production code (except KochenSpecker.lean WIP)
 - Doomsday algorithm correctness
 - FRACTRAN computation formalization
 - Look-and-Say sequence properties
 - Nim game strategy
 - Angel problem formalization
+- **WIP**: Kochen-Specker theorem (Pilier 1 of Epic #1651 Conway FWT)
+
+## Kochen-Specker (Pilier 1 of Free Will Theorem)
+
+The `KochenSpecker.lean` module formalizes the 18-vector proof by Cabello,
+Estebaranz and Garcia-Alcaine (1996). It is the combinatorial kernel of the
+Conway-Kochen Free Will Theorem (2006/2009, Epic #1651).
+
+**Hall of Fame**:
+- Kochen & Specker (1967) — original 117-vector proof
+- Cabello, Estebaranz, Garcia-Alcaine (1996) — 18-vector tight proof
+- Conway & Kochen (2006) — 33-vector proof + Free Will Theorem
+- Peres (1991), Mermin (1993) — simplifications and pedagogy
 
 ## Notes
 
 - Part of the GameTheory Lean series
 - Companion notebooks in the GameTheory series
+- Cross-link: Epic #1647 Conway Phase 2 (Life-as-Computation)
+- Cross-link: Epic #1651 Conway Phase 3 (Free Will Theorem)
