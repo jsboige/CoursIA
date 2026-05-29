@@ -62,6 +62,9 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 | `scripts/environment/install-ffmpeg.{ps1,sh}` | Installer ffmpeg (audio/vidéo) |
 | `scripts/kernels/lean4-wsl/` | Kernel Lean 4 WSL |
 | `scripts/kernels/validate_lean11.py` | Validation Lean-11 |
+| `scripts/lean/setup_lean4_all.py` | **Point d'entrée unique** setup kernel Lean 4 : `--wsl-only` / `--register` / `--validate` / `--check-wrapper` (orchestre WSL install + registration Windows + validation) — cf [docs/wsl-kernels-detail.md](wsl-kernels-detail.md) |
+| `scripts/lean/lean_kernel_check.py` | Détection canonique régression wrapper kernel.json (#1618) : `inspect_kernel_wrapper` (partagé par les 2 validateurs + l'orchestrateur) |
+| `scripts/lean/smoke_test_epita_is.py` | Smoke-test kernels Lean EPITA-IS |
 | `scripts/mcp-maintenance/` | Maintenance MCP (config, docs, scripts) — cf `README_MCP_MAINTENANCE.md` |
 | `scripts/validation/dispatch.py` + `matrix.yml` | Matrice de validation / dispatch |
 | `scripts/genai-stack/genai.py` | GenAI Docker (ComfyUI + Qwen) + validation — cf [docs/genai-services.md](genai-services.md) |
