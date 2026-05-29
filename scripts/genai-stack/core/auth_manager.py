@@ -158,7 +158,7 @@ class GenAIAuthManager:
             # Mettre à jour les permissions (lecture seule pour user si possible)
             try:
                 os.chmod(self.config_file, 0o600)
-            except:
+            except OSError:
                 pass
                 
             logger.info(f"✅ Configuration sauvegardée: {self.config_file}")
@@ -353,7 +353,7 @@ SESSION_EXPIRE_HOURS=24
                         else:
                             content = raw_content
                             is_valid = (content == ref_hash)
-                    except:
+                    except OSError:
                         content = "[READ_ERROR]"
                 
                 locations.append(TokenLocation(

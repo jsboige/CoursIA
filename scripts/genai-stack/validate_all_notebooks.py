@@ -104,7 +104,7 @@ def execute_notebook(notebook_path: Path, timeout: int = 300) -> Tuple[bool, str
         if output_path.exists():
             try:
                 output_path.unlink()
-            except:
+            except OSError:
                 pass
 
 def main():

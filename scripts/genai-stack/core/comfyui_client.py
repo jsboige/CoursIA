@@ -15,6 +15,8 @@ import sys
 import os
 import json
 import time
+import uuid
+import logging
 import requests
 import urllib3
 from pathlib import Path
@@ -55,7 +57,7 @@ class ComfyUIClient:
     def __init__(self, config: ComfyUIConfig = None):
         self.config = config or ComfyUIConfig()
         self.session = requests.Session()
-        self.client_id = "ComfyUIClient-" + str(time.time())
+        self.client_id = f"ComfyUIClient-{uuid.uuid4().hex[:12]}"
         
         # Headers par défaut
         self.session.headers.update({
@@ -106,7 +108,7 @@ class ComfyUIClient:
             self._request('GET', '/system_stats')
             return True
         except Exception as e:
-            print(f"DEBUG: is_reachable failed: {e}")
+            logging.debug("is_reachable failed: %s", e)
             return False
 
     def get_system_stats(self) -> Dict[str, Any]:
