@@ -1,5 +1,12 @@
 # Audio - Speech, Voix & Musique par IA
 
+<!-- CATALOG-STATUS
+series: GenAI-Audio
+pedagogical_count: 30
+breakdown: Foundation=5, Advanced=9, Orchestration=3, Applications=13
+maturity: BETA=18, PRODUCTION=12
+-->
+
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)
 
 Le traitement audio est souvent le parent pauvre de l'IA generative, eclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalites les plus naturelles de l'interaction humaine. Cette serie couvre l'ensemble de la chaine audio IA : reconnaissance vocale, synthese, clonage, generation musicale, et orchestration de pipelines.
