@@ -18,26 +18,26 @@ Le parcours va du premier pipeline (ML-1) jusqu'a une application complete : pre
 
 ### Fondamentaux (ML-1 à ML-4)
 
-| # | Notebook | Contenu | Duree | Statut |
-|---|----------|---------|-------|--------|
-| 1 | [ML-1-Introduction](ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base | 30-40 min | ✅ Validé |
-| 2 | [ML-2-Data&Features](ML-2-Data%26Features.ipynb) | IDataView, TextLoader, encodage | 40-50 min | ✅ Validé |
-| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement%26AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min | ✅ Validé |
-| 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, metriques, PFI | 40-50 min | ✅ Validé |
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 1 | [ML-1-Introduction](ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base | 30-40 min |
+| 2 | [ML-2-Data&Features](ML-2-Data%26Features.ipynb) | IDataView, TextLoader, encodage | 40-50 min |
+| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement%26AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
+| 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, metriques, PFI | 40-50 min |
 
 ### Fonctionnalités avancées (ML-5 à ML-7)
 
-| # | Notebook | Contenu | Duree | Statut |
-|---|----------|---------|-------|--------|
-| 5 | [ML-5-TimeSeries](ML-5-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | 45-60 min | 📚 Référence |
-| 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | 45-60 min | 📚 Référence |
-| 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | 45-60 min | 📚 Référence |
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 5 | [ML-5-TimeSeries](ML-5-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | 45-60 min |
+| 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | 45-60 min |
+| 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | 45-60 min |
 
 ### TP Pratique
 
-| # | Notebook | Contenu | Duree | Statut |
-|---|----------|---------|-------|--------|
-| TP | [TP-prevision-ventes](TP-prevision-ventes.ipynb) | Regression avec ML.NET + Infer.NET bayésien | 45-60 min | ✅ Validé |
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| TP | [TP-prevision-ventes](TP-prevision-ventes.ipynb) | Regression avec ML.NET + Infer.NET bayésien | 45-60 min |
 
 ## Contenu detaille
 
