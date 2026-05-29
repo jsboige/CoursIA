@@ -260,6 +260,30 @@ Ce notebook bonus compare differents raisonneurs OWL (owlrl, HermiT, reasonable,
 
 ---
 
+## Statut de maturite
+
+| # | Notebook | Kernel | Cellules | Exercices | Statut |
+|---|----------|--------|----------|-----------|--------|
+| 1 | SW-1-CSharp-Setup | .NET | 18 | - | **COMPLET** |
+| 2 | SW-2-CSharp-RDFBasics | .NET | 48 | 2 | **COMPLET** |
+| 2b | SW-2b-Python-RDFBasics | Python | 30 | 2 | **COMPLET** |
+| 3 | SW-3-CSharp-GraphOperations | .NET | 34 | 3 | **COMPLET** |
+| 4 | SW-4-CSharp-SPARQL | .NET | 36 | 3 | **COMPLET** |
+| 4b | SW-4b-Python-SPARQL | Python | 25 | 2 | **COMPLET** |
+| 5 | SW-5-CSharp-LinkedData | .NET | 38 | 3 | **COMPLET** |
+| 5b | SW-5b-Python-LinkedData | Python | 25 | 2 | **COMPLET** |
+| 6 | SW-6-CSharp-RDFS | .NET | 33 | 2 | **COMPLET** |
+| 7 | SW-7-CSharp-OWL | .NET | 35 | 2 | **COMPLET** |
+| 7b | SW-7b-Python-OWL | Python | 30 | 2 | **COMPLET** |
+| 8 | SW-8-Python-SHACL | Python | 43 | 3 | **COMPLET** |
+| 9 | SW-9-Python-JSONLD | Python | 60 | 3 | **COMPLET** |
+| 10 | SW-10-Python-RDFStar | Python | 52 | 2 | **COMPLET** |
+| 11 | SW-11-Python-KnowledgeGraphs | Python | 75 | 3 | **COMPLET** |
+| 12 | SW-12-Python-GraphRAG | Python | 44 | 3 | **COMPLET** |
+| 13 | SW-13-Python-Reasoners (bonus) | Python | 38 | 3 | **COMPLET** |
+
+---
+
 ## Acquis d'apprentissage
 
 A l'issue de cette serie, l'apprenant est capable de :
