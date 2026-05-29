@@ -32,6 +32,10 @@ sympy>=1.12
 # Optional: Deep learning for Deep CFR
 # torch>=2.0.0
 
+# SAT/SMT Solvers (SocialChoice/04, GameTheory-1 setup check)
+python-sat>=0.1.8             # PySAT — SAT solving (Glucose3, Minisat22, Cadical103)
+z3-solver>=4.13               # Microsoft Z3 SMT solver
+
 # Utilities
 python-dotenv>=1.0.0
 
