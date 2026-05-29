@@ -38,6 +38,96 @@ from .otel_setup import enable_prover_otel
 
 _PROVER_DIR = Path(__file__).resolve().parent
 
+# P5 (Epic #1453 forensic, 2026-05-29): version-controlled KB of documented
+# INTRACTABLE targets. Loaded once, lazily, from baselines/intractable_targets.json.
+_INTRACTABLE_KB_PATH = _PROVER_DIR / "baselines" / "intractable_targets.json"
+_intractable_kb_cache: Optional[list] = None
+
+
+def _load_intractable_kb() -> list:
+    """Load the documented-intractable targets KB (cached, best-effort).
+
+    Returns the list under the ``targets`` key, or [] if the file is missing
+    or malformed. A missing/broken KB must never crash the prover — it simply
+    means no pre-screen entries (degrade to the prior behaviour).
+    """
+    global _intractable_kb_cache
+    if _intractable_kb_cache is not None:
+        return _intractable_kb_cache
+    try:
+        data = json.loads(_INTRACTABLE_KB_PATH.read_text(encoding="utf-8"))
+        targets = data.get("targets", [])
+        _intractable_kb_cache = targets if isinstance(targets, list) else []
+    except (OSError, json.JSONDecodeError, ValueError):
+        _intractable_kb_cache = []
+    return _intractable_kb_cache
+
+
+def _match_intractable_kb(filepath: str, sorry_line: int) -> Optional[dict]:
+    """Return the matching KB entry for (filepath, sorry_line), else None.
+
+    Matching is filename-based (NOT absolute-path-based) so the KB is portable
+    across machines — config.py resolves machine-specific absolute paths. An
+    entry matches when its ``file`` basename equals the target basename AND
+    either (a) ``match_by_file_only`` is true (any sorry in that file), or
+    (b) its ``line`` equals ``sorry_line``.
+    """
+    try:
+        target_name = Path(filepath).name
+    except (TypeError, ValueError):
+        return None
+    for entry in _load_intractable_kb():
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("file") != target_name:
+            continue
+        if entry.get("match_by_file_only"):
+            return entry
+        if entry.get("line") == sorry_line:
+            return entry
+    return None
+
+
+def _refuse_intractable(filepath: str, sorry_line: int,
+                        demo_name: str) -> Optional[dict]:
+    """Return an early-skip result dict if the target is documented INTRACTABLE.
+
+    P5 (Epic #1453). Mirrors the shape of ``_refuse_honest_sorry``: checks the
+    version-controlled KB (baselines/intractable_targets.json) and, on a match,
+    returns a result dict the caller returns immediately — BEFORE any agent is
+    spawned. Otherwise returns None.
+
+    Distinct from ``_refuse_honest_sorry`` (genuinely-unprovable sorrys): these
+    targets are provable in principle but blocked behind ~200-300 lines of new
+    formalization the prover cannot invent. Looping agents on them only burns
+    the iteration budget (forensic: 9/13 director-less runs, ~8.2h wasted).
+    """
+    entry = _match_intractable_kb(filepath, sorry_line)
+    if entry is None:
+        return None
+    reason = entry.get("reason", "documented intractable")
+    source = entry.get("source", "")
+    msg = (
+        f"SKIPPED: sorry at {Path(filepath).name}:{sorry_line} is DOCUMENTED "
+        f"INTRACTABLE (KB baselines/intractable_targets.json). "
+        f"Identifier: {entry.get('identifier', '?')}. Reason: {reason}. "
+        f"Source: {source}. Looping agents here only burns the budget — "
+        f"the missing piece is new formalization, not search depth. "
+        f"Remove the KB entry to re-enable once the formalization exists."
+    )
+    print(f"\n{'!'*70}\n{msg}\n{'!'*70}\n")
+    return {
+        "success": False,
+        "skipped": True,
+        "reason": "documented_intractable",
+        "detail": reason,
+        "identifier": entry.get("identifier"),
+        "source": source,
+        "demo": demo_name,
+        "sorry_line": sorry_line,
+        "filepath": filepath,
+    }
+
 
 def _refuse_honest_sorry(filepath: str, sorry_line: int,
                          demo_name: str) -> Optional[dict]:
@@ -214,6 +304,12 @@ class MultiAgentSorryProver:
         if refusal is not None:
             return refusal
 
+        # P5 (#1453): pre-screen documented-INTRACTABLE targets BEFORE spinning
+        # up agents. A KB match skips immediately instead of looping to the cap.
+        intractable = _refuse_intractable(filepath, sorry_line, demo["name"])
+        if intractable is not None:
+            return intractable
+
         print(f"\n{'='*70}")
         print(f"MULTI-AGENT PROVER: {demo['name']}")
         print(f"File: {filepath}:{sorry_line}")
@@ -321,6 +417,18 @@ class MultiAgentSorryProver:
         # The gate only enforces consultation when a Director actually
         # exists to consult.
         if director_agent is None:
+            # P4 (#1453): the blanket auto-bypass below satisfies the F9 gate
+            # but leaves the abandon decision to the (z.ai) agents — which, on a
+            # documented-intractable target, never call mark_sorry_intractable
+            # and loop to the iteration cap (forensic: 9/13 director-less runs,
+            # ~8.2h wasted). The top-of-function pre-screen already returns early
+            # on an exact KB line match; this is the defense-in-depth fallback
+            # for the director-less path (catches file-only KB entries and line
+            # drift) — apply the SAME KB skip rather than relying on agent
+            # self-abandonment. Non-KB targets keep the graceful degradation.
+            kb_skip = _refuse_intractable(filepath, sorry_line, demo["name"])
+            if kb_skip is not None:
+                return kb_skip
             state.director_consulted = True
             print("  [DIRECTOR] not wired - F9 gate auto-bypassed")
 
@@ -556,6 +664,12 @@ class MultiAgentSorryProver:
             "config": f"multi-{self.provider}",
             "sorry_evolution": f"{original_sorry_count} -> {final_sorry}",
             "best_sorry": tactic_tools.best_sorry_count,
+            # P6 (#1453 forensic): surface the structural-progress flag so a
+            # build-OK / sorry_delta==0 outcome ("proof restructured", e.g. one
+            # sorry decomposed into N compiling sub-sorries) is distinguishable
+            # from an actual sorry reduction. Without this, both report
+            # success=True and consumers cannot tell them apart.
+            "structural_progress": structural_progress,
         }
 
     def _build_context_message(self, demo: dict, ctx_data: dict,
@@ -689,6 +803,12 @@ class AutonomousProver:
         refusal = _refuse_honest_sorry(filepath, sorry_line, demo["name"])
         if refusal is not None:
             return refusal
+
+        # P5 (#1453): pre-screen documented-INTRACTABLE targets BEFORE spinning
+        # up the agent. A KB match skips immediately instead of looping to the cap.
+        intractable = _refuse_intractable(filepath, sorry_line, demo["name"])
+        if intractable is not None:
+            return intractable
 
         print(f"\n{'='*70}")
         print(f"AUTONOMOUS PROVER: {demo['name']}")
@@ -1214,6 +1334,11 @@ class AutonomousProver:
             "config": self.config_label,
             "sorry_evolution": f"{original_sorry_count} -> {final_sorry}",
             "best_sorry": tactic_tools.best_sorry_count,
+            # P6 (#1453 forensic): same flag as MultiAgentSorryProver — already
+            # computed by _autonomous_success_gate, now surfaced so a build-OK /
+            # sorry_delta>=0 "proof restructured" outcome is distinguishable
+            # from a real sorry reduction in the result JSON.
+            "structural_progress": structural_progress_autonomous,
         }
 
     def _build_autonomous_context(self, demo: dict, sorry_line: int,

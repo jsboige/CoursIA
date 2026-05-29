@@ -1089,3 +1089,231 @@ def test_delta0_hardcap_ignored_when_proof_found():
     # The delta0 path is skipped; the agent runs (proof_found is handled
     # elsewhere, not pre-empted by the stagnation backstop).
     agent.run.assert_awaited_once()
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# P5/P4 (Epic #1453, 2026-05-29 forensic) — pre-screen documented-intractable
+# targets BEFORE spawning agents.
+#
+# Forensic: all NON-Conway sorry targets are documented intractable in
+# docs/lean/stable_marriage_intractable_diagnosis.md, yet director-less
+# (zai-provider) runs blanket-bypassed the intractable gate (provers.py sets
+# state.director_consulted=True when director_agent is None) and looped to the
+# iteration cap — 9/13 runs burned full budgets, ~8.2h wasted. The pre-screen
+# (P5) returns {skipped:true, success:false, reason:"documented_intractable"}
+# without spawning; the director-less fallback (P4) applies the SAME KB skip
+# instead of looping. These tests pin the decision offline (mock KB, no lake).
+# ──────────────────────────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def mock_intractable_kb(monkeypatch):
+    """Inject a deterministic 2-entry KB into the cache (no real file I/O)."""
+    import prover.provers as P
+
+    fake_kb = [
+        {
+            "file": "GaleShapley.lean",
+            "line": 116,
+            "identifier": "gale_shapley_man_optimal :: IsStable",
+            "reason": "rural hospitals theorem missing",
+            "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-1",
+        },
+        {
+            "file": "WholeFileIntractable.lean",
+            "match_by_file_only": True,
+            "identifier": "any sorry in this file",
+            "reason": "entire file blocked behind new formalization",
+            "source": "docs/lean/example.md",
+        },
+    ]
+    monkeypatch.setattr(P, "_intractable_kb_cache", fake_kb)
+    return fake_kb
+
+
+def test_load_intractable_kb_returns_documented_targets():
+    """The real version-controlled KB loads and lists the documented targets."""
+    import prover.provers as P
+
+    # Bust any cache from a prior test so we read the real JSON.
+    P._intractable_kb_cache = None
+    kb = P._load_intractable_kb()
+    P._intractable_kb_cache = None  # leave cache clean for downstream tests
+
+    assert isinstance(kb, list) and len(kb) >= 5, (
+        f"expected the documented stable-marriage targets, got {len(kb)}"
+    )
+    files = {e.get("file") for e in kb}
+    assert {"GaleShapley.lean", "Lattice.lean", "Basic.lean"} <= files
+    # Every entry must cite a source doc (review discipline).
+    assert all(e.get("source") for e in kb), "every KB entry must cite a source"
+
+
+def test_load_intractable_kb_degrades_to_empty_on_missing_file(monkeypatch):
+    """A missing/broken KB returns [] (never crashes the prover)."""
+    import prover.provers as P
+    from pathlib import Path as _P
+
+    P._intractable_kb_cache = None
+    monkeypatch.setattr(P, "_INTRACTABLE_KB_PATH", _P("/does/not/exist.json"))
+    assert P._load_intractable_kb() == []
+    P._intractable_kb_cache = None
+
+
+def test_match_intractable_kb_matches_by_basename_and_line(mock_intractable_kb):
+    """Matching is filename-based (machine-portable) AND line-keyed."""
+    import prover.provers as P
+
+    # Different absolute path, same basename + line -> match.
+    entry = P._match_intractable_kb(
+        "/some/machine/specific/path/GaleShapley.lean", 116
+    )
+    assert entry is not None
+    assert entry["identifier"] == "gale_shapley_man_optimal :: IsStable"
+
+
+def test_match_intractable_kb_no_match_on_different_line(mock_intractable_kb):
+    """Same file, a DIFFERENT (provable) sorry line must NOT match."""
+    import prover.provers as P
+
+    assert P._match_intractable_kb("X/GaleShapley.lean", 999) is None
+
+
+def test_match_intractable_kb_no_match_on_different_file(mock_intractable_kb):
+    """A file not in the KB must not match — provable targets stay provable."""
+    import prover.provers as P
+
+    assert P._match_intractable_kb("X/Voting.lean", 116) is None
+
+
+def test_match_intractable_kb_file_only_matches_any_line(mock_intractable_kb):
+    """match_by_file_only entries match ANY sorry line in that file."""
+    import prover.provers as P
+
+    assert P._match_intractable_kb("X/WholeFileIntractable.lean", 1) is not None
+    assert P._match_intractable_kb("X/WholeFileIntractable.lean", 42) is not None
+
+
+def test_refuse_intractable_returns_skip_dict(mock_intractable_kb):
+    """A KB match yields the documented_intractable skip dict (P5 shape)."""
+    import prover.provers as P
+
+    out = P._refuse_intractable("X/GaleShapley.lean", 116, "DEMO_X")
+    assert out is not None
+    assert out["skipped"] is True
+    assert out["success"] is False
+    assert out["reason"] == "documented_intractable"
+    assert out["sorry_line"] == 116
+    assert out["demo"] == "DEMO_X"
+    assert out["source"]
+    # Shape parity with _refuse_honest_sorry (same keys present).
+    for key in ("success", "skipped", "reason", "detail", "demo",
+                "sorry_line", "filepath"):
+        assert key in out, f"missing key {key!r} (shape parity with honest_sorry)"
+
+
+def test_refuse_intractable_returns_none_for_provable_target(mock_intractable_kb):
+    """A target NOT in the KB returns None -> the prover proceeds normally."""
+    import prover.provers as P
+
+    assert P._refuse_intractable("X/GaleShapley.lean", 999, "DEMO_X") is None
+    assert P._refuse_intractable("X/Voting.lean", 116, "DEMO_X") is None
+
+
+def test_refuse_intractable_shape_matches_honest_sorry(mock_intractable_kb):
+    """The skip dict mirrors _refuse_honest_sorry so callers handle both alike."""
+    import prover.provers as P
+
+    intractable = P._refuse_intractable("X/GaleShapley.lean", 116, "D")
+    # _refuse_honest_sorry returns the same shape for a static HONEST sorry.
+    # We compare key sets (values differ by reason).
+    honest_keys = {
+        "success", "skipped", "reason", "detail", "demo",
+        "sorry_line", "filepath",
+    }
+    assert honest_keys <= set(intractable.keys())
+    assert intractable["success"] is False and intractable["skipped"] is True
+
+
+def test_p4_director_less_fallback_skips_intractable(mock_intractable_kb):
+    """P4: the director-less branch applies the KB skip instead of looping.
+
+    Mirrors the exact decision in provers.py: when director_agent is None and
+    the target is a KB hit, _refuse_intractable returns a skip dict (the branch
+    returns it). A non-KB target returns None (graceful degradation preserved:
+    director_consulted=True, run proceeds).
+    """
+    import prover.provers as P
+
+    # KB target -> skip (no loop-to-cap).
+    skip = P._refuse_intractable("X/GaleShapley.lean", 116, "D")
+    assert skip is not None and skip["reason"] == "documented_intractable"
+
+    # Non-KB target -> None -> the blanket F9 auto-bypass still applies.
+    assert P._refuse_intractable("X/SomeProvable.lean", 5, "D") is None
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# P6 (Epic #1453, 2026-05-29 forensic) — surface structural_progress into the
+# result JSON so a build-OK / sorry_delta>=0 "proof restructured" outcome is
+# distinguishable from an actual sorry reduction.
+#
+# Both provers must emit the field. We verify the result-construction key is
+# present by parsing the source AST of prove_sorry (no LLM / lake needed).
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_multi_agent_result_includes_structural_progress_key():
+    """MultiAgentSorryProver result dict carries the structural_progress key."""
+    import ast
+    import inspect
+    from prover.provers import MultiAgentSorryProver
+
+    src = inspect.getsource(MultiAgentSorryProver.prove_sorry)
+    tree = ast.parse(src.lstrip())  # strip method indentation
+    keys = _result_dict_keys(tree)
+    assert "structural_progress" in keys, (
+        "MultiAgentSorryProver.prove_sorry must surface structural_progress (P6)"
+    )
+
+
+def test_autonomous_result_includes_structural_progress_key():
+    """AutonomousProver result dict carries the structural_progress key."""
+    import ast
+    import inspect
+    from prover.provers import AutonomousProver
+
+    src = inspect.getsource(AutonomousProver.prove_sorry)
+    tree = ast.parse(src.lstrip())
+    keys = _result_dict_keys(tree)
+    assert "structural_progress" in keys, (
+        "AutonomousProver.prove_sorry must surface structural_progress (P6)"
+    )
+
+
+def _result_dict_keys(tree):
+    """Collect every string key from every dict literal in an AST subtree."""
+    import ast
+
+    keys = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            for k in node.keys:
+                if isinstance(k, ast.Constant) and isinstance(k.value, str):
+                    keys.add(k.value)
+    return keys
+
+
+def test_autonomous_gate_structural_flag_feeds_result():
+    """The structural_progress flag the result reports is the gate's 2nd return.
+
+    Pins the wiring: _autonomous_success_gate returns (success, structural),
+    and the result JSON's structural_progress must reflect that boolean — i.e.
+    a build-OK same-count outcome reports structural_progress=True.
+    """
+    from prover.provers import _autonomous_success_gate
+
+    _success, structural = _autonomous_success_gate(
+        final_sorry=4, original_sorry_count=4, final_build_ok=True,
+    )
+    assert structural is True  # build-OK, sorry_delta==0 -> "proof restructured"
