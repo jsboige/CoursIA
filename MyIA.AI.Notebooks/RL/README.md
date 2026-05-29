@@ -138,7 +138,7 @@ python -m venv venv
 venv\Scripts\activate  # Windows
 
 # Dependances de base (notebooks 1-4)
-pip install "stable-baselines3[extra]>=2.0.0a4" gymnasium numpy matplotlib
+pip install "stable-baselines3[extra]>=2.0.0a4" gymnasium numpy pandas matplotlib
 
 # Pour le notebook 3 (parking environment)
 pip install highway-env moviepy
@@ -157,6 +157,7 @@ pip install "pettingzoo[classic]>=1.24.0"
 | stable-baselines3 | >=2.0.0a4 | Algorithmes RL (notebooks 1-3) |
 | gymnasium | latest | Interface environnements |
 | numpy | latest | Calcul numerique |
+| pandas | >=2.0 | Tableaux de resultats (notebook 4) |
 | matplotlib | latest | Visualisation |
 | torch | latest | Reseaux de neurones (notebook 5) |
 | pettingzoo | >=1.24.0 | Multi-agent (notebook 6) |
