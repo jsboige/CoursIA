@@ -29,7 +29,9 @@ La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) 
 
 ## Structure
 
-**17 notebooks principaux** + **7 side tracks** (4 Lean, 3 Python approfondissement) + **4 SocialChoice** (sous-serie dediee) = **28 notebooks**
+La série s'articule autour d'un **fil principal** qui suit la maturation historique de la discipline — des jeux statiques (matrices de gains, Nash, minimax) vers les jeux dynamiques (formes extensives, induction, information incomplète) puis les frontières contemporaines (CFR pour le poker, mécanismes, choix social, RL multi-agent). Ce fil est doublé de deux fils transversaux optionnels : un **fil de formalisation Lean 4** (side tracks *b*), qui prouve mécaniquement les grands théorèmes au lieu de seulement les illustrer, et un **fil Python d'approfondissement** (side tracks *c*) pour les variantes et visualisations avancées. La sous-série **[SocialChoice/](SocialChoice/)** prolonge le bloc « agrégation des préférences » avec une étude dédiée d'Arrow, Sen et des méthodes de vote, en confrontant preuve formelle, simulation et encodage SAT/Z3.
+
+Chaque notebook principal renvoie vers ses side tracks ; ceux-ci se lisent indépendamment et ne sont jamais des prérequis du fil principal.
 
 ### Partie 1 : Fondations et Jeux statiques (Notebooks 1-6)
 
@@ -90,6 +92,19 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 - Chaque notebook principal inclut des liens vers ses side tracks
 - Les side tracks sont optionnels et peuvent etre etudies independamment
 - Progression recommandee : notebook principal, puis side track b (formalisation), puis c (applications)
+
+## Acquis d'apprentissage
+
+À l'issue de la série, vous êtes capable de :
+
+- **Modéliser** une interaction stratégique sous forme normale ou extensive, et y lire dominance, meilleure réponse, ensembles d'information et menaces crédibles.
+- **Calculer** des équilibres : Nash pur et mixte (Lemke-Howson), minimax et dualité LP en jeux à somme nulle, équilibre parfait en sous-jeux par induction arrière et avant.
+- **Simuler** des dynamiques d'apprentissage et d'évolution : tournois itérés à la Axelrod, *replicator dynamics*, et apprentissage multi-agent moderne (CFR/Deep CFR, NFSP, PSRO).
+- **Analyser** la coopération : valeur de Shapley, Core, et conditions de stabilité (Bondareva-Shapley) ; concevoir un mécanisme incitatif (principe de révélation, VCG).
+- **Raisonner** sur l'agrégation collective : impossibilité d'Arrow, théorème de Sen, méthodes de Condorcet/Borda/Copeland, et leur encodage en problème SAT résolu par Z3.
+- **Formaliser** ces résultats en Lean 4 et saisir ce que « prouver » veut dire dans un assistant de preuve — du point fixe de Brouwer/Kakutani pour Nash à l'axiomatique de Shapley et à la preuve d'Arrow.
+
+Chaque notebook adopte la même trame pédagogique — introduction motivée, plan ancré, exemples exécutés et exercices corrigés — pensée pour un travail en autonomie. Les side tracks Lean (*b*) et la sous-série SocialChoice vont jusqu'au degré « preuve formelle vérifiée par la machine » : les résultats principaux sont prouvés sans `sorry` (l'inventaire complet des toolchains, du statut de build et des `sorry` résiduels intractables est tenu dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md)).
 
 ## Statut de maturite
 
@@ -351,6 +366,17 @@ BATCH_MODE=true python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory
 | **Valeur de Shapley** | Repartition equitable des gains en jeu cooperatif |
 | **Core** | Ensemble des allocations stables en jeu cooperatif |
 | **Theoreme d'Arrow** | Impossibilite d'agregation parfaite des preferences |
+
+## Applications du monde reel
+
+La theorie des jeux n'est pas qu'un objet academique : ses resultats structurent des pans entiers de l'economie numerique et des politiques publiques. Quelques exemples directement relies aux notebooks de la serie :
+
+- **Encheres et enchères de spectre** (notebooks 14, 16) — les mecanismes VCG et leurs derives fondent les encheres publicitaires de Google et Meta (des milliards de transactions/jour) ainsi que les ventes de frequences telecom orchestrees par les Etats, ou le design du mecanisme se chiffre en milliards.
+- **Marches d'appariement** (notebook 15, jeux cooperatifs) — l'algorithme de Gale-Shapley et la valeur de Shapley sont au coeur de l'affectation des etudiants aux ecoles (New York, Boston), des internes aux hopitaux (NRMP), et des dons d'organes par echanges croises ; prix Nobel d'economie 2012 (Roth & Shapley).
+- **IA de poker et bluff optimal** (notebook 13, CFR) — Counterfactual Regret Minimization a permis a Libratus et Pluribus de battre les meilleurs joueurs humains au Texas Hold'em, premiere resolution d'un jeu majeur a information imparfaite.
+- **Systemes de vote et gouvernance** (sous-serie SocialChoice) — le theoreme d'Arrow et les methodes de Condorcet/Borda eclairent le choix d'un mode de scrutin, du vote citoyen aux DAO blockchain (cf. cross-series SmartContracts).
+- **Cooperation et evolution** (notebook 6) — le tournoi d'Axelrod et les dynamiques de replication modelisent l'emergence de la cooperation en biologie, en relations internationales et dans les protocoles de reseaux pair-a-pair.
+- **Regulation et dissuasion** (notebooks 10-12) — l'induction arriere, les jeux de reputation et le signaling formalisent la credibilite des menaces, des banques centrales (politique monetaire) a la strategie concurrentielle.
 
 ## Connections cross-series
 

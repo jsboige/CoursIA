@@ -25,14 +25,14 @@ Le prover test harness `_GoalExtract.lean` contient 2 sorry de scaffolding (non-
 | `gale_shapley_terminates` | Algorithm terminates in at most n^2 steps | 0 | CLOSED (`trivial`) |
 | `gale_shapley_produces_matching` | Output is a valid bijection | 0 | CLOSED (identity witness) |
 | `gale_shapley_stable` | No blocking pair exists | 0 | **CLOSED via PR #1194** (port mmaaz-git upstream) |
-| `gale_shapley_man_optimal` | Proposers get best achievable partners | 0 | **CLOSED via PR #1521** (multi-agent prover GPT-5.5) |
-| `gale_shapley_woman_pessimal` | Receivers get worst achievable partners | 0 | **CLOSED via PR #1521** |
+| `gale_shapley_man_optimal` | Proposers get best achievable partners | 0 (body) | **CLOSED via PR #1521** body, BUT transitively depends on `doctor_optimal_eq_top` (L836 sorry) — see note below |
+| `gale_shapley_woman_pessimal` | Receivers get worst achievable partners | 0 (body) | **CLOSED via PR #1521** body, BUT same transitive dependency on L836 |
 | `meetSpouse_injective` | Spouse map is injective | 0 | **CLOSED via PR #1522** (multi-agent prover GPT-5.5) |
-| `Lattice.Case A2` (L185) | Knuth rotation Case A2 | 1 | INTRACTABLE (Knuth 1976 sub-case) |
-| `Lattice.Case B` (L187) | Knuth rotation Case B | 1 | INTRACTABLE (Knuth 1976 sub-case) |
-| `doctor_optimal_eq_top` (L836) | Doctor-optimal = top of stable lattice | 1 | Conditional on `no_cross_match` (axiom) |
+| `Lattice.no_cross_match` Case A2 (L185) | Knuth rotation Case A2 | 1 | INTRACTABLE (Knuth 1976 sub-case, user mandate "stays as sorry" per PR #1530) |
+| `Lattice.no_cross_match` Case B (L187) | Knuth rotation Case B | 1 | INTRACTABLE (Knuth 1976 sub-case, same mandate) |
+| `doctor_optimal_eq_top` (L836) | Doctor-optimal = top of stable lattice | 1 | Transitively conditional on `no_cross_match` (L185/L187 sorry, **NOT axiom**) |
 
-**Important**: les 3 sorrys restants vivent dans `Lattice.lean` et representent la machinerie complete du lattice de matchings stables (Knuth 1976, Wu-Roth 2018) qui n'existe pas encore dans Mathlib4. Tous **INTRACTABLE** par le prover LLM courant (cf [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) GO/NO-GO per project).
+**Important — transitive dependency** : les theoremes `gale_shapley_man_optimal` et `gale_shapley_woman_pessimal` ont 0 sorry **dans leur corps** mais appellent `doctor_optimal_eq_top` (L836) qui contient 1 sorry. Le claim "CLOSED via PR #1521" est correct au sens mecanique (corps des theoremes principaux fermes) mais **incomplet au sens transitif**. Les 3 sorrys restants vivent dans `Lattice.lean` et representent la machinerie complete du lattice de matchings stables (Knuth 1976, Wu-Roth 2018) qui n'existe pas encore dans Mathlib4. `no_cross_match` est un `lemma ... := by sorry` (PAS un `axiom`), per mandate user PR #1530. Tous **INTRACTABLE** par le prover LLM courant (4 traces 2026-05-23/24 sur A2/B/L836 = 0 sorry-delta net, cf `agent_tests/prover/traces/*Lattice*.json` et [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) GO/NO-GO per project).
 
 ## Quick Start
 

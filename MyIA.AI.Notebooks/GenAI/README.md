@@ -198,20 +198,33 @@ python scripts/notebook_tools/notebook_tools.py analyze <path>
 
 ---
 
-## Statut par sous-domaine
+## Acquis d'apprentissage
 
-| Sous-domaine | Notebooks | Validation |
-| ------------ | --------- | ---------- |
-| 00-GenAI-Environment | 6 | 100% |
-| Image | 19 | 100% |
-| Audio | 30 | 100% |
-| Video | 16 | 100% |
-| Texte | 11 | 100% |
-| SemanticKernel | 20 | 85% |
-| FineTuning | 5 | BETA |
-| CaseStudies | 4 | 100% |
-| Playwright-OWUI | 5 modules | 100% |
-| Vibe-Coding | 5 notebooks | 100% |
+A l'issue du parcours, vous etes capable de :
+
+- **Selectionner le bon modele** pour une tache donnee — connaitre les forces/faiblesses des modeles cloud (DALL-E, GPT, Whisper, Sora) face aux modeles open-source locaux (FLUX, SD 3.5, Qwen-Image, Whisper-local, MusicGen, HunyuanVideo) et arbitrer sur cout / qualite / souverainete des donnees.
+- **Combiner les modalites** dans des pipelines coherents — texte vers image, image vers video, audio vers texte vers audio, sans casser la chaine d'inference ni perdre le contexte semantique.
+- **Orchestrer des agents** via Semantic Kernel (plugins, agents, filtres, vector stores, processus multi-etapes) en Python et en C#/.NET Interactive.
+- **Industrialiser une application GenAI** avec authentification ComfyUI, graceful degradation cloud/local, tests E2E Playwright sur Open WebUI, et integration MCP.
+- **Developper avec des agents IA** (Claude Code, Roo Code) en mode "vibe coding" — formuler les besoins, iterer sur les diffs, automatiser les workflows de developpement.
+- **Evaluer la qualite** des sorties generees — metriques objectives (FID, WER, BLEU), validation subjective structuree, comparaison de pipelines.
+
+## Fil rouge transverse
+
+Les sous-domaines ne sont pas isoles. Un projet final typique enchaine :
+
+1. **Texte** produit un script structure (function calling, structured outputs)
+2. **Image** illustre les concepts (DALL-E, FLUX, ou Qwen Image Edit pour les retouches)
+3. **Audio** synthetise la narration (Kokoro/OpenAI TTS) + fond musical (MusicGen)
+4. **Video** assemble le tout (HunyuanVideo pour la generation, Demucs pour la sync A/V)
+5. **SemanticKernel** orchestre le pipeline en agents autonomes
+6. **Playwright-OWUI** teste l'interface utilisateur du produit final
+
+C'est ce parcours d'integration qui differencie une demonstration jouet d'un produit deployable.
+
+## Statut
+
+Toutes les sous-series sont actuellement en etat **BETA ou PRODUCTION**, avec validation Papermill > 90% (CI catalog-drift active). Les details par sous-serie (validation %, maturity par notebook) sont dans chaque README enfant, et le compte canonique se lit dans le marqueur `CATALOG-STATUS` en tete de ce fichier.
 
 ---
 

@@ -1,6 +1,6 @@
 # Lean - Solveur Mathematique et Verification Formelle
 
-Cette serie de **14 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves et la verification formelle de reseaux de neurones.
+Cette serie de **16 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, le port de theoremes phares (theoreme de Kochen-Specker, 18 vecteurs Cabello), et des hommages aux mathematiciens (Grothendieck, langage grothendieckien dans Mathlib 4).
 
 ## Navigation
 
@@ -14,6 +14,8 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Avec Mathlib** | 1-6 | ~3h45 | Ajoute les tactiques Mathlib |
 | **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et theoreme de sensibilite |
+| **Avec Pilier 1.B** | 1-12, 15 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
+| **Avec hommages** | 1-12, 13, 15 | ~12h45 | Ajoute Lean-13 (langage grothendieckien dans Mathlib 4) |
 
 ## Structure
 
@@ -41,26 +43,32 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | Theoreme de sensibilite (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 
-**Duree totale** : ~11h
+### Partie 3 : Theoremes phares (ports complets)
 
-## Statut de maturite
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 15 | [Lean-15-Kochen-Specker](Lean-15-Kochen-Specker.ipynb) | Theoreme de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parite, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
 
-| # | Notebook | Cellules | Exercices | Solutions | Statut |
-|---|----------|----------|-----------|-----------|--------|
-| 1 | Setup | ~17 | - | - | **COMPLET** |
-| 2 | Dependent-Types | ~50 | 3 | 3 | **COMPLET** |
-| 3 | Propositions-Proofs | ~50 | 3 | 3 | **COMPLET** |
-| 4 | Quantifiers | ~46 | 3 | 3 | **COMPLET** |
-| 5 | Tactics | ~70 | 3 | 3 | **COMPLET** |
-| 6 | Mathlib-Essentials | ~45 | 3 | 3 | **COMPLET** |
-| 7 | LLM-Integration | ~50 | 2 | 2 | **COMPLET** |
-| 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
-| 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
-| 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
-| 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
-| 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
-| 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
-| 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
+### Partie 4 : Hommages mathematiciens
+
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 13 | [Lean-13-Grothendieck-Tribute](Lean-13-Grothendieck-Tribute.ipynb) | Langage grothendieckien dans Mathlib 4 : categories/foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas, site de Zariski, morphismes etales/lisses - Epic #1646 | 45 min |
+
+**Duree totale** : ~12h45
+
+## Acquis d'apprentissage
+
+A l'issue de la serie, vous saurez :
+
+- **Modeliser** un raisonnement mathematique dans le Calcul des Constructions : types dependants, univers, propositions comme types (Curry-Howard). Notebooks 2-3 ancrent ces objets sur des exemples concrets (Vector, propositions logiques) plutot que sur de l'abstraction nue.
+- **Prouver** un theoreme en mode tactique avec les briques Mathlib : `intro`/`apply`/`exact`/`rfl` pour la structure, `ring`/`linarith`/`omega`/`simp` pour l'arithmetique et la simplification, `induction`/`cases`/`rcases` pour l'analyse de cas. Notebooks 4-6.
+- **Integrer un LLM** au workflow de preuve : patterns LeanCopilot et AlphaProof (n-best, MCTS), prompts goal-aware, comparaison ND-search vs CoT, agents APOLLO/Erdos. Notebooks 7-9.
+- **Tracer et explorer** une base de preuves a grande echelle : LeanDojo (parsing AST, theorem extraction, interaction Dojo), reseaux de neurones verifies via IBP/CROWN (TorchLean). Notebooks 10-11.
+- **Porter** un theoreme de recherche en Lean 4 : theoreme de sensibilite (Huang 2019, hypercube et signing matrix), theoreme de Kochen-Specker (Cabello 18 vecteurs, argument de parite, contextuality quantique). Notebooks 12, 15.
+- **Lire le langage grothendieckien** dans Mathlib 4 : categories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas et sites, morphismes etales/lisses — comme entree vers la geometrie algebrique formalisee. Notebook 13.
+
+Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` residuels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) et le [README du projet conway_lean](conway_lean/README.md).
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
@@ -228,6 +236,9 @@ Lean/
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11-TorchLean-Python.ipynb  # Python kernel - Implementation algorithmes
+├── Lean-13-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
+├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
+├── Lean-15-Kochen-Specker.ipynb    # Lean4 kernel - theoreme de Kochen-Specker (Pilier 1.B)
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example

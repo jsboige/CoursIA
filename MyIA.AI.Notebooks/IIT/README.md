@@ -95,6 +95,17 @@ La Theorie de l'Information Integree (IIT) propose une approche mathematique de 
 
 **Phi** mesure le degre d'integration informationnelle d'un systeme. Un Phi > 0 indique une integration irreductible, suggerant une forme de conscience.
 
+## Portee scientifique et debats
+
+L'IIT n'est pas qu'une speculation philosophique : elle a engendre des outils utilises en clinique et alimente l'un des debats les plus vifs des neurosciences.
+
+- **Mesure clinique de la conscience.** Le *Perturbational Complexity Index* (PCI), inspire des principes de l'IIT, est utilise pour evaluer la conscience chez des patients non communicants (coma, etat vegetatif, anesthesie). Le protocole « zap-and-zip » (stimulation TMS + EEG, compression de la reponse) distingue empiriquement les etats conscients des etats inconscients — une retombee concrete et reproductible d'une theorie de la conscience.
+- **Une theorie concurrente.** L'IIT s'oppose frontalement aux theories de type *Global Workspace* (Dehaene, Baars), qui font de la conscience une diffusion globale de l'information plutot qu'une integration causale locale. Des programmes de tests adversariaux (collaboration Templeton) confrontent leurs predictions sur des donnees reelles.
+- **Enjeu pour l'IA.** L'IIT predit qu'un reseau purement *feed-forward* (comme l'inference d'un LLM classique) a un Phi nul : il calcule sans « etre » conscient, faute de boucles causales integrees. Cette these est centrale dans les discussions sur la conscience artificielle.
+- **Controverse.** Le calcul exact de Phi est computationnellement intractable au-dela de petits reseaux (d'ou le coarse-graining du notebook), et la theorie a fait l'objet d'une critique publique retentissante (lettre ouverte de 2023 la qualifiant de « pseudoscience ») — un cas d'ecole pour discuter des criteres de scientificite d'une theorie de l'esprit.
+
+Ces tensions font de l'IIT un excellent terrain pour exercer l'esprit critique : on y manipule un formalisme precis (calculable avec PyPhi) tout en gardant a l'esprit les limites de son interpretation.
+
 ## Ressources
 
 ### Documentation PyPhi

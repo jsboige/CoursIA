@@ -1,12 +1,16 @@
 # MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
 
-Ecosysteme complet de **500 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques. Maturite : **158 PRODUCTION + 294 BETA = 452/500 (90%)** prets cours ; 39 ALPHA + 5 DRAFT + 4 TEMPLATE en developpement.
+CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours continu, des fondations jusqu'aux frontières de la recherche. Plutôt qu'une collection d'exemples isolés, il tisse un même fil conducteur à travers onze domaines : on y apprend autant à **faire** — générer des images et de l'audio, entraîner et déployer des modèles, backtester des stratégies de trading, résoudre des problèmes de contraintes — qu'à **comprendre et prouver** : formaliser un théorème en Lean 4, raisonner sur l'incertitude, vérifier qu'un smart contract ou un algorithme se comporte comme attendu.
+
+Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exercices corrigés pour un apprentissage en autonomie.
+
+Le catalogue rassemble près de 500 notebooks répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 497
-breakdown: GenAI=114, QuantConnect=102, SymbolicAI=98, Search=45, Probas=43, Sudoku=32, ML=27, GameTheory=25, RL=6, CaseStudies=4, IIT=1
-maturity: BETA=292, PRODUCTION=158, ALPHA=38, DRAFT=5, TEMPLATE=4
+total: 498
+breakdown: GenAI=114, QuantConnect=102, SymbolicAI=99, Search=45, Probas=43, Sudoku=32, ML=27, GameTheory=25, RL=6, CaseStudies=4, IIT=1
+maturity: BETA=293, PRODUCTION=158, ALPHA=38, DRAFT=5, TEMPLATE=4
 -->
 
 Dernière mise à jour : 2026-05-28
@@ -21,7 +25,7 @@ Dernière mise à jour : 2026-05-28
 | **Search** | 45 | Recherche, CSP, optimisation, metaheuristiques |
 | **Probas** | 43 | Programmation probabiliste (Infer.NET + PyMC) |
 | **Sudoku** | 32 | Resolution de contraintes (.NET C#) |
-| **GameTheory** | 28 | Theorie des Jeux (OpenSpiel, choix social Lean) |
+| **GameTheory** | 25 | Theorie des Jeux (OpenSpiel, choix social Lean) |
 | **ML** | 27 | Machine Learning .NET + Python Agents for Data Science |
 | **RL** | 6 | Reinforcement Learning (Stable-Baselines3) |
 | **CaseStudies** | 4 | Etudes de cas interdisciplinaires (diagnostic medical, planification oncologique) |
@@ -94,7 +98,7 @@ SymbolicAI (98 notebooks)
 | **Search** | 45 | [Search/](Search/README.md) |
 | **Probas** | 43 | [Probas/](Probas/README.md) |
 | **Sudoku** | 32 | [Sudoku/](Sudoku/README.md) |
-| **GameTheory** | 28 | [GameTheory/](GameTheory/README.md) |
+| **GameTheory** | 25 | [GameTheory/](GameTheory/README.md) |
 | **ML** | 27 | [ML/](ML/README.md) |
 | **RL** | 6 | [RL/](RL/README.md) |
 | **CaseStudies** | 4 | [CaseStudies/](CaseStudies/README.md) |

@@ -41,6 +41,8 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
+De la **mécanique d'un backtest** (lifecycle d'un algorithme, gestion des données, types d'ordres, risk management) jusqu'aux **modèles de pointe appliqués à la finance** — Random Forest et XGBoost, puis LSTM, Transformers et State-Space Models, jusqu'au reinforcement learning et aux LLMs employés comme générateurs de signaux — la série couvre toute la chaîne, le bloc **fondations** consolidant l'écosystème LEAN (universe selection, classes d'actifs, Algorithm Framework) avant toute approche ML.
+
 - **51 notebooks Python** (28 cours QC-Py-01..28 + 3 training QC-Py-30..32 + 3 RL avance QC-Py-33..35 + 2 paper-trading QC-Py-40..41 + 13 Cloud-ready QC-Py-Cloud-01..07 + 1 dataset workflow + 1 research interne)
 - **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
 - **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
