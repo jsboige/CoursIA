@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI
 pedagogical_count: 99
-breakdown: SmartContracts=27, SemanticWeb=18, Lean=16, Planners=13, Tweety=10, SymbolicLearning=7, Argument_Analysis=6, root=2
+breakdown: SmartContracts=27, SemanticWeb=18, Lean=16, Planners=14, Tweety=10, SymbolicLearning=7, Argument_Analysis=6, root=2
 maturity: BETA=84, PRODUCTION=9, ALPHA=6
 -->
 
@@ -48,7 +48,7 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 98 notebooks actifs, ~63h de contenu
+**Total** : 99 notebooks actifs, ~65h de contenu
 
 ---
 
@@ -124,7 +124,7 @@ Documentation complete : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Verification Formelle
 
-Serie de **15 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves, plus un port complet du theoreme de Kochen-Specker 18-vecteurs (Lean-15).
+Serie de **16 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves, un tribut a Grothendieck (Lean-13), et un port complet du theoreme de Kochen-Specker 18-vecteurs (Lean-15).
 
 ### Structure detaillee
 
@@ -146,6 +146,7 @@ Serie de **15 notebooks** sur **Lean 4**, proof assistant base sur la theorie de
 | 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Verification formelle de reseaux de neurones | 2 |
 | 11py | [Lean-11-TorchLean-Python](Lean/Lean-11-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, verification | 7 |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Lean 4 | Port Lean du theoreme de sensibilite de Huang (2019), hypercube, signing matrix | 4 |
+| 13 | [Lean-13-Grothendieck-Tribute](Lean/Lean-13-Grothendieck-Tribute.ipynb) | Lean 4 | Hommage a Grothendieck : tour Mathlib, micro-formalisations | 3 |
 | 15 | [Lean-15-Kochen-Specker](Lean/Lean-15-Kochen-Specker.ipynb) | Lean 4 | Theoreme de Kochen-Specker (1967), 18 vecteurs Cabello-Estebaranz-Garcia-Alcaine, contextuality quantique | 5 |
 
 ### Kernels requis
@@ -195,7 +196,7 @@ Documentation complete : [SemanticWeb/README.md](SemanticWeb/README.md)
 
 ## Planners - Planification Automatique
 
-Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, et integration LLM.
+Serie de **14 notebooks** sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, et integration LLM.
 
 ### Structure detaillee
 
@@ -210,6 +211,7 @@ Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classi
 | 4 | [Planners-4-Fast-Downward](Planners/02-Classical/Planners-4-Fast-Downward.ipynb) | Fast Downward, heuristiques | 6 | Docker, Fast-Downward |
 | 5 | [Planners-5-Heuristics](Planners/02-Classical/Planners-5-Heuristics.ipynb) | Heuristiques (FF, LM-Cut, Merge-and-Shrink) | 5 | Fast-Downward |
 | 6 | [Planners-6-Domains](Planners/02-Classical/Planners-6-Domains.ipynb) | Catalogue de domaines PDDL | 3 | Fast-Downward |
+| 6b | [Fast-Downward-Legacy](Planners/Fast-Downward-Legacy.ipynb) | Legacy Fast-Downward .NET | 0 | .NET kernel |
 | **Avance** |
 | 7 | [Planners-7-OR-Tools](Planners/03-Advanced/Planners-7-OR-Tools.ipynb) | CP-SAT, Job Shop, VRP | 2 | ortools |
 | 8 | [Planners-8-Temporal](Planners/03-Advanced/Planners-8-Temporal.ipynb) | Planification temporelle (PDDL 2.1) | 6 | Python |
@@ -219,7 +221,7 @@ Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classi
 | 11 | [Planners-11-Unified-Planning](Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Unified Planning Framework | 3 | unified_planning |
 | 12 | [Planners-12-LOOP](Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb) | LLM + OR-Tools + planification | 2 | Fast-Downward |
 
-> 12/13 notebooks ont des exercices. Seul Planners-0-Setup (configuration) n'en a pas.
+> 13/14 notebooks ont des exercices. Seuls Planners-0-Setup (configuration) et Fast-Downward-Legacy (.NET legacy) n'en ont pas.
 
 Documentation complete : [Planners/README.md](Planners/README.md)
 
@@ -308,19 +310,19 @@ SymbolicAI/
 │   ├── ext_tools/             # Clingo, SPASS, EProver
 │   └── README.md
 │
-├── Lean/                      # Serie Lean 4 (14 notebooks)
+├── Lean/                      # Serie Lean 4 (16 notebooks)
 │   ├── Lean-1-Setup.ipynb ... Lean-12-Sensitivity-Theorem.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
 │   └── README.md
 │
-├── SemanticWeb/               # Web semantique (17 notebooks)
+├── SemanticWeb/               # Web semantique (18 notebooks)
 │   ├── SW-1-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD
 │   ├── RDF.Net-Legacy/      # Notebook original (reference historique)
 │   └── README.md
 │
-├── Planners/                  # Planification automatique (13 notebooks)
+├── Planners/                  # Planification automatique (14 notebooks)
 │   ├── 00-Environment/       # Setup
 │   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
 │   ├── 02-Classical/         # State Space, Fast-Downward, Heuristics, Domains
@@ -501,12 +503,12 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 |-------|-----------|----------------|----------------|--------|
 | SmartContracts | 27 | 27 (100%) | 0 | Complet |
 | SemanticWeb | 18 | 16 (89%) | 2 (Setup + Legacy) | Complet |
-| Lean | 14 | 13 (93%) | 1 (Setup) | Complet |
-| Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
+| Lean | 16 | 14 (88%) | 2 (Setup, Grothendieck) | Complet |
+| Planners | 14 | 12 (86%) | 2 (Setup, Legacy) | Complet |
 | Tweety | 10 | 10 (100%) | 0 | Complet |
 | Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-**Total** : 78/88 notebooks de contenu avec exercices (89%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy deprecie (RDF.Net) et la serie demo Argument Analysis (6 notebooks).
+**Total** : 80/98 notebooks de contenu avec exercices (82%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy (RDF.Net, Fast-Downward-Legacy), le tribute Grothendieck (Lean-13), et la serie demo Argument Analysis (6 notebooks).
 
 ### Problemes restants
 
@@ -607,4 +609,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-05-28
+**Derniere mise a jour** : 2026-05-29
