@@ -70,6 +70,27 @@ A l'issue de la serie, vous saurez :
 
 Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` residuels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) et le [README du projet conway_lean](conway_lean/README.md).
 
+## Statut de maturite
+
+| # | Notebook | Cellules | Exercices | Solutions | Statut |
+|---|----------|----------|-----------|-----------|--------|
+| 1 | Setup | ~17 | - | - | **COMPLET** |
+| 2 | Dependent-Types | ~50 | 3 | 3 | **COMPLET** |
+| 3 | Propositions-Proofs | ~50 | 3 | 3 | **COMPLET** |
+| 4 | Quantifiers | ~46 | 3 | 3 | **COMPLET** |
+| 5 | Tactics | ~70 | 3 | 3 | **COMPLET** |
+| 6 | Mathlib-Essentials | ~45 | 3 | 3 | **COMPLET** |
+| 7 | LLM-Integration | ~50 | 2 | 2 | **COMPLET** |
+| 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
+| 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
+| 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
+| 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
+| 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
+| 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
+| 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
+| 13 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
+| 15 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
+
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
 - Plan de ce Notebook avec liens ancres (notebooks 2-4)
