@@ -1,8 +1,10 @@
 # ML-Pairs-PCA-Selection (HandsOn Ex09)
 
+> **Archived 2026-05-29** — Research-only project: no `main.py` (only `research.ipynb`). Never deployed as a strategy. The PCA pair selection concept is already covered by [PCA-StatArbitrage](../../PCA-StatArbitrage) (consolidated from PCA-StatArb + ML-PCA-StatArb, HandsOn Ex13).
+
 **Asset class:** N/A (Research only)
 **Cloud project ID:** None (local only)
-**Status:** Research phase
+**Status:** Archived (research-only, no executable strategy)
 
 ## Description
 

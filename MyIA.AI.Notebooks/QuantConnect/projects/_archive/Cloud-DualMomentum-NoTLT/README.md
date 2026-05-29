@@ -1,5 +1,7 @@
 # Cloud-DualMomentum-NoTLT
 
+> **Archived 2026-05-29** — Superseded by [DualMomentumNoTLT](../../DualMomentumNoTLT). v2 mode duplicates DualMomentumNoTLT/main.py exactly (same 5-ticker universe, same top-2 equal-weight logic). v1 and v3 variants have no supporting documentation or cloud-id. The naming "Cloud-*" is misleading (no cloud project ID).
+
 **Asset class:** Equities, Bonds, Commodities (multi-asset ETF rotation)
 
 **Cloud project ID:** N/A
