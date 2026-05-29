@@ -1,5 +1,12 @@
 # GenAI Texte - Maîtrise des LLMs : Fondement de tout Génératif
 
+<!-- CATALOG-STATUS
+series: GenAI-Texte
+pedagogical_count: 11
+breakdown: OpenAI-Intro=1, PromptEngineering=1, StructuredOutputs=1, FunctionCalling=1, RAG=1, PDF-WebSearch=1, CodeInterpreter=1, Reasoning=1, Production=1, LocalLlama=1, Quantization=1
+maturity: PRODUCTION=6, BETA=5
+-->
+
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
 
 La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Génératif. Chaque image générée, chaque instruction d'agent et chaque requête RAG trouve son origine dans le texte. Cette série vous guide à travers une progression pédagogique complète pour transformer votre interaction avec l'IA.
