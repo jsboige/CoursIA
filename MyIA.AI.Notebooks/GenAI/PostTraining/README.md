@@ -4,8 +4,8 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 2
-breakdown: Introduction=1, SFT=1
+pedagogical_count: 6
+breakdown: Introduction=1, SFT=1, DPO=1, GRPO=1, RLVR=1, Evaluation=1
 maturity: BETA
 -->
 
@@ -27,22 +27,22 @@ L'angle pedagogique est d'expliquer la **math du loss** avant le code pour chaqu
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 2 livres (PT-01, PT-02) + 4 prevus (PT-03 a PT-06) |
+| Notebooks | **6 livres (PT-01 a PT-06) — serie COMPLETE** |
 | Kernel | Python 3 |
-| Duree estimee | ~6-10h total |
-| GPU cible | RTX 3070 8 Go (po-2024) |
-| Statut | DRAFT (scaffold initial) |
+| Duree estimee | ~8-12h total |
+| GPU cible | RTX 3070 8 Go (LOAD_MODEL_AND_TRAIN=False pour demo CPU) |
+| Statut | **PRODUCTION** (Epic #1742 clos) |
 
-## Notebooks prevus
+## Notebooks
 
-| # | Notebook | Sujet | Technique | Modele cible |
-|---|----------|-------|-----------|--------------|
-| PT-01 | `PT_01_intro_post_training.ipynb` | Vue d'ensemble historique : SFT → RLHF → DPO → GRPO → RLVR | Theorique (markdown + figures) | N/A |
-| PT-02 | `PT_02_sft_baseline.ipynb` | Supervised Fine-Tuning baseline | `trl.SFTTrainer` | Qwen2.5-0.5B-Instruct |
-| PT-03 | `PT_03_dpo_direct_preference.ipynb` | Direct Preference Optimization (Rafailov 2023) | `trl.DPOTrainer` | Qwen2.5-0.5B post-SFT |
-| PT-04 | `PT_04_grpo_deepseek_r1.ipynb` | Group Relative Policy Optimization (livrable cle) | `trl.GRPOTrainer` | Qwen2.5-0.5B |
-| PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) | `trl.GRPOTrainer` + verifier | Qwen2.5-Math-1.5B |
-| PT-06 | `PT_06_evaluation_post_training.ipynb` | Eval comparative SFT vs DPO vs GRPO vs RLVR | `lm-evaluation-harness` | tous |
+| # | Notebook | Sujet | Technique | Modele cible | PR |
+|---|----------|-------|-----------|--------------|----|
+| PT-01 | `PT_01_intro_post_training.ipynb` | Vue d'ensemble historique : SFT → RLHF → DPO → GRPO → RLVR | Theorique (markdown + figures) | N/A | — |
+| PT-02 | `PT_02_sft_baseline.ipynb` | Supervised Fine-Tuning baseline | `trl.SFTTrainer` | Qwen2.5-0.5B-Instruct | #1764 |
+| PT-03 | `PT_03_dpo_direct_preference.ipynb` | Direct Preference Optimization (Rafailov 2023) | `trl.DPOTrainer` | Qwen2.5-0.5B post-SFT | #1766 |
+| PT-04 | `PT_04_grpo_deepseek_r1.ipynb` | Group Relative Policy Optimization (livrable cle) | `trl.GRPOTrainer` | Qwen2.5-0.5B | #1768 |
+| PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) | `trl.GRPOTrainer` + verifier SymPy | Qwen2.5-0.5B | #1771 |
+| PT-06 | `PT_06_eval_comparative.ipynb` | Evaluation comparative SFT vs DPO vs GRPO vs RLVR | Tableaux, chart, framework decision | tous | #1772 |
 
 ## Progression pedagogique
 
@@ -226,9 +226,9 @@ Pour les apprenants disposant de plus de VRAM (RTX 4090 24Go, A100 40Go), la ser
 
 ## Statut
 
-DRAFT — scaffold initial (README + structure). Notebooks PT-01 a PT-06 a livrer dans les cycles suivants (priorite PT-01 → PT-02 → PT-04, autres optionnels).
+PRODUCTION — 6/6 notebooks livres (Epic #1742 COMPLETE). Tous executes avec outputs reels, C.1/C.2 conformes.
 
-Suivi : [Issue #1742](https://github.com/jsboige/CoursIA/issues/1742) (parent Epic #1454).
+Suivi : [Issue #1742](https://github.com/jsboige/CoursIA/issues/1742) (CLOSED).
 
 ## Licence
 

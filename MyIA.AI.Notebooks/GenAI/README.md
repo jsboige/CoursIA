@@ -26,7 +26,7 @@ GenAI/
 ├── Texte/                   # LLMs et generation de texte (11 notebooks)
 ├── SemanticKernel/          # Microsoft Semantic Kernel (20 notebooks)
 ├── FineTuning/              # Fine-tuning de modeles : LoRA/QLoRA/SFT/DPO (5 notebooks)
-├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR (2 notebooks)
+├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR (6 notebooks)
 ├── CaseStudies/             # Etudes de cas etudiants (4 notebooks)
 ├── Playwright-OWUI/         # Tests E2E Playwright (5 modules, 30+ tests)
 └── Vibe-Coding/             # Tutorials Claude Code et Roo Code (5 notebooks)
