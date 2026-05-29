@@ -17,47 +17,47 @@ Dernière mise à jour : 2026-05-28
 
 ## Vue d'ensemble
 
-| Domaine | Notebooks | Description |
-|---------|-----------|-------------|
-| **GenAI** | 114 | IA Generative (Images, Audio, Video, Texte, SemanticKernel, Vibe-Coding) |
-| **QuantConnect** | 102 | Trading algorithmique et ML financier (Python + C#) |
-| **SymbolicAI** | 98 | IA Symbolique (Lean, Tweety, SmartContracts, SemanticWeb, Planners) |
-| **Search** | 45 | Recherche, CSP, optimisation, metaheuristiques |
-| **Probas** | 43 | Programmation probabiliste (Infer.NET + PyMC) |
-| **Sudoku** | 32 | Resolution de contraintes (.NET C#) |
-| **GameTheory** | 25 | Theorie des Jeux (OpenSpiel, choix social Lean) |
-| **ML** | 27 | Machine Learning .NET + Python Agents for Data Science |
-| **RL** | 6 | Reinforcement Learning (Stable-Baselines3) |
-| **CaseStudies** | 4 | Etudes de cas interdisciplinaires (diagnostic medical, planification oncologique) |
-| **IIT** | 1 | Integrated Information Theory (PyPhi) |
+| Domaine | Description |
+|---------|-------------|
+| **GenAI** | Generation d'images (SDXL, Flux, Qwen-VL), audio (FishAudio S2-Pro, STT/TTS), video, LLMs, RAG, fine-tuning LoRA, orchestration via Semantic Kernel |
+| **QuantConnect** | Trading algorithmique progressif : cours Python pas-a-pas, 49 strategies backtestees (GARCH, Kelly, ensemble), pipeline ML thermal-safe |
+| **SymbolicAI** | Preuve formelle Lean 4 (theoremes d'Arrow, Conway, Kochen-Specker), logiques argumentaires (Tweety), SmartContracts Solidity, Web semantique RDF/SPARQL |
+| **Search** | Satisfaction de contraintes (CSP), recherche operationnelle, metaheuristiques (recuit, genetiques), planification PDDL avec Fast-Downward |
+| **Probas** | Programmation probabiliste : modeles graphiques en Infer.NET (.NET C#) + inference bayesienne en PyMC (Python) |
+| **Sudoku** | Resolution de contraintes en .NET C# : backtracking, propagation, modeles CNN/MLP, etude comparative d'architectures |
+| **GameTheory** | Theorie des jeux combinatoire (OpenSpiel), choix social formel (theoremes d'Arrow, Sen, Shapley portes en Lean 4), von Neumann |
+| **ML** | Machine Learning .NET (ML.NET) + Python Agents for Data Science : classification, regression, clustering, pipelines |
+| **RL** | Reinforcement Learning avec Stable-Baselines3 : environnements OpenAI Gym, PPO, SAC, evaluation de politiques |
+| **CaseStudies** | Etudes de cas interdisciplinaires : diagnostic medical par LLM, planification oncologique, analyse de sentiments |
+| **IIT** | Integrated Information Theory : mesures Phi avec PyPhi, neurones logiques, conscience et complexite |
 
 ### Progression pedagogique
 
 ```text
-GenAI (114 notebooks)
-├── 00-GenAI-Environment/ (6) - Setup Docker, GPU, services
-├── Image/ (16) - Generation d'images (SDXL, Qwen, Flux)
-├── Audio/ (30) - STT, TTS, music, pipeline audiobook FishAudio S2-Pro
-├── Video/ (16) - Generation video, animation
-├── Texte/ (11) - LLMs, RAG, reasoning
-├── SemanticKernel/ (20) - SDK Microsoft
-├── FineTuning/ (5) - Fine-tuning LoRA, adapters
-├── CaseStudies/ (4) - Etudes de cas etudiants
-└── Vibe-Coding/ (5) - Claude-Code + Roo-Code
+GenAI
+├── 00-GenAI-Environment/ - Setup Docker, GPU, services
+├── Image/ - Generation d'images (SDXL, Qwen, Flux)
+├── Audio/ - STT, TTS, music, pipeline audiobook FishAudio S2-Pro
+├── Video/ - Generation video, animation
+├── Texte/ - LLMs, RAG, reasoning
+├── SemanticKernel/ - SDK Microsoft
+├── FineTuning/ - Fine-tuning LoRA, adapters
+├── CaseStudies/ - Etudes de cas etudiants
+└── Vibe-Coding/ - Claude-Code + Roo-Code
 
-QuantConnect (102 notebooks)
-├── Python/ (51) - Cours progressifs QC-Py
-├── projects/ (49) - Strategies backtests et ML
-└── ML-Training-Pipeline/ (2) - Pipeline training thermal-safe
+QuantConnect
+├── Python/ - Cours progressifs QC-Py (fondamentaux → strategies)
+├── projects/ - Strategies backtestees et ML (GARCH, Kelly, ensemble)
+└── ML-Training-Pipeline/ - Pipeline training thermal-safe
 
-SymbolicAI (98 notebooks)
-├── SmartContracts/ (27) - Solidity, Web3, blockchain
-├── SemanticWeb/ (18) - RDF, SPARQL, OWL, C# + Python
-├── Lean/ (15) - Theorem proving, LeanDojo, social choice
-├── Planners/ (13) - PDDL, Fast-Downward, OR-Tools, LLM planning
-├── Tweety/ (10) - Logiques classiques, argumentation
-├── SymbolicLearning/ (7) - ILP, NeuroSymbolic, KG-ILP, LLM-Symbolic
-└── Argument_Analysis/ (6) - Analyse d'arguments
+SymbolicAI
+├── SmartContracts/ - Solidity, Web3, blockchain
+├── SemanticWeb/ - RDF, SPARQL, OWL, C# + Python
+├── Lean/ - Theorem proving, LeanDojo, social choice
+├── Planners/ - PDDL, Fast-Downward, OR-Tools, LLM planning
+├── Tweety/ - Logiques classiques, argumentation
+├── SymbolicLearning/ - ILP, NeuroSymbolic, KG-ILP, LLM-Symbolic
+└── Argument_Analysis/ - Analyse d'arguments
 ```
 
 ## Technologies principales
@@ -90,19 +90,19 @@ SymbolicAI (98 notebooks)
 
 ## Liens vers les sous-domaines
 
-| Domaine | Notebooks | Lien |
-|---------|-----------|------|
-| **GenAI** | 114 | [GenAI/](GenAI/README.md) |
-| **QuantConnect** | 102 | [QuantConnect/](QuantConnect/README.md) |
-| **SymbolicAI** | 98 | [SymbolicAI/](SymbolicAI/README.md) |
-| **Search** | 45 | [Search/](Search/README.md) |
-| **Probas** | 43 | [Probas/](Probas/README.md) |
-| **Sudoku** | 32 | [Sudoku/](Sudoku/README.md) |
-| **GameTheory** | 25 | [GameTheory/](GameTheory/README.md) |
-| **ML** | 27 | [ML/](ML/README.md) |
-| **RL** | 6 | [RL/](RL/README.md) |
-| **CaseStudies** | 4 | [CaseStudies/](CaseStudies/README.md) |
-| **IIT** | 1 | [IIT/](IIT/README.md) |
+| Domaine | Lien |
+|---------|------|
+| **GenAI** | [GenAI/](GenAI/README.md) |
+| **QuantConnect** | [QuantConnect/](QuantConnect/README.md) |
+| **SymbolicAI** | [SymbolicAI/](SymbolicAI/README.md) |
+| **Search** | [Search/](Search/README.md) |
+| **Probas** | [Probas/](Probas/README.md) |
+| **Sudoku** | [Sudoku/](Sudoku/README.md) |
+| **GameTheory** | [GameTheory/](GameTheory/README.md) |
+| **ML** | [ML/](ML/README.md) |
+| **RL** | [RL/](RL/README.md) |
+| **CaseStudies** | [CaseStudies/](CaseStudies/README.md) |
+| **IIT** | [IIT/](IIT/README.md) |
 
 ## Configuration requise
 
