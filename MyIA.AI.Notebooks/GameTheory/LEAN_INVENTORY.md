@@ -6,14 +6,14 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 
 | Directory | Toolchain | Production sorry | Modules | Status |
 |-----------|-----------|-----------------|---------|--------|
-| `stable_marriage_lean` | v4.30.0-rc2 | 3 | 6 files | Active proving |
+| `stable_marriage_lean` | v4.30.0-rc2 | 3 | 5 files | Active proving |
 | `calibration_lean` | v4.30.0-rc2 | 0 | 1 file | COMPLETE |
-| `cooperative_games_lean` | v4.30.0-rc2 | 0 | 2 files | COMPLETE |
+| `cooperative_games_lean` | v4.30.0-rc2 | 1 | 2 files | Active proving |
 | `social_choice_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
-| **Total** | — | **3** | **17 files** | — |
+| **Total** | — | **4** | **16 files** | — |
 
-Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production.
+Note: `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production. `_GoalExtract.lean` (former prover test file) has been removed from the repo.
 
 **Conway tribute series relocated**: `conway_lean/` (Conway hommage — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel) was moved to [`SymbolicAI/Lean/conway_lean/`](../SymbolicAI/Lean/conway_lean/) since it formalizes lesser-known Conway results (not game-theoretic content per se). The prover calibration targets defined in `agent_tests/prover/config.py` follow the new path.
 
@@ -29,16 +29,15 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 
 | File | sorry | Description |
 |------|-------|-------------|
-| `StableMarriage/GaleShapley.lean` | 0 | GS algorithm, termination, stability, man_optimal, woman_pessimal |
+| `StableMarriage/GaleShapley.lean` | 0 (body) | GS algorithm, termination, stability, man_optimal, woman_pessimal — `gale_shapley_man_optimal` transitively depends on `doctor_optimal_eq_top` (Lattice L836 sorry) |
 | `StableMarriage/GSState.lean` | 0 | GS state machine, gsChooseMax |
 | `StableMarriage/Lemmas.lean` | 0 | Helper lemmas (gsFinalMatching, gsAllWomenMatched, gsNoBlockingPairs) |
-| `StableMarriage/Defs.lean` | 0 | Core type definitions |
-| `StableMarriage/Lattice.lean` | 3 | Knuth rotation lattice (Case A2 L145, Case B L147, doctor_optimal L795) |
-| `StableMarriage/_GoalExtract.lean` | 2 | Prover test harness (non-production) |
+| `StableMarriage/Definitions.lean` | 0 | Core type definitions |
+| `StableMarriage/Lattice.lean` | 3 | Knuth rotation lattice (`no_cross_match` Case A2 L185, Case B L187, `doctor_optimal_eq_top` L836) |
 
 **Build**: `lake build StableMarriage` — SUCCESS (688 jobs)
 
-**Prover targets**: Lattice.lean 3 sorry — all INTRACTABLE by current LLM (Knuth rotation sub-cases). doctor_optimal_eq_top proved conditionally (PR #1524). meetSpouse_injective proved (PR #1522). man_optimal proved (PR #1521).
+**Prover targets**: Lattice.lean 3 sorry — all INTRACTABLE by current LLM (Knuth rotation sub-cases). `doctor_optimal_eq_top` (Lattice L836) body remains `sorry`, with all upstream consumers (`gale_shapley_man_optimal`, `woman_pessimal` in GaleShapley.lean) transitively dependent. `meetSpouse_injective` body proved (PR #1522). `gale_shapley_man_optimal` body proved (PR #1521) but transitively depends on `doctor_optimal_eq_top`.
 
 **Key proofs**:
 - `gale_shapley_stable` — PR #1194
@@ -74,11 +73,11 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 | File | sorry | Description |
 |------|-------|-------------|
 | `CooperativeGames/Shapley.lean` | 0 | Shapley value (uniqueness proved) |
-| `CooperativeGames/Basic.lean` | 0 | Core definitions (hCore removed in refactor) |
+| `CooperativeGames/Basic.lean` | 1 | `bondareva_shapley_forward.hCore` (L309) tagged `INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION` |
 
-**Build**: `lake build CooperativeGames` — SUCCESS
+**Build**: `lake build CooperativeGames` — SUCCESS (with `sorry` warning on Basic.lean:309)
 
-**Status: COMPLETE (0 sorry)**. hCore was removed in refactoring. Bondareva-Shapley core nonemptiness remains unformalized (requires hyperplane separation in locally convex spaces).
+**Status: Active proving (1 sorry)**. `bondareva_shapley_forward` reduces to extracting a Core allocation from the polytope `P \ K`; the body is sketched (P nonempty + closed + no element has coalition deficit) but requires Hahn-Banach / hyperplane separation in locally convex spaces (not yet ported to Mathlib for finite-dim ℝⁿ in this shape). Consumer theorem `bondareva_shapley` (iff form) transitively depends on this `sorry`.
 
 ---
 
@@ -125,9 +124,10 @@ Note: `_GoalExtract.lean` (2 sorry) is a prover test file, not production code. 
 
 | Priority | Target                       | Dir                    | sorry | Feasibility                        |
 |----------|------------------------------|------------------------|-------|------------------------------------|
-| P1       | Lattice.lean L145 Case A2    | stable_marriage_lean   | 1     | Very Low (Knuth rotations)         |
-| P2       | Lattice.lean L147 Case B     | stable_marriage_lean   | 1     | Very Low (Knuth rotations)         |
-| P3       | Lattice.lean L795 doc_opt    | stable_marriage_lean   | 1     | Low (depends on no_cross_match)    |
+| P1       | Lattice.lean L185 Case A2    | stable_marriage_lean   | 1     | Very Low (Knuth rotations)         |
+| P2       | Lattice.lean L187 Case B     | stable_marriage_lean   | 1     | Very Low (Knuth rotations)         |
+| P3       | Lattice.lean L836 doc_opt    | stable_marriage_lean   | 1     | Low (depends on no_cross_match)    |
+| P4       | Basic.lean L309 hCore        | cooperative_games_lean | 1     | Very Low (Hahn-Banach separation)  |
 
 Note: After PRs #1521-#1525 merge, Lattice.lean will have **0 sorry, 1 axiom** (`no_cross_match`). The 3 sorry listed above are on current main.
 
@@ -135,9 +135,9 @@ Note: After PRs #1521-#1525 merge, Lattice.lean will have **0 sorry, 1 axiom** (
 
 | Project                | Decision | Reasoning                                                      |
 |------------------------|----------|----------------------------------------------------------------|
-| stable_marriage_lean   | NO-GO    | All 3 sorry INTRACTABLE (Knuth rotations). man_optimal proved. |
+| stable_marriage_lean   | NO-GO    | All 3 sorry INTRACTABLE (Knuth rotations). man_optimal body proved. |
 | calibration_lean       | N/A      | COMPLETE (0 sorry). No targets.                                |
-| cooperative_games_lean | N/A      | COMPLETE (0 sorry). hCore removed.                             |
+| cooperative_games_lean | NO-GO    | `hCore` (Basic.lean:309) tagged `INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION`. |
 | social_choice_lean     | N/A      | COMPLETE (0 sorry). MechanismDesign added (#1469).             |
 | social_choice_lean_peters | N/A   | Reference only (pinned v4.27.0-rc1).                           |
 
