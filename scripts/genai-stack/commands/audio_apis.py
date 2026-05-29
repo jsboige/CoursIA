@@ -355,7 +355,7 @@ def test_service(service_name: str) -> bool:
 # E2E Tests — real generation/transcription/separation
 # ============================================================================
 
-def _get_auth_headers(service_name: str = None) -> dict:
+def _get_auth_headers(service_name: Optional[str] = None) -> dict:
     """Load API key from .env file (service-specific key or generic)."""
     from pathlib import Path
     env_file = Path(__file__).resolve().parent.parent.parent.parent / "MyIA.AI.Notebooks" / "GenAI" / ".env"

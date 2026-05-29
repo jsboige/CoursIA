@@ -104,7 +104,7 @@ class ModelSwitcher:
 class BatchNotebookValidator:
     """Validation batch de notebooks avec switching automatique."""
 
-    def __init__(self, model_switcher, notebooks_dir: Path = None):
+    def __init__(self, model_switcher: Any, notebooks_dir: Optional[Path] = None) -> None:
         self.switcher = model_switcher
         self.notebooks_dir = notebooks_dir or GENAI_DIR
         self.results: Dict[str, Dict[str, Any]] = {}
@@ -150,7 +150,7 @@ class BatchNotebookValidator:
         self.results[group] = results
         return results
 
-    def run_full_validation(self, series: str = None) -> Dict:
+    def run_full_validation(self, series: Optional[str] = None) -> Dict:
         """Validation de tous les groupes (ou d'une serie specifique).
 
         Args:

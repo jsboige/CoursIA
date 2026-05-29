@@ -203,23 +203,23 @@ class Colors:
         cls.CYAN = cls.MAGENTA = cls.BOLD = cls.END = ''
 
 
-def print_ok(msg: str):
+def print_ok(msg: str) -> None:
     print(f"{Colors.GREEN}[OK]{Colors.END} {msg}")
 
 
-def print_error(msg: str):
+def print_error(msg: str) -> None:
     print(f"{Colors.RED}[X]{Colors.END} {msg}")
 
 
-def print_warning(msg: str):
+def print_warning(msg: str) -> None:
     print(f"{Colors.YELLOW}[!]{Colors.END} {msg}")
 
 
-def print_info(msg: str):
+def print_info(msg: str) -> None:
     print(f"{Colors.CYAN}[i]{Colors.END} {msg}")
 
 
-def print_section(title: str):
+def print_section(title: str) -> None:
     print(f"\n{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}")
     print(f"{Colors.BOLD}{Colors.BLUE}{title:^60}{Colors.END}")
     print(f"{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}\n")
@@ -911,7 +911,7 @@ class EnvironmentChecker:
                 return True, "unknown"
         return False, ""
 
-    def check_python_package(self, pkg_name: str, import_name: str = None) -> Tuple[bool, str]:
+    def check_python_package(self, pkg_name: str, import_name: Optional[str] = None) -> Tuple[bool, str]:
         """Check if a Python package is installed"""
         if import_name is None:
             import_name = pkg_name.replace("-", "_")
@@ -1259,7 +1259,7 @@ class NotebookExecutor:
 # NOTEBOOK DISCOVERER
 # =============================================================================
 
-def discover_notebooks(target: str, repo_root: Path = None,
+def discover_notebooks(target: str, repo_root: Optional[Path] = None,
                        python_only: bool = False, dotnet_only: bool = False,
                        recursive: bool = True) -> List[Path]:
     """Discover notebooks based on target specification"""

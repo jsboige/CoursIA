@@ -54,7 +54,7 @@ class ComfyUIError(Exception):
 class ComfyUIClient:
     """Client API pour ComfyUI"""
     
-    def __init__(self, config: ComfyUIConfig = None):
+    def __init__(self, config: Optional[ComfyUIConfig] = None) -> None:
         self.config = config or ComfyUIConfig()
         self.session = requests.Session()
         self.client_id = f"ComfyUIClient-{uuid.uuid4().hex[:12]}"
@@ -115,7 +115,7 @@ class ComfyUIClient:
         """Récupère les stats système"""
         return self._request('GET', '/system_stats').json()
 
-    def get_object_info(self, node_class: str = None) -> Dict[str, Any]:
+    def get_object_info(self, node_class: Optional[str] = None) -> Dict[str, Any]:
         """Récupère les infos sur les nodes"""
         endpoint = f'/object_info/{node_class}' if node_class else '/object_info'
         return self._request('GET', endpoint).json()
