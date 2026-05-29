@@ -116,6 +116,10 @@ def check_c2(notebook: dict) -> list[dict]:
         if all(l.startswith("#") for l in lines):
             continue
 
+        # Skip QC reference cells (not executable locally)
+        if "[REFERENCE QC]" in source or "[REFERENCE QC] Code a copier" in source:
+            continue
+
         exec_count = cell.get("execution_count")
         if exec_count is None:
             violations.append({
@@ -295,12 +299,14 @@ def main():
             continue
         print(f"  {rel} ({len(r['violations'])} issues):")
         for v in r["violations"][:5]:
+            cell_ref = f"cell #{v['cell_index']}" if "cell_index" in v else ""
+            prefix = f"[{v['check']}] {cell_ref}: " if cell_ref else f"[{v['check']}]: "
             if "pattern" in v:
-                print(f"    [{v['check']}] cell #{v['cell_index']}: {v['pattern']} → {v['line'][:60]}")
+                print(f"    {prefix}{v['pattern']} → {v['line'][:60]}")
             elif "reason" in v:
                 preview = v.get("source_preview", "")
                 extra = f" → {preview[:50]}" if preview else ""
-                print(f"    [{v['check']}] cell #{v['cell_index']}: {v['reason']}{extra}")
+                print(f"    {prefix}{v['reason']}{extra}")
 
     return 1
 
