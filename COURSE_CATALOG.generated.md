@@ -1,18 +1,18 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-29 01:06
-Total notebooks: 498
+Generated: 2026-05-29 03:12
+Total notebooks: 499
 
 ## Status Summary
 
-- **READY**: 361
+- **READY**: 362
 - **DEMO**: 124
 - **RESEARCH**: 0
 - **BROKEN**: 13
 
 ## Maturity Summary
 
-- **PRODUCTION**: 158
+- **PRODUCTION**: 159
 - **BETA**: 293
 - **TEMPLATE**: 4
 - **ALPHA**: 38
@@ -564,11 +564,17 @@ Total notebooks: 498
 | 5 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 15min | po-2025 |
 | 6 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
+### PostTraining (1 notebooks) — READY:1 | PRODUCTION:1
+
+| # | Notebook | Kernel | Status | Maturity | Duration | Owner |
+|---|----------|--------|--------|----------|----------|-------|
+| 1 | PT-01 — Introduction et vue d'ensemble | Python 3 (ipykernel) | READY | PRODUCTION | 15min | po-2024 |
+
 
 ## Requirements
 
 - **API**: 114 notebooks
-- **GPU**: 71 notebooks
+- **GPU**: 72 notebooks
 - **Cloud**: 102 notebooks
 - **WSL**: 25 notebooks
 - **Local**: 244 notebooks

@@ -41,6 +41,7 @@ RESEARCH_DIR_KEYWORDS = {"research", "archive", "examples", "partner-course"}
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
     "GameTheory", "Sudoku", "Probas", "IIT", "RL", "EPF",
+    "PostTraining",
 ]
 
 # Keywords indicating special requirements
@@ -61,6 +62,7 @@ OWNER_MAP = {
     "IIT": "po-2025",
     "RL": "po-2025",
     "EPF": "ai-01",
+    "PostTraining": "po-2024",
 }
 
 
