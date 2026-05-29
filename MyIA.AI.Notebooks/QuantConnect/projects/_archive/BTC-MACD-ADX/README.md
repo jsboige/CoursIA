@@ -1,5 +1,7 @@
 # BTC-MACD-ADX
 
+> **Archived 2026-05-29** — Misleading name: code is a simple EMA(12/26) crossover + ATR volatility filter (Main.cs L64: "Simplifie depuis MACD+ADX adaptatif"). The MACD and ADX indicators are NOT used. Different from [CSharp-BTC-EMA-Cross](../../CSharp-BTC-EMA-Cross) (which uses EMA 18/23 with cross margins, charts, and $600K capital). Research.ipynb is an unrelated QC template (Uncorrelated Assets).
+
 **Asset class:** Crypto (BTC)
 **Cloud project ID:** None (local only)
 
