@@ -401,6 +401,9 @@ def main():
     parser.add_argument("--top-n", type=int, default=TOP_N)
     parser.add_argument("--n-splits", type=int, default=5)
     parser.add_argument("--gap", type=int, default=21)
+    parser.add_argument("--no-auto-fetch", action="store_true",
+                        help="Skip yfinance fallback for missing panier symbols "
+                             "(default: auto-fetch on, see PR #1726)")
     args = parser.parse_args()
 
     print("L2 Cross-Sectional + Dual Momentum — Anti-Bias Panier")
@@ -414,7 +417,7 @@ def main():
             index=dates, columns=["SPY", "TLT", "GLD", "BTC-USD", "EFA", "SHY", "XLF", "EEM"],
         )
     else:
-        closes = load_panier_closes().dropna(how="all")
+        closes = load_panier_closes(auto_fetch=not args.no_auto_fetch).dropna(how="all")
         forbidden = set(closes.columns) & {"AAPL", "MSFT", "GOOG", "AMZN", "NVDA", "TSLA", "META"}
         if forbidden:
             closes = closes.drop(columns=list(forbidden))

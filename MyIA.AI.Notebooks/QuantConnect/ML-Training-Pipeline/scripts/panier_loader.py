@@ -209,10 +209,15 @@ def load_panier_closes(
     start: str | None = None,
     end: str | None = None,
     panier_dir: Path | None = None,
+    auto_fetch: bool = False,
 ) -> pd.DataFrame:
     """Load aligned close prices for panier symbols.
 
     Returns DataFrame indexed by Date with columns = symbols.
+
+    auto_fetch: when True, missing per-symbol CSVs are fetched via yfinance
+    (lazy import) before assembly. The pre-computed summary path always
+    bypasses fetch — delete panier_close_all.csv to force per-symbol rebuild.
     """
     panier_dir = panier_dir or PANIER_DIR
 
@@ -227,7 +232,13 @@ def load_panier_closes(
         return df
 
     # Build from individual files
-    data = load_panier(group=group, start=start, end=end, panier_dir=panier_dir)
+    data = load_panier(
+        group=group,
+        start=start,
+        end=end,
+        panier_dir=panier_dir,
+        auto_fetch=auto_fetch,
+    )
     closes = {}
     for symbol, df in data.items():
         if "Close" in df.columns:
@@ -243,12 +254,21 @@ def load_panier_returns(
     start: str | None = None,
     end: str | None = None,
     panier_dir: Path | None = None,
+    auto_fetch: bool = False,
 ) -> pd.DataFrame:
     """Load aligned daily returns for panier symbols.
 
     Returns DataFrame of pct_change() values, dropping the first row.
+
+    auto_fetch: propagated to load_panier_closes().
     """
-    closes = load_panier_closes(group=group, start=start, end=end, panier_dir=panier_dir)
+    closes = load_panier_closes(
+        group=group,
+        start=start,
+        end=end,
+        panier_dir=panier_dir,
+        auto_fetch=auto_fetch,
+    )
     return closes.pct_change().dropna()
 
 
