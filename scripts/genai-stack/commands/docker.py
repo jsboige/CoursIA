@@ -47,10 +47,10 @@ def _run_cmd(cmd: List[str], cwd: Path = None, capture: bool = True, timeout: in
         )
         return result
     except subprocess.TimeoutExpired:
-        logger.error(f"Timeout: {' '.join(cmd)}")
+        logger.error("Timeout: %s", " ".join(cmd))
         return subprocess.CompletedProcess(cmd, 1, "", "Timeout")
     except Exception as e:
-        logger.error(f"Erreur commande: {e}")
+        logger.error("Erreur commande: %s", e)
         return subprocess.CompletedProcess(cmd, 1, "", str(e))
 
 
@@ -132,25 +132,25 @@ class DockerManager:
     def start_service(self, service_name: str, build: bool = False) -> bool:
         """Demarre un service."""
         if service_name not in SERVICES:
-            logger.error(f"Service inconnu: {service_name}")
+            logger.error("Service inconnu: %s", service_name)
             return False
 
         svc = SERVICES[service_name]
         compose_dir = svc["compose_dir"]
         if not compose_dir.exists():
-            logger.error(f"Repertoire non trouve: {compose_dir}")
+            logger.error("Repertoire non trouve: %s", compose_dir)
             return False
 
-        logger.info(f"Demarrage de {service_name}...")
+        logger.info("Demarrage de %s...", service_name)
         cmd = COMPOSE_CMD + ["up", "-d"]
         if build:
             cmd.append("--build")
 
         result = _run_cmd(cmd, cwd=compose_dir, capture=False, timeout=300)
         if result.returncode == 0:
-            logger.info(f"{service_name} demarre")
+            logger.info("%s demarre", service_name)
             return True
-        logger.error(f"Echec demarrage {service_name}")
+        logger.error("Echec demarrage %s", service_name)
         return False
 
     def stop_service(self, service_name: str) -> bool:
@@ -158,13 +158,13 @@ class DockerManager:
         if service_name not in SERVICES:
             return False
         svc = SERVICES[service_name]
-        logger.info(f"Arret de {service_name}...")
+        logger.info("Arret de %s...", service_name)
         result = _run_cmd(COMPOSE_CMD + ["down"], cwd=svc["compose_dir"], capture=False, timeout=60)
         return result.returncode == 0
 
     def restart_service(self, service_name: str) -> bool:
         """Redemarre un service."""
-        logger.info(f"Redemarrage de {service_name}...")
+        logger.info("Redemarrage de %s...", service_name)
         self.stop_service(service_name)
         time.sleep(3)
         return self.start_service(service_name)

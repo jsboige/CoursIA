@@ -111,7 +111,7 @@ def prepare_batch(batch_num: int):
 def get_group_notebooks(group_name: str) -> list[Path]:
     """Retourne les notebooks d'un groupe spécifique."""
     if group_name not in NOTEBOOK_SERVICE_MAP:
-        logger.error(f"Groupe inconnu: {group_name}")
+        logger.error("Groupe inconnu: %s", group_name)
         return []
 
     notebooks = []
@@ -134,7 +134,7 @@ def get_group_notebooks(group_name: str) -> list[Path]:
                 found = True
                 break
         if not found:
-            logger.warning(f"Notebook introuvable: {nb_name}")
+            logger.warning("Notebook introuvable: %s", nb_name)
 
     return sorted(set(notebooks))
 
