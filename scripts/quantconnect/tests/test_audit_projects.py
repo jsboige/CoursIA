@@ -3,6 +3,7 @@
 import json
 import sys
 import tempfile
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -49,7 +50,7 @@ class TestLoadProjects:
         assert result == []
 
     def test_missing_file(self):
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(SystemExit):
             load_projects("/nonexistent/path.json")
 
 
@@ -113,7 +114,8 @@ class TestClassifyProject:
     def _classify(self, name="TestProject", pid=1, all_projects=None, catalog=None, **kwargs):
         proj = _project(name=name, pid=pid, **kwargs)
         all_projs = all_projects or [proj]
-        return classify_project(proj, all_projs, catalog)
+        name_index = {p.get("name", ""): p for p in all_projs}
+        return classify_project(proj, name_index, catalog)
 
     def test_test_validation_pattern(self):
         cat, reason = self._classify(name="Alpha-Validation")
@@ -137,21 +139,24 @@ class TestClassifyProject:
     def test_superseded_risk_parity(self):
         p1 = _project(name="RiskParity", pid=1)
         p2 = _project(name="RiskParity-v2", pid=2)
-        cat, reason = classify_project(p1, [p1, p2], None)
+        name_index = {"RiskParity": p1, "RiskParity-v2": p2}
+        cat, reason = classify_project(p1, name_index, None)
         assert cat == "SUPERSEDED"
         assert "RiskParity-v2" in reason
 
     def test_researcher_superseded_by_framework(self):
         p1 = _project(name="Alpha-Researcher", pid=1)
         p2 = _project(name="Framework_Alpha", pid=2)
-        cat, reason = classify_project(p1, [p1, p2], None)
+        name_index = {"Alpha-Researcher": p1, "Framework_Alpha": p2}
+        cat, reason = classify_project(p1, name_index, None)
         assert cat == "SUPERSEDED"
         assert "Framework" in reason
 
     def test_researcher_active_with_backtests(self):
         catalog = {1: {"best_sharpe": 1.5, "backtest_count": 3}}
         p1 = _project(name="Alpha-Researcher", pid=1)
-        cat, reason = classify_project(p1, [p1], catalog)
+        name_index = {"Alpha-Researcher": p1}
+        cat, reason = classify_project(p1, name_index, catalog)
         assert cat == "ALIVE"
         assert "Sharpe" in reason
 
@@ -197,9 +202,10 @@ class TestClassifyProject:
 
     def test_alive_fresh_project(self):
         catalog = {1: {"backtest_count": 0}}
+        recent = (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%dT00:00:00Z")
         cat, _ = self._classify(
             name="NewProject", pid=1, catalog=catalog,
-            created="2026-05-03T00:00:00Z"
+            created=recent
         )
         assert cat == "ALIVE"
 
