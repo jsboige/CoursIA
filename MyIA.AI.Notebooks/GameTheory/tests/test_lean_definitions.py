@@ -8,6 +8,7 @@ when available, or just validates file structure otherwise.
 """
 
 import os
+import shutil
 import sys
 import unittest
 from pathlib import Path
@@ -25,6 +26,11 @@ try:
     HAS_LEAN_RUNNER = True
 except ImportError:
     HAS_LEAN_RUNNER = False
+
+# Even if lean_runner is importable, LeanRunner(backend='auto') crashes in
+# setUpClass when the `lean` ELF binary is missing (typical on CI runners
+# without elan). Guard the execution class on the binary's presence on PATH.
+HAS_LEAN_BINARY = shutil.which('lean') is not None
 
 # Lean files to test
 LEAN_FILES = [
@@ -103,7 +109,10 @@ class TestLeanBasicContent(unittest.TestCase):
         self.assertIn("arrow", content.lower())
 
 
-@unittest.skipIf(not HAS_LEAN_RUNNER, "lean_runner.py not available")
+@unittest.skipIf(
+    not (HAS_LEAN_RUNNER and HAS_LEAN_BINARY),
+    "lean_runner.py or lean executable not available",
+)
 class TestLeanExecution(unittest.TestCase):
     """Test Lean code execution using lean_runner.py."""
 
