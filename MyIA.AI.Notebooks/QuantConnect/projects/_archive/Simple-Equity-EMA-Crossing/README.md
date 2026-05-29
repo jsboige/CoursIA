@@ -1,5 +1,7 @@
 # Simple-Equity-EMA-Crossing
 
+> **Archived 2026-05-29** — Superseded by [EMA-Cross-Stocks](../../EMA-Cross-Stocks) (inline pattern) and [EMA-Cross-Alpha](../../EMA-Cross-Alpha) (framework pattern). This minimal variant (44 lines, EUR cash, no rebalance guard) is preserved for reference as the simplest EMA-cross demo.
+
 **Asset class:** Equities (US large-cap tech)
 
 **Cloud project ID:** N/A
