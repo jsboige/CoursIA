@@ -276,8 +276,8 @@ class GenAIAuthManager:
 # Date: {datetime.now().isoformat()}
 
 # --- API KEYS ---
-CIVITAI_TOKEN=c39ba121e12e5b40ac67a87836431e34
-HF_TOKEN=HF_TOKEN_REDACTED
+CIVITAI_TOKEN={os.getenv("CIVITAI_TOKEN", "")}
+HF_TOKEN={os.getenv("HF_TOKEN", "")}
 QWEN_API_TOKEN={config.get('bcrypt_hash')}
 
 # --- GPU ---
