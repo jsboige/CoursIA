@@ -25,6 +25,8 @@ Ce repertoire contient les scripts de configuration et de validation des kernels
 | `validate_lean_setup.py` | Validation de l'environnement Lean | `python scripts/validate_lean_setup.py` |
 | | Validation WSL | `python scripts/validate_lean_setup.py --wsl` |
 
+> La validation inclut desormais la detection de la regression wrapper kernel.json (issue #1618) : `~/.lean4-kernel-wrapper.py` v5 vs ancien bash. Logique centralisee dans `scripts/lean/lean_kernel_check.py`, partagee avec `scripts/lean/setup_lean4_all.py` et le validateur SymbolicAI/Lean.
+
 ## Installation complete
 
 ### Etape 0 : Python standard (notebooks 1-12, 14-16)

@@ -131,6 +131,41 @@ def check_jupyter_kernel(kernel_name):
         return False
 
 
+def _load_inspect_kernel_wrapper():
+    """Import the canonical wrapper check from scripts/lean/lean_kernel_check.py.
+
+    Returns None if the shared helper cannot be located (graceful degradation).
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / "scripts" / "lean" / "lean_kernel_check.py"
+        if candidate.exists():
+            sys.path.insert(0, str(candidate.parent))
+            try:
+                from lean_kernel_check import inspect_kernel_wrapper
+                return inspect_kernel_wrapper
+            except Exception:
+                return None
+    return None
+
+
+_inspect_kernel_wrapper = _load_inspect_kernel_wrapper()
+
+
+def check_kernel_wrapper(kernel_name="lean4-wsl"):
+    """Verifie que kernel.json pointe vers le bon wrapper Python (v5), pas l'ancien bash.
+
+    Detecte la regression du 2026-05-27 (issue #1618). Logique canonique partagee via
+    scripts/lean/lean_kernel_check.py (auparavant absente de ce validateur GameTheory).
+    """
+    if _inspect_kernel_wrapper is None:
+        print_warning("kernel.json: helper lean_kernel_check introuvable (check ignore)")
+        return True
+    status, message = _inspect_kernel_wrapper(kernel_name)
+    {"ok": print_ok, "error": print_error, "warning": print_warning}[status](message)
+    return status == "ok"
+
+
 def check_social_choice_lean():
     """Verifie que le projet Lake social_choice_lean existe"""
     project_path = Path(__file__).parent.parent / "social_choice_lean"
@@ -184,6 +219,7 @@ def validate_windows():
     # Kernels Lean
     checks.append(check_jupyter_kernel("lean4"))
     checks.append(check_jupyter_kernel("lean4-wsl"))
+    checks.append(check_kernel_wrapper("lean4-wsl"))
 
     # Projets Lean
     checks.append(check_social_choice_lean())

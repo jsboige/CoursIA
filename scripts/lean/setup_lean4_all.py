@@ -15,11 +15,14 @@ Usage:
 """
 
 import argparse
-import json
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+# Canonical wrapper-regression check (issue #1618) lives in this same dir.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lean_kernel_check import inspect_kernel_wrapper  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 GT_SCRIPTS = REPO_ROOT / "MyIA.AI.Notebooks" / "GameTheory" / "scripts"
@@ -110,44 +113,21 @@ def step_validate():
 
 
 def check_wrapper_registration():
-    """Check that kernel.json points to the CORRECT Python wrapper (not old bash)."""
+    """Check that kernel.json points to the CORRECT Python wrapper (not old bash).
+
+    Classification is delegated to the canonical helper
+    ``scripts/lean/lean_kernel_check.inspect_kernel_wrapper`` (issue #1618), which
+    probes both the WSL-side (~/.local/share/jupyter) and Windows-side (%APPDATA%)
+    kernel.json locations.
+    """
     print("=" * 60)
     print("CHECK: kernel.json wrapper registration")
     print("=" * 60)
 
-    kernel_path = Path.home() / "AppData" / "Roaming" / "jupyter" / "kernels" / "lean4-wsl"
-    kernel_json = kernel_path / "kernel.json"
-
-    if not kernel_json.exists():
-        print(f"ERROR: kernel.json not found at {kernel_json}")
-        print("  Run: python scripts/lean/setup_lean4_all.py --register")
-        return False
-
-    with open(kernel_json, encoding="utf-8") as f:
-        config = json.load(f)
-
-    argv = config.get("argv", [])
-    cmd_str = " ".join(argv)
-
-    print(f"kernel.json location: {kernel_json}")
-    print(f"argv: {cmd_str}")
-
-    # Check: must contain the Python wrapper, NOT the old bash wrapper
-    has_python_wrapper = any("lean4-kernel-wrapper.py" in a for a in argv)
-    has_old_bash_wrapper = any("lean4-jupyter-wrapper.sh" in a for a in argv)
-
-    if has_old_bash_wrapper:
-        print("ERROR: kernel.json points to OLD bash wrapper (lean4-jupyter-wrapper.sh)")
-        print("  The bash wrapper lacks Windows->WSL path conversion and will fail.")
-        print("  Fix: python scripts/lean/setup_lean4_all.py --register")
-        return False
-
-    if has_python_wrapper:
-        print("OK: kernel.json points to correct Python wrapper (.lean4-kernel-wrapper.py)")
-        return True
-
-    print(f"WARNING: kernel.json has unexpected argv. Expected .lean4-kernel-wrapper.py")
-    return False
+    status, message = inspect_kernel_wrapper("lean4-wsl")
+    prefix = {"ok": "OK:", "error": "ERROR:", "warning": "WARNING:"}[status]
+    print(f"{prefix} {message}")
+    return status == "ok"
 
 
 def main():
