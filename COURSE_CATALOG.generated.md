@@ -1,18 +1,18 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-05-29 06:51
-Total notebooks: 504
+Generated: 2026-05-29 08:03
+Total notebooks: 505
 
 ## Status Summary
 
-- **READY**: 367
+- **READY**: 368
 - **DEMO**: 124
 - **RESEARCH**: 0
 - **BROKEN**: 13
 
 ## Maturity Summary
 
-- **PRODUCTION**: 160
+- **PRODUCTION**: 161
 - **BETA**: 297
 - **TEMPLATE**: 4
 - **ALPHA**: 38
@@ -20,7 +20,7 @@ Total notebooks: 504
 
 ## By Series
 
-### GenAI (120 notebooks) — BROKEN:1, DEMO:79, READY:40 | ALPHA:4, BETA:75, DRAFT:3, PRODUCTION:35, TEMPLATE:3
+### GenAI (121 notebooks) — BROKEN:1, DEMO:79, READY:41 | ALPHA:4, BETA:75, DRAFT:3, PRODUCTION:36, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -79,71 +79,72 @@ Total notebooks: 504
 | 53 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 54 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 55 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 56 | Comparaison Multi-Modèles : SDXL Turbo, Qwen2-VL,  | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 57 | Workflow Orchestration - Chaînage Multi-Modèles | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 58 | 🚀 Performance Optimization pour la Génération d'Im | Python 3 | DEMO | BETA | 1h | po-2025 |
-| 59 | 🎓 Educational Content Generation - GenAI | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 60 | Creative Workflows - GenAI | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 61 | 🏭 Production Integration - GenAI | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 62 | Génération d’un patron de point de croix à partir  | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 63 | PT-01 — Introduction et vue d'ensemble | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 64 | PT-02 — Supervised Fine-Tuning baseline (SFT) | Python 3 | READY | BETA | 45min | po-2025 |
-| 65 | PT-03 — Direct Preference Optimization (DPO) | Python 3 | READY | BETA | 30min | po-2025 |
-| 66 | PT-04 — Group Relative Policy Optimization (GRPO) | Python 3 | READY | BETA | 30min | po-2025 |
-| 67 | PT-05 — Reinforcement Learning with Verifiable Rew | Python 3 | READY | BETA | 30min | po-2025 |
-| 68 | PT-06 — Evaluation Comparative du Post-Training | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 69 | SK-1-Fundamentals : Introduction a Semantic Kernel | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 70 | SK-2-Functions : Function Calling, Memory et Fonct | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 71 | SK-3-Agents : Agent Framework Semantic Kernel | Python 3 | READY | BETA | 15min | po-2025 |
-| 72 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 73 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 74 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 75 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
-| 76 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 77 | SK-9-Building-CLR : Interoperabilite Python/.NET v | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 78 | SK-10-NotebookMaker : Systeme Multi-Agents pour Ge | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 79 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 56 | Bonsai-Image : Generation Text-to-Image avec Quant | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 57 | Comparaison Multi-Modèles : SDXL Turbo, Qwen2-VL,  | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 58 | Workflow Orchestration - Chaînage Multi-Modèles | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 59 | 🚀 Performance Optimization pour la Génération d'Im | Python 3 | DEMO | BETA | 1h | po-2025 |
+| 60 | 🎓 Educational Content Generation - GenAI | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 61 | Creative Workflows - GenAI | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 62 | 🏭 Production Integration - GenAI | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 63 | Génération d’un patron de point de croix à partir  | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 64 | PT-01 — Introduction et vue d'ensemble | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 65 | PT-02 — Supervised Fine-Tuning baseline (SFT) | Python 3 | READY | BETA | 45min | po-2025 |
+| 66 | PT-03 — Direct Preference Optimization (DPO) | Python 3 | READY | BETA | 30min | po-2025 |
+| 67 | PT-04 — Group Relative Policy Optimization (GRPO) | Python 3 | READY | BETA | 30min | po-2025 |
+| 68 | PT-05 — Reinforcement Learning with Verifiable Rew | Python 3 | READY | BETA | 30min | po-2025 |
+| 69 | PT-06 — Evaluation Comparative du Post-Training | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 70 | SK-1-Fundamentals : Introduction a Semantic Kernel | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 71 | SK-2-Functions : Function Calling, Memory et Fonct | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 72 | SK-3-Agents : Agent Framework Semantic Kernel | Python 3 | READY | BETA | 15min | po-2025 |
+| 73 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 74 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 75 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 76 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
+| 77 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 78 | SK-9-Building-CLR : Interoperabilite Python/.NET v | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 79 | SK-10-NotebookMaker : Systeme Multi-Agents pour Ge | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 80 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 81 | Introduction - Créateur de mail personnalisé | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 82 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | ALPHA | 30min | po-2025 |
-| 83 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 84 | Notebook de travail | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 85 | Notebook de travail | Python 3 | BROKEN | TEMPLATE | 15min | po-2025 |
-| 86 | Notebook de conception de Notebook | .NET (C#) | DEMO | DRAFT | 30min | po-2025 |
-| 87 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
+| 81 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 82 | Introduction - Créateur de mail personnalisé | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 83 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | ALPHA | 30min | po-2025 |
+| 84 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 85 | Notebook de travail | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 86 | Notebook de travail | Python 3 | BROKEN | TEMPLATE | 15min | po-2025 |
+| 87 | Notebook de conception de Notebook | .NET (C#) | DEMO | DRAFT | 30min | po-2025 |
 | 88 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
-| 89 | 10. Hébergement Local de Modèles Génératifs | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 90 | 11. Quantization des LLMs | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 91 | 1. Introduction a l'IA generative avec l'API OpenA | Python 3 | READY | PRODUCTION | 15min | po-2025 |
-| 92 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 93 | Structured Outputs : Sorties JSON Garanties avec O | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 94 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 95 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | BETA | 45min | po-2025 |
-| 96 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 97 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 98 | Modèles de Raisonnement : gpt-5-mini | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 99 | Patterns de Production : APIs Avancées OpenAI | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 100 | Claude CLI - Les Bases | Python 3 | READY | BETA | 45min | po-2025 |
-| 101 | Claude CLI - Gestion des Sessions | Python 3 | READY | BETA | 30min | po-2025 |
-| 102 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 30min | po-2025 |
-| 103 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
-| 104 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 30min | po-2025 |
-| 105 | Operations de Base sur les Videos | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 106 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 107 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 108 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 109 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 110 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 111 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 112 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 113 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 114 | Comparaison Multi-Modeles de Generation Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 115 | Orchestration de Pipelines Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 116 | ComfyUI - Workflows Video via API | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 117 | Generation de Videos Educatives | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 118 | Workflows Video Creatifs | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 119 | Sora API - Generation Video Cloud | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 120 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 89 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
+| 90 | 10. Hébergement Local de Modèles Génératifs | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 91 | 11. Quantization des LLMs | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 92 | 1. Introduction a l'IA generative avec l'API OpenA | Python 3 | READY | PRODUCTION | 15min | po-2025 |
+| 93 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 94 | Structured Outputs : Sorties JSON Garanties avec O | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 95 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 96 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | BETA | 45min | po-2025 |
+| 97 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 98 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 99 | Modèles de Raisonnement : gpt-5-mini | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 100 | Patterns de Production : APIs Avancées OpenAI | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 101 | Claude CLI - Les Bases | Python 3 | READY | BETA | 45min | po-2025 |
+| 102 | Claude CLI - Gestion des Sessions | Python 3 | READY | BETA | 30min | po-2025 |
+| 103 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 30min | po-2025 |
+| 104 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
+| 105 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 30min | po-2025 |
+| 106 | Operations de Base sur les Videos | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
+| 107 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
+| 108 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 109 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 110 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 111 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 112 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 113 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 114 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 115 | Comparaison Multi-Modeles de Generation Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 116 | Orchestration de Pipelines Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 117 | ComfyUI - Workflows Video via API | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 118 | Generation de Videos Educatives | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 119 | Workflows Video Creatifs | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 120 | Sora API - Generation Video Cloud | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 121 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
 
 ### Search (45 notebooks) — DEMO:3, READY:42 | BETA:22, DRAFT:1, PRODUCTION:22
 
@@ -574,7 +575,7 @@ Total notebooks: 504
 ## Requirements
 
 - **API**: 114 notebooks
-- **GPU**: 77 notebooks
+- **GPU**: 78 notebooks
 - **Cloud**: 102 notebooks
 - **WSL**: 25 notebooks
 - **Local**: 244 notebooks
