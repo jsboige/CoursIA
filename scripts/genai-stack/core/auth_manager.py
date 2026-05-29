@@ -102,7 +102,7 @@ class GenAIAuthManager:
         try:
             return bcrypt.checkpw(raw_token.encode('utf-8'), bcrypt_hash.encode('utf-8'))
         except Exception as e:
-            logger.error(f"Erreur validation bcrypt: {e}")
+            logger.error("Erreur validation bcrypt: %s", e)
             return False
 
     def is_bcrypt_hash(self, token: str) -> bool:
@@ -122,7 +122,7 @@ class GenAIAuthManager:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            logger.error(f"Erreur chargement config: {e}")
+            logger.error("Erreur chargement config: %s", e)
             return None
 
     def create_unified_config(self, raw_token: str = None) -> bool:
@@ -161,11 +161,11 @@ class GenAIAuthManager:
             except OSError:
                 pass
                 
-            logger.info(f"✅ Configuration sauvegardée: {self.config_file}")
+            logger.info("Configuration sauvegardee: %s", self.config_file)
             return True
-            
+
         except Exception as e:
-            logger.error(f"❌ Erreur création config: {e}")
+            logger.error("Erreur creation config: %s", e)
             return False
 
     # =========================================================================
@@ -199,19 +199,19 @@ class GenAIAuthManager:
                     if type_ in ['secrets_file', 'docker_secrets']:
                         # Écriture directe du hash
                         path.write_text(bcrypt_hash, encoding='utf-8')
-                        logger.info(f"✅ Écrit hash dans: {path}")
+                        logger.info("Ecrit hash dans: %s", path)
                         success_count += 1
-                        
+
                     elif type_ == 'env_file':
-                        # Mise à jour intelligente du .env
+                        # Mise a jour intelligente du .env
                         self._update_env_file(path, raw_token, bcrypt_hash)
-                        logger.info(f"✅ Mis à jour .env: {path}")
+                        logger.info("Mis a jour .env: %s", path)
                         success_count += 1
-                        
+
                 except Exception as e:
-                    logger.error(f"❌ Erreur synchro {path}: {e}")
-        
-        logger.info(f"Synchronisation terminée: {success_count}/{total_ops} opérations réussies.")
+                    logger.error("Erreur synchro %s: %s", path, e)
+
+        logger.info("Synchronisation terminee: %d/%d operations reussies.", success_count, total_ops)
         return success_count == total_ops
 
     def _update_env_file(self, env_path: Path, raw_token: str, bcrypt_hash: str):
@@ -261,9 +261,9 @@ class GenAIAuthManager:
             backup_path = env_path.with_suffix(f".backup.{int(time.time())}")
             try:
                 shutil.copy2(env_path, backup_path)
-                logger.info(f"Backup .env créé: {backup_path}")
+                logger.info("Backup .env cree: %s", backup_path)
             except Exception as e:
-                logger.error(f"Erreur backup .env: {e}")
+                logger.error("Erreur backup .env: %s", e)
                 return False
 
         config = self.load_config()
@@ -309,10 +309,10 @@ SESSION_EXPIRE_HOURS=24
         try:
             env_path.parent.mkdir(parents=True, exist_ok=True)
             env_path.write_text(content, encoding='utf-8')
-            logger.info(f"✅ Fichier .env reconstruit: {env_path}")
+            logger.info("Fichier .env reconstruit: %s", env_path)
             return True
         except Exception as e:
-            logger.error(f"Erreur écriture .env: {e}")
+            logger.error("Erreur ecriture .env: %s", e)
             return False
 
     # =========================================================================

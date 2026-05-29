@@ -74,7 +74,7 @@ class NotebookValidator:
     def find_notebooks_by_group(self, group: str) -> List[Path]:
         """Trouve les notebooks d'un groupe specifique."""
         if group not in NOTEBOOK_SERVICE_MAP:
-            logger.error(f"Groupe inconnu: {group}")
+            logger.error("Groupe inconnu: %s", group)
             return []
 
         nb_names = NOTEBOOK_SERVICE_MAP[group]
@@ -99,14 +99,14 @@ class NotebookValidator:
                 if matches:
                     found.append(matches[0])
                 else:
-                    logger.warning(f"Notebook introuvable: {nb_name}")
+                    logger.warning("Notebook introuvable: %s", nb_name)
 
         return found
 
     def find_notebooks_by_batch(self, batch_num: int) -> List[Path]:
         """Trouve les notebooks d'un batch d'execution."""
         if batch_num not in EXECUTION_BATCHES:
-            logger.error(f"Batch inconnu: {batch_num}. Disponibles: {list(EXECUTION_BATCHES.keys())}")
+            logger.error("Batch inconnu: %d. Disponibles: %s", batch_num, list(EXECUTION_BATCHES.keys()))
             return []
 
         batch = EXECUTION_BATCHES[batch_num]
@@ -128,7 +128,7 @@ class NotebookValidator:
         output_path = output_dir / rel_path
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"Validation de : {rel_path}")
+        logger.info("Validation de : %s", rel_path)
 
         start_time = datetime.now()
         status = "success"
@@ -146,7 +146,7 @@ class NotebookValidator:
         for ffmpeg_path in ffmpeg_paths:
             if Path(ffmpeg_path).exists():
                 os.environ["PATH"] = f"{ffmpeg_path};{os.environ.get('PATH', '')}"
-                logger.info(f"Added ffmpeg to PATH: {ffmpeg_path}")
+                logger.info("Added ffmpeg to PATH: %s", ffmpeg_path)
                 break
 
         try:
@@ -161,7 +161,7 @@ class NotebookValidator:
         except Exception as e:
             status = "failed"
             error_msg = str(e)
-            logger.error(f"Echec de {rel_path}: {e}")
+            logger.error("Echec de %s: %s", rel_path, e)
         finally:
             os.environ.clear()
             os.environ.update(original_env)
@@ -178,7 +178,7 @@ class NotebookValidator:
     def run_validation(self) -> List[Dict]:
         """Lance la validation sur tous les notebooks."""
         notebooks = self.find_notebooks()
-        logger.info(f"{len(notebooks)} notebooks trouves dans {self.target_path}")
+        logger.info("%d notebooks trouves dans %s", len(notebooks), self.target_path)
 
         output_dir = Path("rapports/notebook_validation")
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -204,7 +204,7 @@ class NotebookValidator:
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
 
-        logger.info(f"Rapport genere : {report_path.absolute()}")
+        logger.info("Rapport genere : %s", report_path.absolute())
 
         print("\n" + "=" * 40)
         print("RESUME VALIDATION NOTEBOOKS")
@@ -261,7 +261,7 @@ def execute(args) -> int:
 
     if gpu_profile:
         from commands.gpu import profile_apply
-        logger.info(f"Application du profil GPU: {gpu_profile}")
+        logger.info("Application du profil GPU: %s", gpu_profile)
         if not profile_apply(gpu_profile, wait_health=True):
             logger.warning("Profil GPU applique partiellement, execution continue...")
 
@@ -270,11 +270,11 @@ def execute(args) -> int:
     # Mode batch
     if batch_num:
         batch_info = EXECUTION_BATCHES[batch_num]
-        logger.info(f"\n{'=' * 60}")
-        logger.info(f"  BATCH {batch_num}: {batch_info['name']}")
-        logger.info(f"  Profil GPU: {batch_info['profile']}")
-        logger.info(f"  Groupes: {', '.join(batch_info['groups'])}")
-        logger.info(f"{'=' * 60}")
+        logger.info("\n%s", "=" * 60)
+        logger.info("  BATCH %d: %s", batch_num, batch_info['name'])
+        logger.info("  Profil GPU: %s", batch_info['profile'])
+        logger.info("  Groupes: %s", ", ".join(batch_info['groups']))
+        logger.info("%s", "=" * 60)
 
         notebooks = validator.find_notebooks_by_batch(batch_num)
         if not notebooks:
@@ -293,7 +293,7 @@ def execute(args) -> int:
     elif group:
         notebooks = validator.find_notebooks_by_group(group)
         if not notebooks:
-            logger.error(f"Aucun notebook trouve pour le groupe '{group}'")
+            logger.error("Aucun notebook trouve pour le groupe '%s'", group)
             return 1
 
         output_dir = Path("rapports/notebook_validation")
@@ -307,7 +307,7 @@ def execute(args) -> int:
     # Mode serie
     elif series:
         if series not in NOTEBOOK_SERIES:
-            logger.error(f"Serie inconnue: {series}")
+            logger.error("Serie inconnue: %s", series)
             return 1
 
         all_results = []
@@ -331,7 +331,7 @@ def execute(args) -> int:
         output_dir = Path("rapports/notebook_validation")
         if output_dir.exists():
             shutil.rmtree(output_dir)
-            logger.info(f"Nettoyage: {output_dir} supprime")
+            logger.info("Nettoyage: %s supprime", output_dir)
 
     return 1 if any(r['status'] == 'failed' for r in results) else 0
 

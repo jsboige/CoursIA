@@ -46,7 +46,7 @@ class VRAMManager:
         try:
             return self.client.free_memory(unload_models=unload_models)
         except Exception as e:
-            logger.error(f"Erreur liberation VRAM: {e}")
+            logger.error("Erreur liberation VRAM: %s", e)
             return {"error": str(e)}
 
     def get_vram_stats(self) -> dict:
@@ -63,7 +63,7 @@ class VRAMManager:
                 }
             return {}
         except Exception as e:
-            logger.error(f"Erreur stats VRAM: {e}")
+            logger.error("Erreur stats VRAM: %s", e)
             return {"error": str(e)}
 
 
@@ -76,18 +76,18 @@ class ModelSwitcher:
 
     def switch_to(self, model_name: str) -> bool:
         if model_name not in MODEL_CONFIGS:
-            logger.error(f"Modele inconnu: {model_name}")
+            logger.error("Modele inconnu: %s", model_name)
             return False
 
         if self.current_model == model_name:
-            logger.info(f"Modele {model_name} deja charge")
+            logger.info("Modele %s deja charge", model_name)
             return True
 
-        logger.info(f"Switch vers modele: {model_name}")
+        logger.info("Switch vers modele: %s", model_name)
         logger.info("Liberation VRAM...")
         result = self.vram.free_vram(unload_models=True)
         if "error" in result:
-            logger.warning(f"Attention lors liberation VRAM: {result['error']}")
+            logger.warning("Attention lors liberation VRAM: %s", result['error'])
 
         time.sleep(2)
 
@@ -95,7 +95,7 @@ class ModelSwitcher:
         if stats and "error" not in stats:
             vram_free_mb = stats.get('vram_free', 0) / (1024 * 1024)
             required_mb = MODEL_CONFIGS[model_name]['vram_required_mb']
-            logger.info(f"VRAM libre: {vram_free_mb:.0f}MB, requis: {required_mb}MB")
+            logger.info("VRAM libre: %.0fMB, requis: %dMB", vram_free_mb, required_mb)
 
         self.current_model = model_name
         return True
@@ -137,7 +137,7 @@ class BatchNotebookValidator:
         if group not in NOTEBOOK_SERVICE_MAP:
             return {"error": f"Groupe inconnu: {group}"}
         notebooks = NOTEBOOK_SERVICE_MAP[group]
-        logger.info(f"Validation groupe '{group}': {len(notebooks)} notebooks")
+        logger.info("Validation groupe '%s': %d notebooks", group, len(notebooks))
         if group in ["qwen", "zimage"]:
             self.switcher.switch_to(group)
         results = {}
@@ -177,8 +177,8 @@ class BatchNotebookValidator:
             total += group_total
             valid += group_valid
             status = "OK" if group_valid == group_total else "PARTIEL"
-            logger.info(f"  {group}: {group_valid}/{group_total} {status}")
-        logger.info(f"TOTAL: {valid}/{total} notebooks valides")
+            logger.info("  %s: %d/%d %s", group, group_valid, group_total, status)
+        logger.info("TOTAL: %d/%d notebooks valides", valid, total)
         return valid == total
 
 
@@ -200,7 +200,7 @@ class ComfyUIValidator:
                 logger.error("ComfyUI inaccessible sur localhost:8188")
                 return False
         except Exception as e:
-            logger.error(f"ComfyUI inaccessible: {e}")
+            logger.error("ComfyUI inaccessible: %s", e)
             return False
         logger.info("Service ComfyUI en ligne")
         return True
@@ -220,10 +220,10 @@ class ComfyUIValidator:
             if resp.status_code == 200:
                 logger.info("Authentification reussie")
             else:
-                logger.error(f"Echec authentification (HTTP {resp.status_code})")
+                logger.error("Echec authentification (HTTP %d)", resp.status_code)
                 return False
         except Exception as e:
-            logger.error(f"Erreur connexion: {e}")
+            logger.error("Erreur connexion: %s", e)
             return False
 
         logger.info("Test acces API protege...")
@@ -232,10 +232,10 @@ class ComfyUIValidator:
             if resp.status_code in [200, 400]:
                 logger.info("API accessible")
                 return True
-            logger.error(f"API refusee (HTTP {resp.status_code})")
+            logger.error("API refusee (HTTP %d)", resp.status_code)
             return False
         except Exception as e:
-            logger.error(f"Erreur API: {e}")
+            logger.error("Erreur API: %s", e)
             return False
 
     def check_nodes(self, check_nunchaku: bool = False) -> bool:
@@ -251,51 +251,51 @@ class ComfyUIValidator:
                 return False
 
             available_nodes = set(object_info.keys())
-            logger.info(f"{len(available_nodes)} noeuds detectes au total")
+            logger.info("%d noeuds detectes au total", len(available_nodes))
 
             missing_qwen = [n for n in EXPECTED_QWEN_NODES if n not in available_nodes]
             missing_native = [n for n in REQUIRED_NATIVE_NODES if n not in available_nodes]
 
             for node in missing_qwen:
-                logger.error(f"  MANQUANT (Qwen): {node}")
+                logger.error("  MANQUANT (Qwen): %s", node)
             if not missing_qwen:
-                logger.info(f"OK: {len(EXPECTED_QWEN_NODES)} noeuds Qwen presents")
+                logger.info("OK: %d noeuds Qwen presents", len(EXPECTED_QWEN_NODES))
 
             for node in missing_native:
-                logger.error(f"  MANQUANT (natif): {node}")
+                logger.error("  MANQUANT (natif): %s", node)
             if not missing_native:
-                logger.info(f"OK: {len(REQUIRED_NATIVE_NODES)} noeuds natifs presents")
+                logger.info("OK: %d noeuds natifs presents", len(REQUIRED_NATIVE_NODES))
 
             if check_nunchaku:
                 missing_nunchaku = [n for n in EXPECTED_NUNCHAKU_NODES if n not in available_nodes]
                 for node in missing_nunchaku:
-                    logger.warning(f"  MANQUANT (Nunchaku): {node}")
+                    logger.warning("  MANQUANT (Nunchaku): %s", node)
                 if not missing_nunchaku:
-                    logger.info(f"OK: {len(EXPECTED_NUNCHAKU_NODES)} noeuds Nunchaku presents")
+                    logger.info("OK: %d noeuds Nunchaku presents", len(EXPECTED_NUNCHAKU_NODES))
 
             return len(missing_qwen) == 0 and len(missing_native) == 0
         except Exception as e:
-            logger.error(f"Erreur verification noeuds: {e}")
+            logger.error("Erreur verification noeuds: %s", e)
             return False
 
     def check_generation(self, workflow_filename="workflow_qwen_native_t2i.json") -> bool:
         logger.info("\n" + "=" * 60)
-        logger.info(f"TEST GENERATION ({workflow_filename})")
+        logger.info("TEST GENERATION (%s)", workflow_filename)
         logger.info("=" * 60)
 
         workflow_path = WORKFLOWS_DIR / workflow_filename
         if not workflow_path.exists():
-            logger.error(f"Workflow introuvable: {workflow_path}")
+            logger.error("Workflow introuvable: %s", workflow_path)
             return False
 
-        logger.info(f"Soumission du workflow {workflow_filename}...")
+        logger.info("Soumission du workflow %s...", workflow_filename)
         try:
             workflow = WorkflowManager.load(str(workflow_path))
             prompt_id = self.client.queue_prompt(workflow)
             if not prompt_id:
                 logger.error("Echec soumission workflow")
                 return False
-            logger.info(f"Job ID: {prompt_id} - Attente generation...")
+            logger.info("Job ID: %s - Attente generation...", prompt_id)
             result = self.client.wait_for_prompt(prompt_id, timeout=300)
             if not result:
                 logger.error("Timeout ou erreur recuperation resultat")
@@ -310,7 +310,7 @@ class ComfyUIValidator:
             logger.info("Generation reussie!")
             return True
         except Exception as e:
-            logger.error(f"Erreur test generation: {e}")
+            logger.error("Erreur test generation: %s", e)
             return False
 
     def run_suite(self, full=True, auth_only=False, nodes_only=False,
@@ -342,12 +342,12 @@ def check_forge_api() -> bool:
     try:
         resp = requests.get(f"{FORGE_URL}/sdapi/v1/sd-models", timeout=5)
         if resp.status_code == 200:
-            logger.info(f"OK Forge-Turbo accessible sur {FORGE_URL}")
+            logger.info("OK Forge-Turbo accessible sur %s", FORGE_URL)
             return True
-        logger.warning(f"Forge-Turbo repond avec HTTP {resp.status_code}")
+        logger.warning("Forge-Turbo repond avec HTTP %d", resp.status_code)
         return False
     except Exception as e:
-        logger.warning(f"Forge-Turbo inaccessible: {e}")
+        logger.warning("Forge-Turbo inaccessible: %s", e)
         return False
 
 
@@ -356,17 +356,17 @@ def check_vllm_api() -> bool:
     try:
         resp = requests.get(f"{VLLM_ZIMAGE_URL}/health", timeout=5)
         if resp.status_code == 200:
-            logger.info(f"OK vLLM Z-Image accessible sur {VLLM_ZIMAGE_URL}")
+            logger.info("OK vLLM Z-Image accessible sur %s", VLLM_ZIMAGE_URL)
             models_resp = requests.get(f"{VLLM_ZIMAGE_URL}/v1/models", timeout=5)
             if models_resp.status_code == 200:
                 models = models_resp.json().get('data', [])
                 model_names = [m.get('id', 'unknown') for m in models]
-                logger.info(f"  Modeles disponibles: {model_names}")
+                logger.info("  Modeles disponibles: %s", model_names)
             return True
-        logger.warning(f"vLLM Z-Image repond avec HTTP {resp.status_code}")
+        logger.warning("vLLM Z-Image repond avec HTTP %d", resp.status_code)
         return False
     except Exception as e:
-        logger.warning(f"vLLM Z-Image inaccessible: {e}")
+        logger.warning("vLLM Z-Image inaccessible: %s", e)
         return False
 
 
@@ -375,15 +375,15 @@ def check_whisper_api() -> bool:
     try:
         resp = requests.get(f"{WHISPER_URL}/", timeout=10)
         if resp.status_code == 200:
-            logger.info(f"OK Whisper-WebUI accessible sur {WHISPER_URL}")
+            logger.info("OK Whisper-WebUI accessible sur %s", WHISPER_URL)
             return True
         elif resp.status_code == 401:
-            logger.info(f"OK Whisper-WebUI accessible (auth requise) sur {WHISPER_URL}")
+            logger.info("OK Whisper-WebUI accessible (auth requise) sur %s", WHISPER_URL)
             return True
-        logger.warning(f"Whisper-WebUI repond avec HTTP {resp.status_code}")
+        logger.warning("Whisper-WebUI repond avec HTTP %d", resp.status_code)
         return False
     except Exception as e:
-        logger.warning(f"Whisper-WebUI inaccessible: {e}")
+        logger.warning("Whisper-WebUI inaccessible: %s", e)
         return False
 
 
@@ -392,21 +392,21 @@ def check_comfyui_video_api() -> bool:
     try:
         resp = requests.get(f"{COMFYUI_VIDEO_URL}/system_stats", timeout=10)
         if resp.status_code == 200:
-            logger.info(f"OK ComfyUI-Video accessible sur {COMFYUI_VIDEO_URL}")
+            logger.info("OK ComfyUI-Video accessible sur %s", COMFYUI_VIDEO_URL)
             data = resp.json()
             devices = data.get('devices', [])
             if devices:
                 dev = devices[0]
                 vram_total = dev.get('vram_total', 0) / (1024**3)
-                logger.info(f"  GPU: {dev.get('name', '?')} ({vram_total:.1f}GB)")
+                logger.info("  GPU: %s (%.1fGB)", dev.get('name', '?'), vram_total)
             return True
         elif resp.status_code == 401:
-            logger.info(f"OK ComfyUI-Video accessible (auth requise) sur {COMFYUI_VIDEO_URL}")
+            logger.info("OK ComfyUI-Video accessible (auth requise) sur %s", COMFYUI_VIDEO_URL)
             return True
-        logger.warning(f"ComfyUI-Video repond avec HTTP {resp.status_code}")
+        logger.warning("ComfyUI-Video repond avec HTTP %d", resp.status_code)
         return False
     except Exception as e:
-        logger.warning(f"ComfyUI-Video inaccessible: {e}")
+        logger.warning("ComfyUI-Video inaccessible: %s", e)
         return False
 
 
