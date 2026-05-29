@@ -1,5 +1,12 @@
 # Lean - Solveur Mathematique et Verification Formelle
 
+<!-- CATALOG-STATUS
+series: SymbolicAI-Lean
+pedagogical_count: 16
+breakdown: Fondations=5, Etat-de-l-art=6, Applications=3, Kochen-Specker=1, Tribute=1
+maturity: PRODUCTION=6, BETA=10
+-->
+
 Cette serie de **16 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, le port de theoremes phares (theoreme de Kochen-Specker, 18 vecteurs Cabello), et des hommages aux mathematiciens (Grothendieck, langage grothendieckien dans Mathlib 4).
 
 ## Navigation

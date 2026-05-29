@@ -1,5 +1,12 @@
 # Web Semantique - Semantic Web
 
+<!-- CATALOG-STATUS
+series: SymbolicAI-SemanticWeb
+pedagogical_count: 18
+breakdown: RDF-Foundations=6, Linked-Data-Ontologies=5, Modern-Standards=3, Knowledge-Graphs-IA=3, Legacy=1
+maturity: PRODUCTION=6, BETA=12
+-->
+
 Serie de notebooks pour explorer le **Web Semantique**, combinant **.NET C#** (dotNetRDF, fondations) et **Python** (rdflib, standards modernes, IA).
 
 ---
