@@ -78,6 +78,21 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 | `scripts/execute_with_env.py`, `scripts/execute_dotnet_notebook.py`, `scripts/execute_sudoku_python.py` | Wrappers d'exécution avec env |
 | `scripts/quantconnect/`, `scripts/smartcontracts/`, `scripts/sudoku/`, `scripts/datasets/`, `scripts/tests/` | Outils par domaine |
 
+## Tests — `scripts/notebook_tools/tests/`
+
+35 fichiers de test, 759 tests au total (pytest). Couverture par domaine :
+
+| Domaine | Fichiers de test | Modules couverts |
+|---------|---------------|---------------|
+| **notebook_tools/** | 26 | CLI principal, helpers, skeleton, lint, catalogue (generate/expand/verify/coverage), qualite C.1/C.2/C.3, leak detection, forensic, execution (.NET/WSL/QC/ Papermill), enrich, reporting |
+| **genai-stack/** | 7 | config.py (load_env, SERVICES, NOTEBOOK_SERVICE_MAP, GPU_PROFILES, EXECUTION_BATCHES, MODEL_CONFIGS), commands/validate.py (BatchNotebookValidator), commands/audio_apis.py + commands/models.py (static config), core/comfyui_client.py (ComfyUIConfig, ComfyUIClient, WorkflowManager, ComfyUIError) |
+| **top-level scripts/** | 3 | fix_robust_dotenv.py, extract_pptx_titles.py, extract_slidev_titles.py |
+| **datasets/** | 2 | stitch_crypto.py, build_panier_anti_bias.py |
+
+Lancer la suite : `python -m pytest scripts/notebook_tools/tests/ -v` (depuis la racine du repo).
+
+Modules non testes (intentionnellement) : commands/docker.py, commands/notebooks.py, commands/auth.py, commands/gpu.py, commands/quant.py (CLI wrappers, subprocess calls, API externe).
+
 ## Voir aussi
 
 - [docs/common-commands.md](common-commands.md) — setup env, validation notebooks, slash commands
