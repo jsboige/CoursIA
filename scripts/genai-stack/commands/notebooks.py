@@ -190,7 +190,7 @@ class NotebookValidator:
             results.append(self.validate_notebook(nb, output_dir))
         return results
 
-    def save_report(self, results: List[Dict]):
+    def save_report(self, results: List[Dict]) -> None:
         """Sauvegarde le rapport JSON."""
         report = {
             "timestamp": datetime.now().isoformat(),

@@ -17,7 +17,7 @@ import time
 import subprocess
 import logging
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Optional, Tuple
 
 try:
     import requests
@@ -33,7 +33,7 @@ from config import SERVICES, load_env
 logger = logging.getLogger("DockerManager")
 
 
-def _run_cmd(cmd: List[str], cwd: Path = None, capture: bool = True, timeout: int = 60) -> subprocess.CompletedProcess:
+def _run_cmd(cmd: List[str], cwd: Optional[Path] = None, capture: bool = True, timeout: int = 60) -> subprocess.CompletedProcess:
     """Execute une commande shell."""
     try:
         result = subprocess.run(
@@ -202,7 +202,7 @@ class DockerManager:
                     })
         return {"available": True, "count": len(gpus), "gpus": gpus}
 
-    def print_status(self, include_remote: bool = False):
+    def print_status(self, include_remote: bool = False) -> None:
         """Affiche le statut de tous les services."""
         print("\n" + "=" * 70)
         print("  STATUT DES SERVICES GENAI")

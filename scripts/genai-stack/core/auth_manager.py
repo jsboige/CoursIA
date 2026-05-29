@@ -62,7 +62,7 @@ class AuditReport:
     inconsistencies: List[Dict]
     recommendations: List[str]
     
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         return {
             'timestamp': self.timestamp,
             'locations': [asdict(loc) for loc in self.locations],
@@ -73,7 +73,7 @@ class AuditReport:
 class GenAIAuthManager:
     """Gestionnaire principal d'authentification (Singleton Facade)"""
     
-    def __init__(self, root_dir: Path = None):
+    def __init__(self, root_dir: Optional[Path] = None) -> None:
         self.root_dir = root_dir if root_dir else PROJECT_ROOT
         self.secrets_dir = self.root_dir / ".secrets"
         self.secrets_dir.mkdir(exist_ok=True, parents=True)
@@ -125,7 +125,7 @@ class GenAIAuthManager:
             logger.error("Erreur chargement config: %s", e)
             return None
 
-    def create_unified_config(self, raw_token: str = None) -> bool:
+    def create_unified_config(self, raw_token: Optional[str] = None) -> bool:
         """Crée ou recrée la configuration unifiée"""
         logger.info("🔐 Création configuration unifiée...")
         
@@ -214,7 +214,7 @@ class GenAIAuthManager:
         logger.info("Synchronisation terminee: %d/%d operations reussies.", success_count, total_ops)
         return success_count == total_ops
 
-    def _update_env_file(self, env_path: Path, raw_token: str, bcrypt_hash: str):
+    def _update_env_file(self, env_path: Path, raw_token: str, bcrypt_hash: str) -> None:
         """Met à jour les variables d'auth dans un fichier .env sans toucher au reste"""
         if not env_path.exists():
             # Créer nouveau si n'existe pas
