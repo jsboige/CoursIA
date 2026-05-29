@@ -18,41 +18,41 @@ A l'issue de cette serie, vous saurez :
 
 ### Partie 0 : Environnement (00-Environment/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 0 | [Planners-0-Setup](00-Environment/Planners-0-Setup.ipynb) | Python | Installation unified-planning, OR-Tools, Docker Fast Downward | 20 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 0 | [Planners-0-Setup](00-Environment/Planners-0-Setup.ipynb) | Python | Installation unified-planning, OR-Tools, Docker Fast Downward | 20 min |
 
 ### Partie 1 : Fondations (01-Foundation/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modele STRIPS, triptyque Etat-Action-But | 30 min | COMPLET |
-| 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problemes, predicats, actions | 40 min | COMPLET |
-| 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'etats, graphes de recherche, explosion combinatoire | 35 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modele STRIPS, triptyque Etat-Action-But | 30 min |
+| 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problemes, predicats, actions | 40 min |
+| 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'etats, graphes de recherche, explosion combinatoire | 35 min |
 
 ### Partie 2 : Planification Classique (02-Classical/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min | COMPLET |
-| 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min | COMPLET |
-| 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
+| 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
+| 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 
 ### Partie 3 : Approches Avancees (03-Advanced/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min | COMPLET |
-| 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durees, parallelisme, ordonnancement | 40 min | COMPLET |
-| 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, methodes, decomposition | 45 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
+| 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durees, parallelisme, ordonnancement | 40 min |
+| 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, methodes, decomposition | 45 min |
 
 ### Partie 4 : Neuro-Symbolique (04-NeuroSymbolic/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 10 | [Planners-10-LLM-Planning](04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | Python | LLMs pour la planification, prompting, plan repair | 50 min | COMPLET |
-| 11 | [Planners-11-Unified-Planning](04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Python | Interface unifiee, multi-solveurs, comparaisons | 40 min | COMPLET |
-| 12 | [Planners-12-LOOP](04-NeuroSymbolic/Planners-12-LOOP.ipynb) | Python | Learning to Plan, modeles neuronaux pour heuristiques | 45 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 10 | [Planners-10-LLM-Planning](04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | Python | LLMs pour la planification, prompting, plan repair | 50 min |
+| 11 | [Planners-11-Unified-Planning](04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Python | Interface unifiee, multi-solveurs, comparaisons | 40 min |
+| 12 | [Planners-12-LOOP](04-NeuroSymbolic/Planners-12-LOOP.ipynb) | Python | Learning to Plan, modeles neuronaux pour heuristiques | 45 min |
 
 ---
 
