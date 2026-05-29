@@ -1,5 +1,16 @@
 # PostTraining - Techniques de post-training des Language Models (SOTA 2024-2025)
 
+[← Documentation GenAI](../README.md) · [Serie FineTuning (LoRA/QLoRA/SFT/DPO pratique)](../FineTuning/README.md)
+
+<!-- CATALOG-STATUS
+series: GenAI-PostTraining
+pedagogical_count: 2
+breakdown: Introduction=1, SFT=1
+maturity: BETA
+-->
+
+> **Place dans GenAI** : cette serie est le pendant *theorique et SOTA 2024-2025* de la serie [FineTuning](../FineTuning/README.md). FineTuning couvre la boite a outils pratique (LoRA, QLoRA, SFT, DPO, model merging) sur 5 notebooks executes ; PostTraining remonte la chaine conceptuelle complete SFT → RLHF → DPO → GRPO → RLVR et reproduit les techniques recentes (Deepseek-R1) sur petits modeles. Les deux se complementent : commencer par FineTuning pour la pratique, PostTraining pour la profondeur methodologique.
+
 Serie pedagogique dediee aux techniques de **post-training** des LMs ouverts : SFT, DPO, GRPO, RLVR. L'objectif est de comprendre pourquoi 2024-2025 marque une rupture pedagogique dans la facon dont les modeles de langue passent du pre-training brut a un assistant utile, et comment cette chaine s'est simplifiee depuis la cascade RLHF historique jusqu'aux methodes "direct" recentes.
 
 ## Pourquoi cette serie
@@ -16,7 +27,7 @@ L'angle pedagogique est d'expliquer la **math du loss** avant le code pour chaqu
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 1 scaffold (5 prevus) |
+| Notebooks | 2 livres (PT-01, PT-02) + 4 prevus (PT-03 a PT-06) |
 | Kernel | Python 3 |
 | Duree estimee | ~6-10h total |
 | GPU cible | RTX 3070 8 Go (po-2024) |
@@ -159,10 +170,11 @@ PT-06 documente le pipeline d'evaluation complet et produit un tableau comparati
 
 | Serie | Connection | Details |
 |-------|------------|---------|
-| **[RL](../RL/)** | RL classique fondamentaux | Les notebooks RL (`rl_4_mdp_dp_qlearning`, `stable_baseline_*`) etablissent l'intuition policy/value que PPO/GRPO reutilisent. Recommande comme prerequis pour PT-04. |
-| **[GenAI/Texte](../GenAI/Texte/)** | Usage des LMs aligned | Les notebooks GenAI consomment des modeles deja post-trained. Cette serie explique comment ces modeles arrivent dans cet etat. |
-| **[ML](../ML/)** | Tutoriels ML.NET | Pont conceptuel : ML.NET = inference de modeles deja entraines ; PostTraining = production de ces modeles. |
-| **[QuantConnect ML-Training-Pipeline](../QuantConnect/ML-Training-Pipeline/)** | Pipeline training trading | Pipeline soeur sur RL/transformers pour trading (DT, PatchTST). PostTraining cible LMs, ML-Training-Pipeline cible time series. |
+| **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL (`rl_4_mdp_dp_qlearning`, `stable_baseline_*`) etablissent l'intuition policy/value que PPO/GRPO reutilisent. Recommande comme prerequis pour PT-04. |
+| **[GenAI/Texte](../Texte/)** | Usage des LMs aligned | Les notebooks GenAI consomment des modeles deja post-trained. Cette serie explique comment ces modeles arrivent dans cet etat. |
+| **[GenAI/FineTuning](../FineTuning/)** | Boite a outils fine-tuning | Serie soeur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur methodologique, FineTuning = recettes executables. |
+| **[ML](../../ML/)** | Tutoriels ML.NET | Pont conceptuel : ML.NET = inference de modeles deja entraines ; PostTraining = production de ces modeles. |
+| **[QuantConnect ML-Training-Pipeline](../../QuantConnect/ML-Training-Pipeline/)** | Pipeline training trading | Pipeline soeur sur RL/transformers pour trading (DT, PatchTST). PostTraining cible LMs, ML-Training-Pipeline cible time series. |
 
 ## Contexte industriel et historique 2017-2025
 
