@@ -561,6 +561,7 @@ docker-configurations/services/comfyui-video/workspace/
 # Notebook output files (Papermill execution artifacts)
 *_output.ipynb
 *_output_*.ipynb
+*_executed.ipynb
 lean-workspace/
 tmp/
 
