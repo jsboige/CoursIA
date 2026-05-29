@@ -351,6 +351,9 @@ def main():
     parser.add_argument("--gap", type=int, default=21, help="WF gap (trading days)")
     parser.add_argument("--stress", action="store_true",
                         help="Run 50bps stress test alongside normal")
+    parser.add_argument("--no-auto-fetch", action="store_true",
+                        help="Skip yfinance fallback for missing panier symbols "
+                             "(default: auto-fetch on, see PR #1726)")
     args = parser.parse_args()
 
     print("L1 TSMOM Baseline — Anti-Bias Panier (26 symbols, 7 asset classes)")
@@ -370,7 +373,7 @@ def main():
         )
     else:
         print("\nLoading panier data...")
-        closes = load_panier_closes()
+        closes = load_panier_closes(auto_fetch=not args.no_auto_fetch)
         closes = closes.dropna(how="all")
         print(f"  Loaded {len(closes.columns)} symbols, {len(closes)} rows "
               f"({closes.index.min().date()} -> {closes.index.max().date()})")

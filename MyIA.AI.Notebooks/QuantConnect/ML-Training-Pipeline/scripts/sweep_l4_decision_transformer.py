@@ -335,6 +335,9 @@ def main():
                         help="Quick test: 2 symbols, 2 seeds, 2 epochs")
     parser.add_argument("--output", type=str, default=None,
                         help="Output path for results JSON")
+    parser.add_argument("--no-auto-fetch", action="store_true",
+                        help="Skip yfinance fallback for missing panier symbols "
+                             "(default: auto-fetch on, see PR #1726)")
     args = parser.parse_args()
 
     # Device
@@ -362,8 +365,8 @@ def main():
     print(f"  WF folds={args.n_splits}, epochs/fold={args.epochs_per_fold}, "
           f"commission={args.commission_bps}bps")
 
-    # Load panier
-    panier = load_panier(start="2015-01-01")
+    # Load panier (auto_fetch missing CSVs via yfinance unless --no-auto-fetch)
+    panier = load_panier(start="2015-01-01", auto_fetch=not args.no_auto_fetch)
     loaded_symbols = [s for s in symbols if s in panier]
     if len(loaded_symbols) < len(symbols):
         missing = [s for s in symbols if s not in panier]

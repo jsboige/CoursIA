@@ -172,7 +172,7 @@ def _train_moe_panier(
     symbols = get_panier_symbols(group=panier_group)
     log.info(f"PANIER mode: loading {len(symbols)} symbols from group '{panier_group or 'all'}'")
 
-    panier = load_panier(group=panier_group, start=start, end=end)
+    panier = load_panier(group=panier_group, start=start, end=end, auto_fetch=True)
     loaded = {s: df for s, df in panier.items() if len(df) >= 500}
     log.info(f"Loaded {len(loaded)}/{len(symbols)} symbols with >= 500 rows")
 
