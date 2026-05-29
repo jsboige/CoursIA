@@ -40,7 +40,7 @@ Every notebook in the QC tree falls into exactly one type:
 | Project | Sharpe | CAGR | Max DD | Type | Research | Note |
 |---------|--------|------|--------|------|----------|------|
 | Positive-Negative-Splits-ML | 1.736 | 90.83% | 42.4% | a+b | — | Split factor + XLK ROC |
-| BTC-MACD-ADX | 1.647 | 38.1% | 48.8% | a | — | C# also available |
+| ~~BTC-MACD-ADX~~ | 1.647 | 38.1% | 48.8% | a | — | ARCHIVED 2026-05-29: misleading name (EMA crossover, not MACD+ADX) |
 | LeveragedETFMomentum-QC | 1.80 | 101.03% | — | — | b | QC Library #60 |
 | LongShortHarvest-QC | 3.39 | 57.94% | — | — | b | QC Library #238 |
 | Framework_Composite_TrendWeather | 1.155 | 27.4% | 27.7% | a | QuantBook | T75/AW25 composite |
@@ -134,7 +134,7 @@ Every notebook in the QC tree falls into exactly one type:
 | Reinforcement-Learning-Trading | a | Pedagogical variant |
 | SVM-Wavelet-Forecasting | — | Local only |
 | Stoploss-Volatility-ML | a+b | BROKEN: CBOE data |
-| ML-Pairs-PCA-Selection | — | Research only |
+| ~~ML-Pairs-PCA-Selection~~ | — | ARCHIVED 2026-05-29: no main.py, concept covered by PCA-StatArbitrage |
 | ML-FinBERT-Sentiment | — | TF unavailable, 0 trades |
 | Framework_Composite_FamaFrenchAllWeather | a | PENDING QC deploy |
 | Framework_Composite_EMATrend | a | Not backtested |
@@ -226,3 +226,4 @@ Full classification table in [Python/README.md](../MyIA.AI.Notebooks/QuantConnec
 
 - **Cycle 5 (2026-05-07)**: Initial classification from issue #29 — 34 strategies, 5 categories (BROKEN_PEDAGOGICAL, BROKEN_TO_FIX, NEEDS_IMPROVEMENT, HEALTHY, NO_BACKTEST)
 - **Cycle 91 (2026-05-28)**: Full refonte — 4-type classification (a/b/c/d) covering ~192 notebooks across 7 directories, merged with 95-project performance data from projects/README.md
+- **2026-05-29 (po-2023, #1627)**: Dedup audit — 50 projects scanned across 9 families (EMA-Cross, DualMomentum, BTC, ML-*, Crypto, Vol-*, Pairs, Cloud-*, HAR-RV). 4 archived (BTC-MACD-ADX misleading name, ML-Pairs-PCA-Selection no main.py, Cloud-DualMomentum-NoTLT duplicate, Simple-Equity-EMA-Crossing minimal). 1 dead code removed (EMA-Cross-Stocks/alpha_model.py). 7 README fixed. 0 duplicates remaining.
