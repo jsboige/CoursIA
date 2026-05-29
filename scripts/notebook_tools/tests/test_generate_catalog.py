@@ -179,10 +179,13 @@ class TestDetermineStatus:
         return NOTEBOOKS_DIR / name
 
     def test_research_path(self):
+        # RESEARCH is keyed off the directory: any path part in
+        # RESEARCH_DIR_KEYWORDS (research/archive/examples/partner-course).
         nb = _nb([_code("x=1", [_stream_output()])])
         code_cells = [nb["cells"][0]]
         reqs = {"requires_api": False, "requires_gpu": False, "requires_cloud": False, "requires_wsl": False}
-        assert determine_status(self._make_path(), nb, code_cells, reqs, pedagogical=False) == "RESEARCH"
+        path = self._make_path("Search/research/Test.ipynb")
+        assert determine_status(path, nb, code_cells, reqs, pedagogical=False) == "RESEARCH"
 
     def test_ready_with_outputs(self):
         nb = _nb([_code("x=1", [_stream_output()])])
@@ -208,11 +211,23 @@ class TestDetermineStatus:
         reqs = {"requires_api": True, "requires_gpu": False, "requires_cloud": False, "requires_wsl": False}
         assert determine_status(self._make_path(), nb, code_cells, reqs, pedagogical=True) == "DEMO"
 
-    def test_demo_with_outputs_and_gpu(self):
+    def test_demo_partial_outputs_with_gpu(self):
+        # Partial outputs (some cell missing) + external requirement -> DEMO.
+        nb = _nb([
+            _code("torch.cuda()", [_stream_output()]),
+            _code("model.train()"),  # no output
+        ])
+        code_cells = [c for c in nb["cells"] if c["cell_type"] == "code"]
+        reqs = {"requires_api": False, "requires_gpu": True, "requires_cloud": False, "requires_wsl": False}
+        assert determine_status(self._make_path(), nb, code_cells, reqs, pedagogical=True) == "DEMO"
+
+    def test_ready_all_outputs_with_gpu(self):
+        # #963: when ALL code cells have outputs, status is READY regardless of
+        # requires_* — outputs are proof of successful execution.
         nb = _nb([_code("torch.cuda()", [_stream_output()])])
         code_cells = [nb["cells"][0]]
         reqs = {"requires_api": False, "requires_gpu": True, "requires_cloud": False, "requires_wsl": False}
-        assert determine_status(self._make_path(), nb, code_cells, reqs, pedagogical=True) == "DEMO"
+        assert determine_status(self._make_path(), nb, code_cells, reqs, pedagogical=True) == "READY"
 
     def test_ready_empty_code_cells(self):
         nb = _nb([_md("# Title")])
@@ -229,22 +244,34 @@ class TestCountTodos:
         assert count_todos(nb) == 0
 
     def test_single_todo(self):
-        nb = _nb([_code("x = None  # TODO student")])
+        # Genuine (non-stub) TODO in an unexecuted cell is counted.
+        nb = _nb([_code("compute()  # TODO refine this")])
         assert count_todos(nb) == 1
 
     def test_multiple_todos(self):
         nb = _nb([
-            _code("x = None  # TODO step 1"),
-            _code("y = None  # TODO step 2"),
+            _code("step1()  # TODO step 1"),
+            _code("step2()  # TODO step 2"),
         ])
         assert count_todos(nb) == 2
 
     def test_case_insensitive(self):
-        nb = _nb([_code("# todo: implement")])
+        nb = _nb([_code("model = build()  # todo implement")])
         assert count_todos(nb) == 1
 
     def test_ignores_markdown(self):
         nb = _nb([_md("# TODO list")])
+        assert count_todos(nb) == 0
+
+    def test_excludes_exercise_stub(self):
+        # #1644: C.1-compliant exercise stubs (var = None # TODO, pass, ...) are
+        # pedagogically complete, not incomplete work -> not counted.
+        nb = _nb([_code("x = None  # TODO student")])
+        assert count_todos(nb) == 0
+
+    def test_excludes_executed_cell_todo(self):
+        # #1480: a TODO in an executed cell (has outputs) is a resolved exercise.
+        nb = _nb([_code("result = train()  # TODO tune", [_stream_output()])])
         assert count_todos(nb) == 0
 
 
@@ -304,9 +331,12 @@ class TestClassifyMaturity:
         return _nb(cells, metadata={"kernelspec": {"display_name": "Python 3", "name": "python3"}})
 
     def test_production(self):
+        # Note: code cell must produce output by design — a bare assignment
+        # (x = 1) is now filtered as "outputless-by-design" (#1644), so we use
+        # an expression that yields a visible result.
         nb = self._full_nb([
             _md("# Introduction"),
-            _code("x = 1", [_stream_output()]),
+            _code("print('result')", [_stream_output()]),
             _md("## Conclusion"),
         ])
         code_cells = [c for c in nb["cells"] if c["cell_type"] == "code"]
@@ -315,7 +345,7 @@ class TestClassifyMaturity:
     def test_beta_missing_conclusion(self):
         nb = self._full_nb([
             _md("# Introduction"),
-            _code("x = 1", [_stream_output()]),
+            _code("print('result')", [_stream_output()]),
             _md("## More"),
         ])
         code_cells = [c for c in nb["cells"] if c["cell_type"] == "code"]
@@ -336,20 +366,26 @@ class TestClassifyMaturity:
         assert classify_maturity(nb, code_cells, "Python 3") == "ALPHA"
 
     def test_draft_no_outputs(self):
+        # Output-producing cell with NO committed output -> DRAFT.
         nb = self._full_nb([
             _md("# Title"),
-            _code("x = 1"),
+            _code("print('x')"),
         ])
         code_cells = [c for c in nb["cells"] if c["cell_type"] == "code"]
         assert classify_maturity(nb, code_cells, "Python 3") == "DRAFT"
 
     def test_draft_no_markdown(self):
-        nb = self._full_nb([_code("x = 1", [_stream_output()])])
+        nb = self._full_nb([_code("print('x')", [_stream_output()])])
         code_cells = [nb["cells"][0]]
         assert classify_maturity(nb, code_cells, "Python 3") == "DRAFT"
 
     def test_draft_too_many_todos(self):
-        code_cells = [_code(f"x{i} = None  # TODO {i}", [_stream_output()]) for i in range(12)]
+        # >10 counted TODOs -> DRAFT. TODOs only count in unexecuted, non-stub
+        # cells (#1480/#1644), so use unexecuted call cells; one executed cell
+        # provides outputs so the no-output DRAFT rule does not fire first.
+        executed = _code("print('ok')", [_stream_output()])
+        todo_cells = [_code(f"func_{i}()  # TODO {i}") for i in range(12)]
+        code_cells = [executed] + todo_cells
         nb = self._full_nb([_md("# Title")] + code_cells)
         assert classify_maturity(nb, code_cells, "Python 3") == "DRAFT"
 
