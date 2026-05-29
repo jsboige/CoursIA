@@ -314,7 +314,6 @@ GameTheory/
 ├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
 ├── social_choice_lean_peters/     # Projet Lake reference DominikPeters (0 sorry, toolchain v4.27.0-rc1)
 ├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 3 sorry residual dans Lattice.lean)
-├── calibration_lean/              # Projet Lake benchmark prover (0 sorry, regression suite)
 ├── lean_game_defs/                # Types Lean partages (pas de Lake project)
 ├── examples/
 │   ├── prisoners_dilemma.py
@@ -394,7 +393,7 @@ Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-serie [SocialChoice/](SocialCh
 | Valeur de Shapley | GameTheory-15b | `Shapley.lean` (cooperative games) | 0 sorry |
 | Coeur cooperatif | GameTheory-15b | `Basic.lean` ([cooperative_games_lean](cooperative_games_lean/)) | 1 sorry (Bondareva-Shapley, INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION) |
 | Modeles de vote | SocialChoice SC-02 | `Voting.lean` (Banks, STV, Median Voter) | 0 sorry |
-| Calibration prover | (benchmark) | `Calibration/Nash.lean` ([calibration_lean](calibration_lean/)) | 0 sorry |
+| Calibration prover | (benchmark) | `Calibration/Nash.lean` ([calibration_lean](../SymbolicAI/Lean/calibration_lean/)) | 0 sorry |
 | Gale-Shapley (stable marriage) | (pas de notebook dedie) | `GaleShapley.lean` ([stable_marriage_lean](stable_marriage_lean/)) | 0 sorry (PR #1521 GPT-5.5 prover); `Lattice.lean` residual 3 sorry (Knuth rotations, INTRACTABLE) |
 
 Voir [SymbolicAI/Lean/README.md](../SymbolicAI/Lean/README.md) pour les prerequis Lean (notebooks 1-6 recommandes).

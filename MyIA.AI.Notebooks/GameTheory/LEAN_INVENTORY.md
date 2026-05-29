@@ -7,15 +7,16 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 | Directory | Toolchain | Production sorry | Modules | Status |
 |-----------|-----------|-----------------|---------|--------|
 | `stable_marriage_lean` | v4.30.0-rc2 | 3 | 5 files | Active proving |
-| `calibration_lean` | v4.30.0-rc2 | 0 | 1 file | COMPLETE |
 | `cooperative_games_lean` | v4.30.0-rc2 | 1 | 2 files | Active proving |
 | `social_choice_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
-| **Total** | — | **4** | **16 files** | — |
+| **Total** | — | **4** | **15 files** | — |
 
-Note: `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production. `_GoalExtract.lean` (former prover test file) has been removed from the repo.
+Note: `_GoalExtract.lean` (former prover test file) has been removed from the repo. `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production.
 
 **Conway tribute series relocated**: `conway_lean/` (Conway hommage — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel) was moved to [`SymbolicAI/Lean/conway_lean/`](../SymbolicAI/Lean/conway_lean/) since it formalizes lesser-known Conway results (not game-theoretic content per se). The prover calibration targets defined in `agent_tests/prover/config.py` follow the new path.
+
+**Calibration relocated**: `calibration_lean/` was moved to [`SymbolicAI/Lean/calibration_lean/`](../SymbolicAI/Lean/calibration_lean/) (issue #1764) since it is a prover harness component, not game-theoretic content.
 
 ---
 
@@ -48,23 +49,7 @@ Note: `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogi
 
 ---
 
-### 2. calibration_lean
-
-**Objective**: Prover calibration targets for benchmarking the multi-agent prover.
-
-**Toolchain**: v4.30.0-rc2 | **Dependencies**: Mathlib4
-
-| File | sorry | Description |
-|------|-------|-------------|
-| `Calibration/Nash.lean` | 0 | Nash equilibrium calibration (all targets proved) |
-
-**Build**: `lake build Calibration` — SUCCESS
-
-**COMPLETE: 0 sorry**. All 4 calibration targets (C, D, E, F) proved. Previous scan matched "sorry" in doc comments only.
-
----
-
-### 3. cooperative_games_lean
+### 2. cooperative_games_lean
 
 **Objective**: Formalize cooperative game theory (Shapley value, core).
 
@@ -77,11 +62,11 @@ Note: `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogi
 
 **Build**: `lake build CooperativeGames` — SUCCESS (with `sorry` warning on Basic.lean:309)
 
-**Status: Active proving (1 sorry)**. `bondareva_shapley_forward` reduces to extracting a Core allocation from the polytope `P \ K`; the body is sketched (P nonempty + closed + no element has coalition deficit) but requires Hahn-Banach / hyperplane separation in locally convex spaces (not yet ported to Mathlib for finite-dim ℝⁿ in this shape). Consumer theorem `bondareva_shapley` (iff form) transitively depends on this `sorry`.
+**Status: Active proving (1 sorry)**. `bondareva_shapley_forward` reduces to extracting a Core allocation from the polytope `P \ K`; the body is sketched (P nonempty + closed + no element has coalition deficit) but requires Hahn-Banach / hyperplane separation in locally convex spaces (not yet ported to Mathlib for finite-dim R^n in this shape). Consumer theorem `bondareva_shapley` (iff form) transitively depends on this `sorry`.
 
 ---
 
-### 4. social_choice_lean
+### 3. social_choice_lean
 
 **Objective**: Port asouther4/lean-social-choice (Lean 3) to Lean 4. Arrow, Sen, Voting, Mechanism Design.
 
@@ -102,7 +87,7 @@ Note: `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogi
 
 ---
 
-### 5. social_choice_lean_peters
+### 4. social_choice_lean_peters
 
 **Objective**: Reference project importing DominikPeters/SocialChoiceLean as a Lake dependency.
 
@@ -136,14 +121,11 @@ Note: After PRs #1521-#1525 merge, Lattice.lean will have **0 sorry, 1 axiom** (
 | Project                | Decision | Reasoning                                                      |
 |------------------------|----------|----------------------------------------------------------------|
 | stable_marriage_lean   | NO-GO    | All 3 sorry INTRACTABLE (Knuth rotations). man_optimal body proved. |
-| calibration_lean       | N/A      | COMPLETE (0 sorry). No targets.                                |
-| cooperative_games_lean | NO-GO    | `hCore` (Basic.lean:309) tagged `INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION`. |
+| cooperative_games_lean | NO-GO    | hCore requires Hahn-Banach / hyperplane separation.           |
 | social_choice_lean     | N/A      | COMPLETE (0 sorry). MechanismDesign added (#1469).             |
 | social_choice_lean_peters | N/A   | Reference only (pinned v4.27.0-rc1).                           |
 
 Conway calibration targets (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) live in `SymbolicAI/Lean/conway_lean/` and are still consumed by `agent_tests/prover/config.py` (#1453 prover harness co-evolution).
-
-**Conclusion**: No tractable BG iter targets exist. Next proving opportunity requires either (a) new Lean files with fresh sorry, or (b) manual Knuth rotation formalization (~200-300 lines).
 
 ---
 

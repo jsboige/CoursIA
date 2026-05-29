@@ -125,10 +125,11 @@ import StableMarriage.Definitions
 """
 
 # ── Calibration (Epic #1452) ──
+# Relocated from GameTheory to SymbolicAI/Lean (issue #1764)
 _CALIBRATION_CANDIDATES = [
-    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\calibration_lean"),
-    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\calibration_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\calibration_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
 ]
 CALIBRATION_DIR = next(
     (p for p in _CALIBRATION_CANDIDATES if p.exists()),
