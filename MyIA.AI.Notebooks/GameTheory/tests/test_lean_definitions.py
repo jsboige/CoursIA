@@ -109,8 +109,13 @@ class TestLeanExecution(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Initialize Lean runner."""
-        cls.runner = LeanRunner(backend='auto')
+        """Initialize Lean runner. Skip the whole class if no Lean toolchain
+        is available (e.g. CPU CI runners without elan/lean installed) instead
+        of erroring at setup."""
+        try:
+            cls.runner = LeanRunner(backend='auto')
+        except (FileNotFoundError, RuntimeError, OSError) as exc:
+            raise unittest.SkipTest(f"Lean toolchain not available: {exc}")
 
     @classmethod
     def tearDownClass(cls):
