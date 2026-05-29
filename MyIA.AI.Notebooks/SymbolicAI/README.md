@@ -41,7 +41,7 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 |-------|-----------|-----------|---------------|-------|-------|
 | [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
 | [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
-| [Lean](#lean---verification-formelle) | 15 | 14 (93%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs, Kochen-Specker | ~11h |
+| [Lean](#lean---verification-formelle) | 16 | 14 (88%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs, Kochen-Specker | ~11h |
 | [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
 | [Tweety](#tweety---tweetyproject) | 10 | 10 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
 | [SymbolicLearning](#symboliclearning---apprentissage-symbolique) | 7 | 7 (100%) | Python | ILP, neuro-symbolique, KG-LLM | ~6h |
