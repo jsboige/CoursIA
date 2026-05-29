@@ -28,6 +28,7 @@ numpy>=1.24
 scipy>=1.10
 pandas>=2.0                  # DataFrames pour analyse et benchmarks
 scikit-learn>=1.3            # ML pour App-18 hyperparameter tuning
+optuna>=3.0                  # Optimisation bayesienne d'hyperparametres (App-18)
 
 # Linear Programming
 pulp>=2.8.0                 # Linear programming with CBC, HiGHS solvers
@@ -38,3 +39,7 @@ papermill>=2.4
 
 # Optional: MiniZinc (requires MiniZinc IDE installed separately)
 # minizinc>=0.9
+
+# Optional: OpenSpiel (Search-7 MCTS/AlphaGo-style) — pas de wheel pip Windows.
+# Installer via WSL/Linux : pip install open_spiel  (cf README, section Search-7)
+# open_spiel>=1.4
