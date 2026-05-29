@@ -2021,9 +2021,9 @@
     "serie": "GenAI",
     "sous_serie": "Image",
     "kernel": "Python 3",
-    "status": "READY",
-    "maturity": "PRODUCTION",
-    "duree_estimee": "30min",
+    "status": "ALPHA",
+    "maturity": "ALPHA",
+    "duree_estimee": "45min",
     "owner_logique": "po-2025",
     "last_validation": "2026-05-29",
     "last_validator": "jsboige@gmail.com",
@@ -2037,7 +2037,7 @@
     "requires_gpu": true,
     "requires_cloud": false,
     "requires_wsl": false,
-    "executable_locally": false
+    "executable_locally": true
   },
   {
     "path": "GenAI/Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb",
