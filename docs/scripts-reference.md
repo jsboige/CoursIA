@@ -49,7 +49,6 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 | `qc_classify.py` | Classification stratégies QC (BROKEN/NEEDS_IMPROVEMENT/HEALTHY) |
 | `epita_prcon_autograde.py` | Autograde EPITA Programmation par Contraintes |
 | `weekly_digest.py` | Digest hebdomadaire d'activité |
-| `auto_enrich_notebooks.py` | Enrichissement markdown pédagogique automatique |
 | `fix_audio_dependencies.py`, `optimize_dvs.py` | Dépendances audio / optimisation |
 | `_alpha_diag.py`, `generate_16e.py` | Diagnostics ponctuels |
 
