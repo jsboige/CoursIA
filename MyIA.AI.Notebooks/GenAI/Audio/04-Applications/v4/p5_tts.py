@@ -25,6 +25,7 @@ from .p1_voice_cloning import SPEAKER_TO_VOICE, FIGURANT_RAW_VOICE_OVERRIDE
 from .fishaudio_client import (
     fishaudio_tts,
     thermal_wait,
+    thermal_backoff,
     audio_duration_mp3,
     OUTPUT_DIR,
 )
@@ -484,6 +485,10 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             "format": "mp3",
             "timeout": 300,
         })
+
+    # Thermal backoff: pause between segments to prevent GPU overheating.
+    # target 72C = light 3s pause, up to 30s pause at 80C+, full cooldown above.
+    thermal_backoff(target_temp=72, max_temp=80, base_sleep=3.0, max_sleep=30.0)
 
     # If single chunk, use direct call
     if len(tts_requests) == 1:
