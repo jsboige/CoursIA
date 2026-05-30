@@ -2,8 +2,8 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 28
-breakdown: root=24, SocialChoice=4
+pedagogical_count: 25
+breakdown: root=21, SocialChoice=4
 maturity: BETA=21, ALPHA=2, PRODUCTION=2
 -->
 
