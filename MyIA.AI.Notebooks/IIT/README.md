@@ -63,10 +63,14 @@ L'unique notebook couvre le spectre complet : construction de graphes causaux bi
 ### Environnement Python
 
 ```bash
-# Environnement conda recommande (Python 3.10+)
-conda create --name pyphi python=3.13 -y
+# Automated setup (creates conda env + registers kernel)
+powershell -File scripts/setup_pyphi_env.ps1
+
+# Manual setup (Python 3.9 required for PyPhi 1.2.0)
+conda create --name pyphi python=3.9 -y
 conda activate pyphi
-pip install pyphi numpy scipy
+pip install pyphi==1.2.0 numpy scipy ipykernel
+python -m ipykernel install --user --name pyphi --display-name "Python 3 (PyPhi/IIT)"
 ```
 
 ### Dependances
@@ -81,7 +85,7 @@ pip install pyphi numpy scipy
 
 | Probleme | Cause | Solution |
 |----------|-------|----------|
-| Conflits numpy/scipy | Rare (PyPhi 1.2.0 OK sur 3.13) | Utiliser Python 3.10+ |
+| `ImportError: cannot import name 'Iterable'` | PyPhi 1.2.0 utilise `collections.Iterable` (supprime Python 3.10+) | Utiliser Python 3.9 (`conda create -n pyphi python=3.9`) |
 | StateUnreachableError | Etats inaccessibles | Configuration `VALIDATE_SUBSYSTEM_STATES` |
 | Performance | Phi calcul intensif pour grands reseaux | Limiter taille des reseaux |
 
