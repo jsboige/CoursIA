@@ -1,0 +1,8 @@
+# Notebook Tools - Dependencies
+# Core execution
+jupyter-client>=8.0.0
+papermill>=2.4.0
+
+# QuantConnect Docker executor
+requests>=2.28.0
+websocket-client>=1.6.0
