@@ -19,3 +19,6 @@ import Conway.Nim
 import Conway.DoomsdayLemmas
 import Conway.LookAndSayLemmas
 import Conway.Angel
+import Conway.Life
+import Conway.Life.Spaceships
+import Conway.Life.Oscillators
