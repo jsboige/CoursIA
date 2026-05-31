@@ -739,7 +739,11 @@
     "hasMain": true,
     "hasResearch": true,
     "hasReadme": true,
-    "classification": "untested"
+    "classification": "robuste",
+    "sharpe": 1.072,
+    "cagr": 23.21,
+    "maxDD": 9.3,
+    "period": "2024-2026"
   },
   {
     "name": "CSharp-CTG-Momentum",
@@ -825,7 +829,11 @@
     "hasMain": true,
     "hasResearch": true,
     "hasReadme": true,
-    "classification": "untested"
+    "classification": "historique",
+    "sharpe": 0.185,
+    "cagr": 4.73,
+    "maxDD": 11.5,
+    "period": "2015-2025"
   },
   {
     "name": "RiskParity",
@@ -857,7 +865,11 @@
     "hasMain": true,
     "hasResearch": true,
     "hasReadme": true,
-    "classification": "untested"
+    "classification": "historique",
+    "sharpe": -0.01,
+    "cagr": 2.8,
+    "maxDD": 14.0,
+    "period": "2015-2025"
   },
   {
     "name": "TrendStocks-Alpha",
@@ -868,7 +880,11 @@
     "hasMain": true,
     "hasResearch": true,
     "hasReadme": true,
-    "classification": "untested"
+    "classification": "robuste",
+    "sharpe": 0.519,
+    "cagr": 15.91,
+    "maxDD": 39.6,
+    "period": "2015-2025"
   },
   {
     "name": "Alpha-Correlation-Analysis",
@@ -974,7 +990,11 @@
     "hasMain": true,
     "hasResearch": true,
     "hasReadme": true,
-    "classification": "untested"
+    "classification": "robuste",
+    "sharpe": 0.581,
+    "cagr": 8.21,
+    "maxDD": 17.0,
+    "period": "2020-2026"
   },
   {
     "name": "BTC-ML",
@@ -1140,7 +1160,12 @@
     "hasMain": true,
     "hasResearch": true,
     "hasReadme": true,
-    "classification": "untested"
+    "classification": "robuste",
+    "sharpe": 0.519,
+    "cagr": 15.7,
+    "maxDD": 16.9,
+    "period": "2024-2026",
+    "description": "Hybrid portfolio combining traditional equities (IBKR) with crypto (Binance)."
   },
   {
     "name": "RL-Options-Hedging",
@@ -1193,7 +1218,12 @@
     "hasMain": true,
     "hasResearch": false,
     "hasReadme": true,
-    "classification": "untested"
+    "classification": "robuste",
+    "sharpe": 0.648,
+    "cagr": 14.67,
+    "maxDD": 21.2,
+    "period": "2015-2026",
+    "description": "Volatility targeting combined with momentum signals for dynamic position sizing."
   },
   {
     "name": "_docs",
