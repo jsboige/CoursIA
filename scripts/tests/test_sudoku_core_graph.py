@@ -223,6 +223,235 @@ class TestSudokuGraphDataset:
         assert ds.solutions.dtype == np.int8
 
 
+# ─── sudoku_collate_fn ────────────────────────────────────────────────
+
+
+class TestSudokuCollateFn:
+    """Tests for the vectorized collate function (7 LIVE callers)."""
+
+    def _make_batch(self, bs, puzzle_val=0, solution_val=1):
+        """Helper: create a batch of (puzzle, solution) tuples."""
+        puzzles = np.full((bs, 81), puzzle_val, dtype=np.int8)
+        solutions = np.full((bs, 81), solution_val, dtype=np.int8)
+        return [(puzzles[i], solutions[i]) for i in range(bs)]
+
+    # --- Output structure ---
+
+    def test_returns_three_tensors(self):
+        batch = self._make_batch(2)
+        result = sudoku_collate_fn(batch)
+        assert len(result) == 3
+        assert isinstance(result[0], torch.Tensor)
+        assert isinstance(result[1], torch.Tensor)
+        assert isinstance(result[2], torch.Tensor)
+
+    def test_x_shape(self):
+        """x should be (batch_size, 81, 10): 9 one-hot channels + is_given."""
+        batch = self._make_batch(4)
+        x, y, mask = sudoku_collate_fn(batch)
+        assert x.shape == (4, 81, 10)
+
+    def test_y_shape(self):
+        """y should be (batch_size, 81): class indices 0-8."""
+        batch = self._make_batch(3)
+        x, y, mask = sudoku_collate_fn(batch)
+        assert y.shape == (3, 81)
+
+    def test_mask_shape(self):
+        """is_given mask should be (batch_size, 81)."""
+        batch = self._make_batch(5)
+        x, y, mask = sudoku_collate_fn(batch)
+        assert mask.shape == (5, 81)
+
+    def test_x_dtype_float32(self):
+        batch = self._make_batch(2)
+        x, _, _ = sudoku_collate_fn(batch)
+        assert x.dtype == torch.float32
+
+    def test_y_dtype_long(self):
+        batch = self._make_batch(2, solution_val=5)
+        _, y, _ = sudoku_collate_fn(batch)
+        assert y.dtype == torch.long
+
+    def test_mask_dtype_float32(self):
+        batch = self._make_batch(2)
+        _, _, mask = sudoku_collate_fn(batch)
+        assert mask.dtype == torch.float32
+
+    # --- One-hot encoding ---
+
+    def test_all_zeros_puzzle_one_hot(self):
+        """All-zero puzzle: one-hot channels 0-8 all zero, is_given=0."""
+        batch = self._make_batch(1, puzzle_val=0)
+        x, _, mask = sudoku_collate_fn(batch)
+        # Channels 0-8 should all be 0 (no digit present)
+        assert torch.all(x[:, :, :9] == 0)
+        # Channel 9 (is_given) should be 0
+        assert torch.all(x[:, :, 9] == 0)
+        # Mask should be all 0
+        assert torch.all(mask == 0)
+
+    def test_digit_one_hot_encoding(self):
+        """Puzzle value 5 activates channel 4 (digit-1), is_given=1."""
+        batch = self._make_batch(1, puzzle_val=5)
+        x, _, mask = sudoku_collate_fn(batch)
+        # Channel 4 (= digit 5 - 1) should be 1
+        assert torch.all(x[:, :, 4] == 1.0)
+        # All other digit channels should be 0
+        for ch in range(9):
+            if ch != 4:
+                assert torch.all(x[:, :, ch] == 0.0), f"Channel {ch} should be 0"
+        # is_given channel should be 1
+        assert torch.all(x[:, :, 9] == 1.0)
+        assert torch.all(mask == 1.0)
+
+    def test_digit_1_activates_channel_0(self):
+        batch = self._make_batch(1, puzzle_val=1)
+        x, _, _ = sudoku_collate_fn(batch)
+        assert torch.all(x[:, :, 0] == 1.0)
+
+    def test_digit_9_activates_channel_8(self):
+        batch = self._make_batch(1, puzzle_val=9)
+        x, _, _ = sudoku_collate_fn(batch)
+        assert torch.all(x[:, :, 8] == 1.0)
+
+    def test_mixed_digits_one_hot(self):
+        """Different cells with different values get correct one-hot."""
+        puzzle = np.zeros(81, dtype=np.int8)
+        puzzle[0] = 1
+        puzzle[1] = 5
+        puzzle[2] = 9
+        batch = [(puzzle, np.ones(81, dtype=np.int8))]
+        x, _, _ = sudoku_collate_fn(batch)
+        # Cell 0: digit 1 -> channel 0
+        assert x[0, 0, 0] == 1.0
+        # Cell 1: digit 5 -> channel 4
+        assert x[0, 1, 4] == 1.0
+        # Cell 2: digit 9 -> channel 8
+        assert x[0, 2, 8] == 1.0
+        # Empty cells: all channels 0 except is_given
+        assert x[0, 3, :9].sum() == 0
+
+    # --- Solution indexing ---
+
+    def test_solutions_shifted_by_minus_1(self):
+        """Solutions are converted to 0-indexed (1->0, 5->4, 9->8)."""
+        batch = self._make_batch(1, solution_val=5)
+        _, y, _ = sudoku_collate_fn(batch)
+        assert torch.all(y == 4)
+
+    def test_solution_1_becomes_0(self):
+        batch = self._make_batch(1, solution_val=1)
+        _, y, _ = sudoku_collate_fn(batch)
+        assert torch.all(y == 0)
+
+    def test_solution_9_becomes_8(self):
+        batch = self._make_batch(1, solution_val=9)
+        _, y, _ = sudoku_collate_fn(batch)
+        assert torch.all(y == 8)
+
+    # --- is_given mask ---
+
+    def test_is_given_for_nonzero(self):
+        batch = self._make_batch(1, puzzle_val=3)
+        _, _, mask = sudoku_collate_fn(batch)
+        assert torch.all(mask == 1.0)
+
+    def test_is_not_given_for_zero(self):
+        batch = self._make_batch(1, puzzle_val=0)
+        _, _, mask = sudoku_collate_fn(batch)
+        assert torch.all(mask == 0.0)
+
+    def test_mixed_given_mask(self):
+        """Mix of given (nonzero) and empty (zero) cells."""
+        puzzle = np.zeros(81, dtype=np.int8)
+        puzzle[0] = 5
+        puzzle[40] = 3
+        batch = [(puzzle, np.ones(81, dtype=np.int8))]
+        _, _, mask = sudoku_collate_fn(batch)
+        assert mask[0, 0] == 1.0
+        assert mask[0, 40] == 1.0
+        assert mask[0, 1] == 0.0
+
+    # --- Batch dimension ---
+
+    def test_batch_size_8(self):
+        batch = self._make_batch(8, puzzle_val=3, solution_val=7)
+        x, y, mask = sudoku_collate_fn(batch)
+        assert x.shape[0] == 8
+        assert y.shape[0] == 8
+        assert mask.shape[0] == 8
+
+    def test_independent_samples(self):
+        """Each sample in batch is encoded independently."""
+        p1 = np.full(81, 1, dtype=np.int8)
+        p2 = np.full(81, 9, dtype=np.int8)
+        batch = [(p1, np.ones(81, dtype=np.int8)), (p2, np.ones(81, dtype=np.int8))]
+        x, _, _ = sudoku_collate_fn(batch)
+        # Sample 0: digit 1 -> channel 0
+        assert torch.all(x[0, :, 0] == 1.0)
+        # Sample 1: digit 9 -> channel 8
+        assert torch.all(x[1, :, 8] == 1.0)
+
+    # --- Determinism ---
+
+    def test_deterministic(self):
+        batch = self._make_batch(3, puzzle_val=4, solution_val=6)
+        r1 = sudoku_collate_fn(batch)
+        r2 = sudoku_collate_fn(batch)
+        assert torch.equal(r1[0], r2[0])
+        assert torch.equal(r1[1], r2[1])
+        assert torch.equal(r1[2], r2[2])
+
+
+# ─── SudokuGraphDataset (extended) ──────────────────────────────────
+
+
+class TestSudokuGraphDatasetExtended:
+    """Additional tests for SudokuGraphDataset edge cases."""
+
+    def test_single_element(self):
+        puzzles = np.zeros((1, 81), dtype=np.int64)
+        solutions = np.ones((1, 81), dtype=np.int64)
+        ds = SudokuGraphDataset(puzzles, solutions)
+        assert len(ds) == 1
+        p, s = ds[0]
+        assert len(p) == 81
+
+    def test_returns_tuple(self):
+        puzzles = np.zeros((1, 81), dtype=np.int64)
+        solutions = np.ones((1, 81), dtype=np.int64)
+        ds = SudokuGraphDataset(puzzles, solutions)
+        result = ds[0]
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+    def test_preserves_values(self):
+        """Values are preserved after int8 cast."""
+        puzzles = np.full((1, 81), 7, dtype=np.int64)
+        solutions = np.full((1, 81), 3, dtype=np.int64)
+        ds = SudokuGraphDataset(puzzles, solutions)
+        p, s = ds[0]
+        assert p[0] == 7
+        assert s[0] == 3
+
+    def test_index_out_of_range(self):
+        puzzles = np.zeros((2, 81), dtype=np.int64)
+        solutions = np.ones((2, 81), dtype=np.int64)
+        ds = SudokuGraphDataset(puzzles, solutions)
+        with pytest.raises(IndexError):
+            ds[2]
+
+    def test_all_zeros_values(self):
+        """All-zero puzzle/solution is valid."""
+        puzzles = np.zeros((1, 81), dtype=np.int64)
+        solutions = np.zeros((1, 81), dtype=np.int64)
+        ds = SudokuGraphDataset(puzzles, solutions)
+        p, s = ds[0]
+        assert np.all(p == 0)
+        assert np.all(s == 0)
+
+
 # ─── Cross-invariants ────────────────────────────────────────────────
 
 
@@ -249,3 +478,38 @@ class TestCrossInvariants:
         result = solve_sudoku(puzzle)
         assert result is not None
         assert np.all(result > 0)
+
+    def test_dataset_then_collate_fn(self):
+        """SudokuGraphDataset output is compatible with sudoku_collate_fn."""
+        puzzles = np.zeros((4, 81), dtype=np.int64)
+        solutions = np.ones((4, 81), dtype=np.int64)
+        # Set some given cells
+        puzzles[0, 0] = 5
+        puzzles[1, 10] = 3
+        puzzles[2, 40] = 7
+        puzzles[3, 80] = 9
+
+        ds = SudokuGraphDataset(puzzles, solutions)
+        batch = [ds[i] for i in range(4)]
+        x, y, mask = sudoku_collate_fn(batch)
+
+        assert x.shape == (4, 81, 10)
+        assert y.shape == (4, 81)
+        assert mask.shape == (4, 81)
+        # Solution 1 -> class 0
+        assert torch.all(y == 0)
+        # Given cells detected
+        assert mask[0, 0] == 1.0
+        assert mask[1, 10] == 1.0
+        assert mask[2, 40] == 1.0
+        assert mask[3, 80] == 1.0
+
+    def test_collate_fn_y_range_0_to_8(self):
+        """Collate output y has values in [0, 8] (0-indexed classes)."""
+        puzzles = np.zeros((1, 81), dtype=np.int8)
+        # Solutions with all values 1-9
+        solutions = np.array([(i % 9) + 1 for i in range(81)], dtype=np.int8)
+        batch = [(puzzles[0], solutions)]
+        _, y, _ = sudoku_collate_fn(batch)
+        assert y.min().item() >= 0
+        assert y.max().item() <= 8
