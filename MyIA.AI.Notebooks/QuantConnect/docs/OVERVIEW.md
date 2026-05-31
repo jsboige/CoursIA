@@ -123,6 +123,24 @@ QuantConnect/
     └── OVERVIEW.md              # Ce fichier
 ```
 
+## Notebooks ↔ Projets (liens croises)
+
+Les notebooks pedagogiques `Python/QC-Py-*` couvrent les concepts ; les projets `projects/<Name>/` implementent les strategies.
+
+| Notebook pedagogique | Projets connexes |
+| ---------------------- | ------------------ |
+| QC-Py-11 (Technical Indicators) | EMA-Cross-*, BTC-MACD-ADX, Multi-Layer-EMA |
+| QC-Py-13 (Alpha Models) | EMA-Cross-Alpha, TrendStocks-Alpha, Framework Composites |
+| QC-Py-14 (Portfolio Construction) | Framework_Composite_TrendWeather, AllWeather, RiskParity, BlackLitterman-Momentum |
+| QC-Py-15 (Parameter Optimization) | MomentumStrategy, SectorMomentum |
+| QC-Py-18 (ML Features) | ML-FeatureEngineering, ML-RandomForest, ML-XGBoost |
+| QC-Py-19 (Deep Learning) | ML-Temporal-CNN, LSTM-Forecasting, DL-LSTM |
+| QC-Py-20 (Reinforcement Learning) | RL-DQN-Trading, RL-Portfolio |
+| QC-Py-Cloud-02 (Sector Rotation) | SectorMomentum, DualMomentum |
+| QC-Py-Cloud-03 (Risk Parity) | RiskParity, RegimeSwitching |
+| QC-Py-Cloud-05 (MLP Forecasting) | Portfolio-Optimization-ML, ML-Regression |
+| QC-Py-Cloud-06 (PCA StatArb) | PCA-StatArbitrage, ETF-Pairs |
+
 ## Pour aller plus loin
 
 - [Quick Tour](../QUICK_TOUR.md) — Vue d'ensemble en 2 minutes
