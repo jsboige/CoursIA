@@ -422,7 +422,8 @@ class SearchTools:
             project_dir = str(Path(self._filepath).parent.parent)
             verifier = get_verifier(project_dir)
             subdir = Path(self._filepath).parent.name
-            module_name = f"{subdir}"
+            stem = Path(self._filepath).stem
+            module_name = f"{subdir}.{stem}"
 
             results = []
             for tactic in ["exact?", "apply?"]:
