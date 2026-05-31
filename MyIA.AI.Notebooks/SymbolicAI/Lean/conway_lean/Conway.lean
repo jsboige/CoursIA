@@ -23,3 +23,5 @@ import Conway.Life
 import Conway.Life.Spaceships
 import Conway.Life.Oscillators
 import Conway.Life.RLE
+import Conway.Life.MacroCell
+import Conway.Life.Hashlife
