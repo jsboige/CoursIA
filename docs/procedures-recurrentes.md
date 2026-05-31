@@ -107,3 +107,47 @@ python -c "import json,sys; nb=json.load(open(sys.argv[1])); bad=[i for i,c in e
 ```
 
 Si fail → (a) exécuter localement (env complet H.2), OU (b) dispatcher RooSync sur machine compatible, OU (c) déplacer dans `_pending_execution/` avec issue ouverte.
+
+## Cycle merge coordinateur — leçons durables (ai-01)
+
+Leçons récurrentes du cycle review+merge, consolidées depuis les logs de cycle. À relire plutôt que de les ré-apprendre incident par incident.
+
+### Cascade catalogue (HARD)
+
+Toute PR touchant `COURSE_CATALOG.generated.json` rend les autres PRs catalog-touchers DIRTY/CONFLICTING au merge (le catalogue est régénéré globalement). Donc :
+
+- Merger les PRs **non-catalogue d'abord**, puis les catalog-touchers **un-par-un**.
+- Conflit catalogue = l'auteur **rebase + régénère** : `python scripts/notebook_tools/generate_catalog.py --json --git-tracked-only` (parité CI = N entrées git-tracked ; `--json` nu inclut les `_output.ipynb` locaux = drift), puis `expand_catalog_markers.py`.
+- **JAMAIS** force-resolve le conflit côté coord ; **JAMAIS** force-push la branche de l'auteur.
+- Check CI **rouge "Notebook catalog drift" = NON mergeable** (propagerait le drift) → bounce à l'auteur pour re-régénérer.
+- **Cascade-independence** : une PR dont le drift-check = SUCCESS **et** qui ne touche pas le catalogue est **indépendante** — ne pas la hold à tort dans la file cascade.
+
+### Trap "APPROVED"
+
+`reviewDecision=APPROVED` provient du bot **requis** `clusterManager-Myia` (Hermes/NanoClaw, même compte, distingués par préfixe body `[Hermes]`/`[NanoClaw]`). Mon `gh pr review --request-changes` en `myia-ai-01` **ne flippe PAS** le flag aggregate. Lever un hold = soit `--approve` documenté par evidence, soit admin-merge via `gh auth switch -u jsboige`. Toujours lire body + tous comments + diff (pas le seul flag).
+
+### Qualité enrichissement
+
+**Toujours** sampler le markdown ajouté avant merge : content-specific (interprétation réelle du résultat) = OK ; filler générique ("Suite du traitement", "Analyse des résultats") = REJET (gaming du détecteur, famille #1214).
+
+### Dead-code
+
+Vérifier qu'un script cible est **LIVE** (existe + exporté + ≥1 caller réel + catalogué) AVANT d'écrire/merger des tests dessus. Un test qui importe un module supprimé casse la suite.
+
+### mergeable != ready
+
+Un flip `MERGEABLE` (conflit résolu) ne lève PAS un hold qualité (gate P5, validation user). Distinguer "merge-conflict résolu" de "gate qualité franchi".
+
+### Maturité catalogue = README au render-time
+
+Les flips BETA→PRODUCTION se vérifient via le **badge counts** du README (`PRODUCTION=N→M`), PAS par grep `maturity` dans le JSON (champ vide au render). Ordering non-stable = diff symétrique = churn cosmétique ; `issue_pr_associee` non-préservé au regen.
+
+### Métriques outputs
+
+`output_type` count ≠ missing-outputs. Le vrai métrique "non-exécuté" = `execution_count: null` **ET** `outputs` vide. Un diff de reserialization (churn C.3) n'est pas une régression d'exécution.
+
+### Commandes / vigilance
+
+- Diff d'un fichier d'une PR : `gh pr diff N -- path` n'est **pas** supporté → `git fetch origin pull/N/head:prN` puis `git show prN:path`.
+- Une self-review de worker peut **sur-alarmer** (ex. flag "API key exposée" sur un print masqué) → lire le diff réel avant de propager une consigne "rotate".
+- Fast-merges (<9 min, compte `jsboige`) bypassent les bots (poll ~30 min) : low-risk mais le gate review est contourné — réserver au forensic/auto trivial.
