@@ -368,24 +368,29 @@ def _is_exercise_stub(cell: dict) -> bool:
     These are NOT incomplete work — they're intentionally stubbed exercises.
     """
     source = "".join(cell.get("source", []))
-    if "# TODO" not in source.upper():
+    upper = source.upper()
+    # Exercise markers per C.1: # TODO, # Etape N, # Indice (accent-tolerant).
+    if not any(m in upper for m in ("# TODO", "# ETAPE", "# ÉTAPE", "# INDICE")):
         return False
     lines = [l.strip() for l in source.split("\n") if l.strip() and not l.strip().startswith("#")]
-    # Comment-only cells with # TODO are exercise instructions
+    # Comment-only cells with an exercise marker are exercise instructions
     if not lines:
         return True
     last_line = lines[-1]
+    # Strip a trailing inline comment so "pass  # TODO: ..." matches "pass".
+    # Safe for the bare-statement patterns below (no '#' inside their code).
+    code_part = last_line.split("#", 1)[0].strip()
     # C.1 patterns: pass, return None, print("Exercice..."), var = None
-    if last_line == "pass":
+    if code_part == "pass":
         return True
-    if last_line.startswith("return None"):
+    if code_part.startswith("return None"):
         return True
     if 'print("Exercice' in last_line or "print('Exercice" in last_line:
         return True
-    if last_line.startswith("print(") and "completer" in last_line.lower():
+    if code_part.startswith("print(") and "completer" in last_line.lower():
         return True
-    # var = None  # TODO pattern
-    if "= None" in last_line and "# TODO" in last_line.upper():
+    # var = None  # TODO pattern (marker already verified above)
+    if code_part.endswith("= None"):
         return True
     return False
 
@@ -394,13 +399,17 @@ def _effective_code_cells(code_cells: list) -> list:
     """Filter cells excluded from maturity classification.
 
     Excludes: Papermill injected-parameters, outputless-by-design cells
-    (assignments, function/class definitions, imports, comments).
-    These produce no visible output and should not block promotion.
+    (assignments, function/class definitions, imports, comments), and
+    C.1-compliant exercise stubs (pass / return None / print("Exercice")
+    with a # TODO / # Etape marker). All of these are output-free by design
+    and must not block PRODUCTION promotion (they are already excluded from
+    the TODO count for the same reason).
     """
     return [
         c for c in code_cells
         if not _is_papermill_injected(c)
         and not _is_outputless_by_design(c)
+        and not _is_exercise_stub(c)
     ]
 
 
