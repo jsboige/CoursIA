@@ -1,4 +1,12 @@
-"""Zero-shot evaluation for Sudoku RRN models."""
+"""Zero-shot evaluation for Sudoku RRN models.
+
+NOT CPU-TESTABLE: requires CUDA (torch.autocast('cuda')) and a trained
+SudokuRRN model. The single function evaluate() performs batched inference
+on GPU. Pure-logic coverage (accuracy/loss computation) is tested indirectly
+through models.py (forward pass) and solvers.py (puzzle validation).
+
+LIVE callers: eval_notebook.py, cpu_diagnostic.py (2).
+"""
 
 import numpy as np
 import torch
