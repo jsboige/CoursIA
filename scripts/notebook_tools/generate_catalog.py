@@ -28,6 +28,7 @@ import json
 import re
 import subprocess
 import sys
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 
@@ -260,18 +261,57 @@ def count_todos(notebook: dict, *, exclude_executed: bool = True) -> int:
     return count
 
 
+def _normalize_text(s: str) -> str:
+    """Lowercase, normalize apostrophes, drop fenced code, and strip accents.
+
+    Accent-stripping makes "synthèse"/"synthese" and "résumé"/"resume" both match
+    a single unaccented keyword, removing the latent bug where an accented heading
+    was missed while its unaccented twin was detected.
+
+    Fenced code blocks (``` ... ```) are removed first so a keyword appearing inside
+    a flow diagram (e.g. "resultat -> synthese" in a fenced ASCII diagram) is NOT
+    mistaken for a real "## Synthese" conclusion heading.
+    """
+    s = re.sub(r"```.*?```", " ", s, flags=re.DOTALL)
+    s = s.lower().replace("’", "'").replace("‘", "'")
+    return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
+
+
 def has_markdown_intro_conclusion(cells: list) -> tuple[bool, bool]:
-    """Check if notebook has intro (first md cell with heading) and conclusion markers."""
+    """Check if notebook has an intro section and a conclusion section.
+
+    Intro keywords are searched in the FIRST 2 markdown cells: the very first cell
+    is frequently a title + navigation header, with the real intro / learning
+    objectives living in the second cell (or phrased "Vue d'ensemble" /
+    "A la fin de ce notebook, vous saurez"). Conclusion keywords are searched in
+    the LAST 3 markdown cells (a conclusion may be followed by a nav/footer cell).
+    Text is accent-stripped via _normalize_text so accented headings are detected.
+
+    This detects existing pedagogical structure more reliably; it does not relax
+    the maturity bar (output/TODO gates in classify_maturity are unchanged).
+    """
     md_cells = [c for c in cells if c["cell_type"] == "markdown"]
     if not md_cells:
         return False, False
 
-    first_src = "".join(md_cells[0].get("source", [])).lower()
-    has_intro = any(kw in first_src for kw in ["introduction", "objectif", "overview", "prérequis", "contexte"])
+    intro_keywords = [
+        "introduction", "objectif", "overview", "vue d'ensemble",
+        "prerequis", "contexte", "vous saurez", "a la fin de ce notebook",
+    ]
+    # First 2 MD cells (title/nav header often precedes the real intro)
+    first_sources = [_normalize_text("".join(c.get("source", []))) for c in md_cells[:2]]
+    has_intro = any(kw in src for src in first_sources for kw in intro_keywords)
 
+    # "bilan" is excluded: as a bare substring it false-positives on body prose
+    # ("le bilan des ressources consommees") without heading a real wrap-up section.
+    # "synthese" is kept (it heads genuine "## Synthese des apprentissages" sections);
+    # _normalize_text strips code fences so it no longer matches flow diagrams.
+    conclusion_keywords = [
+        "conclusion", "resume", "synthese", "recapitulatif", "summary",
+        "points cles", "a retenir", "pour aller plus loin", "next steps",
+    ]
     # Check last 3 MD cells (conclusion may not be the very last if nav/footer follows)
-    last_sources = ["".join(c.get("source", [])).lower() for c in md_cells[-3:]]
-    conclusion_keywords = ["conclusion", "résumé", "resume", "synthese", "recapitulatif", "summary", "pour aller plus loin", "next steps"]
+    last_sources = [_normalize_text("".join(c.get("source", []))) for c in md_cells[-3:]]
     has_conclusion = any(
         kw in src for src in last_sources for kw in conclusion_keywords
     )
