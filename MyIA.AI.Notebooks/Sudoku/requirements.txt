@@ -34,6 +34,8 @@ jpype1>=1.4
 
 # LLM (Sudoku-17)
 openai>=1.0
+semantic-kernel>=0.9        # Microsoft Semantic Kernel
+python-dotenv>=1.0          # .env file loading
 
 # Jupyter
 papermill>=2.4

@@ -29,6 +29,9 @@ scipy>=1.10
 pandas>=2.0                  # DataFrames pour analyse et benchmarks
 scikit-learn>=1.3            # ML pour App-18 hyperparameter tuning
 optuna>=3.0                  # Optimisation bayesienne d'hyperparametres (App-18)
+scikit-image>=0.21           # Image processing (PyGad-EdgeDetection, App-9)
+opencv-python-headless>=4.8  # Computer vision (PyGad-EdgeDetection)
+pillow>=10.0                 # Image I/O (EdgeDetection notebooks)
 
 # Linear Programming
 pulp>=2.8.0                 # Linear programming with CBC, HiGHS solvers
@@ -36,6 +39,7 @@ pulp>=2.8.0                 # Linear programming with CBC, HiGHS solvers
 # Jupyter
 ipywidgets>=8.1
 papermill>=2.4
+python-dotenv>=1.0              # .env file loading (API keys)
 
 # Optional: MiniZinc (requires MiniZinc IDE installed separately)
 # minizinc>=0.9
