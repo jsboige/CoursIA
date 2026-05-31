@@ -376,7 +376,7 @@ def classify_maturity(
 
     Heuristics (B-2 from #656):
         TEMPLATE   — filename contains "template" (case-insensitive)
-        PRODUCTION — kernel defined, all outputs, <3 TODO, intro+conclusion, structured
+        PRODUCTION — kernel defined, all outputs, <=3 TODO, intro+conclusion, structured
         BETA       — outputs present, <5 TODO, markdown structure
         ALPHA      — partial outputs OR 5-10 TODO
         DRAFT      — no outputs OR >10 TODO OR no markdown cells
@@ -427,8 +427,10 @@ def classify_maturity(
     has_structure = has_intro or has_conclusion or len(md_cells) >= 3
 
     if has_outputs and todo_count < 5 and has_structure:
-        # PRODUCTION: stricter requirements (all outputs, no exceptions)
-        if kernel_defined and all_have_outputs and todo_count < 3 and has_intro and has_conclusion:
+        # PRODUCTION: stricter requirements (all outputs, <=3 TODO, intro+conclusion)
+        # Allow <=3 TODOs: exercise stubs (C.1-compliant) are excluded by count_todos,
+        # so remaining TODOs are legitimate scaffolding/placeholder markers.
+        if kernel_defined and all_have_outputs and todo_count <= 3 and has_intro and has_conclusion:
             return "PRODUCTION"
         return "BETA"
 
