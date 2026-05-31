@@ -323,6 +323,98 @@ class TestHasMarkdownIntroConclusion:
         assert intro is True
         assert conclusion is True
 
+    def test_intro_in_second_cell(self):
+        # #1901-precedent: title + nav header is cell 0, the real intro is in cell 1.
+        cells = [
+            _md("# Lean-13 Grothendieck\n**Navigation**: [Index](../README.md)"),
+            _md("## Introduction : pourquoi Grothendieck dans une serie Lean ?"),
+            _code("x = 1"),
+            _md("## Conclusion"),
+        ]
+        intro, conclusion = has_markdown_intro_conclusion(cells)
+        assert intro is True
+        assert conclusion is True
+
+    def test_intro_learning_objectives_phrase(self):
+        # "A la fin de ce notebook, vous saurez" is a learning-objectives intro.
+        cells = [
+            _md("# SW-3 GraphOperations\n## Operations RDF\nA la fin de ce notebook, vous saurez :\n1. Lire un graphe"),
+            _md("Importation des espaces de noms"),
+            _md("## Conclusion"),
+        ]
+        intro, _ = has_markdown_intro_conclusion(cells)
+        assert intro is True
+
+    def test_intro_vue_densemble(self):
+        cells = [
+            _md("# Lean-7b\nCe notebook fait suite au precedent."),
+            _md("## Vue d'ensemble du notebook"),
+            _md("## Conclusion"),
+        ]
+        intro, _ = has_markdown_intro_conclusion(cells)
+        assert intro is True
+
+    def test_conclusion_accented(self):
+        # Latent bug fix: accented "Synthèse" must match (accent-stripping).
+        cells = [
+            _md("# Introduction"),
+            _md("## Synthèse des concepts"),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is True
+
+    def test_conclusion_behind_footer(self):
+        # Conclusion is not the last md cell (a nav footer follows).
+        cells = [
+            _md("# Introduction"),
+            _md("## Conclusion et bilan"),
+            _md("**Navigation**: [<- Index](../README.md)"),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is True
+
+    def test_no_intro_continuation_notebook(self):
+        # A mid-series continuation with no intro section must NOT be flagged.
+        cells = [
+            _md("## 7. Orchestration des strategies"),
+            _md("### Role des strategies dans Semantic Kernel"),
+            _md("## Conclusion"),
+        ]
+        intro, _ = has_markdown_intro_conclusion(cells)
+        assert intro is False
+
+    def test_conclusion_synthese_in_code_fence_ignored(self):
+        # Function_Calling FP: "synthese" inside a fenced flow diagram is NOT a
+        # conclusion; the notebook ends on a bonus exercise, not a wrap-up section.
+        cells = [
+            _md("# Introduction"),
+            _md("Flux de donnees :\n```\nanalyse -> appel tool -> resultat -> synthese\n```"),
+            _md("# Challenge bonus\nA vous de jouer."),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is False
+
+    def test_conclusion_synthese_heading_outside_fence_matches(self):
+        # A genuine "## Synthese des apprentissages" heading must still be detected
+        # even when a fenced code block is present elsewhere in the same cell.
+        cells = [
+            _md("# Introduction"),
+            _md("## Synthese des apprentissages\n```\nx = demo()\n```\nCe que nous avons vu."),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is True
+
+    def test_bilan_alone_is_not_a_conclusion(self):
+        # "bilan" was dropped as a keyword: as bare prose ("le bilan des ressources")
+        # it does not mark a real wrap-up section (Creative-Video FP).
+        cells = [
+            _md("# Introduction"),
+            _md("Nous affichons le bilan des ressources consommees par technique."),
+            _md("## Exercice : creez votre clip."),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is False
+
 
 # --- classify_maturity ---
 
