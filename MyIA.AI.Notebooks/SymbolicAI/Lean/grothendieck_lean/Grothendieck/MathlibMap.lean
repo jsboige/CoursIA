@@ -9,11 +9,10 @@ from the current imports.
 Epic #1646. All `sorry`s eliminated at creation.
 -/
 
+import Mathlib.CategoryTheory.Sites.Grothendieck
 import Mathlib.CategoryTheory.Sites.SheafOfTypes
-import Mathlib.AlgebraicGeometry.Spec
+import Mathlib.AlgebraicGeometry.Scheme
 import Mathlib.Topology.Sheaves.Sheaf
-
-namespace Grothendieck
 
 /-!
 ## Category theory foundations (Grothendieck's legacy)
@@ -30,18 +29,19 @@ Mathlib 4 has a rich category theory library built on these ideas.
 ## Sieves and Presieves
 -/
 
-#check @CategoryTheory.Presieve          -- C → Type _  (set of arrows with codomain X)
-#check @CategoryTheory.Sieve             -- subfunctor of yoneda.obj X
+#check @CategoryTheory.Presieve          -- Presieve X
+#check @CategoryTheory.Sieve             -- Sieve X (subfunctor of yoneda.obj X)
 #check @CategoryTheory.Sieve.pullback    -- pullback a sieve along a morphism
+#check @CategoryTheory.Sieve.arrows      -- the underlying presieve
 
 /-!
 ## Grothendieck topologies
 -/
 
 #check @CategoryTheory.GrothendieckTopology          -- the topology structure
-#check @GrothendieckTopology.trivial                  -- coarsest topology
-#check @GrothendieckTopology.discrete                 -- finest topology
-#check @GrothendieckTopology.dense                    -- dense topology
+#check @CategoryTheory.GrothendieckTopology.trivial  -- coarsest topology
+#check @CategoryTheory.GrothendieckTopology.discrete -- finest topology
+#check @CategoryTheory.GrothendieckTopology.dense    -- dense topology
 
 /-!
 ## Sheaves
@@ -53,29 +53,31 @@ Mathlib 4 has a rich category theory library built on these ideas.
 
 -- Sheaves on a topological space
 #check @TopCat.Sheaf                     -- bundled sheaf on a topological space
-#check @TopCat.Presheaf.IsSheaf          -- sheaf condition for topological spaces
 
 /-!
-## Algebraic geometry: Spec and Schemes
+## Algebraic geometry: Schemes and Spec
 -/
 
--- The Spec construction
-#check @AlgebraicGeometry.Spec           -- CommRingCatᵒᵖ ⥤ Scheme
+open AlgebraicGeometry CategoryTheory
 
--- Schemes
-#check @AlgebraicGeometry.Scheme         -- the type of schemes
-#check @AlgebraicGeometry.Scheme.Spec    -- Spec as a functor to Scheme
-#check @AlgebraicGeometry.Scheme.Γ       -- global sections functor
+-- The type of schemes
+#check Scheme                   -- the type of schemes
 
--- Zariski site
-#check @AlgebraicGeometry.Scheme.zariskiPretopology  -- the pretopology
-#check @AlgebraicGeometry.Scheme.zariskiTopology     -- the Grothendieck topology
+-- The Spec construction: from rings to spaces
+#check Scheme.Spec              -- CommRingCatᵒᵖ ⥤ Scheme
+
+-- Global sections: from spaces to rings
+#check Scheme.Γ                 -- Schemeᵒᵖ ⥤ CommRingCat
+
+-- Forgetful functors
+#check Scheme.forgetToTop       -- Scheme ⥤ TopCat
+#check Scheme.forgetToLocallyRingedSpace  -- Scheme ⥤ LocallyRingedSpace
 
 /-!
 ## What Mathlib does NOT have yet (as of 2026-05)
 
 The following are foundational Grothendieck concepts NOT yet in Mathlib:
-  - Etale cohomology (site étale, ℓ-adic cohomology)
+  - Etale cohomology (site etale, l-adic cohomology)
   - Motives (pure motives, Voevodsky's DM category)
   - Six operations (Grothendieck's formalism)
   - Grothendieck-Riemann-Roch
@@ -86,5 +88,3 @@ The following are foundational Grothendieck concepts NOT yet in Mathlib:
 
 These remain research-grade formalization targets.
 -/
-
-end Grothendieck

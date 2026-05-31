@@ -26,17 +26,13 @@ open CategoryTheory
 ## Sieves
 
 A sieve on X is a collection of morphisms with codomain X that is downward-closed:
-if f ∈ S and g compose with f, then g ≫ f ∈ S. In Mathlib, a `Sieve C X` is a
+if f ∈ S and g compose with f, then g ≫ f ∈ S. In Mathlib, a `Sieve X` is a
 subfunctor of the Yoneda embedding at X.
 -/
 
-/-- The maximal sieve on any object contains all morphisms into X.
-    This is `Sieve.⊤` and it is always a covering sieve in any topology. -/
-example {C : Type*} [Category C] (X : C) : Sieve.⊤ X = Sieve.mk (fun _ _ => True) :=
-  rfl
-
-/-- Sieves form a complete lattice: we can take intersections, unions, etc. -/
-example {C : Type*} [Category C] (X : C) : CompleteLattice (Sieve C X) :=
+/-- Sieves form a complete lattice: we can take intersections, unions, etc.
+    Note: `Sieve X` (not `Sieve C X`) — the category is inferred. -/
+example {C : Type*} [Category C] (X : C) : CompleteLattice (Sieve X) :=
   inferInstance
 
 /-!
@@ -59,7 +55,7 @@ example {C : Type*} [Category C] : GrothendieckTopology C :=
 /-- The dense topology: a sieve S covers X iff for every f : Y → X,
     there exists some arrow in S that factors through f. -/
 example {C : Type*} [Category C] : GrothendieckTopology C :=
-  GrothendieckTopology.dense C
+  GrothendieckTopology.dense
 
 /-!
 ## The three axioms
@@ -69,19 +65,19 @@ Every `J : GrothendieckTopology C` satisfies the three axioms explicitly.
 
 /-- Axiom 1: the maximal sieve is always covering. -/
 theorem top_covers {C : Type*} [Category C] (J : GrothendieckTopology C) (X : C) :
-    Sieve.⊤ X ∈ J.sieves X :=
+    (⊤ : Sieve X) ∈ J.sieves X :=
   J.top_mem X
 
 /-- Axiom 2: covering sieves are stable under pullback. -/
 theorem pullback_cover {C : Type*} [Category C] (J : GrothendieckTopology C)
-    {X Y : C} {S : Sieve C X} (f : Y ⟶ X) (hS : S ∈ J.sieves X) :
+    {X Y : C} {S : Sieve X} (f : Y ⟶ X) (hS : S ∈ J.sieves X) :
     S.pullback f ∈ J.sieves Y :=
   J.pullback_stable f hS
 
 /-- Axiom 3: the transitivity (local character) axiom.
     If S covers X and every arrow in S pulls back to a cover of R, then R covers X. -/
 theorem transitivity {C : Type*} [Category C] (J : GrothendieckTopology C)
-    {X : C} {S R : Sieve C X} (hS : S ∈ J.sieves X)
+    {X : C} {S R : Sieve X} (hS : S ∈ J.sieves X)
     (hR : ∀ ⦃Y : C⦄ ⦃f : Y ⟶ X⦄, S.arrows f → R.pullback f ∈ J.sieves Y) :
     R ∈ J.sieves X :=
   J.transitive hS R hR

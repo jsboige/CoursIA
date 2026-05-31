@@ -44,10 +44,9 @@ Pulling back the maximal sieve along any morphism gives the maximal sieve.
 
 /-- CALIBRATION (simp): pullback of the top sieve is the top sieve. -/
 theorem pullback_top {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X) :
-    (Sieve.⊤ X).pullback f = Sieve.⊤ Y := by
+    (Sieve.pullback f (⊤ : Sieve X)) = (⊤ : Sieve Y) := by
   ext Z g
-  simp [Sieve.⊤, Sieve.pullback]
-  exact fun _ => trivial
+  simp [Sieve.pullback]
 
 /-!
 ## P3: The Zariski topology equals the pretopology-generated topology
@@ -72,9 +71,10 @@ only one covering sieve per object, and the sheaf condition on ⊤ is trivial.
 -/
 
 /-- CALIBRATION (exact): every Type-valued presheaf is a sheaf for the
-    trivial (coarsest) Grothendieck topology. -/
+    trivial (coarsest) Grothendieck topology (= ⊥).
+    Uses `Presieve.isSheaf_bot` which works with `⊥`. -/
 theorem isSheaf_trivial {C : Type*} [Category C] (P : Cᵒᵖ ⥤ Type*) :
-    Presieve.IsSheaf (GrothendieckTopology.trivial C) P :=
-  Presieve.isSheaf_bot P
+    Presieve.IsSheaf (⊥ : GrothendieckTopology C) P :=
+  Presieve.isSheaf_bot
 
 end Grothendieck
