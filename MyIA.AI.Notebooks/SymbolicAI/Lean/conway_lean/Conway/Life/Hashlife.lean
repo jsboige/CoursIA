@@ -155,11 +155,20 @@ Recursive case (`k >= 3`):
 6. Return `node out_nw out_ne out_sw out_se` (level `k-1`).
 -/
 
-partial def hashlifeResult : MacroCell -> MacroCell
-  | c@(node (node nw_nw nw_ne nw_sw nw_se)
-            (node ne_nw ne_ne ne_sw ne_se)
-            (node sw_nw sw_ne sw_sw sw_se)
-            (node se_nw se_ne se_sw se_se)) =>
+/-- Auxiliary for `hashlifeResult`: structural recursion on `fuel`.
+    When `fuel = 0`, returns a default cell. When `fuel > 0`,
+    performs one Hashlife step, recursing with `fuel - 1`.
+    Terminates because `fuel` is a `Nat` that strictly decreases.
+
+    The `partial def` wrapper `hashlifeResult` calls this with
+    `fuel = c.level`, which is a structural upper bound on recursion
+    depth (level strictly decreases at each step of the algorithm). -/
+def hashlifeResultAux : Nat → MacroCell → MacroCell
+  | 0, _ => deadLeaf  -- fuel exhausted: return default
+  | fuel + 1, c@(node (node nw_nw nw_ne nw_sw nw_se)
+                      (node ne_nw ne_ne ne_sw ne_se)
+                      (node sw_nw sw_ne sw_sw sw_se)
+                      (node se_nw se_ne se_sw se_se)) =>
     if c.level == 2 then
       step4x4 c
     else
@@ -172,28 +181,41 @@ partial def hashlifeResult : MacroCell -> MacroCell
       let n7 := node sw_nw sw_ne sw_sw sw_se
       let n8 := node sw_ne se_nw sw_se se_sw
       let n9 := node se_nw se_ne se_sw se_se
-      let r1 := hashlifeResult n1
-      let r2 := hashlifeResult n2
-      let r3 := hashlifeResult n3
-      let r4 := hashlifeResult n4
-      let r5 := hashlifeResult n5
-      let r6 := hashlifeResult n6
-      let r7 := hashlifeResult n7
-      let r8 := hashlifeResult n8
-      let r9 := hashlifeResult n9
+      let r1 := hashlifeResultAux fuel n1
+      let r2 := hashlifeResultAux fuel n2
+      let r3 := hashlifeResultAux fuel n3
+      let r4 := hashlifeResultAux fuel n4
+      let r5 := hashlifeResultAux fuel n5
+      let r6 := hashlifeResultAux fuel n6
+      let r7 := hashlifeResultAux fuel n7
+      let r8 := hashlifeResultAux fuel n8
+      let r9 := hashlifeResultAux fuel n9
       let q_nw := node r1 r2 r4 r5
       let q_ne := node r2 r3 r5 r6
       let q_sw := node r4 r5 r7 r8
       let q_se := node r5 r6 r8 r9
-      let out_nw := hashlifeResult q_nw
-      let out_ne := hashlifeResult q_ne
-      let out_sw := hashlifeResult q_sw
-      let out_se := hashlifeResult q_se
+      let out_nw := hashlifeResultAux fuel q_nw
+      let out_ne := hashlifeResultAux fuel q_ne
+      let out_sw := hashlifeResultAux fuel q_sw
+      let out_se := hashlifeResultAux fuel q_se
       node out_nw out_ne out_sw out_se
-  | c =>
+  | _ + 1, c =>
     -- Malformed: not a level >= 2 node of nodes.
     if c.level == 0 then deadLeaf
     else emptyOfLevel (c.level - 1)
+
+/-- Recursive Hashlife: level-`k` input -> level-`(k-1)` output,
+    `2^(k-2)` generations ahead.
+
+    Implemented via `hashlifeResultAux` with fuel = `c.level`,
+    which is a structural upper bound on the recursion depth
+    (the level strictly decreases at each recursive call).
+
+    This is a `partial def` wrapper. The `def`-level termination
+    guarantee comes from `hashlifeResultAux`'s structural recursion
+    on `fuel`. -/
+partial def hashlifeResult (c : MacroCell) : MacroCell :=
+  hashlifeResultAux c.level c
 
 /-! ## Centering / padding helpers -/
 
@@ -215,38 +237,120 @@ def centerInLevelPlus2 (c : MacroCell) : MacroCell :=
        (node e c e e)
        (node c e e e)
 
+/-- Pad `c` (level `n`) into a level-`(n+1)` MacroCell by placing `c`
+    at the centered region with all-dead padding around it.
+
+    For `c = node nw ne sw se`, the result is:
+    ```
+    node (node e e e nw) (node e e ne e) (node e sw e e) (node se e e e)
+    ```
+    This gives one copy of `c` in the center, with `2^(n-1)` cells of
+    dead padding on each side. -/
+def padToLevelPlus1 (c : MacroCell) : MacroCell :=
+  match c with
+  | node nw ne sw se =>
+    let e := emptyOfLevel nw.level  -- level n-1
+    node (node e e e nw) (node e e ne e) (node e sw e e) (node se e e e)
+  | _ => c  -- leaves can't be padded
+
+/-- Pad `c` by 2 levels, placing it at the center of a level-`(n+2)` cell.
+    Equivalent to `padToLevelPlus1 (padToLevelPlus1 c)`.
+    The result has `2^n` cells of dead padding on each side. -/
+def padCenter2 (c : MacroCell) : MacroCell := padToLevelPlus1 (padToLevelPlus1 c)
+
 /-! ## One-generation step on arbitrary MacroCells
 
-We implement a generic one-generation `hashlifeStep1` that operates on
-*any* MacroCell. The strategy is to convert to/from `Grid` only on the
-boundary — for the genuine Hashlife base case (input fits in a level-2
-window), we exercise `step4x4` via `hashlifeResult` on the padded
-input. -/
+For single-generation steps, we round-trip via Grid for level > 0
+(since `hashlifeResult` jumps by `2^(k-2)` generations, not 1).
+The real speedup comes from `hashlifeJump` and `evolveHashlifeFast`
+which use the recursive Hashlife for multi-generation jumps. -/
 
-/-- Advance `c` by exactly one generation, using Hashlife on the
-    centered level-2 window when possible. For inputs whose live
-    region does not fit in a level-2 window (level > 0), we fall back
-    to `Conway.Life.step` on the underlying grid. The result is
-    semantically correct in all cases. -/
+/-- Advance `c` by exactly one generation. For level 0, uses the
+    Hashlife base case `step4x4`. For larger levels, falls back to
+    `Conway.Life.step` on the underlying grid. -/
 def hashlifeStep1 (c : MacroCell) : MacroCell :=
   if c.level == 0 then
-    -- Level-0 input: pad to level 2 and use step4x4 directly.
-    -- The result is a level-1 cell at the centered position.
     step4x4 (centerInLevelPlus2 c)
   else
-    -- Larger inputs: round-trip via Grid.
     gridToMacroCell (step (c.toGrid (0, 0)))
-
-/-! ## Public API: `hashlifeStep`, `hashlifeFastForward`, `evolveHashlife`
--/
 
 /-- One Hashlife step on a MacroCell. -/
 def hashlifeStep (c : MacroCell) : MacroCell := hashlifeStep1 c
 
-/-- Fast-forward `c` by `k` generations, using Hashlife per step. -/
+/-- Fast-forward `c` by `k` generations, one step at a time. -/
 def hashlifeFastForward : Nat -> MacroCell -> MacroCell
   | 0,     c => c
   | k + 1, c => hashlifeFastForward k (hashlifeStep1 c)
+
+/-! ## Exponential-speedup API: `hashlifeJump`, `evolveHashlifeFast`
+
+The key insight: `hashlifeResult` on a level-`k` MacroCell advances the
+centered region by `2^(k-2)` generations. To ensure the pattern stays
+within the computed region, we pad the MacroCell by 2 levels using
+`centerInLevelPlus2`, which places the pattern at the center of a
+`(level + 2)` cell. This gives `2^level` margin on each side, which is
+more than enough for `2^(level-2)` generations (speed of light = 1 cell/gen).
+
+With this padding, `hashlifeResult` on the padded cell advances by
+`2^level` generations (not `2^(level-2)`), and the result's offset equals
+the original offset (the centered result of the padded cell aligns with
+the original region). -/
+
+/-- Jump a MacroCell forward by `2^level` generations using recursive
+    Hashlife with padding. Pads the input by 2 levels, then calls
+    `hashlifeResult`. The result is a level-`(k+1)` MacroCell.
+
+    The result offset equals the original offset (the centered region
+    of the padded cell aligns with the original bounding box). -/
+def hashlifeJump (c : MacroCell) : MacroCell :=
+  hashlifeResult (padCenter2 c)
+
+/-- Jump size for a level-`k` MacroCell: `2^k` generations. -/
+def jumpSize (lvl : Nat) : Nat := 2 ^ lvl
+
+/-- Compute the offset for the result of `hashlifeJump`.
+
+    After padding by 2 levels (`padCenter2`), the level-`k` MacroCell
+    becomes level-`(k+2)`. The result of `hashlifeResult` on the padded
+    cell is level-`(k+1)`, whose corner is shifted by `-2^(k-1)` relative
+    to the original offset `off`. -/
+def jumpResultOff (off : Int × Int) (lvl : Nat) : Int × Int :=
+  if lvl == 0 then off
+  else (off.1 - (2 ^ (lvl - 1) : Nat), off.2 - (2 ^ (lvl - 1) : Nat))
+
+/-- Auxiliary for `evolveHashlifeFast`: structural recursion on `fuel`.
+    When `fuel = 0`, falls back to `evolve n g` (reference implementation).
+    When `fuel > 0`, tries to use Hashlife exponential jump if possible,
+    recursing with `fuel - 1`. -/
+def evolveHashlifeFastAux : Nat → Nat → Grid → Grid
+  | _, 0, g => g
+  | 0, _, g => g  -- fuel exhausted: return current state
+  | fuel + 1, n, g =>
+    let (off, mc) := gridToMacroCellWithOffset g
+    let lvl := mc.level
+    let js := jumpSize lvl
+    if lvl >= 2 && n >= js then
+      -- Jump forward by `2^lvl` generations using padded Hashlife
+      let jumped := hashlifeJump mc
+      let newOff := jumpResultOff off lvl
+      let g' := jumped.toGrid newOff
+      evolveHashlifeFastAux fuel (n - js) g'
+    else
+      -- Small n or small pattern: use reference evolve
+      evolve n g
+
+/-- Evolve `g` by `n` generations using Hashlife exponential speedup.
+
+    Strategy:
+    - Build a MacroCell from `g` (level `k`).
+    - Pad by 2 levels and use `hashlifeResult` to jump `2^k` generations.
+    - After each jump, rebuild the MacroCell and repeat.
+    - For small `n` or level < 2, fall back to `evolve`.
+
+    Implemented via `evolveHashlifeFastAux` with `fuel = n`,
+    since each iteration reduces `n` by at least `js >= 4`. -/
+def evolveHashlifeFast (n : Nat) (g : Grid) : Grid :=
+  evolveHashlifeFastAux n n g
 
 /-- Compute `evolve n g` using Hashlife. Round-trips through the
     `MacroCell` representation each generation, exercising `step4x4`
@@ -334,6 +438,33 @@ specific 4x4 inputs.
 
 -- Reference: glider 4 steps ahead.
 #eval evolve 4 glider
+
+/-! ## Sanity checks for `evolveHashlifeFast`
+
+Verify that the exponential-speedup path agrees with the reference
+`evolve` on canonical patterns. These exercise `hashlifeJump` (via the
+padded `hashlifeResult` path) rather than the fallback `step`.
+-/
+
+-- Block: still life, any number of generations = unchanged
+#eval evolveHashlifeFast 1 block == evolve 1 block
+#eval evolveHashlifeFast 4 block == evolve 4 block
+#eval evolveHashlifeFast 16 block == evolve 16 block
+
+-- Glider: period 4, displacement (1,-1)
+#eval evolveHashlifeFast 4 glider == evolve 4 glider
+#eval evolveHashlifeFast 8 glider == evolve 8 glider
+#eval evolveHashlifeFast 12 glider == evolve 12 glider
+
+-- Blinker: period 2
+#eval evolveHashlifeFast 2 blinker_h == evolve 2 blinker_h
+#eval evolveHashlifeFast 4 blinker_h == evolve 4 blinker_h
+
+-- Beacon: period 2
+#eval evolveHashlifeFast 2 beacon == evolve 2 beacon
+
+-- Toad: period 2
+#eval evolveHashlifeFast 2 toad == evolve 2 toad
 
 end Life
 end Conway

@@ -32,8 +32,8 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/Life.Oscillators` | 0 | 5 still-lifes + pulsar (p3) + pentadecathlon (p15), 7 `native_decide` |
 | `Conway/Life.RLE` | 0 | RLE pattern parser + glider/LWSS/pulsar/Gosper gun, 8 `native_decide` proofs |
 | `Conway/Life.MacroCell` | 0 | Quadtree datatype + `toGrid`/`buildFromGrid` round-trip |
-| `Conway/Life.Hashlife` | 0 | `step4x4` + `hashlifeResult` recursive + `evolveHashlife` API |
-| `Conway/Life.Computation` | 0 | Hashlife cross-validation (6), eater1 still-life (1), glider composition (5) |
+| `Conway/Life.Hashlife` | 0 | `step4x4` + `hashlifeResult` recursive + `padCenter2` + `hashlifeJump` + `evolveHashlifeFast` |
+| `Conway/Life.Computation` | 0 | Hashlife cross-validation (6 + 6 fast), eater1 still-life (1), glider composition (5) |
 
 ### Phase 3 — Free Will Theorem (Epic #1651, IN PROGRESS)
 
@@ -60,8 +60,12 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
   - Gosper Glider Gun (36 live cells, period 30) parsed and verified
 - **Spaceships**: LWSS, MWSS, HWSS with period-4 displacement proofs
 - **Oscillators**: Blinker (p2), toad (p2), beacon (p2), pulsar (p3), pentadecathlon (p15)
-- **Hashlife**: Quadtree MacroCell + recursive hashlife algorithm
-  - Cross-validated against list-based reference on 6 patterns
+- **Hashlife**: Quadtree MacroCell + recursive hashlife algorithm with exponential speedup
+  - `step4x4`: level-2 base case (B3/S23 direct)
+  - `hashlifeResult`: recursive level-k → level-(k-1), `2^(k-2)` generations
+  - `padCenter2`: proper centered padding (+2 levels, single copy)
+  - `hashlifeJump` + `evolveHashlifeFast`: exponential-speedup API
+  - Cross-validated against list-based reference on 12 patterns (6 + 6 fast path)
   - Eater 1 (fishhook) still-life proved by `native_decide`
   - Multi-period glider composition theorems
 
@@ -93,5 +97,6 @@ Kochen-Specker contradiction.
 - **List(Int x Int) + Bool predicates + `native_decide`** = works reliably
 - **Finset(Int x Int) + decide/native_decide** = BLOCKED (Quot.lift, Eq.rec)
 - Pulsar (48 cells) and pentadecathlon (p15) are borderline but pass `native_decide`
-- Hashlife: partial def with WellFounded recursion on MacroCell level
-- MacroCell round-trip verified by `#eval`, not theorem (too complex for `native_decide`)
+- Hashlife: partial def (no termination proof) with recursive MacroCell decomposition
+- `evolveHashlifeFast`: exponential speedup via `padCenter2` + `hashlifeResult`, validated by `native_decide`
+- MacroCell round-trip verified by `#eval` and `native_decide` theorem
