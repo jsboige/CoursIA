@@ -116,8 +116,28 @@ class LeanVerifier:
             return {"success": False, "errors": "No project directory set", "raw_output": ""}
 
         project = Path(self.project_dir)
-        if not (project / "lakefile.lean").exists() and not (project / "lakefile.toml").exists():
-            return {"success": False, "errors": f"Not a Lake project: {project}", "raw_output": ""}
+        # The prover derives project_dir as `<file>.parent.parent`, which is the
+        # Lake root only for files directly under the top package (e.g.
+        # `Conway/Nim.lean` -> root `conway_lean`). For files nested deeper (e.g.
+        # `Conway/Life/HashlifeCorrectness.lean`) that yields `conway_lean/Conway`,
+        # which holds no lakefile. Walk up to the real Lake root and re-root
+        # `relative_path` with the directory names we passed (so the module name
+        # resolves to `Conway.Life.HashlifeCorrectness`). Backward-compatible: a
+        # project_dir that already holds the lakefile is used unchanged.
+        def _has_lakefile(p: Path) -> bool:
+            return (p / "lakefile.lean").exists() or (p / "lakefile.toml").exists()
+
+        if not _has_lakefile(project):
+            cur = project
+            prefix = []
+            while cur != cur.parent and not _has_lakefile(cur):
+                prefix.insert(0, cur.name)
+                cur = cur.parent
+            if _has_lakefile(cur):
+                project = cur
+                relative_path = "/".join(prefix + [relative_path])
+            else:
+                return {"success": False, "errors": f"Not a Lake project: {project}", "raw_output": ""}
 
         target_file = project / relative_path
         cache_key = self._compute_cache_key(target_file) if target_file.exists() else None
