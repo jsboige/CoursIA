@@ -2,15 +2,56 @@
 
 import importlib.util
 import json
+import sys
+import types
 from pathlib import Path
 
 import pytest
+from unittest.mock import MagicMock
+
+# Stub config module so validate.py `from config import ...` resolves without env
+_saved_config = sys.modules.get("config")
+if not isinstance(_saved_config, types.ModuleType) or not hasattr(_saved_config, "COMFYUI_URL"):
+    sys.modules["config"] = types.SimpleNamespace(
+        COMFYUI_URL="http://localhost:8188",
+        FORGE_URL="http://localhost:17861",
+        VLLM_ZIMAGE_URL="http://localhost:8001",
+        WHISPER_URL="http://localhost:8190",
+        COMFYUI_VIDEO_URL="http://localhost:8189",
+        EXPECTED_QWEN_NODES=[],
+        EXPECTED_NUNCHAKU_NODES=[],
+        REQUIRED_NATIVE_NODES=[],
+        NOTEBOOK_SERVICE_MAP={},
+        NOTEBOOK_SERIES={},
+        NOTEBOOK_SEARCH_DIRS=[],
+        MODEL_CONFIGS={},
+        WORKFLOWS_DIR=Path("/tmp/workflows"),
+        GENAI_DIR=Path("/tmp/genai"),
+        SERVICES={},
+        GPU_PROFILES={},
+        GROUP_GPU_PROFILE={},
+        load_env=lambda: {},
+    )
+
+# Stub auth_manager and comfyui_client so validate.py imports succeed
+for _mod_name in ("core", "core.auth_manager", "core.comfyui_client"):
+    sys.modules.setdefault(_mod_name, types.ModuleType(_mod_name))
+sys.modules["core"].auth_manager = sys.modules["core.auth_manager"]
+sys.modules["core"].comfyui_client = sys.modules["core.comfyui_client"]
+sys.modules["core.auth_manager"].GenAIAuthManager = MagicMock
+sys.modules["core.comfyui_client"].ComfyUIClient = MagicMock
+sys.modules["core.comfyui_client"].ComfyUIConfig = MagicMock
+sys.modules["core.comfyui_client"].WorkflowManager = MagicMock
 
 # Load module by file path
 _MOD_PATH = Path(__file__).resolve().parent.parent.parent / "genai-stack" / "commands" / "validate.py"
 _spec = importlib.util.spec_from_file_location("genai_validate", _MOD_PATH)
 _mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_mod)
+
+# Restore original config if it was saved
+if _saved_config is not None:
+    sys.modules["config"] = _saved_config
 
 BatchNotebookValidator = _mod.BatchNotebookValidator
 
