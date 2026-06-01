@@ -283,7 +283,7 @@ Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/READM
 
 - **[GETTING-STARTED.md](GETTING-STARTED.md)** : Guide de démarrage détaillé
 - **[docs/HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
-- **[docs/BOOK_MAPPING.md](docs/BOOK_MAPPING.md)** : Mapping notebooks ↔ chapitres
+- **[BOOK_MAPPING.md](BOOK_MAPPING.md)** : Mapping notebooks ↔ chapitres
 - **[docs/qc_strategies_catalog.md](docs/qc_strategies_catalog.md)** : Catalogue strategies QC Cloud
 - **[docs/HANDSON_DATA_REQUIREMENTS.md](docs/HANDSON_DATA_REQUIREMENTS.md)** : Datasets requis
 - **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading
