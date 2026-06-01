@@ -61,9 +61,14 @@ _mock_config = types.SimpleNamespace(
     },
 )
 
-# Inject mock config into sys.modules so docker.py `from config import ...` resolves
+# Save original sys.modules state and inject mock config for docker.py imports
+_saved_modules = dict(sys.modules)
 sys.modules["config"] = _mock_config
 _dk_spec.loader.exec_module(_dk_mod)
+
+# Restore sys.modules to prevent polluting other test modules
+sys.modules.clear()
+sys.modules.update(_saved_modules)
 
 DockerManager = _dk_mod.DockerManager
 _run_cmd = _dk_mod._run_cmd
