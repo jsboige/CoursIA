@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-01 23:31
+Generated: 2026-06-01 23:39
 Total notebooks: 505
 
 ## Status Summary
 
-- **READY**: 374
-- **DEMO**: 128
+- **READY**: 375
+- **DEMO**: 127
 - **RESEARCH**: 0
 - **BROKEN**: 3
 
 ## Maturity Summary
 
-- **PRODUCTION**: 399
+- **PRODUCTION**: 400
 - **BETA**: 55
 - **TEMPLATE**: 4
-- **ALPHA**: 43
+- **ALPHA**: 42
 - **DRAFT**: 4
 
 ## By Series
@@ -333,7 +333,7 @@ Total notebooks: 505
 | 99 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 100 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 
-### QuantConnect (101 notebooks) — BROKEN:2, DEMO:33, READY:66 | ALPHA:35, BETA:6, DRAFT:1, PRODUCTION:58, TEMPLATE:1
+### QuantConnect (101 notebooks) — BROKEN:2, DEMO:32, READY:67 | ALPHA:34, BETA:6, DRAFT:1, PRODUCTION:59, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -368,7 +368,7 @@ Total notebooks: 505
 | 29 | Research QuantBook: ML Ensemble | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 30 | Research QuantBook: ML Feature Engineering | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 31 | ML Random Forest - Classification pour Trading | Python 3 | READY | BETA | 45min | po-2026 |
-| 32 | Research QuantBook: ML Regression | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 32 | Research QuantBook: ML Regression | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 33 | ML SVM - Support Vector Machine pour Trading | Python 3 | READY | BETA | 45min | po-2026 |
 | 34 | ML Text Classification for Trading | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 35 | ML XGBoost - Gradient Boosting pour Trading | Python 3 | DEMO | ALPHA | 45min | po-2026 |
