@@ -64,6 +64,19 @@ def _md_cell(source):
     }
 
 
+def _make_nb(code_cells, md_cells=None):
+    """Build notebook with code cells that produce output (print calls, not assignments)."""
+    cells = []
+    if md_cells:
+        for src in md_cells:
+            cells.append(_md_cell(src))
+    for src in code_cells:
+        cells.append(_code_cell(src, outputs=[{"output_type": "stream", "text": ["ok"]}]))
+    nb = {"cells": cells}
+    code = [c for c in cells if c["cell_type"] == "code"]
+    return nb, code
+
+
 # ---------------------------------------------------------------------------
 # estimate_duration
 # ---------------------------------------------------------------------------
@@ -380,10 +393,48 @@ class TestIsOutputlessByDesign:
     def test_class_def(self):
         assert _is_outputless_by_design(_code_cell("class Bar:\n    pass"))
 
-    def test_import_not_outputless(self):
-        """AST Import is not in the outputless tuple (Assign, FunctionDef, ClassDef).
-        Imports are NOT classified as outputless — they may have side effects."""
-        assert not _is_outputless_by_design(_code_cell("import os\nimport sys"))
+    def test_import_is_outputless(self):
+        """AST Import is in the outputless tuple (added by PR #2006/#2018).
+        Imports produce no visible Jupyter output and should not block PRODUCTION."""
+        assert _is_outputless_by_design(_code_cell("import os\nimport sys"))
+
+    def test_import_from_is_outputless(self):
+        """from X import Y also produces no output."""
+        assert _is_outputless_by_design(_code_cell("from pathlib import Path"))
+
+    def test_config_call_outputless(self):
+        """Bare config calls (plt.style.use, warnings.filterwarnings) produce no output."""
+        assert _is_outputless_by_design(_code_cell("plt.style.use('ggplot')"))
+
+    def test_config_call_warnings(self):
+        assert _is_outputless_by_design(_code_cell("warnings.filterwarnings('ignore')"))
+
+    def test_config_call_numpy(self):
+        assert _is_outputless_by_design(_code_cell("np.set_printoptions(precision=2)"))
+
+    def test_display_call_not_outputless(self):
+        """display() is in _OUTPUT_FUNCS and should NOT be outputless."""
+        assert not _is_outputless_by_design(_code_cell("display(df)"))
+
+    def test_pprint_call_not_outputless(self):
+        """pprint() is in _OUTPUT_FUNCS."""
+        assert not _is_outputless_by_design(_code_cell("pprint(data)"))
+
+    def test_show_call_not_outputless(self):
+        """show() is in _OUTPUT_FUNCS."""
+        assert not _is_outputless_by_design(_code_cell("plt.show()"))
+
+    def test_render_call_not_outputless(self):
+        """render() is in _OUTPUT_FUNCS."""
+        assert not _is_outputless_by_design(_code_cell("render(template)"))
+
+    def test_mixed_import_and_config(self):
+        """Import + config call both outputless."""
+        assert _is_outputless_by_design(_code_cell("import matplotlib\nplt.rcParams['font.size'] = 12"))
+
+    def test_assign_and_config(self):
+        """Assignment + config call both outputless."""
+        assert _is_outputless_by_design(_code_cell("x = 42\nnp.set_printoptions(precision=2)"))
 
     def test_print_produces_output(self):
         assert not _is_outputless_by_design(_code_cell("print('hello')"))
@@ -480,35 +531,21 @@ class TestHasMarkdownIntroConclusion:
 # ---------------------------------------------------------------------------
 
 class TestClassifyMaturity:
-    def _make_nb(self, code_cells, md_cells=None):
-        """Build notebook with code cells that produce output (print calls, not assignments)."""
-        cells = []
-        if md_cells:
-            for src in md_cells:
-                cells.append(_md_cell(src))
-        for src in code_cells:
-            # Use print() so cells are NOT outputless-by-design
-            cells.append(_code_cell(src, outputs=[{"output_type": "stream", "text": ["ok"]}]))
-        nb = {"cells": cells}
-        # Return ALL code cells (classify_maturity applies _effective_code_cells internally)
-        code = [c for c in cells if c["cell_type"] == "code"]
-        return nb, code
-
     def test_production(self):
         md = ["# Introduction", "Content", "## Conclusion"]
         code = ["print('a')", "print('b')"]
-        nb, code_cells = self._make_nb(code, md)
+        nb, code_cells = _make_nb(code, md)
         assert classify_maturity(nb, code_cells, "Python 3") == "PRODUCTION"
 
     def test_beta_no_conclusion(self):
         """Outputs present, <5 TODO, has intro but no conclusion → BETA."""
         md = ["# Introduction", "Content"]
         code = ["print('a')", "print('b')"]
-        nb, code_cells = self._make_nb(code, md)
+        nb, code_cells = _make_nb(code, md)
         assert classify_maturity(nb, code_cells, "Python 3") == "BETA"
 
     def test_template_overrides(self):
-        nb, code_cells = self._make_nb(["print('x')"], ["# Title"])
+        nb, code_cells = _make_nb(["print('x')"], ["# Title"])
         assert classify_maturity(nb, code_cells, "Python 3", is_template=True) == "TEMPLATE"
 
     def test_draft_no_markdown(self):
@@ -552,3 +589,185 @@ class TestClassifyMaturity:
         # 4 cells effective, 3 with outputs, 1 without → nearly_all_outputs=True
         # But not all_have_outputs → not PRODUCTION → BETA
         assert classify_maturity(nb, code_cells, "Python 3") == "BETA"
+
+
+# ---------------------------------------------------------------------------
+# classify_maturity — requires_cloud edge cases
+# ---------------------------------------------------------------------------
+
+class TestClassifyMaturityCloud:
+    def test_cloud_no_outputs_promoted(self):
+        """Cloud notebooks with no outputs are promoted (requires_cloud=True)."""
+        cells = [
+            _md_cell("# Introduction"),
+            _md_cell("Content"),
+            _md_cell("## Conclusion"),
+            _code_cell("print('a')"),  # no output, but cloud bypass
+            _code_cell("print('b')"),  # no output
+        ]
+        nb = {"cells": cells}
+        code_cells = [c for c in cells if c["cell_type"] == "code"]
+        result = classify_maturity(nb, code_cells, "Python 3", requires_cloud=True)
+        assert result == "PRODUCTION"
+
+    def test_cloud_with_real_outputs_still_production(self):
+        """Cloud notebooks with actual outputs still reach PRODUCTION."""
+        md = ["# Introduction", "Content", "## Conclusion"]
+        code = ["print('a')", "print('b')"]
+        nb, code_cells = _make_nb(code, md)
+        result = classify_maturity(nb, code_cells, "Python 3", requires_cloud=True)
+        assert result == "PRODUCTION"
+
+    def test_cloud_no_markdown_still_draft(self):
+        """Cloud notebooks without markdown still DRAFT (cloud doesn't fix structure)."""
+        cells = [_code_cell("print('a')")]
+        nb = {"cells": cells}
+        code_cells = [c for c in cells if c["cell_type"] == "code"]
+        result = classify_maturity(nb, code_cells, "Python 3", requires_cloud=True)
+        assert result == "DRAFT"
+
+    def test_cloud_no_code_cells(self):
+        """Cloud notebook with zero code cells → ALPHA (no code, but md present).
+
+        classify_maturity returns ALPHA when total_code=0 and no outputs to check,
+        because the final return is ALPHA. Cloud override only applies when total_code > 0.
+        """
+        md = ["# Introduction", "Content", "## Conclusion"]
+        cells = [_md_cell(s) for s in md]
+        nb = {"cells": cells}
+        result = classify_maturity(nb, [], "Python 3", requires_cloud=True)
+        # total_code=0 → cloud bypass doesn't fire → falls through to ALPHA
+        assert result == "ALPHA"
+
+
+# ---------------------------------------------------------------------------
+# classify_maturity — kernel edge cases
+# ---------------------------------------------------------------------------
+
+class TestClassifyMaturityKernel:
+    def test_unknown_kernel_beta(self):
+        """Unknown kernel prevents PRODUCTION even with all outputs."""
+        md = ["# Introduction", "Content", "## Conclusion"]
+        code = ["print('a')", "print('b')"]
+        nb, code_cells = _make_nb(code, md)
+        assert classify_maturity(nb, code_cells, "unknown") == "BETA"
+
+    def test_empty_kernel_beta(self):
+        """Empty kernel prevents PRODUCTION."""
+        md = ["# Introduction", "Content", "## Conclusion"]
+        code = ["print('a')"]
+        nb, code_cells = _make_nb(code, md)
+        assert classify_maturity(nb, code_cells, "") == "BETA"
+
+    def test_none_kernel_beta(self):
+        """None kernel prevents PRODUCTION."""
+        md = ["# Introduction", "Content", "## Conclusion"]
+        code = ["print('a')"]
+        nb, code_cells = _make_nb(code, md)
+        assert classify_maturity(nb, code_cells, None) == "BETA"
+
+
+# ---------------------------------------------------------------------------
+# classify_maturity — todo boundary tests
+# ---------------------------------------------------------------------------
+
+class TestClassifyMaturityTodoBoundary:
+    """Test TODO count interaction with output checks in classify_maturity.
+
+    Key insight: classify_maturity checks 'no outputs → DRAFT' (line 480)
+    BEFORE checking TODO count (line 484+). So cells without outputs always
+    hit DRAFT regardless of TODO count. These tests verify the actual behavior:
+    - All cells without outputs → DRAFT (TODO count irrelevant)
+    - Mix of output + no-output cells with TODOs → ALPHA (partial outputs gate)
+    """
+
+    def test_all_todo_cells_no_outputs_draft(self):
+        """Cells with TODOs but no outputs → DRAFT (output gate fires first)."""
+        md = ["# Introduction", "Content", "## Conclusion"]
+        cells = [_md_cell(s) for s in md]
+        for i in range(6):
+            cells.append(_code_cell(f"print('value{i}')  # TODO refactor{i}"))
+        nb = {"cells": cells}
+        code_cells = [c for c in cells if c["cell_type"] == "code"]
+        result = classify_maturity(nb, code_cells, "Python 3")
+        assert result == "DRAFT"
+
+    def test_mixed_outputs_and_todos_alpha(self):
+        """Mix of output cells + TODO cells without outputs → ALPHA (partial outputs)."""
+        md = ["# Introduction", "Content", "## Conclusion"]
+        cells = [_md_cell(s) for s in md]
+        # 2 cells WITH outputs (not outputless, no TODO)
+        for i in range(2):
+            cells.append(_code_cell(f"print('result{i}')", outputs=[
+                {"output_type": "stream", "text": [f"result{i}"]}
+            ]))
+        # 6 TODO cells WITHOUT outputs → partial outputs → ALPHA
+        for i in range(6):
+            cells.append(_code_cell(f"print('val{i}')  # TODO step{i}"))
+        nb = {"cells": cells}
+        code_cells = [c for c in cells if c["cell_type"] == "code"]
+        result = classify_maturity(nb, code_cells, "Python 3")
+        assert result == "ALPHA"
+
+    def test_mixed_outputs_and_many_todos_draft(self):
+        """Mix of output cells + >10 TODO cells without outputs → DRAFT."""
+        md = ["# Introduction", "Content", "## Conclusion"]
+        cells = [_md_cell(s) for s in md]
+        # 2 cells WITH outputs
+        for i in range(2):
+            cells.append(_code_cell(f"print('result{i}')", outputs=[
+                {"output_type": "stream", "text": [f"result{i}"]}
+            ]))
+        # 12 TODO cells WITHOUT outputs → >10 TODO → DRAFT
+        for i in range(12):
+            cells.append(_code_cell(f"print('val{i}')  # TODO step{i}"))
+        nb = {"cells": cells}
+        code_cells = [c for c in cells if c["cell_type"] == "code"]
+        result = classify_maturity(nb, code_cells, "Python 3")
+        assert result == "DRAFT"
+
+    def test_nearly_all_outputs_with_few_todos_beta(self):
+        """nearly_all_outputs with <5 TODOs and structure → BETA."""
+        md = ["# Introduction", "Content", "## Conclusion"]
+        cells = [_md_cell(s) for s in md]
+        # 5 print cells with outputs (print is NOT outputless-by-design)
+        for i in range(5):
+            cells.append(_code_cell(f"print({i})", outputs=[
+                {"output_type": "stream", "text": [str(i)]}
+            ]))
+        # 1 TODO print cell without outputs (within nearly_all threshold of 1)
+        cells.append(_code_cell("print(compute())  # TODO implement"))
+        nb = {"cells": cells}
+        code_cells = [c for c in cells if c["cell_type"] == "code"]
+        result = classify_maturity(nb, code_cells, "Python 3")
+        assert result == "BETA"
+
+
+# ---------------------------------------------------------------------------
+# _is_outputless_by_design — config call branches (continued)
+# ---------------------------------------------------------------------------
+
+class TestIsOutputlessConfigCalls:
+    def test_method_call_outputless(self):
+        """Attribute call (plt.style.use) is config, not output."""
+        assert _is_outputless_by_design(_code_cell("plt.style.use('ggplot')"))
+
+    def test_simple_name_call_not_in_output_funcs(self):
+        """A simple name call not in _OUTPUT_FUNCS is outputless (config)."""
+        assert _is_outputless_by_design(_code_cell("setup_logging()"))
+
+    def test_annotated_assign_outputless(self):
+        """Annotated assignment (x: int = 5) is outputless."""
+        assert _is_outputless_by_design(_code_cell("x: int = 42"))
+
+    def test_async_function_def_outputless(self):
+        """Async function definitions produce no output."""
+        assert _is_outputless_by_design(_code_cell("async def fetch():\n    pass"))
+
+    def test_syntax_error_not_outputless(self):
+        """Invalid Python returns False."""
+        assert not _is_outputless_by_design(_code_cell("def foo("))
+
+    def test_config_call_with_args(self):
+        """Config call with multiple args is outputless."""
+        assert _is_outputless_by_design(_code_cell("os.environ.setdefault('KEY', 'val')"))
