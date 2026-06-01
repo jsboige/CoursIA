@@ -25,3 +25,4 @@ import Conway.Life.Oscillators
 import Conway.Life.RLE
 import Conway.Life.MacroCell
 import Conway.Life.Hashlife
+import Conway.Life.Computation
