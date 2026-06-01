@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-01 11:05
+Generated: 2026-06-01 11:16
 Total notebooks: 504
 
 ## Status Summary
@@ -12,8 +12,8 @@ Total notebooks: 504
 
 ## Maturity Summary
 
-- **PRODUCTION**: 394
-- **BETA**: 67
+- **PRODUCTION**: 400
+- **BETA**: 61
 - **TEMPLATE**: 4
 - **ALPHA**: 34
 - **DRAFT**: 5
@@ -438,7 +438,7 @@ Total notebooks: 504
 | 100 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
 | 101 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
 
-### GameTheory (25 notebooks) — READY:25 | ALPHA:1, BETA:1, PRODUCTION:23
+### GameTheory (25 notebooks) — READY:25 | ALPHA:1, PRODUCTION:24
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -455,7 +455,7 @@ Total notebooks: 504
 | 11 | GameTheory-17 : Apprentissage par Renforcement Mul | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
 | 12 | GameTheory-2-NormalForm | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 13 | GameTheory 2b - Formalisation Lean : Definitions d | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
-| 14 | GameTheory-3-Topology2x2 | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
+| 14 | GameTheory-3-Topology2x2 | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
 | 15 | GameTheory-4-NashEquilibrium | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
 | 16 | GameTheory 4b - Theoreme d'Existence de Nash (Lean | Lean 4 (WSL) | READY | PRODUCTION | 30min | po-2024 |
 | 17 | GameTheory 4c - Theoreme d'Existence de Nash (Pyth | Python 3 | READY | PRODUCTION | 30min | po-2024 |
@@ -468,22 +468,22 @@ Total notebooks: 504
 | 24 | SocialChoice 03 - Methodes de Vote et Paradoxes | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 25 | SocialChoice 04 - Agregation Computationnelle : SA | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 
-### Sudoku (32 notebooks) — DEMO:1, READY:31 | BETA:5, PRODUCTION:27
+### Sudoku (32 notebooks) — DEMO:1, READY:31 | PRODUCTION:32
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | Sudoku-0 : Environnement et Classes de Base (C#) | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 2 | Sudoku-1 : Resolution par Backtracking | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 3 | Sudoku-1 : Resolution par Backtracking (Python) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 4 | Sudoku-10 : Resolution avec OR-Tools (C#) | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 4 | Sudoku-10 : Resolution avec OR-Tools (C#) | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 5 | Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 6 | Sudoku-11-Choco-Csharp : Solveur Choco via IKVM | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 7 | Notebook 11: Resolution de Sudoku avec Choco Const | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 8 | Sudoku-12 : Resolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 9 | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 10 | Sudoku-12 : Theorie des Automates Symboliques et C | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 11 | Sudoku-13 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 10 | Sudoku-12 : Theorie des Automates Symboliques et C | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 11 | Sudoku-13 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 12 | Résolution de Sudoku avec Infer.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 13 | Sudoku-15-Infer-Python : Resolution Probabiliste a | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 14 | Sudoku-16 : Résolution par Réseaux de Neurones | Python 3 | DEMO | PRODUCTION | 1h | po-2023 |
 | 15 | Notebook 17: Resolution de Sudoku avec Large Langu | Python 3 | READY | PRODUCTION | 30min | po-2023 |
