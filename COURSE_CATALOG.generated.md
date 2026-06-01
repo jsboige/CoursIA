@@ -1,11 +1,11 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-01 11:16
-Total notebooks: 504
+Generated: 2026-06-01 11:40
+Total notebooks: 505
 
 ## Status Summary
 
-- **READY**: 373
+- **READY**: 374
 - **DEMO**: 120
 - **RESEARCH**: 0
 - **BROKEN**: 11
@@ -13,7 +13,7 @@ Total notebooks: 504
 ## Maturity Summary
 
 - **PRODUCTION**: 400
-- **BETA**: 61
+- **BETA**: 62
 - **TEMPLATE**: 4
 - **ALPHA**: 34
 - **DRAFT**: 5
@@ -145,7 +145,7 @@ Total notebooks: 504
 | 119 | Sora API - Generation Video Cloud | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 120 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
 
-### Search (45 notebooks) — DEMO:3, READY:42 | BETA:1, DRAFT:1, PRODUCTION:43
+### Search (46 notebooks) — DEMO:3, READY:43 | BETA:2, DRAFT:1, PRODUCTION:43
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -153,47 +153,48 @@ Total notebooks: 504
 | 2 | App-11 - Picross (Nonogrammes) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 3 | App-15 : Planification de Calendrier Sportif (CSP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 4 | App-16 : Generateur de Mots Croises (CSP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 5 | App-2 : Coloration de Graphes | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 6 | App-3 : Nurse Scheduling (Planification des horair | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 7 | App-4 : Job-Shop Scheduling | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 8 | App-5 : Emploi du temps universitaire (University  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 9 | App-6 - Demineur : CSP, Probabilites et NP-complet | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 10 | App-7 : Wordle Solver -- CSP et theorie de l'infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 11 | App-8-MiniZinc : Modelisation declarative par cont | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 12 | App-10 : Optimisation de portefeuille par algorith | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 13 | **Navigation** : [Index](../../../README.md) | [<< | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 14 | App-13 : Le Probleme du Voyageur de Commerce (TSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 15 | App-17 : Vehicle Routing Problem (VRP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 16 | App-18: Optimisation d'Hyperparametres - Approches | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 17 | App-9 : Detection de bords par algorithmes genetiq | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 18 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 19 | App-12 : Puissance 4 -- Comparaison d'algorithmes  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 20 | App-14 - Connect Four : Benchmark Adversarial Sear | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 21 | Introduction a la programmation par contrainte | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 22 | Recherche non informee et informee | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 23 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 24 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 25 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 26 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 27 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 28 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 29 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 30 | Search-5 : Algorithmes Genetiques | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 31 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 32 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 33 | Search-8-DancingLinks : L'algorithme X et Dancing  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 34 | Search-9-LinearProgramming : Programmation Lineair | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 35 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | PRODUCTION | 1h | po-2025 |
-| 36 | CSP-2 : Propagation de Contraintes et Consistance | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 37 | CSP-3 : CSP Avance - Contraintes globales, OR-Tool | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 38 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 39 | CSP-5-Optimization : Problèmes d'Optimisation Comb | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 40 | CSP-6-Hybridation : Approches Hybrides Modernes | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 41 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | DEMO | PRODUCTION | 1h | po-2025 |
-| 42 | CSP-8 : Temporels - Raisonnement sur le Temps | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 43 | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 44 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 45 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | DRAFT | 30min | po-2025 |
+| 5 | App-19 — Génération procédurale de niveaux via WFC | .venv (3.14.3) | READY | BETA | 30min | po-2025 |
+| 6 | App-2 : Coloration de Graphes | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 7 | App-3 : Nurse Scheduling (Planification des horair | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 8 | App-4 : Job-Shop Scheduling | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 9 | App-5 : Emploi du temps universitaire (University  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 10 | App-6 - Demineur : CSP, Probabilites et NP-complet | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 11 | App-7 : Wordle Solver -- CSP et theorie de l'infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 12 | App-8-MiniZinc : Modelisation declarative par cont | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 13 | App-10 : Optimisation de portefeuille par algorith | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 14 | **Navigation** : [Index](../../../README.md) | [<< | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 15 | App-13 : Le Probleme du Voyageur de Commerce (TSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 16 | App-17 : Vehicle Routing Problem (VRP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 17 | App-18: Optimisation d'Hyperparametres - Approches | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 18 | App-9 : Detection de bords par algorithmes genetiq | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 19 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 20 | App-12 : Puissance 4 -- Comparaison d'algorithmes  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 21 | App-14 - Connect Four : Benchmark Adversarial Sear | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 22 | Introduction a la programmation par contrainte | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 23 | Recherche non informee et informee | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 24 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 25 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 26 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 27 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 28 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 29 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 30 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 31 | Search-5 : Algorithmes Genetiques | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 32 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 33 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 34 | Search-8-DancingLinks : L'algorithme X et Dancing  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 35 | Search-9-LinearProgramming : Programmation Lineair | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 36 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | PRODUCTION | 1h | po-2025 |
+| 37 | CSP-2 : Propagation de Contraintes et Consistance | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 38 | CSP-3 : CSP Avance - Contraintes globales, OR-Tool | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 39 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 40 | CSP-5-Optimization : Problèmes d'Optimisation Comb | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 41 | CSP-6-Hybridation : Approches Hybrides Modernes | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
+| 42 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | DEMO | PRODUCTION | 1h | po-2025 |
+| 43 | CSP-8 : Temporels - Raisonnement sur le Temps | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
+| 44 | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 45 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 46 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | DRAFT | 30min | po-2025 |
 
 ### ML (27 notebooks) — DEMO:5, READY:22 | ALPHA:1, BETA:1, PRODUCTION:25
 
@@ -577,4 +578,4 @@ Total notebooks: 504
 - **GPU**: 77 notebooks
 - **Cloud**: 101 notebooks
 - **WSL**: 26 notebooks
-- **Local**: 243 notebooks
+- **Local**: 244 notebooks
