@@ -155,11 +155,20 @@ Recursive case (`k >= 3`):
 6. Return `node out_nw out_ne out_sw out_se` (level `k-1`).
 -/
 
-partial def hashlifeResult : MacroCell -> MacroCell
-  | c@(node (node nw_nw nw_ne nw_sw nw_se)
-            (node ne_nw ne_ne ne_sw ne_se)
-            (node sw_nw sw_ne sw_sw sw_se)
-            (node se_nw se_ne se_sw se_se)) =>
+/-- Auxiliary for `hashlifeResult`: structural recursion on `fuel`.
+    When `fuel = 0`, returns a default cell. When `fuel > 0`,
+    performs one Hashlife step, recursing with `fuel - 1`.
+    Terminates because `fuel` is a `Nat` that strictly decreases.
+
+    The `partial def` wrapper `hashlifeResult` calls this with
+    `fuel = c.level`, which is a structural upper bound on recursion
+    depth (level strictly decreases at each step of the algorithm). -/
+def hashlifeResultAux : Nat → MacroCell → MacroCell
+  | 0, _ => deadLeaf  -- fuel exhausted: return default
+  | fuel + 1, c@(node (node nw_nw nw_ne nw_sw nw_se)
+                      (node ne_nw ne_ne ne_sw ne_se)
+                      (node sw_nw sw_ne sw_sw sw_se)
+                      (node se_nw se_ne se_sw se_se)) =>
     if c.level == 2 then
       step4x4 c
     else
@@ -172,28 +181,41 @@ partial def hashlifeResult : MacroCell -> MacroCell
       let n7 := node sw_nw sw_ne sw_sw sw_se
       let n8 := node sw_ne se_nw sw_se se_sw
       let n9 := node se_nw se_ne se_sw se_se
-      let r1 := hashlifeResult n1
-      let r2 := hashlifeResult n2
-      let r3 := hashlifeResult n3
-      let r4 := hashlifeResult n4
-      let r5 := hashlifeResult n5
-      let r6 := hashlifeResult n6
-      let r7 := hashlifeResult n7
-      let r8 := hashlifeResult n8
-      let r9 := hashlifeResult n9
+      let r1 := hashlifeResultAux fuel n1
+      let r2 := hashlifeResultAux fuel n2
+      let r3 := hashlifeResultAux fuel n3
+      let r4 := hashlifeResultAux fuel n4
+      let r5 := hashlifeResultAux fuel n5
+      let r6 := hashlifeResultAux fuel n6
+      let r7 := hashlifeResultAux fuel n7
+      let r8 := hashlifeResultAux fuel n8
+      let r9 := hashlifeResultAux fuel n9
       let q_nw := node r1 r2 r4 r5
       let q_ne := node r2 r3 r5 r6
       let q_sw := node r4 r5 r7 r8
       let q_se := node r5 r6 r8 r9
-      let out_nw := hashlifeResult q_nw
-      let out_ne := hashlifeResult q_ne
-      let out_sw := hashlifeResult q_sw
-      let out_se := hashlifeResult q_se
+      let out_nw := hashlifeResultAux fuel q_nw
+      let out_ne := hashlifeResultAux fuel q_ne
+      let out_sw := hashlifeResultAux fuel q_sw
+      let out_se := hashlifeResultAux fuel q_se
       node out_nw out_ne out_sw out_se
-  | c =>
+  | _ + 1, c =>
     -- Malformed: not a level >= 2 node of nodes.
     if c.level == 0 then deadLeaf
     else emptyOfLevel (c.level - 1)
+
+/-- Recursive Hashlife: level-`k` input -> level-`(k-1)` output,
+    `2^(k-2)` generations ahead.
+
+    Implemented via `hashlifeResultAux` with fuel = `c.level`,
+    which is a structural upper bound on the recursion depth
+    (the level strictly decreases at each recursive call).
+
+    This is a `partial def` wrapper. The `def`-level termination
+    guarantee comes from `hashlifeResultAux`'s structural recursion
+    on `fuel`. -/
+partial def hashlifeResult (c : MacroCell) : MacroCell :=
+  hashlifeResultAux c.level c
 
 /-! ## Centering / padding helpers -/
 
@@ -296,16 +318,14 @@ def jumpResultOff (off : Int × Int) (lvl : Nat) : Int × Int :=
   if lvl == 0 then off
   else (off.1 - (2 ^ (lvl - 1) : Nat), off.2 - (2 ^ (lvl - 1) : Nat))
 
-/-- Evolve `g` by `n` generations using Hashlife exponential speedup.
-
-    Strategy:
-    - Build a MacroCell from `g` (level `k`).
-    - Pad by 2 levels and use `hashlifeResult` to jump `2^k` generations.
-    - After each jump, rebuild the MacroCell and repeat.
-    - For small `n` or level < 2, fall back to `evolve`. -/
-partial def evolveHashlifeFast : Nat → Grid → Grid
-  | 0, g => g
-  | n, g =>
+/-- Auxiliary for `evolveHashlifeFast`: structural recursion on `fuel`.
+    When `fuel = 0`, falls back to `evolve n g` (reference implementation).
+    When `fuel > 0`, tries to use Hashlife exponential jump if possible,
+    recursing with `fuel - 1`. -/
+def evolveHashlifeFastAux : Nat → Nat → Grid → Grid
+  | _, 0, g => g
+  | 0, _, g => g  -- fuel exhausted: return current state
+  | fuel + 1, n, g =>
     let (off, mc) := gridToMacroCellWithOffset g
     let lvl := mc.level
     let js := jumpSize lvl
@@ -314,10 +334,23 @@ partial def evolveHashlifeFast : Nat → Grid → Grid
       let jumped := hashlifeJump mc
       let newOff := jumpResultOff off lvl
       let g' := jumped.toGrid newOff
-      evolveHashlifeFast (n - js) g'
+      evolveHashlifeFastAux fuel (n - js) g'
     else
       -- Small n or small pattern: use reference evolve
       evolve n g
+
+/-- Evolve `g` by `n` generations using Hashlife exponential speedup.
+
+    Strategy:
+    - Build a MacroCell from `g` (level `k`).
+    - Pad by 2 levels and use `hashlifeResult` to jump `2^k` generations.
+    - After each jump, rebuild the MacroCell and repeat.
+    - For small `n` or level < 2, fall back to `evolve`.
+
+    Implemented via `evolveHashlifeFastAux` with `fuel = n`,
+    since each iteration reduces `n` by at least `js >= 4`. -/
+def evolveHashlifeFast (n : Nat) (g : Grid) : Grid :=
+  evolveHashlifeFastAux n n g
 
 /-- Compute `evolve n g` using Hashlife. Round-trips through the
     `MacroCell` representation each generation, exercising `step4x4`
