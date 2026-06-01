@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-02 02:57
+Generated: 2026-06-01 23:01
 Total notebooks: 505
 
 ## Status Summary
@@ -12,8 +12,8 @@ Total notebooks: 505
 
 ## Maturity Summary
 
-- **PRODUCTION**: 406
-- **BETA**: 56
+- **PRODUCTION**: 411
+- **BETA**: 51
 - **TEMPLATE**: 4
 - **ALPHA**: 35
 - **DRAFT**: 4
@@ -145,7 +145,7 @@ Total notebooks: 505
 | 119 | Sora API - Generation Video Cloud | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 120 | Pipeline Video de Production | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 
-### Search (46 notebooks) — DEMO:3, READY:43 | BETA:2, PRODUCTION:44
+### Search (46 notebooks) — DEMO:3, READY:43 | PRODUCTION:46
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -153,7 +153,7 @@ Total notebooks: 505
 | 2 | App-11 - Picross (Nonogrammes) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 3 | App-15 : Planification de Calendrier Sportif (CSP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 4 | App-16 : Generateur de Mots Croises (CSP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 5 | App-19 — Génération procédurale de niveaux via WFC | .venv (3.14.3) | READY | BETA | 30min | po-2025 |
+| 5 | App-19 — Génération procédurale de niveaux via WFC | .venv (3.14.3) | READY | PRODUCTION | 30min | po-2025 |
 | 6 | App-2 : Coloration de Graphes | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 7 | App-3 : Nurse Scheduling (Planification des horair | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 8 | App-4 : Job-Shop Scheduling | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -172,7 +172,7 @@ Total notebooks: 505
 | 21 | App-14 - Connect Four : Benchmark Adversarial Sear | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 22 | Introduction a la programmation par contrainte | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 23 | Recherche non informee et informee | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 24 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 24 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 25 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 26 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 27 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -228,7 +228,7 @@ Total notebooks: 505
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (100 notebooks) — DEMO:6, READY:94 | ALPHA:2, PRODUCTION:98
+### SymbolicAI (100 notebooks) — DEMO:6, READY:94 | ALPHA:2, BETA:1, PRODUCTION:97
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -238,7 +238,7 @@ Total notebooks: 505
 | 4 | Introduction : Orchestration de la Conversation Mu | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 5 | 🚀 Analyse Rhétorique Collaborative par Agents IA - | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 6 | Interface de Configuration et Préparation du Texte | Python 3 | READY | PRODUCTION | 15min | po-2024 |
-| 7 | Lean 4 - Installation et Configuration | Python 3 (WSL) | READY | PRODUCTION | 15min | po-2024 |
+| 7 | Lean 4 - Installation et Configuration | Python 3 (WSL) | READY | BETA | 15min | po-2024 |
 | 8 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 9 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 10 | Lean 11 - TorchLean : Réseaux de Neurones Formelle | Lean 4 (WSL) | READY | PRODUCTION | 30min | po-2024 |
@@ -295,7 +295,7 @@ Total notebooks: 505
 | 61 | SC-4-Functions-State - Fonctions et Etat | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 62 | SC-5-Inheritance - Heritage et Interfaces | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 63 | SC-6-Errors-Events - Erreurs et Evenements | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 64 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
+| 64 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
 | 65 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python (SmartContracts + Found | DEMO | PRODUCTION | 45min | po-2024 |
 | 66 | SC-7-Token-Standards - Standards de Tokens | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 67 | SC-8-DeFi-Primitives - Primitives DeFi | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
@@ -311,7 +311,7 @@ Total notebooks: 505
 | 77 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 78 | SC-21-Move-Sui - Move sur Sui | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
 | 79 | SC-22-Solana-Anchor - Solana avec Anchor | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 80 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
+| 80 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
 | 81 | SC-24 : Deploiement sur Testnets | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 82 | SC-25 : Deploiement Mainnet (L2) | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
 | 83 | SC-26 : Projet Final - DApp Complete | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
@@ -506,7 +506,7 @@ Total notebooks: 505
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
-### Probas (43 notebooks) — READY:43 | BETA:14, PRODUCTION:29
+### Probas (43 notebooks) — READY:43 | BETA:10, PRODUCTION:33
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -530,7 +530,7 @@ Total notebooks: 505
 | 18 | PyMC-7 : Classification Bayesienne et Tests A/B | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 19 | PyMC-8 : Selection de Modeles et Comparaison Bayes | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 20 | PyMC-9 : Modeles de Sujets (Topic Models) et LDA | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 21 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 21 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 22 | Infer-10-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 23 | Infer-11-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 24 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | BETA | 1h | po-2023 |
@@ -542,9 +542,9 @@ Total notebooks: 505
 | 30 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 31 | Infer-19-Decision-Expert-Systems : Decisions Robus | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Infer-2-Gaussian-Mixtures : Distributions Gaussien | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 33 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 34 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 35 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 33 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 34 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 35 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 36 | Infer-5-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | BETA | 1h | po-2023 |
 | 37 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 38 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | BETA | 45min | po-2023 |
