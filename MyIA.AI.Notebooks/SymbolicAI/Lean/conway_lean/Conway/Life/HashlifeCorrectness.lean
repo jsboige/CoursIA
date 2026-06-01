@@ -146,6 +146,52 @@ def BoxAssezGrand (g : Grid) (n : Nat) : Prop := box_assez_grand g n = true
 instance (g : Grid) (n : Nat) : Decidable (BoxAssezGrand g n) :=
   inferInstanceAs (Decidable (box_assez_grand g n = true))
 
+/-! ## P0. Light-cone warm-up lemmas (prover ramp)
+
+Elementary facts about `manhattan` and `lightCone` that feed the **base case**
+of P2 (`step_light_cone` at `t = 0`). `manhattan_self` and `manhattan_comm` are
+hand-proved here (genuine content — `manhattan` is a metric-like quantity, these
+are the reflexivity and symmetry axioms). `self_mem_lightCone` and
+`lightCone_zero` are left as `sorry`: they are the *easiest* rungs of the
+scaffolding, deliberately stated below P2's intermediate difficulty so the
+multi-agent prover (Epic #1453) has a gentle warm-up target before attacking the
+locality induction. They are genuine NEW targets, not regressions — no proof is
+removed. -/
+
+/-- The Manhattan distance from a cell to itself is zero. -/
+theorem manhattan_self (p : Int × Int) : manhattan p p = 0 := by
+  unfold manhattan
+  omega
+
+/-- The Manhattan distance is symmetric. -/
+theorem manhattan_comm (p q : Int × Int) : manhattan p q = manhattan q p := by
+  unfold manhattan
+  omega
+
+/-- Every cell lies in its own light cone, for any radius `t`.
+
+    **Proof strategy** (P0, difficulty: easy):
+    `manhattan p p = 0 ≤ t` (by `manhattan_self`), so `p` passes the `d ≤ t`
+    filter. Unfold `lightCone`; the `i = t` term of `rs` gives
+    `p.1 - t + t = p.1` and the `j = t` term of `cs` gives `p.2`, so the pair
+    `(p.1, p.2) = p` is produced. Discharge membership over
+    `List.flatMap`/`List.filterMap` with `List.mem_flatMap` /
+    `List.mem_filterMap`. -/
+theorem self_mem_lightCone (p : Int × Int) (t : Nat) : p ∈ lightCone p t := by
+  -- P0 TARGET (easy): reflexivity of the light cone — warm-up rung for P2's base case
+  sorry
+
+/-- The light cone of radius `0` is exactly the singleton `[p]`.
+
+    **Proof strategy** (P0, difficulty: easy):
+    With `t = 0`, `List.range 1 = [0]`, so `rs = [p.1]` and `cs = [p.2]`; the
+    filter keeps `(p.1, p.2)` since `d = 0 ≤ 0`. The whole expression reduces by
+    computation — `simp [lightCone]` followed by `decide`, or a direct `List`
+    evaluation after `Prod.ext`. -/
+theorem lightCone_zero (p : Int × Int) : lightCone p 0 = [p] := by
+  -- P0 TARGET (easiest): light cone of radius zero — first prover ramp rung
+  sorry
+
 /-! ## P2. Light-cone locality (speed of light = 1)
 
 The state of cell `p` after `t` generations of B3/S23 depends only on the
