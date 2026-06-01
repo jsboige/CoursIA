@@ -72,7 +72,7 @@ Emplacement pour développer des outils de :
 - **`26-RESOLUTION-DEFINITIVE-MCP-NUGET-SOLUTION-RETROUVEE.md`** : Solution complète retrouvée par analyse archéologique
 
 ### Complémentarité
-Cette documentation technique complète celle disponible dans `docs/investigation-mcp-nuget/` (21 documents séquentiels).
+Cette documentation technique complète celle disponible dans `docs/_archives/investigation-mcp-nuget/` (21 documents séquentiels, archives).
 
 ---
 
@@ -115,7 +115,7 @@ Utiliser les fichiers `config/` comme référence pour reproduire la configurati
 ## 📚 Documentation Complémentaire
 
 ### Investigation Complète
-Voir `docs/investigation-mcp-nuget/` pour la séquence complète de 21 documents d'investigation (docs 06-26).
+Voir `docs/_archives/investigation-mcp-nuget/` pour la séquence complète de 21 documents d'investigation (docs 06-26, archives).
 
 ### Architecture Générale
 Voir `architecture_mcp_roo.md` à la racine pour l'architecture globale des serveurs MCP.

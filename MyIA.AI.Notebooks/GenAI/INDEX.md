@@ -787,83 +787,12 @@ execute_notebook(
 
 ---
 
-## 📖 Documentation Technique
+## Documentation Technique
 
-### Documents Disponibles
+- [docs/genai-services.md](../../../docs/genai-services.md) — Architecture services GenAI, GPU, modeles, configurations Docker
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Resolution problemes courants, erreurs APIs, scripts diagnostiques
 
-#### Architecture & Design
-
-1. **[`docs/genai/architecture.md`](../../../docs/suivis/genai-image/architecture.md)**
-   - Architecture modulaire complète
-   - Diagrammes composants
-   - Flux de données
-   - Patterns conception
-
-2. **[`docs/genai/development-standards.md`](../../../docs/suivis/genai-image/development-standards.md)**
-   - Standards code Python
-   - Conventions nommage
-   - Structure notebooks
-   - Documentation requirements
-
-3. **[`docs/genai/docker-lifecycle-management.md`](../../../docs/suivis/genai-image/docker-lifecycle-management.md)**
-   - Cycle de vie containers
-   - Orchestration Docker Compose
-   - Health checks
-   - Logs management
-
----
-
-#### Déploiement & Production
-
-4. **[`docs/genai/deployment-guide.md`](../../../docs/suivis/genai-image/deployment-guide.md)**
-   - Environnements (dev, staging, prod)
-   - CI/CD pipelines
-   - Monitoring alerting
-   - Backup/restore
-
-5. **[`DEPLOYMENT.md`](DEPLOYMENT.md)**
-   - Guide déploiement production
-   - Security best practices
-   - Scaling strategies
-   - Cost optimization
-
-6. **[`docs/genai/environment-configurations.md`](../../../docs/suivis/genai-image/environment-configurations.md)**
-   - Configuration environnements multiples
-   - Variables d'environnement
-   - Secrets management
-   - Testing configurations
-
----
-
-#### Testing & Quality
-
-7. **[`docs/genai/infrastructure-tests.md`](../../../docs/suivis/genai-image/infrastructure-tests.md)**
-   - Tests unitaires
-   - Tests intégration
-   - Tests end-to-end
-   - Performance benchmarks
-
-8. **[`docs/genai/integration-procedures.md`](../../../docs/suivis/genai-image/integration-procedures.md)**
-   - Procédures intégration
-   - APIs testing
-   - Validation workflows
-   - Rollback procedures
-
----
-
-#### Templates & Guides
-
-9. **[`docs/genai/phase2-templates.md`](../../../docs/suivis/genai-image/phase2-templates.md)**
-   - Templates notebooks
-   - Boilerplate code
-   - Configuration types
-   - Patterns réutilisables
-
-10. **[`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)**
-    - Résolution problèmes courants
-    - Erreurs APIs
-    - Issues configuration
-    - Scripts diagnostiques
+> Historique des investigations (phases 12a/29/30/31 ComfyUI-Qwen) : archive dans [docs/_archives/suivis/genai-image/](../../../docs/_archives/suivis/genai-image/)
 
 ---
 

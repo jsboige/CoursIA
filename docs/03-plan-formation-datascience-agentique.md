@@ -130,4 +130,4 @@ Emplacement : `MyIA.AI.Notebooks/GenAI/Playwright-OWUI/` (5 modules, 30+ tests)
 
 ---
 
-*Document mis a jour mai 2026. Pour l'historique de la version originale (ADK DeepMind 2023), voir `docs/02-etude-adk-deepmind.md`.*
+*Document mis a jour mai 2026. Pour l'historique de la version originale (ADK DeepMind 2023), voir `docs/_archives/02-etude-adk-deepmind.md`.*
