@@ -15,6 +15,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "notebook_tools"))
 from generate_catalog import (
+    _effective_code_cells,
     _is_exercise_stub,
     _is_outputless_by_design,
     check_errors,
@@ -241,6 +242,128 @@ class TestIsExerciseStub:
     def test_comment_only_with_todo(self):
         """Comment-only cells with # TODO are exercise instructions (excluded)."""
         assert _is_exercise_stub(_code_cell("# TODO etudiant\n# Indice: utiliser map()"))
+
+    # --- New markers from #1942: # ETAPE, # ÉTAPE, # INDICE ---
+
+    def test_etape_marker_pass(self):
+        """# Etape N marker is recognized as exercise stub."""
+        assert _is_exercise_stub(_code_cell("# Etape 1: implement BFS\npass"))
+
+    def test_etape_accent_marker(self):
+        """# Étape (with accent) marker is recognized."""
+        assert _is_exercise_stub(_code_cell("# Étape 2: complétez\npass"))
+
+    def test_indice_marker_return_none(self):
+        """# Indice marker with return None stub."""
+        assert _is_exercise_stub(_code_cell("# Indice: utiliser sorted()\nreturn None"))
+
+    def test_comment_only_with_etape(self):
+        """Comment-only cells with # Etape are exercise instructions."""
+        assert _is_exercise_stub(_code_cell("# Etape 3: analysez le résultat\n# Indice: regardez la complexité"))
+
+    def test_comment_only_with_indice(self):
+        """Comment-only cells with # Indice are exercise instructions."""
+        assert _is_exercise_stub(_code_cell("# Indice: utiliser une file de priorité"))
+
+    def test_no_marker_not_stub(self):
+        """Cell without any exercise marker is not a stub."""
+        assert not _is_exercise_stub(_code_cell("pass"))
+
+    # --- code_part stripping from #1942 ---
+
+    def test_pass_with_inline_comment(self):
+        """pass with trailing inline # TODO comment is stripped and matched."""
+        assert _is_exercise_stub(_code_cell("pass  # TODO: implement this"))
+
+    def test_return_none_with_inline_comment(self):
+        """return None with trailing inline comment is matched."""
+        assert _is_exercise_stub(_code_cell("return None  # TODO etudiant"))
+
+    def test_var_none_without_todo_on_last_line(self):
+        """var = None matches even without # TODO on the last line (marker checked in source)."""
+        assert _is_exercise_stub(_code_cell("# TODO etudiant\nresult = None"))
+
+    def test_print_completer_with_code_part(self):
+        """print(...) with 'completer' matched via code_part stripping."""
+        assert _is_exercise_stub(_code_cell('# TODO\nprint("A completer")'))
+
+    def test_print_completer_single_quotes(self):
+        """print(...) with 'completer' in single quotes."""
+        assert _is_exercise_stub(_code_cell("# TODO\nprint('Exercice a completer')"))
+
+    def test_real_solution_with_etape_not_stub(self):
+        """# Etape marker with real computation is NOT a stub."""
+        assert not _is_exercise_stub(_code_cell("# Etape 1\nreturn compute(x)"))
+
+
+# ---------------------------------------------------------------------------
+# _effective_code_cells
+# ---------------------------------------------------------------------------
+
+
+class TestEffectiveCodeCells:
+    def _make_code_cells(self, sources):
+        """Build a list of code cells from source strings."""
+        return [_code_cell(s) for s in sources]
+
+    def test_filters_papermill_injected(self):
+        """Papermill injected-parameters cells are excluded."""
+        cells = self._make_code_cells(["x = 42"])
+        cells[0]["metadata"]["tags"] = ["injected-parameters"]
+        result = _effective_code_cells(cells)
+        assert len(result) == 0
+
+    def test_filters_outputless_assignments(self):
+        """Pure assignment cells are excluded."""
+        cells = self._make_code_cells(["x = 42"])
+        result = _effective_code_cells(cells)
+        assert len(result) == 0
+
+    def test_filters_function_defs(self):
+        """Function definition cells are excluded."""
+        cells = self._make_code_cells(["def foo():\n    pass"])
+        result = _effective_code_cells(cells)
+        assert len(result) == 0
+
+    def test_filters_exercise_stubs(self):
+        """C.1-compliant exercise stubs are excluded."""
+        cells = self._make_code_cells(["# TODO\npass"])
+        result = _effective_code_cells(cells)
+        assert len(result) == 0
+
+    def test_keeps_print_cells(self):
+        """Cells with print() are kept (they produce output)."""
+        cells = self._make_code_cells(["print('hello')"])
+        result = _effective_code_cells(cells)
+        assert len(result) == 1
+
+    def test_keeps_expression_cells(self):
+        """Cells with bare expressions are kept."""
+        cells = self._make_code_cells(["42"])
+        result = _effective_code_cells(cells)
+        assert len(result) == 1
+
+    def test_mixed_filtering(self):
+        """Mix of excluded and kept cells."""
+        cells = self._make_code_cells([
+            "x = 42",                     # outputless -> excluded
+            "# TODO\npass",               # exercise stub -> excluded
+            "print('result')",            # has output -> kept
+            "def foo():\n    pass",        # function def -> excluded
+            "2 + 2",                       # expression -> kept
+        ])
+        result = _effective_code_cells(cells)
+        assert len(result) == 2
+
+    def test_empty_list(self):
+        """Empty list returns empty."""
+        assert _effective_code_cells([]) == []
+
+    def test_etape_stub_filtered(self):
+        """Exercise stub with # Etape marker is filtered."""
+        cells = self._make_code_cells(["# Etape 1\npass"])
+        result = _effective_code_cells(cells)
+        assert len(result) == 0
 
 
 # ---------------------------------------------------------------------------
