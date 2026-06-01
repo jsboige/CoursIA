@@ -396,9 +396,12 @@ def _is_exercise_stub(cell: dict) -> bool:
     source = "".join(cell.get("source", []))
     upper = source.upper()
     # Exercise markers per C.1: # TODO, # Etape N, # Indice (accent-tolerant).
-    if not any(m in upper for m in ("# TODO", "# ETAPE", "# ÉTAPE", "# INDICE")):
+    # Also support C# style // TODO markers (.NET Interactive notebooks).
+    if not any(m in upper for m in ("# TODO", "# ETAPE", "# ÉTAPE", "# INDICE",
+                                     "// TODO", "// ETAPE", "// ÉTAPE", "// INDICE")):
         return False
-    lines = [l.strip() for l in source.split("\n") if l.strip() and not l.strip().startswith("#")]
+    lines = [l.strip() for l in source.split("\n")
+             if l.strip() and not l.strip().startswith("#") and not l.strip().startswith("//")]
     # Comment-only cells with an exercise marker are exercise instructions
     if not lines:
         return True
@@ -406,10 +409,12 @@ def _is_exercise_stub(cell: dict) -> bool:
     # Strip a trailing inline comment so "pass  # TODO: ..." matches "pass".
     # Safe for the bare-statement patterns below (no '#' inside their code).
     code_part = last_line.split("#", 1)[0].strip()
-    # C.1 patterns: pass, return None, print("Exercice..."), var = None
+    # C.1 patterns: pass, return None/null, print("Exercice..."), var = None
     if code_part == "pass":
         return True
     if code_part.startswith("return None"):
+        return True
+    if code_part.startswith("return null"):
         return True
     if 'print("Exercice' in last_line or "print('Exercice" in last_line:
         return True
@@ -418,6 +423,21 @@ def _is_exercise_stub(cell: dict) -> bool:
     # var = None  # TODO pattern (marker already verified above)
     if code_part.endswith("= None"):
         return True
+    # Also check all non-comment lines for C# stubs (return null;)
+    # Multi-line C# exercise stubs may end with a closing brace, but the
+    # last executable statement is often "return null;  // TODO etudiant"
+    for line in reversed(lines):
+        # Strip both Python (#) and C# (//) inline comments
+        cp = line
+        if "//" in cp:
+            cp = cp[:cp.index("//")].strip()
+        cp = cp.rstrip(";").strip()
+        if cp == "return null":
+            return True
+        if cp == "}" or cp == "{":
+            continue
+        if cp:
+            break
     return False
 
 
