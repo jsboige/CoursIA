@@ -11,7 +11,7 @@ maturity: BETA=18, PRODUCTION=12
 
 Le traitement audio est souvent le parent pauvre de l'IA generative, eclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalites les plus naturelles de l'interaction humaine. Cette serie couvre l'ensemble de la chaine audio IA : reconnaissance vocale, synthese, clonage, generation musicale, et orchestration de pipelines.
 
-30 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livre 18/05/2026, 8 PRs, post-mortem [ici](../../docs/epic-1028-audiobook-postmortem.md)) etendu par une variante FishAudio S2-Pro avec 29 tags prosodiques officiels et validation WER (Epic #1273, en cours).
+30 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livre 18/05/2026, 8 PRs, post-mortem [ici](../../../docs/epic-1028-audiobook-postmortem.md)) etendu par une variante FishAudio S2-Pro avec 29 tags prosodiques officiels et validation WER (Epic #1273, en cours).
 
 ## Fil rouge : construire un podcast automatise
 

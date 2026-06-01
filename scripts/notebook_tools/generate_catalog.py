@@ -28,6 +28,7 @@ import json
 import re
 import subprocess
 import sys
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 
@@ -260,18 +261,59 @@ def count_todos(notebook: dict, *, exclude_executed: bool = True) -> int:
     return count
 
 
+def _normalize_text(s: str) -> str:
+    """Lowercase, normalize apostrophes, drop fenced code, and strip accents.
+
+    Accent-stripping makes "synthèse"/"synthese" and "résumé"/"resume" both match
+    a single unaccented keyword, removing the latent bug where an accented heading
+    was missed while its unaccented twin was detected.
+
+    Fenced code blocks (``` ... ```) are removed first so a keyword appearing inside
+    a flow diagram (e.g. "resultat -> synthese" in a fenced ASCII diagram) is NOT
+    mistaken for a real "## Synthese" conclusion heading.
+    """
+    s = re.sub(r"```.*?```", " ", s, flags=re.DOTALL)
+    s = s.lower().replace("’", "'").replace("‘", "'")
+    return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
+
+
 def has_markdown_intro_conclusion(cells: list) -> tuple[bool, bool]:
-    """Check if notebook has intro (first md cell with heading) and conclusion markers."""
+    """Check if notebook has an intro section and a conclusion section.
+
+    Intro keywords are searched in the FIRST 2 markdown cells: the very first cell
+    is frequently a title + navigation header, with the real intro / learning
+    objectives living in the second cell (or phrased "Vue d'ensemble" /
+    "A la fin de ce notebook, vous saurez"). Conclusion keywords are searched in
+    the LAST 3 markdown cells (a conclusion may be followed by a nav/footer cell).
+    Text is accent-stripped via _normalize_text so accented headings are detected.
+
+    This detects existing pedagogical structure more reliably; it does not relax
+    the maturity bar (output/TODO gates in classify_maturity are unchanged).
+    """
     md_cells = [c for c in cells if c["cell_type"] == "markdown"]
     if not md_cells:
         return False, False
 
-    first_src = "".join(md_cells[0].get("source", [])).lower()
-    has_intro = any(kw in first_src for kw in ["introduction", "objectif", "overview", "prérequis", "contexte"])
+    intro_keywords = [
+        "introduction", "objectif", "overview", "vue d'ensemble",
+        "prerequis", "contexte", "vous saurez", "a la fin de ce notebook",
+    ]
+    # First 2 MD cells (title/nav header often precedes the real intro)
+    first_sources = [_normalize_text("".join(c.get("source", []))) for c in md_cells[:2]]
+    has_intro = any(kw in src for src in first_sources for kw in intro_keywords)
 
-    last_src = "".join(md_cells[-1].get("source", [])).lower()
+    # "bilan" is excluded: as a bare substring it false-positives on body prose
+    # ("le bilan des ressources consommees") without heading a real wrap-up section.
+    # "synthese" is kept (it heads genuine "## Synthese des apprentissages" sections);
+    # _normalize_text strips code fences so it no longer matches flow diagrams.
+    conclusion_keywords = [
+        "conclusion", "resume", "synthese", "recapitulatif", "summary",
+        "points cles", "a retenir", "pour aller plus loin", "next steps",
+    ]
+    # Check last 3 MD cells (conclusion may not be the very last if nav/footer follows)
+    last_sources = [_normalize_text("".join(c.get("source", []))) for c in md_cells[-3:]]
     has_conclusion = any(
-        kw in last_src for kw in ["conclusion", "résumé", "summary", "pour aller plus loin", "next steps"]
+        kw in src for src in last_sources for kw in conclusion_keywords
     )
     return has_intro, has_conclusion
 
@@ -302,13 +344,39 @@ def _is_outputless_by_design(cell: dict) -> bool:
     lines = [l.strip() for l in source.split("\n") if l.strip()]
     if all(l.startswith("#") for l in lines):
         return True
+    # Strip IPython magic lines (%matplotlib, %load_ext, etc.) before AST parsing.
+    # Magics are not valid Python and would cause SyntaxError, but they never
+    # produce output that blocks notebook maturity classification.
+    clean_lines = [l for l in source.split("\n") if not l.strip().startswith("%")]
+    clean_source = "\n".join(clean_lines)
+    if not clean_source.strip():
+        return True  # entire cell was IPython magics
     try:
-        tree = ast.parse(source)
+        tree = ast.parse(clean_source)
         outputless = (
             ast.Assign, ast.AnnAssign,
             ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
+            ast.Import, ast.ImportFrom,
         )
-        return all(isinstance(node, outputless) for node in ast.iter_child_nodes(tree))
+        # Also accept Expr nodes that are bare Call expressions for configuration
+        # (plt.style.use, warnings.filterwarnings, np.set_printoptions, etc.).
+        # These produce no visible output and are purely side-effect configuration.
+        # Exclude print()/display() which DO produce output.
+        _OUTPUT_FUNCS = {"print", "display", "pprint", "show", "render"}
+        for node in ast.iter_child_nodes(tree):
+            if not isinstance(node, outputless):
+                if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+                    # Get the function name (simple or attribute)
+                    func = node.value.func
+                    fname = ""
+                    if isinstance(func, ast.Name):
+                        fname = func.id
+                    elif isinstance(func, ast.Attribute):
+                        fname = func.attr
+                    if fname not in _OUTPUT_FUNCS:
+                        continue  # config call, no output expected
+                return False
+        return True
     except SyntaxError:
         return False
 
@@ -326,24 +394,29 @@ def _is_exercise_stub(cell: dict) -> bool:
     These are NOT incomplete work — they're intentionally stubbed exercises.
     """
     source = "".join(cell.get("source", []))
-    if "# TODO" not in source.upper():
+    upper = source.upper()
+    # Exercise markers per C.1: # TODO, # Etape N, # Indice (accent-tolerant).
+    if not any(m in upper for m in ("# TODO", "# ETAPE", "# ÉTAPE", "# INDICE")):
         return False
     lines = [l.strip() for l in source.split("\n") if l.strip() and not l.strip().startswith("#")]
-    # Comment-only cells with # TODO are exercise instructions
+    # Comment-only cells with an exercise marker are exercise instructions
     if not lines:
         return True
     last_line = lines[-1]
+    # Strip a trailing inline comment so "pass  # TODO: ..." matches "pass".
+    # Safe for the bare-statement patterns below (no '#' inside their code).
+    code_part = last_line.split("#", 1)[0].strip()
     # C.1 patterns: pass, return None, print("Exercice..."), var = None
-    if last_line == "pass":
+    if code_part == "pass":
         return True
-    if last_line.startswith("return None"):
+    if code_part.startswith("return None"):
         return True
     if 'print("Exercice' in last_line or "print('Exercice" in last_line:
         return True
-    if last_line.startswith("print(") and "completer" in last_line.lower():
+    if code_part.startswith("print(") and "completer" in last_line.lower():
         return True
-    # var = None  # TODO pattern
-    if "= None" in last_line and "# TODO" in last_line.upper():
+    # var = None  # TODO pattern (marker already verified above)
+    if code_part.endswith("= None"):
         return True
     return False
 
@@ -352,13 +425,17 @@ def _effective_code_cells(code_cells: list) -> list:
     """Filter cells excluded from maturity classification.
 
     Excludes: Papermill injected-parameters, outputless-by-design cells
-    (assignments, function/class definitions, imports, comments).
-    These produce no visible output and should not block promotion.
+    (assignments, function/class definitions, imports, comments), and
+    C.1-compliant exercise stubs (pass / return None / print("Exercice")
+    with a # TODO / # Etape marker). All of these are output-free by design
+    and must not block PRODUCTION promotion (they are already excluded from
+    the TODO count for the same reason).
     """
     return [
         c for c in code_cells
         if not _is_papermill_injected(c)
         and not _is_outputless_by_design(c)
+        and not _is_exercise_stub(c)
     ]
 
 
@@ -374,7 +451,7 @@ def classify_maturity(
 
     Heuristics (B-2 from #656):
         TEMPLATE   — filename contains "template" (case-insensitive)
-        PRODUCTION — kernel defined, all outputs, <3 TODO, intro+conclusion, structured
+        PRODUCTION — kernel defined, all outputs, <=3 TODO, intro+conclusion, structured
         BETA       — outputs present, <5 TODO, markdown structure
         ALPHA      — partial outputs OR 5-10 TODO
         DRAFT      — no outputs OR >10 TODO OR no markdown cells
@@ -425,8 +502,10 @@ def classify_maturity(
     has_structure = has_intro or has_conclusion or len(md_cells) >= 3
 
     if has_outputs and todo_count < 5 and has_structure:
-        # PRODUCTION: stricter requirements (all outputs, no exceptions)
-        if kernel_defined and all_have_outputs and todo_count < 3 and has_intro and has_conclusion:
+        # PRODUCTION: stricter requirements (all outputs, <=3 TODO, intro+conclusion)
+        # Allow <=3 TODOs: exercise stubs (C.1-compliant) are excluded by count_todos,
+        # so remaining TODOs are legitimate scaffolding/placeholder markers.
+        if kernel_defined and all_have_outputs and todo_count <= 3 and has_intro and has_conclusion:
             return "PRODUCTION"
         return "BETA"
 

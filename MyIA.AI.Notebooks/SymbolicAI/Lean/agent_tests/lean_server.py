@@ -344,8 +344,15 @@ class LeanVerifier:
             f"  {tactic}\n"
         )
 
-        tmp_file = project / "SocialChoice" / "_LeanSearch.lean"
-        if not (project / "SocialChoice").exists():
+        # Derive temp file from module_name (e.g. "Grothendieck.Calibration"
+        # -> project/Grothendieck/_LeanSearch.lean). Falls back to scanning
+        # subdirectories if the derived path doesn't exist.
+        module_parts = module_name.split(".")
+        if len(module_parts) > 1:
+            tmp_file = project / module_parts[0] / "_LeanSearch.lean"
+        else:
+            tmp_file = project / "SocialChoice" / "_LeanSearch.lean"
+        if not tmp_file.parent.exists():
             for subdir in project.iterdir():
                 if subdir.is_dir() and (subdir / "lakefile.lean").exists():
                     continue

@@ -14,7 +14,7 @@ a HARNESS CALIBRATION ladder for the prover co-evolution Epic (#1453):
         : NOT closed (free `d`); a naive `decide` fails because `d` is a variable.
           The Director must DECOMPOSE: `cases d <;> rfl`.                    (medium)
 
-The `sorry`s are intentional scaffolding, not regressions (Epic #1453).
+All `sorry`s have been eliminated (Epic #1453, #1651).
 -/
 
 import Conway.Doomsday
