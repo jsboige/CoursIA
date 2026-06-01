@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-01 11:09
+Generated: 2026-06-01 11:16
 Total notebooks: 504
 
 ## Status Summary
@@ -12,8 +12,8 @@ Total notebooks: 504
 
 ## Maturity Summary
 
-- **PRODUCTION**: 399
-- **BETA**: 62
+- **PRODUCTION**: 400
+- **BETA**: 61
 - **TEMPLATE**: 4
 - **ALPHA**: 34
 - **DRAFT**: 5
@@ -145,7 +145,7 @@ Total notebooks: 504
 | 119 | Sora API - Generation Video Cloud | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 120 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
 
-### Search (45 notebooks) — DEMO:3, READY:42 | BETA:2, DRAFT:1, PRODUCTION:42
+### Search (45 notebooks) — DEMO:3, READY:42 | BETA:1, DRAFT:1, PRODUCTION:43
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -175,7 +175,7 @@ Total notebooks: 504
 | 24 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 25 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 26 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 27 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | BETA | 45min | po-2025 |
+| 27 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 28 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 29 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 30 | Search-5 : Algorithmes Genetiques | Python 3 | READY | PRODUCTION | 45min | po-2025 |

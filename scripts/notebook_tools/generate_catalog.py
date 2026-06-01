@@ -344,8 +344,15 @@ def _is_outputless_by_design(cell: dict) -> bool:
     lines = [l.strip() for l in source.split("\n") if l.strip()]
     if all(l.startswith("#") for l in lines):
         return True
+    # Strip IPython magic lines (%matplotlib, %load_ext, etc.) before AST parsing.
+    # Magics are not valid Python and would cause SyntaxError, but they never
+    # produce output that blocks notebook maturity classification.
+    clean_lines = [l for l in source.split("\n") if not l.strip().startswith("%")]
+    clean_source = "\n".join(clean_lines)
+    if not clean_source.strip():
+        return True  # entire cell was IPython magics
     try:
-        tree = ast.parse(source)
+        tree = ast.parse(clean_source)
         outputless = (
             ast.Assign, ast.AnnAssign,
             ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
