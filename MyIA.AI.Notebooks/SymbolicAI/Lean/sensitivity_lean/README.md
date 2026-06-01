@@ -22,7 +22,7 @@ Lean 4 formalization of the Sensitivity Theorem from Boolean function analysis.
 ## Key Results
 
 - **COMPLETE**: All proofs done, 0 sorry
-- Formalization of the Sensitivity Theorem (sensitivity <= block sensitivity)
+- Formalization of the **Huang degree theorem** (Huang 2019, `huang_degree_theorem` in `MainTheorem.lean`): an induced subgraph of the hypercube on more than half its vertices has a vertex of degree `>= sqrt(n)` -- the combinatorial result that resolves the Sensitivity Conjecture (`deg(f) <= s(f)^2`)
 - Boolean hypercube structure
 - Sensitivity and block sensitivity operators
 
