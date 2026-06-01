@@ -287,6 +287,41 @@ visible in the elaboration output.
 #eval gosper_gun                                 -- expected: 36 cells
 #eval gosper_gun.length                          -- expected: 36
 
+/-! ## Proven parsing correctness
+
+The parser is deterministic and total. `native_decide` verifies that
+parsing succeeds (no error) for all four flagship patterns and confirms
+that the parsed LWSS and Pulsar grids match their hand-written
+counterparts in `Conway.Life`. The glider uses a different phase than
+the hand-written constant (the RLE encodes phase 1 heading SE while
+`Conway.Life.glider` uses a different orientation), so no round-trip
+theorem is stated for it.
+-/
+
+/-- Parsing the glider RLE succeeds (no error). -/
+theorem glider_parse_ok : (parseRLE glider_RLE).toOption.isSome = true := by native_decide
+
+/-- Parsing the LWSS RLE succeeds. -/
+theorem lwss_parse_ok : (parseRLE lwss_RLE).toOption.isSome = true := by native_decide
+
+/-- Parsing the pulsar RLE succeeds. -/
+theorem pulsar_parse_ok : (parseRLE pulsar_RLE).toOption.isSome = true := by native_decide
+
+/-- Parsing the Gosper gun RLE succeeds. -/
+theorem gosper_gun_parse_ok : (parseRLE gosper_gun_RLE).toOption.isSome = true := by native_decide
+
+/-- The parsed LWSS grid matches the hand-written `lwss` constant. -/
+theorem lwss_rle_roundtrip : lwss_parsed = lwss := by native_decide
+
+/-- The parsed Pulsar grid matches the hand-written `pulsar` constant. -/
+theorem pulsar_rle_roundtrip : pulsar_parsed = pulsar := by native_decide
+
+/-- The Gosper gun has exactly 36 live cells. -/
+theorem gosper_gun_cell_count : gosper_gun.length = 36 := by native_decide
+
+/-- The parsed glider grid has exactly 5 live cells. -/
+theorem glider_parsed_cell_count : glider_parsed.length = 5 := by native_decide
+
 /-! ## Round-trip behavioural checks
 
 These confirm the parsed grids exhibit the documented dynamical
