@@ -32,7 +32,14 @@ contract CounterTest is Test {
     // Verifie qu'on ne peut pas decrementer sous zero
     function testDecrementZero() public {
         assertEq(counter.getCount(), 0);
-        vm.expectRevert(bytes("Counter: count is already zero"));
+        vm.expectRevert(bytes("Cannot decrement below zero"));
         counter.decrement();
+    }
+
+    // Verifie que le getter automatique public count() et getCount() sont coherents
+    function testPublicGetter() public {
+        counter.increment();
+        assertEq(counter.count(), 1);
+        assertEq(counter.count(), counter.getCount());
     }
 }
