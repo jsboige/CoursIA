@@ -1,26 +1,26 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-01 11:40
+Generated: 2026-06-01 21:00
 Total notebooks: 505
 
 ## Status Summary
 
-- **READY**: 374
-- **DEMO**: 120
+- **READY**: 375
+- **DEMO**: 119
 - **RESEARCH**: 0
 - **BROKEN**: 11
 
 ## Maturity Summary
 
-- **PRODUCTION**: 400
-- **BETA**: 62
+- **PRODUCTION**: 407
+- **BETA**: 56
 - **TEMPLATE**: 4
 - **ALPHA**: 34
-- **DRAFT**: 5
+- **DRAFT**: 4
 
 ## By Series
 
-### GenAI (120 notebooks) — BROKEN:1, DEMO:80, READY:39 | ALPHA:4, BETA:31, DRAFT:3, PRODUCTION:79, TEMPLATE:3
+### GenAI (120 notebooks) — BROKEN:1, DEMO:80, READY:39 | ALPHA:4, BETA:27, DRAFT:3, PRODUCTION:83, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -41,7 +41,7 @@ Total notebooks: 505
 | 15 | MusicGen - Generation Musicale par IA | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 16 | Demucs v4 - Separation de Sources Audio | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 17 | Multi-Model TTS Gateway - Synthese Vocale Multi-Mo | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 18 | Generation MIDI avec midi-model (SkyTNT) | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 18 | Generation MIDI avec midi-model (SkyTNT) | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 19 | Generation de Chansons Completes : YuE vs SongGene | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 20 | TTS Expressif : Fish S2 Pro et Modeles SOTA | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 21 | Ace-Step v1.5 - Generation Musicale avec Paroles | Python 3 | DEMO | BETA | 45min | po-2025 |
@@ -117,7 +117,7 @@ Total notebooks: 505
 | 91 | 1. Introduction a l'IA generative avec l'API OpenA | Python 3 | READY | PRODUCTION | 15min | po-2025 |
 | 92 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 93 | Structured Outputs : Sorties JSON Garanties avec O | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 94 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 94 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 95 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 96 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 97 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | PRODUCTION | 30min | po-2025 |
@@ -141,11 +141,11 @@ Total notebooks: 505
 | 115 | Orchestration de Pipelines Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 116 | ComfyUI - Workflows Video via API | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 117 | Generation de Videos Educatives | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 118 | Workflows Video Creatifs | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 118 | Workflows Video Creatifs | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 119 | Sora API - Generation Video Cloud | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 120 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 120 | Pipeline Video de Production | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 
-### Search (46 notebooks) — DEMO:3, READY:43 | BETA:2, DRAFT:1, PRODUCTION:43
+### Search (46 notebooks) — DEMO:3, READY:43 | BETA:1, PRODUCTION:45
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -153,7 +153,7 @@ Total notebooks: 505
 | 2 | App-11 - Picross (Nonogrammes) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 3 | App-15 : Planification de Calendrier Sportif (CSP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 4 | App-16 : Generateur de Mots Croises (CSP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 5 | App-19 — Génération procédurale de niveaux via WFC | .venv (3.14.3) | READY | BETA | 30min | po-2025 |
+| 5 | App-19 — Génération procédurale de niveaux via WFC | .venv (3.14.3) | READY | PRODUCTION | 30min | po-2025 |
 | 6 | App-2 : Coloration de Graphes | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 7 | App-3 : Nurse Scheduling (Planification des horair | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 8 | App-4 : Job-Shop Scheduling | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -194,15 +194,15 @@ Total notebooks: 505
 | 43 | CSP-8 : Temporels - Raisonnement sur le Temps | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 44 | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 45 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 46 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | DRAFT | 30min | po-2025 |
+| 46 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
-### ML (27 notebooks) — DEMO:5, READY:22 | ALPHA:1, BETA:1, PRODUCTION:25
+### ML (27 notebooks) — DEMO:4, READY:23 | ALPHA:1, BETA:1, PRODUCTION:25
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | 1.2 - Manipulation de Données avec NumPy | Python 3 | READY | BETA | 15min | po-2023 |
 | 2 | 1.3 - Analyse de Données avec Pandas | Python 3 | READY | PRODUCTION | 15min | po-2023 |
-| 3 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | DEMO | PRODUCTION | 30min | po-2023 |
+| 3 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 4 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 5 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 6 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
@@ -228,7 +228,7 @@ Total notebooks: 505
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (100 notebooks) — DEMO:6, READY:94 | ALPHA:1, BETA:3, PRODUCTION:96
+### SymbolicAI (100 notebooks) — DEMO:6, READY:94 | ALPHA:1, BETA:2, PRODUCTION:97
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -275,7 +275,7 @@ Total notebooks: 505
 | 41 | SW-10-Python-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 42 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | PRODUCTION | 1h | po-2024 |
 | 43 | SW-12-Python-GraphRAG | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 44 | SW-14-Reasoners | Python 3 | READY | BETA | 45min | po-2024 |
+| 44 | SW-14-Reasoners | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 45 | SW-2-RDFBasics | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 | 46 | SW-2b-Python-RDFBasics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 47 | SW-3-GraphOperations | .NET (C#) | READY | PRODUCTION | 1h | po-2024 |
