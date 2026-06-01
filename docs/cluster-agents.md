@@ -81,7 +81,7 @@ Si user dit "OK GPU heavy po-2025" : verifier qu'il connait l'incident avant d'a
 | `myia-po-2025:2026-Epita-Programmation-par-Contraintes` | Review/merge PRs etudiants PrCon | EN ATTENTE PRs etudiants |
 | `myia-po-2025:2026-Epita-Intelligence-Symbolique` | Veille sujets + enrichissement | ACTIF veille |
 
-**Skills cross-workspace tappables** : po-2025 developpe des skills specifiques par workspace, mais ai-01 peut tapper l'agent qui a deja la skill fraiche. Exemple : formulaire eval ESGF cree par `po-2025:2026-Epita-PrCon` plutot que `po-2025:CoursIA`, parce que PrCon avait fait des formulaires GWorkspace+Playwright le meme jour.
+**Skills cross-workspace tappables** : po-2025 developpe des skills specifiques par workspace, mais ai-01 peut tapper l'agent qui a deja la skill fraiche. Exemple : formulaire eval partenaire cree par `po-2025:2026-Epita-PrCon` plutot que `po-2025:CoursIA`, parce que PrCon avait fait des formulaires GWorkspace+Playwright le meme jour.
 
 ## Specialisations infrastructure
 
@@ -132,7 +132,7 @@ Rotation cle API geree par po-2023 lui-meme. **NON consomme** dans workspace Cou
 | GenAI Texte / vLLM (containers) | `ai-01:CoursIA` | tout agent pour consommer l'endpoint |
 | GenAI Embedding (container) | `po-2026:CoursIA` | tout agent pour consommer l'endpoint |
 | QC backtest / strategie | `po-2024:CoursIA` | `po-2026:CoursIA` (tokens MCP) |
-| QC ESGF org cleanup | `po-2024:CoursIA` | `po-2026:CoursIA` |
+| QC partner org cleanup | `po-2024:CoursIA` | `po-2026:CoursIA` |
 | Lean / Mathlib (port + preuves) | `po-2026:CoursIA` | ai-01 secours (env a installer) |
 | Lean prover BG forensic | **`ai-01:CoursIA` systematique** | apres chaque PR / message po-2026 mentionnant sorry |
 | Audit notebooks pedagogique | tout agent polyvalent | cross-check pour eviter double couverture |

@@ -2,6 +2,8 @@
 
 S'applique à **tous les reviewers**, humains et bots (clusterManager-Myia, jsboige self-bot, ai-01 coordinateur).
 
+**Exception — PRs de TP étudiantes (mandat user 2026-05-20).** Les critères CHANGES_REQUESTED A-G ci-dessous visent les PRs **internes/contributeurs** (agents cluster `myia-*`, staff). Les PRs soumises par des **étudiants** (forks ou comptes étudiants de `jsboige/CoursIA`) suivent [student-pr-reviews.md](student-pr-reviews.md) : review **bienveillante**, bypass template + CI, **pas de CHANGES_REQUESTED** sur scaffolding (template vide, CI rouge, exec_count manquant). Ne PAS appliquer A-G à un TP étudiant.
+
 **Contexte (incident 2026-05-08), workflow ai-01, anti-patterns détaillés** : [docs/pr-review-context.md](../../docs/pr-review-context.md).
 
 ## Critères CHANGES_REQUESTED obligatoires (HARD)

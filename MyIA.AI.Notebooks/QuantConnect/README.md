@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 102
-breakdown: Python=51, projects=49, ML-Training-Pipeline=2
-maturity: PRODUCTION=73, BETA=16, ALPHA=10, DRAFT=2, TEMPLATE=1
+pedagogical_count: 101
+breakdown: Python=51, projects=48, ML-Training-Pipeline=2
+maturity: PRODUCTION=64, ALPHA=27, BETA=8, DRAFT=1, TEMPLATE=1
 -->
 
 Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus de 60% des volumes aux États-Unis sont générés par des algorithmes. Cette série vous apprend à construire, tester et déployer vos propres stratégies de trading automatisées sur la plateforme **QuantConnect LEAN** — un framework open-source utilisé par des milliers de quants professionnels. Le parcours va des fondements (lifecycle d'un algorithme, gestion des données) aux frontières de l'IA (Transformers, RL, LLMs pour signaux de trading).
@@ -12,6 +12,8 @@ Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus 
 La série couvre huit phases progressives. Les **fondements** (phases 1-4) maîtrisent l'écosystème QuantConnect : architecture LEAN, universe selection, options/futures, risk management, et l'Algorithm Framework modulaire. La **préparation ML** (phase 5) intègre les données alternatives et le feature engineering. Le **machine learning** (phases 6-7) applique les modèles classiques (Random Forest, XGBoost) puis le deep learning (LSTM, Transformers, autoencoders) aux séries temporelles financières. La **production** (phase 8) couvre le RL, les LLMs pour le trading, et le déploiement live. Chaque notebook est exécutable sur le cloud QuantConnect (free tier) sans installation locale.
 
 **À qui s'adresse cette série** : étudiants en finance quantitative, ingénieurs ML souhaitant appliquer leurs compétences aux marchés, et développeurs curieux de trading algorithmique. Les notebooks Python s'exécutent sur QuantConnect Cloud (gratuit) ou localement avec le LEAN engine. Le livre de référence est *"Hands-On AI Trading"* (Jared Broad, 2025). Aucun capital de départ nécessaire : tout se passe en backtest et paper trading.
+
+> **Visiteur ?** Lire le [Quick Tour](QUICK_TOUR.md) (2 min) pour comprendre l'ampleur du travail.
 
 ---
 
@@ -41,7 +43,9 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
-- **46 notebooks Python** (28 cours + 4 training local + 2 paper-trading + 12 Cloud-ready)
+De la **mécanique d'un backtest** (lifecycle d'un algorithme, gestion des données, types d'ordres, risk management) jusqu'aux **modèles de pointe appliqués à la finance** — Random Forest et XGBoost, puis LSTM, Transformers et State-Space Models, jusqu'au reinforcement learning et aux LLMs employés comme générateurs de signaux — la série couvre toute la chaîne, le bloc **fondations** consolidant l'écosystème LEAN (universe selection, classes d'actifs, Algorithm Framework) avant toute approche ML.
+
+- **51 notebooks Python** (28 cours QC-Py-01..28 + 3 training QC-Py-30..32 + 3 RL avance QC-Py-33..35 + 2 paper-trading QC-Py-40..41 + 13 Cloud-ready QC-Py-Cloud-01..07 + 1 dataset workflow + 1 research interne)
 - **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
 - **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
 - **Free tier compatible** avec workarounds pour fonctionnalités payantes
@@ -151,9 +155,9 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 
 ---
 
-### Phase 8 : IA Avancée et Production (3 notebooks, ~4.5h)
+### Phase 8 : IA Avancée et Production (4 notebooks, ~5.5h)
 
-État de l'art : Reinforcement Learning, LLM pour trading signals, déploiement production.
+État de l'art : Reinforcement Learning, LLM pour trading signals, déploiement production, détection de régime de marché.
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -162,17 +166,31 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 | 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | 75 min | Paper trading, live trading setup, monitoring, deployment |
 | 28 | [QC-Py-28-Market-Regime-Detection](Python/QC-Py-28-Market-Regime-Detection.ipynb) | 75 min | HMM, regime detection, allocation adaptative |
 
-**Objectifs** : IA state-of-the-art pour trading, déploiement production.
+**Objectifs** : IA state-of-the-art pour trading, déploiement production, détection régime.
+
+---
+
+### Compléments Reinforcement Learning Avancé (3 notebooks, ~4h)
+
+Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et application portfolio construction.
+
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 33 | [QC-Py-33-RL-PPO-Trading](Python/QC-Py-33-RL-PPO-Trading.ipynb) | 90 min | Proximal Policy Optimization, clipped surrogate, Stable-Baselines3 |
+| 34 | [QC-Py-34-RL-SAC-A2C-Trading](Python/QC-Py-34-RL-SAC-A2C-Trading.ipynb) | 75 min | Soft Actor-Critic + A2C, comparatif algorithmes RL |
+| 35 | [QC-Py-35-RL-Portfolio-Construction](Python/QC-Py-35-RL-Portfolio-Construction.ipynb) | 75 min | RL pour allocation multi-asset, contraintes de risque |
+
+**Objectifs** : Comparer les algorithmes RL modernes, appliquer au portfolio multi-asset.
 
 ---
 
 ## Résumé de la Progression
 
-**Total** : **28 notebooks Python** (~32 heures de contenu)
+**Total cours linéaire** : **28 notebooks Python** (QC-Py-01 à QC-Py-28, ~32 heures de contenu) + **23 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, Cloud strategies QC-Py-Cloud-*, training QC-Py-30..32, dataset workflow).
 
-**Répartition** :
+**Répartition cours linéaire (Phases 1-8)** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
-- **9 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM) : ~12h
+- **10 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM, Régime) : ~13h
 
 **Progression pédagogique** : Maîtriser les fondations QuantConnect **avant** d'aborder le Machine Learning.
 
@@ -196,7 +214,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 
 ## Projets de Stratégies
 
-Le dossier [`projects/`](projects/) contient **67 stratégies de trading** prêtes à backtester.
+Le dossier [`projects/`](projects/) contient **115 stratégies de trading** prêtes à backtester.
 
 ### Comment utiliser les projets
 
@@ -217,15 +235,28 @@ Le dossier [`projects/`](projects/) contient **67 stratégies de trading** prêt
 
 ---
 
-## ESGF-2026 - Exemples de Recherche
+## 4-Type Notebook Classification
 
-Le dossier **ESGF-2026/** contient des exemples de recherche avancée utilisés dans le cours ESGF 2026.
+Each notebook in the QC tree falls into one of four types:
 
-### Structure ESGF-2026
+| Type | Label | Execution | Count |
+|------|-------|-----------|-------|
+| **(a)** | quantbook QC Cloud | QC Cloud only | 59 |
+| **(b)** | research linked to quantbook | QC Cloud + local | ~76 |
+| **(c)** | standalone research | Local (yfinance/sklearn) | 24 |
+| **(d)** | pedagogical placeholder | Read-only / copy-paste | 33 |
+
+See [docs/qc-strategies-status.md](../../docs/qc-strategies-status.md) for the exhaustive classification.
+
+## Cours partenaire — Exemples de Recherche
+
+Le dossier **partner-course-quant-trading/** contient des exemples de recherche avancée utilisés dans le cours partenaire.
+
+### Structure
 
 ```
-ESGF-2026/
-├── examples/           # 11 projets d'exemples du professeur
+partner-course-quant-trading/
+├── examples/           # Projets d'exemples du professeur
 ├── templates/          # Templates pour projets étudiants
 │   ├── starter/        # Niveau débutant
 │   ├── intermediate/   # Niveau intermédiaire
@@ -233,9 +264,18 @@ ESGF-2026/
 └── archive-2025/       # Archives historiques
 ```
 
-Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et templates.
+Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/README.md) pour le détail des exemples et templates.
 
 ---
+
+## Transient Directories
+
+| Directory | Status | Description |
+|-----------|--------|-------------|
+| `_pending_execution/` | Active | QuantBook research notebooks awaiting QC Cloud execution (H.3/C.2) |
+| `partner-course-quant-trading/archive-2025/` | Reference | 2024-2025 student project IDs and cloud references |
+| `_archive/` | Purged | Superseded reports moved to `docs/audits/` (commit `#1626`) |
+| `_esgf_cours_5mai/` | Purged | Course 5 May 2026 backtest results archived to G drive (commit `#1626`) |
 
 ## Documentation Complémentaire
 
@@ -243,7 +283,7 @@ Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et 
 
 - **[GETTING-STARTED.md](GETTING-STARTED.md)** : Guide de démarrage détaillé
 - **[docs/HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
-- **[docs/BOOK_MAPPING.md](docs/BOOK_MAPPING.md)** : Mapping notebooks ↔ chapitres
+- **[BOOK_MAPPING.md](BOOK_MAPPING.md)** : Mapping notebooks ↔ chapitres
 - **[docs/qc_strategies_catalog.md](docs/qc_strategies_catalog.md)** : Catalogue strategies QC Cloud
 - **[docs/HANDSON_DATA_REQUIREMENTS.md](docs/HANDSON_DATA_REQUIREMENTS.md)** : Datasets requis
 - **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading

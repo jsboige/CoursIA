@@ -9,9 +9,7 @@ Dual EMA crossover on cryptocurrency. Goes long when EMA(20) > EMA(60) on BTC/ET
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Crypto"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

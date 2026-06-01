@@ -2,6 +2,19 @@
 
 Complete training pipeline for ML models on financial OHLCV data. Designed for GPU training with CPU dry-run validation. All GPU scripts use thermal-safe training via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
 
+## 4-Type Classification
+
+All 4 notebooks in this directory are **(c) standalone research** — independent analysis using local data (yfinance, sklearn, PyTorch), no QuantConnect Cloud dependency.
+
+| Notebook | Topic | Type |
+|----------|-------|------|
+| `ML-Research-Template.ipynb` | Template for ML research | (c) |
+| `m3_har_asymmetric_semivariance.ipynb` | HAR asymmetric semivariance | (c) |
+| `research_what_dl_can_predict.ipynb` | What DL can predict in finance | (c) |
+| `research_l4_decision_transformer.ipynb` | Decision Transformer evaluation | (c) |
+
+Full classification: [docs/qc-strategies-status.md](../../../docs/qc-strategies-status.md)
+
 ## Curriculum V2 — Validated Keepers (2026-05-16, gate FERMEE)
 
 After 8 stages tested (S1–S8) on anti-FAANG/Mag7 universe (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), **4 KEEPERS** confirmed under strict OOS 2027 holdout, walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), tx costs 10bps rebalance + 50bps stress :
@@ -17,7 +30,7 @@ S1 long-horizon sweep also produced **8 BEATS multi-coin sur 16** (XRP h=66 13.5
 
 **Rejected stages** (NO BEATS) : S2 vol-ensembles (DM, MLP, GSP), S5 stop-loss overlays, S6 LO-only sectors, S7 composites, S8 long-horizon classifiers (dir_acc ≠ edge).
 
-> Detail complet : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) — méthodologie, ablations, leçons. Pivot V2 documenté dans [`CURRICULUM.md`](CURRICULUM.md). 3 projets QC Cloud ESGF déployés à partir de ces KEEPERS — cf [`../ESGF-2026/README.md`](../ESGF-2026/README.md).
+> Detail complet : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) — méthodologie, ablations, leçons. Pivot V2 documenté dans [`CURRICULUM.md`](CURRICULUM.md). 3 projets QC Cloud déployés à partir de ces KEEPERS — cf [`../partner-course-quant-trading/README.md`](../partner-course-quant-trading/README.md).
 
 ## Architecture
 
@@ -408,6 +421,22 @@ Dry-run results (CPU, Python 3.13, torch 2.11.0+cpu):
 | train_volatility_regime.py | PASS | Acc=0.663, Edge=-0.266 | ~5s |
 
 Note: dry-run uses synthetic random data. FAILS baseline is expected with random walks. Real-data results are in `results/` and on the cluster dashboard.
+
+## Ladder #1409 — Action vs Forecast (2026-05-27)
+
+Systematic evaluation of trading signal generation approaches on 25-26 crypto+ETF symbols, walk-forward 5-fold, 4+ seeds. B&H SPY 2015-2025 Sharpe = 1.15 baseline.
+
+| Ladder | Model | Approach | Verdict | Signal/Total | Median AUC | Combos | Time |
+|--------|-------|----------|---------|-------------|------------|--------|------|
+| L1 | TSMOM | Time-series momentum | NO BEATS | 0/25 | — | — | 1s |
+| L2 | CS+DM | Carry+DualMomentum | NO BEATS | 0/25 | — | 252d best | 27s |
+| L3 | Trend | Regime+trend long-horizon | NO BEATS | 0/75 | 0.509 | 300 | 874s |
+| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** | **24/26** | **0.558** | **104** | **3714s** |
+| L5 | PatchTST | Forecast-based (return prediction) | NO BEATS | 0/26 | 0.501 | 104 | 2844s |
+
+**Key finding**: Action-based models (DT classifies buy/hold/sell) massively outperform forecast-based models (PatchTST predicts return magnitude). Forecasting returns is necessary but not sufficient — the portfolio translation layer (forecast -> position) destroys the signal via transaction costs and discretization errors.
+
+Results: `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_patchtst}/results.json`
 
 ## Reproducibility
 

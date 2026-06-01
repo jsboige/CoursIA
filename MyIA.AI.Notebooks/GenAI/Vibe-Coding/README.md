@@ -1,5 +1,12 @@
 # Vibe-Coding - Ateliers IA Generative pour le Developpement
 
+<!-- CATALOG-STATUS
+series: GenAI-Vibe-Coding
+pedagogical_count: 5
+breakdown: Claude-CLI-Bases=1, Claude-CLI-Sessions=1, Claude-CLI-References=1, Claude-CLI-Agents=1, Claude-CLI-Automatisation=1
+maturity: BETA=5
+-->
+
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Claude Discovery](Claude-Code/01-decouverte/README.md)
 
 Bienvenue dans l'ère du **vibe-coding** - la compétence la plus demandée de 2026 ! Imaginez : vous décrivez ce que vous voulez construire en langage naturel, et l'IA écrit le code pour vous. Plus besoin de semaines de développement, mais des minutes pour transformer une idée en fonctionnalité réelle. Le vibe-coding révolutionne la programmation en rendant la barrière technique quasi invisible : votre seule limite est votre imagination.

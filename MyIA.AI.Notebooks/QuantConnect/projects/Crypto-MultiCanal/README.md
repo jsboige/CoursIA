@@ -1,18 +1,17 @@
 # Crypto-MultiCanal
 
 **Asset class:** Crypto (BTC)
-**Cloud project ID:** None (local only)
+**Cloud project ID:** 30750734
 
 ## Description
 
-Multi-channel ZigZag strategy on Bitcoin. Uses 3 nested ZigZag channels (short/medium/long) to identify trend structure at multiple scales.
+Multi-channel ZigZag strategy on Bitcoin. Uses 3 nested ZigZag channels (short/medium/long) to identify trend structure at multiple scale.
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Crypto-MultiCanal"`
 
-
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud:** Deployed as project 30750734.
 
 ## Backtest Metrics
 

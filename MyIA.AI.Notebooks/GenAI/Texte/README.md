@@ -1,5 +1,12 @@
 # GenAI Texte - Maîtrise des LLMs : Fondement de tout Génératif
 
+<!-- CATALOG-STATUS
+series: GenAI-Texte
+pedagogical_count: 11
+breakdown: OpenAI-Intro=1, PromptEngineering=1, StructuredOutputs=1, FunctionCalling=1, RAG=1, PDF-WebSearch=1, CodeInterpreter=1, Reasoning=1, Production=1, LocalLlama=1, Quantization=1
+maturity: PRODUCTION=6, BETA=5
+-->
+
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
 
 La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Génératif. Chaque image générée, chaque instruction d'agent et chaque requête RAG trouve son origine dans le texte. Cette série vous guide à travers une progression pédagogique complète pour transformer votre interaction avec l'IA.
@@ -134,11 +141,15 @@ Le fil rouge de cette serie est la progression de l'interaction basique avec un 
 
 4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modeles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise. [10_LocalLlama](10_LocalLlama.ipynb) et [11_Quantization](11_Quantization.ipynb) deployent en local avec vLLM.
 
-## Relation avec les autres series
+## Cross-series Bridges
 
-- **GenAI/Images** : Generation d'images (DALL-E, Stable Diffusion)
-- **GenAI/Audio** : Transcription, TTS (Whisper)
-- **SymbolicAI** : Reasoning formel (Z3, Tweety, Lean)
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Image](../Image/README.md) | Prompts structurés | Les textes prompts guident la generation d'images (DALL-E, GPT-5 Image) — notebooks [1](1_OpenAI_Intro.ipynb) et [4](4_Function_Calling.ipynb) |
+| [Audio](../Audio/README.md) | STT/TTS + RAG podcast | Whisper STT et TTS APIs sont les bases du pipeline podcast (Audio/03-2) ; le RAG (notebook [5](5_RAG_Modern.ipynb)) alimente le contenu |
+| [Video](../Video/README.md) | GPT-5 Video + Sora prompts | La comprehension video (Video/01-2) utilise les memes APIs texte ; Sora (Video/04-3) depend de prompts structures |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration agentique | Semantic Kernel orchestre les LLMs via plugins et agents — prolonge les patterns de function calling (notebook [4](4_Function_Calling.ipynb)) |
+| [SymbolicAI](../../SymbolicAI/README.md) | Reasoning formel | Les modeles raisonnants (notebook [8](8_Reasoning_Models.ipynb)) complementent le reasoning formel (Z3, Tweety, Lean) |
 
 ## Ressources
 

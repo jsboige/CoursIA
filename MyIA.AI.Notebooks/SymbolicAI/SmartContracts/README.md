@@ -1,6 +1,17 @@
 # Smart Contracts - Des Cypherpunks aux Blockchains Modernes
 
+<!-- CATALOG-STATUS
+series: SymbolicAI-SmartContracts
+pedagogical_count: 27
+breakdown: 00-Foundations=3, 01-Solidity-Foundation=4, 02-Solidity-Advanced=5, 03-Foundry-Testing=3, 04-Privacy-Cryptography=3, 05-Alternative-Chains=5, 06-Real-World=4
+maturity: PRODUCTION=11, BETA=16
+-->
+
 Serie de notebooks educatifs couvrant les fondements cryptographiques, le developpement Solidity, les tests, la cryptographie avancee (ZKP, HE, vote verifiable), et les blockchains alternatives.
+
+Un smart contract est un programme qui s'execute tout seul sur une blockchain : une fois deploye, son code fait foi, transfere de la valeur et applique des regles sans intermediaire ni possibilite de revenir en arriere. C'est ce qui fait sa puissance — des ecosystemes entiers (DeFi, NFT, DAO) reposent dessus — et son danger : un bug n'est pas un patch a pousser le lendemain, c'est une faille immuable qui peut couter des millions (le hack de The DAO en 2016, les exploits de ponts cross-chain). D'ou le poids accorde dans cette serie aux **tests, au fuzzing et a la verification formelle** autant qu'au developpement.
+
+Le parcours suit le fil annonce par le titre : on part des **primitives cryptographiques** des cypherpunks (hachage, arbres de Merkle, preuve de travail, signatures) pour comprendre *pourquoi* une blockchain tient, puis on construit en **Solidity** (types, heritage, standards ERC, DeFi, gouvernance), on **securise** (Foundry, invariants, verification formelle), on explore la **cryptographie pour la vie privee** (ZKP, chiffrement homomorphique, vote verifiable de bout en bout), avant d'elargir aux **chaines alternatives** (Vyper, XRP, Bitcoin Script, Move/Sui, Solana) et au **deploiement reel** sur testnet puis mainnet. L'objectif final n'est pas seulement de savoir ecrire un contrat, mais de savoir le rendre digne de confiance.
 
 ## Vue d'Ensemble
 

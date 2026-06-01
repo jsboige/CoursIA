@@ -1,3 +1,7 @@
+<!-- ETUDIANTS (PR de TP) : remplissez seulement la section Summary ci-dessous. Laissez les checklists telles quelles — votre encadrant s'en charge. Une CI rouge ne bloque pas votre TP. -->
+
+> **Etudiants (PR de TP)** : remplissez seulement **Summary**. Les checklists de review sont pour l'encadrant — laissez-les telles quelles. Une CI rouge ne bloque pas le merge de votre TP.
+
 ## Summary
 
 <!-- 1-3 bullet points describing what this PR does -->

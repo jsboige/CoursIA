@@ -70,8 +70,8 @@ OBLIGATOIRE avant toute iteration:
 
 4. Chercher un notebook existant:
    - projects/{Strategy}/research.ipynb
-   - ESGF-2026/examples/{Strategy}/research.ipynb
-   - ESGF-2026/lean-workspace/{Strategy}-Researcher/research.ipynb
+   - partner-course-quant-trading/examples/{Strategy}/research.ipynb
+   - partner-course-quant-trading/lean-workspace/{Strategy}-Researcher/research.ipynb
 ```
 
 ### Etape 2: Research Notebook (ARTEFACT PRINCIPAL)
@@ -247,7 +247,7 @@ plt.show()
 6. **Long-only en bull** - Short = catastrophique
 7. **SVXY max 30%** - Trailing stop obligatoire
 8. **"In Progress..." = bug MCP** - Attendre et reessayer
-9. **Org perso seulement** - ESGF = FREE, pas de backtest API
+9. **Org perso seulement** - Partner org = FREE, pas de backtest API
 
 ## Principes d'integrite des ameliorations
 

@@ -1,6 +1,23 @@
 # Argument_Analysis - Analyse Argumentative avec Agents IA
 
+<!-- CATALOG-STATUS
+series: SymbolicAI-Argument_Analysis
+pedagogical_count: 6
+breakdown: Pipeline=5, UI=1
+maturity: PRODUCTION=5, BETA=1
+-->
+
 Pipeline complet d'analyse argumentative combinant Semantic Kernel, TweetyProject et programmation logique pour l'identification et l'evaluation d'arguments dans des textes.
+
+## Pourquoi cette serie
+
+Distinguer un argument valide d'un sophisme est un acte essentiel dans une societe sature de discours generes a la chaine. Lorsque les LLMs produisent des textes plausibles a la demande, la frontiere entre persuasion legitime et manipulation rhetorique se brouille : raisonnements circulaires, faux dilemmes, appels a l'autorite mal calibres deviennent indetectables par simple lecture rapide. La verification formelle, autrefois reservee aux logiciens, devient un service de masse : moderation de plateformes, journalisme assiste, education critique, audit de contenus pedagogiques generes par IA.
+
+Cette serie pose une question concrete : peut-on construire un pipeline qui prend un texte argumentatif en entree et qui en restitue une carte logique formelle, validee par un solveur SAT, avec detection systematique des sophismes connus ? La reponse passe par un assemblage soigne de trois competences distinctes : un LLM pour extraire le tissu argumentatif informel (premisses, conclusions, transitions), un solveur logique (TweetyProject, Java via JPype) pour verifier la coherence des formalisations propositionnelles obtenues, et une couche d'orchestration agentique (Semantic Kernel) qui transforme cette chaine en pipeline reproductible. Le travail pedagogique consiste a maitriser chacune de ces briques *et* leur composition : ou s'arrete le LLM, ou commence le verificateur formel, comment une boucle informel/formel converge vers un verdict.
+
+Le contexte de recherche actuel rend cette competence particulierement pertinente. Les frameworks de raisonnement structure (ASPIC+, ABA, DeLP) sont implementes en JVM et accessibles via les memes ponts JPype que ceux utilises ici. Les LLMs de 2025-2026 sont assez fiables pour la phase d'extraction informelle mais restent faibles sur la verification formelle, ce qui motive precisement le pattern hybride documente dans la serie. Les ponts vers [Tweety](../Tweety/) (semantiques de Dung, revision de croyances AGM, preferences de Tweety-9) et [Lean](../Lean/) (preuves formelles, tactiques) permettent d'aller plus loin pour qui veut depasser la simple verification SAT.
+
+**A qui s'adresse cette serie** : enseignants en pensee critique, equipes editoriales construisant des outils de fact-checking, etudiants en philosophie computationnelle ou en linguistique formelle, et ingenieurs explorant les architectures hybrides LLM + solveur. La maitrise prealable supposee est moderee : Python intermediate, intuition logique propositionnelle, familiarite minimale avec les LLMs et l'OpenAI API. Les notebooks (~4-5h total) s'enchainent dans l'ordre 0 → 1 → 2 → 3, avec l'`Executor` comme point d'entree pour une execution batch reproducible (Papermill / MCP).
 
 ## Vue d'ensemble
 
@@ -51,6 +68,16 @@ Pipeline complet d'analyse argumentative combinant Semantic Kernel, TweetyProjec
 3. **Validation** - Verification coherence via Tweety
 4. **Evaluation** - Detection de sophismes et faiblesses
 5. **Rapport** - Generation conclusion structuree
+
+## Domaines d'application
+
+L'analyse argumentative outillee s'inscrit dans plusieurs cas concrets ou la distinction "argument valide / sophisme" doit etre rendue automatique ou semi-automatique :
+
+- **Moderation de discussions en ligne** : detection des sophismes recurrents (homme de paille, faux dilemmes, glissement, ad hominem) dans des fils de commentaires longs, avec un rapport agrege par utilisateur ou par fil. Le pattern LLM-extracteur + verificateur formel est calibre precisement pour cet usage.
+- **Fact-checking et journalisme assiste** : decomposition d'un editorial ou d'un discours politique en chaine de premisses et conclusions, marquage des transitions logiquement faibles, identification des affirmations factuelles a verifier externement. La phase "formalisation" cree un livrable inspectable, contrairement aux jugements opaques d'un LLM seul.
+- **Education a la pensee critique** : production d'exercices d'analyse a partir de textes reels (discours, essais, posts), avec correction automatisee partielle. L'enseignant valide la decomposition, l'eleve apprend a justifier chaque etape.
+- **Audit de contenus IA** : verification de la coherence interne des reponses LLM longues sur sujets sensibles (medical, juridique, financier). Un LLM peut produire un raisonnement plausible mais incoherent ; le solveur formel detecte les contradictions internes.
+- **Recherche en argumentation structuree** : terrain experimental pour les frameworks Dung, ASPIC+, ABA, accessibles via les ponts Tweety. La serie sert de support a des explorations academiques (memoires, theses) sur les semantiques d'acceptabilite, la revision de croyances AGM, ou les preferences entre arguments.
 
 ## Mode batch
 

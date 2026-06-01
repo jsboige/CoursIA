@@ -2,7 +2,7 @@
 Cache intelligent pour les telechargements yfinance.
 
 Stocke les donnees en Parquet pour eviter les re-telechargements
-lors de l'execution Papermill des notebooks ESGF.
+lors de l'execution Papermill des notebooks quant trading.
 
 Usage:
     from shared.data_cache import get_yf_data, get_yf_batch
@@ -18,7 +18,7 @@ from typing import Optional, Union
 import pandas as pd
 import yfinance as yf
 
-DEFAULT_CACHE_DIR = Path(__file__).parent.parent / "ESGF-2026" / "examples" / ".data_cache"
+DEFAULT_CACHE_DIR = Path(__file__).parent.parent / "partner-course-quant-trading" / "examples" / ".data_cache"
 
 
 def _cache_path(ticker: str, start: str, end: str, column: str,
@@ -50,7 +50,7 @@ def get_yf_data(
         start: Date debut 'YYYY-MM-DD'
         end: Date fin 'YYYY-MM-DD'
         column: Colonne yfinance ('Close', 'Adj Close', etc.)
-        cache_dir: Repertoire cache (defaut: ESGF-2026/examples/.data_cache/)
+        cache_dir: Repertoire cache (defaut: partner-course-quant-trading/examples/.data_cache/)
         max_age_days: Age max du cache en jours (None = pas de limite)
         verbose: Afficher les messages de statut
 

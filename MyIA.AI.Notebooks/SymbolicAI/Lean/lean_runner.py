@@ -88,11 +88,20 @@ class LeanRunner:
     - auto: Automatically select best available backend
     """
 
+    # Default WSL lake project providing the Init prelude (OfNat, Nat literals,
+    # core tactics). Without a project cwd, the standalone `repl` invocation
+    # cannot resolve OfNat for numeric literals (`0`, `1`, ...) and every
+    # theorem touching a literal fails with "Unknown constant `OfNat`" followed
+    # by a parser cascade ("unexpected token '+' / '*'").
+    # See: ~/lean-projects/notebook_context (lakefile.lean + lean-toolchain).
+    DEFAULT_WSL_PROJECT_DIR = "~/lean-projects/notebook_context"
+
     def __init__(
         self,
         lean_path: Optional[str] = None,
         timeout: int = 30,
-        backend: Literal["subprocess", "wsl", "leandojo", "auto"] = "subprocess"
+        backend: Literal["subprocess", "wsl", "leandojo", "auto"] = "subprocess",
+        wsl_project_dir: Optional[str] = None,
     ):
         """
         Initialize the Lean runner.
@@ -101,11 +110,15 @@ class LeanRunner:
             lean_path: Path to lean executable. If None, auto-detected.
             timeout: Timeout in seconds for Lean execution.
             backend: Backend to use ('subprocess', 'wsl', 'leandojo', 'auto')
+            wsl_project_dir: WSL path to the lake project providing the Init
+                prelude context for the `repl` (default: notebook_context).
+                Required for numeric literals to resolve through OfNat.
         """
         self.timeout = timeout
         self._temp_dir = None
         self._wsl_kernel = None
         self._leandojo_repo = None
+        self.wsl_project_dir = wsl_project_dir or self.DEFAULT_WSL_PROJECT_DIR
 
         # Select backend
         if backend == "auto":
@@ -388,14 +401,25 @@ class LeanRunner:
             )
 
     def _run_wsl(self, code: str) -> LeanResult:
-        """Execute Lean code via WSL lean4_jupyter REPL."""
-        # Build JSON command for REPL
-        json_cmd = json.dumps({"cmd": code})
+        """Execute Lean code via WSL lean4_jupyter REPL.
+
+        The REPL is invoked from inside the lake project directory
+        (`self.wsl_project_dir`, default `~/lean-projects/notebook_context`)
+        so the Init prelude is loaded and numeric literals resolve through
+        `OfNat`. Running `repl` from the WSL home folder leaves the
+        environment without `OfNat` instances and every theorem touching a
+        Nat literal fails with "Unknown constant `OfNat`".
+        """
+        # Build JSON command for REPL. Escape single quotes so the shell
+        # heredoc-via-echo remains parseable when the LLM-generated code
+        # contains apostrophes.
+        json_cmd = json.dumps({"cmd": code}).replace("'", "'\\''")
 
         try:
             result = subprocess.run(
                 ["wsl", "-d", "Ubuntu", "--", "bash", "-c",
-                 f'source ~/.elan/env && echo \'{json_cmd}\' | repl'],
+                 f"cd {self.wsl_project_dir} && source ~/.elan/env "
+                 f"&& echo '{json_cmd}' | repl"],
                 capture_output=True, text=True, timeout=self.timeout
             )
 

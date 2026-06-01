@@ -14,6 +14,8 @@ Avant de relayer un diagnostic technique d'un autre agent dans un dispatch ou un
 
 **Incident 2026-05-07** : agent a affirme "MultiAgentSorryProver doesn't exist" pendant 3 sessions, alors qu'il etait fully implemented dans `prover/agents.py`, `prover/workflow.py`, `prover/tools.py`, `prover/provers.py`. Cf [.claude/rules/verify-before-claiming.md](../.claude/rules/verify-before-claiming.md).
 
+**Incident 2026-05-24 (#274)** : ai-01 a ferme #274 (ComfyUI-RookieUI) sur un verdict "NO-GO (scope mismatch)" repris d'un audit po-2023 anterieur, SANS relire le body de l'issue. Or l'audit evaluait RookieUI contre une exigence "UI d'edition video" que #274 n'a JAMAIS formulee (#274 demande une sidebar generation d'IMAGE style A1111) — issue mal attribuee, l'audit confondait #274 avec une autre. Pire, la close a AJOUTE un rationale fabrique ("overlaps Forge/SDNext, no pedagogical value") contredisant le body. Detecte par le user ("Pure hallucination, tu as lu l'issue ?"), reverte (reopen + rétractation). **Lecon (G.1 + G.9) : un verdict est un claim comme un autre — son label ne dispense pas de relire la source qu'il pretend juger. Fermer une issue sur un label sans confronter son raisonnement au body = hallucination par procuration.**
+
 ---
 
 ## G.2 — Metriques honnetes, pas binaires

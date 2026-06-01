@@ -11,7 +11,7 @@ Lighter version of TrendStocks-Alpha (which uses 50 stocks + monthly rebalance).
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/TrendStocksLite"`
 ```bash
 lean backtest --project .
 ```

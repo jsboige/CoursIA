@@ -106,7 +106,7 @@ roosync_send(
 ### qc (QuantConnect)
 - Agent: po-2024
 - Issues: #106-113, #81
-- Context: ESGF deadline fin mars, Sprint 1 done, Sprint 2 pending
+- Context: Partner course deadline fin mars, Sprint 1 done, Sprint 2 pending
 - Memory: jared_qc_partnership.md, qc_strategies_catalog.md
 
 ### slides

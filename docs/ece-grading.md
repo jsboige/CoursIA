@@ -12,7 +12,7 @@ Les rendus etudiants sont dans des **orgs/comptes GitHub dedies, jamais dans Cou
 | EPITA Programmation par Contraintes | `jsboigeEpita` | `2026-Epita-Programmation-par-Contraintes` (mono-repo, sujets numerotes) |
 | EPITA IA Symbolique | `jsboigeEpita` | `2026-Epita-Intelligence-Symbolique` (sujets) **+ forks `jsboige/CoursIA`** (TPs notebooks) |
 | EPF GenAI | `jsboigeEPF` | `2025-MSBNS3IN03-GenAI` |
-| ESGF Algo Trading | (QC org Trading Firm ESGF) | code QC Cloud, pas de repo GitHub commun |
+| Partner Algo Trading | (QC org partner) | code QC Cloud, pas de repo GitHub commun |
 
 Pour toute investigation rattrapage/notation, lister les PRs etudiants :
 

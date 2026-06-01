@@ -9,9 +9,7 @@ Causal inference framework for event-driven alpha. Uses DoWhy/causal methods to 
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/CausalEventAlpha"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

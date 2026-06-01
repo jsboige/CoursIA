@@ -120,7 +120,7 @@ Two defensible re-statements that respect G.2 :
 2. **"On the 5 strongest combos (ADA/LTC/BTC/XRP/DOT at long horizons), kelly_har_mu60/250 achieves p<0.10 one-sided ; none crosses p<0.05."** — this is a small-N marginally-significant cluster, useful for pedagogy ("real edge but not bankable").
 
 The unqualified "BEATS buy_hold by Δ Sharpe" should be **dropped** from the
-ESGF pedagogy slides in favour of either #1 or #2.
+the pedagogy slides in favour of either #1 or #2.
 
 ---
 

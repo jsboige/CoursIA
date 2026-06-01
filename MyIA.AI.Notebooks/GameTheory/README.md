@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: GameTheory
 pedagogical_count: 25
-breakdown: =21, SocialChoice=4
-maturity: BETA=18, DRAFT=3, ALPHA=2, PRODUCTION=2
+breakdown: root=21, SocialChoice=4
+maturity: PRODUCTION=24, ALPHA=1
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
@@ -29,7 +29,9 @@ La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) 
 
 ## Structure
 
-**17 notebooks principaux** + **8 side tracks** (b = Lean, c = Python approfondissement) + **4 SocialChoice** (sous-serie dediee) = **29 notebooks**
+La série s'articule autour d'un **fil principal** qui suit la maturation historique de la discipline — des jeux statiques (matrices de gains, Nash, minimax) vers les jeux dynamiques (formes extensives, induction, information incomplète) puis les frontières contemporaines (CFR pour le poker, mécanismes, choix social, RL multi-agent). Ce fil est doublé de deux fils transversaux optionnels : un **fil de formalisation Lean 4** (side tracks *b*), qui prouve mécaniquement les grands théorèmes au lieu de seulement les illustrer, et un **fil Python d'approfondissement** (side tracks *c*) pour les variantes et visualisations avancées. La sous-série **[SocialChoice/](SocialChoice/)** prolonge le bloc « agrégation des préférences » avec une étude dédiée d'Arrow, Sen et des méthodes de vote, en confrontant preuve formelle, simulation et encodage SAT/Z3.
+
+Chaque notebook principal renvoie vers ses side tracks ; ceux-ci se lisent indépendamment et ne sont jamais des prérequis du fil principal.
 
 ### Partie 1 : Fondations et Jeux statiques (Notebooks 1-6)
 
@@ -90,6 +92,19 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 - Chaque notebook principal inclut des liens vers ses side tracks
 - Les side tracks sont optionnels et peuvent etre etudies independamment
 - Progression recommandee : notebook principal, puis side track b (formalisation), puis c (applications)
+
+## Acquis d'apprentissage
+
+À l'issue de la série, vous êtes capable de :
+
+- **Modéliser** une interaction stratégique sous forme normale ou extensive, et y lire dominance, meilleure réponse, ensembles d'information et menaces crédibles.
+- **Calculer** des équilibres : Nash pur et mixte (Lemke-Howson), minimax et dualité LP en jeux à somme nulle, équilibre parfait en sous-jeux par induction arrière et avant.
+- **Simuler** des dynamiques d'apprentissage et d'évolution : tournois itérés à la Axelrod, *replicator dynamics*, et apprentissage multi-agent moderne (CFR/Deep CFR, NFSP, PSRO).
+- **Analyser** la coopération : valeur de Shapley, Core, et conditions de stabilité (Bondareva-Shapley) ; concevoir un mécanisme incitatif (principe de révélation, VCG).
+- **Raisonner** sur l'agrégation collective : impossibilité d'Arrow, théorème de Sen, méthodes de Condorcet/Borda/Copeland, et leur encodage en problème SAT résolu par Z3.
+- **Formaliser** ces résultats en Lean 4 et saisir ce que « prouver » veut dire dans un assistant de preuve — du point fixe de Brouwer/Kakutani pour Nash à l'axiomatique de Shapley et à la preuve d'Arrow.
+
+Chaque notebook adopte la même trame pédagogique — introduction motivée, plan ancré, exemples exécutés et exercices corrigés — pensée pour un travail en autonomie. Les side tracks Lean (*b*) et la sous-série SocialChoice vont jusqu'au degré « preuve formelle vérifiée par la machine » : les résultats principaux sont prouvés sans `sorry` (l'inventaire complet des toolchains, du statut de build et des `sorry` résiduels intractables est tenu dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md)).
 
 ## Statut de maturite
 
@@ -295,9 +310,11 @@ GameTheory/
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
 │   ├── tournament.py              # Tournoi Axelrod
 │   └── visualization.py           # Animations populations
-├── cooperative_games_lean/        # Projet Lake pour Lean cooperatif (Shapley)
-├── social_choice_lean/            # Projet Lake pour Lean choix social (Arrow, Sen, Voting)
-├── stable_marriage_lean/          # Projet Lake pour Gale-Shapley (2 sorry / 5 theoremes)
+├── cooperative_games_lean/        # Projet Lake jeux cooperatifs (Shapley 0 sorry, Bondareva-Shapley 1 sorry INTRACTABLE)
+├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
+├── social_choice_lean_peters/     # Projet Lake reference DominikPeters (0 sorry, toolchain v4.27.0-rc1)
+├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 3 sorry residual dans Lattice.lean)
+├── lean_game_defs/                # Types Lean partages (pas de Lake project)
 ├── examples/
 │   ├── prisoners_dilemma.py
 │   ├── topology_2x2_periodic_table.py
@@ -349,11 +366,22 @@ BATCH_MODE=true python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory
 | **Core** | Ensemble des allocations stables en jeu cooperatif |
 | **Theoreme d'Arrow** | Impossibilite d'agregation parfaite des preferences |
 
+## Applications du monde reel
+
+La theorie des jeux n'est pas qu'un objet academique : ses resultats structurent des pans entiers de l'economie numerique et des politiques publiques. Quelques exemples directement relies aux notebooks de la serie :
+
+- **Encheres et enchères de spectre** (notebooks 14, 16) — les mecanismes VCG et leurs derives fondent les encheres publicitaires de Google et Meta (des milliards de transactions/jour) ainsi que les ventes de frequences telecom orchestrees par les Etats, ou le design du mecanisme se chiffre en milliards.
+- **Marches d'appariement** (notebook 15, jeux cooperatifs) — l'algorithme de Gale-Shapley et la valeur de Shapley sont au coeur de l'affectation des etudiants aux ecoles (New York, Boston), des internes aux hopitaux (NRMP), et des dons d'organes par echanges croises ; prix Nobel d'economie 2012 (Roth & Shapley).
+- **IA de poker et bluff optimal** (notebook 13, CFR) — Counterfactual Regret Minimization a permis a Libratus et Pluribus de battre les meilleurs joueurs humains au Texas Hold'em, premiere resolution d'un jeu majeur a information imparfaite.
+- **Systemes de vote et gouvernance** (sous-serie SocialChoice) — le theoreme d'Arrow et les methodes de Condorcet/Borda eclairent le choix d'un mode de scrutin, du vote citoyen aux DAO blockchain (cf. cross-series SmartContracts).
+- **Cooperation et evolution** (notebook 6) — le tournoi d'Axelrod et les dynamiques de replication modelisent l'emergence de la cooperation en biologie, en relations internationales et dans les protocoles de reseaux pair-a-pair.
+- **Regulation et dissuasion** (notebooks 10-12) — l'induction arriere, les jeux de reputation et le signaling formalisent la credibilite des menaces, des banques centrales (politique monetaire) a la strategie concurrentielle.
+
 ## Connections cross-series
 
 ### GameTheory et Lean (Verification Formelle)
 
-Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-serie [SocialChoice/](SocialChoice/) formalisent en Lean 4 les resultats theoriques etudies en Python dans les notebooks principaux. Cette dualite Python (simulation) / Lean (preuve formelle) est un fil rouge du curriculum.
+Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-serie [SocialChoice/](SocialChoice/) formalisent en Lean 4 les resultats theoriques etudies en Python dans les notebooks principaux. Cette dualite Python (simulation) / Lean (preuve formelle) est un fil rouge du curriculum. **Inventaire detaille** : [LEAN_INVENTORY.md](LEAN_INVENTORY.md) (toolchains, GO/NO-GO prover, lake build status, sorry residuels).
 
 | Concept GameTheory | Notebook Python | Formalisation Lean | Statut |
 |--------------------|----------------|--------------------|--------|
@@ -362,9 +390,11 @@ Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-serie [SocialChoice/](SocialCh
 | Jeux combinatoires | GameTheory-8 | `PGame.lean` (notebook 8b) | Prouve |
 | Theoreme d'Arrow | SocialChoice SC-01/SC-04 | `Arrow.lean` (social_choice_lean) | 0 sorry |
 | Theoreme de Sen | SocialChoice SC-02 | `Sen.lean` (social_choice_lean) | 0 sorry |
-| Valeur de Shapley | GameTheory-15b | `Shapley.lean` (cooperative games) | 1 sorry |
-| Modeles de vote | SocialChoice SC-02 | `Voting.lean` (Banks, STV) | 0 sorry |
-| Gale-Shapley (stable marriage) | (pas de notebook dedie) | `GaleShapley.lean` ([stable_marriage_lean](stable_marriage_lean/)) | 2 sorry (Knuth lattice — man_optimal + woman_pessimal, requiert Wu-Roth 2018, 5-8j Mathlib) |
+| Valeur de Shapley | GameTheory-15b | `Shapley.lean` (cooperative games) | 0 sorry |
+| Coeur cooperatif | GameTheory-15b | `Basic.lean` ([cooperative_games_lean](cooperative_games_lean/)) | 1 sorry (Bondareva-Shapley, INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION) |
+| Modeles de vote | SocialChoice SC-02 | `Voting.lean` (Banks, STV, Median Voter) | 0 sorry |
+| Calibration prover | (benchmark) | `Calibration/Nash.lean` ([calibration_lean](../SymbolicAI/Lean/calibration_lean/)) | 0 sorry |
+| Gale-Shapley (stable marriage) | (pas de notebook dedie) | `GaleShapley.lean` ([stable_marriage_lean](stable_marriage_lean/)) | 0 sorry (PR #1521 GPT-5.5 prover); `Lattice.lean` residual 3 sorry (Knuth rotations, INTRACTABLE) |
 
 Voir [SymbolicAI/Lean/README.md](../SymbolicAI/Lean/README.md) pour les prerequis Lean (notebooks 1-6 recommandes).
 

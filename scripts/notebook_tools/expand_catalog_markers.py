@@ -73,9 +73,9 @@ def _sorted_counter(c: Counter) -> dict[str, int]:
 
 
 def compute_breakdown(entries: list[dict], serie: str) -> dict[str, int]:
-    """Compute breakdown by sous_serie for a given serie."""
+    """Compute breakdown by sous_serie for a given serie. Entries without sous_serie group as 'root'."""
     serie_entries = [e for e in entries if e.get("serie") == serie]
-    return _sorted_counter(Counter(e.get("sous_serie", "_root") for e in serie_entries))
+    return _sorted_counter(Counter((e.get("sous_serie") or "root") for e in serie_entries))
 
 
 def compute_maturity_distribution(entries: list[dict], serie: str | None = None) -> dict[str, int]:

@@ -1,13 +1,17 @@
 # Search - Applications
 
-Sous-serie de **20 notebooks** appliquant les algorithmes de recherche et de programmation par contraintes a des problemes du monde reel. Les notebooks sont desormais organises par categorie technique.
+Les 21 notebooks d'application illustrent chaque concept de la serie Search sur des **problemes reels** adaptes de projets etudiants EPITA, EPF et ECE. Chaque application combine une ou plusieurs techniques abordees dans les Parties 1-2 et montre comment elles se comportent sur des instances concretes.
+
+Les applications sont organisees en trois categories : **Search pur** (jeux combinatoires), **CSP** (problemes de satisfaction de contraintes : N-Queens, ordonnancement, demineur, mots croises, generation procedurale), et **Hybride** (metaheuristiques et GA : detection de contours, optimisation de portefeuille, TSP, VRP). La plupart des notebooks sont autonomes et pointent vers les pre-requis pertinents.
+
+Sous-serie de **21 notebooks** | **~14h05** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`)
 
 ## Structure
 
 ```text
 Applications/
 ├── Search/     # Applications purement Search (2 notebooks)
-├── CSP/        # Applications CSP (11 notebooks)
+├── CSP/        # Applications CSP (12 notebooks)
 └── Hybrid/     # Metaheuristiques / GA (7 notebooks)
 ```
 
@@ -37,6 +41,7 @@ Applications/
 | 9 | [App-11-Picross](CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | EPITA 2025 |
 | 10 | [App-15-SportsScheduling](CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, equite, deplacements | ECE 2026 |
 | 11 | [App-16-Crossword-CSP](CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croises : backtracking, OR-Tools, generation | EPF 2025 |
+| 12 | [App-19-ProceduralGeneration-WFC](CSP/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Generation procedurale : Wave Function Collapse via CP-SAT | EPITA PrCon 2026 |
 
 ---
 
@@ -78,6 +83,7 @@ Applications/
 | App-11 Picross | CSP-3, Search-8 (DLX) | ortools |
 | App-15 SportsScheduling | CSP-3, CSP-4 | ortools |
 | App-16 Crossword-CSP | CSP-1, CSP-2 | ortools |
+| App-19 ProceduralGeneration-WFC | CSP-1, CSP-3 | ortools, numpy, matplotlib |
 
 ### Applications Hybrid
 
@@ -96,6 +102,7 @@ Applications/
 ## Sources des projets etudiants
 
 - **EPITA PPC 2025** : Nurse Rostering, Job-Shop, Minesweeper, Wordle, Picross, Connect Four
+- **EPITA PrCon 2026** : Generation procedurale de niveaux par Wave Function Collapse (groupe H2)
 - **EPF MSMIN5IN52** : Timetabling (MiniZinc), Crossword Generator, VRP
 - **ECE Ing4 2026** : Graph Coloring, Sports Scheduling
 

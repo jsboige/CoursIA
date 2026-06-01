@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 45
-breakdown: Applications=20, Part1-Foundations=11, Part2-CSP=9, =5
-maturity: BETA=20, PRODUCTION=16, DRAFT=8, ALPHA=1
+pedagogical_count: 46
+breakdown: Applications=21, Part1-Foundations=11, Part2-CSP=9, root=5
+maturity: PRODUCTION=43, BETA=2, DRAFT=1
 -->
 
 Tout problème d'IA, du plus simple jeu de plateau à la planification logistique industrielle, se réduit à un même défi : explorer un espace de solutions possibles pour trouver la meilleure. Cette série vous apprend à maîtriser cette exploration, depuis les algorithmes classiques (BFS, A*, Minimax) jusqu'aux techniques avancées (CSP, métaheuristiques, hybridation LLM). Le fil rouge est la **réduction de l'espace de recherche** : comment passer d'une exploration aveugle exponentielle à une résolution intelligemment guidée.
@@ -30,11 +30,12 @@ Les 20 notebooks d'applications illustrent chaque concept sur des cas réels : p
 ## Vue d'ensemble
 
 | Partie | Notebooks | Duree |
-|--------|-----------|-------|
+| -------- | --------- | ----- |
 | Partie 1: Search Fondamental | 11 | ~12h30 |
 | Partie 2: Programmation par Contraintes | 9 | ~9h |
 | Applications | 20 | ~13h20 |
-| **Total** | **40** | **~34h50** |
+| Heritage (racine) | 5 | ~3h |
+| **Total** | **45** | **~38h** |
 
 | Statistique | Valeur |
 |-------------|--------|

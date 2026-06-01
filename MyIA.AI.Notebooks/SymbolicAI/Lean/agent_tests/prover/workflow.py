@@ -19,6 +19,7 @@ Hardening (2026-05-08):
 """
 
 import asyncio
+import os
 import time
 from dataclasses import dataclass
 from typing import Optional
@@ -45,6 +46,76 @@ from .knowledge import ProofKnowledgeBase
 # actually think on Mathlib goals; the workflow wall-clock cap in provers.py
 # still bounds the total session.
 DEFAULT_AGENT_TIMEOUT_S = 600
+
+# Transient-error retry policy. Forensic analysis of prover traces
+# (traces/*.spans.jsonl) showed whole iterations lost to TRANSIENT provider
+# errors (HTTP 5xx, connection reset/aborted, read/connect timeouts) that
+# crashed an agent mid-run with no retry. Retries are bounded: 2 attempts with
+# short exponential backoff (2s, 4s). Note: a 404 is NOT transient — it means a
+# bad/missing model_id (config bug) — and must NOT be retried (see
+# `_is_transient_error`).
+TRANSIENT_RETRY_MAX = 2
+TRANSIENT_RETRY_BACKOFF_S = (2.0, 4.0)
+
+# P1 stagnation hard-cap (Epic #1453). The compile tool (tools.py) computes
+# the number of consecutive Δ0 compiles — a build that succeeds but does NOT
+# reach a new sorry-count low — and mirrors it to
+# `state.consecutive_delta0_compiles`. It also emits a soft `directive` string
+# in the compile result, on which the orchestrator used to rely entirely: the
+# count was written but never enforced. Forensic trace
+# multi_custom_Lattice_L147_zai.json: 26 of 30 compiles were Δ0 (22 consecutive
+# at 4 sorry right from the start) yet the run never terminated — it burned the
+# full iteration + LLM budget making zero proof progress. This ceiling is the
+# hard backstop: it fires at 2x the tools.py soft threshold (3), so the soft
+# directive and the existing Director escalations get a window first, but a run
+# that ignores the signal for this many consecutive Δ0 compiles is yielded
+# rather than left to waste compute.
+DELTA0_STAGNATION_HARDCAP = 6
+
+
+def _is_transient_error(exc: BaseException) -> bool:
+    """Return True if `exc` looks like a transient provider/network error.
+
+    Matches ONLY conditions worth retrying:
+      - HTTP 5xx server errors (500, 502, 503, 504),
+      - connection reset / aborted / refused,
+      - read / connect timeouts.
+
+    Explicitly EXCLUDES 404 (bad/missing model_id — a config bug, retrying just
+    wastes time) and other 4xx client errors (401/403/422). `agent_framework`
+    may wrap the underlying httpx / openai error, so we probe both the
+    `status_code` attribute and the stringified message defensively.
+    """
+    # 1. Structured HTTP status code, if the provider exposed one. Checked on
+    #    the exception and a common nested `.response` (httpx-style) attribute.
+    for candidate in (exc, getattr(exc, "response", None)):
+        if candidate is None:
+            continue
+        status = getattr(candidate, "status_code", None)
+        if isinstance(status, int):
+            # 5xx → transient. Any 4xx (incl. 404) → NOT transient.
+            return status in (500, 502, 503, 504)
+
+    # 2. Fall back to message inspection (wrapped errors lose the attribute).
+    msg = str(exc).lower()
+
+    # Guard: never treat an explicit 404 / other 4xx as transient even if the
+    # message also happens to contain a generic word like "timeout".
+    if any(code in msg for code in (" 404", "404 ", "not found",
+                                    " 401", " 403", " 422",
+                                    "unauthorized", "forbidden")):
+        return False
+
+    transient_markers = (
+        "500", "502", "503", "504",
+        "internal server error", "bad gateway",
+        "service unavailable", "gateway timeout",
+        "connection reset", "connection aborted", "connection refused",
+        "connectionreset", "connectionerror",
+        "read timeout", "connect timeout", "timed out", "timeout",
+        "temporarily unavailable", "remote end closed",
+    )
+    return any(marker in msg for marker in transient_markers)
 
 
 @dataclass
@@ -73,6 +144,11 @@ class ProofMessage:
     # try these identifiers. Populated by AgentExecutor after DirectorAgent
     # runs; consumed when TacticAgent receives the message.
     absent_identifiers: list = None
+    # Feature 3: DiagnosisAgent qualitative assessment fields
+    diagnosis_assessment: Optional[str] = None
+    is_structural_progress: bool = False
+    diagnosis_reason: Optional[str] = None
+    agent_opinion: str = ""
 
 
 class AgentExecutor(Executor):
@@ -90,6 +166,9 @@ class AgentExecutor(Executor):
         self._trace = trace
         self._timeout_s = timeout_s
         self._state = state  # B.3: shared state for plan propagation
+        # P1 (Epic #1453): hard ceiling on consecutive Δ0 compiles; see
+        # DELTA0_STAGNATION_HARDCAP. Read live from state on every iteration.
+        self._delta0_stagnation_hardcap = DELTA0_STAGNATION_HARDCAP
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -133,6 +212,29 @@ class AgentExecutor(Executor):
                              f"but Director in-flight (calls={msg.director_calls}), "
                              f"allowing +1"),
                 )
+
+        # P1 (Epic #1453): Δ0 stagnation hard-cap. The compile tool mirrors the
+        # consecutive-Δ0 count to state.consecutive_delta0_compiles and emits a
+        # soft directive, but nothing enforced it — a run could compile cleanly
+        # dozens of times without ever lowering the sorry count (forensic L147:
+        # 22 consecutive Δ0 at 4 sorry). Once the count crosses the hard ceiling
+        # the soft signal and every Director escalation have already had their
+        # window, so we yield to stop wasting compute rather than escalate again.
+        _delta0 = (
+            getattr(self._state, "consecutive_delta0_compiles", 0)
+            if self._state else 0
+        )
+        if (not msg.proof_found
+                and _delta0 >= self._delta0_stagnation_hardcap):
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="delta0_stagnation_yield",
+                    content=(f"consecutive_delta0_compiles={_delta0} >= "
+                             f"hardcap={self._delta0_stagnation_hardcap}, "
+                             f"yielding to stop no-progress waste"),
+                )
+            await ctx.yield_output(msg)
+            return
 
         # F12: Force Director invocation at iteration 4 (after first
         # Coordinator→Search→Tactic cycle completes). This ensures Director
@@ -249,6 +351,51 @@ class AgentExecutor(Executor):
                             agent=self._agent.name, role="error_retry_failed",
                             content=str(e2)[:200],
                         )
+            elif _is_transient_error(e):
+                # Transient provider/network error (HTTP 5xx, connection
+                # reset/aborted, read/connect timeout). Forensic: several
+                # iterations were lost when an agent crashed mid-run on a
+                # transient error with no retry. Retry the SAME invocation,
+                # bounded (TRANSIENT_RETRY_MAX) with short exponential backoff.
+                # A 404 / other 4xx never reaches here (_is_transient_error
+                # excludes them — those are config bugs, not worth retrying).
+                response_text = None
+                _last_exc = e
+                for _attempt in range(1, TRANSIENT_RETRY_MAX + 1):
+                    _backoff = TRANSIENT_RETRY_BACKOFF_S[
+                        min(_attempt - 1, len(TRANSIENT_RETRY_BACKOFF_S) - 1)
+                    ]
+                    _retry_msg = (
+                        f"[retry] transient provider error "
+                        f"(attempt {_attempt}/{TRANSIENT_RETRY_MAX}): "
+                        f"{repr(_last_exc)[:120]}"
+                    )
+                    if self._trace:
+                        self._trace.log(
+                            agent=self._agent.name, role="transient_retry",
+                            content=_retry_msg,
+                        )
+                    await asyncio.sleep(_backoff)
+                    try:
+                        response = await self._agent.run(content)
+                        response_text = self._extract_response_text(response)
+                        break
+                    except Exception as e_retry:
+                        _last_exc = e_retry
+                        # Only keep retrying while still transient; a fresh
+                        # non-transient error must fall through immediately.
+                        if not _is_transient_error(e_retry):
+                            break
+                if response_text is None:
+                    # Retries exhausted (or a non-transient error surfaced) —
+                    # fall through to the existing failure handling, do NOT
+                    # swallow the error silently.
+                    response_text = f"Agent error: {_last_exc}"
+                    if self._trace:
+                        self._trace.log(
+                            agent=self._agent.name, role="transient_retry_failed",
+                            content=str(_last_exc)[:200],
+                        )
             else:
                 response_text = f"Agent error: {e}"
                 if self._trace:
@@ -286,6 +433,10 @@ class AgentExecutor(Executor):
                 and len(self._state.tactic_history) > history_len_before):
             latest = self._state.tactic_history[-1]
             tactic_text = getattr(latest, "tactic", None)
+            # Filter control signals that are NOT valid Lean tactics
+            _CONTROL_SIGNALS = {"LEAVERN", "ABORT", "SKIP", "GIVE_UP"}
+            if tactic_text and tactic_text.strip().upper() in _CONTROL_SIGNALS:
+                tactic_text = None
             if tactic_text:
                 msg.tactic = tactic_text
                 msg.is_decomposition = bool(getattr(latest, "is_decomposition", False))
@@ -360,12 +511,33 @@ class AgentExecutor(Executor):
                     if ident and ident not in absent and len(ident) < 60:
                         absent.append(ident)
             if absent:
-                msg.absent_identifiers = absent
+                # P3 (Epic #1453): accumulate rather than replace. Previous
+                # Director calls may have flagged identifiers that the current
+                # call doesn't mention. Merging ensures TacticAgent always
+                # sees the full blocklist.
+                if msg.absent_identifiers is None:
+                    msg.absent_identifiers = absent
+                else:
+                    for ident in absent:
+                        if ident not in msg.absent_identifiers:
+                            msg.absent_identifiers.append(ident)
                 if self._trace:
                     self._trace.log(
                         agent="DirectorAgent", role="absent_identifiers",
                         content=f"flagged absent: {absent}",
                     )
+
+        # B2 (issue #1224): Track SearchAgent consultations so the
+        # intractable gate can require at least one SearchAgent pass
+        # before abandoning a sorry.
+        if self._agent.name == "SearchAgent":
+            if self._state:
+                self._state.search_agent_consulted = True
+            if self._trace:
+                self._trace.log(
+                    agent="SearchAgent", role="search_consulted",
+                    content="SearchAgent ran — intractable gate satisfied",
+                )
 
         # F5: Coordinator can mark the current sorry intractable. End the
         # session cleanly so we don't waste iterations on a known-dead goal.
@@ -468,6 +640,11 @@ class VerifyExecutor(Executor):
         # so we don't depend on prompt adherence.
         self._consecutive_build_fails = 0
         self._total_fails = 0
+        # #1620 Pathology 2: consecutive bare-sorry rejections from sorry_guard.
+        # After 2 consecutive rejections, force handoff to Director (if available)
+        # or yield — avoids the TacticAgent→sorry_guard→Coordinator→TacticAgent loop
+        # that burns LLM cycles on the same giveup pattern (14 rejections on L147).
+        self._consecutive_sorry_rejections = 0
         self._escalation_threshold = escalation_threshold
         # F7 (2026-05-15): when the Director lane is wired, F1 escalates
         # DIRECTLY to Director instead of looping through the Coordinator.
@@ -485,7 +662,9 @@ class VerifyExecutor(Executor):
         # decompositions. This counter keeps climbing and triggers Director
         # re-escalade after _cumulative_fails_threshold fails regardless.
         self._cumulative_fails = 0
-        self._cumulative_fails_threshold = 5
+        self._cumulative_fails_threshold = int(
+            os.environ.get("PROVER_CUMULATIVE_FAILS_THRESHOLD", "3")
+        )  # P3: configurable, default 3 (was 5)
         # Re-search trigger: after this many total fails, force a hint to
         # the Critic that fresh lemmas may be needed. The Critic still makes
         # the routing decision, but the hint makes re-search more likely.
@@ -497,11 +676,23 @@ class VerifyExecutor(Executor):
         self._session_start = time.monotonic()
         self._wallclock_director_threshold_s = 1500
         self._wallclock_director_min_fails = 10
+        # P1 (Epic #1453): no-progress compile detector. Forensic showed 13+
+        # iterations where TacticAgent compiles successfully but sorry count
+        # doesn't decrease — the agent probes the goal state without making
+        # actual edits. Track consecutive iterations with neither proof found
+        # nor sorry reduction. >=3 -> force Director/yield.
+        self._consecutive_noprogress = 0
+        self._noprogress_threshold = 3
+        self._original_sorry_count: Optional[int] = None
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
         """Verify the tactic submitted by TacticAgent."""
         from .lean_utils import verify_sorry_replacement
+
+        # P1: initialize original sorry count on first call
+        if self._original_sorry_count is None:
+            self._original_sorry_count = msg.sorry_count or 0
 
         if not msg.tactic:
             msg.error = "No tactic submitted"
@@ -518,25 +709,131 @@ class VerifyExecutor(Executor):
         # 2026-05-12 Shapley_2daf67cb86_L570 trace: TacticAgent did exactly
         # this — long comment block followed by literal `sorry`, build_fail
         # outcome already correct but wasted ~30s on the compile.
+        # #1620 Pathology 2: after 2 consecutive bare-sorry rejections, force
+        # Director handoff to break the TacticAgent→sorry_guard→Coordinator loop.
         import re as _re
         _stripped = _re.sub(r"--.*", "", msg.tactic)  # strip line comments
         _stripped = _re.sub(r"/-(.|\n)*?-/", "", _stripped)  # block comments
         if _re.search(r"(^|\s)sorry(\s|$)", _stripped):
-            msg.error = (
-                "Tactic contains a literal `sorry` token (LLM giveup pattern). "
-                "A proof must close the goal with real tactics. Routing back "
-                "to Coordinator to revise attack plan."
-            )
-            msg.error_type = "tactic_contains_sorry"
-            msg.next_agent = "coordinator"
+            self._consecutive_sorry_rejections += 1
+            _force_director = (self._consecutive_sorry_rejections >= 2
+                               and self._has_director
+                               and msg.director_calls < self._director_max_calls)
+            if _force_director:
+                msg.error = (
+                    "Tactic contains a literal `sorry` token (LLM giveup pattern). "
+                    f"Consecutive bare-sorry rejections: {self._consecutive_sorry_rejections}. "
+                    "Forcing Director handoff to break the giveup loop."
+                )
+                msg.error_type = "tactic_contains_sorry"
+                msg.next_agent = "director"
+            else:
+                msg.error = (
+                    "Tactic contains a literal `sorry` token (LLM giveup pattern). "
+                    "A proof must close the goal with real tactics. Routing back "
+                    "to Coordinator to revise attack plan."
+                )
+                msg.error_type = "tactic_contains_sorry"
+                msg.next_agent = "coordinator"
             self._consecutive_build_fails += 1
             if self._trace:
                 self._trace.log(
                     agent="VerifyExecutor", role="sorry_guard",
-                    content=f"rejected tactic containing sorry: {msg.tactic[:120]}",
+                    content=(f"rejected tactic containing sorry "
+                             f"(consecutive={self._consecutive_sorry_rejections}, "
+                             f"force_director={_force_director}): "
+                             f"{msg.tactic[:120]}"),
                 )
             await ctx.send_message(msg)
             return
+
+        # P1 latch-success (Epic #1453, 2026-05-23 forensic): detect the case
+        # where TacticAgent has ALREADY proved the target in-place before this
+        # verify runs. tools.file_replace_lines edits the REAL target file on
+        # disk (tools.py:1091) and its own build_check already passed, but
+        # SorryContext.sorry_line is frozen at session start (provers.py:203)
+        # and is NEVER updated. The downstream verify_sorry_replacement then
+        # finds no sorry at the frozen line, P5-relocates to a nearest
+        # UNRELATED sorry, injects msg.tactic there -> goal mismatch ->
+        # spurious tactic_failed that MASKS a genuine proof. Latch here, before
+        # that doomed re-verify, when all three hold (else fall through to the
+        # existing verify -> P5 path preserved, no regression):
+        #   1. the frozen target line no longer contains "sorry"
+        #   2. the current raw sorry count is STRICTLY below the session-start
+        #      count (full_file snapshot) -> distinguishes "a sorry was proved"
+        #      from "lines merely shifted" (a shift leaves the count unchanged)
+        #   3. a confirming build of the ACTUAL file succeeds
+        # Cost: one file read + count per verify; a build only in the rare
+        # in-place-proof case (conditions 1+2), and that build replaces the
+        # doomed relocated one (net-zero) and is cache-eligible by content hash.
+        try:
+            from pathlib import Path as _LatchPath
+            from .verifier import get_verifier as _latch_get_verifier
+            _latch_fp = self._sorry_ctx.filepath
+            _latch_cur = _LatchPath(_latch_fp).read_text(encoding="utf-8")
+            _latch_lines = _latch_cur.split("\n")
+            _latch_target = self._sorry_ctx.sorry_line
+            _latch_line_clear = (
+                1 <= _latch_target <= len(_latch_lines)
+                and "sorry" not in _latch_lines[_latch_target - 1]
+            )
+            _latch_orig = (
+                self._sorry_ctx.full_file.count("sorry")
+                if getattr(self._sorry_ctx, "full_file", "")
+                else (self._original_sorry_count or 0)
+            )
+            _latch_now = _latch_cur.count("sorry")
+            if _latch_line_clear and _latch_now < _latch_orig:
+                _latch_verifier = _latch_get_verifier(
+                    str(_LatchPath(_latch_fp).parent.parent))
+                _latch_rel = (f"{_LatchPath(_latch_fp).parent.name}/"
+                              f"{_LatchPath(_latch_fp).name}")
+                _latch_build = _latch_verifier.verify_project_file(_latch_rel)
+                # Build-aware re-count: a passing build can still emit
+                # "declaration uses sorry" warnings when the agent swapped an
+                # explicit `sorry` for a search tactic (apply?/exact?/
+                # solve_by_elim) that found nothing — an IMPLICIT sorry that the
+                # text count above misses (#1500). Fold the warning count the
+                # same way tools.compile() does and require the EFFECTIVE count
+                # to have dropped below the session-start count, else the
+                # "in-place proof" is illusory and we must fall through to the
+                # normal verify path.
+                from .tools import _count_sorries_from_build_output
+                _latch_build_warn = _count_sorries_from_build_output(
+                    _latch_build.get("raw_output", ""))
+                _latch_effective = max(_latch_now, _latch_build_warn)
+                if _latch_build.get("success") and _latch_effective < _latch_orig:
+                    msg.proof_found = True
+                    self._consecutive_build_fails = 0
+                    self._consecutive_sorry_rejections = 0
+                    self._consecutive_noprogress = 0
+                    if self._trace:
+                        self._trace.log(
+                            agent="VerifyExecutor", role="verify",
+                            content=(f"PROOF FOUND (in-place latch): frozen line "
+                                     f"{_latch_target} clear, sorry {_latch_orig}"
+                                     f"->{_latch_now}, clean build OK"),
+                            tool_name="verify_project_file",
+                            tool_result="success=True",
+                        )
+                    try:
+                        self._kb.record_success(
+                            goal=self._sorry_ctx.goal_state or "",
+                            tactic=msg.tactic,
+                            theorem="",
+                            file=f"{_latch_fp}:{_latch_target}",
+                        )
+                    except Exception:
+                        pass
+                    await ctx.yield_output(msg)
+                    return
+        except Exception as _latch_err:
+            if self._trace:
+                self._trace.log(
+                    agent="VerifyExecutor", role="latch_error",
+                    content=(f"in-place latch check failed, falling through "
+                             f"to verify_sorry_replacement: {_latch_err}"),
+                )
 
         result = verify_sorry_replacement(
             filepath=self._sorry_ctx.filepath,
@@ -547,6 +844,8 @@ class VerifyExecutor(Executor):
         if result["success"]:
             msg.proof_found = True
             self._consecutive_build_fails = 0
+            self._consecutive_sorry_rejections = 0
+            self._consecutive_noprogress = 0  # P1: real progress
             if self._trace:
                 self._trace.log(
                     agent="VerifyExecutor", role="verify",
@@ -585,6 +884,10 @@ class VerifyExecutor(Executor):
             msg.next_agent = "tactic"
             # Decomposition is progress (new sub-goals to attack), reset.
             self._consecutive_build_fails = 0
+            self._consecutive_sorry_rejections = 0
+            # P1: decomposition with sorry reduction is structural progress
+            if new_sorry_count < self._original_sorry_count:
+                self._consecutive_noprogress = 0
         else:
             msg.error = result.get("errors", "")[:500]
             msg.error_type = result.get("error_type", "unknown")
@@ -628,6 +931,7 @@ class VerifyExecutor(Executor):
                                  f"{self._director_max_calls})"),
                     )
                 self._consecutive_build_fails = 0
+                self._consecutive_sorry_rejections = 0
             # B2c (issue #1224): cumulative fail re-escalade. Decompositions
             # reset _consecutive_build_fails to 0, which means the F1
             # escalation threshold (default 5) is never reached when the
@@ -657,6 +961,7 @@ class VerifyExecutor(Executor):
                                  f"{self._director_max_calls})"),
                     )
                 self._consecutive_build_fails = 0
+                self._consecutive_sorry_rejections = 0
                 # Reset cumulative so we don't re-trigger immediately
                 self._cumulative_fails = 0
             elif self._consecutive_build_fails >= self._escalation_threshold:
@@ -701,17 +1006,66 @@ class VerifyExecutor(Executor):
                 # Reset so we don't immediately re-escalate on the next fail;
                 # give the new agent a fresh window of `threshold` attempts.
                 self._consecutive_build_fails = 0
+                self._consecutive_sorry_rejections = 0
                 self._total_fails = 0  # reset after coordinator escalation
             else:
-                msg.next_agent = "critic"
-                # Re-search hint: if total fails exceed threshold, nudge the
-                # Critic toward SearchAgent for fresh lemma analysis.
-                if self._total_fails >= self._research_hint_threshold:
-                    msg.error += (
-                        f"\n[HINT] {self._total_fails} total BUILD-FAIL so far. "
-                        f"Consider routing to SearchAgent for fresh lemma candidates "
-                        f"— the current set may be insufficient."
+                # P1 (Epic #1453): no-progress detection. Increment counter
+                # when iteration produces neither proof nor sorry reduction.
+                # >=3 consecutive no-progress -> force Director/yield instead
+                # of default critic route. Forensic: 13+ iterations wasted on
+                # targets where TacticAgent probed goals without editing.
+                self._consecutive_noprogress += 1
+                if (self._consecutive_noprogress >= self._noprogress_threshold
+                        and self._has_director
+                        and msg.director_calls < self._director_max_calls):
+                    msg.next_agent = "director"
+                    msg.error = (
+                        f"[P1 no-progress -> Director] "
+                        f"{self._consecutive_noprogress} consecutive iterations "
+                        f"with no sorry reduction. TacticAgent is probing goals "
+                        f"without making edits. Forcing Director for strategic "
+                        f"guidance. Last error: {msg.error}"
                     )
+                    if self._trace:
+                        self._trace.log(
+                            agent="VerifyExecutor", role="p1_noprogress_escalation",
+                            content=(f"consecutive_noprogress="
+                                     f"{self._consecutive_noprogress} >= "
+                                     f"threshold={self._noprogress_threshold}, "
+                                     f"forcing Director "
+                                     f"(calls={msg.director_calls}/"
+                                     f"{self._director_max_calls})"),
+                        )
+                    self._consecutive_noprogress = 0
+                    self._consecutive_build_fails = 0
+                    self._consecutive_sorry_rejections = 0
+                elif self._consecutive_noprogress >= self._noprogress_threshold:
+                    # No Director available or budget spent -> yield
+                    msg.error += (
+                        f"\n[P1 no-progress] {self._consecutive_noprogress} "
+                        f"consecutive iterations without sorry reduction. "
+                        f"Yielding to avoid wasting compute."
+                    )
+                    self._consecutive_noprogress = 0
+                    if self._trace:
+                        self._trace.log(
+                            agent="VerifyExecutor", role="p1_noprogress_yield",
+                            content=(f"consecutive_noprogress="
+                                     f"{self._consecutive_noprogress}, no Director "
+                                     f"available, yielding"),
+                        )
+                    await ctx.yield_output(msg)
+                    return
+                else:
+                    msg.next_agent = "critic"
+                    # Re-search hint: if total fails exceed threshold, nudge the
+                    # Critic toward SearchAgent for fresh lemma analysis.
+                    if self._total_fails >= self._research_hint_threshold:
+                        msg.error += (
+                            f"\n[HINT] {self._total_fails} total BUILD-FAIL so far. "
+                            f"Consider routing to SearchAgent for fresh lemma candidates "
+                            f"— the current set may be insufficient."
+                        )
 
         if self._trace:
             self._trace.log(
@@ -734,6 +1088,151 @@ class VerifyExecutor(Executor):
         return "\n".join(new_lines).count("sorry")
 
 
+class DiagnosisExecutor(Executor):
+    """Hybrid: LLM DiagnosisAgent with mechanical VerifyExecutor fallback.
+
+    When the DiagnosisAgent fails (timeout, crash), permanently switches to
+    the mechanical VerifyExecutor. Agent-driven routing: when the DiagnosisAgent
+    specifies next_agent in assess_structural_progress, that routing takes
+    precedence. Otherwise falls back to VerifyExecutor's routing logic.
+    """
+
+    def __init__(self, diagnosis_agent_executor: AgentExecutor,
+                 fallback_verify: VerifyExecutor,
+                 diagnosis_timeout_s: int = 60,
+                 state: "ProofState" = None, **kwargs):
+        super().__init__(id="diagnosis_executor", **kwargs)
+        self._diagnosis = diagnosis_agent_executor
+        self._fallback = fallback_verify
+        self._diagnosis_timeout_s = diagnosis_timeout_s
+        self._fallback_active = False
+        self._state = state
+        self._session_start = time.monotonic()
+
+    @handler
+    async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
+        # Update shared resource state so agents can make wrap-up decisions
+        if self._state:
+            self._state.elapsed_seconds = time.monotonic() - self._session_start
+            if msg.max_iterations > 0:
+                self._state.remaining_iterations = max(0, msg.max_iterations - msg.iteration)
+
+        if self._fallback_active:
+            await self._fallback.handle(msg, ctx)
+            return
+
+        # Run DiagnosisAgent with timeout
+        try:
+            # The DiagnosisAgent needs context about what just happened
+            diagnosis_prompt = (
+                f"Diagnose the latest proof attempt.\n\n"
+                f"Previous agent output:\n{msg.content[:2000]}\n\n"
+                f"Tactic attempted: {msg.tactic or '(none)'}\n"
+                f"Current sorry count: {msg.sorry_count}\n"
+                f"Iteration: {msg.iteration}/{msg.max_iterations}\n"
+            )
+            msg_copy = ProofMessage(
+                content=diagnosis_prompt,
+                iteration=msg.iteration,
+                sorry_count=msg.sorry_count,
+                tactic=msg.tactic,
+                error=msg.error,
+                max_iterations=msg.max_iterations,
+                plan=msg.plan,
+                intractable=msg.intractable,
+                intractable_reason=msg.intractable_reason,
+                director_calls=msg.director_calls,
+                absent_identifiers=msg.absent_identifiers,
+                next_agent=msg.next_agent,
+            )
+
+            try:
+                result = await asyncio.wait_for(
+                    self._diagnosis.handle(msg_copy, ctx),
+                    timeout=self._diagnosis_timeout_s,
+                )
+            except asyncio.TimeoutError:
+                raise TimeoutError(
+                    f"DiagnosisAgent timed out after {self._diagnosis_timeout_s}s"
+                )
+
+            # If DiagnosisAgent set routing via next_agent, propagate it.
+            # The assess_structural_progress tool stores the opinion in state.
+            # We propagate the routing token from the agent's response.
+            if msg_copy.next_agent and msg_copy.next_agent != msg.next_agent:
+                msg.next_agent = msg_copy.next_agent
+
+            # Propagate diagnosis fields
+            msg.diagnosis_assessment = msg_copy.diagnosis_assessment
+            msg.is_structural_progress = msg_copy.is_structural_progress
+            msg.diagnosis_reason = msg_copy.diagnosis_reason
+            msg.agent_opinion = msg_copy.agent_opinion
+            msg.content = msg_copy.content
+
+            await ctx.send_message(msg)
+
+        except Exception as e:
+            # First failure — permanently switch to mechanical fallback
+            self._fallback_active = True
+            if hasattr(self._diagnosis, '_trace') and self._diagnosis._trace:
+                self._diagnosis._trace.log(
+                    agent="DiagnosisExecutor", role="fallback",
+                    content=f"DiagnosisAgent failed ({e}), switching to mechanical fallback",
+                )
+            await self._fallback.handle(msg, ctx)
+
+
+class MergeSearchExecutor(Executor):
+    """Aggregates results from multiple concurrent SearchAgents.
+
+    Receives a ``list[ProofMessage]`` via fan-in, deduplicates discovered
+    lemmas, and forwards a single merged ProofMessage to the TacticAgent.
+    """
+
+    def __init__(self, trace: TraceLogger = None, **kwargs):
+        super().__init__(id="merge_search", **kwargs)
+        self._trace = trace
+
+    @handler
+    async def handle(self, messages: list[ProofMessage], ctx: WorkflowContext) -> ProofMessage:
+        if not messages:
+            return
+        # Use the first message as base, merge content from others
+        base = messages[0]
+        merged_parts = []
+        all_lemmas = set()
+        for msg in messages:
+            if msg.content:
+                merged_parts.append(msg.content)
+            if hasattr(msg, '_discovered_lemmas') and msg._discovered_lemmas:
+                all_lemmas.update(msg._discovered_lemmas)
+
+        merged = ProofMessage(
+            content="\n\n---\n\n".join(merged_parts) if merged_parts else base.content,
+            iteration=max(m.iteration for m in messages),
+            sorry_count=base.sorry_count,
+            tactic=base.tactic,
+            error=base.error,
+            error_type=base.error_type,
+            is_decomposition=base.is_decomposition,
+            proof_found=base.proof_found,
+            next_agent="tactic",
+            max_iterations=base.max_iterations,
+            plan=base.plan,
+            intractable=base.intractable,
+            intractable_reason=base.intractable_reason,
+            director_calls=base.director_calls,
+            absent_identifiers=base.absent_identifiers,
+        )
+        if self._trace:
+            n = len(messages)
+            self._trace.log(
+                agent="MergeSearch", role="merge",
+                content=f"merged {n} search results, forwarding to tactic",
+            )
+        await ctx.send_message(merged)
+
+
 class ProofWorkflowBuilder:
     """Builds the multi-agent proof workflow graph.
 
@@ -750,8 +1249,24 @@ class ProofWorkflowBuilder:
                  sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, state: "ProofState" = None,
                  kb: Optional[ProofKnowledgeBase] = None,
-                 director_agent: Optional[Agent] = None):
+                 director_agent: Optional[Agent] = None,
+                 diagnosis_agent: Optional[Agent] = None,
+                 concurrent_search_count: int = 0,
+                 extra_search_agents: Optional[list] = None):
         self._search = AgentExecutor(search_agent, trace=trace, state=state)
+        # B.7: additional SearchAgents for parallel lemma discovery.
+        # When concurrent_search_count > 0, extra_search_agents provides
+        # the additional Agent instances (created in provers.py with
+        # independent SearchTools). The workflow uses fan-out/fan-in to
+        # run them concurrently and merge results before TacticAgent.
+        self._concurrent_search_count = concurrent_search_count
+        self._extra_search_execs: list = []
+        if extra_search_agents:
+            for i, agent in enumerate(extra_search_agents):
+                self._extra_search_execs.append(
+                    AgentExecutor(agent, trace=trace, state=state,
+                                  name=f"SearchAgent-{i+2}")
+                )
         self._tactic = AgentExecutor(tactic_agent, trace=trace, state=state)
         self._critic = AgentExecutor(critic_agent, trace=trace, state=state)
         self._coordinator = AgentExecutor(coordinator_agent, trace=trace, state=state)
@@ -772,6 +1287,24 @@ class ProofWorkflowBuilder:
             has_director=bool(self._director),
             director_max_calls=self._director_max_calls,
         )
+        # Feature 3: DiagnosisAgent replaces VerifyExecutor when provided.
+        # DiagnosisExecutor wraps the LLM agent with mechanical fallback.
+        self._diagnosis_executor: Optional[DiagnosisExecutor] = None
+        if diagnosis_agent:
+            diagnosis_agent_exec = AgentExecutor(
+                diagnosis_agent, trace=trace, state=state,
+                timeout_s=60,
+            )
+            self._diagnosis_executor = DiagnosisExecutor(
+                diagnosis_agent_exec, self._verify,
+                diagnosis_timeout_s=60,
+                state=state,
+            )
+        # B.7: MergeSearchExecutor for concurrent search fan-in.
+        if self._concurrent_search_count > 0 and self._extra_search_execs:
+            self._merge_search = MergeSearchExecutor(trace=trace)
+        else:
+            self._merge_search = None
 
     def build(self):
         # B.3: CoordinatorAgent runs FIRST to set attack plan, then routes to
@@ -783,9 +1316,31 @@ class ProofWorkflowBuilder:
         # truth for coordinator routing now.
         builder = WorkflowBuilder(start_executor=self._coordinator)
 
-        # Forward chain: search -> tactic -> verify
-        builder.add_edge(self._search, self._tactic)
-        builder.add_edge(self._tactic, self._verify)
+        # B.7: When concurrent search is enabled, set up fan-out/fan-in:
+        #   Default routes -> self._search (primary) -> fan-out to extras
+        #   all_search -> merge -> tactic
+        # Otherwise, single search -> tactic (original path).
+        use_concurrent = (
+            self._concurrent_search_count > 0
+            and self._extra_search_execs
+            and self._merge_search is not None
+        )
+
+        if use_concurrent:
+            all_search = [self._search] + self._extra_search_execs
+            # Primary search fans out to all extra search agents concurrently.
+            # When a message reaches self._search (via switch-case Default),
+            # it also broadcasts to all extra agents.
+            builder.add_fan_out_edges(self._search, self._extra_search_execs)
+            # Fan-in: all search agents -> merge -> tactic
+            builder.add_fan_in_edges(all_search, self._merge_search)
+            builder.add_edge(self._merge_search, self._tactic)
+        else:
+            # Original single-search path
+            builder.add_edge(self._search, self._tactic)
+
+        _verify_node = self._diagnosis_executor or self._verify
+        builder.add_edge(self._tactic, _verify_node)
 
         # Director -> tactic (director suggests tactics, TacticAgent applies)
         if self._director:
@@ -824,11 +1379,13 @@ class ProofWorkflowBuilder:
             )
         verify_cases.append(Default(target=self._critic))
         builder.add_switch_case_edge_group(
-            source=self._verify,
+            source=_verify_node,
             cases=verify_cases,
         )
 
-        # Critic conditional routing (requires exactly one Default)
+        # Critic conditional routing. Default -> primary search agent.
+        # B.7: fan_out_edges from _search to extras are already registered
+        # above; switch-case Default targets _search which triggers broadcast.
         builder.add_switch_case_edge_group(
             source=self._critic,
             cases=[
@@ -844,11 +1401,7 @@ class ProofWorkflowBuilder:
             ],
         )
 
-        # Coordinator routing — with optional Director escalation.
-        # When the Coordinator determines local agents are stalled it can
-        # request director guidance by setting next_agent="director".
-        # The guard caps director calls to avoid budget burn; if the cap
-        # is hit the coordinator falls through to search (normal path).
+        # Coordinator routing with optional Director escalation.
         if self._director:
             builder.add_switch_case_edge_group(
                 source=self._coordinator,

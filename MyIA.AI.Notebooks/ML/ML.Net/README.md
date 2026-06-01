@@ -2,6 +2,10 @@
 
 Serie de notebooks couvrant ML.NET, la bibliotheque open-source de Microsoft pour le Machine Learning dans l'ecosysteme .NET.
 
+ML.NET apporte le machine learning **nativement dans l'ecosysteme .NET** : on entraine et on consomme des modeles directement en C#, sans quitter sa stack applicative ni dependre d'un runtime Python. C'est un choix pense pour les developpeurs autant que pour les data scientists — l'AutoML abaisse la barriere d'entree, et les modeles s'executent *in-process* dans des applications existantes (API web, services, desktop). L'interoperabilite **ONNX** permet d'importer des modeles entraines ailleurs (scikit-learn, PyTorch, Hugging Face) et de les servir cote .NET : ML.NET devient ainsi un pont concret entre la recherche en Python et la production en entreprise.
+
+Le parcours va du premier pipeline (ML-1) jusqu'a une application complete : preparation des donnees et feature engineering (ML-2), entrainement et AutoML (ML-3), evaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalites avancees — prevision de series temporelles par SSA (ML-5), interoperabilite ONNX (ML-6) et systemes de recommandation (ML-7) — avant un TP capstone qui marie ML.NET et la regression bayesienne d'Infer.NET.
+
 ## Vue d'ensemble
 
 | Statistique | Valeur |
@@ -14,26 +18,26 @@ Serie de notebooks couvrant ML.NET, la bibliotheque open-source de Microsoft pou
 
 ### Fondamentaux (ML-1 à ML-4)
 
-| # | Notebook | Contenu | Duree | Statut |
-|---|----------|---------|-------|--------|
-| 1 | [ML-1-Introduction](ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base | 30-40 min | ✅ Validé |
-| 2 | [ML-2-Data&Features](ML-2-Data%26Features.ipynb) | IDataView, TextLoader, encodage | 40-50 min | ✅ Validé |
-| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement%26AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min | ✅ Validé |
-| 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, metriques, PFI | 40-50 min | ✅ Validé |
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 1 | [ML-1-Introduction](ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base | 30-40 min |
+| 2 | [ML-2-Data&Features](ML-2-Data%26Features.ipynb) | IDataView, TextLoader, encodage | 40-50 min |
+| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement%26AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
+| 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, metriques, PFI | 40-50 min |
 
 ### Fonctionnalités avancées (ML-5 à ML-7)
 
-| # | Notebook | Contenu | Duree | Statut |
-|---|----------|---------|-------|--------|
-| 5 | [ML-5-TimeSeries](ML-5-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | 45-60 min | 📚 Référence |
-| 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | 45-60 min | 📚 Référence |
-| 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | 45-60 min | 📚 Référence |
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 5 | [ML-5-TimeSeries](ML-5-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | 45-60 min |
+| 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | 45-60 min |
+| 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | 45-60 min |
 
 ### TP Pratique
 
-| # | Notebook | Contenu | Duree | Statut |
-|---|----------|---------|-------|--------|
-| TP | [TP-prevision-ventes](TP-prevision-ventes.ipynb) | Regression avec ML.NET + Infer.NET bayésien | 45-60 min | ✅ Validé |
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| TP | [TP-prevision-ventes](TP-prevision-ventes.ipynb) | Regression avec ML.NET + Infer.NET bayésien | 45-60 min |
 
 ## Contenu detaille
 

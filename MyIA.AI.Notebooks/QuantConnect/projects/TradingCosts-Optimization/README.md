@@ -10,8 +10,7 @@ Educational demo of ML-based trading cost prediction. DecisionTreeRegressor pred
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/TradingCosts-Optimization"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
@@ -27,4 +26,5 @@ Educational demo of ML-based trading cost prediction. DecisionTreeRegressor pred
 - research.ipynb - Cost analysis and ML evaluation
 ## References
 
-- Hands-On AI Trading, Section 06, Example 12
+- Hands-On AI Trading, Section 06, Example 12
+

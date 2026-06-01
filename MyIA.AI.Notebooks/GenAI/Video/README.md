@@ -1,5 +1,12 @@
 # Video - Generation et Comprehension Video par IA
 
+<!-- CATALOG-STATUS
+series: GenAI-Video
+pedagogical_count: 16
+breakdown: Foundation=5, Advanced=4, Orchestration=3, Applications=4
+maturity: BETA=9, ALPHA=3, PRODUCTION=2, DRAFT=2
+-->
+
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
 
 La video est la modalite generative la plus exigeante : elle combine l'analyse d'images, la comprehension du temps, la synchronisation audio, et la creation de mouvement coherent. Cette serie couvre l'ensemble de la chaine video IA : comprehension de sequences existantes, generation a partir de texte ou d'images, orchestration de pipelines multi-modeles, et workflows de production. 16 notebooks repartis sur 4 niveaux progressifs.
@@ -123,6 +130,15 @@ winget install FFmpeg
 | Generation video | 01-5, 02-1 a 02-4 |
 | Comprehension video | 01-2, 01-3 |
 | Production complete | Tous + Audio/04-4 (sync A/V) |
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Audio](../Audio/README.md) | Sync audio-video | [Audio/04-4](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise la piste audio generee avec la video |
+| [Image](../Image/README.md) | Source d'images | Le pipeline Video/03-2 genere des images via les modeles Image avant de les animer ; SVD (02-4) anime une image existante |
+| [Texte](../Texte/README.md) | Prompts et APIs | La comprehension video (01-2) utilise les memes APIs GPT-5 que Texte ; Sora (04-3) depend de prompts structures |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les workflows video ComfyUI (03-3) partagent les patterns d'orchestration avec les agents Semantic Kernel |
 
 ## Licence
 

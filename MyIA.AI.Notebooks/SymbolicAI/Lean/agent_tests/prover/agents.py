@@ -12,9 +12,10 @@ from .instructions import (
     CRITIC_AGENT_INSTRUCTIONS,
     COORDINATOR_AGENT_INSTRUCTIONS,
     DIRECTOR_AGENT_INSTRUCTIONS,
+    DIAGNOSIS_AGENT_INSTRUCTIONS,
     augment_instructions,
 )
-from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
+from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools, DiagnosisTools
 
 # Generous max_tokens budget: thinking models (z.ai GLM-5.1, Qwen3.6) burn
 # 90-99% of their output budget in `reasoning_content` before producing a
@@ -39,7 +40,7 @@ def _fast_options() -> ChatOptions:
 
 
 def create_search_agent(tools: SearchTools, provider: str = "local",
-                        goal: str = "") -> Agent:
+                        goal: str = "", name: str = "SearchAgent") -> Agent:
     """SearchAgent: finds Mathlib lemmas. Uses fast local model."""
     client = create_client(provider, model_key="fast")
     return Agent(
@@ -47,12 +48,14 @@ def create_search_agent(tools: SearchTools, provider: str = "local",
         instructions=augment_instructions(SEARCH_AGENT_INSTRUCTIONS, goal=goal),
         tools=[
             tools.search_mathlib_lemmas,
+            tools.search_leanexplore,
             tools.lookup_proven_pattern,
             tools.get_proof_state,
             tools.add_discovered_lemma,
             tools.file_read_lines,
+            tools.file_load,
         ],
-        name="SearchAgent",
+        name=name,
         default_options=_fast_options(),
     )
 
@@ -72,6 +75,7 @@ def create_tactic_agent(tools: TacticTools, provider: str = "zai",
             tools.file_find_sorry_lines,
             tools.file_replace_lines,
             tools.file_replace_sorry,
+            tools.file_insert_lines,
             tools.compile_probe_goal,
             tools.compile,
             tools.verify_sorry_replacement,
@@ -161,4 +165,24 @@ def create_director_agent(provider: str = "openrouter",
         tools=[],
         name="DirectorAgent",
         default_options=ChatOptions(max_tokens=DIRECTOR_MAX_TOKENS),
+    )
+
+
+def create_diagnosis_agent(tools: DiagnosisTools, provider: str = "local") -> Agent:
+    """DiagnosisAgent: qualitative verification. Uses fast local model."""
+    client = create_client(provider, model_key="fast")
+    return Agent(
+        client=client,
+        instructions=DIAGNOSIS_AGENT_INSTRUCTIONS,
+        tools=[
+            tools.get_resource_status,
+            tools.read_build_result,
+            tools.count_sorries,
+            tools.diff_current_vs_original,
+            tools.read_build_errors,
+            tools.assess_structural_progress,
+            tools.adjust_decomposition_budget,
+        ],
+        name="DiagnosisAgent",
+        default_options=_fast_options(),
     )

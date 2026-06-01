@@ -58,7 +58,7 @@ KELLY_CAP = 1.0
 MU_WINDOW = 60
 FEE_BPS = 5  # equity standard (not 50bps crypto)
 N_SPLITS = 5
-REFIT_EVERY = 66  # quarterly refit (daily data has more obs than crypto intraday)
+REFIT_EVERY = 22
 RESULTS_DIR = SCRIPT_DIR / "results" / "m15_cross_asset"
 
 # LSTM hyperparams (same as crypto M15)
@@ -78,11 +78,10 @@ def load_daily_asset(ticker: str) -> pd.Series:
     """Load daily log-returns for a traditional asset via yfinance.
 
     Returns a Series of daily log-returns indexed by Date.
-    Limited to last 10 years for computational feasibility.
     """
     import yfinance as yf
 
-    data = yf.download(ticker, period="10y", auto_adjust=True, progress=False)
+    data = yf.download(ticker, period="max", auto_adjust=True, progress=False)
     if data.empty:
         raise ValueError(f"No data for {ticker}")
     close = data["Close"]

@@ -9,9 +9,7 @@ Adaptive Conformal Inference (ACI) risk overlay on multi-factor momentum. Uses c
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Adaptive-Conformal-Risk"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

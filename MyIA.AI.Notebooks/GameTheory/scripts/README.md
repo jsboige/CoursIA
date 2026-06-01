@@ -1,6 +1,6 @@
 # Scripts GameTheory
 
-Ce repertoire contient les scripts de configuration et validation pour les notebooks Lean de la serie GameTheory.
+Ce repertoire contient les scripts de configuration et de validation des kernels utilises par la serie GameTheory : kernel Python WSL pour les notebooks OpenSpiel/CFR (`GameTheory-13`, `GameTheory-17`), et kernel Lean 4 (WSL) pour les notebooks Lean natifs (`-2b`, `-8b`, `-15b`, `SocialChoice/02-Lean-SocialChoice-Formal`).
 
 ## Scripts disponibles
 
@@ -24,6 +24,8 @@ Ce repertoire contient les scripts de configuration et validation pour les noteb
 |--------|-------------|-------|
 | `validate_lean_setup.py` | Validation de l'environnement Lean | `python scripts/validate_lean_setup.py` |
 | | Validation WSL | `python scripts/validate_lean_setup.py --wsl` |
+
+> La validation inclut desormais la detection de la regression wrapper kernel.json (issue #1618) : `~/.lean4-kernel-wrapper.py` v5 vs ancien bash. Logique centralisee dans `scripts/lean/lean_kernel_check.py`, partagee avec `scripts/lean/setup_lean4_all.py` et le validateur SymbolicAI/Lean.
 
 ## Installation complete
 
@@ -72,20 +74,28 @@ python scripts/validate_lean_setup.py
 python scripts/validate_lean_setup.py --wsl
 ```
 
-### Etape 4 : Redemarrer VSCode
+### Etape 3 : Redemarrer VSCode
 
 Fermer et rouvrir completement VSCode pour que les nouveaux kernels soient detectes.
 
 ## Architecture des kernels
 
+Les notebooks Lean natifs sont suffixes `-b` (kernel Lean 4) ; les notebooks Python miroirs sont suffixes `-c` quand un parallele Python existe.
+
 | Notebook | Kernel | Description |
 |----------|--------|-------------|
-| 1-16 | Python | Notebooks Python classiques |
-| 17 (Lean-Definitions) | **Lean 4 (WSL)** | Definitions formelles, cellules Lean natives |
-| 18 (Lean-NashExistence) | Python (WSL) | Lecture guidee, orchestration via lean_runner.py |
-| 19 (Lean-CombinatorialGames) | **Lean 4 (WSL)** | PGame mathlib, cellules Lean natives |
-| 20 (Lean-SocialChoice) | **Lean 4 (WSL)** | Arrow, Sen, electeur median |
-| 21 (Lean-CooperativeGames) | **Lean 4 (WSL)** | Formalisation Shapley |
+| `GameTheory-1` a `GameTheory-12`, `-14`, `-16` | Python (Windows) | Notebooks Python classiques (Nashpy, sympy, networkx) |
+| `GameTheory-2b-Lean-Definitions` | **Lean 4 (WSL)** | Definitions formelles, cellules Lean natives |
+| `GameTheory-4b-Lean-NashExistence` | Python (WSL) | Lecture guidee, orchestration via `lean_runner.py` |
+| `GameTheory-4c-NashExistence-Python` | Python (Windows) | Miroir numerique (sympy, scipy) |
+| `GameTheory-8b-Lean-CombinatorialGames` | **Lean 4 (WSL)** | PGame mathlib, cellules Lean natives |
+| `GameTheory-8c-CombinatorialGames-Python` | Python (Windows) | Miroir Sprague-Grundy en Python |
+| `GameTheory-13-ImperfectInfo-CFR` | Python (WSL) | OpenSpiel CFR (WSL requis : pas de wheel Windows) |
+| `GameTheory-15-CooperativeGames` | Python (Windows) | Solutions cooperatives (Shapley, core, nucleolus) |
+| `GameTheory-15b-Lean-CooperativeGames` | **Lean 4 (WSL)** | Formalisation Shapley (Lean 4) |
+| `GameTheory-15c-CooperativeGames-Python` | Python (Windows) | Miroir Python du calcul Shapley |
+| `GameTheory-17-MultiAgent-RL` | Python (WSL) | OpenSpiel multi-agent RL (idem GT-13, WSL requis) |
+| `SocialChoice/02-Lean-SocialChoice-Formal` | **Lean 4 (WSL)** | Arrow, Sen, electeur median |
 
 ## Troubleshooting
 

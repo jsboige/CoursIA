@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: IIT
 pedagogical_count: 1
-breakdown: =1
-maturity: BETA=1
+breakdown: root=1
+maturity: PRODUCTION=1
 -->
 
 La conscience est-elle mesurable ? La Théorie de l'Information Intégrée (IIT), proposée par Giulio Tononi, répond oui : un système est conscient dans la mesure où il intègre de l'information de manière non réductible. Plus formellement, la quantité de conscience d'un système correspond à la valeur **Phi** (big Phi), qui mesure le degré d'intégration causale irréductible. Cette série vous apprend à calculer cette mesure avec **PyPhi**, la bibliothèque de référence du laboratoire Tononi, et à explorer la géométrie informationnelle des systèmes complexes.
@@ -63,10 +63,14 @@ L'unique notebook couvre le spectre complet : construction de graphes causaux bi
 ### Environnement Python
 
 ```bash
-# Environnement conda recommande (Python 3.7-3.9)
+# Automated setup (creates conda env + registers kernel)
+powershell -File scripts/setup_pyphi_env.ps1
+
+# Manual setup (Python 3.9 required for PyPhi 1.2.0)
 conda create --name pyphi python=3.9 -y
 conda activate pyphi
-pip install pyphi numpy scipy
+pip install pyphi==1.2.0 numpy scipy ipykernel
+python -m ipykernel install --user --name pyphi --display-name "Python 3 (PyPhi/IIT)"
 ```
 
 ### Dependances
@@ -81,7 +85,7 @@ pip install pyphi numpy scipy
 
 | Probleme | Cause | Solution |
 |----------|-------|----------|
-| Conflits numpy/scipy | Python 3.10+ incompatible | Utiliser Python 3.7-3.9 |
+| `ImportError: cannot import name 'Iterable'` | PyPhi 1.2.0 utilise `collections.Iterable` (supprime Python 3.10+) | Utiliser Python 3.9 (`conda create -n pyphi python=3.9`) |
 | StateUnreachableError | Etats inaccessibles | Configuration `VALIDATE_SUBSYSTEM_STATES` |
 | Performance | Phi calcul intensif pour grands reseaux | Limiter taille des reseaux |
 
@@ -94,6 +98,17 @@ La Theorie de l'Information Integree (IIT) propose une approche mathematique de 
 3. **Exclusion** : Un seul niveau de Phi domine a tout moment
 
 **Phi** mesure le degre d'integration informationnelle d'un systeme. Un Phi > 0 indique une integration irreductible, suggerant une forme de conscience.
+
+## Portee scientifique et debats
+
+L'IIT n'est pas qu'une speculation philosophique : elle a engendre des outils utilises en clinique et alimente l'un des debats les plus vifs des neurosciences.
+
+- **Mesure clinique de la conscience.** Le *Perturbational Complexity Index* (PCI), inspire des principes de l'IIT, est utilise pour evaluer la conscience chez des patients non communicants (coma, etat vegetatif, anesthesie). Le protocole « zap-and-zip » (stimulation TMS + EEG, compression de la reponse) distingue empiriquement les etats conscients des etats inconscients — une retombee concrete et reproductible d'une theorie de la conscience.
+- **Une theorie concurrente.** L'IIT s'oppose frontalement aux theories de type *Global Workspace* (Dehaene, Baars), qui font de la conscience une diffusion globale de l'information plutot qu'une integration causale locale. Des programmes de tests adversariaux (collaboration Templeton) confrontent leurs predictions sur des donnees reelles.
+- **Enjeu pour l'IA.** L'IIT predit qu'un reseau purement *feed-forward* (comme l'inference d'un LLM classique) a un Phi nul : il calcule sans « etre » conscient, faute de boucles causales integrees. Cette these est centrale dans les discussions sur la conscience artificielle.
+- **Controverse.** Le calcul exact de Phi est computationnellement intractable au-dela de petits reseaux (d'ou le coarse-graining du notebook), et la theorie a fait l'objet d'une critique publique retentissante (lettre ouverte de 2023 la qualifiant de « pseudoscience ») — un cas d'ecole pour discuter des criteres de scientificite d'une theorie de l'esprit.
+
+Ces tensions font de l'IIT un excellent terrain pour exercer l'esprit critique : on y manipule un formalisme precis (calculable avec PyPhi) tout en gardant a l'esprit les limites de son interpretation.
 
 ## Ressources
 

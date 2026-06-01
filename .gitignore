@@ -439,6 +439,18 @@ MyIA.AI.Notebooks/GenAI/logs/*
 MyIA.AI.Notebooks/GenAI/temp/*
 !MyIA.AI.Notebooks/GenAI/temp/.gitkeep
 
+# GenAI Audio - generated TTS/audiobook outputs (regenerable, kept local, not committed)
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/audiobook_final/*.mp3
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/audiobook_final/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output/*.mp3
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output_fishaudio/*.mp3
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output_fishaudio/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.mp3
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.mp3
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.wav
+
 # Tweety runtime dependencies (downloaded by notebook)
 # Note: Les binaires PRECIEUX sont maintenant versionnés (voir exceptions positives ci-dessous)
 MyIA.AI.Notebooks/SymbolicAI/resources/
@@ -451,15 +463,15 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/
 MyIA.AI.Notebooks/Sudoku/choco-solver-*-jar-with-dependencies.jar
 
 # Sudoku NN - large generated files
-sudoku_models/_archived/
-sudoku_models/data_cache/
-sudoku_models/*.pt
-sudoku_models/*.pth
-sudoku_models/*.h5
-sudoku_models/*.log
-sudoku_models/*.json
+MyIA.AI.Notebooks/Sudoku/sudoku_models/_archived/
+MyIA.AI.Notebooks/Sudoku/sudoku_models/data_cache/
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.pt
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.pth
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.h5
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.log
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.json
 # EXCEPTION: validated checkpoints for reproducibility
-!sudoku_models/checkpoints/*.pt
+!MyIA.AI.Notebooks/Sudoku/sudoku_models/checkpoints/*.pt
 
 # ============================================================================
 # EXCEPTIONS POSITIVES - Binaires Tweety PRECIEUX à versionner
@@ -483,6 +495,13 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS_installer.exe
 
 # Bibliothèques natives SAT (Minisat, Lingeling, Picosat)
 !MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/native/
+
+# Tweety JARs — auto-download via download_tweety_tools.py --lib-dir
+# Issue #1396: untrack 857M duplicate JARs, keep native/ tracked
+MyIA.AI.Notebooks/SymbolicAI/libs/*.jar
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/libs/*.jar
+!MyIA.AI.Notebooks/SymbolicAI/libs/native/
+!MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/libs/native/
 
 # Jupyter/MCP temp files
 kernel_info.json
@@ -542,8 +561,14 @@ docker-configurations/services/comfyui-video/workspace/
 # Notebook output files (Papermill execution artifacts)
 *_output.ipynb
 *_output_*.ipynb
+*_executed.ipynb
 lean-workspace/
 tmp/
+
+# Claude Code worktrees and temp artifacts
+.claude/worktrees/
+*.lscache
+$null
 
 # Notebook backup files
 **/*.ipynb.backup
@@ -563,6 +588,18 @@ tmp/
 **/checkpoints/**/*.pth
 # EXCEPTION: Sudoku validated checkpoints
 !sudoku_models/checkpoints/
+
+# PyTorch extended model formats
+**/checkpoints/**/*.ckpt
+**/checkpoints/**/*.safetensors
+**/checkpoints/**/*.bin
+
+# FineTuning series training outputs (checkpoints too large for git)
+MyIA.AI.Notebooks/GenAI/FineTuning/results_*/
+
+# Docker bind-mount data: model weights and TTS references (runtime only)
+docker-configurations/services/tts-fishaudio/checkpoints/
+docker-configurations/services/tts-fishaudio/references/
 
 # ECE grading reports (student PII - never commit)
 reports/
@@ -609,7 +646,16 @@ MyIA.AI.Notebooks/QuantConnect/TrendStocks*/
 MyIA.AI.Notebooks/QuantConnect/TurnOfMonth-Researcher/
 MyIA.AI.Notebooks/QuantConnect/VIX-TermStructure-Researcher/
 MyIA.AI.Notebooks/QuantConnect/lean.json
+MyIA.AI.Notebooks/QuantConnect/partner-course-Workspace/
 MyIA.AI.Notebooks/QuantConnect/ESGF-Workspace/
+
+# NuGet build artifacts
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/**/obj/
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/**/bin/
+
+# NuGet build artifacts
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/**/obj/
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/**/bin/
 
 # Generated secrets (security - never commit raw tokens)
 .secrets/.env.generated
@@ -664,9 +710,9 @@ slides/*/analysis/titles-pptx.txt
 slides/*/analysis/titles-slidev.txt
 
 # Sudoku NN training artifacts (large binary files)
-sudoku_models/
+MyIA.AI.Notebooks/Sudoku/sudoku_models/
 # EXCEPTION: validated checkpoints required for notebook reproducibility
-!sudoku_models/checkpoints/
+!MyIA.AI.Notebooks/Sudoku/sudoku_models/checkpoints/
 *_dqn_model.pt
 best_dqn_model.pt
 dqn_backtest.png
@@ -755,3 +801,52 @@ scripts/whisper_comparison_results.json
 !MyIA.AI.Notebooks/QuantConnect/Python/best_dqn_model.pt
 !MyIA.AI.Notebooks/QuantConnect/Python/lstm_attention_sp50.pt
 !RL/stable_baseline_3_experience_replay_dqn/her_sac_parking_replay_buffer.pkl
+.playwright-mcp/
+
+# Claude Code worktrees
+.claude/worktrees/
+
+# Temporary / generated files
+qc_cells_summary.json
+temp_qc_cells/
+ibkr_login_tasks.png
+ibkr_qr_login.png
+m11ef_qc_execution.png
+m12_notebook_top.png
+nb_full_execution.png
+ppo_learning_curves.png
+rl_learning_curves.png
+c	tempqc_validate.txt
+right_click_context.png
+
+# ML training generated scripts
+MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/c2_har_rv_j_lstm_h32.py
+
+# Jupyter temp notebooks
+MyIA.AI.Notebooks/QuantConnect/Python/_executor.ipynb
+MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Alpha/test_qb.ipynb
+
+# Research scratch notebooks (not yet committed)
+MyIA.AI.Notebooks/QuantConnect/research/research_multi_layer_ema.ipynb
+MyIA.AI.Notebooks/QuantConnect/research/research_option_wheel.ipynb
+MyIA.AI.Notebooks/QuantConnect/research/research_sector_momentum.ipynb
+
+# Research result images
+MyIA.AI.Notebooks/QuantConnect/research/composite_ff_aw_results.png
+MyIA.AI.Notebooks/QuantConnect/research/composite_mom_regime_results.png
+MyIA.AI.Notebooks/QuantConnect/research/rl_multi_asset_curves.png
+
+# csproj cache files
+*.csproj.lscache
+
+# PowerShell artifact
+$null
+
+# Root-level libs/ (Tweety JARs downloaded by setup scripts — use SymbolicAI/Tweety/libs/ instead)
+/libs/
+
+# Temp OWL files from notebook execution
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
+
+# Stray root-level analytique output dir (should live under v4/outputs/ if persisted)
+/output_analytique/

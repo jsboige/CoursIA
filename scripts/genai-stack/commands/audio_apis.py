@@ -219,7 +219,7 @@ def start_service(service_name: str, wait_health: bool = True) -> bool:
                 if resp.status_code == 200:
                     print("OK")
                     return True
-            except:
+            except Exception:
                 pass
             print(".", end="", flush=True)
 
@@ -308,7 +308,7 @@ def test_service(service_name: str) -> bool:
         try:
             data = resp.json()
             print(f"  Details: {json.dumps(data, indent=4)[:300]}")
-        except:
+        except (ValueError, json.JSONDecodeError):
             print(f"  Reponse (text): {resp.text[:200]}")
 
     except Exception as e:
@@ -355,7 +355,7 @@ def test_service(service_name: str) -> bool:
 # E2E Tests — real generation/transcription/separation
 # ============================================================================
 
-def _get_auth_headers(service_name: str = None) -> dict:
+def _get_auth_headers(service_name: Optional[str] = None) -> dict:
     """Load API key from .env file (service-specific key or generic)."""
     from pathlib import Path
     env_file = Path(__file__).resolve().parent.parent.parent.parent / "MyIA.AI.Notebooks" / "GenAI" / ".env"
