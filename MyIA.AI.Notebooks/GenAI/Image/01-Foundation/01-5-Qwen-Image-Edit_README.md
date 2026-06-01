@@ -330,11 +330,11 @@ Le notebook contient un template workflow `workflow_exercice` avec:
 ### Contact Formation
 
 - **Email**: support-formation@myia.io
-- **Documentation Projet**: [docs/genai-services.md](../../../docs/genai-services.md)
+- **Documentation GenAI** : [Services et architecture GenAI](../../../../docs/genai-services.md)
 
 ### Issues Connues
 
-Consultez les rapports de tests dans les [archives](../../../docs/_archives/suivis/genai-image/).
+Consultez les rapports de tests dans les [archives GenAI](../../../../docs/genai-services.md).
 
 ---
 

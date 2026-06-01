@@ -88,4 +88,4 @@ Batch → Queue → Processing → QC → Distribution → Analytics
 
 - [Documentation Video principale](../README.md)
 - [Guide ComfyUI](../../00-GenAI-Environment/README.md)
-- [Production Best Practices](../../docs/)
+- [GenAI Services](../../../../docs/genai-services.md)

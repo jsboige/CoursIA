@@ -17,6 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from generate_catalog import (
     NOTEBOOKS_DIR,
+    _effective_code_cells,
+    _is_exercise_stub,
     check_errors,
     classify_maturity,
     count_todos,
@@ -323,6 +325,98 @@ class TestHasMarkdownIntroConclusion:
         assert intro is True
         assert conclusion is True
 
+    def test_intro_in_second_cell(self):
+        # #1901-precedent: title + nav header is cell 0, the real intro is in cell 1.
+        cells = [
+            _md("# Lean-13 Grothendieck\n**Navigation**: [Index](../README.md)"),
+            _md("## Introduction : pourquoi Grothendieck dans une serie Lean ?"),
+            _code("x = 1"),
+            _md("## Conclusion"),
+        ]
+        intro, conclusion = has_markdown_intro_conclusion(cells)
+        assert intro is True
+        assert conclusion is True
+
+    def test_intro_learning_objectives_phrase(self):
+        # "A la fin de ce notebook, vous saurez" is a learning-objectives intro.
+        cells = [
+            _md("# SW-3 GraphOperations\n## Operations RDF\nA la fin de ce notebook, vous saurez :\n1. Lire un graphe"),
+            _md("Importation des espaces de noms"),
+            _md("## Conclusion"),
+        ]
+        intro, _ = has_markdown_intro_conclusion(cells)
+        assert intro is True
+
+    def test_intro_vue_densemble(self):
+        cells = [
+            _md("# Lean-7b\nCe notebook fait suite au precedent."),
+            _md("## Vue d'ensemble du notebook"),
+            _md("## Conclusion"),
+        ]
+        intro, _ = has_markdown_intro_conclusion(cells)
+        assert intro is True
+
+    def test_conclusion_accented(self):
+        # Latent bug fix: accented "Synthèse" must match (accent-stripping).
+        cells = [
+            _md("# Introduction"),
+            _md("## Synthèse des concepts"),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is True
+
+    def test_conclusion_behind_footer(self):
+        # Conclusion is not the last md cell (a nav footer follows).
+        cells = [
+            _md("# Introduction"),
+            _md("## Conclusion et bilan"),
+            _md("**Navigation**: [<- Index](../README.md)"),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is True
+
+    def test_no_intro_continuation_notebook(self):
+        # A mid-series continuation with no intro section must NOT be flagged.
+        cells = [
+            _md("## 7. Orchestration des strategies"),
+            _md("### Role des strategies dans Semantic Kernel"),
+            _md("## Conclusion"),
+        ]
+        intro, _ = has_markdown_intro_conclusion(cells)
+        assert intro is False
+
+    def test_conclusion_synthese_in_code_fence_ignored(self):
+        # Function_Calling FP: "synthese" inside a fenced flow diagram is NOT a
+        # conclusion; the notebook ends on a bonus exercise, not a wrap-up section.
+        cells = [
+            _md("# Introduction"),
+            _md("Flux de donnees :\n```\nanalyse -> appel tool -> resultat -> synthese\n```"),
+            _md("# Challenge bonus\nA vous de jouer."),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is False
+
+    def test_conclusion_synthese_heading_outside_fence_matches(self):
+        # A genuine "## Synthese des apprentissages" heading must still be detected
+        # even when a fenced code block is present elsewhere in the same cell.
+        cells = [
+            _md("# Introduction"),
+            _md("## Synthese des apprentissages\n```\nx = demo()\n```\nCe que nous avons vu."),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is True
+
+    def test_bilan_alone_is_not_a_conclusion(self):
+        # "bilan" was dropped as a keyword: as bare prose ("le bilan des ressources")
+        # it does not mark a real wrap-up section (Creative-Video FP).
+        cells = [
+            _md("# Introduction"),
+            _md("Nous affichons le bilan des ressources consommees par technique."),
+            _md("## Exercice : creez votre clip."),
+        ]
+        _, conclusion = has_markdown_intro_conclusion(cells)
+        assert conclusion is False
+
 
 # --- classify_maturity ---
 
@@ -388,6 +482,93 @@ class TestClassifyMaturity:
         code_cells = [executed] + todo_cells
         nb = self._full_nb([_md("# Title")] + code_cells)
         assert classify_maturity(nb, code_cells, "Python 3") == "DRAFT"
+
+
+# --- _is_exercise_stub ---
+
+class TestIsExerciseStub:
+    def test_pass_with_trailing_todo_comment(self):
+        # #1939: "pass  # TODO: ..." must match the bare `pass` pattern after
+        # the inline comment is stripped (the marker is also the comment).
+        assert _is_exercise_stub(_code('"""docstring"""\npass  # TODO: implementez')) is True
+
+    def test_pass_alone_with_separate_marker(self):
+        assert _is_exercise_stub(_code("# TODO student\npass")) is True
+
+    def test_etape_marker(self):
+        # # Etape N is a valid C.1 exercise marker (accent-tolerant).
+        assert _is_exercise_stub(_code("# Etape: assemblez le systeme\npass  # Etape: a faire")) is True
+
+    def test_etape_accented_marker(self):
+        assert _is_exercise_stub(_code("# Étape 2\npass")) is True
+
+    def test_indice_marker(self):
+        assert _is_exercise_stub(_code("# Indice: voir l'exemple precedent\npass  # Remplacer")) is True
+
+    def test_print_exercice_completer(self):
+        assert _is_exercise_stub(_code('# TODO\nprint("Exercice a completer (phe non installe)")')) is True
+
+    def test_return_none_stub(self):
+        assert _is_exercise_stub(_code("# TODO complete\ndef f():\n    return None  # a faire")) is True
+
+    def test_var_assign_none(self):
+        assert _is_exercise_stub(_code("result = None  # TODO etudiant")) is True
+
+    def test_comment_only_with_marker(self):
+        # An instruction-only cell (only comments) carrying a marker is a stub.
+        assert _is_exercise_stub(_code("# TODO: implementez la fonction ci-dessous")) is True
+
+    def test_no_marker_not_a_stub(self):
+        # No exercise marker -> not a stub even if it ends with `pass`.
+        assert _is_exercise_stub(_code("def f():\n    pass")) is False
+
+    def test_marker_but_real_code_not_a_stub(self):
+        # Marker present but the last line is real computed code -> not a stub.
+        assert _is_exercise_stub(_code("# TODO refine\nx = compute()\nprint(x)")) is False
+
+
+# --- _effective_code_cells ---
+
+class TestEffectiveCodeCells:
+    def test_excludes_exercise_stub(self):
+        # #1939: C.1 exercise stubs are output-free by design and must not be
+        # counted against the maturity output-coverage check.
+        cells = [
+            _code("print('real')", [_stream_output()]),
+            _code('"""doc"""\npass  # TODO: implementez'),
+        ]
+        eff = _effective_code_cells(cells)
+        assert len(eff) == 1
+        assert eff[0] is cells[0]
+
+    def test_excludes_outputless_by_design(self):
+        cells = [_code("print('x')", [_stream_output()]), _code("x = 1")]
+        assert len(_effective_code_cells(cells)) == 1
+
+    def test_keeps_real_output_cells(self):
+        cells = [_code("print('a')", [_stream_output()]), _code("print('b')", [_stream_output()])]
+        assert len(_effective_code_cells(cells)) == 2
+
+
+# --- classify_maturity: exercise-stub promotion (#1939 regression) ---
+
+class TestClassifyMaturityExerciseStub:
+    def _full_nb(self, cells):
+        return _nb(cells, metadata={"kernelspec": {"display_name": "Python 3", "name": "python3"}})
+
+    def test_stub_does_not_block_production(self):
+        # #1939: a pedagogically complete notebook (intro + conclusion + every
+        # real cell has output) must reach PRODUCTION even with a C.1 exercise
+        # stub whose `pass  # TODO` produces no output. Before the fix the stub
+        # was wrongly counted as a missing-output cell and capped it at ALPHA.
+        nb = self._full_nb([
+            _md("# Introduction et objectifs"),
+            _code("print('demo result')", [_stream_output()]),
+            _code('"""Exercice"""\npass  # TODO: implementez la fonction', execution_count=2),
+            _md("## Conclusion et synthèse"),
+        ])
+        code_cells = [c for c in nb["cells"] if c["cell_type"] == "code"]
+        assert classify_maturity(nb, code_cells, "Python 3") == "PRODUCTION"
 
 
 if __name__ == "__main__":

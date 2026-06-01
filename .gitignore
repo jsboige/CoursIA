@@ -463,15 +463,15 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/
 MyIA.AI.Notebooks/Sudoku/choco-solver-*-jar-with-dependencies.jar
 
 # Sudoku NN - large generated files
-sudoku_models/_archived/
-sudoku_models/data_cache/
-sudoku_models/*.pt
-sudoku_models/*.pth
-sudoku_models/*.h5
-sudoku_models/*.log
-sudoku_models/*.json
+MyIA.AI.Notebooks/Sudoku/sudoku_models/_archived/
+MyIA.AI.Notebooks/Sudoku/sudoku_models/data_cache/
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.pt
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.pth
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.h5
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.log
+MyIA.AI.Notebooks/Sudoku/sudoku_models/*.json
 # EXCEPTION: validated checkpoints for reproducibility
-!sudoku_models/checkpoints/*.pt
+!MyIA.AI.Notebooks/Sudoku/sudoku_models/checkpoints/*.pt
 
 # ============================================================================
 # EXCEPTIONS POSITIVES - Binaires Tweety PRECIEUX à versionner
@@ -710,9 +710,9 @@ slides/*/analysis/titles-pptx.txt
 slides/*/analysis/titles-slidev.txt
 
 # Sudoku NN training artifacts (large binary files)
-sudoku_models/
+MyIA.AI.Notebooks/Sudoku/sudoku_models/
 # EXCEPTION: validated checkpoints required for notebook reproducibility
-!sudoku_models/checkpoints/
+!MyIA.AI.Notebooks/Sudoku/sudoku_models/checkpoints/
 *_dqn_model.pt
 best_dqn_model.pt
 dqn_backtest.png

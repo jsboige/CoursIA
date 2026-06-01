@@ -422,7 +422,8 @@ class SearchTools:
             project_dir = str(Path(self._filepath).parent.parent)
             verifier = get_verifier(project_dir)
             subdir = Path(self._filepath).parent.name
-            module_name = f"{subdir}"
+            stem = Path(self._filepath).stem
+            module_name = f"{subdir}.{stem}"
 
             results = []
             for tactic in ["exact?", "apply?"]:
@@ -618,14 +619,17 @@ class TacticTools:
             self._original_content = raw
 
         self._heuristics = {
-            "equality": ["rfl", "exact", "simp", "ring", "omega"],
-            "nat_arithmetic": ["omega", "simp", "decide"],
+            "equality": ["rfl", "exact", "simp", "ring", "omega", "aesop"],
+            "nat_arithmetic": ["omega", "simp", "decide", "aesop"],
             "ring_expression": ["ring", "ring_nf"],
             "forall": ["intro", "intros", "apply"],
             "exists": ["use", "exists", "exact"],
             "and": ["constructor", "exact And.intro"],
             "or": ["left", "right"],
             "implication": ["intro", "apply", "exact"],
+            "lattice": ["aesop", "exact bot_le", "exact le_top", "simp"],
+            "type_class": ["aesop", "infer_instance", "apply_instance"],
+            "sieve": ["aesop", "exact", "simp", "ext"],
         }
 
     def _check_tool_loop(self, tool_name: str, args_key: str) -> Optional[str]:
@@ -682,6 +686,16 @@ class TacticTools:
             detected.append("forall")
         if "exists" in goal_lower or "∃" in goal:
             detected.append("exists")
+        if any(x in goal_lower for x in ["≤", "<=", "≥", ">=", "lattice",
+                                           "bot", "top", "complete_lattice",
+                                           "grothendieck", "topology"]):
+            detected.append("lattice")
+        if any(x in goal_lower for x in ["instance", "infer_instance",
+                                           "category", "functor", "monad"]):
+            detected.append("type_class")
+        if any(x in goal_lower for x in ["sieve", "presieve", "sheaf",
+                                           "covering", "pullback"]):
+            detected.append("sieve")
 
         seen = set()
         for pattern in detected:
@@ -699,6 +713,7 @@ class TacticTools:
                 {"tactic": "rfl", "confidence": 0.3, "pattern": "default"},
                 {"tactic": "simp", "confidence": 0.3, "pattern": "default"},
                 {"tactic": "omega", "confidence": 0.3, "pattern": "default"},
+                {"tactic": "aesop", "confidence": 0.25, "pattern": "default"},
             ]
 
         return json.dumps(suggestions, indent=2, ensure_ascii=False)

@@ -17,7 +17,7 @@ Angel's move-set (a Chebyshev ball), where the power-1 Angel is exactly a chess
 king. Homage to a MathOverflow contribution on Conway's pursuit-evasion results
 (post 357433).
 
-The `sorry`s are intentional calibration scaffolding, not regressions (Epic #1453).
+All `sorry`s have been eliminated (Epic #1453, #1651).
 -/
 
 import Mathlib.Data.Int.Interval
