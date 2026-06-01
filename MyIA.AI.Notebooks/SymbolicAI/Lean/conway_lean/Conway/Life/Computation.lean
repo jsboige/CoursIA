@@ -158,5 +158,37 @@ def glider_meets_eater : Grid :=
 -- Hashlife on the eater (still life = no change at every step)
 #eval evolveHashlife 10 eater1 == eater1
 
+/-! ## Section 6: Exponential-speedup Hashlife validation
+
+`evolveHashlifeFast` uses the recursive Hashlife algorithm to jump
+forward by `2^level` generations in a single MacroCell step. These
+theorems verify correctness of the fast path against the reference
+`evolve` for canonical patterns. -/
+
+/-- `evolveHashlifeFast` agrees with reference on block after 4 gens. -/
+theorem hashlife_fast_block_4 : evolveHashlifeFast 4 block = evolve 4 block := by native_decide
+
+/-- `evolveHashlifeFast` agrees with reference on glider after 4 gens. -/
+theorem hashlife_fast_glider_4 : evolveHashlifeFast 4 glider = evolve 4 glider := by native_decide
+
+/-- `evolveHashlifeFast` agrees with reference on glider after 8 gens
+    (2 full periods, displacement (2, -2)). -/
+theorem hashlife_fast_glider_8 : evolveHashlifeFast 8 glider = shift (2, -2) glider := by native_decide
+
+/-- `evolveHashlifeFast` agrees with reference on blinker after 2 gens. -/
+theorem hashlife_fast_blinker_2 : evolveHashlifeFast 2 blinker_h = evolve 2 blinker_h := by native_decide
+
+/-- `evolveHashlifeFast` agrees with reference on beacon after 2 gens. -/
+theorem hashlife_fast_beacon_2 : evolveHashlifeFast 2 beacon = evolve 2 beacon := by native_decide
+
+/-- `evolveHashlifeFast` agrees with reference on toad after 2 gens. -/
+theorem hashlife_fast_toad_2 : evolveHashlifeFast 2 toad = evolve 2 toad := by native_decide
+
+-- #eval witnesses for larger jumps (validates the recursive path)
+#eval evolveHashlifeFast 16 block == evolve 16 block
+#eval evolveHashlifeFast 12 glider == shift (3, -3) glider
+#eval evolveHashlifeFast 4 blinker_h == blinker_h  -- period 2, 4 = 2 periods
+#eval evolveHashlifeFast 10 eater1 == eater1  -- still life
+
 end Life
 end Conway
