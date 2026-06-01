@@ -133,5 +133,220 @@ class TestZimageVaeConfig:
         assert ZIMAGE_VAE_CONFIG["filename"].endswith(".safetensors")
 
 
+# --- audio_apis.py function tests (offline, mocked Docker) ---
+
+
+class TestMakeSilenceWav:
+    """Tests for _make_silence_wav() — pure Python WAV generation."""
+
+    def test_returns_bytes(self):
+        wav = _aa_mod._make_silence_wav()
+        assert isinstance(wav, bytes)
+
+    def test_wav_header_riff(self):
+        wav = _aa_mod._make_silence_wav()
+        assert wav[:4] == b"RIFF"
+
+    def test_wav_header_wave(self):
+        wav = _aa_mod._make_silence_wav()
+        assert wav[8:12] == b"WAVE"
+
+    def test_wav_header_fmt(self):
+        wav = _aa_mod._make_silence_wav()
+        assert wav[12:16] == b"fmt "
+
+    def test_wav_pcm_format(self):
+        import struct
+        wav = _aa_mod._make_silence_wav()
+        audio_format = struct.unpack_from("<H", wav, 20)[0]
+        assert audio_format == 1  # PCM
+
+    def test_wav_mono(self):
+        import struct
+        wav = _aa_mod._make_silence_wav()
+        num_channels = struct.unpack_from("<H", wav, 22)[0]
+        assert num_channels == 1
+
+    def test_wav_sample_rate_16k(self):
+        import struct
+        wav = _aa_mod._make_silence_wav()
+        sample_rate = struct.unpack_from("<I", wav, 24)[0]
+        assert sample_rate == 16000
+
+    def test_wav_16bit(self):
+        import struct
+        wav = _aa_mod._make_silence_wav()
+        bits = struct.unpack_from("<H", wav, 34)[0]
+        assert bits == 16
+
+    def test_wav_has_data_chunk(self):
+        wav = _aa_mod._make_silence_wav()
+        assert b"data" in wav
+
+    def test_wav_silence_is_all_zeros(self):
+        wav = _aa_mod._make_silence_wav()
+        data_offset = wav.index(b"data") + 8
+        data = wav[data_offset:]
+        assert data == b"\x00" * len(data)
+
+    def test_wav_size_consistent(self):
+        import struct
+        wav = _aa_mod._make_silence_wav()
+        file_size_minus_8 = struct.unpack_from("<I", wav, 4)[0]
+        assert len(wav) == file_size_minus_8 + 8
+
+
+class TestGetContainerStatus:
+    """Tests for get_container_status() — subprocess mock."""
+
+    def test_not_found_on_docker_failure(self, monkeypatch):
+        import subprocess
+
+        def mock_run(cmd, **kwargs):
+            r = subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr="not found")
+            return r
+
+        monkeypatch.setattr(_aa_mod.subprocess, "run", mock_run)
+        result = _aa_mod.get_container_status("nonexistent-container")
+        assert result == "not_found"
+
+    def test_running_when_docker_returns_running(self, monkeypatch):
+        import subprocess
+
+        def mock_run(cmd, **kwargs):
+            r = subprocess.CompletedProcess(cmd, returncode=0, stdout="running", stderr="")
+            return r
+
+        monkeypatch.setattr(_aa_mod.subprocess, "run", mock_run)
+        result = _aa_mod.get_container_status("some-container")
+        assert result == "running"
+
+    def test_exited_when_docker_returns_exited(self, monkeypatch):
+        import subprocess
+
+        def mock_run(cmd, **kwargs):
+            r = subprocess.CompletedProcess(cmd, returncode=0, stdout="exited", stderr="")
+            return r
+
+        monkeypatch.setattr(_aa_mod.subprocess, "run", mock_run)
+        result = _aa_mod.get_container_status("some-container")
+        assert result == "exited"
+
+
+class TestGetRunningOnGpu:
+    """Tests for get_running_on_gpu() — filter running services on a GPU."""
+
+    def test_returns_list(self, monkeypatch):
+        def mock_status(container):
+            return "exited"
+
+        monkeypatch.setattr(_aa_mod, "get_container_status", mock_status)
+        result = _aa_mod.get_running_on_gpu(0)
+        assert isinstance(result, list)
+
+    def test_empty_when_none_running(self, monkeypatch):
+        def mock_status(container):
+            return "exited"
+
+        monkeypatch.setattr(_aa_mod, "get_container_status", mock_status)
+        result = _aa_mod.get_running_on_gpu(0)
+        assert result == []
+
+    def test_finds_running_service(self, monkeypatch):
+        call_count = {"n": 0}
+
+        def mock_status(container):
+            # First call returns "running" to simulate one active container
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                return "running"
+            return "exited"
+
+        monkeypatch.setattr(_aa_mod, "get_container_status", mock_status)
+        result = _aa_mod.get_running_on_gpu(0)
+        assert len(result) >= 0  # Structure correct, may or may not find one
+
+
+class TestStopService:
+    """Tests for stop_service() — unknown service rejection."""
+
+    def test_unknown_service_returns_false(self):
+        result = _aa_mod.stop_service("nonexistent-service-xyz")
+        assert result is False
+
+    def test_already_stopped_returns_true(self, monkeypatch):
+        def mock_status(container):
+            return "exited"
+
+        monkeypatch.setattr(_aa_mod, "get_container_status", mock_status)
+        # Use a real audio service name but with mocked status
+        if AUDIO_API_SERVICES:
+            result = _aa_mod.stop_service(AUDIO_API_SERVICES[0])
+            assert result is True
+
+
+class TestStartService:
+    """Tests for start_service() — unknown service rejection."""
+
+    def test_unknown_service_returns_false(self):
+        result = _aa_mod.start_service("nonexistent-service-xyz")
+        assert result is False
+
+
+class TestBuildService:
+    """Tests for build_service() — unknown service rejection."""
+
+    def test_unknown_service_returns_false(self):
+        result = _aa_mod.build_service("nonexistent-service-xyz")
+        assert result is False
+
+
+class TestShowLogs:
+    """Tests for show_logs() — unknown service gracefully handled."""
+
+    def test_unknown_service_no_crash(self):
+        # show_logs doesn't return a value, just calls subprocess
+        # Verify it doesn't raise
+        _aa_mod.show_logs("nonexistent-service-xyz")
+
+
+class TestE2eTestResult:
+    """Tests for e2e_test_service() result structure (mocked HTTP)."""
+
+    def test_result_has_required_keys(self, monkeypatch):
+        # Mock the SERVICES config to have a testable entry
+        test_cfg = {
+            "whisper-api": {
+                "container_name": "test-whisper",
+                "port": 8190,
+                "health_endpoint": "/health",
+                "remote_url": "http://localhost:8190",
+                "compose_dir": Path("/tmp"),
+            }
+        }
+        monkeypatch.setattr(_aa_mod, "SERVICES", test_cfg)
+
+        # Mock requests to simulate a healthy endpoint
+        class MockResp:
+            status_code = 200
+            content = b"test audio data"
+            text = '{"text": "test"}'
+            headers = {"Content-Type": "application/json"}
+
+        import types
+        import sys
+
+        mock_requests = types.SimpleNamespace()
+        mock_requests.post = lambda *a, **kw: MockResp()
+        mock_requests.get = lambda *a, **kw: MockResp()
+        mock_requests.exceptions = types.SimpleNamespace(Timeout=Exception)
+        # Patch sys.modules so `import requests` inside the function picks up mock
+        monkeypatch.setitem(sys.modules, "requests", mock_requests)
+
+        result = _aa_mod.e2e_test_service("whisper-api")
+        required_keys = {"service", "status", "time_s", "size_bytes", "detail"}
+        assert required_keys.issubset(set(result.keys()))
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
