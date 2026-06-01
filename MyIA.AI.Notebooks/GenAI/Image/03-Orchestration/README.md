@@ -73,4 +73,4 @@ Input → Model Selection → Processing → Output
 
 - [Documentation Image principale](../README.md)
 - [Guide ComfyUI](../../00-GenAI-Environment/README.md)
-- [Architecture ComfyUI](../../docs/COMFYUI-ARCHITECTURE.md)
+- [Architecture ComfyUI](../../../../docs/genai-services.md)
