@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-01 01:00
+Generated: 2026-06-01 00:40
 Total notebooks: 504
 
 ## Status Summary
@@ -12,8 +12,8 @@ Total notebooks: 504
 
 ## Maturity Summary
 
-- **PRODUCTION**: 358
-- **BETA**: 106
+- **PRODUCTION**: 359
+- **BETA**: 105
 - **TEMPLATE**: 4
 - **ALPHA**: 31
 - **DRAFT**: 5
@@ -438,7 +438,7 @@ Total notebooks: 504
 | 100 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | ALPHA | 5min | po-2026 |
 | 101 | Workflow : Téléchargement et gestion des datasets | Python 3 | BROKEN | PRODUCTION | 45min | po-2026 |
 
-### GameTheory (25 notebooks) — READY:25 | ALPHA:2, BETA:9, PRODUCTION:14
+### GameTheory (25 notebooks) — READY:25 | ALPHA:2, BETA:8, PRODUCTION:15
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -455,7 +455,7 @@ Total notebooks: 504
 | 11 | GameTheory-17 : Apprentissage par Renforcement Mul | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
 | 12 | GameTheory-2-NormalForm | Python 3 | READY | BETA | 45min | po-2024 |
 | 13 | GameTheory 2b - Formalisation Lean : Definitions d | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
-| 14 | GameTheory-3-Topology2x2 | Python (GameTheory WSL + OpenS | READY | BETA | 45min | po-2024 |
+| 14 | GameTheory-3-Topology2x2 | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
 | 15 | GameTheory-4-NashEquilibrium | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
 | 16 | GameTheory 4b - Theoreme d'Existence de Nash (Lean | Lean 4 (WSL) | READY | PRODUCTION | 30min | po-2024 |
 | 17 | GameTheory 4c - Theoreme d'Existence de Nash (Pyth | Python 3 | READY | ALPHA | 30min | po-2024 |
