@@ -349,8 +349,27 @@ def _is_outputless_by_design(cell: dict) -> bool:
         outputless = (
             ast.Assign, ast.AnnAssign,
             ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
+            ast.Import, ast.ImportFrom,
         )
-        return all(isinstance(node, outputless) for node in ast.iter_child_nodes(tree))
+        # Also accept Expr nodes that are bare Call expressions for configuration
+        # (plt.style.use, warnings.filterwarnings, np.set_printoptions, etc.).
+        # These produce no visible output and are purely side-effect configuration.
+        # Exclude print()/display() which DO produce output.
+        _OUTPUT_FUNCS = {"print", "display", "pprint", "show", "render"}
+        for node in ast.iter_child_nodes(tree):
+            if not isinstance(node, outputless):
+                if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+                    # Get the function name (simple or attribute)
+                    func = node.value.func
+                    fname = ""
+                    if isinstance(func, ast.Name):
+                        fname = func.id
+                    elif isinstance(func, ast.Attribute):
+                        fname = func.attr
+                    if fname not in _OUTPUT_FUNCS:
+                        continue  # config call, no output expected
+                return False
+        return True
     except SyntaxError:
         return False
 
