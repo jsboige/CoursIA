@@ -310,8 +310,8 @@ def has_markdown_intro_conclusion(cells: list) -> tuple[bool, bool]:
         "conclusion", "resume", "synthese", "recapitulatif", "summary",
         "points cles", "a retenir", "pour aller plus loin", "next steps",
     ]
-    # Check last 3 MD cells (conclusion may not be the very last if nav/footer follows)
-    last_sources = [_normalize_text("".join(c.get("source", []))) for c in md_cells[-3:]]
+    # Check last 5 MD cells (conclusion may be followed by exercises + nav/footer)
+    last_sources = [_normalize_text("".join(c.get("source", []))) for c in md_cells[-5:]]
     has_conclusion = any(
         kw in src for src in last_sources for kw in conclusion_keywords
     )
