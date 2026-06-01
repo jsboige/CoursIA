@@ -9,9 +9,7 @@ QC Strategy Library clone. Value investing selecting high book-to-market stocks 
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/HighBookToMarketFScore-QC"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

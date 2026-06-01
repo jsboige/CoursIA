@@ -67,8 +67,10 @@ class TestComputeBreakdown:
         assert bd["Audio"] == 1
 
     def test_breakdown_no_sous_serie(self):
+        # Entries without sous_serie group under the "root" key (renamed from
+        # "_root" in #1698: `sous_serie or root`).
         bd = compute_breakdown(SAMPLE_ENTRIES, "ML")
-        assert bd["_root"] == 3
+        assert bd["root"] == 3
 
     def test_breakdown_empty(self):
         bd = compute_breakdown(SAMPLE_ENTRIES, "NonExistent")

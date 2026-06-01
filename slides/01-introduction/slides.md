@@ -152,15 +152,11 @@ layout: section
 
 <img src="./images/img_002.png" style="position:absolute; top:80px; right:20px; width:340px;" alt="Quatre definitions de l'IA" />
 
-<div style="max-width:55%;">
-
 - **Des definitions multiples et un concept evolutif**
-  - L'IA n'a pas de definition unique : elle recouvre des approches tres differentes
-  - Concevoir un systeme intelligent n'implique pas de comprendre l'intelligence
+  - L'IA n'a pas de definition unique : elle recouvre des<br>approches tres differentes
+  - Concevoir un systeme intelligent n'implique pas de<br>comprendre l'intelligence
 - **Une definition qui evolue avec la technologie :**
-  - Automates → Calculateurs → Algorithmes → Bases de connaissances → Systemes experts → Apprentissage profond → IA generative
-
-</div>
+  - Automates → Calculateurs → Algorithmes →<br>Bases de connaissances → Systemes experts →<br>Apprentissage profond → IA generative
 
 ---
 
@@ -201,19 +197,15 @@ image: ./images/img_004.png
 
 <img src="./images/img_004.png" style="position:absolute; top:60px; right:20px; width:340px;" alt="Frise chronologique IA" />
 
-<div style="max-width:55%;">
-
 **Les debuts (1943-1970)**
-- **1943** : McCulloch & Pitts modelisent le cerveau comme un circuit logique
+- **1943** : McCulloch & Pitts modelisent le cerveau<br>comme un circuit logique
 - **1950** : Turing pose la question "Can machines think?"
-- **1956** : Conference de Dartmouth -- le terme "Artificial Intelligence" est ne
+- **1956** : Conference de Dartmouth -- le terme<br>"Artificial Intelligence" est ne
 - **Annees 50** : premiers programmes capables d'apprendre
   - Samuel (jeu de dames), Newell & Simon (theoricien logique)
   - Gelernter (geometrie), naissance de Lisp
-- **1965** : Robinson propose un algorithme complet de raisonnement logique
-- **1969-79** : age d'or des systemes experts (bases de connaissances)
-
-</div>
+- **1965** : Robinson propose un algorithme complet<br>de raisonnement logique
+- **1969-79** : age d'or des systemes experts<br>(bases de connaissances)
 
 ---
 
@@ -331,9 +323,7 @@ image: ./images/img_020.png
 
 <img src="./images/img_020.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Test de Turing" />
 
-<div style="max-width:60%;">
-
-**Alan Turing (1950)** propose un test operationnel : une machine est "intelligente" si un humain ne peut la distinguer d'un autre humain en conversant avec elle.
+**Alan Turing (1950)** propose un test operationnel : une machine<br>est "intelligente" si un humain ne peut la distinguer d'un autre<br>humain en conversant avec elle.
 
 **Competences requises pour reussir le test :**
 - Traitement du langage naturel
@@ -343,13 +333,11 @@ image: ./images/img_020.png
 
 **« Total Turing » (+ camera)** ajoute la vision et la robotique.
 
-**Ces competences definissent les grandes disciplines de l'IA** -- dont quatre seront detaillees dans ce cours.
+**Ces competences definissent les grandes disciplines de l'IA**<br>-- dont quatre seront detaillees dans ce cours.
 
 <div style="font-size:0.78em; opacity:0.8; margin-top:6px;">
 
 *En pratique : Dnn + Portal Keeper -- plateforme web d'agents conversationnels*
-
-</div>
 
 </div>
 
@@ -428,17 +416,13 @@ image: ./images/img_021.png
 
 <img src="./images/img_021.png" style="position:absolute; top:60px; right:20px; width:320px;" alt="Schema agent" />
 
-<div style="max-width:55%;">
-
 **Un agent est une entite autonome qui :**
-- **Percoit** son environnement grace a des capteurs (cameras, micros, senseurs...)
-- **Agit** sur cet environnement par des effecteurs (moteurs, ecrans, haut-parleurs...)
+- **Percoit** son environnement grace a des capteurs<br>(cameras, micros, senseurs...)
+- **Agit** sur cet environnement par des effecteurs<br>(moteurs, ecrans, haut-parleurs...)
 
 **Formalisation :**
-- Un agent implemente une *fonction d'agent* : $f: \mathcal{P}^* \to \mathcal{A}$
-- A partir de l'historique complet de ses percepts, il choisit une action
-
-</div>
+- Un agent implemente une *fonction d'agent* :<br>$f: \mathcal{P}^* \to \mathcal{A}$
+- A partir de l'historique complet de ses percepts,<br>il choisit une action
 
 ---
 
@@ -571,19 +555,15 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 
 <img src="./images/img_030.png" style="position:absolute; top:75px; right:20px; width:380px; background:white; padding:6px; border-radius:4px;" alt="Pseudocode agent pilote par table" />
 
-<div style="max-width:55%;">
-
 **f(agent) = Architecture physique + Programme**
 
 **Programme agent pilote par table**
 
 - Taille ? Duree ? Autonomie ?
 
-</div>
+<div style="margin-top:8px;">
 
-<div style="max-width:95%; margin-top:8px;">
-
-Un agent naif pourrait stocker une table "percepts → action" : la table serait gigantesque et impossible a construire.
+Un agent naif pourrait stocker une table "percepts → action" :<br>la table serait gigantesque et impossible a construire.
 
 **Cinq architectures d'agents, par ordre de generalite :**
 
@@ -603,8 +583,6 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 <img src="./images/img_032.png" style="position:absolute; bottom:30px; right:30px; width:340px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent reflexe" />
 
-<div style="max-width:48%;">
-
 - **Pas de memoire**
 - **Percepts courants**
 - **Regles Conditions / Actions**
@@ -622,8 +600,6 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 </div>
 
-</div>
-
 <img src="./images/img_033.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="A New Kind of Science - Wolfram" />
 
 
@@ -634,8 +610,6 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 <img src="./images/img_034.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent modele" />
 
 <img src="./images/img_035.png" style="position:absolute; bottom:30px; right:30px; width:320px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent fonde sur un modele" />
-
-<div style="max-width:48%;">
 
 **Caracteristiques :**
 
@@ -654,8 +628,6 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 </div>
 
-</div>
-
 <img src="./images/img_036.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="Robot Brooks" />
 
 
@@ -665,15 +637,11 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 <img src="./images/img_037.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent buts" />
 
-<div style="max-width:55%;">
-
-**Du reactif au deliberatif** : l'agent ne reagit plus seulement a l'instant present, il anticipe le futur.
+**Du reactif au deliberatif** : l'agent ne reagit plus seulement<br>a l'instant present, il anticipe le futur.
 
 - Considere les consequences de ses actions
 - Planifie des sequences d'actions pour atteindre un objectif
 - Utilise la recherche (exploration) et la planification
-
-</div>
 
 ---
 
@@ -681,18 +649,14 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 <img src="./images/img_038.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent utilite" />
 
-<div style="max-width:55%;">
-
 **Quand plusieurs chemins menent au but, lequel choisir ?**
 
-- Une **fonction d'utilite** U : Etat → R attribue un score a chaque etat
+- Une **fonction d'utilite** U : Etat → R attribue<br>un score a chaque etat
 - L'agent choisit l'action qui maximise l'utilite esperee
 
 **Permet d'arbitrer entre :**
 - Probabilite de succes vs importance de l'objectif
 - Risque vs recompense, urgence vs cout
-
-</div>
 
 ---
 
@@ -700,18 +664,14 @@ Un agent naif pourrait stocker une table "percepts → action" : la table serait
 
 <img src="./images/img_039.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent apprentissage" />
 
-<div style="max-width:55%;">
-
 **Quatre composants internes :**
 
 - **Element de performance** : choisit les actions
-- **Element d'apprentissage** : ameliore la performance a partir de l'experience
+- **Element d'apprentissage** : ameliore la performance<br>a partir de l'experience
 - **Critique** : evalue les resultats par rapport a un standard fixe
 - **Generateur de problemes** : suggere des actions exploratoires
 
 **Formes d'apprentissage :** supervise, par renforcement, non supervise
-
-</div>
 
 ---
 

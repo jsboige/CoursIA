@@ -21,7 +21,7 @@
 | EMA-Cross-Index | 28789945 | — | 0.384 | ~0.43 expected | RESEARCH DONE, NO BACKTEST YET |
 | TrendStocksLite | 28817425 | — | NEW | **0.719** | v1.0 initial (2026-03-09) |
 | DualMomentumNoTLT | 28817424 | — | NEW | **0.469** | v1.0 initial (2026-03-09) |
-| Trend-Following | 28797562 | ESGF | 0.212 | 0.212 | CEILING REACHED (iter6, 2026-03-09) |
+| Trend-Following | 28797562 | Partner | 0.212 | 0.212 | CEILING REACHED (iter6, 2026-03-09) |
 | TrendFilteredMeanReversion | 28817422 | #40 | NEW | **-0.016** | HARD CEILING: H4 multi-instrument REJECTED (-0.129) |
 | Gaussian-Direction-Classifier | 29398513 | — | 0.864 | **0.761** | v2.0: Beta 1.133->0.540, MaxDD 36.8%->25.6% |
 | **LSTM-Forecasting** | **29443476** | **—** | **0.366** | **0.525** | **v2.1: real MLPClassifier, 7-ETF, alpha -0.008->+0.016. IMPROVED.** |

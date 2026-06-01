@@ -1189,7 +1189,7 @@ layout: section
 
 - **Format** : 10 min presentation + 5 min questions par groupe
 - **Support** : Slidev obligatoire (template fourni dans le depot)
-- **Livrables** : projet uploaded dans l'org ESGF avant J-2 (17 mai)
+- **Livrables** : projet uploaded dans l'org partenaire avant J-2 (17 mai)
 
 <div v-click="1">
 

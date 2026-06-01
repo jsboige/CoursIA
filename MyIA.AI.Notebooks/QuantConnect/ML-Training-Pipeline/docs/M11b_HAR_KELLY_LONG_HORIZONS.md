@@ -79,10 +79,10 @@
 
 **Combined M11a + M11b**: kelly_har_mu60 BEATS **27/35 = 77%** systematic edge across 7 coins × 5 horizons (h=1,5,10,15,20). Confirms HAR-RV + Kelly sizing as the strongest classical baseline in our M-series.
 
-## ESGF / pedagogical implications
+## Pedagogical implications
 
-- **`ESGF-HAR-RV-Kelly` strategy ROBUSTNESS confirmed across horizons** — same dominant strategy at h=1,5,10,15,20. Not regime-specific.
-- **Sprint #969 Batch 1 (already PR #975)** : the existing ESGF-HAR-RV-Kelly research notebook can cite M11b for long-horizon robustness validation.
+- **`HAR-RV-Kelly` strategy ROBUSTNESS confirmed across horizons** — same dominant strategy at h=1,5,10,15,20. Not regime-specific.
+- **Sprint #969 Batch 1 (already PR #975)** : the existing HAR-RV-Kelly research notebook can cite M11b for long-horizon robustness validation.
 - **Honest didactic narrative** : "HAR-RV + Kelly is the strongest baseline we've found, BEATS buy_hold 77% of the time across 5 horizons × 7 coins. Transformers (M8 SOTA sweep 0/96 BEATS on direction prediction) do NOT add value over this baseline."
 
 ## Caveats / next steps

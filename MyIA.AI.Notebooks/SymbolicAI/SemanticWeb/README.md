@@ -1,5 +1,12 @@
 # Web Semantique - Semantic Web
 
+<!-- CATALOG-STATUS
+series: SymbolicAI-SemanticWeb
+pedagogical_count: 18
+breakdown: RDF-Foundations=6, Linked-Data-Ontologies=5, Modern-Standards=3, Knowledge-Graphs-IA=3, Legacy=1
+maturity: PRODUCTION=6, BETA=12
+-->
+
 Serie de notebooks pour explorer le **Web Semantique**, combinant **.NET C#** (dotNetRDF, fondations) et **Python** (rdflib, standards modernes, IA).
 
 ---
@@ -260,27 +267,17 @@ Ce notebook bonus compare differents raisonneurs OWL (owlrl, HermiT, reasonable,
 
 ---
 
-## Statut de maturite
+## Acquis d'apprentissage
 
-| # | Notebook | Kernel | Cellules | Exercices | Statut |
-|---|----------|--------|----------|-----------|--------|
-| 1 | SW-1-CSharp-Setup | .NET | 18 | - | **COMPLET** |
-| 2 | SW-2-CSharp-RDFBasics | .NET | 48 | 2 | **COMPLET** |
-| 2b | SW-2b-Python-RDFBasics | Python | 30 | 2 | **COMPLET** |
-| 3 | SW-3-CSharp-GraphOperations | .NET | 34 | 3 | **COMPLET** |
-| 4 | SW-4-CSharp-SPARQL | .NET | 36 | 3 | **COMPLET** |
-| 4b | SW-4b-Python-SPARQL | Python | 25 | 2 | **COMPLET** |
-| 5 | SW-5-CSharp-LinkedData | .NET | 38 | 3 | **COMPLET** |
-| 5b | SW-5b-Python-LinkedData | Python | 25 | 2 | **COMPLET** |
-| 6 | SW-6-CSharp-RDFS | .NET | 33 | 2 | **COMPLET** |
-| 7 | SW-7-CSharp-OWL | .NET | 35 | 2 | **COMPLET** |
-| 7b | SW-7b-Python-OWL | Python | 30 | 2 | **COMPLET** |
-| 8 | SW-8-Python-SHACL | Python | 43 | 3 | **COMPLET** |
-| 9 | SW-9-Python-JSONLD | Python | 60 | 3 | **COMPLET** |
-| 10 | SW-10-Python-RDFStar | Python | 52 | 2 | **COMPLET** |
-| 11 | SW-11-Python-KnowledgeGraphs | Python | 75 | 3 | **COMPLET** |
-| 12 | SW-12-Python-GraphRAG | Python | 44 | 3 | **COMPLET** |
-| 13 | SW-13-Python-Reasoners (bonus) | Python | 38 | 3 | **COMPLET** |
+A l'issue de cette serie, l'apprenant est capable de :
+
+- **Modeliser un domaine en RDF** (triplets, IRIs, litteraux typees, namespaces) et manipuler des graphes en C# avec dotNetRDF (`SW-2-CSharp-RDFBasics.ipynb`, `SW-3-CSharp-GraphOperations.ipynb`) ou en Python avec rdflib (`SW-2b-Python-RDFBasics.ipynb`).
+- **Interroger un graphe en SPARQL 1.1** (SELECT, CONSTRUCT, ASK, DESCRIBE, federations via SERVICE) cote .NET (`SW-4-CSharp-SPARQL.ipynb`) et Python (`SW-4b-Python-SPARQL.ipynb`), puis publier des donnees Linked Data resolvables (`SW-5-CSharp-LinkedData.ipynb`, `SW-5b-Python-LinkedData.ipynb`).
+- **Formaliser une ontologie en RDFS puis OWL** (classes, proprietes, restrictions, hierarchies) et tirer parti d'un raisonneur pour materialiser les inferences (`SW-6-CSharp-RDFS.ipynb`, `SW-7-CSharp-OWL.ipynb`, `SW-7b-Python-OWL.ipynb`, `SW-13-Python-Reasoners.ipynb`).
+- **Valider la conformite d'un graphe** avec SHACL (NodeShapes/PropertyShapes, contraintes de cardinalite et de type, rapport de validation) via pySHACL (`SW-8-Python-SHACL.ipynb`).
+- **Serialiser et echanger des donnees RDF en JSON-LD** (`@context`, framing, compaction/expansion) pour interoperer avec les APIs Web modernes (`SW-9-Python-JSONLD.ipynb`).
+- **Annoter des assertions avec RDF-Star / SPARQL-Star** (citations de triplets, provenance, niveau de confiance) pour modeliser metadonnees et reification compacte (`SW-10-Python-RDFStar.ipynb`).
+- **Construire et exploiter un graphe de connaissances integre a un LLM** (extraction de triplets, embeddings, GraphRAG) pour ancrer les reponses generatives sur des donnees structurees (`SW-11-Python-KnowledgeGraphs.ipynb`, `SW-12-Python-GraphRAG.ipynb`).
 
 ---
 
@@ -379,8 +376,18 @@ SemanticWeb/
 ├── SW-10-Python-RDFStar.ipynb
 ├── SW-11-Python-KnowledgeGraphs.ipynb
 ├── SW-12-Python-GraphRAG.ipynb
-└── SW-13-Python-Reasoners.ipynb     # Bonus
+├── SW-13-Python-Reasoners.ipynb     # Bonus
+├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
+└── RDF.Net-Legacy/                  # Archive C# RDF.NET (pre-migration Python)
+    ├── RDF.Net.ipynb                # Notebook .NET historique
+    ├── Example.ttl                  # Donnees Turtle
+    ├── example.srj                  # Resultats SPARQL JSON
+    └── example.srx                  # Resultats SPARQL XML
 ```
+
+> **Note** — `RDF.Net-Legacy/` conserve l'ancien notebook C# (kernel .NET Interactive)
+> avant la bascule pedagogique vers Python (`SW-2b-Python-RDFBasics.ipynb` et suivants).
+> Archive de reference, non maintenue. Pour le RDF actuel, voir SW-2 / SW-2b.
 
 ## Ressources
 

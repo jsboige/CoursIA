@@ -608,6 +608,9 @@ def test_f9_intractable_accepted_after_director_consultation():
     # Simulate AgentExecutor recording a real Director run.
     state.director_consulted = True
     state.director_consulted_count = 1
+    # B2 gate (#1224): the always-wired SearchAgent (provers.py:255) has also
+    # explored reference_docs/ by the time the Coordinator gives up.
+    state.search_agent_consulted = True
 
     out = ct.mark_sorry_intractable("director also failed")
     assert "REFUSED" not in out, f"F9 gate over-restrictive: {out[:200]}"
@@ -631,6 +634,10 @@ def test_f9_graceful_degradation_when_no_director_wired():
     director_agent = None
     if director_agent is None:
         state.director_consulted = True
+    # The SearchAgent is always wired (provers.py:255, unconditional), so by
+    # the time intractable is reached it has run and cleared the B2 gate
+    # (#1224). Only the Director has a no-wire auto-bypass.
+    state.search_agent_consulted = True
 
     from prover.tools import CoordinatorTools
     ct = CoordinatorTools(state=state, filepath="", trace=None)
@@ -640,3 +647,673 @@ def test_f9_graceful_degradation_when_no_director_wired():
         f"F9 gate trapped a no-Director session: {out[:200]}"
     )
     assert state.intractable is True
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# P1 latch-success (Epic #1453, 2026-05-23 forensic) — in-place-proof detector
+#
+# Bug: tools.file_replace_lines edits the REAL target file in place and its
+# own build_check passes, but SorryContext.sorry_line is frozen at session
+# start (provers.py:203) and is NEVER updated. The downstream
+# verify_sorry_replacement then finds no sorry at the frozen line,
+# P5-relocates to a nearest UNRELATED sorry, injects the tactic there ->
+# goal mismatch -> spurious tactic_failed that MASKS the genuine proof.
+#
+# The latch in VerifyExecutor.handle catches this BEFORE the doomed re-verify
+# when all three hold (else it falls through, P5 path preserved):
+#   1. the frozen target line no longer contains "sorry"
+#   2. the current raw sorry count is STRICTLY below the session-start count
+#      (full_file snapshot) -> distinguishes a real proof from a line shift
+#   3. a confirming build of the actual file succeeds
+# These tests pin the decision offline (verifier + re-verify mocked, no lake).
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _make_verify_executor(filepath, sorry_line, full_file, goal_state=""):
+    from prover.workflow import VerifyExecutor
+
+    sctx = SorryContext(
+        filepath=str(filepath), sorry_line=sorry_line, indentation=2,
+        indent_str="  ", full_file=full_file, goal_state=goal_state,
+    )
+    return VerifyExecutor(sorry_context=sctx, imports="")
+
+
+def _run_handle(executor, msg):
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    ctx = AsyncMock()
+    ctx.yield_output = AsyncMock()
+    ctx.send_message = AsyncMock()
+    asyncio.run(executor.handle(msg, ctx))
+    return ctx
+
+
+def _patch_verifier_and_reverify(monkeypatch, build_success=True, raw_output=""):
+    """Mock the verifier (condition 3) and record any re-verify fall-through.
+
+    ``raw_output`` lets a test inject a build log carrying a "declaration uses
+    sorry" warning so the build-aware latch guard (#1500) can be exercised
+    without a real lake build.
+    """
+    import prover.verifier as vmod
+    import prover.lean_utils as lu
+
+    class _FakeVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {"success": build_success, "errors": "",
+                    "raw_output": raw_output}
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FakeVerifier())
+
+    reverify_calls = []
+    monkeypatch.setattr(
+        lu, "verify_sorry_replacement",
+        lambda **k: (reverify_calls.append(k)
+                     or {"success": False, "errors": "REACHED_REVERIFY"}),
+    )
+    return reverify_calls
+
+
+def test_p1_latch_fires_on_in_place_proof(tmp_path, monkeypatch):
+    """All three conditions hold -> latch sets proof_found, no re-verify run."""
+    from prover.workflow import ProofMessage
+
+    proved = (
+        "import Mathlib.Tactic\n"
+        "theorem t : True := by\n"
+        "  trivial\n"
+    )
+    fake = tmp_path / "Proved.lean"
+    fake.write_text(proved, encoding="utf-8")
+    # Session-start snapshot had ONE sorry; it is now proved (count 1 -> 0).
+    session_full = proved.replace("  trivial\n", "  sorry\n")
+    assert session_full.count("sorry") == 1 and proved.count("sorry") == 0
+
+    reverify_calls = _patch_verifier_and_reverify(monkeypatch, build_success=True)
+
+    ex = _make_verify_executor(fake, sorry_line=3, full_file=session_full)
+    msg = ProofMessage(content="x", tactic="trivial", sorry_count=1)
+    ctx = _run_handle(ex, msg)
+
+    assert msg.proof_found is True, "latch must set proof_found on in-place proof"
+    assert reverify_calls == [], (
+        "verify_sorry_replacement must NOT run when the latch fires"
+    )
+    ctx.yield_output.assert_awaited_once()
+
+
+def test_p1_latch_skips_when_sorry_count_not_dropped(tmp_path, monkeypatch):
+    """Condition 2 fails (count unchanged = a shift) -> re-verify runs instead."""
+    from prover.workflow import ProofMessage
+
+    # Frozen line is clear, but the session snapshot has the SAME sorry count
+    # (the sorry merely moved). The latch must defer to the existing verify.
+    content = (
+        "import Mathlib.Tactic\n"
+        "theorem t : True := by\n"
+        "  trivial\n"
+        "-- a stray sorry mention in a comment\n"
+    )
+    fake = tmp_path / "Shift.lean"
+    fake.write_text(content, encoding="utf-8")
+    session_full = content  # identical -> same count -> no drop
+
+    reverify_calls = _patch_verifier_and_reverify(monkeypatch, build_success=True)
+
+    ex = _make_verify_executor(fake, sorry_line=3, full_file=session_full)
+    msg = ProofMessage(content="x", tactic="trivial", sorry_count=1)
+    _run_handle(ex, msg)
+
+    assert msg.proof_found is False, "latch must not fire without a sorry drop"
+    assert len(reverify_calls) == 1, "re-verify must run when the latch is skipped"
+
+
+def test_p1_latch_skips_when_target_line_still_has_sorry(tmp_path, monkeypatch):
+    """Condition 1 fails (frozen line still has sorry) -> re-verify runs.
+
+    Even though a sorry was removed elsewhere (count dropped), the frozen
+    target line still carries a sorry, so latching success would be a false
+    positive. Condition 1 vetoes it.
+    """
+    from prover.workflow import ProofMessage
+
+    content = (
+        "import Mathlib.Tactic\n"
+        "theorem t1 : True := by\n"
+        "  sorry\n"  # frozen line 3 — STILL a sorry
+    )
+    fake = tmp_path / "StillSorry.lean"
+    fake.write_text(content, encoding="utf-8")
+    # Session snapshot had TWO sorries (count dropped 2 -> 1) so cond 2 holds.
+    session_full = content + "theorem t2 : True := by\n  sorry\n"
+    assert session_full.count("sorry") == 2 and content.count("sorry") == 1
+
+    reverify_calls = _patch_verifier_and_reverify(monkeypatch, build_success=True)
+
+    ex = _make_verify_executor(fake, sorry_line=3, full_file=session_full)
+    msg = ProofMessage(content="x", tactic="omega", sorry_count=2)
+    _run_handle(ex, msg)
+
+    assert msg.proof_found is False, (
+        "latch must not fire while the frozen target line still has a sorry"
+    )
+    assert len(reverify_calls) == 1, "re-verify must run when condition 1 vetoes"
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1500 — implicit-sorry blind spot: a passing build can still hide a sorry
+#
+# When the agent swaps an explicit `sorry` for a search tactic
+# (apply?/exact?/solve_by_elim) that finds nothing, Lean emits a
+# "declaration uses sorry" WARNING (not an error). The build SUCCEEDS and the
+# text no longer contains the token "sorry", so a text-only count reports 0 —
+# a false positive. The fix folds the build-warning count into the decision
+# (the same max() that tools.compile() already uses) in BOTH success gates:
+#   - prover/provers.py  run_session success gate (final_sorry adoption)
+#   - prover/workflow.py P1 in-place latch (effective-count condition)
+# `_count_sorries_from_build_output` is the shared primitive; tests below pin
+# the primitive and the latch decision offline (no lake build needed).
+# ──────────────────────────────────────────────────────────────────────────
+
+
+# A realistic lake build log fragment with one implicit-sorry warning.
+_IMPLICIT_SORRY_LOG = (
+    "Building TestSpace\n"
+    "warning: ./TestSpace/Fake.lean:42:0: declaration uses 'sorry'\n"
+    "Build completed successfully.\n"
+)
+
+
+def test_count_sorries_from_build_output_counts_warning():
+    """The shared primitive counts a 'declaration uses sorry' warning."""
+    from prover.tools import _count_sorries_from_build_output
+
+    assert _count_sorries_from_build_output(_IMPLICIT_SORRY_LOG) == 1
+
+
+@pytest.mark.parametrize("log", [
+    "Build completed successfully.\n",          # clean build, no warning
+    "info: building\nwarning: unused variable x\n",  # unrelated warning
+    "",                                          # empty
+])
+def test_count_sorries_from_build_output_zero_when_no_sorry(log):
+    """No 'uses sorry' warning -> count 0 (no false positives on clean logs)."""
+    from prover.tools import _count_sorries_from_build_output
+
+    assert _count_sorries_from_build_output(log) == 0
+
+
+def test_count_sorries_from_build_output_counts_multiple_declarations():
+    """One warning per flagged declaration."""
+    from prover.tools import _count_sorries_from_build_output
+
+    log = (
+        "warning: ./A.lean:3:0: declaration uses 'sorry'\n"
+        "warning: ./A.lean:9:0: declaration uses `sorry`\n"
+    )
+    assert _count_sorries_from_build_output(log) == 2
+
+
+def test_p1_latch_skips_on_implicit_sorry(tmp_path, monkeypatch):
+    """#1500: frozen line text-clear + text count dropped + build SUCCEEDS,
+    but the build log warns 'declaration uses sorry' (the agent swapped the
+    explicit sorry for `apply?` which found nothing). The effective count did
+    NOT actually drop, so the latch must NOT fire — it must fall through to the
+    normal verify path instead of claiming a spurious in-place proof.
+    """
+    from prover.workflow import ProofMessage
+
+    # Text shows no "sorry" (replaced by apply?), but the build will warn.
+    swapped = (
+        "import Mathlib.Tactic\n"
+        "theorem t : True := by\n"
+        "  apply?\n"
+    )
+    fake = tmp_path / "Implicit.lean"
+    fake.write_text(swapped, encoding="utf-8")
+    session_full = swapped.replace("  apply?\n", "  sorry\n")
+    # Condition 1 (frozen line clear) and condition 2 (text 1 -> 0) both hold.
+    assert session_full.count("sorry") == 1 and swapped.count("sorry") == 0
+
+    reverify_calls = _patch_verifier_and_reverify(
+        monkeypatch, build_success=True, raw_output=_IMPLICIT_SORRY_LOG,
+    )
+
+    ex = _make_verify_executor(fake, sorry_line=3, full_file=session_full)
+    msg = ProofMessage(content="x", tactic="apply?", sorry_count=1)
+    _run_handle(ex, msg)
+
+    assert msg.proof_found is False, (
+        "latch must NOT fire when the build still warns 'uses sorry' (#1500)"
+    )
+    assert len(reverify_calls) == 1, (
+        "re-verify must run when the effective (build-aware) count did not drop"
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1483 — AutonomousProver increase-case gate: a strategic decomposition that
+# RAISES the sorry count but still compiles (lake build SUCCESS, 0 errors) must
+# be reported as success and must NOT be reverted. The revert branch upstream
+# (provers.py ~1105) is keyed on `level_1_build` alone, so a sorry increase
+# never reaches it while the build passes; `_autonomous_success_gate` is the
+# pure decision behind the final success/structural-progress flags. P4 intent:
+# "never revert a file solely because sorry increased".
+# ──────────────────────────────────────────────────────────────────────────
+def test_autonomous_gate_increase_case_is_success_no_revert():
+    """sorry 4 -> 5 (decomposition) + build OK => success, structural progress."""
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=5, original_sorry_count=4, final_build_ok=True,
+    )
+    assert success is True, (
+        "increase-case that still builds must report success (P4 #1483)"
+    )
+    assert structural is True, (
+        "a building sorry increase is structural progress, not a regression"
+    )
+
+
+def test_autonomous_gate_increase_case_reverts_when_build_fails():
+    """sorry 4 -> 5 but build FAILS => not success (revert territory)."""
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=5, original_sorry_count=4, final_build_ok=False,
+    )
+    assert success is False
+    assert structural is False
+
+
+@pytest.mark.parametrize(
+    "final_sorry,original,build_ok,exp_success,exp_struct",
+    [
+        # increase + build OK -> success via structural progress (#1483 core)
+        (5, 4, True, True, True),
+        # same count + build OK + >0 -> structural progress (no regression)
+        (4, 4, True, True, True),
+        # decrease + build OK -> plain success, not structural
+        (3, 4, True, True, False),
+        # fully solved + build OK -> success, not structural (count 0)
+        (0, 4, True, True, False),
+        # increase + build FAIL -> never success
+        (5, 4, False, False, False),
+        # decrease + build FAIL -> never success (false positive guard)
+        (3, 4, False, False, False),
+        # degenerate 0 -> 0 (no sorry to prove): no progress, not structural
+        # (struct needs final_sorry > 0). Preserves the pre-extraction formula.
+        (0, 0, True, False, False),
+    ],
+)
+def test_autonomous_gate_matrix(final_sorry, original, build_ok,
+                                exp_success, exp_struct):
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=final_sorry,
+        original_sorry_count=original,
+        final_build_ok=build_ok,
+    )
+    assert success is exp_success
+    assert structural is exp_struct
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1460 — compile_probe_goal caching. Probing the goal state runs the Lean
+# server; forensics found 54 exact-repeat probes of the same unchanged goal
+# (~2.2h wasted). The cache is keyed by (file content hash, sorry_line): a
+# repeat probe of an unchanged file is served from cache, and any edit that
+# changes the content hash invalidates it (a content key is a stronger
+# invalidation signal than a wall-clock TTL — the goal can only change when
+# the file does).
+# ──────────────────────────────────────────────────────────────────────────
+def test_probe_goal_caches_unchanged_file(tactic_tools, monkeypatch):
+    """Two probes of the same file hit the Lean server once; second is cached."""
+    import json
+    import prover.lean_utils as lean_utils
+
+    calls = {"n": 0}
+
+    def fake_get_goal_state(filepath, line):
+        calls["n"] += 1
+        return f"goal at {line}"
+
+    monkeypatch.setattr(lean_utils, "get_goal_state", fake_get_goal_state)
+    line = tactic_tools._test_sorry_line
+
+    first = tactic_tools.compile_probe_goal(line)
+    second = tactic_tools.compile_probe_goal(line)
+
+    assert calls["n"] == 1, "unchanged file must serve the second probe from cache"
+    assert first == second, "cached result must be identical to the first probe"
+    assert json.loads(first)["goal"] == f"goal at {line}"
+
+
+def test_probe_goal_cache_invalidates_on_file_change(tactic_tools, monkeypatch):
+    """Editing the file changes its content hash, so the next probe recomputes."""
+    import prover.lean_utils as lean_utils
+
+    calls = {"n": 0}
+
+    def fake_get_goal_state(filepath, line):
+        calls["n"] += 1
+        return f"goal v{calls['n']}"
+
+    monkeypatch.setattr(lean_utils, "get_goal_state", fake_get_goal_state)
+    line = tactic_tools._test_sorry_line
+
+    tactic_tools.compile_probe_goal(line)
+    # Mutate the underlying file: the content hash changes -> cache miss.
+    path = Path(tactic_tools._filepath)
+    path.write_text(path.read_text(encoding="utf-8") + "\n-- edit\n", encoding="utf-8")
+    tactic_tools.compile_probe_goal(line)
+
+    assert calls["n"] == 2, "a content change must invalidate the probe cache"
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# P1 Δ0 stagnation hard-cap (Epic #1453) — AgentExecutor.handle must yield
+# once consecutive Δ0 compiles cross DELTA0_STAGNATION_HARDCAP.
+#
+# The compile tool (tools.py) already counts consecutive Δ0 compiles (a build
+# that succeeds but does NOT reach a new sorry low) and mirrors the count to
+# state.consecutive_delta0_compiles, but until #1453 nothing consumed it — it
+# relied on the LLM heeding a soft directive string. Forensic
+# multi_custom_Lattice_L147_zai.json: 26/30 compiles were Δ0 (22 consecutive at
+# 4 sorry from the start) yet the run never terminated and burned the full
+# budget. The hard cap is the orchestrator backstop.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _stagnation_agent(name="SearchAgent"):
+    from unittest.mock import AsyncMock, MagicMock
+
+    agent = MagicMock()
+    agent.name = name
+    agent.run = AsyncMock(return_value=MagicMock(
+        messages=[MagicMock(text="ran")]
+    ))
+    return agent
+
+
+def test_delta0_hardcap_yields_and_skips_agent():
+    """At/over the hard cap, handle yields the message and never runs the agent."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, DELTA0_STAGNATION_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_delta0_compiles = DELTA0_STAGNATION_HARDCAP
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    ctx = _run_handle(ex, ProofMessage(content="x"))
+
+    ctx.yield_output.assert_awaited_once()
+    agent.run.assert_not_awaited()  # no compute wasted past the cap
+
+
+def test_delta0_below_hardcap_runs_agent_normally():
+    """One short of the cap, the run continues — the agent executes as usual."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, DELTA0_STAGNATION_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_delta0_compiles = DELTA0_STAGNATION_HARDCAP - 1
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    ctx = _run_handle(ex, ProofMessage(content="x"))
+
+    agent.run.assert_awaited_once()  # below the cap → keep working
+    ctx.yield_output.assert_not_awaited()
+
+
+def test_delta0_hardcap_ignored_when_proof_found():
+    """A found proof must not be masked by the stagnation yield (guarded by
+    `not msg.proof_found`)."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, DELTA0_STAGNATION_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_delta0_compiles = DELTA0_STAGNATION_HARDCAP + 5
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x")
+    msg.proof_found = True
+    ctx = _run_handle(ex, msg)
+
+    # The delta0 path is skipped; the agent runs (proof_found is handled
+    # elsewhere, not pre-empted by the stagnation backstop).
+    agent.run.assert_awaited_once()
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# P5/P4 (Epic #1453, 2026-05-29 forensic) — pre-screen documented-intractable
+# targets BEFORE spawning agents.
+#
+# Forensic: all NON-Conway sorry targets are documented intractable in
+# docs/lean/stable_marriage_intractable_diagnosis.md, yet director-less
+# (zai-provider) runs blanket-bypassed the intractable gate (provers.py sets
+# state.director_consulted=True when director_agent is None) and looped to the
+# iteration cap — 9/13 runs burned full budgets, ~8.2h wasted. The pre-screen
+# (P5) returns {skipped:true, success:false, reason:"documented_intractable"}
+# without spawning; the director-less fallback (P4) applies the SAME KB skip
+# instead of looping. These tests pin the decision offline (mock KB, no lake).
+# ──────────────────────────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def mock_intractable_kb(monkeypatch):
+    """Inject a deterministic 2-entry KB into the cache (no real file I/O)."""
+    import prover.provers as P
+
+    fake_kb = [
+        {
+            "file": "GaleShapley.lean",
+            "line": 116,
+            "identifier": "gale_shapley_man_optimal :: IsStable",
+            "reason": "rural hospitals theorem missing",
+            "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-1",
+        },
+        {
+            "file": "WholeFileIntractable.lean",
+            "match_by_file_only": True,
+            "identifier": "any sorry in this file",
+            "reason": "entire file blocked behind new formalization",
+            "source": "docs/lean/example.md",
+        },
+    ]
+    monkeypatch.setattr(P, "_intractable_kb_cache", fake_kb)
+    return fake_kb
+
+
+def test_load_intractable_kb_returns_documented_targets():
+    """The real version-controlled KB loads and lists the documented targets."""
+    import prover.provers as P
+
+    # Bust any cache from a prior test so we read the real JSON.
+    P._intractable_kb_cache = None
+    kb = P._load_intractable_kb()
+    P._intractable_kb_cache = None  # leave cache clean for downstream tests
+
+    assert isinstance(kb, list) and len(kb) >= 5, (
+        f"expected the documented stable-marriage targets, got {len(kb)}"
+    )
+    files = {e.get("file") for e in kb}
+    assert {"GaleShapley.lean", "Lattice.lean", "Basic.lean"} <= files
+    # Every entry must cite a source doc (review discipline).
+    assert all(e.get("source") for e in kb), "every KB entry must cite a source"
+
+
+def test_load_intractable_kb_degrades_to_empty_on_missing_file(monkeypatch):
+    """A missing/broken KB returns [] (never crashes the prover)."""
+    import prover.provers as P
+    from pathlib import Path as _P
+
+    P._intractable_kb_cache = None
+    monkeypatch.setattr(P, "_INTRACTABLE_KB_PATH", _P("/does/not/exist.json"))
+    assert P._load_intractable_kb() == []
+    P._intractable_kb_cache = None
+
+
+def test_match_intractable_kb_matches_by_basename_and_line(mock_intractable_kb):
+    """Matching is filename-based (machine-portable) AND line-keyed."""
+    import prover.provers as P
+
+    # Different absolute path, same basename + line -> match.
+    entry = P._match_intractable_kb(
+        "/some/machine/specific/path/GaleShapley.lean", 116
+    )
+    assert entry is not None
+    assert entry["identifier"] == "gale_shapley_man_optimal :: IsStable"
+
+
+def test_match_intractable_kb_no_match_on_different_line(mock_intractable_kb):
+    """Same file, a DIFFERENT (provable) sorry line must NOT match."""
+    import prover.provers as P
+
+    assert P._match_intractable_kb("X/GaleShapley.lean", 999) is None
+
+
+def test_match_intractable_kb_no_match_on_different_file(mock_intractable_kb):
+    """A file not in the KB must not match — provable targets stay provable."""
+    import prover.provers as P
+
+    assert P._match_intractable_kb("X/Voting.lean", 116) is None
+
+
+def test_match_intractable_kb_file_only_matches_any_line(mock_intractable_kb):
+    """match_by_file_only entries match ANY sorry line in that file."""
+    import prover.provers as P
+
+    assert P._match_intractable_kb("X/WholeFileIntractable.lean", 1) is not None
+    assert P._match_intractable_kb("X/WholeFileIntractable.lean", 42) is not None
+
+
+def test_refuse_intractable_returns_skip_dict(mock_intractable_kb):
+    """A KB match yields the documented_intractable skip dict (P5 shape)."""
+    import prover.provers as P
+
+    out = P._refuse_intractable("X/GaleShapley.lean", 116, "DEMO_X")
+    assert out is not None
+    assert out["skipped"] is True
+    assert out["success"] is False
+    assert out["reason"] == "documented_intractable"
+    assert out["sorry_line"] == 116
+    assert out["demo"] == "DEMO_X"
+    assert out["source"]
+    # Shape parity with _refuse_honest_sorry (same keys present).
+    for key in ("success", "skipped", "reason", "detail", "demo",
+                "sorry_line", "filepath"):
+        assert key in out, f"missing key {key!r} (shape parity with honest_sorry)"
+
+
+def test_refuse_intractable_returns_none_for_provable_target(mock_intractable_kb):
+    """A target NOT in the KB returns None -> the prover proceeds normally."""
+    import prover.provers as P
+
+    assert P._refuse_intractable("X/GaleShapley.lean", 999, "DEMO_X") is None
+    assert P._refuse_intractable("X/Voting.lean", 116, "DEMO_X") is None
+
+
+def test_refuse_intractable_shape_matches_honest_sorry(mock_intractable_kb):
+    """The skip dict mirrors _refuse_honest_sorry so callers handle both alike."""
+    import prover.provers as P
+
+    intractable = P._refuse_intractable("X/GaleShapley.lean", 116, "D")
+    # _refuse_honest_sorry returns the same shape for a static HONEST sorry.
+    # We compare key sets (values differ by reason).
+    honest_keys = {
+        "success", "skipped", "reason", "detail", "demo",
+        "sorry_line", "filepath",
+    }
+    assert honest_keys <= set(intractable.keys())
+    assert intractable["success"] is False and intractable["skipped"] is True
+
+
+def test_p4_director_less_fallback_skips_intractable(mock_intractable_kb):
+    """P4: the director-less branch applies the KB skip instead of looping.
+
+    Mirrors the exact decision in provers.py: when director_agent is None and
+    the target is a KB hit, _refuse_intractable returns a skip dict (the branch
+    returns it). A non-KB target returns None (graceful degradation preserved:
+    director_consulted=True, run proceeds).
+    """
+    import prover.provers as P
+
+    # KB target -> skip (no loop-to-cap).
+    skip = P._refuse_intractable("X/GaleShapley.lean", 116, "D")
+    assert skip is not None and skip["reason"] == "documented_intractable"
+
+    # Non-KB target -> None -> the blanket F9 auto-bypass still applies.
+    assert P._refuse_intractable("X/SomeProvable.lean", 5, "D") is None
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# P6 (Epic #1453, 2026-05-29 forensic) — surface structural_progress into the
+# result JSON so a build-OK / sorry_delta>=0 "proof restructured" outcome is
+# distinguishable from an actual sorry reduction.
+#
+# Both provers must emit the field. We verify the result-construction key is
+# present by parsing the source AST of prove_sorry (no LLM / lake needed).
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_multi_agent_result_includes_structural_progress_key():
+    """MultiAgentSorryProver result dict carries the structural_progress key."""
+    import ast
+    import inspect
+    from prover.provers import MultiAgentSorryProver
+
+    src = inspect.getsource(MultiAgentSorryProver.prove_sorry)
+    tree = ast.parse(src.lstrip())  # strip method indentation
+    keys = _result_dict_keys(tree)
+    assert "structural_progress" in keys, (
+        "MultiAgentSorryProver.prove_sorry must surface structural_progress (P6)"
+    )
+
+
+def test_autonomous_result_includes_structural_progress_key():
+    """AutonomousProver result dict carries the structural_progress key."""
+    import ast
+    import inspect
+    from prover.provers import AutonomousProver
+
+    src = inspect.getsource(AutonomousProver.prove_sorry)
+    tree = ast.parse(src.lstrip())
+    keys = _result_dict_keys(tree)
+    assert "structural_progress" in keys, (
+        "AutonomousProver.prove_sorry must surface structural_progress (P6)"
+    )
+
+
+def _result_dict_keys(tree):
+    """Collect every string key from every dict literal in an AST subtree."""
+    import ast
+
+    keys = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            for k in node.keys:
+                if isinstance(k, ast.Constant) and isinstance(k.value, str):
+                    keys.add(k.value)
+    return keys
+
+
+def test_autonomous_gate_structural_flag_feeds_result():
+    """The structural_progress flag the result reports is the gate's 2nd return.
+
+    Pins the wiring: _autonomous_success_gate returns (success, structural),
+    and the result JSON's structural_progress must reflect that boolean — i.e.
+    a build-OK same-count outcome reports structural_progress=True.
+    """
+    from prover.provers import _autonomous_success_gate
+
+    _success, structural = _autonomous_success_gate(
+        final_sorry=4, original_sorry_count=4, final_build_ok=True,
+    )
+    assert structural is True  # build-OK, sorry_delta==0 -> "proof restructured"

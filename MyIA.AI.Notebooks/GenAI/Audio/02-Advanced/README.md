@@ -10,7 +10,7 @@ Ce module explore les techniques avancees : clonage vocal, generation musicale, 
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 8 |
+| Notebooks | 9 |
 | Kernel | Python 3 |
 | Duree estimee | ~6-8h |
 | GPU requis | 2-24GB |
@@ -27,6 +27,7 @@ Ce module explore les techniques avancees : clonage vocal, generation musicale, 
 | 6 | [02-6-MIDI-Generation](02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), génération symbolique | Local GPU | ~2-4 GB |
 | 7 | [02-7-Song-Generation](02-7-Song-Generation.ipynb) | YuE vs SongGeneration 2, chansons complètes | Local GPU | 10-24 GB |
 | 8 | [02-8-Expressive-TTS](02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
+| 9 | [02-9-AceStep-Music-Generation](02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
 
 ## Prérequis
 
@@ -52,9 +53,10 @@ pip install -r requirements-music.txt  # Pour MusicGen, MIDI
 
 ### Parcours Musique
 1. **02-3-MusicGen-Generation** - Génération de musique textuelle
-2. **02-6-MIDI-Generation** - Génération MIDI symbolique
-3. **02-7-Song-Generation** - Chansons complètes
-4. **02-4-Demucs-Source-Separation** - Séparation de sources
+2. **02-9-AceStep-Music-Generation** - Text-to-song multilingue (<4 GB VRAM)
+3. **02-6-MIDI-Generation** - Génération MIDI symbolique
+4. **02-7-Song-Generation** - Chansons complètes
+5. **02-4-Demucs-Source-Separation** - Séparation de sources
 
 ## Technologies clés
 
@@ -62,6 +64,7 @@ pip install -r requirements-music.txt  # Pour MusicGen, MIDI
 |-------------|-------------|
 | **XTTS v2** | Clonage vocal zero-shot |
 | **MusicGen** | Génération text-to-music |
+| **ACE-Step v1.5** | Text-to-song multilingue (<4 GB VRAM) |
 | **Demucs v4** | Séparation de sources 4 stems |
 | **Chatterbox Turbo** | TTS émotionnel |
 | **Fish S2 Pro** | TTS ultra-naturel |

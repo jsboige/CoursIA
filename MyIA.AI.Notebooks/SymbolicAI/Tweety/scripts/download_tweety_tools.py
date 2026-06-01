@@ -145,8 +145,19 @@ def get_script_dir() -> pathlib.Path:
     try:
         return pathlib.Path(__file__).parent.resolve()
     except NameError:
-        # Exécuté depuis un notebook ou un REPL
-        return pathlib.Path.cwd()
+        # Exécuté depuis un notebook ou un REPL — chercher le bon répertoire Tweety
+        cwd = pathlib.Path.cwd()
+        # Si CWD est la racine du repo ou un parent, chercher le sous-répertoire Tweety
+        candidate = cwd / "MyIA.AI.Notebooks" / "SymbolicAI" / "Tweety" / "scripts"
+        if candidate.is_dir():
+            return candidate
+        # Si CWD est déjà dans l'arborescence Tweety, utiliser le scripts/ le plus proche
+        for parent in [cwd, *cwd.parents]:
+            scripts_dir = parent / "scripts" / "download_tweety_tools.py"
+            if scripts_dir.exists():
+                return scripts_dir.parent
+        # Dernier recours : CWD (comportement historique)
+        return cwd
 
 
 def download_with_progress(url: str, dest: pathlib.Path, desc: str = "Downloading") -> bool:
@@ -633,9 +644,21 @@ Examples:
     parser.add_argument("--spass", action="store_true", help="Download SPASS (Linux only)")
     parser.add_argument("--jdk", action="store_true", help="Download Zulu JDK 17")
     parser.add_argument("--native-sat", action="store_true", help="Download native SAT libraries")
+    parser.add_argument("--lib-dir", type=str, default=None,
+                        help="Target directory for JARs (default: Tweety/libs/)")
+    parser.add_argument("--version", type=str, default=None,
+                        help="Tweety version to download (default: 1.30)")
     parser.add_argument("--no-interactive", action="store_true", help="Disable progress bars")
 
     args = parser.parse_args()
+
+    # Override version if specified
+    global TWEETY_VERSION
+    if args.version:
+        TWEETY_VERSION = args.version
+
+    # Resolve lib directory
+    lib_dir = pathlib.Path(args.lib_dir) if args.lib_dir else None
 
     # Si aucun argument spécifié, afficher l'aide
     if not any(vars(args).values()):
@@ -651,7 +674,7 @@ Examples:
 
     # Exécuter les téléchargements demandés
     if args.all:
-        results.append(("JARs", download_tweety_jars()))
+        results.append(("JARs", download_tweety_jars(lib_dir)))
         results.append(("Resources", download_resource_files()))
         results.append(("Clingo", download_clingo()))
         results.append(("SPASS", download_spass()))
@@ -659,7 +682,7 @@ Examples:
         results.append(("Native SAT", download_native_sat_libs()))
     else:
         if args.jars:
-            results.append(("JARs", download_tweety_jars()))
+            results.append(("JARs", download_tweety_jars(lib_dir)))
         if args.resources:
             results.append(("Resources", download_resource_files()))
         if args.clingo:

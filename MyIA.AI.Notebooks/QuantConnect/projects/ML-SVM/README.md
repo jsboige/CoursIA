@@ -14,7 +14,7 @@ Monthly training, biweekly rebalance. Threshold 0.55 with max 4 positions.
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-SVM"`
 ```bash
 lean backtest --project .
 ```

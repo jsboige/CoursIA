@@ -13,7 +13,7 @@ Stop-loss at -8% to cut real breakdowns. Max 4 concurrent positions at 25% each.
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/MeanReversion"`
 ```bash
 lean backtest --project .
 ```

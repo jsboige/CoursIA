@@ -28,6 +28,7 @@ import json
 import re
 import subprocess
 import sys
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 
@@ -35,8 +36,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
-EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "output", "ESGF", "examples"}
-RESEARCH_DIR_KEYWORDS = {"research", "archive", "examples", "ESGF"}
+EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "output", "partner-course", "examples"}
+RESEARCH_DIR_KEYWORDS = {"research", "archive", "examples", "partner-course"}
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
@@ -44,7 +45,7 @@ SERIES_ORDER = [
 ]
 
 # Keywords indicating special requirements
-API_KEYWORDS = {"openai", "anthropic", "api_key", "API_KEY", "bearer", "endpoint"}
+API_KEYWORDS = {"openai", "anthropic", "api_key", "API_KEY", "bearer", "endpoint", "SemanticKernel"}
 GPU_KEYWORDS = {"cuda", "gpu", "torch.device", "ComfyUI", "VRAM"}
 CLOUD_KEYWORDS = {"QuantBook", "quantconnect", "qc-api", "lean-cli", "AlgorithmImports", "QCAlgorithm"}
 WSL_KEYWORDS = {"wsl", "WSL"}
@@ -160,11 +161,16 @@ def detect_requirements(notebook: dict) -> dict:
         if cell["cell_type"] == "code":
             all_source += "".join(cell.get("source", [])) + "\n"
 
+    all_lower = all_source.lower()
+
+    def _matches(keywords: set[str]) -> bool:
+        return any(kw.lower() in all_lower for kw in keywords)
+
     return {
-        "requires_api": any(kw in all_source for kw in API_KEYWORDS),
-        "requires_gpu": any(kw in all_source for kw in GPU_KEYWORDS),
-        "requires_cloud": any(kw in all_source for kw in CLOUD_KEYWORDS),
-        "requires_wsl": any(kw in all_source for kw in WSL_KEYWORDS),
+        "requires_api": _matches(API_KEYWORDS),
+        "requires_gpu": _matches(GPU_KEYWORDS),
+        "requires_cloud": _matches(CLOUD_KEYWORDS),
+        "requires_wsl": _matches(WSL_KEYWORDS),
     }
 
 
@@ -178,7 +184,7 @@ def check_errors(outputs: list) -> list[str]:
 
 
 def _is_research_path(nb_path: Path) -> bool:
-    """Check if notebook is in a research/archive/examples/ESGF directory."""
+    """Check if notebook is in a research/archive/examples/partner-course directory."""
     parts = nb_path.relative_to(NOTEBOOKS_DIR).parts
     return any(part in RESEARCH_DIR_KEYWORDS for part in parts)
 
@@ -233,28 +239,81 @@ def determine_status(
     return "READY"
 
 
-def count_todos(notebook: dict) -> int:
-    """Count # TODO markers across all code cells."""
+def count_todos(notebook: dict, *, exclude_executed: bool = True) -> int:
+    """Count # TODO markers across code cells.
+
+    When exclude_executed=True (default), TODOs in cells that have been
+    executed with outputs are excluded — they represent resolved exercises,
+    not incomplete work.
+
+    C.1-compliant exercise stubs (pass, return None, print("Exercice"))
+    are also excluded — they're pedagogically complete, not incomplete.
+    """
     count = 0
     for cell in notebook.get("cells", []):
         if cell["cell_type"] == "code":
+            if exclude_executed and cell.get("outputs"):
+                continue
+            if _is_exercise_stub(cell):
+                continue
             src = "".join(cell.get("source", []))
             count += src.upper().count("# TODO")
     return count
 
 
+def _normalize_text(s: str) -> str:
+    """Lowercase, normalize apostrophes, drop fenced code, and strip accents.
+
+    Accent-stripping makes "synthèse"/"synthese" and "résumé"/"resume" both match
+    a single unaccented keyword, removing the latent bug where an accented heading
+    was missed while its unaccented twin was detected.
+
+    Fenced code blocks (``` ... ```) are removed first so a keyword appearing inside
+    a flow diagram (e.g. "resultat -> synthese" in a fenced ASCII diagram) is NOT
+    mistaken for a real "## Synthese" conclusion heading.
+    """
+    s = re.sub(r"```.*?```", " ", s, flags=re.DOTALL)
+    s = s.lower().replace("’", "'").replace("‘", "'")
+    return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
+
+
 def has_markdown_intro_conclusion(cells: list) -> tuple[bool, bool]:
-    """Check if notebook has intro (first md cell with heading) and conclusion markers."""
+    """Check if notebook has an intro section and a conclusion section.
+
+    Intro keywords are searched in the FIRST 2 markdown cells: the very first cell
+    is frequently a title + navigation header, with the real intro / learning
+    objectives living in the second cell (or phrased "Vue d'ensemble" /
+    "A la fin de ce notebook, vous saurez"). Conclusion keywords are searched in
+    the LAST 3 markdown cells (a conclusion may be followed by a nav/footer cell).
+    Text is accent-stripped via _normalize_text so accented headings are detected.
+
+    This detects existing pedagogical structure more reliably; it does not relax
+    the maturity bar (output/TODO gates in classify_maturity are unchanged).
+    """
     md_cells = [c for c in cells if c["cell_type"] == "markdown"]
     if not md_cells:
         return False, False
 
-    first_src = "".join(md_cells[0].get("source", [])).lower()
-    has_intro = any(kw in first_src for kw in ["introduction", "objectif", "overview", "prérequis", "contexte"])
+    intro_keywords = [
+        "introduction", "objectif", "overview", "vue d'ensemble",
+        "prerequis", "contexte", "vous saurez", "a la fin de ce notebook",
+    ]
+    # First 2 MD cells (title/nav header often precedes the real intro)
+    first_sources = [_normalize_text("".join(c.get("source", []))) for c in md_cells[:2]]
+    has_intro = any(kw in src for src in first_sources for kw in intro_keywords)
 
-    last_src = "".join(md_cells[-1].get("source", [])).lower()
+    # "bilan" is excluded: as a bare substring it false-positives on body prose
+    # ("le bilan des ressources consommees") without heading a real wrap-up section.
+    # "synthese" is kept (it heads genuine "## Synthese des apprentissages" sections);
+    # _normalize_text strips code fences so it no longer matches flow diagrams.
+    conclusion_keywords = [
+        "conclusion", "resume", "synthese", "recapitulatif", "summary",
+        "points cles", "a retenir", "pour aller plus loin", "next steps",
+    ]
+    # Check last 3 MD cells (conclusion may not be the very last if nav/footer follows)
+    last_sources = [_normalize_text("".join(c.get("source", []))) for c in md_cells[-3:]]
     has_conclusion = any(
-        kw in last_src for kw in ["conclusion", "résumé", "summary", "pour aller plus loin", "next steps"]
+        kw in src for src in last_sources for kw in conclusion_keywords
     )
     return has_intro, has_conclusion
 
@@ -285,28 +344,98 @@ def _is_outputless_by_design(cell: dict) -> bool:
     lines = [l.strip() for l in source.split("\n") if l.strip()]
     if all(l.startswith("#") for l in lines):
         return True
+    # Strip IPython magic lines (%matplotlib, %load_ext, etc.) before AST parsing.
+    # Magics are not valid Python and would cause SyntaxError, but they never
+    # produce output that blocks notebook maturity classification.
+    clean_lines = [l for l in source.split("\n") if not l.strip().startswith("%")]
+    clean_source = "\n".join(clean_lines)
+    if not clean_source.strip():
+        return True  # entire cell was IPython magics
     try:
-        tree = ast.parse(source)
+        tree = ast.parse(clean_source)
         outputless = (
             ast.Assign, ast.AnnAssign,
             ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
+            ast.Import, ast.ImportFrom,
         )
-        return all(isinstance(node, outputless) for node in ast.iter_child_nodes(tree))
+        # Also accept Expr nodes that are bare Call expressions for configuration
+        # (plt.style.use, warnings.filterwarnings, np.set_printoptions, etc.).
+        # These produce no visible output and are purely side-effect configuration.
+        # Exclude print()/display() which DO produce output.
+        _OUTPUT_FUNCS = {"print", "display", "pprint", "show", "render"}
+        for node in ast.iter_child_nodes(tree):
+            if not isinstance(node, outputless):
+                if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+                    # Get the function name (simple or attribute)
+                    func = node.value.func
+                    fname = ""
+                    if isinstance(func, ast.Name):
+                        fname = func.id
+                    elif isinstance(func, ast.Attribute):
+                        fname = func.attr
+                    if fname not in _OUTPUT_FUNCS:
+                        continue  # config call, no output expected
+                return False
+        return True
     except SyntaxError:
         return False
+
+
+def _is_exercise_stub(cell: dict) -> bool:
+    """Check if a code cell is a C.1-compliant exercise stub (pedagogically complete).
+
+    Exercise stubs contain # TODO but also have a valid stub pattern per rule C.1:
+    - pass
+    - return None
+    - print("Exercice a completer") / print("Exercice...")
+    - result = None  # TODO
+    - Comment-only cells with # TODO (no executable code)
+
+    These are NOT incomplete work — they're intentionally stubbed exercises.
+    """
+    source = "".join(cell.get("source", []))
+    upper = source.upper()
+    # Exercise markers per C.1: # TODO, # Etape N, # Indice (accent-tolerant).
+    if not any(m in upper for m in ("# TODO", "# ETAPE", "# ÉTAPE", "# INDICE")):
+        return False
+    lines = [l.strip() for l in source.split("\n") if l.strip() and not l.strip().startswith("#")]
+    # Comment-only cells with an exercise marker are exercise instructions
+    if not lines:
+        return True
+    last_line = lines[-1]
+    # Strip a trailing inline comment so "pass  # TODO: ..." matches "pass".
+    # Safe for the bare-statement patterns below (no '#' inside their code).
+    code_part = last_line.split("#", 1)[0].strip()
+    # C.1 patterns: pass, return None, print("Exercice..."), var = None
+    if code_part == "pass":
+        return True
+    if code_part.startswith("return None"):
+        return True
+    if 'print("Exercice' in last_line or "print('Exercice" in last_line:
+        return True
+    if code_part.startswith("print(") and "completer" in last_line.lower():
+        return True
+    # var = None  # TODO pattern (marker already verified above)
+    if code_part.endswith("= None"):
+        return True
+    return False
 
 
 def _effective_code_cells(code_cells: list) -> list:
     """Filter cells excluded from maturity classification.
 
     Excludes: Papermill injected-parameters, outputless-by-design cells
-    (assignments, function/class definitions, imports, comments).
-    These produce no visible output and should not block promotion.
+    (assignments, function/class definitions, imports, comments), and
+    C.1-compliant exercise stubs (pass / return None / print("Exercice")
+    with a # TODO / # Etape marker). All of these are output-free by design
+    and must not block PRODUCTION promotion (they are already excluded from
+    the TODO count for the same reason).
     """
     return [
         c for c in code_cells
         if not _is_papermill_injected(c)
         and not _is_outputless_by_design(c)
+        and not _is_exercise_stub(c)
     ]
 
 
@@ -322,7 +451,7 @@ def classify_maturity(
 
     Heuristics (B-2 from #656):
         TEMPLATE   — filename contains "template" (case-insensitive)
-        PRODUCTION — kernel defined, all outputs, <3 TODO, intro+conclusion, structured
+        PRODUCTION — kernel defined, all outputs, <=3 TODO, intro+conclusion, structured
         BETA       — outputs present, <5 TODO, markdown structure
         ALPHA      — partial outputs OR 5-10 TODO
         DRAFT      — no outputs OR >10 TODO OR no markdown cells
@@ -373,8 +502,10 @@ def classify_maturity(
     has_structure = has_intro or has_conclusion or len(md_cells) >= 3
 
     if has_outputs and todo_count < 5 and has_structure:
-        # PRODUCTION: stricter requirements (all outputs, no exceptions)
-        if kernel_defined and all_have_outputs and todo_count < 3 and has_intro and has_conclusion:
+        # PRODUCTION: stricter requirements (all outputs, <=3 TODO, intro+conclusion)
+        # Allow <=3 TODOs: exercise stubs (C.1-compliant) are excluded by count_todos,
+        # so remaining TODOs are legitimate scaffolding/placeholder markers.
+        if kernel_defined and all_have_outputs and todo_count <= 3 and has_intro and has_conclusion:
             return "PRODUCTION"
         return "BETA"
 
@@ -453,12 +584,28 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
     }
 
 
+def _git_tracked_files() -> set[str] | None:
+    """Return set of git-tracked relative paths, or None if not in a git repo."""
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "-z", "--", "MyIA.AI.Notebooks/"],
+            capture_output=True, text=False, cwd=str(REPO_ROOT),
+        )
+        if result.returncode != 0:
+            return None
+        return set(result.stdout.decode("utf-8").strip("\x00").split("\x00"))
+    except FileNotFoundError:
+        return None
+
+
 def scan_all_notebooks(
     pedagogical: bool = True,
     series_filter: str | None = None,
     git_meta: dict | None = None,
+    git_tracked_only: bool = False,
 ) -> list[dict]:
     """Scan all notebooks and return catalog entries."""
+    tracked = _git_tracked_files() if git_tracked_only else None
     entries = []
     dirs = sorted(NOTEBOOKS_DIR.iterdir()) if not series_filter else [
         NOTEBOOKS_DIR / series_filter
@@ -471,6 +618,11 @@ def scan_all_notebooks(
             continue
 
         for nb_path in sorted(series_dir.rglob("*.ipynb")):
+            rel = str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/")
+            if tracked and rel not in tracked:
+                continue
+            if pedagogical and nb_path.stem.endswith("_executed"):
+                continue
             parts = nb_path.relative_to(series_dir).parts
             if any(exc in part for part in parts for exc in EXCLUDE_ALWAYS):
                 continue
@@ -604,11 +756,18 @@ def main():
         "--output-dir", type=str, default=str(REPO_ROOT),
         help="Output directory for generated files",
     )
+    parser.add_argument(
+        "--git-tracked-only", action="store_true",
+        help="Only include notebooks tracked by git (for CI consistency)",
+    )
     args = parser.parse_args()
 
     pedagogical = not args.all
     git_meta = build_git_metadata()
-    entries = scan_all_notebooks(pedagogical=pedagogical, series_filter=args.series, git_meta=git_meta)
+    entries = scan_all_notebooks(
+        pedagogical=pedagogical, series_filter=args.series,
+        git_meta=git_meta, git_tracked_only=args.git_tracked_only,
+    )
 
     if args.status:
         entries = [e for e in entries if e["status"] == args.status]

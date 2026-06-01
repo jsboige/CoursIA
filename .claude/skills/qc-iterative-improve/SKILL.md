@@ -105,8 +105,8 @@ Tracker global: issue #29
 
 4. Verifier si un notebook existe deja
    - projects/{Strategy}/research.ipynb
-   - ESGF-2026/examples/{Strategy}/research.ipynb
-   - ESGF-2026/lean-workspace/{Strategy}-Researcher/research.ipynb
+   - partner-course-quant-trading/examples/{Strategy}/research.ipynb
+   - partner-course-quant-trading/lean-workspace/{Strategy}-Researcher/research.ipynb
 ```
 
 ## Phase 2: Research Notebook (COEUR DU WORKFLOW)
@@ -229,7 +229,7 @@ Le workflow est concu pour survivre aux redemarrages:
 5. **Pas de Universe Selection** - Trop lent. ETFs fixes
 6. **Long-only en bull market** - Short = catastrophique
 7. **"In Progress..." = bug MCP** - Attendre et reessayer
-8. **Org perso seulement** - ESGF = FREE, pas de backtest API
+8. **Org perso seulement** - Partner org = FREE, pas de backtest API
 
 ## Sub-Agent
 

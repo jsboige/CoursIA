@@ -9,8 +9,7 @@ FinBERT sentiment analysis on financial text. Requires TensorFlow and model weig
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-FinBERT-Sentiment"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
@@ -26,4 +25,5 @@ FinBERT sentiment analysis on financial text. Requires TensorFlow and model weig
 - research.ipynb - Sentiment model evaluation
 ## References
 
-- Hands-On AI Trading, Section 06, Example 19
+- Hands-On AI Trading, Section 06, Example 19
+

@@ -30,7 +30,11 @@ TRACES_DIR.mkdir(exist_ok=True)
 def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                mode: str = "multi", iterations: int = 8,
                provider: str = "zai", local_provider: str = "local",
-               goal: str = "", director_provider: str = None):
+               goal: str = "", director_provider: str = None,
+               coordinator_provider: str = None,
+               tactic_provider: str = None,
+               use_diagnosis_agent: bool = False,
+               concurrent_search_count: int = 0):
     """Run the prover on a target."""
     if demo_num is not None:
         if demo_num not in DEMOS:
@@ -56,7 +60,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     print(f"Target: {name}")
     print(f"  File: {filepath} (line {line})")
     print(f"  Mode: {mode}, Iterations: {iterations}")
-    print(f"  Provider: {provider}, Local: {local_provider}")
+    print(f"  Provider: {provider}, Local: {local_provider}, Tactic: {tactic_provider or 'openrouter (default)'}, Coordinator: {coordinator_provider or 'openrouter (default)'}")
     print(f"  Initial sorry count: {original_sorry}")
     print()
 
@@ -65,7 +69,9 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     if mode == "multi":
         prover = MultiAgentSorryProver(
             trace=trace, provider=provider, local_provider=local_provider,
-            director_provider=director_provider)
+            director_provider=director_provider,
+            coordinator_provider=coordinator_provider,
+            tactic_provider=tactic_provider)
         if director_provider:
             print(f"  Director: ENABLED (provider={director_provider})")
     else:
@@ -73,9 +79,14 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
 
     start = time.time()
     try:
-        result = asyncio.run(
-            prover.prove_sorry(demo=demo, max_iterations=iterations)
-        )
+        if mode == "multi":
+            result = asyncio.run(
+                prover.prove_sorry(demo=demo, max_iterations=iterations,
+                                   use_diagnosis_agent=use_diagnosis_agent,
+                                   concurrent_search_count=concurrent_search_count)
+            )
+        else:
+            result = prover.prove_sorry(demo=demo, max_iterations=iterations)
     except Exception as e:
         print(f"\nProver crashed: {e}")
         result = {"error": str(e)}
@@ -99,6 +110,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         "name": name,
         "mode": mode,
         "provider": provider,
+        "coordinator_provider": coordinator_provider or "openrouter (default)",
         "iterations": iterations,
         "original_sorry": original_sorry,
         "final_sorry": final_sorry,
@@ -126,12 +138,35 @@ if __name__ == "__main__":
     parser.add_argument("--goal", default="", help="Goal state override for KB matching")
     parser.add_argument("--mode", default="multi", choices=["multi", "autonomous"])
     parser.add_argument("--iterations", type=int, default=8)
-    parser.add_argument("--provider", default="zai")
+    parser.add_argument("--provider", default="openrouter",
+                        help="Provider for AutonomousProver auto-mode agent "
+                             "(default: openrouter). #1459: GLM-5.1 (zai) causes "
+                             "87.8%% rate-limit errors; GPT-5.5 via openrouter "
+                             "eliminates the cascade. Use 'zai' for fallback.")
     parser.add_argument("--local-provider", default="local")
     parser.add_argument("--director-provider", default=None,
                         help="Provider for the frontier DirectorAgent "
                              "(e.g. 'openrouter'). Omit to disable the "
                              "Director lane. Only used in --mode multi.")
+    parser.add_argument("--coordinator-provider", default=None,
+                        help="Provider for CoordinatorAgent (default: openrouter). "
+                             "#1289: GLM-5.1 (zai) times out on complex Lean contexts; "
+                             "GPT-5.5 via openrouter is 6x faster. "
+                             "Only used in --mode multi.")
+    parser.add_argument("--tactic-provider", default=None,
+                        help="Provider for TacticAgent (default: openrouter). "
+                             "#1289: GLM-5.1 (zai) times out at 1680s on complex "
+                             "Lean tactic generation; GPT-5.5 via openrouter "
+                             "expected ~60-120s. Only used in --mode multi.")
+    parser.add_argument("--use-diagnosis-agent", action="store_true",
+                        help="Enable DiagnosisAgent (LLM-powered qualitative "
+                             "verification replacing mechanical VerifyExecutor). "
+                             "Only used in --mode multi.")
+    parser.add_argument("--concurrent-search", type=int, default=0,
+                        help="Number of ADDITIONAL SearchAgents to run in "
+                             "parallel (B.7). 0 = single search (default). "
+                             "E.g. --concurrent-search 2 = 3 total search agents. "
+                             "Only used in --mode multi.")
     args = parser.parse_args()
 
     run_prover(
@@ -144,4 +179,8 @@ if __name__ == "__main__":
         local_provider=args.local_provider,
         goal=args.goal,
         director_provider=args.director_provider,
+        coordinator_provider=args.coordinator_provider,
+        tactic_provider=args.tactic_provider,
+        use_diagnosis_agent=args.use_diagnosis_agent,
+        concurrent_search_count=args.concurrent_search,
     )

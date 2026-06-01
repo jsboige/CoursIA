@@ -2,14 +2,14 @@
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 107
-breakdown: Audio=28, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, Vibe-Coding=5, CaseStudies=4, =1
-maturity: BETA=52, PRODUCTION=38, DRAFT=12, TEMPLATE=3, ALPHA=2
+pedagogical_count: 120
+breakdown: Audio=30, SemanticKernel=20, Image=16, Video=16, Texte=11, 00-GenAI-Environment=6, PostTraining=6, FineTuning=5, Vibe-Coding=5, CaseStudies=4, root=1
+maturity: PRODUCTION=79, BETA=31, ALPHA=4, DRAFT=3, TEMPLATE=3
 -->
 
 Ce parcours vous forme a la maitrise de l'IA generative dans toute sa diversite : generer des images, synthetiser la voix, composer de la musique, produire des videos, orchestrer des agents autonomes, et deployer des applications en production. Chaque modalite suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modeles de production.
 
-**110 notebooks** | **9 sous-domaines** | **~90-100h** | **95%+ valides**
+**116 notebooks** | **11 sous-domaines** | **~90-100h** | **95%+ valides**
 
 ## Pourquoi ce parcours ?
 
@@ -20,14 +20,16 @@ L'IA generative a transforme la creation de contenu en 2024-2026. Un developpeur
 ```text
 GenAI/
 ├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
-├── Image/                   # Generation d'images (19 notebooks)
-├── Audio/                   # Speech, TTS, musique, separation (28 notebooks)
+├── Image/                   # Generation d'images (16 notebooks)
+├── Audio/                   # Speech, TTS, musique, separation (30 notebooks)
 ├── Video/                   # Generation et comprehension video (16 notebooks)
 ├── Texte/                   # LLMs et generation de texte (11 notebooks)
 ├── SemanticKernel/          # Microsoft Semantic Kernel (20 notebooks)
-├── CaseStudies/              # Etudes de cas etudiants (4 notebooks)
+├── FineTuning/              # Fine-tuning de modeles : LoRA/QLoRA/SFT/DPO (5 notebooks)
+├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR (6 notebooks)
+├── CaseStudies/             # Etudes de cas etudiants (4 notebooks)
 ├── Playwright-OWUI/         # Tests E2E Playwright (5 modules, 30+ tests)
-└── Vibe-Coding/             # Tutorials Claude Code et Roo Code
+└── Vibe-Coding/             # Tutorials Claude Code et Roo Code (5 notebooks)
 ```
 
 ---
@@ -48,7 +50,7 @@ On commence par les fondamentaux : appeler DALL-E 3 et GPT-5 pour generer des im
 
 **Fil rouge** : construire un generateur de contenu visuel pour l'education (diagrammes scientifiques, illustrations pedagogiques, motifs decoratifs).
 
-[README complet](Image/README.md) | 19 notebooks | ~6-8h
+[README complet](Image/README.md) | 16 notebooks | ~6-8h
 
 ---
 
@@ -58,7 +60,7 @@ L'audio est souvent le parent pauvre des parcours IA, pourtant c'est l'une des m
 
 **Fil rouge** : produire un podcast automatique avec voix synthetique personnalisee et fond musical genere.
 
-[README complet](Audio/README.md) | 28 notebooks | ~14-16h
+[README complet](Audio/README.md) | 30 notebooks | ~14-16h
 
 ---
 
@@ -104,11 +106,11 @@ Les applications GenAI doivent etre testees rigoureusement. Cette serie utilise 
 
 ---
 
-### EPF - Projets etudiants
+### CaseStudies - Projets etudiants
 
-Projets realises par les etudiants de l'EPF : generation d'images style Barbie/Shrek, generateur de recettes, chatbot medical educatif, challenges style Fort Boyard. Ces notebooks illustrent la diversite des applications possibles apres le parcours.
+Projets realises par les etudiants : generation d'images style Barbie/Shrek, generateur de recettes, chatbot medical educatif, challenges style Fort Boyard. Ces notebooks illustrent la diversite des applications possibles apres le parcours.
 
-[README complet](EPF/README.md) | 4 notebooks
+[README complet](CaseStudies/README.md) | 4 notebooks
 
 ---
 
@@ -197,30 +199,54 @@ python scripts/notebook_tools/notebook_tools.py analyze <path>
 
 ---
 
-## Statut par sous-domaine
+## Acquis d'apprentissage
 
-| Sous-domaine | Notebooks | Validation |
-| ------------ | ----------- | ------------ |
-| 00-GenAI-Environment | 6 | 100% |
-| Image | 19 | 100% |
-| Audio | 28 | 100% |
-| Video | 16 | 100% |
-| Texte | 11 | 100% |
-| SemanticKernel | 20 | 85% |
-| EPF | 4 | 100% |
-| Playwright-OWUI | 5 modules | 100% |
-| Vibe-Coding | 10 modules | 100% |
+A l'issue du parcours, vous etes capable de :
+
+- **Selectionner le bon modele** pour une tache donnee — connaitre les forces/faiblesses des modeles cloud (DALL-E, GPT, Whisper, Sora) face aux modeles open-source locaux (FLUX, SD 3.5, Qwen-Image, Whisper-local, MusicGen, HunyuanVideo) et arbitrer sur cout / qualite / souverainete des donnees.
+- **Combiner les modalites** dans des pipelines coherents — texte vers image, image vers video, audio vers texte vers audio, sans casser la chaine d'inference ni perdre le contexte semantique.
+- **Orchestrer des agents** via Semantic Kernel (plugins, agents, filtres, vector stores, processus multi-etapes) en Python et en C#/.NET Interactive.
+- **Industrialiser une application GenAI** avec authentification ComfyUI, graceful degradation cloud/local, tests E2E Playwright sur Open WebUI, et integration MCP.
+- **Developper avec des agents IA** (Claude Code, Roo Code) en mode "vibe coding" — formuler les besoins, iterer sur les diffs, automatiser les workflows de developpement.
+- **Evaluer la qualite** des sorties generees — metriques objectives (FID, WER, BLEU), validation subjective structuree, comparaison de pipelines.
+
+## Fil rouge transverse
+
+Les sous-domaines ne sont pas isoles. Un projet final typique enchaine :
+
+1. **Texte** produit un script structure (function calling, structured outputs)
+2. **Image** illustre les concepts (DALL-E, FLUX, ou Qwen Image Edit pour les retouches)
+3. **Audio** synthetise la narration (Kokoro/OpenAI TTS) + fond musical (MusicGen)
+4. **Video** assemble le tout (HunyuanVideo pour la generation, Demucs pour la sync A/V)
+5. **SemanticKernel** orchestre le pipeline en agents autonomes
+6. **Playwright-OWUI** teste l'interface utilisateur du produit final
+
+C'est ce parcours d'integration qui differencie une demonstration jouet d'un produit deployable.
+
+## Statut
+
+Toutes les sous-series sont actuellement en etat **BETA ou PRODUCTION**, avec validation Papermill > 90% (CI catalog-drift active). Les details par sous-serie (validation %, maturity par notebook) sont dans chaque README enfant, et le compte canonique se lit dans le marqueur `CATALOG-STATUS` en tete de ce fichier.
 
 ---
 
-Architecture SDDD | Compatible MCP | Derniere mise a jour : mai 2026
+Architecture SDDD | Compatible MCP | Derniere mise a jour : 2026-05-28
 
 ## Cross-series Bridges
+
+### Interne GenAI
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Image](Image/README.md) | Source visuelle pour Video | Le pipeline Video/03-2 enchaine generation d'images puis animation ; SVD (Video/02-4) anime une image existante |
+| [Audio](Audio/README.md) | Sync A/V + podcast | Audio/04-4 synchronise audio et video ; le pipeline podcast (Audio/03-2) enchaine STT, LLM (Texte) et TTS |
+| [Texte](Texte/README.md) | Prompts et APIs | Les prompts structures (Texte/2) guident toute generation (Image, Audio, Video) ; function calling (Texte/4) pilote les APIs multimodales |
+| [SemanticKernel](SemanticKernel/README.md) | Orchestration | Les pipelines multi-modeles de chaque serie suivent les patterns d'orchestration Semantic Kernel |
+
+### Externe
 
 | Serie | Lien | Connection |
 |-------|------|-------------|
 | [ML](../ML/README.md) | Pipelines ML, evaluation | Les modeles generatifs s'evaluent avec les memes metriques (precision, FID, WER) et s'integrent dans des pipelines ML |
-| [SemanticKernel](SemanticKernel/README.md) | Orchestration agentique | Semantic Kernel orchestre les LLMs et outils GenAI dans des workflows de production |
 | [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | L'analyse de sentiment par LLM (Texte/8_Reasoning_Models) alimente les strategies de trading |
 | [RL](../RL/README.md) | Apprentissage par renforcement | Les agents RL peuvent utiliser des modeles generatifs comme recompenses (images, texte) |
 | [Probas](../Probas/README.md) | Modeles probabilistes | Les VAE, diffusion models et Bayesian neural networks partagent les memes fondements probabilistes |

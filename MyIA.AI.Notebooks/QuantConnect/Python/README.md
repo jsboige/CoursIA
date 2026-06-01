@@ -5,11 +5,24 @@ Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnec
 > **Note** : Ces notebooks sont des supports de cours a lire sur GitHub ou en local.
 > Pour executer les backtests, copiez le code dans un projet [QuantConnect Cloud](https://www.quantconnect.com/lab).
 
+## 4-Type Classification
+
+| Type | Count | Description |
+|------|-------|-------------|
+| **(a)** quantbook QC Cloud | 16 | QuantBook research or cloud-deploy descriptors (inclut Cloud-06-PCA-StatArb, Cloud-07-TemporalCNN ajoutés 2026-05) |
+| **(b)** research companion | 2 | QuantBook research paired with a course notebook |
+| **(c)** standalone research | 6 | Local yfinance/sklearn training |
+| **(d)** pedagogical placeholder | 33 | Course material with embedded QCAlgorithm strings |
+
+> Récapitulatif : 16+2+6+33 = 57 entrées de classification. Le nombre total de fichiers `.ipynb` dans le dossier est **51** : la différence reflète les notebooks classés dans plusieurs catégories (ex. course material exécuté localement = (c)+(d)). Voir [docs/qc-strategies-status.md](../../../docs/qc-strategies-status.md) pour la classification détaillée.
+
+Full classification: [docs/qc-strategies-status.md](../../../docs/qc-strategies-status.md)
+
 ---
 
-## État réel d'exécution (audit 2026-05-05)
+## État réel d'exécution (audit 2026-05-05, mise à jour 2026-05-28)
 
-Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Aucun output theatrical** (cellules qui printent des métadonnées en se faisant passer pour une exécution) ne subsiste après nettoyage de la PR `chore/qc-strip-fake-outputs`.
+Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Aucun output theatrical** (cellules qui printent des métadonnées en se faisant passer pour une exécution) ne subsiste après nettoyage de la PR `chore/qc-strip-fake-outputs`. Mise à jour 2026-05-28 : ajout des 5 notebooks créés depuis l'audit initial (RL avancé + 2 Cloud).
 
 **Légende** :
 - **EXÉCUTÉ** : cellules avec outputs réels issus d'une vraie exécution kernel
@@ -63,9 +76,14 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Cloud-05-MLP-Forecasting | EXÉCUTÉ | 1/2 cellules avec outputs |
 | QC-Py-Cloud-05-RegimeSwitching | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-06-VolTargeting | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-06-PCA-StatArb | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-07-TemporalCNN | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-33-RL-PPO-Trading | EXÉCUTÉ | 12/12 cellules avec outputs |
+| QC-Py-34-RL-SAC-A2C-Trading | EXÉCUTÉ | 11/11 cellules avec outputs |
+| QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | 5/5 cellules avec outputs |
 | QC-Py-Dataset-Workflow | NON EXÉCUTÉ | 11 cellules code, 0 output |
 
-**Récapitulatif** : 46 notebooks total — 14 exécutés, 26 non exécutés, 6 doc cloud.
+**Récapitulatif** : 51 notebooks total — 17 exécutés, 26 non exécutés, 8 doc cloud.
 
 **Politique** : un notebook NON EXÉCUTÉ avec du code réel est préférable à un notebook avec des outputs théâtraux (print de métadonnées prétendant être une exécution). Les patterns théâtraux suivants sont désormais détectés comme erreur par [`scripts/validate_qc_notebooks.py`](../scripts/validate_qc_notebooks.py) :
 - `print("Algorithme charge : {len(qc_code)} caracteres")` — métadonnée d'une string, pas une exécution
@@ -135,6 +153,16 @@ Notebooks d'entrainement de modeles avec checkpoints GPU.
 | [QC-Py-31-Transformer-Training](QC-Py-31-Transformer-Training.ipynb) | Transformer | Checkpoint PyTorch |
 | [QC-Py-32-RL-DQN-Trading](QC-Py-32-RL-DQN-Trading.ipynb) | DQN | Checkpoint PyTorch |
 
+## Reinforcement Learning Avance (QC-Py-33 a 35)
+
+Approfondissement RL au-dela du DQN de la Phase 8 : PPO, SAC/A2C, application portfolio.
+
+| Notebook | Algorithme | Contenu |
+|----------|------------|---------|
+| [QC-Py-33-RL-PPO-Trading](QC-Py-33-RL-PPO-Trading.ipynb) | PPO | Proximal Policy Optimization, clipped surrogate, Stable-Baselines3 |
+| [QC-Py-34-RL-SAC-A2C-Trading](QC-Py-34-RL-SAC-A2C-Trading.ipynb) | SAC + A2C | Soft Actor-Critic + A2C, comparatif algorithmes RL |
+| [QC-Py-35-RL-Portfolio-Construction](QC-Py-35-RL-Portfolio-Construction.ipynb) | RL multi-asset | RL pour allocation multi-asset, contraintes de risque |
+
 ## Paper Trading (QC-Py-40 a 41)
 
 | Notebook | Courtier |
@@ -159,6 +187,8 @@ Notebooks de recherche et strategies executees sur QuantConnect Cloud.
 | [QC-Py-Cloud-05-MLP-Forecasting](QC-Py-Cloud-05-MLP-Forecasting.ipynb) | MLP Forecasting |
 | [QC-Py-Cloud-05-RegimeSwitching](QC-Py-Cloud-05-RegimeSwitching.ipynb) | Regime Switching |
 | [QC-Py-Cloud-06-VolTargeting](QC-Py-Cloud-06-VolTargeting.ipynb) | Volatility Targeting |
+| [QC-Py-Cloud-06-PCA-StatArb](QC-Py-Cloud-06-PCA-StatArb.ipynb) | PCA Statistical Arbitrage |
+| [QC-Py-Cloud-07-TemporalCNN](QC-Py-Cloud-07-TemporalCNN.ipynb) | Temporal CNN |
 
 ## Utilitaires
 

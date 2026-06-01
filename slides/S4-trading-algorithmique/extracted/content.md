@@ -810,7 +810,7 @@ Algorithme par défaut: BasicTemplateFrameworkAlgorithm
 Place un point d’arrêt dans la fonction Initialize et relancer.
 Désassemblage: DotPeek / serveur de symboles
 Développement et debuggage en Python
-https://github.com/MyIntelligenceAgency/Lean/blob/master/ESGF/Python.md
+https://github.com/MyIntelligenceAgency/Lean/blob/master/docs/Python.md
 CS 405
 
 <!-- Slide number: 57 -->

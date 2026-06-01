@@ -124,6 +124,53 @@ import Mathlib.Tactic.Common
 import StableMarriage.Definitions
 """
 
+# ── Calibration (Epic #1452) ──
+# Relocated from GameTheory to SymbolicAI/Lean (issue #1764)
+_CALIBRATION_CANDIDATES = [
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
+]
+CALIBRATION_DIR = next(
+    (p for p in _CALIBRATION_CANDIDATES if p.exists()),
+    _CALIBRATION_CANDIDATES[0],
+)
+NASH_CALIBRATION_FILE = CALIBRATION_DIR / "Calibration" / "Nash.lean" if CALIBRATION_DIR.exists() else None
+NASH_CALIBRATION_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Tactic
+"""
+
+# ── Conway calibration (Epic #1453) ──
+# Conway hommage series relocated 2026-05-28: was MyIA.AI.Notebooks/GameTheory/conway_lean.
+_CONWAY_CANDIDATES = [
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
+]
+CONWAY_DIR = next(
+    (p for p in _CONWAY_CANDIDATES if p.exists()),
+    _CONWAY_CANDIDATES[0],
+)
+CONWAY_NIM_FILE = CONWAY_DIR / "Conway" / "Nim.lean" if CONWAY_DIR.exists() else None
+CONWAY_NIM_IMPORTS = """import Mathlib.Data.Nat.Bitwise
+import Mathlib.Data.List.Basic
+"""
+CONWAY_ANGEL_FILE = CONWAY_DIR / "Conway" / "Angel.lean" if CONWAY_DIR.exists() else None
+CONWAY_ANGEL_IMPORTS = """import Mathlib.Data.Int.Interval
+import Mathlib.Data.Finset.Prod
+"""
+CONWAY_DOOMSDAY_FILE = CONWAY_DIR / "Conway" / "DoomsdayLemmas.lean" if CONWAY_DIR.exists() else None
+CONWAY_DOOMSDAY_IMPORTS = """import Conway.Doomsday
+"""
+CONWAY_LOOKANDSAY_FILE = CONWAY_DIR / "Conway" / "LookAndSayLemmas.lean" if CONWAY_DIR.exists() else None
+CONWAY_LOOKANDSAY_IMPORTS = """import Conway.LookAndSay
+"""
+CONWAY_KS_FILE = CONWAY_DIR / "Conway" / "KochenSpecker.lean" if CONWAY_DIR.exists() else None
+CONWAY_KS_IMPORTS = """import Mathlib.Data.Real.Basic
+import Mathlib.Data.Fin.Basic
+import Mathlib.Tactic
+"""
+
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
 # fix. Attacking them wastes compute and produces fake "PROVED" reports. Each
@@ -1002,7 +1049,7 @@ DEMOS = {
     34: {
         "name": "LATTICE_DOCTOR_OPTIMAL_TOP",
         "file": str(LATTICE_FILE),
-        "line": 321,
+        "line": 836,
         "sorry_type": "sorry_replacement",
         "theorem_name": "doctor_optimal_eq_top",
         "theorem": "doctor_optimal_eq_top",
@@ -1090,10 +1137,368 @@ DEMOS = {
             "  sorry  -- TODO: complete trichotomy argument"
         ),
     },
+    # ── Calibration targets (Epic #1452) ──
+    # Goldilocks: solvable in 3-10 prover iterations, self-contained,
+    # exercises specific harness paths (P1/P2/P3).
+    35: {
+        "name": "CALIBRATION_NASH_STRICT_DOMINANCE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 65,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "strictly_domin_defect_pd",
+        "theorem": "strictly_domin_defect_pd",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target C (P3 harness path).\n"
+            "Prove strictly_domin_defect_pd: defection strictly dominates\n"
+            "cooperation in Prisoner's Dilemma for player 1.\n"
+            "P3: agent may search Mathlib for game-theory lemmas that don't\n"
+            "exist; must fall back to unfold + Fin 2 case split + omega.\n"
+            "Self-contained: Game2x2, strictlyDominates1, prisonersDilemma\n"
+            "defined in same file. LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 3-5 prover iterations."
+        ),
+        "difficulty": "easy",
+    },
+    36: {
+        "name": "CALIBRATION_NASH_PD_DEFECT_NE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 72,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "pd_defect_is_pure_ne",
+        "theorem": "pd_defect_is_pure_ne",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target D (P2 harness path).\n"
+            "Prove pd_defect_is_pure_ne: (Defect, Defect) is a pure Nash\n"
+            "equilibrium of Prisoner's Dilemma.\n"
+            "P2: multi-step proof requiring Fin 2 case splits on both players'\n"
+            "deviations + Int comparisons. Uses constructor for conjunction.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 4-7 prover iterations."
+        ),
+        "difficulty": "medium",
+    },
+    37: {
+        "name": "CALIBRATION_NASH_COOPERATE_NOT_NE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 80,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "pd_cooperate_not_ne",
+        "theorem": "pd_cooperate_not_ne",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target E (P1+P2 harness path).\n"
+            "Prove pd_cooperate_not_ne: (Cooperate, Cooperate) is NOT a pure\n"
+            "Nash equilibrium. Harder: requires negation + constructing\n"
+            "witness (defection beats cooperation).\n"
+            "Pattern: intro ⟨h1, _⟩, have := h1 Trahir, then simp/omega.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 5-10 prover iterations."
+        ),
+        "difficulty": "medium",
+    },
+    38: {
+        "name": "CALIBRATION_NASH_P4_SORRY_INCREASE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 97,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "pd_defect_is_ne_decomposable",
+        "theorem": "pd_defect_is_ne_decomposable",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target F (P4 sorry-increase harness path).\n"
+            "Prove pd_defect_is_ne_decomposable: same as Target D but designed\n"
+            "for decomposition. The prover should split into 2 sub-sorries\n"
+            "(constructor · sorry · sorry), increasing sorry 1→2.\n"
+            "Harness MUST NOT revert if build passes (P4 gate on level_1_build).\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 3-5 prover iterations, sorry may increase."
+        ),
+        "difficulty": "easy",
+    },
+    # ── Conway calibration targets (Epic #1453) ──
+    # Nim.lean — tractable gradient: decide / unfold+simp / xor_self
+    39: {
+        "name": "CALIBRATION_CONWAY_NIM_WINNING_345",
+        "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
+        "line": 42,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isWinningNim_345",
+        "theorem": "isWinningNim_345",
+        "imports": CONWAY_NIM_IMPORTS,
+        "description": (
+            "Calibration: position [3,4,5] is a first-player win.\n"
+            "Easy: closed evaluation via decide / native_decide.\n"
+            "Self-contained: nimSum, isWinningNim defined in same file.\n"
+            "LEAN_PROJECT must be conway_lean.\n"
+            "Expected: 1-3 prover iterations."
+        ),
+        "difficulty": "easy",
+    },
+    40: {
+        "name": "CALIBRATION_CONWAY_NIM_SUM_SINGLE",
+        "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
+        "line": 46,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "nimSum_single",
+        "theorem": "nimSum_single",
+        "imports": CONWAY_NIM_IMPORTS,
+        "description": (
+            "Calibration: single heap nim-sum equals its size.\n"
+            "Easy: unfold nimSum + foldl + Nat.zero_xor / simp.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be conway_lean.\n"
+            "Expected: 2-4 prover iterations."
+        ),
+        "difficulty": "easy",
+    },
+    41: {
+        "name": "CALIBRATION_CONWAY_NIM_SUM_SELF",
+        "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
+        "line": 50,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "nimSum_self",
+        "theorem": "nimSum_self",
+        "imports": CONWAY_NIM_IMPORTS,
+        "description": (
+            "Calibration: two equal heaps cancel (losing P-position).\n"
+            "Medium: unfold nimSum + foldl + Nat.xor_self.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be conway_lean.\n"
+            "Expected: 3-5 prover iterations."
+        ),
+        "difficulty": "medium",
+    },
+    # ── Conway calibration: Angel problem (power-1 king moves, Chebyshev) ──
+    42: {
+        "name": "CALIBRATION_CONWAY_ANGEL_KING_MOVES",
+        "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
+        "line": 47,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "kingMoves_card",
+        "theorem": "kingMoves_card",
+        "imports": CONWAY_ANGEL_IMPORTS,
+        "description": (
+            "Calibration: power-1 Angel (chess king) has 8 moves from origin.\n"
+            "Easy: closed evaluation -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    43: {
+        "name": "CALIBRATION_CONWAY_ANGEL_POWER2",
+        "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
+        "line": 51,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "angelMoves2_card",
+        "theorem": "angelMoves2_card",
+        "imports": CONWAY_ANGEL_IMPORTS,
+        "description": (
+            "Calibration: power-2 Angel has 24 moves from origin.\n"
+            "Easy: closed evaluation -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    44: {
+        "name": "CALIBRATION_CONWAY_ANGEL_CARD_FORMULA",
+        "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
+        "line": 58,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "angelMoves_card",
+        "theorem": "angelMoves_card",
+        "imports": CONWAY_ANGEL_IMPORTS,
+        "description": (
+            "Calibration: Angel of power k from any square has (2k+1)^2 - 1 moves.\n"
+            "Medium: parametric, requires Finset.card_product + card_erase_of_mem + Int.card_Icc.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "medium",
+    },
+    # ── Conway calibration: Doomsday algorithm lemmas ──
+    45: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_2000",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 25,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isLeapYear_2000",
+        "theorem": "isLeapYear_2000",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: 2000 is a leap year (div by 400).\n"
+            "Easy: closed boolean eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    46: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_1900",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 29,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isLeapYear_1900",
+        "theorem": "isLeapYear_1900",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: 1900 is NOT a leap year (div by 100, not 400).\n"
+            "Easy: closed boolean eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    47: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_2024",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 33,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isLeapYear_2024",
+        "theorem": "isLeapYear_2024",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: 2024 is a leap year.\n"
+            "Easy: closed boolean eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    48: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_CONWAY_DEATH",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 38,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "dayOfWeek_conway_death",
+        "theorem": "dayOfWeek_conway_death",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Homage + Calibration: Conway died Saturday April 11, 2020.\n"
+            "Closed eval over Doomsday algorithm -> native_decide.\n"
+            "Medium: naive rfl may stall on %-arithmetic.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    49: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_ADD_SEVEN",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 43,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "dayOfWeek_add_seven",
+        "theorem": "dayOfWeek_add_seven",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: adding a full week is identity.\n"
+            "Medium: free variable d, naive decide fails.\n"
+            "Requires: cases d <;> rfl.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "medium",
+    },
+    # ── Conway calibration: Look-and-Say lemmas ──
+    50: {
+        "name": "CALIBRATION_CONWAY_LAS_DIGITS_EXAMPLE",
+        "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
+        "line": 25,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "digitsToNat_example",
+        "theorem": "digitsToNat_example",
+        "imports": CONWAY_LOOKANDSAY_IMPORTS,
+        "description": (
+            "Calibration: [1,2,1,1] decodes to 1211.\n"
+            "Easy: closed eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    51: {
+        "name": "CALIBRATION_CONWAY_LAS_LOOKANDSAY_4",
+        "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
+        "line": 29,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "lookAndSay_4",
+        "theorem": "lookAndSay_4",
+        "imports": CONWAY_LOOKANDSAY_IMPORTS,
+        "description": (
+            "Calibration: 5th look-and-say term is 111221.\n"
+            "Medium: WF recursion, naive rfl/decide may not reduce.\n"
+            "Exercises phantom-id blocklist path (P3).\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "medium",
+    },
+    52: {
+        "name": "CALIBRATION_CONWAY_LAS_ROUND_TRIP",
+        "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
+        "line": 34,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "digitsToNat_natToDigits",
+        "theorem": "digitsToNat_natToDigits",
+        "imports": CONWAY_LOOKANDSAY_IMPORTS,
+        "description": (
+            "Calibration (HARD): decoding decimal digits of n recovers n.\n"
+            "Requires structural induction matching natToDigits recursion on n/10,\n"
+            "plus a digitsToNat_append helper lemma.\n"
+            "Director must NOT expect one-shot tactic.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "hard",
+    },
+    53: {
+        "name": "KS_EACH_VECTOR_IN_TWO_CONTEXTS",
+        "file": str(CONWAY_KS_FILE) if CONWAY_KS_FILE else "",
+        "line": 156,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "each_vector_in_two_contexts",
+        "theorem": "each_vector_in_two_contexts",
+        "imports": CONWAY_KS_IMPORTS,
+        "description": (
+            "Pilier 1.B (Epic #1651). Prove that each of the 18 Cabello vectors\n"
+            "appears in exactly 2 of the 9 contexts. The goal is:\n"
+            "  (Sum k : ContextIdx, Sum i : Fin 4,\n"
+            "    if contextMembers k i = v then (1 : Nat) else 0) = 2\n"
+            "\n"
+            "Strategy candidates:\n"
+            "  1. `decide` (finite check, may need `native_decide` for speed).\n"
+            "  2. Explicit case-split on `v : VecIdx` (= Fin 18) via `fin_cases v` then\n"
+            "     `simp [contextMembers]` then `decide` on each branch.\n"
+            "  3. `Finset.sum_eq_count` reformulation if the iff-cond is a Decidable.\n"
+            "\n"
+            "`contextMembers` is the Cabello 9x4 table (lines ~60-130 of file).\n"
+            "Pure combinatorial: no Real, no Mathlib heavy."
+        ),
+        "difficulty": "medium",
+    },
+    54: {
+        "name": "KS_KOCHEN_SPECKER_PARITY",
+        "file": str(CONWAY_KS_FILE) if CONWAY_KS_FILE else "",
+        "line": 175,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "kochen_specker",
+        "theorem": "kochen_specker",
+        "imports": CONWAY_KS_IMPORTS,
+        "description": (
+            "Pilier 1.C (Epic #1651). The 18-vector Cabello KS theorem.\n"
+            "Goal: `not exists c : Coloring, IsValidColoring c`.\n"
+            "\n"
+            "Parity argument (per docstring in file):\n"
+            "  1. By `IsValidColoring c`, summing over the 9 contexts gives 9 ones.\n"
+            "  2. Swap the double sum (Finset.sum_comm): each vector v contributes\n"
+            "     `(number of contexts containing v) * c(v)`.\n"
+            "  3. By `each_vector_in_two_contexts` (line 156 lemma, DEMO 53),\n"
+            "     that multiplier is always 2.\n"
+            "  4. Hence total ones = 2 * (count of true-colored vectors), even.\n"
+            "  5. Contradiction with 9 being odd.\n"
+            "\n"
+            "DEPENDS ON DEMO 53 being proved first (the lemma at line 156).\n"
+            "Key Mathlib lemmas: `Finset.sum_comm`, `Nat.not_even_iff_odd`,\n"
+            "`Nat.even_iff`, `Finset.sum_eq_card_nsmul_one` or `mul_comm`."
+        ),
+        "difficulty": "hard",
+    },
 }
-
-# DEMOS already proved — the prover MUST NOT target these. Lemmas.lean has
-# 0 sorry (all proved 2026-05-15/16), so DEMOS 18-28 are stale. DEMO 15
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.
 PROVED_DEMOS = {

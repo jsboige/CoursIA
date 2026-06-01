@@ -1,5 +1,12 @@
 # TweetyProject - Serie de Notebooks Jupyter
 
+<!-- CATALOG-STATUS
+series: SymbolicAI-Tweety
+pedagogical_count: 10
+breakdown: Fondations=3, Revision-Croyances=1, Argumentation=4, Applications=2
+maturity: PRODUCTION=6, BETA=4
+-->
+
 Serie complete de 10 notebooks pour explorer [TweetyProject](https://tweetyproject.org/), une bibliotheque Java pour l'intelligence artificielle symbolique.
 
 ## Presentation
@@ -12,6 +19,8 @@ TweetyProject est une collection de bibliotheques Java couvrant :
 - **Preferences et vote** : Ordres de preference, Agregation
 
 Les notebooks utilisent **JPype** pour integrer Java dans Python, permettant un apprentissage interactif.
+
+A l'heure des modeles statistiques et des LLMs, pourquoi etudier ces logiques symboliques ? Parce qu'elles apportent ce que l'apprentissage seul ne garantit pas : un raisonnement **explicite, verifiable et explicable**. L'argumentation computationnelle (cadres de Dung, ASPIC+, ABA) modelise la facon dont des agents confrontent des arguments, gerent les contradictions et aboutissent a des conclusions justifiees — avec des applications en raisonnement juridique, en aide a la decision, en negociation multi-agents, et de plus en plus comme couche de controle au-dessus des LLMs (detecter les incoherences, structurer un debat). La revision de croyances (AGM) formalise comment un agent rationnel met a jour ses connaissances face a une information nouvelle ou contradictoire. L'interet de TweetyProject est de reunir tous ces formalismes sous un meme toit : on experimente d'une logique a l'autre sans avoir a reimplementer chaque solveur.
 
 ## Structure de la Serie
 

@@ -267,9 +267,8 @@ Le notebook gère automatiquement les erreurs courantes :
    - Paper : [SDXL-Turbo](https://stability.ai/news/sdxl-turbo)
    - Hugging Face : [stabilityai/sdxl-turbo](https://huggingface.co/stabilityai/sdxl-turbo)
 
-3. **Guide Étudiants MyIA** :
-   - [`GUIDE-APIS-ETUDIANTS.md`](../../../../docs/suivis/genai-image/GUIDE-APIS-ETUDIANTS.md)
-   - Status APIs : [Phase 16 Audit](../../../../docs/suivis/genai-image/phase-16-execution-tests/)
+3. **Documentation GenAI** :
+   - [Services et API GenAI](../../../../docs/genai-services.md)
 
 ### Tutoriels Supplémentaires
 

@@ -135,7 +135,7 @@ Peut-on appliquer les techniques d'IA aux marches financiers ? Cette serie repon
 
 **ML Training Pipeline** -- Pipeline complet d'entrainement et d'evaluation de modeles DL pour le forecasting financier : LSTM, Transformer, iTransformer, PatchTST, Mamba. Donnees crypto panier (10 coins) avec validation walk-forward stricte, evaluation zero-shot de modeles foundation (Chronos-Bolt, Kronos), et baselines comparatives (GARCH, random walk, majority class).
 
-**ESGF-2026** -- Exemples de projets etudiants et notebooks de recherche issus du cours ESGF.
+**partner-course-quant-trading** -- Exemples de projets etudiants et notebooks de recherche issus du cours partenaire.
 
 Python | [README detaille](MyIA.AI.Notebooks/QuantConnect/README.md) | [Strategies](MyIA.AI.Notebooks/QuantConnect/projects/README.md)
 
@@ -172,7 +172,7 @@ CoursIA/
       Python/                  Notebooks pedagogiques
       projects/                Strategies backtestees
       ML-Training-Pipeline/    Pipeline DL forecasting
-      ESGF-2026/               Projets etudiants
+      partner-course-quant-trading/ Projets etudiants
     EPF/                       Projets transversaux (Python)
     IIT/                       Information integree (Python)
     Config/                    Configuration API

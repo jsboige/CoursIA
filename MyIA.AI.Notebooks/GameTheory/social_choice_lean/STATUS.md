@@ -4,10 +4,10 @@
 
 | Item | Value |
 |------|-------|
-| Lean toolchain | `leanprover/lean4:v4.29.1` |
-| Mathlib | `v4.29.1` (`5e932f97dd25`) |
+| Lean toolchain | `leanprover/lean4:v4.30.0-rc2` |
+| Mathlib | `v4.30.0-rc2` |
 | Sorry count | **0** (all production files) |
-| Last verified | 2026-04-29 |
+| Last verified | 2026-05-26 |
 
 ## Source Files
 
@@ -38,3 +38,4 @@ Steps: elan install, Mathlib cache, `lake build`, sorry detection.
 | 2026-04-19 | Sen impossibility theorem (0 sorry) | `28d3bb5e` |
 | 2026-04-28 | Voting.lean - Condorcet concepts | `e45e6538` |
 | 2026-04-29 | Toolchain upgrade v4.28.0-rc1 -> v4.29.1 | `c1b2cde1` |
+| 2026-05-26 | Toolchain upgrade v4.29.1 -> v4.30.0-rc2 | — |

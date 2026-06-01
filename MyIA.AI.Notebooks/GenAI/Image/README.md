@@ -2,16 +2,24 @@
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Docker Management](../00-GenAI-Environment/00-2-Docker-Services-Management.ipynb)
 
-La generation d'images par IA est la deuxieme modalite generative la plus accessible apres le texte. Elle couvre un spectre large : generation from scratch (DALL-E, FLUX), edition d'images existantes (Qwen Image Edit), upscaling (Real-ESRGAN), et orchestration de workflows multi-modeles via ComfyUI. 19 notebooks repartis sur 5 niveaux progressifs.
+La generation d'images par IA est la deuxieme modalite generative la plus accessible apres le texte. Elle couvre un spectre large : generation from scratch (DALL-E, FLUX), edition d'images existantes (Qwen Image Edit), upscaling (Real-ESRGAN), et orchestration de workflows multi-modeles via ComfyUI. La progression va du prompt cloud one-shot au workflow ComfyUI multi-modeles oriente production.
 
 ## Fil rouge : construire un generateur de contenu visuel educatif
 
 L'objectif fil rouge de cette serie est de construire un systeme capable de produire des visuels pedagogiques de qualite : diagrammes, illustrations conceptuelles, et images d'identite pour des supports de cours. Chaque niveau apporte une brique supplementaire : generation simple via API cloud (niveau 1), modeles avances et edition fine (niveau 2), comparaison et orchestration multi-modeles (niveau 3), workflows de production (niveau 4), et cas d'usage concrets par domaine (examples).
 
-## Vue d'ensemble
+## Acquis d'apprentissage
 
-19 notebooks organisés en 5 sous-dossiers, représentant environ 6 à 8 heures d'apprentissage intensif dans le domaine de la génération d'images par IA, avec un taux de validation de 100%.
+A l'issue de la serie, l'apprenant sait :
 
+- **Choisir la bonne modalite** : API cloud (DALL-E 3, GPT-5 Image) vs ComfyUI auto-heberge (SD XL, FLUX, Qwen) selon le besoin (controle, cout, debit, donnees sensibles).
+- **Manipuler une image en code** : PIL/OpenCV pour redimensionnement, masques, compositing, conversion VAE latents <-> pixels.
+- **Concevoir un workflow ComfyUI** : graphe de noeuds (Sampler, VAE, ConditioningCombine, ModelSampling), import/export JSON, batching et seeds reproductibles.
+- **Editer plutot que regenerer** : Qwen Image Edit, ControlNet, inpainting (zones a regenerer dans un visuel existant) — moins couteux et plus controlable que repartir de zero.
+- **Composer plusieurs modeles** : pipeline base + LoRA style + upscaler + post-processing pour atteindre une qualite "supports de cours".
+- **Operationnaliser** : gestion VRAM (quantizations Nunchaku INT4 / FP8), file d'attente ComfyUI, monitoring GPU, deploiement derriere une API.
+
+La structure detaillee (notebooks par niveau, contenu, services utilises) est listee plus bas. Le decompte canonique reside dans `CATALOG-STATUS.json` du depot.
 
 ## Structure
 
@@ -146,6 +154,15 @@ Le fil rouge de cette serie est la creation d'un systeme de visuels pedagogiques
 3. **03-Orchestration** (comparaison et pipelines) : [03-1](03-Orchestration/03-1-Multi-Model-Comparison.ipynb) compare les modeles pour choisir le meilleur rapport qualite/cout. [03-2](03-Orchestration/03-2-Workflow-Orchestration.ipynb) assemble un pipeline de generation complet.
 
 4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Content-Generation.ipynb) applique le pipeline au contenu educatif. Les notebooks [examples/](examples/) montrent des cas d'usage par domaine (histoire, sciences, litterature).
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Video](../Video/README.md) | Image-to-video | SVD (Video/02-4) anime une image existante ; le pipeline Video/03-2 enchaine generation d'images puis animation |
+| [Audio](../Audio/README.md) | Sync audio-video | Audio/04-4 synchronise la piste audio avec les visuels generes |
+| [Texte](../Texte/README.md) | Prompts structures | Les prompts DALL-E et GPT-5 Image beneficient des techniques de prompt engineering (Texte/2) et function calling (Texte/4) |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines d'orchestration (03-2) partagent les memes patterns que les agents Semantic Kernel |
 
 ## Licence
 

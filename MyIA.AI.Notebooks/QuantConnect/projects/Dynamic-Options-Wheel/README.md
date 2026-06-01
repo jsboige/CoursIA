@@ -9,9 +9,7 @@ IV percentile-based dynamic options wheel on SPY. Adjusts put strike delta and c
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Dynamic-Options-Wheel"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

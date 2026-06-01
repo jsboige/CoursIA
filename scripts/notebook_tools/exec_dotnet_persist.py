@@ -146,7 +146,7 @@ def _wait_idle(kc, timeout=10):
             msg = kc.get_iopub_msg(timeout=2)
             if msg['msg_type'] == 'status' and msg['content'].get('execution_state') == 'idle':
                 return
-        except:
+        except Exception:
             pass
 
 

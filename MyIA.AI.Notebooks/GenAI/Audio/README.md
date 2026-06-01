@@ -1,10 +1,17 @@
 # Audio - Speech, Voix & Musique par IA
 
+<!-- CATALOG-STATUS
+series: GenAI-Audio
+pedagogical_count: 30
+breakdown: Foundation=5, Advanced=9, Orchestration=3, Applications=13
+maturity: BETA=18, PRODUCTION=12
+-->
+
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)
 
 Le traitement audio est souvent le parent pauvre de l'IA generative, eclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalites les plus naturelles de l'interaction humaine. Cette serie couvre l'ensemble de la chaine audio IA : reconnaissance vocale, synthese, clonage, generation musicale, et orchestration de pipelines.
 
-28 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livre 18/05/2026, 8 PRs, post-mortem [ici](../../docs/epic-1028-audiobook-postmortem.md)).
+30 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livre 18/05/2026, 8 PRs, post-mortem [ici](../../../docs/_archives/epic-1028-audiobook-postmortem.md)) etendu par une variante FishAudio S2-Pro avec 29 tags prosodiques officiels et validation WER (Epic #1273, en cours).
 
 ## Fil rouge : construire un podcast automatise
 
@@ -15,9 +22,9 @@ L'objectif fil rouge de cette serie est de construire un podcast entierement gen
 ```
 Audio/
 ├── 01-Foundation/     # STT, TTS, bases audio (5 notebooks)
-├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif (8 notebooks)
+├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif (9 notebooks)
 ├── 03-Orchestration/  # Multi-modeles, temps reel (3 notebooks)
-└── 04-Applications/   # Education, production, sync A/V, live coding, audiobook (12 notebooks)
+└── 04-Applications/   # Education, production, sync A/V, live coding, audiobook (13 notebooks)
 ```
 
 ## Progression par niveau
@@ -48,6 +55,7 @@ Un podcast de qualite demande une voix naturelle et une identite sonore distinct
 | [02-6-MIDI-Generation](02-Advanced/02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), generation symbolique | Local GPU | ~2-4 GB |
 | [02-7-Song-Generation](02-Advanced/02-7-Song-Generation.ipynb) | YuE vs SongGeneration 2, chansons completes | Local GPU | 10-24 GB |
 | [02-8-Expressive-TTS](02-Advanced/02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
+| [02-9-AceStep-Music-Generation](02-Advanced/02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
 
 ### 03-Orchestration - Multi-modeles & Temps reel
 
@@ -61,7 +69,7 @@ Les composants existent, il faut les assembler. Ce niveau construit les pipeline
 
 ### 04-Applications - Cas d'usage production
 
-Application directe : les notebooks de ce niveau mettent en oeuvre des workflows complets. 04-1 a 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-video et le live coding. 04-6 a 04-12 forment un pipeline audiobook agentique complet (Epic #1028) : benchmark des voix, analyse litteraire, casting vocal, annotation prosodique, generation TTS et compilation finale.
+Application directe : les notebooks de ce niveau mettent en oeuvre des workflows complets. 04-1 a 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-video et le live coding. 04-6 a 04-12 forment un pipeline audiobook agentique complet (Epic #1028) : benchmark des voix, analyse litteraire, casting vocal, annotation prosodique, generation TTS et compilation finale. 04-13 etend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels (Epic #1273).
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -75,8 +83,9 @@ Application directe : les notebooks de ce niveau mettent en oeuvre des workflows
 | [04-8-Lecture-Analytique](04-Applications/04-8-Lecture-Analytique.ipynb) | Analyse litteraire, segmentation | OpenAI API | 0 |
 | [04-9-Voice-Casting](04-Applications/04-9-Voice-Casting.ipynb) | Attribution voix par personnage | OpenAI API | 0 |
 | [04-10-Annotation-Prosodique](04-Applications/04-10-Annotation-Prosodique.ipynb) | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
-| [04-11-Generation-TTS](04-Applications/04-11-Generation-TTS_output.ipynb) | Generation TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
-| [04-12-Compilation-Audio](04-Applications/04-12-Compilation-Audio_output.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
+| [04-11-Generation-TTS](04-Applications/04-11-Generation-TTS.ipynb) | Generation TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
+| [04-12-Compilation-Audio](04-Applications/04-12-Compilation-Audio.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
+| [04-13-Audiobook-FishAudio-S2Pro](04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
 
 ## Technologies
 
@@ -150,6 +159,15 @@ Le fil rouge de cette serie est la creation d'un podcast genere par IA. Voici co
 3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare les modeaux pour choisir le meilleur STT/TTS selon le budget. [03-2](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) assemble le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatise.
 
 4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Audio-Content.ipynb) applique le pipeline a la narration de cours. [04-2](04-Applications/04-2-Transcription-Pipeline.ipynb) gere la transcription batch pour les episodes longs. [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise avec la piste video si le podcast a une composante visuelle.
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Video](../Video/README.md) | Sync audio-video | [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise l'audio genere avec les pistes video de la serie Video |
+| [Texte](../Texte/README.md) | LLM dans le pipeline | Le pipeline podcast (03-2) enchaine STT vers LLM vers TTS ; les prompts structures (Texte/2) et le RAG (Texte/5) alimentent le contenu |
+| [Image](../Image/README.md) | Contenu multimodal | Un podcast enrichi combine voix (Audio), illustrations (Image) et eventuellement video (Video) |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines multi-modeles Audio (03-1, 03-2) partagent les patterns d'orchestration avec Semantic Kernel |
 
 ## Licence
 

@@ -984,7 +984,7 @@ class NotebookExecutor:
             try:
                 kc.stop_channels()
                 km.shutdown_kernel(now=True)
-            except:
+            except Exception:
                 pass
 
     def _wait_for_idle(self, kc, timeout: int = 10) -> None:
@@ -994,7 +994,7 @@ class NotebookExecutor:
                 msg = kc.get_iopub_msg(timeout=timeout)
                 if msg['msg_type'] == 'status' and msg['content']['execution_state'] == 'idle':
                     break
-            except:
+            except Exception:
                 break
 
     def execute_notebook_cell_by_cell(
@@ -1135,7 +1135,7 @@ class NotebookExecutor:
             try:
                 kc.stop_channels()
                 km.shutdown_kernel(now=True)
-            except:
+            except Exception:
                 pass
 
         return result

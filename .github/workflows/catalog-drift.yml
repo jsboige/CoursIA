@@ -20,7 +20,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Generate catalog (prerequisite)
-      run: python3 scripts/notebook_tools/generate_catalog.py --json-only
+      run: python3 scripts/notebook_tools/generate_catalog.py --json-only --git-tracked-only
 
     - name: Check CATALOG-STATUS marker drift
       run: python3 scripts/notebook_tools/expand_catalog_markers.py --check
@@ -36,7 +36,7 @@ jobs:
 
         base = 'MyIA.AI.Notebooks'
         EXCLUDE_ALWAYS = {'.ipynb_checkpoints', 'obj', 'bin', '__pycache__', '.git'}
-        EXCLUDE_PED = {'research', 'archive', '_output', 'ESGF', 'examples'}
+        EXCLUDE_PED = {'research', 'archive', '_output', 'partner-course', 'examples'}
         CATALOG_RE = re.compile(r'<!--\s*CATALOG-STATUS\s*\n(.*?)\n\s*-->', re.DOTALL)
 
         for series in sorted(os.listdir(base)):

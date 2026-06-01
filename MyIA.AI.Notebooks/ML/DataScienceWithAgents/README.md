@@ -2,6 +2,8 @@
 
 Formation complete en Data Science Python avec integration d'agents IA. Combine les fondamentaux NumPy/Pandas avec deux tracks complementaires : LangChain (3 jours) et Google ADK (4 jours).
 
+Au-dela des bibliotheques classiques, cette formation explore un changement de paradigme : passer de *l'ecriture* de code data science a *l'orchestration* d'**agents LLM** qui le produisent et l'executent. Apres les fondations NumPy/Pandas, le track **LangChain** apprend a construire des agents capables d'interroger un DataFrame, de nettoyer un jeu de donnees ou de scorer des candidatures ; le track **Google ADK** monte en puissance avec des systemes multi-agents (boucles planner-coder, frameworks DS-STAR / MLE-STAR) jusqu'a concourir sur des competitions Kaggle. L'enjeu pedagogique n'est pas seulement technique : il s'agit de comprendre *quand* un agent autonome accelere reellement le travail d'analyse, et *comment* l'encadrer (outils, validation, garde-fous).
+
 ## Vue d'ensemble
 
 | Statistique | Valeur |

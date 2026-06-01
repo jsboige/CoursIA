@@ -62,7 +62,7 @@ class AuditReport:
     inconsistencies: List[Dict]
     recommendations: List[str]
     
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         return {
             'timestamp': self.timestamp,
             'locations': [asdict(loc) for loc in self.locations],
@@ -73,7 +73,7 @@ class AuditReport:
 class GenAIAuthManager:
     """Gestionnaire principal d'authentification (Singleton Facade)"""
     
-    def __init__(self, root_dir: Path = None):
+    def __init__(self, root_dir: Optional[Path] = None) -> None:
         self.root_dir = root_dir if root_dir else PROJECT_ROOT
         self.secrets_dir = self.root_dir / ".secrets"
         self.secrets_dir.mkdir(exist_ok=True, parents=True)
@@ -102,7 +102,7 @@ class GenAIAuthManager:
         try:
             return bcrypt.checkpw(raw_token.encode('utf-8'), bcrypt_hash.encode('utf-8'))
         except Exception as e:
-            logger.error(f"Erreur validation bcrypt: {e}")
+            logger.error("Erreur validation bcrypt: %s", e)
             return False
 
     def is_bcrypt_hash(self, token: str) -> bool:
@@ -122,10 +122,10 @@ class GenAIAuthManager:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            logger.error(f"Erreur chargement config: {e}")
+            logger.error("Erreur chargement config: %s", e)
             return None
 
-    def create_unified_config(self, raw_token: str = None) -> bool:
+    def create_unified_config(self, raw_token: Optional[str] = None) -> bool:
         """Crée ou recrée la configuration unifiée"""
         logger.info("🔐 Création configuration unifiée...")
         
@@ -158,14 +158,14 @@ class GenAIAuthManager:
             # Mettre à jour les permissions (lecture seule pour user si possible)
             try:
                 os.chmod(self.config_file, 0o600)
-            except:
+            except OSError:
                 pass
                 
-            logger.info(f"✅ Configuration sauvegardée: {self.config_file}")
+            logger.info("Configuration sauvegardee: %s", self.config_file)
             return True
-            
+
         except Exception as e:
-            logger.error(f"❌ Erreur création config: {e}")
+            logger.error("Erreur creation config: %s", e)
             return False
 
     # =========================================================================
@@ -199,22 +199,22 @@ class GenAIAuthManager:
                     if type_ in ['secrets_file', 'docker_secrets']:
                         # Écriture directe du hash
                         path.write_text(bcrypt_hash, encoding='utf-8')
-                        logger.info(f"✅ Écrit hash dans: {path}")
+                        logger.info("Ecrit hash dans: %s", path)
                         success_count += 1
-                        
+
                     elif type_ == 'env_file':
-                        # Mise à jour intelligente du .env
+                        # Mise a jour intelligente du .env
                         self._update_env_file(path, raw_token, bcrypt_hash)
-                        logger.info(f"✅ Mis à jour .env: {path}")
+                        logger.info("Mis a jour .env: %s", path)
                         success_count += 1
-                        
+
                 except Exception as e:
-                    logger.error(f"❌ Erreur synchro {path}: {e}")
-        
-        logger.info(f"Synchronisation terminée: {success_count}/{total_ops} opérations réussies.")
+                    logger.error("Erreur synchro %s: %s", path, e)
+
+        logger.info("Synchronisation terminee: %d/%d operations reussies.", success_count, total_ops)
         return success_count == total_ops
 
-    def _update_env_file(self, env_path: Path, raw_token: str, bcrypt_hash: str):
+    def _update_env_file(self, env_path: Path, raw_token: str, bcrypt_hash: str) -> None:
         """Met à jour les variables d'auth dans un fichier .env sans toucher au reste"""
         if not env_path.exists():
             # Créer nouveau si n'existe pas
@@ -261,9 +261,9 @@ class GenAIAuthManager:
             backup_path = env_path.with_suffix(f".backup.{int(time.time())}")
             try:
                 shutil.copy2(env_path, backup_path)
-                logger.info(f"Backup .env créé: {backup_path}")
+                logger.info("Backup .env cree: %s", backup_path)
             except Exception as e:
-                logger.error(f"Erreur backup .env: {e}")
+                logger.error("Erreur backup .env: %s", e)
                 return False
 
         config = self.load_config()
@@ -276,8 +276,8 @@ class GenAIAuthManager:
 # Date: {datetime.now().isoformat()}
 
 # --- API KEYS ---
-CIVITAI_TOKEN=c39ba121e12e5b40ac67a87836431e34
-HF_TOKEN=HF_TOKEN_REDACTED
+CIVITAI_TOKEN={os.getenv("CIVITAI_TOKEN", "")}
+HF_TOKEN={os.getenv("HF_TOKEN", "")}
 QWEN_API_TOKEN={config.get('bcrypt_hash')}
 
 # --- GPU ---
@@ -309,10 +309,10 @@ SESSION_EXPIRE_HOURS=24
         try:
             env_path.parent.mkdir(parents=True, exist_ok=True)
             env_path.write_text(content, encoding='utf-8')
-            logger.info(f"✅ Fichier .env reconstruit: {env_path}")
+            logger.info("Fichier .env reconstruit: %s", env_path)
             return True
         except Exception as e:
-            logger.error(f"Erreur écriture .env: {e}")
+            logger.error("Erreur ecriture .env: %s", e)
             return False
 
     # =========================================================================
@@ -353,7 +353,7 @@ SESSION_EXPIRE_HOURS=24
                         else:
                             content = raw_content
                             is_valid = (content == ref_hash)
-                    except:
+                    except OSError:
                         content = "[READ_ERROR]"
                 
                 locations.append(TokenLocation(

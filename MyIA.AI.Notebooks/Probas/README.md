@@ -2,24 +2,27 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 32
-breakdown: Infer=20, _python_port=9, =3
-maturity: BETA=25, PRODUCTION=6, ALPHA=1
+pedagogical_count: 43
+breakdown: Infer=20, _python_port=20, root=3
+maturity: PRODUCTION=29, BETA=14
 -->
 
 Le monde reel est incertain. Un diagnostic medical n'est jamais sur a 100%, un classement sportif depend de performances intrinsequement variables, et les donnees que nous collectons sont toujours bruitees ou incompletes. La programmation probabiliste offre un cadre rigoureux pour modeliser cette incertitude : plutot que de calculer une seule reponse, on obtient une **distribution de probabilites** qui quantifie notre confiance dans chaque resultat possible.
 
-Cette serie vous apprend a construire des modeles probabilistes decomplexes en quelques lignes de code. Vous decouvrirez comment Infer.NET (Microsoft) permet de definir des variables aleatoires, d'exprimer des observations, et d'obtenir automatiquement les distributions posterieures — sans ecrire d'integrales ni deriver d'equations. Le parcours couvre les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne pour prendre des decisions optimales sous incertitude.
+Cette serie couvre trois stack complementaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA, HMM trading). Les 20 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne. Les 20 notebooks PyMC reprennent l'integralite des modeles Infer.NET en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science : fondations 1-3, modeles classiques 4-13, et theorie de la decision 14-20.
 
-**A qui s'adresse cette serie** : etudiants en IA, data scientists, et developpeurs souhaitant aller au-dela des modeles deterministes. Les 20 notebooks Infer.NET utilisent le kernel .NET Interactive (C#), tandis que les 2 notebooks racine (Infer-101, Pyro RSA) sont en Python. Aucun prerequis en probabilites avancees : les concepts sont introduits progressivement.
+**43 notebooks** | **3 stack** | **~40h**
+
+**A qui s'adresse cette serie** : etudiants en IA, data scientists, et developpeurs souhaitant aller au-dela des modeles deterministes. Aucun prerequis en probabilites avancees : les concepts sont introduits progressivement.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 22 (20 Infer.NET + 2 Python) |
-| Duree totale | ~20h |
+| Notebooks | 43 (20 Infer.NET + 20 PyMC + 3 standalone) |
+| Duree totale | ~40h |
 | Langages | C# (.NET), Python |
+| Kernels | .NET Interactive, Python 3 |
 
 ## Parcours d'apprentissage
 
@@ -35,9 +38,13 @@ Les notebooks 4 a 13 construisent des modeles de complexite croissante, chacun i
 
 La seconde moitie de la serie passe de l'inference a la decision : comment choisir une action quand on ne connait que des probabilites ? Les notebooks 14-16 posent les fondations (axiomes de l'utilite, fonctions d'utilite mono- et multi-attributs). Les notebooks 17-20 appliquent ces concepts aux reseaux de decision, a la valeur de l'information, aux systemes experts robustes, et aux processus decisionnels de Markov (MDPs) — qui relient cette serie a la serie [RL](../RL/).
 
-### Parcours alternatif : Python (Infer-101 + Pyro RSA, ~2h)
+### Parcours alternatif : Python (Infer-101 + Pyro RSA + HMM, ~2h)
 
-Si vous preferez Python au C#, commencez par Infer-101.ipynb (introduction standalone avec modeles Two Coins et Cyclist) puis Pyro_RSA_Hyperbole.ipynb (application a la linguistique pragmatique avec le framework RSA). Ces deux notebooks ne dependent pas d'Infer.NET.
+Si vous preferez Python au C#, commencez par Infer-101.ipynb (introduction standalone avec modeles Two Coins et Cyclist) puis Pyro_RSA_Hyperbole.ipynb (application a la linguistique pragmatique avec le framework RSA). Le notebook PyMC-HMM-Trading-Alpha.ipynb applique les HMM gaussiens a la generation de signaux de trading.
+
+### Parcours PyMC complet (20 notebooks, ~14h)
+
+Les notebooks PyMC dans `_python_port/` reprennent l'integralite des 20 modeles Infer.NET en Python avec PyMC et l'echantillonnage NUTS : fondations (1-3), modeles classiques (4-13), et theorie de la decision (14-20). Ils constituent un excellent complement pour comparer les approches d'inference (message passing vs MCMC) et rejoindre l'ecosysteme Python data science. La progression suit la meme structure pedagogique en 3 phases que la serie Infer.NET.
 
 ## Structure
 
@@ -45,6 +52,10 @@ Si vous preferez Python au C#, commencez par Infer-101.ipynb (introduction stand
 Probas/
 ├── Infer-101.ipynb              # Introduction Python/C# (standalone)
 ├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
+├── PyMC-HMM-Trading-Alpha.ipynb # HMM gaussien pour trading (Python)
+├── _python_port/                # Port PyMC complet des modeles Infer.NET (20 notebooks)
+│   ├── PyMC-1-Setup.ipynb ... PyMC-20-Decision-Sequential.ipynb
+│   └── (port en cours d'enrichissement)
 └── Infer/                       # Serie complete Infer.NET (20 notebooks)
     ├── Infer-1-Setup.ipynb ... Infer-20-Decision-Sequential.ipynb
     ├── README.md                # Documentation detaillee de la serie
@@ -105,7 +116,60 @@ La serie complete est documentee dans [Infer/README.md](Infer/README.md).
 | 13 | Debugging | EP vs VMP, diagnostic erreurs |
 | 14-20 | Decision Theory | Utilite, MAUT, influence diagrams, MDPs |
 
+## Serie PyMC (20 notebooks, Python)
+
+Port Python complet des modeles Infer.NET, utilisant l'echantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inference sur des modeles identiques. La progression suit les memes trois phases que la serie Infer.NET : fondations (1-3), modeles classiques (4-13), et theorie de la decision (14-20).
+
+### Phase 1 — Fondations (notebooks 1-3, ~2h)
+
+| # | Notebook | Sujet |
+|---|----------|-------|
+| 1 | [PyMC-1-Setup](_python_port/PyMC-1-Setup.ipynb) | Configuration PyMC, modele Beta-Bernoulli |
+| 2 | [PyMC-2-Gaussian-Mixtures](_python_port/PyMC-2-Gaussian-Mixtures.ipynb) | Distributions continues, melanges gaussiens |
+| 3 | [PyMC-3-Factor-Graphs](_python_port/PyMC-3-Factor-Graphs.ipynb) | Graphes de facteurs, inference discrete |
+
+### Phase 2 — Modeles classiques (notebooks 4-13, ~9h)
+
+| # | Notebook | Sujet |
+|---|----------|-------|
+| 4 | [PyMC-4-Bayesian-Networks](_python_port/PyMC-4-Bayesian-Networks.ipynb) | Reseaux bayesiens, CPTs |
+| 5 | [PyMC-5-Skills-IRT](_python_port/PyMC-5-Skills-IRT.ipynb) | Item Response Theory, modeles de competences |
+| 6 | [PyMC-6-TrueSkill](_python_port/PyMC-6-TrueSkill.ipynb) | Classement, TrueSkill |
+| 7 | [PyMC-7-Classification](_python_port/PyMC-7-Classification.ipynb) | Classification bayesienne |
+| 8 | [PyMC-8-Model-Selection](_python_port/PyMC-8-Model-Selection.ipynb) | Selection de modeles, Bayes Factors |
+| 9 | [PyMC-9-Topic-Models](_python_port/PyMC-9-Topic-Models.ipynb) | LDA, Dirichlet priors |
+| 10 | [PyMC-10-Crowdsourcing](_python_port/PyMC-10-Crowdsourcing.ipynb) | Agregation de labels, workers, communautes |
+| 11 | [PyMC-11-Sequences](_python_port/PyMC-11-Sequences.ipynb) | HMM, chaines de Markov cachees, sequences temporelles |
+| 12 | [PyMC-12-Recommenders](_python_port/PyMC-12-Recommenders.ipynb) | Systemes de recommandation bayesiens, factorisation |
+| 13 | [PyMC-13-Debugging](_python_port/PyMC-13-Debugging.ipynb) | Troubleshooting MCMC, diagnostics NUTS, bonnes pratiques |
+
+### Phase 3 — Theorie de la decision (notebooks 14-20, ~6h)
+
+| # | Notebook | Sujet |
+|---|----------|-------|
+| 14 | [PyMC-14-Decision-Utility-Foundations](_python_port/PyMC-14-Decision-Utility-Foundations.ipynb) | Loteries, axiomes Von Neumann-Morgenstern, utilite esperee |
+| 15 | [PyMC-15-Decision-Utility-Money](_python_port/PyMC-15-Decision-Utility-Money.ipynb) | Aversion au risque, CARA, CRRA, paradoxe Saint-Petersbourg |
+| 16 | [PyMC-16-Decision-Multi-Attribute](_python_port/PyMC-16-Decision-Multi-Attribute.ipynb) | MAUT, SMART, swing weights, decisions multi-criteres |
+| 17 | [PyMC-17-Decision-Networks](_python_port/PyMC-17-Decision-Networks.ipynb) | Reseaux de decision, diagrammes d'influence, politique optimale |
+| 18 | [PyMC-18-Decision-Value-Information](_python_port/PyMC-18-Decision-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information parfaite et d'echantillon |
+| 19 | [PyMC-19-Decision-Expert-Systems](_python_port/PyMC-19-Decision-Expert-Systems.ipynb) | Systemes experts, Minimax, Minimax Regret, decisions robustes |
+| 20 | [PyMC-20-Decision-Sequential](_python_port/PyMC-20-Decision-Sequential.ipynb) | MDPs, iteration de valeur/politique, bandits, POMDPs |
+
+## Applications standalone (3 notebooks)
+
+| Notebook | Kernel | Contenu | Duree |
+| -------- | ------- | ------- | ----- |
+| [Infer-101](Infer-101.ipynb) | .NET (C#) + Python | Introduction Infer.NET, Two Coins, Cyclist | 1h |
+| [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
+| [PyMC-HMM-Trading-Alpha](PyMC-HMM-Trading-Alpha.ipynb) | Python 3 | HMM gaussien pour signaux de trading | 45 min |
+
 ## Installation
+
+### Notebooks PyMC (Python)
+
+```bash
+pip install pymc numpy scipy matplotlib arviz
+```
 
 ### Notebooks Infer.NET (C# .NET Interactive)
 
@@ -180,6 +244,19 @@ pip install pyro-ppl torch matplotlib numpy
 | Finance | 11, 15, 20 |
 | E-commerce | 12 |
 
+### Exemples concrets
+
+Derriere chaque modele de la serie se cache un systeme reel deja en production :
+
+- **TrueSkill** (notebook 6) est l'algorithme que Microsoft utilise pour apparier des millions de joueurs sur Xbox Live : il maintient pour chaque joueur une competence *gaussienne* (moyenne + incertitude) mise a jour apres chaque partie, generalisant l'Elo des echecs aux jeux en equipe.
+- **Item Response Theory** (notebook 5) est le moteur des tests adaptatifs comme le GMAT ou le GRE : la difficulte de chaque question est calibree probabilistiquement, et le test s'ajuste en temps reel au niveau estime du candidat.
+- **Les reseaux bayesiens** (notebooks 4, 7) fondent les systemes d'aide au diagnostic medical (de QMR-DT aux outils modernes) et le filtrage anti-spam : ils propagent l'incertitude entre symptomes, causes et observations.
+- **LDA / topic models** (notebook 9) structurent automatiquement de grands corpus — decouverte de thematiques dans des archives de presse, cartographie de la litterature scientifique, analyse de tickets support.
+- **Les HMM** (notebook 11, et `PyMC-HMM-Trading-Alpha`) detectent les regimes caches : phases de marche en finance, reconnaissance de la parole, segmentation de sequences biologiques.
+- **Les systemes de recommandation bayesiens** (notebook 12) sont la version « avec barre d'incertitude » du collaborative filtering de Netflix ou Amazon — utile pour decider quand explorer un nouvel item plutot que d'exploiter une preference connue.
+- **Le crowdsourcing** (notebook 10) modelise la fiabilite de chaque annotateur (Mechanical Turk, labellisation de datasets) pour reconstruire la verite terrain malgre des votes bruites.
+- **La theorie de la decision et les MDPs** (notebooks 14-20) relient la serie au controle sequentiel : gestion de stocks, maintenance predictive, et passerelle directe vers le [reinforcement learning](../RL/).
+
 ## Ressources
 
 ### Infer.NET
@@ -205,7 +282,9 @@ Voir la licence du repository principal.
 ## Cross-series Bridges
 
 | Serie | Lien | Connection |
-|-------|------|-------------|
+| ------- | ------ | ----------- |
 | [IIT](../IIT/README.md) | PyPhi | L'integration informationnelle (phi) repose sur les memes fondements probabilistes |
 | [SymbolicAI/SemanticWeb](../SymbolicAI/SemanticWeb/README.md) | OWL reasoning | Les ontologies OWL utilisent la logique probabiliste pour le raisonnement incertain |
 | [GameTheory](../GameTheory/README.md) | Bayesian games | Les jeux bayesiens combinent probabilites et theorie des jeux |
+| [QuantConnect](../QuantConnect/README.md) | HMM trading | PyMC-HMM-Trading-Alpha applique les modeles probabilistes aux signaux de trading |
+| [Search](../Search/README.md) | Optimisation bayesienne | La selection de modeles (PyMC-8) utilise les memes techniques que l'optimisation bayesienne |

@@ -13,7 +13,7 @@ Slow=60 captures quarterly trends and reduces whipsaws compared to the standard 
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Index"`
 ```bash
 lean backtest --project .
 ```

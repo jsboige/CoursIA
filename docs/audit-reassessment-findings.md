@@ -32,6 +32,21 @@ Liste des items déjà reclassés par le protocole [.claude/rules/audit-reassess
 - SC-22 Solana-Anchor (6/6 exec 0 err — print-based demos are only viable approach for Solana/Rust in Python kernel)
 - SC-11 LLM-Assisted (15/15 exec 0 err — exercise stubs correctly have empty outputs)
 
+## Step 1 — vérification mécanique (script)
+
+```python
+import json
+with open(notebook_path) as f:
+    nb = json.load(f)
+code = [c for c in nb['cells'] if c['cell_type']=='code']
+exec_count = sum(1 for c in code if c.get('execution_count'))
+outputs = sum(1 for c in code if c.get('outputs'))
+errors = sum(1 for c in code if any(o.get('output_type')=='error' for o in c.get('outputs',[])))
+print(f'{len(code)} cells, {exec_count} executed, {outputs} outputs, {errors} errors')
+```
+
+Si `exec_count == len(code)` et `errors == 0` alors que l'audit reporte "code never executed" → **FALSE POSITIVE**. Stop ici.
+
 ## NanoClaw Known False Positive Patterns
 
 NanoClaw systematically misidentifies :

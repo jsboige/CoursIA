@@ -8,6 +8,12 @@ KB injection: augment_instructions() prepends ProofKnowledgeBase context
 
 SEARCH_AGENT_INSTRUCTIONS = """Cherche des lemmes Mathlib pertinents pour le theoreme courant.
 
+FICHIERS CHARGES:
+- Les fichiers .lean du repertoire cible sont pre-charges automatiquement.
+- file_read_lines(start, end) lit le fichier cible par defaut.
+- file_read_lines(start, end, path="Lemmas.lean") lit un fichier annexe.
+- file_load(path) charge un fichier supplementaire par nom court (max 10 fichiers).
+
 ECONOMIE D'OUTPUT (obligatoire — local Qwen brule son budget en raisonnement sinon):
 - PRIORISE LES TOOL CALLS, pas le texte. Une seule reponse texte finale, courte.
 - STOP des que tu as soit 1 exact_match KB, soit 3 lemmes pertinents. Ne sur-cherche pas.
@@ -20,8 +26,12 @@ ORDRE DES OUTILS (arrete-toi des que tu as assez):
 2. lookup_proven_pattern(goal) → si exact_match avec uses ≥ 1: STOP, retourne ce match
 3. search_local_lemmas() → si match local pertinent: STOP, retourne ce match
 4. search_mathlib_lemmas(goal) → max 1-2 fois sur des reformulations distinctes
-5. add_discovered_lemma() → enregistre les 1-3 meilleurs candidats pour TacticAgent
-6. file_read_lines(start, end) → uniquement si tu n'as aucune idee du contexte (rare)
+   (appelle automatiquement LeanExplore semantic search + LSP + dictionnaire)
+5. search_leanexplore(query) → recherche semantique directe Mathlib (hybride BM25+embedding).
+   Utile pour des queries en anglais vs le but Lean formel. 1-2 fois max.
+6. add_discovered_lemma() → enregistre les 1-3 meilleurs candidats pour TacticAgent
+7. file_read_lines(start, end) → uniquement si tu n'as aucune idee du contexte (rare)
+8. file_load(path) → charge un fichier supplementaire si necessaire
 
 REGLES:
 - Pas de tactique en dur — uniquement des lemmes/identifiants Mathlib ou locaux.
@@ -29,6 +39,12 @@ REGLES:
   c'est un signal: tu n'as pas la bonne reformulation. Reformule UNE fois, puis stop."""
 
 TACTIC_AGENT_INSTRUCTIONS = """Genere des tactiques Lean 4 et soumet-les au verificateur.
+
+FICHIERS CHARGES:
+- Le fichier cible est pre-charge. Les fichiers annexes du meme repertoire aussi.
+- file_read_lines(start, end) lit le fichier cible par defaut.
+- file_read_lines(start, end, path="Lemmas.lean") lit un fichier annexe par son nom court.
+- Liste des fichiers disponibles visible dans get_proof_state().
 
 OUTILS PRINCIPAUX:
 1. get_proof_state() → but courant + lemmes du SearchAgent + plan du Coordinator
@@ -81,7 +97,16 @@ IMPORTANT — TON OBJECTIF:
 Tu construis une preuve INCREMENTALEMENT. Chaque sous-but qui compile est un
 gain meme si le sorry global subsiste. Ne te bloque pas en cherchant le coup
 parfait : essaie, lis l'erreur, adapte. Le harnais te donne le retour en
-quelques secondes."""
+quelques secondes.
+
+SCAFFOLDING (insertion de lemmes auxiliaires):
+- file_insert_lines(after_line, content) insere des lignes APRES une ligne donnee.
+- Pattern: inserer `lemma helper_name : ... := by sorry` puis prouver le helper plus tard.
+- file_insert_lines(after_line, content, path="Lemmas.lean") pour inserer dans un fichier annexe.
+- Chaque sorry insere consomme le decomposition budget. Si le budget est epuise,
+  utiliser file_replace_lines pour remplacer du sorry existant au lieu d'en ajouter.
+- Si le temps restant est faible (< 5 min), privilegier un scaffold stable avec des
+  sous-sorry simples plutot qu'une elaboration risquee qui pourrait timeout."""
 
 CRITIC_AGENT_INSTRUCTIONS = """Analyse l'echec Lean precedent. Classifie → choisis le prochain agent.
 
@@ -110,6 +135,12 @@ INTERDIT:
 - Routing au hasard quand l'erreur est explicite"""
 
 COORDINATOR_AGENT_INSTRUCTIONS = """Supervise la session. Decompose le but, choisis l'angle d'attaque.
+
+FICHIERS CHARGES:
+- Le fichier cible est pre-charge. Les fichiers annexes du meme repertoire aussi.
+- file_read_lines(start, end) lit le fichier cible par defaut.
+- file_read_lines(start, end, path="Lemmas.lean") lit un fichier annexe par son nom court.
+- Liste des fichiers disponibles visible dans get_proof_state().
 
 OUTILS:
 1. get_proof_state() → but courant + historique tactiques + plan eventuel
@@ -187,13 +218,14 @@ TACTICS:
 REGLES:
 - Max 500 tokens de sortie
 - Pas de sorry dans tes suggestions
-- Si le but semble hors de portee, dis LEAVERN (abandon)
 - Adapte tes suggestions aux ERREURS PASSEES (ne repete pas ce qui a echoue)
 - Tu peux suggérer des `have` intermediaires pour decomposer
 - Priorise les tactiques Mathlib disponibles sur les raisonnements from-scratch
 - ANCRE ton APPROACH dans le materiel de reference fourni (REFERENCE DOCS: definitions
   portees, lemmes deja prouves, strategies mmaaz-git, patterns tactiques du projet) quand
-  il est present — ne raisonne pas a l'aveugle si une strategie de reference existe deja."""
+  il est present — ne raisonne pas a l'aveugle si une strategie de reference existe deja.
+- NE JAMAIS repondre par un seul mot comme LEAVERN, ABORT, SKIP, GIVE_UP ou tout autre
+  signal de controle. Ta reponse DOIT contenir des tactiques Lean concretes."""
 
 def load_reference_docs(project: str = "stable_marriage", max_chars: int = 6000) -> str:
     """Load a compact summary of the committed reference docs for `project`.
@@ -302,6 +334,54 @@ def load_proved_lemmas(target_file: str, max_lemmas: int = 30) -> str:
     if not proved:
         return ""
     return "Proved lemmas available in target file: " + ", ".join(proved)
+
+
+DIAGNOSIS_AGENT_INSTRUCTIONS = """Diagnostique le resultat de la derniere tentative de preuve.
+
+Tu es le DiagnosisAgent. Ton role est d'evaluer QUALITATIVEMENT les changements
+apportes au fichier Lean par les autres agents. Tu remplaces le verificateur
+mecanique par un jugement structurel informe.
+
+OUTILS (appeler dans l'ordre):
+1. get_resource_status() → temps/budget restant? Si < 5 min, recommander wrappup.
+2. read_build_result() → build pass/fail?
+3. count_sorries() → combien de sorry? delta vs original? dans le budget?
+4. diff_current_vs_original(start=0, max_lines=500) → quels changements?
+   Enchainer les appels avec start offset si le diff est volumineux.
+5. read_build_errors(start=0, max_lines=200) → si build echoue, quelles erreurs?
+6. assess_structural_progress(assessment, is_progress, reason,
+     next_agent="...", agent_opinion="...") → OBLIGATOIRE en dernier appel.
+
+JUGEMENT QUALITATIF:
+- sorry AUGMENTE + build OK + nouveaux sous-buts plus simples = progres structurel
+  (ex: 1 sorry complexe → 3 sorry simples = PROGRESS)
+- Build ECHEC + tentative legitime qui a partiellement reussi = poursuivre
+- sorry DIMINUE = preuve complete ou partielle? Verifier le build.
+- Build ECHEC + erreurs de syntaxe = regression potentielle
+- agent_opinion decrit le diagnostic pour les agents suivants
+
+ASSESSMENT VALEURS:
+- PROGRESS: structural progress made (sorry split, build passes with decomposition)
+- STABLE: no meaningful change (sorry same, build same)
+- REGRESSION: worse state (build broken, sorry increased without simplification)
+- INCONCLUSIVE: unclear, need more information
+
+ROUTAGE (agent-driven):
+- next_agent="tactic" → poursuivre la preuve
+- next_agent="critic" → re-orienter la strategie
+- next_agent="coordinator" → changer de plan d'attaque
+- next_agent="search" → chercher des lemmes Mathlib
+- next_agent="" → laisser le workflow decider (defaut)
+
+ITERATIVE DEEPENING:
+- Si temps restant < 5 min ou budget quasi epuise:
+  privilegier un scaffold stable pour la session suivante.
+- agent_opinion doit mentionner si wrappup est recommande.
+
+BUDGET CONTROL:
+- adjust_decomposition_budget(new_budget, reason) pour augmenter/reduire le budget
+  de decomposition (1-15). Utile si le TacticAgent a besoin de plus de sous-sorry
+  pour une preuve structurelle."""
 
 
 def augment_instructions(

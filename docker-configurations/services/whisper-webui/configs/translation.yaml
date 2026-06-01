@@ -1,0 +1,54 @@
+en:
+  Language: Language
+  Upload File here: Upload File here
+  Model: Model
+  Automatic Detection: Automatic Detection
+  File Format: File Format
+  Translate to English?: Translate to English? (Whisper's End-To-End Speech-To-Text
+    translation feature)
+  Add a timestamp to the end of the filename: Add a timestamp to the end of the filename
+  Offload sub model when finished: Offload model when finished
+  Advanced Parameters: Advanced Parameters
+  Enabling this will remove background music: Enabling this will remove background
+    music by submodel before transcribing
+  Enable Background Music Remover Filter: Enable Background Music Remover Filter
+  Device: Device
+  Save separated files to output: Save separated files to output
+  Background Music Remover Filter: Background Music Remover Filter
+  Enable this to transcribe only detected voice: Enable this to transcribe only detected
+    voice parts by submodel.
+  Enable Silero VAD Filter: Enable Silero VAD Filter
+  Voice Detection Filter: Voice Detection Filter
+  Enable Diarization: Enable Diarization
+  This is only needed the first time you download the model: This is only needed the
+    first time you download the model. If you already have models, you don't need
+    to enter. To download the model, you must manually go to "https://huggingface.co/pyannote/speaker-diarization-3.1"
+    and "https://huggingface.co/pyannote/segmentation-3.0" and agree to their requirement.
+  HuggingFace Token: HuggingFace Token
+  Diarization: Diarization
+  GENERATE SUBTITLE FILE: GENERATE SUBTITLE FILE
+  Output: Output
+  Downloadable output file: Downloadable output file
+  File: File
+  Youtube Link: Youtube Link
+  Youtube Thumbnail: Youtube Thumbnail
+  Youtube Title: Youtube Title
+  Youtube Description: Youtube Description
+  Youtube: Youtube
+  Record with Mic: Record with Mic
+  Mic: Mic
+  Upload Subtitle Files to translate here: Upload Subtitle Files to translate here
+  Your Auth Key (API KEY): Your Auth Key (API KEY)
+  Source Language: Source Language
+  Target Language: Target Language
+  Pro User?: Pro User?
+  TRANSLATE SUBTITLE FILE: TRANSLATE SUBTITLE FILE
+  DeepL API: DeepL API
+  NLLB: NLLB
+  T2T Translation: T2T Translation
+  Upload Audio Files to separate background music: Upload Audio Files to separate
+    background music
+  SEPARATE BACKGROUND MUSIC: SEPARATE BACKGROUND MUSIC
+  Instrumental: Instrumental
+  Vocals: Vocals
+  BGM Separation: BGM Separation

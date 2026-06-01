@@ -76,10 +76,10 @@
 | `projects/Framework_Composite_EMATrend/quantbook_composite_research.ipynb` | Quantbook | Composite framework |
 | `projects/CSharp-BTC-EMA-Cross/research_robustness.ipynb` | Robustness | C# strategy |
 | `projects/CSharp-CTG-Momentum/research_robustness.ipynb` | Robustness | C# strategy |
-| `ESGF-2026/examples/Crypto-MultiCanal/research_archive.ipynb` | Archive | Archived research |
-| `ESGF-2026/kit-transitoire/01-ML-RandomForest/research.ipynb` | Template | Student kit |
-| `ESGF-2026/kit-transitoire/02-ML-XGBoost/research.ipynb` | Template | Student kit |
-| `ESGF-2026/kit-transitoire/03-Framework-Composite/research.ipynb` | Template | Student kit |
+| `partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb` | Archive | Archived research |
+| `partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb` | Template | Student kit |
+| `partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb` | Template | Student kit |
+| `partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb` | Template | Student kit |
 | `ML-Training-Pipeline/ML-Research-Template.ipynb` | Template | ML template |
 | `Python/research/research_classification.ipynb` | Research | Classification |
 | `Python/research/research_lstm.ipynb` | Research | LSTM |
@@ -124,7 +124,7 @@
 
 | Notebook | Code | Exec | % Exec | Notes |
 |----------|------|------|--------|-------|
-| `ESGF-2026/examples/Crypto-MultiCanal/research.ipynb` | 24 | 15 | 63% | 15/24, 0 outputs |
+| `partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb` | 24 | 15 | 63% | 15/24, 0 outputs |
 | `projects/CSharp-BTC-MACD-ADX/Research.ipynb` | 21 | 18 | 86% | 18/21, 0 outputs |
 | `projects/ML-TextClassification/quantbook.ipynb` | 14 | 4 | 29% | 4/14 |
 | `projects/PairsTrading/quantbook.ipynb` | 7 | 3 | 43% | 3/7 |
@@ -162,7 +162,7 @@ These 5 quantbooks have >50% error cells and need QC Cloud re-execution:
 Majority are research/quantbook notebooks requiring QC Cloud execution.
 
 - 9 `Research-Executor/research_*.ipynb` — template research notebooks
-- 3 `ESGF-2026/kit-transitoire/` — student kit templates
+- 3 `partner-course-quant-trading/kit-transitoire/` — student kit templates
 - 4 `Python/QC-Py-XX-*.ipynb` — course notebooks (01, 04, 19, Dataset)
 - Remaining: project-specific quantbooks and research notebooks
 
@@ -190,7 +190,7 @@ Most are partially-executed quantbooks. Sudoku-16-NN is 95% complete (1 cell).
 All problematic QuantConnect notebooks share `last_commit: 2026-05-12T18:46:04+02:00` — batch-committed during a recent sweep. This confirms they were touched structurally without re-execution (rule H.1).
 
 Notebooks with `pre_rule_c2: true` (3) predate the C.2 rule (committed before 2026-04-26):
-- `ESGF-2026/examples/Crypto-MultiCanal/research.ipynb`
+- `partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb`
 - `projects/CSharp-BTC-MACD-ADX/Research.ipynb`
 - `projects/Portfolio-Optimization-ML/research.ipynb`
 

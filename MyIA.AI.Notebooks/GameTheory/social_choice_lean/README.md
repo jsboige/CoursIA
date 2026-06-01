@@ -6,12 +6,12 @@ Ce répertoire contient les formalisations mathématiques de la théorie du choi
 
 | Statistique | Valeur |
 |-------------|--------|
-| Théorèmes formels | 2 certifiés (0 sorry) + 1 en cours |
-| sorry restants | 3 (dans Voting.lean : median voter) |
-| Référence commit | `d679d950` (main, 29/04/2026) |
+| Théorèmes formels | 3 certifiés (0 sorry) |
+| sorry restants | 0 |
+| Référence commit | `v4.30.0-rc2` (main, 26/05/2026) |
 | Dépendances | Mathlib4, Lake |
 
-**Statut formel** : Arrow.lean et Sen.lean sont **FORMAL-CERTIFIED** (0 sorry). Voting.lean contient 3 sorry dans les preuves du Median Voter Theorem (en cours de complétion). Voir `FORMAL_STATUS.md` (PR-G) pour le détail par fichier.
+**Statut formel** : Arrow.lean, Sen.lean et Voting.lean sont **FORMAL-CERTIFIED** (0 sorry). Voir `FORMAL_STATUS.md` pour le détail par fichier.
 
 ## Théorèmes formalisés
 
@@ -39,7 +39,7 @@ Résultats formalisés par Peters :
 |--------|---------------------------|---------------|
 | Type de préférence | `PrefOrder α` (réflexif, total, transitif) | `LinearOrder A` (strict, Mathlib) |
 | Règle de vote | `SCC ι σ` (types fixés) | `VotingRule` (polymorphe sur V, A) |
-| Toolchain | `v4.28.0-rc1` | `v4.27.0-rc1` (pin commit `d679d950`) |
+| Toolchain | `v4.30.0-rc2` | `v4.27.0-rc1` (pin commit `d679d950`) |
 
 ```
 
@@ -72,7 +72,7 @@ Résultats formalisés par Peters :
 **Dans `SocialChoice/Voting.lean`** :
 
 - **Énoncé** : Pour des préférences single-peaked, la règle de la majorité sélectionne l'alternative préférée de l'électeur médian.
-- **Statut** : **FORMAL-SKETCH** (3 sorry). Définitions complètes (single-peaked, peak), preuve en cours.
+- **Statut** : **FORMAL-CERTIFIED** (0 sorry). Définitions complètes (single-peaked, peak) et théorème fermé (cf [LEAN_INVENTORY.md](../LEAN_INVENTORY.md)).
 
 ## Structure des fichiers
 
@@ -80,7 +80,7 @@ Résultats formalisés par Peters :
 social_choice_lean/
 ├── README.md                          # Documentation générale
 ├── lakefile.lean                      # Configuration du projet Lake
-├── lean-toolchain                     # Version de Lean (v4.28.0-rc1)
+├── lean-toolchain                     # Version de Lean (v4.30.0-rc2)
 ├── SocialChoice.lean                  # Fichier d'imports principaux
 ├── SocialChoice/                      # Module principal
 │   ├── Basic.lean                    # Définitions de base (P, I, PrefOrder, Profile)

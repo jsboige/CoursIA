@@ -9,8 +9,7 @@ DecisionTreeRegressor dividend prediction. Predicts dividend yield using fundame
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Dividend-Harvesting-ML"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
@@ -29,4 +28,5 @@ DecisionTreeRegressor dividend prediction. Predicts dividend yield using fundame
 - research.ipynb - Dividend feature analysis
 ## References
 
-- Hands-On AI Trading, Section 06, Example 06
+- Hands-On AI Trading, Section 06, Example 06
+

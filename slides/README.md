@@ -56,8 +56,8 @@ Les images pleine-largeur utilisent le layout **`image-overlay`** (fond d'image 
 | S1 | Argumentation | `S1-argumentation/` | ~791 | 20 | Sessions avancees |
 | S2 | IA exploratoire/symbolique | `S2-ia-exploratoire-symbolique/` | ~1112 | 54 | Sessions avancees |
 | S3 | Acculturation IA | `S3-acculturation/` | ~2039 | 133 | Sessions avancees |
-| S4 | Trading algorithmique | `S4-trading-algorithmique/` | ~2761 | 15 | ESGF |
-| S4 | Trading exercices | `S4-trading-exercices/` | ~871 | 0 | ESGF |
+| S4 | Trading algorithmique | `S4-trading-algorithmique/` | ~2761 | 15 | Partner |
+| S4 | Trading exercices | `S4-trading-exercices/` | ~871 | 0 | Partner |
 
 Le decompte exact de slides se fait au runtime Slidev (les separateurs `---` incluent aussi les frontmatter locaux des layouts custom). Lancer le serveur pour voir le compteur pagine.
 

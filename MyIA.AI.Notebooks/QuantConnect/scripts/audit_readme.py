@@ -50,7 +50,7 @@ class ReadmeAuditor:
         "Utilisation"
     ]
 
-    ESGF_EXAMPLE_SECTIONS = [
+    COURSE_EXAMPLE_SECTIONS = [
         "Objectif",
         "Stratégie",
         "Résultats",
@@ -71,12 +71,12 @@ class ReadmeAuditor:
     def classify_readme(self, path: Path) -> str:
         """Classifie le type de README."""
         parts = path.parts
-        if "ESGF-2026" in parts and "examples" in parts:
-            return "ESGF_EXAMPLE"
-        elif "ESGF-2026" in parts and "templates" in parts:
-            return "ESGF_TEMPLATE"
-        elif "ESGF-2026" in parts:
-            return "ESGF_MAIN"
+        if "partner-course-quant-trading" in parts and "examples" in parts:
+            return "COURSE_EXAMPLE"
+        elif "partner-course-quant-trading" in parts and "templates" in parts:
+            return "COURSE_TEMPLATE"
+        elif "partner-course-quant-trading" in parts:
+            return "COURSE_MAIN"
         elif "projects" in parts:
             return "PROJECT"
         elif path.name == "README.md" and len(parts) <= 7:
@@ -134,8 +134,8 @@ class ReadmeAuditor:
             expected = self.MAIN_SECTIONS
         elif readme_type == "PROJECT":
             expected = self.PROJECT_SECTIONS
-        elif readme_type == "ESGF_EXAMPLE":
-            expected = self.ESGF_EXAMPLE_SECTIONS
+        elif readme_type == "COURSE_EXAMPLE":
+            expected = self.COURSE_EXAMPLE_SECTIONS
         else:
             expected = []
 
