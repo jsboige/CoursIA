@@ -5,6 +5,8 @@ rdflib>=7.0.0,<8.0.0
 SPARQLWrapper>=2.0.0
 pyshacl>=0.27.0
 owlready2>=0.45
+owlrl>=0.4.0
+reasonable>=0.1.0
 
 # Knowledge Graph tools
 kglab>=0.6.0
