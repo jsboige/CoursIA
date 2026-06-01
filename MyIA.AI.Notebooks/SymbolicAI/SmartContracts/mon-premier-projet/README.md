@@ -1,66 +1,64 @@
-## Foundry
+# Mon Premier Projet Foundry — Counter
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Projet Foundry cree dans le cadre du notebook [SC-1-Setup-Foundry](../00-Foundations/SC-1-Setup-Foundry.ipynb). Premier contrat Solidity avec tests unitaires.
 
-Foundry consists of:
+## Contrat : Counter.sol
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+Compteur simple en Solidity 0.8.28 avec protection contre le underflow.
 
-## Documentation
+| Fonction | Type | Description |
+|----------|------|-------------|
+| `increment()` | `public` | Augmente `count` de 1 |
+| `decrement()` | `public` | Diminue `count` de 1 (revert si `count == 0`) |
+| `getCount()` | `public view` | Retourne la valeur de `count` |
+| `count()` | `public view` | Getter automatique (variable `public`) |
 
-https://book.getfoundry.sh/
+**Protection underflow** : `require(count > 0, "Cannot decrement below zero")` empêche le decrement en dessous de zero. Solidity 0.8+ a des checks natifs pour l'underflow arithmetique, mais le require explicite fournit un message d'erreur clair.
 
-## Usage
+## Tests : Counter.t.sol
 
-### Build
+4 tests Foundry couvrant les cas nominal et edge :
 
-```shell
-$ forge build
+| Test | Cas de test |
+|------|-------------|
+| `testIncrement` | Incrementation successive (0 -> 1 -> 2) |
+| `testDecrement` | Decrementation (2 -> 1) |
+| `testDecrementZero` | Revert attendu quand `count == 0` |
+| `testPublicGetter` | Coherence entre `count()` (auto) et `getCount()` (explicite) |
+
+## Utilisation
+
+```bash
+# Compiler
+forge build
+
+# Lancer les tests
+forge test -vv
+
+# Formater
+forge fmt
 ```
 
-### Test
+## Structure
 
-```shell
-$ forge test
+```
+mon-premier-projet/
+├── src/
+│   └── Counter.sol          # Contrat Counter
+├── test/
+│   └── Counter.t.sol        # Tests Foundry
+├── script/
+│   └── Counter.s.sol        # Script de deploiement
+├── foundry.toml              # Configuration Foundry
+└── README.md
 ```
 
-### Format
+## Documentation Foundry
 
-```shell
-$ forge fmt
-```
+- [Foundry Book](https://book.getfoundry.sh/) — documentation officielle
+- [Forge CLI](https://book.getfoundry.sh/reference/forge/) — commandes forge
+- [Testing](https://book.getfoundry.sh/forge/tests) — guide de test Foundry
 
-### Gas Snapshots
+## Auteurs
 
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+Nabil Chartouni, Lucas Majerczyk, Wilfrid Wangon Zekou — TP Smart Contracts EPITA-IS 2026.
