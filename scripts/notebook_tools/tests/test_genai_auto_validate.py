@@ -48,10 +48,7 @@ _mock_config = types.SimpleNamespace(
     NOTEBOOK_SERIES=_mock_notebook_series,
 )
 
-# Inject mock config
-sys.modules["config"] = _mock_config
-
-# Mock commands.notebooks and commands.gpu (imported by auto_validate)
+# Mock submodules needed by auto_validate
 _mock_notebooks_mod = types.SimpleNamespace(
     NotebookValidator=MagicMock,
 )
@@ -59,20 +56,46 @@ _mock_gpu_mod = types.SimpleNamespace(
     profile_apply=MagicMock(),
     profile_current=MagicMock(),
 )
-sys.modules["commands"] = types.SimpleNamespace()
-sys.modules["commands.notebooks"] = _mock_notebooks_mod
-sys.modules["commands.gpu"] = _mock_gpu_mod
+
+# Inject mocks into sys.modules with patch.dict for clean teardown
+_MODULES_PATCH = {
+    "config": _mock_config,
+    "commands": types.SimpleNamespace(),
+    "commands.notebooks": _mock_notebooks_mod,
+    "commands.gpu": _mock_gpu_mod,
+}
 
 # --- Load auto_validate.py ---
 _AV_PATH = Path(__file__).resolve().parent.parent.parent / "genai-stack" / "commands" / "auto_validate.py"
-_av_spec = importlib.util.spec_from_file_location("auto_validate", _AV_PATH)
-_av_mod = importlib.util.module_from_spec(_av_spec)
-_av_spec.loader.exec_module(_av_mod)
 
-extract_images = _av_mod.extract_images_from_notebook
-get_batch_notebooks = _av_mod.get_batch_notebooks
-get_group_notebooks = _av_mod.get_group_notebooks
-validate_single_notebook = _av_mod.validate_single_notebook
+
+@pytest.fixture(scope="module", autouse=True)
+def _setup_module():
+    """Inject mock modules with clean teardown — prevents sys.modules pollution."""
+    saved = {}
+    for key, val in _MODULES_PATCH.items():
+        saved[key] = sys.modules.get(key)
+        sys.modules[key] = val
+
+    # Load the module under test
+    global _av_mod, extract_images, get_batch_notebooks, get_group_notebooks, validate_single_notebook
+    _av_spec = importlib.util.spec_from_file_location("auto_validate", _AV_PATH)
+    _av_mod = importlib.util.module_from_spec(_av_spec)
+    _av_spec.loader.exec_module(_av_mod)
+
+    extract_images = _av_mod.extract_images_from_notebook
+    get_batch_notebooks = _av_mod.get_batch_notebooks
+    get_group_notebooks = _av_mod.get_group_notebooks
+    validate_single_notebook = _av_mod.validate_single_notebook
+
+    yield
+
+    # Teardown: restore original sys.modules entries
+    for key, orig in saved.items():
+        if orig is None:
+            sys.modules.pop(key, None)
+        else:
+            sys.modules[key] = orig
 
 
 # ============================================================================
@@ -226,10 +249,13 @@ class TestGetBatchNotebooks:
 
     def test_batch_empty_group(self):
         """Batch with groups not in NOTEBOOK_SERVICE_MAP returns empty."""
-        _mock_execution_batches[99] = {"groups": ["nonexistent_group"]}
-        result = get_batch_notebooks(99)
+        # Use a local copy to avoid mutating the shared mock config
+        original = _mock_config.EXECUTION_BATCHES
+        test_batches = dict(original)
+        test_batches[99] = {"groups": ["nonexistent_group"]}
+        with patch.object(_av_mod, "EXECUTION_BATCHES", test_batches):
+            result = get_batch_notebooks(99)
         assert result == []
-        del _mock_execution_batches[99]
 
 
 # ============================================================================
