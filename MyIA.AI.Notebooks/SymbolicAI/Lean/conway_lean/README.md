@@ -35,11 +35,12 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/Life.Hashlife` | 0 | `step4x4` + `hashlifeResult` recursive + `evolveHashlife` API |
 | `Conway/Life.Computation` | 0 | Hashlife cross-validation (6), eater1 still-life (1), glider composition (5) |
 
-### Draft / WIP
+### Phase 3 — Free Will Theorem (Epic #1651, IN PROGRESS)
 
-| File | sorry | Description |
-|------|-------|-------------|
-| `Conway/KochenSpecker.lean` | 2 | Kochen-Specker theorem (18-vec Cabello, native_decide exhausted) |
+| File                          | sorry | Description                                              |
+|-------------------------------|-------|----------------------------------------------------------|
+| `Conway/KochenSpecker.lean`   | 0     | KS 18-vec Cabello proof (parity argument, Pilier 1)      |
+| `Conway/FreeWillTheorem.lean` | 0     | Conway-Kochen FWT (SPIN + TWIN + MIN, Pilier 2)          |
 
 ## Key Results
 
@@ -64,11 +65,15 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
   - Eater 1 (fishhook) still-life proved by `native_decide`
   - Multi-period glider composition theorems
 
-### Kochen-Specker (Pilier 1 of Free Will Theorem, DRAFT)
+### Kochen-Specker + Free Will Theorem (Phase 3, PROVED)
 
 The `KochenSpecker.lean` module formalizes the 18-vector proof by Cabello,
 Estebaranz and Garcia-Alcaine (1996). It is the combinatorial kernel of the
 Conway-Kochen Free Will Theorem (2006/2009, Epic #1651).
+
+The `FreeWillTheorem.lean` module proves the full Free Will Theorem from
+three physically motivated axioms (SPIN, TWIN, MIN), reducing to the
+Kochen-Specker contradiction.
 
 **Hall of Fame**:
 - Kochen & Specker (1967) — original 117-vector proof
