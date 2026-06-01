@@ -189,8 +189,9 @@ theorem self_mem_lightCone (p : Int × Int) (t : Nat) : p ∈ lightCone p t := b
     computation — `simp [lightCone]` followed by `decide`, or a direct `List`
     evaluation after `Prod.ext`. -/
 theorem lightCone_zero (p : Int × Int) : lightCone p 0 = [p] := by
-  -- P0 TARGET (easiest): light cone of radius zero — first prover ramp rung
-  sorry
+  simp [lightCone, List.range_succ, List.map_cons, List.map_nil,
+        List.flatMap_cons, List.flatMap_nil, List.filterMap_cons,
+        List.filterMap_nil, Int.natAbs]
 
 /-! ## P2. Light-cone locality (speed of light = 1)
 
