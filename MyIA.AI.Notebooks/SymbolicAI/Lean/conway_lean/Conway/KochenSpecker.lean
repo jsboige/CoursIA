@@ -156,7 +156,7 @@ def IsValidColoring (c : Coloring) : Prop :=
 lemma each_vector_in_two_contexts (v : VecIdx) :
     (∑ k : ContextIdx, ∑ i : Fin 4,
       if contextMembers k i = v then (1 : ℕ) else 0) = 2 := by
-  sorry  -- TODO Pilier 1: verify by `decide` / explicit case-split on v
+  fin_cases v <;> decide
 
 /-- **Kochen-Specker Theorem (18-vector Cabello proof)**.
     There is no valid {0,1}-coloring of the 18 vectors compatible
@@ -173,7 +173,70 @@ lemma each_vector_in_two_contexts (v : VecIdx) :
        which is even.
     4. But 9 is odd. Contradiction. -/
 theorem kochen_specker : ¬ ∃ c : Coloring, IsValidColoring c := by
-  sorry  -- TODO Pilier 1: parity argument via Finset double-sum reorder
+  rintro ⟨c, hc⟩
+  -- Let S = total ones counted with multiplicity over contexts.
+  set S : ℕ := ∑ k : ContextIdx, ∑ i : Fin 4,
+      if c (contextMembers k i) then (1 : ℕ) else 0 with hS_def
+  -- Step 1: S = 9, since each context has exactly one `1`.
+  have hS9 : S = 9 := by
+    have hsum : S = ∑ _k : ContextIdx, (1 : ℕ) := by
+      apply Finset.sum_congr rfl
+      intro k _; exact hc k
+    rw [hsum]; decide
+  -- Step 2: rewrite each cell indicator as a sum over v.
+  -- (if c (members k i) then 1 else 0) = ∑ v, (if members k i = v then ind(c v) else 0)
+  have hCell : ∀ (k : ContextIdx) (i : Fin 4),
+      (if c (contextMembers k i) then (1 : ℕ) else 0)
+        = ∑ v : VecIdx,
+            if contextMembers k i = v then (if c v then (1 : ℕ) else 0) else 0 := by
+    intro k i
+    -- The sum has exactly one nonzero term: at v = contextMembers k i.
+    rw [Finset.sum_eq_single (contextMembers k i)]
+    · simp
+    · intro v _ hv
+      rw [if_neg hv.symm]
+    · intro h
+      exact (h (Finset.mem_univ _)).elim
+  -- Step 3: substitute and swap the v-sum outside.
+  have hS_even : S = 2 * (∑ v : VecIdx, if c v then (1 : ℕ) else 0) := by
+    -- First rewrite S into triple-nested form.
+    have h1 : S = ∑ k : ContextIdx, ∑ i : Fin 4, ∑ v : VecIdx,
+        if contextMembers k i = v then (if c v then (1 : ℕ) else 0) else 0 := by
+      apply Finset.sum_congr rfl
+      intro k _
+      apply Finset.sum_congr rfl
+      intro i _
+      exact hCell k i
+    rw [h1]
+    -- Swap v outside via two Finset.sum_comm applications.
+    -- ∑ k, ∑ i, ∑ v, F = ∑ k, ∑ v, ∑ i, F   (inner swap, per k)
+    rw [show (∑ k : ContextIdx, ∑ i : Fin 4, ∑ v : VecIdx,
+              (if contextMembers k i = v then (if c v then (1 : ℕ) else 0) else 0))
+            = ∑ k : ContextIdx, ∑ v : VecIdx, ∑ i : Fin 4,
+              (if contextMembers k i = v then (if c v then (1 : ℕ) else 0) else 0) from by
+      apply Finset.sum_congr rfl
+      intro k _
+      exact Finset.sum_comm]
+    -- Now: ∑ k, ∑ v, ∑ i, F. Swap k and v (outer).
+    rw [Finset.sum_comm]
+    -- Goal: ∑ v, ∑ k, ∑ i, F = 2 * ∑ v, ind(c v)
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro v _
+    -- Goal: ∑ k, ∑ i, (if k,i=v then ind(c v) else 0) = 2 * ind(c v)
+    by_cases hcv : c v
+    · -- ind(c v) = 1
+      simp only [hcv, if_true]
+      have hlem := each_vector_in_two_contexts v
+      -- hlem: ∑ k, ∑ i, (if k,i = v then 1 else 0) = 2
+      -- Goal after simp: ∑ k, ∑ i, (if k,i = v then 1 else 0) = 2 * 1
+      rw [hlem]; rfl
+    · -- ind(c v) = 0, all terms 0
+      simp [hcv]
+  -- Step 4: combine to get 9 = 2 * N, contradiction.
+  have h2div : 2 ∣ S := ⟨_, hS_even⟩
+  rw [hS9] at h2div
+  omega
 
 end KochenSpecker
 
