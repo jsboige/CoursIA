@@ -61,14 +61,18 @@ _mock_config = types.SimpleNamespace(
     },
 )
 
-# Save original sys.modules state and inject mock config for docker.py imports
-_saved_modules = dict(sys.modules)
+# Inject mock config into sys.modules so docker.py `from config import ...` resolves.
+# Track which keys we inject so we can cleanly remove them afterwards (targeted
+# deletion is safer than sys.modules.clear() which nukes builtins).
+_injected_keys: list[str] = []
+if "config" not in sys.modules:
+    _injected_keys.append("config")
 sys.modules["config"] = _mock_config
 _dk_spec.loader.exec_module(_dk_mod)
 
-# Restore sys.modules to prevent polluting other test modules
-sys.modules.clear()
-sys.modules.update(_saved_modules)
+# Remove only the keys we injected — leaves all other cached modules intact.
+for _key in _injected_keys:
+    sys.modules.pop(_key, None)
 
 DockerManager = _dk_mod.DockerManager
 _run_cmd = _dk_mod._run_cmd
