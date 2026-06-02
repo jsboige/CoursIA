@@ -389,15 +389,41 @@ theorem aliveNext_local (g₁ g₂ : Grid) (p : Int × Int)
     exact iff_of_eq (congrArg (· = true) h)
   rw [h_count]
 
+/-- Bridge: `isAlive (step g) p = aliveNext g p`.
+    Since `step g = sortDedup ((candidates g).filter (aliveNext g))` and
+    `sortDedup` preserves membership, `p ∈ step g ↔ p ∈ candidates g ∧ aliveNext g p = true`.
+    For the forward direction (`aliveNext g p = true → p ∈ step g`), use
+    `aliveNext_true_mem_candidates` to obtain `p ∈ candidates g`. -/
+theorem isAlive_step_eq_aliveNext (g : Grid) (p : Int × Int) :
+    isAlive (step g) p = aliveNext g p := by
+  by_cases h : aliveNext g p = true
+  · -- aliveNext g p = true case: must have p ∈ step g.
+    rw [h]
+    unfold isAlive step sortDedup
+    rw [List.elem_iff, List.mem_eraseDups, List.mem_mergeSort, List.mem_filter]
+    exact ⟨aliveNext_true_mem_candidates g p h, h⟩
+  · -- aliveNext g p = false case: p ∉ filter, hence p ∉ step g.
+    have h_false : aliveNext g p = false := by
+      cases h_iA : aliveNext g p
+      · rfl
+      · exact absurd h_iA h
+    rw [h_false]
+    unfold isAlive step sortDedup
+    -- Need: (sortDedup ...).elem p = false. Show p ∉ sortDedup, then elem = false.
+    have h_ne : p ∉ (((candidates g).filter (aliveNext g)).mergeSort
+                      (fun a b => lexLt a b = true)).eraseDups := by
+      rw [List.mem_eraseDups, List.mem_mergeSort, List.mem_filter]
+      rintro ⟨_, h_alive⟩
+      exact h h_alive
+    cases h_e : ((((candidates g).filter (aliveNext g)).mergeSort
+                    (fun a b => lexLt a b = true)).eraseDups).elem p
+    · rfl
+    · exact absurd (List.elem_iff.mp h_e) h_ne
+
 /-- If two grids agree on the light cone of radius 2 around `p`, then
     `isAlive (step g₁) p = isAlive (step g₂) p` (single-step locality).
     The radius 2 is needed because Moore neighbors (including diagonals)
-    have Manhattan distance ≤ 2.
-
-    **Proof sketch**: Derive `aliveNext g₁ p = aliveNext g₂ p` from the light cone
-    hypothesis. Then use `isAlive (step g) p = aliveNext g p` (requires
-    `List.elem_iff`, `List.mem_eraseDups`, `List.mem_mergeSort`, `List.mem_filter`,
-    and `aliveNext_true → p ∈ candidates g`). -/
+    have Manhattan distance ≤ 2. -/
 theorem step_local (g₁ g₂ : Grid) (p : Int × Int)
     (h_cone : ∀ q ∈ lightCone p 2, isAlive g₁ q = isAlive g₂ q) :
     isAlive (step g₁) p = isAlive (step g₂) p := by
@@ -407,7 +433,7 @@ theorem step_local (g₁ g₂ : Grid) (p : Int × Int)
     intro q hq; apply h_cone q; exact moore_subset_cone p q hq
   have h_alive : aliveNext g₁ p = aliveNext g₂ p :=
     aliveNext_local g₁ g₂ p h_self h_nbrs
-  sorry  -- bridge: needs isAlive (step g) p = aliveNext g p
+  rw [isAlive_step_eq_aliveNext, isAlive_step_eq_aliveNext, h_alive]
 
 /-- If two grids agree on the light cone of radius `2 * t` around `p`, then
     after `t` steps they yield the same liveness at `p`.
