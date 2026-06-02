@@ -1,19 +1,19 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-02 11:57
+Generated: 2026-06-02 16:49
 Total notebooks: 505
 
 ## Status Summary
 
-- **READY**: 377
-- **DEMO**: 117
+- **READY**: 378
+- **DEMO**: 116
 - **RESEARCH**: 0
 - **BROKEN**: 11
 
 ## Maturity Summary
 
-- **PRODUCTION**: 414
-- **BETA**: 49
+- **PRODUCTION**: 411
+- **BETA**: 52
 - **TEMPLATE**: 4
 - **ALPHA**: 34
 - **DRAFT**: 4
@@ -196,7 +196,7 @@ Total notebooks: 505
 | 45 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
 | 46 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
-### ML (27 notebooks) — DEMO:4, READY:23 | ALPHA:1, BETA:1, PRODUCTION:25
+### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:1, BETA:1, PRODUCTION:25
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -218,7 +218,7 @@ Total notebooks: 505
 | 16 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 17 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | PRODUCTION | 15min | po-2023 |
 | 18 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | PRODUCTION | 15min | po-2023 |
-| 19 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | DEMO | PRODUCTION | 30min | po-2023 |
+| 19 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 20 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 21 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 22 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
@@ -298,8 +298,8 @@ Total notebooks: 505
 | 64 | SC-10-Account-Abstraction - ERC-4337 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 65 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
 | 66 | SC-7-Token-Standards - Standards de Tokens | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 67 | SC-8-DeFi-Primitives - Primitives DeFi | Python 3 | READY | PRODUCTION | 15min | po-2024 |
-| 68 | SC-9-DAO-Governance - Gouvernance DAO | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 67 | SC-8-DeFi-Primitives - Primitives DeFi | Python (CoursIA SemanticWeb) | READY | PRODUCTION | 15min | po-2024 |
+| 68 | SC-9-DAO-Governance - Gouvernance DAO | cours-ia | READY | PRODUCTION | 15min | po-2024 |
 | 69 | SC-12-Foundry-Testing - Tests avec Foundry | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 70 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 71 | SC-14-Formal-Verification - Verification Formelle | Python 3 | READY | PRODUCTION | 30min | po-2024 |
@@ -308,7 +308,7 @@ Total notebooks: 505
 | 74 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 75 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 76 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 77 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 77 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | .venv | READY | PRODUCTION | 30min | po-2024 |
 | 78 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 79 | SC-22-Solana-Anchor - Solana avec Anchor | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 80 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
@@ -506,7 +506,7 @@ Total notebooks: 505
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
-### Probas (43 notebooks) — READY:43 | BETA:10, PRODUCTION:33
+### Probas (43 notebooks) — READY:43 | BETA:13, PRODUCTION:30
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -530,7 +530,7 @@ Total notebooks: 505
 | 18 | PyMC-7 : Classification Bayesienne et Tests A/B | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 19 | PyMC-8 : Selection de Modeles et Comparaison Bayes | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 20 | PyMC-9 : Modeles de Sujets (Topic Models) et LDA | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 21 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 21 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 22 | Infer-10-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 23 | Infer-11-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 24 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | BETA | 1h | po-2023 |
@@ -542,9 +542,9 @@ Total notebooks: 505
 | 30 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 31 | Infer-19-Decision-Expert-Systems : Decisions Robus | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Infer-2-Gaussian-Mixtures : Distributions Gaussien | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 33 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 34 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 35 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 33 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 34 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 35 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 36 | Infer-5-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | BETA | 1h | po-2023 |
 | 37 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 38 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | BETA | 45min | po-2023 |
@@ -552,7 +552,7 @@ Total notebooks: 505
 | 40 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 41 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | BETA | 1h | po-2023 |
 | 42 | HMM Gaussian Alpha -- Generation de signaux direct | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 43 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | BETA | 30min | po-2023 |
+| 43 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
 ### IIT (1 notebooks) — READY:1 | PRODUCTION:1
 
