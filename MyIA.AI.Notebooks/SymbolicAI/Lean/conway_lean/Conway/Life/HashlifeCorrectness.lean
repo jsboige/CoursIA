@@ -215,7 +215,107 @@ theorem lightCone_zero (p : Int × Int) : lightCone p 0 = [p] := by
 
 The state of cell `p` after `t` generations of B3/S23 depends only on the
 initial state of cells within Manhattan distance `t` of `p`. This is the
-"speed of light" principle for GoL. -/
+"speed of light" principle for GoL.
+
+### Helper lemmas for P2
+
+These bridge lemmas establish the locality of a single B3/S23 step, which
+is then lifted by induction to `evolve t`. -/
+
+/-- Helper: if `a - b` is in the set {-1, 0, 1}, then `Int.natAbs (a - b) ≤ 1`. -/
+private theorem int_natAbs_of_three (a b : Int) (h : a - b = -1 ∨ a - b = 0 ∨ a - b = 1) :
+    Int.natAbs (a - b) ≤ 1 := by
+  rcases h with h | h | h
+  · rw [h]; decide
+  · rw [h]; decide
+  · rw [h]; decide
+
+/-- Every Moore neighbor of `p` has Manhattan distance at most 2 from `p`.
+    (Diagonal neighbors have Manhattan distance 2; orthogonal neighbors have 1.)
+
+    **Proof**: For each Moore neighbor `q`, the row difference `p.1 - q.1` and
+    column difference `p.2 - q.2` are each in {-1, 0, 1}. By `int_natAbs_of_three`,
+    each has `natAbs ≤ 1`, so the Manhattan distance is ≤ 1 + 1 = 2. -/
+theorem manhattan_moore_le_two (p q : Int × Int) (hq : q ∈ mooreNeighbors p) :
+    manhattan p q ≤ 2 := by
+  unfold manhattan mooreNeighbors at *
+  simp only [List.mem_cons] at hq
+  rcases hq with h | h | h | h | h | h | h | h | h
+  · -- q = (p.1-1, p.2-1)
+    have hd1 : p.1 - q.1 = 1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1-1, p.2)
+    have hd1 : p.1 - q.1 = 1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1-1, p.2+1)
+    have hd1 : p.1 - q.1 = 1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1, p.2-1)
+    have hd1 : p.1 - q.1 = 0 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1, p.2+1)
+    have hd1 : p.1 - q.1 = 0 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1+1, p.2-1)
+    have hd1 : p.1 - q.1 = -1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1+1, p.2)
+    have hd1 : p.1 - q.1 = -1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1+1, p.2+1)
+    have hd1 : p.1 - q.1 = -1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q ∈ [] — impossible
+    simp at h
+
+/-- Every Moore neighbor of `p` lies in the light cone of radius 1.
+
+    **Proof strategy**: unfold `lightCone` at `t = 1`, construct membership
+    witness using the fact that Moore neighbors satisfy `|q.1-p.1| ≤ 1`
+    and `|q.2-p.2| ≤ 1` (each coordinate differs by at most 1). -/
+theorem moore_subset_cone (p : Int × Int) (q : Int × Int)
+    (hq : q ∈ mooreNeighbors p) : q ∈ lightCone p 1 := by
+  sorry  -- bridge lemma: requires coordinate-bounding from moore disjunction
+
+/-- If two grids agree on `p` and all its Moore neighbors, then `aliveNext`
+    gives the same result for `p` (B3/S23 locality). -/
+theorem aliveNext_local (g₁ g₂ : Grid) (p : Int × Int)
+    (h_self : isAlive g₁ p = isAlive g₂ p)
+    (h_nbrs : ∀ q ∈ mooreNeighbors p, isAlive g₁ q = isAlive g₂ q) :
+    aliveNext g₁ p = aliveNext g₂ p := by
+  unfold aliveNext liveNeighborCount
+  -- The let-binding creates: if (isAlive g p) then ... else ...
+  -- Both sides have the same structure; rewrite with h_self
+  rw [h_self]
+  -- Now both sides have the same isAlive test; need countP equality
+  have h_count : (mooreNeighbors p).countP (isAlive g₁) =
+                 (mooreNeighbors p).countP (isAlive g₂) := by
+    apply List.countP_congr
+    intro q hq
+    have h := h_nbrs q hq
+    exact iff_of_eq (congrArg (· = true) h)
+  rw [h_count]
+
+/-- If two grids agree on the light cone of radius 1 around `p`, then
+    `isAlive (step g₁) p = isAlive (step g₂) p` (single-step locality). -/
+theorem step_local (g₁ g₂ : Grid) (p : Int × Int)
+    (h_cone : ∀ q ∈ lightCone p 1, isAlive g₁ q = isAlive g₂ q) :
+    isAlive (step g₁) p = isAlive (step g₂) p := by
+  unfold step isAlive
+  -- step = sortDedup (filter (aliveNext g) (candidates g))
+  -- isAlive checks membership, which is invariant under sortDedup
+  -- We need: p ∈ sortDedup (filter (aliveNext g₁) (candidates g₁))
+  --        ↔ p ∈ sortDedup (filter (aliveNext g₂) (candidates g₂))
+  -- This follows from aliveNext_local + sortDedup invariance
+  sorry  -- bridge lemma: needs sortDedup/filter membership equivalence
 
 /-- If two grids agree on the light cone of radius `t` around `p`, then
     after `t` steps they yield the same liveness at `p`.
