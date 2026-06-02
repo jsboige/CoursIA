@@ -335,11 +335,34 @@ theorem aliveNext_true_mem_candidates (g : Grid) (p : Int × Int)
     left
     rw [isAlive] at h_alive
     exact Iff.mp (List.elem_iff) h_alive
-  · -- Birth: isAlive g p = false, so aliveNext = (liveNeighborCount g p == 3) = true
-    -- liveNeighborCount g p = 3, so some Moore neighbor q has isAlive g q = true
-    -- Then p ∈ g.flatMap mooreNeighbors (via q), so p ∈ candidates g
+  · -- Birth: isAlive g p = false, so aliveNext g p = true means liveNeighborCount g p = 3
+    -- Then some Moore neighbor q has isAlive g q = true → q ∈ g and p ∈ mooreNeighbors q
     right
-    sorry  -- bridge: countP == 3 → exists alive neighbor → p ∈ flatMap mooreNeighbors
+    -- Convert h_alive to isAlive g p = false
+    have h_iA_false : isAlive g p = false := by
+      cases h_iA : isAlive g p
+      · rfl
+      · exact absurd h_iA h_alive
+    -- Derive liveNeighborCount g p = 3 from h (without unfolding isAlive everywhere)
+    have h3 : liveNeighborCount g p = 3 := by
+      rw [h_iA_false] at h
+      -- h : (let n := liveNeighborCount g p; if false then ... else n == 3) = true
+      simpa using h
+    -- liveNeighborCount unfolds to countP (isAlive g)
+    have h_count : (mooreNeighbors p).countP (isAlive g) = 3 := h3
+    -- countP = 3 > 0, so exists q ∈ mooreNeighbors p with isAlive g q = true
+    have h_pos : 0 < (mooreNeighbors p).countP (isAlive g) := by omega
+    rw [List.countP_pos_iff] at h_pos
+    obtain ⟨q, hq_mem, hq_alive⟩ := h_pos
+    -- hq_alive : isAlive g q (which means isAlive g q = true via Bool coercion)
+    -- By symmetry, p ∈ mooreNeighbors q
+    have hp_symm : p ∈ mooreNeighbors q := mooreNeighbors_symm p q hq_mem
+    -- isAlive g q = true means q ∈ g (elem_iff forward)
+    have hq_in_g : q ∈ g := by
+      rw [isAlive] at hq_alive
+      exact Iff.mp (List.elem_iff) hq_alive
+    -- p ∈ g.flatMap mooreNeighbors because q ∈ g and p ∈ mooreNeighbors q
+    exact List.mem_flatMap.mpr ⟨q, hq_in_g, hp_symm⟩
 
 /-- Moore neighborhood ⊆ light cone of radius 2. -/
 theorem moore_subset_cone (p : Int × Int) (q : Int × Int)
