@@ -90,7 +90,7 @@ def run(project_dir: Path, notebook_name: str, port: int, timeout: int) -> int:
     print(f"[recipe] launching lean research --detach on port {port}...", file=sys.stderr)
     res = subprocess.run(
         [lean, "research", str(project_rel), "--detach", "--no-open",
-         "--port", str(port)],
+         "--no-update", "--port", str(port)],
         cwd=str(ws), env=env, capture_output=True, text=True,
     )
     print(res.stdout, file=sys.stderr)
