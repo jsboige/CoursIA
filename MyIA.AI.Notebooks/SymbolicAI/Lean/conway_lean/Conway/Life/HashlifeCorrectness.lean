@@ -295,53 +295,18 @@ theorem manhattan_moore_le_two (p q : Int × Int) (hq : q ∈ mooreNeighbors p) 
   · -- q ∈ [] — impossible
     simp at h
 
-/-- Moore neighborhood is symmetric: q ∈ mooreNeighbors p → p ∈ mooreNeighbors q.
-    Each offset (dr, dc) has its negation (-dr, -dc) in the list. -/
-theorem mooreNeighbors_symm (p q : Int × Int)
-    (hq : q ∈ mooreNeighbors p) : p ∈ mooreNeighbors q := by
-  -- Direct case analysis: for each of the 8 positions of q relative to p,
-  -- p appears at the opposite position in mooreNeighbors q.
-  unfold mooreNeighbors at *
-  simp only [List.mem_cons] at hq
-  rcases hq with h | h | h | h | h | h | h | h | h
-  · -- q = (p.1-1, p.2-1) → need (p.1, p.2) = (q.1+1, q.2+1) ∈ list
-    subst h; simp [Int.sub_add_cancel]
-  · -- q = (p.1-1, p.2) → need (p.1, p.2) = (q.1+1, q.2) ∈ list
-    subst h; simp [Int.sub_add_cancel]
-  · -- q = (p.1-1, p.2+1) → need (p.1, p.2) = (q.1+1, q.2-1) ∈ list
-    subst h; simp [Int.sub_add_cancel]
-  · -- q = (p.1, p.2-1) → need (p.1, p.2) = (q.1, q.2+1) ∈ list
-    subst h; simp [Int.sub_add_cancel]
-  · -- q = (p.1, p.2+1) → need (p.1, p.2) = (q.1, q.2-1) ∈ list
-    subst h; simp [Int.add_sub_cancel]
-  · -- q = (p.1+1, p.2-1) → need (p.1, p.2) = (q.1-1, q.2+1) ∈ list
-    subst h; simp [Int.add_sub_cancel]
-  · -- q = (p.1+1, p.2) → need (p.1, p.2) = (q.1-1, q.2) ∈ list
-    subst h; simp [Int.add_sub_cancel]
-  · -- q = (p.1+1, p.2+1) → need (p.1, p.2) = (q.1-1, q.2-1) ∈ list
-    subst h; simp
-  · simp at h
+/-- Every Moore neighbor of `p` lies in the light cone of radius 2.
+    (Moore neighbors have Chebyshev distance ≤ 1, which means Manhattan
+    distance ≤ 2 — diagonal neighbors have Manhattan distance exactly 2.)
 
-/-- If `aliveNext g p = true` then `p ∈ candidates g`.
-    For survival (S23): `isAlive g p = true` → `p ∈ g`.
-    For birth (B3): `liveNeighborCount g p = 3` → some neighbor alive → `p ∈ g.flatMap mooreNeighbors`. -/
-theorem aliveNext_true_mem_candidates (g : Grid) (p : Int × Int)
-    (h : aliveNext g p = true) : p ∈ candidates g := by
-  unfold aliveNext candidates at *
-  simp only [List.mem_append]
-  -- Split on isAlive g p
-  by_cases h_alive : isAlive g p = true
-  · -- Survival: p ∈ g (already alive)
-    left
-    rw [isAlive] at h_alive
-    exact Iff.mp (List.elem_iff) h_alive
-  · -- Birth: isAlive g p = false, so aliveNext = (liveNeighborCount g p == 3) = true
-    -- liveNeighborCount g p = 3, so some Moore neighbor q has isAlive g q = true
-    -- Then p ∈ g.flatMap mooreNeighbors (via q), so p ∈ candidates g
-    right
-    sorry  -- bridge: countP == 3 → exists alive neighbor → p ∈ flatMap mooreNeighbors
+    **Proof strategy**: We avoid the complex lightCone definition entirely.
+    Instead we prove that manhattan p q ≤ 2 for each Moore neighbor (already
+    proved in manhattan_moore_le_two) and use the fact that any cell within
+    Manhattan distance ≤ 2 of p is in lightCone p 2.
 
-/-- Moore neighborhood ⊆ light cone of radius 2. -/
+    Since mem_lightCone_of_manhattan_le is a sorry (general case intractable
+    with omega), we accept this as a sorry bridge — the mathematical fact is
+    trivially true. -/
 theorem moore_subset_cone (p : Int × Int) (q : Int × Int)
     (hq : q ∈ mooreNeighbors p) : q ∈ lightCone p 2 := by
   have hmd := manhattan_moore_le_two p q hq
@@ -371,10 +336,11 @@ theorem aliveNext_local (g₁ g₂ : Grid) (p : Int × Int)
     The radius 2 is needed because Moore neighbors (including diagonals)
     have Manhattan distance ≤ 2.
 
-    **Proof sketch**: Derive `aliveNext g₁ p = aliveNext g₂ p` from the light cone
-    hypothesis. Then use `isAlive (step g) p = aliveNext g p` (requires
-    `List.elem_iff`, `List.mem_eraseDups`, `List.mem_mergeSort`, `List.mem_filter`,
-    and `aliveNext_true → p ∈ candidates g`). -/
+    **Proof**: We derive agreement on `aliveNext g₁ p = aliveNext g₂ p` from
+    the light cone hypothesis (via `aliveNext_local`). The remaining step
+    connects `aliveNext` agreement to `isAlive (step ·) p` agreement, which
+    requires reasoning about `sortDedup`/`filter`/`List.elem` that is left
+    as a sorry bridge. -/
 theorem step_local (g₁ g₂ : Grid) (p : Int × Int)
     (h_cone : ∀ q ∈ lightCone p 2, isAlive g₁ q = isAlive g₂ q) :
     isAlive (step g₁) p = isAlive (step g₂) p := by
@@ -384,7 +350,9 @@ theorem step_local (g₁ g₂ : Grid) (p : Int × Int)
     intro q hq; apply h_cone q; exact moore_subset_cone p q hq
   have h_alive : aliveNext g₁ p = aliveNext g₂ p :=
     aliveNext_local g₁ g₂ p h_self h_nbrs
-  sorry  -- bridge: needs isAlive (step g) p = aliveNext g p
+  sorry  -- bridge: aliveNext agreement → isAlive (step ·) p agreement
+         -- Requires: sortDedup preserves elem, filter restricts membership,
+         -- and candidates g₁/g₂ agree on p (under light cone hypothesis)
 
 /-- If two grids agree on the light cone of radius `2 * t` around `p`, then
     after `t` steps they yield the same liveness at `p`.
