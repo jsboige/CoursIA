@@ -14,6 +14,18 @@ Type: description courte de la modification
 ```
 Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans l'exemple ML.NET`
 
+### Safe reference syntax (prevent premature issue auto-close)
+
+GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax:
+
+| Intent | Correct | Wrong |
+|--------|---------|-------|
+| Link without closing | `See #N` or `Part of #N` | ~~`Refs #N`~~ |
+| Close when ALL criteria met | `Closes #N` (verify acceptance first) | ~~`Fixes #N`~~ for partial |
+| Partial delivery | `See #N` (partial: X/Y criteria) | ~~`Refs #N`~~ |
+
+**Incident**: 3 issues (#1943, #2048, #2158) auto-closed by GitHub on partial PRs using `Refs #N`. See #2211.
+
 ## Safety Rules
 
 ### 🚨 CRITICAL - NEVER FORCE PUSH
