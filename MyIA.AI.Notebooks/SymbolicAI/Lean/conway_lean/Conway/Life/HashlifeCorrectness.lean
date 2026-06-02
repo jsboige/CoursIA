@@ -336,11 +336,10 @@ theorem aliveNext_local (g₁ g₂ : Grid) (p : Int × Int)
     The radius 2 is needed because Moore neighbors (including diagonals)
     have Manhattan distance ≤ 2.
 
-    **Proof**: We derive agreement on `aliveNext g₁ p = aliveNext g₂ p` from
-    the light cone hypothesis (via `aliveNext_local`). The remaining step
-    connects `aliveNext` agreement to `isAlive (step ·) p` agreement, which
-    requires reasoning about `sortDedup`/`filter`/`List.elem` that is left
-    as a sorry bridge. -/
+    **Proof sketch**: Derive `aliveNext g₁ p = aliveNext g₂ p` from the light cone
+    hypothesis. Then use `isAlive (step g) p = aliveNext g p` (requires
+    `List.elem_iff`, `List.mem_eraseDups`, `List.mem_mergeSort`, `List.mem_filter`,
+    and `aliveNext_true → p ∈ candidates g`). -/
 theorem step_local (g₁ g₂ : Grid) (p : Int × Int)
     (h_cone : ∀ q ∈ lightCone p 2, isAlive g₁ q = isAlive g₂ q) :
     isAlive (step g₁) p = isAlive (step g₂) p := by
@@ -350,9 +349,7 @@ theorem step_local (g₁ g₂ : Grid) (p : Int × Int)
     intro q hq; apply h_cone q; exact moore_subset_cone p q hq
   have h_alive : aliveNext g₁ p = aliveNext g₂ p :=
     aliveNext_local g₁ g₂ p h_self h_nbrs
-  sorry  -- bridge: aliveNext agreement → isAlive (step ·) p agreement
-         -- Requires: sortDedup preserves elem, filter restricts membership,
-         -- and candidates g₁/g₂ agree on p (under light cone hypothesis)
+  sorry  -- bridge: needs isAlive (step g) p = aliveNext g p
 
 /-- If two grids agree on the light cone of radius `2 * t` around `p`, then
     after `t` steps they yield the same liveness at `p`.
