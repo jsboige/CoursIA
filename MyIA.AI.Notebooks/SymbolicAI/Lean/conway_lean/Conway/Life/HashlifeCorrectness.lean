@@ -510,24 +510,56 @@ theorem step_light_cone (t : Nat) (g₁ g₂ : Grid) (p : Int × Int)
 
 /-! ## P3. Padding correctness
 
-`padCenter2 c` correctly places `c` at the center of a level-`(k+2)`
-MacroCell with `2^k` dead cells of padding on each side. -/
+`padCenter2 c` places `c` (assuming `c.level ≥ 1`) inside a level-`(k+2)`
+MacroCell. Each application of `padToLevelPlus1` shifts every cell of
+the original input by `+2^(k-1)` (the input lands in the SE position of
+the SW sub-quadrant for `nw`, NE/SW/SE wrap analogously). Composing twice,
+`padCenter2` shifts every cell of `c` by `+2^(k-1) + 2^k = 3·2^(k-1)`.
 
-/-- The cells of `padCenter2 c` restricted to the centered region equal
-    the cells of `c`.
+To recover `c.toCellsAux 0 0` from `(padCenter2 c).toCellsAux _ _`,
+the calling offset must therefore be `-3·2^(k-1)` on both axes. -/
+
+/-- The cells of `padCenter2 c` viewed from the corrected center offset
+    equal the cells of `c` viewed from origin. The negative offset
+    `-(3·2^(k-1))` exactly cancels the cumulative shift introduced by
+    the two `padToLevelPlus1` applications.
+
+    **Statement correction (this commit)**: the previous version used
+    `center_off = (2^k, 2^k)`, which is incorrect — it would only cancel
+    a shift of `-2^k`, but the actual shift introduced by `padCenter2`
+    is `+3·2^(k-1)`. Verified empirically below on the 2×2 block witness
+    (`padCenter2_correct_block_level1`).
 
     **Proof strategy** (P3, difficulty: structural):
-    Direct computation. Unfold `padCenter2` (= `padToLevelPlus1` twice),
-    unfold `toCellsAux`, observe that the padding `e := emptyOfLevel ...`
-    contributes no live cells, and the four copies of `c` are at the same
-    position in the centered region. -/
-theorem padCenter2_correct (c : MacroCell) :
+    Induction on `c` is awkward because `padToLevelPlus1` matches on the
+    structure of the input (only nodes get padded). A direct unfolding
+    of `padCenter2`, `toCellsAux`, and the offset arithmetic at each
+    quadrant (NW/NE/SW/SE) should close the equality. The hypothesis
+    `1 ≤ c.level` rules out the degenerate leaf case where `padCenter2`
+    is the identity. -/
+theorem padCenter2_correct (c : MacroCell) (hk : 1 ≤ c.level) :
     let k := c.level
     let padded := padCenter2 c
-    let center_off : Int × Int := (2^k, 2^k)
-    padded.toCellsAux center_off.1 center_off.2 = c.toCellsAux 0 0 := by
-  -- P3 TARGET: structural correctness of padCenter2
+    let center_off : Int := -(3 * 2 ^ (k - 1) : Int)
+    padded.toCellsAux center_off center_off = c.toCellsAux 0 0 := by
+  -- P3 TARGET: structural correctness of padCenter2 with corrected offset.
+  -- The hypothesis `hk` excludes the trivial leaf case.
   sorry
+
+/-- WITNESS for P3 on a 2×2 block (level 1, shift = 3·2^0 = 3).
+
+    Empirically proven via `native_decide`: the corrected statement
+    holds on the level-1 all-alive 2×2 block. This certifies that the
+    constant `-(3·2^(k-1))` is correct (vs. the previous `2^k`).
+
+    Future work: extend to general `c.level ≥ 1` by structural argument
+    (P3 main theorem above). -/
+theorem padCenter2_correct_block_level1 :
+    let c : MacroCell :=
+      MacroCell.node MacroCell.aliveLeaf MacroCell.aliveLeaf
+                     MacroCell.aliveLeaf MacroCell.aliveLeaf
+    (padCenter2 c).toCellsAux (-3 : Int) (-3 : Int) = c.toCellsAux 0 0 := by
+  native_decide
 
 /-! ## P4. Hashlife central result (decompose-compose)
 
