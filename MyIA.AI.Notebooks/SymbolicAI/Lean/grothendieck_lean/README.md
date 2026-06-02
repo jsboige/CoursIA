@@ -15,6 +15,8 @@ The goal is to give learners a curated entry point into:
 
 ## Structure
 
+### Phase 1 (Tour) — `0 sorry`
+
 | File | Content | Lines |
 |------|---------|-------|
 | `Grothendieck/CategoryAndSites.lean` | Sieves, Grothendieck topologies (trivial/discrete/dense), three axioms | ~110 |
@@ -22,6 +24,12 @@ The goal is to give learners a curated entry point into:
 | `Grothendieck/ZariskiSite.lean` | Zariski pretopology, zariskiTopology_eq bridge theorem, subcanonical | ~60 |
 | `Grothendieck/MathlibMap.lean` | `#check` index of all Grothendieck-related Mathlib definitions | ~70 |
 | `Grothendieck/Calibration.lean` | 4 micro-proof targets for prover harness (Epic #1453) | ~60 |
+
+### Phase 2 (Extension) — `0 sorry` (Issue #2159, Epic #2162)
+
+| File | Content | Lines |
+|------|---------|-------|
+| `Grothendieck/SieveLattice.lean` | Sieve pullback identities: `pullback_id`, `pullback_pullback` (contravariant composition), `pullback_bot`, `pullback_monotone` | ~90 |
 
 ## Build
 
