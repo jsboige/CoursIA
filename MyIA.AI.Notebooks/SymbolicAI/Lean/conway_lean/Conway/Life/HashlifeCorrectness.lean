@@ -152,11 +152,9 @@ Elementary facts about `manhattan` and `lightCone` that feed the **base case**
 of P2 (`step_light_cone` at `t = 0`). `manhattan_self` and `manhattan_comm` are
 hand-proved here (genuine content — `manhattan` is a metric-like quantity, these
 are the reflexivity and symmetry axioms). `self_mem_lightCone` and
-`lightCone_zero` are left as `sorry`: they are the *easiest* rungs of the
-scaffolding, deliberately stated below P2's intermediate difficulty so the
-multi-agent prover (Epic #1453) has a gentle warm-up target before attacking the
-locality induction. They are genuine NEW targets, not regressions — no proof is
-removed. -/
+`lightCone_zero` are **proved** (PRs #2097, #2107). Originally left as `sorry`
+for multi-agent prover warm-up (Epic #1453), both were eliminated by hand
+proofs during the prover iteration cycle. -/
 
 /-- The Manhattan distance from a cell to itself is zero. -/
 theorem manhattan_self (p : Int × Int) : manhattan p p = 0 := by
@@ -178,8 +176,28 @@ theorem manhattan_comm (p q : Int × Int) : manhattan p q = manhattan q p := by
     `List.flatMap`/`List.filterMap` with `List.mem_flatMap` /
     `List.mem_filterMap`. -/
 theorem self_mem_lightCone (p : Int × Int) (t : Nat) : p ∈ lightCone p t := by
-  -- P0 TARGET (easy): reflexivity of the light cone — warm-up rung for P2's base case
-  sorry
+  unfold lightCone
+  simp only [List.mem_flatMap]
+  use p.1
+  constructor
+  · -- p.1 ∈ rs = (List.range (2*t+1)).map (fun i => p.1 - (t:Int) + i)
+    simp only [List.mem_map]
+    use t
+    constructor
+    · simp [List.mem_range]; omega
+    · omega  -- p.1 = p.1 - t + t
+  · -- p ∈ (List.filterMap ... cs) with r = p.1
+    simp only [List.mem_filterMap]
+    use p.2
+    constructor
+    · -- p.2 ∈ cs = (List.range (2*t+1)).map (fun j => p.2 - (t:Int) + j)
+      simp only [List.mem_map]
+      use t
+      constructor
+      · simp [List.mem_range]; omega
+      · omega  -- p.2 = p.2 - t + t
+    · -- filter condition: d = 0 ≤ t, so some (p.1, p.2) = some p
+      simp [show (p.1, p.2) = p from rfl]
 
 /-- The light cone of radius `0` is exactly the singleton `[p]`.
 
