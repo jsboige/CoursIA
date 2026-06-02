@@ -573,32 +573,116 @@ the SW sub-quadrant for `nw`, NE/SW/SE wrap analogously). Composing twice,
 To recover `c.toCellsAux 0 0` from `(padCenter2 c).toCellsAux _ _`,
 the calling offset must therefore be `-3·2^(k-1)` on both axes. -/
 
+/-- (helper) Empty `MacroCell`s contribute no live cells to the enumeration.
+    By induction on the level: at level 0 we have `deadLeaf = leaf false`,
+    which `toCellsAux` maps to `[]`; at level `n+1` the four sub-quadrants
+    each enumerate to `[]` by the IH, and the concatenation is `[]`. -/
+private theorem emptyOfLevel_toCellsAux_eq_nil (n : Nat) (r0 c0 : Int) :
+    (MacroCell.emptyOfLevel n).toCellsAux r0 c0 = [] := by
+  induction n generalizing r0 c0 with
+  | zero => rfl
+  | succ n ih =>
+    simp only [MacroCell.emptyOfLevel, MacroCell.toCellsAux, ih,
+               List.append_nil, List.nil_append]
+
+/-- (helper) `(emptyOfLevel n).level = n` — induction over `n`. -/
+private theorem emptyOfLevel_level (n : Nat) : (MacroCell.emptyOfLevel n).level = n := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    show 1 + (MacroCell.emptyOfLevel n).level = n + 1
+    rw [ih]; omega
+
+/-- (helper) `padToLevelPlus1` applied to a node-typed `MacroCell` of level
+    `1+nw.level` shifts every enumerated cell by `+2^(nw.level)` on both axes.
+
+    By definition of `padToLevelPlus1`, the input `node nw ne sw se` becomes
+    `node Q1 Q2 Q3 Q4` where each Qi is a `node` placing the original cell in
+    one quadrant (NW for nw, NE for ne, etc.) and `emptyOfLevel nw.level` in
+    the others. Empty cells contribute `[]` via `emptyOfLevel_toCellsAux_eq_nil`,
+    so only the original cells survive — shifted by `2^nw.level` per axis
+    (the inner-quadrant offset). -/
+private theorem padToLevelPlus1_toCellsAux_node
+    (nw ne sw se : MacroCell) (r0 c0 : Int) :
+    (padToLevelPlus1 (MacroCell.node nw ne sw se)).toCellsAux r0 c0
+      = (MacroCell.node nw ne sw se).toCellsAux
+          (r0 + ((2 ^ nw.level : Nat) : Int))
+          (c0 + ((2 ^ nw.level : Nat) : Int)) := by
+  have h2s : ((2 ^ (1 + nw.level) : Nat) : Int)
+           = ((2 ^ nw.level : Nat) : Int) + ((2 ^ nw.level : Nat) : Int) := by
+    push_cast
+    rw [Nat.add_comm 1 nw.level, pow_succ]
+    ring
+  simp only [padToLevelPlus1, MacroCell.toCellsAux, MacroCell.level,
+             emptyOfLevel_level, emptyOfLevel_toCellsAux_eq_nil,
+             List.nil_append, List.append_nil, h2s, ← Int.add_assoc]
+
 /-- The cells of `padCenter2 c` viewed from the corrected center offset
     equal the cells of `c` viewed from origin. The negative offset
     `-(3·2^(k-1))` exactly cancels the cumulative shift introduced by
     the two `padToLevelPlus1` applications.
 
-    **Statement correction (this commit)**: the previous version used
+    **Statement correction (#2197)**: the previous version used
     `center_off = (2^k, 2^k)`, which is incorrect — it would only cancel
     a shift of `-2^k`, but the actual shift introduced by `padCenter2`
     is `+3·2^(k-1)`. Verified empirically below on the 2×2 block witness
     (`padCenter2_correct_block_level1`).
 
-    **Proof strategy** (P3, difficulty: structural):
-    Induction on `c` is awkward because `padToLevelPlus1` matches on the
-    structure of the input (only nodes get padded). A direct unfolding
-    of `padCenter2`, `toCellsAux`, and the offset arithmetic at each
-    quadrant (NW/NE/SW/SE) should close the equality. The hypothesis
-    `1 ≤ c.level` rules out the degenerate leaf case where `padCenter2`
-    is the identity. -/
+    **Proof**: case-split on `c`. The leaf case contradicts `hk : 1 ≤ c.level`
+    (leaves have level 0). For the node case, apply `padToLevelPlus1_toCellsAux_node`
+    twice (the level after one application becomes `1 + nw.level + 1`, so the second
+    shift is `2^(1 + nw.level) = 2 · 2^nw.level`). The cumulative shift is
+    `2^nw.level + 2·2^nw.level = 3·2^nw.level = 3·2^(c.level - 1)`, which the
+    `center_off = -(3·2^(c.level - 1))` exactly cancels. -/
 theorem padCenter2_correct (c : MacroCell) (hk : 1 ≤ c.level) :
     let k := c.level
     let padded := padCenter2 c
     let center_off : Int := -(3 * 2 ^ (k - 1) : Int)
     padded.toCellsAux center_off center_off = c.toCellsAux 0 0 := by
-  -- P3 TARGET: structural correctness of padCenter2 with corrected offset.
-  -- The hypothesis `hk` excludes the trivial leaf case.
-  sorry
+  match c, hk with
+  | MacroCell.leaf _, hk =>
+    -- Leaf level is 0; contradiction with 1 ≤ c.level.
+    simp [MacroCell.level] at hk
+  | MacroCell.node nw ne sw se, _ =>
+    -- c.level = 1 + nw.level, so c.level - 1 = nw.level.
+    -- padCenter2 c = padToLevelPlus1 (padToLevelPlus1 c).
+    -- After 1st application: shift +2^nw.level. Result level = 2 + nw.level, and its
+    -- inner nw is (node e e e nw), with level 1 + nw.level.
+    -- After 2nd application: shift +2^(1+nw.level) = 2 · 2^nw.level. Cumulative: 3·2^nw.level.
+    simp only [MacroCell.level, padCenter2, Nat.add_sub_cancel_left]
+    -- Expose the INNER padToLevelPlus1 as a node literal via rfl (4-way pad form).
+    -- This only rewrites the inner occurrence (the outer is padToLevelPlus1 of
+    -- a padToLevelPlus1 application, not of a node literal).
+    have hinner : padToLevelPlus1 (MacroCell.node nw ne sw se) =
+        MacroCell.node
+          (MacroCell.node (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level)
+                          (MacroCell.emptyOfLevel nw.level) nw)
+          (MacroCell.node (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level)
+                          ne (MacroCell.emptyOfLevel nw.level))
+          (MacroCell.node (MacroCell.emptyOfLevel nw.level) sw
+                          (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level))
+          (MacroCell.node se (MacroCell.emptyOfLevel nw.level)
+                          (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level)) := rfl
+    rw [hinner]
+    -- Now the outer padToLevelPlus1 is applied to a node literal. Apply shift lemma.
+    rw [padToLevelPlus1_toCellsAux_node]
+    -- After shift: (node Q1 Q2 Q3 Q4).tCA (c_off + 2^Q1.level) (...) where Q1.level = 1 + nw.level.
+    -- Reduce 2^(1+nw.level) = 2^nw.level + 2^nw.level (Int).
+    have hpow_succ : ((2 ^ (1 + nw.level) : Nat) : Int)
+                   = ((2 ^ nw.level : Nat) : Int) + ((2 ^ nw.level : Nat) : Int) := by
+      push_cast
+      rw [Nat.add_comm 1 nw.level, pow_succ]
+      ring
+    -- Unfold the outer toCellsAux + strip empty cells via empty lemmas.
+    simp only [MacroCell.toCellsAux, MacroCell.level, emptyOfLevel_level,
+               emptyOfLevel_toCellsAux_eq_nil, List.nil_append, List.append_nil, hpow_succ]
+    -- Both sides are now 4-way ++ of nw/ne/sw/se applied to Int offsets.
+    -- LHS offsets reduce via push_cast + ring to match RHS (-3s + 2s + s = 0; -3s + 2s + 2s = s).
+    congr 1
+    · congr 1
+      · congr 1 <;> push_cast <;> ring_nf
+      · congr 1 <;> push_cast <;> ring_nf
+    · congr 1 <;> push_cast <;> ring_nf
 
 /-- WITNESS for P3 on a 2×2 block (level 1, shift = 3·2^0 = 3).
 
