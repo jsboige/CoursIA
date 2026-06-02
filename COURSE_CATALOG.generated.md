@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-01 23:01
+Generated: 2026-06-02 11:47
 Total notebooks: 505
 
 ## Status Summary
 
-- **READY**: 374
-- **DEMO**: 120
+- **READY**: 376
+- **DEMO**: 118
 - **RESEARCH**: 0
 - **BROKEN**: 11
 
 ## Maturity Summary
 
-- **PRODUCTION**: 411
-- **BETA**: 51
+- **PRODUCTION**: 413
+- **BETA**: 50
 - **TEMPLATE**: 4
-- **ALPHA**: 35
+- **ALPHA**: 34
 - **DRAFT**: 4
 
 ## By Series
@@ -228,7 +228,7 @@ Total notebooks: 505
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (100 notebooks) — DEMO:6, READY:94 | ALPHA:2, BETA:1, PRODUCTION:97
+### SymbolicAI (100 notebooks) — DEMO:4, READY:96 | ALPHA:1, PRODUCTION:99
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -238,7 +238,7 @@ Total notebooks: 505
 | 4 | Introduction : Orchestration de la Conversation Mu | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 5 | 🚀 Analyse Rhétorique Collaborative par Agents IA - | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 6 | Interface de Configuration et Préparation du Texte | Python 3 | READY | PRODUCTION | 15min | po-2024 |
-| 7 | Lean 4 - Installation et Configuration | Python 3 (WSL) | READY | BETA | 15min | po-2024 |
+| 7 | Lean 4 - Installation et Configuration | Python 3 (WSL) | READY | PRODUCTION | 15min | po-2024 |
 | 8 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 9 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 10 | Lean 11 - TorchLean : Réseaux de Neurones Formelle | Lean 4 (WSL) | READY | PRODUCTION | 30min | po-2024 |
@@ -267,10 +267,10 @@ Total notebooks: 505
 | 33 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 34 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 35 | Planners-9-HTN - Planification Hierarchique | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 36 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
+| 36 | Planners-10: LLMs pour la Planification | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 37 | Planners-11: Unified Planning | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 38 | Planners-12: Learning to Plan avec LOOP | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
-| 39 | Introduction au web sémantique avec RDF.Net | .NET (C#) | DEMO | ALPHA | 2h+ | po-2024 |
+| 39 | Introduction au web sémantique avec RDF.Net | .NET (C#) | READY | PRODUCTION | 2h+ | po-2024 |
 | 40 | SW-1-Setup | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
 | 41 | SW-10-Python-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 42 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | PRODUCTION | 1h | po-2024 |
@@ -282,39 +282,39 @@ Total notebooks: 505
 | 48 | SW-4-SPARQL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 | 49 | SW-4b-Python-SPARQL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 50 | SW-5-LinkedData | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 51 | SW-5b-Python-LinkedData | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 51 | SW-5b-Python-LinkedData | .venv (3.12.3) | READY | PRODUCTION | 30min | po-2024 |
 | 52 | SW-6-RDFS | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 | 53 | SW-7-OWL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 | 54 | SW-7b-Python-OWL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 55 | SW-8-Python-SHACL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 56 | SW-9-Python-JSONLD | Python 3 | READY | PRODUCTION | 1h | po-2024 |
-| 57 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 58 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 59 | SC-2-Setup-Web3py - Python et la Blockchain | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
+| 57 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 58 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 59 | SC-2-Setup-Web3py - Python et la Blockchain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 60 | SC-3-Solidity-Basics - Fondements de Solidity | .venv | READY | PRODUCTION | 30min | po-2024 |
-| 61 | SC-4-Functions-State - Fonctions et Etat | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 62 | SC-5-Inheritance - Heritage et Interfaces | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 63 | SC-6-Errors-Events - Erreurs et Evenements | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 64 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 65 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python (SmartContracts + Found | DEMO | PRODUCTION | 45min | po-2024 |
-| 66 | SC-7-Token-Standards - Standards de Tokens | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 67 | SC-8-DeFi-Primitives - Primitives DeFi | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 68 | SC-9-DAO-Governance - Gouvernance DAO | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 69 | SC-12-Foundry-Testing - Tests avec Foundry | Python (SmartContracts + Found | READY | PRODUCTION | 45min | po-2024 |
+| 61 | SC-4-Functions-State - Fonctions et Etat | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 62 | SC-5-Inheritance - Heritage et Interfaces | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 63 | SC-6-Errors-Events - Erreurs et Evenements | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 64 | SC-10-Account-Abstraction - ERC-4337 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 65 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
+| 66 | SC-7-Token-Standards - Standards de Tokens | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 67 | SC-8-DeFi-Primitives - Primitives DeFi | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 68 | SC-9-DAO-Governance - Gouvernance DAO | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 69 | SC-12-Foundry-Testing - Tests avec Foundry | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 70 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | PRODUCTION | 15min | po-2024 |
-| 71 | SC-14-Formal-Verification - Verification Formelle | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 72 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 73 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 74 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 75 | SC-18-Vyper - Smart Contracts en Python-like | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 76 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 77 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 78 | SC-21-Move-Sui - Move sur Sui | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 79 | SC-22-Solana-Anchor - Solana avec Anchor | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 80 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 81 | SC-24 : Deploiement sur Testnets | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 82 | SC-25 : Deploiement Mainnet (L2) | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 83 | SC-26 : Projet Final - DApp Complete | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
+| 71 | SC-14-Formal-Verification - Verification Formelle | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 72 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 73 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 74 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 75 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 76 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 77 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 78 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 79 | SC-22-Solana-Anchor - Solana avec Anchor | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 80 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 81 | SC-24 : Deploiement sur Testnets | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 82 | SC-25 : Deploiement Mainnet (L2) | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 83 | SC-26 : Projet Final - DApp Complete | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 84 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 85 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 86 | SL-3 --- Apprentissage Base sur la Pertinence (RBL | Python 3 | READY | PRODUCTION | 30min | po-2024 |
