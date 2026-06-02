@@ -239,7 +239,61 @@ private theorem int_natAbs_sub_comm (a b : Int) :
     Manhattan ball of radius `t`, which is exactly what `lightCone p t` enumerates. -/
 theorem mem_lightCone_of_manhattan_le (p q : Int × Int) (t : Nat)
     (h : manhattan p q ≤ t) : q ∈ lightCone p t := by
-  sorry
+  unfold manhattan at h
+  -- h : Int.natAbs (p.1 - q.1) + Int.natAbs (p.2 - q.2) ≤ t
+  -- Switch sub order to match lightCone's filterMap predicate (q - p form).
+  rw [int_natAbs_sub_comm p.1 q.1, int_natAbs_sub_comm p.2 q.2] at h
+  -- h : Int.natAbs (q.1 - p.1) + Int.natAbs (q.2 - p.2) ≤ t
+  -- Derive per-coordinate Int bounds via Int.abs_le (omega does not propagate
+  -- natAbs through the toNat-cast subgoals reliably).
+  have hxNat : Int.natAbs (q.1 - p.1) ≤ t :=
+    Nat.le_trans (Nat.le_add_right _ _) h
+  have hyNat : Int.natAbs (q.2 - p.2) ≤ t :=
+    Nat.le_trans (Nat.le_add_left _ _) h
+  have hx_abs : |q.1 - p.1| ≤ (t : Int) := by
+    rw [Int.abs_eq_natAbs]; exact_mod_cast hxNat
+  have hy_abs : |q.2 - p.2| ≤ (t : Int) := by
+    rw [Int.abs_eq_natAbs]; exact_mod_cast hyNat
+  obtain ⟨hx_lo, hx_hi⟩ := abs_le.mp hx_abs
+  obtain ⟨hy_lo, hy_hi⟩ := abs_le.mp hy_abs
+  -- Both differences are in [-t, t]; their +t lift is in [0, 2t].
+  have hx_nn : (0 : Int) ≤ q.1 - p.1 + (t : Int) := by linarith
+  have hy_nn : (0 : Int) ≤ q.2 - p.2 + (t : Int) := by linarith
+  -- Witnesses i and j into List.range (2t+1).
+  set i : Nat := (q.1 - p.1 + (t : Int)).toNat with hi_def_eq
+  set j : Nat := (q.2 - p.2 + (t : Int)).toNat with hj_def_eq
+  have hi_cast : (↑i : Int) = q.1 - p.1 + (t : Int) := by
+    rw [hi_def_eq]; exact Int.toNat_of_nonneg hx_nn
+  have hj_cast : (↑j : Int) = q.2 - p.2 + (t : Int) := by
+    rw [hj_def_eq]; exact Int.toNat_of_nonneg hy_nn
+  have hi_lt : i < 2 * t + 1 := by
+    have h_int : (↑i : Int) < ((2 * t + 1 : Nat) : Int) := by
+      rw [hi_cast]; push_cast; linarith
+    exact_mod_cast h_int
+  have hj_lt : j < 2 * t + 1 := by
+    have h_int : (↑j : Int) < ((2 * t + 1 : Nat) : Int) := by
+      rw [hj_cast]; push_cast; linarith
+    exact_mod_cast h_int
+  have hi_image : p.1 - (t : Int) + ↑i = q.1 := by rw [hi_cast]; ring
+  have hj_image : p.2 - (t : Int) + ↑j = q.2 := by rw [hj_cast]; ring
+  -- Assemble the membership proof.
+  -- Note: Lean elaborates `List.range n |>.map (fun i => p.1 - ↑t + i)` (where i : Nat)
+  -- as `List.map (fun (i : Int) => p.1 - ↑t + i) (List.range n |>.map (↑·))` —
+  -- a composition of two maps. We need two nested `List.mem_map.mpr` calls.
+  unfold lightCone
+  refine List.mem_flatMap.mpr ⟨q.1, ?_, ?_⟩
+  · -- q.1 ∈ List.map (fun (i : Int) => p.1 - ↑t + i) (do let a ← range; pure ↑a)
+    refine List.mem_map.mpr ⟨(↑i : Int), ?_, hi_image⟩
+    -- ↑i ∈ do let a ← range; pure ↑a — use mem_flatMap on the do/pure form
+    refine List.mem_flatMap.mpr ⟨i, List.mem_range.mpr hi_lt, ?_⟩
+    exact List.mem_singleton.mpr rfl
+  · refine List.mem_filterMap.mpr ⟨q.2, ?_, ?_⟩
+    · -- q.2 ∈ List.map (fun (j : Int) => p.2 - ↑t + j) (do let a ← range; pure ↑a)
+      refine List.mem_map.mpr ⟨(↑j : Int), ?_, hj_image⟩
+      refine List.mem_flatMap.mpr ⟨j, List.mem_range.mpr hj_lt, ?_⟩
+      exact List.mem_singleton.mpr rfl
+    · -- (if d ≤ t then some (q.1, q.2) else none) = some q
+      simp only [if_pos h]
 
 /-- Reverse direction: every cell in `lightCone p t` is within Manhattan
     distance `t` of `p`. The light cone is exactly the Manhattan ball of
