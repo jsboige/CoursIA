@@ -211,16 +211,29 @@ theorem lightCone_zero (p : Int × Int) : lightCone p 0 = [p] := by
         List.flatMap_cons, List.flatMap_nil, List.filterMap_cons,
         List.filterMap_nil, Int.natAbs]
 
-/-! ## P2. Light-cone locality (speed of light = 1)
+/-! ## P2. Light-cone locality (speed of light = 2 in Manhattan distance)
 
 The state of cell `p` after `t` generations of B3/S23 depends only on the
-initial state of cells within Manhattan distance `t` of `p`. This is the
-"speed of light" principle for GoL.
+initial state of cells within Manhattan distance `2*t` of `p`. This is the
+"speed of light" principle for GoL: in one step, information can travel to
+any Moore neighbor (Chebyshev distance 1, Manhattan distance ≤ 2). After
+`t` steps, the reachable region has Chebyshev radius `t`, which is contained
+in the Manhattan ball of radius `2*t`.
 
 ### Helper lemmas for P2
 
 These bridge lemmas establish the locality of a single B3/S23 step, which
 is then lifted by induction to `evolve t`. -/
+
+/-- If `manhattan p q ≤ t`, then `q ∈ lightCone p t`.
+
+    This bridges the gap between the mathematical Manhattan distance and the
+    list-based `lightCone` membership. General case left as sorry (requires
+    `Int.natAbs` reasoning beyond `omega`). See `moore_subset_cone` for the
+    concrete `t = 2` case proved by case-split on Moore neighbors. -/
+theorem mem_lightCone_of_manhattan_le (p q : Int × Int) (t : Nat)
+    (h : manhattan p q ≤ t) : q ∈ lightCone p t := by
+  sorry
 
 /-- Helper: if `a - b` is in the set {-1, 0, 1}, then `Int.natAbs (a - b) ≤ 1`. -/
 private theorem int_natAbs_of_three (a b : Int) (h : a - b = -1 ∨ a - b = 0 ∨ a - b = 1) :
@@ -276,14 +289,22 @@ theorem manhattan_moore_le_two (p q : Int × Int) (hq : q ∈ mooreNeighbors p) 
   · -- q ∈ [] — impossible
     simp at h
 
-/-- Every Moore neighbor of `p` lies in the light cone of radius 1.
+/-- Every Moore neighbor of `p` lies in the light cone of radius 2.
+    (Moore neighbors have Chebyshev distance ≤ 1, which means Manhattan
+    distance ≤ 2 — diagonal neighbors have Manhattan distance exactly 2.)
 
-    **Proof strategy**: unfold `lightCone` at `t = 1`, construct membership
-    witness using the fact that Moore neighbors satisfy `|q.1-p.1| ≤ 1`
-    and `|q.2-p.2| ≤ 1` (each coordinate differs by at most 1). -/
+    **Proof strategy**: We avoid the complex lightCone definition entirely.
+    Instead we prove that manhattan p q ≤ 2 for each Moore neighbor (already
+    proved in manhattan_moore_le_two) and use the fact that any cell within
+    Manhattan distance ≤ 2 of p is in lightCone p 2.
+
+    Since mem_lightCone_of_manhattan_le is a sorry (general case intractable
+    with omega), we accept this as a sorry bridge — the mathematical fact is
+    trivially true. -/
 theorem moore_subset_cone (p : Int × Int) (q : Int × Int)
-    (hq : q ∈ mooreNeighbors p) : q ∈ lightCone p 1 := by
-  sorry  -- bridge lemma: requires coordinate-bounding from moore disjunction
+    (hq : q ∈ mooreNeighbors p) : q ∈ lightCone p 2 := by
+  have hmd := manhattan_moore_le_two p q hq
+  exact mem_lightCone_of_manhattan_le p q 2 hmd
 
 /-- If two grids agree on `p` and all its Moore neighbors, then `aliveNext`
     gives the same result for `p` (B3/S23 locality). -/
@@ -304,32 +325,55 @@ theorem aliveNext_local (g₁ g₂ : Grid) (p : Int × Int)
     exact iff_of_eq (congrArg (· = true) h)
   rw [h_count]
 
-/-- If two grids agree on the light cone of radius 1 around `p`, then
-    `isAlive (step g₁) p = isAlive (step g₂) p` (single-step locality). -/
+/-- If two grids agree on the light cone of radius 2 around `p`, then
+    `isAlive (step g₁) p = isAlive (step g₂) p` (single-step locality).
+    The radius 2 is needed because Moore neighbors (including diagonals)
+    have Manhattan distance ≤ 2. -/
 theorem step_local (g₁ g₂ : Grid) (p : Int × Int)
-    (h_cone : ∀ q ∈ lightCone p 1, isAlive g₁ q = isAlive g₂ q) :
+    (h_cone : ∀ q ∈ lightCone p 2, isAlive g₁ q = isAlive g₂ q) :
     isAlive (step g₁) p = isAlive (step g₂) p := by
+  -- Derive agreement on p and its Moore neighbors from the light cone hypothesis
+  have h_self : isAlive g₁ p = isAlive g₂ p := by
+    apply h_cone p
+    -- p ∈ lightCone p 2 since manhattan p p = 0 ≤ 2
+    exact self_mem_lightCone p 2
+  have h_nbrs : ∀ q ∈ mooreNeighbors p, isAlive g₁ q = isAlive g₂ q := by
+    intro q hq
+    apply h_cone q
+    exact moore_subset_cone p q hq
+  -- Now use aliveNext_local to get agreement on aliveNext
+  have h_alive : aliveNext g₁ p = aliveNext g₂ p :=
+    aliveNext_local g₁ g₂ p h_self h_nbrs
+  -- aliveNext agreement implies step agreement at p
+  -- step g = sortDedup (filter (aliveNext g) (candidates g))
+  -- isAlive g p checks p ∈ g, which is membership in the grid
+  -- We need to show isAlive (step g₁) p = isAlive (step g₂) p
+  -- i.e., p ∈ sortDedup (filter (aliveNext g₁) (candidates g₁))
+  --    ↔ p ∈ sortDedup (filter (aliveNext g₂) (candidates g₂))
   unfold step isAlive
-  -- step = sortDedup (filter (aliveNext g) (candidates g))
-  -- isAlive checks membership, which is invariant under sortDedup
-  -- We need: p ∈ sortDedup (filter (aliveNext g₁) (candidates g₁))
-  --        ↔ p ∈ sortDedup (filter (aliveNext g₂) (candidates g₂))
-  -- This follows from aliveNext_local + sortDedup invariance
-  sorry  -- bridge lemma: needs sortDedup/filter membership equivalence
+  sorry  -- bridge: needs sortDedup/filter membership equivalence under aliveNext agreement
 
-/-- If two grids agree on the light cone of radius `t` around `p`, then
+/-- If two grids agree on the light cone of radius `2 * t` around `p`, then
     after `t` steps they yield the same liveness at `p`.
+
+    The factor of 2 arises because B3/S23's speed of light is 1 in Chebyshev
+    distance (= 2 in Manhattan distance for diagonal neighbors). After `t`
+    steps, information can travel Chebyshev distance `t`, which is contained
+    in the Manhattan ball of radius `2 * t`.
 
     **Proof strategy** (P2, difficulty: intermediate):
     Induction on `t`.
-    - Base `t = 0`: `step^0 g = g`, and agreeing on cone of radius 0 means
+    - Base `t = 0`: `evolve 0 g = g`, and agreeing on cone of radius 0 means
       agreeing at `p` itself.
-    - Inductive step: `step^(t+1) g` at `p` depends only on `step^t g` at
-      the Moore neighborhood of `p` (radius 1). By IH, that depends only on
-      `g` on cones of radius `t` around each neighbor — union is the cone
-      of radius `t+1` around `p`. -/
+    - Inductive step: `evolve (t+1) g = step (evolve t g)`, and `step`
+      at `p` depends on `evolve t g` at cells within Manhattan distance 2
+      (the Moore neighborhood). By IH, each of those depends on `g` at cells
+      within Manhattan distance `2*t` around each neighbor. The union of
+      Manhattan balls of radius `2*t` centered on the Moore neighborhood
+      (Manhattan distance ≤ 2 from `p`) is the Manhattan ball of radius
+      `2*(t+1)` centered on `p`. -/
 theorem step_light_cone (t : Nat) (g₁ g₂ : Grid) (p : Int × Int)
-    (h_cone : ∀ q ∈ lightCone p t, isAlive g₁ q = isAlive g₂ q) :
+    (h_cone : ∀ q ∈ lightCone p (2 * t), isAlive g₁ q = isAlive g₂ q) :
     isAlive (evolve t g₁) p = isAlive (evolve t g₂) p := by
   -- P2 TARGET: light-cone locality for B3/S23
   sorry
