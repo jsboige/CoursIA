@@ -241,6 +241,40 @@ theorem mem_lightCone_of_manhattan_le (p q : Int × Int) (t : Nat)
     (h : manhattan p q ≤ t) : q ∈ lightCone p t := by
   sorry
 
+/-- Reverse direction: every cell in `lightCone p t` is within Manhattan
+    distance `t` of `p`. The light cone is exactly the Manhattan ball of
+    radius `t`. -/
+theorem manhattan_le_of_mem_lightCone (p q : Int × Int) (t : Nat)
+    (h : q ∈ lightCone p t) : manhattan p q ≤ t := by
+  unfold lightCone at h
+  simp only [List.mem_flatMap, List.mem_filterMap, List.mem_map] at h
+  obtain ⟨r, _, c, _, h_some⟩ := h
+  by_cases h_le : Int.natAbs (r - p.1) + Int.natAbs (c - p.2) ≤ t
+  · rw [if_pos h_le] at h_some
+    have h_eq : (r, c) = q := Option.some.inj h_some
+    unfold manhattan
+    rw [← h_eq]
+    rw [int_natAbs_sub_comm p.1 r, int_natAbs_sub_comm p.2 c]
+    exact h_le
+  · rw [if_neg h_le] at h_some
+    simp at h_some
+
+/-- Triangle inequality for Manhattan distance:
+    `manhattan p r ≤ manhattan p q + manhattan q r`.
+    Used to chain light-cone membership across induction on `evolve` steps. -/
+theorem manhattan_triangle (p q r : Int × Int) :
+    manhattan p r ≤ manhattan p q + manhattan q r := by
+  unfold manhattan
+  have h1 : Int.natAbs (p.1 - r.1) ≤ Int.natAbs (p.1 - q.1) + Int.natAbs (q.1 - r.1) := by
+    have h_split : p.1 - r.1 = (p.1 - q.1) + (q.1 - r.1) := by ring
+    rw [h_split]
+    exact Int.natAbs_add_le _ _
+  have h2 : Int.natAbs (p.2 - r.2) ≤ Int.natAbs (p.2 - q.2) + Int.natAbs (q.2 - r.2) := by
+    have h_split : p.2 - r.2 = (p.2 - q.2) + (q.2 - r.2) := by ring
+    rw [h_split]
+    exact Int.natAbs_add_le _ _
+  omega
+
 /-- Helper: if `a - b` is in the set {-1, 0, 1}, then `Int.natAbs (a - b) ≤ 1`. -/
 private theorem int_natAbs_of_three (a b : Int) (h : a - b = -1 ∨ a - b = 0 ∨ a - b = 1) :
     Int.natAbs (a - b) ≤ 1 := by
@@ -457,8 +491,22 @@ theorem step_local (g₁ g₂ : Grid) (p : Int × Int)
 theorem step_light_cone (t : Nat) (g₁ g₂ : Grid) (p : Int × Int)
     (h_cone : ∀ q ∈ lightCone p (2 * t), isAlive g₁ q = isAlive g₂ q) :
     isAlive (evolve t g₁) p = isAlive (evolve t g₂) p := by
-  -- P2 TARGET: light-cone locality for B3/S23
-  sorry
+  induction t generalizing p with
+  | zero =>
+    simp only [evolve_zero, Nat.mul_zero] at *
+    exact h_cone p (self_mem_lightCone p 0)
+  | succ n ih =>
+    simp only [evolve_succ]
+    apply step_local
+    intro q hq
+    apply ih
+    intro r hr
+    apply h_cone r
+    apply mem_lightCone_of_manhattan_le
+    have hpq : manhattan p q ≤ 2 := manhattan_le_of_mem_lightCone p q 2 hq
+    have hqr : manhattan q r ≤ 2 * n := manhattan_le_of_mem_lightCone q r (2 * n) hr
+    have h_tri : manhattan p r ≤ manhattan p q + manhattan q r := manhattan_triangle p q r
+    omega
 
 /-! ## P3. Padding correctness
 
