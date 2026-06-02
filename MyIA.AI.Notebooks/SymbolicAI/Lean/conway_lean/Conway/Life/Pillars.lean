@@ -1,0 +1,162 @@
+/-
+Copyright (c) 2026 CoursIA. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+
+## Pillars — Community-witness theorems (Phase 3c scaffolding)
+
+This module is **scaffolding** for the four "pillars" of the Conway
+Life community that we want to certify via `native_decide` once
+memoized Hashlife (`Conway.Life.HashlifeMemo`) is in place.
+
+### The four pillars
+
+| Pillar              | Author       | Year | Pattern               | Generations | Level |
+|---------------------|--------------|------|-----------------------|-------------|-------|
+| OTCA metapixel      | Brice Due    | 2006 | OTCA-on/off transition| 35 328      | ~9    |
+| Unit cell           | Nicolay Beluchenko | 2011 | unitcell.rle  | 4 096       | ~7    |
+| Gemini              | Andrew Wade  | 2010 | gemini.rle           | 33 699 586  | ~14   |
+| CPU (digital)       | Nicolay Beluchenko / Andy Stearns | 2016 | digital_cpu.rle | 1 048 576 | ~12   |
+
+Each witness asserts that `evolveHashlifeFastMemo N pattern` produces
+the expected target configuration after `N` generations. The
+generation count is chosen at a notable milestone of the pattern's
+public demo (e.g. the OTCA "one on/off cycle" is 35 328 generations,
+the published Gemini self-replication completes in 33 699 586).
+
+### Status
+
+- **Phase 3b** : `hashlifeResultAux` proven structurally recursive,
+  light-cone bound `mem_lightCone_of_manhattan_le` closed (PR #2173).
+  Remaining 5 sorries in `Conway.Life.HashlifeCorrectness` are
+  level-2/step containment lemmas, independent of this file.
+- **Phase 3c** (this file) : witness theorems are declared with their
+  intended types. Their proofs are `sorry` until
+  `Conway.Life.HashlifeMemo.hashlifeResultMemo` is implemented and
+  the RLE patterns are loaded as concrete `Grid` values.
+- **Future** : once the memoized fast-evolve is in place, each
+  theorem becomes a single `by native_decide` (gated by an
+  appropriate `set_option native_decide.maxBudget` raise).
+
+### Why a separate file ?
+
+These theorems exercise `native_decide` on large patterns; compile
+times explode (`9^k` recursion on each subcell). Keeping them in a
+distinct module lets the rest of `Conway.Life` build quickly while
+`Pillars.lean` can be opted into via `lake build Conway.Life.Pillars`
+when needed.
+
+### Why scaffold the witnesses now ?
+
+User mandate 2026-06-01 : prepare a complete-presentation scaffold so
+that the §11 roadmap of `Lean-14-Conway-Tribute.ipynb` is concrete and
+visible. Memoization was validated at the start of Phase 3 ; the
+witnesses are the natural endpoint.
+-/
+
+import Conway.Life
+import Conway.Life.MacroCell
+import Conway.Life.Hashlife
+import Conway.Life.HashlifeMemo
+-- Future: import Conway.Life.RLE  -- once OTCA / Gemini / UnitCell / CPU patterns are encoded
+
+namespace Conway
+namespace Life
+namespace Pillars
+
+/-! ## Pattern placeholders
+
+Each pillar needs (a) its initial RLE-decoded `Grid`, (b) the target
+generation count, (c) the expected post-evolution `Grid` (also from
+the published source). For the scaffold we declare opaque names with
+trivial bodies ; the real patterns will be loaded via
+`Conway.Life.RLE.parseRLE` in Phase 3c.
+
+These are **defs**, not `axiom`s — they have a concrete trivial body
+(`Grid.empty`) so no axiom is introduced. They will be replaced by
+parsed RLE in the actual pillar PR. -/
+
+/-- OTCA metapixel initial state. Loaded from RLE in Phase 3c. -/
+def otcaInitial : Grid := ([] : Grid)
+
+/-- OTCA metapixel state after one on/off cycle (35 328 generations).
+    Loaded from RLE in Phase 3c. -/
+def otcaTarget : Grid := ([] : Grid)
+
+/-- Generation count for the OTCA metapixel on/off cycle. -/
+def otcaGens : Nat := 35328
+
+/-- UnitCell initial state. Loaded from RLE in Phase 3c. -/
+def unitcellInitial : Grid := ([] : Grid)
+
+/-- UnitCell state after one full period. Loaded from RLE in Phase 3c. -/
+def unitcellTarget : Grid := ([] : Grid)
+
+/-- Generation count for the UnitCell period (4 096). -/
+def unitcellGens : Nat := 4096
+
+/-- Gemini self-replicator initial state. Loaded from RLE in Phase 3c. -/
+def geminiInitial : Grid := ([] : Grid)
+
+/-- Gemini state after one full self-replication cycle (33 699 586 gens). -/
+def geminiTarget : Grid := ([] : Grid)
+
+/-- Generation count for one Gemini self-replication cycle. -/
+def geminiGens : Nat := 33699586
+
+/-- Digital CPU initial state. Loaded from RLE in Phase 3c. -/
+def cpuInitial : Grid := ([] : Grid)
+
+/-- Digital CPU state after a representative cycle (1 048 576 gens). -/
+def cpuTarget : Grid := ([] : Grid)
+
+/-- Generation count for one Digital CPU cycle. -/
+def cpuGens : Nat := 1048576
+
+/-! ## Witness theorems
+
+Each theorem asserts that `evolveHashlifeFastMemo N pattern = target`
+for the corresponding pillar. The proof is intended to be a single
+`by native_decide` once memoization lands. -/
+
+/-- **OTCA metapixel witness** — Brice Due 2006. The OTCA emulates an
+    arbitrary Game of Life cell on a 2048x2048 region with 35 328-gen
+    period. After one full ON-state cycle the metapixel returns to its
+    starting configuration (or transitions to OFF, depending on the
+    published demo file).
+
+    Phase 3c : `by native_decide` with memoized Hashlife. -/
+theorem otca_metapixel_witness :
+    evolveHashlifeFastMemo otcaGens otcaInitial = otcaTarget := by
+  sorry
+
+/-- **UnitCell witness** — Nicolay Beluchenko 2011. Smaller OTCA-style
+    metacell with a 4 096-gen period. Easier target — likely the first
+    pillar to land green.
+
+    Phase 3c : `by native_decide` with memoized Hashlife. -/
+theorem unitcell_witness :
+    evolveHashlifeFastMemo unitcellGens unitcellInitial = unitcellTarget := by
+  sorry
+
+/-- **Gemini witness** — Andrew Wade 2010. The first self-replicating
+    universal-constructor pattern in Life. One full self-replication
+    cycle takes 33 699 586 generations across a level-14 quadtree.
+
+    Phase 3c : `by native_decide` with memoized Hashlife. This is the
+    flagship witness — without memoization, intractable. -/
+theorem gemini_witness :
+    evolveHashlifeFastMemo geminiGens geminiInitial = geminiTarget := by
+  sorry
+
+/-- **Digital CPU witness** — Beluchenko / Stearns 2016. Programmable
+    CPU built out of OTCA metapixels, executing one cycle in
+    1 048 576 generations.
+
+    Phase 3c : `by native_decide` with memoized Hashlife. -/
+theorem cpu_witness :
+    evolveHashlifeFastMemo cpuGens cpuInitial = cpuTarget := by
+  sorry
+
+end Pillars
+end Life
+end Conway
