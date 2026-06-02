@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-02 16:43
+Generated: 2026-06-02 18:02
 Total notebooks: 505
 
 ## Status Summary
@@ -516,13 +516,13 @@ Total notebooks: 505
 | 4 | PyMC-12-Recommenders : Systemes de Recommandation  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 5 | PyMC-13-Debugging : Troubleshooting et Bonnes Prat | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 6 | PyMC-14-Decision-Utility-Foundations : Axiomes et  | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 7 | PyMC-15-Decision-Utility-Money : Utilite de l'Arge | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 7 | PyMC-15-Decision-Utility-Money : Utilite de l'Arge | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 8 | PyMC-16-Decision-Multi-Attribute : Utilite Multi-A | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 9 | PyMC-17-Decision-Networks : Reseaux de Decision | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 10 | PyMC-18 : Valeur de l'Information | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 11 | PyMC-19 : Systemes Experts et Decisions Robustes | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 10 | PyMC-18 : Valeur de l'Information | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 11 | PyMC-19 : Systemes Experts et Decisions Robustes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 12 | PyMC-2 : Distributions Gaussiennes et Melanges | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 13 | PyMC-20 : MDPs, Bandits et POMDPs | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 13 | PyMC-20 : MDPs, Bandits et POMDPs | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 14 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | PRODUCTION | 15min | po-2023 |
 | 15 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 16 | PyMC-5 : Modeles de Competences (IRT et DINA) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
