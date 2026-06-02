@@ -222,14 +222,59 @@ initial state of cells within Manhattan distance `t` of `p`. This is the
 These bridge lemmas establish the locality of a single B3/S23 step, which
 is then lifted by induction to `evolve t`. -/
 
-/-- Every Moore neighbor of `p` has Manhattan distance at most 1 from `p`.
+/-- Helper: if `a - b` is in the set {-1, 0, 1}, then `Int.natAbs (a - b) ≤ 1`. -/
+private theorem int_natAbs_of_three (a b : Int) (h : a - b = -1 ∨ a - b = 0 ∨ a - b = 1) :
+    Int.natAbs (a - b) ≤ 1 := by
+  rcases h with h | h | h
+  · rw [h]; decide
+  · rw [h]; decide
+  · rw [h]; decide
 
-    **Proof strategy**: after unfolding mooreNeighbors to the explicit list of
-    8 coordinate pairs, each case reduces to `|±1| + |0| ≤ 1` or similar, which
-    omega can handle once the Prod equality is destructed. -/
-theorem manhattan_moore_le_one (p q : Int × Int) (hq : q ∈ mooreNeighbors p) :
-    manhattan p q ≤ 1 := by
-  sorry  -- bridge lemma: each moore neighbor satisfies |dr| + |dc| ≤ 1
+/-- Every Moore neighbor of `p` has Manhattan distance at most 2 from `p`.
+    (Diagonal neighbors have Manhattan distance 2; orthogonal neighbors have 1.)
+
+    **Proof**: For each Moore neighbor `q`, the row difference `p.1 - q.1` and
+    column difference `p.2 - q.2` are each in {-1, 0, 1}. By `int_natAbs_of_three`,
+    each has `natAbs ≤ 1`, so the Manhattan distance is ≤ 1 + 1 = 2. -/
+theorem manhattan_moore_le_two (p q : Int × Int) (hq : q ∈ mooreNeighbors p) :
+    manhattan p q ≤ 2 := by
+  unfold manhattan mooreNeighbors at *
+  simp only [List.mem_cons] at hq
+  rcases hq with h | h | h | h | h | h | h | h | h
+  · -- q = (p.1-1, p.2-1)
+    have hd1 : p.1 - q.1 = 1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1-1, p.2)
+    have hd1 : p.1 - q.1 = 1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1-1, p.2+1)
+    have hd1 : p.1 - q.1 = 1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1, p.2-1)
+    have hd1 : p.1 - q.1 = 0 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1, p.2+1)
+    have hd1 : p.1 - q.1 = 0 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1+1, p.2-1)
+    have hd1 : p.1 - q.1 = -1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1+1, p.2)
+    have hd1 : p.1 - q.1 = -1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q = (p.1+1, p.2+1)
+    have hd1 : p.1 - q.1 = -1 := by rw [h]; omega
+    have hd2 : p.2 - q.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · -- q ∈ [] — impossible
+    simp at h
 
 /-- Every Moore neighbor of `p` lies in the light cone of radius 1.
 
