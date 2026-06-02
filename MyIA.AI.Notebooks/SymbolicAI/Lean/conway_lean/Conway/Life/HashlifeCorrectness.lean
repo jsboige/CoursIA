@@ -239,7 +239,22 @@ private theorem int_natAbs_sub_comm (a b : Int) :
     Manhattan ball of radius `t`, which is exactly what `lightCone p t` enumerates. -/
 theorem mem_lightCone_of_manhattan_le (p q : Int × Int) (t : Nat)
     (h : manhattan p q ≤ t) : q ∈ lightCone p t := by
-  sorry
+  unfold manhattan at h
+  unfold lightCone
+  simp only [List.mem_flatMap]
+  refine ⟨q.1, ?_, ?_⟩
+  · simp only [List.mem_map, List.mem_range]
+    refine ⟨(q.1 - p.1 + t).toNat, ?_, ?_⟩
+    · omega
+    · omega
+  · simp only [List.mem_filterMap]
+    refine ⟨q.2, ?_, ?_⟩
+    · simp only [List.mem_map, List.mem_range]
+      refine ⟨(q.2 - p.2 + t).toNat, ?_, ?_⟩
+      · omega
+      · omega
+    · have hd : Int.natAbs (q.1 - p.1) + Int.natAbs (q.2 - p.2) ≤ t := by omega
+      simp [hd, show (q.1, q.2) = q from rfl]
 
 /-- Reverse direction: every cell in `lightCone p t` is within Manhattan
     distance `t` of `p`. The light cone is exactly the Manhattan ball of
