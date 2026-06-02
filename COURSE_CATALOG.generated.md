@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-01 23:06
+Generated: 2026-06-02 02:57
 Total notebooks: 505
 
 ## Status Summary
@@ -12,8 +12,8 @@ Total notebooks: 505
 
 ## Maturity Summary
 
-- **PRODUCTION**: 405
-- **BETA**: 57
+- **PRODUCTION**: 406
+- **BETA**: 56
 - **TEMPLATE**: 4
 - **ALPHA**: 35
 - **DRAFT**: 4
@@ -228,7 +228,7 @@ Total notebooks: 505
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (100 notebooks) — DEMO:6, READY:94 | ALPHA:2, BETA:1, PRODUCTION:97
+### SymbolicAI (100 notebooks) — DEMO:6, READY:94 | ALPHA:2, PRODUCTION:98
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -238,7 +238,7 @@ Total notebooks: 505
 | 4 | Introduction : Orchestration de la Conversation Mu | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 5 | 🚀 Analyse Rhétorique Collaborative par Agents IA - | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 6 | Interface de Configuration et Préparation du Texte | Python 3 | READY | PRODUCTION | 15min | po-2024 |
-| 7 | Lean 4 - Installation et Configuration | Python 3 (WSL) | READY | BETA | 15min | po-2024 |
+| 7 | Lean 4 - Installation et Configuration | Python 3 (WSL) | READY | PRODUCTION | 15min | po-2024 |
 | 8 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 9 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 10 | Lean 11 - TorchLean : Réseaux de Neurones Formelle | Lean 4 (WSL) | READY | PRODUCTION | 30min | po-2024 |
@@ -295,7 +295,7 @@ Total notebooks: 505
 | 61 | SC-4-Functions-State - Fonctions et Etat | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 62 | SC-5-Inheritance - Heritage et Interfaces | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 63 | SC-6-Errors-Events - Erreurs et Evenements | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
-| 64 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
+| 64 | SC-10-Account-Abstraction - ERC-4337 | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 65 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python (SmartContracts + Found | DEMO | PRODUCTION | 45min | po-2024 |
 | 66 | SC-7-Token-Standards - Standards de Tokens | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 67 | SC-8-DeFi-Primitives - Primitives DeFi | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
@@ -311,7 +311,7 @@ Total notebooks: 505
 | 77 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 78 | SC-21-Move-Sui - Move sur Sui | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
 | 79 | SC-22-Solana-Anchor - Solana avec Anchor | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
-| 80 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
+| 80 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 81 | SC-24 : Deploiement sur Testnets | Python (SmartContracts + Found | READY | PRODUCTION | 30min | po-2024 |
 | 82 | SC-25 : Deploiement Mainnet (L2) | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
 | 83 | SC-26 : Projet Final - DApp Complete | Python (SmartContracts + Found | READY | PRODUCTION | 15min | po-2024 |
