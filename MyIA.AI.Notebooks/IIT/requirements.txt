@@ -16,5 +16,5 @@
 pyphi==1.2.0                 # IIT computation library
 
 # Scientific
-numpy>=1.21                  # Numerical computing
+numpy>=1.21,<2.0             # Numerical computing (numpy<2 for pyemd compat)
 scipy>=0.13.3                # Scientific computing
