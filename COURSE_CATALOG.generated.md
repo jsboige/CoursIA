@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-03 11:37
+Generated: 2026-06-03 16:29
 Total notebooks: 510
 
 ## Status Summary
@@ -12,10 +12,10 @@ Total notebooks: 510
 
 ## Maturity Summary
 
-- **PRODUCTION**: 403
-- **BETA**: 53
+- **PRODUCTION**: 393
+- **BETA**: 48
 - **TEMPLATE**: 4
-- **ALPHA**: 46
+- **ALPHA**: 61
 - **DRAFT**: 4
 
 ## By Series
@@ -228,7 +228,7 @@ Total notebooks: 510
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (104 notebooks) — BROKEN:2, DEMO:2, READY:100 | ALPHA:3, BETA:3, PRODUCTION:98
+### SymbolicAI (104 notebooks) — BROKEN:2, DEMO:2, READY:100 | ALPHA:4, BETA:4, PRODUCTION:96
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -250,8 +250,8 @@ Total notebooks: 510
 | 16 | Lean-14c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | BETA | 30min | po-2024 |
 | 17 | Lean-15 : Le Theoreme de Kochen-Specker (Cabello 1 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 18 | Lean-16 : Le Theoreme du Libre Arbitre (Conway-Koc | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 19 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
-| 20 | Lean 3 - Propositions et Preuves | Lean 4 | READY | PRODUCTION | 45min | po-2024 |
+| 19 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
+| 20 | Lean 3 - Propositions et Preuves | Lean 4 | READY | BETA | 45min | po-2024 |
 | 21 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 22 | Lean 5 - Mode Tactique | Lean 4 | READY | PRODUCTION | 1h | po-2024 |
 | 23 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | PRODUCTION | 45min | po-2024 |
@@ -399,8 +399,8 @@ Total notebooks: 510
 | 56 | QC-Py-06 : Options Trading dans QuantConnect | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 57 | QC-Py-07 : Futures et Forex Trading dans QuantConn | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
 | 58 | QC-Py-08 - Multi-Asset Portfolio Strategies | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 59 | QC-Py-09 : Types d'Ordres et Order Management dans | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 60 | QC-Py-10 - Risk Management et Portfolio Management | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 59 | QC-Py-09 : Types d'Ordres et Order Management dans | Python 3 | DEMO | ALPHA | 1h | po-2026 |
+| 60 | QC-Py-10 - Risk Management et Portfolio Management | Python 3 | DEMO | ALPHA | 1h | po-2026 |
 | 61 | QC-Py-11 - Indicateurs Techniques dans QuantConnec | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 62 | QC-Py-12 - Backtesting et Analyse de Performance | Python 3 | DEMO | ALPHA | 1h30 | po-2026 |
 | 63 | QC-Py-13 - Alpha Models et Algorithm Framework | Python 3 | DEMO | ALPHA | 45min | po-2026 |
@@ -500,7 +500,7 @@ Total notebooks: 510
 | 21 | Résolution de Sudoku par Recuit Simulé | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 22 | Sudoku-4 : Recuit Simule (Python) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 23 | Sudoku-5 : Particle Swarm Optimization (PSO) | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 24 | Sudoku-5 : Particle Swarm Optimization (Python) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 24 | Sudoku-5 : Particle Swarm Optimization (Python) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 25 | Sudoku-6 : Resolution par CSP Academique (AIMA) | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 26 | Sudoku-6 : Resolution par CSP Academique (Python) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 27 | Sudoku-7 : Resolution par Propagation de Contraint | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
@@ -510,30 +510,30 @@ Total notebooks: 510
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
-### Probas (43 notebooks) — READY:43 | BETA:12, PRODUCTION:31
+### Probas (43 notebooks) — READY:43 | ALPHA:14, BETA:6, PRODUCTION:23
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 2 | Infer-10-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 3 | Infer-11-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 4 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 5 | Infer-13-Debugging : Troubleshooting et Bonnes Pra | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 6 | Infer-14-Decision-Utility-Foundations : Axiomes et | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 7 | Infer-15-Decision-Utility-Money : Utilite de l'Arg | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 8 | Infer-16-Decision-Multi-Attribute : Utilite Multi- | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 9 | Infer-17-Decision-Networks : Reseaux de Decision | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 10 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 11 | Infer-19-Decision-Expert-Systems : Decisions Robus | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 12 | Infer-2-Gaussian-Mixtures : Distributions Gaussien | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 13 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 14 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 15 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 16 | Infer-5-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 17 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 18 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 2 | Infer-10-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 3 | Infer-11-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 4 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | ALPHA | 1h | po-2023 |
+| 5 | Infer-13-Debugging : Troubleshooting et Bonnes Pra | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 6 | Infer-14-Decision-Utility-Foundations : Axiomes et | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 7 | Infer-15-Decision-Utility-Money : Utilite de l'Arg | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 8 | Infer-16-Decision-Multi-Attribute : Utilite Multi- | .NET (C#) | READY | ALPHA | 1h | po-2023 |
+| 9 | Infer-17-Decision-Networks : Reseaux de Decision | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 10 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 11 | Infer-19-Decision-Expert-Systems : Decisions Robus | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 12 | Infer-2-Gaussian-Mixtures : Distributions Gaussien | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 13 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 14 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 15 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | ALPHA | 1h | po-2023 |
+| 16 | Infer-5-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | ALPHA | 1h | po-2023 |
+| 17 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 18 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 19 | Infer-8-Model-Selection : Selection et Comparaison | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 20 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 20 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 21 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 22 | PyMC-1 : Configuration et Premier Modele | Python 3 | READY | PRODUCTION | 15min | po-2023 |
 | 23 | PyMC-10 : Crowdsourcing - Agregation de Labels et  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
