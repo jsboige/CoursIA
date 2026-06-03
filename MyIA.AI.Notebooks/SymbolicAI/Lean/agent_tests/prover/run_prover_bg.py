@@ -64,6 +64,42 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     print(f"  Initial sorry count: {original_sorry}")
     print()
 
+    # P3 (#1453): dynamic pre-check — skip the (expensive) prover spawn when the
+    # target file already has no sorry. The static PROVED_DEMOS set (above) only
+    # covers demos curated by hand and goes stale; a target solved since the last
+    # curation — or any direct --file/--line target that is already clean — would
+    # otherwise still spawn a full multi-agent run for zero work (the forensic
+    # "already-solved schedule" pathology). A count of 0 is a SAFE skip signal:
+    # str.count("sorry") only ever OVER-counts (it also matches comments/strings),
+    # so == 0 guarantees there is genuinely nothing to prove and can never skip a
+    # live target. (count > 0 still spawns the prover, exactly as before.)
+    if original_sorry == 0:
+        print(f"Already solved: 0 sorry in {filepath} — skipping prover spawn.")
+        trace_name = f"{mode}_{name.replace(' ', '_')}_{provider}"
+        summary = {
+            "name": name,
+            "mode": mode,
+            "provider": provider,
+            "coordinator_provider": coordinator_provider or "openrouter (default)",
+            "iterations": iterations,
+            "actual_iterations": 0,
+            "original_sorry": 0,
+            "final_sorry": 0,
+            "sorry_delta": 0,
+            "elapsed_s": 0.0,
+            "result": {"status": "already_solved",
+                       "reason": "0 sorry in target file (pre-check, no prover spawn)"},
+            "trace_file": None,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+        summary_path = TRACES_DIR / f"{trace_name}_result.json"
+        summary_path.write_text(
+            json.dumps(summary, indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
+        print(f"Summary: {summary_path}")
+        return summary
+
     trace = TraceLogger(output_dir=str(TRACES_DIR))
 
     if mode == "multi":
