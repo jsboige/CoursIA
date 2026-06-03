@@ -44,7 +44,7 @@ direct light-cone bound, independent of memoization).
 ### Why scaffold now ?
 
 The user (mandate 2026-06-01) requested a complete-presentation
-scaffold for the Lean-14-Conway-Tribute notebook §11 roadmap, so that
+scaffold for the Lean-14b-Conway-Game-of-Life-Lean notebook §11 roadmap, so that
 the memoization-driven witnesses (OTCA, UnitCell, Gemini, CPU) are
 visible as a concrete next step rather than vague text. The contract
 of this module is the architecture; the proofs come next.

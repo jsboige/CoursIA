@@ -22,7 +22,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et theoreme de sensibilite |
 | **Avec Pilier 1.B** | 1-12, 15 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
-| **Avec hommages** | 1-12, 13, 14a, 14, 15, 16 | ~16h | Ajoute Lean-13 (Grothendieck), Lean-14a (Conway, l'homme et l'oeuvre), Lean-14 (Conway, Game of Life) et Lean-16 (Conway, theoreme du libre arbitre - adosse a Lean-15) |
+| **Avec hommages** | 1-12, 13, 14a, 14b, 14c, 15, 16 | ~16h | Ajoute Lean-13 (Grothendieck), Lean-14a (Conway, l'homme et l'oeuvre), Lean-14b (Conway, Game of Life) et Lean-16 (Conway, theoreme du libre arbitre - adosse a Lean-15) |
 
 ## Structure
 
@@ -62,7 +62,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 13 | [Lean-13-Grothendieck-Tribute](Lean-13-Grothendieck-Tribute.ipynb) | Langage grothendieckien dans Mathlib 4 : categories/foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas, site de Zariski, morphismes etales/lisses - Epic #1646 | 45 min |
 | 14a | [Lean-14a-Conway-Man-and-Work](Lean-14a-Conway-Man-and-Work.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme methode) ; panorama des grands resultats (nombres surreels, groupes de Conway & Monstrous Moonshine, reseau de Leech, polynome de Conway, Doomsday, Look-and-Say, FRACTRAN, probleme de l'Ange, Sprouts, theoreme du libre arbitre) ; premieres noix crackees executees depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
-| 14 | [Lean-14-Conway-Tribute](Lean-14-Conway-Tribute.ipynb) | Hommage a John Conway : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel - Epic #1647 | 60 min |
+| 14b | [Lean-14b-Conway-Game-of-Life-Lean](Lean-14b-Conway-Game-of-Life-Lean.ipynb) | Hommage a John Conway : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel - Epic #1647 | 60 min |
 | 16 | [Lean-16-Conway-Free-Will-Theorem](Lean-16-Conway-Free-Will-Theorem.ipynb) | Theoreme du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le theoreme dit et NE dit PAS, port formel adosse a `FreeWillTheorem.lean` (chaine de reduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilite - Epic #2162 / #2156 | 40 min |
 
 **Duree totale** : ~16h
@@ -103,7 +103,7 @@ Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` res
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
 | 13 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
 | 14a | Conway-Man-and-Work | ~39 | 3 | 0 | **NOUVEAU** (hommage) |
-| 14 | Conway-Tribute | ~26 | 0 | - | **NOUVEAU** (hommage) |
+| 14b | Conway-Game-of-Life-Lean | ~26 | 0 | - | **NOUVEAU** (hommage) |
 | 15 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
 | 16 | Conway-Free-Will-Theorem | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
 
@@ -275,7 +275,7 @@ Lean/
 ├── Lean-11-TorchLean-Python.ipynb  # Python kernel - Implementation algorithmes
 ├── Lean-13-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
 ├── Lean-14a-Conway-Man-and-Work.ipynb # Python kernel - hommage Conway (l'homme et l'oeuvre, noix executees depuis conway_lean)
-├── Lean-14-Conway-Tribute.ipynb   # Python kernel - hommage Conway (Game of Life as Computation)
+├── Lean-14b-Conway-Game-of-Life-Lean.ipynb   # Python kernel - hommage Conway (Game of Life as Computation)
 ├── Lean-15-Kochen-Specker.ipynb    # Lean4 kernel - theoreme de Kochen-Specker (Pilier 1.B)
 ├── Lean-16-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (theoreme du libre arbitre, adosse a FreeWillTheorem.lean)
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
