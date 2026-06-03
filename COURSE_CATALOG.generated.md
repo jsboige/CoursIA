@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-03 20:48
+Generated: 2026-06-03 21:37
 Total notebooks: 510
 
 ## Status Summary
 
-- **READY**: 375
-- **DEMO**: 129
+- **READY**: 369
+- **DEMO**: 135
 - **RESEARCH**: 0
 - **BROKEN**: 6
 
 ## Maturity Summary
 
-- **PRODUCTION**: 386
-- **BETA**: 48
+- **PRODUCTION**: 383
+- **BETA**: 49
 - **TEMPLATE**: 4
-- **ALPHA**: 67
+- **ALPHA**: 69
 - **DRAFT**: 5
 
 ## By Series
@@ -151,7 +151,7 @@ Total notebooks: 510
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | App-1 : Le Probleme des N-Reines | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 2 | App-11 - Picross (Nonogrammes) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 3 | App-15 : Planification de Calendrier Sportif (CSP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 3 | App-15 : Planification de Calendrier Sportif (CSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 4 | App-16 : Generateur de Mots Croises (CSP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 5 | App-19 — Génération procédurale de niveaux via WFC | .venv (3.14.3) | READY | PRODUCTION | 45min | po-2025 |
 | 6 | App-2 : Coloration de Graphes | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -228,7 +228,7 @@ Total notebooks: 510
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
 
-### SymbolicAI (104 notebooks) — BROKEN:2, DEMO:2, READY:100 | ALPHA:4, BETA:4, PRODUCTION:96
+### SymbolicAI (104 notebooks) — BROKEN:2, DEMO:3, READY:99 | ALPHA:5, BETA:5, PRODUCTION:94
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -259,8 +259,8 @@ Total notebooks: 510
 | 25 | Lean 7b - Exemples Progressifs et Benchmarks | Python 3 (WSL) | READY | PRODUCTION | 30min | po-2024 |
 | 26 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 27 | Description du notebook | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 28 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 29 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 28 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | ALPHA | 30min | po-2024 |
+| 29 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 30 | Planners-0-Setup | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 31 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 32 | Planners-2-PDDL-Basics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
@@ -271,7 +271,7 @@ Total notebooks: 510
 | 37 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 38 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 39 | Planners-9-HTN - Planification Hierarchique | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 40 | Planners-10: LLMs pour la Planification | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 40 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
 | 41 | Planners-11: Unified Planning | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 42 | Planners-12: Learning to Plan avec LOOP | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 43 | Introduction au web sémantique avec RDF.Net | .NET (C#) | READY | PRODUCTION | 2h+ | po-2024 |
@@ -337,7 +337,7 @@ Total notebooks: 510
 | 103 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 104 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 
-### QuantConnect (101 notebooks) — BROKEN:1, DEMO:40, READY:60 | ALPHA:33, BETA:6, DRAFT:2, PRODUCTION:59, TEMPLATE:1
+### QuantConnect (101 notebooks) — BROKEN:1, DEMO:45, READY:55 | ALPHA:33, BETA:6, DRAFT:2, PRODUCTION:59, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -418,13 +418,13 @@ Total notebooks: 510
 | 75 | QC-Py-24 - Modèles Génératifs pour Anomaly Detecti | Python 3 | DEMO | PRODUCTION | 1h | po-2026 |
 | 76 | QC-Py-25 - Reinforcement Learning pour le Trading | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
 | 77 | QC-Py-26 - LLM Trading Signals | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 78 | QC-Py-27 - Production Deployment | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 78 | QC-Py-27 - Production Deployment | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 79 | QC-Py-28 - Market Regime Detection | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 80 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 81 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 82 | QC-Py-32 - Reinforcement Learning DQN pour le Trad | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 83 | QC-Py-33 - Reinforcement Learning PPO pour le Trad | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 84 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL po | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 80 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
+| 81 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
+| 82 | QC-Py-32 - Reinforcement Learning DQN pour le Trad | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
+| 83 | QC-Py-33 - Reinforcement Learning PPO pour le Trad | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
+| 84 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL po | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
 | 85 | QC-Py-35 - Reinforcement Learning pour la Construc | Python 3 | READY | PRODUCTION | 30min | po-2026 |
 | 86 | QC-Py-40 : Paper Trading Binance - Mean Reversion  | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 87 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | Python 3 | READY | PRODUCTION | 30min | po-2026 |
@@ -510,7 +510,7 @@ Total notebooks: 510
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
-### Probas (43 notebooks) — READY:43 | ALPHA:14, BETA:6, PRODUCTION:23
+### Probas (43 notebooks) — READY:43 | ALPHA:15, BETA:6, PRODUCTION:22
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -534,7 +534,7 @@ Total notebooks: 510
 | 18 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 19 | Infer-8-Model-Selection : Selection et Comparaison | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 20 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 21 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 21 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | ALPHA | 1h | po-2023 |
 | 22 | PyMC-1 : Configuration et Premier Modele | Python 3 | READY | PRODUCTION | 15min | po-2023 |
 | 23 | PyMC-10 : Crowdsourcing - Agregation de Labels et  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 24 | PyMC-11 — Modeles de Sequences et Chaines de Marko | Python 3 | READY | PRODUCTION | 45min | po-2023 |
@@ -556,7 +556,7 @@ Total notebooks: 510
 | 40 | PyMC-8 : Selection de Modeles et Comparaison Bayes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 41 | PyMC-9 : Modeles de Sujets (Topic Models) et LDA | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 42 | HMM Gaussian Alpha -- Generation de signaux direct | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 43 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 43 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 
 ### IIT (2 notebooks) — READY:2 | PRODUCTION:2
 
