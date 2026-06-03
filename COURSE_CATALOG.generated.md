@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-03 10:58
+Generated: 2026-06-03 11:37
 Total notebooks: 510
 
 ## Status Summary
 
-- **READY**: 387
+- **READY**: 383
 - **DEMO**: 121
 - **RESEARCH**: 0
-- **BROKEN**: 2
+- **BROKEN**: 6
 
 ## Maturity Summary
 
-- **PRODUCTION**: 407
+- **PRODUCTION**: 403
 - **BETA**: 53
 - **TEMPLATE**: 4
-- **ALPHA**: 42
+- **ALPHA**: 46
 - **DRAFT**: 4
 
 ## By Series
@@ -145,7 +145,7 @@ Total notebooks: 510
 | 119 | Sora API - Generation Video Cloud | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 120 | Pipeline Video de Production | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 
-### Search (46 notebooks) — DEMO:3, READY:43 | ALPHA:1, BETA:1, PRODUCTION:44
+### Search (46 notebooks) — BROKEN:2, DEMO:3, READY:41 | ALPHA:3, BETA:1, PRODUCTION:42
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -167,12 +167,12 @@ Total notebooks: 510
 | 16 | App-17 : Vehicle Routing Problem (VRP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 17 | App-18: Optimisation d'Hyperparametres - Approches | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 18 | App-9 : Detection de bords par algorithmes genetiq | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 19 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 19 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | BROKEN | ALPHA | 45min | po-2025 |
 | 20 | App-12 : Puissance 4 -- Comparaison d'algorithmes  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 21 | App-14 - Connect Four : Benchmark Adversarial Sear | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 22 | Introduction a la programmation par contrainte | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 23 | Recherche non informee et informee | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 24 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 24 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | BROKEN | ALPHA | 45min | po-2025 |
 | 25 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 26 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | ALPHA | 45min | po-2025 |
 | 27 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -228,7 +228,7 @@ Total notebooks: 510
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (104 notebooks) — DEMO:2, READY:102 | ALPHA:1, BETA:3, PRODUCTION:100
+### SymbolicAI (104 notebooks) — BROKEN:2, DEMO:2, READY:100 | ALPHA:3, BETA:3, PRODUCTION:98
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -298,12 +298,12 @@ Total notebooks: 510
 | 64 | SC-3-Solidity-Basics - Fondements de Solidity | .venv | READY | PRODUCTION | 45min | po-2024 |
 | 65 | SC-4-Functions-State - Fonctions et Etat | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 66 | SC-5-Inheritance - Heritage et Interfaces | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 67 | SC-6-Errors-Events - Erreurs et Evenements | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 67 | SC-6-Errors-Events - Erreurs et Evenements | Python 3 | BROKEN | ALPHA | 30min | po-2024 |
 | 68 | SC-10-Account-Abstraction - ERC-4337 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 69 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
 | 70 | SC-7-Token-Standards - Standards de Tokens | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 71 | SC-8-DeFi-Primitives - Primitives DeFi | Python (CoursIA SemanticWeb) | READY | PRODUCTION | 30min | po-2024 |
-| 72 | SC-9-DAO-Governance - Gouvernance DAO | cours-ia | READY | PRODUCTION | 30min | po-2024 |
+| 72 | SC-9-DAO-Governance - Gouvernance DAO | cours-ia | BROKEN | ALPHA | 30min | po-2024 |
 | 73 | SC-12-Foundry-Testing - Tests avec Foundry | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 74 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 75 | SC-14-Formal-Verification - Verification Formelle | Python 3 | READY | PRODUCTION | 30min | po-2024 |
@@ -313,7 +313,7 @@ Total notebooks: 510
 | 79 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 80 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 81 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | .venv | READY | PRODUCTION | 30min | po-2024 |
-| 82 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 82 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 83 | SC-22-Solana-Anchor - Solana avec Anchor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 84 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 85 | SC-24 : Deploiement sur Testnets | Python 3 | READY | PRODUCTION | 30min | po-2024 |
