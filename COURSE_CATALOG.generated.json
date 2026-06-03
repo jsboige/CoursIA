@@ -10032,8 +10032,8 @@
     "executable_locally": false
   },
   {
-    "path": "SymbolicAI/Lean/Lean-14-Conway-Tribute.ipynb",
-    "title": "Lean-14 : Hommage a John Conway — Game of Life as Computation",
+    "path": "SymbolicAI/Lean/Lean-14b-Conway-Game-of-Life-Lean.ipynb",
+    "title": "Lean-14b : Hommage a John Conway — Game of Life as Computation",
     "serie": "SymbolicAI",
     "sous_serie": "Lean",
     "kernel": "Python 3 (ipykernel)",
