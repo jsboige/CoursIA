@@ -1,12 +1,12 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-03 18:22
+Generated: 2026-06-03 20:48
 Total notebooks: 510
 
 ## Status Summary
 
-- **READY**: 383
-- **DEMO**: 121
+- **READY**: 375
+- **DEMO**: 129
 - **RESEARCH**: 0
 - **BROKEN**: 6
 
@@ -15,8 +15,8 @@ Total notebooks: 510
 - **PRODUCTION**: 386
 - **BETA**: 48
 - **TEMPLATE**: 4
-- **ALPHA**: 68
-- **DRAFT**: 4
+- **ALPHA**: 67
+- **DRAFT**: 5
 
 ## By Series
 
@@ -337,7 +337,7 @@ Total notebooks: 510
 | 103 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 104 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 
-### QuantConnect (101 notebooks) — BROKEN:1, DEMO:32, READY:68 | ALPHA:34, BETA:6, DRAFT:1, PRODUCTION:59, TEMPLATE:1
+### QuantConnect (101 notebooks) — BROKEN:1, DEMO:40, READY:60 | ALPHA:33, BETA:6, DRAFT:2, PRODUCTION:59, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -398,25 +398,25 @@ Total notebooks: 510
 | 55 | QC-Py-05 - Universe Selection dans QuantConnect | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 56 | QC-Py-06 : Options Trading dans QuantConnect | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 57 | QC-Py-07 : Futures et Forex Trading dans QuantConn | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
-| 58 | QC-Py-08 - Multi-Asset Portfolio Strategies | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 58 | QC-Py-08 - Multi-Asset Portfolio Strategies | Python 3 | DEMO | DRAFT | 1h | po-2026 |
 | 59 | QC-Py-09 : Types d'Ordres et Order Management dans | Python 3 | DEMO | ALPHA | 1h | po-2026 |
 | 60 | QC-Py-10 - Risk Management et Portfolio Management | Python 3 | DEMO | ALPHA | 1h | po-2026 |
 | 61 | QC-Py-11 - Indicateurs Techniques dans QuantConnec | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 62 | QC-Py-12 - Backtesting et Analyse de Performance | Python 3 | DEMO | ALPHA | 1h30 | po-2026 |
 | 63 | QC-Py-13 - Alpha Models et Algorithm Framework | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 64 | QC-Py-14 - Portfolio Construction et Execution Mod | Python 3 | DEMO | ALPHA | 1h | po-2026 |
-| 65 | QC-Py-15 - Parameter Optimization et Walk-Forward  | Python 3 | READY | PRODUCTION | 1h | po-2026 |
+| 65 | QC-Py-15 - Parameter Optimization et Walk-Forward  | Python 3 | DEMO | PRODUCTION | 1h30 | po-2026 |
 | 66 | QC-Py-16 - Alternative Data dans QuantConnect | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 67 | QC-Py-17 - Sentiment Analysis pour le Trading | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 68 | QC-Py-18 - Feature Engineering pour Machine Learni | Python 3 | READY | PRODUCTION | 1h | po-2026 |
-| 69 | QC-Py-19 - Machine Learning Classification pour Di | Python 3 | READY | PRODUCTION | 1h | po-2026 |
+| 67 | QC-Py-17 - Sentiment Analysis pour le Trading | Python 3 | DEMO | PRODUCTION | 1h | po-2026 |
+| 68 | QC-Py-18 - Feature Engineering pour Machine Learni | Python 3 | DEMO | PRODUCTION | 1h | po-2026 |
+| 69 | QC-Py-19 - Machine Learning Classification pour Di | Python 3 | DEMO | PRODUCTION | 1h | po-2026 |
 | 70 | QC-Py-20 - Machine Learning Regression pour Price  | Python 3 | DEMO | ALPHA | 1h | po-2026 |
 | 71 | QC-Py-21 - Portfolio Optimization avec Machine Lea | Python 3 | DEMO | ALPHA | 1h | po-2026 |
-| 72 | QC-Py-22 - Modern Time Series Deep Learning (SOTA  | Python 3 | READY | PRODUCTION | 1h | po-2026 |
-| 73 | QC-Py-23 - State Space Models (Mamba) pour Trading | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 72 | QC-Py-22 - Modern Time Series Deep Learning (SOTA  | Python 3 | DEMO | PRODUCTION | 1h | po-2026 |
+| 73 | QC-Py-23 - State Space Models (Mamba) pour Trading | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
 | 74 | QC-Py-23b - PatchTST et iTransformer pour Previsio | Python 3 | READY | BETA | 45min | po-2026 |
-| 75 | QC-Py-24 - Modèles Génératifs pour Anomaly Detecti | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 76 | QC-Py-25 - Reinforcement Learning pour le Trading | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 75 | QC-Py-24 - Modèles Génératifs pour Anomaly Detecti | Python 3 | DEMO | PRODUCTION | 1h | po-2026 |
+| 76 | QC-Py-25 - Reinforcement Learning pour le Trading | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
 | 77 | QC-Py-26 - LLM Trading Signals | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 78 | QC-Py-27 - Production Deployment | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 79 | QC-Py-28 - Market Regime Detection | Python 3 | DEMO | BETA | 45min | po-2026 |
@@ -573,7 +573,7 @@ Total notebooks: 510
 | 2 | RL-5 : Deep Q-Network (DQN) et Policy Gradient | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 3 | RL-6 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 4 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 5 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 15min | po-2025 |
+| 5 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 30min | po-2025 |
 | 6 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
 
