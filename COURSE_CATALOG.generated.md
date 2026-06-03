@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-03 10:41
+Generated: 2026-06-03 10:58
 Total notebooks: 510
 
 ## Status Summary
@@ -245,10 +245,10 @@ Total notebooks: 510
 | 11 | Lean-12 : Le Theoreme de Sensibilite (Huang 2019) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 12 | Lean-13 : Hommage a Alexandre Grothendieck -- Le l | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 13 | Lean-13b : Grothendieck en Lean -- Atelier pratiqu | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 14 | Lean-14 : Hommage a John Conway — Game of Life as  | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
-| 15 | Lean-14a - Conway, l'homme et l'oeuvre | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2024 |
+| 14 | Lean-14a - Conway, l'homme et l'oeuvre | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2024 |
+| 15 | Lean-14b : Hommage a John Conway — Game of Life as | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
 | 16 | Lean-14c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | BETA | 30min | po-2024 |
-| 17 | Lean-15 : Le Theoreme de Kochen-Specker (Cabello 1 | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 17 | Lean-15 : Le Theoreme de Kochen-Specker (Cabello 1 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 18 | Lean-16 : Le Theoreme du Libre Arbitre (Conway-Koc | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 19 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 20 | Lean 3 - Propositions et Preuves | Lean 4 | READY | PRODUCTION | 45min | po-2024 |
@@ -548,7 +548,7 @@ Total notebooks: 510
 | 32 | PyMC-19 : Systemes Experts et Decisions Robustes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 33 | PyMC-2 : Distributions Gaussiennes et Melanges | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 34 | PyMC-20 : MDPs, Bandits et POMDPs | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 35 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | PRODUCTION | 15min | po-2023 |
+| 35 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 36 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 37 | PyMC-5 : Modeles de Competences (IRT et DINA) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 38 | PyMC-6 : TrueSkill - Classement et Apprentissage e | Python 3 | READY | PRODUCTION | 30min | po-2023 |
