@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-03 16:29
+Generated: 2026-06-03 17:32
 Total notebooks: 510
 
 ## Status Summary
@@ -12,10 +12,10 @@ Total notebooks: 510
 
 ## Maturity Summary
 
-- **PRODUCTION**: 393
+- **PRODUCTION**: 386
 - **BETA**: 48
 - **TEMPLATE**: 4
-- **ALPHA**: 61
+- **ALPHA**: 68
 - **DRAFT**: 4
 
 ## By Series
@@ -196,7 +196,7 @@ Total notebooks: 510
 | 45 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
 | 46 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
-### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:1, BETA:1, PRODUCTION:25
+### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:8, BETA:1, PRODUCTION:18
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -219,14 +219,14 @@ Total notebooks: 510
 | 17 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | PRODUCTION | 15min | po-2023 |
 | 18 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | PRODUCTION | 15min | po-2023 |
 | 19 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 20 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 21 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 22 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
-| 23 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 1h30 | po-2023 |
-| 24 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 25 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
-| 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
+| 20 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 21 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 22 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | ALPHA | 30min | po-2023 |
+| 23 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 2h+ | po-2023 |
+| 24 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 25 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | ALPHA | 30min | po-2023 |
+| 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
 
 ### SymbolicAI (104 notebooks) — BROKEN:2, DEMO:2, READY:100 | ALPHA:4, BETA:4, PRODUCTION:96
 
