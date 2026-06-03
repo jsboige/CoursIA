@@ -180,7 +180,7 @@ print(f"Winner: {'MR' if mr_sharpe > mom_sharpe else 'Momentum'}")
 ### Phase 4: Integration
 
 ```
-1. Sauvegarder dans le dossier ESGF-2026/research/
+1. Sauvegarder dans le dossier partner-course-quant-trading/research/
 2. Mettre a jour le README du projet
 3. Proposer les changements a implementer
 ```
@@ -209,7 +209,7 @@ Task(
     4. Comparer les metriques
     5. Conclure sur les hypotheses
 
-    Sauvegarder dans: ESGF-2026/examples/ETF-Pairs-Trading/research/volatility-filter.ipynb
+    Sauvegarder dans: partner-course-quant-trading/examples/ETF-Pairs-Trading/research/volatility-filter.ipynb
     """,
     description="Research volatility filter"
 )

@@ -1,0 +1,13 @@
+# SymbolicLearning - Python Dependencies
+# Install: pip install -r requirements.txt
+#
+# SL-1, SL-2, SL-4, SL-5, SL-7: standard library only (no external deps)
+# SL-3: numpy + scikit-learn (RBL vs sklearn comparison)
+# SL-6: rdflib (Knowledge Graph construction)
+
+# Scientific computing (SL-3)
+numpy>=1.24
+scikit-learn>=1.2              # Information mutual comparison (SL-3)
+
+# Knowledge Graphs (SL-6)
+rdflib>=7.0                    # RDF graph manipulation, AMIE rule mining

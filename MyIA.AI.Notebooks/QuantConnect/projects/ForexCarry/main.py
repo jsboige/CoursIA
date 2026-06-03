@@ -38,7 +38,8 @@ class ForexCarryTradeStrategy(QCAlgorithm):
 
     def initialize(self):
         # Extended period: captures euro crisis 2012, dollar strength 2014-2016
-        self.set_start_date(2013, 1, 1)
+        self.set_start_date(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
         # 4 diversified FX pairs (Europe, Commodity, Asia, Americas) - confirmed best

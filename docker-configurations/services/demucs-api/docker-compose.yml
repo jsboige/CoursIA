@@ -22,7 +22,7 @@ services:
               capabilities: [gpu]
 
     ports:
-      - "${DEMUCS_API_PORT:-8193}:8193"
+      - "127.0.0.1:${DEMUCS_API_PORT:-8193}:8193"
 
     volumes:
       - type: bind

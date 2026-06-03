@@ -1,6 +1,17 @@
 # Smart Contracts - Des Cypherpunks aux Blockchains Modernes
 
+<!-- CATALOG-STATUS
+series: SymbolicAI-SmartContracts
+pedagogical_count: 27
+breakdown: 00-Foundations=3, 01-Solidity-Foundation=4, 02-Solidity-Advanced=5, 03-Foundry-Testing=3, 04-Privacy-Cryptography=3, 05-Alternative-Chains=5, 06-Real-World=4
+maturity: PRODUCTION=11, BETA=16
+-->
+
 Serie de notebooks educatifs couvrant les fondements cryptographiques, le developpement Solidity, les tests, la cryptographie avancee (ZKP, HE, vote verifiable), et les blockchains alternatives.
+
+Un smart contract est un programme qui s'execute tout seul sur une blockchain : une fois deploye, son code fait foi, transfere de la valeur et applique des regles sans intermediaire ni possibilite de revenir en arriere. C'est ce qui fait sa puissance — des ecosystemes entiers (DeFi, NFT, DAO) reposent dessus — et son danger : un bug n'est pas un patch a pousser le lendemain, c'est une faille immuable qui peut couter des millions (le hack de The DAO en 2016, les exploits de ponts cross-chain). D'ou le poids accorde dans cette serie aux **tests, au fuzzing et a la verification formelle** autant qu'au developpement.
+
+Le parcours suit le fil annonce par le titre : on part des **primitives cryptographiques** des cypherpunks (hachage, arbres de Merkle, preuve de travail, signatures) pour comprendre *pourquoi* une blockchain tient, puis on construit en **Solidity** (types, heritage, standards ERC, DeFi, gouvernance), on **securise** (Foundry, invariants, verification formelle), on explore la **cryptographie pour la vie privee** (ZKP, chiffrement homomorphique, vote verifiable de bout en bout), avant d'elargir aux **chaines alternatives** (Vyper, XRP, Bitcoin Script, Move/Sui, Solana) et au **deploiement reel** sur testnet puis mainnet. L'objectif final n'est pas seulement de savoir ecrire un contrat, mais de savoir le rendre digne de confiance.
 
 ## Vue d'Ensemble
 
@@ -134,12 +145,43 @@ anvil  # dans un terminal separe
 
 ## Ressources Externes
 
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| Nakamoto, "Bitcoin: A Peer-to-Peer Electronic Cash System" (2008) | SC-0, SC-20 |
+| Buterin, "Ethereum White Paper" (2014) | Fondements Ethereum, SC-1 a SC-10 |
+| Wood, "Ethereum: A Secure Decentralised Generalised Transaction Ledger" (2014) | EVM, gas, SC-5 |
+| Ben-Sasson et al., "Scalable Zero Knowledge with No Trusted Setup" (2019) | SC-15 ZK proofs |
+| Gentry, "Fully Homomorphic Encryption Using Ideal Lattices" (2009) | SC-16 HE |
+| Appel, "Verification of a Cryptographic Primitive: SHA-256" (2015) | SC-14 Formal verification |
+| Daian et al., "Flash Boys 2.0: Frontrunning in Decentralized Exchanges" (2020) | SC-8 DeFi |
+| Atzei, Bartoletti & Cimoli, "A Survey of Attacks on Ethereum Smart Contracts" (2017) | SC-12, SC-14 |
+
+### Ressources en ligne
+
 - [Foundry Book](https://book.getfoundry.sh/)
 - [Solidity Docs](https://docs.soliditylang.org/)
 - [web3.py Docs](https://web3py.readthedocs.io/)
 - [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)
 - [ElectionGuard](https://www.electionguard.vote/)
 - [XRP Ledger Docs](https://xrpl.org/docs.html)
+
+## Connections cross-series
+
+### SmartContracts et Lean (Verification Formelle)
+
+Les techniques de verification formelle presentees dans cette serie (SC-14, fuzzing SC-13) complementent les methodes de preuve formelle de la serie Lean :
+
+- **SC-14 Formal Verification** (Certora, SMTChecker) vs. **Lean 4** : deux approches de la meme idee -- prouver mathematiquement la correction d'un programme. Les SMT solvers (Z3, CVC5) sont automatiques mais bornes ; Lean est interactif mais expressif ( Curry-Howard, types dependants).
+- **SC-11 LLM-Assisted Contracts** : le meme paradigme d'assistance LLM que les notebooks [Lean-7/8/9](../Lean/), applique a la generation de smart contracts.
+
+### SmartContracts et Theorie des Jeux (GameTheory)
+
+Les mecanismes de vote et de gouvernance on-chain (SC-9, SC-17) sont des instances concretes des resultats formels de la serie GameTheory :
+
+- **SC-9 DAO Governance** : les systemes de vote on-chain sont soumis aux memes limitations que le **theoreme d'Arrow** (formalise dans `social_choice_lean/Arrow.lean`, 0 sorry).
+- **SC-17 E2E Verifiable Voting** : les proprietes des systemes de vote (Banks sets, monotonicite STV) sont etudiees formellement dans `social_choice_lean/Voting.lean`. Le chiffrement homomorphique (SC-16) et les ZKP (SC-15) sont les briques cryptographiques qui rendent le vote E2E possible.
 
 ---
 

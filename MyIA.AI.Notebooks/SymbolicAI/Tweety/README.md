@@ -1,5 +1,12 @@
 # TweetyProject - Serie de Notebooks Jupyter
 
+<!-- CATALOG-STATUS
+series: SymbolicAI-Tweety
+pedagogical_count: 10
+breakdown: Fondations=3, Revision-Croyances=1, Argumentation=4, Applications=2
+maturity: PRODUCTION=6, BETA=4
+-->
+
 Serie complete de 10 notebooks pour explorer [TweetyProject](https://tweetyproject.org/), une bibliotheque Java pour l'intelligence artificielle symbolique.
 
 ## Presentation
@@ -12,6 +19,8 @@ TweetyProject est une collection de bibliotheques Java couvrant :
 - **Preferences et vote** : Ordres de preference, Agregation
 
 Les notebooks utilisent **JPype** pour integrer Java dans Python, permettant un apprentissage interactif.
+
+A l'heure des modeles statistiques et des LLMs, pourquoi etudier ces logiques symboliques ? Parce qu'elles apportent ce que l'apprentissage seul ne garantit pas : un raisonnement **explicite, verifiable et explicable**. L'argumentation computationnelle (cadres de Dung, ASPIC+, ABA) modelise la facon dont des agents confrontent des arguments, gerent les contradictions et aboutissent a des conclusions justifiees — avec des applications en raisonnement juridique, en aide a la decision, en negociation multi-agents, et de plus en plus comme couche de controle au-dessus des LLMs (detecter les incoherences, structurer un debat). La revision de croyances (AGM) formalise comment un agent rationnel met a jour ses connaissances face a une information nouvelle ou contradictoire. L'interet de TweetyProject est de reunir tous ces formalismes sous un meme toit : on experimente d'une logique a l'autre sans avoir a reimplementer chaque solveur.
 
 ## Structure de la Serie
 
@@ -34,6 +43,22 @@ Les notebooks utilisent **JPype** pour integrer Java dans Python, permettant un 
 
 **Duree totale estimee** : ~7 heures
 
+## Quick Start
+
+```bash
+# 1. Installer les packages Python
+pip install jpype1 requests tqdm clingo z3-solver python-sat
+
+# 2. Ouvrir le notebook de setup (auto-telecharge JDK + JARs)
+jupyter notebook Tweety-1-Setup.ipynb
+
+# 3. Executer toutes les cellules, puis passer a Tweety-2
+```
+
+JDK 17 et les 35 JARs TweetyProject sont telecharges automatiquement par le notebook de setup. Aucune installation systeme requise.
+
+---
+
 ## Prerequis
 
 ### Logiciels requis
@@ -46,12 +71,6 @@ Les notebooks utilisent **JPype** pour integrer Java dans Python, permettant un 
 ```bash
 pip install jpype1 requests tqdm clingo z3-solver python-sat
 ```
-
-### Installation rapide
-
-1. Cloner le repository
-2. Ouvrir `Tweety-1-Setup.ipynb`
-3. Executer toutes les cellules (telechargement automatique des JARs et JDK)
 
 ## Architecture
 
@@ -258,10 +277,34 @@ La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSIO
 
 ## Ressources
 
+### References academiques
+
+| Reference | Couverture |
+|-----------|------------|
+| Dung, "On the Acceptability of Arguments" (1995) | Notebook 5, semantiques de Dung |
+| Modgil & Prakken, "The ASPIC+ Framework" (2014) | Notebook 6, argumentation structuree |
+| Alchourron, Gardenfors & Makinson, "On the Logic of Theory Change" (1985) | Notebook 4, revision AGM |
+| Enderton, *A Mathematical Introduction to Logic* (2001) | Notebooks 2-3, logiques formelles |
+| Besnard & Hunter, *Elements of Argumentation* (2008) | Notebooks 5-7, theorie argumentation |
+| Brewka, Eiter & Truszczynski, "Answer Set Programming at a Glance" (2011) | Notebook 6, ASP/Clingo |
+| Russell & Norvig, *AIMA* 4e ed., ch. 7-8 | Cadre general logique et SAT |
+
+### Ressources en ligne
+
 - **TweetyProject** : https://tweetyproject.org/
 - **Documentation API** : https://tweetyproject.org/api/
 - **GitHub** : https://github.com/TweetyProjectTeam/TweetyProject
 - **JPype** : https://jpype.readthedocs.io/
+
+## Ponts avec les autres series
+
+| Serie | Connection | Details |
+|-------|------------|---------|
+| **[Argument_Analysis](../Argument_Analysis/)** | Argumentation agentique | Utilise Tweety comme backend Java pour le raisonnement argumentatif. Les semantiques de Dung (notebook 5) sont directement appliquees dans l'analyse de textes. |
+| **[Lean](../Lean/)** | Verification formelle | Les logiques propositionnelles et FOL (notebooks 2-3) correspondent aux tactiques de preuve Lean. Les SAT solvers de Tweety completent la verification Lean. |
+| **[SmartContracts](../SmartContracts/)** | Methods formelles | La verification formelle SC-14 (Certora/SMTChecker) utilise les memes solveurs SAT/SMT. La logique propositionnelle de Tweety est la base des invariants Solidity. |
+| **[GameTheory](../../GameTheory/)** | Theorie du vote | Le notebook 9 (Preferences/Vote) couvre les concepts de choix social formalises dans `social_choice_lean/` (Arrow, Sen, Voting). |
+| **[Planners](../Planners/)** | Planification argumentative | Les dialogues argumentatifs (notebook 8) peuvent etre modelises comme des problemes de planification PDDL. |
 
 ## Licence
 

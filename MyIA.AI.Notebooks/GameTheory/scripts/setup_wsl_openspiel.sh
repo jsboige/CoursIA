@@ -1,13 +1,23 @@
 #!/bin/bash
-# Setup script for OpenSpiel WSL kernel
-# Run this script inside WSL Ubuntu
+# Setup script for GameTheory WSL environment
+# Covers the entire GameTheory notebook series:
+#   - OpenSpiel (game theory library)
+#   - PySAT (SAT solving for social choice theorems)
+#   - Standard scientific Python stack
+#
+# Run this script inside WSL Ubuntu:
+#   bash setup_wsl_openspiel.sh
+#
+# After this script, run setup_wsl_kernel.ps1 on Windows
+# to register the Jupyter kernel.
 
 set -e
 
 VENV_PATH="$HOME/.gametheory-venv"
 WRAPPER_PATH="$HOME/.gametheory-kernel-wrapper.sh"
 
-echo "=== OpenSpiel WSL Kernel Setup ==="
+echo "=== GameTheory WSL Environment Setup ==="
+echo "  Covers: OpenSpiel, PySAT, NashPy, scientific stack"
 echo ""
 
 # Check if running in WSL
@@ -19,29 +29,49 @@ fi
 # Step 1: Install system dependencies
 echo "[1/5] Installing system dependencies..."
 sudo apt update
-sudo apt install -y python3-pip python3-venv
+sudo apt install -y python3-pip python3-venv python3-full
 
 # Step 2: Create virtual environment
 echo "[2/5] Creating virtual environment at $VENV_PATH..."
 if [ -d "$VENV_PATH" ]; then
-    echo "  Virtual environment already exists, skipping..."
+    echo "  Virtual environment already exists, reusing..."
 else
     python3 -m venv "$VENV_PATH"
 fi
 
-# Step 3: Install packages
-echo "[3/5] Installing OpenSpiel and dependencies..."
+# Step 3: Install packages (full GameTheory series)
+echo "[3/5] Installing GameTheory dependencies..."
 source "$VENV_PATH/bin/activate"
 pip install --upgrade pip
-pip install open_spiel nashpy numpy scipy matplotlib networkx seaborn pandas tqdm ipykernel
 
-# Verify OpenSpiel
-echo "  Verifying OpenSpiel installation..."
-GAME_COUNT=$(python3 -c "import pyspiel; print(len(pyspiel.registered_names()))")
-echo "  OpenSpiel OK: $GAME_COUNT games available"
+# Core game theory
+pip install open_spiel nashpy
 
-# Step 4: Create wrapper script
-echo "[4/5] Creating kernel wrapper script..."
+# SAT solving (social choice theorems)
+pip install python-sat
+
+# Scientific stack
+pip install numpy scipy matplotlib networkx seaborn pandas tqdm
+
+# Jupyter kernel support
+pip install ipykernel
+
+# Verify key imports
+echo "  Verifying installations..."
+python3 -c "import pyspiel; print(f'  OpenSpiel OK: {len(pyspiel.registered_names())} games available')"
+python3 -c "from pysat.solvers import Glucose3; print('  PySAT OK')"
+python3 -c "import nashpy; print('  NashPy OK')"
+python3 -c "import matplotlib; print(f'  matplotlib OK ({matplotlib.__version__})')"
+
+# Step 4: Register ipykernel
+echo "[4/5] Registering Jupyter kernel..."
+python3 -m ipykernel install --user --name python3 \
+    --display-name "Python 3 (WSL)" \
+    --env PATH "$VENV_PATH/bin:/usr/local/bin:/usr/bin:/bin"
+echo "  Kernel 'Python 3 (WSL)' registered"
+
+# Step 5: Create wrapper script (for Windows Jupyter to connect)
+echo "[5/5] Creating kernel wrapper script..."
 cat > "$WRAPPER_PATH" << 'WRAPPER_SCRIPT'
 #!/bin/bash
 # Kernel wrapper for WSL - handles Windows path conversion
@@ -69,11 +99,9 @@ for arg in "$@"; do
         fi
 
         # Case 2: Backslashes were stripped by shell (c:UsersjsboiAppDataRoaming...)
-        # Pattern: c:Users<user>AppDataRoamingjupyterruntimekernel-xxx.json
         if [[ "$arg" =~ ^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$ ]]; then
             USERNAME="${BASH_REMATCH[1]}"
             FILENAME="${BASH_REMATCH[2]}"
-            # Reconstruct with proper path separators
             arg="C:\\Users\\${USERNAME}\\AppData\\Roaming\\jupyter\\runtime\\${FILENAME}"
             echo "Reconstructed path: $arg" >> "$LOGFILE"
         fi
@@ -113,20 +141,21 @@ chmod +x "$WRAPPER_PATH"
 # Verify wrapper syntax
 bash -n "$WRAPPER_PATH" && echo "  Wrapper script OK"
 
-# Step 5: Instructions for Windows
-echo "[5/5] Setup complete!"
+# Done
+echo ""
+echo "=== Setup complete! ==="
+echo ""
+echo "Installed packages:"
+echo "  - open_spiel  (game theory library)"
+echo "  - pysat       (SAT solving)"
+echo "  - nashpy      (Nash equilibrium)"
+echo "  - numpy, scipy, matplotlib, networkx, seaborn, pandas, tqdm"
+echo "  - ipykernel   (Jupyter kernel support)"
+echo ""
+echo "Jupyter kernel: 'Python 3 (WSL)' (python3)"
 echo ""
 echo "=== Next Steps (run in PowerShell on Windows) ==="
 echo ""
-echo "Run the following PowerShell script to register the kernel:"
-echo ""
 echo "  cd $(wslpath -w "$(dirname "$0")")"
 echo "  .\\setup_wsl_kernel.ps1"
-echo ""
-echo "Or manually:"
-echo ""
-WSL_USER=$(whoami)
-echo "  \$kernelPath = \"\$env:APPDATA\\jupyter\\kernels\\gametheory-wsl\""
-echo "  New-Item -ItemType Directory -Force -Path \$kernelPath"
-echo "  # Then create kernel.json with wrapper path: /home/$WSL_USER/.gametheory-kernel-wrapper.sh"
 echo ""

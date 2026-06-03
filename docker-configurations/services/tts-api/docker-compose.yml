@@ -22,7 +22,7 @@ services:
               capabilities: [gpu]
 
     ports:
-      - "${TTS_API_PORT:-8191}:8191"
+      - "127.0.0.1:${TTS_API_PORT:-8191}:8191"
 
     volumes:
       - type: bind
@@ -44,7 +44,7 @@ services:
       - DEFAULT_TTS_MODEL=kokoro
       - DEFAULT_TTS_VOICE=af_sky
       - SAMPLE_RATE=24000
-      - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-false}
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
       - TZ=${TZ:-Europe/Paris}
       - API_KEY=${TTS_API_KEY:-}

@@ -14,7 +14,8 @@ class MLEnsembleAlgorithm(QCAlgorithm):
     """
 
     def Initialize(self):
-        self.SetStartDate(2020, 1, 1)
+        self.SetStartDate(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.SetCash(100000)
 
         # Universe: Top 30 liquid stocks

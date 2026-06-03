@@ -222,6 +222,75 @@ def transcribe_local(audio_path: str, model_size: str = "large-v3-turbo",
     }
 
 
+def transcribe_api(audio_path: str, api_url: Optional[str] = None,
+                   api_key: Optional[str] = None,
+                   language: Optional[str] = None,
+                   service: str = "whisper") -> Dict[str, Any]:
+    """Transcription audio via un service STT local (API HTTP).
+
+    Services disponibles sur po-2023 :
+      - whisper (port 8190) : faster-whisper large-v3-turbo
+      - qwen (port 8195) : Qwen ASR, 30 langues
+      - funasr (port 8194) : FunASR (Alibaba)
+
+    Les URLs et cles sont lues depuis le .env GenAI si non fournies :
+      WHISPER_API_URL / WHISPER_API_KEY
+      QWEN_ASR_API_URL / QWEN_ASR_API_KEY
+      FUNASR_API_URL / FUNASR_API_KEY
+
+    Args:
+        audio_path: Chemin vers le fichier audio
+        api_url: URL du service (si None, lu depuis .env)
+        api_key: Cle API (si None, lu depuis .env)
+        language: Code langue ISO 639-1 (None = auto-detection)
+        service: Nom du service ("whisper", "qwen", "funasr")
+
+    Returns:
+        Dict avec le texte transcrit et les metadonnees
+    """
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+    service_upper = {"whisper": "WHISPER", "qwen": "QWEN_ASR", "funasr": "FUNASR"}
+    prefix = service_upper.get(service, "WHISPER")
+
+    if api_url is None:
+        api_url = os.getenv(f"{prefix}_API_URL", f"http://localhost:8190")
+    if api_key is None:
+        api_key = os.getenv(f"{prefix}_API_KEY", "")
+
+    import requests
+
+    with open(audio_path, "rb") as f:
+        files = {"file": (Path(audio_path).name, f)}
+        data = {}
+        if language:
+            data["language"] = language
+
+        headers = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        response = requests.post(
+            f"{api_url}/v1/audio/transcriptions",
+            files=files,
+            data=data,
+            headers=headers,
+            timeout=120,
+        )
+
+    response.raise_for_status()
+    result = response.json()
+
+    return {
+        "text": result.get("text", ""),
+        "service": service,
+        "language": result.get("language", language),
+        "duration": result.get("duration"),
+        "raw": result,
+    }
+
+
 # ============================================================================
 # Wrappers TTS (Text-to-Speech)
 # ============================================================================
@@ -258,6 +327,75 @@ def synthesize_openai(text: str, voice: str = "alloy", model: str = "tts-1",
         with open(output_path, "wb") as f:
             f.write(audio_bytes)
         logger.info(f"Audio TTS sauvegarde : {output_path}")
+
+    return audio_bytes
+
+
+def synthesize_tts_api(text: str, api_url: Optional[str] = None,
+                       api_key: Optional[str] = None,
+                       voice: Optional[str] = None,
+                       model: str = "kokoro",
+                       output_path: Optional[str] = None) -> bytes:
+    """Synthese vocale via le gateway TTS local (Kokoro/TADA/Qwen3).
+
+    Le gateway TTS (port 8191) expose 3 modeles :
+      - kokoro (rapide, leger) : /v1/audio/speech
+      - tada (HumeAI, avance) : /tada/v1/audio/speech
+      - qwen3 (haute qualite) : /qwen/v1/audio/speech
+
+    Les URLs et cles sont lues depuis le .env GenAI si non fournies.
+
+    Args:
+        text: Texte a synthetiser
+        api_url: URL du gateway TTS (si None, lu depuis TTS_API_URL)
+        api_key: Cle API (si None, lu depuis TTS_API_KEY)
+        voice: Voix a utiliser (depend du modele)
+        model: Modele TTS ("kokoro", "tada", "qwen3")
+        output_path: Chemin de sauvegarde (optionnel)
+
+    Returns:
+        Bytes du fichier audio genere
+    """
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+    if api_url is None:
+        api_url = os.getenv("TTS_API_URL", "http://localhost:8191")
+    if api_key is None:
+        api_key = os.getenv("TTS_API_KEY", "")
+
+    import requests
+
+    model_paths = {
+        "kokoro": "/v1/audio/speech",
+        "tada": "/tada/v1/audio/speech",
+        "qwen3": "/qwen/v1/audio/speech",
+    }
+    path = model_paths.get(model, "/v1/audio/speech")
+
+    payload = {"input": text, "model": model}
+    if voice:
+        payload["voice"] = voice
+
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    response = requests.post(
+        f"{api_url}{path}",
+        json=payload,
+        headers=headers,
+        timeout=60,
+    )
+    response.raise_for_status()
+
+    audio_bytes = response.content
+
+    if output_path:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "wb") as f:
+            f.write(audio_bytes)
+        logger.info(f"Audio TTS local sauvegarde : {output_path}")
 
     return audio_bytes
 

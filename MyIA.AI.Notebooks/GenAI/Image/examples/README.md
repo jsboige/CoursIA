@@ -4,6 +4,8 @@
 
 Exemples concrets d'utilisation des notebooks GenAI Image dans différents domaines éducatifs et professionnels.
 
+**Dans le cadre du fil rouge contenu visuel educatif** : ces notebooks montrent l'application directe des techniques des niveaux precedents. [science-diagrams](science-diagrams.ipynb) genere des diagrammes et schemas techniques pour les cours de sciences. [history-geography](history-geography.ipynb) cree des cartes et reconstitutions historiques. [literature-visual](literature-visual.ipynb) illustre des textes litteraires.
+
 ## Vue d'overview
 
 | Statistique | Valeur |

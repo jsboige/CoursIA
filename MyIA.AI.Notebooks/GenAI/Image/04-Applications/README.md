@@ -4,6 +4,8 @@
 
 Ce module présente des cas d'usage concrets et des workflows de production pour la génération d'images.
 
+**Dans le cadre du fil rouge contenu visuel educatif** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Content-Generation.ipynb) automatise la creation de visuels pedagogiques (brief texte vers images). [04-2](04-2-Creative-Workflows.ipynb) gere les workflows creatifs. [04-3](04-3-Production-Integration.ipynb) integre le pipeline en production.
+
 ## Vue d'overview
 
 | Statistique | Valeur |
@@ -87,4 +89,4 @@ Batch → Queue → Processing → QC → Output → Analytics
 
 - [Documentation Image principale](../README.md)
 - [Guide ComfyUI](../../00-GenAI-Environment/README.md)
-- [Production Best Practices](../../docs/)
+- [GenAI Services](../../../../docs/genai-services.md)

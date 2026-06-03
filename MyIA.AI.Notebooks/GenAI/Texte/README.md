@@ -1,18 +1,25 @@
-# GenAI Texte - Generation de Texte par IA
+# GenAI Texte - Maîtrise des LLMs : Fondement de tout Génératif
+
+<!-- CATALOG-STATUS
+series: GenAI-Texte
+pedagogical_count: 11
+breakdown: OpenAI-Intro=1, PromptEngineering=1, StructuredOutputs=1, FunctionCalling=1, RAG=1, PDF-WebSearch=1, CodeInterpreter=1, Reasoning=1, Production=1, LocalLlama=1, Quantization=1
+maturity: PRODUCTION=6, BETA=5
+-->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
 
-Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et les APIs OpenAI modernes (2025-2026).
+La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Génératif. Chaque image générée, chaque instruction d'agent et chaque requête RAG trouve son origine dans le texte. Cette série vous guide à travers une progression pédagogique complète pour transformer votre interaction avec l'IA.
 
-## Vue d'ensemble
+## Ce que vous apprendrez
 
-| Tier | Notebooks | Niveau |
-|------|-----------|--------|
-| **Fondations** | 1-2 | Debutant |
-| **Sorties Structurees** | 3-4 | Intermediaire |
-| **Augmentation** | 5-7 | Intermediaire |
-| **Avance** | 8-11 | Avance |
-| **Validation** | 100% (11/11 notebooks) |
+À travers ces 11 notebooks pratiques, vous acquerrez une expertise complète :
+- **Art du prompt engineering** : du zéro-shot au chain-of-thought
+- **Structuration des réponses** : JSON Schema, Pydantic, extraction de données
+- **Intelligence augmentée** : function calling, RAG moderne, code interpreter
+- **Raisonnement avancé** : modèles o4-mini, gpt-5-thinking
+- **Production enterprise** : gestion de sessions, retry, batch processing
+- **Déploiement local** : vLLM, quantification, optimisation des coûts
 
 ## Contenu detaille
 
@@ -59,7 +66,7 @@ Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et l
 
 ## Parcours suggere
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
 │  1_OpenAI_Intro ─────► 2_PromptEngineering                     │
@@ -94,7 +101,7 @@ Ce dossier contient une serie complete de notebooks pour maitriser les LLMs et l
 | **File Upload** | 6, 7 | Support PDF et fichiers |
 | **Reasoning** | 2, 8 | Modeles o4-mini, gpt-5-thinking |
 
-## Technologies
+## Technologies et ecosysteme
 
 - **OpenAI API** : GPT-4o, GPT-4o-mini, o4-mini, gpt-5-thinking
 - **Python** : openai, pydantic, tiktoken, semantic-kernel
@@ -122,11 +129,27 @@ python scripts/notebook_tools/notebook_tools.py validate GenAI/Texte --quick
 python scripts/notebook_tools/notebook_tools.py execute GenAI/Texte --timeout 300
 ```
 
-## Relation avec les autres series
+## Recette : maitriser les LLMs pour piloter tout le generatif
 
-- **GenAI/Images** : Generation d'images (DALL-E, Stable Diffusion)
-- **GenAI/Audio** : Transcription, TTS (Whisper)
-- **SymbolicAI** : Reasoning formel (Z3, Tweety, Lean)
+Le fil rouge de cette serie est la progression de l'interaction basique avec un LLM vers la maitrise complete en production. Voici comment les tiers s'articulent :
+
+1. **Tier 1** (fondations) : [1_OpenAI_Intro](1_OpenAI_Intro.ipynb) couvre l'API OpenAI et les tokens. [2_PromptEngineering](2_PromptEngineering.ipynb) explore les techniques de prompting (zero-shot, few-shot, chain-of-thought). A la fin, vous savez interagir efficacement avec un LLM.
+
+2. **Tier 2** (sorties structurees) : [3_Structured_Outputs](3_Structured_Outputs.ipynb) maitrise les formats JSON et Pydantic. [4_Function_Calling](4_Function_Calling.ipynb) connecte le LLM a des outils externes. Ces deux notebooks sont essentiels pour tout systeme qui pilote d'autres modeles generatifs (image, audio, video).
+
+3. **Tier 3** (augmentation) : [5_RAG_Modern](5_RAG_Modern.ipynb) et [6_PDF_Web_Search](6_PDF_Web_Search.ipynb) enrichissent le LLM avec des sources externes. [7_Code_Interpreter](7_Code_Interpreter.ipynb) lui donne la capacite d'executer du code.
+
+4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modeles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise. [10_LocalLlama](10_LocalLlama.ipynb) et [11_Quantization](11_Quantization.ipynb) deployent en local avec vLLM.
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Image](../Image/README.md) | Prompts structurés | Les textes prompts guident la generation d'images (DALL-E, GPT-5 Image) — notebooks [1](1_OpenAI_Intro.ipynb) et [4](4_Function_Calling.ipynb) |
+| [Audio](../Audio/README.md) | STT/TTS + RAG podcast | Whisper STT et TTS APIs sont les bases du pipeline podcast (Audio/03-2) ; le RAG (notebook [5](5_RAG_Modern.ipynb)) alimente le contenu |
+| [Video](../Video/README.md) | GPT-5 Video + Sora prompts | La comprehension video (Video/01-2) utilise les memes APIs texte ; Sora (Video/04-3) depend de prompts structures |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration agentique | Semantic Kernel orchestre les LLMs via plugins et agents — prolonge les patterns de function calling (notebook [4](4_Function_Calling.ipynb)) |
+| [SymbolicAI](../../SymbolicAI/README.md) | Reasoning formel | Les modeles raisonnants (notebook [8](8_Reasoning_Models.ipynb)) complementent le reasoning formel (Z3, Tweety, Lean) |
 
 ## Ressources
 

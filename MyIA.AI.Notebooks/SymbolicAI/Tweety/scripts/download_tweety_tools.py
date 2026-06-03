@@ -85,6 +85,10 @@ EXTERNAL_DEPENDENCIES = {
         "https://repo1.maven.org/maven2/org/ow2/sat4j/org.ow2.sat4j.core/2.3.5/org.ow2.sat4j.core-2.3.5.jar",
     "args4j-2.33.jar":
         "https://repo1.maven.org/maven2/args4j/args4j/2.33/args4j-2.33.jar",
+    # Required by tweety-math ApacheCommonsSimplex (org.apache.commons.math.optimization)
+    # Note: commons-math 2.x uses group org.apache.commons, artifact commons-math (NOT commons-math3)
+    "commons-math-2.2.jar":
+        "https://repo1.maven.org/maven2/org/apache/commons/commons-math/2.2/commons-math-2.2.jar",
 }
 
 # Modules conditionnels par version
@@ -141,8 +145,19 @@ def get_script_dir() -> pathlib.Path:
     try:
         return pathlib.Path(__file__).parent.resolve()
     except NameError:
-        # Exécuté depuis un notebook ou un REPL
-        return pathlib.Path.cwd()
+        # Exécuté depuis un notebook ou un REPL — chercher le bon répertoire Tweety
+        cwd = pathlib.Path.cwd()
+        # Si CWD est la racine du repo ou un parent, chercher le sous-répertoire Tweety
+        candidate = cwd / "MyIA.AI.Notebooks" / "SymbolicAI" / "Tweety" / "scripts"
+        if candidate.is_dir():
+            return candidate
+        # Si CWD est déjà dans l'arborescence Tweety, utiliser le scripts/ le plus proche
+        for parent in [cwd, *cwd.parents]:
+            scripts_dir = parent / "scripts" / "download_tweety_tools.py"
+            if scripts_dir.exists():
+                return scripts_dir.parent
+        # Dernier recours : CWD (comportement historique)
+        return cwd
 
 
 def download_with_progress(url: str, dest: pathlib.Path, desc: str = "Downloading") -> bool:
@@ -449,6 +464,22 @@ def download_spass(ext_tools_dir: Optional[pathlib.Path] = None) -> bool:
         print()
         print("    Alternatively, use the binary already included in the repository")
         print("    if you have cloned it from version control.")
+
+        # If SPASS.exe is already present, set RunAsInvoker to avoid UAC elevation (error 740)
+        spass_exe = spass_dir / "SPASS.exe"
+        if spass_exe.exists():
+            try:
+                import winreg
+                reg_path = r"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, reg_path, 0,
+                                    winreg.KEY_SET_VALUE) as key:
+                    winreg.SetValueEx(key, str(spass_exe.resolve()), 0,
+                                      winreg.REG_SZ, "~ RunAsInvoker")
+                print(f"  ✓ RunAsInvoker flag set for {spass_exe}")
+            except Exception as e:
+                print(f"  ! Could not set RunAsInvoker flag: {e}")
+                print("    Run manually in PowerShell (no elevation needed):")
+                print(f'    Set-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers" -Name "{spass_exe.resolve()}" -Value "~ RunAsInvoker"')
         return False
 
     elif system == "Linux":
@@ -613,9 +644,21 @@ Examples:
     parser.add_argument("--spass", action="store_true", help="Download SPASS (Linux only)")
     parser.add_argument("--jdk", action="store_true", help="Download Zulu JDK 17")
     parser.add_argument("--native-sat", action="store_true", help="Download native SAT libraries")
+    parser.add_argument("--lib-dir", type=str, default=None,
+                        help="Target directory for JARs (default: Tweety/libs/)")
+    parser.add_argument("--version", type=str, default=None,
+                        help="Tweety version to download (default: 1.30)")
     parser.add_argument("--no-interactive", action="store_true", help="Disable progress bars")
 
     args = parser.parse_args()
+
+    # Override version if specified
+    global TWEETY_VERSION
+    if args.version:
+        TWEETY_VERSION = args.version
+
+    # Resolve lib directory
+    lib_dir = pathlib.Path(args.lib_dir) if args.lib_dir else None
 
     # Si aucun argument spécifié, afficher l'aide
     if not any(vars(args).values()):
@@ -631,7 +674,7 @@ Examples:
 
     # Exécuter les téléchargements demandés
     if args.all:
-        results.append(("JARs", download_tweety_jars()))
+        results.append(("JARs", download_tweety_jars(lib_dir)))
         results.append(("Resources", download_resource_files()))
         results.append(("Clingo", download_clingo()))
         results.append(("SPASS", download_spass()))
@@ -639,7 +682,7 @@ Examples:
         results.append(("Native SAT", download_native_sat_libs()))
     else:
         if args.jars:
-            results.append(("JARs", download_tweety_jars()))
+            results.append(("JARs", download_tweety_jars(lib_dir)))
         if args.resources:
             results.append(("Resources", download_resource_files()))
         if args.clingo:

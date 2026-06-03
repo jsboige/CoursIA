@@ -9,7 +9,7 @@ on:
     branches: [ main ]
     paths:
       - '**.ipynb'
-  workflow_dispatch:  # Allow manual triggering
+  workflow_dispatch:
 
 jobs:
   validate-notebooks:
@@ -58,3 +58,21 @@ jobs:
           exit 1
         fi
         echo "All notebooks validated successfully"
+
+    - name: Check C.2 compliance (execution outputs)
+      run: |
+        python scripts/notebook_tools/check_c2_compliance.py --json > /tmp/c2_results.json || true
+        VIOLATIONS=$(python -c "
+        import json
+        data = json.load(open('/tmp/c2_results.json'))
+        nb_violations = [r for r in data if r['violations']]
+        total_cells = sum(len(r['violations']) for r in nb_violations)
+        print(f'{len(nb_violations)} notebooks, {total_cells} cells')
+        ")
+        echo "C.2 compliance: $VIOLATIONS with violations"
+        # Report but don't block — C.2 is advisory on PRs, enforced on merge
+        if echo "$VIOLATIONS" | grep -q "0 notebooks"; then
+          echo "All notebooks C.2 compliant."
+        else
+          echo "::warning::$VIOLATIONS missing outputs (C.2)"
+        fi

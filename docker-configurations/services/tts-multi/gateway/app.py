@@ -9,12 +9,18 @@ Path routing:
 """
 
 import os
+import sys
 import json
 import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 import httpx
 from typing import Optional
+
+# Auth middleware support (shared module mounted at /app/shared)
+if os.path.exists("/app/shared/auth_middleware.py"):
+    sys.path.insert(0, "/app/shared")
+    from auth_middleware import setup_auth
 
 # Configuration
 KOKORO_SERVICE_URL = os.getenv("KOKORO_SERVICE_URL", "http://tts-kokoro:8000")
@@ -40,6 +46,12 @@ app = FastAPI(
     description="OpenAI-compatible TTS API with 3 models: Kokoro, TADA, Qwen3",
     version="1.0.0"
 )
+
+# Setup auth if available
+try:
+    setup_auth(app)
+except Exception:
+    logger.warning("Auth middleware not available - gateway running without auth")
 
 # Async HTTP client for upstream requests
 client = httpx.AsyncClient(timeout=300.0)

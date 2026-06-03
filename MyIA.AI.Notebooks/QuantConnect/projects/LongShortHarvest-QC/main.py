@@ -16,7 +16,8 @@ from sklearn.preprocessing import StandardScaler
 class VolatilityHarvestML_LongShort(QCAlgorithm):
 
     def Initialize(self):
-        self.SetStartDate(2012, 1, 1)
+        self.SetStartDate(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Margin)
 

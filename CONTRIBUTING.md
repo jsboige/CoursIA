@@ -23,7 +23,8 @@ Vous pouvez contribuer de plusieurs façons :
 ### 2. Développement
 
 1. **Créez une branche** pour votre contribution :
-   ```
+
+   ```bash
    git checkout -b type/nom-court-descriptif
    ```
    Exemples : `feature/notebook-transformers`, `fix/ml-example-bug`, `docs/improve-readme`
@@ -38,13 +39,15 @@ Vous pouvez contribuer de plusieurs façons :
 ### 3. Soumission
 
 1. **Committez vos changements** avec des messages clairs et descriptifs :
-   ```
+
+   ```bash
    git commit -m "Type: description courte de la modification"
    ```
    Exemples : `"Add: notebook sur les Transformers"`, `"Fix: correction d'erreurs dans l'exemple ML.NET"`
 
 2. **Poussez votre branche** vers votre fork :
-   ```
+
+   ```bash
    git push origin nom-de-votre-branche
    ```
 
@@ -76,7 +79,7 @@ Vous pouvez contribuer de plusieurs façons :
 - **Complétude** : Couvrir les aspects importants du sujet
 - **Références** : Citer les sources et proposer des lectures complémentaires
 
-## 🧪 Tests et validation
+## Tests et validation
 
 Avant de soumettre votre contribution, assurez-vous que :
 
@@ -84,6 +87,27 @@ Avant de soumettre votre contribution, assurez-vous que :
 2. Le code est conforme aux standards du projet
 3. Les explications sont claires et pédagogiquement pertinentes
 4. Les dépendances sont correctement documentées
+
+### Validation automatisee
+
+Le depot dispose de scripts de validation pour verifier la qualite des notebooks :
+
+```bash
+# Validation structure (verifie metadata, outputs, kernel)
+python scripts/notebook_tools/notebook_tools.py validate <path>
+
+# Execution complete (Papermill, verifie que toutes les cellules passent)
+python scripts/notebook_tools/notebook_tools.py execute <path>
+
+# Analyse structure (stats cellules, outputs, index NIE)
+python scripts/notebook_tools/notebook_tools.py analyze <path>
+```
+
+### Conventions notebooks
+
+- **Pas d'erreur volontaire** : `raise NotImplementedError`, `assert False`, `1/0` sont interdits. Les cellules d'exercice utilisent `pass`, `print("Exercice a completer")`, ou `return None`
+- **Outputs inclus** : les notebooks sont committes avec leurs outputs d'execution (sauf donnees sensibles)
+- **Pas d'emojis** dans le code, les noms de variables ou les fichiers genere
 
 ## 📚 Ressources utiles
 

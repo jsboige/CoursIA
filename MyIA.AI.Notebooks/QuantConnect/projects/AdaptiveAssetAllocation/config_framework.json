@@ -1,0 +1,9 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {},
+    "description": "Framework version: AdaptiveAssetAllocationAlpha + InsightWeightingPortfolioConstructionModel",
+    "id": 1,
+    "name": "Framework-AdaptiveAssetAllocation",
+    "cloud-id": 31244187,
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

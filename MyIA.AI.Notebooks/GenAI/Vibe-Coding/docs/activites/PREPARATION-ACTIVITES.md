@@ -375,7 +375,7 @@ Pour référence rapide lors des activités :
 **Ressources techniques** :
 - Guides dans [docs/](../)
 - Roo Code : [Ateliers-roo-code/](../../Ateliers-roo-code/)
-- Claude Code : [docs/claude-code/](../claude-code/)
+- Claude Code : [Claude-Code/docs/](../../Claude-Code/docs/)
 
 **Communauté** :
 - Microsoft Semantic-Kernel : https://github.com/microsoft/semantic-kernel

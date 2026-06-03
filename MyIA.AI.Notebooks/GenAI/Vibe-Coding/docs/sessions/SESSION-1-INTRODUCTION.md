@@ -43,8 +43,8 @@
 - **Option B** : Claude Code (pour utilisateurs avancés)
 
 **Support** :
-- Roo Code : [docs/roo-code/INSTALLATION-ROO.md](../roo-code/INSTALLATION-ROO.md)
-- Claude Code : [docs/claude-code/INSTALLATION-CLAUDE-CODE.md](../claude-code/INSTALLATION-CLAUDE-CODE.md)
+- Roo Code : [INSTALLATION-ROO.md](../../Roo-Code/docs/INSTALLATION-ROO.md)
+- Claude Code : [INSTALLATION-CLAUDE-CODE.md](../../Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md)
 
 **Activités** :
 1. Installation VS Code (si nécessaire)
@@ -61,7 +61,7 @@
 
 ### Partie 3 : Atelier Pratique Guidé (90 min)
 
-**Support principal** : [docs/roo-code/ROO-GUIDED-PATH.md](../roo-code/ROO-GUIDED-PATH.md)
+**Support principal** : [ROO-GUIDED-PATH.md](../../Roo-Code/docs/ROO-GUIDED-PATH.md)
 **Matériel pratique** : Dossier [Ateliers-roo-code/](../../Ateliers-roo-code/)
 
 **Progression** :
@@ -107,7 +107,7 @@
 ### Documents à Distribuer
 - [README.md](../../README.md) : Vue d'ensemble du cours
 - Guide d'installation selon l'outil choisi
-- [ROO-GUIDED-PATH.md](../roo-code/ROO-GUIDED-PATH.md) ou équivalent Claude Code
+- [ROO-GUIDED-PATH.md](../../Roo-Code/docs/ROO-GUIDED-PATH.md) ou equivalent Claude Code
 
 ### Matériel Pratique
 - Dossier [Ateliers-roo-code/](../../Ateliers-roo-code/) complet

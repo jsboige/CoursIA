@@ -286,7 +286,7 @@ pip install pandas numpy yfinance matplotlib seaborn scipy
 ### Execution
 
 ```bash
-cd ESGF-2026/examples/CSharp-BTC-MACD-ADX
+cd partner-course-quant-trading/examples/CSharp-BTC-MACD-ADX
 python execute_research.py
 ```
 

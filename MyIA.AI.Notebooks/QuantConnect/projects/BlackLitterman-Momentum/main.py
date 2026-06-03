@@ -11,8 +11,7 @@ class BlackLittermanMomentum(QCAlgorithm):
     Black-Litterman Portfolio with Multi-Window Momentum Views.
 
     Combines market equilibrium (CAPM implied returns) with momentum-based
-    investor views using the Black-Litterman framework. Key innovations from
-    ECE student projects (4 groups, Tour/Monteiro, ilhan/Farhan):
+    investor views using the Black-Litterman framework. Key features:
 
     - He & Litterman Omega calibration: view uncertainty proportional to
       asset covariance (no arbitrary diagonal)
@@ -20,9 +19,6 @@ class BlackLittermanMomentum(QCAlgorithm):
       momentum signals, higher agreement = higher confidence
     - Sector concentration constraints: max 30% per sector
     - Ledoit-Wolf covariance estimation (shrinkage regularized)
-
-    Source: ECE student project (4 groups, Gr01/Gr02/Gr03), adapted for
-    ESGF pool. Issue #238 - Integrate ECE student concepts into QC strategies.
 
     Universe: 15 Large-Caps US (5 sectors, same as Portfolio-Optimization-ML)
     Benchmark: Portfolio-Optimization-ML (Sharpe 0.896)

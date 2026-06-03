@@ -30,7 +30,7 @@ def validate_notebook():
             json.load(f)
         print('✓ Format JSON valide')
         structure_score += 3
-    except:
+    except (json.JSONDecodeError, OSError):
         print('✗ Format JSON invalide')
 
     # Kernel

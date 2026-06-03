@@ -80,7 +80,7 @@ class CNNPatternDetectionAlgorithm(QCAlgorithm):
     _min_size = 25
 
     def initialize(self):
-        self.set_start_date(2019, 1, 1)
+        self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash(100_000)
 

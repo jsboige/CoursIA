@@ -200,7 +200,7 @@ Créez un fichier `mes-premieres-questions.md` et documentez vos échanges avec 
 
 ## Ressources
 
-- [Guide d'installation détaillé](../../../docs/claude-code/INSTALLATION-CLAUDE-CODE.md)
+- [Guide d'installation détaillé](../../docs/INSTALLATION-CLAUDE-CODE.md)
 - [Documentation officielle](https://docs.anthropic.com/en/docs/claude-code)
 
 ---

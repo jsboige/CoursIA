@@ -1,0 +1,10 @@
+# Training outputs
+checkpoints/
+outputs/
+
+# Python
+__pycache__/
+*.pyc
+
+# Data (downloaded separately)
+datasets/

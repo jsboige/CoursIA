@@ -6,5 +6,6 @@
     "description": "Random Forest Classification Strategy - PEP8 compliant (snake_case custom methods)",
     "name": "ML-RandomForest",
     "cloud-id": 29434751,
-    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f",
+    "local-id": 574799259
 }

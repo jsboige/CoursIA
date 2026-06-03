@@ -1,0 +1,1957 @@
+{
+  "rows": [
+    {
+      "coin": "BTC-USD",
+      "horizon": 1,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1890,
+      "n_refits": 75,
+      "regime_persistence_days": 5.798,
+      "regime_share": {
+        "0": 0.5740740740740741,
+        "1": 0.42592592592592593
+      },
+      "regime_means_train_logret": [
+        2.5e-05,
+        0.002245
+      ],
+      "regime_vols_train_logret": [
+        0.01331,
+        0.03935
+      ],
+      "regime_means_eval_annualised": [
+        0.0919,
+        0.4727
+      ],
+      "regime_vols_eval_annualised": [
+        0.3734,
+        0.7556
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8084,
+          0.1916
+        ],
+        [
+          0.1219,
+          0.8781
+        ]
+      ],
+      "sharpe_active_ann": 0.6874,
+      "sharpe_buy_hold_ann": 0.4469,
+      "sharpe_kelly_har_mu60_ann": 0.743,
+      "sharpe_diff_ann_vs_buy_hold": 0.2405,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.0556,
+      "se_daily_LW_vs_buy_hold": 0.016566670316439998,
+      "se_daily_LW_vs_kelly_har_mu60": 0.010617273758603853,
+      "t_stat_vs_buy_hold": 0.9146014264236837,
+      "t_stat_vs_kelly_har_mu60": -0.3297142327518065,
+      "p_value_one_sided_vs_buy_hold": 0.18020045480396096,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.6291920507916346,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 32.28
+    },
+    {
+      "coin": "BTC-USD",
+      "horizon": 5,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1870,
+      "n_refits": 74,
+      "regime_persistence_days": 5.899,
+      "regime_share": {
+        "0": 0.5748663101604278,
+        "1": 0.42513368983957217
+      },
+      "regime_means_train_logret": [
+        2.9e-05,
+        0.002177
+      ],
+      "regime_vols_train_logret": [
+        0.013677,
+        0.039596
+      ],
+      "regime_means_eval_annualised": [
+        0.1125,
+        0.4576
+      ],
+      "regime_vols_eval_annualised": [
+        0.3735,
+        0.756
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8169,
+          0.1831
+        ],
+        [
+          0.1195,
+          0.8805
+        ]
+      ],
+      "sharpe_active_ann": 0.7705,
+      "sharpe_buy_hold_ann": 0.4558,
+      "sharpe_kelly_har_mu60_ann": 0.814,
+      "sharpe_diff_ann_vs_buy_hold": 0.3147,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.0435,
+      "se_daily_LW_vs_buy_hold": 0.016409118426537684,
+      "se_daily_LW_vs_kelly_har_mu60": 0.010789262789301412,
+      "t_stat_vs_buy_hold": 1.2082551960444932,
+      "t_stat_vs_kelly_har_mu60": -0.253850971860149,
+      "p_value_one_sided_vs_buy_hold": 0.11347455825257846,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.6001946534868966,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 33.84
+    },
+    {
+      "coin": "BTC-USD",
+      "horizon": 10,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1845,
+      "n_refits": 73,
+      "regime_persistence_days": 5.857,
+      "regime_share": {
+        "0": 0.5859078590785908,
+        "1": 0.4140921409214092
+      },
+      "regime_means_train_logret": [
+        0.000153,
+        0.002221
+      ],
+      "regime_vols_train_logret": [
+        0.013725,
+        0.03959
+      ],
+      "regime_means_eval_annualised": [
+        0.1362,
+        0.496
+      ],
+      "regime_vols_eval_annualised": [
+        0.3743,
+        0.7649
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8229,
+          0.1771
+        ],
+        [
+          0.116,
+          0.884
+        ]
+      ],
+      "sharpe_active_ann": 0.8771,
+      "sharpe_buy_hold_ann": 0.5007,
+      "sharpe_kelly_har_mu60_ann": 0.8033,
+      "sharpe_diff_ann_vs_buy_hold": 0.3764,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.0737,
+      "se_daily_LW_vs_buy_hold": 0.0166240362368837,
+      "se_daily_LW_vs_kelly_har_mu60": 0.011123688612079867,
+      "t_stat_vs_buy_hold": 1.426176176140242,
+      "t_stat_vs_kelly_har_mu60": 0.4174259339696689,
+      "p_value_one_sided_vs_buy_hold": 0.07690874731985875,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.338183444464357,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 35.9
+    },
+    {
+      "coin": "BTC-USD",
+      "horizon": 15,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1820,
+      "n_refits": 72,
+      "regime_persistence_days": 5.688,
+      "regime_share": {
+        "0": 0.5851648351648352,
+        "1": 0.41483516483516486
+      },
+      "regime_means_train_logret": [
+        0.000158,
+        0.002098
+      ],
+      "regime_vols_train_logret": [
+        0.013708,
+        0.039517
+      ],
+      "regime_means_eval_annualised": [
+        0.1392,
+        0.4716
+      ],
+      "regime_vols_eval_annualised": [
+        0.3733,
+        0.7676
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8208,
+          0.1792
+        ],
+        [
+          0.1174,
+          0.8826
+        ]
+      ],
+      "sharpe_active_ann": 0.7667,
+      "sharpe_buy_hold_ann": 0.4852,
+      "sharpe_kelly_har_mu60_ann": 0.7753,
+      "sharpe_diff_ann_vs_buy_hold": 0.2815,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.0086,
+      "se_daily_LW_vs_buy_hold": 0.01676175153788011,
+      "se_daily_LW_vs_kelly_har_mu60": 0.010474212686763315,
+      "t_stat_vs_buy_hold": 1.0579401869894964,
+      "t_stat_vs_kelly_har_mu60": -0.0517473984710761,
+      "p_value_one_sided_vs_buy_hold": 0.1450413561238484,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.5206350153560333,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 37.05
+    },
+    {
+      "coin": "BTC-USD",
+      "horizon": 20,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1795,
+      "n_refits": 71,
+      "regime_persistence_days": 5.609,
+      "regime_share": {
+        "0": 0.5816155988857938,
+        "1": 0.4183844011142061
+      },
+      "regime_means_train_logret": [
+        0.000166,
+        0.002065
+      ],
+      "regime_vols_train_logret": [
+        0.013708,
+        0.039536
+      ],
+      "regime_means_eval_annualised": [
+        0.208,
+        0.3409
+      ],
+      "regime_vols_eval_annualised": [
+        0.3804,
+        0.7597
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8174,
+          0.1826
+        ],
+        [
+          0.1207,
+          0.8793
+        ]
+      ],
+      "sharpe_active_ann": 0.9594,
+      "sharpe_buy_hold_ann": 0.462,
+      "sharpe_kelly_har_mu60_ann": 0.7607,
+      "sharpe_diff_ann_vs_buy_hold": 0.4974,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.1988,
+      "se_daily_LW_vs_buy_hold": 0.0173454339305432,
+      "se_daily_LW_vs_kelly_har_mu60": 0.011791780329148455,
+      "t_stat_vs_buy_hold": 1.8065368815625713,
+      "t_stat_vs_kelly_har_mu60": 1.06181902024327,
+      "p_value_one_sided_vs_buy_hold": 0.03541725929288453,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.14415892667881303,
+      "BEATS_buy_hold_p005": true,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 40.05
+    },
+    {
+      "coin": "ETH-USD",
+      "horizon": 1,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1240,
+      "n_refits": 45,
+      "regime_persistence_days": 13.626,
+      "regime_share": {
+        "0": 0.42016129032258065,
+        "1": 0.5798387096774194
+      },
+      "regime_means_train_logret": [
+        0.001558,
+        0.00273
+      ],
+      "regime_vols_train_logret": [
+        0.023341,
+        0.051586
+      ],
+      "regime_means_eval_annualised": [
+        0.3494,
+        0.6177
+      ],
+      "regime_vols_eval_annualised": [
+        0.8201,
+        0.6165
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.9814,
+          0.0186
+        ],
+        [
+          0.0258,
+          0.9742
+        ]
+      ],
+      "sharpe_active_ann": 0.6212,
+      "sharpe_buy_hold_ann": 0.712,
+      "sharpe_kelly_har_mu60_ann": 0.6362,
+      "sharpe_diff_ann_vs_buy_hold": -0.0908,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.015,
+      "se_daily_LW_vs_buy_hold": 0.018295190358048167,
+      "se_daily_LW_vs_kelly_har_mu60": 0.01136174230856165,
+      "t_stat_vs_buy_hold": -0.31271787496364545,
+      "t_stat_vs_kelly_har_mu60": -0.08326527186202133,
+      "p_value_one_sided_vs_buy_hold": 0.6227524930185926,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.5331796932937005,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": false,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 12.58
+    },
+    {
+      "coin": "ETH-USD",
+      "horizon": 5,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1220,
+      "n_refits": 45,
+      "regime_persistence_days": 14.699,
+      "regime_share": {
+        "0": 0.4344262295081967,
+        "1": 0.5655737704918032
+      },
+      "regime_means_train_logret": [
+        0.001542,
+        0.002679
+      ],
+      "regime_vols_train_logret": [
+        0.023381,
+        0.051207
+      ],
+      "regime_means_eval_annualised": [
+        0.3528,
+        0.6008
+      ],
+      "regime_vols_eval_annualised": [
+        0.8127,
+        0.6217
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.9837,
+          0.0163
+        ],
+        [
+          0.0222,
+          0.9778
+        ]
+      ],
+      "sharpe_active_ann": 0.6542,
+      "sharpe_buy_hold_ann": 0.6934,
+      "sharpe_kelly_har_mu60_ann": 0.5273,
+      "sharpe_diff_ann_vs_buy_hold": -0.0392,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.1269,
+      "se_daily_LW_vs_buy_hold": 0.017899828653652396,
+      "se_daily_LW_vs_kelly_har_mu60": 0.011408834946953854,
+      "t_stat_vs_buy_hold": -0.13802463860332015,
+      "t_stat_vs_kelly_har_mu60": 0.7008326962934666,
+      "p_value_one_sided_vs_buy_hold": 0.5548895274391468,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.24170371532451362,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": false,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 12.96
+    },
+    {
+      "coin": "ETH-USD",
+      "horizon": 10,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1195,
+      "n_refits": 43,
+      "regime_persistence_days": 13.736,
+      "regime_share": {
+        "0": 0.43430962343096235,
+        "1": 0.5656903765690376
+      },
+      "regime_means_train_logret": [
+        0.00133,
+        0.002571
+      ],
+      "regime_vols_train_logret": [
+        0.023317,
+        0.051278
+      ],
+      "regime_means_eval_annualised": [
+        0.4317,
+        0.4645
+      ],
+      "regime_vols_eval_annualised": [
+        0.7929,
+        0.639
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.9858,
+          0.0142
+        ],
+        [
+          0.0219,
+          0.9781
+        ]
+      ],
+      "sharpe_active_ann": 0.9298,
+      "sharpe_buy_hold_ann": 0.6342,
+      "sharpe_kelly_har_mu60_ann": 0.6661,
+      "sharpe_diff_ann_vs_buy_hold": 0.2956,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.2637,
+      "se_daily_LW_vs_buy_hold": 0.01802174849586788,
+      "se_daily_LW_vs_kelly_har_mu60": 0.011040714105428192,
+      "t_stat_vs_buy_hold": 1.0332803773556858,
+      "t_stat_vs_kelly_har_mu60": 1.5044388350667635,
+      "p_value_one_sided_vs_buy_hold": 0.150736353734523,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.06623420560003213,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 14.58
+    },
+    {
+      "coin": "ETH-USD",
+      "horizon": 15,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1170,
+      "n_refits": 42,
+      "regime_persistence_days": 16.479,
+      "regime_share": {
+        "0": 0.46068376068376066,
+        "1": 0.5393162393162393
+      },
+      "regime_means_train_logret": [
+        0.001358,
+        0.002834
+      ],
+      "regime_vols_train_logret": [
+        0.023384,
+        0.05119
+      ],
+      "regime_means_eval_annualised": [
+        0.253,
+        0.6499
+      ],
+      "regime_vols_eval_annualised": [
+        0.7663,
+        0.6573
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.9864,
+          0.0136
+        ],
+        [
+          0.0208,
+          0.9792
+        ]
+      ],
+      "sharpe_active_ann": 0.9243,
+      "sharpe_buy_hold_ann": 0.6581,
+      "sharpe_kelly_har_mu60_ann": 0.7616,
+      "sharpe_diff_ann_vs_buy_hold": 0.2662,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.1627,
+      "se_daily_LW_vs_buy_hold": 0.017969071960207902,
+      "se_daily_LW_vs_kelly_har_mu60": 0.01166065384583018,
+      "t_stat_vs_buy_hold": 0.9330600553376581,
+      "t_stat_vs_kelly_har_mu60": 0.8787209998450447,
+      "p_value_one_sided_vs_buy_hold": 0.1753944808373955,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.18977628477706543,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 16.08
+    },
+    {
+      "coin": "ETH-USD",
+      "horizon": 20,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 1145,
+      "n_refits": 41,
+      "regime_persistence_days": 16.357,
+      "regime_share": {
+        "0": 0.4890829694323144,
+        "1": 0.5109170305676856
+      },
+      "regime_means_train_logret": [
+        0.001326,
+        0.002583
+      ],
+      "regime_vols_train_logret": [
+        0.023543,
+        0.051254
+      ],
+      "regime_means_eval_annualised": [
+        0.5021,
+        0.3839
+      ],
+      "regime_vols_eval_annualised": [
+        0.7723,
+        0.6511
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.9883,
+          0.0117
+        ],
+        [
+          0.0157,
+          0.9843
+        ]
+      ],
+      "sharpe_active_ann": 1.0783,
+      "sharpe_buy_hold_ann": 0.6195,
+      "sharpe_kelly_har_mu60_ann": 0.6164,
+      "sharpe_diff_ann_vs_buy_hold": 0.4588,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.4619,
+      "se_daily_LW_vs_buy_hold": 0.018150466801879567,
+      "se_daily_LW_vs_kelly_har_mu60": 0.015168203333779261,
+      "t_stat_vs_buy_hold": 1.5921789335312193,
+      "t_stat_vs_kelly_har_mu60": 1.9183809180922105,
+      "p_value_one_sided_vs_buy_hold": 0.05567225264541009,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.027531364407711756,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": true,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 17.7
+    },
+    {
+      "coin": "SOL-USD",
+      "horizon": 1,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 595,
+      "n_refits": 16,
+      "regime_persistence_days": 27.045,
+      "regime_share": {
+        "0": 0.8252100840336134,
+        "1": 0.17478991596638654
+      },
+      "regime_means_train_logret": [
+        -0.001762,
+        6.1e-05
+      ],
+      "regime_vols_train_logret": [
+        0.058023,
+        0.031917
+      ],
+      "regime_means_eval_annualised": [
+        -0.0865,
+        -0.2211
+      ],
+      "regime_vols_eval_annualised": [
+        0.6693,
+        0.6684
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8248,
+          0.1752
+        ],
+        [
+          0.0664,
+          0.9336
+        ]
+      ],
+      "sharpe_active_ann": -0.3149,
+      "sharpe_buy_hold_ann": -0.1645,
+      "sharpe_kelly_har_mu60_ann": -0.6006,
+      "sharpe_diff_ann_vs_buy_hold": -0.1504,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.2857,
+      "se_daily_LW_vs_buy_hold": 0.033894656605235364,
+      "se_daily_LW_vs_kelly_har_mu60": 0.02347847650599783,
+      "t_stat_vs_buy_hold": -0.27956324125537885,
+      "t_stat_vs_kelly_har_mu60": 0.7666721883852243,
+      "p_value_one_sided_vs_buy_hold": 0.6100936939134706,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.22163822163522706,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": false,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 4.15
+    },
+    {
+      "coin": "SOL-USD",
+      "horizon": 5,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 575,
+      "n_refits": 15,
+      "regime_persistence_days": 28.75,
+      "regime_share": {
+        "0": 0.8139130434782609,
+        "1": 0.18608695652173912
+      },
+      "regime_means_train_logret": [
+        -0.001349,
+        -0.000586
+      ],
+      "regime_vols_train_logret": [
+        0.062038,
+        0.033028
+      ],
+      "regime_means_eval_annualised": [
+        -0.1057,
+        -0.624
+      ],
+      "regime_vols_eval_annualised": [
+        0.677,
+        0.6749
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.7761,
+          0.2239
+        ],
+        [
+          0.0662,
+          0.9338
+        ]
+      ],
+      "sharpe_active_ann": -0.2954,
+      "sharpe_buy_hold_ann": -0.2988,
+      "sharpe_kelly_har_mu60_ann": -0.5181,
+      "sharpe_diff_ann_vs_buy_hold": 0.0034,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.2227,
+      "se_daily_LW_vs_buy_hold": 0.034136948150182686,
+      "se_daily_LW_vs_kelly_har_mu60": 0.02429745630767222,
+      "t_stat_vs_buy_hold": 0.0062632691743634596,
+      "t_stat_vs_kelly_har_mu60": 0.5773477968205042,
+      "p_value_one_sided_vs_buy_hold": 0.49750133344932923,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.2818522657384821,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 3.52
+    },
+    {
+      "coin": "SOL-USD",
+      "horizon": 10,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 550,
+      "n_refits": 14,
+      "regime_persistence_days": 25.0,
+      "regime_share": {
+        "0": 0.8690909090909091,
+        "1": 0.13090909090909092
+      },
+      "regime_means_train_logret": [
+        -0.001299,
+        -0.001086
+      ],
+      "regime_vols_train_logret": [
+        0.064951,
+        0.033797
+      ],
+      "regime_means_eval_annualised": [
+        -0.0593,
+        -1.8841
+      ],
+      "regime_vols_eval_annualised": [
+        0.6547,
+        0.857
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.7387,
+          0.2613
+        ],
+        [
+          0.0661,
+          0.9339
+        ]
+      ],
+      "sharpe_active_ann": -0.455,
+      "sharpe_buy_hold_ann": -0.4349,
+      "sharpe_kelly_har_mu60_ann": -0.4052,
+      "sharpe_diff_ann_vs_buy_hold": -0.0201,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.0498,
+      "se_daily_LW_vs_buy_hold": 0.033912920530119045,
+      "se_daily_LW_vs_kelly_har_mu60": 0.02504800854504932,
+      "t_stat_vs_buy_hold": -0.03736000388163279,
+      "t_stat_vs_kelly_har_mu60": -0.12526093243698527,
+      "p_value_one_sided_vs_buy_hold": 0.5149010186648724,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.549841510036833,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": false,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.2
+    },
+    {
+      "coin": "SOL-USD",
+      "horizon": 15,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 525,
+      "n_refits": 13,
+      "regime_persistence_days": 27.632,
+      "regime_share": {
+        "0": 0.9714285714285714,
+        "1": 0.02857142857142857
+      },
+      "regime_means_train_logret": [
+        -0.001468,
+        -0.000475
+      ],
+      "regime_vols_train_logret": [
+        0.033788,
+        0.067188
+      ],
+      "regime_means_eval_annualised": [
+        -0.276,
+        -1.6937
+      ],
+      "regime_vols_eval_annualised": [
+        0.6433,
+        1.615
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.7332,
+          0.2668
+        ],
+        [
+          0.0607,
+          0.9393
+        ]
+      ],
+      "sharpe_active_ann": -0.3203,
+      "sharpe_buy_hold_ann": -0.4583,
+      "sharpe_kelly_har_mu60_ann": -0.4048,
+      "sharpe_diff_ann_vs_buy_hold": 0.1381,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.0845,
+      "se_daily_LW_vs_buy_hold": 0.03620034778397327,
+      "se_daily_LW_vs_kelly_har_mu60": 0.023742201741097986,
+      "t_stat_vs_buy_hold": 0.2402931064179384,
+      "t_stat_vs_kelly_har_mu60": 0.22429442964155197,
+      "p_value_one_sided_vs_buy_hold": 0.4050515193822255,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.4112641051526189,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 4.77
+    },
+    {
+      "coin": "SOL-USD",
+      "horizon": 20,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 500,
+      "n_refits": 12,
+      "regime_persistence_days": 33.333,
+      "regime_share": {
+        "0": 0.886,
+        "1": 0.114
+      },
+      "regime_means_train_logret": [
+        -0.001565,
+        -0.001257
+      ],
+      "regime_vols_train_logret": [
+        0.034003,
+        0.067415
+      ],
+      "regime_means_eval_annualised": [
+        -0.1504,
+        -1.9175
+      ],
+      "regime_vols_eval_annualised": [
+        0.6715,
+        0.8514
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.7544,
+          0.2456
+        ],
+        [
+          0.0559,
+          0.9441
+        ]
+      ],
+      "sharpe_active_ann": 0.185,
+      "sharpe_buy_hold_ann": -0.506,
+      "sharpe_kelly_har_mu60_ann": -0.2678,
+      "sharpe_diff_ann_vs_buy_hold": 0.691,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.4528,
+      "se_daily_LW_vs_buy_hold": 0.03448504991829183,
+      "se_daily_LW_vs_kelly_har_mu60": 0.023424585411662233,
+      "t_stat_vs_buy_hold": 1.262278153870466,
+      "t_stat_vs_kelly_har_mu60": 1.217634638132148,
+      "p_value_one_sided_vs_buy_hold": 0.10342435740635292,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.11168142270403636,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 5.84
+    },
+    {
+      "coin": "LTC-USD",
+      "horizon": 1,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 595,
+      "n_refits": 16,
+      "regime_persistence_days": 12.66,
+      "regime_share": {
+        "0": 0.8974789915966387,
+        "1": 0.10252100840336134
+      },
+      "regime_means_train_logret": [
+        0.000305,
+        0.001447
+      ],
+      "regime_vols_train_logret": [
+        0.022568,
+        0.053732
+      ],
+      "regime_means_eval_annualised": [
+        0.3294,
+        -2.4568
+      ],
+      "regime_vols_eval_annualised": [
+        0.5565,
+        1.124
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8812,
+          0.1188
+        ],
+        [
+          0.2083,
+          0.7917
+        ]
+      ],
+      "sharpe_active_ann": 0.2407,
+      "sharpe_buy_hold_ann": 0.0683,
+      "sharpe_kelly_har_mu60_ann": 0.1711,
+      "sharpe_diff_ann_vs_buy_hold": 0.1724,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.0696,
+      "se_daily_LW_vs_buy_hold": 0.023684633971276813,
+      "se_daily_LW_vs_kelly_har_mu60": 0.016521455753453113,
+      "t_stat_vs_buy_hold": 0.4585645225174234,
+      "t_stat_vs_kelly_har_mu60": 0.2653312138370593,
+      "p_value_one_sided_vs_buy_hold": 0.32327345913365313,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.39537716039338267,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 3.88
+    },
+    {
+      "coin": "LTC-USD",
+      "horizon": 5,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 575,
+      "n_refits": 15,
+      "regime_persistence_days": 13.372,
+      "regime_share": {
+        "0": 0.8434782608695652,
+        "1": 0.1565217391304348
+      },
+      "regime_means_train_logret": [
+        0.000191,
+        0.000815
+      ],
+      "regime_vols_train_logret": [
+        0.022747,
+        0.053862
+      ],
+      "regime_means_eval_annualised": [
+        0.3319,
+        -2.0435
+      ],
+      "regime_vols_eval_annualised": [
+        0.5795,
+        0.9109
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8782,
+          0.1218
+        ],
+        [
+          0.2087,
+          0.7913
+        ]
+      ],
+      "sharpe_active_ann": -0.0559,
+      "sharpe_buy_hold_ann": -0.0619,
+      "sharpe_kelly_har_mu60_ann": -0.2365,
+      "sharpe_diff_ann_vs_buy_hold": 0.006,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.1806,
+      "se_daily_LW_vs_buy_hold": 0.024420763716968143,
+      "se_daily_LW_vs_kelly_har_mu60": 0.014404086577327956,
+      "t_stat_vs_buy_hold": 0.01541933361524304,
+      "t_stat_vs_kelly_har_mu60": 0.7896556345118944,
+      "p_value_one_sided_vs_buy_hold": 0.49384881963274885,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.2148644538650255,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 3.77
+    },
+    {
+      "coin": "LTC-USD",
+      "horizon": 10,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 550,
+      "n_refits": 14,
+      "regime_persistence_days": 11.702,
+      "regime_share": {
+        "0": 0.8309090909090909,
+        "1": 0.1690909090909091
+      },
+      "regime_means_train_logret": [
+        -8.8e-05,
+        0.000649
+      ],
+      "regime_vols_train_logret": [
+        0.022744,
+        0.054397
+      ],
+      "regime_means_eval_annualised": [
+        0.279,
+        -1.9446
+      ],
+      "regime_vols_eval_annualised": [
+        0.5887,
+        0.9049
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8554,
+          0.1446
+        ],
+        [
+          0.2428,
+          0.7572
+        ]
+      ],
+      "sharpe_active_ann": -0.2326,
+      "sharpe_buy_hold_ann": -0.148,
+      "sharpe_kelly_har_mu60_ann": -0.3323,
+      "sharpe_diff_ann_vs_buy_hold": -0.0845,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.0997,
+      "se_daily_LW_vs_buy_hold": 0.027620334796718684,
+      "se_daily_LW_vs_kelly_har_mu60": 0.014606104922851184,
+      "t_stat_vs_buy_hold": -0.1928112742196342,
+      "t_stat_vs_kelly_har_mu60": 0.42999435901863964,
+      "p_value_one_sided_vs_buy_hold": 0.5764466131909322,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.3335998722995862,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": false,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 4.5
+    },
+    {
+      "coin": "LTC-USD",
+      "horizon": 15,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 525,
+      "n_refits": 13,
+      "regime_persistence_days": 13.462,
+      "regime_share": {
+        "0": 0.900952380952381,
+        "1": 0.09904761904761905
+      },
+      "regime_means_train_logret": [
+        -0.000299,
+        0.001469
+      ],
+      "regime_vols_train_logret": [
+        0.022906,
+        0.05553
+      ],
+      "regime_means_eval_annualised": [
+        0.1732,
+        -2.274
+      ],
+      "regime_vols_eval_annualised": [
+        0.577,
+        1.1769
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8682,
+          0.1318
+        ],
+        [
+          0.2331,
+          0.7669
+        ]
+      ],
+      "sharpe_active_ann": 0.2099,
+      "sharpe_buy_hold_ann": -0.1043,
+      "sharpe_kelly_har_mu60_ann": 0.3531,
+      "sharpe_diff_ann_vs_buy_hold": 0.3143,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.1432,
+      "se_daily_LW_vs_buy_hold": 0.027242566897699973,
+      "se_daily_LW_vs_kelly_har_mu60": 0.015122764053992807,
+      "t_stat_vs_buy_hold": 0.7267224245945552,
+      "t_stat_vs_kelly_har_mu60": -0.5964255532095525,
+      "p_value_one_sided_vs_buy_hold": 0.2336980067118113,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.7245545130142641,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 5.12
+    },
+    {
+      "coin": "LTC-USD",
+      "horizon": 20,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 500,
+      "n_refits": 12,
+      "regime_persistence_days": 14.286,
+      "regime_share": {
+        "0": 0.908,
+        "1": 0.092
+      },
+      "regime_means_train_logret": [
+        -0.00061,
+        0.001391
+      ],
+      "regime_vols_train_logret": [
+        0.023102,
+        0.056591
+      ],
+      "regime_means_eval_annualised": [
+        0.1107,
+        -2.331
+      ],
+      "regime_vols_eval_annualised": [
+        0.5846,
+        1.2176
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8544,
+          0.1456
+        ],
+        [
+          0.265,
+          0.735
+        ]
+      ],
+      "sharpe_active_ann": 0.7549,
+      "sharpe_buy_hold_ann": -0.1702,
+      "sharpe_kelly_har_mu60_ann": 0.5006,
+      "sharpe_diff_ann_vs_buy_hold": 0.9251,
+      "sharpe_diff_ann_vs_kelly_har_mu60": 0.2543,
+      "se_daily_LW_vs_buy_hold": 0.02914782142996332,
+      "se_daily_LW_vs_kelly_har_mu60": 0.02210407187190819,
+      "t_stat_vs_buy_hold": 1.9993160203058196,
+      "t_stat_vs_kelly_har_mu60": 0.7247676728789997,
+      "p_value_one_sided_vs_buy_hold": 0.022787085940080387,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.234297285503399,
+      "BEATS_buy_hold_p005": true,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": true,
+      "elapsed_s": 6.35
+    },
+    {
+      "coin": "XRP-USD",
+      "horizon": 1,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 595,
+      "n_refits": 16,
+      "regime_persistence_days": 7.933,
+      "regime_share": {
+        "0": 0.8252100840336134,
+        "1": 0.17478991596638654
+      },
+      "regime_means_train_logret": [
+        -0.00203,
+        0.006767
+      ],
+      "regime_vols_train_logret": [
+        0.021782,
+        0.057474
+      ],
+      "regime_means_eval_annualised": [
+        0.5291,
+        0.2057
+      ],
+      "regime_vols_eval_annualised": [
+        0.6587,
+        0.9663
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.874,
+          0.126
+        ],
+        [
+          0.2093,
+          0.7907
+        ]
+      ],
+      "sharpe_active_ann": 0.7947,
+      "sharpe_buy_hold_ann": 0.6545,
+      "sharpe_kelly_har_mu60_ann": 1.0025,
+      "sharpe_diff_ann_vs_buy_hold": 0.1402,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.2078,
+      "se_daily_LW_vs_buy_hold": 0.021394966939245686,
+      "se_daily_LW_vs_kelly_har_mu60": 0.01971960671424219,
+      "t_stat_vs_buy_hold": 0.4127586318260457,
+      "t_stat_vs_kelly_har_mu60": -0.6638291190028971,
+      "p_value_one_sided_vs_buy_hold": 0.3398917314731431,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.7466001568245364,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.34
+    },
+    {
+      "coin": "XRP-USD",
+      "horizon": 5,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 575,
+      "n_refits": 15,
+      "regime_persistence_days": 9.426,
+      "regime_share": {
+        "0": 0.8486956521739131,
+        "1": 0.15130434782608695
+      },
+      "regime_means_train_logret": [
+        -0.001963,
+        0.006159
+      ],
+      "regime_vols_train_logret": [
+        0.02246,
+        0.058111
+      ],
+      "regime_means_eval_annualised": [
+        0.4538,
+        0.2441
+      ],
+      "regime_vols_eval_annualised": [
+        0.6662,
+        1.0117
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.892,
+          0.108
+        ],
+        [
+          0.1821,
+          0.8179
+        ]
+      ],
+      "sharpe_active_ann": 0.805,
+      "sharpe_buy_hold_ann": 0.5789,
+      "sharpe_kelly_har_mu60_ann": 1.0577,
+      "sharpe_diff_ann_vs_buy_hold": 0.2261,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.2527,
+      "se_daily_LW_vs_buy_hold": 0.021929909354720434,
+      "se_daily_LW_vs_kelly_har_mu60": 0.011042020666768126,
+      "t_stat_vs_buy_hold": 0.6494080969186734,
+      "t_stat_vs_kelly_har_mu60": -1.4417220360259577,
+      "p_value_one_sided_vs_buy_hold": 0.25803731590905243,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.9253095977210495,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.28
+    },
+    {
+      "coin": "XRP-USD",
+      "horizon": 10,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 550,
+      "n_refits": 14,
+      "regime_persistence_days": 8.73,
+      "regime_share": {
+        "0": 0.8454545454545455,
+        "1": 0.15454545454545454
+      },
+      "regime_means_train_logret": [
+        -0.002053,
+        0.005558
+      ],
+      "regime_vols_train_logret": [
+        0.022272,
+        0.058142
+      ],
+      "regime_means_eval_annualised": [
+        0.4692,
+        -0.0956
+      ],
+      "regime_vols_eval_annualised": [
+        0.6754,
+        1.0081
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8865,
+          0.1135
+        ],
+        [
+          0.1852,
+          0.8148
+        ]
+      ],
+      "sharpe_active_ann": 0.8557,
+      "sharpe_buy_hold_ann": 0.5183,
+      "sharpe_kelly_har_mu60_ann": 1.0646,
+      "sharpe_diff_ann_vs_buy_hold": 0.3373,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.209,
+      "se_daily_LW_vs_buy_hold": 0.02816578194207335,
+      "se_daily_LW_vs_kelly_har_mu60": 0.010777688240312706,
+      "t_stat_vs_buy_hold": 0.7544019080280556,
+      "t_stat_vs_kelly_har_mu60": -1.2214054362913902,
+      "p_value_one_sided_vs_buy_hold": 0.22530396311528333,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.8890337250470605,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 6.4
+    },
+    {
+      "coin": "XRP-USD",
+      "horizon": 15,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 525,
+      "n_refits": 13,
+      "regime_persistence_days": 10.714,
+      "regime_share": {
+        "0": 0.8704761904761905,
+        "1": 0.1295238095238095
+      },
+      "regime_means_train_logret": [
+        -0.002145,
+        0.006397
+      ],
+      "regime_vols_train_logret": [
+        0.02256,
+        0.060074
+      ],
+      "regime_means_eval_annualised": [
+        0.4504,
+        0.3288
+      ],
+      "regime_vols_eval_annualised": [
+        0.6827,
+        1.0918
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8908,
+          0.1092
+        ],
+        [
+          0.1885,
+          0.8115
+        ]
+      ],
+      "sharpe_active_ann": 0.7287,
+      "sharpe_buy_hold_ann": 0.5808,
+      "sharpe_kelly_har_mu60_ann": 1.0793,
+      "sharpe_diff_ann_vs_buy_hold": 0.1479,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.3506,
+      "se_daily_LW_vs_buy_hold": 0.028874385481793014,
+      "se_daily_LW_vs_kelly_har_mu60": 0.01139753499363692,
+      "t_stat_vs_buy_hold": 0.32262938605076164,
+      "t_stat_vs_kelly_har_mu60": -1.9378547715584982,
+      "p_value_one_sided_vs_buy_hold": 0.37348796800726447,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.9736795283620954,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 17.24
+    },
+    {
+      "coin": "XRP-USD",
+      "horizon": 20,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 500,
+      "n_refits": 12,
+      "regime_persistence_days": 14.286,
+      "regime_share": {
+        "0": 0.878,
+        "1": 0.122
+      },
+      "regime_means_train_logret": [
+        -0.002268,
+        0.006619
+      ],
+      "regime_vols_train_logret": [
+        0.023221,
+        0.061321
+      ],
+      "regime_means_eval_annualised": [
+        0.5447,
+        -0.2212
+      ],
+      "regime_vols_eval_annualised": [
+        0.6995,
+        1.1061
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.9106,
+          0.0894
+        ],
+        [
+          0.156,
+          0.844
+        ]
+      ],
+      "sharpe_active_ann": 1.1139,
+      "sharpe_buy_hold_ann": 0.593,
+      "sharpe_kelly_har_mu60_ann": 1.3266,
+      "sharpe_diff_ann_vs_buy_hold": 0.5209,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.2127,
+      "se_daily_LW_vs_buy_hold": 0.03004047032463798,
+      "se_daily_LW_vs_kelly_har_mu60": 0.01072664939538599,
+      "t_stat_vs_buy_hold": 1.092363960716182,
+      "t_stat_vs_kelly_har_mu60": -1.2490382850680652,
+      "p_value_one_sided_vs_buy_hold": 0.13733657858224868,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.8941744643831168,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 15.76
+    },
+    {
+      "coin": "ADA-USD",
+      "horizon": 1,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 595,
+      "n_refits": 16,
+      "regime_persistence_days": 10.439,
+      "regime_share": {
+        "0": 0.8941176470588236,
+        "1": 0.10588235294117647
+      },
+      "regime_means_train_logret": [
+        -0.003446,
+        0.00645
+      ],
+      "regime_vols_train_logret": [
+        0.031238,
+        0.066746
+      ],
+      "regime_means_eval_annualised": [
+        -0.2238,
+        1.6501
+      ],
+      "regime_vols_eval_annualised": [
+        0.7591,
+        1.2117
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8787,
+          0.1213
+        ],
+        [
+          0.3046,
+          0.6954
+        ]
+      ],
+      "sharpe_active_ann": 0.1746,
+      "sharpe_buy_hold_ann": -0.031,
+      "sharpe_kelly_har_mu60_ann": 0.2713,
+      "sharpe_diff_ann_vs_buy_hold": 0.2056,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.0967,
+      "se_daily_LW_vs_buy_hold": 0.035280272825984824,
+      "se_daily_LW_vs_kelly_har_mu60": 0.02037179932964842,
+      "t_stat_vs_buy_hold": 0.3671904259985043,
+      "t_stat_vs_kelly_har_mu60": -0.2989968579297624,
+      "p_value_one_sided_vs_buy_hold": 0.35673849012781245,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.6175287785163517,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.43
+    },
+    {
+      "coin": "ADA-USD",
+      "horizon": 5,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 575,
+      "n_refits": 15,
+      "regime_persistence_days": 12.234,
+      "regime_share": {
+        "0": 0.8973913043478261,
+        "1": 0.10260869565217391
+      },
+      "regime_means_train_logret": [
+        -0.003398,
+        0.005221
+      ],
+      "regime_vols_train_logret": [
+        0.03194,
+        0.067722
+      ],
+      "regime_means_eval_annualised": [
+        -0.3722,
+        1.9462
+      ],
+      "regime_vols_eval_annualised": [
+        0.764,
+        1.2398
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8817,
+          0.1183
+        ],
+        [
+          0.3094,
+          0.6906
+        ]
+      ],
+      "sharpe_active_ann": -0.2438,
+      "sharpe_buy_hold_ann": -0.1624,
+      "sharpe_kelly_har_mu60_ann": -0.1644,
+      "sharpe_diff_ann_vs_buy_hold": -0.0813,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.0793,
+      "se_daily_LW_vs_buy_hold": 0.03908877474055203,
+      "se_daily_LW_vs_kelly_har_mu60": 0.02105708711070381,
+      "t_stat_vs_buy_hold": -0.13102957163258908,
+      "t_stat_vs_kelly_har_mu60": -0.23730740394690186,
+      "p_value_one_sided_vs_buy_hold": 0.5521240428550982,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.5937908406890213,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": false,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.58
+    },
+    {
+      "coin": "ADA-USD",
+      "horizon": 10,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 550,
+      "n_refits": 14,
+      "regime_persistence_days": 12.222,
+      "regime_share": {
+        "0": 0.9181818181818182,
+        "1": 0.08181818181818182
+      },
+      "regime_means_train_logret": [
+        -0.003041,
+        0.00398
+      ],
+      "regime_vols_train_logret": [
+        0.032711,
+        0.069405
+      ],
+      "regime_means_eval_annualised": [
+        -0.338,
+        1.3649
+      ],
+      "regime_vols_eval_annualised": [
+        0.7746,
+        1.3381
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8997,
+          0.1003
+        ],
+        [
+          0.2935,
+          0.7065
+        ]
+      ],
+      "sharpe_active_ann": -0.2244,
+      "sharpe_buy_hold_ann": -0.2377,
+      "sharpe_kelly_har_mu60_ann": -0.0115,
+      "sharpe_diff_ann_vs_buy_hold": 0.0133,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.213,
+      "se_daily_LW_vs_buy_hold": 0.04116237500608423,
+      "se_daily_LW_vs_kelly_har_mu60": 0.018990188093936978,
+      "t_stat_vs_buy_hold": 0.020303917989115534,
+      "t_stat_vs_kelly_har_mu60": -0.7064615341287375,
+      "p_value_one_sided_vs_buy_hold": 0.49190046516446695,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.7600494171375719,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.96
+    },
+    {
+      "coin": "ADA-USD",
+      "horizon": 15,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 525,
+      "n_refits": 13,
+      "regime_persistence_days": 13.462,
+      "regime_share": {
+        "0": 0.9104761904761904,
+        "1": 0.08952380952380952
+      },
+      "regime_means_train_logret": [
+        -0.003187,
+        0.004459
+      ],
+      "regime_vols_train_logret": [
+        0.032309,
+        0.070274
+      ],
+      "regime_means_eval_annualised": [
+        -0.3277,
+        1.2366
+      ],
+      "regime_vols_eval_annualised": [
+        0.7901,
+        1.2878
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.9014,
+          0.0986
+        ],
+        [
+          0.2848,
+          0.7152
+        ]
+      ],
+      "sharpe_active_ann": 0.1141,
+      "sharpe_buy_hold_ann": -0.2216,
+      "sharpe_kelly_har_mu60_ann": 0.1494,
+      "sharpe_diff_ann_vs_buy_hold": 0.3357,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.0353,
+      "se_daily_LW_vs_buy_hold": 0.03843712799086505,
+      "se_daily_LW_vs_kelly_har_mu60": 0.02239517709540503,
+      "t_stat_vs_buy_hold": 0.5501598121869613,
+      "t_stat_vs_kelly_har_mu60": -0.0993275910525015,
+      "p_value_one_sided_vs_buy_hold": 0.29110488258969347,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.5395609138785035,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.91
+    },
+    {
+      "coin": "ADA-USD",
+      "horizon": 20,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 500,
+      "n_refits": 12,
+      "regime_persistence_days": 13.514,
+      "regime_share": {
+        "0": 0.926,
+        "1": 0.074
+      },
+      "regime_means_train_logret": [
+        -0.003441,
+        0.00561
+      ],
+      "regime_vols_train_logret": [
+        0.032498,
+        0.071936
+      ],
+      "regime_means_eval_annualised": [
+        -0.3425,
+        1.7968
+      ],
+      "regime_vols_eval_annualised": [
+        0.7972,
+        1.3722
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.9025,
+          0.0975
+        ],
+        [
+          0.3092,
+          0.6908
+        ]
+      ],
+      "sharpe_active_ann": 0.2036,
+      "sharpe_buy_hold_ann": -0.2157,
+      "sharpe_kelly_har_mu60_ann": 0.3724,
+      "sharpe_diff_ann_vs_buy_hold": 0.4193,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.1688,
+      "se_daily_LW_vs_buy_hold": 0.03980840958694601,
+      "se_daily_LW_vs_kelly_har_mu60": 0.022901165152426278,
+      "t_stat_vs_buy_hold": 0.663559466252259,
+      "t_stat_vs_kelly_har_mu60": -0.46439542657291427,
+      "p_value_one_sided_vs_buy_hold": 0.2534861536902472,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.6788177669278759,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 5.12
+    },
+    {
+      "coin": "DOT-USD",
+      "horizon": 1,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 595,
+      "n_refits": 16,
+      "regime_persistence_days": 13.222,
+      "regime_share": {
+        "0": 0.8470588235294118,
+        "1": 0.15294117647058825
+      },
+      "regime_means_train_logret": [
+        -0.003495,
+        0.002739
+      ],
+      "regime_vols_train_logret": [
+        0.030058,
+        0.068156
+      ],
+      "regime_means_eval_annualised": [
+        -0.2183,
+        -1.5338
+      ],
+      "regime_vols_eval_annualised": [
+        0.6904,
+        1.0321
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8646,
+          0.1354
+        ],
+        [
+          0.3687,
+          0.6313
+        ]
+      ],
+      "sharpe_active_ann": -0.3579,
+      "sharpe_buy_hold_ann": -0.5569,
+      "sharpe_kelly_har_mu60_ann": 0.1667,
+      "sharpe_diff_ann_vs_buy_hold": 0.199,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.5246,
+      "se_daily_LW_vs_buy_hold": 0.03207199129402998,
+      "se_daily_LW_vs_kelly_har_mu60": 0.016418989098106195,
+      "t_stat_vs_buy_hold": 0.3908439092551542,
+      "t_stat_vs_kelly_har_mu60": -2.0127665928643945,
+      "p_value_one_sided_vs_buy_hold": 0.3479563082270761,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.9779304050249765,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.27
+    },
+    {
+      "coin": "DOT-USD",
+      "horizon": 5,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 575,
+      "n_refits": 15,
+      "regime_persistence_days": 13.372,
+      "regime_share": {
+        "0": 0.8556521739130435,
+        "1": 0.1443478260869565
+      },
+      "regime_means_train_logret": [
+        -0.003528,
+        0.001625
+      ],
+      "regime_vols_train_logret": [
+        0.030695,
+        0.068662
+      ],
+      "regime_means_eval_annualised": [
+        -0.3201,
+        -1.5705
+      ],
+      "regime_vols_eval_annualised": [
+        0.7004,
+        1.053
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8771,
+          0.1229
+        ],
+        [
+          0.3467,
+          0.6533
+        ]
+      ],
+      "sharpe_active_ann": -0.8187,
+      "sharpe_buy_hold_ann": -0.657,
+      "sharpe_kelly_har_mu60_ann": -0.2089,
+      "sharpe_diff_ann_vs_buy_hold": -0.1618,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.6099,
+      "se_daily_LW_vs_buy_hold": 0.03040604448198753,
+      "se_daily_LW_vs_kelly_har_mu60": 0.01955313394507687,
+      "t_stat_vs_buy_hold": -0.3351676573639169,
+      "t_stat_vs_kelly_har_mu60": -1.9647891605390206,
+      "p_value_one_sided_vs_buy_hold": 0.6312506909636019,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.9752806773575302,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": false,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 3.71
+    },
+    {
+      "coin": "DOT-USD",
+      "horizon": 10,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 550,
+      "n_refits": 14,
+      "regime_persistence_days": 14.103,
+      "regime_share": {
+        "0": 0.8272727272727273,
+        "1": 0.17272727272727273
+      },
+      "regime_means_train_logret": [
+        -0.0035,
+        4.6e-05
+      ],
+      "regime_vols_train_logret": [
+        0.030763,
+        0.068959
+      ],
+      "regime_means_eval_annualised": [
+        -0.138,
+        -2.8878
+      ],
+      "regime_vols_eval_annualised": [
+        0.7328,
+        0.9082
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8786,
+          0.1214
+        ],
+        [
+          0.342,
+          0.658
+        ]
+      ],
+      "sharpe_active_ann": -0.8243,
+      "sharpe_buy_hold_ann": -0.7973,
+      "sharpe_kelly_har_mu60_ann": -0.4153,
+      "sharpe_diff_ann_vs_buy_hold": -0.027,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.409,
+      "se_daily_LW_vs_buy_hold": 0.03264347301725252,
+      "se_daily_LW_vs_kelly_har_mu60": 0.017306192611224562,
+      "t_stat_vs_buy_hold": -0.05219469102419772,
+      "t_stat_vs_kelly_har_mu60": -1.488809428840148,
+      "p_value_one_sided_vs_buy_hold": 0.5208132184407892,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.9317312206354907,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": false,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.24
+    },
+    {
+      "coin": "DOT-USD",
+      "horizon": 15,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 525,
+      "n_refits": 13,
+      "regime_persistence_days": 15.909,
+      "regime_share": {
+        "0": 0.8933333333333333,
+        "1": 0.10666666666666667
+      },
+      "regime_means_train_logret": [
+        -0.003327,
+        -0.000336
+      ],
+      "regime_vols_train_logret": [
+        0.030807,
+        0.069839
+      ],
+      "regime_means_eval_annualised": [
+        -0.474,
+        -1.8745
+      ],
+      "regime_vols_eval_annualised": [
+        0.6529,
+        1.4204
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.9004,
+          0.0996
+        ],
+        [
+          0.2977,
+          0.7023
+        ]
+      ],
+      "sharpe_active_ann": -0.333,
+      "sharpe_buy_hold_ann": -0.807,
+      "sharpe_kelly_har_mu60_ann": -0.2515,
+      "sharpe_diff_ann_vs_buy_hold": 0.474,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.0815,
+      "se_daily_LW_vs_buy_hold": 0.03630579828150233,
+      "se_daily_LW_vs_kelly_har_mu60": 0.014492680647277103,
+      "t_stat_vs_buy_hold": 0.8224505052451048,
+      "t_stat_vs_kelly_har_mu60": -0.35413715960260034,
+      "p_value_one_sided_vs_buy_hold": 0.20541027249344235,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.6383819525353935,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 4.59
+    },
+    {
+      "coin": "DOT-USD",
+      "horizon": 20,
+      "strategy": "kelly_hmm_har_mu60_regime",
+      "n_states": 2,
+      "n_periods": 500,
+      "n_refits": 12,
+      "regime_persistence_days": 15.152,
+      "regime_share": {
+        "0": 0.894,
+        "1": 0.106
+      },
+      "regime_means_train_logret": [
+        -0.003895,
+        0.000639
+      ],
+      "regime_vols_train_logret": [
+        0.030721,
+        0.071004
+      ],
+      "regime_means_eval_annualised": [
+        -0.5457,
+        -1.6258
+      ],
+      "regime_vols_eval_annualised": [
+        0.6899,
+        1.3021
+      ],
+      "transition_matrix_last_fit": [
+        [
+          0.8874,
+          0.1126
+        ],
+        [
+          0.3495,
+          0.6505
+        ]
+      ],
+      "sharpe_active_ann": -0.2894,
+      "sharpe_buy_hold_ann": -0.8482,
+      "sharpe_kelly_har_mu60_ann": 0.0125,
+      "sharpe_diff_ann_vs_buy_hold": 0.5588,
+      "sharpe_diff_ann_vs_kelly_har_mu60": -0.3018,
+      "se_daily_LW_vs_buy_hold": 0.037679960572262,
+      "se_daily_LW_vs_kelly_har_mu60": 0.016576738432596095,
+      "t_stat_vs_buy_hold": 0.9342493839300126,
+      "t_stat_vs_kelly_har_mu60": -1.1470176306222697,
+      "p_value_one_sided_vs_buy_hold": 0.17508763357404744,
+      "p_value_one_sided_vs_kelly_har_mu60": 0.874312832818148,
+      "BEATS_buy_hold_p005": false,
+      "BEATS_kelly_har_mu60_p005": false,
+      "BEATS_buy_hold_delta_sharpe": true,
+      "BEATS_kelly_har_mu60_delta_sharpe": false,
+      "elapsed_s": 5.36
+    }
+  ],
+  "elapsed_s": 393.30727529525757,
+  "config": {
+    "coins": [
+      "BTC-USD",
+      "ETH-USD",
+      "SOL-USD",
+      "LTC-USD",
+      "XRP-USD",
+      "ADA-USD",
+      "DOT-USD"
+    ],
+    "horizons": [
+      1,
+      5,
+      10,
+      15,
+      20
+    ],
+    "n_states": 2,
+    "mu_window": 60,
+    "kelly_cap": 1.0,
+    "fee_bps": 10.0,
+    "n_splits": 5,
+    "refit_every": 22,
+    "train_size": 250,
+    "test": "Ledoit-Wolf 2008 paired Sharpe SE, one-sided p-value vs buy_hold and vs kelly_har_mu60",
+    "hmm": "GaussianHMM (regime_detector.GaussianHMM, pure numpy)"
+  }
+}

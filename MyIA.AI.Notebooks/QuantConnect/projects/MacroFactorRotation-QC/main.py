@@ -64,8 +64,14 @@ class AIStocksBondsRotationAlgorithm(QCAlgorithm):
         # Train model and make predictions
         prediction_by_symbol = pd.Series()
         for symbol in self._symbols:
+            if symbol not in labels.columns:
+                continue
             asset_labels = labels[symbol].dropna()
+            if len(asset_labels) == 0:
+                continue
             idx = factors.index.intersection(asset_labels.index)
+            if len(idx) == 0:
+                continue
 
             # Fit model
             self._model.fit(
@@ -76,6 +82,8 @@ class AIStocksBondsRotationAlgorithm(QCAlgorithm):
             prediction = self._model.predict(self._scaler.transform([factors.iloc[-1]]))[0]
             if prediction > 0:
                 prediction_by_symbol.loc[symbol] = prediction
+        if len(prediction_by_symbol) == 0:
+            return
         # Calculate weights
         weight_by_symbol = (
             1.5 * prediction_by_symbol / prediction_by_symbol.sum()

@@ -4,34 +4,60 @@ paths: MyIA.AI.Notebooks/**/*.ipynb
 
 # Notebook Conventions
 
+**Regles user (C.1/C.2/C.3 detaillees)** : voir CLAUDE.md section C.
+
 ## Manipulation
 
-- ALWAYS use `scripts/notebook_tools/notebook_helpers.py` and `scripts/notebook_tools/notebook_tools.py` for notebook manipulation, NOT ad-hoc Python code
-- Use `NotebookEdit` tool for cell-level changes (insert, replace, delete)
-- When inserting cells, work from BOTTOM to TOP to avoid index shifting
-- Use cell `cell_id` (not index) as reference for NotebookEdit insertions
-- Re-read notebook after each edit operation (indices change)
-- Verify with `git diff` after modifications (expect more insertions than deletions for enrichment)
+- Utiliser `scripts/notebook_tools/notebook_helpers.py` et `notebook_tools.py` (PAS de code Python ad-hoc)
+- `NotebookEdit` pour cell-level changes — references par `cell_id`, pas par index
+- Insertions multiples : travailler BAS vers HAUT (evite index shift)
+- Re-read le notebook apres chaque edit (indices changent)
+- `git diff` apres modifs : enrichissement = insertions > deletions
 
-## Pedagogical Structure
+## Structure pedagogique
 
-- Every notebook MUST have: navigation header, learning objectives, prerequisites, estimated duration
-- No consecutive code cells without explanatory markdown between them
-- Every significant output MUST have an interpretation cell AFTER it
-- Section introductions go BEFORE the code they introduce
-- Conclusion with summary table at end of each major section
+- Header obligatoire : navigation, objectifs d'apprentissage, prerequis, duree estimee
+- Pas de cellules code consecutives sans markdown entre elles
+- Interpretation APRES chaque output significatif
+- Introduction de section AVANT le code qu'elle introduit
+- Conclusion avec table recap en fin de section majeure
 
 ## Execution
 
-- Python notebooks: prefer Papermill for batch execution
-- .NET notebooks: ALWAYS use cell-by-cell via MCP (Papermill does NOT work)
-- .NET notebooks with `#!import`: cell-by-cell execution ONLY
-- Set working directory explicitly for notebooks with relative paths
-- Use BATCH_MODE=true for notebooks with interactive widgets
+- **Python notebooks** : Papermill pour batch (`notebook_tools.py execute <path>`)
+- **.NET notebooks** : Papermill avec kernel `.net-csharp` fonctionne (verifie SW-3, 50/50 cells). Sauf `#!import` (MCP Jupyter cell-by-cell en fallback). Prefere Papermill quand possible.
+- **WSL notebooks** (GameTheory/Lean) : `wsl_papermill.py` (cf [.claude/rules/wsl-kernels.md](wsl-kernels.md))
+- Working directory explicite pour notebooks avec paths relatifs
+- `BATCH_MODE=true` pour notebooks avec widgets interactifs
 
-## Content Rules
+## Cellules code : output systematique (anti faux-positif maturite)
 
-- No emojis in content
-- French as primary language for documentation
-- Code comments may be in French or English
-- Professional, descriptive naming (no "Pure", "Enhanced", "Advanced", "Ultimate" prefixes)
+**Convention user 2026-05-31.** Toute cellule code executable doit produire un **output**, pour que la porte catalogue `all_have_outputs` soit un signal **vrai** (et non un cas a forgiver cote detecteur). On corrige l'**artefact**, pas l'instrument de mesure.
+
+- Cellule setup / imports / defs / guards qui ne produit rien naturellement => ajouter un **print informatif de confirmation** : `print("Imports OK : semantic_kernel, nest_asyncio")`, `print(f"Kernel configure : {kernel.service_id}")`, `print(f"{len(funcs)} fonctions definies")`.
+- **Print informatif, jamais du bruit.** `print("ok")` repete partout = gaming du detecteur (famille incident #1214), INTERDIT. Le print doit dire ce que la cellule a accompli.
+- **JAMAIS printer une valeur de secret / cle** (`print(api_key)` interdit). Confirmer la presence sans reveler : `print("Cle API chargee" if key else "Cle MANQUANTE")`.
+- Stub d'exercice : garde `print("Exercice a completer")` (deja conforme C.1, aucun changement).
+- **Un print ne remplace PAS l'execution reelle** : une cellule LLM/API doit montrer sa **vraie** reponse, pas un `print("done")` creux sur un appel echoue. Provisionner le `.env` d'abord (regle F), puis re-executer.
+- **Forward convention** : appliquer en editant/finalisant un notebook (surtout pour le faire passer BETA -> PROD) et pour tout nouveau notebook. Ne PAS reserialiser en masse des notebooks deja PRODUCTION juste pour ajouter des prints (churn C.3 interdit).
+
+## Patterns stub d'exercice (rule C.1)
+
+`raise NotImplementedError` / `assert False` / `1/0` **INTERDITS partout** (notebook doit s'executer end-to-end). Patterns corrects :
+
+| Contexte | Pattern |
+|----------|---------|
+| Top-level | `print("Exercice a completer")` ou `pass` |
+| Methode classe | `def foo(self): pass  # TODO etudiant : <desc>` |
+| Fonction utilitaire | `def helper(...): return None  # TODO etudiant` |
+| Variable attendue | `result = None  # TODO etudiant : remplacer par compute_thing()` |
+
+Preserver TOUS les commentaires `# TODO`, `# Indice`, `# Etape N`. Remplacer `raise NotImplementedError` legacy par ce pattern = **conforme**, anti-regression ne s'applique pas.
+
+## Commit avec outputs (rule C.2)
+
+Tout notebook committe : `execution_count: <int>` + `outputs: [...]` coherents pour chaque cellule code executable. Modification source = re-execution complete avant commit. Exception : modifs uniquement markdown → outputs precedents valides.
+
+## Scope strict re-execution (rule C.3)
+
+Commit UNIQUEMENT les notebooks dont la source a change (`git diff <nb> | grep -cE '^\+\s*"source"' > 0`). Pour audit/inventaire : Papermill dans `/tmp/audit_<famille>_$(date +%s)/`, rapport sur dashboard, pas dans le repo.

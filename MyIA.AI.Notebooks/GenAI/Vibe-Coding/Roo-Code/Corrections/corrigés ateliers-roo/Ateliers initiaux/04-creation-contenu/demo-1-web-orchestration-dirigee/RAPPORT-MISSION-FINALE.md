@@ -13,7 +13,7 @@
 - **Objectif** : Comprendre les conventions du projet pour la structure des solutions
 - **Actions réalisées** :
   - Recherche sémantique avec [`codebase_search`](codebase_search) : `"conventions structure solutions corriges"`
-  - Lecture et analyse de [`docs/Analyse_Corriges_Ateliers_Roo.md`](docs/Analyse_Corriges_Ateliers_Roo.md)
+  - Lecture et analyse de `docs/Analyse_Corriges_Ateliers_Roo.md`
 - **Résultat** : Architecture et méthodologie bien comprises, prêt pour l'exécution
 
 ### Phase 2 : Sauvegarde et Documentation ✅

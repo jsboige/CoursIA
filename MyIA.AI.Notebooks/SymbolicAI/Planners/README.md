@@ -1,6 +1,15 @@
 # Planification Automatique - Automated Planning
 
+<!-- CATALOG-STATUS
+series: SymbolicAI-Planners
+pedagogical_count: 13
+breakdown: Environment=1, Foundation=3, Classical=3, Advanced=3, NeuroSymbolic=3
+maturity: PRODUCTION=9, BETA=4
+-->
+
 Cette serie de notebooks introduit la **Planification Automatique**, une branche fondamentale de l'IA qui genere des sequences d'actions pour atteindre des objectifs.
+
+La planification repond a une question differente de celle de l'apprentissage : non pas « que predire ? » mais « **que faire ?** ». A partir d'un modele du monde — un etat initial, des actions avec leurs preconditions et effets, un but — un planificateur cherche automatiquement une suite d'actions qui mene au but. C'est une technologie eprouvee : elle pilote des robots (manipulation, navigation), optimise la logistique et l'ordonnancement, et a dirige des engins spatiaux autonomes (Remote Agent sur Deep Space 1, planification d'activites des rovers martiens). Le langage **PDDL** a standardise la maniere de decrire ces problemes, donnant naissance a tout un ecosysteme de solveurs comparables. La planification connait aujourd'hui un regain d'interet avec les LLMs, comme moyen de doter les modeles de langage d'une capacite d'action verifiable et orientee vers un but.
 
 ## Objectifs d'apprentissage
 
@@ -16,41 +25,41 @@ A l'issue de cette serie, vous saurez :
 
 ### Partie 0 : Environnement (00-Environment/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 0 | [Planners-0-Setup](00-Environment/Planners-0-Setup.ipynb) | Python | Installation unified-planning, OR-Tools, Docker Fast Downward | 20 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 0 | [Planners-0-Setup](00-Environment/Planners-0-Setup.ipynb) | Python | Installation unified-planning, OR-Tools, Docker Fast Downward | 20 min |
 
 ### Partie 1 : Fondations (01-Foundation/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modele STRIPS, triptyque Etat-Action-But | 30 min | COMPLET |
-| 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problemes, predicats, actions | 40 min | COMPLET |
-| 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'etats, graphes de recherche, explosion combinatoire | 35 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modele STRIPS, triptyque Etat-Action-But | 30 min |
+| 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problemes, predicats, actions | 40 min |
+| 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'etats, graphes de recherche, explosion combinatoire | 35 min |
 
 ### Partie 2 : Planification Classique (02-Classical/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min | COMPLET |
-| 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min | COMPLET |
-| 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
+| 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
+| 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 
 ### Partie 3 : Approches Avancees (03-Advanced/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min | COMPLET |
-| 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durees, parallelisme, ordonnancement | 40 min | COMPLET |
-| 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, methodes, decomposition | 45 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
+| 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durees, parallelisme, ordonnancement | 40 min |
+| 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, methodes, decomposition | 45 min |
 
 ### Partie 4 : Neuro-Symbolique (04-NeuroSymbolic/)
 
-| # | Notebook | Kernel | Contenu | Duree | Statut |
-|---|----------|--------|---------|-------|--------|
-| 10 | [Planners-10-LLM-Planning](04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | Python | LLMs pour la planification, prompting, plan repair | 50 min | COMPLET |
-| 11 | [Planners-11-Unified-Planning](04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Python | Interface unifiee, multi-solveurs, comparaisons | 40 min | COMPLET |
-| 12 | [Planners-12-LOOP](04-NeuroSymbolic/Planners-12-LOOP.ipynb) | Python | Learning to Plan, modeles neuronaux pour heuristiques | 45 min | COMPLET |
+| # | Notebook | Kernel | Contenu | Duree |
+|---|----------|--------|---------|-------|
+| 10 | [Planners-10-LLM-Planning](04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | Python | LLMs pour la planification, prompting, plan repair | 50 min |
+| 11 | [Planners-11-Unified-Planning](04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Python | Interface unifiee, multi-solveurs, comparaisons | 40 min |
+| 12 | [Planners-12-LOOP](04-NeuroSymbolic/Planners-12-LOOP.ipynb) | Python | Learning to Plan, modeles neuronaux pour heuristiques | 45 min |
 
 ---
 
@@ -61,6 +70,23 @@ A l'issue de cette serie, vous saurez :
 | Foundation | Introduction, concepts de base | 0, 1, 2, 3 |
 | Intermediate | Algorithmes, outils pratiques | 4, 5, 6, 7, 8, 9 |
 | Advanced | Extensions, recherche | 10, 11, 12 |
+
+## Quick Start
+
+```bash
+# 1. Installer les dependances Python
+pip install unified-planning ortools numpy matplotlib networkx
+
+# 2. Verifier l'installation
+python -c "import unified_planning; from ortools.sat.python import cp_model; print('OK')"
+
+# 3. Premier notebook (introduction aux concepts)
+jupyter notebook 01-Foundation/Planners-1-Introduction.ipynb
+```
+
+Pour les notebooks 4-6 (Fast Downward), Docker est recommande : `docker pull aiplanning/fast-downward`. Les notebooks theoriques (1-3, 7-12) ne necessitent que Python.
+
+---
 
 ## Prerequis
 
@@ -284,9 +310,17 @@ BATCH_MODE=true python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.
 - [IPC Benchmarks](https://github.com/aibasel/downward-benchmarks) - Problemes standards
 
 ### Publications
-- Helmert (2006) - "The Fast Downward Planning System"
-- Hoffmann & Nebel (2001) - "The FF Planning System"
-- Richter & Westphal (2010) - "LAMA: Planner"
+
+| Reference | Couverture |
+|-----------|------------|
+| Ghallab, Nau & Traverso, *Automated Planning: Theory and Practice* (2004) | Textbook de reference, toute la serie |
+| Russell & Norvig, *AIMA* 4e ed., ch. 10-11 | Cadre general planification |
+| Helmert, "The Fast Downward Planning System" (2006) | Notebooks 4-6 |
+| Hoffmann & Nebel, "The FF Planning System" (2001) | Heuristique h-FF, notebook 5 |
+| Richter & Westphal, "LAMA: Planner" (2010) | Landmarks, notebook 5 |
+| Fox & Long, "PDDL2.1: An Extension to PDDL for Expressing Temporal Planning Domains" (2003) | Notebook 8 |
+| Erol, Hendler & Nau, "HTN Planning: Complexity and Expressivity" (1994) | Notebook 9 |
+| Valmeekam et al., "On the Planning Abilities of Large Language Models" (2024) | Notebook 10 |
 
 ## Relation avec SymbolicAI
 
@@ -295,10 +329,15 @@ La planification automatique est une branche de l'IA symbolique :
 - Recherche dans espace d'etats
 - Heuristiques admissibles pour optimalite
 
-Voir aussi :
-- [Tweety](../Tweety/) - Logique et argumentation
-- [Lean](../Lean/) - Verification formelle
-- [Z3](../Z3/) - Solveur SMT
+### Ponts avec les autres series
+
+| Serie | Connection | Details |
+| ----- | ---------- | ------- |
+| **[Tweety](../Tweety/)** | Logique et argumentation | Les solveurs SAT/CSP de Tweety complementent les planificateurs PDDL. Les dialogues argumentatifs (Tweety-8) sont des instances de planification multi-agents. |
+| **[Lean](../Lean/)** | Verification formelle | Les plans generes peuvent etre verifies formellement. Les heuristiques d'admissibilite (h-max, LM-cut) reposent sur des preuves de correction similaires aux tactiques Lean. |
+| **[SmartContracts](../SmartContracts/)** | Execution planifiee | Les smart contracts DeFi (liquidations, arbitrage) sont des problemes de planification sous contraintes temporelles et de gaz. Le notebook SC-14 (verification formelle) croise OR-Tools (Planners-7). |
+| **[GameTheory](../../GameTheory/)** | Jeux sequentiels | La recherche adversariale (A*, minimax) est commune a la planification classique et a la theorie des jeux. Les jeux cooperatifs (Shapley) sont des problemes d'allocation de taches planifiables. |
+| **[Search](../../Search/)** | Fondements communs | La serie Search couvre les algorithmes de base (BFS, DFS, A*) utilises dans les planificateurs. CSP (Search Part2) correspond a OR-Tools CP-SAT (Planners-7). |
 
 ## Contribution
 

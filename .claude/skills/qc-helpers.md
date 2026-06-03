@@ -14,8 +14,8 @@ Documente les patterns et helpers pour utiliser les outils MCP QuantConnect.
 
 - **User ID**: 46613
 - **Org personnelle (PAID)**: `d600793ee4caecb03441a09fc2d00f7f` - Backtest API OK
-- **Org ESGF (FREE)**: `94aa4bcb45ff1d1ef286d93817104cce` - Compile OK, backtest API REFUSE
-- **IMPORTANT**: Toujours specifier `organizationId` dans create_project, sinon defaut = ESGF (FREE)
+- **Org partenaire (FREE)**: `94aa4bcb45ff1d1ef286d93817104cce` - Compile OK, backtest API REFUSE
+- **IMPORTANT**: Toujours specifier `organizationId` dans create_project, sinon defaut = org partenaire (FREE)
 
 ## Outils MCP disponibles
 
@@ -106,7 +106,7 @@ Solution: attendre 30s et reessayer. Ou utiliser list_backtests pour checker le 
 ```
 create_project(name, language="Py", organizationId="d600793ee4caecb03441a09fc2d00f7f")
 
-SANS organizationId -> cree dans ESGF (FREE) -> pas de backtest API!
+SANS organizationId -> cree dans org partenaire (FREE) -> pas de backtest API!
 ```
 
 ## Project IDs
@@ -135,7 +135,7 @@ SANS organizationId -> cree dans ESGF (FREE) -> pas de backtest API!
 | EMA-Cross-Crypto | 28789943 | 1.272 | HEALTHY | — |
 | EMA-Cross-Stocks | 28789946 | 0.872 | HEALTHY | — |
 
-### Org ESGF (94aa4bcb) - Exemples pedagogiques
+### Org partenaire (94aa4bcb) - Exemples pedagogiques
 
 | Projet | Cloud ID | Sharpe | Lang | Note |
 |--------|----------|--------|------|------|
@@ -158,9 +158,9 @@ Les strategies Researcher ont leur code local dans:
 MyIA.AI.Notebooks/QuantConnect/projects/{StrategyName}/main.py
 ```
 
-Les exemples ESGF sont dans:
+Les exemples du cours partenaire sont dans:
 ```
-MyIA.AI.Notebooks/QuantConnect/ESGF-2026/examples/{ProjectName}/main.py
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/{ProjectName}/main.py
 ```
 
 ## Classification des performances

@@ -2,7 +2,9 @@
 
 [← Documentation Audio](../README.md) | [↑ ..](../README.md) | [→ Audio Advanced](../02-Advanced/)
 
-Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vocale (STT), synthèse vocale (TTS), et opérations audio de base.
+Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vocale (STT), synthese vocale (TTS), et operations audio de base.
+
+**Dans le cadre du fil rouge podcast** : avant de produire un episode, il faut maitriser les deux briques essentielles -- faire parler la machine (TTS) et comprendre la parole humaine (STT). [01-1](01-1-OpenAI-TTS-Intro.ipynb) et [01-2](01-2-OpenAI-Whisper-STT.ipynb) couvrent les API cloud (rapides a mettre en oeuvre), tandis que [01-4](01-4-Whisper-Local.ipynb) et [01-5](01-5-Kokoro-TTS-Local.ipynb) passent en local GPU pour l'autonomie et le controle. [01-3](01-3-Basic-Audio-Operations.ipynb) donne les bases techniques (spectrogrammes, MFCC) utiles pour comprendre ce que manipulent les modeles.
 
 ## Vue d'ensemble
 

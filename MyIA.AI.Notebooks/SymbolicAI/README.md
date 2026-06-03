@@ -1,6 +1,39 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
-Collection de **84 notebooks Jupyter** pour l'apprentissage de l'IA symbolique : logiques formelles, argumentation computationnelle, verification formelle, web semantique, planification automatique, smart contracts et optimisation.
+<!-- CATALOG-STATUS
+series: SymbolicAI
+pedagogical_count: 104
+breakdown: SmartContracts=27, Lean=21, SemanticWeb=18, Planners=13, Tweety=10, SymbolicLearning=7, Argument_Analysis=6, root=2
+maturity: PRODUCTION=100, BETA=3, ALPHA=1
+-->
+
+L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
+
+Vous y découvrirez six domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. Et l'**analyse argumentative** avec les LLMs ponte l'IA symbolique et l'IA neuronale. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
+
+**À qui s'adresse cette série** : étudiants en IA, ingénieurs logiciel curieux de logique formelle, et chercheurs souhaitant aller au-delà du machine learning. Les notebooks Python (Tweety, Planners, SmartContracts, SemanticWeb Python) ne nécessitent que Python 3.10+. Les notebooks .NET C# (SemanticWeb, optimisation) requièrent .NET 9.0 + dotnet-interactive. Les notebooks Lean nécessitent WSL + elan. Aucun prérequis en logique avancée : chaque série introduit ses concepts progressivement depuis les fondements.
+
+## Parcours d'apprentissage
+
+### Phase 1 : Logique et argumentation (Tweety, ~7h)
+
+Le parcours commence par Tweety-1-Setup qui configure l'environnement Java/JPype et charge les 35 modules TweetyProject. Les notebooks 2-3 introduisent les logiques formelles (propositionnelle, premier ordre, modale, description) avec des solveurs SAT et des prouveurs de théorèmes. Les notebooks 4-7 couvrent la révision de croyances (postulats AGM), l'argumentation abstraite (sémantiques de Dung), l'argumentation structurée (ASPIC+, ABA, ASP avec Clingo), et les extensions (bipolaire, probabiliste). Les notebooks 8-9 appliquent ces théories aux dialogues d'agents et aux préférences collectives. À l'issue de cette phase, vous maîtrisez les formalismes de base du raisonnement symbolique et pouvez implémenter des systèmes argumentatifs.
+
+### Phase 2 : Représentation de connaissances (SemanticWeb, ~13h)
+
+Le Web Sémantique généralise les concepts logiques de la Phase 1 au web. Les notebooks 1-4 (C# et Python) couvrent RDF (triplets, graphes, sérialisation) et SPARQL (requêtes, filtres, unions). Les notebooks 5-7 abordent les données liées (DBpedia, Wikidata), RDFS (inférence), et OWL (ontologies, profils EL/QL/RL). Les notebooks 8-10 introduisent les standards modernes : SHACL (validation), JSON-LD (SEO), RDF-Star (métadonnées sur métadonnées). Les notebooks 11-12 ferment la boucle avec les graphes de connaissances et GraphRAG (extraction d'entités par LLM). Cette phase présuppose les bases logiques de la Phase 1 mais peut être suivie indépendamment.
+
+### Phase 3 : Vérification formelle (Lean, ~10h)
+
+La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
+
+### Phase 4 : Applications (Planners + SmartContracts, ~30h)
+
+Deux séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **planification automatique** (13 notebooks) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
+
+### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
+
+Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (6 notebooks) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
 ## Vue d'ensemble
 
@@ -8,13 +41,31 @@ Collection de **84 notebooks Jupyter** pour l'apprentissage de l'IA symbolique :
 |-------|-----------|-----------|---------------|-------|-------|
 | [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
 | [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
+| [Lean](#lean---verification-formelle) | 16 | 14 (88%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs, Kochen-Specker | ~11h |
 | [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~8h |
-| [Lean](#lean---verification-formelle) | 13 | 12 (92%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs | ~10h |
-| [Tweety](#tweety---tweetyproject) | 10 | 11 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
+| [Tweety](#tweety---tweetyproject) | 10 | 10 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
+| [SymbolicLearning](#symboliclearning---apprentissage-symbolique) | 7 | 7 (100%) | Python | ILP, neuro-symbolique, KG-LLM | ~6h |
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 84 notebooks actifs, ~56h de contenu
+**Total** : 99 notebooks actifs, ~65h de contenu
+
+---
+
+## Quick Start
+
+**Premier notebook recommande par serie :**
+
+| Serie | Premier notebook | Commande rapide |
+|-------|-----------------|-----------------|
+| **Tweety** | `Tweety/Tweety-1-Setup.ipynb` | Ouvrir dans Jupyter, executer toutes les cellules |
+| **Lean** | `Lean/Lean-1-Setup.ipynb` | `wsl -d Ubuntu -- bash -c "jupyter notebook Lean-1-Setup.ipynb"` |
+| **SemanticWeb** | `SemanticWeb/SW-1-CSharp-Setup.ipynb` (.NET) ou `SW-2b-Python-RDFBasics.ipynb` (Python) | `pip install rdflib pySHACL` |
+| **Planners** | `Planners/00-Environment/Planners-0-Setup.ipynb` | `pip install ortools unified_planning` |
+| **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
+| **Argument Analysis** | `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
+
+**Pour commencer sans rien installer** : les notebooks Python (Tweety, Planners, SemanticWeb Python, SmartContracts) ne necessitent que `pip install jupyter ipykernel` + les packages listes ci-dessus.
 
 ---
 
@@ -55,7 +106,7 @@ Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibli
 | 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
 | 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 1 | Java/JPype |
 
-> 10/10 notebooks ont des exercices. Tweety-1-Setup (configuration) est le seul sans exercice.
+> 10/10 notebooks ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la serie.
 
 ### Technologies
 
@@ -73,7 +124,7 @@ Documentation complete : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Verification Formelle
 
-Serie de **13 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves.
+Serie de **16 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves, un tribut a Grothendieck (Lean-13), et un port complet du theoreme de Kochen-Specker 18-vecteurs (Lean-15).
 
 ### Structure detaillee
 
@@ -94,10 +145,13 @@ Serie de **13 notebooks** sur **Lean 4**, proof assistant base sur la theorie de
 | 10 | [Lean-10-LeanDojo](Lean/Lean-10-LeanDojo.ipynb) | Python WSL | LeanDojo, tracing, extraction theoremes, ML pour theorem proving | 2 |
 | 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Verification formelle de reseaux de neurones | 2 |
 | 11py | [Lean-11-TorchLean-Python](Lean/Lean-11-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, verification | 7 |
+| 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Lean 4 | Port Lean du theoreme de sensibilite de Huang (2019), hypercube, signing matrix | 4 |
+| 13 | [Lean-13-Grothendieck-Tribute](Lean/Lean-13-Grothendieck-Tribute.ipynb) | Lean 4 | Hommage a Grothendieck : tour Mathlib, micro-formalisations | 3 |
+| 15 | [Lean-15-Kochen-Specker](Lean/Lean-15-Kochen-Specker.ipynb) | Lean 4 | Theoreme de Kochen-Specker (1967), 18 vecteurs Cabello-Estebaranz-Garcia-Alcaine, contextuality quantique | 5 |
 
 ### Kernels requis
 
-- **Lean 4 (WSL)** : Notebooks 2-6, 11 (preuves Lean natives)
+- **Lean 4 (WSL)** : Notebooks 2-6, 11, 12, 15 (preuves Lean natives)
 - **Python 3 (WSL)** : Notebooks 1, 7-10, 11py (setup, LLM, LeanDojo)
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problemes chemins)
@@ -108,7 +162,7 @@ Documentation complete : [Lean/README.md](Lean/README.md)
 
 ## SemanticWeb - Web Semantique
 
-Serie de **17 notebooks** sur le Web Semantique, combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
+Serie de **18 notebooks** sur le Web Semantique (dont 1 legacy deprecie), combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
 
 ### Structure detaillee
 
@@ -142,7 +196,7 @@ Documentation complete : [SemanticWeb/README.md](SemanticWeb/README.md)
 
 ## Planners - Planification Automatique
 
-Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, et integration LLM.
+Serie de **14 notebooks** sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, et integration LLM.
 
 ### Structure detaillee
 
@@ -157,6 +211,7 @@ Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classi
 | 4 | [Planners-4-Fast-Downward](Planners/02-Classical/Planners-4-Fast-Downward.ipynb) | Fast Downward, heuristiques | 6 | Docker, Fast-Downward |
 | 5 | [Planners-5-Heuristics](Planners/02-Classical/Planners-5-Heuristics.ipynb) | Heuristiques (FF, LM-Cut, Merge-and-Shrink) | 5 | Fast-Downward |
 | 6 | [Planners-6-Domains](Planners/02-Classical/Planners-6-Domains.ipynb) | Catalogue de domaines PDDL | 3 | Fast-Downward |
+| 6b | [Fast-Downward-Legacy](Planners/Fast-Downward-Legacy.ipynb) | Legacy Fast-Downward .NET | 0 | .NET kernel |
 | **Avance** |
 | 7 | [Planners-7-OR-Tools](Planners/03-Advanced/Planners-7-OR-Tools.ipynb) | CP-SAT, Job Shop, VRP | 2 | ortools |
 | 8 | [Planners-8-Temporal](Planners/03-Advanced/Planners-8-Temporal.ipynb) | Planification temporelle (PDDL 2.1) | 6 | Python |
@@ -166,7 +221,7 @@ Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classi
 | 11 | [Planners-11-Unified-Planning](Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Unified Planning Framework | 3 | unified_planning |
 | 12 | [Planners-12-LOOP](Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb) | LLM + OR-Tools + planification | 2 | Fast-Downward |
 
-> 12/13 notebooks ont des exercices. Seul Planners-0-Setup (configuration) n'en a pas.
+> 13/14 notebooks ont des exercices. Seuls Planners-0-Setup (configuration) et Fast-Downward-Legacy (.NET legacy) n'en ont pas.
 
 Documentation complete : [Planners/README.md](Planners/README.md)
 
@@ -213,6 +268,26 @@ Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.
 
 ---
 
+## SymbolicLearning - Apprentissage Symbolique
+
+Serie de **7 notebooks** Python qui explorent l'apprentissage automatique symbolique : ILP, programmation logique inductive, neuro-symbolique, et graphes de connaissances couples aux LLMs.
+
+### Structure detaillee
+
+| # | Notebook | Contenu | Exercices | Prerequis |
+|---|----------|---------|-----------|-----------|
+| 1 | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | Concepts de l'apprentissage logique, version spaces | 1 | Python |
+| 2 | [SL-2-KnowledgeBasedLearning](SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb) | Apprentissage base sur la connaissance, EBL | 1 | SL-1 |
+| 3 | [SL-3-RelevanceLearning](SymbolicLearning/SL-3-RelevanceLearning.ipynb) | Determinations, relevance based learning | 1 | SL-1 |
+| 4 | [SL-4-InductiveLogicProgramming](SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | ILP, FOIL, generalisation/specialisation | 1 | SL-1, Prolog |
+| 5 | [SL-5-NeuroSymbolic](SymbolicLearning/SL-5-NeuroSymbolic.ipynb) | Couplage reseaux de neurones et raisonnement symbolique | 1 | SL-1, PyTorch |
+| 6 | [SL-6-KnowledgeGraphs-ILP](SymbolicLearning/SL-6-KnowledgeGraphs-ILP.ipynb) | KG + ILP, link prediction, completion | 1 | SL-4 |
+| 7 | [SL-7-LLM-SymbolicLearning](SymbolicLearning/SL-7-LLM-SymbolicLearning.ipynb) | LLMs comme apprenants symboliques, prompt engineering | 1 | SL-1 |
+
+Documentation complete : [SymbolicLearning/README.md](SymbolicLearning/README.md)
+
+---
+
 ## Autres Notebooks
 
 ### Optimisation et Contraintes (2 notebooks)
@@ -228,26 +303,26 @@ Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.
 
 ```
 SymbolicAI/
-├── Tweety/                    # Serie TweetyProject (9 notebooks)
+├── Tweety/                    # Serie TweetyProject (10 notebooks)
 │   ├── Tweety-1-Setup.ipynb ... Tweety-9-Preferences.ipynb
 │   ├── tweety_init.py         # Module d'initialisation partage
 │   ├── libs/                  # JARs TweetyProject (35 modules)
 │   ├── ext_tools/             # Clingo, SPASS, EProver
 │   └── README.md
 │
-├── Lean/                      # Serie Lean 4 (13 notebooks)
-│   ├── Lean-1-Setup.ipynb ... Lean-11-TorchLean-Python.ipynb
+├── Lean/                      # Serie Lean 4 (16 notebooks)
+│   ├── Lean-1-Setup.ipynb ... Lean-12-Sensitivity-Theorem.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
 │   └── README.md
 │
-├── SemanticWeb/               # Web semantique (17 notebooks)
+├── SemanticWeb/               # Web semantique (18 notebooks)
 │   ├── SW-1-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD
 │   ├── RDF.Net-Legacy/      # Notebook original (reference historique)
 │   └── README.md
 │
-├── Planners/                  # Planification automatique (13 notebooks)
+├── Planners/                  # Planification automatique (14 notebooks)
 │   ├── 00-Environment/       # Setup
 │   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
 │   ├── 02-Classical/         # State Space, Fast-Downward, Heuristics, Domains
@@ -267,6 +342,10 @@ SymbolicAI/
 │
 ├── Argument_Analysis/         # Analyse argumentative (6 notebooks, demo)
 │   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
+│   └── README.md
+│
+├── SymbolicLearning/          # Apprentissage symbolique (7 notebooks)
+│   ├── SL-1-LogicalLearning.ipynb ... SL-7-LLM-SymbolicLearning.ipynb
 │   └── README.md
 │
 ├── OR-tools-Stiegler.ipynb    # Optimisation LP
@@ -291,24 +370,106 @@ SymbolicAI/
 # Python 3.10+
 pip install jupyter ipykernel
 
-# Pour notebooks .NET (C#)
+# Pour notebooks .NET (C#) -- ATTENTION: Windows policy peut bloquer dotnet-interactive.exe
 dotnet tool install -g Microsoft.dotnet-interactive
 dotnet interactive jupyter install
 ```
 
-### Par serie
+> **Windows Policy** : Si `dotnet-interactive.exe` est bloque (Win32Exception 4551), executer en admin PowerShell :
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` puis relancer.
 
-| Serie | Installation | Environnement special |
-|-------|--------------|----------------------|
-| **Tweety** | Executer `Tweety-1-Setup.ipynb` | JDK 17 + JARs (auto-telecharges) |
-| **Lean** | Executer `Lean-1-Setup.ipynb` sous WSL | elan + Lean 4 + lean4_jupyter |
-| **Lean (LLM)** | Configurer `.env` avec `OPENAI_API_KEY` | Notebooks 7-10 |
-| **SemanticWeb (.NET)** | `dotnet restore MyIA.CoursIA.sln` | dotNetRDF via NuGet |
-| **SemanticWeb (Python)** | `pip install -r SemanticWeb/requirements.txt` | rdflib, pySHACL |
-| **Planners** | `pip install ortools unified-planning` | Fast-Downward via WSL ou Docker |
-| **SmartContracts** | `pip install py-solc-x web3` | Solidity/solc, optionnel: Foundry |
-| **Argument Analysis** | Configurer `.env` avec `OPENAI_API_KEY` | Java/JPype |
-| **Autres** | `dotnet restore MyIA.CoursIA.sln` | OR-Tools, Z3 via NuGet |
+### Tweety
+
+**Status execution : 10/10 SUCCESS**
+
+Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
+
+1. **JDK 17 portable** : Auto-telecharge dans `Tweety/jdk-17-portable/` (Azul Zulu, ~180MB). Aucune installation systeme requise, pas de UAC.
+2. **JARs TweetyProject** : Auto-telecharges dans `Tweety/libs/` depuis Maven Central (35 modules, ~50MB total).
+3. **Outils externes** : Clingo, SPASS, EProver dans `Tweety/ext_tools/` (inclus dans le depot).
+
+**Problemes connus :**
+- `asp-1.30.jar` et `rpcl-1.30.jar` : Modules absents de Maven Central pour la version 1.30. Non bloquant -- les notebooks gerent l'absence avec try/except.
+- Si un JAR fait 0 bytes ou ~554 bytes : re-telecharger manuellement depuis `https://repo1.maven.org/maven2/org/tweetyproject/`.
+
+### Planners
+
+**Status execution : 13/14 SUCCESS** (Fast-Downward-Legacy.ipynb echoue -- kernel .NET bloque)
+
+1. **Packages Python** : `pip install ortools unified_planning`
+2. **Fast-Downward** (requis pour notebooks 2-6, 12) : Installer via WSL ou Docker
+   - WSL : `sudo apt install fast-downward` ou compiler depuis source
+   - Docker : Image `aiblazor/fast-downward` disponible
+3. **Notebooks theoriques** (7-11) : Ne necessitent que Python + les packages ci-dessus
+
+### SmartContracts
+
+**Status execution : 15/27 (avec anvil lance : 25/27)**
+
+1. **Kernel Jupyter** : Enregistrer le kernel custom :
+   ```bash
+   python -m ipykernel install --user --name smartcontracts --display-name "Python (SmartContracts + Foundry)"
+   ```
+2. **Foundry** (requis pour SC-12 a SC-14) : Installer dans WSL :
+   ```bash
+   # Dans WSL Ubuntu
+   curl -L https://foundry.paradigm.xyz | bash
+   source ~/.bashrc
+   foundryup
+   ```
+   Versions testees : forge/cast/anvil/chisel 1.5.1-stable
+3. **Solidity** : `pip install py-solc-x web3` -- solc auto-installe par py-solc-x
+4. **Anvil** (requis pour SC-3 a SC-10) : Lancer avant l'execution :
+   ```bash
+   # Dans un terminal WSL
+   anvil --host 0.0.0.0
+   ```
+   Ou en arriere-plan : `wsl -d Ubuntu -- bash -c 'anvil --host 0.0.0.0 &'`
+5. **Fichier `.env`** : Configurer dans `SmartContracts/.env` :
+   - `ANVIL_RPC=http://127.0.0.1:8545` (local)
+   - `LLM_API_KEY` pour SC-11 (via OpenRouter)
+   - `DEPLOYER_PRIVATE_KEY` : Mettre une cle de testnet reelle pour SC-24/25, ou laisser le placeholder (ces notebooks echoueront)
+
+**Problemes connus :**
+- **SC-3 a SC-10** : Echouent si anvil n'est pas lance sur le port 8545. Solution : lancer `anvil` avant l'execution.
+- **SC-15 Zero-Knowledge-Proofs** : SyntaxError f-string imbriquee (`{"CONVAINCU" if ...}`) -- incompatible Python 3.11. Fix : utiliser des parentheses ou une variable intermediaire.
+- **SC-24/25** : `hexstr_to_bytes` erreur si `DEPLOYER_PRIVATE_KEY` contient un placeholder non-hex.
+
+### Argument_Analysis
+
+**Status execution : 3/5 (demo, pas cours etudiant)**
+
+1. **JDK 17 portable** : Partage avec Tweety (meme `jdk-17-portable/` si configure)
+2. **Fichier `.env`** : Configurer dans `Argument_Analysis/.env` :
+   - `OPENAI_API_KEY` (via OpenRouter : `sk-or-v1-...`)
+   - `OPENAI_BASE_URL=https://openrouter.ai/api/v1`
+   - `TEXT_CONFIG_PASSPHRASE=Propaganda`
+   - `BATCH_MODE=true`
+3. **Packages** : `pip install semantic-kernel jpype1`
+
+**Problemes connus :**
+- **AA-3 orchestration** : Papermill ne preserve pas l'etat entre notebooks. Les definitions de AA-0/1/2 ne sont pas disponibles. Ce notebook doit etre execute manuellement apres les 3 precedents.
+- **AA Executor** : Timeout a 300s (pipeline multi-agents long).
+
+### Lean
+
+**Status execution : NON TESTE (WSL kernel timeout)**
+
+1. **WSL obligatoire** : Les notebooks Lean ne fonctionnent pas sous Windows natif (SIGPIPE, problemes de chemins)
+2. **Installation** : Executer `Lean-1-Setup.ipynb` sous WSL (installe elan + Lean 4 + lean4_jupyter)
+3. **Kernels** :
+   - `Lean 4 (WSL)` : Notebooks 2-6, 11 (preuves natives)
+   - `Python 3 (WSL)` : Notebooks 1, 7-10, 11py (setup, LLM, LeanDojo)
+4. **Fichier `.env`** (pour notebooks 7-10) : `OPENAI_API_KEY` via OpenRouter
+
+### SemanticWeb
+
+**Python : 10/10 SUCCESS | C# : 0/7 (Windows policy)**
+
+1. **Python** : `pip install rdflib pySHACL owlready2 kglab` -- tous les notebooks Python passent
+2. **C#** : `dotnet restore MyIA.CoursIA.sln` -- necessite dotnet-interactive fonctionnel
+3. **Win32Exception 4551** : Windows peut bloquer dotnet-interactive.exe. Fix admin PowerShell :
+   `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 ---
 
@@ -341,13 +502,13 @@ dotnet interactive jupyter install
 | Serie | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
 | SmartContracts | 27 | 27 (100%) | 0 | Complet |
-| SemanticWeb | 18 | 16 (89%) | 2 (Setup + Bonus) | Complet |
-| Lean | 13 | 12 (92%) | 1 (Setup) | Complet |
-| Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
+| SemanticWeb | 18 | 16 (89%) | 2 (Setup + Legacy) | Complet |
+| Lean | 16 | 14 (88%) | 2 (Setup, Grothendieck) | Complet |
+| Planners | 14 | 12 (86%) | 2 (Setup, Legacy) | Complet |
 | Tweety | 10 | 10 (100%) | 0 | Complet |
 | Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-**Total** : 67/82 notebooks de contenu avec exercices (82%). Les notebooks sans exercices sont les notebooks de setup/configuration et le bonus SemanticWeb, ainsi que la série demo Argument Analysis.
+**Total** : 80/98 notebooks de contenu avec exercices (82%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy (RDF.Net, Fast-Downward-Legacy), le tribute Grothendieck (Lean-13), et la serie demo Argument Analysis (6 notebooks).
 
 ### Problemes restants
 
@@ -356,23 +517,88 @@ dotnet interactive jupyter install
 
 ---
 
+## Ponts cross-series
+
+Ces connexions entre series sont exploitees dans le curriculum EPITA IA Symbolique (demarrage 18/05/2026).
+
+### Lean <-> GameTheory (Choix social)
+
+| Concept Lean | Concept GameTheory | Notebooks |
+|-------------|-------------------|-----------|
+| Theoreme d'Arrow (preuve formelle) | Theorie du vote / Choix social | `Lean/social_choice_lean/Arrow.lean` <-> `GameTheory/16b-Social-Choice.ipynb` |
+| Theoreme de Sen (preuve formelle) | Impossibilite Pareto liberal | `Lean/social_choice_lean/Sen.lean` <-> `GameTheory/16c-Sen.ipynb` |
+| Valeur de Shapley (preuve formelle) | Coalitions, jeux cooperatifs | `Lean/social_choice_lean/Shapley.lean` <-> `GameTheory/16d-Shapley.ipynb` |
+
+### Lean <-> SmartContracts (Verification formelle)
+
+| Concept | Pont | Notebooks |
+|---------|------|-----------|
+| Theorie des types dependants | Verification formelle de contrats | `Lean/Lean-1-Setup.ipynb` (types) <-> `SmartContracts/04-Privacy-Cryptography/SC-14-Formal-Verification.ipynb` |
+| Preuves LLM-assistees | Contrats LLM-assistes | `Lean/Lean-8-Agentic-Proving.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb` |
+| `sorry` = axiome non prouve | Bugs de contrats non detectes | Concepts paralleles d'incompletude |
+
+### Tweety <-> Argument_Analysis (Argumentation)
+
+| Concept Tweety | Concept Argument_Analysis | Notebooks |
+|---------------|--------------------------|-----------|
+| Frameworks de Dung | Argumentation multi-agents | `Tweety/Tweety-5-Abstract-Argumentation.ipynb` <-> `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` |
+| ASPIC+ (argumentation structuree) | Analyse LLM d'arguments | `Tweety/Tweety-6-Structured-Argumentation.ipynb` <-> `Argument_Analysis/Argument_Analysis_3-Frameworks.ipynb` |
+| Dialogues d'agents | Debate multi-agent | `Tweety/Tweety-8-Agent-Dialogues.ipynb` <-> `Argument_Analysis/Argument_Analysis_4-MultiAgent.ipynb` |
+
+### SemanticWeb <-> SmartContracts (Decentralisation)
+
+| Concept | Pont | Notebooks |
+|---------|------|-----------|
+| Ontologies RDF/OWL | Gouvernance DAO (etat canonique) | `SemanticWeb/SW-6-OWL.ipynb` <-> `SmartContracts/01-Solidity-Foundation/SC-9-DAO-Governance.ipynb` |
+| GraphRAG | Indexation on-chain | `SemanticWeb/SW-12-GraphRAG.ipynb` <-> SmartContracts DeFi indexing |
+| SHACL (validation) | Smart contract verification | `SemanticWeb/SW-9-SHACL.ipynb` <-> `SmartContracts/04-Privacy-Cryptography/SC-14-Formal-Verification.ipynb` |
+
+### Planners <-> SmartContracts (Coordination)
+
+| Concept | Pont | Notebooks |
+|---------|------|-----------|
+| Planification multi-agent | MEV / auctions cross-chain | `Planners/03-Advanced/Planners-9-HTN.ipynb` <-> SmartContracts MEV |
+| CP-SAT (OR-Tools) | Optimisation gas/fees | `Planners/03-Advanced/Planners-7-OR-Tools.ipynb` <-> `SmartContracts/01-Solidity-Foundation/SC-8-Gas-Optimization.ipynb` |
+
+---
+
 ## Ressources
 
-### TweetyProject
-- Site officiel : https://tweetyproject.org/
-- GitHub : https://github.com/TweetyProjectTeam/TweetyProject
+### References academiques
 
-### Lean 4
-- Theorem Proving in Lean 4 : https://leanprover.github.io/theorem_proving_in_lean4/
-- Mathlib4 : https://leanprover-community.github.io/mathlib4_docs/
-- LeanDojo : https://leandojo.readthedocs.io/
+| Domaine | Reference | Couverture |
+|---------|-----------|------------|
+| IA Symbolique (general) | Russell & Norvig, *AIMA* 4e ed., ch. 7-12 | Recherche, logique, planification |
+| Theorie des jeux / choix social | Osborne & Rubinstein, *A Course in Game Theory* (1994) | GameTheory, Lean social choice |
+| Logiques formelles | Enderton, *A Mathematical Introduction to Logic* (2001) | Tweety, Lean |
+| Argumentation | Dung, "On the Acceptability of Arguments" (1995) | Tweety-5, Argument Analysis |
+| Argumentation structuree | Modgil & Prakken, "The ASPIC+ Framework" (2014) | Tweety-6 |
+| Revision de croyances | Alchourron, Gardenfors & Makinson, "On the Logic of Theory Change" (1985) | Tweety-4 |
+| Web semantique | Berners-Lee et al., "The Semantic Web", *Scientific American* (2001) | SemanticWeb |
+| RDF/SPARQL | W3C RDF 1.1 Primer, https://www.w3.org/TR/rdf11-primer/ | SemanticWeb |
+| Planification automatique | Ghallab, Nau & Traverso, *Automated Planning: Theory and Practice* (2004) | Planners |
+| Planification PDDL | Helmert, "The Fast Downward Planning System" (2006) | Planners-4 |
+| Lean 4 | de Moura & Ullrich, "The Lean 4 Theorem Prover" (2021) | Lean |
+| Mathlib4 | The Mathlib Community, "The Mathlib Library" (2020) | Lean-6 |
+| Smart contracts | Buterin, "Ethereum White Paper" (2014) | SmartContracts |
+| Verification formelle | Appel, "Verification of a Cryptographic Primitive: SHA-256" (2015) | SC-14 |
+| Zero-knowledge | Ben-Sasson et al., "Scalable Zero Knowledge" (2014) | SC-15 |
 
-### Autres
-- OR-Tools : https://developers.google.com/optimization
-- Z3 : https://github.com/Z3Prover/z3
-- dotNetRDF : https://dotnetrdf.org/
-- Fast Downward : https://www.fast-downward.org/
-- Solidity : https://docs.soliditylang.org/
+### Ressources en ligne
+
+| Ressource | URL |
+|-----------|-----|
+| TweetyProject | https://tweetyproject.org/ |
+| Lean 4 - Theorem Proving | https://leanprover.github.io/theorem_proving_in_lean4/ |
+| Mathlib4 docs | https://leanprover-community.github.io/mathlib4_docs/ |
+| LeanDojo | https://leandojo.readthedocs.io/ |
+| OR-Tools | https://developers.google.com/optimization |
+| Z3 Prover | https://github.com/Z3Prover/z3 |
+| dotNetRDF | https://dotnetrdf.org/ |
+| Fast Downward | https://www.fast-downward.org/ |
+| Solidity docs | https://docs.soliditylang.org/ |
+| W3C RDF 1.1 | https://www.w3.org/TR/rdf11-primer/ |
+| Foundry Book | https://book.getfoundry.sh/ |
 
 ---
 
@@ -383,4 +609,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-03-20
+**Derniere mise a jour** : 2026-05-29

@@ -56,8 +56,8 @@ Les images pleine-largeur utilisent le layout **`image-overlay`** (fond d'image 
 | S1 | Argumentation | `S1-argumentation/` | ~791 | 20 | Sessions avancees |
 | S2 | IA exploratoire/symbolique | `S2-ia-exploratoire-symbolique/` | ~1112 | 54 | Sessions avancees |
 | S3 | Acculturation IA | `S3-acculturation/` | ~2039 | 133 | Sessions avancees |
-| S4 | Trading algorithmique | `S4-trading-algorithmique/` | ~2761 | 15 | ESGF |
-| S4 | Trading exercices | `S4-trading-exercices/` | ~871 | 0 | ESGF |
+| S4 | Trading algorithmique | `S4-trading-algorithmique/` | ~2761 | 15 | Partner |
+| S4 | Trading exercices | `S4-trading-exercices/` | ~871 | 0 | Partner |
 
 Le decompte exact de slides se fait au runtime Slidev (les separateurs `---` incluent aussi les frontmatter locaux des layouts custom). Lancer le serveur pour voir le compteur pagine.
 
@@ -141,3 +141,46 @@ Regles de base pour les images et le layout :
 - **Slides "Questions?"** conservees comme pauses respiratoires entre sections
 - **PPTX-reference en `.gitignore` ou committe** selon le deck : les renders PNG servent a l'audit visuel
 - **Cross-references notebooks** : chaque deck termine ses sections par un lien vers le notebook Jupyter correspondant
+
+## Invariants Slidev (regression-prone)
+
+Bugs silencieux observes sur le parser Slidev — a respecter strictement pour eviter les regressions.
+
+### Frontmatter par slide : **pas de ligne vide** entre `---` et la cle `layout:`
+
+**Probleme** : une ligne vide entre le separateur `---` et `layout: <name>` casse le parser YAML. Slidev rend alors `layout: section` comme texte litteral dans le body et la slide apparait vide / cassee.
+
+**Forme correcte** :
+
+```markdown
+---
+layout: section
+---
+
+# Plan du cours
+
+...
+```
+
+**Forme cassee** (a ne JAMAIS faire) :
+
+```markdown
+---
+
+layout: section
+---
+```
+
+**Detection** : `grep -nP "^---$\s*\n\s*\nlayout:" slides/<deck>/slides.md` (multiline mode).
+
+**Incident** : 2026-05-17 deck `03-logique` slide 2 (TOC) avait cette regression — corrigee dans PR #1239 (cours EPITA TODAY).
+
+### Layout `image-overlay` (HARD, issue #221)
+
+Images pleine-largeur : layout `image-overlay` avec texte par-dessus, **JAMAIS** en colonne droite (`two-cols` avec image a droite). Convention confirmee 5+ fois.
+
+### Verification visuelle obligatoire avant merge
+
+- Lancer `npx slidev slides.md --port 30XX` localement
+- Capture Playwright `?clicks=99` sur les slides modifiees (post-animations)
+- Audit `<deck>/analysis/visual-audit-deck<NN>.md` mis a jour si regression detectee

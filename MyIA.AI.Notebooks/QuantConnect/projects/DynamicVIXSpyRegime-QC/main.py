@@ -14,7 +14,8 @@ from collections import deque
 class VolatilityHarvestML(QCAlgorithm):
 
     def Initialize(self):
-        self.SetStartDate(2008, 1, 1)
+        self.SetStartDate(2015, 1, 1)
+        self.set_end_date(2024, 12, 31)
         self.SetCash(100000)
 
         self.spy = self.AddEquity("SPY", Resolution.Daily).Symbol

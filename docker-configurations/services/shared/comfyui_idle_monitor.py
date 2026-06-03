@@ -63,6 +63,7 @@ class ComfyUIIdleMonitor:
 
         self._last_activity: Optional[float] = None
         self._last_check: Optional[float] = None
+        self._monitor_start_time: Optional[float] = None
         self._running = False
         self._monitor_thread: Optional[threading.Thread] = None
         self._unload_count = 0
@@ -91,15 +92,29 @@ class ComfyUIIdleMonitor:
                 timeout=10
             )
 
-            # Check for successful login (redirect to / or session cookie set)
-            if resp.status_code == 302 or resp.status_code == 200:
-                # Check if session cookie was set
-                if "AIOHTTP_SESSION" in self.session.cookies:
+            # Successful login: 302 redirect to "/" with session cookie
+            # Failed login: 302 redirect to "/login?wrong_password=1"
+            if resp.status_code == 302:
+                location = resp.headers.get("Location", "")
+                if location == "/":
+                    # Successful login redirects to root
                     self._logged_in = True
                     logger.info(f"Successfully logged in as {self.username}")
                     return True
-                # Also accept if we get redirected to /
-                if resp.status_code == 302 and resp.headers.get("Location") == "/":
+                elif "wrong_password" in location:
+                    logger.warning(f"Login failed: wrong password (redirect to {location})")
+                    return False
+                elif "AIOHTTP_SESSION" in self.session.cookies:
+                    # Fallback: session cookie set even with unexpected redirect
+                    self._logged_in = True
+                    logger.info(f"Logged in via session cookie as {self.username}")
+                    return True
+                else:
+                    logger.warning(f"Login redirect to unexpected location: {location}")
+                    return False
+
+            if resp.status_code == 200:
+                if "AIOHTTP_SESSION" in self.session.cookies:
                     self._logged_in = True
                     logger.info(f"Successfully logged in as {self.username}")
                     return True
@@ -113,6 +128,10 @@ class ComfyUIIdleMonitor:
 
     def _ensure_authenticated(self) -> bool:
         """Ensure we have a valid session, re-login if needed."""
+        # Bearer token auth: no session needed
+        if self.auth_token and not self.username and not self.password:
+            return True
+
         if not self.username or not self.password:
             return True  # No auth required
 
@@ -122,8 +141,11 @@ class ComfyUIIdleMonitor:
         return self.login()
 
     def _get_headers(self) -> dict:
-        """Get request headers."""
-        return {"Content-Type": "application/json"}
+        """Get request headers, including Bearer token if configured."""
+        headers = {"Content-Type": "application/json"}
+        if self.auth_token:
+            headers["Authorization"] = f"Bearer {self.auth_token}"
+        return headers
 
     def get_running_prompts(self) -> list:
         """Get list of currently running prompt IDs."""
@@ -249,22 +271,34 @@ class ComfyUIIdleMonitor:
         current_time = time.time()
         self._last_check = current_time
 
-        # Get last activity
-        last_activity = self.get_last_activity_time()
+        # If we recently unloaded, use that timestamp as the activity baseline
+        # to prevent re-unloading on stale history timestamps.
+        if self._monitor_start_time:
+            last_real_activity = self.get_last_activity_time()
+            # Use the most recent of: last real activity, or last unload time
+            if last_real_activity is not None:
+                last_activity = max(last_real_activity, self._monitor_start_time)
+            else:
+                last_activity = self._monitor_start_time
+        else:
+            last_activity = self.get_last_activity_time()
 
         if last_activity is None:
-            # No activity recorded yet
-            logger.debug("No activity recorded, skipping unload check")
+            logger.debug("No activity recorded and no start time, skipping check")
             return False
 
         self._last_activity = last_activity
         idle_time = current_time - last_activity
+        source = "since last unload" if last_activity == self._monitor_start_time else "since last prompt"
 
-        logger.debug(f"Idle time: {idle_time:.0f}s / {self.idle_timeout}s")
+        logger.info(f"Idle: {idle_time:.0f}s / {self.idle_timeout}s ({source}, {self.comfyui_url})")
 
         if idle_time >= self.idle_timeout:
             logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
-            return self.unload_models()
+            unloaded = self.unload_models()
+            if unloaded:
+                self._monitor_start_time = time.time()
+            return unloaded
 
         return False
 
@@ -293,6 +327,7 @@ class ComfyUIIdleMonitor:
             return
 
         self._running = True
+        self._monitor_start_time = time.time()
         self._monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
         self._monitor_thread.start()
         logger.info("ComfyUI Idle Monitor started")

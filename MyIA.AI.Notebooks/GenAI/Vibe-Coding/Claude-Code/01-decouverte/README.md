@@ -126,8 +126,8 @@ Le fichier CLAUDE.md est la "mémoire projet" de Claude Code :
 
 ## Ressources
 
-- [Guide d'installation complet](../../docs/claude-code/INSTALLATION-CLAUDE-CODE.md)
-- [Cheat-Sheet](../../docs/claude-code/CHEAT-SHEET.md)
+- [Guide d'installation complet](../docs/INSTALLATION-CLAUDE-CODE.md)
+- [Cheat-Sheet](../docs/CHEAT-SHEET.md)
 - [Documentation officielle](https://docs.anthropic.com/en/docs/claude-code)
 
 ## Exercices bonus

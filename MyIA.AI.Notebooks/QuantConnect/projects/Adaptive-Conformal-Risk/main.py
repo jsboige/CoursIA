@@ -13,7 +13,7 @@ class AdaptiveConformalRisk(QCAlgorithm):
     with guaranteed marginal coverage, dynamically adapting interval width
     based on recent prediction errors.
 
-    Core innovation from ECE student project (El Bakkali, Gr02):
+    Core innovations:
     - Online alpha adjustment: coverage violations widen intervals,
       excess coverage narrows them
     - Nonconformity-based position sizing: wider intervals = smaller
@@ -25,9 +25,6 @@ class AdaptiveConformalRisk(QCAlgorithm):
     - Sector-balanced universe (5 sectors, 15 assets)
     - Target volatility framework (15% annualized)
     - Monthly rebalancing with ACI-adjusted weights
-
-    Source: ECE student project (El Bakkali, Gr02), adapted for ESGF pool.
-    Issue #238 - Integrate ECE student concepts into QC strategies.
 
     Universe: 15 Large-Caps US (5 sectors)
     Benchmark: SectorMomentum (Sharpe 0.57)

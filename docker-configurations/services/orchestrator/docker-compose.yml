@@ -9,7 +9,7 @@ services:
     hostname: orchestrator
     
     ports:
-      - "${ORCHESTRATOR_PORT:-8090}:8090"
+      - "127.0.0.1:${ORCHESTRATOR_PORT:-8090}:8090"
     
     volumes:
       - type: bind
@@ -87,7 +87,7 @@ services:
               capabilities: [gpu]
     
     ports:
-      - "${FLUX_PORT:-8189}:8188"
+      - "127.0.0.1:${FLUX_PORT:-8189}:8188"
     
     volumes:
       - type: bind
@@ -160,7 +160,7 @@ services:
               capabilities: [gpu]
     
     ports:
-      - "${SD35_PORT:-8190}:8000"
+      - "127.0.0.1:${SD35_PORT:-8190}:8000"
     
     volumes:
       - type: bind
@@ -233,7 +233,7 @@ services:
               capabilities: [gpu]
     
     ports:
-      - "${COMFYUI_WORKFLOWS_PORT:-8191}:8188"
+      - "127.0.0.1:${COMFYUI_WORKFLOWS_PORT:-8191}:8188"
     
     volumes:
       - type: bind

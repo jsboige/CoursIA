@@ -1,0 +1,20 @@
+[
+  {
+    "tactic": "exact List.sorted_mergeSort",
+    "tactic_norm": "exact List.sorted_mergeSort",
+    "outcome": "success",
+    "error_category": "",
+    "error_excerpt": "",
+    "session_id": "09adc8d2",
+    "timestamp": "2026-05-12T00:54:21.106976"
+  },
+  {
+    "tactic": "exact List.Sorted (· ≤ ·) []",
+    "tactic_norm": "exact List.Sorted (· ≤ ·) []",
+    "outcome": "success",
+    "error_category": "",
+    "error_excerpt": "",
+    "session_id": "09adc8d2",
+    "timestamp": "2026-05-12T00:54:21.106976"
+  }
+]

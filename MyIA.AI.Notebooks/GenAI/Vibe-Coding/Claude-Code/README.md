@@ -154,12 +154,12 @@ Une serie de **5 notebooks Jupyter** pour apprendre et experimenter avec `claude
 | Document | Emplacement | Description |
 |----------|-------------|-------------|
 | **Quickstart OpenRouter** | [docs/OPENROUTER_SETUP.md](docs/OPENROUTER_SETUP.md) | 15 min, prise en main etape par etape |
-| **Introduction** | [docs/claude-code/INTRO-CLAUDE-CODE.md](../docs/claude-code/INTRO-CLAUDE-CODE.md) | Concepts et fonctionnalites |
-| **Installation** | [docs/claude-code/INSTALLATION-CLAUDE-CODE.md](../docs/claude-code/INSTALLATION-CLAUDE-CODE.md) | Guide complet avec OpenRouter |
-| **Modeles alternatifs** | [docs/claude-code/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter](../docs/claude-code/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter) | GLM-4.7, Qwen3 Coder via OpenRouter |
-| **Aide-memoire** | [docs/claude-code/CHEAT-SHEET.md](../docs/claude-code/CHEAT-SHEET.md) | Commandes essentielles |
-| **Concepts avances** | [docs/claude-code/CONCEPTS-AVANCES.md](../docs/claude-code/CONCEPTS-AVANCES.md) | Skills, Subagents, Hooks, MCP |
-| **Comparaison** | [docs/claude-code/COMPARAISON-CLAUDE-ROO.md](../docs/claude-code/COMPARAISON-CLAUDE-ROO.md) | Claude Code vs Roo Code |
+| **Introduction** | [INTRO-CLAUDE-CODE.md](docs/INTRO-CLAUDE-CODE.md) | Concepts et fonctionnalites |
+| **Installation** | [INSTALLATION-CLAUDE-CODE.md](docs/INSTALLATION-CLAUDE-CODE.md) | Guide complet avec OpenRouter |
+| **Modeles alternatifs** | [INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter](docs/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter) | GLM-4.7, Qwen3 Coder via OpenRouter |
+| **Aide-memoire** | [CHEAT-SHEET.md](docs/CHEAT-SHEET.md) | Commandes essentielles |
+| **Concepts avances** | [CONCEPTS-AVANCES.md](docs/CONCEPTS-AVANCES.md) | Skills, Subagents, Hooks, MCP |
+| **Comparaison** | [COMPARAISON-CLAUDE-ROO.md](../docs/COMPARAISON-CLAUDE-ROO.md) | Claude Code vs Roo Code |
 
 ### Documentation officielle
 
@@ -239,11 +239,11 @@ claude
 | Extension ne se connecte pas | Activer "Disable Login Prompt" dans les settings |
 | MCP timeout | Augmenter la variable `MCP_TIMEOUT` |
 
-**Guide complet** : [INSTALLATION-CLAUDE-CODE.md](../docs/claude-code/INSTALLATION-CLAUDE-CODE.md#résolution-de-problèmes)
+**Guide complet** : [INSTALLATION-CLAUDE-CODE.md](docs/INSTALLATION-CLAUDE-CODE.md#résolution-de-problèmes)
 
 ## Support
 
-- **Questions techniques** : Consultez la [documentation](../docs/claude-code/)
+- **Questions techniques** : Consultez la [documentation](docs/)
 - **Issues Claude Code** : [github.com/anthropics/claude-code/issues](https://github.com/anthropics/claude-code/issues)
 - **Formation ECE** : Contactez votre formateur
 

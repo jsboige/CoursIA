@@ -43,6 +43,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+# Register Papermill translators for non-Python kernels so parameter
+# translation doesn't crash even when we skip injection for lean4.
+try:
+    from papermill.translators import PapermillTranslators, PythonTranslator
+    _pm_translators = PapermillTranslators()
+    for _k in ('lean4', 'lean4-wsl', 'lean'):
+        if _k not in _pm_translators._translators:
+            _pm_translators.register(_k, PythonTranslator)
+except ImportError:
+    pass
+
 # Import base classes from notebook_helpers
 try:
     from notebook_helpers import (
@@ -192,23 +203,23 @@ class Colors:
         cls.CYAN = cls.MAGENTA = cls.BOLD = cls.END = ''
 
 
-def print_ok(msg: str):
+def print_ok(msg: str) -> None:
     print(f"{Colors.GREEN}[OK]{Colors.END} {msg}")
 
 
-def print_error(msg: str):
+def print_error(msg: str) -> None:
     print(f"{Colors.RED}[X]{Colors.END} {msg}")
 
 
-def print_warning(msg: str):
+def print_warning(msg: str) -> None:
     print(f"{Colors.YELLOW}[!]{Colors.END} {msg}")
 
 
-def print_info(msg: str):
+def print_info(msg: str) -> None:
     print(f"{Colors.CYAN}[i]{Colors.END} {msg}")
 
 
-def print_section(title: str):
+def print_section(title: str) -> None:
     print(f"\n{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}")
     print(f"{Colors.BOLD}{Colors.BLUE}{title:^60}{Colors.END}")
     print(f"{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}\n")
@@ -900,7 +911,7 @@ class EnvironmentChecker:
                 return True, "unknown"
         return False, ""
 
-    def check_python_package(self, pkg_name: str, import_name: str = None) -> Tuple[bool, str]:
+    def check_python_package(self, pkg_name: str, import_name: Optional[str] = None) -> Tuple[bool, str]:
         """Check if a Python package is installed"""
         if import_name is None:
             import_name = pkg_name.replace("-", "_")
@@ -1089,24 +1100,92 @@ class NotebookExecutor:
         if output_path is None:
             output_path = self.path.parent / f"{self.path.stem}_output.ipynb"
 
+        # Resolve to absolute paths before passing to papermill.
+        # Papermill changes cwd via --cwd, so relative input/output paths
+        # would break after the directory change.
+        abs_input = self.path.resolve()
+        abs_output = output_path.resolve()
+        abs_cwd = self.path.parent.resolve()
+
         # WSL-based kernels need longer startup
         start_timeout = 120 if 'wsl' in kernel or kernel == 'smartcontracts' else 60
+
+        # lean4 kernels need in-process Papermill (subprocess can't register translators)
+        is_lean_kernel = 'lean' in kernel.lower()
+        if is_lean_kernel:
+            try:
+                import papermill as pm
+                from papermill.translators import PapermillTranslators, PythonTranslator
+                _t = PapermillTranslators()
+                for _k in ('lean4', 'lean4-wsl', 'lean'):
+                    _t.register(_k, PythonTranslator)
+                pm.execute_notebook(
+                    str(self.path), str(output_path),
+                    kernel_name=kernel,
+                    start_timeout=start_timeout,
+                    cwd=str(self.path.parent)
+                )
+                execution_time = time.time() - start_time
+                return NotebookExecutionResult(
+                    path=str(self.path), success=True, kernel=kernel,
+                    execution_time=execution_time, message=f"SUCCESS (kernel={kernel}, in-process)"
+                )
+            except Exception as e:
+                execution_time = time.time() - start_time
+                return NotebookExecutionResult(
+                    path=str(self.path), success=False, kernel=kernel,
+                    execution_time=execution_time, message=f"FAILED: {e}"
+                )
+
         cmd = [
             sys.executable, "-m", "papermill",
-            str(self.path), str(output_path),
-            "--kernel", kernel, "--cwd", str(self.path.parent),
+            str(abs_input), str(abs_output),
+            "--kernel", kernel, "--cwd", str(abs_cwd),
             "--start-timeout", str(start_timeout),
         ]
+        # Build subprocess environment with BATCH_MODE propagated as env var
+        # (notebooks read os.getenv("BATCH_MODE"), not Papermill -p params)
+        sub_env = None
         if batch_mode:
             cmd.extend(["-p", "BATCH_MODE", "true"])
+            sub_env = {**os.environ, "BATCH_MODE": "true"}
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=sub_env)
             execution_time = time.time() - start_time
-            if result.returncode == 0:
+
+            # Papermill returns 0 even when cells fail — check output notebook
+            cell_errors = []
+            if abs_output.exists():
+                try:
+                    import json as _json
+                    with open(abs_output, encoding="utf-8") as _f:
+                        _nb = _json.load(_f)
+                    for _i, _c in enumerate(_nb.get("cells", [])):
+                        for _o in _c.get("outputs", []):
+                            if _o.get("output_type") == "error":
+                                cell_errors.append(f"Cell {_i}: {_o.get('ename')}: {_o.get('evalue', '')[:100]}")
+                except Exception:
+                    pass
+
+            if result.returncode == 0 and not cell_errors:
+                # Copy executed output back to source notebook
+                if abs_output.exists() and abs_output != abs_input:
+                    import shutil
+                    shutil.copy2(str(abs_output), str(abs_input))
                 return NotebookExecutionResult(
                     path=str(self.path), success=True, kernel=kernel,
                     execution_time=execution_time, message=f"SUCCESS (kernel={kernel})"
+                )
+            elif result.returncode == 0 and cell_errors:
+                # Still copy so user can see which cells failed
+                if abs_output.exists() and abs_output != abs_input:
+                    import shutil
+                    shutil.copy2(str(abs_output), str(abs_input))
+                return NotebookExecutionResult(
+                    path=str(self.path), success=False, kernel=kernel,
+                    execution_time=execution_time,
+                    message=f"CELL ERRORS: {'; '.join(cell_errors[:5])}"
                 )
             else:
                 return NotebookExecutionResult(
@@ -1134,6 +1213,14 @@ class NotebookExecutor:
             result = self._base_executor.execute_notebook_cell_by_cell(
                 str(self.path), timeout_per_cell=timeout
             )
+            msg = (
+                f"Executed {result.executed_cells} cells: "
+                f"{result.executed_cells - result.failed_cells} OK, "
+                f"{result.failed_cells} errors"
+            )
+            if result.errors:
+                msg += f" | Details: {'; '.join(result.errors[:3])}"
+
             return NotebookExecutionResult(
                 path=str(self.path),
                 success=result.success,
@@ -1143,7 +1230,7 @@ class NotebookExecutor:
                 success_cells=result.executed_cells - result.failed_cells,
                 error_cells=result.failed_cells,
                 execution_time=result.duration,
-                message=f"Executed {result.executed_cells} cells: {result.executed_cells - result.failed_cells} OK, {result.failed_cells} errors"
+                message=msg,
             )
 
         # Fallback: minimal implementation
@@ -1172,7 +1259,7 @@ class NotebookExecutor:
 # NOTEBOOK DISCOVERER
 # =============================================================================
 
-def discover_notebooks(target: str, repo_root: Path = None,
+def discover_notebooks(target: str, repo_root: Optional[Path] = None,
                        python_only: bool = False, dotnet_only: bool = False,
                        recursive: bool = True) -> List[Path]:
     """Discover notebooks based on target specification"""

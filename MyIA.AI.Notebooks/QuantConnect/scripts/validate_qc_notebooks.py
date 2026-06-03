@@ -53,6 +53,22 @@ class NotebookValidator:
         'using QuantConnect.Algorithm;'
     ]
 
+    # Patterns théâtraux interdits — code qui simule l'exécution sans rien faire.
+    # Origine : audit 2026-05-05 ai-01, PR #588 + #597 ont introduit ces patterns.
+    # Voir CLAUDE.md règle C.2 (notebooks committés AVEC outputs réels).
+    THEATRICAL_PATTERNS = [
+        # Le print du nombre de caractères de l'algo encodé en string n'est PAS une exécution.
+        ('print.*Algorithme charge', "Métadonnée du qc_code stringifié — n'est pas une exécution réelle"),
+        ('print.*Lignes de code', "Métadonnée du qc_code stringifié — n'est pas une exécution réelle"),
+        # Le print du workflow MCP comme texte n'est pas une exécution.
+        ('print.*Workflow de deploiement', "Workflow MCP imprimé comme texte — pas d'exécution réelle"),
+        # Les "résultats hardcodés à déployer" ne sont pas des résultats réels.
+        ('print.*Placeholder pour les resultats', "Résultats hardcodés en placeholder — pas un backtest réel"),
+        ('a deployer via MCP', "Placeholder hardcodé prétendant être un résultat de backtest"),
+        # Le print "Resultats sync depuis QC Cloud" sans fetch réel est mensonger.
+        ('Resultats sync depuis QC Cloud', "Prétend synchroniser depuis QC Cloud sans fetch réel"),
+    ]
+
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
         self.errors = []
@@ -107,6 +123,7 @@ class NotebookValidator:
         # Validations
         self._validate_metadata(nb, language, fix)
         self._validate_cells(nb, language, fix)
+        self._validate_no_theatrical_outputs(nb)
         self._validate_structure(nb, language)
         self._validate_naming(notebook_path, language)
 
@@ -197,7 +214,13 @@ class NotebookValidator:
         code_cells = [c for c in cells if c.get('cell_type') == 'code']
 
         if len(code_cells) == 0:
-            self.errors.append("Aucune cellule de code trouvée")
+            # Notebooks markdown-only légitimes : référence vers QC Cloud projet exécuté
+            # ailleurs (cas Cloud-XX). On veut un warning pas un error : le validator
+            # vérifie que le notebook ne ment pas, pas qu'il a forcément du code.
+            self.warnings.append(
+                "Notebook markdown-only (aucune cellule de code) — vérifier que c'est intentionnel "
+                "(ex: notebook qui documente un backtest exécuté sur QC Cloud)"
+            )
             return
 
         # Vérifier imports/using
@@ -225,6 +248,30 @@ class NotebookValidator:
                 f"{len(executed_cells)} cellules avec outputs (notebook exécuté). "
                 "Recommandé : nettoyer avant commit"
             )
+
+    def _validate_no_theatrical_outputs(self, nb: dict):
+        """Détecte les patterns d'outputs théâtraux (print de métadonnées prétendant être une exécution).
+
+        Patterns interdits depuis l'audit 2026-05-05 :
+        - print du len(qc_code) prétendant que charger une string = exécuter l'algo
+        - print du workflow MCP comme texte sans appel réel
+        - print de "résultats" hardcodés sans backtest réel
+        - print "Resultats sync depuis QC Cloud projet XXXX" sans fetch effectif
+
+        Ces patterns ont été introduits par PR #588 + #597 et trompent les agents de validation
+        car la cellule a un output non-vide. Ils transforment le notebook en théâtre.
+        """
+        for idx, cell in enumerate(nb.get('cells', [])):
+            if cell.get('cell_type') != 'code':
+                continue
+            source = ''.join(cell.get('source', []))
+            for pattern, reason in self.THEATRICAL_PATTERNS:
+                if re.search(pattern, source):
+                    self.errors.append(
+                        f"Cell {idx}: pattern théâtral détecté ('{pattern}') — {reason}. "
+                        f"Soit exécuter le notebook réellement, soit retirer la cellule menteuse."
+                    )
+                    break
 
     def _validate_structure(self, nb: dict, language: str):
         """Valider structure générale"""
@@ -257,6 +304,221 @@ class NotebookValidator:
                 f"Nom fichier non conforme : {filename}, "
                 f"attendu : {prefix}XX-Description.ipynb"
             )
+
+
+class ResearchNotebookValidator:
+    """Validates QC project research notebooks per Issue #756 Phase D.
+
+    Checks:
+    1. Research notebook present in project directory
+    2. Executed (>30% code cells with outputs)
+    3. No stub copy-paste detected (identical source across cells)
+    4. Required sections present (Exploration, Iterations, Calibration/Conclusion)
+    5. Real QuantBook usage (qb = QuantBook() in code, not just markdown mention)
+    """
+
+    MIN_OUTPUT_RATIO = 0.30
+    REQUIRED_SECTIONS = [
+        (r'explor|charg.*donn|data.*load|history', 'Exploration/Data Loading'),
+        (r'it.rat|grid.?search|walk.?forward|backtest.*multi', 'Iterations/Grid Search'),
+        (r'calibrat|conclusion|recommand|résultat.*final|synth.se', 'Calibration/Conclusion'),
+    ]
+
+    STUB_PATTERNS = [
+        r'^\s*pass\s*$',
+        r'^\s*print\(["\']Exercice',
+        r'^\s*# TODO',
+        r'^\s*raise NotImplementedError',
+    ]
+
+    def __init__(self, verbose: bool = False):
+        self.verbose = verbose
+        self.errors = []
+        self.warnings = []
+
+    def log(self, message: str, level: str = 'INFO'):
+        if self.verbose or level in ('ERROR', 'WARNING'):
+            prefix = {'INFO': '✓', 'WARNING': '⚠', 'ERROR': '✗'}.get(level, ' ')
+            print(f"{prefix} {message}")
+
+    def validate_project(self, project_dir: Path) -> Tuple[bool, List[str], List[str]]:
+        """Validate research notebook(s) in a QC project directory.
+
+        Returns (is_valid, errors, warnings).
+        """
+        self.errors = []
+        self.warnings = []
+
+        if not project_dir.is_dir():
+            self.errors.append(f"Not a directory: {project_dir}")
+            return False, self.errors, self.warnings
+
+        # Find research notebooks
+        research_nbs = self._find_research_notebooks(project_dir)
+
+        if not research_nbs:
+            has_main = (project_dir / "main.py").exists()
+            if has_main:
+                self.warnings.append(
+                    f"Project {project_dir.name} has main.py but no research notebook"
+                )
+            return len(self.errors) == 0, self.errors, self.warnings
+
+        for nb_path in research_nbs:
+            self._validate_single_notebook(nb_path, project_dir)
+
+        return len(self.errors) == 0, self.errors, self.warnings
+
+    def _find_research_notebooks(self, project_dir: Path) -> List[Path]:
+        """Find research notebook files in project directory."""
+        patterns = ["research*.ipynb", "quantbook*.ipynb", "*_research.ipynb"]
+        found = []
+        for pattern in patterns:
+            found.extend(project_dir.glob(pattern))
+        return sorted(set(found))
+
+    def _validate_single_notebook(self, nb_path: Path, project_dir: Path):
+        """Run all research notebook checks on a single notebook."""
+        self.log(f"Validating research notebook: {nb_path.name}")
+
+        try:
+            with open(nb_path, "r", encoding="utf-8") as f:
+                nb = json.load(f)
+        except (json.JSONDecodeError, Exception) as e:
+            self.errors.append(f"{nb_path.name}: JSON error: {e}")
+            return
+
+        cells = nb.get("cells", [])
+        code_cells = [c for c in cells if c.get("cell_type") == "code"]
+
+        if not code_cells:
+            self.errors.append(f"{nb_path.name}: No code cells found")
+            return
+
+        self._check_execution(nb_path, code_cells)
+        self._check_no_stub_copy_paste(nb_path, code_cells)
+        self._check_sections(nb_path, cells)
+        self._check_quantbook_real(nb_path, code_cells)
+
+    def _check_execution(self, nb_path: Path, code_cells: List[dict]):
+        """Check that >30% of code cells have outputs."""
+        executed = [c for c in code_cells if c.get("outputs")]
+        ratio = len(executed) / len(code_cells) if code_cells else 0
+
+        if ratio == 0:
+            self.errors.append(
+                f"{nb_path.name}: 0% code cells executed ({len(code_cells)} cells) "
+                "- notebook must be executed via QC Cloud"
+            )
+        elif ratio < self.MIN_OUTPUT_RATIO:
+            self.errors.append(
+                f"{nb_path.name}: {ratio:.0%} code cells executed "
+                f"({len(executed)}/{len(code_cells)}), "
+                f"minimum {self.MIN_OUTPUT_RATIO:.0%} required"
+            )
+        else:
+            self.log(f"{nb_path.name}: {ratio:.0%} executed ({len(executed)}/{len(code_cells)})")
+
+    def _check_no_stub_copy_paste(self, nb_path: Path, code_cells: List[dict]):
+        """Detect identical code cells (copy-paste stub detection)."""
+        sources = []
+        for c in code_cells:
+            src = "".join(c.get("source", [])).strip()
+            if src:
+                sources.append(src)
+
+        if len(sources) < 2:
+            return
+
+        seen = {}
+        for i, src in enumerate(sources):
+            key = src[:200]
+            if key in seen:
+                self.warnings.append(
+                    f"{nb_path.name}: Cellules {seen[key]} et {i} "
+                    "ont un source identique (copy-paste suspect)"
+                )
+            else:
+                seen[key] = i
+
+    def _check_sections(self, nb_path: Path, cells: List[dict]):
+        """Check required research sections are present."""
+        all_text = ""
+        for c in cells:
+            src = "".join(c.get("source", []))
+            all_text += src + "\n"
+
+        all_text_lower = all_text.lower()
+
+        for pattern, section_name in self.REQUIRED_SECTIONS:
+            if re.search(pattern, all_text_lower):
+                self.log(f"{nb_path.name}: Section '{section_name}' found")
+            else:
+                self.warnings.append(
+                    f"{nb_path.name}: Section '{section_name}' not found "
+                    f"(pattern: {pattern})"
+                )
+
+    def _check_quantbook_real(self, nb_path: Path, code_cells: List[dict]):
+        """Check that QuantBook is actually instantiated in code (not just markdown)."""
+        has_qb_code = any(
+            "QuantBook()" in "".join(c.get("source", []))
+            for c in code_cells
+        )
+
+        if not has_qb_code:
+            # Check if it's a C# project (no QuantBook expected)
+            main_py = nb_path.parent / "main.py"
+            main_cs = nb_path.parent / "Main.cs"
+            if main_cs.exists() and not main_py.exists():
+                self.log(f"{nb_path.name}: C# project, QuantBook check skipped")
+                return
+
+            self.warnings.append(
+                f"{nb_path.name}: No QuantBook() instantiation found in code cells"
+            )
+        else:
+            self.log(f"{nb_path.name}: QuantBook() instantiation found")
+
+
+def validate_projects(
+    projects_dir: Path, verbose: bool = False
+) -> Dict[str, any]:
+    """Validate research notebooks across all QC projects.
+
+    Returns dict with total/valid/invalid counts and per-project results.
+    """
+    validator = ResearchNotebookValidator(verbose=verbose)
+    results = {"total": 0, "valid": 0, "invalid": 0, "results": []}
+
+    if not projects_dir.is_dir():
+        print(f"Not a directory: {projects_dir}")
+        return results
+
+    project_dirs = sorted(
+        d for d in projects_dir.iterdir()
+        if d.is_dir() and not d.name.startswith("_")
+    )
+
+    for proj_dir in project_dirs:
+        has_nb = any(proj_dir.glob("*.ipynb"))
+        if not has_nb:
+            continue
+
+        results["total"] += 1
+        is_valid, errors, warnings = validator.validate_project(proj_dir)
+        results["results"].append({
+            "project": proj_dir.name,
+            "valid": is_valid,
+            "errors": errors,
+            "warnings": warnings,
+        })
+        if is_valid:
+            results["valid"] += 1
+        else:
+            results["invalid"] += 1
+
+    return results
 
 
 def validate_directory(directory: Path, quick: bool = False, fix: bool = False,
@@ -349,6 +611,8 @@ def main():
     parser.add_argument('--verbose', action='store_true', help='Affichage détaillé')
     parser.add_argument('--python-only', action='store_true', help='Valider uniquement Python')
     parser.add_argument('--csharp-only', action='store_true', help='Valider uniquement C#')
+    parser.add_argument('--research', action='store_true',
+                        help='Validate research notebooks in QC projects')
 
     args = parser.parse_args()
 
@@ -363,37 +627,67 @@ def main():
     print("QuantConnect Notebooks Validator")
     print("=" * 70)
     print(f"Chemin : {path}")
-    print(f"Mode : {'Quick' if args.quick else 'Full'}")
+    print(f"Mode : {'Research' if args.research else 'Quick' if args.quick else 'Full'}")
     print(f"Fix : {'Enabled' if args.fix else 'Disabled'}")
     print(f"Verbose : {'Yes' if args.verbose else 'No'}")
     print("=" * 70)
     print()
 
-    # Valider
-    results = validate_directory(
-        path,
-        quick=args.quick,
-        fix=args.fix,
-        verbose=args.verbose,
-        python_only=args.python_only,
-        csharp_only=args.csharp_only
-    )
+    if args.research:
+        # Research notebook validation mode
+        projects_dir = path
+        if (path / "projects").is_dir():
+            projects_dir = path / "projects"
 
-    # Résumé
-    print()
-    print("=" * 70)
-    print("Résumé")
-    print("=" * 70)
-    print(f"Total notebooks : {results['total']}")
-    print(f"✓ Valides : {results['valid']}")
-    print(f"✗ Invalides : {results['invalid']}")
+        results = validate_projects(projects_dir, verbose=args.verbose)
 
-    if results['total'] > 0:
-        success_rate = (results['valid'] / results['total']) * 100
-        print(f"Taux de succès : {success_rate:.1f}%")
+        print()
+        print("=" * 70)
+        print("Research Notebooks Summary")
+        print("=" * 70)
+        print(f"Projects with notebooks : {results['total']}")
+        print(f"Valid : {results['valid']}")
+        print(f"Invalid : {results['invalid']}")
 
-    # Exit code
-    sys.exit(0 if results['invalid'] == 0 else 1)
+        if results['total'] > 0:
+            for r in results['results']:
+                status = "PASS" if r['valid'] else "FAIL"
+                print(f"  [{status}] {r['project']}")
+                for err in r['errors']:
+                    print(f"    ERROR: {err}")
+                if args.verbose:
+                    for warn in r['warnings']:
+                        print(f"    WARN: {warn}")
+
+            success_rate = (results['valid'] / results['total']) * 100
+            print(f"\nSuccess rate : {success_rate:.1f}%")
+
+        sys.exit(0 if results['invalid'] == 0 else 1)
+    else:
+        # Standard notebook validation
+        results = validate_directory(
+            path,
+            quick=args.quick,
+            fix=args.fix,
+            verbose=args.verbose,
+            python_only=args.python_only,
+            csharp_only=args.csharp_only
+        )
+
+        # Résumé
+        print()
+        print("=" * 70)
+        print("Résumé")
+        print("=" * 70)
+        print(f"Total notebooks : {results['total']}")
+        print(f"✓ Valides : {results['valid']}")
+        print(f"✗ Invalides : {results['invalid']}")
+
+        if results['total'] > 0:
+            success_rate = (results['valid'] / results['total']) * 100
+            print(f"Taux de succès : {success_rate:.1f}%")
+
+        sys.exit(0 if results['invalid'] == 0 else 1)
 
 
 if __name__ == '__main__':

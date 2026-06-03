@@ -330,13 +330,11 @@ Le notebook contient un template workflow `workflow_exercice` avec:
 ### Contact Formation
 
 - **Email**: support-formation@myia.io
-- **Documentation Projet**: [`docs/suivis/genai-image/phase-20-notebook-qwen/`](../../../docs/suivis/genai-image/phase-20-notebook-qwen/)
+- **Documentation GenAI** : [Services et architecture GenAI](../../../../docs/genai-services.md)
 
 ### Issues Connues
 
-Consultez les rapports de tests:
-- **Validation Notebook**: [`2025-10-20_20_07_resultats-tests-fonctionnels.md`](../../../docs/suivis/genai-image/phase-20-notebook-qwen/2025-10-20_20_07_resultats-tests-fonctionnels.md)
-- **Checkpoint Qualité**: [`2025-10-20_20_08_checkpoint-sddd-validation.md`](../../../docs/suivis/genai-image/phase-20-notebook-qwen/2025-10-20_20_08_checkpoint-sddd-validation.md)
+Consultez les rapports de tests dans les [archives GenAI](../../../../docs/genai-services.md).
 
 ---
 

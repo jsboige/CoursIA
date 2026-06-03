@@ -212,7 +212,7 @@ async def generate_music(request: GenerateRequest):
 
     try:
         # Generate using transformers
-        inputs = processor(
+        inputs = processor.tokenizer(
             [request.prompt],
             padding=True,
             return_tensors="pt"
@@ -231,9 +231,9 @@ async def generate_music(request: GenerateRequest):
                 generator=generator
             )
 
-        # Get audio data
-        audio = audio_values.audios[0].cpu().numpy()
-        sample_rate = 32000  # MusicGen default sample rate
+        # Get audio data — generate() returns tensor (batch, channels, samples)
+        audio = audio_values[0, 0].cpu().numpy()
+        sample_rate = musicgen.config.audio_encoder.sampling_rate
 
         # Normalize
         max_val = np.max(np.abs(audio))

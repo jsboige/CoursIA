@@ -3,9 +3,13 @@ services:
     image: python:3.11
     container_name: comfyui-qwen
     hostname: comfyui-qwen
+    user: "1000:1000"
     
     deploy:
       resources:
+        limits:
+          cpus: '4'
+          memory: 12G
         reservations:
           devices:
             - driver: nvidia
@@ -13,7 +17,7 @@ services:
               capabilities: [gpu]
     
     ports:
-      - "${COMFYUI_PORT:-8188}:8188"
+      - "127.0.0.1:${COMFYUI_PORT:-8188}:8188"
     
     volumes:
       - type: bind
@@ -102,7 +106,7 @@ services:
       - CHECK_INTERVAL=${CHECK_INTERVAL:-60}
       - COMFYUI_AUTH_TOKEN=${COMFYUI_RAW_TOKEN}
       - COMFYUI_USERNAME=${COMFYUI_USERNAME:-admin}
-      - COMFYUI_PASSWORD=${COMFYUI_RAW_TOKEN}
+      - COMFYUI_PASSWORD=${COMFYUI_PASSWORD}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - TZ=${TZ:-Europe/Paris}
 

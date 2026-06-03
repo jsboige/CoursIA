@@ -180,13 +180,10 @@ class HMMKMeansVoting(QCAlgorithm):
     Crisis circuit breaker: 5d vol > 25% -> force bear.
     Features: returns, vol20, mom60, vol_ratio (MAD winsorized).
     Universe: SPY, TLT, IEF, GLD, DJP
-
-    Source: ECE student project (Brusset, Gr01 H.4), adapted for ESGF pool.
-    Issue #238 - Integrate ECE student concepts into QC strategies.
     """
 
     def initialize(self):
-        self.set_start_date(2010, 1, 1)
+        self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash(100_000)
         self.set_brokerage_model(

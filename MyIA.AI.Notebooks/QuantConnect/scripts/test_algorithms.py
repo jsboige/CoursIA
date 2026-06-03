@@ -282,15 +282,15 @@ class AlgorithmTester:
     <meta charset="utf-8">
     <title>QuantConnect Algorithms Test Report</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #0066cc; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #0066cc; color: white; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
-        .success { color: green; font-weight: bold; }
-        .failed { color: red; font-weight: bold; }
-        .metric { text-align: right; }
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        h1 {{ color: #0066cc; }}
+        table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
+        th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+        th {{ background-color: #0066cc; color: white; }}
+        tr:nth-child(even) {{ background-color: #f2f2f2; }}
+        .success {{ color: green; font-weight: bold; }}
+        .failed {{ color: red; font-weight: bold; }}
+        .metric {{ text-align: right; }}
     </style>
 </head>
 <body>
@@ -325,9 +325,9 @@ class AlgorithmTester:
                 <td>{algo_name}</td>
                 <td>{result['language']}</td>
                 <td class="{status_class}">{status.upper()}</td>
-                <td class="metric">{metrics.get('sharpe_ratio', 'N/A'):.2f if isinstance(metrics.get('sharpe_ratio'), (int, float)) else 'N/A'}</td>
-                <td class="metric">{metrics.get('total_return', 'N/A'):.2%} if isinstance(metrics.get('total_return'), (int, float)) else 'N/A'}</td>
-                <td class="metric">{metrics.get('max_drawdown', 'N/A'):.2%} if isinstance(metrics.get('max_drawdown'), (int, float)) else 'N/A'}</td>
+                <td class="metric">{f"{metrics.get('sharpe_ratio'):.2f}" if isinstance(metrics.get('sharpe_ratio'), (int, float)) else 'N/A'}</td>
+                <td class="metric">{metrics.get('total_return', 'N/A') if not isinstance(metrics.get('total_return'), (int, float)) else f"{metrics.get('total_return'):.2%}"}</td>
+                <td class="metric">{metrics.get('max_drawdown', 'N/A') if not isinstance(metrics.get('max_drawdown'), (int, float)) else f"{metrics.get('max_drawdown'):.2%}"}</td>
                 <td class="metric">{metrics.get('trades', 'N/A')}</td>
                 <td class="metric">{result.get('duration', 0):.1f}</td>
             </tr>

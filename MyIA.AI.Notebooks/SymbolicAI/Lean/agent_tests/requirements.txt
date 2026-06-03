@@ -1,0 +1,25 @@
+# Multi-agent Lean 4 prover (agent_tests/) — Python deps
+#
+# Install (recommandé : env Conda dédié) :
+#   conda create -n lean-prover python=3.11 -y
+#   conda activate lean-prover
+#   pip install -r requirements.txt
+#
+# Ou bien dans un env existant compatible (Python 3.10+) :
+#   "C:/Users/MYIA/miniconda3/envs/coursia-ml-training/python.exe" -m pip install -r requirements.txt
+#
+# Prerequis externe : Lean 4 + lake (via elan) — voir docs/quantconnect.md / .claude/rules/wsl-kernels.md
+
+# Microsoft Agent Framework (graph workflow + Agent abstraction)
+# 1.3.0+ requis pour OpenAIChatCompletionClient avec providers externes
+agent-framework-openai>=1.3.0,<2.0.0
+
+# Providers externes via OpenAI-compatible endpoint
+openai>=2.0.0
+
+# Configuration via .env (PROVIDER=zai|openrouter|local|deepseek|...)
+python-dotenv>=1.0.0
+
+# Test runner
+pytest>=8.0.0
+pytest-asyncio>=0.23.0

@@ -16,7 +16,7 @@ class MarkovRegimeDetection(QCAlgorithm):
     Reference: Hands-On AI Trading with Python, QuantConnect, and AWS
     Chapter 06 - Applied Machine Learning, Example 04
 
-    Version 1.1 - ECE Item 4 improvements (Maisonnave concepts):
+    Version 1.1 improvements:
     - Anti-micro-rebalancing threshold: skip trades when position delta < 5%
     - Causal forward-filter: explicit look-ahead guard in regime detection
     - Extended end date to 2026
@@ -27,9 +27,6 @@ class MarkovRegimeDetection(QCAlgorithm):
     - Constant GLD hedge (10%)
     - Confirmation filter: only switch when probability > 55%
     - Sharpe 0.408 on 2015-2024 backtest
-
-    Source: ECE student concepts (Maisonnave, Gr01 H.4b), adapted for ESGF pool.
-    Issue #238 - Integrate ECE student concepts into QC strategies.
 
     How it works:
     1. Collect trailing daily returns of SPY
@@ -63,7 +60,7 @@ class MarkovRegimeDetection(QCAlgorithm):
         self._equity_weight = 0.80  # Max allocation to SPY or TLT
         self._confirmation_threshold = 0.55
 
-        # Anti-micro-rebalancing threshold (Maisonnave concept)
+        # Anti-micro-rebalancing threshold
         self._rebalance_threshold = 0.05  # Skip trades when position delta < 5%
 
         # Trailing daily returns series
@@ -132,8 +129,8 @@ class MarkovRegimeDetection(QCAlgorithm):
             regime = smoothed_probs.values.argmax(axis=1)[-1]
 
             # Plot regime probability for visualization
-            self.plot('Regime', 'Low Vol Probability', prob_low_vol)
-            self.plot('Regime', 'Volatility Class', regime)
+            self.plot('Regime', 'Low Vol Probability', float(prob_low_vol))
+            self.plot('Regime', 'Volatility Class', int(regime))
 
             # Confirmation filter: only rebalance when probability is confident
             max_prob = max(prob_low_vol, 1 - prob_low_vol)
