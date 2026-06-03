@@ -573,32 +573,116 @@ the SW sub-quadrant for `nw`, NE/SW/SE wrap analogously). Composing twice,
 To recover `c.toCellsAux 0 0` from `(padCenter2 c).toCellsAux _ _`,
 the calling offset must therefore be `-3·2^(k-1)` on both axes. -/
 
+/-- (helper) Empty `MacroCell`s contribute no live cells to the enumeration.
+    By induction on the level: at level 0 we have `deadLeaf = leaf false`,
+    which `toCellsAux` maps to `[]`; at level `n+1` the four sub-quadrants
+    each enumerate to `[]` by the IH, and the concatenation is `[]`. -/
+private theorem emptyOfLevel_toCellsAux_eq_nil (n : Nat) (r0 c0 : Int) :
+    (MacroCell.emptyOfLevel n).toCellsAux r0 c0 = [] := by
+  induction n generalizing r0 c0 with
+  | zero => rfl
+  | succ n ih =>
+    simp only [MacroCell.emptyOfLevel, MacroCell.toCellsAux, ih,
+               List.append_nil, List.nil_append]
+
+/-- (helper) `(emptyOfLevel n).level = n` — induction over `n`. -/
+private theorem emptyOfLevel_level (n : Nat) : (MacroCell.emptyOfLevel n).level = n := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    show 1 + (MacroCell.emptyOfLevel n).level = n + 1
+    rw [ih]; omega
+
+/-- (helper) `padToLevelPlus1` applied to a node-typed `MacroCell` of level
+    `1+nw.level` shifts every enumerated cell by `+2^(nw.level)` on both axes.
+
+    By definition of `padToLevelPlus1`, the input `node nw ne sw se` becomes
+    `node Q1 Q2 Q3 Q4` where each Qi is a `node` placing the original cell in
+    one quadrant (NW for nw, NE for ne, etc.) and `emptyOfLevel nw.level` in
+    the others. Empty cells contribute `[]` via `emptyOfLevel_toCellsAux_eq_nil`,
+    so only the original cells survive — shifted by `2^nw.level` per axis
+    (the inner-quadrant offset). -/
+private theorem padToLevelPlus1_toCellsAux_node
+    (nw ne sw se : MacroCell) (r0 c0 : Int) :
+    (padToLevelPlus1 (MacroCell.node nw ne sw se)).toCellsAux r0 c0
+      = (MacroCell.node nw ne sw se).toCellsAux
+          (r0 + ((2 ^ nw.level : Nat) : Int))
+          (c0 + ((2 ^ nw.level : Nat) : Int)) := by
+  have h2s : ((2 ^ (1 + nw.level) : Nat) : Int)
+           = ((2 ^ nw.level : Nat) : Int) + ((2 ^ nw.level : Nat) : Int) := by
+    push_cast
+    rw [Nat.add_comm 1 nw.level, pow_succ]
+    ring
+  simp only [padToLevelPlus1, MacroCell.toCellsAux, MacroCell.level,
+             emptyOfLevel_level, emptyOfLevel_toCellsAux_eq_nil,
+             List.nil_append, List.append_nil, h2s, ← Int.add_assoc]
+
 /-- The cells of `padCenter2 c` viewed from the corrected center offset
     equal the cells of `c` viewed from origin. The negative offset
     `-(3·2^(k-1))` exactly cancels the cumulative shift introduced by
     the two `padToLevelPlus1` applications.
 
-    **Statement correction (this commit)**: the previous version used
+    **Statement correction (#2197)**: the previous version used
     `center_off = (2^k, 2^k)`, which is incorrect — it would only cancel
     a shift of `-2^k`, but the actual shift introduced by `padCenter2`
     is `+3·2^(k-1)`. Verified empirically below on the 2×2 block witness
     (`padCenter2_correct_block_level1`).
 
-    **Proof strategy** (P3, difficulty: structural):
-    Induction on `c` is awkward because `padToLevelPlus1` matches on the
-    structure of the input (only nodes get padded). A direct unfolding
-    of `padCenter2`, `toCellsAux`, and the offset arithmetic at each
-    quadrant (NW/NE/SW/SE) should close the equality. The hypothesis
-    `1 ≤ c.level` rules out the degenerate leaf case where `padCenter2`
-    is the identity. -/
+    **Proof**: case-split on `c`. The leaf case contradicts `hk : 1 ≤ c.level`
+    (leaves have level 0). For the node case, apply `padToLevelPlus1_toCellsAux_node`
+    twice (the level after one application becomes `1 + nw.level + 1`, so the second
+    shift is `2^(1 + nw.level) = 2 · 2^nw.level`). The cumulative shift is
+    `2^nw.level + 2·2^nw.level = 3·2^nw.level = 3·2^(c.level - 1)`, which the
+    `center_off = -(3·2^(c.level - 1))` exactly cancels. -/
 theorem padCenter2_correct (c : MacroCell) (hk : 1 ≤ c.level) :
     let k := c.level
     let padded := padCenter2 c
     let center_off : Int := -(3 * 2 ^ (k - 1) : Int)
     padded.toCellsAux center_off center_off = c.toCellsAux 0 0 := by
-  -- P3 TARGET: structural correctness of padCenter2 with corrected offset.
-  -- The hypothesis `hk` excludes the trivial leaf case.
-  sorry
+  match c, hk with
+  | MacroCell.leaf _, hk =>
+    -- Leaf level is 0; contradiction with 1 ≤ c.level.
+    simp [MacroCell.level] at hk
+  | MacroCell.node nw ne sw se, _ =>
+    -- c.level = 1 + nw.level, so c.level - 1 = nw.level.
+    -- padCenter2 c = padToLevelPlus1 (padToLevelPlus1 c).
+    -- After 1st application: shift +2^nw.level. Result level = 2 + nw.level, and its
+    -- inner nw is (node e e e nw), with level 1 + nw.level.
+    -- After 2nd application: shift +2^(1+nw.level) = 2 · 2^nw.level. Cumulative: 3·2^nw.level.
+    simp only [MacroCell.level, padCenter2, Nat.add_sub_cancel_left]
+    -- Expose the INNER padToLevelPlus1 as a node literal via rfl (4-way pad form).
+    -- This only rewrites the inner occurrence (the outer is padToLevelPlus1 of
+    -- a padToLevelPlus1 application, not of a node literal).
+    have hinner : padToLevelPlus1 (MacroCell.node nw ne sw se) =
+        MacroCell.node
+          (MacroCell.node (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level)
+                          (MacroCell.emptyOfLevel nw.level) nw)
+          (MacroCell.node (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level)
+                          ne (MacroCell.emptyOfLevel nw.level))
+          (MacroCell.node (MacroCell.emptyOfLevel nw.level) sw
+                          (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level))
+          (MacroCell.node se (MacroCell.emptyOfLevel nw.level)
+                          (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level)) := rfl
+    rw [hinner]
+    -- Now the outer padToLevelPlus1 is applied to a node literal. Apply shift lemma.
+    rw [padToLevelPlus1_toCellsAux_node]
+    -- After shift: (node Q1 Q2 Q3 Q4).tCA (c_off + 2^Q1.level) (...) where Q1.level = 1 + nw.level.
+    -- Reduce 2^(1+nw.level) = 2^nw.level + 2^nw.level (Int).
+    have hpow_succ : ((2 ^ (1 + nw.level) : Nat) : Int)
+                   = ((2 ^ nw.level : Nat) : Int) + ((2 ^ nw.level : Nat) : Int) := by
+      push_cast
+      rw [Nat.add_comm 1 nw.level, pow_succ]
+      ring
+    -- Unfold the outer toCellsAux + strip empty cells via empty lemmas.
+    simp only [MacroCell.toCellsAux, MacroCell.level, emptyOfLevel_level,
+               emptyOfLevel_toCellsAux_eq_nil, List.nil_append, List.append_nil, hpow_succ]
+    -- Both sides are now 4-way ++ of nw/ne/sw/se applied to Int offsets.
+    -- LHS offsets reduce via push_cast + ring to match RHS (-3s + 2s + s = 0; -3s + 2s + 2s = s).
+    congr 1
+    · congr 1
+      · congr 1 <;> push_cast <;> ring_nf
+      · congr 1 <;> push_cast <;> ring_nf
+    · congr 1 <;> push_cast <;> ring_nf
 
 /-- WITNESS for P3 on a 2×2 block (level 1, shift = 3·2^0 = 3).
 
@@ -621,30 +705,104 @@ On a level-`k` MacroCell `c` with adequate padding, `hashlifeResult c`
 equals `step^[2^(k-2)]` applied to the centered sub-region.
 
 This is the heart of Hashlife: the recursive quadtree decomposition followed
-by memoized recomposition gives the same answer as the flat iteration. -/
+by memoized recomposition gives the same answer as the flat iteration.
+
+**Statement correction (#2215 followup)**: the previous version used `off =
+(0, 0)` for both input and output. This is incorrect: `hashlifeResultAux
+(k+2) c` produces a level-`(k+1)` cell representing the centered `2^(k+1) ×
+2^(k+1)` region of the level-`(k+2)` input. The center starts at position
+`(2^k, 2^k)` in the input's coordinate system. So `result.toGrid (2^k,
+2^k)` covers `[2^k, 2^k + 2^(k+1)) × [2^k, 2^k + 2^(k+1))`, which is
+exactly the centered region. -/
+
+/-- Restrict a Grid to the centered region `[lo, lo + size) × [lo, lo + size)`. -/
+def restrictGridTo (g : Grid) (lo : Int) (size : Nat) : Grid :=
+  g.filter fun p =>
+    lo ≤ p.1 && p.1 < lo + (size : Int) &&
+    lo ≤ p.2 && p.2 < lo + (size : Int)
 
 /-- For a level-`k` MacroCell `c` with `k ≥ 2`, the centered region of
-    `hashlifeResult c` equals `evolve (2^(k-2))` applied to the centered
-    region of `c`.
+    `hashlifeResultAux (k+2) c` (viewed at offset `(2^k, 2^k)`) equals
+    `evolve (2^k)` applied to `c.toGrid (0, 0)` and restricted to the
+    centered `[2^k, 2^k + 2^(k+1)) × [2^k, 2^k + 2^(k+1))` region.
+
+    **Statement correction**: offset `(2^k, 2^k)` accounts for centering.
 
     **Proof strategy** (P4, difficulty: hard, compositional):
     Strong induction on `k`.
-    - Base `k = 2`: `hashlifeResult` reduces to `step4x4`, which is the
-      direct B3/S23 computation on a 4x4 grid. The centered 2x2 result is
-      `step` applied to the 4x4 input (truncated to the center).
+    - Base `k = 0`: `hashlifeResultAux 2 c` reduces to `step4x4 c`, which
+      is the direct B3/S23 computation on a 4x4 grid. The centered 2x2
+      result at offset `(1, 1)` matches `evolve 1` restricted to `[1,3)×[1,3)`.
     - Inductive step `k → k+1`: the recursive Hashlife makes 9 sub-calls on
-      level-`(k-1)` cells, then 4 sub-calls on the resulting level-`(k-1)`
-      supercells. Each sub-call uses the IH at level `k-1`. The composition
-      matches `step^[2^(k-1)]` by the light-cone lemma P2 applied 2^(k-2)
+      level-`(k+1)` cells, then 4 sub-calls on the resulting level-`k`
+      supercells. Each sub-call uses the IH at level `k`. The composition
+      matches `step^[2^(k+1)]` by the light-cone lemma P2 applied 2^(k-1)
       times (once per "half-step" in the double-nine decomposition). -/
 theorem hashlifeResult_central_correct (c : MacroCell) (k : Nat)
     (hk : c.level = k + 2) :
-    let off : Int × Int := (0, 0)
     let result := hashlifeResultAux (k + 2) c
-    let expected := evolve (2^k) (c.toGrid off)
-    result.toGrid off = expected := by
+    let resultGrid := result.toGrid ((2^k : Nat), (2^k : Nat))
+    let expected := evolve (2^k) (c.toGrid (0, 0))
+    resultGrid = restrictGridTo expected (2^k : Int) (2^(k+1)) := by
   -- P4 TARGET: central Hashlife correctness, by induction on level
   sorry
+
+/-! ## P4 witnesses: base case k=0 (native_decide)
+
+Concrete level-2 MacroCells verifying that the corrected P4 statement
+holds on the base case `k = 0` (level-2 input, offset `(1,1)`, 1 generation).
+Each `native_decide` confirms the theorem is satisfiable. -/
+
+/-- Level-2 cell with the block pattern at positions (1,1)-(2,2). -/
+private def blockCell : MacroCell :=
+  MacroCell.node (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf true))
+                 (MacroCell.node (leaf false) (leaf false) (leaf true)  (leaf false))
+                 (MacroCell.node (leaf false) (leaf true)  (leaf false) (leaf false))
+                 (MacroCell.node (leaf true)  (leaf false) (leaf false) (leaf false))
+
+/-- Level-2 cell with a horizontal blinker at positions (0,1),(1,1),(2,1). -/
+private def blinkerHCell : MacroCell :=
+  MacroCell.node (MacroCell.node (leaf false) (leaf true) (leaf false) (leaf true))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf true) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+
+/-- Level-2 cell with the glider pattern at positions (0,1),(1,2),(2,0),(2,1),(2,2). -/
+private def gliderCell : MacroCell :=
+  MacroCell.node (MacroCell.node (leaf false) (leaf true)  (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf true))
+                 (MacroCell.node (leaf true)  (leaf true)  (leaf false) (leaf false))
+                 (MacroCell.node (leaf true)  (leaf false) (leaf false) (leaf false))
+
+/-- P4 base case k=0 on block (still life): centered 2x2 matches after 1 step. -/
+theorem p4_base_block :
+    (hashlifeResultAux 2 blockCell).toGrid (1, 1)
+    = restrictGridTo (evolve 1 (blockCell.toGrid (0, 0))) 1 2 := by
+  native_decide
+
+/-- P4 base case k=0 on all-dead: trivially empty. -/
+private def deadCell : MacroCell :=
+  MacroCell.node (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+
+theorem p4_base_dead :
+    (hashlifeResultAux 2 deadCell).toGrid (1, 1)
+    = restrictGridTo (evolve 1 (deadCell.toGrid (0, 0))) 1 2 := by
+  native_decide
+
+/-- P4 base case k=0 on glider: centered 2x2 matches after 1 step. -/
+theorem p4_base_glider :
+    (hashlifeResultAux 2 gliderCell).toGrid (1, 1)
+    = restrictGridTo (evolve 1 (gliderCell.toGrid (0, 0))) 1 2 := by
+  native_decide
+
+/-- P4 base case k=0 on blinker: key test — cell (1,0) is outside center. -/
+theorem p4_base_blinker :
+    (hashlifeResultAux 2 blinkerHCell).toGrid (1, 1)
+    = restrictGridTo (evolve 1 (blinkerHCell.toGrid (0, 0))) 1 2 := by
+  native_decide
 
 /-! ## P5. Main theorem: bounded correctness
 
