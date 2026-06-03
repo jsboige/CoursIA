@@ -705,30 +705,104 @@ On a level-`k` MacroCell `c` with adequate padding, `hashlifeResult c`
 equals `step^[2^(k-2)]` applied to the centered sub-region.
 
 This is the heart of Hashlife: the recursive quadtree decomposition followed
-by memoized recomposition gives the same answer as the flat iteration. -/
+by memoized recomposition gives the same answer as the flat iteration.
+
+**Statement correction (#2215 followup)**: the previous version used `off =
+(0, 0)` for both input and output. This is incorrect: `hashlifeResultAux
+(k+2) c` produces a level-`(k+1)` cell representing the centered `2^(k+1) ×
+2^(k+1)` region of the level-`(k+2)` input. The center starts at position
+`(2^k, 2^k)` in the input's coordinate system. So `result.toGrid (2^k,
+2^k)` covers `[2^k, 2^k + 2^(k+1)) × [2^k, 2^k + 2^(k+1))`, which is
+exactly the centered region. -/
+
+/-- Restrict a Grid to the centered region `[lo, lo + size) × [lo, lo + size)`. -/
+def restrictGridTo (g : Grid) (lo : Int) (size : Nat) : Grid :=
+  g.filter fun p =>
+    lo ≤ p.1 && p.1 < lo + (size : Int) &&
+    lo ≤ p.2 && p.2 < lo + (size : Int)
 
 /-- For a level-`k` MacroCell `c` with `k ≥ 2`, the centered region of
-    `hashlifeResult c` equals `evolve (2^(k-2))` applied to the centered
-    region of `c`.
+    `hashlifeResultAux (k+2) c` (viewed at offset `(2^k, 2^k)`) equals
+    `evolve (2^k)` applied to `c.toGrid (0, 0)` and restricted to the
+    centered `[2^k, 2^k + 2^(k+1)) × [2^k, 2^k + 2^(k+1))` region.
+
+    **Statement correction**: offset `(2^k, 2^k)` accounts for centering.
 
     **Proof strategy** (P4, difficulty: hard, compositional):
     Strong induction on `k`.
-    - Base `k = 2`: `hashlifeResult` reduces to `step4x4`, which is the
-      direct B3/S23 computation on a 4x4 grid. The centered 2x2 result is
-      `step` applied to the 4x4 input (truncated to the center).
+    - Base `k = 0`: `hashlifeResultAux 2 c` reduces to `step4x4 c`, which
+      is the direct B3/S23 computation on a 4x4 grid. The centered 2x2
+      result at offset `(1, 1)` matches `evolve 1` restricted to `[1,3)×[1,3)`.
     - Inductive step `k → k+1`: the recursive Hashlife makes 9 sub-calls on
-      level-`(k-1)` cells, then 4 sub-calls on the resulting level-`(k-1)`
-      supercells. Each sub-call uses the IH at level `k-1`. The composition
-      matches `step^[2^(k-1)]` by the light-cone lemma P2 applied 2^(k-2)
+      level-`(k+1)` cells, then 4 sub-calls on the resulting level-`k`
+      supercells. Each sub-call uses the IH at level `k`. The composition
+      matches `step^[2^(k+1)]` by the light-cone lemma P2 applied 2^(k-1)
       times (once per "half-step" in the double-nine decomposition). -/
 theorem hashlifeResult_central_correct (c : MacroCell) (k : Nat)
     (hk : c.level = k + 2) :
-    let off : Int × Int := (0, 0)
     let result := hashlifeResultAux (k + 2) c
-    let expected := evolve (2^k) (c.toGrid off)
-    result.toGrid off = expected := by
+    let resultGrid := result.toGrid ((2^k : Nat), (2^k : Nat))
+    let expected := evolve (2^k) (c.toGrid (0, 0))
+    resultGrid = restrictGridTo expected (2^k : Int) (2^(k+1)) := by
   -- P4 TARGET: central Hashlife correctness, by induction on level
   sorry
+
+/-! ## P4 witnesses: base case k=0 (native_decide)
+
+Concrete level-2 MacroCells verifying that the corrected P4 statement
+holds on the base case `k = 0` (level-2 input, offset `(1,1)`, 1 generation).
+Each `native_decide` confirms the theorem is satisfiable. -/
+
+/-- Level-2 cell with the block pattern at positions (1,1)-(2,2). -/
+private def blockCell : MacroCell :=
+  MacroCell.node (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf true))
+                 (MacroCell.node (leaf false) (leaf false) (leaf true)  (leaf false))
+                 (MacroCell.node (leaf false) (leaf true)  (leaf false) (leaf false))
+                 (MacroCell.node (leaf true)  (leaf false) (leaf false) (leaf false))
+
+/-- Level-2 cell with a horizontal blinker at positions (0,1),(1,1),(2,1). -/
+private def blinkerHCell : MacroCell :=
+  MacroCell.node (MacroCell.node (leaf false) (leaf true) (leaf false) (leaf true))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf true) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+
+/-- Level-2 cell with the glider pattern at positions (0,1),(1,2),(2,0),(2,1),(2,2). -/
+private def gliderCell : MacroCell :=
+  MacroCell.node (MacroCell.node (leaf false) (leaf true)  (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf true))
+                 (MacroCell.node (leaf true)  (leaf true)  (leaf false) (leaf false))
+                 (MacroCell.node (leaf true)  (leaf false) (leaf false) (leaf false))
+
+/-- P4 base case k=0 on block (still life): centered 2x2 matches after 1 step. -/
+theorem p4_base_block :
+    (hashlifeResultAux 2 blockCell).toGrid (1, 1)
+    = restrictGridTo (evolve 1 (blockCell.toGrid (0, 0))) 1 2 := by
+  native_decide
+
+/-- P4 base case k=0 on all-dead: trivially empty. -/
+private def deadCell : MacroCell :=
+  MacroCell.node (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+                 (MacroCell.node (leaf false) (leaf false) (leaf false) (leaf false))
+
+theorem p4_base_dead :
+    (hashlifeResultAux 2 deadCell).toGrid (1, 1)
+    = restrictGridTo (evolve 1 (deadCell.toGrid (0, 0))) 1 2 := by
+  native_decide
+
+/-- P4 base case k=0 on glider: centered 2x2 matches after 1 step. -/
+theorem p4_base_glider :
+    (hashlifeResultAux 2 gliderCell).toGrid (1, 1)
+    = restrictGridTo (evolve 1 (gliderCell.toGrid (0, 0))) 1 2 := by
+  native_decide
+
+/-- P4 base case k=0 on blinker: key test — cell (1,0) is outside center. -/
+theorem p4_base_blinker :
+    (hashlifeResultAux 2 blinkerHCell).toGrid (1, 1)
+    = restrictGridTo (evolve 1 (blinkerHCell.toGrid (0, 0))) 1 2 := by
+  native_decide
 
 /-! ## P5. Main theorem: bounded correctness
 
