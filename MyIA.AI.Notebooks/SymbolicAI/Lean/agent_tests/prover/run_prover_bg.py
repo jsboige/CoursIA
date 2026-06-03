@@ -101,6 +101,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     print(f"\n{'='*60}")
     print(f"RESULT: {result.get('status', 'unknown')}")
     print(f"  Sorry: {original_sorry} → {final_sorry}")
+    _actual_iters = result.get("iterations") if isinstance(result, dict) else None
+    print(f"  Iterations: {_actual_iters if _actual_iters is not None else '?'}/{iterations} (actual/budget)")
     print(f"  Time: {elapsed:.1f}s")
     print(f"  Trace: {trace_path}")
     print(f"{'='*60}")
@@ -111,7 +113,16 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         "mode": mode,
         "provider": provider,
         "coordinator_provider": coordinator_provider or "openrouter (default)",
+        # `iterations` is the REQUESTED budget (the max_iterations CLI arg). Kept
+        # under this key for backward compat with existing trace analyzers.
+        # `actual_iterations` is how many iterations the prover actually ran
+        # (from the prover result; None if the run crashed before reporting).
+        # Forensic (#1453 P4): the summary previously exposed only the budget, so
+        # a run that hit the cap and one that exited early after 2 iterations were
+        # indistinguishable in the top-level field — the actual count was buried
+        # in `result["iterations"]`. Both are now legible side by side.
         "iterations": iterations,
+        "actual_iterations": result.get("iterations") if isinstance(result, dict) else None,
         "original_sorry": original_sorry,
         "final_sorry": final_sorry,
         "sorry_delta": final_sorry - original_sorry,
