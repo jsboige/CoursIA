@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: Probas
 pedagogical_count: 43
-breakdown: Infer=20, PyMC=20, root=3
+breakdown: Infer=20, _python_port=20, root=3
 maturity: PRODUCTION=31, BETA=12
 -->
 
