@@ -1,89 +1,86 @@
-# La mer qui monte — une grille de lecture grothendieckienne du depot CoursIA
+# La mer qui monte — lire le depot CoursIA d'un seul geste
 
-> **Cle de lecture transversale.** Ce document lit le depot CoursIA comme un projet intellectuel coherent, sans rien reecrire au code. Distinct de [#1646](https://github.com/jsboige/CoursIA/issues/1646) (formaliser le *langage* de Grothendieck dans Mathlib) — ici, on lit le depot a travers le *geste*.
+Grothendieck decrivait deux facons de venir a bout d'un probleme dur, comme on ouvre une noix. On peut la frapper au marteau et au burin, jusqu'a ce que la coque cede sous le coup. Ou bien on peut la plonger dans l'eau et laisser la mer monter — lentement, sans bruit — jusqu'a ce qu'un jour la coque, ramollie, s'ouvre d'elle-meme. Sa preference allait a la seconde : non pas forcer le probleme, mais faire monter autour de lui le cadre qui le rend soluble.
+
+Le depot CoursIA, parcouru d'une serie a l'autre, ressemble d'abord a un catalogue : automates cellulaires, preuves formelles, programmation probabiliste, theorie des jeux, planification, contrats intelligents, apprentissage par renforcement, trading, GenAI. Une vingtaine de sujets sans rapport evident. Mais lu avec une seule question en tete, il se met a raconter une histoire continue. La question n'est pas « comment resoudre ce probleme ? » — elle est grothendieckienne : *dans quel cadre ce probleme cesse-t-il d'etre dur ?* Suivons-la.
 
 ---
 
-## 1. La mer qui monte
+## Changer de representation jusqu'a ce que la difficulte se dissolve
 
-Grothendieck opposait deux facons d'ouvrir une noix : le marteau et le burin, ou bien laisser monter la mer jusqu'a ce que la coque cede sans effort. Le depot, lu transversalement, choisit regulierement la seconde. Trois mouvements reviennent, d'une serie a l'autre :
+Le premier mouvement est partout le meme : prendre un objet et le reecrire dans une autre langue, ou il devient maniable. La regle de voisinage de Conway, posee cellule par cellule, n'apprend rien sur les motifs qui en emergent ; transformee en quadtree puis en type inductif ([`conway_lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/)), elle laisse sauter `2^k` generations d'un coup — et pose enfin la question de la preuve de ces sauts. La sensibilite d'une fonction booleenne parait combinatoire ; devenue coloration de l'hypercube puis affaire d'algebre lineaire, elle tombe sous le theoreme de Huang ([`sensitivity_lean/Sensitivity/MainTheorem.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/Sensitivity/MainTheorem.lean), `huang_degree_theorem`, 0 `sorry`). Le meme Sudoku se laisse attaquer comme probleme de contraintes, comme formule SAT, ou par recherche pure — trois representations, trois couts, une seule grille a remplir. Et un meme modele probabiliste vit deux fois dans le depot : une fois comme graphe de facteurs Infer.NET, une fois comme programme PyMC — [`Probas/Infer`](../MyIA.AI.Notebooks/Probas/Infer/) et [`Probas/PyMC`](../MyIA.Notebooks/Probas/PyMC/) se repondent notebook pour notebook, des graphes de facteurs jusqu'a la theorie de la decision (valeur d'une information, action optimale sous utilite). Contenu identique, seules changent la langue, et avec elle le cout et la lisibilite.
 
-- **Local -> global (recollement).** Une donnee locale engendre une structure globale : la regle de voisinage de Conway fait emerger des motifs Turing-complets ; la sensibilite ponctuelle d'une fonction booleenne se hisse au theoreme de Huang ; les preferences individuelles se heurtent a l'impossibilite d'Arrow ; une action PDDL se compose en un plan ; une transition de contrat devient une obligation immuable ; une distribution locale se resout en politique de decision. C'est, litteralement chez Grothendieck (topologie, faisceaux), et par analogie partout ailleurs, le passage du local au global par recollement.
+La theorie des jeux pousse ce geste a la limite, presque en clair : l'existence d'un equilibre de Nash, la valeur d'une coalition, un jeu combinatoire a la Conway s'y ecrivent chaque fois *trois fois* — en prose conceptuelle, en preuve Lean, en code Python ([`GameTheory-4/4b/4c`](../MyIA.AI.Notebooks/GameTheory/GameTheory-4-Nash-Equilibria.ipynb), [`-15/15b/15c`](../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb), [`-8/8b/8c`](../MyIA.AI.Notebooks/GameTheory/GameTheory-8-Combinatorial-Games.ipynb)). Le theoreme ne bouge pas d'une version a l'autre. Ce qui bouge, c'est ce qu'on peut en faire : le calculer vite, ou le demontrer. Trouver la representation ou le probleme devient facile — ou prouvable — n'est pas le preliminaire du travail. C'est le travail. Et, on va le voir, c'est aussi ce qui decide de la garantie qu'on en retire.
 
-- **Changement de representation.** Le meme objet traverse plusieurs representations entre lesquelles on traduit : grille <-> quadtree <-> inductif Lean ; fonction booleenne <-> coloration de l'hypercube <-> algebre lineaire ; graphe de facteurs Infer.NET <-> PyMC ; PDDL <-> graphe d'etats <-> CP-SAT ; langage naturel <-> semantiques formelles d'argumentation. Le *resultat* est invariant ; ce qui change, c'est le **cout** et la **prouvabilite**. Trouver la representation ou le probleme devient facile — ou demontrable — *est* le travail.
+## Du local au global
 
-- **Monter d'un cran.** Quand un axe sature, on ne s'acharne pas : on change la question. C'est le ressort le plus grothendieckien, et celui qui donne au depot sa signature propre.
+Le deuxieme mouvement est celui que Grothendieck a place au coeur des mathematiques, et qu'on retrouve ici par analogie d'une serie a l'autre : une donnee purement locale engendre une structure globale. La regle B3/S23 d'une seule cellule suffit a la Turing-complete. Des strategies individuelles se recollent en un equilibre dont aucun joueur n'a interet a devier — et dont l'existence se *prouve*, en Lean ([`GameTheory-4b`](../MyIA.AI.Notebooks/GameTheory/GameTheory-4b-Lean-NashExistence.ipynb)). Des preferences individuelles, recollees, se heurtent au contraire a l'impossibilite d'Arrow ([`social_choice_lean`](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/), 0 `sorry`). Une fonction caracteristique — ce que vaut chaque coalition prise a part — se resout en une allocation equitable unique, la valeur de Shapley ([`cooperative_games_lean`](../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb)). Une action PDDL, composee avec ses semblables, devient un plan ([`Planners`](../MyIA.AI.Notebooks/SymbolicAI/Planners/)). Une transition d'etat de contrat devient une obligation que plus personne ne peut defaire — et qu'on cherche meme a verifier formellement ([`SmartContracts`](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/), [SC-14 Formal-Verification](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb), [SC-17 Verifiable-Voting](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb)). C'est le geste du recollement — litteral chez Grothendieck, a travers faisceaux et topologies ([`grothendieck_lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/), et l'hommage du notebook [Lean-13](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Grothendieck-Tribute.ipynb)), metaphorique partout ailleurs.
 
-## 2. La signature du depot : la certification
+## Monter d'un cran : deux axes, et la question de la garantie
 
-Une lecture « local -> global » seule resterait une belle observation un peu generale. Le depot ajoute une **seconde dimension**, moins evidente et plus originale : il ne se contente pas d'assembler, il demande *avec quelle garantie ?* Toute transformation calculee se mesure alors sur **deux axes orthogonaux** :
+Jusqu'ici, un seul mouvement : changer de langue jusqu'a ce que le probleme s'allege. Mais le depot en superpose un second, plus discret — *monter d'un cran* des qu'un axe de progres sature. Car il n'y a pas un axe, il y en a deux, et ils sont independants. Le premier est celui de l'echelle : calculer plus grand, plus vite, plus loin. C'est l'axe que maximisent les outils de la communaute — HashLife saute `2^k` generations d'un coup, Golly fait tourner des motifs sur des millions de pas, les grands modeles avalent des corpus entiers. Le second est celui de la garantie : non pas *jusqu'ou* va le resultat, mais *a quel point on peut s'y fier*.
 
-- **Axe quantitatif** — *combien*, *a quelle echelle*. C'est l'axe que maximisent les outils communautaires (Golly et HashLife sautent `2^k` generations, OTCA et Gemini se comptent en millions de pas).
-- **Axe de certification** — *avec quelle garantie* la transformation est-elle atteste. C'est l'axe que le depot ouvre des qu'il porte une construction en Lean, en Z3, en verification formelle.
+Ces deux axes ne se confondent pas, et c'est tout l'interet de les separer. On peut filer tres loin sur le premier sans avancer d'un pouce sur le second — HashLife calcule des sauts gigantesques sans demontrer le theoreme qui les justifierait. Et l'on peut tenir le sommet du second en restant tout petit sur le premier — une preuve que le noyau de Lean verifie ligne a ligne est d'une certitude maximale, mais plafonne vite en taille. C'est sur ce second axe que le depot met le plus volentiers son energie, des qu'une serie porte un resultat vers Lean ou Z3.
 
-Les deux ne sont pas en competition : ils sont independants. L'intuition s'est d'abord cristallisee sur Conway/HashLife (#1647, #2062) — un portage Lean ne battra jamais Golly sur l'axe quantitatif, mais il ouvre une garantie que Golly, qui *calcule* sans *certifier*, ne touche jamais. Mais le constat deborde tres largement ce cas : c'est la grille qui distingue, dans *toute* la table du §3, ce qui est prouve de ce qui est mesure.
+Et la, la garantie n'est pas binaire : c'est un continuum. A une extremite, la preuve verifiee ligne a ligne par le noyau : le theoreme de Huang est la, sans aucun `sorry`, aussi sur qu'un enonce mathematique peut l'etre. Un cran en deca, `native_decide` : on fait confiance au compilateur Lean plutot qu'au seul noyau, on cede un peu de certitude mais on gagne l'echelle — deja sans commune mesure avec un outil qui calcule sans rien attester. A l'autre extremite, le certificat ouvert, et c'est la que vit la plus grande part du depot : un backtest QuantConnect sur periode hors-echantillon, ses Sharpe, CAGR et drawdown reportes sans fard ; une politique d'apprentissage par renforcement, dont la seule caution est le rendement mesure sur des episodes ([`GameTheory-17`](../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb)) ; le Phi de la theorie de l'information integree, quantite que PyPhi *calcule* sur de petits systemes sans pretendre la *demontrer*, et qui plafonne en taille aussi vite qu'elle gagne en sens ; un modele entraine ou une image generee, juges par une evaluation. Aucun de ces certificats ne garantit rien mecaniquement, et c'est tres bien — a condition de le dire.
 
-Pour que « qualite de certification » soit mesurable plutot qu'incantatoire, on la gradue :
+La theorie des jeux donne d'ailleurs a voir le continuum sans detour : l'existence de Nash *prouvee* en Lean ([`GameTheory-4b`](../MyIA.AI.Notebooks/GameTheory/GameTheory-4b-Lean-NashExistence.ipynb)) et la meme existence *constatee* numeriquement en Python ([`GameTheory-4c`](../MyIA.AI.Notebooks/GameTheory/GameTheory-4-Nash-Equilibria.ipynb)) ne sont pas au meme cran, bien que ce soit le meme theoreme. Changer de representation, ce n'est pas seulement changer de cout : c'est changer de garantie.
+
+Car le seul vrai defaut, dans tout le depot, n'est jamais d'etre a l'extremite ouverte du continuum, ni d'etre reste petit sur l'axe de l'echelle. C'est d'etre a l'extremite ouverte tout en portant le costume de l'autre : un resultat empirique presente comme une preuve, une reussite d'echelle maquillee en garantie. Le portage HashLife en est le garde-fou exemplaire — il pousse loin l'axe de l'echelle et valide ses sauts motif par motif (`#eval`, `native_decide`), sans jamais pretendre au theoreme general `evolveHashlife = evolve`, qui reste a etablir ([#2062](https://github.com/jsboige/CoursIA/issues/2062)). L'hommage a Grothendieck est honnete de la meme maniere : sa formalisation est en chemin — les micro-preuves et smoke tests Lean sont arrives a maturite (0 `sorry` de production, 7 fichiers), mais la cartographie mathematique et l'interpretation restent au stade documentaire — une montee commencee, pas achevee, et nommee comme telle ([#1646](https://github.com/jsboige/CoursIA/issues/1646)). Rester franc sur la marche ou chaque resultat se tient : voila le seul imperatif, et il vaut pour les deux axes.
+
+## Pourquoi ce geste, maintenant
+
+On pourrait croire l'affaire purement formelle. Elle est, au contraire, d'une actualite immediate. A mesure que l'IA bascule vers les grands modeles de langage, plusieurs series refont spontanement le meme geste : prendre la sortie fluide mais incertaine d'un modele, et la re-representer dans un cadre qui, lui, se verifie. L'apprentissage symbolique reboucle un LLM sur une verification logique ([`SL-7`](../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-LLM-SymbolicLearning.ipynb)) ; l'analyse d'argumentation traduit le langage naturel en semantiques formelles que l'on peut interroger ([`Tweety`](../MyIA.AI.Notebooks/SymbolicAI/Tweety/), [`Argument_Analysis`](../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/)) ; le planificateur confronte une intention dite en mots a un solveur qui tranche ([`Planners-10`](../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb)) ; le contrat assiste par LLM se relit a l'aune de sa verification formelle ([`SC-11`](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb)). Le changement de representation vers le verifiable cesse alors d'etre une elegance : il devient le garde-fou. Lu d'un bout a l'autre, le depot soutient a voix basse une these simple — l'IA digne de confiance sera grothendieckienne par necessite : elle consistera a trouver le cadre ou l'affirmation devient controlable.
+
+Cette lecture ne remplace aucun des chantiers de formalisation en cours : l'hommage au *langage* de Grothendieck dans Mathlib ([#1646](https://github.com/jsboige/CoursIA/issues/1646)), le portage Conway/HashLife ([#1647](https://github.com/jsboige/CoursIA/issues/1647)), le theoreme HashLife qui reste a etablir ([#2062](https://github.com/jsboige/CoursIA/issues/2062)) avancent pour leur propre compte. Elle passe au-dessus d'eux, et les relie.
+
+## Une cle, pas une cathedrale
+
+Ce que cette lecture demande est volentierement petit, et a l'image de son sujet. Un document — celui-ci. Une conclusion ajoutee au notebook [Lean-13-Grothendieck-Tribute](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Grothendieck-Tribute.ipynb), qui referme l'hommage au langage de Grothendieck sur ce *geste*-ci. Quelques liens depuis les series citees. Rien de plus : pas de nouvelle serie, pas d'encyclopedie. Une cle n'a pas a etre plus grande que la porte.
+
+D'ailleurs, la cle a deja servi. En relisant le depot de cette facon, une coquille a saute aux yeux : le README de `sensitivity_lean` annoncait une formalisation de « sensitivity <= block sensitivity » — la direction triviale — la ou le code prouve le vrai theoreme de degre de Huang, celui qui resout la conjecture de sensibilite (PR [#2064](https://github.com/jsboige/CoursIA/pull/2064) l'a corrige). Une grille n'aurait pas attrape cela ; une lecture suivie, si.
+
+Et s'il faut une derniere note meta : une cle de lecture qui parle de trouver la bonne representation se devait de trouver la sienne. Ce texte aurait pu etre un tableau — une ligne par serie, une colonne pour la garantie, tout range en boites. Mais un tableau decoupe en fragments isoles ce qui n'est qu'un seul geste, et remplace une idee par un bareme. La bonne representation d'un fil continu, c'est une prose continue. La mer, pas le burin.
+
+---
+
+### Annexe — Grades de certification (pour qui veut creuser, sans rompre le fil)
+
+Cette echelle vaut partout, pas qu'en Lean. Le seul defaut possible n'est jamais d'etre en grade C — c'est de presenter un grade C comme un grade A.
 
 | Grade | Mecanisme | Confiance | Portee |
 |-------|-----------|-----------|--------|
 | **A — noyau** | `rfl` / `decide` verifies par le noyau Lean | maximale | plafonne en taille |
-| **B — compilateur de confiance** | `native_decide` (code compile + axiome `ofReduceBool`) | elevee — fait confiance au compilateur Lean | passe a l'echelle ; deja plus fort que tout outil qui ne certifie rien |
-| **C — ouvert** | test, backtest, evaluation, `#eval`, preuve empirique | aucune garantie machine | c'est une donnee, declaree comme telle |
+| **B — compilateur de confiance** | `native_decide` (code compile + axiome `ofReduceBool`) | elevee | passe a l'echelle |
+| **C — ouvert** | test, backtest, evaluation, `#eval` | aucune garantie machine | declaree comme telle |
 
-L'echelle vaut **partout**, pas qu'en Lean : un backtest QuantConnect, une eval ML, une inference PyMC sont des certificats de **grade C** parfaitement legitimes. Le seul defaut possible n'est jamais « etre en grade C » — c'est « presenter un grade C comme un grade A ». La grille rend cette question uniforme et la pose sans agressivite.
+Exemples par serie :
 
-Cette signature est aussi **d'actualite** : a mesure que l'IA bascule vers le LLM, plusieurs series (SL-7, Planners, Argumentum) montrent le meme reflexe — reprendre la sortie d'un modele de langage et la *re-representer* dans un cadre verifiable. Le changement de representation vers la prouvabilite y devient un garde-fou, pas une coquetterie formelle.
+| Serie | Mecanisme dominant | Portee certifiee |
+|-------|--------------------|-------------------|
+| **Sensitivity** (Lean-12) | A (0 sorry, `huang_degree_theorem`) | Theoreme de Huang complet |
+| **Social Choice** | A (0 sorry sur Arrow/Sen/Voting) | Theoremes d'impossibilite |
+| **Grothendieck** (Lean-13) | A sur les micro-preuves ; C-documentaire | Faisceaux, schemas : cartographie Mathlib, pas formalisation EGA/SGA |
+| **Conway / HashLife** (Lean-14) | B par-pattern (`native_decide`) | Motifs bornes ; theoreme general en chantier ([#2062](https://github.com/jsboige/CoursIA/issues/2062)) |
+| **SmartContracts** | C → B (Foundry fuzz/invariants), A vise (SC-14 verif formelle) | Transitions d'etat et invariants |
+| **GameTheory** | A sur les portages Lean ; C sur simulations Python | Existence Nash, Shapley (Lean) ; equilibres numeriques (Python) |
+| **Planners** | C | Plans verifiables, optimalite parfois prouvee |
+| **SymbolicLearning** | C ; SL-7 = montee vers B via LLM+verif | Hypotheses symboliques |
+| **Probas** | C | Infer.NET exact (petit) / PyMC MCMC (echelle) |
+| **RL / ML / GenAI** | C | Rendement empirique |
+| **QuantConnect** | C (walk-forward + couts) | Performance hors-echantillon |
+| **IIT** | C | Calcul Phi sur petits systemes |
 
-## 3. Le geste, serie par serie (verifie contre le depot)
-
-Chaque ligne est grounded sur les fichiers reels (chemins / Epics cites). Grade = certificat *dominant* aujourd'hui ; entre parentheses, le grade *vise* quand il differe.
-
-| Serie | Objet local | Structure globale | Changement de representation | Grade |
-|-------|-------------|-------------------|------------------------------|-------|
-| **Grothendieck** (`Lean/grothendieck_lean`, [Lean-13](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Grothendieck-Tribute.ipynb) ; [#1646](https://github.com/jsboige/CoursIA/issues/1646)) | objet local d'un site | structure globale recollee (faisceau, schema) | proprietes locales <-> globales via topologie de Grothendieck (Mathlib) | **A vise** — formalisation *en cours*, ~6 sorry residuels, [#1646](https://github.com/jsboige/CoursIA/issues/1646) ouverte |
-| **Sensitivity** (`Lean/sensitivity_lean`, [Lean-12](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb)) | sensibilite ponctuelle d'une fonction booleenne | theoreme de Huang (degre dans l'hypercube) | fonction booleenne <-> coloration de l'hypercube <-> algebre lineaire | **A** (0 sorry, dust-off `mathlib/Archive/Sensitivity`) |
-| **Social Choice** (`GameTheory/social_choice_lean`) | preference individuelle | impossibilites d'Arrow / Sen, mecanismes | profils <-> fonctions de bien-etre <-> theoreme Lean | **A** (0 sorry sur Arrow/Sen/Voting.lean) |
-| **Coop. games / Stable marriage** (`GameTheory/*_lean`) | coalition / paire | coeur, stabilite | combinatoire <-> Lean | **A** (residus sorry honnetes, ex. Bondareva-Shapley) |
-| **Conway / Life** (`Lean/conway_lean`, [Lean-14](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14b-Conway-Game-of-Life-Lean.ipynb)) | regle B3/S23 sur une cellule | motifs emergents, Turing-completude | grille <-> quadtree (MacroCell/HashLife) <-> inductif Lean | **B** par-pattern ; A vise sur motifs periodiques bornes ; *honnnete : pas de theoreme general `evolveHashlife = evolve`* ([#2062](https://github.com/jsboige/CoursIA/issues/2062)) |
-| **GameTheory** (pratique) | gains d'un joueur | equilibres | tables de gains <-> Nashpy / OpenSpiel / CFR | **C** (calcul/simulation) |
-| **SmartContracts** (`SymbolicAI/SmartContracts`, 27 notebooks) | une transition d'etat | obligation immuable, ecosysteme (DeFi/DAO) | intention <-> Solidity <-> bytecode EVM <-> invariants Foundry / ZKP | **C -> B**, verif. formelle = A vise |
-| **Planners** (`SymbolicAI/Planners`, 27 notebooks) | une action (preconditions/effets) | un plan atteignant le but | monde <-> PDDL/STRIPS <-> graphe d'etats <-> CP-SAT / heuristiques | **C** (plan verifiable ; optimalite parfois prouvee) |
-| **SymbolicLearning** (`SymbolicAI/SymbolicLearning`, SL-1 a SL-7) | exemple + connaissance du domaine | hypothese / regle generale | version space <-> clauses Horn (ILP) <-> tenseurs logiques (LTN/DeepProbLog) <-> LLM+verif | **C** ; SL-7 = boucle LLM + verification symbolique = montee vers le certificat |
-| **Probas — Decision** (`Probas/Infer` + `Probas/PyMC`, 20+20 notebooks) | distribution / utilite locale | reseau de decision, valeur de l'information | **graphe de facteurs Infer.NET <-> PyMC** : le *meme* contenu en deux representations | **C** — *le double port EST le changement de representation incarne* |
-| **Argumentum** (`SymbolicAI/Argument_Analysis` ; [#2137](https://github.com/jsboige/CoursIA/issues/2137), [#1650](https://github.com/jsboige/CoursIA/issues/1650)) | un argument / une assertion | graphe d'argumentation, depot multilingue | langage naturel <-> Tweety (semantiques formelles) <-> CSV traduisibles | **C** (pipeline LLM + Tweety + SK) |
-| **RL** (`RL`, 8 notebooks) | transition `(s,a,r,s')` | politique optimale | MDP <-> Bellman <-> reseau (DQN/PPO) | **C** (empirique) |
-| **IIT** (`IIT`, 3 notebooks) | mecanisme local (TPM) | Phi integre | TPM <-> cause-effet <-> macro / coarse-graining / blackboxing | **C** + discussion critique assumee |
-| **Search / Sudoku** (`Search`, `Sudoku`) | une contrainte / un coup | solution globale | backtracking <-> CSP/SAT/SMT/DLX <-> metaheuristiques <-> LLM | **C** ; SMT (insatisfiabilite prouvee) = vers A. Sudoku = banc d'essai multi-representation |
-| **ML / GenAI** (`ML`, `GenAI`) | echantillon / prompt | modele, pipeline orchestre | features <-> ONNX <-> SemanticKernel / agents | **C** (eval, tests) |
-| **QuantConnect** (`QuantConnect`, 190+ notebooks) | une barre de marche | strategie / portefeuille | donnees <-> signal <-> backtest OOS | **C** (walk-forward + couts ; honnetete = pas de same-period leak) |
-
-*Les noix historiques externalisees — MetaGeneticSharp ([#1203](https://github.com/jsboige/CoursIA/issues/1203)), Z3.Linq ([#1206](https://github.com/jsboige/CoursIA/issues/1206)), semantic-fleet ([#1210](https://github.com/jsboige/CoursIA/issues/1210)) — se lisent par la meme cle (primitives composables -> bestiaire d'algorithmes ; contraintes locales -> solveur global ; connecteurs -> routeur multi-fournisseurs).*
-
-Lue ainsi, la table raconte une progression : du **A** (certitude formelle, plafonnee en taille) vers le **C** (echelle statistique, sans garantie machine), et le depot construit explicitement les ponts — c'est tout le sens de SMT en Search, de la verification formelle en SmartContracts, de SL-7 en SymbolicLearning. La montee vers le certificat *est* le fil rouge.
-
-## 4. Honnetete du certificat
-
-Le constat de fond est positif : les series sont serieuses et correctement sourcees. La grille ne sert pas a instruire un proces — elle pose partout la meme question utile, « ce resultat, a quel grade est-il certifie, et le depot le dit-il honnetement ? », et le depot y repond bien dans l'immense majorite des cas. Quand la lecture fait remonter une coquille (un grade C habille en A, une trace perimee, une parenthese qui surclasse un theoreme), on la corrige au passage, sans en faire le sujet.
-
-### Coquilles reperees pendant le grounding
-
-1. **Sensitivity — README ligne 25 (CORRIGE, PR #2064).** Le README disait « *Formalization of the Sensitivity Theorem (sensitivity <= block sensitivity)* », alors que le theoreme formalise est `huang_degree_theorem` (`sensitivity_lean/Sensitivity/MainTheorem.lean:84`, Huang 2019). « sensitivity <= block sensitivity » est trivial et n'est pas le resultat de Huang. Parenthese reformulee dans **PR #2064**. `NOTICE.md` et `Sensitivity.lean:9` etaient deja corrects.
-2. **KochenSpecker — numero (CORRIGE).** Le notebook est **Lean-15-Kochen-Specker**, pas Lean-14 (= Conway-Tribute). La coherence trace `sorry` vs README 0-sorry reste a verifier sur le bon fichier avant toute action.
-3. **HashLife — statut (DEJA TRACE [#2062](https://github.com/jsboige/CoursIA/issues/2062)).** Vocabulaire honnete : `#eval` + `native_decide` par-pattern, pas de theoreme general. Rien a corriger, ne pas surclasser.
-
----
-
-## Reconciliation avec les Epics existantes
+### Reconciliation avec les Epics existantes
 
 | Epic | Rapport |
 |------|---------|
-| **[#1646](https://github.com/jsboige/CoursIA/issues/1646)** Hommage Grothendieck (formaliser le langage dans Mathlib) | **Socle conceptuel.** [#1646](https://github.com/jsboige/CoursIA/issues/1646) montre le langage *dans* le depot ; ce document lit le depot *avec* le geste. La conclusion Lean-13 fait la jointure. |
-| **[#1647](https://github.com/jsboige/CoursIA/issues/1647) / [#1651](https://github.com/jsboige/CoursIA/issues/1651) / [#2062](https://github.com/jsboige/CoursIA/issues/2062)** Conway (Phases 2-3, HashLife) | Exemple-source des deux axes et cas d'ecole d'honnetete du certificat. |
-| **[#1468](https://github.com/jsboige/CoursIA/issues/1468)** SOTA Lean (harnais + lib + notebooks) | La grille des 3 grades fournit un vocabulaire commun reutilisable ; reste distincte (concret vs. meta). |
-| **[#1203](https://github.com/jsboige/CoursIA/issues/1203) / [#1206](https://github.com/jsboige/CoursIA/issues/1206) / [#1210](https://github.com/jsboige/CoursIA/issues/1210)** trilogie externalisee | Lues par la cle, mentionnees seulement. |
-| **[#1271](https://github.com/jsboige/CoursIA/issues/1271) / [#1650](https://github.com/jsboige/CoursIA/issues/1650)** Argumentum | Une ligne de la table ; [#1650](https://github.com/jsboige/CoursIA/issues/1650) = vecteur d'une eventuelle traduction du document. |
+| [#1646](https://github.com/jsboige/CoursIA/issues/1646) Hommage Grothendieck | **Socle conceptuel.** #1646 montre le langage *dans* le depot ; ce document lit le depot *avec* le geste. La conclusion Lean-13 fait la jointure. |
+| [#1647](https://github.com/jsboige/CoursIA/issues/1647) / [#2062](https://github.com/jsboige/CoursIA/issues/2062) Conway/HashLife | Exemple-source des deux axes et cas d'ecole d'honnetete du certificat. |
+| [#1468](https://github.com/jsboige/CoursIA/issues/1468) SOTA Lean | La grille des 3 grades fournit un vocabulaire commun ; reste distincte (concret vs. meta). |
+| [#1203](https://github.com/jsboige/CoursIA/issues/1203) / [#1206](https://github.com/jsboige/CoursIA/issues/1206) / [#1210](https://github.com/jsboige/CoursIA/issues/1210) | Lues par la cle, mentionnees seulement. |
+| [#2137](https://github.com/jsboige/CoursIA/issues/2137) Argumentum | Une ligne de la table ; pipeline LLM + Tweety = changement de representation vers le verifiable. |
 
 ---
 
-*Document de lecture — aucun nouveau code de serie, aucun dossier encyclopedique. Voir [#2065](https://github.com/jsboige/CoursIA/issues/2065) pour l'Epic originale.*
+*Reperes verifiables : `conway_lean` et le statut HashLife [#2062](https://github.com/jsboige/CoursIA/issues/2062) ; `sensitivity_lean/Sensitivity/MainTheorem.lean` (`huang_degree_theorem`, 0 `sorry`) ; `social_choice_lean/SocialChoice/Arrow.lean` (0 `sorry`) ; `cooperative_games_lean` + [`GameTheory-15b`](../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb) (Shapley) ; [`GameTheory-4/4b/4c`](../MyIA.AI.Notebooks/GameTheory/GameTheory-4-Nash-Equilibria.ipynb) (Nash : concept/Lean/Python) ; `grothendieck_lean` + notebook [Lean-13](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Grothendieck-Tribute.ipynb) ([#1646](https://github.com/jsboige/CoursIA/issues/1646)) ; `Probas/Infer` <-> `Probas/PyMC` (miroir 1-a-1) ; `Sudoku` / `Search` ; `SymbolicAI/{SmartContracts, Planners, SymbolicLearning, Argument_Analysis, Tweety}` ; `IIT` ; `QuantConnect`.*
