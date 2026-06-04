@@ -16,6 +16,7 @@ Ces fichiers decrivent l'architecture et le fonctionnement general du projet.
 | [handson-book-mapping.md](handson-book-mapping.md) | Cartographie du livre Hands-On AI Trading (Jared Broad) |
 | [qc-broken-strategies-audit.md](qc-broken-strategies-audit.md) | Audit strategies QuantConnect broken |
 | [visitor-navigation-guide.md](visitor-navigation-guide.md) | Carte du visiteur : 4 parcours thematiques a travers 511 notebooks |
+| [grothendieckian-lens.md](grothendieckian-lens.md) | Cle de lecture grothendieckienne : mer qui monte, grades A/B/C, table grounded |
 
 ## Regles et conventions
 
