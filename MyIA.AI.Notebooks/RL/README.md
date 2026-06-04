@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 8
-breakdown: root=8
-maturity: PRODUCTION=7, BETA=1
+pedagogical_count: 10
+breakdown: root=10
+maturity: PRODUCTION=7, BETA=2, NEW=1
 -->
 
 Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'IA qui apprend a un agent a prendre des decisions optimales par l'essai et l'erreur, en recevant des recompenses ou des penalites de son environnement. C'est la technologie derriere AlphaGo, les robots de Boston Dynamics, les systemes de recommendation de Netflix, et les voitures autonomes. La ou l'apprentissage supervise predit a partir d'exemples etiquetes et l'apprentissage non supervise decouvre des structures, le RL **agit** : il choisit des actions, observe leurs consequences, et s'ameliore iterativement.
@@ -17,9 +17,9 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 8 |
+| Notebooks | 10 |
 | Kernel | Python 3 |
-| Duree totale | ~315-370 min |
+| Duree totale | ~410-470 min |
 | Version | Stable Baselines3 2.0.0+ |
 
 ## Notebooks
@@ -33,6 +33,8 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | 5 | [rl_4_mdp_dp_qlearning](rl_4_mdp_dp_qlearning.ipynb) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
 | 6 | [rl_5_dqn_policy_gradient](rl_5_dqn_policy_gradient.ipynb) | DQN depuis zero, REINFORCE | 50-55 min |
 | 6b | [rl_5b_actor_critic](rl_5b_actor_critic.ipynb) | Actor-Critic (A2C) depuis zero, advantage, entropy bonus | 45-50 min |
+| 6c | [rl_5c_ppo_from_scratch](rl_5c_ppo_from_scratch.ipynb) | PPO depuis zero, clipping, advantage normalization | 45-50 min |
+| 6d | [rl_5d_sac_from_scratch](rl_5d_sac_from_scratch.ipynb) | SAC depuis zero, maximum entropy RL, twin Q-networks, auto-temperature | 45-50 min |
 | 7 | [rl_6_multi_agent_rl](rl_6_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
 
 ## Contenu detaille
@@ -106,6 +108,27 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | Entropy bonus | Exploration via maximisation d'entropie |
 | Comparaison | A2C vs REINFORCE (reduction de variance) |
 
+### Notebook 6c - PPO depuis zero
+
+| Section | Contenu |
+|---------|---------|
+| PPO | Proximal Policy Optimization, objectif clippe |
+| Clipping | Limitation des mises a jour de politique |
+| Advantage normalization | Stabilisation de l'apprentissage |
+| GAE | Generalized Advantage Estimation |
+| Comparaison | PPO vs A2C (stabilite des mises a jour) |
+
+### Notebook 6d - SAC depuis zero
+
+| Section | Contenu |
+|---------|---------|
+| Maximum Entropy RL | Objectif avec bonus d'entropie, exploration automatique |
+| Gaussian Policy | Politique stochastique avec tanh squashing |
+| Twin Q-Networks | Double critique pour reduire la surestimation |
+| Auto-temperature | Temperature alpha apprise automatiquement |
+| Reparameterization | Trick pour gradient dans l'action |
+| Pendulum-v1 | Environnement continu de reference |
+
 ### Notebook 7 - Apprentissage Multi-Agent
 
 | Section | Contenu |
@@ -120,9 +143,9 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 
 | Algorithme | Type | Notebook | Utilisation |
 |------------|------|----------|-------------|
-| **PPO** | On-policy | 1, 2 | Controle general, robuste |
+| **PPO** | On-policy | 1, 2, 6c | Controle general, robuste |
 | **A2C** | On-policy | 2, 6b | Actor-Critic depuis zero et via SB3 |
-| **SAC** | Off-policy | 3 | Actions continues |
+| **SAC** | Off-policy | 3, 6d | Actions continues, maximum entropy |
 | **DDPG** | Off-policy | 3 | Actions continues |
 | **HER** | Replay strategy | 3 | Goal-conditioned tasks |
 | **Epsilon-greedy** | Exploration | 4 | Strategie d'exploration basique |
@@ -139,7 +162,7 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | Environnement | Type | Notebook |
 |---------------|------|----------|
 | CartPole-v1 | Controle classique, discret | 1, 6 |
-| Pendulum-v1 | Controle continu | 2 |
+| Pendulum-v1 | Controle continu | 2, 6d |
 | Parking-v0 | Goal-conditioned, continu | 3 |
 | GaussianBandit | Bandit stochastique | 4 |
 | FrozenLake-v1 | Grille discrete, stochastique | 5 |
@@ -153,7 +176,7 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 - Python intermediaire (classes, numpy)
 - Concepts RL de base (agent, environnement, reward)
 - Pas d'experience RL prealable necessaire pour le notebook 1
-- Bases PyTorch pour les notebooks 6 (tenseurs, autograd, Module)
+- Bases PyTorch pour les notebooks 6, 6b, 6c, 6d (tenseurs, autograd, Module)
 
 ### Installation
 
@@ -170,7 +193,7 @@ pip install highway-env moviepy
 
 # Pour le notebook 4 (bandits — pas de dependance supplementaire)
 
-# Pour le notebook 6 (DQN, REINFORCE)
+# Pour les notebooks 6, 6b, 6c, 6d (DQN, REINFORCE, A2C, PPO, SAC)
 pip install torch
 
 # Pour le notebook 7 (multi-agent)
@@ -186,7 +209,7 @@ pip install "pettingzoo[classic]>=1.24.0"
 | numpy | latest | Calcul numerique |
 | pandas | >=2.0 | Tableaux de resultats (notebook 5) |
 | matplotlib | latest | Visualisation |
-| torch | latest | Reseaux de neurones (notebook 6) |
+| torch | latest | Reseaux de neurones (notebooks 6, 6b, 6c, 6d) |
 | pettingzoo | >=1.24.0 | Multi-agent (notebook 7) |
 | highway-env | latest | Parking-v0 (notebook 3) |
 | moviepy | latest | Enregistrement video |
@@ -228,9 +251,9 @@ Le notebook 3 introduit les taches a objectifs (goal-conditioned RL) avec l'algo
 
 Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer de nouvelles options et exploiter ce qui fonctionne deja ? Vous implementerez des strategies d'exploration (epsilon-greedy, decaying epsilon, Thompson Sampling) sur un probleme de bandits manchots et comparerez leur regret cumule.
 
-**Phase 4 : Les maths sous le capot (~3h, notebooks 5-7)**
+**Phase 4 : Les maths sous le capot (~4.5h, notebooks 5-7)**
 
-Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 7 clot avec le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play).
+Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6b introduit l'Actor-Critic (A2C), le notebook 6c implemente PPO avec clipping, et le notebook 6d culmine avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 clot avec le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play).
 
 ## Concepts cles
 
@@ -251,6 +274,10 @@ Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depui
 | **DQN** | Q-Learning avec approximation neurale | 6 |
 | **Actor-Critic** | Combinaison politique + valeur | 6b |
 | **Advantage** | Reduction de variance A_t = R_t - V(s) | 6b |
+| **PPO** | Policy optimization avec clipping | 6c |
+| **Maximum entropy RL** | Maximisation recompense + entropie | 6d |
+| **SAC** | Soft Actor-Critic, off-policy continu | 6d |
+| **Twin Q-networks** | Double critique anti-surestimation | 6d |
 | **Policy gradient** | Optimisation directe de la politique | 6 |
 | **Multi-agent** | Plusieurs agents apprenant simultanement | 7 |
 
@@ -288,6 +315,8 @@ RL/
 ├── rl_4_mdp_dp_qlearning.ipynb
 ├── rl_5_dqn_policy_gradient.ipynb
 ├── rl_5b_actor_critic.ipynb
+├── rl_5c_ppo_from_scratch.ipynb
+├── rl_5d_sac_from_scratch.ipynb
 ├── rl_6_multi_agent_rl.ipynb
 └── README.md
 ```
