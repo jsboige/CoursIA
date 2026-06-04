@@ -6,6 +6,24 @@ Les applications sont organisees en trois categories : **Search pur** (jeux comb
 
 Sous-serie de **21 notebooks** | **~14h05** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`)
 
+## Objectifs d'apprentissage
+
+A l'issue de cette sous-serie, vous serez capable de :
+
+1. **Transposer** les algorithmes de Search et CSP vers des problemes reels (logistique, ordonnancement, jeux)
+2. **Comparer** les approches (backtracking vs CP-SAT vs metaheuristiques) sur des instances concretes
+3. **Evaluer** les compromis performance/qualite entre methodes exactes et approchees
+
+## FAQ / Troubleshooting
+
+| Probleme | Solution |
+|----------|----------|
+| `ModuleNotFoundError: minizinc` | `pip install minizinc` — necessaire pour App-5 (Timetabling) et App-8 (MiniZinc). Requiert aussi l'installation du solver MiniZinc |
+| `ModuleNotFoundError: optuna` | `pip install optuna` — necessaire pour App-18 (Hyperparameter Tuning) |
+| `ModuleNotFoundError: pygad` | `pip install pygad` — necessaire pour App-9/10 (EdgeDetection, Portfolio) |
+| App-9b/10b (.NET) : kernel non disponible | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+| Certains solveurs sont lents (>30s) | Les instances sont intentionally petites pour le pedagogique. Pour des instances plus grandes, activer les timeouts dans CP-SAT (`model.parameters.max_time_in_seconds`) |
+
 ## Structure
 
 ```text
