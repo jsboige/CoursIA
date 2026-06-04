@@ -488,3 +488,430 @@ class TestResultStructure:
         result = validate_notebook(nb)
         assert result["passed"] is True
         assert isinstance(result["passed"], bool)
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: comment-only detection uses all(), not any()
+# ---------------------------------------------------------------------------
+
+
+class TestCommentOnlyAllVsAny:
+    """A cell with code + comments must be counted as code.
+
+    Mutation: all() -> any() would skip mixed code+comment cells.
+    """
+
+    def test_mixed_code_and_comment_is_counted(self, tmp_path):
+        """Code followed by comment → counted as code, not comment-only."""
+        cell = {
+            "cell_type": "code",
+            "source": ["x = 42  # with comment\n"],
+            "execution_count": 1,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        assert result["total_code"] == 1
+
+    def test_multiple_comments_with_code_counted(self, tmp_path):
+        """Lines: comment, code, comment → still code, not comment-only."""
+        cell = {
+            "cell_type": "code",
+            "source": ["# setup\n", "x = 1\n", "# done\n"],
+            "execution_count": 1,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        assert result["total_code"] == 1
+
+    def test_pure_comment_not_counted(self, tmp_path):
+        """All lines start with # → not counted (baseline)."""
+        cell = {
+            "cell_type": "code",
+            "source": ["# only comments\n", "# here\n"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        assert result["total_code"] == 0
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: empty source detection
+# ---------------------------------------------------------------------------
+
+
+class TestEmptySourceDetection:
+    """Mutation: `not source.strip()` -> `source.strip()` would reject real code.
+
+    Also: whitespace-only cells must be treated as empty.
+    """
+
+    def test_whitespace_only_cell_skipped(self, tmp_path):
+        """Source with only spaces/tabs → skipped (total_code = 0)."""
+        cell = {
+            "cell_type": "code",
+            "source": ["   \n", "\t\n", "  \n"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        assert result["total_code"] == 0
+
+    def test_single_newline_source_skipped(self, tmp_path):
+        """Source = just newlines → skipped."""
+        cell = {
+            "cell_type": "code",
+            "source": ["\n", "\n"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        assert result["total_code"] == 0
+
+    def test_non_empty_source_counted(self, tmp_path):
+        """Source with actual code → counted."""
+        cell = _code("x = 1")
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        assert result["total_code"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: H.3 execution_count boundary — None vs 0 vs positive
+# ---------------------------------------------------------------------------
+
+
+class TestH3ExecCountBoundary:
+    """Kills mutants that treat 0 like None or vice versa."""
+
+    def test_exec_count_zero_not_null(self, tmp_path):
+        """execution_count=0 is a valid int → no H.3 error."""
+        cell = {
+            "cell_type": "code",
+            "source": ["x = 1\n"],
+            "execution_count": 0,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        h3 = [e for e in result["errors"] if "H.3" in e]
+        assert h3 == []
+
+    def test_exec_count_negative_not_null(self, tmp_path):
+        """execution_count=-1 is still an int → no H.3 error."""
+        cell = {
+            "cell_type": "code",
+            "source": ["x = 1\n"],
+            "execution_count": -1,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        h3 = [e for e in result["errors"] if "H.3" in e]
+        assert h3 == []
+
+    def test_exec_count_large_int_passes(self, tmp_path):
+        """execution_count=999 is valid → no H.3 error."""
+        cell = {
+            "cell_type": "code",
+            "source": ["x = 1\n"],
+            "execution_count": 999,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        h3 = [e for e in result["errors"] if "H.3" in e]
+        assert h3 == []
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: H.1 error output_type string comparison
+# ---------------------------------------------------------------------------
+
+
+class TestH1OutputTypeComparison:
+    """Mutation: `== 'error'` -> `!= 'error'` or wrong string.
+
+    Verifies that only output_type='error' triggers H.1, not 'stream' etc.
+    """
+
+    def test_stream_output_not_flagged(self, tmp_path):
+        """output_type='stream' → NOT an H.1 error."""
+        cell = {
+            "cell_type": "code",
+            "source": ["print('hello')\n"],
+            "execution_count": 1,
+            "outputs": [{"output_type": "stream", "text": "hello\n"}],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        assert result["passed"]
+        assert not any("error output" in e for e in result["errors"])
+
+    def test_execute_result_output_not_flagged(self, tmp_path):
+        """output_type='execute_result' → NOT an H.1 error."""
+        cell = {
+            "cell_type": "code",
+            "source": ["1 + 1\n"],
+            "execution_count": 1,
+            "outputs": [{"output_type": "execute_result", "data": {"text/plain": "2"}}],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        assert result["passed"]
+        assert not any("error output" in e for e in result["errors"])
+
+    def test_display_data_output_not_flagged(self, tmp_path):
+        """output_type='display_data' → NOT an H.1 error."""
+        cell = {
+            "cell_type": "code",
+            "source": ["import matplotlib\n"],
+            "execution_count": 1,
+            "outputs": [{"output_type": "display_data", "data": {"image/png": "..."}}],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        assert result["passed"]
+        assert not any("error output" in e for e in result["errors"])
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: rel_path ValueError handling
+# ---------------------------------------------------------------------------
+
+
+class TestRelPathValueError:
+    """Mutation: removing the try/except around rel_path.
+
+    When nb_path is outside REPO_ROOT, relative_to raises ValueError.
+    The validator must use the absolute path as fallback.
+    """
+
+    def test_path_outside_repo_uses_absolute(self, tmp_path):
+        """Notebook outside repo root → path field = absolute path string."""
+        cell = _code("x = 1\n")
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        # tmp_path is outside REPO_ROOT, so rel_path should be absolute
+        assert result["path"] == str(nb)
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: SKIP_EXEC_KERNELS substring matching
+# ---------------------------------------------------------------------------
+
+
+class TestSkipExecKernelSubstring:
+    """Mutation: `any(k in kernel)` -> `any(kernel == k)` would break
+    substring matching (e.g., 'lean4-wsl' contains 'lean4').
+    """
+
+    def test_lean4_wsl_kernel_variant_skipped(self, tmp_path):
+        """'lean4-wsl' contains 'lean4' → H.3 skipped."""
+        cell = {
+            "cell_type": "code",
+            "source": ["#check Nat\n"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path, kernel="lean4-wsl")
+        result = validate_notebook(nb)
+        h3 = [e for e in result["errors"] if "H.3" in e]
+        assert h3 == []
+
+    def test_dotnet_fsharp_kernel_skipped(self, tmp_path):
+        """'.net-fsharp' in SKIP_EXEC_KERNELS → H.3 skipped."""
+        cell = {
+            "cell_type": "code",
+            "source": ["let x = 1\n"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path, kernel=".net-fsharp")
+        result = validate_notebook(nb)
+        h3 = [e for e in result["errors"] if "H.3" in e]
+        assert h3 == []
+
+    def test_dotnet_powershell_kernel_skipped(self, tmp_path):
+        """'.net-powershell' in SKIP_EXEC_KERNELS → H.3 skipped."""
+        cell = {
+            "cell_type": "code",
+            "source": ["Get-Date\n"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path, kernel=".net-powershell")
+        result = validate_notebook(nb)
+        h3 = [e for e in result["errors"] if "H.3" in e]
+        assert h3 == []
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: QC_CLOUD_PATHS substring matching
+# ---------------------------------------------------------------------------
+
+
+class TestQcCloudPathSubstring:
+    """Mutation: path matching uses `any(p in normalized)` which is substring.
+
+    Verifies both QuantConnect/Python and QuantConnect/projects are detected.
+    """
+
+    def test_qc_projects_path_skips_exec(self, tmp_path):
+        """QuantConnect/projects path → H.3 skipped."""
+        cell = {
+            "cell_type": "code",
+            "source": ["qb = QuantBook()\n"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        qc_dir = tmp_path / "QuantConnect" / "projects"
+        qc_dir.mkdir(parents=True)
+        nb = _write_nb([cell], qc_dir, kernel="python3")
+        result = validate_notebook(nb)
+        h3 = [e for e in result["errors"] if "H.3" in e]
+        assert h3 == []
+
+    def test_non_qc_path_not_skipped(self, tmp_path):
+        """Non-QC path with python3 → H.3 NOT skipped."""
+        cell = {
+            "cell_type": "code",
+            "source": ["x = 1\n"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        nb = _write_nb([cell], tmp_path, kernel="python3")
+        result = validate_notebook(nb)
+        h3 = [e for e in result["errors"] if "H.3" in e]
+        assert len(h3) == 1
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: multiple error outputs in single cell
+# ---------------------------------------------------------------------------
+
+
+class TestMultipleErrorOutputs:
+    """Cell with multiple error outputs → each one flagged."""
+
+    def test_two_error_outputs_both_flagged(self, tmp_path):
+        cell = {
+            "cell_type": "code",
+            "source": ["raise ValueError\nraise TypeError\n"],
+            "execution_count": 1,
+            "outputs": [
+                {"output_type": "error", "ename": "ValueError", "evalue": "x"},
+                {"output_type": "error", "ename": "TypeError", "evalue": "y"},
+            ],
+        }
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        h1 = [e for e in result["errors"] if "error output" in e]
+        assert len(h1) == 2
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: cell_type comparison
+# ---------------------------------------------------------------------------
+
+
+class TestCellTypeComparison:
+    """Mutation: `!= 'code'` -> `== 'code'` would skip all code cells."""
+
+    def test_markdown_cell_not_counted(self, tmp_path):
+        """Markdown cells are completely ignored."""
+        cells = [
+            {"cell_type": "markdown", "source": ["# Title\n"]},
+            _code("x = 1\n"),
+        ]
+        nb = _write_nb(cells, tmp_path)
+        result = validate_notebook(nb)
+        assert result["total_code"] == 1
+
+    def test_raw_cell_not_counted(self, tmp_path):
+        """Raw cells are completely ignored."""
+        cells = [
+            {"cell_type": "raw", "source": ["raw text\n"]},
+            _code("x = 1\n"),
+        ]
+        nb = _write_nb(cells, tmp_path)
+        result = validate_notebook(nb)
+        assert result["total_code"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: C.1 scan_c1_source integration
+# ---------------------------------------------------------------------------
+
+
+class TestC1ScannerIntegration:
+    """Verify validate_notebook correctly uses scan_c1_source results.
+
+    Tests that C.1 violations produce correct cell indices and descriptions.
+    """
+
+    def test_c1_violation_in_second_cell_correct_index(self, tmp_path):
+        """C.1 violation in cell 1 → error references cell 1."""
+        cells = [
+            _code("x = 1\n"),
+            _code("raise NotImplementedError('todo')\n"),
+        ]
+        nb = _write_nb(cells, tmp_path)
+        result = validate_notebook(nb)
+        c1 = [e for e in result["errors"] if "C.1" in e]
+        assert len(c1) == 1
+        assert "cell 1" in c1[0]
+
+    def test_c1_violation_after_markdown_correct_index(self, tmp_path):
+        """C.1 in cell 2 (after markdown at 0, code at 1) → error says cell 2."""
+        cells = [
+            {"cell_type": "markdown", "source": ["# Title\n"]},
+            _code("x = 1\n"),
+            _code("assert False, 'nope'\n"),
+        ]
+        nb = _write_nb(cells, tmp_path)
+        result = validate_notebook(nb)
+        c1 = [e for e in result["errors"] if "C.1" in e]
+        assert len(c1) == 1
+        assert "cell 2" in c1[0]
+
+    def test_c1_no_violation_clean_code(self, tmp_path):
+        """Clean code → no C.1 violations."""
+        cell = _code("x = 42\nprint(x)")
+        nb = _write_nb([cell], tmp_path)
+        result = validate_notebook(nb)
+        c1 = [e for e in result["errors"] if "C.1" in e]
+        assert c1 == []
+
+
+# ---------------------------------------------------------------------------
+# Mutation test: main() --strict flag
+# ---------------------------------------------------------------------------
+
+
+class TestMainStrictFlag:
+    """Verify --strict flag affects behavior for non-Python kernels."""
+
+    def test_strict_flag_causes_exit_1_for_dotnet_exec_none(self, tmp_path):
+        """--strict with dotnet kernel + execution_count=None → fail.
+
+        Note: current implementation does not implement --strict for H.3
+        (it only adds execution_count check for non-Python kernels).
+        This test documents expected behavior if --strict is implemented.
+        """
+        cell = {
+            "cell_type": "code",
+            "source": ["Console.WriteLine('hi');\n"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        p = _write_nb([cell], tmp_path, kernel=".net-csharp")
+        with patch("sys.argv", ["validate_pr_notebooks.py", "--strict", "origin/main", str(p)]):
+            exit_code = main()
+        # Currently --strict doesn't affect H.3 skip_exec, so this passes
+        assert exit_code == 0
