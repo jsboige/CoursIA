@@ -26,4 +26,8 @@ import Conway.Life.RLE
 import Conway.Life.MacroCell
 import Conway.Life.Hashlife
 import Conway.Life.Computation
+import Conway.Life.HashlifeCorrectness
+import Conway.Life.HashlifeMemo
+import Conway.Life.Pillars
 import Conway.FreeWillTheorem
+import Conway.MathlibMap

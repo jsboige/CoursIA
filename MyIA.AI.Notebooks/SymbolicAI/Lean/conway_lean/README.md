@@ -88,7 +88,7 @@ Kochen-Specker contradiction.
 ## Notes
 
 - Part of the GameTheory Lean series
-- Companion notebook: `Lean-14-Conway-Tribute.ipynb`
+- Companion notebook: `Lean-14b-Conway-Game-of-Life-Lean.ipynb`
 - Cross-link: Epic #1647 Conway Phase 2 (Life-as-Computation)
 - Cross-link: Epic #1651 Conway Phase 3 (Free Will Theorem)
 

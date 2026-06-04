@@ -10,6 +10,35 @@ Les notebooks sont disponibles en Python, C# (.NET Interactive) et Lean 4. Chaqu
 
 ---
 
+## Commencer ici
+
+Vous avez clone le depot et vous ne savez pas par ou commencer ?
+
+1. **Choisissez votre niveau** : voyez les parcours recommandes plus bas pour un plan d'apprentissage guide
+2. **Explorez par serie** : chaque serie a son propre README detaille avec une vue d'ensemble, la liste des notebooks, les prerequis et la duree estimee
+3. **Documentation projet** : le repertoire [docs/](docs/README.md) centralise les regles de travail, l'infrastructure, les procedes recurrents et les guides d'apprentissage
+
+## Cartographie rapide du depot
+
+```
+MyIA.AI.Notebooks/
+  Search/          -> Algorithmes de recherche (BFS, A*, CSP) -- point d'entree ideal pour debutants
+  Sudoku/          -> Resolution multi-paradigme -- 10 approches pour 1 probleme
+  ML/              -> Machine Learning (ML.NET, agents ADK)
+  RL/              -> Reinforcement Learning (PPO, DQN, Stable Baselines3)
+  Probas/          -> Programmation probabiliste (Infer.NET, Pyro)
+  GameTheory/      -> Theorie des jeux, equilibres de Nash, mechanism design
+  IIT/             -> Theologie de l'information integree (Tononi, PyPhi)
+  CaseStudies/     -> Etudes de cas interdisciplinaires
+  SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners)
+  GenAI/           -> IA generative (Image, Audio, Video, Texte, Semantic Kernel)
+  QuantConnect/    -> Trading algorithmique (27 notebooks pedag + strategies backtestees)
+```
+
+Pour un guide complet des parcours d'apprentissage, voir [docs/parcours/](docs/parcours/).
+
+---
+
 ## Parcours recommandes
 
 **Debutant** -- Commencer par Search (Part 1), Sudoku, puis ML.Net. Ces series ne necessitent aucune cle API et introduisent les concepts fondamentaux.
@@ -143,7 +172,7 @@ Python | [README detaille](MyIA.AI.Notebooks/QuantConnect/README.md) | [Strategi
 
 Introduction a l'apprentissage par renforcement avec Stable Baselines3 : PPO sur CartPole, wrappers et callbacks, experience replay et DQN.
 
-Python
+Python | [README detaille](MyIA.AI.Notebooks/RL/README.md)
 
 ### IIT -- Theorie de l'Information Integree
 
@@ -173,7 +202,7 @@ CoursIA/
       projects/                Strategies backtestees
       ML-Training-Pipeline/    Pipeline DL forecasting
       partner-course-quant-trading/ Projets etudiants
-    EPF/                       Projets transversaux (Python)
+    CaseStudies/               Etudes de cas interdisciplinaires (Python)
     IIT/                       Information integree (Python)
     Config/                    Configuration API
 

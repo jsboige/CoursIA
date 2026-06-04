@@ -749,7 +749,14 @@ class AutonomousProver:
         self.config_label = f"auto-{provider}"
 
     def prove_sorry(self, demo: dict, max_iterations: int = 10,
-                    strategic_hints: str = "", agent_timeout_s: int = 0) -> dict:
+                    # agent_timeout_s default was 0 (no timeout), letting a
+                    # stuck provider hang indefinitely on a bare prove_sorry()
+                    # call (observed: TacticAgent z.ai 1680s, GLM single-call
+                    # 1200s+). Normal single-agent call is ~60-120s, so a 900s
+                    # hard cap kills pathological hangs with generous headroom.
+                    # Routes through the ContextVar-safe asyncio.wait branch
+                    # below. Pass agent_timeout_s=0 explicitly to disable.
+                    strategic_hints: str = "", agent_timeout_s: int = 900) -> dict:
         # Same OTel wiring as MultiAgentSorryProver — single-agent runs benefit
         # just as much from a durable span log of LLM-tool interactions.
         otel_session = f"auto_{demo['name']}_{self.provider}_{int(time.time())}"

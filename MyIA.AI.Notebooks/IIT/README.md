@@ -2,24 +2,24 @@
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 1
-breakdown: root=1
-maturity: PRODUCTION=1
+pedagogical_count: 2
+breakdown: root=2
+maturity: PRODUCTION=2
 -->
 
 La conscience est-elle mesurable ? La Théorie de l'Information Intégrée (IIT), proposée par Giulio Tononi, répond oui : un système est conscient dans la mesure où il intègre de l'information de manière non réductible. Plus formellement, la quantité de conscience d'un système correspond à la valeur **Phi** (big Phi), qui mesure le degré d'intégration causale irréductible. Cette série vous apprend à calculer cette mesure avec **PyPhi**, la bibliothèque de référence du laboratoire Tononi, et à explorer la géométrie informationnelle des systèmes complexes.
 
-L'unique notebook couvre le spectre complet : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), définition des sous-systèmes, extraction des Cause-Effect Structures (CES), et exploration des macro-subsystemes (coarse-graining, blackboxing). Le cheminement va de l'intuition physique (un réseau de neurones simplifié) aux formalismes mathématiques (partition minimale d'information, structure cause-effet).
+Le premier notebook couvre le spectre fondamental : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), définition des sous-systèmes, extraction des Cause-Effect Structures (CES), et exploration des macro-subsystemes. Le second approfondit les aspects avancés : partitionnement MIP, repertoires cause-effet, MICE, comparaison big Phi vs small phi, reseaux elargis a 4+ noeuds, coarse-graining et apercu IIT 4.0.
 
-**À qui s'adresse cette série** : étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Le notebook (~90 min) nécessite Python 3.10+ avec `pyphi` (installé via conda). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
+**À qui s'adresse cette série** : étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Les notebooks (~60-90 min chacun) nécessitent Python 3.9 avec `pyphi` (installé via conda env dédié). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 1 |
-| Kernel | Python 3 |
-| Duree estimee | ~60-90 min |
+| Notebooks | 2 |
+| Kernel | Python 3 (PyPhi/IIT) |
+| Duree estimee | ~120-180 min |
 | Version | PyPhi 1.2.0+ |
 
 ## Notebook
@@ -27,6 +27,7 @@ L'unique notebook couvre le spectre complet : construction de graphes causaux bi
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 1 | [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Introduction complète à PyPhi et IIT | 60-90 min |
+| 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | Partitionnement MIP, repertoires, MICE, reseaux elargis | 60-90 min |
 
 ## Contenu detaille
 
@@ -41,6 +42,19 @@ L'unique notebook couvre le spectre complet : construction de graphes causaux bi
 | CES | Cause-Effect Structures, mecanismes |
 | Causation actuelle | Liens causaux entre elements |
 | Macro-subsystemes | Coarse-graining, blackboxing |
+
+### IIT-2-AdvancedTopics.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Rappels | Reprise des concepts du notebook 1 |
+| Partitionnement MIP | Coupes minimales d'information, bipartitions |
+| Repertoires cause-effet | Distributions cause, effet, non-perturbees |
+| MICE et concepts | Mechanismes maximalement irreductibles |
+| Big Phi vs Small Phi | Comparaison niveau systeme vs mecanisme |
+| Reseaux elargis | Systemes 4+ noeuds, interpretation |
+| Performance | Coarse-graining, timing, complexite |
+| IIT 4.0 | Concept-style, evolutions recentes, debats |
 
 ## Concepts cles
 
@@ -127,8 +141,12 @@ Ces tensions font de l'IIT un excellent terrain pour exercer l'esprit critique :
 
 ```
 IIT/
-├── Intro_to_PyPhi.ipynb    # Notebook principal
-└── README.md               # Cette documentation
+├── Intro_to_PyPhi.ipynb        # Notebook 1 : introduction
+├── IIT-2-AdvancedTopics.ipynb  # Notebook 2 : sujets avances
+├── scripts/
+│   ├── setup_pyphi_env.ps1     # Setup conda env + kernel
+│   └── build_notebook.py       # Script de construction notebook 2
+└── README.md                   # Cette documentation
 ```
 
 ## Licence

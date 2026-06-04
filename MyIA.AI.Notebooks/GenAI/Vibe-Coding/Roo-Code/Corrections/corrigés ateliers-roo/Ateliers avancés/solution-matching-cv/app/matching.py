@@ -6,7 +6,6 @@ import semantic_kernel as sk
 from semantic_kernel.connectors.ai.open_ai import OpenAITextEmbedding
 from semantic_kernel.data.vector import VectorStoreField, VectorStoreCollectionDefinition
 from semantic_kernel.exceptions import KernelException
-from matching.games import StableMarriage
 
 def _preprocess_data(consultants_df, jobs_df, logger):
     """
@@ -226,34 +225,50 @@ async def find_matches(vector_store, jobs_df, logger, consultant_collection_name
     logger.info(f"Processus de recherche terminé. {len(results)} correspondances totales trouvées.")
     return results
 
+def _build_hash_to_name_map(df, description_fn, name_col):
+    """
+    Construit un mapping hash -> nom pour retrouver les noms a partir des IDs deterministes.
+    Les IDs dans le pipeline semantique sont des hashes SHA256 generes par _generate_deterministic_id().
+    """
+    mapping = {}
+    for _, row in df.iterrows():
+        description = description_fn(row)
+        record_id = _generate_deterministic_id(description)
+        mapping[record_id] = row[name_col]
+    return mapping
+
+
+def _consultant_description(row):
+    return f"Titre: {row['Poste']}. Experience: {row['Expériences clés']}. Competences: {row['Compétences']}."
+
+
+def _job_description(row):
+    return f"Titre du poste: {row['Titre']}. Description: {row['Description brute']}. Competences requises: {row['Compétences clés']}"
+
+
 def run_best_score_matching(jobs_df, consultants_df, similarity_scores, logger):
     """
-    Trouve le meilleur consultant pour chaque poste basé sur le score de similarité.
-    Ne requiert pas un nombre égal de consultants et de postes.
+    Trouve le meilleur consultant pour chaque poste base sur le score de similarite.
+    Ne requiert pas un nombre egal de consultants et de postes.
     """
-    # Copie des dataframes pour éviter les effets de bord
     jobs_df = jobs_df.copy()
     consultants_df = consultants_df.copy()
-    
-    logger.info("Début de l'algorithme de matching par meilleur score.")
-    
+
+    logger.info("Debut de l'algorithme de matching par meilleur score.")
+
     similarity_df = pd.DataFrame(similarity_scores)
     if similarity_df.empty:
-        logger.warning("Le dataframe des scores de similarité est vide. Aucun appariement possible.")
+        logger.warning("Le dataframe des scores de similarite est vide. Aucun appariement possible.")
         return pd.DataFrame()
 
-
-    # S'assurer que les IDs sont des chaînes de caractères pour les fusions
-    if 'ID' not in consultants_df.columns:
-        consultants_df['ID'] = consultants_df.index
-    consultants_df['ID'] = consultants_df['ID'].astype(str)
-    if 'ID' not in jobs_df.columns:
-        jobs_df['ID'] = jobs_df.index
-    jobs_df['ID'] = jobs_df['ID'].astype(str)
     similarity_df['consultant_id'] = similarity_df['consultant_id'].astype(str)
     similarity_df['job_id'] = similarity_df['job_id'].astype(str)
 
-    # Logique d'assignation unique basée sur le meilleur score global
+    # Construire les mappings hash -> nom pour resoudre les noms
+    consultant_names = _build_hash_to_name_map(consultants_df, _consultant_description, 'Nom')
+    job_titles = _build_hash_to_name_map(jobs_df, _job_description, 'Titre')
+
+    # Logique d'assignation unique basee sur le meilleur score global
     all_matches = similarity_df.sort_values(by='score_de_similarite', ascending=False)
 
     final_matches_list = []
@@ -270,47 +285,36 @@ def run_best_score_matching(jobs_df, consultants_df, similarity_scores, logger):
         return pd.DataFrame()
 
     best_matches = pd.DataFrame(final_matches_list)
-    logger.info(f"Meilleurs matchs uniques trouvés : \n{best_matches.to_string()}")
-    
-    # Fusionner pour obtenir les noms et les titres
-    results_df = pd.merge(best_matches, jobs_df, left_on='job_id', right_on='ID', how='left')
-    results_df = pd.merge(results_df, consultants_df, left_on='consultant_id', right_on='ID', how='left')
+    logger.info(f"Meilleurs matchs uniques trouves : \n{best_matches.to_string()}")
 
-    # Renommer et sélectionner les colonnes finales
-    results_df = results_df.rename(columns={
-        'Titre': 'job_title',
-        'Nom': 'consultant_name',
-        'score_de_similarite': 'matching_score'
-    })
-    
+    # Resoudre les noms via les mappings hash -> nom
+    best_matches['job_title'] = best_matches['job_id'].map(job_titles)
+    best_matches['consultant_name'] = best_matches['consultant_id'].map(consultant_names)
+
+    best_matches = best_matches.rename(columns={'score_de_similarite': 'matching_score'})
     final_columns = ['job_id', 'job_title', 'consultant_id', 'consultant_name', 'matching_score']
-    results_df = results_df[final_columns]
-    
-    logger.info(f"{len(results_df)} correspondances trouvées par meilleur score.")
-    
+    results_df = best_matches[final_columns]
+
+    logger.info(f"{len(results_df)} correspondances trouvees par meilleur score.")
     return results_df
 
 def run_stable_matching(jobs_df, consultants_df, similarity_scores, logger, proposing_party='consultants'):
     """
-    Exécute l'algorithme de mariage stable pour apparier les consultants et les postes.
+    Execute l'algorithme de mariage stable pour apparier les consultants et les postes.
+    Utilise HospitalResident (variante de Gale-Shapley) pour gerer les groupes de tailles inegales.
     """
-    logger.info(f"Début de l'algorithme de mariage stable, optimisé pour : {proposing_party}.")
-    
-    # S'assurer que les IDs sont présents et correctement formatés pour les fusions
-    if 'ID' not in consultants_df.columns:
-        consultants_df['ID'] = consultants_df.index.astype(str)
-    consultants_df['ID'] = consultants_df['ID'].astype(str)
-    
-    if 'ID' not in jobs_df.columns:
-        jobs_df['ID'] = jobs_df.index.astype(str)
-    jobs_df['ID'] = jobs_df['ID'].astype(str)
+    logger.info(f"Debut de l'algorithme de mariage stable, optimise pour : {proposing_party}.")
 
     similarity_df = pd.DataFrame(similarity_scores)
     if similarity_df.empty:
-        logger.warning("Le dataframe des scores de similarité est vide. Aucun appariement stable possible.")
+        logger.warning("Le dataframe des scores de similarite est vide. Aucun appariement stable possible.")
         return pd.DataFrame()
 
-    # Créer les listes de préférences
+    # Construire les mappings hash -> nom
+    consultant_names = _build_hash_to_name_map(consultants_df, _consultant_description, 'Nom')
+    job_titles = _build_hash_to_name_map(jobs_df, _job_description, 'Titre')
+
+    # Creer les listes de preferences
     consultant_preferences = {
         cid: similarity_df[similarity_df['consultant_id'] == cid]
         .sort_values('score_de_similarite', ascending=False)['job_id']
@@ -325,70 +329,53 @@ def run_stable_matching(jobs_df, consultants_df, similarity_scores, logger, prop
     }
 
     try:
-        # Instancier et résoudre le jeu de mariage stable
-        # Utiliser l'algorithme HospitalResident, qui gère les groupes de tailles inégales
         from matching.games import HospitalResident
 
-        # Déterminer qui propose
-        # La partie qui propose est considérée comme "résident" dans la terminologie de la bibliothèque
         if proposing_party == 'consultants':
             resident_prefs = consultant_preferences
             hospital_prefs = job_preferences
-            # Chaque poste (hôpital) a une capacité de 1
             hospital_capacities = {job: 1 for job in job_preferences}
-        else:  # 'jobs' propose
+        else:
             resident_prefs = job_preferences
             hospital_prefs = consultant_preferences
-            # Chaque consultant (hôpital) a une capacité de 1
             hospital_capacities = {consultant: 1 for consultant in consultant_preferences}
 
         game = HospitalResident.create_from_dictionaries(resident_prefs, hospital_prefs, hospital_capacities)
         stable_matches_dict = game.solve()
 
         if not stable_matches_dict:
-            logger.warning("L'algorithme de mariage stable n'a trouvé aucune correspondance.")
+            logger.warning("L'algorithme de mariage stable n'a trouve aucune correspondance.")
             return pd.DataFrame()
 
-        # Conversion robuste des résultats en DataFrame
         matches_list = []
-        # Le dictionnaire de résultats est de la forme {hopital: [residents]}
         if proposing_party == 'consultants':
-            # Les hôpitaux sont les jobs
             for job, residents in stable_matches_dict.items():
                 for consultant in residents:
                     matches_list.append({'job_id': str(job), 'consultant_id': str(consultant)})
         else:
-            # Les hôpitaux sont les consultants
             for consultant, residents in stable_matches_dict.items():
                 for job in residents:
                     matches_list.append({'consultant_id': str(consultant), 'job_id': str(job)})
-        
+
         if not matches_list:
             return pd.DataFrame()
-            
+
         matches_df = pd.DataFrame(matches_list)
 
-        # Fusionner avec les scores de similarité
+        # Fusionner avec les scores de similarite
         results_df = pd.merge(matches_df, similarity_df, on=['consultant_id', 'job_id'], how='left')
 
-        # Préparer les dataframes pour la fusion finale
-        consultants_info = consultants_df[['ID', 'Nom']].rename(columns={'ID': 'consultant_id', 'Nom': 'consultant_name'})
-        jobs_info = jobs_df[['ID', 'Titre']].rename(columns={'ID': 'job_id', 'Titre': 'job_title'})
+        # Resoudre les noms via les mappings hash -> nom
+        results_df['consultant_name'] = results_df['consultant_id'].map(consultant_names)
+        results_df['job_title'] = results_df['job_id'].map(job_titles)
 
-        # Fusionner pour obtenir les noms et les titres
-        results_df = pd.merge(results_df, consultants_info, on='consultant_id', how='left')
-        results_df = pd.merge(results_df, jobs_info, on='job_id', how='left')
-        
-        # Renommer la colonne de score
         results_df = results_df.rename(columns={'score_de_similarite': 'matching_score'})
-
-        # Sélectionner et ordonner les colonnes finales
         final_columns = ['job_id', 'job_title', 'consultant_id', 'consultant_name', 'matching_score']
         results_df = results_df[final_columns].sort_values(by='matching_score', ascending=False).reset_index(drop=True)
-        
-        logger.info(f"{len(results_df)} correspondances stables trouvées.")
+
+        logger.info(f"{len(results_df)} correspondances stables trouvees.")
         return results_df
 
     except Exception as e:
-        logger.error(f"Erreur lors de la résolution du jeu de mariage stable : {e}", exc_info=True)
+        logger.error(f"Erreur lors de la resolution du jeu de mariage stable : {e}", exc_info=True)
         return pd.DataFrame()

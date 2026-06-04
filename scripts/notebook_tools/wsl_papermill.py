@@ -1,28 +1,38 @@
 #!/usr/bin/env python3
-"""Execute Jupyter notebooks via papermill inside WSL.
+"""Execute Jupyter notebooks via papermill (native or WSL).
 
-Workaround for the jupyter_client cross-OS connection issue:
+On macOS/Linux: runs papermill natively via the system Python.
+On Windows: runs papermill inside WSL (cross-OS kernel workaround).
+
+The WSL mode works around the jupyter_client cross-OS connection issue:
 Windows-side jupyter_client cannot connect to WSL kernels because
-WSL strips backslashes from connection file paths. This script runs
+WSL strips backslashes from connection file paths. WSL mode runs
 papermill natively inside WSL, avoiding the cross-OS boundary entirely.
 
-Prerequisites (one-time setup):
+Prerequisites (WSL, one-time setup):
     wsl -e bash -c "python3 -m venv ~/coursia-wsl"
     wsl -e bash -c "source ~/coursia-wsl/bin/activate && pip install nashpy matplotlib papermill ipykernel scipy numpy"
     wsl -e bash -c "source ~/coursia-wsl/bin/activate && python3 -m ipykernel install --user --name python3"
 
+Prerequisites (native macOS/Linux):
+    pip install papermill ipykernel
+    (plus any notebook-specific dependencies: nashpy, matplotlib, numpy, scipy, etc.)
+
 Usage:
-    python wsl_papermill.py execute <notebook.ipynb> [--output <path>] [--kernel python3]
-    python wsl_papermill.py batch <dir> [--pattern "*.ipynb"] [--kernel python3]
-    python wsl_papermill.py check-env
+    python wsl_papermill.py execute <notebook.ipynb> [--output <path>] [--kernel python3] [--mode auto]
+    python wsl_papermill.py batch <dir> [--pattern "*.ipynb"] [--kernel python3] [--mode auto]
+    python wsl_papermill.py check-env [--mode auto]
 
 Examples:
     python wsl_papermill.py execute MyIA.AI.Notebooks/GameTheory/GameTheory-1-Setup.ipynb
     python wsl_papermill.py batch MyIA.AI.Notebooks/GameTheory/ --kernel python3
+    python wsl_papermill.py check-env --mode native
 """
 
 import argparse
 import json
+import platform
+import shutil
 import subprocess
 import sys
 import time
@@ -32,6 +42,15 @@ WSL_VENV = "~/coursia-wsl"
 WSL_PAPERMILL_CMD = f"source {WSL_VENV}/bin/activate && papermill"
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
+
+def _default_mode() -> str:
+    """Auto-detect execution mode based on platform."""
+    return "wsl" if platform.system() == "Windows" else "native"
+
+
+# =============================================================================
+# WSL mode (Windows only)
+# =============================================================================
 
 def win_to_wsl_path(win_path: str) -> str:
     """Convert Windows path to WSL path."""
@@ -49,7 +68,7 @@ def run_wsl(cmd: str, timeout: int = 300) -> tuple[int, str, str]:
     return result.returncode, result.stdout, result.stderr
 
 
-def check_env() -> bool:
+def check_env_wsl() -> bool:
     """Verify WSL papermill environment is set up."""
     print("Checking WSL papermill environment...")
     ok = True
@@ -75,9 +94,9 @@ def check_env() -> bool:
     return ok
 
 
-def execute_notebook(notebook: str, output: str | None = None,
-                     kernel: str = "python3", timeout: int = 300,
-                     in_place: bool = False) -> int:
+def execute_notebook_wsl(notebook: str, output: str | None = None,
+                         kernel: str = "python3", timeout: int = 300,
+                         in_place: bool = False) -> int:
     """Execute a single notebook via WSL papermill."""
     nb_path = Path(notebook).resolve()
     if not nb_path.exists():
@@ -94,7 +113,7 @@ def execute_notebook(notebook: str, output: str | None = None,
         wsl_output = f"/tmp/{nb_path.stem}_wsl_output.ipynb"
 
     cmd = f'{WSL_PAPERMILL_CMD} --kernel {kernel} "{wsl_input}" "{wsl_output}"'
-    print(f"Executing: {nb_path.name} ...")
+    print(f"Executing (WSL): {nb_path.name} ...")
 
     start = time.time()
     try:
@@ -119,7 +138,113 @@ def execute_notebook(notebook: str, output: str | None = None,
             print(f"  WARNING: could not copy output back ({elapsed:.1f}s)")
             return 1
 
-    # Validate output
+    return _validate_output(nb_path, elapsed)
+
+
+# =============================================================================
+# Native mode (macOS/Linux)
+# =============================================================================
+
+def check_env_native() -> bool:
+    """Verify native papermill environment is set up."""
+    print("Checking native papermill environment...")
+    ok = True
+
+    # Check papermill
+    if shutil.which("papermill") or _find_papermill():
+        print("  papermill: OK")
+    else:
+        print("  papermill: MISSING — run: pip install papermill ipykernel")
+        ok = False
+
+    # Check common packages
+    pkgs = ["jupyter", "ipykernel"]
+    for pkg in pkgs:
+        try:
+            __import__(pkg)
+            print(f"  {pkg}: OK")
+        except ImportError:
+            print(f"  {pkg}: MISSING")
+            ok = False
+
+    # Check Lean tools if relevant
+    for tool in ["lake", "lean"]:
+        if shutil.which(tool):
+            print(f"  {tool}: OK ({shutil.which(tool)})")
+        else:
+            print(f"  {tool}: not found (optional for Lean notebooks)")
+
+    return ok
+
+
+def _find_papermill() -> str | None:
+    """Find papermill executable (may be in same Python as sys.executable)."""
+    # Try running papermill via current Python
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "papermill", "--version"],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            return sys.executable
+    except Exception:
+        pass
+    return None
+
+
+def execute_notebook_native(notebook: str, output: str | None = None,
+                            kernel: str = "python3", timeout: int = 300,
+                            in_place: bool = False) -> int:
+    """Execute a single notebook via native papermill (macOS/Linux)."""
+    nb_path = Path(notebook).resolve()
+    if not nb_path.exists():
+        print(f"ERROR: {nb_path} not found")
+        return 1
+
+    if output:
+        out_path = str(Path(output).resolve())
+    elif in_place:
+        out_path = str(nb_path)
+    else:
+        out_path = str(nb_path.parent / f"{nb_path.stem}_output.ipynb")
+
+    cmd = [
+        sys.executable, "-m", "papermill",
+        str(nb_path), out_path,
+        "--kernel", kernel,
+        "--cwd", str(nb_path.parent),
+    ]
+
+    print(f"Executing (native): {nb_path.name} ...")
+
+    start = time.time()
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        elapsed = time.time() - start
+    except subprocess.TimeoutExpired:
+        print(f"  TIMEOUT after {timeout}s")
+        return 2
+
+    if result.returncode != 0:
+        print(f"  FAILED ({elapsed:.1f}s)")
+        if result.stderr:
+            for line in result.stderr.strip().split("\n")[-10:]:
+                print(f"    {line}")
+        return 1
+
+    # Copy output back if different from input
+    if out_path != str(nb_path) and Path(out_path).exists():
+        shutil.copy2(out_path, str(nb_path))
+
+    return _validate_output(nb_path, elapsed)
+
+
+# =============================================================================
+# Shared validation
+# =============================================================================
+
+def _validate_output(nb_path: Path, elapsed: float) -> int:
+    """Validate executed notebook output. Returns 0 (OK), 3 (errors), 0 (warning)."""
     try:
         content = nb_path.read_text(encoding="utf-8")
         nb = json.loads(content)
@@ -136,8 +261,29 @@ def execute_notebook(notebook: str, output: str | None = None,
         return 0
 
 
+# =============================================================================
+# Unified dispatch
+# =============================================================================
+
+def execute_notebook(notebook: str, output: str | None = None,
+                     kernel: str = "python3", timeout: int = 300,
+                     in_place: bool = False, mode: str = "auto") -> int:
+    """Execute a single notebook, dispatching to native or WSL mode."""
+    if mode == "auto":
+        mode = _default_mode()
+
+    if mode == "wsl":
+        return execute_notebook_wsl(notebook, output, kernel, timeout, in_place)
+    elif mode == "native":
+        return execute_notebook_native(notebook, output, kernel, timeout, in_place)
+    else:
+        print(f"ERROR: unknown mode '{mode}' (use 'wsl', 'native', or 'auto')")
+        return 1
+
+
 def batch_execute(directory: str, pattern: str = "*.ipynb",
-                  kernel: str = "python3", timeout: int = 300) -> int:
+                  kernel: str = "python3", timeout: int = 300,
+                  mode: str = "auto") -> int:
     """Execute all matching notebooks in a directory."""
     nb_dir = Path(directory).resolve()
     if not nb_dir.exists():
@@ -154,7 +300,8 @@ def batch_execute(directory: str, pattern: str = "*.ipynb",
 
     for i, nb in enumerate(notebooks, 1):
         print(f"\n[{i}/{len(notebooks)}] {nb.name}")
-        rc = execute_notebook(str(nb), kernel=kernel, timeout=timeout, in_place=True)
+        rc = execute_notebook(str(nb), kernel=kernel, timeout=timeout,
+                              in_place=True, mode=mode)
         if rc == 0:
             results["ok"] += 1
         elif rc == 2:
@@ -169,8 +316,23 @@ def batch_execute(directory: str, pattern: str = "*.ipynb",
     return 1 if results["fail"] > 0 or results["timeout"] > 0 else 0
 
 
+def check_env(mode: str = "auto") -> bool:
+    """Check environment for the given mode."""
+    if mode == "auto":
+        mode = _default_mode()
+
+    if mode == "wsl":
+        return check_env_wsl()
+    elif mode == "native":
+        return check_env_native()
+    else:
+        print(f"ERROR: unknown mode '{mode}'")
+        return False
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Execute notebooks via WSL papermill")
+    parser = argparse.ArgumentParser(
+        description="Execute notebooks via papermill (native or WSL)")
     sub = parser.add_subparsers(dest="command")
 
     # execute
@@ -179,6 +341,9 @@ def main():
     p_exec.add_argument("--output", help="Output path (default: in-place)")
     p_exec.add_argument("--kernel", default="python3", help="Kernel name")
     p_exec.add_argument("--timeout", type=int, default=300, help="Timeout in seconds")
+    p_exec.add_argument("--mode", default="auto",
+                        choices=["auto", "wsl", "native"],
+                        help="Execution mode (default: auto-detected)")
 
     # batch
     p_batch = sub.add_parser("batch", help="Execute all notebooks in directory")
@@ -186,17 +351,25 @@ def main():
     p_batch.add_argument("--pattern", default="*.ipynb", help="Glob pattern")
     p_batch.add_argument("--kernel", default="python3", help="Kernel name")
     p_batch.add_argument("--timeout", type=int, default=300, help="Timeout per notebook")
+    p_batch.add_argument("--mode", default="auto",
+                         choices=["auto", "wsl", "native"],
+                         help="Execution mode (default: auto-detected)")
 
     # check-env
-    sub.add_parser("check-env", help="Check WSL papermill environment")
+    p_check = sub.add_parser("check-env", help="Check papermill environment")
+    p_check.add_argument("--mode", default="auto",
+                         choices=["auto", "wsl", "native"],
+                         help="Environment to check (default: auto-detected)")
 
     args = parser.parse_args()
     if args.command == "execute":
-        sys.exit(execute_notebook(args.notebook, args.output, args.kernel, args.timeout))
+        sys.exit(execute_notebook(args.notebook, args.output, args.kernel,
+                                  args.timeout, mode=args.mode))
     elif args.command == "batch":
-        sys.exit(batch_execute(args.directory, args.pattern, args.kernel, args.timeout))
+        sys.exit(batch_execute(args.directory, args.pattern, args.kernel,
+                               args.timeout, mode=args.mode))
     elif args.command == "check-env":
-        sys.exit(0 if check_env() else 1)
+        sys.exit(0 if check_env(args.mode) else 1)
     else:
         parser.print_help()
 
