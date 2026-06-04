@@ -850,3 +850,9 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
 
 # Stray root-level analytique output dir (should live under v4/outputs/ if persisted)
 /output_analytique/
+
+# Root-level artifacts from notebooks/scripts run with wrong CWD (canonical copies live in series dirs)
+/sudoku_models/
+/data/pizza_test.owl
+/results/
+/tmp_*.py
