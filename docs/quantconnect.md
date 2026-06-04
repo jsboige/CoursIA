@@ -66,6 +66,31 @@ Toute modification d'une strategie QC (main.py, parametres, periodes) **DOIT** e
 }
 ```
 
+### Alternative legere : `qc-mcp-lite` (~5k tokens vs ~40k)
+
+Le MCP Docker officiel charge un schema d'outils volumineux (~40k tokens). Pour les workflows de backtest standard, le depot fournit un wrapper Python leger **`scripts/qc-mcp-lite/server.py`** (~10 outils, schema <5k tokens) qui re-expose l'API QC v2 sans conteneur Docker.
+
+Outils exposes : `create_compile`, `read_compile`, `create_backtest`, `read_backtest` (Sharpe/CAGR/MaxDD), `list_backtests`, `list_projects`, `read_project`, `read_file`, `create_file`, `update_file_contents`. Auth = pattern QC v2 (`SHA256(token:timestamp)` + header `Basic userId:hash`). Rate limiting 10 appels/min applique in-process (meme limite fleet-wide).
+
+Config `.mcp.json` (remplace l'entree Docker `qc-mcp` ; secrets dans `.env` gitignore, **JAMAIS inline**) :
+
+```json
+{
+  "mcpServers": {
+    "qc-mcp-lite": {
+      "command": "python",
+      "args": ["scripts/qc-mcp-lite/server.py"],
+      "env": {
+        "QC_API_USER_ID": "<voir dashboard RooSync>",
+        "QC_API_ACCESS_TOKEN": "<voir dashboard RooSync>"
+      }
+    }
+  }
+}
+```
+
+Verification rapide : `python -c "from server import list_projects; print(list_projects())"` depuis `scripts/qc-mcp-lite/`. Procedure complete (setup `.env`, retour au MCP Docker complet) : [`scripts/qc-mcp-lite/README.md`](../scripts/qc-mcp-lite/README.md).
+
 ### Rate limiting strict
 
 MAX 10 appels/minute entre TOUS les agents. Avant de lancer un backtest, poster sur le dashboard. Un seul agent a la fois sur l'API QC.
