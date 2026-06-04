@@ -23,4 +23,5 @@ Multi-channel ZigZag strategy on Bitcoin. Uses 3 nested ZigZag channels (short/m
 
 ## Files
 
-- main.py - Strategy (v17, multi-channel ZigZag)
+- main.py - Strategy (v18, inlined channel_helpers for QC Cloud compatibility)
+- channel_helpers.py - Original helpers (kept for local Lean CLI / research notebook use)
