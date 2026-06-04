@@ -21,7 +21,7 @@ Le parcours Python commence par les fondations (NumPy/Pandas) puis se divise en 
 
 ## Positionnement pedagogique
 
-Cette série sert les cours **ECE / EPITA / EPF** en introduction au Machine Learning appliqué. Elle se situe après les fondamentaux de programmation (Python ou C#) et avant les séries spécialisées ([QuantConnect](../QuantConnect/) pour le trading, [RL](../RL/) pour l'apprentissage par renforcement). Aucune prérequis en statistiques avancées : les concepts sont introduits au fil des notebooks.
+Cette série sert les cours d'introduction au Machine Learning appliqué. Elle se situe après les fondamentaux de programmation (Python ou C#) et avant les séries spécialisées ([QuantConnect](../QuantConnect/) pour le trading, [RL](../RL/) pour l'apprentissage par renforcement). Aucune prérequis en statistiques avancées : les concepts sont introduits au fil des notebooks.
 
 **Slides de cours associes** : [06-apprentissage/](../../slides/06-apprentissage/) | **Livre de reference** : [Hands-On AI Trading](https://www.hands-on-ai-trading.com/) (chapitres ML)
 
