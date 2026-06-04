@@ -20,6 +20,7 @@ Le repo contient deja plusieurs documents canoniques. **Ne pas dupliquer ici** c
 | [MyIA.AI.Notebooks/QuantConnect/docs/audits/](../MyIA.AI.Notebooks/QuantConnect/docs/audits/) | Audits historiques | AUDIT_QC_CLOUD, AUDIT_QC_ORG_2026-04, AUDIT_RAPPORT_2026-03-22, VALIDATION-REPORT |
 | [MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md](../MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md) | Registry training | 70+ checkpoints, stages -1/0/1/2, Anti-Bias |
 | [docs/ml-trading-state.md](ml-trading-state.md) | Lecons ML trading | Pattern central vol vs direction, 7 disciplines, anti-FAANG |
+| [MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md](../MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md) | Assistants QC Cloud | 8 assistants, protocole couts QCC, matrice delegation |
 
 **Regle de coherence** : pour les performances par strategie (Sharpe, CAGR) -> `qc_strategies_catalog.md`. Pour les patterns reutilisables -> ce fichier. Pour les lecons ML trans-iteration -> `ml-trading-state.md`. Pour le mapping livre -> `BOOK_MAPPING.md` (racine, pas doublon `docs/`).
 
