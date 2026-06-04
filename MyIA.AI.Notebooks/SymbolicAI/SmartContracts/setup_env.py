@@ -37,6 +37,7 @@ Known limitations:
 import argparse
 import importlib
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -316,6 +317,50 @@ def stop_anvil_wsl() -> bool:
         return False
 
 
+def start_anvil_native(port: int = 8545) -> bool:
+    """Start anvil natively on Mac/Linux as a background process."""
+    if check_anvil_running():
+        print(f"  [OK] anvil already running on port {port}")
+        return True
+
+    anvil_path = shutil.which("anvil")
+    if not anvil_path:
+        print("  [FAIL] anvil not found on PATH. Install Foundry first:")
+        print("    curl -L https://foundry.paradigm.xyz | bash && foundryup")
+        return False
+
+    print(f"  Starting anvil on port {port}...")
+    subprocess.Popen(
+        [anvil_path, "--host", "127.0.0.1", "--port", str(port)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    import time
+    for _ in range(10):
+        time.sleep(0.5)
+        if check_anvil_running():
+            print(f"  [OK] anvil started on localhost:{port}")
+            return True
+
+    print("  [FAIL] anvil did not start. Check if port is available.")
+    return False
+
+
+def stop_anvil_native() -> bool:
+    """Stop anvil running natively on Mac/Linux."""
+    import signal
+    try:
+        result = subprocess.run(
+            ["pkill", "-f", "anvil"],
+            capture_output=True, timeout=5
+        )
+        print("  anvil stopped")
+        return True
+    except Exception:
+        return False
+
+
 # =============================================================================
 # INSTALL
 # =============================================================================
@@ -554,11 +599,17 @@ Examples:
 
     # ---- ANVIL MANAGEMENT ----
     if args.start_anvil:
-        start_anvil_wsl()
+        if sys.platform == "win32":
+            start_anvil_wsl()
+        else:
+            start_anvil_native()
         return
 
     if args.stop_anvil:
-        stop_anvil_wsl()
+        if sys.platform == "win32":
+            stop_anvil_wsl()
+        else:
+            stop_anvil_native()
         return
 
     # ---- CHECK MODE ----

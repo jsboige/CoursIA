@@ -129,18 +129,42 @@ SmartContracts/
 
 ## Demarrage Rapide
 
+### macOS / Linux (natif)
+
 ```bash
-# 1. Installer les dependances Python
-pip install -r requirements.txt
+# Setup complet en une commande (Foundry + Python + kernel Jupyter)
+bash scripts/setup.sh
 
-# 2. Installer Foundry
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
+# Ou via l'orchestrateur Python
+python setup_env.py --setup
 
-# 3. Lancer anvil (blockchain locale)
-anvil  # dans un terminal separe
+# Lancer anvil (blockchain locale)
+python setup_env.py --start-anvil
+# ou directement: anvil
 
-# 4. Commencer par SC-0-Cypherpunk-Origins
+# Ouvrir les notebooks et selectionner le kernel "Python (SmartContracts + Foundry)"
+```
+
+### Windows (via WSL)
+
+```bash
+# Depuis PowerShell, lance le setup dans WSL Ubuntu
+wsl -d Ubuntu -- bash /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/scripts/setup.sh
+
+# Ou alternative en 2 etapes (WSL puis PowerShell)
+# Etape 1: dans WSL Ubuntu
+bash scripts/setup_wsl_smartcontracts.sh
+# Etape 2: dans PowerShell
+.\scripts\setup_wsl_kernel.ps1
+
+# Lancer anvil
+python setup_env.py --start-anvil
+```
+
+### Verifier l'installation
+
+```bash
+python setup_env.py --check
 ```
 
 ## Ressources Externes
