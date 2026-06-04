@@ -1,6 +1,6 @@
 # Search - Applications
 
-Les 21 notebooks d'application illustrent chaque concept de la serie Search sur des **problemes reels** adaptes de projets etudiants EPITA, EPF et ECE. Chaque application combine une ou plusieurs techniques abordees dans les Parties 1-2 et montre comment elles se comportent sur des instances concretes.
+Les 21 notebooks d'application illustrent chaque concept de la serie Search sur des **problemes reels** adaptes de projets etudiants. Chaque application combine une ou plusieurs techniques abordees dans les Parties 1-2 et montre comment elles se comportent sur des instances concretes.
 
 Les applications sont organisees en trois categories : **Search pur** (jeux combinatoires), **CSP** (problemes de satisfaction de contraintes : N-Queens, ordonnancement, demineur, mots croises, generation procedurale), et **Hybride** (metaheuristiques et GA : detection de contours, optimisation de portefeuille, TSP, VRP). La plupart des notebooks sont autonomes et pointent vers les pre-requis pertinents.
 
@@ -39,8 +39,8 @@ Applications/
 
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12-ConnectFour](Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | EPITA 2025 |
-| 2 | [App-14-ConnectFour-Adversarial](Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | ECE 2026 + EPITA |
+| 1 | [App-12-ConnectFour](Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | Projet etudiant |
+| 2 | [App-14-ConnectFour-Adversarial](Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet etudiant |
 
 ---
 
@@ -49,17 +49,17 @@ Applications/
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-1-NQueens](CSP/App-1-NQueens.ipynb) | ~30 min | Backtracking, Min-Conflicts, OR-Tools | Classique |
-| 2 | [App-2-GraphColoring](CSP/App-2-GraphColoring.ipynb) | ~45 min | Greedy, DSATUR, CP-SAT, departements | ECE 2026 |
-| 3 | [App-3-NurseScheduling](CSP/App-3-NurseScheduling.ipynb) | ~60 min | Hard/soft constraints, CP-SAT | EPITA 2025 |
-| 4 | [App-4-JobShopScheduling](CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Intervalles, precedences, makespan | EPITA 2025 |
-| 5 | [App-5-Timetabling](CSP/App-5-Timetabling.ipynb) | ~50 min | MiniZinc + OR-Tools | EPITA 2025 |
-| 6 | [App-6-Minesweeper](CSP/App-6-Minesweeper.ipynb) | ~50 min | CSP + probabilites + LLM | EPITA 2025 |
-| 7 | [App-7-Wordle](CSP/App-7-Wordle.ipynb) | ~45 min | Filtrage CSP + theorie de l'information | EPITA 2025 |
+| 2 | [App-2-GraphColoring](CSP/App-2-GraphColoring.ipynb) | ~45 min | Greedy, DSATUR, CP-SAT, departements | Projet etudiant |
+| 3 | [App-3-NurseScheduling](CSP/App-3-NurseScheduling.ipynb) | ~60 min | Hard/soft constraints, CP-SAT | Projet etudiant |
+| 4 | [App-4-JobShopScheduling](CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Intervalles, precedences, makespan | Projet etudiant |
+| 5 | [App-5-Timetabling](CSP/App-5-Timetabling.ipynb) | ~50 min | MiniZinc + OR-Tools | Projet etudiant |
+| 6 | [App-6-Minesweeper](CSP/App-6-Minesweeper.ipynb) | ~50 min | CSP + probabilites + LLM | Projet etudiant |
+| 7 | [App-7-Wordle](CSP/App-7-Wordle.ipynb) | ~45 min | Filtrage CSP + theorie de l'information | Projet etudiant |
 | 8 | [App-8-MiniZinc](CSP/App-8-MiniZinc.ipynb) | ~50 min | Syntaxe MiniZinc, contraintes globales | Nouveau |
-| 9 | [App-11-Picross](CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | EPITA 2025 |
-| 10 | [App-15-SportsScheduling](CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, equite, deplacements | ECE 2026 |
-| 11 | [App-16-Crossword-CSP](CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croises : backtracking, OR-Tools, generation | EPF 2025 |
-| 12 | [App-19-ProceduralGeneration-WFC](CSP/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Generation procedurale : Wave Function Collapse via CP-SAT | EPITA PrCon 2026 |
+| 9 | [App-11-Picross](CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | Projet etudiant |
+| 10 | [App-15-SportsScheduling](CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, equite, deplacements | Projet etudiant |
+| 11 | [App-16-Crossword-CSP](CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croises : backtracking, OR-Tools, generation | Projet etudiant |
+| 12 | [App-19-ProceduralGeneration-WFC](CSP/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Generation procedurale : Wave Function Collapse via CP-SAT | Projet etudiant |
 
 ---
 
@@ -72,7 +72,7 @@ Applications/
 | 3 | [App-10-Portfolio](Hybrid/App-10-Portfolio.ipynb) | ~40 min | Multi-objectif, frontiere de Pareto | Existant |
 | 4 | [App-10b-Portfolio-CSharp](Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | GeneticSharp (C#) | Existant |
 | 5 | [App-13-TSP-Metaheuristics](Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
-| 6 | [App-17-VRP-Logistics](Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | EPF 2025 |
+| 6 | [App-17-VRP-Logistics](Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet etudiant |
 | 7 | [App-18-HyperparameterTuning](Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayesienne, GA, PSO, Optuna | Nouveau |
 
 ---
@@ -117,12 +117,9 @@ Applications/
 
 ---
 
-## Sources des projets etudiants
+## Origine des projets
 
-- **EPITA PPC 2025** : Nurse Rostering, Job-Shop, Minesweeper, Wordle, Picross, Connect Four
-- **EPITA PrCon 2026** : Generation procedurale de niveaux par Wave Function Collapse (groupe H2)
-- **EPF MSMIN5IN52** : Timetabling (MiniZinc), Crossword Generator, VRP
-- **ECE Ing4 2026** : Graph Coloring, Sports Scheduling
+La plupart des notebooks d'application sont adaptes de projets etudiants realises dans le cadre de cours d'IA. Les references specifics sont indiquees dans chaque notebook.
 
 ---
 
