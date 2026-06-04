@@ -34,8 +34,8 @@ Search (46 nb)           GameTheory (25 nb)       SymbolicAI (104 nb)
   Search-6 Adversarial     GT-4 Jeux Repetes         Planners-1 Introduction
   Search-7 MCTS            GT-6 Nash/Equilibres      Planners-4 Fast-Downward
   CSP-1 Fundamentals       GT-10 SPE                 Lean-7 LLM Integration
-  CSP-2 Consistency        GT-13 CFR                 Lean-11 Arrow
-  CSP-4 Scheduling                                   Lean-13 Grothendieck
+  CSP-2 Consistency        GT-13 CFR                 Lean-15 Kochen-Specker
+  CSP-4 Scheduling         SocialChoice (Lean)       Lean-13 Grothendieck
 ```
 
 **Entree recommandee** : [Search-1-StateSpace](../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb) formalise les espaces d'etats, le concept fondateur commun a toute la serie.
@@ -44,7 +44,7 @@ Search (46 nb)           GameTheory (25 nb)       SymbolicAI (104 nb)
 1. **Search Part 1** (11 nb, ~12h) : BFS, DFS, A*, recherche locale, algorithmes genetiques, Minimax, MCTS. Le coeur algorithmique.
 2. **Search Part 2 — CSP** (9 nb, ~9h) : changement de paradigme — au lieu d'explorer, on reduit les domaines par propagation. AC-3,ordonnancement,optimisation.
 3. **GameTheory** (25 nb) : la recherche adversariale (Minimax, MCTS) rencontrela theorie des jeux (Nash, equilibres bayesiens, CFR).
-4. **SymbolicAI — Lean** (16 nb) : les memes concepts de preuve et de recherche, formalises en theoreme. Arrow, Conway, Kochen-Specker portes en Lean 4.
+4. **SymbolicAI — Lean** (16 nb) : les memes concepts de preuve et de recherche, formalises en theoreme. Conway, Kochen-Specker, Grothendieck portes en Lean 4 ; les theoremes de **choix social** (Arrow, Sen, Voting) sont formalises a part dans [GameTheory/social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) (`Arrow.lean` / `Sen.lean` / `Voting.lean`, 0 sorry).
 
 **Ponts inter-series** :
 - Search-6 (Adversarial) → GT-6 (Nash) : Minimax est un cas particulier de l'equilibre de Nash dans les jeux a somme nulle.
@@ -134,15 +134,35 @@ SymbolicAI (104 nb)
 **Entree recommandee** : [Lean-1-Setup](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) configure l'environnement Lean 4 (kernel WSL). Puis [Tweety-1](../MyIA.AI.Notebooks/SymbolicAI/Tweety/01-Propositional-Logic/) pour les fondamentaux logiques.
 
 **Points de passage** :
-1. **Lean 4** (16 nb) : de la tactique basique aux theoremes portes (Arrow, Sen, Shapley pour les choix social ; Conway, Kochen-Specker, Free Will pour les mathematiques).
+1. **Lean 4** (16 nb) : de la tactique basique aux theoremes portes (Conway, Kochen-Specker, Free Will, Grothendieck pour les mathematiques). Les theoremes de **choix social** (Arrow, Sen, Voting) sont portes a part dans [GameTheory/social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) (0 sorry), avec leur pendant pedagogique Python dans [GameTheory/SocialChoice](../MyIA.AI.Notebooks/GameTheory/SocialChoice/).
 2. **Tweety** (13 nb) : logique propositionnelle, premier ordre, modale, argumentation, Markov Logic Networks.
 3. **Planners** (13 nb) : PDDL, Fast-Downward, planification temporelle et hierarchique, LLM+Planning.
 4. **SmartContracts** (18 nb) : Solidity, verification formelle, DeFi, oracle manipulation.
 
 **Ponts inter-series** :
-- Lean/GameTheory : les theoremes d'Arrow et Shapley sont portes en Lean 4 (Lean-11 a Lean-16).
+- GameTheory/Lean : les theoremes de choix social (Arrow, Sen) ont un double traitement — pedagogique en Python ([SocialChoice/01-Arrow](../MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)) et certifie en Lean 4 ([social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/), 0 sorry).
 - Planners/Search : PDDL etend les CSP vers la planification d'actions.
 - SmartContracts/Search : la verification de smart contracts utilise les solveurs SMT (Z3).
+
+---
+
+## Une cle de lecture transversale : la dualite simulation / preuve
+
+Au-dela des parcours lineaires, le depot suit un **fil conducteur conceptuel** (cf. [README principal](../MyIA.AI.Notebooks/README.md)) : un meme concept est d'abord **illustre numeriquement** (on *simule*, on *calcule*, on *genere*), puis — quand c'est possible — **formalise et verifie mecaniquement** (on *prouve*). Lire le depot selon cet axe relie des series qui semblent eloignees.
+
+| Concept | Versant *simulation* (faire / calculer) | Versant *preuve* (formaliser / verifier) |
+|---------|-----------------------------------------|------------------------------------------|
+| **Choix social** | [SocialChoice/03-Voting-Methods](../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (agreger des votes), [04-SAT-Z3](../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) | [social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) — `Arrow.lean` / `Sen.lean` / `Voting.lean` (impossibilite **certifiee**, 0 sorry) |
+| **Contraintes** | [Search/CSP-1-Fundamentals](../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) (resoudre par propagation) | [SocialChoice/04-SAT-Z3](../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) (encoder + verifier via solveur SMT) |
+| **Incertitude** | [Probas/PyMC-1-Setup](../MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb) (echantillonnage MCMC, inference *approchee*) | [Probas/Infer-101](../MyIA.AI.Notebooks/Probas/Infer-101.ipynb) (inference *exacte* par message-passing) |
+| **Smart contracts** | [SC-12-Foundry-Testing](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-12-Foundry-Testing.ipynb), [SC-13-Fuzz-Invariants](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-13-Fuzz-Invariants.ipynb) (tester / fuzzer) | [SC-14-Formal-Verification](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb) (verification formelle) |
+| **Mathematiques** | [Lean-14b Game of Life](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14b-Conway-Game-of-Life-Lean.ipynb) (automate cellulaire) | [Lean-13 Grothendieck](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Grothendieck-Tribute.ipynb), [Lean-15 Kochen-Specker](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Kochen-Specker.ipynb), [Lean-16 Free Will](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Free-Will-Theorem.ipynb) |
+
+**Comment s'en servir** :
+
+- Pour *ancrer* un concept abstrait, commencez par le versant simulation (intuition, visualisation), puis passez au versant preuve (rigueur, garanties).
+- Les series **purement generatives** (GenAI) et **purement empiriques** (QuantConnect) se situent au bout « simulation » du spectre : leur contrepartie « preuve » se trouve ailleurs (verification formelle, theoremes de choix social).
+- Inversement, les series **Lean** sont au bout « preuve » : leur intuition numerique se trouve dans les notebooks Python correspondants (ex. [SocialChoice/01-Arrow](../MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) avant `Arrow.lean`).
 
 ---
 
