@@ -84,7 +84,7 @@ python -c "import unified_planning; from ortools.sat.python import cp_model; pri
 jupyter notebook 01-Foundation/Planners-1-Introduction.ipynb
 ```
 
-Pour les notebooks 4-6 (Fast Downward), Docker est recommande : `docker pull aiplanning/fast-downward`. Les notebooks theoriques (1-3, 7-12) ne necessitent que Python.
+Pour les notebooks 4-6 (Fast Downward), l'image Docker `jsboige/coursia-fast-downward` fournit un serveur API HTTP sur le port 8200 : `docker pull jsboige/coursia-fast-downward:latest`. Les notebooks theoriques (1-3, 7-12) ne necessitent que Python.
 
 ---
 
@@ -117,15 +117,16 @@ pip install unified-planning ortools numpy matplotlib networkx
 ### 2. Docker pour Fast Downward (recommande)
 
 ```bash
-# Telecharger l'image Docker Fast Downward
-docker pull aiplanning/fast-downward
+# Telecharger l'image Docker Fast Downward (serveur HTTP port 8200)
+docker pull jsboige/coursia-fast-downward:latest
 ```
 
 ### 3. Verification
 
 ```bash
 python -c "import unified_planning; from ortools.sat.python import cp_model; print('OK')"
-docker run --rm aiplanning/fast-downward --help
+# Verifier le serveur Fast Downward (port 8200)
+curl -s http://localhost:8200/health
 ```
 
 ## Technologies utilisees
@@ -248,12 +249,16 @@ Planificateur optimal developpe a l'Universite de Bale :
 | **Heuristiques** | FF, add, landmark-cut |
 | **Performance** | Gagnant IPC multiple fois |
 
-### Utilisation via Docker
+### Utilisation via Docker (serveur HTTP)
 
 ```bash
-# Execution via Docker
-docker run --rm -v $(pwd)/pddl:/data aiplanning/fast-downward \
-  /data/domain.pddl /data/problem.pddl --search "astar(lmcut())"
+# Lancer le conteneur Fast Downward (port 8200)
+docker run -d --name coursia-fast-downward -p 8200:8200 jsboige/coursia-fast-downward:latest
+
+# Soumettre un probleme via l'API HTTP
+curl -X POST http://localhost:8200/plan \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "<domain.pddl>", "problem": "<problem.pddl>", "search": "astar(lmcut())"}'
 ```
 
 ### Utilisation via unified-planning
