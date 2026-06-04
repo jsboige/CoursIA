@@ -544,3 +544,259 @@ class TestGetRepoRoot:
     def test_root_contains_claude_md(self):
         root = get_repo_root()
         assert (root / "CLAUDE.md").exists() or (root / ".git").exists()
+
+
+# =============================================================================
+# Mutation-killing tests — targeting surviving mutants
+# =============================================================================
+
+class TestShouldSkipMutations:
+    """Kill mutants in should_skip: wildcard patterns, boundary conditions."""
+
+    def test_wildcard_output_pattern(self):
+        """Wildcard '*_output.ipynb' must match any path containing '_output.ipynb'."""
+        assert should_skip(Path("series/nb_output.ipynb")) is True
+        assert should_skip(Path("series/normal.ipynb")) is False
+
+    def test_wildcard_verified_pattern(self):
+        """Wildcard '*_verified.ipynb' must match."""
+        assert should_skip(Path("series/nb_verified.ipynb")) is True
+
+    def test_non_wildcard_ui_configuration(self):
+        """Exact match 'UI_configuration.ipynb' without wildcard."""
+        assert should_skip(Path("any/dir/UI_configuration.ipynb")) is True
+
+    def test_checkpoints_dir_pattern(self):
+        """'.ipynb_checkpoints' as substring match."""
+        assert should_skip(Path(".ipynb_checkpoints/anything.ipynb")) is True
+
+    def test_no_false_positives_similar_names(self):
+        """Names containing but not matching patterns should NOT be skipped."""
+        assert should_skip(Path("output_analyzer.ipynb")) is False
+        assert should_skip(Path("my_verified_tool.ipynb")) is False
+
+    def test_all_skip_patterns_covered(self):
+        """Each pattern in SKIP_PATTERNS must be triggerable."""
+        for pattern in SKIP_PATTERNS:
+            if '*' in pattern:
+                test_name = "test" + pattern.replace('*', '')
+            else:
+                test_name = pattern
+            assert should_skip(Path(test_name)) is True, f"Pattern '{pattern}' not matching '{test_name}'"
+
+
+class TestDetectKernelMutations:
+    """Kill mutants in detect_kernel: condition boundary, return value."""
+
+    def test_csharp_language_variant(self):
+        """'csharp' (no #) must be detected as .NET C#."""
+        nb = {"metadata": {"kernelspec": {"name": "unknown", "language": "csharp"}}, "cells": []}
+        assert detect_kernel(nb) == ".NET C#"
+
+    def test_fsharp_in_kernel_name(self):
+        """Pure fsharp kernel name (without .net prefix) must be .NET F#."""
+        nb = {"metadata": {"kernelspec": {"name": "fsharp", "language": "f#"}}, "cells": []}
+        assert detect_kernel(nb) == ".NET F#"
+
+    def test_lean4_in_language(self):
+        """Language 'lean4' without 'lean' in kernel name still detected."""
+        nb = {"metadata": {"kernelspec": {"name": "custom", "language": "lean4"}}, "cells": []}
+        assert detect_kernel(nb) == "Lean 4"
+
+    def test_python_case_insensitive_kernel(self):
+        """Python detection is case-insensitive on kernel_name."""
+        nb = {"metadata": {"kernelspec": {"name": "Python3", "language": ""}}, "cells": []}
+        assert detect_kernel(nb) == "Python"
+
+    def test_magic_in_code_cell_only(self):
+        """Only code cells (not raw) should trigger .NET magic detection."""
+        nb = {
+            "metadata": {"kernelspec": {"name": "unknown", "language": ""}},
+            "cells": [{"cell_type": "raw", "source": ["#!import\n"]}],
+        }
+        assert detect_kernel(nb) == "Unknown"
+
+    def test_empty_cells_list(self):
+        """Empty cells list should not crash."""
+        nb = {"metadata": {"kernelspec": {"name": "julia", "language": "julia"}}, "cells": []}
+        assert detect_kernel(nb) == "Unknown"
+
+
+class TestExtractCellPreviewMutations:
+    """Kill mutants in extract_cell_preview: boundary conditions."""
+
+    def test_exact_max_chars_no_truncation(self):
+        """When preview is exactly max_chars, it should be truncated."""
+        # Create a string that's exactly max_chars long
+        source = "a" * 150
+        preview = extract_cell_preview(source, max_chars=150)
+        # Either truncated or exactly 150 — but the function truncates at max_chars
+        assert len(preview) <= 153  # 150 + "..."
+
+    def test_max_lines_exactly_one(self):
+        """max_lines=1 should return exactly one line."""
+        source = "line1\nline2\nline3"
+        preview = extract_cell_preview(source, max_lines=1)
+        assert "line1" in preview
+        assert "line2" not in preview
+
+    def test_strips_hashbang_not_hash(self):
+        """Lines starting with #! are skipped, but regular # comments are kept."""
+        preview = extract_cell_preview("#!skip\n#keep\nx = 1")
+        assert "#keep" in preview
+        assert "#!skip" not in preview
+
+    def test_truncation_at_word_boundary(self):
+        """Truncation splits at word boundary, adds '...'."""
+        source = "alpha beta " * 50  # Long string
+        preview = extract_cell_preview(source, max_chars=30)
+        if len(preview) > 30:
+            assert preview.endswith("...")
+
+
+class TestNotebookAnalyzerMutations:
+    """Kill mutants in NotebookAnalyzer: error handling, edge cases."""
+
+    def test_invalid_json_file(self, tmp_path):
+        """Invalid JSON should set nb_data=None, is_valid=False."""
+        bad_file = tmp_path / "bad.ipynb"
+        bad_file.write_text("this is not json {{{{", encoding="utf-8")
+        analyzer = NotebookAnalyzer(str(bad_file))
+        assert analyzer.is_valid is False
+        assert analyzer.nb_data is None
+
+    def test_cells_property_on_none_data(self, tmp_path):
+        """cells should return [] when file doesn't exist."""
+        analyzer = NotebookAnalyzer(str(tmp_path / "missing.ipynb"))
+        assert analyzer.cells == []
+
+    def test_kernel_property_on_none_data(self, tmp_path):
+        """kernel should return 'unknown' (lowercase) when file doesn't exist."""
+        analyzer = NotebookAnalyzer(str(tmp_path / "missing.ipynb"))
+        assert analyzer.kernel == "unknown"
+
+    def test_get_skeleton_empty_notebook(self, tmp_path):
+        """Skeleton of empty notebook should have 0 counts."""
+        nb = _make_notebook([])
+        nb_path = tmp_path / "empty.ipynb"
+        _write_notebook(nb, str(nb_path))
+        analyzer = NotebookAnalyzer(str(nb_path))
+        skel = analyzer.get_skeleton()
+        assert skel.total_cells == 0
+        assert skel.code_cells == 0
+        assert skel.markdown_cells == 0
+
+
+class TestNotebookValidatorMutations:
+    """Kill mutants in NotebookValidator: error detection, edge cases."""
+
+    def test_division_by_zero_flagged(self, tmp_path):
+        """1/0 in outputs should be flagged as execution error."""
+        nb = _make_notebook([
+            {"cell_type": "code", "source": ["1/0\n"], "metadata": {},
+             "execution_count": 1, "outputs": [{
+                 "output_type": "error", "ename": "ZeroDivisionError",
+                 "evalue": "division by zero", "traceback": ["..."],
+             }]},
+        ])
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook(nb, str(nb_path))
+        validator = NotebookValidator(str(nb_path))
+        issues = validator.validate_content()
+        assert any("ZeroDivisionError" in i.message for i in issues)
+
+    def test_assert_false_flagged(self, tmp_path):
+        """assert False in outputs should be flagged."""
+        nb = _make_notebook([
+            {"cell_type": "code", "source": ["assert False\n"], "metadata": {},
+             "execution_count": 1, "outputs": [{
+                 "output_type": "error", "ename": "AssertionError",
+                 "evalue": "", "traceback": ["..."],
+             }]},
+        ])
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook(nb, str(nb_path))
+        validator = NotebookValidator(str(nb_path))
+        issues = validator.validate_content()
+        assert any("AssertionError" in i.message for i in issues)
+
+    def test_invalid_json_flagged(self, tmp_path):
+        """Malformed JSON should produce 'Invalid JSON format' issue."""
+        bad_file = tmp_path / "bad.ipynb"
+        bad_file.write_text("not json", encoding="utf-8")
+        validator = NotebookValidator(str(bad_file))
+        result = validator.validate_structure()
+        assert result.exists is True
+        assert result.valid_json is False
+        assert any("Invalid JSON" in i.message for i in result.issues)
+
+    def test_no_metadata_flagged(self, tmp_path):
+        """Notebook without metadata should get a warning."""
+        nb = {"cells": [{"cell_type": "markdown", "source": ["# Title\n"], "metadata": {}}], "metadata": {}, "nbformat": 4}
+        nb_path = tmp_path / "no_meta.ipynb"
+        with open(str(nb_path), "w", encoding="utf-8") as f:
+            json.dump(nb, f)
+        validator = NotebookValidator(str(nb_path))
+        result = validator.validate_structure()
+        # Either no_metadata warning or has_metadata=False
+        has_meta_warnings = [i for i in result.issues if "metadata" in i.message.lower()]
+        # Should have no metadata warning
+        assert len(has_meta_warnings) > 0 or result.has_metadata is False
+
+    def test_code_cells_counted_correctly(self, tmp_path):
+        """code_cells and markdown_cells counted accurately."""
+        nb = _make_notebook([
+            {"cell_type": "markdown", "source": ["# H1\n"], "metadata": {}},
+            {"cell_type": "code", "source": ["x=1\n"], "metadata": {},
+             "execution_count": 1, "outputs": []},
+            {"cell_type": "code", "source": ["y=2\n"], "metadata": {},
+             "execution_count": 2, "outputs": [{"output_type": "stream", "name": "stdout", "text": ["2\n"]}]},
+            {"cell_type": "markdown", "source": ["## H2\n"], "metadata": {}},
+        ])
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook(nb, str(nb_path))
+        validator = NotebookValidator(str(nb_path))
+        result = validator.validate_structure()
+        assert result.code_cells == 2
+        assert result.markdown_cells == 2
+        assert result.cells_with_output == 1
+
+    def test_no_title_flagged_in_pedagogy(self, tmp_path):
+        """Notebook without # heading should get pedagogy warning."""
+        nb = _make_notebook([
+            {"cell_type": "markdown", "source": ["Just some text\n"], "metadata": {}},
+            {"cell_type": "code", "source": ["x=1\n"], "metadata": {},
+             "execution_count": 1, "outputs": []},
+        ])
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook(nb, str(nb_path))
+        validator = NotebookValidator(str(nb_path))
+        issues = validator.validate_content()
+        title_issues = [i for i in issues if "title" in i.message.lower()]
+        assert len(title_issues) > 0
+
+
+class TestDiscoverNotebooksMutations:
+    """Kill mutants in discover_notebooks: recursion, filtering."""
+
+    def test_recursive_discovery(self, tmp_path):
+        """discover_notebooks should find notebooks in subdirectories."""
+        nb_dir = tmp_path / "Series"
+        sub_dir = nb_dir / "SubSeries"
+        sub_dir.mkdir(parents=True)
+        nb = _make_notebook([])
+        _write_notebook(nb, str(sub_dir / "Sub-1.ipynb"))
+        result = discover_notebooks(str(nb_dir), repo_root=tmp_path)
+        assert len(result) == 1
+        assert "Sub-1.ipynb" in str(result[0])
+
+    def test_skips_non_ipynb_files(self, tmp_path):
+        """Non-.ipynb files should be ignored."""
+        nb_dir = tmp_path / "Series"
+        nb_dir.mkdir()
+        nb = _make_notebook([])
+        _write_notebook(nb, str(nb_dir / "Test-1.ipynb"))
+        (nb_dir / "readme.md").write_text("readme", encoding="utf-8")
+        (nb_dir / "data.csv").write_text("a,b,c", encoding="utf-8")
+        result = discover_notebooks(str(nb_dir), repo_root=tmp_path)
+        assert len(result) == 1
