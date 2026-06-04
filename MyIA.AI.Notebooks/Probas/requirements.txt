@@ -3,13 +3,13 @@
 #
 # Note: 20 notebooks are C# (.NET Interactive) using Infer.NET.
 # Python notebooks: Pyro_RSA_Hyperbole, PyMC-HMM-Trading-Alpha,
-#   and _python_port/PyMC-* series (20 notebooks).
+#   and PyMC/PyMC-* series (20 notebooks).
 
 # === Pyro (RSA Hyperbole) ===
 pyro-ppl>=1.8                # Probabilistic programming (Pyro)
 torch>=2.0                   # PyTorch (Pyro backend)
 
-# === PyMC (_python_port/ series + HMM Trading Alpha) ===
+# === PyMC (PyMC/ series + HMM Trading Alpha) ===
 pymc>=5.0                    # Probabilistic programming (PyMC)
 arviz>=0.14                  # Bayesian diagnostics & visualization
 
