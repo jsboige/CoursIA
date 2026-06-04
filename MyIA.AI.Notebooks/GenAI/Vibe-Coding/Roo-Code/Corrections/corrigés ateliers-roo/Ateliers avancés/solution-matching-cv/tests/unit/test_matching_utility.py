@@ -115,9 +115,11 @@ async def test_compare_matching_utility(similarity_scores_data):
     print(f"Utilité totale (Meilleur Score): {best_score_utility:.4f}")
     print(f"Utilité totale (Mariage Stable): {stable_matching_utility:.4f}")
 
-    # 4. Vérifier que le mariage stable produit une utilité globale supérieure ou égale
-    #    (il optimise la stabilité, ce qui peut mener à une utilité égale ou supérieure)
-    assert stable_matching_utility >= best_score_utility
+    # 4. Verifier que les deux algorithmes produisent des resultats valides
+    #    Note: le mariage stable ne maximise PAS l'utilite globale, il garantit la stabilite
+    #    (pas de paire bloquante). Son utilite peut etre inferieure au greedy best-score.
+    assert best_score_utility > 0
+    assert stable_matching_utility > 0
 
 @pytest.mark.asyncio
 async def test_compare_stable_matching_roles(similarity_scores_data):
