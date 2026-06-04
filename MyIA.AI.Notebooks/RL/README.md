@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 7
-breakdown: root=7
-maturity: PRODUCTION=6, BETA=1
+pedagogical_count: 8
+breakdown: root=8
+maturity: PRODUCTION=7, BETA=1
 -->
 
 Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'IA qui apprend a un agent a prendre des decisions optimales par l'essai et l'erreur, en recevant des recompenses ou des penalites de son environnement. C'est la technologie derriere AlphaGo, les robots de Boston Dynamics, les systemes de recommendation de Netflix, et les voitures autonomes. La ou l'apprentissage supervise predit a partir d'exemples etiquetes et l'apprentissage non supervise decouvre des structures, le RL **agit** : il choisit des actions, observe leurs consequences, et s'ameliore iterativement.
@@ -17,9 +17,9 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 7 |
+| Notebooks | 8 |
 | Kernel | Python 3 |
-| Duree totale | ~270-320 min |
+| Duree totale | ~315-370 min |
 | Version | Stable Baselines3 2.0.0+ |
 
 ## Notebooks
@@ -32,6 +32,7 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | 4 | [rl_3_multi_armed_bandits](rl_3_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
 | 5 | [rl_4_mdp_dp_qlearning](rl_4_mdp_dp_qlearning.ipynb) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
 | 6 | [rl_5_dqn_policy_gradient](rl_5_dqn_policy_gradient.ipynb) | DQN depuis zero, REINFORCE | 50-55 min |
+| 6b | [rl_5b_actor_critic](rl_5b_actor_critic.ipynb) | Actor-Critic (A2C) depuis zero, advantage, entropy bonus | 45-50 min |
 | 7 | [rl_6_multi_agent_rl](rl_6_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
 
 ## Contenu detaille
@@ -94,6 +95,17 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | REINFORCE | Gradient de politique, baseline |
 | Comparaison | Value-based vs policy-based |
 
+### Notebook 6b - Actor-Critic (A2C)
+
+| Section | Contenu |
+|---------|---------|
+| Actor-Critic | Paradigme combinant value-based et policy-based |
+| CriticNetwork | Reseau de valeur V(s) |
+| ActorNetwork | Politique parametree pi(a\|s) |
+| A2C | Advantage Actor-Critic, calcul de l'avantage |
+| Entropy bonus | Exploration via maximisation d'entropie |
+| Comparaison | A2C vs REINFORCE (reduction de variance) |
+
 ### Notebook 7 - Apprentissage Multi-Agent
 
 | Section | Contenu |
@@ -109,7 +121,7 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | Algorithme | Type | Notebook | Utilisation |
 |------------|------|----------|-------------|
 | **PPO** | On-policy | 1, 2 | Controle general, robuste |
-| **A2C** | On-policy | 2 | Alternative a PPO |
+| **A2C** | On-policy | 2, 6b | Actor-Critic depuis zero et via SB3 |
 | **SAC** | Off-policy | 3 | Actions continues |
 | **DDPG** | Off-policy | 3 | Actions continues |
 | **HER** | Replay strategy | 3 | Goal-conditioned tasks |
@@ -237,6 +249,8 @@ Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depui
 | **Experience replay** | Reutilisation des experiences passees | 3, 6 |
 | **HER** | Reinterpretation d'echecs comme succes | 3 |
 | **DQN** | Q-Learning avec approximation neurale | 6 |
+| **Actor-Critic** | Combinaison politique + valeur | 6b |
+| **Advantage** | Reduction de variance A_t = R_t - V(s) | 6b |
 | **Policy gradient** | Optimisation directe de la politique | 6 |
 | **Multi-agent** | Plusieurs agents apprenant simultanement | 7 |
 
@@ -273,6 +287,7 @@ RL/
 ├── rl_3_multi_armed_bandits.ipynb
 ├── rl_4_mdp_dp_qlearning.ipynb
 ├── rl_5_dqn_policy_gradient.ipynb
+├── rl_5b_actor_critic.ipynb
 ├── rl_6_multi_agent_rl.ipynb
 └── README.md
 ```
