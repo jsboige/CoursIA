@@ -648,7 +648,7 @@
   },
   {
     "name": "Clustering-Fundamentals-ML",
-    "description": "PCA + GBR fundamental ranking. Runtime Error.",
+    "description": "Z-score fundamental factor ranking (v4: direct scoring, no PCA/GBR).",
     "level": "",
     "language": "Python",
     "hasMain": true,
@@ -983,7 +983,7 @@
   },
   {
     "name": "Crypto-MultiCanal",
-    "description": "3 canaux ZigZag imbriqués (macro/meso/micro) sur BTCUSDT. ❌ Runtime Error : cannot import 'find_envelope_line'.",
+    "description": "3 canaux ZigZag imbriques (macro/meso/micro) sur BTCUSDT. Inlined channel_helpers.py for QC Cloud compatibility.",
     "level": "",
     "cloudId": 30750734,
     "language": "Python",
