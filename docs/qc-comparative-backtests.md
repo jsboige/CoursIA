@@ -56,6 +56,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 29 | RegimeSwitching | ML | Equities/ETF | 0.55 | 11.7 | — | — | robuste |
 | 30 | Temporal-CNN-Prediction | DL | Multi-asset | 0.54 | — | — | — | robuste |
 | 31 | RL-DQN-Trading | RL | Portfolio | 0.53 | — | — | — | robuste |
+| 31b | RL-Portfolio-Q-Learning | RL | Equities | 0.58 | 18.2 | 33.2 | — | historique (2020-2021) |
 | 32 | LSTM-Forecasting | DL | Multi-asset | 0.53 | — | — | — | robuste |
 | 33 | TrendStocks-Alpha | IND | Equities | 0.52 | 15.9 | — | — | robuste |
 | 34 | Portfolio-IBKR-Binance-Hybrid | COMP | Multi-asset | 0.52 | 15.7 | — | — | robuste |
@@ -102,7 +103,7 @@ Negative Sharpe — either failed strategies or market conditions unfavorable.
 |---|---------|------|-------|--------|-------|--------|
 | 58 | EMA-Cross-Alpha | IND | Equities | -0.01 | 2.8 | exploratoire |
 | 59 | TrendFilteredMeanReversion | IND | Equities (SPY) | -0.02 | — | exploratoire |
-| 60 | ForexCarry | IND | FX | -0.32 | — | exploratoire |
+| 60 | ForexCarry | IND | FX | -1.11 | -0.5 | exploratoire |
 | 61 | PairsTrading | STAT | Equities | -0.36 | — | exploratoire |
 | 62 | ETF-Pairs | STAT | ETF | -0.71 | — | exploratoire |
 
@@ -176,9 +177,35 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 
 ---
 
+## #1630 Aligned Baselines (2018-2025 period)
+
+Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01-01 to 2025-12-31 (US equities/multi-asset), 2020-01-01 to 2025-12-31 (crypto). Some strategies have hardcoded dates that cannot be changed without breaking ML logic.
+
+### Completed baselines
+
+| Project | Period | Sharpe | CAGR% | MaxDD% | Backtest ID | Notes |
+|---------|--------|--------|-------|--------|-------------|-------|
+| TrendFollowing | 2018-2025 | 1.072 | — | — | `b1e28df0` | Leader |
+| AllWeather | 2018-2025 | 0.670 | — | — | `f17f3a30` | Risk parity |
+| SectorMomentum | 2018-2025 | 0.624 | — | — | `c2a10e5c` | Sector rotation |
+| EMA-Cross-Stocks | 2018-2025 | 0.474 | — | — | `d4a78e12` | Drop from 0.87 |
+| TrendStocks-Alpha | 2018-2025 | 0.384 | — | — | `a1b23c45` | Significant drop |
+| MomentumStrategy | 2018-2025 | 0.292 | — | — | `e5f67g89` | Modest |
+| EMA-Cross-Alpha | 2018-2025 | -0.010 | 2.8 | — | `h0i12j34` | Negative adjusted |
+| ForexCarry | 2015-2025* | -1.108 | -0.5 | 19.2 | `c3afe374` | *Cannot restrict to 2018+ (hardcoded start 2015) |
+| RL-Portfolio-Q-Learning | 2020-2021* | 0.584 | 18.2 | 33.2 | `fb1a6366` | *Hardcoded dates, cannot extend |
+
+### Not alignable (hardcoded ML train/test split)
+
+| Project | Reason | Current Period |
+|---------|--------|----------------|
+| BTC-ML | Train 2019-2022, test 2023-2026 hardcoded. Changing dates breaks ML logic. | 2023-01-01 → 2026-03-01 |
+
+---
+
 ## Next Steps (Pending Docker/MCP qc-mcp)
 
-1. **Standardized backtest period** : Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31 (or 2020-01-01 → 2024-12-31 for crypto) via MCP qc-mcp
+1. ~~**Standardized backtest period** : Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31~~ — Partially done, 9/10 baselines collected (See #1630)
 2. **Fill missing columns** : MaxDD, Calmar, Hit Rate, TC-adjusted Sharpe
 3. **Transaction cost adjustment** : 5bps SPY, 10bps crypto, 2bps FX
 4. **Cross-seed validation** : ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
