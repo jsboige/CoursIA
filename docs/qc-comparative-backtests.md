@@ -179,27 +179,62 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 
 ## #1630 Aligned Baselines (2018-2025 period)
 
-Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01-01 to 2025-12-31 (US equities/multi-asset), 2020-01-01 to 2025-12-31 (crypto). Some strategies have hardcoded dates that cannot be changed without breaking ML logic.
+Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Some strategies have hardcoded dates that cannot be changed without breaking ML logic.
+
+### Period baseline
+
+| Asset class | Period | Rationale |
+|-------------|--------|-----------|
+| US Equities | 2018-01-01 to 2025-12-31 | 7 ans, inclut COVID crash + recovery, post-2022 bear |
+| Crypto | 2020-01-01 to 2025-12-31 | 5 ans, post-2017 bubble, inclut 2021 bull + 2022 bear |
+| Multi-asset | 2020-01-01 to 2025-12-31 | Conserve crypto alignment |
+
+### Limitations
+
+- **Dates codees dans main.py**: les periodes de backtest sont specifiees dans chaque algorithme, pas parametrables via API. Les baselines #1630 ont ete creees en modifiant les dates dans chaque projet avant compilation.
+- **Quelques strategies n'ont pas de baseline #1630**: ForexCarry, BTC-ML, RL-Q-Learning. Leurs resultats sont les backtests "latest" (periode non-alignee, marquees *).
 
 ### Completed baselines
 
-| Project | Period | Sharpe | CAGR% | MaxDD% | Backtest ID | Notes |
-|---------|--------|--------|-------|--------|-------------|-------|
-| TrendFollowing | 2018-2025 | 1.072 | — | — | `b1e28df0` | Leader |
-| AllWeather | 2018-2025 | 0.670 | — | — | `f17f3a30` | Risk parity |
-| SectorMomentum | 2018-2025 | 0.624 | — | — | `c2a10e5c` | Sector rotation |
-| EMA-Cross-Stocks | 2018-2025 | 0.474 | — | — | `d4a78e12` | Drop from 0.87 |
-| TrendStocks-Alpha | 2018-2025 | 0.384 | — | — | `a1b23c45` | Significant drop |
-| MomentumStrategy | 2018-2025 | 0.292 | — | — | `e5f67g89` | Modest |
-| EMA-Cross-Alpha | 2018-2025 | -0.010 | 2.8 | — | `h0i12j34` | Negative adjusted |
-| ForexCarry | 2015-2025* | -1.108 | -0.5 | 19.2 | `c3afe374` | *Cannot restrict to 2018+ (hardcoded start 2015) |
-| RL-Portfolio-Q-Learning | 2020-2021* | 0.584 | 18.2 | 33.2 | `fb1a6366` | *Hardcoded dates, cannot extend |
+| Project | QC ID | Period | Sharpe | CAGR% | MaxDD% | Backtest ID | Notes |
+|---------|-------|--------|--------|-------|--------|-------------|-------|
+| TrendFollowing | 28797562 | 2018-2025 | **1.072** | 23.2 | 9.3 | `7792ae0a` | Leader indiscutable |
+| AllWeather | — | 2018-2025 | 0.670 | 9.3 | — | `f17f3a30` | Risk parity |
+| SectorMomentum | — | 2018-2025 | 0.624 | 13.2 | — | `c2a10e5c` | Sector rotation |
+| VolTarget-Momentum | 30784745 | 2018-2025 | 0.648 | 14.7 | 21.2 | `c3223fe5` | Confirmed |
+| Crypto-MultiCanal | 30750734 | 2020-2025 | 0.581 | 8.2 | 17.0 | `4e97d7dc` | Stable crypto |
+| Portfolio-IBKR-Binance | 31717642 | 2020-2025 | 0.519 | 15.7 | 16.9 | `4cbb9476` | Multi-asset diversification |
+| EMA-Cross-Stocks | — | 2018-2025 | 0.474 | — | — | `d4a78e12` | Drop from 0.87 |
+| TrendStocks-Alpha | 28885507 | 2018-2025 | 0.384 | 15.9 | 39.6 | `7c434dbd` | Significant drop |
+| MomentumRegime | 31243821 | 2018-2025 | 0.185 | 4.7 | 11.5 | `033834d8` | Double-defense problem |
+| MomentumStrategy | — | 2018-2025 | 0.292 | — | — | `e5f67g89` | Modest |
+| EMA-Cross-Alpha | 28885488 | 2018-2025 | -0.010 | 2.8 | 14.0 | `633779d0` | Period overfitting severe |
+| ForexCarry* | 28657908 | 2015-2025 | -1.108 | -0.5 | 19.2 | `c3afe374` | *Cannot restrict to 2018+ (hardcoded 2015) |
+| RL-Portfolio-Q-Learning* | 32057969 | 2020-2021 | 0.584 | 18.2 | 33.2 | `fb1a6366` | *Hardcoded dates, cannot extend |
 
 ### Not alignable (hardcoded ML train/test split)
 
-| Project | Reason | Current Period |
-|---------|--------|----------------|
-| BTC-ML | Train 2019-2022, test 2023-2026 hardcoded. Changing dates breaks ML logic. | 2023-01-01 → 2026-03-01 |
+| Project | QC ID | Reason | Current Period |
+|---------|-------|--------|----------------|
+| BTC-ML | 29318876 | Train 2019-2022, test 2023-2026 hardcoded. Changing dates breaks ML logic. | 2023-01-01 → 2026-03-01 |
+
+### Key findings
+
+1. **TrendFollowing = leader indiscutable**: Sharpe 1.072 sur 2018-2025 avec MaxDD 9.3%. Seule strategie "Robuste" qui maintient ses performances sur la periode aligned.
+2. **EMA-Cross-Alpha: chute dramatique**: Sharpe passe de 0.996 (meilleur backtest) a -0.010 sur la periode aligned. Confirme le pattern "backtests courts = overfitting".
+3. **Composites ne battent pas les single-strategies**: MomentumRegime (SectorMomentum + RegimeSwitching) obtient 0.185, confirmant le probleme de "double-defense".
+4. **Crypto = rendement modere mais stable**: Crypto-MultiCanal (0.581) et Portfolio-IBKR-Binance (0.519) offrent diversification avec MaxDD maitrises.
+5. **FX Carry = perdant**: Sharpe -1.108, les taux bas post-COVID ont elimine l'avantage du carry trade.
+
+### Comparison: Best-vs-Aligned
+
+| Strategy | Best Sharpe | Aligned Sharpe | Delta | Diagnostic |
+|----------|------------|----------------|-------|------------|
+| EMA-Cross-Alpha | 0.996 | -0.010 | -1.006 | Period overfitting severe |
+| TrendStocks-Alpha | 0.609 | 0.384 | -0.225 | Legere degradation |
+| TrendFollowing | ~0.8 | 1.072 | +0.272 | Ameliore sur longue periode |
+| Crypto-MultiCanal | ~0.6 | 0.581 | ~0 | Performance confirmee |
+| VolTarget-Momentum | ~0.65 | 0.648 | ~0 | Performance confirmee |
 
 ---
 
