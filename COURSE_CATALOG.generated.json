@@ -10139,7 +10139,7 @@
     "owner_logique": "po-2024",
     "last_validation": "2026-06-04",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#2368",
+    "issue_pr_associee": "#2314, #2315, #2323",
     "cells_total": 45,
     "cells_code": 18,
     "cells_markdown": 27,
