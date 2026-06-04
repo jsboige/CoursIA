@@ -529,19 +529,19 @@ A partir des modeles pre-entraines sur diverse_200k, fine-tuning avec un dataset
 
 ## Sources des Projets Etudiants
 
-Les notebooks sont adaptes des meilleurs projets etudiants des depots GitHub :
+Les notebooks sont adaptes de projets etudiants :
 
-| Technique | Source | Repertoire |
-|-----------|--------|------------|
-| **Norvig** | [jsboigeEpita/2024-Sudoku-NLP](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
-| **Simulated Annealing** | [jsboigeEpita/2023-Sudoku-NLP](https://github.com/jsboigeEpita/2023-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.SimulatedAnnealing` |
-| **Human Strategies** | [jsboigeEpita/2024-Sudoku-NLP](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.Human` (23 fichiers, 13 techniques) |
-| **Neural Network** | [jsboigeEpita/2024-Sudoku-CV](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-CV) | `Sudoku.NeuralNetwork` (4 architectures) |
-| **PSO** | [jsboige/MSMIN4IN32-22-MIN2-Sudoku](https://github.com/jsboige/MSMIN4IN32-22-MIN2-Sudoku) | `Sudoku.PSO` (7 fichiers) |
-| **AIMA CSP** | [jsboigeEpita/2024-Sudoku-NLP](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.CspAima` |
-| **Graph Coloring** | [jsboige/MSMIN4IN32-22-MIN2-Sudoku](https://github.com/jsboige/MSMIN4IN32-22-MIN2-Sudoku) | `Sodoku.GraphColoring` (11 fichiers) |
-| **Choco** | [jsboigeECE/2025-Sudoku-Gr01](https://github.com/jsboigeECE/2025-ECE-Ing4-Fin-Sudoku-Gr01) | `Sudoku.ChocoSolvers` (5 implementations) |
-| **LLM** | [jsboigeECE/2025-Sudoku-Gr01](https://github.com/jsboigeECE/2025-ECE-Ing4-Fin-Sudoku-Gr01) | `Sudoku.LLM-ChatGPTenzin` |
+| Technique | Contenu | Repertoire |
+|-----------|---------|------------|
+| **Norvig** | Solveur Norvig + variante BitArray | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
+| **Simulated Annealing** | Recuit simule | `Sudoku.SimulatedAnnealing` |
+| **Human Strategies** | Strategies humaines | `Sudoku.Human` (23 fichiers, 13 techniques) |
+| **Neural Network** | 4 architectures de reseaux de neurones | `Sudoku.NeuralNetwork` |
+| **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` (7 fichiers) |
+| **AIMA CSP** | CSP inspire de AIMA | `Sudoku.CspAima` |
+| **Graph Coloring** | Coloration de graphe | `Sodoku.GraphColoring` (11 fichiers) |
+| **Choco** | 5 implementations Choco | `Sudoku.ChocoSolvers` |
+| **LLM** | Resolution par LLM | `Sudoku.LLM-ChatGPTenzin` |
 
 ## Structure des Fichiers
 
