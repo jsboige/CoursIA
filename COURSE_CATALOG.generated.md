@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-04 11:05
+Generated: 2026-06-04 11:48
 Total notebooks: 511
 
 ## Status Summary
@@ -12,10 +12,10 @@ Total notebooks: 511
 
 ## Maturity Summary
 
-- **PRODUCTION**: 381
-- **BETA**: 50
+- **PRODUCTION**: 399
+- **BETA**: 46
 - **TEMPLATE**: 4
-- **ALPHA**: 71
+- **ALPHA**: 57
 - **DRAFT**: 5
 
 ## By Series
@@ -510,31 +510,31 @@ Total notebooks: 511
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
-### Probas (43 notebooks) — READY:43 | ALPHA:16, BETA:6, PRODUCTION:21
+### Probas (43 notebooks) — READY:43 | ALPHA:2, BETA:2, PRODUCTION:39
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 2 | Infer-10-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 3 | Infer-11-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 4 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | ALPHA | 1h | po-2023 |
-| 5 | Infer-13-Debugging : Troubleshooting et Bonnes Pra | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 6 | Infer-14-Decision-Utility-Foundations : Axiomes et | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 7 | Infer-15-Decision-Utility-Money : Utilite de l'Arg | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 2 | Infer-10-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 3 | Infer-11-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 4 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 5 | Infer-13-Debugging : Troubleshooting et Bonnes Pra | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 6 | Infer-14-Decision-Utility-Foundations : Axiomes et | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 7 | Infer-15-Decision-Utility-Money : Utilite de l'Arg | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 8 | Infer-16-Decision-Multi-Attribute : Utilite Multi- | .NET (C#) | READY | ALPHA | 1h | po-2023 |
-| 9 | Infer-17-Decision-Networks : Reseaux de Decision | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 10 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 11 | Infer-19-Decision-Expert-Systems : Decisions Robus | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 12 | Infer-2-Gaussian-Mixtures : Distributions Gaussien | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 13 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 14 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 15 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | ALPHA | 1h | po-2023 |
-| 16 | Infer-5-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | ALPHA | 1h | po-2023 |
-| 17 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 18 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | ALPHA | 45min | po-2023 |
+| 9 | Infer-17-Decision-Networks : Reseaux de Decision | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 10 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 11 | Infer-19-Decision-Expert-Systems : Decisions Robus | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 12 | Infer-2-Gaussian-Mixtures : Distributions Gaussien | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 13 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 14 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 15 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 16 | Infer-5-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 17 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 18 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 19 | Infer-8-Model-Selection : Selection et Comparaison | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 20 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 21 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | ALPHA | 1h | po-2023 |
+| 20 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 21 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 22 | PyMC-1 : Configuration et Premier Modele | Python 3 | READY | PRODUCTION | 15min | po-2023 |
 | 23 | PyMC-10 : Crowdsourcing - Agregation de Labels et  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 24 | PyMC-11 — Modeles de Sequences et Chaines de Marko | Python 3 | READY | PRODUCTION | 45min | po-2023 |
