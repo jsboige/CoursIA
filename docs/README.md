@@ -15,6 +15,7 @@ Ces fichiers decrivent l'architecture et le fonctionnement general du projet.
 | [env-python-reparation.md](env-python-reparation.md) | RepARATION environnements Python |
 | [handson-book-mapping.md](handson-book-mapping.md) | Cartographie du livre Hands-On AI Trading (Jared Broad) |
 | [qc-broken-strategies-audit.md](qc-broken-strategies-audit.md) | Audit strategies QuantConnect broken |
+| [visitor-navigation-guide.md](visitor-navigation-guide.md) | Carte du visiteur : 4 parcours thematiques a travers 511 notebooks |
 
 ## Regles et conventions
 
