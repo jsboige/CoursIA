@@ -351,6 +351,7 @@ Search/
 | [RL](../RL/README.md) | Apprentissage par renforcement | MCTS (Search-7) et l'optimisation d'hyperparametres (App-18) relient la recherche au RL |
 | [ML](../ML/README.md) | Machine Learning | L'optimisation bayesienne d'hyperparametres (App-18) applique les metaheuristiques de cette serie au ML |
 | [GenAI](../GenAI/README.md) | IA generative | Les LLMs peuvent etre utilises comme heuristiques pour la resolution CSP (CSP-6 Hybridization) |
+| Lecture transversale | [La mer qui monte](../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |
 
 ---
 
