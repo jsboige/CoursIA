@@ -94,7 +94,7 @@ Backtested but modest or marginal strategies. Useful for pedagogical comparison.
 
 ---
 
-## Tier 3 — Exploratoire (Sharpe < 0, 4 strategies)
+## Tier 3 — Exploratoire (Sharpe < 0, 5 strategies)
 
 Negative Sharpe — either failed strategies or market conditions unfavorable.
 
