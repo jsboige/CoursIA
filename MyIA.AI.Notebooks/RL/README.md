@@ -9,7 +9,7 @@ maturity: PRODUCTION=6, BETA=1
 
 Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'IA qui apprend a un agent a prendre des decisions optimales par l'essai et l'erreur, en recevant des recompenses ou des penalites de son environnement. C'est la technologie derriere AlphaGo, les robots de Boston Dynamics, les systemes de recommendation de Netflix, et les voitures autonomes. La ou l'apprentissage supervise predit a partir d'exemples etiquetes et l'apprentissage non supervise decouvre des structures, le RL **agit** : il choisit des actions, observe leurs consequences, et s'ameliore iterativement.
 
-Cette serie couvre les **fondements theoriques** (MDP, equation de Bellman, Q-Learning), les **algorithmes avec reseaux de neurones** (DQN, Policy Gradient, PPO) et les **frameworks de production** (Stable Baselines3). Vous commencerez par entrainer un agent en quelques lignes avec un framework industriel, puis vous implementerez les memes algorithmes depuis zero pour comprendre ce qui se cache sous le capot.
+Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bellman, Q-Learning), les **algorithmes avec reseaux de neurones** (DQN, Policy Gradient, PPO) et les **frameworks de production** (Stable Baselines3). Vous commencerez par entrainer un agent en quelques lignes avec un framework industriel, puis vous implementerez les memes algorithmes depuis zero pour comprendre ce qui se cache sous le capot.
 
 **A qui s'adresse cette serie** : etudiants en IA, developpeurs souhaitant ajouter des capacites decisionnelles a leurs applications, et chercheurs en automatique ou robotique. Prerequis : Python intermediaire et bases en calculus (gradients). Aucune experience RL prealable necessaire pour le notebook 1.
 
@@ -17,21 +17,22 @@ Cette serie couvre les **fondements theoriques** (MDP, equation de Bellman, Q-Le
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 6 |
+| Notebooks | 7 |
 | Kernel | Python 3 |
-| Duree totale | ~240-280 min |
+| Duree totale | ~270-320 min |
 | Version | Stable Baselines3 2.0.0+ |
 
 ## Notebooks
 
-| # | Notebook | Contenu | Durée |
+| # | Notebook | Contenu | Duree |
 |---|----------|---------|-------|
 | 1 | [stable_baseline_1_intro_cartpole](stable_baseline_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
 | 2 | [stable_baseline_2_wrappers_sauvegarde_callbacks](stable_baseline_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
 | 3 | [stable_baseline_3_experience_replay_dqn](stable_baseline_3_experience_replay_dqn.ipynb) | HER, goal-conditioned RL | 40-45 min |
-| 4 | [rl_4_mdp_dp_qlearning](rl_4_mdp_dp_qlearning.ipynb) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
-| 5 | [rl_5_dqn_policy_gradient](rl_5_dqn_policy_gradient.ipynb) | DQN depuis zero, REINFORCE | 50-55 min |
-| 6 | [rl_6_multi_agent_rl](rl_6_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
+| 4 | [rl_3_multi_armed_bandits](rl_3_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
+| 5 | [rl_4_mdp_dp_qlearning](rl_4_mdp_dp_qlearning.ipynb) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
+| 6 | [rl_5_dqn_policy_gradient](rl_5_dqn_policy_gradient.ipynb) | DQN depuis zero, REINFORCE | 50-55 min |
+| 7 | [rl_6_multi_agent_rl](rl_6_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
 
 ## Contenu detaille
 
@@ -64,7 +65,16 @@ Cette serie couvre les **fondements theoriques** (MDP, equation de Bellman, Q-Le
 | SAC / DDPG | Algorithmes off-policy avec HER |
 | Replay buffers | Sauvegarde et chargement |
 
-### Notebook 4 - MDP, Programmation Dynamique et Q-Learning
+### Notebook 4 - Bandits Manchots et Exploration
+
+| Section | Contenu |
+|---------|---------|
+| Multi-armed bandit | Probleme fondamental exploration vs exploitation |
+| Strategies naives | Aléatoire, greedy, epsilon-greedy |
+| Strategies intelligentes | Decaying epsilon-greedy, Thompson Sampling |
+| Analyse | Comparaison regret, visualisation des estimations |
+
+### Notebook 5 - MDP, Programmation Dynamique et Q-Learning
 
 | Section | Contenu |
 |---------|---------|
@@ -74,7 +84,7 @@ Cette serie couvre les **fondements theoriques** (MDP, equation de Bellman, Q-Le
 | Q-Learning tabulaire | Apprentissage model-free, $\varepsilon$-greedy |
 | FrozenLake / CliffWalking | Environnements discrets |
 
-### Notebook 5 - DQN et Policy Gradient
+### Notebook 6 - DQN et Policy Gradient
 
 | Section | Contenu |
 |---------|---------|
@@ -84,7 +94,7 @@ Cette serie couvre les **fondements theoriques** (MDP, equation de Bellman, Q-Le
 | REINFORCE | Gradient de politique, baseline |
 | Comparaison | Value-based vs policy-based |
 
-### Notebook 6 - Apprentissage Multi-Agent
+### Notebook 7 - Apprentissage Multi-Agent
 
 | Section | Contenu |
 |---------|---------|
@@ -103,23 +113,26 @@ Cette serie couvre les **fondements theoriques** (MDP, equation de Bellman, Q-Le
 | **SAC** | Off-policy | 3 | Actions continues |
 | **DDPG** | Off-policy | 3 | Actions continues |
 | **HER** | Replay strategy | 3 | Goal-conditioned tasks |
-| **Value Iteration** | Model-based | 4 | Resolution exacte de MDP |
-| **Policy Iteration** | Model-based | 4 | Resolution exacte de MDP |
-| **Q-Learning** | Model-free (tabulaire) | 4 | Espaces discrets |
-| **DQN** | Off-policy (deep) | 5 | Espaces continus |
-| **REINFORCE** | Policy gradient | 5 | Politique directe |
-| **IQL** | Multi-agent | 6 | Apprentissage independant |
+| **Epsilon-greedy** | Exploration | 4 | Strategie d'exploration basique |
+| **Thompson Sampling** | Exploration | 4 | Exploration bayesienne |
+| **Value Iteration** | Model-based | 5 | Resolution exacte de MDP |
+| **Policy Iteration** | Model-based | 5 | Resolution exacte de MDP |
+| **Q-Learning** | Model-free (tabulaire) | 5 | Espaces discrets |
+| **DQN** | Off-policy (deep) | 6 | Espaces continus |
+| **REINFORCE** | Policy gradient | 6 | Politique directe |
+| **IQL** | Multi-agent | 7 | Apprentissage independant |
 
 ## Environnements
 
 | Environnement | Type | Notebook |
 |---------------|------|----------|
-| CartPole-v1 | Controle classique, discret | 1, 5 |
+| CartPole-v1 | Controle classique, discret | 1, 6 |
 | Pendulum-v1 | Controle continu | 2 |
 | Parking-v0 | Goal-conditioned, continu | 3 |
-| FrozenLake-v1 | Grille discrete, stochastique | 4 |
-| CliffWalking-v1 | Grille, compromis risque/recompense | 4 |
-| TicTacToe-v3 | Jeu a somme nulle | 6 |
+| GaussianBandit | Bandit stochastique | 4 |
+| FrozenLake-v1 | Grille discrete, stochastique | 5 |
+| CliffWalking-v1 | Grille, compromis risque/recompense | 5 |
+| TicTacToe-v3 | Jeu a somme nulle | 7 |
 
 ## Prerequisites
 
@@ -128,7 +141,7 @@ Cette serie couvre les **fondements theoriques** (MDP, equation de Bellman, Q-Le
 - Python intermediaire (classes, numpy)
 - Concepts RL de base (agent, environnement, reward)
 - Pas d'experience RL prealable necessaire pour le notebook 1
-- Bases PyTorch pour les notebooks 5 (tenseurs, autograd, Module)
+- Bases PyTorch pour les notebooks 6 (tenseurs, autograd, Module)
 
 ### Installation
 
@@ -143,10 +156,12 @@ pip install "stable-baselines3[extra]>=2.0.0a4" gymnasium numpy pandas matplotli
 # Pour le notebook 3 (parking environment)
 pip install highway-env moviepy
 
-# Pour le notebook 5 (DQN, REINFORCE)
+# Pour le notebook 4 (bandits — pas de dependance supplementaire)
+
+# Pour le notebook 6 (DQN, REINFORCE)
 pip install torch
 
-# Pour le notebook 6 (multi-agent)
+# Pour le notebook 7 (multi-agent)
 pip install "pettingzoo[classic]>=1.24.0"
 ```
 
@@ -157,10 +172,10 @@ pip install "pettingzoo[classic]>=1.24.0"
 | stable-baselines3 | >=2.0.0a4 | Algorithmes RL (notebooks 1-3) |
 | gymnasium | latest | Interface environnements |
 | numpy | latest | Calcul numerique |
-| pandas | >=2.0 | Tableaux de resultats (notebook 4) |
+| pandas | >=2.0 | Tableaux de resultats (notebook 5) |
 | matplotlib | latest | Visualisation |
-| torch | latest | Reseaux de neurones (notebook 5) |
-| pettingzoo | >=1.24.0 | Multi-agent (notebook 6) |
+| torch | latest | Reseaux de neurones (notebook 6) |
+| pettingzoo | >=1.24.0 | Multi-agent (notebook 7) |
 | highway-env | latest | Parking-v0 (notebook 3) |
 | moviepy | latest | Enregistrement video |
 
@@ -170,10 +185,10 @@ pip install "pettingzoo[classic]>=1.24.0"
 Notebook 1 (Bases SB3)
     |
     v
-Notebook 4 (Fondements theoriques) ---> Notebook 5 (DQN / Policy Gradient)
-    |                                          |
-    v                                          v
-Notebook 2 (Production features)         Notebook 6 (Multi-Agent)
+Notebook 4 (Bandits) ---> Notebook 5 (MDP / Q-Learning) ---> Notebook 6 (DQN / Policy Gradient)
+    |                                                          |
+    v                                                          v
+Notebook 2 (Production features)                           Notebook 7 (Multi-Agent)
     |
     v
 Notebook 3 (Goal-conditioned RL)
@@ -182,9 +197,10 @@ Notebook 3 (Goal-conditioned RL)
 | Objectif | Notebooks |
 |----------|-----------|
 | Decouverte rapide | 1 uniquement |
+| Exploration et bandits | 4 uniquement |
 | Fondations SB3 | 1 + 2 + 3 |
-| Fondements theoriques | 4 + 5 + 6 |
-| Maitrise complete | 1 a 6 |
+| Fondements theoriques | 4 + 5 + 6 + 7 |
+| Maitrise complete | 1 a 7 |
 
 ### Parcours d'apprentissage
 
@@ -196,9 +212,13 @@ Le notebook 1 pose les bases : vous installez Stable Baselines3, creez votre pre
 
 Le notebook 3 introduit les taches a objectifs (goal-conditioned RL) avec l'algorithme HER (Hindsight Experience Replay). Vous resoudrez un probleme de parking autonome ou l'agent doit atteindre une position cible. C'est le passage de "equilibrer un baton" a "garer une voiture" — un saut qualitatif qui montre la puissance du RL.
 
-**Phase 3 : Les maths sous le capot (~2.5h, notebooks 4-6)**
+**Phase 3 : Exploration et bandits (~30min, notebook 4)**
 
-Les notebooks 4 a 6 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 4 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 5 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6 clot avec le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play).
+Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer de nouvelles options et exploiter ce qui fonctionne deja ? Vous implementerez des strategies d'exploration (epsilon-greedy, decaying epsilon, Thompson Sampling) sur un probleme de bandits manchots et comparerez leur regret cumule.
+
+**Phase 4 : Les maths sous le capot (~3h, notebooks 5-7)**
+
+Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 7 clot avec le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play).
 
 ## Concepts cles
 
@@ -208,21 +228,24 @@ Les notebooks 4 a 6 quittent le framework pour implementer les algorithmes depui
 | **Environnement** | Monde avec lequel l'agent interagit | 1 |
 | **Reward** | Signal de feedback pour l'apprentissage | 1 |
 | **Policy** | Strategie de l'agent (state vers action) | 1 |
-| **Value function** | Estimation des rewards futurs | 4 |
-| **MDP** | Formalisation mathematique du probleme RL | 4 |
-| **Bellman equation** | Relation de recurrence pour V et Q | 4 |
-| **Experience replay** | Reutilisation des experiences passees | 3, 5 |
+| **Value function** | Estimation des rewards futurs | 5 |
+| **MDP** | Formalisation mathematique du probleme RL | 5 |
+| **Bellman equation** | Relation de recurrence pour V et Q | 5 |
+| **Exploration vs exploitation** | Compromis entre tester et exploiter | 4 |
+| **Regret** | Mesure de performance cumulative en bandit | 4 |
+| **Thompson Sampling** | Exploration bayesienne optimale | 4 |
+| **Experience replay** | Reutilisation des experiences passees | 3, 6 |
 | **HER** | Reinterpretation d'echecs comme succes | 3 |
-| **DQN** | Q-Learning avec approximation neurale | 5 |
-| **Policy gradient** | Optimisation directe de la politique | 5 |
-| **Multi-agent** | Plusieurs agents apprenant simultanement | 6 |
+| **DQN** | Q-Learning avec approximation neurale | 6 |
+| **Policy gradient** | Optimisation directe de la politique | 6 |
+| **Multi-agent** | Plusieurs agents apprenant simultanement | 7 |
 
 ## Caracteristiques
 
 - **Compatible Windows** : Pas de dependance xvfb
 - **Debutant-friendly** : Progression pedagogique
 - **Production-ready** : Checkpointing, monitoring (notebooks 1-3)
-- **From scratch** : Implementations sans framework (notebooks 4-6)
+- **From scratch** : Implementations sans framework (notebooks 4-7)
 - **Exercices** : Manipulations et explorations dans chaque notebook
 
 ## Ressources
@@ -247,6 +270,7 @@ RL/
 ├── stable_baseline_1_intro_cartpole.ipynb
 ├── stable_baseline_2_wrappers_sauvegarde_callbacks.ipynb
 ├── stable_baseline_3_experience_replay_dqn.ipynb
+├── rl_3_multi_armed_bandits.ipynb
 ├── rl_4_mdp_dp_qlearning.ipynb
 ├── rl_5_dqn_policy_gradient.ipynb
 ├── rl_6_multi_agent_rl.ipynb
@@ -257,7 +281,7 @@ RL/
 
 | Serie | Lien | Connection |
 |-------|------|-------------|
-| [GameTheory](../GameTheory/README.md) | Jeux bayesiens, equilibre de Nash | Le RL multi-agent (notebook 6) formalise les memes interactions que la theorie des jeux, mais avec apprentissage |
+| [GameTheory](../GameTheory/README.md) | Jeux bayesiens, equilibre de Nash | Le RL multi-agent (notebook 7) formalise les memes interactions que la theorie des jeux, mais avec apprentissage |
 | [ML](../ML/README.md) | Pipelines ML | Le RL s'appuie sur les memes outils (PyTorch, numpy) et suppose la familiarite avec l'entrainement de modeles |
 | [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | Les strategies de trading se modelisent comme des problemes RL (actions = acheter/vendre, reward = PnL) |
 | [Probas](../Probas/README.md) | Decision bayesienne (notebooks 17-20) | Les MDP du RL generalisent les processus decisionnels de Markov de la serie Probas |
