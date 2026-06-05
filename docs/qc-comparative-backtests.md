@@ -206,7 +206,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | DualMomentum (student) | 31798582 | 2023-2025* | 0.493 | 13.5 | 9.0 | **54.9** | `88d36544` | *Hardcoded 2023 start. PSR > 50%! |
 | RiskParity inverse-vol (student) | 31872286 | 2015-2025* | 0.514 | 9.3 | 20.7 | 16.3 | `d6a7bc52` | *Hardcoded 2015 start |
 | ValueFactor Z-Score (student) | 31932810 | 2015-2025* | 0.227 | 6.4 | 36.5 | 0.8 | `da42c569` | Alpha negatif (decennie growth) |
-| OptionWheel VGT (student) | 31846074 | 2018-2025* | -0.51 | 0% | 103.5 | 0.004 | `b9eca3c8` | Win-rate paradoxe, MaxDD > 100% |
+| OptionWheel VGT (student) | 31846074 | 2018-2025* | -0.51 | 0% | 103.5 | 0.0 | `b9eca3c8` | Win-rate paradoxe, MaxDD > 100% |
 
 **Note**: AdaptiveAssetAllocation (31781187) et MarkovRegime (31871247) n'ont produit aucune métrique (0 trades ou erreur d'exécution).
 
@@ -231,8 +231,9 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 9. **SectorDualMomentum v3.2**: Sharpe 0.581, CAGR 13.5%, MaxDD 22.8%. PSR 15.3%.
 10. **TrendStocks-Alpha: high return, high risk**: CAGR 15.9% mais MaxDD 39.6% (Calmar 0.40). PSR 5.8% = non significatif.
 11. **Student DualMomentum: PSR > 50%**: Sharpe 0.493 sur 2023-2025 avec MaxDD 9.0%. Seule strategie etudiante avec PSR significatif (54.9%).
-12. **Student OptionWheel: catastrophe pedagogique**: Sharpe -0.51, MaxDD 103.5%. Parfait comme etude de cas du "win-rate paradoxe".
-13. **Student ValueFactor: alpha negatif confirmee**: Sharpe 0.227, PSR 0.8%. Decennie growth-dominée = facteur value sous-performant.
+12. **Student RiskParity: performance honnete**: Sharpe 0.514, CAGR 9.3%, MaxDD 20.7%. Inverse-vol simple mais efficace. PSR 16.3% (non significatif mais respectable).
+13. **Student OptionWheel: catastrophe pedagogique**: Sharpe -0.51, MaxDD 103.5%. Parfait comme etude de cas du "win-rate paradoxe".
+14. **Student ValueFactor: alpha negatif confirmee**: Sharpe 0.227, PSR 0.8%. Decennie growth-dominée = facteur value sous-performant.
 
 ## Comparison: Best-vs-Aligned
 
