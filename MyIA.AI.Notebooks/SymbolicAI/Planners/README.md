@@ -517,6 +517,115 @@ La planification automatique est une branche de l'IA symbolique :
 | [GameTheory](../../GameTheory/README.md) | Recherche sequentielle | A* en planification et minimax en jeux partagent la meme structure de graphe |
 | [Search](../../Search/README.md) | Fondations algorithmiques | A*, BFS, DFS de Search sont les bases des planificateurs classiques |
 
+## FAQ / Troubleshooting
+
+### 1. Le conteneur Docker Fast Downward ne repond pas sur le port 8200
+
+**Symptome** : `ConnectionRefusedError` ou timeout dans les notebooks 4-6.
+
+**Causes et solutions** :
+
+```bash
+# Verifier que le conteneur tourne
+docker ps | grep coursia-fast-downward
+
+# S'il n'apparait pas, le lancer
+docker run -d --name coursia-fast-downward -p 8200:8200 jsboige/coursia-fast-downward:latest
+
+# Verifier que le port est accessible
+curl -s http://localhost:8200/health
+```
+
+Si le port 8200 est deja pris par un autre service, utiliser un port different :
+```bash
+docker run -d --name coursia-fast-downward -p 8201:8200 jsboige/coursia-fast-downward:latest
+```
+Dans ce cas, adapter l'URL dans les notebooks de `localhost:8200` vers `localhost:8201`.
+
+### 2. unified-planning ne detecte pas Fast Downward
+
+**Symptome** : `up_fast_downward` importe mais `FastDownwardPDDLPlanner()` echoue avec une erreur de chemin.
+
+**Cause** : `unified-planning` attend l'executable `downward` dans le PATH ou dans le repertoire configure. Avec Docker, ce n'est pas necessaire — les notebooks utilisent l'API HTTP a la place.
+
+**Solution** : Les notebooks 4-6 utilisent le serveur Docker (endpoint `/plan`), pas l'executable local. Verifier que les appels HTTP fonctionnent :
+```python
+import requests
+resp = requests.post("http://localhost:8200/plan",
+    json={"domain": domain_pddl, "problem": problem_pddl, "search": "astar(lmcut())"})
+print(resp.status_code, resp.json())
+```
+
+### 3. Erreurs PDDL "undeclared variable" ou "type mismatch"
+
+**Symptome** : Le solveur rejette le domaine ou le probleme PDDL avec une erreur de parsing.
+
+**Causes frequentes** :
+
+| Erreur | Cause | Correction |
+| ------ | ----- | ---------- |
+| `undeclared variable '?x'` | Parametre non declare dans `:parameters` | Ajouter `?x - type` dans la signature de l'action |
+| `type mismatch` | Type de parametre incorrect | Verifier que le type existe dans `:types` |
+| `unsupported requirement` | Requirement non supporte par le solveur | Retirer `:adl`, `:quantified-preconditions` ou utiliser un solveur compatible |
+| `precondition false` | Conjonction vide ou variable non initialisee | Verifier les noms de predicats dans `:predicates` |
+
+**Astuce** : Valider le PDDL avec [planning.wiki](https://planning.wiki/) avant de le soumettre au solveur. Le notebook 2 (PDDL-Basics) couvre la syntaxe complete.
+
+### 4. OR-Tools CP-SAT : "model is infeasible" sur un probleme simple
+
+**Symptome** : Le solveur CP-SAT retourne `INFEASIBLE` alors que le probleme devrait avoir une solution.
+
+**Causes** :
+
+1. **Contradiction entre contraintes** : deux contraintes `model.Add(x == 1)` et `model.Add(x == 2)` sur la meme variable.
+2. **Domaine vide** : `model.NewIntVar(5, 3, "x")` (borne inferieure > superieure).
+3. **Contraintes cumulatives** : la capacite cumulee est inferieure a la demande totale.
+
+**Diagnostic** :
+```python
+# Activer le log du solveur pour comprendre l'infeasibilite
+solver = cp_model.CpSolver()
+solver.parameters.max_time_in_seconds = 30.0
+status = solver.Solve(model)
+if status == cp_model.INFEASIBLE:
+    # Verifier les contraintes une par une en les desactivant
+    for i, ct in enumerate(model.proto.constraint):
+        print(f"Constraint {i}: {ct}")
+```
+
+### 5. Explication combinatoire : le solveur ne termine pas
+
+**Symptome** : Le planificateur tourne indefiniment sur un probleme de taille moyenne.
+
+**Cause** : L'espace d'etats explose ($O(2^n)$ pour $n$ predicats). Les domaines comme Logistics ou Satellite avec beaucoup d'objets sont particulierement sensibles.
+
+**Solutions** :
+
+| Strategie | Configuration | Quand l'utiliser |
+| --------- | ------------- | ---------------- |
+| **Limiter le temps** | `solver.parameters.max_time_in_seconds = 60` | Probleme trop grand |
+| **Heuristique rapide** | Utiliser `eager_greedy([ff()])` au lieu de `astar(lmcut())` | Solution rapide, pas forcement optimale |
+| **Reduire le probleme** | Moins d'objets dans `:objects` | Prototypage, validation du modele |
+| **Sous-optimal** | `astar(ff())` avec weight > 1 | Bon compromis qualite/temps |
+
+### 6. Docker sur Windows : "permission denied" ou "daemon not running"
+
+**Symptome** : Les commandes `docker` echouent sur Windows.
+
+**Solutions** :
+
+1. Verifier que Docker Desktop est lance (icone dans la barre de taches).
+2. Sur Windows, utiliser PowerShell en mode Administrateur si necessaire.
+3. Alternative sans Docker : installer Fast Downward nativement (Linux/WSL uniquement) :
+   ```bash
+   # Dans WSL
+   git clone https://github.com/aibasel/downward.git
+   cd downward && ./build.py
+   # Puis pointer unified-planning vers le binaire
+   ```
+
+Les notebooks theoriques (1-3, 7-12) ne necessitent **pas** Docker et fonctionnent avec uniquement `pip install unified-planning ortools`.
+
 ## Contribution
 
 Pour contribuer a cette serie :
