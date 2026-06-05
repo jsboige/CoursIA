@@ -1,5 +1,34 @@
 name: Catalog Drift Check
 
+# Purpose: keep COURSE_CATALOG.generated.json and the README CATALOG-STATUS
+# markers in sync with the notebooks, WITHOUT blocking notebook PRs.
+#
+# Root cause this workflow addresses (see #2433):
+#   The catalog embeds git-derived fields (last_validation, issue_pr_associee)
+#   and a maturity heuristic that evolve as commits land on main. A clean
+#   regeneration therefore differs from the committed JSON even when a PR did
+#   not touch the catalog at all. The old job ran `expand_catalog_markers.py
+#   --check` and exited 1 on that benign drift, so EVERY notebook PR failed
+#   this check regardless of its content. This jammed the merge queue and
+#   spawned recurring "catalog resync" PRs.
+#
+# Fix:
+#   For same-repo PRs (where CI has write access) AUTO-REGENERATE the catalog
+#   + README markers and COMMIT the result back to the PR branch with a bot
+#   commit ([skip ci] so it does not loop). The author no longer has to
+#   remember to regenerate. The #2433 generator already preserves curated
+#   git-fields (last_validation / last_validator / issue_pr_associee) for
+#   unchanged entries, so this auto-commit cannot blank another entry's
+#   curated data.
+#
+#   For fork PRs (student / external contributors, no write token) the job
+#   degrades to an INFORMATIONAL, NON-BLOCKING report (annotation only) and
+#   always exits 0, so fork PRs are never blocked by drift.
+#
+# This job is intentionally NON-BLOCKING. The REQUIRED notebook gate remains
+# "Static validation (H.1/H.3/C.1)" in notebook-execution-required.yml, which
+# this workflow does not touch.
+
 on:
   pull_request:
     branches: [ main ]
@@ -11,82 +40,105 @@ on:
       - 'COURSE_CATALOG.generated.json'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
-  check-drift:
+  catalog-drift:
     name: "Notebook catalog drift"
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      # For same-repo PRs we check out the actual PR head branch (not the
+      # detached merge ref) so we can commit + push back to it. For forks we
+      # check out the merge ref read-only; the push step is skipped anyway.
+      - name: Determine PR origin
+        id: origin
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [ "$HEAD_REPO" = "$THIS_REPO" ] && [ -n "$HEAD_REF" ]; then
+            echo "is_fork=false" >> "$GITHUB_OUTPUT"
+            echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+            echo "Same-repo PR on branch '$HEAD_REF' - auto-commit mode enabled."
+          else
+            echo "is_fork=true" >> "$GITHUB_OUTPUT"
+            echo "head_ref=" >> "$GITHUB_OUTPUT"
+            echo "Fork or manual dispatch - informational (non-blocking) mode."
+          fi
 
-    - name: Generate catalog (prerequisite)
-      run: python3 scripts/notebook_tools/generate_catalog.py --json-only --git-tracked-only
+      - name: Checkout PR head (same-repo)
+        if: steps.origin.outputs.is_fork == 'false'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.origin.outputs.head_ref }}
+          fetch-depth: 0
+          persist-credentials: true
 
-    - name: Check CATALOG-STATUS marker drift
-      run: python3 scripts/notebook_tools/expand_catalog_markers.py --check
+      - name: Checkout (fork / dispatch, read-only)
+        if: steps.origin.outputs.is_fork == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Check notebook catalog drift
-      run: |
-        python3 scripts/notebook_tools/verify_catalog_readme.py 2>/dev/null || python3 -c "
-        import os, re, sys
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-        # Fallback if verify_catalog_readme.py is not available
-        ERRORS = 0
-        WARNINGS = 0
+      # Canonical regeneration: generate the catalog JSON (git-tracked notebooks
+      # only, for CI determinism) then expand the README CATALOG-STATUS markers
+      # from it. The generator preserves curated git-fields from origin/main
+      # (#2433), so unchanged entries are not blanked.
+      - name: Regenerate catalog + README markers
+        run: |
+          git fetch origin main --depth=1 || true
+          python scripts/notebook_tools/generate_catalog.py --json-only --git-tracked-only
+          python scripts/notebook_tools/expand_catalog_markers.py
 
-        base = 'MyIA.AI.Notebooks'
-        EXCLUDE_ALWAYS = {'.ipynb_checkpoints', 'obj', 'bin', '__pycache__', '.git'}
-        EXCLUDE_PED = {'research', 'archive', '_output', 'partner-course', 'examples'}
-        CATALOG_RE = re.compile(r'<!--\s*CATALOG-STATUS\s*\n(.*?)\n\s*-->', re.DOTALL)
+      - name: Detect drift
+        id: diff
+        run: |
+          # Only the catalog JSON and the README marker files are in scope.
+          git add COURSE_CATALOG.generated.json MyIA.AI.Notebooks/README.md 'MyIA.AI.Notebooks/*/README.md' 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "Catalog and README markers are already in sync. No drift."
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+            echo "Catalog drift detected in:"
+            git diff --cached --name-only | sed 's/^/  - /'
+            echo "::notice title=Catalog drift::The catalog/README markers were out of sync with the notebooks and have been (or would be) regenerated."
+          fi
 
-        for series in sorted(os.listdir(base)):
-            series_path = os.path.join(base, series)
-            readme_path = os.path.join(series_path, 'README.md')
-            if not os.path.isdir(series_path) or not os.path.isfile(readme_path):
-                continue
+      # Same-repo PR: commit the regenerated catalog + markers back to the PR
+      # branch. [skip ci] prevents a re-trigger loop. GITHUB_TOKEN pushes do
+      # not re-fire pull_request workflows, but [skip ci] is belt-and-braces.
+      - name: Commit regenerated catalog to PR branch
+        if: steps.origin.outputs.is_fork == 'false' && steps.diff.outputs.drift == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(catalog): auto-regenerate catalog + README markers [skip ci]" \
+                     -m "Keeps COURSE_CATALOG.generated.json and CATALOG-STATUS markers in sync. See #2433." \
+                     -m "Co-Authored-By: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          if git push origin "HEAD:${{ steps.origin.outputs.head_ref }}"; then
+            echo "::notice title=Catalog auto-synced::Regenerated catalog committed to PR branch '${{ steps.origin.outputs.head_ref }}'."
+          else
+            echo "::warning title=Catalog auto-sync skipped::Could not push the regenerated catalog (branch protection or permissions). Drift is informational only; this check does not block the PR. Run 'python scripts/notebook_tools/generate_catalog.py --json-only --git-tracked-only && python scripts/notebook_tools/expand_catalog_markers.py' locally and commit if desired."
+          fi
 
-            # Count actual pedagogical notebooks
-            actual = 0
-            for root, dirs, files in os.walk(series_path):
-                dirs[:] = [d for d in dirs if d not in EXCLUDE_ALWAYS]
-                rel = os.path.relpath(root, series_path)
-                if any(exc in rel for exc in EXCLUDE_PED):
-                    continue
-                for f in files:
-                    if f.endswith('.ipynb'):
-                        actual += 1
+      # Fork / external PR: cannot push. Report as a non-blocking warning so the
+      # PR is never blocked by drift.
+      - name: Informational drift warning (fork)
+        if: steps.origin.outputs.is_fork == 'true' && steps.diff.outputs.drift == 'true'
+        run: |
+          echo "::warning title=Catalog drift (informational)::This PR's notebooks are not yet reflected in COURSE_CATALOG.generated.json. This is expected for external/fork PRs and does NOT block the PR - a maintainer regenerates the catalog periodically."
 
-            if actual == 0:
-                continue
-
-            # Parse CATALOG-STATUS marker
-            with open(readme_path, 'r', encoding='utf-8') as f:
-                text = f.read()
-            m = CATALOG_RE.search(text)
-            if not m:
-                print(f'WARN: {series} has no CATALOG-STATUS marker ({actual} notebooks)')
-                WARNINGS += 1
-                continue
-
-            declared = None
-            for line in m.group(1).strip().splitlines():
-                key, _, val = line.partition(':')
-                if key.strip() == 'pedagogical_count':
-                    declared = int(val.strip())
-
-            if declared is None:
-                print(f'WARN: {series} CATALOG-STATUS missing pedagogical_count')
-                WARNINGS += 1
-                continue
-
-            if declared != actual:
-                print(f'ERROR: {series} declared={declared} actual={actual} (drift={actual - declared:+d})')
-                ERRORS += 1
-            else:
-                print(f'OK: {series} {declared} notebooks')
-
-        print()
-        print(f'Catalog drift check: {WARNINGS} warning(s), {ERRORS} error(s)')
-        if ERRORS > 0:
-            sys.exit(1)
-        "
+      # This job is always green. Drift is handled by auto-commit (same-repo) or
+      # surfaced as an annotation (fork). It never blocks notebook PRs.
+      - name: Done (non-blocking)
+        run: echo "Catalog drift check complete (non-blocking)."

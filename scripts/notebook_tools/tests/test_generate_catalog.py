@@ -16,9 +16,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from generate_catalog import (
+    CURATED_GIT_FIELDS,
     NOTEBOOKS_DIR,
     _effective_code_cells,
     _is_exercise_stub,
+    _merge_curated_fields,
     check_errors,
     classify_maturity,
     count_todos,
@@ -1065,6 +1067,143 @@ class TestDetectRequirementsEdgeCases:
         result = detect_requirements(nb)
         # Documenting the actual behavior — substring match
         assert result["requires_gpu"] is True  # "gpu" in "pug" → True (heuristic)
+
+
+class TestMergeCuratedFields:
+    """Regression tests for stale-branch field preservation.
+
+    When generate_catalog.py runs on a branch behind main, git log
+    misses recent commits. The _merge_curated_fields function preserves
+    last_validation/last_validator/issue_pr_associee from origin/main
+    for entries not touched on the current branch.
+    """
+
+    def _entry(self, path, last_validation="", last_validator="",
+               issue_pr_associee="", **kwargs):
+        """Build a catalog entry with defaults."""
+        return {
+            "path": path,
+            "title": kwargs.get("title", "Test"),
+            "serie": kwargs.get("serie", "Test"),
+            "kernel": kwargs.get("kernel", "Python 3"),
+            "status": kwargs.get("status", "READY"),
+            "maturity": kwargs.get("maturity", "PRODUCTION"),
+            "last_validation": last_validation,
+            "last_validator": last_validator,
+            "issue_pr_associee": issue_pr_associee,
+        }
+
+    def test_preserves_empty_fields_from_main(self):
+        """Entries with empty git fields get values from main."""
+        fresh = [
+            self._entry("Series/nb1.ipynb", last_validation="",
+                        last_validator="", issue_pr_associee=""),
+        ]
+        main = {
+            "Series/nb1.ipynb": self._entry(
+                "Series/nb1.ipynb", last_validation="2026-06-01",
+                last_validator="dev@example.com",
+                issue_pr_associee="#2161",
+            ),
+        }
+        result = _merge_curated_fields(fresh, main)
+        assert result[0]["last_validation"] == "2026-06-01"
+        assert result[0]["last_validator"] == "dev@example.com"
+        assert result[0]["issue_pr_associee"] == "#2161"
+
+    def test_preserves_current_nonempty_values(self):
+        """Entries with existing values are NOT overwritten by main."""
+        fresh = [
+            self._entry("Series/nb1.ipynb", last_validation="2026-06-04",
+                        last_validator="me@test.com",
+                        issue_pr_associee="#2309"),
+        ]
+        main = {
+            "Series/nb1.ipynb": self._entry(
+                "Series/nb1.ipynb", last_validation="2026-06-01",
+                last_validator="dev@example.com",
+                issue_pr_associee="#2161",
+            ),
+        }
+        result = _merge_curated_fields(fresh, main)
+        # Current values preserved — they are non-empty and more recent
+        assert result[0]["last_validation"] == "2026-06-04"
+        assert result[0]["last_validator"] == "me@test.com"
+        assert result[0]["issue_pr_associee"] == "#2309"
+
+    def test_no_matching_main_entry(self):
+        """Entries not in main catalog are left unchanged."""
+        fresh = [
+            self._entry("Series/new_notebook.ipynb",
+                        last_validation="", last_validator=""),
+        ]
+        main = {}  # no matching entry
+        result = _merge_curated_fields(fresh, main)
+        assert result[0]["last_validation"] == ""
+
+    def test_empty_main_catalog(self):
+        """Empty main catalog = no changes, no crash."""
+        fresh = [
+            self._entry("Series/nb1.ipynb", last_validation=""),
+        ]
+        result = _merge_curated_fields(fresh, {})
+        assert result[0]["last_validation"] == ""
+
+    def test_mixed_entries_some_need_merge(self):
+        """Only entries with empty git fields get merged."""
+        fresh = [
+            self._entry("Series/nb1.ipynb", last_validation="",
+                        last_validator=""),  # needs merge
+            self._entry("Series/nb2.ipynb", last_validation="2026-06-04",
+                        last_validator="me@test.com"),  # has data
+        ]
+        main = {
+            "Series/nb1.ipynb": self._entry(
+                "Series/nb1.ipynb", last_validation="2026-06-01",
+                last_validator="dev@example.com",
+                issue_pr_associee="#2161",
+            ),
+            "Series/nb2.ipynb": self._entry(
+                "Series/nb2.ipynb", last_validation="2026-05-01",
+                last_validator="old@example.com",
+            ),
+        }
+        result = _merge_curated_fields(fresh, main)
+        # nb1 got merged from main
+        assert result[0]["last_validation"] == "2026-06-01"
+        assert result[0]["issue_pr_associee"] == "#2161"
+        # nb2 kept its current values (non-empty)
+        assert result[1]["last_validation"] == "2026-06-04"
+        assert result[1]["last_validator"] == "me@test.com"
+
+    def test_partial_field_merge(self):
+        """Only empty fields are filled, non-empty kept."""
+        fresh = [
+            self._entry("Series/nb1.ipynb", last_validation="",
+                        last_validator="local@test.com",
+                        issue_pr_associee=""),
+        ]
+        main = {
+            "Series/nb1.ipynb": self._entry(
+                "Series/nb1.ipynb", last_validation="2026-06-01",
+                last_validator="remote@test.com",
+                issue_pr_associee="#2161",
+            ),
+        }
+        result = _merge_curated_fields(fresh, main)
+        # last_validation was empty → filled from main
+        assert result[0]["last_validation"] == "2026-06-01"
+        # last_validator was non-empty → kept current
+        assert result[0]["last_validator"] == "local@test.com"
+        # issue_pr_associee was empty → filled from main
+        assert result[0]["issue_pr_associee"] == "#2161"
+
+    def test_curated_fields_constant_contains_expected_fields(self):
+        """CURATED_GIT_FIELDS must contain the 3 git-derived fields."""
+        assert "last_validation" in CURATED_GIT_FIELDS
+        assert "last_validator" in CURATED_GIT_FIELDS
+        assert "issue_pr_associee" in CURATED_GIT_FIELDS
+        assert len(CURATED_GIT_FIELDS) == 3
 
 
 if __name__ == "__main__":
