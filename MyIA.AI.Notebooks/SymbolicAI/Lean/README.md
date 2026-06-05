@@ -373,6 +373,10 @@ La verification formelle en Lean (type theory, Curry-Howard) est conceptuellemen
 - **SC-11 LLM-Assisted Contracts** : Le meme paradigme d'assistance LLM que les notebooks Lean-7/8/9, applique a la generation de smart contracts au lieu de preuves.
 - **SC-17 E2E Verifiable Voting** : Les resultats de `Voting.lean` (theoreme du median voter, proprietes Banks/STV) eclairent les proprietes theoriques des systemes de vote verifiable.
 
+### Lecture transversale
+
+[La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de representation, certification A/B/C).
+
 ## Licence
 
 Voir la licence du repository principal.

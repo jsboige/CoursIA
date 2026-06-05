@@ -277,6 +277,31 @@ Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depui
 - **From scratch** : Implementations sans framework (notebooks 4-7)
 - **Exercices** : Manipulations et explorations dans chaque notebook
 
+## FAQ
+
+### Quelle est la difference entre on-policy et off-policy ?
+
+**On-policy** (PPO, A2C, REINFORCE) : l'apprentissage utilise uniquement les donnees collectees par la politique courante. Plus stable mais moins sample-efficient. **Off-policy** (DQN, SAC, DDPG) : l'apprentissage peut reutiliser des donnees passees stockees dans un replay buffer. Plus sample-efficient mais potentiellement moins stable. Le notebook 6 compare DQN (off-policy) et REINFORCE (on-policy) sur le meme environnement.
+
+### Pourquoi commencer par Stable Baselines3 plutot que par les algorithmes from scratch ?
+
+Stable Baselines3 permet de resoudre un probleme reel en quelques lignes, ce qui donne une intuition concreten avant d'etudier la theorie. L'approche "framework d'abord, maths ensuite" evite le piege de la theorie abstraite sans application. Les notebooks 4-7 deconstruisent ensuite les memes algorithmes pour comprendre ce qui se passe sous le capot.
+
+### Quelle est la difference entre value-based et policy-based ?
+
+**Value-based** (Q-Learning, DQN) : on apprend a estimer la valeur de chaque action dans chaque etat, puis on choisit l'action avec la plus haute valeur. Adapté aux espaces d'actions discrets. **Policy-based** (REINFORCE, PPO) : on optimise directement la politique (probabilite de choisir chaque action). Adapté aux espaces continus et aux politiques stochastiques. **Actor-Critic** (A2C, SAC) combine les deux : l'acteur choisit l'action, le critique estime la valeur.
+
+### Qu'est-ce que l'experience replay et pourquoi est-ce important ?
+
+L'experience replay (notebook 6) stocke les transitions (etat, action, reward, etat_suivant) dans un buffer et re-echantillonne aleatoirement pendant l'apprentissage. Cela casse les correlations temporelles entre experiences consecutives et ameliore l'efficacite en reutilisant chaque experience plusieurs fois. Sans replay buffer, les agents off-policy comme DQN seraient instables. HER (notebook 3) etend ce concept en re-interpretant les echecs comme des succes par changement d'objectif.
+
+### Comment choisir entre DQN et PPO pour un nouveau probleme ?
+
+- **Espace d'actions discret** et petit : DQN est simple et efficace (notebooks 5-6)
+- **Espace d'actions continu** : PPO ou SAC (notebooks 1-2, 3)
+- **Stabilite prioritaire** : PPO est le choix par defaut dans l'industrie (clipping prevents large policy updates)
+- **Sample efficiency** : SAC (off-policy) apprend plus vite en nombre d'interactions, mais PPO (on-policy) est souvent plus robuste en hyperparametres
+
 ## Ressources
 
 ### Documentation
