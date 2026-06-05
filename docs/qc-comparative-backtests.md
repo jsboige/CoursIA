@@ -56,6 +56,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 29 | RegimeSwitching | ML | Equities/ETF | 0.55 | 11.7 | — | — | robuste |
 | 30 | Temporal-CNN-Prediction | DL | Multi-asset | 0.54 | — | — | — | robuste |
 | 31 | RL-DQN-Trading | RL | Portfolio | 0.53 | — | — | — | robuste |
+| 31b | RL-Portfolio-Q-Learning | RL | Equities | 0.58 | 18.2 | 33.2 | — | historique (2020-2021) |
 | 32 | LSTM-Forecasting | DL | Multi-asset | 0.53 | — | — | — | robuste |
 | 33 | TrendStocks-Alpha | IND | Equities | 0.52 | 15.9 | — | — | robuste |
 | 34 | Portfolio-IBKR-Binance-Hybrid | COMP | Multi-asset | 0.52 | 15.7 | — | — | robuste |
@@ -102,7 +103,7 @@ Negative Sharpe — either failed strategies or market conditions unfavorable.
 |---|---------|------|-------|--------|-------|--------|
 | 58 | EMA-Cross-Alpha | IND | Equities | -0.01 | 2.8 | exploratoire |
 | 59 | TrendFilteredMeanReversion | IND | Equities (SPY) | -0.02 | — | exploratoire |
-| 60 | ForexCarry | IND | FX | -0.32 | — | exploratoire |
+| 60 | ForexCarry | IND | FX | -1.11 | -0.5 | exploratoire |
 | 61 | PairsTrading | STAT | Equities | -0.36 | — | exploratoire |
 | 62 | ETF-Pairs | STAT | ETF | -0.71 | — | exploratoire |
 
@@ -176,19 +177,92 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 
 ---
 
-## Next Steps (Pending Docker/MCP qc-mcp)
+## #1630 Aligned Baselines (2018-2025 period)
 
-1. **Standardized backtest period** : Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31 (or 2020-01-01 → 2024-12-31 for crypto) via MCP qc-mcp
-2. **Fill missing columns** : MaxDD, Calmar, Hit Rate, TC-adjusted Sharpe
-3. **Transaction cost adjustment** : 5bps SPY, 10bps crypto, 2bps FX
-4. **Cross-seed validation** : ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
-5. **Edge vs σ** : Compute for all strategies vs B&H baseline
-6. **Update this document** with live metrics post-backtest
+Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01-01 to 2025-12-31 (US equities/multi-asset), 2020-01-01 to 2025-12-31 (crypto). Some strategies have hardcoded dates that cannot be changed without breaking ML logic.
+
+### Verified baselines (CAGR/MaxDD from QC Cloud API)
+
+| Project | QC ID | Period | Sharpe | CAGR% | MaxDD% | PSR% | Backtest ID | Notes |
+|---------|-------|--------|--------|-------|--------|------|-------------|-------|
+| TrendFollowing | 28797562 | 2018-2025 | **1.072** | 23.2 | 9.3 | 81.8 | `7792ae0a` | Leader, PSR > 80% |
+| AllWeather | 28657833 | 2010-2025* | 0.631 | 9.016 | 16.4 | 31.2 | `cd6ba790` | *Hardcoded start 2010. PSR 31% |
+| SectorDualMomentum | 29686886 | 2015-2025* | 0.581 | 13.488 | 22.8 | 15.3 | `8713e974` | *Hardcoded start 2015 |
+| MomentumStrategy (SectorMom) | 28657837 | 2010-2025* | 0.555 | 11.676 | 25.8 | 7.2 | `e4491127` | *Hardcoded start 2010 |
+| VolTarget-Momentum | 30784745 | 2018-2025 | 0.648 | 14.7 | 21.2 | 22.3 | `c3223fe5` | Confirmed |
+| Crypto-MultiCanal | 30750734 | 2020-2025 | 0.581 | 8.2 | 17.0 | 37.6 | `4e97d7dc` | Stable crypto |
+| EMA-Cross-Stocks | 28789946 | 2018-2025 | **0.891** | 26.229 | 35.7 | 40.5 | `6b40d921` | Highest CAGR |
+| Portfolio-IBKR-Binance | 31717642 | 2020-2025 | 0.519 | 15.7 | 16.9 | 46.2 | `4cbb9476` | Multi-asset |
+| TrendStocks-Alpha | 28885507 | 2018-2025 | 0.519 | 15.9 | 39.6 | 5.8 | `7c434dbd` | High MaxDD |
+| EMA-Cross-Alpha | 28885488 | 2018-2025 | -0.010 | 2.8 | 14.0 | 0.5 | `633779d0` | Period overfitting |
+| MomentumRegime | 31243821 | 2018-2025 | 0.185 | 4.7 | 11.5 | 13.0 | `033834d8` | Double-defense |
+| ForexCarry | 28657908 | 2015-2025* | -1.108 | -0.5 | 19.2 | — | `c3afe374` | *Cannot restrict to 2018+ |
+| RL-Q-Learning | 32057969 | 2020-2021* | 0.584 | 18.2 | 33.2 | — | `fb1a6366` | *Hardcoded dates |
+
+### Student strategies (ESGF 5BD1 cohort, See #1405)
+
+| Project | QC ID | Period | Sharpe | CAGR% | MaxDD% | PSR% | Backtest ID | Notes |
+|---------|-------|--------|--------|-------|--------|------|-------------|-------|
+| DualMomentum (student) | 31798582 | 2023-2025* | 0.493 | 13.5 | 9.0 | **54.9** | `88d36544` | *Hardcoded 2023 start. PSR > 50%! |
+| RiskParity inverse-vol (student) | 31872286 | 2015-2025* | 0.514 | 9.3 | 20.7 | 16.3 | `d6a7bc52` | *Hardcoded 2015 start |
+| ValueFactor Z-Score (student) | 31932810 | 2015-2025* | 0.227 | 6.4 | 36.5 | 0.8 | `da42c569` | Alpha negatif (decennie growth) |
+| OptionWheel VGT (student) | 31846074 | 2018-2025* | -0.51 | 0% | 103.5 | 0.0 | `b9eca3c8` | Win-rate paradoxe, MaxDD > 100% |
+
+**Note**: AdaptiveAssetAllocation (31781187) et MarkovRegime (31871247) n'ont produit aucune métrique (0 trades ou erreur d'exécution).
+
+### Not alignable (hardcoded ML train/test split)
+
+| Project | QC ID | Reason | Current Period |
+|---------|-------|--------|----------------|
+| BTC-ML | 29318876 | Train 2019-2022, test 2023-2026 hardcoded. Changing dates breaks ML logic. | 2023-01-01 → 2026-03-01 |
+
+---
+
+## Key findings
+
+1. **TrendFollowing = leader indiscutable**: Sharpe 1.072 sur 2018-2025 avec MaxDD 9.3%. PSR 81.8% (statistiquement significatif). Seule strategie "Robuste" confirmee sur la periode aligned.
+2. **EMA-Cross-Stocks: surprise positive**: Sharpe 0.891 sur 2018-2025, CAGR 26.2%. PSR 40.5%. 2e meilleur Sharpe aligne, derriere TrendFollowing.
+3. **EMA-Cross-Alpha: chute dramatique**: Sharpe passe de 0.996 (meilleur backtest) a -0.010 sur la periode aligned. PSR 0.5% = bruit. Confirme le pattern "backtests courts = overfitting".
+4. **Composites ne battent pas les single-strategies**: MomentumRegime (SectorMomentum + RegimeSwitching) obtient 0.185, confirmant le probleme de "double-defense".
+5. **Crypto = rendement modere mais stable**: Crypto-MultiCanal (0.581) et Portfolio-IBKR-Binance (0.519) offrent diversification avec MaxDD maitrises.
+6. **FX Carry = perdant**: Sharpe -1.108, les taux bas post-COVID ont elimine l'avantage du carry trade.
+7. **AllWeather: performance confirme**: Sharpe 0.631 (2010-2025), MaxDD 16.4%, PSR 31.2%. Risk-parity solide.
+8. **MomentumStrategy (SectorMom v4.0)**: Sharpe 0.555, CAGR 11.7%, mais PSR 7.2% = non significatif.
+9. **SectorDualMomentum v3.2**: Sharpe 0.581, CAGR 13.5%, MaxDD 22.8%. PSR 15.3%.
+10. **TrendStocks-Alpha: high return, high risk**: CAGR 15.9% mais MaxDD 39.6% (Calmar 0.40). PSR 5.8% = non significatif.
+11. **Student DualMomentum: PSR > 50%**: Sharpe 0.493 sur 2023-2025 avec MaxDD 9.0%. Seule strategie etudiante avec PSR significatif (54.9%).
+12. **Student RiskParity: performance honnete**: Sharpe 0.514, CAGR 9.3%, MaxDD 20.7%. Inverse-vol simple mais efficace. PSR 16.3% (non significatif mais respectable).
+13. **Student OptionWheel: catastrophe pedagogique**: Sharpe -0.51, MaxDD 103.5%. Parfait comme etude de cas du "win-rate paradoxe".
+14. **Student ValueFactor: alpha negatif confirmee**: Sharpe 0.227, PSR 0.8%. Decennie growth-dominée = facteur value sous-performant.
+
+## Comparison: Best-vs-Aligned
+
+| Strategy | Best Sharpe | Aligned Sharpe | Delta | Diagnostic |
+|----------|------------|----------------|-------|------------|
+| EMA-Cross-Alpha | 0.996 | -0.010 | -1.006 | Period overfitting severe |
+| EMA-Cross-Stocks | 0.87 | 0.891 | +0.021 | Performance confirmee, ameliore |
+| TrendStocks-Alpha | 0.609 | 0.519 | -0.090 | Legere degradation |
+| AllWeather | 0.67 | 0.631 | -0.039 | Stable, confirme |
+| MomentumStrategy | 0.57 | 0.555 | -0.015 | Performance confirmee |
+| TrendFollowing | ~0.8 | 1.072 | +0.272 | Ameliore sur longue periode |
+| Crypto-MultiCanal | ~0.6 | 0.581 | ~0 | Performance confirmee |
+| VolTarget-Momentum | ~0.65 | 0.648 | ~0 | Performance confirmee |
+
+---
+
+## Next Steps
+
+1. ~~**Standardized backtest period**: Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31~~ — Done, 21 baselines verified via QC Cloud API (See #1630)
+2. ~~**Run aligned baselines for AllWeather/SectorMomentum/EMA-Cross-Stocks/MomentumStrategy**~~ — Done, all 4 re-backtested via QC Cloud
+3. ~~**Student strategies (ESGF #1405)**: DualMomentum, RiskParity, ValueFactor, OptionWheel backtestees~~ — Done, 4/6 valides
+4. **Transaction cost adjustment**: 5bps SPY, 10bps crypto, 2bps FX
+5. **Cross-seed validation**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
+6. **Edge vs σ**: Compute for all strategies vs B&H baseline
 
 ---
 
 ## Data Source
 
+- QC Cloud API via `qc-mcp-lite` — backtest IDs verified 2026-06-05
 - `projects/catalog.json` — 114 entries, authoritative metadata
 - `projects/README.md` + `STRATEGIES_DETAIL.md` — human-readable catalog
-- Prior individual backtest runs (Sharpe/CAGR from catalog)

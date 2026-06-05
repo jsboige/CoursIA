@@ -4,7 +4,7 @@
 series: SymbolicAI
 pedagogical_count: 104
 breakdown: SmartContracts=27, Lean=21, SemanticWeb=18, Planners=13, Tweety=10, SymbolicLearning=7, Argument_Analysis=6, root=2
-maturity: PRODUCTION=94, ALPHA=5, BETA=5
+maturity: PRODUCTION=94, BETA=6, ALPHA=4
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
@@ -251,7 +251,7 @@ Documentation complete : [SmartContracts/README.md](SmartContracts/README.md)
 
 Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine detection de sophismes, formalisation logique, et validation par TweetyProject.
 
-> **Note** : Cette serie est un projet/demo, pas un cours. Aucun exercice etudiant. Non adaptee en l'etat pour EPITA.
+> **Note** : Cette serie est un projet/demo, pas un cours. Aucun exercice etudiant. Non adaptee en l'etat pour un cours structure.
 
 ### Structure detaillee
 
@@ -519,7 +519,7 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 
 ## Ponts cross-series
 
-Ces connexions entre series sont exploitees dans le curriculum EPITA IA Symbolique (demarrage 18/05/2026).
+Ces connexions entre series sont exploitees dans le curriculum IA Symbolique.
 
 ### Lean <-> GameTheory (Choix social)
 
@@ -602,6 +602,30 @@ Ces connexions entre series sont exploitees dans le curriculum EPITA IA Symboliq
 
 ---
 
+## FAQ
+
+### Par quelle sous-serie commencer si je n'ai pas de JDK installe ?
+
+Les series **SemanticWeb** (notebooks Python), **Planners** (notebooks theoriques 7-11) et **Lean** (notebooks Python 1, 7-10) ne necessitent aucun JDK. **Tweety** et **Argument Analysis** utilisent JPype (bridge Java/Python) avec un JDK 17 portable auto-telecharge par le notebook de setup (pas d'installation systeme, pas de UAC). Si vous evitez les notebooks C# (qui requierent dotnet-interactive), vous pouvez travailler entierement en Python avec uniquement `pip install rdflib ortools unified_planning`.
+
+### Pourquoi Tweety utilise-t-il JPype plutot que des implementations Python natives ?
+
+TweetyProject est la bibliotheque de reference pour l'IA symbolique formelle (argumentation de Dung, ASPIC+, revision de croyances, logiques modales). Elle couvre des domaines ou il n'existe pas d'equivalent Python mature : solveurs d'argumentation structures, frameworks d'agent dialogues, logiques epistemiques. JPype permet d'appeler directement les JARs Java depuis Python sans reimplementation. Les notebooks gerent la bridge de maniere transparente via `tweety_init.py`.
+
+### Quelle est la difference entre les notebooks C# et Python de SemanticWeb ?
+
+Les **notebooks Python** (SW-8 a SW-13) utilisent `rdflib`, `pySHACL`, `owlready2` et `kglab` — 10/10 s'executent sans probleme. Les **notebooks C#** (SW-1 a SW-7) utilisent `dotNetRDF` via .NET Interactive et peuvent echouer sous Windows si la policy d'execution bloque `dotnet-interactive.exe` (Win32Exception 4551). Les memes concepts (RDF, SPARQL, OWL, SHACL) sont couverts dans les deux stacks. Si vous n'avez pas besoin specifiquement de .NET, les notebooks Python suffisent pour le parcours complet.
+
+### Comment executer les notebooks Lean sans GPU ni installation systeme ?
+
+Les notebooks Lean utilisent **WSL (Windows Subsystem for Linux)** comme runtime — pas de GPU necessaire. Le notebook `Lean-1-Setup.ipynb` installe automatiquement `elan` (gestionnaire de toolchains Lean) et `lean4_jupyter` dans WSL. Les notebooks de preuves (2-6, 11) tournent sur le kernel `Lean 4 (WSL)` natif. Les notebooks LLM/prover (7-10) tournent sur `Python 3 (WSL)` et necessitent une cle API OpenRouter. Si WSL n'est pas disponible, les notebooks Python du meme domaine (1, 7-10) peuvent etre executes en Python natif.
+
+### Peut-on etudier les SmartContracts sans blockchain reelle ?
+
+Oui, c'est l'approche pedagogique de la serie. **Anvil** (Foundry) fournit un simulateur Ethereum local qui tourne en une commande (`anvil --host 0.0.0.0`) sous WSL. Les notebooks SC-3 a SC-10 deploient et testent des contrats sur cette chaine locale — aucun ether reel, aucun testnet. Les notebooks theoriques (SC-0 a SC-2, SC-15 a SC-26) explorent les concepts (ZK proofs, DeFi, DAO, cross-chain) principalement via code Python/Solidity sans deploiement. Seuls SC-24 et SC-25 (deploiement reel) necessitent une cle testnet.
+
+---
+
 ## Licence
 
 Les notebooks sont distribues sous licence MIT.
@@ -609,4 +633,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-05-29
+**Derniere mise a jour** : 2026-06-03

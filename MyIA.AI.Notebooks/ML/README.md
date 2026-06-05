@@ -7,7 +7,30 @@ breakdown: DataScienceWithAgents=19, ML.Net=8
 maturity: PRODUCTION=16, ALPHA=8, BETA=3
 -->
 
-Vous êtes développeur ou analyste et vous voulez construire des modèles prédictifs sans devenir data scientist théoricien ? Cette série vous forme au Machine Learning pratique avec deux stack complémentaires : **ML.NET** pour l'écosystème .NET/C# (8 notebooks, ~6h) et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs (19 notebooks, ~17h). À la fin, vous saurez charger des données, entraîner un modèle, l'évaluer rigoureusement, et le déployer en production.
+Le monde regorge de donnees, mais les transformer en decisions eclairees demande plus qu'un tableur. Le Machine Learning offre un cadre systematique pour construire des modeles predictifs a partir de donnees, en allant de la regression lineaire aux reseaux de neurones en passant par les systemes de recommandation. Cette serie vous forme au ML pratique avec deux stack complementaires : **ML.NET** pour l'ecosysteme .NET/C# (8 notebooks, ~6h) et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs (19 notebooks, ~17h).
+
+**27 notebooks** | **2 sous-domaines** | **~23h** | **.NET Interactive + Python**
+
+## Pourquoi cette serie
+
+Le Machine Learning est partout : recommandations Netflix, detection de spam, previsions de vente, diagnostic medical. Mais passer de la theorie a la pratique reste un saut difficile. Cette serie comble ce gap en proposant une **double approche** :
+
+- **ML.NET (C#/.NET)** : Pour les developpeurs deja familiers avec l'ecosysteme .NET, ML.NET offre un pipeline ML natif en C#. Pas besoin d'apprendre Python pour faire du ML en enterprise. Les notebooks couvrent le pipeline complet, de `IDataView` au deploiement ONNX, avec une evaluation rigoureuse par cross-validation.
+- **Python + AI Agents** : Pour les data scientists et praticiens IA, le track Python combine les fondamentaux (NumPy, Pandas, scikit-learn) avec les agents LLM (LangChain, Google ADK). C'est le futur du data science workflow : l'automatisation par des agents capables de nettoyer, analyser et modeliser des donnees.
+
+Avoir les deux approches permet de comprendre que le ML n'est pas lie a un langage : les concepts (features, entrainement, evaluation, generalisation) sont universels, seuls les outils different.
+
+**Applications reelles couvertes** : previsions de ventes (regression bayesienne), systemes de recommandation (collaborative filtering), series temporelles (forecasting), analyse de CV (NLP + agents), competitions Kaggle (MLE-STAR pipeline).
+
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Construire** un pipeline ML complet (chargement, features, entrainement, evaluation) en C# ou Python
+2. **Evaluer** rigoureusement un modele (cross-validation, metriques, Permutation Feature Importance, surapprentissage)
+3. **Appliquer** le feature engineering adapte au probleme (encodage, normalisation, selection de variables)
+4. **Integrer** des agents LLM dans un workflow data science (analyse automatisee, parsing, recommandation)
+5. **Deployer** un modele en production (export ONNX, interop Python/.NET, BigQuery ML)
 
 ## Parcours d'apprentissage
 
@@ -21,11 +44,9 @@ Le parcours Python commence par les fondations (NumPy/Pandas) puis se divise en 
 
 ## Positionnement pedagogique
 
-Cette série sert les cours **ECE / EPITA / EPF** en introduction au Machine Learning appliqué. Elle se situe après les fondamentaux de programmation (Python ou C#) et avant les séries spécialisées ([QuantConnect](../QuantConnect/) pour le trading, [RL](../RL/) pour l'apprentissage par renforcement). Aucune prérequis en statistiques avancées : les concepts sont introduits au fil des notebooks.
+Cette serie sert les cours d'introduction au Machine Learning applique. Elle se situe apres les fondamentaux de programmation (Python ou C#) et avant les series specialisees ([QuantConnect](../QuantConnect/) pour le trading, [RL](../RL/) pour l'apprentissage par renforcement). Aucun prerequis en statistiques avancees : les concepts sont introduits au fil des notebooks.
 
 **Slides de cours associes** : [06-apprentissage/](../../slides/06-apprentissage/) | **Livre de reference** : [Hands-On AI Trading](https://www.hands-on-ai-trading.com/) (chapitres ML)
-
-**27 notebooks** | **2 sous-domaines** | **~23h** | **.NET Interactive + Python**
 
 ## Structure
 
@@ -167,6 +188,28 @@ Documentation complete : [DataScienceWithAgents/README.md](DataScienceWithAgents
 1. [ML-5](ML.Net/ML-5-TimeSeries.ipynb) : series temporelles
 1. [ML-6](ML.Net/ML-6-ONNX.ipynb) : interop Python → .NET
 1. [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) : projet integre
+
+## Quel parcours choisir
+
+| Profil | Parcours recommande | Duree |
+| ------ | ------------------- | ----- |
+| Developpeur C#/.NET en enterprise | Track A : ML.NET (ML-1 a ML-4 + TP) | ~6h |
+| Data scientist debutant | Track B (Days 1-3) : Python + scikit-learn | ~8h |
+| Praticien IA souhaitant automatiser | Track B complet : Python + Agents (Days 1-7) | ~17h |
+| Curieux voulant comparer les approches | ML.NET (ML-1 a ML-4) + Python (Labs 1-5) | ~10h |
+
+## FAQ / Troubleshooting
+
+| Probleme | Solution |
+| -------- | -------- |
+| `dotnet-interactive` non trouve | `dotnet tool install -g Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install` |
+| Kernel `.net-csharp` absent | Verifier avec `jupyter kernelspec list`. Reinstaller si necessaire (cf. [docs/kernels-runtime.md](../../docs/kernels-runtime.md)) |
+| ML.NET : erreur `IDataView` au chargement | Verifier le chemin du CSV (utilisez `Path.Combine` plutot qu'un chemin absolu) |
+| `OPENAI_API_KEY` manquant (Labs 2-3) | Creer un fichier `.env` a la racine avec `OPENAI_API_KEY=sk-...` |
+| PyTorch lent sur CPU | Normal pour les Labs 8+. Le GPU est recommande mais pas obligatoire |
+| `langchain` import error | `pip install langchain langchain-openai langchain-experimental` (versions compatibles) |
+| erreur `No module named 'google.adk'` | Installer le track AgenticDataScience : `pip install -r requirements.txt` dans le bon repertoire |
+| Plots ne s'affichent pas | Verifier `ipywidgets` installe + extension Jupyter activee |
 
 ## Concepts cles
 
