@@ -413,6 +413,32 @@ Après completion de cette série, vous maîtriserez :
 
 ---
 
+## Stratégies Vérifiées — Baselines Comparatives
+
+Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/qc-comparative-backtests.md).
+
+### Top 5 stratégies (Sharpe aligned, 2018-2025)
+
+| # | Stratégie | Type | Sharpe | CAGR% | MaxDD% | PSR% |
+|---|-----------|------|--------|-------|--------|------|
+| 1 | TrendFollowing | IND | **1.072** | 23.2 | 9.3 | 81.8 |
+| 2 | EMA-Cross-Stocks | IND | **0.891** | 26.2 | 35.7 | 40.5 |
+| 3 | VolTarget-Momentum | COMP | 0.648 | 14.7 | 21.2 | 22.3 |
+| 4 | AllWeather | RISK | 0.631 | 9.0 | 16.4 | 31.2 |
+| 5 | Crypto-MultiCanal | IND | 0.581 | 8.2 | 17.0 | 37.6 |
+
+**Lecture** : PSR (Probabilistic Sharpe Ratio) > 50% = statistiquement significatif. TrendFollowing est le seul leader confirmé (PSR 81.8%).
+
+**Enseignements clés** :
+- **TrendFollowing** domine : Sharpe 1.072 avec MaxDD 9.3% seulement. La tendance persiste sur longue période.
+- **EMA-Cross-Alpha** : Sharpe -0.010 en aligned (vs 0.996 en backtest court) = overfitting sever. Démonstration pédagogique du danger des backtests courts.
+- **Composites < single-strategies** : MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185, confirmant le problème de "double-defense".
+- **Crypto = diversification stable** : MaxDD maitrisé (~17%), rendement modéré.
+
+> Voir [docs/qc-comparative-backtests.md](../../docs/qc-comparative-backtests.md) pour les 17 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
+
+---
+
 ## Cross-series Bridges
 
 | Serie | Lien | Connection |
