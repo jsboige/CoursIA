@@ -262,11 +262,82 @@ ML-7-Recommendation (systèmes de recommandation)
 
 **Note** : Les notebooks ML-5, ML-6, ML-7 présentent les fonctionnalités récentes de ML.NET (2024-2025) et sont conçus comme références pédagogiques. Certains exemples nécessitent des modèles ou services externes pour une exécution complète.
 
+## FAQ / Troubleshooting
+
+### .NET Interactive ne s'installe pas ou le kernel n'apparait pas
+
+```bash
+# Verifier que .NET SDK 9.0+ est installe
+dotnet --version  # doit afficher 9.x.x
+
+# Installer .NET Interactive globalement
+dotnet tool install --global Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+
+# Si deja installe mais kernel absent, mettre a jour
+dotnet tool update --global Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+
+# Verifier
+jupyter kernelspec list  # doit montrer .net-csharp
+```
+
+Si `jupyter kernelspec list` ne montre pas `.net-csharp` apres installation, verifier que `dotnet` est dans le PATH et relancer le terminal.
+
+### Erreur "No handler for trainer" dans ML-3
+
+Certains trainers (LightGBM, SymSGD) necessitent des packages NuGet supplementaires. Dans le notebook :
+
+```csharp
+#r "nuget: Microsoft.ML.LightGbm"
+```
+
+Verifier dans ML-3 que tous les packages `#r "nuget:..."` du debut du notebook sont bien executes avant d'appeler le trainer.
+
+### Le dataset taxi-fare.csv est introuvable
+
+Le dataset doit se trouver dans le meme repertoire que le notebook. Verifier :
+
+```csharp
+// En debut de notebook, verifier le chemin
+if (!File.Exists("taxi-fare.csv"))
+    Console.WriteLine("taxi-fare.csv non trouve. Placer le fichier a cote du notebook.");
+```
+
+Le fichier est inclus dans le depot : [taxi-fare.csv](taxi-fare.csv).
+
+### Les metriques de ML-4 semblent aberrantes (R² negatif, MAE tres eleve)
+
+Un R² negatif signifie que le modele predit **moins bien** que la moyenne constante. Causes courantes :
+
+1. **Donnees non melangees** : `mlContext.Data.ShuffleRows()` avant le split
+2. **Features non normalisees** : ajouter `NormalizeMinMax` ou `MeanVariance` au pipeline
+3. **Split temporel** pour des donnees ordonnees : utiliser un split chronologique plutot que aleatoire
+
+### ONNX export echoue avec "NotSupportedException" (ML-6)
+
+Tous les trainers ML.NET ne supportent pas l'export ONNX. Les trainers compatibles incluent : FastTree, LightGBM, SDCA, Lbfgs. Les trainers **non compatibles** : les trainers de recommandation (MatrixFactorization) et certains trainers de series temporelles.
+
+### Comment passer de scikit-learn a ML.NET ?
+
+Les concepts se correspondent directement :
+
+| Concept scikit-learn | Equivalent ML.NET |
+| ---------------------- | ------------------- |
+| `fit()` | `Fit()` sur le pipeline |
+| `predict()` | `CreatePredictionEngine().Predict()` |
+| `train_test_split()` | `mlContext.Data.TrainTestSplit()` |
+| `cross_val_score()` | `mlContext.Regression.CrossValidate()` |
+| Pipeline sklearn | `EstimatorChain` ML.NET |
+| `OneHotEncoder` | `OneHotEncodingEstimator` |
+| `StandardScaler` | `NormalizeMinMax` / `MeanVariance` |
+
 ## Ressources
 
 - [Documentation ML.NET](https://docs.microsoft.com/en-us/dotnet/machine-learning/)
 - [ML.NET Samples](https://github.com/dotnet/machinelearning-samples)
 - [ML.NET API Reference](https://docs.microsoft.com/en-us/dotnet/api/microsoft.ml)
+- [Hands-On AI Trading](https://www.hands-on-ai-trading.com/) — chapitres ML.NET et pipeline de trading
 
 ## Licence
 

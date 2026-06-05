@@ -377,6 +377,84 @@ La verification formelle en Lean (type theory, Curry-Howard) est conceptuellemen
 
 [La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de representation, certification A/B/C).
 
+## FAQ
+
+### Le kernel lean4-wsl ne demarre pas (timeout apres 60s)
+
+**Cause** : le wrapper Python (`~/.lean4-kernel-wrapper.py`) ne trouve pas le venv Lean ou le REPL. Verifier :
+
+```bash
+# Dans WSL
+test -f ~/.lean4-venv/bin/python3 && echo "venv OK" || echo "venv MISSING"
+test -f ~/.elan/bin/repl && echo "repl OK" || echo "repl MISSING"
+test -d ~/lean-projects/notebook_context && echo "context OK" || echo "context MISSING"
+```
+
+Si un element manque, relancer le setup : `bash MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh`. Si le kernel.json pointe vers l'ancien wrapper bash (`~/lean4-jupyter-wrapper.sh`), le mettre a jour pour pointer vers `~/.lean4-kernel-wrapper.py` (incident 2026-05-27).
+
+### `lake build` echoue avec des erreurs Mathlib inattendues
+
+**Cause frequente** : la toolchain Lean locale est desynchronisee du `lean-toolchain` du projet. Lean 4 evolue rapidement et Mathlib suit.
+
+```bash
+# Verifier la toolchain requise par le projet
+cat lean-toolchain    # ex: leanprover/lean4:v4.x.0
+
+# Verifier la toolchain installee
+elan show
+
+# Forcer la reinstallation de la bonne version
+elan toolchain install leanprover/lean4:v4.x.0
+lake exe cache get    # Telecharger les artifacts Mathlib precompiles
+lake build            # Doit passer
+```
+
+### Comment installer Lean 4 sous Windows ?
+
+Lean 4 ne tourne pas nativement sous Windows pour les notebooks. La configuration recommandee utilise **WSL 2 (Ubuntu)** :
+
+1. `wsl --install -d Ubuntu` (si pas encore fait)
+2. Dans WSL : `curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh`
+3. `elan default leanprover/lean4:stable`
+4. Installer le kernel Jupyter via `scripts/setup_wsl_lean4.sh` (cree le venv, le wrapper, et enregistre le kernel)
+
+Le notebook [Lean-1-Setup](Lean-1-Setup.ipynb) guide l'installation complete et verifie chaque composant.
+
+### Mes preuves passent en mode terme mais pas en mode tactique
+
+C'est un pattern courant en Lean 4. Le mode terme (style `theorem foo : X := by exact h`) et le mode tactique utilisent parfois des mecanismes de synthese differents. En general :
+
+- Le mode tactique offre plus de controle (`rw`, `simp`, `ring`) et des messages d'erreur plus lisibles.
+- Si une preuve terme echoue, essayer le mode tactique avec les memes etapes decomposees.
+- `simp?` suggere les lemmes que `simp` utilise — utile pour comprendre pourquoi `simp` seul ne passe pas.
+
+### Comment lire les erreurs `type mismatch` ?
+
+Lean 4 signale `type mismatch` quand le type attendu et le type fourni ne coincident pas. Les causes les plus frequentes :
+
+- **Universe level** : `Type u` vs `Type` — ajouter `universe u` ou utiliser `Sort _`.
+- **Implicit arguments** : Lean ne peut pas inferrer un argument implicite. Essayer `@nom_fonction` pour rendre tous les arguments explicites.
+- **Definitional equality** : `Nat` vs `Int`, `List` vs `Array` — utiliser les conversions explicites (`Int.ofNat`, `List.toArray`).
+- **Motive mismatch** dans `induction`/`cases` : le motif (motive) ne generalise pas correctement. Essayer `generalizing h` ou restructurer le but avec `have` avant l'induction.
+
+### `sorry` dans un notebook pedagogique, c'est grave ?
+
+**Non** dans les cellules d'exercice (stub pour l'etudiant). **Oui** dans le code de production (preuves formelles). La convention CoursIA :
+
+- Cellules d'exercice : `sorry` = placeholder etudiant, normal et attendu.
+- Preuves certifiees (ex: `conway_lean/`, `grothendieck_lean/`, `social_choice_lean/`) : `sorry` = axiome implicite = trou dans la chaine de certification. Le compteur `grep -c sorry` est suivi par les agents du depot.
+
+Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'etat detaille des preuves par module.
+
+### LLM + Lean : quelles limites actuelles ?
+
+Les LLMs (GPT-4o, Claude, DeepSeek) sont capables de generer des tactiques Lean 4 pour des preuves de niveau undergraduate, mais :
+
+- **Preuves longues** (> 20 etapes) : le taux de succes chute significativement.
+- **Mathlib avancee** : les LLMs ne connaissent pas toujours les lemmes disponibles — LeanCopilot et la recherche semantique (Loogle/Moogle) compensent.
+- **Agents autonomes** (APOLLO, AlphaProof) : prometteurs pour les competitions (IMO, Erdos) mais pas encore fiables pour des preuves de recherche originales sans supervision.
+- **Bon usage pedagogique** : utiliser les LLMs comme assistant (suggestions, exploration), pas comme oracle (accepter sans verifier). Les notebooks 7-9 illustrent ce workflow.
+
 ## Licence
 
 Voir la licence du repository principal.
