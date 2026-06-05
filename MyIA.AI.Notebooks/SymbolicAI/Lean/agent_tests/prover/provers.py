@@ -1110,6 +1110,18 @@ class AutonomousProver:
                         next_phase = PHASE_TRANSITIONS.get(state.phase, ProofPhase.TACTIC_GEN)
                         state.phase = next_phase
 
+                # Delta-0 stagnation guard (P2, #1453 forensic):
+                # The multi-agent path has DELTA0_STAGNATION_HARDCAP=6 in
+                # workflow.py:223-237, but the autonomous loop had no equivalent.
+                # Forensic: custom_Basic_L308 burned 5.9h with 7 identical
+                # compiles. A hardcap at 6 stops pathological burners.
+                DELTA0_HARDCAP = 6
+                if tactic_tools._consecutive_delta0 >= DELTA0_HARDCAP:
+                    print(f"  DELTA0 STAGNATION: {tactic_tools._consecutive_delta0} "
+                          f"compiles without progress (hardcap={DELTA0_HARDCAP}). "
+                          f"Stopping to preserve budget.", flush=True)
+                    break
+
                 # B.9: HITL — ask for human hint when stuck
                 if self.hitl_enabled and state.consecutive_failures >= self.hitl_threshold:
                     print(f"\n  [HITL] {state.consecutive_failures} echecs consecutifs. "
