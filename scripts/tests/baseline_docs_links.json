@@ -542,6 +542,18 @@
     },
     {
       "source": "MyIA.AI.Notebooks/ML/ML.Net/README.md",
+      "target": "taxi-fare.csv",
+      "line": 189,
+      "text": "taxi-fare.csv"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/ML/ML.Net/README.md",
+      "target": "taxi-fare.csv",
+      "line": 307,
+      "text": "taxi-fare.csv"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/ML/ML.Net/README.md",
       "target": "../Probas/Infer/README.md",
       "line": 350,
       "text": "Probas/Infer"
@@ -584,6 +596,12 @@
     },
     {
       "source": "MyIA.AI.Notebooks/QuantConnect/projects/README.md",
+      "target": "BTC-MACD-ADX/",
+      "line": 21,
+      "text": "BTC-MACD-ADX"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/QuantConnect/projects/README.md",
       "target": "../../docs/quantconnect.md",
       "line": 83,
       "text": "Leçons et patterns"
@@ -620,6 +638,6 @@
     }
   ],
   "orphans": [],
-  "scanned_files": 445,
-  "total_links": 1917
+  "scanned_files": 431,
+  "total_links": 1946
 }
