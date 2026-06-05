@@ -223,6 +223,28 @@ Les sous-domaines ne sont pas isoles. Un projet final typique enchaine :
 
 C'est ce parcours d'integration qui differencie une demonstration jouet d'un produit deployable.
 
+## FAQ
+
+### Faut-il un GPU pour cette serie ?
+
+Non. Les notebooks Image utilisent ComfyUI heberge sur un serveur distant (RTX 3090 dediee, accessible via API). Les notebooks Texte utilisent les API cloud (OpenAI, Anthropic). Les notebooks Audio et Video peuvent tourner en CPU pour les demos (avec une latence plus elevee). Seul le sous-domaine Vibe-Coding et les tests Playwright sont entierement CPU. Si vous avez un GPU local, les notebooks Image montrent aussi comment l'utiliser.
+
+### Quels sont les couts API attendus ?
+
+La serie est concue pour minimiser les couts. Les notebooks Texte utilisent principalement GPT-4o-mini (~0.15$/1M input tokens) et GPT-4o (~2.50$/1M input tokens). Les notebooks Image utilisent DALL-E 3 uniquement pour les exercices (les exemples utilisent ComfyUI/Qwen gratuit). Budget estimé : **5-15$ total** pour l'ensemble de la serie, sauf si vous faites des appels iteratifs intensifs dans les exercices.
+
+### Quelle est la difference entre ComfyUI et DALL-E ?
+
+**ComfyUI** est un serveur open-source heberge localement qui execute des modeles open-source (FLUX, SD 3.5, Qwen Image Edit). Avantages : gratuit, controle total sur les parametres (seed, steps, CFG), pipelines personnalisables. **DALL-E 3** est l'API cloud d'OpenAI. Avantages : qualite elevee par defaut, simplicite d'usage (un appel API = une image). La serie montre les deux et vous apprend a choisir selon le contexte.
+
+### Comment sont valides les notebooks GenAI ?
+
+Les notebooks sont valides par Papermill (execution automatique) + un script de validation `scripts/genai-stack/genai.py validate --full` qui verifie : acces aux services (ComfyUI, SD Forge), variables d'environnement configurees, et outputs coherents. Le CI GitHub (catalog-drift + H.3) tourne sur chaque PR. Les notebooks qui necessitent un GPU ou des API payantes sont marques avec des guards (`try/except` sur les imports) pour ne pas bloquer l'execution en local.
+
+### Peut-on suivre cette serie en parallele d'une autre ?
+
+Oui. Chaque sous-domaine (Image, Audio, Video, Texte, SemanticKernel) est independant. Le parcours recommande est de commencer par **Texte** (necessaire pour comprendre les prompts utilisees partout) puis de choisir un sous-domaine selon votre projet. Les Cross-series Bridges indiquent les connexions avec les autres series (QuantConnect pour le trading par LLM, RL pour les agents, Probas pour l'inférence bayesienne).
+
 ## Statut
 
 Toutes les sous-series sont actuellement en etat **BETA ou PRODUCTION**, avec validation Papermill > 90% (CI catalog-drift active). Les details par sous-serie (validation %, maturity par notebook) sont dans chaque README enfant, et le compte canonique se lit dans le marqueur `CATALOG-STATUS` en tete de ce fichier.
