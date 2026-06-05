@@ -169,6 +169,92 @@ Le fil rouge de cette serie est la creation d'un podcast genere par IA. Voici co
 | [Image](../Image/README.md) | Contenu multimodal | Un podcast enrichi combine voix (Audio), illustrations (Image) et eventuellement video (Video) |
 | [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines multi-modeles Audio (03-1, 03-2) partagent les patterns d'orchestration avec Semantic Kernel |
 
+## FAQ
+
+### GPU OOM pendant un notebook TTS/STT local
+
+La plupart des modeles audio locaux (Whisper, MusicGen, XTTS) saturent rapidement la VRAM. Strategies :
+
+- **Kokoro TTS** (01-5) : seulement ~2 GB, bon fallback si GPU limite.
+- **Whisper V3 Turbo** (01-4) : ~10 GB en `large-v3-turbo`, ~4 GB en `medium`. Utiliser `model="medium"` si OOM.
+- **XTTS v2** (02-2) : ~6 GB. Fermer les autres notebooks GPU avant le clonage.
+- **MusicGen** (02-3) : ~10 GB en `large`, ~4 GB en `small`. Reduire `duration` si OOM.
+- Pattern general : `torch.cuda.empty_cache()` entre les cellules lourdes, et verifier avec `!nvidia-smi`.
+
+### Whisper retourne du texte vide ou hallucine
+
+Whisper peut produire des hallucinations (repetitions, texte invente) sur l'audio silencieux ou tres bruite. Mitigation :
+
+- Utiliser `condition_on_previous_text=False` pour les segments longs.
+- Specifier `language="fr"` pour forcer la langue et eviter les transcriptions melangees.
+- Appliquer un pre-traitement `pydub` pour normaliser le volume et couper le silence (notebook 01-3).
+- Le modele `large-v3-turbo` (notebook 01-4) est plus robuste que `medium` ou `small`.
+
+### ComfyUI / services Docker audio injoignables
+
+Les services audio locaux (Whisper STT port 8190, Kokoro TTS port 8191, MusicGen port 8192) tournent dans des conteneurs Docker. S'ils repondent en 401 ou 502 :
+
+```bash
+# Verifier les conteneurs actifs
+docker ps | grep -E "whisper|kokoro|musicgen"
+
+# Redemarrer un service specifique
+cd docker-configurations && docker compose restart whisper-api kokoro-tts
+
+# Verifier le bearer token (drift bcrypt)
+cat GenAI/.env | grep COMFYUI_BEARER_TOKEN
+```
+
+Les notebooks ont une **graceful degradation** : sans token, ils basculent vers les APIs cloud (OpenAI TTS/Whisper).
+
+### FFmpeg non trouve par Pydub / AudioSegment
+
+FFmpeg est requis pour les notebooks de compilation audio (04-12, 04-13). S'il manque :
+
+```bash
+# Windows (conda)
+conda install -c conda-forge ffmpeg
+
+# Linux/Mac
+sudo apt install ffmpeg   # ou brew install ffmpeg
+
+# Verifier
+ffmpeg -version
+```
+
+Pydub utilise `AudioSegment.converter` pour trouver FFmpeg. Si installe dans un chemin non-standard :
+
+```python
+from pydub import AudioSegment
+AudioSegment.converter = "/chemin/vers/ffmpeg"
+```
+
+### Difference entre les voix TTS (Kokoro, OpenAI, FishAudio, Chatterbox)
+
+| Moteur | Qualite | VRAM | Cout | Use case |
+|--------|---------|------|------|----------|
+| **Kokoro** (01-5) | Bonne, rapide | ~2 GB | Gratuit (local) | Production legere, lecture voix-off |
+| **OpenAI TTS** (01-1) | Excellente | 0 (API) | $0.015/1K chars | Qualite maximale, 6 voix |
+| **FishAudio S2-Pro** (02-8, 04-13) | Haute + tags expressifs | ~6 GB | Gratuit (local) | Prosodie fine, emotion, narration |
+| **Chatterbox Turbo** (02-1) | Bonne + emotion | ~8 GB | Gratuit (local) | Emotions extremes, humour |
+| **XTTS v2** (02-2) | Variable (clonage) | ~6 GB | Gratuit (local) | Clonage vocal zero-shot |
+
+Pour le pipeline audiobook, la combinaison recommandee est **FishAudio S2-Pro** pour l'expressivite (notebook 04-13).
+
+### Le pipeline audiobook (04-6 a 04-13) — par ou commencer ?
+
+Les notebooks 04-6 a 04-13 forment un pipeline sequentiel qui transforme un texte en audiobook complet. L'ordre recommande :
+
+1. **04-8 Lecture Analytique** : analyse litteraire du texte (personnages, structure).
+2. **04-9 Voice Casting** : attribution d'une voix par personnage.
+3. **04-10 Annotation Prosodique** : generation des tags expressifs FishAudio.
+4. **04-7 TTS Voice Benchmark** : comparaison des voix disponibles (optionnel mais recommande).
+5. **04-11 Generation TTS** : synthese audio de chaque segment.
+6. **04-12 Compilation Audio** : assemblage final via FFmpeg.
+7. **04-13 FishAudio S2-Pro** : variante avec 29 tags prosodiques officiels (meilleure qualite).
+
+Les notebooks 04-6 (pipeline orchestrateur) et 04-1 (narration educative) sont des entrees plus simples pour decouvrir le workflow.
+
 ## Licence
 
 Voir la licence du repository principal.

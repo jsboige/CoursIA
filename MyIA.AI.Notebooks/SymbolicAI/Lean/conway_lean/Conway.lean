@@ -29,4 +29,6 @@ import Conway.Life.Computation
 import Conway.Life.HashlifeCorrectness
 import Conway.Life.HashlifeMemo
 import Conway.Life.Pillars
+import Conway.KochenSpecker
 import Conway.FreeWillTheorem
+import Conway.MathlibMap

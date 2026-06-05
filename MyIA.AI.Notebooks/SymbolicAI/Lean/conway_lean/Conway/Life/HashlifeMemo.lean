@@ -44,7 +44,7 @@ direct light-cone bound, independent of memoization).
 ### Why scaffold now ?
 
 The user (mandate 2026-06-01) requested a complete-presentation
-scaffold for the Lean-14-Conway-Tribute notebook §11 roadmap, so that
+scaffold for the Lean-14b-Conway-Game-of-Life-Lean notebook §11 roadmap, so that
 the memoization-driven witnesses (OTCA, UnitCell, Gemini, CPU) are
 visible as a concrete next step rather than vague text. The contract
 of this module is the architecture; the proofs come next.
@@ -114,8 +114,57 @@ We expose two surfaces:
 
     where `hashlifeResultAuxMemoBody` mirrors `hashlifeResultAux` but
     recurses through `hashlifeResultMemo` to thread the cache. -/
-def hashlifeResultMemo (_c : MacroCell) : StateM MemoCache MacroCell := by
-  sorry
+partial def hashlifeResultMemo (c : MacroCell) : StateM MemoCache MacroCell := do
+  let cache ← get
+  match cache.get? c with
+  | some r => return r
+  | none =>
+    let r ← hashlifeResultMemoBody c
+    modify (·.insert c r)
+    return r
+where
+  hashlifeResultMemoBody (c : MacroCell) : StateM MemoCache MacroCell := do
+    match c with
+    | node (node nw_nw nw_ne nw_sw nw_se)
+          (node ne_nw ne_ne ne_sw ne_se)
+          (node sw_nw sw_ne sw_sw sw_se)
+          (node se_nw se_ne se_sw se_se) => do
+      if c.level == 2 then
+        pure (step4x4 c)
+      else do
+        -- Form the 9 overlapping level-(k-1) sub-cells
+        let n1 := node nw_nw nw_ne nw_sw nw_se
+        let n2 := node nw_ne ne_nw nw_se ne_sw
+        let n3 := node ne_nw ne_ne ne_sw ne_se
+        let n4 := node nw_sw nw_se sw_nw sw_ne
+        let n5 := node nw_se ne_sw sw_ne se_nw
+        let n6 := node ne_sw ne_se se_nw se_ne
+        let n7 := node sw_nw sw_ne sw_sw sw_se
+        let n8 := node sw_ne se_nw sw_se se_sw
+        let n9 := node se_nw se_ne se_sw se_se
+        -- Recurse on each sub-cell
+        let r1 ← hashlifeResultMemo n1
+        let r2 ← hashlifeResultMemo n2
+        let r3 ← hashlifeResultMemo n3
+        let r4 ← hashlifeResultMemo n4
+        let r5 ← hashlifeResultMemo n5
+        let r6 ← hashlifeResultMemo n6
+        let r7 ← hashlifeResultMemo n7
+        let r8 ← hashlifeResultMemo n8
+        let r9 ← hashlifeResultMemo n9
+        -- Form the 4 overlapping super-cells
+        let q_nw := node r1 r2 r4 r5
+        let q_ne := node r2 r3 r5 r6
+        let q_sw := node r4 r5 r7 r8
+        let q_se := node r5 r6 r8 r9
+        -- Recurse on each super-cell
+        let out_nw ← hashlifeResultMemo q_nw
+        let out_ne ← hashlifeResultMemo q_ne
+        let out_sw ← hashlifeResultMemo q_sw
+        let out_se ← hashlifeResultMemo q_se
+        pure (node out_nw out_ne out_sw out_se)
+    | leaf _ => pure deadLeaf
+    | _ => pure (emptyOfLevel (max 1 (c.level - 1)))
 
 /-- Convenience: run `hashlifeResultMemo` from the empty cache,
     discarding the final cache state. Returns the same `MacroCell` as

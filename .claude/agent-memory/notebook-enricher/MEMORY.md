@@ -62,6 +62,14 @@
   - GameTheory domain: CFR, Stackelberg, Fictitious Play, PSRO, AlphaZero, Arrow/Sen, Sprague-Grundy
   - Key rule confirmed: Lean notebooks follow same header standards as Python notebooks
 
+- **2026-06-03**: DataScienceWithAgents Exercise Stubs (8 notebooks, 17 exercise pairs added for >=3 convention, See #2161)
+  - Added exercise stubs (markdown context + code cell) to meet >=3 exercises per notebook
+  - Notebooks: Lab2-RFP (+2), Lab3-CV (+2), Lab4-DataWrangling (+1), Lab5-Viz-ML (+2), Lab6-First-Agent (+3), Lab7-Data-Analysis-Agent (+2), 1.2-NumPy (+1), 1.3-Pandas (+3)
+  - All stubs use `None` / `pass` pattern with `# Etape N` and `# Indice` comments
+  - Each exercise preceded by markdown cell with objective + indices
+  - No `raise NotImplementedError` / `assert False` / `1/0` used
+  - Path correction: NumPy/Pandas notebooks are under `01-PythonForDataScience/` not `PythonAgentsForDataScience/`
+
 - **2026-03-03**: Lean-11-TorchLean Pedagogical Enhancement (4 cells added, SQUELETTE → COMPLET)
   - TorchLean: réseaux de neurones formellement vérifiés avec Lean 4
   - BOTTOM-to-TOP insertion strategy flawless (4 cells, no errors)

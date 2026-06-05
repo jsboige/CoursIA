@@ -20,6 +20,7 @@ Le repo contient deja plusieurs documents canoniques. **Ne pas dupliquer ici** c
 | [MyIA.AI.Notebooks/QuantConnect/docs/audits/](../MyIA.AI.Notebooks/QuantConnect/docs/audits/) | Audits historiques | AUDIT_QC_CLOUD, AUDIT_QC_ORG_2026-04, AUDIT_RAPPORT_2026-03-22, VALIDATION-REPORT |
 | [MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md](../MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md) | Registry training | 70+ checkpoints, stages -1/0/1/2, Anti-Bias |
 | [docs/ml-trading-state.md](ml-trading-state.md) | Lecons ML trading | Pattern central vol vs direction, 7 disciplines, anti-FAANG |
+| [MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md](../MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md) | Assistants QC Cloud | 8 assistants, protocole couts QCC, matrice delegation |
 
 **Regle de coherence** : pour les performances par strategie (Sharpe, CAGR) -> `qc_strategies_catalog.md`. Pour les patterns reutilisables -> ce fichier. Pour les lecons ML trans-iteration -> `ml-trading-state.md`. Pour le mapping livre -> `BOOK_MAPPING.md` (racine, pas doublon `docs/`).
 
@@ -65,6 +66,31 @@ Toute modification d'une strategie QC (main.py, parametres, periodes) **DOIT** e
   }
 }
 ```
+
+### Alternative legere : `qc-mcp-lite` (~5k tokens vs ~40k)
+
+Le MCP Docker officiel charge un schema d'outils volumineux (~40k tokens). Pour les workflows de backtest standard, le depot fournit un wrapper Python leger **`scripts/qc-mcp-lite/server.py`** (~10 outils, schema <5k tokens) qui re-expose l'API QC v2 sans conteneur Docker.
+
+Outils exposes : `create_compile`, `read_compile`, `create_backtest`, `read_backtest` (Sharpe/CAGR/MaxDD), `list_backtests`, `list_projects`, `read_project`, `read_file`, `create_file`, `update_file_contents`. Auth = pattern QC v2 (`SHA256(token:timestamp)` + header `Basic userId:hash`). Rate limiting 10 appels/min applique in-process (meme limite fleet-wide).
+
+Config `.mcp.json` (remplace l'entree Docker `qc-mcp` ; secrets dans `.env` gitignore, **JAMAIS inline**) :
+
+```json
+{
+  "mcpServers": {
+    "qc-mcp-lite": {
+      "command": "python",
+      "args": ["scripts/qc-mcp-lite/server.py"],
+      "env": {
+        "QC_API_USER_ID": "<voir dashboard RooSync>",
+        "QC_API_ACCESS_TOKEN": "<voir dashboard RooSync>"
+      }
+    }
+  }
+}
+```
+
+Verification rapide : `python -c "from server import list_projects; print(list_projects())"` depuis `scripts/qc-mcp-lite/`. Procedure complete (setup `.env`, retour au MCP Docker complet) : [`scripts/qc-mcp-lite/README.md`](../scripts/qc-mcp-lite/README.md).
 
 ### Rate limiting strict
 

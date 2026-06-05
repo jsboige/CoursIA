@@ -61,4 +61,4 @@ mon-premier-projet/
 
 ## Auteurs
 
-Nabil Chartouni, Lucas Majerczyk, Wilfrid Wangon Zekou — TP Smart Contracts EPITA-IS 2026.
+Nabil Chartouni, Lucas Majerczyk, Wilfrid Wangon Zekou — TP Smart Contracts 2026.
