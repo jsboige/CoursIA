@@ -199,6 +199,17 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | ForexCarry | 28657908 | 2015-2025* | -1.108 | -0.5 | 19.2 | — | `c3afe374` | *Cannot restrict to 2018+ |
 | RL-Q-Learning | 32057969 | 2020-2021* | 0.584 | 18.2 | 33.2 | — | `fb1a6366` | *Hardcoded dates |
 
+### Student strategies (ESGF 5BD1 cohort, See #1405)
+
+| Project | QC ID | Period | Sharpe | CAGR% | MaxDD% | PSR% | Backtest ID | Notes |
+|---------|-------|--------|--------|-------|--------|------|-------------|-------|
+| DualMomentum (student) | 31798582 | 2023-2025* | 0.493 | 13.5 | 9.0 | **54.9** | `88d36544` | *Hardcoded 2023 start. PSR > 50%! |
+| RiskParity inverse-vol (student) | 31872286 | 2015-2025* | 0.514 | 9.3 | 20.7 | 16.3 | `d6a7bc52` | *Hardcoded 2015 start |
+| ValueFactor Z-Score (student) | 31932810 | 2015-2025* | 0.227 | 6.4 | 36.5 | 0.8 | `da42c569` | Alpha negatif (decennie growth) |
+| OptionWheel VGT (student) | 31846074 | 2018-2025* | -0.51 | 0% | 103.5 | 0.0 | `b9eca3c8` | Win-rate paradoxe, MaxDD > 100% |
+
+**Note**: AdaptiveAssetAllocation (31781187) et MarkovRegime (31871247) n'ont produit aucune métrique (0 trades ou erreur d'exécution).
+
 ### Not alignable (hardcoded ML train/test split)
 
 | Project | QC ID | Reason | Current Period |
@@ -219,6 +230,10 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 8. **MomentumStrategy (SectorMom v4.0)**: Sharpe 0.555, CAGR 11.7%, mais PSR 7.2% = non significatif.
 9. **SectorDualMomentum v3.2**: Sharpe 0.581, CAGR 13.5%, MaxDD 22.8%. PSR 15.3%.
 10. **TrendStocks-Alpha: high return, high risk**: CAGR 15.9% mais MaxDD 39.6% (Calmar 0.40). PSR 5.8% = non significatif.
+11. **Student DualMomentum: PSR > 50%**: Sharpe 0.493 sur 2023-2025 avec MaxDD 9.0%. Seule strategie etudiante avec PSR significatif (54.9%).
+12. **Student RiskParity: performance honnete**: Sharpe 0.514, CAGR 9.3%, MaxDD 20.7%. Inverse-vol simple mais efficace. PSR 16.3% (non significatif mais respectable).
+13. **Student OptionWheel: catastrophe pedagogique**: Sharpe -0.51, MaxDD 103.5%. Parfait comme etude de cas du "win-rate paradoxe".
+14. **Student ValueFactor: alpha negatif confirmee**: Sharpe 0.227, PSR 0.8%. Decennie growth-dominée = facteur value sous-performant.
 
 ## Comparison: Best-vs-Aligned
 
@@ -237,11 +252,12 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 
 ## Next Steps
 
-1. ~~**Standardized backtest period**: Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31~~ — Done, 17 baselines verified via QC Cloud API (See #1630)
+1. ~~**Standardized backtest period**: Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31~~ — Done, 21 baselines verified via QC Cloud API (See #1630)
 2. ~~**Run aligned baselines for AllWeather/SectorMomentum/EMA-Cross-Stocks/MomentumStrategy**~~ — Done, all 4 re-backtested via QC Cloud
-3. **Transaction cost adjustment**: 5bps SPY, 10bps crypto, 2bps FX
-4. **Cross-seed validation**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
-5. **Edge vs σ**: Compute for all strategies vs B&H baseline
+3. ~~**Student strategies (ESGF #1405)**: DualMomentum, RiskParity, ValueFactor, OptionWheel backtestees~~ — Done, 4/6 valides
+4. **Transaction cost adjustment**: 5bps SPY, 10bps crypto, 2bps FX
+5. **Cross-seed validation**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
+6. **Edge vs σ**: Compute for all strategies vs B&H baseline
 
 ---
 
