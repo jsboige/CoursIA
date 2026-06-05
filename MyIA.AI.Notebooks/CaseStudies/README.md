@@ -156,6 +156,28 @@ pip install -r requirements.txt
 
 Dependances principales : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools
 
+## FAQ
+
+### Faut-il avoir suivi toutes les series avant de commencer les etudes de cas ?
+
+Non, mais les prerequis varient par projet. Le **Diagnostic Medical** necessite d'avoir vu Search Part 1 (recherche informee) et Search Part 2 (CSP/Z3). L'**Oncology Planning** necessite Probas (inference bayesienne) et ideallement Planners (CP-SAT). Chaque projet indique les prerequis specifiques dans sa section. Commencez par le projet dont vous maitrisez les prerequis.
+
+### Qu'est-ce qu'un jumeau numerique patient ?
+
+Un **jumeau numerique** est un modele computationnel qui simule le comportement d'un patient virtuel face a un traitement. Dans OncoPlan, le modele probabiliste (Pyro) estime la reponse tumorale en fonction des parametres patient (age, stade, biomarqueurs) et du protocole propose. Le jumeau permet de tester des scenarios de traitement sans risque pour le patient reel.
+
+### Les donnees medicales sont-elles reelles ?
+
+Les notebooks utilisent des **donnees synthetiques** (generees pour etre pedagogiquement realistes) ou des **donnees publiques anonymisees** (quand disponibles). Aucune donnee patient reelle n'est incluse. Les modeles sont simplifies pour rester comprehensible — un modele clinique reel aurait des dizaines de variables supplementaires.
+
+### Quelle est la difference entre diagnostic medical et planification oncologique ?
+
+Le **Diagnostic Medical** resout un probleme de classification : etant donne des symptomes, identifier la maladie (recherche dans un espace d'etats + contraintes Z3). L'**Oncology Planning** resout un probleme d'optimisation : etant donne un diagnostic, planifier le meilleur protocole de traitement sous contraintes de toxicite et delais (CP-SAT + modele probabiliste). Ce sont deux paradigmes distincts couverts par des series differentes.
+
+### Peut-on etendre ces projets en projets de fin d'etude ?
+
+Oui, c'est l'objectif. Les sections "Extensions possibles" de chaque projet proposent des pistes : ajouter de nouvelles pathologies au diagnostic, integrer des donnees genomiques au modele oncologique, deployer une interface web avec SemanticKernel. Ces extensions mobilisent les competences de plusieurs series simultanement.
+
 ## Connections cross-series
 
 Les etudes de cas de cette serie sont des projets interdisciplinaires qui combinent les techniques de plusieurs series du cursus.
