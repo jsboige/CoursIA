@@ -852,7 +852,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
 /output_analytique/
 
 # Root-level artifacts from notebooks/scripts run with wrong CWD (canonical copies live in series dirs)
-/sudoku_models/
+# NOTE: /sudoku_models/ intentionally NOT ignored — it carries live in-flight ai-01 training WIP (Blocker A, not user-signed-off)
 /data/pizza_test.owl
 /results/
 /tmp_*.py
