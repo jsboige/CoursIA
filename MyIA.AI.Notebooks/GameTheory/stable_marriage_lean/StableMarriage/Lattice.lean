@@ -302,27 +302,60 @@ lemma no_cross_match (μ ν : Matching n)
       --   conditions hold, so we case-split. In each branch, at least one
       --   of the two cross-blocking-pairs forms, giving a contradiction.
       --
-      --   by_cases hm₁w₂ : prof.ManPrefers m₁ w₂ w
-      --   · -- m₁ prefers w₂ over w (= μ.spouse m₁)
-      --     -- Since hm₁ : m₁ prefers w over w₁, by transitivity:
-      --     --   menPref m₁ w₂ < menPref m₁ w < menPref m₁ w₁
-      --     -- So m₁ also prefers w₂ over w₁.
-      --     -- Apply μ-stability to (m₁, w₂):
-      --     --   ManPrefers m₁ w₂ w holds (hm₁w₂)
-      --     --   So ¬WomanPrefers w₂ m₁ m₂ must hold (else blocks μ)
-      --     -- Apply ν-stability to (m₁, w₂):
-      --     --   ManPrefers m₁ w₂ (ν.spouse m₁) = ManPrefers m₁ w₂ w₁
-      --     --   Since menPref m₁ w₂ < menPref m₁ w < menPref m₁ w₁, this holds.
-      --     --   So ¬WomanPrefers w₂ m₁ (ν.inverse w₂) must hold.
-      --     sorry  -- SUB-GOAL: derive contradiction from cross-stability
-      --   · -- m₁ does NOT prefer w₂ over w
-      --     -- So menPref m₁ w ≤ menPref m₁ w₂ (m₁ weakly prefers w over w₂)
-      --     -- Apply ν-stability to (m₂, w₁):
-      --     --   ManPrefers m₂ w₁ (ν.spouse m₂) = ManPrefers m₂ w₁ w
-      --     --   From ¬hm₂: menPref m₂ w ≤ menPref m₂ w₂
-      --     --   We need menPref m₂ w₁ < menPref m₂ w. This requires w₁ ≠ w.
-      --     sorry  -- SUB-GOAL: derive contradiction from the other branch
-      sorry
+      -- Key derivation: ¬hm₂ + w ≠ w₂ → ManPrefers m₂ w₂ w
+      -- ¬hm₂ means menPref m₂ w ≤ menPref m₂ w₂ (m₂ weakly prefers w₂).
+      -- Since w ≠ w₂ and menPref is injective: menPref m₂ w ≠ menPref m₂ w₂.
+      -- Combined: menPref m₂ w < menPref m₂ w₂ → ManPrefers m₂ w₂ w.
+      have hm₂' : prof.ManPrefers m₂ w₂ w := by
+        unfold PrefProfile.ManPrefers at hm₂ ⊢
+        simp only [not_lt] at hm₂
+        have hne_w : ¬(prof.menPref m₂ w₂ : Nat) = (prof.menPref m₂ w : Nat) := by
+          intro heq
+          have : w₂ = w := (prof.menPref_bijective m₂).injective (Fin.ext heq)
+          exact hw_ne_w2 this.symm
+        exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hm₂) hne_w)
+      -- Case-split on whether m₁ prefers w₂ over w
+      by_cases hm₁w₂ : prof.ManPrefers m₁ w₂ w
+      · -- Branch: m₁ prefers w₂ over w
+        -- μ-stability on (m₁, w₂): ManPrefers m₁ w₂ (μ.spouse m₁) = ManPrefers m₁ w₂ w ✓
+        -- So ¬WomanPrefers w₂ m₁ (μ.inverse w₂) = ¬WomanPrefers w₂ m₁ m₂
+        have hμ_stab_m₁w₂ : ¬prof.WomanPrefers w₂ m₁ m₂ := by
+          intro hwp
+          have hbp : IsBlockingPair prof μ m₁ w₂ := by
+            unfold IsBlockingPair
+            rw [h1, hμinv_w₂]
+            exact ⟨hm₁w₂, hwp⟩
+          exact hμ m₁ w₂ hbp
+        -- ν-stability on (m₂, w₂): ManPrefers m₂ w₂ (ν.spouse m₂) = ManPrefers m₂ w₂ w ✓
+        -- So ¬WomanPrefers w₂ m₂ (ν.inverse w₂)
+        have hν_stab_m₂w₂ : ¬prof.WomanPrefers w₂ m₂ (ν.inverse w₂) := by
+          intro hwp
+          have hbp : IsBlockingPair prof ν m₂ w₂ := by
+            unfold IsBlockingPair
+            rw [show ν.spouse m₂ = w from h2]
+            exact ⟨hm₂', hwp⟩
+          exact hν m₂ w₂ hbp
+        -- Transitivity: hm₁w₂ (w₂ < w) + hm₁ (w < w₁) → ManPrefers m₁ w₂ w₁
+        -- ν-stability on (m₁, w₂): man-side ✓, so ¬WP w₂ m₁ (ν.inverse w₂)
+        have hm₁w₁ : prof.ManPrefers m₁ w₂ w₁ := by
+          unfold PrefProfile.ManPrefers at hm₁w₂ hm₁ ⊢
+          exact Nat.lt_trans hm₁w₂ hm₁
+        have hν_stab_m₁w₂ : ¬prof.WomanPrefers w₂ m₁ (ν.inverse w₂) := by
+          intro hwp
+          have hbp : IsBlockingPair prof ν m₁ w₂ := by
+            unfold IsBlockingPair
+            exact ⟨hm₁w₁, hwp⟩
+          exact hν m₁ w₂ hbp
+        -- We have 3 non-preferences on w₂: ¬WP w₂ m₁ m₂, ¬WP w₂ m₁ (ν.inv w₂), ¬WP w₂ m₂ (ν.inv w₂)
+        -- All are ≥ direction, no strict < to force antisymmetry contradiction.
+        -- Need: either strict WP from injectivity + ≠, or a different stability application.
+        -- TODO: try (m₂, w₁) cross-blocking or decomposition chain argument.
+        sorry
+      · -- Branch: m₁ does NOT prefer w₂ over w (menPref m₁ w ≤ menPref m₁ w₂)
+        -- Context: hm₁ (w < w₁), ¬hm₁w₂ (w ≤ w₂ for m₁), hm₂' (w₂ < w for m₂)
+        -- ¬hm₁w₂: menPref m₁ w ≤ menPref m₁ w₂
+        -- TODO: case-split on ManPrefers m₂ w₁ w₂ or use ν-stab(m₂, w₁)
+        sorry
   · -- Case B: m₁ prefers w₁(=ν(m₁)) over w(=μ(m₁))
     --
     -- SCAFFOLD STRATEGY:
