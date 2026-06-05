@@ -1,13 +1,13 @@
+import Mathlib.Topology.Algebra.InfiniteSum.Basic
+import Mathlib.Analysis.SpecificLimits.Basic
+import Mathlib.Data.Real.Basic
+
 /-!
 # Geometric Discount — Proved Identities
 
 Lemmas about geometric discounting using Mathlib's real analysis.
 These are the building blocks for the Gittins index formalization.
 -/
-
-import Mathlib.Topology.Algebra.InfiniteSum.Basic
-import Mathlib.Analysis.SpecialFunctions.Pow.Order
-import Mathlib.Data.Real.Basic
 
 namespace Gittins
 
@@ -28,6 +28,7 @@ def geometricPartialSum (γ : ℝ) (n : ℕ) : ℝ :=
     This wraps Mathlib's `tsum_geometric_of_lt_one`. -/
 theorem geometric_series_converges {γ : ℝ} (hγ₁ : 0 ≤ γ) (hγ₂ : γ < 1) :
     ∑' n : ℕ, γ ^ n = 1 / (1 - γ) := by
+  rw [one_div]
   exact tsum_geometric_of_lt_one hγ₁ hγ₂
 
 /-- For 0 ≤ γ < 1, 1 - γ > 0. -/
@@ -39,12 +40,9 @@ lemma one_minus_gamma_pos {γ : ℝ} (h : γ < 1) (h₀ : 0 ≤ γ) : 0 < 1 - γ
 theorem present_value_constant {γ r : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1) (hr : 0 ≤ r) :
     ∑' n : ℕ, γ ^ n * r = r / (1 - γ) := by
   have hγ₁' : 0 ≤ γ := le_of_lt hγ₁
-  rw [← tsum_geometric_of_lt_one hγ₁' hγ₂]
-  -- tsum_geometric_of_lt_one gives us Σ γ^n = 1/(1-γ)
-  -- Multiply both sides by r
-  simp [mul_comm r]
-  ring_nf
-  sorry  -- TODO: complete the mul cancellation proof
+  -- Sum_n gamma^n * r = (Sum_n gamma^n) * r = (1-gamma)^{-1} * r = r / (1-gamma)
+  rw [tsum_mul_right, tsum_geometric_of_lt_one hγ₁' hγ₂]
+  ring
 
 /-- Discount factor closer to 1 gives higher present value.
     If γ₁ ≤ γ₂, then Σ γ₁^n ≤ Σ γ₂^n. -/

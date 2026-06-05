@@ -1,3 +1,6 @@
+import Gittins.Basic
+import Gittins.Discount
+
 /-!
 # Gittins Index Theorem — Statement with sorry
 
@@ -7,9 +10,6 @@ multi-armed bandits with geometric discounting.
 The full proof is INTRACTABLE in the current Mathlib (no MDP/bandit/Bellman).
 We state the theorem and provide sorry placeholders.
 -/
-
-import Gittins.Basic
-import Gittins.Discount
 
 namespace Gittins
 
@@ -34,10 +34,16 @@ is optimal for the discounted infinite-horizon multi-armed bandit.
 -/
 
 /-- A Gittins index policy: at each step, play the arm with highest Gittins index. -/
-def gittinsPolicy (instance : BanditInstance) (histories : Array RewardHistory) : Nat :=
-  match instance.arms.idxMax? (fun arm => gittinsIndex arm instance.discount (histories[instance.arms.indexOf arm]?.getD [])) with
-  | some i => i
-  | none => 0
+def gittinsPolicy (inst : BanditInstance) (histories : Array RewardHistory) : Nat :=
+  -- Argmax of the Gittins index over the arms (the index itself is `sorry`-stubbed).
+  ((Array.range inst.arms.size).foldl
+    (fun (best : Nat × Float) i =>
+      match inst.arms[i]? with
+      | none => best
+      | some arm =>
+        let g := gittinsIndex arm inst.discount (histories[i]?.getD [])
+        if g > best.2 then (i, g) else best)
+    (0, 0.0)).1
 
 /-- **Gittins Index Theorem** (Gittins 1979, Weber 1992):
     The Gittins index policy maximizes the total expected discounted reward
@@ -52,12 +58,12 @@ def gittinsPolicy (instance : BanditInstance) (histories : Array RewardHistory) 
     A complete proof would require ~2000-5000 lines of supporting definitions.
 -/
 theorem gittins_optimality {γ : Float} (hγ : 0 < γ ∧ γ < 1)
-    (instance : BanditInstance) :
+    (inst : BanditInstance) :
     ∀ π : Policy,
       let V (policy : Policy) : Float :=
         -- Total expected discounted reward under a policy
         sorry  -- TODO: formal expected value over reward distribution
-      V (gittinsPolicy instance (Array.mkArray instance.arms.size []))
+      V (fun _ => gittinsPolicy inst (Array.replicate inst.arms.size []))
         ≥
       V π := by
   sorry
@@ -82,8 +88,8 @@ theorem gittins_index_monotone_discount (arm : BanditArm) (γ₁ γ₂ : Float)
   sorry
 
 /-- For the 2-armed bandit, the Gittins policy outperforms the greedy policy. -/
-theorem gittins_beats_greedy (instance : BanditInstance)
-    (h : instance.arms.size = 2) :
+theorem gittins_beats_greedy (inst : BanditInstance)
+    (h : inst.arms.size = 2) :
     True := by  -- Placeholder: the actual statement needs V(gittins) ≥ V(greedy)
   trivial
 

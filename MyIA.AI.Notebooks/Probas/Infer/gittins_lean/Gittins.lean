@@ -1,3 +1,7 @@
+import Gittins.Basic
+import Gittins.Discount
+import Gittins.GittinsTheorem
+
 /-!
 # Gittins Index — Formal Verification
 
@@ -13,6 +17,3 @@ for multi-armed bandits with geometric discounting.
 - Proved lemmas: geometric convergence, present value, discount monotonicity
 - Sorry statements: Gittins optimality theorem, index computation
 -/
-import Gittins.Basic
-import Gittins.Discount
-import Gittins.GittinsTheorem
