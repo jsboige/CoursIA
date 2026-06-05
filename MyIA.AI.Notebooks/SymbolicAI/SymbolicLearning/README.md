@@ -13,6 +13,28 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 
 **A qui s'adresse cette serie** : etudiants en IA, informaticiens interesses par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~6h total) ne necessitent que Python 3.10+ standard library, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle) et SL-6 (rdflib pour les knowledge graphs). Une familiarite avec la logique propositionnelle suffit pour SL-1 a SL-4 ; SL-5 et SL-7 supposent une intuition des reseaux de neurones et des LLMs respectivement. Ils constituent un complement theorique aux series [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (representation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
 
+## Pourquoi cette serie
+
+L'apprentissage symbolique represente la contrepartie theorique du machine learning statistique. Tandis que les methodes modernes (deep learning, ensembles d'arbres) excellent a extraire des patterns de grandes masses de donnees, elles souffrent de trois limites fondamentales que l'approche symbolique adresse directement :
+
+- **Peu de donnees disponibles** : les methodes symboliques comme Candidate Elimination ou FOIL apprennent a partir de quelques exemples,voire d'un seul (EBL). Quand la collecte de donnees est couteuse ou impossible (diagnostic medical rare, validation formelle), l'induction pure ne fonctionne pas.
+- **Interpretabilité requise** : une regle logique `IF temperature > 38 AND toux THEN infection` est comprehensible par un humain. Un reseau de neurones de 100M de parametres ne l'est pas. Pour les applications critique ou reglementees (medecine, finance, justice), l'interpretabilité n'est pas un luxe — c'est une exigence.
+- **Integration avec la connaissance existante** : les methodes symboliques combinent examples ET theorie du domaine. EBL compile un exemple prouve en une regle operationnelle generale ; RBL identifie les attributs determinant via des contraintes formelles. Aucune methode statistique ne peut exploiter cette connaissance a priori de la meme facon.
+
+Cette serie montre que les deux approches ne s'opposent pas — elles se **complementent**. La phase finale (SL-5 a SL-7) explore explicitement cette integration : T-norms differentiables pour rendre la logique compatible avec l'entrainement neuronal, rule mining sur knowledge graphs reels, et boucles de verification symbolique pour fiabiliser les sorties LLM.
+
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Implémenter** les algorithmes d'apprentissage inductif de base (CBH, Candidate Elimination, Version Space)
+2. **Compiler** des preuves en heuristiques operationnelles via EBL, et **identifier** les attributs pertinents via RBL et les determinations
+3. **Construire** le treillis des determinations et appliquer MINIMAL-CONSISTENT-DET pour la selection guidee d'attributs
+4. **Apprendre** des regles logiques ( clauses Horn ) a partir d'exemples avec FOIL et la resolution inverse
+5. **Intégrer** logique et apprentissage neuronal via T-norms, Logique Tensorielle, et DeepProbLog
+6. **Extraire** des regles de knowledge graphs reels avec rdflib et AMIE, et **effectuer** la completion de graphes
+7. **Concevoir** une boucle LLM-symbolique : extraction de regles IF-THEN depuis du texte, verification de coherence formelle, feedback pour l'amelioration
+
 ## Vue d'ensemble
 
 | Statistique | Valeur |
@@ -21,6 +43,38 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 | Kernel | Python 3 |
 | Duree estimee | ~370 min |
 | prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-6) |
+
+## Parcours d'apprentissage
+
+### Phase 1 : Fondations inductives (SL-1, ~50 min)
+
+Le parcours commence par l'apprentissage inductif pur : un agent doit decouvrir une regle cachee a partir d'exemples. SL-1 presente les algorithmes fondamentaux — Current-Best-Hypothesis (ajuste une seule hypothese incrementalement) et Candidate Elimination (maintient l'ensemble complet des hypotheses consistantes, le "Version Space"). Vous experimentez leurs limites face au bruit et aux concepts disjonctifs, ce qui motive naturellement les approches plus riches introduites ensuite.
+
+### Phase 2 : Apprentissage base sur la connaissance (SL-2 a SL-3, ~105 min)
+
+La deuxieme phase introduit l'idee centrale que **la connaissance accelere l'apprentissage**. EBL (SL-2) montre comment compiler un exemple prouve en une regle operationnelle generale, en quatre etapes : expliquer, variabiliser, extraire, simplifier. RBL (SL-2 + SL-3) explore une autre facette : identifier les attributs qui determinant vraiment la cible via le formalisme des determinations et le treillis des sous-ensembles d'attributs. La comparaison avec sklearn (information mutuelle) montre quand la connaissance du domaine bat la statistique brute.
+
+### Phase 3 : Programmation logique inductive (SL-4, ~55 min)
+
+SL-4 fait le pont entre apprentissage automatique et intelligence artificielle symbolique classique en couvrant l'ILP : apprentissage de programmes logiques (clauses Horn) a partir d'exemples. L'algorithme FOIL (top-down) et la resolution inverse (bottom-up) sont implémentes de zero, puis appliques aux knowledge graphs — avec extraction de regles AMIE et requetes SPARQL CONSTRUCT.
+
+### Phase 4 : Integration neuro-symbolique (SL-5 a SL-7, ~160 min)
+
+La phase finale explore les methodes contemporaines a l'intersection du symbolique et du connexionniste. SL-5 introduit les T-norms differentiables, les predicats neuronaux et les Logics Tensor Networks qui rendent la logique operationnelle dans un gradient descent. SL-6 passe a l'echelle avec le rule mining reel sur des knowledge graphs construits avec rdflib (AMIE, completion de graphes). SL-7 ferme la boucle avec LLMs : extraction de regles depuis du texte naturel, verification symbolique des sorties, et boucles de retroaction pour fiabiliser le raisonnement.
+
+### Parcours alternatives
+
+#### Parcours rapide (SL-1 + SL-5 + SL-7, ~2h)
+
+Pour ceux qui veulent saisir l'essence sans suivre toute la progression : les fondements inductifs (SL-1), l'integration neuro-symbolique (SL-5), et la verification LLM (SL-7). Donne une vue d'ensemble du spectre, de l'inductif pur au LLM symbolique.
+
+#### Parcours ILP approfondi (SL-1 a SL-4, ~265 min)
+
+Pour les etudiants en logique et IA symbolique : suivre les quatre premiers notebooks dans l'ordre pour maitriser l'apprentissage inductif complet — de Candidate Elimination a FOIL, resolution inverse, et rule mining sur KG.
+
+#### Parcours knowledge graphs (SL-2, SL-3, SL-4, SL-6, ~220 min)
+
+Pour les professionnels du web semantique et des donnees structurees : EBL, RBL, FOIL sur clauses Horn, puis application directe sur des knowledge graphs reels avec rdflib et AMIE. Presuppose une familiarite avec RDF/SPARQL.
 
 ## Notebooks
 
@@ -145,6 +199,57 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 ### Environnement Python
 
 Aucune dependance externe pour SL-1 et SL-2 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-4 utilise uniquement la bibliotheque standard. SL-5 utilise uniquement la bibliotheque standard. SL-6 utilise `rdflib`. SL-7 utilise uniquement la bibliotheque standard.
+
+## FAQ / Troubleshooting
+
+### `rdflib` ne s'installe pas ou plantage a l'execution
+
+SL-6 depend de `rdflib` pour manipuler les knowledge graphs RDF. Si l'installation echoue :
+
+```bash
+pip install rdflib
+```
+
+Si rdflib plante avec une erreur de compilateur C sur les parsers RDF/XML : installez `lxml` comme fallback `pip install lxml`, ou utilisez un environnement conda (`conda install -c conda-forge rdflib`).
+
+### JPype / Java : erreurs courantes avec les bindings
+
+Certains algorithmes de cette serie (surtout SL-5 pour les Logics Tensor Networks et SL-6 pour certains benchmarks AMIE) peuvent necessiter JPype pour interagir avec du code Java. Erreurs frequentes :
+
+- **`java.lang.NoClassDefFoundError`** : `JAVA_HOME` n'est pas defini. Verifiez `echo $JAVA_HOME` (PowerShell: `$env:JAVA_HOME`) et ajoutez-le au PATH.
+- **`UnsatisfiedLinkError`** : version Java incompatible. JPype necessite Java 8 ou 11. Evitez Java 17+ pour les anciennes versions de JPype.
+- **`ModuleNotFoundError: jpype1`** : `pip install jpype1` ou `pip install jpype1-python` (version moderne).
+
+### `scikit-learn` : version incompatible avec Python 3.10+
+
+SL-3 utilise `scikit-learn` pour la comparaison information mutuelle vs determinations. Si vous avez une erreur lors de l'import :
+
+```bash
+pip install -U scikit-learn numpy
+```
+
+Les versions >= 1.3 de scikit-learn sont compatibles avec Python 3.10-3.12.
+
+### `MemoryError` sur le treillis des determinations (SL-3)
+
+Le treillis des determinations croit exponentiellement avec le nombre d'attributs. Si vous travaillez avec des datasets > 50 attributs :
+
+- Limitez l'analyse aux 20-30 attributs les plus informatifs en premier
+- Utilisez `check_determination()` pour filtrer avant de construire le treillis complet
+- Le notebook inclut un parametre `max_attributes` pour controler cette taille
+
+### Erreurs de compilation Lean dans les preuves references
+
+Bien que cette serie soit en Python, certaines fonctions sont comparees avec des preuves Lean dans les notes de reference. Si `lake build` echoue :
+
+- Verifiez la version de Lean 4 : `lake --version` (minimum 4.9.0)
+- Si les imports Mathlib échouent : `lake exe cache get` pour rafraichir les dependances
+
+### Jupyter / kernels Python
+
+- Si le kernel Python n'apparait pas : `python -m ipykernel install --user --name python3 --display-name "Python 3"`
+- Si Papermill ne tourne pas les notebooks : `pip install papermill`
+- En cas de conflit de sortie entre cellules : redemarrez le kernel avant execution complete
 
 ## Ressources
 
