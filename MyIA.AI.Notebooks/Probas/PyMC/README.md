@@ -4,6 +4,34 @@ Port Python de la serie Infer.NET — **20 notebooks** couvrant l'inference baye
 
 **20 notebooks** | Python 3.10+ | PyMC 5.x | ~19h
 
+**A qui s'adresse cette serie** : praticiens Python, data scientists et etudiants souhaitant maitriser l'inference bayesienne moderne avec l'ecosysteme PyMC/ArviZ. Aucun prerequis en C# ou Infer.NET : chaque notebook est autonome.
+
+## Pourquoi cette serie
+
+PyMC est le framework d'inference bayesienne le plus utilise en Python pour la modelisation probabiliste appliquee. La ou scikit-learn fournit des predictions ponctuelles, PyMC produit des **distributions posterieures completes** qui quantifient l'incertitude de chaque parametre.
+
+Cette serie couvre les **meme 20 modeles** que la serie [Infer.NET](../Infer/) mais avec un moteur d'inference radicalement different :
+
+| Aspect | Infer.NET (C#) | PyMC (Python) |
+|--------|----------------|---------------|
+| **Moteur** | Message passing (EP/VMP) | Echantillonnage MCMC (NUTS) |
+| **Resultats** | Deterministes, analytiques | Stochastiques, convergents |
+| **Flexibilite** | Modeles conjugues | Presque tout modele |
+| **Diagnostics** | Factor graphs | ArviZ (trace, ESS, R-hat) |
+| **Ecosysteme** | .NET | NumPy/Pandas/Matplotlib |
+
+Avoir les deux approches sur les memes modeles permet de comprendre les **compromis** entre inference exacte et approchee, une competence cle pour tout praticien.
+
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Construire** un modele probabiliste avec PyMC (definition du prior, vraisemblance, echantillonnage)
+2. **Diagnostiquer** la convergence MCMC avec ArviZ (R-hat, ESS, trace plots, divergences)
+3. **Comparer** message passing (Infer.NET) vs MCMC (PyMC) sur le meme modele
+4. **Appliquer** l'inference bayesienne a des problemes concrets (ranking, classification, recommandation)
+5. **Integrer** inference probabiliste et theorie de la decision (EVPI, MDPs, bandits)
+
 ## Vue d'ensemble
 
 | # | Notebook | Duree | Concepts |
@@ -70,14 +98,108 @@ THEORIE DE LA DECISION (14-20)
 ## Installation
 
 ```bash
+# Environnement dedie (recommande)
+conda create -n pymc-env python=3.12
+conda activate pymc-env
+
+# Dependances principales
 pip install pymc arviz pandas numpy scipy matplotlib
+
+# Verification
+python -c "import pymc; print(f'PyMC {pymc.__version__}')"
+```
+
+### kernels Jupyter
+
+```bash
+python -m ipykernel install --user --name pymc-env --display-name "Python 3 (PyMC)"
+jupyter kernelspec list  # doit afficher pymc-env
 ```
 
 ## Prerequis
 
-- Python 3.10+
+- Python 3.10+ (3.12 recommande)
 - Connaissance de base en probabilites et statistiques
 - Familiarite avec Python et Jupyter notebooks
+- Optionnel : avoir suivi la serie [Infer.NET](../Infer/) pour la comparaison message passing vs MCMC
+
+## Quel parcours choisir
+
+### Parcours data scientist Python (~10h)
+
+Notebooks 1-3 (fondations) puis 7-8 (classification/selection) puis 9-12 (modeles avances). Ce parcours couvre les modeles les plus utiles en pratique sans passer par la theorie de la decision.
+
+1. [PyMC-1-Setup](PyMC-1-Setup.ipynb) -> premier modele
+2. [PyMC-2](PyMC-2-Gaussian-Mixtures.ipynb) + [PyMC-3](PyMC-3-Factor-Graphs.ipynb) -> distributions et inference
+3. [PyMC-7](PyMC-7-Classification.ipynb) + [PyMC-8](PyMC-8-Model-Selection.ipynb) -> classification bayesienne
+4. [PyMC-9](PyMC-9-Topic-Models.ipynb) -> [PyMC-12](PyMC-12-Recommenders.ipynb) -> modeles avances
+
+### Parcours theorie de la decision (~7h)
+
+Notebooks 14-20 en sequence. Ce parcours couvre l'utilite esperee, la valeur de l'information et les MDPs avec un moteur MCMC.
+
+1. [PyMC-14](PyMC-14-Decision-Utility-Foundations.ipynb) -> axiomes VNM
+2. [PyMC-15](PyMC-15-Decision-Utility-Money.ipynb) -> aversion au risque
+3. [PyMC-17](PyMC-17-Decision-Networks.ipynb) -> reseaux de decision
+4. [PyMC-18](PyMC-18-Decision-Value-Information.ipynb) -> [PyMC-20](PyMC-20-Decision-Sequential.ipynb) -> EVPI, MDPs
+
+### Parcours comparatif Infer.NET vs PyMC (~15h)
+
+Alterner chaque notebook PyMC avec son equivalent [Infer.NET](../Infer/).Comparer les implementations (message passing vs MCMC) sur les memes modeles pour comprendre les compromis.
+
+### Parcours rapide (~2h)
+
+[PyMC-1-Setup](PyMC-1-Setup.ipynb) + [PyMC-4-Bayesian-Networks](PyMC-4-Bayesian-Networks.ipynb) + [PyMC-7-Classification](PyMC-7-Classification.ipynb). Les trois notebooks les plus representatifs pour une premiere prise en main.
+
+## FAQ / Troubleshooting
+
+### PyMC ne s'installe pas sur Windows (compilateur C manquant)
+
+PyMC 5.x requiert un compilateur C pour les extensions natives. Solution :
+
+```bash
+# Option 1 : installer via conda (inclut le compilateur)
+conda install -c conda-forge pymc
+
+# Option 2 : installer les build tools Visual Studio
+# Telecharger depuis https://visualstudio.microsoft.com/visual-cpp-build-tools/
+# Cocher "Desktop development with C++"
+```
+
+### L'echantillonnage NUTS est tres lent ou ne converge pas
+
+- Verifier les priors : des priors trop larges causent des explorations inutiles
+- Augmenter `target_accept` : `pm.sample(target_accept=0.95)` (defaut 0.8)
+- Utiliser `init="advi"` pour une initialisation plus robuste
+- Consulter [PyMC-13-Debugging](PyMC-13-Debugging.ipynb) pour les diagnostics complets
+
+### ArviZ affiche des divergences
+
+Les divergences indiquent que l'echantillonneur n'a pas explore correctement certaines regions de l'espace posterieur. Actions :
+
+1. `az.plot_trace(trace)` -> verifier le melange des chaines
+2. `az.summary(trace)` -> verifier que `r_hat < 1.05` et `ess_bulk > 400`
+3. Reparametriser le modele (centrage, log-transform)
+4. Augmenter le nombre de tirages : `pm.sample(draws=4000, tune=2000)`
+
+### Erreur "SamplingError: Initial evaluation of model failed"
+
+Le prior et la vraisemblance sont incompatibles avec les donnees observes. Verifier :
+
+- Les valeurs observes sont dans le support du prior (pas de valeurs negatives pour une distribution Gamma)
+- Les dimensions correspondent (pas de shape mismatch)
+- Les priors ne sont pas trop restrictifs
+
+### Comment passer de Infer.NET a PyMC ?
+
+La serie suit le meme ordre que [Infer.NET](../Infer/). Les concepts se correspondent :
+
+| Concept Infer.NET | Equivalent PyMC |
+|-------------------|-----------------|
+| `Variable.Bernoulli(p)` | `pm.Bernoulli('x', p=p)` |
+| `InferenceEngine` | `pm.sample()` |
+| `Infer<DistributionType>` | `trace['x']` |
+| `ShowFactorGraph` | `pm.model_to_graphviz()` |
 
 ## Concepts cles
 
@@ -89,6 +211,13 @@ pip install pymc arviz pandas numpy scipy matplotlib
 ## Serie complementaire
 
 Ce port Python est le pendant de la serie [Infer.NET](../Infer/) (C# / .NET Interactive) couvrant les memes sujets avec un moteur d'inference different (message passing vs MCMC).
+
+## Ressources
+
+- [PyMC Documentation](https://www.pymc.io/projects/docs/en/stable/)
+- [ArviZ Documentation](https://python.arviz.org/)
+- [Bayesian Methods for Hackers](https://github.com/CamDavidsonPilon/Probabilistic-Programming-and-Bayesian-Methods-for-Hackers)
+- [Statistical Rethinking (McElreath)](https://xcelab.net/rm/statistical-rethinking/) — livre de reference pour l'inference bayesienne appliquee
 
 ---
 

@@ -31,6 +31,12 @@ The goal is to give learners a curated entry point into:
 |------|---------|-------|
 | `Grothendieck/SieveLattice.lean` | Sieve pullback identities: `pullback_id`, `pullback_pullback` (contravariant composition), `pullback_bot`, `pullback_monotone` | ~90 |
 
+### Phase 3 (Sheaf Basics) — `0 sorry` (Issue #2159, Epic #2162)
+
+| File | Content | Lines |
+|------|---------|-------|
+| `Grothendieck/SheafBasics.lean` | Sheaf/separated basics, subcanonical topologies, sheaf transfer along J₁ ≤ J₂ | ~128 |
+
 ## Build
 
 ```bash

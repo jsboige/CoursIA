@@ -406,6 +406,10 @@ Les mecanismes de vote et de gouvernance on-chain (SC-9, SC-17) sont des instanc
 - **SC-9 DAO Governance** : les systemes de vote on-chain sont soumis aux memes limitations que le **theoreme d'Arrow** (formalise dans `social_choice_lean/Arrow.lean`, 0 sorry).
 - **SC-17 E2E Verifiable Voting** : les proprietes des systemes de vote (Banks sets, monotonicite STV) sont etudiees formellement dans `social_choice_lean/Voting.lean`. Le chiffrement homomorphique (SC-16) et les ZKP (SC-15) sont les briques cryptographiques qui rendent le vote E2E possible.
 
+### Lecture transversale
+
+[La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de representation, certification A/B/C).
+
 ---
 
-*Serie creee pour CoursIA (EPITA IA Symbolique) - Issue #129*
+*Serie creee pour CoursIA - Issue #129*
