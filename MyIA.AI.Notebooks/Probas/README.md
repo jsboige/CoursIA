@@ -4,7 +4,7 @@
 series: Probas
 pedagogical_count: 43
 breakdown: Infer=20, PyMC=20, root=3
-maturity: PRODUCTION=40, BETA=2, ALPHA=1
+maturity: PRODUCTION=39, ALPHA=2, BETA=2
 -->
 
 Le monde reel est incertain. Un diagnostic medical n'est jamais sur a 100%, un classement sportif depend de performances intrinsequement variables, et les donnees que nous collectons sont toujours bruitees ou incompletes. La programmation probabiliste offre un cadre rigoureux pour modeliser cette incertitude : plutot que de calculer une seule reponse, on obtient une **distribution de probabilites** qui quantifie notre confiance dans chaque resultat possible.
@@ -505,3 +505,4 @@ Voir la licence du repository principal.
 | [Search](../Search/README.md) | Optimisation bayesienne | La selection de modeles (PyMC-8) utilise les memes techniques que l'optimisation bayesienne |
 | [RL](../RL/README.md) | MDPs | Les MDPs de PyMC-20 (Decision Sequential) sont la passerelle vers le reinforcement learning |
 | [SmartContracts](../SymbolicAI/SmartContract/README.md) | Decision robust | Minimax Regret (PyMC-19) s'applique aux smart contracts pour la gestion des incertitudes on-chain |
+| Lecture transversale | [La mer qui monte](../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |

@@ -178,3 +178,4 @@ SymbolicLearning/
 | [SemanticWeb](../SemanticWeb/README.md) | Representation de connaissances | RDFS/OWL formalisent les determinations et les hierarchies de generalite |
 | [Planners](../Planners/README.md) | Planification | EBL compile les theories en regles operationnelles, similaire aux heuristiques de planification |
 | [Lean](../Lean/README.md) | Preuves formelles | L'arbre de preuve EBL est analogue aux arbres de preuve Lean 4 |
+| Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |
