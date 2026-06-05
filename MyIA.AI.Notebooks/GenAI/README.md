@@ -231,6 +231,66 @@ Toutes les sous-series sont actuellement en etat **BETA ou PRODUCTION**, avec va
 
 Architecture SDDD | Compatible MCP | Derniere mise a jour : 2026-05-28
 
+## Concepts cles
+
+| Concept | Description | Serie principale |
+|---------|-------------|-----------------|
+| **Latent space** | Espace comprime ou le modele "pense" — toute generation commence ici | Image, Video |
+| **Diffusion** | Processus iteratif : bruit → image/audio/video en N etapes | Image, Video, Audio |
+| **VAE / VAE-Decoder** | Encodeur/decodeur entre pixel space et latent space | Image |
+| **CFG (Classifier-Free Guidance)** | Parametre controlant la fidelite au prompt vs liberte creatrice | Image |
+| **LoRA / QLoRA** | Adaptateurs legers pour specialiser un modele sans re-entrainer tout le poids | FineTuning |
+| **DPO / RLHF** | Alignement des modeaux sur les preferences humaines | PostTraining |
+| **RAG** | Retrieval-Augmented Generation : injecter des documents externes dans le contexte LLM | Texte |
+| **Function Calling** | Le LLM appelle vos fonctions — passerelle vers les outils et APIs | Texte |
+| **Structured Outputs** | Forcer le LLM a respecter un schema JSON precis | Texte |
+| **SFT / GRPO / RLVR** | Post-training : Supervised Fine-Tuning, Group Relative Policy Optimization, RL with Verifiable Rewards | PostTraining |
+| **Semantic Kernel** | SDK d'orchestration : plugins, agents, filtres, processus | SemanticKernel |
+| **MCP (Model Context Protocol)** | Standard de connexion outils-modeles — le LLM decouvre vos outils dynamiquement | SemanticKernel |
+| **Whisper / STT** | Speech-to-Text : transcrire l'audio en texte avec timestamps | Audio |
+| **TTS** | Text-to-Speech : synthetiser la voix depuis du texte | Audio |
+| **ComfyUI** | Interface visuelle pour chainer les modeaux generatifs en workflows | Image, Video |
+| **Playwright** | Framework de test E2E pour applications web GenAI | Playwright-OWUI |
+
+## FAQ / Troubleshooting
+
+### Le notebook Image/Video met une erreur ComfyUI 401 Unauthorized
+
+Verifiez que `COMFYUI_BEARER_TOKEN` est configure dans `.env`. Le token est disponible aupres de l'enseignant. Sans token, les notebooks basculent en mode cloud (DALL-E/OpenAI) si `OPENAI_API_KEY` est present — c'est le mecanisme de graceful degradation.
+
+### Papermill timeout sur les notebooks GenAI
+
+Les notebooks GenAI qui appellent des modeaux de generation (image, video, audio) peuvent etre lents selon la charge GPU. Utilisez `--execution-timeout 600` (10 min) au lieu du timeout par defaut. Pour les notebooks Video qui generent des clips, `--execution-timeout 1200` peut etre necessaire.
+
+### Docker services ne demarrent pas
+
+Verifiez que Docker Desktop est en cours d'execution et que les conteneurs sont actifs :
+
+```bash
+python scripts/genai-stack/genai.py docker status
+```
+
+Si les services sont DOWN, relancez avec `genai.py docker start`. Details : [docs/genai-services.md](../../docs/genai-services.md).
+
+### Erreur `torch.cuda.OutOfMemoryError` sur les notebooks locaux
+
+Les modeaux de generation (FLUX, SD 3.5, Qwen-Image, MusicGen) requierent une GPU avec suffisamment de VRAM. Sur une RTX 3090 (24 GB), la plupart des modeaux tournent en FP16. Si OOM persiste :
+
+- Fermez les autres conteneurs GPU (`genai.py docker stop <service>`)
+- Utilisez les variantes quantizees (INT4, FP8) si disponibles
+- Baissez la resolution de generation
+
+### Les notebooks SemanticKernel echouent avec une erreur .NET
+
+Verifiez que .NET SDK 9.0+ est installe (`dotnet --version`) et que le kernel `.net-csharp` est enregistre (`jupyter kernelspec list`). Les notebooks SemanticKernel utilisent .NET Interactive et le package `Microsoft.SemanticKernel`.
+
+### open_spiel ou torch ne s'installe pas
+
+Certains packages (torch avec CUDA, open_spiel) requierent un compilateur C ou CUDA toolkit. Sur Windows :
+
+- PyTorch : utilisez les wheels pre-compilees (`pip install torch --index-url https://download.pytorch.org/whl/cu121`)
+- OpenSpiel : non supporte nativement Windows, necessite WSL (kernel `gametheory-wsl`)
+
 ## Cross-series Bridges
 
 ### Interne GenAI
@@ -250,3 +310,7 @@ Architecture SDDD | Compatible MCP | Derniere mise a jour : 2026-05-28
 | [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | L'analyse de sentiment par LLM (Texte/8_Reasoning_Models) alimente les strategies de trading |
 | [RL](../RL/README.md) | Apprentissage par renforcement | Les agents RL peuvent utiliser des modeles generatifs comme recompenses (images, texte) |
 | [Probas](../Probas/README.md) | Modeles probabilistes | Les VAE, diffusion models et Bayesian neural networks partagent les memes fondements probabilistes |
+
+### Lecture transversale
+
+[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — GenAI comme versant *simulation* (generer, calculer, experimenter) face au versant *preuve* des series formelles.
