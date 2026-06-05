@@ -604,6 +604,81 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
     }
 
 
+# Fields derived from git history that may be more up-to-date on origin/main
+# than on the current branch. These should be preserved from origin/main
+# for entries that were NOT modified on the current branch.
+CURATED_GIT_FIELDS = ("last_validation", "last_validator", "issue_pr_associee")
+
+
+def _load_main_catalog() -> dict[str, dict]:
+    """Load the catalog from origin/main via git show.
+
+    Returns a dict keyed by notebook path with the full entry dict.
+    Returns empty dict if not in a git repo or file doesn't exist on main.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "show", "origin/main:COURSE_CATALOG.generated.json"],
+            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=15,
+        )
+        if result.returncode != 0:
+            return {}
+        import json as _json
+        data = _json.loads(result.stdout)
+        return {e["path"]: e for e in data if "path" in e}
+    except (subprocess.TimeoutExpired, FileNotFoundError, ValueError):
+        return {}
+
+
+def _merge_curated_fields(
+    entries: list[dict],
+    main_catalog: dict[str, dict],
+) -> list[dict]:
+    """Preserve curated git fields from origin/main for unchanged entries.
+
+    When running from a branch that is behind main, git log won't include
+    commits that landed on main after the branch diverged. This causes
+    last_validation/last_validator/issue_pr_associee to be blanked for
+    entries not touched on the current branch.
+
+    This function merges the curated fields from origin/main's catalog
+    into the freshly generated entries, preserving the more complete data.
+    """
+    if not main_catalog:
+        return entries
+
+    merged_count = 0
+    for entry in entries:
+        path = entry.get("path", "")
+        main_entry = main_catalog.get(path)
+        if not main_entry:
+            continue
+
+        # Check if current branch has stale/empty values for these fields
+        needs_merge = False
+        for field in CURATED_GIT_FIELDS:
+            current_val = entry.get(field, "")
+            main_val = main_entry.get(field, "")
+            # Merge if current is empty/missing and main has data
+            if (not current_val or current_val == "") and main_val:
+                needs_merge = True
+                break
+
+        if needs_merge:
+            for field in CURATED_GIT_FIELDS:
+                current_val = entry.get(field, "")
+                main_val = main_entry.get(field, "")
+                # Prefer non-empty value from main when current is empty
+                if (not current_val or current_val == "") and main_val:
+                    entry[field] = main_val
+            merged_count += 1
+
+    if merged_count:
+        print(f"Preserved curated fields from origin/main for {merged_count} entries")
+
+    return entries
+
+
 def _git_tracked_files() -> set[str] | None:
     """Return set of git-tracked relative paths, or None if not in a git repo."""
     try:
@@ -788,6 +863,11 @@ def main():
         pedagogical=pedagogical, series_filter=args.series,
         git_meta=git_meta, git_tracked_only=args.git_tracked_only,
     )
+
+    # Preserve curated git fields from origin/main for entries not
+    # touched on the current branch (prevents stale-branch blanching)
+    main_catalog = _load_main_catalog()
+    entries = _merge_curated_fields(entries, main_catalog)
 
     if args.status:
         entries = [e for e in entries if e["status"] == args.status]
