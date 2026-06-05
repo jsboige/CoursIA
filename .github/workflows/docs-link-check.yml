@@ -17,4 +17,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check docs/ links
-        run: python scripts/check_docs_links.py --quiet
+        run: python scripts/check_docs_links.py --check --quiet

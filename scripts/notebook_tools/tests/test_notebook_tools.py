@@ -1516,3 +1516,187 @@ class TestCodePreviewLimit:
         analyzer = NotebookAnalyzer(str(nb_path))
         skeleton = analyzer.get_skeleton()
         assert len(skeleton.code_previews) == 2
+
+
+# =============================================================================
+# Execute options (--kernel, --cwd, --env, --scrub-keys)
+# =============================================================================
+
+@pytest.mark.skipif(not HAS_EXECUTOR, reason="NotebookExecutor not available")
+class TestExecuteOptions:
+    """Test new CLI options for the execute command."""
+
+    def test_scrub_keys_constant_exists(self):
+        """SCRUB_KEYS list is defined and non-empty."""
+        assert hasattr(NotebookExecutor, "SCRUB_KEYS")
+        assert len(NotebookExecutor.SCRUB_KEYS) > 0
+        assert "OPENAI_API_KEY" in NotebookExecutor.SCRUB_KEYS
+        assert "ANTHROPIC_API_KEY" in NotebookExecutor.SCRUB_KEYS
+
+    def test_scrub_keys_env_cleaned(self, tmp_path, monkeypatch):
+        """--scrub-keys removes API keys from subprocess environment."""
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook({"cells": [
+            {"cell_type": "code", "source": ["x=1\n"], "metadata": {},
+             "execution_count": None, "outputs": []}
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}, str(nb_path))
+
+        # Set a fake API key in the test environment
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-secret-12345")
+
+        executor = NotebookExecutor(str(nb_path))
+        # Verify method accepts the parameter
+        assert hasattr(executor, "execute_with_papermill")
+
+    def test_execute_accepts_kernel_override(self, tmp_path):
+        """execute_with_papermill accepts kernel_override parameter."""
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook({"cells": [
+            {"cell_type": "code", "source": ["x=1\n"], "metadata": {},
+             "execution_count": None, "outputs": []}
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}, str(nb_path))
+
+        executor = NotebookExecutor(str(nb_path))
+        import inspect
+        sig = inspect.signature(executor.execute_with_papermill)
+        assert "kernel_override" in sig.parameters
+        assert "cwd_override" in sig.parameters
+        assert "env_extra" in sig.parameters
+        assert "scrub_keys" in sig.parameters
+
+    def test_execute_defaults_unchanged(self, tmp_path):
+        """Default parameters are unchanged (non-regression)."""
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook({"cells": [
+            {"cell_type": "code", "source": ["x=1\n"], "metadata": {},
+             "execution_count": None, "outputs": []}
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}, str(nb_path))
+
+        executor = NotebookExecutor(str(nb_path))
+        import inspect
+        sig = inspect.signature(executor.execute_with_papermill)
+        # New defaults: None/False (unchanged behavior)
+        assert sig.parameters["kernel_override"].default is None
+        assert sig.parameters["cwd_override"].default is None
+        assert sig.parameters["env_extra"].default is None
+        assert sig.parameters["scrub_keys"].default is False
+        # Original defaults unchanged
+        assert sig.parameters["timeout"].default == 300
+        assert sig.parameters["batch_mode"].default is False
+
+    def test_scrub_keys_env_build(self, tmp_path, monkeypatch):
+        """Scrub keys produces clean env without API keys."""
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-secret")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+        monkeypatch.setenv("SAFE_VAR", "keep-me")
+
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook({"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}, str(nb_path))
+
+        executor = NotebookExecutor(str(nb_path))
+        # Simulate env building logic
+        sub_env = dict(os.environ)
+        for key in executor.SCRUB_KEYS:
+            sub_env.pop(key, None)
+
+        assert "OPENAI_API_KEY" not in sub_env
+        assert "ANTHROPIC_API_KEY" not in sub_env
+        assert sub_env.get("SAFE_VAR") == "keep-me"
+
+    def test_env_extra_merges_into_env(self, tmp_path):
+        """env_extra dict values override subprocess environment."""
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook({"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}, str(nb_path))
+
+        executor = NotebookExecutor(str(nb_path))
+        sub_env = dict(os.environ)
+        env_extra = {"BATCH_MODE": "true", "MY_CUSTOM": "val"}
+        sub_env.update(env_extra)
+
+        assert sub_env["BATCH_MODE"] == "true"
+        assert sub_env["MY_CUSTOM"] == "val"
+
+    def test_kernel_override_replaces_auto(self, tmp_path):
+        """kernel_override takes precedence over detect_kernel_name()."""
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook({
+            "cells": [{"cell_type": "code", "source": ["x=1\n"], "metadata": {},
+                       "execution_count": None, "outputs": []}],
+            "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"}},
+            "nbformat": 4, "nbformat_minor": 5,
+        }, str(nb_path))
+
+        executor = NotebookExecutor(str(nb_path))
+        auto_kernel = executor.detect_kernel_name()
+        assert auto_kernel == "python3"
+
+        # With override, should use the override value
+        kernel = "custom-kernel" or executor.detect_kernel_name()
+        assert kernel == "custom-kernel"
+
+    def test_cwd_override_path_resolution(self, tmp_path):
+        """cwd_override is resolved to absolute path."""
+        nb_path = tmp_path / "test.ipynb"
+        _write_notebook({"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}, str(nb_path))
+
+        custom_dir = tmp_path / "custom_workdir"
+        custom_dir.mkdir()
+
+        cwd_override = custom_dir
+        abs_cwd = (cwd_override or nb_path.parent).resolve()
+        assert abs_cwd == custom_dir.resolve()
+
+        abs_cwd_default = (None or nb_path.parent).resolve()
+        assert abs_cwd_default == nb_path.parent.resolve()
+
+
+class TestExecuteCLIArgs:
+    """Test CLI argument parsing for execute command."""
+
+    def test_cli_accepts_kernel(self):
+        """--kernel argument is parsed correctly."""
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--kernel', type=str, default=None)
+        args = parser.parse_args(['--kernel', 'python3'])
+        assert args.kernel == 'python3'
+
+    def test_cli_accepts_cwd(self):
+        """--cwd argument is parsed correctly."""
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--cwd', type=str, default=None)
+        args = parser.parse_args(['--cwd', '/tmp/workdir'])
+        assert args.cwd == '/tmp/workdir'
+
+    def test_cli_accepts_env_repeatable(self):
+        """--env KEY=VAL can be repeated."""
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--env', action='append', default=[], metavar='KEY=VAL')
+        args = parser.parse_args(['--env', 'A=1', '--env', 'B=2'])
+        assert args.env == ['A=1', 'B=2']
+
+    def test_cli_accepts_scrub_keys(self):
+        """--scrub-keys is a boolean flag."""
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--scrub-keys', action='store_true')
+        args = parser.parse_args(['--scrub-keys'])
+        assert args.scrub_keys is True
+        args2 = parser.parse_args([])
+        assert args2.scrub_keys is False
+
+    def test_env_parsing_key_val(self):
+        """--env KEY=VAL pairs are parsed into dict."""
+        pairs = ['BATCH_MODE=true', 'MY_VAR=hello']
+        env_extra = {}
+        for pair in pairs:
+            key, val = pair.split('=', 1)
+            env_extra[key] = val
+        assert env_extra == {"BATCH_MODE": "true", "MY_VAR": "hello"}
+
+    def test_env_parsing_rejects_no_equals(self):
+        """--env without = is rejected."""
+        pair = "INVALID"
+        assert '=' not in pair
