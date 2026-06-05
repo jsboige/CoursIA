@@ -339,6 +339,69 @@ for ticker in self.all_tickers:
     security.set_fee_model(ConstantFeeModel(self.transaction_cost_bps / 10000 * self.portfolio.total_portfolio_value * 0.20))
 ```
 
+### Estimated Fee Impact Analysis
+
+**Methodology**: Each strategy's annual turnover is translated into a round-trip cost drag. Fee assumptions: US equities/ETFs = 5 bps one-way (10 bps round-trip, IBKR pricing), Crypto = 10 bps one-way (20 bps round-trip, Binance), FX = 2 bps one-way. QC-reported CAGR is treated as near-zero-fee (no explicit `SetFeeModel` in 8/10 strategies).
+
+#### Annual Cost Drag
+
+| Project | Est. Turnover | Round-trip Fee | Annual Cost Drag | CAGR% (QC) | Est. Net CAGR% | CAGR Erosion |
+|---------|---------------|----------------|------------------|------------|----------------|--------------|
+| TrendFollowing | 2x | 10 bps | 20 bps (0.20%) | 23.2 | 23.0 | -20 bps |
+| EMA-Cross-Stocks | 5x | 10 bps | 50 bps (0.50%) | 26.2 | 25.7 | -50 bps |
+| MomentumStrategy | 3x | 10 bps | 30 bps (0.30%) | 11.7 | 11.4 | -30 bps |
+| AllWeather | 0.5x | 10 bps | 5 bps (0.05%) | 9.0 | 9.0 | -5 bps |
+| VolTarget-Momentum | 2.5x | 10 bps | 25 bps (0.25%) | 14.7 | 14.5 | -25 bps |
+| Crypto-MultiCanal | 4x | 20 bps | 80 bps (0.80%) | 8.2 | 7.4 | -80 bps |
+| Portfolio-IBKR-Binance | 0.15x | 10 bps | 1.5 bps (0.02%) | 15.7 | 15.7 | -2 bps |
+| MomentumRegime | 2x | 10 bps | 20 bps (0.20%) | 4.7 | 4.5 | -20 bps |
+| TrendStocks-Alpha | 6x | 10 bps | 60 bps (0.60%) | 15.9 | 15.3 | -60 bps |
+| EMA-Cross-Alpha | 5x | 10 bps | 50 bps (0.50%) | 2.8 | 2.3 | -50 bps |
+
+**Calculation**: Annual Cost = Turnover x Round-trip Fee. Example: EMA-Cross-Stocks = 5x x 10 bps = 50 bps/year drag.
+
+#### Sharpe Ratio Erosion
+
+| Project | Aligned Sharpe | Est. Vol% | Annual Cost | Sharpe Erosion | Est. Net Sharpe | Erosion % |
+|---------|---------------|-----------|-------------|----------------|-----------------|-----------|
+| TrendFollowing | 1.072 | 21.6% | 20 bps | -0.009 | 1.063 | -0.9% |
+| EMA-Cross-Stocks | 0.891 | 29.4% | 50 bps | -0.017 | 0.874 | -1.9% |
+| MomentumStrategy | 0.555 | 21.1% | 30 bps | -0.014 | 0.541 | -2.5% |
+| AllWeather | 0.631 | 14.3% | 5 bps | -0.003 | 0.628 | -0.5% |
+| VolTarget-Momentum | 0.648 | 22.7% | 25 bps | -0.011 | 0.637 | -1.7% |
+| Crypto-MultiCanal | 0.581 | 14.1% | 80 bps | -0.057 | 0.524 | **-9.8%** |
+| Portfolio-IBKR-Binance | 0.519 | 30.3% | 1.5 bps | -0.001 | 0.519 | -0.1% |
+| MomentumRegime | 0.185 | 25.4% | 20 bps | -0.008 | 0.177 | -4.3% |
+| TrendStocks-Alpha | 0.519 | 30.6% | 60 bps | -0.020 | 0.499 | -3.8% |
+| EMA-Cross-Alpha | -0.010 | 28.0% | 50 bps | -0.018 | -0.028 | N/A |
+
+**Calculation**: Vol = CAGR / Sharpe. Sharpe erosion = Cost / Vol. Example: Crypto-MultiCanal = 0.80% / 14.1% = 0.057 Sharpe erosion.
+
+#### Fee Resilience Ranking
+
+| Rank | Project | Cost Drag | Sharpe Erosion | Break-even Fee (one-way) | Resilience |
+|------|---------|-----------|----------------|--------------------------|------------|
+| 1 | Portfolio-IBKR-Binance | 1.5 bps | 0.5 bps | ~52,000 bps | Near-immune |
+| 2 | AllWeather | 5 bps | 3 bps | 1,800 bps | Very high |
+| 3 | TrendFollowing | 20 bps | 9 bps | 580 bps | High |
+| 4 | VolTarget-Momentum | 25 bps | 11 bps | 294 bps | High |
+| 5 | MomentumStrategy | 30 bps | 14 bps | 195 bps | High |
+| 6 | EMA-Cross-Stocks | 50 bps | 17 bps | 262 bps | Moderate |
+| 7 | TrendStocks-Alpha | 60 bps | 20 bps | 133 bps | Moderate |
+| 8 | MomentumRegime | 20 bps | 8 bps | 118 bps | Moderate |
+| 9 | Crypto-MultiCanal | 80 bps | 57 bps | 103 bps | **Vulnerable** |
+| 10 | EMA-Cross-Alpha | 50 bps | 18 bps | 28 bps | **Vulnerable** |
+
+**Break-even fee** = CAGR / Turnover. Below this threshold the strategy remains net profitable.
+
+#### Key Takeaways
+
+1. **Crypto fees are the primary risk factor**: Crypto-MultiCanal loses 9.8% of its Sharpe to fees (-57 bps). A Binance fee increase or slippage spike could materially impact returns.
+2. **EMA-Cross-Alpha is fragile on multiple dimensions**: Already negative Sharpe, thin fee margin (28 bps break-even), and high turnover. Confirms "exploratoire" classification.
+3. **High-turnover equity strategies lose meaningful CAGR**: EMA-Cross-Stocks (-50 bps) and TrendStocks-Alpha (-60 bps) each lose ~0.5-0.6% annually. Warrant explicit `SetFeeModel`.
+4. **No profitable strategy flips unprofitable** at realistic fees. The risk is Sharpe degradation, not sign flip.
+5. **Slippage excluded**: Market impact on small-caps (EMA-Cross-Stocks) could add 5-15 bps/trade, doubling effective cost for those strategies.
+
 ---
 
 ## Data Source
