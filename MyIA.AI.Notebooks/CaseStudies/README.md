@@ -156,6 +156,28 @@ pip install -r requirements.txt
 
 Dependances principales : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools
 
+## FAQ
+
+### Pourquoi combiner plusieurs paradigmes IA plutot que d'en choisir un seul ?
+
+Chaque paradigme a des forces et des limites distinctes. Les **regles symboliques** sont deterministes et explicables mais incapables de gerer l'incertitude. Les **modeles probabilistes** quantifient l'incertitude mais ne garantissent pas les contraintes dures (doses maximales, delais de securite). Les **algorithmes de recherche** explorent efficacement un espace d'etats mais manquent de flexibilite pour les problemes mal definis. L'architecture hybride compose ces paradigmes en cascade : filtrage symbolique → modelisation probabiliste → optimisation combinatoire → validation par contraintes. Un seul paradigme ne peut pas couvrir cette chaine complete.
+
+### Peut-on executer ces notebooks sans les series prerequises ?
+
+Techniquement oui, car chaque projet est autonome (donnees incluses, dependances listees). Pedagogiquement, c'est deconseille : les notebooks supposent la maitrise d'A* (Search Part 1), des distributions Dirichlet (Probas), des ontologies OWL (SemanticWeb SW-4) et de la programmation par contraintes (Search Part 2). Sans ces prerequis, l'etudiant comprend le code individuellement mais manque la vue d'ensemble de l'architecture hybride — qui est le veritable objectif de la serie.
+
+### Quelle est la difference entre le template etudiant et la solution ?
+
+Le template etudiant (`student/`) contient le squelette du projet : classes avec methodes `pass` ou `return None` (`# TODO etudiant`), structures de donnees pre-remplies, et tests unitaires pour valider chaque composant. La solution (`solution/`) implemente chaque methode completement. La pedagogie recommande un parcours en 3 phases : (1) comprendre la solution de reference, (2) implementer le template en s'appuyant sur les tests, (3) etendre avec des variantes personnelles. Le template est executable end-to-end grace aux stubs conformes (pas de `raise NotImplementedError`).
+
+### Pyro (Python) vs Infer.NET (C#) : pourquoi Pyro pour OncoPlan ?
+
+Pyro offre une integration native avec l'ecosysteme Python (pandas, numpy, matplotlib) et une flexibilite superieure pour les modeles generatifs complexes (`poutine.scale` pour l'amplification, guides custom). Infer.NET est plus performant (EP vs SVI) mais contraint a l'ecosysteme .NET. Pour un projet interdisciplinaire combinant ontologies (Python rdflib), CSP (Python OR-Tools) et probabilisme, rester en Python evite les friction de serialisation entre langages. La serie Probas couvre Infer.NET en parallele pour les etudiants souhaitant comparer.
+
+### Comment adapter ces projets a un autre domaine que le medical ?
+
+L'architecture hybride est **domaine-agnostique**. Les 5 couches (connaissances, contraintes, incertitude, optimisation, decision) s'appliquent a tout domaine avec des regles strictes ET de l'incertitude. Pour la **finance** : ontologie des instruments financiers, contraintes reglementaires (Bale III), modeles de volatilite stochastique, optimisation de portefeuille. Pour la **logistique** : ontologie des vehicules/depots, contraintes de capacite et fenetres horaires, modeles de demande probabilistes, routage optimal. Pour la **maintenance predictive** : ontologie des equipements, contraintes de securite, modeles de degradation (Weibull), planification des interventions. Les notebooks utilisent le domaine medical comme cas d'etude concret, mais les patterns architecturaux sont transferables directement.
+
 ## Connections cross-series
 
 Les etudes de cas de cette serie sont des projets interdisciplinaires qui combinent les techniques de plusieurs series du cursus.
