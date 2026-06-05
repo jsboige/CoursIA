@@ -29,6 +29,7 @@ paths: MyIA.AI.Notebooks/**/*.ipynb
 - **WSL notebooks** (GameTheory/Lean) : `wsl_papermill.py` (cf [.claude/rules/wsl-kernels.md](wsl-kernels.md))
 - Working directory explicite pour notebooks avec paths relatifs
 - `BATCH_MODE=true` pour notebooks avec widgets interactifs
+- **Notebooks LLM/API** (SC-11, GenAI) : re-exec validation via `--scrub-keys` pour forcer le chemin mock deterministe sans appel API payant : `notebook_tools.py execute <path> --scrub-keys`. Cf [docs/scripts-reference.md](../../docs/scripts-reference.md) pour le cookbook complet (`--kernel`, `--cwd`, `--env`, `--scrub-keys`).
 
 ## Cellules code : output systematique (anti faux-positif maturite)
 
