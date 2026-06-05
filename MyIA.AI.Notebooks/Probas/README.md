@@ -505,3 +505,4 @@ Voir la licence du repository principal.
 | [Search](../Search/README.md) | Optimisation bayesienne | La selection de modeles (PyMC-8) utilise les memes techniques que l'optimisation bayesienne |
 | [RL](../RL/README.md) | MDPs | Les MDPs de PyMC-20 (Decision Sequential) sont la passerelle vers le reinforcement learning |
 | [SmartContracts](../SymbolicAI/SmartContract/README.md) | Decision robust | Minimax Regret (PyMC-19) s'applique aux smart contracts pour la gestion des incertitudes on-chain |
+| Lecture transversale | [La mer qui monte](../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |
