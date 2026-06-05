@@ -408,6 +408,10 @@ Les concepts de theorie des jeux et de choix social apparaissent directement dan
 
 Voir [SymbolicAI/SmartContracts/README.md](../SymbolicAI/SmartContracts/README.md) pour la serie complete.
 
+### Lecture transversale
+
+[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de representation, certification A/B/C).
+
 ## Licence
 
 Voir la licence du repository principal.

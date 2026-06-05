@@ -305,6 +305,7 @@ La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSIO
 | **[SmartContracts](../SmartContracts/)** | Methods formelles | La verification formelle SC-14 (Certora/SMTChecker) utilise les memes solveurs SAT/SMT. La logique propositionnelle de Tweety est la base des invariants Solidity. |
 | **[GameTheory](../../GameTheory/)** | Theorie du vote | Le notebook 9 (Preferences/Vote) couvre les concepts de choix social formalises dans `social_choice_lean/` (Arrow, Sen, Voting). |
 | **[Planners](../Planners/)** | Planification argumentative | Les dialogues argumentatifs (notebook 8) peuvent etre modelises comme des problemes de planification PDDL. |
+| Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |
 
 ## Licence
 
