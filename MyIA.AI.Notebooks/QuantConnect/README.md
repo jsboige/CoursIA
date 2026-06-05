@@ -372,6 +372,31 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ---
 
+## FAQ
+
+### Peut-on executer les notebooks localement sans compte QuantConnect ?
+
+Non. Les notebooks Python de cette serie utilisent `QuantBook()` qui necessite une connexion au cloud QuantConnect. Les notebooks C# (.NET) executent du code LEAN en local mais n'ont pas acces aux donnees de marche sans connexion QC. Creez un compte gratuit sur [quantconnect.com](https://www.quantconnect.com/) pour obtenir votre token API (variable `QC_API_TOKEN` dans `.env`).
+
+### Quelle est la difference entre un notebook Python et un projet C# ?
+
+Les **notebooks Python** (QC-Py-01 a QC-28) sont des explorations interactives avec `QuantBook()` : chargement de donnees, analyses, visualisations, prototypage rapide. Les **projets C#** sont des algorithmes complets (`QCAlgorithm`) destines au backtesting production dans l'IDE QuantConnect. Le workflow standard est : explorer en notebook Python -> implementer en C# ou Python projet.
+
+### Comment limiter le cout en heures de calcul ?
+
+- **Backtesting** : limiter la periode historique (2-3 ans suffit pour un prototype) et la frequence (Daily plutot que Minute)
+- **Notebooks** : utiliser `qb.history()` avec des dates precises plutot que charger l'historique complet
+- **Deep Learning** : les notebooks QC-22/23/24 sont CPU-optimized pour le free tier
+- **Rate limiting** : max 10 appels API/min entre tous les agents du cluster
+
+### Pourquoi utiliser LEAN plutot qu'un framework comme Backtrader ?
+
+LEAN est le moteur de production de QuantConnect : il gere les donnees corporates (splits, dividends, spinoffs), le slippage, les frais reels, le margin, et le live trading. Backtrader et Zipline sont d'excellents outils pedagogiques mais ne gerent pas ces aspects en production. Cette serie enseigne LEAN pour que les competences soient directement transferables au trading reel.
+
+### Qu'est-ce qu'un QuantBook et comment se differencie-t-il d'un algorithme ?
+
+`QuantBook` est l'API interactive de QuantConnect pour les notebooks Jupyter. Elle permet de charger des donnees, calculer des indicateurs, et analyser des resultats sans ecrire un algorithme complet. Un `QCAlgorithm` est la version production avec des callbacks (`OnData`, `OnEndOfDay`), un portefeuille, et un moteur d'execution. Les notebooks de cette serie utilisent `QuantBook` pour l'exploration ; les projets utilisent `QCAlgorithm` pour le backtesting.
+
 ## Free Tier vs Paid
 
 | Fonctionnalité | Free Tier | Paid (Team/Premium) |
