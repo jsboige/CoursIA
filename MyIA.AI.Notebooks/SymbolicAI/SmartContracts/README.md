@@ -209,4 +209,4 @@ Les mecanismes de vote et de gouvernance on-chain (SC-9, SC-17) sont des instanc
 
 ---
 
-*Serie creee pour CoursIA (EPITA IA Symbolique) - Issue #129*
+*Serie creee pour CoursIA - Issue #129*
