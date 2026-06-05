@@ -261,62 +261,67 @@ lemma no_cross_match (μ ν : Matching n)
       exact hμ m₂ w hbp
     · -- Case A2: m₁ prefers w>w₁, m₂ prefers w₂>w
       --
-      -- SCAFFOLD STRATEGY:
-      -- We have hwp₁ : ¬WomanPrefers w m₁ m₂ (from ν-stability)
-      -- We need    : ¬WomanPrefers w m₂ m₁ (to get womenPref equality → m₁ = m₂)
+      -- CORRECT PROOF STRATEGY (verified by manual analysis):
       --
-      -- To obtain ¬WomanPrefers w m₂ m₁, we argue:
-      -- If WomanPrefers w m₂ m₁, then (m₂, w) blocks μ:
-      --   Man side: ManPrefers m₂ w (μ.spouse m₂) = ManPrefers m₂ w w₂
-      --   But ¬hm₂ says ¬ManPrefers m₂ w w₂, so man side FAILS.
-      -- So this direct path doesn't work.
+      -- Context:
+      --   hm₁ : ManPrefers m₁ w w₁        (m₁ prefers μ-partner over ν-partner)
+      --   ¬hm₂ : ¬ManPrefers m₂ w w₂       (m₂ does NOT prefer w over μ-partner)
+      --   hwp₁ : ¬WomanPrefers w m₁ m₂     (from ν-stability on (m₁, w))
+      --   hw_m₂_pref : WomanPrefers w m₂ m₁ (from hwp₁ + womenPref injectivity)
+      --   hμinv_w : μ.inverse w = m₁
+      --   hμinv_w₂ : μ.inverse w₂ = m₂
+      --   hνinv_w : ν.inverse w = m₂
+      --   hνinv_w₁ : ν.inverse w₁ = m₁
       --
-      -- ALTERNATIVE: use μ-stability on (m₁, w₂) instead.
-      -- ManPrefers m₁ w₂ (μ.spouse m₁) = ManPrefers m₁ w₂ w.
-      -- We know hm₁ : ManPrefers m₁ w w₁, so menPref m₁ w < menPref m₁ w₁.
-      -- We need menPref m₁ w₂ < menPref m₁ w to establish man side.
-      -- But we don't know this directly.
+      -- NOTE: The direct approach "derive ¬WomanPrefers w m₂ m₁ from μ-stability
+      -- on (m₂, w)" FAILS because ¬hm₂ means man-side fails.
+      -- Instead, we use a CROSS-STABILITY argument involving w₂ and w₁:
       --
-      -- CORRECT PATH (Knuth's original, p. 57):
-      -- Use ν-stability on (m₂, w) to get ¬WomanPrefers w m₂ m₁.
-      -- ν.spouse m₂ = w (from h2), so (m₂, w) blocks ν only if
-      -- ManPrefers m₂ w (ν.spouse m₂) = ManPrefers m₂ w w = false.
-      -- So (m₂, w) can't block ν because m₂ is already matched to w in ν!
+      -- Step 1: From ¬hm₂, derive menPref m₂ w₂ ≤ menPref m₂ w (weak pref).
+      --   have hm₂weak : prof.menPref m₂ w₂ ≤ prof.menPref m₂ w := by
+      --     unfold PrefProfile.ManPrefers at hm₂; simp only [not_lt] at hm₂; exact mod_cast hm₂
       --
-      -- The real trick: we need to involve a THIRD woman.
-      -- Consider (m₁, w₂): blocks μ?
-      --   ManPrefers m₁ w₂ (μ.spouse m₁) = ManPrefers m₁ w₂ w
-      --   If this holds and WomanPrefers w₂ m₁ (μ.inverse w₂) = WomanPrefers w₂ m₁ m₂,
-      --   then (m₁, w₂) blocks μ.
-      -- Similarly (m₂, w₁): blocks ν?
+      -- Step 2: Apply μ-stability to (m₂, w). This requires BOTH:
+      --   ManPrefers m₂ w (μ.spouse m₂) = ManPrefers m₂ w w₂  [FAILS: ¬hm₂]
+      --   So (m₂, w) CANNOT block μ. This is a DEAD END.
       --
-      -- The Knuth argument for this case uses the TRANSITIVITY of preferences
-      -- and the fact that m₁ ≠ m₂ to derive a contradiction from the
-      -- circular preference structure. This is related to the "rotations"
-      -- concept in Irving (1985).
+      -- Step 3 (CORRECT PATH): Use μ-stability on (m₁, w₂) and
+      --   ν-stability on (m₂, w₁). These are the CROSS pairs:
+      --   m₁'s μ-partner is w, but we ask about w₂ (m₂'s μ-partner).
+      --   m₂'s ν-partner is w, but we ask about w₁ (m₁'s ν-partner).
       --
-      -- For the formal proof, we observe that the context already contains
-      -- everything needed: the same `Nat.le_antisymm + injective` pattern
-      -- used in `no_cross_if_both_choose_cross` applies here if we can
-      -- derive both ¬WomanPrefers w m₁ m₂ (already have) and
-      -- ¬WomanPrefers w m₂ m₁ (to derive).
+      --   For (m₁, w₂) to block μ:
+      --     ManPrefers m₁ w₂ (μ.spouse m₁) = ManPrefers m₁ w₂ w  [need this]
+      --     WomanPrefers w₂ m₁ (μ.inverse w₂) = WomanPrefers w₂ m₁ m₂  [need this]
       --
-      -- Sub-goal 1: ¬ManPrefers m₂ w w₂ gives menPref m₂ w₂ ≤ menPref m₂ w
-      -- Sub-goal 2: μ-stability applied to (m₂, w) requires:
-      --   ManPrefers m₂ w (μ.spouse m₂) ∧ WomanPrefers w m₂ (μ.inverse w)
-      --   = ManPrefers m₂ w w₂ ∧ WomanPrefers w m₂ m₁
-      --   The man side is ¬hm₂, so the blocking pair can't form.
-      --   Therefore μ-stability gives us NOTHING directly.
+      --   For (m₂, w₁) to block ν:
+      --     ManPrefers m₂ w₁ (ν.spouse m₂) = ManPrefers m₂ w₁ w  [need this]
+      --     WomanPrefers w₁ m₂ (ν.inverse w₁) = WomanPrefers w₁ m₂ m₁  [need this]
       --
-      -- Sub-goal 3: Instead, apply ν-stability to (m₁, w₂):
-      --   ManPrefers m₁ w₂ (ν.spouse m₁) = ManPrefers m₁ w₂ w₁
-      --   WomanPrefers w₂ m₁ (ν.inverse w₂)
-      --   If ManPrefers m₁ w₂ w₁ holds, we need WomanPrefers to fail.
+      -- Step 4: The key insight is that we don't know whether these man-side
+      --   conditions hold, so we case-split. In each branch, at least one
+      --   of the two cross-blocking-pairs forms, giving a contradiction.
       --
-      -- The proof requires careful case analysis on whether m₁ and m₂
-      -- are connected through the "crossing" structure of μ and ν.
-      -- See: Gusfield & Irving (1989), "The Stable Marriage Problem",
-      -- Section 1.3.2, Lemma 1.3.2.
+      --   by_cases hm₁w₂ : prof.ManPrefers m₁ w₂ w
+      --   · -- m₁ prefers w₂ over w (= μ.spouse m₁)
+      --     -- Since hm₁ : m₁ prefers w over w₁, by transitivity:
+      --     --   menPref m₁ w₂ < menPref m₁ w < menPref m₁ w₁
+      --     -- So m₁ also prefers w₂ over w₁.
+      --     -- Apply μ-stability to (m₁, w₂):
+      --     --   ManPrefers m₁ w₂ w holds (hm₁w₂)
+      --     --   So ¬WomanPrefers w₂ m₁ m₂ must hold (else blocks μ)
+      --     -- Apply ν-stability to (m₁, w₂):
+      --     --   ManPrefers m₁ w₂ (ν.spouse m₁) = ManPrefers m₁ w₂ w₁
+      --     --   Since menPref m₁ w₂ < menPref m₁ w < menPref m₁ w₁, this holds.
+      --     --   So ¬WomanPrefers w₂ m₁ (ν.inverse w₂) must hold.
+      --     sorry  -- SUB-GOAL: derive contradiction from cross-stability
+      --   · -- m₁ does NOT prefer w₂ over w
+      --     -- So menPref m₁ w ≤ menPref m₁ w₂ (m₁ weakly prefers w over w₂)
+      --     -- Apply ν-stability to (m₂, w₁):
+      --     --   ManPrefers m₂ w₁ (ν.spouse m₂) = ManPrefers m₂ w₁ w
+      --     --   From ¬hm₂: menPref m₂ w ≤ menPref m₂ w₂
+      --     --   We need menPref m₂ w₁ < menPref m₂ w. This requires w₁ ≠ w.
+      --     sorry  -- SUB-GOAL: derive contradiction from the other branch
       sorry
   · -- Case B: m₁ prefers w₁(=ν(m₁)) over w(=μ(m₁))
     --
