@@ -1176,7 +1176,6 @@ class NotebookExecutor:
             if scrub_keys:
                 for key in self.SCRUB_KEYS:
                     sub_env.pop(key, None)
-                    sub_env[key] = ""
             if env_extra:
                 sub_env.update(env_extra)
 

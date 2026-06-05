@@ -1598,10 +1598,9 @@ class TestExecuteOptions:
         sub_env = dict(os.environ)
         for key in executor.SCRUB_KEYS:
             sub_env.pop(key, None)
-            sub_env[key] = ""
 
-        assert sub_env.get("OPENAI_API_KEY") == ""
-        assert sub_env.get("ANTHROPIC_API_KEY") == ""
+        assert "OPENAI_API_KEY" not in sub_env
+        assert "ANTHROPIC_API_KEY" not in sub_env
         assert sub_env.get("SAFE_VAR") == "keep-me"
 
     def test_env_extra_merges_into_env(self, tmp_path):
