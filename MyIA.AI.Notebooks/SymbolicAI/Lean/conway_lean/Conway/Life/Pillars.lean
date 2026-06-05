@@ -57,7 +57,7 @@ import Conway.Life
 import Conway.Life.MacroCell
 import Conway.Life.Hashlife
 import Conway.Life.HashlifeMemo
--- Future: import Conway.Life.RLE  -- once OTCA / Gemini / UnitCell / CPU patterns are encoded
+import Conway.Life.RLE
 
 namespace Conway
 namespace Life
@@ -112,45 +112,82 @@ def cpuTarget : Grid := ([] : Grid)
 /-- Generation count for one Digital CPU cycle. -/
 def cpuGens : Nat := 1048576
 
+/-! ## RLE-proven witness example
+
+The Pulsar (period-3 oscillator) is parsed from RLE in our RLE.lean
+module and verified as an oscillator. It serves as a concrete
+demonstration that the RLE → Grid → evolve pipeline works end-to-end.
+The four pillar patterns (OTCA, UnitCell, Gemini, CPU) are too large
+for Lean string literals (OTCA alone is 70 KB of RLE) and await a
+future file-based loading mechanism. -/
+
+/-- The Pulsar parsed from its RLE representation.
+    Proven equal to the hand-written constant in RLE.lean. -/
+def pulsarGrid : Grid := RLE.pulsar_parsed
+
+/-- The Pulsar is a period-3 oscillator: after 3 generations it
+    returns to its initial state. Proven via `native_decide`. -/
+theorem pulsar_period3 :
+    evolveHashlifeFast 3 pulsarGrid = pulsarGrid := by
+  native_decide
+
 /-! ## Witness theorems
 
 Each theorem asserts that `evolveHashlifeFastMemo N pattern = target`
 for the corresponding pillar. The proof is intended to be a single
 `by native_decide` once memoization lands. -/
 
-/-- **OTCA metapixel witness** — Brice Due 2006. The OTCA emulates an
-    arbitrary Game of Life cell on a 2048x2048 region with 35 328-gen
-    period. After one full ON-state cycle the metapixel returns to its
-    starting configuration (or transitions to OFF, depending on the
-    published demo file).
+/-- **OTCA metapixel witness** — Brice Due 2006.
+
+    The OTCA metapixel is a 2048×2048 period-35328 unit cell that can
+    emulate any Life-like cellular automaton. When zoomed out, ON and
+    OFF cells are clearly visible. It was the first programmable
+    metacell, demonstrating that Life can simulate *itself*.
+
+    Public demo: one full ON→OFF→ON cycle completes in 35 328 gens.
+    RLE source: conwaylife.com/wiki/OTCA_metapixel (70 KB).
 
     Phase 3c : `by native_decide` with memoized Hashlife. -/
 theorem otca_metapixel_witness :
     evolveHashlifeFastMemo otcaGens otcaInitial = otcaTarget := by
   sorry
 
-/-- **UnitCell witness** — Nicolay Beluchenko 2011. Smaller OTCA-style
-    metacell with a 4 096-gen period. Easier target — likely the first
-    pillar to land green.
+/-- **UnitCell witness** — Nicolay Beluchenko 2011.
+
+    A smaller OTCA-style metacell with period 4 096, roughly 9× the
+    speed of OTCA. At level-7 quadtree this is the most tractable
+    pillar — likely the first to land green once memoization is in
+    place. The pattern uses a different internal architecture (p5760
+    core) making it complementary to OTCA.
 
     Phase 3c : `by native_decide` with memoized Hashlife. -/
 theorem unitcell_witness :
     evolveHashlifeFastMemo unitcellGens unitcellInitial = unitcellTarget := by
   sorry
 
-/-- **Gemini witness** — Andrew Wade 2010. The first self-replicating
-    universal-constructor pattern in Life. One full self-replication
-    cycle takes 33 699 586 generations across a level-14 quadtree.
+/-- **Gemini witness** — Andrew Wade 2010.
 
-    Phase 3c : `by native_decide` with memoized Hashlife. This is the
-    flagship witness — without memoization, intractable. -/
+    The first self-replicating universal constructor in Life. Gemini
+    creates a complete copy of itself in 33 699 586 generations across
+    a level-14 quadtree. This is the **flagship witness** — it
+    demonstrates that Life is capable of open-ended self-replication,
+    the strongest form of universality. Named for the Gemini
+    constellation (twins).
+
+    This is the hardest target: level-14 quadtree + 33M generations.
+    Phase 3c : `by native_decide` with memoized Hashlife. -/
 theorem gemini_witness :
     evolveHashlifeFastMemo geminiGens geminiInitial = geminiTarget := by
   sorry
 
-/-- **Digital CPU witness** — Beluchenko / Stearns 2016. Programmable
-    CPU built out of OTCA metapixels, executing one cycle in
-    1 048 576 generations.
+/-- **Digital CPU witness** — Beluchenko / Andy Stearns 2016.
+
+    A programmable digital CPU constructed from OTCA metapixels. It
+    executes one instruction cycle in 1 048 576 generations (level-12
+    quadtree). Demonstrates that Life can implement arbitrary
+    computation — not just simulate a cell, but run a program.
+    Detailed in Adam P. Goucher's 2016 analysis on the conwaylife.com
+    forum.
 
     Phase 3c : `by native_decide` with memoized Hashlife. -/
 theorem cpu_witness :
