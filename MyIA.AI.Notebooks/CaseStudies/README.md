@@ -178,6 +178,18 @@ Le **Diagnostic Medical** resout un probleme de classification : etant donne des
 
 Oui, c'est l'objectif. Les sections "Extensions possibles" de chaque projet proposent des pistes : ajouter de nouvelles pathologies au diagnostic, integrer des donnees genomiques au modele oncologique, deployer une interface web avec SemanticKernel. Ces extensions mobilisent les competences de plusieurs series simultanement.
 
+### Pourquoi combiner plusieurs paradigmes IA plutot que d'en choisir un seul ?
+
+Chaque paradigme a des forces et des limites distinctes. Les **regles symboliques** sont deterministes et explicables mais incapables de gerer l'incertitude. Les **modeles probabilistes** quantifient l'incertitude mais ne garantissent pas les contraintes dures (doses maximales, delais de securite). Les **algorithmes de recherche** explorent efficacement un espace d'etats mais manquent de flexibilite pour les problemes mal definis. L'architecture hybride compose ces paradigmes en cascade : filtrage symbolique → modelisation probabiliste → optimisation combinatoire → validation par contraintes. Un seul paradigme ne peut pas couvrir cette chaine complete.
+
+### Quelle est la difference entre le template etudiant et la solution ?
+
+Le template etudiant (`student/`) contient le squelette du projet : classes avec methodes `pass` ou `return None` (`# TODO etudiant`), structures de donnees pre-remplies, et tests unitaires pour valider chaque composant. La solution (`solution/`) implemente chaque methode completement. La pedagogie recommande un parcours en 3 phases : (1) comprendre la solution de reference, (2) implementer le template en s'appuyant sur les tests, (3) etendre avec des variantes personnelles. Le template est executable end-to-end grace aux stubs conformes (pas de `raise NotImplementedError`).
+
+### Comment adapter ces projets a un autre domaine que le medical ?
+
+L'architecture hybride est **domaine-agnostique**. Les 5 couches (connaissances, contraintes, incertitude, optimisation, decision) s'appliquent a tout domaine avec des regles strictes ET de l'incertitude. Pour la **finance** : ontologie des instruments financiers, contraintes reglementaires (Bale III), modeles de volatilite stochastique, optimisation de portefeuille. Pour la **logistique** : ontologie des vehicules/depots, contraintes de capacite et fenetres horaires, modeles de demande probabilistes, routage optimal. Pour la **maintenance predictive** : ontologie des equipements, contraintes de securite, modeles de degradation (Weibull), planification des interventions. Les notebooks utilisent le domaine medical comme cas d'etude concret, mais les patterns architecturaux sont transferables directement.
+
 ### Le package z3-solver ne s'installe pas ou echoue a l'import
 
 Le solveur Z3 (utilise dans le Diagnostic Medical) requiert un compilateur C sur certaines plateformes :
