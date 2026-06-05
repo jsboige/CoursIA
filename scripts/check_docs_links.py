@@ -206,8 +206,6 @@ def find_orphan_docs(scanned_files: list[Path], all_refs: list[LinkRef]) -> list
 
     return orphans
 
-    return orphans
-
 
 def run_scan(report_orphans: bool = False) -> ScanResult:
     """Run a full link scan across the repository."""
