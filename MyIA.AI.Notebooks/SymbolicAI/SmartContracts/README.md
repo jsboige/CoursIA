@@ -410,6 +410,141 @@ Les mecanismes de vote et de gouvernance on-chain (SC-9, SC-17) sont des instanc
 
 [La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de representation, certification A/B/C).
 
+## FAQ / Troubleshooting
+
+### 1. Foundry non detecte ou `forge: command not found`
+
+**Symptome** : Les notebooks SC-1/SC-12 echouent avec `forge not found` ou `anvil not found`.
+
+**Solutions** :
+
+```bash
+# Installer Foundry (macOS/Linux)
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+
+# Verifier l'installation
+forge --version
+anvil --version
+
+# Si deja installe mais non dans le PATH
+export PATH="$HOME/.foundry/bin:$PATH"
+# Ajouter au ~/.bashrc ou ~/.zshrc pour persistance
+```
+
+Sur **Windows**, Foundry s'execute via WSL. Verifier que les notebooks utilisent le bon kernel Python configuré pour WSL :
+
+```bash
+# Dans WSL
+which forge && which anvil
+```
+
+### 2. `py-solcx` : erreur de compilation Solidity
+
+**Symptome** : `solcx` retourne une erreur de compilation ou "solc binary not found".
+
+**Cause** : `py-solcx` telecharge le compilateur `solc` a la premiere utilisation. Si le telechargement echoue (proxy, pare-feu), la compilation echoue.
+
+**Solution** :
+
+```python
+import solcx
+# Forcer l'installation d'une version specifique
+solcx.install_solc("0.8.20")
+# Verifier les versions disponibles
+print(solcx.get_installed_solc_versions())
+# Utiliser une version installee
+solcx.set_solc_version("0.8.20")
+```
+
+Si le telechargement est bloque, telecharger manuellement le binaire depuis [github.com/ethereum/solidity/releases](https://github.com/ethereum/solidity/releases) et le placer dans le repertoire indique par `solcx.get_solcx_install_folder()`.
+
+### 3. Anvil ne demarre pas ou port 8545 deja pris
+
+**Symptome** : `ConnectionRefusedError` lors des deploiements dans les notebooks SC-2/SC-3+.
+
+**Diagnostic** :
+
+```bash
+# Verifier si Anvil tourne deja
+ps aux | grep anvil    # macOS/Linux
+tasklist | findstr anvil  # Windows/WSL
+
+# Verifier si le port 8545 est occupe
+lsof -i :8545          # macOS/Linux
+netstat -ano | findstr 8545  # Windows
+```
+
+**Solutions** :
+
+```bash
+# Tuer un processus Anvil existant
+pkill anvil
+
+# Ou utiliser un port different
+anvil --port 8546
+# Adapter les notebooks: w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8546"))
+```
+
+### 4. Erreurs `web3.py` : "insufficient funds" ou "nonce too low"
+
+**Symptome** : Les transactions echouent lors du deploiement dans les notebooks.
+
+**Causes et solutions** :
+
+| Erreur | Cause | Solution |
+| ------ | ----- | -------- |
+| `insufficient funds` | Compte Anvil non finance | Redemarrer Anvil (les comptes sont reinitialises) ou utiliser `anvil --accounts 10 --balance 10000` |
+| `nonce too low` | Transaction envoyee avec un nonce deja utilise | Appeler `w3.eth.get_transaction_count(address)` pour obtenir le nonce courant |
+| `replacement fee too low` | Remplacement de transaction avec gas insuffisant | Augmenter `gasPrice` de 10% minimum |
+| `execution reverted` | Erreur dans le contrat Solidity | Verifier les `require()` et les conditions dans le code Solidity |
+
+**Astuce** : Les comptes Anvil par defaut ont 10000 ETH chacun. Si les fonds semblent manquants, redemarrer Anvil pour reinitialiser l'etat.
+
+### 5. Erreurs d'import des bibliotheques cryptographiques
+
+**Symptome** : `ImportError` pour `Crypto`, `phe`, `tensile` ou `xrpl`.
+
+**Cause** : Dependances non installees ou conflit de nom de package.
+
+**Solutions** :
+
+```bash
+# pycryptodome (attention: pas pycrypto qui est obsolete)
+pip uninstall pycrypto   # si installe par erreur
+pip install pycryptodome
+
+# TenSEAL (chiffrement homomorphique, SC-16)
+pip install tenseal       # nom du package = tenseal, PAS tensile
+
+# Paillier (SC-16)
+pip install phe
+
+# XRP (SC-19)
+pip install xrpl-py
+```
+
+**Conflit connu** : si `import Crypto` echoue alors que `pycryptodome` est installe, verifier que `pycrypto` n'est pas installe en parallele (il ecrase le namespace). Desinstaller `pycrypto` et reinstalle `pycryptodome`.
+
+### 6. WSL : scripts de setup inaccessible ou permission denied
+
+**Symptome** : Les scripts `setup.sh` ou `setup_wsl_smartcontracts.sh` echouent sur Windows.
+
+**Solutions** :
+
+```bash
+# Verifier que WSL Ubuntu est installe
+wsl --list --verbose
+
+# Donner les permissions d'execution
+wsl -d Ubuntu -- chmod +x /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/scripts/setup.sh
+
+# Executer le setup
+wsl -d Ubuntu -- bash /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/scripts/setup.sh
+```
+
+Si le chemin contient des espaces, encapsuler dans des guillemets. Alternative : cloner le depot directement dans WSL (`~/CoursIA/`) plutot que d'utiliser `/mnt/c/`.
+
 ---
 
 *Serie creee pour CoursIA - Issue #129*
