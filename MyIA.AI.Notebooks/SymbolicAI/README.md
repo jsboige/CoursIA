@@ -251,7 +251,7 @@ Documentation complete : [SmartContracts/README.md](SmartContracts/README.md)
 
 Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine detection de sophismes, formalisation logique, et validation par TweetyProject.
 
-> **Note** : Cette serie est un projet/demo, pas un cours. Aucun exercice etudiant. Non adaptee en l'etat pour EPITA.
+> **Note** : Cette serie est un projet/demo, pas un cours. Aucun exercice etudiant. Non adaptee en l'etat pour un cours structure.
 
 ### Structure detaillee
 
@@ -519,7 +519,7 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 
 ## Ponts cross-series
 
-Ces connexions entre series sont exploitees dans le curriculum EPITA IA Symbolique (demarrage 18/05/2026).
+Ces connexions entre series sont exploitees dans le curriculum IA Symbolique.
 
 ### Lean <-> GameTheory (Choix social)
 
