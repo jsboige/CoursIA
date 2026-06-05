@@ -1072,10 +1072,32 @@ class NotebookExecutor:
             return 'lean4'
         return 'python3'
 
+    # Keys scrubbed by --scrub-keys to prevent live API calls during validation
+    SCRUB_KEYS = [
+        "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY",
+        "MISTRAL_API_KEY", "DEEPSEEK_API_KEY", "HUGGINGFACE_API_KEY",
+        "HUGGINGFACEHUB_API_TOKEN", "OPENROUTER_API_KEY",
+    ]
+
     def execute_with_papermill(self, timeout: int = 300,
                                 output_path: Optional[Path] = None,
-                                batch_mode: bool = False) -> NotebookExecutionResult:
-        """Execute notebook using Papermill."""
+                                batch_mode: bool = False,
+                                kernel_override: Optional[str] = None,
+                                cwd_override: Optional[Path] = None,
+                                env_extra: Optional[dict] = None,
+                                scrub_keys: bool = False) -> NotebookExecutionResult:
+        """Execute notebook using Papermill.
+
+        Args:
+            timeout: Maximum execution time in seconds.
+            output_path: Path for the output notebook (default: <name>_output.ipynb).
+            batch_mode: If True, set BATCH_MODE=true in the notebook environment.
+            kernel_override: Force a specific kernel name instead of auto-detection.
+            cwd_override: Execute from this directory instead of the notebook's parent.
+            env_extra: Additional environment variables to inject into the subprocess.
+            scrub_keys: If True, remove LLM API keys from the subprocess environment
+                        to force deterministic mock paths.
+        """
         # Use base executor if available
         if self._base_executor:
             params = {"BATCH_MODE": "true"} if batch_mode else None
@@ -1094,7 +1116,7 @@ class NotebookExecutor:
             )
 
         # Fallback implementation
-        kernel = self.detect_kernel_name()
+        kernel = kernel_override or self.detect_kernel_name()
         start_time = time.time()
 
         if output_path is None:
@@ -1105,7 +1127,7 @@ class NotebookExecutor:
         # would break after the directory change.
         abs_input = self.path.resolve()
         abs_output = output_path.resolve()
-        abs_cwd = self.path.parent.resolve()
+        abs_cwd = (cwd_override or self.path.parent).resolve()
 
         # WSL-based kernels need longer startup
         start_timeout = 120 if 'wsl' in kernel or kernel == 'smartcontracts' else 60
@@ -1123,7 +1145,7 @@ class NotebookExecutor:
                     str(self.path), str(output_path),
                     kernel_name=kernel,
                     start_timeout=start_timeout,
-                    cwd=str(self.path.parent)
+                    cwd=str(abs_cwd)
                 )
                 execution_time = time.time() - start_time
                 return NotebookExecutionResult(
@@ -1146,9 +1168,17 @@ class NotebookExecutor:
         # Build subprocess environment with BATCH_MODE propagated as env var
         # (notebooks read os.getenv("BATCH_MODE"), not Papermill -p params)
         sub_env = None
-        if batch_mode:
-            cmd.extend(["-p", "BATCH_MODE", "true"])
-            sub_env = {**os.environ, "BATCH_MODE": "true"}
+        if batch_mode or env_extra or scrub_keys:
+            sub_env = dict(os.environ)
+            if batch_mode:
+                cmd.extend(["-p", "BATCH_MODE", "true"])
+                sub_env["BATCH_MODE"] = "true"
+            if scrub_keys:
+                for key in self.SCRUB_KEYS:
+                    sub_env.pop(key, None)
+                    sub_env[key] = ""
+            if env_extra:
+                sub_env.update(env_extra)
 
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=sub_env)
@@ -1524,12 +1554,35 @@ def cmd_execute(args):
         print_error(f"No notebooks found for target: {args.target}")
         return 1
 
+    # Parse --env KEY=VAL pairs into a dict
+    env_extra = {}
+    for pair in getattr(args, 'env', []) or []:
+        if '=' not in pair:
+            print_error(f"Invalid --env format: {pair!r} (expected KEY=VAL)")
+            return 1
+        key, val = pair.split('=', 1)
+        env_extra[key] = val
+
+    # Parse --cwd
+    cwd_override = Path(args.cwd).resolve() if args.cwd else None
+
+    # Resolve kernel override
+    kernel_override = args.kernel or None
+
     print_info(f"Found {len(notebooks)} notebook(s) to execute")
+    if kernel_override:
+        print_info(f"  Kernel override: {kernel_override}")
+    if cwd_override:
+        print_info(f"  CWD override: {cwd_override}")
+    if env_extra:
+        print_info(f"  Extra env: {list(env_extra.keys())}")
+    if args.scrub_keys:
+        print_info(f"  Scrub keys: ON ({len(NotebookExecutor.SCRUB_KEYS)} keys)")
 
     results = []
     for nb_path in notebooks:
         executor = NotebookExecutor(nb_path)
-        kernel = executor.detect_kernel_name()
+        kernel = kernel_override or executor.detect_kernel_name()
 
         print(f"\n[{nb_path.name}] (kernel: {kernel})")
 
@@ -1541,7 +1594,11 @@ def cmd_execute(args):
         else:
             result = executor.execute_with_papermill(
                 timeout=args.timeout,
-                batch_mode=args.batch_mode
+                batch_mode=args.batch_mode,
+                kernel_override=kernel_override,
+                cwd_override=cwd_override,
+                env_extra=env_extra or None,
+                scrub_keys=args.scrub_keys,
             )
 
         results.append(result)
@@ -1632,6 +1689,14 @@ def main():
                           help='Timeout per notebook/cell in seconds (default: 300)')
     p_execute.add_argument('--python-only', action='store_true')
     p_execute.add_argument('--dotnet-only', action='store_true')
+    p_execute.add_argument('--kernel', type=str, default=None,
+                          help='Force a specific kernel name (e.g. python3, .net-csharp)')
+    p_execute.add_argument('--cwd', type=str, default=None,
+                          help='Execute from this directory instead of notebook parent')
+    p_execute.add_argument('--env', action='append', default=[], metavar='KEY=VAL',
+                          help='Inject environment variable (repeatable, e.g. --env BATCH_MODE=true)')
+    p_execute.add_argument('--scrub-keys', action='store_true',
+                          help='Remove LLM API keys from subprocess env (force mock/deterministic path)')
     p_execute.add_argument('--verbose', '-v', action='store_true')
     p_execute.add_argument('--json', action='store_true')
 
