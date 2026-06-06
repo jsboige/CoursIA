@@ -94,7 +94,7 @@ L'arbitrage HL Wheel reste a confirmer explicitement par le user avant generatio
 
 ## Verdicts review forks vs baselines (rappel)
 
-Source : [REVIEW_FORKS_AGAINST_BASELINES.md](file:///G:/Mon%20Drive/MyIA/Formation/ESGF/2026/REVIEW_FORKS_AGAINST_BASELINES.md). 10 verdicts qualitatifs informent l'evaluation **technique** (deja capturee dans le peer eval) :
+Source : `REVIEW_FORKS_AGAINST_BASELINES.md` (fichier local G-Drive ESGF 2026). 10 verdicts qualitatifs informent l'evaluation **technique** (deja capturee dans le peer eval) :
 
 | Verdict | Effet sur note technique |
 |---------|--------------------------|

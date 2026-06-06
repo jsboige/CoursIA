@@ -25,6 +25,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import unquote
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -163,9 +164,10 @@ def check_link(target: str, source_path: Path, root: Path = REPO_ROOT) -> bool:
         source_path: Path of the file containing the link.
         root: Root directory for safety check (default: REPO_ROOT).
     """
-    # Resolve relative to source file's directory
+    # Resolve relative to source file's directory (decode URL-encoded chars)
     try:
-        resolved = (source_path.parent / target).resolve()
+        decoded_target = unquote(target)
+        resolved = (source_path.parent / decoded_target).resolve()
     except (OSError, ValueError):
         return False
 
