@@ -1,6 +1,6 @@
 # Programmation Probabiliste avec Infer.NET
 
-Serie de **20 notebooks** couvrant la programmation probabiliste avec Microsoft Infer.NET, des fondamentaux aux modeles relationnels avances, incluant une section complete sur la theorie de la decision.
+Serie de **21 notebooks** couvrant la programmation probabiliste avec Microsoft Infer.NET, des fondamentaux aux modeles relationnels avances, incluant une section complete sur la theorie de la decision et des preuves formelles Lean 4.
 
 ## Vue d'ensemble
 
@@ -26,8 +26,9 @@ Serie de **20 notebooks** couvrant la programmation probabiliste avec Microsoft 
 | 18 | [Infer-18-Decision-Value-Information](Infer-18-Decision-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
 | 19 | [Infer-19-Decision-Expert-Systems](Infer-19-Decision-Expert-Systems.ipynb) | 50 min | Systemes experts, Minimax, regret |
 | 20 | [Infer-20-Decision-Sequential](Infer-20-Decision-Sequential.ipynb) | 60 min | MDPs, iteration valeur/politique |
+| 20b | [Infer-20b-Lean-Gittins](Infer-20b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
 
-**Duree totale** : ~19h
+**Duree totale** : ~20h
 
 **Ressource complementaire** : [Glossaire](Infer-Glossary.md) - Definitions des termes techniques
 
@@ -65,6 +66,7 @@ THEORIE DE LA DECISION (14-20)
 +-- 18-Decision-Value-Information : EVPI, EVSI
 +-- 19-Decision-Expert-Systems : Systemes experts, Minimax
 +-- 20-Decision-Sequential : MDPs, planification
++-- 20b-Lean-Gittins : Preuves formelles Gittins (Lean 4)
 ```
 
 ---
@@ -767,6 +769,21 @@ V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
 
 **Applications** : Navigation robotique, allocation de ressources, jeux de strategie
 
+### Infer-20b : Preuves formelles - Indice de Gittins (Lean 4)
+
+**Duree** : 45 min | **Prerequis** : Notebook 20, bases Lean 4
+**Kernel** : Lean 4 (WSL)
+
+**Companion notebook** de [Infer-20](Infer-20-Decision-Sequential.ipynb) avec preuves formelles en Lean 4.
+
+**Objectifs** :
+
+- Formaliser le cadre **SFABP** (Simple Family of Alternative Bandit Processes)
+- Prouver l'**optimalite de l'indice de Gittins** via l'argument des prevailing charges
+- Explorer les **limitations** (geometric discount, NP-difficulte du calcul exact)
+
+**Lien avec PyMC** : Le notebook compagnon [PyMC-20](../PyMC/PyMC-20-Decision-Sequential.ipynb) couvre les memes concepts en Python avec Thompson Sampling MCMC et diagnostics ArviZ.
+
 ---
 
 ## Prerequis
@@ -890,6 +907,7 @@ var posterior = moteur.Infer<DistributionType>(variable);
 ```
 Infer/
 +-- Infer-1-Setup.ipynb ... Infer-20-Decision-Sequential.ipynb
++-- Infer-20b-Lean-Gittins.ipynb    # Companion Lean 4 (preuves formelles Gittins)
 +-- Infer-Glossary.md
 +-- FactorGraphHelper.cs          # Helper pour visualisation Graphviz
 +-- README.md
