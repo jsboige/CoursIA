@@ -5,7 +5,7 @@ Recipe validated 2026-05-10 (incident H.7 / forensic T17, ai-01).
 Workflow:
   1. `lean login` once with QC_API_USER_ID + QC_API_TOKEN (Lean CLI stores creds in ~/.lean)
   2. `lean research <project> --detach --no-open --port <port>` from a Lean workspace
-     (workspace must contain lean.json + data/ folder, e.g. ESGF-2026/lean-workspace/)
+     (workspace must contain lean.json + data/ folder, e.g. partner-course-quant-trading/lean-workspace/)
   3. `docker exec <container> jupyter nbconvert --to notebook --execute --inplace
        --ExecutePreprocessor.timeout=N research.ipynb`
   4. Read the in-place modified notebook from the host path (Docker bind-mount)
@@ -23,7 +23,7 @@ Caveats:
 
 Usage:
   python scripts/notebook_tools/qc_quantbook_execute.py \
-      MyIA.AI.Notebooks/QuantConnect/ESGF-2026/lean-workspace/Multi-Layer-EMA-Researcher \
+      MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/Multi-Layer-EMA-Researcher \
       --notebook research.ipynb [--port 8889] [--timeout 600]
 """
 from __future__ import annotations
@@ -90,7 +90,7 @@ def run(project_dir: Path, notebook_name: str, port: int, timeout: int) -> int:
     print(f"[recipe] launching lean research --detach on port {port}...", file=sys.stderr)
     res = subprocess.run(
         [lean, "research", str(project_rel), "--detach", "--no-open",
-         "--port", str(port)],
+         "--no-update", "--port", str(port)],
         cwd=str(ws), env=env, capture_output=True, text=True,
     )
     print(res.stdout, file=sys.stderr)

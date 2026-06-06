@@ -180,5 +180,5 @@ ne fassent pas rougir pour sa classe.
 ## Gotchas
 
 - **"In Progress..." status** fait planter read_backtest (bug MCP Pydantic) -> attendre et reessayer
-- **Org ESGF = FREE** -> pas de backtest API, seulement org perso
+- **Org partenaire = FREE** -> pas de backtest API, seulement org perso
 - **1 backtest a la fois** -> sequentiel uniquement

@@ -132,6 +132,42 @@ def check_jupyter_kernel(kernel_name):
         return False
 
 
+def _load_inspect_kernel_wrapper():
+    """Import the canonical wrapper check from scripts/lean/lean_kernel_check.py.
+
+    Returns None if the shared helper cannot be located (graceful degradation).
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / "scripts" / "lean" / "lean_kernel_check.py"
+        if candidate.exists():
+            sys.path.insert(0, str(candidate.parent))
+            try:
+                from lean_kernel_check import inspect_kernel_wrapper
+                return inspect_kernel_wrapper
+            except Exception:
+                return None
+    return None
+
+
+_inspect_kernel_wrapper = _load_inspect_kernel_wrapper()
+
+
+def check_kernel_wrapper(kernel_name="lean4-wsl"):
+    """Verifie que kernel.json pointe vers le bon wrapper Python (v5), pas l'ancien bash.
+
+    Detecte la regression du 2026-05-27 (issue #1618). La logique canonique vit dans
+    scripts/lean/lean_kernel_check.py (source unique partagee avec setup_lean4_all.py
+    et le validateur GameTheory).
+    """
+    if _inspect_kernel_wrapper is None:
+        print_warning("kernel.json: helper lean_kernel_check introuvable (check ignore)")
+        return True
+    status, message = _inspect_kernel_wrapper(kernel_name)
+    {"ok": print_ok, "error": print_error, "warning": print_warning}[status](message)
+    return status == "ok"
+
+
 def check_env_file():
     """Verifie le fichier .env"""
     env_path = Path(__file__).parent.parent / ".env"
@@ -195,6 +231,7 @@ def validate_windows():
     # Kernels
     checks.append(check_jupyter_kernel("lean4"))
     checks.append(check_jupyter_kernel("python3-wsl"))
+    checks.append(check_kernel_wrapper("lean4-wsl"))
 
     # Fichiers projet
     checks.append(check_env_file())
@@ -227,6 +264,9 @@ def validate_wsl():
     checks.append(check_python())
     checks.append(check_command("elan", "elan"))
     checks.append(check_command("lean", "Lean 4"))
+
+    # Kernel wrapper (regression check #1618)
+    checks.append(check_kernel_wrapper("lean4-wsl"))
 
     # Venv Python WSL
     venv_path = Path.home() / ".python3-wsl-venv"

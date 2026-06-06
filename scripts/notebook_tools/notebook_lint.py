@@ -32,7 +32,7 @@ CATALOG_PATH = REPO_ROOT / "COURSE_CATALOG.generated.json"
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
-EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "ESGF", "examples"}
+EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "partner-course", "examples"}
 
 # C.1 forbidden patterns (intentional errors in top-level / exercise stubs)
 # Only flag patterns that are clearly intentional errors, not error handling
@@ -54,6 +54,36 @@ def _is_in_docstring(line: str, in_doc: bool) -> tuple[bool, bool]:
     return in_doc, is_inside
 
 
+def scan_c1_source(source: str) -> list[tuple[str, str]]:
+    """Scan one code cell's source for C.1 forbidden patterns.
+
+    Returns a list of (offending_line, pattern_desc) tuples. Comment lines,
+    inline comments, and docstring bodies are skipped, and patterns are matched
+    with digit-bounded regexes (C1_PATTERNS) rather than substrings — so
+    legitimate data such as the date "21/02/2022" (which contains "1/0" as a
+    substring) is not flagged. This is the single shared C.1 detector; both
+    notebook_lint and validate_pr_notebooks consume it to avoid divergence
+    (#1505).
+    """
+    hits: list[tuple[str, str]] = []
+    in_docstring = False
+    for line in source.split("\n"):
+        stripped = line.lstrip()
+        # Skip any comment line (commented-out code is not executable)
+        if stripped.startswith("#"):
+            continue
+        # Strip inline comments before checking patterns
+        code_part = line.split("#")[0].rstrip()
+        # Track and skip docstring content
+        in_docstring, is_inside = _is_in_docstring(line, in_docstring)
+        if is_inside:
+            continue
+        for pattern, desc in C1_PATTERNS:
+            if re.search(pattern, code_part):
+                hits.append((line.strip(), desc))
+    return hits
+
+
 def check_c1(notebook: dict) -> list[dict]:
     """Check C.1: no intentional errors in code cells."""
     violations = []
@@ -61,26 +91,13 @@ def check_c1(notebook: dict) -> list[dict]:
         if cell.get("cell_type") != "code":
             continue
         source = "".join(cell.get("source", []))
-        in_docstring = False
-        for line in source.split("\n"):
-            stripped = line.lstrip()
-            # Skip any comment line (commented-out code is not executable)
-            if stripped.startswith("#"):
-                continue
-            # Strip inline comments before checking patterns
-            code_part = line.split("#")[0].rstrip()
-            # Track and skip docstring content
-            in_docstring, is_inside = _is_in_docstring(line, in_docstring)
-            if is_inside:
-                continue
-            for pattern, desc in C1_PATTERNS:
-                if re.search(pattern, code_part):
-                    violations.append({
-                        "check": "C1",
-                        "cell_index": i,
-                        "line": line.strip(),
-                        "pattern": desc,
-                    })
+        for offending_line, desc in scan_c1_source(source):
+            violations.append({
+                "check": "C1",
+                "cell_index": i,
+                "line": offending_line,
+                "pattern": desc,
+            })
     return violations
 
 
@@ -97,6 +114,10 @@ def check_c2(notebook: dict) -> list[dict]:
         # Skip comment-only cells
         lines = [l.strip() for l in source.split("\n") if l.strip()]
         if all(l.startswith("#") for l in lines):
+            continue
+
+        # Skip QC reference cells (not executable locally)
+        if "[REFERENCE QC]" in source or "[REFERENCE QC] Code a copier" in source:
             continue
 
         exec_count = cell.get("execution_count")
@@ -278,12 +299,14 @@ def main():
             continue
         print(f"  {rel} ({len(r['violations'])} issues):")
         for v in r["violations"][:5]:
+            cell_ref = f"cell #{v['cell_index']}" if "cell_index" in v else ""
+            prefix = f"[{v['check']}] {cell_ref}: " if cell_ref else f"[{v['check']}]: "
             if "pattern" in v:
-                print(f"    [{v['check']}] cell #{v['cell_index']}: {v['pattern']} → {v['line'][:60]}")
+                print(f"    {prefix}{v['pattern']} → {v['line'][:60]}")
             elif "reason" in v:
                 preview = v.get("source_preview", "")
                 extra = f" → {preview[:50]}" if preview else ""
-                print(f"    [{v['check']}] cell #{v['cell_index']}: {v['reason']}{extra}")
+                print(f"    {prefix}{v['reason']}{extra}")
 
     return 1
 

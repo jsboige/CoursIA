@@ -24,7 +24,15 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
-def _resolve_lake_command(extra_args: List[str]) -> Tuple[List[str], dict]:
+def _to_wsl_path(win_path: str) -> str:
+    """Convert ``C:\\foo\\bar`` to ``/mnt/c/foo/bar`` for use inside WSL bash."""
+    p = str(win_path).replace("\\", "/")
+    if len(p) >= 2 and p[1] == ":":
+        return f"/mnt/{p[0].lower()}{p[2:]}"
+    return p
+
+
+def _resolve_lake_command(extra_args: List[str], cwd: str = None) -> Tuple[List[str], dict]:
     """Return (argv, env) for invoking ``lake <extra_args>``.
 
     Strategy (in order):
@@ -44,20 +52,22 @@ def _resolve_lake_command(extra_args: List[str]) -> Tuple[List[str], dict]:
     if override and Path(override).exists():
         return [override, *extra_args], env
 
+    # WSL preferred when LEAN_USE_WSL=1 (Conway KS Pilier 1 #1651: WSL .lake
+    # cache is already warm, Windows lake.exe would trigger 1-2h Mathlib
+    # rebuild because OS-specific .c IR files differ).
+    if os.getenv("LEAN_USE_WSL") == "1":
+        cd_prefix = f"cd '{_to_wsl_path(cwd)}' && " if cwd else ""
+        wsl_cmd = cd_prefix + "source ~/.elan/env 2>/dev/null; lake " + " ".join(
+            f"'{a}'" for a in extra_args
+        )
+        return ["wsl", "-d", "Ubuntu", "bash", "-lc", wsl_cmd], env
+
     if platform.system() == "Windows":
         elan_bin = Path.home() / ".elan" / "bin"
         lake_exe = elan_bin / "lake.exe"
         if lake_exe.exists():
             env["PATH"] = f"{elan_bin}{os.pathsep}{env.get('PATH', '')}"
             return [str(lake_exe), *extra_args], env
-
-    # WSL fallback: only attempt if the operator explicitly opted in via
-    # LEAN_USE_WSL=1 (avoid regressing into the silent-source-fails trap).
-    if os.getenv("LEAN_USE_WSL") == "1":
-        wsl_cmd = "source ~/.elan/env 2>/dev/null; lake " + " ".join(
-            f"'{a}'" for a in extra_args
-        )
-        return ["wsl", "bash", "-c", wsl_cmd], env
 
     return ["lake", *extra_args], env
 
@@ -106,8 +116,28 @@ class LeanVerifier:
             return {"success": False, "errors": "No project directory set", "raw_output": ""}
 
         project = Path(self.project_dir)
-        if not (project / "lakefile.lean").exists() and not (project / "lakefile.toml").exists():
-            return {"success": False, "errors": f"Not a Lake project: {project}", "raw_output": ""}
+        # The prover derives project_dir as `<file>.parent.parent`, which is the
+        # Lake root only for files directly under the top package (e.g.
+        # `Conway/Nim.lean` -> root `conway_lean`). For files nested deeper (e.g.
+        # `Conway/Life/HashlifeCorrectness.lean`) that yields `conway_lean/Conway`,
+        # which holds no lakefile. Walk up to the real Lake root and re-root
+        # `relative_path` with the directory names we passed (so the module name
+        # resolves to `Conway.Life.HashlifeCorrectness`). Backward-compatible: a
+        # project_dir that already holds the lakefile is used unchanged.
+        def _has_lakefile(p: Path) -> bool:
+            return (p / "lakefile.lean").exists() or (p / "lakefile.toml").exists()
+
+        if not _has_lakefile(project):
+            cur = project
+            prefix = []
+            while cur != cur.parent and not _has_lakefile(cur):
+                prefix.insert(0, cur.name)
+                cur = cur.parent
+            if _has_lakefile(cur):
+                project = cur
+                relative_path = "/".join(prefix + [relative_path])
+            else:
+                return {"success": False, "errors": f"Not a Lake project: {project}", "raw_output": ""}
 
         target_file = project / relative_path
         cache_key = self._compute_cache_key(target_file) if target_file.exists() else None
@@ -141,12 +171,16 @@ class LeanVerifier:
         Uses Windows-side lake.exe by default (see ``_resolve_lake_command``);
         the cwd is the Lake project root so ``.lake/build/lib/<module>.olean``
         is written/read at the same path as manual builds.
+
+        Timeout is 600s (increased from 300s). WSL builds via ``/mnt/c/``
+        suffer 9P/NTFS overhead (~10x slower than native), so a cold build
+        can exceed the original 300s ceiling. See DEMO 35/36 traces.
         """
         module_name = relative_path.replace("/", ".").replace("\\", ".")
         if module_name.endswith(".lean"):
             module_name = module_name[:-5]
 
-        cmd, env = _resolve_lake_command(["build", "-R", module_name])
+        cmd, env = _resolve_lake_command(["build", "-R", module_name], cwd=str(project))
 
         try:
             start = time.time()
@@ -155,7 +189,7 @@ class LeanVerifier:
                 cwd=str(project),
                 capture_output=True,
                 text=True,
-                timeout=300,
+                timeout=600,
                 env=env,
             )
             duration = time.time() - start
@@ -277,7 +311,7 @@ class LeanVerifier:
             ]
 
         project = Path(self.project_dir)
-        cmd, env = _resolve_lake_command(["env", "lean", "--stdin"])
+        cmd, env = _resolve_lake_command(["env", "lean", "--stdin"], cwd=str(project))
 
         try:
             stdin_input = f"import {module_name}\n#print axioms {module_name.split('.')[-1]}\n"
@@ -334,8 +368,15 @@ class LeanVerifier:
             f"  {tactic}\n"
         )
 
-        tmp_file = project / "SocialChoice" / "_LeanSearch.lean"
-        if not (project / "SocialChoice").exists():
+        # Derive temp file from module_name (e.g. "Grothendieck.Calibration"
+        # -> project/Grothendieck/_LeanSearch.lean). Falls back to scanning
+        # subdirectories if the derived path doesn't exist.
+        module_parts = module_name.split(".")
+        if len(module_parts) > 1:
+            tmp_file = project / module_parts[0] / "_LeanSearch.lean"
+        else:
+            tmp_file = project / "SocialChoice" / "_LeanSearch.lean"
+        if not tmp_file.parent.exists():
             for subdir in project.iterdir():
                 if subdir.is_dir() and (subdir / "lakefile.lean").exists():
                     continue
@@ -351,7 +392,7 @@ class LeanVerifier:
             if module.endswith(".lean"):
                 module = module[:-5]
 
-            cmd, env = _resolve_lake_command(["build", module])
+            cmd, env = _resolve_lake_command(["build", module], cwd=str(project))
             result = subprocess.run(
                 cmd,
                 cwd=str(project),

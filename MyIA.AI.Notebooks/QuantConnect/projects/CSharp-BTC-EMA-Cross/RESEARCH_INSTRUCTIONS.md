@@ -9,7 +9,7 @@
 
 ## Notebook Details
 
-**Local Path**: `c:\dev\CoursIA\MyIA.AI.Notebooks\QuantConnect\ESGF-2026\examples\CSharp-BTC-EMA-Cross\research_robustness.ipynb`
+**Local Path**: `c:\dev\CoursIA\MyIA.AI.Notebooks\QuantConnect\partner-course-quant-trading\examples\CSharp-BTC-EMA-Cross\research_robustness.ipynb`
 
 **Purpose**: Validate the robustness of the BTC-EMA-Cross strategy (Project 21193838) across extended market regimes (2019-2025).
 
@@ -148,4 +148,4 @@ This change will:
 For questions about this research:
 - Original Strategy: CSharp-BTC-EMA-Cross (QC Project 21193838)
 - Research Project: BTC-EMA-Cross-Robustness-Research (QC Project 28265073)
-- Local Path: `MyIA.AI.Notebooks/QuantConnect/ESGF-2026/examples/CSharp-BTC-EMA-Cross/`
+- Local Path: `MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/CSharp-BTC-EMA-Cross/`

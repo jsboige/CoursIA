@@ -14,7 +14,7 @@ SMA200 regime filter: stays flat in bear markets.
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/TurnOfMonth"`
 ```bash
 lean backtest --project .
 ```

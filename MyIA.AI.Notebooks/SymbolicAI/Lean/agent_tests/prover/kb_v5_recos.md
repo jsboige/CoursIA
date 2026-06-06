@@ -77,7 +77,7 @@ These are not INTRACTABLE and should be attempted:
 ## Conway Tribute — CGT Targets
 
 ### Current state (VERIFIED)
-- `GameTheory/conway_lean/` exists with 3 "noix" COMPLETE (0 sorry):
+- `SymbolicAI/Lean/conway_lean/` exists with 3 "noix" COMPLETE (0 sorry) — relocated 2026-05-28 from `GameTheory/conway_lean/`:
   - Doomsday.lean: Conway's day-of-week algorithm
   - LookAndSay.lean: Look-and-say sequence + Conway's constant
   - Fractran.lean: FRACTRAN universal machine

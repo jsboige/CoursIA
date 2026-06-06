@@ -1,5 +1,12 @@
 # Video - Generation et Comprehension Video par IA
 
+<!-- CATALOG-STATUS
+series: GenAI-Video
+pedagogical_count: 16
+breakdown: Foundation=5, Advanced=4, Orchestration=3, Applications=4
+maturity: BETA=9, ALPHA=3, PRODUCTION=2, DRAFT=2
+-->
+
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
 
 La video est la modalite generative la plus exigeante : elle combine l'analyse d'images, la comprehension du temps, la synchronisation audio, et la creation de mouvement coherent. Cette serie couvre l'ensemble de la chaine video IA : comprehension de sequences existantes, generation a partir de texte ou d'images, orchestration de pipelines multi-modeles, et workflows de production. 16 notebooks repartis sur 4 niveaux progressifs.
@@ -123,6 +130,89 @@ winget install FFmpeg
 | Generation video | 01-5, 02-1 a 02-4 |
 | Comprehension video | 01-2, 01-3 |
 | Production complete | Tous + Audio/04-4 (sync A/V) |
+
+## Cross-series Bridges
+
+| Serie | Lien | Connection |
+|-------|------|------------|
+| [Audio](../Audio/README.md) | Sync audio-video | [Audio/04-4](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise la piste audio generee avec la video |
+| [Image](../Image/README.md) | Source d'images | Le pipeline Video/03-2 genere des images via les modeles Image avant de les animer ; SVD (02-4) anime une image existante |
+| [Texte](../Texte/README.md) | Prompts et APIs | La comprehension video (01-2) utilise les memes APIs GPT-5 que Texte ; Sora (04-3) depend de prompts structures |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les workflows video ComfyUI (03-3) partagent les patterns d'orchestration avec les agents Semantic Kernel |
+
+## FAQ
+
+### HunyuanVideo OOM ou generation extremement lente
+
+HunyuanVideo (notebook [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb)) est le modele le plus gourmand de la serie (~18-24 GB VRAM). Strategies :
+
+- Utiliser la quantization integree au notebook pour reduire a ~18 GB.
+- Generer des clips courts (2-3 secondes) plutot que des sequences longues.
+- Si votre GPU a 12 GB ou moins, utiliser **LTX-Video** (notebook [02-2](02-Advanced/02-2-LTX-Video-Lightweight.ipynb), ~8 GB) ou **Wan** (notebook [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb), ~10 GB) comme alternatives legeres.
+- Fermer tous les autres processus GPU avant la generation (`nvidia-smi` pour verifier).
+
+### FFmpeg non trouve ou erreurs de codec
+
+FFmpeg est requis par moviepy (notebook [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb)) et les notebooks de production (04-4). Si erreur `FileNotFoundError: [WinError 2]` ou codec non supporte :
+
+```bash
+# Windows (via winget)
+winget install FFmpeg
+
+# Ou via conda
+conda install -c conda-forge ffmpeg
+```
+
+Verifier : `ffmpeg -version`. Si installe dans un chemin non-standard, ajouter au PATH ou configurer :
+
+```python
+import imageio_ffmpeg
+ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+```
+
+### Quelle difference entre Sora 2 et les modeles locaux ?
+
+| Critere | Sora 2 (cloud) | HunyuanVideo | Wan | LTX-Video |
+|---------|----------------|--------------|-----|-----------|
+| **Cout** | $0.10-1.00/video | Gratuit (local) | Gratuit (local) | Gratuit (local) |
+| **Qualite** | Excellente | Haute | Bonne | Correcte |
+| **Duree max** | 20s | 5-10s | 5-10s | 3-5s |
+| **VRAM** | 0 (API) | ~18-24 GB | ~10 GB | ~8 GB |
+| **Latence** | 30s-2min | 1-5min | 30s-2min | 10-30s |
+
+Pour du prototypage ou des resultats rapides, Sora 2 (notebook [04-3](04-Applications/04-3-Sora-API-Cloud-Video.ipynb)) est ideal. Pour un controle fin, une production repetitive, ou des donnees sensibles, les modeaux locaux sont indispensables.
+
+### Les videos generees manquent de coherence temporelle
+
+La coherence entre les frames est le defi principal de la generation video. Le flickering, les objets qui apparaissent/disparaissent, ou les mouvements irrealistes sont frequents, surtout avec les modeaux les plus legers. Mitigation :
+
+- Limiter la duree a 3-5 secondes pour les modeaux legers (LTX, AnimateDiff).
+- Utiliser des prompts simples et descriptifs plutot que narratifs.
+- HunyuanVideo et Wan offrent une meilleure coherence temporelle que LTX-Video.
+- Le pipeline ComfyUI (notebook [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb)) permet de controler finement les parametres de generation (CFG, steps, seed).
+- L'upscaling ESRGAN + interpolation RIFE (notebook [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb)) ameliore la qualite visuelle a posteriori.
+
+### ComfyUI Video retourne des erreurs de noeuds manquants
+
+Les workflows video ComfyUI (notebook [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb)) necessitent des noeuds specifiques (AnimateDiff, SVD, HunyuanVideo) qui ne sont pas dans l'installation de base de ComfyUI. Si erreur `Node not found` :
+
+```bash
+# Verifier les noeuds installes
+ls ComfyUI/custom_nodes/
+
+# Installer les noeuds video manquants
+cd ComfyUI/custom_nodes/ && git clone <node-repo-url>
+```
+
+Les conteneurs Docker CoursIA incluent deja les noeuds necessaires. Si vous utilisez une installation ComfyUI propre, verifier que les custom nodes video sont installes.
+
+### GPT-5 Video Understanding echoue sur les videos longues
+
+L'API GPT-5 video (notebook [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb)) a des limites sur la duree et la taille des fichiers envoyes. Si erreur 413 ou timeout :
+
+- Decouper la video en segments de 30-60 secondes avec moviepy (notebook [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb)).
+- Compresser avant envoi : resolution 720p, bitrate reduit.
+- Utiliser le modele local Qwen2.5-VL (notebook [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb)) pour les videos longues ou sensibles, sans limite de taille.
 
 ## Licence
 

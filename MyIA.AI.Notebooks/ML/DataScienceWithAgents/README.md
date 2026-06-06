@@ -2,6 +2,22 @@
 
 Formation complete en Data Science Python avec integration d'agents IA. Combine les fondamentaux NumPy/Pandas avec deux tracks complementaires : LangChain (3 jours) et Google ADK (4 jours).
 
+Au-dela des bibliotheques classiques, cette formation explore un changement de paradigme : passer de *l'ecriture* de code data science a *l'orchestration* d'**agents LLM** qui le produisent et l'executent. Apres les fondations NumPy/Pandas, le track **LangChain** apprend a construire des agents capables d'interroger un DataFrame, de nettoyer un jeu de donnees ou de scorer des candidatures ; le track **Google ADK** monte en puissance avec des systemes multi-agents (boucles planner-coder, frameworks DS-STAR / MLE-STAR) jusqu'a concourir sur des competitions Kaggle. L'enjeu pedagogique n'est pas seulement technique : il s'agit de comprendre *quand* un agent autonome accelere reellement le travail d'analyse, et *comment* l'encadrer (outils, validation, garde-fous).
+
+## Pourquoi cette serie
+
+Le Data Science traditionnel suit un workflow manuel : charger, nettoyer, transformer, modeliser, evaluer. Cette serie introduit un **changement de paradigme** : orchestrer des agents LLM qui automatisent ce workflow. L'objectif n'est pas de remplacer le data scientist, mais de comprendre *quand* un agent accelere reellement le travail et *comment* l'encadrer.
+
+La formation couvre deux stacks complementaires :
+
+| Aspect | Track LangChain (Days 1-3) | Track Google ADK (Days 4-7) |
+|--------|---------------------------|----------------------------|
+| **Approche** | Agent unique avec tools | Systemes multi-agents |
+| **Framework** | LangChain + OpenAI | Google ADK + LiteLLM |
+| **Complexite** | Chains, outils simples | Boucles planner-coder, DS-STAR |
+| **Application** | RFP, CV screening, data wrangling | Kaggle, BigQuery, deploiement |
+| **Providers** | OpenAI uniquement | Multi-provider (Gemini, vLLM, OpenAI) |
+
 ## Vue d'ensemble
 
 | Statistique | Valeur |
@@ -93,6 +109,16 @@ pip install langchain langchain-openai langchain-experimental python-dotenv
 OPENAI_API_KEY=sk-...
 ```
 
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Construire** un agent LLM avec LangChain (tools, chains, memory) et l'appliquer a des taches data science concretes
+2. **Evaluer** quand un agent autonome accelere le travail d'analyse vs une approche manuelle
+3. **Orchestrer** des systemes multi-agents avec Google ADK (planner-coder, DS-STAR, MLE-STAR)
+4. **Configurer** un pipeline multi-provider (Gemini, OpenAI, vLLM local) via LiteLLM
+5. **Deployer** un agent data science en production (BigQuery, BQML, GCP)
+
 ## Concepts cles
 
 | Concept | Description |
@@ -105,20 +131,117 @@ OPENAI_API_KEY=sk-...
 ## Public cible
 
 - Analystes de donnees souhaitant integrer l'IA
-- Data scientists interessés par les agents
+- Data scientists interesses par les agents
 - Developpeurs Python intermediaires
 
-## Parcours recommande
+## Quel parcours choisir
 
+### Parcours analyste data science (~3 jours)
+
+Labs 1-7 en sequence. Acquerir les bases Pandas, puis construire des agents LangChain pour automatiser l'analyse de donnees.
+
+1. Lab 1 -> revision Pandas/Matplotlib/Scikit-Learn
+2. Labs 2-3 -> agents documentaires (RFP, CV)
+3. Labs 4-7 -> data wrangling + agents d'analyse
+
+### Parcours ingenieur ML agentique (~4 jours)
+
+Labs 8-17 en sequence. Monter en complexite avec les frameworks Google ADK et les systemes multi-agents.
+
+1. Labs 8-9 -> architecture ADK, premier agent
+2. Labs 10-12 -> DS-STAR (data science autonome)
+3. Labs 13-15 -> MLE-STAR (Kaggle, optimisation)
+4. Labs 16-17 -> production (BigQuery, projet final)
+
+### Parcours complet (~7 jours)
+
+Tous les labs en sequence, des fondations NumPy/Pandas jusqu'au deploiement GCP.
+
+### Parcours rapide (~1 jour)
+
+Labs 1 + 6 + 8. Decouvrir le pipeline data science, construire un premier agent LangChain, puis un premier agent ADK. Les trois labs les plus representatifs pour une premiere prise en main.
+
+## FAQ / Troubleshooting
+
+### `langchain` ou `langchain-openai` echoue a l'import
+
+Verifier que le bon environnement est active :
+
+```bash
+# verifier l'environnement
+which python  # Linux/Mac
+where python  # Windows
+# doit pointer vers votre venv, pas le systeme
+
+# re-installer si necessaire
+pip install langchain langchain-openai langchain-experimental
 ```
-01-PythonForDataScience (prereq)
-    |
-Day 1: Lab 1 (revision)
-    |
-Day 2: Labs 2-3 (agents documentaires)
-    |
-Day 3: Labs 4-7 (data + agents)
+
+Si l'erreur persiste, verifier la version Python (3.10+ requis) : `python --version`.
+
+### Erreur "OPENAI_API_KEY not found" dans les Labs 2-3 et 6-7
+
+Ces labs necessitent une cle API OpenAI. Creer un fichier `.env` a la racine du projet :
+
+```bash
+# A la racine du repo ou a cote des notebooks
+echo 'OPENAI_API_KEY=sk-...' > .env
 ```
+
+Le package `python-dotenv` charge automatiquement ce fichier. Ne JAMAIS committer le fichier `.env` (il est dans `.gitignore`).
+
+### Les agents ADK ne se connectent pas au provider (Labs 8+)
+
+Verifier la configuration dans le fichier `.env` d'AgenticDataScience :
+
+```bash
+# Provider recommande (cle gratuite)
+ACTIVE_PROVIDER=gemini
+GEMINI_API_KEY=AIza...
+
+# Ou provider local (pas de cle requise)
+ACTIVE_PROVIDER=vllm
+VLLM_BASE_URL=http://localhost:8000/v1
+```
+
+Si vous utilisez Gemini, obtenir une cle gratuite sur [aistudio.google.com](https://aistudio.google.com).
+
+### `ModuleNotFoundError` pour un package dans un lab
+
+Chaque lab a des dependances specifiques. Installer les packages au fur et a mesure :
+
+```bash
+# Labs 1, 4-5 (data science classique)
+pip install pandas numpy matplotlib seaborn scikit-learn ipywidgets
+
+# Labs 2-3, 6-7 (agents LangChain)
+pip install langchain langchain-openai langchain-experimental python-dotenv
+
+# Labs 8-17 (ADK)
+pip install -r AgenticDataScience/requirements.txt
+```
+
+### Comment passer de LangChain a Google ADK ?
+
+Les concepts se correspondent :
+
+| Concept LangChain | Equivalent ADK |
+|-------------------|----------------|
+| `LLMChain` | ADK Agent avec instruction |
+| `Tool` | ADK FunctionTool |
+| `AgentExecutor` | ADK Runner |
+| `ConversationBufferMemory` | ADK Session |
+| `SequentialChain` | Boucle Planner-Coder |
+
+Le passage se fait naturellement au Lab 8 qui reprend les memes concepts avec l'API ADK.
+
+### Le kernel Jupyter n'affiche pas les outputs des agents
+
+Certains agents produisent des outputs longs. Verifier :
+
+1. La cellule n'est pas en timeout (augmenter le timeout du kernel)
+2. Le provider repond (tester avec un appel simple : `client.chat.completions.create(...)`)
+3. Les prints intermediaires sont flushes : `print(..., flush=True)`
 
 ## Ressources
 

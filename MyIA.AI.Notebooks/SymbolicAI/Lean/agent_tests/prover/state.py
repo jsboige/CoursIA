@@ -94,6 +94,10 @@ class ProofState:
     consecutive_failures: int = 0
     last_compile_errors: List[Dict[str, Any]] = field(default_factory=list)
     best_sorry_count: int = 999
+    # P2 (#1453): mirrored from TacticTools.compile() — consecutive successful
+    # compiles that did not reach a new sorry-count low (Delta0-stagnation).
+    # Lets workflow executors force-route a stuck session without re-deriving it.
+    consecutive_delta0_compiles: int = 0
 
     # B.3: Explicit attack plan set by CoordinatorAgent
     plan: List[str] = field(default_factory=list)
@@ -118,6 +122,30 @@ class ProofState:
     # whether to force Director invocation at iteration 4.
     _has_director: bool = False
 
+    # Feature 1: Multi-file loading. Orchestrator pre-loads sibling .lean files.
+    # Agents reference files by short name (e.g. "Lemmas.lean"), never by path.
+    loaded_files: Dict[str, str] = field(default_factory=dict)
+    target_filepath: str = ""   # absolute path of primary target
+    target_filename: str = ""   # short name (e.g. "Lattice.lean")
+
+    # Feature 2: Resource awareness for iterative deepening.
+    # Agents check these to decide wrap-up vs continue.
+    decomposition_budget: int = 5
+    decomposition_budget_used: int = 0
+    elapsed_seconds: float = 0.0
+    max_session_seconds: float = 1800.0
+    remaining_iterations: int = 0
+
+    # Feature 2+3: Qualitative opinions circulating between agents.
+    # Each agent writes its diagnostic here for subsequent agents to read.
+    agent_opinions: Dict[str, str] = field(default_factory=dict)
+
+    # B2 (issue #1224): SearchAgent consultation gate. The Coordinator
+    # MUST have had SearchAgent explore reference_docs/ before
+    # mark_sorry_intractable can terminate the session. C37 forensic showed
+    # Coordinator decided intractable in 139.7s with 0 SearchAgent payload.
+    search_agent_consulted: bool = False
+
     # B.8: Checkpoint support — save/restore state between phases
     _checkpoints: Dict[str, dict] = field(default_factory=dict, repr=False)
 
@@ -140,6 +168,7 @@ class ProofState:
             "consecutive_failures": self.consecutive_failures,
             "error_count": self.error_count,
             "best_sorry_count": self.best_sorry_count,
+            "consecutive_delta0_compiles": self.consecutive_delta0_compiles,
             "discovered_lemmas": list(self.discovered_lemmas),
             "plan": list(self.plan),
             "plan_phase": self.plan_phase,
@@ -162,6 +191,7 @@ class ProofState:
         self.consecutive_failures = cp["consecutive_failures"]
         self.error_count = cp["error_count"]
         self.best_sorry_count = cp["best_sorry_count"]
+        self.consecutive_delta0_compiles = cp.get("consecutive_delta0_compiles", 0)
         self.discovered_lemmas = cp["discovered_lemmas"]
         self.plan = cp["plan"]
         self.plan_phase = cp["plan_phase"]

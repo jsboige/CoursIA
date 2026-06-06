@@ -11,6 +11,8 @@ Usage:
     python dispatch.py --all --quick               # Quick scan all
     python dispatch.py --all --json                # JSON output
     python dispatch.py --summary                   # Summary table only
+    python dispatch.py --family Search --execute   # Execute via Papermill
+    python dispatch.py --family Sudoku --execute   # Execute (cell-by-cell for .NET)
 
 Output:
     Per-family pass/fail/warn counts + maturity distribution + BROKEN list.
@@ -32,7 +34,7 @@ NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 sys.path.insert(0, str(SCRIPTS_DIR / "notebook_tools"))
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from notebook_tools import NotebookValidator, discover_notebooks
+from notebook_tools import NotebookValidator, NotebookExecutor, discover_notebooks
 
 
 def load_matrix() -> dict:
@@ -71,7 +73,7 @@ def validate_family(
 
     results = {
         "name": family_name,
-        "total": len(notebooks),
+        "total": 0,
         "pass": 0,
         "warn": 0,
         "fail": 0,
@@ -82,9 +84,13 @@ def validate_family(
     }
 
     for nb_path in notebooks:
+        name = nb_path.name
         if ".ipynb_checkpoints" in str(nb_path):
             continue
+        if name.endswith("_output.ipynb"):
+            continue
 
+        results["total"] += 1
         validator = NotebookValidator(nb_path)
         struct = validator.validate_structure()
 
@@ -216,6 +222,73 @@ def build_aggregate(all_results: list[dict]) -> dict:
     }
 
 
+def execute_family(
+    family_name: str,
+    family_config: dict,
+    timeout: int | None = None,
+) -> dict:
+    """Execute notebooks in a family using Papermill or cell-by-cell.
+
+    Delegates to NotebookExecutor which handles kernel detection and
+    per-kernel execution strategies (Papermill for Python, cell-by-cell
+    for .NET Interactive, etc.).
+    """
+    import time
+
+    t0 = time.time()
+    notebooks = get_family_notebooks(family_name, family_config)
+    default_timeout = timeout or family_config.get("timeout", 300)
+    strategy = family_config.get("strategy", "papermill")
+
+    results = {
+        "name": family_name,
+        "total": 0,
+        "executed": 0,
+        "success": 0,
+        "fail": 0,
+        "skipped": 0,
+        "errors": [],
+        "duration_s": 0.0,
+    }
+
+    for nb_path in notebooks:
+        name = nb_path.name
+        if ".ipynb_checkpoints" in str(nb_path):
+            continue
+        if name.endswith("_output.ipynb"):
+            continue
+
+        results["total"] += 1
+        try:
+            executor = NotebookExecutor(nb_path)
+            cell_by_cell = strategy in ("cell-by-cell", "mixed")
+            result = executor.execute_with_papermill(
+                timeout=default_timeout,
+                batch_mode=True,
+            ) if not cell_by_cell else executor.execute_cell_by_cell(
+                timeout=default_timeout,
+            )
+
+            results["executed"] += 1
+            if result.success:
+                results["success"] += 1
+            else:
+                results["fail"] += 1
+                results["errors"].append({
+                    "path": str(nb_path.relative_to(REPO_ROOT)),
+                    "reason": result.message[:200],
+                })
+        except Exception as e:
+            results["fail"] += 1
+            results["errors"].append({
+                "path": str(nb_path.relative_to(REPO_ROOT)),
+                "reason": str(e)[:200],
+            })
+
+    results["duration_s"] = round(time.time() - t0, 1)
+    return results
+
+
 def print_report(all_results: list[dict], json_output: bool = False):
     """Print validation report."""
     if json_output:
@@ -274,6 +347,10 @@ def main():
     parser.add_argument("--family", help="Validate a single family")
     parser.add_argument("--all", action="store_true", help="Validate all families")
     parser.add_argument("--quick", action="store_true", help="Structure check only")
+    parser.add_argument("--execute", action="store_true",
+                        help="Execute notebooks (Papermill/cell-by-cell)")
+    parser.add_argument("--timeout", type=int, default=None,
+                        help="Override timeout in seconds for --execute")
     parser.add_argument("--json", action="store_true", help="JSON output")
     parser.add_argument("--summary", action="store_true", help="Summary table only")
     parser.add_argument(
@@ -299,11 +376,20 @@ def main():
 
     all_results = []
     for name, config in targets.items():
-        print(f"Validating {name}...", end=" ", flush=True)
-        result = validate_family(name, config, quick=args.quick)
-        status = "OK" if result["fail"] == 0 else f"{result['fail']} FAIL"
-        print(f"{result['total']} notebooks, {status} ({result['duration_s']}s)")
-        all_results.append(result)
+        if args.execute:
+            print(f"Executing {name}...", end=" ", flush=True)
+            result = execute_family(name, config, timeout=args.timeout)
+            status = f"{result['success']}/{result['total']} OK"
+            if result["fail"]:
+                status += f" ({result['fail']} FAIL)"
+            print(f"{result['total']} notebooks, {status} ({result['duration_s']}s)")
+            all_results.append(result)
+        else:
+            print(f"Validating {name}...", end=" ", flush=True)
+            result = validate_family(name, config, quick=args.quick)
+            status = "OK" if result["fail"] == 0 else f"{result['fail']} FAIL"
+            print(f"{result['total']} notebooks, {status} ({result['duration_s']}s)")
+            all_results.append(result)
 
     print_report(all_results, json_output=args.json)
 

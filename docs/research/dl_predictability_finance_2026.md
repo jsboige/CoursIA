@@ -1,7 +1,7 @@
 # What Can Deep Learning Actually Predict on Financial Data?
 
 **Mission #779** | SOTA DL Predictability Analysis for Epic NN #754 Pivot
-**Date**: 2026-05-06 | **Deadline**: 09/05/2026 | **ESGF**: 19/05/2026
+**Date**: 2026-05-06 | **Deadline**: 09/05/2026 | **Partner course**: 19/05/2026
 
 > **Context**: 27+ experiments across 8 architectures (MoE, LSTM, Transformer, PatchTST, iTransformer, Mamba, STGAT, MTGNN) failed to beat daily binary direction prediction on modern financial data, even with strict walk-forward OOS validation and multi-seed verification (4/5 seeds FAIL, seed=42 BEAT was +1.5sigma outlier).
 
@@ -107,7 +107,7 @@
 | **Evidence** | STRONG (4+ independent confirmations, 6+ additional 2024-2026 studies) |
 | **Pedagogy** | HIGH (core quant skill, risk management) |
 | **Timeline** | 2-3 weeks to first results |
-| **ESGF impact** | HIGH - volatility modeling directly applicable |
+| **Partner course impact** | HIGH - volatility modeling directly applicable |
 
 **Pros**: Strongest DL edge in finance. Same LSTM/Transformer architectures, different target. Crypto panier has hourly data. Walk-forward framework already exists.
 

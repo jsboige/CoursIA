@@ -1,14 +1,41 @@
 # Web Semantique - Semantic Web
 
-Serie de notebooks pour explorer le **Web Semantique**, combinant **.NET C#** (dotNetRDF, fondations) et **Python** (rdflib, standards modernes, IA).
+<!-- CATALOG-STATUS
+series: SymbolicAI-SemanticWeb
+pedagogical_count: 18
+breakdown: RDF-Foundations=6, Linked-Data-Ontologies=5, Modern-Standards=3, Knowledge-Graphs-IA=3, Legacy=1
+maturity: PRODUCTION=6, BETA=12
+-->
 
----
+Le Web Semantique est la promesse d'un Web ou les machines comprennent la signification des donnees, pas seulement leur syntaxe. RDF, SPARQL, OWL, SHACL : ces standards du W3C definissent un langage commun pour decrire, interroger, valider et raisonner sur des graphes de connaissances. Cette serie vous mene des fondations (.NET C# avec dotNetRDF) aux applications modernes (Python avec rdflib, pySHACL, GraphRAG), en passant par les ontologies, les donnees liees et les standards emergents (RDF 1.2, JSON-LD 1.1).
 
-## Presentation
+**18 notebooks** | **2 langages** | **~10h**
 
-Le Web Semantique etend le Web classique en permettant aux machines de comprendre la signification des donnees. Cette serie couvre l'ensemble du spectre : des fondations RDF aux graphes de connaissances integres aux LLMs (GraphRAG), en passant par SPARQL, OWL, SHACL, JSON-LD et RDF 1.2.
+**A qui s'adresse cette serie** : developpeurs web curieux du sens cache dans leurs donnees, data scientists voulant structurer leurs pipelines, et etudiants en IA souhaitant comprendre comment les graphes de connaissances ancrent les LLMs. Aucun prerequis en logique formelle.
 
-La vision originale de Tim Berners-Lee etait de creer un "Web de donnees" ou les informations seraient liees de facon signifiante, permettant aux machines d'effectuer des raisonnements automatiques. Cette serie vous accompagnera depuis les concepts fondamentaux jusqu'aux applications modernes integrant l'IA generative.
+## Pourquoi cette serie
+
+Le Web Semantique a traverse des cycles de hype et de desillusion. En 2001, Tim Berners-Lee en faisait la couverture de *Scientific American*. En 2010, les donnees liees semblaient une niche academique. En 2024, GraphRAG (Microsoft) a montre que les graphes de connaissances RDF pouvaient ancrer les LLMs sur des faits verifiables : le Web Semantique devenait un garde-fou pour l'IA generative.
+
+Cette serie couvre le spectre complet parce que les briques s'articulent : RDF definit les donnees, SPARQL les interroge, RDFS/OWL structurent le raisonnement, SHACL valide la qualite, JSON-LD ponte vers le Web, RDF-Star ajoute la provenance, et les KG+LLMs ferment la boucle. Chaque standard est une couche qui s'appuie sur les precedentes.
+
+La serie propose deliberement deux stacks : **.NET C#** (SW-1 a SW-7) pour les fondations avec dotNetRDF (typed, performant, integre a l'ecosysteme CoursIA), et **Python** (SW-8 a SW-13) pour les standards modernes et l'IA. Les sidetracks Python (SW-2b, 4b, 5b, 7b) offrent un miroir des notebooks C# en Python.
+
+## Concepts cles
+
+| Concept | En une phrase | Notebook |
+|---------|---------------|----------|
+| **Triplet RDF** | Un fait elementaire : sujet-predicat-objet (comme une phrase simple) | SW-2 |
+| **Graphe RDF** | Un ensemble de triplets formant un reseau semantique | SW-3 |
+| **SPARQL** | Le SQL du Web Semantique : interroger des graphes avec des patterns | SW-4 |
+| **Linked Data** | Des donnees publiees sur le Web avec des URIs resolvables | SW-5 |
+| **RDFS** | Un vocabulaire pour definir des hierarchies de classes et proprietes | SW-6 |
+| **OWL** | Une logique de description pour le raisonnement automatique | SW-7 |
+| **SHACL** | Des contraintes de validation sur les graphes (comme des schemas JSON) | SW-8 |
+| **JSON-LD** | Du JSON avec un contexte semantique (le pont Web classique ↔ Web Semantique) | SW-9 |
+| **RDF-Star** | Des metadonnees sur les triplets (provenance, confiance, annotations) | SW-10 |
+| **Graphe de connaissances** | Un RDF riche, visualisable, requetable, ancre dans une ontologie | SW-11 |
+| **GraphRAG** | Un KG ancre dans un LLM pour du RAG structure (anti-hallucination) | SW-12 |
 
 ## Vue d'ensemble
 
@@ -260,27 +287,55 @@ Ce notebook bonus compare differents raisonneurs OWL (owlrl, HermiT, reasonable,
 
 ---
 
-## Statut de maturite
+## Acquis d'apprentissage
 
-| # | Notebook | Kernel | Cellules | Exercices | Statut |
-|---|----------|--------|----------|-----------|--------|
-| 1 | SW-1-CSharp-Setup | .NET | 18 | - | **COMPLET** |
-| 2 | SW-2-CSharp-RDFBasics | .NET | 48 | 2 | **COMPLET** |
-| 2b | SW-2b-Python-RDFBasics | Python | 30 | 2 | **COMPLET** |
-| 3 | SW-3-CSharp-GraphOperations | .NET | 34 | 3 | **COMPLET** |
-| 4 | SW-4-CSharp-SPARQL | .NET | 36 | 3 | **COMPLET** |
-| 4b | SW-4b-Python-SPARQL | Python | 25 | 2 | **COMPLET** |
-| 5 | SW-5-CSharp-LinkedData | .NET | 38 | 3 | **COMPLET** |
-| 5b | SW-5b-Python-LinkedData | Python | 25 | 2 | **COMPLET** |
-| 6 | SW-6-CSharp-RDFS | .NET | 33 | 2 | **COMPLET** |
-| 7 | SW-7-CSharp-OWL | .NET | 35 | 2 | **COMPLET** |
-| 7b | SW-7b-Python-OWL | Python | 30 | 2 | **COMPLET** |
-| 8 | SW-8-Python-SHACL | Python | 43 | 3 | **COMPLET** |
-| 9 | SW-9-Python-JSONLD | Python | 60 | 3 | **COMPLET** |
-| 10 | SW-10-Python-RDFStar | Python | 52 | 2 | **COMPLET** |
-| 11 | SW-11-Python-KnowledgeGraphs | Python | 75 | 3 | **COMPLET** |
-| 12 | SW-12-Python-GraphRAG | Python | 44 | 3 | **COMPLET** |
-| 13 | SW-13-Python-Reasoners (bonus) | Python | 38 | 3 | **COMPLET** |
+A l'issue de cette serie, l'apprenant est capable de :
+
+- **Modeliser un domaine en RDF** (triplets, IRIs, litteraux typees, namespaces) et manipuler des graphes en C# avec dotNetRDF (`SW-2-CSharp-RDFBasics.ipynb`, `SW-3-CSharp-GraphOperations.ipynb`) ou en Python avec rdflib (`SW-2b-Python-RDFBasics.ipynb`).
+- **Interroger un graphe en SPARQL 1.1** (SELECT, CONSTRUCT, ASK, DESCRIBE, federations via SERVICE) cote .NET (`SW-4-CSharp-SPARQL.ipynb`) et Python (`SW-4b-Python-SPARQL.ipynb`), puis publier des donnees Linked Data resolvables (`SW-5-CSharp-LinkedData.ipynb`, `SW-5b-Python-LinkedData.ipynb`).
+- **Formaliser une ontologie en RDFS puis OWL** (classes, proprietes, restrictions, hierarchies) et tirer parti d'un raisonneur pour materialiser les inferences (`SW-6-CSharp-RDFS.ipynb`, `SW-7-CSharp-OWL.ipynb`, `SW-7b-Python-OWL.ipynb`, `SW-13-Python-Reasoners.ipynb`).
+- **Valider la conformite d'un graphe** avec SHACL (NodeShapes/PropertyShapes, contraintes de cardinalite et de type, rapport de validation) via pySHACL (`SW-8-Python-SHACL.ipynb`).
+- **Serialiser et echanger des donnees RDF en JSON-LD** (`@context`, framing, compaction/expansion) pour interoperer avec les APIs Web modernes (`SW-9-Python-JSONLD.ipynb`).
+- **Annoter des assertions avec RDF-Star / SPARQL-Star** (citations de triplets, provenance, niveau de confiance) pour modeliser metadonnees et reification compacte (`SW-10-Python-RDFStar.ipynb`).
+- **Construire et exploiter un graphe de connaissances integre a un LLM** (extraction de triplets, embeddings, GraphRAG) pour ancrer les reponses generatives sur des donnees structurees (`SW-11-Python-KnowledgeGraphs.ipynb`, `SW-12-Python-GraphRAG.ipynb`).
+
+---
+
+## Parcours alternatifs
+
+### Parcours Python-only (~5h)
+
+Si vous n'avez pas d'environnement .NET, vous pouvez suivre uniquement les notebooks Python :
+
+1. **SW-2b** (RDF Basics Python) → **SW-4b** (SPARQL Python) → **SW-5b** (Linked Data Python) → **SW-7b** (OWL Python) : les 4 sidetracks couvrent les fondamentaux avec rdflib.
+2. Puis **SW-8** (SHACL) → **SW-9** (JSON-LD) → **SW-10** (RDF-Star) → **SW-11** (KG) → **SW-12** (GraphRAG) : les standards modernes et l'IA.
+
+### Parcours data engineer (~3h)
+
+Pour les praticiens qui veulent aller vite :
+
+1. **SW-2b** (RDF en 5 min) → **SW-4b** (SPARQL) → **SW-8** (SHACL : valider vos donnees) → **SW-9** (JSON-LD : exposer en API) → **SW-12** (GraphRAG : connecter aux LLMs).
+
+### Parcours ontologue (~4h)
+
+Pour les personnes creant des ontologies et des vocabulaires :
+
+1. **SW-6** (RDFS) → **SW-7** (OWL) → **SW-7b** (OWL Python) → **SW-8** (SHACL : contraintes sur les donnees) → **SW-13** (comparaison raisonneurs).
+
+## FAQ / Troubleshooting
+
+| Probleme | Solution |
+|----------|----------|
+| `dotNetRDF` NuGet restore echoue | Verifier .NET SDK 9.0+ (`dotnet --version`). Relancer la cellule d'import. |
+| Endpoint DBpedia/Wikidata timeout | Les endpoints publics ont des limites. Ajouter `LIMIT 100` aux requetes. Reessayer hors heures de pointe. |
+| pySHACL validation vide | Verifier que les prefixes du graphe de donnees correspondent aux shapes (meme `ex:` namespace). |
+| OWLReady2 Java bridge error | Installer JDK 11+ (OWlReady2 utilise HermiT en Java). Sur Windows : `winget install EclipseAdoptium.Temurin.11.JDK`. |
+| RDF-Star syntax non reconnue | rdflib 7.x supporte RDF-Star en mode experimental. Verifier `rdflib.__version__ >= 7.0`. |
+| GraphRAG : `OPENAI_API_KEY` manquant | SW-12 requiert une cle LLM (OpenAI ou Anthropic). Configurer `.env` (voir `.env.example`). Les notebooks SW-1 a SW-11 n'ont pas besoin de cle. |
+
+## Lecture transversale
+
+La serie SemanticWeb illustre un mouvement profond du depot CoursIA : **prendre des donnees non-structurees et les re-representer dans un cadre verifiable**. RDF donne un sens formel a du JSON, OWL ajoute le raisonnement, SHACL ajoute la validation, GraphRAG ancre les LLMs sur des faits. Ce geste — trouver la representation ou le probleme se dissout — traverse toutes les series du depot, des CSP (Search) aux preuves Lean (SymbolicAI). La cle de lecture [La mer qui monte](../../../docs/grothendieckian-lens.md) developpe ce fil conducteur.
 
 ---
 
@@ -379,8 +434,18 @@ SemanticWeb/
 ├── SW-10-Python-RDFStar.ipynb
 ├── SW-11-Python-KnowledgeGraphs.ipynb
 ├── SW-12-Python-GraphRAG.ipynb
-└── SW-13-Python-Reasoners.ipynb     # Bonus
+├── SW-13-Python-Reasoners.ipynb     # Bonus
+├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
+└── RDF.Net-Legacy/                  # Archive C# RDF.NET (pre-migration Python)
+    ├── RDF.Net.ipynb                # Notebook .NET historique
+    ├── Example.ttl                  # Donnees Turtle
+    ├── example.srj                  # Resultats SPARQL JSON
+    └── example.srx                  # Resultats SPARQL XML
 ```
+
+> **Note** — `RDF.Net-Legacy/` conserve l'ancien notebook C# (kernel .NET Interactive)
+> avant la bascule pedagogique vers Python (`SW-2b-Python-RDFBasics.ipynb` et suivants).
+> Archive de reference, non maintenue. Pour le RDF actuel, voir SW-2 / SW-2b.
 
 ## Ressources
 

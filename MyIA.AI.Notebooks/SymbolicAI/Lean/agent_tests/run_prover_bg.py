@@ -63,6 +63,7 @@ async def main(args: argparse.Namespace) -> int:
     _bg(f"DIFF  {demo.get('difficulty')}")
     _bg(
         f"PROVIDER reasoning={args.provider} fast={args.local_provider} "
+        f"tactic={getattr(args, 'tactic_provider', None) or 'openrouter'} "
         f"director={args.director_provider or 'none'} "
         f"max_iter={args.max_iter} workflow_timeout={args.workflow_timeout}s"
     )
@@ -80,6 +81,8 @@ async def main(args: argparse.Namespace) -> int:
         provider=args.provider,
         local_provider=args.local_provider,
         director_provider=args.director_provider,
+        coordinator_provider=getattr(args, "coordinator_provider", None),
+        tactic_provider=getattr(args, "tactic_provider", None),
     )
 
     t0 = time.time()
@@ -134,6 +137,13 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--director-provider", default=None,
                    help="external LLM provider for strategic tactic guidance "
                         "(e.g. openrouter for GPT-5.5)")
+    p.add_argument("--coordinator-provider", default=None,
+                   help="Provider for CoordinatorAgent (default: openrouter). "
+                        "#1289: GLM-5.1 (zai) times out; GPT-5.5 via openrouter is 6x faster.")
+    p.add_argument("--tactic-provider", default=None,
+                   help="Provider for TacticAgent (default: openrouter). "
+                        "#1289: GLM-5.1 (zai) times out at 1680s on tactic generation; "
+                        "GPT-5.5 via openrouter expected ~60-120s.")
     return p.parse_args()
 
 

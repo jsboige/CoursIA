@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 102
-breakdown: Python=51, projects=49, ML-Training-Pipeline=2
-maturity: PRODUCTION=73, BETA=16, ALPHA=10, DRAFT=2, TEMPLATE=1
+pedagogical_count: 101
+breakdown: Python=51, projects=48, ML-Training-Pipeline=2
+maturity: PRODUCTION=59, ALPHA=33, BETA=6, DRAFT=2, TEMPLATE=1
 -->
 
 Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus de 60% des volumes aux États-Unis sont générés par des algorithmes. Cette série vous apprend à construire, tester et déployer vos propres stratégies de trading automatisées sur la plateforme **QuantConnect LEAN** — un framework open-source utilisé par des milliers de quants professionnels. Le parcours va des fondements (lifecycle d'un algorithme, gestion des données) aux frontières de l'IA (Transformers, RL, LLMs pour signaux de trading).
@@ -12,6 +12,8 @@ Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus 
 La série couvre huit phases progressives. Les **fondements** (phases 1-4) maîtrisent l'écosystème QuantConnect : architecture LEAN, universe selection, options/futures, risk management, et l'Algorithm Framework modulaire. La **préparation ML** (phase 5) intègre les données alternatives et le feature engineering. Le **machine learning** (phases 6-7) applique les modèles classiques (Random Forest, XGBoost) puis le deep learning (LSTM, Transformers, autoencoders) aux séries temporelles financières. La **production** (phase 8) couvre le RL, les LLMs pour le trading, et le déploiement live. Chaque notebook est exécutable sur le cloud QuantConnect (free tier) sans installation locale.
 
 **À qui s'adresse cette série** : étudiants en finance quantitative, ingénieurs ML souhaitant appliquer leurs compétences aux marchés, et développeurs curieux de trading algorithmique. Les notebooks Python s'exécutent sur QuantConnect Cloud (gratuit) ou localement avec le LEAN engine. Le livre de référence est *"Hands-On AI Trading"* (Jared Broad, 2025). Aucun capital de départ nécessaire : tout se passe en backtest et paper trading.
+
+> **Visiteur ?** Lire le [Quick Tour](QUICK_TOUR.md) (2 min) pour comprendre l'ampleur du travail.
 
 ---
 
@@ -41,7 +43,9 @@ Cette série est une formation complète sur le **trading algorithmique** avec l
 
 ### Contenu
 
-- **46 notebooks Python** (28 cours + 4 training local + 2 paper-trading + 12 Cloud-ready)
+De la **mécanique d'un backtest** (lifecycle d'un algorithme, gestion des données, types d'ordres, risk management) jusqu'aux **modèles de pointe appliqués à la finance** — Random Forest et XGBoost, puis LSTM, Transformers et State-Space Models, jusqu'au reinforcement learning et aux LLMs employés comme générateurs de signaux — la série couvre toute la chaîne, le bloc **fondations** consolidant l'écosystème LEAN (universe selection, classes d'actifs, Algorithm Framework) avant toute approche ML.
+
+- **51 notebooks Python** (28 cours QC-Py-01..28 + 3 training QC-Py-30..32 + 3 RL avance QC-Py-33..35 + 2 paper-trading QC-Py-40..41 + 13 Cloud-ready QC-Py-Cloud-01..07 + 1 dataset workflow + 1 research interne)
 - **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
 - **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
 - **Free tier compatible** avec workarounds pour fonctionnalités payantes
@@ -151,9 +155,9 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 
 ---
 
-### Phase 8 : IA Avancée et Production (3 notebooks, ~4.5h)
+### Phase 8 : IA Avancée et Production (4 notebooks, ~5.5h)
 
-État de l'art : Reinforcement Learning, LLM pour trading signals, déploiement production.
+État de l'art : Reinforcement Learning, LLM pour trading signals, déploiement production, détection de régime de marché.
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -162,17 +166,31 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 | 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | 75 min | Paper trading, live trading setup, monitoring, deployment |
 | 28 | [QC-Py-28-Market-Regime-Detection](Python/QC-Py-28-Market-Regime-Detection.ipynb) | 75 min | HMM, regime detection, allocation adaptative |
 
-**Objectifs** : IA state-of-the-art pour trading, déploiement production.
+**Objectifs** : IA state-of-the-art pour trading, déploiement production, détection régime.
+
+---
+
+### Compléments Reinforcement Learning Avancé (3 notebooks, ~4h)
+
+Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et application portfolio construction.
+
+| # | Notebook | Durée | Contenu |
+|---|----------|-------|---------|
+| 33 | [QC-Py-33-RL-PPO-Trading](Python/QC-Py-33-RL-PPO-Trading.ipynb) | 90 min | Proximal Policy Optimization, clipped surrogate, Stable-Baselines3 |
+| 34 | [QC-Py-34-RL-SAC-A2C-Trading](Python/QC-Py-34-RL-SAC-A2C-Trading.ipynb) | 75 min | Soft Actor-Critic + A2C, comparatif algorithmes RL |
+| 35 | [QC-Py-35-RL-Portfolio-Construction](Python/QC-Py-35-RL-Portfolio-Construction.ipynb) | 75 min | RL pour allocation multi-asset, contraintes de risque |
+
+**Objectifs** : Comparer les algorithmes RL modernes, appliquer au portfolio multi-asset.
 
 ---
 
 ## Résumé de la Progression
 
-**Total** : **28 notebooks Python** (~32 heures de contenu)
+**Total cours linéaire** : **28 notebooks Python** (QC-Py-01 à QC-Py-28, ~32 heures de contenu) + **23 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, Cloud strategies QC-Py-Cloud-*, training QC-Py-30..32, dataset workflow).
 
-**Répartition** :
+**Répartition cours linéaire (Phases 1-8)** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
-- **9 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM) : ~12h
+- **10 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM, Régime) : ~13h
 
 **Progression pédagogique** : Maîtriser les fondations QuantConnect **avant** d'aborder le Machine Learning.
 
@@ -196,7 +214,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
 
 ## Projets de Stratégies
 
-Le dossier [`projects/`](projects/) contient **67 stratégies de trading** prêtes à backtester.
+Le dossier [`projects/`](projects/) contient **115 stratégies de trading** prêtes à backtester.
 
 ### Comment utiliser les projets
 
@@ -217,15 +235,28 @@ Le dossier [`projects/`](projects/) contient **67 stratégies de trading** prêt
 
 ---
 
-## ESGF-2026 - Exemples de Recherche
+## 4-Type Notebook Classification
 
-Le dossier **ESGF-2026/** contient des exemples de recherche avancée utilisés dans le cours ESGF 2026.
+Each notebook in the QC tree falls into one of four types:
 
-### Structure ESGF-2026
+| Type | Label | Execution | Count |
+|------|-------|-----------|-------|
+| **(a)** | quantbook QC Cloud | QC Cloud only | 59 |
+| **(b)** | research linked to quantbook | QC Cloud + local | ~76 |
+| **(c)** | standalone research | Local (yfinance/sklearn) | 24 |
+| **(d)** | pedagogical placeholder | Read-only / copy-paste | 33 |
+
+See [docs/_archives/qc-strategies-status.md](../../docs/_archives/qc-strategies-status.md) for the exhaustive classification.
+
+## Cours partenaire — Exemples de Recherche
+
+Le dossier **partner-course-quant-trading/** contient des exemples de recherche avancée utilisés dans le cours partenaire.
+
+### Structure
 
 ```
-ESGF-2026/
-├── examples/           # 11 projets d'exemples du professeur
+partner-course-quant-trading/
+├── examples/           # Projets d'exemples du professeur
 ├── templates/          # Templates pour projets étudiants
 │   ├── starter/        # Niveau débutant
 │   ├── intermediate/   # Niveau intermédiaire
@@ -233,9 +264,18 @@ ESGF-2026/
 └── archive-2025/       # Archives historiques
 ```
 
-Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et templates.
+Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/README.md) pour le détail des exemples et templates.
 
 ---
+
+## Transient Directories
+
+| Directory | Status | Description |
+|-----------|--------|-------------|
+| `_pending_execution/` | Active | QuantBook research notebooks awaiting QC Cloud execution (H.3/C.2) |
+| `partner-course-quant-trading/archive-2025/` | Reference | 2024-2025 student project IDs and cloud references |
+| `_archive/` | Purged | Superseded reports moved to `docs/audits/` (commit `#1626`) |
+| `_esgf_cours_5mai/` | Purged | Course 5 May 2026 backtest results archived to G drive (commit `#1626`) |
 
 ## Documentation Complémentaire
 
@@ -243,7 +283,7 @@ Voir [ESGF-2026/README.md](ESGF-2026/README.md) pour le détail des exemples et 
 
 - **[GETTING-STARTED.md](GETTING-STARTED.md)** : Guide de démarrage détaillé
 - **[docs/HANDSON_AI_TRADING_MAPPING.md](docs/HANDSON_AI_TRADING_MAPPING.md)** : Mapping avec le livre "Hands-On AI Trading"
-- **[docs/BOOK_MAPPING.md](docs/BOOK_MAPPING.md)** : Mapping notebooks ↔ chapitres
+- **[BOOK_MAPPING.md](BOOK_MAPPING.md)** : Mapping notebooks ↔ chapitres
 - **[docs/qc_strategies_catalog.md](docs/qc_strategies_catalog.md)** : Catalogue strategies QC Cloud
 - **[docs/HANDSON_DATA_REQUIREMENTS.md](docs/HANDSON_DATA_REQUIREMENTS.md)** : Datasets requis
 - **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading
@@ -332,6 +372,47 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ---
 
+## FAQ
+
+### Peut-on trade avec de l'argent reel directement ?
+
+Techniquement oui (QC supporte les brokers live : IBKR, Binance, etc.), mais **pas dans le cadre de cette serie**. Tous les notebooks et projets sont conçus pour le backtest et le paper trading. Le passage en live necessite un compte broker, du capital, et une discipline de validation stricte (walk-forward, multi-seed, OOS).
+
+### Comment choisir une premiere strategie ?
+
+Pour debuter : **EMA-Cross-Stocks** (Sharpe 0.872, debutant) ou **AllWeather** (Sharpe 0.667, debutant). Ces strategies sont simples, robustes, et pedagogiques. Les strategies avancees (BTC-ML, Framework_Composite) ont des Sharpes plus eleves mais requierent une comprehension plus profonde des risques.
+
+### Quelle est la difference entre Sharpe et CAGR ?
+
+Le **CAGR** (Compound Annual Growth Rate) mesure le rendement annualise. Le **Sharpe ratio** mesure le rendement ajuste au risque : Sharpe = (Rendement - Taux_sans_risque) / Volatilite. Un CAGR eleve avec un Sharpe faible signifie une strategie volatile (gros gains, grosses pertes). Un Sharpe > 0.5 est considere robuste dans cette serie.
+
+### Les performances backtestees sont-elles realistes en live ?
+
+Non, ou avec une discount significative (20-30% en moins). Les backtests souffrent de biais connus : look-ahead, survivorship, overfitting, et ignorent le slippage et le market impact reels. Les Sharpes annonces sont in-sample. La serie inclut des notebooks sur le walk-forward et les couts de transaction pour evaluer la robustesse hors-echantillon.
+
+### Peut-on executer les notebooks localement sans compte QuantConnect ?
+
+Non. Les notebooks Python de cette serie utilisent `QuantBook()` qui necessite une connexion au cloud QuantConnect. Les notebooks C# (.NET) executent du code LEAN en local mais n'ont pas acces aux donnees de marche sans connexion QC. Creez un compte gratuit sur [quantconnect.com](https://www.quantconnect.com/) pour obtenir votre token API (variable `QC_API_TOKEN` dans `.env`).
+
+### Quelle est la difference entre un notebook Python et un projet C# ?
+
+Les **notebooks Python** (QC-Py-01 a QC-28) sont des explorations interactives avec `QuantBook()` : chargement de donnees, analyses, visualisations, prototypage rapide. Les **projets C#** sont des algorithmes complets (`QCAlgorithm`) destines au backtesting production dans l'IDE QuantConnect. Le workflow standard est : explorer en notebook Python -> implementer en C# ou Python projet.
+
+### Comment limiter le cout en heures de calcul ?
+
+- **Backtesting** : limiter la periode historique (2-3 ans suffit pour un prototype) et la frequence (Daily plutot que Minute)
+- **Notebooks** : utiliser `qb.history()` avec des dates precises plutot que charger l'historique complet
+- **Deep Learning** : les notebooks QC-22/23/24 sont CPU-optimized pour le free tier
+- **Rate limiting** : max 10 appels API/min entre tous les agents du cluster
+
+### Pourquoi utiliser LEAN plutot qu'un framework comme Backtrader ?
+
+LEAN est le moteur de production de QuantConnect : il gere les donnees corporates (splits, dividends, spinoffs), le slippage, les frais reels, le margin, et le live trading. Backtrader et Zipline sont d'excellents outils pedagogiques mais ne gerent pas ces aspects en production. Cette serie enseigne LEAN pour que les competences soient directement transferables au trading reel.
+
+### Qu'est-ce qu'un QuantBook et comment se differencie-t-il d'un algorithme ?
+
+`QuantBook` est l'API interactive de QuantConnect pour les notebooks Jupyter. Elle permet de charger des donnees, calculer des indicateurs, et analyser des resultats sans ecrire un algorithme complet. Un `QCAlgorithm` est la version production avec des callbacks (`OnData`, `OnEndOfDay`), un portefeuille, et un moteur d'execution. Les notebooks de cette serie utilisent `QuantBook` pour l'exploration ; les projets utilisent `QCAlgorithm` pour le backtesting.
+
 ## Free Tier vs Paid
 
 | Fonctionnalité | Free Tier | Paid (Team/Premium) |
@@ -373,6 +454,32 @@ Après completion de cette série, vous maîtriserez :
 
 ---
 
+## Stratégies Vérifiées — Baselines Comparatives
+
+Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/qc-comparative-backtests.md).
+
+### Top 5 stratégies (Sharpe aligned, 2018-2025)
+
+| # | Stratégie | Type | Sharpe | CAGR% | MaxDD% | PSR% |
+|---|-----------|------|--------|-------|--------|------|
+| 1 | TrendFollowing | IND | **1.072** | 23.2 | 9.3 | 81.8 |
+| 2 | EMA-Cross-Stocks | IND | **0.891** | 26.2 | 35.7 | 40.5 |
+| 3 | VolTarget-Momentum | COMP | 0.648 | 14.7 | 21.2 | 22.3 |
+| 4 | AllWeather | RISK | 0.631 | 9.0 | 16.4 | 31.2 |
+| 5 | Crypto-MultiCanal | IND | 0.581 | 8.2 | 17.0 | 37.6 |
+
+**Lecture** : PSR (Probabilistic Sharpe Ratio) > 50% = statistiquement significatif. TrendFollowing est le seul leader confirmé (PSR 81.8%).
+
+**Enseignements clés** :
+- **TrendFollowing** domine : Sharpe 1.072 avec MaxDD 9.3% seulement. La tendance persiste sur longue période.
+- **EMA-Cross-Alpha** : Sharpe -0.010 en aligned (vs 0.996 en backtest court) = overfitting sever. Démonstration pédagogique du danger des backtests courts.
+- **Composites < single-strategies** : MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185, confirmant le problème de "double-defense".
+- **Crypto = diversification stable** : MaxDD maitrisé (~17%), rendement modéré.
+
+> Voir [docs/qc-comparative-backtests.md](../../docs/qc-comparative-backtests.md) pour les 17 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
+
+---
+
 ## Cross-series Bridges
 
 | Serie | Lien | Connection |
@@ -382,7 +489,7 @@ Après completion de cette série, vous maîtriserez :
 | [RL](../RL/README.md) | Apprentissage par renforcement | Les strategies RL (QC-22 PPO, QC-23 DRL, QC-24 Crypto RL) prolongent les fondamentaux RL de cette serie |
 | [Probas](../Probas/README.md) | Programmation probabiliste | La modelisation bayesienne des rendements et la gestion du risque s'appuient sur les modeles probabilistes de la serie Probas |
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres de strategies (grid search, bayesienne) rejoint les techniques de recherche |
-| [TimeSeries](../TimeSeries/README.md) | Series temporelles | L'analyse technique (QC-4 a QC-7) partage les memes fondements que l'analyse de series temporelles |
+| [ML](../ML/ML.Net/README.md) | Series temporelles ML.NET | L'analyse technique (QC-4 a QC-7) partage les memes fondements que le forecasting par SSA (ML-5) |
 
 ---
 

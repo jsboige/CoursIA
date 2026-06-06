@@ -70,7 +70,7 @@
 
 → Les longs horizons (h=20) sont systématiquement plus robustes au coût (turnover plus faible). Les courts horizons (h=1-5) sur BTC/ETH sont plus sensibles (turnover élevé pour Kelly fraction réactive).
 
-## Conclusion ESGF / pédagogique
+## Conclusion / pédagogique
 
 - **Edge K60 vs BH économiquement viable jusqu'à ~50 bps** au niveau population (sign-test p<0.05). Cohérent avec spread crypto Binance/Kraken (~10-25 bps).
 - **Per-combo p<0.05 = 0/35 même à 5 bps** : confirme M11c — signal faible par combo individuel, fort en agrégat.
@@ -83,7 +83,7 @@
 
 ## How to apply
 
-- **Pour kit ESGF** : afficher la fee-sensitivity curve. Ne pas vendre K60 comme "garanti à toute condition de coût".
+- **Pour le cours** : afficher la fee-sensitivity curve. Ne pas vendre K60 comme "garanti à toute condition de coût".
 - **Pour utilisation prod** : préférer h=20 (plus fee-robust) sur alt-coins downtrend (LTC, ADA, DOT).
 - **Pour deeper research** : tester (a) fee-aware Kelly (ne trader que si |Δw| > seuil), (b) volatility-aware position sizing (réduire fraction quand vol forecast bouge peu) — pourrait pousser break-even au-delà de 100 bps.
 

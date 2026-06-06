@@ -12,7 +12,7 @@ Monthly model training with biweekly rebalance (every other Monday). Prediction 
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-RandomForest"`
 ```bash
 lean backtest --project .
 ```

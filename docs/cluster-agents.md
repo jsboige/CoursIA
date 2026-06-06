@@ -81,7 +81,7 @@ Si user dit "OK GPU heavy po-2025" : verifier qu'il connait l'incident avant d'a
 | `myia-po-2025:2026-Epita-Programmation-par-Contraintes` | Review/merge PRs etudiants PrCon | EN ATTENTE PRs etudiants |
 | `myia-po-2025:2026-Epita-Intelligence-Symbolique` | Veille sujets + enrichissement | ACTIF veille |
 
-**Skills cross-workspace tappables** : po-2025 developpe des skills specifiques par workspace, mais ai-01 peut tapper l'agent qui a deja la skill fraiche. Exemple : formulaire eval ESGF cree par `po-2025:2026-Epita-PrCon` plutot que `po-2025:CoursIA`, parce que PrCon avait fait des formulaires GWorkspace+Playwright le meme jour.
+**Skills cross-workspace tappables** : po-2025 developpe des skills specifiques par workspace, mais ai-01 peut tapper l'agent qui a deja la skill fraiche. Exemple : formulaire eval partenaire cree par `po-2025:2026-Epita-PrCon` plutot que `po-2025:CoursIA`, parce que PrCon avait fait des formulaires GWorkspace+Playwright le meme jour.
 
 ## Specialisations infrastructure
 
@@ -118,7 +118,7 @@ Tokens API QC configures dans `.mcp.json` sur les 2 machines (Docker MCP server 
 
 ### Lean / Mathlib -> po-2026
 
-Specialisation `*.lean`, port social_choice, Lake build, reecriture preuves structurelles. ai-01 = secours (env Lean a installer si manquant). Cf [docs/lean-prover-state.md](lean-prover-state.md).
+Specialisation `*.lean`, port social_choice, Lake build, reecriture preuves structurelles. ai-01 = secours (env Lean a installer si manquant). Cf [docs/lean/prover_iteration_history.md](lean/prover_iteration_history.md).
 
 ### Whisper API host -> po-2023
 
@@ -132,7 +132,7 @@ Rotation cle API geree par po-2023 lui-meme. **NON consomme** dans workspace Cou
 | GenAI Texte / vLLM (containers) | `ai-01:CoursIA` | tout agent pour consommer l'endpoint |
 | GenAI Embedding (container) | `po-2026:CoursIA` | tout agent pour consommer l'endpoint |
 | QC backtest / strategie | `po-2024:CoursIA` | `po-2026:CoursIA` (tokens MCP) |
-| QC ESGF org cleanup | `po-2024:CoursIA` | `po-2026:CoursIA` |
+| QC partner org cleanup | `po-2024:CoursIA` | `po-2026:CoursIA` |
 | Lean / Mathlib (port + preuves) | `po-2026:CoursIA` | ai-01 secours (env a installer) |
 | Lean prover BG forensic | **`ai-01:CoursIA` systematique** | apres chaque PR / message po-2026 mentionnant sorry |
 | Audit notebooks pedagogique | tout agent polyvalent | cross-check pour eviter double couverture |
@@ -171,4 +171,4 @@ Pour tout sprint / curriculum >= 3 etapes, creer **Epic GitHub** + sub-issues nu
 - Calendrier enseignement + scope ecoles : [docs/teaching-context.md](teaching-context.md)
 - Wrapper training BG avec checkpoints : `scripts/training/train_with_checkpoints.py`
 - QC backtest + MCP Docker : [docs/quantconnect.md](quantconnect.md)
-- Lean prover BG forensic protocol : [docs/lean-prover-state.md](lean-prover-state.md)
+- Lean prover BG forensic protocol : [docs/lean/prover_iteration_history.md](lean/prover_iteration_history.md)

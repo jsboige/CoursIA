@@ -263,8 +263,7 @@ Réponse suggérée : "Les images sont traitées pour l'analyse mais ne sont pas
 
 Après avoir exploré cette démo, vous pouvez :
 - Revenir à la [Demo 1 - Conversation avec Roo](../demo-1-conversation/README.md) pour approfondir vos connaissances sur les interactions textuelles
-- Passer à la [Demo 3 - Organisation et productivité](../demo-3-organisation/README.md) pour des cas d'usage plus spécifiques
-- Explorer la [Demo 4 - Questions techniques et conceptuelles](../demo-4-questions/README.md) pour des sujets plus complexes
+- Explorer les [exemples de questions](../exemples-questions.md) pour d'autres cas d'usage
 
 ---
 

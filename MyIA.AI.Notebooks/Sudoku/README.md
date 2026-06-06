@@ -3,11 +3,25 @@
 <!-- CATALOG-STATUS
 series: Sudoku
 pedagogical_count: 32
-breakdown: =32
-maturity: BETA=23, PRODUCTION=8, ALPHA=1
+breakdown: root=32
+maturity: PRODUCTION=32
 -->
 
-Cette serie de **32 notebooks** explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
+Cette serie de **32 notebooks** (16 C#, 16 Python) explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
+
+**32 notebooks** | **7 niveaux** | **~8h** | **16 C# + 16 Python**
+
+**A qui s'adresse cette serie** : etudiants en informatique (L2-M2) decouvrant les paradigmes algorithmiques, candidats a des entretiens techniques, et enseignants cherchant un fil rouge pedagogique. Les notebooks Python ne necessitent que Python 3.10+. Les notebooks C# requierent .NET 9.0 + dotnet-interactive. Aucun prerequis en IA : les concepts sont introduits depuis le backtracking.
+
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Implementer** un solveur de backtracking avec heuristiques (MRV, Forward Checking) et comprendre sa complexite
+2. **Comparer** 7 paradigmes algorithmiques (exhaustif, metaheuristique, CP, SMT, neuronal, LLM) sur un meme probleme NP-complet
+3. **Modeliser** le Sudoku comme un CSP (variables, domaines, contraintes) et utiliser des solveurs industriels (OR-Tools, Choco)
+4. **Evaluer** les compromis garantie vs performance vs generalisation pour choisir une strategie de resolution
+5. **Mesurer** empiriquement les performances de chaque approche (temps, taux de succes, echelle de difficulte)
 
 ## Pourquoi etudier le Sudoku en IA ?
 
@@ -48,7 +62,7 @@ Chaque approche reflete une philosophie differente de la resolution de problemes
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 33 (16 C#, 17 Python) |
+| Notebooks | 32 (16 C#, 16 Python) |
 | Duree estimee | ~8h |
 | Niveau | Debutant a avance |
 | Langages | C# (.NET Interactive), Python |
@@ -281,6 +295,34 @@ Niveau 7 : Synthese
 
 ---
 
+## Ce que chaque notebook apporte
+
+Chaque notebook introduit une technique de resolution specifique. Le tableau ci-dessous resume en une ligne l'apport pedagogique de chacun — au-dela du titre, c'est le **concept cle** qu'il enseigne.
+
+| # | Notebook | Apport pedagogique |
+|---|----------|-------------------|
+| 0 | Environment | Structures de donnees Sudoku : grille, candidats, propagation de base |
+| 1 | Backtracking | DFS avec retour arriere : l'algorithme fondamental, garantie de solution |
+| 2 | Dancing Links | Couverture exacte de Knuth : listes doublement liees pour Algorithm X |
+| 3 | Genetic | Algorithmes genetiques : population, crossover, mutation, fitness |
+| 4 | Simulated Annealing | Recuit simule : temperature, refroidissement, probabilite d'acceptation |
+| 5 | PSO | Essaim de particules : convergence collective, vitesse, position |
+| 6 | AIMA CSP | CSP academique : variables, domaines, contraintes, MRV, AC-3 |
+| 7 | Norvig | Propagation de Norvig : elimination des candidats + recherche efficace |
+| 8 | Human Strategies | 13 techniques humaines : naked/hidden singles, pairs, pointing, box/line |
+| 9 | Graph Coloring | Formulation graphe : nx.sudoku_graph(), coloration DSATUR |
+| 10 | OR-Tools | CP-SAT industriel : modele declaratif, contraintes globales, parallelisme |
+| 11 | Choco | Solveur Java via JPype : API CP alternative, propagateurs custom |
+| 12 | Z3 | SMT solving : assertions logiques, theories combinees, garantie formelle |
+| 13 | Symbolic Automata | Automates finis + Z3 : alphabets symboliques, transitions prediques |
+| 14 | BDD/MDD | Diagrammes de decision binaires : representation compacte d'espaces de solutions |
+| 15 | Infer/NumPyro | Inference probabiliste : distribution a posteriori sur les cases |
+| 16 | Neural Network | CNN PyTorch : apprentissage de patterns visuels sur grilles |
+| 17 | LLM | LLM Solver : prompt engineering pour resolution logique, limites |
+| 18 | Comparison | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard/Expert |
+
+---
+
 ## Structure des Notebooks
 
 | # | Sujet | C# | Python | Technologie Python |
@@ -487,19 +529,19 @@ A partir des modeles pre-entraines sur diverse_200k, fine-tuning avec un dataset
 
 ## Sources des Projets Etudiants
 
-Les notebooks sont adaptes des meilleurs projets etudiants des depots GitHub :
+Les notebooks sont adaptes de projets etudiants :
 
-| Technique | Source | Repertoire |
-|-----------|--------|------------|
-| **Norvig** | [jsboigeEpita/2024-Sudoku-NLP](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
-| **Simulated Annealing** | [jsboigeEpita/2023-Sudoku-NLP](https://github.com/jsboigeEpita/2023-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.SimulatedAnnealing` |
-| **Human Strategies** | [jsboigeEpita/2024-Sudoku-NLP](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.Human` (23 fichiers, 13 techniques) |
-| **Neural Network** | [jsboigeEpita/2024-Sudoku-CV](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-CV) | `Sudoku.NeuralNetwork` (4 architectures) |
-| **PSO** | [jsboige/MSMIN4IN32-22-MIN2-Sudoku](https://github.com/jsboige/MSMIN4IN32-22-MIN2-Sudoku) | `Sudoku.PSO` (7 fichiers) |
-| **AIMA CSP** | [jsboigeEpita/2024-Sudoku-NLP](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-NLP) | `Sudoku.CspAima` |
-| **Graph Coloring** | [jsboige/MSMIN4IN32-22-MIN2-Sudoku](https://github.com/jsboige/MSMIN4IN32-22-MIN2-Sudoku) | `Sodoku.GraphColoring` (11 fichiers) |
-| **Choco** | [jsboigeECE/2025-Sudoku-Gr01](https://github.com/jsboigeECE/2025-ECE-Ing4-Fin-Sudoku-Gr01) | `Sudoku.ChocoSolvers` (5 implementations) |
-| **LLM** | [jsboigeECE/2025-Sudoku-Gr01](https://github.com/jsboigeECE/2025-ECE-Ing4-Fin-Sudoku-Gr01) | `Sudoku.LLM-ChatGPTenzin` |
+| Technique | Contenu | Repertoire |
+|-----------|---------|------------|
+| **Norvig** | Solveur Norvig + variante BitArray | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
+| **Simulated Annealing** | Recuit simule | `Sudoku.SimulatedAnnealing` |
+| **Human Strategies** | Strategies humaines | `Sudoku.Human` (23 fichiers, 13 techniques) |
+| **Neural Network** | 4 architectures de reseaux de neurones | `Sudoku.NeuralNetwork` |
+| **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` (7 fichiers) |
+| **AIMA CSP** | CSP inspire de AIMA | `Sudoku.CspAima` |
+| **Graph Coloring** | Coloration de graphe | `Sodoku.GraphColoring` (11 fichiers) |
+| **Choco** | 5 implementations Choco | `Sudoku.ChocoSolvers` |
+| **LLM** | Resolution par LLM | `Sudoku.LLM-ChatGPTenzin` |
 
 ## Structure des Fichiers
 
@@ -560,6 +602,70 @@ Sudoku/
 - [Infer.NET Documentation](https://dotnet.github.io/infer/)
 - [Microsoft Semantic Kernel](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [PyTorch](https://pytorch.org/)
+
+## FAQ / Troubleshooting
+
+### Les notebooks C# (.NET Interactive) ne s'executent pas
+
+- Verifiez que .NET SDK 9.0+ est installe : `dotnet --version`
+- Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive && dotnet interactive jupyter install`
+- Verifiez : `jupyter kernelspec list` doit afficher `.net-csharp`
+- Le notebook 0 (Environment) definit les classes de base utilisees par les notebooks suivants — executez-le en premier
+
+### OR-Tools ou Z3 ne s'installent pas
+
+- OR-Tools : `pip install ortools` (wheels precompiles disponibles). Si echec, essayez `conda install -c conda-forge ortools-python`
+- Z3 : `pip install z3-solver`. Attention : le package s'appelle `z3-solver`, pas `z3`
+
+### PyGAD ou MEALPy causent des erreurs
+
+- PyGAD : `pip install pygad` — requiert numpy compatible
+- MEALPy (notebook 5 PSO) : `pip install mealpy` — dependances nombreuses, preferez un env dedie
+- Si conflit de versions : `pip install --upgrade numpy pygad mealpy`
+
+### Le solveur Choco (notebook 11) ne fonctionne pas
+
+Choco est un solveur Java appele via JPype :
+- Verifiez que Java est installe : `java -version`
+- Installez JPype : `pip install jpype1`
+- Le JAR Choco est telecharge automatiquement par le notebook
+
+### L'entrainement du reseau de neurones (notebook 16) est lent
+
+- Sans GPU : reduisez `num_epochs` et `hidden_size` dans les cellules de configuration
+- Avec GPU CUDA : verifiez `torch.cuda.is_available()` avant l'entrainement
+- Le modele pre-entraine `sudoku_solver_final.h5` est inclus pour inference rapide sans entrainement
+
+### Le LLM Solver (notebook 17) echoue souvent
+
+- C'est un comportement attendu : les LLM atteignent generalement 10-30% de succes sur les Sudokus
+- Le notebook illustre les **limites** des modeles de langage sur le raisonnement logique pur
+- Augmentez le nombre de tentatives pour observer la variabilite
+
+### Quelle difficulte de puzzle utiliser ?
+
+- **Easy** : 36-45 indices donnes — tous les solveurs reussissent
+- **Medium** : 30-35 indices — les metaheuristiques commencent a peiner
+- **Hard** : 25-29 indices — seuls les solveurs exacts (DLX, Norvig, CP-SAT, Z3) garantissent la solution
+- **Expert** : 17-24 indices — benchmark extreme, certaines instances sontNP-difficiles
+
+## Quel parcours choisir ?
+
+### Si vous decouvrez les algorithmes
+
+Commencez par **Sudoku-0 (Environment)** pour comprendre les structures de donnees, puis **Sudoku-1 (Backtracking)** pour le premier solveur. Passez a **Sudoku-7 (Norvig)** pour voir comment une simple optimisation (propagation) donne des gains de 100x. C'est le socle commun.
+
+### Si vous voulez comparer les paradigmes
+
+Suivez l'ordre numerique : 0-5 (exhaustif et metaheuristiques), puis 6-12 (CSP et symbolique), puis 16-18 (data-driven). Le notebook **18 (Comparison)** synthetise toutes les approches en un benchmark comparatif.
+
+### Si vous venez du C# / .NET
+
+Les notebooks C# (suffixe `-Csharp`) utilisent GeneticSharp, OR-Tools .NET, Z3 .NET et Infer.NET. Commencez par le parcours C# complet (0-15). Les notebooks Python peuvent servir de reference de comparaison.
+
+### Si vous venez du Python / data science
+
+Les notebooks Python (suffixe `-Python`) couvrent 16 solveurs avec PyGAD, OR-Tools Python, Z3 Python, NumPyro et PyTorch. Commencez par **Sudoku-1-Backtracking-Python**, puis montez en complexite. Le notebook **18-Comparison-Python** synthetise tout.
 
 ## Licence
 

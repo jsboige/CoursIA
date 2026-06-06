@@ -1,58 +1,63 @@
 # MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
 
-Ecosysteme complet de **473 notebooks** Jupyter pour l'apprentissage des technologies AI/ML modernes, organisé par domaines thématiques.
+CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours continu, des fondations jusqu'aux frontières de la recherche. Plutôt qu'une collection d'exemples isolés, il tisse un même fil conducteur à travers onze domaines : on y apprend autant à **faire** — générer des images et de l'audio, entraîner et déployer des modèles, backtester des stratégies de trading, résoudre des problèmes de contraintes — qu'à **comprendre et prouver** : formaliser un théorème en Lean 4, raisonner sur l'incertitude, vérifier qu'un smart contract ou un algorithme se comporte comme attendu.
+
+Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exercices corrigés pour un apprentissage en autonomie.
+
+Le catalogue rassemble près de 500 notebooks répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 474
-breakdown: GenAI=107, QuantConnect=102, SymbolicAI=90, Search=45, Probas=32, Sudoku=32, ML=30, GameTheory=25, RL=6, CaseStudies=4, IIT=1
-maturity: BETA=253, PRODUCTION=160, DRAFT=30, ALPHA=27, TEMPLATE=4
+total: 515
+breakdown: GenAI=120, SymbolicAI=104, QuantConnect=101, Search=46, Probas=44, Sudoku=32, ML=27, GameTheory=25, RL=10, CaseStudies=4, IIT=2
+maturity: PRODUCTION=411, ALPHA=52, BETA=44, DRAFT=4, TEMPLATE=4
 -->
 
-Dernière mise à jour : 2026-05-02
+Dernière mise à jour : 2026-05-28
 
 ## Vue d'ensemble
 
-| Domaine | Notebooks | Description |
-|---------|-----------|-------------|
-| **GenAI** | 110 | IA Generative (Images, Audio, Video, Texte, Vibe-Coding) |
-| **QuantConnect** | 93 | Trading algorithmique et ML financier (Python + C#) |
-| **SymbolicAI** | 90 | IA Symbolique (Lean, Tweety, SmartContracts, SemanticWeb, Planners) |
-| **Search** | 45 | Recherche, CSP, optimisation, metaheuristiques |
-| **Sudoku** | 32 | Resolution de contraintes (.NET C#) |
-| **ML** | 30 | Machine Learning .NET + Python Agents for Data Science |
-| **GameTheory** | 26 | Theorie des Jeux (OpenSpiel, choix social Lean) |
-| **Probas** | 22 | Programmation probabiliste (Infer.NET) |
-| **RL** | 6 | Reinforcement Learning (Stable-Baselines3) |
-| **CaseStudies** | 4 | Etudes de cas interdisciplinaires (diagnostic medical, planification oncologique) |
-| **IIT** | 1 | Integrated Information Theory (PyPhi) |
+| Domaine | Description |
+|---------|-------------|
+| **GenAI** | Generation d'images (SDXL, Flux, Qwen-VL), audio (FishAudio S2-Pro, STT/TTS), video, LLMs, RAG, fine-tuning LoRA, orchestration via Semantic Kernel |
+| **QuantConnect** | Trading algorithmique progressif : cours Python pas-a-pas, 49 strategies backtestees (GARCH, Kelly, ensemble), pipeline ML thermal-safe |
+| **SymbolicAI** | Preuve formelle Lean 4 (theoremes d'Arrow, Conway, Kochen-Specker), logiques argumentaires (Tweety), SmartContracts Solidity, Web semantique RDF/SPARQL |
+| **Search** | Satisfaction de contraintes (CSP), recherche operationnelle, metaheuristiques (recuit, genetiques), planification PDDL avec Fast-Downward |
+| **Probas** | Programmation probabiliste : modeles graphiques en Infer.NET (.NET C#) + inference bayesienne en PyMC (Python) |
+| **Sudoku** | Resolution de contraintes en .NET C# : backtracking, propagation, modeles CNN/MLP, etude comparative d'architectures |
+| **GameTheory** | Theorie des jeux combinatoire (OpenSpiel), choix social formel (theoremes d'Arrow, Sen, Shapley portes en Lean 4), von Neumann |
+| **ML** | Machine Learning .NET (ML.NET) + Python Agents for Data Science : classification, regression, clustering, pipelines |
+| **RL** | Reinforcement Learning avec Stable-Baselines3 : environnements OpenAI Gym, PPO, SAC, evaluation de politiques |
+| **CaseStudies** | Etudes de cas interdisciplinaires : diagnostic medical par LLM, planification oncologique, analyse de sentiments |
+| **IIT** | Integrated Information Theory : mesures Phi avec PyPhi, neurones logiques, conscience et complexite |
 
 ### Progression pedagogique
 
 ```text
-GenAI (110 notebooks)
-├── 00-Environment/ (6) - Setup
-├── Image/ (19) - Generation d'images
-├── Audio/ (28) - Traitement audio
-├── Video/ (16) - Traitement video
-├── Texte/ (11) - LLMs et texte
-├── SemanticKernel/ (20) - SDK Microsoft
-├── CaseStudies/ (4) - Etudes de cas etudiants
-└── Vibe-Coding/ (5) - Claude-Code + Roo-Code
+GenAI
+├── 00-GenAI-Environment/ - Setup Docker, GPU, services
+├── Image/ - Generation d'images (SDXL, Qwen, Flux)
+├── Audio/ - STT, TTS, music, pipeline audiobook FishAudio S2-Pro
+├── Video/ - Generation video, animation
+├── Texte/ - LLMs, RAG, reasoning
+├── SemanticKernel/ - SDK Microsoft
+├── FineTuning/ - Fine-tuning LoRA, adapters
+├── CaseStudies/ - Etudes de cas etudiants
+└── Vibe-Coding/ - Claude-Code + Roo-Code
 
-QuantConnect (93 notebooks)
-├── Python/ (27) - Cours progressifs QC-Py-01 a 27
-├── projects/ (46) - Strategies backtests et ML
-├── ESGF-2026/ (19) - Cours ESGF exercices et templates
-└── shared/ (1) - Librairie utilitaire
+QuantConnect
+├── Python/ - Cours progressifs QC-Py (fondamentaux → strategies)
+├── projects/ - Strategies backtestees et ML (GARCH, Kelly, ensemble)
+└── ML-Training-Pipeline/ - Pipeline training thermal-safe
 
-SymbolicAI (90 notebooks)
-├── SmartContracts/ (26) - Solidity, Web3, blockchain
-├── SemanticWeb/ (13) - RDF, SPARQL, OWL, C# + Python
-├── Planners/ (12) - PDDL, Fast-Downward, OR-Tools, LLM planning
-├── Lean/ (13) - Theorem proving, LeanDojo
-├── Tweety/ (9) - Logiques classiques, argumentation
-└── Argument_Analysis/ (2) - Analyse d'arguments
+SymbolicAI
+├── SmartContracts/ - Solidity, Web3, blockchain
+├── SemanticWeb/ - RDF, SPARQL, OWL, C# + Python
+├── Lean/ - Theorem proving, LeanDojo, social choice
+├── Planners/ - PDDL, Fast-Downward, OR-Tools, LLM planning
+├── Tweety/ - Logiques classiques, argumentation
+├── SymbolicLearning/ - ILP, NeuroSymbolic, KG-ILP, LLM-Symbolic
+└── Argument_Analysis/ - Analyse d'arguments
 ```
 
 ## Technologies principales
@@ -85,19 +90,19 @@ SymbolicAI (90 notebooks)
 
 ## Liens vers les sous-domaines
 
-| Domaine | Notebooks | Lien |
-|---------|-----------|------|
-| **GenAI** | 110 | [GenAI/](GenAI/README.md) |
-| **QuantConnect** | 93 | [QuantConnect/](QuantConnect/README.md) |
-| **SymbolicAI** | 90 | [SymbolicAI/](SymbolicAI/README.md) |
-| **Search** | 45 | [Search/](Search/README.md) |
-| **Sudoku** | 32 | [Sudoku/](Sudoku/README.md) |
-| **ML** | 30 | [ML/](ML/README.md) |
-| **GameTheory** | 26 | [GameTheory/](GameTheory/README.md) |
-| **Probas** | 22 | [Probas/](Probas/README.md) |
-| **RL** | 6 | [RL/](RL/README.md) |
-| **CaseStudies** | 4 | [CaseStudies/](CaseStudies/README.md) |
-| **IIT** | 1 | [IIT/](IIT/README.md) |
+| Domaine | Lien |
+|---------|------|
+| **GenAI** | [GenAI/](GenAI/README.md) |
+| **QuantConnect** | [QuantConnect/](QuantConnect/README.md) |
+| **SymbolicAI** | [SymbolicAI/](SymbolicAI/README.md) |
+| **Search** | [Search/](Search/README.md) |
+| **Probas** | [Probas/](Probas/README.md) |
+| **Sudoku** | [Sudoku/](Sudoku/README.md) |
+| **GameTheory** | [GameTheory/](GameTheory/README.md) |
+| **ML** | [ML/](ML/README.md) |
+| **RL** | [RL/](RL/README.md) |
+| **CaseStudies** | [CaseStudies/](CaseStudies/README.md) |
+| **IIT** | [IIT/](IIT/README.md) |
 
 ## Configuration requise
 
@@ -137,7 +142,7 @@ docker-compose up -d
 1. **GenAI** - Toutes les series sauf Orchestration
 2. **ML** - Tutoriels .NET + Python Agents
 3. **SymbolicAI** - SmartContracts, SemanticWeb
-4. **QuantConnect/ESGF-2026/** - Exercices trading
+4. **QuantConnect/partner-course-quant-trading/** - Exercices trading
 
 ### Expert (120h+)
 1. **GenAI/03-Orchestration** + **04-Applications**

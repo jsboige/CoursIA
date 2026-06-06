@@ -9,8 +9,7 @@ Lasso regression stop-loss volatility prediction. Predicts next-day realized vol
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Stoploss-Volatility-ML"`
 **QC Cloud:** Project 29463529. Research notebook executed on QC Cloud (2026-05-11).
 
 ## Backtest Metrics

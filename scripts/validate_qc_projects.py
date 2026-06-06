@@ -10,7 +10,7 @@ Checks:
     3. Every project on disk appears in README
     4. Count matches between README header and actual
     5. Empty/orphan directories
-    6. Duplicate detection across source dirs (projects-imported, ESGF-2026/examples)
+    6. Duplicate detection across source dirs (projects-imported, partner-course-quant-trading/examples)
 """
 
 import argparse
@@ -83,7 +83,7 @@ def check_duplicate_sources(qc_root: Path) -> list[str]:
     source_dirs = [
         qc_root / "projects-imported",
         qc_root / "algorithms" / "python",
-        qc_root / "ESGF-2026" / "examples",
+        qc_root / "partner-course-quant-trading" / "examples",
     ]
     for src_dir in source_dirs:
         if not src_dir.exists():

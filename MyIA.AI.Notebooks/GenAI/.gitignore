@@ -1,1 +1,10 @@
 .env
+# TTS generation artifacts
+Audio/04-Applications/tts_output_fishaudio/
+Audio/04-Applications/tts_output_kokoro/
+Audio/04-Applications/tts_output/
+Audio/04-Applications/audiobook_*.wav
+Audio/04-Applications/audiobook_*.mp3
+Audio/04-Applications/prosodic_output/
+Audio/04-Applications/voice_casting_output/
+Audio/04-Applications/exec_fishaudio*.py

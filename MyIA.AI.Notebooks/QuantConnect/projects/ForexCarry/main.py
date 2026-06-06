@@ -42,6 +42,9 @@ class ForexCarryTradeStrategy(QCAlgorithm):
         self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
+        # Brokerage: G10 FX traded via OANDA margin account
+        self.set_brokerage_model(BrokerageName.OANDA_BROKERAGE, AccountType.MARGIN)
+
         # 4 diversified FX pairs (Europe, Commodity, Asia, Americas) - confirmed best
         self.pair_names = ["EURUSD", "AUDUSD", "USDJPY", "USDCAD"]
         self.forex_symbols = {}

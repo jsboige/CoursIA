@@ -9,8 +9,7 @@ Black-Litterman portfolio with multi-window momentum views (1M, 3M, 6M, 12M). BL
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/BlackLitterman-Momentum"`
 
 **QC Cloud:** Deployed as project 29816300.
 

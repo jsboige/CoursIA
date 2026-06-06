@@ -14,7 +14,7 @@ Long-only top-2 momentum currencies vs USD, monthly rebalance. Signal is inverte
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ForexCarry"`
 ```bash
 lean backtest --project .
 ```

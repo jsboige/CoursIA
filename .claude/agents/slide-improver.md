@@ -208,7 +208,7 @@ Variantes : `.img-grid-2x2` (2 colonnes), `.img-grid-3` (3 colonnes).
 ![bg](images/img_001.png)
 ```
 
-Avec texte : `![bg brightness:0.4](images/img_001.png)` + texte blanc.
+Avec texte : `![bg brightness:0.4]` + `(images/img_001.png)` + texte blanc.
 
 ### Pattern 9 : Slide dense avec images
 

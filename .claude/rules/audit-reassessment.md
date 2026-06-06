@@ -1,53 +1,20 @@
 # Audit Reassessment Protocol
 
-**Source:** Issue #499 — Mandatory verification before fixing any NanoClaw (#488) finding.
-**Rationale:** NanoClaw audit has ~60% false positive rate (verified on 17-item sample). Blind fixes propagate fake work.
+**Source:** Issue #499 — vérification obligatoire avant tout fix sur NanoClaw (#488) finding.
+**Rationale:** NanoClaw audit a ~60% false positive rate (vérifié sur 17-item sample). Fixes aveugles propagent fake work.
 
 S'applique à **tout fix basé sur audit automatisé** (NanoClaw ou similaire). Pas de PR sur un audit finding sans avoir complété le protocole.
 
-**Items déjà reclassés + patterns NanoClaw false positive connus** : [docs/audit-reassessment-findings.md](../../docs/audit-reassessment-findings.md).
+**Items déjà reclassés, script Step 1, patterns FP connus** : [docs/audit-reassessment-findings.md](../../docs/audit-reassessment-findings.md).
 
 ## Protocole 4 étapes (HARD)
 
-### Step 1 : Vérification mécanique
-
-```python
-import json
-with open(notebook_path) as f:
-    nb = json.load(f)
-code = [c for c in nb['cells'] if c['cell_type']=='code']
-exec_count = sum(1 for c in code if c.get('execution_count'))
-outputs = sum(1 for c in code if c.get('outputs'))
-errors = sum(1 for c in code if any(o.get('output_type')=='error' for o in c.get('outputs',[])))
-print(f'{len(code)} cells, {exec_count} executed, {outputs} outputs, {errors} errors')
-```
-
-Si `exec_count == len(code)` et `errors == 0` alors que l'audit reporte "code never executed" → **FALSE POSITIVE**. Stop ici.
-
-### Step 2 : Vérification pédagogique (seulement si Step 1 montre des problèmes)
-
-Lire le notebook directement. Classifier :
-
-| Classification | Signification | Action |
-|---------------|---------------|--------|
-| **CONFIRMED bug** | Erreurs code persistantes à la re-exécution | Fix code + re-execute |
-| **CONFIRMED outputs stripped** | Code exec OK mais outputs cleared avant commit | Re-execute seulement, pas de PR code |
-| **CONFIRMED pedagogy** | Interprétation décrit des résultats différents des outputs réels | Reformuler markdown ou re-execute |
-| **FALSE POSITIVE** | Tout va bien, audit faux | Reporter sur dashboard, pas de PR |
-
-### Step 3 : Reporter sur dashboard
-
-```
-Item M-XX : [CONFIRMED bug | CONFIRMED outputs stripped | CONFIRMED pedagogy | FALSE POSITIVE]
-Details : [direct read vs audit claim]
-```
-
-### Step 4 : Fix (seulement si CONFIRMED)
-
-- **CONFIRMED bug** : fix code + Papermill re-exécution
-- **CONFIRMED outputs stripped** : re-execute seulement (pas de PR fix code)
-- **CONFIRMED pedagogy** : reformuler interpretations ou re-execute
-- **FALSE POSITIVE** : reporter sur dashboard, fermer le finding, pas de PR
+| Step | Action | Conclusion |
+|------|--------|------------|
+| **1. Vérif mécanique** | Compter cellules code, `execution_count`, `outputs`, `errors` (script Python : [detail](../../docs/audit-reassessment-findings.md#step-1--vérification-mécanique)) | `exec_count == len(code)` et `errors == 0` alors que audit dit "never executed" → **FALSE POSITIVE**, stop |
+| **2. Vérif pédagogique** | Lire le notebook directement, classifier | `CONFIRMED bug` / `CONFIRMED outputs stripped` / `CONFIRMED pedagogy` / `FALSE POSITIVE` |
+| **3. Reporter dashboard** | `Item M-XX : [classification] — details : [direct read vs audit claim]` | Documenter pour prévenir re-dispatch |
+| **4. Fix si CONFIRMED** | bug→fix+re-exec ; outputs stripped→re-exec seul ; pedagogy→reformuler ; FP→fermer | Pas de PR sur FP |
 
 ## Critères d'acceptation
 

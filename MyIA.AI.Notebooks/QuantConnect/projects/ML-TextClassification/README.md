@@ -1,25 +1,25 @@
 # ML-TextClassification
 
-**Asset class:** Template (no active strategy)
+**Asset class:** US Equities (5 stocks: AAPL, MSFT, GOOGL, AMZN, TSLA)
 **Cloud project ID:** None (local only)
 
 ## Description
 
-Template/skeleton project for text classification strategies. Contains basic NLP framework.
+Text classification strategy using Naive Bayes on simulated news sentiment. Predicts stock direction from news headlines (simulated via random sampling for demo purposes). Daily classification with biweekly retraining.
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-TextClassification"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
 
 | Metric | Value |
 |--------|-------|
-| Status | Template/skeleton (no active strategy) |
+| Model | Naive Bayes text classifier |
+| Universe | 5 stocks (AAPL, MSFT, GOOGL, AMZN, TSLA) |
+| Rebalance | Daily (classification-based) |
 
 ## Files
 
-- main.py - Template structure
+- main.py - Strategy (262L, MLTextClassificationAlgorithm)

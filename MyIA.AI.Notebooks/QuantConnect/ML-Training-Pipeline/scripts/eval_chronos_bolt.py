@@ -63,9 +63,12 @@ def load_chronos_model(
     """Load Chronos-Bolt model from HuggingFace."""
     model_id = CHRONOS_MODEL_IDS.get(model_size, CHRONOS_MODEL_IDS["base"])
     try:
-        from chronos import ChronosPipeline
+        # chronos-bolt-* models require BaseChronosPipeline (auto-dispatches to
+        # ChronosBoltPipeline). The legacy ChronosPipeline (T5) rejects the
+        # bolt config field `input_patch_size` with a TypeError.
+        from chronos import BaseChronosPipeline
 
-        pipeline = ChronosPipeline.from_pretrained(model_id, device_map=device)
+        pipeline = BaseChronosPipeline.from_pretrained(model_id, device_map=device)
         return ChronosBoltWrapper(pipeline, model_id=model_id)
     except ImportError:
         print(

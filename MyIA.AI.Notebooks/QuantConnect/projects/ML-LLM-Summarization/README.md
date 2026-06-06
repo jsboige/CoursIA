@@ -9,8 +9,7 @@ LLM-based news summarization for sentiment signals. Uses OpenAI API or keyword e
 
 ## How to Run
 
-**Lean CLI:**
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-LLM-Summarization"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
@@ -29,4 +28,5 @@ LLM-based news summarization for sentiment signals. Uses OpenAI API or keyword e
 - research.ipynb - Sentiment signal evaluation
 ## References
 
-- Hands-On AI Trading, Section 06, Example 16
+- Hands-On AI Trading, Section 06, Example 16
+

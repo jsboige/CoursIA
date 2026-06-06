@@ -2,12 +2,187 @@
 from AlgorithmImports import *
 import numpy as np
 import pandas as pd
+import math
 import traceback
 from datetime import timezone
-from channel_helpers import (
-    classic_chart_zigzag, find_envelope_line,
-    get_line_params_time, get_channel_value_at_time
-)
+
+
+# --- Inlined from channel_helpers.py for QC Cloud compatibility ---
+
+
+def _get_line_params_time(p1_time_num, p1_price, p2_time_num, p2_price):
+    """Get slope (m) and intercept (c) for a line through two time-price points."""
+    time_diff = p2_time_num - p1_time_num
+    if abs(time_diff) < 1e-9:
+        return float('inf'), float(p1_time_num)
+    m = (p2_price - p1_price) / time_diff
+    c = p1_price - m * p1_time_num
+    return m, c
+
+
+def _find_envelope_line(pivots_df, is_resistance, recency_alpha=0.0,
+                        max_violation_pct=0.0, check_all_pivots=None):
+    """Find the tightest envelope line through any pair of same-type pivots.
+
+    Algorithm:
+    1. Try ALL pairs of same-type pivots as anchors
+    2. Check containment against check_all_pivots (if provided) or same-type pivots
+    3. Allow up to max_violation_pct fraction of check points to violate
+    4. Score = (violations, avg_margin) -- minimize violations first, then tightness
+    """
+    n_pivots = len(pivots_df)
+    if n_pivots < 2:
+        return None, None
+
+    pivots_vals = pivots_df[['time_numeric', 'price']].values
+
+    if check_all_pivots is not None:
+        check_vals = check_all_pivots
+    else:
+        check_vals = pivots_vals
+    n_check = len(check_vals)
+    max_violations = max(1, int(n_check * max_violation_pct)) if max_violation_pct > 0 else 0
+
+    best = None
+    best_violations = n_check + 1
+    best_margin = float('inf')
+
+    for i in range(n_pivots):
+        for j in range(i + 1, n_pivots):
+            t1, p1 = pivots_vals[i]
+            t2, p2 = pivots_vals[j]
+            if abs(t2 - t1) < 1e-9:
+                continue
+
+            m, c = _get_line_params_time(t1, p1, t2, p2)
+            if m == float('inf'):
+                continue
+
+            violations = 0
+            total_margin = 0.0
+            n_checked = 0
+            valid = True
+            for k in range(n_check):
+                pk_t, pk_p = check_vals[k]
+                if abs(pk_t - t1) < 1e-9 or abs(pk_t - t2) < 1e-9:
+                    continue
+                line_val = m * pk_t + c
+                if is_resistance:
+                    margin = line_val - pk_p
+                    if margin < -1e-9:
+                        violations += 1
+                        if violations > max_violations:
+                            valid = False
+                            break
+                else:
+                    margin = pk_p - line_val
+                    if margin < -1e-9:
+                        violations += 1
+                        if violations > max_violations:
+                            valid = False
+                            break
+                total_margin += margin
+                n_checked += 1
+
+            if not valid:
+                continue
+
+            avg_margin = total_margin / n_checked if n_checked > 0 else float('inf')
+
+            if (violations < best_violations or
+                    (violations == best_violations and avg_margin < best_margin)):
+                best_violations = violations
+                best_margin = avg_margin
+                best = (i, j)
+
+    if best is None:
+        return None, None
+    return pivots_df.iloc[best[0]], pivots_df.iloc[best[1]]
+
+
+def _classic_chart_zigzag(df, threshold_percent=0.05):
+    """Classic ZigZag indicator: finds alternating high/low pivots."""
+    if len(df) < 2:
+        return []
+
+    pivots = []
+    first = df.iloc[0]
+    last_price = float(first['close'])
+    last_time = first['time']
+    second = df.iloc[1]
+    direction_up = float(second['close']) > last_price
+    extreme_price = last_price
+    extreme_time = last_time
+    last_sign = 1 if direction_up else -1
+    pivots.append({'time': last_time, 'price': last_price, 'type': last_sign})
+
+    for i in range(1, len(df)):
+        row = df.iloc[i]
+        price = float(row['close'])
+        time = row['time']
+
+        if direction_up:
+            if price > extreme_price:
+                extreme_price = price
+                extreme_time = time
+            else:
+                retrace = 1.0 - (price / extreme_price) if extreme_price != 0 else 0
+                if retrace >= threshold_percent:
+                    pivots.append({'time': extreme_time, 'price': extreme_price, 'type': -1})
+                    direction_up = False
+                    extreme_price = price
+                    extreme_time = time
+        else:
+            if price < extreme_price:
+                extreme_price = price
+                extreme_time = time
+            else:
+                rally = (price / extreme_price) - 1.0 if extreme_price != 0 else float('inf')
+                if rally >= threshold_percent:
+                    pivots.append({'time': extreme_time, 'price': extreme_price, 'type': 1})
+                    direction_up = True
+                    extreme_price = price
+                    extreme_time = time
+
+    # Ensure alternation
+    if len(pivots) > 1 and pivots[-1]['type'] == pivots[-2]['type']:
+        if pivots[-1]['type'] == 1:
+            if pivots[-1]['price'] < pivots[-2]['price']:
+                pivots.pop(-2)
+            else:
+                pivots.pop(-1)
+        else:
+            if pivots[-1]['price'] > pivots[-2]['price']:
+                pivots.pop(-2)
+            else:
+                pivots.pop(-1)
+
+    if pivots and pivots[-1]['type'] != (-1 if direction_up else 1):
+        pivots.append({'time': extreme_time, 'price': extreme_price,
+                       'type': (-1 if direction_up else 1)})
+
+    return pivots
+
+
+def _get_channel_value_at_time(channel_pivots, time_numeric):
+    """Get channel line value at a specific time."""
+    if not channel_pivots or channel_pivots[0] is None or channel_pivots[1] is None:
+        return float('nan')
+    p1, p2 = channel_pivots[0], channel_pivots[1]
+    if pd.isna(p1.get('time_numeric')) or pd.isna(p2.get('time_numeric')):
+        return float('nan')
+    m, c = _get_line_params_time(p1['time_numeric'], p1['price'],
+                                  p2['time_numeric'], p2['price'])
+    if m == float('inf'):
+        return float('nan')
+    return m * time_numeric + c
+
+
+# Alias for readability in algorithm body (match original import names)
+get_line_params_time = _get_line_params_time
+find_envelope_line = _find_envelope_line
+classic_chart_zigzag = _classic_chart_zigzag
+get_channel_value_at_time = _get_channel_value_at_time
 # endregion
 
 

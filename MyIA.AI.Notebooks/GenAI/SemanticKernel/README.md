@@ -1,5 +1,12 @@
 # SemanticKernel - Microsoft Semantic Kernel
 
+<!-- CATALOG-STATUS
+series: GenAI-SemanticKernel
+pedagogical_count: 20
+breakdown: Fundamentals=1, Advanced=1, Agents=1, Filters=1, VectorStores=1, ProcessFramework=1, MultiModal=1, MCP=1, CLR=1, NotebookMaker=3, CaseStudies=5, AutoInteractive=1, Templates=2
+maturity: PRODUCTION=8, BETA=7, TEMPLATE=3, ALPHA=1, DRAFT=1
+-->
+
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Text Generation](../Texte/README.md)
 
 Microsoft Semantic Kernel represente un tournant dans la maniere de construire des applications intelligentes. Ce SDK d'orchestration agentique connecte les LLMs aux outils, donnees et workflows de votre systeme. La reponse de Microsoft a l'ecosysteme LangChain, Semantic Kernel transforme des applications statiques en systemes autonomes capables de raisonnement, d'apprentissage et d'action.
@@ -175,6 +182,84 @@ Le fil rouge de cette serie est le NotebookMaker, un systeme multi-agents qui ge
 - Remplacement des Planners deprecies par `FunctionChoiceBehavior.Auto()`
 - Ajout interpretations pedagogiques style GameTheory
 - Integration Qdrant pour Vector Stores
+
+## FAQ
+
+### `semantic-kernel` installe mais `ImportError` au premier notebook
+
+Semantic Kernel evolue rapidement et les versions sont parfois incompatibles entre elles. Si `ImportError: cannot import name 'Kernel'` ou similaire :
+
+```bash
+# Verifier la version installee
+pip show semantic-kernel
+
+# Installer la version testee avec les notebooks
+pip install semantic-kernel>=1.30.0 python-dotenv openai
+```
+
+Les notebooks 01-03 utilisent les APIs stables (`Kernel`, `ChatCompletionAgent`, `AgentGroupChat`). Les APIs depreciees (`Planner`, `SKContext`) ont ete remplacees par `FunctionChoiceBehavior.Auto()` depuis janvier 2026. Si votre code utilise encore `Planner`, consulter le notebook [02](02-SemanticKernel-Advanced.ipynb) pour la migration.
+
+### Le NotebookMaker genere des notebooks vides ou incomplets
+
+Le NotebookMaker (notebook [10](10-SemanticKernel-NotebookMaker.ipynb)) orchestre 3 agents (Admin, Coder, Reviewer) pour generer un notebook. Si le resultat est vide ou incomplet :
+
+- Verifier que le model LLM configure supporte le function calling (`gpt-4o-mini` minimum, `gpt-4o` recommande).
+- Le systeme necessite 3 a 5 iterations agentiques pour converger. Les versions batch ([10a](10a-SemanticKernel-NotebookMaker-batch.ipynb)) et parametrisee ([10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb)) offrent plus de controle sur le nombre de tours.
+- Les filtres d'observabilite (notebook [04](04-SemanticKernel-Filters-Observability.ipynb)) permettent de tracer chaque echange agentique et diagnostiquer les blocages.
+
+### Quelle difference entre Semantic Kernel et LangChain ?
+
+| Critere | Semantic Kernel | LangChain |
+|---------|----------------|-----------|
+| **Editeur** | Microsoft | Communautaire |
+| **Langues** | Python + C# | Python + JS/TS |
+| **Approche** | Plugins et Kernel central | Chains et LCEL |
+| **Agents** | `ChatCompletionAgent` + `AgentGroupChat` | `AgentExecutor` |
+| **RAG** | VectorStores natifs | Retrievers + VectorStores |
+| **Interop .NET** | Natif (pythonnet/CLR) | Non |
+| **Maturite entreprise** | Integre Azure | Ecosysteme large |
+
+Si vous travaillez dans l'ecosysteme Microsoft (Azure, .NET, Teams), Semantic Kernel est le choix naturel. Pour un ecosysteme Python pur ou du prototypage rapide, LangChain offre plus de flexibilite.
+
+### Les agents SK bouclent sans converger
+
+L'`AgentGroupChat` (notebook [03](03-SemanticKernel-Agents.ipynb)) peut entrer en boucle infinie si la `SelectionStrategy` ne definit pas de condition de terminaison claire. Mitigation :
+
+- Utiliser une `TerminationStrategy` explicite (nombre max de tours, mot-cle de fin).
+- Limiter `maximum_iterations` dans la configuration du chat.
+- La `SelectionStrategy` par defaut est round-robin — pour des agents specialises, implementer une strategie basee sur le contexte (voir NotebookMaker notebook [10](10-SemanticKernel-NotebookMaker.ipynb)).
+
+### VectorStores / RAG : Qdrant injoignable
+
+Le notebook [05](05-SemanticKernel-VectorStores.ipynb) utilise Qdrant pour le RAG. Si erreur de connexion :
+
+```bash
+# Verifier que Qdrant est actif
+curl http://localhost:6333/collections
+
+# Ou utiliser l'instance cloud
+QDRANT_URL=https://qdrant.myia.io
+QDRANT_API_KEY=votre-cle
+```
+
+Le notebook fonctionne en mode demo avec un magasin en memoire si Qdrant n'est pas disponible. Pour la production, Qdrant (ou un autre store persistant) est recommande.
+
+### Comment utiliser les filtres pour deboguer les appels LLM ?
+
+Les filtres SK (notebook [04](04-SemanticKernel-Filters-Observability.ipynb)) interceptent chaque appel LLM avant et apres execution. Pour le debug :
+
+```python
+from semantic_kernel.filters import FilterTypes
+
+@kernel.filter(FilterTypes.FUNCTION_INVOCATION)
+async def log_filter(context, next):
+    print(f"Appel: {context.function.name}")
+    print(f"Args: {context.arguments}")
+    await next(context)
+    print(f"Resultat: {context.result}")
+```
+
+Ce pattern est essentielle pour comprendre ce que font les agents dans un systeme multi-agents comme le NotebookMaker.
 
 ## Licence
 

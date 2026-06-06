@@ -2,16 +2,51 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 45
-breakdown: Applications=20, Part1-Foundations=11, Part2-CSP=9, =5
-maturity: BETA=20, PRODUCTION=16, DRAFT=8, ALPHA=1
+pedagogical_count: 46
+breakdown: Applications=21, Part1-Foundations=11, Part2-CSP=9, root=5
+maturity: PRODUCTION=43, ALPHA=2, BETA=1
 -->
 
 Tout problème d'IA, du plus simple jeu de plateau à la planification logistique industrielle, se réduit à un même défi : explorer un espace de solutions possibles pour trouver la meilleure. Cette série vous apprend à maîtriser cette exploration, depuis les algorithmes classiques (BFS, A*, Minimax) jusqu'aux techniques avancées (CSP, métaheuristiques, hybridation LLM). Le fil rouge est la **réduction de l'espace de recherche** : comment passer d'une exploration aveugle exponentielle à une résolution intelligemment guidée.
 
-Le parcours couvre quatre grands piliers. Les **fondements** formalisent les espaces d'états et couvrent les algorithmes de recherche non informée, informée, locale, génétique, adversariale et MCTS. La **programmation par contraintes** (CSP) introduit un changement de paradigme : au lieu d'explorer, on réduit les domaines par propagation. Les **applications** (20 notebooks) illustrent chaque concept sur des problèmes réels adaptés de projets étudiants EPITA, EPF et ECE. Enfin, les **métaheuristiques et l'hybridation** relient la recherche à l'optimisation continue et aux LLMs.
+Le parcours couvre quatre grands piliers. Les **fondements** formalisent les espaces d'états et couvrent les algorithmes de recherche non informée, informée, locale, génétique, adversariale et MCTS. La **programmation par contraintes** (CSP) introduit un changement de paradigme : au lieu d'explorer, on réduit les domaines par propagation. Les **applications** (20 notebooks) illustrent chaque concept sur des problèmes réels adaptés de projets étudiants. Enfin, les **métaheuristiques et l'hybridation** relient la recherche à l'optimisation continue et aux LLMs.
 
-**À qui s'adresse cette série** : étudiants en informatique (L3-M2), ingénieurs logiciel confrontés à des problèmes d'optimisation, et candidats à des entretiens techniques. Les notebooks Python ne nécessitent que Python 3.10+ avec `ortools` et `deap`. Les side tracks C# (edge detection, portefeuille) requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en algorithmique avancée : les concepts sont introduits depuis les espaces d'états.
+**46 notebooks** | **4 piliers** | **~38h**
+
+**A qui s'adresse cette serie** : etudiants en informatique (L3-M2), ingenieurs logiciel confrontes a des problemes d'optimisation, et candidats a des entretiens techniques. Les notebooks Python ne necessitent que Python 3.10+ avec `ortools` et `deap`. Les side tracks C# (edge detection, portefeuille) requierent .NET 9.0 + dotnet-interactive. Aucun prerequis en algorithmique avancee : les concepts sont introduits depuis les espaces d'etats.
+
+## Pourquoi cette serie
+
+La recherche et l'optimisation sont au coeur de l'informatique : tout probleme, du plus simple jeu de plateau a la planification logistique industrielle, se reduit a explorer un espace de solutions. Cette serie couvre **l'integralite du spectre algorithmique** — de la recherche aveugle (BFS) a l'hybridation LLM+CSP — en construisant une comprehension progressive des compromis fondamentaux.
+
+Cette serie repose sur une **double approche**, delibement juxtaposee :
+
+- **Exploration systematique** (recherche classique) : BFS, DFS, A*, Minimax — des algorithmes qui garantissent de trouver une solution optimale si elle existe, mais dont le cout peut etre exponentiel. C'est le domaine des espaces d'etats, des heuristiques admissibles, de la complétude.
+- **Reduction de l'espace** (programmation par contraintes) : au lieu d'explorer betement, on elague les domaines impossibles par propagation (AC-3, Forward Checking, CP-SAT). C'est un changement de paradigme : on ne cherche plus, on contraint. Avantage : resolution de problemes industriels (ordonnancement, emploi du temps) en quelques millisecondes. Limite : la modelisation est un art.
+
+Avoir les deux approches permet de comprendre **quand explorer, quand contraindre, et quand les combiner** — une competence cruciale pour tout ingenieur confronte a des problemes combinatoires.
+
+Au-dela de la methodologie, cette serie couvre des **applications reelles** adaptees de projets etudiants : planification d'infirmiers (CHU), ordonnancement d'atelier (industrie), optimisation de portefeuille (finance), TSP/VRP (logistique), demineur (CSP + probabilites), Picross (couverture exacte). Chaque application est une brique construite sur les concepts precedents.
+
+## Qu'est-ce que la recherche en IA ?
+
+| Aspect | Exploration systematique | Programmation par contraintes | Metaheuristiques |
+|--------|--------------------------|-------------------------------|-----------------|
+| **Philosophie** | Enumerer methodiquement | Reduire les domaines impossibles | S'inspirer de la nature |
+| **Garantie** | Solution optimale (si temps) | Solution optimale (si modelisable) | Aucune garantie |
+| **Modelisation** | Espace d'etats (S, A, T, G) | Variables, domaines, contraintes | Fonction objectif, voisinage |
+| **Complexite** | Exponentielle (mais heuristiques) | Exponentielle (mais propagation) | Polynomiale par iteration |
+| **Quand l'utiliser** | Problemes bien definis, heuristique connue | Contraintes claires, domaine discret | Grands espaces, approximation acceptable |
+
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Formaliser** un probleme reel en espace d'etats (S, s0, A, T, G) et choisir l'algorithme de recherche adapte
+2. **Comparer** recherche systematique (A*), contraintes (CSP) et metaheuristiques (GA, SA) sur un meme probleme
+3. **Modeliser** un probleme industriel en CSP (ordonnancement, routing, emploi du temps) avec OR-Tools CP-SAT
+4. **Evaluer** les compromis garantie vs performance vs generalisation pour choisir une strategie algorithmique
+5. **Combiner** approches complementaires (CP+SAT, LLM+CSP, MCTS+DQN) pour des problemes complexes
 
 ## Parcours d'apprentissage
 
@@ -30,16 +65,74 @@ Les 20 notebooks d'applications illustrent chaque concept sur des cas réels : p
 ## Vue d'ensemble
 
 | Partie | Notebooks | Duree |
-|--------|-----------|-------|
+| -------- | --------- | ----- |
 | Partie 1: Search Fondamental | 11 | ~12h30 |
 | Partie 2: Programmation par Contraintes | 9 | ~9h |
 | Applications | 20 | ~13h20 |
-| **Total** | **40** | **~34h50** |
+| Heritage (racine) | 5 | ~3h |
+| **Total** | **45** | **~38h** |
 
 | Statistique | Valeur |
 |-------------|--------|
 | Langages | Python (principal), C# (side tracks) |
 | Niveau | Debutant a avance |
+
+## Ce que chaque notebook apporte
+
+Chaque notebook introduit un concept ou algorithme specifique. Le tableau ci-dessous resume en une ligne l'apport pedagogique de chacun.
+
+### Partie 1 : Search Fondamental
+
+| # | Notebook | Apport pedagogique |
+|---|----------|-------------------|
+| 1 | StateSpace | Formaliser un probleme en espace d'etats (S, s0, A, T, G) |
+| 2 | Uninformed | BFS vs DFS : comment l'ordre d'exploration change la complexite |
+| 3 | Informed | Heuristiques admissibles et A* : guider la recherche vers la solution |
+| 4 | LocalSearch | Abandonner la garantie pour l'efficacite : paysages de fitness et optima locaux |
+| 5 | GeneticAlgorithms | Populations, crossover, mutation : l'evolution comme metaheuristique |
+| 6 | AdversarialSearch | Minimax, Alpha-Beta : chercher dans les jeux a deux joueurs |
+| 7 | MCTS-And-Beyond | Monte Carlo Tree Search et la revolution AlphaGo (MCTS + DQN) |
+| 8 | DancingLinks | Couverture exacte de Knuth : une structure de donnees transforme un algorithme |
+| 9 | LinearProgramming | Programmation lineaire (PuLP) : relaxer les contraintes entieres |
+| 10 | SymbolicAutomata | Automates finis + Z3 : raisonner sur des alphabets infinis |
+| 11 | Metaheuristiques | PSO, ABC, BRO avec MEALPy : comparer 160+ algorithmes |
+
+### Partie 2 : Programmation par Contraintes
+
+| # | Notebook | Apport pedagogique |
+|---|----------|-------------------|
+| 1 | CSP Fundamentals | Modele (X, D, C) : declarer le probleme plutot que l'algorithme |
+| 2 | CSP Consistency | AC-3, Forward Checking : reduire l'espace par propagation avant la recherche |
+| 3 | CSP Advanced | Contraintes globales (AllDifferent, Cumulative, Circuit) |
+| 4 | CSP Scheduling | Job-Shop, RCPSP, Nurse : l'ordonnancement industriel par contraintes |
+| 5 | CSP Optimization | Bin Packing, Knapsack, Portfolio : optimiser sous contraintes |
+| 6 | CSP Hybridization | LCG, CP+SAT, CP+ML, LLM+CSP : combiner les paradigmes |
+| 7 | CSP Soft | Contraintes souples, Fuzzy CSP : quand toutes les contraintes ne sont pas egales |
+| 8 | CSP Temporal | Allen's Interval Algebra, STP : raisonner sur le temps |
+| 9 | CSP Distributed | ABT, AWC : resoudre des CSP repartis entre agents |
+
+### Applications
+
+| # | Notebook | Apport pedagogique |
+|---|----------|-------------------|
+| App-1 | NQueens | Le benchmark classique CSP : backtracking vs min-conflicts vs CP-SAT |
+| App-2 | GraphColoring | Coloration de cartes : DSATUR vs CP-SAT, departements francais |
+| App-3 | NurseScheduling | Planning infirmiers : contraintes hard/soft, modele CP-SAT |
+| App-4 | JobShopScheduling | Ordonnancement industriel : IntervalVar, NoOverlap, makespan |
+| App-5 | Timetabling | Emploi du temps : MiniZinc + CP-SAT, une modelisation declarative |
+| App-6 | Minesweeper | Demineur : propagation CSP + probabilites + hybridation LLM |
+| App-7 | Wordle | Solveur Wordle : filtrage CSP + theorie de l'information (entropy) |
+| App-8 | MiniZinc | Modelisation declarative : syntaxe MiniZinc, contraintes globales |
+| App-9 | EdgeDetection | Detection de bords par GA : PyGAD, filtres de convolution |
+| App-10 | Portfolio | Frontiere de Pareto : optimisation multi-objectif de portefeuille |
+| App-11 | Picross | Nonogrammes : speedup 27Mx CP-SAT vs naive |
+| App-12 | ConnectFour | Puissance 4 : 8 algorithmes IA (Minimax, MCTS, DQN-RL) |
+| App-13 | TSP | Voyageur de commerce : SA, GA, ACO, OR-Tools routing |
+| App-14 | ConnectFour-Adversarial | Benchmark adversarial : Minimax vs Alpha-Beta vs MCTS |
+| App-15 | SportsScheduling | Calendrier sportif : contraintes TV, equite, deplacements |
+| App-16 | Crossword | Mots croises : backtracking, OR-Tools, generation |
+| App-17 | VRP-Logistics | Vehicle Routing : SA, GA, ACO, CP-SAT |
+| App-18 | HyperparameterTuning | Optimisation bayesienne de hyperparams : Optuna vs GA vs PSO |
 
 ---
 
@@ -89,30 +182,30 @@ Les notebooks CSP necessitent une comprehension prealable de :
 
 ## Applications (`Applications/`)
 
-Problemes du monde reel adaptes de projets etudiants (EPITA PPC 2025, EPF MSMIN5IN52, ECE Ing4 2026).
+Problemes du monde reel adaptes de projets etudiants.
 
 ### Applications Search (`Applications/Search/`)
 
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12-ConnectFour](Applications/Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : 8 algorithmes IA (Minimax, MCTS, DQN-RL) | EPITA PPC 2025 |
-| 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | ECE 2026 + EPITA |
+| 1 | [App-12-ConnectFour](Applications/Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : 8 algorithmes IA (Minimax, MCTS, DQN-RL) | Projet etudiant |
+| 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet etudiant |
 
 ### Applications CSP (`Applications/CSP/`)
 
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-1-NQueens](Applications/CSP/App-1-NQueens.ipynb) | ~30 min | Benchmark classique CSP : backtracking, min-conflicts, OR-Tools | Classique |
-| 2 | [App-2-GraphColoring](Applications/CSP/App-2-GraphColoring.ipynb) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, departements francais | ECE 2026 Gr01 |
-| 3 | [App-3-NurseScheduling](Applications/CSP/App-3-NurseScheduling.ipynb) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | EPITA PPC 2025 |
-| 4 | [App-4-JobShopScheduling](Applications/CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Ordonnancement industriel : intervalles, precedences, makespan | EPITA PPC 2025 |
-| 5 | [App-5-Timetabling](Applications/CSP/App-5-Timetabling.ipynb) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | EPITA PPC 2025 |
-| 6 | [App-6-Minesweeper](Applications/CSP/App-6-Minesweeper.ipynb) | ~50 min | Demineur CSP : propagation, probabilites, hybride CSP+LLM | EPITA PPC 2025 |
-| 7 | [App-7-Wordle](Applications/CSP/App-7-Wordle.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + theorie de l'information | EPITA PPC 2025 |
+| 2 | [App-2-GraphColoring](Applications/CSP/App-2-GraphColoring.ipynb) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, departements francais | Projet etudiant |
+| 3 | [App-3-NurseScheduling](Applications/CSP/App-3-NurseScheduling.ipynb) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | Projet etudiant |
+| 4 | [App-4-JobShopScheduling](Applications/CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Ordonnancement industriel : intervalles, precedences, makespan | Projet etudiant |
+| 5 | [App-5-Timetabling](Applications/CSP/App-5-Timetabling.ipynb) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | Projet etudiant |
+| 6 | [App-6-Minesweeper](Applications/CSP/App-6-Minesweeper.ipynb) | ~50 min | Demineur CSP : propagation, probabilites, hybride CSP+LLM | Projet etudiant |
+| 7 | [App-7-Wordle](Applications/CSP/App-7-Wordle.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + theorie de l'information | Projet etudiant |
 | 8 | [App-8-MiniZinc](Applications/CSP/App-8-MiniZinc.ipynb) | ~50 min | Modelisation declarative : syntaxe MiniZinc, contraintes globales | Nouveau |
-| 9 | [App-11-Picross](Applications/CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup 27Mx CP-SAT vs naive | EPITA PPC 2025 |
-| 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, equite, deplacements | ECE 2026 |
-| 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croises : backtracking, OR-Tools, generation | EPF 2025 |
+| 9 | [App-11-Picross](Applications/CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup 27Mx CP-SAT vs naive | Projet etudiant |
+| 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, equite, deplacements | Projet etudiant |
+| 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croises : backtracking, OR-Tools, generation | Projet etudiant |
 
 ### Applications Hybrides / Metaheuristiques (`Applications/Hybrid/`)
 
@@ -123,7 +216,7 @@ Problemes du monde reel adaptes de projets etudiants (EPITA PPC 2025, EPF MSMIN5
 | 3 | [App-10-Portfolio](Applications/Hybrid/App-10-Portfolio.ipynb) | ~40 min | Optimisation de portefeuille : frontiere de Pareto, multi-objectif | Existant (refonte) |
 | 4 | [App-10b-Portfolio-CSharp](Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
 | 5 | [App-13-TSP-Metaheuristics](Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
-| 6 | [App-17-VRP-Logistics](Applications/Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | EPF 2025 |
+| 6 | [App-17-VRP-Logistics](Applications/Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet etudiant |
 | 7 | [App-18-HyperparameterTuning](Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayesienne, GA, PSO, Optuna | Nouveau |
 
 ---
@@ -257,9 +350,7 @@ dotnet --version
 
 ### Projets etudiants sources
 
-- [EPITA PPC 2025](https://github.com/jsboigeEpita/2025-Epita-Programmation-par-Contraintes) - 25 projets CSP
-- [EPF MSMIN5IN52 2025](https://github.com/jsboigeEPF/2025-MSMIN5IN52-Search-Symbolic-Min1) - 18 projets Search/Symbolic
-- [ECE Ing4 2026](https://github.com/jsboigeECE/2026-ECE-Ing4-Fin-IA-Projet1-Gr01) - 15 projets IA exploratoire
+Les applications sont adaptees de projets etudiants. Les references specifics sont indiquees dans chaque notebook d'application.
 
 ---
 
@@ -350,6 +441,69 @@ Search/
 | [RL](../RL/README.md) | Apprentissage par renforcement | MCTS (Search-7) et l'optimisation d'hyperparametres (App-18) relient la recherche au RL |
 | [ML](../ML/README.md) | Machine Learning | L'optimisation bayesienne d'hyperparametres (App-18) applique les metaheuristiques de cette serie au ML |
 | [GenAI](../GenAI/README.md) | IA generative | Les LLMs peuvent etre utilises comme heuristiques pour la resolution CSP (CSP-6 Hybridization) |
+| Lecture transversale | [La mer qui monte](../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |
+
+## FAQ / Troubleshooting
+
+### OR-Tools ne s'installe pas
+
+OR-Tools necessite une version Python compatible. Sur Windows :
+- Verifiez votre version Python : `python --version` (3.10-3.12 recommande)
+- Installez avec : `pip install ortools` (les wheels precompiles sont disponibles pour la plupart des plateformes)
+- Si echec : essayez `conda install -c conda-forge ortools-python`
+
+### MiniZinc ne trouve pas son solveur
+
+Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
+- Telechargez depuis [minizinc.org](https://www.minizinc.org/software.html)
+- Le solveur Gecode est inclus par defaut
+- Verifiez : `minizinc --version` dans un terminal
+
+### Les notebooks C# (.NET Interactive) ne s'executent pas
+
+- Verifiez que .NET SDK 9.0+ est installe : `dotnet --version`
+- Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive && dotnet interactive jupyter install`
+- Verifiez : `jupyter kernelspec list` doit afficher `.net-csharp`
+- Les notebooks C# (App-9b, App-10b) utilisent GeneticSharp et SkiaSharp, installes automatiquement via `#r` dans les cellules
+
+### DEAP ou PyGAD provoquent des erreurs d'import
+
+- DEAP : `pip install deap` — compatible Python 3.8+
+- PyGAD : `pip install pygad` — requiert numpy. Si conflit : `pip install --upgrade numpy pygad`
+- MEALPy (Search-11) : `pip install mealpy` — dependances nombreuses, preferez un env dedie
+
+### Les solveurs CP-SAT sont lents sur mon probleme
+
+- Verifiez que vous utilisez `model.parameters.max_time_in_seconds` pour limiter le temps
+- Les contraintes globales (AllDifferent, Cumulative) sont beaucoup plus efficaces que des contraintes binaires equivalentes
+- Activez la parallelisation : `solver.parameters.num_workers = 8`
+- Consultez le [CP-SAT Primer](https://github.com/google/or-tools/blob/stable/ortools/sat/docs/CP-SAT_Primer.md) pour les bonnes pratiques
+
+### Comment choisir entre A*, CSP et metaheuristiques ?
+
+- **Espace d'etats petit, solution optimale requise** : A* avec heuristique admissible
+- **Contraintes complexes, domaine discret** : CP-SAT (OR-Tools)
+- **Grands espaces, approximation acceptable** : Metaheuristiques (GA, SA, PSO)
+- **Probleme de jeux, deux adversaires** : Minimax / Alpha-Beta / MCTS
+- **Probleme NP-difficile, temps limite** : LNS (Large Neighborhood Search) dans CP-SAT
+
+## Quel parcours choisir ?
+
+### Si vous decouvrez la recherche en IA
+
+Commencez par **Search-1 (StateSpace)** et **Search-2 (Uninformed)** pour comprendre la formalisation des problemes et les algorithmes fondamentaux (BFS, DFS). Puis **Search-3 (Informed)** pour decouvrir A* et les heuristiques. C'est le socle commun a toute la serie.
+
+### Si vous venez de la programmation par contraintes
+
+Commencez par **CSP-1 (Fundamentals)** et **CSP-2 (Consistency)** si vous connaissez deja les espaces d'etats. Puis montez en complexite avec **CSP-3-6** et les applications industrielles (**App-3 NurseScheduling**, **App-4 JobShop**).
+
+### Si vous preparez un entretien technique
+
+Concentrez-vous sur **Search-1 a Search-3** (espaces d'etats, BFS/DFS, A*), **Search-6 (AdversarialSearch)** (Minimax) et **CSP-1-2** (backtracking, propagation). Ce sont les algorithmes les plus frequemment demandes.
+
+### Si vous voulez resoudre un probleme industriel
+
+Allez directement aux applications qui correspondent a votre domaine : **App-3/App-4** (ordonnancement), **App-13/App-17** (routing/logistique), **App-5** (emploi du temps), ou **App-10** (optimisation portefeuille). Chaque application est autonome avec les prerequis indiques.
 
 ---
 

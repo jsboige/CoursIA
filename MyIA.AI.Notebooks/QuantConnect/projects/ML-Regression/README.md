@@ -1,25 +1,25 @@
 # ML-Regression
 
-**Asset class:** Template (no active strategy)
+**Asset class:** US Equities (20 large-cap stocks)
 **Cloud project ID:** None (local only)
 
 ## Description
 
-Template/skeleton project for regression-based ML strategies.
+Ridge regression strategy predicting next-day returns on a 20-stock universe. Uses lagged open-close returns as features. Bi-weekly rebalance with monthly retraining. Selects top-N stocks by predicted return.
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Regression"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics
 
 | Metric | Value |
 |--------|-------|
-| Status | Template/skeleton (no active strategy) |
+| Model | Ridge regression |
+| Universe | 20 large-cap stocks |
+| Rebalance | Biweekly |
 
 ## Files
 
-- main.py - Template structure
+- main.py - Strategy (227L, MLRegressionAlgorithm)

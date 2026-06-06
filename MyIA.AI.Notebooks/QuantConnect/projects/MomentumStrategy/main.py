@@ -30,6 +30,9 @@ class SectorMomentumETFRotation(QCAlgorithm):
         self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
+        # Brokerage: US sector ETFs traded via IBKR margin account
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+
         self.sector_tickers = [
             "XLK", "XLF", "XLE", "XLV", "XLI",
             "XLY", "XLP", "XLU", "XLB", "XLRE", "XLC",

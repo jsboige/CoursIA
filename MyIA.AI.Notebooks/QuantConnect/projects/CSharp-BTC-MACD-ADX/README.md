@@ -28,4 +28,4 @@ Momentum strategy combining MACD (trend) and ADX (strength) indicators for BTCUS
 
 ## Source
 
-ESGF-2026/examples/CSharp-BTC-MACD-ADX (archived after standardization)
+partner-course-quant-trading/examples/CSharp-BTC-MACD-ADX (archived after standardization)

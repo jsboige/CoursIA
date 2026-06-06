@@ -168,7 +168,7 @@ python scripts/genai-auth/utils/diagnostic_utils.py --full-scan
 
 - **Scripts GenAI-Auth** : `../scripts/genai-auth/README.md`
 - **Configuration ComfyUI** : `../comfyui-qwen/README.md`
-- **Architecture GenAI** : `../../docs/genai/`
+- **Architecture GenAI** : `../../docs/genai-services.md`
 
 ### Modèles Supportés
 

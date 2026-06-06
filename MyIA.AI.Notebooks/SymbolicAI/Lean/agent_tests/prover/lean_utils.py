@@ -651,7 +651,37 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     if sorry_line < 1 or sorry_line > len(lines):
         return {"success": False, "errors": f"Line {sorry_line} out of range"}
 
+    # P5 fix (2026-05-23): if the target line doesn't contain sorry, search
+    # nearby for the actual sorry. Line numbers shift as the file is edited.
+    # P1 fix (2026-05-26): bounded search + same-proof-block validation to
+    # prevent target-mismatch (picking a sorry from a different theorem).
+    MAX_RELOCATION_RANGE = 30  # hard cap on relocation distance
     sorry_text = lines[sorry_line - 1]
+    if "sorry" not in sorry_text:
+        # Search within bounded range for the nearest sorry
+        candidates = []
+        for i, line in enumerate(lines):
+            if "sorry" in line:
+                dist = abs(i + 1 - sorry_line)
+                if dist <= MAX_RELOCATION_RANGE:
+                    candidates.append((dist, i + 1))
+        if candidates:
+            candidates.sort()
+            # Validate: relocated sorry must be in the same proof block
+            # (same or closer indentation than the target, not inside a
+            # nested theorem/lemma/def)
+            actual_line = candidates[0][1]
+            actual_indent = len(lines[actual_line - 1]) - len(lines[actual_line - 1].lstrip())
+            target_indent = len(sorry_text) - len(sorry_text.lstrip())
+            if actual_line != sorry_line and actual_indent <= target_indent + 2:
+                print(f"  P5: sorry_line {sorry_line} has no sorry, "
+                      f"using nearest at {actual_line} (relocated, "
+                      f"indent {actual_indent}<={target_indent+2})")
+                sorry_line = actual_line
+                sorry_text = lines[sorry_line - 1]
+            elif actual_indent > target_indent + 2:
+                print(f"  P5: nearest sorry at {actual_line} rejected: "
+                      f"indent {actual_indent} too deep vs target {target_indent}")
     indent = len(sorry_text) - len(sorry_text.lstrip())
     indent_str = " " * indent
 
@@ -702,9 +732,13 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     if current_error:
         all_error_lines.append(current_error)
 
-    # Separate: direct errors vs cascade errors vs pre-existing
+    # Separate: direct errors vs cascade errors vs distant errors
+    # P2 (Epic #1453): distant errors (outside nearby_range) were silently
+    # ignored, causing false successes where errors existed in the file but
+    # outside the ±5 line window. Now collected and included in the result.
     direct_errors = []
     cascade_errors = []
+    distant_errors = []
     nearby_range = 5 + line_shift
 
     for err_block in all_error_lines:
@@ -714,11 +748,17 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             direct_errors.append(text)
         elif abs(first_line_num - sorry_line) <= nearby_range:
             cascade_errors.append(text)
+        else:
+            distant_errors.append(text)
 
     # Build result
     has_direct_error = len(direct_errors) > 0
     has_cascade_error = len(cascade_errors) > 0
-    is_success = not has_direct_error and not has_cascade_error
+    # P2: require absence of ALL errors in _SorryVerify.lean, not just nearby.
+    # Distant errors indicate the replacement broke something elsewhere.
+    has_distant_error = len(distant_errors) > 0
+    is_success = (not has_direct_error and not has_cascade_error
+                  and not has_distant_error)
 
     # Extract residual goals from cascade errors (lines starting with ⊢)
     residual_goals = []
@@ -741,6 +781,15 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             "Cascade error:\n" + "\n".join(cascade_errors[:2])
         )
         error_type = "unsolved_goals"
+    elif has_distant_error:
+        # P2: errors outside the nearby window mean the replacement broke
+        # something elsewhere in the file. Report first 2 distant errors.
+        error_msg = (
+            f"Tactic at line {sorry_line} compiles locally but introduced "
+            f"errors at distant lines. File may be broken elsewhere:\n"
+            + "\n".join(distant_errors[:2])
+        )
+        error_type = "distant_errors"
     else:
         error_msg = ""
         error_type = None
@@ -751,6 +800,7 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         "raw_error": error_msg[:500],
         "error_type": error_type,
         "residual_goals": residual_goals,
+        "distant_errors": distant_errors,  # P2: expose for caller inspection
         "all_errors": result.get("errors", ""),
         "time_s": result.get("time_s", 0),
         "backend": result.get("backend", ""),

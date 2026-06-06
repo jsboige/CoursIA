@@ -9,9 +9,7 @@ GaussianNB direction classifier on 8 tech stocks. Uses lagged returns, RSI, volu
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Gaussian-Direction-Classifier"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

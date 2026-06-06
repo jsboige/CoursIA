@@ -62,7 +62,7 @@ trades sont des sauts complets 0→1 ou 1→0, lesquels dépassent toujours thre
 → La no-trade band ne peut donc fonctionner que sur une **stratégie continue** (vol-target
 non clippée, par exemple), pas sur Kelly capé.
 
-## Conclusion ESGF / pédagogique
+## Conclusion / pédagogique
 
 - **Hypothèse « fee-aware Kelly via no-trade band »** : REJETÉE pour `kelly_har_mu60`
   capé. La stratégie est trop bang-bang pour que le seuil capture des trades supprimables.

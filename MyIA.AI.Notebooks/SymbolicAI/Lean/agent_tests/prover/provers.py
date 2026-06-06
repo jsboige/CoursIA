@@ -11,6 +11,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
+from agent_framework import ToolResultCompactionStrategy
+
 from .trace import TraceLogger
 from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, TacticAttempt
 from .lean_utils import (
@@ -18,13 +20,14 @@ from .lean_utils import (
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
     is_honest_sorry,
 )
-from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools
+from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools, DiagnosisTools
 from .agents import (
     create_search_agent,
     create_tactic_agent,
     create_critic_agent,
     create_coordinator_agent,
     create_director_agent,
+    create_diagnosis_agent,
 )
 from .workflow import ProofWorkflowBuilder, ProofMessage
 from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS, augment_instructions
@@ -34,6 +37,96 @@ from .knowledge import ProofKnowledgeBase
 from .otel_setup import enable_prover_otel
 
 _PROVER_DIR = Path(__file__).resolve().parent
+
+# P5 (Epic #1453 forensic, 2026-05-29): version-controlled KB of documented
+# INTRACTABLE targets. Loaded once, lazily, from baselines/intractable_targets.json.
+_INTRACTABLE_KB_PATH = _PROVER_DIR / "baselines" / "intractable_targets.json"
+_intractable_kb_cache: Optional[list] = None
+
+
+def _load_intractable_kb() -> list:
+    """Load the documented-intractable targets KB (cached, best-effort).
+
+    Returns the list under the ``targets`` key, or [] if the file is missing
+    or malformed. A missing/broken KB must never crash the prover — it simply
+    means no pre-screen entries (degrade to the prior behaviour).
+    """
+    global _intractable_kb_cache
+    if _intractable_kb_cache is not None:
+        return _intractable_kb_cache
+    try:
+        data = json.loads(_INTRACTABLE_KB_PATH.read_text(encoding="utf-8"))
+        targets = data.get("targets", [])
+        _intractable_kb_cache = targets if isinstance(targets, list) else []
+    except (OSError, json.JSONDecodeError, ValueError):
+        _intractable_kb_cache = []
+    return _intractable_kb_cache
+
+
+def _match_intractable_kb(filepath: str, sorry_line: int) -> Optional[dict]:
+    """Return the matching KB entry for (filepath, sorry_line), else None.
+
+    Matching is filename-based (NOT absolute-path-based) so the KB is portable
+    across machines — config.py resolves machine-specific absolute paths. An
+    entry matches when its ``file`` basename equals the target basename AND
+    either (a) ``match_by_file_only`` is true (any sorry in that file), or
+    (b) its ``line`` equals ``sorry_line``.
+    """
+    try:
+        target_name = Path(filepath).name
+    except (TypeError, ValueError):
+        return None
+    for entry in _load_intractable_kb():
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("file") != target_name:
+            continue
+        if entry.get("match_by_file_only"):
+            return entry
+        if entry.get("line") == sorry_line:
+            return entry
+    return None
+
+
+def _refuse_intractable(filepath: str, sorry_line: int,
+                        demo_name: str) -> Optional[dict]:
+    """Return an early-skip result dict if the target is documented INTRACTABLE.
+
+    P5 (Epic #1453). Mirrors the shape of ``_refuse_honest_sorry``: checks the
+    version-controlled KB (baselines/intractable_targets.json) and, on a match,
+    returns a result dict the caller returns immediately — BEFORE any agent is
+    spawned. Otherwise returns None.
+
+    Distinct from ``_refuse_honest_sorry`` (genuinely-unprovable sorrys): these
+    targets are provable in principle but blocked behind ~200-300 lines of new
+    formalization the prover cannot invent. Looping agents on them only burns
+    the iteration budget (forensic: 9/13 director-less runs, ~8.2h wasted).
+    """
+    entry = _match_intractable_kb(filepath, sorry_line)
+    if entry is None:
+        return None
+    reason = entry.get("reason", "documented intractable")
+    source = entry.get("source", "")
+    msg = (
+        f"SKIPPED: sorry at {Path(filepath).name}:{sorry_line} is DOCUMENTED "
+        f"INTRACTABLE (KB baselines/intractable_targets.json). "
+        f"Identifier: {entry.get('identifier', '?')}. Reason: {reason}. "
+        f"Source: {source}. Looping agents here only burns the budget — "
+        f"the missing piece is new formalization, not search depth. "
+        f"Remove the KB entry to re-enable once the formalization exists."
+    )
+    print(f"\n{'!'*70}\n{msg}\n{'!'*70}\n")
+    return {
+        "success": False,
+        "skipped": True,
+        "reason": "documented_intractable",
+        "detail": reason,
+        "identifier": entry.get("identifier"),
+        "source": source,
+        "demo": demo_name,
+        "sorry_line": sorry_line,
+        "filepath": filepath,
+    }
 
 
 def _refuse_honest_sorry(filepath: str, sorry_line: int,
@@ -83,6 +176,33 @@ def _refuse_honest_sorry(filepath: str, sorry_line: int,
     return None
 
 
+def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
+                             final_build_ok: bool) -> tuple[bool, bool]:
+    """Decide AutonomousProver session success from the post-verify counts (P4).
+
+    Pure decision behind the increase-case gate (#1483). A file that BUILDS
+    (``final_build_ok``) is a success when the sorry count DECREASED, or when it
+    stayed/INCREASED through strategic decomposition (structural progress) while
+    still > 0. A build failure is never a success. The increase-case is the
+    point P4 targets: a decomposition that raises the sorry count but still
+    compiles 0 errors must report success and must NOT be reverted — the revert
+    branch upstream is keyed on ``final_build_ok`` (``level_1_build``) alone, so
+    a sorry increase never reaches it as long as the build passes.
+
+    Returns ``(success, structural_progress)``.
+    """
+    structural_progress = (
+        final_sorry >= original_sorry_count
+        and final_build_ok
+        and final_sorry > 0
+    )
+    success = (
+        (final_sorry < original_sorry_count or structural_progress)
+        and final_build_ok
+    )
+    return success, structural_progress
+
+
 class MultiAgentSorryProver:
     """Multi-agent sorry replacement using WorkflowBuilder graph.
 
@@ -93,14 +213,29 @@ class MultiAgentSorryProver:
 
     def __init__(self, trace: TraceLogger, provider: str = "zai",
                  local_provider: str = "local",
-                 director_provider: Optional[str] = None):
+                 director_provider: Optional[str] = None,
+                 coordinator_provider: Optional[str] = None,
+                 tactic_provider: Optional[str] = None):
         self.trace = trace
         self.provider = provider
         self.local_provider = local_provider
         self.director_provider = director_provider
+        # #1289: CoordinatorAgent needs a fast, capable model for tool-use
+        # orchestration. GLM-5.1 (zai) times out on complex Lean contexts.
+        # Default to "openrouter" (GPT-5.5 via OPENAI_CHAT_MODEL_ID) which
+        # handles Coordinator tasks in <2min vs 12+ min with GLM-5.1.
+        self.coordinator_provider = coordinator_provider or "openrouter"
+        # #1289 (TacticAgent): Same root cause — GLM-5.1 (zai) times out at
+        # 1680s on complex Lean tactic generation (Lattice contexts).
+        # BG DEMO 30 forensic showed Coordinator (60s) + Director (8s) fine,
+        # but TacticAgent z.ai hung for 1680s. Default to "openrouter" so
+        # GPT-5.5 handles tactic generation in ~60-120s instead.
+        self.tactic_provider = tactic_provider or "openrouter"
 
     async def prove_sorry(self, demo: dict, max_iterations: int = 10,
-                          workflow_timeout_s: Optional[int] = None) -> dict:
+                          workflow_timeout_s: Optional[int] = None,
+                          use_diagnosis_agent: bool = False,
+                          concurrent_search_count: int = 0) -> dict:
         # Enable MS Agent Framework OTel + JSONL exporter so every agent run,
         # tool call, and LLM completion lands in baselines/traces/<name>.spans.jsonl
         # alongside the higher-level TraceLogger entries.
@@ -169,6 +304,12 @@ class MultiAgentSorryProver:
         if refusal is not None:
             return refusal
 
+        # P5 (#1453): pre-screen documented-INTRACTABLE targets BEFORE spinning
+        # up agents. A KB match skips immediately instead of looping to the cap.
+        intractable = _refuse_intractable(filepath, sorry_line, demo["name"])
+        if intractable is not None:
+            return intractable
+
         print(f"\n{'='*70}")
         print(f"MULTI-AGENT PROVER: {demo['name']}")
         print(f"File: {filepath}:{sorry_line}")
@@ -204,6 +345,24 @@ class MultiAgentSorryProver:
             max_iterations=max_iterations,
         )
 
+        # Feature 1: Auto-load sibling .lean files at session start.
+        # Agents reference files by short name (e.g. "Lemmas.lean"), never by path.
+        target_path = Path(filepath).resolve()
+        state.target_filepath = str(target_path)
+        state.target_filename = target_path.name
+        state.remaining_iterations = max_iterations
+        parent_dir = target_path.parent
+        for sibling in sorted(parent_dir.glob("*.lean")):
+            short_name = sibling.name
+            try:
+                content = sibling.read_text(encoding="utf-8")
+                state.loaded_files[short_name] = content
+            except OSError:
+                pass
+        loaded_names = list(state.loaded_files.keys())
+        if loaded_names:
+            print(f"  [Feature1] Loaded {len(loaded_names)} sibling files: {', '.join(loaded_names)}")
+
         # Shared KB instance so SearchAgent reads what VerifyExecutor wrote
         # in the same session (otherwise each side instantiates its own and
         # only sees prior-session entries via the JSON file).
@@ -221,9 +380,23 @@ class MultiAgentSorryProver:
         search_agent = create_search_agent(
             search_tools, provider=self.local_provider, goal=goal_state or "")
         tactic_agent = create_tactic_agent(
-            tactic_tools, provider=self.provider, goal=goal_state or "")
+            tactic_tools, provider=self.tactic_provider, goal=goal_state or "")
         critic_agent = create_critic_agent(critic_tools, provider=self.provider)
-        coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.provider)
+        coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.coordinator_provider)
+
+        # B.7: Create additional SearchAgents for concurrent lemma discovery.
+        # Each gets its own SearchTools (independent Mathlib search) but shares
+        # the same ProofState so discoveries are visible to all agents.
+        extra_search_agents = []
+        if concurrent_search_count > 0:
+            for i in range(concurrent_search_count):
+                extra_tools = SearchTools(state, filepath, self.trace, kb=kb)
+                extra_agent = create_search_agent(
+                    extra_tools, provider=self.local_provider,
+                    goal=goal_state or "",
+                    name=f"SearchAgent_{i+2}")
+                extra_search_agents.append(extra_agent)
+            print(f"  [B.7] {concurrent_search_count} concurrent SearchAgents created")
 
         # Create optional DirectorAgent (external LLM for strategic guidance)
         director_agent = None
@@ -244,14 +417,42 @@ class MultiAgentSorryProver:
         # The gate only enforces consultation when a Director actually
         # exists to consult.
         if director_agent is None:
+            # P4 (#1453): the blanket auto-bypass below satisfies the F9 gate
+            # but leaves the abandon decision to the (z.ai) agents — which, on a
+            # documented-intractable target, never call mark_sorry_intractable
+            # and loop to the iteration cap (forensic: 9/13 director-less runs,
+            # ~8.2h wasted). The top-of-function pre-screen already returns early
+            # on an exact KB line match; this is the defense-in-depth fallback
+            # for the director-less path (catches file-only KB entries and line
+            # drift) — apply the SAME KB skip rather than relying on agent
+            # self-abandonment. Non-KB targets keep the graceful degradation.
+            kb_skip = _refuse_intractable(filepath, sorry_line, demo["name"])
+            if kb_skip is not None:
+                return kb_skip
             state.director_consulted = True
             print("  [DIRECTOR] not wired - F9 gate auto-bypassed")
+
+        # Feature 3: optional DiagnosisAgent (LLM-powered qualitative
+        # verification replacing mechanical VerifyExecutor).
+        diagnosis_agent = None
+        if use_diagnosis_agent:
+            try:
+                diagnosis_tools = DiagnosisTools(state, filepath, self.trace)
+                diagnosis_agent = create_diagnosis_agent(
+                    diagnosis_tools, provider=self.local_provider)
+                print(f"  [DIAGNOSIS] enabled provider={self.local_provider}")
+            except Exception as e:
+                print(f"  [DIAGNOSIS] FAILED to create: {e}")
+                diagnosis_agent = None
 
         # Build workflow graph (kb shared with SearchTools)
         workflow_builder = ProofWorkflowBuilder(
             search_agent, tactic_agent, critic_agent, coordinator_agent,
             sorry_ctx, demo.get("imports", ""), self.trace, state=state, kb=kb,
             director_agent=director_agent,
+            diagnosis_agent=diagnosis_agent,
+            concurrent_search_count=concurrent_search_count,
+            extra_search_agents=extra_search_agents if extra_search_agents else None,
         )
         workflow = workflow_builder.build()
 
@@ -358,13 +559,6 @@ class MultiAgentSorryProver:
                     Path(filepath).write_text(last_ok_content, encoding="utf-8")
                     final_sorry = last_ok_sorry if last_ok_sorry is not None else final_sorry
                     structural_progress = True
-                else:
-                    print(
-                        f"  Restoring original (no build-ok edits: "
-                        f"{final_sorry} >= {original_sorry_count})"
-                    )
-                    Path(filepath).write_text(original_content, encoding="utf-8")
-                    final_sorry = original_sorry_count
 
             # MANDATORY final build verification on the committed file. This
             # catches false positives where the snapshot's build_check was
@@ -382,10 +576,10 @@ class MultiAgentSorryProver:
                 final_verify_raw = tactic_tools.compile()
                 final_verify = json.loads(final_verify_raw)
             except Exception as _e:
-                final_verify = {"overall": False, "level_1": False,
+                final_verify = {"overall": False, "level_1_build": False,
                                 "errors": [{"message": f"final-verify crashed: {_e}"}]}
 
-            final_build_ok = bool(final_verify.get("level_1", False))
+            final_build_ok = bool(final_verify.get("level_1_build", False))
             if not final_build_ok:
                 _errs = final_verify.get("errors", [])[:5]
                 print(
@@ -398,6 +592,27 @@ class MultiAgentSorryProver:
                 # Force-clear best snapshot so callers don't claim spurious progress
                 tactic_tools._best_content = None
                 tactic_tools._best_sorry_count = original_sorry_count
+            else:
+                # Build passed — but a passing build can still hide an IMPLICIT
+                # sorry: when the agent replaces an explicit `sorry` with a search
+                # tactic (apply?/exact?/solve_by_elim) that finds nothing, Lean
+                # emits a "declaration uses sorry" WARNING (not an error), so the
+                # build succeeds while the text no longer contains "sorry" (#1500).
+                # compile() already folds that warning into
+                # final_verify["sorry_count"] (build-aware: max of text + warning
+                # counts); the text-only final_sorry read above misses it. Adopt
+                # the build-aware count whenever it is higher so the success gate
+                # below cannot fire on a vanished-text / implicit sorry.
+                _verify_sorry = final_verify.get("sorry_count")
+                if isinstance(_verify_sorry, int) and _verify_sorry > final_sorry:
+                    print(
+                        f"  Build-aware sorry count {_verify_sorry} > text count "
+                        f"{final_sorry}: {_verify_sorry - final_sorry} implicit "
+                        f"sorry (apply?/exact?/solve_by_elim). Using build-aware "
+                        f"count for the success gate (#1500)."
+                    )
+                    final_sorry = _verify_sorry
+                    structural_progress = False
 
         # Success now also covers structural progress: file changed but
         # compiles, even if sorry count didn't decrease. Provers.py used to
@@ -449,6 +664,12 @@ class MultiAgentSorryProver:
             "config": f"multi-{self.provider}",
             "sorry_evolution": f"{original_sorry_count} -> {final_sorry}",
             "best_sorry": tactic_tools.best_sorry_count,
+            # P6 (#1453 forensic): surface the structural-progress flag so a
+            # build-OK / sorry_delta==0 outcome ("proof restructured", e.g. one
+            # sorry decomposed into N compiling sub-sorries) is distinguishable
+            # from an actual sorry reduction. Without this, both report
+            # success=True and consumers cannot tell them apart.
+            "structural_progress": structural_progress,
         }
 
     def _build_context_message(self, demo: dict, ctx_data: dict,
@@ -519,7 +740,7 @@ class AutonomousProver:
     The orchestrator loop: agent acts -> auto-compile -> feedback -> repeat.
     """
 
-    def __init__(self, trace: TraceLogger, provider: str = "zai",
+    def __init__(self, trace: TraceLogger, provider: str = "openrouter",
                  hitl_enabled: bool = True, hitl_threshold: int = 5):
         self.trace = trace
         self.provider = provider
@@ -528,7 +749,14 @@ class AutonomousProver:
         self.config_label = f"auto-{provider}"
 
     def prove_sorry(self, demo: dict, max_iterations: int = 10,
-                    strategic_hints: str = "", agent_timeout_s: int = 0) -> dict:
+                    # agent_timeout_s default was 0 (no timeout), letting a
+                    # stuck provider hang indefinitely on a bare prove_sorry()
+                    # call (observed: TacticAgent z.ai 1680s, GLM single-call
+                    # 1200s+). Normal single-agent call is ~60-120s, so a 900s
+                    # hard cap kills pathological hangs with generous headroom.
+                    # Routes through the ContextVar-safe asyncio.wait branch
+                    # below. Pass agent_timeout_s=0 explicitly to disable.
+                    strategic_hints: str = "", agent_timeout_s: int = 900) -> dict:
         # Same OTel wiring as MultiAgentSorryProver — single-agent runs benefit
         # just as much from a durable span log of LLM-tool interactions.
         otel_session = f"auto_{demo['name']}_{self.provider}_{int(time.time())}"
@@ -582,6 +810,12 @@ class AutonomousProver:
         refusal = _refuse_honest_sorry(filepath, sorry_line, demo["name"])
         if refusal is not None:
             return refusal
+
+        # P5 (#1453): pre-screen documented-INTRACTABLE targets BEFORE spinning
+        # up the agent. A KB match skips immediately instead of looping to the cap.
+        intractable = _refuse_intractable(filepath, sorry_line, demo["name"])
+        if intractable is not None:
+            return intractable
 
         print(f"\n{'='*70}")
         print(f"AUTONOMOUS PROVER: {demo['name']}")
@@ -675,6 +909,9 @@ class AutonomousProver:
             ),
             tools=agent_tools,
             name="AutonomousProver",
+            compaction_strategy=ToolResultCompactionStrategy(
+                keep_last_tool_call_groups=3,
+            ),
         )
 
         # Build rich initial context — from Lean-9 notebook pattern
@@ -873,6 +1110,18 @@ class AutonomousProver:
                         next_phase = PHASE_TRANSITIONS.get(state.phase, ProofPhase.TACTIC_GEN)
                         state.phase = next_phase
 
+                # Delta-0 stagnation guard (P2, #1453 forensic):
+                # The multi-agent path has DELTA0_STAGNATION_HARDCAP=6 in
+                # workflow.py:223-237, but the autonomous loop had no equivalent.
+                # Forensic: custom_Basic_L308 burned 5.9h with 7 identical
+                # compiles. A hardcap at 6 stops pathological burners.
+                DELTA0_HARDCAP = 6
+                if tactic_tools._consecutive_delta0 >= DELTA0_HARDCAP:
+                    print(f"  DELTA0 STAGNATION: {tactic_tools._consecutive_delta0} "
+                          f"compiles without progress (hardcap={DELTA0_HARDCAP}). "
+                          f"Stopping to preserve budget.", flush=True)
+                    break
+
                 # B.9: HITL — ask for human hint when stuck
                 if self.hitl_enabled and state.consecutive_failures >= self.hitl_threshold:
                     print(f"\n  [HITL] {state.consecutive_failures} echecs consecutifs. "
@@ -1006,18 +1255,41 @@ class AutonomousProver:
                 Path(filepath).write_text(original_file_content, encoding="utf-8")
                 final_sorry = original_sorry_count
 
-        # Always restore original if no improvement — prevent file corruption
-        if final_sorry >= original_sorry_count:
-            print(f"  Restoring original (no improvement: {final_sorry} >= {original_sorry_count})")
-            Path(filepath).write_text(original_content, encoding="utf-8")
-            final_sorry = original_sorry_count
+        # P4 fix (2026-05-23): NEVER revert a file solely because sorry_count
+        # increased. Strategic decomposition (1 sorry → 2 sub-sorries) is valid
+        # when the file compiles. Only revert on BUILD FAILURE (compile errors).
+        # Forensic: Director L147 run reverted a compiling file (0 errors, sorry
+        # 4→5) losing strategic decomposition progress.
 
         # Final verification build — catch false positives (0 sorry but unsolved goals)
+        # P4: Run on ALL files, not just sorry-reduced ones.
         final_verify_ok = False
-        if final_sorry < original_sorry_count:
-            print("  Final verification build...", flush=True)
+        print("  Final verification build...", flush=True)
+        verify_result = json.loads(tactic_tools.compile())
+        # P4: Gate on build success only (level_1_build), NOT overall "success"
+        # which includes sorry_delta check (level_2). A sorry increase from
+        # strategic decomposition must NOT trigger revert if the build passes.
+        final_verify_ok = verify_result.get("level_1_build", False)
+        final_build_ok = final_verify_ok
+        # Update final_sorry from compile result (includes implicit sorry detection)
+        final_sorry = verify_result.get("sorry_count", final_sorry)
+        if not final_verify_ok:
+            errors = verify_result.get("errors", [])
+            unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
+            if unsolved:
+                print(f"  FALSE POSITIVE: {len(unsolved)} unsolved goals despite "
+                      f"{final_sorry} sorry. Reverting to original.", flush=True)
+                Path(filepath).write_text(original_file_content, encoding="utf-8")
+                final_sorry = original_sorry_count
+            else:
+                print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
+                      f"reverting.", flush=True)
+                Path(filepath).write_text(original_file_content, encoding="utf-8")
+                final_sorry = original_sorry_count
+            print("  Final verification build (post-revert)...", flush=True)
             verify_result = json.loads(tactic_tools.compile())
-            final_verify_ok = verify_result.get("success", False)
+            final_verify_ok = verify_result.get("level_1_build", False)
+            final_sorry = verify_result.get("sorry_count", final_sorry)
             if not final_verify_ok:
                 errors = verify_result.get("errors", [])
                 unsolved = [e for e in errors if "unsolved" in e.get("message", "")]
@@ -1036,7 +1308,13 @@ class AutonomousProver:
                     print(f"  Build failed ({verify_result.get('error_count', '?')} errors), "
                           f"reverting.", flush=True)
 
-        success = final_sorry < original_sorry_count and final_build_ok and final_verify_ok
+        # P4: success also covers structural progress (sorry increase from
+        # strategic decomposition) as long as the file builds. Decision is
+        # extracted to a pure helper so the increase-case is unit-testable
+        # (#1483). final_build_ok == final_verify_ok here (set at line ~1102).
+        success, structural_progress_autonomous = _autonomous_success_gate(
+            final_sorry, original_sorry_count, final_build_ok
+        )
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
         # Persist outcome to cross-session history (best-effort, never raises)
@@ -1075,6 +1353,11 @@ class AutonomousProver:
             "config": self.config_label,
             "sorry_evolution": f"{original_sorry_count} -> {final_sorry}",
             "best_sorry": tactic_tools.best_sorry_count,
+            # P6 (#1453 forensic): same flag as MultiAgentSorryProver — already
+            # computed by _autonomous_success_gate, now surfaced so a build-OK /
+            # sorry_delta>=0 "proof restructured" outcome is distinguishable
+            # from a real sorry reduction in the result JSON.
+            "structural_progress": structural_progress_autonomous,
         }
 
     def _build_autonomous_context(self, demo: dict, sorry_line: int,

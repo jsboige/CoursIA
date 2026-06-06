@@ -13,7 +13,7 @@ Dynamic top_n selection (all factors with positive score). Per-position stop-los
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/FamaFrench"`
 ```bash
 lean backtest --project .
 ```

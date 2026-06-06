@@ -150,7 +150,7 @@ All CPU-only, no GPU required.
 
 ## Naming Convention
 
-- Directory: `MyIA.AI.Notebooks/Probas/_python_port/`
+- Directory: `MyIA.AI.Notebooks/Probas/PyMC/`
 - Files: `PyMC-{N}-{Title}.ipynb` for PyMC-based, `NumPyro-{N}-{Title}.ipynb` for NumPyro-based
 - Data: reuse `Infer/data/` CSV/JSON files directly (same datasets)
 - Kernel: `python3`

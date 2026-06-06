@@ -31,7 +31,7 @@ Pre-trained policy that adjusts the BS delta based on:
 | Field | Value |
 |-------|-------|
 | Project ID | 30800109 |
-| Organization | Trading Firm ESGF |
+| Organization | Trading Firm QC-Course |
 | Period | 2018-01-01 to 2024-12-31 |
 | Starting Capital | $1,000,000 |
 

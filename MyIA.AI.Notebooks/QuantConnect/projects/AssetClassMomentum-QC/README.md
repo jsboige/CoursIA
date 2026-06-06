@@ -9,9 +9,7 @@ QC Strategy Library clone. Cross-asset momentum rotation across equities, bonds,
 
 ## How to Run
 
-**Lean CLI:**
-
-
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/AssetClassMomentum-QC"`
 **QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
 
 ## Backtest Metrics

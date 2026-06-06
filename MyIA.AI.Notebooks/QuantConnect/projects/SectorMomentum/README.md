@@ -16,7 +16,7 @@ Daily SMA200 exit protection (intra-month stops if SPY breaks below SMA200).
 
 ## How to Run
 
-**Lean CLI:**
+**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/SectorMomentum"`
 ```bash
 lean backtest --project .
 ```
