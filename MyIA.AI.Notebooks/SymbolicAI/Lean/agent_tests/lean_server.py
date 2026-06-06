@@ -171,6 +171,10 @@ class LeanVerifier:
         Uses Windows-side lake.exe by default (see ``_resolve_lake_command``);
         the cwd is the Lake project root so ``.lake/build/lib/<module>.olean``
         is written/read at the same path as manual builds.
+
+        Timeout is 600s (increased from 300s). WSL builds via ``/mnt/c/``
+        suffer 9P/NTFS overhead (~10x slower than native), so a cold build
+        can exceed the original 300s ceiling. See DEMO 35/36 traces.
         """
         module_name = relative_path.replace("/", ".").replace("\\", ".")
         if module_name.endswith(".lean"):
@@ -185,7 +189,7 @@ class LeanVerifier:
                 cwd=str(project),
                 capture_output=True,
                 text=True,
-                timeout=300,
+                timeout=600,
                 env=env,
             )
             duration = time.time() - start

@@ -70,7 +70,6 @@ Le livrable va sur l'**Epic #1453** (issue comment) et/ou le dashboard, **pas** 
 
 ## Voir aussi
 
-- [.claude/rules/lean-prover-bg-systematic.md](../rules/lean-prover-bg-systematic.md) — BG iter systematique post-PR/msg po-2026
-- [.claude/rules/lean-lake-build-required.md](../rules/lean-lake-build-required.md) — Lake build avant merge
+- [.claude/rules/lean-merge-discipline.md](../rules/lean-merge-discipline.md) — BG iter systematique post-PR/msg po-2026 + Lake build avant merge
 - [docs/lean/prover_iteration_history.md](../../docs/lean/prover_iteration_history.md) — historique iterations F6-F11, B3
 - [.claude/rules/proactive-coordination.md](../rules/proactive-coordination.md) — modele side-track async

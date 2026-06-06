@@ -52,4 +52,3 @@ Exemples concrets d'utilisation des notebooks GenAI Image dans différents domai
 
 - [Documentation Image principale](../README.md)
 - [Tous les notebooks Image](../README.md)
-- [Exemples Audio](../../Audio/examples/)

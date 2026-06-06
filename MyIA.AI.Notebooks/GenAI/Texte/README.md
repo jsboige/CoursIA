@@ -151,6 +151,66 @@ Le fil rouge de cette serie est la progression de l'interaction basique avec un 
 | [SemanticKernel](../SemanticKernel/README.md) | Orchestration agentique | Semantic Kernel orchestre les LLMs via plugins et agents — prolonge les patterns de function calling (notebook [4](4_Function_Calling.ipynb)) |
 | [SymbolicAI](../../SymbolicAI/README.md) | Reasoning formel | Les modeles raisonnants (notebook [8](8_Reasoning_Models.ipynb)) complementent le reasoning formel (Z3, Tweety, Lean) |
 
+## FAQ
+
+### Chat Completions vs Responses API — laquelle utiliser ?
+
+Les notebooks couvrent les deux APIs OpenAI :
+
+- **Chat Completions** (notebooks 1-4, 8) : l'API classique `client.chat.completions.create()`. Toujours supportee, simple d'usage, stateless. Ideale pour les requetes unitaires et les prototypes.
+- **Responses API** (notebooks 1, 5, 9) : la nouvelle API `client.responses.create()`. Ajoute la persistence automatique des conversations, le support natif du RAG multi-turn, et les citations. Recommandee pour les workflows multi-etapes.
+
+En pratique, commencez avec Chat Completions (notebook 1), puis migrez vers Responses API quand vous avez besoin de persistence ou de RAG (notebook 5).
+
+### Structured Outputs echoue en mode strict
+
+Le mode strict (`strict=True`) impose des contraintes sur les schemas JSON :
+
+- **Tous les champs** doivent etre `required` (pas de champ optionnel `Optional`).
+- **Pas de types union** complexes (`str | int | None`).
+- **Pas de profondeur excessive** (> 5 niveaux d'imbrication).
+- Le schema doit etre **deterministe** : chaque champ a exactement un type possible.
+
+Si le mode strict echoue, retirer `strict=True` et utiliser le mode par defaut (moins strict, mais le schema est quand meme respecte dans ~95% des cas). Le notebook [3_Structured_Outputs](3_Structured_Outputs.ipynb) montre les deux approches.
+
+### Function calling : le modele appelle un outil inexistant
+
+Ce phenomene (hallucination d'outils) arrive quand :
+
+- La description de l'outil est ambigue ou incomplete.
+- Le prompt utilisateur est vague et le modele "invente" un outil pour repondre.
+- Trop d'outils sont declares simultanement (> 10).
+
+Mitigation : fournir des descriptions precises pour chaque outil, valider les arguments cote client avant execution, et limiter le nombre d'outils actifs. Le notebook [4_Function_Calling](4_Function_Calling.ipynb) montre le pattern de validation.
+
+### RAG : les reponses sont hors-sujet ou inventees
+
+Les causes les plus frequentes :
+
+- **Chunking trop grand** : les segments depassent 512 tokens, diluant le contenu pertinent. Utiliser des chunks de 200-400 tokens avec chevauchement de 50 tokens.
+- **Embedding inadapte** : `text-embedding-3-small` est plus rapide mais moins precis que `text-embedding-3-large` pour le RAG technique.
+- **Pas de citation** : sans verification, le modele peut halluciner des sources. La Responses API (notebook 5) genere automatiquement des citations.
+- **Top-k trop eleve** : injecter trop de context noie le signal. Commencer avec `top_k=3` et ajuster.
+
+### Modeles raisonnants (o4-mini, gpt-5-thinking) : tokens et cout
+
+Les modeles raisonnants consomment des **reasoning tokens** (non visibles) en plus des tokens d'entree/sortie. Implications :
+
+- **Cout** : le cout reel peut etre 3-10x superieur a un modele non-raisonnant pour le meme prompt. Utiliser `reasoning_effort="low"` pour les taches simples.
+- **Latence** : les modeles raisonnants prennent plus de temps (10-60s vs 2-5s). Pas adaptes au temps reel.
+- **Usage** : excellents pour les taches de planification, l'analyse multi-etapes, et la decomposition de problemes complexes. Inutiles pour le simple formatage ou l'extraction.
+
+Le notebook [8_Reasoning_Models](8_Reasoning_Models.ipynb) compare les couts et la qualite entre modeles raisonnants et classiques.
+
+### LLM local (vLLM) : erreur CUDA ou OOM
+
+Les notebooks 10-11 utilisent vLLM pour servir des modeles locaux. Problemes courants :
+
+- **VRAM insuffisante** : Qwen3.5-35B-A3B en FP16 necessite ~70 GB. Utiliser la quantification AWQ (notebook 11) pour reduire a ~12 GB.
+- **Version CUDA** : vLLM requiert CUDA 12.1+. Verifier avec `nvidia-smi` et `nvcc --version`.
+- **Port deja occupe** : vLLM utilise le port 8000 par defaut. Utiliser `--port 8001` si besoin.
+- **Timeout au premier appel** : le chargement du modele prend 30-120s au demarrage. Les appels suivants sont instantanes.
+
 ## Ressources
 
 - [OpenAI Documentation](https://platform.openai.com/docs)

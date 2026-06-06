@@ -18,7 +18,7 @@
 
 | Projet | Sharpe | CAGR | MaxDD | Période | Niveau |
 |--------|--------|------|-------|---------|--------|
-| [BTC-MACD-ADX](BTC-MACD-ADX/) | **1.647** | 38.1% | 48.8% | 2020-2026 | Intermédiaire |
+| [BTC-ML](BTC-ML/) | **1.647** | 38.1% | 48.8% | 2020-2026 | Intermédiaire |
 | [Framework_Composite_TrendWeather](Framework_Composite_TrendWeather/) | **1.155** | 27.4% | 27.7% | 2015-2026 | Avancé |
 | [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | **1.094** | 36.2% | 40.7% | 2017-2026 | Débutant |
 | [EMA-Cross-Stocks](EMA-Cross-Stocks/) | **0.872** | 25.7% | 35.7% | 2015-2026 | Débutant |
@@ -80,7 +80,7 @@ MonProjet/
 ## Ressources
 
 - [Descriptions détaillées](STRATEGIES_DETAIL.md) — Toutes les stratégies par catégorie
-- [Leçons et patterns](../../docs/quantconnect.md) — 20 patterns confirmés + anti-patterns
+- [Leçons et patterns](../../../docs/quantconnect.md) — 20 patterns confirmés + anti-patterns
 - [Catalogue QC Cloud](../docs/qc_strategies_catalog.md) — Métriques par stratégie avec Cloud IDs
 - [Quick Tour](../QUICK_TOUR.md) — Vue d'ensemble en 2 minutes
 - [QuantConnect Lab](https://www.quantconnect.com/terminal) · [Documentation](https://www.quantconnect.com/docs) · [Forum](https://www.quantconnect.com/forum)

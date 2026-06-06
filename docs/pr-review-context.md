@@ -47,8 +47,8 @@ PRs micro qui inflate le compteur "PRs livrées" sans valeur réelle (#806 +2 li
 
 ### Liens internes
 
-- [feedback_multi_seed_required.md](../.claude/memory/feedback_multi_seed_required.md) — pour critère C (ML)
-- [feedback_use_bot_reviews_for_dispatch.md](../.claude/memory/feedback_use_bot_reviews_for_dispatch.md)
-- [feedback_review_state_filter.md](../.claude/memory/feedback_review_state_filter.md)
+- Criteres multi-seed (ML) : cf [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) section C
+- Bot reviews pour dispatch : cf [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) section G
+- Review state filter : cf [.claude/rules/verify-before-claiming.md](../.claude/rules/verify-before-claiming.md)
 - [.claude/rules/anti-regression.md](../.claude/rules/anti-regression.md)
 - CLAUDE.md section B (Reviews PR 5 points obligatoires)
