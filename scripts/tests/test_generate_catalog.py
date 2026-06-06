@@ -15,9 +15,14 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "notebook_tools"))
 from generate_catalog import (
+    CURATED_GIT_FIELDS,
     _effective_code_cells,
+    _is_comment_only_cell,
     _is_exercise_stub,
     _is_outputless_by_design,
+    _is_papermill_injected,
+    _merge_curated_fields,
+    _normalize_text,
     check_errors,
     classify_maturity,
     count_todos,
@@ -771,3 +776,247 @@ class TestIsOutputlessConfigCalls:
     def test_config_call_with_args(self):
         """Config call with multiple args is outputless."""
         assert _is_outputless_by_design(_code_cell("os.environ.setdefault('KEY', 'val')"))
+
+
+# ---------------------------------------------------------------------------
+# _merge_curated_fields
+# ---------------------------------------------------------------------------
+
+
+class TestMergeCuratedFields:
+    """Tests for _merge_curated_fields — critical for stale-catalog poison prevention.
+
+    When catalog is regenerated on a branch behind main, curated git-derived fields
+    (last_validation, last_validator, issue_pr_associee) may be blank for entries
+    not modified on the current branch. This function preserves them from main.
+    """
+
+    def test_empty_main_catalog(self):
+        """Empty main catalog returns entries unchanged."""
+        entries = [{"path": "a.ipynb", "last_validation": "2026-01-01"}]
+        result = _merge_curated_fields(entries, {})
+        assert len(result) == 1
+        assert result[0]["last_validation"] == "2026-01-01"
+
+    def test_empty_entries(self):
+        """Empty entries list returns empty list."""
+        result = _merge_curated_fields([], {"a.ipynb": {"path": "a.ipynb"}})
+        assert result == []
+
+    def test_preserves_from_main_when_empty(self):
+        """Blank curated fields are filled from main catalog."""
+        entries = [{"path": "a.ipynb", "last_validation": "", "last_validator": "", "issue_pr_associee": ""}]
+        main = {"a.ipynb": {"path": "a.ipynb", "last_validation": "2026-06-01", "last_validator": "ai-01", "issue_pr_associee": "#123"}}
+        result = _merge_curated_fields(entries, main)
+        assert result[0]["last_validation"] == "2026-06-01"
+        assert result[0]["last_validator"] == "ai-01"
+        assert result[0]["issue_pr_associee"] == "#123"
+
+    def test_keeps_current_when_not_empty(self):
+        """Non-empty current fields are NOT overwritten by main."""
+        entries = [{"path": "a.ipynb", "last_validation": "2026-06-05", "last_validator": "po-2023", "issue_pr_associee": "#456"}]
+        main = {"a.ipynb": {"path": "a.ipynb", "last_validation": "2026-06-01", "last_validator": "ai-01", "issue_pr_associee": "#123"}}
+        result = _merge_curated_fields(entries, main)
+        assert result[0]["last_validation"] == "2026-06-05"
+        assert result[0]["last_validator"] == "po-2023"
+        assert result[0]["issue_pr_associee"] == "#456"
+
+    def test_mixed_fill_and_keep(self):
+        """Some fields filled from main, some kept from current."""
+        entries = [{"path": "a.ipynb", "last_validation": "2026-06-05", "last_validator": "", "issue_pr_associee": ""}]
+        main = {"a.ipynb": {"path": "a.ipynb", "last_validation": "2026-06-01", "last_validator": "ai-01", "issue_pr_associee": "#123"}}
+        result = _merge_curated_fields(entries, main)
+        assert result[0]["last_validation"] == "2026-06-05"  # kept (non-empty)
+        assert result[0]["last_validator"] == "ai-01"  # filled from main
+        assert result[0]["issue_pr_associee"] == "#123"  # filled from main
+
+    def test_missing_fields_treated_as_empty(self):
+        """Missing curated fields (no key at all) are filled from main."""
+        entries = [{"path": "a.ipynb"}]
+        main = {"a.ipynb": {"path": "a.ipynb", "last_validation": "2026-06-01", "last_validator": "ai-01", "issue_pr_associee": "#789"}}
+        result = _merge_curated_fields(entries, main)
+        assert result[0]["last_validation"] == "2026-06-01"
+        assert result[0]["last_validator"] == "ai-01"
+        assert result[0]["issue_pr_associee"] == "#789"
+
+    def test_no_match_in_main(self):
+        """Entry not in main catalog is left unchanged."""
+        entries = [{"path": "new.ipynb", "last_validation": "", "last_validator": ""}]
+        main = {"old.ipynb": {"path": "old.ipynb", "last_validation": "2026-06-01"}}
+        result = _merge_curated_fields(entries, main)
+        assert result[0]["last_validation"] == ""
+
+    def test_multiple_entries(self):
+        """Multiple entries are processed independently."""
+        entries = [
+            {"path": "a.ipynb", "last_validation": "", "last_validator": "", "issue_pr_associee": ""},
+            {"path": "b.ipynb", "last_validation": "2026-06-05", "last_validator": "po-2023", "issue_pr_associee": "#999"},
+        ]
+        main = {
+            "a.ipynb": {"path": "a.ipynb", "last_validation": "2026-06-01", "last_validator": "ai-01", "issue_pr_associee": "#100"},
+            "b.ipynb": {"path": "b.ipynb", "last_validation": "2026-05-01", "last_validator": "other", "issue_pr_associee": "#200"},
+        }
+        result = _merge_curated_fields(entries, main)
+        # a.ipynb: all fields filled from main
+        assert result[0]["last_validation"] == "2026-06-01"
+        assert result[0]["last_validator"] == "ai-01"
+        # b.ipynb: current values preserved (non-empty)
+        assert result[1]["last_validation"] == "2026-06-05"
+        assert result[1]["last_validator"] == "po-2023"
+        assert result[1]["issue_pr_associee"] == "#999"
+
+    def test_does_not_modify_non_curated_fields(self):
+        """Non-curated fields (title, kernel, etc.) are never touched."""
+        entries = [{"path": "a.ipynb", "title": "My Notebook", "kernel": "Python 3", "last_validation": ""}]
+        main = {"a.ipynb": {"path": "a.ipynb", "title": "Old Title", "kernel": "Python 2", "last_validation": "2026-06-01"}}
+        result = _merge_curated_fields(entries, main)
+        assert result[0]["title"] == "My Notebook"  # unchanged
+        assert result[0]["kernel"] == "Python 3"  # unchanged
+        assert result[0]["last_validation"] == "2026-06-01"  # filled
+
+    def test_none_main_catalog(self):
+        """None main catalog returns entries unchanged (treated as empty)."""
+        entries = [{"path": "a.ipynb", "last_validation": "2026-01-01"}]
+        result = _merge_curated_fields(entries, None)
+        assert result[0]["last_validation"] == "2026-01-01"
+
+    def test_curated_git_fields_constant(self):
+        """CURATED_GIT_FIELDS contains exactly the 3 expected fields."""
+        assert CURATED_GIT_FIELDS == ("last_validation", "last_validator", "issue_pr_associee")
+
+    def test_merge_is_not_deep_copy(self):
+        """Entries are modified in-place (same dict objects)."""
+        entries = [{"path": "a.ipynb", "last_validation": ""}]
+        main = {"a.ipynb": {"path": "a.ipynb", "last_validation": "2026-06-01"}}
+        result = _merge_curated_fields(entries, main)
+        assert result[0] is entries[0]  # same object, mutated
+
+
+# ---------------------------------------------------------------------------
+# _normalize_text
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizeText:
+    """Tests for _normalize_text — accent stripping, code fence removal, lowercasing."""
+
+    def test_lowercase(self):
+        """Converts to lowercase."""
+        result = _normalize_text("Hello WORLD")
+        assert result == "hello world"
+
+    def test_strips_accents(self):
+        """Removes combining characters (accents)."""
+        result = _normalize_text("synthese")
+        assert "synthese" in result
+        result2 = _normalize_text("synthèse")
+        assert "synthese" in result2
+
+    def test_normalizes_apostrophes(self):
+        """Curly quotes apostrophes become straight apostrophes."""
+        result = _normalize_text("l’objectif")
+        assert "l'objectif" in result
+
+    def test_removes_fenced_code_blocks(self):
+        """Fenced code blocks are removed entirely."""
+        text = "before ```flow\nresultat -> synthese\n``` after"
+        result = _normalize_text(text)
+        assert "resultat" not in result
+        assert "before" in result
+        assert "after" in result
+
+    def test_preserves_non_fenced_code(self):
+        """Non-fenced content is preserved."""
+        result = _normalize_text("conclusion section here")
+        assert "conclusion" in result
+
+    def test_empty_string(self):
+        """Empty string returns empty string."""
+        assert _normalize_text("") == ""
+
+    def test_multiline_fenced_code(self):
+        """Multi-line fenced code blocks are removed."""
+        text = "intro\n```\nline1\nline2\n```\nconclusion"
+        result = _normalize_text(text)
+        assert "line1" not in result
+        assert "intro" in result
+        assert "conclusion" in result
+
+
+# ---------------------------------------------------------------------------
+# _is_papermill_injected
+# ---------------------------------------------------------------------------
+
+
+class TestIsPapermillInjected:
+    """Tests for _is_papermill_injected — Papermill parameter cell detection."""
+
+    def test_injected_tag(self):
+        """Cell with injected-parameters tag is detected."""
+        cell = _code_cell("param = 42", tags=["injected-parameters"])
+        assert _is_papermill_injected(cell)
+
+    def test_no_tags(self):
+        """Cell without tags is not injected."""
+        cell = _code_cell("param = 42")
+        assert not _is_papermill_injected(cell)
+
+    def test_other_tags(self):
+        """Cell with other tags but not injected-parameters is not injected."""
+        cell = _code_cell("param = 42", tags=["parameters"])
+        assert not _is_papermill_injected(cell)
+
+    def test_empty_tags(self):
+        """Cell with empty tags list is not injected."""
+        cell = _code_cell("param = 42", tags=[])
+        assert not _is_papermill_injected(cell)
+
+    def test_no_metadata(self):
+        """Cell without metadata is not injected."""
+        cell = {"cell_type": "code", "source": ["x = 1"], "outputs": []}
+        assert not _is_papermill_injected(cell)
+
+
+# ---------------------------------------------------------------------------
+# _is_comment_only_cell
+# ---------------------------------------------------------------------------
+
+
+class TestIsCommentOnlyCell:
+    """Tests for _is_comment_only_cell — comment-only code cell detection."""
+
+    def test_comment_only(self):
+        """Cell with only comments returns True."""
+        cell = _code_cell("# This is a comment\n# Another comment")
+        assert _is_comment_only_cell(cell)
+
+    def test_code_with_comment(self):
+        """Cell with code and comment returns False."""
+        cell = _code_cell("x = 1  # with comment")
+        assert not _is_comment_only_cell(cell)
+
+    def test_empty_source(self):
+        """Cell with empty source returns True."""
+        cell = _code_cell("")
+        assert _is_comment_only_cell(cell)
+
+    def test_whitespace_only(self):
+        """Cell with only whitespace returns True."""
+        cell = _code_cell("   \n   \n")
+        assert _is_comment_only_cell(cell)
+
+    def test_mixed_comments_and_blank_lines(self):
+        """Cell with comments and blank lines returns True."""
+        cell = _code_cell("# comment\n\n# another\n")
+        assert _is_comment_only_cell(cell)
+
+    def test_actual_code(self):
+        """Cell with actual code returns False."""
+        cell = _code_cell("print('hello')")
+        assert not _is_comment_only_cell(cell)
+
+    def test_multiline_comment(self):
+        """Cell with multi-line comment (triple-quoted string) is NOT comment-only."""
+        cell = _code_cell('"""docstring"""')
+        # Triple-quoted strings are parsed as Expr(Str), not comments
+        assert not _is_comment_only_cell(cell)
