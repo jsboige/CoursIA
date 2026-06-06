@@ -160,7 +160,7 @@ Ces documents sont conserves pour reference mais ne sont plus actifs.
 | [H7_P2_DOCKER_ERROR_CATALOG.md](_archives/H7_P2_DOCKER_ERROR_CATALOG.md) | Catalog erreurs Docker H7/P2 |
 | [NOTEBOOK_ENV_COVERAGE.md](_archives/NOTEBOOK_ENV_COVERAGE.md) | Couverture environnements notebooks |
 | [REVERSE_PROXY_CIRCUIT.md](_archives/REVERSE_PROXY_CIRCUIT.md) | Reverse proxy circuit |
-| [STABLE_SNAPSHOT.md](STABLE_SNAPSHOT.md) | Stable snapshot |
+| [STABLE_SNAPSHOT.md](_archives/STABLE_SNAPSHOT.md) | Stable snapshot (2026-05-11, SHA 08d52b0d) |
 | [epf-universalisation-design.md](_archives/epf-universalisation-design.md) | Design universalisation EPF |
 | [epic-1028-audiobook-postmortem.md](_archives/epic-1028-audiobook-postmortem.md) | Postmortem audiobook |
 | [dette-branches-audit-2026-05-27.md](_archives/dette-branches-audit-2026-05-27.md) | Dette branches audit |
@@ -169,7 +169,7 @@ Ces documents sont conserves pour reference mais ne sont plus actifs.
 | [genai-stack-audit-2026-05-10.md](_archives/genai-stack-audit-2026-05-10.md) | Audit stack GenAI |
 | [qc-league-ece.md](_archives/qc-league-ece.md) | League ECE QuantConnect |
 | [qc-stabilization-phase2.md](_archives/qc-stabilization-phase2.md) | Stabilisation QC phase 2 |
-| [qc-strategies-status.md](qc-strategies-status.md) | Status strategies QuantConnect |
+| [qc-strategies-status.md](_archives/qc-strategies-status.md) | Audit classification strategies QC (2026-05-28) |
 | [slides-refonte-procedure.md](_archives/slides-refonte-procedure.md) | Procedure refonte slides |
 | [stabilization-phase1-matrix.md](_archives/stabilization-phase1-matrix.md) | Matrice stabilization phase 1 |
 

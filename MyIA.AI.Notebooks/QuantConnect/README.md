@@ -246,7 +246,7 @@ Each notebook in the QC tree falls into one of four types:
 | **(c)** | standalone research | Local (yfinance/sklearn) | 24 |
 | **(d)** | pedagogical placeholder | Read-only / copy-paste | 33 |
 
-See [docs/qc-strategies-status.md](../../docs/qc-strategies-status.md) for the exhaustive classification.
+See [docs/_archives/qc-strategies-status.md](../../docs/_archives/qc-strategies-status.md) for the exhaustive classification.
 
 ## Cours partenaire — Exemples de Recherche
 
