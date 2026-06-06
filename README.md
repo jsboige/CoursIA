@@ -255,44 +255,55 @@ CoursIA/
 git clone https://github.com/jsboige/CoursIA.git
 cd CoursIA
 
-# 2. Environnement Python
+# 2. Environnement Python (un venv suffit pour la majorite des series)
 python -m venv venv
-venv\Scripts\activate          # Windows
-pip install jupyter openai anthropic python-dotenv
+venv\Scripts\activate          # Windows ; sous Linux/WSL : source venv/bin/activate
+pip install jupyter ipykernel python-dotenv
 
-# 3. Kernel Jupyter
+# 3. Kernel Jupyter Python
 python -m ipykernel install --user --name=coursia --display-name "Python (CoursIA)"
 
-# 4. Packages .NET (si notebooks C#)
+# 4. Kernel .NET Interactive (notebooks C#)
+dotnet tool install --global Microsoft.dotnet-interactive
+dotnet interactive jupyter install
 dotnet restore MyIA.CoursIA.sln
 
-# 5. Configuration API (selon les series souhaitees)
-cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
+# 5. Dependances de la serie visee (chaque serie porte son requirements.txt)
+pip install -r MyIA.AI.Notebooks/<Serie>/requirements.txt
 ```
+
+Les cles API eventuelles se posent via les `.env.example` (section Configuration). Pour valider
+ou executer un notebook, ne pas ecrire de script ad-hoc : le depot fournit une CLI dediee
+(section Scripts et validation).
 
 ### Installation par serie
 
-La plupart des series fonctionnent directement apres le clone. Voici les dependances specifiques :
+Chaque serie Python porte son propre `requirements.txt` : c'est la reference d'installation,
+a preferer aux listes de paquets ecrites a la main. Certaines series fournissent en plus un
+script de preparation d'environnement.
 
 ```bash
-# Search / Sudoku (aucune config requise)
-pip install z3-solver ortools numpy matplotlib
+# Schema general : installer le requirements.txt de la serie ouverte
+pip install -r MyIA.AI.Notebooks/Search/requirements.txt          # Search / CSP
+pip install -r MyIA.AI.Notebooks/Sudoku/requirements.txt          # Sudoku
+pip install -r MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt
+pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
+pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt           # + requirements-audio/-video selon le module
+pip install -r MyIA.AI.Notebooks/QuantConnect/requirements.txt
+pip install -r MyIA.AI.Notebooks/Probas/requirements.txt
+pip install -r MyIA.AI.Notebooks/IIT/requirements.txt
+pip install -r MyIA.AI.Notebooks/RL/requirements.txt
+# ... idem pour chaque sous-serie SymbolicAI (Lean, Planners, SemanticWeb, SmartContracts,
+#     SymbolicLearning, Argument_Analysis) et pour CaseStudies / cross-series.
 
-# Tweety (JDK auto-telecharge)
-pip install jpype1 python-sat
-
-# Lean (WSL requis)
-pip install lean4_jupyter openai anthropic
-
-# GameTheory
-pip install numpy scipy matplotlib nashpy open_spiel networkx
-
-# GenAI (Docker GPU recommande pour modeles locaux)
-pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt
-
-# QuantConnect
-pip install yfinance pandas numpy matplotlib
+# Series avec script de preparation dedie
+python MyIA.AI.Notebooks/SymbolicAI/SmartContracts/setup_env.py        # toolchain Solidity / Foundry
+bash   MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/setup_wsl_python.sh    # env Python cote WSL pour Lean
+python MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/validate_lean_setup.py # diagnostic elan / Mathlib
 ```
+
+Les notebooks C# (ML.NET, Sudoku, Probas/Infer.NET) ne passent pas par pip : ils s'appuient
+sur le kernel .NET Interactive et `dotnet restore` (section Mise en route).
 
 ---
 
@@ -336,10 +347,14 @@ Pour les notebooks GenAI avances utilisant des modeles locaux (Qwen Image Edit, 
 
 Services disponibles : Qwen Image Edit (~29 Go VRAM), ComfyUI Video (~12 Go), Stable Diffusion Forge (~10 Go), Whisper, MusicGen, Kokoro TTS, Demucs.
 
+La pile s'orchestre via le CLI `genai.py` plutot que des commandes `docker` lancees a la main :
+
 ```bash
-cd docker-configurations/services/comfyui-qwen
-cp .env.example .env
-docker-compose up -d
+cp docker-configurations/services/comfyui-qwen/.env.example docker-configurations/services/comfyui-qwen/.env
+python scripts/genai-stack/genai.py docker status      # etat des services
+python scripts/genai-stack/genai.py docker start all   # demarrer
+python scripts/genai-stack/genai.py docker stop all    # arreter
+python scripts/genai-stack/genai.py gpu                # verifier la VRAM disponible
 ```
 
 Configuration detaillee dans `docker-configurations/`.
@@ -348,20 +363,28 @@ Configuration detaillee dans `docker-configurations/`.
 
 ## Scripts et validation
 
+Regle de base : **toujours passer par ces scripts pour valider ou executer un notebook,
+jamais par un script ecrit pour l'occasion**. La CLI detecte le kernel depuis les metadonnees
+du notebook (Python, .NET Interactive, Lean sous WSL).
+
 | Script | Usage |
 |--------|-------|
-| `scripts/notebook_tools/notebook_tools.py` | CLI : `validate`, `skeleton`, `analyze`, `check-env` |
-| `scripts/notebook_helpers.py` | Manipulation notebooks, iteration cellules |
-| `scripts/genai-stack/genai.py` | Validation stack GenAI (`validate --full`) |
+| `scripts/notebook_tools/notebook_tools.py` | CLI multi-series : `validate`, `execute`, `analyze`, `skeleton`, `check-env` |
+| `scripts/notebook_tools/notebook_helpers.py` | Manipulation de notebooks, iteration cellule par cellule |
+| `scripts/genai-stack/genai.py` | Pile GenAI : `docker`, `validate`, `notebooks`, `gpu` |
+| `scripts/smartcontracts/validate_sc_notebooks.py` | Validation dediee Smart Contracts (`--quick`, `--execute --anvil`) |
 
 ```bash
-# Validation structure
-python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku --quick
+# Validation de structure
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku
 
-# Analyse structure
-python scripts/notebook_tools/notebook_tools.py analyze MyIA.AI.Notebooks/Search
+# Execution (Papermill ; --cell-by-cell pour les notebooks .NET / Lean)
+python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/Search --cell-by-cell
 
-# Validation stack GenAI
+# Verification de l'environnement d'une famille
+python scripts/notebook_tools/notebook_tools.py check-env GenAI
+
+# Validation complete de la pile GenAI
 python scripts/genai-stack/genai.py validate --full
 ```
 
@@ -385,15 +408,15 @@ Configuration dans `.claude/agents/` et `.claude/skills/`.
 
 Les dependances principales par serie :
 
-| Outil | Series | Installation |
-|-------|--------|--------------|
-| Z3 SMT Solver | Sudoku, Search, SymbolicAI | `pip install z3-solver` |
-| OR-Tools | Sudoku, Search, Planners | `pip install ortools` |
-| Tweety + JDK | Tweety, Argument_Analysis | Auto-telecharge |
-| Lean 4 + Mathlib | Lean, GameTheory | Via `elan` (WSL) |
-| OpenSpiel | GameTheory 13-17 | `pip install open_spiel` |
-| Infer.NET | Probas | Via NuGet |
-| PyPhi | IIT | `pip install pyphi` |
+| Outil | Series | Provenance |
+|-------|--------|-----------|
+| Z3 SMT Solver | Sudoku, Search, SymbolicAI | `requirements.txt` de la serie |
+| OR-Tools | Sudoku, Search, Planners | `requirements.txt` de la serie |
+| Tweety + JDK | Tweety, Argument_Analysis | JDK auto-telecharge ; reste dans `requirements.txt` |
+| Lean 4 + Mathlib | Lean, GameTheory | `elan` (WSL) ; diagnostic via `validate_lean_setup.py` |
+| OpenSpiel | GameTheory | `requirements.txt` GameTheory |
+| Infer.NET | Probas | NuGet (kernel .NET Interactive) |
+| PyPhi | IIT | `requirements.txt` IIT |
 
 ---
 
