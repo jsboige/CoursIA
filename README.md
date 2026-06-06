@@ -2,9 +2,11 @@
 
 **Apprendre l'intelligence artificielle par la pratique, des fondements theoriques aux applications avancees.**
 
-CoursIA est une collection de notebooks Jupyter interactifs couvrant l'ensemble du spectre de l'IA : algorithmes de recherche, resolution par contraintes, raisonnement formel, theorie des jeux, programmation probabiliste, machine learning, IA generative multimodale et trading algorithmique.
+CoursIA est une collection de plus de 500 notebooks Jupyter interactifs couvrant l'ensemble du spectre de l'IA : algorithmes de recherche, resolution par contraintes, raisonnement formel, theorie des jeux, programmation probabiliste, machine learning, IA generative multimodale et trading algorithmique.
 
 Les notebooks sont disponibles en Python, C# (.NET Interactive) et Lean 4. Chaque serie suit une progression pedagogique, des concepts fondamentaux vers les applications avancees. La plupart fonctionnent en local sans configuration ; seules les series GenAI et QuantConnect necessitent des cles API.
+
+> **Index complet des notebooks** : le fichier [`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md) est regenere quotidiennement et liste chaque notebook avec son statut (READY/DEMO) et sa maturite (PRODUCTION/BETA). C'est la source de verite pour les comptes et les statuts a jour.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -28,11 +30,12 @@ MyIA.AI.Notebooks/
   RL/              -> Reinforcement Learning (PPO, DQN, Stable Baselines3)
   Probas/          -> Programmation probabiliste (Infer.NET, Pyro)
   GameTheory/      -> Theorie des jeux, equilibres de Nash, mechanism design
-  IIT/             -> Theologie de l'information integree (Tononi, PyPhi)
+  IIT/             -> Theorie de l'information integree (Tononi, PyPhi)
   CaseStudies/     -> Etudes de cas interdisciplinaires
+  cross-series/    -> Applications multi-series (matching CV, pipelines transverses)
   SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners)
-  GenAI/           -> IA generative (Image, Audio, Video, Texte, Semantic Kernel)
-  QuantConnect/    -> Trading algorithmique (27 notebooks pedag + strategies backtestees)
+  GenAI/           -> IA generative (Image, Audio, Video, Texte, Semantic Kernel) -- plus de 120 notebooks
+  QuantConnect/    -> Trading algorithmique (plus de 100 notebooks : pedag, strategies, ML pipeline)
 ```
 
 Pour un guide complet des parcours d'apprentissage, voir [docs/parcours/](docs/parcours/).
@@ -98,9 +101,11 @@ L'IA symbolique s'interesse aux systemes de raisonnement automatique. Cette seri
 
 **Semantic Web** (18 notebooks) -- Du RDF/OWL aux graphes de connaissances integres aux LLMs. Fondations en .NET (dotNetRDF), standards modernes en Python (SHACL, JSON-LD, RDF-Star), puis GraphRAG et comparaison de raisonneurs.
 
-**Lean** (13 notebooks) -- Verification formelle avec Lean 4. Types dependants, isomorphisme de Curry-Howard, tactiques Mathlib, assistance par LLM (LeanCopilot, AlphaProof). Necessite WSL sous Windows.
+**Lean** (plus de 20 notebooks) -- Verification formelle avec Lean 4. Types dependants, isomorphisme de Curry-Howard, tactiques Mathlib, assistance par LLM (LeanCopilot, AlphaProof). Necessite WSL sous Windows.
 
-**Planners** (13 notebooks) -- Planification automatique : fondations PDDL, heuristiques avec Fast-Downward, planification temporelle, HTN, puis pont vers le neurosymbolique (LLM-planning).
+**Planners** (plus de 14 notebooks) -- Planification automatique : fondations PDDL, heuristiques avec Fast-Downward, planification temporelle, HTN, puis pont vers le neurosymbolique (LLM-planning).
+
+**SymbolicLearning** (7 notebooks) -- Apprentissage symbolique : de l'apprentissage logique et base sur la connaissance a l'apprentissage inductif de programmes logiques (ILP), en passant par le neuro-symbolique et les graphes de connaissances. Pont entre IA symbolique classique et LLMs.
 
 **Smart Contracts** (27 notebooks) -- Des origines cypherpunk a Solidity avancee et aux blockchains multi-chain (Vyper, Move/Sui, Solana/Anchor). Tests Foundry, fuzz testing, verification formelle, zero-knowledge proofs, chiffrement homomorphe et DAO governance.
 
@@ -136,7 +141,7 @@ C# et Python | [README detaille](MyIA.AI.Notebooks/ML/README.md)
 
 ### GenAI -- IA Generative
 
-Comment generer des images, composer de la musique, creer des videos ou converser avec un LLM ? Cette serie explore l'IA generative dans toutes ses modalites, avec une progression qui va de l'utilisation d'APIs cloud au deploiement de modeles locaux sur GPU.
+Comment generer des images, composer de la musique, creer des videos ou converser avec un LLM ? Cette serie explore l'IA generative dans toutes ses modalites, avec une progression qui va de l'utilisation d'APIs cloud au deploiement de modeles locaux sur GPU. Avec plus de 120 notebooks, c'est la serie la plus riche du depot.
 
 Organisee par modalite, chaque domaine (Image, Audio, Video) suit une progression en quatre niveaux : Foundation (decouverte des APIs), Advanced (modeles locaux, fine-tuning), Orchestration (workflows multi-modeles) et Applications (cas d'usage concrets).
 
@@ -158,7 +163,7 @@ Python | [README detaille](MyIA.AI.Notebooks/GenAI/README.md)
 
 Peut-on appliquer les techniques d'IA aux marches financiers ? Cette serie repond a cette question en combinant le framework LEAN de QuantConnect avec des approches allant du momentum classique au deep learning.
 
-**Notebooks pedagogiques** (27 notebooks) -- Du cycle de vie d'un algorithme LEAN aux strategies ML/DL/RL/LLM, en passant par les options, futures, risk management et analyse de sentiment. Progression en cinq phases : fondations LEAN, univers et actifs, trading avance, algorithm framework, puis ML/DL/AI.
+**Notebooks pedagogiques** (plus de 40 notebooks) -- Du cycle de vie d'un algorithme LEAN aux strategies ML/DL/RL/LLM, en passant par les options, futures, risk management et analyse de sentiment. Progression en cinq phases : fondations LEAN, univers et actifs, trading avance, algorithm framework, puis ML/DL/AI.
 
 **Strategies backtestees** -- Strategies completes avec notebooks de recherche standalone (yfinance/pandas). Les approches vont du momentum multi-actifs aux modeles de facteurs Fama-French, en passant par les options couvertes et le mean reversion. Chaque strategie est accompagnee de son code source et de ses resultats de backtest.
 
@@ -174,6 +179,18 @@ Introduction a l'apprentissage par renforcement avec Stable Baselines3 : PPO sur
 
 Python | [README detaille](MyIA.AI.Notebooks/RL/README.md)
 
+### CaseStudies -- Etudes de cas interdisciplinaires
+
+Des applications concretes de l'IA dans des domaines specialises : diagnostic medical assiste par ML, planification oncologique par optimisation combinatoire. Chaque cas propose une version etudiant (a completer) et une version solution.
+
+Python | [README detaille](MyIA.AI.Notebooks/CaseStudies/README.md)
+
+### cross-series -- Applications transverses
+
+Des notebooks qui combinent les techniques de plusieurs series : pipelines de matching CV mobilisant le NLP, la recherche d'information et la visualisation. Ces applications montrent comment les concepts individuels s'articulent dans des systemes reels.
+
+Python | [README detaille](MyIA.AI.Notebooks/cross-series/README.md)
+
 ### IIT -- Theorie de l'Information Integree
 
 La theorie de l'information integree (Tononi) propose une approche mathematique de la conscience : un systeme est conscient dans la mesure ou il integre l'information de maniere non reducible. Ce notebook utilise PyPhi pour calculer le coefficient Phi et explorer les concepts de cause et d'effet en information.
@@ -186,23 +203,24 @@ Python | [README detaille](MyIA.AI.Notebooks/IIT/README.md)
 
 ```text
 CoursIA/
-  MyIA.AI.Notebooks/          Notebooks interactifs (500+)
+  MyIA.AI.Notebooks/          Notebooks interactifs (voir COURSE_CATALOG.generated.md)
     Search/                    Algorithmes de recherche (Python, C#)
     Sudoku/                    Resolution multi-paradigme (Python, C#)
     SymbolicAI/                IA symbolique (Python, Lean 4, C#)
-      Tweety/ SemanticWeb/ Lean/ Planners/ SmartContracts/ Argument_Analysis/
+      Tweety/ SemanticWeb/ Lean/ Planners/ SymbolicLearning/ SmartContracts/ Argument_Analysis/
     GameTheory/                Theorie des jeux (Python, Lean 4)
     Probas/                    Programmation probabiliste (C#, Python)
     ML/                        Machine Learning (C#, Python)
     RL/                        Reinforcement Learning (Python)
-    GenAI/                     IA Generative (Python)
+    GenAI/                     IA Generative (Python) -- plus de 120 notebooks
       Image/ Audio/ Video/ Texte/ SemanticKernel/ Vibe-Coding/
-    QuantConnect/              Trading algorithmique (Python)
+    QuantConnect/              Trading algorithmique (Python) -- plus de 100 notebooks
       Python/                  Notebooks pedagogiques
       projects/                Strategies backtestees
       ML-Training-Pipeline/    Pipeline DL forecasting
       partner-course-quant-trading/ Projets etudiants
     CaseStudies/               Etudes de cas interdisciplinaires (Python)
+    cross-series/              Applications multi-series (Python)
     IIT/                       Information integree (Python)
     Config/                    Configuration API
 
