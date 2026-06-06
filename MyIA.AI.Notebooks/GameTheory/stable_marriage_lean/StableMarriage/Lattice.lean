@@ -350,7 +350,49 @@ lemma no_cross_match (μ ν : Matching n)
         -- All are ≥ direction, no strict < to force antisymmetry contradiction.
         -- Need: either strict WP from injectivity + ≠, or a different stability application.
         -- TODO: try (m₂, w₁) cross-blocking or decomposition chain argument.
-        sorry
+        have hw2_pref_m2_m1 : prof.WomanPrefers w₂ m₂ m₁ := by
+          unfold PrefProfile.WomanPrefers at hμ_stab_m₁w₂ ⊢
+          simp only [not_lt] at hμ_stab_m₁w₂
+          have hne_rank : ¬ (prof.womenPref w₂ m₂ : Nat) = (prof.womenPref w₂ m₁ : Nat) := by
+            intro heq
+            have : m₂ = m₁ := (prof.womenPref_bijective w₂).injective (Fin.ext heq)
+            exact hm this.symm
+          exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hμ_stab_m₁w₂) hne_rank)
+        have hνinv_w2_ne_m2 : ν.inverse w₂ ≠ m₂ := by
+          intro h
+          have hs : w₂ = w := by
+            calc
+              w₂ = ν.spouse (ν.inverse w₂) := (spouse_inverse ν w₂).symm
+              _ = ν.spouse m₂ := by rw [h]
+              _ = w := h2
+          exact hw_ne_w2 hs.symm
+        have hw2_pref_nuinv_m2 : prof.WomanPrefers w₂ (ν.inverse w₂) m₂ := by
+          unfold PrefProfile.WomanPrefers at hν_stab_m₂w₂ ⊢
+          simp only [not_lt] at hν_stab_m₂w₂
+          have hne_rank : ¬ (prof.womenPref w₂ (ν.inverse w₂) : Nat) = (prof.womenPref w₂ m₂ : Nat) := by
+            intro heq
+            have : ν.inverse w₂ = m₂ := (prof.womenPref_bijective w₂).injective (Fin.ext heq)
+            exact hνinv_w2_ne_m2 this
+          exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hν_stab_m₂w₂) hne_rank)
+        have hνinv_w2_ne_m1 : ν.inverse w₂ ≠ m₁ := by
+          intro h
+          have hs : w₂ = w₁ := by
+            calc
+              w₂ = ν.spouse (ν.inverse w₂) := (spouse_inverse ν w₂).symm
+              _ = ν.spouse m₁ := by rw [h]
+              _ = w₁ := rfl
+          exact hw1_ne_w2 hs.symm
+        have hw2_pref_nuinv_m1 : prof.WomanPrefers w₂ (ν.inverse w₂) m₁ := by
+          unfold PrefProfile.WomanPrefers at hν_stab_m₁w₂ ⊢
+          simp only [not_lt] at hν_stab_m₁w₂
+          have hne_rank : ¬ (prof.womenPref w₂ (ν.inverse w₂) : Nat) = (prof.womenPref w₂ m₁ : Nat) := by
+            intro heq
+            have : ν.inverse w₂ = m₁ := (prof.womenPref_bijective w₂).injective (Fin.ext heq)
+            exact hνinv_w2_ne_m1 this
+          exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hν_stab_m₁w₂) hne_rank)
+        have hcaseA2_branch1_chain : False := by
+          sorry
+        exact hcaseA2_branch1_chain
       · -- Branch: m₁ does NOT prefer w₂ over w (menPref m₁ w ≤ menPref m₁ w₂)
         -- Context: hm₁ (w < w₁), ¬hm₁w₂ (w ≤ w₂ for m₁), hm₂' (w₂ < w for m₂)
         -- ¬hm₁w₂: menPref m₁ w ≤ menPref m₁ w₂
