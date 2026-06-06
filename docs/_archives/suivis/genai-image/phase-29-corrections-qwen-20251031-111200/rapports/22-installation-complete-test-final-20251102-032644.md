@@ -1,3 +1,5 @@
+> **Superseded by [22-installation-complete-test-final-20251102-031809.md](22-installation-complete-test-final-20251102-031809.md)**, archived 2026-06-06. Content preserved for audit trail.
+
 # Rapport Installation Complète ComfyUI Qwen - Phase 29
 
 **Date**: 2025-11-02 03:26:44  
