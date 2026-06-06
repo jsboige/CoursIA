@@ -191,7 +191,7 @@ Si vous utilisez VS Code uniquement (sans CLI), l'extension Claude Code dans le 
 | **Courbe d'apprentissage** | Moyenne | Facile |
 | **OpenRouter** | Oui | Oui |
 
-**Recommandation** : debutants complets -> commencer par Roo Code ([module 01](Roo-Code/01-decouverte/)) ; developpeurs -> Claude Code ([module 01](Claude-Code/01-decouverte/)) offre plus de puissance. Les deux coexistent dans le meme VS Code. Le document [COMPARAISON-CLAUDE-ROO.md](Claude-Code/docs/COMPARAISON-CLAUDE-ROO.md) detaille les differences.
+**Recommandation** : debutants complets -> commencer par Roo Code ([module 01](Roo-Code/01-decouverte/)) ; developpeurs -> Claude Code ([module 01](Claude-Code/01-decouverte/)) offre plus de puissance. Les deux coexistent dans le meme VS Code. Voir le tableau comparatif ci-dessus pour les differences detaillees.
 
 ### Erreur d'authentification OpenRouter ou "401 Unauthorized"
 

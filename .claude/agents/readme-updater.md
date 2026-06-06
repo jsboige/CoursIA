@@ -166,7 +166,7 @@ Description courte de la serie.
 ### Regles de coherence
 
 - [ ] Tous les notebooks sont listes dans au moins un tableau
-- [ ] Les liens vers les notebooks sont corrects (`[Name](Name.ipynb)`)
+- [ ] Les liens vers les notebooks sont corrects (format: `texte` + `(chemin.ipynb)`)
 - [ ] Les durees estimees sont coherentes
 - [ ] Les kernels sont correctement identifies
 - [ ] Les sections suivent une hierarchie logique (##, ###)

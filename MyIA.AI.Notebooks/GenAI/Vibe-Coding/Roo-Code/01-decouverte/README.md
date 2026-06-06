@@ -16,16 +16,6 @@ Ce répertoire contient plusieurs démos pour vous aider à découvrir les capac
    - Apprenez à poser des questions sur des contenus visuels
    - Explorez différents types d'analyses visuelles
 
-3. **[Demo 3 - Organisation et productivité](./demo-3-organisation/README.md)**
-   - Utilisez Roo pour organiser vos documents
-   - Planifiez efficacement votre temps
-   - Améliorez votre productivité quotidienne
-
-4. **[Demo 4 - Questions techniques et conceptuelles](./demo-4-questions/README.md)**
-   - Posez des questions complexes à Roo
-   - Obtenez des explications claires sur des sujets techniques
-   - Approfondissez vos connaissances dans divers domaines
-
 ## Structure des démos
 
 Chaque démo est organisée de la même façon :

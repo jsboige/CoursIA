@@ -184,9 +184,9 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliques dans les n
 
 ## Dataset
 
-| Fichier | Description |
-|---------|-------------|
-| [taxi-fare.csv](taxi-fare.csv) | Donnees courses taxi NYC |
+| Fichier          | Description                                                  |
+|------------------|--------------------------------------------------------------|
+| `taxi-fare.csv`  | Donnees courses taxi NYC (fourni localement, exclu du depot) |
 
 ## Installation
 
@@ -304,7 +304,7 @@ if (!File.Exists("taxi-fare.csv"))
     Console.WriteLine("taxi-fare.csv non trouve. Placer le fichier a cote du notebook.");
 ```
 
-Le fichier est inclus dans le depot : [taxi-fare.csv](taxi-fare.csv).
+Le fichier `taxi-fare.csv` est fourni localement (exclu du depot via `.gitignore`). Placer le fichier dans le meme repertoire que les notebooks.
 
 ### Les metriques de ML-4 semblent aberrantes (R² negatif, MAE tres eleve)
 
