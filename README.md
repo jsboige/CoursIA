@@ -278,32 +278,37 @@ ou executer un notebook, ne pas ecrire de script ad-hoc : le depot fournit une C
 
 ### Installation par serie
 
-Chaque serie Python porte son propre `requirements.txt` : c'est la reference d'installation,
-a preferer aux listes de paquets ecrites a la main. Certaines series fournissent en plus un
-script de preparation d'environnement.
+La plupart des series sont autonomes et s'ouvrent sur un **notebook de mise en route**
+(Setup / Environment) qui installe les dependances de la serie et verifie la chaine d'outils :
+c'est le point de depart recommande. Pour les kernels, WSL et toolchains specifiques, des
+scripts de preparation dedies accompagnent ces notebooks. Les series sans notebook de setup
+s'installent directement via leur `requirements.txt`.
+
+| Serie | Notebook de mise en route | Preparation dediee |
+|-------|---------------------------|--------------------|
+| GenAI | `GenAI/00-GenAI-Environment/` (Environment-Setup, Docker-Services, API-Endpoints, Validation) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
+| GameTheory | `GameTheory/GameTheory-1-Setup.ipynb` | `scripts/setup_wsl_openspiel.sh`, `setup_wsl_lean4.sh`, `setup_lean4_kernel.ps1` |
+| Sudoku | `Sudoku/Sudoku-0-Environment-Csharp.ipynb` | kernel .NET Interactive |
+| Probas | `Probas/Infer/Infer-1-Setup.ipynb`, `Probas/PyMC/PyMC-1-Setup.ipynb` | `Infer/scripts/setup_environment.ps1` |
+| QuantConnect | `QuantConnect/Python/QC-Py-01-Setup.ipynb` | `requirements.txt` |
+| Lean | `SymbolicAI/Lean/Lean-1-Setup.ipynb` | `Lean/scripts/setup_wsl_python.sh`, `validate_lean_setup.py` |
+| Planners | `SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
+| SemanticWeb | `SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb` | kernel .NET Interactive |
+| SmartContracts | `SymbolicAI/SmartContracts/00-Foundations/SC-1-Setup-Foundry.ipynb`, `SC-2-Setup-Web3py.ipynb` | `setup_env.py`, `scripts/setup_wsl_smartcontracts.sh` |
+| Tweety | `SymbolicAI/Tweety/Tweety-1-Setup.ipynb` | `tweety_init.py` (JDK auto-telecharge) |
+| Argument Analysis | `SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuration.ipynb` | `install_jdk_portable.py` |
+| IIT | `requirements.txt` | `scripts/setup_pyphi_env.ps1` |
+| Search / RL / CaseStudies | `requirements.txt` | -- |
+| cross-series | `requirements.txt` | `cross-series/matching-cv/scripts/install_deps.sh` |
+
+Pour les series qui exposent un `requirements.txt`, l'installation directe reste possible :
 
 ```bash
-# Schema general : installer le requirements.txt de la serie ouverte
-pip install -r MyIA.AI.Notebooks/Search/requirements.txt          # Search / CSP
-pip install -r MyIA.AI.Notebooks/Sudoku/requirements.txt          # Sudoku
-pip install -r MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt
-pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
-pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt           # + requirements-audio/-video selon le module
-pip install -r MyIA.AI.Notebooks/QuantConnect/requirements.txt
-pip install -r MyIA.AI.Notebooks/Probas/requirements.txt
-pip install -r MyIA.AI.Notebooks/IIT/requirements.txt
-pip install -r MyIA.AI.Notebooks/RL/requirements.txt
-# ... idem pour chaque sous-serie SymbolicAI (Lean, Planners, SemanticWeb, SmartContracts,
-#     SymbolicLearning, Argument_Analysis) et pour CaseStudies / cross-series.
-
-# Series avec script de preparation dedie
-python MyIA.AI.Notebooks/SymbolicAI/SmartContracts/setup_env.py        # toolchain Solidity / Foundry
-bash   MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/setup_wsl_python.sh    # env Python cote WSL pour Lean
-python MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/validate_lean_setup.py # diagnostic elan / Mathlib
+pip install -r MyIA.AI.Notebooks/<Serie>/requirements.txt
 ```
 
-Les notebooks C# (ML.NET, Sudoku, Probas/Infer.NET) ne passent pas par pip : ils s'appuient
-sur le kernel .NET Interactive et `dotnet restore` (section Mise en route).
+Les notebooks C# (ML.NET, Sudoku, SemanticWeb, Probas/Infer.NET) ne passent pas par pip :
+ils s'appuient sur le kernel .NET Interactive et `dotnet restore` (section Mise en route).
 
 ---
 
