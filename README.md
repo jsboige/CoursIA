@@ -185,17 +185,29 @@ La theorie de l'information integree (Tononi) propose une approche mathematique 
 
 Python | [README detaille](MyIA.AI.Notebooks/IIT/README.md)
 
+### CaseStudies -- Etudes de cas interdisciplinaires
+
+Les etudes de cas fusionnent les techniques apprises en silos -- un solveur SMT, un algorithme genetique, une ontologie OWL, un modele bayesien -- autour d'un probleme metier reel (diagnostic medical, planification oncologique). Chaque projet mobilise trois a quatre paradigmes qui se renforcent au lieu de se concurrencer, articules autour du pattern du jumeau numerique (digital twin). Concue comme un devoir integrateur de fin de cycle, la serie fournit pour chaque projet un template etudiant et une solution de reference.
+
+Python | [README detaille](MyIA.AI.Notebooks/CaseStudies/README.md)
+
+### cross-series -- Applications transverses
+
+Au-dela des notebooks pedagogiques, le repertoire `cross-series/` rassemble des applications completes combinant plusieurs domaines en un livrable autonome. Premier exemple : `matching-cv`, une application web (Flask) qui compare trois approches d'appariement CV-offre -- appariement stable de Gale-Shapley, similarite semantique et RAG hybride -- au croisement de la recherche, de l'IA generative et de l'IA symbolique.
+
+[README detaille](MyIA.AI.Notebooks/cross-series/README.md)
+
 ---
 
 ## Structure du depot
 
 ```text
 CoursIA/
-  MyIA.AI.Notebooks/          Notebooks interactifs (500+)
+  MyIA.AI.Notebooks/          Notebooks interactifs, organises par serie
     Search/                    Algorithmes de recherche (Python, C#)
     Sudoku/                    Resolution multi-paradigme (Python, C#)
     SymbolicAI/                IA symbolique (Python, Lean 4, C#)
-      Tweety/ SemanticWeb/ Lean/ Planners/ SmartContracts/ Argument_Analysis/
+      Tweety/ SemanticWeb/ Lean/ Planners/ SmartContracts/ Argument_Analysis/ SymbolicLearning/
     GameTheory/                Theorie des jeux (Python, Lean 4)
     Probas/                    Programmation probabiliste (C#, Python)
     ML/                        Machine Learning (C#, Python)
@@ -208,6 +220,7 @@ CoursIA/
       ML-Training-Pipeline/    Pipeline DL forecasting
       partner-course-quant-trading/ Projets etudiants
     CaseStudies/               Etudes de cas interdisciplinaires (Python)
+    cross-series/              Applications transverses multi-domaines (Python)
     IIT/                       Information integree (Python)
     Config/                    Configuration API
 
