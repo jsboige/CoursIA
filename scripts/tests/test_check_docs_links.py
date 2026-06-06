@@ -26,6 +26,7 @@ from check_docs_links import (
     check_regression,
     find_orphan_docs,
     find_scan_files,
+    format_report,
     load_baseline,
     run_scan,
     scan_file,
@@ -362,6 +363,83 @@ class TestSelfCheck:
             parts = Path(f).parts
             for skip in (".lake", "node_modules", ".git", "_output"):
                 assert skip not in parts, f"Found skip dir {skip} in {f}"
+
+
+# ---------------------------------------------------------------------------
+# format_report
+# ---------------------------------------------------------------------------
+
+
+class TestFormatReport:
+    """Tests for format_report — human-readable scan result formatting."""
+
+    def test_no_broken_no_orphans(self):
+        """Clean scan produces 'No broken links found'."""
+        result = ScanResult(scanned_files=10, total_links=50, broken=[], valid=[], orphans=[])
+        report = format_report(result)
+        assert "Scanned 10 files, 50 links" in report
+        assert "No broken links found" in report
+        assert "Orphan" not in report
+
+    def test_with_broken_links(self):
+        """Broken links are listed with source:line -> target."""
+        result = ScanResult(
+            scanned_files=5, total_links=20,
+            broken=[
+                LinkRef(source="docs/a.md", target="missing.md", line=10, text="link"),
+                LinkRef(source="README.md", target="gone.md", line=5, text="ref"),
+            ],
+            valid=[], orphans=[],
+        )
+        report = format_report(result)
+        assert "Broken links (2)" in report
+        assert "docs/a.md:10 -> missing.md" in report
+        assert "README.md:5 -> gone.md" in report
+
+    def test_with_orphans(self):
+        """Orphans shown when show_orphans=True."""
+        result = ScanResult(
+            scanned_files=3, total_links=10, broken=[], valid=[],
+            orphans=["docs/orphan.md", "docs/lonely.md"],
+        )
+        report = format_report(result, show_orphans=True)
+        assert "Orphan docs (2)" in report
+        assert "docs/orphan.md" in report
+        assert "docs/lonely.md" in report
+
+    def test_orphans_hidden_by_default(self):
+        """Orphans not shown when show_orphans=False (default)."""
+        result = ScanResult(
+            scanned_files=3, total_links=10, broken=[], valid=[],
+            orphans=["docs/orphan.md"],
+        )
+        report = format_report(result, show_orphans=False)
+        assert "Orphan" not in report
+
+    def test_broken_sorted_by_source_and_line(self):
+        """Broken links are sorted by (source, line)."""
+        result = ScanResult(
+            scanned_files=2, total_links=5,
+            broken=[
+                LinkRef(source="b.md", target="x", line=5, text=""),
+                LinkRef(source="a.md", target="y", line=10, text=""),
+                LinkRef(source="a.md", target="z", line=3, text=""),
+            ],
+            valid=[], orphans=[],
+        )
+        report = format_report(result)
+        # a.md:3 before a.md:10 before b.md:5
+        pos_a3 = report.index("a.md:3")
+        pos_a10 = report.index("a.md:10")
+        pos_b5 = report.index("b.md:5")
+        assert pos_a3 < pos_a10 < pos_b5
+
+    def test_empty_scan(self):
+        """Zero files scanned produces valid report."""
+        result = ScanResult(scanned_files=0, total_links=0, broken=[], valid=[], orphans=[])
+        report = format_report(result)
+        assert "Scanned 0 files, 0 links" in report
+        assert "No broken links found" in report
 
 
 if __name__ == "__main__":
