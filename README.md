@@ -10,7 +10,7 @@ Les notebooks sont disponibles en Python, C# (.NET Interactive) et Lean 4. Chaqu
 
 ---
 
-> **Catalogue vivant** -- Pour l'inventaire exhaustif et a jour (comptes exacts par serie, statut READY/DEMO, maturite PRODUCTION/BETA), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**. Ce catalogue est regenere automatiquement chaque jour : il fait foi sur les chiffres, ce README en donne la vue d'ensemble pedagogique. Le depot compte plus de 500 notebooks repartis sur une douzaine de series.
+> **Catalogue vivant** -- Pour l'inventaire exhaustif et a jour (comptes exacts par serie, statut READY/DEMO, maturite PRODUCTION/BETA), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**. Ce catalogue est regenere automatiquement chaque jour : il fait foi sur les chiffres et les statuts, ce README en donne la vue d'ensemble pedagogique. Le depot couvre une douzaine de grandes series, de l'IA symbolique au trading algorithmique en passant par l'IA generative et l'apprentissage automatique.
 
 ## Commencer ici
 
@@ -97,17 +97,19 @@ C# et Python | [README detaille](MyIA.AI.Notebooks/Sudoku/README.md)
 
 L'IA symbolique s'interesse aux systemes de raisonnement automatique. Cette serie explore plusieurs sous-domaines complementaires :
 
-**Tweety** (10 notebooks) -- Logiques formelles et argumentation computationnelle avec TweetyProject. Logiques propositionnelle, du premier ordre, modale et argumentatives, des extensions de Dung aux systemes ASPIC+ et DeLP, en passant par la revision de croyances AGM.
+**Tweety** -- Logiques formelles et argumentation computationnelle avec TweetyProject. Logiques propositionnelle, du premier ordre, modale et argumentatives, des extensions de Dung aux systemes ASPIC+ et DeLP, en passant par la revision de croyances AGM.
 
-**Semantic Web** (18 notebooks) -- Du RDF/OWL aux graphes de connaissances integres aux LLMs. Fondations en .NET (dotNetRDF), standards modernes en Python (SHACL, JSON-LD, RDF-Star), puis GraphRAG et comparaison de raisonneurs.
+**Semantic Web** -- Du RDF/OWL aux graphes de connaissances integres aux LLMs. Fondations en .NET (dotNetRDF), standards modernes en Python (SHACL, JSON-LD, RDF-Star), puis GraphRAG et comparaison de raisonneurs.
 
-**Lean** (13 notebooks) -- Verification formelle avec Lean 4. Types dependants, isomorphisme de Curry-Howard, tactiques Mathlib, assistance par LLM (LeanCopilot, AlphaProof). Necessite WSL sous Windows.
+**Lean** -- Verification formelle avec Lean 4, des fondations (types dependants, isomorphisme de Curry-Howard, tactiques Mathlib) a l'assistance par LLM (LeanCopilot, AlphaProof, agents de preuve autonomes), la verification de reseaux de neurones et le port de theoremes phares : theoreme de sensibilite, theoreme de Kochen-Specker, theoreme du libre arbitre de Conway-Kochen, ainsi que des hommages a Grothendieck et Conway. Necessite WSL sous Windows.
 
-**Planners** (13 notebooks) -- Planification automatique : fondations PDDL, heuristiques avec Fast-Downward, planification temporelle, HTN, puis pont vers le neurosymbolique (LLM-planning).
+**Planners** -- Planification automatique : fondations PDDL, heuristiques avec Fast-Downward, planification temporelle, HTN, puis pont vers le neurosymbolique (LLM-planning).
 
-**Smart Contracts** (27 notebooks) -- Des origines cypherpunk a Solidity avancee et aux blockchains multi-chain (Vyper, Move/Sui, Solana/Anchor). Tests Foundry, fuzz testing, verification formelle, zero-knowledge proofs, chiffrement homomorphe et DAO governance.
+**Smart Contracts** -- Des origines cypherpunk a Solidity avancee et aux blockchains multi-chain (Vyper, Move/Sui, Solana/Anchor). Tests Foundry, fuzz testing, verification formelle, zero-knowledge proofs, chiffrement homomorphe et DAO governance.
 
-**Argument Analysis** (6 notebooks) -- Analyse argumentative multi-agents avec Semantic Kernel et LLMs.
+**Argument Analysis** -- Analyse argumentative multi-agents avec Semantic Kernel et LLMs.
+
+**Symbolic Learning** -- Apprentissage symbolique dans la lignee du chapitre 19 d'AIMA : de l'induction pure (espaces de versions, elimination de candidats) a l'apprentissage guide par la connaissance (EBL, RBL) et a la programmation logique inductive (FOIL), jusqu'a l'integration neuro-symbolique (Logic Tensor Networks, DeepProbLog), l'extraction de regles sur graphes de connaissances et les boucles LLM-verification symbolique.
 
 Python, Lean 4 et C# | [README detaille](MyIA.AI.Notebooks/SymbolicAI/README.md)
 
