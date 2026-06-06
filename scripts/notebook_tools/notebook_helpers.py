@@ -1140,13 +1140,23 @@ class NotebookExecutor:
 
         return result
 
+    # Keys scrubbed by scrub_keys to prevent live API calls during validation
+    SCRUB_KEYS = [
+        "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY",
+        "MISTRAL_API_KEY", "DEEPSEEK_API_KEY", "HUGGINGFACE_API_KEY",
+        "HUGGINGFACEHUB_API_TOKEN", "OPENROUTER_API_KEY",
+    ]
+
     def execute_with_papermill(
         self,
         notebook_path: str,
         output_path: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None,
         kernel_name: Optional[str] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
+        cwd_override: Optional[str] = None,
+        env_extra: Optional[Dict[str, str]] = None,
+        scrub_keys: bool = False,
     ) -> NotebookExecutionResult:
         """
         Execute a notebook using Papermill (subprocess).
@@ -1157,13 +1167,14 @@ class NotebookExecutor:
             parameters: Parameters to inject
             kernel_name: Kernel to use (auto-detected if None)
             timeout: Timeout in seconds
-
-        Returns:
-            NotebookExecutionResult
+            cwd_override: Execute from this directory instead of notebook parent.
+            env_extra: Additional environment variables to inject.
+            scrub_keys: If True, remove LLM API keys from subprocess environment.
         """
         import subprocess
         import time
         import sys
+        import os as _os
 
         start_time = time.time()
         kernel_name = kernel_name or self.detect_kernel(notebook_path)
@@ -1173,7 +1184,7 @@ class NotebookExecutor:
         if output_path is None:
             output_path = str(nb_path.parent / f"{nb_path.stem}_output{nb_path.suffix}")
         abs_output = str(Path(output_path).resolve())
-        abs_cwd = str(nb_path.parent)
+        abs_cwd = str(Path(cwd_override).resolve()) if cwd_override else str(nb_path.parent)
 
         # WSL-based kernels need longer startup time
         start_timeout = 120 if 'wsl' in kernel_name or kernel_name == 'smartcontracts' else 60
@@ -1192,6 +1203,16 @@ class NotebookExecutor:
         if parameters and not is_lean_kernel:
             for key, value in parameters.items():
                 cmd.extend(['-p', str(key), str(value)])
+
+        # Build subprocess environment if needed
+        sub_env = None
+        if env_extra or scrub_keys:
+            sub_env = dict(_os.environ)
+            if scrub_keys:
+                for key in self.SCRUB_KEYS:
+                    sub_env.pop(key, None)
+            if env_extra:
+                sub_env.update(env_extra)
 
         result = NotebookExecutionResult(
             success=False,
@@ -1212,17 +1233,36 @@ class NotebookExecutor:
                 if self.verbose:
                     print(f"Executing with Papermill in-process (kernel={kernel_name})...")
 
-                pm.execute_notebook(
-                    str(notebook_path),
-                    str(output_path),
-                    kernel_name=kernel_name,
-                    start_timeout=start_timeout,
-                    cwd=str(nb_path.parent)
-                )
-                result.success = True
-                result.duration = time.time() - start_time
-                if self.verbose:
-                    print(f"Success in {result.duration:.1f}s")
+                # Apply env changes for in-process execution (temporary)
+                _old_env = {}
+                if env_extra or scrub_keys:
+                    if scrub_keys:
+                        for key in self.SCRUB_KEYS:
+                            if key in _os.environ:
+                                _old_env[key] = _os.environ.pop(key)
+                    if env_extra:
+                        for key, val in env_extra.items():
+                            _old_env[key] = _os.environ.get(key)
+                            _os.environ[key] = val
+                try:
+                    pm.execute_notebook(
+                        str(notebook_path),
+                        str(output_path),
+                        kernel_name=kernel_name,
+                        start_timeout=start_timeout,
+                        cwd=abs_cwd,
+                    )
+                    result.success = True
+                    result.duration = time.time() - start_time
+                    if self.verbose:
+                        print(f"Success in {result.duration:.1f}s")
+                finally:
+                    # Restore original env
+                    for key, val in _old_env.items():
+                        if val is None:
+                            _os.environ.pop(key, None)
+                        else:
+                            _os.environ[key] = val
             except Exception as e:
                 result.duration = time.time() - start_time
                 result.errors.append(str(e))
@@ -1239,6 +1279,7 @@ class NotebookExecutor:
                 capture_output=True,
                 text=True,
                 timeout=timeout,
+                env=sub_env,
             )
 
             result.duration = time.time() - start_time

@@ -18,6 +18,69 @@ from .state import ProofState, TacticAttempt, SorryContext
 from .trace import TraceLogger
 from .knowledge import ProofKnowledgeBase
 
+# Regex to detect standalone `axiom` declarations in Lean 4 source.
+# Matches lines like `axiom foo`, `axiom bar : Prop`, `axiom baz (n : Nat) : ...`
+# but NOT lines inside comments (--) or strings, and NOT `axiom` in prose.
+_AXIOM_DECL_RE = re.compile(r'^\s*axiom\s+\w', re.MULTILINE)
+
+
+def _is_axiom_declaration(line: str) -> bool:
+    """Check if a single line is a standalone axiom declaration."""
+    return bool(_AXIOM_DECL_RE.match(line))
+
+
+def _count_axiom_declarations(content: str) -> int:
+    """Count standalone axiom declarations in Lean source content."""
+    return sum(1 for line in content.splitlines() if _is_axiom_declaration(line))
+
+
+# Regex to extract lemma/def names that contain sorry in their body.
+# NOTE: `have` is excluded because decomposition with `have h := by sorry` is
+# the legitimate scaffolding pattern. Only top-level `lemma`/`def` sorry
+# definitions indicate relocation (the prover creates a separate named lemma
+# instead of decomposing inline).
+_SORRY_DEF_RE = re.compile(r'(?:lemma|def)\s+(\w+)\b[^:]*:=\s*by\s+sorry', re.MULTILINE)
+
+
+def _find_sorry_definitions(content: str) -> set:
+    """Find names of lemmas/defs/haves defined with sorry in their body.
+
+    Returns a set of identifier names that are defined as sorry in the content.
+    Used by the sorry-relocation guard to detect when the prover creates a
+    new sorry lemma and calls it to close existing sorry.
+    """
+    return set(_SORRY_DEF_RE.findall(content))
+
+
+def _check_sorry_relocation(new_content: str, original_content: str,
+                            replaced_text: str) -> tuple:
+    """Check if sorry was relocated rather than proved.
+
+    Returns (is_relocation: bool, sorry_defs: set, called_names: set).
+
+    A relocation is when:
+    1. The new file has NEW lemmas/defs/haves defined with sorry that
+       didn't exist in the original
+    2. The replacement text (which closed existing sorry) calls one of
+       those new sorry definitions
+    """
+    orig_defs = _find_sorry_definitions(original_content)
+    new_defs = _find_sorry_definitions(new_content)
+    # New sorry definitions not in original
+    fresh_sorry_defs = new_defs - orig_defs
+    if not fresh_sorry_defs:
+        return False, set(), set()
+    # Check if the replacement text references any fresh sorry definition
+    called = set()
+    for name in fresh_sorry_defs:
+        if name in replaced_text:
+            called.add(name)
+    if called:
+        return True, fresh_sorry_defs, called
+    # Also check if ANY sorry-closing text in new_content references them
+    # (for cases where the replacement spans multiple edits)
+    return False, fresh_sorry_defs, set()
+
 
 def _count_sorries_from_build_output(raw_output: str) -> int:
     """Count 'uses sorry' warnings in lake build output.
@@ -617,6 +680,14 @@ class TacticTools:
             raw = Path(filepath).read_text(encoding="utf-8")
             self._original_file_size = len(raw)
             self._original_content = raw
+        # Axiom guard: count standalone `axiom` declarations in the original file.
+        # The prover can game sorry_guard by replacing `lemma foo := by sorry` with
+        # `axiom foo` (sorry count drops, build passes, but proof is lost).
+        # This baseline lets us block any edit that introduces new axioms.
+        self._original_axiom_count: int = (
+            sum(1 for line in (self._original_content or "").splitlines()
+                if _is_axiom_declaration(line))
+        )
 
         self._heuristics = {
             "equality": ["rfl", "exact", "simp", "ring", "omega", "aesop"],
@@ -1141,6 +1212,58 @@ class TacticTools:
 
             sorry_count = new_file_content.count("sorry")
 
+            # Axiom guard: block edits that introduce new `axiom` declarations.
+            # The prover can game sorry_guard by replacing `lemma foo := by sorry`
+            # with `axiom foo` (sorry count drops, build passes, proof lost).
+            new_axiom_count = _count_axiom_declarations(new_file_content)
+            if new_axiom_count > self._original_axiom_count:
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="axiom_guard",
+                        content=f"BLOCKED file_replace_lines: axioms {self._original_axiom_count}->{new_axiom_count}. "
+                                f"Replacing sorry with axiom is not a valid proof. REVERTING.",
+                        duration_s=0.01,
+                    )
+                return json.dumps({
+                    "error": f"BLOCKED by axiom guard: {new_axiom_count} axioms > original {self._original_axiom_count}. "
+                             f"Replacing `lemma ... := by sorry` with `axiom ...` is not a valid proof. "
+                             f"Decompose the goal with `have` sub-goals instead.",
+                    "replaced_lines": f"{start}-{end}",
+                    "axiom_count": new_axiom_count,
+                    "original_axiom_count": self._original_axiom_count,
+                }, ensure_ascii=False)
+
+            # Sorry-relocation guard: detect when the prover creates a new
+            # lemma/definition containing sorry and calls it to close existing
+            # sorry. The global sorry count drops, but the mathematical problem
+            # is unchanged (sorry was moved, not proved).
+            # Anti-pattern #3 (2026-06-06 forensic): prover added
+            # `lemma no_cross_match_core := by sorry` then called it to close
+            # 3 existing sorry. 8→6 sorry but 0 real progress.
+            if self._original_content and sorry_count < self._original_sorry_count:
+                is_reloc, sorry_defs, called = _check_sorry_relocation(
+                    new_file_content, self._original_content, new_content
+                )
+                if is_reloc:
+                    if self._trace:
+                        self._trace.log(
+                            agent="TacticTools", role="relocation_guard",
+                            content=f"BLOCKED file_replace_lines: sorry relocation detected. "
+                                    f"Fresh sorry defs: {sorry_defs}, called in replacement: {called}. "
+                                    f"global: {self._original_sorry_count}->{sorry_count}. REVERTING.",
+                            duration_s=0.01,
+                        )
+                    return json.dumps({
+                        "error": f"BLOCKED by sorry-relocation guard: replacement calls fresh sorry "
+                                 f"definition(s): {called}. These are defined with sorry elsewhere in the file. "
+                                 f"This is sorry relocation, not a proof. "
+                                 f"Prove the sorry inline with real tactics instead of calling another sorry lemma.",
+                        "replaced_lines": f"{start}-{end}",
+                        "global_sorry": sorry_count,
+                        "fresh_sorry_defs": list(sorry_defs),
+                        "called_sorry_defs": list(called),
+                    }, ensure_ascii=False)
+
             # Sorry guard: block only if growth EXCEEDS the decomposition
             # budget. Replacing 1 sorry by N sub-sorries that all compile is
             # structural progress (the agent breaks down a hard goal). Block
@@ -1398,6 +1521,49 @@ class TacticTools:
                                   ensure_ascii=False)
 
             sorry_count = new_content.count("sorry")
+
+            # Axiom guard: block edits that introduce new `axiom` declarations.
+            new_axiom_count = _count_axiom_declarations(new_content)
+            if new_axiom_count > self._original_axiom_count:
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="axiom_guard",
+                        content=f"BLOCKED file_replace_sorry: axioms {self._original_axiom_count}->{new_axiom_count}. "
+                                f"Replacing sorry with axiom is not a valid proof. REVERTING.",
+                        duration_s=0.01,
+                    )
+                return json.dumps({
+                    "error": f"BLOCKED by axiom guard: {new_axiom_count} axioms > original {self._original_axiom_count}. "
+                             f"Replacing `lemma ... := by sorry` with `axiom ...` is not a valid proof. "
+                             f"Decompose the goal with `have` sub-goals instead.",
+                    "replaced": old_line.strip(),
+                    "axiom_count": new_axiom_count,
+                    "original_axiom_count": self._original_axiom_count,
+                }, ensure_ascii=False)
+
+            # Sorry-relocation guard (same as file_replace_lines).
+            if self._original_content and sorry_count < self._original_sorry_count:
+                is_reloc, sorry_defs, called = _check_sorry_relocation(
+                    new_content, self._original_content, replacement
+                )
+                if is_reloc:
+                    if self._trace:
+                        self._trace.log(
+                            agent="TacticTools", role="relocation_guard",
+                            content=f"BLOCKED file_replace_sorry: sorry relocation detected. "
+                                    f"Fresh sorry defs: {sorry_defs}, called in replacement: {called}. "
+                                    f"global: {self._original_sorry_count}->{sorry_count}. REVERTING.",
+                            duration_s=0.01,
+                        )
+                    return json.dumps({
+                        "error": f"BLOCKED by sorry-relocation guard: replacement calls fresh sorry "
+                                 f"definition(s): {called}. Sorry relocation is not a proof. "
+                                 f"Prove the sorry inline with real tactics.",
+                        "replaced": old_line.strip(),
+                        "global_sorry": sorry_count,
+                        "fresh_sorry_defs": list(sorry_defs),
+                        "called_sorry_defs": list(called),
+                    }, ensure_ascii=False)
 
             # Sorry guard: same semantics as file_replace_lines. Allow up to
             # `_decomposition_budget` extra sorries on top of the original

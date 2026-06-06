@@ -11,11 +11,11 @@ L'objectif est d'apprendre à préparer et structurer des données pour ensuite 
 Votre mission consiste à utiliser deux sources de données pour préparer la génération d'un DC :
 
 1.  **Choisir un profil de consultant :**
-    *   Le fichier [`../../data_metier_csv/Base consultants.csv`](../../data_metier_csv/Base%20consultants.csv) contient une liste de profils de consultants avec leurs compétences et expériences.
+    *   Le fichier [`Base consultants.csv`](../data_metier_csv/Base%20consultants.csv) contient une liste de profils de consultants avec leurs compétences et expériences.
     *   Vous devrez sélectionner **un** consultant dans cette base.
 
 2.  **Choisir une fiche de poste :**
-    *   Le fichier [`../../data_metier_csv/Fiches de poste client.csv`](../../data_metier_csv/Fiches%20de%20poste%20client.csv) décrit les besoins et les attendus pour différents postes chez nos clients.
+    *   Le fichier [`Fiches de poste client.csv`](../data_metier_csv/Fiches%20de%20poste%20client.csv) décrit les besoins et les attendus pour différents postes chez nos clients.
     *   Vous devrez sélectionner **une** fiche de poste pertinente.
 
 3.  **Préparer les données pour le LLM :**

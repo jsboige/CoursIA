@@ -1105,7 +1105,11 @@ class NotebookExecutor:
                 str(self.path),
                 output_path=str(output_path) if output_path else None,
                 parameters=params,
-                timeout=timeout
+                kernel_name=kernel_override,
+                timeout=timeout,
+                cwd_override=str(cwd_override) if cwd_override else None,
+                env_extra=env_extra,
+                scrub_keys=scrub_keys,
             )
             return NotebookExecutionResult(
                 path=str(self.path),
@@ -1141,12 +1145,33 @@ class NotebookExecutor:
                 _t = PapermillTranslators()
                 for _k in ('lean4', 'lean4-wsl', 'lean'):
                     _t.register(_k, PythonTranslator)
-                pm.execute_notebook(
-                    str(self.path), str(output_path),
-                    kernel_name=kernel,
-                    start_timeout=start_timeout,
-                    cwd=str(abs_cwd)
-                )
+
+                # Apply env changes for in-process execution (temporary)
+                _old_env = {}
+                if env_extra or scrub_keys:
+                    if scrub_keys:
+                        for key in self.SCRUB_KEYS:
+                            if key in os.environ:
+                                _old_env[key] = os.environ.pop(key)
+                    if env_extra:
+                        for key, val in env_extra.items():
+                            _old_env[key] = os.environ.get(key)
+                            os.environ[key] = val
+                try:
+                    pm.execute_notebook(
+                        str(self.path), str(output_path),
+                        kernel_name=kernel,
+                        start_timeout=start_timeout,
+                        cwd=str(abs_cwd)
+                    )
+                finally:
+                    # Restore original env
+                    for key, val in _old_env.items():
+                        if val is None:
+                            os.environ.pop(key, None)
+                        else:
+                            os.environ[key] = val
+
                 execution_time = time.time() - start_time
                 return NotebookExecutionResult(
                     path=str(self.path), success=True, kernel=kernel,

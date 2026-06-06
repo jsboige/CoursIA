@@ -1,121 +1,37 @@
 {
   "broken_links": [
     {
-      "source": "docs/esgf-grading.md",
-      "target": "file:///G:/Mon%20Drive/MyIA/Formation/ESGF/2026/REVIEW_FORKS_AGAINST_BASELINES.md",
-      "line": 97,
-      "text": "REVIEW_FORKS_AGAINST_BASELINES.md"
+      "source": "docker-configurations/services/comfyui-qwen/ComfyUI/custom_nodes/ComfyUI-QwenImageWanBridge/README.md",
+      "target": "nodes/docs/prompt_cookbook.md",
+      "line": 168,
+      "text": "Prompt Cookbook"
     },
     {
-      "source": ".claude/agents/readme-updater.md",
-      "target": "Name.ipynb",
-      "line": 169,
-      "text": "Name"
+      "source": "docker-configurations/services/comfyui-qwen/ComfyUI/custom_nodes/ComfyUI_QwenImageWanBridge/README.md",
+      "target": "ADVANCED_ENCODER_TEST_GUIDE.md",
+      "line": 157,
+      "text": "ADVANCED_ENCODER_TEST_GUIDE.md"
     },
     {
-      "source": ".claude/agents/slide-improver.md",
-      "target": "images/img_001.png",
-      "line": 211,
-      "text": "bg brightness:0.4"
+      "source": "docker-configurations/services/comfyui-qwen/workspace/custom_nodes/ComfyUI-nunchaku/README.md",
+      "target": "example_workflows/nunchaku-flux.1-dev-controlnet-union-pro.json",
+      "line": 40,
+      "text": "**ControlNet**"
     },
     {
-      "source": "docker-configurations/_archive-20251125/flux-1-dev/README.md",
-      "target": "../docs/genai/workflow-examples.md",
-      "line": 154,
-      "text": "Documentation Workflows"
+      "source": "docker-configurations/services/comfyui-qwen/workspace/custom_nodes/ComfyUI-nunchaku/README.md",
+      "target": "examples/flux.1-dev-turing.py",
+      "line": 40,
+      "text": "**20-series GPU**"
     },
     {
-      "source": "docker-configurations/services/comfyui-qwen/README.md",
-      "target": "../../docs/genai-suivis/2025-10-13_11_checkpoint-semantique-1-comfyui-base.md",
-      "line": 355,
-      "text": "Checkpoint Sémantique 1"
-    },
-    {
-      "source": "docker-configurations/services/comfyui-qwen/README.md",
-      "target": "../../docs/genai-suivis/2025-10-13_11_checkpoint-semantique-2-standalone-validation.md",
-      "line": 356,
-      "text": "Checkpoint Sémantique 2"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md",
-      "target": "Claude-Code/docs/COMPARAISON-CLAUDE-ROO.md",
-      "line": 194,
-      "text": "COMPARAISON-CLAUDE-ROO.md"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/01-decouverte/demo-2-vision/README.md",
-      "target": "../demo-3-organisation/README.md",
-      "line": 266,
-      "text": "Demo 3 - Organisation et productivité"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/01-decouverte/demo-2-vision/README.md",
-      "target": "../demo-4-questions/README.md",
-      "line": 267,
-      "text": "Demo 4 - Questions techniques et conceptuelles"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/01-decouverte/README.md",
-      "target": "./demo-3-organisation/README.md",
-      "line": 19,
-      "text": "Demo 3 - Organisation et productivité"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/01-decouverte/README.md",
-      "target": "./demo-4-questions/README.md",
-      "line": 24,
-      "text": "Demo 4 - Questions techniques et conceptuelles"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/Ateliers avancés/02-analyse-marche/README.md",
-      "target": "../data_metier_csv/Indicateurs%20internes.csv",
-      "line": 34,
-      "text": "`Indicateurs internes.csv`"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/Ateliers avancés/03-generation-dc/README.md",
-      "target": "../../data_metier_csv/Base%20consultants.csv",
-      "line": 14,
-      "text": "`../../data_metier_csv/Base consultants.csv`"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/Ateliers avancés/03-generation-dc/README.md",
-      "target": "../../data_metier_csv/Fiches%20de%20poste%20client.csv",
-      "line": 18,
-      "text": "`../../data_metier_csv/Fiches de poste client.csv`"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/Corrections/corrigés ateliers-roo/Ateliers avancés/02-analyse-marche/README.md",
-      "target": "../data_metier_csv/Indicateurs%20internes.csv",
-      "line": 34,
-      "text": "`Indicateurs internes.csv`"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/Corrections/corrigés ateliers-roo/Ateliers avancés/03-generation-dc/README.md",
-      "target": "../../data_metier_csv/Base%20consultants.csv",
-      "line": 14,
-      "text": "`../../data_metier_csv/Base consultants.csv`"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/Corrections/corrigés ateliers-roo/Ateliers avancés/03-generation-dc/README.md",
-      "target": "../../data_metier_csv/Fiches%20de%20poste%20client.csv",
-      "line": 18,
-      "text": "`../../data_metier_csv/Fiches de poste client.csv`"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/ML/ML.Net/README.md",
-      "target": "taxi-fare.csv",
-      "line": 189,
-      "text": "taxi-fare.csv"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/ML/ML.Net/README.md",
-      "target": "taxi-fare.csv",
-      "line": 307,
-      "text": "taxi-fare.csv"
+      "source": "docker-configurations/services/comfyui-qwen/workspace/custom_nodes/ComfyUI_QwenImageWanBridge/README.md",
+      "target": "ADVANCED_ENCODER_TEST_GUIDE.md",
+      "line": 157,
+      "text": "ADVANCED_ENCODER_TEST_GUIDE.md"
     }
   ],
   "orphans": [],
-  "scanned_files": 491,
-  "total_links": 2056
+  "scanned_files": 532,
+  "total_links": 2074
 }
