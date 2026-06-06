@@ -473,7 +473,7 @@ Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes s
 | [RL](../RL/README.md) | Apprentissage par renforcement | Les strategies RL (QC-22 PPO, QC-23 DRL, QC-24 Crypto RL) prolongent les fondamentaux RL de cette serie |
 | [Probas](../Probas/README.md) | Programmation probabiliste | La modelisation bayesienne des rendements et la gestion du risque s'appuient sur les modeles probabilistes de la serie Probas |
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres de strategies (grid search, bayesienne) rejoint les techniques de recherche |
-| [TimeSeries](../TimeSeries/README.md) | Series temporelles | L'analyse technique (QC-4 a QC-7) partage les memes fondements que l'analyse de series temporelles |
+| [ML](../ML/ML.Net/README.md) | Series temporelles ML.NET | L'analyse technique (QC-4 a QC-7) partage les memes fondements que le forecasting par SSA (ML-5) |
 
 ---
 

@@ -88,4 +88,4 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
 - [Catalog complet QC](../../README.md)
 - [BOOK_MAPPING](../../BOOK_MAPPING.md) — correspondance Hands-On AI Trading
 - [M12 HAR-RV-J docs](../../ML-Training-Pipeline/docs/M_NEXT_VOL_PROPOSAL.md)
-- [Discipline ML/Trading](../../../../.claude/memory/feedback_ml_trading_pitfalls.md)
+- [Discipline ML/Trading](../../../../.claude/rules/pr-review-discipline.md) — Critères multi-seed et validation ML
