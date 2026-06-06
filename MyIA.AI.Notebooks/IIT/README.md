@@ -211,24 +211,6 @@ IIT/
 └── README.md                   # Cette documentation
 ```
 
-## FAQ
-
-### PyPhi ne s'installe pas, que faire ?
-
-PyPhi 1.2.0 requiert **Python 3.9** (il utilise `collections.Iterable` supprime en 3.10+). Creez un env conda dedie : `conda create -n pyphi python=3.9 && conda activate pyphi && pip install pyphi==1.2.0`. Le script `scripts/setup_pyphi_env.ps1` automatise toute l'installation y compris le kernel Jupyter.
-
-### Pourquoi la taille du reseau est-elle limitee a 3-4 noeuds ?
-
-Le calcul exact de Phi est **exponentiel** en le nombre de noeuds (partitions, sous-systemes, repertoires). Pour 5 noeuds, le temps de calcul peut depasser plusieurs heures. Le coarse-graining (notebook 2) permet d'analyser des systemes plus grands en les simplifiant. C'est une limitation fondamentale de l'algorithme, pas de PyPhi.
-
-### L'IIT est-elle acceptee par la communaute scientifique ?
-
-L'IIT est une theorie **controversée**. Elle a des retombees cliniques reelles (PCI pour mesurer la conscience chez les patients comateux) mais reste debattue : certains chercheurs la considerent comme le meilleur cadre theorique existant, d'autres la critiquent comme pseudoscience. Les notebooks presentent le formalisme et ses outils sans prendre position — c'est un excellent terrain pour exercer l'esprit critique.
-
-### Quelle est la difference entre big Phi et small phi ?
-
-**Big Phi** mesure l'integration au niveau du systeme complet (un seul nombre par systeme). **Small phi** mesure l'integration au niveau d'un mecanisme individuel (un nombre par sous-ensemble de noeuds). Big Phi = somme ponderee des small phi de tous les concepts de la Cause-Effect Structure. Couvert en detail dans le notebook 2.
-
 ## Licence
 
 Voir la licence du repository principal.

@@ -357,28 +357,6 @@ RL/
 | [Probas](../Probas/README.md) | Decision bayesienne (notebooks 17-20) | Les MDP du RL generalisent les processus decisionnels de Markov de la serie Probas |
 | [Search](../Search/README.md) | Optimisation combinatoire | La planification RL (value/policy iteration) ressemble a la recherche dans un espace d'etats |
 
-## FAQ
-
-### Quelle est la difference entre RL et apprentissage supervise ?
-
-L'apprentissage **supervise** apprend a partir de donnees etiquetées (entree -> sortie correcte). Le RL apprend par **interaction** : l'agent prend des actions, recoit des recompenses/penalites, et ajuste sa strategie. Il n'y a pas de "bonne reponse" fournie — l'agent doit decouvrir quelles actions maximisent la recompense cumulee. Le RL est pertinent quand le probleme est sequentiel (une action affecte les futures observations).
-
-### Faut-il un GPU pour les notebooks ?
-
-Non. Les notebooks 1-4 (SB3 intro, wrappers, bandits, DQN from scratch) et 7-8 (multi-agent, curriculum) tournent sur CPU avec les environnements simples (CartPole, MountainCar). Les notebooks 5-6 (Policy Gradient, PPO from scratch) beneficient d'un GPU pour les reseaux plus profonds mais restent executables en CPU (plus lent). Environnements Atari (optionnel) : GPU recommande.
-
-### Stable Baselines3 ou implementation from scratch ?
-
-Les deux. Les notebooks 1-2 montrent **SB3** (framework industriel, quelques lignes pour entrainer un agent). Les notebooks 3-6 implementent les algorithmes **from scratch** (Q-Learning, DQN, Policy Gradient, PPO) pour comprendre les mecanismes internes. L'ordre recommande est SB3 d'abord (notebook 1) pour voir le resultat, puis from scratch (notebooks 3-6) pour comprendre.
-
-### Qu'est-ce qu'un MDP et pourquoi est-ce central ?
-
-Un **MDP** (Markov Decision Process) est le modele mathematique du RL : un ensemble d'etats S, d'actions A, de transitions T(s'|s,a), de recompenses R(s,a), et d'un facteur d'actualisation gamma. Tout probleme de RL se formalise comme un MDP. L'equation de Bellman (notebook 3) definit recursivement la valeur optimale. Si vous avez fait la serie Probas, les MDP generalisent les chaines de Markov avec des decisions.
-
-### Quelle est la difference entre on-policy et off-policy ?
-
-**On-policy** (SARSA, PPO) apprend la valeur de la politique en cours d'execution. **Off-policy** (Q-Learning, DQN) apprend la valeur optimale independamment de la politique executee. Off-policy est plus sample-efficient (reutilise des experiences passees via experience replay) mais moins stable. Couvert dans les notebooks 3 (Q-Learning off-policy) et 5 (PPO on-policy).
-
 ## Licence
 
 Voir la licence du repository principal.
