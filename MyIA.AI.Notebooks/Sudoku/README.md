@@ -561,6 +561,28 @@ Sudoku/
 - [Microsoft Semantic Kernel](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [PyTorch](https://pytorch.org/)
 
+## FAQ
+
+### Pourquoi etudier le Sudoku en IA alors que des solveurs rapides existent ?
+
+Le Sudoku est un **paradigme pedagogique**, pas un probleme industriel. Il est NP-complet (comme le voyageur de commerce), facile a visualiser, et admet des approches tres diverses (backtracking, CSP, SAT, metaheuristiques, reseaux de neurones). Comparer ces approches sur un meme probleme enseigne les compromis fondamentaux : exactitude vs temps, generalite vs specialisation, declaration vs enumeration.
+
+### Faut-il faire les 32 notebooks ?
+
+Non. Les notebooks sont organises par approche algorithmique. Choisissez selon votre interet :
+- **Fondements** : Backtracking, Constraint Propagation (Python 1-5 ou C# 1-5)
+- **Recherche avancee** : DLX/Dancing Links, SAT/SMT (Python 6-8 ou C# 6-8)
+- **Optimisation** : Metaheuristiques, genetiques (Python 9-11 ou C# 9-11)
+- **IA moderne** : Neural networks, LLM solving (Python 12-15 ou C# 12-15)
+
+### Quelle est la difference entre les versions C# et Python ?
+
+Les notebooks C# et Python couvrent les **memes algorithmes** avec des implementations miroir. C# utilise .NET 9.0 + dotnet-interactive, Python utilise les bibliotheques standard (z3-solver, ortools, torch). Choisissez le langage que vous maitrisez le mieux — aucun des deux n'est prerequis pour l'autre.
+
+### DLX/Dancing Links, c'est quoi exactement ?
+
+Dancing Links (DLX) est un algorithme de Knuth pour resoudre le probleme de **couverture exacte**. Le Sudoku se reformule en couverture exacte : chaque cellule doit avoir exactement un chiffre, chaque ligne/colonne/bloc exactement un de chaque chiffre. DLX est extremement rapide (millions de grilles/seconde) car il utilise une structure de liste doublement chainee avec annulation instantanee. Couvert dans les notebooks Python/C# 6-7.
+
 ## Licence
 
 Voir la licence du repository principal.

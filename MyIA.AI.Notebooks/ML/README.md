@@ -193,6 +193,28 @@ Documentation complete : [DataScienceWithAgents/README.md](DataScienceWithAgents
 - [LangChain Documentation](https://python.langchain.com/)
 - [Google ADK Documentation](https://google.github.io/adk-docs/)
 
+## FAQ
+
+### Quelle est la difference entre ML.NET et les notebooks Python ?
+
+**ML.NET** (C#/.NET 9.0) couvre le machine learning classique (classification, regression, clustering, anomaly detection) via le framework Microsoft.ML. Les notebooks Python couvrent les agents IA (LangChain, Google ADK, data wrangling avec Pandas). Les deux sous-series sont independantes. ML.NET est pertinent si vous travaillez dans l'ecosysteme .NET ; les notebooks Python sont plus generaux.
+
+### Faut-il connaitre le C# pour les notebooks ML.NET ?
+
+Oui, les notebooks ML.NET utilisent .NET Interactive (C#). Les concepts ML sont introduits depuis zero, mais la syntaxe C# de base (variables, LINQ, classes) est supposee. Si vous ne connaissez pas C#, les notebooks Python (DataScienceWithAgents) couvrent des concepts similaires sans prerequis C#.
+
+### Les notebooks DataScienceWithAgents sont-ils une introduction a LangChain ?
+
+Partiellement. Les notebooks Day 1-3 couvrent les fondamentaux des agents IA (LLM, Tools, ReAct) avec LangChain comme framework. Les notebooks Day 4+ evoluent vers Google ADK (Agent Development Kit) pour des agents multi-tools plus avances. C'est une progression pedagogique : maitriser les patterns agentiques avant de les implementer dans un framework de production.
+
+### Quelle est la progression recommandee ?
+
+1. **ML.NET** (notebooks 1-5) : comprendre les bases du ML supervise/non supervis
+2. **DataScienceWithAgents** (Day 1-7) : decouvrir les agents IA et le RAG
+3. **AgenticDataScience** (Day 4-7) : agents avances avec Google ADK
+
+Les deux sous-series sont independantes et peuvent etre suivies dans n'importe quel ordre.
+
 ## Licence
 
 Voir la licence du repository principal.
