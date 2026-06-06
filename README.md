@@ -128,6 +128,20 @@ Vue d'ensemble, la serie raconte une seule idee declinee d'une sous-serie a l'au
 
 Python, Lean 4 et C# | [README detaille](MyIA.AI.Notebooks/SymbolicAI/README.md)
 
+### Probas -- Programmation probabiliste
+
+Comment raisonner -- et surtout decider -- quand rien n'est certain ? Un diagnostic medical n'est jamais sur a cent pour cent, un classement de joueurs depend de performances variables, et les donnees arrivent toujours bruitees ou incompletes. La programmation probabiliste refuse de repondre par un seul chiffre : elle calcule une *distribution* qui dit a quel point on croit a chaque issue possible. Mais une croyance ne sert a rien tant qu'on n'agit pas dessus -- et c'est la le fil conducteur de la serie : passer d'une reponse unique a une distribution, puis d'une distribution a une decision. La theorie de la decision bayesienne, qui occupe toute la seconde moitie du parcours, est la charniere de ce mouvement, et le socle dont la theorie des jeux a besoin pour modeliser des agents rationnels.
+
+**Deux ecosystemes, les memes modeles** -- La serie repose sur une juxtaposition deliberee : chaque modele est traite dans deux ecosystemes complementaires qui couvrent, a eux deux, plusieurs familles d'algorithmes d'inference. Infer.NET (Microsoft, C#) compile le modele en graphe de facteurs et laisse choisir son moteur -- passage de messages (Expectation Propagation, Variational Message Passing) ou echantillonnage de Gibbs -- avec des resultats exacts sur les modeles conjugues et approches ailleurs, le tout rapide et dont la structure se visualise. PyMC (Python) reprend l'integralite de ces modeles avec le MCMC moderne a base de gradient (le sampler NUTS), qui s'applique a presque tout modele au prix d'un diagnostic de convergence outille par ArviZ (R-hat, taille d'echantillon effective, divergences, trace plots). L'enjeu n'est donc pas de trancher entre exact et approche, ni meme entre deterministe et aleatoire -- chaque famille a sa place -- mais d'apprendre, en voyant un meme modele resolu de plusieurs facons, quel moteur convient a quelle structure. Et les modeles ne sont pas des jouets : reseaux bayesiens pour le diagnostic medical et l'explaining away, Item Response Theory (le moteur des tests adaptatifs comme le GMAT), TrueSkill (le classement bayesien des joueurs sur Xbox Live), LDA pour la decouverte de themes, modeles de Markov caches pour les regimes, agregation de foules d'annotateurs bruites, recommandation assortie d'une barre d'incertitude.
+
+**De l'inference a la decision -- la theorie de l'utilite** -- A quoi bon une distribution si elle ne dicte aucune action ? La seconde moitie de la serie franchit ce pas, et c'est son coeur. On part des axiomes de Von Neumann-Morgenstern qui fondent l'utilite esperee comme critere rationnel, on modelise l'aversion au risque (utilites CARA et CRRA, paradoxe de Saint-Petersbourg), on decide sur plusieurs criteres a la fois (utilite multi-attributs, MAUT), on branche la decision sur l'inference par les diagrammes d'influence, on chiffre la valeur d'une information avant de payer pour l'acquerir (EVPI, EVSI -- quand un test complementaire est-il rentable ?), on se protege contre l'incertitude radicale (Minimax Regret), et l'on debouche sur la decision *sequentielle* : processus de decision markoviens, bandits, POMDP. Ce dernier maillon est une double passerelle -- vers le reinforcement learning d'un cote, et de l'autre vers la theorie des jeux, qui suppose precisement des agents maximisant leur utilite esperee. C'est pourquoi cette serie precede desormais GameTheory : l'utilite en est le prerequis.
+
+**Jusqu'a la preuve formelle -- l'indice de Gittins en Lean** -- Le probleme du bandit -- explorer pour apprendre, ou exploiter ce qu'on croit savoir ? -- admet une solution remarquable : l'indice de Gittins, qui ramene un probleme sequentiel intimidant a un simple classement de bras. La serie ne se contente pas de l'implementer ; un volet en Lean 4 (avec Mathlib) cherche a le *prouver*. Les identites d'escompte geometrique qui fondent le calcul d'une valeur actualisee -- la somme escomptee d'une recompense constante -- y sont demontrees rigoureusement, verifiees ligne a ligne par le noyau. Le theoreme d'optimalite de Gittins lui-meme, en revanche, est *enonce* mais laisse a la frontiere : sa preuve complete exigerait une formalisation des MDP et de l'equation de Bellman qui manque encore a Mathlib, et le notebook le documente honnetement comme tel. Cette lucidite sur ce qui est prouve et ce qui ne l'est pas encore est l'enseignement -- elle relie Probas a la serie Lean de SymbolicAI, ou le noyau a toujours le dernier mot.
+
+Probas est un carrefour discret du depot. Sa theorie de la decision est le socle de **GameTheory** (jeux bayesiens, agents a utilite esperee) et la passerelle vers **RL** (ses MDP et ses bandits y deviennent apprentissage par renforcement) ; son inference bayesienne nourrit le TP de regression de **ML** et la gestion du risque de **QuantConnect** (ou un modele de Markov cache genere des signaux de trading) ; ses fondements probabilistes sous-tendent le phi de l'**IIT** et le raisonnement incertain des ontologies de **SemanticWeb** ; et son pont vers Lean prolonge le fil de verification formelle de **SymbolicAI**. Partout la meme exigence : ne pas confondre une croyance avec une certitude, ni une prediction avec une decision.
+
+C# (Infer.NET), Python (PyMC, Pyro) et Lean 4 | [README detaille](MyIA.AI.Notebooks/Probas/README.md)
+
 ### GameTheory -- Theorie des jeux
 
 Comment des agents rationnels interagissent-ils ? Des equilibres de Nash aux jeux evolutionnaires, du backward induction aux jeux bayesiens, cette serie couvre les fondamentaux de la theorie des jeux et leurs applications en IA.
@@ -135,14 +149,6 @@ Comment des agents rationnels interagissent-ils ? Des equilibres de Nash aux jeu
 Les aspects avances incluent le CFR (Counterfactual Regret Minimization, au coeur des IA de poker), les jeux cooperatifs, le mechanism design et le MARL. Des side tracks en Lean 4 proposent des formalisations et preuves des theoremes classiques (Arrow, Sen).
 
 Python et Lean 4 | [README detaille](MyIA.AI.Notebooks/GameTheory/README.md)
-
-### Probas -- Programmation probabiliste
-
-Comment raisonner sous incertitude ? La programmation probabiliste permet de definir des modeles generatifs, propager l'incertitude et mettre a jour des croyances face a de nouvelles observations.
-
-La serie utilise principalement Infer.NET de Microsoft (C#) : distributions fondamentales, reseaux bayesiens, modeles de melange et theorie de la decision bayesienne. Un notebook complementaire explore la pragmatique du langage avec Pyro (modele RSA -- Rational Speech Acts).
-
-C# (Infer.NET) et Python (Pyro) | [README Probas](MyIA.AI.Notebooks/Probas/README.md)
 
 ### ML -- Machine Learning
 
