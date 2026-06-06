@@ -25,7 +25,7 @@ Vous avez clone le depot et vous ne savez pas par ou commencer ?
 ```
 MyIA.AI.Notebooks/
   Search/          -> Algorithmes de recherche (BFS, A*, CSP) -- point d'entree ideal pour debutants
-  Sudoku/          -> Resolution multi-paradigme -- 10 approches pour 1 probleme
+  Sudoku/          -> Resolution multi-paradigme -- plusieurs approches pour un seul probleme
   ML/              -> Machine Learning (ML.NET, agents ADK)
   RL/              -> Reinforcement Learning (PPO, DQN, Stable Baselines3)
   Probas/          -> Programmation probabiliste (Infer.NET, Pyro)
@@ -271,8 +271,8 @@ CoursIA/
     Sudoku/                    Resolution multi-paradigme (Python, C#)
     SymbolicAI/                IA symbolique (Python, Lean 4, C#)
       Tweety/ SemanticWeb/ Lean/ Planners/ SmartContracts/ Argument_Analysis/ SymbolicLearning/
-    GameTheory/                Theorie des jeux (Python, Lean 4)
     Probas/                    Programmation probabiliste (C#, Python)
+    GameTheory/                Theorie des jeux (Python, Lean 4)
     ML/                        Machine Learning (C#, Python)
     RL/                        Reinforcement Learning (Python)
     GenAI/                     IA Generative (Python)
