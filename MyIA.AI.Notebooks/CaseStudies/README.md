@@ -170,6 +170,14 @@ Un **jumeau numerique** est un modele computationnel qui simule le comportement 
 
 Les notebooks utilisent des **donnees synthetiques** (generees pour etre pedagogiquement realistes) ou des **donnees publiques anonymisees** (quand disponibles). Aucune donnee patient reelle n'est incluse. Les modeles sont simplifies pour rester comprehensible — un modele clinique reel aurait des dizaines de variables supplementaires.
 
+### Peut-on appliquer ces techniques a d'autres domaines que le medical ?
+
+Absolument. Les patterns (architecture hybride, jumeau numerique, contraintes + incertitude) sont transposables : logistique (jumeau de flotte + planification + previsions), finance (jumeau de marche + contraintes reglementaires), maintenance predictive (jumeau equipement + Bayesien). Le domaine medical est choisi pour sa richesse en contraintes formelles et en incertitude.
+
+### Quels packages Python sont necessaires ?
+
+`pip install -r requirements.txt` installe tout : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools. Aucune dependance externe (API, Docker, GPU) n'est requise.
+
 ### Quelle est la difference entre diagnostic medical et planification oncologique ?
 
 Le **Diagnostic Medical** resout un probleme de classification : etant donne des symptomes, identifier la maladie (recherche dans un espace d'etats + contraintes Z3). L'**Oncology Planning** resout un probleme d'optimisation : etant donne un diagnostic, planifier le meilleur protocole de traitement sous contraintes de toxicite et delais (CP-SAT + modele probabiliste). Ce sont deux paradigmes distincts couverts par des series differentes.

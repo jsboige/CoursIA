@@ -604,6 +604,18 @@ Ces connexions entre series sont exploitees dans le curriculum IA Symbolique.
 
 ## FAQ
 
+### Qu'est-ce que l'IA symbolique et pourquoi l'etudier a l'ere des LLMs ?
+
+L'IA symbolique repose sur la **manipulation explicite de symboles et de regles** (logique, ontologies, planification, contrats) plutot que sur l'apprentissage statistique. Les LLMs sont puissants mais opaques : ils ne garantissent pas la correction logique, ne peuvent pas verifier formellement un resultat, et hallucinent. L'IA symbolique apporte ce que les modeles statistiques ne fournissent pas : raisonnement **verifiable, explicable et certifie**. Les deux paradigmes sont complementaires — l'avenir est neuro-symbolique.
+
+### Quelle est la difference entre Tweety et Z3 ?
+
+**TweetyProject** est une bibliotheque Java pour la logique formelle (propositionnelle, FOL, modale, argumentation, revision de croyances). Elle est utilisee via JPype en Python. **Z3** (Microsoft Research) est un solveur SMT (Satisfiability Modulo Theories) qui automatise la resolution de problemes logiques complexes. Tweety est oriente enseignement (comprendre les semantiques), Z3 est oriente resolution (prouver/infirmer des proprietes). Les deux apparaissent dans GameTheory (Arrow/SAT) et Search (CSP).
+
+### Comment installer l'environnement Tweety ?
+
+Ouvrez le notebook `Tweety-1-Setup.ipynb` : il telecharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
+
 ### Par quelle sous-serie commencer si je n'ai pas de JDK installe ?
 
 Les series **SemanticWeb** (notebooks Python), **Planners** (notebooks theoriques 7-11) et **Lean** (notebooks Python 1, 7-10) ne necessitent aucun JDK. **Tweety** et **Argument Analysis** utilisent JPype (bridge Java/Python) avec un JDK 17 portable auto-telecharge par le notebook de setup (pas d'installation systeme, pas de UAC). Si vous evitez les notebooks C# (qui requierent dotnet-interactive), vous pouvez travailler entierement en Python avec uniquement `pip install rdflib ortools unified_planning`.

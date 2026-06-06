@@ -374,6 +374,22 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ## FAQ
 
+### Peut-on trade avec de l'argent reel directement ?
+
+Techniquement oui (QC supporte les brokers live : IBKR, Binance, etc.), mais **pas dans le cadre de cette serie**. Tous les notebooks et projets sont conçus pour le backtest et le paper trading. Le passage en live necessite un compte broker, du capital, et une discipline de validation stricte (walk-forward, multi-seed, OOS).
+
+### Comment choisir une premiere strategie ?
+
+Pour debuter : **EMA-Cross-Stocks** (Sharpe 0.872, debutant) ou **AllWeather** (Sharpe 0.667, debutant). Ces strategies sont simples, robustes, et pedagogiques. Les strategies avancees (BTC-ML, Framework_Composite) ont des Sharpes plus eleves mais requierent une comprehension plus profonde des risques.
+
+### Quelle est la difference entre Sharpe et CAGR ?
+
+Le **CAGR** (Compound Annual Growth Rate) mesure le rendement annualise. Le **Sharpe ratio** mesure le rendement ajuste au risque : Sharpe = (Rendement - Taux_sans_risque) / Volatilite. Un CAGR eleve avec un Sharpe faible signifie une strategie volatile (gros gains, grosses pertes). Un Sharpe > 0.5 est considere robuste dans cette serie.
+
+### Les performances backtestees sont-elles realistes en live ?
+
+Non, ou avec une discount significative (20-30% en moins). Les backtests souffrent de biais connus : look-ahead, survivorship, overfitting, et ignorent le slippage et le market impact reels. Les Sharpes annonces sont in-sample. La serie inclut des notebooks sur le walk-forward et les couts de transaction pour evaluer la robustesse hors-echantillon.
+
 ### Peut-on executer les notebooks localement sans compte QuantConnect ?
 
 Non. Les notebooks Python de cette serie utilisent `QuantBook()` qui necessite une connexion au cloud QuantConnect. Les notebooks C# (.NET) executent du code LEAN en local mais n'ont pas acces aux donnees de marche sans connexion QC. Creez un compte gratuit sur [quantconnect.com](https://www.quantconnect.com/) pour obtenir votre token API (variable `QC_API_TOKEN` dans `.env`).
