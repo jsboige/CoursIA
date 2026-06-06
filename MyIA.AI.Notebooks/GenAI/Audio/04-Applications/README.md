@@ -6,7 +6,7 @@ Ce module presente des cas d'usage concrets et des workflows de production pour 
 
 **Fil rouge podcast** : [04-1](04-1-Educational-Audio-Content.ipynb) automatise la narration de cours. [04-2](04-2-Transcription-Pipeline.ipynb) gere la transcription batch avec sous-titres SRT. [04-3](04-3-Music-Composition-Workflow.ipynb) compose des bandes sonores. [04-4](04-4-Audio-Video-Sync.ipynb) synchronise l'audio avec la video.
 
-**Fil rouge audiobook (Epic #1028)** : [04-6](04-6-Audiobook-Pipeline.ipynb) a [04-12](04-12-Compilation-Audio_output.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse litteraire, casting vocal, annotation prosodique, generation TTS et compilation finale. [04-13](04-13-Audiobook-FishAudio-S2Pro.ipynb) etend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
+**Fil rouge audiobook (Epic #1028)** : [04-6](04-6-Audiobook-Pipeline.ipynb) a [04-12](04-12-Compilation-Audio.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse litteraire, casting vocal, annotation prosodique, generation TTS et compilation finale. [04-13](04-13-Audiobook-FishAudio-S2Pro.ipynb) etend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
 
 ## Vue d'ensemble
 
