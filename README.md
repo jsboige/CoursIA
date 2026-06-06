@@ -56,12 +56,15 @@ Pour un guide complet des parcours d'apprentissage, voir [docs/parcours/](docs/p
 
 ## Ce qu'on y trouve
 
-Le depot couvre un spectre large de l'IA, des algorithmes classiques aux modeles generatifs les plus recents. Quelques points notables :
+Le depot couvre un spectre large de l'IA, des algorithmes classiques aux modeles generatifs les plus recents, avec un parti pris constant : confronter plusieurs paradigmes sur les memes problemes plutot que d'en privilegier un seul. Quelques points notables :
 
-- **Multi-langages** : Python pour le ML et l'IA generative, C# pour l'ecosysteme Microsoft (ML.NET, Infer.NET, Semantic Kernel), Lean 4 pour la verification formelle
-- **Donnees reelles** : les notebooks QuantConnect utilisent des donnees de marche reelles via yfinance ; le ML Training Pipeline travaille sur un panier de 10 cryptomonnaies avec validation walk-forward stricte
-- **Infrastructure complete** : les notebooks GenAI peuvent utiliser des modeles locaux via Docker (Qwen, FLUX, ComfyUI) ou des APIs cloud (OpenAI, Anthropic)
-- **Preuves formelles** : les series Lean et GameTheory proposent des preuves mecanisees en Lean 4
+- **Multi-langages, multi-ecosystemes** : Python pour le machine learning et l'IA generative, C# pour l'ecosysteme Microsoft (ML.NET, Infer.NET, Semantic Kernel), Lean 4 pour la verification formelle. Chaque langage est employe la ou il excelle, pas par defaut.
+- **Du fondamental a la recherche** : les series partent des algorithmes de base (BFS, A*, backtracking) et vont jusqu'a des sujets de pointe -- transformers pour le forecasting financier, agents de preuve autonomes, integration neuro-symbolique, deep learning multimodal.
+- **Preuves formelles ambitieuses** : au-dela des exercices, les series Lean et GameTheory mecanisent des theoremes phares en Lean 4 -- theoreme de sensibilite, theoreme de Kochen-Specker, theoreme du libre arbitre de Conway-Kochen, formalisations des theoremes d'Arrow et de Sen -- avec des hommages aux mathematiques de Grothendieck et de Conway.
+- **Donnees et marches reels** : les notebooks QuantConnect s'appuient sur des donnees de marche reelles (yfinance, framework LEAN) ; le pipeline d'entrainement ML valide ses modeles par walk-forward strict et multi-seed sur un panier de cryptomonnaies.
+- **IA generative deployable** : les notebooks GenAI fonctionnent au choix sur des APIs cloud (OpenAI, Anthropic) ou sur des modeles locaux servis par une infrastructure Docker GPU (Qwen, FLUX, ComfyUI, Whisper, MusicGen).
+- **Agents et LLMs transverses** : assistants de preuve, agents de data science autonomes, planification pilotee par LLM, GraphRAG et boucles LLM-verification symbolique tissent un fil rouge entre les series.
+- **Etudes de cas integratrices** : des projets interdisciplinaires (diagnostic medical, planification oncologique) et des applications transverses combinent les techniques apprises en silos en livrables complets.
 
 ---
 
@@ -71,7 +74,9 @@ Chaque serie est concue pour etre **self-contained** : un etudiant peut ouvrir n
 
 Les approches **multi-paradigmes** sont privilegiees : le Sudoku est resolu par backtracking, CSP, metaheuristiques et reseaux de neurones pour comparer les compromis. Les jeux sont formalises en Python et en Lean 4. Cette diversite d'approches sur un meme probleme est au coeur de la demarche.
 
-Les notebooks combinent **theorie et implementation** : les concepts sont introduits progressivement, puis mis en pratique dans des cellules executables. Les exercices proposes permettent de consolider les acquis.
+Les notebooks combinent **theorie et implementation** : les concepts sont introduits progressivement, puis mis en pratique dans des cellules executables. La structure **exemple puis exercice** est systematique -- chaque notion est d'abord demontree par un exemple resolu, puis reprise dans un exercice a completer ; corriges et squelettes cohabitent, et le notebook s'execute de bout en bout meme lorsque les exercices ne sont pas faits.
+
+Enfin, **la priorite au local** : la majorite des series tournent apres un simple clone, sans cle API ni GPU. Seules GenAI (modeles generatifs) et QuantConnect (donnees de marche) demandent une configuration -- de sorte que rien ne fasse barrage a la prise en main.
 
 ---
 
