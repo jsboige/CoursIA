@@ -146,21 +146,27 @@ C# et Python | [README detaille](MyIA.AI.Notebooks/ML/README.md)
 
 ### GenAI -- IA Generative
 
-Comment generer des images, composer de la musique, creer des videos ou converser avec un LLM ? Cette serie explore l'IA generative dans toutes ses modalites, avec une progression qui va de l'utilisation d'APIs cloud au deploiement de modeles locaux sur GPU.
+Comment generer une image a partir d'une phrase, faire parler une machine, composer un fond musical, animer une video, ou brancher un LLM sur ses propres outils ? La plus grande serie du depot explore l'IA generative dans toutes ses modalites. Son fil conducteur n'est pas l'accumulation d'APIs : c'est apprendre a **choisir** entre un modele cloud (DALL-E, GPT-5, Whisper) et un modele open-source auto-heberge (FLUX, Stable Diffusion, Qwen, MusicGen) selon le cout, le controle, le debit et la sensibilite des donnees, puis a **combiner** ces briques dans des pipelines qui tiennent en production. Tout commence par `00-GenAI-Environment`, le passage oblige qui configure cles API, services Docker et validation.
 
-Organisee par modalite, chaque domaine (Image, Audio, Video) suit une progression en quatre niveaux : Foundation (decouverte des APIs), Advanced (modeles locaux, fine-tuning), Orchestration (workflows multi-modeles) et Applications (cas d'usage concrets).
+Chaque modalite (Image, Audio, Video) suit la meme montee en quatre niveaux -- Foundation (premiers appels d'API), Advanced (modeles locaux sur GPU, edition fine), Orchestration (workflows multi-modeles) et Applications (cas d'usage concrets) -- et chacune se structure autour d'un fil rouge concret a construire de bout en bout.
 
-**Image** -- Generation et edition avec DALL-E 3, GPT-5, FLUX, Stable Diffusion 3.5, Qwen Image Edit. Workflows multi-modeles avec ComfyUI.
+**Image** -- De DALL-E 3 et GPT-5 en cloud jusqu'aux modeles auto-heberges (FLUX, Stable Diffusion 3.5, Qwen Image Edit, Z-Image/Lumina) orchestres via ComfyUI. On y apprend a editer plutot que regenerer (inpainting, ControlNet), a composer des graphes de noeuds reproductibles, et a gerer la VRAM (quantizations INT4/FP8). Fil rouge : un generateur de visuels pedagogiques.
 
-**Audio** -- Synthese vocale (OpenAI TTS, Kokoro, XTTS), transcription (Whisper), generation musicale (MusicGen), separation de sources (Demucs).
+**Audio** -- La chaine vocale complete : transcription (Whisper), synthese (OpenAI TTS, Kokoro, Chatterbox), clonage de voix (XTTS), generation musicale (MusicGen, YuE, ACE-Step), separation de sources (Demucs) et TTS expressif a tags prosodiques. Fil rouge : un podcast entierement genere, voix clonee et fond musical compris.
 
-**Video** -- Comprehension video (GPT-5, Qwen-VL), generation (HunyuanVideo, LTX-Video, Wan), super-resolution (Real-ESRGAN).
+**Video** -- La modalite la plus exigeante : comprehension de sequences (GPT-5, Qwen-VL), generation de mouvement (HunyuanVideo, LTX-Video, Wan, Stable Video Diffusion), super-resolution et interpolation (Real-ESRGAN, RIFE). Fil rouge : transformer un script texte en video pedagogique animee.
 
-**Texte** -- Prompt engineering, structured outputs, RAG, reasoning, LLMs locaux et deploiement.
+**Texte** -- Le socle de tout le reste : prompt engineering, structured outputs (JSON Schema, Pydantic), function calling, RAG moderne, code interpreter, modeles de raisonnement (o-series, GPT-5 thinking), patterns de production, et deploiement de LLMs locaux (vLLM, quantization AWQ/GPTQ).
 
-**Semantic Kernel** -- L'orchestrateur IA de Microsoft, des fondamentaux a MCP et la creation de notebooks automatisee.
+**Semantic Kernel** -- Le SDK d'orchestration agentique de Microsoft, en Python et en C#/.NET Interactive : plugins, agents, filtres, vector stores, Process Framework, multimodalite et MCP. Demonstrateur phare : un NotebookMaker a trois agents (Admin, Coder, Reviewer) qui genere lui-meme des notebooks pedagogiques.
 
-**Vibe-Coding** -- Ateliers pratiques sur Claude Code et Roo Code pour le developpement assiste par IA.
+**Specialisation des modeles** -- Au-dela de l'usage, on entraine : FineTuning (LoRA, QLoRA, SFT, DPO) pour adapter un modele sans tout re-entrainer, et PostTraining pour les techniques d'alignement de pointe (RLHF, DPO, GRPO, RLVR).
+
+**Industrialisation** -- Les applications GenAI se testent : la serie Playwright-OWUI ecrit des tests de bout en bout sur Open WebUI (navigation, streaming, RAG, outils MCP, CI/CD), pour passer de la demonstration jouet au produit deployable.
+
+**Vibe-Coding** -- Le developpement assiste par agents IA, devenu competence centrale : ateliers progressifs sur Claude Code et Roo Code, plus une introduction aux agents autonomes (Claw-Systems), de la decouverte a l'automatisation avancee (skills, sous-agents, MCP, hooks).
+
+Tout converge dans un fil rouge transverse : le **Texte** structure un script, l'**Image** l'illustre, l'**Audio** le narre, la **Video** l'assemble, et **Semantic Kernel** orchestre l'ensemble en agents autonomes -- c'est ce parcours d'integration qui distingue une demo d'un produit deployable.
 
 Python | [README detaille](MyIA.AI.Notebooks/GenAI/README.md)
 
