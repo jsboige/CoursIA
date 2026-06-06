@@ -534,8 +534,8 @@ La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSIO
 | Serie | Lien | Connection |
 | ------- | ------ | ----------- |
 | [SymbolicAI/SemanticWeb](../SemanticWeb/README.md) | OWL reasoning | La logique de Description (Tweety-3) est le fondement de l'OWL reasoning — les ontologies OWL DL utilisent les memes solveurs DL que Tweety |
-| [IIT](../IIT/README.md) | Argumentation pour la consciousness | L'analyse argumentative des systemes complexes (notebooks 5-7) partage des concepts avec l'analyse IIT — identification de sous-ensembles causaux |
-| [SymbolicAI/Planning/](../Planning/README.md) | Planification logique | Les logiques formelles (notebooks 2-3) sont la base de la planification automate PDDL |
+| [IIT](../../IIT/README.md) | Argumentation pour la consciousness | L'analyse argumentative des systemes complexes (notebooks 5-7) partage des concepts avec l'analyse IIT — identification de sous-ensembles causaux |
+| [SymbolicAI/Planners/](../Planners/README.md) | Planification logique | Les logiques formelles (notebooks 2-3) sont la base de la planification automate PDDL |
 | [ML/](../../ML/README.md) | Neuro-symbolic AI | L'intersection logiques + apprentissage : verifier les predictions de modeles neuronaux avec des contraintes logiques |
 | [Search](../../Search/README.md) | SAT-based search | Le solving SAT (notebook 2) partage les memes algorithmes que la recherche par contraintes (CSP) |
 

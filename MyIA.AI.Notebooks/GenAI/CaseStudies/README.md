@@ -35,3 +35,27 @@ CaseStudies/
 ```bash
 pip install openai pandas numpy semantic-kernel
 ```
+
+## FAQ
+
+### Quelle cle API est requise pour les projets ?
+
+- **Barbie-Schreck** et **Fort-Boyard** : `OPENAI_API_KEY` uniquement (modeaux GPT et DALL-E).
+- **Recipe-Maker** et **Medical-Chatbot** : `OPENAI_API_KEY` + un service Semantic Kernel configure (Azure OpenAI ou OpenAI direct).
+
+Configurer les cles dans `GenAI/.env` (voir [00-GenAI-Environment](../00-GenAI-Environment/README.md) pour le setup complet).
+
+### Peut-on executer Medical-Chatbot sans Semantic Kernel ?
+
+Medical-Chatbot utilise Semantic Kernel pour l'orchestration des plugins (requete vers API, parsing, formatage de reponse). Pour le faire sans SK, remplacer les appels `kernel.invoke()` par des appels directs `openai.chat.completions.create()` -- la logique metier reste la meme, seule la couche d'orchestration change.
+
+### Quelle difference entre CaseStudies et les autres series GenAI ?
+
+| Serie | Focus | Prerequis |
+|-------|-------|-----------|
+| **CaseStudies** (ici) | Projets complets bout-en-bout | Python basique + cle API |
+| [Texte](../Texte/README.md) | Techniques NLL/prompting avancees | Python intermediaire |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration agents multi-services | Python + concepts SK |
+| [Image](../Image/README.md) | Generation/edition d'images | Docker + GPU |
+
+CaseStudies est le point d'entree ideal pour decouvrir les capacites GenAI avant d'approfondir dans les series thematiques.
