@@ -216,9 +216,17 @@ Cette serie est le terrain ou convergent les autres : les modeles predictifs de 
 
 Python | [README detaille](MyIA.AI.Notebooks/QuantConnect/README.md) | [Strategies](MyIA.AI.Notebooks/QuantConnect/projects/README.md)
 
-### RL -- Reinforcement Learning
+### RL -- Apprentissage par renforcement
 
-Introduction a l'apprentissage par renforcement avec Stable Baselines3 : PPO sur CartPole, wrappers et callbacks, experience replay et DQN.
+Comment apprendre a decider quand personne ne fournit la bonne reponse ? La ou l'apprentissage supervise predit a partir d'exemples etiquetes et l'apprentissage non supervise degage des structures, le renforcement **agit** : un agent choisit une action, observe la recompense ou la penalite que lui renvoie son environnement, et corrige sa strategie a l'essai et a l'erreur. C'est le paradigme derriere AlphaGo, la marche des robots et les moteurs de recommandation. Le fil conducteur de la serie est un pari pedagogique assume -- *agir d'abord, comprendre ensuite* : on entraine un agent fonctionnel en quelques lignes avec un framework industriel, puis on reimplemente les memes algorithmes a la main pour voir ce qui tourne sous le capot.
+
+**Le framework d'abord -- un agent qui marche en quelques lignes** -- Le point d'entree est **Stable Baselines3** : on entraine un agent PPO a equilibrer un baton (CartPole) et on visualise sa progression avant d'avoir ecrit la moindre equation. La prise en main s'enrichit ensuite des outils de production -- wrappers pour reconfigurer un environnement, callbacks pour monitorer et sauvegarder, multiprocessing pour accelerer -- puis franchit un saut qualitatif avec les taches a objectif (goal-conditioned RL) et l'astuce HER, qui reinterprete les echecs comme des succes : on passe d'equilibrer un baton a garer une voiture. L'intuition concrete precede la theorie, jamais l'inverse.
+
+**Les maths sous le capot -- reimplementer pour comprendre** -- Le second temps quitte le framework et reconstruit tout depuis zero. On commence par la question fondatrice -- explorer de nouvelles options ou exploiter ce qui marche deja -- sur les bandits manchots (epsilon-greedy, Thompson Sampling, regret cumule). Vient ensuite la formalisation : processus de decision markovien, equation de Bellman, value et policy iteration, Q-Learning tabulaire. Puis le passage a l'echelle par les reseaux de neurones, en PyTorch pur et par paliers : DQN et REINFORCE, l'architecture acteur-critique (A2C), PPO et son surrogate clippe avec GAE, enfin SAC et le cadre maximum d'entropie pour les actions continues. Chaque algorithme eclaire un compromis -- on-policy contre off-policy, value-based contre policy-based, biais contre variance.
+
+**Plusieurs agents qui apprennent -- du jeu solitaire a l'interaction** -- La serie se clot sur le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent. Avec PettingZoo et l'Independent Q-Learning, un agent affronte sa propre copie en self-play sur un jeu a somme nulle -- la meme situation que la theorie des jeux, mais ou l'equilibre est *appris* plutot que calcule.
+
+Ce dernier pas ouvre la porte des series voisines. Le multi-agent prolonge directement **GameTheory** -- equilibre de Nash appris au lieu d'etre demontre -- tandis que les MDP generalisent les processus decisionnels bayesiens de **Probas**, dont la theorie de l'utilite fournit le socle. Le renforcement partage avec **ML** ses outils (PyTorch, gradients) et avec **Search** sa parente entre value iteration et exploration d'un espace d'etats ; il s'incarne enfin sur donnees reelles en **QuantConnect**, ou acheter et vendre deviennent des actions et le profit une recompense. Le contraste feed-forward contre recurrent qui structure ses architectures rejoint meme la question soulevee par **IIT**.
 
 Python | [README detaille](MyIA.AI.Notebooks/RL/README.md)
 
