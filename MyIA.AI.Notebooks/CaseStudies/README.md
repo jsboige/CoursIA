@@ -148,6 +148,24 @@ Les systemes IA appliques au domaine medical sont soumis a des contraintes legal
 
 Ces dimensions sont abordees en survol dans les notebooks mais meritent un module dedie pour une formation professionnelle complete.
 
+## FAQ
+
+### Faut-il avoir fait toutes les autres series avant ?
+
+Non, mais les prerequis minimums sont : [Search](../Search/README.md) (A*, CSP, Z3) pour le Diagnostic Medical, et [Probas](../Probas/README.md) (inference bayesienne) pour l'Oncology Planning. Les series SymbolicAI (ontologies) et RL (optimisation par simulation) sont des complement utiles mais pas bloquants.
+
+### Quelle est la difference entre le template student et la solution ?
+
+Le **template student** contient les structures de donnees, les squelettes de fonctions et des indices (commentaires `# TODO`). La **solution** est la reference complete, executable et documentee. L'etudiant commence par le template, implemente les fonctions, et compare avec la solution pour auto-evaluation.
+
+### Peut-on appliquer ces techniques a d'autres domaines que le medical ?
+
+Absolument. Les patterns (architecture hybride, jumeau numerique, contraintes + incertitude) sont transposables : logistique (jumeau de flotte + planification + previsions), finance (jumeau de marche + contraintes reglementaires), maintenance predictive (jumeau equipement + Bayesien). Le domaine medical est choisi pour sa richesse en contraintes formelles et en incertitude.
+
+### Quels packages Python sont necessaires ?
+
+`pip install -r requirements.txt` installe tout : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools. Aucune dependance externe (API, Docker, GPU) n'est requise.
+
 ## Installation
 
 ```bash

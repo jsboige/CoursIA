@@ -413,6 +413,34 @@ Après completion de cette série, vous maîtriserez :
 
 ---
 
+## FAQ
+
+### Faut-il un compte QuantConnect pour utiliser cette serie ?
+
+Oui, mais le **free tier suffit**. Creer un compte sur [quantconnect.com](https://www.quantconnect.com/signup), creer un projet Python dans QC Lab, et copier un `main.py` depuis `projects/`. Les backtests sont gratuits (limites a 2 simultanes). Aucun capital reel necessaire — tout se passe en simulation.
+
+### Quelle est la difference entre un notebook QC-Py et un projet `projects/` ?
+
+Les **notebooks QC-Py-XX** sont des supports de cours pedagogiques (a lire sur GitHub, pas a uploader dans QC Lab). Les **projets `projects/`** contiennent des `main.py` deployables sur QuantConnect Cloud. Pour executer une strategie : copier le `main.py` d'un projet dans QC Lab et cliquer Backtest.
+
+### Peut-on trader avec de l'argent reel directement ?
+
+Techniquement oui (QC supporte les brokers live : IBKR, Binance, etc.), mais **pas dans le cadre de cette serie**. Tous les notebooks et projets sont conçus pour le backtest et le paper trading. Le passage en live necessite un compte broker, du capital, et une discipline de validation stricte (walk-forward, multi-seed, OOS). Cf [discipline ML/Trading](../../.claude/rules/pr-review-discipline.md).
+
+### Comment choisir une premiere strategie ?
+
+Pour debuter : **EMA-Cross-Stocks** (Sharpe 0.872, debutant) ou **AllWeather** (Sharpe 0.667, debutant). Ces strategies sont simples, robustes, et pedagogiques. Les strategies avancees (BTC-ML, Framework_Composite) ont des Sharpes plus eleves mais requierent une comprehension plus profonde des risques.
+
+### Quelle est la difference entre Sharpe et CAGR ?
+
+Le **CAGR** (Compound Annual Growth Rate) mesure le rendement annualise. Le **Sharpe ratio** mesure le rendement ajuste au risque : Sharpe = (Rendement - Taux_sans_risque) / Volatilite. Un CAGR eleve avec un Sharpe faible signifie une strategie volatile (gros gains, grosses pertes). Un Sharpe > 0.5 est considere robuste dans cette serie.
+
+### Les performances backtestees sont-elles realistes en live ?
+
+Non, ou avec une discount significative (20-30% en moins). Les backtests souffrent de biais connus : look-ahead, survivorship, overfitting, et ignorent le slippage et le market impact reels. Les Sharpes annonces sont in-sample. La serie inclut des notebooks sur le walk-forward et les couts de transaction pour evaluer la robustesse hors-echantillon.
+
+---
+
 ## Cross-series Bridges
 
 | Serie | Lien | Connection |
@@ -422,7 +450,7 @@ Après completion de cette série, vous maîtriserez :
 | [RL](../RL/README.md) | Apprentissage par renforcement | Les strategies RL (QC-22 PPO, QC-23 DRL, QC-24 Crypto RL) prolongent les fondamentaux RL de cette serie |
 | [Probas](../Probas/README.md) | Programmation probabiliste | La modelisation bayesienne des rendements et la gestion du risque s'appuient sur les modeles probabilistes de la serie Probas |
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres de strategies (grid search, bayesienne) rejoint les techniques de recherche |
-| [TimeSeries](../TimeSeries/README.md) | Series temporelles | L'analyse technique (QC-4 a QC-7) partage les memes fondements que l'analyse de series temporelles |
+| [ML/ML.Net](../ML/ML.Net/README.md) | Series temporelles | L'analyse de series temporelles SSA (ML-2) partage les fondements avec l'analyse technique (QC-4 a QC-7) |
 
 ---
 
