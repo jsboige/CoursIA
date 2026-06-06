@@ -52,10 +52,11 @@ class TestWinToWslPath:
         assert "Users/test/file.txt" in result
 
     def test_d_drive(self):
-        """D: drive maps to /mnt/d."""
+        """D: drive maps to /mnt/d (case-insensitive check due to resolve())."""
         result = win_to_wsl_path("D:\\dev\\project")
         assert result.startswith("/mnt/d/")
-        assert "dev/project" in result
+        # Path.resolve() may capitalize path components based on physical disk
+        assert "dev/project" in result.lower()
 
     def test_lowercase_drive(self):
         """Drive letter is lowercased in WSL path."""
