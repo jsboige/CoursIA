@@ -32,3 +32,4 @@ import Conway.Life.Pillars
 import Conway.KochenSpecker
 import Conway.FreeWillTheorem
 import Conway.MathlibMap
+import Conway.CollatzLike
