@@ -200,6 +200,22 @@ Documentation complete : [DataScienceWithAgents/README.md](DataScienceWithAgents
 
 ## FAQ / Troubleshooting
 
+### Quelle est la difference entre ML.NET et les notebooks Python ?
+
+**ML.NET** (C#/.NET 9.0) couvre le machine learning classique (classification, regression, clustering, anomaly detection) via le framework Microsoft.ML. Les notebooks Python couvrent les agents IA (LangChain, Google ADK, data wrangling avec Pandas). Les deux sous-series sont independantes. ML.NET est pertinent si vous travaillez dans l'ecosysteme .NET ; les notebooks Python sont plus generaux.
+
+### Faut-il connaitre le C# pour les notebooks ML.NET ?
+
+Oui, les notebooks ML.NET utilisent .NET Interactive (C#). Les concepts ML sont introduits depuis zero, mais la syntaxe C# de base (variables, LINQ, classes) est supposee. Si vous ne connaissez pas C#, les notebooks Python (DataScienceWithAgents) couvrent des concepts similaires sans prerequis C#.
+
+### Quelle est la progression recommandee ?
+
+1. **ML.NET** (notebooks 1-5) : comprendre les bases du ML supervise/non supervis
+2. **DataScienceWithAgents** (Day 1-7) : decouvrir les agents IA et le RAG
+3. **AgenticDataScience** (Day 4-7) : agents avances avec Google ADK
+
+Les deux sous-series sont independantes et peuvent etre suivies dans n'importe quel ordre.
+
 | Probleme | Solution |
 | -------- | -------- |
 | `dotnet-interactive` non trouve | `dotnet tool install -g Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install` |

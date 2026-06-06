@@ -170,6 +170,10 @@ Ces tensions font de l'IIT un excellent terrain pour exercer l'esprit critique :
 
 PyPhi 1.2.0 utilise `collections.Iterable`, qui a ete supprime dans Python 3.10 (PEP 585). Tenter d'installer PyPhi sur Python 3.10+ provoque une `ImportError` des le `import pyphi`. L'environnement conda dedie isole cette contrainte sans affecter vos autres projets.
 
+### L'IIT est-elle acceptee par la communaute scientifique ?
+
+L'IIT est une theorie **controversée**. Elle a des retombees cliniques reelles (PCI pour mesurer la conscience chez les patients comateux) mais reste debattue : certains chercheurs la considerent comme le meilleur cadre theorique existant, d'autres la critiquent comme pseudoscience. Les notebooks presentent le formalisme et ses outils sans prendre position — c'est un excellent terrain pour exercer l'esprit critique.
+
 ### Quelle est la difference entre big Phi et small phi ?
 
 **Big Phi** ($\Phi$) mesure l'integration au niveau du systeme complet : il quantifie a quel point le systeme est "plus que la somme de ses parties". **Small phi** ($\varphi$) mesure l'integration d'un mecanisme individuel (un sous-ensemble de noeuds) : chaque concept dans la CES a son propre small phi. La CES est l'ensemble des concepts dont le small phi > 0, et le big Phi aggrege ces contributions.

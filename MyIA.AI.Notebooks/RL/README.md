@@ -292,6 +292,18 @@ Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depui
 
 ## FAQ
 
+### Quelle est la difference entre RL et apprentissage supervise ?
+
+L'apprentissage **supervise** apprend a partir de donnees etiquetees (entree -> sortie correcte). Le RL apprend par **interaction** : l'agent prend des actions, recoit des recompenses/penalites, et ajuste sa strategie. Il n'y a pas de "bonne reponse" fournie — l'agent doit decouvrir quelles actions maximisent la recompense cumulee. Le RL est pertinent quand le probleme est sequentiel (une action affecte les futures observations).
+
+### Faut-il un GPU pour les notebooks ?
+
+Non. Les notebooks 1-4 (SB3 intro, wrappers, bandits, DQN from scratch) et 7-8 (multi-agent, curriculum) tournent sur CPU avec les environnements simples (CartPole, MountainCar). Les notebooks 5-6 (Policy Gradient, PPO from scratch) beneficient d'un GPU pour les reseaux plus profonds mais restent executables en CPU (plus lent). Environnements Atari (optionnel) : GPU recommande.
+
+### Qu'est-ce qu'un MDP et pourquoi est-ce central ?
+
+Un **MDP** (Markov Decision Process) est le modele mathematique du RL : un ensemble d'etats S, d'actions A, de transitions T(s'|s,a), de recompenses R(s,a), et d'un facteur d'actualisation gamma. Tout probleme de RL se formalise comme un MDP. L'equation de Bellman (notebook 3) definit recursivement la valeur optimale. Si vous avez fait la serie Probas, les MDP generalisent les chaines de Markov avec des decisions.
+
 ### Quelle est la difference entre on-policy et off-policy ?
 
 **On-policy** (PPO, A2C, REINFORCE) : l'apprentissage utilise uniquement les donnees collectees par la politique courante. Plus stable mais moins sample-efficient. **Off-policy** (DQN, SAC, DDPG) : l'apprentissage peut reutiliser des donnees passees stockees dans un replay buffer. Plus sample-efficient mais potentiellement moins stable. Le notebook 6 compare DQN (off-policy) et REINFORCE (on-policy) sur le meme environnement.
