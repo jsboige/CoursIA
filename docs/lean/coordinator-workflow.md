@@ -1,8 +1,6 @@
 # Lean coordinator workflow (ai-01)
 
-Detail des deux disciplines coordinateur sur le projet Lean : Lake build pre-merge + BG iter prover systematique. Les regles HARD correspondantes sont dans :
-- [.claude/rules/lean-lake-build-required.md](../../.claude/rules/lean-lake-build-required.md)
-- [.claude/rules/lean-prover-bg-systematic.md](../../.claude/rules/lean-prover-bg-systematic.md)
+Detail des deux disciplines coordinateur sur le projet Lean : Lake build pre-merge + BG iter prover systematique. Les regles HARD correspondantes sont dans [.claude/rules/lean-merge-discipline.md](../../.claude/rules/lean-merge-discipline.md).
 
 ## 1. Lake build SUCCESS local avant merge
 

@@ -13,8 +13,8 @@ Ces fichiers decrivent l'architecture et le fonctionnement general du projet.
 | [architecture_mcp_roo.md](architecture_mcp_roo.md) | Architecture des 34 outils MCP roo-state-manager |
 | [kernels-runtime.md](kernels-runtime.md) | .NET, Python, WSL, conda envs |
 | [env-python-reparation.md](env-python-reparation.md) | RepARATION environnements Python |
-| [handson-book-mapping.md](handson-book-mapping.md) | Cartographie du livre Hands-On AI Trading (Jared Broad) |
-| [qc-broken-strategies-audit.md](qc-broken-strategies-audit.md) | Audit strategies QuantConnect broken |
+| [handson-book-mapping.md](_archives/handson-book-mapping.md) | Cartographie du livre Hands-On AI Trading (Jared Broad) |
+| [qc-broken-strategies-audit.md](_archives/qc-broken-strategies-audit.md) | Audit strategies QuantConnect broken |
 | [visitor-navigation-guide.md](visitor-navigation-guide.md) | Carte du visiteur : 4 parcours thematiques a travers 511 notebooks |
 | [grothendieckian-lens.md](grothendieckian-lens.md) | Cle de lecture grothendieckienne : mer qui monte, grades A/B/C, table grounded |
 
@@ -58,7 +58,7 @@ Ces fichiers fournissent des details complementaires au CLAUDE.md principal.
 | [secrets-and-coord-detail.md](secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [user-blocker-signaling-detail.md](user-blocker-signaling-detail.md) | Categories + anti-patterns signaler |
 | [wsl-kernels-detail.md](wsl-kernels-detail.md) | Details WSL kernels |
-| [integration-roadmap.md](integration-roadmap.md) | Roadmap integration |
+| [integration-roadmap.md](_archives/integration-roadmap.md) | Roadmap integration |
 | [claude-code-config.md](claude-code-config.md) | Agents, skills, rules, model selection |
 
 ## Infrastructure et agents
@@ -67,7 +67,7 @@ Ces fichiers fournissent des details complementaires au CLAUDE.md principal.
 |---------|-------------|
 | [cluster-agents.md](cluster-agents.md) | Machines cluster, GPU topology |
 | [teaching-context.md](teaching-context.md) | Calendrier, scope EPITA-IS, agents par ecole |
-| [env-audit-cluster-2026-05-10.md](env-audit-cluster-2026-05-10.md) | Audit environnements cluster |
+| [env-audit-cluster-2026-05-10.md](_archives/env-audit-cluster-2026-05-10.md) | Audit environnements cluster |
 
 ## Grading / Notation
 
@@ -89,21 +89,21 @@ Documentation detailee de l'infrastructure GenAI (ComfyUI, Docker, modeles locau
 | Fichier | Description |
 |---------|-------------|
 | [genai-services.md](genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
-| [genai/README.md](genai/README.md) | Index services GenAI |
-| [genai/user-guide.md](genai/user-guide.md) | Guide utilisateur |
-| [genai/architecture.md](genai/architecture.md) | Architecture GenAI |
-| [genai/deployment-guide.md](genai/deployment-guide.md) | Guide deploiement |
-| [genai/docker-orchestration.md](genai/docker-orchestration.md) | Orchestration Docker |
-| [genai/docker-specs.md](genai/docker-specs.md) | Specs Docker |
-| [genai/environment-configurations.md](genai/environment-configurations.md) | Configs environnement |
-| [genai/troubleshooting.md](genai/troubleshooting.md) | Resolution problems |
-| [genai/infrastructure-tests.md](genai/infrastructure-tests.md) | Tests infrastructure |
-| [genai/development-standards.md](genai/development-standards.md) | Standards developpement |
-| [genai/docker-lifecycle-management.md](genai/docker-lifecycle-management.md) | Gestion cycle de vie Docker |
-| [genai/ecosystem-readme.md](genai/ecosystem-readme.md) | Ecosystem GenAI |
-| [genai/integration-procedures.md](genai/integration-procedures.md) | Procedures integration |
-| [genai/phase2-templates.md](genai/phase2-templates.md) | Templates phase 2 |
-| [genai/powershell-scripts.md](genai/powershell-scripts.md) | Scripts PowerShell |
+| [genai/README.md](_archives/genai/README.md) | Index services GenAI |
+| [genai/user-guide.md](_archives/genai/user-guide.md) | Guide utilisateur |
+| [genai/architecture.md](_archives/genai/architecture.md) | Architecture GenAI |
+| [genai/deployment-guide.md](_archives/genai/deployment-guide.md) | Guide deploiement |
+| [genai/docker-orchestration.md](_archives/genai/docker-orchestration.md) | Orchestration Docker |
+| [genai/docker-specs.md](_archives/genai/docker-specs.md) | Specs Docker |
+| [genai/environment-configurations.md](_archives/genai/environment-configurations.md) | Configs environnement |
+| [genai/troubleshooting.md](_archives/genai/troubleshooting.md) | Resolution problems |
+| [genai/infrastructure-tests.md](_archives/genai/infrastructure-tests.md) | Tests infrastructure |
+| [genai/development-standards.md](_archives/genai/development-standards.md) | Standards developpement |
+| [genai/docker-lifecycle-management.md](_archives/genai/docker-lifecycle-management.md) | Gestion cycle de vie Docker |
+| [genai/ecosystem-readme.md](_archives/genai/ecosystem-readme.md) | Ecosystem GenAI |
+| [genai/integration-procedures.md](_archives/genai/integration-procedures.md) | Procedures integration |
+| [genai/phase2-templates.md](_archives/genai/phase2-templates.md) | Templates phase 2 |
+| [genai/powershell-scripts.md](_archives/genai/powershell-scripts.md) | Scripts PowerShell |
 
 ## Lean (docs/lean/)
 
@@ -152,25 +152,25 @@ Ces documents sont conserves pour reference mais ne sont plus actifs.
 
 | Fichier | Description |
 |---------|-------------|
-| [01-cartographie-initiale.md](01-cartographie-initiale.md) | Cartographie initiale projet |
-| [02-etude-adk-deepmind.md](02-etude-adk-deepmind.md) | Etude DeepMind ADK |
-| [03-plan-formation-datascience-agentique.md](03-plan-formation-datascience-agentique.md) | Plan formation data science agentique |
-| [GROTHENDIECK_MATHLIB_MAP.md](GROTHENDIECK_MATHLIB_MAP.md) | Map Mathlib Grothendieck |
-| [H7_P2_DOCKER_ERROR_CATALOG.md](H7_P2_DOCKER_ERROR_CATALOG.md) | Catalog erreurs Docker H7/P2 |
-| [NOTEBOOK_ENV_COVERAGE.md](NOTEBOOK_ENV_COVERAGE.md) | Couverture environnements notebooks |
-| [REVERSE_PROXY_CIRCUIT.md](REVERSE_PROXY_CIRCUIT.md) | Reverse proxy circuit |
+| [01-cartographie-initiale.md](_archives/01-cartographie-initiale.md) | Cartographie initiale projet |
+| [02-etude-adk-deepmind.md](_archives/02-etude-adk-deepmind.md) | Etude DeepMind ADK |
+| [03-plan-formation-datascience-agentique.md](_archives/03-plan-formation-datascience-agentique.md) | Plan formation data science agentique |
+| [GROTHENDIECK_MATHLIB_MAP.md](_archives/GROTHENDIECK_MATHLIB_MAP.md) | Map Mathlib Grothendieck |
+| [H7_P2_DOCKER_ERROR_CATALOG.md](_archives/H7_P2_DOCKER_ERROR_CATALOG.md) | Catalog erreurs Docker H7/P2 |
+| [NOTEBOOK_ENV_COVERAGE.md](_archives/NOTEBOOK_ENV_COVERAGE.md) | Couverture environnements notebooks |
+| [REVERSE_PROXY_CIRCUIT.md](_archives/REVERSE_PROXY_CIRCUIT.md) | Reverse proxy circuit |
 | [STABLE_SNAPSHOT.md](STABLE_SNAPSHOT.md) | Stable snapshot |
-| [epf-universalisation-design.md](epf-universalisation-design.md) | Design universalisation EPF |
-| [epic-1028-audiobook-postmortem.md](epic-1028-audiobook-postmortem.md) | Postmortem audiobook |
-| [dette-branches-audit-2026-05-27.md](dette-branches-audit-2026-05-27.md) | Dette branches audit |
-| [genai-images-mission-complete.md](genai-images-mission-complete.md) | Mission complete images GenAI |
-| [genai-services-inventory-2026-05.md](genai-services-inventory-2026-05.md) | Inventory services GenAI mai 2026 |
-| [genai-stack-audit-2026-05-10.md](genai-stack-audit-2026-05-10.md) | Audit stack GenAI |
-| [qc-league-ece.md](qc-league-ece.md) | League ECE QuantConnect |
-| [qc-stabilization-phase2.md](qc-stabilization-phase2.md) | Stabilisation QC phase 2 |
+| [epf-universalisation-design.md](_archives/epf-universalisation-design.md) | Design universalisation EPF |
+| [epic-1028-audiobook-postmortem.md](_archives/epic-1028-audiobook-postmortem.md) | Postmortem audiobook |
+| [dette-branches-audit-2026-05-27.md](_archives/dette-branches-audit-2026-05-27.md) | Dette branches audit |
+| [genai-images-mission-complete.md](_archives/genai-images-mission-complete.md) | Mission complete images GenAI |
+| [genai-services-inventory-2026-05.md](_archives/genai-services-inventory-2026-05.md) | Inventory services GenAI mai 2026 |
+| [genai-stack-audit-2026-05-10.md](_archives/genai-stack-audit-2026-05-10.md) | Audit stack GenAI |
+| [qc-league-ece.md](_archives/qc-league-ece.md) | League ECE QuantConnect |
+| [qc-stabilization-phase2.md](_archives/qc-stabilization-phase2.md) | Stabilisation QC phase 2 |
 | [qc-strategies-status.md](qc-strategies-status.md) | Status strategies QuantConnect |
-| [slides-refonte-procedure.md](slides-refonte-procedure.md) | Procedure refonte slides |
-| [stabilization-phase1-matrix.md](stabilization-phase1-matrix.md) | Matrice stabilization phase 1 |
+| [slides-refonte-procedure.md](_archives/slides-refonte-procedure.md) | Procedure refonte slides |
+| [stabilization-phase1-matrix.md](_archives/stabilization-phase1-matrix.md) | Matrice stabilization phase 1 |
 
 ## Carte rapide
 

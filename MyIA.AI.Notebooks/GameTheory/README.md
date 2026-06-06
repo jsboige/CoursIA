@@ -369,7 +369,7 @@ Le premier demarrage du kernel Lean 4 via WSL peut prendre 30-60 secondes (cold 
 
 1. Verifiez que WSL Ubuntu est operationnel : `wsl -d Ubuntu -- echo OK`
 2. Verifiez le wrapper : `wsl -d Ubuntu -- test -f ~/.lean4-kernel-wrapper.py && echo OK`
-3. Relancez le kernel. Si ca persiste, voir [wsl-kernels.md](../../docs/wsl-kernels.md) pour le diagnostic complet.
+3. Relancez le kernel. Si ca persiste, voir [wsl-kernels.md](../../.claude/rules/wsl-kernels.md) pour le diagnostic complet.
 
 ### Nashpy retourne plusieurs equilibres
 

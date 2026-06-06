@@ -30,8 +30,8 @@ Le parcours va du premier pipeline (ML-1) jusqu'a une application complete : pre
 | # | Notebook | Contenu | Duree |
 |---|----------|---------|-------|
 | 1 | [ML-1-Introduction](ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base | 30-40 min |
-| 2 | [ML-2-Data&Features](ML-2-Data%26Features.ipynb) | IDataView, TextLoader, encodage | 40-50 min |
-| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement%26AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
+| 2 | [ML-2-Data&Features](ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | 40-50 min |
+| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
 | 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, metriques, PFI | 40-50 min |
 
 ### Fonctionnalités avancées (ML-5 à ML-7)
@@ -70,7 +70,7 @@ Le notebook 7 explore les systemes de recommandation — un domaine ou ML.NET br
 
 ### Phase 3 : TP Capstone (~1h)
 
-Le TP final combine tout ce qui a ete appris. Il commence par une regression simple avec ML.NET pour predire des ventes d'assurance, puis introduit la regression bayesienne via Infer.NET pour quantifier l'incertitude des predictions. Ce notebook est le seul de la serie a utiliser Infer.NET (Microsoft's probabilistic programming language pour .NET) et fait le lien avec la serie [Probas/Infer](../Probas/Infer/README.md).
+Le TP final combine tout ce qui a ete appris. Il commence par une regression simple avec ML.NET pour predire des ventes d'assurance, puis introduit la regression bayesienne via Infer.NET pour quantifier l'incertitude des predictions. Ce notebook est le seul de la serie a utiliser Infer.NET (Microsoft's probabilistic programming language pour .NET) et fait le lien avec la serie [Probas/Infer](../../Probas/Infer/README.md).
 
 ## Exemples concrets
 
@@ -347,13 +347,13 @@ Voir la licence du repository principal.
 
 | Serie | Lien | Connection |
 |-------|------|------------|
-| [Probas/Infer](../Probas/Infer/README.md) | Regression bayesienne | Le TP capstone utilise Infer.NET, le meme moteur probabiliste de la serie Probas |
-| [Search](../Search/README.md) | Optimisation | L'AutoML (ML-3) et la detection de saisonnalite (ML-5) utilisent des techniques de recherche et optimisation |
-| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | Les modeles de prevision de series temporelles (ML-5) s'appliquent directement aux strategies de trading |
-| [GenAI](../GenAI/README.md) | IA generative | Les modeles ONNX (ML-6) servent a deployer des LLMs et modeles NLP (BERT, Whisper) via ONNX Runtime dans .NET |
+| [Probas/Infer](../../Probas/Infer/README.md) | Regression bayesienne | Le TP capstone utilise Infer.NET, le meme moteur probabiliste de la serie Probas |
+| [Search](../../Search/README.md) | Optimisation | L'AutoML (ML-3) et la detection de saisonnalite (ML-5) utilisent des techniques de recherche et optimisation |
+| [QuantConnect](../../QuantConnect/README.md) | Trading algorithmique | Les modeles de prevision de series temporelles (ML-5) s'appliquent directement aux strategies de trading |
+| [GenAI](../../GenAI/README.md) | IA generative | Les modeles ONNX (ML-6) servent a deployer des LLMs et modeles NLP (BERT, Whisper) via ONNX Runtime dans .NET |
 | [DataScienceWithAgents](../DataScienceWithAgents/README.md) | Python ML | Les memes concepts ML.NET existent en Python via scikit-learn dans le track DataScienceWithAgents |
 
 ## Navigation
 
 - [<- Notebooks ML](../README.md)
-- [ML.NET ->](ML.Net/README.md) | [DataScienceWithAgents ->](../DataScienceWithAgents/README.md)
+- [DataScienceWithAgents ->](../DataScienceWithAgents/README.md)

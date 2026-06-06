@@ -289,6 +289,89 @@ Cette serie pedagogique a ete creee dans le cadre du cycle GenAI CoursIA,
 en complement des ateliers Vibe-Coding (Claude Code et Roo Code).
 Elle utilise les tests E2E reels du projet Open WebUI comme base pedagogique.
 
+## FAQ
+
+### `npm install` echoue ou Playwright ne trouve pas Chromium
+
+Playwright (utilise dans les modules [01](01-decouverte/) a [05](05-multi-tenant-ci/)) requiert Node.js 18+ et telecharge Chromium (~200 Mo). Si erreur :
+
+```bash
+# Verifier Node.js
+node --version  # doit afficher v18+
+
+# Installer Playwright browsers
+npx playwright install chromium
+
+# Si erreur de permissions (Linux/Mac)
+npx playwright install-deps chromium
+```
+
+Si vous etes derriere un proxy ou firewall, telecharger manuellement : `PLAYWRIGHT_DOWNLOAD_HOST=https://proxy.example.com npx playwright install chromium`. Le module [01](01-decouverte/) couvre la configuration pas-a-pas.
+
+### Les tests echouent avec "Timeout exceeded" sur le chat
+
+Le module [03](03-chat-streaming/) teste le chat avec un LLM reel via streaming. Les timeouts sont elonges (30-60s) mais les LLM lents ou surcharges peuvent les depasser. Mitigation :
+
+```typescript
+// Augmenter le timeout pour un test specifique
+test('chat reponse', { tag: '@slow' }, async ({ page }) => {
+  test.setTimeout(120_000); // 2 minutes
+  // ...
+});
+```
+
+- Verifier que l'instance OWUI est accessible : `curl $OWUI_URL/api/v1/models`
+- Le streaming utilise `page.waitForFunction()` — si le modele ne stream pas, le poll tourne en boucle.
+- Le module [03](03-chat-streaming/) explique les strategies d'assertion sur du contenu non-deterministe.
+
+### Peut-on utiliser cette serie sans instance Open WebUI ?
+
+Partiellement. Les modules [01](01-decouverte/) (navigation, selecteurs) et [05](05-multi-tenant-ci/) (API testing) fonctionnent sur toute application web. Les modules [02](02-navigation-authentification/) a [04](04-rag-tools-avances/) sont specifiques a OWUI (auth, chat, RAG).
+
+Pour une instance locale rapide :
+
+```bash
+# OWUI avec modeles Ollama (local, pas de cle API)
+docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway ghcr.io/open-webui/open-webui:main
+
+# Ou avec vLLM (GPU requis)
+# Configurer OWUI_LOCAL_MODEL dans .env
+```
+
+Le module [01](01-decouverte/) explique comment pointer Playwright vers votre instance via `.env`.
+
+### Les tests du module 04 (RAG/MCP) sont tous skip
+
+Le module [04](04-rag-tools-avances/) teste les Knowledge Bases, les outils MCP et les channels. Les 5 skips dans les resultats de validation viennent de fonctionnalites non configurees sur l'instance OWUI :
+
+- **Knowledge Bases** : necessitent un upload prealable de documents via l'interface OWUI.
+- **Outils MCP** : le serveur MCP doit etre configure dans les parametres OWUI (Admin > Tools).
+- **Channels** : fonctionnalite collaborative qui requiert plusieurs utilisateurs actifs.
+
+Pour activer ces tests, configurer les fonctionnalites correspondantes dans OWUI et decommenter les `test.skip()` dans [04-rag-tools.spec.ts](04-rag-tools-avances/04-rag-tools.spec.ts).
+
+### Quelle difference entre cette serie et les ateliers Vibe-Coding ?
+
+| Critere | Playwright-OWUI | Vibe-Coding |
+|---------|-----------------|-------------|
+| **Focus** | Tests E2E automatises | Developpement assiste par IA |
+| **Langage** | TypeScript (.spec.ts) | Naturel (prompt engineering) |
+| **Outil** | Playwright | Claude Code / Roo Code |
+| **Public** | Testeurs QA, dev backend | Developeurs, debutants |
+| **Non-determinisme** | Gere (streaming, LLM) | N/A |
+
+Les deux series sont complementaires : Vibe-Coding ([README](../Vibe-Coding/README.md)) couvre le developpement assiste par IA, tandis que Playwright-OWUI couvre la validation automatisee des interfaces generees.
+
+### Comment adapter les tests a une autre application OWUI (version ou config differente) ?
+
+Les selecteurs CSS et les patterns d'auth sont stables entre OWUI v0.8.x et v0.9.x. Si votre instance differe :
+
+1. **Selecteurs** : verifier avec le mode debug (`npx playwright test --debug`) que les selecteurs dans [helpers/selectors.ts](helpers/selectors.ts) correspondent a votre version.
+2. **Labels multilingues** : OWUI v0.9+ a change certains labels. Adapter dans les tests ou utiliser `getByRole()` (plus robuste que `getByText()`).
+3. **Nouvelles fonctionnalites** : OWUI v0.9.1 ajoute Calendar, Automations, Desktop app. Ce sont de bons candidats pour des exercices bonus (voir `WHATS-NEW-v0.9.1.md`).
+
+Le module [01](01-decouverte/) enseigne les selecteurs robustes (`getByRole`, `getByTestId`) qui resistent aux changements d'UI.
+
 ---
 
 *Version 1.1.0 — Avril 2026 (revalidee sur OWUI v0.9.1)*

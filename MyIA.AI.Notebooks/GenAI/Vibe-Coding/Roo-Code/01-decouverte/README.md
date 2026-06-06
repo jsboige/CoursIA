@@ -58,4 +58,4 @@ Une fois que vous avez exploré ces démos de base, vous pouvez passer aux secti
 - [04-creation-contenu](../04-creation-contenu/) : Explorez les capacités de création de contenu
 - [05-projets-avances](../05-projets-avances/) : Plongez dans des projets plus complexes et avancés
 
-> **Note sur l'intégration**: Ce projet fait partie d'un dépôt plus large. Pour plus d'informations sur l'intégration, consultez le fichier [README-integration.md](../README-integration.md) à la racine du sous-dossier.
+> **Note sur l'intégration**: Ce projet fait partie d'un dépôt plus large. Pour plus d'informations sur l'intégration, consultez le fichier [README.md](../README.md) à la racine du sous-dossier.
