@@ -586,8 +586,7 @@ $null
 *_model.pt
 **/checkpoints/**/*.pt
 **/checkpoints/**/*.pth
-# EXCEPTION: Sudoku validated checkpoints
-!sudoku_models/checkpoints/
+# Sudoku checkpoints live in MyIA.AI.Notebooks/Sudoku/sudoku_models/checkpoints/ only
 
 # PyTorch extended model formats
 **/checkpoints/**/*.ckpt
@@ -852,7 +851,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
 /output_analytique/
 
 # Root-level artifacts from notebooks/scripts run with wrong CWD (canonical copies live in series dirs)
-# NOTE: /sudoku_models/ intentionally NOT ignored — it carries live in-flight ai-01 training WIP (Blocker A, not user-signed-off)
+/sudoku_models/
 /data/pizza_test.owl
 /results/
 /tmp_*.py
