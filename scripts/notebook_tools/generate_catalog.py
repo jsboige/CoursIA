@@ -654,23 +654,25 @@ def _merge_curated_fields(
         if not main_entry:
             continue
 
-        # Check if current branch has stale/empty values for these fields
-        needs_merge = False
+        cur_date = entry.get("last_validation", "") or ""
+        main_date = main_entry.get("last_validation", "") or ""
+        # origin/main is authoritative for curated git history. A branch behind main
+        # computes an OLDER (or empty) last_validation for notebooks it did not touch,
+        # because its `git log` is missing the commits that landed on main after the
+        # branch diverged. Writing that out silently reverts main's curated metadata
+        # on merge (stale-catalog-silent-revert). Take main's whole triple whenever
+        # main's date is more recent, or backfill fields the branch left empty.
+        # ISO YYYY-MM-DD compares lexicographically; a genuine re-validation committed
+        # on the branch carries the newest date, so it still wins.
+        prefer_main = bool(main_date) and (not cur_date or main_date > cur_date)
+        changed = False
         for field in CURATED_GIT_FIELDS:
-            current_val = entry.get(field, "")
             main_val = main_entry.get(field, "")
-            # Merge if current is empty/missing and main has data
-            if (not current_val or current_val == "") and main_val:
-                needs_merge = True
-                break
-
-        if needs_merge:
-            for field in CURATED_GIT_FIELDS:
-                current_val = entry.get(field, "")
-                main_val = main_entry.get(field, "")
-                # Prefer non-empty value from main when current is empty
-                if (not current_val or current_val == "") and main_val:
-                    entry[field] = main_val
+            cur_val = entry.get(field, "")
+            if main_val and (prefer_main or not cur_val) and cur_val != main_val:
+                entry[field] = main_val
+                changed = True
+        if changed:
             merged_count += 1
 
     if merged_count:
@@ -868,6 +870,14 @@ def main():
     # touched on the current branch (prevents stale-branch blanching)
     main_catalog = _load_main_catalog()
     entries = _merge_curated_fields(entries, main_catalog)
+
+    # Deterministic ordering by path. Filesystem iteration order (iterdir/rglob)
+    # differs between the Linux CI runner that owns main's catalog and the Windows
+    # agent machines that regenerate on feature branches, which otherwise produces
+    # massive spurious reorder diffs (~1300 lines) on every regen even when no entry
+    # changed. Sorting by path makes the output identical across platforms = the core
+    # of idempotent regeneration.
+    entries.sort(key=lambda e: e.get("path", ""))
 
     if args.status:
         entries = [e for e in entries if e["status"] == args.status]
