@@ -9,7 +9,7 @@ maturity: PRODUCTION=84, BETA=26, ALPHA=5, TEMPLATE=3, DRAFT=2
 
 Ce parcours vous forme a la maitrise de l'IA generative dans toute sa diversite : generer des images, synthetiser la voix, composer de la musique, produire des videos, orchestrer des agents autonomes, et deployer des applications en production. Chaque modalite suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modeles de production.
 
-**116 notebooks** | **11 sous-domaines** | **~90-100h** | **95%+ valides**
+**120+ notebooks** | **11 sous-domaines** | **~90-100h** | **95%+ valides**
 
 ## Pourquoi ce parcours ?
 
