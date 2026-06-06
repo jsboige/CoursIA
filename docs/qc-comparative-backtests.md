@@ -256,7 +256,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 2. ~~**Run aligned baselines for AllWeather/SectorMomentum/EMA-Cross-Stocks/MomentumStrategy**~~ — Done, all 4 re-backtested via QC Cloud
 3. ~~**Student strategies (ESGF #1405)**: DualMomentum, RiskParity, ValueFactor, OptionWheel backtestees~~ — Done, 4/6 valides
 4. ~~**Transaction cost sensitivity analysis**: Estimated turnover and cost impact for all 10 research baselines~~ — Done (See #1407)
-5. **Transaction cost re-backtest**: Add `SetFeeModel` to high-sensitivity strategies + fee sweep (0x/1x/2x)
+5. ~~**Transaction cost re-backtest**: Add `SetBrokerageModel` + configurable brokerage parameter~~ — Done, #2575 + fee sweep (See #2471)
 6. **Cross-seed validation**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
 7. **Edge vs σ**: Compute for all strategies vs B&H baseline
 
@@ -271,15 +271,16 @@ Source code analysis of all 10 research projects. Zero strategies have explicitl
 | Project | QC ID | `SetFeeModel` | `SetBrokerageModel` | Default Fees |
 |---------|-------|---------------|----------------------|--------------|
 | TrendFollowing | 28797562 | NONE | NONE | QC Default (equity) |
-| EMA-Cross-Stocks | 28789946 | NONE | NONE | QC Default (equity) |
-| MomentumStrategy | 28657837 | NONE | NONE | QC Default (equity) |
-| AllWeather | 28657833 | NONE | NONE | QC Default (equity) |
-| VolTarget-Momentum | 30784745 | NONE | NONE | QC Default (equity) |
+| EMA-Cross-Stocks | 28789946 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
+| MomentumStrategy | 28657837 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
+| AllWeather | 28657833 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
+| VolTarget-Momentum | 30784745 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
 | Crypto-MultiCanal | 30750734 | NONE | `BINANCE, CASH` | Binance schedule (0.1%) |
-| Portfolio-IBKR-Binance | 31717642 | NONE | NONE | QC Default (equity) |
+| Portfolio-IBKR-Binance | 31717642 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
 | MomentumRegime | 31243821 | NONE | `IBKR, MARGIN` | IBKR tiered |
 | TrendStocks-Alpha | 28885507 | NONE | `IBKR, MARGIN` | IBKR tiered |
 | EMA-Cross-Alpha | 28885488 | NONE | `IBKR, MARGIN` | IBKR tiered |
+| ForexCarry | 28657908 | NONE | `OANDA, MARGIN` (#2575) | OANDA schedule |
 
 ### Turnover Estimation
 
