@@ -18,6 +18,21 @@ from .state import ProofState, TacticAttempt, SorryContext
 from .trace import TraceLogger
 from .knowledge import ProofKnowledgeBase
 
+# Regex to detect standalone `axiom` declarations in Lean 4 source.
+# Matches lines like `axiom foo`, `axiom bar : Prop`, `axiom baz (n : Nat) : ...`
+# but NOT lines inside comments (--) or strings, and NOT `axiom` in prose.
+_AXIOM_DECL_RE = re.compile(r'^\s*axiom\s+\w', re.MULTILINE)
+
+
+def _is_axiom_declaration(line: str) -> bool:
+    """Check if a single line is a standalone axiom declaration."""
+    return bool(_AXIOM_DECL_RE.match(line))
+
+
+def _count_axiom_declarations(content: str) -> int:
+    """Count standalone axiom declarations in Lean source content."""
+    return sum(1 for line in content.splitlines() if _is_axiom_declaration(line))
+
 
 def _count_sorries_from_build_output(raw_output: str) -> int:
     """Count 'uses sorry' warnings in lake build output.
@@ -617,6 +632,14 @@ class TacticTools:
             raw = Path(filepath).read_text(encoding="utf-8")
             self._original_file_size = len(raw)
             self._original_content = raw
+        # Axiom guard: count standalone `axiom` declarations in the original file.
+        # The prover can game sorry_guard by replacing `lemma foo := by sorry` with
+        # `axiom foo` (sorry count drops, build passes, but proof is lost).
+        # This baseline lets us block any edit that introduces new axioms.
+        self._original_axiom_count: int = (
+            sum(1 for line in (self._original_content or "").splitlines()
+                if _is_axiom_declaration(line))
+        )
 
         self._heuristics = {
             "equality": ["rfl", "exact", "simp", "ring", "omega", "aesop"],
@@ -1141,6 +1164,27 @@ class TacticTools:
 
             sorry_count = new_file_content.count("sorry")
 
+            # Axiom guard: block edits that introduce new `axiom` declarations.
+            # The prover can game sorry_guard by replacing `lemma foo := by sorry`
+            # with `axiom foo` (sorry count drops, build passes, proof lost).
+            new_axiom_count = _count_axiom_declarations(new_file_content)
+            if new_axiom_count > self._original_axiom_count:
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="axiom_guard",
+                        content=f"BLOCKED file_replace_lines: axioms {self._original_axiom_count}->{new_axiom_count}. "
+                                f"Replacing sorry with axiom is not a valid proof. REVERTING.",
+                        duration_s=0.01,
+                    )
+                return json.dumps({
+                    "error": f"BLOCKED by axiom guard: {new_axiom_count} axioms > original {self._original_axiom_count}. "
+                             f"Replacing `lemma ... := by sorry` with `axiom ...` is not a valid proof. "
+                             f"Decompose the goal with `have` sub-goals instead.",
+                    "replaced_lines": f"{start}-{end}",
+                    "axiom_count": new_axiom_count,
+                    "original_axiom_count": self._original_axiom_count,
+                }, ensure_ascii=False)
+
             # Sorry guard: block only if growth EXCEEDS the decomposition
             # budget. Replacing 1 sorry by N sub-sorries that all compile is
             # structural progress (the agent breaks down a hard goal). Block
@@ -1398,6 +1442,25 @@ class TacticTools:
                                   ensure_ascii=False)
 
             sorry_count = new_content.count("sorry")
+
+            # Axiom guard: block edits that introduce new `axiom` declarations.
+            new_axiom_count = _count_axiom_declarations(new_content)
+            if new_axiom_count > self._original_axiom_count:
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="axiom_guard",
+                        content=f"BLOCKED file_replace_sorry: axioms {self._original_axiom_count}->{new_axiom_count}. "
+                                f"Replacing sorry with axiom is not a valid proof. REVERTING.",
+                        duration_s=0.01,
+                    )
+                return json.dumps({
+                    "error": f"BLOCKED by axiom guard: {new_axiom_count} axioms > original {self._original_axiom_count}. "
+                             f"Replacing `lemma ... := by sorry` with `axiom ...` is not a valid proof. "
+                             f"Decompose the goal with `have` sub-goals instead.",
+                    "replaced": old_line.strip(),
+                    "axiom_count": new_axiom_count,
+                    "original_axiom_count": self._original_axiom_count,
+                }, ensure_ascii=False)
 
             # Sorry guard: same semantics as file_replace_lines. Allow up to
             # `_decomposition_budget` extra sorries on top of the original
