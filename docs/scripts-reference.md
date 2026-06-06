@@ -23,6 +23,41 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 | `execute_qcpy_docker.py`, `qc_quantbook_execute.py` | Exécution QuantConnect (Quantbooks via Docker/QC Cloud) |
 | `_exec_bdd_csharp.py` | Exécution C# BDD interne |
 
+#### `notebook_tools.py execute` — Options avancées
+
+```bash
+python scripts/notebook_tools/notebook_tools.py execute <target> [options]
+```
+
+| Option | Description | Cas d'usage |
+|--------|-------------|-------------|
+| `--kernel <name>` | Force un kernel specifique (ex. `python3`, `.net-csharp`, `python3 (PyMC)`) | Cibler un env conda precis quand le kernel par defaut manque des deps |
+| `--cwd <path>` | Execute depuis ce repertoire au lieu du dossier parent du notebook | Executer dans un worktree de curation, ou isoler `load_dotenv()` |
+| `--env KEY=VAL` | Injecte une variable d'environnement (repeter pour plusieurs) | `--env BATCH_MODE=true`, overrides ponctuels |
+| `--scrub-keys` | Retire les cles API LLM (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.) du sous-processus | Force le chemin mock deterministe pour les notebooks LLM (SC-11, GenAI) sans appel API payant |
+| `--batch-mode` | Active BATCH_MODE=true (env + param Papermill) | Notebooks interactifs en validation non-interactive |
+| `--cell-by-cell` | Execution cellule par cellule (.NET/Lean) | Kernels persistants |
+| `--timeout N` | Timeout par notebook en secondes (defaut: 300) | Notebooks longs |
+
+**Cookbook — cas d'usage courants** :
+
+```bash
+# Re-exec validation standard (chemin mock, pas d'appel API)
+python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/SymbolicAI/SmartContracts/SC-11-LLM-Assisted.ipynb --scrub-keys
+
+# Re-exec dans un worktree de curation
+python scripts/notebook_tools/notebook_tools.py execute /tmp/worktree/SC-11.ipynb --cwd /tmp/worktree
+
+# Forcer un kernel conda specifique
+python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/Probas/PyMC/ --kernel "python3 (PyMC)"
+
+# Re-exec avec variables d'env personnalisees
+python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/ --env BATCH_MODE=true --env MOCK_RESPONSES=true
+
+# Re-exec batch d'une famille complete, mode mock
+python scripts/notebook_tools/notebook_tools.py execute SmartContracts --scrub-keys --batch-mode
+```
+
 ### Catalogue (anti-drift)
 | Script | Usage |
 |--------|-------|

@@ -30,4 +30,4 @@ A la fin de ce lab, vous saurez :
 
 ## Navigation
 
-[<- Index Python Agents](../../README.md) | [Lab 2 <<](../Lab2-RFP-Analysis/README.md) | [>> Lab 4](../../Day3/Labs/Lab4-DataWrangling/README.md)
+[<- Index Python Agents](../../../../README.md) | [Lab 2 <<](../Lab2-RFP-Analysis/README.md) | [>> Lab 4](../../../Day3/Labs/Lab4-DataWrangling/README.md)
