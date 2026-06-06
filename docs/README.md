@@ -81,6 +81,7 @@ Ces fichiers fournissent des details complementaires au CLAUDE.md principal.
 | Fichier | Description |
 |---------|-------------|
 | [quantconnect.md](quantconnect.md) | Backtests, structure, livre reference |
+| [qc-comparative-backtests.md](qc-comparative-backtests.md) | Analyse comparative backtests multi-strategies |
 
 ## GenAI (docs/genai/)
 
