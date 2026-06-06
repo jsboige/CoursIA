@@ -412,6 +412,32 @@ Voir [SymbolicAI/SmartContracts/README.md](../SymbolicAI/SmartContracts/README.m
 
 [La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de representation, certification A/B/C).
 
+## FAQ
+
+### J'ai un Windows, est-ce que je peux suivre toute la serie ?
+
+Oui. Les notebooks 1-12 et 14-16 tournent en Python natif sur Windows (Nashpy, numpy, matplotlib). Les notebooks 13 (CFR/OpenSpiel) et 17 (Multi-Agent RL) necessitent WSL car OpenSpiel ne compile pas nativement sous Windows. Les side tracks Lean (2b, 4b, 8b, 15b) necessitent aussi WSL pour le kernel `lean4-wsl`. Les scripts d'installation sont dans `scripts/` (voir section Installation).
+
+### Quel est le pre-requis mathematique minimum ?
+
+Algebre lineaire de base (multiplication de matrices, vecteurs) et probabilites (esperance, loi uniforme). Les concepts de theorie des jeux (Nash, minimax, Shapley) sont introduits progressivement depuis zero. Aucune prerequis en theorie des jeux n'est necessaire.
+
+### Faut-il faire les notebooks Lean (side tracks b) ?
+
+Non. Les side tracks Lean sont optionnels et independants. Ils sont destines aux etudiants qui veulent comprendre ce que signifie "prouver" un resultat mathematique dans un assistant de preuve. Le fil principal (Python) suffit pour maitriser les concepts. Si vous n'avez jamais touche a Lean, commencez par la serie [SymbolicAI/Lean](../SymbolicAI/Lean/README.md).
+
+### Quelle est la difference entre Nash pur et Nash mixte ?
+
+Un equilibre de Nash **pur** est un choix deterministe (chaque joueur choisit une seule strategie). Un equilibre de Nash **mixte** autorise les probabilites (chaque joueur randomise entre plusieurs strategies avec certaines probabilites). Le notebook 4 (NashEquilibrium) couvre les deux cas et montre que tout jeu fini a au moins un equilibre de Nash mixte (theoreme de Nash, 1951).
+
+### OpenSpiel ne s'installe pas, que faire ?
+
+OpenSpiel requiert un environnement Linux. Sous Windows, utilisez WSL (Windows Subsystem for Linux) avec le kernel `gametheory-wsl`. Seuls les notebooks 13 et 17 dependent d'OpenSpiel. Tous les autres fonctionnent avec Nashpy seul (Python natif Windows).
+
+### Je suis bloque sur un exercice Lean, ou trouver de l'aide ?
+
+Consultez d'abord le notebook [Lean-1-Setup](../SymbolicAI/Lean/Lean-1-Setup.ipynb) pour verifier votre environnement. La documentation Lean 4 officielle ([Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/)) est la reference principale. Les exercices Lean de cette serie sont conçus pour etre accessibles avec les tactiques introduites dans les notebooks ; il n'est pas necessaire de connaitre Mathlib en detail.
+
 ## Licence
 
 Voir la licence du repository principal.

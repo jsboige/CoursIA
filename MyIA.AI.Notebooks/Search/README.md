@@ -355,6 +355,34 @@ Search/
 
 ---
 
+## FAQ
+
+### Quelle est la difference entre recherche informee et non informee ?
+
+La recherche **non informee** (BFS, DFS, UCS, IDDFS) explore l'espace sans connaissance du probleme : elle ne sait pas si un noeud est "plus proche" de la solution. La recherche **informee** (A*, Greedy, IDA*) utilise une **fonction heuristique** h(n) pour estimer le cout restant et guider l'exploration. A* combine le cout deja parcouru g(n) et l'heuristique h(n) ; si h est admissible, A* est optimal. Couvert dans Search-2 (uninformed) et Search-3 (informed).
+
+### J'ai un probleme d'optimisation, quelle technique choisir ?
+
+Depend de la structure du probleme :
+- **Contraintes discretes** (horaires, coloriage, sudoku) -> CSP (Part 2), OR-Tools
+- **Espace continu** (parametres, design) -> Hill Climbing, Simulated Annealing (Search-4)
+- **Probleme combinatoire massif** (routing, scheduling) -> metaheuristiques (Search-5/11) ou CP-SAT (CSP-6)
+- **Pas de fonction objectif claire** -> algorithmes evolutionnaires (Search-5) ou LLM+CSP (CSP-6)
+
+### OR-Tools est-il requis pour toute la serie ?
+
+Non. OR-Tools est necessaire uniquement pour les notebooks CSP (Part 2) et certaines applications. Les notebooks de la Partie 1 (Search-1 a Search-7) utilisent uniquement numpy et des implementations from-scratch. Les applications Python utilisent ortools, deap, ou des bibliotheques standard.
+
+### Quelle est la difference entre un algorithme de recherche et un CSP ?
+
+Un algorithme de recherche (BFS, A*) explore un espace d'etats en generant des successeurs. Un CSP (Constraint Satisfaction Problem) definit le probleme comme un ensemble de **variables**, de **domaines** et de **contraintes**, et le resout par **propagation** (reduction des domaines) puis **backtracking** si necessaire. Le CSP est souvent plus efficace car la propagation elimine des branches entieres avant de les explorer. Couvert dans CSP-1 et CSP-2.
+
+### Les notebooks C# sont-ils obligatoires ?
+
+Non. Les side tracks C# (Applications) sont optionnels. Le fil principal est entierement en Python. Les notebooks C# montrent des applications complementaires (.NET 9.0, dotnet-interactive).
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.

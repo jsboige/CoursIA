@@ -602,6 +602,34 @@ Ces connexions entre series sont exploitees dans le curriculum EPITA IA Symboliq
 
 ---
 
+## FAQ
+
+### Qu'est-ce que l'IA symbolique et pourquoi l'etudier a l'ere des LLMs ?
+
+L'IA symbolique repose sur la **manipulation explicite de symboles et de regles** (logique, ontologies, planification, contrats) plutot que sur l'apprentissage statistique. Les LLMs sont puissants mais opaques : ils ne garantissent pas la correction logique, ne peuvent pas verifier formellement un resultat, et hallucinent. L'IA symbolique apporte ce que les modeles statistiques ne fournissent pas : raisonnement **verifiable, explicable et certifie**. Les deux paradigmes sont complementaires — l'avenir est neuro-symbolique.
+
+### Quels notebooks puis-je faire sans Java/Lean/WSL ?
+
+La majorite des notebooks Python fonctionnent nativement sur Windows :
+- **Tweety** (1-9) : requiert JPype + JVM (auto-telecharge par le notebook 1)
+- **SemanticWeb** (1-6) : Python pur (rdflib, SPARQL)
+- **Planning** (1-5) : Python pur (Fast Downward telecharge auto)
+- **SmartContracts** (1-17) : Python pur + Foundry/Anvil (WSL pour Solidity)
+- **SymbolicLearning** (1-1) : Python pur
+- **Lean** (1-13) : requiert WSL + elan + kernel lean4-wsl
+
+### Quelle est la difference entre Tweety et Z3 ?
+
+**TweetyProject** est une bibliotheque Java pour la logique formelle (propositionnelle, FOL, modale, argumentation, revision de croyances). Elle est utilisee via JPype en Python. **Z3** (Microsoft Research) est un solveur SMT (Satisfiability Modulo Theories) qui automatise la resolution de problemes logiques complexes. Tweety est oriente enseignement (comprendre les semantiques), Z3 est oriente resolution (prouver/infirmer des proprietes). Les deux apparaissent dans GameTheory (Arrow/SAT) et Search (CSP).
+
+### Dois-je faire les notebooks Lean pour comprendre les autres series ?
+
+Non. Les notebooks Lean (1-13) forment un fil independant dedie a la **preuve formelle verifiee par machine**. Ils sont utilises dans GameTheory (preuve d'Arrow, Nash, Shapley) et dans les projets Lake (social_choice_lean, cooperative_games_lean). Si vous n'etes pas interesse par la formalisation mathematique, vous pouvez ignorer ce fil et suivre les notebooks Python/Tweety/SemanticWeb.
+
+### Comment installer l'environnement Tweety ?
+
+Ouvrez le notebook `Tweety-1-Setup.ipynb` : il telecharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
+
 ## Licence
 
 Les notebooks sont distribues sous licence MIT.
