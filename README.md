@@ -10,6 +10,8 @@ Les notebooks sont disponibles en Python, C# (.NET Interactive) et Lean 4. Chaqu
 
 ---
 
+> **Catalogue vivant** -- Pour l'inventaire exhaustif et a jour (comptes exacts par serie, statut READY/DEMO, maturite PRODUCTION/BETA), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**. Ce catalogue est regenere automatiquement chaque jour : il fait foi sur les chiffres, ce README en donne la vue d'ensemble pedagogique. Le depot compte plus de 500 notebooks repartis sur une douzaine de series.
+
 ## Commencer ici
 
 Vous avez clone le depot et vous ne savez pas par ou commencer ?
@@ -28,11 +30,12 @@ MyIA.AI.Notebooks/
   RL/              -> Reinforcement Learning (PPO, DQN, Stable Baselines3)
   Probas/          -> Programmation probabiliste (Infer.NET, Pyro)
   GameTheory/      -> Theorie des jeux, equilibres de Nash, mechanism design
-  IIT/             -> Theologie de l'information integree (Tononi, PyPhi)
+  IIT/             -> Theorie de l'information integree (Tononi, PyPhi)
   CaseStudies/     -> Etudes de cas interdisciplinaires
-  SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners)
-  GenAI/           -> IA generative (Image, Audio, Video, Texte, Semantic Kernel)
-  QuantConnect/    -> Trading algorithmique (27 notebooks pedag + strategies backtestees)
+  SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners, Symbolic Learning)
+  GenAI/           -> IA generative (Image, Audio, Video, Texte, Semantic Kernel) -- la plus grande serie
+  QuantConnect/    -> Trading algorithmique (notebooks pedagogiques + strategies backtestees + pipeline ML)
+  cross-series/    -> Applications transverses (matching-cv : data science multi-domaines)
 ```
 
 Pour un guide complet des parcours d'apprentissage, voir [docs/parcours/](docs/parcours/).
