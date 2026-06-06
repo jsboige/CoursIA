@@ -163,7 +163,7 @@ Python | [README detaille](MyIA.AI.Notebooks/GenAI/README.md)
 
 Peut-on appliquer les techniques d'IA aux marches financiers ? Cette serie repond a cette question en combinant le framework LEAN de QuantConnect avec des approches allant du momentum classique au deep learning.
 
-**Notebooks pedagogiques** (27 notebooks) -- Du cycle de vie d'un algorithme LEAN aux strategies ML/DL/RL/LLM, en passant par les options, futures, risk management et analyse de sentiment. Progression en cinq phases : fondations LEAN, univers et actifs, trading avance, algorithm framework, puis ML/DL/AI.
+**Notebooks pedagogiques** -- Du cycle de vie d'un algorithme LEAN aux strategies ML/DL/RL/LLM, en passant par les options, futures, risk management et analyse de sentiment. Progression en cinq phases : fondations LEAN, univers et actifs, trading avance, algorithm framework, puis ML/DL/AI.
 
 **Strategies backtestees** -- Strategies completes avec notebooks de recherche standalone (yfinance/pandas). Les approches vont du momentum multi-actifs aux modeles de facteurs Fama-French, en passant par les options couvertes et le mean reversion. Chaque strategie est accompagnee de son code source et de ses resultats de backtest.
 
