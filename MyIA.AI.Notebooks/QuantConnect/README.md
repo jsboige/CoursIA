@@ -372,6 +372,31 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ---
 
+## FAQ
+
+### Peut-on executer les notebooks localement sans compte QuantConnect ?
+
+Non. Les notebooks Python de cette serie utilisent `QuantBook()` qui necessite une connexion au cloud QuantConnect. Les notebooks C# (.NET) executent du code LEAN en local mais n'ont pas acces aux donnees de marche sans connexion QC. Creez un compte gratuit sur [quantconnect.com](https://www.quantconnect.com/) pour obtenir votre token API (variable `QC_API_TOKEN` dans `.env`).
+
+### Quelle est la difference entre un notebook Python et un projet C# ?
+
+Les **notebooks Python** (QC-Py-01 a QC-28) sont des explorations interactives avec `QuantBook()` : chargement de donnees, analyses, visualisations, prototypage rapide. Les **projets C#** sont des algorithmes complets (`QCAlgorithm`) destines au backtesting production dans l'IDE QuantConnect. Le workflow standard est : explorer en notebook Python -> implementer en C# ou Python projet.
+
+### Comment limiter le cout en heures de calcul ?
+
+- **Backtesting** : limiter la periode historique (2-3 ans suffit pour un prototype) et la frequence (Daily plutot que Minute)
+- **Notebooks** : utiliser `qb.history()` avec des dates precises plutot que charger l'historique complet
+- **Deep Learning** : les notebooks QC-22/23/24 sont CPU-optimized pour le free tier
+- **Rate limiting** : max 10 appels API/min entre tous les agents du cluster
+
+### Pourquoi utiliser LEAN plutot qu'un framework comme Backtrader ?
+
+LEAN est le moteur de production de QuantConnect : il gere les donnees corporates (splits, dividends, spinoffs), le slippage, les frais reels, le margin, et le live trading. Backtrader et Zipline sont d'excellents outils pedagogiques mais ne gerent pas ces aspects en production. Cette serie enseigne LEAN pour que les competences soient directement transferables au trading reel.
+
+### Qu'est-ce qu'un QuantBook et comment se differencie-t-il d'un algorithme ?
+
+`QuantBook` est l'API interactive de QuantConnect pour les notebooks Jupyter. Elle permet de charger des donnees, calculer des indicateurs, et analyser des resultats sans ecrire un algorithme complet. Un `QCAlgorithm` est la version production avec des callbacks (`OnData`, `OnEndOfDay`), un portefeuille, et un moteur d'execution. Les notebooks de cette serie utilisent `QuantBook` pour l'exploration ; les projets utilisent `QCAlgorithm` pour le backtesting.
+
 ## Free Tier vs Paid
 
 | Fonctionnalité | Free Tier | Paid (Team/Premium) |
@@ -413,31 +438,29 @@ Après completion de cette série, vous maîtriserez :
 
 ---
 
-## FAQ
+## Stratégies Vérifiées — Baselines Comparatives
 
-### Faut-il un compte QuantConnect pour utiliser cette serie ?
+Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/qc-comparative-backtests.md).
 
-Oui, mais le **free tier suffit**. Creer un compte sur [quantconnect.com](https://www.quantconnect.com/signup), creer un projet Python dans QC Lab, et copier un `main.py` depuis `projects/`. Les backtests sont gratuits (limites a 2 simultanes). Aucun capital reel necessaire — tout se passe en simulation.
+### Top 5 stratégies (Sharpe aligned, 2018-2025)
 
-### Quelle est la difference entre un notebook QC-Py et un projet `projects/` ?
+| # | Stratégie | Type | Sharpe | CAGR% | MaxDD% | PSR% |
+|---|-----------|------|--------|-------|--------|------|
+| 1 | TrendFollowing | IND | **1.072** | 23.2 | 9.3 | 81.8 |
+| 2 | EMA-Cross-Stocks | IND | **0.891** | 26.2 | 35.7 | 40.5 |
+| 3 | VolTarget-Momentum | COMP | 0.648 | 14.7 | 21.2 | 22.3 |
+| 4 | AllWeather | RISK | 0.631 | 9.0 | 16.4 | 31.2 |
+| 5 | Crypto-MultiCanal | IND | 0.581 | 8.2 | 17.0 | 37.6 |
 
-Les **notebooks QC-Py-XX** sont des supports de cours pedagogiques (a lire sur GitHub, pas a uploader dans QC Lab). Les **projets `projects/`** contiennent des `main.py` deployables sur QuantConnect Cloud. Pour executer une strategie : copier le `main.py` d'un projet dans QC Lab et cliquer Backtest.
+**Lecture** : PSR (Probabilistic Sharpe Ratio) > 50% = statistiquement significatif. TrendFollowing est le seul leader confirmé (PSR 81.8%).
 
-### Peut-on trader avec de l'argent reel directement ?
+**Enseignements clés** :
+- **TrendFollowing** domine : Sharpe 1.072 avec MaxDD 9.3% seulement. La tendance persiste sur longue période.
+- **EMA-Cross-Alpha** : Sharpe -0.010 en aligned (vs 0.996 en backtest court) = overfitting sever. Démonstration pédagogique du danger des backtests courts.
+- **Composites < single-strategies** : MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185, confirmant le problème de "double-defense".
+- **Crypto = diversification stable** : MaxDD maitrisé (~17%), rendement modéré.
 
-Techniquement oui (QC supporte les brokers live : IBKR, Binance, etc.), mais **pas dans le cadre de cette serie**. Tous les notebooks et projets sont conçus pour le backtest et le paper trading. Le passage en live necessite un compte broker, du capital, et une discipline de validation stricte (walk-forward, multi-seed, OOS). Cf [discipline ML/Trading](../../.claude/rules/pr-review-discipline.md).
-
-### Comment choisir une premiere strategie ?
-
-Pour debuter : **EMA-Cross-Stocks** (Sharpe 0.872, debutant) ou **AllWeather** (Sharpe 0.667, debutant). Ces strategies sont simples, robustes, et pedagogiques. Les strategies avancees (BTC-ML, Framework_Composite) ont des Sharpes plus eleves mais requierent une comprehension plus profonde des risques.
-
-### Quelle est la difference entre Sharpe et CAGR ?
-
-Le **CAGR** (Compound Annual Growth Rate) mesure le rendement annualise. Le **Sharpe ratio** mesure le rendement ajuste au risque : Sharpe = (Rendement - Taux_sans_risque) / Volatilite. Un CAGR eleve avec un Sharpe faible signifie une strategie volatile (gros gains, grosses pertes). Un Sharpe > 0.5 est considere robuste dans cette serie.
-
-### Les performances backtestees sont-elles realistes en live ?
-
-Non, ou avec une discount significative (20-30% en moins). Les backtests souffrent de biais connus : look-ahead, survivorship, overfitting, et ignorent le slippage et le market impact reels. Les Sharpes annonces sont in-sample. La serie inclut des notebooks sur le walk-forward et les couts de transaction pour evaluer la robustesse hors-echantillon.
+> Voir [docs/qc-comparative-backtests.md](../../docs/qc-comparative-backtests.md) pour les 17 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
 
 ---
 
@@ -450,7 +473,7 @@ Non, ou avec une discount significative (20-30% en moins). Les backtests souffre
 | [RL](../RL/README.md) | Apprentissage par renforcement | Les strategies RL (QC-22 PPO, QC-23 DRL, QC-24 Crypto RL) prolongent les fondamentaux RL de cette serie |
 | [Probas](../Probas/README.md) | Programmation probabiliste | La modelisation bayesienne des rendements et la gestion du risque s'appuient sur les modeles probabilistes de la serie Probas |
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres de strategies (grid search, bayesienne) rejoint les techniques de recherche |
-| [ML/ML.Net](../ML/ML.Net/README.md) | Series temporelles | L'analyse de series temporelles SSA (ML-2) partage les fondements avec l'analyse technique (QC-4 a QC-7) |
+| [ML](../ML/ML.Net/README.md) | Series temporelles ML.NET | L'analyse technique (QC-4 a QC-7) partage les memes fondements que le forecasting par SSA (ML-5) |
 
 ---
 

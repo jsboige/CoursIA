@@ -156,6 +156,96 @@ Le repertoire `docs/` contient :
 - **Générer automatiquement** la documentation, les tests et les configurations
 - **Automatiser des tâches complexes** allant du simple script au déploiement en production
 
+## FAQ
+
+### Claude Code ne s'installe pas ou erreur `command not found`
+
+Claude Code (modules [01](Claude-Code/01-decouverte/) a [05](Claude-Code/05-automatisation-avancee/)) s'installe via npm. Si erreur `claude: command not found` apres installation :
+
+```bash
+# Verifier Node.js (18+ requis)
+node --version
+
+# Installer globalement
+npm install -g @anthropic-ai/claude-code
+
+# Verifier l'installation
+claude --version
+
+# Si toujours introuvable, verifier le PATH npm
+npm config get prefix
+# Ajouter au PATH si necessaire (Windows)
+# $env:PATH += ";$(npm config get prefix)"
+```
+
+Si vous utilisez VS Code uniquement (sans CLI), l'extension Claude Code dans le Marketplace suffit. Le module [01](Claude-Code/01-decouverte/) couvre les deux modes d'installation.
+
+### Quelle difference entre Claude Code et Roo Code ?
+
+| Critere | Claude Code | Roo Code |
+|---------|-------------|----------|
+| **Interface** | CLI + VS Code | VS Code uniquement |
+| **Agents paralleles** | Jusqu'a 10 simultanes | Sequentiel |
+| **MCP** | Support complet | Partiel |
+| **Skills/Commands** | Ecosysteme standardise | Configuration manuelle |
+| **Courbe d'apprentissage** | Moyenne | Facile |
+| **OpenRouter** | Oui | Oui |
+
+**Recommandation** : debutants complets -> commencer par Roo Code ([module 01](Roo-Code/01-decouverte/)) ; developpeurs -> Claude Code ([module 01](Claude-Code/01-decouverte/)) offre plus de puissance. Les deux coexistent dans le meme VS Code. Le document [COMPARAISON-CLAUDE-ROO.md](Claude-Code/docs/COMPARAISON-CLAUDE-ROO.md) detaille les differences.
+
+### Erreur d'authentification OpenRouter ou "401 Unauthorized"
+
+Les ateliers Claude Code et Roo Code utilisent OpenRouter comme fournisseur LLM. Si erreur 401 :
+
+```powershell
+# Verifier les variables d'environnement
+$env:ANTHROPIC_BASE_URL    # doit etre "https://openrouter.ai/api"
+$env:ANTHROPIC_AUTH_TOKEN   # doit commencer par "sk-or-v1-..."
+```
+
+Points frequents :
+
+- La cle OpenRouter doit etre active sur [openrouter.ai/keys](https://openrouter.ai/keys) avec des credits disponibles.
+- Ne pas confondre cle OpenAI (`sk-...`) et cle OpenRouter (`sk-or-v1-...`) -- les deux commencent par `sk-` mais ne sont pas interchangeables.
+- Le guide d'installation ([INSTALLATION-CLAUDE-CODE.md](Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md)) detaille la configuration pas-a-pas.
+
+### Les scripts PowerShell de preparation echouent
+
+Les scripts `Scripts/prepare-workspaces.ps1` et `Scripts/clean-workspaces.ps1` (references dans les modules Claude Code et Roo Code) preparent les espaces de travail individuels. Si erreur :
+
+```powershell
+# Verifier la politique d'execution PowerShell
+Get-ExecutionPolicy
+# Si "Restricted", autoriser les scripts locaux
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Executer depuis le bon repertoire
+cd MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code
+./Scripts/prepare-workspaces.ps1 -UserName "VotreNom"
+```
+
+Si `UserName` contient des espaces, l'entourer de guillemets. Les workspaces sont crees dans le dossier `workspaces/` de chaque sous-repertoire (Claude Code et Roo Code separent leurs espaces).
+
+### NanoClaw / OpenClaw : comment deployer un agent autonome ?
+
+Les Claw Systems ([README](Claw-Systems/README.md)) sont des agents IA conteneurises qui operent via Telegram et API. Pour demarrer :
+
+1. Lire l'[Architecture](Claw-Systems/docs/NanoClaw-Architecture.md) pour comprendre les composants (LLM, ASR Whisper, Telegram bot).
+2. Suivre le [Guide de deploiement](Claw-Systems/docs/NanoClaw-Deploy.md) pour Docker Compose.
+3. Configurer l'[ASR Whisper](Claw-Systems/docs/ASR-Integration.md) si la transcription vocale est requise.
+
+**Prerequis** : Docker + Docker Compose, un token Telegram Bot (`@BotFather`), une cle API LLM (OpenRouter ou OpenAI). Le deploiement complet tourne sur un VPS 4 GB RAM minimum.
+
+### Peut-on faire les ateliers sans OpenRouter ?
+
+Oui, partiellement. OpenRouter est le fournisseur par defaut car il aggrege plusieurs modeaux (Claude, GPT, Gemini) sous une seule cle. Alternatives :
+
+- **API Anthropic directe** : `$env:ANTHROPIC_API_KEY = "sk-ant-..."` (sans `ANTHROPIC_BASE_URL`). Fonctionne avec les modeaux Claude uniquement.
+- **API OpenAI directe** : configuree via les settings Claude Code (sans OpenRouter). Modeaux GPT uniquement.
+- **Mode hors-ligne** : les modules [01](Claude-Code/01-decouverte/) et [02](Claude-Code/02-orchestration-taches/) contiennent des exercices de decouverte qui ne necessitent pas d'API (exploration de l'interface, configuration CLAUDE.md, gestion de sessions).
+
+Le module [05](Claude-Code/05-automatisation-avancee/) (Skills, Subagents, MCP) necessite un LLM actif pour les demonstrations avancees.
+
 ---
 
 *Version 1.0.0 - Fevrier 2026*

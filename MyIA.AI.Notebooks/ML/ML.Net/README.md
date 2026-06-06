@@ -30,8 +30,8 @@ Le parcours va du premier pipeline (ML-1) jusqu'a une application complete : pre
 | # | Notebook | Contenu | Duree |
 |---|----------|---------|-------|
 | 1 | [ML-1-Introduction](ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base | 30-40 min |
-| 2 | [ML-2-Data&Features](ML-2-Data%26Features.ipynb) | IDataView, TextLoader, encodage | 40-50 min |
-| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement%26AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
+| 2 | [ML-2-Data&Features](ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | 40-50 min |
+| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
 | 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, metriques, PFI | 40-50 min |
 
 ### Fonctionnalités avancées (ML-5 à ML-7)
@@ -70,7 +70,7 @@ Le notebook 7 explore les systemes de recommandation — un domaine ou ML.NET br
 
 ### Phase 3 : TP Capstone (~1h)
 
-Le TP final combine tout ce qui a ete appris. Il commence par une regression simple avec ML.NET pour predire des ventes d'assurance, puis introduit la regression bayesienne via Infer.NET pour quantifier l'incertitude des predictions. Ce notebook est le seul de la serie a utiliser Infer.NET (Microsoft's probabilistic programming language pour .NET) et fait le lien avec la serie [Probas/Infer](../Probas/Infer/README.md).
+Le TP final combine tout ce qui a ete appris. Il commence par une regression simple avec ML.NET pour predire des ventes d'assurance, puis introduit la regression bayesienne via Infer.NET pour quantifier l'incertitude des predictions. Ce notebook est le seul de la serie a utiliser Infer.NET (Microsoft's probabilistic programming language pour .NET) et fait le lien avec la serie [Probas/Infer](../../Probas/Infer/README.md).
 
 ## Exemples concrets
 
@@ -262,11 +262,82 @@ ML-7-Recommendation (systèmes de recommandation)
 
 **Note** : Les notebooks ML-5, ML-6, ML-7 présentent les fonctionnalités récentes de ML.NET (2024-2025) et sont conçus comme références pédagogiques. Certains exemples nécessitent des modèles ou services externes pour une exécution complète.
 
+## FAQ / Troubleshooting
+
+### .NET Interactive ne s'installe pas ou le kernel n'apparait pas
+
+```bash
+# Verifier que .NET SDK 9.0+ est installe
+dotnet --version  # doit afficher 9.x.x
+
+# Installer .NET Interactive globalement
+dotnet tool install --global Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+
+# Si deja installe mais kernel absent, mettre a jour
+dotnet tool update --global Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+
+# Verifier
+jupyter kernelspec list  # doit montrer .net-csharp
+```
+
+Si `jupyter kernelspec list` ne montre pas `.net-csharp` apres installation, verifier que `dotnet` est dans le PATH et relancer le terminal.
+
+### Erreur "No handler for trainer" dans ML-3
+
+Certains trainers (LightGBM, SymSGD) necessitent des packages NuGet supplementaires. Dans le notebook :
+
+```csharp
+#r "nuget: Microsoft.ML.LightGbm"
+```
+
+Verifier dans ML-3 que tous les packages `#r "nuget:..."` du debut du notebook sont bien executes avant d'appeler le trainer.
+
+### Le dataset taxi-fare.csv est introuvable
+
+Le dataset doit se trouver dans le meme repertoire que le notebook. Verifier :
+
+```csharp
+// En debut de notebook, verifier le chemin
+if (!File.Exists("taxi-fare.csv"))
+    Console.WriteLine("taxi-fare.csv non trouve. Placer le fichier a cote du notebook.");
+```
+
+Le fichier est inclus dans le depot : [taxi-fare.csv](taxi-fare.csv).
+
+### Les metriques de ML-4 semblent aberrantes (R² negatif, MAE tres eleve)
+
+Un R² negatif signifie que le modele predit **moins bien** que la moyenne constante. Causes courantes :
+
+1. **Donnees non melangees** : `mlContext.Data.ShuffleRows()` avant le split
+2. **Features non normalisees** : ajouter `NormalizeMinMax` ou `MeanVariance` au pipeline
+3. **Split temporel** pour des donnees ordonnees : utiliser un split chronologique plutot que aleatoire
+
+### ONNX export echoue avec "NotSupportedException" (ML-6)
+
+Tous les trainers ML.NET ne supportent pas l'export ONNX. Les trainers compatibles incluent : FastTree, LightGBM, SDCA, Lbfgs. Les trainers **non compatibles** : les trainers de recommandation (MatrixFactorization) et certains trainers de series temporelles.
+
+### Comment passer de scikit-learn a ML.NET ?
+
+Les concepts se correspondent directement :
+
+| Concept scikit-learn | Equivalent ML.NET |
+| ---------------------- | ------------------- |
+| `fit()` | `Fit()` sur le pipeline |
+| `predict()` | `CreatePredictionEngine().Predict()` |
+| `train_test_split()` | `mlContext.Data.TrainTestSplit()` |
+| `cross_val_score()` | `mlContext.Regression.CrossValidate()` |
+| Pipeline sklearn | `EstimatorChain` ML.NET |
+| `OneHotEncoder` | `OneHotEncodingEstimator` |
+| `StandardScaler` | `NormalizeMinMax` / `MeanVariance` |
+
 ## Ressources
 
 - [Documentation ML.NET](https://docs.microsoft.com/en-us/dotnet/machine-learning/)
 - [ML.NET Samples](https://github.com/dotnet/machinelearning-samples)
 - [ML.NET API Reference](https://docs.microsoft.com/en-us/dotnet/api/microsoft.ml)
+- [Hands-On AI Trading](https://www.hands-on-ai-trading.com/) — chapitres ML.NET et pipeline de trading
 
 ## Licence
 
@@ -276,13 +347,13 @@ Voir la licence du repository principal.
 
 | Serie | Lien | Connection |
 |-------|------|------------|
-| [Probas/Infer](../Probas/Infer/README.md) | Regression bayesienne | Le TP capstone utilise Infer.NET, le meme moteur probabiliste de la serie Probas |
-| [Search](../Search/README.md) | Optimisation | L'AutoML (ML-3) et la detection de saisonnalite (ML-5) utilisent des techniques de recherche et optimisation |
-| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | Les modeles de prevision de series temporelles (ML-5) s'appliquent directement aux strategies de trading |
-| [GenAI](../GenAI/README.md) | IA generative | Les modeles ONNX (ML-6) servent a deployer des LLMs et modeles NLP (BERT, Whisper) via ONNX Runtime dans .NET |
+| [Probas/Infer](../../Probas/Infer/README.md) | Regression bayesienne | Le TP capstone utilise Infer.NET, le meme moteur probabiliste de la serie Probas |
+| [Search](../../Search/README.md) | Optimisation | L'AutoML (ML-3) et la detection de saisonnalite (ML-5) utilisent des techniques de recherche et optimisation |
+| [QuantConnect](../../QuantConnect/README.md) | Trading algorithmique | Les modeles de prevision de series temporelles (ML-5) s'appliquent directement aux strategies de trading |
+| [GenAI](../../GenAI/README.md) | IA generative | Les modeles ONNX (ML-6) servent a deployer des LLMs et modeles NLP (BERT, Whisper) via ONNX Runtime dans .NET |
 | [DataScienceWithAgents](../DataScienceWithAgents/README.md) | Python ML | Les memes concepts ML.NET existent en Python via scikit-learn dans le track DataScienceWithAgents |
 
 ## Navigation
 
 - [<- Notebooks ML](../README.md)
-- [ML.NET ->](ML.Net/README.md) | [DataScienceWithAgents ->](../DataScienceWithAgents/README.md)
+- [DataScienceWithAgents ->](../DataScienceWithAgents/README.md)

@@ -19,7 +19,7 @@ A la fin de ce lab, vous saurez :
 
 ## Prerequis
 
-- [Lab 1 (Day 1)](../../Day1/Labs/README.md) : bases Pandas + premiere classification ML
+- [Lab 1 (Day 1)](../../../Day1/Labs/README.md) : bases Pandas + premiere classification ML
 - Cle API LLM configuree (`.env` racine)
 
 ## Notebook
@@ -29,4 +29,4 @@ A la fin de ce lab, vous saurez :
 
 ## Navigation
 
-[<- Index Python Agents](../../README.md) | [Lab 1 (Day 1) <<](../../Day1/Labs/README.md) | [>> Lab 3](../Lab3-CV-Screening/README.md)
+[<- Index Python Agents](../../../../README.md) | [Lab 1 (Day 1) <<](../../../Day1/Labs/README.md) | [>> Lab 3](../Lab3-CV-Screening/README.md)

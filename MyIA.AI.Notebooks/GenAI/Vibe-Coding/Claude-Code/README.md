@@ -176,7 +176,7 @@ Une serie de **5 notebooks Jupyter** pour apprendre et experimenter avec `claude
 
 ## Comparaison avec Roo Code
 
-Si vous avez déjà utilisé les [Ateliers Roo Code](../Ateliers-roo-code/), voici les principales différences :
+Si vous avez déjà utilisé les [Ateliers Roo Code](../Roo-Code/), voici les principales différences :
 
 | Aspect | Claude Code | Roo Code |
 |--------|-------------|----------|
@@ -188,7 +188,7 @@ Si vous avez déjà utilisé les [Ateliers Roo Code](../Ateliers-roo-code/), voi
 | **Idéal pour** | Projets complexes | Débutants |
 
 **Recommandation** :
-- **Débutants complets** : Commencer avec [Roo Code](../Ateliers-roo-code/)
+- **Débutants complets** : Commencer avec [Roo Code](../Roo-Code/)
 - **Développeurs** : Claude Code offre plus de puissance
 - **Les deux peuvent coexister** dans le même environnement VS Code
 

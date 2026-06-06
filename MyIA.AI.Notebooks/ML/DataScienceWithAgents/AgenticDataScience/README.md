@@ -1,6 +1,19 @@
 # AgenticDataScience - Agents IA pour Data Science avec Google ADK
 
-Formation avancée sur les agents IA pour la Data Science, intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
+Formation avancee sur les agents IA pour la Data Science, integrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
+
+## Pourquoi cette serie
+
+Les frameworks d'agents IA (AutoGPT, CrewAI, ADK) promettent d'automatiser le travail du data scientist. Mais passer du demo au pipeline production-ready demande une comprehension approfondie des patterns d'orchestration. Cette serie vous apprend a construire des systemes multi-agents qui **fonctionnent reellement** sur des taches de data science complexes.
+
+Les deux frameworks couverts (DS-STAR et MLE-STAR) representent l'etat de l'art en agents data science, publies par Google Research. Ils resolvent des problemes concrets :
+
+| Framework | Probleme resolu | Pattern |
+|-----------|----------------|---------|
+| **DS-STAR** | Analyse de datasets heterogenes | Boucle Planner-Coder-Verifier |
+| **MLE-STAR** | Competitions Kaggle automatisées | Recherche SOTA + Ablation + Refinement |
+
+La particularite de cette serie : le support **multi-provider** (Gemini, vLLM, OpenAI, OpenRouter) via LiteLLM. Vous n'etes pas verrouille a un fournisseur LLM et pouvez tester avec un modele local gratuit.
 
 ## Vue d'ensemble
 
@@ -161,27 +174,132 @@ Definir `ACTIVE_PROVIDER=gemini` (ou `vllm`, `openai`, `openrouter`, `lmstudio`)
 | **MLE-STAR** | Agent ML Engineering avec recherche SOTA et ablation |
 | **Multi-provider** | Switch entre Gemini, vLLM, OpenAI sans changer le code |
 
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Configurer** un environnement multi-provider (Gemini, vLLM, OpenAI) via LiteLLM et l'abstraction ADK
+2. **Construire** un agent ADK avec des outils personnalises (file analysis, web search, code execution)
+3. **Orchestrer** une boucle Planner-Coder-Verifier pour l'analyse autonome de datasets (DS-STAR)
+4. **Optimiser** un pipeline ML via recherche SOTA et ablation systematique (MLE-STAR)
+5. **Deployer** un agent data science en production avec BigQuery et Vertex AI
+
 ## Public cible
 
 - Data Scientists maitrisant Python
-- Ingénieurs ML interessés par les agents
-- Étudiants ayant complété Days 1-3 (LangChain)
+- Ingenieurs ML interesses par les agents
+- Etudiants ayant complete Days 1-3 (LangChain)
 
-## Prérequis
+## Prerequis
 
 ### Technique
 
 - Python 3.11+ et environnements virtuels
-- Connaissances Pandas/NumPy (niveau intermédiaire)
+- Connaissances Pandas/NumPy (niveau intermediaire)
 - Notions de Machine Learning
 
 ### API/Cloud
 
-| Mode | Prérequis | Labs Accessibles |
+| Mode | Prerequis | Labs Accessibles |
 |------|-----------|------------------|
 | **Local seul** | vLLM via reverse proxy | Days 4-6 |
-| **Gemini API** | Clé API gratuite | Days 4-6 |
+| **Gemini API** | Cle API gratuite | Days 4-6 |
 | **GCP complet** | Projet + Vertex AI | Days 4-7 |
+
+## Quel parcours choisir
+
+### Parcours agent data science (~2 jours)
+
+Labs 8-12 en sequence. Maitriser DS-STAR pour automatiser l'analyse de datasets.
+
+1. Labs 8-9 -> architecture ADK, premier agent avec outils
+2. Labs 10-12 -> DS-STAR (file analyzer, planner-coder, workshop)
+
+### Parcours ML engineering (~2 jours)
+
+Labs 13-17 en sequence. MLE-STAR pour les competitions et le deploiement.
+
+1. Labs 13-15 -> recherche SOTA, ablation, Kaggle
+2. Labs 16-17 -> BigQuery/BQML, projet final
+
+### Parcours complet (~4 jours)
+
+Tous les labs (8-17) en sequence. Le parcours recommande pour une formation complete.
+
+### Parcours rapide (~0.5 jour)
+
+Labs 8 + 11 + 15. Architecture ADK, boucle planner-coder, et Kaggle. Les trois labs les plus representatifs.
+
+## FAQ / Troubleshooting
+
+### Le provider Gemini renvoie une erreur 429 (rate limit)
+
+Gemini API free tier a un quota limité. Solutions :
+
+```bash
+# Option 1 : ajouter un delai entre les appels
+# Dans votre code : time.sleep(2) entre les appels API
+
+# Option 2 : basculer vers un autre provider
+ACTIVE_PROVIDER=openai  # ou openrouter
+
+# Option 3 : utiliser vLLM local (pas de rate limit)
+ACTIVE_PROVIDER=vllm
+VLLM_BASE_URL=http://localhost:8000/v1
+```
+
+### `ModuleNotFoundError: No module named 'google.adk'`
+
+Le package google-adk n'est pas encore sur PyPI stable. Installer depuis le depot :
+
+```bash
+pip install -r AgenticDataScience/requirements.txt
+# ou manuellement :
+pip install google-generativeai litellm
+```
+
+### LiteLLM ne parvient pas a se connecter au provider
+
+Verifier la configuration `.env` :
+
+```bash
+# Debug : afficher la config chargee
+python -c "from litellm import completion; print('LiteLLM OK')"
+
+# Verifier que le .env est bien charge
+python -c "from dotenv import load_dotenv; import os; load_dotenv(); print(os.getenv('ACTIVE_PROVIDER'))"
+```
+
+Causes courantes : mauvais chemin `.env` (doit etre dans `AgenticDataScience/`), cle API invalide, ou URL base incorrecte pour vLLM.
+
+### Les agents bouclent sans converger (Planner-Coder)
+
+Le pattern Planner-Coder-Verifier peut entrer dans une boucle infinie si le prompt du verifier est trop laxiste. Ajuster :
+
+1. Ajouter un **critere d'arret** explicite dans le prompt verifier (ex: "si le resultat est coherent avec les donnees, arreter")
+2. Limiter le nombre d'iterations : `max_iterations = 5`
+3. Verifier que le planner a acces aux **resultats** du coder (pas seulement au code)
+
+### Comment passer de LangChain (Days 1-3) a ADK ?
+
+Les concepts se correspondent directement :
+
+| Concept LangChain | Equivalent ADK |
+|-------------------|----------------|
+| `ChatOpenAI` | `LiteLLM` + provider config |
+| `Tool` decorator | `FunctionTool` |
+| `AgentExecutor` | `Runner` + `Session` |
+| `LLMChain` | Agent avec instruction |
+| `ConversationMemory` | Session state |
+
+Le Lab 8 (ADK Introduction) reprend les memes concepts avec la syntaxe ADK.
+
+### Les Labs 16-17 (GCP) echouent sans projet Google Cloud
+
+Les Labs 16-17 necessitent un projet GCP avec Vertex AI et BigQuery actives. Si vous n'avez pas acces GCP :
+
+- Les Labs 8-15 sont **entirement autonomes** et ne necessitent que Gemini ou vLLM
+- Le Lab 17 (Final Project) peut etre adapte avec un dataset local au lieu de BigQuery
 
 ## Ressources
 

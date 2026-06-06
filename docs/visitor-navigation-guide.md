@@ -26,30 +26,11 @@ Les notebooks utilisent principalement **Python 3.10+** (PyTorch, OR-Tools, PyMC
 
 **Fil conducteur** : comment explorer un espace de solutions, comment raisonner sur l'incertitude, comment formaliser et prouver.
 
-```text
-Search (46 nb)           GameTheory (25 nb)       SymbolicAI (104 nb)
-  Search-1 StateSpace      GT-1 Setup                Lean-1 Setup
-  Search-2 Uninformed      GT-2 Jeux Matriciels      Lean-2 Tactics
-  Search-3 Informed/A*     GT-3 Jeux Extensifs       Tweety-1 Propositional
-  Search-6 Adversarial     GT-4 Jeux Repetes         Planners-1 Introduction
-  Search-7 MCTS            GT-6 Nash/Equilibres      Planners-4 Fast-Downward
-  CSP-1 Fundamentals       GT-10 SPE                 Lean-7 LLM Integration
-  CSP-2 Consistency        GT-13 CFR                 Lean-15 Kochen-Specker
-  CSP-4 Scheduling         SocialChoice (Lean)       Lean-13 Grothendieck
-```
-
 **Entree recommandee** : [Search-1-StateSpace](../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb) formalise les espaces d'etats, le concept fondateur commun a toute la serie.
 
-**Points de passage** :
-1. **Search Part 1** (11 nb, ~12h) : BFS, DFS, A*, recherche locale, algorithmes genetiques, Minimax, MCTS. Le coeur algorithmique.
-2. **Search Part 2 — CSP** (9 nb, ~9h) : changement de paradigme — au lieu d'explorer, on reduit les domaines par propagation. AC-3,ordonnancement,optimisation.
-3. **GameTheory** (25 nb) : la recherche adversariale (Minimax, MCTS) rencontrela theorie des jeux (Nash, equilibres bayesiens, CFR).
-4. **SymbolicAI — Lean** (16 nb) : les memes concepts de preuve et de recherche, formalises en theoreme. Conway, Kochen-Specker, Grothendieck portes en Lean 4 ; les theoremes de **choix social** (Arrow, Sen, Voting) sont formalises a part dans [GameTheory/social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) (`Arrow.lean` / `Sen.lean` / `Voting.lean`, 0 sorry).
+**Etapes cles** : Search (BFS, DFS, A*, MCTS) → CSP (propagation, ordonnancement) → GameTheory (Minimax, Nash, CFR) → Lean (preuves formelles). Les series Lean et SymbolicAI sont partagees avec le **Parcours D** ; ici on les lit comme l'aboutissement de la recherche algorithmique (la preuve comme exploration exhaustive dans l'espace des tactiques).
 
-**Ponts inter-series** :
-- Search-6 (Adversarial) → GT-6 (Nash) : Minimax est un cas particulier de l'equilibre de Nash dans les jeux a somme nulle.
-- CSP-6 (Hybridation) → Planners-10 (LLM Planning) : les LLMs comme heuristiques pour la resolution CSP.
-- Search-8 (Dancing Links) → Sudoku-5 (DLX) : application directe de l'algorithme X.
+**Ponts inter-series** : Search-6 (Adversarial) → GT-6 (Nash) : Minimax est un cas particulier de l'equilibre de Nash. CSP-6 (Hybridation) → Planners-10 (LLM Planning) : les LLMs comme heuristiques pour la resolution CSP.
 
 ---
 
@@ -59,59 +40,25 @@ Search (46 nb)           GameTheory (25 nb)       SymbolicAI (104 nb)
 
 **Fil conducteur** : generer du contenu (images, audio, texte, video) avec des modeles locaux et cloud, puis orchestrer des pipelines complexes.
 
-```text
-GenAI (120 nb)
-  00-Environment/Setup
-  Image/  (SDXL, Flux, Qwen-VL, ComfyUI)
-  Audio/  (Whisper STT, Kokoro TTS, FishAudio S2-Pro, MusicGen)
-  Texte/  (LLMs, RAG, Reasoning, Structured Outputs)
-  Video/  (Generation, animation)
-  SemanticKernel/  (Orchestration .NET)
-  FineTuning/  (LoRA, adapters)
-  Vibe-Coding/  (Claude Code + Roo-Code)
-```
+**Entree recommandee** : [GenAI/00-GenAI-Environment/](../MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/) configure l'infrastructure Docker (ComfyUI, Qwen, vLLM).
 
-**Entree recommandee** : [GenAI/00-Environment/](../MyIA.AI.Notebooks/GenAI/00-Environment/) configure l'infrastructure Docker (ComfyUI, Qwen, vLLM). Les notebooks Image et Audio fonctionnent ensuite sans GPU cloud.
+**Etapes cles** : Image (SDXL, Flux, ComfyUI) → Audio (Whisper, Kokoro, FishAudio) → Texte (LLMs, RAG, Reasoning) → Orchestration (Semantic Kernel C#) → Fine-Tuning (LoRA).
 
-**Points de passage** :
-1. **Image** (~20 nb) : generation SDXL/Flux, editing, inpainting avec ComfyUI sur GPU locale.
-2. **Audio** (~25 nb) : STT (Whisper), TTS (Kokoro, FishAudio S2-Pro), cloning vocal, pipeline audiobook complet.
-3. **Texte** (~15 nb) : LLMs, RAG, code interpreteur, structured outputs, quantization.
-4. **Orchestration** (~15 nb) : Semantic Kernel (C#), agentic workflows, multi-model chaining.
-5. **Fine-Tuning** (~10 nb) : LoRA, adapters, entra&#94;nement sur donnees custom.
-
-**Ponts inter-series** :
-- GenAI/Texte + Search/CSP-6 (LLM+CSP) : les LLMs comme solveurs d'optimisation.
-- GenAI/Video + ML (pipeline training) : les modeles de generation video comme cas d'usage ML.
-- Vibe-Coding + SymbolicAI/Lean-7 (LLM Integration) : comment les LLMs interagissent avec les outils formels.
+**Ponts inter-series** : GenAI/Texte + Search/CSP-6 (LLM+CSP) : les LLMs comme solveurs d'optimisation. Vibe-Coding + SymbolicAI/Lean-7 (LLM Integration) : comment les LLMs interagissent avec les outils formels.
 
 ---
 
 ### Parcours C : Trading algorithmique et ML financier (~60h)
 
-**Pour qui** : etudiants en finance quantitative, data scientists, ingeenieurs interesses par le ML applique.
+**Pour qui** : etudiants en finance quantitative, data scientists, ingenieurs interesses par le ML applique.
 
 **Fil conducteur** : construire, backtester et deployer des strategies de trading algorithmique avec un pipeline ML complet.
 
-```text
-QuantConnect (101 nb)        Search/ML (metaheuristiques)
-  Python/QC-Py-01 a 10        App-10 Portfolio
-  projects/ (49 strategies)    App-13 TSP
-  ML-Training-Pipeline/        Search-9 LP
-```
+**Entree recommandee** : [QC-Py-01](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-01-Setup.ipynb) introduit le backtesting sur la plateforme QuantConnect.
 
-**Entree recommandee** : [QC-Py-01](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-01-Introduction-Backtesting.ipynb) introduit le backtesting sur la plateforme QuantConnect.
+**Etapes cles** : Cours QC Python (10 nb, backtesting) → Strategies (49 projets, GARCH, Kelly, momentum) → ML Training Pipeline (GPU, walk-forward) → Optimisation (metaheuristiques de Search).
 
-**Points de passage** :
-1. **Cours QC Python** (10 nb) : fondements du backtesting, indicateurs, gestion de portefeuille.
-2. **Strategies** (49 projets) : GARCH, Kelly, ensemble, momentum, mean-reversion — chacune backtestee.
-3. **ML Training Pipeline** : entrainement thermal-safe sur GPU, walk-forward validation, multi-seed.
-4. **Optimisation** : les metaheuristiques de Search (SA, GA, PSO) optimisent les hyperparametres.
-
-**Ponts inter-series** :
-- QuantConnect + Search (metaheuristiques) : optimisation de portefeuille par algorithmes genetiques.
-- QuantConnect + Probas (PyMC) : modelisation bayesienne de la volatilite.
-- QuantConnect + RL (PPO, SAC) : agents RL pour le trading.
+**Ponts inter-series** : QuantConnect + Search (metaheuristiques) : optimisation de portefeuille par algorithmes genetiques. QuantConnect + Probas (PyMC) : modelisation bayesienne de la volatilite. QuantConnect + RL (PPO, SAC) : agents RL pour le trading.
 
 ---
 
@@ -121,48 +68,47 @@ QuantConnect (101 nb)        Search/ML (metaheuristiques)
 
 **Fil conducteur** : prouver des theoremes classiques (Arrow, Conway, Kochen-Specker) en Lean 4, utiliser des solveurs (Z3, OR-Tools), et explorer les logiques non-classiques.
 
-```text
-SymbolicAI (104 nb)
-  Lean/  (16 notebooks, theoremes portes)
-  Tweety/  (logiques, argumentation)
-  Planners/  (PDDL, Fast-Downward, OR-Tools)
-  SmartContracts/  (Solidity, verification formelle)
-  SemanticWeb/  (RDF, SPARQL, OWL)
-  SymbolicLearning/  (ILP, NeuroSymbolic)
-```
+**Entree recommandee** : [Lean-1-Setup](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) configure l'environnement Lean 4 (kernel WSL). Puis [Tweety-2](../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb) pour les fondamentaux logiques.
 
-**Entree recommandee** : [Lean-1-Setup](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) configure l'environnement Lean 4 (kernel WSL). Puis [Tweety-1](../MyIA.AI.Notebooks/SymbolicAI/Tweety/01-Propositional-Logic/) pour les fondamentaux logiques.
+**Etapes cles** : Lean 4 (16 nb, theoremes portes) → Tweety (logiques, argumentation) → Planners (PDDL, Fast-Downward) → SmartContracts (Solidity, verification formelle). Les series Lean et SymbolicAI sont partagees avec le **Parcours A** ; ici on les lit comme le coeur de la verification formelle (la preuve comme garantie, pas comme exploration).
 
-**Points de passage** :
-1. **Lean 4** (16 nb) : de la tactique basique aux theoremes portes (Conway, Kochen-Specker, Free Will, Grothendieck pour les mathematiques). Les theoremes de **choix social** (Arrow, Sen, Voting) sont portes a part dans [GameTheory/social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) (0 sorry), avec leur pendant pedagogique Python dans [GameTheory/SocialChoice](../MyIA.AI.Notebooks/GameTheory/SocialChoice/).
-2. **Tweety** (13 nb) : logique propositionnelle, premier ordre, modale, argumentation, Markov Logic Networks.
-3. **Planners** (13 nb) : PDDL, Fast-Downward, planification temporelle et hierarchique, LLM+Planning.
-4. **SmartContracts** (18 nb) : Solidity, verification formelle, DeFi, oracle manipulation.
-
-**Ponts inter-series** :
-- GameTheory/Lean : les theoremes de choix social (Arrow, Sen) ont un double traitement — pedagogique en Python ([SocialChoice/01-Arrow](../MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)) et certifie en Lean 4 ([social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/), 0 sorry).
-- Planners/Search : PDDL etend les CSP vers la planification d'actions.
-- SmartContracts/Search : la verification de smart contracts utilise les solveurs SMT (Z3).
+**Ponts inter-series** : GameTheory/social_choice_lean (Arrow/Sen en Lean certifie) ↔ GameTheory/SocialChoice (Python pedagogique) : double traitement. Planners/Search : PDDL etend les CSP vers la planification d'actions.
 
 ---
 
-## Une cle de lecture transversale : la dualite simulation / preuve
+## Ponts conceptuels inter-series
 
-Au-dela des parcours lineaires, le depot suit un **fil conducteur conceptuel** (cf. [README principal](../MyIA.AI.Notebooks/README.md)) : un meme concept est d'abord **illustre numeriquement** (on *simule*, on *calcule*, on *genere*), puis — quand c'est possible — **formalise et verifie mecaniquement** (on *prouve*). Lire le depot selon cet axe relie des series qui semblent eloignees.
+Au-dela des parcours lineaires, le depot tisse des liens profonds entre ses series. La cle de lecture [La mer qui monte](grothendieckian-lens.md) developpe cette vision d'ensemble ; les ponts ci-dessous en donnent les passages les plus directs.
+
+### La dualite simulation / preuve
+
+Un meme concept est d'abord **illustre numeriquement** (on simule, on calcule, on genere), puis — quand c'est possible — **formalise et verifie mecaniquement** (on prouve). Ce double mouvement est le fil conducteur le plus continu du depot.
 
 | Concept | Versant *simulation* (faire / calculer) | Versant *preuve* (formaliser / verifier) |
 |---------|-----------------------------------------|------------------------------------------|
-| **Choix social** | [SocialChoice/03-Voting-Methods](../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (agreger des votes), [04-SAT-Z3](../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) | [social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) — `Arrow.lean` / `Sen.lean` / `Voting.lean` (impossibilite **certifiee**, 0 sorry) |
-| **Contraintes** | [Search/CSP-1-Fundamentals](../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) (resoudre par propagation) | [SocialChoice/04-SAT-Z3](../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) (encoder + verifier via solveur SMT) |
-| **Incertitude** | [Probas/PyMC-1-Setup](../MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb) (echantillonnage MCMC, inference *approchee*) | [Probas/Infer-101](../MyIA.AI.Notebooks/Probas/Infer-101.ipynb) (inference *exacte* par message-passing) |
+| **Choix social** | [SocialChoice/03-Voting-Methods](../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (agreger des votes) | [social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) — Arrow/Sen/Voting certifies (0 sorry) |
+| **Contraintes** | [CSP-1-Fundamentals](../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) (resoudre par propagation) | [SocialChoice/04-SAT-Z3](../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) (encoder + verifier via solveur SMT) |
+| **Incertitude** | [PyMC-1-Setup](../MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb) (echantillonnage MCMC) | [Infer-101](../MyIA.AI.Notebooks/Probas/Infer-101.ipynb) (inference exacte par message-passing) |
 | **Smart contracts** | [SC-12-Foundry-Testing](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-12-Foundry-Testing.ipynb), [SC-13-Fuzz-Invariants](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-13-Fuzz-Invariants.ipynb) (tester / fuzzer) | [SC-14-Formal-Verification](../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb) (verification formelle) |
 | **Mathematiques** | [Lean-14b Game of Life](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14b-Conway-Game-of-Life-Lean.ipynb) (automate cellulaire) | [Lean-13 Grothendieck](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Grothendieck-Tribute.ipynb), [Lean-15 Kochen-Specker](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Kochen-Specker.ipynb), [Lean-16 Free Will](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Free-Will-Theorem.ipynb) |
 
-**Comment s'en servir** :
+**Comment s'en servir** : pour *ancrer* un concept abstrait, commencez par le versant simulation (intuition, visualisation), puis passez au versant preuve (rigueur, garanties). Les series purement generatives (GenAI, QuantConnect) se situent au bout simulation ; les series Lean sont au bout preuve. Leur point de jonction est la ligne du tableau.
 
-- Pour *ancrer* un concept abstrait, commencez par le versant simulation (intuition, visualisation), puis passez au versant preuve (rigueur, garanties).
-- Les series **purement generatives** (GenAI) et **purement empiriques** (QuantConnect) se situent au bout « simulation » du spectre : leur contrepartie « preuve » se trouve ailleurs (verification formelle, theoremes de choix social).
-- Inversement, les series **Lean** sont au bout « preuve » : leur intuition numerique se trouve dans les notebooks Python correspondants (ex. [SocialChoice/01-Arrow](../MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) avant `Arrow.lean`).
+### L'IA comme changement de representation
+
+Plusieurs series du depot pratiquent le meme geste : prendre la sortie incertaine d'un modele et la re-representer dans un cadre verifiable. Ce geste — trouver la representation ou le probleme se dissout — traverse le depot de bout en bout :
+
+- **SymbolicLearning/SL-7** : un LLM reboucle sur une verification logique.
+- **Tweety + Argument_Analysis** : le langage naturel traduit en semantiques formelles interrogeables.
+- **Planners-10** : une intention en mots naturels confrontee a un solveur qui tranche.
+- **SC-11** : un contrat assiste par LLM relu a l'aune de sa verification formelle.
+- **Search/CSP** : un meme Sudoku resolu par recherche, par contraintes, ou par SAT — trois representations, trois couts.
+
+Ce mouvement est developpe dans la cle de lecture [La mer qui monte](grothendieckian-lens.md) : l'IA digne de confiance sera celle qui sait trouver le cadre ou l'affirmation devient controlable.
+
+### Du local au global
+
+Un second fil relie les series : une regle purement locale engendre une structure globale. La regle B3/S23 d'une cellule engendre la Turing-complete. Des strategies individuelles se recollent en un equilibre de Nash ([GameTheory-4](../MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium.ipynb)). Des preferences individuelles se heurtent a l'impossibilite d'Arrow ([social_choice_lean](../MyIA.AI.Notebooks/GameTheory/social_choice_lean/)). Une action PDDL composee avec ses semblables devient un plan. Une transition d'etat de contrat devient une obligation irreversible. Ce geste du recollement — litteral chez Grothendieck (faisceaux, topologies), metaphorique partout ailleurs — est le principe organisateur de la theorie des jeux, de la planification, des smart contracts, et de la theorie du choix social dans le depot.
 
 ---
 
@@ -239,4 +185,4 @@ Au-dela des parcours lineaires, le depot suit un **fil conducteur conceptuel** (
 
 ---
 
-**Navigation** : [CLAUDE.md](../CLAUDE.md) | [docs/README.md](README.md) | [Index notebooks](../MyIA.AI.Notebooks/README.md)
+**Navigation** : [CLAUDE.md](../CLAUDE.md) | [docs/README.md](README.md) | [Index notebooks](../MyIA.AI.Notebooks/README.md) | [La mer qui monte](grothendieckian-lens.md)

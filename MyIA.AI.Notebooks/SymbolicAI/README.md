@@ -4,7 +4,7 @@
 series: SymbolicAI
 pedagogical_count: 104
 breakdown: SmartContracts=27, Lean=21, SemanticWeb=18, Planners=13, Tweety=10, SymbolicLearning=7, Argument_Analysis=6, root=2
-maturity: PRODUCTION=94, ALPHA=5, BETA=5
+maturity: PRODUCTION=94, BETA=6, ALPHA=4
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
@@ -211,7 +211,7 @@ Serie de **14 notebooks** sur la planification automatique, couvrant PDDL classi
 | 4 | [Planners-4-Fast-Downward](Planners/02-Classical/Planners-4-Fast-Downward.ipynb) | Fast Downward, heuristiques | 6 | Docker, Fast-Downward |
 | 5 | [Planners-5-Heuristics](Planners/02-Classical/Planners-5-Heuristics.ipynb) | Heuristiques (FF, LM-Cut, Merge-and-Shrink) | 5 | Fast-Downward |
 | 6 | [Planners-6-Domains](Planners/02-Classical/Planners-6-Domains.ipynb) | Catalogue de domaines PDDL | 3 | Fast-Downward |
-| 6b | [Fast-Downward-Legacy](Planners/Fast-Downward-Legacy.ipynb) | Legacy Fast-Downward .NET | 0 | .NET kernel |
+| 6b | [Fast-Downward-Legacy](Planners/archive/Fast-Downward-Legacy.ipynb) | Legacy Fast-Downward .NET | 0 | .NET kernel |
 | **Avance** |
 | 7 | [Planners-7-OR-Tools](Planners/03-Advanced/Planners-7-OR-Tools.ipynb) | CP-SAT, Job Shop, VRP | 2 | ortools |
 | 8 | [Planners-8-Temporal](Planners/03-Advanced/Planners-8-Temporal.ipynb) | Planification temporelle (PDDL 2.1) | 6 | Python |
@@ -251,7 +251,7 @@ Documentation complete : [SmartContracts/README.md](SmartContracts/README.md)
 
 Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine detection de sophismes, formalisation logique, et validation par TweetyProject.
 
-> **Note** : Cette serie est un projet/demo, pas un cours. Aucun exercice etudiant. Non adaptee en l'etat pour EPITA.
+> **Note** : Cette serie est un projet/demo, pas un cours. Aucun exercice etudiant. Non adaptee en l'etat pour un cours structure.
 
 ### Structure detaillee
 
@@ -519,7 +519,7 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 
 ## Ponts cross-series
 
-Ces connexions entre series sont exploitees dans le curriculum EPITA IA Symbolique (demarrage 18/05/2026).
+Ces connexions entre series sont exploitees dans le curriculum IA Symbolique.
 
 ### Lean <-> GameTheory (Choix social)
 
@@ -604,31 +604,27 @@ Ces connexions entre series sont exploitees dans le curriculum EPITA IA Symboliq
 
 ## FAQ
 
-### Qu'est-ce que l'IA symbolique et pourquoi l'etudier a l'ere des LLMs ?
+### Par quelle sous-serie commencer si je n'ai pas de JDK installe ?
 
-L'IA symbolique repose sur la **manipulation explicite de symboles et de regles** (logique, ontologies, planification, contrats) plutot que sur l'apprentissage statistique. Les LLMs sont puissants mais opaques : ils ne garantissent pas la correction logique, ne peuvent pas verifier formellement un resultat, et hallucinent. L'IA symbolique apporte ce que les modeles statistiques ne fournissent pas : raisonnement **verifiable, explicable et certifie**. Les deux paradigmes sont complementaires — l'avenir est neuro-symbolique.
+Les series **SemanticWeb** (notebooks Python), **Planners** (notebooks theoriques 7-11) et **Lean** (notebooks Python 1, 7-10) ne necessitent aucun JDK. **Tweety** et **Argument Analysis** utilisent JPype (bridge Java/Python) avec un JDK 17 portable auto-telecharge par le notebook de setup (pas d'installation systeme, pas de UAC). Si vous evitez les notebooks C# (qui requierent dotnet-interactive), vous pouvez travailler entierement en Python avec uniquement `pip install rdflib ortools unified_planning`.
 
-### Quels notebooks puis-je faire sans Java/Lean/WSL ?
+### Pourquoi Tweety utilise-t-il JPype plutot que des implementations Python natives ?
 
-La majorite des notebooks Python fonctionnent nativement sur Windows :
-- **Tweety** (1-9) : requiert JPype + JVM (auto-telecharge par le notebook 1)
-- **SemanticWeb** (1-6) : Python pur (rdflib, SPARQL)
-- **Planning** (1-5) : Python pur (Fast Downward telecharge auto)
-- **SmartContracts** (1-17) : Python pur + Foundry/Anvil (WSL pour Solidity)
-- **SymbolicLearning** (1-1) : Python pur
-- **Lean** (1-13) : requiert WSL + elan + kernel lean4-wsl
+TweetyProject est la bibliotheque de reference pour l'IA symbolique formelle (argumentation de Dung, ASPIC+, revision de croyances, logiques modales). Elle couvre des domaines ou il n'existe pas d'equivalent Python mature : solveurs d'argumentation structures, frameworks d'agent dialogues, logiques epistemiques. JPype permet d'appeler directement les JARs Java depuis Python sans reimplementation. Les notebooks gerent la bridge de maniere transparente via `tweety_init.py`.
 
-### Quelle est la difference entre Tweety et Z3 ?
+### Quelle est la difference entre les notebooks C# et Python de SemanticWeb ?
 
-**TweetyProject** est une bibliotheque Java pour la logique formelle (propositionnelle, FOL, modale, argumentation, revision de croyances). Elle est utilisee via JPype en Python. **Z3** (Microsoft Research) est un solveur SMT (Satisfiability Modulo Theories) qui automatise la resolution de problemes logiques complexes. Tweety est oriente enseignement (comprendre les semantiques), Z3 est oriente resolution (prouver/infirmer des proprietes). Les deux apparaissent dans GameTheory (Arrow/SAT) et Search (CSP).
+Les **notebooks Python** (SW-8 a SW-13) utilisent `rdflib`, `pySHACL`, `owlready2` et `kglab` — 10/10 s'executent sans probleme. Les **notebooks C#** (SW-1 a SW-7) utilisent `dotNetRDF` via .NET Interactive et peuvent echouer sous Windows si la policy d'execution bloque `dotnet-interactive.exe` (Win32Exception 4551). Les memes concepts (RDF, SPARQL, OWL, SHACL) sont couverts dans les deux stacks. Si vous n'avez pas besoin specifiquement de .NET, les notebooks Python suffisent pour le parcours complet.
 
-### Dois-je faire les notebooks Lean pour comprendre les autres series ?
+### Comment executer les notebooks Lean sans GPU ni installation systeme ?
 
-Non. Les notebooks Lean (1-13) forment un fil independant dedie a la **preuve formelle verifiee par machine**. Ils sont utilises dans GameTheory (preuve d'Arrow, Nash, Shapley) et dans les projets Lake (social_choice_lean, cooperative_games_lean). Si vous n'etes pas interesse par la formalisation mathematique, vous pouvez ignorer ce fil et suivre les notebooks Python/Tweety/SemanticWeb.
+Les notebooks Lean utilisent **WSL (Windows Subsystem for Linux)** comme runtime — pas de GPU necessaire. Le notebook `Lean-1-Setup.ipynb` installe automatiquement `elan` (gestionnaire de toolchains Lean) et `lean4_jupyter` dans WSL. Les notebooks de preuves (2-6, 11) tournent sur le kernel `Lean 4 (WSL)` natif. Les notebooks LLM/prover (7-10) tournent sur `Python 3 (WSL)` et necessitent une cle API OpenRouter. Si WSL n'est pas disponible, les notebooks Python du meme domaine (1, 7-10) peuvent etre executes en Python natif.
 
-### Comment installer l'environnement Tweety ?
+### Peut-on etudier les SmartContracts sans blockchain reelle ?
 
-Ouvrez le notebook `Tweety-1-Setup.ipynb` : il telecharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
+Oui, c'est l'approche pedagogique de la serie. **Anvil** (Foundry) fournit un simulateur Ethereum local qui tourne en une commande (`anvil --host 0.0.0.0`) sous WSL. Les notebooks SC-3 a SC-10 deploient et testent des contrats sur cette chaine locale — aucun ether reel, aucun testnet. Les notebooks theoriques (SC-0 a SC-2, SC-15 a SC-26) explorent les concepts (ZK proofs, DeFi, DAO, cross-chain) principalement via code Python/Solidity sans deploiement. Seuls SC-24 et SC-25 (deploiement reel) necessitent une cle testnet.
+
+---
 
 ## Licence
 
@@ -637,4 +633,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-05-29
+**Derniere mise a jour** : 2026-06-03
