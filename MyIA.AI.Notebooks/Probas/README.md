@@ -9,9 +9,9 @@ maturity: PRODUCTION=41, BETA=3
 
 Le monde reel est incertain. Un diagnostic medical n'est jamais sur a 100%, un classement sportif depend de performances intrinsequement variables, et les donnees que nous collectons sont toujours bruitees ou incompletes. La programmation probabiliste offre un cadre rigoureux pour modeliser cette incertitude : plutot que de calculer une seule reponse, on obtient une **distribution de probabilites** qui quantifie notre confiance dans chaque resultat possible.
 
-Cette serie couvre trois stack complementaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA, HMM trading). Les 20 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne. Les 20 notebooks PyMC reprennent l'integralite des modeles Infer.NET en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science : fondations 1-3, modeles classiques 4-13, et theorie de la decision 14-20.
+Cette serie couvre trois stack complementaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA, HMM trading). Les 21 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne. Les 20 notebooks PyMC reprennent l'integralite des modeles Infer.NET en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science : fondations 1-3, modeles classiques 4-13, et theorie de la decision 14-20.
 
-**43 notebooks** | **3 stack** | **~40h**
+**44 notebooks** | **3 stack** | **~40h**
 
 **A qui s'adresse cette serie** : etudiants en IA, data scientists, et developpeurs souhaitant aller au-dela des modeles deterministes. Aucun prerequis en probabilites avancees : les concepts sont introduits progressivement.
 
