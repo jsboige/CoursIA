@@ -149,7 +149,13 @@ Guides pedagogiques pour les parcours d'apprentissage.
 
 ## Historique et archives
 
-Ces documents sont conserves pour reference mais ne sont plus actifs.
+Ces documents sont conserves pour reference mais ne sont plus actifs. Index complet : [_archives/INDEX.md](_archives/INDEX.md).
+
+**Sous-repertoires archives** :
+
+- [_archives/investigation-mcp-nuget/](_archives/investigation-mcp-nuget/INDEX.md) — Investigation MCP Jupyter / NuGet (26 fichiers)
+- [_archives/genai/](_archives/genai/README.md) — Infrastructure GenAI detaillee (13+ fichiers)
+- [_archives/suivis/genai-image/](_archives/suivis/genai-image/INDEX.md) — Suivi ComfyUI/Qwen (8 fichiers + 4 phases)
 
 | Fichier | Description |
 |---------|-------------|
