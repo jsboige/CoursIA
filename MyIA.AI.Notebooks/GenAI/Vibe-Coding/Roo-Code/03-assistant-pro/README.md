@@ -22,4 +22,4 @@ Apprenez à utiliser Roo pour améliorer votre communication écrite professionn
 
 Pour commencer, choisissez l'une des démos ci-dessus et suivez les instructions détaillées.
 
-> **Note sur l'intégration**: Ce projet fait partie d'un dépôt plus large. Pour plus d'informations sur l'intégration, consultez le fichier [README-integration.md](../README-integration.md) à la racine du sous-dossier.
+> **Note sur l'intégration**: Ce projet fait partie d'un dépôt plus large. Pour plus d'informations sur l'intégration, consultez le fichier [README.md](../README.md) à la racine du sous-dossier.
