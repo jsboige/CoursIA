@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: ML-ML.Net
 pedagogical_count: 8
-breakdown: fondamentaux=4, avance=3, tp=1
-maturity: PRODUCTION=8
+breakdown: ML.Net=8
+maturity: ALPHA=8
 -->
 
 Serie de notebooks couvrant ML.NET, la bibliotheque open-source de Microsoft pour le Machine Learning dans l'ecosysteme .NET.
