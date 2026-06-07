@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI-Tweety
 pedagogical_count: 10
-breakdown: Fondations=3, Revision-Croyances=1, Argumentation=4, Applications=2
-maturity: PRODUCTION=6, BETA=4
+breakdown: Tweety=10
+maturity: PRODUCTION=10
 -->
 
 Serie complete de 10 notebooks pour explorer [TweetyProject](https://tweetyproject.org/), une bibliotheque Java pour l'intelligence artificielle symbolique.

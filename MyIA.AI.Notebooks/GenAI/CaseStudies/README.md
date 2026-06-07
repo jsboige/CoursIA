@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: GenAI-CaseStudies
 pedagogical_count: 4
-breakdown: Barbie-Schreck=1, Recipe-Maker=1, Medical-Chatbot=1, Fort-Boyard=1
-maturity: BETA
+breakdown: CaseStudies=4
+maturity: PRODUCTION=3, BETA=1
 -->
 
 Projets etudiants en IA generative : generation d'images, agents conversationnels, et jeux interactifs.
