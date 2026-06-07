@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-06 09:02
+Generated: 2026-06-07 05:10
 Total notebooks: 515
 
 ## Status Summary
@@ -13,14 +13,14 @@ Total notebooks: 515
 ## Maturity Summary
 
 - **PRODUCTION**: 411
-- **BETA**: 45
+- **BETA**: 44
 - **TEMPLATE**: 4
-- **ALPHA**: 51
+- **ALPHA**: 52
 - **DRAFT**: 4
 
 ## By Series
 
-### GenAI (120 notebooks) — BROKEN:1, DEMO:77, READY:42 | ALPHA:5, BETA:27, DRAFT:2, PRODUCTION:83, TEMPLATE:3
+### GenAI (120 notebooks) — BROKEN:1, DEMO:77, READY:42 | ALPHA:5, BETA:26, DRAFT:2, PRODUCTION:84, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -138,7 +138,7 @@ Total notebooks: 515
 | 112 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 113 | Comparaison Multi-Modeles de Generation Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
 | 114 | Orchestration de Pipelines Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 115 | ComfyUI - Workflows Video via API | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 115 | ComfyUI - Workflows Video via API | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 116 | Generation de Videos Educatives | Python 3 | DEMO | DRAFT | 45min | po-2025 |
 | 117 | Workflows Video Creatifs | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 118 | Sora API - Generation Video Cloud | Python 3 | DEMO | ALPHA | 45min | po-2025 |
@@ -228,7 +228,7 @@ Total notebooks: 515
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
 
-### SymbolicAI (104 notebooks) — DEMO:3, READY:101 | ALPHA:2, BETA:4, PRODUCTION:98
+### SymbolicAI (104 notebooks) — DEMO:3, READY:101 | ALPHA:3, BETA:2, PRODUCTION:99
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -247,7 +247,7 @@ Total notebooks: 515
 | 13 | Lean-13b : Grothendieck en Lean -- Atelier pratiqu | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 14 | Lean-14a - Conway, l'homme et l'oeuvre | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
 | 15 | Lean-14b : Hommage a John Conway — Game of Life as | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
-| 16 | Lean-14c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | BETA | 30min | po-2024 |
+| 16 | Lean-14c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 17 | Lean-15 : Le Theoreme de Kochen-Specker (Cabello 1 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 18 | Lean-16 : Le Theoreme du Libre Arbitre (Conway-Koc | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 19 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
@@ -260,7 +260,7 @@ Total notebooks: 515
 | 26 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 27 | Description du notebook | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 28 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 29 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 29 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | ALPHA | 45min | po-2024 |
 | 30 | Planners-0-Setup | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 31 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 32 | Planners-2-PDDL-Basics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
@@ -510,53 +510,53 @@ Total notebooks: 515
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
-### Probas (44 notebooks) — READY:44 | BETA:1, PRODUCTION:43
+### Probas (44 notebooks) — READY:44 | BETA:3, PRODUCTION:41
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 2 | Infer-10-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 3 | Infer-11-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 4 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 5 | Infer-13-Debugging : Troubleshooting et Bonnes Pra | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 6 | Infer-14-Decision-Utility-Foundations : Axiomes et | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 7 | Infer-15-Decision-Utility-Money : Utilite de l'Arg | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 8 | Infer-16-Decision-Multi-Attribute : Utilite Multi- | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 9 | Infer-17-Decision-Networks : Reseaux de Decision | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 10 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 11 | Infer-19-Decision-Expert-Systems : Decisions Robus | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 12 | Infer-2-Gaussian-Mixtures : Distributions Gaussien | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 13 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 14 | Infer-20b : Preuves formelles — Indice de Gittins | Lean 4 (WSL) | READY | PRODUCTION | 30min | po-2023 |
-| 15 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 16 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 17 | Infer-5-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 18 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 19 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 20 | Infer-8-Model-Selection : Selection et Comparaison | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 21 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 22 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 23 | PyMC-1 : Configuration et Premier Modele | Python 3 | READY | PRODUCTION | 15min | po-2023 |
-| 24 | PyMC-10 : Crowdsourcing - Agregation de Labels et  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 25 | PyMC-11 — Modeles de Sequences et Chaines de Marko | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 26 | PyMC-12-Recommenders : Systemes de Recommandation  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 27 | PyMC-13-Debugging : Troubleshooting et Bonnes Prat | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 28 | PyMC-14-Decision-Utility-Foundations : Axiomes et  | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 29 | PyMC-15-Decision-Utility-Money : Utilite de l'Arge | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 30 | PyMC-16-Decision-Multi-Attribute : Utilite Multi-A | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 31 | PyMC-17-Decision-Networks : Reseaux de Decision | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 32 | PyMC-18 : Valeur de l'Information | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 33 | PyMC-19 : Systemes Experts et Decisions Robustes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 34 | PyMC-2 : Distributions Gaussiennes et Melanges | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 35 | PyMC-20 : MDPs, Bandits et POMDPs | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 36 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 37 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 38 | PyMC-5 : Modeles de Competences (IRT et DINA) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 39 | PyMC-6 : TrueSkill - Classement et Apprentissage e | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 40 | PyMC-7 : Classification Bayesienne et Tests A/B | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 41 | PyMC-8 : Selection de Modeles et Comparaison Bayes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 42 | PyMC-9 : Modeles de Sujets (Topic Models) et LDA | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 43 | HMM Gaussian Alpha -- Generation de signaux direct | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 1 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 2 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 3 | Infer-10-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 4 | Infer-11-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 5 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 6 | Infer-13-Debugging : Troubleshooting et Bonnes Pra | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 7 | Infer-14-Decision-Utility-Foundations : Axiomes et | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 8 | Infer-15-Decision-Utility-Money : Utilite de l'Arg | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 9 | Infer-16-Decision-Multi-Attribute : Utilite Multi- | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 10 | Infer-17-Decision-Networks : Reseaux de Decision | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 11 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 12 | Infer-19-Decision-Expert-Systems : Decisions Robus | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 13 | Infer-2-Gaussian-Mixtures : Distributions Gaussien | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 14 | Infer-20-Decision-Sequential : MDPs, Bandits et PO | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 15 | Infer-20b : Preuves formelles — Indice de Gittins | Lean 4 (WSL) | READY | PRODUCTION | 30min | po-2023 |
+| 16 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 17 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 18 | Infer-5-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 19 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 20 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 21 | Infer-8-Model-Selection : Selection et Comparaison | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 22 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 23 | HMM Gaussian Alpha -- Generation de signaux direct | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 24 | PyMC-1 : Configuration et Premier Modele | Python 3 | READY | PRODUCTION | 15min | po-2023 |
+| 25 | PyMC-10 : Crowdsourcing - Agregation de Labels et  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 26 | PyMC-11 — Modeles de Sequences et Chaines de Marko | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 27 | PyMC-12-Recommenders : Systemes de Recommandation  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 28 | PyMC-13-Debugging : Troubleshooting et Bonnes Prat | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 29 | PyMC-14-Decision-Utility-Foundations : Axiomes et  | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 30 | PyMC-15-Decision-Utility-Money : Utilite de l'Arge | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2023 |
+| 31 | PyMC-16-Decision-Multi-Attribute : Utilite Multi-A | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 32 | PyMC-17-Decision-Networks : Reseaux de Decision | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 33 | PyMC-18 : Valeur de l'Information | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 34 | PyMC-19 : Systemes Experts et Decisions Robustes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 35 | PyMC-2 : Distributions Gaussiennes et Melanges | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 36 | PyMC-20 : MDPs, Bandits et POMDPs | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 37 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 38 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 39 | PyMC-5 : Modeles de Competences (IRT et DINA) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 40 | PyMC-6 : TrueSkill - Classement et Apprentissage e | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 41 | PyMC-7 : Classification Bayesienne et Tests A/B | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 42 | PyMC-8 : Selection de Modeles et Comparaison Bayes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 43 | PyMC-9 : Modeles de Sujets (Topic Models) et LDA | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 44 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 
 ### IIT (2 notebooks) — READY:2 | PRODUCTION:2
