@@ -52,7 +52,7 @@ A l'issue de cette serie, vous serez capable de :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 43 (20 Infer.NET + 20 PyMC + 3 standalone) |
+| Notebooks | 44 (21 Infer.NET + 20 PyMC + 3 standalone) |
 | Duree totale | ~40h |
 | Langages | C# (.NET), Python |
 | Kernels | .NET Interactive, Python 3 |
