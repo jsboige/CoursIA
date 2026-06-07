@@ -37,7 +37,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [.claude/rules/proactive-coordination.md](.claude/rules/proactive-coordination.md) - 1 PR/wakeup + main track + side-track async via sous-agents spécialistes (mandat user 2026-05-23)
 - [.claude/rules/user-blocker-signaling.md](.claude/rules/user-blocker-signaling.md) - Re-poke chaque fin de session quand le user bloque (mandat user 2026-05-28, anti-dilution wakeup)
 - [.claude/rules/harness-hygiene.md](.claude/rules/harness-hygiene.md) - Info 3 tiers : harnais succinct / docs pérenne / dashboard éphémère (mandat user 2026-06-01)
-- [.claude/rules/catalog-pr-hygiene.md](.claude/rules/catalog-pr-hygiene.md) - Catalogue = propriété de l'automatisation (cron main + CI par-PR), JAMAIS régén sur branche + rebase frais + atomique + `Closes #X` (mandat user 2026-06-06)
+- [.claude/rules/catalog-pr-hygiene.md](.claude/rules/catalog-pr-hygiene.md) - Catalogue = propriété de l'automatisation (cron main + CI par-PR + guard CI `catalog-guard.yml`), JAMAIS régén sur branche + rebase frais + atomique + `Closes #X` (mandat user 2026-06-06, #2632)
 - [.claude/rules/three-exercises-per-notebook.md](.claude/rules/three-exercises-per-notebook.md) - Convention >=3 exercices par notebook, rollout progressif (#2161)
 
 ---
