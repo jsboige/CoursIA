@@ -1,326 +1,442 @@
-"""Tests for audit_c1_c3.py — C.1 + C.3 violation detection."""
+"""Tests for scripts/notebook_tools/audit_c1_c3.py — C.1 + C.3 audit.
+
+Tests focus on pure functions: _is_in_docstring, find_notebooks,
+check_c1, check_c3, get_family.
+"""
 
 import json
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from audit_c1_c3 import (
-    REPO_ROOT,
+    C1_PATTERNS,
+    EXCLUDE_DIRS,
+    _is_in_docstring,
     check_c1,
     check_c3,
     find_notebooks,
     get_family,
-    _is_in_docstring,
 )
 
 
-def _nb(cells: list[dict]) -> dict:
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _nb(cells: list[dict], metadata: dict | None = None) -> dict:
     """Build a minimal notebook dict."""
-    return {
-        "cells": cells,
-        "metadata": {
-            "kernelspec": {"display_name": "Python 3", "name": "python3"},
-        },
-        "nbformat": 4,
-        "nbformat_minor": 5,
-    }
+    return {"cells": cells, "metadata": metadata or {}}
 
 
-def _code(source: str) -> dict:
-    """Build a code cell."""
-    lines = source.split("\n")
-    elements = [line + "\n" for line in lines[:-1]] + [lines[-1]]
+def _code(source: str, exec_count: int | None = None, outputs: list | None = None) -> dict:
     return {
         "cell_type": "code",
-        "source": elements,
-        "execution_count": 1,
-        "outputs": [],
-        "metadata": {},
+        "source": [source],
+        "execution_count": exec_count,
+        "outputs": outputs or [],
     }
 
 
 def _md(source: str) -> dict:
-    """Build a markdown cell."""
-    lines = source.split("\n")
-    elements = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {
-        "cell_type": "markdown",
-        "source": elements,
-        "metadata": {},
-    }
+    return {"cell_type": "markdown", "source": [source]}
 
 
-def _write_nb(tmp_path: Path, name: str, nb: dict) -> str:
-    """Write a notebook to disk and return the path string."""
-    p = tmp_path / name
-    p.write_text(json.dumps(nb), encoding="utf-8")
-    return str(p)
+def _write_nb(path: Path, cells: list[dict], metadata: dict | None = None) -> Path:
+    """Write a minimal .ipynb file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = {"cells": cells, "metadata": metadata or {}, "nbformat": 4, "nbformat_minor": 5}
+    path.write_text(json.dumps(nb), encoding="utf-8")
+    return path
 
 
-# --- _is_in_docstring ---
-
+# ---------------------------------------------------------------------------
+# _is_in_docstring
+# ---------------------------------------------------------------------------
 
 class TestIsInDocstring:
-    def test_not_in_docstring(self):
+    """Tests for the docstring tracker _is_in_docstring."""
+
+    def test_no_docstring(self):
         in_doc, inside = _is_in_docstring("x = 1", False)
         assert in_doc is False
-        # was=False, now=False => was != now is False, or was is False => False
         assert inside is False
 
-    def test_enter_docstring(self):
-        in_doc, inside = _is_in_docstring('"""start doc', False)
+    def test_enter_triple_double(self):
+        in_doc, inside = _is_in_docstring('"""hello', False)
         assert in_doc is True
-        # was=False, now=True => was != now is True, or was is False => True... but inside should be True since we just entered
-        assert inside is True  # inside docstring
+        assert inside is True
 
-    def test_exit_docstring(self):
-        in_doc, inside = _is_in_docstring('end doc"""', True)
+    def test_exit_triple_double(self):
+        in_doc, inside = _is_in_docstring('world"""', True)
         assert in_doc is False
-        assert inside is True  # was != now OR was is True
+        assert inside is True  # was != current -> inside True
 
-    def test_inside_docstring(self):
-        in_doc, inside = _is_in_docstring("some content", True)
-        assert in_doc is True
-        assert inside is True  # was=True, was != now is False, but was is True => True
-
-    def test_single_quotes_docstring(self):
+    def test_enter_triple_single(self):
         in_doc, inside = _is_in_docstring("'''start", False)
         assert in_doc is True
+        assert inside is True
 
-    def test_triple_quote_on_same_line(self):
-        """Opening and closing on same line cancel out."""
-        in_doc, inside = _is_in_docstring('"""inline"""', False)
+    def test_complete_docstring_one_line(self):
+        """Complete docstring on one line: opens and closes, ends outside."""
+        in_doc, inside = _is_in_docstring('"""doc"""', False)
+        assert in_doc is False  # opened and closed
+        assert inside is False  # was=False, ended=False -> (False != False) or False = False
+
+    def test_inside_docstring_line(self):
+        in_doc, inside = _is_in_docstring("some content", True)
+        assert in_doc is True
+        assert inside is True  # was=True, still True -> (True != True) or True = True
+
+    def test_consecutive_lines_in_doc(self):
+        """Track state across multiple lines — propagates in_doc (first return)."""
+        in_doc = False
+        in_doc, inside = _is_in_docstring('"""opening', in_doc)
+        assert in_doc is True
+        assert inside is True
+        in_doc, inside = _is_in_docstring("middle line", in_doc)
+        assert in_doc is True
+        assert inside is True
+        in_doc, inside = _is_in_docstring('closing"""', in_doc)
         assert in_doc is False
-
-    def test_multiple_triple_quotes(self):
-        in_doc, _ = _is_in_docstring('"""a""" """b"""', False)
+        assert inside is True  # was True, now False -> inside=True
+        in_doc, inside = _is_in_docstring("after", in_doc)
         assert in_doc is False
+        assert inside is False  # was False, still False -> inside=False
 
 
-# --- check_c1 ---
+# ---------------------------------------------------------------------------
+# C1_PATTERNS
+# ---------------------------------------------------------------------------
 
+class TestC1Patterns:
+    """Tests for the compiled C.1 regex patterns."""
+
+    def test_raise_not_implemented(self):
+        p = C1_PATTERNS[0][0]
+        assert p.search("raise NotImplementedError")
+        assert p.search("raise NotImplementedError('TODO')")
+        assert p.search("  raise NotImplementedError")
+
+    def test_assert_false(self):
+        p = C1_PATTERNS[1][0]
+        assert p.search("assert False")
+        assert p.search("  assert False")
+
+    def test_division_by_zero(self):
+        p = C1_PATTERNS[2][0]
+        assert p.search("1/0")
+        assert p.search("1 / 0")
+        assert p.search("return 1/0")
+        # Should NOT match 21/0 or 1/07 (digits adjacent)
+        assert not p.search("21/0")
+        assert not p.search("1/07")
+
+    def test_no_false_positive_on_variants(self):
+        p0, p1, p2 = [p for p, _ in C1_PATTERNS]
+        # Normal code should not trigger
+        assert not p0.search("x = 1")
+        assert not p1.search("x = True")
+        assert not p2.search("x = 1/2")
+
+    def test_pattern_descriptions(self):
+        """Each pattern has a human-readable description."""
+        for pattern, desc in C1_PATTERNS:
+            assert isinstance(desc, str)
+            assert len(desc) > 0
+
+
+# ---------------------------------------------------------------------------
+# check_c1
+# ---------------------------------------------------------------------------
 
 class TestCheckC1:
-    def test_clean_notebook(self, tmp_path):
-        nb = _nb([
-            _md("# Title"),
-            _code("x = 1\ny = 2\nprint(x + y)"),
-        ])
-        p = _write_nb(tmp_path, "clean.ipynb", nb)
-        assert check_c1(Path(p)) == []
+    """Tests for check_c1 function."""
 
-    def test_raise_not_implemented_error(self, tmp_path):
-        nb = _nb([
-            _code("def f():\n    raise NotImplementedError"),
-        ])
-        p = _write_nb(tmp_path, "c1.ipynb", nb)
-        violations = check_c1(Path(p))
+    def test_clean_notebook(self, tmp_path):
+        nb = _nb([_code("x = 1"), _md("# Title"), _code("print('hello')")])
+        p = _write_nb(tmp_path / "clean.ipynb", nb["cells"])
+        assert check_c1(p) == []
+
+    def test_raise_not_implemented_detected(self, tmp_path):
+        nb = _nb([_code("raise NotImplementedError")])
+        p = _write_nb(tmp_path / "bad.ipynb", nb["cells"])
+        violations = check_c1(p)
         assert len(violations) == 1
-        assert "raise NotImplementedError" in violations[0]["pattern"]
+        assert violations[0]["pattern"] == "raise NotImplementedError"
         assert violations[0]["cell"] == 0
 
-    def test_assert_false(self, tmp_path):
-        nb = _nb([
-            _code("assert False"),
-        ])
-        p = _write_nb(tmp_path, "c1.ipynb", nb)
-        violations = check_c1(Path(p))
+    def test_assert_false_detected(self, tmp_path):
+        nb = _nb([_code("assert False")])
+        p = _write_nb(tmp_path / "bad.ipynb", nb["cells"])
+        violations = check_c1(p)
         assert len(violations) == 1
-        assert "assert False" in violations[0]["pattern"]
+        assert violations[0]["pattern"] == "assert False"
 
-    def test_division_by_zero(self, tmp_path):
-        nb = _nb([
-            _code("x = 1/0"),
-        ])
-        p = _write_nb(tmp_path, "c1.ipynb", nb)
-        violations = check_c1(Path(p))
+    def test_division_by_zero_detected(self, tmp_path):
+        nb = _nb([_code("1/0")])
+        p = _write_nb(tmp_path / "bad.ipynb", nb["cells"])
+        violations = check_c1(p)
         assert len(violations) == 1
-        assert "1/0" in violations[0]["pattern"]
+        assert violations[0]["pattern"] == "1/0"
 
-    def test_commented_violation_not_flagged(self, tmp_path):
-        nb = _nb([
-            _code("# raise NotImplementedError\nx = 1"),
-        ])
-        p = _write_nb(tmp_path, "ok.ipynb", nb)
-        assert check_c1(Path(p)) == []
-
-    def test_inline_comment_not_flagged(self, tmp_path):
-        nb = _nb([
-            _code("x = 1  # raise NotImplementedError"),
-        ])
-        p = _write_nb(tmp_path, "ok.ipynb", nb)
-        assert check_c1(Path(p)) == []
-
-    def test_violation_in_docstring_not_flagged(self, tmp_path):
-        nb = _nb([
-            _code('"""\nraise NotImplementedError\n"""\nx = 1'),
-        ])
-        p = _write_nb(tmp_path, "ok.ipynb", nb)
-        assert check_c1(Path(p)) == []
-
-    def test_multiple_violations_in_same_cell(self, tmp_path):
-        nb = _nb([
-            _code("raise NotImplementedError\nassert False\n1/0"),
-        ])
-        p = _write_nb(tmp_path, "multi.ipynb", nb)
-        violations = check_c1(Path(p))
+    def test_multiple_violations_same_cell(self, tmp_path):
+        nb = _nb([_code("raise NotImplementedError\nassert False\n1/0")])
+        p = _write_nb(tmp_path / "multi.ipynb", nb["cells"])
+        violations = check_c1(p)
         assert len(violations) == 3
 
     def test_violations_across_cells(self, tmp_path):
-        nb = _nb([
-            _code("raise NotImplementedError"),
-            _code("x = 1"),
-            _code("assert False"),
-        ])
-        p = _write_nb(tmp_path, "multi.ipynb", nb)
-        violations = check_c1(Path(p))
+        nb = _nb([_code("raise NotImplementedError"), _code("assert False")])
+        p = _write_nb(tmp_path / "multi_cell.ipynb", nb["cells"])
+        violations = check_c1(p)
         assert len(violations) == 2
         assert violations[0]["cell"] == 0
-        assert violations[1]["cell"] == 2
+        assert violations[1]["cell"] == 1
 
-    def test_markdown_cells_not_checked(self, tmp_path):
-        nb = _nb([
-            _md("raise NotImplementedError is bad"),
-        ])
-        p = _write_nb(tmp_path, "md.ipynb", nb)
-        assert check_c1(Path(p)) == []
-
-    def test_invalid_json_returns_empty(self, tmp_path):
-        p = tmp_path / "bad.ipynb"
-        p.write_text("not valid json{{{", encoding="utf-8")
+    def test_markdown_cells_skipped(self, tmp_path):
+        nb = _nb([_md("raise NotImplementedError\nassert False")])
+        p = _write_nb(tmp_path / "md.ipynb", nb["cells"])
         assert check_c1(p) == []
 
-    def test_10_division_not_flagged(self, tmp_path):
-        """100/10 should NOT match the 1/0 pattern."""
-        nb = _nb([
-            _code("x = 100/10"),
-        ])
-        p = _write_nb(tmp_path, "ok.ipynb", nb)
-        violations = check_c1(Path(p))
-        assert len(violations) == 0
+    def test_commented_violation_skipped(self, tmp_path):
+        nb = _nb([_code("# raise NotImplementedError")])
+        p = _write_nb(tmp_path / "comment.ipynb", nb["cells"])
+        assert check_c1(p) == []
 
-    def test_pass_is_not_violation(self, tmp_path):
-        nb = _nb([
-            _code("pass"),
-        ])
-        p = _write_nb(tmp_path, "ok.ipynb", nb)
-        assert check_c1(Path(p)) == []
+    def test_inline_comment_does_not_mask(self, tmp_path):
+        """Code before inline comment should still be checked."""
+        nb = _nb([_code("x = 1  # raise NotImplementedError")])
+        p = _write_nb(tmp_path / "inline.ipynb", nb["cells"])
+        assert check_c1(p) == []
 
-    def test_return_none_is_not_violation(self, tmp_path):
-        nb = _nb([
-            _code("return None"),
-        ])
-        p = _write_nb(tmp_path, "ok.ipynb", nb)
-        assert check_c1(Path(p)) == []
+    def test_inside_docstring_skipped(self, tmp_path):
+        nb = _nb([_code('"""doc\nraise NotImplementedError\ndoc"""')])
+        p = _write_nb(tmp_path / "docstring.ipynb", nb["cells"])
+        assert check_c1(p) == []
 
-    def test_10_over_0_flagged(self, tmp_path):
-        """10/0 should match 1/0 pattern (the regex catches any N/0)."""
-        nb = _nb([
-            _code("x = 10/0"),
-        ])
-        p = _write_nb(tmp_path, "c1.ipynb", nb)
-        violations = check_c1(Path(p))
-        # The regex is (?<!\d)1\s*/\s*0(?!\d) which matches "1/0" but not "10/0"
-        # Actually let's check what happens: "10/0" has "1" preceded by digit "1"
-        # (?<!\d)1 = "1" not preceded by digit => "10/0" -> the "1" IS preceded by "1" => no match
-        # But "0/0" -> the "0" is matched by "1"? No, the pattern matches literal "1"
-        # So "10/0" should NOT match because the "1" is preceded by another "1" (a digit)
-        assert len(violations) == 0
+    def test_empty_notebook(self, tmp_path):
+        nb = _nb([])
+        p = _write_nb(tmp_path / "empty.ipynb", nb["cells"])
+        assert check_c1(p) == []
+
+    def test_invalid_json(self, tmp_path):
+        p = tmp_path / "bad_json.ipynb"
+        p.write_text("not json", encoding="utf-8")
+        assert check_c1(p) == []
+
+    def test_multiline_source(self, tmp_path):
+        """Source as a list of strings (standard nbformat)."""
+        nb = {
+            "cells": [{
+                "cell_type": "code",
+                "source": ["raise NotImplementedError\n"],
+                "execution_count": None,
+                "outputs": [],
+            }]
+        }
+        p = _write_nb(tmp_path / "ml.ipynb", nb["cells"])
+        violations = check_c1(p)
+        assert len(violations) == 1
+
+    def test_line_truncation(self, tmp_path):
+        long_line = "x = " + "a" * 200
+        nb = _nb([_code(f"raise NotImplementedError  # {long_line}")])
+        p = _write_nb(tmp_path / "long.ipynb", nb["cells"])
+        violations = check_c1(p)
+        assert len(violations) == 1
+        assert len(violations[0]["line"]) <= 80
 
 
-# --- check_c3 ---
-
+# ---------------------------------------------------------------------------
+# check_c3
+# ---------------------------------------------------------------------------
 
 class TestCheckC3:
-    def test_no_git_diff_returns_empty(self, tmp_path, monkeypatch):
-        """Notebook not tracked by git => no diff => no violations."""
-        # check_c3 calls relative_to(REPO_ROOT), so we need a path inside the repo
-        # Use monkeypatch to avoid the relative_to issue with tmp_path
-        nb_path = REPO_ROOT / "MyIA.AI.Notebooks" / "_test_c3_temp.ipynb"
+    """Tests for check_c3 function — patches REPO_ROOT for tmp_path compat."""
+
+    def test_no_git_diff(self, tmp_path):
+        """No diff output -> no violations."""
         nb = _nb([_code("x = 1")])
-        nb_path.write_text(json.dumps(nb), encoding="utf-8")
-        try:
-            result = check_c3(nb_path)
-            # No git changes to this file => empty
-            assert result == []
-        finally:
-            nb_path.unlink(missing_ok=True)
+        p = _write_nb(tmp_path / "clean.ipynb", nb["cells"])
+        with patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.subprocess.run") as mock_run:
+            mock_run.return_value.stdout = ""
+            assert check_c3(p) == []
+
+    def test_output_only_change(self, tmp_path):
+        """Only outputs changed -> C.3 violation."""
+        nb = _nb([_code("x = 1")])
+        p = _write_nb(tmp_path / "out.ipynb", nb["cells"])
+        diff_output = '@@ -1,1 +1,1 @@\n-"outputs": []\n+"outputs": [{"output_type": "stream"}]'
+        with patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.subprocess.run") as mock_run:
+            mock_run.return_value.stdout = diff_output
+            violations = check_c3(p)
+            assert len(violations) == 1
+            assert "output-only" in violations[0]["reason"]
+
+    def test_source_change_no_violation(self, tmp_path):
+        """Source changed -> no C.3 violation even if outputs also changed."""
+        nb = _nb([_code("x = 1")])
+        p = _write_nb(tmp_path / "src.ipynb", nb["cells"])
+        diff_output = '@@ -1,1 +1,1 @@\n-"source": ["x = 1"]\n+"source": ["x = 2"]\n-"outputs": []\n+"outputs": [{"data": 2}]'
+        with patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.subprocess.run") as mock_run:
+            mock_run.return_value.stdout = diff_output
+            assert check_c3(p) == []
+
+    def test_git_timeout(self, tmp_path):
+        """Git timeout -> no violations (graceful)."""
+        import subprocess
+        nb = _nb([_code("x = 1")])
+        p = _write_nb(tmp_path / "tout.ipynb", nb["cells"])
+        with patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.TimeoutExpired(cmd="git", timeout=10)
+            assert check_c3(p) == []
+
+    def test_diff_headers_ignored(self, tmp_path):
+        """+++ and --- lines should not count as changes."""
+        nb = _nb([_code("x = 1")])
+        p = _write_nb(tmp_path / "hdr.ipynb", nb["cells"])
+        diff_output = '--- a/file.ipynb\n+++ b/file.ipynb\n@@ -1 +1 @@\n+"outputs": []'
+        with patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.subprocess.run") as mock_run:
+            mock_run.return_value.stdout = diff_output
+            violations = check_c3(p)
+            assert len(violations) == 1
+
+    def test_execution_count_change(self, tmp_path):
+        """execution_count change counts as output change."""
+        nb = _nb([_code("x = 1")])
+        p = _write_nb(tmp_path / "ec.ipynb", nb["cells"])
+        diff_output = '@@ -1 +1 @@\n-"execution_count": null\n+"execution_count": 1'
+        with patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.subprocess.run") as mock_run:
+            mock_run.return_value.stdout = diff_output
+            violations = check_c3(p)
+            assert len(violations) == 1
 
 
-# --- get_family ---
-
-
-class TestGetFamily:
-    def test_top_level_notebook(self):
-        p = REPO_ROOT / "MyIA.AI.Notebooks" / "test.ipynb"
-        assert get_family(p) == "test.ipynb"
-
-    def test_nested_notebook(self):
-        p = REPO_ROOT / "MyIA.AI.Notebooks" / "Search" / "App-1.ipynb"
-        assert get_family(p) == "Search"
-
-    def test_deeply_nested(self):
-        p = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Tweety" / "Tweety-1.ipynb"
-        assert get_family(p) == "SymbolicAI"
-
-
-# --- find_notebooks ---
-
+# ---------------------------------------------------------------------------
+# find_notebooks
+# ---------------------------------------------------------------------------
 
 class TestFindNotebooks:
-    def test_nonexistent_family_returns_empty(self):
-        result = find_notebooks("NonExistentFamily12345")
+    """Tests for find_notebooks discovery."""
+
+    def test_nonexistent_family(self):
+        result = find_notebooks("NONEXISTENT_FAMILY_XYZ")
         assert result == []
 
-    def test_family_parameter_filters(self, tmp_path, monkeypatch):
-        """With a specific family, only notebooks under that dir are returned."""
-        notebooks_dir = tmp_path / "MyIA.AI.Notebooks"
-        search_dir = notebooks_dir / "Search"
-        search_dir.mkdir(parents=True)
-        ml_dir = notebooks_dir / "ML"
-        ml_dir.mkdir(parents=True)
+    def test_excluded_dirs(self, tmp_path):
+        """Notebooks in excluded directories should be skipped."""
+        with patch("audit_c1_c3.NOTEBOOKS_DIR", tmp_path):
+            # Create notebook in excluded dir
+            exc = tmp_path / ".ipynb_checkpoints"
+            exc.mkdir()
+            (exc / "bad.ipynb").write_text("{}", encoding="utf-8")
+            # Create notebook in normal dir
+            (tmp_path / "good.ipynb").write_text("{}", encoding="utf-8")
+            result = find_notebooks()
+            names = [p.name for p in result]
+            assert "good.ipynb" in names
+            assert "bad.ipynb" not in names
 
-        # Create notebooks in both families
-        (search_dir / "App-1.ipynb").write_text('{"cells":[]}', encoding="utf-8")
-        (ml_dir / "ML-1.ipynb").write_text('{"cells":[]}', encoding="utf-8")
 
-        import audit_c1_c3
-        monkeypatch.setattr(audit_c1_c3, "NOTEBOOKS_DIR", notebooks_dir)
+# ---------------------------------------------------------------------------
+# get_family
+# ---------------------------------------------------------------------------
 
-        result = find_notebooks("Search")
-        assert len(result) == 1
-        assert result[0].name == "App-1.ipynb"
+class TestGetFamily:
+    """Tests for get_family path extraction."""
 
-    def test_excluded_dirs_skipped(self, tmp_path, monkeypatch):
-        """Notebooks in excluded directories are not returned."""
-        import audit_c1_c3
-        notebooks_dir = tmp_path / "MyIA.AI.Notebooks"
-        ok_dir = notebooks_dir / "Search"
-        ok_dir.mkdir(parents=True)
-        checkpoint_dir = notebooks_dir / ".ipynb_checkpoints"
-        checkpoint_dir.mkdir(parents=True)
+    def test_normal_path(self):
+        from audit_c1_c3 import NOTEBOOKS_DIR
+        nb_path = NOTEBOOKS_DIR / "Search" / "Part1" / "test.ipynb"
+        assert get_family(nb_path) == "Search"
 
-        (ok_dir / "App-1.ipynb").write_text('{"cells":[]}', encoding="utf-8")
-        (checkpoint_dir / "App-1.ipynb").write_text('{"cells":[]}', encoding="utf-8")
+    def test_root_notebook(self):
+        from audit_c1_c3 import NOTEBOOKS_DIR
+        nb_path = NOTEBOOKS_DIR / "test.ipynb"
+        assert get_family(nb_path) == "test.ipynb"
 
-        monkeypatch.setattr(audit_c1_c3, "NOTEBOOKS_DIR", notebooks_dir)
-        result = find_notebooks()
-        assert len(result) == 1
-        assert result[0].parent.name == "Search"
+    def test_path_outside_notebooks_dir(self):
+        """Path not under NOTEBOOKS_DIR returns 'unknown'."""
+        assert get_family(Path("/tmp/test.ipynb")) == "unknown"
 
-    def test_results_sorted(self, tmp_path, monkeypatch):
-        """Results are sorted by path."""
-        import audit_c1_c3
-        notebooks_dir = tmp_path / "MyIA.AI.Notebooks" / "Search"
-        notebooks_dir.mkdir(parents=True)
 
-        for name in ["C.ipynb", "A.ipynb", "B.ipynb"]:
-            (notebooks_dir / name).write_text('{"cells":[]}', encoding="utf-8")
+# ---------------------------------------------------------------------------
+# main (CLI)
+# ---------------------------------------------------------------------------
 
-        monkeypatch.setattr(audit_c1_c3, "NOTEBOOKS_DIR", tmp_path / "MyIA.AI.Notebooks")
-        result = find_notebooks("Search")
-        names = [p.name for p in result]
-        assert names == sorted(names)
+class TestMainCLI:
+    """Integration tests for the main CLI function."""
+
+    def test_no_notebooks_found(self, capsys):
+        from audit_c1_c3 import main
+        with patch("audit_c1_c3.find_notebooks", return_value=[]), \
+             patch("sys.argv", ["audit_c1_c3.py"]):
+            ret = main()
+            assert ret == 0
+            assert "No notebooks found" in capsys.readouterr().out
+
+    def test_all_clean(self, tmp_path, capsys):
+        from audit_c1_c3 import main
+        nb = _nb([_code("x = 1")])
+        p = _write_nb(tmp_path / "clean.ipynb", nb["cells"])
+        with patch("audit_c1_c3.find_notebooks", return_value=[p]), \
+             patch("audit_c1_c3.check_c1", return_value=[]), \
+             patch("audit_c1_c3.check_c3", return_value=[]), \
+             patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.NOTEBOOKS_DIR", tmp_path), \
+             patch("sys.argv", ["audit_c1_c3.py"]):
+            ret = main()
+            assert ret == 0
+            assert "All clear" in capsys.readouterr().out
+
+    def test_violations_exit_code_1(self, tmp_path, capsys):
+        from audit_c1_c3 import main
+        nb = _nb([_code("raise NotImplementedError")])
+        p = _write_nb(tmp_path / "bad.ipynb", nb["cells"])
+        with patch("audit_c1_c3.find_notebooks", return_value=[p]), \
+             patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.NOTEBOOKS_DIR", tmp_path), \
+             patch("sys.argv", ["audit_c1_c3.py"]):
+            ret = main()
+            assert ret == 1
+
+    def test_json_output(self, tmp_path, capsys):
+        from audit_c1_c3 import main
+        nb = _nb([_code("raise NotImplementedError")])
+        p = _write_nb(tmp_path / "bad.ipynb", nb["cells"])
+        with patch("audit_c1_c3.find_notebooks", return_value=[p]), \
+             patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.NOTEBOOKS_DIR", tmp_path), \
+             patch("sys.argv", ["audit_c1_c3.py", "--json"]):
+            ret = main()
+            assert ret == 1
+            output = capsys.readouterr().out
+            parsed = json.loads(output)
+            assert "total_notebooks" in parsed
+            assert parsed["total_notebooks"] == 1
+
+    def test_summary_output(self, tmp_path, capsys):
+        from audit_c1_c3 import main
+        nb = _nb([_code("x = 1")])
+        p = _write_nb(tmp_path / "good.ipynb", nb["cells"])
+        with patch("audit_c1_c3.find_notebooks", return_value=[p]), \
+             patch("audit_c1_c3.check_c1", return_value=[]), \
+             patch("audit_c1_c3.check_c3", return_value=[]), \
+             patch("audit_c1_c3.REPO_ROOT", tmp_path), \
+             patch("audit_c1_c3.NOTEBOOKS_DIR", tmp_path), \
+             patch("sys.argv", ["audit_c1_c3.py", "--summary"]):
+            ret = main()
+            assert ret == 0
+            output = capsys.readouterr().out
+            assert "Family" in output
+            assert "Total" in output
