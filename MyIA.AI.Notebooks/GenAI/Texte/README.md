@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: GenAI-Texte
 pedagogical_count: 11
-breakdown: Texte=11
-maturity: PRODUCTION=10, BETA=1
+breakdown: OpenAI-Intro=1, PromptEngineering=1, StructuredOutputs=1, FunctionCalling=1, RAG=1, PDF-WebSearch=1, CodeInterpreter=1, Reasoning=1, Production=1, LocalLlama=1, Quantization=1
+maturity: PRODUCTION=6, BETA=5
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
