@@ -63,7 +63,31 @@ namespace Conway
 namespace Life
 namespace Pillars
 
-/-! ## Pattern placeholders
+/-! ## Pattern archive
+
+RLE files for the four pillars live in `patterns/` alongside this
+Lean project. They were downloaded from the copy.sh mirror of the
+LifeWiki community archive:
+
+  `https://copy.sh/life/examples/<name>.rle`
+
+| File                | Grid size    | Size (KB) | Pillar theorem            |
+|---------------------|-------------|-----------|---------------------------|
+| `otcametapixel.rle` | 2058 × 2058 | 165       | `otca_metapixel_witness`  |
+| `p5760unitlifecell.rle` | 499 × 499 | 15     | `unitcell_witness`        |
+| `turingmachine.rle` | variable    | 104       | (narrative: Act II)       |
+| `gemini.rle`        | huge        | 5 300     | `gemini_witness`          |
+
+`gemini.rle` (5.3 MB) is gitignored due to size; the notebook's
+`fetch_rle()` re-downloads it on demand with disk caching.
+
+The RLE files are **too large** for Lean string literals (OTCA alone is
+165 KB of RLE text; the Lean kernel would need to parse it at compile
+time). They await a future file-IO loading mechanism or external
+pre-processing step that generates Lean `Grid` definitions from the
+RLE source.
+
+## Pattern placeholders
 
 Each pillar needs (a) its initial RLE-decoded `Grid`, (b) the target
 generation count, (c) the expected post-evolution `Grid` (also from
