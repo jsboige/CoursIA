@@ -268,19 +268,19 @@ Source code analysis of all 10 research projects. Zero strategies have explicitl
 
 ### Fee Model Configuration
 
-| Project | QC ID | `SetFeeModel` | `SetBrokerageModel` | Default Fees |
-|---------|-------|---------------|----------------------|--------------|
-| TrendFollowing | 28797562 | NONE | NONE | QC Default (equity) |
-| EMA-Cross-Stocks | 28789946 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
-| MomentumStrategy | 28657837 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
-| AllWeather | 28657833 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
-| VolTarget-Momentum | 30784745 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
-| Crypto-MultiCanal | 30750734 | NONE | `BINANCE, CASH` (configurable) | Binance schedule (0.1%) |
-| Portfolio-IBKR-Binance | 31717642 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
-| MomentumRegime | 31243821 | NONE | `IBKR, MARGIN` | IBKR tiered |
-| TrendStocks-Alpha | 28885507 | NONE | `IBKR, MARGIN` | IBKR tiered |
-| EMA-Cross-Alpha | 28885488 | NONE | `IBKR, MARGIN` | IBKR tiered |
-| ForexCarry | 28657908 | NONE | `OANDA, MARGIN` (#2575) | OANDA schedule |
+| Project | QC ID | `SetFeeModel` | `SetBrokerageModel` | Configurable | Default Fees |
+|---------|-------|---------------|----------------------|--------------|--------------|
+| Trend-Following | 28797562 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
+| EMA-Cross-Stocks | 28789946 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
+| MomentumStrategy | 28657837 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
+| AllWeather | 28657833 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
+| VolTarget-Momentum | 30784745 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
+| Crypto-MultiCanal | 30750734 | NONE | `BINANCE, CASH` | YES (`brokerage=binance/none`) | Binance schedule (0.1%) |
+| Portfolio-IBKR-Binance | 31717642 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
+| MomentumRegime | 31243821 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
+| TrendStocks-Alpha | 28885507 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
+| EMA-Cross-Alpha | 28885488 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
+| ForexCarry | 28657908 | NONE | `OANDA, MARGIN` | YES (`brokerage=oanda/none`) | OANDA schedule |
 
 ### Turnover Estimation
 
