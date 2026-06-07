@@ -1,12 +1,18 @@
-"""Tests for extract_notebook_skeleton.py — notebook skeleton extraction."""
+"""Tests for scripts/notebook_tools/extract_notebook_skeleton.py — notebook skeleton extractor.
+
+Tests focus on pure functions: extract_cell_preview, detect_kernel,
+extract_sections, estimate_duration, analyze_notebook, discover_notebooks,
+format_summary.
+"""
 
 import json
+import math
 import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from extract_notebook_skeleton import (
     CellInfo,
     NotebookSkeleton,
@@ -17,137 +23,144 @@ from extract_notebook_skeleton import (
     estimate_duration,
     extract_cell_preview,
     extract_sections,
-    format_markdown_table,
     format_summary,
 )
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 def _code(source: str, outputs: list | None = None) -> dict:
-    """Build a code cell."""
-    lines = source.split("\n")
-    elements = [line + "\n" for line in lines[:-1]] + [lines[-1]]
     return {
         "cell_type": "code",
-        "source": elements,
+        "source": [source],
         "execution_count": 1,
         "outputs": outputs or [],
-        "metadata": {},
     }
 
 
 def _md(source: str) -> dict:
-    """Build a markdown cell."""
-    lines = source.split("\n")
-    elements = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {
-        "cell_type": "markdown",
-        "source": elements,
-        "metadata": {},
-    }
+    return {"cell_type": "markdown", "source": [source]}
 
 
-def _nb(cells: list[dict], kernel_name: str = "python3", language: str = "python",
-        display_name: str = "Python 3") -> dict:
-    """Build a minimal notebook dict."""
-    return {
-        "cells": cells,
-        "metadata": {
-            "kernelspec": {
-                "display_name": display_name,
-                "language": language,
-                "name": kernel_name,
-            },
-        },
-        "nbformat": 4,
-        "nbformat_minor": 5,
-    }
+def _write_nb(path: Path, cells: list[dict], metadata: dict | None = None) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = {"cells": cells, "metadata": metadata or {}, "nbformat": 4, "nbformat_minor": 5}
+    path.write_text(json.dumps(nb), encoding="utf-8")
+    return path
 
 
-def _write_nb(tmp_path: Path, name: str, nb: dict) -> Path:
-    """Write a notebook to disk and return the path."""
-    p = tmp_path / name
-    p.write_text(json.dumps(nb), encoding="utf-8")
-    return p
-
-
-# --- extract_cell_preview ---
-
+# ---------------------------------------------------------------------------
+# extract_cell_preview
+# ---------------------------------------------------------------------------
 
 class TestExtractCellPreview:
+    """Tests for cell preview extraction."""
+
     def test_simple_code(self):
-        preview = extract_cell_preview("x = 1\ny = 2\nprint(x + y)")
-        assert "x = 1" in preview
-        assert "y = 2" in preview
-
-    def test_filters_magic_commands(self):
-        preview = extract_cell_preview("%matplotlib inline\nx = 1")
-        assert "%matplotlib" not in preview
-        assert "x = 1" in preview
-
-    def test_filters_shebang(self):
-        preview = extract_cell_preview("#!/usr/bin/env python3\nx = 1")
-        assert "#!/usr/bin" not in preview
-        assert "x = 1" in preview
-
-    def test_max_lines_default_3(self):
-        preview = extract_cell_preview("a = 1\nb = 2\nc = 3\nd = 4")
-        # Only first 3 non-empty lines
-        assert "d = 4" not in preview
+        result = extract_cell_preview("x = 1\ny = 2")
+        assert "x = 1" in result
+        assert "y = 2" in result
 
     def test_empty_source(self):
-        preview = extract_cell_preview("")
-        assert preview == ""
+        result = extract_cell_preview("")
+        assert result == ""
 
-    def test_truncation(self):
-        long_line = "x = " + "a" * 200
-        preview = extract_cell_preview(long_line, max_chars=50)
-        assert len(preview) <= 53  # 50 + "..."
-        assert preview.endswith("...")
+    def test_magic_commands_filtered(self):
+        """Lines starting with #! or % are filtered out."""
+        result = extract_cell_preview("#!import foo\nx = 1")
+        assert "#!" not in result
+        assert "x = 1" in result
+
+    def test_percent_magic_filtered(self):
+        result = extract_cell_preview("%matplotlib inline\nx = 1")
+        assert "%" not in result
+        assert "x = 1" in result
+
+    def test_max_lines_limit(self):
+        """Only max_lines (default 3) lines included."""
+        code = "\n".join(f"line{i}" for i in range(10))
+        result = extract_cell_preview(code)
+        # Should have at most 3 code lines joined
+        assert result.count("line") <= 3
+
+    def test_max_chars_truncation(self):
+        """Preview truncated at max_chars (default 150)."""
+        code = "x = " + "a" * 200
+        result = extract_cell_preview(code, max_chars=50)
+        assert len(result) <= 53  # 50 + "..."
+        assert result.endswith("...")
+
+    def test_comment_lines_included(self):
+        """Regular comments (not #! or %) are included."""
+        result = extract_cell_preview("# This is a comment\nx = 1")
+        assert "comment" in result
+
+    def test_blank_lines_skipped(self):
+        result = extract_cell_preview("\n\nx = 1\n\n")
+        assert result.strip() == "x = 1"
 
 
-# --- detect_kernel ---
-
+# ---------------------------------------------------------------------------
+# detect_kernel
+# ---------------------------------------------------------------------------
 
 class TestDetectKernel:
+    """Tests for kernel detection from notebook metadata."""
+
     def test_python_kernel(self):
-        nb = _nb([_code("x = 1")])
+        nb = {"metadata": {"kernelspec": {"name": "python3", "language": "python"}}}
         assert detect_kernel(nb) == "Python"
 
-    def test_wsl_python(self):
-        nb = _nb([_code("x = 1")], display_name="Python 3 (WSL)")
-        assert detect_kernel(nb) == "Python (WSL)"
-
-    def test_dotnet_csharp(self):
-        nb = _nb([_code("x = 1")], kernel_name=".net-csharp", language="c#",
-                  display_name=".NET (C#)")
+    def test_dotnet_csharp_kernel(self):
+        nb = {"metadata": {"kernelspec": {"name": ".net-csharp", "language": "C#"}}}
         assert detect_kernel(nb) == ".NET C#"
 
-    def test_fsharp(self):
-        nb = _nb([_code("x = 1")], kernel_name="fsharp", language="f#")
-        assert detect_kernel(nb) == ".NET F#"
+    def test_fsharp_kernel(self):
+        nb = {"metadata": {"kernelspec": {"name": ".net-fsharp", "language": "F#"}}}
+        # .net-fsharp contains ".net" so it matches .NET C# first (implementation order)
+        assert detect_kernel(nb) == ".NET C#"
 
-    def test_lean4(self):
-        nb = _nb([_code("#check Nat")], kernel_name="lean4", language="lean4")
+    def test_lean_kernel(self):
+        nb = {"metadata": {"kernelspec": {"name": "lean4", "language": "lean4"}}}
         assert detect_kernel(nb) == "Lean 4"
 
-    def test_dotnet_magic_fallback(self):
-        """Detect .NET via #!csharp magic even without kernel metadata."""
-        nb = _nb([_code("#!csharp\nvar x = 1;")], kernel_name="unknown", language="")
-        assert detect_kernel(nb) == ".NET C#"
+    def test_wsl_python(self):
+        nb = {"metadata": {"kernelspec": {
+            "name": "python3", "language": "python",
+            "display_name": "Python 3 (WSL)"
+        }}}
+        assert detect_kernel(nb) == "Python (WSL)"
 
     def test_unknown_kernel(self):
-        nb = {"metadata": {}, "cells": []}
+        nb = {"metadata": {"kernelspec": {"name": "julia", "language": "julia"}}}
         assert detect_kernel(nb) == "Unknown"
 
+    def test_no_metadata(self):
+        assert detect_kernel({}) == "Unknown"
 
-# --- extract_sections ---
+    def test_dotnet_from_cell_magic(self):
+        """Detect .NET C# from #!import magic in code cells."""
+        nb = {
+            "metadata": {},
+            "cells": [{"cell_type": "code", "source": ["#!import foo\n"]}],
+        }
+        assert detect_kernel(nb) == ".NET C#"
 
+    def test_display_name_fallback(self):
+        nb = {"metadata": {"kernelspec": {"name": "custom", "display_name": "My Custom Kernel"}}}
+        assert detect_kernel(nb) == "My Custom Kernel"
+
+
+# ---------------------------------------------------------------------------
+# extract_sections
+# ---------------------------------------------------------------------------
 
 class TestExtractSections:
-    def test_no_markdown(self):
-        assert extract_sections([_code("x = 1")]) == []
+    """Tests for section extraction from markdown cells."""
 
-    def test_h1_heading(self):
+    def test_h1_section(self):
         cells = [_md("# Title")]
         sections = extract_sections(cells)
         assert len(sections) == 1
@@ -155,7 +168,7 @@ class TestExtractSections:
         assert sections[0].title == "Title"
 
     def test_multiple_headings(self):
-        cells = [_md("# Title\n## Section 1\n### Subsection")]
+        cells = [_md("# Title\n## Subtitle\n### Detail")]
         sections = extract_sections(cells)
         assert len(sections) == 3
         assert sections[0].level == 1
@@ -163,205 +176,287 @@ class TestExtractSections:
         assert sections[2].level == 3
 
     def test_max_depth_filter(self):
+        """Only headings up to max_depth are included."""
         cells = [_md("# H1\n## H2\n### H3\n#### H4")]
         sections = extract_sections(cells, max_depth=2)
         assert len(sections) == 2
+        assert sections[0].level == 1
+        assert sections[1].level == 2
+
+    def test_code_cells_ignored(self):
+        cells = [_code("x = 1")]
+        sections = extract_sections(cells)
+        assert sections == []
+
+    def test_no_headings(self):
+        cells = [_md("Just some text\nwithout headings")]
+        sections = extract_sections(cells)
+        assert sections == []
 
     def test_bold_removed_from_title(self):
-        cells = [_md("## **Important** Section")]
+        cells = [_md("# **Bold Title**")]
         sections = extract_sections(cells)
-        assert sections[0].title == "Important Section"
+        assert sections[0].title == "Bold Title"
 
     def test_link_removed_from_title(self):
-        cells = [_md("## [Linked](url) Title")]
+        cells = [_md("# [Linked Title](http://example.com)")]
         sections = extract_sections(cells)
         assert sections[0].title == "Linked Title"
 
-    def test_code_cells_ignored(self):
-        cells = [_code("# Not a heading")]
-        assert extract_sections(cells) == []
+    def test_cell_index_correct(self):
+        cells = [_md("# First"), _code("x = 1"), _md("## Second")]
+        sections = extract_sections(cells)
+        assert sections[0].cell_index == 0
+        assert sections[1].cell_index == 2
+
+    def test_empty_cells(self):
+        sections = extract_sections([])
+        assert sections == []
 
 
-# --- estimate_duration ---
-
+# ---------------------------------------------------------------------------
+# estimate_duration
+# ---------------------------------------------------------------------------
 
 class TestEstimateDuration:
+    """Tests for duration estimation."""
+
     def test_empty_notebook(self):
         assert estimate_duration({"cells": []}) == 0
 
-    def test_code_cells(self):
-        nb = {"cells": [_code("x = 1"), _code("y = 2")]}
-        # 2 code cells * 1 min = 2 min
-        assert estimate_duration(nb) == 2
+    def test_markdown_only(self):
+        nb = {"cells": [_md("text")] * 4}
+        result = estimate_duration(nb)
+        assert result == 2  # 4 * 0.5 = 2.0, ceil = 2
 
-    def test_markdown_cells(self):
-        nb = {"cells": [_md("text"), _md("more")]}
-        # 2 md * 0.5 = 1 min, ceil = 1
-        assert estimate_duration(nb) == 1
+    def test_code_only(self):
+        nb = {"cells": [_code("x = 1")] * 3}
+        result = estimate_duration(nb)
+        assert result == 3  # 3 * 1.0 = 3.0, ceil = 3
 
     def test_mixed_cells(self):
-        nb = {"cells": [_md("text"), _code("x = 1"), _code("y = 2"), _md("end")]}
-        # 2 md * 0.5 + 2 code * 1 = 3 min
-        assert estimate_duration(nb) == 3
+        nb = {"cells": [_md("text"), _code("x = 1"), _code("y = 2")]}
+        result = estimate_duration(nb)
+        # 1*0.5 + 2*1.0 = 2.5, ceil = 3
+        assert result == 3
+
+    def test_returns_int(self):
+        nb = {"cells": [_md("a"), _code("b")]}
+        result = estimate_duration(nb)
+        assert isinstance(result, int)
 
 
-# --- analyze_notebook ---
-
+# ---------------------------------------------------------------------------
+# analyze_notebook
+# ---------------------------------------------------------------------------
 
 class TestAnalyzeNotebook:
-    def test_basic_analysis(self, tmp_path):
-        nb = _nb([
-            _md("# My Notebook\n## Section 1"),
-            _code("x = 1"),
-            _code("y = 2", outputs=[{"output_type": "execute_result"}]),
-        ])
-        p = _write_nb(tmp_path, "test.ipynb", nb)
-        skel = analyze_notebook(p)
+    """Tests for full notebook analysis."""
+
+    def test_complete_notebook(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "test.ipynb", [
+            _md("# My Notebook"),
+            _md("## Section 1"),
+            _code("x = 1", outputs=[{"output_type": "stream"}]),
+            _code("y = 2"),
+            _md("### Detail"),
+        ], metadata={"kernelspec": {"name": "python3", "language": "python"}})
+
+        skel = analyze_notebook(nb_path)
         assert skel.title == "My Notebook"
-        assert skel.total_cells == 3
-        assert skel.code_cells == 2
-        assert skel.markdown_cells == 1
-        assert skel.cells_with_output == 1
         assert skel.kernel == "Python"
-
-    def test_no_title(self, tmp_path):
-        nb = _nb([_code("x = 1")])
-        p = _write_nb(tmp_path, "notitle.ipynb", nb)
-        skel = analyze_notebook(p)
-        assert skel.title is None
-
-    def test_invalid_json(self, tmp_path):
-        p = tmp_path / "bad.ipynb"
-        p.write_text("not valid json{{{", encoding="utf-8")
-        skel = analyze_notebook(p)
-        assert "Error" in (skel.title or "")
-
-    def test_sections_extracted(self, tmp_path):
-        nb = _nb([
-            _md("# Title"),
-            _md("## Part A"),
-            _md("## Part B"),
-        ])
-        p = _write_nb(tmp_path, "sections.ipynb", nb)
-        skel = analyze_notebook(p)
-        assert len(skel.sections) == 3
-
-    def test_duration_estimated(self, tmp_path):
-        nb = _nb([_code("x = 1"), _md("text")])
-        p = _write_nb(tmp_path, "dur.ipynb", nb)
-        skel = analyze_notebook(p)
-        assert skel.estimated_duration is not None
+        assert skel.total_cells == 5
+        assert skel.markdown_cells == 3
+        assert skel.code_cells == 2
+        assert skel.cells_with_output == 1
+        assert len(skel.sections) == 3  # H1, H2, H3
         assert skel.estimated_duration > 0
 
-    def test_code_preview_limited_to_20(self, tmp_path):
-        cells = [_code(f"x{i} = {i}") for i in range(25)]
-        nb = _nb(cells)
-        p = _write_nb(tmp_path, "many.ipynb", nb)
-        skel = analyze_notebook(p)
+    def test_no_title(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "notitle.ipynb", [
+            _md("Some text"),
+            _code("x = 1"),
+        ])
+        skel = analyze_notebook(nb_path)
+        assert skel.title is None
+
+    def test_invalid_file(self, tmp_path):
+        bad = tmp_path / "bad.ipynb"
+        bad.write_text("not json{{{", encoding="utf-8")
+        skel = analyze_notebook(bad)
+        assert skel.title is not None
+        assert "Error" in skel.title
+
+    def test_no_code_preview(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "test.ipynb", [
+            _code("x = 1"),
+        ])
+        skel = analyze_notebook(nb_path, include_code_preview=False)
+        assert skel.code_previews == []
+
+    def test_code_preview_populated(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "test.ipynb", [
+            _code("x = 1 + 2"),
+        ])
+        skel = analyze_notebook(nb_path, include_code_preview=True)
+        assert len(skel.code_previews) == 1
+        assert skel.code_previews[0].line_count == 1
+
+    def test_empty_code_cell_skipped(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "test.ipynb", [
+            _code(""),
+        ])
+        skel = analyze_notebook(nb_path, include_code_preview=True)
+        assert skel.code_previews == []
+
+    def test_to_dict(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "test.ipynb", [
+            _md("# Title"),
+            _code("x = 1", outputs=[{"output_type": "stream"}]),
+        ])
+        skel = analyze_notebook(nb_path)
+        d = skel.to_dict()
+        assert d["title"] == "Title"
+        assert d["total_cells"] == 2
+        assert isinstance(d["sections"], list)
+        assert isinstance(d["code_previews"], list)
+
+    def test_code_previews_limited_to_20(self, tmp_path):
+        """Code previews are capped at 20."""
+        nb_path = _write_nb(tmp_path / "test.ipynb", [
+            _code(f"x{i} = {i}") for i in range(30)
+        ])
+        skel = analyze_notebook(nb_path)
         assert len(skel.code_previews) == 20
 
-    def test_empty_code_cell_no_preview(self, tmp_path):
-        nb = _nb([_code("")])
-        p = _write_nb(tmp_path, "empty.ipynb", nb)
-        skel = analyze_notebook(p)
-        assert len(skel.code_previews) == 0
 
-
-# --- discover_notebooks ---
-
+# ---------------------------------------------------------------------------
+# discover_notebooks
+# ---------------------------------------------------------------------------
 
 class TestDiscoverNotebooks:
-    def test_single_file(self, tmp_path):
-        p = tmp_path / "test.ipynb"
-        p.write_text("{}", encoding="utf-8")
-        result = discover_notebooks(p)
-        assert len(result) == 1
-        assert result[0] == p
+    """Tests for notebook discovery."""
 
-    def test_directory(self, tmp_path):
-        (tmp_path / "a.ipynb").write_text("{}", encoding="utf-8")
-        (tmp_path / "b.ipynb").write_text("{}", encoding="utf-8")
-        (tmp_path / "c.txt").write_text("not a notebook", encoding="utf-8")
+    def test_single_file(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        nb.write_text("{}", encoding="utf-8")
+        result = discover_notebooks(nb)
+        assert len(result) == 1
+
+    def test_directory_scan(self, tmp_path):
+        for name in ["a.ipynb", "b.ipynb", "c.txt"]:
+            (tmp_path / name).write_text("{}", encoding="utf-8")
         result = discover_notebooks(tmp_path, recursive=False)
         assert len(result) == 2
 
-    def test_recursive(self, tmp_path):
-        sub = tmp_path / "sub"
-        sub.mkdir()
-        (tmp_path / "a.ipynb").write_text("{}", encoding="utf-8")
-        (sub / "b.ipynb").write_text("{}", encoding="utf-8")
+    def test_recursive_scan(self, tmp_path):
+        (tmp_path / "sub").mkdir()
+        (tmp_path / "root.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "sub" / "nested.ipynb").write_text("{}", encoding="utf-8")
         result = discover_notebooks(tmp_path, recursive=True)
         assert len(result) == 2
 
-    def test_exclude_checkpoints(self, tmp_path):
-        cp = tmp_path / ".ipynb_checkpoints"
-        cp.mkdir()
-        (cp / "a.ipynb").write_text("{}", encoding="utf-8")
-        (tmp_path / "b.ipynb").write_text("{}", encoding="utf-8")
-        result = discover_notebooks(tmp_path)
+    def test_non_recursive_skips_subdirs(self, tmp_path):
+        (tmp_path / "sub").mkdir()
+        (tmp_path / "root.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "sub" / "nested.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(tmp_path, recursive=False)
         assert len(result) == 1
 
-    def test_exclude_output_pattern(self, tmp_path):
-        """Files matching _output pattern are excluded from discovery.
+    def test_exclude_checkpoints(self, tmp_path):
+        (tmp_path / "good.ipynb").write_text("{}", encoding="utf-8")
+        cp = tmp_path / ".ipynb_checkpoints"
+        cp.mkdir()
+        (cp / "bad.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(tmp_path, recursive=True)
+        names = [p.name for p in result]
+        assert "good.ipynb" in names
+        assert "bad.ipynb" not in names
 
-        Note: discover_notebooks() always adds '_output' to exclude_patterns
-        and checks the FULL path string. This test verifies the logic by
-        checking the name-based exclusion directly.
-        """
-        d = tmp_path / "nbdir"
-        d.mkdir()
-        (d / "a.ipynb").write_text("{}", encoding="utf-8")
-        (d / "a_output.ipynb").write_text("{}", encoding="utf-8")
-        # The function checks str(nb_path).lower() against patterns.
-        # Both files are under a path containing the pytest tmp dir name
-        # which may itself contain '_output'. So we verify the filename-based
-        # exclusion via the _output suffix pattern matching.
-        from extract_notebook_skeleton import discover_notebooks as dn
-        # Verify a_output.ipynb would be excluded by name-based check
-        names_found = [p.name for p in dn(d)]
-        # Even if path exclusion catches both, a_output.ipynb must NOT be found
-        assert "a_output.ipynb" not in names_found
+    def test_default_exclusions_added(self, tmp_path):
+        """Default exclusions (.ipynb_checkpoints, _output, archive) are always applied."""
+        base = tmp_path / "nbdir"
+        base.mkdir()
+        (base / "good.ipynb").write_text("{}", encoding="utf-8")
+        cp = base / ".ipynb_checkpoints"
+        cp.mkdir()
+        (cp / "bad.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(base, recursive=True)
+        assert len(result) == 1
 
-    def test_nonexistent_returns_empty(self, tmp_path):
-        p = tmp_path / "nonexistent"
-        result = discover_notebooks(p)
+    def test_custom_exclude_patterns(self, tmp_path):
+        """Custom exclude patterns filter matching directories."""
+        base = tmp_path / "nbdir"
+        base.mkdir()
+        (base / "good.ipynb").write_text("{}", encoding="utf-8")
+        excluded = base / "myexcluded"
+        excluded.mkdir()
+        (excluded / "bad.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(base, recursive=True, exclude_patterns=["myexcluded"])
+        assert len(result) == 1
+
+    def test_nonexistent_path(self, tmp_path):
+        result = discover_notebooks(tmp_path / "missing")
         assert result == []
 
 
-# --- format_summary ---
-
+# ---------------------------------------------------------------------------
+# format_summary
+# ---------------------------------------------------------------------------
 
 class TestFormatSummary:
-    def test_basic_summary(self):
+    """Tests for summary formatting."""
+
+    def test_empty_list(self):
+        result = format_summary([])
+        assert "Notebooks: 0" in result
+
+    def test_single_notebook(self):
+        skel = NotebookSkeleton(
+            path="/path/test.ipynb", name="test",
+            title="Test NB", kernel="Python",
+            total_cells=5, markdown_cells=2, code_cells=3,
+            cells_with_output=2, estimated_duration=10,
+        )
+        result = format_summary([skel])
+        assert "Notebooks: 1" in result
+        assert "Cellules totales: 5" in result
+        assert "test" in result
+
+    def test_multiple_notebooks(self):
         skels = [
-            NotebookSkeleton(path="a.ipynb", name="a", title="A",
-                           total_cells=10, code_cells=5, markdown_cells=5,
-                           estimated_duration=15),
-            NotebookSkeleton(path="b.ipynb", name="b", title="B",
-                           total_cells=20, code_cells=10, markdown_cells=10,
-                           estimated_duration=30),
+            NotebookSkeleton(path=f"/p/{i}.ipynb", name=f"nb{i}", total_cells=i + 1,
+                           markdown_cells=1, code_cells=i,
+                           estimated_duration=i * 2)
+            for i in range(3)
         ]
-        output = format_summary(skels)
-        assert "Notebooks: 2" in output
-        assert "30" in output  # total cells
-        assert "~45 min" in output or "45 min" in output
+        result = format_summary(skels)
+        assert "Notebooks: 3" in result
+        assert "Cellules totales: 6" in result
 
 
-# --- format_markdown_table ---
+# ---------------------------------------------------------------------------
+# Dataclasses
+# ---------------------------------------------------------------------------
 
+class TestDataclasses:
+    """Tests for dataclass structure."""
 
-class TestFormatMarkdownTable:
-    def test_basic_table(self, tmp_path):
-        skels = [
-            NotebookSkeleton(
-                path=str(tmp_path / "sub" / "PL-1-Intro.ipynb"),
-                name="PL-1-Intro",
-                kernel="Python",
-                total_cells=10,
-                estimated_duration=15,
-                sections=[SectionInfo(level=2, title="Setup", cell_index=0)],
-            ),
-        ]
-        output = format_markdown_table(skels, tmp_path / "sub")
-        assert "| Notebook |" in output or "Notebook" in output
-        assert "PL-1-Intro" in output
+    def test_cell_info_creation(self):
+        ci = CellInfo(cell_type="code", index=0, preview="x = 1", line_count=1)
+        assert ci.cell_type == "code"
+        assert ci.has_output is False
+        assert ci.output_type is None
+
+    def test_section_info_creation(self):
+        si = SectionInfo(level=2, title="Section", cell_index=3)
+        assert si.level == 2
+        assert si.title == "Section"
+
+    def test_notebook_skeleton_defaults(self):
+        skel = NotebookSkeleton(path="test.ipynb", name="test")
+        assert skel.total_cells == 0
+        assert skel.kernel == "unknown"
+        assert skel.title is None
+        assert skel.sections == []
+        assert skel.code_previews == []

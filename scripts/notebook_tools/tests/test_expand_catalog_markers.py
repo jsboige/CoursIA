@@ -1,18 +1,17 @@
-"""Tests for expand_catalog_markers.py — catalog marker expansion.
+"""Tests for scripts/notebook_tools/expand_catalog_markers.py — catalog marker expansion.
 
-Covers: compute_counter, _sorted_counter, compute_breakdown,
-compute_maturity_distribution, compute_status_distribution,
-format_catalog_status_block, expand_file, _to_lf.
+Tests focus on pure functions: _to_lf, compute_counter, _sorted_counter,
+compute_breakdown, compute_maturity_distribution, compute_status_distribution,
+format_catalog_status_block, expand_file. No filesystem I/O in tests.
 """
 
-import os
 import sys
 from collections import Counter
+from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from expand_catalog_markers import (
     _sorted_counter,
     _to_lf,
@@ -25,319 +24,400 @@ from expand_catalog_markers import (
 )
 
 
-def _entry(serie="ML", status="READY", maturity="PRODUCTION", sous_serie=None, **kw):
-    e = {"serie": serie, "status": status, "maturity": maturity}
-    if sous_serie:
-        e["sous_serie"] = sous_serie
-    e.update(kw)
-    return e
-
+# ---------------------------------------------------------------------------
+# Fixtures — sample catalog entries
+# ---------------------------------------------------------------------------
 
 SAMPLE_ENTRIES = [
-    _entry(serie="ML", status="READY", maturity="PRODUCTION"),
-    _entry(serie="ML", status="READY", maturity="PRODUCTION"),
-    _entry(serie="ML", status="BROKEN", maturity="EXPERIMENTAL"),
-    _entry(serie="GenAI", status="READY", maturity="PRODUCTION", sous_serie="Image"),
-    _entry(serie="GenAI", status="READY", maturity="PRODUCTION", sous_serie="Audio"),
-    _entry(serie="GenAI", status="NEEDS_IMPROVEMENT", maturity="EXPERIMENTAL", sous_serie="Image"),
+    {"serie": "Search", "sous_serie": "Part1-Foundations", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "Search", "sous_serie": "Part1-Foundations", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "Search", "sous_serie": "Part2-CSP", "status": "READY", "maturity": "BETA"},
+    {"serie": "Search", "sous_serie": "Part3-Advanced", "status": "DRAFT", "maturity": "ALPHA"},
+    {"serie": "Sudoku", "sous_serie": None, "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "Sudoku", "sous_serie": None, "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "Sudoku", "sous_serie": None, "status": "DRAFT", "maturity": "BETA"},
+    {"serie": "GameTheory", "sous_serie": "social_choice", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "GameTheory", "sous_serie": "social_choice", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "GameTheory", "sous_serie": "open_spiel", "status": "READY", "maturity": "BETA"},
 ]
 
 
-# --- _to_lf (mutation tests) ---
+# ---------------------------------------------------------------------------
+# _to_lf
+# ---------------------------------------------------------------------------
 
 class TestToLf:
-    """Mutation tests for _to_lf (L42-45) — CRLF/CR normalization."""
-
     def test_crlf_to_lf(self):
         assert _to_lf("a\r\nb\r\n") == "a\nb\n"
 
     def test_cr_to_lf(self):
-        assert _to_lf("a\rb\n") == "a\nb\n"
+        assert _to_lf("a\rb\r") == "a\nb\n"
 
     def test_lf_unchanged(self):
         assert _to_lf("a\nb\n") == "a\nb\n"
 
-    def test_mixed_line_endings(self):
+    def test_mixed_endings(self):
         assert _to_lf("a\r\nb\rc\n") == "a\nb\nc\n"
+
+    def test_no_endings(self):
+        assert _to_lf("abc") == "abc"
 
     def test_empty_string(self):
         assert _to_lf("") == ""
 
 
-# --- _sorted_counter (mutation tests) ---
+# ---------------------------------------------------------------------------
+# compute_counter
+# ---------------------------------------------------------------------------
+
+class TestComputeCounter:
+    def test_total_count_no_params(self):
+        assert compute_counter(SAMPLE_ENTRIES, {}) == str(len(SAMPLE_ENTRIES))
+
+    def test_filter_by_serie(self):
+        result = compute_counter(SAMPLE_ENTRIES, {"serie": "Search"})
+        assert result == "4"
+
+    def test_filter_by_serie_sudoku(self):
+        result = compute_counter(SAMPLE_ENTRIES, {"serie": "Sudoku"})
+        assert result == "3"
+
+    def test_filter_by_status(self):
+        result = compute_counter(SAMPLE_ENTRIES, {"status": "DRAFT"})
+        assert result == "2"
+
+    def test_filter_by_maturity(self):
+        result = compute_counter(SAMPLE_ENTRIES, {"maturity": "PRODUCTION"})
+        assert result == "6"
+
+    def test_filter_by_sous_serie(self):
+        result = compute_counter(SAMPLE_ENTRIES, {"sous_serie": "Part2-CSP"})
+        assert result == "1"
+
+    def test_combined_filter_serie_and_status(self):
+        result = compute_counter(SAMPLE_ENTRIES, {"serie": "Sudoku", "status": "READY"})
+        assert result == "2"
+
+    def test_combined_filter_serie_and_maturity(self):
+        result = compute_counter(SAMPLE_ENTRIES, {"serie": "Search", "maturity": "BETA"})
+        assert result == "1"
+
+    def test_filter_no_match(self):
+        result = compute_counter(SAMPLE_ENTRIES, {"serie": "NonExistent"})
+        assert result == "0"
+
+    def test_empty_entries(self):
+        assert compute_counter([], {"serie": "Search"}) == "0"
+
+    def test_missing_key_in_entry(self):
+        """Entries missing the filter key should not match."""
+        entries = [{"serie": "Search"}, {"serie": "Sudoku"}]
+        assert compute_counter(entries, {"maturity": "PRODUCTION"}) == "0"
+
+
+# ---------------------------------------------------------------------------
+# _sorted_counter
+# ---------------------------------------------------------------------------
 
 class TestSortedCounter:
-    """Mutation tests for _sorted_counter (L70-72) — deterministic sorting."""
-
     def test_sort_by_count_descending(self):
-        c = Counter(["a", "a", "b"])
+        c = Counter({"a": 3, "b": 1, "c": 2})
         result = _sorted_counter(c)
-        assert list(result.keys()) == ["a", "b"]
-        assert result["a"] == 2
-        assert result["b"] == 1
+        assert list(result.keys()) == ["a", "c", "b"]
 
     def test_tiebreak_alphabetical(self):
-        c = Counter(["b", "a", "c"])
+        """When counts are equal, keys are sorted alphabetically."""
+        c = Counter({"zebra": 2, "alpha": 2, "middle": 2})
         result = _sorted_counter(c)
-        # All count=1, alphabetical order
+        assert list(result.keys()) == ["alpha", "middle", "zebra"]
+
+    def test_tiebreak_mixed_counts(self):
+        c = Counter({"b": 5, "a": 5, "c": 3})
+        result = _sorted_counter(c)
         assert list(result.keys()) == ["a", "b", "c"]
 
     def test_empty_counter(self):
         assert _sorted_counter(Counter()) == {}
 
     def test_single_item(self):
-        c = Counter(["x"])
-        assert _sorted_counter(c) == {"x": 1}
+        assert _sorted_counter(Counter({"x": 1})) == {"x": 1}
 
-    def test_multiple_ties(self):
-        c = Counter(["z", "m", "a"])
+    def test_preserves_values(self):
+        c = Counter({"a": 10, "b": 5})
         result = _sorted_counter(c)
-        assert list(result.keys()) == ["a", "m", "z"]
+        assert result == {"a": 10, "b": 5}
 
 
-# --- compute_counter ---
-
-class TestComputeCounter:
-
-    def test_total(self):
-        assert compute_counter(SAMPLE_ENTRIES, {}) == "6"
-
-    def test_filter_serie(self):
-        assert compute_counter(SAMPLE_ENTRIES, {"serie": "ML"}) == "3"
-
-    def test_filter_status(self):
-        assert compute_counter(SAMPLE_ENTRIES, {"status": "BROKEN"}) == "1"
-
-    def test_filter_serie_and_status(self):
-        assert compute_counter(SAMPLE_ENTRIES, {"serie": "ML", "status": "READY"}) == "2"
-
-    def test_filter_maturity(self):
-        assert compute_counter(SAMPLE_ENTRIES, {"maturity": "PRODUCTION"}) == "4"
-
-    def test_filter_sous_serie(self):
-        assert compute_counter(SAMPLE_ENTRIES, {"sous_serie": "Image"}) == "2"
-
-    def test_no_match(self):
-        assert compute_counter(SAMPLE_ENTRIES, {"serie": "NonExistent"}) == "0"
-
-    def test_empty_entries(self):
-        assert compute_counter([], {}) == "0"
-
-    def test_returns_string(self):
-        result = compute_counter(SAMPLE_ENTRIES, {})
-        assert isinstance(result, str)
-
-
-# --- compute_breakdown ---
+# ---------------------------------------------------------------------------
+# compute_breakdown
+# ---------------------------------------------------------------------------
 
 class TestComputeBreakdown:
+    def test_search_breakdown(self):
+        result = compute_breakdown(SAMPLE_ENTRIES, "Search")
+        assert result == {
+            "Part1-Foundations": 2,
+            "Part2-CSP": 1,
+            "Part3-Advanced": 1,
+        }
 
-    def test_breakdown_genai(self):
-        bd = compute_breakdown(SAMPLE_ENTRIES, "GenAI")
-        assert bd["Image"] == 2
-        assert bd["Audio"] == 1
+    def test_sudoku_root_grouping(self):
+        """Entries without sous_serie are grouped as 'root'."""
+        result = compute_breakdown(SAMPLE_ENTRIES, "Sudoku")
+        assert result == {"root": 3}
 
-    def test_breakdown_no_sous_serie(self):
-        bd = compute_breakdown(SAMPLE_ENTRIES, "ML")
-        assert bd["root"] == 3
+    def test_gametheory_breakdown(self):
+        result = compute_breakdown(SAMPLE_ENTRIES, "GameTheory")
+        assert result == {"social_choice": 2, "open_spiel": 1}
 
-    def test_breakdown_empty(self):
-        bd = compute_breakdown(SAMPLE_ENTRIES, "NonExistent")
-        assert bd == {}
+    def test_nonexistent_serie(self):
+        result = compute_breakdown(SAMPLE_ENTRIES, "NonExistent")
+        assert result == {}
 
-    def test_breakdown_sorted_by_count(self):
+    def test_empty_entries(self):
+        assert compute_breakdown([], "Search") == {}
+
+    def test_deterministic_order(self):
+        """Breakdown keys are sorted by (-count, key)."""
         entries = [
-            _entry(serie="X", sous_serie="B"),
-            _entry(serie="X", sous_serie="A"),
-            _entry(serie="X", sous_serie="A"),
+            {"serie": "X", "sous_serie": "b"},
+            {"serie": "X", "sous_serie": "a"},
+            {"serie": "X", "sous_serie": "a"},
+            {"serie": "X", "sous_serie": "c"},
+            {"serie": "X", "sous_serie": "c"},
         ]
-        bd = compute_breakdown(entries, "X")
-        assert list(bd.keys()) == ["A", "B"]  # A=2 before B=1
-
-    def test_breakdown_none_sous_serie(self):
-        entries = [{"serie": "ML", "sous_serie": None, "status": "READY", "maturity": "PRODUCTION"}]
-        bd = compute_breakdown(entries, "ML")
-        assert bd == {"root": 1}
+        result = compute_breakdown(entries, "X")
+        assert list(result.keys()) == ["a", "c", "b"]  # a=2, c=2 (alpha tiebreak), b=1
 
 
-# --- compute_maturity_distribution ---
+# ---------------------------------------------------------------------------
+# compute_maturity_distribution
+# ---------------------------------------------------------------------------
 
 class TestComputeMaturityDistribution:
+    def test_all_series(self):
+        result = compute_maturity_distribution(SAMPLE_ENTRIES, None)
+        assert result["PRODUCTION"] == 6
+        assert result["BETA"] == 3
+        assert result["ALPHA"] == 1
 
-    def test_all(self):
-        dist = compute_maturity_distribution(SAMPLE_ENTRIES)
-        assert dist["PRODUCTION"] == 4
-        assert dist["EXPERIMENTAL"] == 2
+    def test_specific_serie(self):
+        result = compute_maturity_distribution(SAMPLE_ENTRIES, "Search")
+        assert result == {"PRODUCTION": 2, "BETA": 1, "ALPHA": 1}
 
-    def test_by_serie(self):
-        dist = compute_maturity_distribution(SAMPLE_ENTRIES, "ML")
-        assert dist["PRODUCTION"] == 2
-        assert dist["EXPERIMENTAL"] == 1
+    def test_sudoku_maturity(self):
+        result = compute_maturity_distribution(SAMPLE_ENTRIES, "Sudoku")
+        assert result == {"PRODUCTION": 2, "BETA": 1}
 
-    def test_unknown_maturity(self):
-        entries = [{"serie": "ML", "status": "READY"}]  # no maturity key
-        dist = compute_maturity_distribution(entries, "ML")
-        assert dist == {"UNKNOWN": 1}
+    def test_nonexistent_serie(self):
+        result = compute_maturity_distribution(SAMPLE_ENTRIES, "NonExistent")
+        assert result == {}
 
-    def test_no_serie_filter(self):
-        entries = [_entry(maturity="BETA"), _entry(maturity="BETA"), _entry(maturity="ALPHA")]
-        dist = compute_maturity_distribution(entries)
-        assert dist["BETA"] == 2
-        assert dist["ALPHA"] == 1
+    def test_missing_maturity_key(self):
+        """Entries missing 'maturity' are counted as UNKNOWN."""
+        entries = [{"serie": "X"}, {"serie": "X", "maturity": "PRODUCTION"}]
+        result = compute_maturity_distribution(entries, "X")
+        assert result == {"PRODUCTION": 1, "UNKNOWN": 1}
 
-    def test_sorted_output(self):
-        entries = [_entry(maturity="Z"), _entry(maturity="A")]
-        dist = compute_maturity_distribution(entries)
-        # Z=1, A=1 → alphabetical tiebreak
-        assert list(dist.keys()) == ["A", "Z"]
+    def test_deterministic_order(self):
+        result = compute_maturity_distribution(SAMPLE_ENTRIES, None)
+        keys = list(result.keys())
+        # PRODUCTION=6 > BETA=3 > ALPHA=1 — all different, pure count order
+        assert keys == ["PRODUCTION", "BETA", "ALPHA"]
 
 
-# --- compute_status_distribution ---
+# ---------------------------------------------------------------------------
+# compute_status_distribution
+# ---------------------------------------------------------------------------
 
 class TestComputeStatusDistribution:
+    def test_all_series(self):
+        result = compute_status_distribution(SAMPLE_ENTRIES, None)
+        assert result["READY"] == 8
+        assert result["DRAFT"] == 2
 
-    def test_all(self):
-        dist = compute_status_distribution(SAMPLE_ENTRIES)
-        assert dist["READY"] == 4
-        assert dist["BROKEN"] == 1
-        assert dist["NEEDS_IMPROVEMENT"] == 1
+    def test_specific_serie(self):
+        result = compute_status_distribution(SAMPLE_ENTRIES, "Search")
+        assert result == {"READY": 3, "DRAFT": 1}
 
-    def test_by_serie(self):
-        dist = compute_status_distribution(SAMPLE_ENTRIES, "GenAI")
-        assert dist["READY"] == 2
-        assert dist["NEEDS_IMPROVEMENT"] == 1
-
-    def test_sorted_output(self):
-        entries = [_entry(status="DEMO"), _entry(status="ALPHA")]
-        dist = compute_status_distribution(entries)
-        assert list(dist.keys()) == ["ALPHA", "DEMO"]
+    def test_nonexistent_serie(self):
+        assert compute_status_distribution(SAMPLE_ENTRIES, "NonExistent") == {}
 
 
-# --- format_catalog_status_block ---
+# ---------------------------------------------------------------------------
+# format_catalog_status_block
+# ---------------------------------------------------------------------------
 
 class TestFormatCatalogStatusBlock:
+    def test_single_serie_block(self):
+        result = format_catalog_status_block(SAMPLE_ENTRIES, "Search")
+        assert "series: Search" in result
+        assert "pedagogical_count: 4" in result
+        assert "Part1-Foundations=2" in result
+        assert "PRODUCTION=2" in result
+        assert result.startswith("<!-- CATALOG-STATUS")
+        assert result.endswith("-->")
 
-    def test_serie_block(self):
-        block = format_catalog_status_block(SAMPLE_ENTRIES, "ML")
-        assert "series: ML" in block
-        assert "pedagogical_count: 3" in block
-        assert "CATALOG-STATUS" in block
-        assert "-->" in block
+    def test_all_series_block(self):
+        result = format_catalog_status_block(SAMPLE_ENTRIES, "ALL")
+        assert "series: ALL" in result
+        assert "total: 10" in result
+        assert "Search=4" in result
+        assert "Sudoku=3" in result
+        assert "GameTheory=3" in result
 
-    def test_all_block(self):
-        block = format_catalog_status_block(SAMPLE_ENTRIES, "ALL")
-        assert "series: ALL" in block
-        assert "total: 6" in block
-        assert "breakdown:" in block
+    def test_block_structure(self):
+        """Block has exactly 5 lines of content between markers."""
+        result = format_catalog_status_block(SAMPLE_ENTRIES, "Search")
+        lines = result.strip().split("\n")
+        assert lines[0] == "<!-- CATALOG-STATUS"
+        assert lines[-1] == "-->"
+        # 5 content lines: series, pedagogical_count, breakdown, maturity, (closing)
+        assert len(lines) == 6  # opener + 4 data lines + closer
 
-    def test_all_block_series_breakdown(self):
-        block = format_catalog_status_block(SAMPLE_ENTRIES, "ALL")
-        assert "ML=3" in block
-        assert "GenAI=3" in block
+    def test_all_block_structure(self):
+        result = format_catalog_status_block(SAMPLE_ENTRIES, "ALL")
+        lines = result.strip().split("\n")
+        assert lines[0] == "<!-- CATALOG-STATUS"
+        assert lines[-1] == "-->"
+        assert "total:" in result
+        assert "breakdown:" in result
 
-    def test_serie_block_with_sous_serie_breakdown(self):
-        block = format_catalog_status_block(SAMPLE_ENTRIES, "GenAI")
-        assert "Image=2" in block
-        assert "Audio=1" in block
-
-    def test_nonexistent_serie_empty(self):
-        block = format_catalog_status_block(SAMPLE_ENTRIES, "NonExistent")
-        assert "pedagogical_count: 0" in block
-
-    def test_block_starts_and_ends_correctly(self):
-        block = format_catalog_status_block(SAMPLE_ENTRIES, "ML")
-        assert block.startswith("<!-- CATALOG-STATUS\n")
-        assert block.endswith("-->")
+    def test_empty_serie(self):
+        result = format_catalog_status_block([], "Search")
+        assert "pedagogical_count: 0" in result
+        assert "breakdown: " in result
 
 
-# --- expand_file ---
+# ---------------------------------------------------------------------------
+# expand_file
+# ---------------------------------------------------------------------------
 
 class TestExpandFile:
-
-    def test_no_markers(self):
-        content = "# Title\nSome text.\n"
+    def test_no_markers_unchanged(self):
+        content = "# Title\n\nSome text\n"
         new_content, changes = expand_file(content, SAMPLE_ENTRIES)
         assert new_content == content
         assert changes == []
 
-    def test_counter_marker_preserved(self):
-        content = "<!-- CATALOG:counter:total -->\n"
-        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
-        assert "CATALOG:counter:total" in new_content
-
-    def test_counter_with_params(self):
-        content = "<!-- CATALOG:counter:serie=ML -->\n"
-        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
-        assert "CATALOG:counter:serie=ML" in new_content
-
-    def test_catalog_status_block_updated(self):
-        content = "<!-- CATALOG-STATUS\nseries: ML\n-->\n"
-        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
-        assert "series: ML" in new_content
-        assert "pedagogical_count: 3" in new_content
-
-    def test_catalog_status_block_all(self):
-        content = "<!-- CATALOG-STATUS\nseries: ALL\n-->\n"
-        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
-        assert "total: 6" in new_content
-
-    def test_mixed_markers(self):
+    def test_catalog_status_block_replaced(self):
         content = (
-            "# Title\n"
-            "<!-- CATALOG:counter:total -->\n"
-            "<!-- CATALOG-STATUS\nseries: ML\n-->\n"
-        )
-        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
-        assert "CATALOG:counter:total" in new_content
-        assert "series: ML" in new_content
-
-    def test_catalog_status_block_unchanged_when_current(self):
-        """Block that matches current data produces no changes."""
-        block = format_catalog_status_block(SAMPLE_ENTRIES, "ML")
-        content = f"# README\n{block}\n"
-        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
-        assert changes == []
-
-    def test_catalog_status_no_series_line_preserved(self):
-        """Block with no 'series:' line is preserved as-is."""
-        content = "<!-- CATALOG-STATUS\nnonsense: here\n-->\n"
-        new_content, changes = expand_file(content, [_entry()])
-        assert changes == []
-        assert "nonsense: here" in new_content
-
-    def test_unknown_marker_type_preserved(self):
-        content = "<!-- CATALOG:unknown:foo -->\n"
-        new_content, changes = expand_file(content, [_entry()])
-        assert "<!-- CATALOG:unknown:foo -->" in new_content
-        assert changes == []
-
-    def test_counter_empty_params(self):
-        content = "<!-- CATALOG:counter: -->\n"
-        new_content, changes = expand_file(content, [_entry()])
-        assert "CATALOG:counter:" in new_content
-
-    def test_multiple_counter_markers(self):
-        content = (
-            "<!-- CATALOG:counter:total -->\n"
-            "<!-- CATALOG:counter:serie=ML -->\n"
-        )
-        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
-        assert "CATALOG:counter:total" in new_content
-        assert "CATALOG:counter:serie=ML" in new_content
-
-    def test_catalog_status_multiline_block(self):
-        """Multi-line CATALOG-STATUS block is correctly replaced."""
-        entries = [_entry(serie="ML")]
-        content = (
+            "# Title\n\n"
             "<!-- CATALOG-STATUS\n"
-            "series: ML\n"
+            "series: Search\n"
             "pedagogical_count: 999\n"
+            "breakdown: old=1\n"
+            "maturity: OLD=1\n"
             "-->\n"
         )
-        new_content, changes = expand_file(content, entries)
-        assert "pedagogical_count: 1" in new_content
-        assert len(changes) > 0
+        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
+        assert len(changes) == 1
+        assert "Search" in changes[0]
+        assert "pedagogical_count: 4" in new_content
+        assert "999" not in new_content
 
+    def test_catalog_status_block_idempotent(self):
+        """Running expand_file twice produces identical output."""
+        content = (
+            "<!-- CATALOG-STATUS\n"
+            "series: Sudoku\n"
+            "pedagogical_count: 999\n"
+            "breakdown: old=1\n"
+            "maturity: OLD=1\n"
+            "-->\n"
+        )
+        first, _ = expand_file(content, SAMPLE_ENTRIES)
+        second, changes = expand_file(first, SAMPLE_ENTRIES)
+        assert first == second
+        assert changes == []
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    def test_inline_counter_marker(self):
+        content = "Total: <!-- CATALOG:counter:total --> notebooks\n"
+        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
+        # Counter marker is preserved as-is (it's a placeholder, value is the marker itself)
+        assert "<!-- CATALOG:counter:total -->" in new_content
+        # Note: the current implementation preserves markers, it doesn't inline the count
+        # This test verifies the marker survives expansion
+
+    def test_catalog_status_all_series(self):
+        content = (
+            "<!-- CATALOG-STATUS\n"
+            "series: ALL\n"
+            "total: 0\n"
+            "breakdown: none\n"
+            "maturity: none\n"
+            "-->\n"
+        )
+        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
+        assert len(changes) == 1
+        assert "total: 10" in new_content
+        assert "Search=4" in new_content
+
+    def test_multiple_blocks_in_file(self):
+        content = (
+            "<!-- CATALOG-STATUS\n"
+            "series: Search\n"
+            "pedagogical_count: 0\n"
+            "breakdown: none\n"
+            "maturity: none\n"
+            "-->\n"
+            "\nSome text\n\n"
+            "<!-- CATALOG-STATUS\n"
+            "series: Sudoku\n"
+            "pedagogical_count: 0\n"
+            "breakdown: none\n"
+            "maturity: none\n"
+            "-->\n"
+        )
+        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
+        assert len(changes) == 2
+        assert "pedagogical_count: 4" in new_content  # Search
+        assert "pedagogical_count: 3" in new_content  # Sudoku
+
+    def test_preserves_surrounding_content(self):
+        content = (
+            "# Header\n\n"
+            "<!-- CATALOG-STATUS\n"
+            "series: Search\n"
+            "pedagogical_count: 0\n"
+            "breakdown: none\n"
+            "maturity: none\n"
+            "-->\n\n"
+            "Footer text\n"
+        )
+        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
+        assert new_content.startswith("# Header\n\n")
+        assert new_content.endswith("\n\nFooter text\n")
+        assert "pedagogical_count: 4" in new_content
+
+    def test_crlf_content_normalized(self):
+        """CRLF in content should work correctly."""
+        content = "<!-- CATALOG-STATUS\r\nseries: Search\r\npedagogical_count: 0\r\nbreakdown: none\r\nmaturity: none\r\n-->\r\n"
+        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
+        # Should handle and normalize
+        assert len(changes) == 1
+
+    def test_block_without_series_ignored(self):
+        """CATALOG-STATUS block without 'series:' line is preserved as-is."""
+        content = (
+            "<!-- CATALOG-STATUS\n"
+            "unknown_key: value\n"
+            "-->\n"
+        )
+        new_content, changes = expand_file(content, SAMPLE_ENTRIES)
+        assert changes == []
+        assert "unknown_key: value" in new_content
+
+    def test_empty_entries(self):
+        content = (
+            "<!-- CATALOG-STATUS\n"
+            "series: Search\n"
+            "pedagogical_count: 0\n"
+            "breakdown: none\n"
+            "maturity: none\n"
+            "-->\n"
+        )
+        new_content, changes = expand_file(content, [])
+        assert len(changes) == 1
+        assert "pedagogical_count: 0" in new_content
+        assert "breakdown: " in new_content

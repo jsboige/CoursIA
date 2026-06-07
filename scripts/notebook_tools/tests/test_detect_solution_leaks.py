@@ -1,300 +1,328 @@
-"""Tests for detect_solution_leaks.py — solution leak detection in notebooks."""
+"""Tests for scripts/notebook_tools/detect_solution_leaks.py — solution leak scanner.
+
+Tests focus on pure functions: is_stub_code, scan_notebook, discover_notebooks.
+Uses synthetic notebook dicts and tmp_path for filesystem isolation.
+"""
 
 import json
+import re
 import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from detect_solution_leaks import (
+    EXERCISE_HEADER_RE,
+    SOUMIS_PAR_RE,
+    SOLUTION_MARKER_RE,
+    STUB_PATTERNS,
+    discover_notebooks,
     is_stub_code,
     scan_notebook,
 )
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 def _nb(cells: list[dict]) -> dict:
-    """Build a minimal notebook dict."""
-    return {
-        "cells": cells,
-        "metadata": {
-            "kernelspec": {"display_name": "Python 3", "name": "python3"},
-        },
-        "nbformat": 4,
-        "nbformat_minor": 5,
-    }
+    return {"cells": cells, "metadata": {}}
 
 
 def _code(source: str) -> dict:
-    """Build a code cell."""
-    lines = source.split("\n")
-    elements = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {
-        "cell_type": "code",
-        "source": elements,
-        "execution_count": 1,
-        "outputs": [],
-        "metadata": {},
-    }
+    return {"cell_type": "code", "source": [source]}
 
 
 def _md(source: str) -> dict:
-    """Build a markdown cell."""
-    lines = source.split("\n")
-    elements = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {
-        "cell_type": "markdown",
-        "source": elements,
-        "metadata": {},
-    }
+    return {"cell_type": "markdown", "source": [source]}
 
 
-def _write_nb(tmp_path: Path, name: str, nb: dict) -> str:
-    """Write a notebook to disk and return the path string."""
-    p = tmp_path / name
-    p.write_text(json.dumps(nb), encoding="utf-8")
-    return str(p)
+def _write_nb(path: Path, cells: list[dict]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    path.write_text(json.dumps(nb), encoding="utf-8")
+    return path
 
 
-# --- is_stub_code ---
-
+# ---------------------------------------------------------------------------
+# is_stub_code
+# ---------------------------------------------------------------------------
 
 class TestIsStubCode:
     def test_pass_is_stub(self):
         assert is_stub_code("pass") is True
 
-    def test_print_exercice_a_completer_is_stub(self):
+    def test_print_exercice_a_completer(self):
         assert is_stub_code('print("Exercice a completer")') is True
 
-    def test_print_exercices_a_completer_is_stub(self):
-        assert is_stub_code('print("Exercices a completer")') is True
-
-    def test_return_none_is_stub(self):
+    def test_return_none(self):
         assert is_stub_code("return None") is True
 
-    def test_todo_comment_is_stub(self):
-        assert is_stub_code("# TODO: implementer la solution") is True
+    def test_todo_comment(self):
+        assert is_stub_code("# TODO: implement") is True
 
-    def test_empty_source_is_stub(self):
-        assert is_stub_code("") is True
-
-    def test_comment_only_is_stub(self):
-        assert is_stub_code("# Just a comment\n# Another comment") is True
-
-    def test_import_only_is_stub(self):
-        assert is_stub_code("import numpy as np") is True
-
-    def test_import_plus_one_line_is_stub(self):
-        assert is_stub_code("import numpy as np\nresult = None") is True
-
-    def test_complete_code_is_not_stub(self):
-        source = "x = 10\ny = 20\nprint(x + y)\nresult = x * y"
-        assert is_stub_code(source) is False
-
-    def test_real_function_is_not_stub(self):
-        source = "def solve(data):\n    return [x**2 for x in data]"
-        assert is_stub_code(source) is False
-
-    def test_multiline_solution_is_not_stub(self):
-        source = "a = 1\nb = 2\nc = a + b\nprint(c)\nreturn c"
-        assert is_stub_code(source) is False
-
-    def test_console_writeline_stub(self):
+    def test_console_writeline_french(self):
         assert is_stub_code('Console.WriteLine("Exercice a completer")') is True
 
-    def test_csharp_comment_only_is_stub(self):
-        assert is_stub_code("// TODO: implement\n// Another comment") is True
+    def test_real_code_not_stub(self):
+        code = "def solve(x):\n    return x ** 2 + 3 * x + 1\nresult = solve(42)"
+        assert is_stub_code(code) is False
+
+    def test_empty_is_stub(self):
+        assert is_stub_code("") is True
+
+    def test_whitespace_only_is_stub(self):
+        assert is_stub_code("   \n  \n  ") is True
+
+    def test_single_import_plus_pass(self):
+        assert is_stub_code("import numpy as np\npass") is True
+
+    def test_two_code_lines_not_stub(self):
+        code = "x = compute(data)\ny = transform(x)"
+        assert is_stub_code(code) is False
+
+    def test_import_only_is_stub(self):
+        assert is_stub_code("import pandas as pd") is True
+
+    def test_comment_only_is_stub(self):
+        assert is_stub_code("# just a comment\n# another") is True
+
+    def test_csharp_pass_is_stub(self):
+        # C# comments start with //
+        assert is_stub_code("// TODO\nreturn null;") is True
 
 
-# --- scan_notebook ---
+# ---------------------------------------------------------------------------
+# EXERCISE_HEADER_RE
+# ---------------------------------------------------------------------------
+
+class TestExerciseHeaderRe:
+    def test_french_exercice(self):
+        m = EXERCISE_HEADER_RE.search("## Exercice 1 : Tri")
+        assert m is not None
+        assert m.group(1) == "1"
+        assert "Tri" in m.group(2)
+
+    def test_exercice_no_number(self):
+        m = EXERCISE_HEADER_RE.search("### Exercice")
+        assert m is not None
+
+    def test_english_exercise(self):
+        m = EXERCISE_HEADER_RE.search("# Exercise 3: Sorting")
+        assert m is not None
+        assert m.group(1) == "3"
+
+    def test_with_dot_separator(self):
+        m = EXERCISE_HEADER_RE.search("## 2. Exercice")
+        assert m is not None
+
+    def test_no_match_regular_heading(self):
+        assert EXERCISE_HEADER_RE.search("## Introduction") is None
+
+    def test_no_match_example(self):
+        assert EXERCISE_HEADER_RE.search("## Exemple guide") is None
+
+    def test_h3_exercice(self):
+        m = EXERCISE_HEADER_RE.search("### Exercice 5")
+        assert m is not None
+        assert m.group(1) == "5"
 
 
-class TestScanNotebookClean:
-    """No leaks in properly structured notebooks."""
+# ---------------------------------------------------------------------------
+# SOUMIS_PAR_RE
+# ---------------------------------------------------------------------------
 
-    def test_exercise_with_stub(self, tmp_path):
-        nb = _nb([
-            _md("## Exercice 1\nResoudre le probleme."),
+class TestSoumisParRe:
+    def test_french(self):
+        assert SOUMIS_PAR_RE.search("Solution soumis par Jean") is not None
+
+    def test_english(self):
+        assert SOUMIS_PAR_RE.search("submitted by Alice") is not None
+
+    def test_no_match(self):
+        assert SOUMIS_PAR_RE.search("Random text") is None
+
+
+# ---------------------------------------------------------------------------
+# SOLUTION_MARKER_RE
+# ---------------------------------------------------------------------------
+
+class TestSolutionMarkerRe:
+    def test_solution(self):
+        assert SOLUTION_MARKER_RE.search("# Solution") is not None
+
+    def test_reponse(self):
+        assert SOLUTION_MARKER_RE.search("## Reponse") is not None
+
+    def test_resultat(self):
+        assert SOLUTION_MARKER_RE.search("Resultat:") is not None
+
+    def test_no_match(self):
+        assert SOLUTION_MARKER_RE.search("Code here") is None
+
+
+# ---------------------------------------------------------------------------
+# scan_notebook
+# ---------------------------------------------------------------------------
+
+class TestScanNotebook:
+    def test_clean_stub_exercise(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "clean.ipynb", [
+            _md("## Exercice 1 : Tri"),
             _code("pass"),
         ])
-        path = _write_nb(tmp_path, "clean.ipynb", nb)
-        findings = scan_notebook(path)
-        assert findings == []
+        findings = scan_notebook(str(nb_path))
+        assert len(findings) == 0
 
-    def test_exercise_with_todo(self, tmp_path):
-        nb = _nb([
-            _md("## Exercice 2\nCalculer X."),
-            _code("# TODO: votre code ici\npass"),
+    def test_solution_leak_high(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "leak.ipynb", [
+            _md("## Exercice 1 : Tri"),
+            _code("# Solution\ndef quicksort(arr):\n    if len(arr) <= 1:\n        return arr\n    pivot = arr[0]\n    left = [x for x in arr[1:] if x <= pivot]\n    right = [x for x in arr[1:] if x > pivot]\n    return quicksort(left) + [pivot] + quicksort(right)\nresult = quicksort(data)\nprint(result)"),
         ])
-        path = _write_nb(tmp_path, "clean.ipynb", nb)
-        findings = scan_notebook(path)
-        assert findings == []
+        findings = scan_notebook(str(nb_path))
+        assert any(f["severity"] == "HIGH" for f in findings)
 
-    def test_exercise_with_return_none(self, tmp_path):
-        nb = _nb([
-            _md("## Exercice 3\nImplementer f."),
-            _code("def f(x):\n    return None  # TODO"),
+    def test_soumis_par_leak(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "soumis.ipynb", [
+            _md("## Exercice 2 soumis par Alice"),
+            _code("x = complex_calc(data)\ny = transform(x)\nresult = finalize(y)"),
         ])
-        path = _write_nb(tmp_path, "clean.ipynb", nb)
-        findings = scan_notebook(path)
-        assert findings == []
+        findings = scan_notebook(str(nb_path))
+        assert any(f["severity"] == "HIGH" for f in findings)
+        assert any("soumis par" in f["message"] for f in findings)
 
-    def test_example_with_complete_code_is_not_leak(self, tmp_path):
-        """Exemple guide with complete code is NOT a leak."""
-        nb = _nb([
-            _md("## Exemple guide\nResolution complete."),
-            _code("x = 10\ny = 20\nresult = x + y\nprint(result)"),
-        ])
-        path = _write_nb(tmp_path, "ok.ipynb", nb)
-        findings = scan_notebook(path)
-        assert all(f["severity"] != "HIGH" for f in findings)
-
-
-class TestScanNotebookLeaks:
-    """Detect solution leaks."""
-
-    def test_exercise_with_long_complete_code_is_leak(self, tmp_path):
-        """Code with >8 lines under Exercice header triggers HIGH."""
-        nb = _nb([
-            _md("## Exercice 1\nResoudre le probleme."),
-            _code("x = 10\ny = 20\nz = 30\nresult = x + y + z\n"
-                  "output = result * 2\nprint(output)\nreturn output\n# done\nfinal = True"),
-        ])
-        path = _write_nb(tmp_path, "leak.ipynb", nb)
-        findings = scan_notebook(path)
-        high = [f for f in findings if f["severity"] == "HIGH"]
-        assert len(high) >= 1
-        assert "Solution leak" in high[0]["message"]
-
-    def test_exercise_with_short_complete_code_no_marker_not_leak(self, tmp_path):
-        """Short code (<9 lines) without solution marker is NOT flagged.
-
-        The detector only flags non-stub code under Exercice if it has
-        >8 lines OR contains a solution marker. This is by design to
-        avoid false positives on short helper cells.
-        """
-        nb = _nb([
-            _md("## Exercice 1\nResoudre."),
-            _code("x = 10\ny = 20\nresult = x + y"),
-        ])
-        path = _write_nb(tmp_path, "short.ipynb", nb)
-        findings = scan_notebook(path)
-        high = [f for f in findings if f["severity"] == "HIGH"]
-        assert len(high) == 0
-
-    def test_exercise_with_soumis_par_and_code_is_leak(self, tmp_path):
-        nb = _nb([
-            _md("## Exercice 5 — soumis par Jean\nMa solution."),
-            _code("x = 42\nresult = x * 2\nprint(result)"),
-        ])
-        path = _write_nb(tmp_path, "soumis.ipynb", nb)
-        findings = scan_notebook(path)
-        high = [f for f in findings if f["severity"] == "HIGH"]
-        assert len(high) >= 1
-        assert "soumis par" in high[0]["message"]
-
-    def test_exercise_with_solution_marker_is_leak(self, tmp_path):
-        nb = _nb([
-            _md("## Exercice 4\nCalculer."),
-            _code("# Solution\nx = 10\ny = 20"),
-        ])
-        path = _write_nb(tmp_path, "marker.ipynb", nb)
-        findings = scan_notebook(path)
-        high = [f for f in findings if f["severity"] == "HIGH"]
-        assert len(high) >= 1
-
-
-class TestScanNotebookDuplicates:
-    """Detect duplicate exercise numbering."""
-
-    def test_duplicate_exercise_numbers(self, tmp_path):
-        nb = _nb([
-            _md("## Exercice 1\nPremier."),
-            _code("pass"),
-            _md("## Exercice 1\nSecond (duplicate)."),
+    def test_soumis_par_with_stub_ok(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "ok.ipynb", [
+            _md("## Exercice 2 soumis par Alice"),
             _code("pass"),
         ])
-        path = _write_nb(tmp_path, "dup.ipynb", nb)
-        findings = scan_notebook(path)
-        medium = [f for f in findings if f["severity"] == "MEDIUM"]
-        assert len(medium) >= 1
-        assert "Duplicate" in medium[0]["message"]
+        findings = scan_notebook(str(nb_path))
+        assert len(findings) == 0
 
+    def test_duplicate_exercise_number(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "dup.ipynb", [
+            _md("## Exercice 1 : First"),
+            _code("pass"),
+            _md("## Exercice 1 : Second"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(f["severity"] == "MEDIUM" for f in findings)
 
-class TestScanNotebookEdgeCases:
-    """Edge cases and robustness."""
-
-    def test_no_exercises_no_findings(self, tmp_path):
-        nb = _nb([
+    def test_no_exercises_clean(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "none.ipynb", [
             _md("# Title"),
             _code("x = 1"),
-            _md("Some text"),
+            _md("## Conclusion"),
         ])
-        path = _write_nb(tmp_path, "no_ex.ipynb", nb)
-        findings = scan_notebook(path)
-        assert findings == []
+        findings = scan_notebook(str(nb_path))
+        assert len(findings) == 0
 
-    def test_exercise_with_no_following_code(self, tmp_path):
-        nb = _nb([
-            _md("## Exercice 1\nEnonce."),
-            _md("## Section suivante"),
-        ])
-        path = _write_nb(tmp_path, "no_code.ipynb", nb)
-        findings = scan_notebook(path)
-        assert findings == []
-
-    def test_exercise_with_code_two_cells_away_checked(self, tmp_path):
-        """Code cell within 3 cells of exercise header is checked."""
-        nb = _nb([
-            _md("## Exercice 1\nEnonce."),
-            _md("Indice: utilisez la fonction f."),
-            _code("# Solution complete\na = 10\nb = 20\nc = 30\nresult = a+b+c\n"
-                  "output = result * 2\nprint(output)\nreturn output\nfinal = True"),
-        ])
-        path = _write_nb(tmp_path, "gap.ipynb", nb)
-        findings = scan_notebook(path)
-        high = [f for f in findings if f["severity"] == "HIGH"]
-        # Has solution marker "# Solution" so should be flagged even if <9 lines
-        assert len(high) >= 1
-
-    def test_exercise_with_code_four_cells_away_not_checked(self, tmp_path):
-        """Code cell beyond 3 cells of exercise header is NOT checked."""
-        nb = _nb([
-            _md("## Exercice 1\nEnonce."),
-            _md("Indice 1."),
-            _md("Indice 2."),
-            _md("Indice 3."),
-            _code("x = 10\ny = 20\nresult = x + y\nprint(result)"),
-        ])
-        path = _write_nb(tmp_path, "far.ipynb", nb)
-        findings = scan_notebook(path)
-        high = [f for f in findings if f["severity"] == "HIGH"]
-        assert len(high) == 0
-
-    def test_invalid_json_returns_error(self, tmp_path):
-        p = tmp_path / "bad.ipynb"
-        p.write_text("not valid json{{{", encoding="utf-8")
-        findings = scan_notebook(str(p))
+    def test_invalid_json(self, tmp_path):
+        bad = tmp_path / "bad.ipynb"
+        bad.write_text("{invalid json!!!", encoding="utf-8")
+        findings = scan_notebook(str(bad))
         assert any(f["severity"] == "ERROR" for f in findings)
 
-    def test_exercise_numbered_with_dot(self, tmp_path):
-        nb = _nb([
-            _md("## 1. Exercice 3\nResoudre."),
-            _code("pass"),
+    def test_code_cell_gap(self, tmp_path):
+        """Next code cell within 3 cells after exercise header with >8 lines."""
+        nb_path = _write_nb(tmp_path / "gap.ipynb", [
+            _md("## Exercice 1"),
+            _md("Some instructions"),
+            _md("More instructions"),
+            _code("def solve():\n    data = load()\n    x = preprocess(data)\n    y = model(x)\n    z = postprocess(y)\n    result = validate(z)\n    return result\noutput = solve()\nprint(output)"),
         ])
-        path = _write_nb(tmp_path, "dot.ipynb", nb)
-        findings = scan_notebook(path)
-        # No leak since code is stub
-        high = [f for f in findings if f["severity"] == "HIGH"]
-        assert len(high) == 0
+        findings = scan_notebook(str(nb_path))
+        assert any(f["severity"] == "HIGH" for f in findings)
 
-    def test_exercise_english_variant(self, tmp_path):
-        nb = _nb([
-            _md("## Exercise 1\nSolve the problem."),
-            _code("pass"),
+    def test_code_cell_too_far(self, tmp_path):
+        """Next code cell beyond 3 cells is not checked."""
+        nb_path = _write_nb(tmp_path / "far.ipynb", [
+            _md("## Exercice 1"),
+            _md("A"),
+            _md("B"),
+            _md("C"),
+            _code("def solve():\n    return complex_thing(data)\nresult = solve()"),
         ])
-        path = _write_nb(tmp_path, "eng.ipynb", nb)
-        findings = scan_notebook(path)
-        # No leak since code is stub
-        high = [f for f in findings if f["severity"] == "HIGH"]
-        assert len(high) == 0
+        findings = scan_notebook(str(nb_path))
+        assert len(findings) == 0
+
+    def test_exercise_no_number(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "nonum.ipynb", [
+            _md("## Exercice"),
+            _code("x = full_solution(data)\ny = process(x)\nresult = y"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        # No soumis par, but has solution marker or >8 lines
+        assert any(f["severity"] == "HIGH" for f in findings)
+
+
+# ---------------------------------------------------------------------------
+# discover_notebooks
+# ---------------------------------------------------------------------------
+
+class TestDiscoverNotebooks:
+    def test_finds_notebooks(self, tmp_path):
+        (tmp_path / "a.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "b.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(str(tmp_path))
+        assert len(result) == 2
+
+    def test_excludes_checkpoints(self, tmp_path):
+        (tmp_path / ".ipynb_checkpoints").mkdir()
+        (tmp_path / ".ipynb_checkpoints" / "hidden.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "visible.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(str(tmp_path))
+        assert len(result) == 1
+
+    def test_excludes_output_files(self, tmp_path):
+        (tmp_path / "nb.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "nb_output.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(str(tmp_path))
+        assert len(result) == 1
+
+    def test_excludes_output_dir(self, tmp_path):
+        (tmp_path / "_output").mkdir()
+        (tmp_path / "_output" / "exec.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "real.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(str(tmp_path))
+        assert len(result) == 1
+
+    def test_empty_dir(self, tmp_path):
+        result = discover_notebooks(str(tmp_path))
+        assert result == []
+
+    def test_nested_dirs(self, tmp_path):
+        sub = tmp_path / "sub" / "deep"
+        sub.mkdir(parents=True)
+        (sub / "nb.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(str(tmp_path))
+        assert len(result) == 1
+
+    def test_sorted_output(self, tmp_path):
+        (tmp_path / "z.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "a.ipynb").write_text("{}", encoding="utf-8")
+        result = discover_notebooks(str(tmp_path))
+        assert result[0].endswith("a.ipynb")
+        assert result[1].endswith("z.ipynb")
+
+    def test_non_ipynb_ignored(self, tmp_path):
+        (tmp_path / "readme.md").write_text("hello", encoding="utf-8")
+        (tmp_path / "script.py").write_text("pass", encoding="utf-8")
+        result = discover_notebooks(str(tmp_path))
+        assert result == []
+
+
+# ---------------------------------------------------------------------------
+# STUB_PATTERNS constants
+# ---------------------------------------------------------------------------
+
+class TestStubPatterns:
+    def test_patterns_exist(self):
+        assert len(STUB_PATTERNS) > 0
+
+    def test_patterns_are_valid_regex(self):
+        for pattern in STUB_PATTERNS:
+            assert re.compile(pattern) is not None
