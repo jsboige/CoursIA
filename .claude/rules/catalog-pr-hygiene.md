@@ -1,6 +1,6 @@
 # Catalogue & hygiène PR — le catalogue appartient à l'automatisation
 
-S'applique à **tous les agents du cluster CoursIA** (workers `po-*` + coordinateur `ai-01`) qui ouvrent des PR. Source : mandat user 2026-06-06 (« régler définitivement le pb du catalogue et faire faire aux agents workers le travail t'économisant le tien »). Codifie la leçon `stale-catalog-silent-revert` (incidents #2376 / #2383 / #2385).
+S'applique à **tous les agents du cluster CoursIA** (workers `po-*` + coordinateur `ai-01`) qui ouvrent des PR. Source : mandat user 2026-06-06 (« régler définitivement le pb du catalogue et faire faire aux agents workers le travail t'économisant le tien »). Codifie la leçon `stale-catalog-silent-revert` (incidents #2376 / #2383 / #2385). **Enforcé par CI** : `catalog-guard.yml` FAIL toute PR touchant le catalogue (exception : bot `github-actions[bot]`). See #2632.
 
 ## Règle HARD 1 — NE JAMAIS régénérer le catalogue sur une branche feature
 

@@ -1,0 +1,99 @@
+name: Catalog Guard
+
+# Purpose
+# -------
+# PREVENT agents from committing COURSE_CATALOG.generated.{json,md} or
+# CATALOG-STATUS README markers on feature branches. The catalog is owned
+# exclusively by:
+#   - catalog-cron.yml  (scheduled auto-regen on main)
+#   - catalog-drift.yml (per-PR auto-regen, same-repo only)
+#
+# Any other PR that touches these files will FAIL this check with an explicit
+# error pointing to the governance rule.
+#
+# Rationale (decision user 07/06, #2632):
+#   Each PR that regenerates the catalog on a feature branch re-derives ~1060
+#   entries and silently overwrites curated fields present on main (maturity,
+#   issue_pr_associee, last_validation). At merge time -> silent-revert.
+#   Manual de-poisoning does not scale (8+ branches across 2 cron cycles).
+#
+# Exceptions:
+#   - github-actions[bot] (catalog-cron.yml, catalog-drift.yml auto-commits)
+#   - Manual workflow_dispatch (for emergency maintainer override)
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: "No catalog changes on feature branch"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout base
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for catalog file changes
+        id: check
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+        run: |
+          set -euo pipefail
+
+          # Allow the scheduled bot to bypass this check entirely.
+          if [ "$PR_AUTHOR" = "github-actions[bot]" ]; then
+            echo "::notice title=Catalog guard::Author is github-actions[bot] (automation) — guard bypassed."
+            echo "bypass=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # For workflow_dispatch (no pull_request context), skip.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Catalog guard::Manual dispatch — guard bypassed."
+            echo "bypass=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 3-dot diff: changes on the PR branch that are not on the base.
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- \
+            'COURSE_CATALOG.generated.json' \
+            'COURSE_CATALOG.generated.md' \
+            || true)
+
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=Catalog guard::No catalog files changed — clean."
+            echo "violated=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error title=Catalog guard FAILED::PR modifies catalog files that are owned by automation ($CHANGED). See #2632 and .claude/rules/catalog-pr-hygiene.md."
+            echo ""
+            echo "## Catalog Guard Violation" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "This PR modifies catalog-owned files:" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            for f in $CHANGED; do
+              echo "- \`$f\`" >> "$GITHUB_STEP_SUMMARY"
+            done
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### How to fix" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```bash' >> "$GITHUB_STEP_SUMMARY"
+            echo "git checkout origin/main -- $CHANGED" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "The catalog is regenerated automatically by \`catalog-cron.yml\` (daily on main) and \`catalog-drift.yml\` (per-PR auto-commit). See [#2632](https://github.com/${{ github.repository }}/issues/2632) and [.claude/rules/catalog-pr-hygiene.md](https://github.com/${{ github.repository }}/blob/main/.claude/rules/catalog-pr-hygiene.md)." >> "$GITHUB_STEP_SUMMARY"
+            echo "violated=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail if violated
+        if: steps.check.outputs.violated == 'true'
+        run: |
+          echo "::error title=Catalog guard FAILED::This PR modifies catalog-owned files. Restore them with: git checkout origin/main -- COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md"
+          exit 1
