@@ -1,7 +1,7 @@
 # Social Choice - Theorie du Choix Social
 
 <!-- CATALOG-STATUS
-series: SocialChoice
+series: GameTheory-SocialChoice
 pedagogical_count: 4
 maturity: PRODUCTION=4
 -->
