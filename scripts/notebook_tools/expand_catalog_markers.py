@@ -229,9 +229,10 @@ def find_readme_targets(target_file: str | None = None) -> list[Path]:
     if root_readme.exists():
         targets.append(root_readme)
 
-    # Series READMEs
-    for readme in NOTEBOOKS_DIR.glob("*/README.md"):
-        targets.append(readme)
+    # Series and sub-series READMEs (recursive to catch GenAI/Image/, SymbolicAI/Lean/, etc.)
+    for readme in NOTEBOOKS_DIR.rglob("README.md"):
+        if readme != root_readme:
+            targets.append(readme)
 
     return targets
 
