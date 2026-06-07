@@ -12,7 +12,7 @@ Avant de croire qu'un feature manque, qu'une API n'existe pas, qu'un fichier est
 
 Avant de relayer un diagnostic technique d'un autre agent dans un dispatch ou un bilan : exiger la preuve (ligne de code citee, log d'erreur copie, output compilateur). Pas de propagation par confiance. Si le diagnostic se revele faux apres relais, le coordinateur partage la responsabilite.
 
-**Incident 2026-05-07** : agent a affirme "MultiAgentSorryProver doesn't exist" pendant 3 sessions, alors qu'il etait fully implemented dans `prover/agents.py`, `prover/workflow.py`, `prover/tools.py`, `prover/provers.py`. Cf [.claude/rules/verify-before-claiming.md](../.claude/rules/verify-before-claiming.md).
+**Incident 2026-05-07** : agent a affirme "MultiAgentSorryProver doesn't exist" pendant 3 sessions, alors qu'il etait fully implemented dans `prover/agents.py`, `prover/workflow.py`, `prover/tools.py`, `prover/provers.py`. Cf [.claude/rules/verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md).
 
 **Incident 2026-05-24 (#274)** : ai-01 a ferme #274 (ComfyUI-RookieUI) sur un verdict "NO-GO (scope mismatch)" repris d'un audit po-2023 anterieur, SANS relire le body de l'issue. Or l'audit evaluait RookieUI contre une exigence "UI d'edition video" que #274 n'a JAMAIS formulee (#274 demande une sidebar generation d'IMAGE style A1111) — issue mal attribuee, l'audit confondait #274 avec une autre. Pire, la close a AJOUTE un rationale fabrique ("overlaps Forge/SDNext, no pedagogical value") contredisant le body. Detecte par le user ("Pure hallucination, tu as lu l'issue ?"), reverte (reopen + rétractation). **Lecon (G.1 + G.9) : un verdict est un claim comme un autre — son label ne dispense pas de relire la source qu'il pretend juger. Fermer une issue sur un label sans confronter son raisonnement au body = hallucination par procuration.**
 
@@ -96,7 +96,7 @@ Pattern interdit : APPROVED sur composite > 3000 lignes / 15 fichiers. Le bot DO
 
 Pattern interdit : APPROVED sur micro PR docs < 20 lignes isolee. Le bot DOIT detecter et exiger groupement.
 
-Cf [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) pour la grille complete.
+Cf [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) pour la grille complete.
 
 ---
 
@@ -110,8 +110,8 @@ Avant d'accepter une "breakthrough" rapportee par un agent (sorry 5→0, BEATS m
 
 ## References connexes
 
-- [.claude/rules/verify-before-claiming.md](../.claude/rules/verify-before-claiming.md) — Verifier avant de claimer un feature absent
-- [.claude/rules/anti-regression.md](../.claude/rules/anti-regression.md) — Anti-regression code metier
-- [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) — Discipline review PR
-- [.claude/rules/audit-reassessment.md](../.claude/rules/audit-reassessment.md) — Verifier audit avant fix
+- [.claude/rules/verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md) — Verifier avant de claimer un feature absent
+- [.claude/rules/anti-regression.md](../../.claude/rules/anti-regression.md) — Anti-regression code metier
+- [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) — Discipline review PR
+- [.claude/rules/audit-reassessment.md](../../.claude/rules/audit-reassessment.md) — Verifier audit avant fix
 - [docs/regles-validation-detail.md](regles-validation-detail.md) — Regles H.1-H.7 validation notebooks

@@ -116,7 +116,7 @@ Cf [docs/_archives/STABLE_SNAPSHOT.md](_archives/STABLE_SNAPSHOT.md).
 
 ## References connexes
 
-- [.claude/rules/notebook-conventions.md](../.claude/rules/notebook-conventions.md) — Rules C.1/C.2/C.3 notebook
+- [.claude/rules/notebook-conventions.md](../../.claude/rules/notebook-conventions.md) — Rules C.1/C.2/C.3 notebook
 - [docs/regles-vigilance-detail.md](regles-vigilance-detail.md) — Regles G.1-G.9 anti-complaisance
 - [docs/env-python-reparation.md](env-python-reparation.md) — Reparation env Python (regle F)
 - [docs/kernels-runtime.md](kernels-runtime.md) — Inventaire kernels par machine

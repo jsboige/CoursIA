@@ -1,6 +1,6 @@
 # ECE - Evaluation etudiants et compilation notes
 
-Pipeline GradeBookApp + repos GitHub etudiants. Pour le **calendrier toutes ecoles, scope EPITA-IS, agents par ecole** : cf [docs/teaching-context.md](teaching-context.md). Pour les **regles de review PR etudiantes** (anti-fuite questions soutenance) : cf [.claude/rules/student-pr-reviews.md](../.claude/rules/student-pr-reviews.md).
+Pipeline GradeBookApp + repos GitHub etudiants. Pour le **calendrier toutes ecoles, scope EPITA-IS, agents par ecole** : cf [docs/teaching-context.md](teaching-context.md). Pour les **regles de review PR etudiantes** (anti-fuite questions soutenance) : cf [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md).
 
 ## Repos GitHub etudiants
 
@@ -140,4 +140,4 @@ Sur tout repo etudiant, les commentaires de PR sont **visibles par les etudiants
 
 Le briefing jury / les questions / la grille restent **internes** (G drive `Notation/`, dashboard RooSync, rapport markdown local non-committe).
 
-Voir [.claude/rules/student-pr-reviews.md](../.claude/rules/student-pr-reviews.md) pour le protocole complet (incident 2026-05-17 documente).
+Voir [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md) pour le protocole complet (incident 2026-05-17 documente).

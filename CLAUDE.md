@@ -3,23 +3,23 @@
 Guidance pour Claude Code travaillant avec le repository CoursIA.
 
 **Documentation deportee — `docs/` :**
-- [docs/common-commands.md](docs/common-commands.md) - Setup environnement, validation notebooks, slash commands
-- [docs/genai-services.md](docs/genai-services.md) - Architectures Qwen/Lumina, scripts genai-stack, mappings notebooks
-- [docs/claude-code-config.md](docs/claude-code-config.md) - Agents, skills, rules, model selection
-- [docs/quantconnect.md](docs/quantconnect.md) - Backtests, MCP Docker, structure, livre reference
-- [docs/ece-grading.md](docs/ece-grading.md) - Pipeline GradeBookApp (notation collegiale, bonus CC, compilation), repos etudiants
-- [docs/esgf-grading.md](docs/esgf-grading.md) - Pipeline ESGF (cohorte 5ESGF-5BD1, peer eval CSV, calibration Option C HL, floor=10, mirror ECE)
-- [docs/teaching-context.md](docs/teaching-context.md) - Calendrier toutes ecoles, scope EPITA-IS, agents par ecole
-- [docs/cluster-agents.md](docs/cluster-agents.md) - Machines cluster, GPU topology, agents par specialisation, dispatch Epic
+- [docs/reference/common-commands.md](docs/reference/common-commands.md) - Setup environnement, validation notebooks, slash commands
+- [docs/genai/genai-services.md](docs/genai/genai-services.md) - Architectures Qwen/Lumina, scripts genai-stack, mappings notebooks
+- [docs/reference/claude-code-config.md](docs/reference/claude-code-config.md) - Agents, skills, rules, model selection
+- [docs/qc/quantconnect.md](docs/qc/quantconnect.md) - Backtests, MCP Docker, structure, livre reference
+- [docs/reference/ece-grading.md](docs/reference/ece-grading.md) - Pipeline GradeBookApp (notation collegiale, bonus CC, compilation), repos etudiants
+- [docs/reference/esgf-grading.md](docs/reference/esgf-grading.md) - Pipeline ESGF (cohorte 5ESGF-5BD1, peer eval CSV, calibration Option C HL, floor=10, mirror ECE)
+- [docs/reference/teaching-context.md](docs/reference/teaching-context.md) - Calendrier toutes ecoles, scope EPITA-IS, agents par ecole
+- [docs/reference/cluster-agents.md](docs/reference/cluster-agents.md) - Machines cluster, GPU topology, agents par specialisation, dispatch Epic
 - [docs/lean/](docs/lean/) - Prover iteration history, intractable diagnosis, LLM endpoints
-- [docs/architecture_mcp_roo.md](docs/architecture_mcp_roo.md) - Architecture MCP roo-state-manager (34 outils, RooSync)
-- [docs/kernels-runtime.md](docs/kernels-runtime.md) - .NET / Python / WSL kernels, conda envs (`coursia-ml-training`, `mcp-jupyter`, `epita_symbolic_ai`), dotnet-interactive PIN
-- [docs/procedures-recurrentes.md](docs/procedures-recurrentes.md) - Workflow PR, dispatch agents, validation notebook, audit anti-regression, productivite operations longues, pre-commit H.3
-- [docs/subagents-reference.md](docs/subagents-reference.md) - Catalogue 21 sous-agents + 15 skills, mapping side-tracks, usage async
-- [docs/scripts-reference.md](docs/scripts-reference.md) - Catalogue scripts dépôt (notebook CLI, exécution, catalogue anti-drift, qualité, maintenance/env)
-- [docs/env-python-reparation.md](docs/env-python-reparation.md) - Reparation env Python (regle F)
-- [docs/regles-vigilance-detail.md](docs/regles-vigilance-detail.md) - Detail G.1-G.9 + incidents
-- [docs/regles-validation-detail.md](docs/regles-validation-detail.md) - Detail H.1-H.7 + incident Sudoku-13 + plan P0-P4 + pre-commit script
+- [docs/reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) - Architecture MCP roo-state-manager (34 outils, RooSync)
+- [docs/reference/kernels-runtime.md](docs/reference/kernels-runtime.md) - .NET / Python / WSL kernels, conda envs (`coursia-ml-training`, `mcp-jupyter`, `epita_symbolic_ai`), dotnet-interactive PIN
+- [docs/reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md) - Workflow PR, dispatch agents, validation notebook, audit anti-regression, productivite operations longues, pre-commit H.3
+- [docs/reference/subagents-reference.md](docs/reference/subagents-reference.md) - Catalogue 21 sous-agents + 15 skills, mapping side-tracks, usage async
+- [docs/reference/scripts-reference.md](docs/reference/scripts-reference.md) - Catalogue scripts dépôt (notebook CLI, exécution, catalogue anti-drift, qualité, maintenance/env)
+- [docs/reference/env-python-reparation.md](docs/reference/env-python-reparation.md) - Reparation env Python (regle F)
+- [docs/reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) - Detail G.1-G.9 + incidents
+- [docs/reference/regles-validation-detail.md](docs/reference/regles-validation-detail.md) - Detail H.1-H.7 + incident Sudoku-13 + plan P0-P4 + pre-commit script
 
 **Regles modulaires `.claude/rules/` (auto-loaded a chaque session)** — chaque section critique ci-dessous renvoie a la regle complete :
 - [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md) - Branches, commits, force push (section A)
@@ -106,7 +106,7 @@ Detail complet : [.claude/rules/code-style.md](.claude/rules/code-style.md).
 
 **Regle user 2026-05-06 (Python) + 2026-05-26 (kernels)** : un env degrade ou un kernel manquant ne se contourne **jamais** par delegation, fallback ou skip. On **installe** le kernel/env manquant sur la machine locale, on demande UAC user au besoin.
 
-**Kernels installables partout** : .NET Interactive (`dotnet tool install --global Microsoft.dotnet-interactive`), Python 3 (via conda env dedie), Lean 4 (`elan toolchain install stable`). Verification : `jupyter kernelspec list`. Versions/paths exacts + envs Conda `coursia-ml-training` / `mcp-jupyter` / `epita_symbolic_ai` : [docs/kernels-runtime.md](docs/kernels-runtime.md). Reparation Python : [docs/env-python-reparation.md](docs/env-python-reparation.md).
+**Kernels installables partout** : .NET Interactive (`dotnet tool install --global Microsoft.dotnet-interactive`), Python 3 (via conda env dedie), Lean 4 (`elan toolchain install stable`). Verification : `jupyter kernelspec list`. Versions/paths exacts + envs Conda `coursia-ml-training` / `mcp-jupyter` / `epita_symbolic_ai` : [docs/reference/kernels-runtime.md](docs/reference/kernels-runtime.md). Reparation Python : [docs/reference/env-python-reparation.md](docs/reference/env-python-reparation.md).
 
 **Anti-patterns INTERDITS** (incident PR #1591 ML.Net, commit `4ca477e`) :
 - "kernel not available locally" dans un body PR = **manquement grave** à H.2
@@ -119,7 +119,7 @@ Detail complet : [.claude/rules/code-style.md](.claude/rules/code-style.md).
 
 ### G. Vigilance permanente — anti-complaisance
 
-S'applique a **tous les agents** (executants, coordinateur, reviewers humains et bots). Detail G.1-G.9 + incidents : [docs/regles-vigilance-detail.md](docs/regles-vigilance-detail.md).
+S'applique a **tous les agents** (executants, coordinateur, reviewers humains et bots). Detail G.1-G.9 + incidents : [docs/reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md).
 
 | # | Regle | Resume |
 |---|-------|--------|
@@ -135,13 +135,13 @@ S'applique a **tous les agents** (executants, coordinateur, reviewers humains et
 
 ### H. Validation REELLE — pas de complaisance, jamais
 
-S'applique a TOUS les agents. Aucune derogation. Detail H.1-H.7 + incident Sudoku-13 + plan P0-P4 + pre-commit bash script H.3 : [docs/regles-validation-detail.md](docs/regles-validation-detail.md). Workflow pre-commit egalement deporte : [docs/procedures-recurrentes.md](docs/procedures-recurrentes.md#validation-pré-commit-notebook-h3-regle-hard).
+S'applique a TOUS les agents. Aucune derogation. Detail H.1-H.7 + incident Sudoku-13 + plan P0-P4 + pre-commit bash script H.3 : [docs/reference/regles-validation-detail.md](docs/reference/regles-validation-detail.md). Workflow pre-commit egalement deporte : [docs/reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md#validation-pré-commit-notebook-h3-regle-hard).
 
 | # | Regle | Resume |
 |---|-------|--------|
 | H.1 | Validation = exec complete + outputs verifies | 4 preuves : exec_count!=null, 0 error, Papermill end-to-end, trailer body PR |
 | H.2 | Tous les agents installent l'env complet | Python+Conda+.NET 9+WSL+Lean+Docker. Reparation > contournement |
-| H.3 | Aucun commit de notebook non-execute | Pre-commit check `execution_count is None and not outputs` = fail bloquant (script : voir [detail](docs/regles-validation-detail.md)) |
+| H.3 | Aucun commit de notebook non-execute | Pre-commit check `execution_count is None and not outputs` = fail bloquant (script : voir [detail](docs/reference/regles-validation-detail.md)) |
 | H.4 | Merges coord JAMAIS complaisants | git checkout + Papermill local OU body PR avec log + scope OK (relax JSON forensic) |
 | H.5 | Bots reviewers audit forensique | Verdict EXEC_PROVED / STRUCTURAL_ONLY / SUSPECT_REGRESSION par parsing JSON diff |
 | H.6 | Audit historique = responsabilite bot | `audit-history` bot retourne `LAST_REAL_EXEC` ou `NEVER_EXECUTED_SINCE_<creation>` |
@@ -153,7 +153,7 @@ S'applique a TOUS les agents. Aucune derogation. Detail H.1-H.7 + incident Sudok
 
 ```
 MyIA.AI.Notebooks/                      # Series pedagogiques par theme
-- GenAI/{Image,Audio,Video,Texte}/      # 60+ notebooks Python (cf docs/genai-services.md)
+- GenAI/{Image,Audio,Video,Texte}/      # 60+ notebooks Python (cf docs/genai/genai-services.md)
 - ML/                                    # ML.NET tutorials (.NET C#)
 - Search/{Part1-Foundations, Part2-CSP, Part3-Advanced}/  # Search/CSP (Mixed)
 - Sudoku/                                # Constraint solving (.NET C#)
@@ -162,20 +162,20 @@ MyIA.AI.Notebooks/                      # Series pedagogiques par theme
 - GameTheory/                            # OpenSpiel + Lean (cf 16b/16c/16d Social Choice)
   - social_choice_lean/                  # Lean 4 port Arrow/Sen/Voting
 - IIT/                                   # PyPhi (Python)
-- QuantConnect/                          # 27 notebooks + 50 strategies (cf docs/quantconnect.md)
+- QuantConnect/                          # 27 notebooks + 50 strategies (cf docs/qc/quantconnect.md)
 - Config/settings.json                   # API settings
 
 scripts/notebook_tools/notebook_tools.py # CLI multi-famille (validate/execute/skeleton/analyze)
 scripts/smartcontracts/                  # SC-specifique
-scripts/genai-stack/genai.py             # GenAI Docker + validation (cf docs/genai-services.md)
+scripts/genai-stack/genai.py             # GenAI Docker + validation (cf docs/genai/genai-services.md)
 
 .claude/{agents, skills, rules}/         # 21 sous-agents, 15 skills, rules auto-loaded
-GradeBookApp/                            # Notation etudiants (cf docs/ece-grading.md)
+GradeBookApp/                            # Notation etudiants (cf docs/reference/ece-grading.md)
 docker-configurations/                   # ComfyUI + Qwen Docker
 docs/                                    # Documentation deportee de ce CLAUDE.md
 ```
 
-**Tables detaillees** (scripts reutilisables, skills slash commands, MCP servers, GenAI services, kernels & runtime) : [docs/common-commands.md](docs/common-commands.md), [docs/claude-code-config.md](docs/claude-code-config.md), [docs/kernels-runtime.md](docs/kernels-runtime.md), [docs/genai-services.md](docs/genai-services.md).
+**Tables detaillees** (scripts reutilisables, skills slash commands, MCP servers, GenAI services, kernels & runtime) : [docs/reference/common-commands.md](docs/reference/common-commands.md), [docs/reference/claude-code-config.md](docs/reference/claude-code-config.md), [docs/reference/kernels-runtime.md](docs/reference/kernels-runtime.md), [docs/genai/genai-services.md](docs/genai/genai-services.md).
 
 **Regle generale outils** : ne jamais ecrire un script ad-hoc d'execution / validation : il existe presque toujours un outil dedie dans `scripts/notebook_tools/`. Si manquant, l'ajouter la (pas dans la racine `scripts/`).
 
@@ -183,9 +183,9 @@ docs/                                    # Documentation deportee de ce CLAUDE.m
 
 **Règle HARD.** Là où un **sous-agent** spécialiste, un **skill** slash-command, ou un **script** dédié couvre une tâche, **l'utiliser plutôt que de réimproviser le workflow à la main**. Les Epics side-tracks **DOIVENT** déléguer aux sous-agents async (`run_in_background: true`) quand un specialist existe.
 
-- **Sous-agents `.claude/agents/` (21)** : invoquer via `Agent(subagent_type: "<nom>")`. Familles : orchestrateurs side-track async (`series-improver`, `notebook-iterative-builder`), notebooks (`notebook-designer/enricher/cleaner/cell-iterator/modernizer/executor/validator`, `infer-notebook-enricher`), trading QC (`qc-strategy-analyzer/improver`, `qc-robustness-researcher`, `qc-research-notebook`), training ML #1454 (`training-specialist`), GenAI #1385 (`genai-iterator`), prover Lean #1453 (`prover-forensic`), README/slides (`readme-hierarchy-auditor/updater`, `slide-analyzer/improver`), génériques (`code-explorer`, `general-purpose`). Roster + mapping side-track Epic → specialists : [docs/subagents-reference.md](docs/subagents-reference.md).
-- **Skills `.claude/skills/` (15)** : invoquer en slash-command `/<nom>`. Principaux : `/coordinate` (reprise session ai-01), `/review-student-prs` (#1455 EPITA/ECE/PrCon), `/build-notebook`, `/enrich-notebooks`, `/cleanup-notebooks`, `/execute-notebook`, `/verify-notebooks`, `/validate-genai`, `/genai-iterate`, `/train-model`, `/qc-iterative-improve`, `/analyze-slides`. Détail : [docs/subagents-reference.md](docs/subagents-reference.md).
-- **Scripts dédiés** : catalogue complet (notebook CLI, catalogue anti-drift, qualité/conformité C.1-C.3, exécution, environnement, genai-stack) : [docs/scripts-reference.md](docs/scripts-reference.md). **Ne jamais** réécrire un script d'exécution/validation/maintenance.
+- **Sous-agents `.claude/agents/` (21)** : invoquer via `Agent(subagent_type: "<nom>")`. Familles : orchestrateurs side-track async (`series-improver`, `notebook-iterative-builder`), notebooks (`notebook-designer/enricher/cleaner/cell-iterator/modernizer/executor/validator`, `infer-notebook-enricher`), trading QC (`qc-strategy-analyzer/improver`, `qc-robustness-researcher`, `qc-research-notebook`), training ML #1454 (`training-specialist`), GenAI #1385 (`genai-iterator`), prover Lean #1453 (`prover-forensic`), README/slides (`readme-hierarchy-auditor/updater`, `slide-analyzer/improver`), génériques (`code-explorer`, `general-purpose`). Roster + mapping side-track Epic → specialists : [docs/reference/subagents-reference.md](docs/reference/subagents-reference.md).
+- **Skills `.claude/skills/` (15)** : invoquer en slash-command `/<nom>`. Principaux : `/coordinate` (reprise session ai-01), `/review-student-prs` (#1455 EPITA/ECE/PrCon), `/build-notebook`, `/enrich-notebooks`, `/cleanup-notebooks`, `/execute-notebook`, `/verify-notebooks`, `/validate-genai`, `/genai-iterate`, `/train-model`, `/qc-iterative-improve`, `/analyze-slides`. Détail : [docs/reference/subagents-reference.md](docs/reference/subagents-reference.md).
+- **Scripts dédiés** : catalogue complet (notebook CLI, catalogue anti-drift, qualité/conformité C.1-C.3, exécution, environnement, genai-stack) : [docs/reference/scripts-reference.md](docs/reference/scripts-reference.md). **Ne jamais** réécrire un script d'exécution/validation/maintenance.
 
 **Règle collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
 
@@ -195,9 +195,9 @@ docs/                                    # Documentation deportee de ce CLAUDE.m
 
 ## PROCEDURES RECURRENTES
 
-**Workflows detailles** (Workflow PR 10 etapes, Dispatch agents template, Validation notebook bash, Audit anti-regression bash, Execution Quantbooks, **Productivite operations longues** - 2 tracks min, pre-commit notebook H.3) : [docs/procedures-recurrentes.md](docs/procedures-recurrentes.md).
+**Workflows detailles** (Workflow PR 10 etapes, Dispatch agents template, Validation notebook bash, Audit anti-regression bash, Execution Quantbooks, **Productivite operations longues** - 2 tracks min, pre-commit notebook H.3) : [docs/reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md).
 
-**Productivite operations longues — HARD 2026-05-11** : quand un processus long tourne (training GPU, backtest QC, build Lean, prover BG iter, papermill batch), **ne pas attendre passivement**. Lancer BG, immediatement continuer autre travail, check uniquement intervalles utiles (5-10 min), **minimum 2 tracks en flight**. Detail 4 etapes + anti-patterns + incident Lean prover iter 6 (~35 events monitor consommes) : [docs/procedures-recurrentes.md](docs/procedures-recurrentes.md#productivité-pendant-les-opérations-longues-règle-hard-2026-05-11).
+**Productivite operations longues — HARD 2026-05-11** : quand un processus long tourne (training GPU, backtest QC, build Lean, prover BG iter, papermill batch), **ne pas attendre passivement**. Lancer BG, immediatement continuer autre travail, check uniquement intervalles utiles (5-10 min), **minimum 2 tracks en flight**. Detail 4 etapes + anti-patterns + incident Lean prover iter 6 (~35 events monitor consommes) : [docs/reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md#productivité-pendant-les-opérations-longues-règle-hard-2026-05-11).
 
 ---
 
@@ -220,7 +220,7 @@ docs/                                    # Documentation deportee de ce CLAUDE.m
 - **Quantbooks** = exigence d'execution **via QC Cloud** (MCP / Playwright en fallback), pas d'execution locale fictive.
 - **Livre reference** : *Hands-On AI Trading* (Jared Broad), https://www.hands-on-ai-trading.com/
 
-Cf [docs/quantconnect.md](docs/quantconnect.md) pour structure complete.
+Cf [docs/qc/quantconnect.md](docs/qc/quantconnect.md) pour structure complete.
 
 ---
 

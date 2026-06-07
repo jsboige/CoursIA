@@ -1,6 +1,6 @@
 # Cluster CoursIA - agents, GPUs, specialisations
 
-Reference perenne sur la structure du cluster : machines, GPUs, workspaces RooSync, specialisations infrastructure. Pour les **regles de coordination** : cf [docs/architecture_mcp_roo.md](architecture_mcp_roo.md) (RooSync) + [CLAUDE.md](../CLAUDE.md) section A. Pour le **calendrier enseignement / scope par ecole** : cf [docs/teaching-context.md](teaching-context.md).
+Reference perenne sur la structure du cluster : machines, GPUs, workspaces RooSync, specialisations infrastructure. Pour les **regles de coordination** : cf [docs/architecture_mcp_roo.md](architecture_mcp_roo.md) (RooSync) + [CLAUDE.md](../../CLAUDE.md) section A. Pour le **calendrier enseignement / scope par ecole** : cf [docs/teaching-context.md](teaching-context.md).
 
 ## Machines du cluster
 
@@ -167,7 +167,7 @@ Pour tout sprint / curriculum >= 3 etapes, creer **Epic GitHub** + sub-issues nu
 ## Pointeurs cross-doc
 
 - Architecture RooSync (34 outils MCP roo-state-manager) : [docs/architecture_mcp_roo.md](architecture_mcp_roo.md)
-- Regles de coordination Git + dashboard : [CLAUDE.md](../CLAUDE.md) section A
+- Regles de coordination Git + dashboard : [CLAUDE.md](../../CLAUDE.md) section A
 - Calendrier enseignement + scope ecoles : [docs/teaching-context.md](teaching-context.md)
 - Wrapper training BG avec checkpoints : `scripts/training/train_with_checkpoints.py`
 - QC backtest + MCP Docker : [docs/quantconnect.md](quantconnect.md)

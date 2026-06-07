@@ -28,7 +28,7 @@ Quand le user formule une demande concrete et realisable :
 
 Bonus G.9 : "qu'est-ce que le user a demande que je n'ai pas encore fait ?" est un meilleur reflexe que "qu'est-ce qui reste a faire dans mon plan ?".
 
-Workflow batch merge complet (commandes + audit pre-merge) + triage detail + incident origine : [docs/secrets-and-coord-detail.md](../../docs/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
+Workflow batch merge complet (commandes + audit pre-merge) + triage detail + incident origine : [docs/secrets-and-coord-detail.md](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
 
 ## Voir aussi
 

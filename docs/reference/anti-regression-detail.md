@@ -1,6 +1,6 @@
 # Anti-régression — Détails, incidents, workflow audit
 
-Document de référence détaillant les règles auto-loaded de [.claude/rules/anti-regression.md](../.claude/rules/anti-regression.md). Lire ce document lors d'un audit de PR suspecte, d'une investigation rogue commit, ou pour comprendre le contexte des règles.
+Document de référence détaillant les règles auto-loaded de [.claude/rules/anti-regression.md](../../.claude/rules/anti-regression.md). Lire ce document lors d'un audit de PR suspecte, d'une investigation rogue commit, ou pour comprendre le contexte des règles.
 
 ## Incident fondateur 2026-04-24 (Arrow.lean)
 

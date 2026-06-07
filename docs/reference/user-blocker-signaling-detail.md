@@ -1,6 +1,6 @@
 # User-blocker signaling — detail
 
-Detail de [.claude/rules/user-blocker-signaling.md](../.claude/rules/user-blocker-signaling.md). Voir aussi [coordinator-discipline.md](../.claude/rules/coordinator-discipline.md), [proactive-coordination.md](../.claude/rules/proactive-coordination.md).
+Detail de [.claude/rules/user-blocker-signaling.md](../../.claude/rules/user-blocker-signaling.md). Voir aussi [coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md), [proactive-coordination.md](../../.claude/rules/proactive-coordination.md).
 
 ## Source mandate (2026-05-28T12:48Z)
 
@@ -53,6 +53,6 @@ Verbatim user :
 
 ## Interaction avec autres regles
 
-- **[coordinator-discipline.md](../.claude/rules/coordinator-discipline.md)** "Aucune demande user ne pourrit > 1 cycle" : cette regle = l'inverse symetrique (quand c'est le user qui pourrit cote action).
+- **[coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md)** "Aucune demande user ne pourrit > 1 cycle" : cette regle = l'inverse symetrique (quand c'est le user qui pourrit cote action).
 - **CLAUDE.md section A** "Reporting dashboard" : `[ASK USER]` en plus des posts debut/livraison/fin, pas a la place.
 - **CLAUDE.md G.7** "Stagnation cross-cycle = escalade" : applicable user-block > 5 cycles.

@@ -4,7 +4,7 @@ paths: MyIA.AI.Notebooks/GenAI/**/*
 
 # GenAI Configuration Rules
 
-**Documentation complète** (services, modèles, VRAM, quantizations par service, GPU allocation, ComfyUI Qwen Phase 29) : [docs/genai-services.md](../../docs/genai-services.md).
+**Documentation complète** (services, modèles, VRAM, quantizations par service, GPU allocation, ComfyUI Qwen Phase 29) : [docs/genai-services.md](../../docs/genai/genai-services.md).
 
 ## Règles HARD
 
@@ -23,7 +23,7 @@ Diffère du SDXL standard. À ne PAS modifier sans test :
 - Loaders séparés : `VAELoader` + `CLIPLoader(type=sd3)` + `UNETLoader` (NOT `CheckpointLoaderSimple`)
 - Text encoding : `TextEncodeQwenImageEdit` (NOT `CLIPTextEncode`), negative : `ConditioningZeroOut`
 
-Pipeline complet et workflow JSON : [docs/genai-services.md](../../docs/genai-services.md).
+Pipeline complet et workflow JSON : [docs/genai-services.md](../../docs/genai/genai-services.md).
 
 ## Scripts validation
 

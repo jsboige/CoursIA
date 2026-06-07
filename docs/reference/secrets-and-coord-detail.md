@@ -1,8 +1,8 @@
 # Secrets hygiene & coordinator discipline — detail
 
 Detail des deux regles HARD :
-- [.claude/rules/secrets-hygiene.md](../.claude/rules/secrets-hygiene.md)
-- [.claude/rules/coordinator-discipline.md](../.claude/rules/coordinator-discipline.md)
+- [.claude/rules/secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md)
+- [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md)
 
 ## 1. Secrets hygiene — content-based, pas path-based
 

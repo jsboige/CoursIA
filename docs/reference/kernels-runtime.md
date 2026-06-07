@@ -158,7 +158,7 @@ Notebooks dans `GameTheory/` et `SymbolicAI/Lean/` requierent un kernel WSL spec
 
 Pieges : backslashes consommes par WSL shell, paths sans separateurs, kernel timeout 60s cold start, heredoc variables interpolees. Wrapper bash obligatoire (Python wrapper ne marche PAS).
 
-Detail diagnostic + workarounds : [.claude/rules/wsl-kernels.md](../.claude/rules/wsl-kernels.md) + [docs/wsl-kernels-detail.md](wsl-kernels-detail.md).
+Detail diagnostic + workarounds : [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) + [docs/wsl-kernels-detail.md](wsl-kernels-detail.md).
 
 ## Lean prover LLM endpoints
 

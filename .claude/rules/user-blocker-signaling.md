@@ -1,6 +1,6 @@
 # User-blocker signaling — anti-dilution
 
-S'applique a **tous les agents** du cluster CoursIA (workers `po-*` + coordinateur `ai-01`). Source : mandat user 2026-05-28T12:48Z (verbatim + workers/coordinator detail + categories + anti-patterns) : [docs/user-blocker-signaling-detail.md](../../docs/user-blocker-signaling-detail.md).
+S'applique a **tous les agents** du cluster CoursIA (workers `po-*` + coordinateur `ai-01`). Source : mandat user 2026-05-28T12:48Z (verbatim + workers/coordinator detail + categories + anti-patterns) : [docs/user-blocker-signaling-detail.md](../../docs/reference/user-blocker-signaling-detail.md).
 
 ## Regle HARD
 
@@ -19,6 +19,6 @@ Quand un livrable d'agent **depend d'une action user non faite** (relecture, val
 
 ## Voir aussi
 
-- [docs/user-blocker-signaling-detail.md](../../docs/user-blocker-signaling-detail.md) — verbatim, categories, anti-patterns, interaction regles
+- [docs/user-blocker-signaling-detail.md](../../docs/reference/user-blocker-signaling-detail.md) — verbatim, categories, anti-patterns, interaction regles
 - [coordinator-discipline.md](coordinator-discipline.md) — symetrique cote agent ("aucune demande user ne pourrit > 1 cycle")
 - [proactive-coordination.md](proactive-coordination.md) — 1 PR/wakeup + main + side-track

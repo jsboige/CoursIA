@@ -4,7 +4,7 @@ paths: "{MyIA.AI.Notebooks/GameTheory/**/*,MyIA.AI.Notebooks/SymbolicAI/Lean/**/
 
 # WSL Kernel Rules
 
-**Diagnostic detaille (issues, paths, heredoc, setup, verifications)** : [docs/wsl-kernels-detail.md](../../docs/wsl-kernels-detail.md).
+**Diagnostic detaille (issues, paths, heredoc, setup, verifications)** : [docs/wsl-kernels-detail.md](../../docs/reference/wsl-kernels-detail.md).
 
 ## Regles HARD
 

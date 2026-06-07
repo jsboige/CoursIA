@@ -1,6 +1,6 @@
 # ESGF - Evaluation etudiants et compilation notes
 
-Pipeline d'evaluation cohorte ESGF (5ESGF-5BD1) sur module Trading Algorithmique. Pour le **calendrier toutes ecoles, scope par cohorte, agents par ecole** : cf [docs/teaching-context.md](teaching-context.md). Pour les **regles de review PR etudiantes** (anti-fuite questions soutenance) : cf [.claude/rules/student-pr-reviews.md](../.claude/rules/student-pr-reviews.md). Pour le **pattern ECE** dont ce pipeline est le miroir : cf [docs/ece-grading.md](ece-grading.md).
+Pipeline d'evaluation cohorte ESGF (5ESGF-5BD1) sur module Trading Algorithmique. Pour le **calendrier toutes ecoles, scope par cohorte, agents par ecole** : cf [docs/teaching-context.md](teaching-context.md). Pour les **regles de review PR etudiantes** (anti-fuite questions soutenance) : cf [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md). Pour le **pattern ECE** dont ce pipeline est le miroir : cf [docs/ece-grading.md](ece-grading.md).
 
 ## Contexte
 
@@ -18,8 +18,8 @@ ESG Finance 5e annee, parcours BD (Big Data) et HL (Haute Liaison). Module Tradi
 
 | Element | Localisation |
 |---------|--------------|
-| Moteur de notation collegiale | [GradeBookApp/gradebook.py](../GradeBookApp/gradebook.py) (repo) |
-| Runner generique | [GradeBookApp/run_grading.py](../GradeBookApp/run_grading.py) (repo) |
+| Moteur de notation collegiale | [GradeBookApp/gradebook.py](../../GradeBookApp/gradebook.py) (repo) |
+| Runner generique | [GradeBookApp/run_grading.py](../../GradeBookApp/run_grading.py) (repo) |
 | Configs runtime ESGF | `G:\Mon Drive\MyIA\Formation\ESGF\2026\grading\` (G-drive) |
 | Reponses peer eval (GForm CSV) | `G:\Mon Drive\MyIA\Formation\ESGF\2026\ESG - 2026 - 5ESGF-5BD1 - Trading Algorithmique - Evaluations (reponses) - Reponses au formulaire 1.csv` (G-drive) |
 | Compilation finale | `G:\Mon Drive\MyIA\Formation\ESGF\2026\Notes_Finales_ESGF_2026_Compilation.xlsx` (G-drive) |
@@ -56,7 +56,7 @@ Pour chaque projet :
 3. Aggreger les 3 notes /10 -> note /30 -> /20 (division par 1.5)
 4. Moyenne pondéree note prof / moyenne etudiants : `TEACHER_WEIGHT = 1.0` (50/50)
 
-Formule (mirror [gradebook.py:17](../GradeBookApp/gradebook.py)) :
+Formule (mirror [gradebook.py:17](../../GradeBookApp/gradebook.py)) :
 ```
 note_brute = (student_avg + teacher_avg * TEACHER_WEIGHT) / (1 + TEACHER_WEIGHT)
 ```
@@ -111,7 +111,7 @@ Comme ECE : **tous les membres d'un sous-groupe projet recoivent la meme note**,
 
 ## Absence
 
-Absence = 0 sur la cohorte. Pas de plafonnement cache. Sous-groupes solo (1 etudiant) recoivent l'ajustement +3 du bareme `group_size_adjustments` ([gradebook.py:309](../GradeBookApp/gradebook.py)).
+Absence = 0 sur la cohorte. Pas de plafonnement cache. Sous-groupes solo (1 etudiant) recoivent l'ajustement +3 du bareme `group_size_adjustments` ([gradebook.py:309](../../GradeBookApp/gradebook.py)).
 
 ## Bonus CC ESGF
 
@@ -151,12 +151,12 @@ Comme pour ECE et EPITA-IS, les comments sur PR / commits dans `Trading-Firm-ESG
 
 Le briefing jury / les questions / la grille restent **internes** (G-drive `SOUTENANCE_*_REVIEW.md`, dashboard RooSync, rapport markdown local non-committe).
 
-Voir [.claude/rules/student-pr-reviews.md](../.claude/rules/student-pr-reviews.md) pour le protocole complet (incident 2026-05-17 documente).
+Voir [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md) pour le protocole complet (incident 2026-05-17 documente).
 
 ## Voir aussi
 
 - [docs/ece-grading.md](ece-grading.md) - Pattern ECE Finance Ing4 (3 groupes, 2 projets, bonus CC)
 - [docs/teaching-context.md](teaching-context.md) - Calendrier toutes ecoles, scope par cohorte
 - [docs/quantconnect.md](quantconnect.md) - Org QC Trading-Firm-ESGF, MCP qc-mcp, baselines
-- [GradeBookApp/README.md](../GradeBookApp/README.md) - Moteur generique
-- [.claude/rules/student-pr-reviews.md](../.claude/rules/student-pr-reviews.md) - Anti-fuite jury (HARD)
+- [GradeBookApp/README.md](../../GradeBookApp/README.md) - Moteur generique
+- [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md) - Anti-fuite jury (HARD)
