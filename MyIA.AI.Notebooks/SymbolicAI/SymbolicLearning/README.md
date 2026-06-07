@@ -1,7 +1,7 @@
 # SymbolicLearning - Apprentissage Symbolique
 
 <!-- CATALOG-STATUS
-series: SymbolicLearning
+series: SymbolicAI-SymbolicLearning
 pedagogical_count: 7
 breakdown: =7
 maturity: PRODUCTION=7
