@@ -43,7 +43,10 @@ class ForexCarryTradeStrategy(QCAlgorithm):
         self.set_cash(100000)
 
         # Brokerage: G10 FX traded via OANDA margin account
-        self.set_brokerage_model(BrokerageName.OANDA_BROKERAGE, AccountType.MARGIN)
+        # Configurable brokerage for fee sweep (default: OANDA margin with real fees)
+        self._brokerage_mode = self.get_parameter("brokerage", "oanda")
+        if self._brokerage_mode != "none":
+            self.set_brokerage_model(BrokerageName.OANDA_BROKERAGE, AccountType.MARGIN)
 
         # 4 diversified FX pairs (Europe, Commodity, Asia, Americas) - confirmed best
         self.pair_names = ["EURUSD", "AUDUSD", "USDJPY", "USDCAD"]
