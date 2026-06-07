@@ -91,6 +91,25 @@ def _sorted_counter(c: Counter) -> dict[str, int]:
     return dict(sorted(c.items(), key=lambda kv: (-kv[1], kv[0])))
 
 
+def _filter_by_series(entries: list[dict], serie: str) -> list[dict]:
+    """Filter entries by serie name, supporting 'Serie-SousSerie' format.
+
+    README CATALOG-STATUS markers use 'Serie-SousSerie' (e.g. 'SymbolicAI-Lean')
+    while the catalog JSON stores serie='SymbolicAI' and sous_serie='Lean'.
+    This function tries exact match first, then falls back to serie+sous_serie.
+    """
+    # Exact match (e.g. serie='ML')
+    filtered = [e for e in entries if e.get("serie") == serie]
+    if filtered:
+        return filtered
+    # Fallback: parse 'Serie-SousSerie' format
+    if "-" in serie:
+        parent, child = serie.split("-", 1)
+        return [e for e in entries
+                if e.get("serie") == parent and e.get("sous_serie") == child]
+    return []
+
+
 def compute_breakdown(entries: list[dict], serie: str) -> dict[str, int]:
     """Compute breakdown by sous_serie for a given serie. Entries without sous_serie group as 'root'."""
     serie_entries = _filter_by_series(entries, serie)

@@ -562,3 +562,97 @@ class TestExpandFile:
         assert len(changes) == 1
         assert "pedagogical_count: 0" in new_content
         assert "breakdown: " in new_content
+
+
+# ---------------------------------------------------------------------------
+# _filter_by_series — Serie-SousSerie format support (regression #2599)
+# ---------------------------------------------------------------------------
+
+
+class TestFilterBySeries:
+    """Tests for the Serie-SousSerie fallback in _filter_by_series."""
+
+    @pytest.fixture
+    def entries(self):
+        return [
+            {"serie": "SymbolicAI", "sous_serie": "Lean"},
+            {"serie": "SymbolicAI", "sous_serie": "Lean"},
+            {"serie": "SymbolicAI", "sous_serie": "Tweety"},
+            {"serie": "SymbolicAI", "sous_serie": ""},
+            {"serie": "ML", "sous_serie": ""},
+        ]
+
+    def test_exact_serie_match(self, entries):
+        result = _filter_by_series(entries, "ML")
+        assert len(result) == 1
+
+    def test_exact_serie_multiple(self, entries):
+        result = _filter_by_series(entries, "SymbolicAI")
+        assert len(result) == 4
+
+    def test_serie_sousserie_format(self, entries):
+        """'SymbolicAI-Lean' matches serie=SymbolicAI + sous_serie=Lean."""
+        result = _filter_by_series(entries, "SymbolicAI-Lean")
+        assert len(result) == 2
+
+    def test_serie_sousserie_tweety(self, entries):
+        result = _filter_by_series(entries, "SymbolicAI-Tweety")
+        assert len(result) == 1
+
+    def test_serie_sousserie_root(self, entries):
+        """'SymbolicAI-' matches serie=SymbolicAI + sous_serie=''."""
+        result = _filter_by_series(entries, "SymbolicAI-")
+        assert len(result) == 1
+
+    def test_nonexistent_returns_empty(self, entries):
+        result = _filter_by_series(entries, "Nonexistent")
+        assert result == []
+
+    def test_nonexistent_sousserie_returns_empty(self, entries):
+        result = _filter_by_series(entries, "SymbolicAI-FooBar")
+        assert result == []
+
+    def test_exact_match_takes_priority(self):
+        """If a serie literally equals 'A-B', exact match wins."""
+        entries = [
+            {"serie": "A-B", "sous_serie": ""},
+            {"serie": "A", "sous_serie": "B"},
+        ]
+        result = _filter_by_series(entries, "A-B")
+        assert len(result) == 1
+        assert result[0]["serie"] == "A-B"
+
+
+class TestCatalogStatusSerieSousSerie:
+    """Regression test: CATALOG-STATUS with 'Serie-SousSerie' format."""
+
+    def test_sousserie_status_block(self):
+        entries = [
+            {"serie": "SymbolicAI", "sous_serie": "Lean", "maturity": "PRODUCTION"},
+            {"serie": "SymbolicAI", "sous_serie": "Lean", "maturity": "BETA"},
+            {"serie": "SymbolicAI", "sous_serie": "Tweety"},
+        ]
+        block = format_catalog_status_block(entries, "SymbolicAI-Lean")
+        assert "pedagogical_count: 2" in block
+        assert "PRODUCTION=1" in block and "BETA=1" in block
+
+    def test_sousserie_counter_marker(self):
+        entries = [
+            {"serie": "SymbolicAI", "sous_serie": "Lean"},
+            {"serie": "SymbolicAI", "sous_serie": "Tweety"},
+        ]
+        result = compute_counter(entries, {"serie": "SymbolicAI-Lean"})
+        assert result == "1"
+
+    def test_sousserie_breakdown(self):
+        entries = [
+            {"serie": "SymbolicAI", "sous_serie": "Lean"},
+            {"serie": "SymbolicAI", "sous_serie": "Lean"},
+            {"serie": "SymbolicAI", "sous_serie": "Tweety"},
+        ]
+        breakdown = compute_breakdown(entries, "SymbolicAI-Lean")
+        assert breakdown == {"Lean": 2}
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
