@@ -13,6 +13,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from expand_catalog_markers import (
+    _filter_by_series,
     _sorted_counter,
     _to_lf,
     compute_breakdown,
@@ -40,6 +41,146 @@ SAMPLE_ENTRIES = [
     {"serie": "GameTheory", "sous_serie": "social_choice", "status": "READY", "maturity": "PRODUCTION"},
     {"serie": "GameTheory", "sous_serie": "open_spiel", "status": "READY", "maturity": "BETA"},
 ]
+
+# Entries simulating SymbolicAI sub-series (serie=SymbolicAI, sous_serie varies)
+SYMBOLIC_ENTRIES = [
+    {"serie": "SymbolicAI", "sous_serie": "Lean", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "SymbolicAI", "sous_serie": "Lean", "status": "READY", "maturity": "BETA"},
+    {"serie": "SymbolicAI", "sous_serie": "Tweety", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "SymbolicAI", "sous_serie": "SemanticWeb", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "SymbolicAI", "sous_serie": "SemanticWeb", "status": "DRAFT", "maturity": "ALPHA"},
+    {"serie": "SymbolicAI", "sous_serie": "SymbolicLearning", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "SymbolicAI", "sous_serie": "SymbolicLearning", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "SymbolicAI", "sous_serie": "SymbolicLearning", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "ML", "sous_serie": "ML.Net", "status": "READY", "maturity": "PRODUCTION"},
+    {"serie": "ML", "sous_serie": "ML.Net", "status": "READY", "maturity": "BETA"},
+    {"serie": "GameTheory", "sous_serie": "SocialChoice", "status": "READY", "maturity": "PRODUCTION"},
+]
+
+
+# ---------------------------------------------------------------------------
+# _filter_by_series
+# ---------------------------------------------------------------------------
+
+class TestFilterBySeries:
+    def test_exact_match_serie(self):
+        """Exact match on serie field returns entries."""
+        result = _filter_by_series(SAMPLE_ENTRIES, "Search")
+        assert len(result) == 4
+
+    def test_exact_match_no_sous_serie(self):
+        """Serie without sous_serie matches exactly."""
+        result = _filter_by_series(SAMPLE_ENTRIES, "Sudoku")
+        assert len(result) == 3
+
+    def test_fallback_serie_sousserie(self):
+        """Serie-SousSerie format falls back to serie+ sous_serie match."""
+        result = _filter_by_series(SYMBOLIC_ENTRIES, "SymbolicAI-Lean")
+        assert len(result) == 2
+        assert all(e.get("serie") == "SymbolicAI" for e in result)
+        assert all(e.get("sous_serie") == "Lean" for e in result)
+
+    def test_fallback_symbolic_learning(self):
+        """SymbolicAI-SymbolicLearning matches 3 entries."""
+        result = _filter_by_series(SYMBOLIC_ENTRIES, "SymbolicAI-SymbolicLearning")
+        assert len(result) == 3
+
+    def test_fallback_semantic_web(self):
+        """SymbolicAI-SemanticWeb matches 2 entries."""
+        result = _filter_by_series(SYMBOLIC_ENTRIES, "SymbolicAI-SemanticWeb")
+        assert len(result) == 2
+
+    def test_no_match_returns_empty(self):
+        """Nonexistent serie returns empty list."""
+        result = _filter_by_series(SAMPLE_ENTRIES, "NonExistent")
+        assert result == []
+
+    def test_fallback_no_sousserie(self):
+        """ML-ML.Net falls back correctly."""
+        result = _filter_by_series(SYMBOLIC_ENTRIES, "ML-ML.Net")
+        assert len(result) == 2
+
+    def test_fallback_gametheory_socialchoice(self):
+        """GameTheory-SocialChoice falls back correctly."""
+        result = _filter_by_series(SYMBOLIC_ENTRIES, "GameTheory-SocialChoice")
+        assert len(result) == 1
+
+    def test_exact_match_takes_priority(self):
+        """When exact match exists, it is used (not fallback)."""
+        # Add an entry where serie exactly matches 'SymbolicAI-Lean'
+        entries = SYMBOLIC_ENTRIES + [{"serie": "SymbolicAI-Lean", "sous_serie": None}]
+        result = _filter_by_series(entries, "SymbolicAI-Lean")
+        assert len(result) == 1
+        assert result[0].get("serie") == "SymbolicAI-Lean"
+
+
+# ---------------------------------------------------------------------------
+# Serie-SousSerie fallback integration tests
+# ---------------------------------------------------------------------------
+
+class TestSerieSousSerieIntegration:
+    def test_breakdown_fallback(self):
+        """compute_breakdown works with Serie-SousSerie format."""
+        result = compute_breakdown(SYMBOLIC_ENTRIES, "SymbolicAI-SymbolicLearning")
+        assert result == {"SymbolicLearning": 3}
+
+    def test_breakdown_with_multiple_sousseries(self):
+        """compute_breakdown with SymbolicAI gives breakdown by sous_serie."""
+        result = compute_breakdown(SYMBOLIC_ENTRIES, "SymbolicAI")
+        expected = {
+            "SymbolicLearning": 3,
+            "Lean": 2,
+            "SemanticWeb": 2,
+            "Tweety": 1,
+        }
+        assert result == expected
+
+    def test_maturity_fallback(self):
+        """compute_maturity_distribution works with Serie-SousSerie format."""
+        result = compute_maturity_distribution(SYMBOLIC_ENTRIES, "SymbolicAI-SymbolicLearning")
+        assert result == {"PRODUCTION": 3}
+
+    def test_status_fallback(self):
+        """compute_status_distribution works with Serie-SousSerie format."""
+        result = compute_status_distribution(SYMBOLIC_ENTRIES, "SymbolicAI-Lean")
+        assert result == {"READY": 2}
+
+    def test_format_block_fallback(self):
+        """format_catalog_status_block works with Serie-SousSerie format."""
+        result = format_catalog_status_block(SYMBOLIC_ENTRIES, "SymbolicAI-SymbolicLearning")
+        assert "series: SymbolicAI-SymbolicLearning" in result
+        assert "pedagogical_count: 3" in result
+        assert "PRODUCTION=3" in result
+
+    def test_expand_file_fallback(self):
+        """expand_file correctly expands a Serie-SousSerie marker."""
+        content = (
+            "<!-- CATALOG-STATUS\n"
+            "series: SymbolicAI-SymbolicLearning\n"
+            "pedagogical_count: 0\n"
+            "breakdown: none\n"
+            "maturity: none\n"
+            "-->\n"
+        )
+        new_content, changes = expand_file(content, SYMBOLIC_ENTRIES)
+        assert len(changes) == 1
+        assert "pedagogical_count: 3" in new_content
+        assert "PRODUCTION=3" in new_content
+
+    def test_expand_file_fallback_idempotent(self):
+        """Running expand twice with fallback produces identical output."""
+        content = (
+            "<!-- CATALOG-STATUS\n"
+            "series: SymbolicAI-Lean\n"
+            "pedagogical_count: 0\n"
+            "breakdown: none\n"
+            "maturity: none\n"
+            "-->\n"
+        )
+        first, _ = expand_file(content, SYMBOLIC_ENTRIES)
+        second, changes = expand_file(first, SYMBOLIC_ENTRIES)
+        assert first == second
+        assert changes == []
 
 
 # ---------------------------------------------------------------------------
