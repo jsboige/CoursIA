@@ -5,8 +5,8 @@
 <!-- CATALOG-STATUS
 series: GenAI-FineTuning
 pedagogical_count: 5
-breakdown: FineTuning=5
-maturity: PRODUCTION=4, BETA=1
+breakdown: Introduction=1, QLoRA=1, SFT=1, RLHF-DPO=1, ModelMerging=1
+maturity: BETA
 -->
 
 Serie progressive sur le fine-tuning des modeles de langue : des bases LoRA a la fusion de modeles, en passant par la quantization, l'instruction-following et l'alignement par preferences humaines.
