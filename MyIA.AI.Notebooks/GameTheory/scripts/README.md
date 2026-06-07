@@ -4,7 +4,14 @@ Ce repertoire contient les scripts de configuration et de validation des kernels
 
 ## Scripts disponibles
 
-### Configuration Lean 4 (WSL)
+### Configuration Lean 4 — native (macOS / Linux)
+
+| Script | Description | Usage |
+|--------|-------------|-------|
+| `setup_lean4_native.sh` | Installe elan, Lean 4, REPL et lean4_jupyter nativement | `bash scripts/setup_lean4_native.sh` |
+| `setup_lean4_native.sh --check` | Verifie l'installation sans modifier | `bash scripts/setup_lean4_native.sh --check` |
+
+### Configuration Lean 4 — WSL (Windows)
 
 | Script | Description | Usage |
 |--------|-------------|-------|
@@ -36,7 +43,20 @@ pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
 # open_spiel echoue sur Windows - c'est normal, les notebooks Python natifs n'en ont pas besoin
 ```
 
-### Etape 1a : Configuration WSL OpenSpiel (GT-13, GT-17)
+### Etape 1a-native : Configuration Lean 4 native (macOS / Linux)
+
+```bash
+# Directement sur macOS ou Linux (pas de WSL necessaire)
+cd MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_lean4_native.sh
+
+# Verification
+bash setup_lean4_native.sh --check
+```
+
+Puis redemarrez VSCode et selectionnez le kernel **"Lean 4 (Native)"**.
+
+### Etape 1a-wsl : Configuration WSL OpenSpiel (GT-13, GT-17) — Windows uniquement
 
 ```bash
 # Dans WSL Ubuntu
@@ -50,7 +70,7 @@ cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 .\setup_wsl_kernel.ps1
 ```
 
-### Etape 1b : Configuration WSL Lean 4 (notebooks b)
+### Etape 1b : Configuration WSL Lean 4 (notebooks b) — Windows uniquement
 
 ```bash
 # Dans WSL Ubuntu
