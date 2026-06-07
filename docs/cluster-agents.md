@@ -38,12 +38,12 @@ Regle stricte : GPU 2 **doit etre occupee 24/7** par un training BG longue duree
 
 | GPU | Role | Etat normal |
 |-----|------|-------------|
-| GPU 0 RTX 4090 | vLLM `medium` (Qwen3.5-35B-A3B-GPTQ-Int4, TP=2 avec GPU 1) | ~23-24 GB VRAM occupee 24/7 |
+| GPU 0 RTX 4090 | vLLM `medium` (Qwen3.6-35B-A3B-GPTQ-Int4, TP=2 avec GPU 1) | ~23-24 GB VRAM occupee 24/7 |
 | GPU 1 RTX 4090 | vLLM `medium` (TP=2 avec GPU 0) | ~23-24 GB VRAM occupee 24/7 |
 | GPU 2 RTX 4090 | **vLLM `mini` + Training BG ai-01 dedie** | DOIT toujours etre occupee par training BG |
 
 **Alias vLLM** :
-- `mini` : OmniCoder-9B-AWQ-4bit, GPU 2, port 5001
+- `mini` : OmniCoder-9B-AWQ-4bit, GPU 2, port 5001, deprecated
 - `medium` : Qwen3.5-35B-A3B-GPTQ-Int4, GPU 0+1 TP=2, port 5002
 
 **Anti-patterns interdits sur ai-01** :
@@ -102,7 +102,7 @@ Les 2 containers Texte tournent sur le **vLLM workspace de ai-01**, pas po-2023.
 
 Container embedding dedie sur po-2026. Tout agent peut consommer l'endpoint.
 
-### Reverse proxy `xx.myia.io` -> po-2026
+### Reverse proxy `xx.myia.io` -> po-2023
 
 Sous-domaines publics qui pointent vers les services GenAI de po-2023. Permet validation **bout-en-bout** des notebooks GenAI (auth bearer + timeouts + latences reelles client-side) en plus du test localhost de po-2023.
 
